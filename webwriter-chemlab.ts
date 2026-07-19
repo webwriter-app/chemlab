@@ -1181,17 +1181,17 @@ export class ChemLab extends LitElementWw {
 			this.shadowRoot.getElementById("ecomp_panel").style.display =
 				"none";
 			this.settings_drawer.removeAttribute("disabled");
-			// this.curr_mol._bondTypes.forEach((key) => {
-			// 	if(key in this.dictionary && key!= "hydrogen"){
-			// 		// @ts-ignore
-			// 		let bondType: SlOption = this.shadowRoot.createElement(
-			// 			"sl-option"
-			// 		) as SlOption;
-			// 		bondType.innerHTML = this.dictionary[key];
-			// 		bondType.value = key;
-			// 		this.bond_sel_3.appendChild(bondType);
-			// 	}
-			// });
+			this.curr_mol._bondTypes.forEach((key) => {
+				if(key in this.dictionary && key!= "hydrogen"){
+					// @ts-ignore
+					let bondType: SlOption = this.shadowRoot.createElement(
+						"sl-option"
+					) as SlOption;
+					bondType.innerHTML = this.dictionary[key];
+					bondType.value = key;
+					this.bond_sel_3.appendChild(bondType);
+				}
+			});
 
 		}
 

@@ -920,769 +920,11 @@ var require_punycode = __commonJS({
   }
 });
 
-// node_modules/es-errors/index.js
-var require_es_errors = __commonJS({
-  "node_modules/es-errors/index.js"(exports, module) {
-    "use strict";
-    module.exports = Error;
-  }
-});
-
-// node_modules/es-errors/eval.js
-var require_eval = __commonJS({
-  "node_modules/es-errors/eval.js"(exports, module) {
-    "use strict";
-    module.exports = EvalError;
-  }
-});
-
-// node_modules/es-errors/range.js
-var require_range = __commonJS({
-  "node_modules/es-errors/range.js"(exports, module) {
-    "use strict";
-    module.exports = RangeError;
-  }
-});
-
-// node_modules/es-errors/ref.js
-var require_ref = __commonJS({
-  "node_modules/es-errors/ref.js"(exports, module) {
-    "use strict";
-    module.exports = ReferenceError;
-  }
-});
-
-// node_modules/es-errors/syntax.js
-var require_syntax = __commonJS({
-  "node_modules/es-errors/syntax.js"(exports, module) {
-    "use strict";
-    module.exports = SyntaxError;
-  }
-});
-
 // node_modules/es-errors/type.js
 var require_type = __commonJS({
   "node_modules/es-errors/type.js"(exports, module) {
     "use strict";
     module.exports = TypeError;
-  }
-});
-
-// node_modules/es-errors/uri.js
-var require_uri = __commonJS({
-  "node_modules/es-errors/uri.js"(exports, module) {
-    "use strict";
-    module.exports = URIError;
-  }
-});
-
-// node_modules/has-symbols/shams.js
-var require_shams = __commonJS({
-  "node_modules/has-symbols/shams.js"(exports, module) {
-    "use strict";
-    module.exports = function hasSymbols() {
-      if (typeof Symbol !== "function" || typeof Object.getOwnPropertySymbols !== "function") {
-        return false;
-      }
-      if (typeof Symbol.iterator === "symbol") {
-        return true;
-      }
-      var obj = {};
-      var sym = Symbol("test");
-      var symObj = Object(sym);
-      if (typeof sym === "string") {
-        return false;
-      }
-      if (Object.prototype.toString.call(sym) !== "[object Symbol]") {
-        return false;
-      }
-      if (Object.prototype.toString.call(symObj) !== "[object Symbol]") {
-        return false;
-      }
-      var symVal = 42;
-      obj[sym] = symVal;
-      for (sym in obj) {
-        return false;
-      }
-      if (typeof Object.keys === "function" && Object.keys(obj).length !== 0) {
-        return false;
-      }
-      if (typeof Object.getOwnPropertyNames === "function" && Object.getOwnPropertyNames(obj).length !== 0) {
-        return false;
-      }
-      var syms = Object.getOwnPropertySymbols(obj);
-      if (syms.length !== 1 || syms[0] !== sym) {
-        return false;
-      }
-      if (!Object.prototype.propertyIsEnumerable.call(obj, sym)) {
-        return false;
-      }
-      if (typeof Object.getOwnPropertyDescriptor === "function") {
-        var descriptor = Object.getOwnPropertyDescriptor(obj, sym);
-        if (descriptor.value !== symVal || descriptor.enumerable !== true) {
-          return false;
-        }
-      }
-      return true;
-    };
-  }
-});
-
-// node_modules/has-symbols/index.js
-var require_has_symbols = __commonJS({
-  "node_modules/has-symbols/index.js"(exports, module) {
-    "use strict";
-    var origSymbol = typeof Symbol !== "undefined" && Symbol;
-    var hasSymbolSham = require_shams();
-    module.exports = function hasNativeSymbols() {
-      if (typeof origSymbol !== "function") {
-        return false;
-      }
-      if (typeof Symbol !== "function") {
-        return false;
-      }
-      if (typeof origSymbol("foo") !== "symbol") {
-        return false;
-      }
-      if (typeof Symbol("bar") !== "symbol") {
-        return false;
-      }
-      return hasSymbolSham();
-    };
-  }
-});
-
-// node_modules/has-proto/index.js
-var require_has_proto = __commonJS({
-  "node_modules/has-proto/index.js"(exports, module) {
-    "use strict";
-    var test = {
-      __proto__: null,
-      foo: {}
-    };
-    var $Object = Object;
-    module.exports = function hasProto() {
-      return { __proto__: test }.foo === test.foo && !(test instanceof $Object);
-    };
-  }
-});
-
-// node_modules/function-bind/implementation.js
-var require_implementation = __commonJS({
-  "node_modules/function-bind/implementation.js"(exports, module) {
-    "use strict";
-    var ERROR_MESSAGE = "Function.prototype.bind called on incompatible ";
-    var toStr = Object.prototype.toString;
-    var max6 = Math.max;
-    var funcType = "[object Function]";
-    var concatty = function concatty2(a7, b5) {
-      var arr = [];
-      for (var i11 = 0; i11 < a7.length; i11 += 1) {
-        arr[i11] = a7[i11];
-      }
-      for (var j4 = 0; j4 < b5.length; j4 += 1) {
-        arr[j4 + a7.length] = b5[j4];
-      }
-      return arr;
-    };
-    var slicy = function slicy2(arrLike, offset3) {
-      var arr = [];
-      for (var i11 = offset3 || 0, j4 = 0; i11 < arrLike.length; i11 += 1, j4 += 1) {
-        arr[j4] = arrLike[i11];
-      }
-      return arr;
-    };
-    var joiny = function(arr, joiner) {
-      var str = "";
-      for (var i11 = 0; i11 < arr.length; i11 += 1) {
-        str += arr[i11];
-        if (i11 + 1 < arr.length) {
-          str += joiner;
-        }
-      }
-      return str;
-    };
-    module.exports = function bind(that) {
-      var target = this;
-      if (typeof target !== "function" || toStr.apply(target) !== funcType) {
-        throw new TypeError(ERROR_MESSAGE + target);
-      }
-      var args = slicy(arguments, 1);
-      var bound;
-      var binder = function() {
-        if (this instanceof bound) {
-          var result = target.apply(
-            this,
-            concatty(args, arguments)
-          );
-          if (Object(result) === result) {
-            return result;
-          }
-          return this;
-        }
-        return target.apply(
-          that,
-          concatty(args, arguments)
-        );
-      };
-      var boundLength = max6(0, target.length - args.length);
-      var boundArgs = [];
-      for (var i11 = 0; i11 < boundLength; i11++) {
-        boundArgs[i11] = "$" + i11;
-      }
-      bound = Function("binder", "return function (" + joiny(boundArgs, ",") + "){ return binder.apply(this,arguments); }")(binder);
-      if (target.prototype) {
-        var Empty = function Empty2() {
-        };
-        Empty.prototype = target.prototype;
-        bound.prototype = new Empty();
-        Empty.prototype = null;
-      }
-      return bound;
-    };
-  }
-});
-
-// node_modules/function-bind/index.js
-var require_function_bind = __commonJS({
-  "node_modules/function-bind/index.js"(exports, module) {
-    "use strict";
-    var implementation = require_implementation();
-    module.exports = Function.prototype.bind || implementation;
-  }
-});
-
-// node_modules/hasown/index.js
-var require_hasown = __commonJS({
-  "node_modules/hasown/index.js"(exports, module) {
-    "use strict";
-    var call = Function.prototype.call;
-    var $hasOwn = Object.prototype.hasOwnProperty;
-    var bind = require_function_bind();
-    module.exports = bind.call(call, $hasOwn);
-  }
-});
-
-// node_modules/get-intrinsic/index.js
-var require_get_intrinsic = __commonJS({
-  "node_modules/get-intrinsic/index.js"(exports, module) {
-    "use strict";
-    var undefined2;
-    var $Error = require_es_errors();
-    var $EvalError = require_eval();
-    var $RangeError = require_range();
-    var $ReferenceError = require_ref();
-    var $SyntaxError = require_syntax();
-    var $TypeError = require_type();
-    var $URIError = require_uri();
-    var $Function = Function;
-    var getEvalledConstructor = function(expressionSyntax) {
-      try {
-        return $Function('"use strict"; return (' + expressionSyntax + ").constructor;")();
-      } catch (e15) {
-      }
-    };
-    var $gOPD = Object.getOwnPropertyDescriptor;
-    if ($gOPD) {
-      try {
-        $gOPD({}, "");
-      } catch (e15) {
-        $gOPD = null;
-      }
-    }
-    var throwTypeError = function() {
-      throw new $TypeError();
-    };
-    var ThrowTypeError = $gOPD ? function() {
-      try {
-        arguments.callee;
-        return throwTypeError;
-      } catch (calleeThrows) {
-        try {
-          return $gOPD(arguments, "callee").get;
-        } catch (gOPDthrows) {
-          return throwTypeError;
-        }
-      }
-    }() : throwTypeError;
-    var hasSymbols = require_has_symbols()();
-    var hasProto = require_has_proto()();
-    var getProto = Object.getPrototypeOf || (hasProto ? function(x4) {
-      return x4.__proto__;
-    } : null);
-    var needsEval = {};
-    var TypedArray = typeof Uint8Array === "undefined" || !getProto ? undefined2 : getProto(Uint8Array);
-    var INTRINSICS = {
-      __proto__: null,
-      "%AggregateError%": typeof AggregateError === "undefined" ? undefined2 : AggregateError,
-      "%Array%": Array,
-      "%ArrayBuffer%": typeof ArrayBuffer === "undefined" ? undefined2 : ArrayBuffer,
-      "%ArrayIteratorPrototype%": hasSymbols && getProto ? getProto([][Symbol.iterator]()) : undefined2,
-      "%AsyncFromSyncIteratorPrototype%": undefined2,
-      "%AsyncFunction%": needsEval,
-      "%AsyncGenerator%": needsEval,
-      "%AsyncGeneratorFunction%": needsEval,
-      "%AsyncIteratorPrototype%": needsEval,
-      "%Atomics%": typeof Atomics === "undefined" ? undefined2 : Atomics,
-      "%BigInt%": typeof BigInt === "undefined" ? undefined2 : BigInt,
-      "%BigInt64Array%": typeof BigInt64Array === "undefined" ? undefined2 : BigInt64Array,
-      "%BigUint64Array%": typeof BigUint64Array === "undefined" ? undefined2 : BigUint64Array,
-      "%Boolean%": Boolean,
-      "%DataView%": typeof DataView === "undefined" ? undefined2 : DataView,
-      "%Date%": Date,
-      "%decodeURI%": decodeURI,
-      "%decodeURIComponent%": decodeURIComponent,
-      "%encodeURI%": encodeURI,
-      "%encodeURIComponent%": encodeURIComponent,
-      "%Error%": $Error,
-      "%eval%": eval,
-      // eslint-disable-line no-eval
-      "%EvalError%": $EvalError,
-      "%Float32Array%": typeof Float32Array === "undefined" ? undefined2 : Float32Array,
-      "%Float64Array%": typeof Float64Array === "undefined" ? undefined2 : Float64Array,
-      "%FinalizationRegistry%": typeof FinalizationRegistry === "undefined" ? undefined2 : FinalizationRegistry,
-      "%Function%": $Function,
-      "%GeneratorFunction%": needsEval,
-      "%Int8Array%": typeof Int8Array === "undefined" ? undefined2 : Int8Array,
-      "%Int16Array%": typeof Int16Array === "undefined" ? undefined2 : Int16Array,
-      "%Int32Array%": typeof Int32Array === "undefined" ? undefined2 : Int32Array,
-      "%isFinite%": isFinite,
-      "%isNaN%": isNaN,
-      "%IteratorPrototype%": hasSymbols && getProto ? getProto(getProto([][Symbol.iterator]())) : undefined2,
-      "%JSON%": typeof JSON === "object" ? JSON : undefined2,
-      "%Map%": typeof Map === "undefined" ? undefined2 : Map,
-      "%MapIteratorPrototype%": typeof Map === "undefined" || !hasSymbols || !getProto ? undefined2 : getProto((/* @__PURE__ */ new Map())[Symbol.iterator]()),
-      "%Math%": Math,
-      "%Number%": Number,
-      "%Object%": Object,
-      "%parseFloat%": parseFloat,
-      "%parseInt%": parseInt,
-      "%Promise%": typeof Promise === "undefined" ? undefined2 : Promise,
-      "%Proxy%": typeof Proxy === "undefined" ? undefined2 : Proxy,
-      "%RangeError%": $RangeError,
-      "%ReferenceError%": $ReferenceError,
-      "%Reflect%": typeof Reflect === "undefined" ? undefined2 : Reflect,
-      "%RegExp%": RegExp,
-      "%Set%": typeof Set === "undefined" ? undefined2 : Set,
-      "%SetIteratorPrototype%": typeof Set === "undefined" || !hasSymbols || !getProto ? undefined2 : getProto((/* @__PURE__ */ new Set())[Symbol.iterator]()),
-      "%SharedArrayBuffer%": typeof SharedArrayBuffer === "undefined" ? undefined2 : SharedArrayBuffer,
-      "%String%": String,
-      "%StringIteratorPrototype%": hasSymbols && getProto ? getProto(""[Symbol.iterator]()) : undefined2,
-      "%Symbol%": hasSymbols ? Symbol : undefined2,
-      "%SyntaxError%": $SyntaxError,
-      "%ThrowTypeError%": ThrowTypeError,
-      "%TypedArray%": TypedArray,
-      "%TypeError%": $TypeError,
-      "%Uint8Array%": typeof Uint8Array === "undefined" ? undefined2 : Uint8Array,
-      "%Uint8ClampedArray%": typeof Uint8ClampedArray === "undefined" ? undefined2 : Uint8ClampedArray,
-      "%Uint16Array%": typeof Uint16Array === "undefined" ? undefined2 : Uint16Array,
-      "%Uint32Array%": typeof Uint32Array === "undefined" ? undefined2 : Uint32Array,
-      "%URIError%": $URIError,
-      "%WeakMap%": typeof WeakMap === "undefined" ? undefined2 : WeakMap,
-      "%WeakRef%": typeof WeakRef === "undefined" ? undefined2 : WeakRef,
-      "%WeakSet%": typeof WeakSet === "undefined" ? undefined2 : WeakSet
-    };
-    if (getProto) {
-      try {
-        null.error;
-      } catch (e15) {
-        errorProto = getProto(getProto(e15));
-        INTRINSICS["%Error.prototype%"] = errorProto;
-      }
-    }
-    var errorProto;
-    var doEval = function doEval2(name2) {
-      var value;
-      if (name2 === "%AsyncFunction%") {
-        value = getEvalledConstructor("async function () {}");
-      } else if (name2 === "%GeneratorFunction%") {
-        value = getEvalledConstructor("function* () {}");
-      } else if (name2 === "%AsyncGeneratorFunction%") {
-        value = getEvalledConstructor("async function* () {}");
-      } else if (name2 === "%AsyncGenerator%") {
-        var fn = doEval2("%AsyncGeneratorFunction%");
-        if (fn) {
-          value = fn.prototype;
-        }
-      } else if (name2 === "%AsyncIteratorPrototype%") {
-        var gen = doEval2("%AsyncGenerator%");
-        if (gen && getProto) {
-          value = getProto(gen.prototype);
-        }
-      }
-      INTRINSICS[name2] = value;
-      return value;
-    };
-    var LEGACY_ALIASES = {
-      __proto__: null,
-      "%ArrayBufferPrototype%": ["ArrayBuffer", "prototype"],
-      "%ArrayPrototype%": ["Array", "prototype"],
-      "%ArrayProto_entries%": ["Array", "prototype", "entries"],
-      "%ArrayProto_forEach%": ["Array", "prototype", "forEach"],
-      "%ArrayProto_keys%": ["Array", "prototype", "keys"],
-      "%ArrayProto_values%": ["Array", "prototype", "values"],
-      "%AsyncFunctionPrototype%": ["AsyncFunction", "prototype"],
-      "%AsyncGenerator%": ["AsyncGeneratorFunction", "prototype"],
-      "%AsyncGeneratorPrototype%": ["AsyncGeneratorFunction", "prototype", "prototype"],
-      "%BooleanPrototype%": ["Boolean", "prototype"],
-      "%DataViewPrototype%": ["DataView", "prototype"],
-      "%DatePrototype%": ["Date", "prototype"],
-      "%ErrorPrototype%": ["Error", "prototype"],
-      "%EvalErrorPrototype%": ["EvalError", "prototype"],
-      "%Float32ArrayPrototype%": ["Float32Array", "prototype"],
-      "%Float64ArrayPrototype%": ["Float64Array", "prototype"],
-      "%FunctionPrototype%": ["Function", "prototype"],
-      "%Generator%": ["GeneratorFunction", "prototype"],
-      "%GeneratorPrototype%": ["GeneratorFunction", "prototype", "prototype"],
-      "%Int8ArrayPrototype%": ["Int8Array", "prototype"],
-      "%Int16ArrayPrototype%": ["Int16Array", "prototype"],
-      "%Int32ArrayPrototype%": ["Int32Array", "prototype"],
-      "%JSONParse%": ["JSON", "parse"],
-      "%JSONStringify%": ["JSON", "stringify"],
-      "%MapPrototype%": ["Map", "prototype"],
-      "%NumberPrototype%": ["Number", "prototype"],
-      "%ObjectPrototype%": ["Object", "prototype"],
-      "%ObjProto_toString%": ["Object", "prototype", "toString"],
-      "%ObjProto_valueOf%": ["Object", "prototype", "valueOf"],
-      "%PromisePrototype%": ["Promise", "prototype"],
-      "%PromiseProto_then%": ["Promise", "prototype", "then"],
-      "%Promise_all%": ["Promise", "all"],
-      "%Promise_reject%": ["Promise", "reject"],
-      "%Promise_resolve%": ["Promise", "resolve"],
-      "%RangeErrorPrototype%": ["RangeError", "prototype"],
-      "%ReferenceErrorPrototype%": ["ReferenceError", "prototype"],
-      "%RegExpPrototype%": ["RegExp", "prototype"],
-      "%SetPrototype%": ["Set", "prototype"],
-      "%SharedArrayBufferPrototype%": ["SharedArrayBuffer", "prototype"],
-      "%StringPrototype%": ["String", "prototype"],
-      "%SymbolPrototype%": ["Symbol", "prototype"],
-      "%SyntaxErrorPrototype%": ["SyntaxError", "prototype"],
-      "%TypedArrayPrototype%": ["TypedArray", "prototype"],
-      "%TypeErrorPrototype%": ["TypeError", "prototype"],
-      "%Uint8ArrayPrototype%": ["Uint8Array", "prototype"],
-      "%Uint8ClampedArrayPrototype%": ["Uint8ClampedArray", "prototype"],
-      "%Uint16ArrayPrototype%": ["Uint16Array", "prototype"],
-      "%Uint32ArrayPrototype%": ["Uint32Array", "prototype"],
-      "%URIErrorPrototype%": ["URIError", "prototype"],
-      "%WeakMapPrototype%": ["WeakMap", "prototype"],
-      "%WeakSetPrototype%": ["WeakSet", "prototype"]
-    };
-    var bind = require_function_bind();
-    var hasOwn = require_hasown();
-    var $concat = bind.call(Function.call, Array.prototype.concat);
-    var $spliceApply = bind.call(Function.apply, Array.prototype.splice);
-    var $replace = bind.call(Function.call, String.prototype.replace);
-    var $strSlice = bind.call(Function.call, String.prototype.slice);
-    var $exec = bind.call(Function.call, RegExp.prototype.exec);
-    var rePropName = /[^%.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|%$))/g;
-    var reEscapeChar = /\\(\\)?/g;
-    var stringToPath = function stringToPath2(string) {
-      var first = $strSlice(string, 0, 1);
-      var last = $strSlice(string, -1);
-      if (first === "%" && last !== "%") {
-        throw new $SyntaxError("invalid intrinsic syntax, expected closing `%`");
-      } else if (last === "%" && first !== "%") {
-        throw new $SyntaxError("invalid intrinsic syntax, expected opening `%`");
-      }
-      var result = [];
-      $replace(string, rePropName, function(match, number, quote, subString) {
-        result[result.length] = quote ? $replace(subString, reEscapeChar, "$1") : number || match;
-      });
-      return result;
-    };
-    var getBaseIntrinsic = function getBaseIntrinsic2(name2, allowMissing) {
-      var intrinsicName = name2;
-      var alias;
-      if (hasOwn(LEGACY_ALIASES, intrinsicName)) {
-        alias = LEGACY_ALIASES[intrinsicName];
-        intrinsicName = "%" + alias[0] + "%";
-      }
-      if (hasOwn(INTRINSICS, intrinsicName)) {
-        var value = INTRINSICS[intrinsicName];
-        if (value === needsEval) {
-          value = doEval(intrinsicName);
-        }
-        if (typeof value === "undefined" && !allowMissing) {
-          throw new $TypeError("intrinsic " + name2 + " exists, but is not available. Please file an issue!");
-        }
-        return {
-          alias,
-          name: intrinsicName,
-          value
-        };
-      }
-      throw new $SyntaxError("intrinsic " + name2 + " does not exist!");
-    };
-    module.exports = function GetIntrinsic(name2, allowMissing) {
-      if (typeof name2 !== "string" || name2.length === 0) {
-        throw new $TypeError("intrinsic name must be a non-empty string");
-      }
-      if (arguments.length > 1 && typeof allowMissing !== "boolean") {
-        throw new $TypeError('"allowMissing" argument must be a boolean');
-      }
-      if ($exec(/^%?[^%]*%?$/, name2) === null) {
-        throw new $SyntaxError("`%` may not be present anywhere but at the beginning and end of the intrinsic name");
-      }
-      var parts = stringToPath(name2);
-      var intrinsicBaseName = parts.length > 0 ? parts[0] : "";
-      var intrinsic = getBaseIntrinsic("%" + intrinsicBaseName + "%", allowMissing);
-      var intrinsicRealName = intrinsic.name;
-      var value = intrinsic.value;
-      var skipFurtherCaching = false;
-      var alias = intrinsic.alias;
-      if (alias) {
-        intrinsicBaseName = alias[0];
-        $spliceApply(parts, $concat([0, 1], alias));
-      }
-      for (var i11 = 1, isOwn = true; i11 < parts.length; i11 += 1) {
-        var part = parts[i11];
-        var first = $strSlice(part, 0, 1);
-        var last = $strSlice(part, -1);
-        if ((first === '"' || first === "'" || first === "`" || (last === '"' || last === "'" || last === "`")) && first !== last) {
-          throw new $SyntaxError("property names with quotes must have matching quotes");
-        }
-        if (part === "constructor" || !isOwn) {
-          skipFurtherCaching = true;
-        }
-        intrinsicBaseName += "." + part;
-        intrinsicRealName = "%" + intrinsicBaseName + "%";
-        if (hasOwn(INTRINSICS, intrinsicRealName)) {
-          value = INTRINSICS[intrinsicRealName];
-        } else if (value != null) {
-          if (!(part in value)) {
-            if (!allowMissing) {
-              throw new $TypeError("base intrinsic for " + name2 + " exists, but the property is not available.");
-            }
-            return void 0;
-          }
-          if ($gOPD && i11 + 1 >= parts.length) {
-            var desc = $gOPD(value, part);
-            isOwn = !!desc;
-            if (isOwn && "get" in desc && !("originalValue" in desc.get)) {
-              value = desc.get;
-            } else {
-              value = value[part];
-            }
-          } else {
-            isOwn = hasOwn(value, part);
-            value = value[part];
-          }
-          if (isOwn && !skipFurtherCaching) {
-            INTRINSICS[intrinsicRealName] = value;
-          }
-        }
-      }
-      return value;
-    };
-  }
-});
-
-// node_modules/es-define-property/index.js
-var require_es_define_property = __commonJS({
-  "node_modules/es-define-property/index.js"(exports, module) {
-    "use strict";
-    var GetIntrinsic = require_get_intrinsic();
-    var $defineProperty = GetIntrinsic("%Object.defineProperty%", true) || false;
-    if ($defineProperty) {
-      try {
-        $defineProperty({}, "a", { value: 1 });
-      } catch (e15) {
-        $defineProperty = false;
-      }
-    }
-    module.exports = $defineProperty;
-  }
-});
-
-// node_modules/gopd/index.js
-var require_gopd = __commonJS({
-  "node_modules/gopd/index.js"(exports, module) {
-    "use strict";
-    var GetIntrinsic = require_get_intrinsic();
-    var $gOPD = GetIntrinsic("%Object.getOwnPropertyDescriptor%", true);
-    if ($gOPD) {
-      try {
-        $gOPD([], "length");
-      } catch (e15) {
-        $gOPD = null;
-      }
-    }
-    module.exports = $gOPD;
-  }
-});
-
-// node_modules/define-data-property/index.js
-var require_define_data_property = __commonJS({
-  "node_modules/define-data-property/index.js"(exports, module) {
-    "use strict";
-    var $defineProperty = require_es_define_property();
-    var $SyntaxError = require_syntax();
-    var $TypeError = require_type();
-    var gopd = require_gopd();
-    module.exports = function defineDataProperty(obj, property, value) {
-      if (!obj || typeof obj !== "object" && typeof obj !== "function") {
-        throw new $TypeError("`obj` must be an object or a function`");
-      }
-      if (typeof property !== "string" && typeof property !== "symbol") {
-        throw new $TypeError("`property` must be a string or a symbol`");
-      }
-      if (arguments.length > 3 && typeof arguments[3] !== "boolean" && arguments[3] !== null) {
-        throw new $TypeError("`nonEnumerable`, if provided, must be a boolean or null");
-      }
-      if (arguments.length > 4 && typeof arguments[4] !== "boolean" && arguments[4] !== null) {
-        throw new $TypeError("`nonWritable`, if provided, must be a boolean or null");
-      }
-      if (arguments.length > 5 && typeof arguments[5] !== "boolean" && arguments[5] !== null) {
-        throw new $TypeError("`nonConfigurable`, if provided, must be a boolean or null");
-      }
-      if (arguments.length > 6 && typeof arguments[6] !== "boolean") {
-        throw new $TypeError("`loose`, if provided, must be a boolean");
-      }
-      var nonEnumerable = arguments.length > 3 ? arguments[3] : null;
-      var nonWritable = arguments.length > 4 ? arguments[4] : null;
-      var nonConfigurable = arguments.length > 5 ? arguments[5] : null;
-      var loose = arguments.length > 6 ? arguments[6] : false;
-      var desc = !!gopd && gopd(obj, property);
-      if ($defineProperty) {
-        $defineProperty(obj, property, {
-          configurable: nonConfigurable === null && desc ? desc.configurable : !nonConfigurable,
-          enumerable: nonEnumerable === null && desc ? desc.enumerable : !nonEnumerable,
-          value,
-          writable: nonWritable === null && desc ? desc.writable : !nonWritable
-        });
-      } else if (loose || !nonEnumerable && !nonWritable && !nonConfigurable) {
-        obj[property] = value;
-      } else {
-        throw new $SyntaxError("This environment does not support defining a property as non-configurable, non-writable, or non-enumerable.");
-      }
-    };
-  }
-});
-
-// node_modules/has-property-descriptors/index.js
-var require_has_property_descriptors = __commonJS({
-  "node_modules/has-property-descriptors/index.js"(exports, module) {
-    "use strict";
-    var $defineProperty = require_es_define_property();
-    var hasPropertyDescriptors = function hasPropertyDescriptors2() {
-      return !!$defineProperty;
-    };
-    hasPropertyDescriptors.hasArrayLengthDefineBug = function hasArrayLengthDefineBug() {
-      if (!$defineProperty) {
-        return null;
-      }
-      try {
-        return $defineProperty([], "length", { value: 1 }).length !== 1;
-      } catch (e15) {
-        return true;
-      }
-    };
-    module.exports = hasPropertyDescriptors;
-  }
-});
-
-// node_modules/set-function-length/index.js
-var require_set_function_length = __commonJS({
-  "node_modules/set-function-length/index.js"(exports, module) {
-    "use strict";
-    var GetIntrinsic = require_get_intrinsic();
-    var define2 = require_define_data_property();
-    var hasDescriptors = require_has_property_descriptors()();
-    var gOPD = require_gopd();
-    var $TypeError = require_type();
-    var $floor = GetIntrinsic("%Math.floor%");
-    module.exports = function setFunctionLength(fn, length) {
-      if (typeof fn !== "function") {
-        throw new $TypeError("`fn` is not a function");
-      }
-      if (typeof length !== "number" || length < 0 || length > 4294967295 || $floor(length) !== length) {
-        throw new $TypeError("`length` must be a positive 32-bit integer");
-      }
-      var loose = arguments.length > 2 && !!arguments[2];
-      var functionLengthIsConfigurable = true;
-      var functionLengthIsWritable = true;
-      if ("length" in fn && gOPD) {
-        var desc = gOPD(fn, "length");
-        if (desc && !desc.configurable) {
-          functionLengthIsConfigurable = false;
-        }
-        if (desc && !desc.writable) {
-          functionLengthIsWritable = false;
-        }
-      }
-      if (functionLengthIsConfigurable || functionLengthIsWritable || !loose) {
-        if (hasDescriptors) {
-          define2(
-            /** @type {Parameters<define>[0]} */
-            fn,
-            "length",
-            length,
-            true,
-            true
-          );
-        } else {
-          define2(
-            /** @type {Parameters<define>[0]} */
-            fn,
-            "length",
-            length
-          );
-        }
-      }
-      return fn;
-    };
-  }
-});
-
-// node_modules/call-bind/index.js
-var require_call_bind = __commonJS({
-  "node_modules/call-bind/index.js"(exports, module) {
-    "use strict";
-    var bind = require_function_bind();
-    var GetIntrinsic = require_get_intrinsic();
-    var setFunctionLength = require_set_function_length();
-    var $TypeError = require_type();
-    var $apply = GetIntrinsic("%Function.prototype.apply%");
-    var $call = GetIntrinsic("%Function.prototype.call%");
-    var $reflectApply = GetIntrinsic("%Reflect.apply%", true) || bind.call($call, $apply);
-    var $defineProperty = require_es_define_property();
-    var $max = GetIntrinsic("%Math.max%");
-    module.exports = function callBind(originalFunction) {
-      if (typeof originalFunction !== "function") {
-        throw new $TypeError("a function is required");
-      }
-      var func = $reflectApply(bind, $call, arguments);
-      return setFunctionLength(
-        func,
-        1 + $max(0, originalFunction.length - (arguments.length - 1)),
-        true
-      );
-    };
-    var applyBind = function applyBind2() {
-      return $reflectApply(bind, $apply, arguments);
-    };
-    if ($defineProperty) {
-      $defineProperty(module.exports, "apply", { value: applyBind });
-    } else {
-      module.exports.apply = applyBind;
-    }
-  }
-});
-
-// node_modules/call-bind/callBound.js
-var require_callBound = __commonJS({
-  "node_modules/call-bind/callBound.js"(exports, module) {
-    "use strict";
-    var GetIntrinsic = require_get_intrinsic();
-    var callBind = require_call_bind();
-    var $indexOf = callBind(GetIntrinsic("String.prototype.indexOf"));
-    module.exports = function callBoundIntrinsic(name2, allowMissing) {
-      var intrinsic = GetIntrinsic(name2, !!allowMissing);
-      if (typeof intrinsic === "function" && $indexOf(name2, ".prototype.") > -1) {
-        return callBind(intrinsic);
-      }
-      return intrinsic;
-    };
   }
 });
 
@@ -1949,26 +1191,29 @@ var require_object_inspect = __commonJS({
     function quote(s6) {
       return $replace.call(String(s6), /"/g, "&quot;");
     }
+    function canTrustToString(obj) {
+      return !toStringTag || !(typeof obj === "object" && (toStringTag in obj || typeof obj[toStringTag] !== "undefined"));
+    }
     function isArray2(obj) {
-      return toStr(obj) === "[object Array]" && (!toStringTag || !(typeof obj === "object" && toStringTag in obj));
+      return toStr(obj) === "[object Array]" && canTrustToString(obj);
     }
     function isDate(obj) {
-      return toStr(obj) === "[object Date]" && (!toStringTag || !(typeof obj === "object" && toStringTag in obj));
+      return toStr(obj) === "[object Date]" && canTrustToString(obj);
     }
     function isRegExp(obj) {
-      return toStr(obj) === "[object RegExp]" && (!toStringTag || !(typeof obj === "object" && toStringTag in obj));
+      return toStr(obj) === "[object RegExp]" && canTrustToString(obj);
     }
     function isError(obj) {
-      return toStr(obj) === "[object Error]" && (!toStringTag || !(typeof obj === "object" && toStringTag in obj));
+      return toStr(obj) === "[object Error]" && canTrustToString(obj);
     }
     function isString(obj) {
-      return toStr(obj) === "[object String]" && (!toStringTag || !(typeof obj === "object" && toStringTag in obj));
+      return toStr(obj) === "[object String]" && canTrustToString(obj);
     }
     function isNumber2(obj) {
-      return toStr(obj) === "[object Number]" && (!toStringTag || !(typeof obj === "object" && toStringTag in obj));
+      return toStr(obj) === "[object Number]" && canTrustToString(obj);
     }
     function isBoolean(obj) {
-      return toStr(obj) === "[object Boolean]" && (!toStringTag || !(typeof obj === "object" && toStringTag in obj));
+      return toStr(obj) === "[object Boolean]" && canTrustToString(obj);
     }
     function isSymbol(obj) {
       if (hasShammedSymbols) {
@@ -2220,36 +1465,31 @@ var require_object_inspect = __commonJS({
   }
 });
 
-// node_modules/side-channel/index.js
-var require_side_channel = __commonJS({
-  "node_modules/side-channel/index.js"(exports, module) {
+// node_modules/side-channel-list/index.js
+var require_side_channel_list = __commonJS({
+  "node_modules/side-channel-list/index.js"(exports, module) {
     "use strict";
-    var GetIntrinsic = require_get_intrinsic();
-    var callBound = require_callBound();
     var inspect = require_object_inspect();
     var $TypeError = require_type();
-    var $WeakMap = GetIntrinsic("%WeakMap%", true);
-    var $Map = GetIntrinsic("%Map%", true);
-    var $weakMapGet = callBound("WeakMap.prototype.get", true);
-    var $weakMapSet = callBound("WeakMap.prototype.set", true);
-    var $weakMapHas = callBound("WeakMap.prototype.has", true);
-    var $mapGet = callBound("Map.prototype.get", true);
-    var $mapSet = callBound("Map.prototype.set", true);
-    var $mapHas = callBound("Map.prototype.has", true);
-    var listGetNode = function(list, key) {
+    var listGetNode = function(list, key, isDelete) {
       var prev = list;
       var curr;
-      for (; (curr = prev.next) !== null; prev = curr) {
+      for (; (curr = prev.next) != null; prev = curr) {
         if (curr.key === key) {
           prev.next = curr.next;
-          curr.next = /** @type {NonNullable<typeof list.next>} */
-          list.next;
-          list.next = curr;
+          if (!isDelete) {
+            curr.next = /** @type {NonNullable<typeof list.next>} */
+            list.next;
+            list.next = curr;
+          }
           return curr;
         }
       }
     };
     var listGet = function(objects, key) {
+      if (!objects) {
+        return void 0;
+      }
       var node = listGetNode(objects, key);
       return node && node.value;
     };
@@ -2258,7 +1498,7 @@ var require_side_channel = __commonJS({
       if (node) {
         node.value = value;
       } else {
-        objects.next = /** @type {import('.').ListNode<typeof value>} */
+        objects.next = /** @type {import('./list.d.ts').ListNode<typeof value, typeof key>} */
         {
           // eslint-disable-line no-param-reassign, no-extra-parens
           key,
@@ -2268,11 +1508,17 @@ var require_side_channel = __commonJS({
       }
     };
     var listHas = function(objects, key) {
+      if (!objects) {
+        return false;
+      }
       return !!listGetNode(objects, key);
     };
-    module.exports = function getSideChannel() {
-      var $wm;
-      var $m;
+    var listDelete = function(objects, key) {
+      if (objects) {
+        return listGetNode(objects, key, true);
+      }
+    };
+    module.exports = function getSideChannelList() {
       var $o;
       var channel = {
         assert: function(key) {
@@ -2280,54 +1526,1018 @@ var require_side_channel = __commonJS({
             throw new $TypeError("Side channel does not contain " + inspect(key));
           }
         },
+        "delete": function(key) {
+          var root = $o && $o.next;
+          var deletedNode = listDelete($o, key);
+          if (deletedNode && root && root === deletedNode) {
+            $o = void 0;
+          }
+          return !!deletedNode;
+        },
         get: function(key) {
-          if ($WeakMap && key && (typeof key === "object" || typeof key === "function")) {
-            if ($wm) {
-              return $weakMapGet($wm, key);
+          return listGet($o, key);
+        },
+        has: function(key) {
+          return listHas($o, key);
+        },
+        set: function(key, value) {
+          if (!$o) {
+            $o = {
+              next: void 0
+            };
+          }
+          listSet(
+            /** @type {NonNullable<typeof $o>} */
+            $o,
+            key,
+            value
+          );
+        }
+      };
+      return channel;
+    };
+  }
+});
+
+// node_modules/es-object-atoms/index.js
+var require_es_object_atoms = __commonJS({
+  "node_modules/es-object-atoms/index.js"(exports, module) {
+    "use strict";
+    module.exports = Object;
+  }
+});
+
+// node_modules/es-errors/index.js
+var require_es_errors = __commonJS({
+  "node_modules/es-errors/index.js"(exports, module) {
+    "use strict";
+    module.exports = Error;
+  }
+});
+
+// node_modules/es-errors/eval.js
+var require_eval = __commonJS({
+  "node_modules/es-errors/eval.js"(exports, module) {
+    "use strict";
+    module.exports = EvalError;
+  }
+});
+
+// node_modules/es-errors/range.js
+var require_range = __commonJS({
+  "node_modules/es-errors/range.js"(exports, module) {
+    "use strict";
+    module.exports = RangeError;
+  }
+});
+
+// node_modules/es-errors/ref.js
+var require_ref = __commonJS({
+  "node_modules/es-errors/ref.js"(exports, module) {
+    "use strict";
+    module.exports = ReferenceError;
+  }
+});
+
+// node_modules/es-errors/syntax.js
+var require_syntax = __commonJS({
+  "node_modules/es-errors/syntax.js"(exports, module) {
+    "use strict";
+    module.exports = SyntaxError;
+  }
+});
+
+// node_modules/es-errors/uri.js
+var require_uri = __commonJS({
+  "node_modules/es-errors/uri.js"(exports, module) {
+    "use strict";
+    module.exports = URIError;
+  }
+});
+
+// node_modules/math-intrinsics/abs.js
+var require_abs = __commonJS({
+  "node_modules/math-intrinsics/abs.js"(exports, module) {
+    "use strict";
+    module.exports = Math.abs;
+  }
+});
+
+// node_modules/math-intrinsics/floor.js
+var require_floor = __commonJS({
+  "node_modules/math-intrinsics/floor.js"(exports, module) {
+    "use strict";
+    module.exports = Math.floor;
+  }
+});
+
+// node_modules/math-intrinsics/max.js
+var require_max = __commonJS({
+  "node_modules/math-intrinsics/max.js"(exports, module) {
+    "use strict";
+    module.exports = Math.max;
+  }
+});
+
+// node_modules/math-intrinsics/min.js
+var require_min = __commonJS({
+  "node_modules/math-intrinsics/min.js"(exports, module) {
+    "use strict";
+    module.exports = Math.min;
+  }
+});
+
+// node_modules/math-intrinsics/pow.js
+var require_pow = __commonJS({
+  "node_modules/math-intrinsics/pow.js"(exports, module) {
+    "use strict";
+    module.exports = Math.pow;
+  }
+});
+
+// node_modules/math-intrinsics/round.js
+var require_round = __commonJS({
+  "node_modules/math-intrinsics/round.js"(exports, module) {
+    "use strict";
+    module.exports = Math.round;
+  }
+});
+
+// node_modules/math-intrinsics/isNaN.js
+var require_isNaN = __commonJS({
+  "node_modules/math-intrinsics/isNaN.js"(exports, module) {
+    "use strict";
+    module.exports = Number.isNaN || function isNaN2(a7) {
+      return a7 !== a7;
+    };
+  }
+});
+
+// node_modules/math-intrinsics/sign.js
+var require_sign = __commonJS({
+  "node_modules/math-intrinsics/sign.js"(exports, module) {
+    "use strict";
+    var $isNaN = require_isNaN();
+    module.exports = function sign5(number) {
+      if ($isNaN(number) || number === 0) {
+        return number;
+      }
+      return number < 0 ? -1 : 1;
+    };
+  }
+});
+
+// node_modules/gopd/gOPD.js
+var require_gOPD = __commonJS({
+  "node_modules/gopd/gOPD.js"(exports, module) {
+    "use strict";
+    module.exports = Object.getOwnPropertyDescriptor;
+  }
+});
+
+// node_modules/gopd/index.js
+var require_gopd = __commonJS({
+  "node_modules/gopd/index.js"(exports, module) {
+    "use strict";
+    var $gOPD = require_gOPD();
+    if ($gOPD) {
+      try {
+        $gOPD([], "length");
+      } catch (e15) {
+        $gOPD = null;
+      }
+    }
+    module.exports = $gOPD;
+  }
+});
+
+// node_modules/es-define-property/index.js
+var require_es_define_property = __commonJS({
+  "node_modules/es-define-property/index.js"(exports, module) {
+    "use strict";
+    var $defineProperty = Object.defineProperty || false;
+    if ($defineProperty) {
+      try {
+        $defineProperty({}, "a", { value: 1 });
+      } catch (e15) {
+        $defineProperty = false;
+      }
+    }
+    module.exports = $defineProperty;
+  }
+});
+
+// node_modules/has-symbols/shams.js
+var require_shams = __commonJS({
+  "node_modules/has-symbols/shams.js"(exports, module) {
+    "use strict";
+    module.exports = function hasSymbols() {
+      if (typeof Symbol !== "function" || typeof Object.getOwnPropertySymbols !== "function") {
+        return false;
+      }
+      if (typeof Symbol.iterator === "symbol") {
+        return true;
+      }
+      var obj = {};
+      var sym = Symbol("test");
+      var symObj = Object(sym);
+      if (typeof sym === "string") {
+        return false;
+      }
+      if (Object.prototype.toString.call(sym) !== "[object Symbol]") {
+        return false;
+      }
+      if (Object.prototype.toString.call(symObj) !== "[object Symbol]") {
+        return false;
+      }
+      var symVal = 42;
+      obj[sym] = symVal;
+      for (var _3 in obj) {
+        return false;
+      }
+      if (typeof Object.keys === "function" && Object.keys(obj).length !== 0) {
+        return false;
+      }
+      if (typeof Object.getOwnPropertyNames === "function" && Object.getOwnPropertyNames(obj).length !== 0) {
+        return false;
+      }
+      var syms = Object.getOwnPropertySymbols(obj);
+      if (syms.length !== 1 || syms[0] !== sym) {
+        return false;
+      }
+      if (!Object.prototype.propertyIsEnumerable.call(obj, sym)) {
+        return false;
+      }
+      if (typeof Object.getOwnPropertyDescriptor === "function") {
+        var descriptor = (
+          /** @type {PropertyDescriptor} */
+          Object.getOwnPropertyDescriptor(obj, sym)
+        );
+        if (descriptor.value !== symVal || descriptor.enumerable !== true) {
+          return false;
+        }
+      }
+      return true;
+    };
+  }
+});
+
+// node_modules/has-symbols/index.js
+var require_has_symbols = __commonJS({
+  "node_modules/has-symbols/index.js"(exports, module) {
+    "use strict";
+    var origSymbol = typeof Symbol !== "undefined" && Symbol;
+    var hasSymbolSham = require_shams();
+    module.exports = function hasNativeSymbols() {
+      if (typeof origSymbol !== "function") {
+        return false;
+      }
+      if (typeof Symbol !== "function") {
+        return false;
+      }
+      if (typeof origSymbol("foo") !== "symbol") {
+        return false;
+      }
+      if (typeof Symbol("bar") !== "symbol") {
+        return false;
+      }
+      return hasSymbolSham();
+    };
+  }
+});
+
+// node_modules/get-proto/Reflect.getPrototypeOf.js
+var require_Reflect_getPrototypeOf = __commonJS({
+  "node_modules/get-proto/Reflect.getPrototypeOf.js"(exports, module) {
+    "use strict";
+    module.exports = typeof Reflect !== "undefined" && Reflect.getPrototypeOf || null;
+  }
+});
+
+// node_modules/get-proto/Object.getPrototypeOf.js
+var require_Object_getPrototypeOf = __commonJS({
+  "node_modules/get-proto/Object.getPrototypeOf.js"(exports, module) {
+    "use strict";
+    var $Object = require_es_object_atoms();
+    module.exports = $Object.getPrototypeOf || null;
+  }
+});
+
+// node_modules/function-bind/implementation.js
+var require_implementation = __commonJS({
+  "node_modules/function-bind/implementation.js"(exports, module) {
+    "use strict";
+    var ERROR_MESSAGE = "Function.prototype.bind called on incompatible ";
+    var toStr = Object.prototype.toString;
+    var max6 = Math.max;
+    var funcType = "[object Function]";
+    var concatty = function concatty2(a7, b5) {
+      var arr = [];
+      for (var i11 = 0; i11 < a7.length; i11 += 1) {
+        arr[i11] = a7[i11];
+      }
+      for (var j4 = 0; j4 < b5.length; j4 += 1) {
+        arr[j4 + a7.length] = b5[j4];
+      }
+      return arr;
+    };
+    var slicy = function slicy2(arrLike, offset3) {
+      var arr = [];
+      for (var i11 = offset3 || 0, j4 = 0; i11 < arrLike.length; i11 += 1, j4 += 1) {
+        arr[j4] = arrLike[i11];
+      }
+      return arr;
+    };
+    var joiny = function(arr, joiner) {
+      var str = "";
+      for (var i11 = 0; i11 < arr.length; i11 += 1) {
+        str += arr[i11];
+        if (i11 + 1 < arr.length) {
+          str += joiner;
+        }
+      }
+      return str;
+    };
+    module.exports = function bind(that) {
+      var target = this;
+      if (typeof target !== "function" || toStr.apply(target) !== funcType) {
+        throw new TypeError(ERROR_MESSAGE + target);
+      }
+      var args = slicy(arguments, 1);
+      var bound;
+      var binder = function() {
+        if (this instanceof bound) {
+          var result = target.apply(
+            this,
+            concatty(args, arguments)
+          );
+          if (Object(result) === result) {
+            return result;
+          }
+          return this;
+        }
+        return target.apply(
+          that,
+          concatty(args, arguments)
+        );
+      };
+      var boundLength = max6(0, target.length - args.length);
+      var boundArgs = [];
+      for (var i11 = 0; i11 < boundLength; i11++) {
+        boundArgs[i11] = "$" + i11;
+      }
+      bound = Function("binder", "return function (" + joiny(boundArgs, ",") + "){ return binder.apply(this,arguments); }")(binder);
+      if (target.prototype) {
+        var Empty = function Empty2() {
+        };
+        Empty.prototype = target.prototype;
+        bound.prototype = new Empty();
+        Empty.prototype = null;
+      }
+      return bound;
+    };
+  }
+});
+
+// node_modules/function-bind/index.js
+var require_function_bind = __commonJS({
+  "node_modules/function-bind/index.js"(exports, module) {
+    "use strict";
+    var implementation = require_implementation();
+    module.exports = Function.prototype.bind || implementation;
+  }
+});
+
+// node_modules/call-bind-apply-helpers/functionCall.js
+var require_functionCall = __commonJS({
+  "node_modules/call-bind-apply-helpers/functionCall.js"(exports, module) {
+    "use strict";
+    module.exports = Function.prototype.call;
+  }
+});
+
+// node_modules/call-bind-apply-helpers/functionApply.js
+var require_functionApply = __commonJS({
+  "node_modules/call-bind-apply-helpers/functionApply.js"(exports, module) {
+    "use strict";
+    module.exports = Function.prototype.apply;
+  }
+});
+
+// node_modules/call-bind-apply-helpers/reflectApply.js
+var require_reflectApply = __commonJS({
+  "node_modules/call-bind-apply-helpers/reflectApply.js"(exports, module) {
+    "use strict";
+    module.exports = typeof Reflect !== "undefined" && Reflect && Reflect.apply;
+  }
+});
+
+// node_modules/call-bind-apply-helpers/actualApply.js
+var require_actualApply = __commonJS({
+  "node_modules/call-bind-apply-helpers/actualApply.js"(exports, module) {
+    "use strict";
+    var bind = require_function_bind();
+    var $apply = require_functionApply();
+    var $call = require_functionCall();
+    var $reflectApply = require_reflectApply();
+    module.exports = $reflectApply || bind.call($call, $apply);
+  }
+});
+
+// node_modules/call-bind-apply-helpers/index.js
+var require_call_bind_apply_helpers = __commonJS({
+  "node_modules/call-bind-apply-helpers/index.js"(exports, module) {
+    "use strict";
+    var bind = require_function_bind();
+    var $TypeError = require_type();
+    var $call = require_functionCall();
+    var $actualApply = require_actualApply();
+    module.exports = function callBindBasic(args) {
+      if (args.length < 1 || typeof args[0] !== "function") {
+        throw new $TypeError("a function is required");
+      }
+      return $actualApply(bind, $call, args);
+    };
+  }
+});
+
+// node_modules/dunder-proto/get.js
+var require_get = __commonJS({
+  "node_modules/dunder-proto/get.js"(exports, module) {
+    "use strict";
+    var callBind = require_call_bind_apply_helpers();
+    var gOPD = require_gopd();
+    var hasProtoAccessor;
+    try {
+      hasProtoAccessor = /** @type {{ __proto__?: typeof Array.prototype }} */
+      [].__proto__ === Array.prototype;
+    } catch (e15) {
+      if (!e15 || typeof e15 !== "object" || !("code" in e15) || e15.code !== "ERR_PROTO_ACCESS") {
+        throw e15;
+      }
+    }
+    var desc = !!hasProtoAccessor && gOPD && gOPD(
+      Object.prototype,
+      /** @type {keyof typeof Object.prototype} */
+      "__proto__"
+    );
+    var $Object = Object;
+    var $getPrototypeOf = $Object.getPrototypeOf;
+    module.exports = desc && typeof desc.get === "function" ? callBind([desc.get]) : typeof $getPrototypeOf === "function" ? (
+      /** @type {import('./get')} */
+      function getDunder(value) {
+        return $getPrototypeOf(value == null ? value : $Object(value));
+      }
+    ) : false;
+  }
+});
+
+// node_modules/get-proto/index.js
+var require_get_proto = __commonJS({
+  "node_modules/get-proto/index.js"(exports, module) {
+    "use strict";
+    var reflectGetProto = require_Reflect_getPrototypeOf();
+    var originalGetProto = require_Object_getPrototypeOf();
+    var getDunderProto = require_get();
+    module.exports = reflectGetProto ? function getProto(O2) {
+      return reflectGetProto(O2);
+    } : originalGetProto ? function getProto(O2) {
+      if (!O2 || typeof O2 !== "object" && typeof O2 !== "function") {
+        throw new TypeError("getProto: not an object");
+      }
+      return originalGetProto(O2);
+    } : getDunderProto ? function getProto(O2) {
+      return getDunderProto(O2);
+    } : null;
+  }
+});
+
+// node_modules/hasown/index.js
+var require_hasown = __commonJS({
+  "node_modules/hasown/index.js"(exports, module) {
+    "use strict";
+    var call = Function.prototype.call;
+    var $hasOwn = Object.prototype.hasOwnProperty;
+    var bind = require_function_bind();
+    module.exports = bind.call(call, $hasOwn);
+  }
+});
+
+// node_modules/get-intrinsic/index.js
+var require_get_intrinsic = __commonJS({
+  "node_modules/get-intrinsic/index.js"(exports, module) {
+    "use strict";
+    var undefined2;
+    var $Object = require_es_object_atoms();
+    var $Error = require_es_errors();
+    var $EvalError = require_eval();
+    var $RangeError = require_range();
+    var $ReferenceError = require_ref();
+    var $SyntaxError = require_syntax();
+    var $TypeError = require_type();
+    var $URIError = require_uri();
+    var abs3 = require_abs();
+    var floor6 = require_floor();
+    var max6 = require_max();
+    var min6 = require_min();
+    var pow12 = require_pow();
+    var round11 = require_round();
+    var sign5 = require_sign();
+    var $Function = Function;
+    var getEvalledConstructor = function(expressionSyntax) {
+      try {
+        return $Function('"use strict"; return (' + expressionSyntax + ").constructor;")();
+      } catch (e15) {
+      }
+    };
+    var $gOPD = require_gopd();
+    var $defineProperty = require_es_define_property();
+    var throwTypeError = function() {
+      throw new $TypeError();
+    };
+    var ThrowTypeError = $gOPD ? function() {
+      try {
+        arguments.callee;
+        return throwTypeError;
+      } catch (calleeThrows) {
+        try {
+          return $gOPD(arguments, "callee").get;
+        } catch (gOPDthrows) {
+          return throwTypeError;
+        }
+      }
+    }() : throwTypeError;
+    var hasSymbols = require_has_symbols()();
+    var getProto = require_get_proto();
+    var $ObjectGPO = require_Object_getPrototypeOf();
+    var $ReflectGPO = require_Reflect_getPrototypeOf();
+    var $apply = require_functionApply();
+    var $call = require_functionCall();
+    var needsEval = {};
+    var TypedArray = typeof Uint8Array === "undefined" || !getProto ? undefined2 : getProto(Uint8Array);
+    var INTRINSICS = {
+      __proto__: null,
+      "%AggregateError%": typeof AggregateError === "undefined" ? undefined2 : AggregateError,
+      "%Array%": Array,
+      "%ArrayBuffer%": typeof ArrayBuffer === "undefined" ? undefined2 : ArrayBuffer,
+      "%ArrayIteratorPrototype%": hasSymbols && getProto ? getProto([][Symbol.iterator]()) : undefined2,
+      "%AsyncFromSyncIteratorPrototype%": undefined2,
+      "%AsyncFunction%": needsEval,
+      "%AsyncGenerator%": needsEval,
+      "%AsyncGeneratorFunction%": needsEval,
+      "%AsyncIteratorPrototype%": needsEval,
+      "%Atomics%": typeof Atomics === "undefined" ? undefined2 : Atomics,
+      "%BigInt%": typeof BigInt === "undefined" ? undefined2 : BigInt,
+      "%BigInt64Array%": typeof BigInt64Array === "undefined" ? undefined2 : BigInt64Array,
+      "%BigUint64Array%": typeof BigUint64Array === "undefined" ? undefined2 : BigUint64Array,
+      "%Boolean%": Boolean,
+      "%DataView%": typeof DataView === "undefined" ? undefined2 : DataView,
+      "%Date%": Date,
+      "%decodeURI%": decodeURI,
+      "%decodeURIComponent%": decodeURIComponent,
+      "%encodeURI%": encodeURI,
+      "%encodeURIComponent%": encodeURIComponent,
+      "%Error%": $Error,
+      "%eval%": eval,
+      // eslint-disable-line no-eval
+      "%EvalError%": $EvalError,
+      "%Float16Array%": typeof Float16Array === "undefined" ? undefined2 : Float16Array,
+      "%Float32Array%": typeof Float32Array === "undefined" ? undefined2 : Float32Array,
+      "%Float64Array%": typeof Float64Array === "undefined" ? undefined2 : Float64Array,
+      "%FinalizationRegistry%": typeof FinalizationRegistry === "undefined" ? undefined2 : FinalizationRegistry,
+      "%Function%": $Function,
+      "%GeneratorFunction%": needsEval,
+      "%Int8Array%": typeof Int8Array === "undefined" ? undefined2 : Int8Array,
+      "%Int16Array%": typeof Int16Array === "undefined" ? undefined2 : Int16Array,
+      "%Int32Array%": typeof Int32Array === "undefined" ? undefined2 : Int32Array,
+      "%isFinite%": isFinite,
+      "%isNaN%": isNaN,
+      "%IteratorPrototype%": hasSymbols && getProto ? getProto(getProto([][Symbol.iterator]())) : undefined2,
+      "%JSON%": typeof JSON === "object" ? JSON : undefined2,
+      "%Map%": typeof Map === "undefined" ? undefined2 : Map,
+      "%MapIteratorPrototype%": typeof Map === "undefined" || !hasSymbols || !getProto ? undefined2 : getProto((/* @__PURE__ */ new Map())[Symbol.iterator]()),
+      "%Math%": Math,
+      "%Number%": Number,
+      "%Object%": $Object,
+      "%Object.getOwnPropertyDescriptor%": $gOPD,
+      "%parseFloat%": parseFloat,
+      "%parseInt%": parseInt,
+      "%Promise%": typeof Promise === "undefined" ? undefined2 : Promise,
+      "%Proxy%": typeof Proxy === "undefined" ? undefined2 : Proxy,
+      "%RangeError%": $RangeError,
+      "%ReferenceError%": $ReferenceError,
+      "%Reflect%": typeof Reflect === "undefined" ? undefined2 : Reflect,
+      "%RegExp%": RegExp,
+      "%Set%": typeof Set === "undefined" ? undefined2 : Set,
+      "%SetIteratorPrototype%": typeof Set === "undefined" || !hasSymbols || !getProto ? undefined2 : getProto((/* @__PURE__ */ new Set())[Symbol.iterator]()),
+      "%SharedArrayBuffer%": typeof SharedArrayBuffer === "undefined" ? undefined2 : SharedArrayBuffer,
+      "%String%": String,
+      "%StringIteratorPrototype%": hasSymbols && getProto ? getProto(""[Symbol.iterator]()) : undefined2,
+      "%Symbol%": hasSymbols ? Symbol : undefined2,
+      "%SyntaxError%": $SyntaxError,
+      "%ThrowTypeError%": ThrowTypeError,
+      "%TypedArray%": TypedArray,
+      "%TypeError%": $TypeError,
+      "%Uint8Array%": typeof Uint8Array === "undefined" ? undefined2 : Uint8Array,
+      "%Uint8ClampedArray%": typeof Uint8ClampedArray === "undefined" ? undefined2 : Uint8ClampedArray,
+      "%Uint16Array%": typeof Uint16Array === "undefined" ? undefined2 : Uint16Array,
+      "%Uint32Array%": typeof Uint32Array === "undefined" ? undefined2 : Uint32Array,
+      "%URIError%": $URIError,
+      "%WeakMap%": typeof WeakMap === "undefined" ? undefined2 : WeakMap,
+      "%WeakRef%": typeof WeakRef === "undefined" ? undefined2 : WeakRef,
+      "%WeakSet%": typeof WeakSet === "undefined" ? undefined2 : WeakSet,
+      "%Function.prototype.call%": $call,
+      "%Function.prototype.apply%": $apply,
+      "%Object.defineProperty%": $defineProperty,
+      "%Object.getPrototypeOf%": $ObjectGPO,
+      "%Math.abs%": abs3,
+      "%Math.floor%": floor6,
+      "%Math.max%": max6,
+      "%Math.min%": min6,
+      "%Math.pow%": pow12,
+      "%Math.round%": round11,
+      "%Math.sign%": sign5,
+      "%Reflect.getPrototypeOf%": $ReflectGPO
+    };
+    if (getProto) {
+      try {
+        null.error;
+      } catch (e15) {
+        errorProto = getProto(getProto(e15));
+        INTRINSICS["%Error.prototype%"] = errorProto;
+      }
+    }
+    var errorProto;
+    var doEval = function doEval2(name2) {
+      var value;
+      if (name2 === "%AsyncFunction%") {
+        value = getEvalledConstructor("async function () {}");
+      } else if (name2 === "%GeneratorFunction%") {
+        value = getEvalledConstructor("function* () {}");
+      } else if (name2 === "%AsyncGeneratorFunction%") {
+        value = getEvalledConstructor("async function* () {}");
+      } else if (name2 === "%AsyncGenerator%") {
+        var fn = doEval2("%AsyncGeneratorFunction%");
+        if (fn) {
+          value = fn.prototype;
+        }
+      } else if (name2 === "%AsyncIteratorPrototype%") {
+        var gen = doEval2("%AsyncGenerator%");
+        if (gen && getProto) {
+          value = getProto(gen.prototype);
+        }
+      }
+      INTRINSICS[name2] = value;
+      return value;
+    };
+    var LEGACY_ALIASES = {
+      __proto__: null,
+      "%ArrayBufferPrototype%": ["ArrayBuffer", "prototype"],
+      "%ArrayPrototype%": ["Array", "prototype"],
+      "%ArrayProto_entries%": ["Array", "prototype", "entries"],
+      "%ArrayProto_forEach%": ["Array", "prototype", "forEach"],
+      "%ArrayProto_keys%": ["Array", "prototype", "keys"],
+      "%ArrayProto_values%": ["Array", "prototype", "values"],
+      "%AsyncFunctionPrototype%": ["AsyncFunction", "prototype"],
+      "%AsyncGenerator%": ["AsyncGeneratorFunction", "prototype"],
+      "%AsyncGeneratorPrototype%": ["AsyncGeneratorFunction", "prototype", "prototype"],
+      "%BooleanPrototype%": ["Boolean", "prototype"],
+      "%DataViewPrototype%": ["DataView", "prototype"],
+      "%DatePrototype%": ["Date", "prototype"],
+      "%ErrorPrototype%": ["Error", "prototype"],
+      "%EvalErrorPrototype%": ["EvalError", "prototype"],
+      "%Float32ArrayPrototype%": ["Float32Array", "prototype"],
+      "%Float64ArrayPrototype%": ["Float64Array", "prototype"],
+      "%FunctionPrototype%": ["Function", "prototype"],
+      "%Generator%": ["GeneratorFunction", "prototype"],
+      "%GeneratorPrototype%": ["GeneratorFunction", "prototype", "prototype"],
+      "%Int8ArrayPrototype%": ["Int8Array", "prototype"],
+      "%Int16ArrayPrototype%": ["Int16Array", "prototype"],
+      "%Int32ArrayPrototype%": ["Int32Array", "prototype"],
+      "%JSONParse%": ["JSON", "parse"],
+      "%JSONStringify%": ["JSON", "stringify"],
+      "%MapPrototype%": ["Map", "prototype"],
+      "%NumberPrototype%": ["Number", "prototype"],
+      "%ObjectPrototype%": ["Object", "prototype"],
+      "%ObjProto_toString%": ["Object", "prototype", "toString"],
+      "%ObjProto_valueOf%": ["Object", "prototype", "valueOf"],
+      "%PromisePrototype%": ["Promise", "prototype"],
+      "%PromiseProto_then%": ["Promise", "prototype", "then"],
+      "%Promise_all%": ["Promise", "all"],
+      "%Promise_reject%": ["Promise", "reject"],
+      "%Promise_resolve%": ["Promise", "resolve"],
+      "%RangeErrorPrototype%": ["RangeError", "prototype"],
+      "%ReferenceErrorPrototype%": ["ReferenceError", "prototype"],
+      "%RegExpPrototype%": ["RegExp", "prototype"],
+      "%SetPrototype%": ["Set", "prototype"],
+      "%SharedArrayBufferPrototype%": ["SharedArrayBuffer", "prototype"],
+      "%StringPrototype%": ["String", "prototype"],
+      "%SymbolPrototype%": ["Symbol", "prototype"],
+      "%SyntaxErrorPrototype%": ["SyntaxError", "prototype"],
+      "%TypedArrayPrototype%": ["TypedArray", "prototype"],
+      "%TypeErrorPrototype%": ["TypeError", "prototype"],
+      "%Uint8ArrayPrototype%": ["Uint8Array", "prototype"],
+      "%Uint8ClampedArrayPrototype%": ["Uint8ClampedArray", "prototype"],
+      "%Uint16ArrayPrototype%": ["Uint16Array", "prototype"],
+      "%Uint32ArrayPrototype%": ["Uint32Array", "prototype"],
+      "%URIErrorPrototype%": ["URIError", "prototype"],
+      "%WeakMapPrototype%": ["WeakMap", "prototype"],
+      "%WeakSetPrototype%": ["WeakSet", "prototype"]
+    };
+    var bind = require_function_bind();
+    var hasOwn = require_hasown();
+    var $concat = bind.call($call, Array.prototype.concat);
+    var $spliceApply = bind.call($apply, Array.prototype.splice);
+    var $replace = bind.call($call, String.prototype.replace);
+    var $strSlice = bind.call($call, String.prototype.slice);
+    var $exec = bind.call($call, RegExp.prototype.exec);
+    var rePropName = /[^%.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|%$))/g;
+    var reEscapeChar = /\\(\\)?/g;
+    var stringToPath = function stringToPath2(string) {
+      var first = $strSlice(string, 0, 1);
+      var last = $strSlice(string, -1);
+      if (first === "%" && last !== "%") {
+        throw new $SyntaxError("invalid intrinsic syntax, expected closing `%`");
+      } else if (last === "%" && first !== "%") {
+        throw new $SyntaxError("invalid intrinsic syntax, expected opening `%`");
+      }
+      var result = [];
+      $replace(string, rePropName, function(match, number, quote, subString) {
+        result[result.length] = quote ? $replace(subString, reEscapeChar, "$1") : number || match;
+      });
+      return result;
+    };
+    var getBaseIntrinsic = function getBaseIntrinsic2(name2, allowMissing) {
+      var intrinsicName = name2;
+      var alias;
+      if (hasOwn(LEGACY_ALIASES, intrinsicName)) {
+        alias = LEGACY_ALIASES[intrinsicName];
+        intrinsicName = "%" + alias[0] + "%";
+      }
+      if (hasOwn(INTRINSICS, intrinsicName)) {
+        var value = INTRINSICS[intrinsicName];
+        if (value === needsEval) {
+          value = doEval(intrinsicName);
+        }
+        if (typeof value === "undefined" && !allowMissing) {
+          throw new $TypeError("intrinsic " + name2 + " exists, but is not available. Please file an issue!");
+        }
+        return {
+          alias,
+          name: intrinsicName,
+          value
+        };
+      }
+      throw new $SyntaxError("intrinsic " + name2 + " does not exist!");
+    };
+    module.exports = function GetIntrinsic(name2, allowMissing) {
+      if (typeof name2 !== "string" || name2.length === 0) {
+        throw new $TypeError("intrinsic name must be a non-empty string");
+      }
+      if (arguments.length > 1 && typeof allowMissing !== "boolean") {
+        throw new $TypeError('"allowMissing" argument must be a boolean');
+      }
+      if ($exec(/^%?[^%]*%?$/, name2) === null) {
+        throw new $SyntaxError("`%` may not be present anywhere but at the beginning and end of the intrinsic name");
+      }
+      var parts = stringToPath(name2);
+      var intrinsicBaseName = parts.length > 0 ? parts[0] : "";
+      var intrinsic = getBaseIntrinsic("%" + intrinsicBaseName + "%", allowMissing);
+      var intrinsicRealName = intrinsic.name;
+      var value = intrinsic.value;
+      var skipFurtherCaching = false;
+      var alias = intrinsic.alias;
+      if (alias) {
+        intrinsicBaseName = alias[0];
+        $spliceApply(parts, $concat([0, 1], alias));
+      }
+      for (var i11 = 1, isOwn = true; i11 < parts.length; i11 += 1) {
+        var part = parts[i11];
+        var first = $strSlice(part, 0, 1);
+        var last = $strSlice(part, -1);
+        if ((first === '"' || first === "'" || first === "`" || (last === '"' || last === "'" || last === "`")) && first !== last) {
+          throw new $SyntaxError("property names with quotes must have matching quotes");
+        }
+        if (part === "constructor" || !isOwn) {
+          skipFurtherCaching = true;
+        }
+        intrinsicBaseName += "." + part;
+        intrinsicRealName = "%" + intrinsicBaseName + "%";
+        if (hasOwn(INTRINSICS, intrinsicRealName)) {
+          value = INTRINSICS[intrinsicRealName];
+        } else if (value != null) {
+          if (!(part in value)) {
+            if (!allowMissing) {
+              throw new $TypeError("base intrinsic for " + name2 + " exists, but the property is not available.");
             }
-          } else if ($Map) {
-            if ($m) {
-              return $mapGet($m, key);
+            return void 0;
+          }
+          if ($gOPD && i11 + 1 >= parts.length) {
+            var desc = $gOPD(value, part);
+            isOwn = !!desc;
+            if (isOwn && "get" in desc && !("originalValue" in desc.get)) {
+              value = desc.get;
+            } else {
+              value = value[part];
             }
           } else {
-            if ($o) {
-              return listGet($o, key);
+            isOwn = hasOwn(value, part);
+            value = value[part];
+          }
+          if (isOwn && !skipFurtherCaching) {
+            INTRINSICS[intrinsicRealName] = value;
+          }
+        }
+      }
+      return value;
+    };
+  }
+});
+
+// node_modules/call-bound/index.js
+var require_call_bound = __commonJS({
+  "node_modules/call-bound/index.js"(exports, module) {
+    "use strict";
+    var GetIntrinsic = require_get_intrinsic();
+    var callBindBasic = require_call_bind_apply_helpers();
+    var $indexOf = callBindBasic([GetIntrinsic("%String.prototype.indexOf%")]);
+    module.exports = function callBoundIntrinsic(name2, allowMissing) {
+      var intrinsic = (
+        /** @type {(this: unknown, ...args: unknown[]) => unknown} */
+        GetIntrinsic(name2, !!allowMissing)
+      );
+      if (typeof intrinsic === "function" && $indexOf(name2, ".prototype.") > -1) {
+        return callBindBasic(
+          /** @type {const} */
+          [intrinsic]
+        );
+      }
+      return intrinsic;
+    };
+  }
+});
+
+// node_modules/side-channel-map/index.js
+var require_side_channel_map = __commonJS({
+  "node_modules/side-channel-map/index.js"(exports, module) {
+    "use strict";
+    var GetIntrinsic = require_get_intrinsic();
+    var callBound = require_call_bound();
+    var inspect = require_object_inspect();
+    var $TypeError = require_type();
+    var $Map = GetIntrinsic("%Map%", true);
+    var $mapGet = callBound("Map.prototype.get", true);
+    var $mapSet = callBound("Map.prototype.set", true);
+    var $mapHas = callBound("Map.prototype.has", true);
+    var $mapDelete = callBound("Map.prototype.delete", true);
+    var $mapSize = callBound("Map.prototype.size", true);
+    module.exports = !!$Map && /** @type {Exclude<import('.'), false>} */
+    function getSideChannelMap() {
+      var $m;
+      var channel = {
+        assert: function(key) {
+          if (!channel.has(key)) {
+            throw new $TypeError("Side channel does not contain " + inspect(key));
+          }
+        },
+        "delete": function(key) {
+          if ($m) {
+            var result = $mapDelete($m, key);
+            if ($mapSize($m) === 0) {
+              $m = void 0;
             }
+            return result;
+          }
+          return false;
+        },
+        get: function(key) {
+          if ($m) {
+            return $mapGet($m, key);
           }
         },
         has: function(key) {
-          if ($WeakMap && key && (typeof key === "object" || typeof key === "function")) {
-            if ($wm) {
-              return $weakMapHas($wm, key);
-            }
-          } else if ($Map) {
-            if ($m) {
-              return $mapHas($m, key);
-            }
-          } else {
-            if ($o) {
-              return listHas($o, key);
-            }
+          if ($m) {
+            return $mapHas($m, key);
           }
           return false;
         },
         set: function(key, value) {
-          if ($WeakMap && key && (typeof key === "object" || typeof key === "function")) {
-            if (!$wm) {
-              $wm = new $WeakMap();
-            }
-            $weakMapSet($wm, key, value);
-          } else if ($Map) {
-            if (!$m) {
-              $m = new $Map();
-            }
-            $mapSet($m, key, value);
-          } else {
-            if (!$o) {
-              $o = { key: {}, next: null };
-            }
-            listSet($o, key, value);
+          if (!$m) {
+            $m = new $Map();
           }
+          $mapSet($m, key, value);
+        }
+      };
+      return channel;
+    };
+  }
+});
+
+// node_modules/side-channel-weakmap/index.js
+var require_side_channel_weakmap = __commonJS({
+  "node_modules/side-channel-weakmap/index.js"(exports, module) {
+    "use strict";
+    var GetIntrinsic = require_get_intrinsic();
+    var callBound = require_call_bound();
+    var inspect = require_object_inspect();
+    var getSideChannelMap = require_side_channel_map();
+    var $TypeError = require_type();
+    var $WeakMap = GetIntrinsic("%WeakMap%", true);
+    var $weakMapGet = callBound("WeakMap.prototype.get", true);
+    var $weakMapSet = callBound("WeakMap.prototype.set", true);
+    var $weakMapHas = callBound("WeakMap.prototype.has", true);
+    var $weakMapDelete = callBound("WeakMap.prototype.delete", true);
+    module.exports = $WeakMap ? (
+      /** @type {Exclude<import('.'), false>} */
+      function getSideChannelWeakMap() {
+        var $wm;
+        var $m;
+        var channel = {
+          assert: function(key) {
+            if (!channel.has(key)) {
+              throw new $TypeError("Side channel does not contain " + inspect(key));
+            }
+          },
+          "delete": function(key) {
+            if ($WeakMap && key && (typeof key === "object" || typeof key === "function")) {
+              if ($wm) {
+                return $weakMapDelete($wm, key);
+              }
+            } else if (getSideChannelMap) {
+              if ($m) {
+                return $m["delete"](key);
+              }
+            }
+            return false;
+          },
+          get: function(key) {
+            if ($WeakMap && key && (typeof key === "object" || typeof key === "function")) {
+              if ($wm) {
+                return $weakMapGet($wm, key);
+              }
+            }
+            return $m && $m.get(key);
+          },
+          has: function(key) {
+            if ($WeakMap && key && (typeof key === "object" || typeof key === "function")) {
+              if ($wm) {
+                return $weakMapHas($wm, key);
+              }
+            }
+            return !!$m && $m.has(key);
+          },
+          set: function(key, value) {
+            if ($WeakMap && key && (typeof key === "object" || typeof key === "function")) {
+              if (!$wm) {
+                $wm = new $WeakMap();
+              }
+              $weakMapSet($wm, key, value);
+            } else if (getSideChannelMap) {
+              if (!$m) {
+                $m = getSideChannelMap();
+              }
+              $m.set(key, value);
+            }
+          }
+        };
+        return channel;
+      }
+    ) : getSideChannelMap;
+  }
+});
+
+// node_modules/side-channel/index.js
+var require_side_channel = __commonJS({
+  "node_modules/side-channel/index.js"(exports, module) {
+    "use strict";
+    var $TypeError = require_type();
+    var inspect = require_object_inspect();
+    var getSideChannelList = require_side_channel_list();
+    var getSideChannelMap = require_side_channel_map();
+    var getSideChannelWeakMap = require_side_channel_weakmap();
+    var makeChannel = getSideChannelWeakMap || getSideChannelMap || getSideChannelList;
+    module.exports = function getSideChannel() {
+      var $channelData;
+      var channel = {
+        assert: function(key) {
+          if (!channel.has(key)) {
+            throw new $TypeError("Side channel does not contain " + inspect(key));
+          }
+        },
+        "delete": function(key) {
+          return !!$channelData && $channelData["delete"](key);
+        },
+        get: function(key) {
+          return $channelData && $channelData.get(key);
+        },
+        has: function(key) {
+          return !!$channelData && $channelData.has(key);
+        },
+        set: function(key, value) {
+          if (!$channelData) {
+            $channelData = makeChannel();
+          }
+          $channelData.set(key, value);
         }
       };
       return channel;
@@ -2876,16 +3086,20 @@ var require_parse = __commonJS({
       parseArrays: true,
       plainObjects: false,
       strictDepth: false,
-      strictNullHandling: false
+      strictNullHandling: false,
+      throwOnLimitExceeded: false
     };
     var interpretNumericEntities = function(str) {
       return str.replace(/&#(\d+);/g, function($0, numberStr) {
         return String.fromCharCode(parseInt(numberStr, 10));
       });
     };
-    var parseArrayValue = function(val, options2) {
+    var parseArrayValue = function(val, options2, currentArrayLength) {
       if (val && typeof val === "string" && options2.comma && val.indexOf(",") > -1) {
         return val.split(",");
+      }
+      if (options2.throwOnLimitExceeded && currentArrayLength >= options2.arrayLimit) {
+        throw new RangeError("Array limit exceeded. Only " + options2.arrayLimit + " element" + (options2.arrayLimit === 1 ? "" : "s") + " allowed in an array.");
       }
       return val;
     };
@@ -2896,7 +3110,13 @@ var require_parse = __commonJS({
       var cleanStr = options2.ignoreQueryPrefix ? str.replace(/^\?/, "") : str;
       cleanStr = cleanStr.replace(/%5B/gi, "[").replace(/%5D/gi, "]");
       var limit = options2.parameterLimit === Infinity ? void 0 : options2.parameterLimit;
-      var parts = cleanStr.split(options2.delimiter, limit);
+      var parts = cleanStr.split(
+        options2.delimiter,
+        options2.throwOnLimitExceeded ? limit + 1 : limit
+      );
+      if (options2.throwOnLimitExceeded && parts.length > limit) {
+        throw new RangeError("Parameter limit exceeded. Only " + limit + " parameter" + (limit === 1 ? "" : "s") + " allowed.");
+      }
       var skipIndex = -1;
       var i11;
       var charset = options2.charset;
@@ -2928,7 +3148,11 @@ var require_parse = __commonJS({
         } else {
           key = options2.decoder(part.slice(0, pos), defaults2.decoder, charset, "key");
           val = utils.maybeMap(
-            parseArrayValue(part.slice(pos + 1), options2),
+            parseArrayValue(
+              part.slice(pos + 1),
+              options2,
+              isArray2(obj[key]) ? obj[key].length : 0
+            ),
             function(encodedVal) {
               return options2.decoder(encodedVal, defaults2.decoder, charset, "value");
             }
@@ -2950,12 +3174,17 @@ var require_parse = __commonJS({
       return obj;
     };
     var parseObject = function(chain, val, options2, valuesParsed) {
-      var leaf = valuesParsed ? val : parseArrayValue(val, options2);
+      var currentArrayLength = 0;
+      if (chain.length > 0 && chain[chain.length - 1] === "[]") {
+        var parentKey = chain.slice(0, -1).join("");
+        currentArrayLength = Array.isArray(val) && val[parentKey] ? val[parentKey].length : 0;
+      }
+      var leaf = valuesParsed ? val : parseArrayValue(val, options2, currentArrayLength);
       for (var i11 = chain.length - 1; i11 >= 0; --i11) {
         var obj;
         var root = chain[i11];
         if (root === "[]" && options2.parseArrays) {
-          obj = options2.allowEmptyArrays && (leaf === "" || options2.strictNullHandling && leaf === null) ? [] : [].concat(leaf);
+          obj = options2.allowEmptyArrays && (leaf === "" || options2.strictNullHandling && leaf === null) ? [] : utils.combine([], leaf);
         } else {
           obj = options2.plainObjects ? { __proto__: null } : {};
           var cleanRoot = root.charAt(0) === "[" && root.charAt(root.length - 1) === "]" ? root.slice(1, -1) : root;
@@ -3026,6 +3255,9 @@ var require_parse = __commonJS({
       if (typeof opts.charset !== "undefined" && opts.charset !== "utf-8" && opts.charset !== "iso-8859-1") {
         throw new TypeError("The charset option must be either utf-8, iso-8859-1, or undefined");
       }
+      if (typeof opts.throwOnLimitExceeded !== "undefined" && typeof opts.throwOnLimitExceeded !== "boolean") {
+        throw new TypeError("`throwOnLimitExceeded` option must be a boolean");
+      }
       var charset = typeof opts.charset === "undefined" ? defaults2.charset : opts.charset;
       var duplicates = typeof opts.duplicates === "undefined" ? defaults2.duplicates : opts.duplicates;
       if (duplicates !== "combine" && duplicates !== "first" && duplicates !== "last") {
@@ -3053,7 +3285,8 @@ var require_parse = __commonJS({
         parseArrays: opts.parseArrays !== false,
         plainObjects: typeof opts.plainObjects === "boolean" ? opts.plainObjects : defaults2.plainObjects,
         strictDepth: typeof opts.strictDepth === "boolean" ? !!opts.strictDepth : defaults2.strictDepth,
-        strictNullHandling: typeof opts.strictNullHandling === "boolean" ? opts.strictNullHandling : defaults2.strictNullHandling
+        strictNullHandling: typeof opts.strictNullHandling === "boolean" ? opts.strictNullHandling : defaults2.strictNullHandling,
+        throwOnLimitExceeded: typeof opts.throwOnLimitExceeded === "boolean" ? opts.throwOnLimitExceeded : false
       };
     };
     module.exports = function(str, opts) {
@@ -3641,9 +3874,9 @@ var require_url = __commonJS({
   }
 });
 
-// ../chemlib/node_modules/kekule/dist/kekule.js
+// node_modules/kekule/dist/kekule.js
 var require_kekule = __commonJS({
-  "../chemlib/node_modules/kekule/dist/kekule.js"(exports, module) {
+  "node_modules/kekule/dist/kekule.js"(exports, module) {
     (function($init_root) {
       var $root;
       {
@@ -3788,7 +4021,8 @@ var require_kekule = __commonJS({
       function loadChildScriptFiles(scriptUrls, forceDomLoader, callback2) {
         if (isNode2) {
           appendScriptFiles(document2, scriptUrls, function(error) {
-            (this.Kekule || __nodeContext.Kekule)._loaded();
+            if (this.Kekule || __nodeContext.Kekule)
+              (this.Kekule || __nodeContext.Kekule)._loaded();
             if (callback2)
               callback2(error);
           });
@@ -4419,7 +4653,8 @@ var require_kekule = __commonJS({
               this.ClassEx = exports.ClassEx;
               this.ObjectEx = exports.ObjectEx;
               this.DataType = exports.DataType;
-              this.Kekule.scriptSrcInfo = scriptInfo;
+              if (this && this.Kekule)
+                this.Kekule.scriptSrcInfo = scriptInfo;
             }
           });
         }
@@ -4431,9 +4666,9 @@ var require_kekule = __commonJS({
   }
 });
 
-// ../chemlib/node_modules/kekule/dist/mins/root.min.js
+// node_modules/kekule/dist/mins/root.min.js
 var require_root_min = __commonJS({
-  "../chemlib/node_modules/kekule/dist/mins/root.min.js"(exports) {
+  "node_modules/kekule/dist/mins/root.min.js"(exports) {
     "use strict";
     !function(e15) {
       function t10() {
@@ -5797,7 +6032,7 @@ var require_root_min = __commonJS({
       } });
     }();
     var Kekule3 = "object" == typeof Kekule3 ? Kekule3 : {};
-    (Kekule3 = Object.extend(Kekule3, { LIBNAME: "Kekule.js", LIBNAME_CORE: "Kekule", VERSION: "1.0.0.23010100", LOADED: false, _afterLoadSysProcedures: [], _afterLoadUserProcedures: [], PROP_AUTO_TITLE: true }))._loaded = function() {
+    (Kekule3 = Object.extend(Kekule3, { LIBNAME: "Kekule.js", LIBNAME_CORE: "Kekule", VERSION: "1.0.2.24121700", LOADED: false, _afterLoadSysProcedures: [], _afterLoadUserProcedures: [], PROP_AUTO_TITLE: true }))._loaded = function() {
       if (!Kekule3.LOADED) {
         Kekule3.LOADED = true;
         for (var e15 = Kekule3._afterLoadSysProcedures; e15.length; ) {
@@ -5876,9 +6111,9 @@ var require_root_min = __commonJS({
   }
 });
 
-// ../chemlib/node_modules/kekule/dist/mins/localization.min.js
+// node_modules/kekule/dist/mins/localization.min.js
 var require_localization_min = __commonJS({
-  "../chemlib/node_modules/kekule/dist/mins/localization.min.js"(exports) {
+  "node_modules/kekule/dist/mins/localization.min.js"(exports) {
     !function(e15) {
       "use strict";
       function t10(e16) {
@@ -5939,13 +6174,13 @@ var require_localization_min = __commonJS({
           return !o17 && t12 && (o17 = Object.setCascadeFieldValue(e17, {}, A2, true)), o17;
         }(O2, true));
       };
-    }(exports), Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("general"), Kekule.Localization.addResource("en", "Texts", { UNNAMED: "unnamed" }), Kekule.Localization.addResource("en", "ErrorMsg", { MODULE_NOT_LOADED: "Module {0} is not loaded", UNIT_NOT_FOUND: "Unit not found: {0}", STANDARD_UNIT_OF_CATEGORY_NOT_FOUND: "Standard unit of category {0} not found", UNABLE_TO_CONVERT_BETWEEN_UNITS: "Unable to convert between units {0} and {1}", NON_OWN_PROPERTY_CANNOT_BE_REPLACED: "Only directly owned property of object can be replaced", EMPTY_DOC: "Document is empty", ELEMENT_NOTSET: "Element not set", EMPTY_RESURI: "Resource URI is empty", CANNOT_LOAD_RES_OF_URI: "Can not load resource of URI: ", LIST_ITEM_CLASS_MISMATCH: "Mismatched item class, can not add to list", CANNOT_CLEAR_WEAKMAP: "Can not clear a weak map", CANNOT_GET_KEY_LIST_IN_WEAKMAP: "Can not get key array from a weak map", CANNOT_GET_VALUE_LIST_IN_WEAKMAP: "Can not get value array from a weak map", INVALID_CHEMELEMENT: "Invalid chemical element", INVALID_ISOTOPE: "Invalid isotope", COORD_STICK_NOT_ALLOWED_ON_CLASS: "Coordinate sticking is not allowed in this type of object", INVALID_STICK_TARGET_OBJ: "Invalid sticking target", UNABLE_TO_STICK_TO_OTHER_OWNER_OBJ: "Unable to stick to object with a different owner", UNABLE_TO_STICK_TO_OBJ_WITHOUT_ABS_COORD: "Unable to stick to object without absolute coordinates", STICK_RECURSION_NOT_ALLOWED: "Stick recursion is not allowed", UNABLE_ADD_MISTYPED_NODE: "Unable to link mistyped node to connector", UNABLE_ADD_DIFF_OWNER_OBJ: "Object with different owner can not be linked to connector", CHEMSTRUCTUREOBJECTGROUP_ITEMCLASS_MISMATCH: "Mismatched group item class", SORT_FUNC_UNSET: "Sort function is not set", SOURCE_FRAGMENT_NOT_SET: "Source structure fragment not set", UNABLE_ADD_NONMOLECULE_MAP: "Unable to add non-molecule to reactants or products", CANNOT_ADD_NON_NODE_NOR_CONNECTOR_TO_STRUCT_CONTAINER: "Can not add object other than node or connector to structure object container", REGISTERED_CANONICALIZATION_EXECUTOR_NOT_FOUND: "Can not find registered canonicalization executor", ERROR_LOADING_FILE: "Error loading file: ", READER_ID_ALREADY_EXISTS: "Can not register reader: id already exists", WRITER_ID_ALREADY_EXISTS: "Can not register writer: id already exists", FAIL_TO_READ_FORMAT: "Fail to load data of format: ", NO_SUITABLE_READER_FOR_FORMAT: "Can not read data of format: ", NO_SUITABLE_READER_FOR_MIMETYPE: "Can not read data of MIME type: ", NO_SUITABLE_READER_FOR_FILEEXT: "Can not read data of file extension: ", NO_SUITABLE_WRITER_FOR_FORMAT: "Can not write data of format: ", NO_SUITABLE_WRITER_FOR_MIMETYPE: "Can not write data of MIME type: ", NO_SUITABLE_WRITER_FOR_FILEEXT: "Can not write data of file extension: ", AJAX_FILELOADER_NOT_FOUND: "AJAX file loader not found, can not load URL", FAIL_TO_LOAD_FILE_URL: "Fail to load file of URL: ", CML_ELEM_READER_NOT_FOUND: "Reader for element <{0}> not found", ATOMID_NOT_EXISTS: "Atom id not exists: ", BONDID_NOT_EXISTS: "Bond id not exists: ", CML_ELEM_WRITER_TYPE_INPROPER: "{0} is not a proper CML element writer for {1}", CML_CAN_NOT_OUTPUT_TO_EMPTY_ELEMENT: "Can not output content to empty element", UNABLE_TO_OUTPUT_AS_CML: "Unable to output object <{0}> to CML data", MDL_CTAB_ATOM_CANNOT_CREATE: "Can not create atom from source MDL format data", MDL_CTAB_BOND_CANNOT_CREATE: "Can not create bond from source MDL format data", CAN_NOT_WRITE_NON_MOLECULE_TO_MOL: "Object is not a molecule and can not be output to connection table", MOLECULE_HAS_NO_CTAB_TO_OUTPUT: "Molecule has no connection table and can not be output to MDL format", NOT_MDL2000_FORMAT_DATA: "Data format wrong: not MDL 2000", NOT_MDL_RXN_DATA: "Not MDL Reaction(RXN) data", MALFORMED_MDL3000_COUNTLINE: "Malformed MDL 3000 count line", MDL3000_ATOMBLOCK_NOT_FOUND: "Atom block not found, malformed MDL 3000 data?", NOT_MDL_FORMAT_DATA: "Data format wrong: not MDL 2000 or 3000", NOT_MDL2000_RXN_DATA: "Not MDL RXN 2000 data", NOT_MDL3000_RXN_DATA: "Not MDL RXN 3000 data", NOT_MDL3000_RXN_COUNTLINE: "Error in reading RXN 3000 count line", MDL_OUTPUT_DATATYPE_NOT_TEXT: "MDL data can not be output to non text format", MDL_INPUT_DATATYPE_NOT_TEXT: "Non text format is not a legal MDL source data", UNABLE_TO_OUTPUT_AS_MDL: "Unable to output object <{0}> to MDL data", KCJ_INPUT_DATATYPE_NOT_JSON_OR_TEXT: "Non text or JSON format data is not a legal KCJ source", KCJ_OUTPUT_DATATYPE_NOT_JSON_OR_TEXT: "Can not output as non text or JSON data", KCX_INPUT_DATATYPE_NOT_DOM_OR_TEXT: "Non text or DOM data is not a legal KCX source", KCX_OUTPUT_DATATYPE_NOT_DOM_OR_TEXT: "Can not output as non text or DOM data", JSON_SERIALIZER_NOT_EXISTS: "Serializer for JSON not exists", XML_SERIALIZER_NOT_EXISTS: "Serializer for XML not exists", JCAMP_DATA_WITHOUT_TITLE_LINE: "Malformed JCAMP format data, not started with TITLE label", JCAMP_OTHER_LABEL_BEFORE_TITLE_LINE: "Malformed JCAMP format data, other labels before the TITLE label", JCAMP_MORE_THAN_ONE_ROOT_BLOCK: "Malformed JCAMP format data, root block not unique", JCAMP_MORE_THAN_TWO_NEST_LEVEL: "Malformed JCAMP format data, block nested level should not exceed 2", JCAMP_ASDF_FORMAT_ERROR_WITH_STR: "Malformed JCAMP ASDF String: {0}", JCAMP_DATA_TABLE_X_VALUE_CHECK_ERROR: "JCAMP data table X value check failed!", JCAMP_DATA_TABLE_Y_VALUE_CHECK_ERROR: "JCAMP data table Y value check failed!", JCAMP_DATA_TABLE_VALUE_FIRST_LAST_NOT_MATCH: "JCAMP data table first/last values not match", JCAMP_DATA_TABLE_VAR_LIST_FORMAT_ERROR: "Malformed JCAMP variable list format: {0}", JCAMP_DATA_TABLE_VAR_LIST_FORMAT_UNSUPPORTED: "Unsupported JCAMP variable list format: {0}", JCAMP_NTUPLES_BEGIN_END_NAME_NOT_MATCH: "Ntuples name not match in begin/end labels: {0} and {1}", JCAMP_NTUPLES_PAGE_DECLARATION_FORMAT_ERROR: "Malformed JCAMP ntuples page declaration: {0}", JCAMP_LDR_TARGET_UNIT_NOT_MATCH_WITH_DETAIL: "The unit of property {0} ({1}) can not be converted to the request one ({2}) for JCAMP {3} LDR", FAILED_TO_ASSIGN_SYMBOL_TO_VARIABLE: "Fail to assign a symbol to variable {0}", JCAMP_IMPLICIT_HYDROGEN_COUNT_NOT_MATCH_DETAIL: "Unmatched implicit hydrogen count for atom {0}({1}), expect {2} but found {3}", VISIBLE_DATA_RANGE_IS_EMPTY: "The visible range of data is empty, unable to draw the spectrum", INAVAILABLE_AUTOSCALE_REF_LENGTH: "Can not determine the length for calculation of auto scale", FORMULA_RENDERER_3D_NOT_AVAILABLE: "3D renderer for molecule formula is not available", CANNOT_FIND_SUITABLE_RENDERER_FOR_OBJ: "Can not find suitable renderer for object", THREEJS_LIB_NOT_UNAVAILABLE: "Three.js not available, try to include it through the <script> tag or import the module by Kekule.externalResourceManager.register method", THREEJS_DRAWING_NOT_UNAVAILABLE: "Webgl, Canvas or SVG is not supported in this browser, please upgrade to a modern one", CANVAS2D_NOT_UNAVAILABLE: "Canvas is not supported in this browser, please upgrade to a modern one", RAPHAEL_LIB_NOT_UNAVAILABLE: "Raphael.js not available, try to import it through the <script> tag", RAPHAEL_SVG_VML_UNAVAILABLE: "SVG or VML is not supported in this browser, please upgrade to a modern one", CALC_TERMINATED_BY_USER: "Calculation terminated by user", CALC_SERVICE_UNAVAILABLE: 'Calculation service "{0}" is unavailable' }), Kekule.Localization.addResource("en", "ErrorCheckMsg", { GENERAL_ERROR_WITH_CODE: "Error code: {0}", ATOM_VALENCE_ERROR_WITH_SUGGEST: "Abnormal valence {1} of atom {0}, the possible value is {2}", ATOM_VALENCE_ERROR_WITH_SUGGESTS: "Abnormal valence {1} of atom {0}, the possible values are {2}", BOND_ORDER_EXCEED_ALLOWED_WITH_SUGGEST: "The bond order ({0}) exceeds the maximum allowed value ({1})", BOND_WITH_ID_ORDER_EXCEED_ALLOWED_WITH_SUGGEST: "The bond order of {0} ({1}) exceeds the maximum allowed value {2}", NODE_DISTANCE_TOO_CLOSE: "Atoms/subgroups are very close to each other", NODE_DISTANCE_TOO_CLOSE_WITH_LABEL: "Atoms/subgroups ({0}) are very close to each other", TITLE_CHANGE_BOND_ORDER_TO: "Change bond order to {0}", DESCRIPTION_CHANGE_BOND_ORDER_TO: "Change bond order from {0} to {1}", TITLE_MERGE_TO: "Merge {0} to {1}", DESCRIPTION_MERGE_TO: "Merge node {0} to {1}" }), Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("widget"), Kekule.Localization.addResource("en", "WidgetTexts", { CAPTION_OK: "OK", CAPTION_CANCEL: "Cancel", CAPTION_YES: "Yes", CAPTION_NO: "No", CAPTION_BROWSE_COLOR: "Browse colors", HINT_BROWSE_COLOR: "Browse more colors", S_COLOR_UNSET: "(unset)", S_COLOR_DEFAULT: "(default)", S_COLOR_MIXED: "(mixed)", S_COLOR_TRANSPARENT: "(transparent)", S_OBJECT_UNSET: "(none)", S_ITEMS: "item(s)", S_OBJECT: "object", S_VALUE_UNSET: "(Unset)", CAPTION_MENU: "Menu", HINT_MENU: "Open menu", S_INSPECT_NONE: "(none)", S_INSPECT_OBJECTS: "({0} objects)", S_INSPECT_ID_OBJECT: "{0}: {1}", S_INSPECT_ANONYMOUS_OBJECT: "({0})", CAPTION_TOGGLE_TEXTWRAP: "Toggle text wrapping", CAPTION_INC_TEXT_SIZE: "Increase text size", CAPTION_DEC_TEXT_SIZE: "Decrease text size", HINT_TOGGLE_TEXTWRAP: "Toggle the state of text wrapping", HINT_INC_TEXT_SIZE: "Increase text size", HINT_DEC_TEXT_SIZE: "Decrease text size", HINT_CHOOSE_FONT_FAMILY: "Choose font family", CAPTION_FIRST_PAGE: "First", CAPTION_LAST_PAGE: "Last", CAPTION_PREV_PAGE: "Prev", CAPTION_NEXT_PAGE: "Next", HINT_FIRST_PAGE: "First page", HINT_LAST_PAGE: "Last page", HINT_PREV_PAGE: "Previous page", HINT_NEXT_PAGE: "Next page", HINT_CURR_PAGE: "Current page", MSG_RETRIEVING_DATA: "Loading data...", CAPTION_DATATABLE_EDIT: "Edit", CAPTION_DATATABLE_DELETE: "Delete", CAPTION_DATATABLE_INSERT: "Insert", HINT_DATATABLE_EDIT: "Edit", HINT_DATATABLE_DELETE: "Delete", HINT_DATATABLE_INSERT: "Insert", CAPTION_ADD_CELL: "+", HINT_ADD_CELL: "Add new cell", CAPTION_REMOVE_CELL: "Remove", HINT_REMOVE_CELL: "Remove cell", CAPTION_CONFIG: "Settings...", HINT_CONFIG: "Change settings", TITLE_IMG_FORMAT_PNG: "PNG format image", TITLE_IMG_FORMAT_JPG: "Jpeg format image", TITLE_IMG_FORMAT_GIF: "GIF format image", TITLE_IMG_FORMAT_SVG: "SVG format image" }), Kekule.Localization.addResource("en", "ChemWidgetTexts", { CAPTION_CLEAROBJS: "Clear", CAPTION_LOADFILE: "Load...", CAPTION_LOADDATA: "Load...", CAPTION_SAVEFILE: "Save...", CAPTION_ZOOMIN: "Zoom In", CAPTION_ZOOMOUT: "Zoom Out", CAPTION_RESETZOOM: "Reset Zoom", CAPTION_RESETVIEW: "Reset", CAPTION_ROTATE: "Rotate", CAPTION_ROTATELEFT: "Left Rotate", CAPTION_ROTATERIGHT: "Right Rotate", CAPTION_ROTATEX: "X Rotate", CAPTION_ROTATEY: "Y Rotate", CAPTION_ROTATEZ: "Z Rotate", CAPTION_MOL_DISPLAY_TYPE: "Molecule Display Style", CAPTION_SKELETAL: "Skeletal", CAPTION_CONDENSED: "Condensed", CAPTION_WIRE: "Wire Frame", CAPTION_STICKS: "Sticks", CAPTION_BALLSTICK: "Ball Stick", CAPTION_SPACEFILL: "Space Fill", CAPTION_HIDEHYDROGENS: "Show/hide hydrogens", CAPTION_AUTO_COORD_GENERATION: "Auto Coordinates Generation", CAPTION_OPENEDITOR: "Edit...", CAPTION_CHANGE_SPECTRUM_SECTION: "Switch Spectrum/Section", CAPTION_SET_SPECTRUM_DATA_ASSIGNMENT: "Set Spectrum Data Assignments", CAPTION_EDITOR_DONE: "Done", CAPTION_EDITOR_CANCEL: "Cancel", CAPTION_EDIT_OBJ: "Edit", HINT_CLEAROBJS: "Clear objects", HINT_LOADFILE: "Load from file", HINT_LOADDATA: "Load data", HINT_SAVEFILE: "Save to file", HINT_ZOOMIN: "Zoom in", HINT_ZOOMOUT: "Zoom out", HINT_RESETZOOM: "Reset zoom", HINT_RESETVIEW: "Reset zoom and rotation", HINT_ROTATE: "Rotate", HINT_ROTATELEFT: "Rotate in anticlockwise direction", HINT_ROTATERIGHT: "Rotate in clockwise direction", HINT_ROTATEX: "Rotate around X axis", HINT_ROTATEY: "Rotate around Y axis", HINT_ROTATEZ: "Rotate around Z axis", HINT_MOL_DISPLAY_TYPE: "Change molecule display style", HINT_SKELETAL: "Show molecule in skeletal style", HINT_CONDENSED: "Show molecule in condensed style", HINT_WIRE: "Show molecule in wire frame style", HINT_STICKS: "Show molecule in sticks style", HINT_BALLSTICK: "Show molecule in ball-stick style", HINT_SPACEFILL: "Show molecule in space-fill style", HINT_HIDEHYDROGENS: "Show/hide hydrogen atoms in model", HINT_AUTO_COORD_GENERATION: "Generate coordinates for molecule atoms", HINT_OPENEDITOR: "Open an editor to modify displayed object", HINT_CHANGE_SPECTRUM_SECTION: "Switch spectrum or data section", HINT_SET_SPECTRUM_DATA_ASSIGNMENT: "Link chem object to spectrum data as assignment", HINT_EDITOR_DONE: "Save the modification", HINT_EDITOR_CANCEL: "Discard the modification", CAPTION_NEWDOC: "New", CAPTION_UNDO: "Undo", CAPTION_REDO: "Redo", CAPTION_COPY: "Copy", CAPTION_COPY_WHOLE: "Copy", CAPTION_CUT: "Cut", CAPTION_PASTE: "Paste", CAPTION_TOGGLE_SELECT: "Toggle select", CAPTION_SELECT_ALL: "Select all", CAPTION_CLONE_SELECTION: "Clone selection", CAPTION_TOGGLE_OBJ_INSPECTOR: "Object inspector", CAPTION_TOGGLE_ISSUE_INSPECTOR: "Issue inspector", CAPTION_TOGGLE_SHOW_ISSUE_MARKERS: "Toggle issue markers", CAPTION_ERASE_SELECTION: "Erase selection", CAPTION_RECHECK_ISSUES: "Recheck issues", CAPTION_MANIPULATE: "Select", CAPTION_MANIPULATE_MARQUEE: "Marquee select", CAPTION_MANIPULATE_LASSO: "Lasso select", CAPTION_MANIPULATE_BRUSH: "Brush select", CAPTION_MANIPULATE_ANCESTOR: "Select molecule", CAPTION_CLIENT_DRAGSCROLL: "Scroll", CAPTION_ERASE: "Erase", CAPTION_TRACK_INPUT: "Track", CAPTION_MOL_BOND: "Bond", CAPTION_MOL_BOND_SINGLE: "Single bond", CAPTION_MOL_BOND_DOUBLE: "Double bond", CAPTION_MOL_BOND_TRIPLE: "Triple bond", CAPTION_MOL_BOND_QUAD: "Quad bond", CAPTION_MOL_BOND_EXPLICIT_AROMATIC: "Aromatic bond", CAPTION_MOL_BOND_WEDGEUP: "Wedge up bond", CAPTION_MOL_BOND_WEDGEUP_INVERTED: "Wedge up bond 2", CAPTION_MOL_BOND_WEDGEDOWN: "Wedge down bond", CAPTION_MOL_BOND_WEDGEDOWN_INVERTED: "Wedge down bond 2", CAPTION_MOL_BOND_CLOSER: "Outer bond", CAPTION_MOL_BOND_WAVY: "Wavy bond", CAPTION_MOL_BOND_DOUBLE_EITHER: "Double Either bond", CAPTION_MOL_BOND_IONIC: "Ionic bond", CAPTION_MOL_BOND_COORDINATE: "Coordinate bond", CAPTION_MOL_BOND_METALLIC: "Metallic bond", CAPTION_MOL_BOND_HYDROGEN: "Hydrogen bond", CAPTION_MOL_BOND_KEKULIZE: "Kekulize", CAPTION_MOL_BOND_HUCKLIZE: "Hucklize", CAPTION_MOL_ATOM: "Atom", CAPTION_MOL_FORMULA: "Formula", CAPTION_MOL_ATOM_AND_FORMULA: "Atom & formula", CAPTION_MOL_CHARGE: "Charge", CAPTION_MOL_CHARGE_CLEAR: "Charge clear", CAPTION_MOL_CHARGE_POSITIVE: "Positive charge", CAPTION_MOL_CHARGE_NEGATIVE: "Negative charge", CAPTION_MOL_CHARGE_SINGLET: "Singlet radical", CAPTION_MOL_CHARGE_DOUBLET: "Monoradical", CAPTION_MOL_CHARGE_TRIPLET: "Triplet radical", CAPTION_MOL_ELECTRON_LONEPAIR: "Lone pair", CAPTION_TEXT_BLOCK: "Text block", CAPTION_IMAGE_BLOCK: "Image block", CAPTION_TEXT_IMAGE: "Text & image", CAPTION_MOL_FLEXCHAIN: "Flex chain", CAPTION_MOL_FLEXRING: "Flex ring", CAPTION_REPOSITORY_RING: "Rings", CAPTION_REPOSITORY_RING_3: "Cyclopropane", CAPTION_REPOSITORY_RING_4: "Cyclobutane", CAPTION_REPOSITORY_RING_5: "Cyclopentane", CAPTION_REPOSITORY_RING_6: "Cyclohexane", CAPTION_REPOSITORY_RING_7: "Cycloheptane", CAPTION_REPOSITORY_RING_8: "Cyclooctane", CAPTION_REPOSITORY_RING_AR_6: "Benzene", CAPTION_REPOSITORY_RING_AR_5: "Cyclopentadiene", CAPTION_REPOSITORY_CYCLOHEXANE_CHAIR1: "Cyclohexane chair 1", CAPTION_REPOSITORY_CYCLOHEXANE_CHAIR2: "Cyclohexane chair 2", CAPTION_REPOSITORY_CYCLOHEXANE_HARWORTH1: "Cyclohexane Haworth 1", CAPTION_REPOSITORY_CYCLOHEXANE_HARWORTH2: "Cyclohexane Haworth 2", CAPTION_REPOSITORY_CYCLOPENTANE_HARWORTH1: "Cyclopentane Haworth 1", CAPTION_REPOSITORY_CYCLOPENTANE_HARWORTH2: "Cyclopentane Haworth 2", CAPTION_REPOSITORY_METHANE: "Methane", CAPTION_REPOSITORY_FISCHER1: "Fischer projection 1", CAPTION_REPOSITORY_FISCHER2: "Fischer projection 2", CAPTION_REPOSITORY_FISCHER3: "Fischer projection 3", CAPTION_REPOSITORY_SAWHORSE_STAGGERED: "Sawhorse staggered", CAPTION_REPOSITORY_SAWHORSE_ECLIPSED: "Sawhorse eclipsed", CAPTION_REPOSITORY_SUBBOND_MARK: "Substituent bond", CAPTION_REPOSITORY_ARROWLINE: "Arrows & symbols", CAPTION_REPOSITORY_GLYPH: "Glyphs", CAPTION_REPOSITORY_GLYPH_LINE: "Line", CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_LINE: "Open arrow line", CAPTION_REPOSITORY_GLYPH_TRIANGLE_ARROW_LINE: "Triangle arrow line", CAPTION_REPOSITORY_GLYPH_DI_OPEN_ARROW_LINE: "Bidirectional open arrow line", CAPTION_REPOSITORY_GLYPH_DI_TRIANGLE_ARROW_LINE: "Bidirectional triangle arrow line", CAPTION_REPOSITORY_GLYPH_REV_ARROW_LINE: "Reversible arrow line", CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_DILINE: "Open arrow double line", CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_ARC: "Open arrow arc", CAPTION_REPOSITORY_GLYPH_SINGLE_SIDE_OPEN_ARROW_ARC: "Single side open arrow arc", CAPTION_ELECTRON_PUSHING_ARROW: "Electron pushing arrow", CAPTION_ELECTRON_PUSHING_ARROW_DOUBLE: "Double electron pushing arrow", CAPTION_ELECTRON_PUSHING_ARROW_SINGLE: "Single electron pushing arrow", CAPTION_REPOSITORY_HEAT_SYMBOL: "Heat symbol", CAPTION_REPOSITORY_ADD_SYMBOL: "Add symbol", CAPTION_TEXT_FORMAT: "Text format", CAPTION_PICK_COLOR: "Color", CAPTION_FONTNAME: "Font name", CAPTION_FONTSIZE: "Font size", CAPTION_TEXT_DIRECTION: "Text direction", CAPTION_TEXT_DIRECTION_DEFAULT: "Default", CAPTION_TEXT_DIRECTION_LTR: "Left to right", CAPTION_TEXT_DIRECTION_RTL: "Right to left", CAPTION_TEXT_DIRECTION_TTB: "Top to bottom", CAPTION_TEXT_DIRECTION_BTT: "Bottom to top", CAPTION_TEXT_HORIZONTAL_ALIGN: "Text horizontal alignment", CAPTION_TEXT_VERTICAL_ALIGN: "Text vertical alignment", CAPTION_TEXT_ALIGN_DEFAULT: "Default", CAPTION_TEXT_ALIGN_LEADING: "Leading", CAPTION_TEXT_ALIGN_TRAILING: "Trailing", CAPTION_TEXT_ALIGN_CENTER: "Center", CAPTION_TEXT_ALIGN_LEFT: "Left", CAPTION_TEXT_ALIGN_RIGHT: "Right", CAPTION_TEXT_ALIGN_TOP: "Top", CAPTION_TEXT_ALIGN_BOTTOM: "Bottom", CAPTION_NODE_LABEL_DISPLAY_MODE: "Atom label display mode", CAPTION_NODE_LABEL_DISPLAY_MODE_DEFAULT: "Default", CAPTION_NODE_LABEL_DISPLAY_MODE_SHOWN: "Show label", CAPTION_NODE_LABEL_DISPLAY_MODE_HIDDEN: "Hide label", CAPTION_NODE_LABEL_DISPLAY_MODE_SMART: "Smart", CAPTION_ATOM_MODIFIER: "Atom", CAPTION_ATOM_MODIFIER_MIXED: "[A]", CAPTION_BOND_MODIFIER: "Bond", CAPTION_CHARGE_MODIFIER: "Charge", CAPTION_GLYPH_PATH_MODIFIER: "Path", CAPTION_REACTION_ARROW_AND_SEGMENT_PATH_MODIFIER: "Reaction arrow & segment", CAPTION_ARC_PATH_MODIFIER: "Arc", CAPTION_MULTI_ARC_PATH_MODIFIER: "Multi-Arc", CAPTION_ELECTRON_PUSHING_ARROW_MODIFIER: "Electron pushing arrow", CAPTION_BOND_FORMING_ELECTRON_PUSHING_ARROW_MODIFIER: "Bond forming arrow", TEXT_CHARGE_POSITIVE: "+", TEXT_CHARGE_NEGATIVE: "-", TEXT_CHARGE_UNKNOWN: "<sup>+</sup>/<sub>-</sub>", TEXT_CHARGE_NONE: "&#8709;", HINT_NEWDOC: "Create new document", HINT_UNDO: "Undo", HINT_REDO: "Redo", HINT_COPY_WHOLE: "Copy objects to internal clipboard", HINT_COPY: "Copy selection to internal clipboard", HINT_CUT: "Cut selection to internal clipboard", HINT_PASTE: "Paste from internal clipboard", HINT_CLONE_SELECTION: "Clone selection", HINT_SELECT_ALL: "Select all", HINT_TOGGLE_SELECT: "Toggle select", HINT_TOGGLE_OBJ_INSPECTOR: "Show or hide object inspector panel", HINT_TOGGLE_ISSUE_INSPECTOR: "Show or hide error inspector panel", HINT_TOGGLE_SHOW_ISSUE_MARKERS: "Show or hide issue markers", HINT_ERASE_SELECTION: "Delete all selected objects", HINT_RECHECK_ISSUES: "Recheck objects in editor for issues", HINT_MANIPULATE: "Select tool", HINT_MANIPULATE_MARQUEE: "Marquee select", HINT_MANIPULATE_LASSO: "Lasso select", HINT_MANIPULATE_BRUSH: "Brush select", HINT_MANIPULATE_ANCESTOR: "Select molecule", HINT_CLIENT_DRAGSCROLL: "Scroll", HINT_ERASE: "Erase tool", HINT_TRACK_INPUT: "Track tool", HINT_MOL_BOND: "Bond tool", HINT_MOL_BOND_SINGLE: "Single bond", HINT_MOL_BOND_DOUBLE: "Double bond", HINT_MOL_BOND_TRIPLE: "Triple bond", HINT_MOL_BOND_QUAD: "Quad bond", HINT_MOL_BOND_EXPLICIT_AROMATIC: "Explicit aromatic bond", HINT_MOL_BOND_WEDGEUP: "Wedge up bond", HINT_MOL_BOND_WEDGEUP_INVERTED: "Wedge up bond 2", HINT_MOL_BOND_WEDGEDOWN: "Wedge down bond", HINT_MOL_BOND_WEDGEDOWN_INVERTED: "Wedge down bond 2", HINT_MOL_BOND_CLOSER: "Outer bond", HINT_MOL_BOND_WAVY: "Wavy bond", HINT_MOL_BOND_DOUBLE_EITHER: "Double either bond", HINT_MOL_BOND_IONIC: "Ionic bond", HINT_MOL_BOND_COORDINATE: "Coordinate bond", HINT_MOL_BOND_METALLIC: "Metallic bond", HINT_MOL_BOND_HYDROGEN: "Hydrogen bond", HINT_MOL_BOND_KEKULIZE: "Kekulize, convert explicit aromatic bonds to compartmental single and double ones", HINT_MOL_BOND_HUCKLIZE: "Hucklize, mark bonds on aromatic rings as explicit aromatic ones", HINT_MOL_ATOM: "Atom tool", HINT_MOL_FORMULA: "Formula tool", HINT_MOL_ATOM_AND_FORMULA: "Atom and formula tool", HINT_MOL_CHARGE: "Charge tool", HINT_MOL_CHARGE_CLEAR: "Clear charge and radical", HINT_MOL_CHARGE_POSITIVE: "Positive charge", HINT_MOL_CHARGE_NEGATIVE: "Negative charge", HINT_MOL_CHARGE_SINGLET: "Singlet radical", HINT_MOL_CHARGE_DOUBLET: "Monoradical", HINT_MOL_CHARGE_TRIPLET: "Triplet radical", HINT_MOL_ELECTRON_LONEPAIR: "Lone pair electrons", HINT_TEXT_BLOCK: "Text block tool", HINT_IMAGE_BLOCK: "Image block tool", HINT_TEXT_IMAGE: "Text and image tool", HINT_MOL_FLEXCHAIN: "Flex carbon chain", HINT_MOL_FLEXRING: "Flex carbon ring", HINT_REPOSITORY_RING: "Ring structures tool", HINT_REPOSITORY_RING_3: "Cyclopropane", HINT_REPOSITORY_RING_4: "Cyclobutane", HINT_REPOSITORY_RING_5: "Cyclopentane", HINT_REPOSITORY_RING_6: "Cyclohexane", HINT_REPOSITORY_RING_7: "Cycloheptane", HINT_REPOSITORY_RING_8: "Cyclooctane", HINT_REPOSITORY_RING_AR_6: "Benzene", HINT_REPOSITORY_RING_AR_5: "Cyclopentadiene", HINT_REPOSITORY_CYCLOHEXANE_CHAIR1: "Cyclohexane chair 1", HINT_REPOSITORY_CYCLOHEXANE_CHAIR2: "Cyclohexane chair 2", HINT_REPOSITORY_CYCLOHEXANE_HARWORTH1: "Cyclohexane Haworth 1", HINT_REPOSITORY_CYCLOHEXANE_HARWORTH2: "Cyclohexane Haworth 2", HINT_REPOSITORY_CYCLOPENTANE_HARWORTH1: "Cyclopentane Haworth 1", HINT_REPOSITORY_CYCLOPENTANE_HARWORTH2: "Cyclopentane Haworth 2", HINT_REPOSITORY_SUBBOND_MARK: "Substituent bond", HINT_REPOSITORY_METHANE: "Methane", HINT_REPOSITORY_FISCHER1: "Fischer projection with one chiral center", HINT_REPOSITORY_FISCHER2: "Fischer projection with two chiral centers", HINT_REPOSITORY_FISCHER3: "Fischer projection with three chiral centers", HINT_REPOSITORY_SAWHORSE_STAGGERED: "Sawhorse staggered", HINT_REPOSITORY_SAWHORSE_ECLIPSED: "Sawhorse eclipsed", HINT_REPOSITORY_ARROWLINE: "Arrows and symbols tool", HINT_REPOSITORY_GLYPH: "Glyphs", HINT_REPOSITORY_GLYPH_LINE: "Line", HINT_REPOSITORY_GLYPH_OPEN_ARROW_LINE: "Open arrow line", HINT_REPOSITORY_GLYPH_TRIANGLE_ARROW_LINE: "Triangle arrow line", HINT_REPOSITORY_GLYPH_DI_OPEN_ARROW_LINE: "Bidirectional open arrow line", HINT_REPOSITORY_GLYPH_DI_TRIANGLE_ARROW_LINE: "Bidirectional triangle arrow line", HINT_REPOSITORY_GLYPH_REV_ARROW_LINE: "Reversible arrow line", HINT_REPOSITORY_GLYPH_OPEN_ARROW_DILINE: "Open arrow double line", HINT_REPOSITORY_GLYPH_OPEN_ARROW_ARC: "Open arrow arc", HINT_REPOSITORY_GLYPH_SINGLE_SIDE_OPEN_ARROW_ARC: "Single side open arrow arc", HINT_REPOSITORY_HEAT_SYMBOL: "Heat symbol", HINT_REPOSITORY_ADD_SYMBOL: "Add symbol", HINT_ELECTRON_PUSHING_ARROW: "Electron pushing arrow", HINT_NODE_LABEL_DISPLAY_MODE: "Atom label display mode", HINT_TEXT_FORMAT: "Set text format", HINT_FONTNAME: "Set font name", HINT_FONTSIZE: "Set font size", HINT_PICK_COLOR: "Select color", HINT_TEXT_DIRECTION: "Set text direction", HINT_TEXT_HORIZONTAL_ALIGN: "Set text horizontal alignment", HINT_TEXT_VERTICAL_ALIGN: "Set text vertical alignment", HINT_CHARGE_NONE: "No charge", HINT_ATOM_MODIFIER: "Set atom", HINT_BOND_MODIFIER: "Set bond", HINT_CHARGE_MODIFIER: "Set charge", HINT_GLYPH_PATH_MODIFIER: "Set path properties", HINT_REACTION_ARROW_AND_SEGMENT_PATH_MODIFIER: "Set reaction arrow and segment properties", HINT_ARC_PATH_MODIFIER: "Set arc properties", HINT_MULTI_ARC_PATH_MODIFIER: "Set multi-arc properties", HINT_ELECTRON_PUSHING_ARROW_MODIFIER: "Set electron pushing arrow properties", HINT_BOND_FORMING_ELECTRON_PUSHING_ARROW_MODIFIER: "Set bond forming arrow properties", HINT_USE_ATOM_CUSTOM_COLOR: "(use atom custom color)", CAPTION_LOADDATA_DIALOG: "Load data", CAPTION_LOADDATA_DIALOG_APPENDMODE: "Append to current", CAPTION_SAVEDATA_DIALOG: "Save data", CAPTION_DATA_FORMAT: "Data format:", CAPTION_DATA_SRC: "Input or paste data below:", CAPTION_LOADDATA_FROM_FILE: "Load from file", CAPTION_CHOOSEFILEFORMAT: "Choose file format", CAPTION_SELECT_FORMAT: "Select format:", CAPTION_PREVIEW_FILE_CONTENT: "Preview: ", S_DEF_SAVE_FILENAME: "Unnamed", CAPTION_ATOMLIST_PERIODIC_TABLE: "more...", CAPTION_RGROUP: "Sub group", CAPTION_VARIABLE_ATOM: "Variable Atom (list)", CAPTION_VARIABLE_NOT_ATOM: "Variable Atom (not list)", CAPTION_PSEUDOATOM: "Pseudoatom", CAPTION_DUMMY_ATOM: "Dummy Atom", CAPTION_HETERO_ATOM: "Hetero Atom", CAPTION_ANY_ATOM: "Any Atom", CAPTION_ATOM: "Atom", CAPTION_SUBGROUP: "Subgroup", CAPTION_PERIODIC_TABLE_DIALOG: "Periodic table", CAPTION_PERIODIC_TABLE_DIALOG_SEL_ELEM: "Select element", CAPTION_PERIODIC_TABLE_DIALOG_SEL_ELEMS: "Select elements", CAPTION_TEXTBLOCK_INIT: "Enter text here", CAPTION_WIDTH: "Width", CAPTION_LENGTH: "Length", CAPTION_PATH_INDEX: "Path {0}", HINT_PATH_INDEX: "Path {0}", CAPTION_REACTION_ARROW_UNSET: "(Unset)", CAPTION_REACTION_ARROW_CUSTOM: "Custom", CAPTION_REACTION_ARROW_NORMAL: "Normal", CAPTION_REACTION_ARROW_RESONANCE: "Resonance", CAPTION_REACTION_ARROW_REVERSIBLE: "Reversible", CAPTION_REACTION_ARROW_RETROSYNTHESIS: "Retrosynthesis", HINT_REACTION_ARROW_UNSET: "Unset", HINT_REACTION_ARROW_CUSTOM: "Custom", HINT_REACTION_ARROW_NORMAL: "Normal arrow", HINT_REACTION_ARROW_RESONANCE: "Resonance arrow", HINT_REACTION_ARROW_REVERSIBLE: "Reversible arrow", HINT_REACTION_ARROW_RETROSYNTHESIS: "Retrosynthesis arrow", CAPTION_LINE_COUNT: "Line count", CAPTION_LINE_GAP: "Line gap", CAPTION_LINE: "Line", CAPTION_STARTING_ARROW: "Starting arrow", CAPTION_ENDING_ARROW: "Ending arrow", CAPTION_REACTION_ARROW_TYPE: "Reaction arrow type", CAPTION_ELECTRON_PUSHING_ARROW_TYPE: "Arrow type", CAPTION_OPPOSITE_ARROW_SIDES: "Opposite arrow sides", CAPTION_SAME_ARROW_SIDES: "Same arrow sides", CAPTION_ELECTRON_PUSHING_ARROW_1: "Single electron pushing arrow", CAPTION_ELECTRON_PUSHING_ARROW_1_ABBR: "Single", HINT_ELECTRON_PUSHING_ARROW_1: "Single electron pushing arrow", CAPTION_ELECTRON_PUSHING_ARROW_2: "Double electron pushing arrow", CAPTION_ELECTRON_PUSHING_ARROW_2_ABBR: "Double", HINT_ELECTRON_PUSHING_ARROW_2: "Double electron pushing arrow", CAPTION_BOND_FORMING_ELECTRON_PUSHING_ARROW_1: "Bond forming electron pushing arrow", HINT_BOND_FORMING_ELECTRON_PUSHING_ARROW_1: "Bond forming electron pushing arrow", LEGEND_CAPTION: "Legend", LEGEND_ELEM_SYMBOL: "Symbol", LEGEND_ELEM_NAME: "name", LEGEND_ATOMIC_NUM: "atomic number", LEGEND_ATOMIC_WEIGHT: "atomic weight", CAPTION_2D: "2D", CAPTION_3D: "3D", CAPTION_AUTOSIZE: "Autosize", CAPTION_AUTOFIT: "Autofit", CAPTION_SHOWSIZEINFO: "Show size info", CAPTION_LABEL_SIZE: "Size: ", CAPTION_BACKGROUND_COLOR: "Background color: ", CAPTION_WIDTH_HEIGHT: "width: {0}, height: {1}", PLACEHOLDER_WIDTH: "width", PLACEHOLDER_HEIGHT: "height", HINT_AUTOSIZE: "Whether graph size is determined by object automatically", HINT_AUTOFIT: "Whether object is zoomed to fullfill the whole graph", CAPTION_CHEMOBJINSERTER_GENERATING_3D_STRUCTURE: "Generating molecule 3D structure...", CAPTION_SPECTRUM_WITH_INDEX: "Spectrum {0}", CAPTION_SPECTRUM_DATASECTION_WITH_INDEX: "Data section {0}", CAPTION_INTERACTIONS: "Interactions: ", CAPTION_ENABLE_HOTTRACK: "Enable hot track", CAPTION_ENABLE_SELECT: "Enable select", CAPTION_ENABLE_MULTISELECT: "Enable multi-select", CAPTION_ASSOC_VIEWER_SIZE: "Correlated molecule viewer size: ", CAPTION_ASSOC_VIEWER_VISUAL_MODE: "Correlated molecule display mode: ", CAPTION_ASSOC_VIEWER_VISUAL_MODE_AUTO: "Auto", CAPTION_ASSOC_VIEWER_VISUAL_MODE_VISIBLE: "Always displayed", CAPTION_ASSOC_VIEWER_VISUAL_MODE_INVISIBLE: "Always hidden", S_VALUE_DEFAULT: "(Default)" }), Kekule.Localization.addResource("en", "ErrorMsg", { WIDGET_CLASS_NOT_FOUND: "Widget class not found", WIDGET_CAN_NOT_BIND_TO_ELEM: "Widget {0} can not be binded to element <{1}>", LOAD_CHEMDATA_FAILED: "Failed to load data", FILE_API_NOT_SUPPORTED: "File operations are not supported by your current web browser. Please update it.", DRAW_BRIDGE_NOT_SUPPORTED: "It seems that your web browser is not modern enough to support the drawing function. Please update it.", COMMAND_NOT_REVERSIBLE: "Command can not be undone", PAGE_INDEX_OUTOF_RANGE: "Page index out of range", FETCH_DATA_TIMEOUT: "Time out to fetch data", RENDER_TYPE_CHANGE_NOT_ALLOWED: "It is not allowed to change render type", CAN_NOT_CREATE_EDITOR: "Creating editor failed", CAN_NOT_LOAD_OBJ_OTHER_THAN_SPECTRUM: "Can not load non-spectrum object", FAIL_TO_EXPORT_IMAGE_DATAURI_FOR_SPECTRUM: "Fail to export data URI for spectrum image", FAIL_TO_EXPORT_IMAGE_DATAURI_FOR_ASSOC: "Fail to export data URI for associated image", CAN_NOT_SET_COORD_OF_CLASS: "Can not set coordinate of instance of {0}.", CAN_NOT_SET_DIMENSION_OF_CLASS: "Can not set dimension of instance of {0}.", CAN_NOT_MERGE_CONNECTORS: "Specified connectors can not be merged.", NOT_A_VALID_ATOM: "Not a valid atom", INVALID_ATOM_SYMBOL: "Invalid atom symbol", INVALID_OR_EMPTY_IMAGE: "Image is empty or invalidate" }), Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("objDefines"), Kekule.OBJDEF_TEXTS = {}, Kekule.Localization.addResource("en", "OBJDEF_TEXTS", { TITLE_PREFIX: "TITLE_", DESCRIPTION_PREFIX: "DES_", DES_ID: "Unique ID for object.", Render: { GeneralConfigs: { TITLE_drawOpacity: "Opacity", DES_drawOpacity: "Opacity (between 0-1) to draw objects" }, Render2DConfigs: { TITLE_generalConfigs: "General render settings", DES_generalConfigs: "General render settings", TITLE_moleculeDisplayConfigs: "Molecule display settings", DES_moleculeDisplayConfigs: "Settings about molecule display styles", TITLE_displayLabelConfigs: "Display label settings", DES_displayLabelConfigs: "Settings of displayed label in molecule/chem object", TITLE_textFontConfigs: "Text and font settings", DES_textFontConfigs: "Settings about text and font of display", TITLE_lengthConfigs: "Lengths settings", DES_lengthConfigs: "Lengths to display molecule/chem object", TITLE_colorConfigs: "Color settings", DES_colorConfigs: "Color settings to display molecule/chem object", TITLE_spectrumDisplayConfigs: "Spectrum display settings", DES_spectrumDisplayConfigs: "Settings for displaying spectrum object" }, MoleculeDisplayConfigs: { TITLE_defMoleculeDisplayType: "Default molecule display mode", DES_defMoleculeDisplayType: "Default display type of molecule: in skeletal or in condensed mode", TITLE_defNodeDisplayMode: "Default atom display mode", DES_defNodeDisplayMode: "Default mode to display atom in molecule", TITLE_defHydrogenDisplayLevel: "Default hydrogen display level", DES_defHydrogenDisplayLevel: "How to display explicit or implicit hydrogens of atom", TITLE_defChargeMarkType: "Default charge mark type", DES_defChargeMarkType: null, TITLE_partialChargeDecimalsLength: "Decimal length of partial charge", DES_partialChargeDecimalsLength: "If an atom has a partical charge (e.g., +1.5), how many digits after decimal point should be displayed", TITLE_distinguishSingletAndTripletRadical: "Distinguish singlet/triplet radical", DES_distinguishSingletAndTripletRadical: "Whether use different mark to distinguish singlet(..) and triplet(^^) radical", TITLE_bondLineCap: "Bond line cap style", TITLE_bondLineJoin: "Bond line join style", TITLE_glyphLineCap: "Glyph line cap style", TITLE_glyphLineJoin: "Glyph line join style" }, DisplayLabelConfigs: { TITLE_enableIsotopeAlias: "Enable isotope alias", DES_enableIsotopeAlias: "Whether isotope alias (e.g. D for 2H) is used to display atom label.", TITLE_unsetElement: "Unset element", DES_unsetElement: "Label for unset or unknown element", TITLE_dummyAtom: "Dummy atom", DES_dummyAtom: "Label for dummy atom", TITLE_heteroAtom: "Hetero atom", DES_heteroAtom: "Label for general hetero atom", TITLE_anyAtom: "Any atom", DES_anyAtom: "Label for atom wildcard", TITLE_variableAtom: "Variable atom", DES_variableAtom: "Label for variable atom or atom list", TITLE_rgroup: "RGroup", DES_rgroup: "Label for RGroup", TITLE_isoListLeadingBracket: "Atom list leading bracket", TITLE_isoListTailingBracket: "Atom list tailing bracket", TITLE_isoListDelimiter: "Atom delimiter in list", TITLE_isoListDisallowPrefix: "Prefix of not-atom list" }, TextFontConfigs: { TITLE_labelFontFamily: "Label font", DES_labelFontFamily: "Font to draw general label", TITLE_atomFontFamily: "Atom font", DES_atomFontFamily: "Font to draw atom label", TITLE_supFontSizeRatio: "Superscript font size ratio", DES_supFontSizeRatio: "Ratio of Superscript text size to normal text size", TITLE_subFontSizeRatio: "Subscript font size ratio", DES_subFontSizeRatio: "Ratio of Subscript text size to normal text size", TITLE_superscriptOverhang: "Superscript text overhang", DES_superscriptOverhang: null, TITLE_subscriptOversink: "Subscript text oversink", DES_subscriptOversink: null, TITLE_textCharDirection: "Text direction", DES_textCharDirection: "Default text direction", TITLE_textHorizontalAlign: "Horizontal text alignment", DES_textHorizontalAlign: "Default horizontal text alignment of label", TITLE_textVerticalAlign: "Vertical text alignment", DES_textVerticalAlign: "Default vertical text alignment of label" }, LengthConfigs: { TITLE_labelFontSize: "Label text size", DES_labelFontSize: "Size of general label text", TITLE_atomFontSize: "Atom text size", DES_atomFontSize: "Size of atom label text", TITLE_chemMarkerFontSize: "Chem marker text size", DES_chemMarkerFontSize: "Size of text in chem marker", TITLE_chemMarkerMargin: "Chem marker margin", DES_chemMarkerMargin: "Margin of chem marker to main object", TITLE_allenCenterAtomRadius: "Allen center radius", DES_allenCenterAtomRadius: "Radius to draw dot on center carbon atom in allen", TITLE_chargeMarkFontSize: "Charge mark size", DES_chargeMarkFontSize: "Font size of charge mark", TITLE_chargeMarkMargin: "Charge mark margin", DES_chargeMarkMargin: "Margin between charge mark and atom", TITLE_defBondLength: "Default bond length", DES_defBondLength: "Default length of a chemical bond", TITLE_bondLineWidth: "Bond line width", DES_bondLineWidth: "Line width to draw a chemical bond", TITLE_hashSpacing: "Hash spacing", DES_hashSpacing: "Spacing between small lines in hash bond", TITLE_multipleBondSpacingRatio: "Multiple bond spacing ratio", DES_multipleBondSpacingRatio: "Ratio of spacing between two lines in double or triple bond to bond length.", TITLE_multipleBondMaxAbsSpacing: "Max multiple bond spacing", DES_multipleBondMaxAbsSpacing: "Maximum spacing between multiple bond", TITLE_bondArrowLength: "Bond arrow length", DES_bondArrowLength: "The length of end triangle in arrow bond", TITLE_bondArrowWidth: "Bond arrow width", DES_bondArrowWidth: "The width of end triangle in arrow bond", TITLE_bondWedgeWidth: "Bond wedge max width", DES_bondWedgeWidth: "The width of ending point in wedge bond", TITLE_bondWedgeHashMinWidth: "Bond wedge min width", DES_bondWedgeHashMinWidth: "The width of starting point in wedge bond", TITLE_bondWavyRadius: "Bond wavy radius", DES_bondWavyRadius: "Radius to draw arc of wavy bond", TITLE_glyphStrokeWidth: "Glyph stroke width", DES_glyphStrokeWidth: "The default width of glyph strokes", TITLE_autofitContextPadding: "Autofit context padding", DES_autofitContextPadding: "Padding of autofit widget edge and drawn object", TITLE_glyphStickOffsetRelLength: "Glyph stick offset relative length", DES_glyphStickOffsetRelLength: "Glyph stick offset relative length", TITLE_defScaleRefLength: "Default scale reference length", DES_defScaleRefLength: "Length for calculating the auto-scale" }, ColorConfigs: { TITLE_useAtomSpecifiedColor: "Use element specified color", DES_useAtomSpecifiedColor: "Whether use different color on different element", TITLE_labelColor: "Label color", DES_labelColor: "Default color of general label", TITLE_atomColor: "Atom color", DES_atomColor: "Default color of atom label", TITLE_bondColor: "Bond color", DES_bondColor: "Default color of bond", TITLE_glyphStrokeColor: "Glyph stroke color", DES_glyphStrokeColor: "Default stroke color of glyph", TITLE_glyphFillColor: "Glyph fill color", DES_glyphFillColor: "Default fill color of glyph" }, spectrumDisplayConfigs: {}, Render3DConfigs: { TITLE_generalConfigs: "General render settings", DES_generalConfigs: "General render settings", TITLE_moleculeDisplayConfigs: "Molecule display settings", DES_moleculeDisplayConfigs: "Settings about molecule display styles", TITLE_environmentConfigs: "3D environment settings", DES_environmentConfigs: "Settings of 3D environment", TITLE_modelConfigs: "3D model settings", DES_modelConfigs: "Settings to render a 3D molecule model", TITLE_lengthConfigs: "Lengths settings", DES_lengthConfigs: "Lengths to display molecule" }, Render3DEnvironmentConfigs: { TITLE_graphicQuality: "Graphic quality", DES_graphicQuality: "Quality of 3D graphic" }, Molecule3DDisplayConfigs: { TITLE_defMoleculeDisplayType: "Default molecule display type", DES_defMoleculeDisplayType: "Draw molecule in wire, stick, ball stick or space fill mode", TITLE_defBondSpliceMode: "Bond splice mode", DES_defBondSpliceMode: "How to draw a splice mode between two atoms with different color", TITLE_defDisplayMultipleBond: "Display multiple bond", DES_defDisplayMultipleBond: "Whether draw multiple bond lines for double or triple bond", TITLE_defBondColor: "Default bond color", DES_defBondColor: "Default bond color", TITLE_defAtomColor: "Default atom color", DES_defAtomColor: "Default atom color", TITLE_useAtomSpecifiedColor: "Use element specified color", DES_useAtomSpecifiedColor: "Whether use different color on different element" }, Model3DConfigs: { TITLE_hideHydrogens: "Hide hydrogens", DES_hideHydrogens: "Whether hide all hydrogen atoms in 3D model", TITLE_useVdWRadius: "Use von dar Waals radius", DES_useVdWRadius: "Whether use atom's von dar Waals radius to draw 3D model", TITLE_multiConnectorRadiusRatio: "Multi-bond radius ratio", DES_multiConnectorRadiusRatio: "If use multi-cylinder for multibond, this value is the radius ratio between multi and single bond", TITLE_multiConnectorMarginRatio: "Multi-bond margin ratio", DES_multiConnectorMarginRatio: "If multi-cylinder is used for multibond, ratio of margin between cylinders and radius of cylinder" }, Length3DConfigs: { TITLE_fixedNodeRadius: "Fixed atom radius", DES_fixedNodeRadius: "If vdW radius of atom is not used, this value will be used for all atom's radius", TITLE_connectorRadius: "Bond radius", DES_connectorRadius: "Bond will be draw based on this radius in stick or ball_stick mode", TITLE_connectorLineWidth: "Bond line width", DES_connectorLineWidth: "Bond will be draw on this width in wire mode" } }, Widget: { BaseWidget: { TITLE_settingFacade: "General settings", DES_settingFacade: "General settings" } }, ChemWidget: { ChemObjDisplayer: { TITLE_enableLoadNewFile: "Enable load data", DES_enableLoadNewFile: "Whether loading new data is enabled" }, ChemObjDisplayerConfigs: { TITLE_ioConfigs: "I/O settings", DES_ioConfigs: "Settings of input/output", TITLE_environment2DConfigs: "2D environment settings", DES_environment2DConfigs: "Settings of 2D drawing environment", TITLE_environment3DConfigs: "3D environment settings", DES_environment3DConfigs: "Settings of 3D drawing environment", TITLE_spectrumViewConfigs: "Spectrum view settings", DES_spectrumViewConfigs: "Display and interaction settings of spectrum sub view" }, ChemObjDisplayerIOConfigs: { TITLE_canonicalizeBeforeSave: "Canonicalize before save", DES_canonicalizeBeforeSave: "Whether canonicalize molecule before saving it", TITLE_autoGenerateCoordsAfterLoad: "Auto generate coordinates after loading molecule", DES_autoGenerateCoordsAfterLoad: "Whether coordinates of atoms are automatically generated when loading a molecule without explicit coordinate information" }, ChemObjDisplayerEnvironmentConfigs: { TITLE_antialias: "Antialias", DES_antialias: "Whether enable extra antialias strategy additional to the default one of browser", TITLE_antialiasBlurRatio: "Antialias blur ratio", DES_antialiasBlurRatio: "Antialias blur ratio", TITLE_overSamplingRatio: "Over sampling ratio", DES_overSamplingRatio: "Over sampling ratio of the drawing context" }, ChemObjDisplayerSpectrumViewConfigs: {}, Viewer: { TITLE_enableDirectInteraction: "Enable direct interaction", DES_enableDirectInteraction: "Whether interaction with chem object in viewer is enabled", TITLE_enableTouchInteraction: "Enable touch interaction", DES_enableTouchInteraction: "Whether touch interaction is enabled", TITLE_enableToolbar: "Enable toolbar", DES_enableToolbar: "Whether toolbar of viewer is displayed", TITLE_toolbarPos: "Toolbar Position", DES_toolbarPos: "Position of toolbar in viewer", TITLE_toolbarMarginHorizontal: "Toolbar horizontal margin", DES_toolbarMarginHorizontal: "Horizontal margin of toolbar to viewer edge", TITLE_toolbarMarginVertical: "Toolbar vertical margin", DES_toolbarMarginVertical: "Vertical margin of toolbar to viewer edge", TITLE_enableEdit: "Enable editing", DES_enableEdit: "Whether edit chem object in viewer is enabled", TITLE_modalEdit: "Modal editing", DES_modalEdit: "Using modal dialog or popup dialog to edit chem object" }, ViewerConfigs: { TITLE_hotKeyConfigs: "Hot key settings", DES_hotKeyConfigs: "Setting of the hot key and action map" }, ViewerHotKeyConfigs: { TITLE_hotKeys: "Hot keys", DES_hotKeys: "Hot key and action settings" } }, Editor: { BaseEditorConfigs: { TITLE_uiMarkerConfigs: "UI marker settings", DES_uiMarkerConfigs: "Settings of interaction marker", TITLE_interactionConfigs: "Interaction settings", DES_interactionConfigs: "Settings about interaction of editor", TITLE_structureConfigs: "Structure settings", DES_structureConfigs: "Settings about creating molecule structure", TITLE_hotKeyConfigs: "Hot key settings", DES_hotKeyConfigs: "Setting of the hot key and action map" }, ChemSpaceEditorConfigs: { TITLE_chemSpaceConfigs: "Chem space settings", DES_chemSpaceConfigs: "Settings about chem space/chem document", TITLE_styleSetterConfigs: "Style setter settings", DES_styleSetterConfigs: "Settings of style toolbar of editor" }, InteractionConfigs: { TITLE_enableTrackOnNearest: "Enale track on nearest", DES_enableTrackOnNearest: "If setting to true, hot track or selection will focus on nearest object to current position, otherwise, the topmost object around will be focused.", TITLE_enableHotTrack: "Enable hot track", DES_enableHotTrack: "Whether highlighting objects under mouse position", TITLE_scrollToObjAfterLoading: "Scroll to object after loading", DES_scrollToObjAfterLoading: "Whether scroll to the newly loaded object after opening data", TITLE_autoExpandClientSizeAfterLoading: "Auto expand client size after loading", DES_autoExpandClientSizeAfterLoading: "Whether expand the client size automatically after loading a large object out of boundary", TITLE_autoExpandClientSizeAfterManipulation: "Auto expand client size after manipulation", DES_autoExpandClientSizeAfterManipulation: "Whether expand the client size automatically when moving a object out of the boundary of editor", TITLE_autoSelectNewlyInsertedObjects: "Auto select new inserted objects", DES_autoSelectNewlyInsertedObjects: "Whether select objects newly inserted or modified in editor automatically", TITLE_autoSelectNewlyInsertedObjectsOnTouch: "Auto select new inserted objects in touch device", DES_autoSelectNewlyInsertedObjectsOnTouch: "Whether select objects newly inserted or modified in editor automatically in touch device", TITLE_objBoundTrackMinInflation: "Object bound minimal inflation (default)", DES_objBoundTrackMinInflation: "The default minimal inflation of the bound of object to make it easier to select", TITLE_objBoundTrackMinInflationMouse: "Object bound minimal inflation (mouse)", DES_objBoundTrackMinInflationMouse: "The minimal inflation of the bound of object to make it easier to select when using mouse as pointer device", TITLE_objBoundTrackMinInflationTouch: "Object bound minimal inflation (touch)", DES_objBoundTrackMinInflationTouch: "The minimal inflation of the bound of object to make it easier to select when touching on screen", TITLE_objBoundTrackMinInflationPen: "Object bound minimal inflation (pen)", DES_objBoundTrackMinInflationPen: "The minimal inflation of the bound of object to make it easier to select when using pen as pointer device", TITLE_objBoundTrackInflationRatio: "Object bound inflation ratio (default)", DES_objBoundTrackInflationRatio: "The default inflation ratio (compaing with the default bond length) of the bound of object to make it easier to select", TITLE_objBoundTrackInflationRatioMouse: "Object bound inflation ratio (mouse)", DES_objBoundTrackInflationRatioMouse: "The inflation ratio (compaing with the default bond length) of the bound of object to make it easier to select when using mouse as pointer device", TITLE_objBoundTrackInflationRatioPen: "Object bound inflation ratio (pen)", DES_objBoundTrackInflationRatioPen: "The inflation ratio (compaing with the default bond length) of the bound of object to make it easier to select when using pen as pointer device", TITLE_objBoundTrackInflationRatioTouch: "Object bound inflation ratio (touch)", DES_objBoundTrackInflationRatioTouch: "The inflation ratio (compaing with the default bond length) of the bound of object to make it easier to select when touching on screen", TITLE_selectionMarkerInflation: "Selection marker inflation", DES_selectionMarkerInflation: "Inflation of object selection mark, makes it easier to see the containing objects", TITLE_selectionMarkerEdgeInflation: "Selection edge inflation", DES_selectionMarkerEdgeInflation: "Inflation when judging if a coord is on selection mark edge", TITLE_followPointerCoordOnDirectManipulatingSingleObj: "Follow pointer coordinate on direct manipulating object", DES_followPointerCoordOnDirectManipulatingSingleObj: "If true, the new coordinate of manipulating object will be set directly by the position of pointer (rather than the delta coordinate to the original position)", TITLE_followPointerCoordOnDirectManipulatingSingleObjDistanceThreshold: "Threshold of following pointer coordinate on direct manipulating object", DES_followPointerCoordOnDirectManipulatingSingleObjDistanceThreshold: "Threshold when following pointer coordinate on direct manipulating object", TITLE_constrainedResizeStep: "Constrained resize step", DES_constrainedResizeStep: "Constrained resize step", TITLE_constrainedRotateStep: "Constrained rotation step", DES_constrainedRotateStep: "Constrained rotation step, in arc", TITLE_rotationLocationPointDistanceThreshold: "Rotation starting min distance", DES_rotationLocationPointDistanceThreshold: "Rotation will occur only when mouse point distance (from rotation center) larger than this value", TITLE_directedMoveDistanceThreshold: "Direct move min distance", DES_directedMoveDistanceThreshold: "Direct moving will only be done if moved distance large than this value", TITLE_enablePartialAreaSelecting: "Enable partial selecting", DES_enablePartialAreaSelecting: "If this value is true, when drag a selecting rubber band, object partly in the band will be totally selected", TITLE_selectingBrushWidth: "Brush selecting Width", DES_selectingBrushWidth: "Width of brush in brush selecting", TITLE_enableOffSelectionManipulation: "Enable off-selection manipulation", DES_enableOffSelectionManipulation: "When setting to true, you can still move, resize or rotate selected objects by holding mouse or touch outside selection for a while", TITLE_offSelectionManipulationActivatingTimeThreshold: "Off-selection manipulation hold time", DES_offSelectionManipulationActivatingTimeThreshold: "The minimal time (in ms) need for holding mouse or touch to invoke off-selection manipulation", TITLE_selectionMarkerDefPulseDuration: "Default selection mark pulse duration", DES_selectionMarkerDefPulseDuration: "The duration (in ms) of selection mark pulse when the selection is been emphasised", TITLE_selectionMarkerDefPulseCount: "Default selection mark pulse count", DES_selectionMarkerDefPulseCount: "The pulse count when the selection is been emphasised", TITLE_rotationRegionInflation: "Rotation region inflation", DES_rotationRegionInflation: "User can rotate the selected objects by pressing and move mouse in this inflated region outside selection", TITLE_enableMergePreview: "Enable merge preview", DES_enableMergePreview: "Whether a preview operation is used rather then the actual merge operation when merge two objects in editor during manipulation. Turn on this option may improve the performance of object manipulation.", TITLE_enableGestureManipulation: "Enable gesture manipulation", DES_enableGestureManipulation: "Whether user can use touch gestures (e.g. pinch) to scale or rotate selected objects in editor", TITLE_enableGestureZoomOnEditor: "Enable gesture zoom on editor", DES_enableGestureZoomOnEditor: "Whether user can use pinch gesture to zoom in or out the editor when there is no selection existed", TITLE_trackSimplifierDistanceThreshold: "Track-input curve simplification threshold", DES_trackSimplifierDistanceThreshold: "Distance threshold in simplifying curve drawn by track-input tool", TITLE_trackSimplifierIgnoreSegmentThreshold: "Track-input ignored segment threshold", DES_trackSimplifierIgnoreSegmentThreshold: "Segment length less than this threshold drawn by track-input will be ignored in parsing", TITLE_trackMergeDistanceThreshold: "Track-input merge distance threshold", DES_trackMergeDistanceThreshold: "If a joint or end point of line segment drawn by track-inpu tool is close to another line segment (less than this threshold), it will be regarded on that line.", TITLE_trackOptimizationAngleConstraint: "Track-input optimization line cross angle constraint", DES_trackOptimizationAngleConstraint: null, TITLE_trackOptimizationDistanceConstraints: "Track-input optimization line length constraint", DES_trackOptimizationDistanceConstraints: null, TITLE_trackOptimizationPrimaryDistanceConstraint: "Track-input optimization primary line length", DES_trackOptimizationPrimaryDistanceConstraint: null, TITLE_autoAdjustZoomLevelOnTrackTouching: null, DES_autoAdjustZoomLevelOnTrackTouching: null, TITLE_editorInitialZoom: "Editor initial zoom level", DES_editorInitialZoom: "The initial zoom level of editor", TITLE_atomSetterFontSize: "Atom setter font size", DES_atomSetterFontSize: "Font size of atom setter", TITLE_allowUnknownAtomSymbol: "Allow unknown atom symbol", DES_allowUnknownAtomSymbol: "Allow inputting unknown symbol and handle it as pseudo atom in atom setter", TITLE_clonedObjectScreenOffset: "Copied object coord offset", DES_clonedObjectScreenOffset: "The distance between copied objects and origin objects when doing paste selection action in editor", TITLE_enableBondKekulizeHucklize: "Enable Kekulize and Hucklize function of bond", DES_enableBondKekulizeHucklize: "Whether Kekulize and Hucklize buttons are shown in bond modifier of editor", TITLE_enableHotKey: "Enable hot keys", DES_enableHotKey: "Whether shortcut with key pressing is enabled in editor" }, UiMarkerConfigs: { TITLE_hotTrackerColor: "Hot track mark color", DES_hotTrackerColor: "Color of hot track mark", TITLE_hotTrackerOpacity: "Hot track mark opacity", DES_hotTrackerOpacity: "Opacity of hot track marker, value from 0 to 1", TITLE_selectionMarkerStrokeColor: "Selection mark stroke color", DES_selectionMarkerStrokeColor: "Stroke color of selection mark", TITLE_selectionMarkerStrokeWidth: "Selection mark stroke width", DES_selectionMarkerStrokeWidth: "Width of selection mark stroke", TITLE_selectionMarkerFillColor: "Selection mark fill color", DES_selectionMarkerFillColor: "Fill color of selection mark.", TITLE_selectionMarkerOpacity: "Selection mark opacity", DES_selectionMarkerOpacity: "Opacity of selection mark, value from 0 to 1", TITLE_selectionMarkerEmphasisOpacity: "Emphasised selection mark opacity", DES_selectionMarkerEmphasisOpacity: "Opacity of emphasised selection marker, value from 0 to 1", TITLE_selectingMarkerStrokeColor: "Selecting mark stroke color", DES_selectingMarkerStrokeColor: "Stroke color of selecting rubber band mark", TITLE_selectingMarkerStrokeWidth: "Selecting mark stroke width", DES_selectingMarkerStrokeWidth: "Stroke width of selection rubber band", TITLE_selectingMarkerStrokeDash: "Selecting mark dash style", DES_selectingMarkerStrokeDash: "Dash style of selecting rubber band", TITLE_selectingMarkerFillColor: "Selecting mark fill color", DES_selectingMarkerFillColor: "Fill color of selecting mark. Usually this value should be left blank (not filled)", TITLE_selectingMarkerOpacity: "Selecting mark opacity", DES_selectingMarkerOpacity: "Opacity of selecting mark, value from 0 to 1", TITLE_selectingBrushMarkerStrokeColor: "Brush selecting mark stroke color", DES_selectingBrushMarkerStrokeColor: "Stroke color of brush selecting mark", TITLE_selectingBrushMarkerStrokeDash: "Brush selecting mark dash style", DES_selectingBrushMarkerStrokeDash: "Dash style of brush selecting track", TITLE_selectingBrushMarkerStrokeLineCap: "Brushing selecting mark line-cap style", DES_selectingBrushMarkerStrokeLineCap: "Line-cap style of both ends of brush selecting track", TITLE_selectingBrushMarkerStrokeLineJoin: "Brushing selecting mark join point style", DES_selectingBrushMarkerStrokeLineJoin: "Join style of brush selection track segments", TITLE_selectingBrushMarkerOpacity: "Brush selecting mark opacity", DES_selectingBrushMarkerOpacity: "Opacity of brush selecting mark, value from 0 to 1", TITLE_trackMarkerStrokeColor: "Track-input mark stroke color", DES_trackMarkerStrokeColor: "Stroke color of track mark when using track-input tool to draw a structure", TITLE_trackMarkerStrokeWidth: "Track-input mark stroke width", DES_trackMarkerStrokeWidth: "Stroke width of track mark when using track-input tool to draw a structure", TITLE_trackMarkerStrokeDash: "Track-input mark dash style", DES_trackMarkerStrokeDash: "Dash style of track mark when using track-input tool to draw a structure", TITLE_trackMarkerOpacity: "Track-input mark opacity", DES_trackMarkerOpacity: "Opacity of track mark when using track-input tool to draw a structure", TITLE_flexStructureAssocMarkerColor: "Flex structure association mark color", DES_flexStructureAssocMarkerColor: "Color of mark showing atom count of flex ring/chain tool", TITLE_flexStructureAssocMarkerOpacity: "Flex structure association mark opacity", DES_flexStructureAssocMarkerOpacity: "Opacity of mark showing atom count of flex ring/chain tool", TITLE_flexStructureAssocMarkerFontSize: "Flex structure association mark font size", DES_flexStructureAssocMarkerFontSize: "Font size of mark showing atom count of flex ring/chain tool", TITLE_flexStructureAssocMarkerFontFamily: "Flex structure association mark font family", DES_flexStructureAssocMarkerFontFamily: "Font family of mark showing atom count of flex ring/chain tool", TITLE_issueCheckMarkerColors: "Issue check markers color", DES_issueCheckMarkerColors: "Color of issue check markers, different colors are used for different issue levels", TITLE_issueCheckMarkerStrokeWidth: "Issue check marker stroke width", DES_issueCheckMarkerStrokeWidth: "Stroke width of issue check marker outline", TITLE_issueCheckActiveMarkerStrokeWidth: "Active issue check marker stroke width", DES_issueCheckActiveMarkerStrokeWidth: "Stroke width of active issue check marker outline", TITLE_issueCheckMarkerOpacity: "Issue check marker opacity", DES_issueCheckMarkerOpacity: "Opacity of issue check marker", TITLE_issueCheckActiveMarkerOpacity: "Active Issue check marker opacity", DES_issueCheckActiveMarkerOpacity: "Opacity of active issue check marker" }, StructureConfigs: { TITLE_defBondType: "Default bond type", DES_defBondType: "Default type of bond", TITLE_defBondOrder: "Default bond order", DES_defBondOrder: "Default bond order", TITLE_defBondLength: "Default bond length", DES_defBondLength: "Default bond length", TITLE_defIsotopeId: "Default isotope", DES_defIsotopeId: "Default isotope when adding a new atom", TITLE_maxFlexChainAtomCount: "Maximum flex chain atom count", DES_maxFlexChainAtomCount: "Maximum atom count when inputting with flex chain tool", TITLE_minFlexChainAtomCount: "Minimal flex chain atom count", DES_minFlexChainAtomCount: "Minimal atom count when inputting with flex chain tool", TITLE_maxFlexRingAtomCount: "Maximum flex ring atom count", DES_maxFlexRingAtomCount: "Maximum atom count when inputting with flex ring tool", TITLE_minFlexRingAtomCount: "Minimal flex ring atom count", DES_minFlexRingAtomCount: "Minimal atom count when inputting with flex ring tool", TITLE_enabledNonAtomNodeTypes: "Available non-atom structure node types", DES_enabledNonAtomNodeTypes: "Non-atom structure node types available in editor", TITLE_enabledBondForms: "Available bond forms", DES_enabledBondForms: "Bond forms available in editor" }, ChemSpaceConfigs: { TITLE_defScreenSize2D: "Default 2D screen size", TITLE_defScreenSize3D: "Default 3D screen size", TITLE_autoExpandScreenSize2D: "Auto expanding size 2D", DES_autoExpandScreenSize2D: "The size used when automatically expanding editor client in 2D mode", TITLE_autoExpandScreenSize3D: "Auto expanding size 3D", DES_autoExpandScreenSize3D: "The size used when automatically expanding editor client in 3D mode", TITLE_defPadding: "Default padding", DES_defPadding: "Padding on top when adding an unpositioned object to container chem space" }, HotKeyConfigs: { TITLE_hotKeys: "Hot keys", DES_hotKeys: "Hot key and action settings" }, BaseEditor: { TITLE_enableCreateNewDoc: "Enable create new document", DES_enableCreateNewDoc: "Whether creating a new document is allowed", TITLE_initOnNewDoc: "Starts with a new document", DES_initOnNewDoc: "Whether create a new document automatically when composer is initialized", TITLE_enableOperHistory: "Enable undo", DES_enableOperHistory: "Whether undo/redo is enabled", TITLE_enableIssueCheck: "Enable issue check", DES_enableIssueCheck: "Whether enable issue checker to detect errors and warning among objects in editor" }, ChemSpaceEditor: { TITLE_allowAppendDataToCurr: "Allow appending data", DES_allowAppendDataToCurr: "Whether allow appending data to current document" }, Composer: { TITLE_enableStyleToolbar: "Enable style toolbar", DES_enableStyleToolbar: "Whether display style toolbar to set color, font and size of objects", TITLE_enableObjModifierToolbar: "Enable object modifier toolbar", DES_enableObjModifierToolbar: "Whether display toolbar with a series of object modification tools", TITLE_allowCreateNewChild: "Enable create new child object", DES_allowCreateNewChild: "Whether new direct child of document can be created", TITLE_allowAppendDataToCurr: "Allow appending data", DES_allowAppendDataToCurr: "Whether allow appending data to current document" } } });
+    }(exports), Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("general"), Kekule.Localization.addResource("en", "Texts", { UNNAMED: "unnamed" }), Kekule.Localization.addResource("en", "ErrorMsg", { MODULE_NOT_LOADED: "Module {0} is not loaded", UNIT_NOT_FOUND: "Unit not found: {0}", STANDARD_UNIT_OF_CATEGORY_NOT_FOUND: "Standard unit of category {0} not found", UNABLE_TO_CONVERT_BETWEEN_UNITS: "Unable to convert between units {0} and {1}", NON_OWN_PROPERTY_CANNOT_BE_REPLACED: "Only directly owned property of object can be replaced", EMPTY_DOC: "Document is empty", ELEMENT_NOTSET: "Element not set", EMPTY_RESURI: "Resource URI is empty", CANNOT_LOAD_RES_OF_URI: "Can not load resource of URI: ", LIST_ITEM_CLASS_MISMATCH: "Mismatched item class, can not add to list", CANNOT_CLEAR_WEAKMAP: "Can not clear a weak map", CANNOT_GET_KEY_LIST_IN_WEAKMAP: "Can not get key array from a weak map", CANNOT_GET_VALUE_LIST_IN_WEAKMAP: "Can not get value array from a weak map", INVALID_CHEMELEMENT: "Invalid chemical element", INVALID_ISOTOPE: "Invalid isotope", COORD_STICK_NOT_ALLOWED_ON_CLASS: "Coordinate sticking is not allowed in this type of object", INVALID_STICK_TARGET_OBJ: "Invalid sticking target", UNABLE_TO_STICK_TO_OTHER_OWNER_OBJ: "Unable to stick to object with a different owner", UNABLE_TO_STICK_TO_OBJ_WITHOUT_ABS_COORD: "Unable to stick to object without absolute coordinates", STICK_RECURSION_NOT_ALLOWED: "Stick recursion is not allowed", UNABLE_ADD_MISTYPED_NODE: "Unable to link mistyped node to connector", UNABLE_ADD_DIFF_OWNER_OBJ: "Object with different owner can not be linked to connector", CHEMSTRUCTUREOBJECTGROUP_ITEMCLASS_MISMATCH: "Mismatched group item class", SORT_FUNC_UNSET: "Sort function is not set", SOURCE_FRAGMENT_NOT_SET: "Source structure fragment not set", UNABLE_ADD_NONMOLECULE_MAP: "Unable to add non-molecule to reactants or products", CANNOT_ADD_NON_NODE_NOR_CONNECTOR_TO_STRUCT_CONTAINER: "Can not add object other than node or connector to structure object container", REGISTERED_CANONICALIZATION_EXECUTOR_NOT_FOUND: "Can not find registered canonicalization executor", ERROR_LOADING_FILE: "Error loading file: ", READER_ID_ALREADY_EXISTS: "Can not register reader: id already exists", WRITER_ID_ALREADY_EXISTS: "Can not register writer: id already exists", FAIL_TO_READ_FORMAT: "Fail to load data of format: ", NO_SUITABLE_READER_FOR_FORMAT: "Can not read data of format: ", NO_SUITABLE_READER_FOR_MIMETYPE: "Can not read data of MIME type: ", NO_SUITABLE_READER_FOR_FILEEXT: "Can not read data of file extension: ", NO_SUITABLE_WRITER_FOR_FORMAT: "Can not write data of format: ", NO_SUITABLE_WRITER_FOR_MIMETYPE: "Can not write data of MIME type: ", NO_SUITABLE_WRITER_FOR_FILEEXT: "Can not write data of file extension: ", AJAX_FILELOADER_NOT_FOUND: "AJAX file loader not found, can not load URL", FAIL_TO_LOAD_FILE_URL: "Fail to load file of URL: ", CML_ELEM_READER_NOT_FOUND: "Reader for element <{0}> not found", ATOMID_NOT_EXISTS: "Atom id not exists: ", BONDID_NOT_EXISTS: "Bond id not exists: ", CML_ELEM_WRITER_TYPE_INPROPER: "{0} is not a proper CML element writer for {1}", CML_CAN_NOT_OUTPUT_TO_EMPTY_ELEMENT: "Can not output content to empty element", UNABLE_TO_OUTPUT_AS_CML: "Unable to output object <{0}> to CML data", MDL_CTAB_ATOM_CANNOT_CREATE: "Can not create atom from source MDL format data", MDL_CTAB_BOND_CANNOT_CREATE: "Can not create bond from source MDL format data", CAN_NOT_WRITE_NON_MOLECULE_TO_MOL: "Object is not a molecule and can not be output to connection table", MOLECULE_HAS_NO_CTAB_TO_OUTPUT: "Molecule has no connection table and can not be output to MDL format", NOT_MDL2000_FORMAT_DATA: "Data format wrong: not MDL 2000", NOT_MDL_RXN_DATA: "Not MDL Reaction(RXN) data", MALFORMED_MDL3000_COUNTLINE: "Malformed MDL 3000 count line", MDL3000_ATOMBLOCK_NOT_FOUND: "Atom block not found, malformed MDL 3000 data?", NOT_MDL_FORMAT_DATA: "Data format wrong: not MDL 2000 or 3000", NOT_MDL2000_RXN_DATA: "Not MDL RXN 2000 data", NOT_MDL3000_RXN_DATA: "Not MDL RXN 3000 data", NOT_MDL3000_RXN_COUNTLINE: "Error in reading RXN 3000 count line", MDL_OUTPUT_DATATYPE_NOT_TEXT: "MDL data can not be output to non text format", MDL_INPUT_DATATYPE_NOT_TEXT: "Non text format is not a legal MDL source data", UNABLE_TO_OUTPUT_AS_MDL: "Unable to output object <{0}> to MDL data", KCJ_INPUT_DATATYPE_NOT_JSON_OR_TEXT: "Non text or JSON format data is not a legal KCJ source", KCJ_OUTPUT_DATATYPE_NOT_JSON_OR_TEXT: "Can not output as non text or JSON data", KCX_INPUT_DATATYPE_NOT_DOM_OR_TEXT: "Non text or DOM data is not a legal KCX source", KCX_OUTPUT_DATATYPE_NOT_DOM_OR_TEXT: "Can not output as non text or DOM data", JSON_SERIALIZER_NOT_EXISTS: "Serializer for JSON not exists", XML_SERIALIZER_NOT_EXISTS: "Serializer for XML not exists", JCAMP_DATA_WITHOUT_TITLE_LINE: "Malformed JCAMP format data, not started with TITLE label", JCAMP_OTHER_LABEL_BEFORE_TITLE_LINE: "Malformed JCAMP format data, other labels before the TITLE label", JCAMP_MORE_THAN_ONE_ROOT_BLOCK: "Malformed JCAMP format data, root block not unique", JCAMP_MORE_THAN_TWO_NEST_LEVEL: "Malformed JCAMP format data, block nested level should not exceed 2", JCAMP_ASDF_FORMAT_ERROR_WITH_STR: "Malformed JCAMP ASDF String: {0}", JCAMP_DATA_TABLE_X_VALUE_CHECK_ERROR: "JCAMP data table X value check failed!", JCAMP_DATA_TABLE_Y_VALUE_CHECK_ERROR: "JCAMP data table Y value check failed!", JCAMP_DATA_TABLE_VALUE_FIRST_LAST_NOT_MATCH: "JCAMP data table first/last values not match", JCAMP_DATA_TABLE_VAR_LIST_FORMAT_ERROR: "Malformed JCAMP variable list format: {0}", JCAMP_DATA_TABLE_VAR_LIST_FORMAT_UNSUPPORTED: "Unsupported JCAMP variable list format: {0}", JCAMP_NTUPLES_BEGIN_END_NAME_NOT_MATCH: "Ntuples name not match in begin/end labels: {0} and {1}", JCAMP_NTUPLES_PAGE_DECLARATION_FORMAT_ERROR: "Malformed JCAMP ntuples page declaration: {0}", JCAMP_LDR_TARGET_UNIT_NOT_MATCH_WITH_DETAIL: "The unit of property {0} ({1}) can not be converted to the request one ({2}) for JCAMP {3} LDR", FAILED_TO_ASSIGN_SYMBOL_TO_VARIABLE: "Fail to assign a symbol to variable {0}", JCAMP_IMPLICIT_HYDROGEN_COUNT_NOT_MATCH_DETAIL: "Unmatched implicit hydrogen count for atom {0}({1}), expect {2} but found {3}", VISIBLE_DATA_RANGE_IS_EMPTY: "The visible range of data is empty, unable to draw the spectrum", INAVAILABLE_AUTOSCALE_REF_LENGTH: "Can not determine the length for calculation of auto scale", FORMULA_RENDERER_3D_NOT_AVAILABLE: "3D renderer for molecule formula is not available", CANNOT_FIND_SUITABLE_RENDERER_FOR_OBJ: "Can not find suitable renderer for object", THREEJS_LIB_NOT_UNAVAILABLE: "Three.js not available, try to include it through the <script> tag or import the module by Kekule.externalResourceManager.register method", THREEJS_DRAWING_NOT_UNAVAILABLE: "Webgl, Canvas or SVG is not supported in this browser, please upgrade to a modern one", CANVAS2D_NOT_UNAVAILABLE: "Canvas is not supported in this browser, please upgrade to a modern one", RAPHAEL_LIB_NOT_UNAVAILABLE: "Raphael.js not available, try to import it through the <script> tag", RAPHAEL_SVG_VML_UNAVAILABLE: "SVG or VML is not supported in this browser, please upgrade to a modern one", CALC_TERMINATED_BY_USER: "Calculation terminated by user", CALC_SERVICE_UNAVAILABLE: 'Calculation service "{0}" is unavailable' }), Kekule.Localization.addResource("en", "ErrorCheckMsg", { GENERAL_ERROR_WITH_CODE: "Error code: {0}", ATOM_VALENCE_ERROR_WITH_SUGGEST: "Abnormal valence {1} of atom {0}, the possible value is {2}", ATOM_VALENCE_ERROR_WITH_SUGGESTS: "Abnormal valence {1} of atom {0}, the possible values are {2}", BOND_ORDER_EXCEED_ALLOWED_WITH_SUGGEST: "The bond order ({0}) exceeds the maximum allowed value ({1})", BOND_WITH_ID_ORDER_EXCEED_ALLOWED_WITH_SUGGEST: "The bond order of {0} ({1}) exceeds the maximum allowed value {2}", NODE_DISTANCE_TOO_CLOSE: "Atoms/subgroups are very close to each other", NODE_DISTANCE_TOO_CLOSE_WITH_LABEL: "Atoms/subgroups ({0}) are very close to each other", TITLE_CHANGE_BOND_ORDER_TO: "Change bond order to {0}", DESCRIPTION_CHANGE_BOND_ORDER_TO: "Change bond order from {0} to {1}", TITLE_MERGE_TO: "Merge {0} to {1}", DESCRIPTION_MERGE_TO: "Merge node {0} to {1}" }), Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("widget"), Kekule.Localization.addResource("en", "WidgetTexts", { CAPTION_OK: "OK", CAPTION_CANCEL: "Cancel", CAPTION_YES: "Yes", CAPTION_NO: "No", CAPTION_BROWSE_COLOR: "Browse colors", HINT_BROWSE_COLOR: "Browse more colors", S_COLOR_UNSET: "(unset)", S_COLOR_DEFAULT: "(default)", S_COLOR_MIXED: "(mixed)", S_COLOR_TRANSPARENT: "(transparent)", S_OBJECT_UNSET: "(none)", S_ITEMS: "item(s)", S_OBJECT: "object", S_VALUE_UNSET: "(Unset)", CAPTION_MENU: "Menu", HINT_MENU: "Open menu", S_INSPECT_NONE: "(none)", S_INSPECT_OBJECTS: "({0} objects)", S_INSPECT_ID_OBJECT: "{0}: {1}", S_INSPECT_ANONYMOUS_OBJECT: "({0})", CAPTION_TOGGLE_TEXTWRAP: "Toggle text wrapping", CAPTION_INC_TEXT_SIZE: "Increase text size", CAPTION_DEC_TEXT_SIZE: "Decrease text size", HINT_TOGGLE_TEXTWRAP: "Toggle the state of text wrapping", HINT_INC_TEXT_SIZE: "Increase text size", HINT_DEC_TEXT_SIZE: "Decrease text size", HINT_CHOOSE_FONT_FAMILY: "Choose font family", CAPTION_FIRST_PAGE: "First", CAPTION_LAST_PAGE: "Last", CAPTION_PREV_PAGE: "Prev", CAPTION_NEXT_PAGE: "Next", HINT_FIRST_PAGE: "First page", HINT_LAST_PAGE: "Last page", HINT_PREV_PAGE: "Previous page", HINT_NEXT_PAGE: "Next page", HINT_CURR_PAGE: "Current page", MSG_RETRIEVING_DATA: "Loading data...", CAPTION_DATATABLE_EDIT: "Edit", CAPTION_DATATABLE_DELETE: "Delete", CAPTION_DATATABLE_INSERT: "Insert", HINT_DATATABLE_EDIT: "Edit", HINT_DATATABLE_DELETE: "Delete", HINT_DATATABLE_INSERT: "Insert", CAPTION_ADD_CELL: "+", HINT_ADD_CELL: "Add new cell", CAPTION_REMOVE_CELL: "Remove", HINT_REMOVE_CELL: "Remove cell", CAPTION_CONFIG: "Settings...", HINT_CONFIG: "Change settings", TITLE_IMG_FORMAT_PNG: "PNG format image", TITLE_IMG_FORMAT_JPG: "Jpeg format image", TITLE_IMG_FORMAT_GIF: "GIF format image", TITLE_IMG_FORMAT_SVG: "SVG format image" }), Kekule.Localization.addResource("en", "ChemWidgetTexts", { CAPTION_CLEAROBJS: "Clear", CAPTION_LOADFILE: "Load...", CAPTION_LOADDATA: "Load...", CAPTION_SAVEFILE: "Save...", CAPTION_ZOOMIN: "Zoom In", CAPTION_ZOOMOUT: "Zoom Out", CAPTION_RESETZOOM: "Reset Zoom", CAPTION_RESETVIEW: "Reset", CAPTION_ROTATE: "Rotate", CAPTION_ROTATELEFT: "Left Rotate", CAPTION_ROTATERIGHT: "Right Rotate", CAPTION_ROTATEX: "X Rotate", CAPTION_ROTATEY: "Y Rotate", CAPTION_ROTATEZ: "Z Rotate", CAPTION_MOL_DISPLAY_TYPE: "Molecule Display Style", CAPTION_SKELETAL: "Skeletal", CAPTION_CONDENSED: "Condensed", CAPTION_WIRE: "Wire Frame", CAPTION_STICKS: "Sticks", CAPTION_BALLSTICK: "Ball Stick", CAPTION_SPACEFILL: "Space Fill", CAPTION_HIDEHYDROGENS: "Show/hide hydrogens", CAPTION_AUTO_COORD_GENERATION: "Auto Coordinates Generation", CAPTION_OPENEDITOR: "Edit...", CAPTION_CHANGE_SPECTRUM_SECTION: "Switch Spectrum/Section", CAPTION_SET_SPECTRUM_DATA_ASSIGNMENT: "Set Spectrum Data Assignments", CAPTION_EDITOR_DONE: "Done", CAPTION_EDITOR_CANCEL: "Cancel", CAPTION_EDIT_OBJ: "Edit", HINT_CLEAROBJS: "Clear objects", HINT_LOADFILE: "Load from file", HINT_LOADDATA: "Load data", HINT_SAVEFILE: "Save to file", HINT_ZOOMIN: "Zoom in", HINT_ZOOMOUT: "Zoom out", HINT_RESETZOOM: "Reset zoom", HINT_RESETVIEW: "Reset zoom and rotation", HINT_ROTATE: "Rotate", HINT_ROTATELEFT: "Rotate in anticlockwise direction", HINT_ROTATERIGHT: "Rotate in clockwise direction", HINT_ROTATEX: "Rotate around X axis", HINT_ROTATEY: "Rotate around Y axis", HINT_ROTATEZ: "Rotate around Z axis", HINT_MOL_DISPLAY_TYPE: "Change molecule display style", HINT_SKELETAL: "Show molecule in skeletal style", HINT_CONDENSED: "Show molecule in condensed style", HINT_WIRE: "Show molecule in wire frame style", HINT_STICKS: "Show molecule in sticks style", HINT_BALLSTICK: "Show molecule in ball-stick style", HINT_SPACEFILL: "Show molecule in space-fill style", HINT_HIDEHYDROGENS: "Show/hide hydrogen atoms in model", HINT_AUTO_COORD_GENERATION: "Generate coordinates for molecule atoms", HINT_OPENEDITOR: "Open an editor to modify displayed object", HINT_CHANGE_SPECTRUM_SECTION: "Switch spectrum or data section", HINT_SET_SPECTRUM_DATA_ASSIGNMENT: "Link chem object to spectrum data as assignment", HINT_EDITOR_DONE: "Save the modification", HINT_EDITOR_CANCEL: "Discard the modification", CAPTION_NEWDOC: "New", CAPTION_UNDO: "Undo", CAPTION_REDO: "Redo", CAPTION_COPY: "Copy", CAPTION_COPY_WHOLE: "Copy", CAPTION_CUT: "Cut", CAPTION_PASTE: "Paste", CAPTION_TOGGLE_SELECT: "Toggle select", CAPTION_SELECT_ALL: "Select all", CAPTION_CLONE_SELECTION: "Clone selection", CAPTION_TOGGLE_OBJ_INSPECTOR: "Object inspector", CAPTION_TOGGLE_ISSUE_INSPECTOR: "Issue inspector", CAPTION_TOGGLE_SHOW_ISSUE_MARKERS: "Toggle issue markers", CAPTION_ERASE_SELECTION: "Erase selection", CAPTION_RECHECK_ISSUES: "Recheck issues", CAPTION_MANIPULATE: "Select", CAPTION_MANIPULATE_MARQUEE: "Marquee select", CAPTION_MANIPULATE_LASSO: "Lasso select", CAPTION_MANIPULATE_BRUSH: "Brush select", CAPTION_MANIPULATE_ANCESTOR: "Select molecule", CAPTION_CLIENT_DRAGSCROLL: "Scroll", CAPTION_ERASE: "Erase", CAPTION_TRACK_INPUT: "Track", CAPTION_MOL_BOND: "Bond", CAPTION_MOL_BOND_SINGLE: "Single bond", CAPTION_MOL_BOND_DOUBLE: "Double bond", CAPTION_MOL_BOND_TRIPLE: "Triple bond", CAPTION_MOL_BOND_QUAD: "Quad bond", CAPTION_MOL_BOND_EXPLICIT_AROMATIC: "Aromatic bond", CAPTION_MOL_BOND_WEDGEUP: "Wedge up bond", CAPTION_MOL_BOND_WEDGEUP_INVERTED: "Wedge up bond 2", CAPTION_MOL_BOND_WEDGEDOWN: "Wedge down bond", CAPTION_MOL_BOND_WEDGEDOWN_INVERTED: "Wedge down bond 2", CAPTION_MOL_BOND_CLOSER: "Outer bond", CAPTION_MOL_BOND_WAVY: "Wavy bond", CAPTION_MOL_BOND_DOUBLE_EITHER: "Double Either bond", CAPTION_MOL_BOND_IONIC: "Ionic bond", CAPTION_MOL_BOND_COORDINATE: "Coordinate bond", CAPTION_MOL_BOND_METALLIC: "Metallic bond", CAPTION_MOL_BOND_HYDROGEN: "Hydrogen bond", CAPTION_MOL_BOND_TRANSITION: "transition bond", CAPTION_MOL_BOND_KEKULIZE: "Kekulize", CAPTION_MOL_BOND_HUCKLIZE: "Hucklize", CAPTION_MOL_ATOM: "Atom", CAPTION_MOL_FORMULA: "Formula", CAPTION_MOL_ATOM_AND_FORMULA: "Atom & formula", CAPTION_MOL_CHARGE: "Charge", CAPTION_MOL_CHARGE_CLEAR: "Charge clear", CAPTION_MOL_CHARGE_POSITIVE: "Positive charge", CAPTION_MOL_CHARGE_NEGATIVE: "Negative charge", CAPTION_MOL_ELECTRONIC_BIAS_POSITIVE: "Positive electronic bias", CAPTION_MOL_ELECTRONIC_BIAS_NEGATIVE: "Negative electronic bias", CAPTION_MOL_CHARGE_SINGLET: "Singlet radical", CAPTION_MOL_CHARGE_DOUBLET: "Monoradical", CAPTION_MOL_CHARGE_TRIPLET: "Triplet radical", CAPTION_MOL_ELECTRON_LONEPAIR: "Lone pair", CAPTION_TEXT_BLOCK: "Text block", CAPTION_IMAGE_BLOCK: "Image block", CAPTION_TEXT_IMAGE: "Text & image", CAPTION_MOL_FLEXCHAIN: "Flex chain", CAPTION_MOL_FLEXRING: "Flex ring", CAPTION_REPOSITORY_RING: "Rings", CAPTION_REPOSITORY_RING_3: "Cyclopropane", CAPTION_REPOSITORY_RING_4: "Cyclobutane", CAPTION_REPOSITORY_RING_5: "Cyclopentane", CAPTION_REPOSITORY_RING_6: "Cyclohexane", CAPTION_REPOSITORY_RING_7: "Cycloheptane", CAPTION_REPOSITORY_RING_8: "Cyclooctane", CAPTION_REPOSITORY_RING_AR_6: "Benzene", CAPTION_REPOSITORY_RING_AR_5: "Cyclopentadiene", CAPTION_REPOSITORY_CYCLOHEXANE_CHAIR1: "Cyclohexane chair 1", CAPTION_REPOSITORY_CYCLOHEXANE_CHAIR2: "Cyclohexane chair 2", CAPTION_REPOSITORY_CYCLOHEXANE_HARWORTH1: "Cyclohexane Haworth 1", CAPTION_REPOSITORY_CYCLOHEXANE_HARWORTH2: "Cyclohexane Haworth 2", CAPTION_REPOSITORY_CYCLOPENTANE_HARWORTH1: "Cyclopentane Haworth 1", CAPTION_REPOSITORY_CYCLOPENTANE_HARWORTH2: "Cyclopentane Haworth 2", CAPTION_REPOSITORY_METHANE: "Methane", CAPTION_REPOSITORY_FISCHER1: "Fischer projection 1", CAPTION_REPOSITORY_FISCHER2: "Fischer projection 2", CAPTION_REPOSITORY_FISCHER3: "Fischer projection 3", CAPTION_REPOSITORY_SAWHORSE_STAGGERED: "Sawhorse staggered", CAPTION_REPOSITORY_SAWHORSE_ECLIPSED: "Sawhorse eclipsed", CAPTION_REPOSITORY_SUBBOND_MARK: "Substituent bond", CAPTION_REPOSITORY_ARROWLINE: "Arrows & symbols", CAPTION_REPOSITORY_GLYPH: "Glyphs", CAPTION_REPOSITORY_GLYPH_LINE: "Line", CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_LINE: "Open arrow line", CAPTION_REPOSITORY_GLYPH_TRIANGLE_ARROW_LINE: "Triangle arrow line", CAPTION_REPOSITORY_GLYPH_DI_OPEN_ARROW_LINE: "Bidirectional open arrow line", CAPTION_REPOSITORY_GLYPH_DI_TRIANGLE_ARROW_LINE: "Bidirectional triangle arrow line", CAPTION_REPOSITORY_GLYPH_REV_ARROW_LINE: "Reversible arrow line", CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_DILINE: "Open arrow double line", CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_ARC: "Open arrow arc", CAPTION_REPOSITORY_GLYPH_SINGLE_SIDE_OPEN_ARROW_ARC: "Single side open arrow arc", CAPTION_ELECTRON_PUSHING_ARROW: "Electron pushing arrow", CAPTION_ELECTRON_PUSHING_ARROW_DOUBLE: "Double electron pushing arrow", CAPTION_ELECTRON_PUSHING_ARROW_SINGLE: "Single electron pushing arrow", CAPTION_REPOSITORY_HEAT_SYMBOL: "Heat symbol", CAPTION_REPOSITORY_ADD_SYMBOL: "Add symbol", CAPTION_TEXT_FORMAT: "Text format", CAPTION_PICK_COLOR: "Color", CAPTION_FONTNAME: "Font name", CAPTION_FONTSIZE: "Font size", CAPTION_TEXT_DIRECTION: "Text direction", CAPTION_TEXT_DIRECTION_DEFAULT: "Default", CAPTION_TEXT_DIRECTION_LTR: "Left to right", CAPTION_TEXT_DIRECTION_RTL: "Right to left", CAPTION_TEXT_DIRECTION_TTB: "Top to bottom", CAPTION_TEXT_DIRECTION_BTT: "Bottom to top", CAPTION_TEXT_HORIZONTAL_ALIGN: "Text horizontal alignment", CAPTION_TEXT_VERTICAL_ALIGN: "Text vertical alignment", CAPTION_TEXT_ALIGN_DEFAULT: "Default", CAPTION_TEXT_ALIGN_LEADING: "Leading", CAPTION_TEXT_ALIGN_TRAILING: "Trailing", CAPTION_TEXT_ALIGN_CENTER: "Center", CAPTION_TEXT_ALIGN_LEFT: "Left", CAPTION_TEXT_ALIGN_RIGHT: "Right", CAPTION_TEXT_ALIGN_TOP: "Top", CAPTION_TEXT_ALIGN_BOTTOM: "Bottom", CAPTION_NODE_LABEL_DISPLAY_MODE: "Atom label display mode", CAPTION_NODE_LABEL_DISPLAY_MODE_DEFAULT: "Default", CAPTION_NODE_LABEL_DISPLAY_MODE_SHOWN: "Show label", CAPTION_NODE_LABEL_DISPLAY_MODE_HIDDEN: "Hide label", CAPTION_NODE_LABEL_DISPLAY_MODE_SMART: "Smart", CAPTION_ATOM_MODIFIER: "Atom", CAPTION_ATOM_MODIFIER_MIXED: "[A]", CAPTION_BOND_MODIFIER: "Bond", CAPTION_CHARGE_MODIFIER: "Charge", CAPTION_GLYPH_PATH_MODIFIER: "Path", CAPTION_REACTION_ARROW_AND_SEGMENT_PATH_MODIFIER: "Reaction arrow & segment", CAPTION_ARC_PATH_MODIFIER: "Arc", CAPTION_MULTI_ARC_PATH_MODIFIER: "Multi-Arc", CAPTION_ELECTRON_PUSHING_ARROW_MODIFIER: "Electron pushing arrow", CAPTION_BOND_FORMING_ELECTRON_PUSHING_ARROW_MODIFIER: "Bond forming arrow", TEXT_CHARGE_POSITIVE: "+", TEXT_CHARGE_NEGATIVE: "-", TEXT_CHARGE_UNKNOWN: "<sup>+</sup>/<sub>-</sub>", TEXT_CHARGE_NONE: "&#8709;", HINT_NEWDOC: "Create new document", HINT_UNDO: "Undo", HINT_REDO: "Redo", HINT_COPY_WHOLE: "Copy objects to internal clipboard", HINT_COPY: "Copy selection to internal clipboard", HINT_CUT: "Cut selection to internal clipboard", HINT_PASTE: "Paste from internal clipboard", HINT_CLONE_SELECTION: "Clone selection", HINT_SELECT_ALL: "Select all", HINT_TOGGLE_SELECT: "Toggle select", HINT_TOGGLE_OBJ_INSPECTOR: "Show or hide object inspector panel", HINT_TOGGLE_ISSUE_INSPECTOR: "Show or hide error inspector panel", HINT_TOGGLE_SHOW_ISSUE_MARKERS: "Show or hide issue markers", HINT_ERASE_SELECTION: "Delete all selected objects", HINT_RECHECK_ISSUES: "Recheck objects in editor for issues", HINT_MANIPULATE: "Select tool", HINT_MANIPULATE_MARQUEE: "Marquee select", HINT_MANIPULATE_LASSO: "Lasso select", HINT_MANIPULATE_BRUSH: "Brush select", HINT_MANIPULATE_ANCESTOR: "Select molecule", HINT_CLIENT_DRAGSCROLL: "Scroll", HINT_ERASE: "Erase tool", HINT_TRACK_INPUT: "Track tool", HINT_MOL_BOND: "Bond tool", HINT_MOL_BOND_SINGLE: "Single bond", HINT_MOL_BOND_DOUBLE: "Double bond", HINT_MOL_BOND_TRIPLE: "Triple bond", HINT_MOL_BOND_QUAD: "Quad bond", HINT_MOL_BOND_EXPLICIT_AROMATIC: "Explicit aromatic bond", HINT_MOL_BOND_WEDGEUP: "Wedge up bond", HINT_MOL_BOND_WEDGEUP_INVERTED: "Wedge up bond 2", HINT_MOL_BOND_WEDGEDOWN: "Wedge down bond", HINT_MOL_BOND_WEDGEDOWN_INVERTED: "Wedge down bond 2", HINT_MOL_BOND_CLOSER: "Outer bond", HINT_MOL_BOND_WAVY: "Wavy bond", HINT_MOL_BOND_DOUBLE_EITHER: "Double either bond", HINT_MOL_BOND_IONIC: "Ionic bond", HINT_MOL_BOND_COORDINATE: "Coordinate bond", HINT_MOL_BOND_METALLIC: "Metallic bond", HINT_MOL_BOND_HYDROGEN: "Hydrogen bond", HINT_MOL_BOND_TRANSITION: "Transition bond", HINT_MOL_BOND_KEKULIZE: "Kekulize, convert explicit aromatic bonds to compartmental single and double ones", HINT_MOL_BOND_HUCKLIZE: "Hucklize, mark bonds on aromatic rings as explicit aromatic ones", HINT_MOL_ATOM: "Atom tool", HINT_MOL_FORMULA: "Formula tool", HINT_MOL_ATOM_AND_FORMULA: "Atom and formula tool", HINT_MOL_CHARGE: "Charge tool", HINT_MOL_CHARGE_CLEAR: "Clear charge and radical", HINT_MOL_CHARGE_POSITIVE: "Positive charge", HINT_MOL_CHARGE_NEGATIVE: "Negative charge", HINT_MOL_ELECTRONIC_BIAS_POSITIVE: "Positive electronic bias", HINT_MOL_ELECTRONIC_BIAS_NEGATIVE: "Negative electronic bias", HINT_MOL_CHARGE_SINGLET: "Singlet radical", HINT_MOL_CHARGE_DOUBLET: "Monoradical", HINT_MOL_CHARGE_TRIPLET: "Triplet radical", HINT_MOL_ELECTRON_LONEPAIR: "Lone pair electrons", HINT_TEXT_BLOCK: "Text block tool", HINT_IMAGE_BLOCK: "Image block tool", HINT_TEXT_IMAGE: "Text and image tool", HINT_MOL_FLEXCHAIN: "Flex carbon chain", HINT_MOL_FLEXRING: "Flex carbon ring", HINT_REPOSITORY_RING: "Ring structures tool", HINT_REPOSITORY_RING_3: "Cyclopropane", HINT_REPOSITORY_RING_4: "Cyclobutane", HINT_REPOSITORY_RING_5: "Cyclopentane", HINT_REPOSITORY_RING_6: "Cyclohexane", HINT_REPOSITORY_RING_7: "Cycloheptane", HINT_REPOSITORY_RING_8: "Cyclooctane", HINT_REPOSITORY_RING_AR_6: "Benzene", HINT_REPOSITORY_RING_AR_5: "Cyclopentadiene", HINT_REPOSITORY_CYCLOHEXANE_CHAIR1: "Cyclohexane chair 1", HINT_REPOSITORY_CYCLOHEXANE_CHAIR2: "Cyclohexane chair 2", HINT_REPOSITORY_CYCLOHEXANE_HARWORTH1: "Cyclohexane Haworth 1", HINT_REPOSITORY_CYCLOHEXANE_HARWORTH2: "Cyclohexane Haworth 2", HINT_REPOSITORY_CYCLOPENTANE_HARWORTH1: "Cyclopentane Haworth 1", HINT_REPOSITORY_CYCLOPENTANE_HARWORTH2: "Cyclopentane Haworth 2", HINT_REPOSITORY_SUBBOND_MARK: "Substituent bond", HINT_REPOSITORY_METHANE: "Methane", HINT_REPOSITORY_FISCHER1: "Fischer projection with one chiral center", HINT_REPOSITORY_FISCHER2: "Fischer projection with two chiral centers", HINT_REPOSITORY_FISCHER3: "Fischer projection with three chiral centers", HINT_REPOSITORY_SAWHORSE_STAGGERED: "Sawhorse staggered", HINT_REPOSITORY_SAWHORSE_ECLIPSED: "Sawhorse eclipsed", HINT_REPOSITORY_ARROWLINE: "Arrows and symbols tool", HINT_REPOSITORY_GLYPH: "Glyphs", HINT_REPOSITORY_GLYPH_LINE: "Line", HINT_REPOSITORY_GLYPH_OPEN_ARROW_LINE: "Open arrow line", HINT_REPOSITORY_GLYPH_TRIANGLE_ARROW_LINE: "Triangle arrow line", HINT_REPOSITORY_GLYPH_DI_OPEN_ARROW_LINE: "Bidirectional open arrow line", HINT_REPOSITORY_GLYPH_DI_TRIANGLE_ARROW_LINE: "Bidirectional triangle arrow line", HINT_REPOSITORY_GLYPH_REV_ARROW_LINE: "Reversible arrow line", HINT_REPOSITORY_GLYPH_OPEN_ARROW_DILINE: "Open arrow double line", HINT_REPOSITORY_GLYPH_OPEN_ARROW_ARC: "Open arrow arc", HINT_REPOSITORY_GLYPH_SINGLE_SIDE_OPEN_ARROW_ARC: "Single side open arrow arc", HINT_REPOSITORY_HEAT_SYMBOL: "Heat symbol", HINT_REPOSITORY_ADD_SYMBOL: "Add symbol", HINT_ELECTRON_PUSHING_ARROW: "Electron pushing arrow", HINT_NODE_LABEL_DISPLAY_MODE: "Atom label display mode", HINT_TEXT_FORMAT: "Set text format", HINT_FONTNAME: "Set font name", HINT_FONTSIZE: "Set font size", HINT_PICK_COLOR: "Select color", HINT_TEXT_DIRECTION: "Set text direction", HINT_TEXT_HORIZONTAL_ALIGN: "Set text horizontal alignment", HINT_TEXT_VERTICAL_ALIGN: "Set text vertical alignment", HINT_CHARGE_NONE: "No charge", HINT_ATOM_MODIFIER: "Set atom", HINT_BOND_MODIFIER: "Set bond", HINT_CHARGE_MODIFIER: "Set charge", HINT_GLYPH_PATH_MODIFIER: "Set path properties", HINT_REACTION_ARROW_AND_SEGMENT_PATH_MODIFIER: "Set reaction arrow and segment properties", HINT_ARC_PATH_MODIFIER: "Set arc properties", HINT_MULTI_ARC_PATH_MODIFIER: "Set multi-arc properties", HINT_ELECTRON_PUSHING_ARROW_MODIFIER: "Set electron pushing arrow properties", HINT_BOND_FORMING_ELECTRON_PUSHING_ARROW_MODIFIER: "Set bond forming arrow properties", HINT_USE_ATOM_CUSTOM_COLOR: "(use atom custom color)", CAPTION_LOADDATA_DIALOG: "Load data", CAPTION_LOADDATA_DIALOG_APPENDMODE: "Append to current", CAPTION_SAVEDATA_DIALOG: "Save data", CAPTION_DATA_FORMAT: "Data format:", CAPTION_DATA_SRC: "Input or paste data below:", CAPTION_LOADDATA_FROM_FILE: "Load from file", CAPTION_CHOOSEFILEFORMAT: "Choose file format", CAPTION_SELECT_FORMAT: "Select format:", CAPTION_PREVIEW_FILE_CONTENT: "Preview: ", S_DEF_SAVE_FILENAME: "Unnamed", CAPTION_ATOMLIST_PERIODIC_TABLE: "more...", CAPTION_RGROUP: "Sub group", CAPTION_VARIABLE_ATOM: "Variable Atom (list)", CAPTION_VARIABLE_NOT_ATOM: "Variable Atom (not list)", CAPTION_PSEUDOATOM: "Pseudoatom", CAPTION_DUMMY_ATOM: "Dummy Atom", CAPTION_HETERO_ATOM: "Hetero Atom", CAPTION_ANY_ATOM: "Any Atom", CAPTION_ATOM: "Atom", CAPTION_SUBGROUP: "Subgroup", CAPTION_PERIODIC_TABLE_DIALOG: "Periodic table", CAPTION_PERIODIC_TABLE_DIALOG_SEL_ELEM: "Select element", CAPTION_PERIODIC_TABLE_DIALOG_SEL_ELEMS: "Select elements", CAPTION_TEXTBLOCK_INIT: "Enter text here", CAPTION_WIDTH: "Width", CAPTION_LENGTH: "Length", CAPTION_PATH_INDEX: "Path {0}", HINT_PATH_INDEX: "Path {0}", CAPTION_REACTION_ARROW_UNSET: "(Unset)", CAPTION_REACTION_ARROW_CUSTOM: "Custom", CAPTION_REACTION_ARROW_NORMAL: "Normal", CAPTION_REACTION_ARROW_RESONANCE: "Resonance", CAPTION_REACTION_ARROW_REVERSIBLE: "Reversible", CAPTION_REACTION_ARROW_RETROSYNTHESIS: "Retrosynthesis", HINT_REACTION_ARROW_UNSET: "Unset", HINT_REACTION_ARROW_CUSTOM: "Custom", HINT_REACTION_ARROW_NORMAL: "Normal arrow", HINT_REACTION_ARROW_RESONANCE: "Resonance arrow", HINT_REACTION_ARROW_REVERSIBLE: "Reversible arrow", HINT_REACTION_ARROW_RETROSYNTHESIS: "Retrosynthesis arrow", CAPTION_LINE_COUNT: "Line count", CAPTION_LINE_GAP: "Line gap", CAPTION_LINE: "Line", CAPTION_STARTING_ARROW: "Starting arrow", CAPTION_ENDING_ARROW: "Ending arrow", CAPTION_REACTION_ARROW_TYPE: "Reaction arrow type", CAPTION_ELECTRON_PUSHING_ARROW_TYPE: "Arrow type", CAPTION_OPPOSITE_ARROW_SIDES: "Opposite arrow sides", CAPTION_SAME_ARROW_SIDES: "Same arrow sides", CAPTION_ELECTRON_PUSHING_ARROW_1: "Single electron pushing arrow", CAPTION_ELECTRON_PUSHING_ARROW_1_ABBR: "Single", HINT_ELECTRON_PUSHING_ARROW_1: "Single electron pushing arrow", CAPTION_ELECTRON_PUSHING_ARROW_2: "Double electron pushing arrow", CAPTION_ELECTRON_PUSHING_ARROW_2_ABBR: "Double", HINT_ELECTRON_PUSHING_ARROW_2: "Double electron pushing arrow", CAPTION_BOND_FORMING_ELECTRON_PUSHING_ARROW_1: "Bond forming electron pushing arrow", HINT_BOND_FORMING_ELECTRON_PUSHING_ARROW_1: "Bond forming electron pushing arrow", LEGEND_CAPTION: "Legend", LEGEND_ELEM_SYMBOL: "Symbol", LEGEND_ELEM_NAME: "name", LEGEND_ATOMIC_NUM: "atomic number", LEGEND_ATOMIC_WEIGHT: "atomic weight", CAPTION_2D: "2D", CAPTION_3D: "3D", CAPTION_AUTOSIZE: "Autosize", CAPTION_AUTOFIT: "Autofit", CAPTION_SHOWSIZEINFO: "Show size info", CAPTION_LABEL_SIZE: "Size: ", CAPTION_BACKGROUND_COLOR: "Background color: ", CAPTION_WIDTH_HEIGHT: "width: {0}, height: {1}", PLACEHOLDER_WIDTH: "width", PLACEHOLDER_HEIGHT: "height", HINT_AUTOSIZE: "Whether graph size is determined by object automatically", HINT_AUTOFIT: "Whether object is zoomed to fullfill the whole graph", CAPTION_CHEMOBJINSERTER_GENERATING_3D_STRUCTURE: "Generating molecule 3D structure...", CAPTION_SPECTRUM_WITH_INDEX: "Spectrum {0}", CAPTION_SPECTRUM_DATASECTION_WITH_INDEX: "Data section {0}", CAPTION_INTERACTIONS: "Interactions: ", CAPTION_ENABLE_HOTTRACK: "Enable hot track", CAPTION_ENABLE_SELECT: "Enable select", CAPTION_ENABLE_MULTISELECT: "Enable multi-select", CAPTION_ASSOC_VIEWER_SIZE: "Correlated molecule viewer size: ", CAPTION_ASSOC_VIEWER_VISUAL_MODE: "Correlated molecule display mode: ", CAPTION_ASSOC_VIEWER_VISUAL_MODE_AUTO: "Auto", CAPTION_ASSOC_VIEWER_VISUAL_MODE_VISIBLE: "Always displayed", CAPTION_ASSOC_VIEWER_VISUAL_MODE_INVISIBLE: "Always hidden", S_VALUE_DEFAULT: "(Default)" }), Kekule.Localization.addResource("en", "ErrorMsg", { WIDGET_CLASS_NOT_FOUND: "Widget class not found", WIDGET_CAN_NOT_BIND_TO_ELEM: "Widget {0} can not be binded to element <{1}>", LOAD_CHEMDATA_FAILED: "Failed to load data", FILE_API_NOT_SUPPORTED: "File operations are not supported by your current web browser. Please update it.", DRAW_BRIDGE_NOT_SUPPORTED: "It seems that your web browser is not modern enough to support the drawing function. Please update it.", COMMAND_NOT_REVERSIBLE: "Command can not be undone", PAGE_INDEX_OUTOF_RANGE: "Page index out of range", FETCH_DATA_TIMEOUT: "Time out to fetch data", RENDER_TYPE_CHANGE_NOT_ALLOWED: "It is not allowed to change render type", CAN_NOT_CREATE_EDITOR: "Creating editor failed", CAN_NOT_LOAD_OBJ_OTHER_THAN_SPECTRUM: "Can not load non-spectrum object", FAIL_TO_EXPORT_IMAGE_DATAURI_FOR_SPECTRUM: "Fail to export data URI for spectrum image", FAIL_TO_EXPORT_IMAGE_DATAURI_FOR_ASSOC: "Fail to export data URI for associated image", CAN_NOT_SET_COORD_OF_CLASS: "Can not set coordinate of instance of {0}.", CAN_NOT_SET_DIMENSION_OF_CLASS: "Can not set dimension of instance of {0}.", CAN_NOT_MERGE_CONNECTORS: "Specified connectors can not be merged.", NOT_A_VALID_ATOM: "Not a valid atom", INVALID_ATOM_SYMBOL: "Invalid atom symbol", INVALID_OR_EMPTY_IMAGE: "Image is empty or invalidate" }), Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("objDefines"), Kekule.OBJDEF_TEXTS = {}, Kekule.Localization.addResource("en", "OBJDEF_TEXTS", { TITLE_PREFIX: "TITLE_", DESCRIPTION_PREFIX: "DES_", DES_ID: "Unique ID for object.", Render: { GeneralConfigs: { TITLE_drawOpacity: "Opacity", DES_drawOpacity: "Opacity (between 0-1) to draw objects" }, Render2DConfigs: { TITLE_generalConfigs: "General render settings", DES_generalConfigs: "General render settings", TITLE_moleculeDisplayConfigs: "Molecule display settings", DES_moleculeDisplayConfigs: "Settings about molecule display styles", TITLE_displayLabelConfigs: "Display label settings", DES_displayLabelConfigs: "Settings of displayed label in molecule/chem object", TITLE_textFontConfigs: "Text and font settings", DES_textFontConfigs: "Settings about text and font of display", TITLE_lengthConfigs: "Lengths settings", DES_lengthConfigs: "Lengths to display molecule/chem object", TITLE_colorConfigs: "Color settings", DES_colorConfigs: "Color settings to display molecule/chem object", TITLE_spectrumDisplayConfigs: "Spectrum display settings", DES_spectrumDisplayConfigs: "Settings for displaying spectrum object" }, MoleculeDisplayConfigs: { TITLE_defMoleculeDisplayType: "Default molecule display mode", DES_defMoleculeDisplayType: "Default display type of molecule: in skeletal or in condensed mode", TITLE_defNodeDisplayMode: "Default atom display mode", DES_defNodeDisplayMode: "Default mode to display atom in molecule", TITLE_defHydrogenDisplayLevel: "Default hydrogen display level", DES_defHydrogenDisplayLevel: "How to display explicit or implicit hydrogens of atom", TITLE_defChargeMarkType: "Default charge mark type", DES_defChargeMarkType: null, TITLE_partialChargeDecimalsLength: "Decimal length of partial charge", DES_partialChargeDecimalsLength: "If an atom has a partical charge (e.g., +1.5), how many digits after decimal point should be displayed", TITLE_distinguishSingletAndTripletRadical: "Distinguish singlet/triplet radical", DES_distinguishSingletAndTripletRadical: "Whether use different mark to distinguish singlet(..) and triplet(^^) radical", TITLE_bondLineCap: "Bond line cap style", TITLE_bondLineJoin: "Bond line join style", TITLE_glyphLineCap: "Glyph line cap style", TITLE_glyphLineJoin: "Glyph line join style" }, DisplayLabelConfigs: { TITLE_enableIsotopeAlias: "Enable isotope alias", DES_enableIsotopeAlias: "Whether isotope alias (e.g. D for 2H) is used to display atom label.", TITLE_unsetElement: "Unset element", DES_unsetElement: "Label for unset or unknown element", TITLE_dummyAtom: "Dummy atom", DES_dummyAtom: "Label for dummy atom", TITLE_heteroAtom: "Hetero atom", DES_heteroAtom: "Label for general hetero atom", TITLE_anyAtom: "Any atom", DES_anyAtom: "Label for atom wildcard", TITLE_variableAtom: "Variable atom", DES_variableAtom: "Label for variable atom or atom list", TITLE_rgroup: "RGroup", DES_rgroup: "Label for RGroup", TITLE_isoListLeadingBracket: "Atom list leading bracket", TITLE_isoListTailingBracket: "Atom list tailing bracket", TITLE_isoListDelimiter: "Atom delimiter in list", TITLE_isoListDisallowPrefix: "Prefix of not-atom list" }, TextFontConfigs: { TITLE_labelFontFamily: "Label font", DES_labelFontFamily: "Font to draw general label", TITLE_atomFontFamily: "Atom font", DES_atomFontFamily: "Font to draw atom label", TITLE_supFontSizeRatio: "Superscript font size ratio", DES_supFontSizeRatio: "Ratio of Superscript text size to normal text size", TITLE_subFontSizeRatio: "Subscript font size ratio", DES_subFontSizeRatio: "Ratio of Subscript text size to normal text size", TITLE_superscriptOverhang: "Superscript text overhang", DES_superscriptOverhang: null, TITLE_subscriptOversink: "Subscript text oversink", DES_subscriptOversink: null, TITLE_textCharDirection: "Text direction", DES_textCharDirection: "Default text direction", TITLE_textHorizontalAlign: "Horizontal text alignment", DES_textHorizontalAlign: "Default horizontal text alignment of label", TITLE_textVerticalAlign: "Vertical text alignment", DES_textVerticalAlign: "Default vertical text alignment of label" }, LengthConfigs: { TITLE_labelFontSize: "Label text size", DES_labelFontSize: "Size of general label text", TITLE_atomFontSize: "Atom text size", DES_atomFontSize: "Size of atom label text", TITLE_chemMarkerFontSize: "Chem marker text size", DES_chemMarkerFontSize: "Size of text in chem marker", TITLE_chemMarkerMargin: "Chem marker margin", DES_chemMarkerMargin: "Margin of chem marker to main object", TITLE_allenCenterAtomRadius: "Allen center radius", DES_allenCenterAtomRadius: "Radius to draw dot on center carbon atom in allen", TITLE_chargeMarkFontSize: "Charge mark size", DES_chargeMarkFontSize: "Font size of charge mark", TITLE_chargeMarkMargin: "Charge mark margin", DES_chargeMarkMargin: "Margin between charge mark and atom", TITLE_defBondLength: "Default bond length", DES_defBondLength: "Default length of a chemical bond", TITLE_bondLineWidth: "Bond line width", DES_bondLineWidth: "Line width to draw a chemical bond", TITLE_hashSpacing: "Hash spacing", DES_hashSpacing: "Spacing between small lines in hash bond", TITLE_multipleBondSpacingRatio: "Multiple bond spacing ratio", DES_multipleBondSpacingRatio: "Ratio of spacing between two lines in double or triple bond to bond length.", TITLE_multipleBondMaxAbsSpacing: "Max multiple bond spacing", DES_multipleBondMaxAbsSpacing: "Maximum spacing between multiple bond", TITLE_bondArrowLength: "Bond arrow length", DES_bondArrowLength: "The length of end triangle in arrow bond", TITLE_bondArrowWidth: "Bond arrow width", DES_bondArrowWidth: "The width of end triangle in arrow bond", TITLE_bondWedgeWidth: "Bond wedge max width", DES_bondWedgeWidth: "The width of ending point in wedge bond", TITLE_bondWedgeHashMinWidth: "Bond wedge min width", DES_bondWedgeHashMinWidth: "The width of starting point in wedge bond", TITLE_bondWavyRadius: "Bond wavy radius", DES_bondWavyRadius: "Radius to draw arc of wavy bond", TITLE_glyphStrokeWidth: "Glyph stroke width", DES_glyphStrokeWidth: "The default width of glyph strokes", TITLE_autofitContextPadding: "Autofit context padding", DES_autofitContextPadding: "Padding of autofit widget edge and drawn object", TITLE_glyphStickOffsetRelLength: "Glyph stick offset relative length", DES_glyphStickOffsetRelLength: "Glyph stick offset relative length", TITLE_defScaleRefLength: "Default scale reference length", DES_defScaleRefLength: "Length for calculating the auto-scale" }, ColorConfigs: { TITLE_useAtomSpecifiedColor: "Use element specified color", DES_useAtomSpecifiedColor: "Whether use different color on different element", TITLE_labelColor: "Label color", DES_labelColor: "Default color of general label", TITLE_atomColor: "Atom color", DES_atomColor: "Default color of atom label", TITLE_bondColor: "Bond color", DES_bondColor: "Default color of bond", TITLE_glyphStrokeColor: "Glyph stroke color", DES_glyphStrokeColor: "Default stroke color of glyph", TITLE_glyphFillColor: "Glyph fill color", DES_glyphFillColor: "Default fill color of glyph" }, spectrumDisplayConfigs: {}, Render3DConfigs: { TITLE_generalConfigs: "General render settings", DES_generalConfigs: "General render settings", TITLE_moleculeDisplayConfigs: "Molecule display settings", DES_moleculeDisplayConfigs: "Settings about molecule display styles", TITLE_environmentConfigs: "3D environment settings", DES_environmentConfigs: "Settings of 3D environment", TITLE_modelConfigs: "3D model settings", DES_modelConfigs: "Settings to render a 3D molecule model", TITLE_lengthConfigs: "Lengths settings", DES_lengthConfigs: "Lengths to display molecule" }, Render3DEnvironmentConfigs: { TITLE_graphicQuality: "Graphic quality", DES_graphicQuality: "Quality of 3D graphic" }, Molecule3DDisplayConfigs: { TITLE_defMoleculeDisplayType: "Default molecule display type", DES_defMoleculeDisplayType: "Draw molecule in wire, stick, ball stick or space fill mode", TITLE_defBondSpliceMode: "Bond splice mode", DES_defBondSpliceMode: "How to draw a splice mode between two atoms with different color", TITLE_defDisplayMultipleBond: "Display multiple bond", DES_defDisplayMultipleBond: "Whether draw multiple bond lines for double or triple bond", TITLE_defBondColor: "Default bond color", DES_defBondColor: "Default bond color", TITLE_defAtomColor: "Default atom color", DES_defAtomColor: "Default atom color", TITLE_useAtomSpecifiedColor: "Use element specified color", DES_useAtomSpecifiedColor: "Whether use different color on different element" }, Model3DConfigs: { TITLE_hideHydrogens: "Hide hydrogens", DES_hideHydrogens: "Whether hide all hydrogen atoms in 3D model", TITLE_useVdWRadius: "Use von dar Waals radius", DES_useVdWRadius: "Whether use atom's von dar Waals radius to draw 3D model", TITLE_multiConnectorRadiusRatio: "Multi-bond radius ratio", DES_multiConnectorRadiusRatio: "If use multi-cylinder for multibond, this value is the radius ratio between multi and single bond", TITLE_multiConnectorMarginRatio: "Multi-bond margin ratio", DES_multiConnectorMarginRatio: "If multi-cylinder is used for multibond, ratio of margin between cylinders and radius of cylinder" }, Length3DConfigs: { TITLE_fixedNodeRadius: "Fixed atom radius", DES_fixedNodeRadius: "If vdW radius of atom is not used, this value will be used for all atom's radius", TITLE_connectorRadius: "Bond radius", DES_connectorRadius: "Bond will be draw based on this radius in stick or ball_stick mode", TITLE_connectorLineWidth: "Bond line width", DES_connectorLineWidth: "Bond will be draw on this width in wire mode" } }, Widget: { BaseWidget: { TITLE_settingFacade: "General settings", DES_settingFacade: "General settings" } }, ChemWidget: { ChemObjDisplayer: { TITLE_enableLoadNewFile: "Enable load data", DES_enableLoadNewFile: "Whether loading new data is enabled" }, ChemObjDisplayerConfigs: { TITLE_ioConfigs: "I/O settings", DES_ioConfigs: "Settings of input/output", TITLE_environment2DConfigs: "2D environment settings", DES_environment2DConfigs: "Settings of 2D drawing environment", TITLE_environment3DConfigs: "3D environment settings", DES_environment3DConfigs: "Settings of 3D drawing environment", TITLE_spectrumViewConfigs: "Spectrum view settings", DES_spectrumViewConfigs: "Display and interaction settings of spectrum sub view" }, ChemObjDisplayerIOConfigs: { TITLE_canonicalizeBeforeSave: "Canonicalize before save", DES_canonicalizeBeforeSave: "Whether canonicalize molecule before saving it", TITLE_autoGenerateCoordsAfterLoad: "Auto generate coordinates after loading molecule", DES_autoGenerateCoordsAfterLoad: "Whether coordinates of atoms are automatically generated when loading a molecule without explicit coordinate information" }, ChemObjDisplayerEnvironmentConfigs: { TITLE_antialias: "Antialias", DES_antialias: "Whether enable extra antialias strategy additional to the default one of browser", TITLE_antialiasBlurRatio: "Antialias blur ratio", DES_antialiasBlurRatio: "Antialias blur ratio", TITLE_overSamplingRatio: "Over sampling ratio", DES_overSamplingRatio: "Over sampling ratio of the drawing context" }, ChemObjDisplayerSpectrumViewConfigs: {}, Viewer: { TITLE_enableDirectInteraction: "Enable direct interaction", DES_enableDirectInteraction: "Whether interaction with chem object in viewer is enabled", TITLE_enableTouchInteraction: "Enable touch interaction", DES_enableTouchInteraction: "Whether touch interaction is enabled", TITLE_enableToolbar: "Enable toolbar", DES_enableToolbar: "Whether toolbar of viewer is displayed", TITLE_toolbarPos: "Toolbar Position", DES_toolbarPos: "Position of toolbar in viewer", TITLE_toolbarMarginHorizontal: "Toolbar horizontal margin", DES_toolbarMarginHorizontal: "Horizontal margin of toolbar to viewer edge", TITLE_toolbarMarginVertical: "Toolbar vertical margin", DES_toolbarMarginVertical: "Vertical margin of toolbar to viewer edge", TITLE_enableEdit: "Enable editing", DES_enableEdit: "Whether edit chem object in viewer is enabled", TITLE_modalEdit: "Modal editing", DES_modalEdit: "Using modal dialog or popup dialog to edit chem object" }, ViewerConfigs: { TITLE_hotKeyConfigs: "Hot key settings", DES_hotKeyConfigs: "Setting of the hot key and action map" }, ViewerHotKeyConfigs: { TITLE_hotKeys: "Hot keys", DES_hotKeys: "Hot key and action settings" } }, Editor: { BaseEditorConfigs: { TITLE_uiMarkerConfigs: "UI marker settings", DES_uiMarkerConfigs: "Settings of interaction marker", TITLE_interactionConfigs: "Interaction settings", DES_interactionConfigs: "Settings about interaction of editor", TITLE_structureConfigs: "Structure settings", DES_structureConfigs: "Settings about creating molecule structure", TITLE_hotKeyConfigs: "Hot key settings", DES_hotKeyConfigs: "Setting of the hot key and action map" }, ChemSpaceEditorConfigs: { TITLE_chemSpaceConfigs: "Chem space settings", DES_chemSpaceConfigs: "Settings about chem space/chem document", TITLE_styleSetterConfigs: "Style setter settings", DES_styleSetterConfigs: "Settings of style toolbar of editor" }, InteractionConfigs: { TITLE_enableTrackOnNearest: "Enale track on nearest", DES_enableTrackOnNearest: "If setting to true, hot track or selection will focus on nearest object to current position, otherwise, the topmost object around will be focused.", TITLE_enableHotTrack: "Enable hot track", DES_enableHotTrack: "Whether highlighting objects under mouse position", TITLE_scrollToObjAfterLoading: "Scroll to object after loading", DES_scrollToObjAfterLoading: "Whether scroll to the newly loaded object after opening data", TITLE_autoExpandClientSizeAfterLoading: "Auto expand client size after loading", DES_autoExpandClientSizeAfterLoading: "Whether expand the client size automatically after loading a large object out of boundary", TITLE_autoExpandClientSizeAfterManipulation: "Auto expand client size after manipulation", DES_autoExpandClientSizeAfterManipulation: "Whether expand the client size automatically when moving a object out of the boundary of editor", TITLE_autoSelectNewlyInsertedObjects: "Auto select new inserted objects", DES_autoSelectNewlyInsertedObjects: "Whether select objects newly inserted or modified in editor automatically", TITLE_autoSelectNewlyInsertedObjectsOnTouch: "Auto select new inserted objects in touch device", DES_autoSelectNewlyInsertedObjectsOnTouch: "Whether select objects newly inserted or modified in editor automatically in touch device", TITLE_objBoundTrackMinInflation: "Object bound minimal inflation (default)", DES_objBoundTrackMinInflation: "The default minimal inflation of the bound of object to make it easier to select", TITLE_objBoundTrackMinInflationMouse: "Object bound minimal inflation (mouse)", DES_objBoundTrackMinInflationMouse: "The minimal inflation of the bound of object to make it easier to select when using mouse as pointer device", TITLE_objBoundTrackMinInflationTouch: "Object bound minimal inflation (touch)", DES_objBoundTrackMinInflationTouch: "The minimal inflation of the bound of object to make it easier to select when touching on screen", TITLE_objBoundTrackMinInflationPen: "Object bound minimal inflation (pen)", DES_objBoundTrackMinInflationPen: "The minimal inflation of the bound of object to make it easier to select when using pen as pointer device", TITLE_objBoundTrackInflationRatio: "Object bound inflation ratio (default)", DES_objBoundTrackInflationRatio: "The default inflation ratio (compaing with the default bond length) of the bound of object to make it easier to select", TITLE_objBoundTrackInflationRatioMouse: "Object bound inflation ratio (mouse)", DES_objBoundTrackInflationRatioMouse: "The inflation ratio (compaing with the default bond length) of the bound of object to make it easier to select when using mouse as pointer device", TITLE_objBoundTrackInflationRatioPen: "Object bound inflation ratio (pen)", DES_objBoundTrackInflationRatioPen: "The inflation ratio (compaing with the default bond length) of the bound of object to make it easier to select when using pen as pointer device", TITLE_objBoundTrackInflationRatioTouch: "Object bound inflation ratio (touch)", DES_objBoundTrackInflationRatioTouch: "The inflation ratio (compaing with the default bond length) of the bound of object to make it easier to select when touching on screen", TITLE_selectionMarkerInflation: "Selection marker inflation", DES_selectionMarkerInflation: "Inflation of object selection mark, makes it easier to see the containing objects", TITLE_selectionMarkerEdgeInflation: "Selection edge inflation", DES_selectionMarkerEdgeInflation: "Inflation when judging if a coord is on selection mark edge", TITLE_followPointerCoordOnDirectManipulatingSingleObj: "Follow pointer coordinate on direct manipulating object", DES_followPointerCoordOnDirectManipulatingSingleObj: "If true, the new coordinate of manipulating object will be set directly by the position of pointer (rather than the delta coordinate to the original position)", TITLE_followPointerCoordOnDirectManipulatingSingleObjDistanceThreshold: "Threshold of following pointer coordinate on direct manipulating object", DES_followPointerCoordOnDirectManipulatingSingleObjDistanceThreshold: "Threshold when following pointer coordinate on direct manipulating object", TITLE_constrainedResizeStep: "Constrained resize step", DES_constrainedResizeStep: "Constrained resize step", TITLE_constrainedRotateStep: "Constrained rotation step", DES_constrainedRotateStep: "Constrained rotation step, in arc", TITLE_rotationLocationPointDistanceThreshold: "Rotation starting min distance", DES_rotationLocationPointDistanceThreshold: "Rotation will occur only when mouse point distance (from rotation center) larger than this value", TITLE_directedMoveDistanceThreshold: "Direct move min distance", DES_directedMoveDistanceThreshold: "Direct moving will only be done if moved distance large than this value", TITLE_enablePartialAreaSelecting: "Enable partial selecting", DES_enablePartialAreaSelecting: "If this value is true, when drag a selecting rubber band, object partly in the band will be totally selected", TITLE_selectingBrushWidth: "Brush selecting Width", DES_selectingBrushWidth: "Width of brush in brush selecting", TITLE_enableOffSelectionManipulation: "Enable off-selection manipulation", DES_enableOffSelectionManipulation: "When setting to true, you can still move, resize or rotate selected objects by holding mouse or touch outside selection for a while", TITLE_offSelectionManipulationActivatingTimeThreshold: "Off-selection manipulation hold time", DES_offSelectionManipulationActivatingTimeThreshold: "The minimal time (in ms) need for holding mouse or touch to invoke off-selection manipulation", TITLE_selectionMarkerDefPulseDuration: "Default selection mark pulse duration", DES_selectionMarkerDefPulseDuration: "The duration (in ms) of selection mark pulse when the selection is been emphasised", TITLE_selectionMarkerDefPulseCount: "Default selection mark pulse count", DES_selectionMarkerDefPulseCount: "The pulse count when the selection is been emphasised", TITLE_rotationRegionInflation: "Rotation region inflation", DES_rotationRegionInflation: "User can rotate the selected objects by pressing and move mouse in this inflated region outside selection", TITLE_enableMergePreview: "Enable merge preview", DES_enableMergePreview: "Whether a preview operation is used rather then the actual merge operation when merge two objects in editor during manipulation. Turn on this option may improve the performance of object manipulation.", TITLE_enableGestureManipulation: "Enable gesture manipulation", DES_enableGestureManipulation: "Whether user can use touch gestures (e.g. pinch) to scale or rotate selected objects in editor", TITLE_enableGestureZoomOnEditor: "Enable gesture zoom on editor", DES_enableGestureZoomOnEditor: "Whether user can use pinch gesture to zoom in or out the editor when there is no selection existed", TITLE_trackSimplifierDistanceThreshold: "Track-input curve simplification threshold", DES_trackSimplifierDistanceThreshold: "Distance threshold in simplifying curve drawn by track-input tool", TITLE_trackSimplifierIgnoreSegmentThreshold: "Track-input ignored segment threshold", DES_trackSimplifierIgnoreSegmentThreshold: "Segment length less than this threshold drawn by track-input will be ignored in parsing", TITLE_trackMergeDistanceThreshold: "Track-input merge distance threshold", DES_trackMergeDistanceThreshold: "If a joint or end point of line segment drawn by track-inpu tool is close to another line segment (less than this threshold), it will be regarded on that line.", TITLE_trackOptimizationAngleConstraint: "Track-input optimization line cross angle constraint", DES_trackOptimizationAngleConstraint: null, TITLE_trackOptimizationDistanceConstraints: "Track-input optimization line length constraint", DES_trackOptimizationDistanceConstraints: null, TITLE_trackOptimizationPrimaryDistanceConstraint: "Track-input optimization primary line length", DES_trackOptimizationPrimaryDistanceConstraint: null, TITLE_autoAdjustZoomLevelOnTrackTouching: null, DES_autoAdjustZoomLevelOnTrackTouching: null, TITLE_editorInitialZoom: "Editor initial zoom level", DES_editorInitialZoom: "The initial zoom level of editor", TITLE_atomSetterFontSize: "Atom setter font size", DES_atomSetterFontSize: "Font size of atom setter", TITLE_allowUnknownAtomSymbol: "Allow unknown atom symbol", DES_allowUnknownAtomSymbol: "Allow inputting unknown symbol and handle it as pseudo atom in atom setter", TITLE_clonedObjectScreenOffset: "Copied object coord offset", DES_clonedObjectScreenOffset: "The distance between copied objects and origin objects when doing paste selection action in editor", TITLE_enableBondKekulizeHucklize: "Enable Kekulize and Hucklize function of bond", DES_enableBondKekulizeHucklize: "Whether Kekulize and Hucklize buttons are shown in bond modifier of editor", TITLE_enableHotKey: "Enable hot keys", DES_enableHotKey: "Whether shortcut with key pressing is enabled in editor" }, UiMarkerConfigs: { TITLE_hotTrackerColor: "Hot track mark color", DES_hotTrackerColor: "Color of hot track mark", TITLE_hotTrackerOpacity: "Hot track mark opacity", DES_hotTrackerOpacity: "Opacity of hot track marker, value from 0 to 1", TITLE_selectionMarkerStrokeColor: "Selection mark stroke color", DES_selectionMarkerStrokeColor: "Stroke color of selection mark", TITLE_selectionMarkerStrokeWidth: "Selection mark stroke width", DES_selectionMarkerStrokeWidth: "Width of selection mark stroke", TITLE_selectionMarkerFillColor: "Selection mark fill color", DES_selectionMarkerFillColor: "Fill color of selection mark.", TITLE_selectionMarkerOpacity: "Selection mark opacity", DES_selectionMarkerOpacity: "Opacity of selection mark, value from 0 to 1", TITLE_selectionMarkerEmphasisOpacity: "Emphasised selection mark opacity", DES_selectionMarkerEmphasisOpacity: "Opacity of emphasised selection marker, value from 0 to 1", TITLE_selectingMarkerStrokeColor: "Selecting mark stroke color", DES_selectingMarkerStrokeColor: "Stroke color of selecting rubber band mark", TITLE_selectingMarkerStrokeWidth: "Selecting mark stroke width", DES_selectingMarkerStrokeWidth: "Stroke width of selection rubber band", TITLE_selectingMarkerStrokeDash: "Selecting mark dash style", DES_selectingMarkerStrokeDash: "Dash style of selecting rubber band", TITLE_selectingMarkerFillColor: "Selecting mark fill color", DES_selectingMarkerFillColor: "Fill color of selecting mark. Usually this value should be left blank (not filled)", TITLE_selectingMarkerOpacity: "Selecting mark opacity", DES_selectingMarkerOpacity: "Opacity of selecting mark, value from 0 to 1", TITLE_selectingBrushMarkerStrokeColor: "Brush selecting mark stroke color", DES_selectingBrushMarkerStrokeColor: "Stroke color of brush selecting mark", TITLE_selectingBrushMarkerStrokeDash: "Brush selecting mark dash style", DES_selectingBrushMarkerStrokeDash: "Dash style of brush selecting track", TITLE_selectingBrushMarkerStrokeLineCap: "Brushing selecting mark line-cap style", DES_selectingBrushMarkerStrokeLineCap: "Line-cap style of both ends of brush selecting track", TITLE_selectingBrushMarkerStrokeLineJoin: "Brushing selecting mark join point style", DES_selectingBrushMarkerStrokeLineJoin: "Join style of brush selection track segments", TITLE_selectingBrushMarkerOpacity: "Brush selecting mark opacity", DES_selectingBrushMarkerOpacity: "Opacity of brush selecting mark, value from 0 to 1", TITLE_trackMarkerStrokeColor: "Track-input mark stroke color", DES_trackMarkerStrokeColor: "Stroke color of track mark when using track-input tool to draw a structure", TITLE_trackMarkerStrokeWidth: "Track-input mark stroke width", DES_trackMarkerStrokeWidth: "Stroke width of track mark when using track-input tool to draw a structure", TITLE_trackMarkerStrokeDash: "Track-input mark dash style", DES_trackMarkerStrokeDash: "Dash style of track mark when using track-input tool to draw a structure", TITLE_trackMarkerOpacity: "Track-input mark opacity", DES_trackMarkerOpacity: "Opacity of track mark when using track-input tool to draw a structure", TITLE_flexStructureAssocMarkerColor: "Flex structure association mark color", DES_flexStructureAssocMarkerColor: "Color of mark showing atom count of flex ring/chain tool", TITLE_flexStructureAssocMarkerOpacity: "Flex structure association mark opacity", DES_flexStructureAssocMarkerOpacity: "Opacity of mark showing atom count of flex ring/chain tool", TITLE_flexStructureAssocMarkerFontSize: "Flex structure association mark font size", DES_flexStructureAssocMarkerFontSize: "Font size of mark showing atom count of flex ring/chain tool", TITLE_flexStructureAssocMarkerFontFamily: "Flex structure association mark font family", DES_flexStructureAssocMarkerFontFamily: "Font family of mark showing atom count of flex ring/chain tool", TITLE_issueCheckMarkerColors: "Issue check markers color", DES_issueCheckMarkerColors: "Color of issue check markers, different colors are used for different issue levels", TITLE_issueCheckMarkerStrokeWidth: "Issue check marker stroke width", DES_issueCheckMarkerStrokeWidth: "Stroke width of issue check marker outline", TITLE_issueCheckActiveMarkerStrokeWidth: "Active issue check marker stroke width", DES_issueCheckActiveMarkerStrokeWidth: "Stroke width of active issue check marker outline", TITLE_issueCheckMarkerOpacity: "Issue check marker opacity", DES_issueCheckMarkerOpacity: "Opacity of issue check marker", TITLE_issueCheckActiveMarkerOpacity: "Active Issue check marker opacity", DES_issueCheckActiveMarkerOpacity: "Opacity of active issue check marker" }, StructureConfigs: { TITLE_defBondType: "Default bond type", DES_defBondType: "Default type of bond", TITLE_defBondOrder: "Default bond order", DES_defBondOrder: "Default bond order", TITLE_defBondLength: "Default bond length", DES_defBondLength: "Default bond length", TITLE_defIsotopeId: "Default isotope", DES_defIsotopeId: "Default isotope when adding a new atom", TITLE_maxFlexChainAtomCount: "Maximum flex chain atom count", DES_maxFlexChainAtomCount: "Maximum atom count when inputting with flex chain tool", TITLE_minFlexChainAtomCount: "Minimal flex chain atom count", DES_minFlexChainAtomCount: "Minimal atom count when inputting with flex chain tool", TITLE_maxFlexRingAtomCount: "Maximum flex ring atom count", DES_maxFlexRingAtomCount: "Maximum atom count when inputting with flex ring tool", TITLE_minFlexRingAtomCount: "Minimal flex ring atom count", DES_minFlexRingAtomCount: "Minimal atom count when inputting with flex ring tool", TITLE_enabledNonAtomNodeTypes: "Available non-atom structure node types", DES_enabledNonAtomNodeTypes: "Non-atom structure node types available in editor", TITLE_enabledBondForms: "Available bond forms", DES_enabledBondForms: "Bond forms available in editor" }, ChemSpaceConfigs: { TITLE_defScreenSize2D: "Default 2D screen size", TITLE_defScreenSize3D: "Default 3D screen size", TITLE_autoExpandScreenSize2D: "Auto expanding size 2D", DES_autoExpandScreenSize2D: "The size used when automatically expanding editor client in 2D mode", TITLE_autoExpandScreenSize3D: "Auto expanding size 3D", DES_autoExpandScreenSize3D: "The size used when automatically expanding editor client in 3D mode", TITLE_defPadding: "Default padding", DES_defPadding: "Padding on top when adding an unpositioned object to container chem space" }, HotKeyConfigs: { TITLE_hotKeys: "Hot keys", DES_hotKeys: "Hot key and action settings" }, BaseEditor: { TITLE_enableCreateNewDoc: "Enable create new document", DES_enableCreateNewDoc: "Whether creating a new document is allowed", TITLE_initOnNewDoc: "Starts with a new document", DES_initOnNewDoc: "Whether create a new document automatically when composer is initialized", TITLE_enableOperHistory: "Enable undo", DES_enableOperHistory: "Whether undo/redo is enabled", TITLE_enableIssueCheck: "Enable issue check", DES_enableIssueCheck: "Whether enable issue checker to detect errors and warning among objects in editor" }, ChemSpaceEditor: { TITLE_allowAppendDataToCurr: "Allow appending data", DES_allowAppendDataToCurr: "Whether allow appending data to current document" }, Composer: { TITLE_enableStyleToolbar: "Enable style toolbar", DES_enableStyleToolbar: "Whether display style toolbar to set color, font and size of objects", TITLE_enableObjModifierToolbar: "Enable object modifier toolbar", DES_enableObjModifierToolbar: "Whether display toolbar with a series of object modification tools", TITLE_allowCreateNewChild: "Enable create new child object", DES_allowCreateNewChild: "Whether new direct child of document can be created", TITLE_allowAppendDataToCurr: "Allow appending data", DES_allowAppendDataToCurr: "Whether allow appending data to current document" } } });
   }
 });
 
-// ../chemlib/node_modules/kekule/dist/mins/html.min.js
+// node_modules/kekule/dist/mins/html.min.js
 var require_html_min = __commonJS({
-  "../chemlib/node_modules/kekule/dist/mins/html.min.js"(exports) {
+  "node_modules/kekule/dist/mins/html.min.js"(exports) {
     !function(e15) {
       "use strict";
       "undefined" != typeof window && (e15 = window);
@@ -6741,9 +6976,9 @@ var require_html_min = __commonJS({
   }
 });
 
-// ../chemlib/node_modules/kekule/dist/mins/widget.min.js
+// node_modules/kekule/dist/mins/widget.min.js
 var require_widget_min = __commonJS({
-  "../chemlib/node_modules/kekule/dist/mins/widget.min.js"(exports, module) {
+  "node_modules/kekule/dist/mins/widget.min.js"(exports, module) {
     "undefined" != typeof window && "undefined" != typeof document && function(e15, t10, i11, n12) {
       "use strict";
       function s6(e16, t11, i12) {
@@ -14276,74 +14511,75 @@ var require_widget_min = __commonJS({
   }
 });
 
-// ../chemlib/node_modules/kekule/dist/mins/emscripten.min.js
+// node_modules/kekule/dist/mins/emscripten.min.js
 var require_emscripten_min = __commonJS({
-  "../chemlib/node_modules/kekule/dist/mins/emscripten.min.js"(exports) {
+  "node_modules/kekule/dist/mins/emscripten.min.js"(exports) {
     !function(e15) {
-      e15 || (e15 = Kekule.$jsRoot), Kekule.EmscriptenUtils = { DEF_MODULE_NAME: "Module", _createdModules: {}, _getActualModule: function(o15) {
-        return e15[o15 || t10.DEF_MODULE_NAME];
+      var t10 = Kekule.$jsRoot || e15;
+      Kekule.EmscriptenUtils = { DEF_MODULE_NAME: "Module", _createdModules: {}, _getActualModule: function(e16) {
+        return t10[e16 || o15.DEF_MODULE_NAME];
       }, isSupported: function(e16) {
-        return void 0 !== t10._getActualModule(e16);
-      }, getRootModule: function(e16, o15) {
-        var u7 = t10._createdModules[e16];
+        return void 0 !== o15._getActualModule(e16);
+      }, getRootModule: function(e16, t11) {
+        var u7 = o15._createdModules[e16];
         if (u7) return u7;
-        var n12 = t10._getActualModule(e16);
-        return u7 = n12, "function" == typeof n12 && (u7 = n12(o15)), u7 && (t10._createdModules[e16] = u7), u7;
-      }, setRootModule: function(e16, o15) {
-        t10._createdModules[e16] = o15;
+        var n12 = o15._getActualModule(e16);
+        return u7 = n12, "function" == typeof n12 && (u7 = n12(t11)), u7 && (o15._createdModules[e16] = u7), u7;
+      }, setRootModule: function(e16, t11) {
+        o15._createdModules[e16] = t11;
       }, getModuleObj: function(e16) {
-        return "object" == typeof e16 ? e16 : t10.getRootModule(e16);
-      }, getMember: function(e16, o15) {
-        return (t10.getModuleObj(o15) || {})[e16];
-      }, getClassCtor: function(e16, o15) {
-        return (t10.getModuleObj(o15) || {})[e16];
-      }, cwrap: function(e16, o15, u7, n12) {
-        var l8 = t10.getModuleObj(n12);
-        return l8 && l8.cwrap && l8.cwrap(e16, o15, u7);
-      }, initModule: function(e16, o15, u7) {
+        return "object" == typeof e16 ? e16 : o15.getRootModule(e16);
+      }, getMember: function(e16, t11) {
+        return (o15.getModuleObj(t11) || {})[e16];
+      }, getClassCtor: function(e16, t11) {
+        return (o15.getModuleObj(t11) || {})[e16];
+      }, cwrap: function(e16, t11, u7, n12) {
+        var r12 = o15.getModuleObj(n12);
+        return r12 && r12.cwrap && r12.cwrap(e16, t11, u7);
+      }, initModule: function(e16, t11, u7) {
         e16 || (e16 = Kekule.$jsRoot.document);
-        var n12 = o15.moduleName, l8 = o15.moduleInitEventName, r12 = o15.moduleInitCallbackName, i11 = o15.creationOptions, d5 = function(e17) {
+        var n12 = t11.moduleName, r12 = t11.moduleInitEventName, l8 = t11.moduleInitCallbackName, i11 = t11.creationOptions, d5 = function(e17) {
           u7 && u7(e17);
         };
-        if (t10.isModuleReady(n12)) d5();
+        if (o15.isModuleReady(n12)) d5();
         else try {
-          if (l8 && e16 && Kekule.X) {
+          if (r12 && e16 && Kekule.X) {
             var c8 = function() {
-              d5(), Kekule.X.Event.removeListener(e16, l8, c8);
+              d5(), Kekule.X.Event.removeListener(e16, r12, c8);
             };
-            Kekule.X.Event.addListener(e16, l8, c8);
-          } else r12 && (Kekule.$jsRoot[r12] = function() {
+            Kekule.X.Event.addListener(e16, r12, c8);
+          } else l8 && (Kekule.$jsRoot[l8] = function() {
             d5();
           });
-          n12 && t10.getRootModule(n12, i11);
+          n12 && o15.getRootModule(n12, i11);
         } catch (e17) {
           throw d5(e17), e17;
         }
       }, isModuleReady: function(e16) {
-        return !!t10._createdModules[e16];
-      }, ensureModuleReady: function(e16, o15, u7) {
-        return t10.initModule(e16, o15, u7);
-      }, loadScript: function(e16, o15, u7, n12) {
+        return !!o15._createdModules[e16];
+      }, ensureModuleReady: function(e16, t11, u7) {
+        return o15.initModule(e16, t11, u7);
+      }, loadScript: function(e16, t11, u7, n12) {
         u7 || (u7 = Kekule.$jsRoot.document);
-        var l8 = function(e17) {
-          e17 ? o15(e17) : t10.initModule(u7, n12, o15);
+        var r12 = function(e17) {
+          e17 ? t11(e17) : o15.initModule(u7, n12, t11);
         };
         if (Kekule.environment.isNode) try {
-          var r12 = Kekule.environment.nodeRequire(e16);
-          n12.moduleName && (Kekule.$jsRoot[n12.moduleName] = r12), l8();
+          var l8 = Kekule.environment.nodeRequire(e16);
+          n12.moduleName && (Kekule.$jsRoot[n12.moduleName] = l8), r12();
         } catch (e17) {
-          throw l8(e17), e17;
+          throw r12(e17), e17;
         }
-        else Kekule.ScriptFileUtils.appendScriptFile(u7, e16, l8);
+        else Kekule.ScriptFileUtils.appendScriptFile(u7, e16, r12);
       } };
-      var t10 = Kekule.EmscriptenUtils;
+      var o15 = Kekule.EmscriptenUtils;
     }(exports);
   }
 });
 
-// ../chemlib/node_modules/kekule/dist/mins/indigo.min.js
+// node_modules/kekule/dist/mins/indigo.min.js
 var require_indigo_min = __commonJS({
-  "../chemlib/node_modules/kekule/dist/mins/indigo.min.js"(exports) {
+  "node_modules/kekule/dist/mins/indigo.min.js"(exports) {
     !function(e15) {
       "use strict";
       var t10 = Kekule.$jsRoot || e15 || {}, o15 = Kekule.EmscriptenUtils, n12 = { usingModulaize: true, moduleName: "IndigoModule", moduleInitEventName: "Indigo.Initialized", moduleInitCallbackName: "__$indigoInitialized$__", indigoAdaptFuncName: "CreateIndigo" };
@@ -38824,7 +39060,7 @@ var StartupSystem = class {
    */
   run(options2) {
     const { renderer } = this;
-    renderer.runners.init.emit(renderer.options), options2.hello && console.log(`PixiJS 7.4.2 - ${renderer.rendererLogId} - https://pixijs.com`), renderer.resize(renderer.screen.width, renderer.screen.height);
+    renderer.runners.init.emit(renderer.options), options2.hello && console.log(`PixiJS 7.4.3 - ${renderer.rendererLogId} - https://pixijs.com`), renderer.resize(renderer.screen.width, renderer.screen.height);
   }
   destroy() {
   }
@@ -46239,7 +46475,8 @@ var CacheClass = class {
     if (keys.forEach((key2) => {
       this._cacheMap.set(key2, cachedAssets);
     }), cacheKeys.forEach((key2) => {
-      this._cache.has(key2) && this._cache.get(key2) !== value && console.warn("[Cache] already has key:", key2), this._cache.set(key2, cacheableAssets[key2]);
+      const val = cacheableAssets ? cacheableAssets[key2] : value;
+      this._cache.has(key2) && this._cache.get(key2) !== val && console.warn("[Cache] already has key:", key2), this._cache.set(key2, cacheableAssets[key2]);
     }), value instanceof Texture) {
       const texture = value;
       keys.forEach((key2) => {
@@ -53680,7 +53917,7 @@ _HTMLText.defaultMaxWidth = 2024, /** Default maxHeight, set at construction */
 _HTMLText.defaultMaxHeight = 2024, /** Default autoResolution for all HTMLText objects */
 _HTMLText.defaultAutoResolution = true;
 
-// ../chemlib/lib/ElementData.js
+// node_modules/chemlib/lib/ElementData.js
 var ElementData = (
   /** @class */
   function() {
@@ -59021,7 +59258,7 @@ var ElementData = (
   }()
 );
 
-// ../chemlib/lib/Atom.js
+// node_modules/chemlib/lib/Atom.js
 var Atom = (
   /** @class */
   function() {
@@ -59179,7 +59416,7 @@ var Atom = (
   }()
 );
 
-// ../chemlib/lib/Bond.js
+// node_modules/chemlib/lib/Bond.js
 var Bond = (
   /** @class */
   function() {
@@ -59204,7 +59441,7 @@ var Bond = (
   }()
 );
 
-// ../chemlib/lib/ElectricComponent.js
+// node_modules/chemlib/lib/ElectricComponent.js
 var EComponentType;
 (function(EComponentType2) {
   EComponentType2["Electrode"] = "electrode";
@@ -59268,7 +59505,7 @@ var ElectricComponent = (
   }()
 );
 
-// ../chemlib/lib/ComponentManager.js
+// node_modules/chemlib/lib/ComponentManager.js
 var ComponentManager = (
   /** @class */
   function() {
@@ -59350,7 +59587,7 @@ var ComponentManager = (
   }()
 );
 
-// ../chemlib/node_modules/kekule/dist/kekule.moduleEnvInits.esm.mjs
+// node_modules/kekule/dist/kekule.moduleEnvInits.esm.mjs
 var kekule_moduleEnvInits_esm_default = function() {
   var $root;
   if (typeof window === "object" && window && window.document)
@@ -59390,15 +59627,15 @@ var kekule_moduleEnvInits_esm_default = function() {
   };
 }();
 
-// ../chemlib/node_modules/kekule/dist/kekule.esm.mjs
+// node_modules/kekule/dist/kekule.esm.mjs
 var import_kekule = __toESM(require_kekule(), 1);
 var import_root_min = __toESM(require_root_min(), 1);
 var import_localization_min = __toESM(require_localization_min(), 1);
 
-// ../chemlib/node_modules/kekule/dist/mins/localizationData.zh.min.js
+// node_modules/kekule/dist/mins/localizationData.zh.min.js
 Kekule.Localization.setCurrModule("general"), Kekule.Localization.addResource("zh", "Texts", { UNNAMED: "\u672A\u547D\u540D" }), Kekule.Localization.addResource("zh", "ErrorMsg", { MODULE_NOT_LOADED: "\u6A21\u5757{0}\u672A\u8F7D\u5165", UNIT_NOT_FOUND: "Unit not found: {0}", STANDARD_UNIT_OF_CATEGORY_NOT_FOUND: "\u7C7B\u522B{0}\u7684\u6807\u51C6\u5355\u4F4D\u672A\u8BBE\u7F6E", UNABLE_TO_CONVERT_BETWEEN_UNITS: "\u65E0\u6CD5\u5728\u5355\u4F4D{0}\u4E0E{1}\u95F4\u8F6C\u6362\u6570\u636E", NON_OWN_PROPERTY_CANNOT_BE_REPLACED: "\u53EA\u80FD\u66FF\u6362\u5BF9\u8C61\u7684\u76F4\u63A5\u5C5E\u6027", EMPTY_DOC: "\u6587\u6863\u65E0\u5185\u5BB9", ELEMENT_NOTSET: "\u672A\u8BBE\u7F6E\u5143\u7D20", EMPTY_RESURI: "\u8D44\u6E90URI\u65E0\u5185\u5BB9", CANNOT_LOAD_RES_OF_URI: "\u65E0\u6CD5\u8F7D\u5165\u8D44\u6E90URI\uFF1A", LIST_ITEM_CLASS_MISMATCH: "\u6761\u76EE\u7C7B\u578B\u9519\u8BEF\uFF0C\u65E0\u6CD5\u52A0\u5165\u5217\u8868", CANNOT_CLEAR_WEAKMAP: "Can not clear a weak map", CANNOT_GET_KEY_LIST_IN_WEAKMAP: "Can not get key array from a weak map", CANNOT_GET_VALUE_LIST_IN_WEAKMAP: "Can not get value array from a weak map", INVALID_CHEMELEMENT: "\u65E0\u6548\u7684\u5316\u5B66\u5143\u7D20", INVALID_ISOTOPE: "\u65E0\u6548\u7684\u540C\u4F4D\u7D20", COORD_STICK_NOT_ALLOWED_ON_CLASS: "Coordinate sticking is not allowed in this type of object", INVALID_STICK_TARGET_OBJ: "Invalid sticking target", UNABLE_TO_STICK_TO_OTHER_OWNER_OBJ: "Unable to stick to object with a different owner", UNABLE_TO_STICK_TO_OBJ_WITHOUT_ABS_COORD: "Unable to stick to object without absolute coordinates", STICK_RECURSION_NOT_ALLOWED: "Stick recursion is not allowed", UNABLE_ADD_MISTYPED_NODE: "\u65E0\u6CD5\u5411\u952E/\u8FDE\u63A5\u7B26\u4E0A\u8FDE\u63A5\u9519\u8BEF\u7684\u539F\u5B50/\u9876\u70B9", UNABLE_ADD_DIFF_OWNER_OBJ: "\u5BF9\u8C61\u6709\u7740\u4E0D\u540C\u7684\u5BBF\u4E3B\uFF0C\u65E0\u6CD5\u8FDE\u63A5\u5728\u540C\u4E00\u952E/\u8FDE\u63A5\u7B26\u4E0A", CHEMSTRUCTUREOBJECTGROUP_ITEMCLASS_MISMATCH: "\u6761\u76EE\u7C7B\u578B\u4E0D\u7B26", SORT_FUNC_UNSET: "\u6392\u5E8F\u51FD\u6570\u672A\u8BBE\u7F6E", SOURCE_FRAGMENT_NOT_SET: "\u672A\u6307\u5B9A\u6E90\u5206\u5B50", UNABLE_ADD_NONMOLECULE_MAP: "\u4EC5\u80FD\u5411\u53CD\u5E94\u7269\u6216\u751F\u6210\u7269\u4E2D\u6DFB\u52A0\u5206\u5B50", CANNOT_ADD_NON_NODE_NOR_CONNECTOR_TO_STRUCT_CONTAINER: "\u4EC5\u80FD\u5411\u7ED3\u6784\u4E2D\u6DFB\u52A0\u539F\u5B50\u3001\u952E\u6216\u9876\u70B9\u3001\u8FDE\u63A5\u7B26", REGISTERED_CANONICALIZATION_EXECUTOR_NOT_FOUND: "\u65E0\u6CD5\u627E\u5230\u6CE8\u518C\u7684\u5F52\u4E00\u5316\u6267\u884C\u5668", ERROR_LOADING_FILE: "\u6587\u4EF6\u8F7D\u5165\u9519\u8BEF\uFF1A", READER_ID_ALREADY_EXISTS: "Can not register reader: id already exists", WRITER_ID_ALREADY_EXISTS: "Can not register writer: id already exists", FAIL_TO_READ_FORMAT: "\u8BFB\u5165\u6570\u636E\u5931\u8D25\uFF0C\u683C\u5F0F\uFF1A", NO_SUITABLE_READER_FOR_FORMAT: "\u65E0\u6CD5\u8BFB\u5165\u6570\u636E\uFF0C\u683C\u5F0F\uFF1A", NO_SUITABLE_READER_FOR_MIMETYPE: "\u65E0\u6CD5\u8BFB\u5165\u6570\u636E\uFF0CMIME\u7C7B\u578B\uFF1A", NO_SUITABLE_READER_FOR_FILEEXT: "\u65E0\u6CD5\u8BFB\u5165\u6570\u636E\uFF0C\u6587\u4EF6\u540E\u7F00\uFF1A", NO_SUITABLE_WRITER_FOR_FORMAT: "\u65E0\u6CD5\u5199\u5165\u6570\u636E\uFF0C\u683C\u5F0F\uFF1A", NO_SUITABLE_WRITER_FOR_MIMETYPE: "\u65E0\u6CD5\u5199\u5165\u6570\u636E\uFF0CMIME\u7C7B\u578B\uFF1A", NO_SUITABLE_WRITER_FOR_FILEEXT: "\u65E0\u6CD5\u5199\u5165\u6570\u636E\uFF0C\u6587\u4EF6\u540E\u7F00\uFF1A", AJAX_FILELOADER_NOT_FOUND: "AJAX file loader not found, can not load URL", FAIL_TO_LOAD_FILE_URL: "\u8F7D\u5165\u6587\u4EF6\u6216\u94FE\u63A5\u5931\u8D25\uFF1A", CML_ELEM_READER_NOT_FOUND: "CML\u5143\u7D20<{0}>\u8BFB\u5165\u5668\u4E0D\u5B58\u5728", ATOMID_NOT_EXISTS: "\u539F\u5B50\u6807\u8BC6(ID)\u4E0D\u5B58\u5728\uFF1A", BONDID_NOT_EXISTS: "\u952E\u6807\u8BC6(ID)\u4E0D\u5B58\u5728\uFF1A", CML_ELEM_WRITER_TYPE_INPROPER: "{0}\u4E0D\u662F\u5408\u9002\u7684CML\u5143\u7D20{1}\u7684\u5199\u5165\u5668", CML_CAN_NOT_OUTPUT_TO_EMPTY_ELEMENT: "\u65E0\u6CD5\u5411\u7A7A\u7684CML\u5143\u7D20\u4E2D\u8F93\u51FA\u5185\u5BB9", UNABLE_TO_OUTPUT_AS_CML: "\u65E0\u6CD5\u5C06\u5BF9\u8C61<{0}>\u8F93\u51FA\u81F3CML", MDL_CTAB_ATOM_CANNOT_CREATE: "\u65E0\u6CD5\u4ECE\u6E90MDL\u683C\u5F0F\u6570\u636E\u4E2D\u521B\u5EFA\u539F\u5B50", MDL_CTAB_BOND_CANNOT_CREATE: "\u65E0\u6CD5\u4ECE\u6E90MDL\u683C\u5F0F\u6570\u636E\u4E2D\u521B\u5EFA\u5316\u5B66\u952E", CAN_NOT_WRITE_NON_MOLECULE_TO_MOL: "\u5BF9\u8C61\u5E76\u975E\u5206\u5B50\uFF0C\u65E0\u6CD5\u8F93\u51FA\u81F3\u5206\u5B50\u8FDE\u63A5\u8868", MOLECULE_HAS_NO_CTAB_TO_OUTPUT: "\u5206\u5B50\u65E0\u8FDE\u63A5\u8868\uFF0C\u65E0\u6CD5\u8F93\u51FA\u81F3MDL\u683C\u5F0F\u6570\u636E", NOT_MDL2000_FORMAT_DATA: "\u6570\u636E\u683C\u5F0F\u9519\u8BEF\uFF1A\u5E76\u975EMDL 2000", NOT_MDL_RXN_DATA: "\u5E76\u975EMDL\u53CD\u5E94(RXN)\u6570\u636E", MALFORMED_MDL3000_COUNTLINE: "MDL 3000\u8BA1\u6570\u884C\u683C\u5F0F\u9519\u8BEF", MDL3000_ATOMBLOCK_NOT_FOUND: "\u65E0\u6CD5\u627E\u5230\u539F\u5B50\u5757\uFF0C\u9519\u8BEF\u7684MDL 3000\u6570\u636E\uFF1F", NOT_MDL_FORMAT_DATA: "\u6570\u636E\u683C\u5F0F\u9519\u8BEF\uFF1A\u5E76\u975EMDL 2000\u62163000", NOT_MDL2000_RXN_DATA: "\u5E76\u975EMDL RXN 2000\u6570\u636E", NOT_MDL3000_RXN_DATA: "\u5E76\u975EMDL RXN 3000\u6570\u636E", NOT_MDL3000_RXN_COUNTLINE: "\u8BFB\u5165RXN 3000\u8BA1\u6570\u884C\u9519\u8BEF", MDL_OUTPUT_DATATYPE_NOT_TEXT: "MDL\u6570\u636E\u65E0\u6CD5\u8F93\u51FA\u4E3A\u975E\u6587\u672C\u683C\u5F0F", MDL_INPUT_DATATYPE_NOT_TEXT: "\u975E\u6587\u672C\u683C\u5F0F\u6570\u636E\uFF0C\u975E\u6CD5\u7684MDL\u6E90\u6570\u636E", UNABLE_TO_OUTPUT_AS_MDL: "\u65E0\u6CD5\u5C06\u5BF9\u8C61<{0}>\u8F93\u51FA\u81F3MDL\u683C\u5F0F\u6570\u636E", KCJ_INPUT_DATATYPE_NOT_JSON_OR_TEXT: "\u975E\u6587\u672C\u6216JSON\u683C\u5F0F\u6570\u636E\uFF0C\u975E\u6CD5\u7684KCJ\u6E90\u6570\u636E", KCJ_OUTPUT_DATATYPE_NOT_JSON_OR_TEXT: "\u65E0\u6CD5\u8F93\u51FA\u4E3A\u975E\u6587\u672C\u6216JSON\u683C\u5F0F", KCX_INPUT_DATATYPE_NOT_DOM_OR_TEXT: "\u975E\u6587\u672C\u6216DOM\u683C\u5F0F\u6570\u636E\uFF0C\u975E\u6CD5\u7684KCX\u6E90\u6570\u636E", KCX_OUTPUT_DATATYPE_NOT_DOM_OR_TEXT: "\u65E0\u6CD5\u8F93\u51FA\u4E3A\u975E\u6587\u672C\u6216DOM\u683C\u5F0F", JSON_SERIALIZER_NOT_EXISTS: "JSON\u5E8F\u5217\u5316\u5668\u4E0D\u5B58\u5728", XML_SERIALIZER_NOT_EXISTS: "XML\u5E8F\u5217\u5316\u5668\u4E0D\u5B58\u5728", JCAMP_DATA_WITHOUT_TITLE_LINE: "\u4E0D\u6B63\u786E\u7684JCAMP\u683C\u5F0F\u6570\u636E\uFF1ATITLE\u6807\u7B7E\u7F3A\u5931", JCAMP_OTHER_LABEL_BEFORE_TITLE_LINE: "\u4E0D\u6B63\u786E\u7684JCAMP\u683C\u5F0F\u6570\u636E\uFF1A\u672A\u4EE5TITLE\u6807\u7B7E\u8D77\u59CB", JCAMP_MORE_THAN_ONE_ROOT_BLOCK: "\u4E0D\u6B63\u786E\u7684JCAMP\u683C\u5F0F\u6570\u636E\uFF1A\u5B58\u5728\u591A\u4E2A\u6839\u6570\u636E\u5757", JCAMP_MORE_THAN_TWO_NEST_LEVEL: "\u4E0D\u6B63\u786E\u7684JCAMP\u683C\u5F0F\u6570\u636E\uFF1A\u8D85\u8FC7\u4E24\u5C42\u6570\u636E\u5757\u5D4C\u5957", JCAMP_ASDF_FORMAT_ERROR_WITH_STR: "\u4E0D\u6B63\u786E\u7684JCAMP ASDF\u5B57\u7B26\u4E32: {0}", JCAMP_DATA_TABLE_X_VALUE_CHECK_ERROR: "JCAMP\u6570\u636E\u8868X\u503C\u6821\u9A8C\u5931\u8D25!", JCAMP_DATA_TABLE_Y_VALUE_CHECK_ERROR: "JCAMP\u6570\u636E\u8868Y\u503C\u6821\u9A8C\u5931\u8D25!", JCAMP_DATA_TABLE_VALUE_FIRST_LAST_NOT_MATCH: "JCAMP\u6570\u636E\u8868\u8D77\u59CB/\u7EC8\u6B62\u6570\u636E\u4E0D\u5339\u914D", JCAMP_DATA_TABLE_VAR_LIST_FORMAT_ERROR: "Malformed JCAMP variable list format: {0}", JCAMP_DATA_TABLE_VAR_LIST_FORMAT_UNSUPPORTED: "Unsupported JCAMP variable list format: {0}", JCAMP_NTUPLES_BEGIN_END_NAME_NOT_MATCH: "Ntuples name not match in begin/end labels: {0} and {1}", JCAMP_NTUPLES_PAGE_DECLARATION_FORMAT_ERROR: "Malformed JCAMP ntuples page declaration: {0}", JCAMP_LDR_TARGET_UNIT_NOT_MATCH_WITH_DETAIL: "The unit of property {0} ({1}) can not be converted to the request one ({2}) for JCAMP {3} LDR", FAILED_TO_ASSIGN_SYMBOL_TO_VARIABLE: "Fail to assign a symbol to variable {0}", JCAMP_IMPLICIT_HYDROGEN_COUNT_NOT_MATCH_DETAIL: "Unmatched implicit hydrogen count for atom {0}({1}), expect {2} but found {3}", VISIBLE_DATA_RANGE_IS_EMPTY: "The visible range of data is empty, unable to draw the spectrum", INAVAILABLE_AUTOSCALE_REF_LENGTH: "\u65E0\u6CD5\u8BA1\u7B97\u81EA\u52A8\u7F29\u653E\u6240\u9700\u7684\u957F\u5EA6", FORMULA_RENDERER_3D_NOT_AVAILABLE: "\u5206\u5B50\u5F0F3D\u6E32\u67D3\u5668\u6682\u4E0D\u53EF\u7528", CANNOT_FIND_SUITABLE_RENDERER_FOR_OBJ: "\u65E0\u6CD5\u627E\u5230\u5408\u9002\u7684\u6E32\u67D3\u5668", THREEJS_LIB_NOT_UNAVAILABLE: "Three.js\u4E0D\u53EF\u7528\uFF0C\u8BF7\u4F7F\u7528<script>\u6807\u7B7E\u5C06\u5176\u5F15\u5165\u6216\u4F7F\u7528Kekule.externalResourceManager.register\u65B9\u6CD5\u6307\u5B9AThree\u5B9E\u4F8B", THREEJS_DRAWING_NOT_UNAVAILABLE: "\u6D4F\u89C8\u5668\u4E0D\u652F\u6301Webgl\u3001Canvas\u6216SVG\uFF0C\u8BF7\u5C06\u5176\u5347\u7EA7\u6216\u66F4\u6362", CANVAS2D_NOT_UNAVAILABLE: "\u6D4F\u89C8\u5668\u4E0D\u652F\u6301Canvas\uFF0C\u8BF7\u5C06\u5176\u5347\u7EA7\u6216\u66F4\u6362", RAPHAEL_LIB_NOT_UNAVAILABLE: "Raphael.js\u4E0D\u53EF\u7528\uFF0C\u8BF7\u4F7F\u7528<script>\u6807\u7B7E\u5C06\u5176\u5F15\u5165", RAPHAEL_SVG_VML_UNAVAILABLE: "\u6D4F\u89C8\u5668\u4E0D\u652F\u6301SVG\u6216VML\uFF0C\u8BF7\u5C06\u5176\u5347\u7EA7\u6216\u66F4\u6362\u3002", CALC_TERMINATED_BY_USER: "\u8BA1\u7B97\u8FC7\u7A0B\u88AB\u7528\u6237\u4E2D\u65AD", CALC_SERVICE_UNAVAILABLE: "\u8BA1\u7B97\u670D\u52A1\u201C{0}\u201D\u4E0D\u53EF\u7528" }), Kekule.Localization.addResource("zh", "ErrorCheckMsg", { GENERAL_ERROR_WITH_CODE: "\u9519\u8BEF\u4EE3\u7801: {0}", ATOM_VALENCE_ERROR_WITH_SUGGEST: "{0}\u539F\u5B50\u4EF7\u6570\uFF08{1}\uFF09\u5F02\u4E8E\u5E38\u89C1\u503C\uFF08{2}\uFF09", ATOM_VALENCE_ERROR_WITH_SUGGESTS: "{0}\u539F\u5B50\u4EF7\u6570\uFF08{1}\uFF09\u5F02\u4E8E\u5E38\u89C1\u503C\uFF08{2}\uFF09", BOND_ORDER_EXCEED_ALLOWED_WITH_SUGGEST: "\u5171\u4EF7\u952E\u952E\u7EA7\uFF08{0}\uFF09\u8D85\u51FA\u5141\u8BB8\u503C\uFF08{1}\uFF09\u8303\u56F4", BOND_WITH_ID_ORDER_EXCEED_ALLOWED_WITH_SUGGEST: "{0}\u952E\u952E\u7EA7\uFF08{1}\uFF09\u8D85\u51FA\u5141\u8BB8\u503C\uFF08{2}\uFF09\u8303\u56F4", NODE_DISTANCE_TOO_CLOSE: "\u539F\u5B50\u6216\u57FA\u56E2\u4F4D\u7F6E\u8FC7\u4E8E\u63A5\u8FD1", NODE_DISTANCE_TOO_CLOSE_WITH_LABEL: "\u539F\u5B50\u6216\u57FA\u56E2\uFF08{0}\uFF09\u4F4D\u7F6E\u8FC7\u4E8E\u63A5\u8FD1", TITLE_CHANGE_BOND_ORDER_TO: "\u5C06\u952E\u7EA7\u4FEE\u6539\u4E3A{0}", DESCRIPTION_CHANGE_BOND_ORDER_TO: "\u5C06\u952E\u7EA7\u7531{0}\u4FEE\u6539\u4E3A{1}", TITLE_MERGE_TO: "\u5C06{0}\u4E0E{1}\u5408\u5E76", DESCRIPTION_MERGE_TO: "\u5C06\u8282\u70B9{0}\u4E0E{1}\u5408\u5E76" }), Kekule.Localization.setCurrModule("widget"), Kekule.Localization.addResource("zh", "WidgetTexts", { CAPTION_OK: "\u786E\u5B9A", CAPTION_CANCEL: "\u53D6\u6D88", CAPTION_YES: "\u662F", CAPTION_NO: "\u5426", CAPTION_BROWSE_COLOR: "\u6D4F\u89C8\u989C\u8272", HINT_BROWSE_COLOR: "\u6D4F\u89C8\u66F4\u591A\u989C\u8272", S_COLOR_UNSET: "(\u672A\u8BBE\u7F6E)", S_COLOR_DEFAULT: "(\u7F3A\u7701\u503C)", S_COLOR_MIXED: "(\u591A\u4E2A\u503C)", S_COLOR_TRANSPARENT: "(\u900F\u660E)", S_OBJECT_UNSET: "(\u65E0)", S_ITEMS: "\u6761\u76EE", S_OBJECT: "\u5BF9\u8C61", S_VALUE_UNSET: "(\u672A\u8BBE\u7F6E)", CAPTION_MENU: "\u83DC\u5355", HINT_MENU: "\u6253\u5F00\u83DC\u5355", S_INSPECT_NONE: "(\u65E0)", S_INSPECT_OBJECTS: "({0}\u4E2A\u5BF9\u8C61)", S_INSPECT_ID_OBJECT: "{0}: {1}", S_INSPECT_ANONYMOUS_OBJECT: "({0})", CAPTION_TOGGLE_TEXTWRAP: "\u5207\u6362\u6587\u672C\u6362\u884C", CAPTION_INC_TEXT_SIZE: "\u589E\u5927\u5B57\u53F7", CAPTION_DEC_TEXT_SIZE: "\u51CF\u5C0F\u5B57\u53F7", HINT_TOGGLE_TEXTWRAP: "\u5207\u6362\u6587\u672C\u662F\u5426\u81EA\u52A8\u6362\u884C", HINT_INC_TEXT_SIZE: "\u589E\u5927\u5B57\u53F7", HINT_DEC_TEXT_SIZE: "\u51CF\u5C0F\u5B57\u53F7", HINT_CHOOSE_FONT_FAMILY: "\u9009\u62E9\u5B57\u4F53", CAPTION_FIRST_PAGE: "\u9996\u9875", CAPTION_LAST_PAGE: "\u672B\u9875", CAPTION_PREV_PAGE: "\u524D\u4E00\u9875", CAPTION_NEXT_PAGE: "\u540E\u4E00\u9875", HINT_FIRST_PAGE: "\u9996\u9875", HINT_LAST_PAGE: "\u672B\u9875", HINT_PREV_PAGE: "\u524D\u4E00\u9875", HINT_NEXT_PAGE: "\u540E\u4E00\u9875", HINT_CURR_PAGE: "\u5F53\u524D\u9875", MSG_RETRIEVING_DATA: "\u8F7D\u5165\u6570\u636E\u2026", CAPTION_DATATABLE_EDIT: "\u7F16\u8F91", CAPTION_DATATABLE_DELETE: "\u5220\u9664", CAPTION_DATATABLE_INSERT: "\u63D2\u5165", HINT_DATATABLE_EDIT: "\u7F16\u8F91\u6570\u636E", HINT_DATATABLE_DELETE: "\u5220\u9664\u6570\u636E", HINT_DATATABLE_INSERT: "\u63D2\u5165\u6570\u636E", CAPTION_ADD_CELL: "+", HINT_ADD_CELL: "\u6DFB\u52A0\u65B0\u5355\u5143\u683C", CAPTION_REMOVE_CELL: "\u79FB\u9664", HINT_REMOVE_CELL: "\u79FB\u9664\u5355\u5143\u683C", CAPTION_CONFIG: "\u8BBE\u7F6E\u2026", HINT_CONFIG: "\u4FEE\u6539\u8BBE\u7F6E", TITLE_IMG_FORMAT_PNG: "PNG\u683C\u5F0F\u56FE\u50CF", TITLE_IMG_FORMAT_JPG: "Jpeg\u683C\u5F0F\u56FE\u50CF", TITLE_IMG_FORMAT_GIF: "GIF\u683C\u5F0F\u56FE\u50CF", TITLE_IMG_FORMAT_SVG: "SVG\u683C\u5F0F\u56FE\u50CF" }), Kekule.Localization.addResource("zh", "ChemWidgetTexts", { CAPTION_CLEAROBJS: "\u6E05\u9664", CAPTION_LOADFILE: "\u8F7D\u5165\u2026", CAPTION_LOADDATA: "\u8F7D\u5165\u2026", CAPTION_SAVEFILE: "\u4FDD\u5B58\u2026", CAPTION_ZOOMIN: "\u653E\u5927", CAPTION_ZOOMOUT: "\u7F29\u5C0F", CAPTION_RESETZOOM: "\u91CD\u7F6E\u7F29\u653E", CAPTION_RESETVIEW: "\u91CD\u7F6E", CAPTION_ROTATE: "\u65CB\u8F6C", CAPTION_ROTATELEFT: "\u5411\u5DE6\u65CB\u8F6C", CAPTION_ROTATERIGHT: "\u5411\u53F3\u65CB\u8F6C", CAPTION_ROTATEX: "\u6CBFX\u8F74\u65CB\u8F6C", CAPTION_ROTATEY: "\u6CBFY\u8F74\u65CB\u8F6C", CAPTION_ROTATEZ: "\u6CBFZ\u8F74\u65CB\u8F6C", CAPTION_MOL_DISPLAY_TYPE: "\u5206\u5B50\u663E\u793A\u6837\u5F0F", CAPTION_SKELETAL: "\u952E\u7EBF\u5F0F", CAPTION_CONDENSED: "\u7F29\u5199\u5F0F", CAPTION_WIRE: "\u5355\u7EBF\u6A21\u578B", CAPTION_STICKS: "\u68CD\u5F0F\u6A21\u578B", CAPTION_BALLSTICK: "\u7403\u68CD\u6A21\u578B", CAPTION_SPACEFILL: "\u6BD4\u4F8B\u6A21\u578B", CAPTION_HIDEHYDROGENS: "\u663E\u793A/\u9690\u85CF\u6C22\u539F\u5B50", CAPTION_OPENEDITOR: "\u7F16\u8F91\u2026", CAPTION_EDITOR_DONE: "\u5B8C\u6210", CAPTION_EDITOR_CANCEL: "\u53D6\u6D88", CAPTION_EDIT_OBJ: "\u7F16\u8F91", HINT_CLEAROBJS: "\u6E05\u9664\u5BF9\u8C61", HINT_LOADFILE: "\u81EA\u6587\u4EF6\u8F7D\u5165", HINT_LOADDATA: "\u8F7D\u5165\u6570\u636E", HINT_SAVEFILE: "\u5B58\u50A8\u5230\u6587\u4EF6", HINT_ZOOMIN: "\u653E\u5927", HINT_ZOOMOUT: "\u7F29\u5C0F", HINT_RESETZOOM: "\u91CD\u7F6E\u7F29\u653E", HINT_RESETVIEW: "\u91CD\u7F6E\u7F29\u653E\u4E0E\u65CB\u8F6C", HINT_ROTATE: "\u65CB\u8F6C", HINT_ROTATELEFT: "\u9006\u65F6\u9488\u65CB\u8F6C", HINT_ROTATERIGHT: "\u987A\u65F6\u9488\u65CB\u8F6C", HINT_ROTATEX: "\u6CBFX\u8F74\u65CB\u8F6C", HINT_ROTATEY: "\u6CBFY\u8F74\u65CB\u8F6C", HINT_ROTATEZ: "\u6CBFZ\u8F74\u65CB\u8F6C", HINT_MOL_DISPLAY_TYPE: "\u6539\u53D8\u5206\u5B50\u663E\u793A\u6837\u5F0F", HINT_SKELETAL: "\u4EE5\u952E\u7EBF\u5F0F\u663E\u793A", HINT_CONDENSED: "\u4EE5\u7F29\u5199\u5F0F\u663E\u793A", HINT_WIRE: "\u4EE5\u5355\u7EBF\u6A21\u578B\u663E\u793A", HINT_STICKS: "\u4EE5\u68CD\u5F0F\u6A21\u578B\u663E\u793A", HINT_BALLSTICK: "\u4EE5\u7403\u68CD\u6A21\u578B\u663E\u793A", HINT_SPACEFILL: "\u4EE5\u6BD4\u4F8B\u6A21\u578B\u663E\u793A", HINT_HIDEHYDROGENS: "\u6A21\u578B\u4E2D\u663E\u793A/\u9690\u85CF\u6C22\u539F\u5B50", HINT_OPENEDITOR: "\u7F16\u8F91\u5F53\u524D\u5BF9\u8C61", HINT_EDITOR_DONE: "\u5173\u95ED\u5E76\u4FDD\u5B58\u7F16\u8F91\u5668\u4E2D\u7684\u4FEE\u6539", HINT_EDITOR_CANCEL: "\u5173\u95ED\u5E76\u53D6\u6D88\u7F16\u8F91\u5668\u4E2D\u7684\u4FEE\u6539", CAPTION_NEWDOC: "\u65B0\u5EFA", CAPTION_UNDO: "\u64A4\u9500", CAPTION_REDO: "\u91CD\u505A", CAPTION_COPY: "\u590D\u5236", CAPTION_COPY_WHOLE: "\u590D\u5236", CAPTION_CUT: "\u526A\u5207", CAPTION_PASTE: "\u7C98\u8D34", CAPTION_TOGGLE_SELECT: "\u53E0\u52A0\u9009\u62E9", CAPTION_SELECT_ALL: "\u5168\u9009", CAPTION_CLONE_SELECTION: "\u514B\u9686\u9009\u533A", CAPTION_TOGGLE_OBJ_INSPECTOR: "\u5BF9\u8C61\u68C0\u89C6\u5668", CAPTION_TOGGLE_ISSUE_INSPECTOR: "\u95EE\u9898\u68C0\u89C6\u5668", CAPTION_TOGGLE_SHOW_ISSUE_MARKERS: "\u663E\u793A\u95EE\u9898\u6807\u8BB0", CAPTION_RECHECK_ISSUES: "\u91CD\u65B0\u68C0\u67E5\u95EE\u9898", CAPTION_MANIPULATE: "\u9009\u53D6", CAPTION_MANIPULATE_MARQUEE: "\u77E9\u5F62\u9009\u6846", CAPTION_MANIPULATE_LASSO: "\u5957\u7D22\u9009\u62E9", CAPTION_MANIPULATE_BRUSH: "\u9009\u62E9\u5237", CAPTION_MANIPULATE_ANCESTOR: "\u9009\u62E9\u5206\u5B50", CAPTION_CLIENT_DRAGSCROLL: "\u79FB\u52A8\u753B\u5E03", CAPTION_ERASE: "\u5220\u9664", CAPTION_TRACK_INPUT: "\u624B\u5199\u8F93\u5165", CAPTION_MOL_BOND: "\u952E", CAPTION_MOL_BOND_SINGLE: "\u5355\u952E", CAPTION_MOL_BOND_DOUBLE: "\u53CC\u952E", CAPTION_MOL_BOND_TRIPLE: "\u4E09\u952E", CAPTION_MOL_BOND_QUAD: "\u56DB\u952E", CAPTION_MOL_BOND_EXPLICIT_AROMATIC: "\u82B3\u9999\u952E", CAPTION_MOL_BOND_WEDGEUP: "\u5B9E\u6954\u7EBF\u952E", CAPTION_MOL_BOND_WEDGEUP_INVERTED: "\u5B9E\u6954\u7EBF\u952E2", CAPTION_MOL_BOND_WEDGEDOWN: "\u865A\u6954\u7EBF\u952E", CAPTION_MOL_BOND_WEDGEDOWN_INVERTED: "\u865A\u6954\u7EBF\u952E2", CAPTION_MOL_BOND_CLOSER: "\u7A81\u51FA(\u52A0\u7C97)\u952E", CAPTION_MOL_BOND_WAVY: "\u6CE2\u6D6A\u952E", CAPTION_MOL_BOND_DOUBLE_EITHER: "\u987A\u6216\u53CD\u5F0F\u53CC\u952E", CAPTION_MOL_BOND_IONIC: "\u79BB\u5B50\u952E", CAPTION_MOL_BOND_COORDINATE: "\u914D\u4F4D\u952E", CAPTION_MOL_BOND_METALLIC: "\u91D1\u5C5E\u952E", CAPTION_MOL_BOND_HYDROGEN: "\u6C22\u952E", CAPTION_MOL_BOND_KEKULIZE: "Kekulize", CAPTION_MOL_BOND_HUCKLIZE: "Hucklize", CAPTION_MOL_ATOM: "\u539F\u5B50", CAPTION_MOL_FORMULA: "\u5206\u5B50\u5F0F", CAPTION_MOL_ATOM_AND_FORMULA: "\u539F\u5B50\u4E0E\u5206\u5B50\u5F0F", CAPTION_MOL_CHARGE: "\u7535\u8377", CAPTION_MOL_CHARGE_CLEAR: "\u6E05\u9664\u7535\u8377", CAPTION_MOL_CHARGE_POSITIVE: "\u6B63\u7535\u8377", CAPTION_MOL_CHARGE_NEGATIVE: "\u8D1F\u7535\u8377", CAPTION_MOL_CHARGE_SINGLET: "\u5355\u7EBF\u6001", CAPTION_MOL_CHARGE_DOUBLET: "\u53CC\u7EBF\u6001\u81EA\u7531\u57FA", CAPTION_MOL_CHARGE_TRIPLET: "\u4E09\u7EBF\u6001", CAPTION_MOL_ELECTRON_LONEPAIR: "\u5B64\u5BF9\u7535\u5B50", CAPTION_TEXT_BLOCK: "\u6587\u5B57", CAPTION_IMAGE_BLOCK: "\u56FE\u50CF", CAPTION_TEXT_IMAGE: "\u6587\u5B57\u4E0E\u56FE\u50CF", CAPTION_MOL_FLEXCHAIN: "\u53EF\u53D8\u78B3\u94FE", CAPTION_MOL_FLEXRING: "\u53EF\u53D8\u78B3\u73AF", CAPTION_REPOSITORY_RING: "\u73AF", CAPTION_REPOSITORY_RING_3: "\u73AF\u4E19\u70F7", CAPTION_REPOSITORY_RING_4: "\u73AF\u4E01\u70F7", CAPTION_REPOSITORY_RING_5: "\u73AF\u620A\u70F7", CAPTION_REPOSITORY_RING_6: "\u73AF\u5DF1\u70F7", CAPTION_REPOSITORY_RING_7: "\u73AF\u5E9A\u70F7", CAPTION_REPOSITORY_RING_8: "\u73AF\u8F9B\u70F7", CAPTION_REPOSITORY_RING_AR_6: "\u82EF", CAPTION_REPOSITORY_RING_AR_5: "\u73AF\u620A\u4E8C\u70EF", CAPTION_REPOSITORY_CYCLOHEXANE_CHAIR1: "\u73AF\u5DF1\u70F7\u6905\u5F0F1", CAPTION_REPOSITORY_CYCLOHEXANE_CHAIR2: "\u73AF\u5DF1\u70F7\u6905\u5F0F2", CAPTION_REPOSITORY_CYCLOHEXANE_HARWORTH1: "\u73AF\u5DF1\u70F7Haworth\u5F0F1", CAPTION_REPOSITORY_CYCLOHEXANE_HARWORTH2: "\u73AF\u5DF1\u70F7Haworth\u5F0F2", CAPTION_REPOSITORY_CYCLOPENTANE_HARWORTH1: "\u73AF\u620A\u70F7Haworth\u5F0F1", CAPTION_REPOSITORY_CYCLOPENTANE_HARWORTH2: "\u73AF\u620A\u70F7Haworth\u5F0F2", CAPTION_REPOSITORY_METHANE: "\u7532\u70F7", CAPTION_REPOSITORY_FISCHER1: "\u5355\u624B\u6027\u4E2D\u5FC3Fischer\u6295\u5F71\u5F0F", CAPTION_REPOSITORY_FISCHER2: "\u53CC\u624B\u6027\u4E2D\u5FC3Fischer\u6295\u5F71\u5F0F", CAPTION_REPOSITORY_FISCHER3: "\u4E09\u624B\u6027\u4E2D\u5FC3Fischer\u6295\u5F71\u5F0F", CAPTION_REPOSITORY_SAWHORSE_STAGGERED: "\u4EA4\u53C9\u5F0F\u952F\u67B6\u5F0F", CAPTION_REPOSITORY_SAWHORSE_ECLIPSED: "\u91CD\u53E0\u5F0F\u952F\u67B6\u5F0F", CAPTION_REPOSITORY_SUBBOND_MARK: "\u53D6\u4EE3\u57FA\u952E", CAPTION_REPOSITORY_ARROWLINE: "\u7EBF\u6BB5\u4E0E\u7BAD\u5934", CAPTION_REPOSITORY_GLYPH: "\u56FE\u7B26", CAPTION_REPOSITORY_GLYPH_LINE: "\u76F4\u7EBF", CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_LINE: "\u5F00\u653E\u7BAD\u5934\u7EBF", CAPTION_REPOSITORY_GLYPH_TRIANGLE_ARROW_LINE: "\u4E09\u89D2\u7BAD\u5934\u7EBF", CAPTION_REPOSITORY_GLYPH_DI_OPEN_ARROW_LINE: "\u53CC\u5411\u5F00\u653E\u7BAD\u5934\u7EBF", CAPTION_REPOSITORY_GLYPH_DI_TRIANGLE_ARROW_LINE: "\u53CC\u5411\u4E09\u89D2\u7BAD\u5934\u7EBF", CAPTION_REPOSITORY_GLYPH_REV_ARROW_LINE: "\u53EF\u9006\u7BAD\u5934\u7EBF", CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_DILINE: "\u5F00\u653E\u7BAD\u5934\u53CC\u7EBF", CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_ARC: "\u5F00\u653E\u7BAD\u5934\u5F27\u7EBF", CAPTION_REPOSITORY_GLYPH_SINGLE_SIDE_OPEN_ARROW_ARC: "\u5355\u4FA7\u5F00\u653E\u7BAD\u5934\u5F27\u7EBF", CAPTION_ELECTRON_PUSHING_ARROW: "\u7535\u5B50\u8F6C\u79FB\u7BAD\u5934", CAPTION_ELECTRON_PUSHING_ARROW_DOUBLE: "\u53CC\u7535\u5B50\u8F6C\u79FB\u7BAD\u5934", CAPTION_ELECTRON_PUSHING_ARROW_SINGLE: "\u5355\u7535\u5B50\u8F6C\u79FB\u7BAD\u5934", CAPTION_REPOSITORY_HEAT_SYMBOL: "\u52A0\u70ED\u7B26\u53F7", CAPTION_REPOSITORY_ADD_SYMBOL: "\u52A0\u53F7", CAPTION_TEXT_FORMAT: "\u6587\u5B57\u683C\u5F0F", CAPTION_PICK_COLOR: "\u989C\u8272", CAPTION_FONTNAME: "\u5B57\u4F53", CAPTION_FONTSIZE: "\u5B57\u53F7", CAPTION_TEXT_DIRECTION: "\u6587\u5B57\u65B9\u5411", CAPTION_TEXT_DIRECTION_DEFAULT: "\u7F3A\u7701", CAPTION_TEXT_DIRECTION_LTR: "\u7531\u5DE6\u81F3\u53F3", CAPTION_TEXT_DIRECTION_RTL: "\u7531\u53F3\u81F3\u5DE6", CAPTION_TEXT_DIRECTION_TTB: "\u7531\u4E0A\u81F3\u4E0B", CAPTION_TEXT_DIRECTION_BTT: "\u7531\u4E0B\u81F3\u4E0A", CAPTION_TEXT_HORIZONTAL_ALIGN: "\u6587\u5B57\u6C34\u5E73\u5BF9\u9F50", CAPTION_TEXT_VERTICAL_ALIGN: "\u6587\u5B57\u5782\u76F4\u5BF9\u9F50", CAPTION_TEXT_ALIGN_DEFAULT: "\u7F3A\u7701", CAPTION_TEXT_ALIGN_LEADING: "\u9996\u5BF9\u9F50", CAPTION_TEXT_ALIGN_TRAILING: "\u5C3E\u5BF9\u9F50", CAPTION_TEXT_ALIGN_CENTER: "\u5C45\u4E2D\u5BF9\u9F50", CAPTION_TEXT_ALIGN_LEFT: "\u5DE6\u5BF9\u9F50", CAPTION_TEXT_ALIGN_RIGHT: "\u53F3\u5BF9\u9F50", CAPTION_TEXT_ALIGN_TOP: "\u4E0A\u5BF9\u9F50", CAPTION_TEXT_ALIGN_BOTTOM: "\u4E0B\u5BF9\u9F50", CAPTION_NODE_LABEL_DISPLAY_MODE: "\u539F\u5B50\u6807\u7B7E\u663E\u793A\u6A21\u5F0F", CAPTION_NODE_LABEL_DISPLAY_MODE_DEFAULT: "\u9ED8\u8BA4", CAPTION_NODE_LABEL_DISPLAY_MODE_SHOWN: "\u663E\u793A\u6587\u672C", CAPTION_NODE_LABEL_DISPLAY_MODE_HIDDEN: "\u9690\u85CF\u6587\u672C", CAPTION_NODE_LABEL_DISPLAY_MODE_SMART: "\u667A\u80FD", CAPTION_ATOM_MODIFIER: "\u539F\u5B50", CAPTION_ATOM_MODIFIER_MIXED: "[A]", CAPTION_BOND_MODIFIER: "\u952E", CAPTION_CHARGE_MODIFIER: "\u7535\u8377", CAPTION_GLYPH_PATH_MODIFIER: "\u7EBF\u6BB5", CAPTION_REACTION_ARROW_AND_SEGMENT_PATH_MODIFIER: "\u53CD\u5E94\u7BAD\u5934\u4E0E\u7EBF\u6BB5", CAPTION_ARC_PATH_MODIFIER: "\u5F27\u7EBF", CAPTION_MULTI_ARC_PATH_MODIFIER: "\u591A\u5F27\u7EBF", CAPTION_ELECTRON_PUSHING_ARROW_MODIFIER: "\u7535\u5B50\u8F6C\u79FB\u7BAD\u5934", CAPTION_BOND_FORMING_ELECTRON_PUSHING_ARROW_MODIFIER: "\u7535\u5B50\u8F6C\u79FB\u6210\u952E\u7BAD\u5934", TEXT_CHARGE_POSITIVE: "+", TEXT_CHARGE_NEGATIVE: "-", TEXT_CHARGE_UNKNOWN: "<sup>+</sup>/<sub>-</sub>", TEXT_CHARGE_NONE: "&#8709;", HINT_NEWDOC: "\u521B\u5EFA\u65B0\u6587\u6863", HINT_UNDO: "\u64A4\u9500", HINT_REDO: "\u91CD\u505A", HINT_COPY_WHOLE: "\u5C06\u5BF9\u8C61\u590D\u5236\u81F3\u5185\u90E8\u526A\u8D34\u677F", HINT_COPY: "\u5C06\u9009\u5B9A\u5BF9\u8C61\u590D\u5236\u81F3\u5185\u90E8\u526A\u8D34\u677F", HINT_CUT: "\u5C06\u9009\u5B9A\u5BF9\u8C61\u526A\u5207\u81F3\u5185\u90E8\u526A\u8D34\u677F", HINT_PASTE: "\u81EA\u5185\u90E8\u526A\u8D34\u677F\u590D\u5236", HINT_CLONE_SELECTION: "\u514B\u9686\u5F53\u524D\u9009\u533A", HINT_SELECT_ALL: "\u9009\u62E9\u5168\u90E8\u5BF9\u8C61", HINT_TOGGLE_SELECT: "\u53E0\u52A0\u9009\u62E9", HINT_TOGGLE_OBJ_INSPECTOR: "\u663E\u793A\u6216\u9690\u85CF\u5BF9\u8C61\u68C0\u89C6\u5668", HINT_TOGGLE_ISSUE_INSPECTOR: "\u663E\u793A\u6216\u9690\u85CF\u95EE\u9898\u68C0\u89C6\u5668", HINT_TOGGLE_SHOW_ISSUE_MARKERS: "\u663E\u793A\u6216\u9690\u85CF\u95EE\u9898\u6807\u8BB0", HINT_RECHECK_ISSUES: "\u91CD\u65B0\u68C0\u67E5\u7F16\u8F91\u5185\u5BB9\u4E2D\u7684\u95EE\u9898", HINT_MANIPULATE: "\u9009\u62E9\u5DE5\u5177", HINT_MANIPULATE_MARQUEE: "\u77E9\u5F62\u9009\u6846", HINT_MANIPULATE_LASSO: "\u5957\u7D22\u9009\u62E9", HINT_MANIPULATE_BRUSH: "\u9009\u62E9\u5237", HINT_MANIPULATE_ANCESTOR: "\u9009\u62E9\u5206\u5B50", HINT_CLIENT_DRAGSCROLL: "\u79FB\u52A8\u753B\u5E03", HINT_ERASE: "\u5220\u9664\u5DE5\u5177", HINT_TRACK_INPUT: "\u624B\u5199\u8F93\u5165\u5DE5\u5177", HINT_MOL_BOND: "\u5316\u5B66\u952E\u5DE5\u5177", HINT_MOL_BOND_SINGLE: "\u5355\u952E", HINT_MOL_BOND_DOUBLE: "\u53CC\u952E", HINT_MOL_BOND_TRIPLE: "\u53C1\u952E", HINT_MOL_BOND_QUAD: "\u56DB\u952E", HINT_MOL_BOND_EXPLICIT_AROMATIC: "\u663E\u5F0F\u82B3\u9999\u952E", HINT_MOL_BOND_WEDGEUP: "\u5B9E\u6954\u7EBF\u952E", HINT_MOL_BOND_WEDGEUP_INVERTED: "\u5B9E\u6954\u7EBF\u952E2", HINT_MOL_BOND_WEDGEDOWN: "\u865A\u6954\u7EBF\u952E", HINT_MOL_BOND_WEDGEDOWN_INVERTED: "\u865A\u6954\u7EBF\u952E2", HINT_MOL_BOND_CLOSER: "\u7A81\u51FA(\u52A0\u7C97)\u952E", HINT_MOL_BOND_WAVY: "\u6CE2\u6D6A\u952E", HINT_MOL_BOND_DOUBLE_EITHER: "\u987A\u6216\u53CD\u5F0F\u53CC\u952E", HINT_MOL_BOND_IONIC: "\u79BB\u5B50\u952E", HINT_MOL_BOND_COORDINATE: "\u914D\u4F4D\u952E", HINT_MOL_BOND_METALLIC: "\u91D1\u5C5E\u952E", HINT_MOL_BOND_HYDROGEN: "\u6C22\u952E", HINT_MOL_BOND_KEKULIZE: "Kekulize, \u5C06\u663E\u5F0F\u7684\u82B3\u9999\u952E\u8F6C\u6362\u4E3A\u5355\u53CC\u952E\u95F4\u9694\u5F62\u5F0F", HINT_MOL_BOND_HUCKLIZE: "Hucklize, \u5C06\u82B3\u73AF\u4E0A\u7684\u952E\u8F6C\u6362\u4E3A\u663E\u5F0F\u7684\u82B3\u9999\u952E", HINT_MOL_ATOM: "\u539F\u5B50\u5DE5\u5177", HINT_MOL_FORMULA: "\u5206\u5B50\u5F0F\u5DE5\u5177", HINT_MOL_ATOM_AND_FORMULA: "\u539F\u5B50\u4E0E\u5206\u5B50\u5F0F\u5DE5\u5177", HINT_MOL_CHARGE: "\u7535\u8377\u5DE5\u5177", HINT_MOL_CHARGE_CLEAR: "\u6E05\u9664\u7535\u8377\u6216\u81EA\u7531\u57FA", HINT_MOL_CHARGE_POSITIVE: "\u6B63\u7535\u8377", HINT_MOL_CHARGE_NEGATIVE: "\u8D1F\u7535\u8377", HINT_MOL_CHARGE_SINGLET: "\u5355\u7EBF\u6001\u81EA\u7531\u57FA", HINT_MOL_CHARGE_DOUBLET: "\u53CC\u7EBF\u6001\u81EA\u7531\u57FA", HINT_MOL_CHARGE_TRIPLET: "\u4E09\u7EBF\u6001\u81EA\u7531\u57FA", HINT_MOL_ELECTRON_LONEPAIR: "\u5B64\u5BF9\u7535\u5B50", HINT_TEXT_BLOCK: "\u6587\u5B57\u5DE5\u5177", HINT_IMAGE_BLOCK: "\u56FE\u50CF\u5DE5\u5177", HINT_TEXT_IMAGE: "\u6587\u5B57\u4E0E\u56FE\u50CF\u5DE5\u5177", HINT_MOL_FLEXCHAIN: "\u53EF\u53D8\u78B3\u94FE", HINT_MOL_FLEXRING: "\u53EF\u53D8\u78B3\u73AF", HINT_REPOSITORY_RING: "\u73AF\u5DE5\u5177", HINT_REPOSITORY_RING_3: "\u73AF\u4E19\u70F7", HINT_REPOSITORY_RING_4: "\u73AF\u4E01\u70F7", HINT_REPOSITORY_RING_5: "\u73AF\u620A\u70F7", HINT_REPOSITORY_RING_6: "\u73AF\u5DF1\u70F7", HINT_REPOSITORY_RING_7: "\u73AF\u5E9A\u70F7", HINT_REPOSITORY_RING_8: "\u73AF\u8F9B\u70F7", HINT_REPOSITORY_RING_AR_6: "\u82EF", HINT_REPOSITORY_RING_AR_5: "\u73AF\u620A\u4E8C\u70EF", HINT_REPOSITORY_CYCLOHEXANE_CHAIR1: "\u73AF\u5DF1\u70F7\u6905\u5F0F1", HINT_REPOSITORY_CYCLOHEXANE_CHAIR2: "\u73AF\u5DF1\u70F7\u6905\u5F0F2", HINT_REPOSITORY_CYCLOHEXANE_HARWORTH1: "\u73AF\u5DF1\u70F7Haworth\u5F0F1", HINT_REPOSITORY_CYCLOHEXANE_HARWORTH2: "\u73AF\u5DF1\u70F7Haworth\u5F0F2", HINT_REPOSITORY_CYCLOPENTANE_HARWORTH1: "\u73AF\u620A\u70F7Haworth\u5F0F1", HINT_REPOSITORY_CYCLOPENTANE_HARWORTH2: "\u73AF\u620A\u70F7Haworth\u5F0F2", HINT_REPOSITORY_SUBBOND_MARK: "\u53D6\u4EE3\u57FA\u952E", HINT_REPOSITORY_METHANE: "\u7532\u70F7", HINT_REPOSITORY_FISCHER1: "\u5355\u624B\u6027\u4E2D\u5FC3Fischer\u6295\u5F71\u5F0F", HINT_REPOSITORY_FISCHER2: "\u53CC\u624B\u6027\u4E2D\u5FC3Fischer\u6295\u5F71\u5F0F", HINT_REPOSITORY_FISCHER3: "\u4E09\u624B\u6027\u4E2D\u5FC3Fischer\u6295\u5F71\u5F0F", HINT_REPOSITORY_SAWHORSE_STAGGERED: "\u4EA4\u53C9\u5F0F\u952F\u67B6\u5F0F", HINT_REPOSITORY_SAWHORSE_ECLIPSED: "\u91CD\u53E0\u5F0F\u952F\u67B6\u5F0F", HINT_REPOSITORY_ARROWLINE: "\u7EBF\u6BB5\u4E0E\u7BAD\u5934", HINT_REPOSITORY_GLYPH: "\u56FE\u7B26", HINT_REPOSITORY_GLYPH_LINE: "\u76F4\u7EBF", HINT_REPOSITORY_GLYPH_OPEN_ARROW_LINE: "\u5F00\u653E\u7BAD\u5934\u7EBF", HINT_REPOSITORY_GLYPH_TRIANGLE_ARROW_LINE: "\u4E09\u89D2\u7BAD\u5934\u7EBF", HINT_REPOSITORY_GLYPH_DI_OPEN_ARROW_LINE: "\u53CC\u5411\u5F00\u653E\u7BAD\u5934\u7EBF", HINT_REPOSITORY_GLYPH_DI_TRIANGLE_ARROW_LINE: "\u53CC\u5411\u4E09\u89D2\u7BAD\u5934\u7EBF", HINT_REPOSITORY_GLYPH_REV_ARROW_LINE: "\u53EF\u9006\u7BAD\u5934\u7EBF", HINT_REPOSITORY_GLYPH_OPEN_ARROW_DILINE: "\u5F00\u653E\u7BAD\u5934\u53CC\u7EBF", HINT_REPOSITORY_GLYPH_OPEN_ARROW_ARC: "\u5F00\u653E\u7BAD\u5934\u5F27\u7EBF", HINT_REPOSITORY_GLYPH_SINGLE_SIDE_OPEN_ARROW_ARC: "\u5355\u4FA7\u5F00\u653E\u7BAD\u5934\u5F27\u7EBF", HINT_REPOSITORY_HEAT_SYMBOL: "\u52A0\u70ED\u7B26\u53F7", HINT_REPOSITORY_ADD_SYMBOL: "\u52A0\u53F7", HINT_ELECTRON_PUSHING_ARROW: "\u7535\u5B50\u8F6C\u79FB\u7BAD\u5934", HINT_NODE_LABEL_DISPLAY_MODE: "\u539F\u5B50\u6807\u7B7E\u663E\u793A\u6A21\u5F0F", HINT_TEXT_FORMAT: "\u8BBE\u7F6E\u6587\u5B57\u683C\u5F0F", HINT_FONTNAME: "\u8BBE\u7F6E\u5B57\u4F53", HINT_FONTSIZE: "\u8BBE\u7F6E\u5B57\u53F7", HINT_PICK_COLOR: "\u9009\u62E9\u989C\u8272", HINT_TEXT_DIRECTION: "\u8BBE\u7F6E\u6587\u5B57\u65B9\u5411", HINT_TEXT_HORIZONTAL_ALIGN: "\u8BBE\u7F6E\u6587\u5B57\u6C34\u5E73\u5BF9\u9F50\u65B9\u5F0F", HINT_TEXT_VERTICAL_ALIGN: "\u8BBE\u7F6E\u6587\u5B57\u6C34\u5E73\u5782\u76F4\u65B9\u5F0F", HINT_CHARGE_NONE: "\u65E0\u7535\u8377", HINT_ATOM_MODIFIER: "\u8BBE\u7F6E\u539F\u5B50", HINT_BOND_MODIFIER: "\u8BBE\u7F6E\u952E", HINT_CHARGE_MODIFIER: "\u8BBE\u7F6E\u7535\u8377", HINT_GLYPH_PATH_MODIFIER: "\u8BBE\u7F6E\u7EBF\u6BB5", HINT_REACTION_ARROW_AND_SEGMENT_PATH_MODIFIER: "\u8BBE\u7F6E\u53CD\u5E94\u7BAD\u5934\u4E0E\u7EBF\u6BB5", HINT_ARC_PATH_MODIFIER: "\u8BBE\u7F6E\u5F27\u7EBF", HINT_MULTI_ARC_PATH_MODIFIER: "\u8BBE\u7F6E\u591A\u91CD\u5F27\u7EBF", HINT_ELECTRON_PUSHING_ARROW_MODIFIER: "\u8BBE\u7F6E\u7535\u5B50\u8F6C\u79FB\u7BAD\u5934", HINT_BOND_FORMING_ELECTRON_PUSHING_ARROW_MODIFIER: "\u8BBE\u7F6E\u7535\u5B50\u8F6C\u79FB\u6210\u952E\u7BAD\u5934", HINT_USE_ATOM_CUSTOM_COLOR: "(\u4F7F\u7528\u539F\u5B50\u7279\u5F81\u989C\u8272)", CAPTION_LOADDATA_DIALOG: "\u8F7D\u5165\u6570\u636E", CAPTION_LOADDATA_DIALOG_APPENDMODE: "\u9644\u52A0\u5230\u5F53\u524D\u6587\u6863", CAPTION_SAVEDATA_DIALOG: "\u4FDD\u5B58\u6570\u636E", CAPTION_DATA_FORMAT: "\u6570\u636E\u683C\u5F0F\uFF1A", CAPTION_DATA_SRC: "\u5728\u4E0B\u65B9\u8F93\u5165\u6216\u7C98\u8D34\u6570\u636E\uFF1A", CAPTION_LOADDATA_FROM_FILE: "\u8F7D\u5165\u6587\u4EF6", CAPTION_CHOOSEFILEFORMAT: "\u9009\u62E9\u6587\u4EF6\u683C\u5F0F", CAPTION_SELECT_FORMAT: "\u9009\u62E9\u683C\u5F0F\uFF1A", CAPTION_PREVIEW_FILE_CONTENT: "\u9884\u89C8\u6587\u4EF6\u5185\u5BB9\u2026", S_DEF_SAVE_FILENAME: "Unnamed", CAPTION_ATOMLIST_PERIODIC_TABLE: "\u66F4\u591A\u2026", CAPTION_RGROUP: "\u53D6\u4EE3\u57FA", CAPTION_VARIABLE_ATOM: "(\u5305\u542B)\u539F\u5B50\u5217\u8868", CAPTION_VARIABLE_NOT_ATOM: "(\u4E0D\u5305\u542B)\u539F\u5B50\u5217\u8868", CAPTION_PSEUDOATOM: "\u8D5D\u539F\u5B50(Pseudoatom)", CAPTION_DUMMY_ATOM: "\u865A\u539F\u5B50(Dummy atom)", CAPTION_HETERO_ATOM: "\u6742\u539F\u5B50", CAPTION_ANY_ATOM: "\u4EFB\u610F\u539F\u5B50", CAPTION_ATOM: "\u539F\u5B50", CAPTION_SUBGROUP: "\u57FA\u56E2", CAPTION_PERIODIC_TABLE_DIALOG: "\u5143\u7D20\u5468\u671F\u8868", CAPTION_PERIODIC_TABLE_DIALOG_SEL_ELEM: "\u9009\u62E9\u5143\u7D20", CAPTION_PERIODIC_TABLE_DIALOG_SEL_ELEMS: "\u9009\u62E9\u591A\u4E2A\u5143\u7D20", CAPTION_TEXTBLOCK_INIT: "\u5728\u6B64\u8F93\u5165\u6587\u5B57", CAPTION_WIDTH: "\u5BBD", CAPTION_LENGTH: "\u957F", CAPTION_PATH_INDEX: "Path {0}", HINT_PATH_INDEX: "Path {0}", CAPTION_REACTION_ARROW_UNSET: "(\u672A\u8BBE\u7F6E)", CAPTION_REACTION_ARROW_CUSTOM: "\u81EA\u5B9A\u4E49", CAPTION_REACTION_ARROW_NORMAL: "\u666E\u901A\u53CD\u5E94\u7BAD\u5934", CAPTION_REACTION_ARROW_RESONANCE: "\u5171\u632F\u5F0F\u7BAD\u5934", CAPTION_REACTION_ARROW_REVERSIBLE: "\u53EF\u9006\u53CD\u5E94\u7BAD\u5934", CAPTION_REACTION_ARROW_RETROSYNTHESIS: "\u9006\u5408\u6210\u5206\u6790\u7BAD\u5934", HINT_REACTION_ARROW_UNSET: "\u672A\u8BBE\u7F6E", HINT_REACTION_ARROW_CUSTOM: "\u81EA\u5B9A\u4E49", HINT_REACTION_ARROW_NORMAL: "\u666E\u901A\u53CD\u5E94\u7BAD\u5934", HINT_REACTION_ARROW_RESONANCE: "\u5171\u632F\u5F0F\u7BAD\u5934", HINT_REACTION_ARROW_REVERSIBLE: "\u53EF\u9006\u53CD\u5E94\u7BAD\u5934", HINT_REACTION_ARROW_RETROSYNTHESIS: "\u9006\u5408\u6210\u5206\u6790\u7BAD\u5934", CAPTION_LINE_COUNT: "\u76F4\u7EBF\u6570\u76EE", CAPTION_LINE_GAP: "\u76F4\u7EBF\u95F4\u9699", CAPTION_LINE: "\u76F4\u7EBF", CAPTION_STARTING_ARROW: "\u8D77\u59CB\u7BAD\u5934", CAPTION_ENDING_ARROW: "\u7EC8\u6B62\u7BAD\u5934", CAPTION_REACTION_ARROW_TYPE: "\u53CD\u5E94\u7BAD\u5934\u7C7B\u578B", CAPTION_ELECTRON_PUSHING_ARROW_TYPE: "\u7535\u5B50\u8F6C\u79FB\u7BAD\u5934\u7C7B\u578B", CAPTION_OPPOSITE_ARROW_SIDES: "\u7BAD\u5934\u4F4D\u7F6E\u76F8\u53CD", CAPTION_SAME_ARROW_SIDES: "\u7BAD\u5934\u4F4D\u7F6E\u76F8\u540C", CAPTION_ELECTRON_PUSHING_ARROW_1: "\u5355\u7535\u5B50\u8F6C\u79FB\u7BAD\u5934", CAPTION_ELECTRON_PUSHING_ARROW_1_ABBR: "\u5355\u7535\u5B50", HINT_ELECTRON_PUSHING_ARROW_1: "\u5355\u7535\u5B50\u8F6C\u79FB\u7BAD\u5934", CAPTION_ELECTRON_PUSHING_ARROW_2: "\u53CC\u7535\u5B50\u8F6C\u79FB\u7BAD\u5934", CAPTION_ELECTRON_PUSHING_ARROW_2_ABBR: "\u53CC\u7535\u5B50", HINT_ELECTRON_PUSHING_ARROW_2: "\u53CC\u7535\u5B50\u8F6C\u79FB\u7BAD\u5934", CAPTION_BOND_FORMING_ELECTRON_PUSHING_ARROW_1: "\u7535\u5B50\u8F6C\u79FB\u6210\u952E\u7BAD\u5934", HINT_BOND_FORMING_ELECTRON_PUSHING_ARROW_1: "\u7535\u5B50\u8F6C\u79FB\u6210\u952E\u7BAD\u5934", LEGEND_CAPTION: "\u56FE\u4F8B", LEGEND_ELEM_SYMBOL: "\u5143\u7D20\u7B26\u53F7", LEGEND_ELEM_NAME: "\u540D\u79F0", LEGEND_ATOMIC_NUM: "\u539F\u5B50\u5E8F\u6570", LEGEND_ATOMIC_WEIGHT: "\u539F\u5B50\u91CF", CAPTION_2D: "2D", CAPTION_3D: "3D", CAPTION_AUTOSIZE: "\u81EA\u52A8\u5C3A\u5BF8", CAPTION_AUTOFIT: "\u81EA\u52A8\u7F29\u653E", CAPTION_SHOWSIZEINFO: "\u663E\u793A\u5C3A\u5BF8\u4FE1\u606F", CAPTION_LABEL_SIZE: "\u5C3A\u5BF8\uFF1A", CAPTION_BACKGROUND_COLOR: "\u80CC\u666F\u989C\u8272\uFF1A", CAPTION_WIDTH_HEIGHT: "\u5BBD\uFF1A{0}\u3001\u9AD8\uFF1A{1}", PLACEHOLDER_WIDTH: "\u5BBD", PLACEHOLDER_HEIGHT: "\u9AD8", HINT_AUTOSIZE: "\u56FE\u5F62\u5C3A\u5BF8\u662F\u5426\u7531\u5BF9\u8C61\u5927\u5C0F\u81EA\u52A8\u8C03\u6574", HINT_AUTOFIT: "\u5BF9\u8C61\u662F\u5426\u586B\u6EE1\u56FE\u5F62\u533A\u57DF", S_VALUE_DEFAULT: "(\u7F3A\u7701)", CAPTION_TOGGLE_INSPECTOR: "\u5BF9\u8C61\u68C0\u89C6\u5668", HINT_TOGGLE_INSPECTOR: "\u663E\u793A\u6216\u9690\u85CF\u5BF9\u8C61\u68C0\u89C6\u5668" }), Kekule.Localization.addResource("zh", "ErrorMsg", { WIDGET_CLASS_NOT_FOUND: "\u63A7\u4EF6\u7C7B\u4E0D\u5B58\u5728", WIDGET_CAN_NOT_BIND_TO_ELEM: "\u63A7\u4EF6{0}\u65E0\u6CD5\u7ED1\u5B9A\u5230HTML\u5143\u7D20<{1}>", LOAD_CHEMDATA_FAILED: "\u8F7D\u5165\u6570\u636E\u5931\u8D25", FILE_API_NOT_SUPPORTED: "\u60A8\u5F53\u524D\u7684\u6D4F\u89C8\u5668\u4E0D\u652F\u6301HTML\u6587\u4EF6\u64CD\u4F5C\uFF0C\u8BF7\u5347\u7EA7\u6D4F\u89C8\u5668\u3002", DRAW_BRIDGE_NOT_SUPPORTED: "\u60A8\u5F53\u524D\u7684\u6D4F\u89C8\u5668\u4E0D\u652F\u6301\u8BE5\u7ED8\u56FE\u529F\u80FD\uFF0C\u8BF7\u5347\u7EA7\u6D4F\u89C8\u5668\u3002", COMMAND_NOT_REVERSIBLE: "\u547D\u4EE4\u65E0\u6CD5\u64A4\u9500", PAGE_INDEX_OUTOF_RANGE: "\u9875\u9762\u8D85\u51FA\u8303\u56F4", FETCH_DATA_TIMEOUT: "\u52A0\u8F7D\u6570\u636E\u8D85\u65F6", RENDER_TYPE_CHANGE_NOT_ALLOWED: "\u6E32\u67D3\u7C7B\u578B\u65E0\u6CD5\u6539\u53D8", CAN_NOT_CREATE_EDITOR: "\u521B\u5EFA\u7F16\u8F91\u5668\u5931\u8D25", CAN_NOT_SET_COORD_OF_CLASS: "\u65E0\u6CD5\u8BBE\u7F6E\u5BF9\u8C61{0}\u5B9E\u4F8B\u7684\u5750\u6807", CAN_NOT_SET_DIMENSION_OF_CLASS: "\u65E0\u6CD5\u8BBE\u7F6E\u5BF9\u8C61{0}\u5B9E\u4F8B\u7684\u5C3A\u5BF8", CAN_NOT_MERGE_CONNECTORS: "\u5316\u5B66\u952E\u6216\u8FDE\u63A5\u7B26\u65E0\u6CD5\u5408\u5E76", NOT_A_VALID_ATOM: "\u65E0\u6548\u7684\u539F\u5B50", INVALID_ATOM_SYMBOL: "\u539F\u5B50\u7B26\u53F7\u65E0\u6548", INVALID_OR_EMPTY_IMAGE: "\u7A7A\u767D\u6216\u4E0D\u5408\u6CD5\u7684\u56FE\u50CF" });
 
-// ../chemlib/node_modules/kekule/dist/mins/common.min.js
+// node_modules/kekule/dist/mins/common.min.js
 !function() {
   if (Kekule.PROP_AUTO_TITLE) {
     var e15 = ClassEx.getPrototype(ObjectEx).defineProp;
@@ -61139,11 +61376,11 @@ Kekule.Localization.setCurrModule("general"), Kekule.Localization.addResource("z
   var r12 = Kekule.MatrixUtils;
   return r12.add(e15, r12.minus(t10));
 }, multiply: function(e15, t10) {
-  for (var r12 = Kekule.MatrixUtils, n12 = r12.getRowCount(e15), i11 = r12.getColCount(t10), o15 = r12.create(n12, i11), a7 = 1; a7 <= n12; ++a7) for (var s6 = 1; s6 <= i11; ++s6) {
-    for (var l8 = 0, u7 = 1; u7 <= n12; ++u7) l8 += r12.getValue(e15, a7, u7) * r12.getValue(t10, u7, s6);
-    r12.setValue(o15, a7, s6, l8);
+  for (var r12 = Kekule.MatrixUtils, n12 = r12.getRowCount(e15), i11 = r12.getColCount(t10), o15 = r12.getRowCount(t10), a7 = r12.create(n12, i11), s6 = 1; s6 <= n12; ++s6) for (var l8 = 1; l8 <= i11; ++l8) {
+    for (var u7 = 0, c8 = 1; c8 <= o15; ++c8) u7 += r12.getValue(e15, s6, c8) * r12.getValue(t10, c8, l8);
+    r12.setValue(a7, s6, l8, u7);
   }
-  return o15;
+  return a7;
 } }, Kekule.CoordUtils = { create: function(e15, t10, r12) {
   var n12 = { x: e15, y: t10 };
   return (r12 || 0 === r12) && (n12.z = r12), n12;
@@ -61200,9 +61437,9 @@ Kekule.Localization.setCurrModule("general"), Kekule.Localization.addResource("z
     l8 = h7 && d5 ? i11(h7.x, d5.x, o15) && i11(h7.y, d5.y, o15) && i11(h7.z, d5.z, o15) : !h7 && !d5;
   }
   if (l8) for (var f7 = ["scale", "scaleX", "scaleY", "scaleZ", "rotateAngle", "rotateX", "rotateY", "rotateZ", "translateX", "translateY", "translateZ"], p5 = 0, g4 = f7.length; p5 < g4; ++p5) {
-    var m5 = f7[p5], y5 = e15[m5], v4 = t10[m5];
-    if (!n12(y5) || !n12(v4)) {
-      if (!(l8 = !n12(y5) && !n12(v4) && i11(y5, v4, 0 === m5.indexOf("scale") ? a7 : 0 === m5.indexOf("rotate") ? s6 : o15))) break;
+    var m5 = f7[p5], y5 = e15[m5], C2 = t10[m5];
+    if (!n12(y5) || !n12(C2)) {
+      if (!(l8 = !n12(y5) && !n12(C2) && i11(y5, C2, 0 === m5.indexOf("scale") ? a7 : 0 === m5.indexOf("rotate") ? s6 : o15))) break;
     }
   }
   return l8;
@@ -61224,13 +61461,13 @@ Kekule.Localization.setCurrModule("general"), Kekule.Localization.addResource("z
     var m5 = r12.create(3, 3);
     r12.setValue(m5, 1, 1, Kekule.oneOf(f7, g4)), r12.setValue(m5, 2, 2, Kekule.oneOf(p5, g4)), r12.setValue(m5, 3, 3, 1);
   }
-  var y5 = i11.translateX, v4 = i11.translateY;
-  if (y5 || v4) {
-    var C2 = r12.create(3, 3);
-    r12.setValue(C2, 1, 1, 1), r12.setValue(C2, 2, 2, 1), r12.setValue(C2, 3, 3, 1), r12.setValue(C2, 1, 3, y5 || 0), r12.setValue(C2, 2, 3, v4 || 0);
+  var y5 = i11.translateX, C2 = i11.translateY;
+  if (y5 || C2) {
+    var v4 = r12.create(3, 3);
+    r12.setValue(v4, 1, 1, 1), r12.setValue(v4, 2, 2, 1), r12.setValue(v4, 3, 3, 1), r12.setValue(v4, 1, 3, y5 || 0), r12.setValue(v4, 2, 3, C2 || 0);
   }
   var O2 = r12.create(3, 3, [1, 0, 0, 0, 1, 0, 0, 0, 1]);
-  return t10 ? (a7 && (O2 = r12.multiply(a7, O2)), C2 && (O2 = r12.multiply(C2, O2)), m5 && (O2 = r12.multiply(m5, O2)), h7 && (O2 = r12.multiply(h7, O2)), s6 && (O2 = r12.multiply(s6, O2))) : (a7 && (O2 = r12.multiply(a7, O2)), h7 && (O2 = r12.multiply(h7, O2)), m5 && (O2 = r12.multiply(m5, O2)), C2 && (O2 = r12.multiply(C2, O2)), s6 && (O2 = r12.multiply(s6, O2))), O2;
+  return t10 ? (a7 && (O2 = r12.multiply(a7, O2)), v4 && (O2 = r12.multiply(v4, O2)), m5 && (O2 = r12.multiply(m5, O2)), h7 && (O2 = r12.multiply(h7, O2)), s6 && (O2 = r12.multiply(s6, O2))) : (a7 && (O2 = r12.multiply(a7, O2)), h7 && (O2 = r12.multiply(h7, O2)), m5 && (O2 = r12.multiply(m5, O2)), v4 && (O2 = r12.multiply(v4, O2)), s6 && (O2 = r12.multiply(s6, O2))), O2;
 }, calcInverseTransform2DMatrix: function(e15) {
   var t10 = Kekule.ObjUtils.notUnset, r12 = Object.create(e15);
   return e15.center && (r12.center = { x: e15.center.x, y: e15.center.y }), t10(r12.scale) && (r12.scale = 1 / r12.scale), t10(r12.scaleX) && (r12.scaleX = 1 / r12.scaleX), t10(r12.scaleY) && (r12.scaleY = 1 / r12.scaleY), r12.translateX && (r12.translateX = -r12.translateX), r12.translateY && (r12.translateY = -r12.translateY), r12.rotateAngle && (r12.rotateAngle = -r12.rotateAngle), Kekule.CoordUtils.calcTransform2DMatrix(r12, true);
@@ -61254,8 +61491,8 @@ Kekule.Localization.setCurrModule("general"), Kekule.Localization.addResource("z
     for (l8 = 1; l8 <= 4; ++l8) for (var m5 = 1; m5 <= 4; ++m5) {
       if (l8 < 4 && m5 < 4) {
         for (var y5 = 1; y5 <= 3 && (y5 === l8 || y5 === m5); ++y5) ;
-        var v4 = f7[l8 - 1] * f7[m5 - 1];
-        c8 = l8 < m5 ? v4 * (1 - p5) - Math.pow(-1, l8 + m5) * f7[y5 - 1] * g4 : l8 > m5 ? v4 * (1 - p5) + Math.pow(-1, l8 + m5) * f7[y5 - 1] * g4 : v4 + (1 - v4) * p5;
+        var C2 = f7[l8 - 1] * f7[m5 - 1];
+        c8 = l8 < m5 ? C2 * (1 - p5) - Math.pow(-1, l8 + m5) * f7[y5 - 1] * g4 : l8 > m5 ? C2 * (1 - p5) + Math.pow(-1, l8 + m5) * f7[y5 - 1] * g4 : C2 + (1 - C2) * p5;
       } else c8 = l8 === m5 ? 1 : 0;
       t10.setValue(h7, l8, m5, c8);
     }
@@ -61282,11 +61519,11 @@ Kekule.Localization.setCurrModule("general"), Kekule.Localization.addResource("z
   }
   var g4 = n12.translateX, m5 = n12.translateY, y5 = n12.translateZ;
   if (g4 || m5 || y5) {
-    var v4 = r12.create(4, 4);
-    r12.setValue(v4, 1, 1, 1), r12.setValue(v4, 2, 2, 1), r12.setValue(v4, 3, 3, 1), r12.setValue(v4, 4, 4, 1), r12.setValue(v4, 1, 4, g4 || 0), r12.setValue(v4, 2, 4, m5 || 0), r12.setValue(v4, 3, 4, y5 || 0);
+    var C2 = r12.create(4, 4);
+    r12.setValue(C2, 1, 1, 1), r12.setValue(C2, 2, 2, 1), r12.setValue(C2, 3, 3, 1), r12.setValue(C2, 4, 4, 1), r12.setValue(C2, 1, 4, g4 || 0), r12.setValue(C2, 2, 4, m5 || 0), r12.setValue(C2, 3, 4, y5 || 0);
   }
-  var C2 = r12.create(4, 4, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-  return o15 && (C2 = r12.multiply(o15, C2)), l8 && (C2 = r12.multiply(l8, C2)), p5 && (C2 = r12.multiply(p5, C2)), v4 && (C2 = r12.multiply(v4, C2)), a7 && (C2 = r12.multiply(a7, C2)), C2;
+  var v4 = r12.create(4, 4, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+  return o15 && (v4 = r12.multiply(o15, v4)), l8 && (v4 = r12.multiply(l8, v4)), p5 && (v4 = r12.multiply(p5, v4)), C2 && (v4 = r12.multiply(C2, v4)), a7 && (v4 = r12.multiply(a7, v4)), v4;
 }, calcInverseTransform3DMatrix: function(e15) {
   var t10 = Kekule.ObjUtils.notUnset, r12 = Object.create(e15);
   return e15.center && (r12.center = { x: e15.center.x, y: e15.center.y, z: e15.center.z }), t10(r12.scale) && (r12.scale = 1 / r12.scale), t10(r12.scaleX) && (r12.scaleX = 1 / r12.scaleX), t10(r12.scaleY) && (r12.scaleY = 1 / r12.scaleY), t10(r12.scaleZ) && (r12.scaleZ = 1 / r12.scaleZ), r12.translateX && (r12.translateX = -r12.translateX), r12.translateY && (r12.translateY = -r12.translateY), r12.translateZ && (r12.translateZ = -r12.translateZ), r12.rotateAngle && (r12.rotateAngle = -r12.rotateAngle), r12.rotateX && (r12.rotateX = -r12.rotateX), r12.rotateX && (r12.rotateY = -r12.rotateY), r12.rotateZ && (r12.rotateZ = -r12.rotateZ), Kekule.CoordUtils.calcTransform3DMatrix(r12, true);
@@ -61381,16 +61618,16 @@ Kekule.Localization.setCurrModule("general"), Kekule.Localization.addResource("z
     if (1 === f7.length && a7(c8, 0, s6)) {
       var y5 = Math.sqrt(d5 * d5 - f7[0] * f7[0]);
       a7(y5, 0, s6) ? m5 = [0] : (m5[0] = y5, m5[1] = -y5, f7[1] = f7[0]);
-    } else for (var v4 = 0, C2 = f7.length; v4 < C2; ++v4) m5[v4] = -(u7 * f7[v4] + h7) / c8;
-    for (v4 = 0, C2 = f7.length; v4 < C2; ++v4) {
-      var O2 = (f7[v4] - l8[0].x) * (f7[v4] - l8[1].x), x4 = (m5[v4] - l8[0].y) * (m5[v4] - l8[1].y);
-      (a7(u7, 0, s6) && O2 <= 0 || a7(c8, 0, s6) && x4 <= 0 || O2 <= 0 && x4 <= 0) && i11.push(o15.add({ x: f7[v4], y: m5[v4] }, t10));
+    } else for (var C2 = 0, v4 = f7.length; C2 < v4; ++C2) m5[C2] = -(u7 * f7[C2] + h7) / c8;
+    for (C2 = 0, v4 = f7.length; C2 < v4; ++C2) {
+      var O2 = (f7[C2] - l8[0].x) * (f7[C2] - l8[1].x), x4 = (m5[C2] - l8[0].y) * (m5[C2] - l8[1].y);
+      (a7(u7, 0, s6) && O2 <= 0 || a7(c8, 0, s6) && x4 <= 0 || O2 <= 0 && x4 <= 0) && i11.push(o15.add({ x: f7[C2], y: m5[C2] }, t10));
     }
   }
   return i11;
 }, getCrossPointsOfCircles: function(e15, t10, r12, n12, i11) {
   if (Kekule.CoordUtils.getDistance(e15, r12) > t10 + n12) return [];
-  for (var o15 = t10, a7 = n12, s6 = e15.x, l8 = r12.x, u7 = e15.y, c8 = r12.y, h7 = (o15 * o15 - a7 * a7 + (l8 * l8 - s6 * s6) + (c8 * c8 - u7 * u7)) / (2 * (c8 - u7)), d5 = (l8 - s6) / (c8 - u7), f7 = 1 + d5 * d5, p5 = -(2 * s6 + 2 * (h7 - u7) * d5), g4 = s6 * s6 + Math.sqr(h7 - u7) - o15 * o15, m5 = Math.sqrt(p5 * p5 - 4 * f7 * g4), y5 = 2 * f7, v4 = Kekule.NumUtils.isFloatEqual(m5, 0, i11) ? [-p5] : [(-p5 + m5) / y5, (-p5 - m5) / y5], C2 = [], O2 = [], x4 = 0, k4 = v4.length; x4 < k4; ++x4) C2[x4] = h7 - d5 * v4[x4], O2.push({ x: v4[x4], y: C2[x4] });
+  for (var o15 = t10, a7 = n12, s6 = e15.x, l8 = r12.x, u7 = e15.y, c8 = r12.y, h7 = (o15 * o15 - a7 * a7 + (l8 * l8 - s6 * s6) + (c8 * c8 - u7 * u7)) / (2 * (c8 - u7)), d5 = (l8 - s6) / (c8 - u7), f7 = 1 + d5 * d5, p5 = -(2 * s6 + 2 * (h7 - u7) * d5), g4 = s6 * s6 + Math.sqr(h7 - u7) - o15 * o15, m5 = Math.sqrt(p5 * p5 - 4 * f7 * g4), y5 = 2 * f7, C2 = Kekule.NumUtils.isFloatEqual(m5, 0, i11) ? [-p5] : [(-p5 + m5) / y5, (-p5 - m5) / y5], v4 = [], O2 = [], x4 = 0, k4 = C2.length; x4 < k4; ++x4) v4[x4] = h7 - d5 * C2[x4], O2.push({ x: C2[x4], y: v4[x4] });
   return O2;
 }, clipLineSegmentByBox: function(e15, t10) {
   for (var r12 = t10[0].x, n12 = t10[0].y, i11 = t10[1].x, o15 = t10[1].y, a7 = e15[0].x, s6 = e15[0].y, l8 = e15[1].x, u7 = e15[1].y, c8 = function(e16) {
@@ -61926,7 +62163,7 @@ Kekule.Localization.setCurrModule("general"), Kekule.Localization.addResource("z
   } }), t10("mol", "mole", "AmountOfSubstance", 1), t10("cd", "candela", "LuminousIntensity", 1), t10("rad", "radian", "Angle", 1), t10("deg", "degree", "Angle", 0.01745329, { symbolHtml: "\xB0" }), t10("sr", "steradian", "SolidAngle", 1), t10("Hz", "Hertz", "Frequency", 1), t10("kHz", "kilohertz", "Frequency", 1e3), t10("MHz", "megahertz", "Frequency", 1e6), t10("N", "Newton", "Force", 1), t10("kcal/\xC5", "kilocalorie_per_angstrom", "Force", null), t10("J", "Joule", "Energy", 1), t10("cal", "calorie", "Energy", 4.184), t10("kcal", "kilocalorie", "Energy", 4184), t10("kcal/rad", "kilocalorie_per_radian", "Energy", null), t10("eV", "electron_volt", "Energy", 160217733e-27), t10("hart", "Hartree", "Energy", 43597482e-25), t10("W", "Watt", "Power", 1), t10("Pa", "Pascal", "Pressure", 1), t10("GPa", "gigaPascal", "Pressure", 1e9), t10("bar", "Bar", "Pressure", 1e5), t10("kbar", "kbar", "Pressure", 1e8), t10("atm", "Atmosphere", "Pressure", 101325.027), t10("GPa-1", "gigaPascal-1", "InversePressure", 1e-9, { symbolHtml: "GPa<sup>-1</sup>" }), t10("C", "Coulomb", "ElectricCharge", 1), t10("e", "electron_charge", "ElectricCharge", 160217733e-27), t10("V", "Volt", "ElectricPotentialDifference", 1), t10("\u03A9", "Ohm", "ElectricResistance", 1), t10("F", "Farad", "ElectricCapacitance", 1), t10("S", "Siemens", "ElectricConductance", 1), t10("Wb", "Weber", "MagneticFlux", 1), t10("T", "Tesla", "MagneticFluxDensity", 1), t10("H", "Henry", "MagneticInductance", 1), t10("Bq", "Becquerel", "Radioactivity", 1), t10("Gy", "Gray", "RadioactiveAbsorbedDose", 1), t10("Sv", "Sievert", "RadioactiveEquivalentDose", 1), t10("kat", "Katal", "CatalyticActivity", 1), t10("cp", "Centipoise", "DynamicVicosity", null), t10("mol/L", "Molarity", "Molarity", 1), t10("mol/kg", "Molality", "Molality", 1), t10("m2", "Square_meter", "Area", 1, { symbolHtml: "m<sup>2</sup>" }), t10("cm2", "centimeter_squared", "Area", 1e-4, { symbolHtml: "cm<sup>2</sup>" }), t10("m3", "Cubic_meter", "Volume", 1, { symbolHtml: "m<sup>3</sup>" }), t10("\xC53", "Angstrom_cubed", "Volume", 1e-30, { symbolHtml: "\xC5<sup>3</sup>" }), t10("L", "litre", "Volume", 1e-3), t10("mL", "millilitre", "Volume", 1e-6), t10("m/s", "Meter_per_second", "Velocity", 1), t10("km/s", "kilometers_per_second", "Velcity", 1e3), t10("m\xB7s-2", "Meter_per_second_squared", "Acceleration", 1, { symbolHtml: "m\xB7s<sup>-2</sup>" }), t10("rad/s", "radian_per_second", "AngularVelocity", 1), t10("N\xB7s", "newton_second", "Momentum", 1), t10("N\xB7m\xB7s", "newton_meter_second", "AngularMomentum", 1), t10("N\xB7m", "newton_meter", "Torque", 1), t10("m-1", "reciprocal_meter", "WaveNumber", 1, { symbolHtml: "m<sup>-1</sup>" }), t10("cm-1", "reciprocal_centimeter", "WaveNumber", 100, { symbolHtml: "cm<sup>-1</sup>" }), t10("kg\xB7m-3", "Kilogram_per_cubic_meter", "MassDensity", 1, { symbolHtml: "kg\xB7m<sup>-3</sup>" }), t10("kg-1\xB7m3", "cubic_meter_per_kilogram", "SpecificVolume", 1, { symbolHtml: "kg<sup>-1</sup>\xB7m<sup>3</sup>" }), t10("m-3\xB7mol", "mole_per_cubic_meter", "AmountConcentration", 1, { symbolHtml: "m<sup>-3</sup>\xB7mol" }), t10("m3/mol", "cubic_meter_per_mole", "MolarVolume", 1, { symbolHtml: "m<sup>3</sup>/mol" }), t10("J/K", "joule_per_kelvin", "HeatCapacity", 1), t10("J\xB7K-1\xB7mol-1", "joule_per_kelvin_mole", "MolarHeatCapacity", 1, { symbolHtml: "J\xB7K<sup>-1</sup>\xB7mol<sup>-1</sup>" }), t10("J\xB7K-1\xB7kg-1", "joule_per_kilogram_kelvin", "SpecificHeatCapacity", 1, { symbolHtml: "J\xB7K<sup>-1</sup>\xB7kg<sup>-1</sup>" }), t10("J/mol", "joule_per_mole", "MolarEnergy", 1), t10("J/kg", "joule_per_kilogram", "SpecificEnergy", 1), t10("J\xB7m-3", "joule_per_cubic_meter", "EnergyDensity", 1, { symbolHtml: "J\xB7m<sup>-3</sup>" }), t10("N/m", "newton_per_meter", "SurfaceTension", 1), t10("W\xB7m-2", "watt_per_square_meter", "HeatFluxDensity", 1, { symbolHtml: "W\xB7m<sup>-2</sup>" }), t10("W\xB7m-1\xB7K-1", "watt_per_meter_kelvin", "ThermalConductivity", 1, { symbolHtml: "W\xB7m<sup>-1</sup>\xB7K<sup>-1</sup>" }), t10("m2/s", "square_meter_per_second", "KinematicViscosity", 1, { symbolHtml: "m<sup>2</sup>/s" }), t10("Pa\xB7s", "Pascal_second", "DynamicViscosity", 1), t10("C\xB7m-3", "coulomb_per_cubic_meter", "ElectricChargeDensity", 1, { symbolHtml: "C\xB7m<sup>-3</sup>" }), t10("A\xB7m-2", "ampere_per_square_meter", "ElectricCurrentDensity", 1, { symbolHtml: "A\xB7m<sup>-2</sup>" }), t10("S/m", "siemens_per_meter", "ElectricalConductivity", 1), t10("S\xB7m2/mol", "siemens_square_meter_per_mole", "MolarConductivity", 1, { symbolHtml: "S\xB7m<sup>2</sup>/mol" }), t10("F/m", "farad_per_meter", "Permittivity", 1), t10("H/m", "henry_per_meter", "Permeability", 1), t10("V/m", "volt_per_meter", "ElectricFieldStrength", 1), t10("A/m", "ampere_per_meter", "MagneticFieldStrength", 1), t10("cd\xB7m-2", "candela_per_square_meter", "Luminance", 1, { symbolHtml: "cd\xB7m<sup>-2</sup>" }), t10("C/kg", "coulomb_per_kilogram", "Exposure", 1), t10("Gy/s", "gray_per_second", "AbsorbedDoseRate", 1), t10("J/m", "joule_per_meter", "EnergyLengthGradient", 1), t10("kj/mol", "kj_per_mole", "MolarEnergy", 1e3), t10("D", "debye", "Dipole", 3335641e-36);
 }();
 
-// ../chemlib/node_modules/kekule/dist/mins/core.min.js
+// node_modules/kekule/dist/mins/core.min.js
 Kekule.AbstractConfigs = Class.create(ObjectEx, { CLASS_NAME: "Kekule.AbstractConfigs", CONFIG_PROP_FLAG: "__$config_prop__", initialize: function(e15) {
   this.tryApplySuper("initialize"), void 0 === e15 && (e15 = true), e15 && this.initPropDefValues();
 }, addConfigProp: function(e15, t10, r12, n12) {
@@ -62104,7 +62341,7 @@ Kekule.AbstractConfigs = Class.create(ObjectEx, { CLASS_NAME: "Kekule.AbstractCo
 } }), Kekule.ElectronSet.UNSET_ELECTRONCOUNT = null, Kekule.UnbondedElectronSet = Class.create(Kekule.ElectronSet, { CLASS_NAME: "Kekule.UnBondedElectronSet", initialize: function(e15) {
   this.tryApplySuper("initialize", [e15]);
 }, initProperties: function() {
-} }), Kekule.BondType = { COVALENT: "covalent", IONIC: "ionic", COORDINATE: "coordinate", METALLIC: "metallic", HYDROGEN: "hydrogen", UNKNOWN: null, DEFAULT: "covalent" }, Kekule.BondOrder = { SINGLE: 1, DOUBLE: 2, TRIPLE: 3, QUAD: 4, EXPLICIT_AROMATIC: 10, OTHER: 20, UNSET: null, DEFAULT: 1, getBondValence: function(e15) {
+} }), Kekule.BondType = { COVALENT: "covalent", IONIC: "ionic", COORDINATE: "coordinate", METALLIC: "metallic", HYDROGEN: "hydrogen", TRANSITION: "transition", UNKNOWN: null, DEFAULT: "covalent" }, Kekule.BondOrder = { SINGLE: 1, DOUBLE: 2, TRIPLE: 3, QUAD: 4, EXPLICIT_AROMATIC: 10, OTHER: 20, UNSET: null, DEFAULT: 1, getBondValence: function(e15) {
   return e15 === Kekule.BondOrder.UNSET ? 0 : e15 == Kekule.BondOrder.EXPLICIT_AROMATIC ? 1.5 : e15;
 } }, Kekule.BondForm = Class.create(Kekule.ElectronSet, { CLASS_NAME: "Kekule.BondForm", initialize: function(e15, t10, r12) {
   this.tryApplySuper("initialize", [t10]), this.setBondOrder(e15 || Kekule.BondOrder.DEFAULT), Kekule.ObjUtils.notUnset(r12) && this.setBondType(r12), Kekule.ObjUtils.notUnset(t10) && this.setElectronCount(t10);
@@ -63691,13 +63928,22 @@ Kekule.AbstractConfigs = Class.create(ObjectEx, { CLASS_NAME: "Kekule.AbstractCo
   }, initProperties: function() {
     this.defineProp("charge", { dataType: DataType.FLOAT, getter: function() {
       return this.getPropStoreFieldValue("charge") || 0;
-    } }), this.defineProp("radical", { dataType: DataType.INT }), this.defineProp("parity", { dataType: DataType.INT }), this.defineProp("isAnchor", { dataType: DataType.BOOL, serializable: false, getter: function() {
+    } }), this.defineProp("electronicBias", { dataType: DataType.INT }), this.defineProp("radical", { dataType: DataType.INT }), this.defineProp("parity", { dataType: DataType.INT }), this.defineProp("isAnchor", { dataType: DataType.BOOL, serializable: false, getter: function() {
       var e16 = this.getParent();
       return !(!e16 || !e16.indexOfAnchorNode) && e16.indexOfAnchorNode(this) >= 0;
     }, setter: function(e16) {
       if (e16 !== this.getIsAnchor()) {
         var t10 = this.getParent();
         t10 && (e16 && t10.appendAnchorNode() ? t10.appendAnchorNode(this) : !e16 && t10.removeAnchorNode && t10.removeAnchorNode(this));
+      }
+    } }), this.defineProp("chargeEx", { dataType: DataType.OBJECT, scope: Class.PropertyScope.PRIVATE, serializable: false, getter: function() {
+      return { charge: this.getCharge(), electronicBias: this.getElectronicBias() };
+    }, setter: function(e16) {
+      this.beginUpdate();
+      try {
+        e16 && Kekule.ObjUtils.notUnset(e16.charge) && this.setCharge(e16.charge), e16 && Kekule.ObjUtils.notUnset(e16.electronicBias) && this.setElectronicBias(e16.electronicBias);
+      } finally {
+        this.endUpdate();
       }
     } });
   }, getStructureRelatedPropNames: function() {
@@ -63759,6 +64005,8 @@ Kekule.AbstractConfigs = Class.create(ObjectEx, { CLASS_NAME: "Kekule.AbstractCo
     this.setPropStoreFieldValue("parity", Kekule.StereoParity.NONE);
   }, isHydrogenAtom: function() {
     return false;
+  }, hasExplicitChargeOrElectronicBias: function() {
+    return !(!this.getCharge() && !this.getElectronicBias());
   }, _getBondsValenceInfo: function(e16) {
     for (var t10 = 0, r12 = 0, n12 = this.getStructureCacheData("piElectronCount") || null, o15 = 0, i11 = e16.length; o15 < i11; ++o15) {
       var a7, s6 = e16[o15];
@@ -64791,7 +65039,7 @@ Kekule.AbstractConfigs = Class.create(ObjectEx, { CLASS_NAME: "Kekule.AbstractCo
   }, hasNode: function(e16, t10) {
     return this.hasCtab() ? this.getCtab().hasNode(e16, t10) : null;
   }, indexStackOfNode: function(e16) {
-    return this.hasCtab() ? this.getCtab().indexStackOfNode(e16) : -1;
+    return this.hasCtab() ? this.getCtab().indexStackOfNode(e16) : null;
   }, getNodeAtIndexStack: function(e16) {
     return this.hasCtab() ? this.getCtab().getNodeAtIndexStack(e16) : null;
   }, getDirectChildOfNestedNode: function(e16) {
@@ -64918,45 +65166,48 @@ Kekule.AbstractConfigs = Class.create(ObjectEx, { CLASS_NAME: "Kekule.AbstractCo
       o15 instanceof Kekule.ChemStructureNode && (this.isSubFragment(o15) && o15.doClean ? o15.doClean(e16) : e16.orphanChemNode && o15.getLinkedConnectorCount() < 1 && n12 > 1 && this.removeNodeAt(t10));
     }
     return this;
-  }, clearExplicitBondHydrogens: function(e16, t10) {
-    var r12 = this, n12 = function(e17) {
+  }, clearExplicitBondHydrogens: function(e16, t10, r12) {
+    var n12 = this, o15 = function(e17) {
       var t11 = e17.getLinkedConnectors(), r13 = 1 === t11.length;
       if (r13) {
         var n13 = t11[0];
-        r13 = n13.isSingleBond && n13.isSingleBond() && n13.getStereo && (!n13.getStereo() || n13.getStereo() === Kekule.BondStereo.NONE);
+        if (r13 = n13.isSingleBond && n13.isSingleBond() && n13.getStereo && (!n13.getStereo() || n13.getStereo() === Kekule.BondStereo.NONE)) {
+          var o16 = e17.getLinkedObjsOnConnector(n13);
+          r13 = 1 === o16.length && (!o16[0].isHydrogenAtom || !o16[0].isHydrogenAtom());
+        }
       }
       return r13;
-    }, o15 = function(e17, t11) {
-      for (var n13 = e17.getLinkedConnectors(), o16 = n13.length; o16 >= 0; --o16) {
-        var i12 = n13[o16];
-        r12.hasConnector(i12, true) && r12.removeConnector(i12, false);
+    }, i11 = function(e17, t11) {
+      for (var r13 = e17.getLinkedConnectors(), o16 = r13.length; o16 >= 0; --o16) {
+        var i12 = r13[o16];
+        n12.hasConnector(i12, true) && n12.removeConnector(i12, false);
       }
-      r12.removeNodeAt(t11, false);
-    }, i11 = function(e17, t11, n13) {
+      n12.removeNodeAt(t11, false);
+    }, a7 = function(e17, t11, r13) {
       for (var o16 = e17.getLinkedConnectors(), i12 = o16.length; i12 >= 0; --i12) {
         var a8 = o16[i12];
-        if (r12.hasConnector(a8, true)) {
-          if (n13) {
+        if (n12.hasConnector(a8, true)) {
+          if (r13) {
             var s7 = e17.getLinkedObjsOnConnector(a8)[0], u8 = s7.getStructureCacheData("omittedBondHydrogenAtomCount") || 0;
             s7.setStructureCacheData("omittedBondHydrogenAtomCount", u8 + 1);
           }
-          r12.removeConnector(a8, false);
+          n12.removeConnector(a8, false);
         }
       }
-      r12.removeNodeAt(t11, false);
+      n12.removeNodeAt(t11, false);
     };
     if (e16) {
-      var a7 = this.getAutoClearStructureCache();
+      var s6 = this.getAutoClearStructureCache();
       this.setAutoClearStructureCache(false);
     }
     this.beginUpdate();
     try {
-      for (var s6 = this.getNodeCount() - 1; s6 >= 0; --s6) {
-        var u7 = this.getNodeAt(s6);
-        u7 instanceof Kekule.ChemStructureNode && (this.isSubFragment(u7) && u7.clearExplicitBondHydrogens ? (u7.clearExplicitBondHydrogens(e16, t10), u7.getNodeCount() <= 0 && o15(u7, s6)) : u7.isHydrogenAtom() && (t10 || n12(u7)) && i11(u7, s6, true));
+      for (var u7 = this.getNodeCount() - 1; u7 >= 0; --u7) {
+        var l8 = this.getNodeAt(u7);
+        l8 instanceof Kekule.ChemStructureNode && (this.isSubFragment(l8) && l8.clearExplicitBondHydrogens ? (l8.clearExplicitBondHydrogens(e16, t10, r12), l8.getNodeCount() <= 0 && i11(l8, u7)) : l8.isHydrogenAtom() && !l8.getCharge() && (t10 || o15(l8)) && a7(l8, u7, true));
       }
     } finally {
-      this.endUpdate(), e16 && this.setAutoClearStructureCache(a7);
+      this.endUpdate(), e16 && this.setAutoClearStructureCache(s6);
     }
     return this;
   }, calcFormula: function() {
@@ -65365,7 +65616,7 @@ Kekule.AbstractConfigs = Class.create(ObjectEx, { CLASS_NAME: "Kekule.AbstractCo
     this.setBondForm(Kekule.BondFormFactory.getBondForm(e16, t10, r12));
   }, canInvertBondDirection: function() {
     var e16 = Kekule.BondType, t10 = this.getBondType();
-    return [e16.COVALENT, e16.IONIC, e16.METALLIC, e16.HYDROGEN, e16.UNKNOWN].indexOf(t10) >= 0;
+    return [e16.COVALENT, e16.IONIC, e16.METALLIC, e16.HYDROGEN, e16.UNKNOWN, e16.TRANSITION].indexOf(t10) >= 0;
   }, invertBondDirection: function() {
     this.setStereo(Kekule.BondStereo.getInvertedDirection(this.getStereo()));
   }, reverseConnectedObjOrder: function() {
@@ -65546,7 +65797,7 @@ Kekule.AbstractConfigs = Class.create(ObjectEx, { CLASS_NAME: "Kekule.AbstractCo
     return this.insertChildAt(e16, t10);
   } }), Kekule.MoleculeList = Class.create(Kekule.ChemObjList, { CLASS_NAME: "Kekule.MoleculeList", initialize: function(e16) {
     this.tryApplySuper("initialize", [e16, Kekule.Molecule]);
-  } }), Kekule.ChemStructureNodeLabels = { ENABLE_ISOTOPE_ALIAS: true, UNSET_ELEMENT: "?", DUMMY_ATOM: "Du", HETERO_ATOM: "Q", ANY_ATOM: "A", CUSTOM_ATOM: "@", VARIABLE_ATOM: "L", SUBGROUP: "R", ISO_LIST_LEADING_BRACKET: "[", ISO_LIST_TAILING_BRACKET: "]", ISO_LIST_DELIMITER: ",", ISO_LIST_DISALLOW_PREFIX: "NOT" }, Kekule.ChemStructureNodeFactory = { CANDIDATE_CLASSES: [Kekule.SubGroup, Kekule.VariableAtom, Kekule.Pseudoatom], getClassByLabel: function(e16, t10) {
+  } }), Kekule.ChemStructureNodeLabels = { ENABLE_ISOTOPE_ALIAS: true, UNSET_ELEMENT: "?", DUMMY_ATOM: "Du", HETERO_ATOM: "Q", ANY_ATOM: "A", CUSTOM_ATOM: "@", VARIABLE_ATOM: "L", SUBGROUP: "R", ISO_LIST_LEADING_BRACKET: "[", ISO_LIST_TAILING_BRACKET: "]", ISO_LIST_DELIMITER: ",", ISO_LIST_DISALLOW_PREFIX: "NOT", DEF_ELECTRONIC_BIAS_MARK: "\u03B4" }, Kekule.ChemStructureNodeFactory = { CANDIDATE_CLASSES: [Kekule.SubGroup, Kekule.VariableAtom, Kekule.Pseudoatom], getClassByLabel: function(e16, t10) {
     void 0 === t10 && (t10 = Kekule.Pseudoatom);
     for (var r12, n12 = Kekule.ChemStructureNodeLabels, o15 = [[n12.SUBGROUP], [n12.VARIABLE_ATOM], [n12.DUMMY_ATOM, n12.HETERO_ATOM, n12.ANY_ATOM, n12.CUSTOM_ATOM]], i11 = Kekule.ChemStructureNodeFactory.CANDIDATE_CLASSES, a7 = 0, s6 = i11.length; a7 < s6; ++a7) {
       var u7 = i11[a7];
@@ -67029,9 +67280,11 @@ Kekule.AbstractConfigs = Class.create(ObjectEx, { CLASS_NAME: "Kekule.AbstractCo
   }, beforeRemovingByEditor: function(e15) {
     this.setPropStoreFieldValue("value", this.getValue()), this.resetParentPropValue();
   } }), Kekule.ChemMarker.Charge = Class.create(Kekule.ChemMarker.ChemPropertyMarker, { CLASS_NAME: "Kekule.ChemMarker.Charge", getPropertyName: function() {
-    return "charge";
+    return "chargeEx";
   }, getAutoIdPrefix: function() {
     return "charge";
+  }, doSetValue: function(e15) {
+    "number" == typeof e15 ? this.tryApplySuper("doSetValue", [{ precise: e15 }]) : this.tryApplySuper("doSetValue", [e15]);
   } }), Kekule.ChemMarker.Radical = Class.create(Kekule.ChemMarker.ChemPropertyMarker, { CLASS_NAME: "Kekule.ChemMarker.Radical", getPropertyName: function() {
     return "radical";
   }, getAutoIdPrefix: function() {
@@ -67062,10 +67315,10 @@ Kekule.AbstractConfigs = Class.create(ObjectEx, { CLASS_NAME: "Kekule.AbstractCo
   });
 }();
 
-// ../chemlib/node_modules/kekule/dist/kekule.esm.mjs
+// node_modules/kekule/dist/kekule.esm.mjs
 var import_html_min = __toESM(require_html_min(), 1);
 
-// ../chemlib/node_modules/kekule/dist/mins/io.min.js
+// node_modules/kekule/dist/mins/io.min.js
 Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesBuffer", LINEBREAK: "\n", initialize: function(e15) {
   this.tryApplySuper("initialize"), this.setPropStoreFieldValue("lines", []), e15 && ("string" == typeof e15 ? this.setText(e15) : this.setLines(e15)), this.setCurrLineNo(0);
 }, initProperties: function() {
@@ -67113,13 +67366,13 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   Kekule.globalOptions.add("IO", {}), Kekule.IO = {}, Kekule.IO.ChemDataType = { TEXT: "text", DOM: "dom", JSON: "json", BINARY: "bin", OTHER: "other", UNKNOWN: "unknown", isBinaryType: function(e16) {
     var t10 = Kekule.IO.ChemDataType;
     return !e16 || e16 === t10.BINARY || e16 === t10.OTHER || e16 === t10.UNKNOWN;
-  } }, Kekule.IO.DataFormat = {}, Kekule.IO.MimeType = { TEXT: "text/plain", HTML: "text/html", XML: "text/xml", JSON: "application/json", JAVASCRIPT: "application/javascript", GIF: "image/gif", JPEG: "image/jpeg", PNG: "image/png", XPNG: "image/x-png", OCTSTREAM: "application/octet-stream" }, Kekule.IO.DataFormatsManager = { _formats: {}, register: function(t10, r12, l8, a7, n12, i11, o15) {
+  } }, Kekule.IO.DataFormat = {}, Kekule.IO.MimeType = { TEXT: "text/plain", HTML: "text/html", XML: "text/xml", JSON: "application/json", JAVASCRIPT: "application/javascript", GIF: "image/gif", JPEG: "image/jpeg", PNG: "image/png", XPNG: "image/x-png", OCTSTREAM: "application/octet-stream" }, Kekule.IO.DataFormatsManager = { _formats: {}, register: function(t10, r12, l8, a7, i11, n12, o15) {
     var u7 = null;
     u7 || (u7 = e15._formats[t10]), u7 || (u7 = { id: t10 }, e15._formats[t10] = u7), u7.mimeType = r12;
     var s6 = DataType.isArrayValue(l8) ? l8 : [l8];
     return s6 = s6.map(function(e16) {
       return e16 ? e16.toLowerCase() : e16;
-    }), u7.fileExts ? Kekule.ArrayUtils.pushUnique(u7.fileExts, s6) : u7.fileExts = s6, a7 && a7 !== Kekule.IO.ChemDataType.UNKNOWN && (u7.dataType = a7), u7.title = n12, u7.description = i11, o15 && (u7 = Object.extend(u7, o15)), u7;
+    }), u7.fileExts ? Kekule.ArrayUtils.pushUnique(u7.fileExts, s6) : u7.fileExts = s6, a7 && a7 !== Kekule.IO.ChemDataType.UNKNOWN && (u7.dataType = a7), u7.title = i11, u7.description = n12, o15 && (u7 = Object.extend(u7, o15)), u7;
   }, unregister: function(t10) {
     e15._formats[t10] && delete e15._formats[t10];
   }, getAllIds: function() {
@@ -67134,8 +67387,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     return r12 ? r12.fileExts : null;
   }, findFormat: function(t10, r12) {
     if (!t10 && !r12) return null;
-    for (var l8 = e15.getAllIds(), a7 = false, n12 = 0, i11 = l8.length; n12 < i11; ++n12) {
-      var o15 = e15.getFormatInfo(l8[n12]);
+    for (var l8 = e15.getAllIds(), a7 = false, i11 = 0, n12 = l8.length; i11 < n12; ++i11) {
+      var o15 = e15.getFormatInfo(l8[i11]);
       if ((a7 = t10 && t10 === o15.mimeType) || (a7 = r12 && o15.fileExts.indexOf(r12.toLowerCase()) >= 0), a7) return o15;
     }
     return null;
@@ -67151,14 +67404,14 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
       var a7 = Kekule.IO.DataFormatsManager.getFormatInfo(r12);
       (t10 = a7 ? a7.dataType : null) || (t10 = "string" == typeof e16 ? Kekule.IO.ChemDataType.TEXT : e16.getElementsByTagName ? Kekule.IO.ChemDataType.DOM : Kekule.IO.ChemDataType.BINARY);
     }
-    var n12 = this.doReadData(e16, t10, r12, l8 || {});
-    if (n12 instanceof Kekule.ChemObject && n12.getSrcInfo) {
-      var i11 = n12.getSrcInfo();
-      i11.data = e16, i11.dataType = t10;
+    var i11 = this.doReadData(e16, t10, r12, l8 || {});
+    if (i11 instanceof Kekule.ChemObject && i11.getSrcInfo) {
+      var n12 = i11.getSrcInfo();
+      n12.data = e16, n12.dataType = t10;
       var o15 = Kekule.IO.DataFormatsManager.getFormatInfo(r12);
-      o15 && (i11.format = r12, i11.mimeType = o15.mimeType, i11.possibleFileExts = o15.fileExts);
+      o15 && (n12.format = r12, n12.mimeType = o15.mimeType, n12.possibleFileExts = o15.fileExts);
     }
-    return n12;
+    return i11;
   }, doReadData: function(e16, t10, r12, l8) {
   } }), Kekule.IO.ChemDataWriter = Class.create(ObjectEx, { CLASS_NAME: "Kekule.IO.ChemDataWriter", initialize: function(e16) {
     this.tryApplySuper("initialize");
@@ -67183,8 +67436,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
       }
     }
     if (t10 >= 0) {
-      var n12 = r12[t10];
-      return r12.splice(t10, 1), n12;
+      var i11 = r12[t10];
+      return r12.splice(t10, 1), i11;
     }
     return null;
   }, getAllReadableFormatIds: function() {
@@ -67195,8 +67448,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     return e16;
   }, getAllReadableFormats: function() {
     for (var t10 = [], r12 = Kekule.IO.ChemDataReaderManager.getAllReadableFormatIds(), l8 = 0, a7 = r12.length; l8 < a7; ++l8) {
-      var n12 = e15.getFormatInfo(r12[l8]);
-      n12 && t10.push(n12);
+      var i11 = e15.getFormatInfo(r12[l8]);
+      i11 && t10.push(i11);
     }
     return t10;
   }, getAvailableReaderInfos: function(e16) {
@@ -67247,10 +67500,10 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     return t10 ? Kekule.IO.ChemDataReaderManager.getReaderByFormat(t10) : null;
   } }, Kekule.IO.ChemDataWriterManager = { _writers: [], register: function(e16, t10, r12, l8, a7) {
     if (e16 && t10 && l8 && (!DataType.isArrayValue(l8) || l8.length)) {
-      var n12 = Kekule.IO.ChemDataWriterManager.getWriterInfoById(e16);
-      if (n12) return t10 === n12.writerClass ? (Kekule.ArrayUtils.pushUnique(n12.srcClasses, r12), Kekule.ArrayUtils.pushUnique(n12.formatId, l8), n12) : (Kekule.raise(Kekule.$L("ErrorMsg.WRITER_ID_ALREADY_EXISTS")), null);
-      var i11 = { id: e16, writerClass: t10, srcClasses: r12, formatId: DataType.isArrayValue(l8) ? l8 : [l8] };
-      return i11 = Object.extend(i11, a7), Kekule.IO.ChemDataWriterManager._writers.push(i11), i11;
+      var i11 = Kekule.IO.ChemDataWriterManager.getWriterInfoById(e16);
+      if (i11) return t10 === i11.writerClass ? (Kekule.ArrayUtils.pushUnique(i11.srcClasses, r12), Kekule.ArrayUtils.pushUnique(i11.formatId, l8), i11) : (Kekule.raise(Kekule.$L("ErrorMsg.WRITER_ID_ALREADY_EXISTS")), null);
+      var n12 = { id: e16, writerClass: t10, srcClasses: r12, formatId: DataType.isArrayValue(l8) ? l8 : [l8] };
+      return n12 = Object.extend(n12, a7), Kekule.IO.ChemDataWriterManager._writers.push(n12), n12;
     }
   }, unregister: function(e16) {
     for (var t10 = -1, r12 = Kekule.IO.ChemDataWriterManager._writers, l8 = 0, a7 = r12.length; l8 < a7; ++l8) {
@@ -67260,8 +67513,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
       }
     }
     if (t10 >= 0) {
-      var n12 = r12[t10];
-      return r12.splice(t10, 1), n12;
+      var i11 = r12[t10];
+      return r12.splice(t10, 1), i11;
     }
     return null;
   }, getAllWritableFormatIds: function() {
@@ -67272,19 +67525,19 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     return e16;
   }, getAllWritableFormats: function() {
     for (var t10 = [], r12 = Kekule.IO.ChemDataWriterManager.getAllWritableFormatIds(), l8 = 0, a7 = r12.length; l8 < a7; ++l8) {
-      var n12 = e15.getFormatInfo(r12[l8]);
-      n12 && t10.push(n12);
+      var i11 = e15.getFormatInfo(r12[l8]);
+      i11 && t10.push(i11);
     }
     return t10;
   }, getAvailableWriterInfos: function(e16, t10) {
-    for (var r12 = [], l8 = ClassEx.isClass(t10) ? t10 : t10.getClass ? t10.getClass() : t10 ? null : void 0, a7 = Kekule.IO.ChemDataWriterManager._writers, n12 = a7.length - 1; n12 >= 0; --n12) if (Kekule.ObjUtils.match(a7[n12], e16)) if (void 0 !== l8) {
-      if (l8) for (var i11 = 0, o15 = a7[n12].srcClasses.length; i11 < o15; ++i11) ClassEx.isOrIsDescendantOf(l8, a7[n12].srcClasses[i11]) && r12.push(a7[n12]);
-    } else r12.push(a7[n12]);
+    for (var r12 = [], l8 = ClassEx.isClass(t10) ? t10 : t10.getClass ? t10.getClass() : t10 ? null : void 0, a7 = Kekule.IO.ChemDataWriterManager._writers, i11 = a7.length - 1; i11 >= 0; --i11) if (Kekule.ObjUtils.match(a7[i11], e16)) if (void 0 !== l8) {
+      if (l8) for (var n12 = 0, o15 = a7[i11].srcClasses.length; n12 < o15; ++n12) ClassEx.isOrIsDescendantOf(l8, a7[i11].srcClasses[n12]) && r12.push(a7[i11]);
+    } else r12.push(a7[i11]);
     return r12;
   }, getWriterInfo: function(e16, t10) {
     for (var r12 = Kekule.IO.ChemDataWriterManager._writers, l8 = r12.length - 1; l8 >= 0; --l8) if (Kekule.ObjUtils.match(r12[l8], e16)) {
       if (t10) {
-        for (var a7 = 0, n12 = r12[l8].srcClasses.length; a7 < n12; ++a7) if (t10 instanceof r12[l8].srcClasses[a7]) return r12[l8];
+        for (var a7 = 0, i11 = r12[l8].srcClasses.length; a7 < i11; ++a7) if (t10 instanceof r12[l8].srcClasses[a7]) return r12[l8];
         return null;
       }
       return r12[l8];
@@ -67295,7 +67548,7 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, getWriterInfoByFormat: function(e16, t10, r12) {
     for (var l8 = Kekule.IO.ChemDataWriterManager._writers, a7 = l8.length - 1; a7 >= 0; --a7) if ((!t10 || Kekule.ObjUtils.match(l8[a7], t10)) && l8[a7].formatId.indexOf(e16) >= 0) {
       if (r12) {
-        for (var n12 = 0, i11 = l8[a7].srcClasses.length; n12 < i11; ++n12) if (r12 instanceof l8[a7].srcClasses[n12]) return l8[a7];
+        for (var i11 = 0, n12 = l8[a7].srcClasses.length; i11 < n12; ++i11) if (r12 instanceof l8[a7].srcClasses[i11]) return l8[a7];
         return null;
       }
       return l8[a7];
@@ -67341,49 +67594,49 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     if (l8) {
       var a7 = l8.readData(e16, null, t10, r12);
       if (false === a7) {
-        var n12 = Kekule.$L("ErrorMsg.FAIL_TO_READ_FORMAT") + t10;
-        Kekule.raise(n12);
+        var i11 = Kekule.$L("ErrorMsg.FAIL_TO_READ_FORMAT") + t10;
+        Kekule.raise(i11);
       }
       return a7;
     }
-    n12 = Kekule.$L("ErrorMsg.NO_SUITABLE_READER_FOR_FORMAT") + t10;
-    return Kekule.raise(n12), null;
+    i11 = Kekule.$L("ErrorMsg.NO_SUITABLE_READER_FOR_FORMAT") + t10;
+    return Kekule.raise(i11), null;
   }, Kekule.IO.loadMimeData = function(e16, t10, r12) {
     return Kekule.IO.loadTypedData(e16, t10, null, r12);
   }, Kekule.IO.loadTypedData = function(e16, t10, r12, l8) {
     var a7;
     r12 && (a7 = Kekule.UrlUtils.extractFileExt(r12));
-    var n12, i11 = Kekule.IO.DataFormatsManager.findFormatId(t10 || null, a7);
-    if (i11 && (n12 = Kekule.IO.loadFormatData(e16, i11, l8)), false !== n12) {
-      if (n12 instanceof Kekule.ChemObject && n12.getSrcInfo) {
-        var o15 = n12.getSrcInfo();
+    var i11, n12 = Kekule.IO.DataFormatsManager.findFormatId(t10 || null, a7);
+    if (n12 && (i11 = Kekule.IO.loadFormatData(e16, n12, l8)), false !== i11) {
+      if (i11 instanceof Kekule.ChemObject && i11.getSrcInfo) {
+        var o15 = i11.getSrcInfo();
         t10 && (o15.mimeType = t10), a7 && (o15.fileExt = a7), r12 && (o15.url = r12, o15.fileName = r12);
       }
-      return n12;
+      return i11;
     }
     var u7 = t10 ? Kekule.$L("ErrorMsg.NO_SUITABLE_READER_FOR_MIMETYPE") + t10 : Kekule.$L("ErrorMsg.NO_SUITABLE_READER_FOR_FILEEXT") + a7;
     return Kekule.raise(u7), null;
   }, Kekule.IO.loadFileData = function(e16, t10, r12, l8) {
     if (Kekule.BrowserFeature.fileapi) {
-      var a7, n12 = e16.name, i11 = Kekule.UrlUtils.extractFileExt(n12);
-      if (!(a7 = r12 ? Kekule.IO.DataFormatsManager.getFormatInfo(r12) : Kekule.IO.DataFormatsManager.findFormat(null, i11))) {
-        var o15 = Kekule.$L("ErrorMsg.NO_SUITABLE_READER_FOR_FILEEXT") + i11;
+      var a7, i11 = e16.name, n12 = Kekule.UrlUtils.extractFileExt(i11);
+      if (!(a7 = r12 ? Kekule.IO.DataFormatsManager.getFormatInfo(r12) : Kekule.IO.DataFormatsManager.findFormat(null, n12))) {
+        var o15 = Kekule.$L("ErrorMsg.NO_SUITABLE_READER_FOR_FILEEXT") + n12;
         return void Kekule.raise(o15);
       }
       var u7 = Kekule.IO.ChemDataType.isBinaryType(a7.dataType), s6 = new FileReader();
       s6.onload = function(e17) {
-        var r13 = s6.result, i12 = Kekule.IO.loadFormatData(r13, a7.id, l8);
-        i12 && i12.getSrcInfo && (i12.getSrcInfo().fileName = n12);
-        t10(i12, false !== i12, r13);
+        var r13 = s6.result, n13 = Kekule.IO.loadFormatData(r13, a7.id, l8);
+        n13 && n13.getSrcInfo && (n13.getSrcInfo().fileName = i11);
+        t10(n13, false !== n13, r13);
       }, u7 ? s6.readAsArrayBuffer(e16) : s6.readAsText(e16);
     } else Kekule.error(Kekule.$L("ErrorMsg.FILE_API_NOT_SUPPORTED"));
   }, Kekule.IO.loadUrlData = function(e16, t10, r12, l8) {
     if (!Kekule.Ajax) return Kekule.raise(Kekule.$L("ErrorMsg.AJAX_FILELOADER_NOT_FOUND")), null;
-    Kekule.Ajax.sendRequest(e16, function(a7, n12, i11) {
-      if (a7 && i11) {
+    Kekule.Ajax.sendRequest(e16, function(a7, i11, n12) {
+      if (a7 && n12) {
         var o15;
         if (r12 && (o15 = Kekule.IO.DataFormatsManager.getFormatInfo(r12)), !r12) {
-          var u7 = Kekule.Ajax.getResponseMimeType(n12);
+          var u7 = Kekule.Ajax.getResponseMimeType(i11);
           o15 = Kekule.IO.DataFormatsManager.findFormat(u7);
         }
         if (!r12) {
@@ -67395,7 +67648,7 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
           return void Kekule.raise(d5);
         }
         var m5 = Kekule.IO.loadFormatData(a7, o15.id, l8);
-        m5.getSrcInfo().fileName = e16, t10(m5, i11 = false !== m5, a7);
+        m5.getSrcInfo().fileName = e16, t10(m5, n12 = false !== m5, a7);
       } else Kekule.raise(Kekule.$L("ErrorMsg.FAIL_TO_LOAD_FILE_URL") + e16);
     });
   }, Kekule.IO.saveFormatData = function(e16, t10, r12) {
@@ -67408,12 +67661,12 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, Kekule.IO.saveTypedData = function(e16, t10, r12, l8) {
     var a7;
     r12 && ((a7 = Kekule.UrlUtils.extractFileExt(r12)) || (a7 = r12));
-    var n12, i11 = Kekule.IO.DataFormatsManager.findFormatId(t10 || null, a7);
-    if (i11 && (n12 = Kekule.IO.saveFormatData(e16, i11, l8)), Kekule.ObjUtils.isUnset(n12)) {
+    var i11, n12 = Kekule.IO.DataFormatsManager.findFormatId(t10 || null, a7);
+    if (n12 && (i11 = Kekule.IO.saveFormatData(e16, n12, l8)), Kekule.ObjUtils.isUnset(i11)) {
       var o15 = t10 ? Kekule.$L("ErrorMsg.NO_SUITABLE_WRITER_FOR_MIMETYPE") + t10 : Kekule.$L("ErrorMsg.NO_SUITABLE_WRITER_FOR_FILEEXT") + a7;
       return Kekule.raise(o15), null;
     }
-    return n12;
+    return i11;
   };
 }(), function() {
   "use strict";
@@ -67464,31 +67717,31 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     var t11 = e16.indexOf(":");
     return t11 >= 0 ? e16.substr(t11 + 1) : e16;
   }, cmlUnitStrToMetricsUnitSymbol: function(e16) {
-    for (var t11, r12, l8 = Kekule.IO.CmlUtils.getCmlNsValueLocalPart(e16), a7 = l8.toLowerCase(), n12 = a7.length > 3 && a7.endsWith("s") ? a7.substr(0, a7.length - 1) : null, i11 = (Kekule.Unit, Kekule.IO.CmlUtils._cmlUnitConvMap), o15 = 0, u7 = i11.length; o15 < u7; ++o15) if (l8 === i11[o15][0] || l8 === i11[o15][1]) {
-      t11 = i11[o15][2];
+    for (var t11, r12, l8 = Kekule.IO.CmlUtils.getCmlNsValueLocalPart(e16), a7 = l8.toLowerCase(), i11 = a7.length > 3 && a7.endsWith("s") ? a7.substr(0, a7.length - 1) : null, n12 = (Kekule.Unit, Kekule.IO.CmlUtils._cmlUnitConvMap), o15 = 0, u7 = n12.length; o15 < u7; ++o15) if (l8 === n12[o15][0] || l8 === n12[o15][1]) {
+      t11 = n12[o15][2];
       break;
     }
     if (!t11) {
-      for (o15 = 0, u7 = i11.length; o15 < u7; ++o15) if (a7 === i11[o15][0].toLowerCase() || a7 === i11[o15][1].toLowerCase()) {
-        t11 = i11[o15][2];
+      for (o15 = 0, u7 = n12.length; o15 < u7; ++o15) if (a7 === n12[o15][0].toLowerCase() || a7 === n12[o15][1].toLowerCase()) {
+        t11 = n12[o15][2];
         break;
       }
     }
-    if (!t11 && n12) {
-      for (o15 = 0, u7 = i11.length; o15 < u7; ++o15) if (n12 === i11[o15][0].toLowerCase() || n12 === i11[o15][1].toLowerCase()) {
-        t11 = i11[o15][2];
+    if (!t11 && i11) {
+      for (o15 = 0, u7 = n12.length; o15 < u7; ++o15) if (i11 === n12[o15][0].toLowerCase() || i11 === n12[o15][1].toLowerCase()) {
+        t11 = n12[o15][2];
         break;
       }
     }
     t11 || (t11 = (r12 = Kekule.Unit.getUnit(l8, true)) && r12.symbol);
     t11 || (t11 = (r12 = Kekule.Unit.getUnitByName(l8, true)) && r12.symbol);
-    !t11 && n12 && (t11 = (r12 = Kekule.Unit.getUnitByName(n12, true)) && r12.symbol);
+    !t11 && i11 && (t11 = (r12 = Kekule.Unit.getUnitByName(i11, true)) && r12.symbol);
     return t11 || l8;
   }, metricsUnitSymbolToCmlUnitStr: function(e16) {
     for (var t11, r12 = Kekule.IO.CmlUtils._cmlUnitConvMap, l8 = 0, a7 = r12.length; l8 < a7; ++l8) {
-      var n12 = r12[l8];
-      if (e16 === n12[2]) {
-        t11 = (n12[3] ? "siUnits:" : "units:") + n12[0];
+      var i11 = r12[l8];
+      if (e16 === i11[2]) {
+        t11 = (i11[3] ? "siUnits:" : "units:") + i11[0];
         break;
       }
     }
@@ -67621,11 +67874,11 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, mergeToCmlArrayValue: function(e16) {
     return e16.join(" ");
   }, analysisCmlFormulaConciseValue: function(e16) {
-    for (var t11, r12 = Kekule.IO.CmlDomUtils.splitCmlArrayValue(e16), l8 = 0, a7 = r12.length, n12 = [], i11 = null; l8 < a7; ) {
+    for (var t11, r12 = Kekule.IO.CmlDomUtils.splitCmlArrayValue(e16), l8 = 0, a7 = r12.length, i11 = [], n12 = null; l8 < a7; ) {
       var o15 = r12[l8], u7 = parseFloat(o15);
-      u7 != u7 ? (i11 && n12.push(i11), i11 = { elementType: o15 }) : i11 ? (i11.count = u7, n12.push(i11), i11 = null) : l8 == a7 - 1 && (t11 = u7), ++l8;
+      u7 != u7 ? (n12 && i11.push(n12), n12 = { elementType: o15 }) : n12 ? (n12.count = u7, i11.push(n12), n12 = null) : l8 == a7 - 1 && (t11 = u7), ++l8;
     }
-    return { isotopes: n12, formalCharge: t11 };
+    return { isotopes: i11, formalCharge: t11 };
   }, getCmlBuiltinElemInfo: function(e16, t11, r12) {
     var l8 = e16.getAttribute("builtin");
     return !l8 && t11 && (e16.getAttributeNS ? l8 = e16.getAttributeNS(t11, "builtin") : r12 && (l8 = r12.getAttributeNS(t11, "builtin", e16))), l8 ? { name: l8, value: Kekule.DomUtils.getElementText(e16) } : null;
@@ -67646,15 +67899,15 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, readCmlTypedPropertyArrayElem: function(e16, t11, r12) {
     var l8;
     if (!(l8 = e16.getAttribute("builtin")) && t11 && (e16.getAttributeNS ? l8 = e16.getAttributeNS(t11, "builtin") : r12 && (l8 = r12.getAttributeNS(t11, "builtin", e16))), l8) {
-      var a7 = Kekule.DomUtils.getElementText(e16), n12 = Kekule.IO.CmlDomUtils.splitCmlArrayValue(a7);
+      var a7 = Kekule.DomUtils.getElementText(e16), i11 = Kekule.IO.CmlDomUtils.splitCmlArrayValue(a7);
       switch (Kekule.DomUtils.getLocalName(e16)) {
         case "float":
-          for (var i11 = 0, o15 = n12.length; i11 < o15; ++i11) n12[i11] = parseFloat(n12[i11]);
+          for (var n12 = 0, o15 = i11.length; n12 < o15; ++n12) i11[n12] = parseFloat(i11[n12]);
           break;
         case "integer":
-          for (i11 = 0, o15 = n12.length; i11 < o15; ++i11) n12[i11] = parseInt(n12[i11]);
+          for (n12 = 0, o15 = i11.length; n12 < o15; ++n12) i11[n12] = parseInt(i11[n12]);
       }
-      return { name: l8, values: n12 };
+      return { name: l8, values: i11 };
     }
     return null;
   }, hasDirectCmlTypedElemChildren: function(e16, t11) {
@@ -67680,14 +67933,14 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     return t11 && r12 && (r12 = e16.namespaceURI === t11), r12;
   }, FILTER_TYPED_ELEM: 1, FILTER_TYPEDARRAY_ELEM: 2, FILTER_ALL: 3, getCmlTypedElem: function(e16, t11, r12) {
     var l8 = e16.namespaceURI, a7 = Kekule.DomUtils.getDirectChildElemsOfAttribValues(e16, [{ builtin: t11 }], null, null, l8);
-    if (a7 && a7.length > 0) for (var n12 = a7.length - 1; n12 >= 0; --n12) {
-      if (r12 & Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM && Kekule.IO.CmlDomUtils.isCmlTypedElem(a7[n12], l8)) return a7[n12];
-      if (r12 & Kekule.IO.CmlDomUtils.FILTER_TYPEDARRAY_ELEM && Kekule.IO.CmlDomUtils.isCmlTypedArrayElem(a7[n12], l8)) return a7[n12];
+    if (a7 && a7.length > 0) for (var i11 = a7.length - 1; i11 >= 0; --i11) {
+      if (r12 & Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM && Kekule.IO.CmlDomUtils.isCmlTypedElem(a7[i11], l8)) return a7[i11];
+      if (r12 & Kekule.IO.CmlDomUtils.FILTER_TYPEDARRAY_ELEM && Kekule.IO.CmlDomUtils.isCmlTypedArrayElem(a7[i11], l8)) return a7[i11];
     }
     return null;
   }, getCmlTypedElems: function(e16, t11, r12) {
-    var l8 = [], a7 = e16.namespaceURI, n12 = Kekule.DomUtils.getDirectChildElemsOfAttribValues(e16, [{ builtin: t11 }], null, null, a7);
-    if (n12 && n12.length > 0) for (var i11 = n12.length - 1; i11 >= 0; --i11) r12 & Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM && Kekule.IO.CmlDomUtils.isCmlTypedElem(n12[i11], a7) ? l8.push(n12[i11]) : r12 & Kekule.IO.CmlDomUtils.FILTER_TYPEDARRAY_ELEM && Kekule.IO.CmlDomUtils.isCmlTypedArrayElem(n12[i11], a7) && l8.push(n12[i11]);
+    var l8 = [], a7 = e16.namespaceURI, i11 = Kekule.DomUtils.getDirectChildElemsOfAttribValues(e16, [{ builtin: t11 }], null, null, a7);
+    if (i11 && i11.length > 0) for (var n12 = i11.length - 1; n12 >= 0; --n12) r12 & Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM && Kekule.IO.CmlDomUtils.isCmlTypedElem(i11[n12], a7) ? l8.push(i11[n12]) : r12 & Kekule.IO.CmlDomUtils.FILTER_TYPEDARRAY_ELEM && Kekule.IO.CmlDomUtils.isCmlTypedArrayElem(i11[n12], a7) && l8.push(i11[n12]);
     return l8.length ? l8 : null;
   }, getCmlTypedElemValue: function(e16, t11, r12, l8) {
     r12 || (r12 = Kekule.IO.CmlDomUtils.FILTER_ALL);
@@ -67697,8 +67950,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     r12 || (r12 = Kekule.IO.CmlDomUtils.FILTER_ALL);
     var a7 = Kekule.IO.CmlDomUtils.getCmlTypedElems(e16, t11, r12);
     if (a7) {
-      for (var n12 = [], i11 = 0, o15 = a7.length; i11 < o15; ++i11) n12.push(Kekule.DomUtils.getElementText(a7[i11]));
-      return n12;
+      for (var i11 = [], n12 = 0, o15 = a7.length; n12 < o15; ++n12) i11.push(Kekule.DomUtils.getElementText(a7[n12]));
+      return i11;
     }
     return null;
   }, getCmlElemAttribute: function(e16, t11, r12, l8) {
@@ -67713,15 +67966,15 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     return Kekule.DomUtils.setSameNSAttributeValue(e16, t11, r12, l8);
   }, fetchCmlElemAttributeValuesToJson: function(e16, t11, r12, l8) {
     t11 || (t11 = Kekule.IO.CmlDomUtils.FILTER_ALL);
-    for (var a7 = e16.namespaceURI, n12 = Kekule.DomUtils.fetchAttributeValuesToJson(e16, a7, true), i11 = Kekule.DomUtils.getDirectChildElems(e16, null, null, a7), o15 = 0, u7 = i11.length; o15 < u7; ++o15) {
-      var s6 = i11[o15];
-      if (t11 & Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM && (Kekule.IO.CmlDomUtils.isCmlTypedElem(s6, a7) || Kekule.IO.CmlDomUtils.isCmlBuiltInMarkedElem(s6, a7))) (d5 = Kekule.IO.CmlDomUtils.readCmlTypedPropertyElem(s6, a7, l8)) && (n12[d5.name] && r12 ? n12[d5.name] += Kekule.IO.CML.ARRAY_VALUE_DELIMITER + d5.value : n12[d5.name] = d5.value);
+    for (var a7 = e16.namespaceURI, i11 = Kekule.DomUtils.fetchAttributeValuesToJson(e16, a7, true), n12 = Kekule.DomUtils.getDirectChildElems(e16, null, null, a7), o15 = 0, u7 = n12.length; o15 < u7; ++o15) {
+      var s6 = n12[o15];
+      if (t11 & Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM && (Kekule.IO.CmlDomUtils.isCmlTypedElem(s6, a7) || Kekule.IO.CmlDomUtils.isCmlBuiltInMarkedElem(s6, a7))) (d5 = Kekule.IO.CmlDomUtils.readCmlTypedPropertyElem(s6, a7, l8)) && (i11[d5.name] && r12 ? i11[d5.name] += Kekule.IO.CML.ARRAY_VALUE_DELIMITER + d5.value : i11[d5.name] = d5.value);
       else if (t11 & Kekule.IO.CmlDomUtils.FILTER_TYPEDARRAY_ELEM && Kekule.IO.CmlDomUtils.isCmlTypedArrayElem(s6, a7)) {
         var d5;
-        (d5 = Kekule.IO.CmlDomUtils.getCmlBuiltinElemInfo(s6, a7, l8)) && (n12[d5.name] && r12 ? n12[d5.name] += Kekule.IO.CML.ARRAY_VALUE_DELIMITER + d5.value : n12[d5.name] = d5.value);
+        (d5 = Kekule.IO.CmlDomUtils.getCmlBuiltinElemInfo(s6, a7, l8)) && (i11[d5.name] && r12 ? i11[d5.name] += Kekule.IO.CML.ARRAY_VALUE_DELIMITER + d5.value : i11[d5.name] = d5.value);
       }
     }
-    return n12;
+    return i11;
   }, isScalarElem: function(e16, t11) {
     var r12 = "scalar" == Kekule.DomUtils.getLocalName(e16);
     return t11 && (r12 = r12 && e16.namespaceURI == t11), r12;
@@ -67750,10 +68003,10 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     var t11;
     t11 = "string" != typeof e16 ? DataType.getType(e16) : e16;
     var r12 = Kekule.IO.CmlElementWriterFactory._writers[t11];
-    if (!r12 && e16.getClassName) for (var l8 = e16, a7 = Kekule.ObjUtils.getOwnedFieldNames(Kekule.IO.CmlElementWriterFactory._writers), n12 = a7.length - 1; n12 >= 0; --n12) {
-      var i11 = ClassEx.findClass(a7[n12]);
-      if (i11 && l8 instanceof i11) {
-        r12 = Kekule.IO.CmlElementWriterFactory._writers[a7[n12]];
+    if (!r12 && e16.getClassName) for (var l8 = e16, a7 = Kekule.ObjUtils.getOwnedFieldNames(Kekule.IO.CmlElementWriterFactory._writers), i11 = a7.length - 1; i11 >= 0; --i11) {
+      var n12 = ClassEx.findClass(a7[i11]);
+      if (n12 && l8 instanceof n12) {
+        r12 = Kekule.IO.CmlElementWriterFactory._writers[a7[i11]];
         break;
       }
     }
@@ -67784,14 +68037,14 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     Kekule.ArrayUtils.pushUnique(this._childHandlers, e16);
   }, _iterateChildHandlers: function(e16, t11, r12) {
     if (e16) for (var l8 = 0, a7 = this._childHandlers.length; l8 < a7; ++l8) {
-      var n12 = this._childHandlers[l8];
-      n12 && (e16.apply(t11, [n12]), r12 && n12._iterateChildHandlers && n12._iterateChildHandlers(e16, t11, r12));
+      var i11 = this._childHandlers[l8];
+      i11 && (e16.apply(t11, [i11]), r12 && i11._iterateChildHandlers && i11._iterateChildHandlers(e16, t11, r12));
     }
   } }), Kekule.IO.CmlElementReader = Class.create(Kekule.IO.CmlElementHandler, { CLASS_NAME: "Kekule.IO.CmlElementReader", readElement: function(e16, t11, r12, l8) {
     var a7 = this.doReadElement(e16, t11, r12, l8);
     if (a7 && a7.getId && !a7.getId() && a7.setId) {
-      var n12 = Kekule.IO.CmlDomUtils.getCmlId(e16, this.getDomHelper);
-      n12 && this.setObjId(a7, n12);
+      var i11 = Kekule.IO.CmlDomUtils.getCmlId(e16, this.getDomHelper);
+      i11 && this.setObjId(a7, i11);
     }
     return a7;
   }, doReadElement: function(e16, t11, r12, l8) {
@@ -67812,9 +68065,9 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     var l8 = Kekule.IO.CmlElementReaderFactory.getReader(e16);
     return l8 && (this.copySettingsToChildHandler(l8), this._appendChildHandler(l8)), l8;
   }, iterateChildElements: function(e16, t11, r12, l8) {
-    for (var a7 = [], n12 = Kekule.DomUtils.getDirectChildElems(e16, null, null, this.getCoreNamespaceURI()), i11 = 0, o15 = n12.length; i11 < o15; ++i11) {
-      var u7 = this.readChildElement(n12[i11], t11, r12);
-      u7 && (a7.push({ element: n12[i11], result: u7 }), l8 && l8(n12[i11], u7, t11, r12));
+    for (var a7 = [], i11 = Kekule.DomUtils.getDirectChildElems(e16, null, null, this.getCoreNamespaceURI()), n12 = 0, o15 = i11.length; n12 < o15; ++n12) {
+      var u7 = this.readChildElement(i11[n12], t11, r12);
+      u7 && (a7.push({ element: i11[n12], result: u7 }), l8 && l8(i11[n12], u7, t11, r12));
     }
     return a7;
   }, doneReadingDocument: function(e16) {
@@ -67841,8 +68094,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     this.getDomHelper().getDocument != l8 && this.getDomHelper().setDocument(l8);
     var a7 = this.doCreateElem(e16, t11, l8);
     a7 ? t11.appendChild(a7) : a7 = t11;
-    var n12 = this.doWriteObject(e16, a7, r12) || a7;
-    return n12 && e16 && (this.writeObjId(e16, n12), this.writeObjAdditionalInfo(e16, n12, r12)), n12;
+    var i11 = this.doWriteObject(e16, a7, r12) || a7;
+    return i11 && e16 && (this.writeObjId(e16, i11), this.writeObjAdditionalInfo(e16, i11, r12)), i11;
   }, writeObjId: function(e16, t11) {
     if (e16.getId) {
       var r12 = e16.getId();
@@ -67856,22 +68109,22 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, writeScalarAttribs: function(e16, t11, r12) {
     if (e16.getScalarAttribs) {
       var l8 = this.doGetChildObjectWriter("Kekule.Scalar");
-      if (l8) for (var a7 = 0, n12 = e16.getScalarAttribCount(); a7 < n12; ++a7) l8.writeObject(e16.getScalarAttribAt(a7), t11, r12);
+      if (l8) for (var a7 = 0, i11 = e16.getScalarAttribCount(); a7 < i11; ++a7) l8.writeObject(e16.getScalarAttribAt(a7), t11, r12);
     }
   }, writeObjInfoValues: function(e16, t11, r12) {
     if (e16.getInfo) {
       var l8, a7 = this.getObjInfoKeysNeedToSaveToMetaList(e16);
       if (!a7 || !a7.length) return;
-      for (var n12 = 0, i11 = a7.length; n12 < i11; ++n12) {
-        var o15 = a7[n12], u7 = e16.getInfoValue(a7[n12]);
+      for (var i11 = 0, n12 = a7.length; i11 < n12; ++i11) {
+        var o15 = a7[i11], u7 = e16.getInfoValue(a7[i11]);
         o15 && u7 && !Kekule.IO.CmlDomUtils.getCmlElemAttribute(t11, o15, this.getDomHelper()) && (l8 || (l8 = this.getOrCreateChildElem("metaDataList", t11)), this.doWriteObjInfoValueItem(o15, u7, e16, l8, r12));
       }
     }
   }, doWriteObjInfoValueItem: function(e16, t11, r12, l8, a7) {
     return this.writeObjMetaValueToListElem(r12, e16, null, t11, l8);
-  }, writeObjMetaValueToListElem: function(e16, t11, r12, l8, a7, n12, i11) {
-    n12 || (n12 = "metaData");
-    var o15 = this.createChildElem(n12, a7);
+  }, writeObjMetaValueToListElem: function(e16, t11, r12, l8, a7, i11, n12) {
+    i11 || (i11 = "metaData");
+    var o15 = this.createChildElem(i11, a7);
     return Kekule.IO.CmlDomUtils.setCmlElemAttribute(o15, "name", t11, this.getDomHelper()), Kekule.IO.CmlDomUtils.setCmlElemAttribute(o15, "content", DataType.StringUtils.serializeValue(r12), this.getDomHelper()), l8 && Kekule.IO.CmlDomUtils.setCmlElemAttribute(o15, "metadataType", l8, this.getDomHelper()), o15;
   }, getObjInfoKeysNeedToSaveToMetaList: function(e16) {
     return e16.getInfoKeys ? e16.getInfoKeys() : null;
@@ -67909,9 +68162,9 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, doReadChildElem: function(e16, t11, r12, l8, a7) {
     return t11.readElement(e16, a7, this);
   }, doReadList: function(e16, t11, r12, l8, a7) {
-    var n12 = Kekule.DomUtils.getDirectChildElems(t11, null, null, this.getCoreNamespaceURI());
-    if (n12) for (var i11 = 0, o15 = n12.length; i11 < o15; ++i11) {
-      var u7 = n12[i11], s6 = this.doGetChildElementReader(u7, r12, this);
+    var i11 = Kekule.DomUtils.getDirectChildElems(t11, null, null, this.getCoreNamespaceURI());
+    if (i11) for (var n12 = 0, o15 = i11.length; n12 < o15; ++n12) {
+      var u7 = i11[n12], s6 = this.doGetChildElementReader(u7, r12, this);
       if (s6) {
         var d5 = this.doReadChildElem(u7, s6, r12, l8, e16);
         d5 && this.doAppendObjToList(d5, e16);
@@ -67928,20 +68181,20 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     return this.writeList(l8, t11, r12);
   }, writeList: function(e16, t11, r12) {
     for (var l8 = 0, a7 = e16.length; l8 < a7; ++l8) {
-      var n12 = e16[l8];
-      if (n12) {
-        var i11 = this.doGetChildObjectWriter(n12);
-        i11 && i11.writeObject(n12, t11, r12);
+      var i11 = e16[l8];
+      if (i11) {
+        var n12 = this.doGetChildObjectWriter(i11);
+        n12 && n12.writeObject(i11, t11, r12);
       }
     }
     return t11;
   } }), Kekule.IO.CmlNameReader = Class.create(Kekule.IO.CmlElementReader, { CLASS_NAME: "Kekule.IO.CmlNameReader", initialize: function() {
     this.tryApplySuper("initialize");
   }, doReadElement: function(e16, t11, r12, l8) {
-    var a7 = Kekule.DomUtils.getElementText(e16), n12 = Kekule.IO.CmlDomUtils.getCmlElemAttribute(e16, "convention");
+    var a7 = Kekule.DomUtils.getElementText(e16), i11 = Kekule.IO.CmlDomUtils.getCmlElemAttribute(e16, "convention");
     if (a7) {
-      var i11 = {};
-      return i11.name = a7, n12 ? i11.convention = n12 : t11 && t11.setName && t11.setName(a7), i11;
+      var n12 = {};
+      return n12.name = a7, i11 ? n12.convention = i11 : t11 && t11.setName && t11.setName(a7), n12;
     }
     return null;
   } }), Kekule.IO.CmlScalarReader = Class.create(Kekule.IO.CmlElementReader, { CLASS_NAME: "Kekule.IO.CmlScalarReader", doReadElement: function(e16, t11, r12, l8) {
@@ -67951,9 +68204,9 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     var t11, r12 = Kekule.DomUtils.fetchAttributeValuesToJson(e16, this.getCoreNamespaceURI(), true);
     if ((o15 = Kekule.DomUtils.getElementText(e16)) && (r12.value = o15), r12.value && (r12.dataType ? (r12.value = Kekule.IO.CmlUtils.convertSimpleValueByDataType(r12.value, r12.dataType), r12.errorValue && (r12.errorValue = Kekule.IO.CmlUtils.convertSimpleValueByDataType(r12.errorValue, r12.dataType, true))) : r12.value = Kekule.IO.CmlUtils.tryParseFloat(r12.value)), r12) {
       t11 = new Kekule.Scalar();
-      for (var l8 = Kekule.ObjUtils.getOwnedFieldNames(r12), a7 = 0, n12 = l8.length; a7 < n12; ++a7) {
-        var i11 = l8[a7], o15 = r12[i11];
-        switch (i11) {
+      for (var l8 = Kekule.ObjUtils.getOwnedFieldNames(r12), a7 = 0, i11 = l8.length; a7 < i11; ++a7) {
+        var n12 = l8[a7], o15 = r12[n12];
+        switch (n12) {
           case "value":
             t11.setValue(o15);
             break;
@@ -67970,7 +68223,7 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
             t11.setName(Kekule.IO.CmlUtils.cmlNsTokenToKekule(o15)), t11.setInfoValue("dictRef", o15);
             break;
           default:
-            t11.setInfoValue(i11, o15);
+            t11.setInfoValue(n12, o15);
         }
       }
     }
@@ -67981,8 +68234,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     if (!(t11 instanceof Kekule.Scalar)) return this.reportTypeMismatchError(t11), null;
     var a7;
     if (Kekule.ObjUtils.isUnset(t11.getValue()) || (Kekule.DomUtils.setElementText(r12, t11.getValue()), a7 = DataType.getType(t11.getValue())), t11.getName() && Kekule.IO.CmlDomUtils.setCmlElemAttribute(r12, "dictRef", Kekule.IO.CmlUtils.kekuleNsTokenToCml(t11.getName()), this.getDomHelper()), t11.getErrorValue() && Kekule.IO.CmlDomUtils.setCmlElemAttribute(r12, "errorValue", t11.getErrorValue(), this.getDomHelper()), t11.getUnit() && Kekule.IO.CmlDomUtils.setCmlElemAttribute(r12, "units", Kekule.IO.CmlUtils.metricsUnitSymbolToCmlUnitStr(t11.getUnit()), this.getDomHelper()), t11.getTitle() && Kekule.IO.CmlDomUtils.setCmlElemAttribute(r12, "title", t11.getTitle(), this.getDomHelper()), a7) {
-      var n12 = e15.getCmlTypeForDataType(a7);
-      n12 && Kekule.IO.CmlDomUtils.setCmlElemAttribute(r12, "datatype", n12, this.getDomHelper());
+      var i11 = e15.getCmlTypeForDataType(a7);
+      i11 && Kekule.IO.CmlDomUtils.setCmlElemAttribute(r12, "datatype", i11, this.getDomHelper());
     }
   } }), Kekule.IO.CmlArrayReader = Class.create(Kekule.IO.CmlElementReader, { CLASS_NAME: "Kekule.IO.CmlArrayReader", initProperties: function() {
     this.defineProp("expandSteppedArray", { dataType: DataType.BOOL, serializable: false }), this.defineProp("defaultItemDataType", { dataType: DataType.STRING, serializable: false });
@@ -68001,7 +68254,7 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     if (this.getExpandSteppedArray()) {
       var r12 = e16.size, l8 = e16.stepSize, a7 = e16.start;
       t11 = [a7];
-      for (var n12 = 0; n12 < r12; ++n12) {
+      for (var i11 = 0; i11 < r12; ++i11) {
         if ((a7 += l8) > e16.end) {
           t11.push(e16.end);
           break;
@@ -68013,11 +68266,11 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, _generateExplicitArray: function(e16, t11) {
     var r12 = !!e16.delimiter, l8 = r12 ? e16.delimiter : Kekule.IO.CML.DEFAULT_VALUE_DELIMITER_PATTERN, a7 = t11.split(l8);
     r12 && (a7.shift(), a7.pop());
-    for (var n12 = e16.dataType || this.getDefaultItemDataType(), i11 = [], o15 = 0, u7 = a7.length; o15 < u7; ++o15) {
+    for (var i11 = e16.dataType || this.getDefaultItemDataType(), n12 = [], o15 = 0, u7 = a7.length; o15 < u7; ++o15) {
       var s6 = a7[o15].trim();
-      !r12 && s6 && (n12 ? i11.push(Kekule.IO.CmlUtils.convertSimpleValueByDataType(s6, n12)) : i11.push(s6));
+      !r12 && s6 && (i11 ? n12.push(Kekule.IO.CmlUtils.convertSimpleValueByDataType(s6, i11)) : n12.push(s6));
     }
-    return i11;
+    return n12;
   } }), Kekule.IO.CmlArrayWriter = Class.create(Kekule.IO.CmlElementWriter, { CLASS_NAME: "Kekule.IO.CmlArrayWriter", DEF_TAGNAME: "array", DEF_DELIMITER: " ", initProperties: function() {
     this.defineProp("defaultItemDataType", { dataType: DataType.STRING, serializable: false }), this.defineProp("defaultItemDataUnit", { dataType: DataType.STRING, serializable: false });
   }, getArrayTagName: function() {
@@ -68035,16 +68288,16 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     }
     return l8 = Object.extend(l8, { unit: l8.unit || r12.unit || this.getDefaultItemDataUnit(), dataType: l8.dataType || r12.dataType || this.getDefaultItemDataType(), delimiter: l8.delimiter || r12.delimiter || this.getDefaultArrayValueDelimiter() }), this.writeArrayObj(l8, t11, r12);
   }, writeArrayObj: function(r12, l8, a7) {
-    for (var n12 = this.getDomHelper(), i11 = ["id", "title", "dictRef"], o15 = 0, u7 = i11.length; o15 < u7; ++o15) {
-      var s6 = r12[i11[o15]];
-      Kekule.ObjUtils.notUnset(s6) && t10.setCmlElemAttribute(l8, i11[o15], s6, n12);
+    for (var i11 = this.getDomHelper(), n12 = ["id", "title", "dictRef"], o15 = 0, u7 = n12.length; o15 < u7; ++o15) {
+      var s6 = r12[n12[o15]];
+      Kekule.ObjUtils.notUnset(s6) && t10.setCmlElemAttribute(l8, n12[o15], s6, i11);
     }
-    r12.unit && t10.setCmlElemAttribute(l8, "units", e15.metricsUnitSymbolToCmlUnitStr(r12.unit), n12), r12.dataType && t10.setCmlElemAttribute(l8, "dataType", e15.getCmlTypeForDataType(r12.dataType), n12);
+    r12.unit && t10.setCmlElemAttribute(l8, "units", e15.metricsUnitSymbolToCmlUnitStr(r12.unit), i11), r12.dataType && t10.setCmlElemAttribute(l8, "dataType", e15.getCmlTypeForDataType(r12.dataType), i11);
     var d5 = r12.values, m5 = d5 ? d5.length : r12.size;
-    if (m5 && t10.setCmlElemAttribute(l8, "size", m5, n12), d5) {
+    if (m5 && t10.setCmlElemAttribute(l8, "size", m5, i11), d5) {
       var c8 = r12.delimiter || this.getDefaultArrayValueDelimiter();
-      Kekule.DomUtils.setElementText(l8, d5.join(c8)), c8 !== this.getDefaultArrayValueDelimiter() && t10.setCmlElemAttribute(l8, "delimiter", c8, n12);
-    } else Kekule.ObjUtils.notUnset(r12.start) && t10.setCmlElemAttribute(l8, "start", r12.start, n12), Kekule.ObjUtils.notUnset(r12.end) && t10.setCmlElemAttribute(l8, "end", r12.end, n12);
+      Kekule.DomUtils.setElementText(l8, d5.join(c8)), c8 !== this.getDefaultArrayValueDelimiter() && t10.setCmlElemAttribute(l8, "delimiter", c8, i11);
+    } else Kekule.ObjUtils.notUnset(r12.start) && t10.setCmlElemAttribute(l8, "start", r12.start, i11), Kekule.ObjUtils.notUnset(r12.end) && t10.setCmlElemAttribute(l8, "end", r12.end, i11);
   } }), Kekule.IO.CmlMetaDataReader = Class.create(Kekule.IO.CmlElementReader, { CLASS_NAME: "Kekule.IO.CmlMetaReader", doReadElement: function(e16, t11, r12, l8) {
     var a7 = this.readMeta(e16);
     return t11 && t11.setInfoValue && a7.key && a7.value && t11.setInfoValue(a7.key, a7.value), a7;
@@ -68070,10 +68323,10 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, atomInfoToJSON: function(e16, t11) {
     return Kekule.IO.CmlDomUtils.fetchCmlElemAttributeValuesToJson(e16, Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM, true, t11);
   }, arrayedAtomInfosToJSON: function(e16, t11) {
-    for (var r12 = ["id", "atomID", "elementType", "isotope", "hydrogenCount", "formalCharge", "count", "xFract", "yFract", "zFract", "x2", "y2", "x3", "y3", "z3"], l8 = ["id", "id", "elementType", "isotope", "hydrogenCount", "formalCharge", "count", "xFract", "yFract", "zFract", "x2", "y2", "x3", "y3", "z3"], a7 = [], n12 = 0, i11 = r12.length; n12 < i11; ++n12) {
+    for (var r12 = ["id", "atomID", "elementType", "isotope", "hydrogenCount", "formalCharge", "count", "xFract", "yFract", "zFract", "x2", "y2", "x3", "y3", "z3"], l8 = ["id", "id", "elementType", "isotope", "hydrogenCount", "formalCharge", "count", "xFract", "yFract", "zFract", "x2", "y2", "x3", "y3", "z3"], a7 = [], i11 = 0, n12 = r12.length; i11 < n12; ++i11) {
       var o15, u7 = [];
-      (o15 = Kekule.IO.CmlDomUtils.getCmlElemAttribute(e16, r12[n12], Kekule.IO.CmlDomUtils.FILTER_TYPEDARRAY_ELEM, t11)) && (u7 = Kekule.IO.CmlDomUtils.splitCmlArrayValue(o15));
-      for (var s6 = 0, d5 = u7.length; s6 < d5; ++s6) a7[s6] || (a7[s6] = {}), u7[s6] && (a7[s6][l8[n12]] = u7[s6]);
+      (o15 = Kekule.IO.CmlDomUtils.getCmlElemAttribute(e16, r12[i11], Kekule.IO.CmlDomUtils.FILTER_TYPEDARRAY_ELEM, t11)) && (u7 = Kekule.IO.CmlDomUtils.splitCmlArrayValue(o15));
+      for (var s6 = 0, d5 = u7.length; s6 < d5; ++s6) a7[s6] || (a7[s6] = {}), u7[s6] && (a7[s6][l8[i11]] = u7[s6]);
     }
     return a7;
   } }), Kekule.IO.CmlFormulaReader = Class.create(Kekule.IO.CmlChemStructureReader, { CLASS_NAME: "Kekule.IO.CmlFormulaReader", doReadElement: function(e16, t11, r12, l8) {
@@ -68081,15 +68334,15 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, readFormula: function(e16, t11) {
     var r12 = new Kekule.MolecularFormula(), l8 = Kekule.IO.CmlDomUtils.getCmlElemAttribute(e16, "formalCharge", Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM, t11);
     l8 && r12.setCharge(parseFloat(l8));
-    var a7 = Kekule.IO.CmlDomUtils.getCmlElemAttribute(e16, "concise", Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM, t11), n12 = Kekule.IO.CmlDomUtils.getCmlElemAttribute(e16, "inline", Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM, t11);
+    var a7 = Kekule.IO.CmlDomUtils.getCmlElemAttribute(e16, "concise", Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM, t11), i11 = Kekule.IO.CmlDomUtils.getCmlElemAttribute(e16, "inline", Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM, t11);
     if (a7) this.setConcise(r12, a7);
-    else if (n12) this.setInlineFormula(r12, n12);
-    else for (var i11 = Kekule.DomUtils.getDirectChildElems(e16, null, null, this.getCoreNamespaceURI()), o15 = 0, u7 = i11.length; o15 < u7; ++o15) switch (Kekule.DomUtils.getLocalName(i11[o15])) {
+    else if (i11) this.setInlineFormula(r12, i11);
+    else for (var n12 = Kekule.DomUtils.getDirectChildElems(e16, null, null, this.getCoreNamespaceURI()), o15 = 0, u7 = n12.length; o15 < u7; ++o15) switch (Kekule.DomUtils.getLocalName(n12[o15])) {
       case "formula":
-        this.readSubFormula(r12, i11[o15], t11);
+        this.readSubFormula(r12, n12[o15], t11);
         break;
       case "atomArray":
-        this.readAtomArray(r12, i11[o15], t11);
+        this.readAtomArray(r12, n12[o15], t11);
         break;
       default:
         Kekule.IO.CmlDomUtils.isCmlTypedElem(e16) || Kekule.IO.CmlDomUtils.isCmlTypedArrayElem(e16) || this.readChildElementDef(e16, r12);
@@ -68105,8 +68358,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     return Kekule.FormulaUtils.textToFormula(t11, null, e16), e16;
   }, readAtomArray: function(e16, t11, r12) {
     var l8 = [], a7 = this.getAtomChildren(t11, r12);
-    if (a7.length > 0) for (var n12 = 0, i11 = a7.length; n12 < i11; ++n12) {
-      var o15 = a7[n12], u7 = this.atomInfoToJSON(o15, r12);
+    if (a7.length > 0) for (var i11 = 0, n12 = a7.length; i11 < n12; ++i11) {
+      var o15 = a7[i11], u7 = this.atomInfoToJSON(o15, r12);
       l8.push(u7);
     }
     else l8 = this.arrayedAtomInfosToJSON(t11, r12);
@@ -68115,8 +68368,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     for (var r12 = 0, l8 = t11.length; r12 < l8; ++r12) {
       var a7 = t11[r12].elementType;
       if (a7) {
-        var n12 = Kekule.IO.CmlUtils.createNodeByCmdElementType(null, a7), i11 = t11[r12].formalCharge || 0, o15 = t11[r12].count;
-        e16.appendSection(n12, o15, i11);
+        var i11 = Kekule.IO.CmlUtils.createNodeByCmdElementType(null, a7), n12 = t11[r12].formalCharge || 0, o15 = t11[r12].count;
+        e16.appendSection(i11, o15, n12);
       }
     }
   }, readSubFormula: function(e16, t11, r12) {
@@ -68126,12 +68379,12 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     return this.createChildElem("formula", t11);
   }, doWriteObject: function(e16, t11, r12) {
     if (!(e16 instanceof Kekule.MolecularFormula)) return this.reportTypeMismatchError(e16), null;
-    for (var l8 = [], a7 = [], n12 = [], i11 = 0, o15 = e16.getSectionCount(); i11 < o15; ++i11) {
-      var u7 = e16.getSectionAt(i11);
+    for (var l8 = [], a7 = [], i11 = [], n12 = 0, o15 = e16.getSectionCount(); n12 < o15; ++n12) {
+      var u7 = e16.getSectionAt(n12);
       if (u7.obj instanceof Kekule.MolecularFormula) {
-        this.createAtomArrayElem(l8, a7, n12, t11), l8 = [], a7 = [], n12 = [];
+        this.createAtomArrayElem(l8, a7, i11, t11), l8 = [], a7 = [], i11 = [];
         this.writeSubFormula(u7.obj, u7.count || 1, t11, r12);
-      } else l8.push(Kekule.IO.CmlUtils.getNodeElementType(u7.obj)), a7.push(u7.count || 1), n12.push(e16.getSectionCharge(u7) || 0), i11 == o15 - 1 && this.createAtomArrayElem(l8, a7, n12, t11);
+      } else l8.push(Kekule.IO.CmlUtils.getNodeElementType(u7.obj)), a7.push(u7.count || 1), i11.push(e16.getSectionCharge(u7) || 0), n12 == o15 - 1 && this.createAtomArrayElem(l8, a7, i11, t11);
     }
     e16.getCharge() && Kekule.IO.CmlDomUtils.setCmlElemAttribute(t11, "formalCharge", e16.getCharge(), this.getDomHelper());
   }, writeSubFormula: function(e16, t11, r12, l8) {
@@ -68139,8 +68392,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     return this.doWriteObject(e16, a7, l8), t11 > 1 && Kekule.IO.CmlDomUtils.setCmlElemAttribute(a7, "count", t11, this.getDomHelper()), a7;
   }, createAtomArrayElem: function(e16, t11, r12, l8) {
     if (!(e16.length <= 0)) {
-      var a7 = this.createChildElem("atomArray", l8), n12 = Kekule.IO.CmlDomUtils.mergeToCmlArrayValue(e16), i11 = Kekule.IO.CmlDomUtils.mergeToCmlArrayValue(t11);
-      Kekule.IO.CmlDomUtils.setCmlElemAttribute(a7, "elementType", n12, this.getDomHelper()), Kekule.IO.CmlDomUtils.setCmlElemAttribute(a7, "count", i11, this.getDomHelper());
+      var a7 = this.createChildElem("atomArray", l8), i11 = Kekule.IO.CmlDomUtils.mergeToCmlArrayValue(e16), n12 = Kekule.IO.CmlDomUtils.mergeToCmlArrayValue(t11);
+      Kekule.IO.CmlDomUtils.setCmlElemAttribute(a7, "elementType", i11, this.getDomHelper()), Kekule.IO.CmlDomUtils.setCmlElemAttribute(a7, "count", n12, this.getDomHelper());
       for (var o15 = false, u7 = 0, s6 = r12.length; u7 < s6; ++u7) if (r12[u7]) {
         o15 = true;
         break;
@@ -68164,8 +68417,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
       if (t11 && t11.getSubMolecules) {
         var l8 = this.readElement(e16, t11, r12);
         if (l8) {
-          var a7 = Kekule.IO.CmlDomUtils.getCmlElemAttribute(e16, "amount", Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM) || Kekule.IO.CmlDomUtils.getCmlElemAttribute(e16, "count", Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM), n12 = a7 ? { amount: parseFloat(a7) } : null;
-          t11.getSubMolecules().appendObj(l8, n12);
+          var a7 = Kekule.IO.CmlDomUtils.getCmlElemAttribute(e16, "amount", Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM) || Kekule.IO.CmlDomUtils.getCmlElemAttribute(e16, "count", Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM), i11 = a7 ? { amount: parseFloat(a7) } : null;
+          t11.getSubMolecules().appendObj(l8, i11);
         }
         return l8;
       }
@@ -68178,8 +68431,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     var l8;
     return this.hasSubMolecule(e16) ? (l8 = new Kekule.CompositeMolecule(), this.iterateChildElements(e16, l8, t11)) : l8 = this.readMoleculeCore(e16, r12), this.readMoleculeAttribs(l8, e16, r12), l8;
   }, readMoleculeAttribs: function(e16, t11, r12) {
-    for (var l8 = Kekule.IO.CmlDomUtils.fetchCmlElemAttributeValuesToJson(t11, null, true, r12), a7 = Kekule.ObjUtils.getOwnedFieldNames(l8), n12 = 0, i11 = a7.length; n12 < i11; ++n12) {
-      var o15 = a7[n12], u7 = l8[o15];
+    for (var l8 = Kekule.IO.CmlDomUtils.fetchCmlElemAttributeValuesToJson(t11, null, true, r12), a7 = Kekule.ObjUtils.getOwnedFieldNames(l8), i11 = 0, n12 = a7.length; i11 < n12; ++i11) {
+      var o15 = a7[i11], u7 = l8[o15];
       switch (o15) {
         case "id":
           this.setObjId(e16, u7);
@@ -68222,8 +68475,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
           break;
         case "bond":
           this.getStructureBuilder().setTarget(r12);
-          var n12 = this.readBond(r12, l8, t11);
-          this.getStructureBuilder().appendConnector(n12);
+          var i11 = this.readBond(r12, l8, t11);
+          this.getStructureBuilder().appendConnector(i11);
           break;
         case "molecule":
           break;
@@ -68236,41 +68489,41 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     return r12.hasCtab() && this.connectUpBondAndAtom(r12), r12;
   }, connectUpBondAndAtom: function(e16) {
     for (var t11 = e16.getConnectors(), r12 = 0, l8 = t11.length; r12 < l8; ++r12) {
-      var a7 = t11[r12], n12 = a7[this._BOND_ATOM_REF_TEMP_FIELD];
-      if (n12 && n12.length) for (var i11 = 0, o15 = n12.length; i11 < o15; ++i11) {
-        var u7 = e16.getNodeById(n12[i11]);
-        u7 ? a7.appendConnectedObj(u7) : Kekule.raise((Kekule.hasLocalRes() ? Kekule.$L("ErrorMsg.ATOMID_NOT_EXISTS") : "Atom id not exists: ") + n12[i11]);
+      var a7 = t11[r12], i11 = a7[this._BOND_ATOM_REF_TEMP_FIELD];
+      if (i11 && i11.length) for (var n12 = 0, o15 = i11.length; n12 < o15; ++n12) {
+        var u7 = e16.getNodeById(i11[n12]);
+        u7 ? a7.appendConnectedObj(u7) : Kekule.raise((Kekule.hasLocalRes() ? Kekule.$L("ErrorMsg.ATOMID_NOT_EXISTS") : "Atom id not exists: ") + i11[n12]);
       }
       delete a7[this._BOND_ATOM_REF_TEMP_FIELD];
       var s6 = a7[this._BOND_BOND_REF_TEMP_FIELD];
-      if (s6 && s6.length) for (i11 = 0, o15 = s6.length; i11 < o15; ++i11) {
-        var d5 = e16.getConnectorById(s6[i11]);
-        d5 ? a7.appendConnectedObj(d5) : Kekule.raise((Kekule.hasLocalRes() ? Kekule.$L("ErrorMsg.BONDID_NOT_EXISTS") : "Bond id not exists: ") + s6[i11]);
+      if (s6 && s6.length) for (n12 = 0, o15 = s6.length; n12 < o15; ++n12) {
+        var d5 = e16.getConnectorById(s6[n12]);
+        d5 ? a7.appendConnectedObj(d5) : Kekule.raise((Kekule.hasLocalRes() ? Kekule.$L("ErrorMsg.BONDID_NOT_EXISTS") : "Bond id not exists: ") + s6[n12]);
       }
       delete a7[this._BOND_BOND_REF_TEMP_FIELD];
     }
   }, readMoleculeAtomArray: function(e16, t11, r12, l8) {
     r12.setTarget(e16);
     var a7 = this.getAtomChildren(t11, l8);
-    if (a7.length > 0) for (var n12 = 0, i11 = a7.length; n12 < i11; ++n12) {
-      var o15 = a7[n12], u7 = this.readAtom(o15, l8);
+    if (a7.length > 0) for (var i11 = 0, n12 = a7.length; i11 < n12; ++i11) {
+      var o15 = a7[i11], u7 = this.readAtom(o15, l8);
       r12.appendNode(u7);
     }
     else {
       var s6 = this.readArrayedAtoms(t11, l8);
-      for (n12 = 0, i11 = s6.length; n12 < i11; ++n12) r12.appendNode(s6[n12]);
+      for (i11 = 0, n12 = s6.length; i11 < n12; ++i11) r12.appendNode(s6[i11]);
     }
   }, readAtom: function(e16, t11) {
     var r12, l8 = !Kekule.IO.CmlDomUtils.hasDirectCmlTypedElemChildren(e16, this.getCoreNamespaceURI()), a7 = this.atomInfoToJSON(e16, t11);
-    if (r12 = this.createStructureNodeOfAttribs(a7), l8) for (var n12 = Kekule.DomUtils.getDirectChildElems(e16, null, null, this.getCoreNamespaceURI()), i11 = 0, o15 = n12.length; i11 < o15; ++i11) {
-      e16 = n12[i11];
+    if (r12 = this.createStructureNodeOfAttribs(a7), l8) for (var i11 = Kekule.DomUtils.getDirectChildElems(e16, null, null, this.getCoreNamespaceURI()), n12 = 0, o15 = i11.length; n12 < o15; ++n12) {
+      e16 = i11[n12];
       this.readChildElementDef(e16, r12);
     }
     return r12;
   }, readArrayedAtoms: function(e16, t11) {
-    for (var r12 = this.arrayedAtomInfosToJSON(e16, t11), l8 = [], a7 = 0, n12 = r12.length; a7 < n12; ++a7) {
-      var i11 = this.createStructureNodeOfAttribs(r12[a7]);
-      i11 && l8.push(i11);
+    for (var r12 = this.arrayedAtomInfosToJSON(e16, t11), l8 = [], a7 = 0, i11 = r12.length; a7 < i11; ++a7) {
+      var n12 = this.createStructureNodeOfAttribs(r12[a7]);
+      n12 && l8.push(n12);
     }
     return l8;
   }, createStructureNodeOfAttribs: function(e16) {
@@ -68278,11 +68531,11 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     e16.elementType || (e16.elementType = Kekule.Element.UNSET_ELEMENT);
     var r12 = null;
     void 0 !== e16.id && (r12 = e16.id), delete e16.id;
-    var l8, a7, n12 = e16.isotope ? Math.round(e16.isotope) : null;
-    if (t11 = Kekule.IO.CmlUtils.createNodeByCmdElementType(r12, e16.elementType, n12), delete e16.elementType, void 0 !== e16.hydrogenCount && t11.setExplicitHydrogenCount && t11.setExplicitHydrogenCount(parseInt(e16.hydrogenCount, 10)), delete e16.hydrogenCount, e16.formalCharge && t11.setCharge(parseInt(e16.formalCharge)), delete e16.formalCharge, e16.title && t11.setInfoValue("title", e16.title), delete e16.title, e16.role && t11.setInfoValue("role", e16.role), delete e16.role, void 0 !== e16.x2 && void 0 !== e16.y2) l8 = { x: parseFloat(e16.x2), y: parseFloat(e16.y2) };
+    var l8, a7, i11 = e16.isotope ? Math.round(e16.isotope) : null;
+    if (t11 = Kekule.IO.CmlUtils.createNodeByCmdElementType(r12, e16.elementType, i11), delete e16.elementType, void 0 !== e16.hydrogenCount && t11.setExplicitHydrogenCount && t11.setExplicitHydrogenCount(parseInt(e16.hydrogenCount, 10)), delete e16.hydrogenCount, e16.formalCharge && t11.setCharge(parseInt(e16.formalCharge)), delete e16.formalCharge, e16.title && t11.setInfoValue("title", e16.title), delete e16.title, e16.role && t11.setInfoValue("role", e16.role), delete e16.role, void 0 !== e16.x2 && void 0 !== e16.y2) l8 = { x: parseFloat(e16.x2), y: parseFloat(e16.y2) };
     else if (e16.xy2) {
-      var i11 = Kekule.IO.CmlDomUtils.splitCmlArrayValue(e16.xy2);
-      2 == i11.length && (l8 = { x: parseFloat(i11[0]), y: parseFloat(i11[1]) });
+      var n12 = Kekule.IO.CmlDomUtils.splitCmlArrayValue(e16.xy2);
+      2 == n12.length && (l8 = { x: parseFloat(n12[0]), y: parseFloat(n12[1]) });
     }
     if (delete e16.x2, delete e16.y2, delete e16.xy2, void 0 !== e16.x3 && void 0 !== e16.y3 && void 0 !== e16.z3) a7 = { x: parseFloat(e16.x3), y: parseFloat(e16.y3), z: parseFloat(e16.z3) };
     else if (e16.xyz3) {
@@ -68294,18 +68547,18 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, _BOND_ATOM_REF_TEMP_FIELD: "__cml_atomRefs", _BOND_BOND_REF_TEMP_FIELD: "__cml_bondRefs", readMoleculeBondArray: function(e16, t11, r12, l8) {
     r12.setTarget(e16);
     var a7 = l8.getElementsByTagNameNS(this.getCoreNamespaceURI(), "bond", t11);
-    if (a7.length > 0) for (var n12 = 0, i11 = a7.length; n12 < i11; ++n12) {
-      var o15 = a7[n12], u7 = this.readBond(e16, o15, l8);
+    if (a7.length > 0) for (var i11 = 0, n12 = a7.length; i11 < n12; ++i11) {
+      var o15 = a7[i11], u7 = this.readBond(e16, o15, l8);
       r12.appendConnector(u7);
     }
     else {
       var s6 = this.readArrayedBonds(e16, t11, l8);
-      for (n12 = 0, i11 = s6.length; n12 < i11; ++n12) r12.appendConnector(s6[n12]);
+      for (i11 = 0, n12 = s6.length; i11 < n12; ++i11) r12.appendConnector(s6[i11]);
     }
   }, readBond: function(e16, t11, r12) {
-    var l8, a7, n12;
-    if (n12 = !Kekule.IO.CmlDomUtils.hasDirectCmlTypedElemChildren(t11, this.getCoreNamespaceURI()), a7 = Kekule.IO.CmlDomUtils.fetchCmlElemAttributeValuesToJson(t11, Kekule.IO.CmlUtils.FILTER_TYPED_ELEM, true, r12), l8 = this.createStructureConnectorOfAttribs(e16, a7), n12) for (var i11 = Kekule.DomUtils.getDirectChildElems(t11, null, null, this.getCoreNamespaceURI()), o15 = 0, u7 = i11.length; o15 < u7; ++o15) {
-      t11 = i11[o15];
+    var l8, a7, i11;
+    if (i11 = !Kekule.IO.CmlDomUtils.hasDirectCmlTypedElemChildren(t11, this.getCoreNamespaceURI()), a7 = Kekule.IO.CmlDomUtils.fetchCmlElemAttributeValuesToJson(t11, Kekule.IO.CmlUtils.FILTER_TYPED_ELEM, true, r12), l8 = this.createStructureConnectorOfAttribs(e16, a7), i11) for (var n12 = Kekule.DomUtils.getDirectChildElems(t11, null, null, this.getCoreNamespaceURI()), o15 = 0, u7 = n12.length; o15 < u7; ++o15) {
+      t11 = n12[o15];
       if ("bondStereo" == Kekule.DomUtils.getLocalName(t11)) {
         var s6 = Kekule.DomUtils.getElementText(t11);
         s6 || (s6 = Kekule.IO.CmlDomUtils.getCmlElemAttribute(t11, "conversionValue", Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM, r12)), s6 || (s6 = Kekule.IO.CmlUtils.getCmlNsValueLocalPart(Kekule.IO.CmlDomUtils.getCmlElemAttribute(t11, "dictRef", Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM, r12)));
@@ -68315,36 +68568,36 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     }
     return l8;
   }, readArrayedBonds: function(e16, t11, r12) {
-    var l8 = ["id", "bondID", "atomRef1", "atomRef2", "order", "bondStereo"], a7 = ["id", "id", "atomRefs2", "atomRefs2", "order", "bondStereo"], n12 = [], i11 = Kekule.IO.CmlDomUtils.getMultipleCmlElemAttribute(t11, "atomRefs", Kekule.IO.CmlDomUtils.FILTER_TYPEDARRAY_ELEM, r12);
-    if (i11 && i11.length) for (var o15 = 0, u7 = i11.length; o15 < u7; ++o15) for (var s6 = i11[o15], d5 = 0, m5 = (c8 = Kekule.IO.CmlDomUtils.splitCmlArrayValue(s6)).length; d5 < m5; ++d5) n12[d5] || (n12[d5] = {}), null == n12[d5].atomRefs && (n12[d5].atomRefs = []), n12[d5].atomRefs.push(c8[d5]);
+    var l8 = ["id", "bondID", "atomRef1", "atomRef2", "order", "bondStereo"], a7 = ["id", "id", "atomRefs2", "atomRefs2", "order", "bondStereo"], i11 = [], n12 = Kekule.IO.CmlDomUtils.getMultipleCmlElemAttribute(t11, "atomRefs", Kekule.IO.CmlDomUtils.FILTER_TYPEDARRAY_ELEM, r12);
+    if (n12 && n12.length) for (var o15 = 0, u7 = n12.length; o15 < u7; ++o15) for (var s6 = n12[o15], d5 = 0, m5 = (c8 = Kekule.IO.CmlDomUtils.splitCmlArrayValue(s6)).length; d5 < m5; ++d5) i11[d5] || (i11[d5] = {}), null == i11[d5].atomRefs && (i11[d5].atomRefs = []), i11[d5].atomRefs.push(c8[d5]);
     for (o15 = 0, u7 = l8.length; o15 < u7; ++o15) {
       var c8 = [];
       (s6 = Kekule.IO.CmlDomUtils.getCmlElemAttribute(t11, l8[o15], Kekule.IO.CmlDomUtils.FILTER_TYPEDARRAY_ELEM, r12)) && (c8 = Kekule.IO.CmlDomUtils.splitCmlArrayValue(s6));
-      for (d5 = 0, m5 = c8.length; d5 < m5; ++d5) n12[d5] || (n12[d5] = {}), c8[d5] && ("atomRef1" == l8[o15] || "atomRef2" == l8[o15] ? (null == n12[d5].atomRefs2 && (n12[d5].atomRefs2 = []), "atomRef1" == l8[o15] ? n12[d5].atomRefs2[0] = c8[d5] : n12[d5].atomRefs2[1] = c8[d5]) : n12[d5][a7[o15]] = c8[d5]);
+      for (d5 = 0, m5 = c8.length; d5 < m5; ++d5) i11[d5] || (i11[d5] = {}), c8[d5] && ("atomRef1" == l8[o15] || "atomRef2" == l8[o15] ? (null == i11[d5].atomRefs2 && (i11[d5].atomRefs2 = []), "atomRef1" == l8[o15] ? i11[d5].atomRefs2[0] = c8[d5] : i11[d5].atomRefs2[1] = c8[d5]) : i11[d5][a7[o15]] = c8[d5]);
     }
     var k4 = [];
-    for (o15 = 0, u7 = n12.length; o15 < u7; ++o15) {
-      var g4 = this.createStructureConnectorOfAttribs(e16, n12[o15]);
+    for (o15 = 0, u7 = i11.length; o15 < u7; ++o15) {
+      var g4 = this.createStructureConnectorOfAttribs(e16, i11[o15]);
       g4 && k4.push(g4);
     }
     return k4;
   }, createStructureConnectorOfAttribs: function(e16, t11) {
     var r12, l8, a7;
     if (t11.id && (l8 = t11.id), delete t11.id, void 0 !== t11.order && (a7 = Kekule.IO.CmlUtils.cmlBondOrderToKekule(t11.order)), delete t11.order, r12 = new Kekule.Bond(l8, null, a7), t11.bondStereo) {
-      var n12 = Kekule.IO.CmlUtils.cmlBondStereoToKekule(t11.bondStereo);
-      n12 != Kekule.BondStereo.NONE && r12.setStereo && r12.setStereo(n12);
+      var i11 = Kekule.IO.CmlUtils.cmlBondStereoToKekule(t11.bondStereo);
+      i11 != Kekule.BondStereo.NONE && r12.setStereo && r12.setStereo(i11);
     }
     delete t11.bondStereo;
-    for (var i11 = 0, o15 = Kekule.IO.CML.ATOMS_REF_ATTRIBS.length; i11 < o15; ++i11) {
-      if (null != t11[s6 = Kekule.IO.CML.ATOMS_REF_ATTRIBS[i11]]) {
+    for (var n12 = 0, o15 = Kekule.IO.CML.ATOMS_REF_ATTRIBS.length; n12 < o15; ++n12) {
+      if (null != t11[s6 = Kekule.IO.CML.ATOMS_REF_ATTRIBS[n12]]) {
         var u7 = Kekule.IO.CmlDomUtils.splitCmlArrayValue(t11[s6]);
         u7.length > 0 && (r12[this._BOND_ATOM_REF_TEMP_FIELD] = u7), delete t11[s6];
         break;
       }
     }
-    for (i11 = 0, o15 = Kekule.IO.CML.BONDS_REF_ATTRIBS.length; i11 < o15; ++i11) {
+    for (n12 = 0, o15 = Kekule.IO.CML.BONDS_REF_ATTRIBS.length; n12 < o15; ++n12) {
       var s6;
-      if (null != t11[s6 = Kekule.IO.CML.BONDS_REF_ATTRIBS[i11]]) {
+      if (null != t11[s6 = Kekule.IO.CML.BONDS_REF_ATTRIBS[n12]]) {
         var d5 = Kekule.IO.CmlDomUtils.splitCmlArrayValue(t11[s6]);
         d5.length > 0 && (r12[this._BOND_BOND_REF_TEMP_FIELD] = d5), delete t11[s6];
         break;
@@ -68376,15 +68629,15 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, writeMoleculeAttribs: function(e16, t11) {
     var r12 = [];
     e16.getCharge() && r12.push({ key: "formalCharge", value: e16.getCharge() });
-    for (var l8 = ["title", "dictRef", "chirality", "ref", "spinMultiplicity", "symmetryOriented", "role"], a7 = 0, n12 = l8.length; a7 < n12; ++a7) {
-      var i11 = l8[a7], o15 = e16.getInfoValue(i11);
-      Kekule.ObjUtils.isUnset(o15) || r12.push({ key: i11, value: e16.getInfoValue(i11) });
+    for (var l8 = ["title", "dictRef", "chirality", "ref", "spinMultiplicity", "symmetryOriented", "role"], a7 = 0, i11 = l8.length; a7 < i11; ++a7) {
+      var n12 = l8[a7], o15 = e16.getInfoValue(n12);
+      Kekule.ObjUtils.isUnset(o15) || r12.push({ key: n12, value: e16.getInfoValue(n12) });
     }
-    for (a7 = 0, n12 = r12.length; a7 < n12; ++a7) Kekule.IO.CmlDomUtils.setCmlElemAttribute(t11, r12[a7].key, r12[a7].value, this.getDomHelper());
+    for (a7 = 0, i11 = r12.length; a7 < i11; ++a7) Kekule.IO.CmlDomUtils.setCmlElemAttribute(t11, r12[a7].key, r12[a7].value, this.getDomHelper());
   }, writeCompositeMolecule: function(e16, t11, r12) {
-    for (var l8 = e16.getSubMolecules(), a7 = 0, n12 = l8.getItemCount(); a7 < n12; ++a7) {
-      var i11 = l8.getItemAt(a7), o15 = i11.obj, u7 = this.writeObject(o15, t11, r12);
-      i11.amount && Kekule.IO.CmlDomUtils.setCmlElemAttribute(u7, "amount", i11.amount, this.getDomHelper());
+    for (var l8 = e16.getSubMolecules(), a7 = 0, i11 = l8.getItemCount(); a7 < i11; ++a7) {
+      var n12 = l8.getItemAt(a7), o15 = n12.obj, u7 = this.writeObject(o15, t11, r12);
+      n12.amount && Kekule.IO.CmlDomUtils.setCmlElemAttribute(u7, "amount", n12.amount, this.getDomHelper());
     }
     return t11;
   }, writeMoleculeCore: function(e16, t11, r12) {
@@ -68396,21 +68649,21 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, writeCtab: function(e16, t11, r12, l8) {
     this.identifyObjsInCtab(e16, t11);
     var a7 = this.getAllowCascadeGroup() ? e16.getNodes() : e16.getLeafNodes();
-    if (a7.length > 0) for (var n12 = this.createChildElem("atomArray", r12), i11 = 0, o15 = a7.length; i11 < o15; ++i11) this.writeCtabNode(a7[i11], n12, l8);
+    if (a7.length > 0) for (var i11 = this.createChildElem("atomArray", r12), n12 = 0, o15 = a7.length; n12 < o15; ++n12) this.writeCtabNode(a7[n12], i11, l8);
     var u7 = this.getAllowCascadeGroup() ? e16.getConnectors() : e16.getAllChildConnectors();
     if (u7.length > 0) {
       var s6 = this.createChildElem("bondArray", r12);
-      for (i11 = 0, o15 = u7.length; i11 < o15; ++i11) this.writeCtabConnector(u7[i11], s6, l8);
+      for (n12 = 0, o15 = u7.length; n12 < o15; ++n12) this.writeCtabConnector(u7[n12], s6, l8);
     }
   }, writeCtabNode: function(e16, t11, r12) {
     var l8 = this.createChildElem("atom", t11);
     this.writeObjId(e16, l8);
     var a7 = Kekule.IO.CmlUtils.getNodeElementType(e16);
     Kekule.IO.CmlDomUtils.setCmlElemAttribute(l8, "elementType", a7, this.getDomHelper());
-    var n12 = e16.getMassNumber ? e16.getMassNumber() : null;
-    n12 && Kekule.IO.CmlDomUtils.setCmlElemAttribute(l8, "isotope", n12, this.getDomHelper());
-    var i11 = e16.getExplicitHydrogenCount ? e16.getExplicitHydrogenCount() : null;
-    Kekule.ObjUtils.isUnset(i11) || Kekule.IO.CmlDomUtils.setCmlElemAttribute(l8, "hydrogenCount", i11, this.getDomHelper());
+    var i11 = e16.getMassNumber ? e16.getMassNumber() : null;
+    i11 && Kekule.IO.CmlDomUtils.setCmlElemAttribute(l8, "isotope", i11, this.getDomHelper());
+    var n12 = e16.getExplicitHydrogenCount ? e16.getExplicitHydrogenCount() : null;
+    Kekule.ObjUtils.isUnset(n12) || Kekule.IO.CmlDomUtils.setCmlElemAttribute(l8, "hydrogenCount", n12, this.getDomHelper());
     var o15 = e16.getCharge ? e16.getCharge() : null;
     o15 && Kekule.IO.CmlDomUtils.setCmlElemAttribute(l8, "formalCharge", o15, this.getDomHelper());
     e16.getParity && e16.getParity();
@@ -68426,17 +68679,17 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
       !Kekule.ObjUtils.isUnset(m5.x) && Kekule.IO.CmlDomUtils.setCmlElemAttribute(l8, "x3", m5.x, this.getDomHelper()), !Kekule.ObjUtils.isUnset(m5.y) && Kekule.IO.CmlDomUtils.setCmlElemAttribute(l8, "y3", m5.y, this.getDomHelper()), !Kekule.ObjUtils.isUnset(m5.z) && Kekule.IO.CmlDomUtils.setCmlElemAttribute(l8, "z3", m5.z, this.getDomHelper());
     }
     for (var c8 = ["occupancy", "xFract", "xyzFract", "yFract", "convention", "dictRef", "ref"], k4 = 0, g4 = c8.length; k4 < g4; ++k4) {
-      var f7 = c8[k4], I3 = e16.getInfoValue(f7);
-      I3 && Kekule.IO.CmlDomUtils.setCmlElemAttribute(l8, f7, I3, this.getDomHelper());
+      var I3 = c8[k4], O2 = e16.getInfoValue(I3);
+      O2 && Kekule.IO.CmlDomUtils.setCmlElemAttribute(l8, I3, O2, this.getDomHelper());
     }
     return this.writeObjAdditionalInfo(e16, l8, r12), l8;
   }, writeCtabConnector: function(e16, t11, r12) {
     var l8 = false, a7 = this.createChildElem("bond", t11);
     this.writeObjId(e16, a7);
-    var n12 = e16.getBondOrder ? e16.getBondOrder() : null;
-    if (n12) {
-      var i11 = Kekule.IO.CmlUtils.kekuleBondOrderToCml(n12);
-      i11 && Kekule.IO.CmlDomUtils.setCmlElemAttribute(a7, "order", i11, this.getDomHelper());
+    var i11 = e16.getBondOrder ? e16.getBondOrder() : null;
+    if (i11) {
+      var n12 = Kekule.IO.CmlUtils.kekuleBondOrderToCml(i11);
+      n12 && Kekule.IO.CmlDomUtils.setCmlElemAttribute(a7, "order", n12, this.getDomHelper());
     }
     var o15, u7 = e16.getStereo ? e16.getStereo() : null;
     if (u7) {
@@ -68447,19 +68700,19 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
       }
     }
     for (var m5 = [], c8 = [], k4 = 0, g4 = e16.getConnectedObjCount(); k4 < g4; ++k4) {
-      var f7 = e16.getConnectedObjAt(k4);
-      if (f7.getId && f7.getId()) {
-        var I3 = f7.getId();
-        f7 instanceof Kekule.ChemStructureNode ? l8 ? m5.unshift(I3) : m5.push(I3) : f7 instanceof Kekule.ChemStructureConnector && c8.push(I3);
+      var I3 = e16.getConnectedObjAt(k4);
+      if (I3.getId && I3.getId()) {
+        var O2 = I3.getId();
+        I3 instanceof Kekule.ChemStructureNode ? l8 ? m5.unshift(O2) : m5.push(O2) : I3 instanceof Kekule.ChemStructureConnector && c8.push(O2);
       }
     }
     if (o15 = m5.length) {
-      var O2 = 1 == o15 ? "atomRefs" : o15 >= 2 && o15 <= 4 ? "atomRefs" + o15 : "atomRefs";
-      Kekule.IO.CmlDomUtils.setCmlElemAttribute(a7, O2, Kekule.IO.CmlDomUtils.mergeToCmlArrayValue(m5), this.getDomHelper());
+      var f7 = 1 == o15 ? "atomRefs" : o15 >= 2 && o15 <= 4 ? "atomRefs" + o15 : "atomRefs";
+      Kekule.IO.CmlDomUtils.setCmlElemAttribute(a7, f7, Kekule.IO.CmlDomUtils.mergeToCmlArrayValue(m5), this.getDomHelper());
     }
     if (o15 = c8.length) {
-      O2 = "bondRefs";
-      Kekule.IO.CmlDomUtils.setCmlElemAttribute(a7, O2, Kekule.IO.CmlDomUtils.mergeToCmlArrayValue(c8), this.getDomHelper());
+      f7 = "bondRefs";
+      Kekule.IO.CmlDomUtils.setCmlElemAttribute(a7, f7, Kekule.IO.CmlDomUtils.mergeToCmlArrayValue(c8), this.getDomHelper());
     }
     var C2 = ["convention", "dictRef", "ref"];
     for (k4 = 0, g4 = C2.length; k4 < g4; ++k4) {
@@ -68473,21 +68726,21 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
       a7.getId() || this.autoIdentifyForObj(a7, t11), e16.isSubFragment(a7) && a7.hasCtab && a7.hasCtab() && this.identifyObjsInCtab(a7.getCtab(), t11);
     }
     for (r12 = 0, l8 = e16.getConnectorCount(); r12 < l8; ++r12) {
-      var n12 = e16.getConnectorAt(r12);
-      n12.getId() || this.autoIdentifyForObj(n12, t11);
+      var i11 = e16.getConnectorAt(r12);
+      i11.getId() || this.autoIdentifyForObj(i11, t11);
     }
   } }), Kekule.IO.CmlMoleculeWriter._UID_SEED = null, Kekule.IO.CmlReactionReagentReader = Class.create(Kekule.IO.CmlElementReader, { CLASS_NAME: "Kekule.IO.CmlReactionReagentReader", doReadElement: function(e16, t11, r12, l8) {
     return this.readReagent(e16, r12, this.getDomHelper());
   }, readReagent: function(e16, t11, r12) {
     var l8 = null, a7 = Kekule.DomUtils.getDirectChildElems(e16, null, "molecule", this.getCoreNamespaceURI());
     if (a7 && a7.length) {
-      var n12 = a7[a7.length - 1], i11 = this.doGetChildElementReader(n12).readElement(n12, null, this);
-      i11 && (l8 = {}, Kekule.RoleMapUtils.setItem(l8, i11), this.readReagentAttribs(l8, e16, r12));
+      var i11 = a7[a7.length - 1], n12 = this.doGetChildElementReader(i11).readElement(i11, null, this);
+      n12 && (l8 = {}, Kekule.RoleMapUtils.setItem(l8, n12), this.readReagentAttribs(l8, e16, r12));
     }
     return l8;
   }, readReagentAttribs: function(e16, t11, r12) {
-    for (var l8 = Kekule.IO.CmlDomUtils.fetchCmlElemAttributeValuesToJson(t11, Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM, true, r12), a7 = Kekule.ObjUtils.getOwnedFieldNames(l8), n12 = 0, i11 = a7.length; n12 < i11; ++n12) {
-      var o15 = a7[n12], u7 = l8[o15];
+    for (var l8 = Kekule.IO.CmlDomUtils.fetchCmlElemAttributeValuesToJson(t11, Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM, true, r12), a7 = Kekule.ObjUtils.getOwnedFieldNames(l8), i11 = 0, n12 = a7.length; i11 < n12; ++i11) {
+      var o15 = a7[i11], u7 = l8[o15];
       switch (o15) {
         case "role":
           e16.role = Kekule.IO.CmlUtils.reagentRoleToKekule(u7);
@@ -68504,10 +68757,10 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   } }), Kekule.IO.CmlReactionReader = Class.create(Kekule.IO.CmlElementReader, { CLASS_NAME: "Kekule.IO.CmlReactionReader", doReadElement: function(e16, t11, r12, l8) {
     return this.readReaction(e16, this.getDomHelper());
   }, readReaction: function(e16, t11) {
-    for (var r12 = new Kekule.Reaction(), l8 = Kekule.DomUtils.getDirectChildElems(e16, null, null, this.getCoreNamespaceURI()), a7 = 0, n12 = l8.length; a7 < n12; ++a7) this.isComponentListElem(l8[a7]) ? this.readComponentList(r12, l8[a7], t11) : this.readChildElement(l8[a7], r12);
-    var i11 = Kekule.IO.CmlDomUtils.fetchCmlElemAttributeValuesToJson(e16, Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM, null, this.getDomHelper()), o15 = Kekule.ObjUtils.getOwnedFieldNames(i11);
-    for (a7 = 0, n12 = o15.length; a7 < n12; ++a7) {
-      var u7 = o15[a7], s6 = i11[u7];
+    for (var r12 = new Kekule.Reaction(), l8 = Kekule.DomUtils.getDirectChildElems(e16, null, null, this.getCoreNamespaceURI()), a7 = 0, i11 = l8.length; a7 < i11; ++a7) this.isComponentListElem(l8[a7]) ? this.readComponentList(r12, l8[a7], t11) : this.readChildElement(l8[a7], r12);
+    var n12 = Kekule.IO.CmlDomUtils.fetchCmlElemAttributeValuesToJson(e16, Kekule.IO.CmlDomUtils.FILTER_TYPED_ELEM, null, this.getDomHelper()), o15 = Kekule.ObjUtils.getOwnedFieldNames(n12);
+    for (a7 = 0, i11 = o15.length; a7 < i11; ++a7) {
+      var u7 = o15[a7], s6 = n12[u7];
       switch (u7) {
         case "name":
           r12.setName(s6);
@@ -68528,8 +68781,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     return r12;
   }, readComponentList: function(e16, t11, r12) {
     var l8 = this.getListElemComponentName(t11), a7 = e16.getComponentArray(l8, true);
-    if (a7) for (var n12 = Kekule.DomUtils.getDirectChildElems(t11, null, null, this.getCoreNamespaceURI()), i11 = 0, o15 = n12.length; i11 < o15; ++i11) {
-      var u7 = this.readChildElement(n12[i11], a7);
+    if (a7) for (var i11 = Kekule.DomUtils.getDirectChildElems(t11, null, null, this.getCoreNamespaceURI()), n12 = 0, o15 = i11.length; n12 < o15; ++n12) {
+      var u7 = this.readChildElement(i11[n12], a7);
       u7 && (l8 == Kekule.ReactionComponent.CONDITION && u7 instanceof ObjectEx ? e16.appendItem(l8, u7) : e16.appendMap(l8, u7));
     }
   }, isComponentListElem: function(e16) {
@@ -68550,20 +68803,20 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, doWriteObject: function(e16, t11, r12) {
     return this.writeReaction(e16, t11, r12);
   }, writeReaction: function(e16, t11, r12) {
-    for (var l8 = [Kekule.ReactionComponent.REACTANT, Kekule.ReactionComponent.PRODUCT, Kekule.ReactionComponent.SUBSTANCE, Kekule.ReactionComponent.CONDITION], a7 = 0, n12 = l8.length; a7 < n12; ++a7) this.writeCompList(e16, l8[a7], t11, r12);
+    for (var l8 = [Kekule.ReactionComponent.REACTANT, Kekule.ReactionComponent.PRODUCT, Kekule.ReactionComponent.SUBSTANCE, Kekule.ReactionComponent.CONDITION], a7 = 0, i11 = l8.length; a7 < i11; ++a7) this.writeCompList(e16, l8[a7], t11, r12);
     return this.writeReactionAttribs(e16, t11, r12), t11;
   }, writeReactionAttribs: function(e16, t11, r12) {
     var l8 = [];
     e16.getName() && l8.push({ key: "name", value: e16.getName() }), e16.getTitle() && l8.push({ key: "title", value: e16.getTitle() }), e16.getReactionType() && l8.push({ key: "type", value: e16.getReactionType() }), e16.getYield() && l8.push({ key: "yield", value: e16.getYield() });
-    for (var a7 = ["dictRef", "convention", "format", "ref", "role", "type", "state", "yield", "atomMap", "electronMap"], n12 = 0, i11 = a7.length; n12 < i11; ++n12) Kekule.ObjUtils.isUnset(e16.getInfoValue(a7[n12])) || l8.push({ key: a7[n12], value: e16.getInfoValue(a7[n12]) });
-    for (n12 = 0, i11 = l8.length; n12 < i11; ++n12) Kekule.IO.CmlDomUtils.setCmlElemAttribute(t11, l8[n12].key, l8[n12].value, this.getDomHelper());
+    for (var a7 = ["dictRef", "convention", "format", "ref", "role", "type", "state", "yield", "atomMap", "electronMap"], i11 = 0, n12 = a7.length; i11 < n12; ++i11) Kekule.ObjUtils.isUnset(e16.getInfoValue(a7[i11])) || l8.push({ key: a7[i11], value: e16.getInfoValue(a7[i11]) });
+    for (i11 = 0, n12 = l8.length; i11 < n12; ++i11) Kekule.IO.CmlDomUtils.setCmlElemAttribute(t11, l8[i11].key, l8[i11].value, this.getDomHelper());
   }, writeCompList: function(e16, t11, r12, l8) {
     if (e16.getComponentItemCount(t11) <= 0) return null;
-    for (var a7 = this.getReactionComponentCmlName(t11), n12 = this.createChildElem(a7 + "List", r12), i11 = 0, o15 = e16.getComponentItemCount(t11); i11 < o15; ++i11) {
-      var u7 = e16.getMapAt(t11, i11), s6 = e16.getMapItemAt(t11, i11);
+    for (var a7 = this.getReactionComponentCmlName(t11), i11 = this.createChildElem(a7 + "List", r12), n12 = 0, o15 = e16.getComponentItemCount(t11); n12 < o15; ++n12) {
+      var u7 = e16.getMapAt(t11, n12), s6 = e16.getMapItemAt(t11, n12);
       if (u7 && s6) {
         var d5;
-        t11 != Kekule.ReactionComponent.CONDITION ? (d5 = this.createChildElem(a7, n12), Kekule.ObjUtils.isUnset(u7.amount) || Kekule.IO.CmlDomUtils.setCmlElemAttribute(d5, "amount", u7.amount, this.getDomHelper()), u7.role && Kekule.IO.CmlDomUtils.setCmlElemAttribute(d5, "role", Kekule.IO.CmlUtils.kekuleReagentRoleToCml(u7.role), this.getDomHelper())) : d5 = n12;
+        t11 != Kekule.ReactionComponent.CONDITION ? (d5 = this.createChildElem(a7, i11), Kekule.ObjUtils.isUnset(u7.amount) || Kekule.IO.CmlDomUtils.setCmlElemAttribute(d5, "amount", u7.amount, this.getDomHelper()), u7.role && Kekule.IO.CmlDomUtils.setCmlElemAttribute(d5, "role", Kekule.IO.CmlUtils.kekuleReagentRoleToCml(u7.role), this.getDomHelper())) : d5 = i11;
         var m5 = this.doGetChildObjectWriter(s6);
         m5 && m5.writeObject(s6, d5, l8);
       }
@@ -68608,14 +68861,14 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   } }), Kekule.IO.CmlRootReader = Class.create(Kekule.IO.CmlElementReader, { CLASS_NAME: "Kekule.IO.CmlRootReader", doReadElement: function(e16, t11, r12, l8) {
     var a7;
     if (this.analysisElem(e16), "cml" != Kekule.DomUtils.getLocalName(e16) && (a7 = this.getReader(e16)), a7) return a7.readElement(e16, null, this, l8);
-    var n12 = l8.defaultRootObjListHolder && l8.enableReadRootObjList, i11 = [], o15 = Kekule.DomUtils.getDirectChildElems(e16, null, null, this.getCoreNamespaceURI());
+    var i11 = l8.defaultRootObjListHolder && l8.enableReadRootObjList, n12 = [], o15 = Kekule.DomUtils.getDirectChildElems(e16, null, null, this.getCoreNamespaceURI());
     if (o15) {
       for (var u7 = 0, s6 = o15.length; u7 < s6; ++u7) if (a7 = this.getReader(o15[u7])) {
         var d5 = a7.readElement(o15[u7], null, this, l8);
-        if (!n12) return d5;
-        i11.push(d5);
+        if (!i11) return d5;
+        n12.push(d5);
       }
-      return i11.length <= 0 ? null : i11.length <= 1 ? i11[0] : this._createChildObjsHolder(i11, l8.defaultRootObjListHolder);
+      return n12.length <= 0 ? null : n12.length <= 1 ? n12[0] : this._createChildObjsHolder(n12, l8.defaultRootObjListHolder);
     }
     return null;
   }, getReader: function(e16) {
@@ -68623,10 +68876,10 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, analysisElem: function(e16) {
     var t11 = this.getDomHelper();
     t11.setForceAnalysisDoc(true), this.getDomHelper().setRootElement(e16);
-    for (var r12 = t11.getNamespaces(), l8 = null, a7 = 0, n12 = r12.length; a7 < n12; ++a7) {
-      var i11 = r12[a7].namespaceURI;
-      if (Kekule.IO.CML.LEGAL_CORE_NAMESPACE_URIS.indexOf(i11) >= 0) {
-        l8 = i11;
+    for (var r12 = t11.getNamespaces(), l8 = null, a7 = 0, i11 = r12.length; a7 < i11; ++a7) {
+      var n12 = r12[a7].namespaceURI;
+      if (Kekule.IO.CML.LEGAL_CORE_NAMESPACE_URIS.indexOf(n12) >= 0) {
+        l8 = n12;
         break;
       }
     }
@@ -68641,17 +68894,17 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   } }), Kekule.IO.CmlReader = Class.create(Kekule.IO.ChemDataReader, { CLASS_NAME: "Kekule.IO.CmlReader", initProperties: function() {
     this.defineProp("objIdMap", { dataType: DataType.HASH, serializable: false });
   }, doReadData: function(e16, t11, r12, l8) {
-    var a7, n12;
+    var a7, i11;
     t11 != Kekule.IO.ChemDataType.DOM ? a7 = DataType.XmlUtility.parse(e16).documentElement : a7 = e16.documentElement ? e16.documentElement : e16;
-    var i11 = Kekule.IO.CmlElementReaderFactory.getReader("cml");
-    if (i11) try {
-      this.setObjIdMap({}), i11.setRootEvoker(this);
+    var n12 = Kekule.IO.CmlElementReaderFactory.getReader("cml");
+    if (n12) try {
+      this.setObjIdMap({}), n12.setRootEvoker(this);
       var o15 = Object.extend({}, Kekule.globalOptions.IO.cml);
-      o15 = Object.extend(o15, l8 || {}), n12 = i11.readElement(a7, null, null, o15), i11.doneReadingDocument(true);
+      o15 = Object.extend(o15, l8 || {}), i11 = n12.readElement(a7, null, null, o15), n12.doneReadingDocument(true);
     } finally {
-      i11.finalize(), this.setObjIdMap(null);
+      n12.finalize(), this.setObjIdMap(null);
     }
-    return n12;
+    return i11;
   }, getLoadedObjById: function(e16) {
     var t11 = this.getObjIdMap();
     return t11 && t11[e16];
@@ -68665,15 +68918,15 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, initProperties: function() {
     this.defineProp("prettyPrint", { dataType: DataType.BOOL, defaultValue: true }), this.defineProp("rootElemWriter", { dataType: DataType.OBJECT, setter: null, serializable: false });
   }, doWriteData: function(e16, t11, r12, l8) {
-    var a7 = Kekule.IO.CML.CML3_SCHEMA_NAMESPACE_URI, n12 = DataType.XmlUtility.newDocument("cml", a7), i11 = Kekule.IO.CmlElementWriterFactory.getWriter("Kekule.ChemDocument");
-    if (i11) {
+    var a7 = Kekule.IO.CML.CML3_SCHEMA_NAMESPACE_URI, i11 = DataType.XmlUtility.newDocument("cml", a7), n12 = Kekule.IO.CmlElementWriterFactory.getWriter("Kekule.ChemDocument");
+    if (n12) {
       var o15;
       try {
-        this.setPropStoreFieldValue("rootElemWriter", i11);
+        this.setPropStoreFieldValue("rootElemWriter", n12);
         var u7 = Object.extend({}, Kekule.globalOptions.IO.cml);
-        u7 = Object.extend(u7, l8 || {}), i11.setCoreNamespaceURI(a7), o15 = i11.writeObject(e16, n12.documentElement, u7), i11.doneWritingDocument(true), t11 == Kekule.IO.ChemDataType.TEXT && (o15 = DataType.XmlUtility.serializeNode(n12.documentElement, { prettyPrint: u7.prettyPrint || this.getPrettyPrint() }));
+        u7 = Object.extend(u7, l8 || {}), n12.setCoreNamespaceURI(a7), o15 = n12.writeObject(e16, i11.documentElement, u7), n12.doneWritingDocument(true), t11 == Kekule.IO.ChemDataType.TEXT && (o15 = DataType.XmlUtility.serializeNode(i11.documentElement, { prettyPrint: u7.prettyPrint || this.getPrettyPrint() }));
       } finally {
-        this.setPropStoreFieldValue("rootElemWriter", null), i11.finalize();
+        this.setPropStoreFieldValue("rootElemWriter", null), n12.finalize();
       }
       return o15;
     }
@@ -68698,12 +68951,12 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
 }, isAtomListSymbol: function(e15) {
   return e15 === Kekule.IO.MDL.SYMBOL_ATOMLIST;
 }, analysisMdlDateTimeStr: function(e15, t10) {
-  var r12 = /* @__PURE__ */ new Date(), l8 = 0, a7 = 2, n12 = (parseInt(e15.substr(l8, a7).trim(), 10) || 1) - 1;
+  var r12 = /* @__PURE__ */ new Date(), l8 = 0, a7 = 2, i11 = (parseInt(e15.substr(l8, a7).trim(), 10) || 1) - 1;
   l8 += a7;
-  var i11 = parseInt(e15.substr(l8, a7).trim(), 10) || 0;
+  var n12 = parseInt(e15.substr(l8, a7).trim(), 10) || 0;
   l8 += a7, a7 = t10 ? 4 : 2;
   var o15 = parseInt(e15.substr(l8, a7), 10) || 0;
-  t10 || (o15 += o15 >= 70 ? 1900 : 2e3), r12.setFullYear(o15, n12, i11), l8 += a7, a7 = 2;
+  t10 || (o15 += o15 >= 70 ? 1900 : 2e3), r12.setFullYear(o15, i11, n12), l8 += a7, a7 = 2;
   var u7 = parseInt(e15.substr(l8, a7), 10) || 0;
   l8 += a7;
   var s6 = parseInt(e15.substr(l8, a7), 10) || 0;
@@ -68749,13 +69002,13 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
 } }, Kekule.IO.MdlStructureUtils = { fillFragment: function(e15, t10, r12) {
   if (e15.clear(), t10) {
     var l8;
-    if (l8 = r12 && r12 != Kekule.CoordMode.UNKNOWN ? r12 == Kekule.CoordMode.COORD3D : t10.atomInfos.isCoord3D, t10.atomInfos) for (var a7 = 0, n12 = t10.atomInfos.length; a7 < n12; ++a7) {
+    if (l8 = r12 && r12 != Kekule.CoordMode.UNKNOWN ? r12 == Kekule.CoordMode.COORD3D : t10.atomInfos.isCoord3D, t10.atomInfos) for (var a7 = 0, i11 = t10.atomInfos.length; a7 < i11; ++a7) {
       if (s6 = t10.atomInfos[a7]) {
-        var i11 = Kekule.IO.MdlStructureUtils.createStructureNode(e15, s6, l8);
-        i11 ? e15.appendNode(i11) : Kekule.raise(Kekule.$L("ErrorMsg.MDL_CTAB_ATOM_CANNOT_CREATE"));
+        var n12 = Kekule.IO.MdlStructureUtils.createStructureNode(e15, s6, l8);
+        n12 ? e15.appendNode(n12) : Kekule.raise(Kekule.$L("ErrorMsg.MDL_CTAB_ATOM_CANNOT_CREATE"));
       }
     }
-    if (t10.bondInfos) for (a7 = 0, n12 = t10.bondInfos.length; a7 < n12; ++a7) {
+    if (t10.bondInfos) for (a7 = 0, i11 = t10.bondInfos.length; a7 < i11; ++a7) {
       if (s6 = t10.bondInfos[a7]) {
         var o15 = Kekule.IO.MdlStructureUtils.createStructureConnector(e15, s6);
         o15 ? e15.appendConnector(o15) : Kekule.raise(Kekule.$L("ErrorMsg.MDL_CTAB_BOND_CANNOT_CREATE"));
@@ -68763,14 +69016,14 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     }
     if (t10.sgInfos && t10.sgInfos.length) {
       var u7 = [];
-      for (a7 = 0, n12 = t10.sgInfos.length; a7 < n12; ++a7) {
+      for (a7 = 0, i11 = t10.sgInfos.length; a7 < i11; ++a7) {
         var s6;
         if ((s6 = t10.sgInfos[a7]) && "SUP" == s6.sgType) {
           for (var d5 = [], m5 = 0, c8 = s6.atomIndexes.length; m5 < c8; ++m5) d5.push(e15.getNodeAt(s6.atomIndexes[m5]));
           d5.length && u7.push({ atoms: d5, text: s6.label });
         }
       }
-      for (a7 = 0, n12 = u7.length; a7 < n12; ++a7) {
+      for (a7 = 0, i11 = u7.length; a7 < i11; ++a7) {
         if ((d5 = u7[a7].atoms).length) {
           var k4 = e15.marshalSubFragment(d5, new Kekule.SubGroup()), g4 = u7[a7].text;
           k4.setFormulaText && g4.match(/.+\d/) ? k4.setFormulaText(u7[a7].text) : k4.setAbbr(u7[a7].text);
@@ -68789,15 +69042,15 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   else if (Kekule.IO.MdlUtils.isHeteroAtomSymbol(t10.symbol)) l8 = new Kekule.Pseudoatom(null, Kekule.PseudoatomType.HETERO);
   else if (Kekule.IO.MdlUtils.isUnspecifiedAtomSymbol(t10.symbol)) l8 = new Kekule.Pseudoatom(null, Kekule.PseudoatomType.ANY);
   else {
-    var n12 = Kekule.ChemicalElementsDataUtil.getElementInfo(t10.symbol);
-    if (n12) {
-      var i11 = null;
-      if (t10.massNumber) i11 = t10.massNumber;
-      else if (t10.massDiff && n12) {
-        var o15 = n12.naturalMass, u7 = (i11 = Math.round(o15 + t10.massDiff), Kekule.IsotopesDataUtil.getIsotopeInfo(n12.atomicNumber, i11));
-        u7 || (i11 = Math.floor(o15 + t10.massDiff), u7 = Kekule.IsotopesDataUtil.getIsotopeInfo(n12.atomicNumber, i11)), u7 || (i11 = Math.ceil(o15 + t10.massDiff), u7 = Kekule.IsotopesDataUtil.getIsotopeInfo(n12.atomicNumber, i11)), u7 || (i11 = null);
+    var i11 = Kekule.ChemicalElementsDataUtil.getElementInfo(t10.symbol);
+    if (i11) {
+      var n12 = null;
+      if (t10.massNumber) n12 = t10.massNumber;
+      else if (t10.massDiff && i11) {
+        var o15 = i11.naturalMass, u7 = (n12 = Math.round(o15 + t10.massDiff), Kekule.IsotopesDataUtil.getIsotopeInfo(i11.atomicNumber, n12));
+        u7 || (n12 = Math.floor(o15 + t10.massDiff), u7 = Kekule.IsotopesDataUtil.getIsotopeInfo(i11.atomicNumber, n12)), u7 || (n12 = Math.ceil(o15 + t10.massDiff), u7 = Kekule.IsotopesDataUtil.getIsotopeInfo(i11.atomicNumber, n12)), u7 || (n12 = null);
       }
-      l8 = new Kekule.Atom(null, t10.symbol, i11);
+      l8 = new Kekule.Atom(null, t10.symbol, n12);
     } else {
       var s6 = Kekule.IsotopesDataUtil.getIsotopeInfo(t10.symbol);
       l8 = s6 ? new Kekule.Atom(null, s6.atomicNumber, s6.massNumber) : new Kekule.Pseudoatom(null, Kekule.PseudoatomType.ANY);
@@ -68808,8 +69061,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   var r12 = e15.getNodeAt(t10.atomIndex1), l8 = e15.getNodeAt(t10.atomIndex2);
   if (r12 && l8) {
     var a7 = [r12, l8];
-    if (t10.endAtomIndexes) for (var n12 = 0, i11 = t10.endAtomIndexes.length; n12 < i11; ++n12) {
-      var o15 = e15.getNodeAt(t10.endAtomIndexes[n12]);
+    if (t10.endAtomIndexes) for (var i11 = 0, n12 = t10.endAtomIndexes.length; i11 < n12; ++i11) {
+      var o15 = e15.getNodeAt(t10.endAtomIndexes[i11]);
       o15 && a7.push(o15);
     }
     var u7 = new Kekule.Bond(null, a7, t10.order);
@@ -68826,8 +69079,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
       if (t10) return Kekule.IO.MDL.SYMBOL_ATOMLIST;
       var r12 = "[", l8 = e15.getAllowedIsotopeIds();
       if (l8 && l8.length || (r12 = "NOT[", l8 = e15.getDisallowedIsotopeIds()), l8 && l8.length) {
-        for (var a7 = [], n12 = 0, i11 = l8.length; n12 < i11; ++n12) {
-          var o15 = Kekule.IsotopesDataUtil.getIsotopeIdDetail(l8[n12]);
+        for (var a7 = [], i11 = 0, n12 = l8.length; i11 < n12; ++i11) {
+          var o15 = Kekule.IsotopesDataUtil.getIsotopeIdDetail(l8[i11]);
           o15 && o15.symbol && a7.push(o15.symbol);
         }
         return r12 = r12 + a7.join(",") + "]";
@@ -68847,10 +69100,10 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
 }, getMoleculeCtabStructureInfo: function(e15) {
   var t10 = {};
   t10.atoms = e15.getLeafNodes(), t10.bonds = e15.getAllChildConnectors(), t10.subGroups = e15.getSubFragments();
-  for (var r12 = 0, l8 = 0, a7 = 0, n12 = t10.atoms.length; a7 < n12; ++a7) t10.atoms[a7].hasCoord3D() && ++l8, t10.atoms[a7].hasCoord2D() && ++r12;
+  for (var r12 = 0, l8 = 0, a7 = 0, i11 = t10.atoms.length; a7 < i11; ++a7) t10.atoms[a7].hasCoord3D() && ++l8, t10.atoms[a7].hasCoord2D() && ++r12;
   return t10.coordMode = r12 > l8 ? Kekule.CoordMode.COORD2D : Kekule.CoordMode.COORD3D, t10;
 }, splitConnectedNodes: function(e15) {
-  for (var t10 = { primaryNodes: [] }, r12 = 0, l8 = e15.getConnectedObjs(), a7 = 0, n12 = l8.length; a7 < n12; ++a7) l8[a7] instanceof Kekule.ChemStructureNode && (r12 < 2 ? (t10.primaryNodes.push(l8[a7]), ++r12) : (t10.remainNodes || (t10.remainNodes = []), t10.remainNodes.push(l8[a7])));
+  for (var t10 = { primaryNodes: [] }, r12 = 0, l8 = e15.getConnectedObjs(), a7 = 0, i11 = l8.length; a7 < i11; ++a7) l8[a7] instanceof Kekule.ChemStructureNode && (r12 < 2 ? (t10.primaryNodes.push(l8[a7]), ++r12) : (t10.remainNodes || (t10.remainNodes = []), t10.remainNodes.push(l8[a7])));
   return t10;
 }, generateClassicStyleCountLine: function(e15, t10) {
   if (t10 == Kekule.IO.MdlVersion.V3000) return "  0  0  0     0  0              0 V3000";
@@ -68967,9 +69220,9 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
 }, getAtomListPropLineValue: function(e15) {
   var t10 = "", r12 = e15.getAllowedIsotopeIds();
   if (r12 && r12.length ? t10 = " F " : (t10 = " T ", r12 = e15.getDisallowedIsotopeIds()), r12 && r12.length) {
-    for (var l8 = [], a7 = 0, n12 = r12.length; a7 < n12; ++a7) {
-      var i11 = Kekule.IsotopesDataUtil.getIsotopeIdDetail(r12[a7]);
-      i11 && i11.symbol && l8.push(i11.symbol.rpad(4));
+    for (var l8 = [], a7 = 0, i11 = r12.length; a7 < i11; ++a7) {
+      var n12 = Kekule.IsotopesDataUtil.getIsotopeIdDetail(r12[a7]);
+      n12 && n12.symbol && l8.push(n12.symbol.rpad(4));
     }
     var o15 = l8.join("");
     return t10 = l8.length.toString().lpad(3) + t10 + o15;
@@ -68987,28 +69240,28 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
 }, analysisCTab: function(e15) {
   var t10 = {}, r12 = e15.readLine(), l8 = this.analysisCountLine(r12), a7 = [];
   a7.isCoord3D = false;
-  for (var n12 = 0; n12 < l8.atomCount; ++n12) {
+  for (var i11 = 0; i11 < l8.atomCount; ++i11) {
     r12 = e15.readLine();
-    var i11 = this.analysisAtomLine(r12);
-    i11.z && (a7.isCoord3D = true), a7.push(i11);
+    var n12 = this.analysisAtomLine(r12);
+    n12.z && (a7.isCoord3D = true), a7.push(n12);
   }
   var o15 = [];
-  for (n12 = 0; n12 < l8.bondCount; ++n12) {
+  for (i11 = 0; i11 < l8.bondCount; ++i11) {
     r12 = e15.readLine();
     var u7 = this.analysisBondLine(r12);
     o15.push(u7);
   }
-  for (n12 = 0; n12 < l8.atomListCount; ++n12) {
+  for (i11 = 0; i11 < l8.atomListCount; ++i11) {
     r12 = e15.readLine();
     var s6 = this.analysisAtomListInfoLine(r12);
     a7[s6.atomIndex] && (a7[s6.atomIndex].atomListInfo = s6);
   }
-  for (n12 = 0; n12 < l8.stextCount; ++n12) r12 = e15.readLine(), r12 = e15.readLine();
+  for (i11 = 0; i11 < l8.stextCount; ++i11) r12 = e15.readLine(), r12 = e15.readLine();
   for (var d5 = []; !e15.eof(); ) {
     r12 = e15.readLine();
     var m5 = this.analysisPropertyLine(r12, a7, d5);
     if ("END" === m5.prop) break;
-    if ("SKP" === m5.prop) for (n12 = 0; n12 < m5.count && !e15.eof(); ++n12) r12 = e15.readLine();
+    if ("SKP" === m5.prop) for (i11 = 0; i11 < m5.count && !e15.eof(); ++i11) r12 = e15.readLine();
     else if ("A" === m5.leading) {
       if (e15.eof()) break;
       var c8 = m5.atomIndex;
@@ -69034,16 +69287,16 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   t10.atomIndex = parseInt(r12, 10) - 1, r12 = e15.substr(4, 1), t10.isAllowList = "f" == r12.toLowerCase(), r12 = e15.substr(9, 1);
   var l8 = Math.min(parseInt(r12, 10), 5);
   t10.atomicNumbers = [];
-  for (var a7 = 11, n12 = 0; n12 < l8; ++n12) {
-    a7 += 4 * n12, r12 = e15.substr(a7, 3);
-    var i11 = parseInt(r12, 10);
-    i11 && t10.atomicNumbers.push(i11);
+  for (var a7 = 11, i11 = 0; i11 < l8; ++i11) {
+    a7 += 4 * i11, r12 = e15.substr(a7, 3);
+    var n12 = parseInt(r12, 10);
+    n12 && t10.atomicNumbers.push(n12);
   }
   return t10;
 }, analysisPropertyLine: function(e15, t10, r12) {
   var l8 = {}, a7 = e15.substr(0, 1);
   if (l8.leading = a7, "M" == a7) {
-    var n12, i11, o15 = e15.substr(3, 3).trim();
+    var i11, n12, o15 = e15.substr(3, 3).trim();
     if (l8.prop = o15, "END" === o15) return l8;
     if (["CHG", "RAD", "ISO"].indexOf(o15) >= 0) {
       var u7 = parseInt(e15.substr(6, 3).trim());
@@ -69052,57 +69305,57 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
         var c8 = parseInt(e15.substr(d5, 3).trim(), 10) - 1, k4 = parseInt(e15.substr(d5 + 4, 3).trim(), 10);
         d5 += 8, l8.entries.push({ atomIndex: c8, propName: k4 }), t10[c8][s6] = k4;
       }
-    } else ["STY", "SLB"].indexOf(o15) >= 0 ? i11 = r12[n12 = parseInt(e15.substr(10, 3), 10) - 1] : ["SAL", "SBL", "SMT", "SCL", "SAP", "SBV"].indexOf(o15) >= 0 && (i11 = r12[n12 = parseInt(e15.substr(7, 3), 10) - 1]);
+    } else ["STY", "SLB"].indexOf(o15) >= 0 ? n12 = r12[i11 = parseInt(e15.substr(10, 3), 10) - 1] : ["SAL", "SBL", "SMT", "SCL", "SAP", "SBV"].indexOf(o15) >= 0 && (n12 = r12[i11 = parseInt(e15.substr(7, 3), 10) - 1]);
     switch (o15) {
       case "ALS":
-        var g4 = {}, f7 = e15.substr(7, 3).trim();
-        g4.atomIndex = parseInt(f7, 10) - 1, l8.atomIndex = g4.atomIndex;
-        var I3 = parseInt(e15.substr(10, 3)), O2 = e15.substr(14, 1);
-        g4.isAllowList = "f" == O2.toLowerCase(), g4.symbols = [];
-        for (m5 = 0; m5 < I3; ++m5) O2 = e15.substr(16 + 4 * m5, 4).trim(), g4.symbols.push(O2);
+        var g4 = {}, I3 = e15.substr(7, 3).trim();
+        g4.atomIndex = parseInt(I3, 10) - 1, l8.atomIndex = g4.atomIndex;
+        var O2 = parseInt(e15.substr(10, 3)), f7 = e15.substr(14, 1);
+        g4.isAllowList = "f" == f7.toLowerCase(), g4.symbols = [];
+        for (m5 = 0; m5 < O2; ++m5) f7 = e15.substr(16 + 4 * m5, 4).trim(), g4.symbols.push(f7);
         l8.atomListInfo = g4;
         var C2 = t10[g4.atomIndex].atomListInfo;
         C2 ? C2.isAllowList !== g4.isAllowList ? t10[g4.atomIndex].atomListInfo = g4 : C2.symbols = Kekule.ArrayUtils.pushUnique(C2.symbols, g4.symbols) : t10[g4.atomIndex].atomListInfo = g4;
         break;
       case "STY":
-        "SUP" == e15.substr(14, 3) && (r12[n12] = { sgType: "SUP" });
+        "SUP" == e15.substr(14, 3) && (r12[i11] = { sgType: "SUP" });
         break;
       case "SLB":
-        i11 && (i11.labelId = e15.substr(14).trim());
+        n12 && (n12.labelId = e15.substr(14).trim());
         break;
       case "SAL":
-        if (i11) {
+        if (n12) {
           var h7 = parseInt(e15.substr(10, 3));
-          i11.atomIndexes || (i11.atomIndexes = []);
+          n12.atomIndexes || (n12.atomIndexes = []);
           for (m5 = 0; m5 < h7; ++m5) {
-            O2 = e15.substr(14 + 4 * m5, 3), c8 = parseInt(O2) - 1;
-            i11.atomIndexes.push(c8);
+            f7 = e15.substr(14 + 4 * m5, 3), c8 = parseInt(f7) - 1;
+            n12.atomIndexes.push(c8);
           }
         }
         break;
       case "SBL":
-        if (i11 && "SUP" == i11.sgType) {
+        if (n12 && "SUP" == n12.sgType) {
           var K2 = parseInt(e15.substr(10, 3));
-          i11.crossBondIndexes || (i11.crossBondIndexes = []);
+          n12.crossBondIndexes || (n12.crossBondIndexes = []);
           for (m5 = 0; m5 < K2; ++m5) {
-            O2 = e15.substr(14 + 4 * m5, 3);
-            var p5 = parseInt(O2) - 1;
-            i11.crossBondIndexes.push(p5);
+            f7 = e15.substr(14 + 4 * m5, 3);
+            var p5 = parseInt(f7) - 1;
+            n12.crossBondIndexes.push(p5);
           }
         }
         break;
       case "SMT":
-        i11 && ("SUP" == i11.sgType ? i11.label = e15.substr(11).trim() : i11.subscript = e15.substr(11).trim());
+        n12 && ("SUP" == n12.sgType ? n12.label = e15.substr(11).trim() : n12.subscript = e15.substr(11).trim());
         break;
       case "SCL":
-        i11 && (i11.sgClass = e15.substr(11).trim());
+        n12 && (n12.sgClass = e15.substr(11).trim());
         break;
       case "SBV":
-        if (i11) {
+        if (n12) {
           var M4 = parseInt(e15.substr(11, 3), 10) - 1;
-          i11.bondVectors || (i11.bondVectors = []), i11.bondVectors[M4] = { bondIndex: M4, x: parseFloat(e15.substr(14, 10)), y: parseFloat(e15.substr(24, 10)) };
+          n12.bondVectors || (n12.bondVectors = []), n12.bondVectors[M4] = { bondIndex: M4, x: parseFloat(e15.substr(14, 10)), y: parseFloat(e15.substr(24, 10)) };
           var E3 = e15.substr(34, 10).trim();
-          E3 && (i11.bondVectors[M4].z = parseFloat(E3) || 0);
+          E3 && (n12.bondVectors[M4].z = parseFloat(E3) || 0);
         }
     }
   } else if ("A" === a7) {
@@ -69123,85 +69376,85 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   return Kekule.IO.MdlUtils.assertIlegalForCtabOutput(e15), this.outputCtab(e15, t10);
 }, outputCtab: function(e15, t10) {
   var r12 = [], l8 = Kekule.IO.MdlStructureUtils.getMoleculeCtabStructureInfo(e15);
-  if (this.getCoordMode() != Kekule.CoordMode.UNKNOWN && (l8.coordMode = this.getCoordMode()), t10.writeLine(this.generateCountLine(l8)), this.outputAtomBlock(e15, l8, t10, r12), this.outputBondBlock(e15, l8, t10), r12.length) for (var a7 = 0, n12 = r12.length; a7 < n12; ++a7) t10.writeLine(r12[a7]);
+  if (this.getCoordMode() != Kekule.CoordMode.UNKNOWN && (l8.coordMode = this.getCoordMode()), t10.writeLine(this.generateCountLine(l8)), this.outputAtomBlock(e15, l8, t10, r12), this.outputBondBlock(e15, l8, t10), r12.length) for (var a7 = 0, i11 = r12.length; a7 < i11; ++a7) t10.writeLine(r12[a7]);
   this.outputSubgroupsPropLines(e15, l8, t10), t10.writeLine(Kekule.IO.Mdl2kUtils.getCtabPropLineTag("END"));
 }, generateCountLine: function(e15) {
   return Kekule.IO.MdlStructureUtils.generateClassicStyleCountLine(e15, Kekule.IO.MdlVersion.V2000);
 }, outputAtomBlock: function(e15, t10, r12, l8) {
-  for (var a7 = 0, n12 = t10.atoms.length; a7 < n12; ++a7) {
-    var i11 = t10.atoms[a7], o15 = this.generateAtomLine(a7, t10.coordMode, i11, l8);
+  for (var a7 = 0, i11 = t10.atoms.length; a7 < i11; ++a7) {
+    var n12 = t10.atoms[a7], o15 = this.generateAtomLine(a7, t10.coordMode, n12, l8);
     r12.writeLine(o15);
   }
 }, generateAtomLine: function(e15, t10, r12, l8) {
-  var a7 = Kekule.IO.Mdl2kUtils.coordToStr, n12 = "", i11 = (e15 + 1).toString().lpad(3), o15 = t10 == Kekule.CoordMode.COORD3D ? r12.getAbsCoord3D() : r12.getAbsCoord2D();
-  if (n12 += a7(o15.x).lpad(10) + a7(o15.y).lpad(10) + a7(o15.z).lpad(10), n12 += " " + Kekule.IO.MdlStructureUtils.getAtomTypeStr(r12, true).rpad(3), Kekule.IO.MdlStructureUtils.isNodeVariableAtom(r12)) {
+  var a7 = Kekule.IO.Mdl2kUtils.coordToStr, i11 = "", n12 = (e15 + 1).toString().lpad(3), o15 = t10 == Kekule.CoordMode.COORD3D ? r12.getAbsCoord3D() : r12.getAbsCoord2D();
+  if (i11 += a7(o15.x).lpad(10) + a7(o15.y).lpad(10) + a7(o15.z).lpad(10), i11 += " " + Kekule.IO.MdlStructureUtils.getAtomTypeStr(r12, true).rpad(3), Kekule.IO.MdlStructureUtils.isNodeVariableAtom(r12)) {
     var u7 = Kekule.IO.Mdl2kUtils.getAtomListPropLineValue(r12);
     if (u7) {
-      var s6 = Kekule.IO.Mdl2kUtils.getCtabPropLineTag("ALS") + " " + i11 + u7;
+      var s6 = Kekule.IO.Mdl2kUtils.getCtabPropLineTag("ALS") + " " + n12 + u7;
       l8.push(s6);
     }
   }
   if (r12.getMassNumber && r12.getMassNumber()) {
-    n12 += (Kekule.IO.Mdl2kUtils.getMassDiff(r12.getIsotope()) || 0).toString().lpad(2);
-    s6 = Kekule.IO.Mdl2kUtils.generateCtabPropLine([i11, r12.getMassNumber().toString().lpad(3)], "ISO", 1);
+    i11 += (Kekule.IO.Mdl2kUtils.getMassDiff(r12.getIsotope()) || 0).toString().lpad(2);
+    s6 = Kekule.IO.Mdl2kUtils.generateCtabPropLine([n12, r12.getMassNumber().toString().lpad(3)], "ISO", 1);
     l8.push(s6);
-  } else n12 += "0".lpad(2);
-  if (n12 += Kekule.IO.Mdl2kUtils.chargeOrRadicalToMdlAtomLineValue(r12.getCharge ? r12.getCharge() : null, r12.getRadical ? r12.getRadical() : null).toString().lpad(3), r12.getCharge && r12.getCharge()) {
-    s6 = Kekule.IO.Mdl2kUtils.generateCtabPropLine([i11, r12.getCharge().toString().lpad(3)], "CHG", 1);
+  } else i11 += "0".lpad(2);
+  if (i11 += Kekule.IO.Mdl2kUtils.chargeOrRadicalToMdlAtomLineValue(r12.getCharge ? r12.getCharge() : null, r12.getRadical ? r12.getRadical() : null).toString().lpad(3), r12.getCharge && r12.getCharge()) {
+    s6 = Kekule.IO.Mdl2kUtils.generateCtabPropLine([n12, r12.getCharge().toString().lpad(3)], "CHG", 1);
     l8.push(s6);
   }
   if (r12.getRadical && r12.getRadical()) {
-    s6 = Kekule.IO.Mdl2kUtils.generateCtabPropLine([i11, Kekule.IO.MdlUtils.kekuleRadicalToMdl(r12.getRadical()).toString().lpad(3)], "RAD", 1);
+    s6 = Kekule.IO.Mdl2kUtils.generateCtabPropLine([n12, Kekule.IO.MdlUtils.kekuleRadicalToMdl(r12.getRadical()).toString().lpad(3)], "RAD", 1);
     l8.push(s6);
   }
-  n12 += (r12.getParity && r12.getParity() || 0).toString().lpad(3);
+  i11 += (r12.getParity && r12.getParity() || 0).toString().lpad(3);
   var d5 = r12.getExplicitHydrogenCount ? r12.getExplicitHydrogenCount() : null;
-  n12 += (Kekule.ObjUtils.isUnset(d5) ? "0" : (d5 + 1).toString()).lpad(3);
-  for (var m5 = 0, c8 = "0".lpad(3); m5 < 8; ++m5) n12 += c8;
-  return n12;
+  i11 += (Kekule.ObjUtils.isUnset(d5) ? "0" : (d5 + 1).toString()).lpad(3);
+  for (var m5 = 0, c8 = "0".lpad(3); m5 < 8; ++m5) i11 += c8;
+  return i11;
 }, outputBondBlock: function(e15, t10, r12) {
   for (var l8 = 0, a7 = t10.bonds.length; l8 < a7; ++l8) {
-    var n12 = t10.bonds[l8], i11 = this.generateBondLine(l8, n12, t10.atoms);
-    r12.writeLine(i11);
+    var i11 = t10.bonds[l8], n12 = this.generateBondLine(l8, i11, t10.atoms);
+    r12.writeLine(n12);
   }
 }, generateBondLine: function(e15, t10, r12) {
-  var l8, a7, n12 = "";
+  var l8, a7, i11 = "";
   t10.getStereo && t10.getBondOrder ? l8 = (a7 = Kekule.IO.Mdl2kUtils.bondStereoToMdlBondLineValue(t10.getStereo(), t10.getBondOrder(), true)).stereo.toString().lpad(3) : (a7 = {}, l8 += "0".lpad(3));
-  var i11, o15, u7 = Kekule.IO.MdlStructureUtils.splitConnectedNodes(t10);
-  return i11 = (r12.indexOf(u7.primaryNodes[0]) + 1).toString().lpad(3), o15 = (r12.indexOf(u7.primaryNodes[1]) + 1).toString().lpad(3), a7 && a7.inverted ? n12 += o15 + i11 : n12 += i11 + o15, t10.getBondOrder ? n12 += Kekule.IO.MdlUtils.kekuleBondOrderToMdlType(t10.getBondOrder()).toString().lpad(3) : n12 += "0".lpad(3), n12 += l8, n12 += "0".lpad(3), n12 += "0".lpad(3), n12 += "0".lpad(3);
+  var n12, o15, u7 = Kekule.IO.MdlStructureUtils.splitConnectedNodes(t10);
+  return n12 = (r12.indexOf(u7.primaryNodes[0]) + 1).toString().lpad(3), o15 = (r12.indexOf(u7.primaryNodes[1]) + 1).toString().lpad(3), a7 && a7.inverted ? i11 += o15 + n12 : i11 += n12 + o15, t10.getBondOrder ? i11 += Kekule.IO.MdlUtils.kekuleBondOrderToMdlType(t10.getBondOrder()).toString().lpad(3) : i11 += "0".lpad(3), i11 += l8, i11 += "0".lpad(3), i11 += "0".lpad(3), i11 += "0".lpad(3);
 }, outputSubgroupsPropLines: function(e15, t10, r12) {
-  for (var l8 = 0, a7 = t10.subGroups.length; l8 < a7; ++l8) for (var n12 = this.generateSgroupLines(l8, t10.subGroups[l8], t10), i11 = 0, o15 = n12.length; i11 < o15; ++i11) r12.writeLine(n12[i11]);
+  for (var l8 = 0, a7 = t10.subGroups.length; l8 < a7; ++l8) for (var i11 = this.generateSgroupLines(l8, t10.subGroups[l8], t10), n12 = 0, o15 = i11.length; n12 < o15; ++n12) r12.writeLine(i11[n12]);
 }, generateSgroupLines: function(e15, t10, r12) {
-  var l8 = [], a7 = (e15 + 1).toString().lpad(3), n12 = Kekule.IO.Mdl2kUtils.generateCtabPropLine([a7, "SUP"], "STY", 1);
-  l8.push(n12), n12 = Kekule.IO.Mdl2kUtils.generateCtabPropLine([a7, a7], "SLB", 1), l8.push(n12);
-  var i11 = t10.getAbbr && t10.getAbbr() || t10.getFormulaText && t10.getFormulaText() || t10.getName && t10.getName();
-  i11 && (n12 = Kekule.IO.Mdl2kUtils.generateCtabPropLine([a7, i11], "SMT"), l8.push(n12));
-  for (var o15 = [], u7 = 0, s6 = (I3 = t10.getLeafNodes()).length; u7 < s6; ++u7) {
-    (e15 = r12.atoms.indexOf(I3[u7])) >= 0 && o15.push((e15 + 1).toString().lpad(3));
+  var l8 = [], a7 = (e15 + 1).toString().lpad(3), i11 = Kekule.IO.Mdl2kUtils.generateCtabPropLine([a7, "SUP"], "STY", 1);
+  l8.push(i11), i11 = Kekule.IO.Mdl2kUtils.generateCtabPropLine([a7, a7], "SLB", 1), l8.push(i11);
+  var n12 = t10.getAbbr && t10.getAbbr() || t10.getFormulaText && t10.getFormulaText() || t10.getName && t10.getName();
+  n12 && (i11 = Kekule.IO.Mdl2kUtils.generateCtabPropLine([a7, n12], "SMT"), l8.push(i11));
+  for (var o15 = [], u7 = 0, s6 = (O2 = t10.getLeafNodes()).length; u7 < s6; ++u7) {
+    (e15 = r12.atoms.indexOf(O2[u7])) >= 0 && o15.push((e15 + 1).toString().lpad(3));
   }
   o15 = o15.sort();
   var d5 = Kekule.ArrayUtils.divide(o15, 15);
   for (u7 = 0, s6 = d5.length; u7 < s6; ++u7) {
     var m5 = d5[u7];
-    n12 = Kekule.IO.Mdl2kUtils.getCtabPropLineTag("SAL") + " " + a7 + m5.length.toString().lpad(3) + " " + m5.join(" "), l8.push(n12);
+    i11 = Kekule.IO.Mdl2kUtils.getCtabPropLineTag("SAL") + " " + a7 + m5.length.toString().lpad(3) + " " + m5.join(" "), l8.push(i11);
   }
-  var c8 = t10.getCrossConnectors(), k4 = [], g4 = [], f7 = Kekule.IO.Mdl2kUtils.coordToStr;
+  var c8 = t10.getCrossConnectors(), k4 = [], g4 = [], I3 = Kekule.IO.Mdl2kUtils.coordToStr;
   for (u7 = 0, s6 = c8.length; u7 < s6; ++u7) {
     if ((e15 = r12.bonds.indexOf(c8[u7])) >= 0) {
       k4.push((e15 + 1).toString().lpad(3));
-      var I3, O2 = [e15 + 1], C2 = {};
-      2 == (I3 = Kekule.IO.MdlStructureUtils.splitConnectedNodes(c8[u7]).primaryNodes).length && (r12.coordMode == Kekule.CoordMode.COORD2D ? (C2 = Kekule.CoordUtils.substract(I3[0].getAbsCoord2D(), I3[1].getAbsCoord2D()), O2 = O2.concat([f7(C2.x).lpad(10), f7(C2.y).lpad(10)])) : (C2 = Kekule.CoordUtils.substract(I3[0].getAbsCoord3D(), I3[1].getAbsCoord3D()), O2 = O2.concat([f7(C2.x), f7(C2.y), f7(C2.z)]))), g4.push(O2);
+      var O2, f7 = [e15 + 1], C2 = {};
+      2 == (O2 = Kekule.IO.MdlStructureUtils.splitConnectedNodes(c8[u7]).primaryNodes).length && (r12.coordMode == Kekule.CoordMode.COORD2D ? (C2 = Kekule.CoordUtils.substract(O2[0].getAbsCoord2D(), O2[1].getAbsCoord2D()), f7 = f7.concat([I3(C2.x).lpad(10), I3(C2.y).lpad(10)])) : (C2 = Kekule.CoordUtils.substract(O2[0].getAbsCoord3D(), O2[1].getAbsCoord3D()), f7 = f7.concat([I3(C2.x), I3(C2.y), I3(C2.z)]))), g4.push(f7);
     }
   }
   k4 = k4.sort();
   var h7 = Kekule.ArrayUtils.divide(k4, 15);
   for (u7 = 0, s6 = h7.length; u7 < s6; ++u7) {
     var K2 = h7[u7];
-    n12 = Kekule.IO.Mdl2kUtils.getCtabPropLineTag("SBL") + " " + a7 + K2.length.toString().lpad(3) + " " + K2.join(" "), l8.push(n12);
+    i11 = Kekule.IO.Mdl2kUtils.getCtabPropLineTag("SBL") + " " + a7 + K2.length.toString().lpad(3) + " " + K2.join(" "), l8.push(i11);
   }
   for (u7 = 0, s6 = g4.length; u7 < s6; ++u7) {
     var p5 = g4[u7].shift(), M4 = g4[u7].join("");
-    n12 = Kekule.IO.Mdl2kUtils.getCtabPropLineTag("SBV") + " " + a7 + " " + p5.toString().lpad(3) + M4, l8.push(n12);
+    i11 = Kekule.IO.Mdl2kUtils.getCtabPropLineTag("SBV") + " " + a7 + " " + p5.toString().lpad(3) + M4, l8.push(i11);
   }
   return l8;
 } }), Kekule.IO.Mdl3kUtils = { get3kBlockStartTag: function(e15) {
@@ -69255,9 +69508,9 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
 }, coordToStr: function(e15) {
   return (e15 || 0).toFixed(6);
 } }, Kekule.IO.Mdl3kValueUtils = { SEPARATOR: " ", KEYVALUE_CONNECTOR: "=", STR_QUOTE: '"', ESC_QUOTE: '""', VALUELIST_PATTERN: /\(.+\)/g, split: function(e15, t10) {
-  for (var r12 = t10 || Kekule.IO.Mdl3kValueUtils.SEPARATOR, l8 = Kekule.IO.Mdl3kValueUtils.STR_QUOTE, a7 = [], n12 = false, i11 = false, o15 = false, u7 = "", s6 = 0, d5 = e15.length; s6 < d5; ++s6) {
+  for (var r12 = t10 || Kekule.IO.Mdl3kValueUtils.SEPARATOR, l8 = Kekule.IO.Mdl3kValueUtils.STR_QUOTE, a7 = [], i11 = false, n12 = false, o15 = false, u7 = "", s6 = 0, d5 = e15.length; s6 < d5; ++s6) {
     var m5 = e15.charAt(s6);
-    m5 == l8 ? !n12 && e15.charAt(s6 + 1) == l8 || n12 && e15.charAt(s6 - 1) == l8 || (n12 = !n12) : "[" == m5 ? i11 = true : "]" == m5 ? i11 = false : "(" == m5 ? o15 = true : ")" == m5 && (o15 = false), m5 == r12 ? n12 || i11 || o15 || !u7 ? u7 += m5 : (a7.push(u7), u7 = "") : u7 += m5;
+    m5 == l8 ? !i11 && e15.charAt(s6 + 1) == l8 || i11 && e15.charAt(s6 - 1) == l8 || (i11 = !i11) : "[" == m5 ? n12 = true : "]" == m5 ? n12 = false : "(" == m5 ? o15 = true : ")" == m5 && (o15 = false), m5 == r12 ? i11 || n12 || o15 || !u7 ? u7 += m5 : (a7.push(u7), u7 = "") : u7 += m5;
   }
   return u7 && a7.push(u7), a7;
 }, merge: function(e15, t10) {
@@ -69292,14 +69545,14 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   return (r12 = r12.replace(l8, t10 + t10)).indexOf(Kekule.IO.Mdl3kValueUtils.SEPARATOR) >= 0 && (r12 = t10 + r12 + t10), r12;
 }, splitValues: function(e15) {
   for (var t10 = [], r12 = Kekule.IO.Mdl3kValueUtils.split(e15), l8 = 0, a7 = r12.length; l8 < a7; ++l8) {
-    var n12 = Kekule.IO.Mdl3kValueUtils.splitKeyValue(r12[l8]);
-    n12.value && (n12.value = Kekule.IO.Mdl3kValueUtils.unquoteValue(n12.value)), t10.push(n12);
+    var i11 = Kekule.IO.Mdl3kValueUtils.splitKeyValue(r12[l8]);
+    i11.value && (i11.value = Kekule.IO.Mdl3kValueUtils.unquoteValue(i11.value)), t10.push(i11);
   }
   return t10;
 }, mergeValues: function(e15) {
   for (var t10, r12 = 0, l8 = e15.length; r12 < l8; ++r12) {
-    var a7, n12, i11, o15 = e15[r12];
-    "object" != typeof o15 || Kekule.ArrayUtils.isArray(o15) ? n12 = o15 : (a7 = o15.key, n12 = o15.value), i11 = Kekule.ArrayUtils.isArray(n12) ? Kekule.IO.Mdl3kValueUtils.mergeValueList(n12) : Kekule.IO.Mdl3kValueUtils.quoteValue(n12), a7 && (i11 = Kekule.IO.Mdl3kValueUtils.mergeKeyValue(i11, a7)), t10 = Kekule.IO.Mdl3kValueUtils.appendToken(t10, i11);
+    var a7, i11, n12, o15 = e15[r12];
+    "object" != typeof o15 || Kekule.ArrayUtils.isArray(o15) ? i11 = o15 : (a7 = o15.key, i11 = o15.value), n12 = Kekule.ArrayUtils.isArray(i11) ? Kekule.IO.Mdl3kValueUtils.mergeValueList(i11) : Kekule.IO.Mdl3kValueUtils.quoteValue(i11), a7 && (n12 = Kekule.IO.Mdl3kValueUtils.mergeKeyValue(n12, a7)), t10 = Kekule.IO.Mdl3kValueUtils.appendToken(t10, n12);
   }
   return t10;
 }, appendToken: function(e15, t10, r12) {
@@ -69335,35 +69588,35 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   if (t10) return this.tryApplySuper("writeLine", [e15]);
   var r12, l8 = e15;
   if (this.isStartWithLeadingTag(e15) || (l8 = this.LEADING_TAG + l8), l8.length > this.MAX_COL_WIDTH) {
-    var a7 = this.LINE_CONTI_MARK, n12 = (Kekule.IO.Mdl3kValueUtils.SEPARATOR, this.MAX_COL_WIDTH - a7.length);
-    r12 = l8.substr(n12), l8 = l8.substr(0, n12), l8 += a7;
+    var a7 = this.LINE_CONTI_MARK, i11 = (Kekule.IO.Mdl3kValueUtils.SEPARATOR, this.MAX_COL_WIDTH - a7.length);
+    r12 = l8.substr(i11), l8 = l8.substr(0, i11), l8 += a7;
   }
-  var i11 = this.tryApplySuper("writeLine", [l8]);
-  return r12 && (i11 = this.writeLine(r12, t10)), i11;
+  var n12 = this.tryApplySuper("writeLine", [l8]);
+  return r12 && (n12 = this.writeLine(r12, t10)), n12;
 }, writeLines: function(e15, t10) {
   for (var r12 = 0, l8 = e15.length; r12 < l8; ++r12) this.writeLine(e15[r12], t10);
 }, getBlockBuffer: function(e15, t10) {
-  for (var r12, l8 = Kekule.IO.Mdl3kUtils.get3kBlockStartTag(e15), a7 = Kekule.IO.Mdl3kUtils.get3kBlockEndTag(e15), n12 = this.getCurrLineNo(), i11 = this.readLine().trim(); i11 != l8 && !this.eof(); ) i11 = this.readLine().trim();
+  for (var r12, l8 = Kekule.IO.Mdl3kUtils.get3kBlockStartTag(e15), a7 = Kekule.IO.Mdl3kUtils.get3kBlockEndTag(e15), i11 = this.getCurrLineNo(), n12 = this.readLine().trim(); n12 != l8 && !this.eof(); ) n12 = this.readLine().trim();
   if (this.eof()) r12 = null;
   else {
     var o15 = this.getCurrLineNo(), u7 = this.getCurrLineNo();
-    for (i11 = this.readLine().trim(); i11 != a7 && !this.eof(); ) u7 = this.getCurrLineNo(), i11 = this.readLine().trim();
-    if (i11 == a7) var s6 = this.getLines().slice(o15, u7);
+    for (n12 = this.readLine().trim(); n12 != a7 && !this.eof(); ) u7 = this.getCurrLineNo(), n12 = this.readLine().trim();
+    if (n12 == a7) var s6 = this.getLines().slice(o15, u7);
     else s6 = this.getLines().slice(o15);
     r12 = new Kekule.IO.Mdl3kTextBuffer(s6);
   }
-  return t10 && this.setCurrLineNo(n12), r12;
+  return t10 && this.setCurrLineNo(i11), r12;
 } }), Kekule.IO.Mdl3kBlockReader = Class.create(Kekule.IO.MdlBlockReader, { CLASS_NAME: "Kekule.IO.Mdl3kBlockReader", createTextBuffer: function() {
   return new Kekule.IO.Mdl3kTextBuffer();
 }, doReadBlock: function(e15, t10) {
   var r12, l8 = !(e15 instanceof Kekule.IO.Mdl3kTextBuffer);
   l8 ? (r12 = new Kekule.IO.Mdl3kTextBuffer()).setLines(e15.getUnreadLines()) : r12 = e15;
-  var a7 = r12.getCurrLineNo(), n12 = this.doRead3kBlock(r12, t10), i11 = r12.getCurrLineNo();
+  var a7 = r12.getCurrLineNo(), i11 = this.doRead3kBlock(r12, t10), n12 = r12.getCurrLineNo();
   if (l8) {
-    var o15 = i11 - a7;
+    var o15 = n12 - a7;
     e15.incCurrLineNo(o15);
   }
-  return n12;
+  return i11;
 }, doRead3kBlock: function(e15, t10) {
 } }), Kekule.IO.Mdl3kBlockWriter = Class.create(Kekule.IO.MdlBlockWriter, { CLASS_NAME: "Kekule.IO.Mdl3kBlockWriter", createTextBuffer: function() {
   return new Kekule.IO.Mdl3kTextBuffer();
@@ -69383,13 +69636,13 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
 }, analysisCTab: function(e15) {
   var t10 = {}, r12 = e15.readLine(), l8 = this.analysisCountLine(r12);
   if (!l8) return null;
-  var a7, n12, i11 = [], o15 = e15.getBlockBuffer("ATOM");
+  var a7, i11, n12 = [], o15 = e15.getBlockBuffer("ATOM");
   if (!o15) return Kekule.raise(Kekule.$L("ErrorMsg.MDL3000_ATOMBLOCK_NOT_FOUND")), null;
-  a7 = this.analysisAtomBlock(o15, i11);
+  a7 = this.analysisAtomBlock(o15, n12);
   var u7, s6 = e15.getBlockBuffer("BOND");
-  s6 && (n12 = this.analysisBondBlock(s6, i11));
+  s6 && (i11 = this.analysisBondBlock(s6, n12));
   var d5 = e15.getBlockBuffer("SGROUP");
-  return d5 && (u7 = this.analysisSGroupBlock(d5, i11)), t10.countInfo = l8, t10.atomInfos = a7, t10.atomIndexMap = i11, n12 && (t10.bondInfos = n12), u7 && (t10.sgInfos = u7), t10;
+  return d5 && (u7 = this.analysisSGroupBlock(d5, n12)), t10.countInfo = l8, t10.atomInfos = a7, t10.atomIndexMap = n12, i11 && (t10.bondInfos = i11), u7 && (t10.sgInfos = u7), t10;
 }, analysisCountLine: function(e15) {
   var t10 = {}, r12 = Kekule.IO.Mdl3kValueUtils.splitValues(e15);
   if ("COUNTS" == r12.shift().value) {
@@ -69399,8 +69652,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   Kekule.raise(Kekule.$L("ErrorMsg.MALFORMED_MDL3000_COUNTLINE"));
 }, analysisAtomBlock: function(e15, t10) {
   for (var r12 = Kekule.CoordMode.COORD2D, l8 = []; !e15.eof(); ) {
-    var a7 = e15.readLine(), n12 = this.analysisAtomLine(a7), i11 = l8.push(n12) - 1;
-    t10[n12.index] = i11, n12.z && (r12 = Kekule.CoordMode.COORD3D);
+    var a7 = e15.readLine(), i11 = this.analysisAtomLine(a7), n12 = l8.push(i11) - 1;
+    t10[i11.index] = n12, i11.z && (r12 = Kekule.CoordMode.COORD3D);
   }
   return l8.coordMode = r12, l8.isCoord3D = r12 == Kekule.CoordMode.COORD3D, l8;
 }, analysisAtomLine: function(e15, t10) {
@@ -69408,12 +69661,12 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   r12.index = parseInt(l8.shift().value, 10);
   var a7 = l8.shift().value.trim();
   if (Kekule.IO.Mdl3kUtils.isAtomList(a7)) {
-    var n12 = Kekule.IO.Mdl3kUtils.analysisAtomList(a7);
-    n12 && (r12.atomListInfo = n12, r12.symbol = "L");
+    var i11 = Kekule.IO.Mdl3kUtils.analysisAtomList(a7);
+    i11 && (r12.atomListInfo = i11, r12.symbol = "L");
   } else r12.symbol = a7;
   r12.x = parseFloat(l8.shift().value), r12.y = parseFloat(l8.shift().value), r12.z = parseFloat(l8.shift().value), l8.shift();
-  for (var i11 = 0, o15 = l8.length; i11 < o15; ++i11) {
-    var u7 = l8[i11], s6 = u7.key, d5 = u7.value;
+  for (var n12 = 0, o15 = l8.length; n12 < o15; ++n12) {
+    var u7 = l8[n12], s6 = u7.key, d5 = u7.value;
     switch (s6) {
       case "CHG":
         (m5 = parseInt(d5, 10)) && (r12.charge = m5);
@@ -69449,8 +69702,8 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   r12.index = parseInt(l8.shift().value, 10);
   var a7 = l8.shift().value;
   r12.order = Kekule.IO.MdlUtils.bondTypeToKekuleOrder(parseInt(a7, 10)), r12.atomIndex1 = t10[parseInt(l8.shift().value, 10)], r12.atomIndex2 = t10[parseInt(l8.shift().value, 10)];
-  for (var n12 = 0, i11 = l8.length; n12 < i11; ++n12) {
-    var o15 = l8[n12].key, u7 = l8[n12].value;
+  for (var i11 = 0, n12 = l8.length; i11 < n12; ++i11) {
+    var o15 = l8[i11].key, u7 = l8[i11].value;
     switch (o15) {
       case "CFG":
         var s6 = parseInt(u7, 10);
@@ -69465,42 +69718,42 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }
   return r12;
 }, analysisSGroupBlock: function(e15, t10) {
-  var r12 = [], l8 = null, a7 = e15.getCurrLineNo(), n12 = e15.readLine();
-  for ("DEFAULT" == Kekule.IO.Mdl3kValueUtils.splitValues(n12).shift().value ? l8 = this.fetchSGroupOptionalValues(n12, t10) : e15.setCurrLineNo(a7); !e15.eof(); ) {
-    n12 = e15.readLine();
-    var i11 = this.analysisSGroupLine(n12, t10, l8);
-    r12[i11.index] = i11;
+  var r12 = [], l8 = null, a7 = e15.getCurrLineNo(), i11 = e15.readLine();
+  for ("DEFAULT" == Kekule.IO.Mdl3kValueUtils.splitValues(i11).shift().value ? l8 = this.fetchSGroupOptionalValues(i11, t10) : e15.setCurrLineNo(a7); !e15.eof(); ) {
+    i11 = e15.readLine();
+    var n12 = this.analysisSGroupLine(i11, t10, l8);
+    r12[n12.index] = n12;
   }
   return r12;
 }, analysisSGroupLine: function(e15, t10, r12) {
   var l8 = {}, a7 = Kekule.IO.Mdl3kValueUtils.splitValues(e15);
   l8.index = parseInt(a7.shift().value, 10), l8.sgType = a7.shift().value.trim(), l8.extIndex = parseInt(a7.shift().value, 10);
-  var n12 = this.fetchSGroupOptionalValues(a7, t10);
-  return r12 && (n12 = Object.extend(r12, n12)), l8 = Object.extend(l8, n12);
+  var i11 = this.fetchSGroupOptionalValues(a7, t10);
+  return r12 && (i11 = Object.extend(r12, i11)), l8 = Object.extend(l8, i11);
 }, fetchSGroupOptionalValues: function(e15, t10) {
   for (var r12 = {}, l8 = 0, a7 = e15.length; l8 < a7; ++l8) {
-    var n12 = e15[l8].key, i11 = e15[l8].value;
-    switch (n12) {
+    var i11 = e15[l8].key, n12 = e15[l8].value;
+    switch (i11) {
       case "ATOMS":
         r12.atomIndexes = [];
-        for (var o15 = 0, u7 = i11.length; o15 < u7; o15++) r12.atomIndexes.push(t10[i11[o15]]);
+        for (var o15 = 0, u7 = n12.length; o15 < u7; o15++) r12.atomIndexes.push(t10[n12[o15]]);
         break;
       case "XBONDS":
-        r12.crossBondIndexes = [].concat(i11);
+        r12.crossBondIndexes = [].concat(n12);
         break;
       case "SUBTYPE":
-        r12.subType = i11;
+        r12.subType = n12;
         break;
       case "LABEL":
-        r12.label = i11;
+        r12.label = n12;
         break;
       case "CSTATE":
         r12.bondVectors || (r12.bondVectors = []);
-        var s6 = parseInt(i11.shift(), 10), d5 = parseFloat(i11.shift()) || 0, m5 = parseFloat(i11.shift()) || 0, c8 = parseFloat(i11.shift()) || 0;
+        var s6 = parseInt(n12.shift(), 10), d5 = parseFloat(n12.shift()) || 0, m5 = parseFloat(n12.shift()) || 0, c8 = parseFloat(n12.shift()) || 0;
         r12.bondVectors[s6] = { bondIndex: s6, x: d5, y: m5, z: c8 };
         break;
       case "CLASS":
-        r12.sgClass = i11;
+        r12.sgClass = n12;
     }
   }
   return r12;
@@ -69521,60 +69774,60 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
 }, outputAtomBlock: function(e15, t10, r12) {
   this.writeStartTag("ATOM", r12);
   for (var l8 = 0, a7 = t10.atoms.length; l8 < a7; ++l8) {
-    var n12 = t10.atoms[l8], i11 = this.generateAtomLine(l8, t10.coordMode, n12);
-    r12.writeLine(i11);
+    var i11 = t10.atoms[l8], n12 = this.generateAtomLine(l8, t10.coordMode, i11);
+    r12.writeLine(n12);
   }
   this.writeEndTag("ATOM", r12);
 }, generateAtomLine: function(e15, t10, r12) {
   var l8 = Kekule.IO.Mdl3kUtils.coordToStr, a7 = [e15 + 1, Kekule.IO.MdlStructureUtils.getAtomTypeStr(r12)];
   if (t10 == Kekule.CoordMode.COORD2D) {
-    var n12 = r12.getAbsCoord2D();
-    a7 = a7.concat([l8(n12.x), l8(n12.y), l8(0)]);
+    var i11 = r12.getAbsCoord2D();
+    a7 = a7.concat([l8(i11.x), l8(i11.y), l8(0)]);
   } else {
-    n12 = r12.getAbsCoord3D();
-    a7 = a7.concat([l8(n12.x), l8(n12.y), l8(n12.z)]);
+    i11 = r12.getAbsCoord3D();
+    a7 = a7.concat([l8(i11.x), l8(i11.y), l8(i11.z)]);
   }
   return a7.push(0), r12.getCharge && r12.getCharge() && a7.push({ key: "CHG", value: r12.getCharge() }), r12.getRadical && r12.getRadical() && a7.push({ key: "RAD", value: r12.getRadical() }), r12.getParity && r12.getParity() && a7.push({ key: "CFG", value: r12.getParity() }), r12.getMassNumber && r12.getMassNumber() && a7.push({ key: "MASS", value: r12.getMassNumber() }), r12.getExplicitHydrogenCount && !Kekule.ObjUtils.isUnset(r12.getExplicitHydrogenCount()) && a7.push({ key: "HCOUNT", value: r12.getExplicitHydrogenCount() + 1 }), Kekule.IO.Mdl3kValueUtils.mergeValues(a7);
 }, outputBondBlock: function(e15, t10, r12) {
   if (!(t10.bonds.length <= 0)) {
     this.writeStartTag("BOND", r12);
     for (var l8 = 0, a7 = t10.bonds.length; l8 < a7; ++l8) {
-      var n12 = t10.bonds[l8], i11 = this.generateBondLine(l8, n12, t10.atoms);
-      r12.writeLine(i11);
+      var i11 = t10.bonds[l8], n12 = this.generateBondLine(l8, i11, t10.atoms);
+      r12.writeLine(n12);
     }
     this.writeEndTag("BOND", r12);
   }
 }, generateBondLine: function(e15, t10, r12) {
-  var l8 = [e15 + 1, Kekule.IO.MdlUtils.kekuleBondOrderToMdlType(t10.getBondOrder ? t10.getBondOrder() : Kekule.BondOrder.UNSET)], a7 = t10.getStereo && t10.getStereo() ? Kekule.IO.Mdl3kUtils.bondStereoToMdlCfg(t10.getStereo(), true) : {}, n12 = [], i11 = [], o15 = Kekule.IO.MdlStructureUtils.splitConnectedNodes(t10), u7 = r12.indexOf(o15.primaryNodes[0]) + 1, s6 = r12.indexOf(o15.primaryNodes[1]) + 1;
-  if (n12 = a7.inverted ? [s6, u7] : [u7, s6], o15.remainNodes && o15.remainNodes.length) for (var d5 = 0, m5 = o15.remainNodes.length; d5 < m5; ++d5) i11.push(r12.indexOf(o15.remainNodes[d5]) + 1);
-  return l8 = l8.concat(n12), a7 && a7.cfg && l8.push({ key: "CFG", value: a7.cfg }), i11.length > 0 && (l8.push({ key: "ENDPTS", value: i11 }), l8.push({ key: "ATTACH", value: "ALL" })), Kekule.IO.Mdl3kValueUtils.mergeValues(l8);
+  var l8 = [e15 + 1, Kekule.IO.MdlUtils.kekuleBondOrderToMdlType(t10.getBondOrder ? t10.getBondOrder() : Kekule.BondOrder.UNSET)], a7 = t10.getStereo && t10.getStereo() ? Kekule.IO.Mdl3kUtils.bondStereoToMdlCfg(t10.getStereo(), true) : {}, i11 = [], n12 = [], o15 = Kekule.IO.MdlStructureUtils.splitConnectedNodes(t10), u7 = r12.indexOf(o15.primaryNodes[0]) + 1, s6 = r12.indexOf(o15.primaryNodes[1]) + 1;
+  if (i11 = a7.inverted ? [s6, u7] : [u7, s6], o15.remainNodes && o15.remainNodes.length) for (var d5 = 0, m5 = o15.remainNodes.length; d5 < m5; ++d5) n12.push(r12.indexOf(o15.remainNodes[d5]) + 1);
+  return l8 = l8.concat(i11), a7 && a7.cfg && l8.push({ key: "CFG", value: a7.cfg }), n12.length > 0 && (l8.push({ key: "ENDPTS", value: n12 }), l8.push({ key: "ATTACH", value: "ALL" })), Kekule.IO.Mdl3kValueUtils.mergeValues(l8);
 }, outputSgroupBlock: function(e15, t10, r12) {
   if (!(t10.subGroups.length <= 0)) {
     this.writeStartTag("SGROUP", r12);
     for (var l8 = 0, a7 = t10.subGroups.length; l8 < a7; ++l8) {
-      var n12 = this.generateSgroupLine(l8, t10.subGroups[l8], t10);
-      r12.writeLine(n12);
+      var i11 = this.generateSgroupLine(l8, t10.subGroups[l8], t10);
+      r12.writeLine(i11);
     }
     this.writeEndTag("SGROUP", r12);
   }
 }, generateSgroupLine: function(e15, t10, r12) {
-  for (var l8 = r12.atoms, a7 = r12.bonds, n12 = [e15 + 1, "SUP", e15 + 1], i11 = [], o15 = 0, u7 = (g4 = t10.getLeafNodes()).length; o15 < u7; ++o15) {
-    (e15 = l8.indexOf(g4[o15])) >= 0 && i11.push(e15 + 1);
+  for (var l8 = r12.atoms, a7 = r12.bonds, i11 = [e15 + 1, "SUP", e15 + 1], n12 = [], o15 = 0, u7 = (g4 = t10.getLeafNodes()).length; o15 < u7; ++o15) {
+    (e15 = l8.indexOf(g4[o15])) >= 0 && n12.push(e15 + 1);
   }
-  i11 = i11.sort(), n12.push({ key: "ATOMS", value: i11 });
+  n12 = n12.sort(), i11.push({ key: "ATOMS", value: n12 });
   var s6 = t10.getAbbr && t10.getAbbr() || t10.getFormulaText && t10.getFormulaText() || t10.getName && t10.getName();
-  s6 && n12.push({ key: "LABEL", value: s6 });
+  s6 && i11.push({ key: "LABEL", value: s6 });
   var d5 = t10.getCrossConnectors(), m5 = [], c8 = [], k4 = Kekule.IO.Mdl3kUtils.coordToStr;
   for (o15 = 0, u7 = d5.length; o15 < u7; ++o15) {
     if ((e15 = a7.indexOf(d5[o15])) >= 0) {
       m5.push(e15 + 1);
-      var g4, f7 = [e15 + 1], I3 = {};
-      2 == (g4 = Kekule.IO.MdlStructureUtils.splitConnectedNodes(d5[o15]).primaryNodes).length && (r12.coordMode == Kekule.CoordMode.COORD2D ? (I3 = Kekule.CoordUtils.substract(g4[0].getAbsCoord2D(), g4[1].getAbsCoord2D()), f7 = f7.concat([k4(I3.x), k4(I3.y), 0])) : (I3 = Kekule.CoordUtils.substract(g4[0].getAbsCoord3D(), g4[1].getAbsCoord3D()), f7 = f7.concat([k4(I3.x), k4(I3.y), k4(I3.z)]))), c8.push(f7);
+      var g4, I3 = [e15 + 1], O2 = {};
+      2 == (g4 = Kekule.IO.MdlStructureUtils.splitConnectedNodes(d5[o15]).primaryNodes).length && (r12.coordMode == Kekule.CoordMode.COORD2D ? (O2 = Kekule.CoordUtils.substract(g4[0].getAbsCoord2D(), g4[1].getAbsCoord2D()), I3 = I3.concat([k4(O2.x), k4(O2.y), 0])) : (O2 = Kekule.CoordUtils.substract(g4[0].getAbsCoord3D(), g4[1].getAbsCoord3D()), I3 = I3.concat([k4(O2.x), k4(O2.y), k4(O2.z)]))), c8.push(I3);
     }
   }
-  m5 = m5.sort(), n12.push({ key: "XBONDS", value: m5 });
-  for (o15 = 0, u7 = c8.length; o15 < u7; ++o15) n12.push({ key: "CSTATE", value: c8[o15] });
-  return Kekule.IO.Mdl3kValueUtils.mergeValues(n12);
+  m5 = m5.sort(), i11.push({ key: "XBONDS", value: m5 });
+  for (o15 = 0, u7 = c8.length; o15 < u7; ++o15) i11.push({ key: "CSTATE", value: c8[o15] });
+  return Kekule.IO.Mdl3kValueUtils.mergeValues(i11);
 } }), Kekule.globalOptions.add("IO.mdl", { mdlVersion: Kekule.IO.MdlVersion.V2000, coordMode: Kekule.CoordMode.UNKNOWN }), Kekule.IO.MdlStructureFragmentReader = Class.create(Kekule.IO.MdlBlockReader, { CLASS_NAME: "Kekule.IO.MdlStructureFragmentReader", initialize: function(e15) {
   this.tryApplySuper("initialize"), this.setCoordMode(e15 || Kekule.CoordMode.UNKNOWN);
 }, initProperties: function() {
@@ -69619,10 +69872,10 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
 }, readHeaderInfo: function(e15, t10) {
   var r12 = {}, l8 = e15.readLine();
   l8 && (r12.name = l8);
-  var a7 = e15.readLine(), n12 = this.readInfoLine(a7);
-  n12 && (r12 = Object.extend(r12, n12));
-  var i11 = e15.readLine();
-  return i11 && (r12.comment = i11), r12;
+  var a7 = e15.readLine(), i11 = this.readInfoLine(a7);
+  i11 && (r12 = Object.extend(r12, i11));
+  var n12 = e15.readLine();
+  return n12 && (r12.comment = n12), r12;
 }, readInfoLine: function(e15) {
   var t10 = {};
   if (e15.trim()) {
@@ -69660,28 +69913,28 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
 } }), Kekule.IO.MdlStructDataReader = Class.create(Kekule.IO.MdlBlockReader, { CLASS_NAME: "Kekule.IO.MdlStructDataReader", DATA_HEAD_PREFIX: Kekule.IO.MDL.SD_DATA_HEAD_PREFIX, DATA_DBFIELD_PATTERN: /\bDT(\d+)\b/, DATA_KEY_NAME_PATTERN: /\<(.+)\>/, MOL_DELIMITER: Kekule.IO.MDL.MOL_DELIMITER, doReadBlock: function(e15, t10) {
   var r12 = new Kekule.IO.MdlMoleculeReader();
   try {
-    for (var l8, a7, n12, i11 = []; !e15.eof(); ) {
+    for (var l8, a7, i11, n12 = []; !e15.eof(); ) {
       try {
-        n12 = r12.doReadBlock(e15, null);
+        i11 = r12.doReadBlock(e15, null);
       } catch (e16) {
-        n12 = null;
+        i11 = null;
       }
-      if (!n12) break;
-      for (i11.push(n12), l8 = null, a7 = null; !e15.eof(); ) {
+      if (!i11) break;
+      for (n12.push(i11), l8 = null, a7 = null; !e15.eof(); ) {
         var o15 = this.analysisDataLine(e15.readLine());
         if (o15) {
           var u7 = o15.lineType;
           if ("dataheader" === u7) l8 = o15.key;
-          else if ("datavalue" === u7) l8 && (a7 = o15.value, n12.setInfoValue(l8, a7));
+          else if ("datavalue" === u7) l8 && (a7 = o15.value, i11.setInfoValue(l8, a7));
           else if ("moldelimiter" === u7) break;
         }
       }
     }
-    if (i11.length > 1) {
-      for (var s6 = new Kekule.ChemObjList(), d5 = 0, m5 = i11.length; d5 < m5; ++d5) s6.append(i11[d5]);
+    if (n12.length > 1) {
+      for (var s6 = new Kekule.ChemObjList(), d5 = 0, m5 = n12.length; d5 < m5; ++d5) s6.append(n12[d5]);
       return s6;
     }
-    return i11[0];
+    return n12[0];
   } finally {
     r12.finalize();
   }
@@ -69700,28 +69953,28 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
 }, doWriteBlock: function(e15, t10) {
   var r12 = this.getChildMols(e15), l8 = new Kekule.IO.MdlMoleculeWriter();
   l8.setMdlVersion(this.getMdlVersion()), l8.setCoordMode(this.getCoordMode());
-  for (var a7 = 0, n12 = r12.length; a7 < n12; ++a7) {
-    var i11 = r12[a7];
+  for (var a7 = 0, i11 = r12.length; a7 < i11; ++a7) {
+    var n12 = r12[a7];
     try {
-      var o15 = l8.writeBlock(i11);
+      var o15 = l8.writeBlock(n12);
       t10.writeText(o15);
-      var u7 = this.getMolData(i11);
+      var u7 = this.getMolData(n12);
       this.doWriteDataBlock(u7, t10), t10.writeLine(Kekule.IO.MDL.MOL_DELIMITER);
     } catch (e16) {
     }
   }
 }, doWriteDataBlock: function(e15, t10) {
   for (var r12 = Kekule.ObjUtils.getOwnedFieldNames(e15), l8 = 0, a7 = r12.length; l8 < a7; ++l8) {
-    var n12 = r12[l8];
-    if (this.IGNORED_INFO_FIELDS.indexOf(n12) < 0) {
-      var i11 = Kekule.IO.MDL.SD_DATA_HEAD_PREFIX + " <" + n12 + ">", o15 = e15[n12];
-      i11 && o15 && (t10.writeLine(i11), t10.writeLine(o15), t10.writeLine(""));
+    var i11 = r12[l8];
+    if (this.IGNORED_INFO_FIELDS.indexOf(i11) < 0) {
+      var n12 = Kekule.IO.MDL.SD_DATA_HEAD_PREFIX + " <" + i11 + ">", o15 = e15[i11];
+      n12 && o15 && (t10.writeLine(n12), t10.writeLine(o15), t10.writeLine(""));
     }
   }
 }, getChildMols: function(e15) {
   for (var t10 = Kekule.ChemStructureUtils.getChildStructureObjs(e15, true), r12 = [], l8 = 0, a7 = t10.length; l8 < a7; ++l8) {
-    var n12 = t10[l8];
-    n12 instanceof Kekule.StructureFragment && r12.push(n12);
+    var i11 = t10[l8];
+    i11 instanceof Kekule.StructureFragment && r12.push(i11);
   }
   return r12;
 }, getMolData: function(e15) {
@@ -69732,12 +69985,12 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
 }, readSubstanceCountLine: function(e15) {
 }, readMolBlock: function(e15) {
 }, doReadBlock: function(e15, t10) {
-  for (var r12 = this.readHeaderBlock(e15, null), l8 = this.readSubstanceCountLine(e15.readLine()), a7 = new Kekule.Reaction(), n12 = 0; n12 < l8.reactantCount; ++n12) {
-    (i11 = this.readMolBlock(e15)) && a7.appendReactant(i11);
+  for (var r12 = this.readHeaderBlock(e15, null), l8 = this.readSubstanceCountLine(e15.readLine()), a7 = new Kekule.Reaction(), i11 = 0; i11 < l8.reactantCount; ++i11) {
+    (n12 = this.readMolBlock(e15)) && a7.appendReactant(n12);
   }
-  for (n12 = 0; n12 < l8.productCount; ++n12) {
-    var i11;
-    (i11 = this.readMolBlock(e15)) && a7.appendProduct(i11);
+  for (i11 = 0; i11 < l8.productCount; ++i11) {
+    var n12;
+    (n12 = this.readMolBlock(e15)) && a7.appendProduct(n12);
   }
   return a7 && r12 && (r12.name && a7.setName(r12.name), r12.userAbbr && a7.setInfoValue("author", r12.userAbbr), r12.programName && a7.setInfoValue("generator", r12.programName), r12.date && a7.setInfoValue("date", r12.date), r12.comment && a7.setInfoValue("comment", r12.comment)), a7;
 } }), Kekule.IO.Mdl2kReactionReader = Class.create(Kekule.IO.MdlBaseReactionReader, { CLASS_NAME: "Kekule.IO.Mdl2kReactionReader", readHeaderBlock: function(e15, t10) {
@@ -69846,54 +70099,72 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   var e15 = Kekule.ArrayUtils;
   Kekule.IO.SMILES = { ATOM_BRACKET_LEFT: "[", ATOM_BRACKET_RIGHT: "]", ATOM_WILDCARD: "*", ATOM_H: "H", ORGAN_SUBSET_ATOMS: ["B", "C", "N", "O", "S", "P", "F", "Cl", "Br", "I"], AROMATIC_SUBSET_ATOMS: ["B", "C", "N", "O", "S", "P"], BOND_SINGLE: "-", BOND_DOUBLE: "=", BOND_TRIPLE: "#", BOND_QUAD: "$", BOND_AROMATIC: ":", BOND_FAKE: ".", RING_BOND_TWO_DIGIT_NO_PREFIX: "%", BRANCH_BRACKET_LEFT: "(", BRANCH_BRACKET_RIGHT: ")", ROTATION_DIR_CLOCKWISE: "@@", ROTATION_DIR_ANTICLOCKWISE: "@", DIRECTION_BOND_SYMBOLS: ["/", "\\"] };
   var t10 = Kekule.IO.SMILES;
-  Kekule.IO.SmilesUtils = { createGraphDepthSpanningTreesEx: function(t11, r13) {
-    for (var l8 = function(e16) {
-      var t12 = { vertexes: [], edges: [], longestPath: { vertexes: [], edges: [], length: 0 } }, r14 = e16;
-      r14.getData("__$visitedEx__") || (t12.vertexes.push(r14), r14.setData("__$visitedEx__", true));
-      for (var a8, n13 = r14.getEdges(), i12 = 0, o16 = n13.length; i12 < o16; ++i12) {
-        var u8 = n13[i12], s7 = r14.getNeighborOnEdge(u8);
-        if (!s7.getData("__$visitedEx__")) {
-          t12.vertexes.push(s7), t12.edges.push(u8), s7.setData("__$visitedEx__", true);
-          var d6 = l8(s7);
-          t12.vertexes = t12.vertexes.concat(d6.vertexes), t12.edges = t12.edges.concat(d6.edges), (d6.longestPath.length > t12.longestPath.length || !t12.longestPath.length) && (t12.longestPath.vertexes = d6.longestPath.vertexes, t12.longestPath.edges = d6.longestPath.edges, t12.longestPath.length = d6.longestPath.length, a8 = u8);
+  Kekule.IO.SMILES.PrimaryPathMode = { LONGEST: 0, HEAVIEST: 1, RANDOM: 2 }, Kekule.IO.SMILES.StartingVertexMode = { MANUAL: 0, HEAVIEST: 1, LIGHTEST: 2, RANDOM: 3 }, Kekule.IO.SmilesGenerationMode = { HEAVIEST_AND_LONGEST: 0, HEAVIEST: 1, LIGHTEST_AND_LONGEST: 2, RANDOM: 3 }, Kekule.IO.SmilesUtils = { createGraphDepthSpanningTreesEx: function(e16, r13, l8) {
+    var a7 = l8 && l8.primaryPathMode || t10.PrimaryPathMode.LONGEST, i11 = l8 && l8.startingVertexMode || t10.StartingVertexMode.MANUAL;
+    return Kekule.IO.SmilesUtils.doCreateGraphDepthSpanningTreesEx(e16, r13, a7, i11);
+  }, doCreateGraphDepthSpanningTreesEx: function(r13, l8, a7, i11) {
+    for (var n12 = function(e16) {
+      var r14 = { vertexes: [], edges: [], primaryPath: { vertexes: [], edges: [], length: 0 } }, l9 = e16;
+      l9.getData("__$visitedEx__") || (r14.vertexes.push(l9), l9.setData("__$visitedEx__", true));
+      for (var i12, o16 = l9.getEdges(), u8 = -1, s7 = a7 === t10.PrimaryPathMode.RANDOM ? Math.floor(Math.random() * o16.length) : -1, d6 = 0, m6 = o16.length; d6 < m6; ++d6) {
+        var c9 = false, k5 = o16[d6], g5 = l9.getNeighborOnEdge(k5);
+        if (!g5.getData("__$visitedEx__")) {
+          r14.vertexes.push(g5), r14.edges.push(k5), g5.setData("__$visitedEx__", true);
+          var I4 = n12(g5);
+          if (r14.vertexes = r14.vertexes.concat(I4.vertexes), r14.edges = r14.edges.concat(I4.edges), s7 >= 0 && d6 === s7) c9 = true;
+          else if (a7 === t10.PrimaryPathMode.HEAVIEST) {
+            var O3 = g5.getData("__$weight__");
+            O3 > u8 && (u8 = O3, c9 = true);
+          } else (I4.primaryPath.length > r14.primaryPath.length || !r14.primaryPath.length) && (c9 = true);
+          c9 && (r14.primaryPath.vertexes = I4.primaryPath.vertexes, r14.primaryPath.edges = I4.primaryPath.edges, r14.primaryPath.length = I4.primaryPath.length, i12 = k5);
         }
       }
-      return a8 && (t12.longestPath.edges.unshift(a8), t12.longestPath.length = (t12.longestPath.length || 0) + 1), t12.longestPath.vertexes.unshift(r14), t12;
-    }, a7 = e15.clone(t11.getVertexes()), n12 = 0, i11 = a7.length; n12 < i11; ++n12) a7[n12].setData("__$visitedEx__", false);
-    for (var o15 = []; a7.length; ) {
-      var u7;
-      u7 = r13 && a7.indexOf(r13) >= 0 ? r13 : a7[0];
-      var s6 = { vertexes: [], edges: [], longestPath: { vertexes: [], edges: [], length: 0 } }, d5 = l8(u7);
-      s6.vertexes = s6.vertexes.concat(d5.vertexes), s6.edges = s6.edges.concat(d5.edges), s6.longestPath.length = (s6.longestPath.length || 0) + d5.longestPath.length, s6.longestPath.vertexes = s6.longestPath.vertexes.concat(d5.longestPath.vertexes), s6.longestPath.edges = s6.longestPath.edges.concat(d5.longestPath.edges), a7 = e15.exclude(a7, d5.vertexes), o15.push(s6);
+      return i12 && (r14.primaryPath.edges.unshift(i12), r14.primaryPath.length = (r14.primaryPath.length || 0) + 1), r14.primaryPath.vertexes.unshift(l9), r14;
+    }, o15 = function(e16, r14) {
+      return r14 === t10.StartingVertexMode.LIGHTEST ? e16[0] : r14 === t10.StartingVertexMode.RANDOM ? e16[Math.floor(Math.random() * e16.length)] : e16[e16.length - 1];
+    }, u7 = e15.clone(r13.getVertexes()), s6 = a7 === t10.PrimaryPathMode.HEAVIEST, d5 = 0, m5 = u7.length; d5 < m5; ++d5) u7[d5].setData("__$visitedEx__", false), s6 && u7[d5].setData("__$weight__", d5);
+    for (var c8 = i11 === t10.StartingVertexMode.MANUAL ? l8 : o15(u7, i11), k4 = []; u7.length; ) {
+      var g4;
+      g4 = c8 && u7.indexOf(c8) >= 0 ? c8 : o15(u7, i11);
+      var I3 = { vertexes: [], edges: [], primaryPath: { vertexes: [], edges: [], length: 0 } }, O2 = n12(g4);
+      I3.vertexes = I3.vertexes.concat(O2.vertexes), I3.edges = I3.edges.concat(O2.edges), I3.primaryPath.length = (I3.primaryPath.length || 0) + O2.primaryPath.length, I3.primaryPath.vertexes = I3.primaryPath.vertexes.concat(O2.primaryPath.vertexes), I3.primaryPath.edges = I3.primaryPath.edges.concat(O2.primaryPath.edges), u7 = e15.exclude(u7, O2.vertexes), k4.push(I3);
     }
-    return o15;
+    return k4;
   } }, Kekule.IO.SmilesMolWriter = Class.create(Kekule.IO.ChemDataWriter, { CLASS_NAME: "Kekule.IO.SmilesMolWriter", doWriteData: function(e16, t11, r13, l8) {
     var a7 = this.getMolecule(e16);
-    return a7 ? this.writeStructFragment(a7, l8) : "";
+    return l8 && l8.generationMode === Kekule.IO.SmilesGenerationMode.RANDOM && l8.randomOutputCount > 1 ? a7 ? this._outputRandomSmiles(a7, l8.randomOutputCount, l8) : [] : a7 ? this.writeStructFragment(a7, l8) : "";
+  }, _outputRandomSmiles: function(e16, t11, r13) {
+    var l8 = [], a7 = Math.round(1.5 * t11), i11 = Object.create(r13);
+    i11.generationMode = Kekule.IO.SmilesGenerationMode.RANDOM;
+    for (var n12 = 0; n12 < a7; ++n12) {
+      var o15 = this.writeStructFragment(e16, i11);
+      if (l8.indexOf(o15) < 0 && (l8.push(o15), l8.length >= t11)) break;
+    }
+    return l8;
   }, getMolecule: function(e16) {
     return Kekule.ChemStructureUtils.getTotalStructFragment(e16);
   }, writeStructFragment: function(r13, l8) {
     if (r13.hasCtab() && !r13.isEmpty()) {
       var a7 = r13.clone();
-      a7.standardize && a7.standardize();
-      var n12 = [], i11 = [];
+      a7.standardize && (a7.clean({ hangingChemConnector: true, orphanChemNode: false }), a7.standardize({ cleanStructure: false }));
+      var i11 = [], n12 = [];
       if (a7.getAromaticRings) for (var o15 = a7.getAromaticRings(), u7 = 0, s6 = o15.length; u7 < s6; ++u7) {
         var d5 = o15[u7];
-        e15.pushUnique(n12, d5.nodes), e15.pushUnique(i11, d5.connectors);
+        e15.pushUnique(i11, d5.nodes), e15.pushUnique(n12, d5.connectors);
       }
-      var m5, c8 = Kekule.GraphAdaptUtils.ctabToGraph(a7.getCtab(), null, { expandSubStructures: true, ignoreBondedHydrogen: true }), k4 = c8.getVertexes(), g4 = (c8.getEdges(), k4[k4.length - 1]), f7 = Kekule.IO.SmilesUtils.createGraphDepthSpanningTreesEx(c8, g4), I3 = this._prepareStereoBondsInformation(a7.getCtab(), l8), O2 = [];
-      for (u7 = 0, s6 = f7.length; u7 < s6; ++u7) {
-        var C2, h7 = f7[u7], K2 = h7.longestPath, p5 = K2.vertexes[0];
-        C2 = this._writeMolVertex(p5, null, K2.edges, h7.edges, O2, n12, i11, { bondStereoDirMap: I3 }, l8), 0 === u7 ? m5 = C2 : m5 += t10.BOND_FAKE + C2;
+      var m5 = Kekule.BondType, c8 = Kekule.GraphAdaptUtils.ctabToGraph(a7.getCtab(), null, { expandSubStructures: true, ignoreBondedHydrogen: true, bondTypes: [m5.COVALENT, m5.UNKNOWN] }), k4 = c8.getVertexes(), g4 = (c8.getEdges(), k4[k4.length - 1]), I3 = Kekule.IO.SmilesGenerationMode, O2 = l8 && l8.generationMode, f7 = { primaryPathMode: O2 === I3.HEAVIEST ? t10.PrimaryPathMode.HEAVIEST : O2 === I3.RANDOM ? t10.PrimaryPathMode.RANDOM : t10.PrimaryPathMode.LONGEST, startingVertexMode: O2 === I3.RANDOM ? t10.StartingVertexMode.RANDOM : O2 === I3.LIGHTEST_AND_LONGEST ? t10.StartingVertexMode.LIGHTEST : t10.StartingVertexMode.HEAVIEST }, C2 = Kekule.IO.SmilesUtils.createGraphDepthSpanningTreesEx(c8, g4, f7), h7 = this._prepareStereoBondsInformation(a7.getCtab(), l8), K2 = [], p5 = "";
+      for (u7 = 0, s6 = C2.length; u7 < s6; ++u7) {
+        var M4, E3 = C2[u7], T3 = E3.primaryPath, D2 = T3.vertexes[0];
+        M4 = this._writeMolVertex(D2, null, T3.edges, E3.edges, K2, i11, n12, { bondStereoDirMap: h7 }, l8), 0 === u7 ? p5 = M4 : p5 += t10.BOND_FAKE + M4;
       }
-      return m5;
+      return p5;
     }
     return "";
   }, _prepareStereoBondsInformation: function(e16, t11) {
     var r13 = t11.ignoreStereoBond;
     if (Kekule.ObjUtils.isUnset(r13) && (r13 = t11.ignoreStereo || false), r13) return null;
-    for (var l8 = 0, a7 = new Kekule.MapEx(), n12 = 0, i11 = e16.getConnectorCount(); n12 < i11; ++n12) {
-      var o15 = e16.getConnectorAt(n12);
+    for (var l8 = 0, a7 = new Kekule.MapEx(), i11 = 0, n12 = e16.getConnectorCount(); i11 < n12; ++i11) {
+      var o15 = e16.getConnectorAt(i11);
       if (o15.getParity && o15.getParity()) {
         ++l8;
         for (var u7 = Kekule.MolStereoUtils.getStereoBondKeyNeighborConnectors(o15), s6 = this._getStereoDoubleBondInitialDirectionSymbols(o15), d5 = [], m5 = 0, c8 = 0, k4 = u7.length; c8 < k4; ++c8) a7.has(u7[c8]) && (d5[c8] = true, s6[c8] !== a7.get(u7[c8]) && ++m5);
@@ -69906,42 +70177,42 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
       }
     }
     return l8 ? a7 : null;
-  }, _writeMolVertex: function(e16, r13, l8, a7, n12, i11, o15, u7, s6) {
-    var d5, m5, c8 = e16.getData("object"), k4 = e16.getEdges(), g4 = [], f7 = [], I3 = [], O2 = [], C2 = s6.ignoreStereoBond;
+  }, _writeMolVertex: function(e16, r13, l8, a7, i11, n12, o15, u7, s6) {
+    var d5, m5, c8 = e16.getData("object"), k4 = e16.getEdges(), g4 = [], I3 = [], O2 = [], f7 = [], C2 = s6.ignoreStereoBond;
     Kekule.ObjUtils.isUnset(C2) && (C2 = s6.ignoreStereo || false);
     for (var h7 = k4.length - 1; h7 >= 0; --h7) {
       var K2 = k4[h7];
       if (K2 !== r13) {
         var p5 = K2.getData("object");
         if (a7.indexOf(K2) >= 0) {
-          var M4 = e16.getNeighborOnEdge(K2), E3 = this._writeMolVertex(M4, K2, l8, a7, n12, i11, o15, u7, s6);
-          l8.indexOf(K2) >= 0 ? (m5 = M4, d5 = E3) : (f7.push(M4), g4.push(E3));
+          var M4 = e16.getNeighborOnEdge(K2), E3 = this._writeMolVertex(M4, K2, l8, a7, i11, n12, o15, u7, s6);
+          l8.indexOf(K2) >= 0 ? (m5 = M4, d5 = E3) : (I3.push(M4), g4.push(E3));
         } else {
-          var T3 = n12.indexOf(K2);
-          T3 < 0 && (T3 = n12.length, n12.push(K2)), O2.push(e16.getNeighborOnEdge(K2));
-          var D2 = this._outputConnectorStr(p5, K2.getVertexes()[0].getData("object"), K2.getVertexes()[1].getData("object"), i11, o15, u7.bondStereoDirMap);
-          D2 += (T3 += 1) < 10 ? T3 : t10.RING_BOND_TWO_DIGIT_NO_PREFIX + T3, I3.push(D2);
+          var T3 = i11.indexOf(K2);
+          T3 < 0 && (T3 = i11.length, i11.push(K2)), f7.push(e16.getNeighborOnEdge(K2));
+          var D2 = this._outputConnectorStr(p5, K2.getVertexes()[0].getData("object"), K2.getVertexes()[1].getData("object"), n12, o15, u7.bondStereoDirMap);
+          D2 += (T3 += 1) < 10 ? T3 : t10.RING_BOND_TWO_DIGIT_NO_PREFIX + T3, O2.push(D2);
         }
       }
     }
     var A2, L2 = "";
     if (r13) {
       "", A2 = e16.getNeighborOnEdge(r13).getData("object");
-      var R3 = r13.getData("object");
-      L2 += this._outputConnectorStr(R3, r13.getVertexes()[0].getData("object"), r13.getVertexes()[1].getData("object"), i11, o15, u7.bondStereoDirMap);
+      var y5 = r13.getData("object");
+      L2 += this._outputConnectorStr(y5, r13.getVertexes()[0].getData("object"), r13.getVertexes()[1].getData("object"), n12, o15, u7.bondStereoDirMap);
     }
-    for (var y5 = [], S5 = (h7 = 0, O2.length); h7 < S5; ++h7) y5.push(O2[h7].getData("object"));
-    for (h7 = 0, S5 = f7.length; h7 < S5; ++h7) y5.push(f7[h7].getData("object"));
-    m5 && y5.push(m5.getData("object")), L2 += this._outputNodeStr(c8, i11.indexOf(c8) >= 0, A2, y5, s6);
-    for (h7 = 0, S5 = I3.length; h7 < S5; ++h7) L2 += I3[h7];
+    for (var S5 = [], R3 = (h7 = 0, f7.length); h7 < R3; ++h7) S5.push(f7[h7].getData("object"));
+    for (h7 = 0, R3 = I3.length; h7 < R3; ++h7) S5.push(I3[h7].getData("object"));
+    m5 && S5.push(m5.getData("object")), L2 += this._outputNodeStr(c8, n12.indexOf(c8) >= 0, A2, S5, s6);
+    for (h7 = 0, R3 = O2.length; h7 < R3; ++h7) L2 += O2[h7];
     !d5 && g4.length && (d5 = g4.shift());
-    for (h7 = 0, S5 = g4.length; h7 < S5; ++h7) L2 += t10.BRANCH_BRACKET_LEFT + g4[h7] + t10.BRANCH_BRACKET_RIGHT;
+    for (h7 = 0, R3 = g4.length; h7 < R3; ++h7) L2 += t10.BRANCH_BRACKET_LEFT + g4[h7] + t10.BRANCH_BRACKET_RIGHT;
     return L2 += "", d5 && (L2 += d5), L2;
-  }, _outputNodeStr: function(e16, r13, l8, a7, n12) {
-    var i11, o15;
-    e16 instanceof Kekule.Atom ? (i11 = o15 = e16.getSymbol(), r13 && (i11 = i11.toLowerCase())) : i11 = t10.ATOM_WILDCARD;
-    var u7, s6 = n12.ignoreStereoAtom;
-    if (Kekule.ObjUtils.isUnset(s6) && (s6 = n12.ignoreStereo || false), !s6 && e16.getParity && e16.getParity() && a7 && a7.length) {
+  }, _outputNodeStr: function(e16, r13, l8, a7, i11) {
+    var n12, o15;
+    e16 instanceof Kekule.Atom ? (n12 = o15 = e16.getSymbol(), r13 && (n12 = n12.toLowerCase())) : n12 = t10.ATOM_WILDCARD;
+    var u7, s6 = i11.ignoreStereoAtom;
+    if (Kekule.ObjUtils.isUnset(s6) && (s6 = i11.ignoreStereo || false), !s6 && e16.getParity && e16.getParity() && a7 && a7.length) {
       var d5 = e16.getLinkedHydrogenAtomsWithSingleBond();
       d5 && 1 === d5.length && a7.indexOf(d5[0]) < 0 && a7.push(d5[0]);
       var m5 = e16.getHydrogenCount && e16.getHydrogenCount(false) || 0;
@@ -69950,38 +70221,41 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
         var c8 = Kekule.MolStereoUtils.calcTetrahedronChiralCenterRotationDirection(null, e16, l8, a7, !!m5, false, { allowExplicitHydrogen: true, allowExplicitVerticalHydrogen: true });
         u7 = c8 === Kekule.RotationDir.CLOCKWISE ? t10.ROTATION_DIR_CLOCKWISE : c8 === Kekule.RotationDir.ANTICLOCKWISE ? t10.ROTATION_DIR_ANTICLOCKWISE : "";
       }
-      u7 && (i11 += u7);
+      u7 && (n12 += u7);
     }
-    var k4 = this._getNodeHydrogenCount(e16, n12), g4 = true, f7 = e16.getRadical ? Math.round(e16.getRadical() || 0) : 0;
+    var k4 = this._getNodeHydrogenCount(e16, i11), g4 = true, I3 = e16.getRadical ? Math.round(e16.getRadical() || 0) : 0;
     if (u7) ;
-    else if (f7) ;
+    else if (I3) ;
     else if (e16 instanceof Kekule.Atom) if (k4 && r13 && "C" !== o15) ;
-    else if ((n12.ignoreExplicitHydrogens || n12.ignoreImplicitHydrogens) && k4 !== this._getNodeHydrogenCount(e16, {})) ;
+    else if ((i11.ignoreExplicitHydrogens || i11.ignoreImplicitHydrogens) && k4 !== this._getNodeHydrogenCount(e16, {})) ;
     else {
-      var I3 = e16.getValence && e16.getValence() || 0, O2 = Kekule.ValenceUtils.getMaxPossibleValence(e16.getAtomicNumber(), e16.getCharge()) || 0;
-      if (I3) if (I3 > O2 && k4) ;
+      var O2 = e16.getValence && e16.getValence() || 0, f7 = Kekule.ValenceUtils.getMaxPossibleValence(e16.getAtomicNumber(), e16.getCharge()) || 0;
+      if (O2) if (O2 > f7 && k4) ;
       else if (e16.hasExplicitHydrogens()) (e16.getExplicitHydrogenCount() || 0) === (e16.getImplicitHydrogenCount() || 0) && (g4 = false);
-      else (e16.getValence && e16.getValence({ ignoreExplicitHydrogens: true, ignoreBondHydrogens: true }) || 0) < I3 || (g4 = false);
+      else (e16.getValence && e16.getValence({ ignoreExplicitHydrogens: true, ignoreBondHydrogens: true }) || 0) < O2 || (g4 = false);
     }
-    g4 && ((m5 = Math.round(k4)) > 0 && (i11 += t10.ATOM_H), m5 > 1 && (i11 += m5));
+    g4 && ((m5 = Math.round(k4)) > 0 && (n12 += t10.ATOM_H), m5 > 1 && (n12 += m5));
     var C2 = Math.round(e16.getCharge());
     if (C2) {
       var h7 = C2 > 0 ? "+" : "-";
-      (C2 > 1 || C2 < -1) && (h7 = Math.abs(C2) + h7), i11 += h7;
+      (C2 > 1 || C2 < -1) && (h7 = Math.abs(C2) + h7), n12 += h7;
     }
     var K2 = e16.getMassNumber ? e16.getMassNumber() : null;
-    K2 && (i11 = Math.abs(K2) + i11);
+    K2 && (n12 = Math.abs(K2) + n12);
     var p5 = false;
-    return g4 || C2 || K2 || u7 || f7 || (!r13 && t10.ORGAN_SUBSET_ATOMS.indexOf(o15) >= 0 || r13 && t10.AROMATIC_SUBSET_ATOMS.indexOf(o15) >= 0) && (p5 = true), p5 || (i11 = t10.ATOM_BRACKET_LEFT + i11 + t10.ATOM_BRACKET_RIGHT), i11;
+    return g4 || C2 || K2 || u7 || I3 || (!r13 && t10.ORGAN_SUBSET_ATOMS.indexOf(o15) >= 0 || r13 && t10.AROMATIC_SUBSET_ATOMS.indexOf(o15) >= 0) && (p5 = true), p5 || (n12 = t10.ATOM_BRACKET_LEFT + n12 + t10.ATOM_BRACKET_RIGHT), n12;
   }, _getNodeHydrogenCount: function(e16, t11) {
     var r13 = e16.getLinkedHydrogenAtomsWithSingleBondCount && e16.getLinkedHydrogenAtomsWithSingleBondCount(true) || 0, l8 = e16.getExplicitHydrogenCount && e16.getExplicitHydrogenCount();
     (t11.ignoreExplicitHydrogens || (r13 += l8 || 0), Kekule.ObjUtils.isUnset(l8) && !t11.ignoreImplicitHydrogens) && (r13 += e16.getImplicitHydrogenCount && e16.getImplicitHydrogenCount() || 0);
     return r13;
-  }, _outputConnectorStr: function(e16, r13, l8, a7, n12, i11) {
-    if (e16 instanceof Kekule.Bond && e16.getBondType() === Kekule.BondType.COVALENT) {
-      if (n12.indexOf(e16) >= 0) return "";
-      var o15 = a7.indexOf(r13) >= 0 && a7.indexOf(l8) >= 0, u7 = e16.getBondOrder(), s6 = Kekule.BondOrder, d5 = u7 === s6.DOUBLE ? t10.BOND_DOUBLE : u7 === s6.TRIPLE ? t10.BOND_TRIPLE : u7 === s6.QUAD ? t10.BOND_QUAD : o15 ? t10.BOND_SINGLE : "";
-      return i11 && i11.has(e16) && (d5 += i11.get(e16)), d5;
+  }, _outputConnectorStr: function(e16, r13, l8, a7, i11, n12) {
+    if (e16 instanceof Kekule.Bond) {
+      if (e16.getBondType() === Kekule.BondType.COVALENT) {
+        if (i11.indexOf(e16) >= 0) return "";
+        var o15 = a7.indexOf(r13) >= 0 && a7.indexOf(l8) >= 0, u7 = e16.getBondOrder(), s6 = Kekule.BondOrder, d5 = u7 === s6.DOUBLE ? t10.BOND_DOUBLE : u7 === s6.TRIPLE ? t10.BOND_TRIPLE : u7 === s6.QUAD ? t10.BOND_QUAD : o15 ? t10.BOND_SINGLE : "";
+        return n12 && n12.has(e16) && (d5 += n12.get(e16)), d5;
+      }
+      return "";
     }
     return t10.BOND_FAKE;
   }, _getStereoDoubleBondInitialDirectionSymbols: function(e16) {
@@ -70008,17 +70282,17 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
 }, writeData: function(e15, t10, r12, l8) {
   var a7 = t10 || Kekule.IO.ChemDataType.TEXT;
   if (a7 != Kekule.IO.ChemDataType.JSON && a7 != Kekule.IO.ChemDataType.TEXT) return Kekule.error(Kekule.$L("ErrorMsg.KCJ_OUTPUT_DATATYPE_NOT_JSON_OR_TEXT")), null;
-  var n12 = this.tryApplySuper("writeData", [e15, Kekule.IO.ChemDataType.JSON]);
-  if (a7 == Kekule.IO.ChemDataType.JSON) return n12;
+  var i11 = this.tryApplySuper("writeData", [e15, Kekule.IO.ChemDataType.JSON]);
+  if (a7 == Kekule.IO.ChemDataType.JSON) return i11;
   if (a7 == Kekule.IO.ChemDataType.TEXT) {
-    var i11 = l8 && Kekule.ObjUtils.notUnset(l8.prettyPrint) ? l8.prettyPrint : this.getPrettyPrint();
-    return DataType.JsonUtility.serializeToStr(n12, { prettyPrint: i11 });
+    var n12 = l8 && Kekule.ObjUtils.notUnset(l8.prettyPrint) ? l8.prettyPrint : this.getPrettyPrint();
+    return DataType.JsonUtility.serializeToStr(i11, { prettyPrint: n12 });
   }
 }, doWriteData: function(e15, t10, r12, l8) {
   var a7 = Class.ObjSerializerFactory.getSerializer("json");
   if (!a7) return Kekule.error(Kekule.$L("ErrorMsg.JSON_SERIALIZER_NOT_EXISTS")), null;
-  var n12 = {};
-  return a7.save(e15, n12), n12;
+  var i11 = {};
+  return a7.save(e15, i11), i11;
 } }), Kekule.IO.KcxReader = Class.create(Kekule.IO.ChemDataReader, { CLASS_NAME: "Kekule.IO.KcxReader", readData: function(e15, t10) {
   var r12, l8 = t10 || Kekule.IO.ChemDataType.TEXT;
   return l8 == Kekule.IO.ChemDataType.DOM && (r12 = e15), l8 != Kekule.IO.ChemDataType.TEXT ? (Kekule.error(Kekule.$L("ErrorMsg.KCX_INPUT_DATATYPE_NOT_DOM_OR_TEXT")), null) : (r12 = DataType.XmlUtility.parse(e15).documentElement, this.tryApplySuper("readData", [r12, Kekule.IO.ChemDataType.DOM]));
@@ -70051,7 +70325,7 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   Kekule.IO.ChemDataReaderManager.register("json", Kekule.IO.KcjReader, e15), Kekule.IO.ChemDataReaderManager.register("kcj", Kekule.IO.KcjReader, t10), Kekule.IO.ChemDataReaderManager.register("kcx", Kekule.IO.KcxReader, r12), Kekule.IO.ChemDataWriterManager.register("kcj", Kekule.IO.KcjWriter, [Kekule.ChemObject], t10, { createOptions: { prettyPrint: false } }), Kekule.IO.ChemDataWriterManager.register("kcx", Kekule.IO.KcxWriter, [Kekule.ChemObject], r12, { createOptions: { prettyPrint: true } });
 }();
 
-// ../chemlib/node_modules/kekule/dist/mins/render.min.js
+// node_modules/kekule/dist/mins/render.min.js
 !function() {
   var e15 = Kekule, t10 = Kekule.ChemStructureNodeLabels, r12 = Kekule.CoordMode;
   ClassEx.extend(Kekule.ChemObject, { getDefCoordPos: function(e16) {
@@ -70261,14 +70535,14 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     var a7 = Kekule.Render;
     Kekule.ObjUtils.isUnset(t11) && (t11 = true);
     var s6, l8 = a7.RichTextUtils.create(), d5 = this.getRenderOption("customLabel");
-    return (s6 = d5 ? a7.RichTextUtils.strToRichText(d5) : this.getCoreDisplayRichTextItem(e16, t11, r13, n13)) && (t11 && (s6 = this.appendElectronStateDisplayText(s6, n13, o15, i11)), s6 && (a7.RichTextUtils.append(l8, s6), l8.anchorItem = s6)), l8;
+    return (s6 = d5 ? a7.RichTextUtils.strToRichText(d5) : this.getCoreDisplayRichTextItem(e16, t11, r13, n13)) && (t11 && (s6 = this.appendElectronStateDisplayText(s6, n13, o15, i11, r13.getElectronicBiasMark())), s6 && (a7.RichTextUtils.append(l8, s6), l8.anchorItem = s6)), l8;
   }, getCoreDisplayRichTextItem: function(e16, t11, r13, n13) {
     return null;
-  }, appendElectronStateDisplayText: function(e16, t11, r13, n13) {
-    var o15 = Kekule.Render, i11 = this.getCharge(), a7 = this.getRadical(), s6 = o15.ChemDisplayTextUtils.createElectronStateDisplayTextSection(i11, a7, t11, r13, n13);
-    if (s6) {
-      var l8 = o15.RichTextUtils.createGroup();
-      return o15.RichTextUtils.append(l8, e16), o15.RichTextUtils.append(l8, s6), l8.charDirection = Kekule.Render.TextDirection.LTR, l8.anchorItem = e16, l8;
+  }, appendElectronStateDisplayText: function(e16, t11, r13, n13, o15) {
+    var i11 = Kekule.Render, a7 = this.getCharge(), s6 = this.getElectronicBias && this.getElectronicBias(), l8 = this.getRadical(), d5 = i11.ChemDisplayTextUtils.createElectronStateDisplayTextSection(a7, l8, t11, r13, n13, s6, o15);
+    if (d5) {
+      var u7 = i11.RichTextUtils.createGroup();
+      return i11.RichTextUtils.append(u7, e16), i11.RichTextUtils.append(u7, d5), u7.charDirection = Kekule.Render.TextDirection.LTR, u7.anchorItem = e16, u7;
     }
     return e16;
   } }), ClassEx.extend(Kekule.AbstractAtom, { getDisplayRichText: function(e16, t11, r13, n13, o15, i11) {
@@ -71218,9 +71492,21 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     1 != i11 ? n12 += t10 ? Kekule.NumUtils.toDecimals(i11, t10) : i11.toString() : r12 === Kekule.Render.ChargeMarkRenderType.CIRCLE_AROUND && (o15 = e15 > 0 ? "\u2295" : "\u2296"), n12 += o15;
   }
   return n12;
-}, createElectronStateDisplayTextSection: function(e15, t10, r12, n12, o15) {
-  var i11 = null, a7 = "";
-  return e15 && (a7 = Kekule.Render.ChemDisplayTextUtils.getChargeDisplayText(e15, r12, n12)), t10 && (a7 += Kekule.Render.ChemDisplayTextUtils.getRadicalDisplayText(t10, o15) || ""), a7 && (i11 = Kekule.Render.RichTextUtils.createSection(a7, { textType: Kekule.Render.RichText.SUP, charDirection: Kekule.Render.TextDirection.LTR })), i11;
+}, getElectronicBiasDisplayText: function(e15, t10) {
+  var r12 = "";
+  if (e15 && t10) {
+    var n12 = e15 > 0 ? "+" : e15 < 0 ? "-" : null;
+    if (n12) {
+      r12 = t10;
+      for (var o15 = Math.abs(e15), i11 = 0; i11 < o15; ++i11) r12 += n12;
+    }
+  }
+  return r12;
+}, getChargeExDisplayText: function(e15, t10, r12, n12, o15) {
+  return e15 ? Kekule.Render.ChemDisplayTextUtils.getChargeDisplayText(e15, r12, o15) : t10 ? Kekule.Render.ChemDisplayTextUtils.getElectronicBiasDisplayText(t10, n12) : "";
+}, createElectronStateDisplayTextSection: function(e15, t10, r12, n12, o15, i11, a7) {
+  var s6 = null, l8 = "";
+  return (e15 || i11) && (l8 = Kekule.Render.ChemDisplayTextUtils.getChargeExDisplayText(e15, i11, r12, a7, n12)), t10 && (l8 += Kekule.Render.ChemDisplayTextUtils.getRadicalDisplayText(t10, o15) || ""), l8 && (s6 = Kekule.Render.RichTextUtils.createSection(l8, { textType: Kekule.Render.RichText.SUP, charDirection: Kekule.Render.TextDirection.LTR })), s6;
 }, formulaToRichText: function(e15, t10, r12, n12, o15, i11, a7) {
   return Kekule.Render.ChemDisplayTextUtils._convFormulaToRichTextGroup(e15, false, t10, r12, n12, o15, i11, a7);
 }, _convFormulaToRichTextGroup: function(e15, t10, r12, n12, o15, i11, a7, s6) {
@@ -71315,6 +71601,7 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   var t10 = Kekule.Render.BondRenderType, r12 = Kekule.BondType;
   switch (e15.getBondType()) {
     case r12.HYDROGEN:
+    case r12.TRANSITION:
       return [t10.DASHED, t10.ARROWED, t10.WAVY];
     case r12.COORDINATE:
       return [t10.ARROWED, t10.SINGLE, t10.DASHED, t10.WAVY];
@@ -71374,6 +71661,7 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   var t10 = Kekule.Render.Bond3DRenderType, r12 = Kekule.BondType;
   switch (e15.getBondType()) {
     case r12.HYDROGEN:
+    case r12.TRANSITION:
       return t10.DASH;
     case r12.COVALENT:
       break;
@@ -71996,6 +72284,10 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
       return e16.ISO_LIST_DISALLOW_PREFIX;
     }, setter: function(t11) {
       t11 && (e16.ISO_LIST_DISALLOW_PREFIX = t11);
+    } }), this.addStrConfigProp("electronicBiasMark", e16.DEF_ELECTRONIC_BIAS_MARK, { getter: function() {
+      return e16.DEF_ELECTRONIC_BIAS_MARK;
+    }, setter: function(t11) {
+      t11 && (e16.DEF_ELECTRONIC_BIAS_MARK = t11);
     } });
   } }), Kekule.Render.TextFontConfigs = Class.create(Kekule.AbstractConfigs, { CLASS_NAME: "Kekule.Render.TextFontConfigs", DEF_LABEL_FONT_FAMILY: "", initProperties: function() {
     this.addStrConfigProp("labelFontFamily", "Arial, Helvetica, sans-serif"), this.addStrConfigProp("atomFontFamily", "Arial, Helvetica, sans-serif"), this.addFloatConfigProp("supFontSizeRatio", 0.66), this.addFloatConfigProp("subFontSizeRatio", 0.66), this.addFloatConfigProp("superscriptOverhang", 0.2), this.addFloatConfigProp("subscriptOversink", 0.2), this.addIntConfigProp("textCharDirection", Kekule.Render.TextDirection.LTR, { enumSource: Kekule.Render.TextDirection }), this.addIntConfigProp("textHorizontalAlign", Kekule.Render.TextAlign.LEADING, { enumSource: Kekule.Render.TextAlign }), this.addIntConfigProp("textVerticalAlign", Kekule.Render.TextAlign.LEADING, { enumSource: Kekule.Render.TextAlign }), this.addIntConfigProp("textBoxXAlignment", Kekule.Render.BoxXAlignment.LEFT, { enumSource: Kekule.Render.BoxXAlignment, scope: t10.PUBLIC }), this.addIntConfigProp("textBoxYAlignment", Kekule.Render.BoxYAlignment.TOP, { enumSource: Kekule.Render.BoxYAlignment, scope: t10.PUBLIC }), this.addIntConfigProp("textBoxAlignmentMode", Kekule.Render.TextBoxAlignmentMode.ANCHOR, { enumSource: Kekule.Render.TextBoxAlignmentMode, scope: t10.PUBLIC });
@@ -72623,7 +72915,7 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     var r13, n13 = this.getChemObj();
     if (n13 instanceof Kekule.ChemMarker.Charge) {
       var o16 = n13.getValue();
-      if (r13 = Kekule.Render.ChemDisplayTextUtils.getChargeDisplayText(o16, t11.partialChargeDecimalsLength, t11.chargeMarkType)) return Kekule.Render.RichTextUtils.createSection(r13, { charDirection: Kekule.Render.TextDirection.LTR });
+      if (r13 = Kekule.Render.ChemDisplayTextUtils.getChargeExDisplayText(o16 && o16.charge, o16 && o16.electronicBias, t11.partialChargeDecimalsLength, t11.displayLabelConfigs.getElectronicBiasMark(), t11.chargeMarkType)) return Kekule.Render.RichTextUtils.createSection(r13, { charDirection: Kekule.Render.TextDirection.LTR });
     } else if (n13 instanceof Kekule.ChemMarker.Radical) {
       var i12 = n13.getValue();
       if (r13 = Kekule.Render.ChemDisplayTextUtils.getRadicalDisplayText(i12, t11.distinguishSingletAndTripletRadical)) return Kekule.Render.RichTextUtils.createSection(r13, { charDirection: Kekule.Render.TextDirection.LTR });
@@ -72888,7 +73180,7 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
       d5.color = g4;
     }
     r13.getCharge() || r13.getRadical();
-    var f7 = r13.getCharge() && !r13.fetchChargeMarker(false), C2 = r13.getRadical() && !r13.fetchRadicalMarker(false), R3 = false;
+    var f7 = r13.hasExplicitCharge && r13.hasExplicitCharge() && !r13.fetchChargeMarker(false), C2 = r13.getRadical() && !r13.fetchRadicalMarker(false), R3 = false;
     if (this.getObjNeedDrawLabel(e16, r13)) {
       R3 = true;
       var D2 = this._getNodeHydrogenDisplayLevel(r13, d5);
@@ -73283,13 +73575,13 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   }, _createChargeAndRadicalMarkerOnStructFragment: function(e16) {
     e16.beginUpdate();
     try {
-      e16.getCharge && e16.getCharge() && e16.fetchChargeMarker(true);
+      e16.hasExplicitCharge && e16.hasExplicitCharge() && e16.fetchChargeMarker(true);
       e16.getNodes();
       for (var t11 = 0, r13 = e16.getNodeCount(); t11 < r13; ++t11) {
         var n13 = e16.getNodeAt(t11);
         n13.beginUpdate();
         try {
-          n13.getCharge() && n13.fetchChargeMarker(true), n13.getRadical() && n13.fetchRadicalMarker(true), n13.getNodeAt && this._createChargeAndRadicalMarkerOnStructFragment(n13);
+          n13.hasExplicitChargeOrElectronicBias && n13.hasExplicitChargeOrElectronicBias() && n13.fetchChargeMarker(true), n13.getRadical() && n13.fetchRadicalMarker(true), n13.getNodeAt && this._createChargeAndRadicalMarkerOnStructFragment(n13);
         } finally {
           n13.endUpdate();
         }
@@ -74456,14 +74748,15 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     l8.fov = 5, this._webglEnabled = s6 instanceof e15.WebGLRenderer, this._updateGraphicQualityLevel();
     var d5 = new e15.Scene();
     d5.add(l8), s6.setSize(r12, n12);
-    for (var u7 = this.getInitialLightPositions(), c8 = [], h7 = 0, g4 = u7.length; h7 < g4; ++h7) {
-      var p5 = new e15.DirectionalLight(13421772, 1, 10, true), f7 = u7[h7];
-      p5.position.set(f7.x, f7.y, f7.z), d5.add(p5), c8.push(p5);
+    const u7 = true === s6.useLegacyLights || void 0 === s6.useLegacyLights && parseInt(e15.REVISION) < 155 ? 1 : Math.PI;
+    for (var c8 = this.getInitialLightPositions(), h7 = [], g4 = 0, p5 = c8.length; g4 < p5; ++g4) {
+      var f7 = new e15.DirectionalLight(13421772, 1 * u7, 10, true), C2 = c8[g4];
+      f7.castShadow = true, f7.position.set(C2.x, C2.y, C2.z), d5.add(f7), h7.push(f7);
     }
-    p5 = new e15.AmbientLight(2105376);
-    d5.add(p5), t11.appendChild(s6.domElement);
-    var C2 = new Kekule.Render.ThreeContext(d5, l8, c8, s6);
-    return C2.setDimension(r12, n12), C2;
+    f7 = new e15.AmbientLight(2105376, 1 * u7);
+    d5.add(f7), t11.appendChild(s6.domElement);
+    var R3 = new Kekule.Render.ThreeContext(d5, l8, h7, s6);
+    return R3.setDimension(r12, n12), R3;
   }, releaseContext: function(e16) {
     var t11 = this.getContextElem(e16);
     e16.finalize(), t11 && t11.parentNode.removeChild(t11);
@@ -74502,10 +74795,15 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
     return d5.scale.x = n12, d5.scale.y = n12, d5.scale.z = n12, d5.position.x = r12.x, d5.position.y = r12.y, d5.position.z = r12.z, t11.getScene().add(d5), d5;
   }, drawLine: function(t11, r12, n12, o15) {
     this.colorStrToHex(o15.color);
-    var i11 = this.materialCache.get(e15.LineBasicMaterial, t11.getScene(), { color: this.colorStrToHex(o15.color), opacity: o15.opacity || 1, linewidth: o15.lineWidth || 1 }), a7 = new e15.Geometry();
-    a7.vertices.push(new e15.Vector3(r12.x, r12.y, r12.z)), a7.vertices.push(new e15.Vector3(n12.x, n12.y, n12.z));
-    var s6 = new e15.Line(a7, i11);
-    return t11.getScene().add(s6), s6;
+    var i11, a7 = this.materialCache.get(e15.LineBasicMaterial, t11.getScene(), { color: this.colorStrToHex(o15.color), opacity: o15.opacity || 1, linewidth: o15.lineWidth || 1 });
+    if (e15.Geometry) (i11 = new e15.Geometry()).vertices.push(new e15.Vector3(r12.x, r12.y, r12.z)), i11.vertices.push(new e15.Vector3(n12.x, n12.y, n12.z));
+    else {
+      i11 = new e15.BufferGeometry();
+      var s6 = [new e15.Vector3(r12.x, r12.y, r12.z), new e15.Vector3(n12.x, n12.y, n12.z)];
+      i11.setFromPoints(s6);
+    }
+    var l8 = new e15.Line(i11, a7);
+    return t11.getScene().add(l8), l8;
   }, drawCylinder: function(t11, r12, n12, o15, i11) {
     var a7 = Kekule.CoordUtils, s6 = this._modelParams.cylinderSegmentsRadius, l8 = a7.getDistance(r12, n12), d5 = this.geometryCache.get(e15.CylinderGeometry, t11.getScene(), 1, 1, 1, s6, 1, true), u7 = this.materialCache.get(e15.MeshLambertMaterial, t11.getScene(), { color: this.colorStrToHex(i11.color), opacity: i11.opacity || 1 }), c8 = new e15.Mesh(d5, u7);
     c8.scale.y = l8, c8.scale.x = o15, c8.scale.z = o15;
@@ -74684,7 +74982,7 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   this.tryApplySuper("initialize", [Kekule.Render.RendererType.R3D, e15, t10, r12]);
 } });
 
-// ../chemlib/node_modules/kekule/dist/mins/spectroscopy.min.js
+// node_modules/kekule/dist/mins/spectroscopy.min.js
 !function() {
   "use strict";
   var e15 = Class.PropertyScope, t10 = Kekule.ArrayUtils, a7 = Kekule.Unit;
@@ -78705,10 +79003,10 @@ Kekule.TextLinesBuffer = Class.create(ObjectEx, { CLASS_NAME: "Kekule.TextLinesB
   });
 }();
 
-// ../chemlib/node_modules/kekule/dist/kekule.esm.mjs
+// node_modules/kekule/dist/kekule.esm.mjs
 var import_widget_min = __toESM(require_widget_min(), 1);
 
-// ../chemlib/node_modules/kekule/dist/mins/chemWidget.min.js
+// node_modules/kekule/dist/mins/chemWidget.min.js
 Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWidget, Kekule.ChemWidget.ComponentWidgetNames = { menu: "menu", newDoc: "newDoc", clearObjs: "clearObjs", loadFile: "loadFile", loadData: "loadData", saveData: "saveData", zoomIn: "zoomIn", zoomOut: "zoomOut", resetZoom: "resetZoom", rotateRight: "rotateRight", rotateLeft: "rotateLeft", rotateX: "rotateX", rotateY: "rotateY", rotateZ: "rotateZ", reset: "reset", molDisplayType: "molDisplayType", molDisplayTypeCondensed: "molDisplayTypeCondensed", molDisplayTypeSkeletal: "molDisplayTypeSkeletal", molDisplayTypeWire: "molDisplayTypeWire", molDisplayTypeSticks: "molDisplayTypeSticks", molDisplayTypeBallStick: "molDisplayTypeBallStick", molDisplayTypeSpaceFill: "molDisplayTypeSpaceFill", molHideHydrogens: "molHideHydrogens", molAutoGenerateCoords: "molAutoGenerateCoords", openEditor: "openEditor", config: "config", objInspector: "objInspector", issueInspector: "issueInspector", undo: "undo", redo: "redo", copy: "copy", cut: "cut", paste: "paste", cloneSelection: "cloneSelection", selectAll: "selectAll", toggleSelect: "toggleSelect", eraseSelection: "eraseSelection", recheckIssues: "recheckIssues", toggleShowAllIssues: "toggleShowAllIssues", dragScroll: "dragScroll", erase: "erase", manipulate: "manipulate", trackInput: "trackInput", molBond: "bond", molAtom: "atom", molFormula: "formula", molAtomAndFormula: "atomAndFormula", molCharge: "charge", textBlock: "textBlock", imageBlock: "imageBlock", molRing: "ring", glyph: "glyph", textImage: "textImage", fontName: "fontName", fontSize: "fontSize", color: "color", textDirection: "textDirection", textAlign: "textAlign", nodeDisplayMode: "nodeDisplayMode" }, Kekule.ChemWidget.HtmlClassNames = { PREFIX: "K-Chem-", INNER_TOOLBAR: "K-Chem-InnerToolbar" }, function() {
   "use strict";
   Class.PropertyScope, Kekule.ChemWidget, Kekule.Widget.HtmlClassNames;
@@ -78908,12 +79206,12 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
       C2.appendChild(c8), s6.push(p5);
     }
     for (var _3 = this.getStartingAtomNum() || 0, m5 = this.getEndingAtomNum() || 3e5, f7 = 0, S5 = n12.length; f7 < S5; ++f7) {
-      var y5 = n12[f7], O2 = y5.atomicNumber;
-      if (!(O2 < _3 || O2 > m5)) {
-        var E3 = y5.symbol, T3 = y5.period, A2 = y5.group, k4 = y5.chemicalSerie.replace(/\s/g, "");
-        Kekule.ArrayUtils.pushUnique(l8, y5.chemicalSerie);
+      var O2 = n12[f7], y5 = O2.atomicNumber;
+      if (!(y5 < _3 || y5 > m5)) {
+        var E3 = O2.symbol, T3 = O2.period, A2 = O2.group, k4 = O2.chemicalSerie.replace(/\s/g, "");
+        Kekule.ArrayUtils.pushUnique(l8, O2.chemicalSerie);
         var b5 = this.LA_SERIES.indexOf(E3), I3 = this.AC_SERIES.indexOf(E3);
-        b5 >= 0 ? g4 = s6[0][b5] : I3 >= 0 ? g4 = s6[1][I3] : T3 && A2 && (g4 = a7[T3][A2]), g4 && (g4.className = i11.PERIODIC_TABLE_ELEM_CELL, g4.appendChild(this.createElemCellContent(t11, y5, k4.upperFirst())), g4[this.ELEM_DATA_FIELD] = y5, this._elemCells.push(g4)), 0 !== b5 && 0 !== I3 || ((g4 = a7[T3][A2]).className = i11.PERIODIC_TABLE_ELEM_STUBSCELL, g4.appendChild(this.createElemCellStubsContent(t11, y5, k4.upperFirst())));
+        b5 >= 0 ? g4 = s6[0][b5] : I3 >= 0 ? g4 = s6[1][I3] : T3 && A2 && (g4 = a7[T3][A2]), g4 && (g4.className = i11.PERIODIC_TABLE_ELEM_CELL, g4.appendChild(this.createElemCellContent(t11, O2, k4.upperFirst())), g4[this.ELEM_DATA_FIELD] = O2, this._elemCells.push(g4)), 0 !== b5 && 0 !== I3 || ((g4 = a7[T3][A2]).className = i11.PERIODIC_TABLE_ELEM_STUBSCELL, g4.appendChild(this.createElemCellStubsContent(t11, O2, k4.upperFirst())));
       }
     }
     if (this.getShowGroupHead()) {
@@ -79338,7 +79636,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
       }
     } else r13(e16);
   }, _tryAutoGenerateChemObjCoordsForLoading: function(e16, t11) {
-    this.getDisplayerConfigs().getIoConfigs().getAutoGenerateCoordsAfterLoad() && (this._molNeedAutoCoordGeneration(e16, this.getCoordMode()) ? this._tryAutoGenerateChemObjCoords(e16, null, t11) : t11(e16));
+    this.getDisplayerConfigs().getIoConfigs().getAutoGenerateCoordsAfterLoad() ? this._molNeedAutoCoordGeneration(e16, this.getCoordMode()) ? this._tryAutoGenerateChemObjCoords(e16, null, t11) : t11(e16) : t11(e16);
   }, _tryAutoGenerateChemObjCoordsAndLoad: function(e16) {
     var t11 = this;
     this._tryAutoGenerateChemObjCoordsForLoading(e16, function(e17) {
@@ -80148,7 +80446,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
 }(), function() {
   "use strict";
   var e15 = Class.PropertyScope, t10 = Kekule.ArrayUtils, r12 = (Kekule.ZoomUtils, Kekule.ChemWidget.ComponentWidgetNames), i11 = Kekule.ChemWidget, o15 = Kekule.Widget.EvokeMode;
-  Kekule.globalOptions.add("chemWidget.viewer", { toolButtons: [r12.loadData, r12.saveData, r12.molDisplayType, r12.molHideHydrogens, r12.zoomIn, r12.zoomOut, r12.rotateX, r12.rotateY, r12.rotateZ, r12.rotateLeft, r12.rotateRight, r12.reset, r12.copy, r12.openEditor], menuItems: [r12.loadData, r12.saveData, Kekule.Widget.MenuItem.SEPARATOR_TEXT, r12.molDisplayType, r12.molHideHydrogens, r12.zoomIn, r12.zoomOut, { text: Kekule.$L("ChemWidgetTexts.CAPTION_ROTATE"), hint: Kekule.$L("ChemWidgetTexts.HINT_ROTATE"), children: [r12.rotateLeft, r12.rotateRight, r12.rotateX, r12.rotateY, r12.rotateZ] }, r12.reset, Kekule.Widget.MenuItem.SEPARATOR_TEXT, r12.copy, r12.openEditor, r12.config], toolbar: { evokeModes: [o15.EVOKEE_CLICK, o15.EVOKEE_MOUSE_ENTER, o15.EVOKEE_TOUCH], revokeModes: [o15.EVOKEE_MOUSE_LEAVE, o15.EVOKER_TIMEOUT], pos: Kekule.Widget.Position.AUTO, marginHorizontal: 10, marginVertical: 10 }, editor: { modal: true, restrainEditorWithCurrObj: true, shareEditorInstance: true }, enableToolbar: false, enableDirectInteraction: true, enableTouchInteraction: false, enableGestureInteraction: false, showCaption: false, useNormalBackground: false, enableCustomCssProperties: true, restraintRotation3DEdgeRatio: 0.18, enableRestraintRotation3D: true }), Kekule.ChemWidget.HtmlClassNames = Object.extend(Kekule.ChemWidget.HtmlClassNames, { VIEWER: "K-Chem-Viewer", VIEWER2D: "K-Chem-Viewer2D", VIEWER3D: "K-Chem-Viewer3D", VIEWER_CLIENT: "K-Chem-Viewer-Client", VIEWER_CAPTION: "K-Chem-Viewer-Caption", VIEWER_EMBEDDED_TOOLBAR: "K-Chem-Viewer-Embedded-Toolbar", VIEWER_UICONTEXT_PARENT: "K-Chem-Viewer-UiContext-Parent", VIEWER_MENU_BUTTON: "K-Chem-Viewer-Menu-Button", VIEWER_EDITOR_FULLCLIENT: "K-Chem-Viewer-Editor-FullClient", ACTION_ROTATE_LEFT: "K-Chem-RotateLeft", ACTION_ROTATE_RIGHT: "K-Chem-RotateRight", ACTION_ROTATE_X: "K-Chem-RotateX", ACTION_ROTATE_Y: "K-Chem-RotateY", ACTION_ROTATE_Z: "K-Chem-RotateZ", ACTION_VIEWER_EDIT: "K-Chem-Viewer-Edit" });
+  Kekule.globalOptions.add("chemWidget.viewer", { toolButtons: [r12.loadData, r12.saveData, r12.molDisplayType, r12.molHideHydrogens, r12.zoomIn, r12.zoomOut, r12.rotateX, r12.rotateY, r12.rotateZ, r12.rotateLeft, r12.rotateRight, r12.reset, r12.copy, r12.openEditor], menuItems: [r12.loadData, r12.saveData, Kekule.Widget.MenuItem.SEPARATOR_TEXT, r12.molDisplayType, r12.molHideHydrogens, r12.zoomIn, r12.zoomOut, { text: Kekule.$L("ChemWidgetTexts.CAPTION_ROTATE"), hint: Kekule.$L("ChemWidgetTexts.HINT_ROTATE"), children: [r12.rotateLeft, r12.rotateRight, r12.rotateX, r12.rotateY, r12.rotateZ] }, r12.reset, Kekule.Widget.MenuItem.SEPARATOR_TEXT, r12.copy, r12.openEditor, r12.config], toolbar: { evokeModes: [o15.EVOKEE_CLICK, o15.EVOKEE_MOUSE_ENTER, o15.EVOKEE_TOUCH], revokeModes: [o15.EVOKEE_MOUSE_LEAVE, o15.EVOKER_TIMEOUT], pos: Kekule.Widget.Position.AUTO, marginHorizontal: 10, marginVertical: 10 }, editor: { modal: true, restrainEditorWithCurrObj: true, shareEditorInstance: true }, enableToolbar: false, enableDirectInteraction: true, enableTouchInteraction: false, enableGestureInteraction: false, enabledDirectInteractionModes: { move: true, rotate: true, zoom: true }, showCaption: false, useNormalBackground: false, enableCustomCssProperties: true, restraintRotation3DEdgeRatio: 0.18, enableRestraintRotation3D: true }), Kekule.ChemWidget.HtmlClassNames = Object.extend(Kekule.ChemWidget.HtmlClassNames, { VIEWER: "K-Chem-Viewer", VIEWER2D: "K-Chem-Viewer2D", VIEWER3D: "K-Chem-Viewer3D", VIEWER_CLIENT: "K-Chem-Viewer-Client", VIEWER_CAPTION: "K-Chem-Viewer-Caption", VIEWER_EMBEDDED_TOOLBAR: "K-Chem-Viewer-Embedded-Toolbar", VIEWER_UICONTEXT_PARENT: "K-Chem-Viewer-UiContext-Parent", VIEWER_MENU_BUTTON: "K-Chem-Viewer-Menu-Button", VIEWER_EDITOR_FULLCLIENT: "K-Chem-Viewer-Editor-FullClient", ACTION_ROTATE_LEFT: "K-Chem-RotateLeft", ACTION_ROTATE_RIGHT: "K-Chem-RotateRight", ACTION_ROTATE_X: "K-Chem-RotateX", ACTION_ROTATE_Y: "K-Chem-RotateY", ACTION_ROTATE_Z: "K-Chem-RotateZ", ACTION_VIEWER_EDIT: "K-Chem-Viewer-Edit" });
   var n12 = Kekule.Widget.HtmlClassNames, a7 = Kekule.ChemWidget.HtmlClassNames;
   Kekule.ChemWidget.ViewerUiMarkerGroup = { HOTTRACK: "hotTrack", SELECT: "select" }, Kekule.ChemWidget.Viewer = Class.create(Kekule.ChemWidget.ChemObjDisplayer, { CLASS_NAME: "Kekule.ChemWidget.Viewer", BINDABLE_TAG_NAMES: ["div", "span", "img"], DEF_BGCOLOR_2D: null, DEF_BGCOLOR_3D: "#000000", DEF_TOOLBAR_EVOKE_MODES: [o15.EVOKEE_CLICK, o15.EVOKEE_MOUSE_ENTER, o15.EVOKEE_TOUCH], DEF_TOOLBAR_REVOKE_MODES: [o15.EVOKEE_MOUSE_LEAVE, o15.EVOKER_TIMEOUT], OBSERVING_GESTURES: ["pinch", "pinchstart", "pinchmove", "pinchend", "pinchcancel", "pinchin", "pinchout"], initialize: function(e16, t11, r13, i12) {
     this.setPropStoreFieldValue("renderType", r13 || Kekule.Render.RendererType.R2D), this.setPropStoreFieldValue("useCornerDecoration", true);
@@ -80269,7 +80567,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
     } }), this.defineProp("enableGesture", { dataType: DataType.BOOL, setter: function(e16) {
       var t11 = !!e16;
       this.getEnableGesture() !== t11 && (this.setPropStoreFieldValue("enableGesture", t11), t11 ? this.startObservingGestureEvents(this.OBSERVING_GESTURES) : this.stopObservingGestureEvents(this.OBSERVING_GESTURES));
-    } }), this.defineProp("hotTrackedObjects", { dataType: DataType.ARRAY, serializable: false, getter: function() {
+    } }), this.defineProp("enabledDirectInteractionModes", { dataType: DataType.HASH }), this.defineProp("hotTrackedObjects", { dataType: DataType.ARRAY, serializable: false, getter: function() {
       return this.getPropStoreFieldValue("hotTrackedObjects") || [];
     }, setter: function(e16) {
       this.changeHotTrackedObjects(e16 && t10.toArray(e16), true);
@@ -80281,7 +80579,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
   }, initPropValues: function() {
     this.setStyleMode(Kekule.Widget.StyleMode.INHERITED);
     var e16 = Kekule.oneOf, t11 = Kekule.globalOptions.get("chemWidget.viewer") || {};
-    this.setUseNormalBackground(e16(t11.useNormalBackground, false)), this.setEnableCustomCssProperties(e16(t11.enableCustomCssProperties, true)), this.setRestraintRotation3DEdgeRatio(e16(t11.restraintRotation3DEdgeRatio, 0.18)), this.setEnableRestraintRotation3D(e16(t11.enableRestraintRotation3D, true)), this.setEnableTouchInteraction(e16(t11.enableTouchInteraction, false)), t11 = t11.editor || {}, this.setModalEdit(e16(t11.modal, true)), this.setRestrainEditorWithCurrObj(e16(t11.restrainEditorWithCurrObj, true)), this.setShareEditorInstance(e16(t11.shareEditorInstance, true));
+    this.setUseNormalBackground(e16(t11.useNormalBackground, false)), this.setEnableCustomCssProperties(e16(t11.enableCustomCssProperties, true)), this.setRestraintRotation3DEdgeRatio(e16(t11.restraintRotation3DEdgeRatio, 0.18)), this.setEnableRestraintRotation3D(e16(t11.enableRestraintRotation3D, true)), this.setEnableTouchInteraction(e16(t11.enableTouchInteraction, false)), this.setEnabledDirectInteractionModes(e16(t11.enabledDirectInteractionModes, { move: true, rotate: true, zoom: true })), t11 = t11.editor || {}, this.setModalEdit(e16(t11.modal, true)), this.setRestrainEditorWithCurrObj(e16(t11.restrainEditorWithCurrObj, true)), this.setShareEditorInstance(e16(t11.shareEditorInstance, true));
   }, createDefaultConfigs: function() {
     return new Kekule.ChemWidget.ViewerConfigs();
   }, canUsePlaceHolderOnElem: function(e16) {
@@ -80790,6 +81088,11 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
         }
       }
     }
+  }, getEnabledOfDirectInteractionMode: function(e16) {
+    return !!(this.getEnabledDirectInteractionModes() || {})[e16];
+  }, setEnabledOfDirectInteractionMode: function(e16, t11) {
+    var r13 = this.getEnabledDirectInteractionModes();
+    return r13 || (r13 = {}, this.setPropStoreFieldValue("enabledDirectInteractionModes", r13)), r13[e16] = !!t11, this;
   }, reactHotKeys: function(e16) {
     if (this.getEnableHotKey()) {
       for (var t11 = this.getCoordMode() || Kekule.CoordMode.COORD2D, r13 = this.getViewerConfigs().getHotKeyConfigs().getHotKeys(), i12 = Kekule.Widget.KeyboardUtils.getKeyParamsFromEvent(e16), o16 = false, n13 = r13.length - 1; n13 >= 0; --n13) {
@@ -80885,8 +81188,8 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
     if (this._transformInfo) {
       if (this._transformInfo.isGestureTransforming) this._doGestureInteractTransformStep();
       else if (this._transformInfo.isTransforming) {
-        var e16 = this._transformInfo.interactScreenCoord;
-        this.getViewerRenderType() === Kekule.Render.RendererType.R3D ? this.rotateByXYDistance(e16.x, e16.y) : this.moveByXYDistance(e16.x, e16.y);
+        var e16 = this.getViewer(), t11 = this._transformInfo.interactScreenCoord;
+        this.getViewerRenderType() === Kekule.Render.RendererType.R3D ? e16.getEnabledOfDirectInteractionMode("rotate") && this.rotateByXYDistance(t11.x, t11.y) : e16.getEnabledOfDirectInteractionMode("move") && this.moveByXYDistance(t11.x, t11.y);
       }
       this._interactiveTransformStepId = window.requestAnimationFrame(this._doInteractiveTransformStepBind);
     }
@@ -80896,7 +81199,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
       var t11 = this._transformInfo;
       if (t11.isGestureTransforming && t11.pinchScale) {
         var r13 = t11.pinchScale;
-        if (r13) {
+        if (r13 && e16.getEnabledOfDirectInteractionMode("zoom")) {
           var i12 = t11.initialGestureZoomLevel * r13;
           e16.zoomTo(i12);
         }
@@ -80932,7 +81235,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
   }, react_dblclick: function(e16) {
     this.needReactEvent(e16) && this.getViewer().resetDisplay();
   }, react_mousewheel: function(e16) {
-    if (this.needReactEvent(e16)) {
+    if (this.needReactEvent(e16) && this.getViewer().getEnabledOfDirectInteractionMode("zoom")) {
       var t11 = e16.wheelDeltaY || e16.wheelDelta;
       t11 && (t11 /= 120);
       var r13 = e16.getOffsetCoord();
@@ -81386,11 +81689,11 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
             m5 && (C2.addDataItemOverrideRenderOptionItem(e16.dataValue, m5), this[a7] = m5, g4 = true);
           }
           if (l8 || d5) {
-            var f7 = this.getClientScreenBox(), S5 = this.calcCoordAtSpectrumData(_3, Kekule.Render.CoordSystem.CONTEXT), y5 = null;
-            d5 && (y5 = this._formatSpectrumDataValueString(_3, n12.getSpectrumDataPointDetailMarkerValuePrecision()));
+            var f7 = this.getClientScreenBox(), S5 = this.calcCoordAtSpectrumData(_3, Kekule.Render.CoordSystem.CONTEXT), O2 = null;
+            d5 && (O2 = this._formatSpectrumDataValueString(_3, n12.getSpectrumDataPointDetailMarkerValuePrecision()));
           }
-          var O2 = t11 ? n12.getSpectrumSelectedDataPointDetailMarkerDrawStyles() : n12.getSpectrumHotTrackedDataPointDetailMarkerDrawStyles(), E3 = t11 ? n12.getSpectrumSelectDataPointMarkerDrawStyles() : n12.getSpectrumHotTrackDataPointMarkerDrawStyles();
-          this._updateDataDetailMarker(p5, S5, { text: y5 }, d5, O2, f7, false), this._updateDataPointMarker(h7, S5, null, l8, E3, f7, false);
+          var y5 = t11 ? n12.getSpectrumSelectedDataPointDetailMarkerDrawStyles() : n12.getSpectrumHotTrackedDataPointDetailMarkerDrawStyles(), E3 = t11 ? n12.getSpectrumSelectDataPointMarkerDrawStyles() : n12.getSpectrumHotTrackDataPointMarkerDrawStyles();
+          this._updateDataDetailMarker(p5, S5, { text: O2 }, d5, y5, f7, false), this._updateDataPointMarker(h7, S5, null, l8, E3, f7, false);
         } else p5 && o15.hideUiMarker(p5, false), h7 && o15.hideUiMarker(h7, false);
         return { needRepaintSpectrum: g4 };
       }, updateSpectrumDataItemUiMarkers: function(e16) {
@@ -81469,8 +81772,8 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
                 var f7 = this.getViewer().getUiContext(), S5 = g4.drawText(f7, { x: 0, y: 0 }, l8, p5);
                 h7 = g4.measureDrawnText(f7, S5), g4.removeDrawnElem(f7, S5);
               }
-              var y5, O2, E3 = (u7.getSpectrumDataPointDetailMarkerPadding() || 0) * c8, T3 = { x1: t11.x - n12.x1, x2: n12.x2 - t11.x, y1: t11.y - n12.y1, y2: n12.y2 - t11.y }, A2 = {};
-              T3.x2 - E3 >= h7.width ? (A2.x = t11.x + E3, y5 = Kekule.Render.BoxXAlignment.LEFT) : T3.x1 - E3 >= h7.width ? (A2.x = t11.x - E3, y5 = Kekule.Render.BoxXAlignment.RIGHT) : T3.x2 >= T3.x1 ? (A2.x = n12.x2 - h7.width, y5 = Kekule.Render.BoxXAlignment.LEFT) : (A2.x = n12.x1 + h7.width, y5 = Kekule.Render.BoxXAlignment.RIGHT), T3.y1 - E3 >= h7.height ? (A2.y = t11.y - E3, O2 = Kekule.Render.BoxYAlignment.BOTTOM) : T3.y2 - E3 >= h7.height ? (A2.y = t11.y + E3, O2 = Kekule.Render.BoxYAlignment.TOP) : T3.y1 >= T3.y2 ? (A2.y = n12.y1 + h7.height, O2 = Kekule.Render.BoxYAlignment.BOTTOM) : (A2.y = n12.y2 - h7.height, O2 = Kekule.Render.BoxYAlignment.TOP), p5.textBoxXAlignment = y5, p5.textBoxYAlignment = O2;
+              var O2, y5, E3 = (u7.getSpectrumDataPointDetailMarkerPadding() || 0) * c8, T3 = { x1: t11.x - n12.x1, x2: n12.x2 - t11.x, y1: t11.y - n12.y1, y2: n12.y2 - t11.y }, A2 = {};
+              T3.x2 - E3 >= h7.width ? (A2.x = t11.x + E3, O2 = Kekule.Render.BoxXAlignment.LEFT) : T3.x1 - E3 >= h7.width ? (A2.x = t11.x - E3, O2 = Kekule.Render.BoxXAlignment.RIGHT) : T3.x2 >= T3.x1 ? (A2.x = n12.x2 - h7.width, O2 = Kekule.Render.BoxXAlignment.LEFT) : (A2.x = n12.x1 + h7.width, O2 = Kekule.Render.BoxXAlignment.RIGHT), T3.y1 - E3 >= h7.height ? (A2.y = t11.y - E3, y5 = Kekule.Render.BoxYAlignment.BOTTOM) : T3.y2 - E3 >= h7.height ? (A2.y = t11.y + E3, y5 = Kekule.Render.BoxYAlignment.TOP) : T3.y1 >= T3.y2 ? (A2.y = n12.y1 + h7.height, y5 = Kekule.Render.BoxYAlignment.BOTTOM) : (A2.y = n12.y2 - h7.height, y5 = Kekule.Render.BoxYAlignment.TOP), p5.textBoxXAlignment = O2, p5.textBoxYAlignment = y5;
             }
             s6.modifyTextBasedMarker(e16, A2, l8, p5, false), s6.showUiMarker(e16, a7);
           } else s6.hideUiMarker(e16, a7);
@@ -83924,8 +84227,8 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
             if (u7) {
               var p5 = "active" === d5;
               if (p5 || t11) for (var h7 = u7.objs, g4 = 0, C2 = h7.length; g4 < C2; ++g4) for (var _3 = h7[g4], m5 = this.getBoundInfoRecorder().getBelongedInfos(this.getObjContext(), _3), f7 = 0, S5 = m5.length; f7 < S5; ++f7) {
-                var y5 = m5[f7].boundInfo;
-                y5 && (y5 = Kekule.Render.MetaShapeUtils.inflateShape(y5, o16), l8.push(y5));
+                var O2 = m5[f7].boundInfo;
+                O2 && (O2 = Kekule.Render.MetaShapeUtils.inflateShape(O2, o16), l8.push(O2));
               }
             }
             this.changeIssueCheckUiMarkerBound(c8, l8, p5);
@@ -86040,7 +86343,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
   } }), Kekule.Editor.UiMarkerConfigs = Class.create(Kekule.AbstractConfigs, { CLASS_NAME: "Kekule.Editor.UiMarkerConfigs", initProperties: function() {
     this.addStrConfigProp("hotTrackerColor", "#0000FF"), this.addFloatConfigProp("hotTrackerOpacity", 0.5), this.addStrConfigProp("selectionMarkerStrokeColor", "#0000FF"), this.addFloatConfigProp("selectionMarkerStrokeWidth", 2), this.addStrConfigProp("selectionMarkerFillColor", "#0000FF"), this.addFloatConfigProp("selectionMarkerOpacity", 0.2), this.addFloatConfigProp("selectionMarkerEmphasisOpacity", 0.4), this.addFloatConfigProp("selectionTransformMarkerSize", 8, { scope: e15.PUBLIC }), this.addFloatConfigProp("selectionTransformMarkerOpacity", 0.4, { scope: e15.PUBLIC }), this.addStrConfigProp("selectingMarkerStrokeColor", "#000000"), this.addFloatConfigProp("selectingMarkerStrokeWidth", 1), this.addStrConfigProp("selectingMarkerStrokeDash", true), this.addStrConfigProp("selectingMarkerFillColor", null), this.addFloatConfigProp("selectingMarkerOpacity", 0.7), this.addStrConfigProp("selectingBrushMarkerStrokeColor", "#0000FF"), this.addStrConfigProp("selectingBrushMarkerStrokeDash", false), this.addFloatConfigProp("selectingBrushMarkerStrokeLineCap", "round"), this.addFloatConfigProp("selectingBrushMarkerStrokeLineJoin", "round"), this.addFloatConfigProp("selectingBrushMarkerOpacity", 0.3), this.addStrConfigProp("trackMarkerStrokeColor", "#0000AA"), this.addFloatConfigProp("trackMarkerStrokeWidth", 2), this.addStrConfigProp("trackMarkerStrokeDash", false), this.addFloatConfigProp("trackMarkerOpacity", 0.5), this.addHashConfigProp("issueCheckMarkerColors", { error: { strokeColor: "#FF0000", fillColor: null, activeStrokeColor: "#FF0000", activeFillColor: "#FF6666" }, warning: { strokeColor: "#f1a200", fillColor: null, activeStrokeColor: "#f1a200", activeFillColor: "#ffdb15" }, note: { strokeColor: "#00b0f0", fillColor: null, activeStrokeColor: "#007ca8", activeFillColor: "#00b0f0" }, log: { strokeColor: "#00b0f0", fillColor: null, activeStrokeColor: "#007ca8", activeFillColor: "#00b0f0" } }), this.addFloatConfigProp("issueCheckMarkerStrokeWidth", 2), this.addFloatConfigProp("issueCheckActiveMarkerStrokeWidth", 2), this.addStrConfigProp("issueCheckMarkerOpacity", 0.3), this.addStrConfigProp("issueCheckActiveMarkerOpacity", 0.6), this.addStrConfigProp("flexStructureAssocMarkerColor", "#0000AA"), this.addFloatConfigProp("flexStructureAssocMarkerOpacity", 0.5), this.addIntConfigProp("flexStructureAssocMarkerFontSize", 14), this.addStrConfigProp("flexStructureAssocMarkerFontFamily", "Arial, Helvetica, sans-serif");
   } }), Kekule.Editor.StructureConfigs = Class.create(Kekule.AbstractConfigs, { CLASS_NAME: "Kekule.Editor.StructureConfigs", initProperties: function() {
-    this.addStrConfigProp("defBondType", Kekule.BondType.DEFAULT, { enumSource: Kekule.BondType }), this.addIntConfigProp("defBondOrder", Kekule.BondOrder.SINGLE, { enumSource: Kekule.BondOrder }), this.addFloatConfigProp("defBondLength", Kekule.globalOptions.structure.defaultBondLength2D || 0.8), this.addConfigProp("defBondAngles", DataType.ARRAY, void 0, { scope: e15.PUBLIC }), this.addFloatConfigProp("bondConstrainedDirectionDelta", void 0, { scope: e15.PUBLIC }), this.addConfigProp("bondConstrainedDirectionAngles", DataType.ARRAY, void 0, { scope: e15.PUBLIC }), this.addFloatConfigProp("bondConstrainedDirectionAngleThreshold", void 0, { scope: e15.PUBLIC }), this.addFloatConfigProp("initialBondDirection", void 0, { scope: e15.PUBLIC }), this.addStrConfigProp("defIsotopeId", "C"), this.addConfigProp("primaryOrgChemAtoms", DataType.ARRAY, void 0, { scope: e15.PUBLIC }), this.addIntConfigProp("maxFlexChainAtomCount", 0), this.addIntConfigProp("minFlexRingAtomCount", 3), this.addIntConfigProp("maxFlexRingAtomCount", 18), this.addHashConfigProp("enabledNonAtomNodeTypes", { RGroup: true, pseudoatomDummy: true, pseudoatomHetero: true, pseudoatomAny: true, variableAtomList: true, variableAtomNotList: true }), this.addHashConfigProp("enabledBondForms", { single: true, double: true, triple: true, quad: true, explicitAromatic: true, up: true, upInverted: true, down: true, downInverted: true, upOrDown: true, eOrZ: true, closer: true, ionic: false, coordinate: false, metallic: false, hydrogen: true });
+    this.addStrConfigProp("defBondType", Kekule.BondType.DEFAULT, { enumSource: Kekule.BondType }), this.addIntConfigProp("defBondOrder", Kekule.BondOrder.SINGLE, { enumSource: Kekule.BondOrder }), this.addFloatConfigProp("defBondLength", Kekule.globalOptions.structure.defaultBondLength2D || 0.8), this.addConfigProp("defBondAngles", DataType.ARRAY, void 0, { scope: e15.PUBLIC }), this.addFloatConfigProp("bondConstrainedDirectionDelta", void 0, { scope: e15.PUBLIC }), this.addConfigProp("bondConstrainedDirectionAngles", DataType.ARRAY, void 0, { scope: e15.PUBLIC }), this.addFloatConfigProp("bondConstrainedDirectionAngleThreshold", void 0, { scope: e15.PUBLIC }), this.addFloatConfigProp("initialBondDirection", void 0, { scope: e15.PUBLIC }), this.addStrConfigProp("defIsotopeId", "C"), this.addConfigProp("primaryOrgChemAtoms", DataType.ARRAY, void 0, { scope: e15.PUBLIC }), this.addIntConfigProp("maxFlexChainAtomCount", 0), this.addIntConfigProp("minFlexRingAtomCount", 3), this.addIntConfigProp("maxFlexRingAtomCount", 18), this.addHashConfigProp("enabledNonAtomNodeTypes", { RGroup: true, pseudoatomDummy: true, pseudoatomHetero: true, pseudoatomAny: true, variableAtomList: true, variableAtomNotList: true }), this.addHashConfigProp("enabledBondForms", { single: true, double: true, triple: true, quad: true, explicitAromatic: true, up: true, upInverted: true, down: true, downInverted: true, upOrDown: true, eOrZ: true, closer: true, ionic: false, coordinate: false, metallic: false, hydrogen: true, transition: true });
   }, initPropValues: function() {
     this.tryApplySuper("initPropValues");
     var e16 = Math.PI / 180, t10 = [], r12 = Kekule.BondOrder, i11 = 2 * Math.PI / 3;
@@ -86809,8 +87112,8 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
       (f7 = new Kekule.Widget.RadioButton(d5, m5)).setHint(c8).addClassName(p5), f7[this.DATA_FIELD] = { arrowType: r13.NONE, arrowSide: (this.getDefaultValue() || {}).arrowSide }, this._arrowStyleButtons.push(f7);
     }
     for (var h7 = 0, g4 = s6.length; h7 < g4; ++h7) for (var C2 = 0, _3 = l8.length; C2 < _3; ++C2) {
-      var m5, f7, S5 = n12[s6[h7]], y5 = a7[l8[C2]];
-      c8 = m5 = S5 + " / " + y5, p5 = i11.GLYPH_PATH_ARROW_STYLE_BUTTON + "-" + S5 + "-" + y5;
+      var m5, f7, S5 = n12[s6[h7]], O2 = a7[l8[C2]];
+      c8 = m5 = S5 + " / " + O2, p5 = i11.GLYPH_PATH_ARROW_STYLE_BUTTON + "-" + S5 + "-" + O2;
       (f7 = new Kekule.Widget.RadioButton(d5, m5)).setHint(c8).addClassName(p5), f7[this.DATA_FIELD] = { arrowType: s6[h7], arrowSide: l8[C2] }, this._arrowStyleButtons.push(f7);
     }
     return d5.setShowGlyph(true).setShowText(false), this._updateStyleButtons(this._arrowStyleButtons), d5.appendToElem(t11), [d5];
@@ -87545,20 +87848,20 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
     var i12 = Kekule.CoordMode, o15 = this.getChemSpace(), n12 = r13 === i12.COORD3D, a7 = ["x", "y"];
     n12 && a7.push("z");
     for (var s6 = this.getEditorConfigs().getChemSpaceConfigs(), l8 = this._getChemSpaceObjScreenLengthRatio(), d5 = s6.getDefPadding() * l8, u7 = n12 ? o15.getSize3D() : o15.getSize2D(), c8 = Kekule.BoxUtils.getMinMaxCoords(e16), p5 = c8.min, h7 = {}, g4 = false, C2 = 0, _3 = a7.length; C2 < _3; ++C2) {
-      (y5 = p5[a7[C2]]) < d5 ? (h7[a7[C2]] = d5 - y5, g4 = true) : h7[a7[C2]] = 0;
+      (O2 = p5[a7[C2]]) < d5 ? (h7[a7[C2]] = d5 - O2, g4 = true) : h7[a7[C2]] = 0;
     }
     var m5 = c8.max, f7 = {}, S5 = false;
     for (C2 = 0, _3 = a7.length; C2 < _3; ++C2) {
-      var y5;
-      (y5 = m5[a7[C2]]) > u7[a7[C2]] - d5 ? (f7[a7[C2]] = y5 - (u7[a7[C2]] - d5), S5 = true) : f7[a7[C2]] = 0;
+      var O2;
+      (O2 = m5[a7[C2]]) > u7[a7[C2]] - d5 ? (f7[a7[C2]] = O2 - (u7[a7[C2]] - d5), S5 = true) : f7[a7[C2]] = 0;
     }
-    var O2 = {}, E3 = {};
+    var y5 = {}, E3 = {};
     if (g4 || S5) {
       var T3 = n12 ? s6.getAutoExpandScreenSize2D() : s6.getAutoExpandScreenSize3D(), A2 = t10.multiply(T3, l8);
       for (C2 = 0, _3 = a7.length; C2 < _3; ++C2) {
         var k4 = a7[C2];
-        O2[k4] = h7[k4] + f7[k4];
-        var b5 = Math.ceil(O2[k4] / A2[k4]);
+        y5[k4] = h7[k4] + f7[k4];
+        var b5 = Math.ceil(y5[k4] / A2[k4]);
         E3[k4] = b5 * A2[k4];
       }
       var I3 = { newSize: t10.add(u7, E3) };
@@ -87697,16 +88000,16 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
         }
       }
       return i13;
-    }(p5, this.getChemSpace()), S5 = this.getChemSpace(), y5 = [], O2 = (this.getCoordMode(), this.getAllowCoordBorrow(), p5.length);
-    for (g4 = 0; g4 < O2; ++g4) {
-      (A2 = (T3 = p5[g4]).clone()).clearIds && A2.clearIds(), y5.push(A2);
+    }(p5, this.getChemSpace()), S5 = this.getChemSpace(), O2 = [], y5 = (this.getCoordMode(), this.getAllowCoordBorrow(), p5.length);
+    for (g4 = 0; g4 < y5; ++g4) {
+      (A2 = (T3 = p5[g4]).clone()).clearIds && A2.clearIds(), O2.push(A2);
     }
     var E3 = [];
     for (g4 = 0, C2 = f7.length; g4 < C2; ++g4) {
-      (D2 = u7(f7[g4], p5, y5)) && E3.push(D2);
+      (D2 = u7(f7[g4], p5, O2)) && E3.push(D2);
     }
-    for (g4 = 0; g4 < O2; ++g4) {
-      var T3 = p5[g4], A2 = y5[g4];
+    for (g4 = 0; g4 < y5; ++g4) {
+      var T3 = p5[g4], A2 = O2[g4];
       if (l8(A2, T3, h7.get(T3)), i12 && a7 && (S5.appendChild(A2), r13)) {
         var k4 = this.getObjectScreenCoord(A2), b5 = Kekule.CoordUtils.add(k4, r13);
         this.setObjectScreenCoord(A2, b5);
@@ -87714,19 +88017,19 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
     }
     for (g4 = 0, C2 = E3.length; g4 < C2; ++g4) {
       var I3, D2 = E3[g4];
-      if (d5(D2.srcObj, y5)) {
+      if (d5(D2.srcObj, O2)) {
         if (e15.isArray(D2.dest)) {
           I3 = [];
           for (var P3 = 0, v4 = D2.dest.length; P3 < v4; ++P3) {
             var R3 = D2.dest[P3];
-            d5(R3, y5) && I3.push(R3);
+            d5(R3, O2) && I3.push(R3);
           }
           I3.length || (I3 = null);
-        } else d5(D2.dest, y5) && (I3 = D2.dest);
+        } else d5(D2.dest, O2) && (I3 = D2.dest);
         I3 && D2.srcObj.setPropValue(D2.srcProp.name, I3);
       }
     }
-    return h7.finalize(), y5;
+    return h7.finalize(), O2;
   }, cloneSelection: function(t11, r13, i12) {
     void 0 === t11 && (t11 = this.getDefaultCloneScreenCoordOffset());
     var o15 = this.getSelection();
@@ -87753,13 +88056,13 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
   }, _createLosingChemMarkerOnStructFragment: function(e16) {
     e16.beginUpdate();
     try {
-      e16.getCharge && e16.getCharge() && e16.fetchChargeMarker(true);
+      e16.hasExplicitCharge && e16.hasExplicitCharge() && e16.fetchChargeMarker(true);
       e16.getNodes();
       for (var t11 = 0, r13 = e16.getNodeCount(); t11 < r13; ++t11) {
         var i12 = e16.getNodeAt(t11);
         i12.beginUpdate();
         try {
-          i12.getCharge() && i12.fetchChargeMarker(true), i12.getRadical() && i12.fetchRadicalMarker(true), i12.getNodeAt && this._createLosingChemMarkerOnStructFragment(i12);
+          i12.hasExplicitChargeOrElectronicBias && i12.hasExplicitChargeOrElectronicBias() && i12.fetchChargeMarker(true), i12.getRadical() && i12.fetchRadicalMarker(true), i12.getNodeAt && this._createLosingChemMarkerOnStructFragment(i12);
         } finally {
           i12.endUpdate();
         }
@@ -87777,7 +88080,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
     var e16 = this.getRenderConfigs().getDisplayLabelConfigs();
     return "~" + (e16 ? e16.getVariableAtom() : Kekule.ChemStructureNodeLabels.VARIABLE_ATOM);
   }, getEnabledBondFormData: function() {
-    for (var e16 = Kekule.BondType, t11 = Kekule.BondOrder, r13 = Kekule.BondStereo, i12 = Kekule.$L, o15 = "K-Chem-MolBondIaController-", n12 = { single: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_SINGLE"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_SINGLE"), htmlClass: o15 + "Single", isDefault: true, bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.NONE } }, double: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_DOUBLE"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_DOUBLE"), htmlClass: o15 + "Double", bondProps: { bondType: e16.COVALENT, bondOrder: t11.DOUBLE, stereo: r13.NONE } }, triple: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_TRIPLE"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_TRIPLE"), htmlClass: o15 + "Triple", bondProps: { bondType: e16.COVALENT, bondOrder: t11.TRIPLE, stereo: r13.NONE } }, quad: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_QUAD"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_QUAD"), htmlClass: o15 + "Quad", bondProps: { bondType: e16.COVALENT, bondOrder: t11.QUAD, stereo: r13.NONE } }, explicitAromatic: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_EXPLICIT_AROMATIC"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_EXPLICIT_AROMATIC"), htmlClass: o15 + "Aromatic", bondProps: { bondType: e16.COVALENT, bondOrder: t11.EXPLICIT_AROMATIC, stereo: r13.NONE } }, up: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_WEDGEUP"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_WEDGEUP"), htmlClass: o15 + "WedgeUp", bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.UP } }, upInverted: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_WEDGEUP_INVERTED"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_WEDGEUP_INVERTED"), htmlClass: o15 + "WedgeUpInverted", bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.UP_INVERTED } }, down: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_WEDGEDOWN"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_WEDGEDOWN"), htmlClass: o15 + "WedgeDown", bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.DOWN } }, downInverted: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_WEDGEDOWN_INVERTED"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_WEDGEDOWN_INVERTED"), htmlClass: o15 + "WedgeDownInverted", bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.DOWN_INVERTED } }, upOrDown: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_WAVY"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_WAVY"), htmlClass: o15 + "WedgeUpOrDown", bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.UP_OR_DOWN } }, closer: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_CLOSER"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_CLOSER"), htmlClass: o15 + "Closer", bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.CLOSER } }, eOrZ: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_DOUBLE_EITHER"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_DOUBLE_EITHER"), htmlClass: o15 + "Double-Either", bondProps: { bondType: e16.COVALENT, bondOrder: t11.DOUBLE, stereo: r13.E_OR_Z } }, ionic: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_IONIC"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_IONIC"), htmlClass: o15 + "Ionic", bondProps: { bondType: e16.IONIC, bondOrder: t11.SINGLE, stereo: r13.NONE } }, coordinate: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_COORDINATE"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_COORDINATE"), htmlClass: o15 + "Coordinate", bondProps: { bondType: e16.COORDINATE, bondOrder: t11.SINGLE, stereo: r13.NONE } }, metallic: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_METALLIC"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_METALLIC"), htmlClass: o15 + "Metallic", bondProps: { bondType: e16.METALLIC, bondOrder: t11.SINGLE, stereo: r13.NONE } }, hydrogen: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_HYDROGEN"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_HYDROGEN"), htmlClass: o15 + "Hydrogen", bondProps: { bondType: e16.HYDROGEN, bondOrder: t11.SINGLE, stereo: r13.NONE } } }, a7 = (i12("ChemWidgetTexts.CAPTION_MOL_BOND_DOUBLE"), i12("ChemWidgetTexts.HINT_MOL_BOND_DOUBLE"), this.getEditorConfigs().getStructureConfigs().getEnabledBondForms()), s6 = Kekule.ObjUtils.getOwnedFieldNames(a7, false), l8 = [], d5 = 0, u7 = s6.length; d5 < u7; ++d5) {
+    for (var e16 = Kekule.BondType, t11 = Kekule.BondOrder, r13 = Kekule.BondStereo, i12 = Kekule.$L, o15 = "K-Chem-MolBondIaController-", n12 = { single: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_SINGLE"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_SINGLE"), htmlClass: o15 + "Single", isDefault: true, bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.NONE } }, double: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_DOUBLE"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_DOUBLE"), htmlClass: o15 + "Double", bondProps: { bondType: e16.COVALENT, bondOrder: t11.DOUBLE, stereo: r13.NONE } }, triple: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_TRIPLE"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_TRIPLE"), htmlClass: o15 + "Triple", bondProps: { bondType: e16.COVALENT, bondOrder: t11.TRIPLE, stereo: r13.NONE } }, quad: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_QUAD"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_QUAD"), htmlClass: o15 + "Quad", bondProps: { bondType: e16.COVALENT, bondOrder: t11.QUAD, stereo: r13.NONE } }, explicitAromatic: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_EXPLICIT_AROMATIC"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_EXPLICIT_AROMATIC"), htmlClass: o15 + "Aromatic", bondProps: { bondType: e16.COVALENT, bondOrder: t11.EXPLICIT_AROMATIC, stereo: r13.NONE } }, up: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_WEDGEUP"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_WEDGEUP"), htmlClass: o15 + "WedgeUp", bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.UP } }, upInverted: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_WEDGEUP_INVERTED"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_WEDGEUP_INVERTED"), htmlClass: o15 + "WedgeUpInverted", bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.UP_INVERTED } }, down: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_WEDGEDOWN"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_WEDGEDOWN"), htmlClass: o15 + "WedgeDown", bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.DOWN } }, downInverted: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_WEDGEDOWN_INVERTED"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_WEDGEDOWN_INVERTED"), htmlClass: o15 + "WedgeDownInverted", bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.DOWN_INVERTED } }, upOrDown: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_WAVY"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_WAVY"), htmlClass: o15 + "WedgeUpOrDown", bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.UP_OR_DOWN } }, closer: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_CLOSER"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_CLOSER"), htmlClass: o15 + "Closer", bondProps: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.CLOSER } }, eOrZ: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_DOUBLE_EITHER"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_DOUBLE_EITHER"), htmlClass: o15 + "Double-Either", bondProps: { bondType: e16.COVALENT, bondOrder: t11.DOUBLE, stereo: r13.E_OR_Z } }, ionic: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_IONIC"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_IONIC"), htmlClass: o15 + "Ionic", bondProps: { bondType: e16.IONIC, bondOrder: t11.SINGLE, stereo: r13.NONE } }, coordinate: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_COORDINATE"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_COORDINATE"), htmlClass: o15 + "Coordinate", bondProps: { bondType: e16.COORDINATE, bondOrder: t11.SINGLE, stereo: r13.NONE } }, metallic: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_METALLIC"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_METALLIC"), htmlClass: o15 + "Metallic", bondProps: { bondType: e16.METALLIC, bondOrder: t11.SINGLE, stereo: r13.NONE } }, hydrogen: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_HYDROGEN"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_HYDROGEN"), htmlClass: o15 + "Hydrogen", bondProps: { bondType: e16.HYDROGEN, bondOrder: t11.SINGLE, stereo: r13.NONE } }, transition: { text: i12("ChemWidgetTexts.CAPTION_MOL_BOND_TRANSITION"), hint: i12("ChemWidgetTexts.HINT_MOL_BOND_TRANSITION"), htmlClass: o15 + "Transition", bondProps: { bondType: e16.TRANSITION, bondOrder: t11.SINGLE, stereo: r13.NONE } } }, a7 = (i12("ChemWidgetTexts.CAPTION_MOL_BOND_DOUBLE"), i12("ChemWidgetTexts.HINT_MOL_BOND_DOUBLE"), this.getEditorConfigs().getStructureConfigs().getEnabledBondForms()), s6 = Kekule.ObjUtils.getOwnedFieldNames(a7, false), l8 = [], d5 = 0, u7 = s6.length; d5 < u7; ++d5) {
       var c8 = s6[d5];
       a7[c8] && (DataType.isObjectValue(a7[c8]) ? l8.push(a7[c8]) : n12[c8] && l8.push(n12[c8]));
     }
@@ -87882,8 +88185,8 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
         a7 = t11.originBondDirectionAngle + f7 * l8, c8 = true;
       }
       if (c8 || (a7 = h7), this.getAllowLengthChangeInConstrainedMoving(e16)) {
-        var S5 = this.getEditor().getDefBondScreenLength(), y5 = g4 / S5, O2 = this.getEditorConfigs().getInteractionConfigs().getConstrainedResizeStep();
-        s6 = S5 * (y5 = (Math.round(y5 / O2) || 1) * O2);
+        var S5 = this.getEditor().getDefBondScreenLength(), O2 = g4 / S5, y5 = this.getEditorConfigs().getInteractionConfigs().getConstrainedResizeStep();
+        s6 = S5 * (O2 = (Math.round(O2 / y5) || 1) * y5);
       } else s6 = t11.connectorScreenLength;
       i12 = o15.add(t11.refScreenCoord, { x: s6 * Math.cos(a7), y: s6 * Math.sin(a7) });
     } else i12 = n12;
@@ -87987,27 +88290,27 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
     Kekule.ArrayUtils.pushUnique(l8, s6);
     var d5 = this.getMergeOperationsInManipulating(), u7 = this.getStickOperations(), c8 = this, p5 = 1 === a7.length && a7[0] instanceof Kekule.ChemStructureConnector, h7 = 1 === s6.length && s6[0] instanceof Kekule.BaseStructureNode && (this._objCanBeMagneticMerged(s6[0]) || this._objCanBeMagneticSticked(s6[0])), g4 = n12 === o15.MOVE && !this.getIsOffsetManipulating() && (p5 && this.getEnableConnectorMerge() || h7 && this.getEnableNodeMerge()), C2 = !p5 && this.getEnableMagneticMerge();
     if (C2 || g4) {
-      var _3 = this.getManipulateObjCurrInfoMap(), m5 = this.getManipulateObjInfoMap(), f7 = [], S5 = [], y5 = [], O2 = [];
+      var _3 = this.getManipulateObjCurrInfoMap(), m5 = this.getManipulateObjInfoMap(), f7 = [], S5 = [], O2 = [], y5 = [];
       if (g4) {
         var E3 = p5 ? a7[0] : s6[0], T3 = this._calcMagneticMergeOrStickInfoOnScreenCoord(e16, E3, this._isManipulatingSingleStickedObj(s6), _3, m5, l8, t11);
-        if (T3) f7 = [0], S5 = [T3.magneticObj], y5 = [T3.magneticDest], O2 = [T3.magneticType];
+        if (T3) f7 = [0], S5 = [T3.magneticObj], O2 = [T3.magneticDest], y5 = [T3.magneticType];
         else if (p5 && this.getEnableConnectorMerge()) {
           var A2 = i12.getBoundInfosAtCoord(e16, null, this.getCurrBoundInflation()), k4 = Kekule.ChemStructureConnector, b5 = (E3 = a7[0], this._findSuitableMergeTargetBoundInfo(A2, l8, k4, function(e17) {
             return c8._canMergeConnectors(E3, e17);
           }));
-          b5 && (f7 = [0], S5 = [E3], y5 = [b5.obj], O2 = [t11.MERGE_BOND]);
+          b5 && (f7 = [0], S5 = [E3], O2 = [b5.obj], y5 = [t11.MERGE_BOND]);
         }
       }
       if (!S5.length && C2) {
         var I3 = this._calcMagneticMergeOrStickInfos(s6, _3, m5, l8, t11);
-        f7 = I3.magneticObjIndexes, S5 = I3.magneticObjs, y5 = I3.magneticDests, O2 = I3.magneticTypes;
+        f7 = I3.magneticObjIndexes, S5 = I3.magneticObjs, O2 = I3.magneticDests, y5 = I3.magneticTypes;
       }
       if (S5.length || u7.length) {
         var D2 = S5.length;
         this.setAllManipulateObjsMerged(D2 === s6.length);
         for (var P3 = 1 === D2, v4 = false, R3 = false, K2 = [], M4 = [], N4 = 0, L2 = S5.length; N4 < L2; ++N4) {
-          var x4 = S5[N4], B3 = y5[N4], w4 = f7[N4];
-          if (O2[N4] === t11.STICK) {
+          var x4 = S5[N4], B3 = O2[N4], w4 = f7[N4];
+          if (y5[N4] === t11.STICK) {
             if (!R3) {
               if (!(V3 = u7[w4]) || !this.isSameNodeStick(V3, x4, B3)) {
                 R3 = true;
@@ -88042,8 +88345,8 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
           v4 && this.reverseMergeOpers(this.getMergeOperationsInManipulating()), R3 && this.reverseStickOpers(this.getStickOperations());
           var U2 = Kekule.CoordUtils;
           if (1 === D2 || i12.getCoordMode() === Kekule.CoordMode.COORD3D) {
-            if (O2[0] !== t11.MERGE_BOND) {
-              var W = (ie = _3.get(S5[0])) && ie.screenCoord, F2 = i12.getObjectScreenCoord(y5[0]);
+            if (y5[0] !== t11.MERGE_BOND) {
+              var W = (ie = _3.get(S5[0])) && ie.screenCoord, F2 = i12.getObjectScreenCoord(O2[0]);
               if (W && F2) {
                 var H3 = U2.substract(F2, W), G2 = false, z3 = Kekule.NumUtils.isFloatEqual;
                 if (!z3(H3.x, 0, 1e-10) || !z3(H3.y, 0, 1e-10)) for (N4 = 0, L2 = s6.length; N4 < L2; ++N4) {
@@ -88066,7 +88369,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
           } else if (D2 > 1 && i12.getCoordMode() !== Kekule.CoordMode.COORD3D) {
             var X = S5[0], J = S5[1];
             if (X && J) {
-              var Z3 = m5.get(X).screenCoord, q2 = m5.get(J).screenCoord, Q2 = i12.getObjectScreenCoord(y5[0]), ee = i12.getObjectScreenCoord(y5[1]), te = U2.calcCoordGroup2DTransformParams(Z3, q2, Q2, ee), re = U2.calcTransform2DMatrix(te);
+              var Z3 = m5.get(X).screenCoord, q2 = m5.get(J).screenCoord, Q2 = i12.getObjectScreenCoord(O2[0]), ee = i12.getObjectScreenCoord(O2[1]), te = U2.calcCoordGroup2DTransformParams(Z3, q2, Q2, ee), re = U2.calcTransform2DMatrix(te);
               for (G2 = false, N4 = 0, L2 = s6.length; N4 < L2; ++N4) {
                 x4 = s6[N4];
                 if (S5.indexOf(x4) < 0) {
@@ -88091,10 +88394,10 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
           }
           if (v4 || R3) {
             var oe = [];
-            this._mergeOperationsChanged(D2, S5, y5);
+            this._mergeOperationsChanged(D2, S5, O2);
             for (N4 = 0, L2 = D2; N4 < L2; ++N4) {
-              x4 = S5[N4], B3 = y5[N4], w4 = f7[N4];
-              var ne = O2[N4];
+              x4 = S5[N4], B3 = O2[N4], w4 = f7[N4];
+              var ne = y5[N4];
               if (ne === t11.STICK) {
                 if (B3 !== m5.get(x4).stickTarget) var ae = this.createNodeStickOperation(x4, B3);
                 this.getStickOperations()[w4] = ae, B3 || oe.push({ index: w4, obj: x4, newInfo: _3.get(x4) });
@@ -88112,7 +88415,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
             }
           }
         }
-        return void i12.hotTrackOnObj(y5);
+        return void i12.hotTrackOnObj(O2);
       }
     }
     (d5 = this.getMergeOperationsInManipulating()) && d5.length && (this._mergeOperationsChanged(0, [], []), this.reverseMergeOpers(d5)), this.tryApplySuper("applyManipulatingObjsInfo", [e16]);
@@ -88357,14 +88660,14 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
     }
     if (u7) {
       var p5 = this.getEditor();
-      p5.beginUpdateObject();
+      p5.beginManipulateObject(), p5.beginUpdateObject();
       try {
         var h7 = new Kekule.ChemObjOperation.Modify(e16, d5, this.getEditor());
         h7.execute(), p5.pushOperation(h7);
         for (var g4 = [e16].concat(e16.getConnectedObjs()), C2 = [], _3 = 0, m5 = g4.length; _3 < m5; ++_3) C2.push({ obj: g4[_3] });
         this.getEditor().objectsChanged(C2);
       } finally {
-        p5.endUpdateObject();
+        p5.endUpdateObject(), p5.endManipulateObject();
       }
     }
   }, react_pointerdown: function(e16) {
@@ -89095,8 +89398,8 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
       }, c8 = function(e16, t12, r14, i13, o16, n13, a8) {
         var l9, p6, h8 = Kekule.BondOrder, g5 = e16 - 1;
         g5 < 0 && (g5 = t12.length - 1);
-        var C3, _4 = !!n13[g5], m6 = _4 ? n13[g5] : null, f8 = t12[e16], S6 = i13[e16], y5 = S6 && S6.getBondOrder(), O2 = 0;
-        if (y5 && s6(y5)) l9 = [y5], p6 = [h8.SINGLE], m6 && s6(m6) && ++O2;
+        var C3, _4 = !!n13[g5], m6 = _4 ? n13[g5] : null, f8 = t12[e16], S6 = i13[e16], O2 = S6 && S6.getBondOrder(), y5 = 0;
+        if (O2 && s6(O2)) l9 = [O2], p6 = [h8.SINGLE], m6 && s6(m6) && ++y5;
         else if (_4 && s6(m6)) l9 = [h8.SINGLE];
         else {
           for (var E3 = f8.getConnectedChemNodes(), T3 = false, A2 = false, k4 = 0, b5 = E3.length; k4 < b5; ++k4) {
@@ -89107,9 +89410,9 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
         }
         for (k4 = 0, b5 = l9.length; k4 < b5; ++k4) {
           var D2 = l9[k4];
-          if (n13[e16] = D2, a8[e16] = p6 && p6[k4] || D2, e16 < t12.length - 1 && (O2 += c8(++e16, t12, r14, i13, o16, n13, a8), (Kekule.ObjUtils.isUnset(C3) || C3 > O2) && (C3 = O2, D2), O2 <= 0)) break;
+          if (n13[e16] = D2, a8[e16] = p6 && p6[k4] || D2, e16 < t12.length - 1 && (y5 += c8(++e16, t12, r14, i13, o16, n13, a8), (Kekule.ObjUtils.isUnset(C3) || C3 > y5) && (C3 = y5, D2), y5 <= 0)) break;
         }
-        return O2;
+        return y5;
       }, p5 = [], h7 = [], g4 = false, C2 = 0, _3 = a7.length; C2 < _3; ++C2) {
         var m5 = a7[C2];
         if (m5 && l8(m5)) {
@@ -89463,24 +89766,24 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
   } }), Kekule.Editor.IaControllerManager.register(Kekule.Editor.AttachedMarkerIaController, Kekule.Editor.ChemSpaceEditor), Kekule.Editor.MolNodeChargeIaController = Class.create(Kekule.Editor.AttachedMarkerIaController, { CLASS_NAME: "Kekule.Editor.MolNodeChargeIaController", initialize: function(e16) {
     this.tryApplySuper("initialize", [e16]), this.setChargeInc(1);
   }, initProperties: function() {
-    this.defineProp("chargeInc", { dataType: DataType.NUMBER, serializable: false }), this.defineProp("charge", { dataType: DataType.NUMBER, serializable: false }), this.defineProp("radical", { dataType: DataType.INT, serializable: false }), this.defineProp("currNode", { dataType: DataType.OBJECT, serializable: false });
+    this.defineProp("chargeInc", { dataType: DataType.NUMBER, serializable: false }), this.defineProp("charge", { dataType: DataType.NUMBER, serializable: false }), this.defineProp("electronicBiasInc", { dataType: DataType.NUMBER, serializable: false }), this.defineProp("electronicBias", { dataType: DataType.NUMBER, serializable: false }), this.defineProp("radical", { dataType: DataType.INT, serializable: false }), this.defineProp("currNode", { dataType: DataType.OBJECT, serializable: false });
   }, initPropValues: function() {
     this.tryApplySuper("initPropValues"), this.setTargetClass(Kekule.ChemStructureNode);
   }, createOperations: function(e16) {
-    var t11 = false, r13 = false, i12 = {}, o15 = e16.getCharge();
-    Kekule.ObjUtils.notUnset(this.getCharge()) ? o15 !== this.getCharge() && (i12.charge = this.getCharge(), t11 = true) : this.getChargeInc() && (o15 += this.getChargeInc(), i12.charge = o15, t11 = true);
-    var n12 = e16.getRadical();
-    this.getRadical() !== n12 && (i12.radical = this.getRadical(), r13 = true);
-    var a7, s6, l8 = [], d5 = [], u7 = this.getEditor();
-    if (t11) {
-      var c8 = e16.fetchChargeMarker(false);
-      0 === i12.charge || c8 || ((a7 = new Kekule.ChemMarker.Charge()).setValue(i12.charge), d5.push(new Kekule.ChemObjOperation.Add(a7, e16, null, u7))), 0 === i12.charge && c8 && d5.push(new Kekule.ChemObjOperation.Remove(c8, null, null, u7));
+    var t11 = false, r13 = false, i12 = false, o15 = {}, n12 = e16.getCharge(), a7 = e16.getElectronicBias && e16.getElectronicBias();
+    Kekule.ObjUtils.notUnset(this.getCharge()) ? n12 !== this.getCharge() && (o15.charge = this.getCharge(), t11 = true) : this.getChargeInc() && (n12 += this.getChargeInc(), o15.charge = n12, t11 = true), Kekule.ObjUtils.notUnset(this.getElectronicBias()) ? a7 !== this.getElectronicBias() && (o15.electronicBias = this.getElectronicBias(), r13 = true) : this.getElectronicBiasInc() && (a7 ? a7 += this.getElectronicBiasInc() : a7 = this.getElectronicBiasInc(), o15.electronicBias = a7, r13 = true);
+    var s6 = e16.getRadical();
+    this.getRadical() !== s6 && (o15.radical = this.getRadical(), i12 = true);
+    var l8, d5, u7 = [], c8 = [], p5 = [], h7 = this.getEditor();
+    if (t11 || r13) {
+      var g4 = e16.fetchChargeMarker(false);
+      g4 ? o15.charge || o15.electronicBias || p5.push(new Kekule.ChemObjOperation.Remove(g4, null, null, h7)) : 0 === o15.electronicBias && 0 === o15.charge || ((l8 = new Kekule.ChemMarker.Charge()).setValue({ electronicBias: o15.electronicBias, charge: o15.charge }), c8.push(new Kekule.ChemObjOperation.Add(l8, e16, null, h7)));
     }
-    if (r13) {
-      var p5 = e16.fetchRadicalMarker(false);
-      0 === i12.radical || p5 || ((a7 = new Kekule.ChemMarker.Radical()).setValue(i12.radical), d5.push(new Kekule.ChemObjOperation.Add(a7, e16, null, u7))), 0 === i12.radical && p5 && d5.push(new Kekule.ChemObjOperation.Remove(p5, null, null, u7));
+    if (i12) {
+      var C2 = e16.fetchRadicalMarker(false);
+      0 === o15.radical || C2 || ((l8 = new Kekule.ChemMarker.Radical()).setValue(o15.radical), c8.push(new Kekule.ChemObjOperation.Add(l8, e16, null, h7))), 0 === o15.radical && C2 && p5.push(new Kekule.ChemObjOperation.Remove(C2, null, null, h7));
     }
-    return l8 = l8.concat(d5), (t11 || r13) && (s6 = new Kekule.ChemObjOperation.Modify(e16, i12, this.getEditor()), l8.push(s6)), l8;
+    return u7 = u7.concat(c8), (t11 || r13 || i12) && (d5 = new Kekule.ChemObjOperation.Modify(e16, o15, this.getEditor()), u7.push(d5)), u7 = u7.concat(p5);
   } }), Kekule.Editor.IaControllerManager.register(Kekule.Editor.MolNodeChargeIaController, Kekule.Editor.ChemSpaceEditor);
 }(), function() {
   "use strict";
@@ -89606,7 +89909,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
       for (var e16 = Kekule.BondType, t11 = Kekule.BondOrder, r13 = Kekule.BondStereo, i12 = { single: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.NONE }, double: { bondType: e16.COVALENT, bondOrder: t11.DOUBLE, stereo: r13.NONE }, triple: { bondType: e16.COVALENT, bondOrder: t11.TRIPLE, stereo: r13.NONE }, quad: { bondType: e16.COVALENT, bondOrder: t11.QUAD, stereo: r13.NONE }, up: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.UP }, down: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.DOWN }, closer: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.CLOSER }, upOrDown: { bondType: e16.COVALENT, bondOrder: t11.SINGLE, stereo: r13.UP_OR_DOWN } }, o16 = Kekule.Editor.ActionOperationCreate.ChemConnectorModify, n12 = Kekule.Editor.createEditorOperationCreateActionClass, a7 = Kekule.ObjUtils.getOwnedFieldNames(i12), s6 = 0, l8 = a7.length; s6 < l8; ++s6) n12(null, "bond_" + a7[s6], o16, i12[a7[s6]]);
     }();
   }
-  Kekule.ChemWidget.HtmlClassNames = Object.extend(Kekule.ChemWidget.HtmlClassNames, { ACTION_UNDO: "K-Chem-Undo", ACTION_REDO: "K-Chem-Redo", ACTION_NEWDOC: "K-Chem-NewDoc", ACTION_SELECT_ALL: "K-Chem-SelectAll", ACTION_CLONE_SELECTION: "K-Chem-Clone-Selection", ACTION_COPY: "K-Chem-Copy", ACTION_CUT: "K-Chem-Cut", ACTION_PASTE: "K-Chem-Paste", ACTION_TOGGLE_SELECT: "K-Chem-Toggle-Select-State", ACTION_ERASE_SELECTION: "K-Chem-Erase-Selection", ACTION_RECHECK_ISSUES: "K-Chem-Recheck-Issues", ACTION_TOGGLE_OBJ_INSPECTOR: "K-Chem-Toggle-ObjInspector", ACTION_TOGGLE_ISSUE_INSPECTOR: "K-Chem-Toggle-IssueInspector", ACTION_TOGGLE_SHOW_ISSUES: "K-Chem-Toggle-ShowIssues" }), Object.extend(Kekule.ChemWidget.ComponentWidgetNames, { manipulateMarquee: "manipulateMarquee", manipulateLasso: "manipulateLasso", manipulateBrush: "manipulateBrush", manipulateAncestor: "manipulateAncestor", molBondSingle: "bondSingle", molBondDouble: "bondDouble", molBondTriple: "bondTriple", molBondCloser: "bondCloser", molBondWedgeUp: "bondWedgeUp", molBondWedgeDown: "bondWedgeDown", molBondWedgeUpOrDown: "bondWedgeUpOrDown", molBondDoubleEither: "bondDoubleEither", molChargeClear: "chargeClear", molChargePositive: "chargePositive", molChargeNegative: "chargeNegative", molRadicalSinglet: "radicalSinglet", molRadicalTriplet: "radicalTriplet", molRadicalDoublet: "radicalDoublet", molElectronLonePair: "electronLonePair", molChain: "chain", molRing3: "ring3", molRing4: "ring4", molRing5: "ring5", molRing6: "ring6", molRing7: "ring7", molRing8: "ring8", molRingAr6: "ringAr6", molRingAr5: "ringAr5", molFlexRing: "flexRing", molRepCyclopentaneHaworth1: "repCyclopentaneHaworth1", molRepCyclopentaneHaworth2: "repCyclopentaneHaworth2", molRepCyclohexaneHaworth1: "repCyclohexaneHaworth1", molRepCyclohexaneHaworth2: "repCyclohexaneHaworth2", molRepCyclohexaneChair1: "repCyclohexaneChair1", molRepCyclohexaneChair2: "repCyclohexaneChair2", molRepSubBondMark: "subBondMark", molRepMethane: "methane", molRepFischer1: "repFischer1", molRepFischer2: "repFischer2", molRepFischer3: "repFischer3", molRepSawhorseStaggered: "repSawhorseStaggered", molRepSawhorseEclipsed: "repSawhorseEclipsed", glyphRepLine: "repLine", glyphRepOpenArrowLine: "repOpenArrowLine", glyphRepTriangleArrowLine: "repTriangleArrowLine", glyphRepDiOpenArrowLine: "repDiOpenArrowLine", glyphRepDiTriangleArrowLine: "repDiTriangleArrowLine", glyphRepReversibleArrowLine: "repReversibleArrowLine", glyphRepOpenArrowDiLine: "repOpenArrowDiLine", glyphRepOpenArrowArc: "repOpenArrowArc", glyphRepSingleSideOpenArrowArc: "repSingleSideOpenArrowArc", glyphRepHeatSymbol: "repHeatSymbol", glyphRepAddSymbol: "repAddSymbol", glyphElectronPushingArrow: "repElectronPushingArrow", glyphElectronPushingArrowDouble: "repElectronPushingArrowDouble", glyphElectronPushingArrowSingle: "repElectronPushingArrowSingle", glyphElectronPushingArrowBondForming: "repElectronPushingArrowBondForming", glyphRepSegment: "repGlyphSegment", glyphReactionArrowNormal: "repGlyphReactionArrowNormal", glyphReactionArrowReversible: "glyphReactionArrowReversible", glyphReactionArrowResonance: "glyphReactionArrowResonance", glyphReactionArrowRetrosynthesis: "glyphReactionArrowRetrosynthesis" }), Kekule.Editor.ActionOperUtils = { getObjsCenterScreenCoord: function(e16, t11) {
+  Kekule.ChemWidget.HtmlClassNames = Object.extend(Kekule.ChemWidget.HtmlClassNames, { ACTION_UNDO: "K-Chem-Undo", ACTION_REDO: "K-Chem-Redo", ACTION_NEWDOC: "K-Chem-NewDoc", ACTION_SELECT_ALL: "K-Chem-SelectAll", ACTION_CLONE_SELECTION: "K-Chem-Clone-Selection", ACTION_COPY: "K-Chem-Copy", ACTION_CUT: "K-Chem-Cut", ACTION_PASTE: "K-Chem-Paste", ACTION_TOGGLE_SELECT: "K-Chem-Toggle-Select-State", ACTION_ERASE_SELECTION: "K-Chem-Erase-Selection", ACTION_RECHECK_ISSUES: "K-Chem-Recheck-Issues", ACTION_TOGGLE_OBJ_INSPECTOR: "K-Chem-Toggle-ObjInspector", ACTION_TOGGLE_ISSUE_INSPECTOR: "K-Chem-Toggle-IssueInspector", ACTION_TOGGLE_SHOW_ISSUES: "K-Chem-Toggle-ShowIssues" }), Object.extend(Kekule.ChemWidget.ComponentWidgetNames, { manipulateMarquee: "manipulateMarquee", manipulateLasso: "manipulateLasso", manipulateBrush: "manipulateBrush", manipulateAncestor: "manipulateAncestor", molBondSingle: "bondSingle", molBondDouble: "bondDouble", molBondTriple: "bondTriple", molBondCloser: "bondCloser", molBondWedgeUp: "bondWedgeUp", molBondWedgeDown: "bondWedgeDown", molBondWedgeUpOrDown: "bondWedgeUpOrDown", molBondDoubleEither: "bondDoubleEither", molChargeClear: "chargeClear", molChargePositive: "chargePositive", molChargeNegative: "chargeNegative", molElectronicBiasPositive: "electronicBiasPositive", molElectronicBiasNegative: "electronicBiasNegative", molRadicalSinglet: "radicalSinglet", molRadicalTriplet: "radicalTriplet", molRadicalDoublet: "radicalDoublet", molElectronLonePair: "electronLonePair", molChain: "chain", molRing3: "ring3", molRing4: "ring4", molRing5: "ring5", molRing6: "ring6", molRing7: "ring7", molRing8: "ring8", molRingAr6: "ringAr6", molRingAr5: "ringAr5", molFlexRing: "flexRing", molRepCyclopentaneHaworth1: "repCyclopentaneHaworth1", molRepCyclopentaneHaworth2: "repCyclopentaneHaworth2", molRepCyclohexaneHaworth1: "repCyclohexaneHaworth1", molRepCyclohexaneHaworth2: "repCyclohexaneHaworth2", molRepCyclohexaneChair1: "repCyclohexaneChair1", molRepCyclohexaneChair2: "repCyclohexaneChair2", molRepSubBondMark: "subBondMark", molRepMethane: "methane", molRepFischer1: "repFischer1", molRepFischer2: "repFischer2", molRepFischer3: "repFischer3", molRepSawhorseStaggered: "repSawhorseStaggered", molRepSawhorseEclipsed: "repSawhorseEclipsed", glyphRepLine: "repLine", glyphRepOpenArrowLine: "repOpenArrowLine", glyphRepTriangleArrowLine: "repTriangleArrowLine", glyphRepDiOpenArrowLine: "repDiOpenArrowLine", glyphRepDiTriangleArrowLine: "repDiTriangleArrowLine", glyphRepReversibleArrowLine: "repReversibleArrowLine", glyphRepOpenArrowDiLine: "repOpenArrowDiLine", glyphRepOpenArrowArc: "repOpenArrowArc", glyphRepSingleSideOpenArrowArc: "repSingleSideOpenArrowArc", glyphRepHeatSymbol: "repHeatSymbol", glyphRepAddSymbol: "repAddSymbol", glyphElectronPushingArrow: "repElectronPushingArrow", glyphElectronPushingArrowDouble: "repElectronPushingArrowDouble", glyphElectronPushingArrowSingle: "repElectronPushingArrowSingle", glyphElectronPushingArrowBondForming: "repElectronPushingArrowBondForming", glyphRepSegment: "repGlyphSegment", glyphReactionArrowNormal: "repGlyphReactionArrowNormal", glyphReactionArrowReversible: "glyphReactionArrowReversible", glyphReactionArrowResonance: "glyphReactionArrowResonance", glyphReactionArrowRetrosynthesis: "glyphReactionArrowRetrosynthesis" }), Kekule.Editor.ActionOperUtils = { getObjsCenterScreenCoord: function(e16, t11) {
     for (var r13 = Kekule.BoxUtils, i12 = Kekule.CoordUtils, o16 = null, n12 = 0, a7 = t11.length; n12 < a7; ++n12) {
       var s6 = Kekule.Render.ObjUtils.getContainerBox(t11[n12], e16.getCoordMode(), e16.getAllowCoordBorrow());
       o16 = o16 ? r13.getContainerBox(s6, o16) : s6;
@@ -89635,8 +89938,8 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
         }
         if (_3) for (u7 = 0, c8 = d5.length; u7 < c8; ++u7) {
           g4 = d5[u7];
-          var y5 = t11.getObjectScreenCoord(g4), O2 = Kekule.CoordUtils.add(y5, _3);
-          t11.setObjectScreenCoord(g4, O2);
+          var O2 = t11.getObjectScreenCoord(g4), y5 = Kekule.CoordUtils.add(O2, _3);
+          t11.setObjectScreenCoord(g4, y5);
         }
         t11.pushOperation(h7), s6.autoSelect && t11.select(d5);
       } finally {
@@ -89894,7 +90197,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
   }, finalize: function() {
     this.getAttachedActions().finalize(), this.tryApplySuper("finalize");
   }, initProperties: function() {
-    this.defineProp("attachedActionClasses", { dataType: DataType.ARRAY, serializable: false, setter: null }), this.defineProp("attachedActions", { dataType: "Kekule.ActionList", serializable: false, setter: null }), this.defineProp("defaultAttachedAction", { dataType: "Kekule.Action", serializable: false });
+    this.defineProp("attachedActionClasses", { dataType: DataType.ARRAY, serializable: false, setter: null }), this.defineProp("attachedActions", { dataType: "Kekule.ActionList", serializable: false, setter: null }), this.defineProp("defaultAttachedAction", { dataType: "Kekule.Action", serializable: false }), this.defineProp("defaultAttachedActionClass", { dataType: DataType.CLASS, serializable: false });
   }, checkedChanged: function() {
     this.tryApplySuper("checkedChanged");
     var e16 = this.getChecked();
@@ -89907,13 +90210,26 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
         i12 || (i12 = this.getDefaultAttachedAction()), i12 && (i12.setChecked(false), i12.execute());
       } else t11.hideAssocToolbar();
     }
+  }, doSetDefaultAttachedActionClass: function(e16) {
+    if (this.setPropStoreFieldValue("defaultAttachedActionClass", e16), e16 && this.hasAttachedActions()) for (var t11 = 0, r13 = this.getAttachedActions().getActionCount(); t11 < r13; ++t11) {
+      var i12 = this.getAttachedActions().getActionAt(t11);
+      if (i12.getClass() === e16) {
+        this.setDefaultAttachedAction(i12);
+        break;
+      }
+    }
   }, hasAttachedActions: function() {
     return !!this.getAttachedActions().getActionCount();
   }, setAttachedActionIndex: function(e16, t11) {
     var r13 = this.getAttachedActions();
     return r13 && r13.setActionIndex(e16, t11), this;
   }, addAttachedAction: function(e16, t11) {
-    return this.getAttachedActions().add(e16), t11 && this.setDefaultAttachedAction(e16), this;
+    if (this.getAttachedActions().add(e16), t11) this.setDefaultAttachedAction(e16);
+    else if (void 0 === t11) {
+      let t12 = this.getDefaultAttachedActionClass();
+      t12 && e16.getClass() === t12 && this.setDefaultAttachedAction(e16);
+    }
+    return this;
   }, removeAttachedAction: function(e16) {
     return this.getDefaultAttachedAction() === e16 && this.setDefaultAttachedAction(null), this.getAttachedActions().remove(e16), this;
   }, clearAttachedActions: function() {
@@ -89943,20 +90259,22 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
     this.defineProp("iaControllerId", { dataType: DataType.STRING, serializable: false, setter: null });
   }, doExecute: function() {
     this.getEditor().setActiveIaControllerId(this.getIaControllerId());
-  } }), Kekule.Editor.createComposerIaControllerActionClass = function(e16, t11, r13, o16, n12, a7, s6, l8, d5, u7) {
+  } }), Kekule.Editor.createComposerIaControllerActionClass = function(e16, t11, r13, o16, n12, a7, s6, l8, d5, u7, c8) {
     n12 || (n12 = o16), n12.startsWith(Kekule.ChemWidget.HtmlClassNames.PREFIX) || (n12 = Kekule.ChemWidget.HtmlClassNames.PREFIX + n12);
-    var c8, p5 = { CLASS_NAME: e16, HTML_CLASSNAME: n12, initialize: function(e17) {
+    var p5, h7 = { CLASS_NAME: e16, HTML_CLASSNAME: n12, initialize: function(e17) {
       this.tryApplySuper("initialize", [e17, t11, r13, o16]), this.initAttachedActions && this.initAttachedActions();
     } };
-    (l8 && (p5 = Object.extend(p5, l8)), a7) && (p5.doExecute && (c8 = p5.doExecute), p5.doExecute = function() {
+    (l8 && (h7 = Object.extend(h7, l8)), c8 && (h7.initPropValues = function() {
+      this.tryApplySuper("initPropValues"), this.setPropValues(c8);
+    }), a7) && (h7.doExecute && (p5 = h7.doExecute), h7.doExecute = function() {
       var e17 = this.getEditor().getIaController(o16);
-      e17 && e17.setPropValues(a7), c8 ? c8.apply(this) : this.tryApplySuper("doExecute");
+      e17 && e17.setPropValues(a7), p5 ? p5.apply(this) : this.tryApplySuper("doExecute");
     });
-    s6 && (p5.initAttachedActions = function() {
+    s6 && (h7.initAttachedActions = function() {
       this.setPropStoreFieldValue("attachedActionClasses", s6);
     });
-    var h7 = Class.create(Kekule.Editor.ActionComposerSetIaController, p5);
-    return d5 && i11.push({ name: d5, actionClass: h7, widgetClass: u7 }), h7;
+    var g4 = Class.create(Kekule.Editor.ActionComposerSetIaController, h7);
+    return d5 && i11.push({ name: d5, actionClass: g4, widgetClass: u7 }), g4;
   }, Kekule.Editor.ActionComposerClientDragScrollController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerClientDragScrollController", Kekule.$L("ChemWidgetTexts.CAPTION_CLIENT_DRAGSCROLL"), Kekule.$L("ChemWidgetTexts.HINT_CLIENT_DRAGSCROLL"), "ClientDragScrollIaController", null, null, null, null, t10.dragScroll), Kekule.Editor.ActionComposerSetManipulateControllerMarquee = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetManipulateControllerMarquee", Kekule.$L("ChemWidgetTexts.CAPTION_MANIPULATE_MARQUEE"), Kekule.$L("ChemWidgetTexts.HINT_MANIPULATE_MARQUEE"), "SelectIaController", "SelectIaController-Marquee", { enableGestureManipulation: true, selectMode: Kekule.Editor.SelectMode.RECT }, null, { doExecute: function() {
     this.tryApplySuper("doExecute"), this.getEditor().setSelectMode(Kekule.Editor.SelectMode.RECT);
   } }, t10.manipulateMarquee), Kekule.Editor.ActionComposerSetManipulateControllerLasso = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetManipulateControllerLasso", Kekule.$L("ChemWidgetTexts.CAPTION_MANIPULATE_LASSO"), Kekule.$L("ChemWidgetTexts.HINT_MANIPULATE_LASSO"), "SelectIaController", "SelectIaController-Lasso", { enableGestureManipulation: true, selectMode: Kekule.Editor.SelectMode.POLYGON }, null, { doExecute: function() {
@@ -89969,7 +90287,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
     this.tryApplySuper("doExecute");
     var e16 = this.getEditor();
     e16.hasSelection() && e16.getActiveIaController().removeSelection();
-  } }, t10.erase), Kekule.Editor.ActionComposerSetTrackController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetTrackController", Kekule.$L("ChemWidgetTexts.CAPTION_TRACK_INPUT"), Kekule.$L("ChemWidgetTexts.HINT_TRACK_INPUT"), "TrackInputIaController", null, null, null, null, t10.trackInput), Kekule.Editor.ActionComposerSetBondControllerSingle = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerSingle", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_SINGLE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_SINGLE"), "MolBondIaController", "MolBondIaController-Single", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.SINGLE, bondStereo: Kekule.BondStereo.NONE }, null, null, t10.molBondSingle), Kekule.Editor.ActionComposerSetBondControllerDouble = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerDouble", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_DOUBLE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_DOUBLE"), "MolBondIaController", "MolBondIaController-Double", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.DOUBLE, bondStereo: Kekule.BondStereo.NONE }, null, null, t10.molBondDouble), Kekule.Editor.ActionComposerSetBondControllerTriple = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerTriple", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_TRIPLE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_TRIPLE"), "MolBondIaController", "MolBondIaController-Triple", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.TRIPLE, bondStereo: Kekule.BondStereo.NONE }, null, null, t10.molBondTriple), Kekule.Editor.ActionComposerSetBondControllerCloser = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerCloser", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_CLOSER"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_CLOSER"), "MolBondIaController", "MolBondIaController-Closer", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.SINGLE, bondStereo: Kekule.BondStereo.CLOSER }, null, null, t10.molBondCloser), Kekule.Editor.ActionComposerSetBondControllerWedgeUp = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerWedgeUp", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_WEDGEUP"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_WEDGEUP"), "MolBondIaController", "MolBondIaController-WedgeUp", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.SINGLE, bondStereo: Kekule.BondStereo.UP }, null, null, t10.molBondWedgeUp), Kekule.Editor.ActionComposerSetBondControllerWedgeDown = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerWedgeDown", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_WEDGEDOWN"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_WEDGEDOWN"), "MolBondIaController", "MolBondIaController-WedgeDown", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.SINGLE, bondStereo: Kekule.BondStereo.DOWN }, null, null, t10.molBondWedgeDown), Kekule.Editor.ActionComposerSetBondControllerWedgeUpOrDown = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerWedgeUpOrDown", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_WAVY"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_WAVY"), "MolBondIaController", "MolBondIaController-WedgeUpOrDown", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.SINGLE, bondStereo: Kekule.BondStereo.UP_OR_DOWN }, null, null, t10.molBondWedgeUpOrDown), Kekule.Editor.ActionComposerSetBondControllerDoubleEither = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerDoubleEither", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_DOUBLE_EITHER"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_DOUBLE_EITHER"), "MolBondIaController", "MolBondIaController-Double-Either", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.DOUBLE, bondStereo: Kekule.BondStereo.E_OR_Z }, null, null, t10.molBondDoubleEither), Kekule.Editor.ActionComposerSetRepositoryFischer1Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryFischer1Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_FISCHER1"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_FISCHER1"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-Fischer1", { repItemName: "fischer1" }, null, null, t10.molRepFischer1), Kekule.Editor.ActionComposerSetRepositoryFischer2Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryFischer2Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_FISCHER2"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_FISCHER2"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-Fischer2", { repItemName: "fischer2" }, null, null, t10.molRepFischer2), Kekule.Editor.ActionComposerSetRepositoryFischer3Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryFischer3Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_FISCHER3"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_FISCHER3"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-Fischer3", { repItemName: "fischer3" }, null, null, t10.molRepFischer3), Kekule.Editor.ActionComposerSetRepositorySawhorseStaggeredController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositorySawhorseStaggeredController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_SAWHORSE_STAGGERED"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_SAWHORSE_STAGGERED"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-SawhorseStaggered", { repItemName: "sawhorseStaggered" }, null, null, t10.molRepSawhorseStaggered), Kekule.Editor.ActionComposerSetRepositorySawhorseEclipsedController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositorySawhorseEclipsedController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_SAWHORSE_ECLIPSED"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_SAWHORSE_ECLIPSED"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-SawhorseEclipsed", { repItemName: "sawhorseEclipsed" }, null, null, t10.molRepSawhorseEclipsed), Kekule.Editor.ActionComposerSetRepositoryMethaneController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryMethaneController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_METHANE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_METHANE"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-Methane", { repItemName: "methane" }, null, null, t10.molRepMethane), Kekule.Editor.ActionComposerSetRepositorySubBondMarkController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositorySubBondMarkController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_SUBBOND_MARK"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_SUBBOND_MARK"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-SubBondMark", { repItemName: "substituentMark" }, null, null, t10.molRepSubBondMark), Kekule.Editor.ActionComposerSetRepositoryMolFlexChainController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryMolFlexChainController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_FLEXCHAIN"), Kekule.$L("ChemWidgetTexts.HINT_MOL_FLEXCHAIN"), "MolFlexChainIaController", "MolFlexChainIaController", null, null, null, t10.molChain), Kekule.Editor.ActionComposerSetBondController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND"), "MolBondIaController", null, null, [Kekule.Editor.ActionComposerSetBondControllerSingle, Kekule.Editor.ActionComposerSetBondControllerDouble, Kekule.Editor.ActionComposerSetBondControllerTriple, Kekule.Editor.ActionComposerSetBondControllerWedgeUp, Kekule.Editor.ActionComposerSetBondControllerWedgeDown, Kekule.Editor.ActionComposerSetRepositoryMolFlexChainController, Kekule.Editor.ActionComposerSetTrackController, Kekule.Editor.ActionComposerSetRepositoryFischer1Controller, Kekule.Editor.ActionComposerSetRepositorySawhorseStaggeredController, Kekule.Editor.ActionComposerSetRepositorySawhorseEclipsedController], null, t10.molBond), Kekule.Editor.ActionComposerSetAtomController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetAtomController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_ATOM"), Kekule.$L("ChemWidgetTexts.HINT_MOL_ATOM"), "MolAtomIaController", null, null, null, null, t10.molAtom), Kekule.Editor.ActionComposerSetFormulaController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetFormulaController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_FORMULA"), Kekule.$L("ChemWidgetTexts.HINT_MOL_FORMULA"), "FormulaIaController", null, null, null, null, t10.molFormula), Kekule.Editor.ActionComposerSetAtomAndFormulaController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetAtomAndFormulaController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_ATOM_AND_FORMULA"), Kekule.$L("ChemWidgetTexts.HINT_MOL_ATOM_AND_FORMULA"), "MolAtomIaController", null, null, [Kekule.Editor.ActionComposerSetAtomController, Kekule.Editor.ActionComposerSetRepositoryMethaneController, Kekule.Editor.ActionComposerSetFormulaController], null, t10.molAtomAndFormula), Kekule.Editor.ActionComposerSetAttachedMarkerIaControllerLonePair = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetAttachedMarkerIaControllerLonePair", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_ELECTRON_LONEPAIR"), Kekule.$L("ChemWidgetTexts.HINT_MOL_ELECTRON_LONEPAIR"), "AttachedMarkerIaController", "AttachedMarkerIaController-LonePair", { markerClassName: "Kekule.ChemMarker.UnbondedElectronSet", targetClassName: "Kekule.AbstractAtom", initialPropValues: { electronCount: 2 } }, null, null, t10.molElectronLonePair), Kekule.Editor.ActionComposerSetNodeChargeControllerClear = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeControllerClear", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE_CLEAR"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE_CLEAR"), "MolNodeChargeIaController", "MolNodeChargeIaController-Clear", { charge: 0, chargeInc: 0, radical: Kekule.RadicalOrder.NONE }, null, null, t10.molChargeClear), Kekule.Editor.ActionComposerSetNodeChargeControllerPositive = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeControllerPositive", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE_POSITIVE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE_POSITIVE"), "MolNodeChargeIaController", "MolNodeChargeIaController-Positive", { charge: null, chargeInc: 1, radical: Kekule.RadicalOrder.NONE }, null, null, t10.molChargePositive), Kekule.Editor.ActionComposerSetNodeChargeControllerNegative = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeControllerNegative", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE_NEGATIVE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE_NEGATIVE"), "MolNodeChargeIaController", "MolNodeChargeIaController-Negative", { charge: null, chargeInc: -1, radical: Kekule.RadicalOrder.NONE }, null, null, t10.molChargeNegative), Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalSinglet = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalSinglet", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE_SINGLET"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE_SINGLET"), "MolNodeChargeIaController", "MolNodeChargeIaController-Singlet", { charge: null, chargeInc: 0, radical: Kekule.RadicalOrder.SINGLET }, null, null, t10.molRadicalSinglet), Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalTriplet = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalTriplet", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE_TRIPLET"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE_TRIPLET"), "MolNodeChargeIaController", "MolNodeChargeIaController-Triplet", { charge: null, chargeInc: 0, radical: Kekule.RadicalOrder.TRIPLET }, null, null, t10.molRadicalTriplet), Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalDoublet = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalDoublet", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE_DOUBLET"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE_DOUBLET"), "MolNodeChargeIaController", "MolNodeChargeIaController-Doublet", { charge: null, chargeInc: 0, radical: Kekule.RadicalOrder.DOUBLET }, null, null, t10.molRadicalDoublet), Kekule.Editor.ActionComposerSetNodeChargeController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE"), "MolNodeChargeIaController", null, null, [Kekule.Editor.ActionComposerSetNodeChargeControllerClear, Kekule.Editor.ActionComposerSetNodeChargeControllerPositive, Kekule.Editor.ActionComposerSetNodeChargeControllerNegative, Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalSinglet, Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalTriplet, Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalDoublet, Kekule.Editor.ActionComposerSetAttachedMarkerIaControllerLonePair], null, t10.molCharge), Kekule.Editor.ActionComposerSetTextBlockController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetTextBlockController", Kekule.$L("ChemWidgetTexts.CAPTION_TEXT_BLOCK"), Kekule.$L("ChemWidgetTexts.HINT_TEXT_BLOCK"), "TextBlockIaController", null, null, null, null, t10.textBlock), Kekule.Editor.ActionComposerSetImageBlockController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetImageBlockController", Kekule.$L("ChemWidgetTexts.CAPTION_IMAGE_BLOCK"), Kekule.$L("ChemWidgetTexts.HINT_IMAGE_BLOCK"), "ImageBlockIaController", null, null, null, null, t10.imageBlock), Kekule.Editor.ActionComposerSetTextImageController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetTextImageController", Kekule.$L("ChemWidgetTexts.CAPTION_TEXT_IMAGE"), Kekule.$L("ChemWidgetTexts.HINT_TEXT_IMAGE"), "TextImageIaController", "TextImageIaController", null, [Kekule.Editor.ActionComposerSetTextBlockController, Kekule.Editor.ActionComposerSetImageBlockController], null, t10.textImage), Kekule.Editor.ActionComposerSetRepositoryRing3Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRing3Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_3"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_3"), "MolRingIaController", "MolRingIaController-3", { ringAtomCount: 3, isAromatic: false }, null, null, t10.molRing3), Kekule.Editor.ActionComposerSetRepositoryRing4Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRing4Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_4"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_4"), "MolRingIaController", "MolRingIaController-4", { ringAtomCount: 4, isAromatic: false }, null, null, t10.molRing4), Kekule.Editor.ActionComposerSetRepositoryRing5Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRing5Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_5"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_5"), "MolRingIaController", "MolRingIaController-5", { ringAtomCount: 5, isAromatic: false }, null, null, t10.molRing5), Kekule.Editor.ActionComposerSetRepositoryRing6Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRing6Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_6"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_6"), "MolRingIaController", "MolRingIaController-6", { ringAtomCount: 6, isAromatic: false }, null, null, t10.molRing6), Kekule.Editor.ActionComposerSetRepositoryRing7Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRing7Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_7"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_7"), "MolRingIaController", "MolRingIaController-7", { ringAtomCount: 7, isAromatic: false }, null, null, t10.molRing7), Kekule.Editor.ActionComposerSetRepositoryRing8Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRing8Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_8"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_8"), "MolRingIaController", "MolRingIaController-8", { ringAtomCount: 8, isAromatic: false }, null, null, t10.molRing8), Kekule.Editor.ActionComposerSetRepositoryRingAr6Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRingAr6Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_AR_6"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_AR_6"), "MolRingIaController", "MolRingIaController-Ar-6", { ringAtomCount: 6, isAromatic: true }, null, null, t10.molRingAr6), Kekule.Editor.ActionComposerSetRepositoryRingAr5Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRingAr5Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_AR_5"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_AR_5"), "MolRingIaController", "MolRingIaController-Ar-5", { ringAtomCount: 5, isAromatic: true }, null, null, t10.molRingAr5), Kekule.Editor.ActionComposerSetRepositoryMolFlexRingController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryMolFlexRingController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_FLEXRING"), Kekule.$L("ChemWidgetTexts.HINT_MOL_FLEXRING"), "MolFlexRingIaController", "MolFlexRingIaController", null, null, null, t10.molFlexRing), Kekule.Editor.ActionComposerSetRepositoryCyclopentaneHaworth1Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryCyclopentaneHaworth1Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_CYCLOPENTANE_HARWORTH1"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_CYCLOPENTANE_HARWORTH1"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-CyclopentaneHaworth1", { repItemName: "cyclopentaneHaworth1" }, null, null, t10.molRepCyclopentaneHaworth1), Kekule.Editor.ActionComposerSetRepositoryCyclopentaneHaworth2Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryCyclopentaneHaworth2Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_CYCLOPENTANE_HARWORTH2"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_CYCLOPENTANE_HARWORTH2"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-CyclopentaneHaworth2", { repItemName: "cyclopentaneHaworth2" }, null, null, t10.molRepCyclopentaneHaworth2), Kekule.Editor.ActionComposerSetRepositoryCyclohexaneHaworth1Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryCyclohexaneHaworth1Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_CYCLOHEXANE_HARWORTH1"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_CYCLOHEXANE_HARWORTH1"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-CyclohexaneHaworth1", { repItemName: "cyclohexaneHaworth1" }, null, null, t10.molRepCyclohexaneHaworth1), Kekule.Editor.ActionComposerSetRepositoryCyclohexaneHaworth2Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryCyclohexaneHaworth2Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_CYCLOHEXANE_HARWORTH2"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_CYCLOHEXANE_HARWORTH2"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-CyclohexaneHaworth2", { repItemName: "cyclohexaneHaworth2" }, null, null, t10.molRepCyclohexaneHaworth2), Kekule.Editor.ActionComposerSetRepositoryCyclohexaneChair1Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryCyclohexaneChair1Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_CYCLOHEXANE_CHAIR1"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_CYCLOHEXANE_CHAIR1"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-CyclohexaneChair1", { repItemName: "cyclohexaneChair1" }, null, null, t10.molRepCyclohexaneChair1), Kekule.Editor.ActionComposerSetRepositoryCyclohexaneChair2Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryCyclohexaneChair2Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_CYCLOHEXANE_CHAIR2"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_CYCLOHEXANE_CHAIR2"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-CyclohexaneChair2", { repItemName: "cyclohexaneChair2" }, null, null, t10.molRepCyclohexaneChair2), Kekule.Editor.ActionComposerSetRepositoryRingController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRingController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING"), "MolRingIaController", null, null, [Kekule.Editor.ActionComposerSetRepositoryRing3Controller, Kekule.Editor.ActionComposerSetRepositoryRing4Controller, Kekule.Editor.ActionComposerSetRepositoryRing5Controller, Kekule.Editor.ActionComposerSetRepositoryRing6Controller, Kekule.Editor.ActionComposerSetRepositoryMolFlexRingController, Kekule.Editor.ActionComposerSetRepositoryRingAr6Controller, Kekule.Editor.ActionComposerSetRepositoryCyclopentaneHaworth1Controller, Kekule.Editor.ActionComposerSetRepositoryCyclohexaneHaworth1Controller, Kekule.Editor.ActionComposerSetRepositoryCyclohexaneChair1Controller, Kekule.Editor.ActionComposerSetRepositoryCyclohexaneChair2Controller], null, t10.molRing), Kekule.Editor.ActionComposerSetRepositoryPathLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathGlyphLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_LINE"), "ArrowLineIaController", "ArrowLineIaController-Line", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: null, lineLength: 1.5 }, null, null, t10.glyphRepLine), Kekule.Editor.ActionComposerSetRepositoryPathOpenArrowLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathOpenArrowLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_OPEN_ARROW_LINE"), "ArrowLineIaController", "ArrowLineIaController-OpenArrowLine", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: { endArrowType: Kekule.Glyph.ArrowType.OPEN, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5 } }, null, null, t10.glyphRepOpenArrowLine), Kekule.Editor.ActionComposerSetRepositoryPathTriangleArrowLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathTriangleArrowLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_TRIANGLE_ARROW_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_TRIANGLE_ARROW_LINE"), "ArrowLineIaController", "ArrowLineIaController-TriangleArrowLine", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: { endArrowType: Kekule.Glyph.ArrowType.TRIANGLE, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5 } }, null, null, t10.glyphRepTriangleArrowLine), Kekule.Editor.ActionComposerSetRepositoryPathDiOpenArrowLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathDiOpenArrowLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_DI_OPEN_ARROW_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_DI_OPEN_ARROW_LINE"), "ArrowLineIaController", "ArrowLineIaController-DiOpenArrowLine", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: { startArrowType: Kekule.Glyph.ArrowType.OPEN, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowType: Kekule.Glyph.ArrowType.OPEN, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5 } }, null, null, t10.glyphRepDiOpenArrowLine), Kekule.Editor.ActionComposerSetRepositoryPathDiTriangleArrowLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathDiTriangleArrowLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_DI_TRIANGLE_ARROW_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_DI_TRIANGLE_ARROW_LINE"), "ArrowLineIaController", "ArrowLineIaController-DiTriangleArrowLine", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: { startArrowType: Kekule.Glyph.ArrowType.TRIANGLE, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowType: Kekule.Glyph.ArrowType.TRIANGLE, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5 } }, null, null, t10.glyphRepDiTriangleArrowLine), Kekule.Editor.ActionComposerSetRepositoryPathReversibleArrowLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathReversibleArrowLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_REV_ARROW_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_REV_ARROW_LINE"), "ArrowLineIaController", "ArrowLineIaController-ReversibleArrowLine", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: { startArrowType: Kekule.Glyph.ArrowType.OPEN, startArrowSide: Kekule.Glyph.ArrowSide.REVERSED, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowType: Kekule.Glyph.ArrowType.OPEN, endArrowSide: Kekule.Glyph.ArrowSide.SINGLE, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1, lineCount: 2 } }, null, null, t10.glyphRepReversibleArrowLine), Kekule.Editor.ActionComposerSetRepositoryPathOpenArrowDblLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathOpenArrowDblLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_DILINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_OPEN_ARROW_DILINE"), "ArrowLineIaController", "ArrowLineIaController-OpenArrowDiLine", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: { endArrowType: Kekule.Glyph.ArrowType.OPEN, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1, lineCount: 2 } }, null, null, t10.glyphRepOpenArrowDiLine), Kekule.Editor.ActionComposerSetRepositoryPathOpenArrowArcController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathOpenArrowArcController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_ARC"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_OPEN_ARROW_ARC"), "ArrowLineIaController", "ArrowLineIaController-OpenArrowArc", { glyphClass: Kekule.Glyph.BaseArc, glyphInitialParams: { endArrowType: Kekule.Glyph.ArrowType.OPEN, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1, lineGap: 0.1, lineCount: 1 } }, null, null, t10.glyphRepOpenArrowArc), Kekule.Editor.ActionComposerSetRepositoryPathSingleSideOpenArrowArcController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathSingleSideOpenArrowArcController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_SINGLE_SIDE_OPEN_ARROW_ARC"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_SINGLE_SIDE_OPEN_ARROW_ARC"), "ArrowLineIaController", "ArrowLineIaController-SingleSideOpenArrowArc", { glyphClass: Kekule.Glyph.BaseArc, glyphInitialParams: { endArrowType: Kekule.Glyph.ArrowType.OPEN, endArrowSide: Kekule.Glyph.ArrowSide.REVERSED, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1, lineGap: 0.1, lineCount: 1 } }, null, null, t10.glyphRepSingleSideOpenArrowArc), Kekule.Editor.ActionComposerSetRepositoryHeatSymbolController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryHeatSymbolController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_HEAT_SYMBOL"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_HEAT_SYMBOL"), "ArrowLineIaController", "ArrowLineIaController-HeatSymbol", { glyphClass: Kekule.Glyph.HeatSymbol, glyphInitialParams: { lineLength: 1 } }, null, null, t10.glyphRepHeatSymbol), Kekule.Editor.ActionComposerSetRepositoryAddSymbolController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryAddSymbolController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_ADD_SYMBOL"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_ADD_SYMBOL"), "ArrowLineIaController", "ArrowLineIaController-AddSymbol", { glyphClass: Kekule.Glyph.AddSymbol, glyphInitialParams: { lineLength: 1 } }, null, null, t10.glyphRepAddSymbol), Kekule.Editor.ActionComposerSetRepositoryLineSegmentController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryLineSegmentController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_LINE"), "ArrowLineIaController", "ArrowLineIaController-Line", { glyphClass: Kekule.Glyph.Segment, glyphInitialParams: { startArrowWidth: 0.25, startArrowLength: 0.25, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1 } }, null, null, t10.glyphRepSegment), Kekule.Editor.ActionComposerSetRepositoryNormalReactionArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryNormalReactionArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_REACTION_ARROW_NORMAL"), Kekule.$L("ChemWidgetTexts.HINT_REACTION_ARROW_NORMAL"), "ArrowLineIaController", "ArrowLineIaController-ReactionArrowNormal", { glyphClass: Kekule.Glyph.ReactionArrow, glyphInitialParams: { reactionArrowType: Kekule.Glyph.ReactionArrowType.NORMAL, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1 } }, null, null, t10.glyphReactionArrowNormal), Kekule.Editor.ActionComposerSetRepositoryReversibleReactionArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryReversibleReactionArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_REACTION_ARROW_REVERSIBLE"), Kekule.$L("ChemWidgetTexts.HINT_REACTION_ARROW_REVERSIBLE"), "ArrowLineIaController", "ArrowLineIaController-ReactionArrowReversible", { glyphClass: Kekule.Glyph.ReactionArrow, glyphInitialParams: { reactionType: Kekule.Glyph.ReactionArrowType.REVERSIBLE, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1 } }, null, null, t10.glyphReactionArrowReversible), Kekule.Editor.ActionComposerSetRepositoryResonanceReactionArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryResonanceReactionArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_REACTION_ARROW_RESONANCE"), Kekule.$L("ChemWidgetTexts.HINT_REACTION_ARROW_RESONANCE"), "ArrowLineIaController", "ArrowLineIaController-ReactionArrowResonance", { glyphClass: Kekule.Glyph.ReactionArrow, glyphInitialParams: { reactionType: Kekule.Glyph.ReactionArrowType.RESONANCE, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1 } }, null, null, t10.glyphReactionArrowResonance), Kekule.Editor.ActionComposerSetRepositoryRetrosynthesisReactionArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRetrosynthesisReactionArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_REACTION_ARROW_RETROSYNTHESIS"), Kekule.$L("ChemWidgetTexts.HINT_REACTION_ARROW_RETROSYNTHESIS"), "ArrowLineIaController", "ArrowLineIaController-ReactionArrowRetrosynthesis", { glyphClass: Kekule.Glyph.ReactionArrow, glyphInitialParams: { reactionType: Kekule.Glyph.ReactionArrowType.RETROSYNTHESIS, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1 } }, null, null, t10.glyphReactionArrowRetrosynthesis), Kekule.Editor.ActionComposerSetRepositoryDoubleElectronPushingArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryDoubleElectronPushingArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_ELECTRON_PUSHING_ARROW_2"), Kekule.$L("ChemWidgetTexts.HINT_ELECTRON_PUSHING_ARROW_2"), "ArrowLineIaController", "ArrowLineIaController-ElectronPushingArrowDouble", { glyphClass: Kekule.Glyph.ElectronPushingArrow, glyphInitialParams: { electronCount: 2, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1, lineGap: 0.1, lineCount: 1 } }, null, null, t10.glyphElectronPushingArrowDouble), Kekule.Editor.ActionComposerSetRepositorySingleElectronPushingArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositorySingleElectronPushingArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_ELECTRON_PUSHING_ARROW_1"), Kekule.$L("ChemWidgetTexts.HINT_ELECTRON_PUSHING_ARROW_1"), "ArrowLineIaController", "ArrowLineIaController-ElectronPushingArrowSingle", { glyphClass: Kekule.Glyph.ElectronPushingArrow, glyphInitialParams: { electronCount: 1, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1, lineGap: 0.1, lineCount: 1 } }, null, null, t10.glyphElectronPushingArrowSingle), Kekule.Editor.ActionComposerSetRepositoryBondFormingElectronPushingArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryBondFormingElectronPushingArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_BOND_FORMING_ELECTRON_PUSHING_ARROW_1"), Kekule.$L("ChemWidgetTexts.HINT_BOND_FORMING_ELECTRON_PUSHING_ARROW_1"), "ArrowLineIaController", "ArrowLineIaController-BondFormingElectronPushingArrowSingle", { glyphClass: Kekule.Glyph.BondFormingElectronPushingArrow, glyphInitialParams: { endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1, pathEndGap: 0.1, lineCount: 1 } }, null, null, t10.glyphElectronPushingArrowBondForming), Kekule.Editor.ActionComposerSetRepositoryGlyphController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryGlyphController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_ARROWLINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_ARROWLINE"), "ArrowLineIaController", null, null, [Kekule.Editor.ActionComposerSetRepositoryNormalReactionArrowController, Kekule.Editor.ActionComposerSetRepositoryReversibleReactionArrowController, Kekule.Editor.ActionComposerSetRepositoryResonanceReactionArrowController, Kekule.Editor.ActionComposerSetRepositoryRetrosynthesisReactionArrowController, Kekule.Editor.ActionComposerSetRepositoryLineSegmentController, Kekule.Editor.ActionComposerSetRepositoryDoubleElectronPushingArrowController, Kekule.Editor.ActionComposerSetRepositorySingleElectronPushingArrowController, Kekule.Editor.ActionComposerSetRepositoryBondFormingElectronPushingArrowController, Kekule.Editor.ActionComposerSetRepositoryHeatSymbolController, Kekule.Editor.ActionComposerSetRepositoryAddSymbolController], null, t10.glyph), Kekule._registerAfterLoadSysProc(function() {
+  } }, t10.erase), Kekule.Editor.ActionComposerSetTrackController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetTrackController", Kekule.$L("ChemWidgetTexts.CAPTION_TRACK_INPUT"), Kekule.$L("ChemWidgetTexts.HINT_TRACK_INPUT"), "TrackInputIaController", null, null, null, null, t10.trackInput), Kekule.Editor.ActionComposerSetBondControllerSingle = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerSingle", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_SINGLE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_SINGLE"), "MolBondIaController", "MolBondIaController-Single", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.SINGLE, bondStereo: Kekule.BondStereo.NONE }, null, null, t10.molBondSingle), Kekule.Editor.ActionComposerSetBondControllerDouble = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerDouble", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_DOUBLE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_DOUBLE"), "MolBondIaController", "MolBondIaController-Double", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.DOUBLE, bondStereo: Kekule.BondStereo.NONE }, null, null, t10.molBondDouble), Kekule.Editor.ActionComposerSetBondControllerTriple = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerTriple", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_TRIPLE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_TRIPLE"), "MolBondIaController", "MolBondIaController-Triple", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.TRIPLE, bondStereo: Kekule.BondStereo.NONE }, null, null, t10.molBondTriple), Kekule.Editor.ActionComposerSetBondControllerCloser = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerCloser", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_CLOSER"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_CLOSER"), "MolBondIaController", "MolBondIaController-Closer", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.SINGLE, bondStereo: Kekule.BondStereo.CLOSER }, null, null, t10.molBondCloser), Kekule.Editor.ActionComposerSetBondControllerWedgeUp = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerWedgeUp", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_WEDGEUP"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_WEDGEUP"), "MolBondIaController", "MolBondIaController-WedgeUp", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.SINGLE, bondStereo: Kekule.BondStereo.UP }, null, null, t10.molBondWedgeUp), Kekule.Editor.ActionComposerSetBondControllerWedgeDown = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerWedgeDown", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_WEDGEDOWN"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_WEDGEDOWN"), "MolBondIaController", "MolBondIaController-WedgeDown", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.SINGLE, bondStereo: Kekule.BondStereo.DOWN }, null, null, t10.molBondWedgeDown), Kekule.Editor.ActionComposerSetBondControllerWedgeUpOrDown = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerWedgeUpOrDown", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_WAVY"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_WAVY"), "MolBondIaController", "MolBondIaController-WedgeUpOrDown", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.SINGLE, bondStereo: Kekule.BondStereo.UP_OR_DOWN }, null, null, t10.molBondWedgeUpOrDown), Kekule.Editor.ActionComposerSetBondControllerDoubleEither = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondControllerDoubleEither", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND_DOUBLE_EITHER"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND_DOUBLE_EITHER"), "MolBondIaController", "MolBondIaController-Double-Either", { bondType: Kekule.BondType.COVALENT, bondOrder: Kekule.BondOrder.DOUBLE, bondStereo: Kekule.BondStereo.E_OR_Z }, null, null, t10.molBondDoubleEither), Kekule.Editor.ActionComposerSetRepositoryFischer1Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryFischer1Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_FISCHER1"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_FISCHER1"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-Fischer1", { repItemName: "fischer1" }, null, null, t10.molRepFischer1), Kekule.Editor.ActionComposerSetRepositoryFischer2Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryFischer2Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_FISCHER2"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_FISCHER2"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-Fischer2", { repItemName: "fischer2" }, null, null, t10.molRepFischer2), Kekule.Editor.ActionComposerSetRepositoryFischer3Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryFischer3Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_FISCHER3"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_FISCHER3"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-Fischer3", { repItemName: "fischer3" }, null, null, t10.molRepFischer3), Kekule.Editor.ActionComposerSetRepositorySawhorseStaggeredController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositorySawhorseStaggeredController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_SAWHORSE_STAGGERED"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_SAWHORSE_STAGGERED"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-SawhorseStaggered", { repItemName: "sawhorseStaggered" }, null, null, t10.molRepSawhorseStaggered), Kekule.Editor.ActionComposerSetRepositorySawhorseEclipsedController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositorySawhorseEclipsedController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_SAWHORSE_ECLIPSED"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_SAWHORSE_ECLIPSED"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-SawhorseEclipsed", { repItemName: "sawhorseEclipsed" }, null, null, t10.molRepSawhorseEclipsed), Kekule.Editor.ActionComposerSetRepositoryMethaneController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryMethaneController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_METHANE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_METHANE"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-Methane", { repItemName: "methane" }, null, null, t10.molRepMethane), Kekule.Editor.ActionComposerSetRepositorySubBondMarkController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositorySubBondMarkController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_SUBBOND_MARK"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_SUBBOND_MARK"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-SubBondMark", { repItemName: "substituentMark" }, null, null, t10.molRepSubBondMark), Kekule.Editor.ActionComposerSetRepositoryMolFlexChainController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryMolFlexChainController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_FLEXCHAIN"), Kekule.$L("ChemWidgetTexts.HINT_MOL_FLEXCHAIN"), "MolFlexChainIaController", "MolFlexChainIaController", null, null, null, t10.molChain), Kekule.Editor.ActionComposerSetBondController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetBondController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_BOND"), Kekule.$L("ChemWidgetTexts.HINT_MOL_BOND"), "MolBondIaController", null, null, [Kekule.Editor.ActionComposerSetBondControllerSingle, Kekule.Editor.ActionComposerSetBondControllerDouble, Kekule.Editor.ActionComposerSetBondControllerTriple, Kekule.Editor.ActionComposerSetBondControllerWedgeUp, Kekule.Editor.ActionComposerSetBondControllerWedgeDown, Kekule.Editor.ActionComposerSetRepositoryMolFlexChainController, Kekule.Editor.ActionComposerSetTrackController, Kekule.Editor.ActionComposerSetRepositoryFischer1Controller, Kekule.Editor.ActionComposerSetRepositorySawhorseStaggeredController, Kekule.Editor.ActionComposerSetRepositorySawhorseEclipsedController], null, t10.molBond), Kekule.Editor.ActionComposerSetAtomController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetAtomController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_ATOM"), Kekule.$L("ChemWidgetTexts.HINT_MOL_ATOM"), "MolAtomIaController", null, null, null, null, t10.molAtom), Kekule.Editor.ActionComposerSetFormulaController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetFormulaController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_FORMULA"), Kekule.$L("ChemWidgetTexts.HINT_MOL_FORMULA"), "FormulaIaController", null, null, null, null, t10.molFormula), Kekule.Editor.ActionComposerSetAtomAndFormulaController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetAtomAndFormulaController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_ATOM_AND_FORMULA"), Kekule.$L("ChemWidgetTexts.HINT_MOL_ATOM_AND_FORMULA"), "MolAtomIaController", null, null, [Kekule.Editor.ActionComposerSetAtomController, Kekule.Editor.ActionComposerSetRepositoryMethaneController, Kekule.Editor.ActionComposerSetFormulaController], null, t10.molAtomAndFormula), Kekule.Editor.ActionComposerSetAttachedMarkerIaControllerLonePair = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetAttachedMarkerIaControllerLonePair", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_ELECTRON_LONEPAIR"), Kekule.$L("ChemWidgetTexts.HINT_MOL_ELECTRON_LONEPAIR"), "AttachedMarkerIaController", "AttachedMarkerIaController-LonePair", { markerClassName: "Kekule.ChemMarker.UnbondedElectronSet", targetClassName: "Kekule.AbstractAtom", initialPropValues: { electronCount: 2 } }, null, null, t10.molElectronLonePair), Kekule.Editor.ActionComposerSetNodeChargeControllerClear = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeControllerClear", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE_CLEAR"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE_CLEAR"), "MolNodeChargeIaController", "MolNodeChargeIaController-Clear", { charge: 0, chargeInc: 0, electronicBias: 0, electronicBiasInc: 0, radical: Kekule.RadicalOrder.NONE }, null, null, t10.molChargeClear), Kekule.Editor.ActionComposerSetNodeChargeControllerPositive = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeControllerPositive", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE_POSITIVE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE_POSITIVE"), "MolNodeChargeIaController", "MolNodeChargeIaController-Positive", { charge: null, chargeInc: 1, electronicBias: 0, electronicBiasInc: 0, radical: Kekule.RadicalOrder.NONE }, null, null, t10.molChargePositive), Kekule.Editor.ActionComposerSetNodeChargeControllerNegative = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeControllerNegative", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE_NEGATIVE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE_NEGATIVE"), "MolNodeChargeIaController", "MolNodeChargeIaController-Negative", { charge: null, chargeInc: -1, electronicBias: 0, electronicBiasInc: 0, radical: Kekule.RadicalOrder.NONE }, null, null, t10.molChargeNegative), Kekule.Editor.ActionComposerSetNodeElectronicBiasControllerPositive = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeElectronicBiasControllerPositive", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_ELECTRONIC_BIAS_POSITIVE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_ELECTRONIC_BIAS_POSITIVE"), "MolNodeChargeIaController", "MolNodeChargeIaController-ElectronicBiasPositive", { charge: 0, chargeInc: 0, electronicBias: null, electronicBiasInc: 1, radical: Kekule.RadicalOrder.NONE }, null, null, t10.molElectronicBiasPositive), Kekule.Editor.ActionComposerSetNodeElectronicBiasControllerNegative = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeElectronicBiasControllerNegative", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_ELECTRONIC_BIAS_NEGATIVE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_ELECTRONIC_BIAS_NEGATIVE"), "MolNodeChargeIaController", "MolNodeChargeIaController-ElectronicBiasNegative", { charge: 0, chargeInc: 0, electronicBias: null, electronicBiasInc: -1, radical: Kekule.RadicalOrder.NONE }, null, null, t10.molElectronicBiasNegative), Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalSinglet = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalSinglet", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE_SINGLET"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE_SINGLET"), "MolNodeChargeIaController", "MolNodeChargeIaController-Singlet", { charge: null, chargeInc: 0, radical: Kekule.RadicalOrder.SINGLET }, null, null, t10.molRadicalSinglet), Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalTriplet = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalTriplet", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE_TRIPLET"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE_TRIPLET"), "MolNodeChargeIaController", "MolNodeChargeIaController-Triplet", { charge: null, chargeInc: 0, radical: Kekule.RadicalOrder.TRIPLET }, null, null, t10.molRadicalTriplet), Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalDoublet = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalDoublet", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE_DOUBLET"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE_DOUBLET"), "MolNodeChargeIaController", "MolNodeChargeIaController-Doublet", { charge: null, chargeInc: 0, radical: Kekule.RadicalOrder.DOUBLET }, null, null, t10.molRadicalDoublet), Kekule.Editor.ActionComposerSetNodeChargeController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetNodeChargeController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_CHARGE"), Kekule.$L("ChemWidgetTexts.HINT_MOL_CHARGE"), "MolNodeChargeIaController", null, null, [Kekule.Editor.ActionComposerSetNodeChargeControllerClear, Kekule.Editor.ActionComposerSetNodeChargeControllerPositive, Kekule.Editor.ActionComposerSetNodeChargeControllerNegative, Kekule.Editor.ActionComposerSetNodeElectronicBiasControllerPositive, Kekule.Editor.ActionComposerSetNodeElectronicBiasControllerNegative, Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalSinglet, Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalTriplet, Kekule.Editor.ActionComposerSetNodeChargeControllerRadicalDoublet, Kekule.Editor.ActionComposerSetAttachedMarkerIaControllerLonePair], null, t10.molCharge), Kekule.Editor.ActionComposerSetTextBlockController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetTextBlockController", Kekule.$L("ChemWidgetTexts.CAPTION_TEXT_BLOCK"), Kekule.$L("ChemWidgetTexts.HINT_TEXT_BLOCK"), "TextBlockIaController", null, null, null, null, t10.textBlock), Kekule.Editor.ActionComposerSetImageBlockController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetImageBlockController", Kekule.$L("ChemWidgetTexts.CAPTION_IMAGE_BLOCK"), Kekule.$L("ChemWidgetTexts.HINT_IMAGE_BLOCK"), "ImageBlockIaController", null, null, null, null, t10.imageBlock), Kekule.Editor.ActionComposerSetTextImageController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetTextImageController", Kekule.$L("ChemWidgetTexts.CAPTION_TEXT_IMAGE"), Kekule.$L("ChemWidgetTexts.HINT_TEXT_IMAGE"), "TextImageIaController", "TextImageIaController", null, [Kekule.Editor.ActionComposerSetTextBlockController, Kekule.Editor.ActionComposerSetImageBlockController], null, t10.textImage), Kekule.Editor.ActionComposerSetRepositoryRing3Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRing3Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_3"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_3"), "MolRingIaController", "MolRingIaController-3", { ringAtomCount: 3, isAromatic: false }, null, null, t10.molRing3), Kekule.Editor.ActionComposerSetRepositoryRing4Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRing4Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_4"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_4"), "MolRingIaController", "MolRingIaController-4", { ringAtomCount: 4, isAromatic: false }, null, null, t10.molRing4), Kekule.Editor.ActionComposerSetRepositoryRing5Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRing5Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_5"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_5"), "MolRingIaController", "MolRingIaController-5", { ringAtomCount: 5, isAromatic: false }, null, null, t10.molRing5), Kekule.Editor.ActionComposerSetRepositoryRing6Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRing6Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_6"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_6"), "MolRingIaController", "MolRingIaController-6", { ringAtomCount: 6, isAromatic: false }, null, null, t10.molRing6), Kekule.Editor.ActionComposerSetRepositoryRing7Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRing7Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_7"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_7"), "MolRingIaController", "MolRingIaController-7", { ringAtomCount: 7, isAromatic: false }, null, null, t10.molRing7), Kekule.Editor.ActionComposerSetRepositoryRing8Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRing8Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_8"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_8"), "MolRingIaController", "MolRingIaController-8", { ringAtomCount: 8, isAromatic: false }, null, null, t10.molRing8), Kekule.Editor.ActionComposerSetRepositoryRingAr6Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRingAr6Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_AR_6"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_AR_6"), "MolRingIaController", "MolRingIaController-Ar-6", { ringAtomCount: 6, isAromatic: true }, null, null, t10.molRingAr6), Kekule.Editor.ActionComposerSetRepositoryRingAr5Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRingAr5Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING_AR_5"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING_AR_5"), "MolRingIaController", "MolRingIaController-Ar-5", { ringAtomCount: 5, isAromatic: true }, null, null, t10.molRingAr5), Kekule.Editor.ActionComposerSetRepositoryMolFlexRingController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryMolFlexRingController", Kekule.$L("ChemWidgetTexts.CAPTION_MOL_FLEXRING"), Kekule.$L("ChemWidgetTexts.HINT_MOL_FLEXRING"), "MolFlexRingIaController", "MolFlexRingIaController", null, null, null, t10.molFlexRing), Kekule.Editor.ActionComposerSetRepositoryCyclopentaneHaworth1Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryCyclopentaneHaworth1Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_CYCLOPENTANE_HARWORTH1"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_CYCLOPENTANE_HARWORTH1"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-CyclopentaneHaworth1", { repItemName: "cyclopentaneHaworth1" }, null, null, t10.molRepCyclopentaneHaworth1), Kekule.Editor.ActionComposerSetRepositoryCyclopentaneHaworth2Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryCyclopentaneHaworth2Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_CYCLOPENTANE_HARWORTH2"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_CYCLOPENTANE_HARWORTH2"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-CyclopentaneHaworth2", { repItemName: "cyclopentaneHaworth2" }, null, null, t10.molRepCyclopentaneHaworth2), Kekule.Editor.ActionComposerSetRepositoryCyclohexaneHaworth1Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryCyclohexaneHaworth1Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_CYCLOHEXANE_HARWORTH1"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_CYCLOHEXANE_HARWORTH1"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-CyclohexaneHaworth1", { repItemName: "cyclohexaneHaworth1" }, null, null, t10.molRepCyclohexaneHaworth1), Kekule.Editor.ActionComposerSetRepositoryCyclohexaneHaworth2Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryCyclohexaneHaworth2Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_CYCLOHEXANE_HARWORTH2"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_CYCLOHEXANE_HARWORTH2"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-CyclohexaneHaworth2", { repItemName: "cyclohexaneHaworth2" }, null, null, t10.molRepCyclohexaneHaworth2), Kekule.Editor.ActionComposerSetRepositoryCyclohexaneChair1Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryCyclohexaneChair1Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_CYCLOHEXANE_CHAIR1"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_CYCLOHEXANE_CHAIR1"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-CyclohexaneChair1", { repItemName: "cyclohexaneChair1" }, null, null, t10.molRepCyclohexaneChair1), Kekule.Editor.ActionComposerSetRepositoryCyclohexaneChair2Controller = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryCyclohexaneChair2Controller", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_CYCLOHEXANE_CHAIR2"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_CYCLOHEXANE_CHAIR2"), "RepositoryStructureFragmentIaController", "RepositoryStructureFragmentIaController-CyclohexaneChair2", { repItemName: "cyclohexaneChair2" }, null, null, t10.molRepCyclohexaneChair2), Kekule.Editor.ActionComposerSetRepositoryRingController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRingController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_RING"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_RING"), "MolRingIaController", null, null, [Kekule.Editor.ActionComposerSetRepositoryRing3Controller, Kekule.Editor.ActionComposerSetRepositoryRing4Controller, Kekule.Editor.ActionComposerSetRepositoryRing5Controller, Kekule.Editor.ActionComposerSetRepositoryRing6Controller, Kekule.Editor.ActionComposerSetRepositoryMolFlexRingController, Kekule.Editor.ActionComposerSetRepositoryRingAr6Controller, Kekule.Editor.ActionComposerSetRepositoryCyclopentaneHaworth1Controller, Kekule.Editor.ActionComposerSetRepositoryCyclohexaneHaworth1Controller, Kekule.Editor.ActionComposerSetRepositoryCyclohexaneChair1Controller, Kekule.Editor.ActionComposerSetRepositoryCyclohexaneChair2Controller], null, t10.molRing, void 0, { defaultAttachedActionClass: Kekule.Editor.ActionComposerSetRepositoryRing6Controller }), Kekule.Editor.ActionComposerSetRepositoryPathLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathGlyphLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_LINE"), "ArrowLineIaController", "ArrowLineIaController-Line", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: null, lineLength: 1.5 }, null, null, t10.glyphRepLine), Kekule.Editor.ActionComposerSetRepositoryPathOpenArrowLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathOpenArrowLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_OPEN_ARROW_LINE"), "ArrowLineIaController", "ArrowLineIaController-OpenArrowLine", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: { endArrowType: Kekule.Glyph.ArrowType.OPEN, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5 } }, null, null, t10.glyphRepOpenArrowLine), Kekule.Editor.ActionComposerSetRepositoryPathTriangleArrowLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathTriangleArrowLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_TRIANGLE_ARROW_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_TRIANGLE_ARROW_LINE"), "ArrowLineIaController", "ArrowLineIaController-TriangleArrowLine", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: { endArrowType: Kekule.Glyph.ArrowType.TRIANGLE, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5 } }, null, null, t10.glyphRepTriangleArrowLine), Kekule.Editor.ActionComposerSetRepositoryPathDiOpenArrowLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathDiOpenArrowLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_DI_OPEN_ARROW_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_DI_OPEN_ARROW_LINE"), "ArrowLineIaController", "ArrowLineIaController-DiOpenArrowLine", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: { startArrowType: Kekule.Glyph.ArrowType.OPEN, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowType: Kekule.Glyph.ArrowType.OPEN, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5 } }, null, null, t10.glyphRepDiOpenArrowLine), Kekule.Editor.ActionComposerSetRepositoryPathDiTriangleArrowLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathDiTriangleArrowLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_DI_TRIANGLE_ARROW_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_DI_TRIANGLE_ARROW_LINE"), "ArrowLineIaController", "ArrowLineIaController-DiTriangleArrowLine", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: { startArrowType: Kekule.Glyph.ArrowType.TRIANGLE, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowType: Kekule.Glyph.ArrowType.TRIANGLE, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5 } }, null, null, t10.glyphRepDiTriangleArrowLine), Kekule.Editor.ActionComposerSetRepositoryPathReversibleArrowLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathReversibleArrowLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_REV_ARROW_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_REV_ARROW_LINE"), "ArrowLineIaController", "ArrowLineIaController-ReversibleArrowLine", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: { startArrowType: Kekule.Glyph.ArrowType.OPEN, startArrowSide: Kekule.Glyph.ArrowSide.REVERSED, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowType: Kekule.Glyph.ArrowType.OPEN, endArrowSide: Kekule.Glyph.ArrowSide.SINGLE, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1, lineCount: 2 } }, null, null, t10.glyphRepReversibleArrowLine), Kekule.Editor.ActionComposerSetRepositoryPathOpenArrowDblLineController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathOpenArrowDblLineController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_DILINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_OPEN_ARROW_DILINE"), "ArrowLineIaController", "ArrowLineIaController-OpenArrowDiLine", { glyphClass: Kekule.Glyph.StraightLine, glyphInitialParams: { endArrowType: Kekule.Glyph.ArrowType.OPEN, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1, lineCount: 2 } }, null, null, t10.glyphRepOpenArrowDiLine), Kekule.Editor.ActionComposerSetRepositoryPathOpenArrowArcController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathOpenArrowArcController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_OPEN_ARROW_ARC"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_OPEN_ARROW_ARC"), "ArrowLineIaController", "ArrowLineIaController-OpenArrowArc", { glyphClass: Kekule.Glyph.BaseArc, glyphInitialParams: { endArrowType: Kekule.Glyph.ArrowType.OPEN, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1, lineGap: 0.1, lineCount: 1 } }, null, null, t10.glyphRepOpenArrowArc), Kekule.Editor.ActionComposerSetRepositoryPathSingleSideOpenArrowArcController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryPathSingleSideOpenArrowArcController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_SINGLE_SIDE_OPEN_ARROW_ARC"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_SINGLE_SIDE_OPEN_ARROW_ARC"), "ArrowLineIaController", "ArrowLineIaController-SingleSideOpenArrowArc", { glyphClass: Kekule.Glyph.BaseArc, glyphInitialParams: { endArrowType: Kekule.Glyph.ArrowType.OPEN, endArrowSide: Kekule.Glyph.ArrowSide.REVERSED, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1, lineGap: 0.1, lineCount: 1 } }, null, null, t10.glyphRepSingleSideOpenArrowArc), Kekule.Editor.ActionComposerSetRepositoryHeatSymbolController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryHeatSymbolController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_HEAT_SYMBOL"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_HEAT_SYMBOL"), "ArrowLineIaController", "ArrowLineIaController-HeatSymbol", { glyphClass: Kekule.Glyph.HeatSymbol, glyphInitialParams: { lineLength: 1 } }, null, null, t10.glyphRepHeatSymbol), Kekule.Editor.ActionComposerSetRepositoryAddSymbolController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryAddSymbolController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_ADD_SYMBOL"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_ADD_SYMBOL"), "ArrowLineIaController", "ArrowLineIaController-AddSymbol", { glyphClass: Kekule.Glyph.AddSymbol, glyphInitialParams: { lineLength: 1 } }, null, null, t10.glyphRepAddSymbol), Kekule.Editor.ActionComposerSetRepositoryLineSegmentController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryLineSegmentController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_GLYPH_LINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_GLYPH_LINE"), "ArrowLineIaController", "ArrowLineIaController-Line", { glyphClass: Kekule.Glyph.Segment, glyphInitialParams: { startArrowWidth: 0.25, startArrowLength: 0.25, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1 } }, null, null, t10.glyphRepSegment), Kekule.Editor.ActionComposerSetRepositoryNormalReactionArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryNormalReactionArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_REACTION_ARROW_NORMAL"), Kekule.$L("ChemWidgetTexts.HINT_REACTION_ARROW_NORMAL"), "ArrowLineIaController", "ArrowLineIaController-ReactionArrowNormal", { glyphClass: Kekule.Glyph.ReactionArrow, glyphInitialParams: { reactionArrowType: Kekule.Glyph.ReactionArrowType.NORMAL, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1 } }, null, null, t10.glyphReactionArrowNormal), Kekule.Editor.ActionComposerSetRepositoryReversibleReactionArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryReversibleReactionArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_REACTION_ARROW_REVERSIBLE"), Kekule.$L("ChemWidgetTexts.HINT_REACTION_ARROW_REVERSIBLE"), "ArrowLineIaController", "ArrowLineIaController-ReactionArrowReversible", { glyphClass: Kekule.Glyph.ReactionArrow, glyphInitialParams: { reactionType: Kekule.Glyph.ReactionArrowType.REVERSIBLE, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1 } }, null, null, t10.glyphReactionArrowReversible), Kekule.Editor.ActionComposerSetRepositoryResonanceReactionArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryResonanceReactionArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_REACTION_ARROW_RESONANCE"), Kekule.$L("ChemWidgetTexts.HINT_REACTION_ARROW_RESONANCE"), "ArrowLineIaController", "ArrowLineIaController-ReactionArrowResonance", { glyphClass: Kekule.Glyph.ReactionArrow, glyphInitialParams: { reactionType: Kekule.Glyph.ReactionArrowType.RESONANCE, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1 } }, null, null, t10.glyphReactionArrowResonance), Kekule.Editor.ActionComposerSetRepositoryRetrosynthesisReactionArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryRetrosynthesisReactionArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_REACTION_ARROW_RETROSYNTHESIS"), Kekule.$L("ChemWidgetTexts.HINT_REACTION_ARROW_RETROSYNTHESIS"), "ArrowLineIaController", "ArrowLineIaController-ReactionArrowRetrosynthesis", { glyphClass: Kekule.Glyph.ReactionArrow, glyphInitialParams: { reactionType: Kekule.Glyph.ReactionArrowType.RETROSYNTHESIS, startArrowWidth: 0.25, startArrowLength: 0.25, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1.5, lineGap: 0.1 } }, null, null, t10.glyphReactionArrowRetrosynthesis), Kekule.Editor.ActionComposerSetRepositoryDoubleElectronPushingArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryDoubleElectronPushingArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_ELECTRON_PUSHING_ARROW_2"), Kekule.$L("ChemWidgetTexts.HINT_ELECTRON_PUSHING_ARROW_2"), "ArrowLineIaController", "ArrowLineIaController-ElectronPushingArrowDouble", { glyphClass: Kekule.Glyph.ElectronPushingArrow, glyphInitialParams: { electronCount: 2, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1, lineGap: 0.1, lineCount: 1 } }, null, null, t10.glyphElectronPushingArrowDouble), Kekule.Editor.ActionComposerSetRepositorySingleElectronPushingArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositorySingleElectronPushingArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_ELECTRON_PUSHING_ARROW_1"), Kekule.$L("ChemWidgetTexts.HINT_ELECTRON_PUSHING_ARROW_1"), "ArrowLineIaController", "ArrowLineIaController-ElectronPushingArrowSingle", { glyphClass: Kekule.Glyph.ElectronPushingArrow, glyphInitialParams: { electronCount: 1, endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1, lineGap: 0.1, lineCount: 1 } }, null, null, t10.glyphElectronPushingArrowSingle), Kekule.Editor.ActionComposerSetRepositoryBondFormingElectronPushingArrowController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryBondFormingElectronPushingArrowController", Kekule.$L("ChemWidgetTexts.CAPTION_BOND_FORMING_ELECTRON_PUSHING_ARROW_1"), Kekule.$L("ChemWidgetTexts.HINT_BOND_FORMING_ELECTRON_PUSHING_ARROW_1"), "ArrowLineIaController", "ArrowLineIaController-BondFormingElectronPushingArrowSingle", { glyphClass: Kekule.Glyph.BondFormingElectronPushingArrow, glyphInitialParams: { endArrowWidth: 0.25, endArrowLength: 0.25, lineLength: 1, pathEndGap: 0.1, lineCount: 1 } }, null, null, t10.glyphElectronPushingArrowBondForming), Kekule.Editor.ActionComposerSetRepositoryGlyphController = Kekule.Editor.createComposerIaControllerActionClass("Kekule.Editor.ActionComposerSetRepositoryGlyphController", Kekule.$L("ChemWidgetTexts.CAPTION_REPOSITORY_ARROWLINE"), Kekule.$L("ChemWidgetTexts.HINT_REPOSITORY_ARROWLINE"), "ArrowLineIaController", null, null, [Kekule.Editor.ActionComposerSetRepositoryNormalReactionArrowController, Kekule.Editor.ActionComposerSetRepositoryReversibleReactionArrowController, Kekule.Editor.ActionComposerSetRepositoryResonanceReactionArrowController, Kekule.Editor.ActionComposerSetRepositoryRetrosynthesisReactionArrowController, Kekule.Editor.ActionComposerSetRepositoryLineSegmentController, Kekule.Editor.ActionComposerSetRepositoryDoubleElectronPushingArrowController, Kekule.Editor.ActionComposerSetRepositorySingleElectronPushingArrowController, Kekule.Editor.ActionComposerSetRepositoryBondFormingElectronPushingArrowController, Kekule.Editor.ActionComposerSetRepositoryHeatSymbolController, Kekule.Editor.ActionComposerSetRepositoryAddSymbolController], null, t10.glyph), Kekule._registerAfterLoadSysProc(function() {
     var e16 = Kekule.ActionManager, r13 = Kekule.ChemWidget, n12 = Kekule.Editor, a7 = Kekule.Editor.ChemSpaceEditor, s6 = e16.registerNamedActionClass;
     s6(t10.newDoc, n12.ActionEditorNewDoc, a7), s6(t10.loadFile, r13.ActionDisplayerLoadFile, a7), s6(t10.loadData, n12.ActionEditorLoadData, a7), s6(t10.saveData, r13.ActionDisplayerSaveFile, a7), s6(t10.zoomIn, r13.ActionDisplayerZoomIn, a7), s6(t10.zoomOut, r13.ActionDisplayerZoomOut, a7), s6(t10.resetZoom, r13.ActionDisplayerResetZoom, a7), s6(t10.reset, r13.ActionDisplayerReset, a7), s6(t10.config, Kekule.Widget.ActionOpenConfigWidget, a7), s6(t10.undo, n12.ActionEditorUndo, a7), s6(t10.redo, n12.ActionEditorRedo, a7), s6(t10.selectAll, n12.ActionSelectAll, a7), s6(t10.cloneSelection, n12.ActionCloneSelection, a7), s6(t10.copy, n12.ActionCopySelection, a7), s6(t10.cut, n12.ActionCutSelection, a7), s6(t10.paste, n12.ActionPaste, a7), s6(t10.toggleSelect, n12.ActionToggleSelectState, a7), s6(t10.eraseSelection, n12.ActionEraseSelection, a7), s6(t10.recheckIssues, n12.ActionRecheckIssues, a7), s6(t10.toggleShowAllIssues, n12.ActionToggleShowIssueMarkers, a7), s6(t10.objInspector, n12.ActionComposerToggleObjInspector, a7), s6(t10.issueInspector, n12.ActionComposerToggleIssueInspector, a7), o15();
     for (var l8 = 0, d5 = i11.length; l8 < d5; ++l8) {
@@ -90146,9 +90464,9 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
     n12.push(e16[0]);
     for (r12.preferredIncludeAngle, r12.preferredIncludeAngle, l8 = 1, d5 = e16.length; l8 < d5; ++l8) if (e16[l8][this.OPTIMIZED_COORD_FIELD]) n12.push(e16[l8][this.OPTIMIZED_COORD_FIELD]);
     else {
-      var f7, S5 = e16[l8 - 1], y5 = n12[l8 - 1], O2 = e16[l8], E3 = (h7 = t10.substract(O2, S5), t10.getDistance(S5, O2)), T3 = this._optimizeLineSegmentDistance(E3, r12), A2 = Math.atan2(h7.y, h7.x);
+      var f7, S5 = e16[l8 - 1], O2 = n12[l8 - 1], y5 = e16[l8], E3 = (h7 = t10.substract(y5, S5), t10.getDistance(S5, y5)), T3 = this._optimizeLineSegmentDistance(E3, r12), A2 = Math.atan2(h7.y, h7.x);
       _3 = f7 = this._optimizeDirectionAngle(A2, m5, r12, _3);
-      var k4 = Math.PI - r12.preferredIncludeAngle, b5 = (m5 = [o15.standardizeAngle(f7 - k4), o15.standardizeAngle(f7 + k4)], { x: T3 * Math.cos(f7), y: T3 * Math.sin(f7) }), I3 = t10.add(y5, b5);
+      var k4 = Math.PI - r12.preferredIncludeAngle, b5 = (m5 = [o15.standardizeAngle(f7 - k4), o15.standardizeAngle(f7 + k4)], { x: T3 * Math.cos(f7), y: T3 * Math.sin(f7) }), I3 = t10.add(O2, b5);
       n12.push(I3), e16[l8][this.OPTIMIZED_COORD_FIELD] = I3;
     }
     return n12;
@@ -90160,8 +90478,8 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
       for (var f7 = [n12[0]], S5 = 1; S5 < o15 - 1; ++S5) f7.push(t10.transform2DByMatrix(n12[S5], m5));
       f7.push(e16[o15 - 1]);
     } else {
-      var y5 = t10.divide(t10.substract(s6, a7), o15 - 1), O2 = (f7 = [n12[0]], { x: 0, y: 0 });
-      for (S5 = 0; S5 < o15 - 1; ++S5) O2 = t10.add(O2, y5), f7.push(t10.add(n12[S5], O2));
+      var O2 = t10.divide(t10.substract(s6, a7), o15 - 1), y5 = (f7 = [n12[0]], { x: 0, y: 0 });
+      for (S5 = 0; S5 < o15 - 1; ++S5) y5 = t10.add(y5, O2), f7.push(t10.add(n12[S5], y5));
       f7.push(e16[o15 - 1]);
     }
     return f7;
@@ -91406,7 +91724,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
     }
     return [];
   } }), o15.register(Kekule.IssueCheck.BondOrderChecker.Result, Kekule.IssueCheck.BondOrderChecker.Resolver), Kekule.IssueCheck.Node2DDistanceChecker = Class.create(Kekule.IssueCheck.BaseChecker, { CLASS_NAME: "Kekule.IssueCheck.Node2DDistanceChecker", doApplicable: function(e16, t11, r13) {
-    return t11 instanceof Kekule.ChemSpace && e16 instanceof Kekule.ChemStructureNode && (!(e16 instanceof Kekule.Molecule) || !(e16.isExpanded && e16.isExpanded)) && (!e16.isExposed || e16.isExposed());
+    return t11 instanceof Kekule.ChemSpace && e16 instanceof Kekule.ChemStructureNode && (!(e16 instanceof Kekule.Molecule) || !(e16.isExpanded && e16.isExpanded())) && !(e16 instanceof Kekule.SubGroup && e16.isExpanded && e16.isExpanded()) && (!e16.isExposed || e16.isExposed());
   }, doCheckOnTarget: function(e16, t11, r13, i12, o16) {
     for (var n12 = [], a7 = e16, s6 = t11 + 1, l8 = r13.length; s6 < l8; ++s6) {
       var d5 = r13[s6];
@@ -92140,12 +92458,12 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
         var s6 = o15.height, l8 = a7.width, d5 = n12 && n12.height || s6, u7 = !this._isUsingGridLayout(), c8 = this.getTopRegionElem(), p5 = this.getBottomRegionElem(), h7 = this.getLeftRegionElem(), g4 = Kekule.HtmlElementUtils.getElemPageRect(this.getElement()), C2 = (Kekule.HtmlElementUtils.getElemPageRect(c8), Kekule.HtmlElementUtils.getElemPageRect(p5).width - (n12 ? n12.width : 0)), _3 = Kekule.HtmlElementUtils.getElemPageRect(h7).height - a7.height, m5 = g4.width;
         if (0.85 * g4.height > m5 ? (this.removeClassName(r12.COMPOSER_LANDSCAPE), this.addClassName(r12.COMPOSER_PORTRAIT)) : (this.addClassName(r12.COMPOSER_LANDSCAPE), this.removeClassName(r12.COMPOSER_PORTRAIT)), u7) {
           (S5 = c8.style).top = "0px", S5.left = l8 + "px", S5.right = "0px", S5.height = s6 + "px", (S5 = p5.style).bottom = "0px", S5.height = d5 + "px", S5.left = l8 + "px", S5.right = "0px", (S5 = h7.style).left = "0px", S5.top = s6 + "px", S5.bottom = "0px", S5.width = l8 + "px";
-          var f7, S5, y5 = s6, O2 = l8, E3 = d5;
+          var f7, S5, O2 = s6, y5 = l8, E3 = d5;
           if ((this.getAdvPanelDisplayedComponents() || []).length) {
             var T3 = this.getAdvPanelElem();
             f7 = Kekule.HtmlElementUtils.getElemPageRect(T3).width;
           } else f7 = 0;
-          (S5 = this.getEditorStageElem().style).position = "absolute", S5.top = y5 + "px", S5.left = O2 + "px", S5.bottom = E3 + "px", S5.right = f7 + "px", (S5 = (T3 = this.getAdvPanelElem()).style).position = "absolute", S5.top = y5 + "px", S5.bottom = E3 + "px";
+          (S5 = this.getEditorStageElem().style).position = "absolute", S5.top = O2 + "px", S5.left = y5 + "px", S5.bottom = E3 + "px", S5.right = f7 + "px", (S5 = (T3 = this.getAdvPanelElem()).style).position = "absolute", S5.top = O2 + "px", S5.bottom = E3 + "px";
         }
         if (_3 / C2 > 0.9 ? this.changeAssocToolbarRegion(true) : this.changeAssocToolbarRegion(false), this.getAutoSetMinDimension()) {
           var A2 = { width: l8 + o15.width, height: s6 + a7.height };
@@ -92261,23 +92579,24 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
           n13 >= 0 ? r14[n13] = null : e17.addAttachedAction(t12, i13), Kekule.ObjUtils.notUnset(o16) && e17.setAttachedActionIndex(t12, o16);
         };
         if (a7) for (var C2 = 0, _3 = a7.length; C2 < _3; ++C2) {
-          var m5 = a7[C2];
-          g4(o15, S5 = this._createToolButtonAction(m5, null, p5), h7, 0 === C2, C2);
+          var m5 = a7[C2], f7 = this._createToolButtonAction(m5, null, p5), S5 = o15.getDefaultAttachedActionClass() === f7.getClass() || 0 === C2;
+          g4(o15, f7, h7, S5, C2);
         }
         else {
-          var f7 = o15.getAttachedActionClasses();
-          if (f7) for (C2 = 0, _3 = f7.length; C2 < _3; ++C2) {
-            var S5, y5 = f7[C2];
-            if (!(S5 = d5.get(y5))) {
-              var O2 = (S5 = new y5(this._getActionTargetWidget(y5))).getExplicitGroup && S5.getExplicitGroup();
-              Kekule.ObjUtils.notUnset(O2) ? S5.setCheckGroup(O2) : S5.setCheckGroup(p5), d5.set(y5, S5);
+          var O2 = o15.getAttachedActionClasses();
+          if (O2) for (C2 = 0, _3 = O2.length; C2 < _3; ++C2) {
+            var y5 = O2[C2];
+            if (!(f7 = d5.get(y5))) {
+              var E3 = (f7 = new y5(this._getActionTargetWidget(y5))).getExplicitGroup && f7.getExplicitGroup();
+              Kekule.ObjUtils.notUnset(E3) ? f7.setCheckGroup(E3) : f7.setCheckGroup(p5), d5.set(y5, f7);
             }
-            g4(o15, S5, h7, 0 === C2, C2);
+            S5 = o15.getDefaultAttachedActionClass() === f7.getClass() || 0 === C2;
+            g4(o15, f7, h7, S5, C2);
           }
         }
         if (h7.length) for (C2 = 0, _3 = h7.length; C2 < _3; ++C2) {
-          var E3 = h7[C2];
-          E3 && (o15.removeAttachedAction(E3), d5.remove(E3.getClass()));
+          var T3 = h7[C2];
+          T3 && (o15.removeAttachedAction(T3), d5.remove(T3.getClass()));
         }
       }
     }
@@ -92551,7 +92870,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
   } });
 }();
 
-// ../chemlib/node_modules/kekule/dist/mins/webComponent.min.js
+// node_modules/kekule/dist/mins/webComponent.min.js
 !function() {
   "use strict";
   if ("undefined" != typeof HTMLElement) {
@@ -92771,7 +93090,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
   });
 }();
 
-// ../chemlib/node_modules/kekule/dist/mins/algorithm.min.js
+// node_modules/kekule/dist/mins/algorithm.min.js
 !function() {
   "use strict";
   var e15 = Kekule.ArrayUtils;
@@ -92877,12 +93196,18 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
           var r13 = e17.getClass();
           if (!ClassEx.isOrIsDescendantOfClasses(r13, n12.nodeClasses)) return false;
         }
-        if (n12.ignoreBondedHydrogen && e17.isHydrogenAtom && e17.isHydrogenAtom()) {
+        if (n12.ignoreBondedHydrogen && e17.isHydrogenAtom && e17.isHydrogenAtom() && !e17.getCharge()) {
           var o16 = e17.getLinkedConnectors();
-          if (t11 && (o16 = i11.intersect(o16, t11)), o16.length <= 1) {
+          if (t11 && (o16 = i11.intersect(o16, t11)), 1 === o16.length) {
             var a8 = o16[0];
             if (!a8) return false;
-            if (a8.isSingleBond && a8.isSingleBond()) return false;
+            if (a8.isSingleBond && a8.isSingleBond()) {
+              var l9 = e17.getLinkedObjsOnConnector(a8);
+              if (1 === l9.length) {
+                var s7 = l9[0];
+                if (!s7.isHydrogenAtom || !s7.isHydrogenAtom()) return false;
+              }
+            }
           }
         }
         return true;
@@ -94217,12 +94542,12 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
   "use strict";
   Kekule.globalOptions.add("algorithm.molStandardization", { cleanStructure: true, clearHydrogens: true, unmarshalSubFragments: true, doCanonicalization: true, doAromaticPerception: true, doStereoPerception: true }), Kekule.MolStandardizer = { standardize: function(e15, t10) {
     var r12 = Object.extend({}, Kekule.globalOptions.algorithm.molStandardization), n12 = e15, o15 = Object.extend(r12, t10);
-    return o15.unmarshalSubFragments && n12.unmarshalAllSubFragments(true), o15.cleanStructure && n12.clean(), o15.doCanonicalization && Kekule.canonicalizer.canonicalize(n12, o15.canonicalizerExecutorId || null), o15.doAromaticPerception && n12.perceiveAromaticRings(), o15.doStereoPerception && n12.perceiveStereos(null, true, o15), o15.clearHydrogens && n12.clearExplicitBondHydrogens(true), n12;
+    return o15.unmarshalSubFragments && n12.unmarshalAllSubFragments(true), o15.cleanStructure && n12.clean(), o15.hucklizeStructure && n12.hucklize(), o15.doCanonicalization && Kekule.canonicalizer.canonicalize(n12, o15.canonicalizerExecutorId || null), o15.doAromaticPerception && n12.perceiveAromaticRings(), o15.doStereoPerception && n12.perceiveStereos(null, true, o15), o15.clearHydrogens && n12.clearExplicitBondHydrogens(true), n12;
   } }, Object.extend(Kekule.ChemStructureUtils, { compareStructFragment: function(e15, t10, r12) {
     var n12 = e15.clone(false), o15 = t10.clone(false);
     n12.setCanonicalizationIndex(null), o15.setCanonicalizationIndex(null);
     var i11 = Object.create(r12 || {});
-    return n12 = Kekule.MolStandardizer.standardize(n12, i11), o15 = Kekule.MolStandardizer.standardize(o15, i11), i11.doStandardize = false, i11.extraComparisonProperties = ["canonicalizationIndex"], n12.compareStructure(o15, i11);
+    return void 0 === i11.hucklizeStructure && (i11.hucklizeStructure = true), n12 = Kekule.MolStandardizer.standardize(n12, i11), o15 = Kekule.MolStandardizer.standardize(o15, i11), i11.doStandardize = false, i11.extraComparisonProperties = ["canonicalizationIndex"], n12.compareStructure(o15, i11);
   }, isSameStructure: function(e15, t10, r12) {
     return 0 === Kekule.ChemStructureUtils.compareStructFragment(e15, t10, r12);
   } }), ClassEx.extend(Kekule.ChemObject, { standardize: function(e15) {
@@ -94244,7 +94569,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
     i11 = Object.extend({ level: Kekule.StructureComparationLevel.CONSTITUTION, compareLinkedConnectorCount: false, compareHydrogenCount: false, compareConnectedObjCount: false }, i11);
     var a7 = i11 = Kekule.ObjComparer.getStructureComparisonDetailOptions(i11);
     if (i11.doStandardize) {
-      var l8 = { unmarshalSubFragments: false, doCanonicalization: true, doAromaticPerception: true };
+      var l8 = { unmarshalSubFragments: false, doCanonicalization: true, doAromaticPerception: true, hucklizeStructure: true };
       i11.compareStereo || (l8.doCanonicalization = false), r12.standardize(l8), n12.standardize(l8);
     }
     for (var s6 = n12.getFlattenedShadowFragment(true), u7 = r12.getFlattenedShadowFragment(true).getNonHydrogenNodes()[0], c8 = s6.getNonHydrogenNodes(), d5 = c8.length, g4 = 0, h7 = [], f7 = [], v4 = false; !v4 && g4 < d5; ) v4 = t10._compareNode(u7, c8[g4], h7, f7, a7), ++g4;
@@ -94794,7 +95119,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
   } });
 }();
 
-// ../chemlib/node_modules/kekule/dist/mins/calculation.min.js
+// node_modules/kekule/dist/mins/calculation.min.js
 !function() {
   "use strict";
   Kekule.Calculator = {}, Kekule.Calculator.Utils = { _instanceMaxIndex: 0, generateUid: function() {
@@ -94977,7 +95302,7 @@ Kekule.ChemWidget = {}, Kekule.ChemWidget.AbstractWidget = Kekule.Widget.BaseWid
   };
 }();
 
-// ../chemlib/node_modules/kekule/dist/mins/data.min.js
+// node_modules/kekule/dist/mins/data.min.js
 Kekule.chemicalElementsData = [{ symbol: "H", casId: "1333-74-0", group: 1, period: 1, name: "Hydrogen", atomicNumber: 1, chemicalSerie: "Nonmetals", phase: "Gas", radiiCova: 0.37, radiiVdw: 1.2, paulingE: 2.2, naturalMass: 1.00794075382579 }, { symbol: "He", casId: "7440-59-7", group: 18, period: 1, name: "Helium", atomicNumber: 2, chemicalSerie: "Noble Gasses", phase: "Gas", radiiCova: 0.32, radiiVdw: 1.4, naturalMass: 4.002601902393709 }, { symbol: "Li", casId: "7439-93-2", group: 1, period: 2, name: "Lithium", atomicNumber: 3, chemicalSerie: "Alkali Metals", phase: "Solid", radiiCova: 0.32, radiiVdw: 2.2, paulingE: 0.98, naturalMass: 6.9400376247955 }, { symbol: "Be", casId: "7440-41-7", group: 2, period: 2, name: "Beryllium", atomicNumber: 4, chemicalSerie: "Alkali Earth Metals", phase: "Solid", radiiCova: 0.9, radiiVdw: 1.9, paulingE: 1.57, naturalMass: 9.0121822 }, { symbol: "B", casId: "7440-42-8", group: 13, period: 2, name: "Boron", atomicNumber: 5, chemicalSerie: "Metalloids", phase: "Solid", radiiCova: 0.82, radiiVdw: 1.8, paulingE: 2.04, naturalMass: 10.811028088400002 }, { symbol: "C", casId: "7440-44-0", group: 14, period: 2, name: "Carbon", atomicNumber: 6, chemicalSerie: "Nonmetals", phase: "Solid", radiiCova: 0.77, radiiVdw: 1.7, paulingE: 2.55, naturalMass: 12.010735896788 }, { symbol: "N", casId: "7727-37-9", group: 15, period: 2, name: "Nitrogen", atomicNumber: 7, chemicalSerie: "Nonmetals", phase: "Gas", radiiCova: 0.77, radiiVdw: 1.6, paulingE: 3.04, naturalMass: 14.006743088432001 }, { symbol: "O", casId: "7782-44-7", group: 16, period: 2, name: "Oxygen", atomicNumber: 8, chemicalSerie: "Nonmetals", phase: "Gas", radiiCova: 0.73, radiiVdw: 1.55, paulingE: 3.44, naturalMass: 15.999404927569397 }, { symbol: "F", casId: "7782-41-4", group: 17, period: 2, name: "Fluorine", atomicNumber: 9, chemicalSerie: "Halogens", phase: "Gas", radiiCova: 0.73, radiiVdw: 1.5, paulingE: 3.98, naturalMass: 18.99840322 }, { symbol: "Ne", casId: "7440-01-9", group: 18, period: 2, name: "Neon", atomicNumber: 10, chemicalSerie: "Noble Gasses", phase: "Gas", radiiCova: 0.69, radiiVdw: 1.54, naturalMass: 20.180046383574997 }, { symbol: "Na", casId: "7440-23-5", group: 1, period: 3, name: "Sodium", atomicNumber: 11, chemicalSerie: "Alkali Metals", phase: "Solid", radiiCova: 1.54, radiiVdw: 2.4, paulingE: 0.93, naturalMass: 22.98976928 }, { symbol: "Mg", casId: "7439-95-4", group: 2, period: 3, name: "Magnesium", atomicNumber: 12, chemicalSerie: "Alkali Earth Metals", phase: "Solid", radiiCova: 1.3, radiiVdw: 2.2, paulingE: 1.31, naturalMass: 24.305051612423004 }, { symbol: "Al", casId: "7429-90-5", group: 13, period: 3, name: "Aluminum", atomicNumber: 13, chemicalSerie: "Metals", phase: "Solid", radiiCova: 1.18, radiiVdw: 2.1, paulingE: 1.61, naturalMass: 26.98153863 }, { symbol: "Si", casId: "7440-21-3", group: 14, period: 3, name: "Silicon", atomicNumber: 14, chemicalSerie: "Metalloids", phase: "Solid", radiiCova: 1.11, radiiVdw: 2.1, paulingE: 1.9, naturalMass: 28.085384754933294 }, { symbol: "P", casId: "7723-14-0", group: 15, period: 3, name: "Phosphorus", atomicNumber: 15, chemicalSerie: "Nonmetals", phase: "Solid", radiiCova: 1.06, radiiVdw: 1.95, paulingE: 2.19, naturalMass: 30.97376163 }, { symbol: "S", casId: "7704-34-9", group: 16, period: 3, name: "Sulfur", atomicNumber: 16, chemicalSerie: "Nonmetals", phase: "Solid", radiiCova: 1.02, radiiVdw: 1.8, paulingE: 2.58, naturalMass: 32.066084993038 }, { symbol: "Cl", casId: "7782-50-5", group: 17, period: 3, name: "Chlorine", atomicNumber: 17, chemicalSerie: "Halogens", phase: "Gas", radiiCova: 0.99, radiiVdw: 1.8, paulingE: 3.16, naturalMass: 35.452538168202 }, { symbol: "Ar", casId: "7440-37-1", group: 18, period: 3, name: "Argon", atomicNumber: 18, chemicalSerie: "Noble Gasses", phase: "Gas", radiiCova: 0.97, radiiVdw: 1.8, naturalMass: 39.947676710841314 }, { symbol: "K", casId: "7440-09-7", group: 1, period: 4, name: "Potassium", atomicNumber: 19, chemicalSerie: "Alkali Metals", phase: "Solid", radiiCova: 1.96, radiiVdw: 2.8, paulingE: 0.82, naturalMass: 39.09830112446276 }, { symbol: "Ca", casId: "7440-70-2", group: 2, period: 4, name: "Calcium", atomicNumber: 20, chemicalSerie: "Alkali Earth Metals", phase: "Solid", radiiCova: 1.74, radiiVdw: 2.4, paulingE: 1, naturalMass: 40.078022651988505 }, { symbol: "Sc", casId: "7440-20-2", group: 3, period: 4, name: "Scandium", atomicNumber: 21, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.44, radiiVdw: 2.3, paulingE: 1.36, naturalMass: 44.9559119 }, { symbol: "Ti", casId: "7440-32-6", group: 4, period: 4, name: "Titanium", atomicNumber: 22, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.44, radiiVdw: 2.15, paulingE: 1.54, naturalMass: 47.866749245159994 }, { symbol: "V", casId: "7440-62-2", group: 5, period: 4, name: "Vanadium", atomicNumber: 23, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.25, radiiVdw: 2.05, paulingE: 1.63, naturalMass: 50.94146749750001 }, { symbol: "Cr", casId: "7440-47-3", group: 6, period: 4, name: "Chromium", atomicNumber: 24, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.27, radiiVdw: 2.05, paulingE: 1.66, naturalMass: 51.996133070619 }, { symbol: "Mn", casId: "7439-96-5", group: 7, period: 4, name: "Manganese", atomicNumber: 25, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.39, radiiVdw: 2.05, paulingE: 1.55, naturalMass: 54.9380451 }, { symbol: "Fe", casId: "7439-89-6", group: 8, period: 4, name: "Iron", atomicNumber: 26, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.25, radiiVdw: 2.05, paulingE: 1.83, naturalMass: 55.845145623527 }, { symbol: "Co", casId: "7440-48-4", group: 9, period: 4, name: "Cobalt", atomicNumber: 27, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.26, radiiVdw: 2, paulingE: 1.88, naturalMass: 58.933195 }, { symbol: "Ni", casId: "7440-02-0", group: 10, period: 4, name: "Nickel", atomicNumber: 28, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.21, radiiVdw: 2, paulingE: 1.91, naturalMass: 58.693351562447994 }, { symbol: "Cu", casId: "7440-50-8", group: 11, period: 4, name: "Copper", atomicNumber: 29, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.38, radiiVdw: 2, paulingE: 1.9, naturalMass: 63.5456400936 }, { symbol: "Zn", casId: "7440-66-6", group: 12, period: 4, name: "Zinc", atomicNumber: 30, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.31, radiiVdw: 2.1, paulingE: 1.65, naturalMass: 65.39556265691999 }, { symbol: "Ga", casId: "7440-55-3", group: 13, period: 4, name: "Gallium", atomicNumber: 31, chemicalSerie: "Metals", phase: "Solid", radiiVdw: 2.1, paulingE: 1.81, naturalMass: 69.723065622084 }, { symbol: "Ge", casId: "7440-56-4", group: 14, period: 4, name: "Germanium", atomicNumber: 32, chemicalSerie: "Metalloids", phase: "Solid", radiiCova: 1.22, radiiVdw: 2.1, paulingE: 2.01, naturalMass: 72.61275825015 }, { symbol: "As", casId: "7440-38-2", group: 15, period: 4, name: "Arsenic", atomicNumber: 33, chemicalSerie: "Metalloids", phase: "Solid", radiiCova: 1.19, radiiVdw: 2.05, paulingE: 2.18, naturalMass: 74.9215965 }, { symbol: "Se", casId: "7782-49-2", group: 16, period: 4, name: "Selenium", atomicNumber: 34, chemicalSerie: "Nonmetals", phase: "Solid", radiiCova: 1.16, radiiVdw: 1.9, paulingE: 2.55, naturalMass: 78.9593882401 }, { symbol: "Br", casId: "7726-95-6", group: 17, period: 4, name: "Bromine", atomicNumber: 35, chemicalSerie: "Halogens", phase: "Liquid", radiiCova: 1.14, radiiVdw: 1.9, paulingE: 2.96, naturalMass: 79.90352797085 }, { symbol: "Kr", casId: "7439-90-9", group: 18, period: 4, name: "Krypton", atomicNumber: 36, chemicalSerie: "Noble Gasses", phase: "Gas", radiiCova: 1.1, radiiVdw: 2.02, paulingE: 3, naturalMass: 83.79932499157 }, { symbol: "Rb", casId: "7440-17-7", group: 1, period: 5, name: "Rubidium", atomicNumber: 37, chemicalSerie: "Alkali Metals", phase: "Solid", radiiCova: 2.11, radiiVdw: 2.9, paulingE: 0.82, naturalMass: 85.46766359685701 }, { symbol: "Sr", casId: "7440-24-6", group: 2, period: 5, name: "Strontium", atomicNumber: 38, chemicalSerie: "Alkali Earth Metals", phase: "Solid", radiiCova: 1.92, radiiVdw: 2.55, paulingE: 0.95, naturalMass: 87.61664410489999 }, { symbol: "Y", casId: "7440-65-5", group: 3, period: 5, name: "Yttrium", atomicNumber: 39, chemicalSerie: "Transition metals", phase: "Solid", naturalMass: 88.9058483 }, { symbol: "Zr", casId: "7440-67-7", group: 4, period: 5, name: "Zirconium", atomicNumber: 40, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.48, radiiVdw: 2.3, naturalMass: 91.22364760672002 }, { symbol: "Nb", casId: "7440-03-1", group: 5, period: 5, name: "Niobium", atomicNumber: 41, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.37, radiiVdw: 2.15, naturalMass: 92.9063781 }, { symbol: "Mo", casId: "7439-98-7", group: 6, period: 5, name: "Molybdenum", atomicNumber: 42, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.45, radiiVdw: 2.1, naturalMass: 95.93129211008 }, { symbol: "Tc", casId: "7440-26-8", group: 7, period: 5, name: "Technetium", atomicNumber: 43, chemicalSerie: "Transition metals", phase: "Synthetic", radiiCova: 1.56, radiiVdw: 2.05 }, { symbol: "Ru", casId: "7440-18-8", group: 8, period: 5, name: "Ruthenium", atomicNumber: 44, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.26, radiiVdw: 2.05, naturalMass: 101.06494544279 }, { symbol: "Rh", casId: "7440-16-6", group: 9, period: 5, name: "Rhodium", atomicNumber: 45, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.35, radiiVdw: 2, naturalMass: 102.905504 }, { symbol: "Pd", casId: "7440-05-3", group: 10, period: 5, name: "Palladium", atomicNumber: 46, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.31, radiiVdw: 2.05, naturalMass: 106.41532878129999 }, { symbol: "Ag", casId: "7440-22-4", group: 11, period: 5, name: "Silver", atomicNumber: 47, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.53, radiiVdw: 2.1, naturalMass: 107.86815084455 }, { symbol: "Cd", casId: "7440-43-9", group: 12, period: 5, name: "Cadmium", atomicNumber: 48, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.48, radiiVdw: 2.2, naturalMass: 112.41155220052002 }, { symbol: "In", casId: "7440-74-6", group: 13, period: 5, name: "Indium", atomicNumber: 49, chemicalSerie: "Metals", phase: "Solid", radiiVdw: 2.25, naturalMass: 114.818085722 }, { symbol: "Sn", casId: "7440-31-5", group: 14, period: 5, name: "Tin", atomicNumber: 50, chemicalSerie: "Metals", phase: "Solid", radiiCova: 1.41, radiiVdw: 2.25, naturalMass: 118.71010831537001 }, { symbol: "Sb", casId: "7440-36-0", group: 15, period: 5, name: "Antimony", atomicNumber: 51, chemicalSerie: "Metalloids", phase: "Solid", radiiCova: 1.38, radiiVdw: 2.2, naturalMass: 121.75978613257 }, { symbol: "Te", casId: "13494-80-9", group: 16, period: 5, name: "Tellurium", atomicNumber: 52, chemicalSerie: "Metalloids", phase: "Solid", radiiCova: 1.35, radiiVdw: 2.1, naturalMass: 127.60312784714 }, { symbol: "I", casId: "7553-56-2", group: 17, period: 5, name: "Iodine", atomicNumber: 53, chemicalSerie: "Halogens", phase: "Solid", radiiCova: 1.33, radiiVdw: 2.1, naturalMass: 126.904473 }, { symbol: "Xe", casId: "7440-63-3", group: 18, period: 5, name: "Xenon", atomicNumber: 54, chemicalSerie: "Noble Gasses", phase: "Gas", radiiCova: 1.3, radiiVdw: 2.16, naturalMass: 131.29248059059 }, { symbol: "Cs", casId: "7440-46-2", group: 1, period: 6, name: "Cesium", atomicNumber: 55, chemicalSerie: "Alkali Metals", phase: "Solid", radiiCova: 2.25, radiiVdw: 3, naturalMass: 132.9054519 }, { symbol: "Ba", casId: "7440-39-3", group: 2, period: 6, name: "Barium", atomicNumber: 56, chemicalSerie: "Alkali Earth Metals", phase: "Solid", radiiCova: 1.98, radiiVdw: 2.7, naturalMass: 137.32689183471098 }, { symbol: "La", casId: "7439-91-0", group: 3, period: 6, name: "Lanthanum", atomicNumber: 57, chemicalSerie: "Lanthanides", phase: "Solid", radiiCova: 1.69, radiiVdw: 2.5, naturalMass: 138.90545398283 }, { symbol: "Ce", casId: "7440-45-1", period: 6, name: "Cerium", atomicNumber: 58, chemicalSerie: "Lanthanides", phase: "Solid", radiiVdw: 2.48, naturalMass: 140.11572621392 }, { symbol: "Pr", casId: "7440-10-0", period: 6, name: "Praseodymium", atomicNumber: 59, chemicalSerie: "Lanthanides", phase: "Solid", radiiVdw: 2.47, naturalMass: 140.9076528 }, { symbol: "Nd", casId: "7440-00-8", period: 6, name: "Neodymium", atomicNumber: 60, chemicalSerie: "Lanthanides", phase: "Solid", radiiVdw: 2.47, naturalMass: 144.23613137220002 }, { symbol: "Pm", casId: "7440-12-2", period: 6, name: "Promethium", atomicNumber: 61, chemicalSerie: "Lanthanides", phase: "Synthetic", radiiVdw: 2.43 }, { symbol: "Sm", casId: "7440-19-9", period: 6, name: "Samarium", atomicNumber: 62, chemicalSerie: "Lanthanides", phase: "Solid", radiiVdw: 2.43, naturalMass: 150.36634852618 }, { symbol: "Eu", casId: "7440-53-1", period: 6, name: "Europium", atomicNumber: 63, chemicalSerie: "Lanthanides", phase: "Solid", radiiCova: 2.4, naturalMass: 151.96437047419 }, { symbol: "Gd", casId: "7440-54-2", period: 6, name: "Gadolinium", atomicNumber: 64, chemicalSerie: "Lanthanides", phase: "Solid", radiiVdw: 2.38, naturalMass: 157.25212221544 }, { symbol: "Tb", casId: "7440-27-9", period: 6, name: "Terbium", atomicNumber: 65, chemicalSerie: "Lanthanides", phase: "Solid", radiiVdw: 2.37, naturalMass: 158.9253468 }, { symbol: "Dy", casId: "7429-91-6", period: 6, name: "Dysprosium", atomicNumber: 66, chemicalSerie: "Lanthanides", phase: "Solid", radiiVdw: 2.35, naturalMass: 162.49703350552 }, { symbol: "Ho", casId: "7440-60-0", period: 6, name: "Holmium", atomicNumber: 67, chemicalSerie: "Lanthanides", phase: "Solid", radiiVdw: 2.33, naturalMass: 164.9303221 }, { symbol: "Er", casId: "7440-52-0", period: 6, name: "Erbium", atomicNumber: 68, chemicalSerie: "Lanthanides", phase: "Solid", radiiVdw: 2.32, naturalMass: 167.25630413192 }, { symbol: "Tm", casId: "7440-30-4", period: 6, name: "Thulium", atomicNumber: 69, chemicalSerie: "Lanthanides", phase: "Solid", radiiVdw: 2.3, naturalMass: 168.9342133 }, { symbol: "Yb", casId: "7440-64-4", period: 6, name: "Ytterbium", atomicNumber: 70, chemicalSerie: "Lanthanides", phase: "Solid", radiiVdw: 2.28, naturalMass: 173.03769558789998 }, { symbol: "Lu", casId: "7439-94-3", period: 6, name: "Lutetium", atomicNumber: 71, chemicalSerie: "Lanthanides", phase: "Solid", radiiCova: 1.6, radiiVdw: 2.27, naturalMass: 174.96672138555 }, { symbol: "Hf", casId: "7440-58-6", group: 4, period: 6, name: "Hafnium", atomicNumber: 72, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.5, radiiVdw: 2.25, naturalMass: 178.48497214162 }, { symbol: "Ta", casId: "7440-25-7", group: 5, period: 6, name: "Tantalum", atomicNumber: 73, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.38, radiiVdw: 2.2, naturalMass: 180.94787573628 }, { symbol: "W", casId: "7440-33-7", group: 6, period: 6, name: "Tungsten", atomicNumber: 74, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.46, radiiVdw: 2.1, naturalMass: 183.84177810241 }, { symbol: "Re", casId: "7440-15-5", group: 7, period: 6, name: "Rhenium", atomicNumber: 75, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.59, radiiVdw: 2.05, naturalMass: 186.2067066106 }, { symbol: "Os", casId: "7440-04-2", group: 8, period: 6, name: "Osmium", atomicNumber: 76, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.28, radiiVdw: 2, naturalMass: 190.22486304558998 }, { symbol: "Ir", casId: "7439-88-5", group: 9, period: 6, name: "Iridium", atomicNumber: 77, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.37, radiiVdw: 2, naturalMass: 192.2160564148 }, { symbol: "Pt", casId: "7440-06-4", group: 10, period: 6, name: "Platinum", atomicNumber: 78, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.28, radiiVdw: 2.05, naturalMass: 195.07780788031297 }, { symbol: "Au", casId: "7440-57-5", group: 11, period: 6, name: "Gold", atomicNumber: 79, chemicalSerie: "Transition metals", phase: "Solid", radiiCova: 1.44, radiiVdw: 2.1, naturalMass: 196.9665687 }, { symbol: "Hg", casId: "7439-97-6", group: 12, period: 6, name: "Mercury", atomicNumber: 80, chemicalSerie: "Transition metals", phase: "Liquid", radiiCova: 1.49, radiiVdw: 2.05, naturalMass: 200.59916661780002 }, { symbol: "Tl", casId: "7440-28-0", group: 13, period: 6, name: "Thallium", atomicNumber: 81, chemicalSerie: "Metals", phase: "Solid", radiiCova: 1.49, radiiVdw: 2.2, naturalMass: 204.38333242650796 }, { symbol: "Pb", casId: "7439-92-1", group: 14, period: 6, name: "Lead", atomicNumber: 82, chemicalSerie: "Metals", phase: "Solid", radiiCova: 1.48, radiiVdw: 2.3, naturalMass: 207.21690766300003 }, { symbol: "Bi", casId: "7440-69-9", group: 15, period: 6, name: "Bismuth", atomicNumber: 83, chemicalSerie: "Metals", phase: "Solid", radiiCova: 1.47, radiiVdw: 2.3, naturalMass: 208.9803987 }, { symbol: "Po", casId: "7440-08-6", group: 16, period: 6, name: "Polonium", atomicNumber: 84, chemicalSerie: "Metalloids", phase: "Solid", radiiCova: 1.46, radiiVdw: 2 }, { symbol: "At", casId: "7440-08-6", group: 17, period: 6, name: "Astatine", atomicNumber: 85, chemicalSerie: "Halogens", phase: "Solid", radiiVdw: 2 }, { symbol: "Rn", casId: "10043-92-2", group: 18, period: 6, name: "Radon", atomicNumber: 86, chemicalSerie: "Noble Gasses", phase: "Gas", radiiCova: 1.45, radiiVdw: 2 }, { symbol: "Fr", casId: "7440-73-5", group: 1, period: 7, name: "Francium", atomicNumber: 87, chemicalSerie: "Alkali Metals", phase: "Solid", radiiVdw: 2 }, { symbol: "Ra", casId: "7440-14-4", group: 2, period: 7, name: "Radium", atomicNumber: 88, chemicalSerie: "Alkali Earth Metals", phase: "Solid", radiiVdw: 2 }, { symbol: "Ac", casId: "7440-34-8", group: 3, period: 7, name: "Actinium", atomicNumber: 89, chemicalSerie: "Actinides", phase: "Synthetic", radiiVdw: 2 }, { symbol: "Th", casId: "7440-29-1", period: 7, name: "Thorium", atomicNumber: 90, chemicalSerie: "Actinides", phase: "Solid", radiiVdw: 2.3, naturalMass: 232.0380553 }, { symbol: "Pa", casId: "7440-13-3", period: 7, name: "Protactinium", atomicNumber: 91, chemicalSerie: "Actinides", phase: "Solid", radiiVdw: 2, naturalMass: 231.035884 }, { symbol: "U", casId: "7440-61-1", period: 7, name: "Uranium", atomicNumber: 92, chemicalSerie: "Actinides", phase: "Solid", radiiVdw: 2.3, naturalMass: 238.0289182792545 }, { symbol: "Np", casId: "7439-99-8", period: 7, name: "Neptunium", atomicNumber: 93, chemicalSerie: "Actinides", phase: "Synthetic", radiiVdw: 2 }, { symbol: "Pu", casId: "7440-07-5", period: 7, name: "Plutonium", atomicNumber: 94, chemicalSerie: "Actinides", phase: "Synthetic", radiiVdw: 2 }, { symbol: "Am", casId: "7440-35-9", period: 7, name: "Americium", atomicNumber: 95, chemicalSerie: "Actinides", phase: "Synthetic", radiiVdw: 2 }, { symbol: "Cm", casId: "7440-51-9", period: 7, name: "Curium", atomicNumber: 96, chemicalSerie: "Actinides", phase: "Synthetic", radiiVdw: 2 }, { symbol: "Bk", casId: "7440-40-6", period: 7, name: "Berkelium", atomicNumber: 97, chemicalSerie: "Actinides", phase: "Synthetic", radiiVdw: 2 }, { symbol: "Cf", casId: "7440-71-3", period: 7, name: "Californium", atomicNumber: 98, chemicalSerie: "Actinides", phase: "Synthetic", radiiVdw: 2 }, { symbol: "Es", casId: "7429-92-7", period: 7, name: "Einsteinium", atomicNumber: 99, chemicalSerie: "Actinides", phase: "Synthetic", radiiVdw: 2 }, { symbol: "Fm", casId: "7440-72-4", period: 7, name: "Fermium", atomicNumber: 100, chemicalSerie: "Actinides", phase: "Synthetic", radiiVdw: 2 }, { symbol: "Md", casId: "7440-11-1", period: 7, name: "Mendelevium", atomicNumber: 101, chemicalSerie: "Actinides", phase: "Synthetic", radiiVdw: 2 }, { symbol: "No", casId: "10028-14-5", period: 7, name: "Nobelium", atomicNumber: 102, chemicalSerie: "Actinides", phase: "Synthetic", radiiVdw: 2 }, { symbol: "Lr", casId: "22537-19-5", period: 7, name: "Lawrencium", atomicNumber: 103, chemicalSerie: "Actinides", phase: "Synthetic", radiiVdw: 2 }, { symbol: "Rf", casId: "53850-36-5", group: 4, period: 7, name: "Rutherfordium", atomicNumber: 104, chemicalSerie: "Transition metals", phase: "Synthetic" }, { symbol: "Db", casId: "53850-35-4", group: 5, period: 7, name: "Dubnium", atomicNumber: 105, chemicalSerie: "Transition metals", phase: "Synthetic" }, { symbol: "Sg", casId: "54038-81-2", group: 6, period: 7, name: "Seaborgium", atomicNumber: 106, chemicalSerie: "Transition metals", phase: "Synthetic" }, { symbol: "Bh", casId: "54037-14-8", group: 7, period: 7, name: "Bohrium", atomicNumber: 107, chemicalSerie: "Transition metals", phase: "Synthetic" }, { symbol: "Hs", casId: "54037-57-9", group: 8, period: 7, name: "Hassium", atomicNumber: 108, chemicalSerie: "Transition metals", phase: "Synthetic" }, { symbol: "Mt", casId: "54038-01-6", group: 9, period: 7, name: "Meitnerium", atomicNumber: 109, chemicalSerie: "Transition metals", phase: "Synthetic" }, { symbol: "Ds", casId: "54083-77-1", group: 10, period: 7, name: "Darmstadtium", atomicNumber: 110, chemicalSerie: "Transition metals", phase: "Synthetic" }, { symbol: "Rg", casId: "54386-24-2", group: 11, period: 7, name: "Roentgenium", atomicNumber: 111, chemicalSerie: "Transition metals", phase: "Synthetic" }, { symbol: "Uub", group: 12, period: 7, name: "Ununbium", atomicNumber: 112, chemicalSerie: "Transition metals", phase: "Synthetic" }], Kekule.isotopesData = [{ elementSymbol: "H", atomicNumber: 1, isotopes: [{ id: "H1", massNumber: 1, relativeAbundance: 0.999885, atomicNumber: 1, exactMass: 1.007825032, spin: "1/2+", magneticMoment: "+2.792846", halfLife: -1 }, { id: "H2", massNumber: 2, relativeAbundance: 115e-6, atomicNumber: 1, exactMass: 2.014101778, spin: "1+", magneticMoment: "+0.857438", halfLife: -1 }, { id: "H3", massNumber: 3, exactMass: 3.016049278, atomicNumber: 1, spin: "1/2+", magneticMoment: "+2.978960", halfLife: 388839e3, betaminusDecay: "0.01861", betaminusDecayLikeliness: "100.0" }, { id: "H4", massNumber: 4, exactMass: 4.02781, atomicNumber: 1 }, { id: "H5", massNumber: 5, exactMass: 5.03531, atomicNumber: 1 }, { id: "H6", massNumber: 6, exactMass: 6.04494, atomicNumber: 1 }, { id: "H7", massNumber: 7, exactMass: 7.05275, atomicNumber: 1 }] }, { elementSymbol: "He", atomicNumber: 2, isotopes: [{ id: "He3", massNumber: 3, relativeAbundance: 137e-8, atomicNumber: 2, exactMass: 3.016029319, spin: "1/2+", magneticMoment: "-2.127624", halfLife: -1 }, { id: "He4", massNumber: 4, relativeAbundance: 0.99999863, atomicNumber: 2, exactMass: 4.002603254, spin: "0+", halfLife: -1 }, { id: "He5", massNumber: 5, exactMass: 5.01222, atomicNumber: 2 }, { id: "He6", massNumber: 6, exactMass: 6.0188891, atomicNumber: 2, halfLife: 0.8067 }, { id: "He7", massNumber: 7, exactMass: 7.028021, atomicNumber: 2 }, { id: "He8", massNumber: 8, exactMass: 8.033922, atomicNumber: 2, halfLife: 0.119 }, { id: "He9", massNumber: 9, exactMass: 9.04395, atomicNumber: 2 }, { id: "He10", massNumber: 10, exactMass: 10.0524, atomicNumber: 2 }] }, null, null, { elementSymbol: "B", atomicNumber: 5, isotopes: [{ id: "B6", massNumber: 6, exactMass: 6.04681, atomicNumber: 5 }, { id: "B7", massNumber: 7, exactMass: 7.02992, atomicNumber: 5 }, { id: "B8", massNumber: 8, exactMass: 8.0246072, atomicNumber: 5, halfLife: 0.77 }, { id: "B9", massNumber: 9, exactMass: 9.0133288, atomicNumber: 5 }, { id: "B10", massNumber: 10, relativeAbundance: 0.19899999999999998, atomicNumber: 5, exactMass: 10.012937, spin: "3+", magneticMoment: "+1.80065", halfLife: -1 }, { id: "B11", massNumber: 11, relativeAbundance: 0.8009999999999999, atomicNumber: 5, exactMass: 11.0093054, spin: "3/2-", magneticMoment: "+2.688637", halfLife: -1 }, { id: "B12", massNumber: 12, exactMass: 12.0143521, atomicNumber: 5, halfLife: 0.0202 }, { id: "B13", massNumber: 13, exactMass: 13.0177802, atomicNumber: 5, halfLife: 0.01736 }, { id: "B14", massNumber: 14, exactMass: 14.025404, atomicNumber: 5, halfLife: 0.0138 }, { id: "B15", massNumber: 15, exactMass: 15.031103, atomicNumber: 5, halfLife: 0.0105 }, { id: "B16", massNumber: 16, exactMass: 16.03981, atomicNumber: 5 }, { id: "B17", massNumber: 17, exactMass: 17.04699, atomicNumber: 5, halfLife: 508e-5 }, { id: "B18", massNumber: 18, exactMass: 18.05617, atomicNumber: 5 }, { id: "B19", massNumber: 19, exactMass: 19.06373, atomicNumber: 5 }] }, { elementSymbol: "C", atomicNumber: 6, isotopes: [{ id: "C8", massNumber: 8, exactMass: 8.037675, atomicNumber: 6 }, { id: "C9", massNumber: 9, exactMass: 9.0310367, atomicNumber: 6, halfLife: 0.126 }, { id: "C10", massNumber: 10, exactMass: 10.0168532, atomicNumber: 6, halfLife: 19.255 }, { id: "C11", massNumber: 11, exactMass: 11.0114336, atomicNumber: 6, spin: "3/2-", halfLife: 1223.4, betaplusDecay: "0.96", betaplusDecayLikeliness: "100.0" }, { id: "C12", massNumber: 12, relativeAbundance: 0.9893000000000001, atomicNumber: 6, exactMass: 12, spin: "0+", halfLife: -1 }, { id: "C13", massNumber: 13, relativeAbundance: 0.010700000000000001, atomicNumber: 6, exactMass: 13.00335484, spin: "1/2-", magneticMoment: "+0.702411", halfLife: -1 }, { id: "C14", massNumber: 14, exactMass: 14.00324199, atomicNumber: 6, halfLife: 180701e6, betaminusDecay: "0.15648", betaminusDecayLikeliness: "100.0" }, { id: "C15", massNumber: 15, exactMass: 15.0105993, atomicNumber: 6, halfLife: 2.449 }, { id: "C16", massNumber: 16, exactMass: 16.014701, atomicNumber: 6, halfLife: 0.747 }, { id: "C17", massNumber: 17, exactMass: 17.022586, atomicNumber: 6, halfLife: 0.193 }, { id: "C18", massNumber: 18, exactMass: 18.02676, atomicNumber: 6, halfLife: 0.095 }, { id: "C19", massNumber: 19, exactMass: 19.03481, atomicNumber: 6, halfLife: 0.046 }, { id: "C20", massNumber: 20, exactMass: 20.04032, atomicNumber: 6, halfLife: 0.014 }, { id: "C21", massNumber: 21, exactMass: 21.04934, atomicNumber: 6 }, { id: "C22", massNumber: 22, exactMass: 22.0572, atomicNumber: 6 }] }, { elementSymbol: "N", atomicNumber: 7, isotopes: [{ id: "N10", massNumber: 10, exactMass: 10.04165, atomicNumber: 7 }, { id: "N11", massNumber: 11, exactMass: 11.02609, atomicNumber: 7 }, { id: "N12", massNumber: 12, exactMass: 12.0186132, atomicNumber: 7, halfLife: 0.011 }, { id: "N13", massNumber: 13, exactMass: 13.00573861, atomicNumber: 7, halfLife: 597.9 }, { id: "N14", massNumber: 14, relativeAbundance: 0.9963200000000001, atomicNumber: 7, exactMass: 14.003074, spin: "1+", magneticMoment: "+0.403761", halfLife: -1 }, { id: "N15", massNumber: 15, relativeAbundance: 368e-5, atomicNumber: 7, exactMass: 15.0001089, spin: "1/2-", magneticMoment: "-0.283189", halfLife: -1 }, { id: "N16", massNumber: 16, exactMass: 16.0061017, atomicNumber: 7, halfLife: 7.13 }, { id: "N17", massNumber: 17, exactMass: 17.00845, atomicNumber: 7, halfLife: 4.173 }, { id: "N18", massNumber: 18, exactMass: 18.014079, atomicNumber: 7, halfLife: 0.624 }, { id: "N19", massNumber: 19, exactMass: 19.017029, atomicNumber: 7, halfLife: 0.304 }, { id: "N20", massNumber: 20, exactMass: 20.02337, atomicNumber: 7, halfLife: 0.1 }, { id: "N21", massNumber: 21, exactMass: 21.02711, atomicNumber: 7, halfLife: 0.085 }, { id: "N22", massNumber: 22, exactMass: 22.03439, atomicNumber: 7, halfLife: 0.024 }, { id: "N23", massNumber: 23, exactMass: 23.04122, atomicNumber: 7 }, { id: "N24", massNumber: 24, exactMass: 24.05104, atomicNumber: 7 }, { id: "N25", massNumber: 25, exactMass: 25.06066, atomicNumber: 7 }] }, { elementSymbol: "O", atomicNumber: 8, isotopes: [{ id: "O12", massNumber: 12, exactMass: 12.034405, atomicNumber: 8 }, { id: "O13", massNumber: 13, exactMass: 13.024812, atomicNumber: 8, halfLife: 858e-5 }, { id: "O14", massNumber: 14, exactMass: 14.00859625, atomicNumber: 8, halfLife: 70.606 }, { id: "O15", massNumber: 15, exactMass: 15.0030656, atomicNumber: 8, halfLife: 122.24 }, { id: "O16", massNumber: 16, relativeAbundance: 0.9975700000000001, atomicNumber: 8, exactMass: 15.99491462, spin: "0+", halfLife: -1 }, { id: "O17", massNumber: 17, relativeAbundance: 37999999999999997e-20, atomicNumber: 8, exactMass: 16.9991317, spin: "5/2+", magneticMoment: "-1.89379", halfLife: -1 }, { id: "O18", massNumber: 18, relativeAbundance: 0.0020499999999999997, atomicNumber: 8, exactMass: 17.999161, spin: "0+", halfLife: -1 }, { id: "O19", massNumber: 19, exactMass: 19.00358, atomicNumber: 8, halfLife: 26.91 }, { id: "O20", massNumber: 20, exactMass: 20.0040767, atomicNumber: 8, halfLife: 13.51 }, { id: "O21", massNumber: 21, exactMass: 21.008656, atomicNumber: 8, halfLife: 3.42 }, { id: "O22", massNumber: 22, exactMass: 22.00997, atomicNumber: 8, halfLife: 2.25 }, { id: "O23", massNumber: 23, exactMass: 23.01569, atomicNumber: 8, halfLife: 0.082 }, { id: "O24", massNumber: 24, exactMass: 24.02047, atomicNumber: 8, halfLife: 0.061 }, { id: "O25", massNumber: 25, exactMass: 25.02946, atomicNumber: 8 }, { id: "O26", massNumber: 26, exactMass: 26.03834, atomicNumber: 8 }, { id: "O27", massNumber: 27, exactMass: 27.04826, atomicNumber: 8 }, { id: "O28", massNumber: 28, exactMass: 28.05781, atomicNumber: 8 }] }, { elementSymbol: "F", atomicNumber: 9, isotopes: [{ id: "F14", massNumber: 14, exactMass: 14.03506, atomicNumber: 9 }, { id: "F15", massNumber: 15, exactMass: 15.01801, atomicNumber: 9, halfLife: -1 }, { id: "F16", massNumber: 16, exactMass: 16.011466, atomicNumber: 9 }, { id: "F17", massNumber: 17, exactMass: 17.00209524, atomicNumber: 9, halfLife: 64.49 }, { id: "F18", massNumber: 18, exactMass: 18.000938, atomicNumber: 9, spin: "1+", halfLife: 6586.2, betaplusDecay: "0.64", betaplusDecayLikeliness: "97.0", ecDecay: "", ecDecayLikeliness: "3.0" }, { id: "F19", massNumber: 19, relativeAbundance: 1, atomicNumber: 9, exactMass: 18.99840322, spin: "1/2+", magneticMoment: "+2.628866", halfLife: -1 }, { id: "F20", massNumber: 20, exactMass: 19.99998132, atomicNumber: 9, halfLife: 11 }, { id: "F21", massNumber: 21, exactMass: 20.999949, atomicNumber: 9, halfLife: 4.158 }, { id: "F22", massNumber: 22, exactMass: 22.002999, atomicNumber: 9, halfLife: 4.23 }, { id: "F23", massNumber: 23, exactMass: 23.00357, atomicNumber: 9, halfLife: 2.23 }, { id: "F24", massNumber: 24, exactMass: 24.00812, atomicNumber: 9, halfLife: 0.34 }, { id: "F25", massNumber: 25, exactMass: 25.0121, atomicNumber: 9, halfLife: 0.059 }, { id: "F26", massNumber: 26, exactMass: 26.01962, atomicNumber: 9 }, { id: "F27", massNumber: 27, exactMass: 27.02676, atomicNumber: 9 }, { id: "F28", massNumber: 28, exactMass: 28.03567, atomicNumber: 9 }, { id: "F29", massNumber: 29, exactMass: 29.04326, atomicNumber: 9 }, { id: "F30", massNumber: 30, exactMass: 30.0525, atomicNumber: 9 }, { id: "F31", massNumber: 31, exactMass: 31.06043, atomicNumber: 9 }] }, null, null, null, null, { elementSymbol: "Si", atomicNumber: 14, isotopes: [{ id: "Si22", massNumber: 22, exactMass: 22.03453, atomicNumber: 14, halfLife: 6e-3 }, { id: "Si23", massNumber: 23, exactMass: 23.02552, atomicNumber: 14 }, { id: "Si24", massNumber: 24, exactMass: 24.011546, atomicNumber: 14, halfLife: 0.102 }, { id: "Si25", massNumber: 25, exactMass: 25.004106, atomicNumber: 14, halfLife: 0.22 }, { id: "Si26", massNumber: 26, exactMass: 25.99233, atomicNumber: 14, halfLife: 2.234 }, { id: "Si27", massNumber: 27, exactMass: 26.98670491, atomicNumber: 14, halfLife: 4.16 }, { id: "Si28", massNumber: 28, relativeAbundance: 0.9222969999999999, atomicNumber: 14, exactMass: 27.97692653, spin: "0+", halfLife: -1 }, { id: "Si29", massNumber: 29, relativeAbundance: 0.046832000000000006, atomicNumber: 14, exactMass: 28.9764947, spin: "1/2+", magneticMoment: "-0.55529", halfLife: -1 }, { id: "Si30", massNumber: 30, relativeAbundance: 0.030872, atomicNumber: 14, exactMass: 29.97377017, spin: "0+", halfLife: -1 }, { id: "Si31", massNumber: 31, exactMass: 30.97536323, atomicNumber: 14, halfLife: 9438 }, { id: "Si32", massNumber: 32, exactMass: 31.97414808, atomicNumber: 14, halfLife: 47304e5 }, { id: "Si33", massNumber: 33, exactMass: 32.978, atomicNumber: 14, halfLife: 6.18 }, { id: "Si34", massNumber: 34, exactMass: 33.978576, atomicNumber: 14, halfLife: 2.77 }, { id: "Si35", massNumber: 35, exactMass: 34.98458, atomicNumber: 14, halfLife: 0.78 }, { id: "Si36", massNumber: 36, exactMass: 35.9866, atomicNumber: 14, halfLife: 0.45 }, { id: "Si37", massNumber: 37, exactMass: 36.99294, atomicNumber: 14 }, { id: "Si38", massNumber: 38, exactMass: 37.99563, atomicNumber: 14 }, { id: "Si39", massNumber: 39, exactMass: 39.00207, atomicNumber: 14 }, { id: "Si40", massNumber: 40, exactMass: 40.00587, atomicNumber: 14 }, { id: "Si41", massNumber: 41, exactMass: 41.01456, atomicNumber: 14 }, { id: "Si42", massNumber: 42, exactMass: 42.01979, atomicNumber: 14 }, { id: "Si43", massNumber: 43, exactMass: 43.02866, atomicNumber: 14 }, { id: "Si44", massNumber: 44, exactMass: 44.03526, atomicNumber: 14 }] }, { elementSymbol: "P", atomicNumber: 15, isotopes: [{ id: "P24", massNumber: 24, exactMass: 24.03435, atomicNumber: 15 }, { id: "P25", massNumber: 25, exactMass: 25.02026, atomicNumber: 15 }, { id: "P26", massNumber: 26, exactMass: 26.01178, atomicNumber: 15, halfLife: 0.02 }, { id: "P27", massNumber: 27, exactMass: 26.99923, atomicNumber: 15, halfLife: 0.26 }, { id: "P28", massNumber: 28, exactMass: 27.992315, atomicNumber: 15, halfLife: 0.2703 }, { id: "P29", massNumber: 29, exactMass: 28.9818006, atomicNumber: 15, halfLife: 4.14 }, { id: "P30", massNumber: 30, exactMass: 29.9783138, atomicNumber: 15, halfLife: 149.88 }, { id: "P31", massNumber: 31, relativeAbundance: 1, atomicNumber: 15, exactMass: 30.97376163, spin: "1/2+", magneticMoment: "+1.13160", halfLife: -1 }, { id: "P32", massNumber: 32, exactMass: 31.97390727, atomicNumber: 15, spin: "1+", magneticMoment: "-0.2524", halfLife: 1232240, betaminusDecay: "1.710", betaminusDecayLikeliness: "100.0" }, { id: "P33", massNumber: 33, exactMass: 32.9717255, atomicNumber: 15, halfLife: 2189380 }, { id: "P34", massNumber: 34, exactMass: 33.973636, atomicNumber: 15, halfLife: 12.43 }, { id: "P35", massNumber: 35, exactMass: 34.9733141, atomicNumber: 15, halfLife: 47.3 }, { id: "P36", massNumber: 36, exactMass: 35.97826, atomicNumber: 15, halfLife: 5.6 }, { id: "P37", massNumber: 37, exactMass: 36.97961, atomicNumber: 15, halfLife: 2.31 }, { id: "P38", massNumber: 38, exactMass: 37.98416, atomicNumber: 15, halfLife: 0.64 }, { id: "P39", massNumber: 39, exactMass: 38.98618, atomicNumber: 15, halfLife: 0.16 }, { id: "P40", massNumber: 40, exactMass: 39.9913, atomicNumber: 15, halfLife: 0.26 }, { id: "P41", massNumber: 41, exactMass: 40.99434, atomicNumber: 15, halfLife: 0.12 }, { id: "P42", massNumber: 42, exactMass: 42.00101, atomicNumber: 15, halfLife: 0.11 }, { id: "P43", massNumber: 43, exactMass: 43.00619, atomicNumber: 15, halfLife: 0.033 }, { id: "P44", massNumber: 44, exactMass: 44.01299, atomicNumber: 15 }, { id: "P45", massNumber: 45, exactMass: 45.01922, atomicNumber: 15 }, { id: "P46", massNumber: 46, exactMass: 46.02738, atomicNumber: 15 }] }, { elementSymbol: "S", atomicNumber: 16, isotopes: [{ id: "S26", massNumber: 26, exactMass: 26.02788, atomicNumber: 16 }, { id: "S27", massNumber: 27, exactMass: 27.01883, atomicNumber: 16, halfLife: 0.021 }, { id: "S28", massNumber: 28, exactMass: 28.00437, atomicNumber: 16, halfLife: 0.125 }, { id: "S29", massNumber: 29, exactMass: 28.99661, atomicNumber: 16, halfLife: 0.187 }, { id: "S30", massNumber: 30, exactMass: 29.984903, atomicNumber: 16, halfLife: 1.178 }, { id: "S31", massNumber: 31, exactMass: 30.9795547, atomicNumber: 16, halfLife: 2.572 }, { id: "S32", massNumber: 32, relativeAbundance: 0.9493, atomicNumber: 16, exactMass: 31.972071, spin: "0+", halfLife: -1 }, { id: "S33", massNumber: 33, relativeAbundance: 76e-4, atomicNumber: 16, exactMass: 32.97145876, spin: "3/2+", magneticMoment: "+0.643821", halfLife: -1 }, { id: "S34", massNumber: 34, relativeAbundance: 0.0429, atomicNumber: 16, exactMass: 33.9678669, spin: "0+", halfLife: -1 }, { id: "S35", massNumber: 35, exactMass: 34.96903216, atomicNumber: 16, spin: "3/2+", magneticMoment: "+1", halfLife: 7544450, betaminusDecay: "0.1674", betaminusDecayLikeliness: "100.0" }, { id: "S36", massNumber: 36, relativeAbundance: 2e-4, atomicNumber: 16, exactMass: 35.96708076, spin: "0+", halfLife: -1 }, { id: "S37", massNumber: 37, exactMass: 36.97112557, atomicNumber: 16, halfLife: 303 }, { id: "S38", massNumber: 38, exactMass: 37.971163, atomicNumber: 16, halfLife: 10218 }, { id: "S39", massNumber: 39, exactMass: 38.97513, atomicNumber: 16, halfLife: 11.5 }, { id: "S40", massNumber: 40, exactMass: 39.97545, atomicNumber: 16, halfLife: 8.8 }, { id: "S41", massNumber: 41, exactMass: 40.97958, atomicNumber: 16 }, { id: "S42", massNumber: 42, exactMass: 41.98102, atomicNumber: 16, halfLife: 0.56 }, { id: "S43", massNumber: 43, exactMass: 42.98715, atomicNumber: 16, halfLife: 0.22 }, { id: "S44", massNumber: 44, exactMass: 43.99021, atomicNumber: 16, halfLife: 0.123 }, { id: "S45", massNumber: 45, exactMass: 44.99651, atomicNumber: 16, halfLife: 0.082 }, { id: "S46", massNumber: 46, exactMass: 46.00075, atomicNumber: 16 }, { id: "S47", massNumber: 47, exactMass: 47.00859, atomicNumber: 16 }, { id: "S48", massNumber: 48, exactMass: 48.01417, atomicNumber: 16 }, { id: "S49", massNumber: 49, exactMass: 49.02362, atomicNumber: 16 }] }, { elementSymbol: "Cl", atomicNumber: 17, isotopes: [{ id: "Cl28", massNumber: 28, exactMass: 28.02851, atomicNumber: 17 }, { id: "Cl29", massNumber: 29, exactMass: 29.01411, atomicNumber: 17 }, { id: "Cl30", massNumber: 30, exactMass: 30.00477, atomicNumber: 17 }, { id: "Cl31", massNumber: 31, exactMass: 30.99241, atomicNumber: 17, halfLife: 0.15 }, { id: "Cl32", massNumber: 32, exactMass: 31.98569, atomicNumber: 17, halfLife: 0.298 }, { id: "Cl33", massNumber: 33, exactMass: 32.9774519, atomicNumber: 17, halfLife: 2.511 }, { id: "Cl34", massNumber: 34, exactMass: 33.97376282, atomicNumber: 17, halfLife: 1.5264 }, { id: "Cl35", massNumber: 35, relativeAbundance: 0.7578, atomicNumber: 17, exactMass: 34.96885268, spin: "3/2+", magneticMoment: "+0.82187", halfLife: -1 }, { id: "Cl36", massNumber: 36, exactMass: 35.96830698, atomicNumber: 17 }, { id: "Cl37", massNumber: 37, relativeAbundance: 0.2422, atomicNumber: 17, exactMass: 36.96590259, spin: "3/2+", magneticMoment: "+0.68412", halfLife: -1 }, { id: "Cl38", massNumber: 38, exactMass: 37.96801043, atomicNumber: 17, halfLife: 2234.4 }, { id: "Cl39", massNumber: 39, exactMass: 38.9680082, atomicNumber: 17, halfLife: 3336 }, { id: "Cl40", massNumber: 40, exactMass: 39.97042, atomicNumber: 17, halfLife: 81 }, { id: "Cl41", massNumber: 41, exactMass: 40.97068, atomicNumber: 17, halfLife: 38.4 }, { id: "Cl42", massNumber: 42, exactMass: 41.97325, atomicNumber: 17, halfLife: 6.8 }, { id: "Cl43", massNumber: 43, exactMass: 42.97405, atomicNumber: 17, halfLife: 3.3 }, { id: "Cl44", massNumber: 44, exactMass: 43.97828, atomicNumber: 17, halfLife: 0.434 }, { id: "Cl45", massNumber: 45, exactMass: 44.98029, atomicNumber: 17, halfLife: 0.4 }, { id: "Cl46", massNumber: 46, exactMass: 45.98421, atomicNumber: 17, halfLife: 0.223 }, { id: "Cl47", massNumber: 47, exactMass: 46.98871, atomicNumber: 17 }, { id: "Cl48", massNumber: 48, exactMass: 47.99495, atomicNumber: 17 }, { id: "Cl49", massNumber: 49, exactMass: 49.00032, atomicNumber: 17 }, { id: "Cl50", massNumber: 50, exactMass: 50.00784, atomicNumber: 17 }, { id: "Cl51", massNumber: 51, exactMass: 51.01449, atomicNumber: 17 }] }, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, { elementSymbol: "Br", atomicNumber: 35, isotopes: [{ id: "Br67", massNumber: 67, exactMass: 66.96479, atomicNumber: 35 }, { id: "Br68", massNumber: 68, exactMass: 67.95852, atomicNumber: 35 }, { id: "Br69", massNumber: 69, exactMass: 68.95011, atomicNumber: 35 }, { id: "Br70", massNumber: 70, exactMass: 69.94479, atomicNumber: 35, halfLife: 0.0791 }, { id: "Br71", massNumber: 71, exactMass: 70.93874, atomicNumber: 35, halfLife: 21.4 }, { id: "Br72", massNumber: 72, exactMass: 71.93664, atomicNumber: 35, halfLife: 78.6 }, { id: "Br73", massNumber: 73, exactMass: 72.93169, atomicNumber: 35, halfLife: 204 }, { id: "Br74", massNumber: 74, exactMass: 73.929891, atomicNumber: 35, halfLife: 1524 }, { id: "Br75", massNumber: 75, exactMass: 74.925776, atomicNumber: 35, halfLife: 5802 }, { id: "Br76", massNumber: 76, exactMass: 75.924541, atomicNumber: 35, halfLife: 58320 }, { id: "Br77", massNumber: 77, exactMass: 76.921379, atomicNumber: 35, halfLife: 205330 }, { id: "Br78", massNumber: 78, exactMass: 77.921146, atomicNumber: 35, halfLife: 387.6 }, { id: "Br79", massNumber: 79, relativeAbundance: 0.5069, atomicNumber: 35, exactMass: 78.9183371, spin: "3/2-", magneticMoment: "+2.1064", halfLife: -1 }, { id: "Br80", massNumber: 80, exactMass: 79.9185293, atomicNumber: 35, halfLife: 1060.8 }, { id: "Br81", massNumber: 81, relativeAbundance: 0.49310000000000004, atomicNumber: 35, exactMass: 80.9162906, spin: "3/2-", magneticMoment: "+2.2706", halfLife: -1 }, { id: "Br82", massNumber: 82, exactMass: 81.9168041, atomicNumber: 35, halfLife: 127080 }, { id: "Br83", massNumber: 83, exactMass: 82.91518, atomicNumber: 35, halfLife: 8640 }, { id: "Br84", massNumber: 84, exactMass: 83.916479, atomicNumber: 35, halfLife: 1908 }, { id: "Br85", massNumber: 85, exactMass: 84.915608, atomicNumber: 35, halfLife: 174 }, { id: "Br86", massNumber: 86, exactMass: 85.918798, atomicNumber: 35, halfLife: 55.1 }, { id: "Br87", massNumber: 87, exactMass: 86.920711, atomicNumber: 35, halfLife: 55.6 }, { id: "Br88", massNumber: 88, exactMass: 87.92407, atomicNumber: 35, halfLife: 16.34 }, { id: "Br89", massNumber: 89, exactMass: 88.92639, atomicNumber: 35, halfLife: 4.348 }, { id: "Br90", massNumber: 90, exactMass: 89.93063, atomicNumber: 35, halfLife: 1.91 }, { id: "Br91", massNumber: 91, exactMass: 90.93397, atomicNumber: 35, halfLife: 0.541 }, { id: "Br92", massNumber: 92, exactMass: 91.93926, atomicNumber: 35, halfLife: 0.343 }, { id: "Br93", massNumber: 93, exactMass: 92.94305, atomicNumber: 35, halfLife: 0.102 }, { id: "Br94", massNumber: 94, exactMass: 93.94868, atomicNumber: 35, halfLife: 0.07 }, { id: "Br95", massNumber: 95, exactMass: 94.95287, atomicNumber: 35 }, { id: "Br96", massNumber: 96, exactMass: 95.95853, atomicNumber: 35 }, { id: "Br97", massNumber: 97, exactMass: 96.9628, atomicNumber: 35 }] }, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, { elementSymbol: "I", atomicNumber: 53, isotopes: [{ id: "I108", massNumber: 108, exactMass: 107.94348, atomicNumber: 53, halfLife: 0.036 }, { id: "I109", massNumber: 109, exactMass: 108.93815, atomicNumber: 53, halfLife: 1e-4 }, { id: "I110", massNumber: 110, exactMass: 109.93524, atomicNumber: 53, halfLife: 0.65 }, { id: "I111", massNumber: 111, exactMass: 110.93028, atomicNumber: 53, halfLife: 2.5 }, { id: "I112", massNumber: 112, exactMass: 111.92797, atomicNumber: 53, halfLife: 3.42 }, { id: "I113", massNumber: 113, exactMass: 112.92364, atomicNumber: 53, halfLife: 6.6 }, { id: "I114", massNumber: 114, exactMass: 113.92185, atomicNumber: 53, halfLife: 2.1 }, { id: "I115", massNumber: 115, exactMass: 114.91805, atomicNumber: 53, halfLife: 78 }, { id: "I116", massNumber: 116, exactMass: 115.91681, atomicNumber: 53, halfLife: 2.91 }, { id: "I117", massNumber: 117, exactMass: 116.91365, atomicNumber: 53, halfLife: 133.2 }, { id: "I118", massNumber: 118, exactMass: 117.913074, atomicNumber: 53, halfLife: 822 }, { id: "I119", massNumber: 119, exactMass: 118.91007, atomicNumber: 53, halfLife: 1146 }, { id: "I120", massNumber: 120, exactMass: 119.910048, atomicNumber: 53, halfLife: 4860 }, { id: "I121", massNumber: 121, exactMass: 120.907367, atomicNumber: 53, halfLife: 7632 }, { id: "I122", massNumber: 122, exactMass: 121.907589, atomicNumber: 53, halfLife: 217.8 }, { id: "I123", massNumber: 123, exactMass: 122.905589, atomicNumber: 53, halfLife: 47772 }, { id: "I124", massNumber: 124, exactMass: 123.9062099, atomicNumber: 53, halfLife: 360806 }, { id: "I125", massNumber: 125, exactMass: 124.9046302, atomicNumber: 53, spin: "5/2+", halfLife: 5132850 }, { id: "I126", massNumber: 126, exactMass: 125.905624, atomicNumber: 53, spin: "2-", halfLife: 1132700 }, { id: "I127", massNumber: 127, relativeAbundance: 1, atomicNumber: 53, exactMass: 126.904473, spin: "5/2+", magneticMoment: "+2.808", halfLife: -1 }, { id: "I128", massNumber: 128, exactMass: 127.905809, atomicNumber: 53, spin: "1+", halfLife: 1499.4 }, { id: "I129", massNumber: 129, exactMass: 128.904988, atomicNumber: 53, magneticMoment: "+2.617", halfLife: 157e5, betaminusDecay: "0.193", betaminusDecayLikeliness: "100.0" }, { id: "I130", massNumber: 130, exactMass: 129.906674, atomicNumber: 53, halfLife: 44496 }, { id: "I131", massNumber: 131, exactMass: 130.9061246, atomicNumber: 53, halfLife: 692988 }, { id: "I132", massNumber: 132, exactMass: 131.907997, atomicNumber: 53, halfLife: 8262 }, { id: "I133", massNumber: 133, exactMass: 132.907797, atomicNumber: 53, halfLife: 74880 }, { id: "I134", massNumber: 134, exactMass: 133.909744, atomicNumber: 53, halfLife: 3150 }, { id: "I135", massNumber: 135, exactMass: 134.910048, atomicNumber: 53, halfLife: 23652 }, { id: "I136", massNumber: 136, exactMass: 135.91465, atomicNumber: 53, halfLife: 83.4 }, { id: "I137", massNumber: 137, exactMass: 136.917871, atomicNumber: 53, halfLife: 24.5 }, { id: "I138", massNumber: 138, exactMass: 137.92235, atomicNumber: 53, halfLife: 6.49 }, { id: "I139", massNumber: 139, exactMass: 138.9261, atomicNumber: 53, halfLife: 2.29 }, { id: "I140", massNumber: 140, exactMass: 139.931, atomicNumber: 53, halfLife: 0.86 }, { id: "I141", massNumber: 141, exactMass: 140.93503, atomicNumber: 53, halfLife: 0.43 }, { id: "I142", massNumber: 142, exactMass: 141.94018, atomicNumber: 53 }, { id: "I143", massNumber: 143, exactMass: 142.94456, atomicNumber: 53 }, { id: "I144", massNumber: 144, exactMass: 143.94999, atomicNumber: 53 }] }], Kekule.structGenAtomTypesData = [{ elementSymbol: "H", atomicNumber: 1, atomTypes: [{ id: "H1", maxBondOrder: 1, bondOrderSum: 1 }] }, null, { elementSymbol: "Li", atomicNumber: 3, atomTypes: [{ id: "Li1", maxBondOrder: 1, bondOrderSum: 1 }] }, null, { elementSymbol: "B", atomicNumber: 5, atomTypes: [{ id: "B3", maxBondOrder: 2, bondOrderSum: 3 }] }, { elementSymbol: "C", atomicNumber: 6, atomTypes: [{ id: "C4", maxBondOrder: 3, bondOrderSum: 4 }] }, { elementSymbol: "N", atomicNumber: 7, atomTypes: [{ id: "N3", maxBondOrder: 3, bondOrderSum: 3 }, { id: "N5", maxBondOrder: 2, bondOrderSum: 5 }] }, { elementSymbol: "O", atomicNumber: 8, atomTypes: [{ id: "O2", maxBondOrder: 2, bondOrderSum: 2 }] }, { elementSymbol: "F", atomicNumber: 9, atomTypes: [{ id: "F1", maxBondOrder: 1, bondOrderSum: 1 }] }, null, { elementSymbol: "Na", atomicNumber: 11, atomTypes: [{ id: "Na1", maxBondOrder: 1, bondOrderSum: 1 }] }, null, null, { elementSymbol: "Si", atomicNumber: 14, atomTypes: [{ id: "Si4", maxBondOrder: 3, bondOrderSum: 4 }] }, { elementSymbol: "P", atomicNumber: 15, atomTypes: [{ id: "P3", maxBondOrder: 3, bondOrderSum: 3 }, { id: "P4", maxBondOrder: 3, bondOrderSum: 5 }] }, { elementSymbol: "S", atomicNumber: 16, atomTypes: [{ id: "S2", maxBondOrder: 2, bondOrderSum: 2 }, { id: "S3", maxBondOrder: 2, bondOrderSum: 4 }, { id: "S4", maxBondOrder: 2, bondOrderSum: 6 }] }, { elementSymbol: "Cl", atomicNumber: 17, atomTypes: [{ id: "Cl1", maxBondOrder: 1, bondOrderSum: 1 }] }, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, { elementSymbol: "As", atomicNumber: 33, atomTypes: [{ id: "As3", maxBondOrder: 1, bondOrderSum: 3 }] }, { elementSymbol: "Se", atomicNumber: 34, atomTypes: [{ id: "Se2", maxBondOrder: 2, bondOrderSum: 2 }] }, { elementSymbol: "Br", atomicNumber: 35, atomTypes: [{ id: "Br1", maxBondOrder: 1, bondOrderSum: 1 }] }, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, { elementSymbol: "I", atomicNumber: 53, atomTypes: [{ id: "I1", maxBondOrder: 1, bondOrderSum: 1 }] }], Kekule.ChemicalElementsDataUtil = { _getElementInfoBySymbol: function(a7) {
   for (var e15, i11 = 0, m5 = Kekule.chemicalElementsData.length; i11 < m5; ++i11) if ((e15 = Kekule.chemicalElementsData[i11]) && e15.symbol == a7) return e15;
   return null;
@@ -95099,10 +95424,10 @@ Kekule.chemicalElementsData = [{ symbol: "H", casId: "1333-74-0", group: 1, peri
   return null;
 } };
 
-// ../chemlib/node_modules/kekule/dist/kekule.esm.mjs
+// node_modules/kekule/dist/kekule.esm.mjs
 var import_emscripten_min = __toESM(require_emscripten_min(), 1);
 
-// ../chemlib/node_modules/kekule/dist/mins/openbabel.min.js
+// node_modules/kekule/dist/mins/openbabel.min.js
 Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), Kekule.Localization.addResource("en", "ErrorMsg", { OpenBabel: { CHEM_NODE_TYPE_NOT_SUITABLE: "Unsuitable node type", CHEM_CONNECTOR_TYPE_NOT_SUITABLE: "Unsuitable connector type", ONLY_STR_INPUT_DATA_ALLOWED: "Input data must be text", ONLY_STR_OUTPUT_DATA_ALLOWED: "Output data must be text", FAIL_TO_GENERATE_3D_STRUCTURE: "Fail to generate 3D structure coordinates" } }), function() {
   var e15 = Kekule.EmscriptenUtils, t10 = { usingModulaize: true, moduleName: "OpenBabelModule", moduleInitEventName: "OpenBabel.Initialized", moduleInitCallbackName: "__$openBabelInitialized$__" };
   Kekule.OpenBabel = { _autoEnabled: true, _module: null, SCRIPT_FILE: "openbabel.js", _enableFuncs: [], BondOrder: { SINGLE: 1, DOUBLE: 2, TRIPLE: 3, EXPLICIT_AROMATIC: 5 }, getObInitOptions: function() {
@@ -95121,12 +95446,12 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
     return e15.isModuleReady(t10.moduleName);
   }, enable: function(e16) {
     r12.isScriptLoaded() ? (r12._enableAllFunctions(), e16 && e16()) : r12.loadObScript(Kekule.$jsRoot.document, function(t11) {
-      t11 || r12._enableAllFunctions(), e16 && e16(t11);
+      Kekule.OpenBabel.AdaptUtils.isAvailable() && (t11 || r12._enableAllFunctions(), e16 && e16(t11));
     });
   }, _enableAllFunctions: function() {
     if (r12.isModuleReady()) for (var e16 = r12._enableFuncs, t11 = 0, n12 = e16.length; t11 < n12; ++t11) {
-      var o15 = e16[t11];
-      o15 && o15();
+      var a7 = e16[t11];
+      a7 && a7();
     }
   } };
   var r12 = Kekule.OpenBabel;
@@ -95140,15 +95465,15 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
     var e16 = Kekule.environment.getEnvVar("openbabel.scriptSrc");
     e16 || (e16 = Kekule.OpenBabel.getObPath() + Kekule.OpenBabel.SCRIPT_FILE, Kekule.isUsingMinJs() || (e16 += ".dev"));
     return e16;
-  }, Kekule.OpenBabel.loadObScript = function(n12, o15) {
+  }, Kekule.OpenBabel.loadObScript = function(n12, a7) {
     n12 || (n12 = Kekule.$jsRoot.document);
-    var a7 = function(e16) {
-      r12._obScriptLoadedBySelf = !e16, o15 && o15(e16);
+    var o15 = function(e16) {
+      r12._obScriptLoadedBySelf = !e16, a7 && a7(e16);
     };
-    if (r12._obScriptLoadedBySelf || r12.isScriptLoaded()) a7();
+    if (r12._obScriptLoadedBySelf || r12.isScriptLoaded()) o15();
     else {
       var l8 = Kekule.OpenBabel.getObScriptUrl();
-      e15.loadScript(l8, a7, n12, t10);
+      e15.loadScript(l8, o15, n12, t10);
     }
   }, Kekule.OpenBabel.AdaptUtils = { DEF_ATOM_ID_PREFIX: "A", DEF_BOND_ID_PREFIX: "B", DEF_MOL_ID_PREFIX: "M", wrapCFuncs: function() {
     if (!Kekule.OpenBabel._funcInited) {
@@ -95157,11 +95482,11 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
   }, isAvailable: function() {
     return void 0 !== r12.getClassCtor("ObBaseHelper");
   }, obObjToKekule: function(e16, t11, r13) {
-    var n12 = Kekule.OpenBabel.AdaptUtils, o15 = Kekule.ObjUtils.getPrototypeOf(e16).constructor.name;
-    return ("OBReaction" === o15 ? n12.obReactionToKekule : "OBMol" === o15 ? n12.obMolToKekule : n12.obBaseToKekule)(e16, t11, r13);
+    var n12 = Kekule.OpenBabel.AdaptUtils, a7 = Kekule.ObjUtils.getPrototypeOf(e16).constructor.name;
+    return ("OBReaction" === a7 ? n12.obReactionToKekule : "OBMol" === a7 ? n12.obMolToKekule : n12.obBaseToKekule)(e16, t11, r13);
   }, kObjToOB: function(e16, t11, r13) {
-    var n12 = Kekule.OpenBabel.AdaptUtils, o15 = e16 instanceof Kekule.Reaction ? n12.kReactionToOB : e16 instanceof Kekule.StructureFragment ? n12.kMolToOB : null;
-    return o15 ? o15(e16, t11, r13) : null;
+    var n12 = Kekule.OpenBabel.AdaptUtils, a7 = e16 instanceof Kekule.Reaction ? n12.kReactionToOB : e16 instanceof Kekule.StructureFragment ? n12.kMolToOB : null;
+    return a7 ? a7(e16, t11, r13) : null;
   }, kIdToOB: function(e16) {
     var t11 = parseInt(e16, 10);
     return t11 || null;
@@ -95170,11 +95495,11 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
   }, kBondOrderToOB: function(e16) {
     return e16 <= 3 ? e16 : e16 === Kekule.BondOrder.EXPLICIT_AROMATIC ? Kekule.OpenBabel.BondOrder.EXPLICIT_AROMATIC : 0;
   }, obBaseToKekule: function(e16, t11) {
-    var n12 = t11 || new Kekule.ChemObject(), o15 = new (r12.getClassCtor("ObBaseHelper"))(e16), a7 = o15.getTitle();
-    a7 && n12.setName && n12.setName(a7);
-    var l8 = o15.getDataSize();
+    var n12 = t11 || new Kekule.ChemObject(), a7 = new (r12.getClassCtor("ObBaseHelper"))(e16), o15 = a7.getTitle();
+    o15 && n12.setName && n12.setName(o15);
+    var l8 = a7.getDataSize();
     if (l8) for (var u7 = n12.getInfo(true), i11 = 0; i11 < l8; ++i11) {
-      var s6 = o15.getDataAt(i11);
+      var s6 = a7.getDataAt(i11);
       if (s6) {
         var O2 = s6.GetAttribute(), d5 = s6.GetValue();
         O2 && d5 && (u7[O2] = d5);
@@ -95184,89 +95509,89 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
   }, kChemObjToOB: function(e16, t11) {
     var n12 = t11 || new (r12.getClassCtor("OBBase"))();
     e16.getName && n12.SetTitle && n12.SetTitle(e16.getName());
-    var o15 = e16.getInfo();
-    if (o15) for (var a7 = Kekule.ObjUtils.getOwnedFieldNames(o15), l8 = 0, u7 = a7.length; l8 < u7; ++l8) {
-      var i11 = a7[l8], s6 = o15[i11];
+    var a7 = e16.getInfo();
+    if (a7) for (var o15 = Kekule.ObjUtils.getOwnedFieldNames(a7), l8 = 0, u7 = o15.length; l8 < u7; ++l8) {
+      var i11 = o15[l8], s6 = a7[i11];
       if (i11 && s6) {
         var O2 = new (r12.getClassCtor("OBPairData"))();
         O2.SetAttribute("" + i11), O2.SetValue("" + s6), n12.SetData(O2);
       }
     }
   }, obAtomToKekule: function(e16, t11, r13) {
-    var n12 = e16.GetAtomicNum(), o15 = n12 ? Kekule.Atom : Kekule.SubGroup;
-    !t11 || t11 instanceof o15 || Kekule.Error(Kekule.$L("ErrorMsg.OpenBabel.CHEM_NODE_TYPE_NOT_SUITABLE"));
-    var a7, l8 = t11 || new o15();
-    return Kekule.OpenBabel.AdaptUtils.obBaseToKekule(e16, l8), a7 = e16.GetId(), Kekule.ObjUtils.notUnset(a7) && l8.setId(Kekule.OpenBabel.AdaptUtils.DEF_ATOM_ID_PREFIX + a7), (a7 = e16.GetFormalCharge()) && l8.setCharge(a7), (a7 = e16.GetSpinMultiplicity()) && l8.setRadical(a7), a7 = { x: e16.GetX(), y: e16.GetY() }, r13 === Kekule.CoordMode.COORD3D && (a7.z = e16.GetZ()), l8.setAbsCoordOfMode ? l8.setAbsCoordOfMode(a7, r13) : l8.setCoordOfMode(a7, r13), l8 instanceof Kekule.Atom && (n12 && l8.setAtomicNumber(n12), (a7 = e16.GetIsotope()) && l8.setMassNumber(a7), (a7 = e16.GetHyb()) && l8.setHybridizationType(a7)), l8;
+    var n12 = e16.GetAtomicNum(), a7 = n12 ? Kekule.Atom : Kekule.SubGroup;
+    !t11 || t11 instanceof a7 || Kekule.Error(Kekule.$L("ErrorMsg.OpenBabel.CHEM_NODE_TYPE_NOT_SUITABLE"));
+    var o15, l8 = t11 || new a7();
+    return Kekule.OpenBabel.AdaptUtils.obBaseToKekule(e16, l8), o15 = e16.GetId(), Kekule.ObjUtils.notUnset(o15) && l8.setId(Kekule.OpenBabel.AdaptUtils.DEF_ATOM_ID_PREFIX + o15), (o15 = e16.GetFormalCharge()) && l8.setCharge(o15), (o15 = e16.GetSpinMultiplicity()) && l8.setRadical(o15), o15 = { x: e16.GetX(), y: e16.GetY() }, r13 === Kekule.CoordMode.COORD3D && (o15.z = e16.GetZ()), l8.setAbsCoordOfMode ? l8.setAbsCoordOfMode(o15, r13) : l8.setCoordOfMode(o15, r13), l8 instanceof Kekule.Atom && (n12 && l8.setAtomicNumber(n12), (o15 = e16.GetIsotope()) && l8.setMassNumber(o15), (o15 = e16.GetHyb()) && l8.setHybridizationType(o15)), l8;
   }, kChemNodeToOB: function(e16, t11, n12) {
-    var o15, a7 = t11 || new (r12.getClassCtor("OBAtom"))();
-    if (o15 = e16.getId(), o15 = Kekule.OpenBabel.AdaptUtils.kIdToOB(o15), Kekule.ObjUtils.notUnset(o15) && a7.SetId(o15), o15 = e16.getCharge()) if (parseInt(o15, 10) === parseFloat(o15)) a7.SetFormalCharge(o15);
+    var a7, o15 = t11 || new (r12.getClassCtor("OBAtom"))();
+    if (a7 = e16.getId(), a7 = Kekule.OpenBabel.AdaptUtils.kIdToOB(a7), Kekule.ObjUtils.notUnset(a7) && o15.SetId(a7), a7 = e16.getCharge()) if (parseInt(a7, 10) === parseFloat(a7)) o15.SetFormalCharge(a7);
     else {
-      var l8 = parseInt(o15, 10), u7 = o15 - l8;
-      a7.SetFormalCharge(l8), a7.SetPartialCharge(u7);
+      var l8 = parseInt(a7, 10), u7 = a7 - l8;
+      o15.SetFormalCharge(l8), o15.SetPartialCharge(u7);
     }
-    if ((o15 = e16.getRadical()) && a7.SetSpinMultiplicity(o15), o15 = e16.getAbsCoordOfMode ? e16.getAbsCoordOfMode(n12) : e16.getCoordOfMode(n12), a7.SetVector(o15.x || 0, o15.y || 0, o15.z || 0), e16 instanceof Kekule.Atom) {
-      a7.SetAtomicNum(e16.getAtomicNumber()), (o15 = e16.getMassNumber()) && a7.SetIsotope(o15), (o15 = e16.getHybridizationType()) && a7.SetHyb(o15);
+    if ((a7 = e16.getRadical()) && o15.SetSpinMultiplicity(a7), a7 = e16.getAbsCoordOfMode ? e16.getAbsCoordOfMode(n12) : e16.getCoordOfMode(n12), o15.SetVector(a7.x || 0, a7.y || 0, a7.z || 0), e16 instanceof Kekule.Atom) {
+      o15.SetAtomicNum(e16.getAtomicNumber()), (a7 = e16.getMassNumber()) && o15.SetIsotope(a7), (a7 = e16.getHybridizationType()) && o15.SetHyb(a7);
       var i11 = e16.getImplicitHydrogenCount();
-      i11 && a7.SetImplicitHCount(i11);
-    } else a7.SetAtomicNum(0);
-    return a7;
+      i11 && o15.SetImplicitHCount(i11);
+    } else o15.SetAtomicNum(0);
+    return o15;
   }, obBondToKekule: function(e16, t11, r13) {
-    var n12, o15 = t11 || new Kekule.Bond();
-    Kekule.OpenBabel.AdaptUtils.obBaseToKekule(e16, o15), n12 = e16.GetId(), Kekule.ObjUtils.notUnset(n12) && o15.setId(Kekule.OpenBabel.AdaptUtils.DEF_BOND_ID_PREFIX + n12), n12 = e16.GetBondOrder(), o15.setBondOrder(Kekule.OpenBabel.AdaptUtils.obBondOrderToKekule(n12));
-    var a7 = Kekule.BondStereo;
-    if (n12 = e16.IsWedge() ? a7.UP : e16.IsHash() ? a7.DOWN : e16.IsWedgeOrHash() ? a7.UP_OR_DOWN : e16.IsCisOrTrans() ? a7.CIS_OR_TRANS : e16.IsDoubleBondGeometry() ? a7.E_Z_BY_COORDINATES : a7.NONE, o15.setStereo(n12), console.log(e16.GetFlags().toString(2)), r13) {
+    var n12, a7 = t11 || new Kekule.Bond();
+    Kekule.OpenBabel.AdaptUtils.obBaseToKekule(e16, a7), n12 = e16.GetId(), Kekule.ObjUtils.notUnset(n12) && a7.setId(Kekule.OpenBabel.AdaptUtils.DEF_BOND_ID_PREFIX + n12), n12 = e16.GetBondOrder(), a7.setBondOrder(Kekule.OpenBabel.AdaptUtils.obBondOrderToKekule(n12));
+    var o15 = Kekule.BondStereo;
+    if (n12 = e16.IsWedge() ? o15.UP : e16.IsHash() ? o15.DOWN : e16.IsWedgeOrHash() ? o15.UP_OR_DOWN : e16.IsCisOrTrans() ? o15.CIS_OR_TRANS : e16.IsDoubleBondGeometry() ? o15.E_Z_BY_COORDINATES : o15.NONE, a7.setStereo(n12), console.log(e16.GetFlags().toString(2)), r13) {
       n12 = null;
       for (var l8 = [e16.GetBeginAtom(), e16.GetEndAtom()], u7 = 0, i11 = l8.length; u7 < i11; ++u7) {
         var s6 = l8[u7];
-        s6 && (n12 = r13.get(s6.GetIdx())) && o15.appendConnectedObj(n12);
-      }
-    }
-    return o15;
-  }, kBondToOB: function(e16, t11, n12, o15) {
-    var a7 = t11 || new (r12.getClassCtor("OBBond"))();
-    Kekule.OpenBabel.AdaptUtils.kChemObjToOB(e16, a7), O2 = Kekule.OpenBabel.AdaptUtils.kIdToOB(e16.getId()), Kekule.ObjUtils.notUnset(O2) && a7.SetId(O2), (O2 = e16.getBondOrder()) && (a7.SetBondOrder(Kekule.OpenBabel.AdaptUtils.kBondOrderToOB(O2)), O2 === Kekule.BondOrder.EXPLICIT_AROMATIC && a7.SetAromatic()), a7.UnsetHash(), a7.UnsetWedge(), a7.UnsetUp(), a7.UnsetDown(), a7.UnsetAromatic();
-    var l8 = Kekule.BondStereo;
-    if ((O2 = e16.getStereo()) === l8.UP ? a7.SetWedge(true) : O2 === l8.DOWN ? a7.SetHash(true) : O2 === l8.UP_OR_DOWN && a7.SetWedgeOrHash(true), n12) for (var u7 = 0, i11 = 0, s6 = e16.getConnectedObjCount(); i11 < s6; ++i11) {
-      var O2, d5 = e16.getConnectedObjAt(i11);
-      if (d5 && d5 instanceof Kekule.ChemStructureNode) {
-        if ((O2 = n12.get(d5)) && (0 === u7 ? a7.SetBegin(O2) : 1 === u7 && a7.SetEnd(O2), ++u7), O2.AddBond && O2.AddBond(a7), u7 > 1) break;
+        s6 && (n12 = r13.get(s6.GetIdx())) && a7.appendConnectedObj(n12);
       }
     }
     return a7;
-  }, obMolToKekule: function(e16, t11, n12) {
-    var o15 = t11, a7 = new (r12.getClassCtor("ObConversionWrapper"))();
-    try {
-      a7.setOutFormat("", "mol");
-      var l8 = a7.writeString(e16, false), u7 = Kekule.IO.loadFormatData(l8, Kekule.IO.DataFormat.MOL);
-      o15 ? o15.assign(u7) : o15 = u7, u7.finalize();
-    } finally {
-      a7.delete();
+  }, kBondToOB: function(e16, t11, n12, a7) {
+    var o15 = t11 || new (r12.getClassCtor("OBBond"))();
+    Kekule.OpenBabel.AdaptUtils.kChemObjToOB(e16, o15), O2 = Kekule.OpenBabel.AdaptUtils.kIdToOB(e16.getId()), Kekule.ObjUtils.notUnset(O2) && o15.SetId(O2), (O2 = e16.getBondOrder()) && (o15.SetBondOrder(Kekule.OpenBabel.AdaptUtils.kBondOrderToOB(O2)), O2 === Kekule.BondOrder.EXPLICIT_AROMATIC && o15.SetAromatic()), o15.UnsetHash(), o15.UnsetWedge(), o15.UnsetUp(), o15.UnsetDown(), o15.UnsetAromatic();
+    var l8 = Kekule.BondStereo;
+    if ((O2 = e16.getStereo()) === l8.UP ? o15.SetWedge(true) : O2 === l8.DOWN ? o15.SetHash(true) : O2 === l8.UP_OR_DOWN && o15.SetWedgeOrHash(true), n12) for (var u7 = 0, i11 = 0, s6 = e16.getConnectedObjCount(); i11 < s6; ++i11) {
+      var O2, d5 = e16.getConnectedObjAt(i11);
+      if (d5 && d5 instanceof Kekule.ChemStructureNode) {
+        if ((O2 = n12.get(d5)) && (0 === u7 ? o15.SetBegin(O2) : 1 === u7 && o15.SetEnd(O2), ++u7), O2.AddBond && O2.AddBond(o15), u7 > 1) break;
+      }
     }
-    if (Kekule.OpenBabel.AdaptUtils.obBaseToKekule(e16, o15), n12) {
+    return o15;
+  }, obMolToKekule: function(e16, t11, n12) {
+    var a7 = t11, o15 = new (r12.getClassCtor("ObConversionWrapper"))();
+    try {
+      o15.setOutFormat("", "mol");
+      var l8 = o15.writeString(e16, false), u7 = Kekule.IO.loadFormatData(l8, Kekule.IO.DataFormat.MOL);
+      a7 ? a7.assign(u7) : a7 = u7, u7.finalize();
+    } finally {
+      o15.delete();
+    }
+    if (Kekule.OpenBabel.AdaptUtils.obBaseToKekule(e16, a7), n12) {
       var i11;
-      if ((i11 = e16.NumAtoms()) === o15.getNodeCount()) for (var s6 = 0; s6 < i11; ++s6) {
+      if ((i11 = e16.NumAtoms()) === a7.getNodeCount()) for (var s6 = 0; s6 < i11; ++s6) {
         var O2 = e16.GetAtom(s6 + 1);
         if (O2) {
-          var d5 = o15.getNodeAt(s6);
+          var d5 = a7.getNodeAt(s6);
           d5 && n12.set(O2, d5);
         }
       }
-      if ((i11 = e16.NumBonds()) === o15.getConnectorCount()) for (s6 = 0; s6 < i11; ++s6) {
+      if ((i11 = e16.NumBonds()) === a7.getConnectorCount()) for (s6 = 0; s6 < i11; ++s6) {
         var c8 = e16.GetBond(s6);
         if (c8) {
-          var p5 = o15.getConnectorAt(s6);
+          var p5 = a7.getConnectorAt(s6);
           p5 && n12.set(c8, p5);
         }
       }
     }
-    return o15;
+    return a7;
   }, kMolToOB: function(e16, t11, n12) {
-    var o15 = e16.nodesHasCoord3D() ? Kekule.CoordMode.COORD3D : Kekule.CoordMode.COORD2D, a7 = t11 || new (r12.getClassCtor("OBMol"))();
-    t11 && a7.Clear();
+    var a7 = e16.nodesHasCoord3D() ? Kekule.CoordMode.COORD3D : Kekule.CoordMode.COORD2D, o15 = t11 || new (r12.getClassCtor("OBMol"))();
+    t11 && o15.Clear();
     for (var l8 = new Kekule.MapEx(false), u7 = e16.getFlattenedShadowFragment(true), i11 = 0, s6 = u7.getNodeCount(); i11 < s6; ++i11) {
       var O2 = u7.getNodeAt(i11);
       if (O2) {
-        var d5 = Kekule.OpenBabel.AdaptUtils.kChemNodeToOB(O2, a7.NewAtom(), o15);
+        var d5 = Kekule.OpenBabel.AdaptUtils.kChemNodeToOB(O2, o15.NewAtom(), a7);
         if (d5 && (l8.set(O2, d5), n12)) {
           var c8 = e16.getFlatternedShadowSourceObj(O2);
           n12.set(c8, d5);
@@ -95276,42 +95601,42 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
     for (i11 = 0, s6 = u7.getConnectorCount(); i11 < s6; ++i11) {
       var p5 = u7.getConnectorAt(i11);
       if (p5 && p5 instanceof Kekule.Bond) {
-        var b5 = Kekule.OpenBabel.AdaptUtils.kBondToOB(p5, a7.NewBond(), l8, a7);
+        var b5 = Kekule.OpenBabel.AdaptUtils.kBondToOB(p5, o15.NewBond(), l8, o15);
         if (n12 && b5) {
           var k4 = e16.getFlatternedShadowSourceObj(p5);
           n12.set(k4, b5);
         }
       }
     }
-    return l8.finalize(), l8 = null, a7;
+    return l8.finalize(), l8 = null, o15;
   }, obReactionToKekule: function(e16, t11, r13) {
     var n12 = t11 || new Kekule.Reaction();
     n12.clearAll(), Kekule.OpenBabel.AdaptUtils.obBaseToKekule(e16, n12), n12.setDirection(e16.IsReversible() ? Kekule.ReactionDirection.BIDIRECTION : Kekule.ReactionDirection.FORWARD);
-    for (var o15 = 0, a7 = e16.NumReactants(); o15 < a7; ++o15) {
-      var l8 = e16.GetReactant(o15), u7 = Kekule.OpenBabel.AdaptUtils.obMolToKekule(l8, null, r13);
+    for (var a7 = 0, o15 = e16.NumReactants(); a7 < o15; ++a7) {
+      var l8 = e16.GetReactant(a7), u7 = Kekule.OpenBabel.AdaptUtils.obMolToKekule(l8, null, r13);
       n12.appendReactant(u7), r13 && r13.set(l8, u7);
     }
-    for (o15 = 0, a7 = e16.NumProducts(); o15 < a7; ++o15) {
-      l8 = e16.GetProduct(o15), u7 = Kekule.OpenBabel.AdaptUtils.obMolToKekule(l8, null, r13);
+    for (a7 = 0, o15 = e16.NumProducts(); a7 < o15; ++a7) {
+      l8 = e16.GetProduct(a7), u7 = Kekule.OpenBabel.AdaptUtils.obMolToKekule(l8, null, r13);
       n12.appendProduct(u7), r13 && r13.set(l8, u7);
     }
     return n12;
   }, kReactionToOB: function(e16, t11, n12) {
-    var o15 = t11 || new (r12.getClassCtor("OBReaction"))();
-    o15.Clear(), Kekule.OpenBabel.AdaptUtils.kChemObjToOB(e16, o15);
-    var a7 = false, l8 = e16.getDirection();
-    l8 === Kekule.ReactionDirection.BIDIRECTION ? o15.SetReversible(true) : l8 === Kekule.ReactionDirection.BACKWARD && (a7 = true);
+    var a7 = t11 || new (r12.getClassCtor("OBReaction"))();
+    a7.Clear(), Kekule.OpenBabel.AdaptUtils.kChemObjToOB(e16, a7);
+    var o15 = false, l8 = e16.getDirection();
+    l8 === Kekule.ReactionDirection.BIDIRECTION ? a7.SetReversible(true) : l8 === Kekule.ReactionDirection.BACKWARD && (o15 = true);
     for (var u7 = 0, i11 = e16.getReactantCount(); u7 < i11; ++u7) {
       if (O2 = e16.getReactantAt(u7)) {
         var s6 = Kekule.OpenBabel.AdaptUtils.kMolToOB(O2, null, n12);
-        a7 ? o15.AddProduct(s6) : o15.AddReactant(s6), n12 && n12.set(O2, s6);
+        o15 ? a7.AddProduct(s6) : a7.AddReactant(s6), n12 && n12.set(O2, s6);
       }
     }
     for (u7 = 0, i11 = e16.getProductCount(); u7 < i11; ++u7) {
       var O2;
       if (O2 = e16.getProductAt(u7)) {
         s6 = Kekule.OpenBabel.AdaptUtils.kMolToOB(O2, null, n12);
-        a7 ? o15.AddReactant(s6) : o15.AddProduct(s6), n12 && n12.set(O2, s6);
+        o15 ? a7.AddReactant(s6) : a7.AddProduct(s6), n12 && n12.set(O2, s6);
       }
     }
   } };
@@ -95324,10 +95649,10 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
     this.tryApplySuper("finalize");
   }, getFormatTargetObClassName: function(e16) {
     return e16.getTypeName().toLowerCase().indexOf("reaction") >= 0 ? "OBReaction" : "OBMol";
-  }, doReadData: function(r12, n12, o15) {
+  }, doReadData: function(r12, n12, a7) {
     this._obConv = new (e15.getClassCtor("ObConversionWrapper"))();
     try {
-      var a7 = Kekule.IO.DataFormatsManager.getFormatInfo(o15), l8 = (a7.mimeType, a7.fileExts[0], this._obConv.setInFormatId(a7.id)), u7 = this.getFormatTargetObClassName(l8);
+      var o15 = Kekule.IO.DataFormatsManager.getFormatInfo(a7), l8 = (o15.mimeType, o15.fileExts[0], this._obConv.setInFormatId(o15.id)), u7 = this.getFormatTargetObClassName(l8);
       try {
         var i11 = [];
         this._obConv.setInStr(r12);
@@ -95353,12 +95678,12 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
     this.tryApplySuper("initialize", [e16]);
   }, finalize: function() {
     this.tryApplySuper("finalize");
-  }, doWriteData: function(r12, n12, o15) {
+  }, doWriteData: function(r12, n12, a7) {
     this._obConv = new (e15.getClassCtor("ObConversionWrapper"))();
     try {
-      var a7 = Kekule.IO.DataFormatsManager.getFormatInfo(o15);
-      a7.mimeType, a7.fileExts[0];
-      this._obConv.setOutFormatId(a7.id);
+      var o15 = Kekule.IO.DataFormatsManager.getFormatInfo(a7);
+      o15.mimeType, o15.fileExts[0];
+      this._obConv.setOutFormatId(o15.id);
       for (var l8 = Kekule.ChemStructureUtils.getChildStructureObjs(r12, true), u7 = 0, i11 = l8.length; u7 < i11; ++u7) {
         var s6 = l8[u7];
         if (s6) {
@@ -95378,8 +95703,8 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
     var t11 = Kekule.IO.OpenBabelWriter.ALLOWED_CLASSES;
     return Kekule.ObjUtils.isInstanceOf(e16, t11);
   } }), Kekule.IO.OpenBabelWriter.ALLOWED_CLASSES = [Kekule.StructureFragment, Kekule.Reaction, Kekule.ChemObjList, Kekule.ChemStructureObjectGroup, Kekule.ChemSpaceElement, Kekule.ChemSpace], Kekule.OpenBabel.IORegHelper = Class.create({ listFormatInfo: function(e16, t11) {
-    for (var r12 = [], n12 = ("in" === e16 ? t11.getSupportedInputFormatsStr("\n") : t11.getSupportedOutputFormatsStr("\n")).split("\n"), o15 = 0, a7 = n12.length; o15 < a7; ++o15) {
-      var l8 = n12[o15], u7 = l8.indexOf("--");
+    for (var r12 = [], n12 = ("in" === e16 ? t11.getSupportedInputFormatsStr("\n") : t11.getSupportedOutputFormatsStr("\n")).split("\n"), a7 = 0, o15 = n12.length; a7 < o15; ++a7) {
+      var l8 = n12[a7], u7 = l8.indexOf("--");
       if (u7 > 0) {
         var i11 = l8.substring(0, u7).trim(), s6 = t11.getFormatInfoById(i11);
         r12.push(s6);
@@ -95387,8 +95712,8 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
     }
     return r12;
   }, registerByInfos: function(e16, t11) {
-    for (var r12 = Kekule.IO.DataFormatsManager, n12 = [], o15 = 0, a7 = e16.length; o15 < a7; ++o15) {
-      var l8 = e16[o15], u7 = l8.id, i11 = l8.mimeType;
+    for (var r12 = Kekule.IO.DataFormatsManager, n12 = [], a7 = 0, o15 = e16.length; a7 < o15; ++a7) {
+      var l8 = e16[a7], u7 = l8.id, i11 = l8.mimeType;
       if ((s6 = r12.findFormatId(i11)) && (s6 = r12.findFormatId(null, u7)), !s6) var s6 = r12.register(u7, i11, u7, Kekule.IO.ChemDataType.UNKNOWN, l8.description, l8.description, { specificationUrl: l8.specificationURL }).id;
       ("in" === t11 ? Kekule.IO.ChemDataReaderManager.getReaderInfoByFormat(s6) : Kekule.IO.ChemDataWriterManager.getWriterInfoByFormat(s6)) || Kekule.ArrayUtils.pushUnique(n12, s6);
     }
@@ -95420,12 +95745,12 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
   Kekule.EmscriptenUtils;
   var e15 = Kekule.OpenBabel, t10 = Kekule.OpenBabel.AdaptUtils;
   Kekule.OpenBabel.StructUtils = { generate2DStructure: function(e16, r12, n12) {
-    var o15 = r12 || {};
+    var a7 = r12 || {};
     try {
-      var a7 = new Kekule.MapEx(), l8 = new Kekule.MapEx(), u7 = t10.kObjToOB(e16, null, a7);
-      if (Kekule.OpenBabel.StructUtils._gen2DByObOperation(u7, o15) || (u7.delete(), u7 = null), u7) {
-        if (e16 = t10.obObjToKekule(u7, null, l8), n12) for (var i11 = a7.getKeys(), s6 = 0, O2 = i11.length; s6 < O2; ++s6) {
-          var d5 = i11[s6], c8 = a7.get(d5);
+      var o15 = new Kekule.MapEx(), l8 = new Kekule.MapEx(), u7 = t10.kObjToOB(e16, null, o15);
+      if (Kekule.OpenBabel.StructUtils._gen2DByObOperation(u7, a7) || (u7.delete(), u7 = null), u7) {
+        if (e16 = t10.obObjToKekule(u7, null, l8), n12) for (var i11 = o15.getKeys(), s6 = 0, O2 = i11.length; s6 < O2; ++s6) {
+          var d5 = i11[s6], c8 = o15.get(d5);
           if (c8) {
             var p5 = l8.get(c8);
             p5 && n12.set(d5, p5);
@@ -95436,8 +95761,8 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
       u7 && u7.delete();
     }
     return e16;
-  }, generate3DStructure: function(r12, n12, o15) {
-    var a7, l8 = n12 || {}, u7 = l8.forceField;
+  }, generate3DStructure: function(r12, n12, a7) {
+    var o15, l8 = n12 || {}, u7 = l8.forceField;
     try {
       var i11 = new Kekule.MapEx(), s6 = new Kekule.MapEx(), O2 = t10.kObjToOB(r12, null, i11);
       if (l8.applyFFCalc) {
@@ -95449,28 +95774,28 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
         }
       } else Kekule.OpenBabel.StructUtils._gen3DByObOperation(O2, l8) || (O2.delete(), O2 = null);
       if (O2) {
-        if (a7 = t10.obObjToKekule(O2, null, s6), o15) for (var c8 = i11.getKeys(), p5 = 0, b5 = c8.length; p5 < b5; ++p5) {
+        if (o15 = t10.obObjToKekule(O2, null, s6), a7) for (var c8 = i11.getKeys(), p5 = 0, b5 = c8.length; p5 < b5; ++p5) {
           var k4 = c8[p5], g4 = i11.get(k4);
           if (g4) {
             var f7 = s6.get(g4);
-            f7 && o15.set(k4, f7);
+            f7 && a7.set(k4, f7);
           }
         }
       } else Kekule.raise(Kekule.$L("ErrorMsg.OpenBabel.FAIL_TO_GENERATE_3D_STRUCTURE"));
     } finally {
       O2 && O2.delete();
     }
-    return a7;
+    return o15;
   }, _gen2DByObOperation: function(t11, r12) {
-    var n12 = false, o15 = e15.getModule().OBOp.FindType("Gen2D");
-    if (o15) {
-      var a7 = "" + r12.speed || "";
-      o15.Do(t11, a7), n12 = true;
+    var n12 = false, a7 = e15.getModule().OBOp.FindType("Gen2D");
+    if (a7) {
+      var o15 = "" + r12.speed || "";
+      a7.Do(t11, o15), n12 = true;
     }
     return n12;
   }, _gen3DByObOperation: function(t11, r12) {
-    var n12 = "" + r12.speed || "", o15 = false, a7 = e15.getModule().OBOp.FindType("Gen3D");
-    return a7 && (a7.Do(t11, n12), o15 = true), o15;
+    var n12 = "" + r12.speed || "", a7 = false, o15 = e15.getModule().OBOp.FindType("Gen3D");
+    return o15 && (o15.Do(t11, n12), a7 = true), a7;
   } }, Kekule.Calculator && (Kekule.Calculator.ObStructureBaseGenerator = Class.create(Kekule.Calculator.AbstractStructureGenerator, { CLASS_NAME: "Kekule.Calculator.ObStructureBaseGenerator", isWorkerShared: function() {
     return true;
   }, getGeneratorCoordMode: function() {
@@ -95505,10 +95830,10 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
     if (this.tryApplySuper("doReactWorkerMessage", [e16, t11]), e16.type === this._getOutputMsgName()) {
       var r12 = e16.molData;
       if (r12) {
-        var n12 = Kekule.IO.loadMimeData(r12, "chemical/x-mdl-molfile"), o15 = this.getChildObjMap();
-        if (o15) {
-          for (var a7 = this.getSourceMol().getFlattenedShadowFragment(true), l8 = 0, u7 = a7.getNodeCount(); l8 < u7; ++l8) o15.set(a7.getNodeAt(l8), n12.getNodeAt(l8));
-          for (l8 = 0, u7 = a7.getConnectorCount(); l8 < u7; ++l8) o15.set(a7.getConnectorAt(l8), n12.getConnectorAt(l8));
+        var n12 = Kekule.IO.loadMimeData(r12, "chemical/x-mdl-molfile"), a7 = this.getChildObjMap();
+        if (a7) {
+          for (var o15 = this.getSourceMol().getFlattenedShadowFragment(true), l8 = 0, u7 = o15.getNodeCount(); l8 < u7; ++l8) a7.set(o15.getNodeAt(l8), n12.getNodeAt(l8));
+          for (l8 = 0, u7 = o15.getConnectorCount(); l8 < u7; ++l8) a7.set(o15.getConnectorAt(l8), n12.getConnectorAt(l8));
         }
         this.setGeneratedMol(n12), this.done();
       }
@@ -95539,10 +95864,10 @@ Kekule.LOCAL_RES = true, Kekule.Localization.setCurrModule("extra.openbabel"), K
   } }), Kekule.Calculator.ServiceManager.register(Kekule.Calculator.Services.GEN3D, Kekule.Calculator.ObStructure3DGenerator, "openbabel", 10), Kekule.Calculator.ServiceManager.register(Kekule.Calculator.Services.GEN2D, Kekule.Calculator.ObStructure2DGenerator, "openbabel", 10));
 }();
 
-// ../chemlib/node_modules/kekule/dist/kekule.esm.mjs
+// node_modules/kekule/dist/kekule.esm.mjs
 var import_indigo_min = __toESM(require_indigo_min(), 1);
 
-// ../chemlib/node_modules/kekule/dist/mins/inchi.min.js
+// node_modules/kekule/dist/mins/inchi.min.js
 !function() {
   "use strict";
   var e15 = Kekule.EmscriptenUtils, n12 = { usingModulaize: true, moduleName: "InChIModule", moduleInitEventName: "InChI.Initialized", moduleInitCallbackName: "__$inChIInitialized$__" };
@@ -95619,7 +95944,7 @@ var import_indigo_min = __toESM(require_indigo_min(), 1);
   });
 }();
 
-// ../chemlib/node_modules/kekule/dist/kekule.esm.mjs
+// node_modules/kekule/dist/kekule.esm.mjs
 var { Kekule: Kekule2, Class: Class2, ClassEx: ClassEx2, ObjectEx: ObjectEx2, DataType: DataType2 } = kekule_moduleEnvInits_esm_default();
 if (!Kekule2.scriptSrcInfo.modules) Kekule2.scriptSrcInfo.modules = [];
 Kekule2.ArrayUtils.pushUnique(Kekule2.scriptSrcInfo.modules, ["lan", "root", "localization", "localizationData", "localizationData.zh", "common", "core", "html", "io", "render", "spectroscopy", "widget", "chemWidget", "webComponent", "algorithm", "calculation", "data", "emscripten", "openbabel", "indigo", "inchi"]);
@@ -95627,7 +95952,7 @@ if (typeof Kekule2 !== "undefined") {
   Kekule2._loaded();
 }
 
-// ../chemlib/lib/Molecule.js
+// node_modules/chemlib/lib/Molecule.js
 var Molecule = (
   /** @class */
   function() {
@@ -95689,10 +96014,10 @@ var Molecule = (
         nIonicCharge = 0;
       }
       if (nPos2Dx === void 0) {
-        nPos2Dx = Math.random() * 2;
+        nPos2Dx = 0;
       }
       if (nPos2Dy === void 0) {
-        nPos2Dy = Math.random() * 2;
+        nPos2Dy = 0;
       }
       var kek_atom;
       var atom;
@@ -95801,7 +96126,7 @@ var Molecule = (
   }()
 );
 
-// ../chemlib/lib/Mixture.js
+// node_modules/chemlib/lib/Mixture.js
 var Mixture = (
   /** @class */
   function() {
@@ -95894,7 +96219,7 @@ var Mixture = (
   }()
 );
 
-// ../chemlib/lib/StructureManager.js
+// node_modules/chemlib/lib/StructureManager.js
 var __awaiter = function(thisArg, _arguments, P3, generator) {
   function adopt(value) {
     return value instanceof P3 ? value : new P3(function(resolve3) {
@@ -96577,7 +96902,7 @@ var StructureManager = (
   }()
 );
 
-// ../chemlib/lib/Simulation.js
+// node_modules/chemlib/lib/Simulation.js
 var Simulation = (
   /** @class */
   function() {
@@ -96663,6 +96988,7 @@ var Simulation = (
           var mol1entry, mol2entry;
           Object.keys(StructureManager._moleculeData["redox"]).forEach(function(key) {
             var entry = StructureManager._moleculeData["redox"][key];
+            console.log(entry, mol1, mol2);
             if (entry["red"] === mol1.smilesString || entry["ox"] === mol1.smilesString) {
               mol1in = true;
               mol1entry = entry;
@@ -96672,7 +96998,9 @@ var Simulation = (
               mol2entry = entry;
             }
           });
+          console.log(mol1entry, mol2entry);
           if (mol1in && mol2in) {
+            console.log("found");
             if (bElectrolysis) {
               if (Math.abs(mol1entry["sep"] - mol2entry["sep"]) < voltage) {
                 voltage = Math.abs(mol1entry["sep"] - mol2entry["sep"]);
@@ -96690,6 +97018,7 @@ var Simulation = (
               }
             } else {
               if (Math.abs(mol1entry["sep"] - mol2entry["sep"]) > voltage) {
+                console.log("drin", Math.abs(mol1entry["sep"] - mol2entry["sep"]));
                 voltage = Math.abs(mol1entry["sep"] - mol2entry["sep"]);
                 if (mol1entry["sep"] < mol2entry["sep"]) {
                   sElectrodeCathode = sElectrode2;
@@ -96774,7 +97103,9 @@ var Simulation = (
       var cKl = cMolP1 * cMolP2 / cMolC;
       var nDiffDiss = 0;
       var nDiffNeutralize = 0;
+      console.log(sMix._molProperties);
       if (cKl < molKl) {
+        console.log("strong");
         if (molKl >= 1) {
           nDiffDiss = cMolC * sMix._solutionVolume;
         } else {
@@ -96782,6 +97113,7 @@ var Simulation = (
         }
       }
       if (molKl < 1) {
+        console.log("weak");
         var mH_1, mOH_1, nH_1, nOH_1;
         sMix._activeMolecules.forEach(function(molecule) {
           if (molecule.smilesString === "[H+]") {
@@ -96792,12 +97124,16 @@ var Simulation = (
             nOH_1 = sMix._molProperties[molecule._id + "n"];
           }
         });
+        console.log(pMolecule2.smilesString);
         if (pMolecule2.smilesString === "[H+]" || pMolecule1.smilesString === "[H+]") {
+          console.log("weak-acid", mOH_1, mH_1);
           if (mOH_1 != void 0 && mH_1 != void 0) {
             if (nH_1 > nOH_1) {
+              console.log(nOH_1, nH_1, nMolC);
               sMix.addMolecule(mH_1, -nOH_1);
               sMix.addMolecule(mOH_1, -nOH_1);
             } else {
+              console.log(nOH_1, nH_1, nMolC);
               nDiffNeutralize = Math.min(nOH_1 - nH_1, nMolC);
               sMix.addMolecule(mH_1, -nH_1);
               sMix.addMolecule(mOH_1, -nDiffNeutralize);
@@ -96825,6 +97161,7 @@ var Simulation = (
           nDiffDiss = -Math.min(cMolP1 * sMix._solutionVolume - Math.sqrt(molKl * cMolC) * sMix._solutionVolume, cMolP2 * sMix._solutionVolume - Math.sqrt(molKl * cMolC) * sMix._solutionVolume);
         }
       }
+      console.log(cMolecule.name, nDiffDiss / nMolC * 100, nDiffNeutralize / nMolC * 100);
       sMix.addMolecule(pMolecule1, nDiffDiss);
       sMix.addMolecule(pMolecule2, nDiffDiss);
       sMix.changeMolecule(cMolecule._id, -nDiffDiss);
@@ -96915,7 +97252,7 @@ var Simulation = (
   }()
 );
 
-// ../chemlib/lib/ChemComponent.js
+// node_modules/chemlib/lib/ChemComponent.js
 var ComponentType;
 (function(ComponentType2) {
   ComponentType2["Testtube"] = "testtube";
@@ -97003,6 +97340,7 @@ var ChemComponent = (
     ChemComponent2.prototype.transferContents = function(_a3, tDest) {
       var _this = this;
       var _b = _a3 === void 0 ? {} : _a3, tMol = _b.tMol, tVolume = _b.tVolume;
+      console.log(tDest);
       if (tDest._inOutLimits[0] > 0) {
         if (tMol != null) {
           tDest.addContents({
@@ -101660,7 +101998,7 @@ function isTopLayer(element) {
 function isContainingBlock(elementOrCss) {
   const webkit = isWebKit();
   const css = isElement(elementOrCss) ? getComputedStyle2(elementOrCss) : elementOrCss;
-  return css.transform !== "none" || css.perspective !== "none" || (css.containerType ? css.containerType !== "normal" : false) || !webkit && (css.backdropFilter ? css.backdropFilter !== "none" : false) || !webkit && (css.filter ? css.filter !== "none" : false) || ["transform", "perspective", "filter"].some((value) => (css.willChange || "").includes(value)) || ["paint", "layout", "strict", "content"].some((value) => (css.contain || "").includes(value));
+  return ["transform", "translate", "scale", "rotate", "perspective"].some((value) => css[value] ? css[value] !== "none" : false) || (css.containerType ? css.containerType !== "normal" : false) || !webkit && (css.backdropFilter ? css.backdropFilter !== "none" : false) || !webkit && (css.filter ? css.filter !== "none" : false) || ["transform", "translate", "scale", "rotate", "perspective", "filter"].some((value) => (css.willChange || "").includes(value)) || ["paint", "layout", "strict", "content"].some((value) => (css.contain || "").includes(value));
 }
 function getContainingBlock(element) {
   let currentNode = getParentNode(element);
@@ -102168,6 +102506,9 @@ var platform = {
   isElement,
   isRTL
 };
+function rectsAreEqual(a7, b5) {
+  return a7.x === b5.x && a7.y === b5.y && a7.width === b5.width && a7.height === b5.height;
+}
 function observeMove(element, onMove) {
   let io = null;
   let timeoutId;
@@ -102186,12 +102527,13 @@ function observeMove(element, onMove) {
       threshold = 1;
     }
     cleanup();
+    const elementRectForRootMargin = element.getBoundingClientRect();
     const {
       left,
       top,
       width,
       height
-    } = element.getBoundingClientRect();
+    } = elementRectForRootMargin;
     if (!skip2) {
       onMove();
     }
@@ -102221,6 +102563,9 @@ function observeMove(element, onMove) {
         } else {
           refresh(false, ratio);
         }
+      }
+      if (ratio === 1 && !rectsAreEqual(elementRectForRootMargin, element.getBoundingClientRect())) {
+        refresh();
       }
       isFirstUpdate = false;
     }
@@ -102285,7 +102630,7 @@ function autoUpdate(reference, floating, update2, options2) {
   }
   function frameLoop() {
     const nextRefRect = getBoundingClientRect(reference);
-    if (prevRefRect && (nextRefRect.x !== prevRefRect.x || nextRefRect.y !== prevRefRect.y || nextRefRect.width !== prevRefRect.width || nextRefRect.height !== prevRefRect.height)) {
+    if (prevRefRect && !rectsAreEqual(prevRefRect, nextRefRect)) {
       update2();
     }
     prevRefRect = nextRefRect;
@@ -112128,7 +112473,7 @@ var uid2 = /* @__PURE__ */ (() => {
   return () => id3++;
 })();
 function isNullOrUndef(value) {
-  return value === null || typeof value === "undefined";
+  return value === null || value === void 0;
 }
 function isArray(value) {
   if (Array.isArray && Array.isArray(value)) {
@@ -112363,8 +112708,11 @@ function _factorize(value) {
   result.sort((a7, b5) => a7 - b5).pop();
   return result;
 }
+function isNonPrimitive(n12) {
+  return typeof n12 === "symbol" || typeof n12 === "object" && n12 !== null && !(Symbol.toPrimitive in n12 || "toString" in n12 || "valueOf" in n12);
+}
 function isNumber(n12) {
-  return !isNaN(parseFloat(n12)) && isFinite(n12);
+  return !isNonPrimitive(n12) && !isNaN(parseFloat(n12)) && isFinite(n12);
 }
 function almostWhole(x4, epsilon) {
   const rounded = Math.round(x4);
@@ -112582,24 +112930,35 @@ function _getStartAndCountOfVisiblePoints(meta, points, animationsDisabled) {
   let start = 0;
   let count = pointCount;
   if (meta._sorted) {
-    const { iScale, _parsed } = meta;
+    const { iScale, vScale, _parsed } = meta;
+    const spanGaps = meta.dataset ? meta.dataset.options ? meta.dataset.options.spanGaps : null : null;
     const axis = iScale.axis;
     const { min: min6, max: max6, minDefined, maxDefined } = iScale.getUserBounds();
     if (minDefined) {
-      start = _limitValue(Math.min(
+      start = Math.min(
         // @ts-expect-error Need to type _parsed
         _lookupByKey(_parsed, axis, min6).lo,
         // @ts-expect-error Need to fix types on _lookupByKey
         animationsDisabled ? pointCount : _lookupByKey(points, axis, iScale.getPixelForValue(min6)).lo
-      ), 0, pointCount - 1);
+      );
+      if (spanGaps) {
+        const distanceToDefinedLo = _parsed.slice(0, start + 1).reverse().findIndex((point) => !isNullOrUndef(point[vScale.axis]));
+        start -= Math.max(0, distanceToDefinedLo);
+      }
+      start = _limitValue(start, 0, pointCount - 1);
     }
     if (maxDefined) {
-      count = _limitValue(Math.max(
+      let end = Math.max(
         // @ts-expect-error Need to type _parsed
         _lookupByKey(_parsed, iScale.axis, max6, true).hi + 1,
         // @ts-expect-error Need to fix types on _lookupByKey
         animationsDisabled ? 0 : _lookupByKey(points, axis, iScale.getPixelForValue(max6), true).hi + 1
-      ), start, pointCount) - start;
+      );
+      if (spanGaps) {
+        const distanceToDefinedHi = _parsed.slice(end - 1).findIndex((point) => !isNullOrUndef(point[vScale.axis]));
+        end += Math.max(0, distanceToDefinedHi);
+      }
+      count = _limitValue(end, start, pointCount) - start;
     } else {
       count = pointCount - start;
     }
@@ -117098,10 +117457,20 @@ var adapters = {
 function binarySearch(metaset, axis, value, intersect) {
   const { controller, data: data2, _sorted } = metaset;
   const iScale = controller._cachedMeta.iScale;
+  const spanGaps = metaset.dataset ? metaset.dataset.options ? metaset.dataset.options.spanGaps : null : null;
   if (iScale && axis === iScale.axis && axis !== "r" && _sorted && data2.length) {
     const lookupMethod = iScale._reversePixels ? _rlookupByKey : _lookupByKey;
     if (!intersect) {
-      return lookupMethod(data2, axis, value);
+      const result = lookupMethod(data2, axis, value);
+      if (spanGaps) {
+        const { vScale } = controller._cachedMeta;
+        const { _parsed } = metaset;
+        const distanceToDefinedLo = _parsed.slice(0, result.lo + 1).reverse().findIndex((point) => !isNullOrUndef(point[vScale.axis]));
+        result.lo -= Math.max(0, distanceToDefinedLo);
+        const distanceToDefinedHi = _parsed.slice(result.hi).findIndex((point) => !isNullOrUndef(point[vScale.axis]));
+        result.hi += Math.max(0, distanceToDefinedHi);
+      }
+      return result;
     } else if (controller._sharedOptions) {
       const el = data2[0];
       const range = typeof el.getRange === "function" && el.getRange(axis);
@@ -119981,7 +120350,7 @@ function needContext(proxy, names2) {
   }
   return false;
 }
-var version3 = "4.4.6";
+var version3 = "4.4.8";
 var KNOWN_POSITIONS = [
   "top",
   "bottom",
@@ -126441,6 +126810,16 @@ var ChemLab = class extends (_a2 = LitElementWw, _containerDiv_dec = [e6("#upper
       this.shadowRoot.getElementById("comp_panel").style.display = "";
       this.shadowRoot.getElementById("ecomp_panel").style.display = "none";
       this.settings_drawer.removeAttribute("disabled");
+      this.curr_mol._bondTypes.forEach((key) => {
+        if (key in this.dictionary && key != "hydrogen") {
+          let bondType = this.shadowRoot.createElement(
+            "sl-option"
+          );
+          bondType.innerHTML = this.dictionary[key];
+          bondType.value = key;
+          this.bond_sel_3.appendChild(bondType);
+        }
+      });
     }
     this.smilesSwitch.checked = this.newSmilesDrawer === 1;
     this._sendxAPiStatement("registered", "chemlab");
@@ -131293,25 +131672,25 @@ lit-html/directives/range.js:
 
 chart.js/dist/chunks/helpers.segment.js:
   (*!
-   * Chart.js v4.4.6
+   * Chart.js v4.4.8
    * https://www.chartjs.org
-   * (c) 2024 Chart.js Contributors
+   * (c) 2025 Chart.js Contributors
    * Released under the MIT License
    *)
 
 chart.js/dist/chart.js:
   (*!
-   * Chart.js v4.4.6
+   * Chart.js v4.4.8
    * https://www.chartjs.org
-   * (c) 2024 Chart.js Contributors
+   * (c) 2025 Chart.js Contributors
    * Released under the MIT License
    *)
 
 chart.js/dist/helpers.js:
   (*!
-   * Chart.js v4.4.6
+   * Chart.js v4.4.8
    * https://www.chartjs.org
-   * (c) 2024 Chart.js Contributors
+   * (c) 2025 Chart.js Contributors
    * Released under the MIT License
    *)
 */
