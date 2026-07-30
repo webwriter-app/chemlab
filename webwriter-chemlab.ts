@@ -104,6 +104,10 @@ import default_svg from "./media/default.svg";
 import bg_svg from "./media/bg.png";
 import { HALF_PI, isNumber } from "chart.js/helpers";
 
+import { dictionary as germanDictionary } from "./data/dictionary";
+import { pHColors as phColorScale } from "./data/phColors";
+import { defaultMolecules, defaultMixtures } from "./data/presets";
+
 /**
  * chemlab webwriter widget for presenting interactive chemistry experiments
  *
@@ -454,24 +458,7 @@ export class ChemLab extends LitElementWw {
 	 * @type {object}
 	 */
 	@property({ attribute: false })
-	private accessor pHColors: object = {
-		// *pride*
-		0: "#ee1c25",
-		1: "#f26724",
-		2: "#f9c511",
-		3: "#f5ed1c",
-		4: "#b5d333",
-		5: "#83c241",
-		6: "#33a94b",
-		7: "#33a94b",
-		8: "#22b46b",
-		9: "#0bb8b6",
-		10: "#4690cd",
-		11: "#3853a4",
-		12: "#5a51a2",
-		13: "#63459d",
-		14: "#462c83",
-	};
+	private accessor pHColors: object = phColorScale;
 	/**
 	 * dictionary for german translation of all internal keywords
 	 *
@@ -479,151 +466,7 @@ export class ChemLab extends LitElementWw {
 	 * @type {object}
 	 */
 	@property({ attribute: false })
-	private accessor dictionary: object = {
-		testtube: "Reagenzglas",
-		beaker: "Becherglas",
-		burette: "Bürette",
-		flask: "Kolben",
-		condenser: "Kühler",
-		separatingfunnel: "Scheidetrichter",
-		cable: "Kabel",
-		electrode: "Elektrode",
-		source: "Spannungsquelle",
-		voltmeter: "Voltmeter",
-		hydrogen: "Wasserstoff",
-		helium: "Helium",
-		lithium: "Lithium",
-		beryllium: "Beryllium",
-		boron: "Bor",
-		carbon: "Kohlenstoff",
-		nitrogen: "Stickstoff",
-		oxygen: "Sauerstoff",
-		fluorine: "Fluor",
-		neon: "Neon",
-		sodium: "Natrium",
-		magnesium: "Magnesium",
-		aluminum: "Aluminium",
-		silicon: "Silizium",
-		phosphorus: "Phosphor",
-		sulfur: "Schwefel",
-		chlorine: "Chlor",
-		argon: "Argon",
-		potassium: "Kalium",
-		calcium: "Calcium",
-		scandium: "Scandium",
-		titanium: "Titan",
-		vanadium: "Vanadium",
-		chromium: "Chrom",
-		manganese: "Mangan",
-		iron: "Eisen",
-		cobalt: "Cobalt",
-		nickel: "Nickel",
-		copper: "Kupfer",
-		zinc: "Zink",
-		gallium: "Gallium",
-		germanium: "Germanium",
-		arsenic: "Arsen",
-		selenium: "Selen",
-		bromine: "Brom",
-		krypton: "Krypton",
-		rubidium: "Rubidium",
-		strontium: "Strontium",
-		yttrium: "Yttrium",
-		zirconium: "Zirkonium",
-		niobium: "Niob",
-		molybdenum: "Molybdän",
-		technetium: "Technetium",
-		ruthenium: "Ruthenium",
-		rhodium: "Rhodium",
-		palladium: "Palladium",
-		silver: "Silber",
-		cadmium: "Cadmium",
-		indium: "Indium",
-		tin: "Zinn",
-		antimony: "Antimon",
-		tellurium: "Tellur",
-		iodine: "Iod",
-		xenon: "Xenon",
-		cesium: "Caesium",
-		barium: "Barium",
-		lanthanum: "Lanthan",
-		cerium: "Cer",
-		praseodymium: "Praseodym",
-		neodymium: "Neodym",
-		promethium: "Promethium",
-		samarium: "Samarium",
-		europium: "Europium",
-		gadolinium: "Gadolinium",
-		terbium: "Terbium",
-		dysprosium: "Dysprosium",
-		holmium: "Holmium",
-		erbium: "Erbium",
-		thulium: "Thulium",
-		ytterbium: "Ytterbium",
-		lutetium: "Lutetium",
-		hafnium: "Hafnium",
-		tantalum: "Tantal",
-		tungsten: "Wolfram",
-		rhenium: "Rhenium",
-		osmium: "Osmium",
-		iridium: "Iridium",
-		platinum: "Platin",
-		gold: "Gold",
-		mercury: "Quecksilber",
-		thallium: "Thallium",
-		lead: "Blei",
-		bismuth: "Wismut",
-		polonium: "Polonium",
-		astatine: "Astat",
-		radon: "Radon",
-		francium: "Francium",
-		radium: "Radium",
-		actinium: "Actinium",
-		thorium: "Thorium",
-		protactinium: "Protactinium",
-		uranium: "Uran",
-		neptunium: "Neptunium",
-		plutonium: "Plutonium",
-		americium: "Americium",
-		curium: "Curium",
-		berkelium: "Berkelium",
-		californium: "Californium",
-		einsteinium: "Einsteinium",
-		fermium: "Fermium",
-		mendelevium: "Mendelevium",
-		nobelium: "Nobelium",
-		lawrencium: "Lawrencium",
-		rutherfordium: "Rutherfordium",
-		dubnium: "Dubnium",
-		seaborgium: "Seaborgium",
-		bohrium: "Bohrium",
-		hassium: "Hassium",
-		meitnerium: "Meitnerium",
-		darmstadtium: "Darmstadtium",
-		roentgenium: "Roentgenium",
-		copernicium: "Copernicium",
-		nihonium: "Nihonium",
-		flerovium: "Flerovium",
-		moscovium: "Moscovium",
-		livermorium: "Livermorium",
-		tennessine: "Tenness",
-		oganesson: "Oganesson",
-		ununennium: "Ununennium",
-		"alkali metal": "Alkalimetall",
-		"alkaline earth metal": "Erdalkalimetall",
-		"transition metal": "Übergangsmetall",
-		"post transition metal": "Metall der Erdmetalle",
-		metalloid: "Halbmetall",
-		"polyatomic nonmetal": "Polyatomares Nichtmetall",
-		"diatomic nonmetal": "Diatomares Nichtmetall",
-		halogen: "Halogen",
-		"noble gas": "Edelgas",
-		lanthanide: "Lanthanoid",
-		actinide: "Actinoid",
-		ionic: "ionische Bindung",
-		acidbase: "Säure/Base Bindung",
-		covalent: "kovalente Bindung"
-	};
+	private accessor dictionary: object = germanDictionary;
 	/**
 	 * reflected data on available molecules
 	 *
@@ -645,13 +488,7 @@ export class ChemLab extends LitElementWw {
 			return newVal.length != oldVal.length;
 		},
 	})
-	private accessor availableMolecules: Array<object> = [
-		{
-			formula: "OH2",
-			atoms: ["oxygen", "hydrogen", "hydrogen"],
-			bonds: ["0-1:covalent:1", "0-2:covalent:1"],
-		},
-	];
+	private accessor availableMolecules: Array<object> = defaultMolecules;
 	/**
 	 * reflected data on available mixtures
 	 *
@@ -673,8 +510,7 @@ export class ChemLab extends LitElementWw {
 			return newVal.length != oldVal.length;
 		},
 	})
-	private accessor availableMixtures: Array<object> = [
-	];
+	private accessor availableMixtures: Array<object> = defaultMixtures;
 	/**
 	 * reflected data on available components
 	 *
