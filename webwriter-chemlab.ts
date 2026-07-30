@@ -4651,6 +4651,22 @@ export class ChemLab extends LitElementWw {
 	 */
 	render() {
 		return html`
+			${this.renderHelpPopups()}
+			${this.renderAuthorOptions()}
+			<div id="upper">
+				${this.pix_canvas}
+				${this.renderConfirmDialog()}
+				${this.renderDiagramDrawer()}
+				${this.renderControlButtons()}
+				${this.renderContextMenu()}
+				${this.renderContextPopup()}
+				${this.renderObjectPanel()}
+			</div>
+		`;
+	}
+
+	private renderHelpPopups() {
+		return html`
 			<webwriter-helpoverlay>
 				<webwriter-helppopup
 					slot="popupContainer"
@@ -4725,6 +4741,11 @@ export class ChemLab extends LitElementWw {
 					</div>
 				</webwriter-helppopup>
 			</webwriter-helpoverlay>
+		`;
+	}
+
+	private renderAuthorOptions() {
+		return html`
 			<div part="options" class="author-only">
 				<h5 id="toHeading">Chemlab Optionen</h5>
 				<div style="max-width: 250px; font-size: 10pt">
@@ -4779,8 +4800,11 @@ export class ChemLab extends LitElementWw {
 					</sl-details>
 				</div>
 			</div>
-			<div id="upper">
-				${this.pix_canvas}
+		`;
+	}
+
+	private renderConfirmDialog() {
+		return html`
 				<sl-dialog id="confirmDialog" no-header label="bestätigen">
 					<div
 						style="display: flex; flex-direction: row; align-items: center"
@@ -4828,6 +4852,11 @@ export class ChemLab extends LitElementWw {
 						</button>
 					</div>
 				</sl-dialog>
+		`;
+	}
+
+	private renderDiagramDrawer() {
+		return html`
 				<sl-drawer
 					id="diagramDrawer"
 					label="Diagramme"
@@ -4870,6 +4899,11 @@ export class ChemLab extends LitElementWw {
 						style="position: absolute; top: 50px; left: 0px; width: 100%; max-height: 550px; overflow: auto"
 					></div>
 				</sl-drawer>
+		`;
+	}
+
+	private renderControlButtons() {
+		return html`
 				<div
 					id="buttonRowTop"
 					style="position: absolute; top: 0px; right: 0px; display: flex; flex-direction: column"
@@ -5033,6 +5067,11 @@ export class ChemLab extends LitElementWw {
 				>
 					<p id="dialogText"></p>
 				</sl-alert>
+		`;
+	}
+
+	private renderContextMenu() {
+		return html`
 				<div
 					id="contextMenu"
 					style="position: absolute; display:none; box-shadow: 0px 6px 12px 0px rgba(0,0,0,0.33); border-radius: 5px"
@@ -5114,6 +5153,11 @@ export class ChemLab extends LitElementWw {
 						</sl-menu-item>
 					</sl-menu>
 				</div>
+		`;
+	}
+
+	private renderContextPopup() {
+		return html`
 				<!-- TODO: make placement dynamic -->
 				<sl-popup
 					id="contextPopup"
@@ -5319,7 +5363,11 @@ export class ChemLab extends LitElementWw {
 						</div>
 					</div>
 				</sl-popup>
+		`;
+	}
 
+	private renderObjectPanel() {
+		return html`
 				<sl-popup
 					showHelp="Panel"
 					id="tabPopup"
@@ -5343,6 +5391,39 @@ export class ChemLab extends LitElementWw {
 								>Objekt</sl-tab
 							>
 							<sl-tab-panel id="details_settings" name="settings">
+								${this.renderCompPanel()}
+								${this.renderEcompPanel()}
+							</sl-tab-panel>
+						</sl-tab-group>
+						<button
+							@click="${() => {
+								this.tabPopup.active = false;
+								this._sendxAPiStatement(
+									"closed",
+									"objectPanel"
+								);
+							}}"
+							style="position: absolute; top: 7.5px; right: 7.5px"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="16"
+								height="16"
+								viewBox="0 0 24 24"
+							>
+								<path
+									fill="#b80000"
+									d="M6.4 19L5 17.6l5.6-5.6L5 6.4L6.4 5l5.6 5.6L17.6 5L19 6.4L13.4 12l5.6 5.6l-1.4 1.4l-5.6-5.6z"
+								/>
+							</svg>
+						</button>
+					</div>
+				</sl-popup>
+		`;
+	}
+
+	private renderCompPanel() {
+		return html`
 								<div id="comp_panel">
 									<sl-split-panel
 										id="atom_panel"
@@ -5855,6 +5936,11 @@ export class ChemLab extends LitElementWw {
 										</div>
 									</sl-split-panel>
 								</div>
+		`;
+	}
+
+	private renderEcompPanel() {
+		return html`
 								<div id="ecomp_panel">
 									<sl-split-panel
 										position="50"
@@ -5997,33 +6083,6 @@ export class ChemLab extends LitElementWw {
 										</div>
 									</sl-split-panel>
 								</div>
-							</sl-tab-panel>
-						</sl-tab-group>
-						<button
-							@click="${() => {
-								this.tabPopup.active = false;
-								this._sendxAPiStatement(
-									"closed",
-									"objectPanel"
-								);
-							}}"
-							style="position: absolute; top: 7.5px; right: 7.5px"
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="16"
-								height="16"
-								viewBox="0 0 24 24"
-							>
-								<path
-									fill="#b80000"
-									d="M6.4 19L5 17.6l5.6-5.6L5 6.4L6.4 5l5.6 5.6L17.6 5L19 6.4L13.4 12l5.6 5.6l-1.4 1.4l-5.6-5.6z"
-								/>
-							</svg>
-						</button>
-					</div>
-				</sl-popup>
-			</div>
 		`;
 	}
 }
