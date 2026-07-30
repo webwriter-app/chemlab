@@ -107,6 +107,7 @@ import { HALF_PI, isNumber } from "chart.js/helpers";
 import { dictionary as germanDictionary } from "./data/dictionary";
 import { pHColors as phColorScale } from "./data/phColors";
 import { defaultMolecules, defaultMixtures } from "./data/presets";
+import { sendXApiStatement } from "./services/xapi";
 
 /**
  * chemlab webwriter widget for presenting interactive chemistry experiments
@@ -4843,133 +4844,16 @@ export class ChemLab extends LitElementWw {
 		context: string,
 		extra?: object
 	): Promise<void> {
-		if (!this.enablexAPI || this.hasAttribute("contenteditable")) {
-			return;
-		}
-
-		let date: Date = new Date();
-		var session: string =
-			date.getDay().toString() +
-			date.getMonth().toString() +
-			date.getFullYear().toString() +
-			this.RndName;
-
-		var verb = {
-			id: "",
-			display: {
-				de: "",
-				"en-US": "",
+		return sendXApiStatement(
+			{
+				enabled: this.enablexAPI && !this.hasAttribute("contenteditable"),
+				rndName: this.RndName,
+				apiKey: this.xAPIKey,
 			},
-		};
-		switch (action) {
-			case "pressed":
-				verb.id = "http://future-learning.info/xAPI/verb/pressed";
-				verb.display.de = "drückte";
-				verb.display["en-US"] = "pressed";
-				break;
-			case "completed":
-				verb.id = "http://activitystrea.ms/schema/1.0/complete";
-				verb.display.de = "beendete";
-				verb.display["en-US"] = "completed";
-				break;
-			case "selected":
-				verb.id = "https://brindlewaye.com/xAPITerms/verbs/selected";
-				verb.display.de = "wählte";
-				verb.display["en-US"] = "selected";
-				break;
-			case "closed":
-				verb.id = "http://activitystrea.ms/schema/1.0/close";
-				verb.display.de = "schloss";
-				verb.display["en-US"] = "closed";
-				break;
-			case "focused":
-				verb.id = "http://id.tincanapi.com/verb/focused";
-				verb.display.de = "wählte";
-				verb.display["en-US"] = "focused";
-				break;
-			case "submitted":
-				verb.id = "https://w3id.org/xapi/dod-isd/verbs/submitted";
-				verb.display.de = "reichte ein";
-				verb.display["en-US"] = "submitted";
-				break;
-			case "opened":
-				verb.id = "http://activitystrea.ms/schema/1.0/open";
-				verb.display.de = "oeffnete";
-				verb.display["en-US"] = "opened";
-				break;
-			case "created":
-				verb.id = "http://activitystrea.ms/schema/1.0/create";
-				verb.display.de = "erstellte";
-				verb.display["en-US"] = "created";
-				break;
-			case "registered":
-				verb.id = "http://adlnet.gov/expapi/verbs/registered";
-				verb.display.de = "registrierte";
-				verb.display["en-US"] = "registered";
-				break;
-			case "started":
-				verb.id = "http://activitystrea.ms/schema/1.0/start";
-				verb.display.de = "startete";
-				verb.display["en-US"] = "started";
-				break;
-			case "inserted":
-				verb.id = "http://activitystrea.ms/schema/1.0/insert";
-				verb.display.de = "fügte ein";
-				verb.display["en-US"] = "inserted";
-				break;
-			case "removed":
-				verb.id = "http://activitystrea.ms/schema/1.0/remove";
-				verb.display.de = "entfernte";
-				verb.display["en-US"] = "removed";
-				break;
-			case "added":
-				verb.id = "http://activitystrea.ms/schema/1.0/add";
-				verb.display.de = "fügte hinzu";
-				verb.display["en-US"] = "added";
-				break;
-			case "appended":
-				verb.id = "http://activitystrea.ms/schema/1.0/append";
-				verb.display.de = "erweiterte";
-				verb.display["en-US"] = "appended";
-				break;
-			case "joined":
-				verb.id = "http://activitystrea.ms/schema/1.0/join";
-				verb.display.de = "verband";
-				verb.display["en-US"] = "joined";
-				break;
-			default:
-				break;
-		}
-		const statement = {
-			actor: {
-				mbox: "mailto:dummy@webwriterchemlabdummymail.de",
-				name: session,
-			},
-			verb: verb,
-			object: {
-				objectType: "Agent",
-				name: context,
-				mbox:
-					"mailto:dummy" +
-					context.replace(":", "") +
-					"@webwriterchemlabdummymail.de",
-			},
-			result: extra,
-		};
-		await fetch("https://lrs.elearn.rwth-aachen.de/data/xAPI/statements", {
-			mode: "cors",
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				"X-Experience-API-Version": "1.0.3",
-				Authorization: this.xAPIKey,
-			},
-			body: JSON.stringify(statement),
-		})
-			.then((response) => {
-				/*console.log(response)*/
-			})
-			.catch((error) => console.error(error.message));
+			action,
+			context,
+			extra
+		);
 	}
 
 	/**
