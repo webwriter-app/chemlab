@@ -108,6 +108,7 @@ import { dictionary as germanDictionary } from "./data/dictionary";
 import { pHColors as phColorScale } from "./data/phColors";
 import { defaultMolecules, defaultMixtures } from "./data/presets";
 import { sendXApiStatement } from "./services/xapi";
+import { DiagramController } from "./controllers/DiagramController";
 
 /**
  * chemlab webwriter widget for presenting interactive chemistry experiments
@@ -423,7 +424,7 @@ export class ChemLab extends LitElementWw {
 	 * @type {HTMLDivElement}
 	 */
 	@query("#canvasContainer")
-	private accessor canvasContainer: HTMLDivElement;
+	accessor canvasContainer: HTMLDivElement;
 	/**
 	 * part of options, toggles different panel variants 
 	 *
@@ -559,13 +560,12 @@ export class ChemLab extends LitElementWw {
 	@property({ attribute: false })
 	private accessor tickerFunctionList: Array<any> = [];
 	/**
-	 * list of current diagrams, contains charts and corresponding div containers
+	 * controller owning all Chart.js diagrams (titration / e-chem)
 	 *
 	 * @private
-	 * @type {Array<any>}
+	 * @type {DiagramController}
 	 */
-	@property({ attribute: false })
-	private accessor diagramList: Array<any> = [];
+	private diagrams = new DiagramController(this);
 	/**
 	 * database to store update intervals for ticker functions
 	 *
@@ -574,14 +574,6 @@ export class ChemLab extends LitElementWw {
 	 */
 	@property({ attribute: false })
 	private accessor tickerTimeObj: object = {};
-	/**
-	 * show diagram lines
-	 *
-	 * @private
-	 * @type {boolean}
-	 */
-	@property({ attribute: false })
-	private accessor diagShowLine: boolean = false;
 	/**
 	 * device has touch abilities
 	 *
@@ -1060,157 +1052,7 @@ export class ChemLab extends LitElementWw {
 		this.tickerTimeObj[name] = 0;
 		// console.log(this.tickerTimeObj);
 		if (name.includes("transfer") || name.includes("echem")) {
-			for (let i = 0; i < this.diagramList.length; i++) {
-				if (
-					(this.diagramList[i][1] as HTMLDivElement).children[0]
-						.id === name
-				) {
-					return;
-				}
-			}
-			// @ts-ignore
-			let canvasBundle: HTMLDivElement = this.shadowRoot.createElement(
-				"div"
-			) as HTMLDivElement;
-			canvasBundle.style.borderTopStyle = "solid";
-			canvasBundle.style.borderTopWidth = "2px";
-			canvasBundle.style.borderTopColor = "#e5e5e5";
-			canvasBundle.style.marginBlock = "20px";
-			// @ts-ignore
-			let canvasDiv: HTMLDivElement = this.shadowRoot.createElement(
-				"div"
-			) as HTMLDivElement;
-			canvasDiv.style.width = "100%";
-			canvasDiv.style.maxWidth = "500px";
-			canvasDiv.style.height = "400px";
-			// @ts-ignore
-			let canvas: HTMLCanvasElement = this.shadowRoot.createElement(
-				"canvas"
-			) as HTMLCanvasElement;
-			canvas.id = name;
-
-			// @ts-ignore
-			let canvasHeading: HTMLHeadingElement = this.shadowRoot.createElement("h5") as HTMLHeadingElement;
-			canvasHeading.innerText =
-				this.diagramList.length +
-				": " +
-				(name.includes("transfer")
-					? "Titration"
-					: name.includes("source")
-					? "Elektrolyse"
-					: "Galvanische Zelle");
-
-			canvasDiv.appendChild(canvas);
-			// @ts-ignore
-			let canvasHeadingContainer: HTMLDivElement = this.shadowRoot.createElement("div") as HTMLDivElement;
-			canvasHeadingContainer.style.display = "flex";
-			canvasHeadingContainer.style.alignItems = "baseline";
-			// @ts-ignore
-			let trashButton: HTMLButtonElement = this.shadowRoot.createElement(
-				"button"
-			) as HTMLButtonElement;
-			trashButton.innerHTML += `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#d10000" d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/></svg>`;
-			trashButton.onclick = (event) => {
-				this.diagramList.forEach((diag) => {
-					if ((diag[1] as HTMLDivElement).children[0].id === name) {
-						this.diagramList.splice(diag, 1);
-						return;
-					}
-				});
-				canvasBundle.remove();
-				this._sendxAPiStatement("removed", "diagram-" + name);
-			};
-			canvasHeadingContainer.appendChild(canvasHeading);
-			canvasHeadingContainer.appendChild(trashButton);
-			canvasBundle.appendChild(canvasHeadingContainer);
-			canvasBundle.appendChild(canvasDiv);
-			this.canvasContainer.appendChild(canvasBundle);
-
-			let chartLabel: string;
-			let chartTitleX: string;
-			let chartTitleY: string;
-
-			if (name.includes("transfer")) {
-				chartLabel = "pH";
-				chartTitleX = "Volumen [ml]";
-				chartTitleY = "pH Wert";
-			}
-			if (name.includes("echem")) {
-				if (name.includes("source")) {
-					chartLabel = "n";
-					chartTitleX = "Zeit [s]";
-					chartTitleY = "umgesetzte Stoffmenge [mol]";
-				}
-				if (name.includes("voltmeter")) {
-					chartLabel = "Spannung";
-					chartTitleX = "Zeit [s]";
-					chartTitleY = "Zellspannung [V]";
-				}
-			}
-			let chart = new Chart(canvas, {
-				type: "line",
-				data: {
-					labels: [],
-					datasets: [],
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					scales: {
-						x: {
-							beginAtZero: true,
-							title: {
-								text: chartTitleX,
-								display: true,
-							},
-							grid: {
-								drawOnChartArea: false,
-							},
-						},
-						y: {
-							beginAtZero: true,
-							title: {
-								text: chartTitleY,
-								display: true,
-							},
-							grid: {
-								drawOnChartArea: false,
-							},
-						},
-					},
-				},
-			});
-
-			chart.data.datasets.push({
-				label: chartLabel,
-				data: [],
-				tension: 0.4,
-				showLine: this.diagShowLine,
-			});
-			if (name.includes("source")) {
-				chart.data.datasets.push({
-					label: chartLabel,
-					data: [],
-					tension: 0.4,
-					showLine: this.diagShowLine,
-				});
-
-				let electrodes: chemlib.ElectricComponent[] =
-					chemlib.ComponentManager.isCircuit(
-						args[1] as chemlib.ElectricComponent
-					);
-				chart.data.datasets[0].label =
-					"Stoffmenge " +
-					electrodes[0]._material._atoms[0].getSymbol() +
-					" Ionen [mol]";
-				chart.data.datasets[1].label =
-					"Stoffmenge " +
-					electrodes[1]._material._atoms[0].getSymbol() +
-					" Ionen [mol]";
-			}
-
-			this.diagramList.push([chart, canvasDiv]);
-			this._sendxAPiStatement("created", "diagram-" + name);
+			this.diagrams.createDiagram(name, args);
 		}
 	}
 
@@ -1483,35 +1325,7 @@ export class ChemLab extends LitElementWw {
 				if (typeof destObj != "undefined") {
 					if (source._content._activeMolecules.length > 0) {
 						source.transferContents({}, destObj);
-						for (let i = 0; i < this.diagramList.length; i++) {
-							if (
-								(
-									this.diagramList[i][1] as HTMLDivElement
-								).children[0].id.includes(
-									source._type + ":" + source._id
-								)
-							) {
-								let chart: Chart = this.diagramList[i][0];
-								chart.data.labels.push(
-									(chart.data.labels.length > 0
-										? Number.parseFloat(
-												chart.data.labels[
-													chart.data.labels.length - 1
-												] as string
-										  )
-										: 0) +
-										source._outVol * 1000
-								);
-								chart.data.datasets.forEach((dataset) => {
-									dataset.data.push(
-										chemlib.Simulation.getpH(
-											destObj._content
-										)
-									);
-								});
-								chart.update();
-							}
-						}
+						this.diagrams.appendTitrationPoint(source, destObj);
 					}
 				}
 			}
@@ -1553,70 +1367,7 @@ export class ChemLab extends LitElementWw {
 					circuitComps[2]
 				);
 
-				for (let i = 0; i < this.diagramList.length; i++) {
-					if (
-						(
-							this.diagramList[i][1] as HTMLDivElement
-						).children[0].id.includes(
-							source._type + ":" + source._id
-						)
-					) {
-						let chart: Chart = this.diagramList[i][0];
-						chart.data.labels.push(
-							(chart.data.labels.length > 0
-								? Number.parseFloat(
-										chart.data.labels[
-											chart.data.labels.length - 1
-										] as string
-								  )
-								: 0) + 1
-						);
-						chart.data.datasets.forEach((dataset) => {
-							if (
-								source._type ===
-								chemlib.EComponentType.Voltmeter
-							) {
-								dataset.data.push(source._visibleVoltage);
-							} else {
-								let datasetId: number =
-									chart.data.datasets.indexOf(dataset);
-								circuitComps[
-									datasetId
-								]._connectedMix._activeMolecules.forEach(
-									(mol) => {
-										// console.log(
-										// 	mol._atomCount,
-										// 	mol._totalCharge,
-										// 	mol._atoms[0].getName(),
-										// 	circuitComps[
-										// 		datasetId
-										// 	]._material._atoms[0].getName(),
-										// 	circuitComps[datasetId]
-										// 		._connectedMix._molProperties
-										// );
-										if (
-											mol._atomCount === 1 &&
-											mol._totalCharge != 0 &&
-											mol._atoms[0].getName() ===
-												circuitComps[
-													datasetId
-												]._material._atoms[0].getName()
-										) {
-											dataset.data.push(
-												circuitComps[datasetId]
-													._connectedMix
-													._molProperties[
-													mol._id + "n"
-												]
-											);
-										}
-									}
-								);
-							}
-						});
-						chart.update();
-					}
-				}
+				this.diagrams.appendEChemPoint(source, circuitComps);
 			}
 		}
 	}
@@ -4857,6 +4608,18 @@ export class ChemLab extends LitElementWw {
 	}
 
 	/**
+	 * Public entry point for reactive controllers to emit an xAPI statement.
+	 * Delegates to {@link _sendxAPiStatement}.
+	 *
+	 * @param action - the verb of the statement
+	 * @param context - the name of the object being interacted with
+	 * @param extra - the optional result of the interaction
+	 */
+	public reportXApi(action: string, context: string, extra?: object): void {
+		this._sendxAPiStatement(action, context, extra);
+	}
+
+	/**
 	 * disables preselected compoents for student use 
 	 *
 	 * @private
@@ -5097,13 +4860,7 @@ export class ChemLab extends LitElementWw {
 						<sl-badge variant="primary">Diagramme</sl-badge>
 						<sl-checkbox
 							@sl-change=${(event) => {
-								this.diagShowLine = !this.diagShowLine;
-								this.diagramList.forEach((diag) => {
-									diag[0].data.datasets.forEach((dataset) => {
-										dataset.showLine = this.diagShowLine;
-									});
-									diag[0].update();
-								});
+								this.diagrams.toggleShowLine();
 							}}
 							><p>Kurven anzeigen</p></sl-checkbox
 						>
