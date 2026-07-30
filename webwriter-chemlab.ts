@@ -109,6 +109,7 @@ import { pHColors as phColorScale } from "./data/phColors";
 import { defaultMolecules, defaultMixtures } from "./data/presets";
 import { sendXApiStatement } from "./services/xapi";
 import { DiagramController } from "./controllers/DiagramController";
+import { SimulationController } from "./controllers/SimulationController";
 
 /**
  * chemlab webwriter widget for presenting interactive chemistry experiments
@@ -552,28 +553,24 @@ export class ChemLab extends LitElementWw {
 	@property({ attribute: false })
 	private accessor canvasBoundingRect: DOMRect;
 	/**
-	 * list of functions to be iteratively called by the PixiJS ticker system
-	 *
-	 * @private
-	 * @type {Array<any>}
-	 */
-	@property({ attribute: false })
-	private accessor tickerFunctionList: Array<any> = [];
-	/**
 	 * controller owning all Chart.js diagrams (titration / e-chem)
 	 *
-	 * @private
 	 * @type {DiagramController}
 	 */
-	private diagrams = new DiagramController(this);
+	diagrams = new DiagramController(this);
+	/**
+	 * controller owning the PixiJS ticker system (loop + registered functions)
+	 *
+	 * @type {SimulationController}
+	 */
+	private simulation = new SimulationController(this);
 	/**
 	 * database to store update intervals for ticker functions
 	 *
-	 * @private
 	 * @type {object}
 	 */
 	@property({ attribute: false })
-	private accessor tickerTimeObj: object = {};
+	accessor tickerTimeObj: object = {};
 	/**
 	 * device has touch abilities
 	 *
@@ -637,7 +634,7 @@ export class ChemLab extends LitElementWw {
 	 * @type {*}
 	 */
 	@property({ attribute: false })
-	private accessor app = null;
+	accessor app = null;
 	/**
 	 * signalizes which datasets (avail. components/e-components/atoms) have already been loaded into their selects
 	 *
@@ -954,27 +951,18 @@ export class ChemLab extends LitElementWw {
 		bg_sprite.height = this.containerDiv.clientHeight;
 		bg_sprite.eventMode = "none";
 		this.app.stage.addChild(bg_sprite);
-		this.app.ticker.add(() => {
-			let indexCount: number = 0;
-			while (typeof this.tickerFunctionList[indexCount] != "undefined") {
-				this.tickerFunctionList[indexCount][1].apply(
-					this,
-					this.tickerFunctionList[indexCount][2]
-				);
-				indexCount += 1;
-			}
-		});
-		this._pushTickerFunction(
+		this.simulation.startLoop();
+		this.simulation.pushTickerFunction(
 			this._updateTickerPopup.name,
 			this._updateTickerPopup,
 			[]
 		);
-		this._pushTickerFunction(
+		this.simulation.pushTickerFunction(
 			this._updateCablePos.name,
 			this._updateCablePos,
 			[]
 		);
-		this._pushTickerFunction(
+		this.simulation.pushTickerFunction(
 			this._updateSpriteTextures.name,
 			this._updateSpriteTextures,
 			[]
@@ -1033,45 +1021,6 @@ export class ChemLab extends LitElementWw {
 			true,
 			10000
 		);
-	}
-
-	/**
-	 * puts a new function in the ticker list, creates new diagram if neccessary
-	 *
-	 * @private
-	 * @param {string} name - the name of the function
-	 * @param {Function} fn - the function reference
-	 * @param {Array<any>} args - additional arguments of the function
-	 */
-	private _pushTickerFunction(
-		name: string,
-		fn: Function,
-		args: Array<any>
-	): void {
-		this.tickerFunctionList.push([name, fn, args]);
-		this.tickerTimeObj[name] = 0;
-		// console.log(this.tickerTimeObj);
-		if (name.includes("transfer") || name.includes("echem")) {
-			this.diagrams.createDiagram(name, args);
-		}
-	}
-
-	/**
-	 * removes a ticker function from the list
-	 *
-	 * @private
-	 * @param {string} name - the name of the function
-	 */
-	private _remTickerFunction(name: string): void {
-		let toRemove: number = -1;
-		for (let i = 0; i < this.tickerFunctionList.length; i++) {
-			if (this.tickerFunctionList[i][0] === name) {
-				toRemove = i;
-			}
-		}
-		if (toRemove > -1) {
-			this.tickerFunctionList.splice(toRemove, 1);
-		}
 	}
 
 	/**
@@ -2066,7 +2015,7 @@ export class ChemLab extends LitElementWw {
 			) {
 				this.openBtn.style.display = "";
 				this.openBtn.innerHTML = "Öffnen";
-				this.tickerFunctionList.forEach((arr) => {
+				this.simulation.tickerFunctionList.forEach((arr) => {
 					if (
 						arr[0] ===
 						"transfer" + this.curr_name + this.curr_stage_index
@@ -2625,7 +2574,7 @@ export class ChemLab extends LitElementWw {
 				"none";
 		}
 
-		this._remTickerFunction(
+		this.simulation.remTickerFunction(
 			"transfer" + this.curr_name + this.curr_stage_index
 		);
 
@@ -5260,7 +5209,7 @@ export class ChemLab extends LitElementWw {
 									) {
 										this.openBtn.innerHTML = "Schließen";
 										let source = this.curr_obj;
-										this._pushTickerFunction(
+										this.simulation.pushTickerFunction(
 											"transfer" +
 												this.curr_name +
 												this.curr_stage_index,
@@ -5276,7 +5225,7 @@ export class ChemLab extends LitElementWw {
 										);
 									} else {
 										this.openBtn.innerHTML = "Öffnen";
-										this._remTickerFunction(
+										this.simulation.remTickerFunction(
 											"transfer" +
 												this.curr_name +
 												this.curr_stage_index
@@ -5317,7 +5266,7 @@ export class ChemLab extends LitElementWw {
 														voltmeter_on_svg
 												  );
 										let source = this.curr_obj;
-										this._pushTickerFunction(
+										this.simulation.pushTickerFunction(
 											"echem" +
 												this.curr_name +
 												this.curr_stage_index,
@@ -5343,7 +5292,7 @@ export class ChemLab extends LitElementWw {
 												: PIXI.Texture.from(
 														voltmeter_off_svg
 												  );
-										this._remTickerFunction(
+										this.simulation.remTickerFunction(
 											"echem" +
 												this.curr_name +
 												this.curr_stage_index
