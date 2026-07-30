@@ -965,14 +965,16 @@ export class ChemLab extends LitElementWw {
 			[]
 		);
 		this.simulation.pushTickerFunction(
-			this._updateCablePos.name,
-			this._updateCablePos,
-			[]
+			"_updateCablePos",
+			this.canvas._updateCablePos,
+			[],
+			this.canvas
 		);
 		this.simulation.pushTickerFunction(
-			this._updateSpriteTextures.name,
-			this._updateSpriteTextures,
-			[]
+			"_updateSpriteTextures",
+			this.canvas._updateSpriteTextures,
+			[],
+			this.canvas
 		);
 		this._listComponents();
 		this._listEComponents();
@@ -1057,168 +1059,7 @@ export class ChemLab extends LitElementWw {
 		}
 	}
 
-	/**
-	 * ticker function to update sprite textures according to the components content
-	 *
-	 * @private
-	 */
-	private _updateSpriteTextures(): void {
-		this.app.stage.children.forEach((sprite: PIXI.Sprite) => {
-			let name: string = sprite.name
-				.split(":")[0]
-				.replace(
-					sprite.name.split(":")[0][0],
-					sprite.name.split(":")[0][0].toUpperCase()
-				);
-			let id: number = Number.parseInt(sprite.name.split(":")[1]);
-			if (Object.keys(chemlib.ComponentType).includes(name)) {
-				this.allChemComponents.forEach((comp) => {
-					if (comp._type === name.toLowerCase() && comp._id === id) {
-						let tex: undefined;
-						if (comp._content._activeMolecules.length > 0) {
-							if (comp._content._isSolution) {
-								switch (comp._type) {
-									case "beaker":
-										tex = beaker_fl_svg;
-										break;
-									case "testtube":
-										tex = testtube_fl_svg;
-										break;
-									case "flask":
-										tex = flask_fl_svg;
-										break;
-									case "burette":
-										tex = burette_fl_svg;
-										break;
-									default:
-										break;
-								}
-								sprite.texture = PIXI.Texture.from(tex);
-							} else {
-								switch (comp._type) {
-									case "beaker":
-										tex = beaker_fs_svg;
-										break;
-									case "testtube":
-										tex = testtube_fs_svg;
-										break;
-									case "flask":
-										tex = flask_fs_svg;
-										break;
-									case "burette":
-										tex = burette_fs_svg;
-										break;
-									default:
-										break;
-								}
-								sprite.texture = PIXI.Texture.from(tex);
-							}
-						} else {
-							switch (comp._type) {
-								case "beaker":
-									tex = beaker_svg;
-									break;
-								case "testtube":
-									tex = testtube_svg;
-									break;
-								case "flask":
-									tex = flask_svg;
-									break;
-								case "burette":
-									tex = burette_svg;
-									break;
-								default:
-									break;
-							}
-							sprite.texture = PIXI.Texture.from(tex);
-						}
-					}
-				});
-			}
-		});
-	}
 
-	/**
-	 * ticker function to update cables and their positions
-	 *
-	 * @private
-	 */
-	private _updateCablePos(): void {
-		let index0: number;
-		this.app.stage.children.forEach((sprite: PIXI.Sprite) => {
-			index0 = this.app.stage.children.indexOf(sprite);
-			if (sprite.name.includes("cable")) {
-				let id: number = Number.parseInt(sprite.name.split(":")[1]);
-				this.allEComponents.forEach((eComp) => {
-					if (
-						eComp._type === chemlib.EComponentType.Cable &&
-						eComp._id === id
-					) {
-						let con1: chemlib.ElectricComponent | undefined =
-							eComp._connections[0];
-						let con2: chemlib.ElectricComponent | undefined =
-							eComp._connections[1];
-
-						if (
-							typeof con1 != "undefined" &&
-							typeof con2 != "undefined"
-						) {
-							let pos1, pos2: number[];
-							let index1, index2: number;
-							this.app.stage.children.forEach((conSprite) => {
-								if (
-									conSprite.name.includes(
-										con1._type + ":" + con1._id
-									)
-								) {
-									index1 =
-										this.app.stage.children.indexOf(
-											conSprite
-										);
-									pos1 = [conSprite.x, conSprite.y];
-								}
-								if (
-									conSprite.name.includes(
-										con2._type + ":" + con2._id
-									)
-								) {
-									index2 =
-										this.app.stage.children.indexOf(
-											conSprite
-										);
-									pos2 = [conSprite.x, conSprite.y];
-								}
-							});
-							let minIndex: number = Math.min(
-								index0,
-								index1,
-								index2
-							);
-							if (minIndex != index0) {
-								let buffer: any =
-									this.app.stage.children[minIndex];
-								this.app.stage.children[minIndex] = sprite;
-								this.app.stage.children[index0] = buffer;
-							}
-							sprite.height = Math.sqrt(
-								Math.pow(pos1[0] - pos2[0], 2) +
-									Math.pow(pos1[1] - pos2[1], 2)
-							);
-							sprite.x = (pos1[0] + pos2[0]) / 2;
-							sprite.y = (pos1[1] + pos2[1]) / 2;
-							sprite.rotation =
-								Math.atan(
-									(pos1[1] - pos2[1]) / (pos1[0] - pos2[0])
-								) + HALF_PI;
-						} else {
-							this._getObject(sprite);
-							this._removeSprite();
-						}
-					}
-				});
-			}
-		});
-	}
 
 	/**
 	 * ticker function for titraton experiments, transfers content to another component dynamically on correct sprite positioning and updates the diagram
@@ -1900,7 +1741,7 @@ export class ChemLab extends LitElementWw {
 	 * 
 	 * @private
 	 */
-	private _removeSprite(): void {
+	_removeSprite(): void {
 		if (
 			Object.values(chemlib.EComponentType).includes(this.curr_obj._type)
 		) {
@@ -1971,7 +1812,7 @@ export class ChemLab extends LitElementWw {
 			this.curr_stage_index = -1;
 			return;
 		}
-		this._updateCablePos();
+		this.canvas._updateCablePos();
 		this._getObject(
 			this.app.stage.children[this.app.stage.children.length - 1]
 		);

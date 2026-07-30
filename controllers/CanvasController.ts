@@ -19,6 +19,23 @@ import source_off_svg from "../media/source_off.svg";
 import voltmeter_off_svg from "../media/voltmeter_off.svg";
 // @ts-ignore
 import default_svg from "../media/default.svg";
+import { HALF_PI } from "chart.js/helpers";
+// @ts-ignore
+import beaker_fl_svg from "../media/beaker_full_l.svg";
+// @ts-ignore
+import beaker_fs_svg from "../media/beaker_full_s.svg";
+// @ts-ignore
+import flask_fl_svg from "../media/flask_full_l.svg";
+// @ts-ignore
+import flask_fs_svg from "../media/flask_full_s.svg";
+// @ts-ignore
+import burette_fl_svg from "../media/burette_full_l.svg";
+// @ts-ignore
+import burette_fs_svg from "../media/burette_full_s.svg";
+// @ts-ignore
+import testtube_fl_svg from "../media/testtube_full_l.svg";
+// @ts-ignore
+import testtube_fs_svg from "../media/testtube_full_S.svg";
 
 import type { ChemLab } from "../webwriter-chemlab";
 
@@ -745,6 +762,169 @@ export class CanvasController implements ReactiveController {
 		});
 		this.host.app.stage.on("pointerupoutside", () => {
 			this._dragEnd();
+		});
+	}
+
+	/**
+	 * ticker function to update sprite textures according to the components content
+	 *
+	 * @private
+	 */
+	_updateSpriteTextures(): void {
+		this.host.app.stage.children.forEach((sprite: PIXI.Sprite) => {
+			let name: string = sprite.name
+				.split(":")[0]
+				.replace(
+					sprite.name.split(":")[0][0],
+					sprite.name.split(":")[0][0].toUpperCase()
+				);
+			let id: number = Number.parseInt(sprite.name.split(":")[1]);
+			if (Object.keys(chemlib.ComponentType).includes(name)) {
+				this.host.allChemComponents.forEach((comp) => {
+					if (comp._type === name.toLowerCase() && comp._id === id) {
+						let tex: undefined;
+						if (comp._content._activeMolecules.length > 0) {
+							if (comp._content._isSolution) {
+								switch (comp._type) {
+									case "beaker":
+										tex = beaker_fl_svg;
+										break;
+									case "testtube":
+										tex = testtube_fl_svg;
+										break;
+									case "flask":
+										tex = flask_fl_svg;
+										break;
+									case "burette":
+										tex = burette_fl_svg;
+										break;
+									default:
+										break;
+								}
+								sprite.texture = PIXI.Texture.from(tex);
+							} else {
+								switch (comp._type) {
+									case "beaker":
+										tex = beaker_fs_svg;
+										break;
+									case "testtube":
+										tex = testtube_fs_svg;
+										break;
+									case "flask":
+										tex = flask_fs_svg;
+										break;
+									case "burette":
+										tex = burette_fs_svg;
+										break;
+									default:
+										break;
+								}
+								sprite.texture = PIXI.Texture.from(tex);
+							}
+						} else {
+							switch (comp._type) {
+								case "beaker":
+									tex = beaker_svg;
+									break;
+								case "testtube":
+									tex = testtube_svg;
+									break;
+								case "flask":
+									tex = flask_svg;
+									break;
+								case "burette":
+									tex = burette_svg;
+									break;
+								default:
+									break;
+							}
+							sprite.texture = PIXI.Texture.from(tex);
+						}
+					}
+				});
+			}
+		});
+	}
+
+	/**
+	 * ticker function to update cables and their positions
+	 *
+	 * @private
+	 */
+	_updateCablePos(): void {
+		let index0: number;
+		this.host.app.stage.children.forEach((sprite: PIXI.Sprite) => {
+			index0 = this.host.app.stage.children.indexOf(sprite);
+			if (sprite.name.includes("cable")) {
+				let id: number = Number.parseInt(sprite.name.split(":")[1]);
+				this.host.allEComponents.forEach((eComp) => {
+					if (
+						eComp._type === chemlib.EComponentType.Cable &&
+						eComp._id === id
+					) {
+						let con1: chemlib.ElectricComponent | undefined =
+							eComp._connections[0];
+						let con2: chemlib.ElectricComponent | undefined =
+							eComp._connections[1];
+
+						if (
+							typeof con1 != "undefined" &&
+							typeof con2 != "undefined"
+						) {
+							let pos1, pos2: number[];
+							let index1, index2: number;
+							this.host.app.stage.children.forEach((conSprite) => {
+								if (
+									conSprite.name.includes(
+										con1._type + ":" + con1._id
+									)
+								) {
+									index1 =
+										this.host.app.stage.children.indexOf(
+											conSprite
+										);
+									pos1 = [conSprite.x, conSprite.y];
+								}
+								if (
+									conSprite.name.includes(
+										con2._type + ":" + con2._id
+									)
+								) {
+									index2 =
+										this.host.app.stage.children.indexOf(
+											conSprite
+										);
+									pos2 = [conSprite.x, conSprite.y];
+								}
+							});
+							let minIndex: number = Math.min(
+								index0,
+								index1,
+								index2
+							);
+							if (minIndex != index0) {
+								let buffer: any =
+									this.host.app.stage.children[minIndex];
+								this.host.app.stage.children[minIndex] = sprite;
+								this.host.app.stage.children[index0] = buffer;
+							}
+							sprite.height = Math.sqrt(
+								Math.pow(pos1[0] - pos2[0], 2) +
+									Math.pow(pos1[1] - pos2[1], 2)
+							);
+							sprite.x = (pos1[0] + pos2[0]) / 2;
+							sprite.y = (pos1[1] + pos2[1]) / 2;
+							sprite.rotation =
+								Math.atan(
+									(pos1[1] - pos2[1]) / (pos1[0] - pos2[0])
+								) + HALF_PI;
+						} else {
+							this.host._getObject(sprite);
+							this.host._removeSprite();
+						}
+					}
+				});
+			}
 		});
 	}
 }

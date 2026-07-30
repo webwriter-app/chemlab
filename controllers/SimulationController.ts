@@ -18,8 +18,9 @@ export class SimulationController implements ReactiveController {
 	private host: ChemLab;
 
 	/**
-	 * Registered ticker entries, each `[name, fn, args]`. `fn` is invoked with
-	 * the host as its `this` on every frame.
+	 * Registered ticker entries, each `[name, fn, args, thisArg?]`. `fn` is
+	 * invoked with `thisArg` (or the host, when omitted) as its `this` on every
+	 * frame.
 	 */
 	tickerFunctionList: Array<any> = [];
 
@@ -39,9 +40,10 @@ export class SimulationController implements ReactiveController {
 		this.host.app.ticker.add(() => {
 			let indexCount: number = 0;
 			while (typeof this.tickerFunctionList[indexCount] != "undefined") {
-				this.tickerFunctionList[indexCount][1].apply(
-					this.host,
-					this.tickerFunctionList[indexCount][2]
+				const entry = this.tickerFunctionList[indexCount];
+				entry[1].apply(
+					entry[3] !== undefined ? entry[3] : this.host,
+					entry[2]
 				);
 				indexCount += 1;
 			}
@@ -53,15 +55,17 @@ export class SimulationController implements ReactiveController {
 	 * experiments, creates the corresponding diagram.
 	 *
 	 * @param name - unique name of the ticker function
-	 * @param fn - the function reference (invoked with the host as `this`)
+	 * @param fn - the function reference
 	 * @param args - additional arguments passed on each tick
+	 * @param thisArg - `this` binding for `fn` (defaults to the host)
 	 */
 	public pushTickerFunction(
 		name: string,
 		fn: Function,
-		args: Array<any>
+		args: Array<any>,
+		thisArg?: any
 	): void {
-		this.tickerFunctionList.push([name, fn, args]);
+		this.tickerFunctionList.push([name, fn, args, thisArg]);
 		this.host.tickerTimeObj[name] = 0;
 		// console.log(this.host.tickerTimeObj);
 		if (name.includes("transfer") || name.includes("echem")) {
