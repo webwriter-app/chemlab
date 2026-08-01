@@ -59,6 +59,11 @@ export class CanvasController implements ReactiveController {
 	/** offset from the sprite's origin to the point where it was grabbed, so a
 	 * drag keeps that point under the pointer instead of snapping to the centre */
 	private _dragOffset: PIXI.Point = new PIXI.Point();
+	/** inactivity timer that closes the sprite context popup */
+	private _contextCloseTimer: number = undefined;
+	/** pointer-move handler that closes the context popup once the pointer
+	 * travels far enough from both the sprite and the dialog */
+	private _contextMoveHandler: (event: PointerEvent) => void = undefined;
 	/** pending long-press timer id (touch/pen context-menu trigger) */
 	private _longPressTimer: number = undefined;
 	/** stage move handler that cancels a long-press once the pointer moves */
@@ -168,6 +173,106 @@ export class CanvasController implements ReactiveController {
 		this.host.contextPopup.active = true;
 		this.host.contextPopup.reposition();
 		this.host.reportXApi("opened", "contextMenu-" + sprite.name);
+		this._startContextAutoClose(sprite);
+	}
+
+	/**
+	 * Auto-closes the sprite context popup opened by {@link _openSpriteContext}.
+	 * Two independent triggers: an inactivity timeout (reset while the pointer
+	 * is over the dialog) and a distance check that closes it once the pointer
+	 * moves far enough from both the sprite and the dialog.
+	 *
+	 * @private
+	 * @param {PIXI.Sprite} sprite - the sprite the popup belongs to
+	 */
+	private _startContextAutoClose(sprite: PIXI.Sprite): void {
+		this._stopContextAutoClose();
+		const TIMEOUT: number = 4000; // ms of inactivity before closing
+		const DISTANCE: number = 150; // px from the sprite or dialog edge
+
+		const resetTimer = () => {
+			if (this._contextCloseTimer !== undefined) {
+				window.clearTimeout(this._contextCloseTimer);
+			}
+			this._contextCloseTimer = window.setTimeout(
+				() => this._closeSpriteContext(),
+				TIMEOUT
+			);
+		};
+		resetTimer();
+
+		const distToRect = (x, y, r): number => {
+			const dx: number = Math.max(r.left - x, 0, x - r.right);
+			const dy: number = Math.max(r.top - y, 0, y - r.bottom);
+			return Math.sqrt(dx * dx + dy * dy);
+		};
+
+		this._contextMoveHandler = (event: PointerEvent) => {
+			// self-clean if the popup was closed by some other path
+			if (!this.host.contextPopup.active) {
+				this._stopContextAutoClose();
+				return;
+			}
+			const infoBox: HTMLDivElement = this.host.shadowRoot.getElementById(
+				"contextInfoBox"
+			) as HTMLDivElement;
+			const dialogRect = infoBox.getBoundingClientRect();
+			const canvasRect = (
+				this.host.app.view as HTMLCanvasElement
+			).getBoundingClientRect();
+			const b = sprite.getBounds();
+			const spriteRect = {
+				left: canvasRect.left + b.x,
+				top: canvasRect.top + b.y,
+				right: canvasRect.left + b.x + b.width,
+				bottom: canvasRect.top + b.y + b.height,
+			};
+			const distDialog: number = distToRect(
+				event.clientX,
+				event.clientY,
+				dialogRect
+			);
+			// over the dialog: keep it open and restart the inactivity timer
+			if (distDialog === 0) {
+				resetTimer();
+				return;
+			}
+			const distSprite: number = distToRect(
+				event.clientX,
+				event.clientY,
+				spriteRect
+			);
+			if (distDialog > DISTANCE && distSprite > DISTANCE) {
+				this._closeSpriteContext();
+			}
+		};
+		window.addEventListener("pointermove", this._contextMoveHandler);
+	}
+
+	/**
+	 * Tears down the context auto-close timer and pointer listener.
+	 *
+	 * @private
+	 */
+	private _stopContextAutoClose(): void {
+		if (this._contextCloseTimer !== undefined) {
+			window.clearTimeout(this._contextCloseTimer);
+			this._contextCloseTimer = undefined;
+		}
+		if (this._contextMoveHandler !== undefined) {
+			window.removeEventListener("pointermove", this._contextMoveHandler);
+			this._contextMoveHandler = undefined;
+		}
+	}
+
+	/**
+	 * Closes the sprite context popup and stops its auto-close watchers.
+	 *
+	 * @private
+	 */
+	private _closeSpriteContext(): void {
+		this.host.contextPopup.active = false;
+		this._stopContextAutoClose();
 	}
 
 	/**
@@ -364,6 +469,7 @@ export class CanvasController implements ReactiveController {
 	 * @param {PIXI.Sprite} sprite - the dragged sprite
 	 */
 	_dragStart(sprite: PIXI.Sprite, event: any): void {
+		this._stopContextAutoClose();
 		this.host.dragObject = sprite;
 		this._dragActive = true;
 		// remember where inside the sprite it was grabbed, so it doesn't jump
