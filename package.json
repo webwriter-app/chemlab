@@ -19,7 +19,9 @@
     "license": "MIT",
     "author": "Robin Kreft",
     "main": "./index.ts",
-    "scripts": {},
+    "scripts": {
+        "dev": "vite"
+    },
     "dependencies": {
         "@shoelace-style/shoelace": "2.19.1",
         "@webwriter/lit": "^2.1.6",
@@ -32,6 +34,7 @@
         "unique-names-generator": "^4.7.1"
     },
     "devDependencies": {
+        "@webcomponents/scoped-custom-element-registry": "^0.0.10",
         "typescript": "^5.8.2",
         "vite": "^5.4.14"
     },
