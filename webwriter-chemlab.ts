@@ -577,30 +577,6 @@ export class ChemLab extends LitElementWw {
 	@property({ attribute: false })
 	accessor tickerTimeObj: object = {};
 	/**
-	 * device has touch abilities
-	 *
-	 * @private
-	 * @type {boolean}
-	 */
-	@property({ attribute: false })
-	accessor hasTouch: boolean = false;
-	/**
-	 * touch input mode (drag/click)
-	 *
-	 * @private
-	 * @type {boolean}
-	 */
-	@property({ attribute: false })
-	accessor dragToggle: boolean = true;
-	/**
-	 * simulate mouseover event when clicking once on a component sprite (for touch use)
-	 *
-	 * @private
-	 * @type {boolean}
-	 */
-	@property({ attribute: false })
-	accessor touchHighlight: boolean = false;
-	/**
 	 * show colored element symbols
 	 *
 	 * @private
@@ -833,7 +809,6 @@ export class ChemLab extends LitElementWw {
 		console.log(SmilesDrawer)
 		this.smilesDrawer100 = new SmilesDrawer.SvgDrawer({ width: 100, height: 100, explicitHydrogens: true, compactDrawing: false, terminalCarbons: true});
 		this.smilesDrawer150 = new SmilesDrawer.SvgDrawer({ width: 150, height: 150, explicitHydrogens: true, compactDrawing: false });
-		this.hasTouch = navigator.maxTouchPoints > 0;
 		this.addEventListener("fullscreenchange", () => {
 			// In fullscreen the host fills the screen, so let #upper fill the
 			// host; on exit clear the inline size so the CSS default (800x600)
@@ -925,18 +900,6 @@ export class ChemLab extends LitElementWw {
 		this.canvas._canvas_init();
 		this.focus();
 		this.canvasBoundingRect = this.containerDiv.getBoundingClientRect();
-		if (this.hasTouch) {
-			let changeInput: HTMLButtonElement = this.shadowRoot.getElementById(
-				"changeInput"
-			) as HTMLButtonElement;
-			let toggleDrag: HTMLButtonElement = this.shadowRoot.getElementById(
-				"toggleDrag"
-			) as HTMLButtonElement;
-			changeInput.innerHTML = `                    
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="4"><path d="M12.566 26.182Q10 27.941 10 32c0 4.06 4.975 11 9.462 11h11.48C35.332 43 38 39.15 38 36.06V23.01a3 3 0 0 0-3-3h-.01A2.99 2.99 0 0 0 32 23"/><path d="M13.981 28.445V8.005a3 3 0 0 1 3.006-2.997a3.014 3.014 0 0 1 3.006 3.015v15.569"/><path stroke-linejoin="round" d="M19.993 23.008v-3.992a3.016 3.016 0 0 1 6.03 0v3.992"/><path stroke-linejoin="round" d="M26 22.716v-2.713a3 3 0 0 1 6 0v3"/></g></svg>
-            `;
-			toggleDrag.style.visibility = "visible";
-		}
 		setAnimation(this.dialogAlert, "alert.show", {
 			keyframes: [{ opacity: "0" }, { opacity: "1" }],
 			options: {
@@ -3620,57 +3583,6 @@ export class ChemLab extends LitElementWw {
 	}
 
 	/**
-	 * changes bewteen mouse and touch input
-	 *
-	 * @private
-	 * @param {HTMLButtonElement} targetButton - the corresponding button that was pressed
-	 */
-	private _changeInputMode(targetButton: HTMLButtonElement): void {
-		let toggleDrag: HTMLButtonElement = this.shadowRoot.getElementById(
-			"toggleDrag"
-		) as HTMLButtonElement;
-		this.hasTouch = !this.hasTouch;
-		if (this.hasTouch) {
-			targetButton.innerHTML = `                    
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="4"><path d="M12.566 26.182Q10 27.941 10 32c0 4.06 4.975 11 9.462 11h11.48C35.332 43 38 39.15 38 36.06V23.01a3 3 0 0 0-3-3h-.01A2.99 2.99 0 0 0 32 23"/><path d="M13.981 28.445V8.005a3 3 0 0 1 3.006-2.997a3.014 3.014 0 0 1 3.006 3.015v15.569"/><path stroke-linejoin="round" d="M19.993 23.008v-3.992a3.016 3.016 0 0 1 6.03 0v3.992"/><path stroke-linejoin="round" d="M26 22.716v-2.713a3 3 0 0 1 6 0v3"/></g></svg>
-            `;
-			toggleDrag.style.visibility = "visible";
-			this._sendxAPiStatement("selected", "touch input");
-		} else {
-			targetButton.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22q-2.9 0-4.95-2.05T5 15V9q0-2.9 2.05-4.95T12 2t4.95 2.05T19 9v6q0 2.9-2.05 4.95T12 22m1-13h4q0-1.8-1.137-3.175T13 4.1zM7 9h4V4.1q-1.725.35-2.863 1.725T7 9m5 11q2.075 0 3.538-1.463T17 15v-4H7v4q0 2.075 1.463 3.538T12 20m0-9"/></svg>
-            `;
-			toggleDrag.style.visibility = "hidden";
-			this._sendxAPiStatement("selected", "mouse input");
-		}
-	}
-
-	/**
-	 * changes the touch input submode
-	 *
-	 * @private
-	 * @param {HTMLButtonElement} targetButton - the corresponding button that was pressed
-	 */
-	private _toggleDrag(targetButton: HTMLButtonElement): void {
-		let toggleDrag: HTMLButtonElement = this.shadowRoot.getElementById(
-			"toggleDrag"
-		) as HTMLButtonElement;
-		this.dragToggle = !this.dragToggle;
-		if (this.dragToggle) {
-			targetButton.innerHTML = `                    
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><defs><mask id="ipTMove0"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"><path fill="#555" d="M22 43c-4.726-1.767-8.667-7.815-10.64-11.357c-.852-1.53-.403-3.408.964-4.502a3.83 3.83 0 0 1 5.1.283L19 29V17.5a2.5 2.5 0 0 1 5 0v6a2.5 2.5 0 0 1 5 0v2a2.5 2.5 0 0 1 5 0v2a2.5 2.5 0 0 1 5 0v7.868c0 1.07-.265 2.128-.882 3.003C37.095 39.82 35.256 42.034 33 43c-3.5 1.5-6.63 1.634-11 0"/><path d="M10 8h22m-18 4l-4-4l4-4m14 0l4 4l-4 4"/></g></mask></defs><path fill="currentColor" d="M0 0h48v48H0z" mask="url(#ipTMove0)"/></svg>
-            `;
-			this._sendxAPiStatement("selected", "touch drag mode");
-		} else {
-			targetButton.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M22 43c-4.726-1.767-8.667-7.815-10.64-11.357c-.852-1.53-.403-3.408.964-4.502a3.83 3.83 0 0 1 5.1.283L19 29V17.5a2.5 2.5 0 0 1 5 0v6a2.5 2.5 0 0 1 5 0v2a2.5 2.5 0 0 1 5 0v2a2.5 2.5 0 0 1 5 0v7.868c0 1.07-.265 2.128-.882 3.003C37.095 39.82 35.256 42.034 33 43c-3.5 1.5-6.63 1.634-11 0M10 8h22m-18 4l-4-4l4-4m14 0l4 4l-4 4"/></svg>
-            `;
-			this._sendxAPiStatement("selected", "touch select mode");
-		}
-	}
-
-
-	/**
 	 * sends an xAPi statement with a fetch request
 	 *
 	 * @private
@@ -3779,25 +3691,6 @@ export class ChemLab extends LitElementWw {
 						<p lang="de">
 							Über diesen Button kann der Vollbildmodus an und aus
 							geschaltet werden. Aktuell deaktiviert.
-						</p>
-					</div>
-				</webwriter-helppopup>
-				<webwriter-helppopup slot="popupContainer" target="changeInput">
-					<div slot="content">
-						<sl-badge>Eingabemodus</sl-badge>
-						<p lang="de">
-							Über diesen Button kann zwischen Maus- und
-							Touch-Steuerung gewechselt werden.
-						</p>
-					</div>
-				</webwriter-helppopup>
-				<webwriter-helppopup slot="popupContainer" target="toggleDrag">
-					<div slot="content">
-						<sl-badge>Dragging an/aus</sl-badge>
-						<p lang="de">
-							Bei der Touch-Steuerung kann über diesen Button
-							umgeschaltet werden, wie Objekte auf Berührungen
-							reagieren.
 						</p>
 					</div>
 				</webwriter-helppopup>
@@ -4028,65 +3921,6 @@ export class ChemLab extends LitElementWw {
 							<path
 								fill="currentColor"
 								d="M3 21v-5h2v3h3v2zm13 0v-2h3v-3h2v5zM3 8V3h5v2H5v3zm16 0V5h-3V3h5v5z"
-							/>
-						</svg>
-					</button>
-					<button
-						id="changeInput"
-						@click="${(event) => {
-							this._changeInputMode(
-								event.target as HTMLButtonElement
-							);
-						}}"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="24"
-							height="24"
-							viewBox="0 0 24 24"
-						>
-							<path
-								fill="currentColor"
-								d="M12 22q-2.9 0-4.95-2.05T5 15V9q0-2.9 2.05-4.95T12 2t4.95 2.05T19 9v6q0 2.9-2.05 4.95T12 22m1-13h4q0-1.8-1.137-3.175T13 4.1zM7 9h4V4.1q-1.725.35-2.863 1.725T7 9m5 11q2.075 0 3.538-1.463T17 15v-4H7v4q0 2.075 1.463 3.538T12 20m0-9"
-							/>
-						</svg>
-					</button>
-					<button
-						id="toggleDrag"
-						@click="${(event) => {
-							this._toggleDrag(event.target as HTMLButtonElement);
-						}}"
-						style="visibility: hidden"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="24"
-							height="24"
-							viewBox="0 0 48 48"
-						>
-							<defs>
-								<mask id="ipTMove0">
-									<g
-										fill="none"
-										stroke="#fff"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="4"
-									>
-										<path
-											fill="#555"
-											d="M22 43c-4.726-1.767-8.667-7.815-10.64-11.357c-.852-1.53-.403-3.408.964-4.502a3.83 3.83 0 0 1 5.1.283L19 29V17.5a2.5 2.5 0 0 1 5 0v6a2.5 2.5 0 0 1 5 0v2a2.5 2.5 0 0 1 5 0v2a2.5 2.5 0 0 1 5 0v7.868c0 1.07-.265 2.128-.882 3.003C37.095 39.82 35.256 42.034 33 43c-3.5 1.5-6.63 1.634-11 0"
-										/>
-										<path
-											d="M10 8h22m-18 4l-4-4l4-4m14 0l4 4l-4 4"
-										/>
-									</g>
-								</mask>
-							</defs>
-							<path
-								fill="currentColor"
-								d="M0 0h48v48H0z"
-								mask="url(#ipTMove0)"
 							/>
 						</svg>
 					</button>

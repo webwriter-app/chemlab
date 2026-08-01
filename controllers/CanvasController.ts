@@ -49,9 +49,141 @@ import type { ChemLab } from "../webwriter-chemlab";
 export class CanvasController implements ReactiveController {
 	private host: ChemLab;
 
+	/** true while a sprite drag is in progress (pointermove listener attached) */
+	private _dragActive: boolean = false;
+	/** stable pointermove handler, so it can be removed again with .off() */
+	private _dragMoveHandler = (event: any): void => {
+		this._dragMove(event);
+		this.host.contextPopup.active = false;
+	};
+	/** offset from the sprite's origin to the point where it was grabbed, so a
+	 * drag keeps that point under the pointer instead of snapping to the centre */
+	private _dragOffset: PIXI.Point = new PIXI.Point();
+	/** pending long-press timer id (touch/pen context-menu trigger) */
+	private _longPressTimer: number = undefined;
+	/** stage move handler that cancels a long-press once the pointer moves */
+	private _longPressMoveHandler: (event: any) => void = undefined;
+
 	constructor(host: ChemLab) {
 		this.host = host;
 		host.addController(this);
+	}
+
+	/**
+	 * Arms a long-press: runs `action` after 500ms unless the pointer moves
+	 * more than a few pixels or is lifted first. Used to give touch/pen input a
+	 * context-menu gesture equivalent to a right-click.
+	 *
+	 * @private
+	 * @param {() => void} action - what to run when the press is held
+	 * @param {*} event - the originating pointerdown event
+	 */
+	private _armLongPress(action: () => void, event: any): void {
+		this._clearLongPress();
+		const startX: number = event.global.x;
+		const startY: number = event.global.y;
+		this._longPressMoveHandler = (moveEvent: any) => {
+			const dx: number = moveEvent.global.x - startX;
+			const dy: number = moveEvent.global.y - startY;
+			if (Math.sqrt(dx * dx + dy * dy) > 10) {
+				this._clearLongPress();
+			}
+		};
+		this.host.app.stage.on("globalpointermove", this._longPressMoveHandler);
+		this._longPressTimer = window.setTimeout(() => {
+			this._clearLongPress();
+			action();
+		}, 500);
+	}
+
+	/**
+	 * Cancels a pending long-press, if any.
+	 *
+	 * @private
+	 */
+	private _clearLongPress(): void {
+		if (this._longPressTimer !== undefined) {
+			window.clearTimeout(this._longPressTimer);
+			this._longPressTimer = undefined;
+		}
+		if (this._longPressMoveHandler !== undefined) {
+			this.host.app.stage.off(
+				"globalpointermove",
+				this._longPressMoveHandler
+			);
+			this._longPressMoveHandler = undefined;
+		}
+	}
+
+	/**
+	 * Stops an in-progress drag without running the drop logic (used when a
+	 * long-press turns the gesture into a context-menu open instead of a move).
+	 *
+	 * @private
+	 */
+	private _cancelDrag(): void {
+		if (this._dragActive) {
+			this.host.app.stage.off("pointermove", this._dragMoveHandler);
+			this._dragActive = false;
+		}
+		if (
+			this.host.curr_stage_index > -1 &&
+			this.host.app.stage.children[this.host.curr_stage_index]
+		) {
+			this.host.app.stage.children[this.host.curr_stage_index].rotation = 0;
+		}
+		this.host.dragObject = undefined;
+		this.host._hideAlert();
+	}
+
+	/**
+	 * Opens the info/actions context popup for a sprite (right-click or
+	 * long-press).
+	 *
+	 * @private
+	 * @param {PIXI.Sprite} sprite - the sprite the popup belongs to
+	 */
+	private _openSpriteContext(sprite: PIXI.Sprite): void {
+		let currSprite = this.host.app.stage.children[this.host.curr_stage_index];
+		this.host.contextPopupAnchor.style.top = currSprite.y.toString() + "px";
+		this.host.contextPopupAnchor.style.left = currSprite.x.toString() + "px";
+		this.host.contextPopupAnchor.style.width =
+			currSprite.width.toString() + "px";
+		this.host.contextPopupAnchor.style.height =
+			currSprite.height.toString() + "px";
+		this.host.contextPopup.reposition();
+
+		let contextInfoBox: HTMLDivElement = this.host.shadowRoot.getElementById(
+			"contextInfoBox"
+		) as HTMLDivElement;
+		contextInfoBox.style.visibility = "visible";
+		let contextActionsInfo: HTMLDivElement =
+			this.host.shadowRoot.getElementById(
+				"contextActionsInfo"
+			) as HTMLDivElement;
+		contextActionsInfo.style.display = "none";
+
+		this.host._updatePopup();
+
+		this.host.contextPopup.active = true;
+		this.host.contextPopup.reposition();
+		this.host.reportXApi("opened", "contextMenu-" + sprite.name);
+	}
+
+	/**
+	 * Opens the canvas "new object" menu at the given viewport coordinates
+	 * (right-click or long-press on empty canvas).
+	 *
+	 * @private
+	 * @param {number} x - viewport x in px
+	 * @param {number} y - viewport y in px
+	 */
+	private _openCanvasMenu(x: number, y: number): void {
+		this.host.contextMenu.style.display = "";
+		this.host.contextMenu.style.top = Math.round(y).toString() + "px";
+		this.host.contextMenu.style.left = Math.round(x).toString() + "px";
+		this.host.contextPopup.active = false;
+		this.host.reportXApi("opened", "objectMenu");
 	}
 
 	/** No reactive lifecycle work; the canvas is driven imperatively. */
@@ -126,59 +258,27 @@ export class CanvasController implements ReactiveController {
 		sprite.cursor = "pointer";
 		sprite.on("pointerdown", (event) => {
 			this.host._getObject(sprite);
-			// !(info === this.host.curr_name) ? this.host._getObject(sprite) : {};
 			this.host.reportXApi("focused", sprite.name);
-
-			if (this.host.hasTouch && event.pointerType === "touch") {
-				if (!this.host.touchHighlight) {
-					sprite.emit("mouseenter", event);
-					this.host.touchHighlight = true;
-					return;
-				} else {
-					this.host.touchHighlight = false;
-				}
-			}
-
-			if (this.host.dragToggle || !this.host.hasTouch) {
-				this._dragStart(sprite);
-				if (this.host.hasTouch) {
-					return;
-				}
-			}
 
 			let contextBadge: SlBadge = this.host.shadowRoot.getElementById(
 				"contextBadge"
 			) as SlBadge;
 			contextBadge.innerHTML = this.host.dictionary[sprite.name.split(":")[0]];
 
-			if (event.button === 2 || event.pointerType != "mouse") {
-				let currSprite = this.host.app.stage.children[this.host.curr_stage_index];
-				this.host.contextPopupAnchor.style.top =
-					currSprite.y.toString() + "px";
-				this.host.contextPopupAnchor.style.left =
-					currSprite.x.toString() + "px";
-				this.host.contextPopupAnchor.style.width =
-					currSprite.width.toString() + "px";
-				this.host.contextPopupAnchor.style.height =
-					currSprite.height.toString() + "px";
-				this.host.contextPopup.reposition();
-
-				let contextInfoBox: HTMLDivElement =
-					this.host.shadowRoot.getElementById(
-						"contextInfoBox"
-					) as HTMLDivElement;
-				contextInfoBox.style.visibility = "visible";
-				let contextActionsInfo: HTMLDivElement =
-					this.host.shadowRoot.getElementById(
-						"contextActionsInfo"
-					) as HTMLDivElement;
-				contextActionsInfo.style.display = "none";
-
-				this.host._updatePopup();
-
-				this.host.contextPopup.active = true;
-				this.host.contextPopup.reposition();
-				this.host.reportXApi("opened", "contextMenu-" + sprite.name);
+			if (event.pointerType === "mouse") {
+				// left button drags, right button opens the context popup
+				if (event.button === 2) {
+					this._openSpriteContext(sprite);
+				} else {
+					this._dragStart(sprite, event);
+				}
+			} else {
+				// touch / pen: move to drag, press-and-hold for the context popup
+				this._dragStart(sprite, event);
+				this._armLongPress(() => {
+					this._cancelDrag();
+					this._openSpriteContext(sprite);
+				}, event);
 			}
 		});
 		sprite.on("mouseenter", async (event) => {
@@ -224,18 +324,10 @@ export class CanvasController implements ReactiveController {
 
 			contextInfoBox.style.visibility = "hidden";
 			contextActionsInfo.style.display = "";
-			if (!this.host.hasTouch) {
-				contextActionsInfo.innerHTML = `<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><path fill="currentColor" d="M144 16h-32a64.07 64.07 0 0 0-64 64v96a64.07 64.07 0 0 0 64 64h32a64.07 64.07 0 0 0 64-64V80a64.07 64.07 0 0 0-64-64m-32 16h16v72H64V80a48.05 48.05 0 0 1 48-48m32 192h-32a48.05 48.05 0 0 1-48-48v-56h128v56a48.05 48.05 0 0 1-48 48"/></svg> Kontextmenü</p>
+			contextActionsInfo.innerHTML = `<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><path fill="currentColor" d="M144 16h-32a64.07 64.07 0 0 0-64 64v96a64.07 64.07 0 0 0 64 64h32a64.07 64.07 0 0 0 64-64V80a64.07 64.07 0 0 0-64-64m-32 16h16v72H64V80a48.05 48.05 0 0 1 48-48m32 192h-32a48.05 48.05 0 0 1-48-48v-56h128v56a48.05 48.05 0 0 1-48 48"/></svg> Kontextmenü</p>
 				<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl-divider>
 				<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><path fill="currentColor" d="M144 16h-32a64.07 64.07 0 0 0-64 64v96a64.07 64.07 0 0 0 64 64h32a64.07 64.07 0 0 0 64-64V80a64.07 64.07 0 0 0-64-64m48 64v24h-64V32h16a48.05 48.05 0 0 1 48 48m-48 144h-32a48.05 48.05 0 0 1-48-48v-56h128v56a48.05 48.05 0 0 1-48 48"/></svg> Bewegen</p>
 				`;
-			} else {
-				if (this.host.dragToggle) {
-					contextActionsInfo.innerHTML = `<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M22 43c-4.726-1.767-8.667-7.815-10.64-11.357c-.852-1.53-.403-3.408.964-4.502a3.83 3.83 0 0 1 5.1.283L19 29V17.5a2.5 2.5 0 0 1 5 0v6a2.5 2.5 0 0 1 5 0v2a2.5 2.5 0 0 1 5 0v2a2.5 2.5 0 0 1 5 0v7.868c0 1.07-.265 2.128-.882 3.003C37.095 39.82 35.256 42.034 33 43c-3.5 1.5-6.63 1.634-11 0M10 8h22m-18 4l-4-4l4-4m14 0l4 4l-4 4"/></svg> Bewegen</p>`;
-				} else {
-					contextActionsInfo.innerHTML = `<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="4"><path stroke-linejoin="round" d="M15 26V15a3 3 0 1 1 6 0v11"/><path stroke-linejoin="round" d="M39 25v6.5C39 37.851 33.851 43 27.5 43h-1C20.149 43 15 37.851 15 31.5V25"/><path stroke-linejoin="round" d="M21 29v-5a3 3 0 1 1 6 0v5m0 0v-5a3 3 0 1 1 6 0v5m0 0v-5a3 3 0 1 1 6 0v5"/><path d="M28 15a9.97 9.97 0 0 0-1.959-5.945A9.99 9.99 0 0 0 18 5a9.99 9.99 0 0 0-8.042 4.055A9.97 9.97 0 0 0 8 15"/></g></svg> Kontextmenü</p>`;
-				}
-			}
 
 			this.host.contextPopup.active = true;
 			this.host.reportXApi("opened", "hover-" + sprite.name);
@@ -271,12 +363,13 @@ export class CanvasController implements ReactiveController {
 	 * @private
 	 * @param {PIXI.Sprite} sprite - the dragged sprite
 	 */
-	_dragStart(sprite: PIXI.Sprite): void {
+	_dragStart(sprite: PIXI.Sprite, event: any): void {
 		this.host.dragObject = sprite;
-		this.host.app.stage.on("pointermove", (event) => {
-			this._dragMove(event);
-			this.host.contextPopup.active = false;
-		});
+		this._dragActive = true;
+		// remember where inside the sprite it was grabbed, so it doesn't jump
+		const local = sprite.parent.toLocal(event.global);
+		this._dragOffset.set(sprite.x - local.x, sprite.y - local.y);
+		this.host.app.stage.on("pointermove", this._dragMoveHandler);
 	}
 
 	/**
@@ -287,10 +380,11 @@ export class CanvasController implements ReactiveController {
 	 */
 	_dragMove(event): void {
 		if (this.host.dragObject) {
-			this.host.dragObject.parent.toLocal(
-				event.global,
-				null,
-				this.host.dragObject.position
+			// move so the grabbed point stays under the pointer (offset preserved)
+			const local = this.host.dragObject.parent.toLocal(event.global);
+			this.host.dragObject.position.set(
+				local.x + this._dragOffset.x,
+				local.y + this._dragOffset.y
 			);
 
 			let mouseHoverObject: number = -1;
@@ -430,10 +524,11 @@ export class CanvasController implements ReactiveController {
 	 * @returns {Promise<void>}
 	 */
 	async _dragEnd(): Promise<void> {
+		this._clearLongPress();
 		if (typeof this.host.dragObject != "undefined") {
-			if (this.host.app.stage._events["pointermove"]) {
-				delete this.host.app.stage._events["pointermove"];
-				this.host.app.stage._eventsCount -= 1;
+			if (this._dragActive) {
+				this.host.app.stage.off("pointermove", this._dragMoveHandler);
+				this._dragActive = false;
 				for (let i = 0; i < this.host.app.stage.children.length; i++) {
 					if (
 						i != this.host.curr_stage_index &&
@@ -727,35 +822,35 @@ export class CanvasController implements ReactiveController {
 		this.host.app.stage.eventMode = "static";
 		this.host.app.stage.hitArea = this.host.app.screen;
 		this.host.app.stage.sortableChildren = true;
-		this.host.app.stage.on("mousemove", (event) => {
+		// pointermove (not mousemove) so mousePos stays current for touch too.
+		// A drag is ended only on pointerup/pointerupoutside — not when the
+		// pointer briefly leaves the sprite bounds during a fast drag.
+		this.host.app.stage.on("pointermove", (event) => {
 			this.host.mousePos = [event.screenX, event.screenY];
-			if (!this._mouseInbounds(this.host.curr_stage_index, 0)) {
-				this._dragEnd();
-			}
 		});
 		this.host.app.stage.on("pointerdown", (event) => {
 			if (this.host.contextMenu.style.display != "none") {
 				this.host.contextMenu.style.display = "none";
 				return;
 			}
-			if(event.pointerType === "mouse" && event.button === 2 || event.pointerType != "mouse" && event.pressure > 0.7){
-				this.host.mousePos = [event.screenX, event.screenY];
-				if (
-					this.host.curr_stage_index > -1 &&
-					this._mouseInbounds(this.host.curr_stage_index, 0)
-				) {
-					return;
-				}
-				this.host.contextMenu.style.display = "";
-				this.host.contextMenu.style.top =
-					Math.round(event.globalY).toString() + "px";
-				this.host.contextMenu.style.left =
-					Math.round(event.globalX).toString() + "px";
-				this.host.contextPopup.active = false;
-
-				this.host.reportXApi("opened", "objectMenu");
+			this.host.mousePos = [event.screenX, event.screenY];
+			// a press on an existing object is handled by that sprite
+			if (
+				this.host.curr_stage_index > -1 &&
+				this._mouseInbounds(this.host.curr_stage_index, 0)
+			) {
+				return;
 			}
-			
+			// open the "new object" menu: right-click on mouse, long-press on touch
+			if (event.pointerType === "mouse") {
+				if (event.button === 2) {
+					this._openCanvasMenu(event.globalX, event.globalY);
+				}
+			} else {
+				const gx: number = event.globalX;
+				const gy: number = event.globalY;
+				this._armLongPress(() => this._openCanvasMenu(gx, gy), event);
+			}
 		});
 		this.host.app.stage.on("pointerup", () => {
 			this._dragEnd();
