@@ -100,8 +100,6 @@ import voltmeter_off_svg from "./media/voltmeter_off.svg";
 import voltmeter_on_svg from "./media/voltmeter_on.svg";
 // @ts-ignore
 import default_svg from "./media/default.svg";
-// @ts-ignore
-import bg_svg from "./media/bg.png";
 import { HALF_PI, isNumber } from "chart.js/helpers";
 
 import { dictionary as germanDictionary } from "./data/dictionary";
@@ -837,8 +835,12 @@ export class ChemLab extends LitElementWw {
 		this.smilesDrawer150 = new SmilesDrawer.SvgDrawer({ width: 150, height: 150, explicitHydrogens: true, compactDrawing: false });
 		this.hasTouch = navigator.maxTouchPoints > 0;
 		this.addEventListener("fullscreenchange", () => {
-			this.containerDiv.style.width = this.clientWidth + "px";
-			this.containerDiv.style.height = this.clientHeight + "px";
+			// In fullscreen the host fills the screen, so let #upper fill the
+			// host; on exit clear the inline size so the CSS default (800x600)
+			// takes over again. Then resize the canvas to match.
+			const isFullscreen = this.ownerDocument.fullscreenElement === this;
+			this.containerDiv.style.width = isFullscreen ? "100%" : "";
+			this.containerDiv.style.height = isFullscreen ? "100%" : "";
 			this.app.resizeTo = this.containerDiv;
 			this.app.resize();
 			this.requestUpdate();
@@ -949,15 +951,8 @@ export class ChemLab extends LitElementWw {
 			},
 		});
 
-		let bg_sprite = PIXI.Sprite.from(bg_svg);
-		bg_sprite.name = "bg_sprite";
-		bg_sprite.anchor.set(0);
-		bg_sprite.x = 0;
-		bg_sprite.y = 0;
-		bg_sprite.width = this.containerDiv.clientWidth;
-		bg_sprite.height = this.containerDiv.clientHeight;
-		bg_sprite.eventMode = "none";
-		this.app.stage.addChild(bg_sprite);
+		// The background grid is drawn with CSS on #upper (see chemlab-style)
+		// and shows through the transparent canvas, so it tiles to fill any size.
 		this.simulation.startLoop();
 		this.simulation.pushTickerFunction(
 			this._updateTickerPopup.name,
@@ -4005,56 +4000,21 @@ export class ChemLab extends LitElementWw {
 				>
 					<button
 						id="buttonFullscreen"
-						disabled
+						title="Vollbild an/aus"
 						@click="${() => {
-							if (
-								!(this.ownerDocument.fullscreenElement === this)
-							) {
-								this.requestFullscreen();
-								this.tab_select.onpointerdown = () => {
-									this.tab_select.onpointermove = (event) => {
-										this.tabPopupAnchor.style.top =
-											(
-												Number.parseInt(
-													this.tabPopupAnchor.style.top.split(
-														"px"
-													)[0]
-												) + event.movementY
-											).toString() + "px";
-										this.tabPopupAnchor.style.left =
-											(
-												Number.parseInt(
-													this.tabPopupAnchor.style.left.split(
-														"px"
-													)[0]
-												) + event.movementX
-											).toString() + "px";
-										this.tabPopup.reposition();
-									};
-								};
-								this.tab_select.onpointerup = () => {
-									this.tab_select.onpointermove = null;
-								};
-
-								this._sendxAPiStatement(
-									"selected",
-									"fullscreen mode"
-								);
-							} else {
-								this.containerDiv.style.width = "800px";
-								this.containerDiv.style.height = "600px";
-								this.app.resizeTo = this.containerDiv;
-								this.app.resize();
-								this.tab_select.onpointerdown = null;
-								this.tab_select.onpointerup = null;
-								this.tabPopupAnchor.style.top = 0 + "px";
-								this.tabPopupAnchor.style.left = 0 + "px";
-								this.tabPopup.reposition();
+							// Toggle fullscreen; the fullscreenchange handler
+							// takes care of resizing the canvas either way.
+							if (this.ownerDocument.fullscreenElement === this) {
 								this.ownerDocument.exitFullscreen();
-
 								this._sendxAPiStatement(
 									"selected",
 									"window mode"
+								);
+							} else {
+								this.requestFullscreen();
+								this._sendxAPiStatement(
+									"selected",
+									"fullscreen mode"
 								);
 							}
 						}}"

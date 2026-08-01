@@ -1042,12 +1042,30 @@ export const style = css`
 
 	#upper {
 		position: relative;
+		box-sizing: border-box;
 		width: 800px;
 		height: 600px;
 		border-width: 2px;
 		border-style: solid;
 		border-radius: 5px;
 		border-color: #6a6a6a;
+		/* Light neutral background with a repeating grid. The PIXI canvas is
+		   transparent, so this shows through and tiles to fill any size
+		   (including fullscreen) with no JS. */
+		background-color: #f7f7f5;
+		background-image: linear-gradient(
+				to right,
+				#d8d8d8 1px,
+				transparent 1px
+			),
+			linear-gradient(to bottom, #d8d8d8 1px, transparent 1px);
+		background-size: 20px 20px;
+	}
+	/* When the widget itself is the fullscreen element, make it fill the screen
+	   so #upper (sized to 100%) can fill it too. */
+	:host(:fullscreen) {
+		width: 100%;
+		height: 100%;
 	}
 	#tab_select {
 		position: absolute;
