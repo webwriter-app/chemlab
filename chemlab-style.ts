@@ -1089,6 +1089,15 @@ export const style = css`
 		overflow: auto;
 	}
 
+	atom_container {
+		display: grid;
+		grid-template-columns: repeat(18, minmax(18px, 1fr));
+		grid-auto-rows: 1.25rem;
+		gap: 2px;
+		width: max-content;
+		min-width: 100%;
+	}
+
 	#comp_panel {
 		margin-top: -16px;
 	}

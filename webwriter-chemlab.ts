@@ -2740,6 +2740,18 @@ export class ChemLab extends LitElementWw {
 				this.dictionary[atom_data["category"]];
 			atom.innerHTML = atom_data["symbol"];
 			atom.style.minWidth = "20px";
+
+			// place the button on the periodic-table grid using its
+			// standard coords (xpos 1-18, ypos 1-7 main table,
+			// 9 lanthanides, 10 actinides). Guard against non-numeric
+			// values so a stray entry can't disrupt the grid.
+			let xpos = atom_data["xpos"];
+			let ypos = atom_data["ypos"];
+			if (typeof xpos === "number" && typeof ypos === "number") {
+				atom.style.gridColumn = String(xpos);
+				atom.style.gridRow = String(ypos);
+			}
+
 			atom_container.appendChild(atom);
 		});
 
