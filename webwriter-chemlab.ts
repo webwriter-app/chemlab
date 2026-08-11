@@ -2656,7 +2656,8 @@ export class ChemLab extends LitElementWw {
 			atom.id = "buttonAtom";
 
 			if (this.useColoredElements === 1) {
-				atom.style.borderBottomWidth = "10px";
+				// thin enough to leave the 18px cell room for its symbol
+				atom.style.borderBottomWidth = "3px";
 				switch (atom_data["category"]) {
 					case "diatomic nonmetal":
 						if (atom_data["group"] === 17) {
@@ -2751,7 +2752,6 @@ export class ChemLab extends LitElementWw {
 				"\n" +
 				this.dictionary[atom_data["category"]];
 			atom.innerHTML = atom_data["symbol"];
-			atom.style.minWidth = "20px";
 
 			// place the button on the periodic-table grid using its
 			// standard coords (xpos 1-18, ypos 1-7 main table,
@@ -4722,7 +4722,7 @@ export class ChemLab extends LitElementWw {
 											style=" height: 300px; display: block;"
 										>
 											<div
-												style="display: flex; justify-content: space-between; align-items: center; width: 327.6px"
+												style="display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 4px; width: 327.6px"
 											>
 												<sl-badge
 													size="small"
@@ -4752,7 +4752,7 @@ export class ChemLab extends LitElementWw {
 												</button>
 												<div
 													id="filterDiv"
-													style="display: flex; justify-content: space-between; align-items: baseline; overflow: auto"
+													style="display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: baseline; gap: 3px; width: 100%"
 												>
 													<button
 														@click="${(event) => {

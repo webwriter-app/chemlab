@@ -1085,17 +1085,21 @@ export const style = css`
 
 	#atoms {
 		display: block !important;
-		height: 100%;
+		height: auto;
+		max-height: 200px;
 		overflow: auto;
 	}
 
 	atom_container {
 		display: grid;
-		grid-template-columns: repeat(18, minmax(18px, 1fr));
-		grid-auto-rows: 1.25rem;
-		gap: 2px;
+		/* Fixed, compact cells. #atom_panel is an sl-split-panel whose end
+		   track is sized to its content (auto) and clips the overflow, so
+		   the table's width has to stay inside the ~328px elements column
+		   or most of it gets cut off. 18*17 + 17*1 = 323px. */
+		grid-template-columns: repeat(18, 17px);
+		grid-auto-rows: 18px;
+		gap: 1px;
 		width: max-content;
-		min-width: 100%;
 	}
 
 	#comp_panel {
@@ -1113,8 +1117,12 @@ export const style = css`
 		margin: 5px;
 	}
 	#filterButton {
-		/* width: 5px; */
-		height: 10px;
+		/* compact enough that all ten category filters fit the elements
+		   column in a couple of wrapped rows instead of overflowing it */
+		height: auto;
+		padding: 1px 4px;
+		font-size: 9px;
+		line-height: 1.4;
 		border-radius: 5px;
 		align-items: flex-end;
 	}
@@ -1190,7 +1198,18 @@ export const style = css`
 	}
 	#buttonAtom {
 		border-radius: 3px;
-		height: 1.25rem;
+		/* sized to fill one atom_container grid cell exactly. width:100% is
+		   needed because a button's auto width is shrink-to-fit, so it would
+		   not stretch to the grid track on its own. */
+		height: 18px;
+		width: 100%;
+		min-width: 0;
+		padding: 0;
+		font-size: 8px;
+		line-height: 1;
+		overflow: hidden;
+		align-items: center;
+		justify-content: center;
 	}
 	#contextBadge::part(base) {
 		background-color: #ff1f66;
