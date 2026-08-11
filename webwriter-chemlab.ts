@@ -1275,30 +1275,42 @@ export class ChemLab extends LitElementWw {
 				}
 			} else if (this.curr_obj._type === chemlib.EComponentType.Electrode){
 				this.activateEComp.style.display = "none";
+				// an electrode has no material until one is assigned in the
+				// panel, and a material's name is only filled in once its chem
+				// data has been fetched. This runs from the ticker via
+				// _updateTickerPopup, so an unguarded access here would throw
+				// every frame and take the whole canvas down with it.
+				let material: chemlib.Molecule = this.curr_obj._material;
+				let materialLabel: string =
+					typeof material != "undefined"
+						? this.dictionary[material.name] ||
+						  material.name ||
+						  "unbekannt"
+						: "kein Material";
 				this.contextEchemInfo.innerHTML = `
 						<div style="display: flex; flex-direction: column; align-content: flex-start; align-items: flex-start">
-							<sl-tag id="contextTag" variant="neutral" size="small" style="margin: 5px">${this.dictionary[this.curr_obj._material.name]}</sl-tag>
+							<sl-tag id="contextTag" variant="neutral" size="small" style="margin: 5px">${materialLabel}</sl-tag>
 							<p>${typeof this.curr_obj._connectedMix != "undefined" ? "verbunden" : "nicht verbunden"}</p>
 						</div>
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 						`;
 				let circuitComps: chemlib.ElectricComponent[] =
-					chemlib.ComponentManager.isCircuit(this.curr_obj);
+					typeof material != "undefined"
+						? chemlib.ComponentManager.isCircuit(this.curr_obj)
+						: [];
 				if (
 					circuitComps.length === 3 &&
 					circuitComps[2]._type === chemlib.EComponentType.Source
 				) {
 					let device: chemlib.ElectricComponent = circuitComps[2];
-					let redox = chemlib.Simulation.getRedoxData(
-						this.curr_obj._material
-					);
+					let redox = chemlib.Simulation.getRedoxData(material);
 					if (typeof redox != "undefined") {
 						// charge for exactly 1s at the source current, so
 						// faradayLaw's output doubles as a per-second rate
 						let faraday = chemlib.Simulation.faradayLaw(
 							device._sourceCurrent || 0,
 							redox.el,
-							this.curr_obj._material.getTotMolMass()
+							material.getTotMolMass()
 						);
 						this.contextEchemInfo.innerHTML += `
 							<div style="display: flex; flex-direction: column">
