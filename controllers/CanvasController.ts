@@ -19,7 +19,6 @@ import source_off_svg from "../media/source_off.svg";
 import voltmeter_off_svg from "../media/voltmeter_off.svg";
 // @ts-ignore
 import default_svg from "../media/default.svg";
-import { HALF_PI } from "chart.js/helpers";
 // @ts-ignore
 import beaker_fl_svg from "../media/beaker_full_l.svg";
 // @ts-ignore
@@ -68,6 +67,8 @@ export class CanvasController implements ReactiveController {
 	private _longPressTimer: number = undefined;
 	/** stage move handler that cancels a long-press once the pointer moves */
 	private _longPressMoveHandler: (event: any) => void = undefined;
+	/** reused scratch Graphics used to rasterize each cable's curved-line texture */
+	private _cableGraphics: PIXI.Graphics = new PIXI.Graphics();
 
 	constructor(host: ChemLab) {
 		this.host = host;
@@ -1109,16 +1110,19 @@ export class CanvasController implements ReactiveController {
 								this.host.app.stage.children[minIndex] = sprite;
 								this.host.app.stage.children[index0] = buffer;
 							}
-							sprite.height = Math.sqrt(
-								Math.pow(pos1[0] - pos2[0], 2) +
-									Math.pow(pos1[1] - pos2[1], 2)
-							);
-							sprite.x = (pos1[0] + pos2[0]) / 2;
-							sprite.y = (pos1[1] + pos2[1]) / 2;
-							sprite.rotation =
-								Math.atan(
-									(pos1[1] - pos2[1]) / (pos1[0] - pos2[0])
-								) + HALF_PI;
+							let curve = this._buildCableCurve(pos1, pos2);
+							// only our own generated textures are safe to
+							// destroy - the shared cable_svg placeholder
+							// texture must survive for sprites still using it
+							if (sprite.texture instanceof PIXI.RenderTexture) {
+								sprite.texture.destroy(true);
+							}
+							sprite.texture = curve.texture;
+							sprite.width = curve.w;
+							sprite.height = curve.h;
+							sprite.x = curve.cx;
+							sprite.y = curve.cy;
+							sprite.rotation = 0;
 						} else {
 							this.host._getObject(sprite);
 							this.host._removeSprite();
@@ -1127,5 +1131,65 @@ export class CanvasController implements ReactiveController {
 				});
 			}
 		});
+	}
+
+	/**
+	 * Draws a sagging cubic-bezier cable between two world-space points
+	 * and bakes it into a texture sized to fit it exactly, so the cable
+	 * sprite can keep using the same anchor(0.5)/width/height contract
+	 * every other sprite relies on (see {@link _mouseInbounds}).
+	 *
+	 * @private
+	 * @param {number[]} pos1 - world [x, y] of the first endpoint
+	 * @param {number[]} pos2 - world [x, y] of the second endpoint
+	 * @returns {{texture: PIXI.RenderTexture, cx: number, cy: number, w: number, h: number}}
+	 */
+	private _buildCableCurve(
+		pos1: number[],
+		pos2: number[]
+	): { texture: PIXI.RenderTexture; cx: number; cy: number; w: number; h: number } {
+		const dx: number = pos2[0] - pos1[0];
+		const dy: number = pos2[1] - pos1[1];
+		const len: number = Math.sqrt(dx * dx + dy * dy) || 1;
+		// perpendicular unit vector, so the sag reads the same regardless
+		// of the cables orientation on the canvas
+		const nx: number = -dy / len;
+		const ny: number = dx / len;
+		const sag: number = Math.min(Math.max(len * 0.15, 8), 40);
+
+		const cp1x: number = pos1[0] + dx / 3 + nx * sag;
+		const cp1y: number = pos1[1] + dy / 3 + ny * sag;
+		const cp2x: number = pos1[0] + (dx * 2) / 3 + nx * sag;
+		const cp2y: number = pos1[1] + (dy * 2) / 3 + ny * sag;
+
+		const lineWidth: number = 3;
+		const pad: number = lineWidth / 2 + 2;
+		// the convex hull of the endpoints + control points bounds a
+		// cubic bezier curve exactly, so this is a tight fit
+		const xs: number[] = [pos1[0], cp1x, cp2x, pos2[0]];
+		const ys: number[] = [pos1[1], cp1y, cp2y, pos2[1]];
+		const minX: number = Math.min(...xs) - pad;
+		const maxX: number = Math.max(...xs) + pad;
+		const minY: number = Math.min(...ys) - pad;
+		const maxY: number = Math.max(...ys) + pad;
+		const w: number = Math.max(1, maxX - minX);
+		const h: number = Math.max(1, maxY - minY);
+
+		const g: PIXI.Graphics = this._cableGraphics;
+		g.clear();
+		g.lineStyle({
+			width: lineWidth,
+			color: 0x000000,
+			cap: PIXI.LINE_CAP.ROUND,
+		});
+		g.moveTo(pos1[0], pos1[1]);
+		g.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, pos2[0], pos2[1]);
+
+		const texture: PIXI.RenderTexture =
+			this.host.app.renderer.generateTexture(g, {
+				region: new PIXI.Rectangle(minX, minY, w, h),
+			});
+
+		return { texture, cx: minX + w / 2, cy: minY + h / 2, w, h };
 	}
 }

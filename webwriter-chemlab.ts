@@ -1259,6 +1259,19 @@ export class ChemLab extends LitElementWw {
 						<p>Spannung: ${this.curr_obj._visibleVoltage.toExponential(2) + " V"}</p>
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 						`;
+				} else {
+					let current: number = this.curr_obj._sourceCurrent || 0;
+					let electronMolRate: number =
+						current / chemlib.Simulation._faradayConst;
+					this.contextEchemInfo.innerHTML = `
+						<div style="display: flex; flex-direction: column">
+							<p>Stromstärke: ${current.toExponential(2)} A</p>
+							<p>Faraday, 1. Gesetz: ${electronMolRate.toExponential(
+								2
+							)} mol e⁻/s</p>
+						</div>
+						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
+						`;
 				}
 			} else if (this.curr_obj._type === chemlib.EComponentType.Electrode){
 				this.activateEComp.style.display = "none";
@@ -1269,6 +1282,36 @@ export class ChemLab extends LitElementWw {
 						</div>
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 						`;
+				let circuitComps: chemlib.ElectricComponent[] =
+					chemlib.ComponentManager.isCircuit(this.curr_obj);
+				if (
+					circuitComps.length === 3 &&
+					circuitComps[2]._type === chemlib.EComponentType.Source
+				) {
+					let device: chemlib.ElectricComponent = circuitComps[2];
+					let redox = chemlib.Simulation.getRedoxData(
+						this.curr_obj._material
+					);
+					if (typeof redox != "undefined") {
+						// charge for exactly 1s at the source current, so
+						// faradayLaw's output doubles as a per-second rate
+						let faraday = chemlib.Simulation.faradayLaw(
+							device._sourceCurrent || 0,
+							redox.el,
+							this.curr_obj._material.getTotMolMass()
+						);
+						this.contextEchemInfo.innerHTML += `
+							<div style="display: flex; flex-direction: column">
+								<p>Faraday, 2. Gesetz (z=${redox.el}):</p>
+								<p>Stoffmengenrate: ${faraday.substanceMol.toExponential(
+									2
+								)} mol/s</p>
+								<p>Massenrate: ${faraday.massGrams.toExponential(2)} g/s</p>
+							</div>
+							<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
+							`;
+					}
+				}
 			} else {
 				this.activateEComp.style.display = "none";
 			}
