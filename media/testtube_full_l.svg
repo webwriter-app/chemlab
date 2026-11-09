@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="80"
+   height="150"
+   viewBox="0 0 21.166666 39.687499"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
+   sodipodi:docname="testtube_full_l.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="true"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     shape-rendering="auto"
+     inkscape:clip-to-page="false"
+     labelstyle="default"
+     inkscape:lockguides="false"
+     showguides="true"
+     showgrid="true"
+     inkscape:zoom="2.8284271"
+     inkscape:cx="112.42998"
+     inkscape:cy="143.01235"
+     inkscape:window-width="2560"
+     inkscape:window-height="1009"
+     inkscape:window-x="1272"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <sodipodi:guide
+       position="0,26.458334"
+       orientation="0,20"
+       id="guide1"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="5.2916664,2.6458345"
+       orientation="200,0"
+       id="guide2"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="5.2916666,-26.458333"
+       orientation="0,-20"
+       id="guide3"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="0,-26.458333"
+       orientation="-200,0"
+       id="guide4"
+       inkscape:locked="false" />
+    <inkscape:grid
+       id="grid4"
+       units="px"
+       originx="0"
+       originy="0"
+       spacingx="0.26458332"
+       spacingy="0.26458333"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14901961"
+       empspacing="5"
+       dotted="false"
+       gridanglex="30"
+       gridanglez="30"
+       visible="true" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Ebene 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       id="rect65-0"
+       style="fill:#afcbd7;fill-opacity:0.426829;stroke:none;stroke-width:0.0898529;stroke-dasharray:none"
+       d="m 10.344901,21.10052 c 1.597882,0 2.885735,0.392494 2.884264,0.879937 l -0.04303,14.259635 c -0.0038,1.244112 -1.243347,1.324274 -2.841229,1.324274 -1.5978829,0 -2.8491727,-0.08011 -2.8519888,-1.324274 L 7.460636,21.980457 C 7.459526,21.492996 8.747018,21.10052 10.344901,21.10052 Z"
+       sodipodi:nodetypes="sssssss" />
+    <rect
+       style="fill:#ffffff;fill-opacity:0.28;stroke:#3e3e3e;stroke-width:0.26458333;stroke-dasharray:none;stroke-linejoin:miter"
+       id="rect4"
+       width="5.6381946"
+       height="35.486343"
+       x="7.5258036"
+       y="2.1287212"
+       ry="0.9069714"
+       rx="2.4250596" />
+    <path
+       style="fill:#cccccc;fill-opacity:0;stroke:#3d3d3d;stroke-width:0.290377;stroke-dasharray:none;stroke-opacity:1"
+       id="path7"
+       sodipodi:type="arc"
+       sodipodi:cx="10.371931"
+       sodipodi:cy="2.9074948"
+       sodipodi:rx="2.7128842"
+       sodipodi:ry="0.65140587"
+       sodipodi:start="6.1744862"
+       sodipodi:end="6.1691164"
+       sodipodi:arc-type="chord"
+       d="M 13.068804,2.8368269 A 2.7128842,0.65140587 0 0 1 10.669859,3.5549606 2.7128842,0.65140587 0 0 1 7.6758581,2.979901 2.7128842,0.65140587 0 0 1 10.066765,2.2602233 a 2.7128842,0.65140587 0 0 1 3.00042,0.5731274 z"
+       sodipodi:open="true" />
+  </g>
+  <metadata
+     id="metadata4">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <cc:license
+           rdf:resource="http://creativecommons.org/publicdomain/zero/1.0/" />
+      </cc:Work>
+      <cc:License
+         rdf:about="http://creativecommons.org/publicdomain/zero/1.0/">
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Reproduction" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Distribution" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#DerivativeWorks" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+</svg>

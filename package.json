@@ -1,0 +1,60 @@
+{
+    "name": "@webwriter/chemlab",
+    "version": "1.0.7",
+    "description": "WIP - Prepare virtual laboratory environments for various topics in chemistry. Includes the building of molecules as well as applications for electrochemistry and acid/base theory.",
+    "keywords": [
+        "webwriter-widget",
+        "widget-conceptual",
+        "widget-simulational",
+        "widget-lang-de",
+        "widget-online",
+        "iscedf2013-05",
+        "isced2011-2",
+        "isced2011-3",
+        "chemistry",
+        "molecules",
+        "solvents",
+        "ions"
+    ],
+    "license": "MIT",
+    "author": "Robin Kreft",
+    "main": "./index.ts",
+    "scripts": {},
+    "dependencies": {
+        "@shoelace-style/shoelace": "2.19.1",
+        "@webwriter/lit": "^2.1.6",
+        "@webwriter/wui": "^0.0.2",
+        "chart.js": "^4.4.4",
+        "chemlib": "^0.2.2",
+        "lit": "^3.1.4",
+        "pixi.js": "^7.4.2",
+        "smiles-drawer": "2.1.5",
+        "unique-names-generator": "^4.7.1"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.5",
+        "vite": "^5.2.13"
+    },
+    "type": "module",
+    "exports": {
+        "./widgets/webwriter-chemlab.*": {
+            "source": "./webwriter-chemlab.ts",
+            "default": "./dist/widgets/webwriter-chemlab.*"
+        },
+        "./snippets/Beispiel-Titration.html": "./snippets/Beispiel-Titration.html",
+        "./snippets/Beispiel-Batterie.html": "./snippets/Beispiel-Batterie.html",
+        "./icon": "./icon.svg"
+    },
+    "editingConfig": {
+        ".": {
+            "description": {
+                "de": "WIP - Virtuelle Versuchsumgebungen für verschiedene Themen der Chemie. Umfasst den Aufbau von Molekülen sowie Anwendungen für die Elektrochemie und die Säure/Base Theorie."
+            }
+        },
+        "./widgets/webwriter-chemlab": {
+            "label": {
+                "_": "Chemistry Lab"
+            }
+        }
+    }
+}
