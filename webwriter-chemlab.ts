@@ -41,9 +41,6 @@ import SlPopup from "@shoelace-style/shoelace/dist/components/popup/popup.compon
 import SlCheckbox from "@shoelace-style/shoelace/dist/components/checkbox/checkbox.component.js";
 import SlDrawer from "@shoelace-style/shoelace/dist/components/drawer/drawer.component.js";
 import SlTooltip from "@shoelace-style/shoelace/dist/components/tooltip/tooltip.component.js";
-import SlRadio from "@shoelace-style/shoelace/dist/components/radio/radio.component.js";
-import SlSwitch from "@shoelace-style/shoelace/dist/components/switch/switch.component.js";
-import SlRadioGroup from "@shoelace-style/shoelace/dist/components/radio-group/radio-group.component.js";
 
 import "@shoelace-style/shoelace/dist/themes/light.css";
 
@@ -114,6 +111,43 @@ import { HALF_PI, isNumber } from "chart.js/helpers";
  */
 @customElement("webwriter-chemlab")
 export class ChemLab extends LitElementWw {
+	static optionGroups = {
+		appearance: { label: { _: "Appearance", "de-DE": "Darstellung" }, collapsible: true, advanced: false },
+		analytics: { label: { _: "xAPI", "de-DE": "xAPI" }, collapsible: true, advanced: true },
+	};
+	static options = {
+		panelVariant: {
+			type: "select" as const,
+			group: "appearance",
+			label: { _: "Panel layout", "de-DE": "Panel-Ansicht" },
+			options: [
+				{ value: "1", label: { _: "All panels", "de-DE": "Alle Bereiche" } },
+				{ value: "2", label: { _: "Content and molecule", "de-DE": "Inhalt und Molekül" } },
+				{ value: "3", label: { _: "Content only", "de-DE": "Nur Inhalt" } },
+			],
+		},
+		newSmilesDrawer: {
+			type: "select" as const,
+			group: "appearance",
+			label: { _: "Experimental molecule drawing", "de-DE": "Experimentelle Moleküldarstellung" },
+			options: [
+				{ value: "1", label: { _: "Enabled", "de-DE": "Aktiviert" } },
+				{ value: "0", label: { _: "Disabled", "de-DE": "Deaktiviert" } },
+			],
+		},
+		enablexAPI: {
+			type: Boolean,
+			group: "analytics",
+			label: { _: "Send xAPI statements", "de-DE": "xAPI-Statements senden" },
+		},
+		xAPIKey: {
+			type: "password" as const,
+			group: "analytics",
+			label: { _: "xAPI key", "de-DE": "xAPI-Schlüssel" },
+		},
+	};
+	readonly options = ChemLab.options;
+
 
 	/**
 	 * css styles
@@ -425,8 +459,6 @@ export class ChemLab extends LitElementWw {
 	 * @private
 	 * @type {SlRadioGroup}
 	 */
-	@query("#panelVariantOptions")
-	private accessor panelVariantOptions: SlRadioGroup;
 	/**
 	 * part of the tab panels split panel element, contains element overview and molecule split panel
 	 *
@@ -444,8 +476,6 @@ export class ChemLab extends LitElementWw {
 	@query("#molecule_panel")
 	private accessor moleculePanel: SlSplitPanel;
 
-	@query("#smilesSwitch")
-	private accessor smilesSwitch: SlSwitch
 
 	/**
 	 * color palet for pH indication
@@ -632,18 +662,7 @@ export class ChemLab extends LitElementWw {
 	 */
 	@property({
 		type: Array<object>,
-		reflect: true,
-		converter: {
-			fromAttribute: (value: string) => {
-				return JSON.parse(value);
-			},
-			toAttribute: (value: Array<object>) => {
-				return JSON.stringify(value);
-			},
-		},
-		hasChanged(newVal: Array<object>, oldVal: Array<object>) {
-			return newVal.length != oldVal.length;
-		},
+		attribute: false,
 	})
 	private accessor availableMolecules: Array<object> = [
 		{
@@ -660,18 +679,7 @@ export class ChemLab extends LitElementWw {
 	 */
 	@property({
 		type: Array<object>,
-		reflect: true,
-		converter: {
-			fromAttribute: (value: string) => {
-				return JSON.parse(value);
-			},
-			toAttribute: (value: Array<object>) => {
-				return JSON.stringify(value);
-			},
-		},
-		hasChanged(newVal: Array<object>, oldVal: Array<object>) {
-			return newVal.length != oldVal.length;
-		},
+		attribute: false,
 	})
 	private accessor availableMixtures: Array<object> = [
 	];
@@ -683,20 +691,14 @@ export class ChemLab extends LitElementWw {
 	 */
 	@property({
 		type: Array<object>,
-		reflect: true,
-		converter: {
-			fromAttribute: (value: string) => {
-				return JSON.parse(value);
-			},
-			toAttribute: (value: Array<object>) => {
-				return JSON.stringify(value);
-			},
-		},
-		hasChanged(newVal: Array<object>, oldVal: Array<object>) {
-			return newVal.length != oldVal.length;
-		},
+		attribute: false,
 	})
 	private accessor availableComponents: Array<object> = [];
+	private dataObserver?: MutationObserver;
+	private savedDataSnapshot: string | null = null;
+	private updatingDataBlock = false;
+	private refreshFromRemoteData = false;
+	private legacyData: Record<string, unknown> | null = null;
 	/**
 	 * list of all sprites of available components
 	 *
@@ -923,15 +925,7 @@ export class ChemLab extends LitElementWw {
 	 */
 	@property({
 		type: Array<String>,
-		reflect: true,
-		converter: {
-			fromAttribute: (value: string, type: string[]) => {
-				return value.split(",");
-			},
-			toAttribute: (value: string[], type: string) => {
-				return value.toString();
-			},
-		},
+		attribute: false,
 	})
 	private accessor invComponents: string[] = [];
 	/**
@@ -948,7 +942,7 @@ export class ChemLab extends LitElementWw {
 				if (value === "true") {
 					return true;
 				}
-				return false;
+					return value === "";
 			},
 			toAttribute: (value: boolean, type: string) => {
 				if (value) {
@@ -1061,9 +1055,6 @@ export class ChemLab extends LitElementWw {
 			"sl-drawer": SlDrawer,
 			"sl-tooltip": SlTooltip,
 			"sl-dialog": SlDialog,
-			"sl-radio": SlRadio,
-			"sl-switch": SlSwitch,
-			"sl-radio-group": SlRadioGroup,
 
 			"webwriter-helpoverlay": HelpOverlay,
 			"webwriter-helppopup": HelpPopup,
@@ -1071,7 +1062,132 @@ export class ChemLab extends LitElementWw {
 	}
 
 	connectedCallback(): void {
+		const legacyNames = ["availablemolecules", "availablemixtures", "availablecomponents", "invcomponents"];
+		this.legacyData = legacyNames.some((name) => this.hasAttribute(name)) ? {
+			availableMolecules: this.readLegacyArray("availablemolecules"),
+			availableMixtures: this.readLegacyArray("availablemixtures"),
+			availableComponents: this.readLegacyArray("availablecomponents"),
+			invComponents: this.getAttribute("invcomponents") ? this.getAttribute("invcomponents")!.split(",") : [],
+		} : null;
+		if (this.legacyData) this.applyAuthoredData(this.legacyData);
 		super.connectedCallback();
+		this.dataObserver = new MutationObserver(() => this.readAuthoredData());
+		this.dataObserver.observe(this, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ["slot", "type"] });
+		if (this.dataBlock()) this.readAuthoredData();
+		else this.persistAuthoredData();
+	}
+
+	disconnectedCallback(): void {
+		this.dataObserver?.disconnect();
+		this.dataObserver = undefined;
+		super.disconnectedCallback();
+	}
+
+	protected updated(changed: PropertyValueMap<any>): void {
+		super.updated(changed);
+		if (changed.has("panelVariant")) this._changePanelVariant();
+		if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents"].some((name) => changed.has(name))) {
+			this.persistAuthoredData();
+		}
+		if (this.refreshFromRemoteData) {
+			this.refreshFromRemoteData = false;
+			if (changed.has("availableMolecules")) {
+				this._listMolecules();
+				this.molConfig.replaceChildren();
+				this._listMolConfig();
+			}
+			if (changed.has("availableMixtures")) {
+				this._listMixtures();
+				this.mixConfig.replaceChildren();
+				this._listMixConfig();
+			}
+			if (changed.has("availableComponents")) {
+				this.app.stage.children.filter((child) => child.name !== "bg_sprite").forEach((child) => this.app.stage.removeChild(child));
+				this.allChemComponents = [];
+				this.allEComponents = [];
+				this.electrodeMaterials = [];
+				this.avComponentsSprites = [];
+				void this._loadComponents();
+				this.compConfig.replaceChildren();
+				this._listCompConfig();
+			}
+			if (changed.has("invComponents")) this.filterComponents();
+		}
+	}
+
+	private readLegacyArray(name: string): object[] | undefined {
+		const raw = this.getAttribute(name);
+		if (raw === null) return undefined;
+		try {
+			const value = JSON.parse(raw);
+			return Array.isArray(value) ? value : undefined;
+		} catch {
+			return undefined;
+		}
+	}
+
+	private dataBlock(): HTMLScriptElement | null {
+		return this.querySelector(':scope > script[type="application/json"][slot="data"]');
+	}
+
+	private applyAuthoredData(value: Record<string, unknown>) {
+		if (Array.isArray(value.availableMolecules)) this.availableMolecules = value.availableMolecules;
+		if (Array.isArray(value.availableMixtures)) this.availableMixtures = value.availableMixtures;
+		if (Array.isArray(value.availableComponents)) this.availableComponents = value.availableComponents;
+		if (Array.isArray(value.invComponents)) this.invComponents = value.invComponents as string[];
+	}
+
+	private readAuthoredData() {
+		const block = this.dataBlock();
+		if (!block || this.updatingDataBlock) return;
+		try {
+			const value = JSON.parse(block.textContent ?? "");
+			if (!value || typeof value !== "object") return;
+			const incoming = JSON.stringify({
+				availableMolecules: value.availableMolecules ?? this.availableMolecules,
+				availableMixtures: value.availableMixtures ?? this.availableMixtures,
+				availableComponents: value.availableComponents ?? this.availableComponents,
+				invComponents: value.invComponents ?? this.invComponents,
+			});
+			if (incoming === this.savedDataSnapshot) return;
+			this.refreshFromRemoteData = this.hasUpdated;
+			this.updatingDataBlock = true;
+			this.applyAuthoredData(value);
+			this.savedDataSnapshot = this.serializeAuthoredData();
+			for (const name of ["availablemolecules", "availablemixtures", "availablecomponents", "invcomponents"]) this.removeAttribute(name);
+		} catch (error) {
+			console.error("Unable to read chemistry lab data block", error);
+		} finally {
+			this.updatingDataBlock = false;
+		}
+	}
+
+	private serializeAuthoredData() {
+		return JSON.stringify({
+			availableMolecules: this.availableMolecules,
+			availableMixtures: this.availableMixtures,
+			availableComponents: this.availableComponents,
+			invComponents: this.invComponents,
+		});
+	}
+
+	private persistAuthoredData() {
+		if (!this.isConnected || this.updatingDataBlock) return;
+		const snapshot = this.serializeAuthoredData();
+		if (snapshot === this.savedDataSnapshot) return;
+		let block = this.dataBlock();
+		if (!block) {
+			block = this.ownerDocument.createElement("script");
+			block.type = "application/json";
+			block.slot = "data";
+			this.append(block);
+		}
+		this.updatingDataBlock = true;
+		block.textContent = snapshot.replace(/</g, "\\u003c");
+		this.savedDataSnapshot = snapshot;
+		this.legacyData = null;
+		for (const name of ["availablemolecules", "availablemixtures", "availablecomponents", "invcomponents"]) this.removeAttribute(name);
+		this.updatingDataBlock = false;
 	}
 
 	/**
@@ -1163,7 +1279,6 @@ export class ChemLab extends LitElementWw {
 		this._listMixConfig();
 		this._loadComponents();
 		this._listCompConfig();
-		this.panelVariantOptions.value = this.panelVariant;
 		this._changePanelVariant();
 		if (!this.hasAttribute("contenteditable")) {
 			this.shadowRoot.getElementById("teacherContext").remove();
@@ -1194,8 +1309,6 @@ export class ChemLab extends LitElementWw {
 			// });
 
 		}
-
-		this.smilesSwitch.checked = this.newSmilesDrawer===1
 
 		this._sendxAPiStatement("registered", "chemlab");
 		this._emitAlert(
@@ -5242,60 +5355,6 @@ export class ChemLab extends LitElementWw {
 					</div>
 				</webwriter-helppopup>
 			</webwriter-helpoverlay>
-			<div part="options" class="author-only">
-				<h5 id="toHeading">Chemlab Optionen</h5>
-				<div style="max-width: 250px; font-size: 10pt">
-					<!-- <sl-details class="optionsDetails" summary="Engine" open>
-						<sl-details class="optionsDetails" summary="xAPI">
-							<sl-input
-								autocomplete="off"
-								id="xAPIKeyInput"
-								placeholder="enter xAPI key"
-								label="Schlüssel"
-								value=${this.xAPIKey}
-								size="small"
-								noSpinButtons
-								clearable
-								@sl-change=${(event) => {
-									this.xAPIKey = this.xAPIKeyInput.value;
-								}}
-							>
-							</sl-input>
-							<sl-checkbox
-								id="xAPICheck"
-								size="small"
-								@sl-change=${(event) => {
-									this.enablexAPI = this.xAPICheck.checked;
-								}}
-								>Statements senden</sl-checkbox
-							>
-						</sl-details>
-					</sl-details> -->
-					<sl-details
-						class="optionsDetails"
-						summary="Darstellung"
-						open
-					>
-						<sl-radio-group
-							id="panelVariantOptions"
-							label="Panel Varianten"
-							value="1"
-							size="small"
-							@sl-change="${(event) => {
-								this.panelVariant =
-									this.panelVariantOptions.value;
-								this._changePanelVariant();
-							}}"
-						>
-							<sl-radio value="1">Alles Anzeigen</sl-radio>
-							<sl-radio value="2">Inhalt & Molekül</sl-radio>
-							<sl-radio value="3">Nur Inhalt</sl-radio>
-						</sl-radio-group>
-						<sl-divider></sl-divider>
-						<sl-switch id="smilesSwitch" style="--width: 20px; --height: 10px; --thumb-size: 8px; margin-left: 5px" @sl-change="${(event)=>{this.newSmilesDrawer = this.smilesSwitch.checked?1:0}}">Experimentelle Moleküldarstellung</sl-switch>
-					</sl-details>
-				</div>
-			</div>
 			<div id="upper">
 				${this.pix_canvas}
 				<sl-dialog id="confirmDialog" no-header label="bestätigen">

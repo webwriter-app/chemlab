@@ -1,6 +1,6 @@
 {
     "name": "@webwriter/chemlab",
-    "version": "1.0.7",
+    "version": "2.0.0",
     "description": "WIP - Prepare virtual laboratory environments for various topics in chemistry. Includes the building of molecules as well as applications for electrochemistry and acid/base theory.",
     "keywords": [
         "webwriter-widget",
