@@ -48,12 +48,70 @@
     "editingConfig": {
         ".": {
             "description": {
-                "de": "WIP - Virtuelle Versuchsumgebungen für verschiedene Themen der Chemie. Umfasst den Aufbau von Molekülen sowie Anwendungen für die Elektrochemie und die Säure/Base Theorie."
+                "de": "WIP - Virtuelle Versuchsumgebungen für verschiedene Themen der Chemie. Umfasst den Aufbau von Molekülen sowie Anwendungen für die Elektrochemie und die Säure/Base Theorie.",
+                "_": "WIP - Prepare virtual laboratory environments for various topics in chemistry. Includes the building of molecules as well as applications for electrochemistry and acid/base theory.",
+                "en": "WIP - Prepare virtual laboratory environments for various topics in chemistry. Includes the building of molecules as well as applications for electrochemistry and acid/base theory.",
+                "en-US": "WIP - Prepare virtual laboratory environments for various topics in chemistry. Includes the building of molecules as well as applications for electrochemistry and acid/base theory.",
+                "en-GB": "WIP - Prepare virtual laboratory environments for various topics in chemistry. Includes the building of molecules as well as applications for electrochemistry and acid/base theory.",
+                "en-CA": "WIP - Prepare virtual laboratory environments for various topics in chemistry. Includes the building of molecules as well as applications for electrochemistry and acid/base theory.",
+                "en-AU": "WIP - Prepare virtual laboratory environments for various topics in chemistry. Includes the building of molecules as well as applications for electrochemistry and acid/base theory.",
+                "en-IN": "WIP - Prepare virtual laboratory environments for various topics in chemistry. Includes the building of molecules as well as applications for electrochemistry and acid/base theory.",
+                "fr": "En cours de développement. Préparez des laboratoires virtuels sur différents sujets de chimie, notamment la construction de molécules, l’électrochimie et la théorie acide-base.",
+                "es": "En desarrollo. Prepara laboratorios virtuales sobre distintos temas de química, como la construcción de moléculas, la electroquímica y la teoría ácido-base."
+            },
+            "label": {
+                "_": "Chemlab",
+                "en": "Chemlab",
+                "en-US": "Chemlab",
+                "en-GB": "Chemlab",
+                "en-CA": "Chemlab",
+                "en-AU": "Chemlab",
+                "en-IN": "Chemlab",
+                "fr": "Chemlab",
+                "de": "Chemlab",
+                "es": "Chemlab"
             }
         },
         "./widgets/webwriter-chemlab": {
             "label": {
-                "_": "Chemistry Lab"
+                "_": "Chemistry Lab",
+                "en": "Chemistry Lab",
+                "en-US": "Chemistry Lab",
+                "en-GB": "Chemistry Lab",
+                "en-CA": "Chemistry Lab",
+                "en-AU": "Chemistry Lab",
+                "en-IN": "Chemistry Lab",
+                "fr": "Laboratoire de chimie",
+                "de": "Chemielabor",
+                "es": "Laboratorio de química"
+            }
+        },
+        "./snippets/Beispiel-Titration": {
+            "label": {
+                "_": "Beispiel-Titration",
+                "en": "Beispiel-Titration",
+                "en-US": "Beispiel-Titration",
+                "en-GB": "Beispiel-Titration",
+                "en-CA": "Beispiel-Titration",
+                "en-AU": "Beispiel-Titration",
+                "en-IN": "Beispiel-Titration",
+                "fr": "Exemple de titrage",
+                "de": "Beispiel: Titration",
+                "es": "Ejemplo de valoración"
+            }
+        },
+        "./snippets/Beispiel-Batterie": {
+            "label": {
+                "_": "Beispiel-Batterie",
+                "en": "Beispiel-Batterie",
+                "en-US": "Beispiel-Batterie",
+                "en-GB": "Beispiel-Batterie",
+                "en-CA": "Beispiel-Batterie",
+                "en-AU": "Beispiel-Batterie",
+                "en-IN": "Beispiel-Batterie",
+                "fr": "Exemple de pile",
+                "de": "Beispiel: Batterie",
+                "es": "Ejemplo de pila"
             }
         }
     }

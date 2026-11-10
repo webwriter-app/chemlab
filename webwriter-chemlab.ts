@@ -1,3 +1,4 @@
+import { drawerLabels, effectiveLanguage, localize } from "./localization/localization";
 import { html, LitElement, PropertyValueMap } from "lit";
 import { LitElementWw } from "@webwriter/lit";
 import {
@@ -111,6 +112,11 @@ import { HALF_PI, isNumber } from "chart.js/helpers";
  */
 @customElement("webwriter-chemlab")
 export class ChemLab extends LitElementWw {
+
+	static override properties = { lang: { attribute: false, noAccessor: true } };
+	override get lang() { return effectiveLanguage(this); }
+	override set lang(value: string) { this.setAttribute("lang", value); }
+
 	static optionGroups = {
 		appearance: { label: { _: "Appearance", "de-DE": "Darstellung" }, collapsible: true, advanced: false },
 		analytics: { label: { _: "xAPI", "de-DE": "xAPI" }, collapsible: true, advanced: true },
@@ -146,7 +152,13 @@ export class ChemLab extends LitElementWw {
 			label: { _: "xAPI key", "de-DE": "xAPI-Schlüssel" },
 		},
 	};
-	readonly options = ChemLab.options;
+	options = ChemLab.options;
+	optionGroups = ChemLab.optionGroups;
+
+	private readonly message = localize(this, () => {
+		this.options = drawerLabels(ChemLab.options, this.lang);
+		this.optionGroups = drawerLabels(ChemLab.optionGroups, this.lang);
+	});
 
 
 	/**
@@ -1284,7 +1296,7 @@ export class ChemLab extends LitElementWw {
 			this.shadowRoot.getElementById("teacherContext").remove();
 		} else {
 			this.shadowRoot.getElementById("studentContext").remove();
-			this.settings_drawer.innerHTML = "neues Molekül";
+			this.settings_drawer.textContent = this.message("neues Molekül");
 			this._newMol();
 			this._listAtoms();
 			this.moleculePanel.position = 0;
@@ -2590,15 +2602,7 @@ export class ChemLab extends LitElementWw {
 				this.curr_obj._type === chemlib.ComponentType.Separatingfunnel
 			) {
 				this.openBtn.style.display = "";
-				this.openBtn.innerHTML = "Öffnen";
-				this.tickerFunctionList.forEach((arr) => {
-					if (
-						arr[0] ===
-						"transfer" + this.curr_name + this.curr_stage_index
-					) {
-						this.openBtn.innerHTML = "Schließen";
-					}
-				});
+				this.requestUpdate();
 			} else {
 				this.openBtn.style.display = "none";
 			}
@@ -3142,7 +3146,7 @@ export class ChemLab extends LitElementWw {
 			);
 		}
 
-		this.settings_drawer.innerHTML = "Objekt";
+		this.settings_drawer.textContent = this.message("Objekt");
 		this.settings_drawer.setAttribute("disabled", "");
 		if (this.settings_drawer.active) {
 			this.shadowRoot.getElementById("comp_panel").style.display = "none";
@@ -3217,9 +3221,9 @@ export class ChemLab extends LitElementWw {
 			"button"
 		) as HTMLButtonElement;
 		addMolButton.id = "enter";
-		addMolButton.innerHTML = "hinzufügen";
+		addMolButton.textContent = this.message("hinzufügen");
 		addMolButton.onclick = (event) => {
-			this.settings_drawer.innerHTML = "neues Molekül";
+			this.settings_drawer.textContent = this.message("neues Molekül");
 			this.tabPopup.active = true;
 			this.tab_select.show("settings");
 			this.contextMenu.style.display = "none";
@@ -3241,7 +3245,7 @@ export class ChemLab extends LitElementWw {
 			let delMolButton: HTMLButtonElement = this.shadowRoot.createElement(
 				"button"
 			) as HTMLButtonElement;
-			delMolButton.innerHTML = "entfernen";
+			delMolButton.textContent = this.message("entfernen");
 			delMolButton.className = "remObj";
 			delMolButton.onclick = (event) => {
 				this._emitAlert(
@@ -3302,7 +3306,7 @@ export class ChemLab extends LitElementWw {
 			"button"
 		) as HTMLButtonElement;
 		addMixButton.id = "enter";
-		addMixButton.innerHTML = "hinzufügen";
+		addMixButton.textContent = this.message("hinzufügen");
 		addMixButton.onclick = (event) => {
 			// @ts-ignore
 			let mixDetails: SlDetails = this.shadowRoot.createElement(
@@ -3313,7 +3317,7 @@ export class ChemLab extends LitElementWw {
 			let setMixButton: HTMLButtonElement = this.shadowRoot.createElement(
 				"button"
 			) as HTMLButtonElement;
-			setMixButton.innerHTML = "speichern";
+			setMixButton.textContent = this.message("speichern");
 			setMixButton.id = "foldMenu";
 			setMixButton.onclick = (event) => {
 				let newMixEntry: object = {
@@ -3335,7 +3339,7 @@ export class ChemLab extends LitElementWw {
 			let delMixButton: HTMLButtonElement = this.shadowRoot.createElement(
 				"button"
 			) as HTMLButtonElement;
-			delMixButton.innerHTML = "entfernen";
+			delMixButton.textContent = this.message("entfernen");
 			delMixButton.className = "remObj";
 			delMixButton.onclick = (event) => {
 				let arrCopy: object[] = [];
@@ -3431,7 +3435,7 @@ export class ChemLab extends LitElementWw {
 			let delMixButton: HTMLButtonElement = this.shadowRoot.createElement(
 				"button"
 			) as HTMLButtonElement;
-			delMixButton.innerHTML = "entfernen";
+			delMixButton.textContent = this.message("entfernen");
 			delMixButton.className = "remObj";
 			delMixButton.onclick = (event) => {
 				this._emitAlert(
@@ -3483,7 +3487,7 @@ export class ChemLab extends LitElementWw {
 			"button"
 		) as HTMLButtonElement;
 		addCompButton.id = "enter";
-		addCompButton.innerHTML = "hinzufügen";
+		addCompButton.textContent = this.message("hinzufügen");
 		addCompButton.onclick = (event) => {
 			// @ts-ignore
 			let compDetails: SlDetails = this.shadowRoot.createElement(
@@ -3492,7 +3496,7 @@ export class ChemLab extends LitElementWw {
 			compDetails.summary = "neues Objekt";
 			// @ts-ignore
 			let setCompButton: HTMLButtonElement = this.shadowRoot.createElement("button") as HTMLButtonElement;
-			setCompButton.innerHTML = "speichern";
+			setCompButton.textContent = this.message("speichern");
 			setCompButton.id = "foldMenu";
 			setCompButton.onclick = (event) => {
 				if (compType.value != "") {
@@ -3537,7 +3541,7 @@ export class ChemLab extends LitElementWw {
 			};
 			// @ts-ignore
 			let delCompButton: HTMLButtonElement = this.shadowRoot.createElement("button") as HTMLButtonElement;
-			delCompButton.innerHTML = "entfernen";
+			delCompButton.textContent = this.message("entfernen");
 			delCompButton.className = "remObj";
 			delCompButton.onclick = (event) => {
 				compDetails.remove();
@@ -3747,7 +3751,7 @@ export class ChemLab extends LitElementWw {
 			compDetails.id = compEntry["id"];
 			// @ts-ignore
 			let delCompButton: HTMLButtonElement = this.shadowRoot.createElement("button") as HTMLButtonElement;
-			delCompButton.innerHTML = "entfernen";
+			delCompButton.textContent = this.message("entfernen");
 			delCompButton.className = "remObj";
 			delCompButton.onclick = (event) => {
 				let arrCopy: object[] = [];
@@ -5287,10 +5291,9 @@ export class ChemLab extends LitElementWw {
 					target="contextInfoBox"
 				>
 					<div slot="content">
-						<sl-badge>Objekt-Kontextmenü</sl-badge>
-						<p lang="de">
-							Hier können das Objekt verwaltet und grundlegende
-							Information angesehen werden.
+						<sl-badge>${this.message("Objekt-Kontextmenü")}</sl-badge>
+						<p lang=${this.lang}>
+							${this.message("Hier können das Objekt verwaltet und grundlegende Information angesehen werden.")}
 						</p>
 					</div>
 				</webwriter-helppopup>
@@ -5299,29 +5302,25 @@ export class ChemLab extends LitElementWw {
 					target="buttonFullscreen"
 				>
 					<div slot="content">
-						<sl-badge>Vollbild an/aus</sl-badge>
-						<p lang="de">
-							Über diesen Button kann der Vollbildmodus an und aus
-							geschaltet werden. Aktuell deaktiviert.
+						<sl-badge>${this.message("Vollbild an/aus")}</sl-badge>
+						<p lang=${this.lang}>
+							${this.message("Über diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.")}
 						</p>
 					</div>
 				</webwriter-helppopup>
 				<webwriter-helppopup slot="popupContainer" target="changeInput">
 					<div slot="content">
-						<sl-badge>Eingabemodus</sl-badge>
-						<p lang="de">
-							Über diesen Button kann zwischen Maus- und
-							Touch-Steuerung gewechselt werden.
+						<sl-badge>${this.message("Eingabemodus")}</sl-badge>
+						<p lang=${this.lang}>
+							${this.message("Über diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.")}
 						</p>
 					</div>
 				</webwriter-helppopup>
 				<webwriter-helppopup slot="popupContainer" target="toggleDrag">
 					<div slot="content">
-						<sl-badge>Dragging an/aus</sl-badge>
-						<p lang="de">
-							Bei der Touch-Steuerung kann über diesen Button
-							umgeschaltet werden, wie Objekte auf Berührungen
-							reagieren.
+						<sl-badge>${this.message("Dragging an/aus")}</sl-badge>
+						<p lang=${this.lang}>
+							${this.message("Bei der Touch-Steuerung kann über diesen Button umgeschaltet werden, wie Objekte auf Berührungen reagieren.")}
 						</p>
 					</div>
 				</webwriter-helppopup>
@@ -5330,18 +5329,17 @@ export class ChemLab extends LitElementWw {
 					target="toggleDiagramDrawer"
 				>
 					<div slot="content">
-						<sl-badge>Diagramm Menü</sl-badge>
-						<p lang="de">
-							Über diesen Button wird das Diagramm Menü an der
-							linken Seite geöffnet.
+						<sl-badge>${this.message("Diagramm Menü")}</sl-badge>
+						<p lang=${this.lang}>
+							${this.message("Über diesen Button wird das Diagramm Menü an der linken Seite geöffnet.")}
 						</p>
 					</div>
 				</webwriter-helppopup>
 				<webwriter-helppopup slot="popupContainer" target="contextMenu">
 					<div slot="content">
-						<sl-badge>Kontextmenü</sl-badge>
-						<p lang="de">
-							${this.hasAttribute("contenteditable") ? "Uber dieses Menü können chemische Stoffe und Komponenten erstellt und vorgegeben werden." : "Über dieses Menü können neue Objekte ausgewählt und platziert werden."}
+						<sl-badge>${this.message("Kontextmenü")}</sl-badge>
+						<p lang=${this.lang}>
+							${this.hasAttribute("contenteditable") ? this.message("Uber dieses Menü können chemische Stoffe und Komponenten erstellt und vorgegeben werden.") : this.message("Über dieses Menü können neue Objekte ausgewählt und platziert werden.")}
 						</p>
 					</div>
 				</webwriter-helppopup>
@@ -5350,18 +5348,18 @@ export class ChemLab extends LitElementWw {
 					target="dialogOverview"
 				>
 					<div slot="content">
-						<sl-badge>Message Toast</sl-badge>
-						<p lang="de">Hier werden Statusmeldungen angezeigt.</p>
+						<sl-badge>${this.message("Message Toast")}</sl-badge>
+						<p lang=${this.lang}>${this.message("Hier werden Statusmeldungen angezeigt.")}</p>
 					</div>
 				</webwriter-helppopup>
 			</webwriter-helpoverlay>
 			<div id="upper">
 				${this.pix_canvas}
-				<sl-dialog id="confirmDialog" no-header label="bestätigen">
+				<sl-dialog id="confirmDialog" no-header label=${this.message("bestätigen")}>
 					<div
 						style="display: flex; flex-direction: row; align-items: center"
 					>
-						<p>Aktion bestätigen:</p>
+						<p>${this.message("Aktion bestätigen:")}</p>
 						<button
 							@click="${(event) => {
 								this.confirmAction = 1;
@@ -5406,7 +5404,7 @@ export class ChemLab extends LitElementWw {
 				</sl-dialog>
 				<sl-drawer
 					id="diagramDrawer"
-					label="Diagramme"
+					label=${this.message("Diagramme")}
 					contained
 					placement="start"
 					no-header
@@ -5433,7 +5431,7 @@ export class ChemLab extends LitElementWw {
 					<div
 						style="position: absolute; top: 7.5px; left: 7.5px; display: flex; flex-direction: row; align-items: baseline"
 					>
-						<sl-badge variant="primary">Diagramme</sl-badge>
+						<sl-badge variant="primary">${this.message("Diagramme")}</sl-badge>
 						<sl-checkbox
 							@sl-change=${(event) => {
 								this.diagShowLine = !this.diagShowLine;
@@ -5444,7 +5442,7 @@ export class ChemLab extends LitElementWw {
 									diag[0].update();
 								});
 							}}
-							><p>Kurven anzeigen</p></sl-checkbox
+							><p>${this.message("Kurven anzeigen")}</p></sl-checkbox
 						>
 					</div>
 					<div
@@ -5620,15 +5618,15 @@ export class ChemLab extends LitElementWw {
 					style="position: absolute; display:none; box-shadow: 0px 6px 12px 0px rgba(0,0,0,0.33); border-radius: 5px"
 				>
 					<sl-menu id="teacherContext">
-						<sl-menu-label> Lehrkraft Steuerung </sl-menu-label>
+						<sl-menu-label> ${this.message("Lehrkraft Steuerung")} </sl-menu-label>
 						<sl-menu-item>
-							Allgemein
+							${this.message("Allgemein")}
 							<sl-menu
 								class="optionsDetails"
 								slot="submenu"
 								style="width: 200px"
 							>
-								<p>Ausblenden</p>
+								<p>${this.message("Ausblenden")}</p>
 								<sl-select
 									id="invCompSelect"
 									size="small"
@@ -5646,7 +5644,7 @@ export class ChemLab extends LitElementWw {
 						</sl-menu-item>
 
 						<sl-menu-item>
-							Moleküle
+							${this.message("Moleküle")}
 							<sl-menu
 								id="molConfig"
 								slot="submenu"
@@ -5655,7 +5653,7 @@ export class ChemLab extends LitElementWw {
 							</sl-menu>
 						</sl-menu-item>
 						<sl-menu-item>
-							Gemische
+							${this.message("Gemische")}
 							<sl-menu
 								id="mixConfig"
 								slot="submenu"
@@ -5664,7 +5662,7 @@ export class ChemLab extends LitElementWw {
 							</sl-menu>
 						</sl-menu-item>
 						<sl-menu-item>
-							Komponenten
+							${this.message("Komponenten")}
 							<sl-menu
 								id="compConfig"
 								slot="submenu"
@@ -5675,9 +5673,9 @@ export class ChemLab extends LitElementWw {
 					</sl-menu>
 
 					<sl-menu id="studentContext" style="max-width: 200px;">
-						<sl-menu-label>Neues Objekt</sl-menu-label>
+						<sl-menu-label>${this.message("Neues Objekt")}</sl-menu-label>
 						<sl-menu-item>
-							Laborgeräte
+							${this.message("Laborgeräte")}
 							<sl-menu
 								slot="submenu"
 								id="details_comp"
@@ -5686,7 +5684,7 @@ export class ChemLab extends LitElementWw {
 							</sl-menu>
 						</sl-menu-item>
 						<sl-menu-item>
-							Elektronik
+							${this.message("Elektronik")}
 							<sl-menu
 								slot="submenu"
 								id="details_ecomp"
@@ -5782,7 +5780,7 @@ export class ChemLab extends LitElementWw {
 										d="M8 12a.5.5 0 0 0 .5-.5V5.707l2.146 2.147a.5.5 0 0 0 .708-.708l-3-3a.5.5 0 0 0-.708 0l-3 3a.5.5 0 1 0 .708.708L7.5 5.707V11.5a.5.5 0 0 0 .5.5"
 									/>
 								</svg>
-								Panel anzeigen
+								${this.message("Panel anzeigen")}
 							</button>
 							<button
 								id="openComp"
@@ -5792,11 +5790,9 @@ export class ChemLab extends LitElementWw {
 											this.curr_stage_index
 										];
 									if (
-										this.openBtn.innerHTML.includes(
-											"Öffnen"
-										)
+										!this.tickerFunctionList.some(([id]) => id === "transfer" + this.curr_name + this.curr_stage_index)
 									) {
-										this.openBtn.innerHTML = "Schließen";
+										this.requestUpdate();
 										let source = this.curr_obj;
 										this._pushTickerFunction(
 											"transfer" +
@@ -5813,7 +5809,7 @@ export class ChemLab extends LitElementWw {
 												this.curr_obj._id
 										);
 									} else {
-										this.openBtn.innerHTML = "Öffnen";
+										this.requestUpdate();
 										this._remTickerFunction(
 											"transfer" +
 												this.curr_name +
@@ -5829,7 +5825,7 @@ export class ChemLab extends LitElementWw {
 									}
 								}}"
 							>
-								Öffnen
+								${this.message(this.tickerFunctionList.some(([id]) => id === "transfer" + this.curr_name + this.curr_stage_index) ? "Schließen" : "Öffnen")}
 							</button>
 							<button
 								id="activateEComp"
@@ -5839,12 +5835,9 @@ export class ChemLab extends LitElementWw {
 											this.curr_stage_index
 										];
 									if (
-										this.activateEComp.innerHTML.includes(
-											"Einschalten"
-										)
+										!this.tickerFunctionList.some(([id]) => id === "echem" + this.curr_name + this.curr_stage_index)
 									) {
-										this.activateEComp.innerHTML =
-											"Ausschalten";
+										this.requestUpdate();
 										(currSprite as PIXI.Sprite).texture =
 											this.curr_obj._type.toLowerCase() ===
 											"source"
@@ -5870,8 +5863,7 @@ export class ChemLab extends LitElementWw {
 												this.curr_obj._id
 										);
 									} else {
-										this.activateEComp.innerHTML =
-											"Einschalten";
+										this.requestUpdate();
 										(currSprite as PIXI.Sprite).texture =
 											this.curr_obj._type.toLowerCase() ===
 											"source"
@@ -5896,7 +5888,7 @@ export class ChemLab extends LitElementWw {
 									}
 								}}"
 							>
-								Einschalten
+								${this.message(this.tickerFunctionList.some(([id]) => id === "echem" + this.curr_name + this.curr_stage_index) ? "Ausschalten" : "Einschalten")}
 							</button>
 						</div>
 					</div>
@@ -5922,7 +5914,7 @@ export class ChemLab extends LitElementWw {
 								slot="nav"
 								panel="settings"
 								disabled
-								>Objekt</sl-tab
+								>${this.message("Objekt")}</sl-tab
 							>
 							<sl-tab-panel id="details_settings" name="settings">
 								<div id="comp_panel">
@@ -5973,7 +5965,7 @@ export class ChemLab extends LitElementWw {
 																	);
 																	this.requestUpdate();
 																}}"
-																title="Objekt leeren"
+																title=${this.message("Objekt leeren")}
 															>
 																<svg
 																	xmlns="http://www.w3.org/2000/svg"
@@ -5992,7 +5984,7 @@ export class ChemLab extends LitElementWw {
 																id="mixVolAmount"
 																size="small"
 																type="number"
-																placeholder="Menge in mL"
+																placeholder=${this.message("Menge in mL")}
 																min="0"
 																style="width: 120px; margin-inline: 5px; margin-top: 5px;"
 																@sl-input="${(
@@ -6035,7 +6027,7 @@ export class ChemLab extends LitElementWw {
 																size="small"
 																hoist
 																disabled
-																placeholder="Bestehende"
+																placeholder=${this.message("Bestehende")}
 																style="width:150px"
 																@sl-change="${(
 																	event
@@ -6121,7 +6113,7 @@ export class ChemLab extends LitElementWw {
 													<sl-badge
 														size="small"
 														variant="primary"
-														>Molekül</sl-badge
+														>${this.message("Molekül")}</sl-badge
 													>
 													<button
 														id="newMol"
@@ -6133,21 +6125,21 @@ export class ChemLab extends LitElementWw {
 															);
 														}}"
 													>
-														zurücksetzen
+														${this.message("zurücksetzen")}
 													</button>
 													<button
 														id="enter"
 														@click="${this
 															._addToObj}"
 													>
-														hinzufügen
+														${this.message("hinzufügen")}
 													</button>
 													<button
 														id="addToElectrode"
 														@click="${this
 															._newElectrodeMat}"
 													>
-														+ Elektrodenmaterial
+														${this.message("+ Elektrodenmaterial")}
 													</button>
 													<div
 														id="mol_prev_div"
@@ -6160,7 +6152,7 @@ export class ChemLab extends LitElementWw {
 															<sl-select
 																id="molSelect"
 																size="small"
-																placeholder="Bestehende"
+																placeholder=${this.message("Bestehende")}
 																placement="bottom"
 																hoist
 																@sl-change="${() => {
@@ -6204,28 +6196,28 @@ export class ChemLab extends LitElementWw {
 																maxlength="6"
 																rows="1"
 																resize="none"
-																placeholder="Menge in mol"
+																placeholder=${this.message("Menge in mol")}
 																min="0"
 																size="small"
 																style="width: 208px; margin-top: 5px; margin-right: 2px"
 															></sl-input>
 															<sl-select
 																id="bond_1"
-																placeholder="Bindung von"
+																placeholder=${this.message("Bindung von")}
 																placement="bottom"
 																size="small"
 																hoist
 															></sl-select>
 															<sl-select
 																id="bond_2"
-																placeholder="Bindung zu"
+																placeholder=${this.message("Bindung zu")}
 																placement="bottom"
 																size="small"
 																hoist
 															></sl-select>
 															<sl-select
 																id="bond_3"
-																placeholder="Bindungsart wählen"
+																placeholder=${this.message("Bindungsart wählen")}
 																placement="top"
 																size="small"
 																hoist
@@ -6254,7 +6246,7 @@ export class ChemLab extends LitElementWw {
 																	@click="${this
 																		._enter}"
 																>
-																	neue Bindung
+																	${this.message("neue Bindung")}
 																</button>
 															</div>
 														</div>
@@ -6273,7 +6265,7 @@ export class ChemLab extends LitElementWw {
 													size="small"
 													variant="primary"
 													style="position: sticky"
-													>Elemente</sl-badge
+													>${this.message("Elemente")}</sl-badge
 												>
 												<button
 													@click="${() => {
@@ -6281,7 +6273,7 @@ export class ChemLab extends LitElementWw {
 															"none"
 														);
 													}}"
-													title="Filter zurücksetzen"
+													title=${this.message("Filter zurücksetzen")}
 												>
 													<svg
 														xmlns="http://www.w3.org/2000/svg"
@@ -6307,9 +6299,9 @@ export class ChemLab extends LitElementWw {
 														}}"
 														id="filterButton"
 														style="border-color: #e83c95; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Halogene"
+														title=${this.message("Kategorie: Halogene")}
 													>
-														Halogene
+														${this.message("Halogene")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -6319,9 +6311,9 @@ export class ChemLab extends LitElementWw {
 														}}"
 														id="filterButton"
 														style="border-color: #e42050; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Nichtmetalle"
+														title=${this.message("Kategorie: Nichtmetalle")}
 													>
-														Nichtmetalle
+														${this.message("Nichtmetalle")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -6331,9 +6323,9 @@ export class ChemLab extends LitElementWw {
 														}}"
 														id="filterButton"
 														style="border-color: #b6778c; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Edelgase"
+														title=${this.message("Kategorie: Edelgase")}
 													>
-														Edelgase
+														${this.message("Edelgase")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -6343,9 +6335,9 @@ export class ChemLab extends LitElementWw {
 														}}"
 														id="filterButton"
 														style="border-color: #73962c; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Alkalimetalle"
+														title=${this.message("Kategorie: Alkalimetalle")}
 													>
-														Alkalimetalle
+														${this.message("Alkalimetalle")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -6355,9 +6347,9 @@ export class ChemLab extends LitElementWw {
 														}}"
 														id="filterButton"
 														style="border-color: #0e9a60; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Erdalkalimetalle"
+														title=${this.message("Kategorie: Erdalkalimetalle")}
 													>
-														Erdalkalimetalle
+														${this.message("Erdalkalimetalle")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -6367,9 +6359,9 @@ export class ChemLab extends LitElementWw {
 														}}"
 														id="filterButton"
 														style="border-color: #806db6; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Halbmetalle"
+														title=${this.message("Kategorie: Halbmetalle")}
 													>
-														Halbmetalle
+														${this.message("Halbmetalle")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -6379,9 +6371,9 @@ export class ChemLab extends LitElementWw {
 														}}"
 														id="filterButton"
 														style="border-color: #0f69af; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Übergangsmetalle"
+														title=${this.message("Kategorie: Übergangsmetalle")}
 													>
-														Übergangsmetalle
+														${this.message("Übergangsmetalle")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -6391,9 +6383,9 @@ export class ChemLab extends LitElementWw {
 														}}"
 														id="filterButton"
 														style="border-color: #2dbecd; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Lanthanoide"
+														title=${this.message("Kategorie: Lanthanoide")}
 													>
-														Lanthanoide
+														${this.message("Lanthanoide")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -6403,9 +6395,9 @@ export class ChemLab extends LitElementWw {
 														}}"
 														id="filterButton"
 														style="border-color: #3a9890; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Actinoide"
+														title=${this.message("Kategorie: Actinoide")}
 													>
-														Actinoide
+														${this.message("Actinoide")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -6415,9 +6407,9 @@ export class ChemLab extends LitElementWw {
 														}}"
 														id="filterButton"
 														style="border-color: #4f4f4f; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Unbekannt"
+														title=${this.message("Kategorie: Unbekannt")}
 													>
-														Unbekannt
+														${this.message("Unbekannt")}
 													</button>
 												</div>
 											</div>
@@ -6428,7 +6420,7 @@ export class ChemLab extends LitElementWw {
 												type="text"
 												rows="1"
 												resize="none"
-												placeholder="Suche nach Name oder Symbol"
+												placeholder=${this.message("Suche nach Name oder Symbol")}
 												size="small"
 												style="width: 91%; margin-top: 3px; margin-inline: 5px"
 												@sl-input="${this._filterAtoms}"
@@ -6454,7 +6446,7 @@ export class ChemLab extends LitElementWw {
 													style="display: flex; flex-direction: row"
 												>
 													<sl-badge
-														>Verbindungen</sl-badge
+														>${this.message("Verbindungen")}</sl-badge
 													>
 													<button
 														id="enter"
@@ -6487,13 +6479,13 @@ export class ChemLab extends LitElementWw {
 															);}
 														}}"
 													>
-														neu anlegen
+														${this.message("neu anlegen")}
 													</button>
 												</div>
 												<sl-select
 													id="newECon"
 													size="small"
-													placeholder="Gegenstück"
+													placeholder=${this.message("Gegenstück")}
 													hoist
 												></sl-select>
 												<div
@@ -6510,14 +6502,14 @@ export class ChemLab extends LitElementWw {
 												style="display: flex; flex-direction: column;"
 											>
 												<sl-badge
-													>Eigenschaften</sl-badge
+													>${this.message("Eigenschaften")}</sl-badge
 												>
 												<div
 													id="compInfo"
 													style="display: flex; flex-direction: column; justify-content: flex-start"
 												>
 													<div>
-														<p>Spannung</p>
+														<p>${this.message("Spannung")}</p>
 														<sl-tag
 															id="shownVoltage"
 															variant="warning"
@@ -6529,7 +6521,7 @@ export class ChemLab extends LitElementWw {
 															autocomplete="off"
 															id="sourceVoltage"
 															size="small"
-															label="Quellspannung"
+															label=${this.message("Quellspannung")}
 															type="number"
 															value="0"
 															style="max-width: 100px"
@@ -6538,7 +6530,7 @@ export class ChemLab extends LitElementWw {
 															autocomplete="off"
 															id="sourceCurrent"
 															size="small"
-															label="Quellstromstärke"
+															label=${this.message("Quellstromstärke")}
 															type="number"
 															value="0"
 															style="max-width: 100px"
@@ -6548,19 +6540,19 @@ export class ChemLab extends LitElementWw {
 															@click="${this
 																._setSourceValues}"
 														>
-															bestätigen
+															${this.message("bestätigen")}
 														</button>
 													</div>
 													<div id="eCompInnerInfo">
 														<p>
-															verbundenes Gemisch
+															${this.message("verbundenes Gemisch")}
 														</p>
 														<sl-tag
 															id="conMix"
 															variant="primary"
 														></sl-tag>
 														<p>
-															Elektrodenmaterial
+															${this.message("Elektrodenmaterial")}
 														</p>
 														<sl-select
 															id="electrodeSelect"
@@ -6571,7 +6563,7 @@ export class ChemLab extends LitElementWw {
 															@click="${this
 																._setElectrodeMaterlial}"
 														>
-															bestätigen
+															${this.message("bestätigen")}
 														</button>
 													</div>
 												</div>

@@ -3573,14 +3573,14 @@ var require_parse = __commonJS({
       }
       var segments = [];
       var first = key.indexOf("[");
-      var parent = first >= 0 ? key.slice(0, first) : key;
-      if (parent) {
-        if (!options2.plainObjects && has.call(Object.prototype, parent)) {
+      var parent2 = first >= 0 ? key.slice(0, first) : key;
+      if (parent2) {
+        if (!options2.plainObjects && has.call(Object.prototype, parent2)) {
           if (!options2.allowPrototypes) {
             return;
           }
         }
-        segments[segments.length] = parent;
+        segments[segments.length] = parent2;
       }
       var n12 = key.length;
       var open = first;
@@ -18623,15 +18623,15 @@ var require_Graph = __commonJS({
         let visited = new Array(length);
         let disc = new Array(length);
         let low = new Array(length);
-        let parent = new Array(length);
+        let parent2 = new Array(length);
         let adj = this.getAdjacencyList();
         let outBridges = Array();
         visited.fill(false);
-        parent.fill(null);
+        parent2.fill(null);
         this._time = 0;
         for (var i11 = 0; i11 < length; i11++) {
           if (!visited[i11]) {
-            this._bridgeDfs(i11, visited, disc, low, parent, adj, outBridges);
+            this._bridgeDfs(i11, visited, disc, low, parent2, adj, outBridges);
           }
         }
         return outBridges;
@@ -18912,19 +18912,19 @@ var require_Graph = __commonJS({
       /**
        * PRIVATE FUNCTION used by getBridges().
        */
-      _bridgeDfs(u6, visited, disc, low, parent, adj, outBridges) {
+      _bridgeDfs(u6, visited, disc, low, parent2, adj, outBridges) {
         visited[u6] = true;
         disc[u6] = low[u6] = ++this._time;
         for (var i11 = 0; i11 < adj[u6].length; i11++) {
           let v4 = adj[u6][i11];
           if (!visited[v4]) {
-            parent[v4] = u6;
-            this._bridgeDfs(v4, visited, disc, low, parent, adj, outBridges);
+            parent2[v4] = u6;
+            this._bridgeDfs(v4, visited, disc, low, parent2, adj, outBridges);
             low[u6] = Math.min(low[u6], low[v4]);
             if (low[v4] > disc[u6]) {
               outBridges.push([u6, v4]);
             }
-          } else if (v4 !== parent[u6]) {
+          } else if (v4 !== parent2[u6]) {
             low[u6] = Math.min(low[u6], disc[v4]);
           }
         }
@@ -26669,11 +26669,11 @@ var require_Parser = __commonJS({
   "node_modules/smiles-drawer/src/Parser.js"(exports, module) {
     module.exports = (function() {
       "use strict";
-      function peg$subclass(child, parent) {
+      function peg$subclass(child, parent2) {
         function ctor() {
           this.constructor = child;
         }
-        ctor.prototype = parent.prototype;
+        ctor.prototype = parent2.prototype;
         child.prototype = new ctor();
       }
       function peg$SyntaxError(message, expected, found, location) {
@@ -28989,6 +28989,139 @@ var require_app = __commonJS({
     module.exports = SmilesDrawer2;
   }
 });
+
+// localization/messages.json
+var messages_default = {
+  en: {
+    "Objekt-Kontextmen\xFC": "Object context menu",
+    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Manage the object and view basic information about it here.",
+    "Vollbild an/aus": "Toggle fullscreen",
+    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "This button toggles fullscreen mode. It is currently disabled.",
+    Eingabemodus: "Input mode",
+    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Use this button to switch between mouse and touch controls.",
+    "Dragging an/aus": "Toggle dragging",
+    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "In touch mode, use this button to change how objects respond to touch.",
+    "Diagramm Men\xFC": "Chart menu",
+    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "This button opens the chart menu on the left.",
+    Kontextmen\u00FC: "Context menu",
+    "Message Toast": "Status notification",
+    "Hier werden Statusmeldungen angezeigt.": "Status messages appear here.",
+    best\u00E4tigen: "Confirm",
+    "Aktion best\xE4tigen:": "Confirm action:",
+    Diagramme: "Charts",
+    "Kurven anzeigen": "Show curves",
+    "Lehrkraft Steuerung": "Teacher controls",
+    Allgemein: "General",
+    Ausblenden: "Hide",
+    Molek\u00FCle: "Molecules",
+    Gemische: "Mixtures",
+    Komponenten: "Components",
+    "Neues Objekt": "New object",
+    Laborger\u00E4te: "Lab equipment",
+    Elektronik: "Electronics",
+    "Panel anzeigen": "Show panel",
+    Objekt: "Object",
+    "Objekt leeren": "Empty object",
+    "Menge in mL": "Amount in mL",
+    Bestehende: "Existing",
+    Molek\u00FCl: "Molecule",
+    zur\u00FCcksetzen: "Reset",
+    hinzuf\u00FCgen: "Add",
+    "+ Elektrodenmaterial": "+ Electrode material",
+    "Menge in mol": "Amount in mol",
+    "Bindung von": "Bond from",
+    "Bindung zu": "Bond to",
+    "Bindungsart w\xE4hlen": "Choose a bond type",
+    "neue Bindung": "New bond",
+    Elemente: "Elements",
+    "Filter zur\xFCcksetzen": "Reset filters",
+    "Kategorie: Halogene": "Category: halogens",
+    Halogene: "Halogens",
+    "Kategorie: Nichtmetalle": "Category: nonmetals",
+    Nichtmetalle: "Nonmetals",
+    "Kategorie: Edelgase": "Category: noble gases",
+    Edelgase: "Noble gases",
+    "Kategorie: Alkalimetalle": "Category: alkali metals",
+    Alkalimetalle: "Alkali metals",
+    "Kategorie: Erdalkalimetalle": "Category: alkaline earth metals",
+    Erdalkalimetalle: "Alkaline earth metals",
+    "Kategorie: Halbmetalle": "Category: metalloids",
+    Halbmetalle: "Metalloids",
+    "Kategorie: \xDCbergangsmetalle": "Category: transition metals",
+    \u00DCbergangsmetalle: "Transition metals",
+    "Kategorie: Lanthanoide": "Category: lanthanides",
+    Lanthanoide: "Lanthanides",
+    "Kategorie: Actinoide": "Category: actinides",
+    Actinoide: "Actinides",
+    "Kategorie: Unbekannt": "Category: unknown",
+    Unbekannt: "Unknown",
+    "Suche nach Name oder Symbol": "Search by name or symbol",
+    Verbindungen: "Compounds",
+    "neu anlegen": "Create new",
+    Gegenst\u00FCck: "Counterpart",
+    Eigenschaften: "Properties",
+    Spannung: "Voltage",
+    Quellspannung: "Source voltage",
+    Quellstromst\u00E4rke: "Source current",
+    "verbundenes Gemisch": "Connected mixture",
+    Elektrodenmaterial: "Electrode material",
+    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Use this menu to create and preset chemical substances and components.",
+    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Use this menu to select and place new objects.",
+    entfernen: "Remove",
+    speichern: "Save",
+    "neues Molek\xFCl": "New molecule",
+    "neues Gemisch": "New mixture",
+    \u00D6ffnen: "Open",
+    Schlie\u00DFen: "Close",
+    Einschalten: "Switch on",
+    Ausschalten: "Switch off"
+  }
+};
+
+// localization/localization.ts
+var messages = new Map(
+  Object.entries(messages_default).map(([locale, entries]) => [locale.toLowerCase(), entries])
+);
+function parent(node) {
+  const root = node.getRootNode();
+  return node.parentElement ?? (root instanceof ShadowRoot ? root.host : null);
+}
+function effectiveLanguage(host) {
+  for (let node = host; node; node = parent(node)) {
+    if (node instanceof HTMLElement && node.hasAttribute("lang")) return node.getAttribute("lang");
+  }
+  return "de";
+}
+function localize(host, onChange) {
+  const observer = new MutationObserver(() => {
+    onChange();
+    host.requestUpdate();
+    host.dispatchEvent(new Event("optionschange", { bubbles: true, composed: true }));
+  });
+  host.addController({
+    hostConnected() {
+      for (let node = host; node; node = parent(node)) {
+        observer.observe(node, { attributes: true, attributeFilter: ["lang"] });
+      }
+      onChange();
+    },
+    hostDisconnected() {
+      observer.disconnect();
+    }
+  });
+  return (source) => {
+    const locale = effectiveLanguage(host).toLowerCase();
+    return messages.get(locale)?.[source] ?? messages.get(locale.split("-")[0])?.[source] ?? source;
+  };
+}
+function drawerLabels(declarations, language) {
+  const german = language.toLowerCase().split("-")[0] === "de";
+  const translate = (item) => {
+    const label = german ? item.label["de-DE"] ?? item.label._ : item.label.en ?? item.label._;
+    return { ...item, label: { _: label }, ...item.options && { options: item.options.map(translate) } };
+  };
+  return Object.fromEntries(Object.entries(declarations).map(([key, item]) => [key, translate(item)]));
+}
 
 // node_modules/@lit/reactive-element/css-tag.js
 var t = globalThis;
@@ -103043,10 +103176,10 @@ var select_styles_default = i`
 `;
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.RWUUFNUL.js
-function getOffset(element, parent) {
+function getOffset(element, parent2) {
   return {
-    top: Math.round(element.getBoundingClientRect().top - parent.getBoundingClientRect().top),
-    left: Math.round(element.getBoundingClientRect().left - parent.getBoundingClientRect().left)
+    top: Math.round(element.getBoundingClientRect().top - parent2.getBoundingClientRect().top),
+    left: Math.round(element.getBoundingClientRect().left - parent2.getBoundingClientRect().left)
   };
 }
 var locks = /* @__PURE__ */ new Set();
@@ -115052,10 +115185,10 @@ function _resolveArray(prop, value, target, isIndexable) {
 function resolveFallback(fallback2, prop, value) {
   return isFunction(fallback2) ? fallback2(prop, value) : fallback2;
 }
-var getScope = (key, parent) => key === true ? parent : typeof key === "string" ? resolveObjectKey(parent, key) : void 0;
+var getScope = (key, parent2) => key === true ? parent2 : typeof key === "string" ? resolveObjectKey(parent2, key) : void 0;
 function addScopes(set2, parentScopes, key, parentFallback, value) {
-  for (const parent of parentScopes) {
-    const scope = getScope(key, parent);
+  for (const parent2 of parentScopes) {
+    const scope = getScope(key, parent2);
     if (scope) {
       set2.add(scope);
       const fallback2 = resolveFallback(scope._fallback, key, value);
@@ -115098,11 +115231,11 @@ function addScopesFromKey(set2, allScopes, key, fallback2, item) {
   return key;
 }
 function subGetTarget(resolver, prop, value) {
-  const parent = resolver._getTarget();
-  if (!(prop in parent)) {
-    parent[prop] = {};
+  const parent2 = resolver._getTarget();
+  if (!(prop in parent2)) {
+    parent2[prop] = {};
   }
-  const target = parent[prop];
+  const target = parent2[prop];
   if (isArray(target) && isObject(value)) {
     return value;
   }
@@ -115309,11 +115442,11 @@ function _isDomSupported() {
   return typeof window !== "undefined" && typeof document !== "undefined";
 }
 function _getParentNode(domNode) {
-  let parent = domNode.parentNode;
-  if (parent && parent.toString() === "[object ShadowRoot]") {
-    parent = parent.host;
+  let parent2 = domNode.parentNode;
+  if (parent2 && parent2.toString() === "[object ShadowRoot]") {
+    parent2 = parent2.host;
   }
-  return parent;
+  return parent2;
 }
 function parseMaxStyle(styleValue, node, parentProperty) {
   let valueInPixels;
@@ -116415,8 +116548,8 @@ function getFirstScaleId(chart, axis) {
   const scales2 = chart.scales;
   return Object.keys(scales2).filter((key) => scales2[key].axis === axis).shift();
 }
-function createDatasetContext(parent, index2) {
-  return createContext(parent, {
+function createDatasetContext(parent2, index2) {
+  return createContext(parent2, {
     active: false,
     dataset: void 0,
     datasetIndex: index2,
@@ -116425,8 +116558,8 @@ function createDatasetContext(parent, index2) {
     type: "dataset"
   });
 }
-function createDataContext(parent, index2, element) {
-  return createContext(parent, {
+function createDataContext(parent2, index2, element) {
+  return createContext(parent2, {
     active: false,
     dataIndex: index2,
     parsed: void 0,
@@ -119592,14 +119725,14 @@ function getTitleHeight(options2, fallback2) {
   const lines = isArray(options2.text) ? options2.text.length : 1;
   return lines * font.lineHeight + padding.height;
 }
-function createScaleContext(parent, scale) {
-  return createContext(parent, {
+function createScaleContext(parent2, scale) {
+  return createContext(parent2, {
     scale,
     type: "scale"
   });
 }
-function createTickContext(parent, index2, tick) {
-  return createContext(parent, {
+function createTickContext(parent2, index2, tick) {
+  return createContext(parent2, {
     tick,
     index: index2,
     type: "tick"
@@ -125140,8 +125273,8 @@ function getAlignedX(tooltip, align, options2) {
 function getBeforeAfterBodyLines(callback2) {
   return pushOrConcat([], splitNewlines(callback2));
 }
-function createTooltipContext(parent, tooltip, tooltipItems) {
-  return createContext(parent, {
+function createTooltipContext(parent2, tooltip, tooltipItems) {
+  return createContext(parent2, {
     tooltip,
     tooltipItems,
     type: "tooltip"
@@ -126682,8 +126815,8 @@ function drawRadiusLine(scale, gridLineOpts, radius, labelCount, borderOpts) {
   ctx.stroke();
   ctx.restore();
 }
-function createPointLabelContext(parent, index2, label) {
-  return createContext(parent, {
+function createPointLabelContext(parent2, index2, label) {
+  return createContext(parent2, {
     label,
     index: index2,
     type: "pointLabel"
@@ -127578,6 +127711,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   constructor() {
     super();
     __publicField(this, "options", _ChemLab.options);
+    __publicField(this, "optionGroups", _ChemLab.optionGroups);
+    __publicField(this, "message", localize(this, () => {
+      this.options = drawerLabels(_ChemLab.options, this.lang);
+      this.optionGroups = drawerLabels(_ChemLab.optionGroups, this.lang);
+    }));
     __privateAdd(this, _containerDiv, __runInitializers(_init2, 8, this)), __runInitializers(_init2, 11, this);
     __privateAdd(this, _molConfig, __runInitializers(_init2, 12, this)), __runInitializers(_init2, 15, this);
     __privateAdd(this, _mixConfig, __runInitializers(_init2, 16, this)), __runInitializers(_init2, 19, this);
@@ -127857,6 +127995,12 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.requestUpdate();
     });
   }
+  get lang() {
+    return effectiveLanguage(this);
+  }
+  set lang(value) {
+    this.setAttribute("lang", value);
+  }
   /**
    * all used custom elements, mainly shoelace elements and the webwriter helpOverlay
    *
@@ -128109,7 +128253,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.shadowRoot.getElementById("teacherContext").remove();
     } else {
       this.shadowRoot.getElementById("studentContext").remove();
-      this.settings_drawer.innerHTML = "neues Molek\xFCl";
+      this.settings_drawer.textContent = this.message("neues Molek\xFCl");
       this._newMol();
       this._listAtoms();
       this.moleculePanel.position = 0;
@@ -129047,12 +129191,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.activateEComp.style.display = "none";
       if (this.curr_obj._type === ComponentType.Burette || this.curr_obj._type === ComponentType.Separatingfunnel) {
         this.openBtn.style.display = "";
-        this.openBtn.innerHTML = "\xD6ffnen";
-        this.tickerFunctionList.forEach((arr) => {
-          if (arr[0] === "transfer" + this.curr_name + this.curr_stage_index) {
-            this.openBtn.innerHTML = "Schlie\xDFen";
-          }
-        });
+        this.requestUpdate();
       } else {
         this.openBtn.style.display = "none";
       }
@@ -129454,7 +129593,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         1
       );
     }
-    this.settings_drawer.innerHTML = "Objekt";
+    this.settings_drawer.textContent = this.message("Objekt");
     this.settings_drawer.setAttribute("disabled", "");
     if (this.settings_drawer.active) {
       this.shadowRoot.getElementById("comp_panel").style.display = "none";
@@ -129518,9 +129657,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       "button"
     );
     addMolButton.id = "enter";
-    addMolButton.innerHTML = "hinzuf\xFCgen";
+    addMolButton.textContent = this.message("hinzuf\xFCgen");
     addMolButton.onclick = (event) => {
-      this.settings_drawer.innerHTML = "neues Molek\xFCl";
+      this.settings_drawer.textContent = this.message("neues Molek\xFCl");
       this.tabPopup.active = true;
       this.tab_select.show("settings");
       this.contextMenu.style.display = "none";
@@ -129537,7 +129676,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       let delMolButton = this.shadowRoot.createElement(
         "button"
       );
-      delMolButton.innerHTML = "entfernen";
+      delMolButton.textContent = this.message("entfernen");
       delMolButton.className = "remObj";
       delMolButton.onclick = (event) => {
         this._emitAlert(
@@ -129586,7 +129725,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       "button"
     );
     addMixButton.id = "enter";
-    addMixButton.innerHTML = "hinzuf\xFCgen";
+    addMixButton.textContent = this.message("hinzuf\xFCgen");
     addMixButton.onclick = (event) => {
       let mixDetails = this.shadowRoot.createElement(
         "sl-details"
@@ -129595,7 +129734,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       let setMixButton = this.shadowRoot.createElement(
         "button"
       );
-      setMixButton.innerHTML = "speichern";
+      setMixButton.textContent = this.message("speichern");
       setMixButton.id = "foldMenu";
       setMixButton.onclick = (event2) => {
         let newMixEntry = {
@@ -129615,7 +129754,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       let delMixButton = this.shadowRoot.createElement(
         "button"
       );
-      delMixButton.innerHTML = "entfernen";
+      delMixButton.textContent = this.message("entfernen");
       delMixButton.className = "remObj";
       delMixButton.onclick = (event2) => {
         let arrCopy = [];
@@ -129690,7 +129829,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       let delMixButton = this.shadowRoot.createElement(
         "button"
       );
-      delMixButton.innerHTML = "entfernen";
+      delMixButton.textContent = this.message("entfernen");
       delMixButton.className = "remObj";
       delMixButton.onclick = (event) => {
         this._emitAlert(
@@ -129731,14 +129870,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       "button"
     );
     addCompButton.id = "enter";
-    addCompButton.innerHTML = "hinzuf\xFCgen";
+    addCompButton.textContent = this.message("hinzuf\xFCgen");
     addCompButton.onclick = (event) => {
       let compDetails = this.shadowRoot.createElement(
         "sl-details"
       );
       compDetails.summary = "neues Objekt";
       let setCompButton = this.shadowRoot.createElement("button");
-      setCompButton.innerHTML = "speichern";
+      setCompButton.textContent = this.message("speichern");
       setCompButton.id = "foldMenu";
       setCompButton.onclick = (event2) => {
         if (compType.value != "") {
@@ -129779,7 +129918,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         }
       };
       let delCompButton = this.shadowRoot.createElement("button");
-      delCompButton.innerHTML = "entfernen";
+      delCompButton.textContent = this.message("entfernen");
       delCompButton.className = "remObj";
       delCompButton.onclick = (event2) => {
         compDetails.remove();
@@ -129957,7 +130096,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       compDetails.summary = compEntry["type"];
       compDetails.id = compEntry["id"];
       let delCompButton = this.shadowRoot.createElement("button");
-      delCompButton.innerHTML = "entfernen";
+      delCompButton.textContent = this.message("entfernen");
       delCompButton.className = "remObj";
       delCompButton.onclick = (event) => {
         let arrCopy = [];
@@ -131229,10 +131368,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					target="contextInfoBox"
 				>
 					<div slot="content">
-						<sl-badge>Objekt-Kontextmenü</sl-badge>
-						<p lang="de">
-							Hier können das Objekt verwaltet und grundlegende
-							Information angesehen werden.
+						<sl-badge>${this.message("Objekt-Kontextmen\xFC")}</sl-badge>
+						<p lang=${this.lang}>
+							${this.message("Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.")}
 						</p>
 					</div>
 				</webwriter-helppopup>
@@ -131241,29 +131379,25 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					target="buttonFullscreen"
 				>
 					<div slot="content">
-						<sl-badge>Vollbild an/aus</sl-badge>
-						<p lang="de">
-							Über diesen Button kann der Vollbildmodus an und aus
-							geschaltet werden. Aktuell deaktiviert.
+						<sl-badge>${this.message("Vollbild an/aus")}</sl-badge>
+						<p lang=${this.lang}>
+							${this.message("\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.")}
 						</p>
 					</div>
 				</webwriter-helppopup>
 				<webwriter-helppopup slot="popupContainer" target="changeInput">
 					<div slot="content">
-						<sl-badge>Eingabemodus</sl-badge>
-						<p lang="de">
-							Über diesen Button kann zwischen Maus- und
-							Touch-Steuerung gewechselt werden.
+						<sl-badge>${this.message("Eingabemodus")}</sl-badge>
+						<p lang=${this.lang}>
+							${this.message("\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.")}
 						</p>
 					</div>
 				</webwriter-helppopup>
 				<webwriter-helppopup slot="popupContainer" target="toggleDrag">
 					<div slot="content">
-						<sl-badge>Dragging an/aus</sl-badge>
-						<p lang="de">
-							Bei der Touch-Steuerung kann über diesen Button
-							umgeschaltet werden, wie Objekte auf Berührungen
-							reagieren.
+						<sl-badge>${this.message("Dragging an/aus")}</sl-badge>
+						<p lang=${this.lang}>
+							${this.message("Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.")}
 						</p>
 					</div>
 				</webwriter-helppopup>
@@ -131272,18 +131406,17 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					target="toggleDiagramDrawer"
 				>
 					<div slot="content">
-						<sl-badge>Diagramm Menü</sl-badge>
-						<p lang="de">
-							Über diesen Button wird das Diagramm Menü an der
-							linken Seite geöffnet.
+						<sl-badge>${this.message("Diagramm Men\xFC")}</sl-badge>
+						<p lang=${this.lang}>
+							${this.message("\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.")}
 						</p>
 					</div>
 				</webwriter-helppopup>
 				<webwriter-helppopup slot="popupContainer" target="contextMenu">
 					<div slot="content">
-						<sl-badge>Kontextmenü</sl-badge>
-						<p lang="de">
-							${this.hasAttribute("contenteditable") ? "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden." : "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden."}
+						<sl-badge>${this.message("Kontextmen\xFC")}</sl-badge>
+						<p lang=${this.lang}>
+							${this.hasAttribute("contenteditable") ? this.message("Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.") : this.message("\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.")}
 						</p>
 					</div>
 				</webwriter-helppopup>
@@ -131292,18 +131425,18 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					target="dialogOverview"
 				>
 					<div slot="content">
-						<sl-badge>Message Toast</sl-badge>
-						<p lang="de">Hier werden Statusmeldungen angezeigt.</p>
+						<sl-badge>${this.message("Message Toast")}</sl-badge>
+						<p lang=${this.lang}>${this.message("Hier werden Statusmeldungen angezeigt.")}</p>
 					</div>
 				</webwriter-helppopup>
 			</webwriter-helpoverlay>
 			<div id="upper">
 				${this.pix_canvas}
-				<sl-dialog id="confirmDialog" no-header label="bestätigen">
+				<sl-dialog id="confirmDialog" no-header label=${this.message("best\xE4tigen")}>
 					<div
 						style="display: flex; flex-direction: row; align-items: center"
 					>
-						<p>Aktion bestätigen:</p>
+						<p>${this.message("Aktion best\xE4tigen:")}</p>
 						<button
 							@click="${(event) => {
       this.confirmAction = 1;
@@ -131348,7 +131481,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				</sl-dialog>
 				<sl-drawer
 					id="diagramDrawer"
-					label="Diagramme"
+					label=${this.message("Diagramme")}
 					contained
 					placement="start"
 					no-header
@@ -131375,7 +131508,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					<div
 						style="position: absolute; top: 7.5px; left: 7.5px; display: flex; flex-direction: row; align-items: baseline"
 					>
-						<sl-badge variant="primary">Diagramme</sl-badge>
+						<sl-badge variant="primary">${this.message("Diagramme")}</sl-badge>
 						<sl-checkbox
 							@sl-change=${(event) => {
       this.diagShowLine = !this.diagShowLine;
@@ -131386,7 +131519,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         diag[0].update();
       });
     }}
-							><p>Kurven anzeigen</p></sl-checkbox
+							><p>${this.message("Kurven anzeigen")}</p></sl-checkbox
 						>
 					</div>
 					<div
@@ -131552,15 +131685,15 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					style="position: absolute; display:none; box-shadow: 0px 6px 12px 0px rgba(0,0,0,0.33); border-radius: 5px"
 				>
 					<sl-menu id="teacherContext">
-						<sl-menu-label> Lehrkraft Steuerung </sl-menu-label>
+						<sl-menu-label> ${this.message("Lehrkraft Steuerung")} </sl-menu-label>
 						<sl-menu-item>
-							Allgemein
+							${this.message("Allgemein")}
 							<sl-menu
 								class="optionsDetails"
 								slot="submenu"
 								style="width: 200px"
 							>
-								<p>Ausblenden</p>
+								<p>${this.message("Ausblenden")}</p>
 								<sl-select
 									id="invCompSelect"
 									size="small"
@@ -131577,7 +131710,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 						</sl-menu-item>
 
 						<sl-menu-item>
-							Moleküle
+							${this.message("Molek\xFCle")}
 							<sl-menu
 								id="molConfig"
 								slot="submenu"
@@ -131586,7 +131719,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 							</sl-menu>
 						</sl-menu-item>
 						<sl-menu-item>
-							Gemische
+							${this.message("Gemische")}
 							<sl-menu
 								id="mixConfig"
 								slot="submenu"
@@ -131595,7 +131728,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 							</sl-menu>
 						</sl-menu-item>
 						<sl-menu-item>
-							Komponenten
+							${this.message("Komponenten")}
 							<sl-menu
 								id="compConfig"
 								slot="submenu"
@@ -131606,9 +131739,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					</sl-menu>
 
 					<sl-menu id="studentContext" style="max-width: 200px;">
-						<sl-menu-label>Neues Objekt</sl-menu-label>
+						<sl-menu-label>${this.message("Neues Objekt")}</sl-menu-label>
 						<sl-menu-item>
-							Laborgeräte
+							${this.message("Laborger\xE4te")}
 							<sl-menu
 								slot="submenu"
 								id="details_comp"
@@ -131617,7 +131750,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 							</sl-menu>
 						</sl-menu-item>
 						<sl-menu-item>
-							Elektronik
+							${this.message("Elektronik")}
 							<sl-menu
 								slot="submenu"
 								id="details_ecomp"
@@ -131713,16 +131846,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 										d="M8 12a.5.5 0 0 0 .5-.5V5.707l2.146 2.147a.5.5 0 0 0 .708-.708l-3-3a.5.5 0 0 0-.708 0l-3 3a.5.5 0 1 0 .708.708L7.5 5.707V11.5a.5.5 0 0 0 .5.5"
 									/>
 								</svg>
-								Panel anzeigen
+								${this.message("Panel anzeigen")}
 							</button>
 							<button
 								id="openComp"
 								@click="${(event) => {
       let currSprite = this.app.stage.children[this.curr_stage_index];
-      if (this.openBtn.innerHTML.includes(
-        "\xD6ffnen"
-      )) {
-        this.openBtn.innerHTML = "Schlie\xDFen";
+      if (!this.tickerFunctionList.some(([id3]) => id3 === "transfer" + this.curr_name + this.curr_stage_index)) {
+        this.requestUpdate();
         let source = this.curr_obj;
         this._pushTickerFunction(
           "transfer" + this.curr_name + this.curr_stage_index,
@@ -131734,7 +131865,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
           "transfer" + this.curr_obj._type + ":" + this.curr_obj._id
         );
       } else {
-        this.openBtn.innerHTML = "\xD6ffnen";
+        this.requestUpdate();
         this._remTickerFunction(
           "transfer" + this.curr_name + this.curr_stage_index
         );
@@ -131745,16 +131876,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       }
     }}"
 							>
-								Öffnen
+								${this.message(this.tickerFunctionList.some(([id3]) => id3 === "transfer" + this.curr_name + this.curr_stage_index) ? "Schlie\xDFen" : "\xD6ffnen")}
 							</button>
 							<button
 								id="activateEComp"
 								@click="${(event) => {
       let currSprite = this.app.stage.children[this.curr_stage_index];
-      if (this.activateEComp.innerHTML.includes(
-        "Einschalten"
-      )) {
-        this.activateEComp.innerHTML = "Ausschalten";
+      if (!this.tickerFunctionList.some(([id3]) => id3 === "echem" + this.curr_name + this.curr_stage_index)) {
+        this.requestUpdate();
         currSprite.texture = this.curr_obj._type.toLowerCase() === "source" ? Texture.from(
           source_on_default
         ) : Texture.from(
@@ -131771,7 +131900,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
           "echem" + this.curr_obj._type + ":" + this.curr_obj._id
         );
       } else {
-        this.activateEComp.innerHTML = "Einschalten";
+        this.requestUpdate();
         currSprite.texture = this.curr_obj._type.toLowerCase() === "source" ? Texture.from(
           source_off_default
         ) : Texture.from(
@@ -131787,7 +131916,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       }
     }}"
 							>
-								Einschalten
+								${this.message(this.tickerFunctionList.some(([id3]) => id3 === "echem" + this.curr_name + this.curr_stage_index) ? "Ausschalten" : "Einschalten")}
 							</button>
 						</div>
 					</div>
@@ -131813,7 +131942,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 								slot="nav"
 								panel="settings"
 								disabled
-								>Objekt</sl-tab
+								>${this.message("Objekt")}</sl-tab
 							>
 							<sl-tab-panel id="details_settings" name="settings">
 								<div id="comp_panel">
@@ -131856,7 +131985,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       );
       this.requestUpdate();
     }}"
-																title="Objekt leeren"
+																title=${this.message("Objekt leeren")}
 															>
 																<svg
 																	xmlns="http://www.w3.org/2000/svg"
@@ -131875,7 +132004,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 																id="mixVolAmount"
 																size="small"
 																type="number"
-																placeholder="Menge in mL"
+																placeholder=${this.message("Menge in mL")}
 																min="0"
 																style="width: 120px; margin-inline: 5px; margin-top: 5px;"
 																@sl-input="${(event) => {
@@ -131900,7 +132029,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 																size="small"
 																hoist
 																disabled
-																placeholder="Bestehende"
+																placeholder=${this.message("Bestehende")}
 																style="width:150px"
 																@sl-change="${(event) => {
       if (this.mixVolAmount.value != "") {
@@ -131960,7 +132089,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 													<sl-badge
 														size="small"
 														variant="primary"
-														>Molekül</sl-badge
+														>${this.message("Molek\xFCl")}</sl-badge
 													>
 													<button
 														id="newMol"
@@ -131972,19 +132101,19 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       );
     }}"
 													>
-														zurücksetzen
+														${this.message("zur\xFCcksetzen")}
 													</button>
 													<button
 														id="enter"
 														@click="${this._addToObj}"
 													>
-														hinzufügen
+														${this.message("hinzuf\xFCgen")}
 													</button>
 													<button
 														id="addToElectrode"
 														@click="${this._newElectrodeMat}"
 													>
-														+ Elektrodenmaterial
+														${this.message("+ Elektrodenmaterial")}
 													</button>
 													<div
 														id="mol_prev_div"
@@ -131997,7 +132126,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 															<sl-select
 																id="molSelect"
 																size="small"
-																placeholder="Bestehende"
+																placeholder=${this.message("Bestehende")}
 																placement="bottom"
 																hoist
 																@sl-change="${() => {
@@ -132032,28 +132161,28 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 																maxlength="6"
 																rows="1"
 																resize="none"
-																placeholder="Menge in mol"
+																placeholder=${this.message("Menge in mol")}
 																min="0"
 																size="small"
 																style="width: 208px; margin-top: 5px; margin-right: 2px"
 															></sl-input>
 															<sl-select
 																id="bond_1"
-																placeholder="Bindung von"
+																placeholder=${this.message("Bindung von")}
 																placement="bottom"
 																size="small"
 																hoist
 															></sl-select>
 															<sl-select
 																id="bond_2"
-																placeholder="Bindung zu"
+																placeholder=${this.message("Bindung zu")}
 																placement="bottom"
 																size="small"
 																hoist
 															></sl-select>
 															<sl-select
 																id="bond_3"
-																placeholder="Bindungsart wählen"
+																placeholder=${this.message("Bindungsart w\xE4hlen")}
 																placement="top"
 																size="small"
 																hoist
@@ -132081,7 +132210,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 																	id="enter"
 																	@click="${this._enter}"
 																>
-																	neue Bindung
+																	${this.message("neue Bindung")}
 																</button>
 															</div>
 														</div>
@@ -132100,7 +132229,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 													size="small"
 													variant="primary"
 													style="position: sticky"
-													>Elemente</sl-badge
+													>${this.message("Elemente")}</sl-badge
 												>
 												<button
 													@click="${() => {
@@ -132108,7 +132237,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         "none"
       );
     }}"
-													title="Filter zurücksetzen"
+													title=${this.message("Filter zur\xFCcksetzen")}
 												>
 													<svg
 														xmlns="http://www.w3.org/2000/svg"
@@ -132134,9 +132263,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}"
 														id="filterButton"
 														style="border-color: #e83c95; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Halogene"
+														title=${this.message("Kategorie: Halogene")}
 													>
-														Halogene
+														${this.message("Halogene")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -132146,9 +132275,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}"
 														id="filterButton"
 														style="border-color: #e42050; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Nichtmetalle"
+														title=${this.message("Kategorie: Nichtmetalle")}
 													>
-														Nichtmetalle
+														${this.message("Nichtmetalle")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -132158,9 +132287,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}"
 														id="filterButton"
 														style="border-color: #b6778c; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Edelgase"
+														title=${this.message("Kategorie: Edelgase")}
 													>
-														Edelgase
+														${this.message("Edelgase")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -132170,9 +132299,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}"
 														id="filterButton"
 														style="border-color: #73962c; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Alkalimetalle"
+														title=${this.message("Kategorie: Alkalimetalle")}
 													>
-														Alkalimetalle
+														${this.message("Alkalimetalle")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -132182,9 +132311,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}"
 														id="filterButton"
 														style="border-color: #0e9a60; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Erdalkalimetalle"
+														title=${this.message("Kategorie: Erdalkalimetalle")}
 													>
-														Erdalkalimetalle
+														${this.message("Erdalkalimetalle")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -132194,9 +132323,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}"
 														id="filterButton"
 														style="border-color: #806db6; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Halbmetalle"
+														title=${this.message("Kategorie: Halbmetalle")}
 													>
-														Halbmetalle
+														${this.message("Halbmetalle")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -132206,9 +132335,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}"
 														id="filterButton"
 														style="border-color: #0f69af; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Übergangsmetalle"
+														title=${this.message("Kategorie: \xDCbergangsmetalle")}
 													>
-														Übergangsmetalle
+														${this.message("\xDCbergangsmetalle")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -132218,9 +132347,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}"
 														id="filterButton"
 														style="border-color: #2dbecd; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Lanthanoide"
+														title=${this.message("Kategorie: Lanthanoide")}
 													>
-														Lanthanoide
+														${this.message("Lanthanoide")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -132230,9 +132359,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}"
 														id="filterButton"
 														style="border-color: #3a9890; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Actinoide"
+														title=${this.message("Kategorie: Actinoide")}
 													>
-														Actinoide
+														${this.message("Actinoide")}
 													</button>
 													<button
 														@click="${(event) => {
@@ -132242,9 +132371,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}"
 														id="filterButton"
 														style="border-color: #4f4f4f; border-width: 3px; flex-shrink: 0"
-														title="Kategorie: Unbekannt"
+														title=${this.message("Kategorie: Unbekannt")}
 													>
-														Unbekannt
+														${this.message("Unbekannt")}
 													</button>
 												</div>
 											</div>
@@ -132255,7 +132384,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 												type="text"
 												rows="1"
 												resize="none"
-												placeholder="Suche nach Name oder Symbol"
+												placeholder=${this.message("Suche nach Name oder Symbol")}
 												size="small"
 												style="width: 91%; margin-top: 3px; margin-inline: 5px"
 												@sl-input="${this._filterAtoms}"
@@ -132281,7 +132410,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 													style="display: flex; flex-direction: row"
 												>
 													<sl-badge
-														>Verbindungen</sl-badge
+														>${this.message("Verbindungen")}</sl-badge
 													>
 													<button
 														id="enter"
@@ -132301,13 +132430,13 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       }
     }}"
 													>
-														neu anlegen
+														${this.message("neu anlegen")}
 													</button>
 												</div>
 												<sl-select
 													id="newECon"
 													size="small"
-													placeholder="Gegenstück"
+													placeholder=${this.message("Gegenst\xFCck")}
 													hoist
 												></sl-select>
 												<div
@@ -132324,14 +132453,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 												style="display: flex; flex-direction: column;"
 											>
 												<sl-badge
-													>Eigenschaften</sl-badge
+													>${this.message("Eigenschaften")}</sl-badge
 												>
 												<div
 													id="compInfo"
 													style="display: flex; flex-direction: column; justify-content: flex-start"
 												>
 													<div>
-														<p>Spannung</p>
+														<p>${this.message("Spannung")}</p>
 														<sl-tag
 															id="shownVoltage"
 															variant="warning"
@@ -132343,7 +132472,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 															autocomplete="off"
 															id="sourceVoltage"
 															size="small"
-															label="Quellspannung"
+															label=${this.message("Quellspannung")}
 															type="number"
 															value="0"
 															style="max-width: 100px"
@@ -132352,7 +132481,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 															autocomplete="off"
 															id="sourceCurrent"
 															size="small"
-															label="Quellstromstärke"
+															label=${this.message("Quellstromst\xE4rke")}
 															type="number"
 															value="0"
 															style="max-width: 100px"
@@ -132361,19 +132490,19 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 															id="enter"
 															@click="${this._setSourceValues}"
 														>
-															bestätigen
+															${this.message("best\xE4tigen")}
 														</button>
 													</div>
 													<div id="eCompInnerInfo">
 														<p>
-															verbundenes Gemisch
+															${this.message("verbundenes Gemisch")}
 														</p>
 														<sl-tag
 															id="conMix"
 															variant="primary"
 														></sl-tag>
 														<p>
-															Elektrodenmaterial
+															${this.message("Elektrodenmaterial")}
 														</p>
 														<sl-select
 															id="electrodeSelect"
@@ -132383,7 +132512,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 															id="enter"
 															@click="${this._setElectrodeMaterlial}"
 														>
-															bestätigen
+															${this.message("best\xE4tigen")}
 														</button>
 													</div>
 												</div>
@@ -132577,6 +132706,7 @@ __decorateElement(_init2, 4, "smilesDrawer100", _smilesDrawer100_dec, _ChemLab, 
 __decorateElement(_init2, 4, "smilesDrawer150", _smilesDrawer150_dec, _ChemLab, _smilesDrawer150);
 __decorateElement(_init2, 4, "newSmilesDrawer", _newSmilesDrawer_dec, _ChemLab, _newSmilesDrawer);
 _ChemLab = __decorateElement(_init2, 0, "ChemLab", _ChemLab_decorators, _ChemLab);
+__publicField(_ChemLab, "properties", { lang: { attribute: false, noAccessor: true } });
 __publicField(_ChemLab, "optionGroups", {
   appearance: { label: { _: "Appearance", "de-DE": "Darstellung" }, collapsible: true, advanced: false },
   analytics: { label: { _: "xAPI", "de-DE": "xAPI" }, collapsible: true, advanced: true }
