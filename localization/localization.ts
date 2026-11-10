@@ -6,6 +6,16 @@ const messages = new Map(
         [locale.toLowerCase(), entries as Record<string, string>]),
 );
 
+const localeDefaults = new Map([["no", "nb"], ["pt", "pt-pt"], ["sr", "sr-cyrl"], ["zh", "zh-hans"]]);
+
+function translate(source: string, language: string) {
+    const tag = language.trim().toLowerCase();
+    const base = tag.split("-")[0];
+    const fallback = localeDefaults.get(base) ?? base;
+    return messages.get(tag)?.[source] ?? messages.get(base)?.[source] ?? messages.get(fallback)?.[source]
+        ?? (base === "de" || !base ? source : messages.get("en")?.[source] ?? source);
+}
+
 function parent(node: Node) {
     const root = node.getRootNode();
     return node.parentElement ?? (root instanceof ShadowRoot ? root.host : null);
@@ -35,9 +45,9 @@ export function localize(host: ReactiveControllerHost & HTMLElement, onChange: (
             observer.disconnect();
         },
     });
-    return (source: string) => {
-        const locale = effectiveLanguage(host).toLowerCase();
-        return messages.get(locale)?.[source] ?? messages.get(locale.split("-")[0])?.[source] ?? source;
+    return (source: string, values: Record<string, string | number> = {}) => {
+        const text = translate(source, effectiveLanguage(host));
+        return text.replace(/\{(\w+)\}/g, (match, key) => Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
     };
 }
 
@@ -45,10 +55,9 @@ type Label = { _: string; en?: string; "de-DE"?: string };
 type Item = { label: Label; options?: readonly Item[] };
 
 export function drawerLabels<T extends Record<string, Item>>(declarations: T, language: string): T {
-    const german = language.toLowerCase().split("-")[0] === "de";
-    const translate = (item: Item): Item => {
-        const label = german ? item.label["de-DE"] ?? item.label._ : item.label.en ?? item.label._;
-        return { ...item, label: { _: label }, ...(item.options && { options: item.options.map(translate) }) };
+    const localizeItem = (item: Item): Item => {
+        const label = translate(item.label["de-DE"] ?? item.label._, language);
+        return { ...item, label: { _: label }, ...(item.options && { options: item.options.map(localizeItem) }) };
     };
-    return Object.fromEntries(Object.entries(declarations).map(([key, item]) => [key, translate(item)])) as T;
+    return Object.fromEntries(Object.entries(declarations).map(([key, item]) => [key, localizeItem(item)])) as T;
 }

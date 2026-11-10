@@ -158,7 +158,28 @@ export class ChemLab extends LitElementWw {
 	private readonly message = localize(this, () => {
 		this.options = drawerLabels(ChemLab.options, this.lang);
 		this.optionGroups = drawerLabels(ChemLab.optionGroups, this.lang);
+		this.updateLocalizedControls();
 	});
+
+	private localizeControl(element: Pick<HTMLElement, "dataset">, property: "label" | "title" | "textContent" | "placeholder", source: string) {
+		element.dataset.message = source;
+		element.dataset.messageProperty = property;
+		Reflect.set(element, property, this.message(source));
+	}
+
+	private updateLocalizedControls() {
+		this.shadowRoot?.querySelectorAll<HTMLElement>("[data-message]").forEach(element => {
+			Reflect.set(element, element.dataset.messageProperty!, this.message(element.dataset.message!));
+		});
+		this.shadowRoot?.querySelectorAll<HTMLElement>("[data-element-name]").forEach(element => {
+			element.title = this.itemName(element.dataset.elementName!) + "\n" + this.itemName(element.dataset.elementCategory!);
+		});
+		this.diagramList.forEach(([, , updateLabels]) => updateLabels());
+	}
+
+	private itemName(key: string) {
+		return this.message(this.dictionary[key?.toLowerCase()] ?? key ?? "");
+	}
 
 
 	/**
@@ -654,7 +675,7 @@ export class ChemLab extends LitElementWw {
 		"alkali metal": "Alkalimetall",
 		"alkaline earth metal": "Erdalkalimetall",
 		"transition metal": "Übergangsmetall",
-		"post transition metal": "Metall der Erdmetalle",
+		"post-transition metal": "Postübergangsmetall",
 		metalloid: "Halbmetall",
 		"polyatomic nonmetal": "Polyatomares Nichtmetall",
 		"diatomic nonmetal": "Diatomares Nichtmetall",
@@ -1146,7 +1167,12 @@ export class ChemLab extends LitElementWw {
 		if (Array.isArray(value.availableMolecules)) this.availableMolecules = value.availableMolecules;
 		if (Array.isArray(value.availableMixtures)) this.availableMixtures = value.availableMixtures;
 		if (Array.isArray(value.availableComponents)) this.availableComponents = value.availableComponents;
-		if (Array.isArray(value.invComponents)) this.invComponents = value.invComponents as string[];
+		if (Array.isArray(value.invComponents)) {
+			const componentNames = Object.keys(chemlib.ComponentType).concat(Object.keys(chemlib.EComponentType));
+			this.invComponents = value.invComponents.map(String).map(value =>
+				componentNames.find(key => this.dictionary[key.toLowerCase()] === value)?.toLowerCase() ?? value.toLowerCase()
+			);
+		}
 	}
 
 	private readAuthoredData() {
@@ -1280,10 +1306,7 @@ export class ChemLab extends LitElementWw {
 		);
 		this._listComponents();
 		this._listEComponents();
-		this.invCompSelect.setAttribute(
-			"value",
-			this.invComponents.toString().replace(",", " ")
-		);
+		this.invCompSelect.value = this.invComponents;
 		this.filterComponents();
 		this._listMolecules();
 		this._listMixtures();
@@ -1296,7 +1319,7 @@ export class ChemLab extends LitElementWw {
 			this.shadowRoot.getElementById("teacherContext").remove();
 		} else {
 			this.shadowRoot.getElementById("studentContext").remove();
-			this.settings_drawer.textContent = this.message("neues Molekül");
+			this.localizeControl(this.settings_drawer, "textContent", "neues Molekül");
 			this._newMol();
 			this._listAtoms();
 			this.moleculePanel.position = 0;
@@ -1324,7 +1347,7 @@ export class ChemLab extends LitElementWw {
 
 		this._sendxAPiStatement("registered", "chemlab");
 		this._emitAlert(
-			"klicke zum Starten in das Fenster!",
+			this.message("klicke zum Starten in das Fenster!"),
 			"success",
 			true,
 			10000
@@ -1379,14 +1402,9 @@ export class ChemLab extends LitElementWw {
 
 			// @ts-ignore
 			let canvasHeading: HTMLHeadingElement = this.shadowRoot.createElement("h5") as HTMLHeadingElement;
-			canvasHeading.innerText =
-				this.diagramList.length +
-				": " +
-				(name.includes("transfer")
-					? "Titration"
-					: name.includes("source")
-					? "Elektrolyse"
-					: "Galvanische Zelle");
+			const chartNumber = this.diagramList.length;
+			const chartHeading = name.includes("transfer") ? "Titration"
+				: name.includes("source") ? "Elektrolyse" : "Galvanische Zelle";
 
 			canvasDiv.appendChild(canvas);
 			// @ts-ignore
@@ -1398,13 +1416,12 @@ export class ChemLab extends LitElementWw {
 				"button"
 			) as HTMLButtonElement;
 			trashButton.innerHTML += `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#d10000" d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/></svg>`;
-			trashButton.onclick = (event) => {
-				this.diagramList.forEach((diag) => {
-					if ((diag[1] as HTMLDivElement).children[0].id === name) {
-						this.diagramList.splice(diag, 1);
-						return;
-					}
-				});
+			trashButton.onclick = () => {
+				const index = this.diagramList.findIndex(([, container]) => container === canvasDiv);
+				if (index >= 0) {
+					this.diagramList.splice(index, 1);
+					chart.destroy();
+				}
 				canvasBundle.remove();
 				this._sendxAPiStatement("removed", "diagram-" + name);
 			};
@@ -1414,9 +1431,9 @@ export class ChemLab extends LitElementWw {
 			canvasBundle.appendChild(canvasDiv);
 			this.canvasContainer.appendChild(canvasBundle);
 
-			let chartLabel: string;
-			let chartTitleX: string;
-			let chartTitleY: string;
+			let chartLabel = "";
+			let chartTitleX = "";
+			let chartTitleY = "";
 
 			if (name.includes("transfer")) {
 				chartLabel = "pH";
@@ -1448,7 +1465,7 @@ export class ChemLab extends LitElementWw {
 						x: {
 							beginAtZero: true,
 							title: {
-								text: chartTitleX,
+								text: this.message(chartTitleX),
 								display: true,
 							},
 							grid: {
@@ -1458,7 +1475,7 @@ export class ChemLab extends LitElementWw {
 						y: {
 							beginAtZero: true,
 							title: {
-								text: chartTitleY,
+								text: this.message(chartTitleY),
 								display: true,
 							},
 							grid: {
@@ -1470,34 +1487,41 @@ export class ChemLab extends LitElementWw {
 			});
 
 			chart.data.datasets.push({
-				label: chartLabel,
+				label: this.message(chartLabel),
 				data: [],
 				tension: 0.4,
 				showLine: this.diagShowLine,
 			});
 			if (name.includes("source")) {
 				chart.data.datasets.push({
-					label: chartLabel,
+					label: this.message(chartLabel),
 					data: [],
 					tension: 0.4,
 					showLine: this.diagShowLine,
 				});
 
-				let electrodes: chemlib.ElectricComponent[] =
-					chemlib.ComponentManager.isCircuit(
-						args[1] as chemlib.ElectricComponent
-					);
-				chart.data.datasets[0].label =
-					"Stoffmenge " +
-					electrodes[0]._material._atoms[0].getSymbol() +
-					" Ionen [mol]";
-				chart.data.datasets[1].label =
-					"Stoffmenge " +
-					electrodes[1]._material._atoms[0].getSymbol() +
-					" Ionen [mol]";
 			}
 
-			this.diagramList.push([chart, canvasDiv]);
+			const ionSymbols = name.includes("source")
+				? chemlib.ComponentManager.isCircuit(args[1] as chemlib.ElectricComponent)
+					.map(electrode => electrode._material?._atoms[0]?.getSymbol())
+				: undefined;
+			const updateLabels = () => {
+				canvasHeading.innerText = chartNumber + ": " + this.message(chartHeading);
+				chart.options.scales.x.title.text = this.message(chartTitleX);
+				chart.options.scales.y.title.text = this.message(chartTitleY);
+				if (ionSymbols) {
+					chart.data.datasets.forEach((dataset, index) => {
+						const symbol = ionSymbols[index];
+						dataset.label = symbol ? this.message("Stoffmenge {symbol} Ionen [mol]", { symbol }) : chartLabel;
+					});
+				} else {
+					chart.data.datasets[0].label = this.message(chartLabel);
+				}
+				chart.update("none");
+			};
+			updateLabels();
+			this.diagramList.push([chart, canvasDiv, updateLabels]);
 			this._sendxAPiStatement("created", "diagram-" + name);
 		}
 	}
@@ -2026,7 +2050,7 @@ export class ChemLab extends LitElementWw {
 			let contextBadge: SlBadge = this.shadowRoot.getElementById(
 				"contextBadge"
 			) as SlBadge;
-			contextBadge.innerHTML = this.dictionary[sprite.name.split(":")[0]];
+			contextBadge.textContent = this.itemName(sprite.name.split(":")[0]);
 
 			if (event.button === 2 || event.pointerType != "mouse") {
 				let currSprite = this.app.stage.children[this.curr_stage_index];
@@ -2097,20 +2121,20 @@ export class ChemLab extends LitElementWw {
 				sprite.height.toString() + "px";
 			this.contextPopup.reposition();
 
-			contextBadge.innerHTML = this.dictionary[info.split(":")[0]];
+			contextBadge.textContent = this.itemName(info.split(":")[0]);
 
 			contextInfoBox.style.visibility = "hidden";
 			contextActionsInfo.style.display = "";
 			if (!this.hasTouch) {
-				contextActionsInfo.innerHTML = `<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><path fill="currentColor" d="M144 16h-32a64.07 64.07 0 0 0-64 64v96a64.07 64.07 0 0 0 64 64h32a64.07 64.07 0 0 0 64-64V80a64.07 64.07 0 0 0-64-64m-32 16h16v72H64V80a48.05 48.05 0 0 1 48-48m32 192h-32a48.05 48.05 0 0 1-48-48v-56h128v56a48.05 48.05 0 0 1-48 48"/></svg> Kontextmenü</p>
+				contextActionsInfo.innerHTML = `<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><path fill="currentColor" d="M144 16h-32a64.07 64.07 0 0 0-64 64v96a64.07 64.07 0 0 0 64 64h32a64.07 64.07 0 0 0 64-64V80a64.07 64.07 0 0 0-64-64m-32 16h16v72H64V80a48.05 48.05 0 0 1 48-48m32 192h-32a48.05 48.05 0 0 1-48-48v-56h128v56a48.05 48.05 0 0 1-48 48"/></svg> ${this.message("Kontextmenü")}</p>
 				<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl-divider>
-				<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><path fill="currentColor" d="M144 16h-32a64.07 64.07 0 0 0-64 64v96a64.07 64.07 0 0 0 64 64h32a64.07 64.07 0 0 0 64-64V80a64.07 64.07 0 0 0-64-64m48 64v24h-64V32h16a48.05 48.05 0 0 1 48 48m-48 144h-32a48.05 48.05 0 0 1-48-48v-56h128v56a48.05 48.05 0 0 1-48 48"/></svg> Bewegen</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><path fill="currentColor" d="M144 16h-32a64.07 64.07 0 0 0-64 64v96a64.07 64.07 0 0 0 64 64h32a64.07 64.07 0 0 0 64-64V80a64.07 64.07 0 0 0-64-64m48 64v24h-64V32h16a48.05 48.05 0 0 1 48 48m-48 144h-32a48.05 48.05 0 0 1-48-48v-56h128v56a48.05 48.05 0 0 1-48 48"/></svg> ${this.message("Bewegen")}</p>
 				`;
 			} else {
 				if (this.dragToggle) {
-					contextActionsInfo.innerHTML = `<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M22 43c-4.726-1.767-8.667-7.815-10.64-11.357c-.852-1.53-.403-3.408.964-4.502a3.83 3.83 0 0 1 5.1.283L19 29V17.5a2.5 2.5 0 0 1 5 0v6a2.5 2.5 0 0 1 5 0v2a2.5 2.5 0 0 1 5 0v2a2.5 2.5 0 0 1 5 0v7.868c0 1.07-.265 2.128-.882 3.003C37.095 39.82 35.256 42.034 33 43c-3.5 1.5-6.63 1.634-11 0M10 8h22m-18 4l-4-4l4-4m14 0l4 4l-4 4"/></svg> Bewegen</p>`;
+					contextActionsInfo.innerHTML = `<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M22 43c-4.726-1.767-8.667-7.815-10.64-11.357c-.852-1.53-.403-3.408.964-4.502a3.83 3.83 0 0 1 5.1.283L19 29V17.5a2.5 2.5 0 0 1 5 0v6a2.5 2.5 0 0 1 5 0v2a2.5 2.5 0 0 1 5 0v2a2.5 2.5 0 0 1 5 0v7.868c0 1.07-.265 2.128-.882 3.003C37.095 39.82 35.256 42.034 33 43c-3.5 1.5-6.63 1.634-11 0M10 8h22m-18 4l-4-4l4-4m14 0l4 4l-4 4"/></svg> ${this.message("Bewegen")}</p>`;
 				} else {
-					contextActionsInfo.innerHTML = `<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="4"><path stroke-linejoin="round" d="M15 26V15a3 3 0 1 1 6 0v11"/><path stroke-linejoin="round" d="M39 25v6.5C39 37.851 33.851 43 27.5 43h-1C20.149 43 15 37.851 15 31.5V25"/><path stroke-linejoin="round" d="M21 29v-5a3 3 0 1 1 6 0v5m0 0v-5a3 3 0 1 1 6 0v5m0 0v-5a3 3 0 1 1 6 0v5"/><path d="M28 15a9.97 9.97 0 0 0-1.959-5.945A9.99 9.99 0 0 0 18 5a9.99 9.99 0 0 0-8.042 4.055A9.97 9.97 0 0 0 8 15"/></g></svg> Kontextmenü</p>`;
+					contextActionsInfo.innerHTML = `<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="4"><path stroke-linejoin="round" d="M15 26V15a3 3 0 1 1 6 0v11"/><path stroke-linejoin="round" d="M39 25v6.5C39 37.851 33.851 43 27.5 43h-1C20.149 43 15 37.851 15 31.5V25"/><path stroke-linejoin="round" d="M21 29v-5a3 3 0 1 1 6 0v5m0 0v-5a3 3 0 1 1 6 0v5m0 0v-5a3 3 0 1 1 6 0v5"/><path d="M28 15a9.97 9.97 0 0 0-1.959-5.945A9.99 9.99 0 0 0 18 5a9.99 9.99 0 0 0-8.042 4.055A9.97 9.97 0 0 0 8 15"/></g></svg> ${this.message("Kontextmenü")}</p>`;
 				}
 			}
 
@@ -2206,10 +2230,7 @@ export class ChemLab extends LitElementWw {
 							&& (upperSprite.y > bottomSprite.y - bottomSprite.height/2 && upperSprite.y < bottomSprite.y + upperSprite.height/2 && upperSprite.x > bottomSprite.x - bottomSprite.width/2 && upperSprite.x < bottomSprite.x + bottomSprite.width/2)
 						) {
 							this._emitAlert(
-								this.curr_obj._type +
-									" in " +
-									cObj._type +
-									" einfügen.",
+								this.message("{from} in {to} einfügen.", { from: this.itemName(this.curr_obj._type), to: this.itemName(cObj._type) }),
 								"primary",
 								false
 							);
@@ -2237,10 +2258,7 @@ export class ChemLab extends LitElementWw {
 								cObj._type != chemlib.EComponentType.Cable
 							) {
 								this._emitAlert(
-									this.curr_obj._type +
-										" und " +
-										cObj._type +
-										" verbinden.",
+									this.message("{from} und {to} verbinden.", { from: this.itemName(this.curr_obj._type), to: this.itemName(cObj._type) }),
 									"primary",
 									false
 								);
@@ -2279,11 +2297,7 @@ export class ChemLab extends LitElementWw {
 									? -20
 									: 20;
 							this._emitAlert(
-								"Inhalt aus " +
-									this.curr_obj._type +
-									" zu " +
-									cObj._type +
-									" transferieren.",
+								this.message("Inhalt aus {from} zu {to} transferieren.", { from: this.itemName(this.curr_obj._type), to: this.itemName(cObj._type) }),
 								"primary",
 								false
 							);
@@ -2367,10 +2381,7 @@ export class ChemLab extends LitElementWw {
 								if (this.confirmAction === 1) {
 									this.curr_obj._connectedMix = cObj._content;
 									this._emitAlert(
-										this.curr_obj._type +
-											" in " +
-											cObj._type +
-											" eingefügt.",
+										this.message("{from} in {to} eingefügt.", { from: this.itemName(this.curr_obj._type), to: this.itemName(cObj._type) }),
 										"success",
 										false,
 										1500
@@ -2481,11 +2492,7 @@ export class ChemLab extends LitElementWw {
 									this.curr_obj.transferContents({}, cObj);
 									this._getObject(this.dragObject);
 									this._emitAlert(
-										"Inhalt aus " +
-											this.curr_obj._type +
-											" zu " +
-											cObj._type +
-											" überführt.",
+										this.message("Inhalt aus {from} zu {to} überführt.", { from: this.itemName(this.curr_obj._type), to: this.itemName(cObj._type) }),
 										"success",
 										false,
 										1500
@@ -2644,7 +2651,7 @@ export class ChemLab extends LitElementWw {
 				this.activateEComp.style.display = "";
 				if (this.curr_obj._type === chemlib.EComponentType.Voltmeter) {
 					this.contextEchemInfo.innerHTML = `
-						<p>Spannung: ${this.curr_obj._visibleVoltage.toExponential(2) + " V"}</p>
+						<p>${this.message("Spannung")}: ${this.curr_obj._visibleVoltage.toExponential(2) + " V"}</p>
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 						`;
 				}
@@ -2652,8 +2659,8 @@ export class ChemLab extends LitElementWw {
 				this.activateEComp.style.display = "none";
 				this.contextEchemInfo.innerHTML = `
 						<div style="display: flex; flex-direction: column; align-content: flex-start; align-items: flex-start">
-							<sl-tag id="contextTag" variant="neutral" size="small" style="margin: 5px">${this.dictionary[this.curr_obj._material.name]}</sl-tag>
-							<p>${typeof this.curr_obj._connectedMix != "undefined" ? "verbunden" : "nicht verbunden"}</p>
+							<sl-tag id="contextTag" variant="neutral" size="small" style="margin: 5px">${this.itemName(this.curr_obj._material.name)}</sl-tag>
+							<p>${typeof this.curr_obj._connectedMix != "undefined" ? this.message("verbunden") : this.message("nicht verbunden")}</p>
 						</div>
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 						`;
@@ -2686,7 +2693,7 @@ export class ChemLab extends LitElementWw {
 		let type: string = name.split(":")[0];
 		let id: number = Number.parseInt(name.split(":")[1]);
 
-		this.settings_drawer.innerHTML = this.dictionary[type];
+		this.localizeControl(this.settings_drawer, "textContent", this.dictionary[type]);
 
 		if (
 			Object.values(chemlib.ComponentType).includes(
@@ -2710,7 +2717,7 @@ export class ChemLab extends LitElementWw {
 						let bondType: SlOption = this.shadowRoot.createElement(
 							"sl-option"
 						) as SlOption;
-						bondType.innerHTML = this.dictionary[key];
+						this.localizeControl(bondType, "textContent", this.dictionary[key]);
 						bondType.value = key;
 						this.bond_sel_3.appendChild(bondType);
 					}
@@ -2730,10 +2737,10 @@ export class ChemLab extends LitElementWw {
 
 			if (chemlib_obj._content._activeMolecules.length > 0) {
 				this.property_tag.variant = "primary";
-				this.property_tag.innerHTML = "Inhalt";
+				this.localizeControl(this.property_tag, "textContent", "Inhalt");
 			} else {
 				this.property_tag.variant = "warning";
-				this.property_tag.innerHTML = "leer";
+				this.localizeControl(this.property_tag, "textContent", "leer");
 			}
 
 			let canvas_arr: string[] =
@@ -2860,7 +2867,7 @@ export class ChemLab extends LitElementWw {
 							eComp._type +
 							":" +
 							this.allEComponents.indexOf(eComp);
-						option.innerHTML = this.dictionary[eComp._type];
+						option.innerHTML = this.itemName(eComp._type);
 						option.onpointerover = (event) => {
 							this.app.stage.children.forEach((sprite) => {
 								if (
@@ -2912,9 +2919,9 @@ export class ChemLab extends LitElementWw {
 						let tag: SlTag = this.shadowRoot.createElement(
 							"sl-tag"
 						) as SlTag;
-						tag.innerHTML = this.dictionary[conComp._type];
+						tag.innerHTML = this.itemName(conComp._type);
 						tag.style.margin = "5px";
-						tag.title = "Doppelklicken zum Lösen der Verbindung."
+						this.localizeControl(tag, "title", "Doppelklicken zum Lösen der Verbindung.");
 						tag.addEventListener("pointerenter", (event) => {
 							tag.variant = "success";
 							this.app.stage.children.forEach((sprite) => {
@@ -2939,10 +2946,7 @@ export class ChemLab extends LitElementWw {
 							this.curr_obj._connections.forEach((comp:chemlib.ElectricComponent)=>{
 								if(comp._connections.includes(conComp)){
 									this._emitAlert(
-										"Verbindung gelöst zwischen " +
-											this.dictionary[this.curr_obj._type] +
-											" und " +
-											this.dictionary[conComp._type],
+										this.message("Verbindung gelöst zwischen {from} und {to}", { from: this.itemName(this.curr_obj._type), to: this.itemName(conComp._type) }),
 										"danger",
 										false,
 										1500
@@ -3016,7 +3020,7 @@ export class ChemLab extends LitElementWw {
 						}
 					});
 					mixTag.innerHTML = chemlib_obj._connectedMix
-						? "Lösung in " + this.dictionary[compName]
+						? this.message("Lösung in {name}", { name: this.itemName(compName) })
 						: "kein Gemisch";
 					let matSel: SlSelect = this.shadowRoot.getElementById(
 						"electrodeSelect"
@@ -3116,10 +3120,7 @@ export class ChemLab extends LitElementWw {
 						if (eComp._connectedMix === this.curr_obj._content) {
 							eComp._connectedMix = undefined;
 							this._emitAlert(
-								eComp._type +
-									" aus " +
-									this.curr_obj._type +
-									" entfernt.",
+								this.message("{from} aus {to} entfernt.", { from: this.itemName(eComp._type), to: this.itemName(this.curr_obj._type) }),
 								"danger",
 								false,
 								1500
@@ -3146,7 +3147,7 @@ export class ChemLab extends LitElementWw {
 			);
 		}
 
-		this.settings_drawer.textContent = this.message("Objekt");
+		this.localizeControl(this.settings_drawer, "textContent", "Objekt");
 		this.settings_drawer.setAttribute("disabled", "");
 		if (this.settings_drawer.active) {
 			this.shadowRoot.getElementById("comp_panel").style.display = "none";
@@ -3221,9 +3222,9 @@ export class ChemLab extends LitElementWw {
 			"button"
 		) as HTMLButtonElement;
 		addMolButton.id = "enter";
-		addMolButton.textContent = this.message("hinzufügen");
+		this.localizeControl(addMolButton, "textContent", "hinzufügen");
 		addMolButton.onclick = (event) => {
-			this.settings_drawer.textContent = this.message("neues Molekül");
+			this.localizeControl(this.settings_drawer, "textContent", "neues Molekül");
 			this.tabPopup.active = true;
 			this.tab_select.show("settings");
 			this.contextMenu.style.display = "none";
@@ -3245,11 +3246,11 @@ export class ChemLab extends LitElementWw {
 			let delMolButton: HTMLButtonElement = this.shadowRoot.createElement(
 				"button"
 			) as HTMLButtonElement;
-			delMolButton.textContent = this.message("entfernen");
+			this.localizeControl(delMolButton, "textContent", "entfernen");
 			delMolButton.className = "remObj";
 			delMolButton.onclick = (event) => {
 				this._emitAlert(
-					"Abhängige Einträge müssen ebenfalls entfernt werden.",
+					this.message("Abhängige Einträge müssen ebenfalls entfernt werden."),
 					"primary",
 					true
 				);
@@ -3267,7 +3268,7 @@ export class ChemLab extends LitElementWw {
 			let molAtoms: SlInput = this.shadowRoot.createElement(
 				"sl-input"
 			) as SlInput;
-			molAtoms.label = "Atome";
+			this.localizeControl(molAtoms, "label", "Atome");
 			molAtoms.size = "small";
 			molAtoms.readonly = true;
 			molAtoms.value = JSON.stringify(molEntry["atoms"])
@@ -3279,7 +3280,7 @@ export class ChemLab extends LitElementWw {
 				"sl-input"
 			) as SlInput;
 			molBonds.autocomplete = "off";
-			molBonds.label = "Bindungen";
+			this.localizeControl(molBonds, "label", "Bindungen");
 			molBonds.size = "small";
 			molBonds.readonly = true;
 			molBonds.value = JSON.stringify(molEntry["bonds"])
@@ -3306,7 +3307,7 @@ export class ChemLab extends LitElementWw {
 			"button"
 		) as HTMLButtonElement;
 		addMixButton.id = "enter";
-		addMixButton.textContent = this.message("hinzufügen");
+		this.localizeControl(addMixButton, "textContent", "hinzufügen");
 		addMixButton.onclick = (event) => {
 			// @ts-ignore
 			let mixDetails: SlDetails = this.shadowRoot.createElement(
@@ -3317,7 +3318,7 @@ export class ChemLab extends LitElementWw {
 			let setMixButton: HTMLButtonElement = this.shadowRoot.createElement(
 				"button"
 			) as HTMLButtonElement;
-			setMixButton.textContent = this.message("speichern");
+			this.localizeControl(setMixButton, "textContent", "speichern");
 			setMixButton.id = "foldMenu";
 			setMixButton.onclick = (event) => {
 				let newMixEntry: object = {
@@ -3339,7 +3340,7 @@ export class ChemLab extends LitElementWw {
 			let delMixButton: HTMLButtonElement = this.shadowRoot.createElement(
 				"button"
 			) as HTMLButtonElement;
-			delMixButton.textContent = this.message("entfernen");
+			this.localizeControl(delMixButton, "textContent", "entfernen");
 			delMixButton.className = "remObj";
 			delMixButton.onclick = (event) => {
 				let arrCopy: object[] = [];
@@ -3360,7 +3361,7 @@ export class ChemLab extends LitElementWw {
 				"sl-input"
 			) as SlInput;
 			mixName.autocomplete = "off";
-			mixName.label = "Name";
+			this.localizeControl(mixName, "label", "Name");
 			mixName.size = "small";
 			mixName.readonly = false;
 			// @ts-ignore
@@ -3368,7 +3369,7 @@ export class ChemLab extends LitElementWw {
 				"sl-input"
 			) as SlInput;
 			mixMolAmount.autocomplete = "off";
-			mixMolAmount.label = "Molekül: Stoffmenge";
+			this.localizeControl(mixMolAmount, "label", "Molekül: Stoffmenge");
 			mixMolAmount.size = "small";
 			mixMolAmount.type = "number";
 			mixMolAmount.placeholder = "mol";
@@ -3383,7 +3384,7 @@ export class ChemLab extends LitElementWw {
 			let mixContent: SlSelect = this.shadowRoot.createElement(
 				"sl-select"
 			) as SlSelect;
-			mixContent.label = "Molekül: Auswahl";
+			this.localizeControl(mixContent, "label", "Molekül: Auswahl");
 			mixContent.size = "small";
 			mixContent.hoist = true;
 			mixContent.multiple = true;
@@ -3435,11 +3436,11 @@ export class ChemLab extends LitElementWw {
 			let delMixButton: HTMLButtonElement = this.shadowRoot.createElement(
 				"button"
 			) as HTMLButtonElement;
-			delMixButton.textContent = this.message("entfernen");
+			this.localizeControl(delMixButton, "textContent", "entfernen");
 			delMixButton.className = "remObj";
 			delMixButton.onclick = (event) => {
 				this._emitAlert(
-					"Abhängige Einträge müssen ebenfalls entfernt werden.",
+					this.message("Abhängige Einträge müssen ebenfalls entfernt werden."),
 					"primary",
 					true
 				);
@@ -3461,7 +3462,7 @@ export class ChemLab extends LitElementWw {
 				"sl-input"
 			) as SlInput;
 			mixContent.autocomplete = "off";
-			mixContent.label = "Inhalt";
+			this.localizeControl(mixContent, "label", "Inhalt");
 			mixContent.size = "small";
 			mixContent.readonly = true;
 			mixContent.value = JSON.stringify(mixEntry["content"])
@@ -3487,7 +3488,7 @@ export class ChemLab extends LitElementWw {
 			"button"
 		) as HTMLButtonElement;
 		addCompButton.id = "enter";
-		addCompButton.textContent = this.message("hinzufügen");
+		this.localizeControl(addCompButton, "textContent", "hinzufügen");
 		addCompButton.onclick = (event) => {
 			// @ts-ignore
 			let compDetails: SlDetails = this.shadowRoot.createElement(
@@ -3496,14 +3497,14 @@ export class ChemLab extends LitElementWw {
 			compDetails.summary = "neues Objekt";
 			// @ts-ignore
 			let setCompButton: HTMLButtonElement = this.shadowRoot.createElement("button") as HTMLButtonElement;
-			setCompButton.textContent = this.message("speichern");
+			this.localizeControl(setCompButton, "textContent", "speichern");
 			setCompButton.id = "foldMenu";
 			setCompButton.onclick = (event) => {
 				if (compType.value != "") {
 					if (compType.value === "Electrode") {
 						if (compMaterial.value === "") {
 							this._emitAlert(
-								"Der Elektrode muss ein Material zugewiesen werden!",
+								this.message("Der Elektrode muss ein Material zugewiesen werden!"),
 								"warning",
 								true
 							);
@@ -3533,7 +3534,7 @@ export class ChemLab extends LitElementWw {
 					this._listCompConfig();
 				} else {
 					this._emitAlert(
-						"es muss ein Objekttyp angegeben werden!",
+						this.message("es muss ein Objekttyp angegeben werden!"),
 						"warning",
 						true
 					);
@@ -3541,7 +3542,7 @@ export class ChemLab extends LitElementWw {
 			};
 			// @ts-ignore
 			let delCompButton: HTMLButtonElement = this.shadowRoot.createElement("button") as HTMLButtonElement;
-			delCompButton.textContent = this.message("entfernen");
+			this.localizeControl(delCompButton, "textContent", "entfernen");
 			delCompButton.className = "remObj";
 			delCompButton.onclick = (event) => {
 				compDetails.remove();
@@ -3550,7 +3551,7 @@ export class ChemLab extends LitElementWw {
 			let compType: SlSelect = this.shadowRoot.createElement(
 				"sl-select"
 			) as SlInput;
-			compType.label = "Typ";
+			this.localizeControl(compType, "label", "Typ");
 			compType.size = "small";
 			compType.hoist = true;
 			Object.values(chemlib.ComponentType).forEach((type) => {
@@ -3560,7 +3561,7 @@ export class ChemLab extends LitElementWw {
 						"sl-option"
 					) as SlOption;
 					typeOption.value = type.replace(type[0], type[0].toUpperCase());
-					typeOption.innerHTML = this.dictionary[type]
+					typeOption.innerHTML = this.itemName(type)
 					compType.appendChild(typeOption);
 				}
 
@@ -3635,10 +3636,10 @@ export class ChemLab extends LitElementWw {
 				"sl-input"
 			) as SlInput;
 			compMixVolume.autocomplete = "off";
-			compMixVolume.label = "Inhalt: Volumen";
+			this.localizeControl(compMixVolume, "label", "Inhalt: Volumen");
 			compMixVolume.size = "small";
 			compMixVolume.type = "number";
-			compMixVolume.placeholder = "Milliliter";
+			this.localizeControl(compMixVolume, "placeholder", "Milliliter");
 			compMixVolume.min = 0;
 			compMixVolume.readonly = false;
 			compMixVolume.oninput = (event) => {
@@ -3656,7 +3657,7 @@ export class ChemLab extends LitElementWw {
 			let compContent: SlSelect = this.shadowRoot.createElement(
 				"sl-select"
 			) as SlSelect;
-			compContent.label = "Inhalt: Auswahl";
+			this.localizeControl(compContent, "label", "Inhalt: Auswahl");
 			compContent.size = "small";
 			compContent.hoist = true;
 			compContent.multiple = true;
@@ -3691,7 +3692,7 @@ export class ChemLab extends LitElementWw {
 				"sl-input"
 			) as SlInput;
 			compVoltage.autocomplete = "off";
-			compVoltage.label = "Spannung";
+			this.localizeControl(compVoltage, "label", "Spannung");
 			compVoltage.size = "small";
 			compVoltage.readonly = false;
 			// @ts-ignore
@@ -3699,16 +3700,16 @@ export class ChemLab extends LitElementWw {
 				"sl-input"
 			) as SlInput;
 			compCurrent.autocomplete = "off";
-			compCurrent.label = "Stromstärke";
+			this.localizeControl(compCurrent, "label", "Stromstärke");
 			compCurrent.size = "small";
 			compCurrent.readonly = false;
 			// @ts-ignore
 			let compMaterial: SlSelect = this.shadowRoot.createElement(
 				"sl-select"
 			) as SlInput;
-			compMaterial.label = "Material";
+			this.localizeControl(compMaterial, "label", "Material");
 			compMaterial.size = "small";
-			compMaterial.placeholder = "Element"
+			this.localizeControl(compMaterial, "placeholder", "Element");
 			compMaterial.hoist = true;
 			this.availableMolecules.forEach((molEntry) => {
 				if(molEntry["atoms"].length === 1){
@@ -3751,7 +3752,7 @@ export class ChemLab extends LitElementWw {
 			compDetails.id = compEntry["id"];
 			// @ts-ignore
 			let delCompButton: HTMLButtonElement = this.shadowRoot.createElement("button") as HTMLButtonElement;
-			delCompButton.textContent = this.message("entfernen");
+			this.localizeControl(delCompButton, "textContent", "entfernen");
 			delCompButton.className = "remObj";
 			delCompButton.onclick = (event) => {
 				let arrCopy: object[] = [];
@@ -3801,7 +3802,7 @@ export class ChemLab extends LitElementWw {
 				"sl-input"
 			) as SlInput;
 			compContent.autocomplete = "off";
-			compContent.label = "Inhalt";
+			this.localizeControl(compContent, "label", "Inhalt");
 			compContent.size = "small";
 			compContent.readonly = true;
 			if (typeof compEntry["content"] != "undefined") {
@@ -3819,7 +3820,7 @@ export class ChemLab extends LitElementWw {
 				"sl-input"
 			) as SlInput;
 			compVoltage.autocomplete = "off";
-			compVoltage.label = "Spannung";
+			this.localizeControl(compVoltage, "label", "Spannung");
 			compVoltage.size = "small";
 			compVoltage.readonly = true;
 			if (typeof compEntry["voltage"] != "undefined") {
@@ -3832,7 +3833,7 @@ export class ChemLab extends LitElementWw {
 			let compCurrent: SlInput = this.shadowRoot.createElement(
 				"sl-input"
 			) as SlInput;
-			compCurrent.label = "Stromstärke";
+			this.localizeControl(compCurrent, "label", "Stromstärke");
 			compCurrent.size = "small";
 			compCurrent.readonly = true;
 			if (typeof compEntry["current"] != "undefined") {
@@ -3846,7 +3847,7 @@ export class ChemLab extends LitElementWw {
 				"sl-input"
 			) as SlInput;
 			compMaterial.autocomplete = "off";
-			compMaterial.label = "Material";
+			this.localizeControl(compMaterial, "label", "Material");
 			compMaterial.size = "small";
 			compMaterial.readonly = true;
 			if (typeof compEntry["material"] != "undefined") {
@@ -3911,7 +3912,7 @@ export class ChemLab extends LitElementWw {
 
 		for (const en_key in chemlib.ComponentType) {
 			if(en_key.toLowerCase() != "separatingfunnel" && en_key.toLowerCase() != "condenser"){
-				let key: string = this.dictionary[en_key.toLowerCase()];
+				const key = en_key.toLowerCase();
 				// @ts-ignore
 				let elem: SlMenuItem = this.shadowRoot.createElement(
 					"sl-menu-item"
@@ -3920,7 +3921,7 @@ export class ChemLab extends LitElementWw {
 					this._addComponent(false, en_key);
 					this.contextMenu.style.display = "none";
 				});
-				elem.innerHTML = key;
+				this.localizeControl(elem, "textContent", this.dictionary[key]);
 				elem.value = key;
 				details.appendChild(elem);
 				// @ts-ignore
@@ -3928,7 +3929,7 @@ export class ChemLab extends LitElementWw {
 					"sl-option"
 				) as SlOption;
 				toElem.style.fontSize = "11pt";
-				toElem.innerHTML = key;
+				this.localizeControl(toElem, "textContent", this.dictionary[key]);
 				toElem.value = key;
 				this.invCompSelect.appendChild(toElem);
 			}
@@ -3950,7 +3951,7 @@ export class ChemLab extends LitElementWw {
 
 		for (const en_key in chemlib.EComponentType) {
 			if (en_key.toLowerCase() != "cable") {
-				let key: string = this.dictionary[en_key.toLowerCase()];
+				const key = en_key.toLowerCase();
 				// @ts-ignore
 				let elem: SlMenuItem = this.shadowRoot.createElement(
 					"sl-menu-item"
@@ -3959,7 +3960,7 @@ export class ChemLab extends LitElementWw {
 					this._addComponent(true, en_key);
 					this.contextMenu.style.display = "none";
 				});
-				elem.innerHTML = key;
+				this.localizeControl(elem, "textContent", this.dictionary[key]);
 				elem.value = key;
 				details.appendChild(elem);
 				// @ts-ignore
@@ -3967,7 +3968,7 @@ export class ChemLab extends LitElementWw {
 					"sl-option"
 				) as SlOption;
 				toElem.style.fontSize = "11pt";
-				toElem.innerHTML = key;
+				this.localizeControl(toElem, "textContent", this.dictionary[key]);
 				toElem.value = key;
 				this.invCompSelect.appendChild(toElem);
 			}
@@ -4075,7 +4076,7 @@ export class ChemLab extends LitElementWw {
 					let atom_option_1: SlOption = this.shadowRoot.createElement(
 						"sl-option"
 					) as SlOption;
-					atom_option_1.innerHTML = atom.getName() + ":" + atom._id;
+					atom_option_1.textContent = this.itemName(atom.getName()) + ":" + atom._id;
 					atom_option_1.value = atom.getName() + ":" + atom._id;
 					this.bond_sel_1.appendChild(atom_option_1);
 
@@ -4083,16 +4084,15 @@ export class ChemLab extends LitElementWw {
 					let atom_option_2: SlOption = this.shadowRoot.createElement(
 						"sl-option"
 					) as SlOption;
-					atom_option_2.innerHTML = atom.getName() + ":" + atom._id;
+					atom_option_2.textContent = this.itemName(atom.getName()) + ":" + atom._id;
 					atom_option_2.value = atom.getName() + ":" + atom._id;
 					this.bond_sel_2.appendChild(atom_option_2);
 				});
 				this.requestUpdate();
 			});
-			atom.title =
-				this.dictionary[atom_data["name"].toLowerCase()] +
-				"\n" +
-				this.dictionary[atom_data["category"]];
+			atom.dataset.elementName = atom_data["name"].toLowerCase();
+			atom.dataset.elementCategory = atom_data["category"];
+			atom.title = this.itemName(atom.dataset.elementName) + "\n" + this.itemName(atom.dataset.elementCategory);
 			atom.innerHTML = atom_data["symbol"];
 			atom.style.minWidth = "20px";
 			atom_container.appendChild(atom);
@@ -4490,12 +4490,12 @@ export class ChemLab extends LitElementWw {
 
 		// @ts-ignore
 		let atomOption1: SlOption = this.shadowRoot.createElement("sl-option");
-		atomOption1.innerHTML = atom.getName() + ":" + atom._id;
+		atomOption1.textContent = this.itemName(atom.getName()) + ":" + atom._id;
 		atomOption1.value = atom.getName() + ":" + atom._id;
 		this.bond_sel_1.appendChild(atomOption1);
 		// @ts-ignore
 		let atomOption2: SlOption = this.shadowRoot.createElement("sl-option");
-		atomOption2.innerHTML = atom.getName() + ":" + atom._id;
+		atomOption2.textContent = this.itemName(atom.getName()) + ":" + atom._id;
 		atomOption2.value = atom.getName() + ":" + atom._id;
 		this.bond_sel_2.appendChild(atomOption2);
 	}
@@ -4516,7 +4516,7 @@ export class ChemLab extends LitElementWw {
 		} else {
 			if (this.curr_mol._atoms.length === 0) {
 				this._emitAlert(
-					"Es wurde kein Atom zum Molekül hinzugefügt.",
+					this.message("Es wurde kein Atom zum Molekül hinzugefügt."),
 					"warning",
 					true
 				);
@@ -4528,7 +4528,7 @@ export class ChemLab extends LitElementWw {
 				!amountRegex.test(this.molAmount.value)
 			) {
 				this._emitAlert(
-					"Es wurde keine/eine falsche Menge angegeben. Der Wert muss eine Zahl ohne Einheit sein.",
+					this.message("Es wurde keine/eine falsche Menge angegeben. Der Wert muss eine Zahl ohne Einheit sein."),
 					"warning",
 					true
 				);
@@ -4588,7 +4588,7 @@ export class ChemLab extends LitElementWw {
 	private async _newElectrodeMat(): Promise<void> {
 		if (this.curr_mol._atoms.length > 1) {
 			this._emitAlert(
-				"Ein Elektrodenmaterial muss ein elementarer Stoff aus einem Atom sein.",
+				this.message("Ein Elektrodenmaterial muss ein elementarer Stoff aus einem Atom sein."),
 				"warning",
 				true
 			);
@@ -4626,7 +4626,7 @@ export class ChemLab extends LitElementWw {
 	private _enter(): void {
 		if (this.bond_sel_1.value === "" || this.bond_sel_2.value === "") {
 			this._emitAlert(
-				"Es wurden keine Atome für eine Bindung ausgewählt.",
+				this.message("Es wurden keine Atome für eine Bindung ausgewählt."),
 				"warning",
 				true
 			);
@@ -4650,7 +4650,7 @@ export class ChemLab extends LitElementWw {
 		}
 		if (this.bond_sel_1.value === this.bond_sel_2.value) {
 			this._emitAlert(
-				"Die ausgefählten Atome dürfen nicht die selben sein.",
+				this.message("Die ausgefählten Atome dürfen nicht die selben sein."),
 				"warning",
 				true
 			);
@@ -4674,7 +4674,7 @@ export class ChemLab extends LitElementWw {
 		}
 		if (this.bond_sel_3.value === "") {
 			this._emitAlert(
-				"Es muss eine Bindungsart ausgewählt werden.",
+				this.message("Es muss eine Bindungsart ausgewählt werden."),
 				"warning",
 				true
 			);
@@ -4799,10 +4799,7 @@ export class ChemLab extends LitElementWw {
 			if(this.curr_obj._type != "cable" && partner._type != "cable"){
 				this._emitAlert(
 					message === ""
-						? "Neue Verbindung zwischen " +
-								this.dictionary[this.curr_obj._type] +
-								" und " +
-								this.dictionary[partner._type]
+						? this.message("Neue Verbindung zwischen {from} und {to}", { from: this.itemName(this.curr_obj._type), to: this.itemName(partner._type) })
 						: message,
 					"success",
 					false,
@@ -4819,7 +4816,7 @@ export class ChemLab extends LitElementWw {
 				}
 			);
 		} else if (message != "") {
-			this._emitAlert(message, "warning", true);
+			this._emitAlert(message.split("\n").filter(Boolean).map(line => this.message(line)).join("\n"), "warning", true);
 			this._sendxAPiStatement(
 				"joined",
 				this.curr_obj._type + this.curr_obj._id,
@@ -4852,7 +4849,7 @@ export class ChemLab extends LitElementWw {
 				}
 			);
 		} else {
-			this._emitAlert(message, "warning", true);
+			this._emitAlert(message.split("\n").filter(Boolean).map(line => this.message(line)).join("\n"), "warning", true);
 			this._sendxAPiStatement(
 				"removed",
 				"eCon " + this.curr_obj._type + this.curr_obj._id,
@@ -4952,7 +4949,7 @@ export class ChemLab extends LitElementWw {
 		closable: boolean,
 		duration?: number
 	) {
-		this.shadowRoot.getElementById("dialogText").innerHTML = text;
+		this.shadowRoot.getElementById("dialogText").textContent = text;
 		// @ts-ignore
 		this.dialogAlert.variant = variant;
 		this.dialogAlert.closable = closable;
@@ -5263,14 +5260,14 @@ export class ChemLab extends LitElementWw {
 		let cDetails = this.shadowRoot.getElementById("details_comp");
 
 		for (let i = 0; i < eDetails.childElementCount; i++) {
-			if (this.invComponents.includes(eDetails.children[i].innerHTML)) {
+			if (this.invComponents.includes((eDetails.children[i] as SlMenuItem).value)) {
 				eDetails.children[i].setAttribute("disabled", "true");
 			} else {
 				eDetails.children[i].removeAttribute("disabled");
 			}
 		}
 		for (let i = 0; i < cDetails.childElementCount; i++) {
-			if (this.invComponents.includes(cDetails.children[i].innerHTML)) {
+			if (this.invComponents.includes((cDetails.children[i] as SlMenuItem).value)) {
 				cDetails.children[i].setAttribute("disabled", "true");
 			} else {
 				cDetails.children[i].removeAttribute("disabled");
@@ -5361,6 +5358,7 @@ export class ChemLab extends LitElementWw {
 					>
 						<p>${this.message("Aktion bestätigen:")}</p>
 						<button
+							aria-label=${this.message("bestätigen")}
 							@click="${(event) => {
 								this.confirmAction = 1;
 								this.confirmDialog.hide();
@@ -5381,6 +5379,7 @@ export class ChemLab extends LitElementWw {
 							</svg>
 						</button>
 						<button
+							aria-label=${this.message("Abbrechen")}
 							@click="${(event) => {
 								this.confirmAction = 2;
 								this.confirmDialog.hide();
@@ -5456,6 +5455,7 @@ export class ChemLab extends LitElementWw {
 				>
 					<button
 						id="buttonFullscreen"
+						aria-label=${this.message("Vollbild an/aus")}
 						disabled
 						@click="${() => {
 							if (
@@ -5524,6 +5524,7 @@ export class ChemLab extends LitElementWw {
 					</button>
 					<button
 						id="changeInput"
+						aria-label=${this.message("Eingabemodus")}
 						@click="${(event) => {
 							this._changeInputMode(
 								event.target as HTMLButtonElement
@@ -5544,6 +5545,7 @@ export class ChemLab extends LitElementWw {
 					</button>
 					<button
 						id="toggleDrag"
+						aria-label=${this.message("Dragging an/aus")}
 						@click="${(event) => {
 							this._toggleDrag(event.target as HTMLButtonElement);
 						}}"
@@ -5753,7 +5755,7 @@ export class ChemLab extends LitElementWw {
 										d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"
 									/>
 								</svg>
-								${this.dictionary[this.curr_name.split(":")[0]]} löschen
+								${this.message("{name} löschen", { name: this.itemName(this.curr_name.split(":")[0]) })}
 							</button>
 							<button
 								id="foldMenu"
@@ -6080,14 +6082,14 @@ export class ChemLab extends LitElementWw {
 																			this.requestUpdate();
 																		} else {
 																			this._emitAlert(
-																				"Das Volumen muss größer als Null sein.",
+																				this.message("Das Volumen muss größer als Null sein."),
 																				"warning",
 																				true
 																			);
 																		}
 																	} else {
 																		this._emitAlert(
-																			"Es muss ein Volumen angegeben werden.",
+																			this.message("Es muss ein Volumen angegeben werden."),
 																			"warning",
 																			true
 																		);
