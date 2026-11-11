@@ -1,0 +1,32 @@
+{
+  "name": "chemlib",
+  "version": "0.2.3",
+  "description": "chemlib is a framework to be used to support software for chemistry teaching and is intended to stand as the backend for such applications.",
+  "private": false,
+  "keywords": [
+    "chemlib",
+    "chemistry",
+    "simulation",
+    "acid-base",
+    "echem"
+  ],
+  "author": "Robin Kreft",
+  "license": "MIT",
+  "dependencies": {
+    "kekule": "^1.0.0"
+  },
+  "module": "./lib/index.js",
+  "main": "./lib-esm/index.js",
+  "exports": {
+    ".": {
+      "import": "./lib/index.js",
+      "require": "./lib-esm/index.js"
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.4.3"
+  },
+  "scripts": {
+    "build": "tsc && tsc -m es6 --outDir lib-esm"
+  }
+}
