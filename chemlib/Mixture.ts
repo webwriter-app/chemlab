@@ -21,7 +21,7 @@ class Mixture {
 	 */
 	_activeMolecules: Array<Molecule>;
 	/**
-	 * A Json object containing data for each {@link Molecule} of the mixture. Gets filed at runtime 
+	 * A Json object containing data for each {@link Molecule} of the mixture. Gets filed at runtime
 	 *
 	 * @type {{}}
 	 */
@@ -32,6 +32,14 @@ class Mixture {
 	 * @type {number}
 	 */
 	_solutionVolume: number = 0;
+
+	/** Measured volume of additions beyond the water tracked by the solution model, in L. */
+	addedVolume = 0;
+	hasLiquidVolume = false;
+
+	get contentVolume(): number {
+		return Math.max(0, this._solutionVolume) + this.addedVolume;
+	}
 	/**
 	 * Is true if the mixture is a solution
 	 *

@@ -92,34 +92,17 @@ export abstract class Simulation {
 		// Salts still dissociate explicitly into their ions, which feed the
 		// solubility model and the electrochemistry code. Iterate until the
 		// dissolution has stabilised.
-		var bRepeat: number = 0;
-		var n: number = 1;
-		while (bRepeat < n) {
-			bRepeat = 0;
-
-			var toDissolve: Array<Molecule> = [];
-			cMixture._activeMolecules.forEach((molecule) => {
-				if (StructureManager.isSalt(molecule)) {
-					toDissolve.push(molecule);
+		let changed: boolean;
+		do {
+			changed = false;
+			const salts = cMixture._activeMolecules.filter((molecule) => StructureManager.isSalt(molecule));
+			for (const salt of salts) {
+				const parts = this.cacheDissociation(salt);
+				if (parts && this.sEquilibriumSalt(cMixture, salt, parts[0], parts[1])) {
+					changed = true;
 				}
-			});
-
-			n = toDissolve.length;
-			toDissolve.forEach((cMolecule) => {
-				var parts: [Molecule, Molecule] = this.cacheDissociation(cMolecule);
-				if (parts === undefined) {
-					return;
-				}
-				bRepeat = this.sEquilibriumSalt(
-					cMixture,
-					cMolecule,
-					parts[0],
-					parts[1]
-				)
-					? bRepeat + 1
-					: bRepeat;
-			});
-		}
+			}
+		} while (changed);
 	}
 
 	/**
@@ -513,18 +496,16 @@ export abstract class Simulation {
 				: StructureManager._moleculeData["salt"][cMolecule.smilesString]["pkl"];
 		var molKl: number = Math.pow(10, -molPKl);
 
-		if (cMolP1 * cMolP2 < molKl) {
-			var nDiff: number = Math.min(
-				Math.sqrt(molKl - cMolP1 * cMolP2) * sMix._solutionVolume,
-				nMolC
-			);
-
-			sMix.addMolecule(pMolecule1, nDiff);
-			sMix.addMolecule(pMolecule2, nDiff);
-			sMix.changeMolecule(cMolecule._id, -nDiff);
-		}
-
-		return nDiff < 1e-5;
+		const deficit = molKl - cMolP1 * cMolP2;
+		if (deficit <= 0 || nMolC <= 0 || sMix._solutionVolume <= 0) return false;
+		const sum = cMolP1 + cMolP2;
+		const concentration = 2 * deficit / (Math.sqrt(sum * sum + 4 * deficit) + sum);
+		const amount = Math.min(concentration * sMix._solutionVolume, nMolC);
+		if (!(amount > 0)) return false;
+		sMix.addMolecule(pMolecule1, amount);
+		sMix.addMolecule(pMolecule2, amount);
+		sMix.changeMolecule(cMolecule._id, -amount);
+		return amount > 1e-5;
 	}
 
 	/**

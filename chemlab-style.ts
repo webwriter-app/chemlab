@@ -1043,40 +1043,230 @@ export const style = css`
 	#upper {
 		position: relative;
 		box-sizing: border-box;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr) auto;
 		width: 800px;
+		max-width: 100%;
 		height: 600px;
-		border-width: 2px;
-		border-style: solid;
+		border: 2px solid #6a6a6a;
 		border-radius: 5px;
-		border-color: #6a6a6a;
-		/* Light neutral background with a repeating grid. The PIXI canvas is
-		   transparent, so this shows through and tiles to fill any size
-		   (including fullscreen) with no JS. */
-		background-color: #f7f7f5;
-		background-image: linear-gradient(
-				to right,
-				#d8d8d8 1px,
-				transparent 1px
-			),
-			linear-gradient(to bottom, #d8d8d8 1px, transparent 1px);
-		background-size: 20px 20px;
+		background: #f7f7f5;
 	}
-	/* When the widget itself is the fullscreen element, make it fill the screen
-	   so #upper (sized to 100%) can fill it too. */
-	:host(:fullscreen) {
+	#upper.show-object-panel {
+		grid-template-columns: minmax(0, 1fr) min(44%, 38rem);
+	}
+	:host(:fullscreen),
+	:host(:fullscreen) #upper {
 		width: 100%;
 		height: 100%;
 	}
-	#tab_select {
-		position: absolute;
-		top: 0px;
-		left: 0px;
-		background-color: #ffffff69;
-		width: 100%;
-		backdrop-filter: blur(20px);
+	#objectArea {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 4px;
+		min-width: 0;
+		min-height: 0;
 	}
-	#settings_drawer::part(base) {
-		color: var(--sl-color-red-800);
+	#upper:not(.show-object-panel) #objectArea {
+		position: absolute;
+		top: 2.25rem;
+		inset-inline-end: 4px;
+		max-width: min(13rem, 45%);
+		pointer-events: none;
+	}
+	#objectArea > * {
+		pointer-events: auto;
+	}
+	#upper.show-object-panel #objectArea {
+		padding: 6px;
+		border-inline-start: 1px solid var(--sl-color-neutral-200);
+		background: var(--sl-color-neutral-0);
+	}
+	#objectPanel {
+		align-self: stretch;
+		flex: 1;
+		min-height: 0;
+		overflow: auto;
+	}
+	#toggleObjectPanel::part(label) {
+		display: flex;
+		align-items: center;
+		padding-inline: 6px;
+	}
+	.panel-button-label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+	#canvasArea {
+		position: relative;
+		container-type: size;
+		display: grid;
+		place-items: center;
+		min-width: 0;
+		min-height: 0;
+	}
+	#canvasArea p_c {
+		display: block;
+		width: min(100cqw, 133.333cqh);
+	}
+	#canvasArea canvas {
+		display: block;
+		width: 100%;
+		height: auto;
+		background-color: #f7f7f5;
+		background-image:
+			linear-gradient(to right, #d8d8d8 1px, transparent 1px),
+			linear-gradient(to bottom, #d8d8d8 1px, transparent 1px);
+		background-size: 2.5% 3.3333%;
+	}
+	#contextInfoBox {
+		box-sizing: border-box;
+		width: max-content;
+		max-width: 100%;
+		max-height: min(11rem, 36vh);
+		overflow: auto;
+		flex-shrink: 0;
+		padding: 5px;
+		background: var(--sl-color-neutral-0);
+		border: 1px solid var(--sl-color-neutral-200);
+		border-radius: 5px;
+		font-size: 0.85rem;
+		overflow-wrap: anywhere;
+	}
+	#contextInfoBox p {
+		margin: 0.25em 0;
+	}
+	#teacherDrawer {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		min-width: 0;
+		padding: 4px 6px;
+		border-top: 1px solid var(--sl-color-neutral-200);
+		background: var(--sl-color-neutral-0);
+	}
+	#teacherDrawerContent {
+		max-height: min(15rem, 40vh);
+		overflow: auto;
+		padding: 4px 0;
+	}
+	.teacher-tabs {
+		display: flex;
+		gap: 4px;
+		margin-bottom: 6px;
+	}
+	.teacher-palette {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(6.25rem, 1fr));
+		gap: 6px;
+		margin-bottom: 8px;
+	}
+	.teacher-card {
+		min-width: 0;
+		padding: 3px;
+		border: 1px solid var(--sl-color-neutral-200);
+		border-radius: 4px;
+	}
+	.component-tile,
+	.chemical-tile {
+		box-sizing: border-box;
+		display: grid;
+		justify-items: center;
+		align-content: start;
+		gap: 3px;
+		width: 100%;
+		padding: 4px;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		background: var(--sl-color-neutral-0);
+	}
+	.component-tile {
+		cursor: grab;
+	}
+	.chemical-tile {
+		cursor: pointer;
+	}
+	.component-tile[aria-pressed="true"],
+	.chemical-tile[aria-pressed="true"] {
+		background: var(--sl-color-primary-100);
+		border-color: var(--sl-color-primary-600);
+	}
+	.component-tile img,
+	.chemical-tile img {
+		width: 60px;
+		height: 48px;
+		object-fit: contain;
+		pointer-events: none;
+	}
+	.capacity-control {
+		display: grid;
+		text-align: center;
+		font-size: 0.75rem;
+	}
+	.capacity-control input {
+		min-width: 0;
+		width: 100%;
+		margin: 0;
+	}
+	.teacher-editors {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+		gap: 8px;
+	}
+	#teacherDrawer h3 {
+		font-size: 0.9rem;
+		margin: 0.4rem 0;
+	}
+	.fill-meter {
+		position: absolute;
+		display: grid;
+		justify-items: center;
+		gap: 2px;
+		padding: 3px;
+		background: var(--sl-color-neutral-0);
+		border-radius: 4px;
+		font-size: 0.7rem;
+		pointer-events: none;
+	}
+	.fill-meter meter {
+		width: 14px;
+		height: 40px;
+		writing-mode: vertical-lr;
+		direction: rtl;
+	}
+	#contextMenu {
+		z-index: 2;
+	}
+	#settings_drawer {
+		font-size: 1rem;
+		margin: 0.25rem 0 0.5rem;
+	}
+	/* Stack the original settings sections within the narrower side panel. */
+	#objectPanel #atom_panel,
+	#objectPanel #molecule_panel {
+		display: block;
+	}
+	#objectPanel #atom_panel::part(panel),
+	#objectPanel #molecule_panel::part(panel) {
+		display: block;
+	}
+	#objectPanel #atom_panel::part(divider),
+	#objectPanel #molecule_panel::part(divider),
+	:host([panelvariant="2"]) #atom_panel::part(end),
+	:host([panelvariant="3"]) #atom_panel::part(end),
+	:host([panelvariant="3"]) #molecule_panel::part(end) {
+		display: none;
+	}
+	#objectPanel #ecomp_panel {
+		flex-wrap: wrap;
+	}
+	#objectPanel #atom_panel > [slot="end"] > div {
+		max-width: 100%;
 	}
 	#molecule_container {
 		display: block;
@@ -1102,13 +1292,9 @@ export const style = css`
 		width: max-content;
 	}
 
-	#comp_panel {
-		margin-top: -16px;
-	}
 	#ecomp_panel {
 		display: flex;
 		flex-direction: row;
-		margin-top: -16px;
 	}
 	#eCompInnerInfo {
 		display: flex;
@@ -1234,14 +1420,6 @@ export const style = css`
 		backdrop-filter: blur(20px);
 		border-radius: 5px;
 		box-shadow: 0px 6px 12px 0px rgba(0, 0, 0, 0.33);
-	}
-	#contextActionsInfo {
-		background-color: #ffffff8d;
-		backdrop-filter: blur(20px);
-		border-radius: 5px;
-		box-shadow: 0px 0px 12px 3px rgba(0, 0, 0, 0.33);
-		display: flex;
-		flex-direction: column;
 	}
 	#confirmDialog::part(overlay) {
 		visibility: hidden;

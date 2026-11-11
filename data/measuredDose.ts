@@ -1,0 +1,29 @@
+import { Mixture, Molecule, StructureManager } from "../chemlib";
+import type { ChemicalRecipe, MoleculeDefinition } from "./chemicals";
+
+export interface SavedDose {
+	recipe: ChemicalRecipe;
+	volumeMl: number;
+}
+
+export function prepareDose(recipe: ChemicalRecipe, load: (definition: MoleculeDefinition) => Molecule) {
+	const parts = recipe.parts
+		.filter(({ amount }) => Number.isFinite(amount) && amount > 0)
+		.map(({ molecule, amount }) => ({ molecule: load(molecule), amount }));
+	const mass = parts.reduce((sum, part) => sum + part.amount * part.molecule.getTotMolMass(), 0);
+	const waterMass = parts.reduce((sum, part) => StructureManager.isWater(part.molecule)
+		? sum + part.amount * part.molecule.getTotMolMass()
+		: sum, 0);
+	const gramsPerMl = waterMass > 0 ? waterMass : mass / recipe.density;
+	if (!(gramsPerMl > 0 && Number.isFinite(gramsPerMl))) return;
+
+	return (volumeMl: number): Mixture => {
+		const dose = StructureManager.newMixture();
+		for (const { molecule, amount } of parts) {
+			dose.addMolecule(molecule, amount * volumeMl / gramsPerMl);
+		}
+		dose.hasLiquidVolume = recipe.phase === "liquid";
+		dose.addedVolume = Math.max(0, volumeMl / 1000 - dose._solutionVolume);
+		return dose;
+	};
+}

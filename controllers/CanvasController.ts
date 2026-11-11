@@ -1,40 +1,9 @@
 import { ReactiveController } from "lit";
 import * as PIXI from "pixi.js";
 import * as chemlib from "../chemlib";
-import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 
-// @ts-ignore
-import beaker_svg from "../media/beaker.svg";
-// @ts-ignore
-import flask_svg from "../media/flask.svg";
-// @ts-ignore
-import burette_svg from "../media/burette.svg";
-// @ts-ignore
-import testtube_svg from "../media/testtube.svg";
-// @ts-ignore
-import cable_svg from "../media/cable.svg";
-// @ts-ignore
-import source_off_svg from "../media/source_off.svg";
-// @ts-ignore
-import voltmeter_off_svg from "../media/voltmeter_off.svg";
-// @ts-ignore
-import default_svg from "../media/default.svg";
-// @ts-ignore
-import beaker_fl_svg from "../media/beaker_full_l.svg";
-// @ts-ignore
-import beaker_fs_svg from "../media/beaker_full_s.svg";
-// @ts-ignore
-import flask_fl_svg from "../media/flask_full_l.svg";
-// @ts-ignore
-import flask_fs_svg from "../media/flask_full_s.svg";
-// @ts-ignore
-import burette_fl_svg from "../media/burette_full_l.svg";
-// @ts-ignore
-import burette_fs_svg from "../media/burette_full_s.svg";
-// @ts-ignore
-import testtube_fl_svg from "../media/testtube_full_l.svg";
-// @ts-ignore
-import testtube_fs_svg from "../media/testtube_full_S.svg";
+import { componentGraphic } from "../data/componentGraphics";
+
 
 import type { ChemLab } from "../webwriter-chemlab";
 
@@ -50,25 +19,25 @@ export class CanvasController implements ReactiveController {
 
 	/** true while a sprite drag is in progress (pointermove listener attached) */
 	private _dragActive: boolean = false;
-	/** stable pointermove handler, so it can be removed again with .off() */
-	private _dragMoveHandler = (event: any): void => {
+	private _dragMoved = false;
+	private dragPointerId: number | undefined;
+	/** Stable pointermove handler, so it can be removed again with .off(). */
+	private _dragMoveHandler = (event: PIXI.FederatedPointerEvent): void => {
+		if (event.pointerId !== this.dragPointerId) return;
+		this._dragMoved = true;
+		this.host.mousePos = [event.global.x, event.global.y];
 		this._dragMove(event);
-		this.host.contextPopup.active = false;
 	};
 	/** offset from the sprite's origin to the point where it was grabbed, so a
 	 * drag keeps that point under the pointer instead of snapping to the centre */
 	private _dragOffset: PIXI.Point = new PIXI.Point();
-	/** inactivity timer that closes the sprite context popup */
-	private _contextCloseTimer: number = undefined;
-	/** pointer-move handler that closes the context popup once the pointer
-	 * travels far enough from both the sprite and the dialog */
-	private _contextMoveHandler: (event: PointerEvent) => void = undefined;
 	/** pending long-press timer id (touch/pen context-menu trigger) */
 	private _longPressTimer: number = undefined;
 	/** stage move handler that cancels a long-press once the pointer moves */
 	private _longPressMoveHandler: (event: any) => void = undefined;
 	/** reused scratch Graphics used to rasterize each cable's curved-line texture */
 	private _cableGraphics: PIXI.Graphics = new PIXI.Graphics();
+	private cableEndpoints = new WeakMap<PIXI.Sprite, [number, number, number, number]>();
 
 	constructor(host: ChemLab) {
 		this.host = host;
@@ -121,346 +90,99 @@ export class CanvasController implements ReactiveController {
 		}
 	}
 
-	/**
-	 * Stops an in-progress drag without running the drop logic (used when a
-	 * long-press turns the gesture into a context-menu open instead of a move).
-	 *
-	 * @private
-	 */
-	private _cancelDrag(): void {
-		if (this._dragActive) {
-			this.host.app.stage.off("pointermove", this._dragMoveHandler);
-			this._dragActive = false;
-		}
-		if (
-			this.host.curr_stage_index > -1 &&
-			this.host.app.stage.children[this.host.curr_stage_index]
-		) {
-			this.host.app.stage.children[this.host.curr_stage_index].rotation = 0;
-		}
-		this.host.dragObject = undefined;
-		this.host._hideAlert();
+	viewportPoint(x: number, y: number): PIXI.Point {
+		const bounds = this.host.app.view.getBoundingClientRect();
+		const { width, height } = this.host.app.screen;
+		return new PIXI.Point(
+			bounds.left + x * bounds.width / width,
+			bounds.top + y * bounds.height / height
+		);
 	}
 
-	/**
-	 * Opens the info/actions context popup for a sprite (right-click or
-	 * long-press).
-	 *
-	 * @private
-	 * @param {PIXI.Sprite} sprite - the sprite the popup belongs to
-	 */
-	private _openSpriteContext(sprite: PIXI.Sprite): void {
-		let currSprite = this.host.app.stage.children[this.host.curr_stage_index];
-		this.host.contextPopupAnchor.style.top = currSprite.y.toString() + "px";
-		this.host.contextPopupAnchor.style.left = currSprite.x.toString() + "px";
-		this.host.contextPopupAnchor.style.width =
-			currSprite.width.toString() + "px";
-		this.host.contextPopupAnchor.style.height =
-			currSprite.height.toString() + "px";
-		this.host.contextPopup.reposition();
-
-		let contextInfoBox: HTMLDivElement = this.host.shadowRoot.getElementById(
-			"contextInfoBox"
-		) as HTMLDivElement;
-		contextInfoBox.style.visibility = "visible";
-		let contextActionsInfo: HTMLDivElement =
-			this.host.shadowRoot.getElementById(
-				"contextActionsInfo"
-			) as HTMLDivElement;
-		contextActionsInfo.style.display = "none";
-
-		this.host._updatePopup();
-
-		this.host.contextPopup.active = true;
-		this.host.contextPopup.reposition();
-		this.host.reportXApi("opened", "contextMenu-" + sprite.name);
-		this._startContextAutoClose(sprite);
-	}
-
-	/**
-	 * Auto-closes the sprite context popup opened by {@link _openSpriteContext}.
-	 * Two independent triggers: an inactivity timeout (reset while the pointer
-	 * is over the dialog) and a distance check that closes it once the pointer
-	 * moves far enough from both the sprite and the dialog.
-	 *
-	 * @private
-	 * @param {PIXI.Sprite} sprite - the sprite the popup belongs to
-	 */
-	private _startContextAutoClose(sprite: PIXI.Sprite): void {
-		this._stopContextAutoClose();
-		const TIMEOUT: number = 4000; // ms of inactivity before closing
-		const DISTANCE: number = 150; // px from the sprite or dialog edge
-
-		const resetTimer = () => {
-			if (this._contextCloseTimer !== undefined) {
-				window.clearTimeout(this._contextCloseTimer);
-			}
-			this._contextCloseTimer = window.setTimeout(
-				() => this._closeSpriteContext(),
-				TIMEOUT
-			);
-		};
-		resetTimer();
-
-		const distToRect = (x, y, r): number => {
-			const dx: number = Math.max(r.left - x, 0, x - r.right);
-			const dy: number = Math.max(r.top - y, 0, y - r.bottom);
-			return Math.sqrt(dx * dx + dy * dy);
-		};
-
-		this._contextMoveHandler = (event: PointerEvent) => {
-			// self-clean if the popup was closed by some other path
-			if (!this.host.contextPopup.active) {
-				this._stopContextAutoClose();
-				return;
-			}
-			const infoBox: HTMLDivElement = this.host.shadowRoot.getElementById(
-				"contextInfoBox"
-			) as HTMLDivElement;
-			const dialogRect = infoBox.getBoundingClientRect();
-			const canvasRect = (
-				this.host.app.view as HTMLCanvasElement
-			).getBoundingClientRect();
-			const b = sprite.getBounds();
-			const spriteRect = {
-				left: canvasRect.left + b.x,
-				top: canvasRect.top + b.y,
-				right: canvasRect.left + b.x + b.width,
-				bottom: canvasRect.top + b.y + b.height,
-			};
-			const distDialog: number = distToRect(
-				event.clientX,
-				event.clientY,
-				dialogRect
-			);
-			// over the dialog: keep it open and restart the inactivity timer
-			if (distDialog === 0) {
-				resetTimer();
-				return;
-			}
-			const distSprite: number = distToRect(
-				event.clientX,
-				event.clientY,
-				spriteRect
-			);
-			if (distDialog > DISTANCE && distSprite > DISTANCE) {
-				this._closeSpriteContext();
-			}
-		};
-		window.addEventListener("pointermove", this._contextMoveHandler);
-	}
-
-	/**
-	 * Tears down the context auto-close timer and pointer listener.
-	 *
-	 * @private
-	 */
-	private _stopContextAutoClose(): void {
-		if (this._contextCloseTimer !== undefined) {
-			window.clearTimeout(this._contextCloseTimer);
-			this._contextCloseTimer = undefined;
-		}
-		if (this._contextMoveHandler !== undefined) {
-			window.removeEventListener("pointermove", this._contextMoveHandler);
-			this._contextMoveHandler = undefined;
-		}
-	}
-
-	/**
-	 * Closes the sprite context popup and stops its auto-close watchers.
-	 *
-	 * @private
-	 */
-	private _closeSpriteContext(): void {
-		this.host.contextPopup.active = false;
-		this._stopContextAutoClose();
-	}
-
-	/**
-	 * Opens the canvas "new object" menu at the given viewport coordinates
-	 * (right-click or long-press on empty canvas).
-	 *
-	 * @private
-	 * @param {number} x - viewport x in px
-	 * @param {number} y - viewport y in px
-	 */
 	private _openCanvasMenu(x: number, y: number): void {
-		this.host.contextMenu.style.display = "";
-		this.host.contextMenu.style.top = Math.round(y).toString() + "px";
-		this.host.contextMenu.style.left = Math.round(x).toString() + "px";
-		this.host.contextPopup.active = false;
+		const point = this.viewportPoint(x, y);
+		const workspace = this.host.containerDiv;
+		const bounds = workspace.getBoundingClientRect();
+		const menu = this.host.contextMenu;
+		menu.style.display = "";
+		menu.style.top = `${point.y - bounds.top - workspace.clientTop}px`;
+		menu.style.left = `${point.x - bounds.left - workspace.clientLeft}px`;
 		this.host.reportXApi("opened", "objectMenu");
 	}
 
-	/** No reactive lifecycle work; the canvas is driven imperatively. */
-	hostConnected(): void {}
+	hostConnected(): void {
+		this.host.app?.start();
+	}
+
+	hostDisconnected(): void {
+		this.cancelPointerInteraction();
+		this.host.app?.stop();
+	}
+
+	private cancelPointerInteraction(): void {
+		this._clearLongPress();
+		this.host.app?.stage.off("globalpointermove", this._dragMoveHandler);
+		this._dragActive = false;
+		this.dragPointerId = undefined;
+
+		this.host.dragObject = undefined;
+	}
+
+	removeSprite(sprite: PIXI.DisplayObject): void {
+		this.host.app.stage.removeChild(sprite);
+		if (sprite instanceof PIXI.Sprite && sprite.texture instanceof PIXI.RenderTexture) {
+			sprite.texture.destroy(true);
+		}
+		sprite.destroy();
+	}
+
+	clearSprites(): void {
+		this.cancelPointerInteraction();
+		for (const sprite of [...this.host.app.stage.children]) this.removeSprite(sprite);
+	}
+
+	setDeviceActive(sprite: PIXI.Sprite, active: boolean): void {
+		const graphic = componentGraphic(sprite.name.split(":")[0]);
+		sprite.texture = PIXI.Texture.from(active ? graphic.active ?? graphic.url : graphic.url);
+	}
 	/**
 	 * adds a new sprite to the canvas
 	 *
 	 * @private
 	 * @param {string} info - a string containing the name of the object and its id
 	 */
-	_addSprite(info: string): void {
-		let spriteHeight: number = 0;
-		let spriteWidth: number = 0;
-		let spriteTexture: any = null;
-
-		switch (info.split(":")[0]) {
-			case "beaker":
-				spriteHeight = 130;
-				spriteWidth = 100;
-				spriteTexture = beaker_svg;
-				break;
-			case "flask":
-				spriteHeight = 156;
-				spriteWidth = 120;
-				spriteTexture = flask_svg;
-				break;
-			case "burette":
-				spriteHeight = 400;
-				spriteWidth = 80;
-				spriteTexture = burette_svg;
-				break;
-			case "testtube":
-				spriteHeight = 150;
-				spriteWidth = 80;
-				spriteTexture = testtube_svg;
-				break;
-			case "cable":
-				spriteHeight = 50;
-				spriteWidth = 3;
-				spriteTexture = cable_svg;
-				break;
-			case "source":
-				spriteHeight = 150;
-				spriteWidth = 200;
-				spriteTexture = source_off_svg;
-				break;
-			case "voltmeter":
-				spriteHeight = 150;
-				spriteWidth = 200;
-				spriteTexture = voltmeter_off_svg;
-				break;
-			case "electrode":
-				spriteHeight = 70;
-				spriteWidth = 25;
-				spriteTexture = default_svg;
-				break;
-			default:
-				spriteHeight = 70;
-				spriteWidth = 50;
-				spriteTexture = default_svg;
-				break;
-		}
-		let sprite = PIXI.Sprite.from(spriteTexture);
+	_addSprite(info: string, select = true, capacityMl?: number): PIXI.Sprite {
+		const graphic = componentGraphic(info.split(":")[0]);
+		const sprite = PIXI.Sprite.from(graphic.url);
+		const scale = graphic.capacityMl && capacityMl ? Math.cbrt(capacityMl / graphic.capacityMl) : 1;
 
 		sprite.anchor.set(0.5);
 
 		sprite.x = this.host.mousePos[0];
 		sprite.y = this.host.mousePos[1];
-		sprite.width = spriteWidth;
-		sprite.height = spriteHeight;
+		sprite.width = graphic.width * scale;
+		sprite.height = graphic.height * scale;
 		sprite.eventMode = "static";
 		sprite.cursor = "pointer";
 		sprite.on("pointerdown", (event) => {
+			event.stopPropagation();
+			if (this._dragActive) return;
+			this.host.contextMenu.style.display = "none";
+			this.host.mousePos = [event.global.x, event.global.y];
+			if (event.button === 0 && this.host.beginChemicalDose(sprite, event.pointerId)) return;
+			const drag = event.button === 0 && !sprite.name.startsWith("cable:");
 			this.host._getObject(sprite);
 			this.host.reportXApi("focused", sprite.name);
-
-			let contextBadge: SlBadge = this.host.shadowRoot.getElementById(
-				"contextBadge"
-			) as SlBadge;
-			contextBadge.textContent = this.host.itemName(sprite.name.split(":")[0]);
-
-			if (event.pointerType === "mouse") {
-				// left button drags, right button opens the context popup
-				if (event.button === 2) {
-					this._openSpriteContext(sprite);
-				} else {
-					this._dragStart(sprite, event);
-				}
-			} else {
-				// touch / pen: move to drag, press-and-hold for the context popup
-				this._dragStart(sprite, event);
-				this._armLongPress(() => {
-					this._cancelDrag();
-					this._openSpriteContext(sprite);
-				}, event);
-			}
-		});
-		sprite.on("mouseenter", async (event) => {
-			await this.host.waitUntil(() => {
-				return true;
-			}, 500);
-			if (this.host.app.stage.children.indexOf(sprite) === -1) {
-				return;
-			}
-			if (
-				!this._mouseInbounds(this.host.app.stage.children.indexOf(sprite), 0)
-			) {
-				return;
-			}
-
-			let contextBadge: SlBadge = this.host.shadowRoot.getElementById(
-				"contextBadge"
-			) as SlBadge;
-			let contextInfoBox: HTMLDivElement = this.host.shadowRoot.getElementById(
-				"contextInfoBox"
-			) as HTMLDivElement;
-			let contextActionsInfo: HTMLDivElement =
-				this.host.shadowRoot.getElementById(
-					"contextActionsInfo"
-				) as HTMLDivElement;
-
-			if (
-				this.host.contextPopup.active === true &&
-				contextInfoBox.style.visibility === "visible"
-			) {
-				return;
-			}
-
-			this.host.contextPopupAnchor.style.top = sprite.y.toString() + "px";
-			this.host.contextPopupAnchor.style.left = sprite.x.toString() + "px";
-			this.host.contextPopupAnchor.style.width =
-				sprite.width.toString() + "px";
-			this.host.contextPopupAnchor.style.height =
-				sprite.height.toString() + "px";
-			this.host.contextPopup.reposition();
-
-			contextBadge.textContent = this.host.itemName(info.split(":")[0]);
-
-			contextInfoBox.style.visibility = "hidden";
-			contextActionsInfo.style.display = "";
-			contextActionsInfo.innerHTML = `<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><path fill="currentColor" d="M144 16h-32a64.07 64.07 0 0 0-64 64v96a64.07 64.07 0 0 0 64 64h32a64.07 64.07 0 0 0 64-64V80a64.07 64.07 0 0 0-64-64m-32 16h16v72H64V80a48.05 48.05 0 0 1 48-48m32 192h-32a48.05 48.05 0 0 1-48-48v-56h128v56a48.05 48.05 0 0 1-48 48"/></svg> ${this.host.message("Kontextmenü")}</p>
-				<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl-divider>
-				<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><path fill="currentColor" d="M144 16h-32a64.07 64.07 0 0 0-64 64v96a64.07 64.07 0 0 0 64 64h32a64.07 64.07 0 0 0 64-64V80a64.07 64.07 0 0 0-64-64m48 64v24h-64V32h16a48.05 48.05 0 0 1 48 48m-48 144h-32a48.05 48.05 0 0 1-48-48v-56h128v56a48.05 48.05 0 0 1-48 48"/></svg> ${this.host.message("Bewegen")}</p>
-				`;
-
-			this.host.contextPopup.active = true;
-			this.host.reportXApi("opened", "hover-" + sprite.name);
-		});
-
-		sprite.on("mouseleave", (event) => {
-			let contextInfoBox: HTMLDivElement = this.host.shadowRoot.getElementById(
-				"contextInfoBox"
-			) as HTMLDivElement;
-
-			if (
-				this.host.contextPopup.active === true &&
-				contextInfoBox.style.visibility === "visible"
-			) {
-				return;
-			}
-
-			contextInfoBox.style.visibility = "visible";
-			this.host.contextPopup.active = false;
+			if (drag) this._dragStart(sprite, event);
 		});
 
 		sprite.name = info;
 		this.host.app.stage.addChild(sprite);
-		if (!sprite.name.includes("cable")) {
+		if (select && !sprite.name.includes("cable")) {
 			this.host._getObject(sprite);
 		}
 		this.host.reportXApi("inserted", sprite.name);
+		return sprite;
 	}
 
 	/**
@@ -469,14 +191,15 @@ export class CanvasController implements ReactiveController {
 	 * @private
 	 * @param {PIXI.Sprite} sprite - the dragged sprite
 	 */
-	_dragStart(sprite: PIXI.Sprite, event: any): void {
-		this._stopContextAutoClose();
+	_dragStart(sprite: PIXI.Sprite, event: PIXI.FederatedPointerEvent): void {
+		this._dragMoved = false;
+		this.dragPointerId = event.pointerId;
 		this.host.dragObject = sprite;
 		this._dragActive = true;
 		// remember where inside the sprite it was grabbed, so it doesn't jump
 		const local = sprite.parent.toLocal(event.global);
 		this._dragOffset.set(sprite.x - local.x, sprite.y - local.y);
-		this.host.app.stage.on("pointermove", this._dragMoveHandler);
+		this.host.app.stage.on("globalpointermove", this._dragMoveHandler);
 	}
 
 	/**
@@ -631,254 +354,200 @@ export class CanvasController implements ReactiveController {
 	 */
 	async _dragEnd(): Promise<void> {
 		this._clearLongPress();
-		if (typeof this.host.dragObject != "undefined") {
-			if (this._dragActive) {
-				this.host.app.stage.off("pointermove", this._dragMoveHandler);
-				this._dragActive = false;
-				for (let i = 0; i < this.host.app.stage.children.length; i++) {
+		if (!this._dragActive) return;
+		this.host.app.stage.off("globalpointermove", this._dragMoveHandler);
+		this._dragActive = false;
+
+		if (!this._dragMoved || !this.host.dragObject) {
+			this.host.dragObject = undefined;
+
+			return;
+		}
+		for (let i = 0; i < this.host.app.stage.children.length; i++) {
+			if (
+				i != this.host.curr_stage_index &&
+				this._mouseInbounds(
+					i,
+				50
+				)
+			) {
+				let upperSprite = this.host.app.stage.children[this.host.curr_stage_index]
+				let bottomSprite = this.host.app.stage.children[i];
+				let cObj: any = undefined;
+				let cOType: string = bottomSprite.name
+					.split(":")[0]
+					.toLowerCase();
+				let cOId: number = Number.parseInt(
+					bottomSprite.name.split(":")[1]
+				);
+				let dialogPanel =
+					this.host.confirmDialog.shadowRoot.querySelector(
+						".dialog__panel"
+					) as HTMLDivElement;
+				if (
+					chemlib.ComponentType.Beaker ===
+						(cOType as chemlib.ComponentType) ||
+					chemlib.ComponentType.Flask ===
+						(cOType as chemlib.ComponentType)
+				) {
+					this.host.allChemComponents.forEach((comp) => {
+						if (comp._id === cOId) {
+							cObj = comp;
+						}
+					});
 					if (
-						i != this.host.curr_stage_index &&
-						this._mouseInbounds(
-							i,
-						50
-						)
+						this.host.curr_obj._type ===
+							chemlib.EComponentType.Electrode &&
+						cObj &&
+						(upperSprite.y > bottomSprite.y - bottomSprite.height/2 && upperSprite.y < bottomSprite.y + upperSprite.height/2 && upperSprite.x > bottomSprite.x - bottomSprite.width/2 && upperSprite.x < bottomSprite.x + bottomSprite.width/2)
 					) {
-						let upperSprite = this.host.app.stage.children[this.host.curr_stage_index]
-						let bottomSprite = this.host.app.stage.children[i];
-						let cObj: any = undefined;
-						let cOType: string = bottomSprite.name
-							.split(":")[0]
-							.toLowerCase();
-						let cOId: number = Number.parseInt(
-							bottomSprite.name.split(":")[1]
+						const point = this.viewportPoint(this.host.mousePos[0], this.host.mousePos[1]);
+						dialogPanel.style.top = `${point.y}px`;
+						dialogPanel.style.left = `${point.x}px`;
+						this.host.confirmDialog.show();
+						await this.host.waitUntil(
+							() => this.host.confirmAction != 0
 						);
-						let dialogPanel =
-							this.host.confirmDialog.shadowRoot.querySelector(
-								".dialog__panel"
-							) as HTMLDivElement;
-						if (
-							chemlib.ComponentType.Beaker ===
-								(cOType as chemlib.ComponentType) ||
-							chemlib.ComponentType.Flask ===
-								(cOType as chemlib.ComponentType)
-						) {
-							this.host.allChemComponents.forEach((comp) => {
-								if (comp._id === cOId) {
-									cObj = comp;
+						// console.log(this.host.confirmAction);
+						if (this.host.confirmAction === 1) {
+							this.host.curr_obj._connectedMix = cObj._content;
+							this.host._emitAlert(
+								this.host.message("{from} in {to} eingefügt.", {
+									from: this.host.itemName(this.host.curr_obj._type),
+									to: this.host.itemName(cObj._type),
+								}),
+								"success",
+								false,
+								1500
+							);
+							this.host.reportXApi(
+								"added",
+								this.host.curr_obj._type +
+									":" +
+									this.host.curr_obj._id,
+								{
+									response: cOType + ":" + cOId,
+									success: true,
+									completion: true,
 								}
-							});
-							if (
-								this.host.curr_obj._type ===
-									chemlib.EComponentType.Electrode &&
-								cObj &&
-								(upperSprite.y > bottomSprite.y - bottomSprite.height/2 && upperSprite.y < bottomSprite.y + upperSprite.height/2 && upperSprite.x > bottomSprite.x - bottomSprite.width/2 && upperSprite.x < bottomSprite.x + bottomSprite.width/2)
-							) {
-								dialogPanel.style.top =
-									(
-										this.host.canvasBoundingRect.y +
-										this.host.mousePos[1]
-									).toString() + "px";
-								dialogPanel.style.left =
-									(
-										this.host.canvasBoundingRect.x +
-										this.host.mousePos[0]
-									).toString() + "px";
-								this.host.confirmDialog.show();
-								await this.host.waitUntil(
-									() => this.host.confirmAction != 0
-								);
-								// console.log(this.host.confirmAction);
-								if (this.host.confirmAction === 1) {
-									this.host.curr_obj._connectedMix = cObj._content;
-									this.host._emitAlert(
-										this.host.message("{from} in {to} eingefügt.", {
-											from: this.host.itemName(this.host.curr_obj._type),
-											to: this.host.itemName(cObj._type),
-										}),
-										"success",
-										false,
-										1500
-									);
-									this.host.reportXApi(
-										"added",
-										this.host.curr_obj._type +
-											":" +
-											this.host.curr_obj._id,
-										{
-											response: cOType + ":" + cOId,
-											success: true,
-											completion: true,
-										}
-									);
-									this.host._getObject(
-										this.host.app.stage.children[
-											this.host.curr_stage_index
-										]
-									);
-								}
-								this.host.confirmAction = 0;
-							}
-							cObj = undefined;
-						}
-						if (
-							Object.values(chemlib.EComponentType).includes(
-								cOType as chemlib.EComponentType
-							)
-						) {
-							this.host.allEComponents.forEach((comp) => {
-								if (comp._id === cOId) {
-									cObj = comp;
-								}
-							});
-							if (
-								Object.values(chemlib.EComponentType).includes(
-									this.host.curr_obj._type
-								)
-							) {
-								if (
-									this.host.curr_obj._type !=
-										chemlib.EComponentType.Cable &&
-									cObj._type != chemlib.EComponentType.Cable
-								) {
-									dialogPanel.style.top =
-										(
-											this.host.canvasBoundingRect.y +
-											this.host.mousePos[1]
-										).toString() + "px";
-									dialogPanel.style.left =
-										(
-											this.host.canvasBoundingRect.x +
-											this.host.mousePos[0]
-										).toString() + "px";
-									this.host.confirmDialog.show();
-									await this.host.waitUntil(
-										() => this.host.confirmAction != 0
-									);
-									// console.log(this.host.confirmAction);
-									if (this.host.confirmAction === 1) {
-										this.host._addEcon(cObj);
-									}
-									this.host.confirmAction = 0;
-								}
-								cObj = undefined;
-							}
-						}
-						if (
-							Object.values(chemlib.ComponentType).includes(
-								cOType as chemlib.ComponentType
-							)
-						) {
-							this.host.allChemComponents.forEach((comp) => {
-								if (comp._id === cOId) {
-									cObj = comp;
-								}
-							});
-							if (
-								(
-								this.host.curr_obj._type ===
-									chemlib.ComponentType.Beaker ||
-								this.host.curr_obj._type ===
-									chemlib.ComponentType.Flask ||
-								this.host.curr_obj._type ===
-									chemlib.ComponentType.Testtube
-								)
-								&& (upperSprite.y < bottomSprite.y - Math.min(50, bottomSprite.height))
-							) {
-								dialogPanel.style.top =
-									(
-										this.host.canvasBoundingRect.y +
-										this.host.mousePos[1]
-									).toString() + "px";
-								dialogPanel.style.left =
-									(
-										this.host.canvasBoundingRect.x +
-										this.host.mousePos[0]
-									).toString() + "px";
-								this.host.confirmDialog.show();
-								await this.host.waitUntil(
-									() => this.host.confirmAction != 0
-								);
+							);
+							this.host._getObject(
 								this.host.app.stage.children[
 									this.host.curr_stage_index
-								].rotation = 0;
-								if (this.host.confirmAction === 1) {
-									this.host.curr_obj.transferContents({}, cObj);
-									this.host._getObject(this.host.dragObject);
-									this.host._emitAlert(
-										this.host.message("Inhalt aus {from} zu {to} überführt.", {
-											from: this.host.itemName(this.host.curr_obj._type),
-											to: this.host.itemName(cObj._type),
-										}),
-										"success",
-										false,
-										1500
-									);
-									this.host.reportXApi(
-										"appended",
-										this.host.curr_obj.type +
-											":" +
-											this.host.curr_obj._id,
-										{
-											response: cOType + ":" + cOId,
-											success: true,
-											completion: true,
-										}
-									);
-								}
-								this.host.confirmAction = 0;
-							}
-							cObj = undefined;
+								]
+							);
 						}
+						this.host.confirmAction = 0;
 					}
+					cObj = undefined;
 				}
-			}
-		}
-		if (this.host.app.stage.children.length > 0) {
-			let wasAvail: boolean = false;
-			let ObjectId: number;
-			this.host.avComponentsSprites.forEach((arr) => {
 				if (
-					!wasAvail &&
-					arr[0] === this.host.app.stage.children[this.host.curr_stage_index]
+					Object.values(chemlib.EComponentType).includes(
+						cOType as chemlib.EComponentType
+					)
 				) {
-					wasAvail = true;
-					ObjectId = arr[1];
-				}
-			});
-			if (wasAvail && this.host.hasAttribute("contenteditable")) {
-				let compIndex: number;
-				this.host.availableComponents.forEach((comp) => {
-					if (comp["id"] === ObjectId) {
-						compIndex = this.host.availableComponents.indexOf(comp);
-					}
-				});
-				if (
-					this.host.availableComponents[compIndex]["pos"][0] !=
-						this.host.app.stage.children[this.host.curr_stage_index].x ||
-					this.host.availableComponents[compIndex]["pos"][1] !=
-						this.host.app.stage.children[this.host.curr_stage_index].y
-				) {
-					this.host.availableComponents[compIndex]["pos"][0] =
-						this.host.app.stage.children[this.host.curr_stage_index].x;
-					this.host.availableComponents[compIndex]["pos"][1] =
-						this.host.app.stage.children[this.host.curr_stage_index].y;
-
-					let arrCopy: object[] = [];
-					this.host.availableComponents.forEach((comp) => {
-						arrCopy.push(comp);
+					this.host.allEComponents.forEach((comp) => {
+						if (comp._id === cOId) {
+							cObj = comp;
+						}
 					});
-					this.host.availableComponents = [];
-					this.host.availableComponents = arrCopy;
+					if (
+						Object.values(chemlib.EComponentType).includes(
+							this.host.curr_obj._type
+						)
+					) {
+						if (
+							this.host.curr_obj._type !=
+								chemlib.EComponentType.Cable &&
+							cObj._type != chemlib.EComponentType.Cable
+						) {
+							const point = this.viewportPoint(this.host.mousePos[0], this.host.mousePos[1]);
+							dialogPanel.style.top = `${point.y}px`;
+							dialogPanel.style.left = `${point.x}px`;
+							this.host.confirmDialog.show();
+							await this.host.waitUntil(
+								() => this.host.confirmAction != 0
+							);
+							// console.log(this.host.confirmAction);
+							if (this.host.confirmAction === 1) {
+								this.host._addEcon(cObj);
+							}
+							this.host.confirmAction = 0;
+						}
+						cObj = undefined;
+					}
+				}
+				if (
+					Object.values(chemlib.ComponentType).includes(
+						cOType as chemlib.ComponentType
+					)
+				) {
+					this.host.allChemComponents.forEach((comp) => {
+						if (comp._id === cOId) {
+							cObj = comp;
+						}
+					});
+					if (
+						(
+						this.host.curr_obj._type ===
+							chemlib.ComponentType.Beaker ||
+						this.host.curr_obj._type ===
+							chemlib.ComponentType.Flask ||
+						this.host.curr_obj._type ===
+							chemlib.ComponentType.Testtube
+						)
+						&& (upperSprite.y < bottomSprite.y - Math.min(50, bottomSprite.height))
+					) {
+						const point = this.viewportPoint(this.host.mousePos[0], this.host.mousePos[1]);
+						dialogPanel.style.top = `${point.y}px`;
+						dialogPanel.style.left = `${point.x}px`;
+						this.host.confirmDialog.show();
+						await this.host.waitUntil(
+							() => this.host.confirmAction != 0
+						);
+						this.host.app.stage.children[
+							this.host.curr_stage_index
+						].rotation = 0;
+						if (this.host.confirmAction === 1) {
+							this.host.curr_obj.transferContents({}, cObj);
+							this.host._getObject(this.host.dragObject);
+							this.host._emitAlert(
+								this.host.message("Inhalt aus {from} zu {to} überführt.", {
+									from: this.host.itemName(this.host.curr_obj._type),
+									to: this.host.itemName(cObj._type),
+								}),
+								"success",
+								false,
+								1500
+							);
+							this.host.reportXApi(
+								"appended",
+								this.host.curr_obj.type +
+									":" +
+									this.host.curr_obj._id,
+								{
+									response: cOType + ":" + cOId,
+									success: true,
+									completion: true,
+								}
+							);
+						}
+						this.host.confirmAction = 0;
+					}
+					cObj = undefined;
 				}
 			}
 		}
+		if (this.host.dragObject) this.host.saveComponentPosition(this.host.dragObject);
+		this.host.dragObject = undefined;
+
 	}
 
 	/**
 	 * tints a sprite with a color
 	 *
 	 * @private
-	 * @param {PIXI.Sprite} sprite - the sprite to be tinted
+	 * @param {PIXI.Container} sprite - the sprite to be tinted
 	 * @param {number} color - the selected color
 	 */
 	_tintSprite(sprite: PIXI.Sprite, color: number): void {
@@ -915,53 +584,50 @@ export class CanvasController implements ReactiveController {
 	 *
 	 * @private
 	 */
-	_canvas_init() {
+	init(): void {
 		this.host.app = new PIXI.Application<HTMLCanvasElement>({
-			background: "rgb(238, 243, 246)",
 			backgroundAlpha: 0,
-			resizeTo: this.host.containerDiv,
+			width: 800,
+			height: 600,
 		});
-
-		this.host.pix_canvas.appendChild(this.host.app.view);
+		const app = this.host.app;
+		this.host.pix_canvas.appendChild(app.view);
 		PIXI.BaseTexture.defaultOptions.scaleMode = PIXI.SCALE_MODES.NEAREST;
 		this.host.app.stage.eventMode = "static";
 		this.host.app.stage.hitArea = this.host.app.screen;
-		this.host.app.stage.sortableChildren = true;
+		app.stage.sortableChildren = true;
 		// pointermove (not mousemove) so mousePos stays current for touch too.
 		// A drag is ended only on pointerup/pointerupoutside — not when the
 		// pointer briefly leaves the sprite bounds during a fast drag.
 		this.host.app.stage.on("pointermove", (event) => {
-			this.host.mousePos = [event.screenX, event.screenY];
+			this.host.mousePos = [event.global.x, event.global.y];
 		});
-		this.host.app.stage.on("pointerdown", (event) => {
-			if (this.host.contextMenu.style.display != "none") {
+		app.stage.on("pointerdown", (event) => {
+			if (this._dragActive) return;
+			this.host.mousePos = [event.global.x, event.global.y];
+			if (event.target === app.stage && event.button === 0) {
+				if (this.host.placeSelectedComponent(event.global.x, event.global.y)) return;
+				this.host.clearObjectSelection();
+			}
+			if (this.host.canAuthor) return;
+			if (this.host.contextMenu.style.display !== "none") {
 				this.host.contextMenu.style.display = "none";
 				return;
 			}
-			this.host.mousePos = [event.screenX, event.screenY];
-			// a press on an existing object is handled by that sprite
-			if (
-				this.host.curr_stage_index > -1 &&
-				this._mouseInbounds(this.host.curr_stage_index, 0)
-			) {
-				return;
-			}
-			// open the "new object" menu: right-click on mouse, long-press on touch
 			if (event.pointerType === "mouse") {
-				if (event.button === 2) {
-					this._openCanvasMenu(event.globalX, event.globalY);
-				}
+				if (event.button === 2) this._openCanvasMenu(event.global.x, event.global.y);
 			} else {
-				const gx: number = event.globalX;
-				const gy: number = event.globalY;
-				this._armLongPress(() => this._openCanvasMenu(gx, gy), event);
+				const { x, y } = event.global;
+				this._armLongPress(() => this._openCanvasMenu(x, y), event);
 			}
 		});
-		this.host.app.stage.on("pointerup", () => {
-			this._dragEnd();
-		});
-		this.host.app.stage.on("pointerupoutside", () => {
-			this._dragEnd();
+		const finishPointer = (event: PIXI.FederatedPointerEvent) => {
+			if (!this._dragActive || event.pointerId === this.dragPointerId) void this._dragEnd();
+		};
+		this.host.app.stage.on("pointerup", finishPointer);
+		this.host.app.stage.on("pointerupoutside", finishPointer);
+		this.host.app.stage.on("pointercancel", (event) => {
+			if (!this._dragActive || this.dragPointerId === event.pointerId) this.cancelPointerInteraction();
 		});
 	}
 
@@ -971,79 +637,18 @@ export class CanvasController implements ReactiveController {
 	 * @private
 	 */
 	_updateSpriteTextures(): void {
-		this.host.app.stage.children.forEach((sprite: PIXI.Sprite) => {
-			let name: string = sprite.name
-				.split(":")[0]
-				.replace(
-					sprite.name.split(":")[0][0],
-					sprite.name.split(":")[0][0].toUpperCase()
-				);
-			let id: number = Number.parseInt(sprite.name.split(":")[1]);
-			if (Object.keys(chemlib.ComponentType).includes(name)) {
-				this.host.allChemComponents.forEach((comp) => {
-					if (comp._type === name.toLowerCase() && comp._id === id) {
-						let tex: undefined;
-						if (comp._content._activeMolecules.length > 0) {
-							if (comp._content._isSolution) {
-								switch (comp._type) {
-									case "beaker":
-										tex = beaker_fl_svg;
-										break;
-									case "testtube":
-										tex = testtube_fl_svg;
-										break;
-									case "flask":
-										tex = flask_fl_svg;
-										break;
-									case "burette":
-										tex = burette_fl_svg;
-										break;
-									default:
-										break;
-								}
-								sprite.texture = PIXI.Texture.from(tex);
-							} else {
-								switch (comp._type) {
-									case "beaker":
-										tex = beaker_fs_svg;
-										break;
-									case "testtube":
-										tex = testtube_fs_svg;
-										break;
-									case "flask":
-										tex = flask_fs_svg;
-										break;
-									case "burette":
-										tex = burette_fs_svg;
-										break;
-									default:
-										break;
-								}
-								sprite.texture = PIXI.Texture.from(tex);
-							}
-						} else {
-							switch (comp._type) {
-								case "beaker":
-									tex = beaker_svg;
-									break;
-								case "testtube":
-									tex = testtube_svg;
-									break;
-								case "flask":
-									tex = flask_svg;
-									break;
-								case "burette":
-									tex = burette_svg;
-									break;
-								default:
-									break;
-							}
-							sprite.texture = PIXI.Texture.from(tex);
-						}
-					}
-				});
-			}
-		});
+		for (const sprite of this.host.app.stage.children) {
+			const [type, id] = sprite.name.split(":");
+			const graphic = componentGraphic(type);
+			if (!graphic.capacityMl) continue;
+			const component = this.host.allChemComponents.find((entry) => entry._type === type && entry._id === Number(id));
+			if (!component) continue;
+			const mixture = component._content;
+			const filled = mixture._isSolution || mixture.hasLiquidVolume ? graphic.liquid : graphic.solid;
+			const url = mixture._activeMolecules.length ? filled ?? graphic.url : graphic.url;
+			const texture = PIXI.Texture.from(url);
+			if (sprite instanceof PIXI.Sprite && sprite.texture !== texture) sprite.texture = texture;
+		}
 	}
 
 	/**
@@ -1052,83 +657,40 @@ export class CanvasController implements ReactiveController {
 	 * @private
 	 */
 	_updateCablePos(): void {
-		let index0: number;
-		this.host.app.stage.children.forEach((sprite: PIXI.Sprite) => {
-			index0 = this.host.app.stage.children.indexOf(sprite);
-			if (sprite.name.includes("cable")) {
-				let id: number = Number.parseInt(sprite.name.split(":")[1]);
-				this.host.allEComponents.forEach((eComp) => {
-					if (
-						eComp._type === chemlib.EComponentType.Cable &&
-						eComp._id === id
-					) {
-						let con1: chemlib.ElectricComponent | undefined =
-							eComp._connections[0];
-						let con2: chemlib.ElectricComponent | undefined =
-							eComp._connections[1];
-
-						if (
-							typeof con1 != "undefined" &&
-							typeof con2 != "undefined"
-						) {
-							let pos1, pos2: number[];
-							let index1, index2: number;
-							this.host.app.stage.children.forEach((conSprite) => {
-								if (
-									conSprite.name.includes(
-										con1._type + ":" + con1._id
-									)
-								) {
-									index1 =
-										this.host.app.stage.children.indexOf(
-											conSprite
-										);
-									pos1 = [conSprite.x, conSprite.y];
-								}
-								if (
-									conSprite.name.includes(
-										con2._type + ":" + con2._id
-									)
-								) {
-									index2 =
-										this.host.app.stage.children.indexOf(
-											conSprite
-										);
-									pos2 = [conSprite.x, conSprite.y];
-								}
-							});
-							let minIndex: number = Math.min(
-								index0,
-								index1,
-								index2
-							);
-							if (minIndex != index0) {
-								let buffer: any =
-									this.host.app.stage.children[minIndex];
-								this.host.app.stage.children[minIndex] = sprite;
-								this.host.app.stage.children[index0] = buffer;
-							}
-							let curve = this._buildCableCurve(pos1, pos2);
-							// only our own generated textures are safe to
-							// destroy - the shared cable_svg placeholder
-							// texture must survive for sprites still using it
-							if (sprite.texture instanceof PIXI.RenderTexture) {
-								sprite.texture.destroy(true);
-							}
-							sprite.texture = curve.texture;
-							sprite.width = curve.w;
-							sprite.height = curve.h;
-							sprite.x = curve.cx;
-							sprite.y = curve.cy;
-							sprite.rotation = 0;
-						} else {
-							this.host._getObject(sprite);
-							this.host._removeSprite();
-						}
-					}
-				});
+		const cables = this.host.allEComponents.filter((component) => component._type === chemlib.EComponentType.Cable);
+		if (cables.length === 0) return;
+		const stage: PIXI.Container = this.host.app.stage;
+		const sprites = new Map(stage.children.map((sprite) => [sprite.name, sprite]));
+		const selected = stage.children[this.host.curr_stage_index];
+		for (const cable of cables) {
+			const sprite = sprites.get(`cable:${cable._id}`);
+			if (!(sprite instanceof PIXI.Sprite) || sprite.parent !== stage) continue;
+			const [first, second] = cable._connections;
+			const from = first && sprites.get(`${first._type}:${first._id}`);
+			const to = second && sprites.get(`${second._type}:${second._id}`);
+			if (!from || !to || from.parent !== stage || to.parent !== stage) {
+				this.host._getObject(sprite);
+				this.host._removeSprite();
+				continue;
 			}
-		});
+			const current = this.cableEndpoints.get(sprite);
+			const endpoints: [number, number, number, number] = [from.x, from.y, to.x, to.y];
+			if (!current || endpoints.some((value, index) => value !== current[index])) {
+				const curve = this._buildCableCurve([from.x, from.y], [to.x, to.y]);
+				const previous = sprite.texture;
+				sprite.texture = curve.texture;
+				sprite.width = curve.w;
+				sprite.height = curve.h;
+				sprite.position.set(curve.cx, curve.cy);
+				sprite.rotation = 0;
+				if (previous instanceof PIXI.RenderTexture) previous.destroy(true);
+				this.cableEndpoints.set(sprite, endpoints);
+			}
+			const index = stage.getChildIndex(sprite);
+			const behindDevices = Math.min(stage.getChildIndex(from), stage.getChildIndex(to));
+			if (index > behindDevices) stage.setChildIndex(sprite, behindDevices);
+		}
+		if (selected?.parent === stage && this.host.curr_obj) this.host.curr_stage_index = stage.getChildIndex(selected);
 	}
 
 	/**
@@ -1140,12 +702,12 @@ export class CanvasController implements ReactiveController {
 	 * @private
 	 * @param {number[]} pos1 - world [x, y] of the first endpoint
 	 * @param {number[]} pos2 - world [x, y] of the second endpoint
-	 * @returns {{texture: PIXI.RenderTexture, cx: number, cy: number, w: number, h: number}}
+	 * @returns {{texture: PIXI.Texture, cx: number, cy: number, w: number, h: number}}
 	 */
 	private _buildCableCurve(
 		pos1: number[],
 		pos2: number[]
-	): { texture: PIXI.RenderTexture; cx: number; cy: number; w: number; h: number } {
+	): { texture: PIXI.Texture; cx: number; cy: number; w: number; h: number } {
 		const dx: number = pos2[0] - pos1[0];
 		const dy: number = pos2[1] - pos1[1];
 		const len: number = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -1173,21 +735,14 @@ export class CanvasController implements ReactiveController {
 		const w: number = Math.max(1, maxX - minX);
 		const h: number = Math.max(1, maxY - minY);
 
-		const g: PIXI.Graphics = this._cableGraphics;
-		g.clear();
-		g.lineStyle({
-			width: lineWidth,
-			color: 0x000000,
-			cap: PIXI.LINE_CAP.ROUND,
+		const graphics = this._cableGraphics;
+		graphics.clear();
+		graphics.lineStyle({ width: lineWidth, color: 0x000000, cap: PIXI.LINE_CAP.ROUND });
+		graphics.moveTo(pos1[0], pos1[1]);
+		graphics.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, pos2[0], pos2[1]);
+		const texture = this.host.app.renderer.generateTexture(graphics, {
+			region: new PIXI.Rectangle(minX, minY, w, h),
 		});
-		g.moveTo(pos1[0], pos1[1]);
-		g.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, pos2[0], pos2[1]);
-
-		const texture: PIXI.RenderTexture =
-			this.host.app.renderer.generateTexture(g, {
-				region: new PIXI.Rectangle(minX, minY, w, h),
-			});
-
 		return { texture, cx: minX + w / 2, cy: minY + h / 2, w, h };
 	}
 }

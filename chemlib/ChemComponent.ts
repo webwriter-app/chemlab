@@ -182,6 +182,13 @@ class ChemComponent {
 					});
 				}
 			} else {
+				const incomingMol = nMix._activeMolecules.reduce((sum, mol) => sum + nMix._molProperties[mol._id + "n"], 0);
+				const addedMol = nMix._activeMolecules.reduce((sum, mol) => sum +
+					Math.min(nMix._molProperties[mol._id + "n"], nMolAmount ?? Infinity), 0);
+				if (incomingMol > 0 && addedMol > 0) {
+					this._content.addedVolume += nMix.addedVolume * addedMol / incomingMol;
+					this._content.hasLiquidVolume ||= nMix.hasLiquidVolume;
+				}
 				for (let mol of nMix._activeMolecules) {
 					this._content.addMolecule(
 						mol,
@@ -219,6 +226,26 @@ class ChemComponent {
 	): void {
 		// console.log(tDest)
 		if (tDest._inOutLimits[0] > 0) {
+			if (this._content.addedVolume > 0 && tMol == null) {
+				const volume = this._content.contentVolume;
+				const limit = Math.max(0, tDest._volume / 1000 - tDest._content.contentVolume);
+				const requested = tVolume ?? (this._outVol || volume);
+				const fraction = Math.min(1, limit / volume, requested / volume);
+				if (fraction <= 0) return;
+				const portion = StructureManager.newMixture();
+				for (const mol of [...this._content._activeMolecules]) {
+					const amount = this._content._molProperties[mol._id + "n"] * fraction;
+					portion.addMolecule(mol, amount);
+					this._content.changeMolecule(mol._id, -amount);
+				}
+				portion.hasLiquidVolume = this._content.hasLiquidVolume;
+				portion.addedVolume = this._content.addedVolume * fraction;
+				this._content.addedVolume -= portion.addedVolume;
+				if (fraction === 1) this._content.hasLiquidVolume = false;
+				tDest.addContents({ nMix: portion });
+				if (tDest._content._isSolution) Simulation.sNeutralize(tDest._content);
+				return;
+			}
 			if (tMol != null) {
 				tDest.addContents({
 					nMolecule: tMol,

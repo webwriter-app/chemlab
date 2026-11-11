@@ -23,5 +23,5 @@
     // "noUnusedParameters": true,
     // "noFallthroughCasesInSwitch": true
   },
-  "include": ["webwriter-chemlab.ts"]
+  "include": ["media/svg.d.ts", "webwriter-chemlab.ts"]
 }
