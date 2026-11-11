@@ -100673,6 +100673,9 @@ var style = i`
 		width: 100%;
 		height: 100%;
 	}
+	#canvasArea canvas {
+		touch-action: none;
+	}
 	#canvasZoom {
 		position: absolute;
 		inset-block-end: 4px;
@@ -176339,6 +176342,9 @@ var CanvasController = class {
   grid;
   resizeObserver;
   pan;
+  touchListeners;
+  touches = /* @__PURE__ */ new Map();
+  pinching = false;
   /** true while a sprite drag is in progress (pointermove listener attached) */
   _dragActive = false;
   _dragMoved = false;
@@ -176431,12 +176437,12 @@ var CanvasController = class {
     return this.camera.toWorld((x4 - bounds.left) * width / bounds.width, (y5 - bounds.top) * height / bounds.height);
   }
   zoomBy(factor) {
-    if (!this.host.app || this._dragActive || this.pan) return;
+    if (!this.host.app || this._dragActive || this.pan || this.pinching) return;
     this.camera.zoomAt(factor, this.camera.width / 2, this.camera.height / 2);
     this.applyCamera();
   }
   zoomFromWheel = (event) => {
-    if (!event.ctrlKey && !event.metaKey || this._dragActive || this.pan) return;
+    if (!event.deltaY || this._dragActive || this.pan || this.pinching) return;
     const bounds = this.host.app.canvas.getBoundingClientRect();
     if (!bounds.width || !bounds.height) return;
     event.preventDefault();
@@ -176446,6 +176452,68 @@ var CanvasController = class {
     this.camera.zoomAt(Math.exp(Math.max(-1, Math.min(1, -pixels * 2e-3))), x4, y5);
     this.applyCamera();
   };
+  observeTouches() {
+    const view = this.host.ownerDocument.defaultView;
+    if (this.touchListeners || !this.host.app || !this.host.isConnected || !view) return;
+    this.touchListeners = new AbortController();
+    const { signal } = this.touchListeners;
+    const options2 = { capture: true, signal };
+    view.addEventListener("pointerdown", this.touchDown, options2);
+    view.addEventListener("pointermove", this.touchMove, options2);
+    view.addEventListener("pointerup", this.touchEnd, options2);
+    view.addEventListener("pointercancel", this.touchEnd, options2);
+    view.addEventListener("blur", () => {
+      if (this.touches.size) this.cancelPointerInteraction();
+      this.resetTouches();
+    }, { signal });
+  }
+  touchDown = (event) => {
+    if (event.pointerType !== "touch" || !event.composedPath().includes(this.host.app.canvas)) return;
+    this.touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (this.pinching || this.touches.size < 2) return;
+    this.pinching = true;
+    const sprite = this.host.dragObject;
+    if (this._dragMoved && sprite) {
+      sprite.rotation = 0;
+      this.host._hideAlert();
+      this.host.saveComponentPosition(sprite);
+    }
+    this.cancelPointerInteraction();
+    this.host.cancelDoseForNavigation();
+    this.host.contextMenu.style.display = "none";
+  };
+  touchMove = (event) => {
+    const previous = this.touches.get(event.pointerId);
+    if (!previous || previous.x === event.clientX && previous.y === event.clientY) return;
+    const current = { x: event.clientX, y: event.clientY };
+    this.touches.set(event.pointerId, current);
+    if (this.touches.size < 2) return;
+    const [first, second] = this.touches.values();
+    if (current !== first && current !== second) return;
+    const other = current === first ? second : first;
+    const bounds = this.host.app.canvas.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    const scaleX = this.camera.width / bounds.width;
+    const scaleY = this.camera.height / bounds.height;
+    const previousDistance = Math.hypot((previous.x - other.x) * scaleX, (previous.y - other.y) * scaleY);
+    const currentDistance = Math.hypot((current.x - other.x) * scaleX, (current.y - other.y) * scaleY);
+    const x4 = ((previous.x + other.x) / 2 - bounds.left) * scaleX;
+    const y5 = ((previous.y + other.y) / 2 - bounds.top) * scaleY;
+    this.camera.zoomAt(Math.max(4, currentDistance) / Math.max(4, previousDistance), x4, y5);
+    this.camera.panBy((current.x - previous.x) * scaleX / 2, (current.y - previous.y) * scaleY / 2);
+    this.applyCamera();
+  };
+  touchEnd = (event) => {
+    if (!this.touches.delete(event.pointerId)) return;
+    if (this.touches.size === 0) this.pinching = false;
+    if (event.type === "pointercancel" && (this.pan?.id === event.pointerId || this.dragPointerId === event.pointerId)) {
+      this.cancelPointerInteraction();
+    }
+  };
+  resetTouches() {
+    this.touches.clear();
+    this.pinching = false;
+  }
   applyCamera() {
     this.world.position.set(this.camera.offsetX, this.camera.offsetY);
     this.world.scale.set(this.camera.zoom);
@@ -176508,10 +176576,14 @@ var CanvasController = class {
   }
   hostConnected() {
     this.observeCanvas();
+    this.observeTouches();
     this.host.app?.start();
   }
   hostDisconnected() {
     this.cancelPointerInteraction();
+    this.touchListeners?.abort();
+    this.touchListeners = void 0;
+    this.resetTouches();
     this.resizeObserver?.disconnect();
     this.resizeObserver = void 0;
     this.host.app?.stop();
@@ -176559,7 +176631,7 @@ var CanvasController = class {
     sprite.cursor = "pointer";
     sprite.on("pointerdown", (event) => {
       event.stopPropagation();
-      if (this._dragActive || this.pan) return;
+      if (this._dragActive || this.pan || this.pinching) return;
       this.host.contextMenu.style.display = "none";
       if (event.button === 1) {
         this.beginPan(event);
@@ -176904,13 +176976,14 @@ var CanvasController = class {
     app.stage.addChild(this.grid.mesh, this.world);
     app.canvas.addEventListener("wheel", this.zoomFromWheel, { passive: false });
     this.observeCanvas();
+    this.observeTouches();
     this.applyCamera();
     this.host.app.stage.on("pointermove", (event) => {
       this.updateMousePosition(event);
     });
     app.stage.on("globalpointermove", (event) => this.movePan(event));
     app.stage.on("pointerdown", (event) => {
-      if (this._dragActive || this.pan) return;
+      if (this._dragActive || this.pan || this.pinching) return;
       this.updateMousePosition(event);
       if (this.host.contextMenu.style.display !== "none") {
         this.host.contextMenu.style.display = "none";
@@ -176918,7 +176991,7 @@ var CanvasController = class {
         return;
       }
       if (event.target === app.stage && event.button === 0) {
-        if (this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+        if (event.pointerType !== "touch" && this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
         this.beginPan(event);
         if (!this.host.canAuthor && event.pointerType !== "mouse") {
           const { x: x4, y: y5 } = event.global;
@@ -176938,7 +177011,13 @@ var CanvasController = class {
         const { moved, deselect } = this.pan;
         this.pan = void 0;
         this._clearLongPress();
-        if (deselect && !moved) this.host.clearObjectSelection();
+        if (deselect && !moved) {
+          if (event.pointerType === "touch" && event.type === "pointerup" && event.target === app.stage) {
+            this.updateMousePosition(event);
+            if (this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+          }
+          this.host.clearObjectSelection();
+        }
       } else if (!this.pan && (!this._dragActive || event.pointerId === this.dragPointerId)) {
         void this._dragEnd();
       }
@@ -177729,6 +177808,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.availableComponents = [...this.availableComponents];
     }
   }
+  cancelDoseForNavigation() {
+    this.stopDose?.(true);
+  }
   beginChemicalDose(sprite, pointerId) {
     const selected = this.selectedChemical;
     if (!this.canAuthor || !selected) return false;
@@ -177793,7 +177875,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         interval = view.setInterval(() => add(0.4), 50);
       }
     }, 300);
-    this.stopDose = () => finish(false, false);
+    this.stopDose = (save = false) => finish(false, save);
     const options2 = { capture: true, signal: controller.signal };
     view.addEventListener("pointerup", (event) => {
       if (event.pointerId === pointerId) finish(true);

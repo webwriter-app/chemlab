@@ -1154,6 +1154,9 @@ export const style = css`
 		width: 100%;
 		height: 100%;
 	}
+	#canvasArea canvas {
+		touch-action: none;
+	}
 	#canvasZoom {
 		position: absolute;
 		inset-block-end: 4px;

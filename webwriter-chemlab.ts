@@ -626,7 +626,7 @@ export class ChemLab extends LitElementWw {
 	@state() private accessor selectedChemical: { key: string; name: string; recipe: ChemicalRecipe } | undefined;
 	@state() private accessor fillMeter: { x: number; y: number; volume: number; capacity: number } | undefined;
 	private chemicalPreviews = new Map<string, string>();
-	private stopDose?: () => void;
+	private stopDose?: (save?: boolean) => void;
 	private meterTimeout?: number;
 
 	@state()
@@ -1332,6 +1332,10 @@ export class ChemLab extends LitElementWw {
 		}
 	}
 
+	cancelDoseForNavigation(): void {
+		this.stopDose?.(true);
+	}
+
 	beginChemicalDose(sprite: PIXI.Sprite, pointerId: number): boolean {
 		const selected = this.selectedChemical;
 		if (!this.canAuthor || !selected) return false;
@@ -1399,7 +1403,7 @@ export class ChemLab extends LitElementWw {
 				interval = view.setInterval(() => add(0.4), 50);
 			}
 		}, 300);
-		this.stopDose = () => finish(false, false);
+		this.stopDose = (save = false) => finish(false, save);
 		const options = { capture: true, signal: controller.signal };
 		view.addEventListener("pointerup", (event) => {
 			if (event.pointerId === pointerId) finish(true);

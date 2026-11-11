@@ -23,6 +23,9 @@ export class CanvasController implements ReactiveController {
 	private grid?: WorkspaceGrid;
 	private resizeObserver?: ResizeObserver;
 	private pan?: { id: number; x: number; y: number; moved: boolean; deselect: boolean };
+	private touchListeners?: AbortController;
+	private touches = new Map<number, { x: number; y: number }>();
+	private pinching = false;
 
 	/** true while a sprite drag is in progress (pointermove listener attached) */
 	private _dragActive: boolean = false;
@@ -124,13 +127,13 @@ export class CanvasController implements ReactiveController {
 	}
 
 	zoomBy(factor: number): void {
-		if (!this.host.app || this._dragActive || this.pan) return;
+		if (!this.host.app || this._dragActive || this.pan || this.pinching) return;
 		this.camera.zoomAt(factor, this.camera.width / 2, this.camera.height / 2);
 		this.applyCamera();
 	}
 
 	private zoomFromWheel = (event: WheelEvent): void => {
-		if ((!event.ctrlKey && !event.metaKey) || this._dragActive || this.pan) return;
+		if (!event.deltaY || this._dragActive || this.pan || this.pinching) return;
 		const bounds = this.host.app.canvas.getBoundingClientRect();
 		if (!bounds.width || !bounds.height) return;
 		event.preventDefault();
@@ -140,6 +143,75 @@ export class CanvasController implements ReactiveController {
 		this.camera.zoomAt(Math.exp(Math.max(-1, Math.min(1, -pixels * 0.002))), x, y);
 		this.applyCamera();
 	};
+
+	private observeTouches(): void {
+		const view = this.host.ownerDocument.defaultView;
+		if (this.touchListeners || !this.host.app || !this.host.isConnected || !view) return;
+		this.touchListeners = new AbortController();
+		const { signal } = this.touchListeners;
+		// Observe the second touch before Pixi dispatches its pointerdown to a sprite.
+		const options = { capture: true, signal };
+		view.addEventListener("pointerdown", this.touchDown, options);
+		view.addEventListener("pointermove", this.touchMove, options);
+		view.addEventListener("pointerup", this.touchEnd, options);
+		view.addEventListener("pointercancel", this.touchEnd, options);
+		view.addEventListener("blur", () => {
+			if (this.touches.size) this.cancelPointerInteraction();
+			this.resetTouches();
+		}, { signal });
+	}
+
+	private touchDown = (event: PointerEvent): void => {
+		if (event.pointerType !== "touch" || !event.composedPath().includes(this.host.app.canvas)) return;
+		this.touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+		if (this.pinching || this.touches.size < 2) return;
+		this.pinching = true;
+		const sprite = this.host.dragObject;
+		if (this._dragMoved && sprite) {
+			sprite.rotation = 0;
+			this.host._hideAlert();
+			this.host.saveComponentPosition(sprite);
+		}
+		this.cancelPointerInteraction();
+		this.host.cancelDoseForNavigation();
+		this.host.contextMenu.style.display = "none";
+	};
+
+	private touchMove = (event: PointerEvent): void => {
+		const previous = this.touches.get(event.pointerId);
+		if (!previous || (previous.x === event.clientX && previous.y === event.clientY)) return;
+		const current = { x: event.clientX, y: event.clientY };
+		this.touches.set(event.pointerId, current);
+		if (this.touches.size < 2) return;
+		const [first, second] = this.touches.values();
+		if (current !== first && current !== second) return;
+		const other = current === first ? second : first;
+		const bounds = this.host.app.canvas.getBoundingClientRect();
+		if (!bounds.width || !bounds.height) return;
+		const scaleX = this.camera.width / bounds.width;
+		const scaleY = this.camera.height / bounds.height;
+		const previousDistance = Math.hypot((previous.x - other.x) * scaleX, (previous.y - other.y) * scaleY);
+		const currentDistance = Math.hypot((current.x - other.x) * scaleX, (current.y - other.y) * scaleY);
+		const x = ((previous.x + other.x) / 2 - bounds.left) * scaleX;
+		const y = ((previous.y + other.y) / 2 - bounds.top) * scaleY;
+		// The midpoint follows the fingers even at the zoom limits.
+		this.camera.zoomAt(Math.max(4, currentDistance) / Math.max(4, previousDistance), x, y);
+		this.camera.panBy((current.x - previous.x) * scaleX / 2, (current.y - previous.y) * scaleY / 2);
+		this.applyCamera();
+	};
+
+	private touchEnd = (event: PointerEvent): void => {
+		if (!this.touches.delete(event.pointerId)) return;
+		if (this.touches.size === 0) this.pinching = false;
+		if (event.type === "pointercancel" && (this.pan?.id === event.pointerId || this.dragPointerId === event.pointerId)) {
+			this.cancelPointerInteraction();
+		}
+	};
+
+	private resetTouches(): void {
+		this.touches.clear();
+		this.pinching = false;
+	}
 
 	private applyCamera(): void {
 		this.world.position.set(this.camera.offsetX, this.camera.offsetY);
@@ -205,11 +277,15 @@ export class CanvasController implements ReactiveController {
 
 	hostConnected(): void {
 		this.observeCanvas();
+		this.observeTouches();
 		this.host.app?.start();
 	}
 
 	hostDisconnected(): void {
 		this.cancelPointerInteraction();
+		this.touchListeners?.abort();
+		this.touchListeners = undefined;
+		this.resetTouches();
 		this.resizeObserver?.disconnect();
 		this.resizeObserver = undefined;
 		this.host.app?.stop();
@@ -263,7 +339,7 @@ export class CanvasController implements ReactiveController {
 		sprite.cursor = "pointer";
 		sprite.on("pointerdown", (event) => {
 			event.stopPropagation();
-			if (this._dragActive || this.pan) return;
+			if (this._dragActive || this.pan || this.pinching) return;
 			this.host.contextMenu.style.display = "none";
 			if (event.button === 1) {
 				this.beginPan(event);
@@ -713,6 +789,7 @@ export class CanvasController implements ReactiveController {
 		app.stage.addChild(this.grid.mesh, this.world);
 		app.canvas.addEventListener("wheel", this.zoomFromWheel, { passive: false });
 		this.observeCanvas();
+		this.observeTouches();
 		this.applyCamera();
 		// pointermove (not mousemove) so mousePos stays current for touch too.
 		// A drag is ended only on pointerup/pointerupoutside — not when the
@@ -722,7 +799,7 @@ export class CanvasController implements ReactiveController {
 		});
 		app.stage.on("globalpointermove", (event) => this.movePan(event));
 		app.stage.on("pointerdown", (event) => {
-			if (this._dragActive || this.pan) return;
+			if (this._dragActive || this.pan || this.pinching) return;
 			this.updateMousePosition(event);
 			if (this.host.contextMenu.style.display !== "none") {
 				this.host.contextMenu.style.display = "none";
@@ -730,7 +807,7 @@ export class CanvasController implements ReactiveController {
 				return;
 			}
 			if (event.target === app.stage && event.button === 0) {
-				if (this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+				if (event.pointerType !== "touch" && this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
 				this.beginPan(event);
 				if (!this.host.canAuthor && event.pointerType !== "mouse") {
 					const { x, y } = event.global;
@@ -750,7 +827,13 @@ export class CanvasController implements ReactiveController {
 				const { moved, deselect } = this.pan;
 				this.pan = undefined;
 				this._clearLongPress();
-				if (deselect && !moved) this.host.clearObjectSelection();
+				if (deselect && !moved) {
+					if (event.pointerType === "touch" && event.type === "pointerup" && event.target === app.stage) {
+						this.updateMousePosition(event);
+						if (this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+					}
+					this.host.clearObjectSelection();
+				}
 			} else if (!this.pan && (!this._dragActive || event.pointerId === this.dragPointerId)) {
 				void this._dragEnd();
 			}
