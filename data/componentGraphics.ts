@@ -45,3 +45,10 @@ export function componentGraphic(type: string): ComponentGraphic {
 		? componentGraphics[type]
 		: { url: electrode, width: 50, height: 70 };
 }
+
+export const componentTextureUrls = [
+	cable,
+	...Object.values<ComponentGraphic>(componentGraphics).flatMap(
+		({ url, liquid, solid, active }) => [url, liquid, solid, active].filter(Boolean)
+	),
+];

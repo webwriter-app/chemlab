@@ -2,7 +2,7 @@ import { ReactiveController } from "lit";
 import * as PIXI from "pixi.js";
 import * as chemlib from "../chemlib";
 
-import { componentGraphic } from "../data/componentGraphics";
+import { componentGraphic, componentTextureUrls } from "../data/componentGraphics";
 
 
 import type { ChemLab } from "../webwriter-chemlab";
@@ -91,7 +91,7 @@ export class CanvasController implements ReactiveController {
 	}
 
 	viewportPoint(x: number, y: number): PIXI.Point {
-		const bounds = this.host.app.view.getBoundingClientRect();
+		const bounds = this.host.app.canvas.getBoundingClientRect();
 		const { width, height } = this.host.app.screen;
 		return new PIXI.Point(
 			bounds.left + x * bounds.width / width,
@@ -128,7 +128,7 @@ export class CanvasController implements ReactiveController {
 		this.host.dragObject = undefined;
 	}
 
-	removeSprite(sprite: PIXI.DisplayObject): void {
+	removeSprite(sprite: PIXI.Container): void {
 		this.host.app.stage.removeChild(sprite);
 		if (sprite instanceof PIXI.Sprite && sprite.texture instanceof PIXI.RenderTexture) {
 			sprite.texture.destroy(true);
@@ -142,8 +142,8 @@ export class CanvasController implements ReactiveController {
 	}
 
 	setDeviceActive(sprite: PIXI.Sprite, active: boolean): void {
-		const graphic = componentGraphic(sprite.name.split(":")[0]);
-		sprite.texture = PIXI.Texture.from(active ? graphic.active ?? graphic.url : graphic.url);
+		const graphic = componentGraphic(sprite.label.split(":")[0]);
+		sprite.texture = PIXI.Assets.get<PIXI.Texture>(active ? graphic.active ?? graphic.url : graphic.url);
 	}
 	/**
 	 * adds a new sprite to the canvas
@@ -153,7 +153,7 @@ export class CanvasController implements ReactiveController {
 	 */
 	_addSprite(info: string, select = true, capacityMl?: number): PIXI.Sprite {
 		const graphic = componentGraphic(info.split(":")[0]);
-		const sprite = PIXI.Sprite.from(graphic.url);
+		const sprite = new PIXI.Sprite(PIXI.Assets.get<PIXI.Texture>(graphic.url));
 		const scale = graphic.capacityMl && capacityMl ? Math.cbrt(capacityMl / graphic.capacityMl) : 1;
 
 		sprite.anchor.set(0.5);
@@ -170,18 +170,18 @@ export class CanvasController implements ReactiveController {
 			this.host.contextMenu.style.display = "none";
 			this.host.mousePos = [event.global.x, event.global.y];
 			if (event.button === 0 && this.host.beginChemicalDose(sprite, event.pointerId)) return;
-			const drag = event.button === 0 && !sprite.name.startsWith("cable:");
+			const drag = event.button === 0 && !sprite.label.startsWith("cable:");
 			this.host._getObject(sprite);
-			this.host.reportXApi("focused", sprite.name);
+			this.host.reportXApi("focused", sprite.label);
 			if (drag) this._dragStart(sprite, event);
 		});
 
-		sprite.name = info;
+		sprite.label = info;
 		this.host.app.stage.addChild(sprite);
-		if (select && !sprite.name.includes("cable")) {
+		if (select && !sprite.label.includes("cable")) {
 			this.host._getObject(sprite);
 		}
-		this.host.reportXApi("inserted", sprite.name);
+		this.host.reportXApi("inserted", sprite.label);
 		return sprite;
 	}
 
@@ -229,11 +229,11 @@ export class CanvasController implements ReactiveController {
 					let upperSprite = this.host.app.stage.children[this.host.curr_stage_index]
 					let bottomSprite = this.host.app.stage.children[i];
 					let cObj: any = undefined;
-					let cOType: string = bottomSprite.name
+					let cOType: string = bottomSprite.label
 						.split(":")[0]
 						.toLowerCase();
 					let cOId: number = Number.parseInt(
-						bottomSprite.name.split(":")[1]
+						bottomSprite.label.split(":")[1]
 					);
 					if (
 						chemlib.ComponentType.Beaker ===
@@ -374,11 +374,11 @@ export class CanvasController implements ReactiveController {
 				let upperSprite = this.host.app.stage.children[this.host.curr_stage_index]
 				let bottomSprite = this.host.app.stage.children[i];
 				let cObj: any = undefined;
-				let cOType: string = bottomSprite.name
+				let cOType: string = bottomSprite.label
 					.split(":")[0]
 					.toLowerCase();
 				let cOId: number = Number.parseInt(
-					bottomSprite.name.split(":")[1]
+					bottomSprite.label.split(":")[1]
 				);
 				let dialogPanel =
 					this.host.confirmDialog.shadowRoot.querySelector(
@@ -550,7 +550,7 @@ export class CanvasController implements ReactiveController {
 	 * @param {PIXI.Container} sprite - the sprite to be tinted
 	 * @param {number} color - the selected color
 	 */
-	_tintSprite(sprite: PIXI.Sprite, color: number): void {
+	_tintSprite(sprite: PIXI.Container, color: number): void {
 		sprite.tint = color;
 	}
 
@@ -584,15 +584,26 @@ export class CanvasController implements ReactiveController {
 	 *
 	 * @private
 	 */
-	init(): void {
-		this.host.app = new PIXI.Application<HTMLCanvasElement>({
+	async init(): Promise<void> {
+		const app = new PIXI.Application<PIXI.WebGLRenderer<HTMLCanvasElement>>();
+		await app.init({
+			preference: ["webgl"],
+			autoStart: false,
 			backgroundAlpha: 0,
 			width: 800,
 			height: 600,
 		});
-		const app = this.host.app;
-		this.host.pix_canvas.appendChild(app.view);
-		PIXI.BaseTexture.defaultOptions.scaleMode = PIXI.SCALE_MODES.NEAREST;
+		try {
+			await PIXI.Assets.load(componentTextureUrls.map((src) => ({
+				src,
+				data: { scaleMode: "nearest" },
+			})));
+		} catch (error) {
+			app.destroy(true, { children: true });
+			throw error;
+		}
+		this.host.app = app;
+		this.host.pix_canvas.appendChild(app.canvas);
 		this.host.app.stage.eventMode = "static";
 		this.host.app.stage.hitArea = this.host.app.screen;
 		app.stage.sortableChildren = true;
@@ -638,7 +649,7 @@ export class CanvasController implements ReactiveController {
 	 */
 	_updateSpriteTextures(): void {
 		for (const sprite of this.host.app.stage.children) {
-			const [type, id] = sprite.name.split(":");
+			const [type, id] = sprite.label.split(":");
 			const graphic = componentGraphic(type);
 			if (!graphic.capacityMl) continue;
 			const component = this.host.allChemComponents.find((entry) => entry._type === type && entry._id === Number(id));
@@ -646,7 +657,7 @@ export class CanvasController implements ReactiveController {
 			const mixture = component._content;
 			const filled = mixture._isSolution || mixture.hasLiquidVolume ? graphic.liquid : graphic.solid;
 			const url = mixture._activeMolecules.length ? filled ?? graphic.url : graphic.url;
-			const texture = PIXI.Texture.from(url);
+			const texture = PIXI.Assets.get<PIXI.Texture>(url);
 			if (sprite instanceof PIXI.Sprite && sprite.texture !== texture) sprite.texture = texture;
 		}
 	}
@@ -659,8 +670,8 @@ export class CanvasController implements ReactiveController {
 	_updateCablePos(): void {
 		const cables = this.host.allEComponents.filter((component) => component._type === chemlib.EComponentType.Cable);
 		if (cables.length === 0) return;
-		const stage: PIXI.Container = this.host.app.stage;
-		const sprites = new Map(stage.children.map((sprite) => [sprite.name, sprite]));
+		const stage = this.host.app.stage;
+		const sprites = new Map(stage.children.map((sprite) => [sprite.label, sprite]));
 		const selected = stage.children[this.host.curr_stage_index];
 		for (const cable of cables) {
 			const sprite = sprites.get(`cable:${cable._id}`);
@@ -679,8 +690,7 @@ export class CanvasController implements ReactiveController {
 				const curve = this._buildCableCurve([from.x, from.y], [to.x, to.y]);
 				const previous = sprite.texture;
 				sprite.texture = curve.texture;
-				sprite.width = curve.w;
-				sprite.height = curve.h;
+				sprite.setSize(curve.w, curve.h);
 				sprite.position.set(curve.cx, curve.cy);
 				sprite.rotation = 0;
 				if (previous instanceof PIXI.RenderTexture) previous.destroy(true);
@@ -735,14 +745,16 @@ export class CanvasController implements ReactiveController {
 		const w: number = Math.max(1, maxX - minX);
 		const h: number = Math.max(1, maxY - minY);
 
-		const graphics = this._cableGraphics;
-		graphics.clear();
-		graphics.lineStyle({ width: lineWidth, color: 0x000000, cap: PIXI.LINE_CAP.ROUND });
-		graphics.moveTo(pos1[0], pos1[1]);
-		graphics.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, pos2[0], pos2[1]);
-		const texture = this.host.app.renderer.generateTexture(graphics, {
-			region: new PIXI.Rectangle(minX, minY, w, h),
+		const graphics = this._cableGraphics
+			.clear()
+			.moveTo(pos1[0], pos1[1])
+			.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, pos2[0], pos2[1])
+			.stroke({ width: lineWidth, color: 0x000000, cap: "round" });
+		const texture = this.host.app.renderer.generateTexture({
+			target: graphics,
+			frame: new PIXI.Rectangle(minX, minY, w, h),
 		});
+
 		return { texture, cx: minX + w / 2, cy: minY + h / 2, w, h };
 	}
 }

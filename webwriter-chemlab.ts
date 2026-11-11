@@ -549,7 +549,8 @@ export class ChemLab extends LitElementWw {
 	 * @type {*}
 	 */
 	@property({ attribute: false })
-	accessor app = null;
+	accessor app: PIXI.Application<PIXI.WebGLRenderer<HTMLCanvasElement>> | null = null;
+	private canvasReady: Promise<void>;
 	/**
 	 * signalizes which datasets (avail. components/e-components/atoms) have already been loaded into their selects
 	 *
@@ -956,7 +957,25 @@ export class ChemLab extends LitElementWw {
 			event.preventDefault();
 		});
 		super.firstUpdated(_changedProperties);
-		this.canvas.init();
+		this.canvasReady = this.initializeCanvas();
+	}
+
+	protected override async getUpdateComplete(): Promise<boolean> {
+		const complete = await super.getUpdateComplete();
+		await this.canvasReady;
+		return complete;
+	}
+
+	private async initializeCanvas(): Promise<void> {
+		try {
+			await this.canvas.init();
+		} catch (error) {
+			console.error("Unable to initialize the Chemlab canvas", error);
+			this._emitAlert(this.message("Die Arbeitsfläche konnte nicht geladen werden."), "danger", true);
+			return;
+		}
+		// The first load uses the latest authored data, including updates during asset loading.
+		this.refreshFromRemoteData = false;
 		this.focus();
 		setAnimation(this.dialogAlert, "alert.show", {
 			keyframes: [{ opacity: "0" }, { opacity: "1" }],
@@ -1026,6 +1045,7 @@ export class ChemLab extends LitElementWw {
 
 		}
 
+		if (this.isConnected) this.app.start();
 		this._sendxAPiStatement("registered", "chemlab");
 		this._emitAlert(
 			this.message("klicke zum Starten in das Fenster!"),
@@ -1071,7 +1091,7 @@ export class ChemLab extends LitElementWw {
 		currSprite: PIXI.Sprite,
 		source: chemlib.ChemComponent
 	): void {
-		const keyName = "transfer" + currSprite.name;
+		const keyName = "transfer" + currSprite.label;
 		this.tickerTimeObj[keyName] += 1;
 		if (
 			this.tickerTimeObj[keyName] >=
@@ -1082,7 +1102,7 @@ export class ChemLab extends LitElementWw {
 		) {
 			this.tickerTimeObj[keyName] = 0;
 			if (source._content._activeMolecules.length > 0) {
-				let destSprite: PIXI.Sprite = undefined;
+				let destSprite: PIXI.Container = undefined;
 				this.app.stage.children.forEach((sprite) => {
 					if (sprite != currSprite) {
 						if (
@@ -1105,8 +1125,8 @@ export class ChemLab extends LitElementWw {
 				this.allChemComponents.forEach((comp) => {
 					if (typeof destSprite != "undefined") {
 						if (
-							destSprite.name.split(":")[0] === comp._type &&
-							Number.parseInt(destSprite.name.split(":")[1]) ===
+							destSprite.label.split(":")[0] === comp._type &&
+							Number.parseInt(destSprite.label.split(":")[1]) ===
 								comp._id
 						) {
 							destObj = comp;
@@ -1134,7 +1154,7 @@ export class ChemLab extends LitElementWw {
 		currSprite: PIXI.Sprite,
 		source: chemlib.ElectricComponent
 	): void {
-		const keyName = "echem" + currSprite.name;
+		const keyName = "echem" + currSprite.label;
 		this.tickerTimeObj[keyName] += 1;
 		if (
 			this.tickerTimeObj[keyName] >=
@@ -1182,7 +1202,7 @@ export class ChemLab extends LitElementWw {
 	private dropComponent(event: DragEvent): void {
 		const type = event.dataTransfer?.getData("application/x-chemlab-component") as PaletteComponent;
 		if (!this.app || !this.canAuthor || !Object.hasOwnProperty.call(componentGraphics, type)) return;
-		const bounds = this.app.view.getBoundingClientRect();
+		const bounds = this.app.canvas.getBoundingClientRect();
 		if (event.clientX < bounds.left || event.clientX > bounds.right ||
 			event.clientY < bounds.top || event.clientY > bounds.bottom) return;
 		event.preventDefault();
@@ -1211,10 +1231,10 @@ export class ChemLab extends LitElementWw {
 		this._loadComponents(entry);
 	}
 
-	private findAuthoredComponent(sprite: PIXI.DisplayObject): object | undefined {
+	private findAuthoredComponent(sprite: PIXI.Container): object | undefined {
 		const match = this.avComponentsSprites.find(([entry]) => entry === sprite);
 		return match && this.availableComponents.find((component) =>
-			`${String(component["type"]).toLowerCase()}:${component["id"]}` === sprite.name);
+			`${String(component["type"]).toLowerCase()}:${component["id"]}` === sprite.label);
 	}
 
 	saveComponentPosition(sprite: PIXI.Sprite): void {
@@ -1226,7 +1246,7 @@ export class ChemLab extends LitElementWw {
 		}
 	}
 
-	private removeAuthoredComponent(sprite: PIXI.DisplayObject): void {
+	private removeAuthoredComponent(sprite: PIXI.Container): void {
 		if (!this.canAuthor) return;
 		const entry = this.findAuthoredComponent(sprite);
 		if (!entry) return;
@@ -1279,7 +1299,7 @@ export class ChemLab extends LitElementWw {
 		if (!this.canAuthor || !selected) return false;
 		if (this.stopDose) return true;
 		const target = this.allChemComponents.find((component) =>
-			`${component._type}:${component._id}` === sprite.name);
+			`${component._type}:${component._id}` === sprite.label);
 		if (!target || !Number.isFinite(target._volume) || target._volume <= 0) return false;
 		const dose = this.buildDose(selected.recipe);
 		if (!dose) return true;
@@ -1288,7 +1308,7 @@ export class ChemLab extends LitElementWw {
 		this._getObject(sprite);
 		const controller = new AbortController();
 		const view = this.ownerDocument.defaultView;
-		const canvasView = this.app.view;
+		const canvasView = this.app.canvas;
 		// Keep receiving the release when the pointer leaves the vessel or canvas.
 		try {
 			canvasView.setPointerCapture(pointerId);
@@ -1540,7 +1560,7 @@ export class ChemLab extends LitElementWw {
 	_getObject(sprite): void {
 		if (!sprite) return;
 		this.editingMolecule = false;
-		const name = sprite.name;
+		const name = sprite.label;
 		let chemlib_obj = null;
 
 		let type: string = name.split(":")[0];
@@ -1725,9 +1745,9 @@ export class ChemLab extends LitElementWw {
 							this.app.stage.children.forEach((sprite) => {
 								if (
 									Number.parseInt(
-										sprite.name.split(":")[1]
+										sprite.label.split(":")[1]
 									) === eComp._id &&
-									sprite.name.split(":")[0] === eComp._type
+									sprite.label.split(":")[0] === eComp._type
 								) {
 									this.canvas._tintSprite(sprite, 0xbbf7d0);
 								}
@@ -1761,7 +1781,7 @@ export class ChemLab extends LitElementWw {
 				}
 			});
 			this.eConInfo.innerHTML = "";
-			if (!sprite.name.includes("cable")) {
+			if (!sprite.label.includes("cable")) {
 				chemlib_obj._connections.forEach(
 					(cable: chemlib.ElectricComponent) => {
 						let conComp: chemlib.ElectricComponent =
@@ -1780,9 +1800,9 @@ export class ChemLab extends LitElementWw {
 							this.app.stage.children.forEach((sprite) => {
 								if (
 									Number.parseInt(
-										sprite.name.split(":")[1]
+										sprite.label.split(":")[1]
 									) === conComp._id &&
-									sprite.name.split(":")[0] === conComp._type
+									sprite.label.split(":")[0] === conComp._type
 								) {
 									this.canvas._tintSprite(sprite, 0xbbf7d0);
 								}
@@ -1810,7 +1830,7 @@ export class ChemLab extends LitElementWw {
 									});
 								}
 							})
-							// console.log(fallbackSprite.name)
+							// console.log(fallbackSprite.label)
 							this._getObject(fallbackSprite)
 						});
 						this.eConInfo.appendChild(tag);
@@ -3188,7 +3208,7 @@ export class ChemLab extends LitElementWw {
 		this.canvas._addSprite(cable._type + ":" + cable._id);
 		if (!source) {
 			const sprite = this.app.stage.children.find(
-				(sprite) => sprite.name === sComp._type + ":" + sComp._id
+				(sprite) => sprite.label === sComp._type + ":" + sComp._id
 			);
 			this._getObject(sprite);
 		}

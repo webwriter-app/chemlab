@@ -129,7 +129,7 @@
         "chart.js": "^4.4.8",
         "kekule": "^1.0.0",
         "lit": "^3.2.1",
-        "pixi.js": "^7.4.3",
+        "pixi.js": "8.22.0",
         "smiles-drawer": "2.1.5",
         "unique-names-generator": "^4.7.1"
     },
