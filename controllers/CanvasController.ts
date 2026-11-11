@@ -4,6 +4,8 @@ import * as chemlib from "../chemlib";
 
 import { componentGraphic, componentTextureUrls } from "../data/componentGraphics";
 
+import { STANDARD_CANVAS_HEIGHT, STANDARD_CANVAS_WIDTH, WorkspaceCamera } from "./WorkspaceCamera";
+import { WorkspaceGrid } from "./WorkspaceGrid";
 
 import type { ChemLab } from "../webwriter-chemlab";
 
@@ -16,16 +18,22 @@ import type { ChemLab } from "../webwriter-chemlab";
  */
 export class CanvasController implements ReactiveController {
 	private host: ChemLab;
+	readonly world = new PIXI.Container({ sortableChildren: true, eventMode: "passive" });
+	private camera = new WorkspaceCamera();
+	private grid?: WorkspaceGrid;
+	private resizeObserver?: ResizeObserver;
+	private pan?: { id: number; x: number; y: number; moved: boolean; deselect: boolean };
 
 	/** true while a sprite drag is in progress (pointermove listener attached) */
 	private _dragActive: boolean = false;
 	private _dragMoved = false;
 	private dragPointerId: number | undefined;
+	private expandAfterDrag = false;
 	/** Stable pointermove handler, so it can be removed again with .off(). */
 	private _dragMoveHandler = (event: PIXI.FederatedPointerEvent): void => {
 		if (event.pointerId !== this.dragPointerId) return;
 		this._dragMoved = true;
-		this.host.mousePos = [event.global.x, event.global.y];
+		this.updateMousePosition(event);
 		this._dragMove(event);
 	};
 	/** offset from the sprite's origin to the point where it was grabbed, so a
@@ -90,7 +98,12 @@ export class CanvasController implements ReactiveController {
 		}
 	}
 
-	viewportPoint(x: number, y: number): PIXI.Point {
+	private updateMousePosition(event: PIXI.FederatedPointerEvent): void {
+		const world = this.camera.toWorld(event.global.x, event.global.y);
+		this.host.mousePos = [world.x, world.y];
+	}
+
+	private screenToViewport(x: number, y: number): PIXI.Point {
 		const bounds = this.host.app.canvas.getBoundingClientRect();
 		const { width, height } = this.host.app.screen;
 		return new PIXI.Point(
@@ -99,8 +112,88 @@ export class CanvasController implements ReactiveController {
 		);
 	}
 
+	viewportPoint(x: number, y: number): PIXI.Point {
+		const screen = this.camera.toScreen(x, y);
+		return this.screenToViewport(screen.x, screen.y);
+	}
+
+	worldPointFromViewport(x: number, y: number) {
+		const bounds = this.host.app.canvas.getBoundingClientRect();
+		const { width, height } = this.host.app.screen;
+		return this.camera.toWorld((x - bounds.left) * width / bounds.width, (y - bounds.top) * height / bounds.height);
+	}
+
+	zoomBy(factor: number): void {
+		if (!this.host.app || this._dragActive || this.pan) return;
+		this.camera.zoomAt(factor, this.camera.width / 2, this.camera.height / 2);
+		this.applyCamera();
+	}
+
+	private zoomFromWheel = (event: WheelEvent): void => {
+		if ((!event.ctrlKey && !event.metaKey) || this._dragActive || this.pan) return;
+		const bounds = this.host.app.canvas.getBoundingClientRect();
+		if (!bounds.width || !bounds.height) return;
+		event.preventDefault();
+		const x = (event.clientX - bounds.left) * this.camera.width / bounds.width;
+		const y = (event.clientY - bounds.top) * this.camera.height / bounds.height;
+		const pixels = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? this.camera.height : 1);
+		this.camera.zoomAt(Math.exp(Math.max(-1, Math.min(1, -pixels * 0.002))), x, y);
+		this.applyCamera();
+	};
+
+	private applyCamera(): void {
+		this.world.position.set(this.camera.offsetX, this.camera.offsetY);
+		this.world.scale.set(this.camera.zoom);
+		this.grid?.update(this.camera);
+	}
+
+	private observeCanvas(): void {
+		if (this.resizeObserver || !this.host.app || !this.host.isConnected) return;
+		const area = this.host.canvasArea;
+		const app = this.host.app;
+		const resize = () => {
+			const width = area.clientWidth;
+			const height = area.clientHeight;
+			if (width < 1 || height < 1) return;
+			const resolution = Math.max(1, Math.min(2, this.host.ownerDocument.defaultView.devicePixelRatio));
+			if (app.screen.width !== width || app.screen.height !== height || app.renderer.resolution !== resolution) {
+				app.renderer.resize(width, height, resolution);
+				app.stage.hitArea = app.screen;
+			}
+			this.camera.resize(width, height);
+			this.applyCamera();
+		};
+		this.resizeObserver = new ResizeObserver(resize);
+		this.resizeObserver.observe(area);
+		resize();
+	}
+
+	private beginPan(event: PIXI.FederatedPointerEvent): void {
+		if (this.pan) return;
+		if (event.button === 1) event.preventDefault();
+		this.pan = {
+			id: event.pointerId, x: event.global.x, y: event.global.y,
+			moved: false, deselect: event.button === 0,
+		};
+	}
+
+	private movePan(event: PIXI.FederatedPointerEvent): void {
+		const pan = this.pan;
+		if (!pan || pan.id !== event.pointerId) return;
+		const dx = event.global.x - pan.x;
+		const dy = event.global.y - pan.y;
+		if (!pan.moved && Math.hypot(dx, dy) < 5) return;
+		pan.moved = true;
+		pan.x = event.global.x;
+		pan.y = event.global.y;
+		this._clearLongPress();
+		this.camera.panBy(dx, dy);
+		this.applyCamera();
+		this.updateMousePosition(event);
+	}
+
 	private _openCanvasMenu(x: number, y: number): void {
-		const point = this.viewportPoint(x, y);
+		const point = this.screenToViewport(x, y);
 		const workspace = this.host.containerDiv;
 		const bounds = workspace.getBoundingClientRect();
 		const menu = this.host.contextMenu;
@@ -111,11 +204,14 @@ export class CanvasController implements ReactiveController {
 	}
 
 	hostConnected(): void {
+		this.observeCanvas();
 		this.host.app?.start();
 	}
 
 	hostDisconnected(): void {
 		this.cancelPointerInteraction();
+		this.resizeObserver?.disconnect();
+		this.resizeObserver = undefined;
 		this.host.app?.stop();
 	}
 
@@ -124,12 +220,13 @@ export class CanvasController implements ReactiveController {
 		this.host.app?.stage.off("globalpointermove", this._dragMoveHandler);
 		this._dragActive = false;
 		this.dragPointerId = undefined;
-
+		this.expandAfterDrag = false;
+		this.pan = undefined;
 		this.host.dragObject = undefined;
 	}
 
 	removeSprite(sprite: PIXI.Container): void {
-		this.host.app.stage.removeChild(sprite);
+		this.world.removeChild(sprite);
 		if (sprite instanceof PIXI.Sprite && sprite.texture instanceof PIXI.RenderTexture) {
 			sprite.texture.destroy(true);
 		}
@@ -138,7 +235,7 @@ export class CanvasController implements ReactiveController {
 
 	clearSprites(): void {
 		this.cancelPointerInteraction();
-		for (const sprite of [...this.host.app.stage.children]) this.removeSprite(sprite);
+		for (const sprite of [...this.world.children]) this.removeSprite(sprite);
 	}
 
 	setDeviceActive(sprite: PIXI.Sprite, active: boolean): void {
@@ -166,18 +263,23 @@ export class CanvasController implements ReactiveController {
 		sprite.cursor = "pointer";
 		sprite.on("pointerdown", (event) => {
 			event.stopPropagation();
-			if (this._dragActive) return;
+			if (this._dragActive || this.pan) return;
 			this.host.contextMenu.style.display = "none";
-			this.host.mousePos = [event.global.x, event.global.y];
+			if (event.button === 1) {
+				this.beginPan(event);
+				return;
+			}
+			this.updateMousePosition(event);
 			if (event.button === 0 && this.host.beginChemicalDose(sprite, event.pointerId)) return;
 			const drag = event.button === 0 && !sprite.label.startsWith("cable:");
-			this.host._getObject(sprite);
+			this.expandAfterDrag = drag && this.world.children[this.host.curr_stage_index] !== sprite;
+			this.host._getObject(sprite, !drag);
 			this.host.reportXApi("focused", sprite.label);
 			if (drag) this._dragStart(sprite, event);
 		});
 
 		sprite.label = info;
-		this.host.app.stage.addChild(sprite);
+		this.world.addChild(sprite);
 		if (select && !sprite.label.includes("cable")) {
 			this.host._getObject(sprite);
 		}
@@ -218,7 +320,7 @@ export class CanvasController implements ReactiveController {
 			);
 
 			let mouseHoverObject: number = -1;
-			for (let i = 0; i < this.host.app.stage.children.length; i++) {
+			for (let i = 0; i < this.world.children.length; i++) {
 				if (
 					i != this.host.curr_stage_index &&
 					this._mouseInbounds(
@@ -226,8 +328,8 @@ export class CanvasController implements ReactiveController {
 						50
 					)
 				) {
-					let upperSprite = this.host.app.stage.children[this.host.curr_stage_index]
-					let bottomSprite = this.host.app.stage.children[i];
+					let upperSprite = this.world.children[this.host.curr_stage_index]
+					let bottomSprite = this.world.children[i];
 					let cObj: any = undefined;
 					let cOType: string = bottomSprite.label
 						.split(":")[0]
@@ -317,10 +419,10 @@ export class CanvasController implements ReactiveController {
 
 							&& (upperSprite.y < bottomSprite.y - Math.min(50, bottomSprite.height))
 						) {
-							this.host.app.stage.children[
+							this.world.children[
 								this.host.curr_stage_index
 							].rotation =
-								this.host.app.stage.children[
+								this.world.children[
 									this.host.curr_stage_index
 								].x > bottomSprite.x
 									? -20
@@ -339,7 +441,7 @@ export class CanvasController implements ReactiveController {
 				}
 			}
 			if (mouseHoverObject === -1) {
-				this.host.app.stage.children[this.host.curr_stage_index].rotation = 0;
+				this.world.children[this.host.curr_stage_index].rotation = 0;
 				this.host._hideAlert();
 			}
 		}
@@ -357,13 +459,14 @@ export class CanvasController implements ReactiveController {
 		if (!this._dragActive) return;
 		this.host.app.stage.off("globalpointermove", this._dragMoveHandler);
 		this._dragActive = false;
-
+		const expand = this.expandAfterDrag;
+		this.expandAfterDrag = false;
 		if (!this._dragMoved || !this.host.dragObject) {
 			this.host.dragObject = undefined;
-
+			if (expand) this.host.expandSelectedObjectPanel();
 			return;
 		}
-		for (let i = 0; i < this.host.app.stage.children.length; i++) {
+		for (let i = 0; i < this.world.children.length; i++) {
 			if (
 				i != this.host.curr_stage_index &&
 				this._mouseInbounds(
@@ -371,8 +474,8 @@ export class CanvasController implements ReactiveController {
 				50
 				)
 			) {
-				let upperSprite = this.host.app.stage.children[this.host.curr_stage_index]
-				let bottomSprite = this.host.app.stage.children[i];
+				let upperSprite = this.world.children[this.host.curr_stage_index]
+				let bottomSprite = this.world.children[i];
 				let cObj: any = undefined;
 				let cOType: string = bottomSprite.label
 					.split(":")[0]
@@ -432,7 +535,7 @@ export class CanvasController implements ReactiveController {
 								}
 							);
 							this.host._getObject(
-								this.host.app.stage.children[
+								this.world.children[
 									this.host.curr_stage_index
 								]
 							);
@@ -505,7 +608,7 @@ export class CanvasController implements ReactiveController {
 						await this.host.waitUntil(
 							() => this.host.confirmAction != 0
 						);
-						this.host.app.stage.children[
+						this.world.children[
 							this.host.curr_stage_index
 						].rotation = 0;
 						if (this.host.confirmAction === 1) {
@@ -540,7 +643,7 @@ export class CanvasController implements ReactiveController {
 		}
 		if (this.host.dragObject) this.host.saveComponentPosition(this.host.dragObject);
 		this.host.dragObject = undefined;
-
+		if (expand) this.host.expandSelectedObjectPanel();
 	}
 
 	/**
@@ -563,13 +666,13 @@ export class CanvasController implements ReactiveController {
 	 * @returns {boolean}
 	 */
 	_mouseInbounds(index: number, offset: number): boolean {
-		if (this.host.app.stage.children.length === 1) {
+		if (this.world.children.length === 1) {
 			return false;
 		}
-		let objWidth: number = this.host.app.stage.children[index].width;
-		let objHeight: number = this.host.app.stage.children[index].height;
-		let objX: number = this.host.app.stage.children[index].x - 0.5 * objWidth;
-		let objY: number = this.host.app.stage.children[index].y - 0.5 * objHeight;
+		let objWidth: number = this.world.children[index].width;
+		let objHeight: number = this.world.children[index].height;
+		let objX: number = this.world.children[index].x - 0.5 * objWidth;
+		let objY: number = this.world.children[index].y - 0.5 * objHeight;
 
 		return (
 			this.host.mousePos[0] > objX - offset &&
@@ -590,8 +693,8 @@ export class CanvasController implements ReactiveController {
 			preference: ["webgl"],
 			autoStart: false,
 			backgroundAlpha: 0,
-			width: 800,
-			height: 600,
+			width: STANDARD_CANVAS_WIDTH,
+			height: STANDARD_CANVAS_HEIGHT,
 		});
 		try {
 			await PIXI.Assets.load(componentTextureUrls.map((src) => ({
@@ -606,39 +709,56 @@ export class CanvasController implements ReactiveController {
 		this.host.pix_canvas.appendChild(app.canvas);
 		this.host.app.stage.eventMode = "static";
 		this.host.app.stage.hitArea = this.host.app.screen;
-		app.stage.sortableChildren = true;
+		this.grid = new WorkspaceGrid();
+		app.stage.addChild(this.grid.mesh, this.world);
+		app.canvas.addEventListener("wheel", this.zoomFromWheel, { passive: false });
+		this.observeCanvas();
+		this.applyCamera();
 		// pointermove (not mousemove) so mousePos stays current for touch too.
 		// A drag is ended only on pointerup/pointerupoutside — not when the
 		// pointer briefly leaves the sprite bounds during a fast drag.
 		this.host.app.stage.on("pointermove", (event) => {
-			this.host.mousePos = [event.global.x, event.global.y];
+			this.updateMousePosition(event);
 		});
+		app.stage.on("globalpointermove", (event) => this.movePan(event));
 		app.stage.on("pointerdown", (event) => {
-			if (this._dragActive) return;
-			this.host.mousePos = [event.global.x, event.global.y];
-			if (event.target === app.stage && event.button === 0) {
-				if (this.host.placeSelectedComponent(event.global.x, event.global.y)) return;
-				this.host.clearObjectSelection();
-			}
-			if (this.host.canAuthor) return;
+			if (this._dragActive || this.pan) return;
+			this.updateMousePosition(event);
 			if (this.host.contextMenu.style.display !== "none") {
 				this.host.contextMenu.style.display = "none";
+				if (event.button === 0) this.host.clearObjectSelection();
 				return;
 			}
-			if (event.pointerType === "mouse") {
-				if (event.button === 2) this._openCanvasMenu(event.global.x, event.global.y);
-			} else {
-				const { x, y } = event.global;
-				this._armLongPress(() => this._openCanvasMenu(x, y), event);
+			if (event.target === app.stage && event.button === 0) {
+				if (this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+				this.beginPan(event);
+				if (!this.host.canAuthor && event.pointerType !== "mouse") {
+					const { x, y } = event.global;
+					this._armLongPress(() => {
+						if (this.pan) this.pan.deselect = false;
+						this._openCanvasMenu(x, y);
+					}, event);
+				}
+			} else if (event.button === 1) {
+				this.beginPan(event);
+			} else if (!this.host.canAuthor && event.button === 2) {
+				this._openCanvasMenu(event.global.x, event.global.y);
 			}
 		});
 		const finishPointer = (event: PIXI.FederatedPointerEvent) => {
-			if (!this._dragActive || event.pointerId === this.dragPointerId) void this._dragEnd();
+			if (this.pan?.id === event.pointerId) {
+				const { moved, deselect } = this.pan;
+				this.pan = undefined;
+				this._clearLongPress();
+				if (deselect && !moved) this.host.clearObjectSelection();
+			} else if (!this.pan && (!this._dragActive || event.pointerId === this.dragPointerId)) {
+				void this._dragEnd();
+			}
 		};
 		this.host.app.stage.on("pointerup", finishPointer);
 		this.host.app.stage.on("pointerupoutside", finishPointer);
 		this.host.app.stage.on("pointercancel", (event) => {
-			if (!this._dragActive || this.dragPointerId === event.pointerId) this.cancelPointerInteraction();
+			if (this.pan?.id === event.pointerId || this.dragPointerId === event.pointerId) this.cancelPointerInteraction();
 		});
 	}
 
@@ -648,7 +768,7 @@ export class CanvasController implements ReactiveController {
 	 * @private
 	 */
 	_updateSpriteTextures(): void {
-		for (const sprite of this.host.app.stage.children) {
+		for (const sprite of this.world.children) {
 			const [type, id] = sprite.label.split(":");
 			const graphic = componentGraphic(type);
 			if (!graphic.capacityMl) continue;
@@ -670,7 +790,7 @@ export class CanvasController implements ReactiveController {
 	_updateCablePos(): void {
 		const cables = this.host.allEComponents.filter((component) => component._type === chemlib.EComponentType.Cable);
 		if (cables.length === 0) return;
-		const stage = this.host.app.stage;
+		const stage = this.world;
 		const sprites = new Map(stage.children.map((sprite) => [sprite.label, sprite]));
 		const selected = stage.children[this.host.curr_stage_index];
 		for (const cable of cables) {

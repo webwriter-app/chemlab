@@ -1,5 +1,5 @@
 import { drawerLabels, effectiveLanguage, localize } from "./localization/localization";
-import { html, LitElement, PropertyValueMap } from "lit";
+import { html, LitElement, nothing, PropertyValueMap } from "lit";
 import { LitElementWw } from "@webwriter/lit";
 import {
 	customElement,
@@ -66,6 +66,7 @@ import { SimulationController } from "./controllers/SimulationController";
 import { componentGraphic, componentGraphics, type PaletteComponent } from "./data/componentGraphics";
 import { chemicalCatalog, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
 import { prepareDose, type SavedDose } from "./data/measuredDose";
+import { STANDARD_CANVAS_HEIGHT } from "./controllers/WorkspaceCamera";
 import { CanvasController } from "./controllers/CanvasController";
 
 /**
@@ -397,8 +398,10 @@ export class ChemLab extends LitElementWw {
 	@query("#diagramDrawer")
 	private accessor diagramDrawer: SlDrawer;
 
-	@query("#canvasContainer")
-	accessor canvasContainer: HTMLDivElement;
+	readonly canvasContainer = Object.assign(document.createElement("div"), { id: "canvasContainer" });
+
+	@query("#canvasArea")
+	accessor canvasArea: HTMLDivElement;
 	/**
 	 * part of options, toggles different panel variants 
 	 *
@@ -611,7 +614,12 @@ export class ChemLab extends LitElementWw {
 	@state()
 	private accessor objectPanelOpen = false;
 
+	@state() private accessor fullWidthMode = false;
+	@state() private accessor diagramPanelOpen = false;
 	@state() private accessor teacherDrawerOpen = false;
+	private teacherDrawerChoice?: boolean;
+	private workspaceResizeObserver?: ResizeObserver;
+	private workspaceClassObserver?: MutationObserver;
 	@state() private accessor teacherTab: "components" | "chemicals" = "components";
 	@state() private accessor componentCapacities: Partial<Record<PaletteComponent, number>> = {};
 	@state() private accessor componentToPlace: PaletteComponent | undefined;
@@ -810,14 +818,44 @@ export class ChemLab extends LitElementWw {
 		this.dataObserver = new MutationObserver(() => this.readAuthoredData());
 		this.dataObserver.observe(this, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ["slot", "type"] });
 		if (this.dataBlock()) this.readAuthoredData();
+		this.observeWorkspaceLayout();
 	}
 
 	disconnectedCallback(): void {
 		this.stopDose?.();
 		this.hideFillMeter();
+		this.workspaceResizeObserver?.disconnect();
+		this.workspaceResizeObserver = undefined;
+		this.workspaceClassObserver?.disconnect();
+		this.workspaceClassObserver = undefined;
 		this.dataObserver?.disconnect();
 		this.dataObserver = undefined;
 		super.disconnectedCallback();
+	}
+
+	private observeWorkspaceLayout(): void {
+		if (!this.containerDiv || this.workspaceResizeObserver || !this.isConnected) return;
+		const update = () => this.updateWorkspaceLayout();
+		this.workspaceResizeObserver = new ResizeObserver(update);
+		this.workspaceResizeObserver.observe(this.containerDiv);
+		this.workspaceClassObserver = new MutationObserver(update);
+		this.workspaceClassObserver.observe(this, { attributes: true, attributeFilter: ["class", "contenteditable"] });
+		update();
+	}
+
+	private updateWorkspaceLayout(): void {
+		const wide = this.classList.contains("ww-full-width");
+		if (wide !== this.fullWidthMode) {
+			this.fullWidthMode = wide;
+			this.diagramPanelOpen = wide;
+			if (!this.editingMolecule) this.objectPanelOpen = wide && !!this.curr_obj;
+		}
+		const drawer = this.shadowRoot.getElementById("teacherDrawer");
+		const body = this.shadowRoot.getElementById("teacherDrawerContent");
+		const chrome = drawer.offsetHeight - body.offsetHeight;
+		const standardDrawerBody = 240;
+		this.teacherDrawerOpen = this.canAuthor && (this.teacherDrawerChoice ??
+			(this.containerDiv.clientHeight >= STANDARD_CANVAS_HEIGHT + standardDrawerBody + chrome));
 	}
 
 	protected updated(changed: PropertyValueMap<any>): void {
@@ -957,6 +995,7 @@ export class ChemLab extends LitElementWw {
 			event.preventDefault();
 		});
 		super.firstUpdated(_changedProperties);
+		this.observeWorkspaceLayout();
 		this.canvasReady = this.initializeCanvas();
 	}
 
@@ -1103,7 +1142,7 @@ export class ChemLab extends LitElementWw {
 			this.tickerTimeObj[keyName] = 0;
 			if (source._content._activeMolecules.length > 0) {
 				let destSprite: PIXI.Container = undefined;
-				this.app.stage.children.forEach((sprite) => {
+				this.canvas.world.children.forEach((sprite) => {
 					if (sprite != currSprite) {
 						if (
 							sprite.y - sprite.height / 2 >
@@ -1207,9 +1246,8 @@ export class ChemLab extends LitElementWw {
 			event.clientY < bounds.top || event.clientY > bounds.bottom) return;
 		event.preventDefault();
 		event.stopPropagation();
-		this.addAuthoredComponent(type,
-			(event.clientX - bounds.left) * this.app.screen.width / bounds.width,
-			(event.clientY - bounds.top) * this.app.screen.height / bounds.height);
+		const point = this.canvas.worldPointFromViewport(event.clientX, event.clientY);
+		this.addAuthoredComponent(type, point.x, point.y);
 	}
 
 	placeSelectedComponent(x: number, y: number): boolean {
@@ -1286,7 +1324,7 @@ export class ChemLab extends LitElementWw {
 
 	private saveSelectedComponent(fields: Record<string, unknown>): void {
 		if (!this.canAuthor) return;
-		const sprite = this.app.stage.children[this.curr_stage_index];
+		const sprite = this.canvas.world.children[this.curr_stage_index];
 		const entry = sprite && this.findAuthoredComponent(sprite);
 		if (entry) {
 			Object.assign(entry, fields);
@@ -1557,10 +1595,11 @@ export class ChemLab extends LitElementWw {
 	 * @private
 	 * @param {*} sprite - the seleted sprite
 	 */
-	_getObject(sprite): void {
+	_getObject(sprite, expand = true): void {
 		if (!sprite) return;
 		this.editingMolecule = false;
 		const name = sprite.label;
+		const newSelection = this.curr_name !== name;
 		let chemlib_obj = null;
 
 		let type: string = name.split(":")[0];
@@ -1742,7 +1781,7 @@ export class ChemLab extends LitElementWw {
 							this.allEComponents.indexOf(eComp);
 						option.innerHTML = this.itemName(eComp._type);
 						option.onpointerover = (event) => {
-							this.app.stage.children.forEach((sprite) => {
+							this.canvas.world.children.forEach((sprite) => {
 								if (
 									Number.parseInt(
 										sprite.label.split(":")[1]
@@ -1754,7 +1793,7 @@ export class ChemLab extends LitElementWw {
 							});
 						};
 						option.onpointerout = (event) => {
-							this.app.stage.children.forEach((sprite) => {
+							this.canvas.world.children.forEach((sprite) => {
 								let color: number = 0xffffff;
 								this.availableComponents.forEach(
 									(availComp) => {
@@ -1797,7 +1836,7 @@ export class ChemLab extends LitElementWw {
 						this.localizeControl(tag, "title", "Doppelklicken zum Lösen der Verbindung.");
 						tag.addEventListener("pointerenter", (event) => {
 							tag.variant = "success";
-							this.app.stage.children.forEach((sprite) => {
+							this.canvas.world.children.forEach((sprite) => {
 								if (
 									Number.parseInt(
 										sprite.label.split(":")[1]
@@ -1810,7 +1849,7 @@ export class ChemLab extends LitElementWw {
 						});
 						tag.addEventListener("pointerleave", (event) => {
 							tag.variant = "neutral";
-							this.app.stage.children.forEach((sprite) => {
+							this.canvas.world.children.forEach((sprite) => {
 								this.canvas._tintSprite(sprite, 0xffffff);
 							});
 						});
@@ -1825,7 +1864,7 @@ export class ChemLab extends LitElementWw {
 										1500
 									);
 									this._remEcon(comp);
-									this.app.stage.children.forEach((sprite) => {
+									this.canvas.world.children.forEach((sprite) => {
 										this.canvas._tintSprite(sprite, 0xffffff);
 									});
 								}
@@ -1929,9 +1968,10 @@ export class ChemLab extends LitElementWw {
 			}
 		}
 
-		this.curr_stage_index = this.app.stage.children.indexOf(sprite);
+		this.curr_stage_index = this.canvas.world.children.indexOf(sprite);
 		this.curr_obj = chemlib_obj;
 		this.curr_name = name;
+		if (expand && newSelection) this.expandSelectedObjectPanel();
 		this._updatePopup();
 
 		this.requestUpdate();
@@ -1990,7 +2030,7 @@ export class ChemLab extends LitElementWw {
 			});
 		}
 
-		const sprite = this.app.stage.children[this.curr_stage_index];
+		const sprite = this.canvas.world.children[this.curr_stage_index];
 		this.stopDose?.();
 		this.hideFillMeter();
 		this.removeAuthoredComponent(sprite);
@@ -3010,7 +3050,7 @@ export class ChemLab extends LitElementWw {
 				success: true,
 				completion: true,
 			});
-			this._getObject(this.app.stage.children[this.curr_stage_index]);
+			this._getObject(this.canvas.world.children[this.curr_stage_index]);
 			(
 				this.shadowRoot.getElementById(
 					"mol_preview"
@@ -3207,7 +3247,7 @@ export class ChemLab extends LitElementWw {
 		this.allEComponents.push(cable);
 		this.canvas._addSprite(cable._type + ":" + cable._id);
 		if (!source) {
-			const sprite = this.app.stage.children.find(
+			const sprite = this.canvas.world.children.find(
 				(sprite) => sprite.label === sComp._type + ":" + sComp._id
 			);
 			this._getObject(sprite);
@@ -3283,7 +3323,7 @@ export class ChemLab extends LitElementWw {
 	 */
 	private _remEcon(partner: chemlib.ElectricComponent): void {
 		let message: string = this.curr_obj.disconnect(partner);
-		this._getObject(this.app.stage.children[this.curr_stage_index]);
+		this._getObject(this.canvas.world.children[this.curr_stage_index]);
 		if (message === "") {
 			this._sendxAPiStatement(
 				"removed",
@@ -3498,7 +3538,7 @@ export class ChemLab extends LitElementWw {
 		return html`
 			<div
 				id="upper"
-				class=${this.objectPanelOpen ? "show-object-panel" : ""}
+				class=${`${this.objectPanelOpen ? "show-object-panel" : ""} ${this.fullWidthMode && this.diagramPanelOpen ? "show-diagram-panel" : ""}`}
 			>
 				<div id="canvasArea" @dragover=${this.handleComponentDragOver} @drop=${this.dropComponent}>
 					${this.pix_canvas}
@@ -3528,7 +3568,7 @@ export class ChemLab extends LitElementWw {
 					${this.renderObjectSummary()}
 					${this.renderObjectPanel()}
 				</aside>
-				${this.renderDiagramDrawer()}
+				${this.fullWidthMode ? this.renderInlineDiagramPanel() : this.renderDiagramDrawer()}
 				${this.renderConfirmDialog()}
 				${this.renderContextMenu()}
 				${this.renderTeacherDrawer()}
@@ -3590,10 +3630,36 @@ export class ChemLab extends LitElementWw {
 		`;
 	}
 
+	expandSelectedObjectPanel(): void {
+		if (this.fullWidthMode && this.curr_obj) this.setObjectPanelOpen(true);
+	}
+
 	private setObjectPanelOpen(open: boolean): void {
 		if (this.objectPanelOpen === open) return;
 		this.objectPanelOpen = open;
 		this._sendxAPiStatement(open ? "opened" : "closed", "objectPanel");
+	}
+
+	private toggleDiagramPanel(): void {
+		if (this.fullWidthMode) {
+			this.diagramPanelOpen = !this.diagramPanelOpen;
+			this._sendxAPiStatement(this.diagramPanelOpen ? "opened" : "closed", "diagramPanel");
+		} else {
+			this.diagramDrawer.show();
+			this._sendxAPiStatement("opened", "diagramPanel");
+		}
+	}
+
+	private renderInlineDiagramPanel() {
+		return html`
+			<aside id="inlineDiagramPanel" aria-label=${this.message("Diagramme")} ?hidden=${!this.diagramPanelOpen}>
+				<sl-badge variant="primary">${this.message("Diagramme")}</sl-badge>
+				<sl-checkbox .checked=${this.diagrams.showLine} @sl-change=${() => this.diagrams.toggleShowLine()}>
+					${this.message("Kurven anzeigen")}
+				</sl-checkbox>
+				${this.canvasContainer}
+			</aside>
+		`;
 	}
 
 	private renderDiagramDrawer() {
@@ -3636,10 +3702,7 @@ export class ChemLab extends LitElementWw {
 							><p>${this.message("Kurven anzeigen")}</p></sl-checkbox
 						>
 					</div>
-					<div
-						id="canvasContainer"
-						style="position: absolute; top: 50px; left: 0px; width: 100%; max-height: 550px; overflow: auto"
-					></div>
+					${this.canvasContainer}
 				</sl-drawer>
 		`;
 	}
@@ -3689,10 +3752,9 @@ export class ChemLab extends LitElementWw {
 				>
 					<button
 						id="toggleDiagramDrawer"
-						@click="${() => {
-							this.diagramDrawer.show();
-							this._sendxAPiStatement("opened", "diagramPanel");
-						}}"
+						title=${this.message("Diagramme")}
+						aria-expanded=${this.fullWidthMode ? String(this.diagramPanelOpen) : nothing}
+						@click=${this.toggleDiagramPanel}
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -3706,6 +3768,12 @@ export class ChemLab extends LitElementWw {
 							/>
 						</svg>
 					</button>
+				</div>
+				<div id="canvasZoom">
+					<sl-button size="small" title=${this.message("Vergrößern")}
+						aria-label=${this.message("Vergrößern")} @click=${() => this.canvas.zoomBy(1.25)}>+</sl-button>
+					<sl-button size="small" title=${this.message("Verkleinern")}
+						aria-label=${this.message("Verkleinern")} @click=${() => this.canvas.zoomBy(0.8)}>−</sl-button>
 				</div>
 				<sl-alert
 					id="dialogOverview"
@@ -3721,7 +3789,7 @@ export class ChemLab extends LitElementWw {
 		return html`
 			<section id="teacherDrawer" class="author-only" aria-label=${this.message("Lehrkraft Steuerung")}>
 				<sl-button size="small" aria-controls="teacherDrawerContent" aria-expanded=${this.teacherDrawerOpen}
-					@click=${() => { this.teacherDrawerOpen = !this.teacherDrawerOpen; }}>
+					@click=${() => { this.teacherDrawerChoice = this.teacherDrawerOpen = !this.teacherDrawerOpen; }}>
 					<svg slot="prefix" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
 						<path d=${this.teacherDrawerOpen ? "m4 6 4 4 4-4" : "m4 10 4-4 4 4"}/>
 					</svg>
@@ -3922,7 +3990,7 @@ export class ChemLab extends LitElementWw {
 						id="openComp"
 						@click="${(event) => {
 							let currSprite =
-								this.app.stage.children[
+								this.canvas.world.children[
 									this.curr_stage_index
 								];
 							if (
@@ -3965,7 +4033,7 @@ export class ChemLab extends LitElementWw {
 						id="activateEComp"
 						@click="${(event) => {
 							let currSprite =
-								this.app.stage.children[
+								this.canvas.world.children[
 									this.curr_stage_index
 								];
 							if (
@@ -4066,7 +4134,7 @@ export class ChemLab extends LitElementWw {
 																	if (!this.curr_obj || this.editingMolecule) return;
 																	this.curr_obj._content = chemlib.StructureManager.newMixture();
 																	this.saveSelectedComponent({ content: "", vol: 0, doses: [] });
-																	this._getObject(this.app.stage.children[this.curr_stage_index]);
+																	this._getObject(this.canvas.world.children[this.curr_stage_index]);
 																	this.requestUpdate();
 																}}"
 																title=${this.message("Objekt leeren")}
@@ -4173,7 +4241,7 @@ export class ChemLab extends LitElementWw {
 																			this.mixSelect.disabled =
 																				true;
 																			this._getObject(
-																				this.app.stage.children[
+																				this.canvas.world.children[
 																					this
 																						.curr_stage_index
 																				]

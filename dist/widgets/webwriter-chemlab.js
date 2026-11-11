@@ -12053,8 +12053,8 @@ var require_Vertex = __commonJS({
        * @param {Vertex} vertex The vertex to check.
        * @returns {Boolean} A boolean indicating whether or not the two vertices have the same id.
        */
-      equals(vertex3) {
-        return this.id === vertex3.id;
+      equals(vertex4) {
+        return this.id === vertex4.id;
       }
       /**
        * Returns the angle of this vertexes positional vector. If a reference vector is supplied in relations to this vector, else in relations to the coordinate system.
@@ -14056,25 +14056,25 @@ var require_Graph = __commonJS({
         atom.ringbonds = node.ringbonds;
         atom.bracket = node.atom.element ? node.atom : null;
         atom.class = node.atom.class;
-        let vertex3 = new Vertex(atom);
+        let vertex4 = new Vertex(atom);
         let parentVertex = this.vertices[parentVertexId];
-        this.addVertex(vertex3);
+        this.addVertex(vertex4);
         if (atom.idx !== null) {
-          this.atomIdxToVertexId.push(vertex3.id);
+          this.atomIdxToVertexId.push(vertex4.id);
         }
         if (parentVertexId !== null) {
-          vertex3.setParentVertexId(parentVertexId);
-          vertex3.value.addNeighbouringElement(parentVertex.value.element);
-          parentVertex.addChild(vertex3.id);
+          vertex4.setParentVertexId(parentVertexId);
+          vertex4.value.addNeighbouringElement(parentVertex.value.element);
+          parentVertex.addChild(vertex4.id);
           parentVertex.value.addNeighbouringElement(atom.element);
-          parentVertex.spanningTreeChildren.push(vertex3.id);
-          let edge = new Edge(parentVertexId, vertex3.id, 1);
+          parentVertex.spanningTreeChildren.push(vertex4.id);
+          let edge = new Edge(parentVertexId, vertex4.id, 1);
           let vertexId = null;
           if (isBranch) {
-            edge.setBondType(vertex3.value.branchBond || "-");
-            vertexId = vertex3.id;
-            edge.setBondType(vertex3.value.branchBond || "-");
-            vertexId = vertex3.id;
+            edge.setBondType(vertex4.value.branchBond || "-");
+            vertexId = vertex4.id;
+            edge.setBondType(vertex4.value.branchBond || "-");
+            vertexId = vertex4.id;
           } else {
             edge.setBondType(parentVertex.value.bondType || "-");
             vertexId = parentVertex.id;
@@ -14100,14 +14100,14 @@ var require_Graph = __commonJS({
               next: null,
               hasNext: false,
               bond: "-"
-            }, i11, vertex3.id, true);
+            }, i11, vertex4.id, true);
           }
         }
         for (var i11 = 0; i11 < node.branchCount; i11++) {
-          this._init(node.branches[i11], i11 + offset3, vertex3.id, true);
+          this._init(node.branches[i11], i11 + offset3, vertex4.id, true);
         }
         if (node.hasNext) {
-          this._init(node.next, node.branchCount + offset3, vertex3.id);
+          this._init(node.next, node.branchCount + offset3, vertex4.id);
         }
       }
       /**
@@ -14124,10 +14124,10 @@ var require_Graph = __commonJS({
        * @param {Vertex} vertex A new vertex.
        * @returns {Number} The vertex id of the new vertex.
        */
-      addVertex(vertex3) {
-        vertex3.id = this.vertices.length;
-        this.vertices.push(vertex3);
-        return vertex3.id;
+      addVertex(vertex4) {
+        vertex4.id = this.vertices.length;
+        this.vertices.push(vertex4);
+        return vertex4.id;
       }
       /**
        * Add an edge to the graph.
@@ -14168,9 +14168,9 @@ var require_Graph = __commonJS({
        */
       getEdges(vertexId) {
         let edgeIds = Array();
-        let vertex3 = this.vertices[vertexId];
-        for (var i11 = 0; i11 < vertex3.neighbours.length; i11++) {
-          edgeIds.push(this.vertexIdsToEdgeId[vertexId + "_" + vertex3.neighbours[i11]]);
+        let vertex4 = this.vertices[vertexId];
+        for (var i11 = 0; i11 < vertex4.neighbours.length; i11++) {
+          edgeIds.push(this.vertexIdsToEdgeId[vertexId + "_" + vertex4.neighbours[i11]]);
         }
         return edgeIds;
       }
@@ -14416,10 +14416,10 @@ var require_Graph = __commonJS({
         var queue = [startVertexId];
         while (queue.length > 0) {
           let u7 = queue.shift();
-          let vertex3 = this.vertices[u7];
-          callback2(vertex3);
-          for (var i11 = 0; i11 < vertex3.neighbours.length; i11++) {
-            let v4 = vertex3.neighbours[i11];
+          let vertex4 = this.vertices[u7];
+          callback2(vertex4);
+          for (var i11 = 0; i11 < vertex4.neighbours.length; i11++) {
+            let v4 = vertex4.neighbours[i11];
             if (!visited[v4]) {
               visited[v4] = true;
               queue.push(v4);
@@ -14468,10 +14468,10 @@ var require_Graph = __commonJS({
           return;
         }
         visited[vertexId] = 1;
-        let vertex3 = this.vertices[vertexId];
-        let neighbours = vertex3.getNeighbours(parentVertexId);
+        let vertex4 = this.vertices[vertexId];
+        let neighbours = vertex4.getNeighbours(parentVertexId);
         if (!ignoreFirst || depth > 1) {
-          callback2(vertex3);
+          callback2(vertex4);
         }
         for (var i11 = 0; i11 < neighbours.length; i11++) {
           this.traverseTree(neighbours[i11], vertexId, callback2, maxDepth, ignoreFirst, depth + 1, visited);
@@ -14490,8 +14490,8 @@ var require_Graph = __commonJS({
         let edgeStrength = bondLength;
         var i11 = vertexIds.length;
         while (i11--) {
-          let vertex3 = this.vertices[vertexIds[i11]];
-          var j4 = vertex3.neighbours.length;
+          let vertex4 = this.vertices[vertexIds[i11]];
+          var j4 = vertex4.neighbours.length;
         }
         let matDist = this.getSubgraphDistanceMatrix(vertexIds);
         let length2 = vertexIds.length;
@@ -14503,15 +14503,15 @@ var require_Graph = __commonJS({
         let arrPositioned = Array(length2);
         i11 = length2;
         while (i11--) {
-          let vertex3 = this.vertices[vertexIds[i11]];
-          if (!vertex3.positioned) {
+          let vertex4 = this.vertices[vertexIds[i11]];
+          if (!vertex4.positioned) {
             arrPositionX[i11] = center.x + Math.cos(a7) * radius;
             arrPositionY[i11] = center.y + Math.sin(a7) * radius;
           } else {
-            arrPositionX[i11] = vertex3.position.x;
-            arrPositionY[i11] = vertex3.position.y;
+            arrPositionX[i11] = vertex4.position.x;
+            arrPositionY[i11] = vertex4.position.y;
           }
-          arrPositioned[i11] = vertex3.positioned;
+          arrPositioned[i11] = vertex4.positioned;
           a7 += angle;
         }
         let matLength = Array(length2);
@@ -14669,11 +14669,11 @@ var require_Graph = __commonJS({
         i11 = length2;
         while (i11--) {
           let index2 = vertexIds[i11];
-          let vertex3 = this.vertices[index2];
-          vertex3.position.x = arrPositionX[i11];
-          vertex3.position.y = arrPositionY[i11];
-          vertex3.positioned = true;
-          vertex3.forcePositioned = true;
+          let vertex4 = this.vertices[index2];
+          vertex4.position.x = arrPositionX[i11];
+          vertex4.position.y = arrPositionY[i11];
+          vertex4.positioned = true;
+          vertex4.forcePositioned = true;
         }
       }
       /**
@@ -15929,28 +15929,28 @@ var require_DrawerBase = __commonJS({
       initRings() {
         let openBonds = /* @__PURE__ */ new Map();
         for (var i11 = this.graph.vertices.length - 1; i11 >= 0; i11--) {
-          let vertex3 = this.graph.vertices[i11];
-          if (vertex3.value.ringbonds.length === 0) {
+          let vertex4 = this.graph.vertices[i11];
+          if (vertex4.value.ringbonds.length === 0) {
             continue;
           }
-          for (var j4 = 0; j4 < vertex3.value.ringbonds.length; j4++) {
-            let ringbondId = vertex3.value.ringbonds[j4].id;
-            let ringbondBond = vertex3.value.ringbonds[j4].bond;
+          for (var j4 = 0; j4 < vertex4.value.ringbonds.length; j4++) {
+            let ringbondId = vertex4.value.ringbonds[j4].id;
+            let ringbondBond = vertex4.value.ringbonds[j4].bond;
             if (!openBonds.has(ringbondId)) {
-              openBonds.set(ringbondId, [vertex3.id, ringbondBond]);
+              openBonds.set(ringbondId, [vertex4.id, ringbondBond]);
             } else {
-              let sourceVertexId = vertex3.id;
+              let sourceVertexId = vertex4.id;
               let targetVertexId = openBonds.get(ringbondId)[0];
               let targetRingbondBond = openBonds.get(ringbondId)[1];
               let edge = new Edge(sourceVertexId, targetVertexId, 1);
               edge.setBondType(targetRingbondBond || ringbondBond || "-");
               let edgeId = this.graph.addEdge(edge);
               let targetVertex = this.graph.vertices[targetVertexId];
-              vertex3.addRingbondChild(targetVertexId, j4);
-              vertex3.value.addNeighbouringElement(targetVertex.value.element);
+              vertex4.addRingbondChild(targetVertexId, j4);
+              vertex4.value.addNeighbouringElement(targetVertex.value.element);
               targetVertex.addRingbondChild(sourceVertexId, j4);
-              targetVertex.value.addNeighbouringElement(vertex3.value.element);
-              vertex3.edges.push(edgeId);
+              targetVertex.value.addNeighbouringElement(vertex4.value.element);
+              vertex4.edges.push(edgeId);
               targetVertex.edges.push(edgeId);
               openBonds.delete(ringbondId);
             }
@@ -16009,14 +16009,14 @@ var require_DrawerBase = __commonJS({
       initHydrogens() {
         if (!this.opts.explicitHydrogens) {
           for (var i11 = 0; i11 < this.graph.vertices.length; i11++) {
-            let vertex3 = this.graph.vertices[i11];
-            if (vertex3.value.element !== "H") {
+            let vertex4 = this.graph.vertices[i11];
+            if (vertex4.value.element !== "H") {
               continue;
             }
-            let neighbour = this.graph.vertices[vertex3.neighbours[0]];
+            let neighbour = this.graph.vertices[vertex4.neighbours[0]];
             neighbour.value.hasHydrogen = true;
             if (!neighbour.value.isStereoCenter || neighbour.value.rings.length < 2 && !neighbour.value.bridgedRing || neighbour.value.bridgedRing && neighbour.value.originalRings.length < 2) {
-              vertex3.value.isDrawn = false;
+              vertex4.value.isDrawn = false;
             }
           }
         }
@@ -16083,30 +16083,30 @@ var require_DrawerBase = __commonJS({
         }
         let leftovers = /* @__PURE__ */ new Set();
         for (let id of vertices) {
-          let vertex3 = this.graph.vertices[id];
-          let intersection = ArrayHelper.intersection(ringIds, vertex3.value.rings);
-          if (vertex3.value.rings.length === 1 || intersection.length === 1) {
-            ringMembers.add(vertex3.id);
+          let vertex4 = this.graph.vertices[id];
+          let intersection = ArrayHelper.intersection(ringIds, vertex4.value.rings);
+          if (vertex4.value.rings.length === 1 || intersection.length === 1) {
+            ringMembers.add(vertex4.id);
           } else {
-            leftovers.add(vertex3.id);
+            leftovers.add(vertex4.id);
           }
         }
         let tmp = Array();
         let insideRing = Array();
         for (let id of leftovers) {
-          let vertex3 = this.graph.vertices[id];
+          let vertex4 = this.graph.vertices[id];
           let onRing = false;
-          for (let j5 = 0; j5 < vertex3.edges.length; j5++) {
-            if (this.edgeRingCount(vertex3.edges[j5]) === 1) {
+          for (let j5 = 0; j5 < vertex4.edges.length; j5++) {
+            if (this.edgeRingCount(vertex4.edges[j5]) === 1) {
               onRing = true;
             }
           }
           if (onRing) {
-            vertex3.value.isBridgeNode = true;
-            ringMembers.add(vertex3.id);
+            vertex4.value.isBridgeNode = true;
+            ringMembers.add(vertex4.id);
           } else {
-            vertex3.value.isBridge = true;
-            ringMembers.add(vertex3.id);
+            vertex4.value.isBridge = true;
+            ringMembers.add(vertex4.id);
           }
         }
         let ring = new Ring([...ringMembers]);
@@ -16120,13 +16120,13 @@ var require_DrawerBase = __commonJS({
           this.graph.vertices[ring.members[i11]].value.bridgedRing = ring.id;
         }
         for (var i11 = 0; i11 < insideRing.length; i11++) {
-          let vertex3 = this.graph.vertices[insideRing[i11]];
-          vertex3.value.rings = Array();
+          let vertex4 = this.graph.vertices[insideRing[i11]];
+          vertex4.value.rings = Array();
         }
         for (let id of ringMembers) {
-          let vertex3 = this.graph.vertices[id];
-          vertex3.value.rings = ArrayHelper.removeAll(vertex3.value.rings, ringIds);
-          vertex3.value.rings.push(ring.id);
+          let vertex4 = this.graph.vertices[id];
+          vertex4.value.rings = ArrayHelper.removeAll(vertex4.value.rings, ringIds);
+          vertex4.value.rings.push(ring.id);
         }
         for (var i11 = 0; i11 < ringIds.length; i11++) {
           for (var j4 = i11 + 1; j4 < ringIds.length; j4++) {
@@ -16211,13 +16211,13 @@ var require_DrawerBase = __commonJS({
       getVerticesAt(position, radius, excludeVertexId) {
         let locals = Array();
         for (var i11 = 0; i11 < this.graph.vertices.length; i11++) {
-          let vertex3 = this.graph.vertices[i11];
-          if (vertex3.id === excludeVertexId || !vertex3.positioned) {
+          let vertex4 = this.graph.vertices[i11];
+          if (vertex4.id === excludeVertexId || !vertex4.positioned) {
             continue;
           }
-          let distance = position.distanceSq(vertex3.position);
+          let distance = position.distanceSq(vertex4.position);
           if (distance <= radius * radius) {
-            locals.push(vertex3.id);
+            locals.push(vertex4.id);
           }
         }
         return locals;
@@ -16228,15 +16228,15 @@ var require_DrawerBase = __commonJS({
        * @param {Vertex} vertex The vertex of which to find the closest other vertex.
        * @returns {Vertex} The closest vertex.
        */
-      getClosestVertex(vertex3) {
+      getClosestVertex(vertex4) {
         let minDist = 99999;
         let minVertex = null;
         for (var i11 = 0; i11 < this.graph.vertices.length; i11++) {
           let v4 = this.graph.vertices[i11];
-          if (v4.id === vertex3.id) {
+          if (v4.id === vertex4.id) {
             continue;
           }
-          let distSq = vertex3.position.distanceSq(v4.position);
+          let distSq = vertex4.position.distanceSq(v4.position);
           if (distSq < minDist) {
             minDist = distSq;
             minVertex = v4;
@@ -16471,8 +16471,8 @@ var require_DrawerBase = __commonJS({
        * @param {Vertex} vertex A vertex.
        * @returns {Vector2} The center of the subring that containing the vertex.
        */
-      getSubringCenter(ring, vertex3) {
-        let rings = vertex3.value.originalRings;
+      getSubringCenter(ring, vertex4) {
+        let rings = vertex4.value.originalRings;
         let center = ring.center;
         let smallest = Number.MAX_VALUE;
         for (var i11 = 0; i11 < rings.length; i11++) {
@@ -16496,8 +16496,8 @@ var require_DrawerBase = __commonJS({
         let that = this;
         let drawn = Array(this.graph.edges.length);
         drawn.fill(false);
-        this.graph.traverseBF(0, function(vertex3) {
-          let edges = that.graph.getEdges(vertex3.id);
+        this.graph.traverseBF(0, function(vertex4) {
+          let edges = that.graph.getEdges(vertex4.id);
           for (var i12 = 0; i12 < edges.length; i12++) {
             let edgeId = edges[i12];
             if (!drawn[edgeId]) {
@@ -16635,15 +16635,15 @@ var require_DrawerBase = __commonJS({
       drawVertices(debug) {
         var i11 = this.graph.vertices.length;
         for (var i11 = 0; i11 < this.graph.vertices.length; i11++) {
-          let vertex3 = this.graph.vertices[i11];
-          let atom = vertex3.value;
+          let vertex4 = this.graph.vertices[i11];
+          let atom = vertex4.value;
           let charge = 0;
           let isotope = 0;
-          let bondCount = vertex3.value.bondCount;
+          let bondCount = vertex4.value.bondCount;
           let element2 = atom.element;
           let hydrogens = Atom2.maxBonds[element2] - bondCount;
-          let dir = vertex3.getTextDirection(this.graph.vertices);
-          let isTerminal = this.opts.terminalCarbons || element2 !== "C" || atom.hasAttachedPseudoElements ? vertex3.isTerminal() : false;
+          let dir = vertex4.getTextDirection(this.graph.vertices);
+          let isTerminal = this.opts.terminalCarbons || element2 !== "C" || atom.hasAttachedPseudoElements ? vertex4.isTerminal() : false;
           let isCarbon = atom.element === "C";
           if (atom.element === "N" && atom.isPartOfAromaticRing) {
             hydrogens = 0;
@@ -16654,12 +16654,12 @@ var require_DrawerBase = __commonJS({
             isotope = atom.bracket.isotope;
           }
           if (this.opts.atomVisualization === "allballs") {
-            this.canvasWrapper.drawBall(vertex3.position.x, vertex3.position.y, element2);
+            this.canvasWrapper.drawBall(vertex4.position.x, vertex4.position.y, element2);
           } else if (atom.isDrawn && (!isCarbon || atom.drawExplicit || isTerminal || atom.hasAttachedPseudoElements) || this.graph.vertices.length === 1) {
             if (this.opts.atomVisualization === "default") {
               this.canvasWrapper.drawText(
-                vertex3.position.x,
-                vertex3.position.y,
+                vertex4.position.x,
+                vertex4.position.y,
                 element2,
                 hydrogens,
                 dir,
@@ -16670,19 +16670,19 @@ var require_DrawerBase = __commonJS({
                 atom.getAttachedPseudoElements()
               );
             } else if (this.opts.atomVisualization === "balls") {
-              this.canvasWrapper.drawBall(vertex3.position.x, vertex3.position.y, element2);
+              this.canvasWrapper.drawBall(vertex4.position.x, vertex4.position.y, element2);
             }
-          } else if (vertex3.getNeighbourCount() === 2 && vertex3.forcePositioned == true) {
-            let a7 = this.graph.vertices[vertex3.neighbours[0]].position;
-            let b5 = this.graph.vertices[vertex3.neighbours[1]].position;
-            let angle = Vector2.threePointangle(vertex3.position, a7, b5);
+          } else if (vertex4.getNeighbourCount() === 2 && vertex4.forcePositioned == true) {
+            let a7 = this.graph.vertices[vertex4.neighbours[0]].position;
+            let b5 = this.graph.vertices[vertex4.neighbours[1]].position;
+            let angle = Vector2.threePointangle(vertex4.position, a7, b5);
             if (Math.abs(Math.PI - angle) < 0.1) {
-              this.canvasWrapper.drawPoint(vertex3.position.x, vertex3.position.y, element2);
+              this.canvasWrapper.drawPoint(vertex4.position.x, vertex4.position.y, element2);
             }
           }
           if (debug) {
-            let value = "v: " + vertex3.id + " " + ArrayHelper.print(atom.ringbonds);
-            this.canvasWrapper.drawDebugText(vertex3.position.x, vertex3.position.y, value);
+            let value = "v: " + vertex4.id + " " + ArrayHelper.print(atom.ringbonds);
+            this.canvasWrapper.drawDebugText(vertex4.position.x, vertex4.position.y, value);
           } else {
           }
         }
@@ -16807,14 +16807,14 @@ var require_DrawerBase = __commonJS({
           }
         } else {
           ring.eachMember(this.graph.vertices, function(v4) {
-            let vertex3 = that.graph.vertices[v4];
-            if (!vertex3.positioned) {
-              vertex3.setPosition(center.x + Math.cos(a7) * radius, center.y + Math.sin(a7) * radius);
+            let vertex4 = that.graph.vertices[v4];
+            if (!vertex4.positioned) {
+              vertex4.setPosition(center.x + Math.cos(a7) * radius, center.y + Math.sin(a7) * radius);
             }
             a7 += angle;
             if (!ring.isBridged || ring.rings.length < 3) {
-              vertex3.angle = a7;
-              vertex3.positioned = true;
+              vertex4.angle = a7;
+              vertex4.positioned = true;
             }
           }, startVertexId, previousVertex ? previousVertex.id : null);
         }
@@ -16892,10 +16892,10 @@ var require_DrawerBase = __commonJS({
        */
       rotateSubtree(vertexId, parentVertexId, angle, center) {
         let that = this;
-        this.graph.traverseTree(vertexId, parentVertexId, function(vertex3) {
-          vertex3.position.rotateAround(angle, center);
-          for (var i11 = 0; i11 < vertex3.value.anchoredRings.length; i11++) {
-            let ring = that.rings[vertex3.value.anchoredRings[i11]];
+        this.graph.traverseTree(vertexId, parentVertexId, function(vertex4) {
+          vertex4.position.rotateAround(angle, center);
+          for (var i11 = 0; i11 < vertex4.value.anchoredRings.length; i11++) {
+            let ring = that.rings[vertex4.value.anchoredRings[i11]];
             if (ring) {
               ring.center.rotateAround(angle, center);
             }
@@ -16915,16 +16915,16 @@ var require_DrawerBase = __commonJS({
         let score = 0;
         let center = new Vector2(0, 0);
         let count2 = 0;
-        this.graph.traverseTree(vertexId, parentVertexId, function(vertex3) {
-          if (!vertex3.value.isDrawn) {
+        this.graph.traverseTree(vertexId, parentVertexId, function(vertex4) {
+          if (!vertex4.value.isDrawn) {
             return;
           }
-          let s6 = vertexOverlapScores[vertex3.id];
+          let s6 = vertexOverlapScores[vertex4.id];
           if (s6 > that.opts.overlapSensitivity) {
             score += s6;
             count2++;
           }
-          let position = that.graph.vertices[vertex3.id].position.clone();
+          let position = that.graph.vertices[vertex4.id].position.clone();
           position.multiplyScalar(s6);
           center.add(position);
         });
@@ -16943,9 +16943,9 @@ var require_DrawerBase = __commonJS({
         let total = new Vector2(0, 0);
         let count2 = 0;
         for (var i11 = 0; i11 < this.graph.vertices.length; i11++) {
-          let vertex3 = this.graph.vertices[i11];
-          if (vertex3.positioned) {
-            total.add(vertex3.position);
+          let vertex4 = this.graph.vertices[i11];
+          if (vertex4.positioned) {
+            total.add(vertex4.position);
             count2++;
           }
         }
@@ -16963,9 +16963,9 @@ var require_DrawerBase = __commonJS({
         let count2 = 0;
         let rSq = r12 * r12;
         for (var i11 = 0; i11 < this.graph.vertices.length; i11++) {
-          let vertex3 = this.graph.vertices[i11];
-          if (vertex3.positioned && vec.distanceSq(vertex3.position) < rSq) {
-            total.add(vertex3.position);
+          let vertex4 = this.graph.vertices[i11];
+          if (vertex4.positioned && vec.distanceSq(vertex4.position) < rSq) {
+            total.add(vertex4.position);
             count2++;
           }
         }
@@ -16980,29 +16980,29 @@ var require_DrawerBase = __commonJS({
         for (var i11 = 0; i11 < this.rings.length; i11++) {
           let ring = this.rings[i11];
           for (var j4 = 0; j4 < ring.members.length; j4++) {
-            let vertex3 = this.graph.vertices[ring.members[j4]];
-            if (done[vertex3.id]) {
+            let vertex4 = this.graph.vertices[ring.members[j4]];
+            if (done[vertex4.id]) {
               continue;
             }
-            done[vertex3.id] = true;
-            let nonRingNeighbours = this.getNonRingNeighbours(vertex3.id);
+            done[vertex4.id] = true;
+            let nonRingNeighbours = this.getNonRingNeighbours(vertex4.id);
             if (nonRingNeighbours.length > 1) {
               let rings = Array();
-              for (var k4 = 0; k4 < vertex3.value.rings.length; k4++) {
-                rings.push(vertex3.value.rings[k4]);
+              for (var k4 = 0; k4 < vertex4.value.rings.length; k4++) {
+                rings.push(vertex4.value.rings[k4]);
               }
               overlaps.push({
-                common: vertex3,
+                common: vertex4,
                 rings,
                 vertices: nonRingNeighbours
               });
-            } else if (nonRingNeighbours.length === 1 && vertex3.value.rings.length === 2) {
+            } else if (nonRingNeighbours.length === 1 && vertex4.value.rings.length === 2) {
               let rings = Array();
-              for (var k4 = 0; k4 < vertex3.value.rings.length; k4++) {
-                rings.push(vertex3.value.rings[k4]);
+              for (var k4 = 0; k4 < vertex4.value.rings.length; k4++) {
+                rings.push(vertex4.value.rings[k4]);
               }
               overlaps.push({
-                common: vertex3,
+                common: vertex4,
                 rings,
                 vertices: nonRingNeighbours
               });
@@ -17049,9 +17049,9 @@ var require_DrawerBase = __commonJS({
       resolveSecondaryOverlaps(scores) {
         for (var i11 = 0; i11 < scores.length; i11++) {
           if (scores[i11].score > this.opts.overlapSensitivity) {
-            let vertex3 = this.graph.vertices[scores[i11].id];
-            if (vertex3.isTerminal()) {
-              let closest = this.getClosestVertex(vertex3);
+            let vertex4 = this.graph.vertices[scores[i11].id];
+            if (vertex4.isTerminal()) {
+              let closest = this.getClosestVertex(vertex4);
               if (closest) {
                 let closestPosition = null;
                 if (closest.isTerminal()) {
@@ -17059,8 +17059,8 @@ var require_DrawerBase = __commonJS({
                 } else {
                   closestPosition = closest.id === 0 ? this.graph.vertices[1].position : closest.position;
                 }
-                let vertexPreviousPosition = vertex3.id === 0 ? this.graph.vertices[1].position : vertex3.previousPosition;
-                vertex3.position.rotateAwayFrom(closestPosition, vertexPreviousPosition, MathHelper.toRad(20));
+                let vertexPreviousPosition = vertex4.id === 0 ? this.graph.vertices[1].position : vertex4.previousPosition;
+                vertex4.position.rotateAwayFrom(closestPosition, vertexPreviousPosition, MathHelper.toRad(20));
               }
             }
           }
@@ -17073,13 +17073,13 @@ var require_DrawerBase = __commonJS({
        */
       getLastVertexWithAngle(vertexId) {
         let angle = 0;
-        let vertex3 = null;
+        let vertex4 = null;
         while (!angle && vertexId) {
-          vertex3 = this.graph.vertices[vertexId];
-          angle = vertex3.angle;
-          vertexId = vertex3.parentVertexId;
+          vertex4 = this.graph.vertices[vertexId];
+          angle = vertex4.angle;
+          vertexId = vertex4.parentVertexId;
         }
-        return vertex3;
+        return vertex4;
       }
       /**
        * Positiones the next vertex thus creating a bond.
@@ -17090,18 +17090,18 @@ var require_DrawerBase = __commonJS({
        * @param {Boolean} [originShortest=false] Whether the origin is the shortest subtree in the branch.
        * @param {Boolean} [skipPositioning=false] Whether or not to skip positioning and just check the neighbours.
        */
-      createNextBond(vertex3, previousVertex = null, angle = 0, originShortest = false, skipPositioning = false) {
-        if (vertex3.positioned && !skipPositioning) {
+      createNextBond(vertex4, previousVertex = null, angle = 0, originShortest = false, skipPositioning = false) {
+        if (vertex4.positioned && !skipPositioning) {
           return;
         }
         let doubleBondConfigSet = false;
         if (previousVertex) {
-          let edge = this.graph.getEdge(vertex3.id, previousVertex.id);
+          let edge = this.graph.getEdge(vertex4.id, previousVertex.id);
           if ((edge.bondType === "/" || edge.bondType === "\\") && ++this.doubleBondConfigCount % 2 === 1) {
             if (this.doubleBondConfig === null) {
               this.doubleBondConfig = edge.bondType;
               doubleBondConfigSet = true;
-              if (previousVertex.parentVertexId === null && vertex3.value.branchBond) {
+              if (previousVertex.parentVertexId === null && vertex4.value.branchBond) {
                 if (this.doubleBondConfig === "/") {
                   this.doubleBondConfig = "\\";
                 } else if (this.doubleBondConfig === "\\") {
@@ -17115,11 +17115,11 @@ var require_DrawerBase = __commonJS({
           if (!previousVertex) {
             let dummy = new Vector2(this.opts.bondLength, 0);
             dummy.rotate(MathHelper.toRad(-60));
-            vertex3.previousPosition = dummy;
-            vertex3.setPosition(this.opts.bondLength, 0);
-            vertex3.angle = MathHelper.toRad(-60);
-            if (vertex3.value.bridgedRing === null) {
-              vertex3.positioned = true;
+            vertex4.previousPosition = dummy;
+            vertex4.setPosition(this.opts.bondLength, 0);
+            vertex4.angle = MathHelper.toRad(-60);
+            if (vertex4.value.bridgedRing === null) {
+              vertex4.positioned = true;
             }
           } else if (previousVertex.value.rings.length > 0) {
             let neighbours = previousVertex.neighbours;
@@ -17145,43 +17145,43 @@ var require_DrawerBase = __commonJS({
             } else {
               pos = joinedVertex.position.clone().rotateAround(Math.PI, previousVertex.position);
             }
-            vertex3.previousPosition = previousVertex.position;
-            vertex3.setPositionFromVector(pos);
-            vertex3.positioned = true;
+            vertex4.previousPosition = previousVertex.position;
+            vertex4.setPositionFromVector(pos);
+            vertex4.positioned = true;
           } else {
             let v4 = new Vector2(this.opts.bondLength, 0);
             v4.rotate(angle);
             v4.add(previousVertex.position);
-            vertex3.setPositionFromVector(v4);
-            vertex3.previousPosition = previousVertex.position;
-            vertex3.positioned = true;
+            vertex4.setPositionFromVector(v4);
+            vertex4.previousPosition = previousVertex.position;
+            vertex4.positioned = true;
           }
         }
-        if (vertex3.value.bridgedRing !== null) {
-          let nextRing = this.getRing(vertex3.value.bridgedRing);
+        if (vertex4.value.bridgedRing !== null) {
+          let nextRing = this.getRing(vertex4.value.bridgedRing);
           if (!nextRing.positioned) {
-            let nextCenter = Vector2.subtract(vertex3.previousPosition, vertex3.position);
+            let nextCenter = Vector2.subtract(vertex4.previousPosition, vertex4.position);
             nextCenter.invert();
             nextCenter.normalize();
             let r12 = MathHelper.polyCircumradius(this.opts.bondLength, nextRing.members.length);
             nextCenter.multiplyScalar(r12);
-            nextCenter.add(vertex3.position);
-            this.createRing(nextRing, nextCenter, vertex3);
+            nextCenter.add(vertex4.position);
+            this.createRing(nextRing, nextCenter, vertex4);
           }
-        } else if (vertex3.value.rings.length > 0) {
-          let nextRing = this.getRing(vertex3.value.rings[0]);
+        } else if (vertex4.value.rings.length > 0) {
+          let nextRing = this.getRing(vertex4.value.rings[0]);
           if (!nextRing.positioned) {
-            let nextCenter = Vector2.subtract(vertex3.previousPosition, vertex3.position);
+            let nextCenter = Vector2.subtract(vertex4.previousPosition, vertex4.position);
             nextCenter.invert();
             nextCenter.normalize();
             let r12 = MathHelper.polyCircumradius(this.opts.bondLength, nextRing.getSize());
             nextCenter.multiplyScalar(r12);
-            nextCenter.add(vertex3.position);
-            this.createRing(nextRing, nextCenter, vertex3);
+            nextCenter.add(vertex4.position);
+            this.createRing(nextRing, nextCenter, vertex4);
           }
         } else {
-          let isStereoCenter = vertex3.value.isStereoCenter;
-          let tmpNeighbours = vertex3.getNeighbours();
+          let isStereoCenter = vertex4.value.isStereoCenter;
+          let tmpNeighbours = vertex4.getNeighbours();
           let neighbours = Array();
           for (var i11 = 0; i11 < tmpNeighbours.length; i11++) {
             if (this.graph.vertices[tmpNeighbours[i11]].value.isDrawn) {
@@ -17191,36 +17191,36 @@ var require_DrawerBase = __commonJS({
           if (previousVertex) {
             neighbours = ArrayHelper.remove(neighbours, previousVertex.id);
           }
-          let previousAngle = vertex3.getAngle();
+          let previousAngle = vertex4.getAngle();
           if (neighbours.length === 1) {
             let nextVertex = this.graph.vertices[neighbours[0]];
-            if (vertex3.value.bondType === "#" || previousVertex && previousVertex.value.bondType === "#" || vertex3.value.bondType === "=" && previousVertex && previousVertex.value.rings.length === 0 && previousVertex.value.bondType === "=" && vertex3.value.branchBond !== "-") {
-              vertex3.value.drawExplicit = false;
+            if (vertex4.value.bondType === "#" || previousVertex && previousVertex.value.bondType === "#" || vertex4.value.bondType === "=" && previousVertex && previousVertex.value.rings.length === 0 && previousVertex.value.bondType === "=" && vertex4.value.branchBond !== "-") {
+              vertex4.value.drawExplicit = false;
               if (previousVertex) {
-                let straightEdge1 = this.graph.getEdge(vertex3.id, previousVertex.id);
+                let straightEdge1 = this.graph.getEdge(vertex4.id, previousVertex.id);
                 straightEdge1.center = true;
               }
-              let straightEdge2 = this.graph.getEdge(vertex3.id, nextVertex.id);
+              let straightEdge2 = this.graph.getEdge(vertex4.id, nextVertex.id);
               straightEdge2.center = true;
-              if (vertex3.value.bondType === "#" || previousVertex && previousVertex.value.bondType === "#") {
+              if (vertex4.value.bondType === "#" || previousVertex && previousVertex.value.bondType === "#") {
                 nextVertex.angle = 0;
               }
               nextVertex.drawExplicit = true;
-              this.createNextBond(nextVertex, vertex3, previousAngle + nextVertex.angle);
+              this.createNextBond(nextVertex, vertex4, previousAngle + nextVertex.angle);
             } else if (previousVertex && previousVertex.value.rings.length > 0) {
               let proposedAngleA = MathHelper.toRad(60);
               let proposedAngleB = -proposedAngleA;
               let proposedVectorA = new Vector2(this.opts.bondLength, 0);
               let proposedVectorB = new Vector2(this.opts.bondLength, 0);
-              proposedVectorA.rotate(proposedAngleA).add(vertex3.position);
-              proposedVectorB.rotate(proposedAngleB).add(vertex3.position);
+              proposedVectorA.rotate(proposedAngleA).add(vertex4.position);
+              proposedVectorB.rotate(proposedAngleB).add(vertex4.position);
               let centerOfMass = this.getCurrentCenterOfMass();
               let distanceA = proposedVectorA.distanceSq(centerOfMass);
               let distanceB = proposedVectorB.distanceSq(centerOfMass);
               nextVertex.angle = distanceA < distanceB ? proposedAngleB : proposedAngleA;
-              this.createNextBond(nextVertex, vertex3, previousAngle + nextVertex.angle);
+              this.createNextBond(nextVertex, vertex4, previousAngle + nextVertex.angle);
             } else {
-              let a7 = vertex3.angle;
+              let a7 = vertex4.angle;
               if (previousVertex && previousVertex.neighbours.length > 3) {
                 if (a7 > 0) {
                   a7 = Math.min(1.0472, a7);
@@ -17230,14 +17230,14 @@ var require_DrawerBase = __commonJS({
                   a7 = 1.0472;
                 }
               } else if (!a7) {
-                let v4 = this.getLastVertexWithAngle(vertex3.id);
+                let v4 = this.getLastVertexWithAngle(vertex4.id);
                 a7 = v4.angle;
                 if (!a7) {
                   a7 = 1.0472;
                 }
               }
               if (previousVertex && !doubleBondConfigSet) {
-                let bondType = this.graph.getEdge(vertex3.id, nextVertex.id).bondType;
+                let bondType = this.graph.getEdge(vertex4.id, nextVertex.id).bondType;
                 if (bondType === "/") {
                   if (this.doubleBondConfig === "/") {
                   } else if (this.doubleBondConfig === "\\") {
@@ -17257,20 +17257,20 @@ var require_DrawerBase = __commonJS({
               } else {
                 nextVertex.angle = -a7;
               }
-              this.createNextBond(nextVertex, vertex3, previousAngle + nextVertex.angle);
+              this.createNextBond(nextVertex, vertex4, previousAngle + nextVertex.angle);
             }
           } else if (neighbours.length === 2) {
-            let a7 = vertex3.angle;
+            let a7 = vertex4.angle;
             if (!a7) {
               a7 = 1.0472;
             }
-            let subTreeDepthA = this.graph.getTreeDepth(neighbours[0], vertex3.id);
-            let subTreeDepthB = this.graph.getTreeDepth(neighbours[1], vertex3.id);
+            let subTreeDepthA = this.graph.getTreeDepth(neighbours[0], vertex4.id);
+            let subTreeDepthB = this.graph.getTreeDepth(neighbours[1], vertex4.id);
             let l8 = this.graph.vertices[neighbours[0]];
             let r12 = this.graph.vertices[neighbours[1]];
             l8.value.subtreeDepth = subTreeDepthA;
             r12.value.subtreeDepth = subTreeDepthB;
-            let subTreeDepthC = this.graph.getTreeDepth(previousVertex ? previousVertex.id : null, vertex3.id);
+            let subTreeDepthC = this.graph.getTreeDepth(previousVertex ? previousVertex.id : null, vertex4.id);
             if (previousVertex) {
               previousVertex.value.subtreeDepth = subTreeDepthC;
             }
@@ -17288,8 +17288,8 @@ var require_DrawerBase = __commonJS({
             }
             let cisVertex = this.graph.vertices[neighbours[cis]];
             let transVertex = this.graph.vertices[neighbours[trans]];
-            let edgeCis = this.graph.getEdge(vertex3.id, cisVertex.id);
-            let edgeTrans = this.graph.getEdge(vertex3.id, transVertex.id);
+            let edgeCis = this.graph.getEdge(vertex4.id, cisVertex.id);
+            let edgeTrans = this.graph.getEdge(vertex4.id, transVertex.id);
             let originShortest2 = false;
             if (subTreeDepthC < subTreeDepthA && subTreeDepthC < subTreeDepthB) {
               originShortest2 = true;
@@ -17307,12 +17307,12 @@ var require_DrawerBase = __commonJS({
                 cisVertex.angle = a7;
               }
             }
-            this.createNextBond(transVertex, vertex3, previousAngle + transVertex.angle, originShortest2);
-            this.createNextBond(cisVertex, vertex3, previousAngle + cisVertex.angle, originShortest2);
+            this.createNextBond(transVertex, vertex4, previousAngle + transVertex.angle, originShortest2);
+            this.createNextBond(cisVertex, vertex4, previousAngle + cisVertex.angle, originShortest2);
           } else if (neighbours.length === 3) {
-            let d1 = this.graph.getTreeDepth(neighbours[0], vertex3.id);
-            let d22 = this.graph.getTreeDepth(neighbours[1], vertex3.id);
-            let d32 = this.graph.getTreeDepth(neighbours[2], vertex3.id);
+            let d1 = this.graph.getTreeDepth(neighbours[0], vertex4.id);
+            let d22 = this.graph.getTreeDepth(neighbours[1], vertex4.id);
+            let d32 = this.graph.getTreeDepth(neighbours[2], vertex4.id);
             let s6 = this.graph.vertices[neighbours[0]];
             let l8 = this.graph.vertices[neighbours[1]];
             let r12 = this.graph.vertices[neighbours[2]];
@@ -17328,31 +17328,31 @@ var require_DrawerBase = __commonJS({
               l8 = this.graph.vertices[neighbours[0]];
               r12 = this.graph.vertices[neighbours[1]];
             }
-            if (previousVertex && previousVertex.value.rings.length < 1 && s6.value.rings.length < 1 && l8.value.rings.length < 1 && r12.value.rings.length < 1 && this.graph.getTreeDepth(l8.id, vertex3.id) === 1 && this.graph.getTreeDepth(r12.id, vertex3.id) === 1 && this.graph.getTreeDepth(s6.id, vertex3.id) > 1) {
-              s6.angle = -vertex3.angle;
-              if (vertex3.angle >= 0) {
+            if (previousVertex && previousVertex.value.rings.length < 1 && s6.value.rings.length < 1 && l8.value.rings.length < 1 && r12.value.rings.length < 1 && this.graph.getTreeDepth(l8.id, vertex4.id) === 1 && this.graph.getTreeDepth(r12.id, vertex4.id) === 1 && this.graph.getTreeDepth(s6.id, vertex4.id) > 1) {
+              s6.angle = -vertex4.angle;
+              if (vertex4.angle >= 0) {
                 l8.angle = MathHelper.toRad(30);
                 r12.angle = MathHelper.toRad(90);
               } else {
                 l8.angle = -MathHelper.toRad(30);
                 r12.angle = -MathHelper.toRad(90);
               }
-              this.createNextBond(s6, vertex3, previousAngle + s6.angle);
-              this.createNextBond(l8, vertex3, previousAngle + l8.angle);
-              this.createNextBond(r12, vertex3, previousAngle + r12.angle);
+              this.createNextBond(s6, vertex4, previousAngle + s6.angle);
+              this.createNextBond(l8, vertex4, previousAngle + l8.angle);
+              this.createNextBond(r12, vertex4, previousAngle + r12.angle);
             } else {
               s6.angle = 0;
               l8.angle = MathHelper.toRad(90);
               r12.angle = -MathHelper.toRad(90);
-              this.createNextBond(s6, vertex3, previousAngle + s6.angle);
-              this.createNextBond(l8, vertex3, previousAngle + l8.angle);
-              this.createNextBond(r12, vertex3, previousAngle + r12.angle);
+              this.createNextBond(s6, vertex4, previousAngle + s6.angle);
+              this.createNextBond(l8, vertex4, previousAngle + l8.angle);
+              this.createNextBond(r12, vertex4, previousAngle + r12.angle);
             }
           } else if (neighbours.length === 4) {
-            let d1 = this.graph.getTreeDepth(neighbours[0], vertex3.id);
-            let d22 = this.graph.getTreeDepth(neighbours[1], vertex3.id);
-            let d32 = this.graph.getTreeDepth(neighbours[2], vertex3.id);
-            let d42 = this.graph.getTreeDepth(neighbours[3], vertex3.id);
+            let d1 = this.graph.getTreeDepth(neighbours[0], vertex4.id);
+            let d22 = this.graph.getTreeDepth(neighbours[1], vertex4.id);
+            let d32 = this.graph.getTreeDepth(neighbours[2], vertex4.id);
+            let d42 = this.graph.getTreeDepth(neighbours[3], vertex4.id);
             let w4 = this.graph.vertices[neighbours[0]];
             let x4 = this.graph.vertices[neighbours[1]];
             let y5 = this.graph.vertices[neighbours[2]];
@@ -17381,10 +17381,10 @@ var require_DrawerBase = __commonJS({
             x4.angle = MathHelper.toRad(36);
             y5.angle = -MathHelper.toRad(108);
             z3.angle = MathHelper.toRad(108);
-            this.createNextBond(w4, vertex3, previousAngle + w4.angle);
-            this.createNextBond(x4, vertex3, previousAngle + x4.angle);
-            this.createNextBond(y5, vertex3, previousAngle + y5.angle);
-            this.createNextBond(z3, vertex3, previousAngle + z3.angle);
+            this.createNextBond(w4, vertex4, previousAngle + w4.angle);
+            this.createNextBond(x4, vertex4, previousAngle + x4.angle);
+            this.createNextBond(y5, vertex4, previousAngle + y5.angle);
+            this.createNextBond(z3, vertex4, previousAngle + z3.angle);
           }
         }
       }
@@ -17394,11 +17394,11 @@ var require_DrawerBase = __commonJS({
        * @param {Vertex} vertex A vertex.
        * @returns {(Number|null)} The id of a vertex sharing the edge that is the common bond of two rings with the vertex provided or null, if none.
        */
-      getCommonRingbondNeighbour(vertex3) {
-        let neighbours = vertex3.neighbours;
+      getCommonRingbondNeighbour(vertex4) {
+        let neighbours = vertex4.neighbours;
         for (var i11 = 0; i11 < neighbours.length; i11++) {
           let neighbour = this.graph.vertices[neighbours[i11]];
-          if (ArrayHelper.containsAll(neighbour.value.rings, vertex3.value.rings)) {
+          if (ArrayHelper.containsAll(neighbour.value.rings, vertex4.value.rings)) {
             return neighbour;
           }
         }
@@ -17463,8 +17463,8 @@ var require_DrawerBase = __commonJS({
        */
       isRingAromatic(ring) {
         for (var i11 = 0; i11 < ring.members.length; i11++) {
-          let vertex3 = this.graph.vertices[ring.members[i11]];
-          if (!vertex3.value.isPartOfAromaticRing) {
+          let vertex4 = this.graph.vertices[ring.members[i11]];
+          if (!vertex4.value.isPartOfAromaticRing) {
             return false;
           }
         }
@@ -17490,11 +17490,11 @@ var require_DrawerBase = __commonJS({
        */
       getNonRingNeighbours(vertexId) {
         let nrneighbours = Array();
-        let vertex3 = this.graph.vertices[vertexId];
-        let neighbours = vertex3.neighbours;
+        let vertex4 = this.graph.vertices[vertexId];
+        let neighbours = vertex4.neighbours;
         for (var i11 = 0; i11 < neighbours.length; i11++) {
           let neighbour = this.graph.vertices[neighbours[i11]];
-          let nIntersections = ArrayHelper.intersection(vertex3.value.rings, neighbour.value.rings).length;
+          let nIntersections = ArrayHelper.intersection(vertex4.value.rings, neighbour.value.rings).length;
           if (nIntersections === 0 && neighbour.value.isBridge == false) {
             nrneighbours.push(neighbour);
           }
@@ -17507,18 +17507,18 @@ var require_DrawerBase = __commonJS({
       annotateStereochemistry() {
         let maxDepth = 10;
         for (var i11 = 0; i11 < this.graph.vertices.length; i11++) {
-          let vertex3 = this.graph.vertices[i11];
-          if (!vertex3.value.isStereoCenter) {
+          let vertex4 = this.graph.vertices[i11];
+          if (!vertex4.value.isStereoCenter) {
             continue;
           }
-          let neighbours = vertex3.getNeighbours();
+          let neighbours = vertex4.getNeighbours();
           let nNeighbours = neighbours.length;
           let priorities = Array(nNeighbours);
           for (var j4 = 0; j4 < nNeighbours; j4++) {
             let visited = new Uint8Array(this.graph.vertices.length);
             let priority = Array(Array());
-            visited[vertex3.id] = 1;
-            this.visitStereochemistry(neighbours[j4], vertex3.id, visited, priority, maxDepth, 0);
+            visited[vertex4.id] = 1;
+            this.visitStereochemistry(neighbours[j4], vertex4.id, visited, priority, maxDepth, 0);
             for (var k4 = 0; k4 < priority.length; k4++) {
               priority[k4].sort(function(a7, b5) {
                 return b5 - a7;
@@ -17566,34 +17566,34 @@ var require_DrawerBase = __commonJS({
           let order = new Uint8Array(nNeighbours);
           for (var j4 = 0; j4 < nNeighbours; j4++) {
             order[j4] = priorities[j4][0];
-            vertex3.value.priority = j4;
+            vertex4.value.priority = j4;
           }
           let posA = this.graph.vertices[neighbours[order[0]]].position;
           let posB = this.graph.vertices[neighbours[order[1]]].position;
           let posC = this.graph.vertices[neighbours[order[2]]].position;
-          let cwA = posA.relativeClockwise(posB, vertex3.position);
-          let cwB = posA.relativeClockwise(posC, vertex3.position);
+          let cwA = posA.relativeClockwise(posB, vertex4.position);
+          let cwB = posA.relativeClockwise(posC, vertex4.position);
           let isCw = cwA === -1;
-          let rotation = vertex3.value.bracket.chirality === "@" ? -1 : 1;
+          let rotation = vertex4.value.bracket.chirality === "@" ? -1 : 1;
           let rs = MathHelper.parityOfPermutation(order) * rotation === 1 ? "R" : "S";
           let wedgeA = "down";
           let wedgeB = "up";
           if (isCw && rs !== "R" || !isCw && rs !== "S") {
-            vertex3.value.hydrogenDirection = "up";
+            vertex4.value.hydrogenDirection = "up";
             wedgeA = "up";
             wedgeB = "down";
           }
-          if (vertex3.value.hasHydrogen) {
-            this.graph.getEdge(vertex3.id, neighbours[order[order.length - 1]]).wedge = wedgeA;
+          if (vertex4.value.hasHydrogen) {
+            this.graph.getEdge(vertex4.id, neighbours[order[order.length - 1]]).wedge = wedgeA;
           }
           let wedgeOrder = new Array(neighbours.length - 1);
-          let showHydrogen = vertex3.value.rings.length > 1 && vertex3.value.hasHydrogen;
-          let offset3 = vertex3.value.hasHydrogen ? 1 : 0;
+          let showHydrogen = vertex4.value.rings.length > 1 && vertex4.value.hasHydrogen;
+          let offset3 = vertex4.value.hasHydrogen ? 1 : 0;
           for (var j4 = 0; j4 < order.length - offset3; j4++) {
             wedgeOrder[j4] = new Uint32Array(2);
             let neighbour = this.graph.vertices[neighbours[order[j4]]];
             wedgeOrder[j4][0] += neighbour.value.isStereoCenter ? 0 : 1e5;
-            wedgeOrder[j4][0] += this.areVerticesInSameRing(neighbour, vertex3) ? 0 : 1e4;
+            wedgeOrder[j4][0] += this.areVerticesInSameRing(neighbour, vertex4) ? 0 : 1e4;
             wedgeOrder[j4][0] += neighbour.value.isHeteroAtom() ? 1e3 : 0;
             wedgeOrder[j4][0] -= neighbour.value.subtreeDepth === 0 ? 1e3 : 0;
             wedgeOrder[j4][0] += 1e3 - neighbour.value.subtreeDepth;
@@ -17609,8 +17609,8 @@ var require_DrawerBase = __commonJS({
           });
           if (!showHydrogen) {
             let wedgeId = wedgeOrder[0][1];
-            if (vertex3.value.hasHydrogen) {
-              this.graph.getEdge(vertex3.id, wedgeId).wedge = wedgeB;
+            if (vertex4.value.hasHydrogen) {
+              this.graph.getEdge(vertex4.id, wedgeId).wedge = wedgeB;
             } else {
               let wedge = wedgeB;
               for (var j4 = order.length - 1; j4 >= 0; j4--) {
@@ -17623,10 +17623,10 @@ var require_DrawerBase = __commonJS({
                   break;
                 }
               }
-              this.graph.getEdge(vertex3.id, wedgeId).wedge = wedge;
+              this.graph.getEdge(vertex4.id, wedgeId).wedge = wedge;
             }
           }
-          vertex3.value.chirality = rs;
+          vertex4.value.chirality = rs;
         }
       }
       /**
@@ -17641,8 +17641,8 @@ var require_DrawerBase = __commonJS({
        */
       visitStereochemistry(vertexId, previousVertexId, visited, priority, maxDepth, depth, parentAtomicNumber = 0) {
         visited[vertexId] = 1;
-        let vertex3 = this.graph.vertices[vertexId];
-        let atomicNumber = vertex3.value.getAtomicNumber();
+        let vertex4 = this.graph.vertices[vertexId];
+        let atomicNumber = vertex4.value.getAtomicNumber();
         if (priority.length <= depth) {
           priority.push(Array());
         }
@@ -17660,7 +17660,7 @@ var require_DrawerBase = __commonJS({
           for (var i11 = 0; i11 < neighbours.length; i11++) {
             bonds += this.graph.getEdge(vertexId, neighbours[i11]).weight;
           }
-          for (var i11 = 0; i11 < vertex3.value.getMaxBonds() - bonds; i11++) {
+          for (var i11 = 0; i11 < vertex4.value.getMaxBonds() - bonds; i11++) {
             if (priority.length <= depth + 1) {
               priority.push(Array());
             }
@@ -17674,19 +17674,19 @@ var require_DrawerBase = __commonJS({
        */
       initPseudoElements() {
         for (var i11 = 0; i11 < this.graph.vertices.length; i11++) {
-          const vertex3 = this.graph.vertices[i11];
-          const neighbourIds = vertex3.neighbours;
+          const vertex4 = this.graph.vertices[i11];
+          const neighbourIds = vertex4.neighbours;
           let neighbours = Array(neighbourIds.length);
           for (var j4 = 0; j4 < neighbourIds.length; j4++) {
             neighbours[j4] = this.graph.vertices[neighbourIds[j4]];
           }
-          if (vertex3.getNeighbourCount() < 3 || vertex3.value.rings.length > 0) {
+          if (vertex4.getNeighbourCount() < 3 || vertex4.value.rings.length > 0) {
             continue;
           }
-          if (vertex3.value.element === "P") {
+          if (vertex4.value.element === "P") {
             continue;
           }
-          if (vertex3.value.element === "C" && neighbours.length === 3 && neighbours[0].value.element === "N" && neighbours[1].value.element === "N" && neighbours[2].value.element === "N") {
+          if (vertex4.value.element === "C" && neighbours.length === 3 && neighbours[0].value.element === "N" && neighbours[1].value.element === "N" && neighbours[2].value.element === "N") {
             continue;
           }
           let heteroAtomCount = 0;
@@ -17724,17 +17724,17 @@ var require_DrawerBase = __commonJS({
               hydrogens = neighbour.value.bracket.hcount;
               charge = neighbour.value.bracket.charge || 0;
             }
-            vertex3.value.attachPseudoElement(neighbour.value.element, previous ? previous.value.element : null, hydrogens, charge);
+            vertex4.value.attachPseudoElement(neighbour.value.element, previous ? previous.value.element : null, hydrogens, charge);
           }
         }
         for (var i11 = 0; i11 < this.graph.vertices.length; i11++) {
-          const vertex3 = this.graph.vertices[i11];
-          const atom = vertex3.value;
+          const vertex4 = this.graph.vertices[i11];
+          const atom = vertex4.value;
           const element2 = atom.element;
           if (element2 === "C" || element2 === "H" || !atom.isDrawn) {
             continue;
           }
-          const neighbourIds = vertex3.neighbours;
+          const neighbourIds = vertex4.neighbours;
           let neighbours = Array(neighbourIds.length);
           for (var j4 = 0; j4 < neighbourIds.length; j4++) {
             neighbours[j4] = this.graph.vertices[neighbourIds[j4]];
@@ -17747,7 +17747,7 @@ var require_DrawerBase = __commonJS({
             const pseudoElements = neighbour.getAttachedPseudoElements();
             if (pseudoElements.hasOwnProperty("0O") && pseudoElements.hasOwnProperty("3C")) {
               neighbour.isDrawn = false;
-              vertex3.value.attachPseudoElement("Ac", "", 0);
+              vertex4.value.attachPseudoElement("Ac", "", 0);
             }
           }
         }
@@ -17840,8 +17840,8 @@ var require_SvgWrapper = __commonJS({
         for (let highlight of this.highlights) {
           highlights.appendChild(highlight);
         }
-        for (let vertex3 of this.vertices) {
-          vertices.appendChild(vertex3);
+        for (let vertex4 of this.vertices) {
+          vertices.appendChild(vertex4);
         }
         for (let mask2 of this.maskElements) {
           masks.appendChild(mask2);
@@ -22118,8 +22118,8 @@ var require_SvgDrawer = __commonJS({
       drawEdges(debug) {
         let preprocessor = this.preprocessor, graph = preprocessor.graph, rings = preprocessor.rings, drawn = Array(this.preprocessor.graph.edges.length);
         drawn.fill(false);
-        graph.traverseBF(0, (vertex3) => {
-          let edges = graph.getEdges(vertex3.id);
+        graph.traverseBF(0, (vertex4) => {
+          let edges = graph.getEdges(vertex4.id);
           for (var i12 = 0; i12 < edges.length; i12++) {
             let edgeId = edges[i12];
             if (!drawn[edgeId]) {
@@ -22227,12 +22227,12 @@ var require_SvgDrawer = __commonJS({
         let rings = preprocessor.rings;
         let svgWrapper = this.svgWrapper;
         for (var i11 = 0; i11 < graph.vertices.length; i11++) {
-          let vertex3 = graph.vertices[i11];
-          let atom = vertex3.value;
+          let vertex4 = graph.vertices[i11];
+          let atom = vertex4.value;
           for (var j4 = 0; j4 < preprocessor.highlight_atoms.length; j4++) {
             let highlight = preprocessor.highlight_atoms[j4];
             if (atom.class === highlight[0]) {
-              svgWrapper.drawAtomHighlight(vertex3.position.x, vertex3.position.y, highlight[1]);
+              svgWrapper.drawAtomHighlight(vertex4.position.x, vertex4.position.y, highlight[1]);
             }
           }
         }
@@ -22246,15 +22246,15 @@ var require_SvgDrawer = __commonJS({
         let preprocessor = this.preprocessor, opts = preprocessor.opts, graph = preprocessor.graph, rings = preprocessor.rings, svgWrapper = this.svgWrapper;
         var i11 = graph.vertices.length;
         for (var i11 = 0; i11 < graph.vertices.length; i11++) {
-          let vertex3 = graph.vertices[i11];
-          let atom = vertex3.value;
+          let vertex4 = graph.vertices[i11];
+          let atom = vertex4.value;
           let charge = 0;
           let isotope = 0;
-          let bondCount = vertex3.value.bondCount;
+          let bondCount = vertex4.value.bondCount;
           let element2 = atom.element;
           let hydrogens = Atom2.maxBonds[element2] - bondCount;
-          let dir = vertex3.getTextDirection(graph.vertices, atom.hasAttachedPseudoElements);
-          let isTerminal = opts.terminalCarbons || element2 !== "C" || atom.hasAttachedPseudoElements ? vertex3.isTerminal() : false;
+          let dir = vertex4.getTextDirection(graph.vertices, atom.hasAttachedPseudoElements);
+          let isTerminal = opts.terminalCarbons || element2 !== "C" || atom.hasAttachedPseudoElements ? vertex4.isTerminal() : false;
           let isCarbon = atom.element === "C";
           if (graph.vertices.length < 3) {
             isCarbon = false;
@@ -22268,7 +22268,7 @@ var require_SvgDrawer = __commonJS({
             isotope = atom.bracket.isotope;
           }
           if (opts.atomVisualization === "allballs") {
-            svgWrapper.drawBall(vertex3.position.x, vertex3.position.y, element2);
+            svgWrapper.drawBall(vertex4.position.x, vertex4.position.y, element2);
           } else if (atom.isDrawn && (!isCarbon || atom.drawExplicit || isTerminal || atom.hasAttachedPseudoElements) || graph.vertices.length === 1) {
             if (opts.atomVisualization === "default") {
               let attachedPseudoElements = atom.getAttachedPseudoElements();
@@ -22276,8 +22276,8 @@ var require_SvgDrawer = __commonJS({
                 dir = "right";
               }
               svgWrapper.drawText(
-                vertex3.position.x,
-                vertex3.position.y,
+                vertex4.position.x,
+                vertex4.position.y,
                 element2,
                 hydrogens,
                 dir,
@@ -22288,19 +22288,19 @@ var require_SvgDrawer = __commonJS({
                 attachedPseudoElements
               );
             } else if (opts.atomVisualization === "balls") {
-              svgWrapper.drawBall(vertex3.position.x, vertex3.position.y, element2);
+              svgWrapper.drawBall(vertex4.position.x, vertex4.position.y, element2);
             }
-          } else if (vertex3.getNeighbourCount() === 2 && vertex3.forcePositioned == true) {
-            let a7 = graph.vertices[vertex3.neighbours[0]].position;
-            let b5 = graph.vertices[vertex3.neighbours[1]].position;
-            let angle = Vector2.threePointangle(vertex3.position, a7, b5);
+          } else if (vertex4.getNeighbourCount() === 2 && vertex4.forcePositioned == true) {
+            let a7 = graph.vertices[vertex4.neighbours[0]].position;
+            let b5 = graph.vertices[vertex4.neighbours[1]].position;
+            let angle = Vector2.threePointangle(vertex4.position, a7, b5);
             if (Math.abs(Math.PI - angle) < 0.1) {
-              svgWrapper.drawPoint(vertex3.position.x, vertex3.position.y, element2);
+              svgWrapper.drawPoint(vertex4.position.x, vertex4.position.y, element2);
             }
           }
           if (debug) {
-            let value = "v: " + vertex3.id + " " + ArrayHelper.print(atom.ringbonds);
-            svgWrapper.drawDebugText(vertex3.position.x, vertex3.position.y, value);
+            let value = "v: " + vertex4.id + " " + ArrayHelper.print(atom.ringbonds);
+            svgWrapper.drawDebugText(vertex4.position.x, vertex4.position.y, value);
           }
         }
         if (opts.debug) {
@@ -22323,11 +22323,11 @@ var require_SvgDrawer = __commonJS({
         }
         let points = [];
         for (const atomIdx of this.preprocessor.graph.atomIdxToVertexId) {
-          let vertex3 = this.preprocessor.graph.vertices[atomIdx];
+          let vertex4 = this.preprocessor.graph.vertices[atomIdx];
           points.push(
             new Vector2(
-              vertex3.position.x - this.svgWrapper.minX,
-              vertex3.position.y - this.svgWrapper.minY
+              vertex4.position.x - this.svgWrapper.minX,
+              vertex4.position.y - this.svgWrapper.minY
             )
           );
         }
@@ -40071,6 +40071,30 @@ var init_squaredDistanceToLineSegment = __esm({
   }
 });
 
+// node_modules/pixi.js/lib/maths/point/pointInTriangle.mjs
+function pointInTriangle(px, py, x1, y1, x22, y22, x32, y32) {
+  const v2x = x32 - x1;
+  const v2y = y32 - y1;
+  const v1x = x22 - x1;
+  const v1y = y22 - y1;
+  const v0x = px - x1;
+  const v0y = py - y1;
+  const dot00 = v2x * v2x + v2y * v2y;
+  const dot01 = v2x * v1x + v2y * v1y;
+  const dot02 = v2x * v0x + v2y * v0y;
+  const dot11 = v1x * v1x + v1y * v1y;
+  const dot12 = v1x * v0x + v1y * v0y;
+  const invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
+  const u7 = (dot11 * dot02 - dot01 * dot12) * invDenom;
+  const v4 = (dot00 * dot12 - dot01 * dot02) * invDenom;
+  return u7 >= 0 && v4 >= 0 && u7 + v4 < 1;
+}
+var init_pointInTriangle = __esm({
+  "node_modules/pixi.js/lib/maths/point/pointInTriangle.mjs"() {
+    "use strict";
+  }
+});
+
 // node_modules/pixi.js/lib/maths/shapes/Circle.mjs
 var Circle;
 var init_Circle = __esm({
@@ -41652,15 +41676,15 @@ var init_GlProgram = __esm({
           addProgramDefines: isES300,
           insertVersion: isES300
         };
-        let fragment3 = options2.fragment;
-        let vertex3 = options2.vertex;
+        let fragment4 = options2.fragment;
+        let vertex4 = options2.vertex;
         Object.keys(processes).forEach((processKey) => {
           const processOptions = preprocessorOptions[processKey];
-          fragment3 = processes[processKey](fragment3, processOptions, true);
-          vertex3 = processes[processKey](vertex3, processOptions, false);
+          fragment4 = processes[processKey](fragment4, processOptions, true);
+          vertex4 = processes[processKey](vertex4, processOptions, false);
         });
-        this.fragment = fragment3;
-        this.vertex = vertex3;
+        this.fragment = fragment4;
+        this.vertex = vertex4;
         this.transformFeedbackVaryings = options2.transformFeedbackVaryings;
         this._key = createIdFromString(`${this.vertex}:${this.fragment}`, "gl-program");
       }
@@ -42082,16 +42106,16 @@ var init_GpuProgram = __esm({
       constructor(options2) {
         this._layoutKey = 0;
         this._attributeLocationsKey = 0;
-        const { fragment: fragment3, vertex: vertex3, layout, gpuLayout, name: name2 } = options2;
+        const { fragment: fragment4, vertex: vertex4, layout, gpuLayout, name: name2 } = options2;
         this.name = name2;
-        this.fragment = fragment3;
-        this.vertex = vertex3;
-        if (fragment3.source === vertex3.source) {
-          const structsAndGroups = extractStructAndGroups(fragment3.source);
+        this.fragment = fragment4;
+        this.vertex = vertex4;
+        if (fragment4.source === vertex4.source) {
+          const structsAndGroups = extractStructAndGroups(fragment4.source);
           this.structsAndGroups = structsAndGroups;
         } else {
-          const vertexStructsAndGroups = extractStructAndGroups(vertex3.source);
-          const fragmentStructsAndGroups = extractStructAndGroups(fragment3.source);
+          const vertexStructsAndGroups = extractStructAndGroups(vertex4.source);
+          const fragmentStructsAndGroups = extractStructAndGroups(fragment4.source);
           this.structsAndGroups = removeStructAndGroupDuplicates(vertexStructsAndGroups, fragmentStructsAndGroups);
         }
         this.layout = layout ?? generateLayoutHash(this.structsAndGroups);
@@ -42102,8 +42126,8 @@ var init_GpuProgram = __esm({
       }
       // TODO maker this pure
       _generateProgramKey() {
-        const { vertex: vertex3, fragment: fragment3 } = this;
-        const bigKey = vertex3.source + fragment3.source + vertex3.entryPoint + fragment3.entryPoint;
+        const { vertex: vertex4, fragment: fragment4 } = this;
+        const bigKey = vertex4.source + fragment4.source + vertex4.entryPoint + fragment4.entryPoint;
         this._layoutKey = createIdFromString(bigKey, "program");
       }
       get attributeData() {
@@ -44086,7 +44110,7 @@ function isEar(ear) {
   const a7 = ear.prev, b5 = ear, c8 = ear.next, ax = a7.x, bx = b5.x, cx = c8.x, ay = a7.y, by = b5.y, cy = c8.y, x0 = Math.min(ax, bx, cx), y0 = Math.min(ay, by, cy), x1 = Math.max(ax, bx, cx), y1 = Math.max(ay, by, cy);
   let p5 = c8.next;
   while (p5 !== a7) {
-    if (p5.x >= x0 && p5.x <= x1 && p5.y >= y0 && p5.y <= y1 && !(ax === p5.x && ay === p5.y) && pointInTriangle(ax, ay, bx, by, cx, cy, p5.x, p5.y) && area(p5.prev, p5, p5.next) >= 0) return false;
+    if (p5.x >= x0 && p5.x <= x1 && p5.y >= y0 && p5.y <= y1 && !(ax === p5.x && ay === p5.y) && pointInTriangle2(ax, ay, bx, by, cx, cy, p5.x, p5.y) && area(p5.prev, p5, p5.next) >= 0) return false;
     p5 = p5.next;
   }
   return true;
@@ -44095,12 +44119,12 @@ function isEarHashed(ear, minX, minY, invSize) {
   const a7 = ear.prev, b5 = ear, c8 = ear.next, ax = a7.x, bx = b5.x, cx = c8.x, ay = a7.y, by = b5.y, cy = c8.y, x0 = Math.min(ax, bx, cx), y0 = Math.min(ay, by, cy), x1 = Math.max(ax, bx, cx), y1 = Math.max(ay, by, cy), minZ = zOrder(x0, y0, minX, minY, invSize), maxZ = zOrder(x1, y1, minX, minY, invSize);
   let p5 = ear.prevZ;
   while (p5 && p5.z >= minZ) {
-    if (p5.x >= x0 && p5.x <= x1 && p5.y >= y0 && p5.y <= y1 && p5 !== c8 && !(ax === p5.x && ay === p5.y) && pointInTriangle(ax, ay, bx, by, cx, cy, p5.x, p5.y) && area(p5.prev, p5, p5.next) >= 0) return false;
+    if (p5.x >= x0 && p5.x <= x1 && p5.y >= y0 && p5.y <= y1 && p5 !== c8 && !(ax === p5.x && ay === p5.y) && pointInTriangle2(ax, ay, bx, by, cx, cy, p5.x, p5.y) && area(p5.prev, p5, p5.next) >= 0) return false;
     p5 = p5.prevZ;
   }
   let n12 = ear.nextZ;
   while (n12 && n12.z <= maxZ) {
-    if (n12.x >= x0 && n12.x <= x1 && n12.y >= y0 && n12.y <= y1 && n12 !== c8 && !(ax === n12.x && ay === n12.y) && pointInTriangle(ax, ay, bx, by, cx, cy, n12.x, n12.y) && area(n12.prev, n12, n12.next) >= 0) return false;
+    if (n12.x >= x0 && n12.x <= x1 && n12.y >= y0 && n12.y <= y1 && n12 !== c8 && !(ax === n12.x && ay === n12.y) && pointInTriangle2(ax, ay, bx, by, cx, cy, n12.x, n12.y) && area(n12.prev, n12, n12.next) >= 0) return false;
     n12 = n12.nextZ;
   }
   return true;
@@ -44261,7 +44285,7 @@ function findHoleBridge(hole, outerNode) {
     p5 = liveBlockHead(b5);
     do {
       if (p5.prev.next === p5 && hx >= p5.x && p5.x >= mx && hx !== p5.x && // skip dead nodes
-      pointInTriangle(hy < my ? hx : qx, hy, mx, my, hy < my ? qx : hx, hy, p5.x, p5.y)) {
+      pointInTriangle2(hy < my ? hx : qx, hy, mx, my, hy < my ? qx : hx, hy, p5.x, p5.y)) {
         const tan = Math.abs(hy - p5.y) / (hx - p5.x);
         if ((locallyInside(p5, hole) || p5.y === hy && p5.next.y === hy && p5.next.x > hx) && (tan < tanMin || tan === tanMin && (p5.x > m5.x || p5.x === m5.x && sectorContainsSector(m5, p5)))) {
           m5 = p5;
@@ -44369,7 +44393,7 @@ function getLeftmost(start) {
   } while (p5 !== start);
   return leftmost;
 }
-function pointInTriangle(ax, ay, bx, by, cx, cy, px, py) {
+function pointInTriangle2(ax, ay, bx, by, cx, cy, px, py) {
   return (cx - px) * (ay - py) >= (ax - px) * (cy - py) && (ax - px) * (by - py) >= (bx - px) * (ay - py) && (bx - px) * (cy - py) >= (cx - px) * (by - py);
 }
 function isValidDiagonal(a7, b5) {
@@ -45076,9 +45100,9 @@ function extractInputs(fragmentSource, out2) {
 function compileInputs(fragments, template, sort = false) {
   const results = [];
   extractInputs(template, results);
-  fragments.forEach((fragment3) => {
-    if (fragment3.header) {
-      extractInputs(fragment3.header, results);
+  fragments.forEach((fragment4) => {
+    if (fragment4.header) {
+      extractInputs(fragment4.header, results);
     }
   });
   const mainInput = results;
@@ -45118,9 +45142,9 @@ function stripVariable(value) {
 function compileOutputs(fragments, template) {
   const results = [];
   extractOutputs(template, results);
-  fragments.forEach((fragment3) => {
-    if (fragment3.header) {
-      extractOutputs(fragment3.header, results);
+  fragments.forEach((fragment4) => {
+    if (fragment4.header) {
+      extractOutputs(fragment4.header, results);
     }
   });
   let index2 = 0;
@@ -45180,8 +45204,8 @@ function compileHighShader({
 }) {
   const cacheId = generateCacheId(template, bits);
   if (cacheMap[cacheId]) return cacheMap[cacheId];
-  const { vertex: vertex3, fragment: fragment3 } = compileInputsAndOutputs(template, bits);
-  cacheMap[cacheId] = compileBits(vertex3, fragment3, bits);
+  const { vertex: vertex4, fragment: fragment4 } = compileInputsAndOutputs(template, bits);
+  cacheMap[cacheId] = compileBits(vertex4, fragment4, bits);
   return cacheMap[cacheId];
 }
 function compileHighShaderGl({
@@ -45212,16 +45236,16 @@ function generateCacheId(template, bits) {
     return bitCacheMap.get(highFragment);
   }).sort((a7, b5) => a7 - b5).join("-") + template.vertex + template.fragment;
 }
-function compileBits(vertex3, fragment3, bits) {
-  const vertexParts = compileHooks(vertex3);
-  const fragmentParts = compileHooks(fragment3);
+function compileBits(vertex4, fragment4, bits) {
+  const vertexParts = compileHooks(vertex4);
+  const fragmentParts = compileHooks(fragment4);
   bits.forEach((shaderBit) => {
     addBits(shaderBit.vertex, vertexParts, shaderBit.name);
     addBits(shaderBit.fragment, fragmentParts, shaderBit.name);
   });
   return {
-    vertex: injectBits(vertex3, vertexParts),
-    fragment: injectBits(fragment3, fragmentParts)
+    vertex: injectBits(vertex4, vertexParts),
+    fragment: injectBits(fragment4, fragmentParts)
   };
 }
 var cacheMap, bitCacheMap, CACHE_UID;
@@ -69788,6 +69812,8 @@ var init_BitmapFont = __esm({
 // localization/messages.json
 var messages_default = {
   en: {
+    Verkleinern: "Zoom out",
+    Vergr\u00F6\u00DFern: "Zoom in",
     "Die Arbeitsfl\xE4che konnte nicht geladen werden.": "The work area could not be loaded.",
     Chemikalien: "Chemicals",
     Feststoffe: "Solids",
@@ -100530,24 +100556,60 @@ var style = i`
 		display: none;
 	}
 	:host {
+		display: block;
+		inline-size: 800px;
+		max-inline-size: 100%;
+		block-size: min(600px, 100dvh);
 		font-family: var(--sl-font-sans);
+	}
+	:host(.ww-full-width) {
+		inline-size: 100%;
 	}
 
 	#upper {
+		--diagram-width: 0px;
+		--object-width: 0px;
 		position: relative;
 		box-sizing: border-box;
 		display: grid;
-		grid-template-columns: minmax(0, 1fr);
+		grid-template-columns: var(--diagram-width) minmax(0, 1fr) var(--object-width);
 		grid-template-rows: minmax(0, 1fr) auto;
-		width: 800px;
-		max-width: 100%;
-		height: 600px;
+		width: 100%;
+		height: 100%;
 		border: 2px solid #6a6a6a;
 		border-radius: 5px;
 		background: #f7f7f5;
 	}
+	#upper.show-diagram-panel {
+		--diagram-width: min(27%, 24rem);
+	}
 	#upper.show-object-panel {
-		grid-template-columns: minmax(0, 1fr) min(44%, 38rem);
+		--object-width: min(44%, 38rem);
+	}
+	#upper.show-diagram-panel.show-object-panel {
+		--object-width: min(36%, 38rem);
+	}
+	#inlineDiagramPanel {
+		grid-column: 1;
+		grid-row: 1;
+		min-width: 0;
+		min-height: 0;
+		padding: 6px;
+		overflow: auto;
+		border-inline-end: 1px solid var(--sl-color-neutral-200);
+		background: var(--sl-color-neutral-0);
+	}
+	#inlineDiagramPanel > sl-checkbox {
+		display: block;
+		margin-block: 6px;
+	}
+	#diagramDrawer #canvasContainer {
+		position: absolute;
+		top: 50px;
+		left: 0;
+		width: 100%;
+		max-height: 550px;
+		overflow: auto;
 	}
 	:host(:fullscreen),
 	:host(:fullscreen) #upper {
@@ -100555,6 +100617,8 @@ var style = i`
 		height: 100%;
 	}
 	#objectArea {
+		grid-column: 3;
+		grid-row: 1;
 		display: flex;
 		flex-direction: column;
 		align-items: flex-end;
@@ -100597,26 +100661,24 @@ var style = i`
 		white-space: nowrap;
 	}
 	#canvasArea {
+		grid-column: 2;
+		grid-row: 1;
 		position: relative;
-		container-type: size;
-		display: grid;
-		place-items: center;
 		min-width: 0;
 		min-height: 0;
 	}
-	#canvasArea p_c {
-		display: block;
-		width: min(100cqw, 133.333cqh);
-	}
+	#canvasArea p_c,
 	#canvasArea canvas {
 		display: block;
 		width: 100%;
-		height: auto;
-		background-color: #f7f7f5;
-		background-image:
-			linear-gradient(to right, #d8d8d8 1px, transparent 1px),
-			linear-gradient(to bottom, #d8d8d8 1px, transparent 1px);
-		background-size: 2.5% 3.3333%;
+		height: 100%;
+	}
+	#canvasZoom {
+		position: absolute;
+		inset-block-end: 4px;
+		inset-inline-start: 4px;
+		display: flex;
+		gap: 3px;
 	}
 	#contextInfoBox {
 		box-sizing: border-box;
@@ -100644,7 +100706,8 @@ var style = i`
 		background: var(--sl-color-neutral-0);
 	}
 	#teacherDrawerContent {
-		max-height: min(15rem, 40vh);
+		box-sizing: border-box;
+		max-height: min(240px, 40vh);
 		overflow: auto;
 		padding: 4px 0;
 	}
@@ -172977,6 +173040,52 @@ function prepareDose(recipe, load) {
   };
 }
 
+// controllers/WorkspaceCamera.ts
+var STANDARD_CANVAS_WIDTH = 800;
+var STANDARD_CANVAS_HEIGHT = 600;
+var WorkspaceCamera = class {
+  width = STANDARD_CANVAS_WIDTH;
+  height = STANDARD_CANVAS_HEIGHT;
+  zoom = 1;
+  x = STANDARD_CANVAS_WIDTH / 2;
+  y = STANDARD_CANVAS_HEIGHT / 2;
+  navigated = false;
+  get offsetX() {
+    return this.width / 2 - this.x * this.zoom;
+  }
+  get offsetY() {
+    return this.height / 2 - this.y * this.zoom;
+  }
+  resize(width, height) {
+    this.width = width;
+    this.height = height;
+    if (!this.navigated) this.zoom = Math.min(1, width / STANDARD_CANVAS_WIDTH, height / STANDARD_CANVAS_HEIGHT);
+  }
+  toWorld(screenX, screenY) {
+    return {
+      x: this.x + (screenX - this.width / 2) / this.zoom,
+      y: this.y + (screenY - this.height / 2) / this.zoom
+    };
+  }
+  toScreen(worldX, worldY) {
+    return { x: worldX * this.zoom + this.offsetX, y: worldY * this.zoom + this.offsetY };
+  }
+  panBy(screenX, screenY) {
+    this.navigated = true;
+    this.x -= screenX / this.zoom;
+    this.y -= screenY / this.zoom;
+  }
+  zoomAt(factor, screenX, screenY) {
+    const next = Math.max(0.025, Math.min(8, this.zoom * factor));
+    if (next === this.zoom) return;
+    const anchor = this.toWorld(screenX, screenY);
+    this.navigated = true;
+    this.zoom = next;
+    this.x = anchor.x - (screenX - this.width / 2) / next;
+    this.y = anchor.y - (screenY - this.height / 2) / next;
+  }
+};
+
 // node_modules/pixi.js/lib/environment-browser/browserExt.mjs
 init_Extensions();
 var browserExt = {
@@ -175646,28 +175755,600 @@ extensions.handle(ExtensionType.Asset, (extension) => {
   Object.keys(assetKeyMap).filter((key) => !!ref[key]).forEach((key) => extensions.remove(ref[key]));
 });
 
+// node_modules/pixi.js/lib/scene/mesh/shared/Mesh.mjs
+init_pointInTriangle();
+init_Geometry();
+init_State();
+init_Texture();
+init_deprecation();
+init_ViewContainer();
+
+// node_modules/pixi.js/lib/scene/mesh/shared/MeshGeometry.mjs
+init_Buffer();
+init_const4();
+init_Geometry();
+init_deprecation();
+var _MeshGeometry = class _MeshGeometry2 extends Geometry {
+  constructor(...args) {
+    let options2 = args[0] ?? {};
+    if (options2 instanceof Float32Array) {
+      deprecation(v8_0_0, "use new MeshGeometry({ positions, uvs, indices }) instead");
+      options2 = {
+        positions: options2,
+        uvs: args[1],
+        indices: args[2]
+      };
+    }
+    options2 = { ..._MeshGeometry2.defaultOptions, ...options2 };
+    const positions2 = options2.positions || new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]);
+    let uvs = options2.uvs;
+    if (!uvs) {
+      if (options2.positions) {
+        uvs = new Float32Array(positions2.length);
+      } else {
+        uvs = new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]);
+      }
+    }
+    const indices = options2.indices || new Uint32Array([0, 1, 2, 0, 2, 3]);
+    const shrinkToFit = options2.shrinkBuffersToFit;
+    const positionBuffer = new Buffer2({
+      data: positions2,
+      label: "attribute-mesh-positions",
+      shrinkToFit,
+      usage: BufferUsage.VERTEX | BufferUsage.COPY_DST
+    });
+    const uvBuffer = new Buffer2({
+      data: uvs,
+      label: "attribute-mesh-uvs",
+      shrinkToFit,
+      usage: BufferUsage.VERTEX | BufferUsage.COPY_DST
+    });
+    const indexBuffer = new Buffer2({
+      data: indices,
+      label: "index-mesh-buffer",
+      shrinkToFit,
+      usage: BufferUsage.INDEX | BufferUsage.COPY_DST
+    });
+    super({
+      attributes: {
+        aPosition: {
+          buffer: positionBuffer,
+          format: "float32x2",
+          stride: 2 * 4,
+          offset: 0
+        },
+        aUV: {
+          buffer: uvBuffer,
+          format: "float32x2",
+          stride: 2 * 4,
+          offset: 0
+        }
+      },
+      indexBuffer,
+      topology: options2.topology
+    });
+    this.batchMode = "auto";
+  }
+  /** The positions of the mesh. */
+  get positions() {
+    return this.attributes.aPosition.buffer.data;
+  }
+  /**
+   * Set the positions of the mesh.
+   * When setting the positions, its important that the uvs array is at least as long as the positions array.
+   * otherwise the geometry will not be valid.
+   * @param {Float32Array} value - The positions of the mesh.
+   */
+  set positions(value) {
+    this.attributes.aPosition.buffer.data = value;
+  }
+  /** The UVs of the mesh. */
+  get uvs() {
+    return this.attributes.aUV.buffer.data;
+  }
+  /**
+   * Set the UVs of the mesh.
+   * Its important that the uvs array you set is at least as long as the positions array.
+   * otherwise the geometry will not be valid.
+   * @param {Float32Array} value - The UVs of the mesh.
+   */
+  set uvs(value) {
+    this.attributes.aUV.buffer.data = value;
+  }
+  /** The indices of the mesh. */
+  get indices() {
+    return this.indexBuffer.data;
+  }
+  set indices(value) {
+    this.indexBuffer.data = value;
+  }
+};
+_MeshGeometry.defaultOptions = {
+  topology: "triangle-list",
+  shrinkBuffersToFit: false
+};
+var MeshGeometry = _MeshGeometry;
+
+// node_modules/pixi.js/lib/scene/mesh/init.mjs
+init_Extensions();
+
+// node_modules/pixi.js/lib/scene/mesh/shared/MeshPipe.mjs
+init_Extensions();
+init_Matrix();
+init_BindGroup();
+init_UniformGroup();
+init_getAdjustedBlendModeBlend();
+init_colorToUniform();
+
+// node_modules/pixi.js/lib/scene/mesh/shared/BatchableMesh.mjs
+var BatchableMesh = class {
+  constructor() {
+    this.batcherName = "default";
+    this.packAsQuad = false;
+    this.indexOffset = 0;
+    this.attributeOffset = 0;
+    this.roundPixels = 0;
+    this._batcher = null;
+    this._batch = null;
+    this._textureMatrixUpdateId = -1;
+    this._uvUpdateId = -1;
+  }
+  get blendMode() {
+    return this.renderable.groupBlendMode;
+  }
+  get topology() {
+    return this._topology || this.geometry.topology;
+  }
+  set topology(value) {
+    this._topology = value;
+  }
+  reset() {
+    this.renderable = null;
+    this.texture = null;
+    this._batcher = null;
+    this._batch = null;
+    this.geometry = null;
+    this._uvUpdateId = -1;
+    this._textureMatrixUpdateId = -1;
+  }
+  /**
+   * Sets the texture for the batchable mesh.
+   * As it does so, it resets the texture matrix update ID.
+   * this is to ensure that the texture matrix is recalculated when the uvs are referenced
+   * @param value - The texture to set.
+   */
+  setTexture(value) {
+    if (this.texture === value) return;
+    this.texture = value;
+    this._textureMatrixUpdateId = -1;
+  }
+  get uvs() {
+    const geometry = this.geometry;
+    const uvBuffer = geometry.getBuffer("aUV");
+    const uvs = uvBuffer.data;
+    let transformedUvs = uvs;
+    const textureMatrix = this.texture.textureMatrix;
+    if (!textureMatrix.isSimple) {
+      transformedUvs = this._transformedUvs;
+      if (this._textureMatrixUpdateId !== textureMatrix._updateID || this._uvUpdateId !== uvBuffer._updateID) {
+        if (!transformedUvs || transformedUvs.length < uvs.length) {
+          transformedUvs = this._transformedUvs = new Float32Array(uvs.length);
+        }
+        this._textureMatrixUpdateId = textureMatrix._updateID;
+        this._uvUpdateId = uvBuffer._updateID;
+        textureMatrix.multiplyUvs(uvs, transformedUvs);
+      }
+    }
+    return transformedUvs;
+  }
+  get positions() {
+    return this.geometry.positions;
+  }
+  get indices() {
+    return this.geometry.indices;
+  }
+  get color() {
+    return this.renderable.groupColorAlpha;
+  }
+  get groupTransform() {
+    return this.renderable.groupTransform;
+  }
+  get attributeSize() {
+    return this.geometry.positions.length / 2;
+  }
+  get indexSize() {
+    return this.geometry.indices.length;
+  }
+};
+
+// node_modules/pixi.js/lib/scene/mesh/shared/MeshPipe.mjs
+var MeshGpuData = class {
+  destroy() {
+  }
+};
+var MeshPipe = class {
+  constructor(renderer, adaptor) {
+    this.localUniforms = new UniformGroup({
+      uTransformMatrix: { value: new Matrix(), type: "mat3x3<f32>" },
+      uColor: { value: new Float32Array([1, 1, 1, 1]), type: "vec4<f32>" },
+      uRound: { value: 0, type: "f32" }
+    });
+    this.localUniformsBindGroup = new BindGroup({
+      0: this.localUniforms
+    });
+    this.renderer = renderer;
+    this._adaptor = adaptor;
+    this._adaptor.init();
+  }
+  validateRenderable(mesh) {
+    const meshData = this._getMeshData(mesh);
+    const wasBatched = meshData.batched;
+    const isBatched = mesh.batched;
+    meshData.batched = isBatched;
+    if (wasBatched !== isBatched) {
+      return true;
+    } else if (isBatched) {
+      const geometry = mesh._geometry;
+      if (geometry.indices.length !== meshData.indexSize || geometry.positions.length !== meshData.vertexSize) {
+        meshData.indexSize = geometry.indices.length;
+        meshData.vertexSize = geometry.positions.length;
+        return true;
+      }
+      const batchableMesh = this._getBatchableMesh(mesh);
+      if (batchableMesh.texture.uid !== mesh._texture.uid) {
+        batchableMesh._textureMatrixUpdateId = -1;
+      }
+      return !batchableMesh._batcher.checkAndUpdateTexture(
+        batchableMesh,
+        mesh._texture
+      );
+    }
+    return false;
+  }
+  addRenderable(mesh, instructionSet) {
+    const batcher = this.renderer.renderPipes.batch;
+    const meshData = this._getMeshData(mesh);
+    if (mesh.didViewUpdate) {
+      meshData.indexSize = mesh._geometry.indices?.length;
+      meshData.vertexSize = mesh._geometry.positions?.length;
+    }
+    if (meshData.batched) {
+      const gpuBatchableMesh = this._getBatchableMesh(mesh);
+      gpuBatchableMesh.setTexture(mesh._texture);
+      gpuBatchableMesh.geometry = mesh._geometry;
+      batcher.addToBatch(gpuBatchableMesh, instructionSet);
+    } else {
+      batcher.break(instructionSet);
+      instructionSet.add(mesh);
+    }
+  }
+  updateRenderable(mesh) {
+    if (mesh.batched) {
+      const gpuBatchableMesh = this._getBatchableMesh(mesh);
+      gpuBatchableMesh.setTexture(mesh._texture);
+      gpuBatchableMesh.geometry = mesh._geometry;
+      gpuBatchableMesh._batcher.updateElement(gpuBatchableMesh);
+    }
+  }
+  execute(mesh) {
+    if (!mesh.isRenderable) return;
+    if (mesh.state.blend) {
+      mesh.state.blendMode = getAdjustedBlendModeBlend(mesh.groupBlendMode, mesh.texture._source);
+    }
+    const localUniforms = this.localUniforms;
+    localUniforms.uniforms.uTransformMatrix = mesh.groupTransform;
+    localUniforms.uniforms.uRound = this.renderer._roundPixels | mesh._roundPixels;
+    localUniforms.update();
+    color32BitToUniform(
+      mesh.groupColorAlpha,
+      localUniforms.uniforms.uColor,
+      0
+    );
+    this._adaptor.execute(this, mesh);
+  }
+  _getMeshData(mesh) {
+    var _a3, _b;
+    (_a3 = mesh._gpuData)[_b = this.renderer.uid] || (_a3[_b] = new MeshGpuData());
+    return mesh._gpuData[this.renderer.uid].meshData || this._initMeshData(mesh);
+  }
+  _initMeshData(mesh) {
+    mesh._gpuData[this.renderer.uid].meshData = {
+      batched: mesh.batched,
+      indexSize: 0,
+      vertexSize: 0
+    };
+    return mesh._gpuData[this.renderer.uid].meshData;
+  }
+  _getBatchableMesh(mesh) {
+    var _a3, _b;
+    (_a3 = mesh._gpuData)[_b = this.renderer.uid] || (_a3[_b] = new MeshGpuData());
+    return mesh._gpuData[this.renderer.uid].batchableMesh || this._initBatchableMesh(mesh);
+  }
+  _initBatchableMesh(mesh) {
+    const gpuMesh = new BatchableMesh();
+    gpuMesh.renderable = mesh;
+    gpuMesh.setTexture(mesh._texture);
+    gpuMesh.transform = mesh.groupTransform;
+    gpuMesh.roundPixels = this.renderer._roundPixels | mesh._roundPixels;
+    mesh._gpuData[this.renderer.uid].batchableMesh = gpuMesh;
+    return gpuMesh;
+  }
+  destroy() {
+    this.localUniforms = null;
+    this.localUniformsBindGroup = null;
+    this._adaptor.destroy();
+    this._adaptor = null;
+    this.renderer = null;
+  }
+};
+MeshPipe.extension = {
+  type: [
+    ExtensionType.WebGLPipes,
+    ExtensionType.WebGPUPipes
+  ],
+  name: "mesh"
+};
+
+// node_modules/pixi.js/lib/scene/mesh/init.mjs
+extensions.add(MeshPipe);
+
+// node_modules/pixi.js/lib/scene/mesh/shared/Mesh.mjs
+var Mesh = class extends ViewContainer {
+  constructor(...args) {
+    let options2 = args[0];
+    if (options2 instanceof Geometry) {
+      deprecation(v8_0_0, "Mesh: use new Mesh({ geometry, shader }) instead");
+      options2 = {
+        geometry: options2,
+        shader: args[1]
+      };
+      if (args[3]) {
+        deprecation(v8_0_0, "Mesh: drawMode argument has been removed, use geometry.topology instead");
+        options2.geometry.topology = args[3];
+      }
+    }
+    const { geometry, shader, texture, roundPixels, state, ...rest } = options2;
+    super({
+      label: "Mesh",
+      ...rest
+    });
+    this.renderPipeId = "mesh";
+    this._shader = null;
+    this.allowChildren = false;
+    this.shader = shader ?? null;
+    this.texture = texture ?? shader?.texture ?? Texture.WHITE;
+    this.state = state ?? State.for2d();
+    this._geometry = geometry;
+    this._geometry.on("update", this.onViewUpdate, this);
+    this.roundPixels = roundPixels ?? false;
+  }
+  /** Alias for {@link Mesh#shader}. */
+  get material() {
+    deprecation(v8_0_0, "mesh.material property has been removed, use mesh.shader instead");
+    return this._shader;
+  }
+  /**
+   * Represents the vertex and fragment shaders that processes the geometry and runs on the GPU.
+   * Can be shared between multiple Mesh objects.
+   */
+  set shader(value) {
+    if (this._shader === value) return;
+    this._shader = value;
+    this.onViewUpdate();
+  }
+  get shader() {
+    return this._shader;
+  }
+  /**
+   * Includes vertex positions, face indices, colors, UVs, and
+   * custom attributes within buffers, reducing the cost of passing all
+   * this data to the GPU. Can be shared between multiple Mesh objects.
+   */
+  set geometry(value) {
+    if (this._geometry === value) return;
+    this._geometry?.off("update", this.onViewUpdate, this);
+    value.on("update", this.onViewUpdate, this);
+    this._geometry = value;
+    this.onViewUpdate();
+  }
+  get geometry() {
+    return this._geometry;
+  }
+  /** The texture that the Mesh uses. Null for non-MeshMaterial shaders */
+  set texture(value) {
+    value || (value = Texture.EMPTY);
+    const currentTexture = this._texture;
+    if (currentTexture === value) return;
+    if (currentTexture && currentTexture.dynamic) currentTexture.off("update", this.onViewUpdate, this);
+    if (value.dynamic) value.on("update", this.onViewUpdate, this);
+    if (this.shader) {
+      this.shader.texture = value;
+    }
+    this._texture = value;
+    this.onViewUpdate();
+  }
+  get texture() {
+    return this._texture;
+  }
+  get batched() {
+    if (this._shader) return false;
+    if ((this.state.data & 12) !== 0) return false;
+    if (this._geometry instanceof MeshGeometry) {
+      if (this._geometry.batchMode === "auto") {
+        return this._geometry.positions.length / 2 <= 100;
+      }
+      return this._geometry.batchMode === "batch";
+    }
+    return false;
+  }
+  /**
+   * The local bounds of the mesh.
+   * @type {Bounds}
+   */
+  get bounds() {
+    return this._geometry.bounds;
+  }
+  /**
+   * Update local bounds of the mesh.
+   * @private
+   */
+  updateBounds() {
+    this._bounds = this._geometry.bounds;
+  }
+  /**
+   * Checks if the object contains the given point.
+   * @param point - The point to check
+   */
+  containsPoint(point) {
+    const { x: x4, y: y5 } = point;
+    if (!this.bounds.containsPoint(x4, y5)) return false;
+    const vertices = this.geometry.getBuffer("aPosition").data;
+    const step = this.geometry.topology === "triangle-strip" ? 3 : 1;
+    if (this.geometry.getIndex()) {
+      const indices = this.geometry.getIndex().data;
+      const len = indices.length;
+      for (let i11 = 0; i11 + 2 < len; i11 += step) {
+        const ind0 = indices[i11] * 2;
+        const ind1 = indices[i11 + 1] * 2;
+        const ind2 = indices[i11 + 2] * 2;
+        if (pointInTriangle(
+          x4,
+          y5,
+          vertices[ind0],
+          vertices[ind0 + 1],
+          vertices[ind1],
+          vertices[ind1 + 1],
+          vertices[ind2],
+          vertices[ind2 + 1]
+        )) {
+          return true;
+        }
+      }
+    } else {
+      const len = vertices.length / 2;
+      for (let i11 = 0; i11 + 2 < len; i11 += step) {
+        const ind0 = i11 * 2;
+        const ind1 = (i11 + 1) * 2;
+        const ind2 = (i11 + 2) * 2;
+        if (pointInTriangle(
+          x4,
+          y5,
+          vertices[ind0],
+          vertices[ind0 + 1],
+          vertices[ind1],
+          vertices[ind1 + 1],
+          vertices[ind2],
+          vertices[ind2 + 1]
+        )) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  /**
+   * Destroys this sprite renderable and optionally its texture.
+   * @param options - Options parameter. A boolean will act as if all options
+   *  have been set to that value
+   * @example
+   * mesh.destroy();
+   * mesh.destroy(true);
+   * mesh.destroy({ texture: true, textureSource: true });
+   */
+  destroy(options2) {
+    super.destroy(options2);
+    const destroyTexture = typeof options2 === "boolean" ? options2 : options2?.texture;
+    if (destroyTexture) {
+      const destroyTextureSource = typeof options2 === "boolean" ? options2 : options2?.textureSource;
+      this._texture.destroy(destroyTextureSource);
+    }
+    this._geometry?.off("update", this.onViewUpdate, this);
+    this._texture = null;
+    this._geometry = null;
+    this._shader = null;
+  }
+};
+
 // node_modules/pixi.js/lib/index.mjs
 init_Point();
 init_Rectangle();
+init_Shader();
+init_UniformGroup();
 init_RenderTexture();
 init_textureFrom();
+init_Container();
 init_Graphics();
 init_Sprite();
 init_eventemitter3();
 extensions.add(browserExt, webworkerExt);
 
+// controllers/WorkspaceGrid.ts
+var vertex3 = `
+	in vec2 aPosition;
+	out vec2 vScreenUv;
+	void main() {
+		vScreenUv = aPosition;
+		gl_Position = vec4(2.0 * aPosition.x - 1.0, 1.0 - 2.0 * aPosition.y, 0.0, 1.0);
+	}
+`;
+var fragment3 = `
+	in vec2 vScreenUv;
+	out vec4 finalColor;
+	uniform vec2 uViewport;
+	uniform vec2 uGridOrigin;
+	uniform float uGridStep;
+	void main() {
+		vec2 cell = (vScreenUv * uViewport - uGridOrigin) / uGridStep;
+		vec2 distancePx = abs(fract(cell + 0.5) - 0.5) * uGridStep;
+		float line = 1.0 - smoothstep(0.15, 0.95, min(distancePx.x, distancePx.y));
+		finalColor = vec4(mix(vec3(0.969, 0.969, 0.961), vec3(0.847), line), 1.0);
+	}
+`;
+var WorkspaceGrid = class {
+  uniforms = new UniformGroup({
+    uViewport: { value: new Float32Array([800, 600]), type: "vec2<f32>" },
+    uGridOrigin: { value: new Float32Array(2), type: "vec2<f32>" },
+    uGridStep: { value: 20, type: "f32" }
+  });
+  mesh = new Mesh({
+    geometry: new MeshGeometry({
+      positions: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),
+      indices: new Uint32Array([0, 1, 2, 0, 2, 3])
+    }),
+    shader: Shader.from({ gl: { vertex: vertex3, fragment: fragment3 }, resources: { grid: this.uniforms } }),
+    eventMode: "none"
+  });
+  update(camera) {
+    const { uniforms } = this.uniforms;
+    const base = 20 * camera.zoom;
+    const step = base * 2 ** Math.ceil(Math.log2(14 / base));
+    uniforms.uViewport[0] = camera.width;
+    uniforms.uViewport[1] = camera.height;
+    uniforms.uGridOrigin[0] = camera.offsetX % step;
+    uniforms.uGridOrigin[1] = camera.offsetY % step;
+    uniforms.uGridStep = step;
+    this.uniforms.update();
+  }
+};
+
 // controllers/CanvasController.ts
 var CanvasController = class {
   host;
+  world = new Container({ sortableChildren: true, eventMode: "passive" });
+  camera = new WorkspaceCamera();
+  grid;
+  resizeObserver;
+  pan;
   /** true while a sprite drag is in progress (pointermove listener attached) */
   _dragActive = false;
   _dragMoved = false;
   dragPointerId;
+  expandAfterDrag = false;
   /** Stable pointermove handler, so it can be removed again with .off(). */
   _dragMoveHandler = (event) => {
     if (event.pointerId !== this.dragPointerId) return;
     this._dragMoved = true;
-    this.host.mousePos = [event.global.x, event.global.y];
+    this.updateMousePosition(event);
     this._dragMove(event);
   };
   /** offset from the sprite's origin to the point where it was grabbed, so a
@@ -175728,7 +176409,11 @@ var CanvasController = class {
       this._longPressMoveHandler = void 0;
     }
   }
-  viewportPoint(x4, y5) {
+  updateMousePosition(event) {
+    const world = this.camera.toWorld(event.global.x, event.global.y);
+    this.host.mousePos = [world.x, world.y];
+  }
+  screenToViewport(x4, y5) {
     const bounds = this.host.app.canvas.getBoundingClientRect();
     const { width, height } = this.host.app.screen;
     return new Point(
@@ -175736,8 +176421,83 @@ var CanvasController = class {
       bounds.top + y5 * bounds.height / height
     );
   }
+  viewportPoint(x4, y5) {
+    const screen2 = this.camera.toScreen(x4, y5);
+    return this.screenToViewport(screen2.x, screen2.y);
+  }
+  worldPointFromViewport(x4, y5) {
+    const bounds = this.host.app.canvas.getBoundingClientRect();
+    const { width, height } = this.host.app.screen;
+    return this.camera.toWorld((x4 - bounds.left) * width / bounds.width, (y5 - bounds.top) * height / bounds.height);
+  }
+  zoomBy(factor) {
+    if (!this.host.app || this._dragActive || this.pan) return;
+    this.camera.zoomAt(factor, this.camera.width / 2, this.camera.height / 2);
+    this.applyCamera();
+  }
+  zoomFromWheel = (event) => {
+    if (!event.ctrlKey && !event.metaKey || this._dragActive || this.pan) return;
+    const bounds = this.host.app.canvas.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    event.preventDefault();
+    const x4 = (event.clientX - bounds.left) * this.camera.width / bounds.width;
+    const y5 = (event.clientY - bounds.top) * this.camera.height / bounds.height;
+    const pixels = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? this.camera.height : 1);
+    this.camera.zoomAt(Math.exp(Math.max(-1, Math.min(1, -pixels * 2e-3))), x4, y5);
+    this.applyCamera();
+  };
+  applyCamera() {
+    this.world.position.set(this.camera.offsetX, this.camera.offsetY);
+    this.world.scale.set(this.camera.zoom);
+    this.grid?.update(this.camera);
+  }
+  observeCanvas() {
+    if (this.resizeObserver || !this.host.app || !this.host.isConnected) return;
+    const area2 = this.host.canvasArea;
+    const app = this.host.app;
+    const resize = () => {
+      const width = area2.clientWidth;
+      const height = area2.clientHeight;
+      if (width < 1 || height < 1) return;
+      const resolution = Math.max(1, Math.min(2, this.host.ownerDocument.defaultView.devicePixelRatio));
+      if (app.screen.width !== width || app.screen.height !== height || app.renderer.resolution !== resolution) {
+        app.renderer.resize(width, height, resolution);
+        app.stage.hitArea = app.screen;
+      }
+      this.camera.resize(width, height);
+      this.applyCamera();
+    };
+    this.resizeObserver = new ResizeObserver(resize);
+    this.resizeObserver.observe(area2);
+    resize();
+  }
+  beginPan(event) {
+    if (this.pan) return;
+    if (event.button === 1) event.preventDefault();
+    this.pan = {
+      id: event.pointerId,
+      x: event.global.x,
+      y: event.global.y,
+      moved: false,
+      deselect: event.button === 0
+    };
+  }
+  movePan(event) {
+    const pan = this.pan;
+    if (!pan || pan.id !== event.pointerId) return;
+    const dx = event.global.x - pan.x;
+    const dy = event.global.y - pan.y;
+    if (!pan.moved && Math.hypot(dx, dy) < 5) return;
+    pan.moved = true;
+    pan.x = event.global.x;
+    pan.y = event.global.y;
+    this._clearLongPress();
+    this.camera.panBy(dx, dy);
+    this.applyCamera();
+    this.updateMousePosition(event);
+  }
   _openCanvasMenu(x4, y5) {
-    const point = this.viewportPoint(x4, y5);
+    const point = this.screenToViewport(x4, y5);
     const workspace = this.host.containerDiv;
     const bounds = workspace.getBoundingClientRect();
     const menu = this.host.contextMenu;
@@ -175747,10 +176507,13 @@ var CanvasController = class {
     this.host.reportXApi("opened", "objectMenu");
   }
   hostConnected() {
+    this.observeCanvas();
     this.host.app?.start();
   }
   hostDisconnected() {
     this.cancelPointerInteraction();
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = void 0;
     this.host.app?.stop();
   }
   cancelPointerInteraction() {
@@ -175758,10 +176521,12 @@ var CanvasController = class {
     this.host.app?.stage.off("globalpointermove", this._dragMoveHandler);
     this._dragActive = false;
     this.dragPointerId = void 0;
+    this.expandAfterDrag = false;
+    this.pan = void 0;
     this.host.dragObject = void 0;
   }
   removeSprite(sprite) {
-    this.host.app.stage.removeChild(sprite);
+    this.world.removeChild(sprite);
     if (sprite instanceof Sprite && sprite.texture instanceof RenderTexture) {
       sprite.texture.destroy(true);
     }
@@ -175769,7 +176534,7 @@ var CanvasController = class {
   }
   clearSprites() {
     this.cancelPointerInteraction();
-    for (const sprite of [...this.host.app.stage.children]) this.removeSprite(sprite);
+    for (const sprite of [...this.world.children]) this.removeSprite(sprite);
   }
   setDeviceActive(sprite, active) {
     const graphic = componentGraphic(sprite.label.split(":")[0]);
@@ -175794,17 +176559,22 @@ var CanvasController = class {
     sprite.cursor = "pointer";
     sprite.on("pointerdown", (event) => {
       event.stopPropagation();
-      if (this._dragActive) return;
+      if (this._dragActive || this.pan) return;
       this.host.contextMenu.style.display = "none";
-      this.host.mousePos = [event.global.x, event.global.y];
+      if (event.button === 1) {
+        this.beginPan(event);
+        return;
+      }
+      this.updateMousePosition(event);
       if (event.button === 0 && this.host.beginChemicalDose(sprite, event.pointerId)) return;
       const drag2 = event.button === 0 && !sprite.label.startsWith("cable:");
-      this.host._getObject(sprite);
+      this.expandAfterDrag = drag2 && this.world.children[this.host.curr_stage_index] !== sprite;
+      this.host._getObject(sprite, !drag2);
       this.host.reportXApi("focused", sprite.label);
       if (drag2) this._dragStart(sprite, event);
     });
     sprite.label = info;
-    this.host.app.stage.addChild(sprite);
+    this.world.addChild(sprite);
     if (select && !sprite.label.includes("cable")) {
       this.host._getObject(sprite);
     }
@@ -175840,13 +176610,13 @@ var CanvasController = class {
         local.y + this._dragOffset.y
       );
       let mouseHoverObject = -1;
-      for (let i11 = 0; i11 < this.host.app.stage.children.length; i11++) {
+      for (let i11 = 0; i11 < this.world.children.length; i11++) {
         if (i11 != this.host.curr_stage_index && this._mouseInbounds(
           i11,
           50
         )) {
-          let upperSprite = this.host.app.stage.children[this.host.curr_stage_index];
-          let bottomSprite = this.host.app.stage.children[i11];
+          let upperSprite = this.world.children[this.host.curr_stage_index];
+          let bottomSprite = this.world.children[i11];
           let cObj = void 0;
           let cOType = bottomSprite.label.split(":")[0].toLowerCase();
           let cOId = Number.parseInt(
@@ -175903,7 +176673,7 @@ var CanvasController = class {
               }
             });
             if ((this.host.curr_obj._type === "beaker" /* Beaker */ || this.host.curr_obj._type === "flask" /* Flask */ || this.host.curr_obj._type === "testtube" /* Testtube */) && upperSprite.y < bottomSprite.y - Math.min(50, bottomSprite.height)) {
-              this.host.app.stage.children[this.host.curr_stage_index].rotation = this.host.app.stage.children[this.host.curr_stage_index].x > bottomSprite.x ? -20 : 20;
+              this.world.children[this.host.curr_stage_index].rotation = this.world.children[this.host.curr_stage_index].x > bottomSprite.x ? -20 : 20;
               this.host._emitAlert(
                 this.host.message("Inhalt aus {from} zu {to} transferieren.", {
                   from: this.host.itemName(this.host.curr_obj._type),
@@ -175918,7 +176688,7 @@ var CanvasController = class {
         }
       }
       if (mouseHoverObject === -1) {
-        this.host.app.stage.children[this.host.curr_stage_index].rotation = 0;
+        this.world.children[this.host.curr_stage_index].rotation = 0;
         this.host._hideAlert();
       }
     }
@@ -175935,17 +176705,20 @@ var CanvasController = class {
     if (!this._dragActive) return;
     this.host.app.stage.off("globalpointermove", this._dragMoveHandler);
     this._dragActive = false;
+    const expand = this.expandAfterDrag;
+    this.expandAfterDrag = false;
     if (!this._dragMoved || !this.host.dragObject) {
       this.host.dragObject = void 0;
+      if (expand) this.host.expandSelectedObjectPanel();
       return;
     }
-    for (let i11 = 0; i11 < this.host.app.stage.children.length; i11++) {
+    for (let i11 = 0; i11 < this.world.children.length; i11++) {
       if (i11 != this.host.curr_stage_index && this._mouseInbounds(
         i11,
         50
       )) {
-        let upperSprite = this.host.app.stage.children[this.host.curr_stage_index];
-        let bottomSprite = this.host.app.stage.children[i11];
+        let upperSprite = this.world.children[this.host.curr_stage_index];
+        let bottomSprite = this.world.children[i11];
         let cObj = void 0;
         let cOType = bottomSprite.label.split(":")[0].toLowerCase();
         let cOId = Number.parseInt(
@@ -175989,7 +176762,7 @@ var CanvasController = class {
                 }
               );
               this.host._getObject(
-                this.host.app.stage.children[this.host.curr_stage_index]
+                this.world.children[this.host.curr_stage_index]
               );
             }
             this.host.confirmAction = 0;
@@ -176039,7 +176812,7 @@ var CanvasController = class {
             await this.host.waitUntil(
               () => this.host.confirmAction != 0
             );
-            this.host.app.stage.children[this.host.curr_stage_index].rotation = 0;
+            this.world.children[this.host.curr_stage_index].rotation = 0;
             if (this.host.confirmAction === 1) {
               this.host.curr_obj.transferContents({}, cObj);
               this.host._getObject(this.host.dragObject);
@@ -176070,6 +176843,7 @@ var CanvasController = class {
     }
     if (this.host.dragObject) this.host.saveComponentPosition(this.host.dragObject);
     this.host.dragObject = void 0;
+    if (expand) this.host.expandSelectedObjectPanel();
   }
   /**
    * tints a sprite with a color
@@ -176090,13 +176864,13 @@ var CanvasController = class {
    * @returns {boolean}
    */
   _mouseInbounds(index2, offset3) {
-    if (this.host.app.stage.children.length === 1) {
+    if (this.world.children.length === 1) {
       return false;
     }
-    let objWidth = this.host.app.stage.children[index2].width;
-    let objHeight = this.host.app.stage.children[index2].height;
-    let objX = this.host.app.stage.children[index2].x - 0.5 * objWidth;
-    let objY = this.host.app.stage.children[index2].y - 0.5 * objHeight;
+    let objWidth = this.world.children[index2].width;
+    let objHeight = this.world.children[index2].height;
+    let objX = this.world.children[index2].x - 0.5 * objWidth;
+    let objY = this.world.children[index2].y - 0.5 * objHeight;
     return this.host.mousePos[0] > objX - offset3 && this.host.mousePos[0] < objWidth + objX + offset3 && this.host.mousePos[1] > objY - offset3 && this.host.mousePos[1] < objHeight + objY + offset3;
   }
   /**
@@ -176110,8 +176884,8 @@ var CanvasController = class {
       preference: ["webgl"],
       autoStart: false,
       backgroundAlpha: 0,
-      width: 800,
-      height: 600
+      width: STANDARD_CANVAS_WIDTH,
+      height: STANDARD_CANVAS_HEIGHT
     });
     try {
       await Assets.load(componentTextureUrls.map((src) => ({
@@ -176126,36 +176900,53 @@ var CanvasController = class {
     this.host.pix_canvas.appendChild(app.canvas);
     this.host.app.stage.eventMode = "static";
     this.host.app.stage.hitArea = this.host.app.screen;
-    app.stage.sortableChildren = true;
+    this.grid = new WorkspaceGrid();
+    app.stage.addChild(this.grid.mesh, this.world);
+    app.canvas.addEventListener("wheel", this.zoomFromWheel, { passive: false });
+    this.observeCanvas();
+    this.applyCamera();
     this.host.app.stage.on("pointermove", (event) => {
-      this.host.mousePos = [event.global.x, event.global.y];
+      this.updateMousePosition(event);
     });
+    app.stage.on("globalpointermove", (event) => this.movePan(event));
     app.stage.on("pointerdown", (event) => {
-      if (this._dragActive) return;
-      this.host.mousePos = [event.global.x, event.global.y];
-      if (event.target === app.stage && event.button === 0) {
-        if (this.host.placeSelectedComponent(event.global.x, event.global.y)) return;
-        this.host.clearObjectSelection();
-      }
-      if (this.host.canAuthor) return;
+      if (this._dragActive || this.pan) return;
+      this.updateMousePosition(event);
       if (this.host.contextMenu.style.display !== "none") {
         this.host.contextMenu.style.display = "none";
+        if (event.button === 0) this.host.clearObjectSelection();
         return;
       }
-      if (event.pointerType === "mouse") {
-        if (event.button === 2) this._openCanvasMenu(event.global.x, event.global.y);
-      } else {
-        const { x: x4, y: y5 } = event.global;
-        this._armLongPress(() => this._openCanvasMenu(x4, y5), event);
+      if (event.target === app.stage && event.button === 0) {
+        if (this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+        this.beginPan(event);
+        if (!this.host.canAuthor && event.pointerType !== "mouse") {
+          const { x: x4, y: y5 } = event.global;
+          this._armLongPress(() => {
+            if (this.pan) this.pan.deselect = false;
+            this._openCanvasMenu(x4, y5);
+          }, event);
+        }
+      } else if (event.button === 1) {
+        this.beginPan(event);
+      } else if (!this.host.canAuthor && event.button === 2) {
+        this._openCanvasMenu(event.global.x, event.global.y);
       }
     });
     const finishPointer = (event) => {
-      if (!this._dragActive || event.pointerId === this.dragPointerId) void this._dragEnd();
+      if (this.pan?.id === event.pointerId) {
+        const { moved, deselect } = this.pan;
+        this.pan = void 0;
+        this._clearLongPress();
+        if (deselect && !moved) this.host.clearObjectSelection();
+      } else if (!this.pan && (!this._dragActive || event.pointerId === this.dragPointerId)) {
+        void this._dragEnd();
+      }
     };
     this.host.app.stage.on("pointerup", finishPointer);
     this.host.app.stage.on("pointerupoutside", finishPointer);
     this.host.app.stage.on("pointercancel", (event) => {
-      if (!this._dragActive || this.dragPointerId === event.pointerId) this.cancelPointerInteraction();
+      if (this.pan?.id === event.pointerId || this.dragPointerId === event.pointerId) this.cancelPointerInteraction();
     });
   }
   /**
@@ -176164,7 +176955,7 @@ var CanvasController = class {
    * @private
    */
   _updateSpriteTextures() {
-    for (const sprite of this.host.app.stage.children) {
+    for (const sprite of this.world.children) {
       const [type, id] = sprite.label.split(":");
       const graphic = componentGraphic(type);
       if (!graphic.capacityMl) continue;
@@ -176185,7 +176976,7 @@ var CanvasController = class {
   _updateCablePos() {
     const cables = this.host.allEComponents.filter((component) => component._type === "cable" /* Cable */);
     if (cables.length === 0) return;
-    const stage = this.host.app.stage;
+    const stage = this.world;
     const sprites = new Map(stage.children.map((sprite) => [sprite.label, sprite]));
     const selected = stage.children[this.host.curr_stage_index];
     for (const cable of cables) {
@@ -176260,9 +177051,9 @@ var CanvasController = class {
 
 // webwriter-chemlab.ts
 setBasePath("@shoelace-style/shoelace/dist");
-var _newSmilesDrawer_dec, _smilesDrawer150_dec, _smilesDrawer100_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _confirmAction_dec, _panelVariant_dec, _curr_stage_index_dec, _curr_name_dec, _curr_mol_dec, _editingMolecule_dec, _fillMeter_dec, _selectedChemical_dec, _componentToPlace_dec, _componentCapacities_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _objectPanelOpen_dec, _curr_obj_dec, _filterCategories_dec, _allEComponents_dec, _allChemComponents_dec, _electrodeMaterials_dec, _eCompPanelVisible_dec, _components_signal_dec, _app_dec, _pix_canvas_dec, _mousePos_dec, _dragObject_dec, _useColoredElements_dec, _tickerTimeObj_dec, _avComponentsSprites_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _moleculePanel_dec, _atomPanel_dec, _canvasContainer_dec, _diagramDrawer_dec, _mixVolAmount_dec, _mixSelect_dec, _molSelect_dec, _invCompSelect_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _contextMolInfo_dec, _dialogAlert_dec, _eCompInfo_dec, _eConInfo_dec, _bondMag_dec, _conSelect_dec, _bond_sel_3_dec, _bond_sel_2_dec, _bond_sel_1_dec, _property_tag_dec, _settings_drawer_dec, _elemSearch_dec, _molAmount_dec, _confirmDialog_dec, _contextMenu_dec, _mixCarousel_dec, _mixConfig_dec, _molConfig_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _molConfig, _mixConfig, _mixCarousel, _contextMenu, _confirmDialog, _molAmount, _elemSearch, _settings_drawer, _property_tag, _bond_sel_1, _bond_sel_2, _bond_sel_3, _conSelect, _bondMag, _eConInfo, _eCompInfo, _dialogAlert, _contextMolInfo, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _invCompSelect, _molSelect, _mixSelect, _mixVolAmount, _diagramDrawer, _canvasContainer, _atomPanel, _moleculePanel, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _avComponentsSprites, _tickerTimeObj, _useColoredElements, _dragObject, _mousePos, _pix_canvas, _app, _components_signal, _eCompPanelVisible, _electrodeMaterials, _allChemComponents, _allEComponents, _filterCategories, _curr_obj, _objectPanelOpen, _teacherDrawerOpen, _teacherTab, _componentCapacities, _componentToPlace, _selectedChemical, _fillMeter, _editingMolecule, _curr_mol, _curr_name, _curr_stage_index, _panelVariant, _confirmAction, _RndName, _invComponents, _enablexAPI, _xAPIKey, _smilesDrawer100, _smilesDrawer150, _newSmilesDrawer;
+var _newSmilesDrawer_dec, _smilesDrawer150_dec, _smilesDrawer100_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _confirmAction_dec, _panelVariant_dec, _curr_stage_index_dec, _curr_name_dec, _curr_mol_dec, _editingMolecule_dec, _fillMeter_dec, _selectedChemical_dec, _componentToPlace_dec, _componentCapacities_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _objectPanelOpen_dec, _curr_obj_dec, _filterCategories_dec, _allEComponents_dec, _allChemComponents_dec, _electrodeMaterials_dec, _eCompPanelVisible_dec, _components_signal_dec, _app_dec, _pix_canvas_dec, _mousePos_dec, _dragObject_dec, _useColoredElements_dec, _tickerTimeObj_dec, _avComponentsSprites_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _moleculePanel_dec, _atomPanel_dec, _canvasArea_dec, _diagramDrawer_dec, _mixVolAmount_dec, _mixSelect_dec, _molSelect_dec, _invCompSelect_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _contextMolInfo_dec, _dialogAlert_dec, _eCompInfo_dec, _eConInfo_dec, _bondMag_dec, _conSelect_dec, _bond_sel_3_dec, _bond_sel_2_dec, _bond_sel_1_dec, _property_tag_dec, _settings_drawer_dec, _elemSearch_dec, _molAmount_dec, _confirmDialog_dec, _contextMenu_dec, _mixCarousel_dec, _mixConfig_dec, _molConfig_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _molConfig, _mixConfig, _mixCarousel, _contextMenu, _confirmDialog, _molAmount, _elemSearch, _settings_drawer, _property_tag, _bond_sel_1, _bond_sel_2, _bond_sel_3, _conSelect, _bondMag, _eConInfo, _eCompInfo, _dialogAlert, _contextMolInfo, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _invCompSelect, _molSelect, _mixSelect, _mixVolAmount, _diagramDrawer, _canvasArea, _atomPanel, _moleculePanel, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _avComponentsSprites, _tickerTimeObj, _useColoredElements, _dragObject, _mousePos, _pix_canvas, _app, _components_signal, _eCompPanelVisible, _electrodeMaterials, _allChemComponents, _allEComponents, _filterCategories, _curr_obj, _objectPanelOpen, _fullWidthMode, _diagramPanelOpen, _teacherDrawerOpen, _teacherTab, _componentCapacities, _componentToPlace, _selectedChemical, _fillMeter, _editingMolecule, _curr_mol, _curr_name, _curr_stage_index, _panelVariant, _confirmAction, _RndName, _invComponents, _enablexAPI, _xAPIKey, _smilesDrawer100, _smilesDrawer150, _newSmilesDrawer;
 _ChemLab_decorators = [t4("webwriter-chemlab")];
-var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [e6("#upper")], _molConfig_dec = [e6("#molConfig")], _mixConfig_dec = [e6("#mixConfig")], _mixCarousel_dec = [e6("#mixCarousel")], _contextMenu_dec = [e6("#contextMenu")], _confirmDialog_dec = [e6("#confirmDialog")], _molAmount_dec = [e6("#molAmount")], _elemSearch_dec = [e6("#elemSearch")], _settings_drawer_dec = [e6("#settings_drawer")], _property_tag_dec = [e6("#property_badge")], _bond_sel_1_dec = [e6("#bond_1")], _bond_sel_2_dec = [e6("#bond_2")], _bond_sel_3_dec = [e6("#bond_3")], _conSelect_dec = [e6("#newECon")], _bondMag_dec = [e6("#bondMag")], _eConInfo_dec = [e6("#conInfo")], _eCompInfo_dec = [e6("#compInfo")], _dialogAlert_dec = [e6("#dialogOverview")], _contextMolInfo_dec = [e6("#contextMolInfo")], _contextMixInfo_dec = [e6("#contextMixInfo")], _openBtn_dec = [e6("#openComp")], _activateEComp_dec = [e6("#activateEComp")], _contextEchemInfo_dec = [e6("#contextEchemInfo")], _xAPICheck_dec = [e6("#xAPICheck")], _xAPIKeyInput_dec = [e6("#xAPIKeyInput")], _invCompSelect_dec = [e6("#invCompSelect")], _molSelect_dec = [e6("#molSelect")], _mixSelect_dec = [e6("#mixSelect")], _mixVolAmount_dec = [e6("#mixVolAmount")], _diagramDrawer_dec = [e6("#diagramDrawer")], _canvasContainer_dec = [e6("#canvasContainer")], _atomPanel_dec = [e6("#atom_panel")], _moleculePanel_dec = [e6("#molecule_panel")], _pHColors_dec = [n5({ attribute: false })], _dictionary_dec = [n5({ attribute: false })], _availableMolecules_dec = [n5({
+var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [e6("#upper")], _molConfig_dec = [e6("#molConfig")], _mixConfig_dec = [e6("#mixConfig")], _mixCarousel_dec = [e6("#mixCarousel")], _contextMenu_dec = [e6("#contextMenu")], _confirmDialog_dec = [e6("#confirmDialog")], _molAmount_dec = [e6("#molAmount")], _elemSearch_dec = [e6("#elemSearch")], _settings_drawer_dec = [e6("#settings_drawer")], _property_tag_dec = [e6("#property_badge")], _bond_sel_1_dec = [e6("#bond_1")], _bond_sel_2_dec = [e6("#bond_2")], _bond_sel_3_dec = [e6("#bond_3")], _conSelect_dec = [e6("#newECon")], _bondMag_dec = [e6("#bondMag")], _eConInfo_dec = [e6("#conInfo")], _eCompInfo_dec = [e6("#compInfo")], _dialogAlert_dec = [e6("#dialogOverview")], _contextMolInfo_dec = [e6("#contextMolInfo")], _contextMixInfo_dec = [e6("#contextMixInfo")], _openBtn_dec = [e6("#openComp")], _activateEComp_dec = [e6("#activateEComp")], _contextEchemInfo_dec = [e6("#contextEchemInfo")], _xAPICheck_dec = [e6("#xAPICheck")], _xAPIKeyInput_dec = [e6("#xAPIKeyInput")], _invCompSelect_dec = [e6("#invCompSelect")], _molSelect_dec = [e6("#molSelect")], _mixSelect_dec = [e6("#mixSelect")], _mixVolAmount_dec = [e6("#mixVolAmount")], _diagramDrawer_dec = [e6("#diagramDrawer")], _canvasArea_dec = [e6("#canvasArea")], _atomPanel_dec = [e6("#atom_panel")], _moleculePanel_dec = [e6("#molecule_panel")], _pHColors_dec = [n5({ attribute: false })], _dictionary_dec = [n5({ attribute: false })], _availableMolecules_dec = [n5({
   type: Array,
   attribute: false
 })], _availableMixtures_dec = [n5({
@@ -176271,7 +177062,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 })], _availableComponents_dec = [n5({
   type: Array,
   attribute: false
-})], _avComponentsSprites_dec = [n5({ attribute: false })], _tickerTimeObj_dec = [n5({ attribute: false })], _useColoredElements_dec = [n5({ attribute: false })], _dragObject_dec = [n5({ attribute: false })], _mousePos_dec = [n5({ attribute: false })], _pix_canvas_dec = [n5({ attribute: false })], _app_dec = [n5({ attribute: false })], _components_signal_dec = [n5({ attribute: false })], _eCompPanelVisible_dec = [n5({ attribute: false })], _electrodeMaterials_dec = [n5({ attribute: false })], _allChemComponents_dec = [n5({ attribute: false })], _allEComponents_dec = [n5({ attribute: false })], _filterCategories_dec = [n5({ attribute: false })], _curr_obj_dec = [n5({ attribute: false })], _objectPanelOpen_dec = [r7()], _teacherDrawerOpen_dec = [r7()], _teacherTab_dec = [r7()], _componentCapacities_dec = [r7()], _componentToPlace_dec = [r7()], _selectedChemical_dec = [r7()], _fillMeter_dec = [r7()], _editingMolecule_dec = [r7()], _curr_mol_dec = [n5({ attribute: false })], _curr_name_dec = [n5({ attribute: false })], _curr_stage_index_dec = [n5({ attribute: false })], _panelVariant_dec = [n5({ type: String, reflect: true })], _confirmAction_dec = [n5({ attribute: false })], _RndName_dec = [n5({ attribute: false })], _invComponents_dec = [n5({
+})], _avComponentsSprites_dec = [n5({ attribute: false })], _tickerTimeObj_dec = [n5({ attribute: false })], _useColoredElements_dec = [n5({ attribute: false })], _dragObject_dec = [n5({ attribute: false })], _mousePos_dec = [n5({ attribute: false })], _pix_canvas_dec = [n5({ attribute: false })], _app_dec = [n5({ attribute: false })], _components_signal_dec = [n5({ attribute: false })], _eCompPanelVisible_dec = [n5({ attribute: false })], _electrodeMaterials_dec = [n5({ attribute: false })], _allChemComponents_dec = [n5({ attribute: false })], _allEComponents_dec = [n5({ attribute: false })], _filterCategories_dec = [n5({ attribute: false })], _curr_obj_dec = [n5({ attribute: false })], _objectPanelOpen_dec = [r7()], _fullWidthMode_dec = [r7()], _diagramPanelOpen_dec = [r7()], _teacherDrawerOpen_dec = [r7()], _teacherTab_dec = [r7()], _componentCapacities_dec = [r7()], _componentToPlace_dec = [r7()], _selectedChemical_dec = [r7()], _fillMeter_dec = [r7()], _editingMolecule_dec = [r7()], _curr_mol_dec = [n5({ attribute: false })], _curr_name_dec = [n5({ attribute: false })], _curr_stage_index_dec = [n5({ attribute: false })], _panelVariant_dec = [n5({ type: String, reflect: true })], _confirmAction_dec = [n5({ attribute: false })], _RndName_dec = [n5({ attribute: false })], _invComponents_dec = [n5({
   type: Array,
   attribute: false
 })], _enablexAPI_dec = [n5({
@@ -176336,7 +177127,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __privateAdd(this, _mixSelect, __runInitializers(_init2, 116, this)), __runInitializers(_init2, 119, this);
     __privateAdd(this, _mixVolAmount, __runInitializers(_init2, 120, this)), __runInitializers(_init2, 123, this);
     __privateAdd(this, _diagramDrawer, __runInitializers(_init2, 124, this)), __runInitializers(_init2, 127, this);
-    __privateAdd(this, _canvasContainer, __runInitializers(_init2, 128, this)), __runInitializers(_init2, 131, this);
+    __publicField(this, "canvasContainer", Object.assign(document.createElement("div"), { id: "canvasContainer" }));
+    __privateAdd(this, _canvasArea, __runInitializers(_init2, 128, this)), __runInitializers(_init2, 131, this);
     __privateAdd(this, _atomPanel, __runInitializers(_init2, 132, this)), __runInitializers(_init2, 135, this);
     __privateAdd(this, _moleculePanel, __runInitializers(_init2, 136, this)), __runInitializers(_init2, 139, this);
     __privateAdd(this, _pHColors, __runInitializers(_init2, 140, this, pHColors)), __runInitializers(_init2, 143, this);
@@ -176382,30 +177174,35 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __privateAdd(this, _filterCategories, __runInitializers(_init2, 208, this, [])), __runInitializers(_init2, 211, this);
     __privateAdd(this, _curr_obj, __runInitializers(_init2, 212, this, null)), __runInitializers(_init2, 215, this);
     __privateAdd(this, _objectPanelOpen, __runInitializers(_init2, 216, this, false)), __runInitializers(_init2, 219, this);
-    __privateAdd(this, _teacherDrawerOpen, __runInitializers(_init2, 220, this, false)), __runInitializers(_init2, 223, this);
-    __privateAdd(this, _teacherTab, __runInitializers(_init2, 224, this, "components")), __runInitializers(_init2, 227, this);
-    __privateAdd(this, _componentCapacities, __runInitializers(_init2, 228, this, {})), __runInitializers(_init2, 231, this);
-    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 232, this)), __runInitializers(_init2, 235, this);
-    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 236, this)), __runInitializers(_init2, 239, this);
-    __privateAdd(this, _fillMeter, __runInitializers(_init2, 240, this)), __runInitializers(_init2, 243, this);
+    __privateAdd(this, _fullWidthMode, __runInitializers(_init2, 220, this, false)), __runInitializers(_init2, 223, this);
+    __privateAdd(this, _diagramPanelOpen, __runInitializers(_init2, 224, this, false)), __runInitializers(_init2, 227, this);
+    __privateAdd(this, _teacherDrawerOpen, __runInitializers(_init2, 228, this, false)), __runInitializers(_init2, 231, this);
+    __publicField(this, "teacherDrawerChoice");
+    __publicField(this, "workspaceResizeObserver");
+    __publicField(this, "workspaceClassObserver");
+    __privateAdd(this, _teacherTab, __runInitializers(_init2, 232, this, "components")), __runInitializers(_init2, 235, this);
+    __privateAdd(this, _componentCapacities, __runInitializers(_init2, 236, this, {})), __runInitializers(_init2, 239, this);
+    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 240, this)), __runInitializers(_init2, 243, this);
+    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 244, this)), __runInitializers(_init2, 247, this);
+    __privateAdd(this, _fillMeter, __runInitializers(_init2, 248, this)), __runInitializers(_init2, 251, this);
     __publicField(this, "chemicalPreviews", /* @__PURE__ */ new Map());
     __publicField(this, "stopDose");
     __publicField(this, "meterTimeout");
-    __privateAdd(this, _editingMolecule, __runInitializers(_init2, 244, this, false)), __runInitializers(_init2, 247, this);
-    __privateAdd(this, _curr_mol, __runInitializers(_init2, 248, this, null)), __runInitializers(_init2, 251, this);
-    __privateAdd(this, _curr_name, __runInitializers(_init2, 252, this, "")), __runInitializers(_init2, 255, this);
-    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 256, this, -1)), __runInitializers(_init2, 259, this);
-    __privateAdd(this, _panelVariant, __runInitializers(_init2, 260, this, "1")), __runInitializers(_init2, 263, this);
-    __privateAdd(this, _confirmAction, __runInitializers(_init2, 264, this, 0)), __runInitializers(_init2, 267, this);
-    __privateAdd(this, _RndName, __runInitializers(_init2, 268, this, n10({
+    __privateAdd(this, _editingMolecule, __runInitializers(_init2, 252, this, false)), __runInitializers(_init2, 255, this);
+    __privateAdd(this, _curr_mol, __runInitializers(_init2, 256, this, null)), __runInitializers(_init2, 259, this);
+    __privateAdd(this, _curr_name, __runInitializers(_init2, 260, this, "")), __runInitializers(_init2, 263, this);
+    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 264, this, -1)), __runInitializers(_init2, 267, this);
+    __privateAdd(this, _panelVariant, __runInitializers(_init2, 268, this, "1")), __runInitializers(_init2, 271, this);
+    __privateAdd(this, _confirmAction, __runInitializers(_init2, 272, this, 0)), __runInitializers(_init2, 275, this);
+    __privateAdd(this, _RndName, __runInitializers(_init2, 276, this, n10({
       dictionaries: [l6, t8, r10]
-    }))), __runInitializers(_init2, 271, this);
-    __privateAdd(this, _invComponents, __runInitializers(_init2, 272, this, [])), __runInitializers(_init2, 275, this);
-    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 276, this, false)), __runInitializers(_init2, 279, this);
-    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 280, this, "")), __runInitializers(_init2, 283, this);
-    __privateAdd(this, _smilesDrawer100, __runInitializers(_init2, 284, this, null)), __runInitializers(_init2, 287, this);
-    __privateAdd(this, _smilesDrawer150, __runInitializers(_init2, 288, this, null)), __runInitializers(_init2, 291, this);
-    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 292, this, 1)), __runInitializers(_init2, 295, this);
+    }))), __runInitializers(_init2, 279, this);
+    __privateAdd(this, _invComponents, __runInitializers(_init2, 280, this, [])), __runInitializers(_init2, 283, this);
+    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 284, this, false)), __runInitializers(_init2, 287, this);
+    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 288, this, "")), __runInitializers(_init2, 291, this);
+    __privateAdd(this, _smilesDrawer100, __runInitializers(_init2, 292, this, null)), __runInitializers(_init2, 295, this);
+    __privateAdd(this, _smilesDrawer150, __runInitializers(_init2, 296, this, null)), __runInitializers(_init2, 299, this);
+    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 300, this, 1)), __runInitializers(_init2, 303, this);
     /**
      * asynchronous timer function to be used in other functions; returns, if the condition is met 
      *
@@ -176491,13 +177288,40 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.dataObserver = new MutationObserver(() => this.readAuthoredData());
     this.dataObserver.observe(this, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ["slot", "type"] });
     if (this.dataBlock()) this.readAuthoredData();
+    this.observeWorkspaceLayout();
   }
   disconnectedCallback() {
     this.stopDose?.();
     this.hideFillMeter();
+    this.workspaceResizeObserver?.disconnect();
+    this.workspaceResizeObserver = void 0;
+    this.workspaceClassObserver?.disconnect();
+    this.workspaceClassObserver = void 0;
     this.dataObserver?.disconnect();
     this.dataObserver = void 0;
     super.disconnectedCallback();
+  }
+  observeWorkspaceLayout() {
+    if (!this.containerDiv || this.workspaceResizeObserver || !this.isConnected) return;
+    const update2 = () => this.updateWorkspaceLayout();
+    this.workspaceResizeObserver = new ResizeObserver(update2);
+    this.workspaceResizeObserver.observe(this.containerDiv);
+    this.workspaceClassObserver = new MutationObserver(update2);
+    this.workspaceClassObserver.observe(this, { attributes: true, attributeFilter: ["class", "contenteditable"] });
+    update2();
+  }
+  updateWorkspaceLayout() {
+    const wide = this.classList.contains("ww-full-width");
+    if (wide !== this.fullWidthMode) {
+      this.fullWidthMode = wide;
+      this.diagramPanelOpen = wide;
+      if (!this.editingMolecule) this.objectPanelOpen = wide && !!this.curr_obj;
+    }
+    const drawer = this.shadowRoot.getElementById("teacherDrawer");
+    const body = this.shadowRoot.getElementById("teacherDrawerContent");
+    const chrome = drawer.offsetHeight - body.offsetHeight;
+    const standardDrawerBody = 240;
+    this.teacherDrawerOpen = this.canAuthor && (this.teacherDrawerChoice ?? this.containerDiv.clientHeight >= STANDARD_CANVAS_HEIGHT + standardDrawerBody + chrome);
   }
   updated(changed) {
     super.updated(changed);
@@ -176627,6 +177451,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       event.preventDefault();
     });
     super.firstUpdated(_changedProperties);
+    this.observeWorkspaceLayout();
     this.canvasReady = this.initializeCanvas();
   }
   async getUpdateComplete() {
@@ -176746,7 +177571,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.tickerTimeObj[keyName] = 0;
       if (source3._content._activeMolecules.length > 0) {
         let destSprite = void 0;
-        this.app.stage.children.forEach((sprite) => {
+        this.canvas.world.children.forEach((sprite) => {
           if (sprite != currSprite) {
             if (sprite.y - sprite.height / 2 > currSprite.y + currSprite.height / 2 && (sprite.x < currSprite.x + currSprite.width / 2 || sprite.x > currSprite.x - currSprite.width / 2)) {
               if (typeof destSprite === "undefined") {
@@ -176826,11 +177651,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) return;
     event.preventDefault();
     event.stopPropagation();
-    this.addAuthoredComponent(
-      type,
-      (event.clientX - bounds.left) * this.app.screen.width / bounds.width,
-      (event.clientY - bounds.top) * this.app.screen.height / bounds.height
-    );
+    const point = this.canvas.worldPointFromViewport(event.clientX, event.clientY);
+    this.addAuthoredComponent(type, point.x, point.y);
   }
   placeSelectedComponent(x4, y5) {
     if (!this.canAuthor || !this.componentToPlace) return false;
@@ -176900,7 +177722,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   saveSelectedComponent(fields) {
     if (!this.canAuthor) return;
-    const sprite = this.app.stage.children[this.curr_stage_index];
+    const sprite = this.canvas.world.children[this.curr_stage_index];
     const entry = sprite && this.findAuthoredComponent(sprite);
     if (entry) {
       Object.assign(entry, fields);
@@ -177124,10 +177946,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
    * @private
    * @param {*} sprite - the seleted sprite
    */
-  _getObject(sprite) {
+  _getObject(sprite, expand = true) {
     if (!sprite) return;
     this.editingMolecule = false;
     const name2 = sprite.label;
+    const newSelection = this.curr_name !== name2;
     let chemlib_obj = null;
     let type = name2.split(":")[0];
     let id = Number.parseInt(name2.split(":")[1]);
@@ -177249,7 +178072,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
             option.value = eComp._type + ":" + this.allEComponents.indexOf(eComp);
             option.innerHTML = this.itemName(eComp._type);
             option.onpointerover = (event) => {
-              this.app.stage.children.forEach((sprite2) => {
+              this.canvas.world.children.forEach((sprite2) => {
                 if (Number.parseInt(
                   sprite2.label.split(":")[1]
                 ) === eComp._id && sprite2.label.split(":")[0] === eComp._type) {
@@ -177258,7 +178081,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
               });
             };
             option.onpointerout = (event) => {
-              this.app.stage.children.forEach((sprite2) => {
+              this.canvas.world.children.forEach((sprite2) => {
                 let color2 = 16777215;
                 this.availableComponents.forEach(
                   (availComp) => {
@@ -177291,7 +178114,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
             this.localizeControl(tag, "title", "Doppelklicken zum L\xF6sen der Verbindung.");
             tag.addEventListener("pointerenter", (event) => {
               tag.variant = "success";
-              this.app.stage.children.forEach((sprite2) => {
+              this.canvas.world.children.forEach((sprite2) => {
                 if (Number.parseInt(
                   sprite2.label.split(":")[1]
                 ) === conComp._id && sprite2.label.split(":")[0] === conComp._type) {
@@ -177301,7 +178124,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
             });
             tag.addEventListener("pointerleave", (event) => {
               tag.variant = "neutral";
-              this.app.stage.children.forEach((sprite2) => {
+              this.canvas.world.children.forEach((sprite2) => {
                 this.canvas._tintSprite(sprite2, 16777215);
               });
             });
@@ -177316,7 +178139,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
                     1500
                   );
                   this._remEcon(comp);
-                  this.app.stage.children.forEach((sprite2) => {
+                  this.canvas.world.children.forEach((sprite2) => {
                     this.canvas._tintSprite(sprite2, 16777215);
                   });
                 }
@@ -177404,9 +178227,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         eDivArr[i11].style.display = this.eCompPanelVisible[i11] ? "" : "none";
       }
     }
-    this.curr_stage_index = this.app.stage.children.indexOf(sprite);
+    this.curr_stage_index = this.canvas.world.children.indexOf(sprite);
     this.curr_obj = chemlib_obj;
     this.curr_name = name2;
+    if (expand && newSelection) this.expandSelectedObjectPanel();
     this._updatePopup();
     this.requestUpdate();
   }
@@ -177439,7 +178263,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         }
       });
     }
-    const sprite = this.app.stage.children[this.curr_stage_index];
+    const sprite = this.canvas.world.children[this.curr_stage_index];
     this.stopDose?.();
     this.hideFillMeter();
     this.removeAuthoredComponent(sprite);
@@ -178274,7 +179098,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         success: true,
         completion: true
       });
-      this._getObject(this.app.stage.children[this.curr_stage_index]);
+      this._getObject(this.canvas.world.children[this.curr_stage_index]);
       this.shadowRoot.getElementById(
         "mol_preview"
       ).src = "";
@@ -178427,7 +179251,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.allEComponents.push(cable);
     this.canvas._addSprite(cable._type + ":" + cable._id);
     if (!source3) {
-      const sprite = this.app.stage.children.find(
+      const sprite = this.canvas.world.children.find(
         (sprite2) => sprite2.label === sComp._type + ":" + sComp._id
       );
       this._getObject(sprite);
@@ -178496,7 +179320,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
    */
   _remEcon(partner) {
     let message = this.curr_obj.disconnect(partner);
-    this._getObject(this.app.stage.children[this.curr_stage_index]);
+    this._getObject(this.canvas.world.children[this.curr_stage_index]);
     if (message === "") {
       this._sendxAPiStatement(
         "removed",
@@ -178685,7 +179509,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     return x`
 			<div
 				id="upper"
-				class=${this.objectPanelOpen ? "show-object-panel" : ""}
+				class=${`${this.objectPanelOpen ? "show-object-panel" : ""} ${this.fullWidthMode && this.diagramPanelOpen ? "show-diagram-panel" : ""}`}
 			>
 				<div id="canvasArea" @dragover=${this.handleComponentDragOver} @drop=${this.dropComponent}>
 					${this.pix_canvas}
@@ -178715,7 +179539,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					${this.renderObjectSummary()}
 					${this.renderObjectPanel()}
 				</aside>
-				${this.renderDiagramDrawer()}
+				${this.fullWidthMode ? this.renderInlineDiagramPanel() : this.renderDiagramDrawer()}
 				${this.renderConfirmDialog()}
 				${this.renderContextMenu()}
 				${this.renderTeacherDrawer()}
@@ -178775,10 +179599,33 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				</sl-dialog>
 		`;
   }
+  expandSelectedObjectPanel() {
+    if (this.fullWidthMode && this.curr_obj) this.setObjectPanelOpen(true);
+  }
   setObjectPanelOpen(open) {
     if (this.objectPanelOpen === open) return;
     this.objectPanelOpen = open;
     this._sendxAPiStatement(open ? "opened" : "closed", "objectPanel");
+  }
+  toggleDiagramPanel() {
+    if (this.fullWidthMode) {
+      this.diagramPanelOpen = !this.diagramPanelOpen;
+      this._sendxAPiStatement(this.diagramPanelOpen ? "opened" : "closed", "diagramPanel");
+    } else {
+      this.diagramDrawer.show();
+      this._sendxAPiStatement("opened", "diagramPanel");
+    }
+  }
+  renderInlineDiagramPanel() {
+    return x`
+			<aside id="inlineDiagramPanel" aria-label=${this.message("Diagramme")} ?hidden=${!this.diagramPanelOpen}>
+				<sl-badge variant="primary">${this.message("Diagramme")}</sl-badge>
+				<sl-checkbox .checked=${this.diagrams.showLine} @sl-change=${() => this.diagrams.toggleShowLine()}>
+					${this.message("Kurven anzeigen")}
+				</sl-checkbox>
+				${this.canvasContainer}
+			</aside>
+		`;
   }
   renderDiagramDrawer() {
     return x`
@@ -178820,10 +179667,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 							><p>${this.message("Kurven anzeigen")}</p></sl-checkbox
 						>
 					</div>
-					<div
-						id="canvasContainer"
-						style="position: absolute; top: 50px; left: 0px; width: 100%; max-height: 550px; overflow: auto"
-					></div>
+					${this.canvasContainer}
 				</sl-drawer>
 		`;
   }
@@ -178872,10 +179716,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				>
 					<button
 						id="toggleDiagramDrawer"
-						@click="${() => {
-      this.diagramDrawer.show();
-      this._sendxAPiStatement("opened", "diagramPanel");
-    }}"
+						title=${this.message("Diagramme")}
+						aria-expanded=${this.fullWidthMode ? String(this.diagramPanelOpen) : E}
+						@click=${this.toggleDiagramPanel}
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -178889,6 +179732,12 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 							/>
 						</svg>
 					</button>
+				</div>
+				<div id="canvasZoom">
+					<sl-button size="small" title=${this.message("Vergr\xF6\xDFern")}
+						aria-label=${this.message("Vergr\xF6\xDFern")} @click=${() => this.canvas.zoomBy(1.25)}>+</sl-button>
+					<sl-button size="small" title=${this.message("Verkleinern")}
+						aria-label=${this.message("Verkleinern")} @click=${() => this.canvas.zoomBy(0.8)}>−</sl-button>
 				</div>
 				<sl-alert
 					id="dialogOverview"
@@ -178904,7 +179753,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 			<section id="teacherDrawer" class="author-only" aria-label=${this.message("Lehrkraft Steuerung")}>
 				<sl-button size="small" aria-controls="teacherDrawerContent" aria-expanded=${this.teacherDrawerOpen}
 					@click=${() => {
-      this.teacherDrawerOpen = !this.teacherDrawerOpen;
+      this.teacherDrawerChoice = this.teacherDrawerOpen = !this.teacherDrawerOpen;
     }}>
 					<svg slot="prefix" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
 						<path d=${this.teacherDrawerOpen ? "m4 6 4 4 4-4" : "m4 10 4-4 4 4"}/>
@@ -179105,7 +179954,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					<button
 						id="openComp"
 						@click="${(event) => {
-      let currSprite = this.app.stage.children[this.curr_stage_index];
+      let currSprite = this.canvas.world.children[this.curr_stage_index];
       if (!this.simulation.tickerFunctionList.some(([id]) => id === "transfer" + this.curr_name)) {
         this.requestUpdate();
         let source3 = this.curr_obj;
@@ -179135,7 +179984,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					<button
 						id="activateEComp"
 						@click="${(event) => {
-      let currSprite = this.app.stage.children[this.curr_stage_index];
+      let currSprite = this.canvas.world.children[this.curr_stage_index];
       if (!this.simulation.tickerFunctionList.some(([id]) => id === "echem" + this.curr_name)) {
         this.requestUpdate();
         this.canvas.setDeviceActive(currSprite, true);
@@ -179220,7 +180069,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       if (!this.curr_obj || this.editingMolecule) return;
       this.curr_obj._content = StructureManager.newMixture();
       this.saveSelectedComponent({ content: "", vol: 0, doses: [] });
-      this._getObject(this.app.stage.children[this.curr_stage_index]);
+      this._getObject(this.canvas.world.children[this.curr_stage_index]);
       this.requestUpdate();
     }}"
 																title=${this.message("Objekt leeren")}
@@ -179289,7 +180138,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
           );
           this.mixSelect.disabled = true;
           this._getObject(
-            this.app.stage.children[this.curr_stage_index]
+            this.canvas.world.children[this.curr_stage_index]
           );
           this.requestUpdate();
         } else {
@@ -179796,7 +180645,7 @@ _molSelect = new WeakMap();
 _mixSelect = new WeakMap();
 _mixVolAmount = new WeakMap();
 _diagramDrawer = new WeakMap();
-_canvasContainer = new WeakMap();
+_canvasArea = new WeakMap();
 _atomPanel = new WeakMap();
 _moleculePanel = new WeakMap();
 _pHColors = new WeakMap();
@@ -179819,6 +180668,8 @@ _allEComponents = new WeakMap();
 _filterCategories = new WeakMap();
 _curr_obj = new WeakMap();
 _objectPanelOpen = new WeakMap();
+_fullWidthMode = new WeakMap();
+_diagramPanelOpen = new WeakMap();
 _teacherDrawerOpen = new WeakMap();
 _teacherTab = new WeakMap();
 _componentCapacities = new WeakMap();
@@ -179868,7 +180719,7 @@ __decorateElement(_init2, 4, "molSelect", _molSelect_dec, _ChemLab, _molSelect);
 __decorateElement(_init2, 4, "mixSelect", _mixSelect_dec, _ChemLab, _mixSelect);
 __decorateElement(_init2, 4, "mixVolAmount", _mixVolAmount_dec, _ChemLab, _mixVolAmount);
 __decorateElement(_init2, 4, "diagramDrawer", _diagramDrawer_dec, _ChemLab, _diagramDrawer);
-__decorateElement(_init2, 4, "canvasContainer", _canvasContainer_dec, _ChemLab, _canvasContainer);
+__decorateElement(_init2, 4, "canvasArea", _canvasArea_dec, _ChemLab, _canvasArea);
 __decorateElement(_init2, 4, "atomPanel", _atomPanel_dec, _ChemLab, _atomPanel);
 __decorateElement(_init2, 4, "moleculePanel", _moleculePanel_dec, _ChemLab, _moleculePanel);
 __decorateElement(_init2, 4, "pHColors", _pHColors_dec, _ChemLab, _pHColors);
@@ -179891,6 +180742,8 @@ __decorateElement(_init2, 4, "allEComponents", _allEComponents_dec, _ChemLab, _a
 __decorateElement(_init2, 4, "filterCategories", _filterCategories_dec, _ChemLab, _filterCategories);
 __decorateElement(_init2, 4, "curr_obj", _curr_obj_dec, _ChemLab, _curr_obj);
 __decorateElement(_init2, 4, "objectPanelOpen", _objectPanelOpen_dec, _ChemLab, _objectPanelOpen);
+__decorateElement(_init2, 4, "fullWidthMode", _fullWidthMode_dec, _ChemLab, _fullWidthMode);
+__decorateElement(_init2, 4, "diagramPanelOpen", _diagramPanelOpen_dec, _ChemLab, _diagramPanelOpen);
 __decorateElement(_init2, 4, "teacherDrawerOpen", _teacherDrawerOpen_dec, _ChemLab, _teacherDrawerOpen);
 __decorateElement(_init2, 4, "teacherTab", _teacherTab_dec, _ChemLab, _teacherTab);
 __decorateElement(_init2, 4, "componentCapacities", _componentCapacities_dec, _ChemLab, _componentCapacities);

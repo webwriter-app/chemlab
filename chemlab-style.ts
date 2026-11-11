@@ -1037,24 +1037,60 @@ export const style = css`
 		display: none;
 	}
 	:host {
+		display: block;
+		inline-size: 800px;
+		max-inline-size: 100%;
+		block-size: min(600px, 100dvh);
 		font-family: var(--sl-font-sans);
+	}
+	:host(.ww-full-width) {
+		inline-size: 100%;
 	}
 
 	#upper {
+		--diagram-width: 0px;
+		--object-width: 0px;
 		position: relative;
 		box-sizing: border-box;
 		display: grid;
-		grid-template-columns: minmax(0, 1fr);
+		grid-template-columns: var(--diagram-width) minmax(0, 1fr) var(--object-width);
 		grid-template-rows: minmax(0, 1fr) auto;
-		width: 800px;
-		max-width: 100%;
-		height: 600px;
+		width: 100%;
+		height: 100%;
 		border: 2px solid #6a6a6a;
 		border-radius: 5px;
 		background: #f7f7f5;
 	}
+	#upper.show-diagram-panel {
+		--diagram-width: min(27%, 24rem);
+	}
 	#upper.show-object-panel {
-		grid-template-columns: minmax(0, 1fr) min(44%, 38rem);
+		--object-width: min(44%, 38rem);
+	}
+	#upper.show-diagram-panel.show-object-panel {
+		--object-width: min(36%, 38rem);
+	}
+	#inlineDiagramPanel {
+		grid-column: 1;
+		grid-row: 1;
+		min-width: 0;
+		min-height: 0;
+		padding: 6px;
+		overflow: auto;
+		border-inline-end: 1px solid var(--sl-color-neutral-200);
+		background: var(--sl-color-neutral-0);
+	}
+	#inlineDiagramPanel > sl-checkbox {
+		display: block;
+		margin-block: 6px;
+	}
+	#diagramDrawer #canvasContainer {
+		position: absolute;
+		top: 50px;
+		left: 0;
+		width: 100%;
+		max-height: 550px;
+		overflow: auto;
 	}
 	:host(:fullscreen),
 	:host(:fullscreen) #upper {
@@ -1062,6 +1098,8 @@ export const style = css`
 		height: 100%;
 	}
 	#objectArea {
+		grid-column: 3;
+		grid-row: 1;
 		display: flex;
 		flex-direction: column;
 		align-items: flex-end;
@@ -1104,26 +1142,24 @@ export const style = css`
 		white-space: nowrap;
 	}
 	#canvasArea {
+		grid-column: 2;
+		grid-row: 1;
 		position: relative;
-		container-type: size;
-		display: grid;
-		place-items: center;
 		min-width: 0;
 		min-height: 0;
 	}
-	#canvasArea p_c {
-		display: block;
-		width: min(100cqw, 133.333cqh);
-	}
+	#canvasArea p_c,
 	#canvasArea canvas {
 		display: block;
 		width: 100%;
-		height: auto;
-		background-color: #f7f7f5;
-		background-image:
-			linear-gradient(to right, #d8d8d8 1px, transparent 1px),
-			linear-gradient(to bottom, #d8d8d8 1px, transparent 1px);
-		background-size: 2.5% 3.3333%;
+		height: 100%;
+	}
+	#canvasZoom {
+		position: absolute;
+		inset-block-end: 4px;
+		inset-inline-start: 4px;
+		display: flex;
+		gap: 3px;
 	}
 	#contextInfoBox {
 		box-sizing: border-box;
@@ -1151,7 +1187,8 @@ export const style = css`
 		background: var(--sl-color-neutral-0);
 	}
 	#teacherDrawerContent {
-		max-height: min(15rem, 40vh);
+		box-sizing: border-box;
+		max-height: min(240px, 40vh);
 		overflow: auto;
 		padding: 4px 0;
 	}
