@@ -28551,19 +28551,8 @@ var require_app = __commonJS({
 // localization/messages.json
 var messages_default = {
   en: {
-    "Objekt-Kontextmen\xFC": "Object context menu",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Manage the object and view basic information about it here.",
     "Vollbild an/aus": "Toggle fullscreen",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "This button toggles fullscreen mode. It is currently disabled.",
-    Eingabemodus: "Input mode",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Use this button to switch between mouse and touch controls.",
-    "Dragging an/aus": "Toggle dragging",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "In touch mode, use this button to change how objects respond to touch.",
-    "Diagramm Men\xFC": "Chart menu",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "This button opens the chart menu on the left.",
     Kontextmen\u00FC: "Context menu",
-    "Message Toast": "Status notification",
-    "Hier werden Statusmeldungen angezeigt.": "Status messages appear here.",
     best\u00E4tigen: "Confirm",
     "Aktion best\xE4tigen:": "Confirm action:",
     Diagramme: "Charts",
@@ -28623,8 +28612,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Source current",
     "verbundenes Gemisch": "Connected mixture",
     Elektrodenmaterial: "Electrode material",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Use this menu to create and preset chemical substances and components.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Use this menu to select and place new objects.",
     entfernen: "Remove",
     speichern: "Save",
     "neues Molek\xFCl": "New molecule",
@@ -28841,19 +28828,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "The selected components are not connected."
   },
   "en-US": {
-    "Objekt-Kontextmen\xFC": "Object context menu",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Manage the object and view basic information about it here.",
     "Vollbild an/aus": "Toggle fullscreen",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "This button toggles fullscreen mode. It is currently disabled.",
-    Eingabemodus: "Input mode",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Use this button to switch between mouse and touch controls.",
-    "Dragging an/aus": "Toggle dragging",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "In touch mode, use this button to change how objects respond to touch.",
-    "Diagramm Men\xFC": "Chart menu",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "This button opens the chart menu on the left.",
     Kontextmen\u00FC: "Context menu",
-    "Message Toast": "Status notification",
-    "Hier werden Statusmeldungen angezeigt.": "Status messages appear here.",
     best\u00E4tigen: "Confirm",
     "Aktion best\xE4tigen:": "Confirm action:",
     Diagramme: "Charts",
@@ -28913,8 +28889,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Source current",
     "verbundenes Gemisch": "Connected mixture",
     Elektrodenmaterial: "Electrode material",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Use this menu to create and preset chemical substances and components.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Use this menu to select and place new objects.",
     entfernen: "Remove",
     speichern: "Save",
     "neues Molek\xFCl": "New molecule",
@@ -29131,19 +29105,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "The selected components are not connected."
   },
   "en-GB": {
-    "Objekt-Kontextmen\xFC": "Object context menu",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Manage the object and view basic information about it here.",
     "Vollbild an/aus": "Toggle fullscreen",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "This button toggles fullscreen mode. It is currently disabled.",
-    Eingabemodus: "Input mode",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Use this button to switch between mouse and touch controls.",
-    "Dragging an/aus": "Toggle dragging",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "In touch mode, use this button to change how objects respond to touch.",
-    "Diagramm Men\xFC": "Chart menu",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "This button opens the chart menu on the left.",
     Kontextmen\u00FC: "Context menu",
-    "Message Toast": "Status notification",
-    "Hier werden Statusmeldungen angezeigt.": "Status messages appear here.",
     best\u00E4tigen: "Confirm",
     "Aktion best\xE4tigen:": "Confirm action:",
     Diagramme: "Charts",
@@ -29203,8 +29166,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Source current",
     "verbundenes Gemisch": "Connected mixture",
     Elektrodenmaterial: "Electrode material",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Use this menu to create and preset chemical substances and components.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Use this menu to select and place new objects.",
     entfernen: "Remove",
     speichern: "Save",
     "neues Molek\xFCl": "New molecule",
@@ -29421,19 +29382,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "The selected components are not connected."
   },
   "en-CA": {
-    "Objekt-Kontextmen\xFC": "Object context menu",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Manage the object and view basic information about it here.",
     "Vollbild an/aus": "Toggle fullscreen",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "This button toggles fullscreen mode. It is currently disabled.",
-    Eingabemodus: "Input mode",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Use this button to switch between mouse and touch controls.",
-    "Dragging an/aus": "Toggle dragging",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "In touch mode, use this button to change how objects respond to touch.",
-    "Diagramm Men\xFC": "Chart menu",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "This button opens the chart menu on the left.",
     Kontextmen\u00FC: "Context menu",
-    "Message Toast": "Status notification",
-    "Hier werden Statusmeldungen angezeigt.": "Status messages appear here.",
     best\u00E4tigen: "Confirm",
     "Aktion best\xE4tigen:": "Confirm action:",
     Diagramme: "Charts",
@@ -29493,8 +29443,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Source current",
     "verbundenes Gemisch": "Connected mixture",
     Elektrodenmaterial: "Electrode material",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Use this menu to create and preset chemical substances and components.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Use this menu to select and place new objects.",
     entfernen: "Remove",
     speichern: "Save",
     "neues Molek\xFCl": "New molecule",
@@ -29711,19 +29659,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "The selected components are not connected."
   },
   "en-AU": {
-    "Objekt-Kontextmen\xFC": "Object context menu",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Manage the object and view basic information about it here.",
     "Vollbild an/aus": "Toggle fullscreen",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "This button toggles fullscreen mode. It is currently disabled.",
-    Eingabemodus: "Input mode",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Use this button to switch between mouse and touch controls.",
-    "Dragging an/aus": "Toggle dragging",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "In touch mode, use this button to change how objects respond to touch.",
-    "Diagramm Men\xFC": "Chart menu",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "This button opens the chart menu on the left.",
     Kontextmen\u00FC: "Context menu",
-    "Message Toast": "Status notification",
-    "Hier werden Statusmeldungen angezeigt.": "Status messages appear here.",
     best\u00E4tigen: "Confirm",
     "Aktion best\xE4tigen:": "Confirm action:",
     Diagramme: "Charts",
@@ -29783,8 +29720,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Source current",
     "verbundenes Gemisch": "Connected mixture",
     Elektrodenmaterial: "Electrode material",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Use this menu to create and preset chemical substances and components.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Use this menu to select and place new objects.",
     entfernen: "Remove",
     speichern: "Save",
     "neues Molek\xFCl": "New molecule",
@@ -30001,19 +29936,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "The selected components are not connected."
   },
   "en-IN": {
-    "Objekt-Kontextmen\xFC": "Object context menu",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Manage the object and view basic information about it here.",
     "Vollbild an/aus": "Toggle fullscreen",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "This button toggles fullscreen mode. It is currently disabled.",
-    Eingabemodus: "Input mode",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Use this button to switch between mouse and touch controls.",
-    "Dragging an/aus": "Toggle dragging",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "In touch mode, use this button to change how objects respond to touch.",
-    "Diagramm Men\xFC": "Chart menu",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "This button opens the chart menu on the left.",
     Kontextmen\u00FC: "Context menu",
-    "Message Toast": "Status notification",
-    "Hier werden Statusmeldungen angezeigt.": "Status messages appear here.",
     best\u00E4tigen: "Confirm",
     "Aktion best\xE4tigen:": "Confirm action:",
     Diagramme: "Charts",
@@ -30073,8 +29997,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Source current",
     "verbundenes Gemisch": "Connected mixture",
     Elektrodenmaterial: "Electrode material",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Use this menu to create and preset chemical substances and components.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Use this menu to select and place new objects.",
     entfernen: "Remove",
     speichern: "Save",
     "neues Molek\xFCl": "New molecule",
@@ -30291,19 +30213,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "The selected components are not connected."
   },
   ar: {
-    "Objekt-Kontextmen\xFC": "\u0627\u0644\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0633\u064A\u0627\u0642\u064A\u0629 \u0644\u0644\u0639\u0646\u0635\u0631",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u064A\u0645\u0643\u0646\u0643 \u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0639\u0646\u0635\u0631 \u0648\u0627\u0644\u0627\u0637\u0644\u0627\u0639 \u0639\u0644\u0649 \u0645\u0639\u0644\u0648\u0645\u0627\u062A\u0647 \u0627\u0644\u0623\u0633\u0627\u0633\u064A\u0629 \u0647\u0646\u0627.",
     "Vollbild an/aus": "\u062A\u0628\u062F\u064A\u0644 \u0648\u0636\u0639 \u0645\u0644\u0621 \u0627\u0644\u0634\u0627\u0634\u0629",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u064A\u0628\u062F\u0651\u0644 \u0647\u0630\u0627 \u0627\u0644\u0632\u0631 \u0648\u0636\u0639 \u0645\u0644\u0621 \u0627\u0644\u0634\u0627\u0634\u0629. \u0648\u0647\u0648 \u0645\u0639\u0637\u0651\u0644 \u062D\u0627\u0644\u064A\u0627.",
-    Eingabemodus: "\u0648\u0636\u0639 \u0627\u0644\u0625\u062F\u062E\u0627\u0644",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0627\u0633\u062A\u062E\u062F\u0645 \u0647\u0630\u0627 \u0627\u0644\u0632\u0631 \u0644\u0644\u062A\u0628\u062F\u064A\u0644 \u0628\u064A\u0646 \u0627\u0644\u062A\u062D\u0643\u0645 \u0628\u0627\u0644\u0641\u0623\u0631\u0629 \u0648\u0627\u0644\u062A\u062D\u0643\u0645 \u0628\u0627\u0644\u0644\u0645\u0633.",
-    "Dragging an/aus": "\u062A\u0628\u062F\u064A\u0644 \u0627\u0644\u0633\u062D\u0628",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u064A\u063A\u064A\u0651\u0631 \u0647\u0630\u0627 \u0627\u0644\u0632\u0631 \u0637\u0631\u064A\u0642\u0629 \u0627\u0633\u062A\u062C\u0627\u0628\u0629 \u0627\u0644\u0639\u0646\u0627\u0635\u0631 \u0644\u0644\u0645\u0633 \u0641\u064A \u0648\u0636\u0639 \u0627\u0644\u0644\u0645\u0633.",
-    "Diagramm Men\xFC": "\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0631\u0633\u0648\u0645 \u0627\u0644\u0628\u064A\u0627\u0646\u064A\u0629",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u064A\u0641\u062A\u062D \u0647\u0630\u0627 \u0627\u0644\u0632\u0631 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0631\u0633\u0648\u0645 \u0627\u0644\u0628\u064A\u0627\u0646\u064A\u0629 \u0639\u0644\u0649 \u0627\u0644\u064A\u0633\u0627\u0631.",
     Kontextmen\u00FC: "\u0627\u0644\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0633\u064A\u0627\u0642\u064A\u0629",
-    "Message Toast": "\u0625\u0634\u0639\u0627\u0631 \u0627\u0644\u062D\u0627\u0644\u0629",
-    "Hier werden Statusmeldungen angezeigt.": "\u062A\u0638\u0647\u0631 \u0631\u0633\u0627\u0626\u0644 \u0627\u0644\u062D\u0627\u0644\u0629 \u0647\u0646\u0627.",
     best\u00E4tigen: "\u062A\u0623\u0643\u064A\u062F",
     "Aktion best\xE4tigen:": "\u062A\u0623\u0643\u064A\u062F \u0627\u0644\u0625\u062C\u0631\u0627\u0621",
     Diagramme: "\u0627\u0644\u0631\u0633\u0648\u0645 \u0627\u0644\u0628\u064A\u0627\u0646\u064A\u0629",
@@ -30363,8 +30274,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u062A\u064A\u0627\u0631 \u0627\u0644\u0645\u0635\u062F\u0631",
     "verbundenes Gemisch": "\u0627\u0644\u062E\u0644\u064A\u0637 \u0627\u0644\u0645\u062A\u0635\u0644",
     Elektrodenmaterial: "\u0645\u0627\u062F\u0629 \u0627\u0644\u0642\u0637\u0628",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0627\u0633\u062A\u062E\u062F\u0645 \u0647\u0630\u0647 \u0627\u0644\u0642\u0627\u0626\u0645\u0629 \u0644\u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0645\u0648\u0627\u062F \u0627\u0644\u0643\u064A\u0645\u064A\u0627\u0626\u064A\u0629 \u0648\u0627\u0644\u0645\u0643\u0648\u0651\u0646\u0627\u062A \u0648\u0636\u0628\u0637\u0647\u0627 \u0645\u0633\u0628\u0642\u0627.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0627\u0633\u062A\u062E\u062F\u0645 \u0647\u0630\u0647 \u0627\u0644\u0642\u0627\u0626\u0645\u0629 \u0644\u0627\u062E\u062A\u064A\u0627\u0631 \u0639\u0646\u0627\u0635\u0631 \u062C\u062F\u064A\u062F\u0629 \u0648\u0648\u0636\u0639\u0647\u0627.",
     entfernen: "\u0625\u0632\u0627\u0644\u0629",
     speichern: "\u062D\u0641\u0638",
     "neues Molek\xFCl": "\u062C\u0632\u064A\u0621 \u062C\u062F\u064A\u062F",
@@ -30581,19 +30490,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0627\u0644\u0645\u0643\u0648\u0651\u0646\u0627\u062A \u0627\u0644\u0645\u062D\u062F\u062F\u0629 \u063A\u064A\u0631 \u0645\u062A\u0635\u0644\u0629."
   },
   bg: {
-    "Objekt-Kontextmen\xFC": "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u043E \u043C\u0435\u043D\u044E \u043D\u0430 \u043E\u0431\u0435\u043A\u0442\u0430",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0422\u0443\u043A \u043C\u043E\u0436\u0435\u0442\u0435 \u0434\u0430 \u0443\u043F\u0440\u0430\u0432\u043B\u044F\u0432\u0430\u0442\u0435 \u043E\u0431\u0435\u043A\u0442\u0430 \u0438 \u0434\u0430 \u043F\u0440\u0435\u0433\u043B\u0435\u0436\u0434\u0430\u0442\u0435 \u043E\u0441\u043D\u043E\u0432\u043D\u0430 \u0438\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u044F \u0437\u0430 \u043D\u0435\u0433\u043E.",
     "Vollbild an/aus": "\u041F\u0440\u0435\u0432\u043A\u043B\u044E\u0447\u0432\u0430\u043D\u0435 \u043D\u0430 \u0446\u044F\u043B \u0435\u043A\u0440\u0430\u043D",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0422\u043E\u0437\u0438 \u0431\u0443\u0442\u043E\u043D \u0432\u043A\u043B\u044E\u0447\u0432\u0430 \u0438 \u0438\u0437\u043A\u043B\u044E\u0447\u0432\u0430 \u0440\u0435\u0436\u0438\u043C\u0430 \u043D\u0430 \u0446\u044F\u043B \u0435\u043A\u0440\u0430\u043D. \u0412 \u043C\u043E\u043C\u0435\u043D\u0442\u0430 \u0435 \u0434\u0435\u0430\u043A\u0442\u0438\u0432\u0438\u0440\u0430\u043D.",
-    Eingabemodus: "\u0420\u0435\u0436\u0438\u043C \u043D\u0430 \u0432\u044A\u0432\u0435\u0436\u0434\u0430\u043D\u0435",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0418\u0437\u043F\u043E\u043B\u0437\u0432\u0430\u0439\u0442\u0435 \u0442\u043E\u0437\u0438 \u0431\u0443\u0442\u043E\u043D, \u0437\u0430 \u0434\u0430 \u043F\u0440\u0435\u0432\u043A\u043B\u044E\u0447\u0432\u0430\u0442\u0435 \u043C\u0435\u0436\u0434\u0443 \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0441 \u043C\u0438\u0448\u043A\u0430 \u0438 \u0441 \u0434\u043E\u043A\u043E\u0441\u0432\u0430\u043D\u0435.",
-    "Dragging an/aus": "\u0412\u043A\u043B\u044E\u0447\u0432\u0430\u043D\u0435/\u0438\u0437\u043A\u043B\u044E\u0447\u0432\u0430\u043D\u0435 \u043D\u0430 \u043F\u043B\u044A\u0437\u0433\u0430\u043D\u0435\u0442\u043E",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0412 \u0440\u0435\u0436\u0438\u043C \u043D\u0430 \u0434\u043E\u043A\u043E\u0441\u0432\u0430\u043D\u0435 \u0442\u043E\u0437\u0438 \u0431\u0443\u0442\u043E\u043D \u043F\u0440\u043E\u043C\u0435\u043D\u044F \u043A\u0430\u043A \u043E\u0431\u0435\u043A\u0442\u0438\u0442\u0435 \u0440\u0435\u0430\u0433\u0438\u0440\u0430\u0442 \u043D\u0430 \u0434\u043E\u043A\u043E\u0441\u0432\u0430\u043D\u0435.",
-    "Diagramm Men\xFC": "\u041C\u0435\u043D\u044E \u043D\u0430 \u0434\u0438\u0430\u0433\u0440\u0430\u043C\u0430\u0442\u0430",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0422\u043E\u0437\u0438 \u0431\u0443\u0442\u043E\u043D \u043E\u0442\u0432\u0430\u0440\u044F \u043C\u0435\u043D\u044E\u0442\u043E \u043D\u0430 \u0434\u0438\u0430\u0433\u0440\u0430\u043C\u0430\u0442\u0430 \u043E\u0442\u043B\u044F\u0432\u043E.",
     Kontextmen\u00FC: "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u043E \u043C\u0435\u043D\u044E",
-    "Message Toast": "\u0418\u0437\u0432\u0435\u0441\u0442\u0438\u0435 \u0437\u0430 \u0441\u044A\u0441\u0442\u043E\u044F\u043D\u0438\u0435\u0442\u043E",
-    "Hier werden Statusmeldungen angezeigt.": "\u0422\u0443\u043A \u0441\u0435 \u043F\u043E\u043A\u0430\u0437\u0432\u0430\u0442 \u0441\u044A\u043E\u0431\u0449\u0435\u043D\u0438\u044F\u0442\u0430 \u0437\u0430 \u0441\u044A\u0441\u0442\u043E\u044F\u043D\u0438\u0435\u0442\u043E.",
     best\u00E4tigen: "\u041F\u043E\u0442\u0432\u044A\u0440\u0436\u0434\u0430\u0432\u0430\u043D\u0435",
     "Aktion best\xE4tigen:": "\u041F\u043E\u0442\u0432\u044A\u0440\u0436\u0434\u0430\u0432\u0430\u043D\u0435 \u043D\u0430 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435\u0442\u043E:",
     Diagramme: "\u0414\u0438\u0430\u0433\u0440\u0430\u043C\u0438",
@@ -30653,8 +30551,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0422\u043E\u043A \u043D\u0430 \u0438\u0437\u0442\u043E\u0447\u043D\u0438\u043A\u0430",
     "verbundenes Gemisch": "\u0421\u0432\u044A\u0440\u0437\u0430\u043D\u0430 \u0441\u043C\u0435\u0441",
     Elektrodenmaterial: "\u041C\u0430\u0442\u0435\u0440\u0438\u0430\u043B \u043D\u0430 \u0435\u043B\u0435\u043A\u0442\u0440\u043E\u0434\u0430",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0418\u0437\u043F\u043E\u043B\u0437\u0432\u0430\u0439\u0442\u0435 \u0442\u043E\u0432\u0430 \u043C\u0435\u043D\u044E, \u0437\u0430 \u0434\u0430 \u0441\u044A\u0437\u0434\u0430\u0432\u0430\u0442\u0435 \u0438 \u0437\u0430\u0434\u0430\u0432\u0430\u0442\u0435 \u043F\u0440\u0435\u0434\u0432\u0430\u0440\u0438\u0442\u0435\u043B\u043D\u043E \u0445\u0438\u043C\u0438\u0447\u043D\u0438 \u0432\u0435\u0449\u0435\u0441\u0442\u0432\u0430 \u0438 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0438.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0418\u0437\u043F\u043E\u043B\u0437\u0432\u0430\u0439\u0442\u0435 \u0442\u043E\u0432\u0430 \u043C\u0435\u043D\u044E, \u0437\u0430 \u0434\u0430 \u0438\u0437\u0431\u0438\u0440\u0430\u0442\u0435 \u0438 \u043F\u043E\u0441\u0442\u0430\u0432\u044F\u0442\u0435 \u043D\u043E\u0432\u0438 \u043E\u0431\u0435\u043A\u0442\u0438.",
     entfernen: "\u041F\u0440\u0435\u043C\u0430\u0445\u0432\u0430\u043D\u0435",
     speichern: "\u0417\u0430\u043F\u0430\u0437\u0432\u0430\u043D\u0435",
     "neues Molek\xFCl": "\u041D\u043E\u0432\u0430 \u043C\u043E\u043B\u0435\u043A\u0443\u043B\u0430",
@@ -30871,19 +30767,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0418\u0437\u0431\u0440\u0430\u043D\u0438\u0442\u0435 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0438 \u043D\u0435 \u0441\u0430 \u0441\u0432\u044A\u0440\u0437\u0430\u043D\u0438."
   },
   zh: {
-    "Objekt-Kontextmen\xFC": "\u5BF9\u8C61\u5FEB\u6377\u83DC\u5355",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u5728\u6B64\u7BA1\u7406\u5BF9\u8C61\u5E76\u67E5\u770B\u57FA\u672C\u4FE1\u606F\u3002",
     "Vollbild an/aus": "\u5207\u6362\u5168\u5C4F",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u6B64\u6309\u94AE\u53EF\u5207\u6362\u5168\u5C4F\u6A21\u5F0F\u3002\u76EE\u524D\u5DF2\u7981\u7528\u3002",
-    Eingabemodus: "\u8F93\u5165\u6A21\u5F0F",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u7528\u6B64\u6309\u94AE\u5207\u6362\u9F20\u6807\u548C\u89E6\u63A7\u64CD\u4F5C\u3002",
-    "Dragging an/aus": "\u5207\u6362\u62D6\u52A8",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u5728\u89E6\u63A7\u6A21\u5F0F\u4E0B\uFF0C\u7528\u6B64\u6309\u94AE\u6539\u53D8\u5BF9\u8C61\u54CD\u5E94\u89E6\u6478\u7684\u65B9\u5F0F\u3002",
-    "Diagramm Men\xFC": "\u56FE\u8868\u83DC\u5355",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u6B64\u6309\u94AE\u6253\u5F00\u5DE6\u4FA7\u7684\u56FE\u8868\u83DC\u5355\u3002",
     Kontextmen\u00FC: "\u5FEB\u6377\u83DC\u5355",
-    "Message Toast": "\u72B6\u6001\u901A\u77E5",
-    "Hier werden Statusmeldungen angezeigt.": "\u72B6\u6001\u6D88\u606F\u663E\u793A\u5728\u8FD9\u91CC\u3002",
     best\u00E4tigen: "\u786E\u8BA4",
     "Aktion best\xE4tigen:": "\u786E\u8BA4\u64CD\u4F5C",
     Diagramme: "\u56FE\u8868",
@@ -30943,8 +30828,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u7535\u6E90\u7535\u6D41",
     "verbundenes Gemisch": "\u76F8\u8FDE\u6DF7\u5408\u7269",
     Elektrodenmaterial: "\u7535\u6781\u6750\u6599",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u7528\u6B64\u83DC\u5355\u521B\u5EFA\u5E76\u9884\u8BBE\u5316\u5B66\u7269\u8D28\u548C\u7EC4\u4EF6\u3002",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u7528\u6B64\u83DC\u5355\u9009\u62E9\u5E76\u653E\u7F6E\u65B0\u5BF9\u8C61\u3002",
     entfernen: "\u79FB\u9664",
     speichern: "\u4FDD\u5B58",
     "neues Molek\xFCl": "\u65B0\u5EFA\u5206\u5B50",
@@ -31161,19 +31044,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u6240\u9009\u7EC4\u4EF6\u672A\u8FDE\u63A5\u3002"
   },
   "zh-Hans": {
-    "Objekt-Kontextmen\xFC": "\u5BF9\u8C61\u5FEB\u6377\u83DC\u5355",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u5728\u6B64\u7BA1\u7406\u5BF9\u8C61\u5E76\u67E5\u770B\u57FA\u672C\u4FE1\u606F\u3002",
     "Vollbild an/aus": "\u5207\u6362\u5168\u5C4F",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u6B64\u6309\u94AE\u53EF\u5207\u6362\u5168\u5C4F\u6A21\u5F0F\u3002\u76EE\u524D\u5DF2\u7981\u7528\u3002",
-    Eingabemodus: "\u8F93\u5165\u6A21\u5F0F",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u7528\u6B64\u6309\u94AE\u5207\u6362\u9F20\u6807\u548C\u89E6\u63A7\u64CD\u4F5C\u3002",
-    "Dragging an/aus": "\u5207\u6362\u62D6\u52A8",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u5728\u89E6\u63A7\u6A21\u5F0F\u4E0B\uFF0C\u7528\u6B64\u6309\u94AE\u6539\u53D8\u5BF9\u8C61\u54CD\u5E94\u89E6\u6478\u7684\u65B9\u5F0F\u3002",
-    "Diagramm Men\xFC": "\u56FE\u8868\u83DC\u5355",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u6B64\u6309\u94AE\u6253\u5F00\u5DE6\u4FA7\u7684\u56FE\u8868\u83DC\u5355\u3002",
     Kontextmen\u00FC: "\u5FEB\u6377\u83DC\u5355",
-    "Message Toast": "\u72B6\u6001\u901A\u77E5",
-    "Hier werden Statusmeldungen angezeigt.": "\u72B6\u6001\u6D88\u606F\u663E\u793A\u5728\u8FD9\u91CC\u3002",
     best\u00E4tigen: "\u786E\u8BA4",
     "Aktion best\xE4tigen:": "\u786E\u8BA4\u64CD\u4F5C",
     Diagramme: "\u56FE\u8868",
@@ -31233,8 +31105,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u7535\u6E90\u7535\u6D41",
     "verbundenes Gemisch": "\u76F8\u8FDE\u6DF7\u5408\u7269",
     Elektrodenmaterial: "\u7535\u6781\u6750\u6599",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u7528\u6B64\u83DC\u5355\u521B\u5EFA\u5E76\u9884\u8BBE\u5316\u5B66\u7269\u8D28\u548C\u7EC4\u4EF6\u3002",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u7528\u6B64\u83DC\u5355\u9009\u62E9\u5E76\u653E\u7F6E\u65B0\u5BF9\u8C61\u3002",
     entfernen: "\u79FB\u9664",
     speichern: "\u4FDD\u5B58",
     "neues Molek\xFCl": "\u65B0\u5EFA\u5206\u5B50",
@@ -31451,19 +31321,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u6240\u9009\u7EC4\u4EF6\u672A\u8FDE\u63A5\u3002"
   },
   "zh-Hant": {
-    "Objekt-Kontextmen\xFC": "\u7269\u4EF6\u5FEB\u986F\u9078\u55AE",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u5728\u6B64\u7BA1\u7406\u7269\u4EF6\u4E26\u67E5\u770B\u57FA\u672C\u8CC7\u8A0A\u3002",
     "Vollbild an/aus": "\u5207\u63DB\u5168\u87A2\u5E55",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u6B64\u6309\u9215\u53EF\u5207\u63DB\u5168\u87A2\u5E55\u6A21\u5F0F\u3002\u76EE\u524D\u5DF2\u505C\u7528\u3002",
-    Eingabemodus: "\u8F38\u5165\u6A21\u5F0F",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u4F7F\u7528\u6B64\u6309\u9215\u5207\u63DB\u6ED1\u9F20\u8207\u89F8\u63A7\u64CD\u4F5C\u3002",
-    "Dragging an/aus": "\u5207\u63DB\u62D6\u66F3",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u5728\u89F8\u63A7\u6A21\u5F0F\u4E0B\uFF0C\u4F7F\u7528\u6B64\u6309\u9215\u6539\u8B8A\u7269\u4EF6\u56DE\u61C9\u89F8\u78B0\u7684\u65B9\u5F0F\u3002",
-    "Diagramm Men\xFC": "\u5716\u8868\u9078\u55AE",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u6B64\u6309\u9215\u6703\u958B\u555F\u5DE6\u5074\u7684\u5716\u8868\u9078\u55AE\u3002",
     Kontextmen\u00FC: "\u5FEB\u986F\u9078\u55AE",
-    "Message Toast": "\u72C0\u614B\u901A\u77E5",
-    "Hier werden Statusmeldungen angezeigt.": "\u72C0\u614B\u8A0A\u606F\u6703\u986F\u793A\u65BC\u6B64\u3002",
     best\u00E4tigen: "\u78BA\u8A8D",
     "Aktion best\xE4tigen:": "\u78BA\u8A8D\u52D5\u4F5C",
     Diagramme: "\u5716\u8868",
@@ -31523,8 +31382,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u96FB\u6E90\u96FB\u6D41",
     "verbundenes Gemisch": "\u76F8\u9023\u6DF7\u5408\u7269",
     Elektrodenmaterial: "\u96FB\u6975\u6750\u6599",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u4F7F\u7528\u6B64\u9078\u55AE\u5EFA\u7ACB\u4E26\u9810\u8A2D\u5316\u5B78\u7269\u8CEA\u8207\u5143\u4EF6\u3002",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u4F7F\u7528\u6B64\u9078\u55AE\u9078\u53D6\u4E26\u653E\u7F6E\u65B0\u7269\u4EF6\u3002",
     entfernen: "\u79FB\u9664",
     speichern: "\u5132\u5B58",
     "neues Molek\xFCl": "\u65B0\u589E\u5206\u5B50",
@@ -31741,19 +31598,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u6240\u9078\u5143\u4EF6\u672A\u9023\u63A5\u3002"
   },
   hr: {
-    "Objekt-Kontextmen\xFC": "Kontekstni izbornik objekta",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Ovdje mo\u017Eete upravljati objektom i pregledati osnovne podatke.",
     "Vollbild an/aus": "Uklju\u010Di ili isklju\u010Di cijeli zaslon",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Ova tipka prebacuje prikaz na cijelom zaslonu. Trenutno je onemogu\u0107ena.",
-    Eingabemodus: "Na\u010Din unosa",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Ovom tipkom prelazite izme\u0111u mi\u0161a i dodirnih kontrola.",
-    "Dragging an/aus": "Uklju\u010Di ili isklju\u010Di povla\u010Denje",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "U dodirnom na\u010Dinu ova tipka mijenja reakciju objekata na dodir.",
-    "Diagramm Men\xFC": "Izbornik grafikona",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Ova tipka otvara izbornik grafikona na lijevoj strani.",
     Kontextmen\u00FC: "Kontekstni izbornik",
-    "Message Toast": "Obavijest o stanju",
-    "Hier werden Statusmeldungen angezeigt.": "Ovdje se prikazuju poruke o stanju.",
     best\u00E4tigen: "Potvrdi",
     "Aktion best\xE4tigen:": "Potvrdi radnju",
     Diagramme: "Grafikoni",
@@ -31813,8 +31659,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Struja izvora",
     "verbundenes Gemisch": "Spojena smjesa",
     Elektrodenmaterial: "Materijal elektrode",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "U ovom izborniku mo\u017Eete izraditi i unaprijed postaviti kemijske tvari i komponente.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "U ovom izborniku mo\u017Eete odabrati i postaviti nove objekte.",
     entfernen: "Ukloni",
     speichern: "Spremi",
     "neues Molek\xFCl": "Nova molekula",
@@ -32031,19 +31875,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Odabrane komponente nisu spojene."
   },
   cs: {
-    "Objekt-Kontextmen\xFC": "Kontextov\xE1 nab\xEDdka objektu",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Zde m\u016F\u017Eete spravovat objekt a zobrazit z\xE1kladn\xED informace.",
     "Vollbild an/aus": "P\u0159epnout celou obrazovku",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Toto tla\u010D\xEDtko p\u0159ep\xEDn\xE1 celoobrazovkov\xFD re\u017Eim. Moment\xE1ln\u011B je vypnut\xFD.",
-    Eingabemodus: "Re\u017Eim vstupu",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Tla\u010D\xEDtko p\u0159ep\xEDn\xE1 mezi my\u0161\xED a dotykov\xFDm ovl\xE1d\xE1n\xEDm.",
-    "Dragging an/aus": "P\u0159epnout p\u0159etahov\xE1n\xED",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "V dotykov\xE9m re\u017Eimu t\xEDmto tla\u010D\xEDtkem zm\u011Bn\xEDte reakci objekt\u016F na dotyk.",
-    "Diagramm Men\xFC": "Nab\xEDdka graf\u016F",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Toto tla\u010D\xEDtko otev\u0159e nab\xEDdku graf\u016F vlevo.",
     Kontextmen\u00FC: "Kontextov\xE1 nab\xEDdka",
-    "Message Toast": "Stavov\xE9 ozn\xE1men\xED",
-    "Hier werden Statusmeldungen angezeigt.": "Zde se zobrazuj\xED stavov\xE9 zpr\xE1vy.",
     best\u00E4tigen: "Potvrdit",
     "Aktion best\xE4tigen:": "Potvrdit akci",
     Diagramme: "Grafy",
@@ -32103,8 +31936,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Proud zdroje",
     "verbundenes Gemisch": "P\u0159ipojen\xE1 sm\u011Bs",
     Elektrodenmaterial: "Materi\xE1l elektrody",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "V t\xE9to nab\xEDdce m\u016F\u017Eete vytv\xE1\u0159et a p\u0159edem nastavovat l\xE1tky a sou\u010D\xE1sti.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "V t\xE9to nab\xEDdce m\u016F\u017Eete vyb\xEDrat a umis\u0165ovat nov\xE9 objekty.",
     entfernen: "Odebrat",
     speichern: "Ulo\u017Eit",
     "neues Molek\xFCl": "Nov\xE1 molekula",
@@ -32321,19 +32152,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Vybran\xE9 sou\u010D\xE1sti nejsou propojen\xE9."
   },
   da: {
-    "Objekt-Kontextmen\xFC": "Objektets genvejsmenu",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Her kan du administrere objektet og se grundl\xE6ggende oplysninger om det.",
     "Vollbild an/aus": "Sl\xE5 fuld sk\xE6rm til/fra",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Denne knap sl\xE5r fuldsk\xE6rmstilstand til og fra. Den er deaktiveret i \xF8jeblikket.",
-    Eingabemodus: "Indtastningstilstand",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Brug denne knap til at skifte mellem mus- og ber\xF8ringsstyring.",
-    "Dragging an/aus": "Sl\xE5 tr\xE6kning til/fra",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "I ber\xF8ringstilstand \xE6ndrer denne knap, hvordan objekter reagerer p\xE5 ber\xF8ring.",
-    "Diagramm Men\xFC": "Diagrammenu",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Denne knap \xE5bner diagrammenuen til venstre.",
     Kontextmen\u00FC: "Genvejsmenu",
-    "Message Toast": "Statusmeddelelse",
-    "Hier werden Statusmeldungen angezeigt.": "Statusmeddelelser vises her.",
     best\u00E4tigen: "Bekr\xE6ft",
     "Aktion best\xE4tigen:": "Bekr\xE6ft handling:",
     Diagramme: "Diagrammer",
@@ -32393,8 +32213,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Kildestr\xF8m",
     "verbundenes Gemisch": "Forbundet blanding",
     Elektrodenmaterial: "Elektrodemateriale",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Brug denne menu til at oprette og forudindstille kemiske stoffer og komponenter.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Brug denne menu til at v\xE6lge og placere nye objekter.",
     entfernen: "Fjern",
     speichern: "Gem",
     "neues Molek\xFCl": "Nyt molekyle",
@@ -32611,19 +32429,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "De valgte komponenter er ikke forbundet."
   },
   nl: {
-    "Objekt-Kontextmen\xFC": "Contextmenu van het object",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Hier beheer je het object en bekijk je basisinformatie.",
     "Vollbild an/aus": "Volledig scherm aan of uit",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Met deze knop schakel je de schermvullende modus in of uit. Die staat nu uit.",
-    Eingabemodus: "Invoermodus",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Met deze knop wissel je tussen muis en aanraakbediening.",
-    "Dragging an/aus": "Slepen aan of uit",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Met deze knop wijzig je in aanraakmodus hoe objecten op aanraking reageren.",
-    "Diagramm Men\xFC": "Grafiekmenu",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Met deze knop open je het grafiekmenu links.",
     Kontextmen\u00FC: "Contextmenu",
-    "Message Toast": "Statusmelding",
-    "Hier werden Statusmeldungen angezeigt.": "Statusberichten verschijnen hier.",
     best\u00E4tigen: "Bevestigen",
     "Aktion best\xE4tigen:": "Handeling bevestigen",
     Diagramme: "Grafieken",
@@ -32683,8 +32490,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Bronstroom",
     "verbundenes Gemisch": "Aangesloten mengsel",
     Elektrodenmaterial: "Elektrodemateriaal",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Met dit menu maak je stoffen en onderdelen en stel je ze vooraf in.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Met dit menu kies en plaats je nieuwe objecten.",
     entfernen: "Verwijderen",
     speichern: "Opslaan",
     "neues Molek\xFCl": "Nieuw molecuul",
@@ -32901,19 +32706,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "De gekozen onderdelen zijn niet verbonden."
   },
   et: {
-    "Objekt-Kontextmen\xFC": "Objekti kontekstimen\xFC\xFC",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Siin saate objekti hallata ja vaadata selle p\xF5hiteavet.",
     "Vollbild an/aus": "T\xE4isekraani sisse/v\xE4lja l\xFClitamine",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Selle nupuga saab t\xE4isekraanire\u017Eiimi sisse ja v\xE4lja l\xFClitada. Praegu on see v\xE4lja l\xFClitatud.",
-    Eingabemodus: "Sisestusre\u017Eiim",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Selle nupuga saate vahetada hiire- ja puutejuhtimise vahel.",
-    "Dragging an/aus": "Lohistamise sisse/v\xE4lja l\xFClitamine",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Puutejuhtimise re\u017Eiimis saab selle nupuga muuta objektide reaktsiooni puudutustele.",
-    "Diagramm Men\xFC": "Diagrammimen\xFC\xFC",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "See nupp avab vasakul diagrammimen\xFC\xFC.",
     Kontextmen\u00FC: "Kontekstimen\xFC\xFC",
-    "Message Toast": "Oleku teavitus",
-    "Hier werden Statusmeldungen angezeigt.": "Oleku teated kuvatakse siin.",
     best\u00E4tigen: "Kinnita",
     "Aktion best\xE4tigen:": "Kinnita toiming:",
     Diagramme: "Diagrammid",
@@ -32973,8 +32767,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Toitevool",
     "verbundenes Gemisch": "\xDChendatud segu",
     Elektrodenmaterial: "Elektroodi materjal",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Selle men\xFC\xFC abil saab luua ja eelseadistada keemilisi aineid ja komponente.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Selle men\xFC\xFC abil saate valida ja paigutada uusi objekte.",
     entfernen: "Eemalda",
     speichern: "Salvesta",
     "neues Molek\xFCl": "Uus molekul",
@@ -33191,19 +32983,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Valitud komponendid ei ole \xFChendatud."
   },
   fi: {
-    "Objekt-Kontextmen\xFC": "Objektin pikavalikko",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "T\xE4ss\xE4 voit hallita objektia ja tarkastella sen perustietoja.",
     "Vollbild an/aus": "Koko n\xE4yt\xF6n tila p\xE4\xE4lle/pois",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "T\xE4ll\xE4 painikkeella voit ottaa koko n\xE4yt\xF6n tilan k\xE4ytt\xF6\xF6n tai poistaa sen k\xE4yt\xF6st\xE4. Se ei ole t\xE4ll\xE4 hetkell\xE4 k\xE4yt\xF6ss\xE4.",
-    Eingabemodus: "Sy\xF6tt\xF6tila",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Vaihda t\xE4ll\xE4 painikkeella hiiri- ja kosketusohjauksen v\xE4lill\xE4.",
-    "Dragging an/aus": "Vet\xE4minen p\xE4\xE4lle/pois",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Kosketustilassa voit muuttaa t\xE4ll\xE4 painikkeella, miten objektit reagoivat kosketukseen.",
-    "Diagramm Men\xFC": "Kaaviovalikko",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "T\xE4m\xE4 painike avaa vasemmalla olevan kaaviovalikon.",
     Kontextmen\u00FC: "Pikavalikko",
-    "Message Toast": "Tilan ilmoitus",
-    "Hier werden Statusmeldungen angezeigt.": "Tilailmoitukset n\xE4kyv\xE4t t\xE4ss\xE4.",
     best\u00E4tigen: "Vahvista",
     "Aktion best\xE4tigen:": "Vahvista toiminto:",
     Diagramme: "Kaaviot",
@@ -33263,8 +33044,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "L\xE4hdevirta",
     "verbundenes Gemisch": "Yhdistetty seos",
     Elektrodenmaterial: "Elektrodin materiaali",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Luo ja m\xE4\xE4rit\xE4 kemiallisia aineita ja komponentteja t\xE4m\xE4n valikon avulla.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Valitse ja sijoita uusia objekteja t\xE4m\xE4n valikon avulla.",
     entfernen: "Poista",
     speichern: "Tallenna",
     "neues Molek\xFCl": "Uusi molekyyli",
@@ -33481,19 +33260,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Valitut komponentit eiv\xE4t ole yhteydess\xE4 toisiinsa."
   },
   fr: {
-    "Objekt-Kontextmen\xFC": "Menu contextuel de l\u2019objet",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "G\xE9rez l\u2019objet et consultez ici ses informations de base.",
     "Vollbild an/aus": "Activer ou quitter le plein \xE9cran",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Ce bouton bascule le mode plein \xE9cran. Il est actuellement d\xE9sactiv\xE9.",
-    Eingabemodus: "Mode de saisie",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Ce bouton permet de passer de la souris aux commandes tactiles.",
-    "Dragging an/aus": "Activer ou d\xE9sactiver le d\xE9placement",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "En mode tactile, ce bouton modifie la fa\xE7on dont les objets r\xE9agissent au toucher.",
-    "Diagramm Men\xFC": "Menu des graphiques",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Ce bouton ouvre le menu des graphiques \xE0 gauche.",
     Kontextmen\u00FC: "Menu contextuel",
-    "Message Toast": "Notification d\u2019\xE9tat",
-    "Hier werden Statusmeldungen angezeigt.": "Les messages d\u2019\xE9tat apparaissent ici.",
     best\u00E4tigen: "Confirmer",
     "Aktion best\xE4tigen:": "Confirmer l\u2019action",
     Diagramme: "Graphiques",
@@ -33553,8 +33321,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Courant de la source",
     "verbundenes Gemisch": "M\xE9lange raccord\xE9",
     Elektrodenmaterial: "Mat\xE9riau d\u2019\xE9lectrode",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Ce menu permet de cr\xE9er et de pr\xE9r\xE9gler des substances et des composants.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Ce menu permet de choisir et de placer de nouveaux objets.",
     entfernen: "Retirer",
     speichern: "Enregistrer",
     "neues Molek\xFCl": "Nouvelle mol\xE9cule",
@@ -33771,19 +33537,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Les composants s\xE9lectionn\xE9s ne sont pas connect\xE9s."
   },
   de: {
-    "Objekt-Kontextmen\xFC": "Objekt-Kontextmen\xFC",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.",
     "Vollbild an/aus": "Vollbild an/aus",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.",
-    Eingabemodus: "Eingabemodus",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.",
-    "Dragging an/aus": "Dragging an/aus",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.",
-    "Diagramm Men\xFC": "Diagramm Men\xFC",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.",
     Kontextmen\u00FC: "Kontextmen\xFC",
-    "Message Toast": "Message Toast",
-    "Hier werden Statusmeldungen angezeigt.": "Hier werden Statusmeldungen angezeigt.",
     best\u00E4tigen: "best\xE4tigen",
     "Aktion best\xE4tigen:": "Aktion best\xE4tigen:",
     Diagramme: "Diagramme",
@@ -33843,8 +33598,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Quellstromst\xE4rke",
     "verbundenes Gemisch": "verbundenes Gemisch",
     Elektrodenmaterial: "Elektrodenmaterial",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.",
     entfernen: "entfernen",
     speichern: "speichern",
     "neues Molek\xFCl": "neues Molek\xFCl",
@@ -34061,19 +33814,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Die gew\xE4hlten Komponenten sind nicht verbunden."
   },
   el: {
-    "Objekt-Kontextmen\xFC": "\u039C\u03B5\u03BD\u03BF\u03CD \u03C0\u03B5\u03C1\u03B9\u03B2\u03AC\u03BB\u03BB\u03BF\u03BD\u03C4\u03BF\u03C2 \u03B1\u03BD\u03C4\u03B9\u03BA\u03B5\u03B9\u03BC\u03AD\u03BD\u03BF\u03C5",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0395\u03B4\u03CE \u03BC\u03C0\u03BF\u03C1\u03B5\u03AF\u03C4\u03B5 \u03BD\u03B1 \u03B4\u03B9\u03B1\u03C7\u03B5\u03B9\u03C1\u03B9\u03C3\u03C4\u03B5\u03AF\u03C4\u03B5 \u03C4\u03BF \u03B1\u03BD\u03C4\u03B9\u03BA\u03B5\u03AF\u03BC\u03B5\u03BD\u03BF \u03BA\u03B1\u03B9 \u03BD\u03B1 \u03B4\u03B5\u03AF\u03C4\u03B5 \u03B2\u03B1\u03C3\u03B9\u03BA\u03AD\u03C2 \u03C0\u03BB\u03B7\u03C1\u03BF\u03C6\u03BF\u03C1\u03AF\u03B5\u03C2.",
     "Vollbild an/aus": "\u0395\u03BD\u03B1\u03BB\u03BB\u03B1\u03B3\u03AE \u03C0\u03BB\u03AE\u03C1\u03BF\u03C5\u03C2 \u03BF\u03B8\u03CC\u03BD\u03B7\u03C2",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0391\u03C5\u03C4\u03CC \u03C4\u03BF \u03BA\u03BF\u03C5\u03BC\u03C0\u03AF \u03B5\u03BD\u03B5\u03C1\u03B3\u03BF\u03C0\u03BF\u03B9\u03B5\u03AF \u03AE \u03B1\u03C0\u03B5\u03BD\u03B5\u03C1\u03B3\u03BF\u03C0\u03BF\u03B9\u03B5\u03AF \u03C4\u03B7\u03BD \u03C0\u03BB\u03AE\u03C1\u03B7 \u03BF\u03B8\u03CC\u03BD\u03B7. \u0391\u03C5\u03C4\u03AE \u03C4\u03B7 \u03C3\u03C4\u03B9\u03B3\u03BC\u03AE \u03B5\u03AF\u03BD\u03B1\u03B9 \u03B1\u03C0\u03B5\u03BD\u03B5\u03C1\u03B3\u03BF\u03C0\u03BF\u03B9\u03B7\u03BC\u03AD\u03BD\u03B7.",
-    Eingabemodus: "\u039B\u03B5\u03B9\u03C4\u03BF\u03C5\u03C1\u03B3\u03AF\u03B1 \u03B5\u03B9\u03C3\u03B1\u03B3\u03C9\u03B3\u03AE\u03C2",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u03A7\u03C1\u03B7\u03C3\u03B9\u03BC\u03BF\u03C0\u03BF\u03B9\u03AE\u03C3\u03C4\u03B5 \u03B1\u03C5\u03C4\u03CC \u03C4\u03BF \u03BA\u03BF\u03C5\u03BC\u03C0\u03AF \u03B3\u03B9\u03B1 \u03B5\u03BD\u03B1\u03BB\u03BB\u03B1\u03B3\u03AE \u03BC\u03B5\u03C4\u03B1\u03BE\u03CD \u03C7\u03B5\u03B9\u03C1\u03B9\u03C3\u03BC\u03BF\u03CD \u03BC\u03B5 \u03C0\u03BF\u03BD\u03C4\u03AF\u03BA\u03B9 \u03BA\u03B1\u03B9 \u03B1\u03C6\u03AE\u03C2.",
-    "Dragging an/aus": "\u0395\u03BD\u03B1\u03BB\u03BB\u03B1\u03B3\u03AE \u03BC\u03B5\u03C4\u03B1\u03BA\u03AF\u03BD\u03B7\u03C3\u03B7\u03C2",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u03A3\u03C4\u03B7 \u03BB\u03B5\u03B9\u03C4\u03BF\u03C5\u03C1\u03B3\u03AF\u03B1 \u03B1\u03C6\u03AE\u03C2, \u03B1\u03C5\u03C4\u03CC \u03C4\u03BF \u03BA\u03BF\u03C5\u03BC\u03C0\u03AF \u03B1\u03BB\u03BB\u03AC\u03B6\u03B5\u03B9 \u03C4\u03BF\u03BD \u03C4\u03C1\u03CC\u03C0\u03BF \u03BC\u03B5 \u03C4\u03BF\u03BD \u03BF\u03C0\u03BF\u03AF\u03BF \u03C4\u03B1 \u03B1\u03BD\u03C4\u03B9\u03BA\u03B5\u03AF\u03BC\u03B5\u03BD\u03B1 \u03B1\u03BD\u03C4\u03B1\u03C0\u03BF\u03BA\u03C1\u03AF\u03BD\u03BF\u03BD\u03C4\u03B1\u03B9 \u03C3\u03C4\u03BF \u03AC\u03B3\u03B3\u03B9\u03B3\u03BC\u03B1.",
-    "Diagramm Men\xFC": "\u039C\u03B5\u03BD\u03BF\u03CD \u03B4\u03B9\u03B1\u03B3\u03C1\u03AC\u03BC\u03BC\u03B1\u03C4\u03BF\u03C2",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0391\u03C5\u03C4\u03CC \u03C4\u03BF \u03BA\u03BF\u03C5\u03BC\u03C0\u03AF \u03B1\u03BD\u03BF\u03AF\u03B3\u03B5\u03B9 \u03C4\u03BF \u03BC\u03B5\u03BD\u03BF\u03CD \u03B4\u03B9\u03B1\u03B3\u03C1\u03B1\u03BC\u03BC\u03AC\u03C4\u03C9\u03BD \u03C3\u03C4\u03B1 \u03B1\u03C1\u03B9\u03C3\u03C4\u03B5\u03C1\u03AC.",
     Kontextmen\u00FC: "\u039C\u03B5\u03BD\u03BF\u03CD \u03C0\u03B5\u03C1\u03B9\u03B2\u03AC\u03BB\u03BB\u03BF\u03BD\u03C4\u03BF\u03C2",
-    "Message Toast": "\u0395\u03B9\u03B4\u03BF\u03C0\u03BF\u03AF\u03B7\u03C3\u03B7 \u03BA\u03B1\u03C4\u03AC\u03C3\u03C4\u03B1\u03C3\u03B7\u03C2",
-    "Hier werden Statusmeldungen angezeigt.": "\u03A4\u03B1 \u03BC\u03B7\u03BD\u03CD\u03BC\u03B1\u03C4\u03B1 \u03BA\u03B1\u03C4\u03AC\u03C3\u03C4\u03B1\u03C3\u03B7\u03C2 \u03B5\u03BC\u03C6\u03B1\u03BD\u03AF\u03B6\u03BF\u03BD\u03C4\u03B1\u03B9 \u03B5\u03B4\u03CE.",
     best\u00E4tigen: "\u0395\u03C0\u03B9\u03B2\u03B5\u03B2\u03B1\u03AF\u03C9\u03C3\u03B7",
     "Aktion best\xE4tigen:": "\u0395\u03C0\u03B9\u03B2\u03B5\u03B2\u03B1\u03AF\u03C9\u03C3\u03B7 \u03B5\u03BD\u03AD\u03C1\u03B3\u03B5\u03B9\u03B1\u03C2:",
     Diagramme: "\u0394\u03B9\u03B1\u03B3\u03C1\u03AC\u03BC\u03BC\u03B1\u03C4\u03B1",
@@ -34133,8 +33875,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0388\u03BD\u03C4\u03B1\u03C3\u03B7 \u03C1\u03B5\u03CD\u03BC\u03B1\u03C4\u03BF\u03C2 \u03C0\u03B7\u03B3\u03AE\u03C2",
     "verbundenes Gemisch": "\u03A3\u03C5\u03BD\u03B4\u03B5\u03B4\u03B5\u03BC\u03AD\u03BD\u03BF \u03BC\u03B5\u03AF\u03B3\u03BC\u03B1",
     Elektrodenmaterial: "\u03A5\u03BB\u03B9\u03BA\u03CC \u03B7\u03BB\u03B5\u03BA\u03C4\u03C1\u03BF\u03B4\u03AF\u03BF\u03C5",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u03A7\u03C1\u03B7\u03C3\u03B9\u03BC\u03BF\u03C0\u03BF\u03B9\u03AE\u03C3\u03C4\u03B5 \u03B1\u03C5\u03C4\u03CC \u03C4\u03BF \u03BC\u03B5\u03BD\u03BF\u03CD \u03B3\u03B9\u03B1 \u03BD\u03B1 \u03B4\u03B7\u03BC\u03B9\u03BF\u03C5\u03C1\u03B3\u03AE\u03C3\u03B5\u03C4\u03B5 \u03BA\u03B1\u03B9 \u03BD\u03B1 \u03C0\u03C1\u03BF\u03BA\u03B1\u03B8\u03BF\u03C1\u03AF\u03C3\u03B5\u03C4\u03B5 \u03C7\u03B7\u03BC\u03B9\u03BA\u03AD\u03C2 \u03BF\u03C5\u03C3\u03AF\u03B5\u03C2 \u03BA\u03B1\u03B9 \u03C3\u03C5\u03C3\u03C4\u03B1\u03C4\u03B9\u03BA\u03AC.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u03A7\u03C1\u03B7\u03C3\u03B9\u03BC\u03BF\u03C0\u03BF\u03B9\u03AE\u03C3\u03C4\u03B5 \u03B1\u03C5\u03C4\u03CC \u03C4\u03BF \u03BC\u03B5\u03BD\u03BF\u03CD \u03B3\u03B9\u03B1 \u03BD\u03B1 \u03B5\u03C0\u03B9\u03BB\u03AD\u03BE\u03B5\u03C4\u03B5 \u03BA\u03B1\u03B9 \u03BD\u03B1 \u03C4\u03BF\u03C0\u03BF\u03B8\u03B5\u03C4\u03AE\u03C3\u03B5\u03C4\u03B5 \u03BD\u03AD\u03B1 \u03B1\u03BD\u03C4\u03B9\u03BA\u03B5\u03AF\u03BC\u03B5\u03BD\u03B1.",
     entfernen: "\u0391\u03C6\u03B1\u03AF\u03C1\u03B5\u03C3\u03B7",
     speichern: "\u0391\u03C0\u03BF\u03B8\u03AE\u03BA\u03B5\u03C5\u03C3\u03B7",
     "neues Molek\xFCl": "\u039D\u03AD\u03BF \u03BC\u03CC\u03C1\u03B9\u03BF",
@@ -34351,19 +34091,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u03A4\u03B1 \u03B5\u03C0\u03B9\u03BB\u03B5\u03B3\u03BC\u03AD\u03BD\u03B1 \u03C3\u03C5\u03C3\u03C4\u03B1\u03C4\u03B9\u03BA\u03AC \u03B4\u03B5\u03BD \u03B5\u03AF\u03BD\u03B1\u03B9 \u03C3\u03C5\u03BD\u03B4\u03B5\u03B4\u03B5\u03BC\u03AD\u03BD\u03B1."
   },
   hu: {
-    "Objekt-Kontextmen\xFC": "Objektum helyi men\xFCje",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Itt kezelheti az objektumot \xE9s tekintheti meg az alapvet\u0151 adatait.",
     "Vollbild an/aus": "Teljes k\xE9perny\u0151 be/ki",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Ezzel a gombbal be- \xE9s kikapcsolhat\xF3 a teljes k\xE9perny\u0151s m\xF3d. Jelenleg ki van kapcsolva.",
-    Eingabemodus: "Beviteli m\xF3d",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Ezzel a gombbal v\xE1lthat az eg\xE9r- \xE9s \xE9rint\xE9svez\xE9rl\xE9s k\xF6z\xF6tt.",
-    "Dragging an/aus": "H\xFAz\xE1s be/ki",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\xC9rint\xE9ses m\xF3dban ezzel a gombbal m\xF3dos\xEDthatja, hogyan reag\xE1lnak az objektumok az \xE9rint\xE9sre.",
-    "Diagramm Men\xFC": "Diagrammen\xFC",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Ezzel a gombbal nyithat\xF3 meg a bal oldali diagrammen\xFC.",
     Kontextmen\u00FC: "Helyi men\xFC",
-    "Message Toast": "\xC1llapot\xE9rtes\xEDt\xE9s",
-    "Hier werden Statusmeldungen angezeigt.": "Az \xE1llapot\xFCzenetek itt jelennek meg.",
     best\u00E4tigen: "Meger\u0151s\xEDt\xE9s",
     "Aktion best\xE4tigen:": "M\u0171velet meger\u0151s\xEDt\xE9se:",
     Diagramme: "Diagramok",
@@ -34423,8 +34152,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Forr\xE1s\xE1ram",
     "verbundenes Gemisch": "Csatlakoztatott kever\xE9k",
     Elektrodenmaterial: "Elektr\xF3da anyaga",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Ezzel a men\xFCvel vegyi anyagokat \xE9s \xF6sszetev\u0151ket hozhat l\xE9tre \xE9s \xE1ll\xEDthat el\u0151.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Ezzel a men\xFCvel \xFAj objektumokat v\xE1laszthat ki \xE9s helyezhet el.",
     entfernen: "Elt\xE1vol\xEDt\xE1s",
     speichern: "Ment\xE9s",
     "neues Molek\xFCl": "\xDAj molekula",
@@ -34641,19 +34368,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "A kiv\xE1lasztott \xF6sszetev\u0151k nincsenek \xF6sszek\xF6tve."
   },
   ga: {
-    "Objekt-Kontextmen\xFC": "Roghchl\xE1r comhth\xE9acs an r\xE9ada",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Bainistigh an r\xE9ad agus f\xE9ach ar bhuneolas faoi anseo.",
     "Vollbild an/aus": "Sc\xE1ile\xE1n ioml\xE1n ann n\xF3 as",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Cuireann an cnaipe seo an l\xE1nsc\xE1ile\xE1n ar si\xFAl n\xF3 as. T\xE1 s\xE9 d\xEDchumasaithe faoi l\xE1thair.",
-    Eingabemodus: "M\xF3d ionchuir",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\xDAs\xE1id an cnaipe seo le haistri\xFA idir rialuithe luiche agus rialuithe tadhaill.",
-    "Dragging an/aus": "Tarraingt ann n\xF3 as",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Sa mh\xF3d tadhaill, \xFAs\xE1id an cnaipe seo chun freagairt na r\xE9ad don teagmh\xE1il a athr\xFA.",
-    "Diagramm Men\xFC": "Roghchl\xE1r na gcairteacha",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Oscla\xEDonn an cnaipe seo roghchl\xE1r na gcairteacha ar chl\xE9.",
     Kontextmen\u00FC: "Roghchl\xE1r comhth\xE9acs",
-    "Message Toast": "F\xF3gra st\xE1dais",
-    "Hier werden Statusmeldungen angezeigt.": "Feictear teachtaireachta\xED st\xE1dais anseo.",
     best\u00E4tigen: "Deimhnigh",
     "Aktion best\xE4tigen:": "Deimhnigh an gn\xEDomh:",
     Diagramme: "Cairteacha",
@@ -34713,8 +34429,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Sruth na foinse",
     "verbundenes Gemisch": "Measc\xE1n nasctha",
     Elektrodenmaterial: "\xC1bhar leictreoide",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\xDAs\xE1id an roghchl\xE1r seo le substaint\xED ceimiceacha agus comhph\xE1irteanna a chruth\xFA agus a r\xE9amhshocr\xFA.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\xDAs\xE1id an roghchl\xE1r seo chun r\xE9ada nua a roghn\xFA agus a chur ina n-\xE1it.",
     entfernen: "Bain",
     speichern: "S\xE1bh\xE1il",
     "neues Molek\xFCl": "M\xF3il\xEDn nua",
@@ -34931,19 +34645,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "N\xEDl na comhph\xE1irteanna roghnaithe nasctha."
   },
   it: {
-    "Objekt-Kontextmen\xFC": "Menu contestuale dell\u2019oggetto",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Qui puoi gestire l\u2019oggetto e consultarne le informazioni di base.",
     "Vollbild an/aus": "Attiva o disattiva schermo intero",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Questo pulsante alterna la modalit\xE0 a schermo intero. Ora \xE8 disattivata.",
-    Eingabemodus: "Modalit\xE0 di input",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Usa questo pulsante per passare dal mouse ai comandi touch.",
-    "Dragging an/aus": "Attiva o disattiva il trascinamento",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "In modalit\xE0 touch, questo pulsante cambia la risposta degli oggetti al tocco.",
-    "Diagramm Men\xFC": "Menu dei grafici",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Questo pulsante apre il menu dei grafici a sinistra.",
     Kontextmen\u00FC: "Menu contestuale",
-    "Message Toast": "Notifica di stato",
-    "Hier werden Statusmeldungen angezeigt.": "I messaggi di stato appaiono qui.",
     best\u00E4tigen: "Conferma",
     "Aktion best\xE4tigen:": "Conferma l\u2019azione",
     Diagramme: "Grafici",
@@ -35003,8 +34706,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Corrente della sorgente",
     "verbundenes Gemisch": "Miscela collegata",
     Elektrodenmaterial: "Materiale dell\u2019elettrodo",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Usa questo menu per creare e preimpostare sostanze e componenti.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Usa questo menu per selezionare e posizionare nuovi oggetti.",
     entfernen: "Rimuovi",
     speichern: "Salva",
     "neues Molek\xFCl": "Nuova molecola",
@@ -35221,19 +34922,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "I componenti selezionati non sono collegati."
   },
   lv: {
-    "Objekt-Kontextmen\xFC": "Objekta kontekstizv\u0113lne",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0160eit varat p\u0101rvald\u012Bt objektu un skat\u012Bt t\u0101 pamatinform\u0101ciju.",
     "Vollbild an/aus": "Pilnekr\u0101na re\u017E\u012Bms iesl\u0113gts/izsl\u0113gts",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0160\u012B poga iesl\u0113dz vai izsl\u0113dz pilnekr\u0101na re\u017E\u012Bmu. Pa\u0161laik tas ir izsl\u0113gts.",
-    Eingabemodus: "Ievades re\u017E\u012Bms",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Ar \u0161o pogu var p\u0101rsl\u0113gties starp peles un sk\u0101rienvad\u012Bbu.",
-    "Dragging an/aus": "Vilk\u0161ana iesl\u0113gta/izsl\u0113gta",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Sk\u0101rienre\u017E\u012Bm\u0101 ar \u0161o pogu var main\u012Bt objektu reakciju uz piesk\u0101rieniem.",
-    "Diagramm Men\xFC": "Diagrammas izv\u0113lne",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0160\u012B poga atver diagrammas izv\u0113lni kreisaj\u0101 pus\u0113.",
     Kontextmen\u00FC: "Kontekstizv\u0113lne",
-    "Message Toast": "Statusa pazi\u0146ojums",
-    "Hier werden Statusmeldungen angezeigt.": "\u0160eit tiek par\u0101d\u012Bti statusa zi\u0146ojumi.",
     best\u00E4tigen: "Apstiprin\u0101t",
     "Aktion best\xE4tigen:": "Apstiprin\u0101t darb\u012Bbu:",
     Diagramme: "Diagrammas",
@@ -35293,8 +34983,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Avota str\u0101va",
     "verbundenes Gemisch": "Savienots mais\u012Bjums",
     Elektrodenmaterial: "Elektroda materi\u0101ls",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Izmantojiet \u0161o izv\u0113lni, lai izveidotu un iepriek\u0161 iestat\u012Btu \u0137\u012Bmiskas vielas un komponentus.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Izmantojiet \u0161o izv\u0113lni, lai atlas\u012Btu un novietotu jaunus objektus.",
     entfernen: "No\u0146emt",
     speichern: "Saglab\u0101t",
     "neues Molek\xFCl": "Jauna molekula",
@@ -35511,19 +35199,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Atlas\u012Btie komponenti nav savienoti."
   },
   lt: {
-    "Objekt-Kontextmen\xFC": "Objekto kontekstinis meniu",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u010Cia galite tvarkyti objekt\u0105 ir per\u017Ei\u016Br\u0117ti pagrindin\u0119 informacij\u0105 apie j\u012F.",
     "Vollbild an/aus": "Viso ekrano re\u017Eimas \u012Fjungtas / i\u0161jungtas",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0160iuo mygtuku \u012Fjungiamas arba i\u0161jungiamas viso ekrano re\u017Eimas. \u0160iuo metu jis i\u0161jungtas.",
-    Eingabemodus: "\u012Evesties re\u017Eimas",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0160iuo mygtuku perjunkite pel\u0117s ir lietimo valdym\u0105.",
-    "Dragging an/aus": "Vilkimas \u012Fjungtas / i\u0161jungtas",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Lietimo re\u017Eimu \u0161iuo mygtuku kei\u010Diama, kaip objektai reaguoja \u012F lietim\u0105.",
-    "Diagramm Men\xFC": "Diagramos meniu",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0160iuo mygtuku atidaromas kair\u0117je esantis diagramos meniu.",
     Kontextmen\u00FC: "Kontekstinis meniu",
-    "Message Toast": "B\u016Bsenos prane\u0161imas",
-    "Hier werden Statusmeldungen angezeigt.": "\u010Cia rodomi b\u016Bsenos prane\u0161imai.",
     best\u00E4tigen: "Patvirtinti",
     "Aktion best\xE4tigen:": "Patvirtinti veiksm\u0105:",
     Diagramme: "Diagramos",
@@ -35583,8 +35260,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0160altinio srov\u0117",
     "verbundenes Gemisch": "Prijungtas mi\u0161inys",
     Elektrodenmaterial: "Elektrodo med\u017Eiaga",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0160iuo meniu kurkite ir i\u0161 anksto nustatykite chemines med\u017Eiagas bei komponentus.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0160iuo meniu pasirinkite ir \u012Fd\u0117kite naujus objektus.",
     entfernen: "Pa\u0161alinti",
     speichern: "I\u0161saugoti",
     "neues Molek\xFCl": "Nauja molekul\u0117",
@@ -35801,19 +35476,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Pasirinkti komponentai nesujungti."
   },
   mt: {
-    "Objekt-Kontextmen\xFC": "Menu tal-kuntest tal-o\u0121\u0121ett",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Hawn tista\u2019 timmani\u0121\u0121ja l-o\u0121\u0121ett u tara l-informazzjoni ba\u017Cika dwaru.",
     "Vollbild an/aus": "Ixg\u0127el jew itfi l-iskrin s\u0127i\u0127",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Din il-buttuna taqleb il-modalit\xE0 tal-iskrin s\u0127i\u0127. B\u0127alissa mhix attiva.",
-    Eingabemodus: "Modalit\xE0 tad-d\u0127ul",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "U\u017Ca din il-buttuna biex taqleb bejn il-kontroll bil-maws u dak bil-mess.",
-    "Dragging an/aus": "Ippermetti jew waqqaf it-tkaxkir",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Fil-modalit\xE0 tal-mess, u\u017Ca din il-buttuna biex tibdel kif l-o\u0121\u0121etti jirrea\u0121ixxu g\u0127all-mess.",
-    "Diagramm Men\xFC": "Menu ta\u010B-\u010Barts",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Din il-buttuna tifta\u0127 il-menu ta\u010B-\u010Barts fuq ix-xellug.",
     Kontextmen\u00FC: "Menu tal-kuntest",
-    "Message Toast": "Notifika tal-istatus",
-    "Hier werden Statusmeldungen angezeigt.": "Il-messa\u0121\u0121i tal-istatus jidhru hawn.",
     best\u00E4tigen: "Ikkonferma",
     "Aktion best\xE4tigen:": "Ikkonferma l-azzjoni:",
     Diagramme: "\u010Aarts",
@@ -35873,8 +35537,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Kurrent tas-sors",
     "verbundenes Gemisch": "Ta\u0127lita konnessa",
     Elektrodenmaterial: "Materjal tal-elettrodu",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "U\u017Ca dan il-menu biex to\u0127loq u tissettja minn qabel sustanzi kimi\u010Bi u komponenti.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "U\u017Ca dan il-menu biex tag\u0127\u017Cel u tqieg\u0127ed o\u0121\u0121etti \u0121odda.",
     entfernen: "Ne\u0127\u0127i",
     speichern: "Issejvja",
     "neues Molek\xFCl": "Molekula \u0121dida",
@@ -36091,19 +35753,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Il-komponenti mag\u0127\u017Cula mhumiex konnessi."
   },
   pl: {
-    "Objekt-Kontextmen\xFC": "Menu kontekstowe obiektu",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Tu mo\u017Cna zarz\u0105dza\u0107 obiektem i przegl\u0105da\u0107 jego podstawowe informacje.",
     "Vollbild an/aus": "Prze\u0142\u0105cz pe\u0142ny ekran",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Ten przycisk prze\u0142\u0105cza tryb pe\u0142noekranowy. Obecnie jest wy\u0142\u0105czony.",
-    Eingabemodus: "Tryb wprowadzania",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Ten przycisk prze\u0142\u0105cza sterowanie mysz\u0105 i dotykiem.",
-    "Dragging an/aus": "Prze\u0142\u0105cz przeci\u0105ganie",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "W trybie dotykowym ten przycisk zmienia spos\xF3b reakcji obiekt\xF3w na dotyk.",
-    "Diagramm Men\xFC": "Menu wykres\xF3w",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Ten przycisk otwiera menu wykres\xF3w po lewej stronie.",
     Kontextmen\u00FC: "Menu kontekstowe",
-    "Message Toast": "Powiadomienie o stanie",
-    "Hier werden Statusmeldungen angezeigt.": "Tutaj pojawiaj\u0105 si\u0119 komunikaty o stanie.",
     best\u00E4tigen: "Potwierd\u017A",
     "Aktion best\xE4tigen:": "Potwierd\u017A dzia\u0142anie",
     Diagramme: "Wykresy",
@@ -36163,8 +35814,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Pr\u0105d \u017Ar\xF3d\u0142a",
     "verbundenes Gemisch": "Pod\u0142\u0105czona mieszanina",
     Elektrodenmaterial: "Materia\u0142 elektrody",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "U\u017Cyj tego menu, aby tworzy\u0107 i wst\u0119pnie konfigurowa\u0107 substancje oraz wyposa\u017Cenie.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "U\u017Cyj tego menu, aby wybiera\u0107 i umieszcza\u0107 nowe obiekty.",
     entfernen: "Usu\u0144",
     speichern: "Zapisz",
     "neues Molek\xFCl": "Nowa cz\u0105steczka",
@@ -36381,19 +36030,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Wybrane elementy nie s\u0105 po\u0142\u0105czone."
   },
   pt: {
-    "Objekt-Kontextmen\xFC": "Menu de contexto do objeto",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Aqui pode gerir o objeto e consultar informa\xE7\xF5es b\xE1sicas.",
     "Vollbild an/aus": "Alternar ecr\xE3 inteiro",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Este bot\xE3o ativa ou desativa o modo de ecr\xE3 inteiro. Est\xE1 desativado.",
-    Eingabemodus: "Modo de introdu\xE7\xE3o",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Use este bot\xE3o para alternar entre o rato e os controlos t\xE1teis.",
-    "Dragging an/aus": "Alternar arrastamento",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "No modo t\xE1til, este bot\xE3o altera a forma como os objetos respondem ao toque.",
-    "Diagramm Men\xFC": "Menu de gr\xE1ficos",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Este bot\xE3o abre o menu de gr\xE1ficos \xE0 esquerda.",
     Kontextmen\u00FC: "Menu de contexto",
-    "Message Toast": "Notifica\xE7\xE3o de estado",
-    "Hier werden Statusmeldungen angezeigt.": "As mensagens de estado aparecem aqui.",
     best\u00E4tigen: "Confirmar",
     "Aktion best\xE4tigen:": "Confirmar a\xE7\xE3o",
     Diagramme: "Gr\xE1ficos",
@@ -36453,8 +36091,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Corrente da fonte",
     "verbundenes Gemisch": "Mistura ligada",
     Elektrodenmaterial: "Material do el\xE9trodo",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Use este menu para criar e predefinir subst\xE2ncias e componentes.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Use este menu para selecionar e colocar novos objetos.",
     entfernen: "Remover",
     speichern: "Guardar",
     "neues Molek\xFCl": "Nova mol\xE9cula",
@@ -36671,19 +36307,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Os componentes selecionados n\xE3o est\xE3o ligados."
   },
   "pt-PT": {
-    "Objekt-Kontextmen\xFC": "Menu de contexto do objeto",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Aqui pode gerir o objeto e consultar informa\xE7\xF5es b\xE1sicas.",
     "Vollbild an/aus": "Alternar ecr\xE3 inteiro",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Este bot\xE3o ativa ou desativa o modo de ecr\xE3 inteiro. Est\xE1 desativado.",
-    Eingabemodus: "Modo de introdu\xE7\xE3o",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Use este bot\xE3o para alternar entre o rato e os controlos t\xE1teis.",
-    "Dragging an/aus": "Alternar arrastamento",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "No modo t\xE1til, este bot\xE3o altera a forma como os objetos respondem ao toque.",
-    "Diagramm Men\xFC": "Menu de gr\xE1ficos",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Este bot\xE3o abre o menu de gr\xE1ficos \xE0 esquerda.",
     Kontextmen\u00FC: "Menu de contexto",
-    "Message Toast": "Notifica\xE7\xE3o de estado",
-    "Hier werden Statusmeldungen angezeigt.": "As mensagens de estado aparecem aqui.",
     best\u00E4tigen: "Confirmar",
     "Aktion best\xE4tigen:": "Confirmar a\xE7\xE3o",
     Diagramme: "Gr\xE1ficos",
@@ -36743,8 +36368,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Corrente da fonte",
     "verbundenes Gemisch": "Mistura ligada",
     Elektrodenmaterial: "Material do el\xE9trodo",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Use este menu para criar e predefinir subst\xE2ncias e componentes.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Use este menu para selecionar e colocar novos objetos.",
     entfernen: "Remover",
     speichern: "Guardar",
     "neues Molek\xFCl": "Nova mol\xE9cula",
@@ -36961,19 +36584,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Os componentes selecionados n\xE3o est\xE3o ligados."
   },
   "pt-BR": {
-    "Objekt-Kontextmen\xFC": "Menu de contexto do objeto",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Aqui pode gerir o objeto e consultar informa\xE7\xF5es b\xE1sicas.",
     "Vollbild an/aus": "Alternar tela cheia",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Este bot\xE3o ativa ou desativa o modo de tela cheia. Est\xE1 desativado.",
-    Eingabemodus: "Modo de introdu\xE7\xE3o",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Use este bot\xE3o para alternar entre o mouse e os controles por toque.",
-    "Dragging an/aus": "Alternar arrastamento",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "No modo t\xE1til, este bot\xE3o altera a forma como os objetos respondem ao toque.",
-    "Diagramm Men\xFC": "Menu de gr\xE1ficos",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Este bot\xE3o abre o menu de gr\xE1ficos \xE0 esquerda.",
     Kontextmen\u00FC: "Menu de contexto",
-    "Message Toast": "Notifica\xE7\xE3o de estado",
-    "Hier werden Statusmeldungen angezeigt.": "As mensagens de estado aparecem aqui.",
     best\u00E4tigen: "Confirmar",
     "Aktion best\xE4tigen:": "Confirmar a\xE7\xE3o",
     Diagramme: "Gr\xE1ficos",
@@ -37033,8 +36645,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Corrente da fonte",
     "verbundenes Gemisch": "Mistura ligada",
     Elektrodenmaterial: "Material do eletrodo",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Use este menu para criar e predefinir subst\xE2ncias e componentes.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Use este menu para selecionar e colocar novos objetos.",
     entfernen: "Remover",
     speichern: "Salvar",
     "neues Molek\xFCl": "Nova mol\xE9cula",
@@ -37251,19 +36861,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Os componentes selecionados n\xE3o est\xE3o conectados."
   },
   ro: {
-    "Objekt-Kontextmen\xFC": "Meniul contextual al obiectului",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Aici pute\u021Bi gestiona obiectul \u0219i consulta informa\u021Biile de baz\u0103 despre acesta.",
     "Vollbild an/aus": "Comutare ecran complet",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Acest buton activeaz\u0103 \u0219i dezactiveaz\u0103 modul ecran complet. Momentan este dezactivat.",
-    Eingabemodus: "Mod de introducere",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Folosi\u021Bi acest buton pentru a comuta \xEEntre controlul cu mouse-ul \u0219i cel tactil.",
-    "Dragging an/aus": "Activare/dezactivare glisare",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\xCEn modul tactil, acest buton schimb\u0103 modul \xEEn care obiectele reac\u021Bioneaz\u0103 la atingere.",
-    "Diagramm Men\xFC": "Meniu diagram\u0103",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Acest buton deschide meniul diagramelor din st\xE2nga.",
     Kontextmen\u00FC: "Meniu contextual",
-    "Message Toast": "Notificare de stare",
-    "Hier werden Statusmeldungen angezeigt.": "Mesajele de stare apar aici.",
     best\u00E4tigen: "Confirmare",
     "Aktion best\xE4tigen:": "Confirm\u0103 ac\u021Biunea:",
     Diagramme: "Diagrame",
@@ -37323,8 +36922,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Curentul sursei",
     "verbundenes Gemisch": "Amestec conectat",
     Elektrodenmaterial: "Materialul electrodului",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Folosi\u021Bi acest meniu pentru a crea \u0219i predefini substan\u021Be chimice \u0219i componente.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Folosi\u021Bi acest meniu pentru a selecta \u0219i plasa obiecte noi.",
     entfernen: "Elimin\u0103",
     speichern: "Salveaz\u0103",
     "neues Molek\xFCl": "Molecul\u0103 nou\u0103",
@@ -37541,19 +37138,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Componentele selectate nu sunt conectate."
   },
   ru: {
-    "Objekt-Kontextmen\xFC": "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u043E\u0435 \u043C\u0435\u043D\u044E \u043E\u0431\u044A\u0435\u043A\u0442\u0430",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0417\u0434\u0435\u0441\u044C \u043C\u043E\u0436\u043D\u043E \u0443\u043F\u0440\u0430\u0432\u043B\u044F\u0442\u044C \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u043C \u0438 \u043F\u0440\u043E\u0441\u043C\u0430\u0442\u0440\u0438\u0432\u0430\u0442\u044C \u0441\u0432\u0435\u0434\u0435\u043D\u0438\u044F \u043E \u043D\u0451\u043C.",
     "Vollbild an/aus": "\u041F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043F\u043E\u043B\u043D\u043E\u044D\u043A\u0440\u0430\u043D\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u042D\u0442\u0430 \u043A\u043D\u043E\u043F\u043A\u0430 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0430\u0435\u0442 \u043F\u043E\u043B\u043D\u043E\u044D\u043A\u0440\u0430\u043D\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C. \u0421\u0435\u0439\u0447\u0430\u0441 \u043E\u043D \u043E\u0442\u043A\u043B\u044E\u0447\u0451\u043D.",
-    Eingabemodus: "\u0420\u0435\u0436\u0438\u043C \u0432\u0432\u043E\u0434\u0430",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u042D\u0442\u0430 \u043A\u043D\u043E\u043F\u043A\u0430 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0430\u0435\u0442 \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u043C\u044B\u0448\u044C\u044E \u0438 \u043A\u0430\u0441\u0430\u043D\u0438\u0435\u043C.",
-    "Dragging an/aus": "\u041F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043F\u0435\u0440\u0435\u0442\u0430\u0441\u043A\u0438\u0432\u0430\u043D\u0438\u0435",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0412 \u0441\u0435\u043D\u0441\u043E\u0440\u043D\u043E\u043C \u0440\u0435\u0436\u0438\u043C\u0435 \u044D\u0442\u0430 \u043A\u043D\u043E\u043F\u043A\u0430 \u043C\u0435\u043D\u044F\u0435\u0442 \u0440\u0435\u0430\u043A\u0446\u0438\u044E \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432 \u043D\u0430 \u043A\u0430\u0441\u0430\u043D\u0438\u0435.",
-    "Diagramm Men\xFC": "\u041C\u0435\u043D\u044E \u0433\u0440\u0430\u0444\u0438\u043A\u043E\u0432",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u042D\u0442\u0430 \u043A\u043D\u043E\u043F\u043A\u0430 \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u043C\u0435\u043D\u044E \u0433\u0440\u0430\u0444\u0438\u043A\u043E\u0432 \u0441\u043B\u0435\u0432\u0430.",
     Kontextmen\u00FC: "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u043E\u0435 \u043C\u0435\u043D\u044E",
-    "Message Toast": "\u0423\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u0435 \u043E \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0438",
-    "Hier werden Statusmeldungen angezeigt.": "\u0417\u0434\u0435\u0441\u044C \u043F\u043E\u044F\u0432\u043B\u044F\u044E\u0442\u0441\u044F \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043E \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0438.",
     best\u00E4tigen: "\u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044C",
     "Aktion best\xE4tigen:": "\u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044C \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435",
     Diagramme: "\u0413\u0440\u0430\u0444\u0438\u043A\u0438",
@@ -37613,8 +37199,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0422\u043E\u043A \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430",
     "verbundenes Gemisch": "\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D\u043D\u0430\u044F \u0441\u043C\u0435\u0441\u044C",
     Elektrodenmaterial: "\u041C\u0430\u0442\u0435\u0440\u0438\u0430\u043B \u044D\u043B\u0435\u043A\u0442\u0440\u043E\u0434\u0430",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0412 \u044D\u0442\u043E\u043C \u043C\u0435\u043D\u044E \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0437\u0434\u0430\u0432\u0430\u0442\u044C \u0438 \u0437\u0430\u0440\u0430\u043D\u0435\u0435 \u043D\u0430\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0442\u044C \u0432\u0435\u0449\u0435\u0441\u0442\u0432\u0430 \u0438 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u044B.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0412 \u044D\u0442\u043E\u043C \u043C\u0435\u043D\u044E \u043C\u043E\u0436\u043D\u043E \u0432\u044B\u0431\u0438\u0440\u0430\u0442\u044C \u0438 \u0440\u0430\u0437\u043C\u0435\u0449\u0430\u0442\u044C \u043D\u043E\u0432\u044B\u0435 \u043E\u0431\u044A\u0435\u043A\u0442\u044B.",
     entfernen: "\u0423\u0431\u0440\u0430\u0442\u044C",
     speichern: "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C",
     "neues Molek\xFCl": "\u041D\u043E\u0432\u0430\u044F \u043C\u043E\u043B\u0435\u043A\u0443\u043B\u0430",
@@ -37831,19 +37415,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0412\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0435 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u044B \u043D\u0435 \u0441\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u044B."
   },
   sk: {
-    "Objekt-Kontextmen\xFC": "Kontextov\xE1 ponuka objektu",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Tu m\xF4\u017Eete spravova\u0165 objekt a zobrazova\u0165 z\xE1kladn\xE9 inform\xE1cie.",
     "Vollbild an/aus": "Zapn\xFA\u0165/vypn\xFA\u0165 cel\xFA obrazovku",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "T\xFDmto tla\u010Didlom zapnete alebo vypnete re\u017Eim celej obrazovky. Moment\xE1lne je vypnut\xFD.",
-    Eingabemodus: "Re\u017Eim zad\xE1vania",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "T\xFDmto tla\u010Didlom m\xF4\u017Eete prep\xEDna\u0165 medzi ovl\xE1dan\xEDm my\u0161ou a dotykom.",
-    "Dragging an/aus": "Zapn\xFA\u0165/vypn\xFA\u0165 pres\xFAvanie",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "V dotykovom re\u017Eime t\xFDmto tla\u010Didlom zmen\xEDte reakciu objektov na dotyk.",
-    "Diagramm Men\xFC": "Ponuka grafu",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "T\xFDmto tla\u010Didlom otvor\xEDte ponuku grafu v\u013Eavo.",
     Kontextmen\u00FC: "Kontextov\xE1 ponuka",
-    "Message Toast": "Ozn\xE1menie o stave",
-    "Hier werden Statusmeldungen angezeigt.": "Tu sa zobrazuj\xFA stavov\xE9 spr\xE1vy.",
     best\u00E4tigen: "Potvrdi\u0165",
     "Aktion best\xE4tigen:": "Potvrdi\u0165 akciu:",
     Diagramme: "Grafy",
@@ -37903,8 +37476,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Pr\xFAd zdroja",
     "verbundenes Gemisch": "Pripojen\xE1 zmes",
     Elektrodenmaterial: "Materi\xE1l elektr\xF3dy",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Pomocou tejto ponuky vytv\xE1rajte a prednastavujte chemick\xE9 l\xE1tky a komponenty.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Pomocou tejto ponuky vyberajte a umiest\u0148ujte nov\xE9 objekty.",
     entfernen: "Odstr\xE1ni\u0165",
     speichern: "Ulo\u017Ei\u0165",
     "neues Molek\xFCl": "Nov\xE1 molekula",
@@ -38121,19 +37692,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Vybran\xE9 komponenty nie s\xFA prepojen\xE9."
   },
   sl: {
-    "Objekt-Kontextmen\xFC": "Kontekstni meni predmeta",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Tukaj lahko upravljate predmet in si ogledate osnovne informacije o njem.",
     "Vollbild an/aus": "Vklop/izklop celozaslonskega na\u010Dina",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Ta gumb vklopi ali izklopi celozaslonski na\u010Din. Trenutno je izklopljen.",
-    Eingabemodus: "Na\u010Din vnosa",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "S tem gumbom preklapljajte med upravljanjem z mi\u0161ko in dotikom.",
-    "Dragging an/aus": "Vklop/izklop vle\u010Denja",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "V na\u010Dinu dotika s tem gumbom spremenite odziv predmetov na dotik.",
-    "Diagramm Men\xFC": "Meni grafikona",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Ta gumb odpre meni grafikona na levi.",
     Kontextmen\u00FC: "Kontekstni meni",
-    "Message Toast": "Obvestilo o stanju",
-    "Hier werden Statusmeldungen angezeigt.": "Tukaj so prikazana sporo\u010Dila o stanju.",
     best\u00E4tigen: "Potrdi",
     "Aktion best\xE4tigen:": "Potrdi dejanje:",
     Diagramme: "Grafikoni",
@@ -38193,8 +37753,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Tok vira",
     "verbundenes Gemisch": "Povezana zmes",
     Elektrodenmaterial: "Material elektrode",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "S tem menijem ustvarite in prednastavite kemi\u010Dne snovi in komponente.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "S tem menijem izberite in postavite nove predmete.",
     entfernen: "Odstrani",
     speichern: "Shrani",
     "neues Molek\xFCl": "Nova molekula",
@@ -38411,19 +37969,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Izbrane komponente niso povezane."
   },
   es: {
-    "Objekt-Kontextmen\xFC": "Men\xFA contextual del objeto",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Aqu\xED puedes gestionar el objeto y consultar informaci\xF3n b\xE1sica.",
     "Vollbild an/aus": "Alternar pantalla completa",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Este bot\xF3n activa o desactiva la pantalla completa. Ahora est\xE1 desactivado.",
-    Eingabemodus: "Modo de entrada",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Usa este bot\xF3n para cambiar entre el rat\xF3n y los controles t\xE1ctiles.",
-    "Dragging an/aus": "Alternar el arrastre",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "En modo t\xE1ctil, este bot\xF3n cambia c\xF3mo responden los objetos al tacto.",
-    "Diagramm Men\xFC": "Men\xFA de gr\xE1ficos",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Este bot\xF3n abre el men\xFA de gr\xE1ficos de la izquierda.",
     Kontextmen\u00FC: "Men\xFA contextual",
-    "Message Toast": "Notificaci\xF3n de estado",
-    "Hier werden Statusmeldungen angezeigt.": "Aqu\xED aparecen los mensajes de estado.",
     best\u00E4tigen: "Confirmar",
     "Aktion best\xE4tigen:": "Confirmar acci\xF3n",
     Diagramme: "Gr\xE1ficos",
@@ -38483,8 +38030,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Corriente de la fuente",
     "verbundenes Gemisch": "Mezcla conectada",
     Elektrodenmaterial: "Material del electrodo",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Usa este men\xFA para crear y preconfigurar sustancias y componentes.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Usa este men\xFA para seleccionar y colocar objetos nuevos.",
     entfernen: "Quitar",
     speichern: "Guardar",
     "neues Molek\xFCl": "Nueva mol\xE9cula",
@@ -38701,19 +38246,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Los componentes seleccionados no est\xE1n conectados."
   },
   sv: {
-    "Objekt-Kontextmen\xFC": "Objektets snabbmeny",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "H\xE4r kan du hantera objektet och visa grundl\xE4ggande information om det.",
     "Vollbild an/aus": "V\xE4xla helsk\xE4rmsl\xE4ge",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Den h\xE4r knappen sl\xE5r p\xE5 och av helsk\xE4rmsl\xE4get. Det \xE4r f\xF6r n\xE4rvarande avst\xE4ngt.",
-    Eingabemodus: "Inmatningsl\xE4ge",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Anv\xE4nd den h\xE4r knappen f\xF6r att v\xE4xla mellan mus- och pekstyrning.",
-    "Dragging an/aus": "V\xE4xla dragning",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "I pekl\xE4get \xE4ndrar knappen hur objekt reagerar p\xE5 ber\xF6ring.",
-    "Diagramm Men\xFC": "Diagrammeny",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Knappen \xF6ppnar diagrammenyn till v\xE4nster.",
     Kontextmen\u00FC: "Snabbmeny",
-    "Message Toast": "Statusmeddelande",
-    "Hier werden Statusmeldungen angezeigt.": "Statusmeddelanden visas h\xE4r.",
     best\u00E4tigen: "Bekr\xE4fta",
     "Aktion best\xE4tigen:": "Bekr\xE4fta \xE5tg\xE4rd:",
     Diagramme: "Diagram",
@@ -38773,8 +38307,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "K\xE4llstr\xF6m",
     "verbundenes Gemisch": "Ansluten blandning",
     Elektrodenmaterial: "Elektrodmaterial",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Anv\xE4nd den h\xE4r menyn f\xF6r att skapa och f\xF6rinst\xE4lla kemiska \xE4mnen och komponenter.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Anv\xE4nd den h\xE4r menyn f\xF6r att v\xE4lja och placera nya objekt.",
     entfernen: "Ta bort",
     speichern: "Spara",
     "neues Molek\xFCl": "Ny molekyl",
@@ -38991,19 +38523,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "De valda komponenterna \xE4r inte anslutna."
   },
   fa: {
-    "Objekt-Kontextmen\xFC": "\u0645\u0646\u0648\u06CC \u0632\u0645\u06CC\u0646\u0647\u0654 \u0634\u06CC\u0621",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u062F\u0631 \u0627\u06CC\u0646\u062C\u0627 \u0634\u06CC\u0621 \u0631\u0627 \u0645\u062F\u06CC\u0631\u06CC\u062A \u06A9\u0646\u06CC\u062F \u0648 \u0627\u0637\u0644\u0627\u0639\u0627\u062A \u067E\u0627\u06CC\u0647\u0654 \u0622\u0646 \u0631\u0627 \u0628\u0628\u06CC\u0646\u06CC\u062F.",
     "Vollbild an/aus": "\u0631\u0648\u0634\u0646/\u062E\u0627\u0645\u0648\u0634 \u06A9\u0631\u062F\u0646 \u062A\u0645\u0627\u0645\u200C\u0635\u0641\u062D\u0647",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0627\u06CC\u0646 \u062F\u06A9\u0645\u0647 \u062D\u0627\u0644\u062A \u062A\u0645\u0627\u0645\u200C\u0635\u0641\u062D\u0647 \u0631\u0627 \u0631\u0648\u0634\u0646 \u06CC\u0627 \u062E\u0627\u0645\u0648\u0634 \u0645\u06CC\u200C\u06A9\u0646\u062F. \u062F\u0631 \u062D\u0627\u0644 \u062D\u0627\u0636\u0631 \u063A\u06CC\u0631\u0641\u0639\u0627\u0644 \u0627\u0633\u062A.",
-    Eingabemodus: "\u062D\u0627\u0644\u062A \u0648\u0631\u0648\u062F\u06CC",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0628\u0627 \u0627\u06CC\u0646 \u062F\u06A9\u0645\u0647 \u0628\u06CC\u0646 \u06A9\u0646\u062A\u0631\u0644 \u0628\u0627 \u0645\u0627\u0648\u0633 \u0648 \u0644\u0645\u0633 \u062C\u0627\u0628\u0647\u200C\u062C\u0627 \u0634\u0648\u06CC\u062F.",
-    "Dragging an/aus": "\u0631\u0648\u0634\u0646/\u062E\u0627\u0645\u0648\u0634 \u06A9\u0631\u062F\u0646 \u06A9\u0634\u06CC\u062F\u0646",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u062F\u0631 \u062D\u0627\u0644\u062A \u0644\u0645\u0633\u06CC\u060C \u0628\u0627 \u0627\u06CC\u0646 \u062F\u06A9\u0645\u0647 \u0646\u062D\u0648\u0647\u0654 \u0648\u0627\u06A9\u0646\u0634 \u0627\u0634\u06CC\u0627 \u0628\u0647 \u0644\u0645\u0633 \u0631\u0627 \u062A\u063A\u06CC\u06CC\u0631 \u062F\u0647\u06CC\u062F.",
-    "Diagramm Men\xFC": "\u0645\u0646\u0648\u06CC \u0646\u0645\u0648\u062F\u0627\u0631",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0627\u06CC\u0646 \u062F\u06A9\u0645\u0647 \u0645\u0646\u0648\u06CC \u0646\u0645\u0648\u062F\u0627\u0631 \u0631\u0627 \u062F\u0631 \u0633\u0645\u062A \u0686\u067E \u0628\u0627\u0632 \u0645\u06CC\u200C\u06A9\u0646\u062F.",
     Kontextmen\u00FC: "\u0645\u0646\u0648\u06CC \u0632\u0645\u06CC\u0646\u0647",
-    "Message Toast": "\u0627\u0639\u0644\u0627\u0646 \u0648\u0636\u0639\u06CC\u062A",
-    "Hier werden Statusmeldungen angezeigt.": "\u067E\u06CC\u0627\u0645\u200C\u0647\u0627\u06CC \u0648\u0636\u0639\u06CC\u062A \u0627\u06CC\u0646\u062C\u0627 \u0646\u0645\u0627\u06CC\u0634 \u062F\u0627\u062F\u0647 \u0645\u06CC\u200C\u0634\u0648\u0646\u062F.",
     best\u00E4tigen: "\u062A\u0623\u06CC\u06CC\u062F",
     "Aktion best\xE4tigen:": "\u062A\u0623\u06CC\u06CC\u062F \u06A9\u0646\u0634:",
     Diagramme: "\u0646\u0645\u0648\u062F\u0627\u0631\u0647\u0627",
@@ -39063,8 +38584,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u062C\u0631\u06CC\u0627\u0646 \u0645\u0646\u0628\u0639",
     "verbundenes Gemisch": "\u0645\u062E\u0644\u0648\u0637 \u0645\u062A\u0635\u0644",
     Elektrodenmaterial: "\u0645\u0627\u062F\u0647\u0654 \u0627\u0644\u06A9\u062A\u0631\u0648\u062F",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0627\u0632 \u0627\u06CC\u0646 \u0645\u0646\u0648 \u0628\u0631\u0627\u06CC \u0627\u06CC\u062C\u0627\u062F \u0648 \u0627\u0632 \u067E\u06CC\u0634 \u062A\u0639\u06CC\u06CC\u0646 \u06A9\u0631\u062F\u0646 \u0645\u0648\u0627\u062F \u0634\u06CC\u0645\u06CC\u0627\u06CC\u06CC \u0648 \u0627\u062C\u0632\u0627 \u0627\u0633\u062A\u0641\u0627\u062F\u0647 \u06A9\u0646\u06CC\u062F.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0627\u0632 \u0627\u06CC\u0646 \u0645\u0646\u0648 \u0628\u0631\u0627\u06CC \u0627\u0646\u062A\u062E\u0627\u0628 \u0648 \u0642\u0631\u0627\u0631 \u062F\u0627\u062F\u0646 \u0627\u0634\u06CC\u0627\u06CC \u062C\u062F\u06CC\u062F \u0627\u0633\u062A\u0641\u0627\u062F\u0647 \u06A9\u0646\u06CC\u062F.",
     entfernen: "\u062D\u0630\u0641",
     speichern: "\u0630\u062E\u06CC\u0631\u0647",
     "neues Molek\xFCl": "\u0645\u0648\u0644\u06A9\u0648\u0644 \u062C\u062F\u06CC\u062F",
@@ -39281,19 +38800,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0627\u062C\u0632\u0627\u06CC \u0627\u0646\u062A\u062E\u0627\u0628\u200C\u0634\u062F\u0647 \u0628\u0647 \u0647\u0645 \u0648\u0635\u0644 \u0646\u06CC\u0633\u062A\u0646\u062F."
   },
   hi: {
-    "Objekt-Kontextmen\xFC": "\u0935\u0938\u094D\u0924\u0941 \u0938\u0902\u0926\u0930\u094D\u092D \u092E\u0947\u0928\u0942",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u092F\u0939\u093E\u0901 \u0935\u0938\u094D\u0924\u0941 \u092A\u094D\u0930\u092C\u0902\u0927\u093F\u0924 \u0915\u0930\u0947\u0902 \u0914\u0930 \u0909\u0938\u0915\u0940 \u092E\u0942\u0932 \u091C\u093E\u0928\u0915\u093E\u0930\u0940 \u0926\u0947\u0916\u0947\u0902\u0964",
     "Vollbild an/aus": "\u092A\u0942\u0930\u094D\u0923 \u0938\u094D\u0915\u094D\u0930\u0940\u0928 \u091A\u093E\u0932\u0942/\u092C\u0902\u0926 \u0915\u0930\u0947\u0902",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u092F\u0939 \u092C\u091F\u0928 \u092A\u0942\u0930\u094D\u0923 \u0938\u094D\u0915\u094D\u0930\u0940\u0928 \u092E\u094B\u0921 \u091A\u093E\u0932\u0942 \u092F\u093E \u092C\u0902\u0926 \u0915\u0930\u0924\u093E \u0939\u0948\u0964 \u0905\u092D\u0940 \u0928\u093F\u0937\u094D\u0915\u094D\u0930\u093F\u092F \u0939\u0948\u0964",
-    Eingabemodus: "\u0907\u0928\u092A\u0941\u091F \u092E\u094B\u0921",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0907\u0938 \u092C\u091F\u0928 \u0938\u0947 \u092E\u093E\u0909\u0938 \u0914\u0930 \u091F\u091A \u0928\u093F\u092F\u0902\u0924\u094D\u0930\u0923 \u0915\u0947 \u092C\u0940\u091A \u092C\u0926\u0932\u0947\u0902\u0964",
-    "Dragging an/aus": "\u0916\u0940\u0902\u091A\u0928\u093E \u091A\u093E\u0932\u0942/\u092C\u0902\u0926 \u0915\u0930\u0947\u0902",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u091F\u091A \u092E\u094B\u0921 \u092E\u0947\u0902, \u0907\u0938 \u092C\u091F\u0928 \u0938\u0947 \u092C\u0926\u0932\u0947\u0902 \u0915\u093F \u0935\u0938\u094D\u0924\u0941\u090F\u0901 \u0938\u094D\u092A\u0930\u094D\u0936 \u092A\u0930 \u0915\u0948\u0938\u0947 \u092A\u094D\u0930\u0924\u093F\u0915\u094D\u0930\u093F\u092F\u093E \u0926\u0947\u0902\u0964",
-    "Diagramm Men\xFC": "\u0906\u0930\u0947\u0916 \u092E\u0947\u0928\u0942",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u092F\u0939 \u092C\u091F\u0928 \u092C\u093E\u0908\u0902 \u0913\u0930 \u0906\u0930\u0947\u0916 \u092E\u0947\u0928\u0942 \u0916\u094B\u0932\u0924\u093E \u0939\u0948\u0964",
     Kontextmen\u00FC: "\u0938\u0902\u0926\u0930\u094D\u092D \u092E\u0947\u0928\u0942",
-    "Message Toast": "\u0938\u094D\u0925\u093F\u0924\u093F \u0938\u0942\u091A\u0928\u093E",
-    "Hier werden Statusmeldungen angezeigt.": "\u0938\u094D\u0925\u093F\u0924\u093F \u0938\u0902\u0926\u0947\u0936 \u092F\u0939\u093E\u0901 \u0926\u093F\u0916\u093E\u0908 \u0926\u0947\u0924\u0947 \u0939\u0948\u0902\u0964",
     best\u00E4tigen: "\u092A\u0941\u0937\u094D\u091F\u093F \u0915\u0930\u0947\u0902",
     "Aktion best\xE4tigen:": "\u0915\u093E\u0930\u094D\u0930\u0935\u093E\u0908 \u0915\u0940 \u092A\u0941\u0937\u094D\u091F\u093F \u0915\u0930\u0947\u0902:",
     Diagramme: "\u0906\u0930\u0947\u0916",
@@ -39353,8 +38861,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0938\u094D\u0930\u094B\u0924 \u0927\u093E\u0930\u093E",
     "verbundenes Gemisch": "\u091C\u0941\u0921\u093C\u093E \u0939\u0941\u0906 \u092E\u093F\u0936\u094D\u0930\u0923",
     Elektrodenmaterial: "\u0907\u0932\u0947\u0915\u094D\u091F\u094D\u0930\u094B\u0921 \u0938\u093E\u092E\u0917\u094D\u0930\u0940",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0907\u0938 \u092E\u0947\u0928\u0942 \u0938\u0947 \u0930\u093E\u0938\u093E\u092F\u0928\u093F\u0915 \u092A\u0926\u093E\u0930\u094D\u0925 \u0914\u0930 \u0918\u091F\u0915 \u092C\u0928\u093E\u090F\u0901 \u0914\u0930 \u092A\u0939\u0932\u0947 \u0938\u0947 \u0928\u093F\u0930\u094D\u0927\u093E\u0930\u093F\u0924 \u0915\u0930\u0947\u0902\u0964",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0907\u0938 \u092E\u0947\u0928\u0942 \u0938\u0947 \u0928\u0908 \u0935\u0938\u094D\u0924\u0941\u090F\u0901 \u091A\u0941\u0928\u0947\u0902 \u0914\u0930 \u0909\u0928\u094D\u0939\u0947\u0902 \u0930\u0916\u0947\u0902\u0964",
     entfernen: "\u0939\u091F\u093E\u090F\u0901",
     speichern: "\u0938\u0939\u0947\u091C\u0947\u0902",
     "neues Molek\xFCl": "\u0928\u092F\u093E \u0905\u0923\u0941",
@@ -39571,19 +39077,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u091A\u0941\u0928\u0947 \u0917\u090F \u0918\u091F\u0915 \u091C\u0941\u0921\u093C\u0947 \u0939\u0941\u090F \u0928\u0939\u0940\u0902 \u0939\u0948\u0902\u0964"
   },
   ja: {
-    "Objekt-Kontextmen\xFC": "\u30AA\u30D6\u30B8\u30A7\u30AF\u30C8\u306E\u30B3\u30F3\u30C6\u30AD\u30B9\u30C8\u30E1\u30CB\u30E5\u30FC",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u3053\u3053\u3067\u30AA\u30D6\u30B8\u30A7\u30AF\u30C8\u3092\u7BA1\u7406\u3057\u3001\u57FA\u672C\u60C5\u5831\u3092\u78BA\u8A8D\u3067\u304D\u307E\u3059\u3002",
     "Vollbild an/aus": "\u5168\u753B\u9762\u8868\u793A\u306E\u5207\u308A\u66FF\u3048",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u3053\u306E\u30DC\u30BF\u30F3\u3067\u5168\u753B\u9762\u8868\u793A\u3092\u5207\u308A\u66FF\u3048\u307E\u3059\u3002\u73FE\u5728\u306F\u7121\u52B9\u3067\u3059\u3002",
-    Eingabemodus: "\u5165\u529B\u30E2\u30FC\u30C9",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u3053\u306E\u30DC\u30BF\u30F3\u3067\u30DE\u30A6\u30B9\u64CD\u4F5C\u3068\u30BF\u30C3\u30C1\u64CD\u4F5C\u3092\u5207\u308A\u66FF\u3048\u307E\u3059\u3002",
-    "Dragging an/aus": "\u30C9\u30E9\u30C3\u30B0\u306E\u5207\u308A\u66FF\u3048",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u30BF\u30C3\u30C1\u64CD\u4F5C\u6642\u306B\u3001\u30AA\u30D6\u30B8\u30A7\u30AF\u30C8\u306E\u30BF\u30C3\u30C1\u306B\u5BFE\u3059\u308B\u53CD\u5FDC\u3092\u5207\u308A\u66FF\u3048\u307E\u3059\u3002",
-    "Diagramm Men\xFC": "\u30B0\u30E9\u30D5\u30E1\u30CB\u30E5\u30FC",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u3053\u306E\u30DC\u30BF\u30F3\u3067\u5DE6\u5074\u306E\u30B0\u30E9\u30D5\u30E1\u30CB\u30E5\u30FC\u3092\u958B\u304D\u307E\u3059\u3002",
     Kontextmen\u00FC: "\u30B3\u30F3\u30C6\u30AD\u30B9\u30C8\u30E1\u30CB\u30E5\u30FC",
-    "Message Toast": "\u72B6\u614B\u901A\u77E5",
-    "Hier werden Statusmeldungen angezeigt.": "\u72B6\u614B\u3092\u793A\u3059\u30E1\u30C3\u30BB\u30FC\u30B8\u304C\u3053\u3053\u306B\u8868\u793A\u3055\u308C\u307E\u3059\u3002",
     best\u00E4tigen: "\u78BA\u8A8D",
     "Aktion best\xE4tigen:": "\u64CD\u4F5C\u3092\u78BA\u8A8D",
     Diagramme: "\u30B0\u30E9\u30D5",
@@ -39643,8 +39138,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u96FB\u6E90\u96FB\u6D41",
     "verbundenes Gemisch": "\u63A5\u7D9A\u3057\u305F\u6DF7\u5408\u7269",
     Elektrodenmaterial: "\u96FB\u6975\u6750\u6599",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u3053\u306E\u30E1\u30CB\u30E5\u30FC\u3067\u5316\u5B66\u7269\u8CEA\u3084\u90E8\u54C1\u3092\u4F5C\u6210\u3057\u3001\u3042\u3089\u304B\u3058\u3081\u8A2D\u5B9A\u3067\u304D\u307E\u3059\u3002",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u3053\u306E\u30E1\u30CB\u30E5\u30FC\u3067\u65B0\u3057\u3044\u30AA\u30D6\u30B8\u30A7\u30AF\u30C8\u3092\u9078\u629E\u3057\u3001\u914D\u7F6E\u3067\u304D\u307E\u3059\u3002",
     entfernen: "\u53D6\u308A\u9664\u304F",
     speichern: "\u4FDD\u5B58",
     "neues Molek\xFCl": "\u65B0\u3057\u3044\u5206\u5B50",
@@ -39861,19 +39354,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u9078\u629E\u3057\u305F\u90E8\u54C1\u306F\u63A5\u7D9A\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002"
   },
   ko: {
-    "Objekt-Kontextmen\xFC": "\uAC1C\uCCB4 \uC0C1\uD669\uC5D0 \uB9DE\uB294 \uBA54\uB274",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\uC5EC\uAE30\uC5D0\uC11C \uAC1C\uCCB4\uB97C \uAD00\uB9AC\uD558\uACE0 \uAE30\uBCF8 \uC815\uBCF4\uB97C \uBCFC \uC218 \uC788\uC2B5\uB2C8\uB2E4.",
     "Vollbild an/aus": "\uC804\uCCB4 \uD654\uBA74 \uC804\uD658",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\uC774 \uBC84\uD2BC\uC73C\uB85C \uC804\uCCB4 \uD654\uBA74 \uBAA8\uB4DC\uB97C \uC804\uD658\uD569\uB2C8\uB2E4. \uD604\uC7AC \uBE44\uD65C\uC131 \uC0C1\uD0DC\uC785\uB2C8\uB2E4.",
-    Eingabemodus: "\uC785\uB825 \uBAA8\uB4DC",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\uC774 \uBC84\uD2BC\uC73C\uB85C \uB9C8\uC6B0\uC2A4 \uC870\uC791\uACFC \uD130\uCE58 \uC870\uC791\uC744 \uC804\uD658\uD569\uB2C8\uB2E4.",
-    "Dragging an/aus": "\uB04C\uAE30 \uC804\uD658",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\uD130\uCE58 \uBAA8\uB4DC\uC5D0\uC11C \uAC1C\uCCB4\uAC00 \uD130\uCE58\uC5D0 \uBC18\uC751\uD558\uB294 \uBC29\uC2DD\uC744 \uBC14\uAFC9\uB2C8\uB2E4.",
-    "Diagramm Men\xFC": "\uCC28\uD2B8 \uBA54\uB274",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\uC774 \uBC84\uD2BC\uC73C\uB85C \uC67C\uCABD \uCC28\uD2B8 \uBA54\uB274\uB97C \uC5FD\uB2C8\uB2E4.",
     Kontextmen\u00FC: "\uC0C1\uD669\uC5D0 \uB9DE\uB294 \uBA54\uB274",
-    "Message Toast": "\uC0C1\uD0DC \uC54C\uB9BC",
-    "Hier werden Statusmeldungen angezeigt.": "\uC0C1\uD0DC \uBA54\uC2DC\uC9C0\uAC00 \uC5EC\uAE30\uC5D0 \uD45C\uC2DC\uB429\uB2C8\uB2E4.",
     best\u00E4tigen: "\uD655\uC778",
     "Aktion best\xE4tigen:": "\uB3D9\uC791 \uD655\uC778",
     Diagramme: "\uCC28\uD2B8",
@@ -39933,8 +39415,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\uC804\uC6D0 \uC804\uB958",
     "verbundenes Gemisch": "\uC5F0\uACB0\uB41C \uD63C\uD569\uBB3C",
     Elektrodenmaterial: "\uC804\uADF9 \uC7AC\uB8CC",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\uC774 \uBA54\uB274\uC5D0\uC11C \uD654\uD559 \uBB3C\uC9C8\uACFC \uAD6C\uC131 \uC694\uC18C\uB97C \uB9CC\uB4E4\uACE0 \uBBF8\uB9AC \uC124\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\uC774 \uBA54\uB274\uC5D0\uC11C \uC0C8 \uAC1C\uCCB4\uB97C \uC120\uD0DD\uD574 \uBC30\uCE58\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.",
     entfernen: "\uC81C\uAC70",
     speichern: "\uC800\uC7A5",
     "neues Molek\xFCl": "\uC0C8 \uBD84\uC790",
@@ -40151,19 +39631,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\uC120\uD0DD\uD55C \uAD6C\uC131 \uC694\uC18C\uAC00 \uC5F0\uACB0\uB418\uC5B4 \uC788\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."
   },
   no: {
-    "Objekt-Kontextmen\xFC": "Objektets kontekstmeny",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Her kan du administrere objektet og vise grunnleggende informasjon om det.",
     "Vollbild an/aus": "Sl\xE5 fullskjerm av/p\xE5",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Denne knappen sl\xE5r fullskjermmodus av og p\xE5. Den er deaktivert n\xE5.",
-    Eingabemodus: "Inndatamodus",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Bruk denne knappen til \xE5 bytte mellom mus- og ber\xF8ringsstyring.",
-    "Dragging an/aus": "Sl\xE5 draing av/p\xE5",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "I ber\xF8ringsmodus endrer denne knappen hvordan objekter reagerer p\xE5 ber\xF8ring.",
-    "Diagramm Men\xFC": "Diagrammeny",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Denne knappen \xE5pner diagrammenyen til venstre.",
     Kontextmen\u00FC: "Kontekstmeny",
-    "Message Toast": "Statusmelding",
-    "Hier werden Statusmeldungen angezeigt.": "Statusmeldinger vises her.",
     best\u00E4tigen: "Bekreft",
     "Aktion best\xE4tigen:": "Bekreft handling:",
     Diagramme: "Diagrammer",
@@ -40223,8 +39692,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Kildestr\xF8m",
     "verbundenes Gemisch": "Tilkoblet blanding",
     Elektrodenmaterial: "Elektrodemateriale",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Bruk denne menyen til \xE5 opprette og forh\xE5ndsdefinere kjemiske stoffer og komponenter.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Bruk denne menyen til \xE5 velge og plassere nye objekter.",
     entfernen: "Fjern",
     speichern: "Lagre",
     "neues Molek\xFCl": "Nytt molekyl",
@@ -40441,19 +39908,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "De valgte komponentene er ikke koblet sammen."
   },
   nb: {
-    "Objekt-Kontextmen\xFC": "Objektets kontekstmeny",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Her kan du administrere objektet og vise grunnleggende informasjon om det.",
     "Vollbild an/aus": "Sl\xE5 fullskjerm av/p\xE5",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Denne knappen sl\xE5r fullskjermmodus av og p\xE5. Den er deaktivert n\xE5.",
-    Eingabemodus: "Inndatamodus",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Bruk denne knappen til \xE5 bytte mellom mus- og ber\xF8ringsstyring.",
-    "Dragging an/aus": "Sl\xE5 draing av/p\xE5",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "I ber\xF8ringsmodus endrer denne knappen hvordan objekter reagerer p\xE5 ber\xF8ring.",
-    "Diagramm Men\xFC": "Diagrammeny",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Denne knappen \xE5pner diagrammenyen til venstre.",
     Kontextmen\u00FC: "Kontekstmeny",
-    "Message Toast": "Statusmelding",
-    "Hier werden Statusmeldungen angezeigt.": "Statusmeldinger vises her.",
     best\u00E4tigen: "Bekreft",
     "Aktion best\xE4tigen:": "Bekreft handling:",
     Diagramme: "Diagrammer",
@@ -40513,8 +39969,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Kildestr\xF8m",
     "verbundenes Gemisch": "Tilkoblet blanding",
     Elektrodenmaterial: "Elektrodemateriale",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Bruk denne menyen til \xE5 opprette og forh\xE5ndsdefinere kjemiske stoffer og komponenter.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Bruk denne menyen til \xE5 velge og plassere nye objekter.",
     entfernen: "Fjern",
     speichern: "Lagre",
     "neues Molek\xFCl": "Nytt molekyl",
@@ -40731,19 +40185,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "De valgte komponentene er ikke koblet sammen."
   },
   nn: {
-    "Objekt-Kontextmen\xFC": "Objektets kontekstmeny",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Her kan du handsame objektet og vise grunnleggjande informasjon om det.",
     "Vollbild an/aus": "Sl\xE5 fullskjerm av/p\xE5",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Denne knappen sl\xE5r fullskjermsmodus av og p\xE5. Han er deaktivert no.",
-    Eingabemodus: "Innskrivingsmodus",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Bruk denne knappen til \xE5 veksle mellom mus- og trykkstyring.",
-    "Dragging an/aus": "Sl\xE5 draing av/p\xE5",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "I trykkmodus endrar denne knappen korleis objekt reagerer p\xE5 trykk.",
-    "Diagramm Men\xFC": "Diagrammeny",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Denne knappen \xE5pner diagrammenyen til venstre.",
     Kontextmen\u00FC: "Kontekstmeny",
-    "Message Toast": "Statusmelding",
-    "Hier werden Statusmeldungen angezeigt.": "Statusmeldinger vises her.",
     best\u00E4tigen: "Stadfest",
     "Aktion best\xE4tigen:": "Stadfest handling:",
     Diagramme: "Diagrammer",
@@ -40803,8 +40246,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Kildestr\xF8m",
     "verbundenes Gemisch": "Tilkopla blanding",
     Elektrodenmaterial: "Elektrodemateriale",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Bruk denne menyen til \xE5 opprette og forh\xE5ndsdefinere kjemiske stoffer og komponenter.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Bruk denne menyen til \xE5 velge og plassere nye objekter.",
     entfernen: "Fjern",
     speichern: "Lagre",
     "neues Molek\xFCl": "Nytt molekyl",
@@ -41021,19 +40462,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Dei valde komponentane er ikkje kopla saman."
   },
   tr: {
-    "Objekt-Kontextmen\xFC": "Nesne ba\u011Flam men\xFCs\xFC",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Buradan nesneyi y\xF6netebilir ve temel bilgilerini g\xF6r\xFCnt\xFCleyebilirsiniz.",
     "Vollbild an/aus": "Tam ekran\u0131 a\xE7/kapat",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Bu d\xFC\u011Fme tam ekran modunu a\xE7\u0131p kapat\u0131r. \u015Eu anda devre d\u0131\u015F\u0131.",
-    Eingabemodus: "Giri\u015F modu",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Fare ve dokunmatik kontroller aras\u0131nda ge\xE7i\u015F yapmak i\xE7in bu d\xFC\u011Fmeyi kullan\u0131n.",
-    "Dragging an/aus": "S\xFCr\xFCklemeyi a\xE7/kapat",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Dokunmatik modda bu d\xFC\u011Fme nesnelerin dokunu\u015Flara verdi\u011Fi tepkiyi de\u011Fi\u015Ftirir.",
-    "Diagramm Men\xFC": "Grafik men\xFCs\xFC",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Bu d\xFC\u011Fme soldaki grafik men\xFCs\xFCn\xFC a\xE7ar.",
     Kontextmen\u00FC: "Ba\u011Flam men\xFCs\xFC",
-    "Message Toast": "Durum bildirimi",
-    "Hier werden Statusmeldungen angezeigt.": "Durum mesajlar\u0131 burada g\xF6r\xFCn\xFCr.",
     best\u00E4tigen: "Onayla",
     "Aktion best\xE4tigen:": "Eylemi onayla:",
     Diagramme: "Grafikler",
@@ -41093,8 +40523,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Kaynak ak\u0131m\u0131",
     "verbundenes Gemisch": "Ba\u011Fl\u0131 kar\u0131\u015F\u0131m",
     Elektrodenmaterial: "Elektrot malzemesi",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Kimyasal maddeler ve bile\u015Fenler olu\u015Fturup \xF6nceden ayarlamak i\xE7in bu men\xFCy\xFC kullan\u0131n.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Yeni nesneleri se\xE7ip yerle\u015Ftirmek i\xE7in bu men\xFCy\xFC kullan\u0131n.",
     entfernen: "Kald\u0131r",
     speichern: "Kaydet",
     "neues Molek\xFCl": "Yeni molek\xFCl",
@@ -41311,19 +40739,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Se\xE7ilen bile\u015Fenler ba\u011Fl\u0131 de\u011Fil."
   },
   uk: {
-    "Objekt-Kontextmen\xFC": "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u0435 \u043C\u0435\u043D\u044E \u043E\u0431\u2019\u0454\u043A\u0442\u0430",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0422\u0443\u0442 \u043C\u043E\u0436\u043D\u0430 \u043A\u0435\u0440\u0443\u0432\u0430\u0442\u0438 \u043E\u0431\u2019\u0454\u043A\u0442\u043E\u043C \u0456 \u043F\u0435\u0440\u0435\u0433\u043B\u044F\u0434\u0430\u0442\u0438 \u043E\u0441\u043D\u043E\u0432\u043D\u0443 \u0456\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0456\u044E \u043F\u0440\u043E \u043D\u044C\u043E\u0433\u043E.",
     "Vollbild an/aus": "\u0423\u0432\u0456\u043C\u043A\u043D\u0443\u0442\u0438/\u0432\u0438\u043C\u043A\u043D\u0443\u0442\u0438 \u043F\u043E\u0432\u043D\u043E\u0435\u043A\u0440\u0430\u043D\u043D\u0438\u0439 \u0440\u0435\u0436\u0438\u043C",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0426\u044F \u043A\u043D\u043E\u043F\u043A\u0430 \u0432\u043C\u0438\u043A\u0430\u0454 \u0442\u0430 \u0432\u0438\u043C\u0438\u043A\u0430\u0454 \u043F\u043E\u0432\u043D\u043E\u0435\u043A\u0440\u0430\u043D\u043D\u0438\u0439 \u0440\u0435\u0436\u0438\u043C. \u041D\u0430\u0440\u0430\u0437\u0456 \u0439\u043E\u0433\u043E \u0432\u0438\u043C\u043A\u043D\u0435\u043D\u043E.",
-    Eingabemodus: "\u0420\u0435\u0436\u0438\u043C \u0432\u0432\u0435\u0434\u0435\u043D\u043D\u044F",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0426\u0456\u0454\u044E \u043A\u043D\u043E\u043F\u043A\u043E\u044E \u043C\u043E\u0436\u043D\u0430 \u043F\u0435\u0440\u0435\u043C\u0438\u043A\u0430\u0442\u0438\u0441\u044F \u043C\u0456\u0436 \u043A\u0435\u0440\u0443\u0432\u0430\u043D\u043D\u044F\u043C \u043C\u0438\u0448\u0435\u044E \u0442\u0430 \u0434\u043E\u0442\u0438\u043A\u043E\u043C.",
-    "Dragging an/aus": "\u0423\u0432\u0456\u043C\u043A\u043D\u0443\u0442\u0438/\u0432\u0438\u043C\u043A\u043D\u0443\u0442\u0438 \u043F\u0435\u0440\u0435\u0442\u044F\u0433\u0443\u0432\u0430\u043D\u043D\u044F",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0423 \u0440\u0435\u0436\u0438\u043C\u0456 \u0434\u043E\u0442\u0438\u043A\u0443 \u0446\u044F \u043A\u043D\u043E\u043F\u043A\u0430 \u0437\u043C\u0456\u043D\u044E\u0454 \u0440\u0435\u0430\u043A\u0446\u0456\u044E \u043E\u0431\u2019\u0454\u043A\u0442\u0456\u0432 \u043D\u0430 \u0434\u043E\u0442\u0438\u043A\u0438.",
-    "Diagramm Men\xFC": "\u041C\u0435\u043D\u044E \u0434\u0456\u0430\u0433\u0440\u0430\u043C",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0426\u044F \u043A\u043D\u043E\u043F\u043A\u0430 \u0432\u0456\u0434\u043A\u0440\u0438\u0432\u0430\u0454 \u043C\u0435\u043D\u044E \u0434\u0456\u0430\u0433\u0440\u0430\u043C \u043B\u0456\u0432\u043E\u0440\u0443\u0447.",
     Kontextmen\u00FC: "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u0435 \u043C\u0435\u043D\u044E",
-    "Message Toast": "\u0421\u043F\u043E\u0432\u0456\u0449\u0435\u043D\u043D\u044F \u043F\u0440\u043E \u0441\u0442\u0430\u043D",
-    "Hier werden Statusmeldungen angezeigt.": "\u0422\u0443\u0442 \u0432\u0456\u0434\u043E\u0431\u0440\u0430\u0436\u0430\u044E\u0442\u044C\u0441\u044F \u043F\u043E\u0432\u0456\u0434\u043E\u043C\u043B\u0435\u043D\u043D\u044F \u043F\u0440\u043E \u0441\u0442\u0430\u043D.",
     best\u00E4tigen: "\u041F\u0456\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u0438",
     "Aktion best\xE4tigen:": "\u041F\u0456\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u0438 \u0434\u0456\u044E:",
     Diagramme: "\u0414\u0456\u0430\u0433\u0440\u0430\u043C\u0438",
@@ -41383,8 +40800,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0421\u0442\u0440\u0443\u043C \u0434\u0436\u0435\u0440\u0435\u043B\u0430",
     "verbundenes Gemisch": "\u0417\u2019\u0454\u0434\u043D\u0430\u043D\u0430 \u0441\u0443\u043C\u0456\u0448",
     Elektrodenmaterial: "\u041C\u0430\u0442\u0435\u0440\u0456\u0430\u043B \u0435\u043B\u0435\u043A\u0442\u0440\u043E\u0434\u0430",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0412\u0438\u043A\u043E\u0440\u0438\u0441\u0442\u043E\u0432\u0443\u0439\u0442\u0435 \u0446\u0435 \u043C\u0435\u043D\u044E, \u0449\u043E\u0431 \u0441\u0442\u0432\u043E\u0440\u044E\u0432\u0430\u0442\u0438 \u0439 \u043F\u043E\u043F\u0435\u0440\u0435\u0434\u043D\u044C\u043E \u043D\u0430\u043B\u0430\u0448\u0442\u043E\u0432\u0443\u0432\u0430\u0442\u0438 \u0445\u0456\u043C\u0456\u0447\u043D\u0456 \u0440\u0435\u0447\u043E\u0432\u0438\u043D\u0438 \u0442\u0430 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0438.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0412\u0438\u043A\u043E\u0440\u0438\u0441\u0442\u043E\u0432\u0443\u0439\u0442\u0435 \u0446\u0435 \u043C\u0435\u043D\u044E, \u0449\u043E\u0431 \u0432\u0438\u0431\u0438\u0440\u0430\u0442\u0438 \u0442\u0430 \u0440\u043E\u0437\u043C\u0456\u0449\u0443\u0432\u0430\u0442\u0438 \u043D\u043E\u0432\u0456 \u043E\u0431\u2019\u0454\u043A\u0442\u0438.",
     entfernen: "\u0412\u0438\u043B\u0443\u0447\u0438\u0442\u0438",
     speichern: "\u0417\u0431\u0435\u0440\u0435\u0433\u0442\u0438",
     "neues Molek\xFCl": "\u041D\u043E\u0432\u0430 \u043C\u043E\u043B\u0435\u043A\u0443\u043B\u0430",
@@ -41601,19 +41016,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0412\u0438\u0431\u0440\u0430\u043D\u0456 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0438 \u043D\u0435 \u0437\u2019\u0454\u0434\u043D\u0430\u043D\u0456."
   },
   sr: {
-    "Objekt-Kontextmen\xFC": "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u0438 \u043C\u0435\u043D\u0438 \u043E\u0431\u0458\u0435\u043A\u0442\u0430",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u041E\u0432\u0434\u0435 \u043C\u043E\u0436\u0435\u0442\u0435 \u0443\u043F\u0440\u0430\u0432\u0459\u0430\u0442\u0438 \u043E\u0431\u0458\u0435\u043A\u0442\u043E\u043C \u0438 \u0432\u0438\u0434\u0435\u0442\u0438 \u043E\u0441\u043D\u043E\u0432\u043D\u0435 \u043F\u043E\u0434\u0430\u0442\u043A\u0435.",
     "Vollbild an/aus": "\u0423\u043A\u0459\u0443\u0447\u0438 \u0438\u043B\u0438 \u0438\u0441\u043A\u0459\u0443\u0447\u0438 \u0446\u0435\u043E \u0435\u043A\u0440\u0430\u043D",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u041E\u0432\u043E \u0434\u0443\u0433\u043C\u0435 \u043C\u0435\u045A\u0430 \u0440\u0435\u0436\u0438\u043C \u043F\u0440\u0435\u043A\u043E \u0446\u0435\u043B\u043E\u0433 \u0435\u043A\u0440\u0430\u043D\u0430. \u0422\u0440\u0435\u043D\u0443\u0442\u043D\u043E \u0458\u0435 \u043E\u043D\u0435\u043C\u043E\u0433\u0443\u045B\u0435\u043D\u043E.",
-    Eingabemodus: "\u0420\u0435\u0436\u0438\u043C \u0443\u043D\u043E\u0441\u0430",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u041E\u0432\u0438\u043C \u0434\u0443\u0433\u043C\u0435\u0442\u043E\u043C \u043F\u0440\u0435\u043B\u0430\u0437\u0438\u0442\u0435 \u0438\u0437\u043C\u0435\u0452\u0443 \u043C\u0438\u0448\u0430 \u0438 \u043A\u043E\u043C\u0430\u043D\u0434\u0438 \u043D\u0430 \u0434\u043E\u0434\u0438\u0440.",
-    "Dragging an/aus": "\u0423\u043A\u0459\u0443\u0447\u0438 \u0438\u043B\u0438 \u0438\u0441\u043A\u0459\u0443\u0447\u0438 \u043F\u0440\u0435\u0432\u043B\u0430\u0447\u0435\u045A\u0435",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0423 \u0440\u0435\u0436\u0438\u043C\u0443 \u0434\u043E\u0434\u0438\u0440\u0430 \u043E\u0432\u043E \u0434\u0443\u0433\u043C\u0435 \u043C\u0435\u045A\u0430 \u043A\u0430\u043A\u043E \u043E\u0431\u0458\u0435\u043A\u0442\u0438 \u0440\u0435\u0430\u0433\u0443\u0458\u0443 \u043D\u0430 \u0434\u043E\u0434\u0438\u0440.",
-    "Diagramm Men\xFC": "\u041C\u0435\u043D\u0438 \u0433\u0440\u0430\u0444\u0438\u043A\u043E\u043D\u0430",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u041E\u0432\u043E \u0434\u0443\u0433\u043C\u0435 \u043E\u0442\u0432\u0430\u0440\u0430 \u043C\u0435\u043D\u0438 \u0433\u0440\u0430\u0444\u0438\u043A\u043E\u043D\u0430 \u043D\u0430 \u043B\u0435\u0432\u043E\u0458 \u0441\u0442\u0440\u0430\u043D\u0438.",
     Kontextmen\u00FC: "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u0438 \u043C\u0435\u043D\u0438",
-    "Message Toast": "\u041E\u0431\u0430\u0432\u0435\u0448\u0442\u0435\u045A\u0435 \u043E \u0441\u0442\u0430\u045A\u0443",
-    "Hier werden Statusmeldungen angezeigt.": "\u041E\u0432\u0434\u0435 \u0441\u0435 \u043F\u0440\u0438\u043A\u0430\u0437\u0443\u0458\u0443 \u043F\u043E\u0440\u0443\u043A\u0435 \u043E \u0441\u0442\u0430\u045A\u0443.",
     best\u00E4tigen: "\u041F\u043E\u0442\u0432\u0440\u0434\u0438",
     "Aktion best\xE4tigen:": "\u041F\u043E\u0442\u0432\u0440\u0434\u0438 \u0440\u0430\u0434\u045A\u0443",
     Diagramme: "\u0413\u0440\u0430\u0444\u0438\u043A\u043E\u043D\u0438",
@@ -41673,8 +41077,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0421\u0442\u0440\u0443\u0458\u0430 \u0438\u0437\u0432\u043E\u0440\u0430",
     "verbundenes Gemisch": "\u041F\u043E\u0432\u0435\u0437\u0430\u043D\u0430 \u0441\u043C\u0435\u0448\u0430",
     Elektrodenmaterial: "\u041C\u0430\u0442\u0435\u0440\u0438\u0458\u0430\u043B \u0435\u043B\u0435\u043A\u0442\u0440\u043E\u0434\u0435",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0423 \u043E\u0432\u043E\u043C \u043C\u0435\u043D\u0438\u0458\u0443 \u043C\u043E\u0436\u0435\u0442\u0435 \u043D\u0430\u043F\u0440\u0430\u0432\u0438\u0442\u0438 \u0438 \u0443\u043D\u0430\u043F\u0440\u0435\u0434 \u043F\u043E\u0434\u0435\u0441\u0438\u0442\u0438 \u0441\u0443\u043F\u0441\u0442\u0430\u043D\u0446\u0435 \u0438 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0435.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0423 \u043E\u0432\u043E\u043C \u043C\u0435\u043D\u0438\u0458\u0443 \u043C\u043E\u0436\u0435\u0442\u0435 \u0438\u0437\u0430\u0431\u0440\u0430\u0442\u0438 \u0438 \u043F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u0438 \u043D\u043E\u0432\u0435 \u043E\u0431\u0458\u0435\u043A\u0442\u0435.",
     entfernen: "\u0423\u043A\u043B\u043E\u043D\u0438",
     speichern: "\u0421\u0430\u0447\u0443\u0432\u0430\u0458",
     "neues Molek\xFCl": "\u041D\u043E\u0432\u0438 \u043C\u043E\u043B\u0435\u043A\u0443\u043B",
@@ -41891,19 +41293,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0418\u0437\u0430\u0431\u0440\u0430\u043D\u0435 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0435 \u043D\u0438\u0441\u0443 \u043F\u043E\u0432\u0435\u0437\u0430\u043D\u0435."
   },
   "sr-Cyrl": {
-    "Objekt-Kontextmen\xFC": "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u0438 \u043C\u0435\u043D\u0438 \u043E\u0431\u0458\u0435\u043A\u0442\u0430",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u041E\u0432\u0434\u0435 \u043C\u043E\u0436\u0435\u0442\u0435 \u0443\u043F\u0440\u0430\u0432\u0459\u0430\u0442\u0438 \u043E\u0431\u0458\u0435\u043A\u0442\u043E\u043C \u0438 \u0432\u0438\u0434\u0435\u0442\u0438 \u043E\u0441\u043D\u043E\u0432\u043D\u0435 \u043F\u043E\u0434\u0430\u0442\u043A\u0435.",
     "Vollbild an/aus": "\u0423\u043A\u0459\u0443\u0447\u0438 \u0438\u043B\u0438 \u0438\u0441\u043A\u0459\u0443\u0447\u0438 \u0446\u0435\u043E \u0435\u043A\u0440\u0430\u043D",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u041E\u0432\u043E \u0434\u0443\u0433\u043C\u0435 \u043C\u0435\u045A\u0430 \u0440\u0435\u0436\u0438\u043C \u043F\u0440\u0435\u043A\u043E \u0446\u0435\u043B\u043E\u0433 \u0435\u043A\u0440\u0430\u043D\u0430. \u0422\u0440\u0435\u043D\u0443\u0442\u043D\u043E \u0458\u0435 \u043E\u043D\u0435\u043C\u043E\u0433\u0443\u045B\u0435\u043D\u043E.",
-    Eingabemodus: "\u0420\u0435\u0436\u0438\u043C \u0443\u043D\u043E\u0441\u0430",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u041E\u0432\u0438\u043C \u0434\u0443\u0433\u043C\u0435\u0442\u043E\u043C \u043F\u0440\u0435\u043B\u0430\u0437\u0438\u0442\u0435 \u0438\u0437\u043C\u0435\u0452\u0443 \u043C\u0438\u0448\u0430 \u0438 \u043A\u043E\u043C\u0430\u043D\u0434\u0438 \u043D\u0430 \u0434\u043E\u0434\u0438\u0440.",
-    "Dragging an/aus": "\u0423\u043A\u0459\u0443\u0447\u0438 \u0438\u043B\u0438 \u0438\u0441\u043A\u0459\u0443\u0447\u0438 \u043F\u0440\u0435\u0432\u043B\u0430\u0447\u0435\u045A\u0435",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0423 \u0440\u0435\u0436\u0438\u043C\u0443 \u0434\u043E\u0434\u0438\u0440\u0430 \u043E\u0432\u043E \u0434\u0443\u0433\u043C\u0435 \u043C\u0435\u045A\u0430 \u043A\u0430\u043A\u043E \u043E\u0431\u0458\u0435\u043A\u0442\u0438 \u0440\u0435\u0430\u0433\u0443\u0458\u0443 \u043D\u0430 \u0434\u043E\u0434\u0438\u0440.",
-    "Diagramm Men\xFC": "\u041C\u0435\u043D\u0438 \u0433\u0440\u0430\u0444\u0438\u043A\u043E\u043D\u0430",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u041E\u0432\u043E \u0434\u0443\u0433\u043C\u0435 \u043E\u0442\u0432\u0430\u0440\u0430 \u043C\u0435\u043D\u0438 \u0433\u0440\u0430\u0444\u0438\u043A\u043E\u043D\u0430 \u043D\u0430 \u043B\u0435\u0432\u043E\u0458 \u0441\u0442\u0440\u0430\u043D\u0438.",
     Kontextmen\u00FC: "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u0438 \u043C\u0435\u043D\u0438",
-    "Message Toast": "\u041E\u0431\u0430\u0432\u0435\u0448\u0442\u0435\u045A\u0435 \u043E \u0441\u0442\u0430\u045A\u0443",
-    "Hier werden Statusmeldungen angezeigt.": "\u041E\u0432\u0434\u0435 \u0441\u0435 \u043F\u0440\u0438\u043A\u0430\u0437\u0443\u0458\u0443 \u043F\u043E\u0440\u0443\u043A\u0435 \u043E \u0441\u0442\u0430\u045A\u0443.",
     best\u00E4tigen: "\u041F\u043E\u0442\u0432\u0440\u0434\u0438",
     "Aktion best\xE4tigen:": "\u041F\u043E\u0442\u0432\u0440\u0434\u0438 \u0440\u0430\u0434\u045A\u0443",
     Diagramme: "\u0413\u0440\u0430\u0444\u0438\u043A\u043E\u043D\u0438",
@@ -41963,8 +41354,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0421\u0442\u0440\u0443\u0458\u0430 \u0438\u0437\u0432\u043E\u0440\u0430",
     "verbundenes Gemisch": "\u041F\u043E\u0432\u0435\u0437\u0430\u043D\u0430 \u0441\u043C\u0435\u0448\u0430",
     Elektrodenmaterial: "\u041C\u0430\u0442\u0435\u0440\u0438\u0458\u0430\u043B \u0435\u043B\u0435\u043A\u0442\u0440\u043E\u0434\u0435",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0423 \u043E\u0432\u043E\u043C \u043C\u0435\u043D\u0438\u0458\u0443 \u043C\u043E\u0436\u0435\u0442\u0435 \u043D\u0430\u043F\u0440\u0430\u0432\u0438\u0442\u0438 \u0438 \u0443\u043D\u0430\u043F\u0440\u0435\u0434 \u043F\u043E\u0434\u0435\u0441\u0438\u0442\u0438 \u0441\u0443\u043F\u0441\u0442\u0430\u043D\u0446\u0435 \u0438 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0435.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0423 \u043E\u0432\u043E\u043C \u043C\u0435\u043D\u0438\u0458\u0443 \u043C\u043E\u0436\u0435\u0442\u0435 \u0438\u0437\u0430\u0431\u0440\u0430\u0442\u0438 \u0438 \u043F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u0438 \u043D\u043E\u0432\u0435 \u043E\u0431\u0458\u0435\u043A\u0442\u0435.",
     entfernen: "\u0423\u043A\u043B\u043E\u043D\u0438",
     speichern: "\u0421\u0430\u0447\u0443\u0432\u0430\u0458",
     "neues Molek\xFCl": "\u041D\u043E\u0432\u0438 \u043C\u043E\u043B\u0435\u043A\u0443\u043B",
@@ -42181,19 +41570,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0418\u0437\u0430\u0431\u0440\u0430\u043D\u0435 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0435 \u043D\u0438\u0441\u0443 \u043F\u043E\u0432\u0435\u0437\u0430\u043D\u0435."
   },
   "sr-Latn": {
-    "Objekt-Kontextmen\xFC": "Kontekstni meni objekta",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Ovde mo\u017Eete upravljati objektom i videti osnovne podatke.",
     "Vollbild an/aus": "Uklju\u010Di ili isklju\u010Di ceo ekran",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Ovo dugme menja re\u017Eim preko celog ekrana. Trenutno je onemogu\u0107eno.",
-    Eingabemodus: "Re\u017Eim unosa",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Ovim dugmetom prelazite izme\u0111u mi\u0161a i komandi na dodir.",
-    "Dragging an/aus": "Uklju\u010Di ili isklju\u010Di prevla\u010Denje",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "U re\u017Eimu dodira ovo dugme menja kako objekti reaguju na dodir.",
-    "Diagramm Men\xFC": "Meni grafikona",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Ovo dugme otvara meni grafikona na levoj strani.",
     Kontextmen\u00FC: "Kontekstni meni",
-    "Message Toast": "Obave\u0161tenje o stanju",
-    "Hier werden Statusmeldungen angezeigt.": "Ovde se prikazuju poruke o stanju.",
     best\u00E4tigen: "Potvrdi",
     "Aktion best\xE4tigen:": "Potvrdi radnju",
     Diagramme: "Grafikoni",
@@ -42253,8 +41631,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Struja izvora",
     "verbundenes Gemisch": "Povezana sme\u0161a",
     Elektrodenmaterial: "Materijal elektrode",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "U ovom meniju mo\u017Eete napraviti i unapred podesiti supstance i komponente.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "U ovom meniju mo\u017Eete izabrati i postaviti nove objekte.",
     entfernen: "Ukloni",
     speichern: "Sa\u010Duvaj",
     "neues Molek\xFCl": "Novi molekul",
@@ -42471,19 +41847,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Izabrane komponente nisu povezane."
   },
   "sr-ijekavsk": {
-    "Objekt-Kontextmen\xFC": "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u0438 \u043C\u0435\u043D\u0438 \u043E\u0431\u0458\u0435\u043A\u0442\u0430",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u041E\u0432\u0434\u0458\u0435 \u043C\u043E\u0436\u0435\u0442\u0435 \u0443\u043F\u0440\u0430\u0432\u0459\u0430\u0442\u0438 \u043E\u0431\u0458\u0435\u043A\u0442\u043E\u043C \u0438 \u0432\u0438\u0434\u0458\u0435\u0442\u0438 \u043E\u0441\u043D\u043E\u0432\u043D\u0435 \u043F\u043E\u0434\u0430\u0442\u043A\u0435.",
     "Vollbild an/aus": "\u0423\u043A\u0459\u0443\u0447\u0438 \u0438\u043B\u0438 \u0438\u0441\u043A\u0459\u0443\u0447\u0438 \u0446\u0438\u043E \u0435\u043A\u0440\u0430\u043D",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u041E\u0432\u043E \u0434\u0443\u0433\u043C\u0435 \u043C\u0435\u045A\u0430 \u0440\u0435\u0436\u0438\u043C \u043F\u0440\u0435\u043A\u043E \u0446\u0438\u0458\u0435\u043B\u043E\u0433 \u0435\u043A\u0440\u0430\u043D\u0430. \u0422\u0440\u0435\u043D\u0443\u0442\u043D\u043E \u0458\u0435 \u043E\u043D\u0435\u043C\u043E\u0433\u0443\u045B\u0435\u043D\u043E.",
-    Eingabemodus: "\u0420\u0435\u0436\u0438\u043C \u0443\u043D\u043E\u0441\u0430",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u041E\u0432\u0438\u043C \u0434\u0443\u0433\u043C\u0435\u0442\u043E\u043C \u043F\u0440\u0435\u043B\u0430\u0437\u0438\u0442\u0435 \u0438\u0437\u043C\u0435\u0452\u0443 \u043C\u0438\u0448\u0430 \u0438 \u043A\u043E\u043C\u0430\u043D\u0434\u0438 \u043D\u0430 \u0434\u043E\u0434\u0438\u0440.",
-    "Dragging an/aus": "\u0423\u043A\u0459\u0443\u0447\u0438 \u0438\u043B\u0438 \u0438\u0441\u043A\u0459\u0443\u0447\u0438 \u043F\u0440\u0435\u0432\u043B\u0430\u0447\u0435\u045A\u0435",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0423 \u0440\u0435\u0436\u0438\u043C\u0443 \u0434\u043E\u0434\u0438\u0440\u0430 \u043E\u0432\u043E \u0434\u0443\u0433\u043C\u0435 \u043C\u0435\u045A\u0430 \u043A\u0430\u043A\u043E \u043E\u0431\u0458\u0435\u043A\u0442\u0438 \u0440\u0435\u0430\u0433\u0443\u0458\u0443 \u043D\u0430 \u0434\u043E\u0434\u0438\u0440.",
-    "Diagramm Men\xFC": "\u041C\u0435\u043D\u0438 \u0433\u0440\u0430\u0444\u0438\u043A\u043E\u043D\u0430",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u041E\u0432\u043E \u0434\u0443\u0433\u043C\u0435 \u043E\u0442\u0432\u0430\u0440\u0430 \u043C\u0435\u043D\u0438 \u0433\u0440\u0430\u0444\u0438\u043A\u043E\u043D\u0430 \u043D\u0430 \u043B\u0438\u0458\u0435\u0432\u043E\u0458 \u0441\u0442\u0440\u0430\u043D\u0438.",
     Kontextmen\u00FC: "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u0438 \u043C\u0435\u043D\u0438",
-    "Message Toast": "\u041E\u0431\u0430\u0432\u0458\u0435\u0448\u0442\u0435\u045A\u0435 \u043E \u0441\u0442\u0430\u045A\u0443",
-    "Hier werden Statusmeldungen angezeigt.": "\u041E\u0432\u0434\u0458\u0435 \u0441\u0435 \u043F\u0440\u0438\u043A\u0430\u0437\u0443\u0458\u0443 \u043F\u043E\u0440\u0443\u043A\u0435 \u043E \u0441\u0442\u0430\u045A\u0443.",
     best\u00E4tigen: "\u041F\u043E\u0442\u0432\u0440\u0434\u0438",
     "Aktion best\xE4tigen:": "\u041F\u043E\u0442\u0432\u0440\u0434\u0438 \u0440\u0430\u0434\u045A\u0443",
     Diagramme: "\u0413\u0440\u0430\u0444\u0438\u043A\u043E\u043D\u0438",
@@ -42543,8 +41908,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0421\u0442\u0440\u0443\u0458\u0430 \u0438\u0437\u0432\u043E\u0440\u0430",
     "verbundenes Gemisch": "\u041F\u043E\u0432\u0435\u0437\u0430\u043D\u0430 \u0441\u043C\u0458\u0435\u0448\u0430",
     Elektrodenmaterial: "\u041C\u0430\u0442\u0435\u0440\u0438\u0458\u0430\u043B \u0435\u043B\u0435\u043A\u0442\u0440\u043E\u0434\u0435",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0423 \u043E\u0432\u043E\u043C \u043C\u0435\u043D\u0438\u0458\u0443 \u043C\u043E\u0436\u0435\u0442\u0435 \u043D\u0430\u043F\u0440\u0430\u0432\u0438\u0442\u0438 \u0438 \u0443\u043D\u0430\u043F\u0440\u0435\u0434 \u043F\u043E\u0434\u0435\u0441\u0438\u0442\u0438 \u0441\u0443\u043F\u0441\u0442\u0430\u043D\u0446\u0435 \u0438 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0435.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0423 \u043E\u0432\u043E\u043C \u043C\u0435\u043D\u0438\u0458\u0443 \u043C\u043E\u0436\u0435\u0442\u0435 \u0438\u0437\u0430\u0431\u0440\u0430\u0442\u0438 \u0438 \u043F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u0438 \u043D\u043E\u0432\u0435 \u043E\u0431\u0458\u0435\u043A\u0442\u0435.",
     entfernen: "\u0423\u043A\u043B\u043E\u043D\u0438",
     speichern: "\u0421\u0430\u0447\u0443\u0432\u0430\u0458",
     "neues Molek\xFCl": "\u041D\u043E\u0432\u0438 \u043C\u043E\u043B\u0435\u043A\u0443\u043B",
@@ -42761,19 +42124,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0418\u0437\u0430\u0431\u0440\u0430\u043D\u0435 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0435 \u043D\u0438\u0441\u0443 \u043F\u043E\u0432\u0435\u0437\u0430\u043D\u0435."
   },
   cnr: {
-    "Objekt-Kontextmen\xFC": "Kontekstni meni objekta",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Ovdje mo\u017Eete upravljati objektom i vidjeti osnovne podatke.",
     "Vollbild an/aus": "Uklju\u010Di ili isklju\u010Di cio ekran",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Ovo dugme menja re\u017Eim preko cijelog ekrana. Trenutno je onemogu\u0107eno.",
-    Eingabemodus: "Re\u017Eim unosa",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Ovim dugmetom prelazite izme\u0111u mi\u0161a i komandi na dodir.",
-    "Dragging an/aus": "Uklju\u010Di ili isklju\u010Di prevla\u010Denje",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "U re\u017Eimu dodira ovo dugme menja kako objekti reaguju na dodir.",
-    "Diagramm Men\xFC": "Meni grafikona",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Ovo dugme otvara meni grafikona na lijevoj strani.",
     Kontextmen\u00FC: "Kontekstni meni",
-    "Message Toast": "Obavje\u0161tenje o stanju",
-    "Hier werden Statusmeldungen angezeigt.": "Ovdje se prikazuju poruke o stanju.",
     best\u00E4tigen: "Potvrdi",
     "Aktion best\xE4tigen:": "Potvrdi radnju",
     Diagramme: "Grafikoni",
@@ -42833,8 +42185,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Struja izvora",
     "verbundenes Gemisch": "Povezana smje\u0161a",
     Elektrodenmaterial: "Materijal elektrode",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "U ovom meniju mo\u017Eete napraviti i unapred podesiti supstance i komponente.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "U ovom meniju mo\u017Eete izabrati i postaviti nove objekte.",
     entfernen: "Ukloni",
     speichern: "Sa\u010Duvaj",
     "neues Molek\xFCl": "Novi molekul",
@@ -43051,19 +42401,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Izabrane komponente nisu povezane."
   },
   sq: {
-    "Objekt-Kontextmen\xFC": "Menyja kontekstuale e objektit",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "K\xEBtu mund ta menaxhosh objektin dhe t\xEB shoh\xEBsh informacionet kryesore p\xEBr t\xEB.",
     "Vollbild an/aus": "Aktivizo ose \xE7aktivizo ekranin e plot\xEB",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Ky buton aktivizon ose \xE7aktivizon ekranin e plot\xEB. P\xEBr momentin \xEBsht\xEB i \xE7aktivizuar.",
-    Eingabemodus: "M\xEBnyra e hyrjes",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "P\xEBrdor k\xEBt\xEB buton p\xEBr t\xEB kaluar nga kontrolli me maus te kontrolli me prekje dhe anasjelltas.",
-    "Dragging an/aus": "Aktivizo ose \xE7aktivizo t\xEBrheqjen",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "N\xEB m\xEBnyr\xEBn me prekje, p\xEBrdor k\xEBt\xEB buton p\xEBr t\xEB ndryshuar m\xEBnyr\xEBn si reagojn\xEB objektet ndaj prekjes.",
-    "Diagramm Men\xFC": "Menyja e grafik\xEBve",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Ky buton hap menyn\xEB e grafik\xEBve n\xEB t\xEB majt\xEB.",
     Kontextmen\u00FC: "Menyja kontekstuale",
-    "Message Toast": "Njoftim p\xEBr gjendjen",
-    "Hier werden Statusmeldungen angezeigt.": "Mesazhet e gjendjes shfaqen k\xEBtu.",
     best\u00E4tigen: "Konfirmo",
     "Aktion best\xE4tigen:": "Konfirmo veprimin:",
     Diagramme: "Grafik\xEB",
@@ -43123,8 +42462,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Rryma e burimit",
     "verbundenes Gemisch": "P\xEBrzierja e lidhur",
     Elektrodenmaterial: "Materiali i elektrod\xEBs",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "P\xEBrdor k\xEBt\xEB meny p\xEBr t\xEB krijuar dhe paracaktuar substanca kimike dhe p\xEBrb\xEBr\xEBs.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "P\xEBrdor k\xEBt\xEB meny p\xEBr t\xEB zgjedhur dhe vendosur objekte t\xEB reja.",
     entfernen: "Hiq",
     speichern: "Ruaj",
     "neues Molek\xFCl": "Molekul\xEB e re",
@@ -43341,19 +42678,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "P\xEBrb\xEBr\xEBsit e zgjedhur nuk jan\xEB t\xEB lidhur."
   },
   mk: {
-    "Objekt-Kontextmen\xFC": "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u043E \u043C\u0435\u043D\u0438 \u043D\u0430 \u043E\u0431\u0458\u0435\u043A\u0442\u043E\u0442",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0422\u0443\u043A\u0430 \u0443\u043F\u0440\u0430\u0432\u0443\u0432\u0430\u0458 \u0441\u043E \u043E\u0431\u0458\u0435\u043A\u0442\u043E\u0442 \u0438 \u043F\u0440\u0435\u0433\u043B\u0435\u0434\u0430\u0458 \u0433\u0438 \u043E\u0441\u043D\u043E\u0432\u043D\u0438\u0442\u0435 \u0438\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438 \u0437\u0430 \u043D\u0435\u0433\u043E.",
     "Vollbild an/aus": "\u0412\u043A\u043B\u0443\u0447\u0438 \u0438\u043B\u0438 \u0438\u0441\u043A\u043B\u0443\u0447\u0438 \u0446\u0435\u043B \u0435\u043A\u0440\u0430\u043D",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0421\u043E \u043E\u0432\u0430 \u043A\u043E\u043F\u0447\u0435 \u0441\u0435 \u0432\u043A\u043B\u0443\u0447\u0443\u0432\u0430 \u0438\u043B\u0438 \u0438\u0441\u043A\u043B\u0443\u0447\u0443\u0432\u0430 \u043F\u0440\u0438\u043A\u0430\u0437\u043E\u0442 \u043D\u0430 \u0446\u0435\u043B \u0435\u043A\u0440\u0430\u043D. \u0412\u043E \u043C\u043E\u043C\u0435\u043D\u0442\u043E\u0432 \u0435 \u043E\u043D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u0435\u043D.",
-    Eingabemodus: "\u0420\u0435\u0436\u0438\u043C \u043D\u0430 \u0432\u043D\u0435\u0441\u0443\u0432\u0430\u045A\u0435",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0421\u043E \u043E\u0432\u0430 \u043A\u043E\u043F\u0447\u0435 \u043F\u0440\u0435\u0444\u0440\u043B\u0438 \u0441\u0435 \u043F\u043E\u043C\u0435\u0453\u0443 \u0443\u043F\u0440\u0430\u0432\u0443\u0432\u0430\u045A\u0435 \u0441\u043E \u0433\u043B\u0443\u0432\u0447\u0435 \u0438 \u0441\u043E \u0434\u043E\u043F\u0438\u0440.",
-    "Dragging an/aus": "\u0412\u043A\u043B\u0443\u0447\u0438 \u0438\u043B\u0438 \u0438\u0441\u043A\u043B\u0443\u0447\u0438 \u0432\u043B\u0435\u0447\u0435\u045A\u0435",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0412\u043E \u0440\u0435\u0436\u0438\u043C \u043D\u0430 \u0434\u043E\u043F\u0438\u0440, \u043A\u043E\u0440\u0438\u0441\u0442\u0438 \u0433\u043E \u043E\u0432\u0430 \u043A\u043E\u043F\u0447\u0435 \u0437\u0430 \u0434\u0430 \u0433\u043E \u0441\u043C\u0435\u043D\u0438\u0448 \u043D\u0430\u0447\u0438\u043D\u043E\u0442 \u043D\u0430 \u043A\u043E\u0458 \u043E\u0431\u0458\u0435\u043A\u0442\u0438\u0442\u0435 \u0440\u0435\u0430\u0433\u0438\u0440\u0430\u0430\u0442 \u043D\u0430 \u0434\u043E\u043F\u0438\u0440.",
-    "Diagramm Men\xFC": "\u041C\u0435\u043D\u0438 \u0437\u0430 \u0433\u0440\u0430\u0444\u0438\u043A\u043E\u043D\u0438",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u041E\u0432\u0430 \u043A\u043E\u043F\u0447\u0435 \u0433\u043E \u043E\u0442\u0432\u043E\u0440\u0430 \u043C\u0435\u043D\u0438\u0442\u043E \u0437\u0430 \u0433\u0440\u0430\u0444\u0438\u043A\u043E\u043D\u0438 \u043B\u0435\u0432\u043E.",
     Kontextmen\u00FC: "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u043D\u043E \u043C\u0435\u043D\u0438",
-    "Message Toast": "\u0418\u0437\u0432\u0435\u0441\u0442\u0443\u0432\u0430\u045A\u0435 \u0437\u0430 \u0441\u043E\u0441\u0442\u043E\u0458\u0431\u0430\u0442\u0430",
-    "Hier werden Statusmeldungen angezeigt.": "\u0422\u0443\u043A\u0430 \u0441\u0435 \u043F\u0440\u0438\u043A\u0430\u0436\u0443\u0432\u0430\u0430\u0442 \u043F\u043E\u0440\u0430\u043A\u0438\u0442\u0435 \u0437\u0430 \u0441\u043E\u0441\u0442\u043E\u0458\u0431\u0430\u0442\u0430.",
     best\u00E4tigen: "\u041F\u043E\u0442\u0432\u0440\u0434\u0438",
     "Aktion best\xE4tigen:": "\u041F\u043E\u0442\u0432\u0440\u0434\u0438 \u0433\u043E \u0434\u0435\u0458\u0441\u0442\u0432\u043E\u0442\u043E:",
     Diagramme: "\u0413\u0440\u0430\u0444\u0438\u043A\u043E\u043D\u0438",
@@ -43413,8 +42739,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0421\u0442\u0440\u0443\u0458\u0430 \u043D\u0430 \u0438\u0437\u0432\u043E\u0440\u043E\u0442",
     "verbundenes Gemisch": "\u041F\u043E\u0432\u0440\u0437\u0430\u043D\u0430 \u0441\u043C\u0435\u0441\u0430",
     Elektrodenmaterial: "\u041C\u0430\u0442\u0435\u0440\u0438\u0458\u0430\u043B \u043D\u0430 \u0435\u043B\u0435\u043A\u0442\u0440\u043E\u0434\u0430\u0442\u0430",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0421\u043E \u043E\u0432\u0430 \u043C\u0435\u043D\u0438 \u0441\u043E\u0437\u0434\u0430\u0432\u0430\u0458 \u0438 \u043E\u0434\u043D\u0430\u043F\u0440\u0435\u0434 \u043F\u043E\u0441\u0442\u0430\u0432\u0443\u0432\u0430\u0458 \u0445\u0435\u043C\u0438\u0441\u043A\u0438 \u0441\u0443\u043F\u0441\u0442\u0430\u043D\u0446\u0438\u0438 \u0438 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0438.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0421\u043E \u043E\u0432\u0430 \u043C\u0435\u043D\u0438 \u0438\u0437\u0431\u0438\u0440\u0430\u0458 \u0438 \u043F\u043E\u0441\u0442\u0430\u0432\u0443\u0432\u0430\u0458 \u043D\u043E\u0432\u0438 \u043E\u0431\u0458\u0435\u043A\u0442\u0438.",
     entfernen: "\u041E\u0442\u0441\u0442\u0440\u0430\u043D\u0438",
     speichern: "\u0417\u0430\u0447\u0443\u0432\u0430\u0458",
     "neues Molek\xFCl": "\u041D\u043E\u0432\u0430 \u043C\u043E\u043B\u0435\u043A\u0443\u043B\u0430",
@@ -43631,19 +42955,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0418\u0437\u0431\u0440\u0430\u043D\u0438\u0442\u0435 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0438 \u043D\u0435 \u0441\u0435 \u043F\u043E\u0432\u0440\u0437\u0430\u043D\u0438."
   },
   is: {
-    "Objekt-Kontextmen\xFC": "Samhengisvalmynd hlutar",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "H\xE9r m\xE1 stj\xF3rna hlutnum og sko\xF0a grunnuppl\xFDsingar um hann.",
     "Vollbild an/aus": "Kveikja e\xF0a sl\xF6kkva \xE1 heilskj\xE1",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\xDEessi hnappur skiptir um heilskj\xE1sham. Hann er \xF3virkur \xED augnablikinu.",
-    Eingabemodus: "Inntakshamur",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Nota\xF0u \xFEennan hnapp til a\xF0 skipta \xE1 milli m\xFAsar- og snertist\xFDringar.",
-    "Dragging an/aus": "Kveikja e\xF0a sl\xF6kkva \xE1 dr\xE6tti",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\xCD snertiham m\xE1 nota hnappinn til a\xF0 breyta \xFEv\xED hvernig hlutir breg\xF0ast vi\xF0 snertingu.",
-    "Diagramm Men\xFC": "Valmynd grafa",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\xDEessi hnappur opnar valmynd grafa til vinstri.",
     Kontextmen\u00FC: "Samhengisvalmynd",
-    "Message Toast": "St\xF6\xF0utilkynning",
-    "Hier werden Statusmeldungen angezeigt.": "St\xF6\xF0uskilabo\xF0 birtast h\xE9r.",
     best\u00E4tigen: "Sta\xF0festa",
     "Aktion best\xE4tigen:": "Sta\xF0festu a\xF0ger\xF0ina:",
     Diagramme: "Gr\xF6f",
@@ -43703,8 +43016,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Straumur gjafa",
     "verbundenes Gemisch": "Tengd blanda",
     Elektrodenmaterial: "Rafskautsefni",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Nota\xF0u \xFEessa valmynd til a\xF0 b\xFAa til og forstilla efni og \xEDhluti.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Nota\xF0u \xFEessa valmynd til a\xF0 velja n\xFDja hluti og koma \xFEeim fyrir.",
     entfernen: "Fjarl\xE6gja",
     speichern: "Vista",
     "neues Molek\xFCl": "N\xFD sameind",
@@ -43921,19 +43232,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "V\xF6ldu \xEDhlutirnir eru \xF3tengdir."
   },
   bs: {
-    "Objekt-Kontextmen\xFC": "Kontekstni meni objekta",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Ovdje mo\u017Eete upravljati objektom i pregledati osnovne podatke.",
     "Vollbild an/aus": "Uklju\u010Di ili isklju\u010Di cijeli zaslon",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Ova tipka prebacuje prikaz na cijelom zaslonu. Trenutno je onemogu\u0107ena.",
-    Eingabemodus: "Na\u010Din unosa",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Ovom tipkom prelazite izme\u0111u mi\u0161a i dodirnih kontrola.",
-    "Dragging an/aus": "Uklju\u010Di ili isklju\u010Di povla\u010Denje",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "U dodirnom na\u010Dinu ova tipka mijenja reakciju objekata na dodir.",
-    "Diagramm Men\xFC": "Meni grafikona",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Ova tipka otvara meni grafikona na lijevoj strani.",
     Kontextmen\u00FC: "Kontekstni meni",
-    "Message Toast": "Obavijest o stanju",
-    "Hier werden Statusmeldungen angezeigt.": "Ovdje se prikazuju poruke o stanju.",
     best\u00E4tigen: "Potvrdi",
     "Aktion best\xE4tigen:": "Potvrdi radnju",
     Diagramme: "Grafikoni",
@@ -43993,8 +43293,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Struja izvora",
     "verbundenes Gemisch": "Spojena smjesa",
     Elektrodenmaterial: "Materijal elektrode",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "U ovom meniu mo\u017Eete izraditi i unaprijed postaviti kemijske supstance i komponente.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "U ovom meniu mo\u017Eete odabrati i postaviti nove objekte.",
     entfernen: "Ukloni",
     speichern: "Sa\u010Duvaj",
     "neues Molek\xFCl": "Nova molekula",
@@ -44211,19 +43509,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Odabrane komponente nisu spojene."
   },
   ca: {
-    "Objekt-Kontextmen\xFC": "Men\xFA contextual de l\u2019objecte",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Gestiona l\u2019objecte i consulta\u2019n la informaci\xF3 b\xE0sica aqu\xED.",
     "Vollbild an/aus": "Activa o desactiva la pantalla completa",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Aquest bot\xF3 activa o desactiva el mode de pantalla completa. Ara est\xE0 desactivat.",
-    Eingabemodus: "Mode d\u2019entrada",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Fes servir aquest bot\xF3 per canviar entre el control amb el ratol\xED i el control t\xE0ctil.",
-    "Dragging an/aus": "Activa o desactiva l\u2019arrossegament",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "En el mode t\xE0ctil, fes servir aquest bot\xF3 per canviar com responen els objectes al tacte.",
-    "Diagramm Men\xFC": "Men\xFA de gr\xE0fics",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Aquest bot\xF3 obre el men\xFA de gr\xE0fics de l\u2019esquerra.",
     Kontextmen\u00FC: "Men\xFA contextual",
-    "Message Toast": "Notificaci\xF3 d\u2019estat",
-    "Hier werden Statusmeldungen angezeigt.": "Els missatges d\u2019estat apareixen aqu\xED.",
     best\u00E4tigen: "Confirma",
     "Aktion best\xE4tigen:": "Confirma l\u2019acci\xF3:",
     Diagramme: "Gr\xE0fics",
@@ -44283,8 +43570,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Intensitat de la font",
     "verbundenes Gemisch": "Mescla connectada",
     Elektrodenmaterial: "Material de l\u2019el\xE8ctrode",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Fes servir aquest men\xFA per crear i predefinir subst\xE0ncies qu\xEDmiques i components.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Fes servir aquest men\xFA per triar i col\xB7locar objectes nous.",
     entfernen: "Suprimeix",
     speichern: "Desa",
     "neues Molek\xFCl": "Mol\xE8cula nova",
@@ -44501,19 +43786,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Els components seleccionats no estan connectats."
   },
   "ca-ES-valencia": {
-    "Objekt-Kontextmen\xFC": "Men\xFA contextual de l\u2019objecte",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Gestiona l\u2019objecte i consulta\u2019n la informaci\xF3 b\xE0sica ac\xED.",
     "Vollbild an/aus": "Activa o desactiva la pantalla completa",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Este bot\xF3 activa o desactiva el mode de pantalla completa. Ara est\xE0 desactivat.",
-    Eingabemodus: "Mode d\u2019entrada",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Fes servir este bot\xF3 per canviar entre el control amb el ratol\xED i el control t\xE0ctil.",
-    "Dragging an/aus": "Activa o desactiva l\u2019arrossegament",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "En el mode t\xE0ctil, fes servir este bot\xF3 per canviar com responen els objectes al tacte.",
-    "Diagramm Men\xFC": "Men\xFA de gr\xE0fics",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Este bot\xF3 obre el men\xFA de gr\xE0fics de l\u2019esquerra.",
     Kontextmen\u00FC: "Men\xFA contextual",
-    "Message Toast": "Notificaci\xF3 d\u2019estat",
-    "Hier werden Statusmeldungen angezeigt.": "Els missatges d\u2019estat apareixen ac\xED.",
     best\u00E4tigen: "Confirma",
     "Aktion best\xE4tigen:": "Confirma l\u2019acci\xF3:",
     Diagramme: "Gr\xE0fics",
@@ -44573,8 +43847,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Intensitat de la font",
     "verbundenes Gemisch": "Mescla connectada",
     Elektrodenmaterial: "Material de l\u2019el\xE8ctrode",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Fes servir este men\xFA per crear i predefinir subst\xE0ncies qu\xEDmiques i components.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Fes servir este men\xFA per seleccionar i col\xB7locar objectes nous.",
     entfernen: "Suprimeix",
     speichern: "Desa",
     "neues Molek\xFCl": "Mol\xE8cula nova",
@@ -44791,19 +44063,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Els components seleccionats no estan connectats."
   },
   eu: {
-    "Objekt-Kontextmen\xFC": "Objektuaren laster-menua",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Kudeatu objektua eta ikusi haren oinarrizko informazioa hemen.",
     "Vollbild an/aus": "Aktibatu edo desaktibatu pantaila osoa",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Botoi honek pantaila osoko modua aktibatzen edo desaktibatzen du. Une honetan desgaituta dago.",
-    Eingabemodus: "Sarrera-modua",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Erabili botoi hau sagu bidezko eta ukipen bidezko kontrolen artean aldatzeko.",
-    "Dragging an/aus": "Aktibatu edo desaktibatu arrastatzea",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Ukipen moduan, erabili botoi hau objektuek ukipenari nola erantzuten dioten aldatzeko.",
-    "Diagramm Men\xFC": "Diagramen menua",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Botoi honek ezkerreko diagramen menua irekitzen du.",
     Kontextmen\u00FC: "Laster-menua",
-    "Message Toast": "Egoeraren jakinarazpena",
-    "Hier werden Statusmeldungen angezeigt.": "Egoera-mezuak hemen agertzen dira.",
     best\u00E4tigen: "Berretsi",
     "Aktion best\xE4tigen:": "Berretsi ekintza:",
     Diagramme: "Diagramak",
@@ -44863,8 +44124,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Iturriaren korrontea",
     "verbundenes Gemisch": "Konektatutako nahastea",
     Elektrodenmaterial: "Elektrodoaren materiala",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Erabili menu hau substantzia kimikoak eta osagaiak sortzeko eta aurrez ezartzeko.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Erabili menu hau objektu berriak hautatu eta kokatzeko.",
     entfernen: "Kendu",
     speichern: "Gorde",
     "neues Molek\xFCl": "Molekula berria",
@@ -45081,19 +44340,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Hautatutako osagaiak ez daude konektatuta."
   },
   gl: {
-    "Objekt-Kontextmen\xFC": "Men\xFA contextual do obxecto",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Xestiona o obxecto e consulta aqu\xED a s\xFAa informaci\xF3n b\xE1sica.",
     "Vollbild an/aus": "Activar ou desactivar a pantalla completa",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Este bot\xF3n activa ou desactiva o modo de pantalla completa. Agora est\xE1 desactivado.",
-    Eingabemodus: "Modo de entrada",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Usa este bot\xF3n para alternar entre o control co rato e o control t\xE1ctil.",
-    "Dragging an/aus": "Activar ou desactivar o arrastre",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "No modo t\xE1ctil, usa este bot\xF3n para cambiar como responden os obxectos ao tacto.",
-    "Diagramm Men\xFC": "Men\xFA de gr\xE1ficos",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Este bot\xF3n abre o men\xFA de gr\xE1ficos da esquerda.",
     Kontextmen\u00FC: "Men\xFA contextual",
-    "Message Toast": "Notificaci\xF3n de estado",
-    "Hier werden Statusmeldungen angezeigt.": "As mensaxes de estado aparecen aqu\xED.",
     best\u00E4tigen: "Confirmar",
     "Aktion best\xE4tigen:": "Confirma a acci\xF3n:",
     Diagramme: "Gr\xE1ficos",
@@ -45153,8 +44401,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Corrente da fonte",
     "verbundenes Gemisch": "Mestura conectada",
     Elektrodenmaterial: "Material do el\xE9ctrodo",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Usa este men\xFA para crear e predefinir substancias qu\xEDmicas e compo\xF1entes.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Usa este men\xFA para escoller e colocar obxectos novos.",
     entfernen: "Eliminar",
     speichern: "Gardar",
     "neues Molek\xFCl": "Mol\xE9cula nova",
@@ -45371,19 +44617,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Os compo\xF1entes seleccionados non est\xE1n conectados."
   },
   cy: {
-    "Objekt-Kontextmen\xFC": "Dewislen gyd-destun y gwrthrych",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Rheolwch y gwrthrych a gweld gwybodaeth sylfaenol amdano yma.",
     "Vollbild an/aus": "Troi sgrin lawn ymlaen neu i ffwrdd",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Mae\u2019r botwm hwn yn troi\u2019r modd sgrin lawn ymlaen neu i ffwrdd. Mae wedi\u2019i analluogi ar hyn o bryd.",
-    Eingabemodus: "Modd mewnbwn",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Defnyddiwch y botwm hwn i newid rhwng rheolyddion llygoden a chyffwrdd.",
-    "Dragging an/aus": "Troi llusgo ymlaen neu i ffwrdd",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Yn y modd cyffwrdd, defnyddiwch y botwm hwn i newid sut mae gwrthrychau\u2019n ymateb i gyffwrdd.",
-    "Diagramm Men\xFC": "Dewislen siartiau",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Mae\u2019r botwm hwn yn agor y ddewislen siartiau ar y chwith.",
     Kontextmen\u00FC: "Dewislen gyd-destun",
-    "Message Toast": "Hysbysiad statws",
-    "Hier werden Statusmeldungen angezeigt.": "Mae negeseuon statws yn ymddangos yma.",
     best\u00E4tigen: "Cadarnhau",
     "Aktion best\xE4tigen:": "Cadarnhewch y weithred:",
     Diagramme: "Siartiau",
@@ -45443,8 +44678,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Cerrynt y ffynhonnell",
     "verbundenes Gemisch": "Cymysgedd cysylltiedig",
     Elektrodenmaterial: "Defnydd yr electrod",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Defnyddiwch y ddewislen hon i greu a rhagosod sylweddau cemegol a chydrannau.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Defnyddiwch y ddewislen hon i ddewis a gosod gwrthrychau newydd.",
     entfernen: "Tynnu",
     speichern: "Cadw",
     "neues Molek\xFCl": "Moleciwl newydd",
@@ -45661,19 +44894,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Nid yw\u2019r cydrannau a ddewiswyd wedi\u2019u cysylltu."
   },
   lb: {
-    "Objekt-Kontextmen\xFC": "Kontextmen\xFC vum Objet",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Hei kanns du den Objet verwalten an d\u2019Basisinformatiounen dozou kucken.",
     "Vollbild an/aus": "Vollbild un oder aus",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "D\xEBse Kn\xE4ppchen schalt de Vollbildmodus un oder aus. En ass am Moment desaktiv\xE9iert.",
-    Eingabemodus: "Agabemodus",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Mat d\xEBsem Kn\xE4ppchen wiessels du t\xEBscht Maus- an Touch-Steierung.",
-    "Dragging an/aus": "Z\xE9ien un oder aus",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Am Touch-Modus kanns du hei \xE4nneren, w\xE9i d\u2019Objeten op Ber\xE9ierungen reag\xE9ieren.",
-    "Diagramm Men\xFC": "Diagrammmen\xFC",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "D\xEBse Kn\xE4ppchen m\xE9cht l\xE9nks den Diagrammmen\xFC op.",
     Kontextmen\u00FC: "Kontextmen\xFC",
-    "Message Toast": "Statusnotifikatioun",
-    "Hier werden Statusmeldungen angezeigt.": "Hei ginn d\u2019Statusmeldungen ugewisen.",
     best\u00E4tigen: "Best\xE4tegen",
     "Aktion best\xE4tigen:": "Aktioun best\xE4tegen:",
     Diagramme: "Diagrammer",
@@ -45733,8 +44955,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Stroumst\xE4erkt vun der Quell",
     "verbundenes Gemisch": "Verbonne M\xEBschung",
     Elektrodenmaterial: "Elektrodematerial",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Mat d\xEBsem Men\xFC kanns du chemesch Stoffer a Komponente schafen a viraus defin\xE9ieren.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Mat d\xEBsem Men\xFC kanns du nei Objeten auswielen a plac\xE9ieren.",
     entfernen: "Ewechhuelen",
     speichern: "Sp\xE4icheren",
     "neues Molek\xFCl": "Neit Molek\xFCll",
@@ -45951,19 +45171,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "D\xE9i ausgewielte Komponente sinn net verbonnen."
   },
   bn: {
-    "Objekt-Kontextmen\xFC": "\u09AC\u09B8\u09CD\u09A4\u09C1\u09B0 \u09AA\u09CD\u09B0\u09B8\u0999\u09CD\u0997 \u09AE\u09C7\u09A8\u09C1",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u098F\u0996\u09BE\u09A8\u09C7 \u09AC\u09B8\u09CD\u09A4\u09C1 \u09AA\u09B0\u09BF\u099A\u09BE\u09B2\u09A8\u09BE \u0995\u09B0\u09C1\u09A8 \u098F\u09AC\u0982 \u098F\u09B0 \u09AA\u09CD\u09B0\u09BE\u09A5\u09AE\u09BF\u0995 \u09A4\u09A5\u09CD\u09AF \u09A6\u09C7\u0996\u09C1\u09A8\u0964",
     "Vollbild an/aus": "\u09AA\u09C2\u09B0\u09CD\u09A3\u09AA\u09B0\u09CD\u09A6\u09BE \u099A\u09BE\u09B2\u09C1/\u09AC\u09A8\u09CD\u09A7",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u098F\u0987 \u09AC\u09CB\u09A4\u09BE\u09AE\u099F\u09BF \u09AA\u09C2\u09B0\u09CD\u09A3\u09AA\u09B0\u09CD\u09A6\u09BE \u09AE\u09CB\u09A1 \u099A\u09BE\u09B2\u09C1 \u09AC\u09BE \u09AC\u09A8\u09CD\u09A7 \u0995\u09B0\u09C7\u0964 \u098F\u099F\u09BF \u09AC\u09B0\u09CD\u09A4\u09AE\u09BE\u09A8\u09C7 \u09A8\u09BF\u09B7\u09CD\u0995\u09CD\u09B0\u09BF\u09AF\u09BC\u0964",
-    Eingabemodus: "\u0987\u09A8\u09AA\u09C1\u099F \u09AE\u09CB\u09A1",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u098F\u0987 \u09AC\u09CB\u09A4\u09BE\u09AE \u09A6\u09BF\u09AF\u09BC\u09C7 \u09AE\u09BE\u0989\u09B8 \u0993 \u09B8\u09CD\u09AA\u09B0\u09CD\u09B6 \u09A8\u09BF\u09AF\u09BC\u09A8\u09CD\u09A4\u09CD\u09B0\u09A3\u09C7\u09B0 \u09AE\u09A7\u09CD\u09AF\u09C7 \u09AC\u09A6\u09B2\u09BE\u09A8\u0964",
-    "Dragging an/aus": "\u099F\u09C7\u09A8\u09C7 \u09B8\u09B0\u09BE\u09A8\u09CB \u099A\u09BE\u09B2\u09C1/\u09AC\u09A8\u09CD\u09A7",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u09B8\u09CD\u09AA\u09B0\u09CD\u09B6 \u09AE\u09CB\u09A1\u09C7, \u09AC\u09B8\u09CD\u09A4\u09C1\u0997\u09C1\u09B2\u09CB \u09B8\u09CD\u09AA\u09B0\u09CD\u09B6\u09C7 \u0995\u09C0\u09AD\u09BE\u09AC\u09C7 \u09AA\u09CD\u09B0\u09A4\u09BF\u0995\u09CD\u09B0\u09BF\u09AF\u09BC\u09BE \u099C\u09BE\u09A8\u09BE\u09AC\u09C7 \u09A4\u09BE \u098F\u0987 \u09AC\u09CB\u09A4\u09BE\u09AE \u09A6\u09BF\u09AF\u09BC\u09C7 \u09AC\u09A6\u09B2\u09BE\u09A8\u0964",
-    "Diagramm Men\xFC": "\u099A\u09BE\u09B0\u09CD\u099F \u09AE\u09C7\u09A8\u09C1",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u098F\u0987 \u09AC\u09CB\u09A4\u09BE\u09AE\u099F\u09BF \u09AC\u09BE\u09AE \u09AA\u09BE\u09B6\u09C7 \u099A\u09BE\u09B0\u09CD\u099F \u09AE\u09C7\u09A8\u09C1 \u0996\u09CB\u09B2\u09C7\u0964",
     Kontextmen\u00FC: "\u09AA\u09CD\u09B0\u09B8\u0999\u09CD\u0997 \u09AE\u09C7\u09A8\u09C1",
-    "Message Toast": "\u0985\u09AC\u09B8\u09CD\u09A5\u09BE\u09B0 \u09AC\u09BF\u099C\u09CD\u099E\u09AA\u09CD\u09A4\u09BF",
-    "Hier werden Statusmeldungen angezeigt.": "\u098F\u0996\u09BE\u09A8\u09C7 \u0985\u09AC\u09B8\u09CD\u09A5\u09BE\u09B0 \u09AC\u09BE\u09B0\u09CD\u09A4\u09BE \u09A6\u09C7\u0996\u09BE \u09AF\u09BE\u09AF\u09BC\u0964",
     best\u00E4tigen: "\u09A8\u09BF\u09B6\u09CD\u099A\u09BF\u09A4 \u0995\u09B0\u09C1\u09A8",
     "Aktion best\xE4tigen:": "\u0995\u09BE\u099C\u099F\u09BF \u09A8\u09BF\u09B6\u09CD\u099A\u09BF\u09A4 \u0995\u09B0\u09C1\u09A8:",
     Diagramme: "\u099A\u09BE\u09B0\u09CD\u099F",
@@ -46023,8 +45232,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0989\u09CE\u09B8 \u0995\u09BE\u09B0\u09C7\u09A8\u09CD\u099F",
     "verbundenes Gemisch": "\u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u09AE\u09BF\u09B6\u09CD\u09B0\u09A3",
     Elektrodenmaterial: "\u0987\u09B2\u09C7\u0995\u099F\u09CD\u09B0\u09CB\u09A1 \u0989\u09AA\u09BE\u09A6\u09BE\u09A8",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u09B0\u09BE\u09B8\u09BE\u09AF\u09BC\u09A8\u09BF\u0995 \u09AA\u09A6\u09BE\u09B0\u09CD\u09A5 \u0993 \u0989\u09AA\u09BE\u09A6\u09BE\u09A8 \u09A4\u09C8\u09B0\u09BF \u098F\u09AC\u0982 \u0986\u0997\u09C7 \u09A5\u09C7\u0995\u09C7 \u09A8\u09BF\u09B0\u09CD\u09A7\u09BE\u09B0\u09A3 \u0995\u09B0\u09A4\u09C7 \u098F\u0987 \u09AE\u09C7\u09A8\u09C1 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0 \u0995\u09B0\u09C1\u09A8\u0964",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u09A8\u09A4\u09C1\u09A8 \u09AC\u09B8\u09CD\u09A4\u09C1 \u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09A8 \u0993 \u09B8\u09CD\u09A5\u09BE\u09AA\u09A8 \u0995\u09B0\u09A4\u09C7 \u098F\u0987 \u09AE\u09C7\u09A8\u09C1 \u09AC\u09CD\u09AF\u09AC\u09B9\u09BE\u09B0 \u0995\u09B0\u09C1\u09A8\u0964",
     entfernen: "\u09B8\u09B0\u09BE\u09A8",
     speichern: "\u09B8\u0982\u09B0\u0995\u09CD\u09B7\u09A3",
     "neues Molek\xFCl": "\u09A8\u09A4\u09C1\u09A8 \u0985\u09A3\u09C1",
@@ -46241,19 +45448,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u09A8\u09BF\u09B0\u09CD\u09AC\u09BE\u099A\u09BF\u09A4 \u0989\u09AA\u09BE\u09A6\u09BE\u09A8\u0997\u09C1\u09B2\u09CB \u09B8\u0982\u09AF\u09C1\u0995\u09CD\u09A4 \u09A8\u09AF\u09BC\u0964"
   },
   pa: {
-    "Objekt-Kontextmen\xFC": "\u0A35\u0A38\u0A24\u0A42 \u0A38\u0A70\u0A26\u0A30\u0A2D \u0A2E\u0A40\u0A28\u0A42",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0A07\u0A71\u0A25\u0A47 \u0A35\u0A38\u0A24\u0A42 \u0A26\u0A3E \u0A2A\u0A4D\u0A30\u0A2C\u0A70\u0A27 \u0A15\u0A30\u0A4B \u0A05\u0A24\u0A47 \u0A07\u0A38\u0A26\u0A40 \u0A2E\u0A41\u0A71\u0A22\u0A32\u0A40 \u0A1C\u0A3E\u0A23\u0A15\u0A3E\u0A30\u0A40 \u0A35\u0A47\u0A16\u0A4B\u0964",
     "Vollbild an/aus": "\u0A2A\u0A42\u0A30\u0A40 \u0A38\u0A15\u0A4D\u0A30\u0A40\u0A28 \u0A1A\u0A3E\u0A32\u0A42/\u0A2C\u0A70\u0A26",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0A07\u0A39 \u0A2C\u0A1F\u0A28 \u0A2A\u0A42\u0A30\u0A40 \u0A38\u0A15\u0A4D\u0A30\u0A40\u0A28 \u0A2E\u0A4B\u0A21 \u0A1A\u0A3E\u0A32\u0A42 \u0A1C\u0A3E\u0A02 \u0A2C\u0A70\u0A26 \u0A15\u0A30\u0A26\u0A3E \u0A39\u0A48\u0964 \u0A07\u0A39 \u0A07\u0A38 \u0A35\u0A47\u0A32\u0A47 \u0A05\u0A38\u0A2E\u0A30\u0A71\u0A25 \u0A39\u0A48\u0964",
-    Eingabemodus: "\u0A07\u0A28\u0A2A\u0A41\u0A71\u0A1F \u0A2E\u0A4B\u0A21",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0A07\u0A38 \u0A2C\u0A1F\u0A28 \u0A28\u0A3E\u0A32 \u0A2E\u0A3E\u0A0A\u0A38 \u0A05\u0A24\u0A47 \u0A1B\u0A4B\u0A39 \u0A28\u0A3F\u0A2F\u0A70\u0A24\u0A30\u0A23 \u0A35\u0A3F\u0A1A\u0A15\u0A3E\u0A30 \u0A2C\u0A26\u0A32\u0A4B\u0964",
-    "Dragging an/aus": "\u0A16\u0A3F\u0A71\u0A1A\u0A23\u0A3E \u0A1A\u0A3E\u0A32\u0A42/\u0A2C\u0A70\u0A26",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0A1B\u0A4B\u0A39 \u0A2E\u0A4B\u0A21 \u0A35\u0A3F\u0A71\u0A1A, \u0A07\u0A38 \u0A2C\u0A1F\u0A28 \u0A28\u0A3E\u0A32 \u0A2C\u0A26\u0A32\u0A4B \u0A15\u0A3F \u0A35\u0A38\u0A24\u0A42\u0A06\u0A02 \u0A1B\u0A4B\u0A39 \u0A09\u0A71\u0A24\u0A47 \u0A15\u0A3F\u0A35\u0A47\u0A02 \u0A2A\u0A4D\u0A30\u0A24\u0A40\u0A15\u0A3F\u0A30\u0A3F\u0A06 \u0A15\u0A30\u0A26\u0A40\u0A06\u0A02 \u0A39\u0A28\u0964",
-    "Diagramm Men\xFC": "\u0A1A\u0A3E\u0A30\u0A1F \u0A2E\u0A40\u0A28\u0A42",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0A07\u0A39 \u0A2C\u0A1F\u0A28 \u0A16\u0A71\u0A2C\u0A47 \u0A2A\u0A3E\u0A38\u0A47 \u0A1A\u0A3E\u0A30\u0A1F \u0A2E\u0A40\u0A28\u0A42 \u0A16\u0A4B\u0A32\u0A4D\u0A39\u0A26\u0A3E \u0A39\u0A48\u0964",
     Kontextmen\u00FC: "\u0A38\u0A70\u0A26\u0A30\u0A2D \u0A2E\u0A40\u0A28\u0A42",
-    "Message Toast": "\u0A39\u0A3E\u0A32\u0A24 \u0A26\u0A40 \u0A38\u0A42\u0A1A\u0A28\u0A3E",
-    "Hier werden Statusmeldungen angezeigt.": "\u0A39\u0A3E\u0A32\u0A24 \u0A26\u0A47 \u0A38\u0A41\u0A28\u0A47\u0A39\u0A47 \u0A07\u0A71\u0A25\u0A47 \u0A26\u0A3F\u0A16\u0A3E\u0A0F \u0A1C\u0A3E\u0A02\u0A26\u0A47 \u0A39\u0A28\u0964",
     best\u00E4tigen: "\u0A2A\u0A41\u0A38\u0A3C\u0A1F\u0A40 \u0A15\u0A30\u0A4B",
     "Aktion best\xE4tigen:": "\u0A15\u0A3E\u0A30\u0A35\u0A3E\u0A08 \u0A26\u0A40 \u0A2A\u0A41\u0A38\u0A3C\u0A1F\u0A40 \u0A15\u0A30\u0A4B:",
     Diagramme: "\u0A1A\u0A3E\u0A30\u0A1F",
@@ -46313,8 +45509,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0A38\u0A30\u0A4B\u0A24 \u0A15\u0A30\u0A70\u0A1F",
     "verbundenes Gemisch": "\u0A1C\u0A41\u0A5C\u0A3F\u0A06 \u0A2E\u0A3F\u0A38\u0A3C\u0A30\u0A23",
     Elektrodenmaterial: "\u0A07\u0A32\u0A48\u0A15\u0A1F\u0A4D\u0A30\u0A4B\u0A21 \u0A38\u0A2E\u0A71\u0A17\u0A30\u0A40",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0A07\u0A38 \u0A2E\u0A40\u0A28\u0A42 \u0A30\u0A3E\u0A39\u0A40\u0A02 \u0A30\u0A38\u0A3E\u0A07\u0A23\u0A15 \u0A2A\u0A26\u0A3E\u0A30\u0A25 \u0A05\u0A24\u0A47 \u0A2D\u0A3E\u0A17 \u0A2C\u0A23\u0A3E\u0A13 \u0A05\u0A24\u0A47 \u0A2A\u0A39\u0A3F\u0A32\u0A3E\u0A02 \u0A24\u0A4B\u0A02 \u0A28\u0A3F\u0A30\u0A27\u0A3E\u0A30\u0A24 \u0A15\u0A30\u0A4B\u0964",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0A07\u0A38 \u0A2E\u0A40\u0A28\u0A42 \u0A30\u0A3E\u0A39\u0A40\u0A02 \u0A28\u0A35\u0A40\u0A06\u0A02 \u0A35\u0A38\u0A24\u0A42\u0A06\u0A02 \u0A1A\u0A41\u0A23\u0A4B \u0A05\u0A24\u0A47 \u0A30\u0A71\u0A16\u0A4B\u0964",
     entfernen: "\u0A39\u0A1F\u0A3E\u0A13",
     speichern: "\u0A38\u0A70\u0A2D\u0A3E\u0A32\u0A4B",
     "neues Molek\xFCl": "\u0A28\u0A35\u0A3E\u0A02 \u0A05\u0A23\u0A42",
@@ -46531,19 +45725,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0A1A\u0A41\u0A23\u0A47 \u0A39\u0A4B\u0A0F \u0A2D\u0A3E\u0A17 \u0A1C\u0A41\u0A5C\u0A47 \u0A39\u0A4B\u0A0F \u0A28\u0A39\u0A40\u0A02 \u0A39\u0A28\u0964"
   },
   gu: {
-    "Objekt-Kontextmen\xFC": "\u0A91\u0AAC\u0ACD\u0A9C\u0AC7\u0A95\u0ACD\u0A9F \u0AB8\u0A82\u0AA6\u0AB0\u0ACD\u0AAD \u0AAE\u0AC7\u0AA8\u0AC1",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0A85\u0AB9\u0AC0\u0A82 \u0A91\u0AAC\u0ACD\u0A9C\u0AC7\u0A95\u0ACD\u0A9F\u0AA8\u0AC1\u0A82 \u0AB8\u0A82\u0A9A\u0ABE\u0AB2\u0AA8 \u0A95\u0AB0\u0ACB \u0A85\u0AA8\u0AC7 \u0AA4\u0AC7\u0AA8\u0AC0 \u0AAE\u0AC2\u0AB3\u0AAD\u0AC2\u0AA4 \u0AAE\u0ABE\u0AB9\u0ABF\u0AA4\u0AC0 \u0A9C\u0AC1\u0A93.",
     "Vollbild an/aus": "\u0AAA\u0AC2\u0AB0\u0ACD\u0AA3\u0AB8\u0ACD\u0A95\u0ACD\u0AB0\u0AC0\u0AA8 \u0A9A\u0ABE\u0AB2\u0AC1/\u0AAC\u0A82\u0AA7",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0A86 \u0AAC\u0A9F\u0AA8 \u0AAA\u0AC2\u0AB0\u0ACD\u0AA3\u0AB8\u0ACD\u0A95\u0ACD\u0AB0\u0AC0\u0AA8 \u0AAE\u0ACB\u0AA1 \u0A9A\u0ABE\u0AB2\u0AC1 \u0A85\u0AA5\u0AB5\u0ABE \u0AAC\u0A82\u0AA7 \u0A95\u0AB0\u0AC7 \u0A9B\u0AC7. \u0AB9\u0ABE\u0AB2\u0AAE\u0ABE\u0A82 \u0AA8\u0ABF\u0AB7\u0ACD\u0A95\u0ACD\u0AB0\u0ABF\u0AAF \u0A9B\u0AC7.",
-    Eingabemodus: "\u0A87\u0AA8\u0AAA\u0AC1\u0A9F \u0AAE\u0ACB\u0AA1",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0A86 \u0AAC\u0A9F\u0AA8\u0AA5\u0AC0 \u0AAE\u0ABE\u0A89\u0AB8 \u0A85\u0AA8\u0AC7 \u0A9F\u0A9A \u0AA8\u0ABF\u0AAF\u0A82\u0AA4\u0ACD\u0AB0\u0AA3 \u0AB5\u0A9A\u0ACD\u0A9A\u0AC7 \u0AAC\u0AA6\u0AB2\u0ACB.",
-    "Dragging an/aus": "\u0A96\u0AC7\u0A82\u0A9A\u0AB5\u0AC1\u0A82 \u0A9A\u0ABE\u0AB2\u0AC1/\u0AAC\u0A82\u0AA7",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0A9F\u0A9A \u0AAE\u0ACB\u0AA1\u0AAE\u0ABE\u0A82, \u0A91\u0AAC\u0ACD\u0A9C\u0AC7\u0A95\u0ACD\u0A9F \u0AB8\u0ACD\u0AAA\u0AB0\u0ACD\u0AB6 \u0AAA\u0AB0 \u0A95\u0AC7\u0AB5\u0AC0 \u0AAA\u0ACD\u0AB0\u0AA4\u0ABF\u0A95\u0ACD\u0AB0\u0ABF\u0AAF\u0ABE \u0A86\u0AAA\u0AC7 \u0AA4\u0AC7 \u0A86 \u0AAC\u0A9F\u0AA8\u0AA5\u0AC0 \u0AAC\u0AA6\u0AB2\u0ACB.",
-    "Diagramm Men\xFC": "\u0A9A\u0ABE\u0AB0\u0ACD\u0A9F \u0AAE\u0AC7\u0AA8\u0AC1",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0A86 \u0AAC\u0A9F\u0AA8 \u0AA1\u0ABE\u0AAC\u0AC0 \u0AAC\u0ABE\u0A9C\u0AC1 \u0A9A\u0ABE\u0AB0\u0ACD\u0A9F \u0AAE\u0AC7\u0AA8\u0AC1 \u0A96\u0ACB\u0AB2\u0AC7 \u0A9B\u0AC7.",
     Kontextmen\u00FC: "\u0AB8\u0A82\u0AA6\u0AB0\u0ACD\u0AAD \u0AAE\u0AC7\u0AA8\u0AC1",
-    "Message Toast": "\u0AB8\u0ACD\u0AA5\u0ABF\u0AA4\u0ABF \u0AB8\u0AC2\u0A9A\u0AA8\u0ABE",
-    "Hier werden Statusmeldungen angezeigt.": "\u0AB8\u0ACD\u0AA5\u0ABF\u0AA4\u0ABF \u0AB8\u0A82\u0AA6\u0AC7\u0AB6\u0ABE \u0A85\u0AB9\u0AC0\u0A82 \u0AA6\u0AC7\u0A96\u0ABE\u0AAF \u0A9B\u0AC7.",
     best\u00E4tigen: "\u0AAA\u0AC1\u0AB7\u0ACD\u0A9F\u0ABF \u0A95\u0AB0\u0ACB",
     "Aktion best\xE4tigen:": "\u0A95\u0ACD\u0AB0\u0ABF\u0AAF\u0ABE\u0AA8\u0AC0 \u0AAA\u0AC1\u0AB7\u0ACD\u0A9F\u0ABF \u0A95\u0AB0\u0ACB:",
     Diagramme: "\u0A86\u0AB2\u0AC7\u0A96",
@@ -46603,8 +45786,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0AB8\u0ACD\u0AA4\u0ACD\u0AB0\u0ACB\u0AA4 \u0AAA\u0ACD\u0AB0\u0AB5\u0ABE\u0AB9",
     "verbundenes Gemisch": "\u0A9C\u0ACB\u0AA1\u0ABE\u0AAF\u0AC7\u0AB2\u0AC1\u0A82 \u0AAE\u0ABF\u0AB6\u0ACD\u0AB0\u0AA3",
     Elektrodenmaterial: "\u0A87\u0AB2\u0AC7\u0A95\u0ACD\u0A9F\u0ACD\u0AB0\u0ACB\u0AA1 \u0AB8\u0ABE\u0AAE\u0A97\u0ACD\u0AB0\u0AC0",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0A86 \u0AAE\u0AC7\u0AA8\u0AC1\u0AA5\u0AC0 \u0AB0\u0AB8\u0ABE\u0AAF\u0AA3\u0ABF\u0A95 \u0AAA\u0AA6\u0ABE\u0AB0\u0ACD\u0AA5\u0ACB \u0A85\u0AA8\u0AC7 \u0A98\u0A9F\u0A95\u0ACB \u0AAC\u0AA8\u0ABE\u0AB5\u0ACB \u0A85\u0AA8\u0AC7 \u0AAA\u0AC2\u0AB0\u0ACD\u0AB5\u0AA8\u0ABF\u0AB0\u0ACD\u0AA7\u0ABE\u0AB0\u0ABF\u0AA4 \u0A95\u0AB0\u0ACB.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0A86 \u0AAE\u0AC7\u0AA8\u0AC1\u0AA5\u0AC0 \u0AA8\u0AB5\u0ABE \u0A91\u0AAC\u0ACD\u0A9C\u0AC7\u0A95\u0ACD\u0A9F \u0AAA\u0AB8\u0A82\u0AA6 \u0A95\u0AB0\u0AC0 \u0AAE\u0AC2\u0A95\u0ACB.",
     entfernen: "\u0AA6\u0AC2\u0AB0 \u0A95\u0AB0\u0ACB",
     speichern: "\u0AB8\u0ABE\u0A9A\u0AB5\u0ACB",
     "neues Molek\xFCl": "\u0AA8\u0AB5\u0ACB \u0A85\u0AA3\u0AC1",
@@ -46821,19 +46002,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0AAA\u0AB8\u0A82\u0AA6 \u0A95\u0AB0\u0AC7\u0AB2\u0ABE \u0A98\u0A9F\u0A95\u0ACB \u0A9C\u0ACB\u0AA1\u0ABE\u0AAF\u0AC7\u0AB2\u0ABE \u0AA8\u0AA5\u0AC0."
   },
   mr: {
-    "Objekt-Kontextmen\xFC": "\u0911\u092C\u094D\u091C\u0947\u0915\u094D\u091F \u0938\u0902\u0926\u0930\u094D\u092D \u092E\u0947\u0928\u0942",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u092F\u0947\u0925\u0947 \u0911\u092C\u094D\u091C\u0947\u0915\u094D\u091F\u091A\u0947 \u0935\u094D\u092F\u0935\u0938\u094D\u0925\u093E\u092A\u0928 \u0915\u0930\u093E \u0906\u0923\u093F \u0924\u094D\u092F\u093E\u091A\u0940 \u092E\u0942\u0932\u092D\u0942\u0924 \u092E\u093E\u0939\u093F\u0924\u0940 \u092A\u093E\u0939\u093E.",
     "Vollbild an/aus": "\u092A\u0942\u0930\u094D\u0923\u0938\u094D\u0915\u094D\u0930\u0940\u0928 \u0938\u0941\u0930\u0942/\u092C\u0902\u0926",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0939\u0947 \u092C\u091F\u0923 \u092A\u0942\u0930\u094D\u0923\u0938\u094D\u0915\u094D\u0930\u0940\u0928 \u092E\u094B\u0921 \u0938\u0941\u0930\u0942 \u0915\u093F\u0902\u0935\u093E \u092C\u0902\u0926 \u0915\u0930\u0924\u0947. \u0938\u0927\u094D\u092F\u093E \u0928\u093F\u0937\u094D\u0915\u094D\u0930\u093F\u092F \u0906\u0939\u0947.",
-    Eingabemodus: "\u0907\u0928\u092A\u0941\u091F \u092E\u094B\u0921",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u092F\u093E \u092C\u091F\u0923\u093E\u0928\u0947 \u092E\u093E\u0909\u0938 \u0906\u0923\u093F \u0938\u094D\u092A\u0930\u094D\u0936 \u0928\u093F\u092F\u0902\u0924\u094D\u0930\u0923\u093E\u092E\u0927\u094D\u092F\u0947 \u092C\u0926\u0932\u093E.",
-    "Dragging an/aus": "\u0913\u0922\u0923\u0947 \u0938\u0941\u0930\u0942/\u092C\u0902\u0926",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0938\u094D\u092A\u0930\u094D\u0936 \u092E\u094B\u0921\u092E\u0927\u094D\u092F\u0947, \u0935\u0938\u094D\u0924\u0942 \u0938\u094D\u092A\u0930\u094D\u0936\u093E\u0932\u093E \u0915\u0938\u093E \u092A\u094D\u0930\u0924\u093F\u0938\u093E\u0926 \u0926\u0947\u0924\u093E\u0924 \u0924\u0947 \u092F\u093E \u092C\u091F\u0923\u093E\u0928\u0947 \u092C\u0926\u0932\u093E.",
-    "Diagramm Men\xFC": "\u0906\u0932\u0947\u0916 \u092E\u0947\u0928\u0942",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0939\u0947 \u092C\u091F\u0923 \u0921\u093E\u0935\u0940\u0915\u0921\u0940\u0932 \u0906\u0932\u0947\u0916 \u092E\u0947\u0928\u0942 \u0909\u0918\u0921\u0924\u0947.",
     Kontextmen\u00FC: "\u0938\u0902\u0926\u0930\u094D\u092D \u092E\u0947\u0928\u0942",
-    "Message Toast": "\u0938\u094D\u0925\u093F\u0924\u0940 \u0938\u0942\u091A\u0928\u093E",
-    "Hier werden Statusmeldungen angezeigt.": "\u0938\u094D\u0925\u093F\u0924\u0940 \u0938\u0902\u0926\u0947\u0936 \u092F\u0947\u0925\u0947 \u0926\u093F\u0938\u0924\u093E\u0924.",
     best\u00E4tigen: "\u092A\u0941\u0937\u094D\u091F\u0940 \u0915\u0930\u093E",
     "Aktion best\xE4tigen:": "\u0915\u094D\u0930\u093F\u092F\u0947\u091A\u0940 \u092A\u0941\u0937\u094D\u091F\u0940 \u0915\u0930\u093E:",
     Diagramme: "\u0906\u0932\u0947\u0916",
@@ -46893,8 +46063,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0938\u094D\u0930\u094B\u0924 \u092A\u094D\u0930\u0935\u093E\u0939",
     "verbundenes Gemisch": "\u091C\u094B\u0921\u0932\u0947\u0932\u0947 \u092E\u093F\u0936\u094D\u0930\u0923",
     Elektrodenmaterial: "\u0907\u0932\u0947\u0915\u094D\u091F\u094D\u0930\u094B\u0921 \u092A\u0926\u093E\u0930\u094D\u0925",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0930\u093E\u0938\u093E\u092F\u0928\u093F\u0915 \u092A\u0926\u093E\u0930\u094D\u0925 \u0906\u0923\u093F \u0918\u091F\u0915 \u0924\u092F\u093E\u0930 \u0915\u0930\u0923\u094D\u092F\u093E\u0938\u093E\u0920\u0940 \u0935 \u092A\u0942\u0930\u094D\u0935\u0928\u093F\u0936\u094D\u091A\u093F\u0924 \u0915\u0930\u0923\u094D\u092F\u093E\u0938\u093E\u0920\u0940 \u0939\u093E \u092E\u0947\u0928\u0942 \u0935\u093E\u092A\u0930\u093E.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0928\u0935\u0940\u0928 \u0911\u092C\u094D\u091C\u0947\u0915\u094D\u091F \u0928\u093F\u0935\u0921\u0923\u094D\u092F\u093E\u0938\u093E\u0920\u0940 \u0906\u0923\u093F \u0920\u0947\u0935\u0923\u094D\u092F\u093E\u0938\u093E\u0920\u0940 \u0939\u093E \u092E\u0947\u0928\u0942 \u0935\u093E\u092A\u0930\u093E.",
     entfernen: "\u0915\u093E\u0922\u0942\u0928 \u091F\u093E\u0915\u093E",
     speichern: "\u091C\u0924\u0928 \u0915\u0930\u093E",
     "neues Molek\xFCl": "\u0928\u0935\u0940\u0928 \u0930\u0947\u0923\u0942",
@@ -47111,19 +46279,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0928\u093F\u0935\u0921\u0932\u0947\u0932\u0947 \u0918\u091F\u0915 \u091C\u094B\u0921\u0932\u0947\u0932\u0947 \u0928\u093E\u0939\u0940\u0924."
   },
   te: {
-    "Objekt-Kontextmen\xFC": "\u0C06\u0C2C\u0C4D\u0C1C\u0C46\u0C15\u0C4D\u0C1F\u0C4D \u0C38\u0C02\u0C26\u0C30\u0C4D\u0C2D \u0C2E\u0C46\u0C28\u0C41",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0C07\u0C15\u0C4D\u0C15\u0C21 \u0C06\u0C2C\u0C4D\u0C1C\u0C46\u0C15\u0C4D\u0C1F\u0C4D\u200C\u0C28\u0C41 \u0C28\u0C3F\u0C30\u0C4D\u0C35\u0C39\u0C3F\u0C02\u0C1A\u0C3F \u0C26\u0C3E\u0C28\u0C3F \u0C2A\u0C4D\u0C30\u0C3E\u0C25\u0C2E\u0C3F\u0C15 \u0C38\u0C2E\u0C3E\u0C1A\u0C3E\u0C30\u0C3E\u0C28\u0C4D\u0C28\u0C3F \u0C1A\u0C42\u0C21\u0C02\u0C21\u0C3F.",
     "Vollbild an/aus": "\u0C2A\u0C42\u0C30\u0C4D\u0C24\u0C3F \u0C38\u0C4D\u0C15\u0C4D\u0C30\u0C40\u0C28\u0C4D \u0C06\u0C28\u0C4D/\u0C06\u0C2B\u0C4D",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0C08 \u0C2C\u0C1F\u0C28\u0C4D \u0C2A\u0C42\u0C30\u0C4D\u0C24\u0C3F \u0C38\u0C4D\u0C15\u0C4D\u0C30\u0C40\u0C28\u0C4D \u0C2E\u0C4B\u0C21\u0C4D\u200C\u0C28\u0C41 \u0C06\u0C28\u0C4D \u0C32\u0C47\u0C26\u0C3E \u0C06\u0C2B\u0C4D \u0C1A\u0C47\u0C38\u0C4D\u0C24\u0C41\u0C02\u0C26\u0C3F. \u0C2A\u0C4D\u0C30\u0C38\u0C4D\u0C24\u0C41\u0C24\u0C02 \u0C28\u0C3F\u0C32\u0C3F\u0C2A\u0C3F\u0C35\u0C47\u0C2F\u0C2C\u0C21\u0C3F\u0C02\u0C26\u0C3F.",
-    Eingabemodus: "\u0C07\u0C28\u0C4D\u200C\u0C2A\u0C41\u0C1F\u0C4D \u0C2E\u0C4B\u0C21\u0C4D",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0C08 \u0C2C\u0C1F\u0C28\u0C4D\u200C\u0C24\u0C4B \u0C2E\u0C4C\u0C38\u0C4D, \u0C1F\u0C1A\u0C4D \u0C28\u0C3F\u0C2F\u0C02\u0C24\u0C4D\u0C30\u0C23 \u0C2E\u0C27\u0C4D\u0C2F \u0C2E\u0C3E\u0C30\u0C02\u0C21\u0C3F.",
-    "Dragging an/aus": "\u0C32\u0C3E\u0C17\u0C21\u0C02 \u0C06\u0C28\u0C4D/\u0C06\u0C2B\u0C4D",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0C1F\u0C1A\u0C4D \u0C2E\u0C4B\u0C21\u0C4D\u200C\u0C32\u0C4B \u0C35\u0C38\u0C4D\u0C24\u0C41\u0C35\u0C41\u0C32\u0C41 \u0C38\u0C4D\u0C2A\u0C30\u0C4D\u0C36\u0C15\u0C41 \u0C0E\u0C32\u0C3E \u0C38\u0C4D\u0C2A\u0C02\u0C26\u0C3F\u0C02\u0C1A\u0C3E\u0C32\u0C4B \u0C08 \u0C2C\u0C1F\u0C28\u0C4D\u200C\u0C24\u0C4B \u0C2E\u0C3E\u0C30\u0C4D\u0C1A\u0C02\u0C21\u0C3F.",
-    "Diagramm Men\xFC": "\u0C1A\u0C3E\u0C30\u0C4D\u0C1F\u0C4D \u0C2E\u0C46\u0C28\u0C41",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0C08 \u0C2C\u0C1F\u0C28\u0C4D \u0C0E\u0C21\u0C2E\u0C35\u0C48\u0C2A\u0C41 \u0C1A\u0C3E\u0C30\u0C4D\u0C1F\u0C4D \u0C2E\u0C46\u0C28\u0C41\u0C28\u0C3F \u0C24\u0C46\u0C30\u0C41\u0C38\u0C4D\u0C24\u0C41\u0C02\u0C26\u0C3F.",
     Kontextmen\u00FC: "\u0C38\u0C02\u0C26\u0C30\u0C4D\u0C2D \u0C2E\u0C46\u0C28\u0C41",
-    "Message Toast": "\u0C38\u0C4D\u0C25\u0C3F\u0C24\u0C3F \u0C28\u0C4B\u0C1F\u0C3F\u0C2B\u0C3F\u0C15\u0C47\u0C37\u0C28\u0C4D",
-    "Hier werden Statusmeldungen angezeigt.": "\u0C38\u0C4D\u0C25\u0C3F\u0C24\u0C3F \u0C38\u0C02\u0C26\u0C47\u0C36\u0C3E\u0C32\u0C41 \u0C07\u0C15\u0C4D\u0C15\u0C21 \u0C15\u0C28\u0C3F\u0C2A\u0C3F\u0C38\u0C4D\u0C24\u0C3E\u0C2F\u0C3F.",
     best\u00E4tigen: "\u0C28\u0C3F\u0C30\u0C4D\u0C27\u0C3E\u0C30\u0C3F\u0C02\u0C1A\u0C02\u0C21\u0C3F",
     "Aktion best\xE4tigen:": "\u0C1A\u0C30\u0C4D\u0C2F\u0C28\u0C41 \u0C28\u0C3F\u0C30\u0C4D\u0C27\u0C3E\u0C30\u0C3F\u0C02\u0C1A\u0C02\u0C21\u0C3F:",
     Diagramme: "\u0C1A\u0C3E\u0C30\u0C4D\u0C1F\u0C4D\u200C\u0C32\u0C41",
@@ -47183,8 +46340,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0C2E\u0C42\u0C32 \u0C35\u0C3F\u0C26\u0C4D\u0C2F\u0C41\u0C24\u0C4D \u0C2A\u0C4D\u0C30\u0C35\u0C3E\u0C39\u0C02",
     "verbundenes Gemisch": "\u0C15\u0C28\u0C46\u0C15\u0C4D\u0C1F\u0C4D \u0C05\u0C2F\u0C3F\u0C28 \u0C2E\u0C3F\u0C36\u0C4D\u0C30\u0C2E\u0C02",
     Elektrodenmaterial: "\u0C0E\u0C32\u0C15\u0C4D\u0C1F\u0C4D\u0C30\u0C4B\u0C21\u0C4D \u0C2A\u0C26\u0C3E\u0C30\u0C4D\u0C25\u0C02",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0C30\u0C38\u0C3E\u0C2F\u0C28 \u0C2A\u0C26\u0C3E\u0C30\u0C4D\u0C25\u0C3E\u0C32\u0C41, \u0C2D\u0C3E\u0C17\u0C3E\u0C32\u0C28\u0C41 \u0C38\u0C43\u0C37\u0C4D\u0C1F\u0C3F\u0C02\u0C1A\u0C3F \u0C2E\u0C41\u0C02\u0C26\u0C47 \u0C05\u0C2E\u0C30\u0C4D\u0C1A\u0C21\u0C3E\u0C28\u0C3F\u0C15\u0C3F \u0C08 \u0C2E\u0C46\u0C28\u0C41\u0C28\u0C3F \u0C09\u0C2A\u0C2F\u0C4B\u0C17\u0C3F\u0C02\u0C1A\u0C02\u0C21\u0C3F.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0C15\u0C4A\u0C24\u0C4D\u0C24 \u0C35\u0C38\u0C4D\u0C24\u0C41\u0C35\u0C41\u0C32\u0C28\u0C41 \u0C0E\u0C02\u0C1A\u0C41\u0C15\u0C41\u0C28\u0C3F \u0C09\u0C02\u0C1A\u0C21\u0C3E\u0C28\u0C3F\u0C15\u0C3F \u0C08 \u0C2E\u0C46\u0C28\u0C41\u0C28\u0C3F \u0C09\u0C2A\u0C2F\u0C4B\u0C17\u0C3F\u0C02\u0C1A\u0C02\u0C21\u0C3F.",
     entfernen: "\u0C24\u0C4A\u0C32\u0C17\u0C3F\u0C02\u0C1A\u0C02\u0C21\u0C3F",
     speichern: "\u0C38\u0C47\u0C35\u0C4D \u0C1A\u0C47\u0C2F\u0C02\u0C21\u0C3F",
     "neues Molek\xFCl": "\u0C15\u0C4A\u0C24\u0C4D\u0C24 \u0C05\u0C23\u0C41\u0C35\u0C41",
@@ -47401,19 +46556,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0C0E\u0C02\u0C1A\u0C41\u0C15\u0C41\u0C28\u0C4D\u0C28 \u0C2D\u0C3E\u0C17\u0C3E\u0C32\u0C41 \u0C05\u0C28\u0C41\u0C38\u0C02\u0C27\u0C3E\u0C28\u0C3F\u0C02\u0C1A\u0C2C\u0C21\u0C32\u0C47\u0C26\u0C41."
   },
   ur: {
-    "Objekt-Kontextmen\xFC": "\u0622\u0628\u062C\u06CC\u06A9\u0679 \u06A9\u0627 \u0633\u06CC\u0627\u0642 \u0645\u06CC\u0646\u0648",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u06CC\u06C1\u0627\u06BA \u0622\u0628\u062C\u06CC\u06A9\u0679 \u06A9\u0627 \u0627\u0646\u062A\u0638\u0627\u0645 \u06A9\u0631\u06CC\u06BA \u0627\u0648\u0631 \u0627\u0633 \u06A9\u06CC \u0628\u0646\u06CC\u0627\u062F\u06CC \u0645\u0639\u0644\u0648\u0645\u0627\u062A \u062F\u06CC\u06A9\u06BE\u06CC\u06BA\u06D4",
     "Vollbild an/aus": "\u0641\u0644 \u0627\u0633\u06A9\u0631\u06CC\u0646 \u0622\u0646/\u0622\u0641",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u06CC\u06C1 \u0628\u0679\u0646 \u0641\u0644 \u0627\u0633\u06A9\u0631\u06CC\u0646 \u0645\u0648\u0688 \u06A9\u0648 \u0622\u0646 \u06CC\u0627 \u0622\u0641 \u06A9\u0631\u062A\u0627 \u06C1\u06D2\u06D4 \u0641\u06CC \u0627\u0644\u062D\u0627\u0644 \u063A\u06CC\u0631 \u0641\u0639\u0627\u0644 \u06C1\u06D2\u06D4",
-    Eingabemodus: "\u0627\u0646 \u067E\u0679 \u0645\u0648\u0688",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0627\u0633 \u0628\u0679\u0646 \u0633\u06D2 \u0645\u0627\u0624\u0633 \u0627\u0648\u0631 \u0679\u0686 \u06A9\u0646\u0679\u0631\u0648\u0644 \u06A9\u06D2 \u062F\u0631\u0645\u06CC\u0627\u0646 \u062A\u0628\u062F\u06CC\u0644 \u06A9\u0631\u06CC\u06BA\u06D4",
-    "Dragging an/aus": "\u06A9\u06BE\u06CC\u0646\u0686\u0646\u0627 \u0622\u0646/\u0622\u0641",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0679\u0686 \u0645\u0648\u0688 \u0645\u06CC\u06BA \u0627\u0633 \u0628\u0679\u0646 \u0633\u06D2 \u0628\u062F\u0644\u06CC\u06BA \u06A9\u06C1 \u0627\u0634\u06CC\u0627 \u0686\u06BE\u0648\u0646\u06D2 \u067E\u0631 \u06A9\u06CC\u0633\u06D2 \u0631\u062F\u0639\u0645\u0644 \u062F\u06CC\u06BA\u06D4",
-    "Diagramm Men\xFC": "\u0686\u0627\u0631\u0679 \u0645\u06CC\u0646\u0648",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u06CC\u06C1 \u0628\u0679\u0646 \u0628\u0627\u0626\u06CC\u06BA \u062C\u0627\u0646\u0628 \u0686\u0627\u0631\u0679 \u0645\u06CC\u0646\u0648 \u06A9\u06BE\u0648\u0644\u062A\u0627 \u06C1\u06D2\u06D4",
     Kontextmen\u00FC: "\u0633\u06CC\u0627\u0642 \u0645\u06CC\u0646\u0648",
-    "Message Toast": "\u062D\u0627\u0644\u062A \u06A9\u06CC \u0627\u0637\u0644\u0627\u0639",
-    "Hier werden Statusmeldungen angezeigt.": "\u062D\u0627\u0644\u062A \u06A9\u06D2 \u067E\u06CC\u063A\u0627\u0645\u0627\u062A \u06CC\u06C1\u0627\u06BA \u062F\u06A9\u06BE\u0627\u0626\u06D2 \u062C\u0627\u062A\u06D2 \u06C1\u06CC\u06BA\u06D4",
     best\u00E4tigen: "\u062A\u0635\u062F\u06CC\u0642 \u06A9\u0631\u06CC\u06BA",
     "Aktion best\xE4tigen:": "\u0639\u0645\u0644 \u06A9\u06CC \u062A\u0635\u062F\u06CC\u0642 \u06A9\u0631\u06CC\u06BA:",
     Diagramme: "\u0686\u0627\u0631\u0679\u0633",
@@ -47473,8 +46617,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0645\u0627\u062E\u0630 \u06A9\u0631\u0646\u0679",
     "verbundenes Gemisch": "\u0645\u0646\u0633\u0644\u06A9 \u0622\u0645\u06CC\u0632\u06C1",
     Elektrodenmaterial: "\u0627\u0644\u06CC\u06A9\u0679\u0631\u0648\u0688 \u06A9\u0627 \u0645\u0627\u062F\u06C1",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0627\u0633 \u0645\u06CC\u0646\u0648 \u0633\u06D2 \u06A9\u06CC\u0645\u06CC\u0627\u0626\u06CC \u0645\u0627\u062F\u06D2 \u0627\u0648\u0631 \u0627\u062C\u0632\u0627 \u0628\u0646\u0627\u0626\u06CC\u06BA \u0627\u0648\u0631 \u067E\u06C1\u0644\u06D2 \u0633\u06D2 \u0645\u0642\u0631\u0631 \u06A9\u0631\u06CC\u06BA\u06D4",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0627\u0633 \u0645\u06CC\u0646\u0648 \u0633\u06D2 \u0646\u0626\u06D2 \u0622\u0628\u062C\u06CC\u06A9\u0679\u0633 \u0645\u0646\u062A\u062E\u0628 \u06A9\u0631 \u06A9\u06D2 \u0631\u06A9\u06BE\u06CC\u06BA\u06D4",
     entfernen: "\u06C1\u0679\u0627\u0626\u06CC\u06BA",
     speichern: "\u0645\u062D\u0641\u0648\u0638 \u06A9\u0631\u06CC\u06BA",
     "neues Molek\xFCl": "\u0646\u06CC\u0627 \u0645\u0627\u0644\u06CC\u06A9\u06CC\u0648\u0644",
@@ -47691,19 +46833,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0645\u0646\u062A\u062E\u0628 \u0627\u062C\u0632\u0627 \u0622\u067E\u0633 \u0645\u06CC\u06BA \u0645\u0646\u0633\u0644\u06A9 \u0646\u06C1\u06CC\u06BA \u06C1\u06CC\u06BA\u06D4"
   },
   kn: {
-    "Objekt-Kontextmen\xFC": "\u0CB5\u0CB8\u0CCD\u0CA4\u0CC1 \u0CB8\u0C82\u0CA6\u0CB0\u0CCD\u0CAD \u0CAE\u0CC6\u0CA8\u0CC1",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0C87\u0CB2\u0CCD\u0CB2\u0CBF \u0CB5\u0CB8\u0CCD\u0CA4\u0CC1\u0CB5\u0CA8\u0CCD\u0CA8\u0CC1 \u0CA8\u0CBF\u0CB0\u0CCD\u0CB5\u0CB9\u0CBF\u0CB8\u0CBF \u0CAE\u0CA4\u0CCD\u0CA4\u0CC1 \u0C85\u0CA6\u0CB0 \u0CAE\u0CC2\u0CB2 \u0CAE\u0CBE\u0CB9\u0CBF\u0CA4\u0CBF\u0CAF\u0CA8\u0CCD\u0CA8\u0CC1 \u0CB5\u0CC0\u0C95\u0CCD\u0CB7\u0CBF\u0CB8\u0CBF.",
     "Vollbild an/aus": "\u0CAA\u0CC2\u0CB0\u0CCD\u0CA3 \u0CAA\u0CB0\u0CA6\u0CC6 \u0C86\u0CA8\u0CCD/\u0C86\u0CAB\u0CCD",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0C88 \u0CAC\u0C9F\u0CA8\u0CCD \u0CAA\u0CC2\u0CB0\u0CCD\u0CA3 \u0CAA\u0CB0\u0CA6\u0CC6 \u0CAE\u0CCB\u0CA1\u0CCD \u0C85\u0CA8\u0CCD\u0CA8\u0CC1 \u0C86\u0CA8\u0CCD \u0C85\u0CA5\u0CB5\u0CBE \u0C86\u0CAB\u0CCD \u0CAE\u0CBE\u0CA1\u0CC1\u0CA4\u0CCD\u0CA4\u0CA6\u0CC6. \u0C88\u0C97 \u0CA8\u0CBF\u0CB7\u0CCD\u0C95\u0CCD\u0CB0\u0CBF\u0CAF\u0CB5\u0CBE\u0C97\u0CBF\u0CA6\u0CC6.",
-    Eingabemodus: "\u0C87\u0CA8\u0CCD\u200C\u0CAA\u0CC1\u0C9F\u0CCD \u0CAE\u0CCB\u0CA1\u0CCD",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0C88 \u0CAC\u0C9F\u0CA8\u0CCD\u200C\u0CA8\u0CBF\u0C82\u0CA6 \u0CAE\u0CCC\u0CB8\u0CCD \u0CAE\u0CA4\u0CCD\u0CA4\u0CC1 \u0CB8\u0CCD\u0CAA\u0CB0\u0CCD\u0CB6 \u0CA8\u0CBF\u0CAF\u0C82\u0CA4\u0CCD\u0CB0\u0CA3\u0CA6 \u0CA8\u0CA1\u0CC1\u0CB5\u0CC6 \u0CAC\u0CA6\u0CB2\u0CBE\u0CAF\u0CBF\u0CB8\u0CBF.",
-    "Dragging an/aus": "\u0C8E\u0CB3\u0CC6\u0CAF\u0CC1\u0CB5\u0CC1\u0CA6\u0CC1 \u0C86\u0CA8\u0CCD/\u0C86\u0CAB\u0CCD",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0CB8\u0CCD\u0CAA\u0CB0\u0CCD\u0CB6 \u0CAE\u0CCB\u0CA1\u0CCD\u200C\u0CA8\u0CB2\u0CCD\u0CB2\u0CBF \u0CB5\u0CB8\u0CCD\u0CA4\u0CC1\u0C97\u0CB3\u0CC1 \u0CB8\u0CCD\u0CAA\u0CB0\u0CCD\u0CB6\u0C95\u0CCD\u0C95\u0CC6 \u0CB9\u0CC7\u0C97\u0CC6 \u0CAA\u0CCD\u0CB0\u0CA4\u0CBF\u0C95\u0CCD\u0CB0\u0CBF\u0CAF\u0CBF\u0CB8\u0CC1\u0CA4\u0CCD\u0CA4\u0CB5\u0CC6 \u0C8E\u0C82\u0CAC\u0CC1\u0CA6\u0CA8\u0CCD\u0CA8\u0CC1 \u0C88 \u0CAC\u0C9F\u0CA8\u0CCD\u200C\u0CA8\u0CBF\u0C82\u0CA6 \u0CAC\u0CA6\u0CB2\u0CBE\u0CAF\u0CBF\u0CB8\u0CBF.",
-    "Diagramm Men\xFC": "\u0C9A\u0CBE\u0CB0\u0CCD\u0C9F\u0CCD \u0CAE\u0CC6\u0CA8\u0CC1",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0C88 \u0CAC\u0C9F\u0CA8\u0CCD \u0C8E\u0CA1\u0CAD\u0CBE\u0C97\u0CA6\u0CB2\u0CCD\u0CB2\u0CBF \u0C9A\u0CBE\u0CB0\u0CCD\u0C9F\u0CCD \u0CAE\u0CC6\u0CA8\u0CC1 \u0CA4\u0CC6\u0CB0\u0CC6\u0CAF\u0CC1\u0CA4\u0CCD\u0CA4\u0CA6\u0CC6.",
     Kontextmen\u00FC: "\u0CB8\u0C82\u0CA6\u0CB0\u0CCD\u0CAD \u0CAE\u0CC6\u0CA8\u0CC1",
-    "Message Toast": "\u0CB8\u0CCD\u0CA5\u0CBF\u0CA4\u0CBF \u0CB8\u0CC2\u0C9A\u0CA8\u0CC6",
-    "Hier werden Statusmeldungen angezeigt.": "\u0CB8\u0CCD\u0CA5\u0CBF\u0CA4\u0CBF \u0CB8\u0C82\u0CA6\u0CC7\u0CB6\u0C97\u0CB3\u0CC1 \u0C87\u0CB2\u0CCD\u0CB2\u0CBF \u0C95\u0CBE\u0CA3\u0CBF\u0CB8\u0CC1\u0CA4\u0CCD\u0CA4\u0CB5\u0CC6.",
     best\u00E4tigen: "\u0C96\u0C9A\u0CBF\u0CA4\u0CAA\u0CA1\u0CBF\u0CB8\u0CBF",
     "Aktion best\xE4tigen:": "\u0C95\u0CCD\u0CB0\u0CBF\u0CAF\u0CC6\u0CAF\u0CA8\u0CCD\u0CA8\u0CC1 \u0C96\u0C9A\u0CBF\u0CA4\u0CAA\u0CA1\u0CBF\u0CB8\u0CBF:",
     Diagramme: "\u0C9A\u0CBE\u0CB0\u0CCD\u0C9F\u0CCD\u200C\u0C97\u0CB3\u0CC1",
@@ -47763,8 +46894,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0CAE\u0CC2\u0CB2 \u0CB5\u0CBF\u0CA6\u0CCD\u0CAF\u0CC1\u0CA4\u0CCD \u0CAA\u0CCD\u0CB0\u0CB5\u0CBE\u0CB9",
     "verbundenes Gemisch": "\u0CB8\u0C82\u0CAA\u0CB0\u0CCD\u0C95\u0CBF\u0CA4 \u0CAE\u0CBF\u0CB6\u0CCD\u0CB0\u0CA3",
     Elektrodenmaterial: "\u0CB5\u0CBF\u0CA6\u0CCD\u0CAF\u0CC1\u0CA6\u0CCD\u0CB5\u0CBE\u0CB0\u0CA6 \u0CB5\u0CB8\u0CCD\u0CA4\u0CC1",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0CB0\u0CBE\u0CB8\u0CBE\u0CAF\u0CA8\u0CBF\u0C95 \u0CAA\u0CA6\u0CBE\u0CB0\u0CCD\u0CA5\u0C97\u0CB3\u0CC1 \u0CAE\u0CA4\u0CCD\u0CA4\u0CC1 \u0C98\u0C9F\u0C95\u0C97\u0CB3\u0CA8\u0CCD\u0CA8\u0CC1 \u0CB0\u0C9A\u0CBF\u0CB8\u0CB2\u0CC1 \u0CB9\u0CBE\u0C97\u0CC2 \u0CAA\u0CC2\u0CB0\u0CCD\u0CB5\u0CA8\u0CBF\u0C97\u0CA6\u0CBF\u0CAA\u0CA1\u0CBF\u0CB8\u0CB2\u0CC1 \u0C88 \u0CAE\u0CC6\u0CA8\u0CC1 \u0CAC\u0CB3\u0CB8\u0CBF.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0CB9\u0CCA\u0CB8 \u0CB5\u0CB8\u0CCD\u0CA4\u0CC1\u0C97\u0CB3\u0CA8\u0CCD\u0CA8\u0CC1 \u0C86\u0CAF\u0CCD\u0C95\u0CC6\u0CAE\u0CBE\u0CA1\u0CBF \u0C87\u0CB0\u0CBF\u0CB8\u0CB2\u0CC1 \u0C88 \u0CAE\u0CC6\u0CA8\u0CC1 \u0CAC\u0CB3\u0CB8\u0CBF.",
     entfernen: "\u0CA4\u0CC6\u0C97\u0CC6\u0CA6\u0CC1\u0CB9\u0CBE\u0C95\u0CC1",
     speichern: "\u0C89\u0CB3\u0CBF\u0CB8\u0CC1",
     "neues Molek\xFCl": "\u0CB9\u0CCA\u0CB8 \u0C85\u0CA3\u0CC1",
@@ -47981,19 +47110,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0C86\u0CAF\u0CCD\u0C95\u0CC6\u0CAE\u0CBE\u0CA1\u0CBF\u0CA6 \u0C98\u0C9F\u0C95\u0C97\u0CB3\u0CC1 \u0CB8\u0C82\u0CAA\u0CB0\u0CCD\u0C95\u0C97\u0CCA\u0C82\u0CA1\u0CBF\u0CB2\u0CCD\u0CB2."
   },
   or: {
-    "Objekt-Kontextmen\xFC": "\u0B2C\u0B38\u0B4D\u0B24\u0B41 \u0B2A\u0B4D\u0B30\u0B38\u0B19\u0B4D\u0B17 \u0B2E\u0B47\u0B28\u0B41",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0B0F\u0B20\u0B3E\u0B30\u0B47 \u0B2C\u0B38\u0B4D\u0B24\u0B41 \u0B2A\u0B30\u0B3F\u0B1A\u0B3E\u0B33\u0B28\u0B3E \u0B15\u0B30\u0B28\u0B4D\u0B24\u0B41 \u0B0F\u0B2C\u0B02 \u0B0F\u0B39\u0B3E\u0B30 \u0B2E\u0B4C\u0B33\u0B3F\u0B15 \u0B38\u0B42\u0B1A\u0B28\u0B3E \u0B26\u0B47\u0B16\u0B28\u0B4D\u0B24\u0B41\u0964",
     "Vollbild an/aus": "\u0B2A\u0B42\u0B30\u0B4D\u0B23\u0B4D\u0B23\u0B2A\u0B30\u0B26\u0B3E \u0B1A\u0B3E\u0B32\u0B41/\u0B2C\u0B28\u0B4D\u0B26",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0B0F\u0B39\u0B3F \u0B2C\u0B1F\u0B28\u0B4D \u0B2A\u0B42\u0B30\u0B4D\u0B23\u0B4D\u0B23\u0B2A\u0B30\u0B26\u0B3E \u0B2E\u0B4B\u0B21\u0B4D \u0B1A\u0B3E\u0B32\u0B41 \u0B15\u0B3F\u0B2E\u0B4D\u0B2C\u0B3E \u0B2C\u0B28\u0B4D\u0B26 \u0B15\u0B30\u0B47\u0964 \u0B2C\u0B30\u0B4D\u0B24\u0B4D\u0B24\u0B2E\u0B3E\u0B28 \u0B28\u0B3F\u0B37\u0B4D\u0B15\u0B4D\u0B30\u0B3F\u0B5F\u0964",
-    Eingabemodus: "\u0B07\u0B28\u0B2A\u0B41\u0B1F\u0B4D \u0B2E\u0B4B\u0B21\u0B4D",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0B0F\u0B39\u0B3F \u0B2C\u0B1F\u0B28\u0B4D\u200C\u0B30\u0B47 \u0B2E\u0B3E\u0B09\u0B38\u0B4D \u0B0F\u0B2C\u0B02 \u0B38\u0B4D\u0B2A\u0B30\u0B4D\u0B36 \u0B28\u0B3F\u0B5F\u0B28\u0B4D\u0B24\u0B4D\u0B30\u0B23 \u0B2E\u0B27\u0B4D\u0B5F\u0B30\u0B47 \u0B2C\u0B26\u0B33\u0B3E\u0B28\u0B4D\u0B24\u0B41\u0964",
-    "Dragging an/aus": "\u0B1F\u0B3E\u0B23\u0B3F\u0B2C\u0B3E \u0B1A\u0B3E\u0B32\u0B41/\u0B2C\u0B28\u0B4D\u0B26",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0B38\u0B4D\u0B2A\u0B30\u0B4D\u0B36 \u0B2E\u0B4B\u0B21\u0B4D\u200C\u0B30\u0B47 \u0B2C\u0B38\u0B4D\u0B24\u0B41\u0B17\u0B41\u0B21\u0B3C\u0B3F\u0B15 \u0B38\u0B4D\u0B2A\u0B30\u0B4D\u0B36\u0B30\u0B47 \u0B15\u0B3F\u0B2A\u0B30\u0B3F \u0B2A\u0B4D\u0B30\u0B24\u0B3F\u0B15\u0B4D\u0B30\u0B3F\u0B5F\u0B3E \u0B15\u0B30\u0B3F\u0B2C\u0B47 \u0B0F\u0B39\u0B3F \u0B2C\u0B1F\u0B28\u0B4D\u200C\u0B30\u0B47 \u0B2C\u0B26\u0B33\u0B3E\u0B28\u0B4D\u0B24\u0B41\u0964",
-    "Diagramm Men\xFC": "\u0B1A\u0B3E\u0B30\u0B4D\u0B1F \u0B2E\u0B47\u0B28\u0B41",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0B0F\u0B39\u0B3F \u0B2C\u0B1F\u0B28\u0B4D \u0B2C\u0B3E\u0B2E \u0B2A\u0B3E\u0B30\u0B4D\u0B36\u0B4D\u0B71\u0B30\u0B47 \u0B1A\u0B3E\u0B30\u0B4D\u0B1F \u0B2E\u0B47\u0B28\u0B41 \u0B16\u0B4B\u0B32\u0B47\u0964",
     Kontextmen\u00FC: "\u0B2A\u0B4D\u0B30\u0B38\u0B19\u0B4D\u0B17 \u0B2E\u0B47\u0B28\u0B41",
-    "Message Toast": "\u0B38\u0B4D\u0B25\u0B3F\u0B24\u0B3F \u0B38\u0B42\u0B1A\u0B28\u0B3E",
-    "Hier werden Statusmeldungen angezeigt.": "\u0B38\u0B4D\u0B25\u0B3F\u0B24\u0B3F \u0B38\u0B28\u0B4D\u0B26\u0B47\u0B36 \u0B0F\u0B20\u0B3E\u0B30\u0B47 \u0B26\u0B47\u0B16\u0B3E\u0B2F\u0B3E\u0B0F\u0964",
     best\u00E4tigen: "\u0B28\u0B3F\u0B36\u0B4D\u0B1A\u0B3F\u0B24 \u0B15\u0B30\u0B28\u0B4D\u0B24\u0B41",
     "Aktion best\xE4tigen:": "\u0B15\u0B3E\u0B30\u0B4D\u0B2F\u0B4D\u0B5F \u0B28\u0B3F\u0B36\u0B4D\u0B1A\u0B3F\u0B24 \u0B15\u0B30\u0B28\u0B4D\u0B24\u0B41:",
     Diagramme: "\u0B1A\u0B3E\u0B30\u0B4D\u0B1F\u0B17\u0B41\u0B21\u0B3C\u0B3F\u0B15",
@@ -48053,8 +47171,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0B09\u0B24\u0B4D\u0B38 \u0B2C\u0B3F\u0B26\u0B4D\u0B5F\u0B41\u0B24\u0B4D \u0B2A\u0B4D\u0B30\u0B2C\u0B3E\u0B39",
     "verbundenes Gemisch": "\u0B38\u0B02\u0B2F\u0B41\u0B15\u0B4D\u0B24 \u0B2E\u0B3F\u0B36\u0B4D\u0B30\u0B23",
     Elektrodenmaterial: "\u0B07\u0B32\u0B47\u0B15\u0B4D\u0B1F\u0B4D\u0B30\u0B4B\u0B21\u0B4D \u0B2A\u0B26\u0B3E\u0B30\u0B4D\u0B25",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0B30\u0B3E\u0B38\u0B3E\u0B5F\u0B28\u0B3F\u0B15 \u0B2A\u0B26\u0B3E\u0B30\u0B4D\u0B25 \u0B0F\u0B2C\u0B02 \u0B09\u0B2A\u0B3E\u0B26\u0B3E\u0B28 \u0B38\u0B43\u0B37\u0B4D\u0B1F\u0B3F \u0B13 \u0B2A\u0B42\u0B30\u0B4D\u0B2C\u0B28\u0B3F\u0B30\u0B4D\u0B26\u0B4D\u0B27\u0B3E\u0B30\u0B23 \u0B2A\u0B3E\u0B07\u0B01 \u0B0F\u0B39\u0B3F \u0B2E\u0B47\u0B28\u0B41 \u0B2C\u0B4D\u0B5F\u0B2C\u0B39\u0B3E\u0B30 \u0B15\u0B30\u0B28\u0B4D\u0B24\u0B41\u0964",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0B28\u0B42\u0B24\u0B28 \u0B2C\u0B38\u0B4D\u0B24\u0B41 \u0B2C\u0B3E\u0B1B\u0B3F \u0B38\u0B4D\u0B25\u0B3E\u0B2A\u0B28 \u0B15\u0B30\u0B3F\u0B2C\u0B3E \u0B2A\u0B3E\u0B07\u0B01 \u0B0F\u0B39\u0B3F \u0B2E\u0B47\u0B28\u0B41 \u0B2C\u0B4D\u0B5F\u0B2C\u0B39\u0B3E\u0B30 \u0B15\u0B30\u0B28\u0B4D\u0B24\u0B41\u0964",
     entfernen: "\u0B15\u0B3E\u0B22\u0B3C\u0B28\u0B4D\u0B24\u0B41",
     speichern: "\u0B38\u0B02\u0B30\u0B15\u0B4D\u0B37\u0B23 \u0B15\u0B30\u0B28\u0B4D\u0B24\u0B41",
     "neues Molek\xFCl": "\u0B28\u0B42\u0B24\u0B28 \u0B05\u0B23\u0B41",
@@ -48271,19 +47387,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0B2C\u0B1B\u0B3E\u0B2F\u0B3E\u0B07\u0B25\u0B3F\u0B2C\u0B3E \u0B09\u0B2A\u0B3E\u0B26\u0B3E\u0B28\u0B17\u0B41\u0B21\u0B3C\u0B3F\u0B15 \u0B38\u0B02\u0B2F\u0B41\u0B15\u0B4D\u0B24 \u0B28\u0B41\u0B39\u0B47\u0B01\u0964"
   },
   ne: {
-    "Objekt-Kontextmen\xFC": "\u0935\u0938\u094D\u0924\u0941 \u0938\u0928\u094D\u0926\u0930\u094D\u092D \u092E\u0947\u0928\u0941",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u092F\u0939\u093E\u0901 \u0935\u0938\u094D\u0924\u0941\u0915\u094B \u0935\u094D\u092F\u0935\u0938\u094D\u0925\u093E\u092A\u0928 \u0917\u0930\u094D\u0928\u0941\u0939\u094B\u0938\u094D \u0930 \u092F\u0938\u0915\u094B \u0906\u0927\u093E\u0930\u092D\u0942\u0924 \u091C\u093E\u0928\u0915\u093E\u0930\u0940 \u0939\u0947\u0930\u094D\u0928\u0941\u0939\u094B\u0938\u094D\u0964",
     "Vollbild an/aus": "\u092A\u0942\u0930\u093E \u092A\u0930\u094D\u0926\u093E \u0916\u094B\u0932\u094D\u0928\u0947/\u092C\u0928\u094D\u0926 \u0917\u0930\u094D\u0928\u0947",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u092F\u094B \u092C\u091F\u0928\u0932\u0947 \u092A\u0942\u0930\u093E \u092A\u0930\u094D\u0926\u093E \u092E\u094B\u0921 \u0916\u094B\u0932\u094D\u091B \u0935\u093E \u092C\u0928\u094D\u0926 \u0917\u0930\u094D\u091B\u0964 \u0905\u0939\u093F\u0932\u0947 \u0928\u093F\u0937\u094D\u0915\u094D\u0930\u093F\u092F \u091B\u0964",
-    Eingabemodus: "\u0907\u0928\u092A\u0941\u091F \u092E\u094B\u0921",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u092F\u094B \u092C\u091F\u0928\u092C\u093E\u091F \u092E\u093E\u0909\u0938 \u0930 \u0938\u094D\u092A\u0930\u094D\u0936 \u0928\u093F\u092F\u0928\u094D\u0924\u094D\u0930\u0923\u092C\u0940\u091A \u092C\u0926\u0932\u094D\u0928\u0941\u0939\u094B\u0938\u094D\u0964",
-    "Dragging an/aus": "\u0924\u093E\u0928\u094D\u0928\u0947 \u0916\u094B\u0932\u094D\u0928\u0947/\u092C\u0928\u094D\u0926 \u0917\u0930\u094D\u0928\u0947",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0938\u094D\u092A\u0930\u094D\u0936 \u092E\u094B\u0921\u092E\u093E \u0935\u0938\u094D\u0924\u0941\u0939\u0930\u0942\u0932\u0947 \u091B\u094B\u0907\u0901\u0926\u093E \u0915\u0938\u0930\u0940 \u092A\u094D\u0930\u0924\u093F\u0915\u094D\u0930\u093F\u092F\u093E \u0926\u093F\u0928\u094D\u091B\u0928\u094D \u092D\u0928\u094D\u0928\u0947 \u092F\u094B \u092C\u091F\u0928\u092C\u093E\u091F \u092C\u0926\u0932\u094D\u0928\u0941\u0939\u094B\u0938\u094D\u0964",
-    "Diagramm Men\xFC": "\u091A\u093E\u0930\u094D\u091F \u092E\u0947\u0928\u0941",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u092F\u094B \u092C\u091F\u0928\u0932\u0947 \u092C\u093E\u092F\u093E\u0901\u0924\u093F\u0930 \u091A\u093E\u0930\u094D\u091F \u092E\u0947\u0928\u0941 \u0916\u094B\u0932\u094D\u091B\u0964",
     Kontextmen\u00FC: "\u0938\u0928\u094D\u0926\u0930\u094D\u092D \u092E\u0947\u0928\u0941",
-    "Message Toast": "\u0938\u094D\u0925\u093F\u0924\u093F \u0938\u0942\u091A\u0928\u093E",
-    "Hier werden Statusmeldungen angezeigt.": "\u0938\u094D\u0925\u093F\u0924\u093F \u0938\u0928\u094D\u0926\u0947\u0936\u0939\u0930\u0942 \u092F\u0939\u093E\u0901 \u0926\u0947\u0916\u093F\u0928\u094D\u091B\u0928\u094D\u0964",
     best\u00E4tigen: "\u092A\u0941\u0937\u094D\u091F\u093F \u0917\u0930\u094D\u0928\u0941\u0939\u094B\u0938\u094D",
     "Aktion best\xE4tigen:": "\u0915\u093E\u0930\u094D\u092F \u092A\u0941\u0937\u094D\u091F\u093F \u0917\u0930\u094D\u0928\u0941\u0939\u094B\u0938\u094D:",
     Diagramme: "\u091A\u093E\u0930\u094D\u091F\u0939\u0930\u0942",
@@ -48343,8 +47448,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0938\u094D\u0930\u094B\u0924 \u0915\u0930\u0947\u0928\u094D\u091F",
     "verbundenes Gemisch": "\u091C\u094B\u0921\u093F\u090F\u0915\u094B \u092E\u093F\u0936\u094D\u0930\u0923",
     Elektrodenmaterial: "\u0907\u0932\u0947\u0915\u094D\u091F\u094D\u0930\u094B\u0921 \u0938\u093E\u092E\u0917\u094D\u0930\u0940",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0930\u093E\u0938\u093E\u092F\u0928\u093F\u0915 \u092A\u0926\u093E\u0930\u094D\u0925 \u0930 \u0905\u0935\u092F\u0935\u0939\u0930\u0942 \u092C\u0928\u093E\u0909\u0928 \u0930 \u092A\u0942\u0930\u094D\u0935\u0928\u093F\u0930\u094D\u0927\u093E\u0930\u093F\u0924 \u0917\u0930\u094D\u0928 \u092F\u094B \u092E\u0947\u0928\u0941 \u092A\u094D\u0930\u092F\u094B\u0917 \u0917\u0930\u094D\u0928\u0941\u0939\u094B\u0938\u094D\u0964",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0928\u092F\u093E\u0901 \u0935\u0938\u094D\u0924\u0941 \u091B\u093E\u0928\u0947\u0930 \u0930\u093E\u0916\u094D\u0928 \u092F\u094B \u092E\u0947\u0928\u0941 \u092A\u094D\u0930\u092F\u094B\u0917 \u0917\u0930\u094D\u0928\u0941\u0939\u094B\u0938\u094D\u0964",
     entfernen: "\u0939\u091F\u093E\u0909\u0928\u0941\u0939\u094B\u0938\u094D",
     speichern: "\u0938\u0941\u0930\u0915\u094D\u0937\u093F\u0924 \u0917\u0930\u094D\u0928\u0941\u0939\u094B\u0938\u094D",
     "neues Molek\xFCl": "\u0928\u092F\u093E\u0901 \u0905\u0923\u0941",
@@ -48561,19 +47664,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u091B\u093E\u0928\u093F\u090F\u0915\u093E \u0905\u0935\u092F\u0935\u0939\u0930\u0942 \u091C\u094B\u0921\u093F\u090F\u0915\u093E \u091B\u0948\u0928\u0928\u094D\u0964"
   },
   si: {
-    "Objekt-Kontextmen\xFC": "\u0DC0\u0DC3\u0DCA\u0DAD\u0DD4 \u0DC3\u0DB1\u0DCA\u0DAF\u0DBB\u0DCA\u0DB7 \u0DB8\u0DD9\u0DB1\u0DD4\u0DC0",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0DB8\u0DD9\u0DC4\u0DD2 \u0DC0\u0DC3\u0DCA\u0DAD\u0DD4\u0DC0 \u0D9A\u0DC5\u0DB8\u0DB1\u0DCF\u0D9A\u0DBB\u0DAB\u0DBA \u0D9A\u0DBB \u0D91\u0DC4\u0DD2 \u0DB8\u0DD6\u0DBD\u0DD2\u0D9A \u0DAD\u0DDC\u0DBB\u0DAD\u0DD4\u0DBB\u0DD4 \u0DB6\u0DBD\u0DB1\u0DCA\u0DB1.",
     "Vollbild an/aus": "\u0DB4\u0DD6\u0DBB\u0DCA\u0DAB \u0DAD\u0DD2\u0DBB\u0DBA \u0DC3\u0D9A\u0DCA\u200D\u0DBB\u0DD2\u0DBA/\u0D85\u0D9A\u0DCA\u200D\u0DBB\u0DD2\u0DBA",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0DB8\u0DD9\u0DB8 \u0DB6\u0DDC\u0DAD\u0DCA\u0DAD\u0DB8 \u0DB4\u0DD6\u0DBB\u0DCA\u0DAB \u0DAD\u0DD2\u0DBB \u0DB4\u0DCA\u200D\u0DBB\u0D9A\u0DCF\u0DBB\u0DBA \u0DC3\u0D9A\u0DCA\u200D\u0DBB\u0DD2\u0DBA \u0DC4\u0DDD \u0D85\u0D9A\u0DCA\u200D\u0DBB\u0DD2\u0DBA \u0D9A\u0DBB\u0DBA\u0DD2. \u0DAF\u0DD0\u0DB1\u0DA7 \u0D85\u0D9A\u0DCA\u200D\u0DBB\u0DD2\u0DBA\u0DBA\u0DD2.",
-    Eingabemodus: "\u0D86\u0DAF\u0DCF\u0DB1 \u0DB4\u0DCA\u200D\u0DBB\u0D9A\u0DCF\u0DBB\u0DBA",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0DB8\u0DD9\u0DB8 \u0DB6\u0DDC\u0DAD\u0DCA\u0DAD\u0DB8\u0DD9\u0DB1\u0DCA \u0DB8\u0DD6\u0DC3\u0DD2\u0D9A \u0DC3\u0DC4 \u0DC3\u0DCA\u0DB4\u0DBB\u0DCA\u0DC1 \u0DB4\u0DCF\u0DBD\u0DB1\u0DBA \u0D85\u0DAD\u0DBB \u0DB8\u0DCF\u0DBB\u0DD4 \u0DC0\u0DB1\u0DCA\u0DB1.",
-    "Dragging an/aus": "\u0D87\u0DAF\u0DD3\u0DB8 \u0DC3\u0D9A\u0DCA\u200D\u0DBB\u0DD2\u0DBA/\u0D85\u0D9A\u0DCA\u200D\u0DBB\u0DD2\u0DBA",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0DC3\u0DCA\u0DB4\u0DBB\u0DCA\u0DC1 \u0DB4\u0DCA\u200D\u0DBB\u0D9A\u0DCF\u0DBB\u0DBA\u0DDA\u0DAF\u0DD3 \u0DC0\u0DC3\u0DCA\u0DAD\u0DD4 \u0DC3\u0DCA\u0DB4\u0DBB\u0DCA\u0DC1\u0DBA\u0DA7 \u0DB4\u0DCA\u200D\u0DBB\u0DAD\u0DD2\u0DA0\u0DCF\u0DBB \u0DAF\u0D9A\u0DCA\u0DC0\u0DB1 \u0D86\u0D9A\u0DCF\u0DBB\u0DBA \u0DB8\u0DD9\u0DB8 \u0DB6\u0DDC\u0DAD\u0DCA\u0DAD\u0DB8\u0DD9\u0DB1\u0DCA \u0DC0\u0DD9\u0DB1\u0DC3\u0DCA \u0D9A\u0DBB\u0DB1\u0DCA\u0DB1.",
-    "Diagramm Men\xFC": "\u0DB4\u0DCA\u200D\u0DBB\u0DC3\u0DCA\u0DAE\u0DCF\u0DBB \u0DB8\u0DD9\u0DB1\u0DD4\u0DC0",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0DB8\u0DD9\u0DB8 \u0DB6\u0DDC\u0DAD\u0DCA\u0DAD\u0DB8 \u0DC0\u0DB8\u0DCA \u0DB4\u0DD0\u0DAD\u0DCA\u0DAD\u0DDA \u0DB4\u0DCA\u200D\u0DBB\u0DC3\u0DCA\u0DAE\u0DCF\u0DBB \u0DB8\u0DD9\u0DB1\u0DD4\u0DC0 \u0DC0\u0DD2\u0DC0\u0DD8\u0DAD \u0D9A\u0DBB\u0DBA\u0DD2.",
     Kontextmen\u00FC: "\u0DC3\u0DB1\u0DCA\u0DAF\u0DBB\u0DCA\u0DB7 \u0DB8\u0DD9\u0DB1\u0DD4\u0DC0",
-    "Message Toast": "\u0DAD\u0DAD\u0DCA\u0DAD\u0DCA\u0DC0 \u0DAF\u0DD0\u0DB1\u0DD4\u0DB8\u0DCA\u0DAF\u0DD3\u0DB8",
-    "Hier werden Statusmeldungen angezeigt.": "\u0DAD\u0DAD\u0DCA\u0DAD\u0DCA\u0DC0 \u0DB4\u0DAB\u0DD2\u0DC0\u0DD2\u0DA9 \u0DB8\u0DD9\u0DC4\u0DD2 \u0DB4\u0DD9\u0DB1\u0DCA\u0DC0\u0DBA\u0DD2.",
     best\u00E4tigen: "\u0DAD\u0DC4\u0DC0\u0DD4\u0DBB\u0DD4 \u0D9A\u0DBB\u0DB1\u0DCA\u0DB1",
     "Aktion best\xE4tigen:": "\u0D9A\u0DCA\u200D\u0DBB\u0DD2\u0DBA\u0DCF\u0DC0 \u0DAD\u0DC4\u0DC0\u0DD4\u0DBB\u0DD4 \u0D9A\u0DBB\u0DB1\u0DCA\u0DB1:",
     Diagramme: "\u0DB4\u0DCA\u200D\u0DBB\u0DC3\u0DCA\u0DAE\u0DCF\u0DBB",
@@ -48633,8 +47725,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0DB8\u0DD6\u0DBD\u0DCF\u0DC1\u0DCA\u200D\u0DBB \u0DB0\u0DCF\u0DBB\u0DCF\u0DC0",
     "verbundenes Gemisch": "\u0DC3\u0DB8\u0DCA\u0DB6\u0DB1\u0DCA\u0DB0\u0DD2\u0DAD \u0DB8\u0DD2\u0DC1\u0DCA\u200D\u0DBB\u0DAB\u0DBA",
     Elektrodenmaterial: "\u0D89\u0DBD\u0DD9\u0D9A\u0DCA\u0DA7\u0DCA\u200D\u0DBB\u0DDD\u0DA9 \u0DAF\u0DCA\u200D\u0DBB\u0DC0\u0DCA\u200D\u0DBA",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0DBB\u0DC3\u0DCF\u0DBA\u0DB1\u0DD2\u0D9A \u0DAF\u0DCA\u200D\u0DBB\u0DC0\u0DCA\u200D\u0DBA \u0DC3\u0DC4 \u0DC3\u0D82\u0DBB\u0DA0\u0D9A \u0DB1\u0DD2\u0DBB\u0DCA\u0DB8\u0DCF\u0DAB\u0DBA \u0D9A\u0DBB \u0DB4\u0DD9\u0DBB\u0DB1\u0DD2\u0DB8\u0DD2 \u0D9A\u0DD2\u0DBB\u0DD3\u0DB8\u0DA7 \u0DB8\u0DD9\u0DB8 \u0DB8\u0DD9\u0DB1\u0DD4\u0DC0 \u0DB7\u0DCF\u0DC0\u0DD2\u0DAD \u0D9A\u0DBB\u0DB1\u0DCA\u0DB1.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0DB1\u0DC0 \u0DC0\u0DC3\u0DCA\u0DAD\u0DD4 \u0DAD\u0DDD\u0DBB\u0DCF \u0DC3\u0DCA\u0DAE\u0DCF\u0DB1\u0D9C\u0DAD \u0D9A\u0DD2\u0DBB\u0DD3\u0DB8\u0DA7 \u0DB8\u0DD9\u0DB8 \u0DB8\u0DD9\u0DB1\u0DD4\u0DC0 \u0DB7\u0DCF\u0DC0\u0DD2\u0DAD \u0D9A\u0DBB\u0DB1\u0DCA\u0DB1.",
     entfernen: "\u0D89\u0DC0\u0DAD\u0DCA \u0D9A\u0DBB\u0DB1\u0DCA\u0DB1",
     speichern: "\u0DC3\u0DD4\u0DBB\u0D9A\u0DD2\u0DB1\u0DCA\u0DB1",
     "neues Molek\xFCl": "\u0DB1\u0DC0 \u0D85\u0DAB\u0DD4\u0DC0",
@@ -48851,19 +47941,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0DAD\u0DDD\u0DBB\u0DCF\u0D9C\u0DAD\u0DCA \u0DC3\u0D82\u0DBB\u0DA0\u0D9A \u0DC3\u0DB8\u0DCA\u0DB6\u0DB1\u0DCA\u0DB0 \u0DC0\u0DD3 \u0DB1\u0DD0\u0DAD."
   },
   ta: {
-    "Objekt-Kontextmen\xFC": "\u0BAA\u0BCA\u0BB0\u0BC1\u0BB3\u0BCD \u0B9A\u0BC2\u0BB4\u0BB2\u0BCD \u0BAE\u0BC6\u0BA9\u0BC1",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0B87\u0B99\u0BCD\u0B95\u0BC7 \u0BAA\u0BCA\u0BB0\u0BC1\u0BB3\u0BC8 \u0BA8\u0BBF\u0BB0\u0BCD\u0BB5\u0B95\u0BBF\u0BA4\u0BCD\u0BA4\u0BC1 \u0B85\u0BA4\u0BA9\u0BCD \u0B85\u0B9F\u0BBF\u0BAA\u0BCD\u0BAA\u0B9F\u0BC8\u0BA4\u0BCD \u0BA4\u0B95\u0BB5\u0BB2\u0BC8\u0BAA\u0BCD \u0BAA\u0BBE\u0BB0\u0BCD\u0B95\u0BCD\u0B95\u0BB5\u0BC1\u0BAE\u0BCD.",
     "Vollbild an/aus": "\u0BAE\u0BC1\u0BB4\u0BC1\u0BA4\u0BCD\u0BA4\u0BBF\u0BB0\u0BC8 \u0B87\u0BAF\u0B95\u0BCD\u0B95\u0BAE\u0BCD/\u0BAE\u0BC1\u0B9F\u0B95\u0BCD\u0B95\u0BAE\u0BCD",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0B87\u0BA8\u0BCD\u0BA4\u0BAA\u0BCD \u0BAA\u0BCA\u0BA4\u0BCD\u0BA4\u0BBE\u0BA9\u0BCD \u0BAE\u0BC1\u0BB4\u0BC1\u0BA4\u0BCD\u0BA4\u0BBF\u0BB0\u0BC8 \u0BAA\u0BAF\u0BA9\u0BCD\u0BAE\u0BC1\u0BB1\u0BC8\u0BAF\u0BC8 \u0B87\u0BAF\u0B95\u0BCD\u0B95\u0BC1\u0B95\u0BBF\u0BB1\u0BA4\u0BC1 \u0B85\u0BB2\u0BCD\u0BB2\u0BA4\u0BC1 \u0BAE\u0BC1\u0B9F\u0B95\u0BCD\u0B95\u0BC1\u0B95\u0BBF\u0BB1\u0BA4\u0BC1. \u0BA4\u0BB1\u0BCD\u0BAA\u0BCB\u0BA4\u0BC1 \u0BAE\u0BC1\u0B9F\u0B95\u0BCD\u0B95\u0BAA\u0BCD\u0BAA\u0B9F\u0BCD\u0B9F\u0BC1\u0BB3\u0BCD\u0BB3\u0BA4\u0BC1.",
-    Eingabemodus: "\u0B89\u0BB3\u0BCD\u0BB3\u0BC0\u0B9F\u0BCD\u0B9F\u0BC1 \u0BAE\u0BC1\u0BB1\u0BC8",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0B87\u0BA8\u0BCD\u0BA4\u0BAA\u0BCD \u0BAA\u0BCA\u0BA4\u0BCD\u0BA4\u0BBE\u0BA9\u0BC8\u0B95\u0BCD \u0B95\u0BCA\u0BA3\u0BCD\u0B9F\u0BC1 \u0B9A\u0BC1\u0B9F\u0BCD\u0B9F\u0BBF \u0BAE\u0BB1\u0BCD\u0BB1\u0BC1\u0BAE\u0BCD \u0BA4\u0BCA\u0B9F\u0BC1 \u0B95\u0B9F\u0BCD\u0B9F\u0BC1\u0BAA\u0BCD\u0BAA\u0BBE\u0B9F\u0BCD\u0B9F\u0BC1\u0B95\u0BCD\u0B95\u0BC1 \u0B87\u0B9F\u0BC8\u0BAF\u0BBF\u0BB2\u0BCD \u0BAE\u0BBE\u0BB1\u0BB5\u0BC1\u0BAE\u0BCD.",
-    "Dragging an/aus": "\u0B87\u0BB4\u0BC1\u0BA4\u0BCD\u0BA4\u0BB2\u0BCD \u0B87\u0BAF\u0B95\u0BCD\u0B95\u0BAE\u0BCD/\u0BAE\u0BC1\u0B9F\u0B95\u0BCD\u0B95\u0BAE\u0BCD",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0BA4\u0BCA\u0B9F\u0BC1 \u0BAE\u0BC1\u0BB1\u0BC8\u0BAF\u0BBF\u0BB2\u0BCD \u0BAA\u0BCA\u0BB0\u0BC1\u0BB3\u0BCD\u0B95\u0BB3\u0BCD \u0BA4\u0BCA\u0B9F\u0BC1\u0BA4\u0BB2\u0BC1\u0B95\u0BCD\u0B95\u0BC1 \u0B8E\u0BB5\u0BCD\u0BB5\u0BBE\u0BB1\u0BC1 \u0BAA\u0BA4\u0BBF\u0BB2\u0BB3\u0BBF\u0B95\u0BCD\u0B95\u0BBF\u0BA9\u0BCD\u0BB1\u0BA9 \u0B8E\u0BA9\u0BCD\u0BAA\u0BA4\u0BC8 \u0B87\u0BA8\u0BCD\u0BA4\u0BAA\u0BCD \u0BAA\u0BCA\u0BA4\u0BCD\u0BA4\u0BBE\u0BA9\u0BBE\u0BB2\u0BCD \u0BAE\u0BBE\u0BB1\u0BCD\u0BB1\u0BB5\u0BC1\u0BAE\u0BCD.",
-    "Diagramm Men\xFC": "\u0BB5\u0BBF\u0BB3\u0B95\u0BCD\u0B95\u0BAA\u0BCD\u0BAA\u0B9F \u0BAE\u0BC6\u0BA9\u0BC1",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0B87\u0BA8\u0BCD\u0BA4\u0BAA\u0BCD \u0BAA\u0BCA\u0BA4\u0BCD\u0BA4\u0BBE\u0BA9\u0BCD \u0B87\u0B9F\u0BAA\u0BCD\u0BAA\u0BC1\u0BB1\u0BA4\u0BCD\u0BA4\u0BBF\u0BB2\u0BCD \u0BB5\u0BBF\u0BB3\u0B95\u0BCD\u0B95\u0BAA\u0BCD\u0BAA\u0B9F \u0BAE\u0BC6\u0BA9\u0BC1\u0BB5\u0BC8\u0BA4\u0BCD \u0BA4\u0BBF\u0BB1\u0B95\u0BCD\u0B95\u0BBF\u0BB1\u0BA4\u0BC1.",
     Kontextmen\u00FC: "\u0B9A\u0BC2\u0BB4\u0BB2\u0BCD \u0BAE\u0BC6\u0BA9\u0BC1",
-    "Message Toast": "\u0BA8\u0BBF\u0BB2\u0BC8 \u0B85\u0BB1\u0BBF\u0BB5\u0BBF\u0BAA\u0BCD\u0BAA\u0BC1",
-    "Hier werden Statusmeldungen angezeigt.": "\u0BA8\u0BBF\u0BB2\u0BC8\u0B9A\u0BCD \u0B9A\u0BC6\u0BAF\u0BCD\u0BA4\u0BBF\u0B95\u0BB3\u0BCD \u0B87\u0B99\u0BCD\u0B95\u0BC7 \u0BA4\u0BCB\u0BA9\u0BCD\u0BB1\u0BC1\u0BAE\u0BCD.",
     best\u00E4tigen: "\u0B89\u0BB1\u0BC1\u0BA4\u0BBF\u0BAA\u0BCD\u0BAA\u0B9F\u0BC1\u0BA4\u0BCD\u0BA4\u0BC1",
     "Aktion best\xE4tigen:": "\u0B9A\u0BC6\u0BAF\u0BB2\u0BC8 \u0B89\u0BB1\u0BC1\u0BA4\u0BBF\u0BAA\u0BCD\u0BAA\u0B9F\u0BC1\u0BA4\u0BCD\u0BA4\u0BC1:",
     Diagramme: "\u0BB5\u0BBF\u0BB3\u0B95\u0BCD\u0B95\u0BAA\u0BCD\u0BAA\u0B9F\u0B99\u0BCD\u0B95\u0BB3\u0BCD",
@@ -48923,8 +48002,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0BAE\u0BC2\u0BB2 \u0BAE\u0BBF\u0BA9\u0BCD\u0BA9\u0BCB\u0B9F\u0BCD\u0B9F\u0BAE\u0BCD",
     "verbundenes Gemisch": "\u0B87\u0BA3\u0BC8\u0B95\u0BCD\u0B95\u0BAA\u0BCD\u0BAA\u0B9F\u0BCD\u0B9F \u0B95\u0BB2\u0BB5\u0BC8",
     Elektrodenmaterial: "\u0BAE\u0BBF\u0BA9\u0BCD\u0BAE\u0BC1\u0BA9\u0BC8\u0BAA\u0BCD \u0BAA\u0BCA\u0BB0\u0BC1\u0BB3\u0BCD",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0BB5\u0BC7\u0BA4\u0BBF\u0BAA\u0BCD\u0BAA\u0BCA\u0BB0\u0BC1\u0BB3\u0BCD\u0B95\u0BB3\u0BCD \u0BAE\u0BB1\u0BCD\u0BB1\u0BC1\u0BAE\u0BCD \u0B95\u0BC2\u0BB1\u0BC1\u0B95\u0BB3\u0BC8 \u0B89\u0BB0\u0BC1\u0BB5\u0BBE\u0B95\u0BCD\u0B95\u0BB5\u0BC1\u0BAE\u0BCD \u0BAE\u0BC1\u0BA9\u0BCD\u0B95\u0BC2\u0B9F\u0BCD\u0B9F\u0BBF\u0BAF\u0BC7 \u0B85\u0BAE\u0BC8\u0B95\u0BCD\u0B95\u0BB5\u0BC1\u0BAE\u0BCD \u0B87\u0BA8\u0BCD\u0BA4 \u0BAE\u0BC6\u0BA9\u0BC1\u0BB5\u0BC8\u0BAA\u0BCD \u0BAA\u0BAF\u0BA9\u0BCD\u0BAA\u0B9F\u0BC1\u0BA4\u0BCD\u0BA4\u0BB5\u0BC1\u0BAE\u0BCD.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0BAA\u0BC1\u0BA4\u0BBF\u0BAF \u0BAA\u0BCA\u0BB0\u0BC1\u0BB3\u0BCD\u0B95\u0BB3\u0BC8\u0BA4\u0BCD \u0BA4\u0BC7\u0BB0\u0BCD\u0BA8\u0BCD\u0BA4\u0BC6\u0B9F\u0BC1\u0BA4\u0BCD\u0BA4\u0BC1 \u0BB5\u0BC8\u0B95\u0BCD\u0B95 \u0B87\u0BA8\u0BCD\u0BA4 \u0BAE\u0BC6\u0BA9\u0BC1\u0BB5\u0BC8\u0BAA\u0BCD \u0BAA\u0BAF\u0BA9\u0BCD\u0BAA\u0B9F\u0BC1\u0BA4\u0BCD\u0BA4\u0BB5\u0BC1\u0BAE\u0BCD.",
     entfernen: "\u0BA8\u0BC0\u0B95\u0BCD\u0B95\u0BC1",
     speichern: "\u0B9A\u0BC7\u0BAE\u0BBF",
     "neues Molek\xFCl": "\u0BAA\u0BC1\u0BA4\u0BBF\u0BAF \u0BAE\u0BC2\u0BB2\u0B95\u0BCD\u0B95\u0BC2\u0BB1\u0BC1",
@@ -49141,19 +48218,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0BA4\u0BC7\u0BB0\u0BCD\u0BA8\u0BCD\u0BA4\u0BC6\u0B9F\u0BC1\u0BA4\u0BCD\u0BA4 \u0B95\u0BC2\u0BB1\u0BC1\u0B95\u0BB3\u0BCD \u0B87\u0BA3\u0BC8\u0B95\u0BCD\u0B95\u0BAA\u0BCD\u0BAA\u0B9F\u0BB5\u0BBF\u0BB2\u0BCD\u0BB2\u0BC8."
   },
   ml: {
-    "Objekt-Kontextmen\xFC": "\u0D12\u0D2C\u0D4D\u0D1C\u0D15\u0D4D\u0D31\u0D4D\u0D31\u0D4D \u0D38\u0D28\u0D4D\u0D26\u0D7C\u0D2D \u0D2E\u0D46\u0D28\u0D41",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0D07\u0D35\u0D3F\u0D1F\u0D46 \u0D12\u0D2C\u0D4D\u0D1C\u0D15\u0D4D\u0D31\u0D4D\u0D31\u0D4D \u0D28\u0D3F\u0D2F\u0D28\u0D4D\u0D24\u0D4D\u0D30\u0D3F\u0D15\u0D4D\u0D15\u0D41\u0D15\u0D2F\u0D41\u0D02 \u0D05\u0D24\u0D3F\u0D28\u0D4D\u0D31\u0D46 \u0D05\u0D1F\u0D3F\u0D38\u0D4D\u0D25\u0D3E\u0D28 \u0D35\u0D3F\u0D35\u0D30\u0D19\u0D4D\u0D19\u0D7E \u0D15\u0D3E\u0D23\u0D41\u0D15\u0D2F\u0D41\u0D02 \u0D1A\u0D46\u0D2F\u0D4D\u0D2F\u0D41\u0D15.",
     "Vollbild an/aus": "\u0D2A\u0D42\u0D7C\u0D23\u0D4D\u0D23\u0D38\u0D4D\u0D15\u0D4D\u0D30\u0D40\u0D7B \u0D13\u0D7A/\u0D13\u0D2B\u0D4D",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0D08 \u0D2C\u0D1F\u0D4D\u0D1F\u0D7A \u0D2A\u0D42\u0D7C\u0D23\u0D4D\u0D23\u0D38\u0D4D\u0D15\u0D4D\u0D30\u0D40\u0D7B \u0D2E\u0D4B\u0D21\u0D4D \u0D13\u0D7A \u0D05\u0D32\u0D4D\u0D32\u0D46\u0D19\u0D4D\u0D15\u0D3F\u0D7D \u0D13\u0D2B\u0D4D \u0D1A\u0D46\u0D2F\u0D4D\u0D2F\u0D41\u0D28\u0D4D\u0D28\u0D41. \u0D07\u0D2A\u0D4D\u0D2A\u0D4B\u0D7E \u0D2A\u0D4D\u0D30\u0D35\u0D7C\u0D24\u0D4D\u0D24\u0D28\u0D30\u0D39\u0D3F\u0D24\u0D2E\u0D3E\u0D23\u0D4D.",
-    Eingabemodus: "\u0D07\u0D7B\u0D2A\u0D41\u0D1F\u0D4D\u0D1F\u0D4D \u0D2E\u0D4B\u0D21\u0D4D",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0D08 \u0D2C\u0D1F\u0D4D\u0D1F\u0D7A \u0D09\u0D2A\u0D2F\u0D4B\u0D17\u0D3F\u0D1A\u0D4D\u0D1A\u0D4D \u0D2E\u0D57\u0D38\u0D4D, \u0D1F\u0D1A\u0D4D\u0D1A\u0D4D \u0D28\u0D3F\u0D2F\u0D28\u0D4D\u0D24\u0D4D\u0D30\u0D23\u0D19\u0D4D\u0D19\u0D7E\u0D15\u0D4D\u0D15\u0D3F\u0D1F\u0D2F\u0D3F\u0D7D \u0D2E\u0D3E\u0D31\u0D41\u0D15.",
-    "Dragging an/aus": "\u0D35\u0D32\u0D3F\u0D1A\u0D4D\u0D1A\u0D3F\u0D1F\u0D7D \u0D13\u0D7A/\u0D13\u0D2B\u0D4D",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0D1F\u0D1A\u0D4D\u0D1A\u0D4D \u0D2E\u0D4B\u0D21\u0D3F\u0D7D \u0D35\u0D38\u0D4D\u0D24\u0D41\u0D15\u0D4D\u0D15\u0D7E \u0D38\u0D4D\u0D2A\u0D7C\u0D36\u0D28\u0D24\u0D4D\u0D24\u0D4B\u0D1F\u0D4D \u0D0E\u0D19\u0D4D\u0D19\u0D28\u0D46 \u0D2A\u0D4D\u0D30\u0D24\u0D3F\u0D15\u0D30\u0D3F\u0D15\u0D4D\u0D15\u0D23\u0D2E\u0D46\u0D28\u0D4D\u0D28\u0D4D \u0D08 \u0D2C\u0D1F\u0D4D\u0D1F\u0D7A \u0D09\u0D2A\u0D2F\u0D4B\u0D17\u0D3F\u0D1A\u0D4D\u0D1A\u0D4D \u0D2E\u0D3E\u0D31\u0D4D\u0D31\u0D41\u0D15.",
-    "Diagramm Men\xFC": "\u0D1A\u0D3E\u0D7C\u0D1F\u0D4D\u0D1F\u0D4D \u0D2E\u0D46\u0D28\u0D41",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0D08 \u0D2C\u0D1F\u0D4D\u0D1F\u0D7A \u0D07\u0D1F\u0D24\u0D41\u0D35\u0D36\u0D24\u0D4D\u0D24\u0D4D \u0D1A\u0D3E\u0D7C\u0D1F\u0D4D\u0D1F\u0D4D \u0D2E\u0D46\u0D28\u0D41 \u0D24\u0D41\u0D31\u0D15\u0D4D\u0D15\u0D41\u0D28\u0D4D\u0D28\u0D41.",
     Kontextmen\u00FC: "\u0D38\u0D28\u0D4D\u0D26\u0D7C\u0D2D \u0D2E\u0D46\u0D28\u0D41",
-    "Message Toast": "\u0D28\u0D3F\u0D32 \u0D05\u0D31\u0D3F\u0D2F\u0D3F\u0D2A\u0D4D\u0D2A\u0D4D",
-    "Hier werden Statusmeldungen angezeigt.": "\u0D28\u0D3F\u0D32 \u0D38\u0D28\u0D4D\u0D26\u0D47\u0D36\u0D19\u0D4D\u0D19\u0D7E \u0D07\u0D35\u0D3F\u0D1F\u0D46 \u0D15\u0D3E\u0D23\u0D3F\u0D15\u0D4D\u0D15\u0D41\u0D02.",
     best\u00E4tigen: "\u0D38\u0D4D\u0D25\u0D3F\u0D30\u0D40\u0D15\u0D30\u0D3F\u0D15\u0D4D\u0D15\u0D41\u0D15",
     "Aktion best\xE4tigen:": "\u0D2A\u0D4D\u0D30\u0D35\u0D7C\u0D24\u0D4D\u0D24\u0D28\u0D02 \u0D38\u0D4D\u0D25\u0D3F\u0D30\u0D40\u0D15\u0D30\u0D3F\u0D15\u0D4D\u0D15\u0D41\u0D15:",
     Diagramme: "\u0D1A\u0D3E\u0D7C\u0D1F\u0D4D\u0D1F\u0D41\u0D15\u0D7E",
@@ -49213,8 +48279,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0D09\u0D31\u0D35\u0D3F\u0D1F \u0D15\u0D31\u0D28\u0D4D\u0D31\u0D4D",
     "verbundenes Gemisch": "\u0D2C\u0D28\u0D4D\u0D27\u0D3F\u0D2A\u0D4D\u0D2A\u0D3F\u0D1A\u0D4D\u0D1A \u0D2E\u0D3F\u0D36\u0D4D\u0D30\u0D3F\u0D24\u0D02",
     Elektrodenmaterial: "\u0D07\u0D32\u0D15\u0D4D\u0D1F\u0D4D\u0D30\u0D4B\u0D21\u0D4D \u0D35\u0D38\u0D4D\u0D24\u0D41",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0D30\u0D3E\u0D38\u0D35\u0D38\u0D4D\u0D24\u0D41\u0D15\u0D4D\u0D15\u0D33\u0D41\u0D02 \u0D18\u0D1F\u0D15\u0D19\u0D4D\u0D19\u0D33\u0D41\u0D02 \u0D38\u0D43\u0D37\u0D4D\u0D1F\u0D3F\u0D15\u0D4D\u0D15\u0D3E\u0D28\u0D41\u0D02 \u0D2E\u0D41\u0D7B\u0D15\u0D42\u0D1F\u0D4D\u0D1F\u0D3F \u0D38\u0D1C\u0D4D\u0D1C\u0D2E\u0D3E\u0D15\u0D4D\u0D15\u0D3E\u0D28\u0D41\u0D02 \u0D08 \u0D2E\u0D46\u0D28\u0D41 \u0D09\u0D2A\u0D2F\u0D4B\u0D17\u0D3F\u0D15\u0D4D\u0D15\u0D41\u0D15.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0D2A\u0D41\u0D24\u0D3F\u0D2F \u0D12\u0D2C\u0D4D\u0D1C\u0D15\u0D4D\u0D31\u0D4D\u0D31\u0D41\u0D15\u0D7E \u0D24\u0D3F\u0D30\u0D1E\u0D4D\u0D1E\u0D46\u0D1F\u0D41\u0D15\u0D4D\u0D15\u0D3E\u0D28\u0D41\u0D02 \u0D38\u0D4D\u0D25\u0D3E\u0D2A\u0D3F\u0D15\u0D4D\u0D15\u0D3E\u0D28\u0D41\u0D02 \u0D08 \u0D2E\u0D46\u0D28\u0D41 \u0D09\u0D2A\u0D2F\u0D4B\u0D17\u0D3F\u0D15\u0D4D\u0D15\u0D41\u0D15.",
     entfernen: "\u0D28\u0D40\u0D15\u0D4D\u0D15\u0D41\u0D15",
     speichern: "\u0D38\u0D47\u0D35\u0D4D \u0D1A\u0D46\u0D2F\u0D4D\u0D2F\u0D41\u0D15",
     "neues Molek\xFCl": "\u0D2A\u0D41\u0D24\u0D3F\u0D2F \u0D24\u0D28\u0D4D\u0D2E\u0D3E\u0D24\u0D4D\u0D30",
@@ -49431,19 +48495,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0D24\u0D3F\u0D30\u0D1E\u0D4D\u0D1E\u0D46\u0D1F\u0D41\u0D24\u0D4D\u0D24 \u0D18\u0D1F\u0D15\u0D19\u0D4D\u0D19\u0D7E \u0D2C\u0D28\u0D4D\u0D27\u0D3F\u0D2A\u0D4D\u0D2A\u0D3F\u0D1A\u0D4D\u0D1A\u0D3F\u0D1F\u0D4D\u0D1F\u0D3F\u0D32\u0D4D\u0D32."
   },
   ps: {
-    "Objekt-Kontextmen\xFC": "\u062F \u0685\u06CC\u0632 \u062F \u0633\u06CC\u0627\u0642 \u063A\u0648\u0631\u0646\u06CD",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u062F\u0644\u062A\u0647 \u0685\u06CC\u0632 \u0627\u062F\u0627\u0631\u0647 \u06A9\u0693\u0626 \u0627\u0648 \u0628\u0646\u0633\u067C\u06CC\u0632 \u0645\u0639\u0644\u0648\u0645\u0627\u062A \u06CC\u06D0 \u0648\u06AB\u0648\u0631\u0626.",
     "Vollbild an/aus": "\u0628\u0634\u067E\u0693\u0647 \u067E\u0631\u062F\u0647 \u0686\u0627\u0644\u0627\u0646/\u0628\u0646\u062F\u0647",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u062F\u0627 \u062A\u06BC\u06CD \u062F \u0628\u0634\u067E\u0693\u06D0 \u067E\u0631\u062F\u06D0 \u062D\u0627\u0644\u062A \u0686\u0627\u0644\u0627\u0646\u0648\u064A \u06CC\u0627 \u0628\u0646\u062F\u0648\u064A. \u0627\u0648\u0633 \u0645\u0647\u0627\u0644 \u0628\u0646\u062F\u0647 \u062F\u0647.",
-    Eingabemodus: "\u062F \u0646\u0646\u0648\u062A\u0644\u0648 \u062D\u0627\u0644\u062A",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u067E\u0647 \u062F\u06D0 \u062A\u06BC\u06CD \u062F \u0645\u0648\u0696\u06A9 \u0627\u0648 \u0644\u0645\u0633 \u06A9\u0646\u067C\u0631\u0648\u0644 \u062A\u0631\u0645\u0646\u0681 \u0628\u062F\u0644\u0648\u0646 \u0648\u06A9\u0693\u0626.",
-    "Dragging an/aus": "\u06A9\u0634\u0648\u0644 \u0686\u0627\u0644\u0627\u0646/\u0628\u0646\u062F",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u062F \u0644\u0645\u0633 \u067E\u0647 \u062D\u0627\u0644\u062A \u06A9\u06D0\u060C \u062F\u0627 \u062A\u06BC\u06CD \u0628\u062F\u0644\u0648\u064A \u0686\u06D0 \u0685\u06CC\u0632\u0648\u0646\u0647 \u0644\u0645\u0633 \u062A\u0647 \u0685\u0646\u06AB\u0647 \u063A\u0628\u0631\u06AB\u0648\u0646 \u069A\u064A\u064A.",
-    "Diagramm Men\xFC": "\u062F \u0686\u0627\u0631\u067C \u063A\u0648\u0631\u0646\u06CD",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u062F\u0627 \u062A\u06BC\u06CD \u067E\u0647 \u06A9\u06CC\u06BC \u0627\u0693\u062E \u06A9\u06D0 \u062F \u0686\u0627\u0631\u067C \u063A\u0648\u0631\u0646\u06CD \u067E\u0631\u0627\u0646\u06CC\u0632\u064A.",
     Kontextmen\u00FC: "\u062F \u0633\u06CC\u0627\u0642 \u063A\u0648\u0631\u0646\u06CD",
-    "Message Toast": "\u062F \u062D\u0627\u0644\u062A \u062E\u0628\u0631\u062A\u06CC\u0627",
-    "Hier werden Statusmeldungen angezeigt.": "\u062F \u062D\u0627\u0644\u062A \u067E\u06CC\u063A\u0627\u0645\u0648\u0646\u0647 \u062F\u0644\u062A\u0647 \u069A\u06A9\u0627\u0631\u064A.",
     best\u00E4tigen: "\u062A\u0627\u06CC\u06CC\u062F \u06A9\u0693\u0626",
     "Aktion best\xE4tigen:": "\u06A9\u0693\u0646\u0647 \u062A\u0627\u06CC\u06CC\u062F \u06A9\u0693\u0626:",
     Diagramme: "\u0686\u0627\u0631\u067C\u0648\u0646\u0647",
@@ -49503,8 +48556,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u062F \u0633\u0631\u0686\u06CC\u0646\u06D0 \u062C\u0631\u06CC\u0627\u0646",
     "verbundenes Gemisch": "\u0646\u069A\u0644\u0648\u0644 \u0634\u0648\u06CC \u0645\u062E\u0644\u0648\u0637",
     Elektrodenmaterial: "\u062F \u0627\u0644\u06A9\u062A\u0631\u0648\u062F \u0645\u0627\u062F\u0647",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u062F \u06A9\u06CC\u0645\u06CC\u0627\u0648\u064A \u0645\u0648\u0627\u062F\u0648 \u0627\u0648 \u0628\u0631\u062E\u0648 \u062F \u062C\u0648\u0693\u0648\u0644\u0648 \u0627\u0648 \u0645\u062E\u06A9\u06D0 \u067C\u0627\u06A9\u0644\u0648 \u0644\u067E\u0627\u0631\u0647 \u062F\u0627 \u063A\u0648\u0631\u0646\u06CD \u0648\u06A9\u0627\u0631\u0648\u0626.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u062F \u0646\u0648\u06CC\u0648 \u0685\u06CC\u0632\u0648\u0646\u0648 \u062F \u067C\u0627\u06A9\u0644\u0648 \u0627\u0648 \u0681\u0627\u06CC \u067E\u0631 \u0681\u0627\u06CC \u06A9\u0648\u0644\u0648 \u0644\u067E\u0627\u0631\u0647 \u062F\u0627 \u063A\u0648\u0631\u0646\u06CD \u0648\u06A9\u0627\u0631\u0648\u0626.",
     entfernen: "\u0644\u0631\u06D0 \u06A9\u0648\u0644",
     speichern: "\u0633\u0627\u062A\u0644",
     "neues Molek\xFCl": "\u0646\u0648\u06CC \u0645\u0627\u0644\u06CC\u06A9\u0648\u0644",
@@ -49721,19 +48772,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u067C\u0627\u06A9\u0644 \u0634\u0648\u06D0 \u0628\u0631\u062E\u06D0 \u0633\u0631\u0647 \u0646\u0647 \u062F\u064A \u0646\u069A\u0644\u0648\u0644 \u0634\u0648\u064A."
   },
   jv: {
-    "Objekt-Kontextmen\xFC": "Menu konteks obyek",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Atur obyek lan delengen informasi dhasare ing kene.",
     "Vollbild an/aus": "Layar wutuh urip/mati",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Tombol iki nguripake utawa mateni mode layar wutuh. Saiki ora aktif.",
-    Eingabemodus: "Mode input",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Gunakake tombol iki kanggo pindhah antarane kontrol mouse lan tutul.",
-    "Dragging an/aus": "Nyeret urip/mati",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Ing mode tutul, tombol iki ngganti cara obyek nanggepi tutul.",
-    "Diagramm Men\xFC": "Menu bagan",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Tombol iki mbukak menu bagan ing sisih kiwa.",
     Kontextmen\u00FC: "Menu konteks",
-    "Message Toast": "Kabar status",
-    "Hier werden Statusmeldungen angezeigt.": "Pesen status katon ing kene.",
     best\u00E4tigen: "Konfirmasi",
     "Aktion best\xE4tigen:": "Konfirmasi tumindak:",
     Diagramme: "Bagan",
@@ -49793,8 +48833,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Arus sumber",
     "verbundenes Gemisch": "Campuran sing nyambung",
     Elektrodenmaterial: "Bahan elektroda",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Gunakake menu iki kanggo nggawe lan nyetel bahan kimia lan komponen luwih dhisik.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Gunakake menu iki kanggo milih lan nyelehake obyek anyar.",
     entfernen: "Copot",
     speichern: "Simpen",
     "neues Molek\xFCl": "Molekul anyar",
@@ -50011,19 +49049,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Komponen sing dipilih ora nyambung."
   },
   id: {
-    "Objekt-Kontextmen\xFC": "Menu konteks objek",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Kelola objek dan lihat informasi dasarnya di sini.",
     "Vollbild an/aus": "Alihkan layar penuh",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Tombol ini mengaktifkan atau menonaktifkan layar penuh. Saat ini dinonaktifkan.",
-    Eingabemodus: "Mode masukan",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Gunakan tombol ini untuk beralih antara kontrol tetikus dan sentuh.",
-    "Dragging an/aus": "Alihkan mode seret",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Dalam mode sentuh, gunakan tombol ini untuk mengubah respons objek terhadap sentuhan.",
-    "Diagramm Men\xFC": "Menu grafik",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Tombol ini membuka menu grafik di sebelah kiri.",
     Kontextmen\u00FC: "Menu konteks",
-    "Message Toast": "Notifikasi status",
-    "Hier werden Statusmeldungen angezeigt.": "Pesan status tampil di sini.",
     best\u00E4tigen: "Konfirmasi",
     "Aktion best\xE4tigen:": "Konfirmasi tindakan:",
     Diagramme: "Grafik",
@@ -50083,8 +49110,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Arus sumber",
     "verbundenes Gemisch": "Campuran terhubung",
     Elektrodenmaterial: "Bahan elektrode",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Gunakan menu ini untuk membuat dan menentukan zat kimia serta komponen.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Gunakan menu ini untuk memilih dan menempatkan objek baru.",
     entfernen: "Hapus",
     speichern: "Simpan",
     "neues Molek\xFCl": "Molekul baru",
@@ -50301,19 +49326,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Komponen yang dipilih tidak terhubung."
   },
   ms: {
-    "Objekt-Kontextmen\xFC": "Menu konteks objek",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Urus objek dan lihat maklumat asasnya di sini.",
     "Vollbild an/aus": "Togol skrin penuh",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Butang ini menghidupkan atau mematikan skrin penuh. Buat masa ini fungsi itu dilumpuhkan.",
-    Eingabemodus: "Mod input",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Gunakan butang ini untuk bertukar antara kawalan tetikus dengan sentuhan.",
-    "Dragging an/aus": "Togol mod seret",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Dalam mod sentuh, gunakan butang ini untuk mengubah tindak balas objek terhadap sentuhan.",
-    "Diagramm Men\xFC": "Menu carta",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Butang ini membuka menu carta di sebelah kiri.",
     Kontextmen\u00FC: "Menu konteks",
-    "Message Toast": "Pemberitahuan status",
-    "Hier werden Statusmeldungen angezeigt.": "Mesej status dipaparkan di sini.",
     best\u00E4tigen: "Sahkan",
     "Aktion best\xE4tigen:": "Sahkan tindakan:",
     Diagramme: "Carta",
@@ -50373,8 +49387,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Arus sumber",
     "verbundenes Gemisch": "Campuran yang disambungkan",
     Elektrodenmaterial: "Bahan elektrod",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Gunakan menu ini untuk mencipta dan menetapkan bahan kimia serta komponen.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Gunakan menu ini untuk memilih dan meletakkan objek baharu.",
     entfernen: "Alih keluar",
     speichern: "Simpan",
     "neues Molek\xFCl": "Molekul baharu",
@@ -50591,19 +49603,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Komponen yang dipilih tidak bersambung."
   },
   tl: {
-    "Objekt-Kontextmen\xFC": "Menu ng konteksto ng object",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Pamahalaan ang object at tingnan ang pangunahing impormasyon nito rito.",
     "Vollbild an/aus": "I-on/i-off ang fullscreen",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Ino-on o ino-off ng button na ito ang fullscreen mode. Kasalukuyang hindi aktibo.",
-    Eingabemodus: "Mode ng input",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Gamitin ang button na ito para magpalipat-lipat sa kontrol ng mouse at touch.",
-    "Dragging an/aus": "I-on/i-off ang pag-drag",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Sa touch mode, gamitin ang button na ito para baguhin kung paano tumutugon ang mga object sa paghawak.",
-    "Diagramm Men\xFC": "Menu ng chart",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Binubuksan ng button na ito ang menu ng chart sa kaliwa.",
     Kontextmen\u00FC: "Menu ng konteksto",
-    "Message Toast": "Abiso ng katayuan",
-    "Hier werden Statusmeldungen angezeigt.": "Lumalabas dito ang mga mensahe ng katayuan.",
     best\u00E4tigen: "Kumpirmahin",
     "Aktion best\xE4tigen:": "Kumpirmahin ang pagkilos:",
     Diagramme: "Mga chart",
@@ -50663,8 +49664,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Kuryente ng pinagmulan",
     "verbundenes Gemisch": "Nakakonektang halo",
     Elektrodenmaterial: "Materyal ng electrode",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Gamitin ang menu na ito para gumawa at magtakda nang maaga ng mga kemikal at bahagi.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Gamitin ang menu na ito para pumili at maglagay ng mga bagong object.",
     entfernen: "Alisin",
     speichern: "I-save",
     "neues Molek\xFCl": "Bagong molekula",
@@ -50881,19 +49880,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Hindi magkakakonekta ang mga napiling bahagi."
   },
   my: {
-    "Objekt-Kontextmen\xFC": "\u1021\u101B\u102C\u101D\u1010\u1039\u1011\u102F \u1006\u1000\u103A\u1005\u1015\u103A\u1019\u102E\u1014\u1030\u1038",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u1024\u1014\u1031\u101B\u102C\u1010\u103D\u1004\u103A \u1021\u101B\u102C\u101D\u1010\u1039\u1011\u102F\u1000\u102D\u102F \u1005\u102E\u1019\u1036\u1001\u1014\u1037\u103A\u1001\u103D\u1032\u1015\u103C\u102E\u1038 \u1021\u1001\u103C\u1031\u1001\u1036\u1021\u1001\u103B\u1000\u103A\u1021\u101C\u1000\u103A\u1000\u102D\u102F \u1000\u103C\u100A\u1037\u103A\u1015\u102B\u104B",
     "Vollbild an/aus": "\u1019\u103B\u1000\u103A\u1014\u103E\u102C\u1015\u103C\u1004\u103A\u1021\u1015\u103C\u100A\u1037\u103A \u1016\u103D\u1004\u1037\u103A/\u1015\u102D\u1010\u103A",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u1024\u1001\u101C\u102F\u1010\u103A\u101E\u100A\u103A \u1019\u103B\u1000\u103A\u1014\u103E\u102C\u1015\u103C\u1004\u103A\u1021\u1015\u103C\u100A\u1037\u103A\u1019\u102F\u1012\u103A\u1000\u102D\u102F \u1016\u103D\u1004\u1037\u103A \u101E\u102D\u102F\u1037\u1019\u101F\u102F\u1010\u103A \u1015\u102D\u1010\u103A\u101E\u100A\u103A\u104B \u101A\u1001\u102F \u1015\u102D\u1010\u103A\u1011\u102C\u1038\u101E\u100A\u103A\u104B",
-    Eingabemodus: "\u1011\u100A\u1037\u103A\u101E\u103D\u1004\u103A\u1038\u1019\u103E\u102F\u1019\u102F\u1012\u103A",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u1024\u1001\u101C\u102F\u1010\u103A\u1016\u103C\u1004\u1037\u103A \u1019\u1031\u102C\u1000\u103A\u1005\u103A\u1014\u103E\u1004\u1037\u103A \u1011\u102D\u1010\u103D\u1031\u1037\u1011\u102D\u1014\u103A\u1038\u1001\u103B\u102F\u1015\u103A\u1019\u103E\u102F\u1021\u1000\u103C\u102C\u1038 \u1015\u103C\u1031\u102C\u1004\u103A\u1038\u1015\u102B\u104B",
-    "Dragging an/aus": "\u1006\u103D\u1032\u1001\u103C\u1004\u103A\u1038 \u1016\u103D\u1004\u1037\u103A/\u1015\u102D\u1010\u103A",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u1011\u102D\u1010\u103D\u1031\u1037\u1019\u102F\u1012\u103A\u1010\u103D\u1004\u103A \u1021\u101B\u102C\u101D\u1010\u1039\u1011\u102F\u1019\u103B\u102C\u1038\u1000 \u1011\u102D\u1010\u103D\u1031\u1037\u1019\u103E\u102F\u1000\u102D\u102F \u1019\u100A\u103A\u101E\u102D\u102F\u1037\u1010\u102F\u1036\u1037\u1015\u103C\u1014\u103A\u1019\u100A\u103A\u1000\u102D\u102F \u1024\u1001\u101C\u102F\u1010\u103A\u1016\u103C\u1004\u1037\u103A \u1015\u103C\u1031\u102C\u1004\u103A\u1038\u1015\u102B\u104B",
-    "Diagramm Men\xFC": "\u1007\u101A\u102C\u1038\u1019\u102E\u1014\u1030\u1038",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u1024\u1001\u101C\u102F\u1010\u103A\u101E\u100A\u103A \u1018\u101A\u103A\u1018\u1000\u103A\u101B\u103E\u102D \u1007\u101A\u102C\u1038\u1019\u102E\u1014\u1030\u1038\u1000\u102D\u102F \u1016\u103D\u1004\u1037\u103A\u101E\u100A\u103A\u104B",
     Kontextmen\u00FC: "\u1006\u1000\u103A\u1005\u1015\u103A\u1019\u102E\u1014\u1030\u1038",
-    "Message Toast": "\u1021\u1001\u103C\u1031\u1021\u1014\u1031 \u1021\u101E\u102D\u1015\u1031\u1038\u1001\u103B\u1000\u103A",
-    "Hier werden Statusmeldungen angezeigt.": "\u1021\u1001\u103C\u1031\u1021\u1014\u1031\u1005\u102C\u1019\u103B\u102C\u1038\u1000\u102D\u102F \u1024\u1014\u1031\u101B\u102C\u1010\u103D\u1004\u103A \u1015\u103C\u101E\u101E\u100A\u103A\u104B",
     best\u00E4tigen: "\u1021\u1010\u100A\u103A\u1015\u103C\u102F\u1015\u102B",
     "Aktion best\xE4tigen:": "\u101C\u102F\u1015\u103A\u1006\u1031\u102C\u1004\u103A\u1001\u103B\u1000\u103A\u1000\u102D\u102F \u1021\u1010\u100A\u103A\u1015\u103C\u102F\u1015\u102B:",
     Diagramme: "\u1007\u101A\u102C\u1038\u1019\u103B\u102C\u1038",
@@ -50953,8 +49941,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u101B\u1004\u103A\u1038\u1019\u103C\u1005\u103A\u101C\u103B\u103E\u1015\u103A\u1005\u102E\u1038",
     "verbundenes Gemisch": "\u1001\u103B\u102D\u1010\u103A\u1006\u1000\u103A\u1011\u102C\u1038\u101E\u1031\u102C \u1021\u101B\u1031\u102C",
     Elektrodenmaterial: "\u101C\u103B\u103E\u1015\u103A\u1000\u1030\u1038\u1015\u1005\u1039\u1005\u100A\u103A\u1038",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u1013\u102C\u1010\u102F\u1015\u1005\u1039\u1005\u100A\u103A\u1038\u1019\u103B\u102C\u1038\u1014\u103E\u1004\u1037\u103A \u1021\u1005\u102D\u1010\u103A\u1021\u1015\u102D\u102F\u1004\u103A\u1038\u1019\u103B\u102C\u1038\u1000\u102D\u102F \u1016\u1014\u103A\u1010\u102E\u1038\u1015\u103C\u102E\u1038 \u1000\u103C\u102D\u102F\u1010\u1004\u103A\u101E\u1010\u103A\u1019\u103E\u1010\u103A\u101B\u1014\u103A \u1024\u1019\u102E\u1014\u1030\u1038\u1000\u102D\u102F \u1021\u101E\u102F\u1036\u1038\u1015\u103C\u102F\u1015\u102B\u104B",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u1021\u101B\u102C\u101D\u1010\u1039\u1011\u102F\u1021\u101E\u1005\u103A\u1019\u103B\u102C\u1038\u1000\u102D\u102F \u101B\u103D\u1031\u1038\u1001\u103B\u101A\u103A\u1015\u103C\u102E\u1038 \u1014\u1031\u101B\u102C\u1001\u103B\u101B\u1014\u103A \u1024\u1019\u102E\u1014\u1030\u1038\u1000\u102D\u102F \u1021\u101E\u102F\u1036\u1038\u1015\u103C\u102F\u1015\u102B\u104B",
     entfernen: "\u1016\u101A\u103A\u101B\u103E\u102C\u1038\u1015\u102B",
     speichern: "\u101E\u102D\u1019\u103A\u1038\u1015\u102B",
     "neues Molek\xFCl": "\u1019\u1031\u102C\u103A\u101C\u102E\u1000\u103B\u1030\u1038\u1021\u101E\u1005\u103A",
@@ -51171,19 +50157,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u101B\u103D\u1031\u1038\u1011\u102C\u1038\u101E\u1031\u102C \u1021\u1005\u102D\u1010\u103A\u1021\u1015\u102D\u102F\u1004\u103A\u1038\u1019\u103B\u102C\u1038 \u1001\u103B\u102D\u1010\u103A\u1006\u1000\u103A\u1019\u1011\u102C\u1038\u1015\u102B\u104B"
   },
   th: {
-    "Objekt-Kontextmen\xFC": "\u0E40\u0E21\u0E19\u0E39\u0E1A\u0E23\u0E34\u0E1A\u0E17\u0E02\u0E2D\u0E07\u0E27\u0E31\u0E15\u0E16\u0E38",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0E08\u0E31\u0E14\u0E01\u0E32\u0E23\u0E27\u0E31\u0E15\u0E16\u0E38\u0E41\u0E25\u0E30\u0E14\u0E39\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1E\u0E37\u0E49\u0E19\u0E10\u0E32\u0E19\u0E44\u0E14\u0E49\u0E17\u0E35\u0E48\u0E19\u0E35\u0E48",
     "Vollbild an/aus": "\u0E40\u0E1B\u0E34\u0E14/\u0E1B\u0E34\u0E14\u0E40\u0E15\u0E47\u0E21\u0E2B\u0E19\u0E49\u0E32\u0E08\u0E2D",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0E1B\u0E38\u0E48\u0E21\u0E19\u0E35\u0E49\u0E43\u0E0A\u0E49\u0E40\u0E1B\u0E34\u0E14\u0E2B\u0E23\u0E37\u0E2D\u0E1B\u0E34\u0E14\u0E42\u0E2B\u0E21\u0E14\u0E40\u0E15\u0E47\u0E21\u0E2B\u0E19\u0E49\u0E32\u0E08\u0E2D \u0E02\u0E13\u0E30\u0E19\u0E35\u0E49\u0E1B\u0E34\u0E14\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E2D\u0E22\u0E39\u0E48",
-    Eingabemodus: "\u0E42\u0E2B\u0E21\u0E14\u0E1B\u0E49\u0E2D\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0E43\u0E0A\u0E49\u0E1B\u0E38\u0E48\u0E21\u0E19\u0E35\u0E49\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E2A\u0E25\u0E31\u0E1A\u0E23\u0E30\u0E2B\u0E27\u0E48\u0E32\u0E07\u0E01\u0E32\u0E23\u0E04\u0E27\u0E1A\u0E04\u0E38\u0E21\u0E14\u0E49\u0E27\u0E22\u0E40\u0E21\u0E32\u0E2A\u0E4C\u0E41\u0E25\u0E30\u0E01\u0E32\u0E23\u0E2A\u0E31\u0E21\u0E1C\u0E31\u0E2A",
-    "Dragging an/aus": "\u0E40\u0E1B\u0E34\u0E14/\u0E1B\u0E34\u0E14\u0E01\u0E32\u0E23\u0E25\u0E32\u0E01",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0E43\u0E19\u0E42\u0E2B\u0E21\u0E14\u0E2A\u0E31\u0E21\u0E1C\u0E31\u0E2A \u0E43\u0E0A\u0E49\u0E1B\u0E38\u0E48\u0E21\u0E19\u0E35\u0E49\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E27\u0E34\u0E18\u0E35\u0E17\u0E35\u0E48\u0E27\u0E31\u0E15\u0E16\u0E38\u0E15\u0E2D\u0E1A\u0E2A\u0E19\u0E2D\u0E07\u0E15\u0E48\u0E2D\u0E01\u0E32\u0E23\u0E2A\u0E31\u0E21\u0E1C\u0E31\u0E2A",
-    "Diagramm Men\xFC": "\u0E40\u0E21\u0E19\u0E39\u0E41\u0E1C\u0E19\u0E20\u0E39\u0E21\u0E34",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0E1B\u0E38\u0E48\u0E21\u0E19\u0E35\u0E49\u0E40\u0E1B\u0E34\u0E14\u0E40\u0E21\u0E19\u0E39\u0E41\u0E1C\u0E19\u0E20\u0E39\u0E21\u0E34\u0E17\u0E32\u0E07\u0E14\u0E49\u0E32\u0E19\u0E0B\u0E49\u0E32\u0E22",
     Kontextmen\u00FC: "\u0E40\u0E21\u0E19\u0E39\u0E1A\u0E23\u0E34\u0E1A\u0E17",
-    "Message Toast": "\u0E01\u0E32\u0E23\u0E41\u0E08\u0E49\u0E07\u0E40\u0E15\u0E37\u0E2D\u0E19\u0E2A\u0E16\u0E32\u0E19\u0E30",
-    "Hier werden Statusmeldungen angezeigt.": "\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E2A\u0E16\u0E32\u0E19\u0E30\u0E08\u0E30\u0E41\u0E2A\u0E14\u0E07\u0E17\u0E35\u0E48\u0E19\u0E35\u0E48",
     best\u00E4tigen: "\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19",
     "Aktion best\xE4tigen:": "\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E01\u0E32\u0E23:",
     Diagramme: "\u0E41\u0E1C\u0E19\u0E20\u0E39\u0E21\u0E34",
@@ -51243,8 +50218,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0E01\u0E23\u0E30\u0E41\u0E2A\u0E44\u0E1F\u0E1F\u0E49\u0E32\u0E15\u0E49\u0E19\u0E17\u0E32\u0E07",
     "verbundenes Gemisch": "\u0E2A\u0E32\u0E23\u0E1C\u0E2A\u0E21\u0E17\u0E35\u0E48\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D",
     Elektrodenmaterial: "\u0E27\u0E31\u0E2A\u0E14\u0E38\u0E2D\u0E34\u0E40\u0E25\u0E47\u0E01\u0E42\u0E17\u0E23\u0E14",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0E43\u0E0A\u0E49\u0E40\u0E21\u0E19\u0E39\u0E19\u0E35\u0E49\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E41\u0E25\u0E30\u0E01\u0E33\u0E2B\u0E19\u0E14\u0E2A\u0E32\u0E23\u0E40\u0E04\u0E21\u0E35\u0E41\u0E25\u0E30\u0E2A\u0E48\u0E27\u0E19\u0E1B\u0E23\u0E30\u0E01\u0E2D\u0E1A\u0E25\u0E48\u0E27\u0E07\u0E2B\u0E19\u0E49\u0E32",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0E43\u0E0A\u0E49\u0E40\u0E21\u0E19\u0E39\u0E19\u0E35\u0E49\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E41\u0E25\u0E30\u0E27\u0E32\u0E07\u0E27\u0E31\u0E15\u0E16\u0E38\u0E43\u0E2B\u0E21\u0E48",
     entfernen: "\u0E19\u0E33\u0E2D\u0E2D\u0E01",
     speichern: "\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01",
     "neues Molek\xFCl": "\u0E42\u0E21\u0E40\u0E25\u0E01\u0E38\u0E25\u0E43\u0E2B\u0E21\u0E48",
@@ -51461,19 +50434,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0E2A\u0E48\u0E27\u0E19\u0E1B\u0E23\u0E30\u0E01\u0E2D\u0E1A\u0E17\u0E35\u0E48\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E01\u0E31\u0E19"
   },
   lo: {
-    "Objekt-Kontextmen\xFC": "\u0EC0\u0EA1\u0E99\u0EB9\u0E9A\u0ECD\u0EA5\u0EB4\u0E9A\u0EBB\u0E94\u0EA7\u0EB1\u0E94\u0E96\u0EB8",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0E88\u0EB1\u0E94\u0E81\u0EB2\u0E99\u0EA7\u0EB1\u0E94\u0E96\u0EB8 \u0EC1\u0EA5\u0EB0\u0EC0\u0E9A\u0EB4\u0EC8\u0E87\u0E82\u0ECD\u0EC9\u0EA1\u0EB9\u0E99\u0E9E\u0EB7\u0EC9\u0E99\u0E96\u0EB2\u0E99\u0EC4\u0E94\u0EC9\u0E97\u0EB5\u0EC8\u0E99\u0EB5\u0EC9.",
     "Vollbild an/aus": "\u0EC0\u0E95\u0EB1\u0EA1\u0E88\u0ECD \u0EC0\u0E9B\u0EB5\u0E94/\u0E9B\u0EB4\u0E94",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0E9B\u0EB8\u0EC8\u0EA1\u0E99\u0EB5\u0EC9\u0EC0\u0E9B\u0EB5\u0E94 \u0EAB\u0EBC\u0EB7\u0E9B\u0EB4\u0E94\u0EC2\u0EDD\u0E94\u0EC0\u0E95\u0EB1\u0EA1\u0E88\u0ECD. \u0E95\u0EAD\u0E99\u0E99\u0EB5\u0EC9\u0E9B\u0EB4\u0E94\u0EA2\u0EB9\u0EC8.",
-    Eingabemodus: "\u0EC2\u0EDD\u0E94\u0E9B\u0EC9\u0EAD\u0E99\u0E82\u0ECD\u0EC9\u0EA1\u0EB9\u0E99",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0EC3\u0E8A\u0EC9\u0E9B\u0EB8\u0EC8\u0EA1\u0E99\u0EB5\u0EC9\u0EAA\u0EB0\u0EAB\u0EBC\u0EB1\u0E9A\u0EA5\u0EB0\u0EAB\u0EA7\u0EC8\u0EB2\u0E87\u0E81\u0EB2\u0E99\u0E84\u0EA7\u0E9A\u0E84\u0EB8\u0EA1\u0E94\u0EC9\u0EA7\u0E8D\u0EC0\u0EA1\u0EBB\u0EB2\u0EAA\u0ECC \u0EC1\u0EA5\u0EB0\u0E81\u0EB2\u0E99\u0EAA\u0EB3\u0E9C\u0EB1\u0E94.",
-    "Dragging an/aus": "\u0EA5\u0EB2\u0E81 \u0EC0\u0E9B\u0EB5\u0E94/\u0E9B\u0EB4\u0E94",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0EC3\u0E99\u0EC2\u0EDD\u0E94\u0EAA\u0EB3\u0E9C\u0EB1\u0E94 \u0EC3\u0E8A\u0EC9\u0E9B\u0EB8\u0EC8\u0EA1\u0E99\u0EB5\u0EC9\u0E9B\u0EC8\u0EBD\u0E99\u0EA7\u0EC8\u0EB2\u0EA7\u0EB1\u0E94\u0E96\u0EB8\u0E95\u0EAD\u0E9A\u0EAA\u0EB0\u0EDC\u0EAD\u0E87\u0E95\u0ECD\u0EC8\u0E81\u0EB2\u0E99\u0EAA\u0EB3\u0E9C\u0EB1\u0E94\u0EC1\u0E99\u0EA7\u0EC3\u0E94.",
-    "Diagramm Men\xFC": "\u0EC0\u0EA1\u0E99\u0EB9\u0EC1\u0E9C\u0E99\u0E9E\u0EB9\u0EA1",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0E9B\u0EB8\u0EC8\u0EA1\u0E99\u0EB5\u0EC9\u0EC0\u0E9B\u0EB5\u0E94\u0EC0\u0EA1\u0E99\u0EB9\u0EC1\u0E9C\u0E99\u0E9E\u0EB9\u0EA1\u0E97\u0EB2\u0E87\u0E8A\u0EC9\u0EB2\u0E8D.",
     Kontextmen\u00FC: "\u0EC0\u0EA1\u0E99\u0EB9\u0E9A\u0ECD\u0EA5\u0EB4\u0E9A\u0EBB\u0E94",
-    "Message Toast": "\u0E81\u0EB2\u0E99\u0EC1\u0E88\u0EC9\u0E87\u0EAA\u0EB0\u0E96\u0EB2\u0E99\u0EB0",
-    "Hier werden Statusmeldungen angezeigt.": "\u0E82\u0ECD\u0EC9\u0E84\u0EA7\u0EB2\u0EA1\u0EAA\u0EB0\u0E96\u0EB2\u0E99\u0EB0\u0E88\u0EB0\u0EAA\u0EB0\u0EC1\u0E94\u0E87\u0EA2\u0EB9\u0EC8\u0E97\u0EB5\u0EC8\u0E99\u0EB5\u0EC9.",
     best\u00E4tigen: "\u0EA2\u0EB7\u0E99\u0EA2\u0EB1\u0E99",
     "Aktion best\xE4tigen:": "\u0EA2\u0EB7\u0E99\u0EA2\u0EB1\u0E99\u0E81\u0EB2\u0E99\u0E81\u0EB0\u0E97\u0EB3:",
     Diagramme: "\u0EC1\u0E9C\u0E99\u0E9E\u0EB9\u0EA1",
@@ -51533,8 +50495,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0E81\u0EB0\u0EC1\u0EAA\u0EC1\u0EAB\u0EBC\u0EC8\u0E87",
     "verbundenes Gemisch": "\u0EAA\u0EB2\u0E99\u0E9B\u0EB0\u0EAA\u0EBB\u0EA1\u0E97\u0EB5\u0EC8\u0EC0\u0E8A\u0EB7\u0EC8\u0EAD\u0EA1\u0E95\u0ECD\u0EC8",
     Elektrodenmaterial: "\u0EA7\u0EB1\u0E94\u0EAA\u0EB0\u0E94\u0EB8\u0E82\u0EBB\u0EC9\u0EA7\u0EC4\u0E9F\u0E9F\u0EC9\u0EB2",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0EC3\u0E8A\u0EC9\u0EC0\u0EA1\u0E99\u0EB9\u0E99\u0EB5\u0EC9\u0EC0\u0E9E\u0EB7\u0EC8\u0EAD\u0EAA\u0EC9\u0EB2\u0E87 \u0EC1\u0EA5\u0EB0\u0E81\u0EB3\u0E99\u0EBB\u0E94\u0EAA\u0EB2\u0E99\u0EC0\u0E84\u0EA1\u0EB5 \u0EC1\u0EA5\u0EB0\u0EAA\u0EC8\u0EA7\u0E99\u0E9B\u0EB0\u0E81\u0EAD\u0E9A\u0EA5\u0EC8\u0EA7\u0E87\u0EDC\u0EC9\u0EB2.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0EC3\u0E8A\u0EC9\u0EC0\u0EA1\u0E99\u0EB9\u0E99\u0EB5\u0EC9\u0EC0\u0E9E\u0EB7\u0EC8\u0EAD\u0EC0\u0EA5\u0EB7\u0EAD\u0E81 \u0EC1\u0EA5\u0EB0\u0EA7\u0EB2\u0E87\u0EA7\u0EB1\u0E94\u0E96\u0EB8\u0EC3\u0EDD\u0EC8.",
     entfernen: "\u0EC0\u0EAD\u0EBB\u0EB2\u0EAD\u0EAD\u0E81",
     speichern: "\u0E9A\u0EB1\u0E99\u0E97\u0EB6\u0E81",
     "neues Molek\xFCl": "\u0EC2\u0EA1\u0EC0\u0EA5\u0E81\u0EB8\u0E99\u0EC3\u0EDD\u0EC8",
@@ -51751,19 +50711,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0EAA\u0EC8\u0EA7\u0E99\u0E9B\u0EB0\u0E81\u0EAD\u0E9A\u0E97\u0EB5\u0EC8\u0EC0\u0EA5\u0EB7\u0EAD\u0E81\u0E9A\u0ECD\u0EC8\u0EC4\u0E94\u0EC9\u0EC0\u0E8A\u0EB7\u0EC8\u0EAD\u0EA1\u0E95\u0ECD\u0EC8\u0E81\u0EB1\u0E99."
   },
   vi: {
-    "Objekt-Kontextmen\xFC": "Menu ng\u1EEF c\u1EA3nh \u0111\u1ED1i t\u01B0\u1EE3ng",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Qu\u1EA3n l\xFD \u0111\u1ED1i t\u01B0\u1EE3ng v\xE0 xem th\xF4ng tin c\u01A1 b\u1EA3n t\u1EA1i \u0111\xE2y.",
     "Vollbild an/aus": "B\u1EADt/t\u1EAFt to\xE0n m\xE0n h\xECnh",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "N\xFAt n\xE0y b\u1EADt ho\u1EB7c t\u1EAFt ch\u1EBF \u0111\u1ED9 to\xE0n m\xE0n h\xECnh. Hi\u1EC7n \u0111ang t\u1EAFt.",
-    Eingabemodus: "Ch\u1EBF \u0111\u1ED9 nh\u1EADp",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "D\xF9ng n\xFAt n\xE0y \u0111\u1EC3 chuy\u1EC3n gi\u1EEFa \u0111i\u1EC1u khi\u1EC3n b\u1EB1ng chu\u1ED9t v\xE0 c\u1EA3m \u1EE9ng.",
-    "Dragging an/aus": "B\u1EADt/t\u1EAFt k\xE9o",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Trong ch\u1EBF \u0111\u1ED9 c\u1EA3m \u1EE9ng, d\xF9ng n\xFAt n\xE0y \u0111\u1EC3 thay \u0111\u1ED5i c\xE1ch c\xE1c \u0111\u1ED1i t\u01B0\u1EE3ng ph\u1EA3n h\u1ED3i khi ch\u1EA1m.",
-    "Diagramm Men\xFC": "Menu bi\u1EC3u \u0111\u1ED3",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "N\xFAt n\xE0y m\u1EDF menu bi\u1EC3u \u0111\u1ED3 \u1EDF b\xEAn tr\xE1i.",
     Kontextmen\u00FC: "Menu ng\u1EEF c\u1EA3nh",
-    "Message Toast": "Th\xF4ng b\xE1o tr\u1EA1ng th\xE1i",
-    "Hier werden Statusmeldungen angezeigt.": "Th\xF4ng b\xE1o tr\u1EA1ng th\xE1i xu\u1EA5t hi\u1EC7n t\u1EA1i \u0111\xE2y.",
     best\u00E4tigen: "X\xE1c nh\u1EADn",
     "Aktion best\xE4tigen:": "X\xE1c nh\u1EADn thao t\xE1c:",
     Diagramme: "Bi\u1EC3u \u0111\u1ED3",
@@ -51823,8 +50772,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "D\xF2ng \u0111i\u1EC7n ngu\u1ED3n",
     "verbundenes Gemisch": "H\u1ED7n h\u1EE3p \u0111\xE3 k\u1EBFt n\u1ED1i",
     Elektrodenmaterial: "V\u1EADt li\u1EC7u \u0111i\u1EC7n c\u1EF1c",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "D\xF9ng menu n\xE0y \u0111\u1EC3 t\u1EA1o v\xE0 \u0111\u1EB7t s\u1EB5n c\xE1c ch\u1EA5t h\xF3a h\u1ECDc c\u0169ng nh\u01B0 th\xE0nh ph\u1EA7n.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "D\xF9ng menu n\xE0y \u0111\u1EC3 ch\u1ECDn v\xE0 \u0111\u1EB7t c\xE1c \u0111\u1ED1i t\u01B0\u1EE3ng m\u1EDBi.",
     entfernen: "X\xF3a",
     speichern: "L\u01B0u",
     "neues Molek\xFCl": "Ph\xE2n t\u1EED m\u1EDBi",
@@ -52041,19 +50988,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "C\xE1c th\xE0nh ph\u1EA7n \u0111\u01B0\u1EE3c ch\u1ECDn kh\xF4ng \u0111\u01B0\u1EE3c k\u1EBFt n\u1ED1i."
   },
   km: {
-    "Objekt-Kontextmen\xFC": "\u1798\u17C9\u17BA\u1793\u17BB\u1799\u1794\u179A\u17B7\u1794\u1791\u179C\u178F\u17D2\u1790\u17BB",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u1782\u17D2\u179A\u1794\u17CB\u1782\u17D2\u179A\u1784\u179C\u178F\u17D2\u1790\u17BB \u1793\u17B7\u1784\u1798\u17BE\u179B\u1796\u17D0\u178F\u17CC\u1798\u17B6\u1793\u1798\u17BC\u179B\u178A\u17D2\u178B\u17B6\u1793\u179A\u1794\u179F\u17CB\u179C\u17B6\u1793\u17C5\u1791\u17B8\u1793\u17C1\u17C7\u17D4",
     "Vollbild an/aus": "\u1794\u17BE\u1780/\u1794\u17B7\u1791\u1796\u17C1\u1789\u17A2\u17C1\u1780\u17D2\u179A\u1784\u17CB",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u1794\u17CA\u17BC\u178F\u17BB\u1784\u1793\u17C1\u17C7\u1794\u17BE\u1780 \u17AC\u1794\u17B7\u1791\u179A\u1794\u17C0\u1794\u1796\u17C1\u1789\u17A2\u17C1\u1780\u17D2\u179A\u1784\u17CB\u17D4 \u1794\u1785\u17D2\u1785\u17BB\u1794\u17D2\u1794\u1793\u17D2\u1793\u1794\u17B7\u1791\u17D4",
-    Eingabemodus: "\u179A\u1794\u17C0\u1794\u1794\u1789\u17D2\u1785\u17BC\u179B",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u1794\u17D2\u179A\u17BE\u1794\u17CA\u17BC\u178F\u17BB\u1784\u1793\u17C1\u17C7\u178A\u17BE\u1798\u17D2\u1794\u17B8\u1794\u17D2\u178A\u17BC\u179A\u179A\u179C\u17B6\u1784\u1780\u17B6\u179A\u1782\u17D2\u179A\u1794\u17CB\u1782\u17D2\u179A\u1784\u178A\u17C4\u1799\u1780\u178E\u17D2\u178A\u17BB\u179A \u1793\u17B7\u1784\u1780\u17B6\u179A\u1794\u17C9\u17C7\u17D4",
-    "Dragging an/aus": "\u1794\u17BE\u1780/\u1794\u17B7\u1791\u1780\u17B6\u179A\u17A2\u17BC\u179F",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u1780\u17D2\u1793\u17BB\u1784\u179A\u1794\u17C0\u1794\u1794\u17C9\u17C7 \u1794\u17D2\u179A\u17BE\u1794\u17CA\u17BC\u178F\u17BB\u1784\u1793\u17C1\u17C7\u178A\u17BE\u1798\u17D2\u1794\u17B8\u1794\u17D2\u178A\u17BC\u179A\u179A\u1794\u17C0\u1794\u178A\u17C2\u179B\u179C\u178F\u17D2\u1790\u17BB\u1786\u17D2\u179B\u17BE\u1799\u178F\u1794\u1793\u17B9\u1784\u1780\u17B6\u179A\u1794\u17C9\u17C7\u17D4",
-    "Diagramm Men\xFC": "\u1798\u17C9\u17BA\u1793\u17BB\u1799\u1782\u17C6\u1793\u17BC\u179F\u178F\u17B6\u1784",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u1794\u17CA\u17BC\u178F\u17BB\u1784\u1793\u17C1\u17C7\u1794\u17BE\u1780\u1798\u17C9\u17BA\u1793\u17BB\u1799\u1782\u17C6\u1793\u17BC\u179F\u178F\u17B6\u1784\u1793\u17C5\u1781\u17B6\u1784\u1786\u17D2\u179C\u17C1\u1784\u17D4",
     Kontextmen\u00FC: "\u1798\u17C9\u17BA\u1793\u17BB\u1799\u1794\u179A\u17B7\u1794\u1791",
-    "Message Toast": "\u1780\u17B6\u179A\u1787\u17BC\u1793\u178A\u17C6\u178E\u17B9\u1784\u179F\u17D2\u1790\u17B6\u1793\u1797\u17B6\u1796",
-    "Hier werden Statusmeldungen angezeigt.": "\u179F\u17B6\u179A\u179F\u17D2\u1790\u17B6\u1793\u1797\u17B6\u1796\u1794\u1784\u17D2\u17A0\u17B6\u1789\u1793\u17C5\u1791\u17B8\u1793\u17C1\u17C7\u17D4",
     best\u00E4tigen: "\u1794\u1789\u17D2\u1787\u17B6\u1780\u17CB",
     "Aktion best\xE4tigen:": "\u1794\u1789\u17D2\u1787\u17B6\u1780\u17CB\u179F\u1780\u1798\u17D2\u1798\u1797\u17B6\u1796\u17D6",
     Diagramme: "\u1782\u17C6\u1793\u17BC\u179F\u178F\u17B6\u1784",
@@ -52113,8 +51049,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u1785\u179A\u1793\u17D2\u178F\u1794\u17D2\u179A\u1797\u1796",
     "verbundenes Gemisch": "\u179B\u17D2\u1794\u17B6\u1799\u178A\u17C2\u179B\u1794\u17B6\u1793\u1797\u17D2\u1787\u17B6\u1794\u17CB",
     Elektrodenmaterial: "\u179F\u1798\u17D2\u1797\u17B6\u179A\u17C8\u17A2\u17C1\u17A1\u17B7\u1785\u178F\u17D2\u179A\u17BC\u178F",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u1794\u17D2\u179A\u17BE\u1798\u17C9\u17BA\u1793\u17BB\u1799\u1793\u17C1\u17C7\u178A\u17BE\u1798\u17D2\u1794\u17B8\u1794\u1784\u17D2\u1780\u17BE\u178F \u1793\u17B7\u1784\u1780\u17C6\u178E\u178F\u17CB\u179F\u17B6\u179A\u1792\u17B6\u178F\u17BB\u1782\u17B8\u1798\u17B8 \u1793\u17B7\u1784\u179F\u1798\u17B6\u179F\u1792\u17B6\u178F\u17BB\u1787\u17B6\u1798\u17BB\u1793\u17D4",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u1794\u17D2\u179A\u17BE\u1798\u17C9\u17BA\u1793\u17BB\u1799\u1793\u17C1\u17C7\u178A\u17BE\u1798\u17D2\u1794\u17B8\u1787\u17D2\u179A\u17BE\u179F \u1793\u17B7\u1784\u178A\u17B6\u1780\u17CB\u179C\u178F\u17D2\u1790\u17BB\u1790\u17D2\u1798\u17B8\u17D4",
     entfernen: "\u1799\u1780\u1785\u17C1\u1789",
     speichern: "\u179A\u1780\u17D2\u179F\u17B6\u1791\u17BB\u1780",
     "neues Molek\xFCl": "\u1798\u17C9\u17BC\u179B\u17C1\u1782\u17BB\u179B\u1790\u17D2\u1798\u17B8",
@@ -52331,19 +51265,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u179F\u1798\u17B6\u179F\u1792\u17B6\u178F\u17BB\u178A\u17C2\u179B\u1794\u17B6\u1793\u1787\u17D2\u179A\u17BE\u179F\u1798\u17B7\u1793\u1794\u17B6\u1793\u1797\u17D2\u1787\u17B6\u1794\u17CB\u1782\u17D2\u1793\u17B6\u1791\u17C1\u17D4"
   },
   kk: {
-    "Objekt-Kontextmen\xFC": "\u041D\u044B\u0441\u0430\u043D\u043D\u044B\u04A3 \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u0456\u043A \u043C\u04D9\u0437\u0456\u0440\u0456",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u041D\u044B\u0441\u0430\u043D\u0434\u044B \u043E\u0441\u044B \u0436\u0435\u0440\u0434\u0435\u043D \u0431\u0430\u0441\u049B\u0430\u0440\u044B\u043F, \u043D\u0435\u0433\u0456\u0437\u0433\u0456 \u0430\u049B\u043F\u0430\u0440\u0430\u0442\u044B\u043D \u043A\u04E9\u0440\u0443\u0433\u0435 \u0431\u043E\u043B\u0430\u0434\u044B.",
     "Vollbild an/aus": "\u0422\u043E\u043B\u044B\u049B \u044D\u043A\u0440\u0430\u043D\u0434\u044B \u049B\u043E\u0441\u0443/\u04E9\u0448\u0456\u0440\u0443",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0411\u04B1\u043B \u0431\u0430\u0442\u044B\u0440\u043C\u0430 \u0442\u043E\u043B\u044B\u049B \u044D\u043A\u0440\u0430\u043D \u0440\u0435\u0436\u0438\u043C\u0456\u043D \u049B\u043E\u0441\u0430\u0434\u044B \u043D\u0435\u043C\u0435\u0441\u0435 \u04E9\u0448\u0456\u0440\u0435\u0434\u0456. \u049A\u0430\u0437\u0456\u0440 \u04E9\u0448\u0456\u0440\u0443\u043B\u0456.",
-    Eingabemodus: "\u0415\u043D\u0433\u0456\u0437\u0443 \u0440\u0435\u0436\u0438\u043C\u0456",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0411\u04B1\u043B \u0431\u0430\u0442\u044B\u0440\u043C\u0430 \u0430\u0440\u049B\u044B\u043B\u044B \u0442\u0456\u043D\u0442\u0443\u0456\u0440 \u0436\u04D9\u043D\u0435 \u0441\u0435\u043D\u0441\u043E\u0440\u043B\u044B\u049B \u0431\u0430\u0441\u049B\u0430\u0440\u0443 \u0430\u0440\u0430\u0441\u044B\u043D\u0434\u0430 \u0430\u0443\u044B\u0441\u0443\u0493\u0430 \u0431\u043E\u043B\u0430\u0434\u044B.",
-    "Dragging an/aus": "\u0421\u04AF\u0439\u0440\u0435\u0443\u0434\u0456 \u049B\u043E\u0441\u0443/\u04E9\u0448\u0456\u0440\u0443",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0421\u0435\u043D\u0441\u043E\u0440\u043B\u044B\u049B \u0440\u0435\u0436\u0438\u043C\u0434\u0435 \u0431\u04B1\u043B \u0431\u0430\u0442\u044B\u0440\u043C\u0430 \u043D\u044B\u0441\u0430\u043D\u0434\u0430\u0440\u0434\u044B\u04A3 \u0442\u04AF\u0440\u0442\u0443\u0433\u0435 \u049B\u0430\u043B\u0430\u0439 \u0436\u0430\u0443\u0430\u043F \u0431\u0435\u0440\u0435\u0442\u0456\u043D\u0456\u043D \u04E9\u0437\u0433\u0435\u0440\u0442\u0435\u0434\u0456.",
-    "Diagramm Men\xFC": "\u0414\u0438\u0430\u0433\u0440\u0430\u043C\u043C\u0430 \u043C\u04D9\u0437\u0456\u0440\u0456",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0411\u04B1\u043B \u0431\u0430\u0442\u044B\u0440\u043C\u0430 \u0441\u043E\u043B \u0436\u0430\u049B\u0442\u0430\u0493\u044B \u0434\u0438\u0430\u0433\u0440\u0430\u043C\u043C\u0430 \u043C\u04D9\u0437\u0456\u0440\u0456\u043D \u0430\u0448\u0430\u0434\u044B.",
     Kontextmen\u00FC: "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u0456\u043A \u043C\u04D9\u0437\u0456\u0440",
-    "Message Toast": "\u041A\u04AF\u0439 \u0445\u0430\u0431\u0430\u0440\u043B\u0430\u043C\u0430\u0441\u044B",
-    "Hier werden Statusmeldungen angezeigt.": "\u041A\u04AF\u0439 \u0445\u0430\u0431\u0430\u0440\u043B\u0430\u043C\u0430\u043B\u0430\u0440\u044B \u043E\u0441\u044B\u043D\u0434\u0430 \u043A\u04E9\u0440\u0441\u0435\u0442\u0456\u043B\u0435\u0434\u0456.",
     best\u00E4tigen: "\u0420\u0430\u0441\u0442\u0430\u0443",
     "Aktion best\xE4tigen:": "\u04D8\u0440\u0435\u043A\u0435\u0442\u0442\u0456 \u0440\u0430\u0441\u0442\u0430\u0443:",
     Diagramme: "\u0414\u0438\u0430\u0433\u0440\u0430\u043C\u043C\u0430\u043B\u0430\u0440",
@@ -52403,8 +51326,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u041A\u04E9\u0437 \u0442\u043E\u0433\u044B",
     "verbundenes Gemisch": "\u049A\u043E\u0441\u044B\u043B\u0493\u0430\u043D \u049B\u043E\u0441\u043F\u0430",
     Elektrodenmaterial: "\u042D\u043B\u0435\u043A\u0442\u0440\u043E\u0434 \u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B\u044B",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0411\u04B1\u043B \u043C\u04D9\u0437\u0456\u0440\u0434\u0435 \u0445\u0438\u043C\u0438\u044F\u043B\u044B\u049B \u0437\u0430\u0442\u0442\u0430\u0440 \u043C\u0435\u043D \u049B\u04B1\u0440\u0430\u043C\u0434\u0430\u0441\u0442\u0430\u0440\u0434\u044B \u0436\u0430\u0441\u0430\u043F, \u0430\u043B\u0434\u044B\u043D \u0430\u043B\u0430 \u043E\u0440\u043D\u0430\u0442\u0443\u0493\u0430 \u0431\u043E\u043B\u0430\u0434\u044B.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0411\u04B1\u043B \u043C\u04D9\u0437\u0456\u0440 \u0436\u0430\u04A3\u0430 \u043D\u044B\u0441\u0430\u043D\u0434\u0430\u0440\u0434\u044B \u0442\u0430\u04A3\u0434\u0430\u043F, \u043E\u0440\u043D\u0430\u043B\u0430\u0441\u0442\u044B\u0440\u0443\u0493\u0430 \u043C\u04AF\u043C\u043A\u0456\u043D\u0434\u0456\u043A \u0431\u0435\u0440\u0435\u0434\u0456.",
     entfernen: "\u0410\u043B\u044B\u043F \u0442\u0430\u0441\u0442\u0430\u0443",
     speichern: "\u0421\u0430\u049B\u0442\u0430\u0443",
     "neues Molek\xFCl": "\u0416\u0430\u04A3\u0430 \u043C\u043E\u043B\u0435\u043A\u0443\u043B\u0430",
@@ -52621,19 +51542,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0422\u0430\u04A3\u0434\u0430\u043B\u0493\u0430\u043D \u049B\u04B1\u0440\u0430\u043C\u0434\u0430\u0441\u0442\u0430\u0440 \u04E9\u0437\u0430\u0440\u0430 \u049B\u043E\u0441\u044B\u043B\u043C\u0430\u0493\u0430\u043D."
   },
   ky: {
-    "Objekt-Kontextmen\xFC": "\u041E\u0431\u044A\u0435\u043A\u0442\u0442\u0438\u043D \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u0442\u0438\u043A \u043C\u0435\u043D\u044E\u0441\u0443",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u041E\u0431\u044A\u0435\u043A\u0442\u0442\u0438 \u0431\u0443\u043B \u0436\u0435\u0440\u0434\u0435\u043D \u0431\u0430\u0448\u043A\u0430\u0440\u044B\u043F, \u043D\u0435\u0433\u0438\u0437\u0433\u0438 \u043C\u0430\u0430\u043B\u044B\u043C\u0430\u0442\u0442\u044B \u043A\u04E9\u0440\u04AF\u04A3\u04AF\u0437.",
     "Vollbild an/aus": "\u0422\u043E\u043B\u0443\u043A \u044D\u043A\u0440\u0430\u043D\u0434\u044B \u043A\u04AF\u0439\u0433\u04AF\u0437\u04AF\u04AF/\u04E9\u0447\u04AF\u0440\u04AF\u04AF",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0411\u0443\u043B \u0431\u0430\u0441\u043A\u044B\u0447 \u0442\u043E\u043B\u0443\u043A \u044D\u043A\u0440\u0430\u043D \u0440\u0435\u0436\u0438\u043C\u0438\u043D \u043A\u04AF\u0439\u0433\u04AF\u0437\u04E9\u0442 \u0436\u0435 \u04E9\u0447\u04AF\u0440\u04E9\u0442. \u0410\u0437\u044B\u0440 \u04E9\u0447\u04AF\u043A.",
-    Eingabemodus: "\u041A\u0438\u0440\u0433\u0438\u0437\u04AF\u04AF \u0440\u0435\u0436\u0438\u043C\u0438",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0411\u0443\u043B \u0431\u0430\u0441\u043A\u044B\u0447 \u043C\u0435\u043D\u0435\u043D \u0447\u044B\u0447\u043A\u0430\u043D \u0436\u0430\u043D\u0430 \u0442\u0438\u0439\u04AF\u04AF \u0431\u0430\u0448\u043A\u0430\u0440\u0443\u0443\u0441\u0443\u043D\u0443\u043D \u043E\u0440\u0442\u043E\u0441\u0443\u043D\u0434\u0430 \u043A\u043E\u0442\u043E\u0440\u0443\u043B\u0443\u04A3\u0443\u0437.",
-    "Dragging an/aus": "\u0421\u04AF\u0439\u0440\u04E9\u04E9\u043D\u04AF \u043A\u04AF\u0439\u0433\u04AF\u0437\u04AF\u04AF/\u04E9\u0447\u04AF\u0440\u04AF\u04AF",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0422\u0438\u0439\u04AF\u04AF \u0440\u0435\u0436\u0438\u043C\u0438\u043D\u0434\u0435 \u043E\u0431\u044A\u0435\u043A\u0442\u0442\u0435\u0440 \u0442\u0438\u0439\u04AF\u04AF\u0433\u04E9 \u043A\u0430\u043D\u0434\u0430\u0439 \u0436\u043E\u043E\u043F \u0431\u0435\u0440\u0435\u0440\u0438\u043D \u0431\u0443\u043B \u0431\u0430\u0441\u043A\u044B\u0447 \u043C\u0435\u043D\u0435\u043D \u04E9\u0437\u0433\u04E9\u0440\u0442\u04AF\u04A3\u04AF\u0437.",
-    "Diagramm Men\xFC": "\u0414\u0438\u0430\u0433\u0440\u0430\u043C\u043C\u0430 \u043C\u0435\u043D\u044E\u0441\u0443",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0411\u0443\u043B \u0431\u0430\u0441\u043A\u044B\u0447 \u0441\u043E\u043B \u0436\u0430\u043A\u0442\u0430\u0433\u044B \u0434\u0438\u0430\u0433\u0440\u0430\u043C\u043C\u0430 \u043C\u0435\u043D\u044E\u0441\u0443\u043D \u0430\u0447\u0430\u0442.",
     Kontextmen\u00FC: "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442\u0442\u0438\u043A \u043C\u0435\u043D\u044E",
-    "Message Toast": "\u0410\u0431\u0430\u043B \u0431\u0438\u043B\u0434\u0438\u0440\u04AF\u04AF\u0441\u04AF",
-    "Hier werden Statusmeldungen angezeigt.": "\u0410\u0431\u0430\u043B \u0431\u0438\u043B\u0434\u0438\u0440\u04AF\u04AF\u043B\u04E9\u0440\u04AF \u0431\u0443\u043B \u0436\u0435\u0440\u0434\u0435 \u043A\u04E9\u0440\u0441\u04E9\u0442\u04AF\u043B\u04E9\u0442.",
     best\u00E4tigen: "\u042B\u0440\u0430\u0441\u0442\u043E\u043E",
     "Aktion best\xE4tigen:": "\u0410\u0440\u0430\u043A\u0435\u0442\u0442\u0438 \u044B\u0440\u0430\u0441\u0442\u043E\u043E:",
     Diagramme: "\u0414\u0438\u0430\u0433\u0440\u0430\u043C\u043C\u0430\u043B\u0430\u0440",
@@ -52693,8 +51603,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0411\u0443\u043B\u0430\u043A \u0442\u043E\u0433\u0443",
     "verbundenes Gemisch": "\u0422\u0443\u0442\u0430\u0448\u043A\u0430\u043D \u0430\u0440\u0430\u043B\u0430\u0448\u043C\u0430",
     Elektrodenmaterial: "\u042D\u043B\u0435\u043A\u0442\u0440\u043E\u0434 \u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B\u044B",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0411\u0443\u043B \u043C\u0435\u043D\u044E\u0434\u0430 \u0445\u0438\u043C\u0438\u044F\u043B\u044B\u043A \u0437\u0430\u0442\u0442\u0430\u0440\u0434\u044B \u0436\u0430\u043D\u0430 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0442\u0435\u0440\u0434\u0438 \u0442\u04AF\u0437\u04AF\u043F, \u0430\u043B\u0434\u044B\u043D \u0430\u043B\u0430 \u043E\u0440\u043D\u043E\u0442\u043E \u0430\u043B\u0430\u0441\u044B\u0437.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0411\u0443\u043B \u043C\u0435\u043D\u044E \u0436\u0430\u04A3\u044B \u043E\u0431\u044A\u0435\u043A\u0442\u0442\u0435\u0440\u0434\u0438 \u0442\u0430\u043D\u0434\u0430\u043F, \u0436\u0430\u0439\u0433\u0430\u0448\u0442\u044B\u0440\u0443\u0443\u0433\u0430 \u043C\u04AF\u043C\u043A\u04AF\u043D\u0434\u04AF\u043A \u0431\u0435\u0440\u0435\u0442.",
     entfernen: "\u0410\u043B\u044B\u043F \u0441\u0430\u043B\u0443\u0443",
     speichern: "\u0421\u0430\u043A\u0442\u043E\u043E",
     "neues Molek\xFCl": "\u0416\u0430\u04A3\u044B \u043C\u043E\u043B\u0435\u043A\u0443\u043B\u0430",
@@ -52911,19 +51819,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0422\u0430\u043D\u0434\u0430\u043B\u0433\u0430\u043D \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u0442\u0435\u0440 \u0442\u0443\u0442\u0430\u0448\u043A\u0430\u043D \u044D\u043C\u0435\u0441."
   },
   mn: {
-    "Objekt-Kontextmen\xFC": "\u041E\u0431\u044A\u0435\u043A\u0442\u044B\u043D \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u0446\u044D\u0441",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u041E\u0431\u044A\u0435\u043A\u0442\u044B\u0433 \u044D\u043D\u0434 \u0443\u0434\u0438\u0440\u0434\u0430\u0436, \u04AF\u043D\u0434\u0441\u044D\u043D \u043C\u044D\u0434\u044D\u044D\u043B\u043B\u0438\u0439\u0433 \u0445\u0430\u0440\u0430\u0445 \u0431\u043E\u043B\u043E\u043C\u0436\u0442\u043E\u0439.",
     "Vollbild an/aus": "\u0411\u04AF\u0442\u044D\u043D \u0434\u044D\u043B\u0433\u044D\u0446\u0438\u0439\u0433 \u0430\u0441\u0430\u0430\u0445/\u0443\u043D\u0442\u0440\u0430\u0430\u0445",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u042D\u043D\u044D \u0442\u043E\u0432\u0447 \u0431\u04AF\u0442\u044D\u043D \u0434\u044D\u043B\u0433\u044D\u0446\u0438\u0439\u043D \u0433\u043E\u0440\u0438\u043C\u044B\u0433 \u0430\u0441\u0430\u0430\u0436, \u0443\u043D\u0442\u0440\u0430\u0430\u043D\u0430. \u041E\u0434\u043E\u043E\u0433\u043E\u043E\u0440 \u0438\u0434\u044D\u0432\u0445\u0433\u04AF\u0439.",
-    Eingabemodus: "\u041E\u0440\u0443\u0443\u043B\u0430\u0445 \u0433\u043E\u0440\u0438\u043C",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u042D\u043D\u044D \u0442\u043E\u0432\u0447\u043E\u043E\u0440 \u0445\u0443\u043B\u0433\u0430\u043D\u0430 \u0431\u043E\u043B\u043E\u043D \u043C\u044D\u0434\u0440\u044D\u0433\u0447\u0442\u044D\u0439 \u0443\u0434\u0438\u0440\u0434\u043B\u0430\u0433\u044B\u043D \u0445\u043E\u043E\u0440\u043E\u043D\u0434 \u0448\u0438\u043B\u0436\u0438\u043D\u044D.",
-    "Dragging an/aus": "\u0427\u0438\u0440\u044D\u0445\u0438\u0439\u0433 \u0430\u0441\u0430\u0430\u0445/\u0443\u043D\u0442\u0440\u0430\u0430\u0445",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u041C\u044D\u0434\u0440\u044D\u0433\u0447\u0442\u044D\u0439 \u0433\u043E\u0440\u0438\u043C\u0434 \u043E\u0431\u044A\u0435\u043A\u0442 \u0445\u04AF\u0440\u044D\u0445\u044D\u0434 \u0445\u044D\u0440\u0445\u044D\u043D \u0445\u0430\u0440\u0438\u0443\u043B\u0430\u0445\u044B\u0433 \u044D\u043D\u044D \u0442\u043E\u0432\u0447\u043E\u043E\u0440 \u04E9\u04E9\u0440\u0447\u0438\u043B\u043D\u04E9.",
-    "Diagramm Men\xFC": "\u0414\u0438\u0430\u0433\u0440\u0430\u043C\u044B\u043D \u0446\u044D\u0441",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u042D\u043D\u044D \u0442\u043E\u0432\u0447 \u0437\u04AF\u04AF\u043D \u0442\u0430\u043B\u044B\u043D \u0434\u0438\u0430\u0433\u0440\u0430\u043C\u044B\u043D \u0446\u044D\u0441\u0438\u0439\u0433 \u043D\u044D\u044D\u043D\u044D.",
     Kontextmen\u00FC: "\u041A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u0446\u044D\u0441",
-    "Message Toast": "\u0422\u04E9\u043B\u04E9\u0432\u0438\u0439\u043D \u043C\u044D\u0434\u044D\u0433\u0434\u044D\u043B",
-    "Hier werden Statusmeldungen angezeigt.": "\u0422\u04E9\u043B\u04E9\u0432\u0438\u0439\u043D \u043C\u044D\u0434\u044D\u0433\u0434\u043B\u04AF\u04AF\u0434 \u044D\u043D\u0434 \u0445\u0430\u0440\u0430\u0433\u0434\u0430\u043D\u0430.",
     best\u00E4tigen: "\u0411\u0430\u0442\u043B\u0430\u0445",
     "Aktion best\xE4tigen:": "\u04AE\u0439\u043B\u0434\u043B\u0438\u0439\u0433 \u0431\u0430\u0442\u043B\u0430\u0445:",
     Diagramme: "\u0414\u0438\u0430\u0433\u0440\u0430\u043C\u0443\u0443\u0434",
@@ -52983,8 +51880,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u04AE\u04AF\u0441\u0433\u04AF\u04AF\u0440\u0438\u0439\u043D \u0433\u04AF\u0439\u0434\u044D\u043B",
     "verbundenes Gemisch": "\u0425\u043E\u043B\u0431\u043E\u0433\u0434\u0441\u043E\u043D \u0445\u043E\u043B\u0438\u043C\u043E\u0433",
     Elektrodenmaterial: "\u042D\u043B\u0435\u043A\u0442\u0440\u043E\u0434\u044B\u043D \u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u042D\u043D\u044D \u0446\u044D\u0441\u044D\u044D\u0440 \u0445\u0438\u043C\u0438\u0439\u043D \u0431\u043E\u0434\u0438\u0441, \u0431\u04AF\u0440\u044D\u043B\u0434\u044D\u0445\u04AF\u04AF\u043D \u0445\u044D\u0441\u044D\u0433 \u04AF\u04AF\u0441\u0433\u044D\u0436, \u0443\u0440\u044C\u0434\u0447\u0438\u043B\u0430\u043D \u0442\u043E\u0445\u0438\u0440\u0443\u0443\u043B\u043D\u0430.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u042D\u043D\u044D \u0446\u044D\u0441\u044D\u044D\u0440 \u0448\u0438\u043D\u044D \u043E\u0431\u044A\u0435\u043A\u0442 \u0441\u043E\u043D\u0433\u043E\u0436 \u0431\u0430\u0439\u0440\u043B\u0443\u0443\u043B\u043D\u0430.",
     entfernen: "\u0425\u0430\u0441\u0430\u0445",
     speichern: "\u0425\u0430\u0434\u0433\u0430\u043B\u0430\u0445",
     "neues Molek\xFCl": "\u0428\u0438\u043D\u044D \u043C\u043E\u043B\u0435\u043A\u0443\u043B",
@@ -53201,19 +52096,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0421\u043E\u043D\u0433\u043E\u0441\u043E\u043D \u0431\u04AF\u0440\u044D\u043B\u0434\u044D\u0445\u04AF\u04AF\u043D \u0445\u044D\u0441\u0433\u04AF\u04AF\u0434 \u0445\u043E\u043E\u0440\u043E\u043D\u0434\u043E\u043E \u0445\u043E\u043B\u0431\u043E\u0433\u0434\u043E\u043E\u0433\u04AF\u0439."
   },
   uz: {
-    "Objekt-Kontextmen\xFC": "Obyekt kontekst menyusi",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Bu yerda obyektni boshqaring va asosiy ma\u02BClumotlarni ko\u2018ring.",
     "Vollbild an/aus": "To\u2018liq ekran yoqish/o\u2018chirish",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Bu tugma to\u2018liq ekran rejimini yoqadi yoki o\u2018chiradi. Hozir o\u2018chirilgan.",
-    Eingabemodus: "Kiritish rejimi",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Bu tugma orqali sichqoncha va sensorli boshqaruv o\u2018rtasida almashing.",
-    "Dragging an/aus": "Sudrashni yoqish/o\u2018chirish",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Sensorli rejimda obyektlar tegishga qanday javob berishini shu tugma bilan o\u2018zgartiring.",
-    "Diagramm Men\xFC": "Diagramma menyusi",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Bu tugma chap tomondagi diagramma menyusini ochadi.",
     Kontextmen\u00FC: "Kontekst menyusi",
-    "Message Toast": "Holat xabari",
-    "Hier werden Statusmeldungen angezeigt.": "Holat xabarlari shu yerda ko\u2018rsatiladi.",
     best\u00E4tigen: "Tasdiqlash",
     "Aktion best\xE4tigen:": "Amalni tasdiqlash:",
     Diagramme: "Diagrammalar",
@@ -53273,8 +52157,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Manba toki",
     "verbundenes Gemisch": "Ulangan aralashma",
     Elektrodenmaterial: "Elektrod materiali",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Bu menyuda kimyoviy moddalar va komponentlarni yaratish hamda oldindan sozlash mumkin.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Bu menyuda yangi obyektlarni tanlash va joylashtirish mumkin.",
     entfernen: "Olib tashlash",
     speichern: "Saqlash",
     "neues Molek\xFCl": "Yangi molekula",
@@ -53491,19 +52373,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Tanlangan komponentlar ulanmagan."
   },
   tg: {
-    "Objekt-Kontextmen\xFC": "\u1218\u120D\u12A5\u12AD\u1272 \u12A3\u1265 \u12D9\u122D\u12EB \u1290\u1308\u122D",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u1290\u1272 \u1290\u1308\u122D \u12A3\u1265\u12DA \u12A3\u1218\u1213\u12F5\u122D\u1363 \u1218\u1230\u1228\u1273\u12CA \u1213\u1260\u122C\u1273 \u12F5\u121B \u122D\u12A0\u1362",
     "Vollbild an/aus": "\u1219\u1209\u12A5 \u1235\u12AD\u122A\u1295 \u12A3\u1295\u1265\u122D/\u12A3\u1325\u134D\u12A5",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u12A5\u12DA \u1218\u1320\u12C8\u1252 \u1219\u1209\u12A5 \u1235\u12AD\u122A\u1295 \u12A3\u1295\u1265\u122D \u12C8\u12ED \u12A3\u1325\u134D\u12A5\u1362 \u1215\u1302 \u1270\u12D3\u133D\u12E9 \u12A3\u120E\u1362",
-    Eingabemodus: "\u121E\u12F5 \u12A5\u1273\u12C8\u1275",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u1265\u12DA \u1218\u1320\u12C8\u1252 \u12A3\u1265 \u1218\u1295\u130E \u121B\u12CD\u1235\u1295 \u1293\u12ED \u1295\u12BD\u12AA \u1218\u1246\u133B\u1338\u122A\u1295 \u1240\u12ED\u122D\u1362",
-    "Dragging an/aus": "\u121D\u1309\u1273\u1275 \u12A3\u1295\u1265\u122D/\u12A3\u1325\u134D\u12A5",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u12A3\u1265 \u121E\u12F5 \u1295\u12BD\u12AA\u1363 \u1290\u1308\u122B\u1275 \u1295\u12BD\u12AA \u1265\u12B8\u1218\u12ED \u12A8\u121D\u12DD\u121D\u120D\u1231 \u1265\u12DA \u1218\u1320\u12C8\u1252 \u1240\u12ED\u122D\u1362",
-    "Diagramm Men\xFC": "\u121C\u1291 \u12F2\u12EB\u130D\u122B\u121D",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u12A5\u12DA \u1218\u1320\u12C8\u1252 \u12A3\u1265 \u1338\u130B\u121D \u12D8\u120E \u121C\u1291 \u12F2\u12EB\u130D\u122B\u121D \u12ED\u12B8\u134D\u1275\u1362",
     Kontextmen\u00FC: "\u121C\u1291 \u1290\u1308\u122D",
-    "Message Toast": "\u1213\u1260\u122C\u1273 \u12A9\u1290\u1273\u1275",
-    "Hier werden Statusmeldungen angezeigt.": "\u1218\u120D\u12A5\u12BD\u1272 \u12A9\u1290\u1273\u1275 \u12A3\u1265\u12DA \u12ED\u1228\u12A0\u1362",
     best\u00E4tigen: "\u12A3\u1228\u130B\u130D\u133D",
     "Aktion best\xE4tigen:": "\u1270\u130D\u1263\u122D \u12A3\u1228\u130B\u130D\u133D\u1366",
     Diagramme: "\u12F2\u12EB\u130D\u122B\u121B\u1275",
@@ -53563,8 +52434,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u12A4\u120C\u12AD\u1275\u122A\u12AD \u121D\u1295\u132A",
     "verbundenes Gemisch": "\u12DD\u1270\u1270\u1213\u1213\u12D8 \u121D\u1215\u12CB\u1235",
     Elektrodenmaterial: "\u1295\u1265\u1228\u1275 \u12A4\u120C\u12AD\u1275\u122E\u12F5",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u1265\u12DA \u121C\u1291 \u12AC\u121A\u12AB\u120B\u12CA \u1295\u1325\u1228 \u1290\u1308\u122B\u1275\u1295 \u12AD\u134D\u120D\u1273\u1275\u1295 \u134D\u1320\u122D\u1363 \u1245\u12F5\u121A \u1215\u1302 \u12F5\u121B \u12A3\u1250\u121D\u1325\u1362",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u1265\u12DA \u121C\u1291 \u1213\u12F0\u123D\u1272 \u1290\u1308\u122B\u1275 \u121D\u1228\u133D\u1295 \u12A3\u1250\u121D\u1325\u1295\u1362",
     entfernen: "\u12A3\u12CD\u133D\u12A5",
     speichern: "\u12A3\u1250\u121D\u1325",
     "neues Molek\xFCl": "\u1213\u12F5\u123D \u121E\u1208\u12AA\u12E9\u120D",
@@ -53781,19 +52650,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u12DD\u1270\u1218\u122D\u1339 \u12AD\u134D\u120D\u1273\u1275 \u12A3\u12ED\u1270\u1270\u1213\u1213\u12D9\u1295\u1362"
   },
   ka: {
-    "Objekt-Kontextmen\xFC": "\u10DD\u10D1\u10D8\u10D4\u10E5\u10E2\u10D8\u10E1 \u10D9\u10DD\u10DC\u10E2\u10D4\u10E5\u10E1\u10E2\u10E3\u10E0\u10D8 \u10DB\u10D4\u10DC\u10D8\u10E3",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u10D0\u10E5 \u10DB\u10D0\u10E0\u10D7\u10D4\u10D7 \u10DD\u10D1\u10D8\u10D4\u10E5\u10E2\u10D8 \u10D3\u10D0 \u10DC\u10D0\u10EE\u10D4\u10D7 \u10EB\u10D8\u10E0\u10D8\u10D7\u10D0\u10D3\u10D8 \u10D8\u10DC\u10E4\u10DD\u10E0\u10DB\u10D0\u10EA\u10D8\u10D0 \u10DB\u10D8\u10E1 \u10E8\u10D4\u10E1\u10D0\u10EE\u10D4\u10D1.",
     "Vollbild an/aus": "\u10E1\u10E0\u10E3\u10DA\u10D4\u10D9\u10E0\u10D0\u10DC\u10D8\u10D0\u10DC\u10D8 \u10E0\u10D4\u10DF\u10D8\u10DB\u10D8\u10E1 \u10E9\u10D0\u10E0\u10D7\u10D5\u10D0/\u10D2\u10D0\u10DB\u10DD\u10E0\u10D7\u10D5\u10D0",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u10D4\u10E1 \u10E6\u10D8\u10DA\u10D0\u10D9\u10D8 \u10E1\u10E0\u10E3\u10DA\u10D4\u10D9\u10E0\u10D0\u10DC\u10D8\u10D0\u10DC \u10E0\u10D4\u10DF\u10D8\u10DB\u10E1 \u10E0\u10D7\u10D0\u10D5\u10E1 \u10D0\u10DC \u10D7\u10D8\u10E8\u10D0\u10D5\u10E1. \u10D0\u10EE\u10DA\u10D0 \u10D2\u10D0\u10DB\u10DD\u10E0\u10D7\u10E3\u10DA\u10D8\u10D0.",
-    Eingabemodus: "\u10E8\u10D4\u10E7\u10D5\u10D0\u10DC\u10D8\u10E1 \u10E0\u10D4\u10DF\u10D8\u10DB\u10D8",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u10D0\u10DB \u10E6\u10D8\u10DA\u10D0\u10D9\u10D8\u10D7 \u10D2\u10D0\u10D3\u10D0\u10D4\u10E0\u10D7\u10D4\u10D7 \u10DB\u10D0\u10E3\u10E1\u10D8\u10E1\u10D0 \u10D3\u10D0 \u10E8\u10D4\u10EE\u10D4\u10D1\u10D8\u10D7 \u10DB\u10D0\u10E0\u10D7\u10D5\u10D0\u10E1 \u10E8\u10DD\u10E0\u10D8\u10E1.",
-    "Dragging an/aus": "\u10D2\u10D0\u10D3\u10D0\u10D7\u10E0\u10D4\u10D5\u10D8\u10E1 \u10E9\u10D0\u10E0\u10D7\u10D5\u10D0/\u10D2\u10D0\u10DB\u10DD\u10E0\u10D7\u10D5\u10D0",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u10E8\u10D4\u10EE\u10D4\u10D1\u10D8\u10D7 \u10E0\u10D4\u10DF\u10D8\u10DB\u10E8\u10D8 \u10D0\u10DB \u10E6\u10D8\u10DA\u10D0\u10D9\u10D8\u10D7 \u10E8\u10D4\u10EA\u10D5\u10D0\u10DA\u10D4\u10D7, \u10E0\u10DD\u10D2\u10DD\u10E0 \u10E0\u10D4\u10D0\u10D2\u10D8\u10E0\u10D4\u10D1\u10D4\u10DC \u10DD\u10D1\u10D8\u10D4\u10E5\u10E2\u10D4\u10D1\u10D8 \u10E8\u10D4\u10EE\u10D4\u10D1\u10D0\u10D6\u10D4.",
-    "Diagramm Men\xFC": "\u10D3\u10D8\u10D0\u10D2\u10E0\u10D0\u10DB\u10D8\u10E1 \u10DB\u10D4\u10DC\u10D8\u10E3",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u10D4\u10E1 \u10E6\u10D8\u10DA\u10D0\u10D9\u10D8 \u10DB\u10D0\u10E0\u10EA\u10EE\u10D4\u10DC\u10D0 \u10DB\u10EE\u10D0\u10E0\u10D4\u10E1 \u10D3\u10D8\u10D0\u10D2\u10E0\u10D0\u10DB\u10D8\u10E1 \u10DB\u10D4\u10DC\u10D8\u10E3\u10E1 \u10EE\u10E1\u10DC\u10D8\u10E1.",
     Kontextmen\u00FC: "\u10D9\u10DD\u10DC\u10E2\u10D4\u10E5\u10E1\u10E2\u10E3\u10E0\u10D8 \u10DB\u10D4\u10DC\u10D8\u10E3",
-    "Message Toast": "\u10E1\u10E2\u10D0\u10E2\u10E3\u10E1\u10D8\u10E1 \u10E8\u10D4\u10E2\u10E7\u10DD\u10D1\u10D8\u10DC\u10D4\u10D1\u10D0",
-    "Hier werden Statusmeldungen angezeigt.": "\u10E1\u10E2\u10D0\u10E2\u10E3\u10E1\u10D8\u10E1 \u10E8\u10D4\u10E2\u10E7\u10DD\u10D1\u10D8\u10DC\u10D4\u10D1\u10D4\u10D1\u10D8 \u10D0\u10E5 \u10D2\u10D0\u10DB\u10DD\u10E9\u10DC\u10D3\u10D4\u10D1\u10D0.",
     best\u00E4tigen: "\u10D3\u10D0\u10D3\u10D0\u10E1\u10E2\u10E3\u10E0\u10D4\u10D1\u10D0",
     "Aktion best\xE4tigen:": "\u10DB\u10DD\u10E5\u10DB\u10D4\u10D3\u10D4\u10D1\u10D8\u10E1 \u10D3\u10D0\u10D3\u10D0\u10E1\u10E2\u10E3\u10E0\u10D4\u10D1\u10D0:",
     Diagramme: "\u10D3\u10D8\u10D0\u10D2\u10E0\u10D0\u10DB\u10D4\u10D1\u10D8",
@@ -53853,8 +52711,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u10EC\u10E7\u10D0\u10E0\u10DD\u10E1 \u10D3\u10D4\u10DC\u10D8",
     "verbundenes Gemisch": "\u10E8\u10D4\u10D4\u10E0\u10D7\u10D4\u10D1\u10E3\u10DA\u10D8 \u10DC\u10D0\u10E0\u10D4\u10D5\u10D8",
     Elektrodenmaterial: "\u10D4\u10DA\u10D4\u10E5\u10E2\u10E0\u10DD\u10D3\u10D8\u10E1 \u10DB\u10D0\u10E1\u10D0\u10DA\u10D0",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u10D0\u10DB \u10DB\u10D4\u10DC\u10D8\u10E3\u10E8\u10D8 \u10E8\u10D4\u10D2\u10D8\u10EB\u10DA\u10D8\u10D0\u10D7 \u10E8\u10D4\u10E5\u10DB\u10DC\u10D0\u10D7 \u10D3\u10D0 \u10EC\u10D8\u10DC\u10D0\u10E1\u10EC\u10D0\u10E0 \u10D3\u10D0\u10D0\u10E7\u10D4\u10DC\u10DD\u10D7 \u10E5\u10D8\u10DB\u10D8\u10E3\u10E0\u10D8 \u10DC\u10D8\u10D5\u10D7\u10D8\u10D4\u10E0\u10D4\u10D1\u10D4\u10D1\u10D8 \u10D3\u10D0 \u10D9\u10DD\u10DB\u10DE\u10DD\u10DC\u10D4\u10DC\u10E2\u10D4\u10D1\u10D8.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u10D0\u10DB \u10DB\u10D4\u10DC\u10D8\u10E3\u10E8\u10D8 \u10E8\u10D4\u10D2\u10D8\u10EB\u10DA\u10D8\u10D0\u10D7 \u10D0\u10D8\u10E0\u10E9\u10D8\u10DD\u10D7 \u10D3\u10D0 \u10D2\u10D0\u10DC\u10D0\u10D7\u10D0\u10D5\u10E1\u10DD\u10D7 \u10D0\u10EE\u10D0\u10DA\u10D8 \u10DD\u10D1\u10D8\u10D4\u10E5\u10E2\u10D4\u10D1\u10D8.",
     entfernen: "\u10D0\u10DB\u10DD\u10E6\u10D4\u10D1\u10D0",
     speichern: "\u10E8\u10D4\u10DC\u10D0\u10EE\u10D5\u10D0",
     "neues Molek\xFCl": "\u10D0\u10EE\u10D0\u10DA\u10D8 \u10DB\u10DD\u10DA\u10D4\u10D9\u10E3\u10DA\u10D0",
@@ -54071,19 +52927,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u10D0\u10E0\u10E9\u10D4\u10E3\u10DA\u10D8 \u10D9\u10DD\u10DB\u10DE\u10DD\u10DC\u10D4\u10DC\u10E2\u10D4\u10D1\u10D8 \u10D3\u10D0\u10D9\u10D0\u10D5\u10E8\u10D8\u10E0\u10D4\u10D1\u10E3\u10DA\u10D8 \u10D0\u10E0 \u10D0\u10E0\u10D8\u10E1."
   },
   hy: {
-    "Objekt-Kontextmen\xFC": "\u0555\u0562\u0575\u0565\u056F\u057F\u056B \u0570\u0561\u0574\u0561\u057F\u0565\u0584\u057D\u057F\u0561\u0575\u056B\u0576 \u0568\u0576\u057F\u0580\u0561\u0581\u0561\u0576\u056F",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0531\u0575\u057D\u057F\u0565\u0572 \u056F\u0561\u057C\u0561\u057E\u0561\u0580\u0565\u0584 \u0585\u0562\u0575\u0565\u056F\u057F\u0568 \u0587 \u0564\u056B\u057F\u0565\u0584 \u0564\u0580\u0561 \u0570\u056B\u0574\u0576\u0561\u056F\u0561\u0576 \u057F\u0565\u0572\u0565\u056F\u0578\u0582\u0569\u0575\u0578\u0582\u0576\u0576\u0565\u0580\u0568\u0589",
     "Vollbild an/aus": "\u053C\u056B\u0561\u0567\u056F\u0580\u0561\u0576 \u057C\u0565\u056A\u056B\u0574\u0568 \u0574\u056B\u0561\u0581\u0576\u0565\u056C/\u0561\u0576\u057B\u0561\u057F\u0565\u056C",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0531\u0575\u057D \u056F\u0578\u0573\u0561\u056F\u0568 \u0574\u056B\u0561\u0581\u0576\u0578\u0582\u0574 \u056F\u0561\u0574 \u0561\u0576\u057B\u0561\u057F\u0578\u0582\u0574 \u0567 \u056C\u056B\u0561\u0567\u056F\u0580\u0561\u0576 \u057C\u0565\u056A\u056B\u0574\u0568\u0589 \u0531\u0575\u056A\u0574 \u0561\u0576\u057B\u0561\u057F\u057E\u0561\u056E \u0567\u0589",
-    Eingabemodus: "\u0544\u0578\u0582\u057F\u0584\u0561\u0563\u0580\u0574\u0561\u0576 \u057C\u0565\u056A\u056B\u0574",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0531\u0575\u057D \u056F\u0578\u0573\u0561\u056F\u0578\u057E \u0561\u0576\u0581\u0565\u0584 \u0574\u056F\u0576\u056B\u056F\u056B \u0587 \u0570\u057A\u0574\u0561\u0576 \u056F\u0561\u057C\u0561\u057E\u0561\u0580\u0574\u0561\u0576 \u0574\u056B\u057B\u0587\u0589",
-    "Dragging an/aus": "\u0554\u0561\u0577\u0578\u0582\u0574\u0568 \u0574\u056B\u0561\u0581\u0576\u0565\u056C/\u0561\u0576\u057B\u0561\u057F\u0565\u056C",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0540\u057A\u0574\u0561\u0576 \u057C\u0565\u056A\u056B\u0574\u0578\u0582\u0574 \u0561\u0575\u057D \u056F\u0578\u0573\u0561\u056F\u0578\u057E \u0583\u0578\u056D\u0565\u0584, \u0569\u0565 \u056B\u0576\u0579\u057A\u0565\u057D \u0565\u0576 \u0585\u0562\u0575\u0565\u056F\u057F\u0576\u0565\u0580\u0576 \u0561\u0580\u0571\u0561\u0563\u0561\u0576\u0584\u0578\u0582\u0574 \u0570\u057A\u0574\u0561\u0576\u0568\u0589",
-    "Diagramm Men\xFC": "\u0533\u056E\u0561\u057A\u0561\u057F\u056F\u0565\u0580\u056B \u0568\u0576\u057F\u0580\u0561\u0581\u0561\u0576\u056F",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0531\u0575\u057D \u056F\u0578\u0573\u0561\u056F\u0568 \u0562\u0561\u0581\u0578\u0582\u0574 \u0567 \u0571\u0561\u056D \u056F\u0578\u0572\u0574\u056B \u0563\u056E\u0561\u057A\u0561\u057F\u056F\u0565\u0580\u056B \u0568\u0576\u057F\u0580\u0561\u0581\u0561\u0576\u056F\u0568\u0589",
     Kontextmen\u00FC: "\u0540\u0561\u0574\u0561\u057F\u0565\u0584\u057D\u057F\u0561\u0575\u056B\u0576 \u0568\u0576\u057F\u0580\u0561\u0581\u0561\u0576\u056F",
-    "Message Toast": "\u053F\u0561\u0580\u0563\u0561\u057E\u056B\u0573\u0561\u056F\u056B \u056E\u0561\u0576\u0578\u0582\u0581\u0578\u0582\u0574",
-    "Hier werden Statusmeldungen angezeigt.": "\u053F\u0561\u0580\u0563\u0561\u057E\u056B\u0573\u0561\u056F\u056B \u0570\u0561\u0572\u0578\u0580\u0564\u0561\u0563\u0580\u0578\u0582\u0569\u0575\u0578\u0582\u0576\u0576\u0565\u0580\u0576 \u0561\u0575\u057D\u057F\u0565\u0572 \u0565\u0576 \u0570\u0561\u0575\u057F\u0576\u057E\u0578\u0582\u0574\u0589",
     best\u00E4tigen: "\u0540\u0561\u057D\u057F\u0561\u057F\u0565\u056C",
     "Aktion best\xE4tigen:": "\u0540\u0561\u057D\u057F\u0561\u057F\u0565\u056C \u0563\u0578\u0580\u056E\u0578\u0572\u0578\u0582\u0569\u0575\u0578\u0582\u0576\u0568\u2024",
     Diagramme: "\u0533\u056E\u0561\u057A\u0561\u057F\u056F\u0565\u0580\u0576\u0565\u0580",
@@ -54143,8 +52988,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0531\u0572\u0562\u0575\u0578\u0582\u0580\u056B \u0570\u0578\u057D\u0561\u0576\u0584",
     "verbundenes Gemisch": "\u0544\u056B\u0561\u0581\u057E\u0561\u056E \u056D\u0561\u057C\u0576\u0578\u0582\u0580\u0564",
     Elektrodenmaterial: "\u0537\u056C\u0565\u056F\u057F\u0580\u0578\u0564\u056B \u0576\u0575\u0578\u0582\u0569",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0531\u0575\u057D \u0568\u0576\u057F\u0580\u0561\u0581\u0561\u0576\u056F\u0578\u0582\u0574 \u056F\u0561\u0580\u0578\u0572 \u0565\u0584 \u057D\u057F\u0565\u0572\u056E\u0565\u056C \u0587 \u0576\u0561\u056D\u0561\u057A\u0565\u057D \u056F\u0561\u0580\u0563\u0561\u057E\u0578\u0580\u0565\u056C \u0584\u056B\u0574\u056B\u0561\u056F\u0561\u0576 \u0576\u0575\u0578\u0582\u0569\u0565\u0580 \u0578\u0582 \u0562\u0561\u0572\u0561\u0564\u0580\u056B\u0579\u0576\u0565\u0580\u0589",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0531\u0575\u057D \u0568\u0576\u057F\u0580\u0561\u0581\u0561\u0576\u056F\u0578\u0582\u0574 \u056F\u0561\u0580\u0578\u0572 \u0565\u0584 \u0568\u0576\u057F\u0580\u0565\u056C \u0587 \u057F\u0565\u0572\u0561\u0564\u0580\u0565\u056C \u0576\u0578\u0580 \u0585\u0562\u0575\u0565\u056F\u057F\u0576\u0565\u0580\u0589",
     entfernen: "\u0540\u0565\u057C\u0561\u0581\u0576\u0565\u056C",
     speichern: "\u054A\u0561\u0570\u057A\u0561\u0576\u0565\u056C",
     "neues Molek\xFCl": "\u0546\u0578\u0580 \u0574\u0578\u056C\u0565\u056F\u0578\u0582\u056C",
@@ -54361,19 +53204,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0538\u0576\u057F\u0580\u057E\u0561\u056E \u0562\u0561\u0572\u0561\u0564\u0580\u056B\u0579\u0576\u0565\u0580\u0568 \u0574\u056B\u0561\u0581\u057E\u0561\u056E \u0579\u0565\u0576\u0589"
   },
   he: {
-    "Objekt-Kontextmen\xFC": "\u05EA\u05E4\u05E8\u05D9\u05D8 \u05D4\u05D4\u05E7\u05E9\u05E8 \u05E9\u05DC \u05D4\u05D0\u05D5\u05D1\u05D9\u05D9\u05E7\u05D8",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u05DB\u05D0\u05DF \u05D0\u05E4\u05E9\u05E8 \u05DC\u05E0\u05D4\u05DC \u05D0\u05EA \u05D4\u05D0\u05D5\u05D1\u05D9\u05D9\u05E7\u05D8 \u05D5\u05DC\u05E8\u05D0\u05D5\u05EA \u05DE\u05D9\u05D3\u05E2 \u05D1\u05E1\u05D9\u05E1\u05D9 \u05E2\u05DC\u05D9\u05D5.",
     "Vollbild an/aus": "\u05D4\u05E4\u05E2\u05DC\u05D4 \u05D0\u05D5 \u05DB\u05D9\u05D1\u05D5\u05D9 \u05E9\u05DC \u05DE\u05E1\u05DA \u05DE\u05DC\u05D0",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u05DB\u05E4\u05EA\u05D5\u05E8 \u05D6\u05D4 \u05DE\u05E4\u05E2\u05D9\u05DC \u05D0\u05D5 \u05DE\u05DB\u05D1\u05D4 \u05D0\u05EA \u05DE\u05E6\u05D1 \u05D4\u05DE\u05E1\u05DA \u05D4\u05DE\u05DC\u05D0. \u05D4\u05DE\u05E6\u05D1 \u05DE\u05D5\u05E9\u05D1\u05EA \u05DB\u05E8\u05D2\u05E2.",
-    Eingabemodus: "\u05DE\u05E6\u05D1 \u05E7\u05DC\u05D8",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u05DB\u05E4\u05EA\u05D5\u05E8 \u05D6\u05D4 \u05DE\u05E2\u05D1\u05D9\u05E8 \u05D1\u05D9\u05DF \u05E9\u05DC\u05D9\u05D8\u05D4 \u05D1\u05E2\u05DB\u05D1\u05E8 \u05DC\u05E9\u05DC\u05D9\u05D8\u05D4 \u05D1\u05DE\u05D2\u05E2.",
-    "Dragging an/aus": "\u05D4\u05E4\u05E2\u05DC\u05D4 \u05D0\u05D5 \u05DB\u05D9\u05D1\u05D5\u05D9 \u05E9\u05DC \u05D2\u05E8\u05D9\u05E8\u05D4",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u05D1\u05DE\u05E6\u05D1 \u05DE\u05D2\u05E2, \u05DB\u05E4\u05EA\u05D5\u05E8 \u05D6\u05D4 \u05DE\u05E9\u05E0\u05D4 \u05D0\u05EA \u05D0\u05D5\u05E4\u05DF \u05D4\u05EA\u05D2\u05D5\u05D1\u05D4 \u05E9\u05DC \u05D0\u05D5\u05D1\u05D9\u05D9\u05E7\u05D8\u05D9\u05DD \u05DC\u05DE\u05D2\u05E2.",
-    "Diagramm Men\xFC": "\u05EA\u05E4\u05E8\u05D9\u05D8 \u05D4\u05EA\u05E8\u05E9\u05D9\u05DE\u05D9\u05DD",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u05DB\u05E4\u05EA\u05D5\u05E8 \u05D6\u05D4 \u05E4\u05D5\u05EA\u05D7 \u05D0\u05EA \u05EA\u05E4\u05E8\u05D9\u05D8 \u05D4\u05EA\u05E8\u05E9\u05D9\u05DE\u05D9\u05DD \u05D1\u05E6\u05D3 \u05E9\u05DE\u05D0\u05DC.",
     Kontextmen\u00FC: "\u05EA\u05E4\u05E8\u05D9\u05D8 \u05D4\u05E7\u05E9\u05E8",
-    "Message Toast": "\u05D4\u05D5\u05D3\u05E2\u05EA \u05DE\u05E6\u05D1",
-    "Hier werden Statusmeldungen angezeigt.": "\u05D4\u05D5\u05D3\u05E2\u05D5\u05EA \u05DE\u05E6\u05D1 \u05DE\u05D5\u05E4\u05D9\u05E2\u05D5\u05EA \u05DB\u05D0\u05DF.",
     best\u00E4tigen: "\u05D0\u05D9\u05E9\u05D5\u05E8",
     "Aktion best\xE4tigen:": "\u05D0\u05D9\u05E9\u05D5\u05E8 \u05D4\u05E4\u05E2\u05D5\u05DC\u05D4:",
     Diagramme: "\u05EA\u05E8\u05E9\u05D9\u05DE\u05D9\u05DD",
@@ -54433,8 +53265,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u05D6\u05E8\u05DD \u05D4\u05DE\u05E7\u05D5\u05E8",
     "verbundenes Gemisch": "\u05EA\u05E2\u05E8\u05D5\u05D1\u05EA \u05DE\u05D7\u05D5\u05D1\u05E8\u05EA",
     Elektrodenmaterial: "\u05D7\u05D5\u05DE\u05E8 \u05D4\u05D0\u05DC\u05E7\u05D8\u05E8\u05D5\u05D3\u05D4",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u05D1\u05EA\u05E4\u05E8\u05D9\u05D8 \u05D6\u05D4 \u05D0\u05E4\u05E9\u05E8 \u05DC\u05D9\u05E6\u05D5\u05E8 \u05D7\u05D5\u05DE\u05E8\u05D9\u05DD \u05DB\u05D9\u05DE\u05D9\u05D9\u05DD \u05D5\u05E8\u05DB\u05D9\u05D1\u05D9\u05DD \u05D5\u05DC\u05D4\u05D2\u05D3\u05D9\u05E8 \u05D0\u05D5\u05EA\u05DD \u05DE\u05E8\u05D0\u05E9.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u05D1\u05EA\u05E4\u05E8\u05D9\u05D8 \u05D6\u05D4 \u05D0\u05E4\u05E9\u05E8 \u05DC\u05D1\u05D7\u05D5\u05E8 \u05D5\u05DC\u05D4\u05E6\u05D9\u05D1 \u05D0\u05D5\u05D1\u05D9\u05D9\u05E7\u05D8\u05D9\u05DD \u05D7\u05D3\u05E9\u05D9\u05DD.",
     entfernen: "\u05D4\u05E1\u05E8\u05D4",
     speichern: "\u05E9\u05DE\u05D9\u05E8\u05D4",
     "neues Molek\xFCl": "\u05DE\u05D5\u05DC\u05E7\u05D5\u05DC\u05D4 \u05D7\u05D3\u05E9\u05D4",
@@ -54651,19 +53481,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u05D4\u05E8\u05DB\u05D9\u05D1\u05D9\u05DD \u05E9\u05E0\u05D1\u05D7\u05E8\u05D5 \u05D0\u05D9\u05E0\u05DD \u05DE\u05D7\u05D5\u05D1\u05E8\u05D9\u05DD."
   },
   az: {
-    "Objekt-Kontextmen\xFC": "Obyektin kontekst menyusu",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Obyekti burada idar\u0259 edin v\u0259 \u0259sas m\u0259lumatlar\u0131na bax\u0131n.",
     "Vollbild an/aus": "Tam ekran\u0131 yand\u0131r/s\xF6nd\xFCr",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Bu d\xFCym\u0259 tam ekran rejimini yand\u0131r\u0131r v\u0259 ya s\xF6nd\xFCr\xFCr. Haz\u0131rda s\xF6n\xFCl\xFCd\xFCr.",
-    Eingabemodus: "Giri\u015F rejimi",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Bu d\xFCym\u0259 il\u0259 si\xE7an v\u0259 toxunma idar\u0259etm\u0259si aras\u0131nda ke\xE7id edin.",
-    "Dragging an/aus": "S\xFCr\xFC\u015Fd\xFCrm\u0259ni yand\u0131r/s\xF6nd\xFCr",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Toxunma rejimind\u0259 obyektl\u0259rin toxunu\u015Fa reaksiyas\u0131n\u0131 bu d\xFCym\u0259 il\u0259 d\u0259yi\u015Fin.",
-    "Diagramm Men\xFC": "Diaqram menyusu",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Bu d\xFCym\u0259 soldak\u0131 diaqram menyusunu a\xE7\u0131r.",
     Kontextmen\u00FC: "Kontekst menyusu",
-    "Message Toast": "V\u0259ziyy\u0259t bildiri\u015Fi",
-    "Hier werden Statusmeldungen angezeigt.": "V\u0259ziyy\u0259t mesajlar\u0131 burada g\xF6r\xFCn\xFCr.",
     best\u00E4tigen: "T\u0259sdiql\u0259",
     "Aktion best\xE4tigen:": "\u018Fm\u0259liyyat\u0131 t\u0259sdiql\u0259:",
     Diagramme: "Diaqramlar",
@@ -54723,8 +53542,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "M\u0259nb\u0259 c\u0259r\u0259yan\u0131",
     "verbundenes Gemisch": "Qo\u015Fulmu\u015F qar\u0131\u015F\u0131q",
     Elektrodenmaterial: "Elektrod material\u0131",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Bu menyuda kimy\u0259vi madd\u0259l\u0259r v\u0259 komponentl\u0259r yarad\u0131b \u0259vv\u0259lc\u0259d\u0259n t\u0259yin ed\u0259 bil\u0259rsiniz.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Bu menyu yeni obyektl\u0259ri se\xE7ib yerl\u0259\u015Fdirm\u0259y\u0259 imkan verir.",
     entfernen: "Sil",
     speichern: "Yadda saxla",
     "neues Molek\xFCl": "Yeni molekul",
@@ -54941,19 +53758,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Se\xE7ilmi\u015F komponentl\u0259r birl\u0259\u015Fdirilm\u0259yib."
   },
   tk: {
-    "Objekt-Kontextmen\xFC": "Ob\xFDekti\u0148 kontekst men\xFDusy",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Ob\xFDekti \u015Fu \xFDerde dolandyry\u0148 we esasy maglumatlaryny g\xF6r\xFC\u0148.",
     "Vollbild an/aus": "Doly ekrany a\xE7/\xFDap",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Bu d\xFCwme doly ekran tertibini a\xE7\xFDar \xFDa-da \xFDap\xFDar. H\xE4zir \xFDapyk.",
-    Eingabemodus: "Giri\u015F tertibi",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Bu d\xFCwme bilen sy\xE7an we degme arkaly dolandyry\u015Fy\u0148 arasynda ge\xE7i\u0148.",
-    "Dragging an/aus": "S\xFC\xFD\u015F\xFCrmegi a\xE7/\xFDap",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Degme tertibinde bu d\xFCwme bilen ob\xFDektleri\u0148 degm\xE4 n\xE4hili jogap ber\xFD\xE4ndigini \xFC\xFDtgedi\u0148.",
-    "Diagramm Men\xFC": "Diagramma men\xFDusy",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Bu d\xFCwme \xE7ep tarapdaky diagramma men\xFDusyny a\xE7\xFDar.",
     Kontextmen\u00FC: "Kontekst men\xFDusy",
-    "Message Toast": "\xDDagda\xFD habarnamasy",
-    "Hier werden Statusmeldungen angezeigt.": "\xDDagda\xFD habarlary \u015Fu \xFDerde g\xF6rkezil\xFD\xE4r.",
     best\u00E4tigen: "Tassykla",
     "Aktion best\xE4tigen:": "Hereketi tassykla:",
     Diagramme: "Diagrammalar",
@@ -55013,8 +53819,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\xC7e\u015Fme togy",
     "verbundenes Gemisch": "Birle\u015Fdirilen garyndy",
     Elektrodenmaterial: "Elektrod materialy",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Bu men\xFDuda himiki maddalary we komponentleri d\xF6redip, \xF6\u0148\xFCnden sazlap bol\xFDar.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Bu men\xFDuda t\xE4ze ob\xFDektleri sa\xFDlap, \xFDerle\u015Fdirip bol\xFDar.",
     entfernen: "A\xFDyr",
     speichern: "\xDDatda sakla",
     "neues Molek\xFCl": "T\xE4ze molekula",
@@ -55231,19 +54035,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Sa\xFDlanan komponentler birle\u015Fdirilmedik."
   },
   dv: {
-    "Objekt-Kontextmen\xFC": "\u0787\u07AE\u0784\u07B0\u0796\u07AC\u0786\u07B0\u0793\u07B0\u078E\u07AC \u0786\u07AE\u0782\u07B0\u0793\u07AC\u0786\u07B0\u0790\u07B0\u0793\u07B0 \u0789\u07AC\u0782\u07AB",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0789\u07A8\u078C\u07A6\u0782\u07AA\u0782\u07B0 \u0787\u07AE\u0784\u07B0\u0796\u07AC\u0786\u07B0\u0793\u07B0 \u0789\u07AC\u0782\u07AD\u0796\u07B0\u0786\u07AE\u0781\u07B0 \u0787\u07A6\u0790\u07A7\u0790\u07A9 \u0789\u07A6\u07A2\u07AA\u078D\u07AB\u0789\u07A7\u078C\u07AA \u0784\u07A6\u078D\u07A7.",
     "Vollbild an/aus": "\u078A\u07AA\u078D\u07B0\u0790\u07B0\u0786\u07B0\u0783\u07A9\u0782\u07B0 \u0784\u07A6\u078B\u07A6\u078D\u07AA\u0786\u07AA\u0783\u07AD",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0789\u07A8 \u0784\u07A6\u0793\u07A6\u0782\u07AA\u0782\u07B0 \u078A\u07AA\u078D\u07B0\u0790\u07B0\u0786\u07B0\u0783\u07A9\u0782\u07B0 \u0789\u07AF\u0791\u07B0 \u0784\u07A6\u078B\u07A6\u078D\u07AA\u0786\u07AA\u0783\u07AC\u0788\u07AD\u0782\u07AC. \u0789\u07A8\u0780\u07A7\u0783\u07AA \u0782\u07A8\u0787\u07B0\u0788\u07A7\u078A\u07A6\u0787\u07A8.",
-    Eingabemodus: "\u0787\u07A8\u0782\u07B0\u0795\u07AA\u0793\u07B0 \u0789\u07AF\u0791\u07B0",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0789\u07A6\u0787\u07AA\u0790\u07B0 \u0787\u07A6\u078B\u07A8 \u0793\u07A6\u0797\u07B0 \u0786\u07AE\u0782\u07B0\u0793\u07B0\u0783\u07AF\u078D\u07B0 \u0784\u07A6\u078B\u07A6\u078D\u07AA\u0786\u07AA\u0783\u07A6\u0782\u07B0 \u0789\u07A8 \u0784\u07A6\u0793\u07A6\u0782\u07B0 \u0784\u07AD\u0782\u07AA\u0782\u07B0\u0786\u07AA\u0783\u07AD.",
-    "Dragging an/aus": "\u078E\u07AC\u0782\u07B0\u078B\u07A8\u0787\u07AA\u0782\u07B0 \u0784\u07A6\u078B\u07A6\u078D\u07AA\u0786\u07AA\u0783\u07AD",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0793\u07A6\u0797\u07B0 \u0789\u07AF\u0791\u07B0\u078E\u07A6\u0787\u07A8 \u0787\u07AE\u0784\u07B0\u0796\u07AC\u0786\u07B0\u0793\u07B0\u078C\u07A6\u0787\u07B0 \u0787\u07A6\u078C\u07AA\u078D\u07AA\u0789\u07A6\u0781\u07B0 \u0783\u07A6\u0787\u07B0\u078B\u07AA\u078B\u07AD \u078E\u07AE\u078C\u07B0 \u0789\u07A8 \u0784\u07A6\u0793\u07A6\u0782\u07AA\u0782\u07B0 \u0784\u07A6\u078B\u07A6\u078D\u07AA\u0786\u07AA\u0783\u07AD.",
-    "Diagramm Men\xFC": "\u0797\u07A7\u0793\u07AA\u078E\u07AC \u0789\u07AC\u0782\u07AB",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0789\u07A8 \u0784\u07A6\u0793\u07A6\u0782\u07AA\u0782\u07B0 \u0788\u07A7\u078C\u07B0\u078A\u07A6\u0783\u07A7\u078C\u07AA\u078E\u07AC \u0797\u07A7\u0793\u07AA\u078E\u07AC \u0789\u07AC\u0782\u07AB \u0780\u07AA\u0785\u07AA\u0788\u07AD.",
     Kontextmen\u00FC: "\u0786\u07AE\u0782\u07B0\u0793\u07AC\u0786\u07B0\u0790\u07B0\u0793\u07B0 \u0789\u07AC\u0782\u07AB",
-    "Message Toast": "\u0780\u07A7\u078D\u07A6\u078C\u07AA \u0787\u07A8\u0782\u07B0\u078E\u07AA\u0782\u07B0",
-    "Hier werden Statusmeldungen angezeigt.": "\u0780\u07A7\u078D\u07A6\u078C\u07AA\u078E\u07AC \u0789\u07AC\u0790\u07AC\u0796\u07AA\u078C\u07A6\u0787\u07B0 \u0789\u07A8\u078C\u07A6\u0782\u07AA\u078E\u07A6\u0787\u07A8 \u078A\u07AC\u0782\u07B0\u0782\u07A7\u0782\u07AC.",
     best\u00E4tigen: "\u0794\u07A6\u078E\u07A9\u0782\u07B0\u0786\u07AA\u0783\u07AD",
     "Aktion best\xE4tigen:": "\u0787\u07A6\u0789\u07A6\u078D\u07AA \u0794\u07A6\u078E\u07A9\u0782\u07B0\u0786\u07AA\u0783\u07AD",
     Diagramme: "\u0797\u07A7\u0793\u07AA\u078C\u07A6\u0787\u07B0",
@@ -55303,8 +54096,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0790\u07AF\u0790\u07B0\u078E\u07AC \u0786\u07A6\u0783\u07A6\u0782\u07B0\u0793\u07B0",
     "verbundenes Gemisch": "\u078E\u07AA\u0785\u07A8\u078A\u07A6\u0787\u07A8\u0788\u07A7 \u0789\u07A8\u0786\u07B0\u0790\u07B0\u0797\u07A6\u0783",
     Elektrodenmaterial: "\u0787\u07A8\u078D\u07AC\u0786\u07B0\u0793\u07B0\u0783\u07AF\u0791\u07AA\u078E\u07AC \u0789\u07AC\u0793\u07A9\u0783\u07A8\u0787\u07A6\u078D\u07B0",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0789\u07A8 \u0789\u07AC\u0782\u07AB\u0787\u07A8\u0782\u07B0 \u0786\u07AC\u0789\u07A8\u0786\u07A6\u078D\u07B0\u078C\u07A6\u0787\u07B0 \u0787\u07A6\u078B\u07A8 \u0786\u07AE\u0789\u07B0\u0795\u07AF\u0782\u07AC\u0782\u07B0\u0793\u07B0\u078C\u07A6\u0787\u07B0 \u0780\u07A6\u078B\u07A6\u0787\u07A8 \u0786\u07AA\u0783\u07A8\u0782\u07B0 \u078C\u07A6\u0787\u07B0\u0794\u07A7\u0783\u07AA\u0786\u07AA\u0783\u07AD.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0789\u07A8 \u0789\u07AC\u0782\u07AB\u0787\u07A8\u0782\u07B0 \u0787\u07A6\u0787\u07AA \u0787\u07AE\u0784\u07B0\u0796\u07AC\u0786\u07B0\u0793\u07B0\u078C\u07A6\u0787\u07B0 \u0780\u07AE\u0788\u07A6\u0787\u07A8 \u078C\u07A6\u0782\u07AA\u078E\u07A6\u0787\u07A8 \u0784\u07A6\u0780\u07A6\u0787\u07B0\u0793\u07A7.",
     entfernen: "\u0782\u07A6\u078E\u07A7",
     speichern: "\u0790\u07AD\u0788\u07B0\u0786\u07AA\u0783\u07AD",
     "neues Molek\xFCl": "\u0787\u07A6\u0787\u07AA \u0789\u07AE\u078D\u07AC\u0786\u07A8\u0787\u07AA\u078D\u07B0",
@@ -55521,19 +54312,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0780\u07AE\u0788\u07A7\u078A\u07A6\u0787\u07A8\u0788\u07A7 \u0786\u07AE\u0789\u07B0\u0795\u07AF\u0782\u07AC\u0782\u07B0\u0793\u07B0\u078C\u07A6\u0787\u07B0 \u0782\u07AA\u078E\u07AA\u0785\u07AD."
   },
   be: {
-    "Objekt-Kontextmen\xFC": "\u041A\u0430\u043D\u0442\u044D\u043A\u0441\u0442\u043D\u0430\u0435 \u043C\u0435\u043D\u044E \u0430\u0431\u2019\u0435\u043A\u0442\u0430",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u0422\u0443\u0442 \u043C\u043E\u0436\u043D\u0430 \u043A\u0456\u0440\u0430\u0432\u0430\u0446\u044C \u0430\u0431\u2019\u0435\u043A\u0442\u0430\u043C \u0456 \u043F\u0440\u0430\u0433\u043B\u044F\u0434\u0430\u0446\u044C \u0430\u0441\u043D\u043E\u045E\u043D\u0443\u044E \u0456\u043D\u0444\u0430\u0440\u043C\u0430\u0446\u044B\u044E \u043F\u0440\u0430 \u044F\u0433\u043E.",
     "Vollbild an/aus": "\u041F\u043E\u045E\u043D\u0430\u044D\u043A\u0440\u0430\u043D\u043D\u044B \u0440\u044D\u0436\u044B\u043C: \u0443\u043A\u043B\u044E\u0447\u044B\u0446\u044C/\u0432\u044B\u043A\u043B\u044E\u0447\u044B\u0446\u044C",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u0413\u044D\u0442\u0430 \u043A\u043D\u043E\u043F\u043A\u0430 \u045E\u043A\u043B\u044E\u0447\u0430\u0435 \u0430\u0431\u043E \u0432\u044B\u043A\u043B\u044E\u0447\u0430\u0435 \u043F\u043E\u045E\u043D\u0430\u044D\u043A\u0440\u0430\u043D\u043D\u044B \u0440\u044D\u0436\u044B\u043C. \u0426\u044F\u043F\u0435\u0440 \u0451\u043D \u0432\u044B\u043A\u043B\u044E\u0447\u0430\u043D\u044B.",
-    Eingabemodus: "\u0420\u044D\u0436\u044B\u043C \u0443\u0432\u043E\u0434\u0443",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u0413\u044D\u0442\u0430\u0439 \u043A\u043D\u043E\u043F\u043A\u0430\u0439 \u043F\u0435\u0440\u0430\u043A\u043B\u044E\u0447\u0430\u0439\u0446\u0435\u0441\u044F \u043F\u0430\u043C\u0456\u0436 \u043A\u0456\u0440\u0430\u0432\u0430\u043D\u043D\u0435\u043C \u043C\u044B\u0448\u0448\u0443 \u0456 \u0434\u043E\u0442\u044B\u043A\u0430\u043C.",
-    "Dragging an/aus": "\u041F\u0435\u0440\u0430\u0446\u044F\u0433\u0432\u0430\u043D\u043D\u0435: \u0443\u043A\u043B\u044E\u0447\u044B\u0446\u044C/\u0432\u044B\u043A\u043B\u044E\u0447\u044B\u0446\u044C",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u0423 \u0440\u044D\u0436\u044B\u043C\u0435 \u0434\u043E\u0442\u044B\u043A\u0443 \u0433\u044D\u0442\u0430\u0439 \u043A\u043D\u043E\u043F\u043A\u0430\u0439 \u0437\u043C\u044F\u043D\u044F\u0439\u0446\u0435 \u0440\u044D\u0430\u043A\u0446\u044B\u044E \u0430\u0431\u2019\u0435\u043A\u0442\u0430\u045E \u043D\u0430 \u0434\u043E\u0442\u044B\u043A.",
-    "Diagramm Men\xFC": "\u041C\u0435\u043D\u044E \u0434\u044B\u044F\u0433\u0440\u0430\u043C\u044B",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u0413\u044D\u0442\u0430 \u043A\u043D\u043E\u043F\u043A\u0430 \u0430\u0434\u043A\u0440\u044B\u0432\u0430\u0435 \u043C\u0435\u043D\u044E \u0434\u044B\u044F\u0433\u0440\u0430\u043C \u0437\u043B\u0435\u0432\u0430.",
     Kontextmen\u00FC: "\u041A\u0430\u043D\u0442\u044D\u043A\u0441\u0442\u043D\u0430\u0435 \u043C\u0435\u043D\u044E",
-    "Message Toast": "\u0410\u043F\u0430\u0432\u044F\u0448\u0447\u044D\u043D\u043D\u0435 \u0430\u0431 \u0441\u0442\u0430\u043D\u0435",
-    "Hier werden Statusmeldungen angezeigt.": "\u0422\u0443\u0442 \u043F\u0430\u043A\u0430\u0437\u0432\u0430\u044E\u0446\u0446\u0430 \u043F\u0430\u0432\u0435\u0434\u0430\u043C\u043B\u0435\u043D\u043D\u0456 \u0430\u0431 \u0441\u0442\u0430\u043D\u0435.",
     best\u00E4tigen: "\u041F\u0430\u0446\u0432\u0435\u0440\u0434\u0437\u0456\u0446\u044C",
     "Aktion best\xE4tigen:": "\u041F\u0430\u0446\u0432\u0435\u0440\u0434\u0437\u0456\u0446\u044C \u0434\u0437\u0435\u044F\u043D\u043D\u0435:",
     Diagramme: "\u0414\u044B\u044F\u0433\u0440\u0430\u043C\u044B",
@@ -55593,8 +54373,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u0422\u043E\u043A \u043A\u0440\u044B\u043D\u0456\u0446\u044B",
     "verbundenes Gemisch": "\u0417\u043B\u0443\u0447\u0430\u043D\u0430\u044F \u0441\u0443\u043C\u0435\u0441\u044C",
     Elektrodenmaterial: "\u041C\u0430\u0442\u044D\u0440\u044B\u044F\u043B \u044D\u043B\u0435\u043A\u0442\u0440\u043E\u0434\u0430",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u0423 \u0433\u044D\u0442\u044B\u043C \u043C\u0435\u043D\u044E \u043C\u043E\u0436\u043D\u0430 \u0441\u0442\u0432\u0430\u0440\u0430\u0446\u044C \u0456 \u0437\u0430\u0434\u0430\u0432\u0430\u0446\u044C \u0445\u0456\u043C\u0456\u0447\u043D\u044B\u044F \u0440\u044D\u0447\u044B\u0432\u044B \u0456 \u043A\u0430\u043C\u043F\u0430\u043D\u0435\u043D\u0442\u044B.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u0423 \u0433\u044D\u0442\u044B\u043C \u043C\u0435\u043D\u044E \u043C\u043E\u0436\u043D\u0430 \u0432\u044B\u0431\u0456\u0440\u0430\u0446\u044C \u0456 \u0440\u0430\u0437\u043C\u044F\u0448\u0447\u0430\u0446\u044C \u043D\u043E\u0432\u044B\u044F \u0430\u0431\u2019\u0435\u043A\u0442\u044B.",
     entfernen: "\u0412\u044B\u0434\u0430\u043B\u0456\u0446\u044C",
     speichern: "\u0417\u0430\u0445\u0430\u0432\u0430\u0446\u044C",
     "neues Molek\xFCl": "\u041D\u043E\u0432\u0430\u044F \u043C\u0430\u043B\u0435\u043A\u0443\u043B\u0430",
@@ -55811,19 +54589,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u0412\u044B\u0431\u0440\u0430\u043D\u044B\u044F \u043A\u0430\u043C\u043F\u0430\u043D\u0435\u043D\u0442\u044B \u043D\u0435 \u0437\u043B\u0443\u0447\u0430\u043D\u044B."
   },
   la: {
-    "Objekt-Kontextmen\xFC": "Menu contextus obiecti",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Hic obiectum administra et notitias praecipuas eius inspice.",
     "Vollbild an/aus": "Plenum velum commuta",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Hoc bullone plenum velum accenditur aut exstinguitur. Nunc inactivum est.",
-    Eingabemodus: "Modus intrandi",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Hoc bullone inter regimen muris et tactus commuta.",
-    "Dragging an/aus": "Tractionem commuta",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "In modo tactili hoc bullone muta quomodo obiecta tactui respondeant.",
-    "Diagramm Men\xFC": "Menu diagrammatum",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Hoc bullone menu diagrammatum ad sinistram aperitur.",
     Kontextmen\u00FC: "Menu contextus",
-    "Message Toast": "Nuntius status",
-    "Hier werden Statusmeldungen angezeigt.": "Nuntii status hic apparent.",
     best\u00E4tigen: "Confirma",
     "Aktion best\xE4tigen:": "Actionem confirma:",
     Diagramme: "Diagrammata",
@@ -55883,8 +54650,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Flumen fontis",
     "verbundenes Gemisch": "Mixtura coniuncta",
     Elektrodenmaterial: "Materia electrodi",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Hoc menu utere ad substantias chemicas et partes creandas atque ante constituendas.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Hoc menu utere ad nova obiecta eligenda et collocanda.",
     entfernen: "Remove",
     speichern: "Serva",
     "neues Molek\xFCl": "Molecula nova",
@@ -56101,19 +54866,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Partes electae non sunt coniunctae."
   },
   tpi: {
-    "Objekt-Kontextmen\xFC": "Menu bilong kontrolim samting",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Long hia yu ken kontrolim samting na lukim ol bikpela toksave bilong en.",
     "Vollbild an/aus": "Senisim fulskr\xEDn",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Dispela batin i senisim fulskr\xEDn. Nau em i pas.",
-    Eingabemodus: "Mod bilong input",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Yusim dispela batin long senisim kontrol bilong maus na tats.",
-    "Dragging an/aus": "Senisim pasin bilong pulim",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Long mod bilong tats, yusim dispela batin long senisim pasin ol samting i bekim tats.",
-    "Diagramm Men\xFC": "Menu bilong chart",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Dispela batin i opim menu bilong chart long han kais.",
     Kontextmen\u00FC: "Menu bilong kontrol",
-    "Message Toast": "Toksave bilong status",
-    "Hier werden Statusmeldungen angezeigt.": "Ol toksave bilong status bai kamap hia.",
     best\u00E4tigen: "Strongim",
     "Aktion best\xE4tigen:": "Strongim dispela wok:",
     Diagramme: "Ol chart",
@@ -56173,8 +54927,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Kuren bilong sors",
     "verbundenes Gemisch": "Miks i join",
     Elektrodenmaterial: "Materiel bilong elektro",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Yusim dispela menu long wokim na redim ol kemikal samting na ol hap samting.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Yusim dispela menu long makim na putim ol nupela samting.",
     entfernen: "Rausim",
     speichern: "Sevim",
     "neues Molek\xFCl": "Nupela molekul",
@@ -56391,19 +55143,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Ol hap yu makim i no join."
   },
   am: {
-    "Objekt-Kontextmen\xFC": "\u12E8\u1290\u1308\u122D \u12A0\u12CD\u12F5 \u121D\u1293\u120C",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u1290\u1308\u1229\u1295 \u12A5\u12DA\u1205 \u12EB\u1235\u1270\u12F3\u12F5\u1229 \u12A5\u1293 \u1235\u1208 \u12A5\u1231 \u1218\u1220\u1228\u1273\u12CA \u1218\u1228\u1303 \u12ED\u1218\u120D\u12A8\u1271\u1362",
     "Vollbild an/aus": "\u1219\u1209 \u121B\u12EB \u12A0\u1265\u122B/\u12A0\u1325\u134B",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u12ED\u1205 \u1241\u120D\u134D \u12E8\u1219\u1209 \u121B\u12EB \u1201\u1290\u1273\u1295 \u12EB\u1260\u122B\u120D \u12C8\u12ED\u121D \u12EB\u1320\u134B\u120D\u1362 \u12A0\u1201\u1295 \u1320\u134D\u1277\u120D\u1362",
-    Eingabemodus: "\u12E8\u130D\u1264\u1275 \u1201\u1290\u1273",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u1260\u12DA\u1205 \u1241\u120D\u134D \u12E8\u1218\u12F3\u134A\u1275\u1293 \u12E8\u1295\u12AD\u12AA \u1241\u1325\u1325\u122D \u1218\u12AB\u12A8\u120D \u12ED\u1240\u12EB\u12ED\u1229\u1362",
-    "Dragging an/aus": "\u1218\u130E\u1270\u1275 \u12A0\u1265\u122B/\u12A0\u1325\u134B",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u1260\u1295\u12AD\u12AA \u1201\u1290\u1273 \u1290\u1308\u122E\u127D \u1208\u1295\u12AD\u12AA \u12E8\u121A\u1230\u1321\u1275\u1295 \u121D\u120B\u123D \u1260\u12DA\u1205 \u1241\u120D\u134D \u12ED\u1240\u12ED\u1229\u1362",
-    "Diagramm Men\xFC": "\u12E8\u1308\u1260\u1273 \u121D\u1293\u120C",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u12ED\u1205 \u1241\u120D\u134D \u1260\u130D\u122B \u12EB\u1208\u12CD\u1295 \u12E8\u1308\u1260\u1273 \u121D\u1293\u120C \u12ED\u12A8\u134D\u1273\u120D\u1362",
     Kontextmen\u00FC: "\u12A0\u12CD\u12F5 \u121D\u1293\u120C",
-    "Message Toast": "\u12E8\u1201\u1294\u1273 \u121B\u1233\u12C8\u1242\u12EB",
-    "Hier werden Statusmeldungen angezeigt.": "\u12E8\u1201\u1294\u1273 \u1218\u120D\u12D5\u12AD\u1276\u127D \u12A5\u12DA\u1205 \u12ED\u1273\u12EB\u1209\u1362",
     best\u00E4tigen: "\u12A0\u1228\u130B\u130D\u1325",
     "Aktion best\xE4tigen:": "\u12F5\u122D\u130A\u1275\u1295 \u12A0\u1228\u130B\u130D\u1325:",
     Diagramme: "\u1308\u1260\u1273\u12CE\u127D",
@@ -56463,8 +55204,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u12E8\u121D\u1295\u132D \u12A4\u120C\u12AD\u1275\u122A\u12AD \u134D\u1230\u1275",
     "verbundenes Gemisch": "\u12E8\u1270\u1308\u1293\u1298 \u12F5\u1265\u120D\u1245",
     Elektrodenmaterial: "\u12E8\u12A4\u120C\u12AD\u1275\u122E\u12F5 \u1241\u1233\u1241\u1235",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u12E8\u12AC\u121A\u12AB\u120D \u1295\u1325\u1228 \u1290\u1308\u122E\u127D\u1295\u1293 \u12AD\u134D\u120E\u127D\u1295 \u1208\u1218\u134D\u1320\u122D \u12A5\u1293 \u1208\u121B\u1235\u1240\u12F5\u121D \u12ED\u1205\u1295 \u121D\u1293\u120C \u12ED\u1320\u1240\u1219\u1362",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u12A0\u12F3\u12F2\u1235 \u1290\u1308\u122E\u127D\u1295 \u1208\u1218\u121D\u1228\u1325\u1293 \u1208\u121B\u1235\u1240\u1218\u1325 \u12ED\u1205\u1295 \u121D\u1293\u120C \u12ED\u1320\u1240\u1219\u1362",
     entfernen: "\u12A0\u1235\u12C8\u130D\u12F5",
     speichern: "\u12A0\u1235\u1240\u121D\u1325",
     "neues Molek\xFCl": "\u12A0\u12F2\u1235 \u121E\u1208\u12AA\u12CD\u120D",
@@ -56681,19 +55420,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u12E8\u1270\u1218\u1228\u1321\u1275 \u12AD\u134D\u120E\u127D \u12A0\u120D\u1270\u1308\u1293\u1299\u121D\u1362"
   },
   om: {
-    "Objekt-Kontextmen\xFC": "Meniin haala wantaa",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Wanticha as keessatti to'adhuu odeeffannoo bu'uuraa waa'ee isaa ilaali.",
     "Vollbild an/aus": "Iskirinii guutuu jijjiiri",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Qabduu kun haalata iskiriinii guutuu bana ykn cufa. Amma cufameera.",
-    Eingabemodus: "Haalata galchaa",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Qabduu kanaan to'annoo hantuutee fi tuqaa gidduutti jijjiiri.",
-    "Dragging an/aus": "Harkisuu jijjiiri",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Haalata tuqaa keessatti wantoonni tuqaa irratti akkamitti deebisan qabduu kanaan jijjiiri.",
-    "Diagramm Men\xFC": "Meniin chaartii",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Qabduu kun meni chaartii bitaa jiru bana.",
     Kontextmen\u00FC: "Meniin haala",
-    "Message Toast": "Beeksisa haalaa",
-    "Hier werden Statusmeldungen angezeigt.": "Ergaawwan haalaa asitti mul'atu.",
     best\u00E4tigen: "Mirkaneessi",
     "Aktion best\xE4tigen:": "Gocha mirkaneessi:",
     Diagramme: "Chaartiiwwan",
@@ -56753,8 +55481,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Kaarantii madda",
     "verbundenes Gemisch": "Makaa walitti hidhame",
     Elektrodenmaterial: "Meeshaa elektiroodii",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Meniin kanaan wantoota keemikaalaa fi qaamolee uumuu fi dursee qindeessuu dandeessa.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Meniin kanaan wantoota haaraa filachuu fi kaa'uu dandeessa.",
     entfernen: "Haqi",
     speichern: "Olkaa'i",
     "neues Molek\xFCl": "Molokiyuula haaraa",
@@ -56971,19 +55697,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Qaamoleen filataman wal hin hidhamne."
   },
   so: {
-    "Objekt-Kontextmen\xFC": "Liiska macnaha shayga",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Halkan ka maamul shayga oo ka eeg xogtiisa aasaasiga ah.",
     "Vollbild an/aus": "Daar oo shid shaashad buuxda",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Badhankani wuxuu daarayaa ama daminayaa shaashad buuxda. Hadda waa damman tahay.",
-    Eingabemodus: "Habka gelinta",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Badhankan ku beddel xakamaynta jiirka iyo taabashada.",
-    "Dragging an/aus": "Daar oo dami jiidista",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Habka taabashada, badhankan ku beddel sida shayadu uga jawaabaan taabashada.",
-    "Diagramm Men\xFC": "Liiska jaantuska",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Badhankani wuxuu furayaa liiska jaantuska ee bidixda.",
     Kontextmen\u00FC: "Liiska macnaha",
-    "Message Toast": "Ogeysiiska xaaladda",
-    "Hier werden Statusmeldungen angezeigt.": "Farriimaha xaaladdu halkan ayay ka muuqdaan.",
     best\u00E4tigen: "Xaqiiji",
     "Aktion best\xE4tigen:": "Xaqiiji tallaabada:",
     Diagramme: "Jaantusyo",
@@ -57043,8 +55758,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Dhaqdhaqaaqa korontada ee isha",
     "verbundenes Gemisch": "Isku-dar ku xiran",
     Elektrodenmaterial: "Walaxda elektaroodhka",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Liiskan ku samee oo sii diyaari walxo kiimiko iyo qaybo.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Liiskan ku dooro oo dhig shay cusub.",
     entfernen: "Ka saar",
     speichern: "Kaydi",
     "neues Molek\xFCl": "Molekuyuul cusub",
@@ -57261,19 +55974,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Qaybaha la doortay iskuma xidhna."
   },
   ti: {
-    "Objekt-Kontextmen\xFC": "\u121D\u122D\u132B \u1293\u12ED\u1272 \u1290\u1308\u122D",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "\u1290\u1272 \u1290\u1308\u122D \u12A3\u1265\u12DA \u12A3\u1218\u1213\u12F5\u122D\u1363 \u1218\u1230\u1228\u1273\u12CA \u1213\u1260\u122C\u1273\u12A1 \u12A5\u12CD\u1295 \u122D\u12A0\u1362",
     "Vollbild an/aus": "\u121D\u1209\u12A5 \u1235\u12AD\u122A\u1295 \u12AD\u1348\u1275 \u12C8\u12ED \u12D5\u133E",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "\u12A5\u12DA \u1218\u1320\u12C8\u1252 \u121D\u1209\u12A5 \u1235\u12AD\u122A\u1295 \u12ED\u12B8\u134D\u1275\u1295 \u12ED\u12D3\u133D\u12CD\u1295\u1362 \u1215\u1302 \u12A3\u12ED\u1230\u122D\u1215\u1295\u1362",
-    Eingabemodus: "\u12A9\u1290\u1273\u1275 \u121D\u12A5\u1273\u12CD",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "\u1265\u121B\u12CD\u1235\u1295 \u1265\u121D\u1275\u1295\u12AB\u134D\u1295 \u1295\u121D\u1241\u133D\u133B\u122D \u12A3\u1265 \u1218\u1295\u130E\u12A6\u121D \u1260\u12DA \u1218\u1320\u12C8\u1252 \u1240\u12ED\u122D\u1362",
-    "Dragging an/aus": "\u121D\u1235\u1213\u1265 \u12A3\u1295\u1245\u1215 \u12C8\u12ED \u12A3\u124B\u122D\u133D",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "\u12A3\u1265 \u12A9\u1290\u1273\u1275 \u121D\u1275\u1295\u12AB\u134D\u1363 \u1290\u1308\u122B\u1275 \u1295\u121D\u1275\u1295\u12AB\u134D \u1265\u12B8\u1218\u12ED \u12A8\u121D \u12DD\u121D\u120D\u1231 \u1260\u12DA \u1218\u1320\u12C8\u1252 \u1240\u12ED\u122D\u1362",
-    "Diagramm Men\xFC": "\u121D\u122D\u132B \u1230\u120C\u12F3\u1273\u1275",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "\u12A5\u12DA \u1218\u1320\u12C8\u1252 \u1265\u1338\u130B\u121D \u12D8\u120E \u121D\u122D\u132B \u1230\u120C\u12F3\u1273\u1275 \u12ED\u12B8\u134D\u1275\u1362",
     Kontextmen\u00FC: "\u121D\u122D\u132B \u1293\u12ED\u12DA \u1266\u1273",
-    "Message Toast": "\u121D\u120D\u12AD\u1273 \u12A9\u1290\u1273\u1275",
-    "Hier werden Statusmeldungen angezeigt.": "\u1218\u120D\u12A5\u12BD\u1272 \u12A9\u1290\u1273\u1275 \u12A3\u1265\u12DA \u12ED\u122D\u12A0\u1362",
     best\u00E4tigen: "\u12A3\u1228\u130B\u130D\u133D",
     "Aktion best\xE4tigen:": "\u1290\u1272 \u1270\u130D\u1263\u122D \u12A3\u1228\u130B\u130D\u133D\u1366",
     Diagramme: "\u1230\u120C\u12F3\u1273\u1275",
@@ -57333,8 +56035,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "\u12CB\u1215\u12DA \u121D\u1295\u132A",
     "verbundenes Gemisch": "\u12DD\u1270\u122B\u12B8\u1260 \u1215\u12CD\u1235\u12CB\u1235",
     Elektrodenmaterial: "\u1293\u12ED \u12A4\u120C\u12AD\u1275\u122E\u12F5 \u1295\u1325\u1228 \u1290\u1308\u122D",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "\u12AC\u121A\u12AB\u120B\u12CA \u1295\u1325\u1228 \u1290\u1308\u122B\u1275\u1295 \u12AD\u134D\u120D\u1273\u1275\u1295 \u1295\u121D\u134D\u1323\u122D\u1295 \u12A3\u1250\u12F2\u121D\u12AB \u1295\u121D\u12CD\u1233\u1295\u1295 \u1290\u12DA \u121D\u122D\u132B \u1270\u1320\u1250\u121D\u1362",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "\u1213\u12F0\u1235\u1272 \u1290\u1308\u122B\u1275 \u1295\u121D\u121D\u122B\u133D\u1295 \u1295\u121D\u1255\u121B\u1325\u1295 \u1290\u12DA \u121D\u122D\u132B \u1270\u1320\u1250\u121D\u1362",
     entfernen: "\u12A3\u12C8\u130D\u12F5",
     speichern: "\u12D3\u1245\u1265",
     "neues Molek\xFCl": "\u1213\u12F5\u123D \u121E\u1208\u12AA\u12E9\u120D",
@@ -57551,19 +56251,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "\u12DD\u1270\u1218\u122D\u1339 \u12AD\u134D\u120D\u1273\u1275 \u12A3\u12ED\u1270\u122B\u12B8\u1261\u1295\u1362"
   },
   sw: {
-    "Objekt-Kontextmen\xFC": "Menyu ya muktadha wa kifaa",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "Dhibiti kifaa na uangalie maelezo yake ya msingi hapa.",
     "Vollbild an/aus": "Washa au zima skrini nzima",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Kitufe hiki huwasha au kuzima hali ya skrini nzima. Kwa sasa hali hiyo imezimwa.",
-    Eingabemodus: "Hali ya ingizo",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Tumia kitufe hiki kubadili kati ya vidhibiti vya kipanya na vya mguso.",
-    "Dragging an/aus": "Washa au zima kuburuta",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "Ukiwa katika hali ya mguso, tumia kitufe hiki kubadili jinsi vifaa vinavyoitikia mguso.",
-    "Diagramm Men\xFC": "Menyu ya chati",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Kitufe hiki hufungua menyu ya chati iliyo upande wa kushoto.",
     Kontextmen\u00FC: "Menyu ya muktadha",
-    "Message Toast": "Arifa ya hali",
-    "Hier werden Statusmeldungen angezeigt.": "Ujumbe wa hali huonekana hapa.",
     best\u00E4tigen: "Thibitisha",
     "Aktion best\xE4tigen:": "Thibitisha kitendo:",
     Diagramme: "Chati",
@@ -57623,8 +56312,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Mkondo wa chanzo",
     "verbundenes Gemisch": "Mchanganyiko uliounganishwa",
     Elektrodenmaterial: "Nyenzo ya elektrodi",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Tumia menyu hii kuunda na kuweka mapema dutu za kikemia na vipengele.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Tumia menyu hii kuchagua na kuweka vifaa vipya.",
     entfernen: "Ondoa",
     speichern: "Hifadhi",
     "neues Molek\xFCl": "Molekuli mpya",
@@ -57841,19 +56528,8 @@ var messages_default = {
     "Die gew\xE4hlten Komponenten sind nicht verbunden.": "Vipengele vilivyochaguliwa havijaunganishwa."
   },
   ha: {
-    "Objekt-Kontextmen\xFC": "Menu na abin",
-    "Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.": "A nan za ka iya sarrafa abin da ganin muhimman bayanansa.",
     "Vollbild an/aus": "Kunna ko kashe cikakken allo",
-    "\xDCber diesen Button kann der Vollbildmodus an und aus geschaltet werden. Aktuell deaktiviert.": "Wannan ma\u0253allin yana kunna ko kashe yanayin cikakken allo. A yanzu an kashe shi.",
-    Eingabemodus: "Yanayin shigar da bayanai",
-    "\xDCber diesen Button kann zwischen Maus- und Touch-Steuerung gewechselt werden.": "Yi amfani da wannan ma\u0253allin don sauyawa tsakanin amfani da linzamin kwamfuta da ta\u0253awa.",
-    "Dragging an/aus": "Kunna ko kashe jan abubuwa",
-    "Bei der Touch-Steuerung kann \xFCber diesen Button umgeschaltet werden, wie Objekte auf Ber\xFChrungen reagieren.": "A yanayin ta\u0253awa, yi amfani da wannan ma\u0253allin don canza yadda abubuwa ke amsawa idan an ta\u0253a su.",
-    "Diagramm Men\xFC": "Menu na jadawalai",
-    "\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.": "Wannan ma\u0253allin yana bu\u0257e menu na jadawalai da ke hagu.",
     Kontextmen\u00FC: "Menu na wannan wuri",
-    "Message Toast": "Sanarwar hali",
-    "Hier werden Statusmeldungen angezeigt.": "Sa\u0199onnin hali suna bayyana a nan.",
     best\u00E4tigen: "Tabbatar",
     "Aktion best\xE4tigen:": "Tabbatar da aikin:",
     Diagramme: "Jadawalai",
@@ -57913,8 +56589,6 @@ var messages_default = {
     Quellstromst\u00E4rke: "Kwararar lantarkin tushe",
     "verbundenes Gemisch": "Gaurayen da aka ha\u0257a",
     Elektrodenmaterial: "Abin da aka yi elektrod da shi",
-    "Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.": "Yi amfani da wannan menu don \u0199ir\u0199ira da saita sinadarai da sassa tun da farko.",
-    "\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.": "Yi amfani da wannan menu don za\u0253ar sabbin abubuwa da ajiye su.",
     entfernen: "Cire",
     speichern: "Ajiye",
     "neues Molek\xFCl": "Sabuwar \u0199wayar molekul",
@@ -141277,462 +139951,6 @@ setDefaultAnimation("tooltip.hide", {
   options: { duration: 150, easing: "ease" }
 });
 
-// node_modules/@webwriter/wui/dist/helpSystem/helpSystem.js
-var __esDecorate = function(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
-  function accept(f7) {
-    if (f7 !== void 0 && typeof f7 !== "function") throw new TypeError("Function expected");
-    return f7;
-  }
-  var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
-  var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
-  var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
-  var _3, done = false;
-  for (var i11 = decorators.length - 1; i11 >= 0; i11--) {
-    var context2 = {};
-    for (var p5 in contextIn) context2[p5] = p5 === "access" ? {} : contextIn[p5];
-    for (var p5 in contextIn.access) context2.access[p5] = contextIn.access[p5];
-    context2.addInitializer = function(f7) {
-      if (done) throw new TypeError("Cannot add initializers after decoration has completed");
-      extraInitializers.push(accept(f7 || null));
-    };
-    var result = (0, decorators[i11])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context2);
-    if (kind === "accessor") {
-      if (result === void 0) continue;
-      if (result === null || typeof result !== "object") throw new TypeError("Object expected");
-      if (_3 = accept(result.get)) descriptor.get = _3;
-      if (_3 = accept(result.set)) descriptor.set = _3;
-      if (_3 = accept(result.init)) initializers.unshift(_3);
-    } else if (_3 = accept(result)) {
-      if (kind === "field") initializers.unshift(_3);
-      else descriptor[key] = _3;
-    }
-  }
-  if (target) Object.defineProperty(target, contextIn.name, descriptor);
-  done = true;
-};
-var __runInitializers3 = function(thisArg, initializers, value) {
-  var useValue = arguments.length > 2;
-  for (var i11 = 0; i11 < initializers.length; i11++) {
-    value = useValue ? initializers[i11].call(thisArg, value) : initializers[i11].call(thisArg);
-  }
-  return useValue ? value : void 0;
-};
-var __classPrivateFieldGet = function(receiver, state, kind, f7) {
-  if (kind === "a" && !f7) throw new TypeError("Private accessor was defined without a getter");
-  if (typeof state === "function" ? receiver !== state || !f7 : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-  return kind === "m" ? f7 : kind === "a" ? f7.call(receiver) : f7 ? f7.value : state.get(receiver);
-};
-var __classPrivateFieldSet = function(receiver, state, value, kind, f7) {
-  if (kind === "m") throw new TypeError("Private method is not writable");
-  if (kind === "a" && !f7) throw new TypeError("Private accessor was defined without a setter");
-  if (typeof state === "function" ? receiver !== state || !f7 : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-  return kind === "a" ? f7.call(receiver, value) : f7 ? f7.value = value : state.set(receiver, value), value;
-};
-var HelpOverlay = (() => {
-  var _a3, _HelpOverlay_containerDiv_accessor_storage, _HelpOverlay_helpButton_accessor_storage, _HelpOverlay_popupArr_accessor_storage, _HelpOverlay_hoverPosArr_accessor_storage, _HelpOverlay_clientDimArr_accessor_storage, _HelpOverlay_showHelp_accessor_storage;
-  let _classSuper = LitElementWw;
-  let _containerDiv_decorators;
-  let _containerDiv_initializers = [];
-  let _containerDiv_extraInitializers = [];
-  let _helpButton_decorators;
-  let _helpButton_initializers = [];
-  let _helpButton_extraInitializers = [];
-  let _popupArr_decorators;
-  let _popupArr_initializers = [];
-  let _popupArr_extraInitializers = [];
-  let _hoverPosArr_decorators;
-  let _hoverPosArr_initializers = [];
-  let _hoverPosArr_extraInitializers = [];
-  let _clientDimArr_decorators;
-  let _clientDimArr_initializers = [];
-  let _clientDimArr_extraInitializers = [];
-  let _showHelp_decorators;
-  let _showHelp_initializers = [];
-  let _showHelp_extraInitializers = [];
-  return _a3 = class HelpOverlay extends _classSuper {
-    /**
-     * The Overlay div
-     *
-     * @private
-     * @type {HTMLDivElement}
-     */
-    get containerDiv() {
-      return __classPrivateFieldGet(this, _HelpOverlay_containerDiv_accessor_storage, "f");
-    }
-    set containerDiv(value) {
-      __classPrivateFieldSet(this, _HelpOverlay_containerDiv_accessor_storage, value, "f");
-    }
-    /**
-     * The help button displayed in the button left corner.
-     *
-     * @private
-     * @type {SlButton}
-     */
-    get helpButton() {
-      return __classPrivateFieldGet(this, _HelpOverlay_helpButton_accessor_storage, "f");
-    }
-    set helpButton(value) {
-      __classPrivateFieldSet(this, _HelpOverlay_helpButton_accessor_storage, value, "f");
-    }
-    /**
-     * An array of all the popup child elements.
-     *
-     * @private
-     * @type {Array<Element>}
-     */
-    get popupArr() {
-      return __classPrivateFieldGet(this, _HelpOverlay_popupArr_accessor_storage, "f");
-    }
-    set popupArr(value) {
-      __classPrivateFieldSet(this, _HelpOverlay_popupArr_accessor_storage, value, "f");
-    }
-    /**
-     * An array of all indication overlays that outline widget objects with provided help information.
-     *
-     * @private
-     * @type {Array<Element>}
-     */
-    get hoverPosArr() {
-      return __classPrivateFieldGet(this, _HelpOverlay_hoverPosArr_accessor_storage, "f");
-    }
-    set hoverPosArr(value) {
-      __classPrivateFieldSet(this, _HelpOverlay_hoverPosArr_accessor_storage, value, "f");
-    }
-    /**
-     * The calculated dimensions and position of the container div.
-     *
-     * @private
-     * @type {DOMRect}
-     */
-    get clientDimArr() {
-      return __classPrivateFieldGet(this, _HelpOverlay_clientDimArr_accessor_storage, "f");
-    }
-    set clientDimArr(value) {
-      __classPrivateFieldSet(this, _HelpOverlay_clientDimArr_accessor_storage, value, "f");
-    }
-    /**
-     * Indicates the help activation status
-     *
-     * @private
-     * @type {boolean}
-     */
-    get showHelp() {
-      return __classPrivateFieldGet(this, _HelpOverlay_showHelp_accessor_storage, "f");
-    }
-    set showHelp(value) {
-      __classPrivateFieldSet(this, _HelpOverlay_showHelp_accessor_storage, value, "f");
-    }
-    /**
-     * Creates an instance of HelpOverlay.
-     *
-     * @constructor
-     */
-    constructor() {
-      super();
-      _HelpOverlay_containerDiv_accessor_storage.set(this, __runInitializers3(this, _containerDiv_initializers, void 0));
-      _HelpOverlay_helpButton_accessor_storage.set(this, (__runInitializers3(this, _containerDiv_extraInitializers), __runInitializers3(this, _helpButton_initializers, void 0)));
-      _HelpOverlay_popupArr_accessor_storage.set(this, (__runInitializers3(this, _helpButton_extraInitializers), __runInitializers3(this, _popupArr_initializers, [])));
-      _HelpOverlay_hoverPosArr_accessor_storage.set(this, (__runInitializers3(this, _popupArr_extraInitializers), __runInitializers3(this, _hoverPosArr_initializers, [])));
-      _HelpOverlay_clientDimArr_accessor_storage.set(this, (__runInitializers3(this, _hoverPosArr_extraInitializers), __runInitializers3(this, _clientDimArr_initializers, void 0)));
-      _HelpOverlay_showHelp_accessor_storage.set(this, (__runInitializers3(this, _clientDimArr_extraInitializers), __runInitializers3(this, _showHelp_initializers, false)));
-      __runInitializers3(this, _showHelp_extraInitializers);
-    }
-    /**
-     * Returns the neccessary Shoelace Components for the help Button.
-     *
-     * @static
-     * @readonly
-     * @type {{ "sl-button": any; "sl-tooltip": any; }}
-     */
-    static get scopedElements() {
-      return {
-        "sl-button": SlButton,
-        "sl-tooltip": SlTooltip
-      };
-    }
-    connectedCallback() {
-      super.connectedCallback();
-    }
-    /**
-     * Upon loading the container div gets fitted to the underlying widget and all provided help Elements get loaded into their array.
-     *
-     * @protected
-     * @param {(PropertyValueMap<any> | Map<PropertyKey, unknown>)} _changedProperties
-     */
-    firstUpdated(_changedProperties) {
-      let parentContainer = this.parentNode.host.getBoundingClientRect();
-      super.firstUpdated(_changedProperties);
-      this.containerDiv.style.width = parentContainer.width.toString() + "px";
-      this.containerDiv.style.height = parentContainer.height.toString() + "px";
-      this.clientDimArr = this.containerDiv.getBoundingClientRect();
-      this.helpButton.style.left = this.containerDiv.style.left;
-      this.helpButton.style.top = (this.clientDimArr.height - 55).toString() + "px";
-      this.popupArr = this.shadowRoot.querySelector("slot").assignedElements({ flatten: true });
-      this._positionSlotItems();
-      if (!this.showHelp) {
-        this.containerDiv.style.pointerEvents = "none";
-      }
-    }
-    /**
-     * Method for determining the correct position and orientation of the help popups and corresponding anchor/indication overlays.
-     * Gets called each time help is shown. ALl overlays are recreated and saved on every call.
-     *
-     * @private
-     */
-    _positionSlotItems() {
-      this.hoverPosArr = [];
-      this.popupArr.forEach((popupElement) => {
-        let anchorId = popupElement.getAttribute("target");
-        let anchorObj = this.parentNode.querySelector("#" + anchorId);
-        let anchorRect = anchorObj.getBoundingClientRect();
-        if ((anchorObj.style.display != "none" && anchorObj.style.visibility != "hidden" || anchorObj.active === true) && anchorRect.width > 0 && anchorRect.height > 0) {
-          let hoverElement = this.shadowRoot.createElement("div");
-          hoverElement.className = "pulse";
-          hoverElement.style.position = "absolute";
-          hoverElement.style.top = (anchorRect.y - this.clientDimArr.y).toString() + "px";
-          hoverElement.style.left = (anchorRect.x - this.clientDimArr.x).toString() + "px";
-          hoverElement.style.width = anchorRect.width.toString() + "px";
-          hoverElement.style.height = anchorRect.height.toString() + "px";
-          hoverElement.style.display = "none";
-          hoverElement.onpointerenter = (event) => {
-            hoverElement.style.opacity = "0";
-            let popupPlacementX = anchorRect.x - this.clientDimArr.x > this.clientDimArr.width / 2 ? "left" : "right";
-            let popupPlacementY = anchorRect.y - this.clientDimArr.y > this.clientDimArr.height / 2 ? "-end" : "-start";
-            popupElement.showPopup(hoverElement, popupPlacementX + popupPlacementY);
-          };
-          hoverElement.onpointerleave = (event) => {
-            hoverElement.style.opacity = "1";
-            popupElement.hidePopup();
-          };
-          this.containerDiv.appendChild(hoverElement);
-          this.hoverPosArr.push(hoverElement);
-        }
-      });
-    }
-    /**
-     * Method to toggle the help system with the help button.
-     *
-     * @private
-     */
-    _toggleHelp() {
-      this.showHelp = !this.showHelp;
-      if (this.showHelp) {
-        this.containerDiv.style.pointerEvents = "";
-        this._positionSlotItems();
-        this.hoverPosArr.forEach((hoverArea) => {
-          hoverArea.style.display = "";
-        });
-      } else {
-        this.containerDiv.style.pointerEvents = "none";
-        this.hoverPosArr.forEach((hoverArea) => {
-          hoverArea.style.display = "none";
-        });
-      }
-    }
-    render() {
-      return x`
-			<div id="container">
-				<sl-tooltip
-					id="helpTooltip"
-					content="Hilfe an/aus"
-					placement="right"
-				>
-					<sl-button
-						id="helpButton"
-						@click="${this._toggleHelp}"
-						circle
-						>?</sl-button
-					>
-				</sl-tooltip>
-
-				<slot name="popupContainer"></slot>
-			</div>
-		`;
-    }
-  }, _HelpOverlay_containerDiv_accessor_storage = /* @__PURE__ */ new WeakMap(), _HelpOverlay_helpButton_accessor_storage = /* @__PURE__ */ new WeakMap(), _HelpOverlay_popupArr_accessor_storage = /* @__PURE__ */ new WeakMap(), _HelpOverlay_hoverPosArr_accessor_storage = /* @__PURE__ */ new WeakMap(), _HelpOverlay_clientDimArr_accessor_storage = /* @__PURE__ */ new WeakMap(), _HelpOverlay_showHelp_accessor_storage = /* @__PURE__ */ new WeakMap(), (() => {
-    const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-    _containerDiv_decorators = [e6("#container")];
-    _helpButton_decorators = [e6("#helpButton")];
-    _popupArr_decorators = [n5({ attribute: false })];
-    _hoverPosArr_decorators = [n5({ attribute: false })];
-    _clientDimArr_decorators = [n5({ attribute: false })];
-    _showHelp_decorators = [n5({ attribute: false })];
-    __esDecorate(_a3, null, _containerDiv_decorators, { kind: "accessor", name: "containerDiv", static: false, private: false, access: { has: (obj) => "containerDiv" in obj, get: (obj) => obj.containerDiv, set: (obj, value) => {
-      obj.containerDiv = value;
-    } }, metadata: _metadata }, _containerDiv_initializers, _containerDiv_extraInitializers);
-    __esDecorate(_a3, null, _helpButton_decorators, { kind: "accessor", name: "helpButton", static: false, private: false, access: { has: (obj) => "helpButton" in obj, get: (obj) => obj.helpButton, set: (obj, value) => {
-      obj.helpButton = value;
-    } }, metadata: _metadata }, _helpButton_initializers, _helpButton_extraInitializers);
-    __esDecorate(_a3, null, _popupArr_decorators, { kind: "accessor", name: "popupArr", static: false, private: false, access: { has: (obj) => "popupArr" in obj, get: (obj) => obj.popupArr, set: (obj, value) => {
-      obj.popupArr = value;
-    } }, metadata: _metadata }, _popupArr_initializers, _popupArr_extraInitializers);
-    __esDecorate(_a3, null, _hoverPosArr_decorators, { kind: "accessor", name: "hoverPosArr", static: false, private: false, access: { has: (obj) => "hoverPosArr" in obj, get: (obj) => obj.hoverPosArr, set: (obj, value) => {
-      obj.hoverPosArr = value;
-    } }, metadata: _metadata }, _hoverPosArr_initializers, _hoverPosArr_extraInitializers);
-    __esDecorate(_a3, null, _clientDimArr_decorators, { kind: "accessor", name: "clientDimArr", static: false, private: false, access: { has: (obj) => "clientDimArr" in obj, get: (obj) => obj.clientDimArr, set: (obj, value) => {
-      obj.clientDimArr = value;
-    } }, metadata: _metadata }, _clientDimArr_initializers, _clientDimArr_extraInitializers);
-    __esDecorate(_a3, null, _showHelp_decorators, { kind: "accessor", name: "showHelp", static: false, private: false, access: { has: (obj) => "showHelp" in obj, get: (obj) => obj.showHelp, set: (obj, value) => {
-      obj.showHelp = value;
-    } }, metadata: _metadata }, _showHelp_initializers, _showHelp_extraInitializers);
-    if (_metadata) Object.defineProperty(_a3, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-  })(), Object.defineProperty(_a3, "styles", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: i`
-		#container {
-			position: absolute;
-			z-index: 99;
-			font-size: 10pt;
-		}
-		#helpButton {
-			position: absolute;
-			margin: 7.5px;
-			pointer-events: auto;
-			cursor: pointer;
-			z-index: 100;
-		}
-		#helpButton::part(label) {
-			display: flex;
-			justify-content: center;
-		}
-
-		.pulse {
-			border-radius: 5px;
-			animation: pulse-animation 2s infinite;
-		}
-		@keyframes pulse-animation {
-			0% {
-				box-shadow: 0 0 0 0px rgb(44, 150, 196);
-			}
-			100% {
-				box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
-			}
-		}
-	`
-  }), /**
-   * Helps to mitigate focus issues within webwriter.
-   *
-   * @static
-   * @type {*}
-   */
-  Object.defineProperty(_a3, "shadowRootOptions", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: {
-      ...r4.shadowRootOptions,
-      delegatesFocus: true
-    }
-  }), _a3;
-})();
-var HelpPopup = class extends LitElementWw {
-  /**
-   * Creates an instance of HelpPopup.
-   *
-   * @constructor
-   */
-  constructor() {
-    super();
-  }
-  /**
-   * returns the shoelace components needed for the popup.
-   *
-   * @static
-   * @readonly
-   * @type {{ "sl-badge": any; "sl-popup": any; }}
-   */
-  static get scopedElements() {
-    return {
-      "sl-badge": SlBadge,
-      "sl-popup": SlPopup
-    };
-  }
-  /**
-   * Method to access and show the actual popup.
-   *
-   * @param {Element} anchor - the anchor Element for the popup.
-   * @param {(| "top"
-   * 			| "top-start"
-   * 			| "top-end"
-   * 			| "bottom"
-   * 			| "bottom-start"
-   * 			| "bottom-end"
-   * 			| "right"
-   * 			| "right-start"
-   * 			| "right-end"
-   * 			| "left"
-   * 			| "left-start"
-   * 			| "left-end")} placement - the position of the popup relative to its anchor.
-   */
-  showPopup(anchor, placement) {
-    let popupElement = this.shadowRoot.querySelector("sl-popup");
-    popupElement.anchor = anchor;
-    popupElement.placement = placement;
-    popupElement.active = true;
-  }
-  /** Method to access and hide the actual popup. */
-  hidePopup() {
-    this.shadowRoot.querySelector("sl-popup").active = false;
-  }
-  render() {
-    return x`
-			<sl-popup distance="5">
-				<div id="popupBox">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="50"
-						height="50"
-						viewBox="0 0 24 24"
-					>
-						<path
-							fill="#0284c7"
-							fill-rule="evenodd"
-							d="M21 12a9 9 0 1 1-18 0a9 9 0 0 1 18 0m-7.75-4.25a1.25 1.25 0 1 1-2.5 0a1.25 1.25 0 0 1 2.5 0M13 17.5v-7h-2v7z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-					<slot name="content"> </slot>
-				</div>
-			</sl-popup>
-		`;
-  }
-};
-Object.defineProperty(HelpPopup, "styles", {
-  enumerable: true,
-  configurable: true,
-  writable: true,
-  value: i`
-		#popupBox {
-			display: flex;
-			flex-direction: row;
-			align-items: center;
-			background-color: #ffffff;
-			border-radius: 5px;
-			padding: 5px;
-			backdrop-filter: blur(20px);
-			box-shadow: 0px 6px 12px 0px rgba(0, 0, 0, 0.33);
-			max-width: 250px;
-			margin: 30px;
-		}
-		svg {
-			margin-right: 10px;
-			height: 50px;
-			width: 100px;
-		}
-	`
-});
-Object.defineProperty(HelpPopup, "shadowRootOptions", {
-  enumerable: true,
-  configurable: true,
-  writable: true,
-  value: {
-    ...r4.shadowRootOptions,
-    delegatesFocus: true
-  }
-});
-
 // node_modules/unique-names-generator/dist/index.m.js
 var a6 = (a7) => {
   a7 = 1831565813 + (a7 |= 0) | 0;
@@ -157880,13 +156098,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   itemName(key) {
     return this.message(this.dictionary[key?.toLowerCase()] ?? key ?? "");
   }
-  /**
-   * all used custom elements, mainly shoelace elements and the webwriter helpOverlay
-   *
-   * @static
-   * @readonly
-   * @type {{ "sl-details": any; "sl-button": any; "sl-icon-button": any; "sl-icon": any; "sl-badge": any; "sl-button-group": any; "sl-tab": any; "sl-tab-group": any; "sl-tab-panel": any; "sl-split-panel": any; "sl-tag": any; "sl-divider": any; ... 20 more ...; "webwriter-helppopup": any; }}
-   */
   static get scopedElements() {
     return {
       "sl-details": SlDetails,
@@ -157917,9 +156128,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       "sl-checkbox": SlCheckbox,
       "sl-drawer": SlDrawer,
       "sl-tooltip": SlTooltip,
-      "sl-dialog": SlDialog,
-      "webwriter-helpoverlay": HelpOverlay,
-      "webwriter-helppopup": HelpPopup
+      "sl-dialog": SlDialog
     };
   }
   connectedCallback() {
@@ -160285,7 +158494,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
    */
   render() {
     return x`
-			${this.renderHelpPopups()}
 			<div id="upper">
 				${this.pix_canvas}
 				${this.renderConfirmDialog()}
@@ -160295,62 +158503,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				${this.renderContextPopup()}
 				${this.renderObjectPanel()}
 			</div>
-		`;
-  }
-  renderHelpPopups() {
-    return x`
-			<webwriter-helpoverlay>
-				<webwriter-helppopup
-					slot="popupContainer"
-					target="contextInfoBox"
-				>
-					<div slot="content">
-						<sl-badge>${this.message("Objekt-Kontextmen\xFC")}</sl-badge>
-						<p lang=${this.lang}>
-							${this.message("Hier k\xF6nnen das Objekt verwaltet und grundlegende Information angesehen werden.")}
-						</p>
-					</div>
-				</webwriter-helppopup>
-				<webwriter-helppopup
-					slot="popupContainer"
-					target="buttonFullscreen"
-				>
-					<div slot="content">
-						<sl-badge>${this.message("Vollbild an/aus")}</sl-badge>
-						<p lang=${this.lang}>
-							${this.message("Vollbild an/aus")}
-						</p>
-					</div>
-				</webwriter-helppopup>
-				<webwriter-helppopup
-					slot="popupContainer"
-					target="toggleDiagramDrawer"
-				>
-					<div slot="content">
-						<sl-badge>${this.message("Diagramm Men\xFC")}</sl-badge>
-						<p lang=${this.lang}>
-							${this.message("\xDCber diesen Button wird das Diagramm Men\xFC an der linken Seite ge\xF6ffnet.")}
-						</p>
-					</div>
-				</webwriter-helppopup>
-				<webwriter-helppopup slot="popupContainer" target="contextMenu">
-					<div slot="content">
-						<sl-badge>${this.message("Kontextmen\xFC")}</sl-badge>
-						<p lang=${this.lang}>
-							${this.hasAttribute("contenteditable") ? this.message("Uber dieses Men\xFC k\xF6nnen chemische Stoffe und Komponenten erstellt und vorgegeben werden.") : this.message("\xDCber dieses Men\xFC k\xF6nnen neue Objekte ausgew\xE4hlt und platziert werden.")}
-						</p>
-					</div>
-				</webwriter-helppopup>
-				<webwriter-helppopup
-					slot="popupContainer"
-					target="dialogOverview"
-				>
-					<div slot="content">
-						<sl-badge>${this.message("Message Toast")}</sl-badge>
-						<p lang=${this.lang}>${this.message("Hier werden Statusmeldungen angezeigt.")}</p>
-					</div>
-				</webwriter-helppopup>
-			</webwriter-helpoverlay>
 		`;
   }
   renderConfirmDialog() {

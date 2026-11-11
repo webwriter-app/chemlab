@@ -50,10 +50,6 @@ import { setBasePath } from "@shoelace-style/shoelace/dist/utilities/base-path.j
 setBasePath("@shoelace-style/shoelace/dist");
 
 import {
-	HelpOverlay,
-	HelpPopup,
-} from "@webwriter/wui/dist/helpSystem/helpSystem.js";
-import {
 	uniqueNamesGenerator,
 	Config,
 	adjectives,
@@ -860,13 +856,6 @@ export class ChemLab extends LitElementWw {
 		delegatesFocus: true,
 	};
 
-	/**
-	 * all used custom elements, mainly shoelace elements and the webwriter helpOverlay
-	 *
-	 * @static
-	 * @readonly
-	 * @type {{ "sl-details": any; "sl-button": any; "sl-icon-button": any; "sl-icon": any; "sl-badge": any; "sl-button-group": any; "sl-tab": any; "sl-tab-group": any; "sl-tab-panel": any; "sl-split-panel": any; "sl-tag": any; "sl-divider": any; ... 20 more ...; "webwriter-helppopup": any; }}
-	 */
 	static get scopedElements() {
 		return {
 			"sl-details": SlDetails,
@@ -899,8 +888,6 @@ export class ChemLab extends LitElementWw {
 			"sl-tooltip": SlTooltip,
 			"sl-dialog": SlDialog,
 
-			"webwriter-helpoverlay": HelpOverlay,
-			"webwriter-helppopup": HelpPopup,
 		};
 	}
 
@@ -3854,7 +3841,6 @@ export class ChemLab extends LitElementWw {
 	 */
 	render() {
 		return html`
-			${this.renderHelpPopups()}
 			<div id="upper">
 				${this.pix_canvas}
 				${this.renderConfirmDialog()}
@@ -3864,63 +3850,6 @@ export class ChemLab extends LitElementWw {
 				${this.renderContextPopup()}
 				${this.renderObjectPanel()}
 			</div>
-		`;
-	}
-
-	private renderHelpPopups() {
-		return html`
-			<webwriter-helpoverlay>
-				<webwriter-helppopup
-					slot="popupContainer"
-					target="contextInfoBox"
-				>
-					<div slot="content">
-						<sl-badge>${this.message("Objekt-Kontextmenü")}</sl-badge>
-						<p lang=${this.lang}>
-							${this.message("Hier können das Objekt verwaltet und grundlegende Information angesehen werden.")}
-						</p>
-					</div>
-				</webwriter-helppopup>
-				<webwriter-helppopup
-					slot="popupContainer"
-					target="buttonFullscreen"
-				>
-					<div slot="content">
-						<sl-badge>${this.message("Vollbild an/aus")}</sl-badge>
-						<p lang=${this.lang}>
-							${this.message("Vollbild an/aus")}
-						</p>
-					</div>
-				</webwriter-helppopup>
-				<webwriter-helppopup
-					slot="popupContainer"
-					target="toggleDiagramDrawer"
-				>
-					<div slot="content">
-						<sl-badge>${this.message("Diagramm Menü")}</sl-badge>
-						<p lang=${this.lang}>
-							${this.message("Über diesen Button wird das Diagramm Menü an der linken Seite geöffnet.")}
-						</p>
-					</div>
-				</webwriter-helppopup>
-				<webwriter-helppopup slot="popupContainer" target="contextMenu">
-					<div slot="content">
-						<sl-badge>${this.message("Kontextmenü")}</sl-badge>
-						<p lang=${this.lang}>
-							${this.hasAttribute("contenteditable") ? this.message("Uber dieses Menü können chemische Stoffe und Komponenten erstellt und vorgegeben werden.") : this.message("Über dieses Menü können neue Objekte ausgewählt und platziert werden.")}
-						</p>
-					</div>
-				</webwriter-helppopup>
-				<webwriter-helppopup
-					slot="popupContainer"
-					target="dialogOverview"
-				>
-					<div slot="content">
-						<sl-badge>${this.message("Message Toast")}</sl-badge>
-						<p lang=${this.lang}>${this.message("Hier werden Statusmeldungen angezeigt.")}</p>
-					</div>
-				</webwriter-helppopup>
-			</webwriter-helpoverlay>
 		`;
 	}
 

@@ -126,7 +126,6 @@
     "dependencies": {
         "@shoelace-style/shoelace": "2.19.1",
         "@webwriter/lit": "^2.1.6",
-        "@webwriter/wui": "^0.0.2",
         "chart.js": "^4.4.8",
         "kekule": "^1.0.0",
         "lit": "^3.2.1",
