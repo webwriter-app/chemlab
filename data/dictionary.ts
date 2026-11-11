@@ -138,7 +138,7 @@ export const dictionary: Record<string, string> = {
 	"alkali metal": "Alkalimetall",
 	"alkaline earth metal": "Erdalkalimetall",
 	"transition metal": "Übergangsmetall",
-	"post transition metal": "Metall der Erdmetalle",
+	"post-transition metal": "Postübergangsmetall",
 	metalloid: "Halbmetall",
 	"polyatomic nonmetal": "Polyatomares Nichtmetall",
 	"diatomic nonmetal": "Diatomares Nichtmetall",

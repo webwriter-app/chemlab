@@ -369,7 +369,7 @@ export class CanvasController implements ReactiveController {
 			let contextBadge: SlBadge = this.host.shadowRoot.getElementById(
 				"contextBadge"
 			) as SlBadge;
-			contextBadge.innerHTML = this.host.dictionary[sprite.name.split(":")[0]];
+			contextBadge.textContent = this.host.itemName(sprite.name.split(":")[0]);
 
 			if (event.pointerType === "mouse") {
 				// left button drags, right button opens the context popup
@@ -426,13 +426,13 @@ export class CanvasController implements ReactiveController {
 				sprite.height.toString() + "px";
 			this.host.contextPopup.reposition();
 
-			contextBadge.innerHTML = this.host.dictionary[info.split(":")[0]];
+			contextBadge.textContent = this.host.itemName(info.split(":")[0]);
 
 			contextInfoBox.style.visibility = "hidden";
 			contextActionsInfo.style.display = "";
-			contextActionsInfo.innerHTML = `<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><path fill="currentColor" d="M144 16h-32a64.07 64.07 0 0 0-64 64v96a64.07 64.07 0 0 0 64 64h32a64.07 64.07 0 0 0 64-64V80a64.07 64.07 0 0 0-64-64m-32 16h16v72H64V80a48.05 48.05 0 0 1 48-48m32 192h-32a48.05 48.05 0 0 1-48-48v-56h128v56a48.05 48.05 0 0 1-48 48"/></svg> Kontextmenü</p>
+			contextActionsInfo.innerHTML = `<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><path fill="currentColor" d="M144 16h-32a64.07 64.07 0 0 0-64 64v96a64.07 64.07 0 0 0 64 64h32a64.07 64.07 0 0 0 64-64V80a64.07 64.07 0 0 0-64-64m-32 16h16v72H64V80a48.05 48.05 0 0 1 48-48m32 192h-32a48.05 48.05 0 0 1-48-48v-56h128v56a48.05 48.05 0 0 1-48 48"/></svg> ${this.host.message("Kontextmenü")}</p>
 				<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl-divider>
-				<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><path fill="currentColor" d="M144 16h-32a64.07 64.07 0 0 0-64 64v96a64.07 64.07 0 0 0 64 64h32a64.07 64.07 0 0 0 64-64V80a64.07 64.07 0 0 0-64-64m48 64v24h-64V32h16a48.05 48.05 0 0 1 48 48m-48 144h-32a48.05 48.05 0 0 1-48-48v-56h128v56a48.05 48.05 0 0 1-48 48"/></svg> Bewegen</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><path fill="currentColor" d="M144 16h-32a64.07 64.07 0 0 0-64 64v96a64.07 64.07 0 0 0 64 64h32a64.07 64.07 0 0 0 64-64V80a64.07 64.07 0 0 0-64-64m48 64v24h-64V32h16a48.05 48.05 0 0 1 48 48m-48 144h-32a48.05 48.05 0 0 1-48-48v-56h128v56a48.05 48.05 0 0 1-48 48"/></svg> ${this.host.message("Bewegen")}</p>
 				`;
 
 			this.host.contextPopup.active = true;
@@ -530,10 +530,10 @@ export class CanvasController implements ReactiveController {
 							&& (upperSprite.y > bottomSprite.y - bottomSprite.height/2 && upperSprite.y < bottomSprite.y + upperSprite.height/2 && upperSprite.x > bottomSprite.x - bottomSprite.width/2 && upperSprite.x < bottomSprite.x + bottomSprite.width/2)
 						) {
 							this.host._emitAlert(
-								this.host.curr_obj._type +
-									" in " +
-									cObj._type +
-									" einfügen.",
+								this.host.message("{from} in {to} einfügen.", {
+									from: this.host.itemName(this.host.curr_obj._type),
+									to: this.host.itemName(cObj._type),
+								}),
 								"primary",
 								false
 							);
@@ -561,10 +561,10 @@ export class CanvasController implements ReactiveController {
 								cObj._type != chemlib.EComponentType.Cable
 							) {
 								this.host._emitAlert(
-									this.host.curr_obj._type +
-										" und " +
-										cObj._type +
-										" verbinden.",
+									this.host.message("{from} und {to} verbinden.", {
+										from: this.host.itemName(this.host.curr_obj._type),
+										to: this.host.itemName(cObj._type),
+									}),
 									"primary",
 									false
 								);
@@ -603,11 +603,10 @@ export class CanvasController implements ReactiveController {
 									? -20
 									: 20;
 							this.host._emitAlert(
-								"Inhalt aus " +
-									this.host.curr_obj._type +
-									" zu " +
-									cObj._type +
-									" transferieren.",
+								this.host.message("Inhalt aus {from} zu {to} transferieren.", {
+									from: this.host.itemName(this.host.curr_obj._type),
+									to: this.host.itemName(cObj._type),
+								}),
 								"primary",
 								false
 							);
@@ -692,10 +691,10 @@ export class CanvasController implements ReactiveController {
 								if (this.host.confirmAction === 1) {
 									this.host.curr_obj._connectedMix = cObj._content;
 									this.host._emitAlert(
-										this.host.curr_obj._type +
-											" in " +
-											cObj._type +
-											" eingefügt.",
+										this.host.message("{from} in {to} eingefügt.", {
+											from: this.host.itemName(this.host.curr_obj._type),
+											to: this.host.itemName(cObj._type),
+										}),
 										"success",
 										false,
 										1500
@@ -806,11 +805,10 @@ export class CanvasController implements ReactiveController {
 									this.host.curr_obj.transferContents({}, cObj);
 									this.host._getObject(this.host.dragObject);
 									this.host._emitAlert(
-										"Inhalt aus " +
-											this.host.curr_obj._type +
-											" zu " +
-											cObj._type +
-											" überführt.",
+										this.host.message("Inhalt aus {from} zu {to} überführt.", {
+											from: this.host.itemName(this.host.curr_obj._type),
+											to: this.host.itemName(cObj._type),
+										}),
 										"success",
 										false,
 										1500
@@ -835,7 +833,7 @@ export class CanvasController implements ReactiveController {
 				}
 			}
 		}
-		if (this.host.app.stage.children.length > 1) {
+		if (this.host.app.stage.children.length > 0) {
 			let wasAvail: boolean = false;
 			let ObjectId: number;
 			this.host.avComponentsSprites.forEach((arr) => {

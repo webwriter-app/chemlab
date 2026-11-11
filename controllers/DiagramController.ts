@@ -18,10 +18,14 @@ export class DiagramController implements ReactiveController {
 	private host: ChemLab;
 
 	/**
-	 * List of active diagrams. Each entry is a `[Chart, containerDiv]` pair,
+	 * List of active diagrams. Each entry is a `[Chart, containerDiv, updateLabels]` tuple,
 	 * where the container's first child carries the experiment id.
 	 */
-	diagramList: Array<any> = [];
+	private diagramList: Array<[Chart<"line">, HTMLDivElement, () => void]> = [];
+
+	public updateLabels(): void {
+		this.diagramList.forEach(([, , updateLabels]) => updateLabels());
+	}
 
 	/** Whether datasets should draw connecting lines between points. */
 	showLine: boolean = false;
@@ -89,14 +93,10 @@ export class DiagramController implements ReactiveController {
 
 		// @ts-ignore
 		let canvasHeading: HTMLHeadingElement = this.host.shadowRoot.createElement("h5") as HTMLHeadingElement;
-		canvasHeading.innerText =
-			this.diagramList.length +
-			": " +
-			(name.includes("transfer")
-				? "Titration"
-				: name.includes("source")
-				? "Elektrolyse"
-				: "Galvanische Zelle");
+		const chartNumber = this.diagramList.length;
+		const chartHeading = name.includes("transfer")
+			? "Titration"
+			: name.includes("source") ? "Elektrolyse" : "Galvanische Zelle";
 
 		canvasDiv.appendChild(canvas);
 		// @ts-ignore
@@ -108,13 +108,12 @@ export class DiagramController implements ReactiveController {
 			"button"
 		) as HTMLButtonElement;
 		trashButton.innerHTML += `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#d10000" d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/></svg>`;
-		trashButton.onclick = (event) => {
-			this.diagramList.forEach((diag) => {
-				if ((diag[1] as HTMLDivElement).children[0].id === name) {
-					this.diagramList.splice(diag, 1);
-					return;
-				}
-			});
+		trashButton.onclick = () => {
+			const index = this.diagramList.findIndex(([, container]) => container === canvasDiv);
+			if (index !== -1) {
+				this.diagramList[index][0].destroy();
+				this.diagramList.splice(index, 1);
+			}
 			canvasBundle.remove();
 			this.host.reportXApi("removed", "diagram-" + name);
 		};
@@ -193,21 +192,26 @@ export class DiagramController implements ReactiveController {
 				showLine: this.showLine,
 			});
 
-			let electrodes: chemlib.ElectricComponent[] =
-				chemlib.ComponentManager.isCircuit(
-					args[1] as chemlib.ElectricComponent
-				);
-			chart.data.datasets[0].label =
-				"Stoffmenge " +
-				electrodes[0]._material._atoms[0].getSymbol() +
-				" Ionen [mol]";
-			chart.data.datasets[1].label =
-				"Stoffmenge " +
-				electrodes[1]._material._atoms[0].getSymbol() +
-				" Ionen [mol]";
 		}
 
-		this.diagramList.push([chart, canvasDiv]);
+		const ionSymbols = name.includes("source")
+			? chemlib.ComponentManager.isCircuit(args[1] as chemlib.ElectricComponent)
+				.map(electrode => electrode._material?._atoms[0]?.getSymbol())
+			: [];
+		const updateLabels = () => {
+			canvasHeading.innerText = chartNumber + ": " + this.host.message(chartHeading);
+			chart.options.scales.x.title.text = this.host.message(chartTitleX);
+			chart.options.scales.y.title.text = this.host.message(chartTitleY);
+			chart.data.datasets.forEach((dataset, index) => {
+				const symbol = ionSymbols[index];
+				dataset.label = symbol
+					? this.host.message("Stoffmenge {symbol} Ionen [mol]", { symbol })
+					: this.host.message(chartLabel);
+			});
+			chart.update("none");
+		};
+		updateLabels();
+		this.diagramList.push([chart, canvasDiv, updateLabels]);
 		this.host.reportXApi("created", "diagram-" + name);
 	}
 
@@ -230,7 +234,7 @@ export class DiagramController implements ReactiveController {
 					source._type + ":" + source._id
 				)
 			) {
-				let chart: Chart = this.diagramList[i][0];
+				const chart = this.diagramList[i][0];
 				chart.data.labels.push(
 					(chart.data.labels.length > 0
 						? Number.parseFloat(
@@ -273,7 +277,7 @@ export class DiagramController implements ReactiveController {
 					source._type + ":" + source._id
 				)
 			) {
-				let chart: Chart = this.diagramList[i][0];
+				const chart = this.diagramList[i][0];
 				chart.data.labels.push(
 					(chart.data.labels.length > 0
 						? Number.parseFloat(
