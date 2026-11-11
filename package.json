@@ -115,7 +115,16 @@
         "widget-lang-so",
         "widget-lang-ti",
         "widget-lang-sw",
-        "widget-lang-ha"
+        "widget-lang-ha",
+        "widget-lang-yue-Hans",
+        "widget-lang-yue-Hant",
+        "widget-lang-kmr",
+        "widget-lang-kmr-Latn",
+        "widget-lang-kmr-Arab",
+        "widget-lang-ckb",
+        "widget-lang-ckb-Arab",
+        "widget-lang-af-ZA",
+        "widget-lang-af-NA"
     ],
     "license": "MIT",
     "author": "Robin Kreft",
@@ -254,7 +263,16 @@
                 "so": "Diyaari tijaabooyin kiimiko oo muuqaal ah si loo barto dhisidda molikuyuullada, kiimikada korontada iyo aragtida aashitada iyo alkaliiga. Qalabkan weli waa la horumarinayaa.",
                 "ti": "ሞለኪዩላት ንምህናጽ፣ ኤሌክትሮኬሚስትሪን ክልሰ ሓሳብ ኣሲድን ቤዝን ንምጽናዕ ምናባዊ ፈተነታት ኬሚስትሪ ኣዳሉ። እዚ መሳርሒ ኣብ ምምዕባል ኣሎ።",
                 "sw": "Andaa majaribio pepe ya kemia kuhusu kujenga molekuli, kemia ya umeme, na nadharia ya asidi na besi. Wijeti bado inaendelezwa.",
-                "ha": "Shirya gwaje-gwajen sinadarai ta kwamfuta kan gina ƙwayoyin halitta, sinadarai na lantarki, da ka’idar asid da bes. Ana ci gaba da haɓaka wannan widget."
+                "ha": "Shirya gwaje-gwajen sinadarai ta kwamfuta kan gina ƙwayoyin halitta, sinadarai na lantarki, da ka’idar asid da bes. Ana ci gaba da haɓaka wannan widget.",
+                "yue-Hans": "制作化学主题嘅虚拟实验室环境（开发中）。包括分子建构，以及电化学同酸碱理论应用。",
+                "yue-Hant": "製作化學主題嘅虛擬實驗室環境（開發中）。包括分子建構，以及電化學同酸鹼理論應用。",
+                "kmr": "WIP - Amadekirina hawîrdorên laboratûara rastazî ji bo mijarên cuda yên kîmyayê. Di nav de avakirina molekulan û her wiha sepanên elektrokîmyayê û teoriya asîd/bazê hene.",
+                "kmr-Latn": "WIP - Amadekirina hawîrdorên laboratûara rastazî ji bo mijarên cuda yên kîmyayê. Di nav de avakirina molekulan û her wiha sepanên elektrokîmyayê û teoriya asîd/bazê hene.",
+                "kmr-Arab": "WIP - ئامادەکرنا هاویردۆرێن لابۆراتووارا راستازی ژ بۆ مژارێن جودا یێن کیمیایێ. د ناڤ دە ئاڤاکرنا مۆلەکولان ئوو هەر وها سەپانێن ئەلەکترۆکیمیایێ ئوو تەۆریا ئاسید/بازێ هەنە.",
+                "ckb": "پێشەکی - ژینگەی تاقیگەی مەجازی بۆ بابەتە جیاوازەکانی کیمیا ئامادە بکە. دروستکردنی مۆلیکول و هەروەها بەکارهێنانەکانی کارەباکیمیا و تیۆریی ترشە/بنەکان لەخۆ دەگرێت.",
+                "ckb-Arab": "پێشەکی - ژینگەی تاقیگەی مەجازی بۆ بابەتە جیاوازەکانی کیمیا ئامادە بکە. دروستکردنی مۆلیکول و هەروەها بەکارهێنانەکانی کارەباکیمیا و تیۆریی ترشە/بنەکان لەخۆ دەگرێت.",
+                "af-ZA": "Werk aan die gang. Berei virtuele laboratoriumomgewings vir verskeie chemieonderwerpe voor. Bou molekules en ondersoek elektrochemie en suur-baseteorie.",
+                "af-NA": "Werk aan die gang. Berei virtuele laboratoriumomgewings vir verskeie chemieonderwerpe voor. Bou molekules en ondersoek elektrochemie en suur-baseteorie."
             },
             "label": {
                 "_": "Chemlab",
@@ -359,7 +377,16 @@
                 "so": "Chemlab",
                 "ti": "Chemlab",
                 "sw": "Chemlab",
-                "ha": "Chemlab"
+                "ha": "Chemlab",
+                "yue-Hans": "化学实验室",
+                "yue-Hant": "化學實驗室",
+                "kmr": "Chemlab",
+                "kmr-Latn": "Chemlab",
+                "kmr-Arab": "Chemlab",
+                "ckb": "تاقیگەی کیمیا",
+                "ckb-Arab": "تاقیگەی کیمیا",
+                "af-ZA": "Chemlab",
+                "af-NA": "Chemlab"
             }
         },
         "./widgets/webwriter-chemlab": {
@@ -466,7 +493,16 @@
                 "so": "Shaybaarka kiimikada",
                 "ti": "ቤተ ፈተነ ኬሚስትሪ",
                 "sw": "Maabara ya kemia",
-                "ha": "Dakin gwajin sinadarai"
+                "ha": "Dakin gwajin sinadarai",
+                "yue-Hans": "化学实验室",
+                "yue-Hant": "化學實驗室",
+                "kmr": "Laboratoriya kîmyayê",
+                "kmr-Latn": "Laboratoriya kîmyayê",
+                "kmr-Arab": "لابۆراتۆریا کیمیایێ",
+                "ckb": "تاقیگەی کیمیا",
+                "ckb-Arab": "تاقیگەی کیمیا",
+                "af-ZA": "Chemielaboratorium",
+                "af-NA": "Chemielaboratorium"
             }
         },
         "./snippets/Beispiel-Titration": {
@@ -573,7 +609,16 @@
                 "so": "Tusaale titrayn",
                 "ti": "ኣብነት ታይትሬሽን",
                 "sw": "Mfano wa titresheni",
-                "ha": "Misalin taitireeshan"
+                "ha": "Misalin taitireeshan",
+                "yue-Hans": "滴定范例",
+                "yue-Hant": "滴定範例",
+                "kmr": "Titrasiyona mînakê",
+                "kmr-Latn": "Titrasiyona mînakê",
+                "kmr-Arab": "تتراسیۆنا میناکێ",
+                "ckb": "تیتراسیۆنی نموونە",
+                "ckb-Arab": "تیتراسیۆنی نموونە",
+                "af-ZA": "Voorbeeld: Titrasie",
+                "af-NA": "Voorbeeld: Titrasie"
             }
         },
         "./snippets/Beispiel-Batterie": {
@@ -680,7 +725,16 @@
                 "so": "Tusaale baytari",
                 "ti": "ኣብነት ባትሪ",
                 "sw": "Mfano wa betri",
-                "ha": "Misalin batiri"
+                "ha": "Misalin batiri",
+                "yue-Hans": "电池范例",
+                "yue-Hant": "電池範例",
+                "kmr": "Bateriya mînakê",
+                "kmr-Latn": "Bateriya mînakê",
+                "kmr-Arab": "باتەریا میناکێ",
+                "ckb": "باتریی نموونە",
+                "ckb-Arab": "باتریی نموونە",
+                "af-ZA": "Voorbeeld: Battery",
+                "af-NA": "Voorbeeld: Battery"
             }
         }
     }
