@@ -10,7 +10,7 @@ import {
 import { style } from "chemlab-style";
 
 import * as PIXI from "pixi.js";
-import * as chemlib from "chemlib";
+import * as chemlib from "./chemlib";
 import SmilesDrawer from "smiles-drawer"
 
 import SlRange from "@shoelace-style/shoelace/dist/components/range/range.component.js";

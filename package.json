@@ -128,7 +128,7 @@
         "@webwriter/lit": "^2.1.6",
         "@webwriter/wui": "^0.0.2",
         "chart.js": "^4.4.8",
-        "chemlib": "file:./chemlib",
+        "kekule": "^1.0.0",
         "lit": "^3.2.1",
         "pixi.js": "^7.4.3",
         "smiles-drawer": "2.1.5",

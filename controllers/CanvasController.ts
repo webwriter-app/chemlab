@@ -1,6 +1,6 @@
 import { ReactiveController } from "lit";
 import * as PIXI from "pixi.js";
-import * as chemlib from "chemlib";
+import * as chemlib from "../chemlib";
 import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 
 // @ts-ignore

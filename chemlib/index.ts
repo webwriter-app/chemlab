@@ -8,8 +8,7 @@ import {Mixture} from './Mixture'
 import {Molecule} from './Molecule'
 import {Simulation} from './Simulation'
 import {StructureManager} from './StructureManager'
-import {AcidBase, AcidBaseSystem} from './AcidBase'
+import {AcidBase} from './AcidBase'
 
-export {Atom, Bond, ChemComponent, ComponentType, ComponentManager, ElectricComponent, EComponentType, ElementData, Mixture, Molecule, Simulation, StructureManager, AcidBase, AcidBaseSystem}
-
-
+export {Atom, Bond, ChemComponent, ComponentType, ComponentManager, ElectricComponent, EComponentType, ElementData, Mixture, Molecule, Simulation, StructureManager, AcidBase}
+export type {AcidBaseSystem} from './AcidBase'

@@ -19,19 +19,19 @@ class Molecule {
 	readonly _bondTypes: Array<any>;
 
 	/**
-	 * The english name of the molecule. Must be fetched seperately 
+	 * The english name of the molecule. Must be fetched seperately
 	 *
 	 * @type {string}
 	 */
 	name: string = "";
 	/**
-	 * The current SMILES representation of the molecule 
+	 * The current SMILES representation of the molecule
 	 *
 	 * @type {string}
 	 */
 	smilesString: string = "";
 	/**
-	 * The current InChi representation of the molecule. Must be generated seperately 
+	 * The current InChi representation of the molecule. Must be generated seperately
 	 *
 	 * @type {string}
 	 */
@@ -181,7 +181,7 @@ class Molecule {
 	 * @param {number} [nIonicCharge=0] - the charge of the atom
 	 * @param {number} [nPos2Dx=0] - the x coordinate of the atom (default is 0)
 	 * @param {number} [nPos2Dy=0] - the y coordinate of the atom (default is 0)
-	 * @param {?*} [nImport] - an existing kekule.js atom object to build from 
+	 * @param {?*} [nImport] - an existing kekule.js atom object to build from
 	 * @returns {Atom}
 	 */
 	public addAtom(
@@ -238,7 +238,7 @@ class Molecule {
 	 * @param {number} nMagnitude - wether its a single, double or any other bond
 	 * @param {number} nLength - the bonds length
 	 * @param {string} nType - the type of bond (covalent, ionic, metallic, hydrogen, acidbase)
-	 * @param {?*} [nImport] - an existing kekule.js bond object 
+	 * @param {?*} [nImport] - an existing kekule.js bond object
 	 */
 	public addBond(
 		nFIndex: number,

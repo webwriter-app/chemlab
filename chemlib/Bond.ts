@@ -48,7 +48,7 @@ class Bond {
 	 * Creates an instance of Bond.
 	 *
 	 * @constructor
-	 * @param {string} pType - the bond type mainly retrieved from kekule.js (covalent, ionic, metallic, hydrogen, acidbase) 
+	 * @param {string} pType - the bond type mainly retrieved from kekule.js (covalent, ionic, metallic, hydrogen, acidbase)
 	 * @param {number} pMagnitude - the bond magnitude
 	 * @param {number} pLength - the bond length
 	 * @param {Atom} pFrom - first atom

@@ -93,7 +93,7 @@ class ElectricComponent {
 	 * 		}} [param0={}] - json object containing all possible parameters. Each can be set specifically or left empty
 	 * @param {Mixture} param0.nMixture - for electrodes: The possible initially connected solution
 	 * @param {Molecule} param0.nMaterial - for electrodes: The electrodes material, molecule should be neutral
-	 * @param {number} param0.nSourceVoltage - for voltage sources: The source voltage 
+	 * @param {number} param0.nSourceVoltage - for voltage sources: The source voltage
 	 * @param {number} param0.nSourceCurrent - for voltage sources: The source current
 	 */
 	constructor(
@@ -157,7 +157,7 @@ class ElectricComponent {
 	}
 
 	/**
-	 * Removes an existing connection 
+	 * Removes an existing connection
 	 *
 	 * @public
 	 * @param {ElectricComponent} rComposite - the connected component

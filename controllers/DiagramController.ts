@@ -1,6 +1,6 @@
 import { ReactiveController } from "lit";
 import Chart from "chart.js/auto";
-import * as chemlib from "chemlib";
+import * as chemlib from "../chemlib";
 
 import type { ChemLab } from "../webwriter-chemlab";
 
