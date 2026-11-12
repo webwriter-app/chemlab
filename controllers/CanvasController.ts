@@ -11,6 +11,45 @@ import { isVesselType, VesselView } from "./VesselView";
 
 import type { ChemLab } from "../webwriter-chemlab";
 
+// Cables are rope-simulated polylines drawn into the canvas world.
+
+/** Number of rope chain points per cable, including the two pinned ends. */
+const CABLE_SEGMENTS = 14;
+/** Distance-constraint passes per simulation step. */
+const CABLE_ITERATIONS = 5;
+/** Gravity acting on rope points in world units per s^2 (1.5 mm per unit). */
+const CABLE_GRAVITY = 4000;
+/** Velocity damping applied per step. */
+const CABLE_DAMPING = 0.92;
+/** Extra length a cable keeps over the straight device distance, so a
+ * fresh or re-dropped cable settles with a slight sag instead of taut. */
+const CABLE_SLACK = 1.1;
+/** Per-point movement in world units below which a rope counts as settled. */
+const CABLE_SETTLE = 0.25;
+/** Name of the background task that keeps the canvas refreshing while cables move. */
+const CABLE_TASK = "cables";
+
+/**
+ * Simulation state of one rope-simulated cable: a verlet point chain
+ * pinned to the connected device sprites at both ends.
+ *
+ * @typedef {CableRope}
+ */
+interface CableRope {
+	/** current positions of the chain; first/last are pinned */
+	points: Array<{ x: number; y: number }>;
+	/** positions of the previous integration step */
+	prev: Array<{ x: number; y: number }>;
+	/** unconstrained material length of the cable in world units */
+	restLength: number;
+	/** true while the rope keeps simulating until it settles */
+	awake: boolean;
+	/** consecutive settled frames; puts the rope back to sleep */
+	idleFrames: number;
+	/** device positions the rope is currently pinned to */
+	endpoints: [number, number, number, number];
+}
+
 /**
  * Owns the PixiJS canvas layer: application/stage lifecycle, sprite
  * creation and the custom drag interaction. These methods manipulate the
@@ -38,7 +77,8 @@ export class CanvasController implements ReactiveController {
 	private vessels = new Map<chemlib.ChemComponent, VesselView>();
 	private scaleTextures = new Map<string, PIXI.Texture>();
 	private changedVessels = new Set<VesselView>();
-	private cables = new Map<PIXI.Sprite, chemlib.ElectricComponent>();
+	private cables = new Map<PIXI.Graphics, chemlib.ElectricComponent>();
+	private cableRopes = new Map<PIXI.Graphics, CableRope>();
 	private cablesDirty = false;
 
 	/** true while a sprite drag is in progress (pointermove listener attached) */
@@ -61,9 +101,6 @@ export class CanvasController implements ReactiveController {
 	/** offset from the sprite's origin to the point where it was grabbed, so a
 	 * drag keeps that point under the pointer instead of snapping to the centre */
 	private _dragOffset: PIXI.Point = new PIXI.Point();
-	/** reused scratch Graphics used to rasterize each cable's curved-line texture */
-	private _cableGraphics: PIXI.Graphics = new PIXI.Graphics();
-	private cableEndpoints = new WeakMap<PIXI.Sprite, [number, number, number, number]>();
 
 	constructor(host: ChemLab) {
 		this.host = host;
@@ -211,10 +248,13 @@ export class CanvasController implements ReactiveController {
 			return;
 		}
 		const selected = this.world.children.filter((sprite) => {
-			const bounds = sprite.getBounds();
 			if (sprite.label.startsWith("cable:")) {
-				return bounds.minX >= rect.left && bounds.maxX <= rect.right && bounds.minY >= rect.top && bounds.maxY <= rect.bottom;
+				// Cables are dynamic links, not selectable objects: they redraw
+				// from their connected components and can only be removed by
+				// deleting a connected device.
+				return false;
 			}
+			const bounds = sprite.getBounds();
 			return bounds.minX <= rect.right && bounds.maxX >= rect.left && bounds.minY <= rect.bottom && bounds.maxY >= rect.top;
 		});
 		this.host.clearObjectSelection(true);
@@ -413,10 +453,8 @@ export class CanvasController implements ReactiveController {
 			this.vessels.delete(sprite.component);
 			this.changedVessels.delete(sprite);
 		}
-		if (sprite instanceof PIXI.Sprite) this.cables.delete(sprite);
-		if (sprite instanceof PIXI.Sprite && sprite.texture instanceof PIXI.RenderTexture) {
-			sprite.texture.destroy(true);
-		}
+		this.cables.delete(sprite as PIXI.Graphics);
+		this.cableRopes.delete(sprite as PIXI.Graphics);
 		sprite.destroy({ children: true });
 		this.host.requestCanvasRender();
 	}
@@ -455,13 +493,21 @@ export class CanvasController implements ReactiveController {
 		const height = heightMm / MILLIMETERS_PER_WORLD_UNIT;
 		const sprite = component instanceof chemlib.ChemComponent && isVesselType(type)
 			? new VesselView(component, type, texture, width, height, this.scaleTextures)
-			: component instanceof chemlib.ElectricComponent && type !== chemlib.EComponentType.Cable
-				? new ElectricDeviceView(component, texture, width, height)
-				: new PIXI.Sprite({ texture, width, height, anchor: 0.5 });
+			: component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable
+				// Cables render as rope polylines and carry no texture.
+				? new PIXI.Graphics()
+				: component instanceof chemlib.ElectricComponent
+					? new ElectricDeviceView(component, texture, width, height)
+					: new PIXI.Sprite({ texture, width, height, anchor: 0.5 });
 
-		sprite.x = this.host.mousePos[0];
-		sprite.y = this.host.mousePos[1];
-		sprite.eventMode = "static";
+		// Cables draw in world coordinates and carry their own transform at (0,0).
+		if (!(component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable)) {
+			sprite.x = this.host.mousePos[0];
+			sprite.y = this.host.mousePos[1];
+		}
+		sprite.eventMode = component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable
+			? "none"
+			: "static";
 		sprite.cursor = "pointer";
 		sprite.on("pointerdown", (event) => {
 			event.stopPropagation();
@@ -495,7 +541,8 @@ export class CanvasController implements ReactiveController {
 			this.changedVessels.add(sprite);
 		}
 		if (component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable) {
-			this.cables.set(sprite as PIXI.Sprite, component);
+			this.cables.set(sprite as PIXI.Graphics, component);
+			this.cableRopes.delete(sprite as PIXI.Graphics);
 			this.cablesDirty = true;
 		}
 		if (select && !sprite.label.includes("cable")) {
@@ -684,6 +731,7 @@ export class CanvasController implements ReactiveController {
 			return;
 		}
 		this.drawSelection();
+		this.relengthCablesAttachedTo([this.host.dragObject]);
 		for (let i = 0; i < this.world.children.length; i++) {
 			if (
 				i != this.host.curr_stage_index &&
@@ -890,6 +938,9 @@ export class CanvasController implements ReactiveController {
 		if (this.world.children.length === 1) {
 			return false;
 		}
+		if (this.world.children[index].label.startsWith("cable:")) {
+			return false;
+		}
 		let objWidth: number = this.world.children[index].width;
 		let objHeight: number = this.world.children[index].height;
 		let objX: number = this.world.children[index].x - 0.5 * objWidth;
@@ -982,6 +1033,7 @@ export class CanvasController implements ReactiveController {
 				this.groupDrag = undefined;
 				if (drag.moved) {
 					this.drawSelection();
+					this.relengthCablesAttachedTo(drag.items.map(({ sprite }) => sprite));
 					this.host.saveComponentPositions(drag.items.map(({ sprite }) => sprite));
 				}
 			} else if (this.pan?.id === event.pointerId) {
@@ -1012,16 +1064,17 @@ export class CanvasController implements ReactiveController {
 	flushChanges(): void {
 		for (const view of this.changedVessels) view.updateContents();
 		this.changedVessels.clear();
-		if (this.cablesDirty) {
+		if (this.cablesDirty || this.cables.size) {
 			this.cablesDirty = false;
+			// requests a render again while any rope is awake, which keeps
+			// the sim loop ticking until all cables have settled
 			this.updateCablePositions();
 		}
 	}
 
 	private updateCablePositions(): void {
 		const stage = this.world;
-		const selected = stage.children[this.host.curr_stage_index];
-		let selectionMoved = false;
+		let anyAwake = false;
 		for (const [sprite, cable] of this.cables) {
 			const [first, second] = cable._connections;
 			const from = first && this.spritesByLabel.get(`${first._type}:${first._id}`);
@@ -1030,82 +1083,185 @@ export class CanvasController implements ReactiveController {
 				this.host.removeObjects([sprite]);
 				continue;
 			}
-			const current = this.cableEndpoints.get(sprite);
 			const endpoints: [number, number, number, number] = [from.x, from.y, to.x, to.y];
-			if (!current || endpoints.some((value, index) => value !== current[index])) {
-				const curve = this._buildCableCurve([from.x, from.y], [to.x, to.y]);
-				const previous = sprite.texture;
-				sprite.texture = curve.texture;
-				sprite.setSize(curve.w, curve.h);
-				sprite.position.set(curve.cx, curve.cy);
-				sprite.rotation = 0;
-				selectionMoved ||= sprite === selected || this.selection.includes(sprite);
-				if (previous instanceof PIXI.RenderTexture) previous.destroy(true);
-				this.cableEndpoints.set(sprite, endpoints);
+
+			let rope = this.cableRopes.get(sprite);
+			if (!rope) {
+				// A fresh cable starts as a straight line between the devices,
+				// with its rest length set to the current span plus slack.
+				rope = { points: [], prev: [], restLength: 0, awake: true, idleFrames: 0, endpoints };
+				const dist = Math.hypot(endpoints[2] - endpoints[0], endpoints[3] - endpoints[1]);
+				rope.restLength = Math.max(dist, 1) * CABLE_SLACK;
+				for (let i = 0; i < CABLE_SEGMENTS; i++) {
+					const t = i / (CABLE_SEGMENTS - 1);
+					const point = {
+						x: endpoints[0] + (endpoints[2] - endpoints[0]) * t,
+						y: endpoints[1] + (endpoints[3] - endpoints[1]) * t,
+					};
+					rope.points.push(point);
+					rope.prev.push({ x: point.x, y: point.y });
+				}
+				this.cableRopes.set(sprite, rope);
+			} else if (endpoints.some((value, index) => value !== rope.endpoints[index])) {
+				// A connected device moved: keep the stored length so bringing
+				// devices closer relaxes the cable, while pulling them apart
+				// only strains it.
+				rope.endpoints = endpoints;
+				rope.awake = true;
+				rope.idleFrames = 0;
 			}
+
+			if (rope.awake) {
+				this.stepRope(rope);
+				this.drawRope(sprite, rope);
+				anyAwake = true;
+			}
+
 			const index = stage.getChildIndex(sprite);
 			const behindDevices = Math.min(stage.getChildIndex(from), stage.getChildIndex(to));
 			if (index > behindDevices) stage.setChildIndex(sprite, behindDevices);
 		}
-		if (selected?.parent === stage && this.host.curr_obj) this.host.curr_stage_index = stage.getChildIndex(selected);
-		if (selectionMoved) this.drawSelection();
+		// Keep the ticker running while any cable moves: the task requests a
+		// render every frame, and the flush below steps the ropes. Only when
+		// all cables have settled does the canvas go back to sleep.
+		const simulation = this.host.simulation;
+		if (anyAwake) {
+			if (!simulation.hasTask(CABLE_TASK)) {
+				simulation.startTask(CABLE_TASK, () => this.host.requestCanvasRender());
+			}
+		} else if (simulation.hasTask(CABLE_TASK)) {
+			simulation.stopTask(CABLE_TASK);
+		}
 	}
 
 	/**
-	 * Draws a sagging cubic-bezier cable between two world-space points
-	 * and bakes it into a texture sized to fit it exactly, so the cable
-	 * sprite can keep using the same anchor(0.5)/width/height contract
-	 * every other sprite relies on (see {@link _mouseInbounds}).
+	 * Integrates one simulation step of a cable rope: the interior points
+	 * fall under gravity with damping, while the distance constraints keep
+	 * every segment at `restLength / segments`. The pinned ends always win,
+	 * so pulling devices apart stretches the drawn cable into a taut line
+	 * instead of moving the devices.
 	 *
 	 * @private
-	 * @param {number[]} pos1 - world [x, y] of the first endpoint
-	 * @param {number[]} pos2 - world [x, y] of the second endpoint
-	 * @returns {{texture: PIXI.Texture, cx: number, cy: number, w: number, h: number}}
+	 * @param {CableRope} rope - the rope to simulate
 	 */
-	private _buildCableCurve(
-		pos1: number[],
-		pos2: number[]
-	): { texture: PIXI.Texture; cx: number; cy: number; w: number; h: number } {
-		const dx: number = pos2[0] - pos1[0];
-		const dy: number = pos2[1] - pos1[1];
-		const len: number = Math.sqrt(dx * dx + dy * dy) || 1;
-		// perpendicular unit vector, so the sag reads the same regardless
-		// of the cables orientation on the canvas
-		const nx: number = -dy / len;
-		const ny: number = dx / len;
-		const sag: number = Math.min(Math.max(len * 0.15, 8), 40);
+	private stepRope(rope: CableRope): void {
+		const { points, prev, endpoints } = rope;
+		const count = points.length;
+		const last = count - 1;
 
-		const cp1x: number = pos1[0] + dx / 3 + nx * sag;
-		const cp1y: number = pos1[1] + dy / 3 + ny * sag;
-		const cp2x: number = pos1[0] + (dx * 2) / 3 + nx * sag;
-		const cp2y: number = pos1[1] + (dy * 2) / 3 + ny * sag;
+		// verlet integration of the interior points: velocity, damping, gravity
+		const dt = Math.min(this.host.app?.ticker.deltaMS ?? 16.67, 40) / 1000;
+		for (let i = 1; i < last; i++) {
+			const vx = (points[i].x - prev[i].x) * CABLE_DAMPING;
+			const vy = (points[i].y - prev[i].y) * CABLE_DAMPING;
+			prev[i].x = points[i].x;
+			prev[i].y = points[i].y;
+			points[i].x += vx;
+			points[i].y += vy + CABLE_GRAVITY * dt * dt;
+		}
 
+		// pin the ends to their devices before and after the constraints
+		points[0].x = endpoints[0];
+		points[0].y = endpoints[1];
+		points[last].x = endpoints[2];
+		points[last].y = endpoints[3];
+
+		// distance constraints keep every segment at restLength / segments;
+		// pinned ends cannot move, so taut cables straighten while their
+		// drawn span grows with the device distance
+		const segLength = rope.restLength / last;
+		for (let iteration = 0; iteration < CABLE_ITERATIONS; iteration++) {
+			for (let k = 0; k < last; k++) {
+				const dx = points[k + 1].x - points[k].x;
+				const dy = points[k + 1].y - points[k].y;
+				const dist = Math.hypot(dx, dy) || 1e-9;
+				const correction = (dist - segLength) / dist;
+				if (k === 0) {
+					points[1].x -= dx * correction;
+					points[1].y -= dy * correction;
+				} else if (k + 1 === last) {
+					points[last - 1].x += dx * correction;
+					points[last - 1].y += dy * correction;
+				} else {
+					points[k].x += dx * correction * 0.5;
+					points[k].y += dy * correction * 0.5;
+					points[k + 1].x -= dx * correction * 0.5;
+					points[k + 1].y -= dy * correction * 0.5;
+				}
+			}
+			points[0].x = endpoints[0];
+			points[0].y = endpoints[1];
+			points[last].x = endpoints[2];
+			points[last].y = endpoints[3];
+		}
+
+		// the rope sleeps once it has calmed down
+		let maxMove = 0;
+		for (let i = 1; i < last; i++) {
+			maxMove = Math.max(
+				maxMove,
+				Math.abs(points[i].x - prev[i].x),
+				Math.abs(points[i].y - prev[i].y)
+			);
+		}
+		if (maxMove < CABLE_SETTLE) {
+			rope.idleFrames += 1;
+			if (rope.idleFrames > 6) rope.awake = false;
+		} else {
+			rope.idleFrames = 0;
+		}
+	}
+
+	/**
+	 * Draws a rope as a smooth polyline with the flat cable look: a dark
+	 * outer stroke and a lighter inner highlight.
+	 *
+	 * @private
+	 * @param {PIXI.Graphics} sprite - the cable's graphics object
+	 * @param {CableRope} rope - the simulated chain to draw
+	 */
+	private drawRope(sprite: PIXI.Graphics, rope: CableRope): void {
 		const lineWidth = CABLE_DIAMETER_MM / MILLIMETERS_PER_WORLD_UNIT;
-		const pad: number = lineWidth / 2 + 2;
-		// the convex hull of the endpoints + control points bounds a
-		// cubic bezier curve exactly, so this is a tight fit
-		const xs: number[] = [pos1[0], cp1x, cp2x, pos2[0]];
-		const ys: number[] = [pos1[1], cp1y, cp2y, pos2[1]];
-		const minX: number = Math.min(...xs) - pad;
-		const maxX: number = Math.max(...xs) + pad;
-		const minY: number = Math.min(...ys) - pad;
-		const maxY: number = Math.max(...ys) + pad;
-		const w: number = Math.max(1, maxX - minX);
-		const h: number = Math.max(1, maxY - minY);
+		const { points } = rope;
+		const trace = (graphics: PIXI.Graphics) => {
+			graphics.moveTo(points[0].x, points[0].y);
+			for (let k = 1; k < points.length - 1; k++) {
+				const mx = (points[k].x + points[k + 1].x) / 2;
+				const my = (points[k].y + points[k + 1].y) / 2;
+				graphics.quadraticCurveTo(points[k].x, points[k].y, mx, my);
+			}
+			const last = points[points.length - 1];
+			graphics.lineTo(last.x, last.y);
+		};
+		sprite.clear();
+		trace(sprite);
+		sprite.stroke({ width: lineWidth, color: 0x30404d, cap: "round", join: "round" });
+		trace(sprite);
+		sprite.stroke({ width: lineWidth * 0.35, color: 0x687d8b, cap: "round", join: "round" });
+	}
 
-		const graphics = this._cableGraphics
-			.clear()
-			.moveTo(pos1[0], pos1[1])
-			.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, pos2[0], pos2[1])
-			.stroke({ width: lineWidth, color: 0x30404d, cap: "round" })
-			.moveTo(pos1[0], pos1[1])
-			.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, pos2[0], pos2[1])
-			.stroke({ width: lineWidth * 0.35, color: 0x687d8b, cap: "round" });
-		const texture = this.host.app.renderer.generateTexture({
-			target: graphics,
-			frame: new PIXI.Rectangle(minX, minY, w, h),
-		});
-
-		return { texture, cx: minX + w / 2, cy: minY + h / 2, w, h };
+	/**
+	 * Gives every cable connected to one of the moved sprites a new rest
+	 * length: the straight distance between its devices at the moment the
+	 * movement ends, plus the usual slack.
+	 *
+	 * @private
+	 * @param {readonly PIXI.Container[]} movedSprites - the sprites that were dropped
+	 */
+	private relengthCablesAttachedTo(movedSprites: readonly PIXI.Container[]): void {
+		if (!this.cables.size) return;
+		for (const [sprite, cable] of this.cables) {
+			const rope = this.cableRopes.get(sprite);
+			if (!rope) continue;
+			const [first, second] = cable._connections;
+			const from = first && this.spritesByLabel.get(`${first._type}:${first._id}`);
+			const to = second && this.spritesByLabel.get(`${second._type}:${second._id}`);
+			if (!from || !to) continue;
+			if (!movedSprites.includes(from) && !movedSprites.includes(to)) continue;
+			rope.restLength = Math.max(Math.hypot(to.x - from.x, to.y - from.y), 1) * CABLE_SLACK;
+			rope.awake = true;
+			rope.idleFrames = 0;
+		}
+		this.host.requestCanvasRender();
 	}
 }

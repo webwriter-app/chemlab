@@ -501,7 +501,7 @@ export class ChemLab extends LitElementWw {
 	 *
 	 * @type {SimulationController}
 	 */
-	private simulation = new SimulationController(this);
+	simulation = new SimulationController(this);
 	/**
 	 * controller owning the PixiJS canvas layer (app, sprites, drag)
 	 *
