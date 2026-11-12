@@ -2,9 +2,13 @@
   "en": {
     "Verkleinern": "Zoom out",
     "Vergrößern": "Zoom in",
+    "Zoom auf 100 % zurücksetzen": "Reset zoom to 100%",
+    "Canvas-Raster": "Canvas grid",
+    "{length} pro Kästchen": "{length} per cell",
     "Alle Objekte einpassen": "Fit all objects",
     "Ausgewählte Objekte": "Selected objects",
     "Auswahl löschen": "Delete selection",
+    "löschen": "Delete",
     "Vorherige Größe": "Previous size",
     "Nächste Größe": "Next size",
     "Vorheriges Material": "Previous material",

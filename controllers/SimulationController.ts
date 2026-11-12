@@ -1,92 +1,95 @@
-import { ReactiveController } from "lit";
+import type { ReactiveController } from "lit";
+import type { Ticker } from "pixi.js";
+import { Simulation, type ChemComponent, type ElectricComponent } from "../chemlib";
 
 import type { ChemLab } from "../webwriter-chemlab";
 
-/**
- * Owns the widget's simulation ticker system: the list of active per-frame
- * update functions, their registration/removal, and the PixiJS ticker loop
- * that drives them.
- *
- * The individual tick functions themselves currently live on the host, since
- * they are tightly coupled to the Pixi canvas (sprite lookup, textures, cable
- * geometry). This controller schedules and runs them — always with the host as
- * `this` — and wires up diagram creation for titration / e-chem experiments.
- *
- * @implements {ReactiveController}
- */
+type FrameTask = (elapsedMs: number) => void;
+
+function isExperimentTask(name: string): boolean {
+	return name.startsWith("transfer") || name.startsWith("echem");
+}
+
 export class SimulationController implements ReactiveController {
-	private host: ChemLab;
+	private tasks = new Map<string, { startedAt: number; step: FrameTask }>();
+	private flushViews?: () => void;
+	private renderPending = false;
 
-	/**
-	 * Registered ticker entries, each `[name, fn, args, thisArg?]`. `fn` is
-	 * invoked with `thisArg` (or the host, when omitted) as its `this` on every
-	 * frame.
-	 */
-	tickerFunctionList: Array<any> = [];
-
-	constructor(host: ChemLab) {
-		this.host = host;
+	constructor(private host: ChemLab) {
 		host.addController(this);
 	}
 
-	/** No reactive lifecycle work; the loop is driven by the Pixi ticker. */
-	hostConnected(): void {}
+	hostConnected(): void {
+		this.requestRender();
+	}
 
-	/**
-	 * Registers the per-frame loop on the host's PixiJS ticker. Must be called
-	 * once the Pixi application exists (after canvas init).
-	 */
-	public startLoop(): void {
-		this.host.app.ticker.add(() => {
-			let indexCount: number = 0;
-			while (typeof this.tickerFunctionList[indexCount] != "undefined") {
-				const entry = this.tickerFunctionList[indexCount];
-				entry[1].apply(
-					entry[3] !== undefined ? entry[3] : this.host,
-					entry[2]
-				);
-				indexCount += 1;
+	hostDisconnected(): void {
+		this.host.app?.stop();
+	}
+
+	startLoop(flushViews: () => void): void {
+		this.flushViews = flushViews;
+		const { app } = this.host;
+		app.ticker.remove(app.render, app);
+		app.ticker.add(this.tick);
+		this.requestRender();
+	}
+
+	requestRender(): void {
+		this.renderPending = true;
+		this.wake();
+	}
+
+	private wake(): void {
+		if (this.flushViews && this.host.isConnected) this.host.app.start();
+	}
+
+	private tick = (ticker: Ticker): void => {
+		// A suspended tab or long frame must not replay an unbounded backlog.
+		const frameTime = ticker.lastTime + ticker.elapsedMS;
+		for (const task of this.tasks.values()) {
+			const elapsedMs = Math.min(ticker.elapsedMS, 250, frameTime - task.startedAt);
+			if (elapsedMs > 0) task.step(elapsedMs);
+		}
+
+		if (this.renderPending) {
+			this.flushViews();
+			this.renderPending = false;
+			this.host.app.render();
+		}
+		if (!this.tasks.size && !this.renderPending) this.host.app.stop();
+	};
+
+	startTask(name: string, step: FrameTask): void {
+		this.tasks.set(name, { startedAt: performance.now(), step });
+		this.wake();
+	}
+
+	startExperiment(name: string, source: ChemComponent | ElectricComponent, step: () => void): void {
+		this.host.diagrams.createDiagram(name, source);
+		let remainingMs = 0;
+		this.startTask(name, (elapsedMs) => {
+			const stepMs = Simulation._simTimeStep * 1000;
+			if (!Number.isFinite(stepMs) || stepMs <= 0) return;
+			remainingMs = Math.min(remainingMs + elapsedMs, 8 * stepMs);
+			while (remainingMs >= stepMs && this.hasTask(name)) {
+				remainingMs -= stepMs;
+				step();
 			}
 		});
 	}
 
-	/**
-	 * Adds a function to the ticker list and, for titration / e-chem
-	 * experiments, creates the corresponding diagram.
-	 *
-	 * @param name - unique name of the ticker function
-	 * @param fn - the function reference
-	 * @param args - additional arguments passed on each tick
-	 * @param thisArg - `this` binding for `fn` (defaults to the host)
-	 */
-	public pushTickerFunction(
-		name: string,
-		fn: Function,
-		args: Array<any>,
-		thisArg?: any
-	): void {
-		this.tickerFunctionList.push([name, fn, args, thisArg]);
-		this.host.tickerTimeObj[name] = 0;
-		// console.log(this.host.tickerTimeObj);
-		if (name.includes("transfer") || name.includes("echem")) {
-			this.host.diagrams.createDiagram(name, args);
-		}
+	hasTask(name: string): boolean {
+		return this.tasks.has(name);
 	}
 
-	/**
-	 * Removes a function from the ticker list.
-	 *
-	 * @param name - the name of the function to remove
-	 */
-	public remTickerFunction(name: string): void {
-		let toRemove: number = -1;
-		for (let i = 0; i < this.tickerFunctionList.length; i++) {
-			if (this.tickerFunctionList[i][0] === name) {
-				toRemove = i;
-			}
-		}
-		if (toRemove > -1) {
-			this.tickerFunctionList.splice(toRemove, 1);
+	stopTask(name: string): void {
+		this.tasks.delete(name);
+	}
+
+	stopExperiments(): void {
+		for (const name of this.tasks.keys()) {
+			if (isExperimentTask(name)) this.stopTask(name);
 		}
 	}
 }

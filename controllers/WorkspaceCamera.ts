@@ -1,7 +1,10 @@
 export const STANDARD_CANVAS_WIDTH = 800;
 export const STANDARD_CANVAS_HEIGHT = 600;
+export const MILLIMETERS_PER_WORLD_UNIT = 1.5;
 const MIN_ZOOM = 0.025;
 const MAX_ZOOM = 8;
+const GRID_BASE_MM = 20;
+const MIN_GRID_CELL_PX = 12;
 
 export class WorkspaceCamera {
 	width = STANDARD_CANVAS_WIDTH;
@@ -18,6 +21,21 @@ export class WorkspaceCamera {
 
 	get offsetY(): number {
 		return this.height / 2 - this.y * this.zoom;
+	}
+
+	get gridCellWidth(): number {
+		const base = GRID_BASE_MM / MILLIMETERS_PER_WORLD_UNIT;
+		return base * 2 ** Math.ceil(Math.log2(MIN_GRID_CELL_PX / (base * this.zoom)));
+	}
+
+	snapToGrid(x: number, y: number) {
+		const step = this.gridCellWidth;
+		return { x: Math.round(x / step) * step, y: Math.round(y / step) * step };
+	}
+
+	resetZoom(): void {
+		this.zoom = 1;
+		this.navigated = true;
 	}
 
 	resize(width: number, height: number): void {

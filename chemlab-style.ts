@@ -1049,7 +1049,8 @@ export const style = css`
 	}
 
 	#upper {
-		--panel-trigger-size: 38px;
+		--panel-trigger-width: 38px;
+		--panel-trigger-height: 28px;
 		--diagram-panel-width: min(27cqw, 24rem);
 		--object-panel-width: min(44cqw, 38rem);
 		--diagram-width: 0px;
@@ -1086,13 +1087,18 @@ export const style = css`
 	}
 	.workspace-details::part(header) {
 		box-sizing: border-box;
-		flex-direction: column;
+		flex-direction: row;
+		justify-content: center;
 		gap: 2px;
-		padding: 4px;
-		inline-size: var(--panel-trigger-size);
+		padding: 0 2px;
+		inline-size: var(--panel-trigger-width);
+		block-size: var(--panel-trigger-height);
 		background: var(--sl-color-neutral-0);
 		border: 1px solid var(--sl-color-neutral-300);
 		border-radius: var(--sl-border-radius-medium);
+	}
+	.workspace-details::part(summary) {
+		flex: none;
 	}
 	.workspace-details::part(summary-icon) {
 		rotate: 0deg;
@@ -1139,7 +1145,7 @@ export const style = css`
 	#inlineDiagramPanel {
 		box-sizing: border-box;
 		inline-size: var(--diagram-panel-width);
-		padding: calc(var(--panel-trigger-size) + 12px) 8px 4px;
+		padding: calc(var(--panel-trigger-height) + 12px) 8px 4px;
 	}
 	#inlineDiagramPanel > sl-checkbox {
 		display: block;
@@ -1149,19 +1155,12 @@ export const style = css`
 		grid-column: 3;
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
-		grid-template-rows: minmax(calc(var(--panel-trigger-size) + 8px), auto) minmax(0, 1fr);
+		grid-template-rows: minmax(calc(var(--panel-trigger-height) + 8px), auto) minmax(0, 1fr);
 		box-shadow: inset 1px 0 var(--sl-color-neutral-200);
 	}
 	#objectArea .workspace-details::part(header) {
 		inset-inline-end: 4px;
-	}
-	#objectArea > section {
-		grid-row: 1;
-		justify-self: unsafe end;
-		margin-block: 4px;
-		margin-inline-end: calc(var(--panel-trigger-size) + 8px);
-		max-inline-size: min(13rem, 52cqw);
-		pointer-events: auto;
+		flex-direction: row-reverse;
 	}
 	#objectArea .workspace-details {
 		grid-row: 2;
@@ -1178,7 +1177,7 @@ export const style = css`
 			transition: none;
 		}
 	}
-	#contextInfoBox[hidden] {
+	.selection-info[hidden] {
 		display: none;
 	}
 	.panel-button-label {
@@ -1211,8 +1210,38 @@ export const style = css`
 		inset-inline-end: 4px;
 		max-width: calc(100% - 8px);
 		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
 		justify-content: flex-end;
 		gap: 3px;
+	}
+	#resetZoom {
+		display: inline-flex;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+	}
+	#zoomLevel::part(base) {
+		min-inline-size: 3.5rem;
+		justify-content: center;
+		font-variant-numeric: tabular-nums;
+	}
+	#gridScale[hidden] {
+		display: none;
+	}
+	#gridScale::part(content) {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+	}
+	.grid-scale-line {
+		box-sizing: border-box;
+		flex: none;
+		inline-size: var(--grid-cell-width, 0px);
+		block-size: 5px;
+		border: 1px solid currentColor;
+		border-block-start: 0;
 	}
 	#canvasZoom sl-button::part(label) {
 		display: flex;
@@ -1221,14 +1250,14 @@ export const style = css`
 		min-width: 24px;
 		padding-inline: 3px;
 	}
-	#contextInfoBox,
-	#groupSelectionInfo {
+	.selection-info {
+		position: absolute;
+		inset: 0 auto auto 0;
 		box-sizing: border-box;
-		width: max-content;
-		max-width: 100%;
-		max-height: min(11rem, 36vh);
+		inline-size: max-content;
+		max-inline-size: min(13rem, calc(100% - 8px));
+		max-block-size: min(11rem, 36vh, calc(100% - 8px));
 		overflow: auto;
-		flex-shrink: 0;
 		padding: 5px;
 		background: var(--sl-color-neutral-0);
 		border: 1px solid var(--sl-color-neutral-200);
@@ -1239,42 +1268,56 @@ export const style = css`
 	#contextInfoBox p {
 		margin: 0.25em 0;
 	}
-	#groupSelectionInfo {
+	.selection-info:not([data-anchored]) {
+		visibility: hidden;
+	}
+	.selection-labels {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		padding: 5px;
+	}
+	.selection-labels > sl-badge {
+		margin: 0;
+	}
+	.selection-actions {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
 	}
-	#groupSelectionInfo ul {
-		margin: 0;
-		padding-inline-start: 1.25em;
-		overflow: auto;
-	}
-	#groupSelectionInfo sl-button::part(label) {
-		white-space: normal;
+	.selection-actions > .remObj {
+		align-self: flex-start;
+		display: inline-flex;
+		align-items: center;
+		padding: 4px 6px;
+		border-color: var(--sl-color-neutral-300);
+		font-size: 10pt;
+		line-height: 1.1;
+		white-space: nowrap;
 	}
 	#teacherDrawer {
+		--teacher-drawer-trigger-inset: 4px;
 		grid-column: 1 / -1;
 		grid-row: 2;
-		min-width: 0;
-		padding: 4px 6px;
-		border-top: 1px solid var(--sl-color-neutral-200);
-		background: var(--sl-color-neutral-0);
-	}
-	#teacherDrawer::part(base) {
-		display: flex;
-		flex-direction: column-reverse;
+		position: relative;
+		z-index: 1;
+		min-inline-size: 0;
 	}
 	#teacherDrawer::part(header) {
-		align-self: flex-start;
+		position: absolute;
+		inset-block-end: var(--teacher-drawer-trigger-inset);
+		inset-inline-start: var(--teacher-drawer-trigger-inset);
+	}
+	#teacherDrawer::part(content) {
+		padding-inline: 6px;
+		padding-block-end: calc(var(--panel-trigger-height) + 2 * var(--teacher-drawer-trigger-inset));
+		box-shadow: inset 0 1px var(--sl-color-neutral-200);
+		background: var(--sl-color-neutral-0);
 	}
 	#teacherDrawerContent {
 		box-sizing: border-box;
 		max-height: min(240px, 40vh);
 		overflow: auto;
 		padding: 4px 0;
-	}
-	#teacherTabs {
-		--track-width: 0;
 	}
 	#teacherTabs::part(nav) {
 		margin-bottom: 6px;
@@ -1639,7 +1682,7 @@ export const style = css`
 		align-items: center;
 		justify-content: center;
 	}
-	#contextBadge::part(base) {
+	.selection-info-title::part(base) {
 		background-color: #ff1f66;
 	}
 	#contextTag::part(base) {

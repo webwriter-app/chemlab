@@ -127,6 +127,11 @@ export class ChemLab extends LitElementWw {
 		this.options = drawerLabels(ChemLab.options, this.lang);
 		this.optionGroups = drawerLabels(ChemLab.optionGroups, this.lang);
 		this.updateLocalizedControls();
+		if (this.hasUpdated) {
+			this.displayedGridWidthMm = undefined;
+			this.canvas.updateScaleReadouts();
+			this._updatePopup();
+		}
 	});
 
 	private localizeControl(element: Pick<HTMLElement, "dataset">, property: "label" | "title" | "textContent" | "placeholder", source: string) {
@@ -302,6 +307,10 @@ export class ChemLab extends LitElementWw {
 	 */
 	@query("#contextMolInfo")
 	private accessor contextMolInfo: HTMLDivElement;
+	@query("#contextInfoBox")
+	private accessor objectSummary: HTMLElement;
+	@query("#groupSelectionInfo")
+	private accessor groupSummary: HTMLElement;
 	/**
 	 * container inside object context menu showing general info on current mixture
 	 *
@@ -388,6 +397,13 @@ export class ChemLab extends LitElementWw {
 
 	@query("#canvasZoom")
 	accessor canvasZoom: HTMLDivElement;
+	@query("#zoomLevel", true)
+	private accessor zoomLevel: HTMLElement;
+	@query("#gridScale", true)
+	private accessor gridScale: HTMLElement;
+	@query("#gridScaleValue", true)
+	private accessor gridScaleValue: HTMLElement;
+	private displayedGridWidthMm?: number;
 	/**
 	 * part of options, toggles different panel variants 
 	 *
@@ -492,13 +508,6 @@ export class ChemLab extends LitElementWw {
 	 * @type {CanvasController}
 	 */
 	private canvas = new CanvasController(this);
-	/**
-	 * database to store update intervals for ticker functions
-	 *
-	 * @type {object}
-	 */
-	@property({ attribute: false })
-	accessor tickerTimeObj: object = {};
 	/**
 	 * show colored element symbols
 	 *
@@ -839,11 +848,12 @@ export class ChemLab extends LitElementWw {
 			this.diagramPanelOpen = wide;
 		}
 		const drawer = this.shadowRoot.getElementById("teacherDrawer");
-		const body = this.shadowRoot.getElementById("teacherDrawerContent");
-		const chrome = drawer.offsetHeight - body.offsetHeight;
+		const drawerStyle = getComputedStyle(drawer);
+		const triggerHeight = Number.parseFloat(drawerStyle.getPropertyValue("--panel-trigger-height"));
+		const triggerInset = Number.parseFloat(drawerStyle.getPropertyValue("--teacher-drawer-trigger-inset"));
 		const standardDrawerBody = 240;
 		this.teacherDrawerOpen = this.teacherDrawerChoice ??
-			(this.containerDiv.clientHeight >= STANDARD_CANVAS_HEIGHT + standardDrawerBody + chrome);
+			(this.containerDiv.clientHeight >= STANDARD_CANVAS_HEIGHT + standardDrawerBody + triggerHeight + 2 * triggerInset);
 	}
 
 	protected updated(changed: PropertyValueMap<any>): void {
@@ -871,11 +881,7 @@ export class ChemLab extends LitElementWw {
 			if (changed.has("availableComponents")) {
 				this.stopDose?.();
 				this.hideFillMeter();
-				for (const [name] of [...this.simulation.tickerFunctionList]) {
-					if (name.startsWith("transfer") || name.startsWith("echem")) {
-						this.simulation.remTickerFunction(name);
-					}
-				}
+				this.simulation.stopExperiments();
 				this.curr_obj = null;
 				this.curr_name = "";
 				this.curr_stage_index = -1;
@@ -888,6 +894,9 @@ export class ChemLab extends LitElementWw {
 				this.avComponentsSprites = [];
 				this._loadComponents();
 			}
+		}
+		if (this.canvas.selectedObjects.length || changed.has("curr_obj") || changed.has("curr_name") || changed.has("editingMolecule")) {
+			this.canvas.drawSelection();
 		}
 	}
 
@@ -1023,24 +1032,7 @@ export class ChemLab extends LitElementWw {
 			},
 		});
 
-		this.simulation.startLoop();
-		this.simulation.pushTickerFunction(
-			this._updateTickerPopup.name,
-			this._updateTickerPopup,
-			[]
-		);
-		this.simulation.pushTickerFunction(
-			"_updateCablePos",
-			this.canvas._updateCablePos,
-			[],
-			this.canvas
-		);
-		this.simulation.pushTickerFunction(
-			"updateVesselFills",
-			this.canvas.updateVesselFills,
-			[],
-			this.canvas
-		);
+		this.simulation.startLoop(() => this.canvas.flushChanges());
 		this._listMolecules();
 		this._listMixtures();
 		this._listMolConfig();
@@ -1073,7 +1065,6 @@ export class ChemLab extends LitElementWw {
 
 		}
 
-		if (this.isConnected) this.app.start();
 		this._sendxAPiStatement("registered", "chemlab");
 		this._emitAlert(
 			this.message("klicke zum Starten in das Fenster!"),
@@ -1083,126 +1074,105 @@ export class ChemLab extends LitElementWw {
 		);
 	}
 
-	/**
-	 * ticker function to update popup contents regulary
-	 *
-	 * @private
-	 */
-	private _updateTickerPopup(): void {
-		if (this.curr_obj && !this.editingMolecule) {
-			this.tickerTimeObj[this._updateTickerPopup.name] += 1;
-			// @ts-ignore
-			if (
-				this.tickerTimeObj[this._updateTickerPopup.name] >=
-				Math.round(
-					0.5 *
-						chemlib.Simulation._simTimeStep *
-						(this.app as PIXI.Application).ticker.FPS
-				)
-			) {
-				this.tickerTimeObj[this._updateTickerPopup.name] = 0;
-				this._updatePopup();
-			}
-		}
+	requestCanvasRender(): void {
+		this.simulation.requestRender();
 	}
 
+	updateZoomLabel(zoom: number): void {
+		const percent = zoom * 100;
+		const text = percent < 1 ? "<1 %" : `${Math.round(percent)} %`;
+		if (this.zoomLevel && this.zoomLevel.textContent !== text) this.zoomLevel.textContent = text;
+	}
 
+	updateGridScale(widthPx: number, widthMm: number): void {
+		if (!this.gridScale || !this.gridScaleValue) return;
+		const lineWidth = `${widthPx.toFixed(2)}px`;
+		if (this.gridScale.style.getPropertyValue("--grid-cell-width") !== lineWidth) {
+			this.gridScale.style.setProperty("--grid-cell-width", lineWidth);
+		}
+		if (this.displayedGridWidthMm === widthMm) return;
+		this.displayedGridWidthMm = widthMm;
+		const length = widthMm >= 1000 ? `${widthMm / 1000} m` : widthMm >= 10 ? `${widthMm / 10} cm` : `${widthMm} mm`;
+		this.gridScaleValue.textContent = this.message("{length} pro Kästchen", { length });
+	}
 
 	/**
-	 * ticker function for titraton experiments, transfers content to another component dynamically on correct sprite positioning and updates the diagram
+	 * Transfers one titration dose to the vessel below the burette and updates the diagram.
 	 *
 	 * @private
 	 * @param {PIXI.Container} currSprite - the view of the burette
 	 * @param {chemlib.ChemComponent} source - the chemlib object of the burette
 	 */
-	private _updateTickerTransfer(
+	private stepTitration(
 		currSprite: PIXI.Container,
 		source: chemlib.ChemComponent
 	): void {
-		const keyName = "transfer" + currSprite.label;
-		this.tickerTimeObj[keyName] += 1;
-		if (
-			this.tickerTimeObj[keyName] >=
-			Math.round(
-				chemlib.Simulation._simTimeStep *
-					(this.app as PIXI.Application).ticker.FPS
-			)
-		) {
-			this.tickerTimeObj[keyName] = 0;
-			if (source._content._activeMolecules.length > 0) {
-				let destSprite: PIXI.Container = undefined;
-				this.canvas.world.children.forEach((sprite) => {
-					if (sprite != currSprite) {
-						if (
-							sprite.y - sprite.height / 2 >
-								currSprite.y + currSprite.height / 2 &&
-							(sprite.x < currSprite.x + currSprite.width / 2 ||
-								sprite.x > currSprite.x - currSprite.width / 2)
-						) {
-							if (typeof destSprite === "undefined") {
+		if (source._content._activeMolecules.length > 0) {
+			let destSprite: PIXI.Container = undefined;
+			this.canvas.world.children.forEach((sprite) => {
+				if (sprite != currSprite) {
+					if (
+						sprite.y - sprite.height / 2 >
+							currSprite.y + currSprite.height / 2 &&
+						(sprite.x < currSprite.x + currSprite.width / 2 ||
+							sprite.x > currSprite.x - currSprite.width / 2)
+					) {
+						if (typeof destSprite === "undefined") {
+							destSprite = sprite;
+						} else {
+							if (destSprite.y - sprite.y > 0) {
 								destSprite = sprite;
-							} else {
-								if (destSprite.y - sprite.y > 0) {
-									destSprite = sprite;
-								}
 							}
 						}
 					}
-				});
-				let destObj: chemlib.ChemComponent = undefined;
-				this.allChemComponents.forEach((comp) => {
-					if (typeof destSprite != "undefined") {
-						if (
-							destSprite.label.split(":")[0] === comp._type &&
-							Number.parseInt(destSprite.label.split(":")[1]) ===
-								comp._id
-						) {
-							destObj = comp;
-						}
+				}
+			});
+			let destObj: chemlib.ChemComponent = undefined;
+			this.allChemComponents.forEach((comp) => {
+				if (typeof destSprite != "undefined") {
+					if (
+						destSprite.label.split(":")[0] === comp._type &&
+						Number.parseInt(destSprite.label.split(":")[1]) ===
+							comp._id
+					) {
+						destObj = comp;
 					}
-				});
-				if (typeof destObj != "undefined") {
-					if (source._content._activeMolecules.length > 0) {
-						source.transferContents({}, destObj);
-						this.diagrams.appendTitrationPoint(source, destObj);
-					}
+				}
+			});
+			if (typeof destObj != "undefined") {
+				if (source._content._activeMolecules.length > 0) {
+					source.transferContents({}, destObj);
+					this.canvas.markVesselChanged(source);
+					this.canvas.markVesselChanged(destObj);
+					if (this.curr_obj === source || this.curr_obj === destObj) this._updatePopup();
+					this.diagrams.appendTitrationPoint(source, destObj);
 				}
 			}
 		}
 	}
 
 	/**
-	 * ticker function for e-chem experiments, checks circuit and updates diagram
-	 *
-	 * @private
-	 * @param {PIXI.Sprite} currSprite - the sprite of the e-component
-	 * @param {chemlib.ElectricComponent} source - the e-component object
+	 * Advances a connected electrochemical experiment by one simulation step.
 	 */
-	private _updateTickerEChem(
-		currSprite: PIXI.Sprite,
-		source: chemlib.ElectricComponent
-	): void {
-		const keyName = "echem" + currSprite.label;
-		this.tickerTimeObj[keyName] += 1;
-		if (
-			this.tickerTimeObj[keyName] >=
-			Math.round(
-				chemlib.Simulation._simTimeStep *
-					(this.app as PIXI.Application).ticker.FPS
-			)
-		) {
-			this.tickerTimeObj[keyName] = 0;
-			const circuitComps = this.operatingCircuit(source);
-			if (circuitComps) {
-				chemlib.Simulation.sEChem(
-					circuitComps[0],
-					circuitComps[1],
-					circuitComps[2]
-				);
+	private stepElectrochemistry(source: chemlib.ElectricComponent): void {
+		const circuitComps = this.operatingCircuit(source);
+		if (circuitComps) {
+			chemlib.Simulation.sEChem(
+				circuitComps[0],
+				circuitComps[1],
+				circuitComps[2]
+			);
 
-				this.diagrams.appendEChemPoint(source, circuitComps);
+			const firstMix = circuitComps[0]._connectedMix;
+			const secondMix = circuitComps[1]._connectedMix;
+			for (const vessel of this.allChemComponents) {
+				if (vessel._content === firstMix || vessel._content === secondMix) this.canvas.markVesselChanged(vessel);
 			}
+			if (circuitComps.includes(this.curr_obj) ||
+				this.curr_obj?._content === firstMix || this.curr_obj?._content === secondMix) this._updatePopup();
+			this.diagrams.appendEChemPoint(source, circuitComps);
 		}
+		this.canvas.refreshDeviceDisplay(source, !!circuitComps);
 	}
 
 	private operatingCircuit(device: chemlib.ElectricComponent): chemlib.ElectricComponent[] | undefined {
@@ -1213,7 +1183,7 @@ export class ChemLab extends LitElementWw {
 
 	private runningCurrent(source: chemlib.ElectricComponent): number {
 		const ticker = `echem${source._type}:${source._id}`;
-		return this.simulation.tickerFunctionList.some(([name]) => name === ticker) && this.operatingCircuit(source)
+		return this.simulation.hasTask(ticker) && this.operatingCircuit(source)
 			? source._sourceCurrent || 0 : 0;
 	}
 
@@ -1287,6 +1257,7 @@ export class ChemLab extends LitElementWw {
 
 	private addPaletteComponent(variant: ComponentVariant, x: number, y: number): boolean {
 		if (!this.canAuthor && !this.isVariantAllowed(variant)) return false;
+		const position = this.canvas.snapPosition(x, y);
 		this.componentToPlace = undefined;
 		this.selectedChemical = undefined;
 		const { id: variantId, type, capacityMl, material } = variant;
@@ -1303,12 +1274,12 @@ export class ChemLab extends LitElementWw {
 				this.allEComponents.push(device);
 				component = device;
 			}
-			const sprite = this.canvas._addSprite(`${type}:${component._id}`, true, capacityMl);
-			sprite.position.set(x, y);
+			const sprite = this.canvas.addComponentView(component);
+			sprite.position.copyFrom(position);
 			return true;
 		}
 		const entry = {
-			type, variantId, pos: [x, y], capacityMl, vol: 0, content: "",
+			type, variantId, pos: [position.x, position.y], capacityMl, vol: 0, content: "",
 			voltage: 0, current: 0, material: "", connections: [],
 		};
 		this.availableComponents = [...this.availableComponents, entry];
@@ -1420,17 +1391,21 @@ export class ChemLab extends LitElementWw {
 			// Window listeners still handle releases when capture is unavailable.
 		}
 		let totalMl = 0;
-		let interval: number;
 		let holding = false;
+		let heldMs = 0;
+		let nextDoseMs = 300;
+		let nextStatusMs = 500;
+		const task = "chemical-dose";
 		const updateMeter = () => {
-			const canvas = this.shadowRoot.getElementById("canvasArea").getBoundingClientRect();
-			const right = this.canvas.viewportPoint(sprite.x + sprite.width / 2, sprite.y);
-			const left = this.canvas.viewportPoint(sprite.x - sprite.width / 2, sprite.y);
+			const { minX, maxX, y, height } = sprite.getBounds();
+			const canvas = this.app.screen;
+			const volume = target._content.contentVolume * 1000;
 			this.fillMeter = {
-				x: Math.max(0, right.x + 92 <= canvas.right ? right.x - canvas.left + 6 : left.x - canvas.left - 86),
-				y: Math.max(0, Math.min(canvas.height - 56, right.y - canvas.top - 28)),
-				volume: target._content.contentVolume * 1000, capacity: target._volume,
+				x: Math.max(0, maxX + 92 <= canvas.width ? maxX + 6 : minX - 86),
+				y: Math.max(0, Math.min(canvas.height - 56, y + height / 2 - 28)),
+				volume, capacity: target._volume,
 			};
+			return volume;
 		};
 		const add = (requestedMl: number) => {
 			const portion = dose(requestedMl);
@@ -1438,14 +1413,13 @@ export class ChemLab extends LitElementWw {
 			const volumeMl = requestedMl * fraction;
 			if (volumeMl > 1e-8) {
 				target.addContents({ nMix: fraction === 1 ? portion : dose(volumeMl) });
+				this.canvas.markVesselChanged(target);
 				totalMl += volumeMl;
 			}
-			updateMeter();
-			if (target._volume - target._content.contentVolume * 1000 <= 1e-8) view.clearInterval(interval);
+			return target._volume - updateMeter() <= 1e-8;
 		};
 		const finish = (click: boolean, save = true) => {
-			view.clearTimeout(delay);
-			view.clearInterval(interval);
+			this.simulation.stopTask(task);
 			controller.abort();
 			if (canvasView.hasPointerCapture(pointerId)) canvasView.releasePointerCapture(pointerId);
 			this.stopDose = undefined;
@@ -1460,13 +1434,19 @@ export class ChemLab extends LitElementWw {
 			}
 			if (this.curr_obj === target) this._updatePopup();
 		};
-		const delay = view.setTimeout(() => {
+		this.simulation.startTask(task, (elapsedMs) => {
+			heldMs += elapsedMs;
+			if (heldMs < nextDoseMs) return;
 			holding = true;
-			add(0.4);
-			if (target._content.contentVolume * 1000 < target._volume - 1e-8) {
-				interval = view.setInterval(() => add(0.4), 50);
+			const steps = 1 + Math.floor((heldMs - nextDoseMs) / 50);
+			nextDoseMs += steps * 50;
+			const full = add(steps * 0.4);
+			if ((full || heldMs >= nextStatusMs) && this.curr_obj === target) {
+				this._updatePopup();
+				nextStatusMs = heldMs + 500;
 			}
-		}, 300);
+			if (full) this.simulation.stopTask(task);
+		});
 		this.stopDose = (save = false) => finish(false, save);
 		const options = { capture: true, signal: controller.signal };
 		view.addEventListener("pointerup", (event) => {
@@ -1486,7 +1466,7 @@ export class ChemLab extends LitElementWw {
 	 * @private
 	 */
 	private _updatePopup(): void {
-		if (!this.curr_obj) return;
+		if (!this.curr_obj || this.editingMolecule) return;
 		this.contextEchemInfo.style.display = "none";
 		this.contextMolInfo.style.display = "none";
 		this.contextMixInfo.style.display = "none";
@@ -1532,12 +1512,13 @@ export class ChemLab extends LitElementWw {
 				this.openBtn.style.display = "";
 			}
 			const mixture = this.curr_obj._content as chemlib.Mixture;
-			if (mixture.contentVolume > 0) {
+			const volume = mixture.contentVolume;
+			if (volume > 0) {
 				this.contextMixInfo.style.display = "";
 				const pH = mixture._isSolution ? chemlib.Simulation.getpH(mixture) : undefined;
 				this.contextMixInfo.innerHTML += `
 					<div style="display: flex; flex-direction: column">
-						<p>vol: ${(mixture.contentVolume * 1000).toFixed(1)} mL</p>
+				<p>vol: ${(volume * 1000).toFixed(1)} mL</p>
 						${pH === undefined ? "" : `<p>pH: ${pH}</p>`}
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 					</div>
@@ -1586,9 +1567,7 @@ export class ChemLab extends LitElementWw {
 				this.activateEComp.style.display = "none";
 				// an electrode has no material until one is assigned in the
 				// panel, and a material's name is only filled in once its chem
-				// data has been fetched. This runs from the ticker via
-				// _updateTickerPopup, so an unguarded access here would throw
-				// every frame and take the whole canvas down with it.
+				// data has been fetched.
 				let material: chemlib.Molecule = this.curr_obj._material;
 				this.contextEchemInfo.innerHTML = `
 						<div style="display: flex; flex-direction: column; align-content: flex-start; align-items: flex-start">
@@ -1633,6 +1612,7 @@ export class ChemLab extends LitElementWw {
 			}
 		}
 
+		this.canvas.drawSelection();
 	}
 
 	/**
@@ -1760,6 +1740,7 @@ export class ChemLab extends LitElementWw {
 						chemlib_obj._content._activeMolecules[currIndex].name !=
 						""
 				);
+				if (this.curr_obj === chemlib_obj) this._updatePopup();
 				infoDiv.innerHTML += `
                         <div style="display: block; background-color: #fdfdfd; border-radius: 5px; overflow: hidden">
                             <h5 title="${
@@ -2100,8 +2081,8 @@ export class ChemLab extends LitElementWw {
 			if (!labels.has(sprite.label)) continue;
 			this.removeAuthoredComponent(sprite);
 			this.canvas.removeSprite(sprite);
-			this.simulation.remTickerFunction("transfer" + sprite.label);
-			this.simulation.remTickerFunction("echem" + sprite.label);
+			this.simulation.stopTask("transfer" + sprite.label);
+			this.simulation.stopTask("echem" + sprite.label);
 			this._sendxAPiStatement("removed", sprite.label);
 		}
 		for (const component of affectedElectrical) {
@@ -2120,10 +2101,9 @@ export class ChemLab extends LitElementWw {
 		if (component._type === Voltmeter) component._visibleVoltage = 0;
 		const label = `${component._type}:${component._id}`;
 		const ticker = "echem" + label;
-		if (!this.simulation.tickerFunctionList.some(([name]) => name === ticker)) return;
-		this.simulation.remTickerFunction(ticker);
-		const sprite = this.canvas.world.children.find((view) => view.label === label);
-		if (sprite instanceof PIXI.Sprite) this.canvas.setDeviceActive(sprite, false);
+		if (!this.simulation.hasTask(ticker)) return;
+		this.simulation.stopTask(ticker);
+		this.canvas.setDeviceActive(component, false);
 		this._sendxAPiStatement("completed", ticker);
 		this.requestUpdate();
 	}
@@ -2859,10 +2839,7 @@ export class ChemLab extends LitElementWw {
 				this.allEComponents.push(newComp);
 			}
 
-			const sprite = this.canvas._addSprite(
-				newComp._type + ":" + newComp._id, entry !== undefined,
-				newComp instanceof chemlib.ChemComponent ? newComp._volume : undefined
-			);
+			const sprite = this.canvas.addComponentView(newComp, entry !== undefined);
 			sprite.x = component["pos"][0];
 			sprite.y = component["pos"][1];
 
@@ -3049,6 +3026,7 @@ export class ChemLab extends LitElementWw {
 				nMolecule: this.curr_mol,
 				nMolAmount: Number.parseFloat(this.molAmount.value),
 			});
+			this.canvas.markVesselChanged(this.curr_obj);
 			this._sendxAPiStatement("appended", this.curr_name, {
 				response:
 					this.curr_mol._kekule_obj.calcFormula().getDisplayText() +
@@ -3254,7 +3232,7 @@ export class ChemLab extends LitElementWw {
 			message = ret1;
 		}
 		this.allEComponents.push(cable);
-		this.canvas._addSprite(cable._type + ":" + cable._id);
+		this.canvas.addComponentView(cable, false);
 		if (!source) {
 			const sprite = this.canvas.world.children.find(
 				(sprite) => sprite.label === sComp._type + ":" + sComp._id
@@ -3375,6 +3353,8 @@ export class ChemLab extends LitElementWw {
 		const formula = this.curr_obj._material._kekule_obj.calcFormula().getDisplayText();
 		const preset = componentVariants.electrode.find(({ material }) => material.name === this.curr_obj._material.name);
 		this.saveSelectedComponent({ material: formula, variantId: preset?.id });
+		this.canvas.refreshDeviceDisplay(this.curr_obj);
+		this._updatePopup();
 		this._sendxAPiStatement(
 			"submitted",
 			"ElectrodeMaterlial " +
@@ -3400,6 +3380,8 @@ export class ChemLab extends LitElementWw {
 		this.curr_obj._sourceVoltage = Number.parseFloat(voltageInput.value) || 0;
 		this.curr_obj._sourceCurrent = Number.parseFloat(currentInput.value) || 0;
 		this.saveSelectedComponent({ voltage: this.curr_obj._sourceVoltage, current: this.curr_obj._sourceCurrent });
+		this.canvas.refreshDeviceDisplay(this.curr_obj);
+		this._updatePopup();
 
 		this._sendxAPiStatement(
 			"submitted",
@@ -3528,6 +3510,8 @@ export class ChemLab extends LitElementWw {
 			>
 				<div id="canvasArea" @dragover=${this.handleComponentDragOver} @drop=${this.dropComponent}>
 					${this.pix_canvas}
+					${this.renderObjectSummary()}
+					${this.renderGroupSummary()}
 					${this.renderFillMeter()}
 					${this.renderControlButtons()}
 				</div>
@@ -3608,8 +3592,6 @@ export class ChemLab extends LitElementWw {
 		const groupSelected = this.canvas.selectedObjects.length > 0;
 		return html`
 			<aside id="objectArea" class="workspace-side">
-				${this.renderObjectSummary()}
-				${this.renderGroupSummary()}
 				<sl-details class="workspace-details" .open=${this.objectPanelOpen}
 					?disabled=${groupSelected || (!this.curr_obj && !this.editingMolecule)}
 					@sl-show=${(event: Event) => { if (event.target === event.currentTarget) this.setObjectPanelOpen(true); }}
@@ -3667,8 +3649,24 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderControlButtons() {
+		const gridLabel = this.message("Canvas-Raster");
+		const resetZoomLabel = this.message("Zoom auf 100 % zurücksetzen");
 		return html`
 				<div id="canvasZoom">
+					<sl-tag id="gridScale" size="small" ?hidden=${!this.canvas.gridVisible}>
+						<span class="grid-scale-line" aria-hidden="true"></span><span id="gridScaleValue"></span>
+					</sl-tag>
+					<button type="button" id="resetZoom" title=${resetZoomLabel} aria-label=${resetZoomLabel}
+						aria-describedby="zoomLevel" @click=${() => this.canvas.resetZoom()}>
+						<sl-tag id="zoomLevel" size="small">100 %</sl-tag>
+					</button>
+					<sl-button size="small" variant=${this.canvas.gridVisible ? "primary" : "default"}
+						title=${gridLabel} aria-label=${gridLabel} aria-pressed=${this.canvas.gridVisible}
+						@click=${() => this.canvas.toggleGrid()}>
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+							<path d="M2 2h12v12H2zM6 2v12m4-12v12M2 6h12M2 10h12"/>
+						</svg>
+					</sl-button>
 					<sl-button size="small" title=${this.message("Vergrößern")}
 						aria-label=${this.message("Vergrößern")} @click=${() => this.canvas.zoomBy(1.25)}>
 						<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true"><path d="M3 8h10M8 3v10"/></svg>
@@ -3747,7 +3745,7 @@ export class ChemLab extends LitElementWw {
 						<sl-tab slot="nav" panel="chemicals" ?disabled=${!this.canAuthor}>${this.message("Chemikalien")}</sl-tab>
 						<sl-tab-panel name="components" active>${this.renderComponentPalette()}</sl-tab-panel>
 						<sl-tab-panel name="chemicals" class="author-only">
-							${this.canAuthor && this.teacherDrawerOpen && this.teacherTab === "chemicals" ? this.renderChemicalCatalog() : ""}
+							${this.canAuthor && this.teacherTab === "chemicals" ? this.renderChemicalCatalog() : ""}
 							<sl-details summary=${this.message("Eigene Moleküle und Gemische")}>
 								<div class="teacher-editors">
 									<section><h3>${this.message("Moleküle")}</h3><div id="molConfig"></div></section>
@@ -3916,21 +3914,81 @@ export class ChemLab extends LitElementWw {
 		const selected = this.canvas.selectedObjects;
 		if (!selected.length) return nothing;
 		return html`
-			<section id="groupSelectionInfo" aria-label=${this.message("Ausgewählte Objekte")}>
-				<ul>
-					${selected.map(({ label }) => html`<li>${this.itemName(label.split(":")[0])}</li>`)}
-				</ul>
-				<sl-button size="small" variant="danger" @click=${() => this.removeObjects(this.canvas.selectedObjects)}>
-					${this.message("Auswahl löschen")}
-				</sl-button>
+			<section id="groupSelectionInfo" class="selection-info" aria-label=${this.message("Ausgewählte Objekte")}>
+				<div class="selection-labels">
+					${selected.map(({ label }) => html`
+						<sl-badge class="selection-info-title">${this.itemName(label.split(":")[0])}</sl-badge>`)}
+				</div>
+				<div class="selection-actions">
+					${this.renderSelectionDeleteButton(() => this.removeObjects(this.canvas.selectedObjects))}
+				</div>
 			</section>
 		`;
 	}
 
-	private renderObjectSummary() {
+	get selectedObjectSprite(): PIXI.Container | undefined {
+		return this.curr_obj && !this.editingMolecule ? this.canvas.world.children[this.curr_stage_index] : undefined;
+	}
+
+	positionSelectionSummary(bounds: PIXI.Bounds | undefined, canvasWidth: number, canvasHeight: number, groupSelected: boolean): void {
+		const summary = groupSelected ? this.groupSummary : this.objectSummary;
+		if (!summary) return;
+		if (!bounds || summary.hidden) {
+			summary.removeAttribute("data-anchored");
+			return;
+		}
+
+		const padding = 4;
+		const gap = 8;
+		const width = summary.offsetWidth;
+		const height = summary.offsetHeight;
+		const left = Math.max(0, bounds.minX);
+		const right = Math.min(canvasWidth, bounds.maxX);
+		const top = Math.max(0, bounds.minY);
+		const bottom = Math.min(canvasHeight, bounds.maxY);
+		const above = top - gap - height;
+		const below = bottom + gap;
+		const maxX = Math.max(padding, canvasWidth - padding - width);
+		const maxY = Math.max(padding, canvasHeight - padding - height);
+		let x = (left + right - width) / 2;
+		let y = above;
+		if (above < padding) {
+			if (below <= maxY) {
+				y = below;
+			} else if (right + gap <= maxX || left - gap - width >= padding) {
+				x = right + gap <= maxX ? right + gap : left - gap - width;
+				y = (top + bottom - height) / 2;
+			} else if (canvasHeight - bottom > top) {
+				y = below;
+			}
+		}
+		summary.style.transform = `translate(${Math.max(padding, Math.min(x, maxX))}px, ${Math.max(padding, Math.min(y, maxY))}px)`;
+		summary.setAttribute("data-anchored", "");
+	}
+
+	private renderSelectionDeleteButton(remove: () => void) {
 		return html`
-			<section id="contextInfoBox" ?hidden=${!this.curr_obj || this.editingMolecule}>
-				<sl-badge id="contextBadge">${this.itemName(this.curr_name.split(":")[0])}</sl-badge>
+			<button type="button" class="remObj" @click=${remove}>
+				<svg
+					aria-hidden="true"
+					width="12"
+					height="12"
+					viewBox="0 0 16 16"
+				>
+					<path
+						fill="currentColor"
+						d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"
+					/>
+				</svg>
+				${this.message("löschen")}
+			</button>`;
+	}
+
+	private renderObjectSummary() {
+		const name = this.itemName(this.curr_name.split(":")[0]);
+		return html`
+			<section id="contextInfoBox" class="selection-info" ?hidden=${!this.curr_obj || this.editingMolecule}>
+				<sl-badge class="selection-info-title">${name}</sl-badge>
 				<div
 					id="contextEchemInfo"
 					style="display: flex; flex-direction: column"
@@ -3943,25 +4001,8 @@ export class ChemLab extends LitElementWw {
 					id="contextMixInfo"
 					style="display: flex; flex-direction: column; border-left: 5px solid; margin-left: 5px"
 				></div>
-				<div style="display: flex; flex-direction:column">
-					<button
-						id="rem_obj"
-						class="remObj"
-						@click="${this._removeSprite}"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="12"
-							height="12"
-							viewBox="0 0 16 16"
-						>
-							<path
-								fill="currentColor"
-								d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"
-							/>
-						</svg>
-						${this.message("{name} löschen", { name: this.itemName(this.curr_name.split(":")[0]) })}
-					</button>
+				<div class="selection-actions">
+					${this.renderSelectionDeleteButton(() => this._removeSprite())}
 					<button
 						id="openComp"
 						@click="${(event) => {
@@ -3970,16 +4011,12 @@ export class ChemLab extends LitElementWw {
 									this.curr_stage_index
 								];
 							if (
-								!this.simulation.tickerFunctionList.some(([id]) => id === "transfer" + this.curr_name)
+								!this.simulation.hasTask("transfer" + this.curr_name)
 							) {
 								this.requestUpdate();
 								let source = this.curr_obj;
-								this.simulation.pushTickerFunction(
-									"transfer" +
-										this.curr_name,
-									this._updateTickerTransfer,
-									[currSprite, source]
-								);
+								this.simulation.startExperiment("transfer" + this.curr_name, source,
+									() => this.stepTitration(currSprite, source));
 								this._sendxAPiStatement(
 									"started",
 									"transfer" +
@@ -3989,7 +4026,7 @@ export class ChemLab extends LitElementWw {
 								);
 							} else {
 								this.requestUpdate();
-								this.simulation.remTickerFunction(
+								this.simulation.stopTask(
 									"transfer" +
 										this.curr_name
 								);
@@ -4003,27 +4040,20 @@ export class ChemLab extends LitElementWw {
 							}
 						}}"
 					>
-						${this.message(this.simulation.tickerFunctionList.some(([id]) => id === "transfer" + this.curr_name) ? "Schließen" : "Öffnen")}
+						${this.message(this.simulation.hasTask("transfer" + this.curr_name) ? "Schließen" : "Öffnen")}
 					</button>
 					<button
 						id="activateEComp"
 						@click="${(event) => {
-							let currSprite =
-								this.canvas.world.children[
-									this.curr_stage_index
-								];
 							if (
-								!this.simulation.tickerFunctionList.some(([id]) => id === "echem" + this.curr_name)
+								!this.simulation.hasTask("echem" + this.curr_name)
 							) {
 								this.requestUpdate();
-								this.canvas.setDeviceActive(currSprite as PIXI.Sprite, true);
+								this.canvas.setDeviceActive(this.curr_obj, true);
 								let source = this.curr_obj;
-								this.simulation.pushTickerFunction(
-									"echem" +
-										this.curr_name,
-									this._updateTickerEChem,
-									[currSprite, source]
-								);
+								this.simulation.startExperiment("echem" + this.curr_name, source,
+									() => this.stepElectrochemistry(source));
+								this._updatePopup();
 								this._sendxAPiStatement(
 									"started",
 									"echem" +
@@ -4033,11 +4063,12 @@ export class ChemLab extends LitElementWw {
 								);
 							} else {
 								this.requestUpdate();
-								this.canvas.setDeviceActive(currSprite as PIXI.Sprite, false);
-								this.simulation.remTickerFunction(
+								this.canvas.setDeviceActive(this.curr_obj, false);
+								this.simulation.stopTask(
 									"echem" +
 										this.curr_name
 								);
+								this._updatePopup();
 								this._sendxAPiStatement(
 									"completed",
 									"echem" +
@@ -4048,7 +4079,7 @@ export class ChemLab extends LitElementWw {
 							}
 						}}"
 					>
-						${this.message(this.simulation.tickerFunctionList.some(([id]) => id === "echem" + this.curr_name) ? "Ausschalten" : "Einschalten")}
+						${this.message(this.simulation.hasTask("echem" + this.curr_name) ? "Ausschalten" : "Einschalten")}
 					</button>
 				</div>
 			</section>
@@ -4108,6 +4139,7 @@ export class ChemLab extends LitElementWw {
 																) => {
 																	if (!this.curr_obj || this.editingMolecule) return;
 																	this.curr_obj._content = chemlib.StructureManager.newMixture();
+																	this.canvas.markVesselChanged(this.curr_obj);
 																	this.saveSelectedComponent({ content: "", vol: 0, doses: [] });
 																	this._getObject(this.canvas.world.children[this.curr_stage_index]);
 																	this.requestUpdate();
@@ -4213,6 +4245,7 @@ export class ChemLab extends LitElementWw {
 																					),
 																				}
 																			);
+																			this.canvas.markVesselChanged(this.curr_obj);
 																			this.mixSelect.disabled =
 																				true;
 																			this._getObject(

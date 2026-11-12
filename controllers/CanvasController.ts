@@ -2,10 +2,11 @@ import { ReactiveController } from "lit";
 import * as PIXI from "pixi.js";
 import * as chemlib from "../chemlib";
 
-import { componentGraphic, componentScale, componentTextureUrls } from "../data/componentGraphics";
+import { CABLE_DIAMETER_MM, componentArtboardMm, componentGraphic, componentTextureUrls } from "../data/componentGraphics";
 
-import { STANDARD_CANVAS_HEIGHT, STANDARD_CANVAS_WIDTH, WorkspaceCamera } from "./WorkspaceCamera";
+import { MILLIMETERS_PER_WORLD_UNIT, STANDARD_CANVAS_HEIGHT, STANDARD_CANVAS_WIDTH, WorkspaceCamera } from "./WorkspaceCamera";
 import { WorkspaceGrid } from "./WorkspaceGrid";
+import { ElectricDeviceView } from "./ElectricDeviceView";
 import { isVesselType, VesselView } from "./VesselView";
 
 import type { ChemLab } from "../webwriter-chemlab";
@@ -22,15 +23,23 @@ export class CanvasController implements ReactiveController {
 	readonly world = new PIXI.Container({ sortableChildren: true, eventMode: "passive" });
 	private camera = new WorkspaceCamera();
 	private grid?: WorkspaceGrid;
+	private showGrid = true;
 	private resizeObserver?: ResizeObserver;
 	private pan?: { id: number; x: number; y: number; moved: boolean; deselectOnTap: boolean };
 	private selectionOverlay = new PIXI.Graphics({ eventMode: "none" });
 	private selection: PIXI.Container[] = [];
 	private marquee?: { id: number; start: PIXI.PointData; end?: PIXI.PointData };
-	private groupDrag?: { id: number; origin: PIXI.PointData; items: { sprite: PIXI.Container; x: number; y: number }[] };
+	private groupDrag?: { id: number; origin: PIXI.PointData; anchor: PIXI.PointData; moved: boolean;
+		items: { sprite: PIXI.Container; x: number; y: number }[] };
 	private touchListeners?: AbortController;
 	private touches = new Map<number, { x: number; y: number }>();
 	private pinching = false;
+	private spritesByLabel = new Map<string, PIXI.Container>();
+	private vessels = new Map<chemlib.ChemComponent, VesselView>();
+	private scaleTextures = new Map<string, PIXI.Texture>();
+	private changedVessels = new Set<VesselView>();
+	private cables = new Map<PIXI.Sprite, chemlib.ElectricComponent>();
+	private cablesDirty = false;
 
 	/** true while a sprite drag is in progress (pointermove listener attached) */
 	private _dragActive: boolean = false;
@@ -41,7 +50,13 @@ export class CanvasController implements ReactiveController {
 		if (event.pointerId !== this.dragPointerId) return;
 		this._dragMoved = true;
 		this.updateMousePosition(event);
+		const sprite = this.host.dragObject;
+		const angle = sprite?.rotation;
 		this._dragMove(event);
+		if (sprite instanceof VesselView) {
+			if (sprite.rotation !== angle) sprite.updateAngle();
+		} else if (this.cables.size) this.cablesDirty = true;
+		this.drawSelection();
 	};
 	/** offset from the sprite's origin to the point where it was grabbed, so a
 	 * drag keeps that point under the pointer instead of snapping to the centre */
@@ -86,6 +101,31 @@ export class CanvasController implements ReactiveController {
 		this.applyCamera();
 	}
 
+	resetZoom(): void {
+		if (!this.host.app || this.pointerBusy) return;
+		this.camera.resetZoom();
+		this.applyCamera();
+	}
+
+	get gridVisible(): boolean {
+		return this.showGrid;
+	}
+
+	toggleGrid(): void {
+		this.showGrid = !this.showGrid;
+		if (this.grid) {
+			this.grid.mesh.visible = this.showGrid;
+			if (this.showGrid) this.grid.update(this.camera);
+		}
+		this.updateScaleReadouts();
+		this.host.requestUpdate();
+		this.host.requestCanvasRender();
+	}
+
+	snapPosition(x: number, y: number): PIXI.PointData {
+		return this.showGrid ? this.camera.snapToGrid(x, y) : { x, y };
+	}
+
 	fitObjects(): void {
 		if (!this.host.app || this.pointerBusy || !this.world.children.length) return;
 		this.camera.fit(this.world.getLocalBounds(), this.host.canvasZoom.offsetHeight + 4);
@@ -127,18 +167,30 @@ export class CanvasController implements ReactiveController {
 			Math.abs(end.x - start.x), Math.abs(end.y - start.y));
 	}
 
-	private drawSelection(): void {
+	drawSelection(): void {
 		this.selectionOverlay.clear();
-		for (const sprite of this.selection) {
-			const { x, y, width, height } = sprite.getBounds();
+		const groupSelected = this.selection.length > 0;
+		const single = this.host.selectedObjectSprite;
+		const sprites = groupSelected ? this.selection : single ? [single] : [];
+		const movingObjects = (this._dragActive && this._dragMoved) || this.groupDrag?.moved;
+		const visibleBounds = new PIXI.Bounds();
+		const { width: canvasWidth, height: canvasHeight } = this.camera;
+		for (const sprite of sprites) {
+			const bounds = sprite.getBounds();
+			const { x, y, width, height } = bounds;
 			this.selectionOverlay.rect(x - 2, y - 2, width + 4, height + 4)
 				.stroke({ color: 0x0284c7, width: 1.5 });
+			if (!movingObjects && bounds.maxX > 0 && bounds.maxY > 0 && bounds.minX < canvasWidth && bounds.minY < canvasHeight) {
+				visibleBounds.addBounds(bounds);
+			}
 		}
 		const rect = this.selectionRectangle();
 		if (rect) {
 			this.selectionOverlay.rect(rect.x, rect.y, rect.width, rect.height)
 				.fill({ color: 0x0284c7, alpha: 0.14 }).stroke({ color: 0x0284c7, width: 1 });
 		}
+		this.host.positionSelectionSummary(visibleBounds.isValid ? visibleBounds : undefined, canvasWidth, canvasHeight, groupSelected);
+		this.host.requestCanvasRender();
 	}
 
 	private moveMarquee(event: PIXI.FederatedPointerEvent): void {
@@ -175,8 +227,16 @@ export class CanvasController implements ReactiveController {
 		const drag = this.groupDrag;
 		if (!drag || drag.id !== event.pointerId) return;
 		const current = this.camera.toWorld(event.global.x, event.global.y);
+		const dx = current.x - drag.origin.x;
+		const dy = current.y - drag.origin.y;
+		if (!drag.moved && dx === 0 && dy === 0) return;
+		drag.moved = true;
+		const anchor = this.snapPosition(drag.anchor.x + dx, drag.anchor.y + dy);
+		const snappedDx = anchor.x - drag.anchor.x;
+		const snappedDy = anchor.y - drag.anchor.y;
 		for (const { sprite, x, y } of drag.items) {
-			sprite.position.set(x + current.x - drag.origin.x, y + current.y - drag.origin.y);
+			sprite.position.set(x + snappedDx, y + snappedDy);
+			if (this.cables.size && !(sprite instanceof VesselView)) this.cablesDirty = true;
 		}
 		this.drawSelection();
 	}
@@ -206,6 +266,7 @@ export class CanvasController implements ReactiveController {
 		const sprite = this.host.dragObject;
 		if (this._dragMoved && sprite) {
 			sprite.rotation = 0;
+			if (sprite instanceof VesselView) sprite.updateAngle();
 			this.host._hideAlert();
 			this.host.saveComponentPosition(sprite);
 		}
@@ -252,8 +313,16 @@ export class CanvasController implements ReactiveController {
 	private applyCamera(): void {
 		this.world.position.set(this.camera.offsetX, this.camera.offsetY);
 		this.world.scale.set(this.camera.zoom);
-		this.grid?.update(this.camera);
-		if (this.selection.length || this.marquee) this.drawSelection();
+		if (this.showGrid) this.grid?.update(this.camera);
+		this.updateScaleReadouts();
+		if (this.selection.length || this.marquee || this.host.selectedObjectSprite) this.drawSelection();
+		this.host.requestCanvasRender();
+	}
+
+	updateScaleReadouts(): void {
+		const { zoom, gridCellWidth } = this.camera;
+		this.host.updateZoomLabel(zoom);
+		if (this.showGrid) this.host.updateGridScale(gridCellWidth * zoom, gridCellWidth * MILLIMETERS_PER_WORLD_UNIT);
 	}
 
 	private observeCanvas(): void {
@@ -303,7 +372,6 @@ export class CanvasController implements ReactiveController {
 	hostConnected(): void {
 		this.observeCanvas();
 		this.observeTouches();
-		this.host.app?.start();
 	}
 
 	hostDisconnected(): void {
@@ -313,21 +381,22 @@ export class CanvasController implements ReactiveController {
 		this.resetTouches();
 		this.resizeObserver?.disconnect();
 		this.resizeObserver = undefined;
-		this.host.app?.stop();
 	}
 
 	private cancelPointerInteraction(): void {
+		const redrawSelection = (this._dragActive && this._dragMoved) || this.groupDrag || this.marquee;
 		this.host.app?.stage.off("globalpointermove", this._dragMoveHandler);
 		this._dragActive = false;
 		this.dragPointerId = undefined;
 		this.pan = undefined;
 		this.host.dragObject = undefined;
-		if (this.groupDrag || this.marquee) {
-			for (const { sprite, x, y } of this.groupDrag?.items ?? []) sprite.position.set(x, y);
-			this.groupDrag = undefined;
-			this.marquee = undefined;
-			this.drawSelection();
+		for (const { sprite, x, y } of this.groupDrag?.items ?? []) {
+			sprite.position.set(x, y);
+			if (this.cables.size && !(sprite instanceof VesselView)) this.cablesDirty = true;
 		}
+		this.groupDrag = undefined;
+		this.marquee = undefined;
+		if (redrawSelection) this.drawSelection();
 	}
 
 	removeSprite(sprite: PIXI.Container): void {
@@ -339,10 +408,17 @@ export class CanvasController implements ReactiveController {
 			this.host.requestUpdate();
 		}
 		this.world.removeChild(sprite);
+		this.spritesByLabel.delete(sprite.label);
+		if (sprite instanceof VesselView) {
+			this.vessels.delete(sprite.component);
+			this.changedVessels.delete(sprite);
+		}
+		if (sprite instanceof PIXI.Sprite) this.cables.delete(sprite);
 		if (sprite instanceof PIXI.Sprite && sprite.texture instanceof PIXI.RenderTexture) {
 			sprite.texture.destroy(true);
 		}
 		sprite.destroy({ children: true });
+		this.host.requestCanvasRender();
 	}
 
 	clearSprites(): void {
@@ -351,26 +427,37 @@ export class CanvasController implements ReactiveController {
 		for (const sprite of [...this.world.children]) this.removeSprite(sprite);
 	}
 
-	setDeviceActive(sprite: PIXI.Sprite, active: boolean): void {
-		const graphic = componentGraphic(sprite.label.split(":")[0]);
-		sprite.texture = PIXI.Assets.get<PIXI.Texture>(active ? graphic.active ?? graphic.url : graphic.url);
+	setDeviceActive(component: chemlib.ElectricComponent, active: boolean): void {
+		const view = this.spritesByLabel.get(`${component._type}:${component._id}`);
+		if (!(view instanceof ElectricDeviceView)) return;
+		view.setActive(active);
+		this.host.requestCanvasRender();
+	}
+
+	refreshDeviceDisplay(component: chemlib.ElectricComponent, hasVoltageReading?: boolean): void {
+		const view = this.spritesByLabel.get(`${component._type}:${component._id}`);
+		if (view instanceof ElectricDeviceView && view.refresh(hasVoltageReading)) this.host.requestCanvasRender();
 	}
 	/**
 	 * adds a new sprite to the canvas
 	 *
 	 * @private
-	 * @param {string} info - a string containing the name of the object and its id
+	 * @param component - the model represented by this view
 	 */
-	_addSprite(info: string, select = true, capacityMl?: number): PIXI.Container {
-		const type = info.split(":")[0];
+	addComponentView(component: chemlib.ChemComponent | chemlib.ElectricComponent, select = true): PIXI.Container {
+		const type = component._type;
+		const info = `${type}:${component._id}`;
 		const graphic = componentGraphic(type);
 		const texture = PIXI.Assets.get<PIXI.Texture>(graphic.url);
-		const scale = componentScale(type, capacityMl);
-		const width = graphic.width * scale;
-		const height = graphic.height * scale;
-		const sprite = isVesselType(type)
-			? new VesselView(type, texture, width, height)
-			: new PIXI.Sprite({ texture, width, height, anchor: 0.5 });
+		const capacityMl = component instanceof chemlib.ChemComponent ? component._volume : undefined;
+		const [widthMm, heightMm] = componentArtboardMm(type, capacityMl);
+		const width = widthMm / MILLIMETERS_PER_WORLD_UNIT;
+		const height = heightMm / MILLIMETERS_PER_WORLD_UNIT;
+		const sprite = component instanceof chemlib.ChemComponent && isVesselType(type)
+			? new VesselView(component, type, texture, width, height, this.scaleTextures)
+			: component instanceof chemlib.ElectricComponent && type !== chemlib.EComponentType.Cable
+				? new ElectricDeviceView(component, texture, width, height)
+				: new PIXI.Sprite({ texture, width, height, anchor: 0.5 });
 
 		sprite.x = this.host.mousePos[0];
 		sprite.y = this.host.mousePos[1];
@@ -387,7 +474,10 @@ export class CanvasController implements ReactiveController {
 			if (event.button === 0 && this.selection.includes(sprite)) {
 				const items = this.selection.filter((item) => !item.label.startsWith("cable:"))
 					.map((item) => ({ sprite: item, x: item.x, y: item.y }));
-				this.groupDrag = { id: event.pointerId, origin: this.camera.toWorld(event.global.x, event.global.y), items };
+				const anchor = items.find((item) => item.sprite === sprite) ?? items[0];
+				if (anchor) this.groupDrag = {
+					id: event.pointerId, origin: this.camera.toWorld(event.global.x, event.global.y), anchor, items, moved: false,
+				};
 				return;
 			}
 			if (event.button === 0 && this.host.beginChemicalDose(sprite, event.pointerId)) return;
@@ -399,10 +489,20 @@ export class CanvasController implements ReactiveController {
 
 		sprite.label = info;
 		this.world.addChild(sprite);
+		this.spritesByLabel.set(info, sprite);
+		if (sprite instanceof VesselView) {
+			this.vessels.set(sprite.component, sprite);
+			this.changedVessels.add(sprite);
+		}
+		if (component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable) {
+			this.cables.set(sprite as PIXI.Sprite, component);
+			this.cablesDirty = true;
+		}
 		if (select && !sprite.label.includes("cable")) {
 			this.host._getObject(sprite);
 		}
 		this.host.reportXApi("inserted", sprite.label);
+		this.host.requestCanvasRender();
 		return sprite;
 	}
 
@@ -433,10 +533,11 @@ export class CanvasController implements ReactiveController {
 		if (this.host.dragObject) {
 			// move so the grabbed point stays under the pointer (offset preserved)
 			const local = this.host.dragObject.parent.toLocal(event.global);
-			this.host.dragObject.position.set(
+			const position = this.snapPosition(
 				local.x + this._dragOffset.x,
 				local.y + this._dragOffset.y
 			);
+			this.host.dragObject.position.copyFrom(position);
 
 			let mouseHoverObject: number = -1;
 			for (let i = 0; i < this.world.children.length; i++) {
@@ -577,10 +678,12 @@ export class CanvasController implements ReactiveController {
 		if (!this._dragActive) return;
 		this.host.app.stage.off("globalpointermove", this._dragMoveHandler);
 		this._dragActive = false;
+		this.dragPointerId = undefined;
 		if (!this._dragMoved || !this.host.dragObject) {
 			this.host.dragObject = undefined;
 			return;
 		}
+		this.drawSelection();
 		for (let i = 0; i < this.world.children.length; i++) {
 			if (
 				i != this.host.curr_stage_index &&
@@ -723,11 +826,13 @@ export class CanvasController implements ReactiveController {
 						await this.host.waitUntil(
 							() => this.host.confirmAction != 0
 						);
-						this.world.children[
-							this.host.curr_stage_index
-						].rotation = 0;
+						upperSprite.rotation = 0;
+						if (upperSprite instanceof VesselView) upperSprite.updateAngle();
+						this.drawSelection();
 						if (this.host.confirmAction === 1) {
 							this.host.curr_obj.transferContents({}, cObj);
+							this.markVesselChanged(this.host.curr_obj);
+							this.markVesselChanged(cObj);
 							this.host._getObject(this.host.dragObject);
 							this.host._emitAlert(
 								this.host.message("Inhalt aus {from} zu {to} überführt.", {
@@ -768,7 +873,9 @@ export class CanvasController implements ReactiveController {
 	 * @param {number} color - the selected color
 	 */
 	_tintSprite(sprite: PIXI.Container, color: number): void {
+		if (sprite.tint === color) return;
 		sprite.tint = color;
+		this.host.requestCanvasRender();
 	}
 
 	/**
@@ -813,7 +920,9 @@ export class CanvasController implements ReactiveController {
 		try {
 			await PIXI.Assets.load(componentTextureUrls.map((src) => ({
 				src,
-				data: { resolution: 2, scaleMode: "linear" },
+				// Filter the SVG textures when zooming out, including narrow sprites
+				// whose horizontal and vertical scales differ substantially.
+				data: { resolution: 2, scaleMode: "linear", autoGenerateMipmaps: true, maxAnisotropy: 4 },
 			})));
 		} catch (error) {
 			app.destroy(true, { children: true });
@@ -828,6 +937,7 @@ export class CanvasController implements ReactiveController {
 		this.host.app.stage.eventMode = "static";
 		this.host.app.stage.hitArea = this.host.app.screen;
 		this.grid = new WorkspaceGrid();
+		this.grid.mesh.visible = this.showGrid;
 		app.stage.addChild(this.grid.mesh, this.world, this.selectionOverlay);
 		app.canvas.addEventListener("wheel", this.zoomFromWheel, { passive: false });
 		this.observeCanvas();
@@ -868,9 +978,12 @@ export class CanvasController implements ReactiveController {
 				this.finishMarquee(event);
 			} else if (this.groupDrag?.id === event.pointerId) {
 				this.moveGroup(event);
-				const moved = this.groupDrag.items.map(({ sprite }) => sprite);
+				const drag = this.groupDrag;
 				this.groupDrag = undefined;
-				this.host.saveComponentPositions(moved);
+				if (drag.moved) {
+					this.drawSelection();
+					this.host.saveComponentPositions(drag.items.map(({ sprite }) => sprite));
+				}
 			} else if (this.pan?.id === event.pointerId) {
 				const { moved, deselectOnTap } = this.pan;
 				this.pan = undefined;
@@ -889,45 +1002,31 @@ export class CanvasController implements ReactiveController {
 		stage.on("pointerupoutside", finishPointer);
 	}
 
-	/**
-	 * Updates the vector fill inside each vessel when its contents change.
-	 *
-	 * @private
-	 */
-	updateVesselFills(): void {
-		for (const sprite of this.world.children) {
-			if (!(sprite instanceof VesselView)) continue;
-			const [type, id] = sprite.label.split(":");
-			const component = this.host.allChemComponents.find((entry) => entry._type === type && entry._id === Number(id));
-			if (!component) continue;
-			const mixture = component._content;
-			const liquid = mixture.hasLiquidContents;
-			const fraction = mixture.contentVolume * 1000 / component._volume;
-			// Older solid mixtures store moles without specifying a bulk volume.
-			const fill = fraction > 0 ? Math.min(1, fraction) : !liquid && mixture._activeMolecules.length ? 0.035 : 0;
-			sprite.updateFill(fill, liquid);
+	markVesselChanged(component: chemlib.ChemComponent): void {
+		const view = this.vessels.get(component);
+		if (!view) return;
+		this.changedVessels.add(view);
+		this.host.requestCanvasRender();
+	}
+
+	flushChanges(): void {
+		for (const view of this.changedVessels) view.updateContents();
+		this.changedVessels.clear();
+		if (this.cablesDirty) {
+			this.cablesDirty = false;
+			this.updateCablePositions();
 		}
 	}
 
-	/**
-	 * ticker function to update cables and their positions
-	 *
-	 * @private
-	 */
-	_updateCablePos(): void {
-		const cables = this.host.allEComponents.filter((component) => component._type === chemlib.EComponentType.Cable);
-		if (cables.length === 0) return;
+	private updateCablePositions(): void {
 		const stage = this.world;
-		const sprites = new Map(stage.children.map((sprite) => [sprite.label, sprite]));
 		const selected = stage.children[this.host.curr_stage_index];
 		let selectionMoved = false;
-		for (const cable of cables) {
-			const sprite = sprites.get(`cable:${cable._id}`);
-			if (!(sprite instanceof PIXI.Sprite) || sprite.parent !== stage) continue;
+		for (const [sprite, cable] of this.cables) {
 			const [first, second] = cable._connections;
-			const from = first && sprites.get(`${first._type}:${first._id}`);
-			const to = second && sprites.get(`${second._type}:${second._id}`);
-			if (!from || !to || from.parent !== stage || to.parent !== stage) {
+			const from = first && this.spritesByLabel.get(`${first._type}:${first._id}`);
+			const to = second && this.spritesByLabel.get(`${second._type}:${second._id}`);
+			if (!from || !to) {
 				this.host.removeObjects([sprite]);
 				continue;
 			}
@@ -940,7 +1039,7 @@ export class CanvasController implements ReactiveController {
 				sprite.setSize(curve.w, curve.h);
 				sprite.position.set(curve.cx, curve.cy);
 				sprite.rotation = 0;
-				selectionMoved ||= this.selection.includes(sprite);
+				selectionMoved ||= sprite === selected || this.selection.includes(sprite);
 				if (previous instanceof PIXI.RenderTexture) previous.destroy(true);
 				this.cableEndpoints.set(sprite, endpoints);
 			}
@@ -981,7 +1080,7 @@ export class CanvasController implements ReactiveController {
 		const cp2x: number = pos1[0] + (dx * 2) / 3 + nx * sag;
 		const cp2y: number = pos1[1] + (dy * 2) / 3 + ny * sag;
 
-		const lineWidth: number = 3;
+		const lineWidth = CABLE_DIAMETER_MM / MILLIMETERS_PER_WORLD_UNIT;
 		const pad: number = lineWidth / 2 + 2;
 		// the convex hull of the endpoints + control points bounds a
 		// cubic bezier curve exactly, so this is a tight fit
@@ -998,7 +1097,10 @@ export class CanvasController implements ReactiveController {
 			.clear()
 			.moveTo(pos1[0], pos1[1])
 			.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, pos2[0], pos2[1])
-			.stroke({ width: lineWidth, color: 0x000000, cap: "round" });
+			.stroke({ width: lineWidth, color: 0x30404d, cap: "round" })
+			.moveTo(pos1[0], pos1[1])
+			.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, pos2[0], pos2[1])
+			.stroke({ width: lineWidth * 0.35, color: 0x687d8b, cap: "round" });
 		const texture = this.host.app.renderer.generateTexture({
 			target: graphics,
 			frame: new PIXI.Rectangle(minX, minY, w, h),

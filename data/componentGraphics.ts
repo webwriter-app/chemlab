@@ -3,34 +3,80 @@ import flask from "../media/flask.svg";
 import burette from "../media/burette.svg";
 import testtube from "../media/testtube.svg";
 import source from "../media/source_off.svg";
-import sourceActive from "../media/source_on.svg";
 import voltmeter from "../media/voltmeter_off.svg";
-import voltmeterActive from "../media/voltmeter_on.svg";
 import ammeter from "../media/ammeter.svg";
-import electrode from "../media/default.svg";
+import electrode from "../media/electrode.svg";
+import separatingfunnel from "../media/separatingfunnel.svg";
+import condenser from "../media/condenser.svg";
+import fallback from "../media/default.svg";
 import cable from "../media/cable.svg";
 import { AMMETER_MODEL_VOLTAGE, VOLTMETER_MODEL_CURRENT } from "../chemlib/ElectricComponent";
 
 interface ComponentGraphic {
 	url: string;
-	width: number;
-	height: number;
+	// Fraction of the SVG artboard occupied by the measured part. For burettes
+	// the width refers to the glass tube, excluding the stopcock handle.
+	widthFraction?: number;
+	heightFraction?: number;
 	capacityMl?: number;
-	active?: string;
 }
 
 export const componentGraphics = {
-	beaker: { url: beaker, width: 100, height: 130, capacityMl: 400 },
-	flask: { url: flask, width: 120, height: 156, capacityMl: 250 },
-	burette: { url: burette, width: 80, height: 400, capacityMl: 25 },
-	testtube: { url: testtube, width: 80, height: 150, capacityMl: 10 },
-	electrode: { url: electrode, width: 25, height: 70 },
-	source: { url: source, active: sourceActive, width: 200, height: 150 },
-	voltmeter: { url: voltmeter, active: voltmeterActive, width: 200, height: 150 },
-	ammeter: { url: ammeter, width: 200, height: 150 },
+	beaker: { url: beaker, capacityMl: 400, widthFraction: 0.955, heightFraction: 0.971 },
+	flask: { url: flask, capacityMl: 250, widthFraction: 0.842, heightFraction: 0.978 },
+	burette: { url: burette, capacityMl: 25, widthFraction: 0.254, heightFraction: 0.955 },
+	testtube: { url: testtube, capacityMl: 10, widthFraction: 0.279, heightFraction: 0.901 },
+	electrode: { url: electrode },
+	source: { url: source },
+	voltmeter: { url: voltmeter },
+	ammeter: { url: ammeter },
 } satisfies Record<string, ComponentGraphic>;
 
 export type PaletteComponent = keyof typeof componentGraphics;
+type DimensionsMm = readonly [width: number, height: number];
+
+const vesselDimensions = {
+	// Lenz DURAN low-form beakers, 7 0010 series.
+	// https://lenz-laborglas.de/en/kcproduct/beakers-low-shape/?download_pdf=1446
+	beaker: { 50: [42, 60], 100: [50, 70], 250: [70, 95], 400: [80, 110], 600: [90, 125], 1000: [105, 145] },
+	// Corning PYREX 4980, body outside diameter × overall height.
+	// https://www.corning.com/catalog/cls/documents/selection-guides/CLS-GL-001.pdf
+	flask: { 50: [51, 78], 125: [67, 114], 250: [82, 132], 500: [101, 176], 1000: [129, 216] },
+	// Eisco CH0240A / CH0240BAM / CH0240CAM, outside tube diameter × overall length.
+	// https://www.eiscolabs.com/collections/ptfe-key-stopcock/products/ch0240a
+	// https://www.eiscolabs.com/collections/ptfe-key-stopcock/products/ch0240b-am
+	// https://www.eiscolabs.com/products/ch0240c-am
+	burette: { 10: [11, 457.2], 25: [13, 572], 50: [14, 775] },
+	// DURAN 261300602, Corning 99445-13, Eisco CH0718D01 and CH0718E.
+	// https://www.dwk.com/duran-test-tube-beaded-rim-5-ml-10-x-100-mm-261300602
+	// https://ecatalog.corning.com/life-sciences/b2b/JP/en/Glassware/Centrifuge-Tubes%2C-Glass/PYREX%C2%AE-Disposable-Rimless-Culture-Tubes%2C-Bulk-Pack/p/99445-13HW
+	// https://www.eiscolabs.com/products/ch0718d01pk48
+	// https://www.eiscolabs.com/products/ch0718epk48
+	testtube: { 5: [10, 100], 10: [13, 100], 15: [15, 130], 20: [16, 150] },
+} satisfies Record<string, Record<number, DimensionsMm>>;
+
+// Stäubli FLEXI-E 1.0, outside diameter including insulation.
+// https://media.ec.staubli.com/tm/datasheets/en/60.7008-%7B%7D_en.pdf
+export const CABLE_DIAMETER_MM = 2.7;
+
+const fixedDimensions: Readonly<Partial<Record<string, DimensionsMm>>> = {
+	// PHYWE 07856-00 strip form, shared by the material variants.
+	// https://www.phywe.com/equipment-accessories/chemicals-and-test-papers/metals/copper-strip-electrode-for-student-electrochemistry-experiments-length-75-mm-width-15-mm_31559_33813/
+	electrode: [15, 75],
+	// PHYWE 13506-93, front of housing (W × H).
+	// https://repository.phywe.com/v1/get-file/?path=bedienungsanleitungen%2F13506.93%2F1350693e.pdf
+	source: [206, 130],
+	// PeakTech P 205-05 and P 205-04, front of housing (W × H).
+	// https://www.peaktech.de/media/7c/56/30/1617257827/Products_2021_EN.pdf
+	voltmeter: [90, 106],
+	ammeter: [90, 106],
+	cable: [CABLE_DIAMETER_MM, CABLE_DIAMETER_MM],
+	// Legacy components outside the palette.
+	// https://www.dwk.com/duran-separating-funnel-spherical-pear-shape-250-ml-242913608
+	separatingfunnel: [90, 235],
+	// https://www.eiscolabs.com/products/ch01012d
+	condenser: [28.575, 450.85],
+};
 
 export interface ComponentVariant {
 	id: string;
@@ -40,15 +86,16 @@ export interface ComponentVariant {
 	material?: { element: string; name: string };
 }
 
-function capacities(type: PaletteComponent, values: number[]): ComponentVariant[] {
-	return values.map((capacityMl) => ({ id: `${type}:${capacityMl}ml`, type, size: `${capacityMl} mL`, capacityMl }));
+function capacities(type: keyof typeof vesselDimensions): ComponentVariant[] {
+	return Object.keys(vesselDimensions[type]).map(Number)
+		.map((capacityMl) => ({ id: `${type}:${capacityMl}ml`, type, size: `${capacityMl} mL`, capacityMl }));
 }
 
 export const componentVariants = {
-	beaker: capacities("beaker", [50, 100, 250, 400, 600, 1000]),
-	flask: capacities("flask", [50, 125, 250, 500, 1000]),
-	burette: capacities("burette", [10, 25, 50]),
-	testtube: capacities("testtube", [5, 10, 15, 20]),
+	beaker: capacities("beaker"),
+	flask: capacities("flask"),
+	burette: capacities("burette"),
+	testtube: capacities("testtube"),
 	electrode: [
 		["carbon", "Graphit"], ["platinum", "Platin"], ["copper", "Kupfer"],
 		["zinc", "Zink"], ["iron", "Eisen"], ["magnesium", "Magnesium"], ["nickel", "Nickel"],
@@ -66,21 +113,34 @@ export function componentVariant(id?: string): ComponentVariant | undefined {
 	return id === undefined ? undefined : variantsById.get(id);
 }
 
-export function componentScale(type: string, capacityMl?: number): number {
-	const standardCapacity = componentGraphic(type).capacityMl;
-	return standardCapacity && capacityMl > 0 ? Math.cbrt(capacityMl / standardCapacity) : 1;
+export function componentArtboardMm(type: string, capacityMl?: number): DimensionsMm {
+	const { capacityMl: standard, widthFraction = 1, heightFraction = 1 } = componentGraphic(type);
+	if (standard) {
+		const sizes: Record<number, DimensionsMm> = vesselDimensions[type];
+		const measured = sizes[capacityMl];
+		const [width, height] = measured ?? sizes[standard];
+		// Older authored documents can specify capacities outside the catalogue.
+		const scale = !measured && Number.isFinite(capacityMl) && capacityMl > 0 ? Math.cbrt(capacityMl / standard) : 1;
+		return [width * scale / widthFraction, height * scale / heightFraction];
+	}
+	const [width, height] = Object.hasOwnProperty.call(fixedDimensions, type) ? fixedDimensions[type] : fixedDimensions.electrode;
+	return [width / widthFraction, height / heightFraction];
 }
 
+const otherGraphics: Record<string, ComponentGraphic> = {
+	cable: { url: cable },
+	separatingfunnel: { url: separatingfunnel },
+	condenser: { url: condenser },
+};
+
 export function componentGraphic(type: string): ComponentGraphic {
-	if (type === "cable") return { url: cable, width: 3, height: 50 };
-	return Object.hasOwnProperty.call(componentGraphics, type)
-		? componentGraphics[type]
-		: { url: electrode, width: 50, height: 70 };
+	if (Object.hasOwnProperty.call(componentGraphics, type)) return componentGraphics[type];
+	if (Object.hasOwnProperty.call(otherGraphics, type)) return otherGraphics[type];
+	return { url: fallback };
 }
 
 export const componentTextureUrls = [
-	cable,
-	...Object.values<ComponentGraphic>(componentGraphics).flatMap(
-		({ url, active }) => active ? [url, active] : [url]
-	),
+	fallback,
+	...Object.values(componentGraphics).map(({ url }) => url),
+	...Object.values(otherGraphics).map(({ url }) => url),
 ];

@@ -42,8 +42,7 @@ export class WorkspaceGrid {
 
 	update(camera: WorkspaceCamera): void {
 		const { uniforms } = this.uniforms;
-		const base = 20 * camera.zoom;
-		const step = base * 2 ** Math.ceil(Math.log2(14 / base));
+		const step = camera.gridCellWidth * camera.zoom;
 		uniforms.uViewport[0] = camera.width;
 		uniforms.uViewport[1] = camera.height;
 		// Keep large world translations out of the shader's floating-point coordinates.

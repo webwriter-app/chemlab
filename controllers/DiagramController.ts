@@ -58,10 +58,10 @@ export class DiagramController implements ReactiveController {
 	 * this experiment already exists.
 	 *
 	 * @param name - the ticker/experiment name (e.g. "transfer...", "echem...")
-	 * @param args - the originating ticker function args, used to label e-chem
+	 * @param source - the device that starts the experiment, used to label electrochemistry datasets
 	 *   datasets from the circuit's electrodes
 	 */
-	public createDiagram(name: string, args: Array<any>): void {
+	public createDiagram(name: string, source: chemlib.ChemComponent | chemlib.ElectricComponent): void {
 		for (let i = 0; i < this.diagramList.length; i++) {
 			if (
 				(this.diagramList[i][1] as HTMLDivElement).children[0]
@@ -195,7 +195,7 @@ export class DiagramController implements ReactiveController {
 		}
 
 		const ionSymbols = name.includes("source")
-			? chemlib.ComponentManager.isCircuit(args[1] as chemlib.ElectricComponent)
+			? chemlib.ComponentManager.isCircuit(source as chemlib.ElectricComponent)
 				.map(electrode => electrode._material?._atoms[0]?.getSymbol())
 			: [];
 		const updateLabels = () => {
