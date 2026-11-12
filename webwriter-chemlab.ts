@@ -1093,7 +1093,14 @@ export class ChemLab extends LitElementWw {
 		if (this.displayedGridWidthMm === widthMm) return;
 		this.displayedGridWidthMm = widthMm;
 		const length = widthMm >= 1000 ? `${widthMm / 1000} m` : widthMm >= 10 ? `${widthMm / 10} cm` : `${widthMm} mm`;
-		this.gridScaleValue.textContent = this.message("{length} pro Kästchen", { length });
+		// Only the length is shown; the "per cell" context stays available as
+		// tooltip and screen-reader label on the tag.
+		const scaleLabel = this.message("{length} pro Kästchen", { length });
+		if (this.gridScale.title !== scaleLabel) {
+			this.gridScale.title = scaleLabel;
+			this.gridScale.setAttribute("aria-label", scaleLabel);
+		}
+		this.gridScaleValue.textContent = length;
 	}
 
 	/**
@@ -3664,7 +3671,7 @@ export class ChemLab extends LitElementWw {
 					</sl-tag>
 					<button type="button" id="resetZoom" title=${resetZoomLabel} aria-label=${resetZoomLabel}
 						aria-describedby="zoomLevel" @click=${() => this.canvas.resetZoom()}>
-						<sl-tag id="zoomLevel" size="small">100 %</sl-tag>
+						<sl-tag id="zoomLevel" size="small" variant="primary">100 %</sl-tag>
 					</button>
 					<sl-button size="small" variant=${this.canvas.gridVisible ? "primary" : "default"}
 						title=${gridLabel} aria-label=${gridLabel} aria-pressed=${this.canvas.gridVisible}
