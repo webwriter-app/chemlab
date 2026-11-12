@@ -1,7 +1,7 @@
 import { Mixture } from "./Mixture";
 import { StructureManager } from "./StructureManager";
 import { Molecule } from "./Molecule";
-import { ElectricComponent } from "./ElectricComponent";
+import { ElectricComponent, EComponentType } from "./ElectricComponent";
 import { ComponentManager } from "./ComponentManager";
 import { AcidBase, AcidBaseSystem } from "./AcidBase";
 
@@ -230,198 +230,74 @@ export abstract class Simulation {
 		sElectrode2: ElectricComponent,
 		sDevice: ElectricComponent
 	): void {
+		if (sDevice._type === EComponentType.Voltmeter) sDevice._visibleVoltage = 0;
 		if (
+			sDevice._type === EComponentType.Ammeter ||
 			!ComponentManager.isConnected(sElectrode1, sElectrode2) ||
-			!sElectrode1._connectedMix._isSolution ||
-			!sElectrode2._connectedMix._isSolution
+			!sElectrode1._connectedMix?._isSolution ||
+			!sElectrode2._connectedMix?._isSolution
 		) {
 			return;
 		}
 
-		var bElectrolysis = sDevice._type === "source";
-		var sElectrodeCathode: ElectricComponent,
-			sElectrodeAnode: ElectricComponent;
-		var eDataRed: object,
-			eDataOx: object
+		const bElectrolysis = sDevice._type === EComponentType.Source;
+		if (!bElectrolysis) sDevice._visibleVoltage = null;
+		type HalfReaction = NonNullable<ReturnType<typeof Simulation.getRedoxData>>;
+		let reaction: {
+			anode: Mixture; cathode: Mixture; material: Molecule; cathodeIon: Molecule;
+			oxidation: HalfReaction; reduction: HalfReaction; voltage: number;
+		} | undefined;
 
-		let voltage: number = bElectrolysis ? Number.MAX_SAFE_INTEGER : 0
-		sElectrode1._connectedMix._activeMolecules.forEach(mol1 =>{
-			sElectrode2._connectedMix._activeMolecules.forEach(mol2 =>{
-				let mol1in: boolean = false
-				let mol2in: boolean = false
-				let mol1entry, mol2entry
-				Object.keys(StructureManager._moleculeData["redox"]).forEach(key =>{
-					let entry = StructureManager._moleculeData["redox"][key]
-					// console.log(entry, mol1, mol2)
-					if(entry["red"] === mol1.smilesString || entry["ox"] === mol1.smilesString){
-						mol1in = true
-						mol1entry = entry
-					}
-					if(entry["red"] === mol2.smilesString || entry["ox"] === mol2.smilesString){
-						mol2in = true
-						mol2entry = entry
-					}
-				})
-				// console.log(mol1entry, mol2entry)
-				if(mol1in && mol2in){
-					// console.log("found")
-					if(bElectrolysis){
-						if(Math.abs(mol1entry["sep"]-mol2entry["sep"]) < voltage){
-							voltage = Math.abs(mol1entry["sep"]-mol2entry["sep"])
-							if(mol1entry["sep"] > mol2entry["sep"]){
-								sElectrodeCathode = sElectrode2
-								eDataRed = mol2entry
-								sElectrodeAnode = sElectrode1
-								eDataOx = mol2entry
-							}else{
-								sElectrodeCathode = sElectrode1
-								eDataRed = mol1entry
-								sElectrodeAnode = sElectrode2
-								eDataOx = mol2entry
-							}
-						}
-					}else{
-						if(Math.abs(mol1entry["sep"]-mol2entry["sep"]) > voltage){
-							// console.log("drin", Math.abs(mol1entry["sep"]-mol2entry["sep"]))
-							voltage = Math.abs(mol1entry["sep"]-mol2entry["sep"])
-							if(mol1entry["sep"] < mol2entry["sep"]){
-								sElectrodeCathode = sElectrode2
-								eDataRed = mol2entry
-								sElectrodeAnode = sElectrode1
-								eDataOx = mol1entry
-							}else{
-								sElectrodeCathode = sElectrode1
-								eDataRed = mol1entry
-								sElectrodeAnode = sElectrode2
-								eDataOx = mol2entry
-							}
-						}
-					}
-				}
-			})
-		})
-			
-
-		var sMixAnode: Mixture = sElectrodeAnode._connectedMix;
-		var sMixCathode: Mixture = sElectrodeCathode._connectedMix;
-
-		let MixAnodeIons: Molecule[] = [];
-		let MixCathodeIons: Molecule[] = [];
-
-		for (let molecule of sMixAnode._activeMolecules) {
-			if (molecule._totalCharge != 0) {
-				MixAnodeIons.push(molecule);
+		for (const [anodeElectrode, cathodeElectrode] of [[sElectrode1, sElectrode2], [sElectrode2, sElectrode1]]) {
+			const material = anodeElectrode._material;
+			const oxidation = material && this.getRedoxData(material);
+			if (!oxidation || material.smilesString !== oxidation.red) continue;
+			const anode = anodeElectrode._connectedMix;
+			const cathode = cathodeElectrode._connectedMix;
+			for (const cathodeIon of cathode._activeMolecules) {
+				if (cathodeIon._totalCharge <= 0) continue;
+				const reduction = this.getRedoxData(cathodeIon);
+				if (!reduction || cathodeIon.smilesString !== reduction.ox) continue;
+				const voltage = reduction.sep - oxidation.sep;
+				if (bElectrolysis) {
+					if (voltage > 0 || !(sDevice._sourceVoltage >= -voltage) ||
+						(reaction && voltage <= reaction.voltage)) continue;
+				} else if (voltage <= 0 || (reaction && voltage <= reaction.voltage)) continue;
+				reaction = { anode, cathode, material, cathodeIon, oxidation, reduction, voltage };
 			}
 		}
-		for (let molecule of sMixCathode._activeMolecules) {
-			if (molecule._totalCharge != 0) {
-				MixCathodeIons.push(molecule);
-			}
-		}
-
-		let eMaterialAnode: Molecule = sElectrodeAnode._material;
-
-		let nProdAnode: Molecule = StructureManager.newMolecule();
-		nProdAnode.addAtom(
-			eMaterialAnode._atoms[0]._element["name"].toLowerCase(),
-			eMaterialAnode._atoms[0]._element["symbol"],
-			eMaterialAnode._totalCharge + eDataOx["el"]
+		if (!reaction) return;
+		const { anode, cathode, material, cathodeIon, oxidation, reduction } = reaction;
+		const zAnode = oxidation.el;
+		const zCathode = reduction.el;
+		const current = sDevice._sourceCurrent;
+		const electronMol = Math.min(
+			current * this._simTimeStep / this._faradayConst,
+			cathode._molProperties[cathodeIon._id + "n"] * zCathode
 		);
-		sMixAnode.addMolecule(nProdAnode, 1e-7);
-
-		let nProdAnodeMixId: number;
-		for (let ion of MixAnodeIons) {
-			if (ion.smilesString === nProdAnode.smilesString) {
-				nProdAnodeMixId = ion._id;
-			}
-		}
-
-		let eCorrIon: Molecule;
-		let eVoltage: number = bElectrolysis ? sDevice._sourceVoltage : 0;
-
-		for (let ion of MixCathodeIons) {
-			if(eDataRed["ox"] === ion.smilesString){
-				eCorrIon = ion
-			}
-		}
-
-			if (bElectrolysis) {
-				if (
-					eDataRed["sep"] < eDataOx["sep"] &&
-					eDataOx["sep"] - eDataRed["sep"] < eVoltage
-				) {
-					eVoltage = Math.abs(
-						eDataOx["sep"] -
-							((this._gasConst * sMixAnode._temperature) /
-								(eDataOx["el"] * this._faradayConst)) *
-								Math.log(
-									1 / StructureManager._moleculeData[nProdAnode._id + "c"] ==
-										null
-										? 0
-										: StructureManager._moleculeData[nProdAnodeMixId + "c"]
-								) -
-							(eDataRed["sep"] -
-								((this._gasConst * sMixCathode._temperature) /
-									(eDataRed["el"] * this._faradayConst)) *
-									Math.log(StructureManager._moleculeData[eCorrIon._id + "c"]))
-					);
-				}
-			} else {
-				if (
-					eDataRed["sep"] > eDataOx["sep"] &&
-					eDataRed["sep"] - eDataOx["sep"] > eVoltage
-				) {
-					eVoltage = Math.abs(
-						eDataOx["sep"] -
-							((this._gasConst * sMixAnode._temperature) /
-								(eDataOx["el"] * this._faradayConst)) *
-								Math.log(1 / sMixAnode._molProperties[nProdAnodeMixId + "c"]) -
-							(eDataRed["sep"] -
-								((this._gasConst * sMixCathode._temperature) /
-									(eDataRed["el"] * this._faradayConst)) *
-									Math.log(1 / sMixCathode._molProperties[eCorrIon._id + "c"]))
-					);
-				}
-			}
-
-		if (eCorrIon != undefined) {
-			let zAnode: number = eDataOx["el"];
-			let zCathode: number = StructureManager._moleculeData["redox"][
-				eCorrIon.getTotMolMass().toString()
-			]["el"];
-
-			// Faraday's 1st law: moles of electrons transferred, n_e = Q/F = I*t/F.
-			// The same current flows through the whole series circuit, so this is
-			// shared by both electrodes - each one's own conversion is then
-			// n_e/z (Faraday's 2nd law), independently, with no LCM balancing
-			// needed (that's only for balancing a discrete stoichiometric
-			// equation, not for splitting a continuous charge flow).
-			let electronMol: number =
-				((!bElectrolysis ? 0.5 : sDevice._sourceCurrent) * this._simTimeStep) /
-				this._faradayConst;
-
-			// can't consume more cathode ions than are actually present
-			electronMol = Math.min(
-				electronMol,
-				sElectrodeCathode._connectedMix._molProperties[eCorrIon._id + "n"] *
-					zCathode
-			);
-
-			sMixAnode.addMolecule(nProdAnode, electronMol / zAnode);
-
-			let nProdCathode: Molecule = StructureManager.newMolecule();
-			nProdCathode.addAtom(
-				eCorrIon._atoms[0]._element["name"].toLowerCase(),
-				eCorrIon._atoms[0]._element["symbol"],
-				eCorrIon._totalCharge - zCathode
-			);
-			sMixCathode.addMolecule(nProdCathode, electronMol / zCathode);
-			sMixCathode.changeMolecule(eCorrIon._id, -electronMol / zCathode);
-		}
+		if (!(electronMol > 0)) return;
 
 		if (!bElectrolysis) {
-			sDevice._visibleVoltage = eVoltage;
+			const anodeIon = anode._activeMolecules.find((molecule) => molecule.smilesString === oxidation.ox);
+			const potential = (standard: number, mix: Mixture, ion: Molecule | undefined, electrons: number) => {
+				const concentration = ion ? mix._molProperties[ion._id + "c"] : undefined;
+				const activity = Number.isFinite(concentration) && concentration > 0 ? concentration : 1;
+				return standard + this._gasConst * mix._temperature / (electrons * this._faradayConst) * Math.log(activity);
+			};
+			sDevice._visibleVoltage = Math.max(0,
+				potential(reduction.sep, cathode, cathodeIon, zCathode) -
+				potential(oxidation.sep, anode, anodeIon, zAnode));
 		}
+
+		const anodeAtom = material._atoms[0];
+		const cathodeAtom = cathodeIon._atoms[0];
+		const anodeProduct = StructureManager.newMolecule();
+		anodeProduct.addAtom(anodeAtom.getName().toLowerCase(), anodeAtom.getSymbol(), zAnode);
+		anode.addMolecule(anodeProduct, electronMol / zAnode);
+		const cathodeProduct = StructureManager.newMolecule();
+		cathodeProduct.addAtom(cathodeAtom.getName().toLowerCase(), cathodeAtom.getSymbol(), cathodeIon._totalCharge - zCathode);
+		cathode.addMolecule(cathodeProduct, electronMol / zCathode);
+		cathode.changeMolecule(cathodeIon._id, -electronMol / zCathode);
 	}
 
 	/**
