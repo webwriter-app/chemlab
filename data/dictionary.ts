@@ -16,6 +16,7 @@ export const dictionary: Record<string, string> = {
 	electrode: "Elektrode",
 	source: "Spannungsquelle",
 	voltmeter: "Voltmeter",
+	ammeter: "Amperemeter",
 	hydrogen: "Wasserstoff",
 	helium: "Helium",
 	lithium: "Lithium",

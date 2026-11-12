@@ -12,7 +12,11 @@ export enum EComponentType {
 	Cable = "cable",
 	Source = "source",
 	Voltmeter = "voltmeter",
+	Ammeter = "ammeter",
 }
+
+export const VOLTMETER_MODEL_CURRENT = 2;
+export const AMMETER_MODEL_VOLTAGE = 10;
 
 /**
  * Representation of an electric component
@@ -77,7 +81,7 @@ class ElectricComponent {
 	 *
 	 * @type {number}
 	 */
-	_visibleVoltage: number;
+	_visibleVoltage: number | null;
 
 	/**
 	 * Creates a new electric component.
@@ -120,8 +124,16 @@ class ElectricComponent {
 				this._conCount = 2;
 				this._sourceVoltage = nSourceVoltage;
 				this._sourceCurrent = nSourceCurrent;
+				break;
 			case EComponentType.Voltmeter:
+				this._conCount = 2;
+				this._sourceCurrent = VOLTMETER_MODEL_CURRENT;
 				this._visibleVoltage = 0;
+				break;
+			case EComponentType.Ammeter:
+				this._conCount = 2;
+				this._sourceVoltage = AMMETER_MODEL_VOLTAGE;
+				break;
 			case EComponentType.Cable:
 				this._conCount = 2;
 				break;
