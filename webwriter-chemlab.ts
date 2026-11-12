@@ -30,15 +30,15 @@ import SlButtonGroup from "@shoelace-style/shoelace/dist/components/button-group
 import SlSplitPanel from "@shoelace-style/shoelace/dist/components/split-panel/split-panel.component.js";
 import SlDivider from "@shoelace-style/shoelace/dist/components/divider/divider.component.js";
 import SlRating from "@shoelace-style/shoelace/dist/components/rating/rating.component.js";
-import SlMenu from "@shoelace-style/shoelace/dist/components/menu/menu.component.js";
 import SlDialog from "@shoelace-style/shoelace/dist/components/dialog/dialog.component.js";
-import SlMenuItem from "@shoelace-style/shoelace/dist/components/menu-item/menu-item.component.js";
-import SlMenuLabel from "@shoelace-style/shoelace/dist/components/menu-label/menu-label.component.js";
 import SlCarousel from "@shoelace-style/shoelace/dist/components/carousel/carousel.component.js";
 import SlCarouselItem from "@shoelace-style/shoelace/dist/components/carousel-item/carousel-item.component.js";
 import SlCheckbox from "@shoelace-style/shoelace/dist/components/checkbox/checkbox.component.js";
-import SlDrawer from "@shoelace-style/shoelace/dist/components/drawer/drawer.component.js";
 import SlTooltip from "@shoelace-style/shoelace/dist/components/tooltip/tooltip.component.js";
+import SlPopup from "@shoelace-style/shoelace/dist/components/popup/popup.component.js";
+import SlTab from "@shoelace-style/shoelace/dist/components/tab/tab.component.js";
+import SlTabGroup from "@shoelace-style/shoelace/dist/components/tab-group/tab-group.component.js";
+import SlTabPanel from "@shoelace-style/shoelace/dist/components/tab-panel/tab-panel.component.js";
 
 import "@shoelace-style/shoelace/dist/themes/light.css";
 
@@ -63,7 +63,7 @@ import { defaultMolecules, defaultMixtures } from "./data/presets";
 import { sendXApiStatement } from "./services/xapi";
 import { DiagramController } from "./controllers/DiagramController";
 import { SimulationController } from "./controllers/SimulationController";
-import { componentGraphic, componentGraphics, type PaletteComponent } from "./data/componentGraphics";
+import { componentGraphic, componentScale, componentVariant, componentVariants, type ComponentVariant, type PaletteComponent } from "./data/componentGraphics";
 import { chemicalCatalog, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
 import { prepareDose, type SavedDose } from "./data/measuredDose";
 import { STANDARD_CANVAS_HEIGHT } from "./controllers/WorkspaceCamera";
@@ -189,14 +189,6 @@ export class ChemLab extends LitElementWw {
 	 */
 	@query("#mixCarousel")
 	private accessor mixCarousel: SlCarousel;
-	/**
-	 * main context menu element for both views
-	 *
-	 * @private
-	 * @type {SlMenu}
-	 */
-	@query("#contextMenu")
-	accessor contextMenu: SlMenu;
 	/**
 	 * confirmation dialog box element
 	 *
@@ -358,14 +350,6 @@ export class ChemLab extends LitElementWw {
 	@query("#xAPIKeyInput")
 	private accessor xAPIKeyInput: SlInput;
 	/**
-	 * select for components to get deactivated for students
-	 *
-	 * @private
-	 * @type {SlSelect}
-	 */
-	@query("#invCompSelect")
-	private accessor invCompSelect: SlSelect;
-	/**
 	 * select for premade molecules inside the panel
 	 *
 	 * @private
@@ -395,13 +379,14 @@ export class ChemLab extends LitElementWw {
 	 * @private
 	 * @type {HTMLDivElement}
 	 */
-	@query("#diagramDrawer")
-	private accessor diagramDrawer: SlDrawer;
 
 	readonly canvasContainer = Object.assign(document.createElement("div"), { id: "canvasContainer" });
 
 	@query("#canvasArea")
 	accessor canvasArea: HTMLDivElement;
+
+	@query("#canvasZoom")
+	accessor canvasZoom: HTMLDivElement;
 	/**
 	 * part of options, toggles different panel variants 
 	 *
@@ -484,10 +469,10 @@ export class ChemLab extends LitElementWw {
 	 * list of all sprites of available components
 	 *
 	 * @private
-	 * @type {Array<[PIXI.Sprite, number]>}
+	 * @type {Array<[PIXI.Container, number]>}
 	 */
 	@property({ attribute: false })
-	accessor avComponentsSprites: Array<[PIXI.Sprite, number]> = [];
+	accessor avComponentsSprites: Array<[PIXI.Container, number]> = [];
 	/**
 	 * controller owning all Chart.js diagrams (titration / e-chem)
 	 *
@@ -555,13 +540,12 @@ export class ChemLab extends LitElementWw {
 	accessor app: PIXI.Application<PIXI.WebGLRenderer<HTMLCanvasElement>> | null = null;
 	private canvasReady: Promise<void>;
 	/**
-	 * signalizes which datasets (avail. components/e-components/atoms) have already been loaded into their selects
+	 * Tracks whether the atom options have already been loaded.
 	 *
 	 * @private
-	 * @type {boolean[]}
+	 * @type {boolean}
 	 */
-	@property({ attribute: false })
-	private accessor components_signal: boolean[] = [false, false, false];
+	private atomsListed = false;
 	/**
 	 * which e-component info to show in the panel
 	 *
@@ -621,8 +605,9 @@ export class ChemLab extends LitElementWw {
 	private workspaceResizeObserver?: ResizeObserver;
 	private workspaceClassObserver?: MutationObserver;
 	@state() private accessor teacherTab: "components" | "chemicals" = "components";
-	@state() private accessor componentCapacities: Partial<Record<PaletteComponent, number>> = {};
-	@state() private accessor componentToPlace: PaletteComponent | undefined;
+	@state() private accessor permissionTooltip: { anchor: HTMLElement; type: PaletteComponent; text: string } | undefined;
+	@state() private accessor visibleVariants: Partial<Record<PaletteComponent, string>> = {};
+	@state() private accessor componentToPlace: string | undefined;
 	@state() private accessor selectedChemical: { key: string; name: string; recipe: ChemicalRecipe } | undefined;
 	@state() private accessor fillMeter: { x: number; y: number; volume: number; capacity: number } | undefined;
 	private chemicalPreviews = new Map<string, string>();
@@ -789,9 +774,6 @@ export class ChemLab extends LitElementWw {
 			"sl-option": SlOption,
 			"sl-rating": SlRating,
 			"sl-input": SlInput,
-			"sl-menu": SlMenu,
-			"sl-menu-item": SlMenuItem,
-			"sl-menu-label": SlMenuLabel,
 			"sl-alert": SlAlert,
 			"sl-carousel": SlCarousel,
 			"sl-carousel-item": SlCarouselItem,
@@ -799,8 +781,11 @@ export class ChemLab extends LitElementWw {
 			"sl-card": SlCard,
 			"sl-checkbox": SlCheckbox,
 
-			"sl-drawer": SlDrawer,
 			"sl-tooltip": SlTooltip,
+			"sl-popup": SlPopup,
+			"sl-tab": SlTab,
+			"sl-tab-group": SlTabGroup,
+			"sl-tab-panel": SlTabPanel,
 			"sl-dialog": SlDialog,
 		};
 	}
@@ -838,7 +823,10 @@ export class ChemLab extends LitElementWw {
 		const update = () => this.updateWorkspaceLayout();
 		this.workspaceResizeObserver = new ResizeObserver(update);
 		this.workspaceResizeObserver.observe(this.containerDiv);
-		this.workspaceClassObserver = new MutationObserver(update);
+		this.workspaceClassObserver = new MutationObserver(() => {
+			update();
+			this.requestUpdate();
+		});
 		this.workspaceClassObserver.observe(this, { attributes: true, attributeFilter: ["class", "contenteditable"] });
 		update();
 	}
@@ -848,18 +836,21 @@ export class ChemLab extends LitElementWw {
 		if (wide !== this.fullWidthMode) {
 			this.fullWidthMode = wide;
 			this.diagramPanelOpen = wide;
-			if (!this.editingMolecule) this.objectPanelOpen = wide && !!this.curr_obj;
 		}
 		const drawer = this.shadowRoot.getElementById("teacherDrawer");
 		const body = this.shadowRoot.getElementById("teacherDrawerContent");
 		const chrome = drawer.offsetHeight - body.offsetHeight;
 		const standardDrawerBody = 240;
-		this.teacherDrawerOpen = this.canAuthor && (this.teacherDrawerChoice ??
-			(this.containerDiv.clientHeight >= STANDARD_CANVAS_HEIGHT + standardDrawerBody + chrome));
+		this.teacherDrawerOpen = this.teacherDrawerChoice ??
+			(this.containerDiv.clientHeight >= STANDARD_CANVAS_HEIGHT + standardDrawerBody + chrome);
 	}
 
 	protected updated(changed: PropertyValueMap<any>): void {
 		super.updated(changed);
+		if (!this.canAuthor && this.teacherTab === "chemicals") {
+			this.shadowRoot.querySelector<SlTabGroup>("#teacherTabs").show("components");
+		}
+		if (!this.canAuthor || changed.has("invComponents")) this.permissionTooltip = undefined;
 		if (changed.has("panelVariant")) this._changePanelVariant();
 		if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents"].some((name) => changed.has(name))) {
 			this.persistAuthoredData();
@@ -896,10 +887,6 @@ export class ChemLab extends LitElementWw {
 				this.avComponentsSprites = [];
 				this._loadComponents();
 			}
-			if (changed.has("invComponents")) {
-				this.invCompSelect.value = this.invComponents;
-				this.filterComponents();
-			}
 		}
 	}
 
@@ -924,7 +911,7 @@ export class ChemLab extends LitElementWw {
 		if (Array.isArray(value.availableComponents)) this.availableComponents = value.availableComponents;
 		if (Array.isArray(value.invComponents)) {
 			const componentNames = Object.keys(chemlib.ComponentType).concat(Object.keys(chemlib.EComponentType));
-			this.invComponents = value.invComponents.map(String).map(value =>
+			this.invComponents = value.invComponents.map(value => String(value).trim()).filter(Boolean).map(value =>
 				componentNames.find(key => this.dictionary[key.toLowerCase()] === value)?.toLowerCase() ?? value.toLowerCase()
 			);
 		}
@@ -991,10 +978,15 @@ export class ChemLab extends LitElementWw {
 	protected firstUpdated(
 		_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
 	): void {
-		this.addEventListener("contextmenu", (event) => {
-			event.preventDefault();
-		});
 		super.firstUpdated(_changedProperties);
+		for (const panel of this.shadowRoot.querySelectorAll(".workspace-side > sl-details")) {
+			// The grid animates the width. Keep the disclosure body at its full height.
+			setAnimation(panel, "details.show", { keyframes: [], options: { duration: 0 } });
+			setAnimation(panel, "details.hide", {
+				keyframes: [{ opacity: 1 }, { opacity: 0 }],
+				options: { duration: 120, easing: "ease-out" },
+			});
+		}
 		this.observeWorkspaceLayout();
 		this.canvasReady = this.initializeCanvas();
 	}
@@ -1043,15 +1035,11 @@ export class ChemLab extends LitElementWw {
 			this.canvas
 		);
 		this.simulation.pushTickerFunction(
-			"_updateSpriteTextures",
-			this.canvas._updateSpriteTextures,
+			"updateVesselFills",
+			this.canvas.updateVesselFills,
 			[],
 			this.canvas
 		);
-		this._listComponents();
-		this._listEComponents();
-		this.invCompSelect.value = this.invComponents;
-		this.filterComponents();
 		this._listMolecules();
 		this._listMixtures();
 		this._listMolConfig();
@@ -1123,11 +1111,11 @@ export class ChemLab extends LitElementWw {
 	 * ticker function for titraton experiments, transfers content to another component dynamically on correct sprite positioning and updates the diagram
 	 *
 	 * @private
-	 * @param {PIXI.Sprite} currSprite - the sprite of the burette
+	 * @param {PIXI.Container} currSprite - the view of the burette
 	 * @param {chemlib.ChemComponent} source - the chemlib object of the burette
 	 */
 	private _updateTickerTransfer(
-		currSprite: PIXI.Sprite,
+		currSprite: PIXI.Container,
 		source: chemlib.ChemComponent
 	): void {
 		const keyName = "transfer" + currSprite.label;
@@ -1203,9 +1191,8 @@ export class ChemLab extends LitElementWw {
 			)
 		) {
 			this.tickerTimeObj[keyName] = 0;
-			let circuitComps: Array<chemlib.ElectricComponent> =
-				chemlib.ComponentManager.isCircuit(source);
-			if (circuitComps.length != 0) {
+			const circuitComps = this.operatingCircuit(source);
+			if (circuitComps) {
 				chemlib.Simulation.sEChem(
 					circuitComps[0],
 					circuitComps[1],
@@ -1217,56 +1204,111 @@ export class ChemLab extends LitElementWw {
 		}
 	}
 
+	private operatingCircuit(device: chemlib.ElectricComponent): chemlib.ElectricComponent[] | undefined {
+		const circuit = chemlib.ComponentManager.isCircuit(device);
+		if (circuit[2] === device && circuit.slice(0, 2).every((electrode) =>
+			electrode._type === chemlib.EComponentType.Electrode && electrode._connectedMix?._isSolution)) return circuit;
+	}
+
+	private runningCurrent(source: chemlib.ElectricComponent): number {
+		const ticker = `echem${source._type}:${source._id}`;
+		return this.simulation.tickerFunctionList.some(([name]) => name === ticker) && this.operatingCircuit(source)
+			? source._sourceCurrent || 0 : 0;
+	}
+
 	get canAuthor(): boolean {
 		const editable = this.getAttribute("contenteditable");
 		return editable === "" || editable === "true";
 	}
 
-	private startComponentDrag(event: DragEvent, type: PaletteComponent): void {
-		if (!event.dataTransfer) return;
+	private isVariantAllowed(variant: ComponentVariant): boolean {
+		return !this.invComponents.includes(variant.type) && !this.invComponents.includes(variant.id);
+	}
+
+	private setVariantAllowed(variant: ComponentVariant, allowed: boolean): void {
+		if (!this.canAuthor) return;
+		const blocked = new Set(this.invComponents);
+		const variants = componentVariants[variant.type];
+		if (blocked.delete(variant.type)) variants.forEach(({ id }) => blocked.add(id));
+		if (allowed) blocked.delete(variant.id);
+		else blocked.add(variant.id);
+		if (variants.every(({ id }) => blocked.has(id))) {
+			variants.forEach(({ id }) => blocked.delete(id));
+			blocked.add(variant.type);
+		}
+		this.invComponents = [...blocked];
+	}
+
+	private startComponentDrag(event: DragEvent, variant: ComponentVariant): void {
+		if (!event.dataTransfer || (!this.canAuthor && !this.isVariantAllowed(variant))) return;
 		event.stopPropagation();
 		event.dataTransfer.effectAllowed = "copy";
-		event.dataTransfer.setData("application/x-chemlab-component", type);
+		event.dataTransfer.setData("application/x-chemlab-component", variant.id);
 		this.componentToPlace = undefined;
 		this.selectedChemical = undefined;
 	}
 
 	private handleComponentDragOver(event: DragEvent): void {
-		if (!this.canAuthor || !event.dataTransfer?.types.includes("application/x-chemlab-component")) return;
+		if (!event.dataTransfer?.types.includes("application/x-chemlab-component")) return;
 		event.preventDefault();
 		event.stopPropagation();
 		event.dataTransfer.dropEffect = "copy";
 	}
 
 	private dropComponent(event: DragEvent): void {
-		const type = event.dataTransfer?.getData("application/x-chemlab-component") as PaletteComponent;
-		if (!this.app || !this.canAuthor || !Object.hasOwnProperty.call(componentGraphics, type)) return;
+		const variant = componentVariant(event.dataTransfer?.getData("application/x-chemlab-component"));
+		if (!this.app || !variant) return;
 		const bounds = this.app.canvas.getBoundingClientRect();
 		if (event.clientX < bounds.left || event.clientX > bounds.right ||
 			event.clientY < bounds.top || event.clientY > bounds.bottom) return;
 		event.preventDefault();
 		event.stopPropagation();
 		const point = this.canvas.worldPointFromViewport(event.clientX, event.clientY);
-		this.addAuthoredComponent(type, point.x, point.y);
+		this.addPaletteComponent(variant, point.x, point.y);
 	}
 
 	placeSelectedComponent(x: number, y: number): boolean {
-		if (!this.canAuthor || !this.componentToPlace) return false;
-		this.addAuthoredComponent(this.componentToPlace, x, y);
-		return true;
+		const variant = componentVariant(this.componentToPlace);
+		this.componentToPlace = undefined;
+		return variant ? this.addPaletteComponent(variant, x, y) : false;
 	}
 
-	private addAuthoredComponent(type: PaletteComponent, x: number, y: number): void {
+	private addPaletteComponent(variant: ComponentVariant, x: number, y: number): boolean {
+		if (!this.canAuthor && !this.isVariantAllowed(variant)) return false;
 		this.componentToPlace = undefined;
 		this.selectedChemical = undefined;
-		const graphic = componentGraphic(type);
-		const capacityMl = this.componentCapacities[type] ?? graphic.capacityMl;
+		const { id: variantId, type, capacityMl, material } = variant;
+		if (!this.canAuthor) {
+			let component: chemlib.ChemComponent | chemlib.ElectricComponent;
+			if (capacityMl !== undefined) {
+				const vessel = chemlib.ComponentManager.newChemComponent(type as chemlib.ComponentType);
+				vessel._volume = capacityMl;
+				this.allChemComponents.push(vessel);
+				component = vessel;
+			} else {
+				const device = chemlib.ComponentManager.newElectricComponent(type as chemlib.EComponentType);
+				if (material) device._material = this.newElectrodeMaterial(material);
+				this.allEComponents.push(device);
+				component = device;
+			}
+			const sprite = this.canvas._addSprite(`${type}:${component._id}`, true, capacityMl);
+			sprite.position.set(x, y);
+			return true;
+		}
 		const entry = {
-			type, pos: [x, y], capacityMl, vol: 0, content: "",
+			type, variantId, pos: [x, y], capacityMl, vol: 0, content: "",
 			voltage: 0, current: 0, material: "", connections: [],
 		};
 		this.availableComponents = [...this.availableComponents, entry];
 		this._loadComponents(entry);
+		return true;
+	}
+
+	private newElectrodeMaterial({ element, name }: ComponentVariant["material"]): chemlib.Molecule {
+		const molecule = chemlib.StructureManager.newMolecule();
+		molecule.addAtom(element, chemlib.ElementData.getData(element)["symbol"]);
+		molecule.name = name;
+		return molecule;
 	}
 
 	private findAuthoredComponent(sprite: PIXI.Container): object | undefined {
@@ -1275,13 +1317,21 @@ export class ChemLab extends LitElementWw {
 			`${String(component["type"]).toLowerCase()}:${component["id"]}` === sprite.label);
 	}
 
-	saveComponentPosition(sprite: PIXI.Sprite): void {
+	saveComponentPosition(sprite: PIXI.Container): void {
+		this.saveComponentPositions([sprite]);
+	}
+
+	saveComponentPositions(sprites: readonly PIXI.Container[]): void {
 		if (!this.canAuthor) return;
-		const entry = this.findAuthoredComponent(sprite);
-		if (entry && (entry["pos"][0] !== sprite.x || entry["pos"][1] !== sprite.y)) {
-			entry["pos"] = [sprite.x, sprite.y];
-			this.availableComponents = [...this.availableComponents];
+		let changed = false;
+		for (const sprite of sprites) {
+			const entry = this.findAuthoredComponent(sprite);
+			if (entry && (entry["pos"][0] !== sprite.x || entry["pos"][1] !== sprite.y)) {
+				entry["pos"] = [sprite.x, sprite.y];
+				changed = true;
+			}
 		}
+		if (changed) this.availableComponents = [...this.availableComponents];
 	}
 
 	private removeAuthoredComponent(sprite: PIXI.Container): void {
@@ -1293,7 +1343,7 @@ export class ChemLab extends LitElementWw {
 		this.availableComponents = this.availableComponents
 			.filter((component) => component !== entry)
 			.map((component) => {
-				component["connections"] = component["connections"]
+				component["connections"] = (component["connections"] ?? [])
 					.filter((connection: number) => connection !== index)
 					.map((connection: number) => connection > index ? connection - 1 : connection);
 				return component;
@@ -1336,7 +1386,7 @@ export class ChemLab extends LitElementWw {
 		this.stopDose?.(true);
 	}
 
-	beginChemicalDose(sprite: PIXI.Sprite, pointerId: number): boolean {
+	beginChemicalDose(sprite: PIXI.Container, pointerId: number): boolean {
 		const selected = this.selectedChemical;
 		if (!this.canAuthor || !selected) return false;
 		if (this.stopDose) return true;
@@ -1371,9 +1421,11 @@ export class ChemLab extends LitElementWw {
 			};
 		};
 		const add = (requestedMl: number) => {
-			const volumeMl = Math.min(requestedMl, Math.max(0, target._volume - target._content.contentVolume * 1000));
+			const portion = dose(requestedMl);
+			const fraction = target._content.fractionThatFits(portion, target._volume / 1000);
+			const volumeMl = requestedMl * fraction;
 			if (volumeMl > 1e-8) {
-				target.addContents({ nMix: dose(volumeMl) });
+				target.addContents({ nMix: fraction === 1 ? portion : dose(volumeMl) });
 				totalMl += volumeMl;
 			}
 			updateMeter();
@@ -1415,34 +1467,6 @@ export class ChemLab extends LitElementWw {
 		updateMeter();
 		return true;
 	}
-
-	/**
-	 * adds a new component
-	 *
-	 * @private
-	 * @param {boolean} e - compoent is an electric component
-	 * @param {string} type - the component type
-	 */
-	private _addComponent(e: boolean, type: string): void {
-		let component: chemlib.ChemComponent | chemlib.ElectricComponent = null;
-		if (!e) {
-			component = chemlib.ComponentManager.newChemComponent(
-				type.toLowerCase() as chemlib.ComponentType
-			);
-			this.allChemComponents.push(component);
-		} else {
-			component = chemlib.ComponentManager.newElectricComponent(
-				type.toLowerCase() as chemlib.EComponentType
-			);
-			this.allEComponents.push(component);
-		}
-
-		this.canvas._addSprite(component._type + ":" + component._id);
-	}
-
-
-
-
 
 	/**
 	 * updates the information shown for the selected object
@@ -1522,12 +1546,15 @@ export class ChemLab extends LitElementWw {
 			) {
 				this.activateEComp.style.display = "";
 				if (this.curr_obj._type === chemlib.EComponentType.Voltmeter) {
+					const reading = this.voltageReading(this.curr_obj);
+					this.shadowRoot.getElementById("shownVoltage").textContent = reading;
 					this.contextEchemInfo.innerHTML = `
-						<p>${this.message("Spannung")}: ${this.curr_obj._visibleVoltage.toExponential(2) + " V"}</p>
+						<p>${this.message("Spannung")}: ${reading}</p>
+						<p>${this.message("Modellstrom")}: ${this.curr_obj._sourceCurrent} A</p>
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 						`;
 				} else {
-					let current: number = this.curr_obj._sourceCurrent || 0;
+					const current = this.runningCurrent(this.curr_obj);
 					let electronMolRate: number =
 						current / chemlib.Simulation._faradayConst;
 					this.contextEchemInfo.innerHTML = `
@@ -1540,6 +1567,9 @@ export class ChemLab extends LitElementWw {
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 						`;
 				}
+			} else if (this.curr_obj._type === chemlib.EComponentType.Ammeter) {
+				this.contextEchemInfo.innerHTML = `<p>${this.message("Modellspannung")}: ${this.curr_obj._sourceVoltage} V</p>
+					<p>${this.message("Strommessung noch nicht verfügbar")}</p>`;
 			} else if (this.curr_obj._type === chemlib.EComponentType.Electrode){
 				this.activateEComp.style.display = "none";
 				// an electrode has no material until one is assigned in the
@@ -1572,7 +1602,7 @@ export class ChemLab extends LitElementWw {
 						// charge for exactly 1s at the source current, so
 						// faradayLaw's output doubles as a per-second rate
 						let faraday = chemlib.Simulation.faradayLaw(
-							device._sourceCurrent || 0,
+							this.runningCurrent(device),
 							redox.el,
 							material.getTotMolMass()
 						);
@@ -1599,11 +1629,12 @@ export class ChemLab extends LitElementWw {
 	 * @private
 	 * @param {*} sprite - the seleted sprite
 	 */
-	_getObject(sprite, expand = true): void {
+	_getObject(sprite): void {
 		if (!sprite) return;
-		this.editingMolecule = false;
+		this.canvas.clearGroupSelection();
 		const name = sprite.label;
-		const newSelection = this.curr_name !== name;
+		const newSelection = this.editingMolecule || this.curr_name !== name;
+		this.editingMolecule = false;
 		let chemlib_obj = null;
 
 		let type: string = name.split(":")[0];
@@ -1827,10 +1858,11 @@ export class ChemLab extends LitElementWw {
 			if (!sprite.label.includes("cable")) {
 				chemlib_obj._connections.forEach(
 					(cable: chemlib.ElectricComponent) => {
-						let conComp: chemlib.ElectricComponent =
+						const conComp: chemlib.ElectricComponent =
 							cable._connections[0] === chemlib_obj
 								? cable._connections[1]
 								: cable._connections[0];
+						if (!conComp) return;
 						// @ts-ignore
 						let tag: SlTag = this.shadowRoot.createElement(
 							"sl-tag"
@@ -1857,24 +1889,14 @@ export class ChemLab extends LitElementWw {
 								this.canvas._tintSprite(sprite, 0xffffff);
 							});
 						});
-						tag.addEventListener("dblclick", (event) => {
-							let fallbackSprite = sprite
-							this.curr_obj._connections.forEach((comp:chemlib.ElectricComponent)=>{
-								if(comp._connections.includes(conComp)){
-									this._emitAlert(
-										this.message("Verbindung gelöst zwischen {from} und {to}", { from: this.itemName(this.curr_obj._type), to: this.itemName(conComp._type) }),
-										"danger",
-										false,
-										1500
-									);
-									this._remEcon(comp);
-									this.canvas.world.children.forEach((sprite) => {
-										this.canvas._tintSprite(sprite, 0xffffff);
-									});
-								}
-							})
-							// console.log(fallbackSprite.label)
-							this._getObject(fallbackSprite)
+						tag.addEventListener("dblclick", () => {
+							const cableView = this.canvas.world.children.find(({ label }) => label === `cable:${cable._id}`);
+							if (!cableView) return;
+							this.removeObjects([cableView]);
+							this._emitAlert(this.message("Verbindung gelöst zwischen {from} und {to}", {
+								from: this.itemName(chemlib_obj._type), to: this.itemName(conComp._type),
+							}), "danger", false, 1500);
+							this.canvas.world.children.forEach((view) => this.canvas._tintSprite(view, 0xffffff));
 						});
 						this.eConInfo.appendChild(tag);
 					}
@@ -1913,11 +1935,7 @@ export class ChemLab extends LitElementWw {
 					}
 					break;
 				case "voltmeter":
-					let mixVoltage: SlTag = this.shadowRoot.getElementById(
-						"shownVoltage"
-					) as SlTag;
-					mixVoltage.innerHTML =
-						chemlib_obj._visibleVoltage.toExponential(2) + " V";
+				case "ammeter":
 					this.eCompInfo.style.visibility = "";
 					this.conSelect.value = "";
 					this.eCompPanelVisible = [true, false, false];
@@ -1975,7 +1993,7 @@ export class ChemLab extends LitElementWw {
 		this.curr_stage_index = this.canvas.world.children.indexOf(sprite);
 		this.curr_obj = chemlib_obj;
 		this.curr_name = name;
-		if (expand && newSelection) this.expandSelectedObjectPanel();
+		if (newSelection) this.setObjectPanelOpen(false);
 		this._updatePopup();
 
 		this.requestUpdate();
@@ -2005,70 +2023,119 @@ export class ChemLab extends LitElementWw {
 	 * @private
 	 */
 	_removeSprite(): void {
-		if (
-			Object.values(chemlib.EComponentType).includes(this.curr_obj._type)
-		) {
-			let length: number = this.curr_obj._connections.length;
-			for (let i = 0; i < length; i++) {
-				this._remEcon(this.curr_obj._connections[0]);
-			}
-		}
-		if (
-			this.curr_obj._type === "flask" ||
-			this.curr_obj._type === "beaker"
-		) {
-			this.allEComponents.forEach((eComp) => {
-				if (typeof eComp != "undefined") {
-					if (eComp._type === "electrode") {
-						if (eComp._connectedMix === this.curr_obj._content) {
-							eComp._connectedMix = undefined;
-							this._emitAlert(
-								this.message("{from} aus {to} entfernt.", { from: this.itemName(eComp._type), to: this.itemName(this.curr_obj._type) }),
-								"danger",
-								false,
-								1500
-							);
-						}
-					}
-				}
-			});
-		}
-
 		const sprite = this.canvas.world.children[this.curr_stage_index];
-		this.stopDose?.();
-		this.hideFillMeter();
-		this.removeAuthoredComponent(sprite);
-		this.canvas.removeSprite(sprite);
-
-		if (this.allChemComponents.includes(this.curr_obj)) {
-			this.allChemComponents.splice(
-				this.allChemComponents.indexOf(this.curr_obj),
-				1
-			);
-		}
-
-		if (this.allEComponents.includes(this.curr_obj)) {
-			this.allEComponents.splice(
-				this.allEComponents.indexOf(this.curr_obj),
-				1
-			);
-		}
-
-		this.localizeControl(this.settings_drawer, "textContent", "Objekt");
-		this.shadowRoot.getElementById("comp_panel").style.display = "none";
-		this.shadowRoot.getElementById("ecomp_panel").style.display = "none";
-
-		this.simulation.remTickerFunction("transfer" + this.curr_name);
-		this.simulation.remTickerFunction("echem" + this.curr_name);
-
-		this._sendxAPiStatement("removed", this.curr_name);
-
-		this.clearObjectSelection();
-		this.canvas._updateCablePos();
+		if (sprite) this.removeObjects([sprite]);
 	}
 
-	clearObjectSelection(): void {
-		if (this.editingMolecule || !this.curr_obj) return;
+	private deleteSelection(event: KeyboardEvent): void {
+		if (event.key !== "Delete" || event.defaultPrevented || event.isComposing ||
+			event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || this.editingMolecule || this.confirmDialog?.open) return;
+		for (const target of event.composedPath()) {
+			if (target === event.currentTarget) break;
+			if (target instanceof Element && target.matches("input, textarea, select, sl-input, sl-select, [role='textbox'], [contenteditable]:not([contenteditable='false'])")) return;
+		}
+		const group = this.canvas.selectedObjects;
+		const single = this.canvas.world.children[this.curr_stage_index];
+		if (!group.length && !single) return;
+		event.preventDefault();
+		event.stopPropagation();
+		this.removeObjects(group.length ? group : [single]);
+	}
+
+	removeObjects(sprites: readonly PIXI.Container[]): void {
+		const world = this.canvas.world;
+		const targets = sprites.filter((sprite) => sprite.parent === world);
+		if (!targets.length) return;
+		const labelOf = (component: chemlib.ChemComponent | chemlib.ElectricComponent) => `${component._type}:${component._id}`;
+		const labels = new Set(targets.map(({ label }) => label));
+		const removedElectrical = this.allEComponents.filter((component) => labels.has(labelOf(component)) ||
+			(component._type === chemlib.EComponentType.Cable && component._connections.some((end) => labels.has(labelOf(end)))));
+		const removedChemical = this.allChemComponents.filter((component) => labels.has(labelOf(component)));
+		const removedMixtures = new Map(removedChemical.map((component) => [component._content, component]));
+		const detachedElectrodes = this.allEComponents.filter((component) => component._type === chemlib.EComponentType.Electrode &&
+			removedMixtures.has(component._connectedMix) && !labels.has(labelOf(component)));
+		// Collect the affected circuit while the connections still exist.
+		const affectedElectrical = new Set([...removedElectrical, ...detachedElectrodes]);
+		for (const component of affectedElectrical) {
+			for (const partner of component._connections) affectedElectrical.add(partner);
+		}
+		for (const component of removedElectrical) labels.add(labelOf(component));
+		const selected = world.children[this.curr_stage_index];
+		if (selected && labels.has(selected.label)) {
+			this.stopDose?.();
+			this.hideFillMeter();
+			this.localizeControl(this.settings_drawer, "textContent", "Objekt");
+			this.shadowRoot.getElementById("comp_panel").style.display = "none";
+			this.shadowRoot.getElementById("ecomp_panel").style.display = "none";
+			this.clearObjectSelection(true);
+		}
+		for (const component of removedElectrical) {
+			if (component._type === chemlib.EComponentType.Cable) this.removeAuthoredCableConnection(component);
+		}
+		for (const component of removedElectrical) {
+			for (const partner of [...component._connections]) this._remEcon(component, partner);
+		}
+		for (const electrode of detachedElectrodes) {
+			const vessel = removedMixtures.get(electrode._connectedMix);
+			electrode._connectedMix = undefined;
+			this._emitAlert(this.message("{from} aus {to} entfernt.", {
+				from: this.itemName(electrode._type), to: this.itemName(vessel._type),
+			}), "danger", false, 1500);
+		}
+		this.allChemComponents = this.allChemComponents.filter((component) => !labels.has(labelOf(component)));
+		this.allEComponents = this.allEComponents.filter((component) => !labels.has(labelOf(component)));
+		for (const sprite of [...world.children]) {
+			if (!labels.has(sprite.label)) continue;
+			this.removeAuthoredComponent(sprite);
+			this.canvas.removeSprite(sprite);
+			this.simulation.remTickerFunction("transfer" + sprite.label);
+			this.simulation.remTickerFunction("echem" + sprite.label);
+			this._sendxAPiStatement("removed", sprite.label);
+		}
+		for (const component of affectedElectrical) {
+			if (!labels.has(labelOf(component))) this.refreshDeviceAfterRemoval(component);
+		}
+		if (selected?.parent === world) {
+			this.curr_stage_index = world.getChildIndex(selected);
+			if (!this.editingMolecule && this.allEComponents.includes(this.curr_obj) &&
+				(removedElectrical.length || affectedElectrical.has(this.curr_obj))) this._getObject(selected);
+		}
+	}
+
+	private refreshDeviceAfterRemoval(component: chemlib.ElectricComponent): void {
+		const { Source, Voltmeter } = chemlib.EComponentType;
+		if ((component._type !== Source && component._type !== Voltmeter) || this.operatingCircuit(component)) return;
+		if (component._type === Voltmeter) component._visibleVoltage = 0;
+		const label = `${component._type}:${component._id}`;
+		const ticker = "echem" + label;
+		if (!this.simulation.tickerFunctionList.some(([name]) => name === ticker)) return;
+		this.simulation.remTickerFunction(ticker);
+		const sprite = this.canvas.world.children.find((view) => view.label === label);
+		if (sprite instanceof PIXI.Sprite) this.canvas.setDeviceActive(sprite, false);
+		this._sendxAPiStatement("completed", ticker);
+		this.requestUpdate();
+	}
+
+	private removeAuthoredCableConnection(cable: chemlib.ElectricComponent): void {
+		if (!this.canAuthor || cable._connections.length !== 2) return;
+		const indices = cable._connections.map((end) => {
+			const sprite = this.canvas.world.children.find(({ label }) => label === `${end._type}:${end._id}`);
+			return sprite ? this.availableComponents.indexOf(this.findAuthoredComponent(sprite)) : -1;
+		});
+		if (indices.some((index) => index < 0)) return;
+		const [first, second] = indices;
+		this.availableComponents = this.availableComponents.map((entry, index) => {
+			if (index !== first && index !== second) return entry;
+			const partner = index === first ? second : first;
+			entry["connections"] = (entry["connections"] ?? []).filter((connection: number) => connection !== partner);
+			return entry;
+		});
+	}
+
+	clearObjectSelection(closeEditor = false): void {
+		if (this.editingMolecule && !closeEditor) return;
+		this.editingMolecule = false;
+		this.canvas.clearGroupSelection();
 		this.curr_obj = null;
 		this.curr_name = "";
 		this.curr_stage_index = -1;
@@ -2124,6 +2191,7 @@ export class ChemLab extends LitElementWw {
 		addMolButton.id = "enter";
 		this.localizeControl(addMolButton, "textContent", "hinzufügen");
 		addMolButton.onclick = (event) => {
+			this.canvas.clearGroupSelection();
 			this.localizeControl(this.settings_drawer, "textContent", "neues Molekül");
 			this.editingMolecule = true;
 			this._newMol();
@@ -2378,84 +2446,6 @@ export class ChemLab extends LitElementWw {
 	}
 
 	/**
-	 * loads available compoents into the corresponding part of the context menu
-	 *
-	 * @private
-	 */
-	private _listComponents(): void {
-		let details = this.shadowRoot.getElementById("details_comp");
-		if (this.components_signal[0]) {
-			return;
-		}
-
-		for (const en_key in chemlib.ComponentType) {
-			if(en_key.toLowerCase() != "separatingfunnel" && en_key.toLowerCase() != "condenser"){
-				const key = en_key.toLowerCase();
-				// @ts-ignore
-				let elem: SlMenuItem = this.shadowRoot.createElement(
-					"sl-menu-item"
-				) as SlMenuItem;
-				elem.addEventListener("click", () => {
-					this._addComponent(false, en_key);
-					this.contextMenu.style.display = "none";
-				});
-				this.localizeControl(elem, "textContent", this.dictionary[key]);
-				elem.value = key;
-				details.appendChild(elem);
-				// @ts-ignore
-				let toElem: SlOption = this.shadowRoot.createElement(
-					"sl-option"
-				) as SlOption;
-				toElem.style.fontSize = "11pt";
-				this.localizeControl(toElem, "textContent", this.dictionary[key]);
-				toElem.value = key;
-				this.invCompSelect.appendChild(toElem);
-			}
-		}
-
-		this.components_signal[0] = true;
-	}
-	/**
-	 * loads available e-compoents into the corresponding part of the context menu
-	 *
-	 * @private
-	 */
-	private _listEComponents(): void {
-		let details = this.shadowRoot.getElementById("details_ecomp");
-
-		if (this.components_signal[1]) {
-			return;
-		}
-
-		for (const en_key in chemlib.EComponentType) {
-			if (en_key.toLowerCase() != "cable") {
-				const key = en_key.toLowerCase();
-				// @ts-ignore
-				let elem: SlMenuItem = this.shadowRoot.createElement(
-					"sl-menu-item"
-				) as SlMenuItem;
-				elem.addEventListener("click", () => {
-					this._addComponent(true, en_key);
-					this.contextMenu.style.display = "none";
-				});
-				this.localizeControl(elem, "textContent", this.dictionary[key]);
-				elem.value = key;
-				details.appendChild(elem);
-				// @ts-ignore
-				let toElem: SlOption = this.shadowRoot.createElement(
-					"sl-option"
-				) as SlOption;
-				toElem.style.fontSize = "11pt";
-				this.localizeControl(toElem, "textContent", this.dictionary[key]);
-				toElem.value = key;
-				this.invCompSelect.appendChild(toElem);
-			}
-		}
-
-		this.components_signal[1] = true;
-	}
-
-	/**
 	 * loads element data into the panel view
 	 *
 	 * @private
@@ -2464,7 +2454,7 @@ export class ChemLab extends LitElementWw {
 		let elements: string[] = chemlib.ElementData.getElementList();
 		let field = this.shadowRoot.getElementById("atoms");
 
-		if (this.components_signal[2]) {
+		if (this.atomsListed) {
 			return;
 		}
 
@@ -2588,7 +2578,7 @@ export class ChemLab extends LitElementWw {
 			atom_container.appendChild(atom);
 		});
 
-		this.components_signal[2] = true;
+		this.atomsListed = true;
 	}
 
 	/**
@@ -2798,16 +2788,19 @@ export class ChemLab extends LitElementWw {
 		// console.log(this.availableComponents, entry);
 		for (let component of this.availableComponents) {
 			if (entry && component !== entry) continue;
+			const type = component["type"].toLowerCase();
+			const savedVariant = componentVariant(component["variantId"]);
+			const variant = savedVariant?.type === type ? savedVariant : undefined;
 
 			let newComp: chemlib.ChemComponent | chemlib.ElectricComponent;
 
 			if (
 				Object.values(chemlib.ComponentType).includes(
-					component["type"].toLowerCase() as chemlib.ComponentType
+				type as chemlib.ComponentType
 				)
 			) {
 				newComp = chemlib.ComponentManager.newChemComponent(
-					component["type"].toLowerCase()
+					type
 				);
 				this.allChemComponents.push(newComp);
 				let newMix: chemlib.Mixture = this._loadMixture(
@@ -2815,7 +2808,7 @@ export class ChemLab extends LitElementWw {
 					component["vol"]
 				);
 				newComp.addContents({ nMix: newMix });
-				const capacity = Number(component["capacityMl"]);
+				const capacity = Number(component["capacityMl"] ?? variant?.capacityMl);
 				if (Number.isFinite(capacity) && capacity > 0) newComp._volume = capacity;
 				for (const saved of (component["doses"] ?? []) as SavedDose[]) {
 					const dose = this.buildDose(saved.recipe);
@@ -2825,24 +2818,24 @@ export class ChemLab extends LitElementWw {
 				}
 			} else {
 				newComp = chemlib.ComponentManager.newElectricComponent(
-					component["type"].toLowerCase()
+					type
 				);
 				switch (newComp._type) {
 					case chemlib.EComponentType.Electrode:
-						if (!component["material"]) break;
-						newComp._material = this._loadMolecule(
-							component["material"],
-							false
-						);
+						if (variant?.material) newComp._material = this.newElectrodeMaterial(variant.material);
+						else if (component["material"]) {
+							newComp._material = this._loadMolecule(component["material"], false);
+							newComp._material.name = component["material"];
+						}
+						if (!newComp._material) break;
 						if (newComp._material._atoms.length === 0) {
 							newComp._material = undefined;
 							break;
 						}
-						newComp._material.name = component["material"];
-						this.electrodeMaterials.push([
-							newComp._material.name,
-							newComp._material,
-						]);
+						const material = newComp._material;
+						if (!this.electrodeMaterials.some(([name]) => name === material.name)) {
+							this.electrodeMaterials.push([material.name, material]);
+						}
 						break;
 					case chemlib.EComponentType.Source:
 						newComp._sourceVoltage = Number.parseFloat(component["voltage"]) || 0;
@@ -3325,13 +3318,12 @@ export class ChemLab extends LitElementWw {
 	 * @private
 	 * @param {chemlib.ElectricComponent} partner - the object to which the connection is to be removed
 	 */
-	private _remEcon(partner: chemlib.ElectricComponent): void {
-		let message: string = this.curr_obj.disconnect(partner);
-		this._getObject(this.canvas.world.children[this.curr_stage_index]);
+	private _remEcon(component: chemlib.ElectricComponent, partner: chemlib.ElectricComponent): void {
+		const message: string = component.disconnect(partner);
 		if (message === "") {
 			this._sendxAPiStatement(
 				"removed",
-				"eCon " + this.curr_obj._type + this.curr_obj._id,
+				"eCon " + component._type + component._id,
 				{
 					response: partner._type + ":" + partner._id,
 					success: true,
@@ -3342,7 +3334,7 @@ export class ChemLab extends LitElementWw {
 			this._emitAlert(message.split("\n").filter(Boolean).map(line => this.message(line)).join("\n"), "warning", true);
 			this._sendxAPiStatement(
 				"removed",
-				"eCon " + this.curr_obj._type + this.curr_obj._id,
+				"eCon " + component._type + component._id,
 				{
 					response: partner._type + ":" + partner._id,
 					success: false,
@@ -3358,6 +3350,7 @@ export class ChemLab extends LitElementWw {
 	 * @private
 	 */
 	private _setElectrodeMaterlial(): void {
+		if (!this.canAuthor) return;
 		let matSel: SlSelect = this.shadowRoot.getElementById(
 			"electrodeSelect"
 		) as SlSelect;
@@ -3368,7 +3361,8 @@ export class ChemLab extends LitElementWw {
 		});
 		if (!this.curr_obj._material) return;
 		const formula = this.curr_obj._material._kekule_obj.calcFormula().getDisplayText();
-		this.saveSelectedComponent({ material: formula });
+		const preset = componentVariants.electrode.find(({ material }) => material.name === this.curr_obj._material.name);
+		this.saveSelectedComponent({ material: formula, variantId: preset?.id });
 		this._sendxAPiStatement(
 			"submitted",
 			"ElectrodeMaterlial " +
@@ -3509,31 +3503,6 @@ export class ChemLab extends LitElementWw {
 	}
 
 	/**
-	 * disables preselected compoents for student use 
-	 *
-	 * @private
-	 */
-	private filterComponents(): void {
-		let eDetails = this.shadowRoot.getElementById("details_ecomp");
-		let cDetails = this.shadowRoot.getElementById("details_comp");
-
-		for (let i = 0; i < eDetails.childElementCount; i++) {
-			if (this.invComponents.includes((eDetails.children[i] as SlMenuItem).value)) {
-				eDetails.children[i].setAttribute("disabled", "true");
-			} else {
-				eDetails.children[i].removeAttribute("disabled");
-			}
-		}
-		for (let i = 0; i < cDetails.childElementCount; i++) {
-			if (this.invComponents.includes((cDetails.children[i] as SlMenuItem).value)) {
-				cDetails.children[i].setAttribute("disabled", "true");
-			} else {
-				cDetails.children[i].removeAttribute("disabled");
-			}
-		}
-	}
-
-	/**
 	 * renders the entire widget
 	 *
 	 * @returns {*}
@@ -3542,40 +3511,22 @@ export class ChemLab extends LitElementWw {
 		return html`
 			<div
 				id="upper"
-				class=${`${this.objectPanelOpen ? "show-object-panel" : ""} ${this.fullWidthMode && this.diagramPanelOpen ? "show-diagram-panel" : ""}`}
+				@keydown=${this.deleteSelection}
+				class=${`${this.objectPanelOpen ? "show-object-panel" : ""} ${this.diagramPanelOpen ? "show-diagram-panel" : ""}`}
 			>
 				<div id="canvasArea" @dragover=${this.handleComponentDragOver} @drop=${this.dropComponent}>
 					${this.pix_canvas}
 					${this.renderFillMeter()}
 					${this.renderControlButtons()}
 				</div>
-				<aside id="objectArea">
-					<sl-button
-						id="toggleObjectPanel"
-						size="small"
-						variant="default"
-						title=${this.message(this.objectPanelOpen ? "Schließen" : "Panel anzeigen")}
-						aria-controls="objectPanel"
-						aria-expanded=${this.objectPanelOpen}
-						?disabled=${!this.curr_obj && !this.editingMolecule}
-						@click=${() => this.setObjectPanelOpen(!this.objectPanelOpen)}
-					>
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-							stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"
-							aria-hidden="true">
-							<rect x="3.5" y="4.5" width="17" height="15" rx="1"/>
-							<path d="M15.5 5v14"/>
-							<path d=${this.objectPanelOpen ? "m8 9 3 3-3 3" : "m11 9-3 3 3 3"}/>
-						</svg>
-						<span class="panel-button-label">${this.message(this.objectPanelOpen ? "Schließen" : "Panel anzeigen")}</span>
-					</sl-button>
-					${this.renderObjectSummary()}
-					${this.renderObjectPanel()}
-				</aside>
-				${this.fullWidthMode ? this.renderInlineDiagramPanel() : this.renderDiagramDrawer()}
+				${this.renderObjectDetails()}
+				${this.renderDiagramDetails()}
 				${this.renderConfirmDialog()}
-				${this.renderContextMenu()}
 				${this.renderTeacherDrawer()}
+				<sl-popup id="permissionPopup" placement="top" distance="8" flip shift arrow
+					.anchor=${this.permissionTooltip?.anchor} .active=${!!this.permissionTooltip}>
+					<div id="permissionTooltip" role="tooltip">${this.permissionTooltip?.text}</div>
+				</sl-popup>
 			</div>
 		`;
 	}
@@ -3634,150 +3585,99 @@ export class ChemLab extends LitElementWw {
 		`;
 	}
 
-	expandSelectedObjectPanel(): void {
-		if (this.fullWidthMode && this.curr_obj) this.setObjectPanelOpen(true);
-	}
-
 	private setObjectPanelOpen(open: boolean): void {
+		if (open && this.canvas.selectedObjects.length) return;
 		if (this.objectPanelOpen === open) return;
 		this.objectPanelOpen = open;
 		this._sendxAPiStatement(open ? "opened" : "closed", "objectPanel");
 	}
 
-	private toggleDiagramPanel(): void {
-		if (this.fullWidthMode) {
-			this.diagramPanelOpen = !this.diagramPanelOpen;
-			this._sendxAPiStatement(this.diagramPanelOpen ? "opened" : "closed", "diagramPanel");
-		} else {
-			this.diagramDrawer.show();
-			this._sendxAPiStatement("opened", "diagramPanel");
-		}
-	}
-
-	private renderInlineDiagramPanel() {
+	private renderObjectDetails() {
+		const groupSelected = this.canvas.selectedObjects.length > 0;
 		return html`
-			<aside id="inlineDiagramPanel" aria-label=${this.message("Diagramme")} ?hidden=${!this.diagramPanelOpen}>
-				<sl-badge variant="primary">${this.message("Diagramme")}</sl-badge>
-				<sl-checkbox .checked=${this.diagrams.showLine} @sl-change=${() => this.diagrams.toggleShowLine()}>
-					${this.message("Kurven anzeigen")}
-				</sl-checkbox>
-				${this.canvasContainer}
-			</aside>
-		`;
-	}
-
-	private renderDiagramDrawer() {
-		return html`
-				<sl-drawer
-					id="diagramDrawer"
-					label=${this.message("Diagramme")}
-					contained
-					placement="start"
-					no-header
-				>
-					<button
-						@click="${() => {
-							this.diagramDrawer.hide();
-							this._sendxAPiStatement("closed", "diagram panel");
-						}}"
-						style="position: absolute; top: 7.5px; right: 7.5px"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-						>
-							<path
-								fill="#b80000"
-								d="M6.4 19L5 17.6l5.6-5.6L5 6.4L6.4 5l5.6 5.6L17.6 5L19 6.4L13.4 12l5.6 5.6l-1.4 1.4l-5.6-5.6z"
-							/>
+			<aside id="objectArea" class="workspace-side">
+				${this.renderObjectSummary()}
+				${this.renderGroupSummary()}
+				<sl-details class="workspace-details" .open=${this.objectPanelOpen}
+					?disabled=${groupSelected || (!this.curr_obj && !this.editingMolecule)}
+					@sl-show=${(event: Event) => { if (event.target === event.currentTarget) this.setObjectPanelOpen(true); }}
+					@sl-hide=${(event: Event) => { if (event.target === event.currentTarget) this.setObjectPanelOpen(false); }}>
+					<span slot="summary" class="workspace-summary" title=${this.message("Objekt")}>
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+							<rect x="2" y="3" width="12" height="10" rx="1"/><path d="M9 3v10"/>
 						</svg>
-					</button>
-					<div
-						style="position: absolute; top: 7.5px; left: 7.5px; display: flex; flex-direction: row; align-items: baseline"
-					>
-						<sl-badge variant="primary">${this.message("Diagramme")}</sl-badge>
-						<sl-checkbox
-							.checked=${this.diagrams.showLine}
-							@sl-change=${(event) => {
-								this.diagrams.toggleShowLine();
-							}}
-							><p>${this.message("Kurven anzeigen")}</p></sl-checkbox
-						>
+						<span class="panel-button-label">${this.message("Objekt")}</span>
+					</span>
+					${this.renderPanelArrows("left")}
+					${this.renderObjectPanel()}
+				</sl-details>
+			</aside>`;
+	}
+
+	private renderDiagramDetails() {
+		return html`
+			<aside id="diagramArea" class="workspace-side">
+				<sl-details class="workspace-details" .open=${this.diagramPanelOpen}
+					@sl-show=${(event: Event) => this.onDiagramToggle(event, true)}
+					@sl-hide=${(event: Event) => this.onDiagramToggle(event, false)}>
+					<span slot="summary" class="workspace-summary" title=${this.message("Diagramme")}>
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+							<path d="M2 2v12h12M4 11l3-4 3 2 4-5"/>
+						</svg>
+						<span class="panel-button-label">${this.message("Diagramme")}</span>
+					</span>
+					${this.renderPanelArrows("right")}
+					<div id="inlineDiagramPanel">
+						<sl-checkbox .checked=${this.diagrams.showLine} @sl-change=${() => this.diagrams.toggleShowLine()}>
+							${this.message("Kurven anzeigen")}
+						</sl-checkbox>
+						${this.canvasContainer}
 					</div>
-					${this.canvasContainer}
-				</sl-drawer>
-		`;
+				</sl-details>
+			</aside>`;
+	}
+
+	private onDiagramToggle(event: Event, open: boolean): void {
+		if (event.target !== event.currentTarget || this.diagramPanelOpen === open) return;
+		this.diagramPanelOpen = open;
+		this._sendxAPiStatement(open ? "opened" : "closed", "diagramPanel");
+	}
+
+	private renderPanelArrows(direction: "left" | "right" | "up") {
+		const paths = {
+			left: ["m9 3-4 4 4 4", "m5 3 4 4-4 4"],
+			right: ["m5 3 4 4-4 4", "m9 3-4 4 4 4"],
+			up: ["m3 9 4-4 4 4", "m3 5 4 4 4-4"],
+		};
+		return html`
+			<svg slot="expand-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" aria-hidden="true"><path d=${paths[direction][0]}/></svg>
+			<svg slot="collapse-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" aria-hidden="true"><path d=${paths[direction][1]}/></svg>`;
 	}
 
 	private renderControlButtons() {
 		return html`
-				<div
-					id="buttonRowTop"
-					style="position: absolute; top: 0px; right: 0px; display: flex; flex-direction: column"
-				>
-					<button
-						id="buttonFullscreen"
-						title=${this.message("Vollbild an/aus")}
-						aria-label=${this.message("Vollbild an/aus")}
-						@click="${() => {
-							if (this.ownerDocument.fullscreenElement === this) {
-								this.ownerDocument.exitFullscreen();
-								this._sendxAPiStatement(
-									"selected",
-									"window mode"
-								);
-							} else {
-								this.requestFullscreen();
-								this._sendxAPiStatement(
-									"selected",
-									"fullscreen mode"
-								);
-							}
-						}}"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="24"
-							height="24"
-							viewBox="0 0 24 24"
-						>
-							<path
-								fill="currentColor"
-								d="M3 21v-5h2v3h3v2zm13 0v-2h3v-3h2v5zM3 8V3h5v2H5v3zm16 0V5h-3V3h5v5z"
-							/>
-						</svg>
-					</button>
-				</div>
-				<div
-					id="buttonRowLeft"
-					style="position: absolute; top: 0px; left: 0px; display: flex; flex-direction: column"
-				>
-					<button
-						id="toggleDiagramDrawer"
-						title=${this.message("Diagramme")}
-						aria-expanded=${this.fullWidthMode ? String(this.diagramPanelOpen) : nothing}
-						@click=${this.toggleDiagramPanel}
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="24"
-							height="24"
-							viewBox="0 0 24 24"
-						>
-							<path
-								fill="currentColor"
-								d="M12.5 8v8l4-4zM5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v14q0 .825-.587 1.413T19 21zm5-2h9V5h-9z"
-							/>
-						</svg>
-					</button>
-				</div>
 				<div id="canvasZoom">
 					<sl-button size="small" title=${this.message("Vergrößern")}
-						aria-label=${this.message("Vergrößern")} @click=${() => this.canvas.zoomBy(1.25)}>+</sl-button>
+						aria-label=${this.message("Vergrößern")} @click=${() => this.canvas.zoomBy(1.25)}>
+						<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true"><path d="M3 8h10M8 3v10"/></svg>
+					</sl-button>
 					<sl-button size="small" title=${this.message("Verkleinern")}
-						aria-label=${this.message("Verkleinern")} @click=${() => this.canvas.zoomBy(0.8)}>−</sl-button>
+						aria-label=${this.message("Verkleinern")} @click=${() => this.canvas.zoomBy(0.8)}>
+						<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true"><path d="M3 8h10"/></svg>
+					</sl-button>
+					<sl-button size="small" title=${this.message("Alle Objekte einpassen")}
+						aria-label=${this.message("Alle Objekte einpassen")} @click=${() => this.canvas.fitObjects()}>
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+							<path d="M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4"/>
+							<rect x="5" y="5" width="6" height="6" rx="0.5"/>
+						</svg>
+					</sl-button>
+					<sl-button id="buttonFullscreen" size="small" title=${this.message("Vollbild an/aus")}
+						aria-label=${this.message("Vollbild an/aus")} @click=${this.toggleFullscreen}>
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+							<path d="M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4"/>
+						</svg>
+					</sl-button>
 				</div>
 				<sl-alert
 					id="dialogOverview"
@@ -3789,81 +3689,151 @@ export class ChemLab extends LitElementWw {
 		`;
 	}
 
+	private async toggleFullscreen(): Promise<void> {
+		const exit = this.ownerDocument.fullscreenElement === this;
+		try {
+			if (exit) await this.ownerDocument.exitFullscreen();
+			else await this.requestFullscreen();
+			this._sendxAPiStatement("selected", exit ? "window mode" : "fullscreen mode");
+		} catch (error) {
+			console.warn("Unable to change Chemlab fullscreen mode", error);
+		}
+	}
+
+	private onTeacherDrawerToggle(event: Event, open: boolean): void {
+		if (event.target !== event.currentTarget || this.teacherDrawerOpen === open) return;
+		this.teacherDrawerChoice = this.teacherDrawerOpen = open;
+		if (!open) this.permissionTooltip = undefined;
+	}
+
 	private renderTeacherDrawer() {
+		const label = this.message(this.canAuthor ? "Lehrkraft Steuerung" : "Komponenten");
 		return html`
-			<section id="teacherDrawer" class="author-only" aria-label=${this.message("Lehrkraft Steuerung")}>
-				<sl-button size="small" aria-controls="teacherDrawerContent" aria-expanded=${this.teacherDrawerOpen}
-					@click=${() => { this.teacherDrawerChoice = this.teacherDrawerOpen = !this.teacherDrawerOpen; }}>
-					<svg slot="prefix" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
-						<path d=${this.teacherDrawerOpen ? "m4 6 4 4 4-4" : "m4 10 4-4 4 4"}/>
+			<sl-details id="teacherDrawer" class="workspace-details" .open=${this.teacherDrawerOpen}
+				@sl-show=${(event: Event) => this.onTeacherDrawerToggle(event, true)}
+				@sl-hide=${(event: Event) => this.onTeacherDrawerToggle(event, false)}>
+				<span slot="summary" class="workspace-summary" title=${label}>
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+						<path d="M2 6h12v7H2zM5 6V3h6v3M2 9h12"/>
 					</svg>
-					${this.message("Lehrkraft Steuerung")}
-				</sl-button>
-				${this.selectedChemical ? html`
-					<sl-button size="small" @click=${() => { this.selectedChemical = undefined; }}>
-						${this.selectedChemical.name} ×
-					</sl-button>` : ""}
-				<div id="teacherDrawerContent" ?hidden=${!this.teacherDrawerOpen}>
-					<div class="teacher-tabs">
-						<sl-button size="small" ?outline=${this.teacherTab !== "components"}
-							@click=${() => { this.teacherTab = "components"; }}>${this.message("Komponenten")}</sl-button>
-						<sl-button size="small" ?outline=${this.teacherTab !== "chemicals"}
-							@click=${() => { this.teacherTab = "chemicals"; }}>${this.message("Chemikalien")}</sl-button>
-					</div>
-					<div ?hidden=${this.teacherTab !== "components"}>
-						<div class="teacher-palette">
-							${(Object.keys(componentGraphics) as PaletteComponent[]).map((type) => {
-								const graphic = componentGraphic(type);
-								const capacity = this.componentCapacities[type] ?? graphic.capacityMl;
-								const step = graphic.capacityMl && Math.max(1, Math.round(graphic.capacityMl / 10));
-								return html`
-									<div class="teacher-card">
-										<button type="button" class="component-tile" draggable="true"
-											aria-pressed=${this.componentToPlace === type}
-											@dragstart=${(event: DragEvent) => this.startComponentDrag(event, type)}
-											@click=${() => {
-												this.componentToPlace = this.componentToPlace === type ? undefined : type;
-												this.selectedChemical = undefined;
-											}}>
-											<img src=${graphic.url} alt="" draggable="false"/>
-											<span>${this.itemName(type)}</span>
-										</button>
-										${capacity ? html`
-											<label class="capacity-control">
-												<span>${capacity} mL</span>
-												<input type="range" min=${step} max=${graphic.capacityMl * 2} step=${step} .value=${String(capacity)}
-													aria-label=${this.itemName(type) + " · mL"}
-													@input=${(event: Event) => {
-														this.componentCapacities = {
-															...this.componentCapacities,
-															[type]: Number((event.target as HTMLInputElement).value),
-														};
-													}}/>
-											</label>` : ""}
-									</div>
-								`;
-							})}
-						</div>
-						<sl-select id="invCompSelect" size="small" hoist clearable multiple
-							label=${this.message("Ausblenden")}
-							@sl-change=${() => {
-								this.invComponents = this.invCompSelect.value as string[];
-								this.filterComponents();
-							}}>
-						</sl-select>
-					</div>
-					<div ?hidden=${this.teacherTab !== "chemicals"}>
-						${this.teacherDrawerOpen && this.teacherTab === "chemicals" ? this.renderChemicalCatalog() : ""}
-						<sl-details summary=${this.message("Eigene Moleküle und Gemische")}>
-							<div class="teacher-editors">
-								<section><h3>${this.message("Moleküle")}</h3><div id="molConfig"></div></section>
-								<section><h3>${this.message("Gemische")}</h3><div id="mixConfig"></div></section>
-							</div>
-						</sl-details>
-					</div>
+					<span class="panel-button-label">${label}</span>
+				</span>
+				${this.renderPanelArrows("up")}
+				<div id="teacherDrawerContent">
+					${this.canAuthor && this.selectedChemical ? html`
+						<sl-button size="small" @click=${() => { this.selectedChemical = undefined; }}>
+							${this.selectedChemical.name} ×
+						</sl-button>` : ""}
+					<sl-tab-group id="teacherTabs" class=${this.canAuthor ? "" : "learner-tabs"}
+						@sl-tab-show=${(event: CustomEvent<{ name: "components" | "chemicals" }>) => {
+							if (event.target === event.currentTarget) {
+								this.teacherTab = event.detail.name;
+								this.permissionTooltip = undefined;
+							}
+						}}>
+						<sl-tab slot="nav" panel="components" active>${this.message("Komponenten")}</sl-tab>
+						<sl-tab slot="nav" panel="chemicals" ?disabled=${!this.canAuthor}>${this.message("Chemikalien")}</sl-tab>
+						<sl-tab-panel name="components" active>${this.renderComponentPalette()}</sl-tab-panel>
+						<sl-tab-panel name="chemicals" class="author-only">
+							${this.canAuthor && this.teacherDrawerOpen && this.teacherTab === "chemicals" ? this.renderChemicalCatalog() : ""}
+							<sl-details summary=${this.message("Eigene Moleküle und Gemische")}>
+								<div class="teacher-editors">
+									<section><h3>${this.message("Moleküle")}</h3><div id="molConfig"></div></section>
+									<section><h3>${this.message("Gemische")}</h3><div id="mixConfig"></div></section>
+								</div>
+							</sl-details>
+						</sl-tab-panel>
+					</sl-tab-group>
 				</div>
-			</section>
+			</sl-details>
 		`;
+	}
+
+	private renderComponentPalette() {
+		const cards = (Object.keys(componentVariants) as PaletteComponent[]).map((type) => {
+			const variants: ComponentVariant[] = componentVariants[type];
+			const allowed = variants.filter((variant) => this.isVariantAllowed(variant));
+			const visible = this.canAuthor ? variants : allowed;
+			if (!visible.length) return nothing;
+			const scale = (variant: ComponentVariant) => componentScale(type, variant.capacityMl);
+			const current = visible.find(({ id }) => id === this.visibleVariants[type]) ??
+				visible.find((variant) => scale(variant) === 1) ?? visible[0];
+			const position = visible.indexOf(current);
+			const previewPercent = 100 * scale(current) / Math.max(...variants.map(scale));
+			const name = this.itemName(type);
+			const variantLabel = current.material ? this.message(current.material.name) : current.size;
+			const partiallyAllowed = allowed.length > 0 && allowed.length < variants.length;
+			const showPermissionTooltip = (event: Event) => {
+				if (!partiallyAllowed) return;
+				this.permissionTooltip = {
+					anchor: event.currentTarget as HTMLElement,
+					type,
+					text: allowed.map((variant) => variant.material ? this.message(variant.material.name) : variant.size).join(", "),
+				};
+			};
+			const hidePermissionTooltip = (event: Event) => {
+				if (this.permissionTooltip?.anchor === event.currentTarget) this.permissionTooltip = undefined;
+			};
+			const itemLabel = variantLabel ? `${name} · ${variantLabel}` : name;
+			const changeVariant = (step: number) => {
+				const next = visible[(position + step + visible.length) % visible.length];
+				this.visibleVariants = { ...this.visibleVariants, [type]: next.id };
+				if (this.componentToPlace === current.id) this.componentToPlace = undefined;
+			};
+			const arrow = (step: number, label: string) => html`
+				<sl-button class="variant-arrow" size="small" variant="text" ?disabled=${visible.length < 2}
+					aria-label=${`${name} · ${label}`} title=${label} @click=${() => changeVariant(step)}>
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+						<path d=${step < 0 ? "m4 10 4-4 4 4" : "m4 6 4 4 4-4"}/>
+					</svg>
+				</sl-button>`;
+			const badge = html`
+				<sl-badge variant=${allowed.length === 0 ? "danger" : partiallyAllowed ? "primary" : "success"}
+					tabindex=${partiallyAllowed ? "0" : nothing}
+					aria-describedby=${this.permissionTooltip?.type === type ? "permissionTooltip" : nothing}
+					@pointerenter=${showPermissionTooltip} @pointerleave=${hidePermissionTooltip}
+					@focus=${showPermissionTooltip} @blur=${hidePermissionTooltip}
+					@keydown=${(event: KeyboardEvent) => { if (event.key === "Escape") hidePermissionTooltip(event); }}
+					aria-label=${this.message("{allowed} von {total} Varianten freigegeben", { allowed: allowed.length, total: variants.length })}>
+					${allowed.length} / ${variants.length}
+				</sl-badge>`;
+			return html`
+				<div class="teacher-card" role="group" aria-label=${name}>
+					<div class="component-card-header">
+						<span>${name}</span>
+						${this.canAuthor ? html`
+							<div class="component-permission-count">
+								${badge}
+							</div>
+							<div class="component-permission">
+								<sl-tooltip hoist content=${this.message("Für Lernende erlauben")}>
+									<sl-checkbox size="small" .checked=${this.isVariantAllowed(current)}
+										aria-label=${`${itemLabel} · ${this.message("Für Lernende erlauben")}`}
+										@sl-change=${(event: Event) => this.setVariantAllowed(current, (event.currentTarget as SlCheckbox).checked)}>
+										${this.message("Für Lernende erlauben")}
+									</sl-checkbox>
+								</sl-tooltip>
+							</div>` : nothing}
+					</div>
+					${arrow(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Größe"))}
+					<button type="button" class="component-tile" draggable="true"
+						aria-label=${itemLabel} aria-pressed=${this.componentToPlace === current.id}
+						@dragstart=${(event: DragEvent) => this.startComponentDrag(event, current)}
+						@click=${() => {
+							this.componentToPlace = this.componentToPlace === current.id ? undefined : current.id;
+							this.selectedChemical = undefined;
+						}}>
+						<span class="component-preview">
+							<img src=${componentGraphic(type).url} alt="" draggable="false"
+								style=${`width:${previewPercent}%;height:${previewPercent}%`}/>
+						</span>
+						<span aria-live="polite">${variantLabel}</span>
+					</button>
+					${arrow(1, this.message(current.material ? "Nächstes Material" : "Nächste Größe"))}
+				</div>`;
+		});
+		if (cards.every((card) => card === nothing)) return html`<p>${this.message("Keine Geräte freigegeben.")}</p>`;
+		return html`<div class="component-palette">${cards}</div>`;
 	}
 
 	private renderChemicalTile(key: string, name: string, recipe: ChemicalRecipe) {
@@ -3924,34 +3894,18 @@ export class ChemLab extends LitElementWw {
 			</div>` : "";
 	}
 
-	private renderContextMenu() {
+	private renderGroupSummary() {
+		const selected = this.canvas.selectedObjects;
+		if (!selected.length) return nothing;
 		return html`
-				<div
-					id="contextMenu"
-					style="position: absolute; display:none; box-shadow: 0px 6px 12px 0px rgba(0,0,0,0.33); border-radius: 5px"
-				>
-					<sl-menu id="studentContext" style="max-width: 200px;">
-						<sl-menu-label>${this.message("Neues Objekt")}</sl-menu-label>
-						<sl-menu-item>
-							${this.message("Laborgeräte")}
-							<sl-menu
-								slot="submenu"
-								id="details_comp"
-								style="box-shadow: 0px 6px 12px 0px rgba(0,0,0,0.33);"
-							>
-							</sl-menu>
-						</sl-menu-item>
-						<sl-menu-item>
-							${this.message("Elektronik")}
-							<sl-menu
-								slot="submenu"
-								id="details_ecomp"
-								style="box-shadow: 0px 6px 12px 0px rgba(0,0,0,0.33);"
-							>
-							</sl-menu>
-						</sl-menu-item>
-					</sl-menu>
-				</div>
+			<section id="groupSelectionInfo" aria-label=${this.message("Ausgewählte Objekte")}>
+				<ul>
+					${selected.map(({ label }) => html`<li>${this.itemName(label.split(":")[0])}</li>`)}
+				</ul>
+				<sl-button size="small" variant="danger" @click=${() => this.removeObjects(this.canvas.selectedObjects)}>
+					${this.message("Auswahl löschen")}
+				</sl-button>
+			</section>
 		`;
 	}
 
@@ -4088,7 +4042,6 @@ export class ChemLab extends LitElementWw {
 			<section
 				id="objectPanel"
 				aria-label=${this.message("Objekt")}
-				?hidden=${!this.objectPanelOpen}
 			>
 				<h3 id="settings_drawer">${this.message("Objekt")}</h3>
 				${this.renderCompPanel()}
@@ -4687,12 +4640,13 @@ export class ChemLab extends LitElementWw {
 													style="display: flex; flex-direction: column; justify-content: flex-start"
 												>
 													<div>
-														<p>${this.message("Spannung")}</p>
+																<p>${this.message(this.curr_obj?._type === chemlib.EComponentType.Ammeter ? "Modellspannung" : "Spannung")}</p>
 														<sl-tag
 															id="shownVoltage"
 															variant="warning"
-															>${0} V</sl-tag
+																	>${this.curr_obj?._type === chemlib.EComponentType.Ammeter ? `${this.curr_obj._sourceVoltage} V` : this.voltageReading(this.curr_obj)}</sl-tag
 														>
+																${this.curr_obj?._type === chemlib.EComponentType.Ammeter ? html`<p>${this.message("Strommessung noch nicht verfügbar")}</p>` : nothing}
 													</div>
 													<div id="eCompInnerInfo">
 														<sl-input
@@ -4732,11 +4686,12 @@ export class ChemLab extends LitElementWw {
 														<p>
 															${this.message("Elektrodenmaterial")}
 														</p>
-														<sl-select
+																<p ?hidden=${this.canAuthor}>${this.curr_obj?._material ? this.itemName(this.curr_obj._material.name) : this.message("kein Material")}</p>
+																<sl-select class="author-only"
 															id="electrodeSelect"
 															size="small"
 														></sl-select>
-														<button
+																<button class="author-only"
 															id="enter"
 															@click="${this
 																._setElectrodeMaterlial}"
@@ -4750,5 +4705,10 @@ export class ChemLab extends LitElementWw {
 									</sl-split-panel>
 								</div>
 		`;
+	}
+
+	private voltageReading(device?: chemlib.ElectricComponent): string {
+		if (device?._visibleVoltage === null) return this.message("Spannung nicht berechenbar");
+		return `${(device?._visibleVoltage ?? 0).toExponential(2)} V`;
 	}
 }

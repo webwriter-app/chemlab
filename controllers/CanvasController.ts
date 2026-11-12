@@ -2,10 +2,11 @@ import { ReactiveController } from "lit";
 import * as PIXI from "pixi.js";
 import * as chemlib from "../chemlib";
 
-import { componentGraphic, componentTextureUrls } from "../data/componentGraphics";
+import { componentGraphic, componentScale, componentTextureUrls } from "../data/componentGraphics";
 
 import { STANDARD_CANVAS_HEIGHT, STANDARD_CANVAS_WIDTH, WorkspaceCamera } from "./WorkspaceCamera";
 import { WorkspaceGrid } from "./WorkspaceGrid";
+import { isVesselType, VesselView } from "./VesselView";
 
 import type { ChemLab } from "../webwriter-chemlab";
 
@@ -22,7 +23,11 @@ export class CanvasController implements ReactiveController {
 	private camera = new WorkspaceCamera();
 	private grid?: WorkspaceGrid;
 	private resizeObserver?: ResizeObserver;
-	private pan?: { id: number; x: number; y: number; moved: boolean; deselect: boolean };
+	private pan?: { id: number; x: number; y: number; moved: boolean; deselectOnTap: boolean };
+	private selectionOverlay = new PIXI.Graphics({ eventMode: "none" });
+	private selection: PIXI.Container[] = [];
+	private marquee?: { id: number; start: PIXI.PointData; end?: PIXI.PointData };
+	private groupDrag?: { id: number; origin: PIXI.PointData; items: { sprite: PIXI.Container; x: number; y: number }[] };
 	private touchListeners?: AbortController;
 	private touches = new Map<number, { x: number; y: number }>();
 	private pinching = false;
@@ -31,7 +36,6 @@ export class CanvasController implements ReactiveController {
 	private _dragActive: boolean = false;
 	private _dragMoved = false;
 	private dragPointerId: number | undefined;
-	private expandAfterDrag = false;
 	/** Stable pointermove handler, so it can be removed again with .off(). */
 	private _dragMoveHandler = (event: PIXI.FederatedPointerEvent): void => {
 		if (event.pointerId !== this.dragPointerId) return;
@@ -42,10 +46,6 @@ export class CanvasController implements ReactiveController {
 	/** offset from the sprite's origin to the point where it was grabbed, so a
 	 * drag keeps that point under the pointer instead of snapping to the centre */
 	private _dragOffset: PIXI.Point = new PIXI.Point();
-	/** pending long-press timer id (touch/pen context-menu trigger) */
-	private _longPressTimer: number = undefined;
-	/** stage move handler that cancels a long-press once the pointer moves */
-	private _longPressMoveHandler: (event: any) => void = undefined;
 	/** reused scratch Graphics used to rasterize each cable's curved-line texture */
 	private _cableGraphics: PIXI.Graphics = new PIXI.Graphics();
 	private cableEndpoints = new WeakMap<PIXI.Sprite, [number, number, number, number]>();
@@ -53,52 +53,6 @@ export class CanvasController implements ReactiveController {
 	constructor(host: ChemLab) {
 		this.host = host;
 		host.addController(this);
-	}
-
-	/**
-	 * Arms a long-press: runs `action` after 500ms unless the pointer moves
-	 * more than a few pixels or is lifted first. Used to give touch/pen input a
-	 * context-menu gesture equivalent to a right-click.
-	 *
-	 * @private
-	 * @param {() => void} action - what to run when the press is held
-	 * @param {*} event - the originating pointerdown event
-	 */
-	private _armLongPress(action: () => void, event: any): void {
-		this._clearLongPress();
-		const startX: number = event.global.x;
-		const startY: number = event.global.y;
-		this._longPressMoveHandler = (moveEvent: any) => {
-			const dx: number = moveEvent.global.x - startX;
-			const dy: number = moveEvent.global.y - startY;
-			if (Math.sqrt(dx * dx + dy * dy) > 10) {
-				this._clearLongPress();
-			}
-		};
-		this.host.app.stage.on("globalpointermove", this._longPressMoveHandler);
-		this._longPressTimer = window.setTimeout(() => {
-			this._clearLongPress();
-			action();
-		}, 500);
-	}
-
-	/**
-	 * Cancels a pending long-press, if any.
-	 *
-	 * @private
-	 */
-	private _clearLongPress(): void {
-		if (this._longPressTimer !== undefined) {
-			window.clearTimeout(this._longPressTimer);
-			this._longPressTimer = undefined;
-		}
-		if (this._longPressMoveHandler !== undefined) {
-			this.host.app.stage.off(
-				"globalpointermove",
-				this._longPressMoveHandler
-			);
-			this._longPressMoveHandler = undefined;
-		}
 	}
 
 	private updateMousePosition(event: PIXI.FederatedPointerEvent): void {
@@ -127,13 +81,19 @@ export class CanvasController implements ReactiveController {
 	}
 
 	zoomBy(factor: number): void {
-		if (!this.host.app || this._dragActive || this.pan || this.pinching) return;
+		if (!this.host.app || this.pointerBusy) return;
 		this.camera.zoomAt(factor, this.camera.width / 2, this.camera.height / 2);
 		this.applyCamera();
 	}
 
+	fitObjects(): void {
+		if (!this.host.app || this.pointerBusy || !this.world.children.length) return;
+		this.camera.fit(this.world.getLocalBounds(), this.host.canvasZoom.offsetHeight + 4);
+		this.applyCamera();
+	}
+
 	private zoomFromWheel = (event: WheelEvent): void => {
-		if (!event.deltaY || this._dragActive || this.pan || this.pinching) return;
+		if (!event.deltaY || this.pointerBusy) return;
 		const bounds = this.host.app.canvas.getBoundingClientRect();
 		if (!bounds.width || !bounds.height) return;
 		event.preventDefault();
@@ -143,6 +103,83 @@ export class CanvasController implements ReactiveController {
 		this.camera.zoomAt(Math.exp(Math.max(-1, Math.min(1, -pixels * 0.002))), x, y);
 		this.applyCamera();
 	};
+
+	get selectedObjects(): readonly PIXI.Container[] {
+		return this.selection;
+	}
+
+	private get pointerBusy(): boolean {
+		return !!(this._dragActive || this.pan || this.pinching || this.marquee || this.groupDrag);
+	}
+
+	clearGroupSelection(): void {
+		if (!this.selection.length) return;
+		if (this.groupDrag) this.cancelPointerInteraction();
+		this.selection = [];
+		this.drawSelection();
+		this.host.requestUpdate();
+	}
+
+	private selectionRectangle(): PIXI.Rectangle | undefined {
+		const { start, end } = this.marquee ?? {};
+		if (!end) return;
+		return new PIXI.Rectangle(Math.min(start.x, end.x), Math.min(start.y, end.y),
+			Math.abs(end.x - start.x), Math.abs(end.y - start.y));
+	}
+
+	private drawSelection(): void {
+		this.selectionOverlay.clear();
+		for (const sprite of this.selection) {
+			const { x, y, width, height } = sprite.getBounds();
+			this.selectionOverlay.rect(x - 2, y - 2, width + 4, height + 4)
+				.stroke({ color: 0x0284c7, width: 1.5 });
+		}
+		const rect = this.selectionRectangle();
+		if (rect) {
+			this.selectionOverlay.rect(rect.x, rect.y, rect.width, rect.height)
+				.fill({ color: 0x0284c7, alpha: 0.14 }).stroke({ color: 0x0284c7, width: 1 });
+		}
+	}
+
+	private moveMarquee(event: PIXI.FederatedPointerEvent): void {
+		if (this.marquee?.id !== event.pointerId) return;
+		const { x, y } = event.global;
+		const { start, end } = this.marquee;
+		if (!end && Math.hypot(x - start.x, y - start.y) < 5) return;
+		this.marquee.end = { x: Math.max(0, Math.min(x, this.camera.width)), y: Math.max(0, Math.min(y, this.camera.height)) };
+		this.drawSelection();
+	}
+
+	private finishMarquee(event: PIXI.FederatedPointerEvent): void {
+		this.moveMarquee(event);
+		const rect = this.selectionRectangle();
+		this.marquee = undefined;
+		if (!rect) {
+			this.host.clearObjectSelection();
+			return;
+		}
+		const selected = this.world.children.filter((sprite) => {
+			const bounds = sprite.getBounds();
+			if (sprite.label.startsWith("cable:")) {
+				return bounds.minX >= rect.left && bounds.maxX <= rect.right && bounds.minY >= rect.top && bounds.maxY <= rect.bottom;
+			}
+			return bounds.minX <= rect.right && bounds.maxX >= rect.left && bounds.minY <= rect.bottom && bounds.maxY >= rect.top;
+		});
+		this.host.clearObjectSelection(true);
+		this.selection = selected;
+		this.drawSelection();
+		this.host.requestUpdate();
+	}
+
+	private moveGroup(event: PIXI.FederatedPointerEvent): void {
+		const drag = this.groupDrag;
+		if (!drag || drag.id !== event.pointerId) return;
+		const current = this.camera.toWorld(event.global.x, event.global.y);
+		for (const { sprite, x, y } of drag.items) {
+			sprite.position.set(x + current.x - drag.origin.x, y + current.y - drag.origin.y);
+		}
+		this.drawSelection();
+	}
 
 	private observeTouches(): void {
 		const view = this.host.ownerDocument.defaultView;
@@ -156,7 +193,7 @@ export class CanvasController implements ReactiveController {
 		view.addEventListener("pointerup", this.touchEnd, options);
 		view.addEventListener("pointercancel", this.touchEnd, options);
 		view.addEventListener("blur", () => {
-			if (this.touches.size) this.cancelPointerInteraction();
+			if (this.pointerBusy) this.cancelPointerInteraction();
 			this.resetTouches();
 		}, { signal });
 	}
@@ -174,7 +211,6 @@ export class CanvasController implements ReactiveController {
 		}
 		this.cancelPointerInteraction();
 		this.host.cancelDoseForNavigation();
-		this.host.contextMenu.style.display = "none";
 	};
 
 	private touchMove = (event: PointerEvent): void => {
@@ -201,9 +237,9 @@ export class CanvasController implements ReactiveController {
 	};
 
 	private touchEnd = (event: PointerEvent): void => {
-		if (!this.touches.delete(event.pointerId)) return;
-		if (this.touches.size === 0) this.pinching = false;
-		if (event.type === "pointercancel" && (this.pan?.id === event.pointerId || this.dragPointerId === event.pointerId)) {
+		if (this.touches.delete(event.pointerId) && this.touches.size === 0) this.pinching = false;
+		if (event.type === "pointercancel" && (this.pan?.id === event.pointerId || this.dragPointerId === event.pointerId ||
+			this.marquee?.id === event.pointerId || this.groupDrag?.id === event.pointerId)) {
 			this.cancelPointerInteraction();
 		}
 	};
@@ -217,6 +253,7 @@ export class CanvasController implements ReactiveController {
 		this.world.position.set(this.camera.offsetX, this.camera.offsetY);
 		this.world.scale.set(this.camera.zoom);
 		this.grid?.update(this.camera);
+		if (this.selection.length || this.marquee) this.drawSelection();
 	}
 
 	private observeCanvas(): void {
@@ -240,12 +277,12 @@ export class CanvasController implements ReactiveController {
 		resize();
 	}
 
-	private beginPan(event: PIXI.FederatedPointerEvent): void {
+	private beginPan(event: PIXI.FederatedPointerEvent, deselectOnTap = false): void {
 		if (this.pan) return;
 		if (event.button === 1) event.preventDefault();
 		this.pan = {
 			id: event.pointerId, x: event.global.x, y: event.global.y,
-			moved: false, deselect: event.button === 0,
+			moved: false, deselectOnTap,
 		};
 	}
 
@@ -258,21 +295,9 @@ export class CanvasController implements ReactiveController {
 		pan.moved = true;
 		pan.x = event.global.x;
 		pan.y = event.global.y;
-		this._clearLongPress();
 		this.camera.panBy(dx, dy);
 		this.applyCamera();
 		this.updateMousePosition(event);
-	}
-
-	private _openCanvasMenu(x: number, y: number): void {
-		const point = this.screenToViewport(x, y);
-		const workspace = this.host.containerDiv;
-		const bounds = workspace.getBoundingClientRect();
-		const menu = this.host.contextMenu;
-		menu.style.display = "";
-		menu.style.top = `${point.y - bounds.top - workspace.clientTop}px`;
-		menu.style.left = `${point.x - bounds.left - workspace.clientLeft}px`;
-		this.host.reportXApi("opened", "objectMenu");
 	}
 
 	hostConnected(): void {
@@ -292,25 +317,37 @@ export class CanvasController implements ReactiveController {
 	}
 
 	private cancelPointerInteraction(): void {
-		this._clearLongPress();
 		this.host.app?.stage.off("globalpointermove", this._dragMoveHandler);
 		this._dragActive = false;
 		this.dragPointerId = undefined;
-		this.expandAfterDrag = false;
 		this.pan = undefined;
 		this.host.dragObject = undefined;
+		if (this.groupDrag || this.marquee) {
+			for (const { sprite, x, y } of this.groupDrag?.items ?? []) sprite.position.set(x, y);
+			this.groupDrag = undefined;
+			this.marquee = undefined;
+			this.drawSelection();
+		}
 	}
 
 	removeSprite(sprite: PIXI.Container): void {
+		if (this._dragActive && this.host.dragObject === sprite) this.cancelPointerInteraction();
+		if (this.selection.includes(sprite)) {
+			if (this.groupDrag) this.cancelPointerInteraction();
+			this.selection = this.selection.filter((selected) => selected !== sprite);
+			this.drawSelection();
+			this.host.requestUpdate();
+		}
 		this.world.removeChild(sprite);
 		if (sprite instanceof PIXI.Sprite && sprite.texture instanceof PIXI.RenderTexture) {
 			sprite.texture.destroy(true);
 		}
-		sprite.destroy();
+		sprite.destroy({ children: true });
 	}
 
 	clearSprites(): void {
 		this.cancelPointerInteraction();
+		this.clearGroupSelection();
 		for (const sprite of [...this.world.children]) this.removeSprite(sprite);
 	}
 
@@ -324,32 +361,38 @@ export class CanvasController implements ReactiveController {
 	 * @private
 	 * @param {string} info - a string containing the name of the object and its id
 	 */
-	_addSprite(info: string, select = true, capacityMl?: number): PIXI.Sprite {
-		const graphic = componentGraphic(info.split(":")[0]);
-		const sprite = new PIXI.Sprite(PIXI.Assets.get<PIXI.Texture>(graphic.url));
-		const scale = graphic.capacityMl && capacityMl ? Math.cbrt(capacityMl / graphic.capacityMl) : 1;
-
-		sprite.anchor.set(0.5);
+	_addSprite(info: string, select = true, capacityMl?: number): PIXI.Container {
+		const type = info.split(":")[0];
+		const graphic = componentGraphic(type);
+		const texture = PIXI.Assets.get<PIXI.Texture>(graphic.url);
+		const scale = componentScale(type, capacityMl);
+		const width = graphic.width * scale;
+		const height = graphic.height * scale;
+		const sprite = isVesselType(type)
+			? new VesselView(type, texture, width, height)
+			: new PIXI.Sprite({ texture, width, height, anchor: 0.5 });
 
 		sprite.x = this.host.mousePos[0];
 		sprite.y = this.host.mousePos[1];
-		sprite.width = graphic.width * scale;
-		sprite.height = graphic.height * scale;
 		sprite.eventMode = "static";
 		sprite.cursor = "pointer";
 		sprite.on("pointerdown", (event) => {
 			event.stopPropagation();
-			if (this._dragActive || this.pan || this.pinching) return;
-			this.host.contextMenu.style.display = "none";
+			if (this.pointerBusy) return;
 			if (event.button === 1) {
 				this.beginPan(event);
 				return;
 			}
 			this.updateMousePosition(event);
+			if (event.button === 0 && this.selection.includes(sprite)) {
+				const items = this.selection.filter((item) => !item.label.startsWith("cable:"))
+					.map((item) => ({ sprite: item, x: item.x, y: item.y }));
+				this.groupDrag = { id: event.pointerId, origin: this.camera.toWorld(event.global.x, event.global.y), items };
+				return;
+			}
 			if (event.button === 0 && this.host.beginChemicalDose(sprite, event.pointerId)) return;
 			const drag = event.button === 0 && !sprite.label.startsWith("cable:");
-			this.expandAfterDrag = drag && this.world.children[this.host.curr_stage_index] !== sprite;
-			this.host._getObject(sprite, !drag);
+			this.host._getObject(sprite);
 			this.host.reportXApi("focused", sprite.label);
 			if (drag) this._dragStart(sprite, event);
 		});
@@ -367,9 +410,9 @@ export class CanvasController implements ReactiveController {
 	 * modifies sprite events when an object gets dragged
 	 *
 	 * @private
-	 * @param {PIXI.Sprite} sprite - the dragged sprite
+	 * @param {PIXI.Container} sprite - the dragged sprite
 	 */
-	_dragStart(sprite: PIXI.Sprite, event: PIXI.FederatedPointerEvent): void {
+	_dragStart(sprite: PIXI.Container, event: PIXI.FederatedPointerEvent): void {
 		this._dragMoved = false;
 		this.dragPointerId = event.pointerId;
 		this.host.dragObject = sprite;
@@ -531,15 +574,11 @@ export class CanvasController implements ReactiveController {
 	 * @returns {Promise<void>}
 	 */
 	async _dragEnd(): Promise<void> {
-		this._clearLongPress();
 		if (!this._dragActive) return;
 		this.host.app.stage.off("globalpointermove", this._dragMoveHandler);
 		this._dragActive = false;
-		const expand = this.expandAfterDrag;
-		this.expandAfterDrag = false;
 		if (!this._dragMoved || !this.host.dragObject) {
 			this.host.dragObject = undefined;
-			if (expand) this.host.expandSelectedObjectPanel();
 			return;
 		}
 		for (let i = 0; i < this.world.children.length; i++) {
@@ -719,7 +758,6 @@ export class CanvasController implements ReactiveController {
 		}
 		if (this.host.dragObject) this.host.saveComponentPosition(this.host.dragObject);
 		this.host.dragObject = undefined;
-		if (expand) this.host.expandSelectedObjectPanel();
 	}
 
 	/**
@@ -775,7 +813,7 @@ export class CanvasController implements ReactiveController {
 		try {
 			await PIXI.Assets.load(componentTextureUrls.map((src) => ({
 				src,
-				data: { scaleMode: "nearest" },
+				data: { resolution: 2, scaleMode: "linear" },
 			})));
 		} catch (error) {
 			app.destroy(true, { children: true });
@@ -783,85 +821,91 @@ export class CanvasController implements ReactiveController {
 		}
 		this.host.app = app;
 		this.host.pix_canvas.appendChild(app.canvas);
+		app.canvas.tabIndex = 0;
+		app.canvas.addEventListener("pointerdown", (event) => {
+			if (event.button === 0) app.canvas.focus({ preventScroll: true });
+		});
 		this.host.app.stage.eventMode = "static";
 		this.host.app.stage.hitArea = this.host.app.screen;
 		this.grid = new WorkspaceGrid();
-		app.stage.addChild(this.grid.mesh, this.world);
+		app.stage.addChild(this.grid.mesh, this.world, this.selectionOverlay);
 		app.canvas.addEventListener("wheel", this.zoomFromWheel, { passive: false });
 		this.observeCanvas();
 		this.observeTouches();
 		this.applyCamera();
+		this.bindPointerEvents(app.stage);
+	}
+
+	private bindPointerEvents(stage: PIXI.Container): void {
 		// pointermove (not mousemove) so mousePos stays current for touch too.
 		// A drag is ended only on pointerup/pointerupoutside — not when the
 		// pointer briefly leaves the sprite bounds during a fast drag.
-		this.host.app.stage.on("pointermove", (event) => {
+		stage.on("pointermove", (event) => {
 			this.updateMousePosition(event);
 		});
-		app.stage.on("globalpointermove", (event) => this.movePan(event));
-		app.stage.on("pointerdown", (event) => {
-			if (this._dragActive || this.pan || this.pinching) return;
+		stage.on("globalpointermove", (event) => {
+			this.movePan(event);
+			this.moveMarquee(event);
+			this.moveGroup(event);
+		});
+		stage.on("pointerdown", (event) => {
+			if (this.pointerBusy) return;
 			this.updateMousePosition(event);
-			if (this.host.contextMenu.style.display !== "none") {
-				this.host.contextMenu.style.display = "none";
-				if (event.button === 0) this.host.clearObjectSelection();
-				return;
-			}
-			if (event.target === app.stage && event.button === 0) {
-				if (event.pointerType !== "touch" && this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+			if (event.button === 1) {
 				this.beginPan(event);
-				if (!this.host.canAuthor && event.pointerType !== "mouse") {
-					const { x, y } = event.global;
-					this._armLongPress(() => {
-						if (this.pan) this.pan.deselect = false;
-						this._openCanvasMenu(x, y);
-					}, event);
+			} else if (event.target === stage && event.button === 0) {
+				const { x, y } = event.global;
+				if (event.pointerType === "mouse" && event.altKey) {
+					this.marquee = { id: event.pointerId, start: { x, y } };
+					return;
 				}
-			} else if (event.button === 1) {
-				this.beginPan(event);
-			} else if (!this.host.canAuthor && event.button === 2) {
-				this._openCanvasMenu(event.global.x, event.global.y);
+				if (event.pointerType !== "touch" && this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+				this.beginPan(event, true);
 			}
 		});
 		const finishPointer = (event: PIXI.FederatedPointerEvent) => {
-			if (this.pan?.id === event.pointerId) {
-				const { moved, deselect } = this.pan;
+			if (this.marquee?.id === event.pointerId) {
+				this.finishMarquee(event);
+			} else if (this.groupDrag?.id === event.pointerId) {
+				this.moveGroup(event);
+				const moved = this.groupDrag.items.map(({ sprite }) => sprite);
+				this.groupDrag = undefined;
+				this.host.saveComponentPositions(moved);
+			} else if (this.pan?.id === event.pointerId) {
+				const { moved, deselectOnTap } = this.pan;
 				this.pan = undefined;
-				this._clearLongPress();
-				if (deselect && !moved) {
-					if (event.pointerType === "touch" && event.type === "pointerup" && event.target === app.stage) {
+				if (deselectOnTap && !moved) {
+					if (event.pointerType === "touch" && event.type === "pointerup" && event.target === stage) {
 						this.updateMousePosition(event);
 						if (this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
 					}
 					this.host.clearObjectSelection();
 				}
-			} else if (!this.pan && (!this._dragActive || event.pointerId === this.dragPointerId)) {
+			} else if (this._dragActive && event.pointerId === this.dragPointerId) {
 				void this._dragEnd();
 			}
 		};
-		this.host.app.stage.on("pointerup", finishPointer);
-		this.host.app.stage.on("pointerupoutside", finishPointer);
-		this.host.app.stage.on("pointercancel", (event) => {
-			if (this.pan?.id === event.pointerId || this.dragPointerId === event.pointerId) this.cancelPointerInteraction();
-		});
+		stage.on("pointerup", finishPointer);
+		stage.on("pointerupoutside", finishPointer);
 	}
 
 	/**
-	 * ticker function to update sprite textures according to the components content
+	 * Updates the vector fill inside each vessel when its contents change.
 	 *
 	 * @private
 	 */
-	_updateSpriteTextures(): void {
+	updateVesselFills(): void {
 		for (const sprite of this.world.children) {
+			if (!(sprite instanceof VesselView)) continue;
 			const [type, id] = sprite.label.split(":");
-			const graphic = componentGraphic(type);
-			if (!graphic.capacityMl) continue;
 			const component = this.host.allChemComponents.find((entry) => entry._type === type && entry._id === Number(id));
 			if (!component) continue;
 			const mixture = component._content;
-			const filled = mixture._isSolution || mixture.hasLiquidVolume ? graphic.liquid : graphic.solid;
-			const url = mixture._activeMolecules.length ? filled ?? graphic.url : graphic.url;
-			const texture = PIXI.Assets.get<PIXI.Texture>(url);
-			if (sprite instanceof PIXI.Sprite && sprite.texture !== texture) sprite.texture = texture;
+			const liquid = mixture.hasLiquidContents;
+			const fraction = mixture.contentVolume * 1000 / component._volume;
+			// Older solid mixtures store moles without specifying a bulk volume.
+			const fill = fraction > 0 ? Math.min(1, fraction) : !liquid && mixture._activeMolecules.length ? 0.035 : 0;
+			sprite.updateFill(fill, liquid);
 		}
 	}
 
@@ -876,6 +920,7 @@ export class CanvasController implements ReactiveController {
 		const stage = this.world;
 		const sprites = new Map(stage.children.map((sprite) => [sprite.label, sprite]));
 		const selected = stage.children[this.host.curr_stage_index];
+		let selectionMoved = false;
 		for (const cable of cables) {
 			const sprite = sprites.get(`cable:${cable._id}`);
 			if (!(sprite instanceof PIXI.Sprite) || sprite.parent !== stage) continue;
@@ -883,8 +928,7 @@ export class CanvasController implements ReactiveController {
 			const from = first && sprites.get(`${first._type}:${first._id}`);
 			const to = second && sprites.get(`${second._type}:${second._id}`);
 			if (!from || !to || from.parent !== stage || to.parent !== stage) {
-				this.host._getObject(sprite);
-				this.host._removeSprite();
+				this.host.removeObjects([sprite]);
 				continue;
 			}
 			const current = this.cableEndpoints.get(sprite);
@@ -896,6 +940,7 @@ export class CanvasController implements ReactiveController {
 				sprite.setSize(curve.w, curve.h);
 				sprite.position.set(curve.cx, curve.cy);
 				sprite.rotation = 0;
+				selectionMoved ||= this.selection.includes(sprite);
 				if (previous instanceof PIXI.RenderTexture) previous.destroy(true);
 				this.cableEndpoints.set(sprite, endpoints);
 			}
@@ -904,6 +949,7 @@ export class CanvasController implements ReactiveController {
 			if (index > behindDevices) stage.setChildIndex(sprite, behindDevices);
 		}
 		if (selected?.parent === stage && this.host.curr_obj) this.host.curr_stage_index = stage.getChildIndex(selected);
+		if (selectionMoved) this.drawSelection();
 	}
 
 	/**

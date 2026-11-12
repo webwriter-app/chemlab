@@ -1041,6 +1041,7 @@ export const style = css`
 		inline-size: 800px;
 		max-inline-size: 100%;
 		block-size: min(600px, 100dvh);
+		container-type: inline-size;
 		font-family: var(--sl-font-sans);
 	}
 	:host(.ww-full-width) {
@@ -1048,6 +1049,9 @@ export const style = css`
 	}
 
 	#upper {
+		--panel-trigger-size: 38px;
+		--diagram-panel-width: min(27cqw, 24rem);
+		--object-panel-width: min(44cqw, 38rem);
 		--diagram-width: 0px;
 		--object-width: 0px;
 		position: relative;
@@ -1055,6 +1059,7 @@ export const style = css`
 		display: grid;
 		grid-template-columns: var(--diagram-width) minmax(0, 1fr) var(--object-width);
 		grid-template-rows: minmax(0, 1fr) auto;
+		transition: grid-template-columns 220ms ease;
 		width: 100%;
 		height: 100%;
 		border: 2px solid #6a6a6a;
@@ -1062,76 +1067,119 @@ export const style = css`
 		background: #f7f7f5;
 	}
 	#upper.show-diagram-panel {
-		--diagram-width: min(27%, 24rem);
+		--diagram-width: var(--diagram-panel-width);
 	}
 	#upper.show-object-panel {
-		--object-width: min(44%, 38rem);
+		--object-width: var(--object-panel-width);
 	}
 	#upper.show-diagram-panel.show-object-panel {
-		--object-width: min(36%, 38rem);
-	}
-	#inlineDiagramPanel {
-		grid-column: 1;
-		grid-row: 1;
-		min-width: 0;
-		min-height: 0;
-		padding: 6px;
-		overflow: auto;
-		border-inline-end: 1px solid var(--sl-color-neutral-200);
-		background: var(--sl-color-neutral-0);
-	}
-	#inlineDiagramPanel > sl-checkbox {
-		display: block;
-		margin-block: 6px;
-	}
-	#diagramDrawer #canvasContainer {
-		position: absolute;
-		top: 50px;
-		left: 0;
-		width: 100%;
-		max-height: 550px;
-		overflow: auto;
+		--object-panel-width: min(36cqw, 38rem);
 	}
 	:host(:fullscreen),
 	:host(:fullscreen) #upper {
 		width: 100%;
 		height: 100%;
 	}
-	#objectArea {
-		grid-column: 3;
-		grid-row: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 4px;
-		min-width: 0;
-		min-height: 0;
+	.workspace-details::part(base) {
+		border: 0;
+		background: transparent;
 	}
-	#upper:not(.show-object-panel) #objectArea {
-		position: absolute;
-		top: 2.25rem;
-		inset-inline-end: 4px;
-		max-width: min(13rem, 45%);
+	.workspace-details::part(header) {
+		box-sizing: border-box;
+		flex-direction: column;
+		gap: 2px;
+		padding: 4px;
+		inline-size: var(--panel-trigger-size);
+		background: var(--sl-color-neutral-0);
+		border: 1px solid var(--sl-color-neutral-300);
+		border-radius: var(--sl-border-radius-medium);
+	}
+	.workspace-details::part(summary-icon) {
+		rotate: 0deg;
+	}
+	.workspace-details::part(content) {
+		padding: 0;
+	}
+	.workspace-summary {
+		display: flex;
+	}
+	.workspace-side {
+		grid-row: 1;
+		position: relative;
+		min-inline-size: 0;
+		min-block-size: 0;
+		z-index: 1;
+		background: var(--sl-color-neutral-0);
 		pointer-events: none;
 	}
-	#objectArea > * {
+	.workspace-side .workspace-details {
+		block-size: 100%;
+		min-block-size: 0;
+	}
+	.workspace-side .workspace-details::part(header) {
+		position: absolute;
+		inset-block-start: 4px;
+		z-index: 1;
 		pointer-events: auto;
 	}
-	#upper.show-object-panel #objectArea {
-		padding: 6px;
-		border-inline-start: 1px solid var(--sl-color-neutral-200);
-		background: var(--sl-color-neutral-0);
+	.workspace-side .workspace-details::part(base) {
+		block-size: 100%;
+		overflow: hidden auto;
+	}
+	.workspace-side .workspace-details[open]::part(base) {
+		pointer-events: auto;
+	}
+	#diagramArea {
+		grid-column: 1;
+		box-shadow: inset -1px 0 var(--sl-color-neutral-200);
+	}
+	#diagramArea .workspace-details::part(header) {
+		inset-inline-start: 4px;
+	}
+	#inlineDiagramPanel {
+		box-sizing: border-box;
+		inline-size: var(--diagram-panel-width);
+		padding: calc(var(--panel-trigger-size) + 12px) 8px 4px;
+	}
+	#inlineDiagramPanel > sl-checkbox {
+		display: block;
+		margin-block: 6px;
+	}
+	#objectArea {
+		grid-column: 3;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: minmax(calc(var(--panel-trigger-size) + 8px), auto) minmax(0, 1fr);
+		box-shadow: inset 1px 0 var(--sl-color-neutral-200);
+	}
+	#objectArea .workspace-details::part(header) {
+		inset-inline-end: 4px;
+	}
+	#objectArea > section {
+		grid-row: 1;
+		justify-self: unsafe end;
+		margin-block: 4px;
+		margin-inline-end: calc(var(--panel-trigger-size) + 8px);
+		max-inline-size: min(13rem, 52cqw);
+		pointer-events: auto;
+	}
+	#objectArea .workspace-details {
+		grid-row: 2;
 	}
 	#objectPanel {
-		align-self: stretch;
-		flex: 1;
-		min-height: 0;
-		overflow: auto;
+		position: relative;
+		box-sizing: border-box;
+		inline-size: var(--object-panel-width);
+		inset-inline-start: min(0px, calc(100% - var(--object-panel-width)));
+		padding: 4px 8px;
 	}
-	#toggleObjectPanel::part(label) {
-		display: flex;
-		align-items: center;
-		padding-inline: 6px;
+	@media (prefers-reduced-motion: reduce) {
+		#upper {
+			transition: none;
+		}
+	}
+	#contextInfoBox[hidden] {
+		display: none;
 	}
 	.panel-button-label {
 		position: absolute;
@@ -1160,11 +1208,21 @@ export const style = css`
 	#canvasZoom {
 		position: absolute;
 		inset-block-end: 4px;
-		inset-inline-start: 4px;
+		inset-inline-end: 4px;
+		max-width: calc(100% - 8px);
 		display: flex;
+		justify-content: flex-end;
 		gap: 3px;
 	}
-	#contextInfoBox {
+	#canvasZoom sl-button::part(label) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 24px;
+		padding-inline: 3px;
+	}
+	#contextInfoBox,
+	#groupSelectionInfo {
 		box-sizing: border-box;
 		width: max-content;
 		max-width: 100%;
@@ -1181,6 +1239,19 @@ export const style = css`
 	#contextInfoBox p {
 		margin: 0.25em 0;
 	}
+	#groupSelectionInfo {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	#groupSelectionInfo ul {
+		margin: 0;
+		padding-inline-start: 1.25em;
+		overflow: auto;
+	}
+	#groupSelectionInfo sl-button::part(label) {
+		white-space: normal;
+	}
 	#teacherDrawer {
 		grid-column: 1 / -1;
 		grid-row: 2;
@@ -1189,16 +1260,49 @@ export const style = css`
 		border-top: 1px solid var(--sl-color-neutral-200);
 		background: var(--sl-color-neutral-0);
 	}
+	#teacherDrawer::part(base) {
+		display: flex;
+		flex-direction: column-reverse;
+	}
+	#teacherDrawer::part(header) {
+		align-self: flex-start;
+	}
 	#teacherDrawerContent {
 		box-sizing: border-box;
 		max-height: min(240px, 40vh);
 		overflow: auto;
 		padding: 4px 0;
 	}
-	.teacher-tabs {
-		display: flex;
-		gap: 4px;
+	#teacherTabs {
+		--track-width: 0;
+	}
+	#teacherTabs::part(nav) {
 		margin-bottom: 6px;
+	}
+	#teacherTabs.learner-tabs::part(nav) {
+		display: none;
+	}
+	#teacherTabs::part(tabs) {
+		gap: 4px;
+		padding: 2px;
+	}
+	#teacherTabs > sl-tab::part(base) {
+		padding: 5px 12px;
+		border: 1px solid var(--sl-color-neutral-300);
+		border-radius: var(--sl-border-radius-pill);
+		background: var(--sl-color-neutral-0);
+		color: var(--sl-color-neutral-700);
+	}
+	#teacherTabs > sl-tab:hover::part(base) {
+		background: var(--sl-color-neutral-100);
+	}
+	#teacherTabs > sl-tab[active]::part(base) {
+		border-color: var(--sl-color-primary-300);
+		background: var(--sl-color-primary-100);
+		color: var(--sl-color-primary-800);
+	}
+	#teacherTabs > sl-tab-panel {
+		--padding: 0;
 	}
 	.teacher-palette {
 		display: grid;
@@ -1206,11 +1310,84 @@ export const style = css`
 		gap: 6px;
 		margin-bottom: 8px;
 	}
+	.component-palette {
+		display: grid;
+		grid-template-rows: auto;
+		grid-auto-flow: column;
+		grid-auto-columns: max-content;
+		gap: 6px;
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		padding: 2px 2px 5px;
+	}
 	.teacher-card {
-		min-width: 0;
-		padding: 3px;
+		display: grid;
+		grid-template-rows: auto auto 1fr auto;
+		min-inline-size: 10.5rem;
+		padding: 5px;
 		border: 1px solid var(--sl-color-neutral-200);
 		border-radius: 4px;
+	}
+	.component-card-header {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		align-items: start;
+		gap: 3px 5px;
+		font-size: 0.8rem;
+		white-space: nowrap;
+	}
+	.component-permission-count {
+		grid-column: 2;
+		justify-self: end;
+	}
+	#permissionPopup {
+		position: absolute;
+		inset: 0;
+		z-index: var(--sl-z-index-tooltip);
+		pointer-events: none;
+		--arrow-color: var(--sl-tooltip-background-color);
+	}
+	#permissionPopup:not([data-current-placement])::part(popup) {
+		visibility: hidden;
+	}
+	#permissionTooltip {
+		max-width: min(20rem, 80cqw);
+		padding: var(--sl-tooltip-padding);
+		border-radius: var(--sl-tooltip-border-radius);
+		background: var(--sl-tooltip-background-color);
+		color: var(--sl-tooltip-color);
+		font-size: var(--sl-tooltip-font-size);
+		line-height: var(--sl-tooltip-line-height);
+	}
+	.component-permission {
+		grid-column: 2;
+		grid-row: 2;
+		justify-self: end;
+	}
+	.component-permission sl-tooltip {
+		--show-delay: 650ms;
+	}
+	.component-permission sl-checkbox::part(label) {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+	.variant-arrow::part(base) {
+		width: 100%;
+		min-height: 0;
+		height: 22px;
+	}
+	.variant-arrow[disabled] {
+		visibility: hidden;
+	}
+	.variant-arrow::part(label) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
 	}
 	.component-tile,
 	.chemical-tile {
@@ -1227,6 +1404,15 @@ export const style = css`
 	}
 	.component-tile {
 		cursor: grab;
+		margin: 0;
+		min-width: 0;
+	}
+	.component-preview {
+		display: grid;
+		place-items: center;
+		width: min(60px, 100%);
+		height: 48px;
+		pointer-events: none;
 	}
 	.chemical-tile {
 		cursor: pointer;
@@ -1242,16 +1428,6 @@ export const style = css`
 		height: 48px;
 		object-fit: contain;
 		pointer-events: none;
-	}
-	.capacity-control {
-		display: grid;
-		text-align: center;
-		font-size: 0.75rem;
-	}
-	.capacity-control input {
-		min-width: 0;
-		width: 100%;
-		margin: 0;
 	}
 	.teacher-editors {
 		display: grid;
@@ -1278,9 +1454,6 @@ export const style = css`
 		height: 40px;
 		writing-mode: vertical-lr;
 		direction: rtl;
-	}
-	#contextMenu {
-		z-index: 2;
 	}
 	#settings_drawer {
 		font-size: 1rem;
@@ -1534,9 +1707,6 @@ export const style = css`
 	sl-tab-group::part(tabs) {
 		background-color: #ffff;
 		border-radius: 5px;
-	}
-	sl-menu-item::part(label) {
-		font-size: 10pt;
 	}
 	sl-carousel::part(base) {
 		gap: var(--sl-spacing-small);
