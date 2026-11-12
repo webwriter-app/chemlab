@@ -1338,7 +1338,7 @@ export class ChemLab extends LitElementWw {
 		if (!this.chemicalPreviews.has(key)) {
 			try {
 				const molecule = this._loadMolecule(definition.formula, false, definition);
-				this.chemicalPreviews.set(key, chemlib.StructureManager.printMolecule(molecule, 70, 52));
+				this.chemicalPreviews.set(key, chemlib.StructureManager.printMolecule(molecule, 80, 60, 14));
 			} catch {
 				this.chemicalPreviews.set(key, "");
 			}
@@ -3869,8 +3869,8 @@ export class ChemLab extends LitElementWw {
 					this.componentToPlace = undefined;
 					this.selectedChemical = this.selectedChemical?.key === key ? undefined : { key, name, recipe };
 				}}>
-				${src ? html`<img src=${src} alt=""/>` : ""}
-				<span>${name}</span>
+				<span class="chemical-preview">${src ? html`<img src=${src} alt=""/>` : nothing}</span>
+				<sl-badge pill variant="neutral">${name}</sl-badge>
 				<small>${preview.formula}</small>
 			</button>
 		`;
@@ -3879,31 +3879,35 @@ export class ChemLab extends LitElementWw {
 	private renderChemicalCatalog() {
 		const molecules = this.availableMolecules as MoleculeDefinition[];
 		return html`
-			<h3>${this.message("Feststoffe")}</h3>
-			<div class="teacher-palette">${chemicalCatalog.filter((item) => item.phase === "solid")
-				.map((item) => this.renderChemicalTile(item.name, this.message(item.name), item))}</div>
-			<h3>${this.message("Flüssigkeiten")}</h3>
-			<div class="teacher-palette">${chemicalCatalog.filter((item) => item.phase === "liquid")
-				.map((item) => this.renderChemicalTile(item.name, this.message(item.name), item))}</div>
-			<h3>${this.message("Eigene Stoffe")}</h3>
-			<div class="teacher-palette">
-				${molecules.map((molecule) => this.renderChemicalTile("mol:" + molecule.formula, molecule.formula, {
-					phase: ["OH2", "H2O"].includes(molecule.formula) ? "liquid" : "solid",
-					density: 1, parts: [{ molecule, amount: 1 }],
-				}))}
-				${this.availableMixtures.map((mixture) => {
-					const parts = (mixture["content"] as string[]).flatMap((entry) => {
-						const [formula, rawAmount] = entry.split(":");
-						const molecule = molecules.find((item) => item.formula === formula.trim());
-						const amount = Number(rawAmount);
-						return molecule && Number.isFinite(amount) && amount > 0 ? [{ molecule, amount }] : [];
-					});
-					return this.renderChemicalTile("mix:" + mixture["name"], mixture["name"], {
-						phase: parts.some(({ molecule }) => ["OH2", "H2O"].includes(molecule.formula)) ? "liquid" : "solid",
-						density: 1, parts,
-					});
-				})}
-			</div>
+			${(["solid", "liquid"] as const).map((phase) => html`
+				<section class="chemical-section">
+					<h3><sl-tag size="small">${this.message(phase === "solid" ? "Feststoffe" : "Flüssigkeiten")}</sl-tag></h3>
+					<div class="chemical-grid">
+						${chemicalCatalog.filter((item) => item.phase === phase)
+							.map((item) => this.renderChemicalTile(item.name, this.message(item.name), item))}
+					</div>
+				</section>`)}
+			<section class="chemical-section">
+				<h3><sl-tag size="small">${this.message("Eigene Stoffe")}</sl-tag></h3>
+				<div class="chemical-grid">
+					${molecules.map((molecule) => this.renderChemicalTile("mol:" + molecule.formula, molecule.formula, {
+						phase: ["OH2", "H2O"].includes(molecule.formula) ? "liquid" : "solid",
+						density: 1, parts: [{ molecule, amount: 1 }],
+					}))}
+					${this.availableMixtures.map((mixture) => {
+						const parts = (mixture["content"] as string[]).flatMap((entry) => {
+							const [formula, rawAmount] = entry.split(":");
+							const molecule = molecules.find((item) => item.formula === formula.trim());
+							const amount = Number(rawAmount);
+							return molecule && Number.isFinite(amount) && amount > 0 ? [{ molecule, amount }] : [];
+						});
+						return this.renderChemicalTile("mix:" + mixture["name"], mixture["name"], {
+							phase: parts.some(({ molecule }) => ["OH2", "H2O"].includes(molecule.formula)) ? "liquid" : "solid",
+							density: 1, parts,
+						});
+					})}
+				</div>
+			</section>
 		`;
 	}
 

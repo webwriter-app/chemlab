@@ -1348,11 +1348,20 @@ export const style = css`
 	#teacherTabs > sl-tab-panel {
 		--padding: 0;
 	}
-	.teacher-palette {
+	.chemical-section {
+		margin-block-end: 6px;
+		padding: 5px;
+		border: 1px solid var(--sl-color-neutral-200);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--sl-color-neutral-50);
+	}
+	#teacherDrawer .chemical-section h3 {
+		margin: 0 0 5px;
+	}
+	.chemical-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(6.25rem, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(min(8.5rem, 100%), 1fr));
 		gap: 6px;
-		margin-bottom: 8px;
 	}
 	.component-palette {
 		display: grid;
@@ -1488,18 +1497,34 @@ export const style = css`
 	}
 	.chemical-tile {
 		cursor: pointer;
+		min-inline-size: 0;
+		margin: 0;
+		border: 1px solid var(--sl-color-neutral-200);
+		border-radius: 4px;
+	}
+	.chemical-tile > sl-badge {
+		max-inline-size: 100%;
+	}
+	.chemical-tile > sl-badge::part(base) {
+		white-space: normal;
+		overflow-wrap: anywhere;
+		line-height: 1.2;
 	}
 	.component-tile[aria-pressed="true"],
 	.chemical-tile[aria-pressed="true"] {
 		background: var(--sl-color-primary-100);
 		border-color: var(--sl-color-primary-600);
 	}
-	.component-tile img,
-	.chemical-tile img {
-		width: 60px;
-		height: 48px;
-		object-fit: contain;
+	.chemical-preview {
+		inline-size: min(76px, 100%);
+		block-size: 57px;
 		pointer-events: none;
+	}
+	.chemical-preview img {
+		display: block;
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: contain;
 	}
 	.teacher-editors {
 		display: grid;

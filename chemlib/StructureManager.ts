@@ -814,7 +814,8 @@ export abstract class StructureManager {
 	public static printMolecule(
 		molecule: Molecule,
 		dimx: number,
-		dimy: number
+		dimy: number,
+		fitPadding?: number
 	): string {
 		let renderType = Kekule.Render.RendererType.R2D;
 		StructureManager.calcPos2D(molecule, true);
@@ -841,7 +842,8 @@ export abstract class StructureManager {
 		);
 		let context = painter.createContext(canvasElem, dimx, dimy);
 	
-		painter.draw(context, { x: dimx / 2, y: dimy / 2 });
+		const options = fitPadding === undefined ? undefined : { autoShrink: true, autofitContextPadding: fitPadding };
+		painter.draw(context, { x: dimx / 2, y: dimy / 2 }, options);
 
 		return canvasElem.getElementsByTagName("canvas")[0].toDataURL("image/png")
 
