@@ -23,6 +23,10 @@ export class DiagramController implements ReactiveController {
 	 */
 	private diagramList: Array<[Chart<"line">, HTMLDivElement, () => void]> = [];
 
+	get hasDiagrams(): boolean {
+		return this.diagramList.length > 0;
+	}
+
 	public updateLabels(): void {
 		this.diagramList.forEach(([, , updateLabels]) => updateLabels());
 	}
@@ -115,6 +119,7 @@ export class DiagramController implements ReactiveController {
 				this.diagramList.splice(index, 1);
 			}
 			canvasBundle.remove();
+			this.host.requestUpdate();
 			this.host.reportXApi("removed", "diagram-" + name);
 		};
 		canvasHeadingContainer.appendChild(canvasHeading);
@@ -212,6 +217,7 @@ export class DiagramController implements ReactiveController {
 		};
 		updateLabels();
 		this.diagramList.push([chart, canvasDiv, updateLabels]);
+		this.host.requestUpdate();
 		this.host.reportXApi("created", "diagram-" + name);
 	}
 

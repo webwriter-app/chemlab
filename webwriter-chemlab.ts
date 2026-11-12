@@ -3502,11 +3502,13 @@ export class ChemLab extends LitElementWw {
 	 * @returns {*}
 	 */
 	render() {
+		const diagramAvailable = this.diagramPanelAvailable;
+		const diagramOpen = diagramAvailable && this.diagramPanelOpen;
 		return html`
 			<div
 				id="upper"
 				@keydown=${this.deleteSelection}
-				class=${`${this.objectPanelOpen ? "show-object-panel" : ""} ${this.diagramPanelOpen ? "show-diagram-panel" : ""}`}
+				class=${`${this.objectPanelOpen ? "show-object-panel" : ""} ${diagramOpen ? "show-diagram-panel" : ""}`}
 			>
 				<div id="canvasArea" @dragover=${this.handleComponentDragOver} @drop=${this.dropComponent}>
 					${this.pix_canvas}
@@ -3516,7 +3518,7 @@ export class ChemLab extends LitElementWw {
 					${this.renderControlButtons()}
 				</div>
 				${this.renderObjectDetails()}
-				${this.renderDiagramDetails()}
+				${this.renderDiagramDetails(diagramAvailable, diagramOpen)}
 				${this.renderConfirmDialog()}
 				${this.renderTeacherDrawer()}
 				<sl-popup id="permissionPopup" placement="top" distance="8" flip shift arrow
@@ -3608,10 +3610,14 @@ export class ChemLab extends LitElementWw {
 			</aside>`;
 	}
 
-	private renderDiagramDetails() {
+	private get diagramPanelAvailable(): boolean {
+		return this.diagrams.hasDiagrams || this.simulation.hasRunningExperiments;
+	}
+
+	private renderDiagramDetails(available: boolean, open: boolean) {
 		return html`
 			<aside id="diagramArea" class="workspace-side">
-				<sl-details class="workspace-details" .open=${this.diagramPanelOpen}
+				<sl-details class="workspace-details" .open=${open} ?disabled=${!available}
 					@sl-show=${(event: Event) => this.onDiagramToggle(event, true)}
 					@sl-hide=${(event: Event) => this.onDiagramToggle(event, false)}>
 					<span slot="summary" class="workspace-summary" title=${this.message("Diagramme")}>
@@ -3632,7 +3638,7 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private onDiagramToggle(event: Event, open: boolean): void {
-		if (event.target !== event.currentTarget || this.diagramPanelOpen === open) return;
+		if (event.target !== event.currentTarget || !this.diagramPanelAvailable || this.diagramPanelOpen === open) return;
 		this.diagramPanelOpen = open;
 		this._sendxAPiStatement(open ? "opened" : "closed", "diagramPanel");
 	}

@@ -77,6 +77,14 @@ export class SimulationController implements ReactiveController {
 				step();
 			}
 		});
+		this.host.requestUpdate();
+	}
+
+	get hasRunningExperiments(): boolean {
+		for (const name of this.tasks.keys()) {
+			if (isExperimentTask(name)) return true;
+		}
+		return false;
 	}
 
 	hasTask(name: string): boolean {
@@ -84,7 +92,7 @@ export class SimulationController implements ReactiveController {
 	}
 
 	stopTask(name: string): void {
-		this.tasks.delete(name);
+		if (this.tasks.delete(name) && isExperimentTask(name)) this.host.requestUpdate();
 	}
 
 	stopExperiments(): void {
