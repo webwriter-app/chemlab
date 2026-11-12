@@ -80,6 +80,8 @@ export class CanvasController implements ReactiveController {
 	private cables = new Map<PIXI.Graphics, chemlib.ElectricComponent>();
 	private cableRopes = new Map<PIXI.Graphics, CableRope>();
 	private cablesDirty = false;
+	/** electrode sprites moved along with a vessel since the last save */
+	private attachedElectrodesMoved = new Set<PIXI.Container>();
 
 	/** true while a sprite drag is in progress (pointermove listener attached) */
 	private _dragActive: boolean = false;
@@ -276,6 +278,7 @@ export class CanvasController implements ReactiveController {
 		const snappedDy = anchor.y - drag.anchor.y;
 		for (const { sprite, x, y } of drag.items) {
 			sprite.position.set(x + snappedDx, y + snappedDy);
+			if (sprite instanceof VesselView) this.moveAttachedElectrodes(sprite, snappedDx, snappedDy);
 			if (this.cables.size && !(sprite instanceof VesselView)) this.cablesDirty = true;
 		}
 		this.drawSelection();
@@ -455,6 +458,7 @@ export class CanvasController implements ReactiveController {
 		}
 		this.cables.delete(sprite as PIXI.Graphics);
 		this.cableRopes.delete(sprite as PIXI.Graphics);
+		this.attachedElectrodesMoved.delete(sprite);
 		sprite.destroy({ children: true });
 		this.host.requestCanvasRender();
 	}
@@ -584,7 +588,12 @@ export class CanvasController implements ReactiveController {
 				local.x + this._dragOffset.x,
 				local.y + this._dragOffset.y
 			);
+			const dx = position.x - this.host.dragObject.x;
+			const dy = position.y - this.host.dragObject.y;
 			this.host.dragObject.position.copyFrom(position);
+			if (this.host.dragObject instanceof VesselView) {
+				this.moveAttachedElectrodes(this.host.dragObject, dx, dy);
+			}
 
 			let mouseHoverObject: number = -1;
 			for (let i = 0; i < this.world.children.length; i++) {
@@ -909,7 +918,9 @@ export class CanvasController implements ReactiveController {
 				}
 			}
 		}
-		if (this.host.dragObject) this.host.saveComponentPosition(this.host.dragObject);
+		const movedElectrodes = [...this.attachedElectrodesMoved];
+		this.attachedElectrodesMoved.clear();
+		if (this.host.dragObject) this.host.saveComponentPositions([this.host.dragObject, ...movedElectrodes]);
 		this.host.dragObject = undefined;
 	}
 
@@ -1034,7 +1045,12 @@ export class CanvasController implements ReactiveController {
 				if (drag.moved) {
 					this.drawSelection();
 					this.relengthCablesAttachedTo(drag.items.map(({ sprite }) => sprite));
-					this.host.saveComponentPositions(drag.items.map(({ sprite }) => sprite));
+					const movedElectrodes = [...this.attachedElectrodesMoved];
+					this.attachedElectrodesMoved.clear();
+					this.host.saveComponentPositions([
+						...drag.items.map(({ sprite }) => sprite),
+						...movedElectrodes,
+					]);
 				}
 			} else if (this.pan?.id === event.pointerId) {
 				const { moved, deselectOnTap } = this.pan;
@@ -1064,11 +1080,56 @@ export class CanvasController implements ReactiveController {
 	flushChanges(): void {
 		for (const view of this.changedVessels) view.updateContents();
 		this.changedVessels.clear();
+		this.updateElectrodeStacking();
 		if (this.cablesDirty || this.cables.size) {
 			this.cablesDirty = false;
 			// requests a render again while any rope is awake, which keeps
 			// the sim loop ticking until all cables have settled
 			this.updateCablePositions();
+		}
+	}
+
+	/**
+	 * Moves the electrode sprites standing inside a vessel's contents by the
+	 * same offset the vessel itself was moved by, so electrodes travel with
+	 * their vessel.
+	 *
+	 * @private
+	 * @param {VesselView} vessel - the moved vessel view
+	 * @param {number} dx - the world-space x offset
+	 * @param {number} dy - the world-space y offset
+	 */
+	private moveAttachedElectrodes(vessel: VesselView, dx: number, dy: number): void {
+		if (!(dx || dy) || !this.host.allEComponents.length) return;
+		const mix = vessel.component._content;
+		for (const eComp of this.host.allEComponents) {
+			if (eComp._type !== chemlib.EComponentType.Electrode || eComp._connectedMix !== mix) continue;
+			const electrode = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
+			if (!electrode || this.host.dragObject === electrode) continue;
+			electrode.x += dx;
+			electrode.y += dy;
+			this.attachedElectrodesMoved.add(electrode);
+		}
+		if (this.cables.size) this.cablesDirty = true;
+	}
+
+	/**
+	 * Keeps an inserted electrode behind its vessel's glass and contents by
+	 * lowering it below the vessel sprite in the world ordering.
+	 *
+	 * @private
+	 */
+	private updateElectrodeStacking(): void {
+		const stage = this.world;
+		for (const [component, view] of this.vessels) {
+			for (const eComp of this.host.allEComponents) {
+				if (eComp._type !== chemlib.EComponentType.Electrode || eComp._connectedMix !== component._content) continue;
+				const electrode = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
+				if (!electrode || !electrode.parent) continue;
+				if (stage.getChildIndex(electrode) > stage.getChildIndex(view)) {
+					stage.setChildIndex(electrode, stage.getChildIndex(view));
+				}
+			}
 		}
 	}
 
