@@ -1284,12 +1284,13 @@ export const style = css`
 	}
 	#teacherTabs::part(tabs) {
 		gap: 4px;
-		padding: 2px;
+		border-radius: 0;
 	}
 	#teacherTabs > sl-tab::part(base) {
 		padding: 5px 12px;
 		border: 1px solid var(--sl-color-neutral-300);
-		border-radius: var(--sl-border-radius-pill);
+		border-bottom: 0;
+		border-radius: var(--sl-border-radius-medium) var(--sl-border-radius-medium) 0 0;
 		background: var(--sl-color-neutral-0);
 		color: var(--sl-color-neutral-700);
 	}
@@ -1322,23 +1323,30 @@ export const style = css`
 	}
 	.teacher-card {
 		display: grid;
-		grid-template-rows: auto auto 1fr auto;
+		grid-template-rows: auto 1fr;
+		gap: 5px;
 		min-inline-size: 10.5rem;
 		padding: 5px;
 		border: 1px solid var(--sl-color-neutral-200);
 		border-radius: 4px;
 	}
 	.component-card-header {
-		display: grid;
-		grid-template-columns: 1fr auto;
-		align-items: start;
-		gap: 3px 5px;
-		font-size: 0.8rem;
-		white-space: nowrap;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 6px;
 	}
-	.component-permission-count {
-		grid-column: 2;
-		justify-self: end;
+	.component-permission-toggle {
+		display: inline-flex;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		touch-action: manipulation;
+		user-select: none;
+	}
+	.component-permission-toggle > sl-badge {
+		margin: 0;
 	}
 	#permissionPopup {
 		position: absolute;
@@ -1359,10 +1367,27 @@ export const style = css`
 		font-size: var(--sl-tooltip-font-size);
 		line-height: var(--sl-tooltip-line-height);
 	}
+	.component-variant {
+		display: grid;
+		grid-template-rows: auto 1fr auto;
+		border: 1px solid var(--sl-color-neutral-200);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--sl-color-neutral-50);
+	}
+	.component-variant-body {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+	}
 	.component-permission {
-		grid-column: 2;
-		grid-row: 2;
+		grid-area: 1 / 2;
+		z-index: 1;
+		display: grid;
+		place-items: center;
 		justify-self: end;
+		align-self: end;
+		block-size: calc(var(--sl-input-height-small) * 0.8);
+		margin-inline-end: 7px;
+		margin-block-end: 4px;
 	}
 	.component-permission sl-tooltip {
 		--show-delay: 650ms;
@@ -1378,7 +1403,7 @@ export const style = css`
 	.variant-arrow::part(base) {
 		width: 100%;
 		min-height: 0;
-		height: 22px;
+		height: 20px;
 	}
 	.variant-arrow[disabled] {
 		visibility: hidden;
@@ -1403,15 +1428,19 @@ export const style = css`
 		background: var(--sl-color-neutral-0);
 	}
 	.component-tile {
+		grid-area: 1 / 1 / 2 / -1;
 		cursor: grab;
 		margin: 0;
 		min-width: 0;
+		padding: 2px 26px 3px;
+		border: 1px solid transparent;
+		background: transparent;
 	}
 	.component-preview {
-		display: grid;
-		place-items: center;
-		width: min(60px, 100%);
-		height: 48px;
+		display: block;
+		inline-size: 76px;
+		block-size: 57px;
+		color: #285160;
 		pointer-events: none;
 	}
 	.chemical-tile {

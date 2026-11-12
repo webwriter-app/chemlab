@@ -63,7 +63,8 @@ import { defaultMolecules, defaultMixtures } from "./data/presets";
 import { sendXApiStatement } from "./services/xapi";
 import { DiagramController } from "./controllers/DiagramController";
 import { SimulationController } from "./controllers/SimulationController";
-import { componentGraphic, componentScale, componentVariant, componentVariants, type ComponentVariant, type PaletteComponent } from "./data/componentGraphics";
+import { componentGraphic, componentVariant, componentVariants, type ComponentVariant, type PaletteComponent } from "./data/componentGraphics";
+import { renderComponentPaletteIcon } from "./data/componentPaletteIcons";
 import { chemicalCatalog, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
 import { prepareDose, type SavedDose } from "./data/measuredDose";
 import { STANDARD_CANVAS_HEIGHT } from "./controllers/WorkspaceCamera";
@@ -1236,6 +1237,17 @@ export class ChemLab extends LitElementWw {
 			variants.forEach(({ id }) => blocked.delete(id));
 			blocked.add(variant.type);
 		}
+		this.invComponents = [...blocked];
+	}
+
+	private toggleAllVariants(type: PaletteComponent): void {
+		if (!this.canAuthor) return;
+		const variants = componentVariants[type];
+		const wereAllAllowed = variants.every((variant) => this.isVariantAllowed(variant));
+		const blocked = new Set(this.invComponents);
+		blocked.delete(type);
+		for (const { id } of variants) blocked.delete(id);
+		if (wereAllAllowed) blocked.add(type);
 		this.invComponents = [...blocked];
 	}
 
@@ -3755,14 +3767,15 @@ export class ChemLab extends LitElementWw {
 			const allowed = variants.filter((variant) => this.isVariantAllowed(variant));
 			const visible = this.canAuthor ? variants : allowed;
 			if (!visible.length) return nothing;
-			const scale = (variant: ComponentVariant) => componentScale(type, variant.capacityMl);
+			const graphic = componentGraphic(type);
 			const current = visible.find(({ id }) => id === this.visibleVariants[type]) ??
-				visible.find((variant) => scale(variant) === 1) ?? visible[0];
+				visible.find(({ capacityMl }) => capacityMl === graphic.capacityMl) ?? visible[0];
 			const position = visible.indexOf(current);
-			const previewPercent = 100 * scale(current) / Math.max(...variants.map(scale));
 			const name = this.itemName(type);
-			const variantLabel = current.material ? this.message(current.material.name) : current.size;
+			const variantLabel = current.material ? this.message(current.material.name) : current.size || this.message("Standard");
 			const partiallyAllowed = allowed.length > 0 && allowed.length < variants.length;
+			const permissionVariant = allowed.length === 0 ? "danger" : partiallyAllowed ? "primary" : "success";
+			const currentAllowed = allowed.includes(current);
 			const showPermissionTooltip = (event: Event) => {
 				if (!partiallyAllowed) return;
 				this.permissionTooltip = {
@@ -3774,7 +3787,7 @@ export class ChemLab extends LitElementWw {
 			const hidePermissionTooltip = (event: Event) => {
 				if (this.permissionTooltip?.anchor === event.currentTarget) this.permissionTooltip = undefined;
 			};
-			const itemLabel = variantLabel ? `${name} · ${variantLabel}` : name;
+			const itemLabel = `${name} · ${variantLabel}`;
 			const changeVariant = (step: number) => {
 				const next = visible[(position + step + visible.length) % visible.length];
 				this.visibleVariants = { ...this.visibleVariants, [type]: next.id };
@@ -3787,49 +3800,54 @@ export class ChemLab extends LitElementWw {
 						<path d=${step < 0 ? "m4 10 4-4 4 4" : "m4 6 4 4 4-4"}/>
 					</svg>
 				</sl-button>`;
+			const permissionCount = this.message("{allowed} von {total} Varianten freigegeben", { allowed: allowed.length, total: variants.length });
+			const permissionAction = this.message(allowed.length === variants.length ? "Alle Varianten sperren" : "Alle Varianten freigeben");
 			const badge = html`
-				<sl-badge variant=${allowed.length === 0 ? "danger" : partiallyAllowed ? "primary" : "success"}
-					tabindex=${partiallyAllowed ? "0" : nothing}
+				<button type="button" class="component-permission-toggle"
+					title=${partiallyAllowed ? nothing : this.message("Doppelklick zum Umschalten aller Varianten")}
+					aria-label=${`${name} · ${permissionCount} · ${permissionAction}`}
 					aria-describedby=${this.permissionTooltip?.type === type ? "permissionTooltip" : nothing}
 					@pointerenter=${showPermissionTooltip} @pointerleave=${hidePermissionTooltip}
 					@focus=${showPermissionTooltip} @blur=${hidePermissionTooltip}
 					@keydown=${(event: KeyboardEvent) => { if (event.key === "Escape") hidePermissionTooltip(event); }}
-					aria-label=${this.message("{allowed} von {total} Varianten freigegeben", { allowed: allowed.length, total: variants.length })}>
-					${allowed.length} / ${variants.length}
-				</sl-badge>`;
+					@dblclick=${() => this.toggleAllVariants(type)}
+					@click=${(event: MouseEvent) => { if (event.detail === 0) this.toggleAllVariants(type); }}>
+					<sl-badge pill variant=${permissionVariant}>
+						${allowed.length} / ${variants.length}
+					</sl-badge>
+				</button>`;
 			return html`
 				<div class="teacher-card" role="group" aria-label=${name}>
 					<div class="component-card-header">
-						<span>${name}</span>
-						${this.canAuthor ? html`
-							<div class="component-permission-count">
-								${badge}
-							</div>
-							<div class="component-permission">
-								<sl-tooltip hoist content=${this.message("Für Lernende erlauben")}>
-									<sl-checkbox size="small" .checked=${this.isVariantAllowed(current)}
-										aria-label=${`${itemLabel} · ${this.message("Für Lernende erlauben")}`}
-										@sl-change=${(event: Event) => this.setVariantAllowed(current, (event.currentTarget as SlCheckbox).checked)}>
-										${this.message("Für Lernende erlauben")}
-									</sl-checkbox>
-								</sl-tooltip>
-							</div>` : nothing}
+						<sl-tag size="small" variant=${this.canAuthor ? permissionVariant : "neutral"}>${name}</sl-tag>
+						${this.canAuthor ? badge : nothing}
 					</div>
-					${arrow(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Größe"))}
-					<button type="button" class="component-tile" draggable="true"
-						aria-label=${itemLabel} aria-pressed=${this.componentToPlace === current.id}
-						@dragstart=${(event: DragEvent) => this.startComponentDrag(event, current)}
-						@click=${() => {
-							this.componentToPlace = this.componentToPlace === current.id ? undefined : current.id;
-							this.selectedChemical = undefined;
-						}}>
-						<span class="component-preview">
-							<img src=${componentGraphic(type).url} alt="" draggable="false"
-								style=${`width:${previewPercent}%;height:${previewPercent}%`}/>
-						</span>
-						<span aria-live="polite">${variantLabel}</span>
-					</button>
-					${arrow(1, this.message(current.material ? "Nächstes Material" : "Nächste Größe"))}
+					<div class="component-variant">
+						${arrow(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Größe"))}
+						<div class="component-variant-body">
+							<button type="button" class="component-tile" draggable="true"
+								aria-label=${itemLabel} aria-pressed=${this.componentToPlace === current.id}
+								@dragstart=${(event: DragEvent) => this.startComponentDrag(event, current)}
+								@click=${() => {
+									this.componentToPlace = this.componentToPlace === current.id ? undefined : current.id;
+									this.selectedChemical = undefined;
+								}}>
+								${renderComponentPaletteIcon(current, variants.indexOf(current) / Math.max(1, variants.length - 1))}
+								<sl-tag size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
+							</button>
+							${this.canAuthor ? html`
+								<div class="component-permission">
+									<sl-tooltip hoist content=${this.message("Für Lernende erlauben")}>
+									<sl-checkbox size="small" .checked=${currentAllowed}
+											aria-label=${`${itemLabel} · ${this.message("Für Lernende erlauben")}`}
+											@sl-change=${(event: Event) => this.setVariantAllowed(current, (event.currentTarget as SlCheckbox).checked)}>
+											${this.message("Für Lernende erlauben")}
+										</sl-checkbox>
+									</sl-tooltip>
+								</div>` : nothing}
+						</div>
+						${arrow(1, this.message(current.material ? "Nächstes Material" : "Nächste Größe"))}
+					</div>
 				</div>`;
 		});
 		if (cards.every((card) => card === nothing)) return html`<p>${this.message("Keine Geräte freigegeben.")}</p>`;
