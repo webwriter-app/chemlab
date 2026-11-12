@@ -1,5 +1,21 @@
 import { Molecule } from "./Molecule";
 import { StructureManager } from "./StructureManager";
+import { ethanolWaterExcessVolume } from "./ethanolWaterVolume";
+
+function isEthanol(molecule: Molecule): boolean {
+	if (molecule._totalCharge !== 0 || molecule._atoms.length !== 9 || molecule._bonds.length !== 8) return false;
+	const atoms = molecule._atoms.map((atom) => atom.getSymbol());
+	return atoms.filter((symbol) => symbol === "H").length === 6 &&
+		atoms.filter((symbol) => symbol === "C").length === 2 &&
+		atoms.includes("O") &&
+		molecule._bonds.every((bond) => bond._type === "covalent" && bond._magnitude === 1) &&
+		molecule._bonds.some((bond) =>
+			bond._from.getSymbol() === "C" && bond._to.getSymbol() === "C") &&
+		molecule._bonds.some((bond) => {
+			const symbols = [bond._from.getSymbol(), bond._to.getSymbol()];
+			return symbols.includes("C") && symbols.includes("O");
+		});
+}
 
 /**
  * A Representation of a mixture of one or more instances of {@link Molecule}
@@ -38,7 +54,46 @@ class Mixture {
 	hasLiquidVolume = false;
 
 	get contentVolume(): number {
-		return Math.max(0, this._solutionVolume) + this.addedVolume;
+		return this.contentVolumeWith();
+	}
+
+	get hasLiquidContents(): boolean {
+		return this._solutionVolume > 0 || this.hasLiquidVolume || this._activeMolecules.some(isEthanol);
+	}
+
+	/** Predicts the volume in litres after mixing in a homogeneous portion. */
+	contentVolumeWith(portion?: Mixture, fraction = 1): number {
+		const additiveVolume = Math.max(0, this._solutionVolume) + this.addedVolume +
+			(portion ? (Math.max(0, portion._solutionVolume) + portion.addedVolume) * fraction : 0);
+		let water = 0;
+		let ethanol = 0;
+		for (const [mixture, scale] of [[this, 1], [portion, fraction]] as const) {
+			if (!mixture || scale <= 0) continue;
+			for (const molecule of mixture._activeMolecules) {
+				const mass = mixture._molProperties[molecule._id + "m"] * scale;
+				if (!(mass > 0)) continue;
+				if (StructureManager.isWater(molecule)) water += mass;
+				else if (isEthanol(molecule)) ethanol += mass;
+				else return additiveVolume;
+			}
+		}
+		if (!ethanol) return additiveVolume;
+		// Keep the nominal pure-component densities used for lab doses. Apply only
+		// the excess volume from the reference model, so pure water stays at 1 g/mL.
+		return water / 1000 + ethanol / 789 + ethanolWaterExcessVolume(water, ethanol);
+	}
+
+	fractionThatFits(portion: Mixture, capacity: number, maximum = 1): number {
+		if (!(capacity > 0 && maximum > 0)) return 0;
+		if (this.contentVolumeWith(portion, maximum) <= capacity + 1e-12) return maximum;
+		let low = 0;
+		let high = maximum;
+		for (let step = 0; step < 38; step++) {
+			const middle = (low + high) / 2;
+			if (this.contentVolumeWith(portion, middle) <= capacity) low = middle;
+			else high = middle;
+		}
+		return low;
 	}
 	/**
 	 * Is true if the mixture is a solution

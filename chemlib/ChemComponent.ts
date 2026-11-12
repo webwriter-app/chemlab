@@ -225,12 +225,13 @@ class ChemComponent {
 		tDest: ChemComponent
 	): void {
 		// console.log(tDest)
+		if (tDest === this) return;
 		if (tDest._inOutLimits[0] > 0) {
-			if (this._content.addedVolume > 0 && tMol == null) {
-				const volume = this._content.contentVolume;
-				const limit = Math.max(0, tDest._volume / 1000 - tDest._content.contentVolume);
+			const volume = this._content.contentVolume;
+			if (volume > 0 && tMol == null) {
 				const requested = tVolume ?? (this._outVol || volume);
-				const fraction = Math.min(1, limit / volume, requested / volume);
+				const maximum = Math.max(0, Math.min(1, requested / volume));
+				const fraction = tDest._content.fractionThatFits(this._content, tDest._volume / 1000, maximum);
 				if (fraction <= 0) return;
 				const portion = StructureManager.newMixture();
 				for (const mol of [...this._content._activeMolecules]) {

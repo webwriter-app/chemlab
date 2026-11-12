@@ -17,7 +17,7 @@ export function prepareDose(recipe: ChemicalRecipe, load: (definition: MoleculeD
 	const gramsPerMl = waterMass > 0 ? waterMass : mass / recipe.density;
 	if (!(gramsPerMl > 0 && Number.isFinite(gramsPerMl))) return;
 
-	return (volumeMl: number): Mixture => {
+	const makeDose = (volumeMl: number): Mixture => {
 		const dose = StructureManager.newMixture();
 		for (const { molecule, amount } of parts) {
 			dose.addMolecule(molecule, amount * volumeMl / gramsPerMl);
@@ -26,4 +26,7 @@ export function prepareDose(recipe: ChemicalRecipe, load: (definition: MoleculeD
 		dose.addedVolume = Math.max(0, volumeMl / 1000 - dose._solutionVolume);
 		return dose;
 	};
+	const referenceMl = makeDose(1).contentVolume * 1000;
+	if (!(referenceMl > 0 && Number.isFinite(referenceMl))) return;
+	return (volumeMl: number) => makeDose(volumeMl / referenceMl);
 }
