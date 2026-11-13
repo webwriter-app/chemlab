@@ -232,7 +232,7 @@ export const chemicalCatalog: CatalogChemical[] = [
 	reference("Calciumchlorid", "Salze", "CaCl₂"),
 	reference("Silberchlorid", "Salze", "AgCl"),
 	reference("Bariumsulfat", "Salze", "BaSO₄"),
-	pure("Natriumhydroxid", "Basen", naoh, "solid", 2.13, concentratedReagent.sodiumHydroxide),
+	pure("Natriumhydroxid", "Basen", naoh, "solid", 2.13),
 	aqueous("Natronlauge (1 mol/L)", "Basen", naoh, concentratedReagent.sodiumHydroxide),
 	aqueous("Kalilauge (1 mol/L)", "Basen", { formula: "KOH", atoms: ["potassium", "oxygen", "hydrogen"],
 		bonds: ["0-1:acidbase:1", "1-2:covalent:1"] }, concentratedReagent.potassiumHydroxide),

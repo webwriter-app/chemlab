@@ -30,8 +30,9 @@ export function nonpolarDensity(molecule: Molecule): number {
 	if (molecule._totalCharge !== 0) return 0;
 	if (molecule._atoms.some((atom) => atom.getIonicCharge())) return 0;
 	const symbols = molecule._atoms.map((atom) => atom.getSymbol());
-	if (!symbols.includes("C")) return 0;
-	if (symbols.some((symbol) => !organicElements.has(symbol))) return 0;
+	if (!symbols.includes("C") || symbols.some((symbol) => !organicElements.has(symbol))) return 0;
+	// Elemental carbon is a dosable solid in the catalog, not a hydrocarbon.
+	if (symbols.every((symbol) => symbol === "C")) return 0;
 	const known = knownDensities[molecule.smilesString];
 	if (known) return known;
 	return symbols.some((symbol) => halogens.has(symbol)) ? 1.2 : 0.7;

@@ -149,7 +149,8 @@ export abstract class Simulation {
 		return molarMass / (density * 1000);
 	}
 
-	private static registerSolidSalt(mix: Mixture, molecule: Molecule, ions: [Molecule, Molecule]): boolean {		const pair = ions[0]._totalCharge > 0 ? ions : [ions[1], ions[0]] as const;
+	private static registerSolidSalt(mix: Mixture, molecule: Molecule, ions: [Molecule, Molecule]): boolean {
+		const pair = ions[0]._totalCharge > 0 ? ions : [ions[1], ions[0]] as const;
 		const salt = saltEquilibria.find(({ cation, anion, cations, anions }) =>
 			cations === 1 && anions === 1 && pair[0].smilesString === cation && pair[1].smilesString === anion);
 		if (!salt) return false;

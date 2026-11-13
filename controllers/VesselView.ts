@@ -12,6 +12,8 @@ interface SolidParticle {
 	vx: number;
 	vy: number;
 	size: number;
+	grain: boolean;
+	ageMs: number;
 	color: number;
 	/** depth at which the particle lands and disappears into the sediment */
 	floor: number;
@@ -196,8 +198,11 @@ export class VesselView extends Container {
 		if (!this.initialized) {
 			// First draw (or a restored document): show the state as it is.
 			this.initialized = true;
+		} else if (hint === "grain") {
+			this.spawnSolidParticles(true, Math.max(0, sediment.mass - this.sedimentMass), fill,
+				liquid ? sedimentFraction : fill, liquid ? sediment.color : 0x827d6f);
 		} else if (sediment.mass > this.sedimentMass + 1e-9 && liquid) {
-			this.spawnSolidParticles(hint === "grain", sediment.mass - this.sedimentMass, fill, sedimentFraction, sediment.color);
+			this.spawnSolidParticles(false, sediment.mass - this.sedimentMass, fill, sedimentFraction, sediment.color);
 		}
 		this.sedimentMass = sediment.mass;
 		if (this.sedimentDrawn < 0) this.sedimentDrawn = sedimentFraction;
@@ -259,6 +264,8 @@ export class VesselView extends Container {
 				vx: (Math.random() * 2 - 1) * (grains ? 1.5 : 0.8),
 				vy: Math.random() * 1.5,
 				size: grains ? 0.55 + Math.random() * 0.45 : 0.28 + Math.random() * 0.3,
+				grain: grains,
+				ageMs: 0,
 				color,
 				floor: floorDepth,
 			});
@@ -299,11 +306,11 @@ export class VesselView extends Container {
 			const gy = cos * cos;
 			const remaining: SolidParticle[] = [];
 			for (const particle of this.particles) {
-				const grain = particle.size > 0.35;
-				const gravity = grain
+				particle.ageMs += dtMs;
+				const gravity = particle.grain
 					? VesselView.GRAIN_GRAVITY
 					: VesselView.PRECIPITATE_GRAVITY;
-				const terminal = grain
+				const terminal = particle.grain
 					? VesselView.GRAIN_TERMINAL
 					: VesselView.PRECIPITATE_TERMINAL;
 				particle.vx = particle.vx * 0.96 + gx * gravity * seconds;
@@ -311,7 +318,7 @@ export class VesselView extends Container {
 				particle.x += particle.vx * seconds;
 				particle.y += particle.vy * seconds;
 				const depth = particle.x * sin + particle.y * cos;
-				if (depth < particle.floor - particle.size * 0.4) remaining.push(particle);
+				if (particle.ageMs < 6000 && depth < particle.floor - particle.size * 0.4) remaining.push(particle);
 			}
 			this.particles = remaining;
 			this.drawParticles();
@@ -324,17 +331,13 @@ export class VesselView extends Container {
 			this.wobbleMs = Math.max(0, this.wobbleMs - dtMs);
 			this.wobbleAge = 850 - this.wobbleMs;
 			this.drawStream();
-			if (this.wobbleMs > 0) {
-				const amplitude = 0.0035 * Math.exp(-this.wobbleAge / 300)
-					* Math.sin(this.wobbleAge * Math.PI * 2 / 260);
-				this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor, amplitude);
-			}
+			const amplitude = this.wobbleMs > 0
+				? 0.0035 * Math.exp(-this.wobbleAge / 300) * Math.sin(this.wobbleAge * Math.PI * 2 / 260)
+				: 0;
+			this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor, amplitude);
 			active = true;
 		}
 
-		if (!this.particles.length && this.streamMs <= 0 && this.wobbleMs <= 0) {
-			this.particlesShape.clear();
-		}
 		return active;
 	}
 
