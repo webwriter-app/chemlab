@@ -4354,7 +4354,7 @@ export class ChemLab extends LitElementWw {
 				<sl-button class="variant-arrow" size="small" variant="text" ?disabled=${visible.length < 2}
 					aria-label=${`${name} · ${label}`} title=${label} @click=${() => changeVariant(step)}>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
-						<path d=${step < 0 ? "m4 10 4-4 4 4" : "m4 6 4 4 4-4"}/>
+						<path d=${step < 0 ? "m10 4-4 4 4 4" : "m6 4 4 4-4 4"}/>
 					</svg>
 				</sl-button>`;
 			const permissionCount = this.message("{allowed} von {total} Varianten freigegeben", { allowed: allowed.length, total: variants.length });
@@ -4373,7 +4373,11 @@ export class ChemLab extends LitElementWw {
 				</button>`;
 			return this.renderPaletteCard(name, permissionVariant, badge, html`
 					<div class="component-variant palette-variant">
-						${arrow(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Größe"))}
+						<div class="component-variant-controls">
+							${arrow(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Größe"))}
+							<sl-tag size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
+							${arrow(1, this.message(current.material ? "Nächstes Material" : "Nächste Größe"))}
+						</div>
 						<div class="component-variant-body">
 							<button type="button" class="component-tile" contenteditable="false"
 								aria-label=${itemLabel} aria-pressed=${this.componentToPlace === current.id}
@@ -4385,7 +4389,6 @@ export class ChemLab extends LitElementWw {
 									this.clearChemicalSelection();
 								}}>
 								${renderComponentPaletteIcon(current, variants.indexOf(current) / Math.max(1, variants.length - 1))}
-								<sl-tag size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
 							</button>
 							${this.canAuthor ? html`
 								<div class="component-permission">
@@ -4398,7 +4401,6 @@ export class ChemLab extends LitElementWw {
 									</sl-tooltip>
 								</div>` : nothing}
 						</div>
-						${arrow(1, this.message(current.material ? "Nächstes Material" : "Nächste Größe"))}
 					</div>
 			`);
 		});
@@ -4500,7 +4502,6 @@ export class ChemLab extends LitElementWw {
 				}}>
 				<span class="chemical-preview">${src ? html`<img src=${src} alt="" draggable="false" decoding="async" loading="lazy"/>`
 					: html`<span>${formula}</span>`}</span>
-				${src ? html`<small>${formula}</small>` : nothing}
 			</button>`;
 	}
 
@@ -4652,7 +4653,6 @@ export class ChemLab extends LitElementWw {
 			</button>`;
 		const body = active !== undefined ? html`
 			<div class="chemical-solution palette-variant">
-				${preview}
 				<div class="chemical-dose-carousel" role="group" aria-label=${`${name} · ${this.message("Konzentration zum Dosieren")}`}>
 					${values.length > 1 ? arrow(-1) : nothing}
 					<span class="chemical-dose-value" aria-live="polite">
@@ -4660,6 +4660,7 @@ export class ChemLab extends LitElementWw {
 					</span>
 					${values.length > 1 ? arrow(1) : nothing}
 				</div>
+				${preview}
 			</div>` : html`
 			<div class="chemical-single palette-variant">
 				${preview}

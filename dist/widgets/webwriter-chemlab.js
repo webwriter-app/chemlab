@@ -103508,9 +103508,15 @@ var style = i`
 		display: block;
 		inline-size: 800px;
 		max-inline-size: 100%;
-		block-size: min(600px, 100dvh);
-		container-type: inline-size;
+		block-size: 920px;
+		min-inline-size: min(260px, 100%);
+		min-block-size: 280px;
+		container-type: size;
 		font-family: var(--sl-font-sans);
+	}
+	:host(:not(:fullscreen)) {
+		resize: both;
+		overflow: hidden;
 	}
 	:host(.ww-full-width) {
 		inline-size: 100%;
@@ -103548,6 +103554,9 @@ var style = i`
 	:host(:fullscreen) #upper {
 		width: 100%;
 		height: 100%;
+	}
+	:host(:fullscreen) {
+		min-block-size: 0;
 	}
 	.workspace-details::part(base) {
 		border: 0;
@@ -103910,7 +103919,7 @@ var style = i`
 	}
 	#teacherDrawerContent {
 		box-sizing: border-box;
-		max-height: min(240px, 40vh);
+		max-height: min(240px, 45cqh);
 		overflow: auto;
 		padding: 4px 0;
 	}
@@ -104014,7 +104023,13 @@ var style = i`
 	}
 	.component-variant {
 		display: grid;
-		grid-template-rows: auto 1fr auto;
+		grid-template-rows: auto 1fr;
+	}
+	.component-variant-controls {
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: center;
+		padding-block-start: 2px;
 	}
 	.palette-variant {
 		border: 1px solid var(--sl-color-neutral-200);
@@ -104053,6 +104068,9 @@ var style = i`
 		width: 100%;
 		min-height: 0;
 		height: 20px;
+	}
+	.variant-arrow:dir(rtl) svg {
+		transform: scaleX(-1);
 	}
 	.variant-arrow[disabled] {
 		visibility: hidden;
@@ -104097,8 +104115,15 @@ var style = i`
 	}
 	.palette-card-chemical {
 		box-sizing: border-box;
-		inline-size: 12.25rem;
+		inline-size: max-content;
+		min-inline-size: 5.5rem;
 		align-self: start;
+	}
+	.palette-card-chemical:has(.chemical-solution) {
+		min-inline-size: 9rem;
+	}
+	.palette-card-chemical > :not(.palette-card-header) {
+		contain: inline-size;
 	}
 	.chemical-single {
 		display: grid;
@@ -104198,7 +104223,7 @@ var style = i`
 		align-items: center;
 		justify-content: center;
 		gap: 2px;
-		padding: 0 3px 3px;
+		padding: 2px 3px 0;
 	}
 	.chemical-dose-value {
 		display: grid;
@@ -104258,7 +104283,6 @@ var style = i`
 		margin: 0;
 		min-width: 0;
 		padding: 2px 26px 3px;
-		margin-block-end: 8px;
 		border: 1px solid transparent;
 		background: transparent;
 	}
@@ -186470,7 +186494,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				<sl-button class="variant-arrow" size="small" variant="text" ?disabled=${visible.length < 2}
 					aria-label=${`${name2} \xB7 ${label}`} title=${label} @click=${() => changeVariant(step)}>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
-						<path d=${step < 0 ? "m4 10 4-4 4 4" : "m4 6 4 4 4-4"}/>
+						<path d=${step < 0 ? "m10 4-4 4 4 4" : "m6 4 4 4-4 4"}/>
 					</svg>
 				</sl-button>`;
       const permissionCount = this.message("{allowed} von {total} Varianten freigegeben", { allowed: allowed.length, total: variants.length });
@@ -186493,7 +186517,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				</button>`;
       return this.renderPaletteCard(name2, permissionVariant, badge, x`
 					<div class="component-variant palette-variant">
-						${arrow3(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Gr\xF6\xDFe"))}
+						<div class="component-variant-controls">
+							${arrow3(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Gr\xF6\xDFe"))}
+							<sl-tag size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
+							${arrow3(1, this.message(current.material ? "N\xE4chstes Material" : "N\xE4chste Gr\xF6\xDFe"))}
+						</div>
 						<div class="component-variant-body">
 							<button type="button" class="component-tile" contenteditable="false"
 								aria-label=${itemLabel} aria-pressed=${this.componentToPlace === current.id}
@@ -186505,7 +186533,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.clearChemicalSelection();
       }}>
 								${renderComponentPaletteIcon(current, variants.indexOf(current) / Math.max(1, variants.length - 1))}
-								<sl-tag size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
 							</button>
 							${this.canAuthor ? x`
 								<div class="component-permission">
@@ -186518,7 +186545,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 									</sl-tooltip>
 								</div>` : E}
 						</div>
-						${arrow3(1, this.message(current.material ? "N\xE4chstes Material" : "N\xE4chste Gr\xF6\xDFe"))}
 					</div>
 			`);
     });
@@ -186610,7 +186636,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.selectedChemical = chemical;
     }}>
 				<span class="chemical-preview">${src ? x`<img src=${src} alt="" draggable="false" decoding="async" loading="lazy"/>` : x`<span>${formula}</span>`}</span>
-				${src ? x`<small>${formula}</small>` : E}
 			</button>`;
   }
   renderChemicalCatalog() {
@@ -186773,7 +186798,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 			</button>`;
     const body2 = active !== void 0 ? x`
 			<div class="chemical-solution palette-variant">
-				${preview}
 				<div class="chemical-dose-carousel" role="group" aria-label=${`${name2} \xB7 ${this.message("Konzentration zum Dosieren")}`}>
 					${values.length > 1 ? arrow3(-1) : E}
 					<span class="chemical-dose-value" aria-live="polite">
@@ -186781,6 +186805,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					</span>
 					${values.length > 1 ? arrow3(1) : E}
 				</div>
+				${preview}
 			</div>` : x`
 			<div class="chemical-single palette-variant">
 				${preview}

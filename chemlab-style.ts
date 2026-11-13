@@ -1040,9 +1040,15 @@ export const style = css`
 		display: block;
 		inline-size: 800px;
 		max-inline-size: 100%;
-		block-size: min(600px, 100dvh);
-		container-type: inline-size;
+		block-size: 920px;
+		min-inline-size: min(260px, 100%);
+		min-block-size: 280px;
+		container-type: size;
 		font-family: var(--sl-font-sans);
+	}
+	:host(:not(:fullscreen)) {
+		resize: both;
+		overflow: hidden;
 	}
 	:host(.ww-full-width) {
 		inline-size: 100%;
@@ -1080,6 +1086,9 @@ export const style = css`
 	:host(:fullscreen) #upper {
 		width: 100%;
 		height: 100%;
+	}
+	:host(:fullscreen) {
+		min-block-size: 0;
 	}
 	.workspace-details::part(base) {
 		border: 0;
@@ -1442,7 +1451,7 @@ export const style = css`
 	}
 	#teacherDrawerContent {
 		box-sizing: border-box;
-		max-height: min(240px, 40vh);
+		max-height: min(240px, 45cqh);
 		overflow: auto;
 		padding: 4px 0;
 	}
@@ -1546,7 +1555,13 @@ export const style = css`
 	}
 	.component-variant {
 		display: grid;
-		grid-template-rows: auto 1fr auto;
+		grid-template-rows: auto 1fr;
+	}
+	.component-variant-controls {
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: center;
+		padding-block-start: 2px;
 	}
 	.palette-variant {
 		border: 1px solid var(--sl-color-neutral-200);
@@ -1585,6 +1600,9 @@ export const style = css`
 		width: 100%;
 		min-height: 0;
 		height: 20px;
+	}
+	.variant-arrow:dir(rtl) svg {
+		transform: scaleX(-1);
 	}
 	.variant-arrow[disabled] {
 		visibility: hidden;
@@ -1629,8 +1647,15 @@ export const style = css`
 	}
 	.palette-card-chemical {
 		box-sizing: border-box;
-		inline-size: 12.25rem;
+		inline-size: max-content;
+		min-inline-size: 5.5rem;
 		align-self: start;
+	}
+	.palette-card-chemical:has(.chemical-solution) {
+		min-inline-size: 9rem;
+	}
+	.palette-card-chemical > :not(.palette-card-header) {
+		contain: inline-size;
 	}
 	.chemical-single {
 		display: grid;
@@ -1730,7 +1755,7 @@ export const style = css`
 		align-items: center;
 		justify-content: center;
 		gap: 2px;
-		padding: 0 3px 3px;
+		padding: 2px 3px 0;
 	}
 	.chemical-dose-value {
 		display: grid;
@@ -1790,7 +1815,6 @@ export const style = css`
 		margin: 0;
 		min-width: 0;
 		padding: 2px 26px 3px;
-		margin-block-end: 8px;
 		border: 1px solid transparent;
 		background: transparent;
 	}
