@@ -48,6 +48,28 @@ export interface CatalogChemical {
 	concentrationLimit?: number;
 }
 
+// Catalog names are also saved permission and preview keys. Short labels are presentation only.
+export const solutionDisplayNames: Readonly<Record<string, string>> = {
+	"Natriumchloridlösung (1 mol/L)": "Natriumchlorid",
+	"Kupfer(II)-sulfatlösung": "Kupfer(II)-sulfat",
+	"Zinksulfatlösung": "Zinksulfat",
+	"Eisen(II)-sulfatlösung": "Eisen(II)-sulfat",
+	"Silbernitratlösung": "Silbernitrat",
+	"Bariumchloridlösung": "Bariumchlorid",
+	"Calciumchloridlösung": "Calciumchlorid",
+	"Eisen(III)-chloridlösung": "Eisen(III)-chlorid",
+	"Natriumcarbonatlösung": "Natriumcarbonat",
+	"Natriumsulfatlösung": "Natriumsulfat",
+	"Kaliumnitratlösung": "Kaliumnitrat",
+	"Natronlauge (1 mol/L)": "Natronlauge",
+	"Kalilauge (1 mol/L)": "Kalilauge",
+	"Ammoniaklösung": "Ammoniak",
+	"Salzsäure (1 mol/L)": "Salzsäure",
+	"Schwefelsäure (1 mol/L)": "Schwefelsäure",
+	"Phosphorsäure (1 mol/L)": "Phosphorsäure",
+	"Wasserstoffperoxidlösung": "Wasserstoffperoxid",
+};
+
 // Nominal concentrations of concentrated reagent stocks, in mol/L.
 // HCl 37%, NH3 28%, H3PO4 85%, acetic acid 99–100% and formic acid 98–100%:
 // https://www.sigmaaldrich.com/deepweb/assets/sigmaaldrich/product/documents/391/185/merc130093-w281145-acid-emsure-emparta-mk.pdf

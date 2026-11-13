@@ -69892,6 +69892,21 @@ var messages_default = {
     Calciumchloridl\u00F6sung: "Calcium chloride solution",
     "Eisen(III)-chloridl\xF6sung": "Iron(III) chloride solution",
     Natriumcarbonatl\u00F6sung: "Sodium carbonate solution",
+    "Kupfer(II)-sulfat": "Copper(II) sulfate",
+    Zinksulfat: "Zinc sulfate",
+    "Eisen(II)-sulfat": "Iron(II) sulfate",
+    Silbernitrat: "Silver nitrate",
+    Bariumchlorid: "Barium chloride",
+    "Eisen(III)-chlorid": "Iron(III) chloride",
+    Natriumcarbonat: "Sodium carbonate",
+    Natriumsulfat: "Sodium sulfate",
+    Natronlauge: "Sodium hydroxide",
+    Kalilauge: "Potassium hydroxide",
+    Ammoniak: "Ammonia",
+    Salzs\u00E4ure: "Hydrochloric acid",
+    Schwefels\u00E4ure: "Sulfuric acid",
+    Phosphors\u00E4ure: "Phosphoric acid",
+    Wasserstoffperoxid: "Hydrogen peroxide",
     Natriumsulfatl\u00F6sung: "Sodium sulfate solution",
     Kaliumnitratl\u00F6sung: "Potassium nitrate solution",
     "Kupfer(II)-sulfat-Pentahydrat": "Copper(II) sulfate pentahydrate",
@@ -176407,6 +176422,26 @@ var chemicalClasses = [
   "Kunststoffe und Monomere",
   "Stoffgemische"
 ];
+var solutionDisplayNames = {
+  "Natriumchloridl\xF6sung (1 mol/L)": "Natriumchlorid",
+  "Kupfer(II)-sulfatl\xF6sung": "Kupfer(II)-sulfat",
+  "Zinksulfatl\xF6sung": "Zinksulfat",
+  "Eisen(II)-sulfatl\xF6sung": "Eisen(II)-sulfat",
+  "Silbernitratl\xF6sung": "Silbernitrat",
+  "Bariumchloridl\xF6sung": "Bariumchlorid",
+  "Calciumchloridl\xF6sung": "Calciumchlorid",
+  "Eisen(III)-chloridl\xF6sung": "Eisen(III)-chlorid",
+  "Natriumcarbonatl\xF6sung": "Natriumcarbonat",
+  "Natriumsulfatl\xF6sung": "Natriumsulfat",
+  "Kaliumnitratl\xF6sung": "Kaliumnitrat",
+  "Natronlauge (1 mol/L)": "Natronlauge",
+  "Kalilauge (1 mol/L)": "Kalilauge",
+  "Ammoniakl\xF6sung": "Ammoniak",
+  "Salzs\xE4ure (1 mol/L)": "Salzs\xE4ure",
+  "Schwefels\xE4ure (1 mol/L)": "Schwefels\xE4ure",
+  "Phosphors\xE4ure (1 mol/L)": "Phosphors\xE4ure",
+  "Wasserstoffperoxidl\xF6sung": "Wasserstoffperoxid"
+};
 var concentratedReagent = {
   hydrochloricAcid: 12.1,
   sulfuricAcid: 18.4,
@@ -183930,7 +183965,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const labels = [];
     for (const item of items) {
       const concentration = chemicalConcentration(item);
-      const label = item.label ?? this.message(item.name);
+      const label = this.chemicalDisplayLabel(item);
       if (concentration) {
         const permitted = this.allowedConcentrationsFor(item.name, concentration.initial);
         const values = this.concentrationVariants(item.name, concentration);
@@ -186612,11 +186647,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				${this.renderPaletteBadge(allowed, total)}
 			</button>`;
   }
-  chemicalTileLabel(name2, concentrationMolPerL) {
-    return concentrationMolPerL == null ? name2 : `${this.chemicalBaseLabel(name2)} (${this.formatAmount(concentrationMolPerL, 8)} mol/L)`;
+  chemicalDisplayLabel({ name: name2, label }) {
+    return label ?? this.message(solutionDisplayNames[name2] ?? name2);
   }
-  chemicalBaseLabel(name2) {
-    return name2.replace(/ \(\d+(?:[.,]\d+)? mol\/L\)$/, "");
+  chemicalTileLabel(name2, concentrationMolPerL) {
+    return concentrationMolPerL == null ? name2 : `${name2} (${this.formatAmount(concentrationMolPerL, 8)} mol/L)`;
   }
   renderChemicalTile(key, name2, formula, recipe, src, concentrationMolPerL) {
     const label = this.chemicalTileLabel(name2, concentrationMolPerL);
@@ -186691,8 +186726,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       const solutions = [];
       const other = [];
       for (const item of group.items) {
-        const label = "label" in item ? item.label : this.message(item.name);
-        if (seen.has(item.name) || !matches(group.category, group.label, item.name, label, item.formula)) continue;
+        const label = this.chemicalDisplayLabel(item);
+        if (seen.has(item.name) || !matches(group.category, group.label, item.name, this.message(item.name), label, item.formula)) continue;
         seen.add(item.name);
         const isSolution = item.recipe.aqueousMolar || chemicalConcentration(item) || item.name.startsWith("mix:") && item.recipe.phase === "liquid";
         (isSolution ? solutions : other).push(item);
@@ -186746,8 +186781,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   renderChemicalCard(item) {
     const concentration = chemicalConcentration(item);
-    const label = item.label ?? this.message(item.name);
-    const name2 = concentration ? this.chemicalBaseLabel(label) : label;
+    const name2 = this.chemicalDisplayLabel(item);
     const src = item.label && item.preview ? this.previewMolecule(item.preview) : catalogPreviews[item.name];
     const allowed = concentration ? this.allowedConcentrationsFor(item.name, concentration.initial) : [];
     const values = concentration ? this.canAuthor ? this.concentrationVariants(item.name, concentration) : allowed : [];
@@ -186756,7 +186790,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const activeKey = active === void 0 ? item.name : `${item.name}@${active}`;
     const preview = this.renderChemicalTile(
       activeKey,
-      label,
+      name2,
       item.formula,
       active === void 0 ? item.recipe : withConcentration(item.recipe, active),
       src,
@@ -186809,7 +186843,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 			</div>` : x`
 			<div class="chemical-single palette-variant">
 				${preview}
-				${this.canAuthor ? this.renderChemicalPermission(item.name, label) : E}
+				${this.canAuthor ? this.renderChemicalPermission(item.name, name2) : E}
 			</div>`;
     return this.renderPaletteCard(name2, variant, badge, body2, true, permissions);
   }

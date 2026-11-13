@@ -67,7 +67,7 @@ import { DiagramController } from "./controllers/DiagramController";
 import { SimulationController } from "./controllers/SimulationController";
 import { componentGraphic, componentVariant, componentVariants, type ComponentVariant, type PaletteComponent } from "./data/componentGraphics";
 import { renderComponentPaletteIcon } from "./data/componentPaletteIcons";
-import { chemicalCatalog, chemicalCatalogGroups, isWaterDefinition, withConcentration, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
+import { chemicalCatalog, chemicalCatalogGroups, isWaterDefinition, solutionDisplayNames, withConcentration, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
 import { loadMoleculeDefinition } from "./data/moleculeDefinition";
 import { catalogPreviews } from "./data/chemicalPreviews.generated";
 import { prepareDose, type SavedDose } from "./data/measuredDose";
@@ -1338,7 +1338,7 @@ export class ChemLab extends LitElementWw {
 		const labels: string[] = [];
 		for (const item of items) {
 			const concentration = chemicalConcentration(item);
-			const label = item.label ?? this.message(item.name);
+			const label = this.chemicalDisplayLabel(item);
 			if (concentration) {
 				const permitted = this.allowedConcentrationsFor(item.name, concentration.initial);
 				const values = this.concentrationVariants(item.name, concentration);
@@ -4474,12 +4474,12 @@ export class ChemLab extends LitElementWw {
 			</button>`;
 	}
 
-	private chemicalTileLabel(name: string, concentrationMolPerL?: number): string {
-		return concentrationMolPerL == null ? name : `${this.chemicalBaseLabel(name)} (${this.formatAmount(concentrationMolPerL, 8)} mol/L)`;
+	private chemicalDisplayLabel({ name, label }: { name: string; label?: string }): string {
+		return label ?? this.message(solutionDisplayNames[name] ?? name);
 	}
 
-	private chemicalBaseLabel(name: string): string {
-		return name.replace(/ \(\d+(?:[.,]\d+)? mol\/L\)$/, "");
+	private chemicalTileLabel(name: string, concentrationMolPerL?: number): string {
+		return concentrationMolPerL == null ? name : `${name} (${this.formatAmount(concentrationMolPerL, 8)} mol/L)`;
 	}
 
 	private renderChemicalTile(key: string, name: string, formula: string, recipe: ChemicalRecipe, src?: string,
@@ -4551,8 +4551,8 @@ export class ChemLab extends LitElementWw {
 			const solutions: Item[] = [];
 			const other: Item[] = [];
 			for (const item of group.items) {
-				const label = "label" in item ? item.label : this.message(item.name);
-				if (seen.has(item.name) || !matches(group.category, group.label, item.name, label, item.formula)) continue;
+				const label = this.chemicalDisplayLabel(item);
+				if (seen.has(item.name) || !matches(group.category, group.label, item.name, this.message(item.name), label, item.formula)) continue;
 				seen.add(item.name);
 				const isSolution = (item.recipe as ChemicalRecipe).aqueousMolar || chemicalConcentration(item) ||
 					(item.name.startsWith("mix:") && item.recipe.phase === "liquid");
@@ -4608,8 +4608,7 @@ export class ChemLab extends LitElementWw {
 		formula: string; recipe: ChemicalRecipe; label?: string; preview?: MoleculeDefinition;
 	}) {
 		const concentration = chemicalConcentration(item);
-		const label = item.label ?? this.message(item.name);
-		const name = concentration ? this.chemicalBaseLabel(label) : label;
+		const name = this.chemicalDisplayLabel(item);
 		const src = item.label && item.preview ? this.previewMolecule(item.preview) : catalogPreviews[item.name];
 		const allowed = concentration ? this.allowedConcentrationsFor(item.name, concentration.initial) : [];
 		const values = concentration ? this.canAuthor ? this.concentrationVariants(item.name, concentration) : allowed : [];
@@ -4617,7 +4616,7 @@ export class ChemLab extends LitElementWw {
 		const active = values.includes(saved) ? saved
 			: concentration && values.includes(concentration.initial) ? concentration.initial : values[0];
 		const activeKey = active === undefined ? item.name : `${item.name}@${active}`;
-		const preview = this.renderChemicalTile(activeKey, label, item.formula,
+		const preview = this.renderChemicalTile(activeKey, name, item.formula,
 			active === undefined ? item.recipe : withConcentration(item.recipe, active), src, active);
 		const allowedCount = concentration ? allowed.length : Number(this.isChemicalAllowed(item.name));
 		const variant = this.palettePermissionVariant(allowedCount, concentration ? values.length : 1);
@@ -4664,7 +4663,7 @@ export class ChemLab extends LitElementWw {
 			</div>` : html`
 			<div class="chemical-single palette-variant">
 				${preview}
-				${this.canAuthor ? this.renderChemicalPermission(item.name, label) : nothing}
+				${this.canAuthor ? this.renderChemicalPermission(item.name, name) : nothing}
 			</div>`;
 		return this.renderPaletteCard(name, variant, badge, body, true, permissions);
 	}
