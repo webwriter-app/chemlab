@@ -1271,6 +1271,129 @@ export const style = css`
 	.selection-info:not([data-anchored]) {
 		visibility: hidden;
 	}
+	#amountMenu {
+		--amount-control-height: 1.0625rem;
+		z-index: 2;
+		max-inline-size: min(13rem, calc(100% - 8px));
+	}
+	#amountMenu .selection-labels {
+		align-items: center;
+		padding: 0 0 5px;
+	}
+	#amountMenu sl-badge {
+		max-inline-size: 100%;
+	}
+	#amountMenu sl-badge::part(base) {
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+	.amount-menu-arrow {
+		display: grid;
+		flex: 1 0 auto;
+		place-items: center;
+	}
+	.amount-menu-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px;
+	}
+	.amount-menu-quantity {
+		position: relative;
+		display: grid;
+		place-items: center;
+		inline-size: max-content;
+		block-size: var(--amount-control-height);
+	}
+	.volume-bar {
+		border-radius: var(--sl-border-radius-small);
+		--amount-fill: color-mix(in srgb, var(--sl-color-primary-500) 16%, transparent);
+		background: linear-gradient(to right, var(--amount-fill) var(--amount-progress), transparent var(--amount-progress)),
+			color-mix(in srgb, var(--sl-color-primary-500) 7%, var(--sl-color-neutral-0));
+	}
+	.amount-menu-value {
+		text-align: center;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+		padding-inline: 2px;
+	}
+	.amount-menu-value[inert] {
+		visibility: hidden;
+	}
+	#amountMenuValue {
+		position: absolute;
+		inset: 0;
+		box-sizing: border-box;
+		inline-size: 100%;
+		min-inline-size: 0;
+		block-size: 100%;
+		margin: 0;
+		padding: 0 3px;
+		font: inherit;
+		text-align: center;
+	}
+	#amountMenuSlider {
+		position: absolute;
+		inset: 0;
+		appearance: none;
+		inline-size: 100%;
+		block-size: 100%;
+		min-block-size: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		font: inherit;
+		border-radius: var(--sl-border-radius-small);
+		background: transparent;
+		cursor: ew-resize;
+		touch-action: none;
+	}
+	#amountMenuSlider::-webkit-slider-thumb {
+		appearance: none;
+		inline-size: 1px;
+		block-size: 100%;
+		background: transparent;
+	}
+	#amountMenuSlider::-moz-range-thumb {
+		inline-size: 1px;
+		block-size: 100%;
+		border: 0;
+		background: transparent;
+	}
+	.amount-menu-button {
+		display: inline-grid;
+		place-items: center;
+		inline-size: 24px;
+		block-size: 24px;
+		margin: 0;
+		padding: 0;
+		line-height: 1;
+		font-weight: 700;
+	}
+	.amount-menu-button[aria-disabled="true"] {
+		opacity: 0.45;
+		cursor: default;
+	}
+	.amount-menu-confirm {
+		--sl-input-height-small: var(--amount-control-height);
+		inline-size: var(--amount-control-height);
+		block-size: var(--amount-control-height);
+		margin-inline-start: auto;
+	}
+	.amount-menu-row .amount-menu-button:nth-last-child(2) {
+		margin-inline-end: 5px;
+	}
+	.amount-menu-confirm::part(base) {
+		inline-size: 100%;
+		block-size: 100%;
+		font-weight: 700;
+		color: var(--sl-color-neutral-600);
+	}
+	.amount-menu-confirm::part(label) {
+		display: grid;
+		place-items: center;
+		padding: 0;
+	}
 	.selection-labels {
 		display: flex;
 		flex-wrap: wrap;
@@ -1350,13 +1473,16 @@ export const style = css`
 	}
 	.chemical-section {
 		margin-block-end: 6px;
-		padding: 5px;
-		border: 1px solid var(--sl-color-neutral-200);
-		border-radius: var(--sl-border-radius-medium);
+	}
+	.chemical-search {
+		margin-block-end: 8px;
+	}
+	.chemical-section::part(base) {
 		background: var(--sl-color-neutral-50);
 	}
-	#teacherDrawer .chemical-section h3 {
-		margin: 0 0 5px;
+	.chemical-section::part(header),
+	.chemical-section::part(content) {
+		padding: 5px;
 	}
 	.chemical-grid {
 		display: grid;
@@ -1482,6 +1608,8 @@ export const style = css`
 	.component-tile {
 		grid-area: 1 / 1 / 2 / -1;
 		cursor: grab;
+		touch-action: pan-x;
+		user-select: none;
 		margin: 0;
 		min-width: 0;
 		padding: 2px 26px 3px;
@@ -1496,11 +1624,43 @@ export const style = css`
 		pointer-events: none;
 	}
 	.chemical-tile {
-		cursor: pointer;
+		cursor: grab;
+		touch-action: none;
+		user-select: none;
 		min-inline-size: 0;
 		margin: 0;
 		border: 1px solid var(--sl-color-neutral-200);
 		border-radius: 4px;
+	}
+	.chemical-reference {
+		cursor: default;
+		touch-action: auto;
+		user-select: text;
+	}
+	.chemical-reference small {
+		color: var(--sl-color-neutral-700);
+	}
+	.palette-dragging {
+		cursor: grabbing;
+	}
+	.component-tile > *,
+	.chemical-tile > * {
+		pointer-events: none;
+	}
+	.chemical-drag-preview {
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 3;
+		pointer-events: none;
+		display: grid;
+		justify-items: center;
+		gap: 2px;
+	}
+	.chemical-drag-preview img {
+		inline-size: 48px;
+		block-size: 36px;
+		object-fit: contain;
 	}
 	.chemical-tile > sl-badge {
 		max-inline-size: 100%;
@@ -1518,7 +1678,10 @@ export const style = css`
 	.chemical-preview {
 		inline-size: min(76px, 100%);
 		block-size: 57px;
-		pointer-events: none;
+		display: grid;
+		place-items: center;
+		text-align: center;
+		font-size: var(--sl-font-size-small);
 	}
 	.chemical-preview img {
 		display: block;
@@ -1537,20 +1700,11 @@ export const style = css`
 	}
 	.fill-meter {
 		position: absolute;
-		display: grid;
-		justify-items: center;
-		gap: 2px;
-		padding: 3px;
-		background: var(--sl-color-neutral-0);
-		border-radius: 4px;
+		padding: 2px 4px;
 		font-size: 0.7rem;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 		pointer-events: none;
-	}
-	.fill-meter meter {
-		width: 14px;
-		height: 40px;
-		writing-mode: vertical-lr;
-		direction: rtl;
 	}
 	#settings_drawer {
 		font-size: 1rem;

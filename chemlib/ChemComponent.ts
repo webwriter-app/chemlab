@@ -219,20 +219,20 @@ class ChemComponent {
 	 * @param {Molecule} param0.tMol - a {@link Molecule} object, if a molecule shall be transfered
 	 * @param {number} param0.tVolume: tVolume - the volume to be transferred. An empty value either means everything or a specific amount based on the type of the component
 	 * @param {ChemComponent} tDest - the component object, to which the contents shall be transferred to
+	 * @returns The transferred bulk volume in litres. Molecule-only transfers do not report a volume.
 	 */
 	public transferContents(
 		{ tMol, tVolume }: { tMol?: Molecule; tVolume?: number } = {},
 		tDest: ChemComponent
-	): void {
-		// console.log(tDest)
-		if (tDest === this) return;
+	): number {
+		if (tDest === this) return 0;
 		if (tDest._inOutLimits[0] > 0) {
 			const volume = this._content.contentVolume;
 			if (volume > 0 && tMol == null) {
 				const requested = tVolume ?? (this._outVol || volume);
 				const maximum = Math.max(0, Math.min(1, requested / volume));
 				const fraction = tDest._content.fractionThatFits(this._content, tDest._volume / 1000, maximum);
-				if (fraction <= 0) return;
+				if (fraction <= 0) return 0;
 				const portion = StructureManager.newMixture();
 				for (const mol of [...this._content._activeMolecules]) {
 					const amount = this._content._molProperties[mol._id + "n"] * fraction;
@@ -245,8 +245,9 @@ class ChemComponent {
 				if (fraction === 1) this._content.hasLiquidVolume = false;
 				tDest.addContents({ nMix: portion });
 				if (tDest._content._isSolution) Simulation.sNeutralize(tDest._content);
-				return;
+				return volume * fraction;
 			}
+			if (tMol == null && tVolume !== undefined) return 0;
 			if (tMol != null) {
 				tDest.addContents({
 					nMolecule: tMol,
@@ -311,6 +312,7 @@ class ChemComponent {
 				Simulation.sNeutralize(tDest._content)
 			}
 		}
+		return 0;
 	}
 }
 

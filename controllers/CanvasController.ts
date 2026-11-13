@@ -66,6 +66,7 @@ export class CanvasController implements ReactiveController {
 	private resizeObserver?: ResizeObserver;
 	private pan?: { id: number; x: number; y: number; moved: boolean; deselectOnTap: boolean };
 	private selectionOverlay = new PIXI.Graphics({ eventMode: "none" });
+	private placementPreviewLayer = new PIXI.Container({ eventMode: "none" });
 	private selection: PIXI.Container[] = [];
 	private marquee?: { id: number; start: PIXI.PointData; end?: PIXI.PointData };
 	private groupDrag?: { id: number; origin: PIXI.PointData; anchor: PIXI.PointData; moved: boolean;
@@ -130,8 +131,51 @@ export class CanvasController implements ReactiveController {
 
 	worldPointFromViewport(x: number, y: number) {
 		const bounds = this.host.app.canvas.getBoundingClientRect();
+		if (x < bounds.left || x >= bounds.right || y < bounds.top || y >= bounds.bottom) return;
 		const { width, height } = this.host.app.screen;
 		return this.camera.toWorld((x - bounds.left) * width / bounds.width, (y - bounds.top) * height / bounds.height);
+	}
+
+	componentAtViewport(x: number, y: number): PIXI.Container | undefined {
+		const app = this.host.app;
+		const bounds = app.canvas.getBoundingClientRect();
+		if (x < bounds.left || x >= bounds.right || y < bounds.top || y >= bounds.bottom) return;
+		const { events } = app.renderer;
+		const point = new PIXI.Point();
+		events.mapPositionToPoint(point, x, y);
+		return events.rootBoundary.hitTest(point.x, point.y) ?? undefined;
+	}
+
+	vesselAtViewport(x: number, y: number): VesselView | undefined {
+		const app = this.host.app;
+		const bounds = app.canvas.getBoundingClientRect();
+		if (x < bounds.left || x >= bounds.right || y < bounds.top || y >= bounds.bottom) return;
+		const point = new PIXI.Point();
+		app.renderer.events.mapPositionToPoint(point, x, y);
+		// Palette drags can reach the canvas without Pixi receiving a pointerdown.
+		const pointInVessel = new PIXI.Point();
+		for (let i = this.world.children.length - 1; i >= 0; i--) {
+			const sprite = this.world.children[i];
+			if (!(sprite instanceof VesselView) || !sprite.visible || !(sprite.component._volume > 0)) continue;
+			const local = sprite.toLocal(point, undefined, pointInVessel);
+			if (sprite.hitArea.contains(local.x, local.y)) return sprite;
+		}
+	}
+
+	private trackVesselTransfer(event: PIXI.FederatedPointerEvent): VesselView | undefined {
+		const source = this.host.dragObject;
+		if (!(source instanceof VesselView)) return;
+		const { Beaker, Flask, Testtube } = chemlib.ComponentType;
+		const type = source.component._type;
+		if (type !== Beaker && type !== Flask && type !== Testtube) return;
+		const { x, y } = event.global;
+		const withinCanvas = x >= 0 && y >= 0 && x < this.camera.width && y < this.camera.height;
+		const target = withinCanvas ? this.world.children.find((sprite, index): sprite is VesselView =>
+			sprite instanceof VesselView && sprite !== source && sprite.component._inOutLimits[0] > 0 &&
+			source.y < sprite.y - Math.min(50, sprite.height) && this._mouseInbounds(index, 50)) : undefined;
+		const point = this.screenToViewport(x, y);
+		this.host.trackVesselTransfer(source.component, target, point);
+		return target;
 	}
 
 	zoomBy(factor: number): void {
@@ -187,8 +231,8 @@ export class CanvasController implements ReactiveController {
 		return this.selection;
 	}
 
-	private get pointerBusy(): boolean {
-		return !!(this._dragActive || this.pan || this.pinching || this.marquee || this.groupDrag);
+	get pointerBusy(): boolean {
+		return !!(this._dragActive || this.pan || this.pinching || this.marquee || this.groupDrag || this.host.draggingPalette);
 	}
 
 	clearGroupSelection(): void {
@@ -208,6 +252,12 @@ export class CanvasController implements ReactiveController {
 
 	drawSelection(): void {
 		this.selectionOverlay.clear();
+		const transferTarget = this.host.transferTarget;
+		if (transferTarget) {
+			const { x, y, width, height } = transferTarget.getBounds();
+			this.selectionOverlay.rect(x - 2, y - 2, width + 4, height + 4)
+				.stroke({ color: 0x0284c7, width: 1.5 });
+		}
 		const groupSelected = this.selection.length > 0;
 		const single = this.host.selectedObjectSprite;
 		const sprites = groupSelected ? this.selection : single ? [single] : [];
@@ -229,6 +279,7 @@ export class CanvasController implements ReactiveController {
 				.fill({ color: 0x0284c7, alpha: 0.14 }).stroke({ color: 0x0284c7, width: 1 });
 		}
 		this.host.positionSelectionSummary(visibleBounds.isValid ? visibleBounds : undefined, canvasWidth, canvasHeight, groupSelected);
+		this.host.positionAmountMenu();
 		this.host.requestCanvasRender();
 	}
 
@@ -356,9 +407,12 @@ export class CanvasController implements ReactiveController {
 	private applyCamera(): void {
 		this.world.position.set(this.camera.offsetX, this.camera.offsetY);
 		this.world.scale.set(this.camera.zoom);
+		this.placementPreviewLayer.position.copyFrom(this.world.position);
+		this.placementPreviewLayer.scale.copyFrom(this.world.scale);
 		if (this.showGrid) this.grid?.update(this.camera);
 		this.updateScaleReadouts();
 		if (this.selection.length || this.marquee || this.host.selectedObjectSprite) this.drawSelection();
+		else this.host.positionAmountMenu();
 		this.host.requestCanvasRender();
 	}
 
@@ -426,7 +480,17 @@ export class CanvasController implements ReactiveController {
 		this.resizeObserver = undefined;
 	}
 
+	cancelVesselDrag(): void {
+		if (this._dragActive && this.host.dragObject instanceof VesselView) this.cancelPointerInteraction();
+	}
+
 	private cancelPointerInteraction(): void {
+		if (this._dragActive) this.host.finishDragTransfer();
+		const sprite = this.host.dragObject;
+		if (this._dragActive && sprite instanceof VesselView) {
+			sprite.rotation = 0;
+			sprite.updateAngle();
+		}
 		const redrawSelection = (this._dragActive && this._dragMoved) || this.groupDrag || this.marquee;
 		this.host.app?.stage.off("globalpointermove", this._dragMoveHandler);
 		this._dragActive = false;
@@ -480,22 +544,15 @@ export class CanvasController implements ReactiveController {
 		const view = this.spritesByLabel.get(`${component._type}:${component._id}`);
 		if (view instanceof ElectricDeviceView && view.refresh(hasVoltageReading)) this.host.requestCanvasRender();
 	}
-	/**
-	 * adds a new sprite to the canvas
-	 *
-	 * @private
-	 * @param component - the model represented by this view
-	 */
-	addComponentView(component: chemlib.ChemComponent | chemlib.ElectricComponent, select = true): PIXI.Container {
+	private createComponentView(component: chemlib.ChemComponent | chemlib.ElectricComponent): PIXI.Container {
 		const type = component._type;
-		const info = `${type}:${component._id}`;
 		const graphic = componentGraphic(type);
 		const texture = PIXI.Assets.get<PIXI.Texture>(graphic.url);
 		const capacityMl = component instanceof chemlib.ChemComponent ? component._volume : undefined;
 		const [widthMm, heightMm] = componentArtboardMm(type, capacityMl);
 		const width = widthMm / MILLIMETERS_PER_WORLD_UNIT;
 		const height = heightMm / MILLIMETERS_PER_WORLD_UNIT;
-		const sprite = component instanceof chemlib.ChemComponent && isVesselType(type)
+		return component instanceof chemlib.ChemComponent && isVesselType(type)
 			? new VesselView(component, type, texture, width, height, this.scaleTextures)
 			: component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable
 				// Cables render as rope polylines and carry no texture.
@@ -503,6 +560,20 @@ export class CanvasController implements ReactiveController {
 				: component instanceof chemlib.ElectricComponent
 					? new ElectricDeviceView(component, texture, width, height)
 					: new PIXI.Sprite({ texture, width, height, anchor: 0.5 });
+	}
+
+	createPlacementPreview(component: chemlib.ChemComponent | chemlib.ElectricComponent): PIXI.Container {
+		const preview = this.createComponentView(component);
+		preview.alpha = 0.5;
+		preview.visible = false;
+		this.placementPreviewLayer.addChild(preview);
+		return preview;
+	}
+
+	addComponentView(component: chemlib.ChemComponent | chemlib.ElectricComponent, select = true): PIXI.Container {
+		const type = component._type;
+		const info = `${type}:${component._id}`;
+		const sprite = this.createComponentView(component);
 
 		// Cables draw in world coordinates and carry their own transform at (0,0).
 		if (!(component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable)) {
@@ -521,6 +592,8 @@ export class CanvasController implements ReactiveController {
 				return;
 			}
 			this.updateMousePosition(event);
+			if (event.button === 0) this.host.closeAmountMenu();
+			if (event.button === 2) return;
 			if (event.button === 0 && this.selection.includes(sprite)) {
 				const items = this.selection.filter((item) => !item.label.startsWith("cable:"))
 					.map((item) => ({ sprite: item, x: item.x, y: item.y }));
@@ -595,16 +668,23 @@ export class CanvasController implements ReactiveController {
 				this.moveAttachedElectrodes(this.host.dragObject, dx, dy);
 			}
 
+			const transferTarget = this.trackVesselTransfer(event);
+			if (this.host.dragObject instanceof VesselView) {
+				this.host.dragObject.rotation = transferTarget
+					? (this.host.dragObject.x > transferTarget.x ? -0.35 : 0.35) : 0;
+				return;
+			}
+
 			let mouseHoverObject: number = -1;
 			for (let i = 0; i < this.world.children.length; i++) {
 				if (
-					i != this.host.curr_stage_index &&
+					this.world.children[i] !== this.host.dragObject &&
 					this._mouseInbounds(
 						i,
 						50
 					)
 				) {
-					let upperSprite = this.world.children[this.host.curr_stage_index]
+					const upperSprite = this.host.dragObject
 					let bottomSprite = this.world.children[i];
 					let cObj: any = undefined;
 					let cOType: string = bottomSprite.label
@@ -673,51 +753,10 @@ export class CanvasController implements ReactiveController {
 							}
 						}
 					}
-					if (
-						Object.values(chemlib.ComponentType).includes(
-							cOType as chemlib.ComponentType
-						)
-					) {
-						this.host.allChemComponents.forEach((comp) => {
-							if (comp._id === cOId) {
-								cObj = comp;
-							}
-						});
-						if (
-							(
-							this.host.curr_obj._type ===
-								chemlib.ComponentType.Beaker ||
-							this.host.curr_obj._type ===
-								chemlib.ComponentType.Flask ||
-							this.host.curr_obj._type ===
-								chemlib.ComponentType.Testtube
-							)
-
-							&& (upperSprite.y < bottomSprite.y - Math.min(50, bottomSprite.height))
-						) {
-							this.world.children[
-								this.host.curr_stage_index
-							].rotation =
-								this.world.children[
-									this.host.curr_stage_index
-								].x > bottomSprite.x
-									? -20
-									: 20;
-							this.host._emitAlert(
-								this.host.message("Inhalt aus {from} zu {to} transferieren.", {
-									from: this.host.itemName(this.host.curr_obj._type),
-									to: this.host.itemName(cObj._type),
-								}),
-								"primary",
-								false
-							);
-							mouseHoverObject = i;
-						}
-					}
 				}
 			}
 			if (mouseHoverObject === -1) {
-				this.world.children[this.host.curr_stage_index].rotation = 0;
+				this.host.dragObject.rotation = 0;
 				this.host._hideAlert();
 			}
 		}
@@ -730,7 +769,7 @@ export class CanvasController implements ReactiveController {
 	 * @async
 	 * @returns {Promise<void>}
 	 */
-	async _dragEnd(): Promise<void> {
+	async _dragEnd(event: PIXI.FederatedPointerEvent): Promise<void> {
 		if (!this._dragActive) return;
 		this.host.app.stage.off("globalpointermove", this._dragMoveHandler);
 		this._dragActive = false;
@@ -739,17 +778,25 @@ export class CanvasController implements ReactiveController {
 			this.host.dragObject = undefined;
 			return;
 		}
+		const dragged = this.host.dragObject;
+		this.updateMousePosition(event);
+		this.trackVesselTransfer(event);
+		this.host.finishDragTransfer(true);
+		if (dragged instanceof VesselView) {
+			dragged.rotation = 0;
+			dragged.updateAngle();
+		}
 		this.drawSelection();
-		this.relengthCablesAttachedTo([this.host.dragObject]);
+		this.relengthCablesAttachedTo([dragged]);
 		for (let i = 0; i < this.world.children.length; i++) {
 			if (
-				i != this.host.curr_stage_index &&
+				this.world.children[i] !== this.host.dragObject &&
 				this._mouseInbounds(
 					i,
 				50
 				)
 			) {
-				let upperSprite = this.world.children[this.host.curr_stage_index]
+				const upperSprite = this.host.dragObject
 				let bottomSprite = this.world.children[i];
 				let cObj: any = undefined;
 				let cOType: string = bottomSprite.label
@@ -855,67 +902,6 @@ export class CanvasController implements ReactiveController {
 						cObj = undefined;
 					}
 				}
-				if (
-					Object.values(chemlib.ComponentType).includes(
-						cOType as chemlib.ComponentType
-					)
-				) {
-					this.host.allChemComponents.forEach((comp) => {
-						if (comp._id === cOId) {
-							cObj = comp;
-						}
-					});
-					if (
-						(
-						this.host.curr_obj._type ===
-							chemlib.ComponentType.Beaker ||
-						this.host.curr_obj._type ===
-							chemlib.ComponentType.Flask ||
-						this.host.curr_obj._type ===
-							chemlib.ComponentType.Testtube
-						)
-						&& (upperSprite.y < bottomSprite.y - Math.min(50, bottomSprite.height))
-					) {
-						const point = this.viewportPoint(this.host.mousePos[0], this.host.mousePos[1]);
-						dialogPanel.style.top = `${point.y}px`;
-						dialogPanel.style.left = `${point.x}px`;
-						this.host.confirmDialog.show();
-						await this.host.waitUntil(
-							() => this.host.confirmAction != 0
-						);
-						upperSprite.rotation = 0;
-						if (upperSprite instanceof VesselView) upperSprite.updateAngle();
-						this.drawSelection();
-						if (this.host.confirmAction === 1) {
-							this.host.curr_obj.transferContents({}, cObj);
-							this.markVesselChanged(this.host.curr_obj);
-							this.markVesselChanged(cObj);
-							this.host._getObject(this.host.dragObject);
-							this.host._emitAlert(
-								this.host.message("Inhalt aus {from} zu {to} überführt.", {
-									from: this.host.itemName(this.host.curr_obj._type),
-									to: this.host.itemName(cObj._type),
-								}),
-								"success",
-								false,
-								1500
-							);
-							this.host.reportXApi(
-								"appended",
-								this.host.curr_obj.type +
-									":" +
-									this.host.curr_obj._id,
-								{
-									response: cOType + ":" + cOId,
-									success: true,
-									completion: true,
-								}
-							);
-						}
-						this.host.confirmAction = 0;
-					}
-					cObj = undefined;
-				}
 			}
 		}
 		const movedElectrodes = [...this.attachedElectrodesMoved];
@@ -1000,7 +986,15 @@ export class CanvasController implements ReactiveController {
 		this.host.app.stage.hitArea = this.host.app.screen;
 		this.grid = new WorkspaceGrid();
 		this.grid.mesh.visible = this.showGrid;
-		app.stage.addChild(this.grid.mesh, this.world, this.selectionOverlay);
+		app.stage.addChild(this.grid.mesh, this.world, this.placementPreviewLayer, this.selectionOverlay);
+		app.canvas.addEventListener("contextmenu", (event) => {
+			if (this.pointerBusy) {
+				event.preventDefault();
+				return;
+			}
+			const target = this.componentAtViewport(event.clientX, event.clientY);
+			if (target && this.host.openChemicalAmountMenu(target)) event.preventDefault();
+		});
 		app.canvas.addEventListener("wheel", this.zoomFromWheel, { passive: false });
 		this.observeCanvas();
 		this.observeTouches();
@@ -1060,10 +1054,11 @@ export class CanvasController implements ReactiveController {
 						this.updateMousePosition(event);
 						if (this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
 					}
+					this.host.clearChemicalSelection();
 					this.host.clearObjectSelection();
 				}
 			} else if (this._dragActive && event.pointerId === this.dragPointerId) {
-				void this._dragEnd();
+				void this._dragEnd(event);
 			}
 		};
 		stage.on("pointerup", finishPointer);

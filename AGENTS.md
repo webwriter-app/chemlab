@@ -6,6 +6,8 @@ Chemlab ist ein WebWriter-Widget mit einer integrierten TypeScript-Simulation. D
 
 ## Entwicklung und Test in WebWriter
 
+Lege nach Abschluss und Prüfung jedes Arbeitspakets automatisch einen Git-Commit für die zugehörigen Änderungen an. Pushe den Commit, wenn der Nutzer darum bittet.
+
 Im Repository-Stamm ausführen.
 
 ```sh

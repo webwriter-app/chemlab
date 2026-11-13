@@ -1,5 +1,6 @@
 import { drawerLabels, effectiveLanguage, localize } from "./localization/localization";
 import { html, LitElement, nothing, PropertyValueMap } from "lit";
+import { repeat } from "lit/directives/repeat.js";
 import { LitElementWw } from "@webwriter/lit";
 import {
 	customElement,
@@ -65,10 +66,20 @@ import { DiagramController } from "./controllers/DiagramController";
 import { SimulationController } from "./controllers/SimulationController";
 import { componentGraphic, componentVariant, componentVariants, type ComponentVariant, type PaletteComponent } from "./data/componentGraphics";
 import { renderComponentPaletteIcon } from "./data/componentPaletteIcons";
-import { chemicalCatalog, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
+import { chemicalCatalogGroups, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
+import { loadMoleculeDefinition } from "./data/moleculeDefinition";
+import { catalogPreviews } from "./data/chemicalPreviews.generated";
 import { prepareDose, type SavedDose } from "./data/measuredDose";
 import { STANDARD_CANVAS_HEIGHT } from "./controllers/WorkspaceCamera";
 import { CanvasController } from "./controllers/CanvasController";
+
+type SelectedChemical = { key: string; name: string; recipe: ChemicalRecipe };
+type AmountSource = { name: string; recipe: ChemicalRecipe; dose: (volumeMl: number) => chemlib.Mixture } |
+	{ vessel: chemlib.ChemComponent };
+
+const TRANSFER_HOLD_MS = 1500;
+const TRANSFER_HOLD_RADIUS = 6;
+const DRAG_TRANSFER_TASK = "drag-transfer";
 
 /**
  * chemlab webwriter widget for presenting interactive chemistry experiments
@@ -618,10 +629,35 @@ export class ChemLab extends LitElementWw {
 	@state() private accessor permissionTooltip: { anchor: HTMLElement; type: PaletteComponent; text: string } | undefined;
 	@state() private accessor visibleVariants: Partial<Record<PaletteComponent, string>> = {};
 	@state() private accessor componentToPlace: string | undefined;
-	@state() private accessor selectedChemical: { key: string; name: string; recipe: ChemicalRecipe } | undefined;
+	@state() private accessor selectedChemical: SelectedChemical | undefined;
+	@state() private accessor amountMenu: {
+		target: chemlib.ChemComponent;
+		anchor: PIXI.Container;
+		from: AmountSource;
+		amount: number;
+		max: number;
+		editing?: boolean;
+	} | undefined;
 	@state() private accessor fillMeter: { x: number; y: number; volume: number; capacity: number } | undefined;
 	private chemicalPreviews = new Map<string, string>();
+	private pendingChemicalPreviews = new Map<string, MoleculeDefinition>();
+	private chemicalPreviewFrame?: number;
+	@state() private accessor chemicalCatalogOpened = false;
+	@state() private accessor chemicalQuery = "";
+	@state() private accessor openedChemicalSections = new Set(["Salze"]);
 	private stopDose?: (save?: boolean) => void;
+	private paletteDrag?: AbortController;
+	private suppressPaletteClick = false;
+	private dragTransfer?: {
+		anchor: PIXI.Container;
+		target: chemlib.ChemComponent;
+		from: AmountSource;
+		point: PIXI.PointData;
+		heldMs: number;
+		nextDoseMs: number;
+		active: boolean;
+		totalMl: number;
+	};
 	private meterTimeout?: number;
 
 	@state()
@@ -818,6 +854,8 @@ export class ChemLab extends LitElementWw {
 
 	disconnectedCallback(): void {
 		this.stopDose?.();
+		this.cancelDoseForNavigation();
+		this.closeAmountMenu();
 		this.hideFillMeter();
 		this.workspaceResizeObserver?.disconnect();
 		this.workspaceResizeObserver = undefined;
@@ -825,6 +863,9 @@ export class ChemLab extends LitElementWw {
 		this.workspaceClassObserver = undefined;
 		this.dataObserver?.disconnect();
 		this.dataObserver = undefined;
+		this.ownerDocument.defaultView?.cancelAnimationFrame(this.chemicalPreviewFrame);
+		this.chemicalPreviewFrame = undefined;
+		this.pendingChemicalPreviews.clear();
 		super.disconnectedCallback();
 	}
 
@@ -880,6 +921,8 @@ export class ChemLab extends LitElementWw {
 			}
 			if (changed.has("availableComponents")) {
 				this.stopDose?.();
+				this.cancelDoseForNavigation();
+				this.closeAmountMenu();
 				this.hideFillMeter();
 				this.simulation.stopExperiments();
 				this.curr_obj = null;
@@ -898,6 +941,7 @@ export class ChemLab extends LitElementWw {
 		if (this.canvas.selectedObjects.length || changed.has("curr_obj") || changed.has("curr_name") || changed.has("editingMolecule")) {
 			this.canvas.drawSelection();
 		}
+		if (changed.has("amountMenu")) this.positionAmountMenu();
 	}
 
 	private readLegacyArray(name: string): object[] | undefined {
@@ -1228,32 +1272,42 @@ export class ChemLab extends LitElementWw {
 		this.invComponents = [...blocked];
 	}
 
-	private startComponentDrag(event: DragEvent, variant: ComponentVariant): void {
-		if (!event.dataTransfer || (!this.canAuthor && !this.isVariantAllowed(variant))) return;
-		event.stopPropagation();
-		event.dataTransfer.effectAllowed = "copy";
-		event.dataTransfer.setData("application/x-chemlab-component", variant.id);
-		this.componentToPlace = undefined;
-		this.selectedChemical = undefined;
-	}
-
-	private handleComponentDragOver(event: DragEvent): void {
-		if (!event.dataTransfer?.types.includes("application/x-chemlab-component")) return;
-		event.preventDefault();
-		event.stopPropagation();
-		event.dataTransfer.dropEffect = "copy";
-	}
-
-	private dropComponent(event: DragEvent): void {
-		const variant = componentVariant(event.dataTransfer?.getData("application/x-chemlab-component"));
-		if (!this.app || !variant) return;
-		const bounds = this.app.canvas.getBoundingClientRect();
-		if (event.clientX < bounds.left || event.clientX > bounds.right ||
-			event.clientY < bounds.top || event.clientY > bounds.bottom) return;
-		event.preventDefault();
-		event.stopPropagation();
-		const point = this.canvas.worldPointFromViewport(event.clientX, event.clientY);
-		this.addPaletteComponent(variant, point.x, point.y);
+	private startComponentDrag(event: PointerEvent, variant: ComponentVariant): void {
+		if (!this.canAuthor && !this.isVariantAllowed(variant)) return;
+		let preview: PIXI.Container | undefined;
+		this.startPaletteDrag(event, {
+			start: () => {
+				const { type, capacityMl, material } = variant;
+				let model: chemlib.ChemComponent | chemlib.ElectricComponent;
+				if (capacityMl !== undefined) {
+					const vessel = new chemlib.ChemComponent(-1, type as chemlib.ComponentType);
+					vessel._volume = capacityMl;
+					model = vessel;
+				} else {
+					model = new chemlib.ElectricComponent(-1, type as chemlib.EComponentType, {
+						nMaterial: material && this.newElectrodeMaterial(material),
+						nSourceVoltage: type === chemlib.EComponentType.Source && this.canAuthor ? 0 : undefined,
+						nSourceCurrent: type === chemlib.EComponentType.Source && this.canAuthor ? 0 : undefined,
+					});
+				}
+				preview = this.canvas.createPlacementPreview(model);
+			},
+			move: (pointer) => {
+				const point = this.canvas.worldPointFromViewport(pointer.clientX, pointer.clientY);
+				preview.visible = !!point;
+				if (point) preview.position.copyFrom(this.canvas.snapPosition(point.x, point.y));
+				this.requestCanvasRender();
+			},
+			drop: (pointer) => {
+				const point = this.canvas.worldPointFromViewport(pointer.clientX, pointer.clientY);
+				if (point) this.addPaletteComponent(variant, point.x, point.y);
+			},
+			cleanup: () => {
+				if (!preview) return;
+				preview.destroy({ children: true });
+				this.requestCanvasRender();
+			},
+		});
 	}
 
 	placeSelectedComponent(x: number, y: number): boolean {
@@ -1266,7 +1320,7 @@ export class ChemLab extends LitElementWw {
 		if (!this.canAuthor && !this.isVariantAllowed(variant)) return false;
 		const position = this.canvas.snapPosition(x, y);
 		this.componentToPlace = undefined;
-		this.selectedChemical = undefined;
+		this.clearChemicalSelection();
 		const { id: variantId, type, capacityMl, material } = variant;
 		if (!this.canAuthor) {
 			let component: chemlib.ChemComponent | chemlib.ElectricComponent;
@@ -1340,17 +1394,36 @@ export class ChemLab extends LitElementWw {
 			});
 	}
 
-	private previewMolecule(definition: MoleculeDefinition): string {
+	private previewMolecule(definition: MoleculeDefinition): string | undefined {
 		const key = JSON.stringify(definition);
-		if (!this.chemicalPreviews.has(key)) {
+		if (!this.chemicalPreviews.has(key) && this.teacherTab === "chemicals" && this.teacherDrawerOpen) {
+			this.pendingChemicalPreviews.set(key, definition);
+			this.scheduleChemicalPreview();
+		}
+		return this.chemicalPreviews.get(key);
+	}
+
+	private scheduleChemicalPreview(): void {
+		if (this.chemicalPreviewFrame !== undefined) return;
+		this.chemicalPreviewFrame = this.ownerDocument.defaultView?.requestAnimationFrame(() => {
+			this.chemicalPreviewFrame = undefined;
+			if (!this.isConnected || !this.canAuthor || !this.teacherDrawerOpen || this.teacherTab !== "chemicals") {
+				this.pendingChemicalPreviews.clear();
+				return;
+			}
+			const next = this.pendingChemicalPreviews.entries().next();
+			if (next.done) return;
+			const [key, definition] = next.value;
+			this.pendingChemicalPreviews.delete(key);
 			try {
-				const molecule = this._loadMolecule(definition.formula, false, definition);
+				const molecule = loadMoleculeDefinition(definition);
 				this.chemicalPreviews.set(key, chemlib.StructureManager.printMolecule(molecule, 80, 60, 14));
 			} catch {
 				this.chemicalPreviews.set(key, "");
 			}
-		}
-		return this.chemicalPreviews.get(key);
+			this.requestUpdate();
+			if (this.pendingChemicalPreviews.size) this.scheduleChemicalPreview();
+		});
 	}
 
 	private buildDose(recipe: ChemicalRecipe) {
@@ -1374,20 +1447,431 @@ export class ChemLab extends LitElementWw {
 
 	cancelDoseForNavigation(): void {
 		this.stopDose?.(true);
+		this.paletteDrag?.abort();
+		this.finishDragTransfer();
+	}
+
+	clearChemicalSelection(): void {
+		this.cancelDoseForNavigation();
+		this.selectedChemical = undefined;
+		this.closeAmountMenu();
+	}
+
+	closeAmountMenu(): void {
+		this.amountMenu = undefined;
+	}
+
+	private doseTarget(sprite: PIXI.Container): chemlib.ChemComponent | undefined {
+		return this.allChemComponents.find((component) =>
+			`${component._type}:${component._id}` === sprite.label && Number.isFinite(component._volume) && component._volume > 0);
+	}
+
+	private addMeasuredDose(target: chemlib.ChemComponent, dose: (volumeMl: number) => chemlib.Mixture, requestedMl: number): number {
+		const portion = dose(requestedMl);
+		const fraction = target._content.fractionThatFits(portion, target._volume / 1000);
+		const volumeMl = requestedMl * fraction;
+		if (volumeMl <= 1e-8) return 0;
+		target.addContents({ nMix: fraction === 1 ? portion : dose(volumeMl) });
+		this.canvas.markVesselChanged(target);
+		return volumeMl;
+	}
+
+	private saveMeasuredDose(sprite: PIXI.Container, recipe: ChemicalRecipe, volumeMl: number): void {
+		const entry = this.findAuthoredComponent(sprite);
+		if (!this.canAuthor || !entry || volumeMl <= 0) return;
+		const record: SavedDose = { recipe, volumeMl };
+		entry["doses"] = [...(entry["doses"] ?? []), record];
+		this.availableComponents = [...this.availableComponents];
+	}
+
+	openChemicalAmountMenu(sprite: PIXI.Container): boolean {
+		const selected = this.selectedChemical;
+		if (!this.canAuthor || !selected) return false;
+		const target = this.doseTarget(sprite);
+		if (!target) return false;
+		this.cancelDoseForNavigation();
+		this.hideFillMeter();
+		const dose = this.buildDose(selected.recipe);
+		if (dose) this.openAmountMenu(target, sprite, { name: selected.name, recipe: selected.recipe, dose });
+		return true;
+	}
+
+	trackVesselTransfer(source: chemlib.ChemComponent, anchor: PIXI.Container | undefined, point: PIXI.PointData): void {
+		this.trackDragTransfer(anchor, point, { vessel: source });
+	}
+
+	get transferTarget(): PIXI.Container | undefined {
+		return this.dragTransfer?.anchor;
+	}
+
+	get draggingPalette(): boolean {
+		return !!this.paletteDrag;
+	}
+
+	private trackDragTransfer(anchor: PIXI.Container | undefined, point: PIXI.PointData, from: AmountSource): void {
+		const target = anchor && this.doseTarget(anchor);
+		if (this.dragTransfer?.anchor !== anchor || !target) this.finishDragTransfer();
+		if (!target || ("vessel" in from && (from.vessel === target || target._inOutLimits[0] <= 0))) return;
+		const current = this.dragTransfer;
+		if (current) {
+			if (!current.active && Math.hypot(point.x - current.point.x, point.y - current.point.y) > TRANSFER_HOLD_RADIUS) {
+				current.point = point;
+				current.heldMs = 0;
+			}
+			return;
+		}
+		const drag = { anchor, target, from, point, heldMs: 0, nextDoseMs: TRANSFER_HOLD_MS, active: false, totalMl: 0 };
+		this.dragTransfer = drag;
+		this.canvas.drawSelection();
+		this.simulation.startTask(DRAG_TRANSFER_TASK, (elapsedMs) => {
+			if (!("vessel" in from) && !this.canAuthor) {
+				this.finishDragTransfer();
+				return;
+			}
+			drag.heldMs += elapsedMs;
+			if (drag.heldMs < drag.nextDoseMs) return;
+			drag.active = true;
+			const steps = 1 + Math.floor((drag.heldMs - drag.nextDoseMs) / 50);
+			drag.nextDoseMs += steps * 50;
+			const requestedMl = steps * 0.4;
+			const added = "vessel" in from
+				? this.transferMeasuredVolume(from.vessel, target, requestedMl)
+				: this.addMeasuredDose(target, from.dose, requestedMl);
+			drag.totalMl += added;
+			this.updateFillMeter(anchor, target);
+			if (added < requestedMl - 1e-8 || target._content.contentVolume * 1000 >= target._volume - 1e-8) {
+				this.simulation.stopTask(DRAG_TRANSFER_TASK);
+			}
+		});
+	}
+
+	finishDragTransfer(drop = false): void {
+		const drag = this.dragTransfer;
+		if (!drag) return;
+		this.dragTransfer = undefined;
+		this.simulation.stopTask(DRAG_TRANSFER_TASK);
+		this.hideFillMeter();
+		this.canvas.drawSelection();
+		const { anchor, target, from, totalMl } = drag;
+		if (totalMl > 0) {
+			if ("vessel" in from) {
+				this.reportXApi("appended", `${from.vessel._type}:${from.vessel._id}`, {
+					response: anchor.label, success: true, completion: true,
+				});
+			} else this.saveMeasuredDose(anchor, from.recipe, totalMl);
+			if (this.curr_obj === target || ("vessel" in from && this.curr_obj === from.vessel)) this._updatePopup();
+		}
+		if (drop && !drag.active) this.openAmountMenu(target, anchor, from);
+	}
+
+	private transferMeasuredVolume(source: chemlib.ChemComponent, target: chemlib.ChemComponent, amount: number): number {
+		const result = source.transferContents({ tVolume: amount / 1000 }, target) * 1000;
+		if (result > 0) {
+			this.canvas.markVesselChanged(source);
+			this.canvas.markVesselChanged(target);
+		}
+		return result;
+	}
+
+	private startPaletteDrag(event: PointerEvent, gesture: {
+		start: () => void;
+		move: (pointer: PointerEvent) => void;
+		drop: (pointer: PointerEvent) => void;
+		cleanup: () => void;
+	}): void {
+		if (event.button !== 0 || !event.isPrimary || !this.app || this.canvas.pointerBusy) return;
+		const button = event.currentTarget as HTMLButtonElement;
+		const view = this.ownerDocument.defaultView;
+		// Keep WebWriter's editor from turning the gesture into a native HTML drag.
+		event.preventDefault();
+		event.stopPropagation();
+		button.focus({ preventScroll: true });
+		const controller = new AbortController();
+		this.paletteDrag = controller;
+		this.suppressPaletteClick = false;
+		const options = { capture: true, signal: controller.signal };
+		controller.signal.addEventListener("abort", () => {
+			this.paletteDrag = undefined;
+			button.classList.remove("palette-dragging");
+			if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
+			gesture.cleanup();
+		}, { once: true });
+		view.addEventListener("pointermove", (pointer) => {
+			if (pointer.pointerId !== event.pointerId) return;
+			if (!this.suppressPaletteClick) {
+				if (Math.hypot(pointer.clientX - event.clientX, pointer.clientY - event.clientY) <= TRANSFER_HOLD_RADIUS) return;
+				this.suppressPaletteClick = true;
+				this.stopDose?.(true);
+				this.closeAmountMenu();
+				this.componentToPlace = undefined;
+				this.selectedChemical = undefined;
+				button.classList.add("palette-dragging");
+				try {
+					button.setPointerCapture(pointer.pointerId);
+				} catch {
+					// Window listeners also handle pointers that cannot be captured.
+				}
+				gesture.start();
+			}
+			gesture.move(pointer);
+		}, options);
+		view.addEventListener("pointerup", (pointer) => {
+			if (pointer.pointerId !== event.pointerId) return;
+			try {
+				if (this.suppressPaletteClick) gesture.drop(pointer);
+			} finally {
+				controller.abort();
+			}
+		}, options);
+		view.addEventListener("pointercancel", (pointer) => {
+			if (pointer.pointerId === event.pointerId) controller.abort();
+		}, options);
+		button.addEventListener("lostpointercapture", () => controller.abort(), options);
+		button.addEventListener("contextmenu", (menuEvent) => menuEvent.preventDefault(), options);
+		view.addEventListener("blur", () => controller.abort(), options);
+	}
+
+	private preventNativePaletteDrag(event: DragEvent): void {
+		event.preventDefault();
+		event.stopPropagation();
+	}
+
+	private consumePaletteClick(event: MouseEvent): boolean {
+		if (!event.detail || !this.suppressPaletteClick) return false;
+		this.suppressPaletteClick = false;
+		return true;
+	}
+
+	private startChemicalDrag(event: PointerEvent, chemical: SelectedChemical, src: string): void {
+		if (!this.canAuthor) return;
+		let from: Extract<AmountSource, { recipe: ChemicalRecipe }> | undefined;
+		let preview: HTMLDivElement | undefined;
+		const track = (pointer: PointerEvent) => {
+			if (!from || !preview) return;
+			const point = { x: pointer.clientX, y: pointer.clientY };
+			const container = this.containerDiv;
+			const bounds = container.getBoundingClientRect();
+			const x = (point.x - bounds.left) * container.offsetWidth / bounds.width - container.clientLeft;
+			const y = (point.y - bounds.top) * container.offsetHeight / bounds.height - container.clientTop;
+			preview.style.transform = `translate(${x + 12}px, ${y + 12}px)`;
+			this.trackDragTransfer(this.canvas.vesselAtViewport(point.x, point.y), point, from);
+		};
+		this.startPaletteDrag(event, {
+			start: () => {
+				this.clearObjectSelection(true);
+				const dose = this.buildDose(chemical.recipe);
+				if (!dose) return;
+				from = { name: chemical.name, recipe: chemical.recipe, dose };
+				const document = this.ownerDocument;
+				preview = document.createElement("div");
+				preview.className = "chemical-drag-preview";
+				preview.setAttribute("aria-hidden", "true");
+				if (src) {
+					const image = document.createElement("img");
+					image.src = src;
+					image.alt = "";
+					preview.append(image);
+				}
+				const badge = document.createElement("sl-badge");
+				badge.setAttribute("pill", "");
+				badge.textContent = chemical.name;
+				preview.append(badge);
+				this.containerDiv.append(preview);
+			},
+			move: track,
+			drop: (pointer) => {
+				track(pointer);
+				this.finishDragTransfer(!!from);
+			},
+			cleanup: () => {
+				preview?.remove();
+				if (from) this.finishDragTransfer();
+			},
+		});
+	}
+
+	private openAmountMenu(target: chemlib.ChemComponent, anchor: PIXI.Container, from: AmountSource): void {
+		const transfer = "vessel" in from;
+		const incoming = transfer ? from.vessel._content : from.dose(target._volume * 2);
+		const limit = !transfer || target._inOutLimits[0] > 0
+			? incoming.contentVolume * 1000 * target._content.fractionThatFits(incoming, target._volume / 1000)
+			: 0;
+		const max = Number.isFinite(limit) && limit > 1e-8 ? limit : 0;
+		const menu = { target, anchor, from, max, amount: transfer ? max : Math.min(1, max) };
+		this.amountMenu = menu;
+		void this.updateComplete.then(() => {
+			if (this.amountMenu === menu) this.shadowRoot.querySelector<HTMLElement>("#amountMenu")?.focus({ preventScroll: true });
+		});
+	}
+
+	private adjustAmount(steps: number): void {
+		if (this.amountMenu?.editing && !this.finishAmountEdit()) return;
+		const menu = this.amountMenu;
+		if (!menu || menu.max <= 0) return;
+		this.setAmount(Number((menu.amount + steps / 10).toPrecision(15)));
+	}
+
+	private setAmount(value: number): void {
+		const menu = this.amountMenu;
+		if (!menu) return;
+		const amount = Math.max(0, Math.min(menu.max, value));
+		if (amount !== menu.amount || menu.editing) this.amountMenu = { ...menu, amount, editing: false };
+	}
+
+	private slideAmount(event: Event): void {
+		const slider = event.currentTarget as HTMLInputElement;
+		const max = Number(slider.max);
+		const raw = slider.valueAsNumber;
+		// Keep the actual capacity reachable when it falls between whole millilitres.
+		const amount = raw === max ? max : Math.min(max, Math.round(raw));
+		slider.valueAsNumber = amount;
+		this.setAmount(amount);
+	}
+
+	private async editAmount(): Promise<void> {
+		const menu = this.amountMenu;
+		if (!menu || menu.editing) return;
+		this.amountMenu = { ...menu, editing: true };
+		await this.updateComplete;
+		const field = this.shadowRoot.querySelector<HTMLInputElement>("#amountMenuValue");
+		field?.focus({ preventScroll: true });
+		field?.select();
+	}
+
+	private finishAmountEdit(): boolean {
+		const menu = this.amountMenu;
+		const field = this.shadowRoot.querySelector<HTMLInputElement>("#amountMenuValue");
+		if (!menu?.editing || !field) return false;
+		const value = field.value.trim();
+		const amount = /^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(value) ? Number(value.replace(",", ".")) : NaN;
+		if (!Number.isFinite(amount) || amount < 0 || amount > menu.max) {
+			field.setCustomValidity(this.message("Gib eine Menge zwischen 0 und {max} mL ein.", {
+				max: this.formatAmount(menu.max, 15),
+			}));
+			field.reportValidity();
+			field.focus({ preventScroll: true });
+			return false;
+		}
+		this.setAmount(amount);
+		return true;
+	}
+
+	private handleAmountMenuKey(event: KeyboardEvent): void {
+		const menu = this.amountMenu;
+		if (!menu || event.isComposing || event.defaultPrevented || menu.max <= 0) return;
+		const target = event.target as HTMLElement;
+		if (target.id === "amountMenuValue") {
+			if (event.key !== "Enter" && event.key !== "Escape") return;
+			event.preventDefault();
+			event.stopPropagation();
+			if (event.key === "Escape") this.amountMenu = { ...menu, editing: false };
+			else if (!this.finishAmountEdit()) return;
+			void this.updateComplete.then(() => this.shadowRoot.querySelector<HTMLElement>("#amountMenuSlider")?.focus({ preventScroll: true }));
+			return;
+		}
+		const onSlider = target.id === "amountMenuSlider";
+		const steps = onSlider || event.shiftKey ? 10 : 1;
+		switch (event.key) {
+			case "ArrowLeft":
+			case "ArrowDown":
+				this.adjustAmount(-steps);
+				break;
+			case "ArrowRight":
+			case "ArrowUp":
+				this.adjustAmount(steps);
+				break;
+			case "Home":
+				this.setAmount(0);
+				break;
+			case "End":
+				this.setAmount(menu.max);
+				break;
+			case "F2":
+				if (!onSlider && event.target !== event.currentTarget) return;
+				void this.editAmount();
+				break;
+			case "Enter":
+				if (event.target !== event.currentTarget && !onSlider) return;
+				this.confirmAmount();
+				break;
+			default:
+				return;
+		}
+		event.preventDefault();
+		event.stopPropagation();
+	}
+
+	private formatAmount(amount: number, maximumSignificantDigits: number): string {
+		const options = { maximumSignificantDigits };
+		try {
+			return new Intl.NumberFormat(this.lang || undefined, options).format(amount);
+		} catch {
+			return new Intl.NumberFormat(undefined, options).format(amount);
+		}
+	}
+
+	private confirmAmount(): void {
+		if (this.amountMenu?.editing && !this.finishAmountEdit()) return;
+		const menu = this.amountMenu;
+		if (!menu || !(menu.amount > 0) || menu.amount > menu.max) return;
+		const { from, target, anchor, amount } = menu;
+		if (!this.allChemComponents.includes(target)) {
+			this.closeAmountMenu();
+			return;
+		}
+		let result: number;
+		if ("vessel" in from) {
+			const source = from.vessel;
+			if (!this.allChemComponents.includes(source)) {
+				this.closeAmountMenu();
+				return;
+			}
+			result = this.transferMeasuredVolume(source, target, amount);
+			if (result > 0) {
+				this.reportXApi("appended", `${source._type}:${source._id}`, {
+					response: anchor.label, success: true, completion: true,
+				});
+			}
+		} else {
+			if (!this.canAuthor) {
+				this.closeAmountMenu();
+				return;
+			}
+			result = this.addMeasuredDose(target, from.dose, amount);
+			this.saveMeasuredDose(anchor, from.recipe, result);
+		}
+		if (this.curr_obj === target || ("vessel" in from && this.curr_obj === from.vessel)) this._updatePopup();
+		if (result > 0) {
+			this.closeAmountMenu();
+			this.app?.canvas.focus({ preventScroll: true });
+		} else {
+			this.amountMenu = { ...menu, amount: 0, max: 0 };
+			void this.updateComplete.then(() => this.shadowRoot.querySelector<HTMLElement>("#amountMenu")?.focus({ preventScroll: true }));
+		}
+	}
+
+	private updateFillMeter(sprite: PIXI.Container, target: chemlib.ChemComponent): number {
+		const { minX, maxX, y, height } = sprite.getBounds();
+		const canvas = this.app.screen;
+		const volume = target._content.contentVolume * 1000;
+		this.fillMeter = {
+			x: Math.max(0, maxX + 92 <= canvas.width ? maxX + 6 : minX - 86),
+			y: Math.max(0, Math.min(canvas.height - 24, y + height / 2 - 12)),
+			volume, capacity: target._volume,
+		};
+		return volume;
 	}
 
 	beginChemicalDose(sprite: PIXI.Container, pointerId: number): boolean {
 		const selected = this.selectedChemical;
 		if (!this.canAuthor || !selected) return false;
 		if (this.stopDose) return true;
-		const target = this.allChemComponents.find((component) =>
-			`${component._type}:${component._id}` === sprite.label);
-		if (!target || !Number.isFinite(target._volume) || target._volume <= 0) return false;
+		const target = this.doseTarget(sprite);
+		if (!target) return false;
 		const dose = this.buildDose(selected.recipe);
 		if (!dose) return true;
 
 		this.hideFillMeter();
-		this._getObject(sprite);
 		const controller = new AbortController();
 		const view = this.ownerDocument.defaultView;
 		const canvasView = this.app.canvas;
@@ -1403,27 +1887,9 @@ export class ChemLab extends LitElementWw {
 		let nextDoseMs = 300;
 		let nextStatusMs = 500;
 		const task = "chemical-dose";
-		const updateMeter = () => {
-			const { minX, maxX, y, height } = sprite.getBounds();
-			const canvas = this.app.screen;
-			const volume = target._content.contentVolume * 1000;
-			this.fillMeter = {
-				x: Math.max(0, maxX + 92 <= canvas.width ? maxX + 6 : minX - 86),
-				y: Math.max(0, Math.min(canvas.height - 56, y + height / 2 - 28)),
-				volume, capacity: target._volume,
-			};
-			return volume;
-		};
 		const add = (requestedMl: number) => {
-			const portion = dose(requestedMl);
-			const fraction = target._content.fractionThatFits(portion, target._volume / 1000);
-			const volumeMl = requestedMl * fraction;
-			if (volumeMl > 1e-8) {
-				target.addContents({ nMix: fraction === 1 ? portion : dose(volumeMl) });
-				this.canvas.markVesselChanged(target);
-				totalMl += volumeMl;
-			}
-			return target._volume - updateMeter() <= 1e-8;
+			totalMl += this.addMeasuredDose(target, dose, requestedMl);
+			return target._volume - this.updateFillMeter(sprite, target) <= 1e-8;
 		};
 		const finish = (click: boolean, save = true) => {
 			this.simulation.stopTask(task);
@@ -1433,12 +1899,7 @@ export class ChemLab extends LitElementWw {
 			if (click && !holding) add(1);
 			if (click) this.meterTimeout = view.setTimeout(() => this.hideFillMeter(), 650);
 			else this.hideFillMeter();
-			const entry = this.findAuthoredComponent(sprite);
-			if (save && entry && totalMl > 0) {
-				const record: SavedDose = { recipe: selected.recipe, volumeMl: totalMl };
-				entry["doses"] = [...(entry["doses"] ?? []), record];
-				this.availableComponents = [...this.availableComponents];
-			}
+			if (save) this.saveMeasuredDose(sprite, selected.recipe, totalMl);
 			if (this.curr_obj === target) this._updatePopup();
 		};
 		this.simulation.startTask(task, (elapsedMs) => {
@@ -1463,7 +1924,7 @@ export class ChemLab extends LitElementWw {
 			if (event.pointerId === pointerId) finish(false);
 		}, options);
 		view.addEventListener("blur", () => finish(false), options);
-		updateMeter();
+		this.updateFillMeter(sprite, target);
 		return true;
 	}
 
@@ -2028,6 +2489,16 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private deleteSelection(event: KeyboardEvent): void {
+		if (event.key === "Escape" && !event.defaultPrevented && !event.isComposing && !this.confirmDialog?.open &&
+			(this.selectedChemical || this.amountMenu || this.paletteDrag || this.dragTransfer)) {
+			event.preventDefault();
+			event.stopPropagation();
+			const focusCanvas = !!this.amountMenu;
+			this.clearChemicalSelection();
+			this.canvas.cancelVesselDrag();
+			if (focusCanvas) this.app?.canvas.focus({ preventScroll: true });
+			return;
+		}
 		if (event.key !== "Delete" || event.defaultPrevented || event.isComposing ||
 			event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || this.editingMolecule || this.confirmDialog?.open) return;
 		for (const target of event.composedPath()) {
@@ -2051,6 +2522,12 @@ export class ChemLab extends LitElementWw {
 		const removedElectrical = this.allEComponents.filter((component) => labels.has(labelOf(component)) ||
 			(component._type === chemlib.EComponentType.Cable && component._connections.some((end) => labels.has(labelOf(end)))));
 		const removedChemical = this.allChemComponents.filter((component) => labels.has(labelOf(component)));
+		const drag = this.dragTransfer;
+		if (drag && (removedChemical.includes(drag.target) ||
+			("vessel" in drag.from && removedChemical.includes(drag.from.vessel)))) this.finishDragTransfer();
+		const menu = this.amountMenu;
+		if (menu && (removedChemical.includes(menu.target) ||
+			("vessel" in menu.from && removedChemical.includes(menu.from.vessel)))) this.closeAmountMenu();
 		const removedMixtures = new Map(removedChemical.map((component) => [component._content, component]));
 		const detachedElectrodes = this.allEComponents.filter((component) => component._type === chemlib.EComponentType.Electrode &&
 			removedMixtures.has(component._connectedMix) && !labels.has(labelOf(component)));
@@ -2909,50 +3386,17 @@ export class ChemLab extends LitElementWw {
 		append: boolean,
 		entry?: object
 	): chemlib.Molecule {
-		let mol: chemlib.Molecule = chemlib.StructureManager.newMolecule();
-		let selMolEntry: object = {};
-
-		if (typeof entry === "undefined") {
-			this.availableMolecules.forEach((molEntry) => {
-				if (molEntry["formula"] === formula) {
-					selMolEntry = molEntry;
-				}
-			});
-		} else {
-			selMolEntry = entry;
+		let definition = entry;
+		if (!definition) {
+			for (let i = this.availableMolecules.length - 1; i >= 0; i--) {
+				const candidate = this.availableMolecules[i];
+				if (candidate["formula"] !== formula) continue;
+				definition = candidate;
+				break;
+			}
 		}
-
-		if (Object.keys(selMolEntry).length != 0) {
-			selMolEntry["atoms"].forEach((atomEntry) => {
-				let atomSymbol: string =
-					chemlib.ElementData.getData(atomEntry)["symbol"];
-				let atom = mol.addAtom(atomEntry, atomSymbol);
-				if (append) {
-					this._appendBondsList(atom);
-				}
-			});
-			selMolEntry["bonds"].forEach((bondEntry) => {
-				if (bondEntry.length > 0) {
-					let separatedEntry: string[] = bondEntry.split(":");
-					let connectedIds: number[] = [
-						Number.parseInt(separatedEntry[0].split("-")[0]),
-						Number.parseInt(separatedEntry[0].split("-")[1]),
-					];
-					let bondType: string = separatedEntry[1];
-					let bondMag: number = Number.parseInt(separatedEntry[2]);
-
-					mol.addBond(
-						connectedIds[0],
-						connectedIds[1],
-						bondMag,
-						100,
-						bondType
-					);
-				}
-			});
-		}
-
-		return mol;
+		return loadMoleculeDefinition(definition as MoleculeDefinition | undefined,
+			append ? (atom) => this._appendBondsList(atom) : undefined);
 	}
 
 	/**
@@ -3517,11 +3961,12 @@ export class ChemLab extends LitElementWw {
 				@keydown=${this.deleteSelection}
 				class=${`${this.objectPanelOpen ? "show-object-panel" : ""} ${diagramOpen ? "show-diagram-panel" : ""}`}
 			>
-				<div id="canvasArea" @dragover=${this.handleComponentDragOver} @drop=${this.dropComponent}>
+				<div id="canvasArea">
 					${this.pix_canvas}
 					${this.renderObjectSummary()}
 					${this.renderGroupSummary()}
 					${this.renderFillMeter()}
+					${this.renderAmountMenu()}
 					${this.renderControlButtons()}
 				</div>
 				${this.renderObjectDetails()}
@@ -3744,13 +4189,14 @@ export class ChemLab extends LitElementWw {
 				${this.renderPanelArrows("up")}
 				<div id="teacherDrawerContent">
 					${this.canAuthor && this.selectedChemical ? html`
-						<sl-button size="small" @click=${() => { this.selectedChemical = undefined; }}>
+						<sl-button size="small" @click=${this.clearChemicalSelection}>
 							${this.selectedChemical.name} ×
 						</sl-button>` : ""}
 					<sl-tab-group id="teacherTabs" class=${this.canAuthor ? "" : "learner-tabs"}
 						@sl-tab-show=${(event: CustomEvent<{ name: "components" | "chemicals" }>) => {
 							if (event.target === event.currentTarget) {
 								this.teacherTab = event.detail.name;
+								if (this.teacherTab === "chemicals") this.chemicalCatalogOpened = true;
 								this.permissionTooltip = undefined;
 							}
 						}}>
@@ -3758,7 +4204,7 @@ export class ChemLab extends LitElementWw {
 						<sl-tab slot="nav" panel="chemicals" ?disabled=${!this.canAuthor}>${this.message("Chemikalien")}</sl-tab>
 						<sl-tab-panel name="components" active>${this.renderComponentPalette()}</sl-tab-panel>
 						<sl-tab-panel name="chemicals" class="author-only">
-							${this.canAuthor && this.teacherTab === "chemicals" ? this.renderChemicalCatalog() : ""}
+							${this.canAuthor && this.chemicalCatalogOpened ? this.renderChemicalCatalog() : nothing}
 							<sl-details summary=${this.message("Eigene Moleküle und Gemische")}>
 								<div class="teacher-editors">
 									<section><h3>${this.message("Moleküle")}</h3><div id="molConfig"></div></section>
@@ -3836,12 +4282,14 @@ export class ChemLab extends LitElementWw {
 					<div class="component-variant">
 						${arrow(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Größe"))}
 						<div class="component-variant-body">
-							<button type="button" class="component-tile" draggable="true"
+							<button type="button" class="component-tile" contenteditable="false"
 								aria-label=${itemLabel} aria-pressed=${this.componentToPlace === current.id}
-								@dragstart=${(event: DragEvent) => this.startComponentDrag(event, current)}
-								@click=${() => {
+								@pointerdown=${(event: PointerEvent) => this.startComponentDrag(event, current)}
+								@dragstart=${this.preventNativePaletteDrag}
+								@click=${(event: MouseEvent) => {
+									if (this.consumePaletteClick(event)) return;
 									this.componentToPlace = this.componentToPlace === current.id ? undefined : current.id;
-									this.selectedChemical = undefined;
+									this.clearChemicalSelection();
 								}}>
 								${renderComponentPaletteIcon(current, variants.indexOf(current) / Math.max(1, variants.length - 1))}
 								<sl-tag size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
@@ -3865,66 +4313,172 @@ export class ChemLab extends LitElementWw {
 		return html`<div class="component-palette">${cards}</div>`;
 	}
 
-	private renderChemicalTile(key: string, name: string, recipe: ChemicalRecipe) {
+	private renderChemicalTile(key: string, name: string, formula: string, src?: string, recipe?: ChemicalRecipe) {
+		const contents = html`
+			<span class="chemical-preview">${src ? html`<img src=${src} alt="" draggable="false" decoding="async" loading="lazy"/>`
+				: html`<span>${formula}</span>`}</span>
+			<sl-badge pill variant="neutral">${name}</sl-badge>
+			${src ? html`<small>${formula}</small>` : nothing}`;
+		if (!recipe) return html`
+			<div class="chemical-tile chemical-reference">
+				${contents}
+				<small>${this.message("Nur Katalogeintrag")}</small>
+			</div>`;
+		return html`
+			<button type="button" class="chemical-tile" contenteditable="false" aria-pressed=${this.selectedChemical?.key === key}
+				@pointerdown=${(event: PointerEvent) => this.startChemicalDrag(event, { key, name, recipe }, src)}
+				@dragstart=${this.preventNativePaletteDrag}
+				@click=${(event: MouseEvent) => {
+					if (this.consumePaletteClick(event)) return;
+					const wasSelected = this.selectedChemical?.key === key;
+					this.clearChemicalSelection();
+					this.componentToPlace = undefined;
+					if (wasSelected) return;
+					this.clearObjectSelection(true);
+					this.selectedChemical = { key, name, recipe };
+				}}>
+				${contents}
+			</button>`;
+	}
+
+	private renderCustomChemical(key: string, name: string, recipe: ChemicalRecipe) {
 		const preview = recipe.parts.find(({ molecule }) =>
 			!["H₂O", "OH2", "H2O"].includes(molecule.formula))?.molecule ?? recipe.parts[0]?.molecule;
-		if (!preview) return "";
-		const src = this.previewMolecule(preview);
-		return html`
-			<button type="button" class="chemical-tile" aria-pressed=${this.selectedChemical?.key === key}
-				@click=${() => {
-					this.componentToPlace = undefined;
-					this.selectedChemical = this.selectedChemical?.key === key ? undefined : { key, name, recipe };
-				}}>
-				<span class="chemical-preview">${src ? html`<img src=${src} alt=""/>` : nothing}</span>
-				<sl-badge pill variant="neutral">${name}</sl-badge>
-				<small>${preview.formula}</small>
-			</button>
-		`;
+		if (!preview) return nothing;
+		return this.renderChemicalTile(key, name, preview.formula, this.previewMolecule(preview), recipe);
+	}
+
+	private rememberChemicalSection(event: Event, category: string): void {
+		if (event.target !== event.currentTarget || this.openedChemicalSections.has(category)) return;
+		this.openedChemicalSections = new Set([...this.openedChemicalSections, category]);
 	}
 
 	private renderChemicalCatalog() {
 		const molecules = this.availableMolecules as MoleculeDefinition[];
+		const normalize = (value: string) => value.normalize("NFKC").toLowerCase();
+		const query = normalize(this.chemicalQuery.trim());
+		const matches = (...values: string[]) => !query || values.some((value) => normalize(value).includes(query));
+		const groups = chemicalCatalogGroups.flatMap(({ category, items }) => {
+			const label = this.message(category);
+			const visible = matches(category, label) ? items : items.filter((item) =>
+				matches(item.name, this.message(item.name), item.formula, item.category, this.message(item.category)));
+			return visible.length ? [{ category, label, items: visible }] : [];
+		});
+		const renderedGroups = repeat(groups, ({ category }) => category, ({ category, label, items }) => html`
+				<sl-details class="chemical-section" ?open=${!!query || category === "Salze"}
+					@sl-show=${(event: Event) => this.rememberChemicalSection(event, category)}>
+					<sl-tag slot="summary" size="small">${label}</sl-tag>
+					${query || this.openedChemicalSections.has(category) ? html`<div class="chemical-grid">
+						${items.map((item) => this.renderChemicalTile(item.name, this.message(item.name), item.formula,
+							catalogPreviews[item.name], item.recipe))}
+					</div>` : nothing}
+				</sl-details>`);
+		const customLabel = this.message("Eigene Stoffe");
+		const customMolecules = molecules.filter((molecule) => matches(molecule.formula, customLabel));
+		const customMixtures = this.availableMixtures.filter((mixture) => matches(mixture["name"], customLabel));
 		return html`
-			${(["solid", "liquid"] as const).map((phase) => html`
-				<section class="chemical-section">
-					<h3><sl-tag size="small">${this.message(phase === "solid" ? "Feststoffe" : "Flüssigkeiten")}</sl-tag></h3>
-					<div class="chemical-grid">
-						${chemicalCatalog.filter((item) => item.phase === phase)
-							.map((item) => this.renderChemicalTile(item.name, this.message(item.name), item))}
-					</div>
-				</section>`)}
-			<section class="chemical-section">
-				<h3><sl-tag size="small">${this.message("Eigene Stoffe")}</sl-tag></h3>
-				<div class="chemical-grid">
-					${molecules.map((molecule) => this.renderChemicalTile("mol:" + molecule.formula, molecule.formula, {
-						phase: ["OH2", "H2O"].includes(molecule.formula) ? "liquid" : "solid",
-						density: 1, parts: [{ molecule, amount: 1 }],
-					}))}
-					${this.availableMixtures.map((mixture) => {
-						const parts = (mixture["content"] as string[]).flatMap((entry) => {
-							const [formula, rawAmount] = entry.split(":");
-							const molecule = molecules.find((item) => item.formula === formula.trim());
-							const amount = Number(rawAmount);
-							return molecule && Number.isFinite(amount) && amount > 0 ? [{ molecule, amount }] : [];
-						});
-						return this.renderChemicalTile("mix:" + mixture["name"], mixture["name"], {
-							phase: parts.some(({ molecule }) => ["OH2", "H2O"].includes(molecule.formula)) ? "liquid" : "solid",
-							density: 1, parts,
-						});
-					})}
-				</div>
-			</section>
+			<sl-input class="chemical-search" size="small" type="search" clearable contenteditable="false"
+				label=${this.message("Chemikalien suchen")} .value=${this.chemicalQuery}
+				@sl-input=${(event: Event) => { this.chemicalQuery = (event.currentTarget as SlInput).value; }}>
+			</sl-input>
+			${renderedGroups}
+			${customMolecules.length || customMixtures.length ? html`
+				<sl-details class="chemical-section" ?open=${!!query}
+					@sl-show=${(event: Event) => this.rememberChemicalSection(event, "Eigene Stoffe")}>
+					<sl-tag slot="summary" size="small">${customLabel}</sl-tag>
+					${query || this.openedChemicalSections.has("Eigene Stoffe") ? html`<div class="chemical-grid">
+						${customMolecules.map((molecule) => this.renderCustomChemical("mol:" + molecule.formula, molecule.formula, {
+							phase: ["OH2", "H2O"].includes(molecule.formula) ? "liquid" : "solid",
+							density: 1, parts: [{ molecule, amount: 1 }],
+						}))}
+						${customMixtures.map((mixture) => {
+							const parts = (mixture["content"] as string[]).flatMap((entry) => {
+								const [formula, rawAmount] = entry.split(":");
+								const molecule = molecules.find((item) => item.formula === formula.trim());
+								const amount = Number(rawAmount);
+								return molecule && Number.isFinite(amount) && amount > 0 ? [{ molecule, amount }] : [];
+							});
+							return this.renderCustomChemical("mix:" + mixture["name"], mixture["name"], {
+								phase: parts.some(({ molecule }) => ["OH2", "H2O"].includes(molecule.formula)) ? "liquid" : "solid",
+								density: 1, parts,
+							});
+						})}
+					</div>` : nothing}
+				</sl-details>` : !groups.length ? html`<p>${this.message("Keine Chemikalien gefunden.")}</p>` : nothing}
 		`;
 	}
 
 	private renderFillMeter() {
 		const meter = this.fillMeter;
-		return meter ? html`
-			<div class="fill-meter" style="left:${meter.x}px;top:${meter.y}px">
-				<meter min="0" max=${meter.capacity} .value=${meter.volume} aria-label=${this.message("Füllstand")}></meter>
-				<span>${Math.min(meter.capacity, meter.volume).toFixed(1)} / ${meter.capacity} mL</span>
-			</div>` : "";
+		if (!meter) return nothing;
+		const volume = Math.max(0, Math.min(meter.capacity, meter.volume));
+		const label = `${volume.toFixed(1)} / ${meter.capacity} mL`;
+		return html`
+			<div class="fill-meter volume-bar" role="meter" aria-label=${this.message("Füllstand")}
+				aria-valuemin="0" aria-valuemax=${meter.capacity} aria-valuenow=${volume} aria-valuetext=${label}
+				style=${`left: ${meter.x}px; top: ${meter.y}px; --amount-progress: ${100 * volume / meter.capacity}%`}>
+				${label}
+			</div>`;
+	}
+
+	private renderAmountMenu() {
+		const menu = this.amountMenu;
+		if (!menu) return nothing;
+		const from = "vessel" in menu.from ? this.itemName(menu.from.vessel._type) : menu.from.name;
+		const target = this.itemName(menu.target._type);
+		const decrease = this.message("Menge verringern");
+		const increase = this.message("Menge erhöhen");
+		const formattedAmount = `${this.formatAmount(menu.amount, 7)} mL`;
+		const editLabel = this.message("Menge bearbeiten (Doppelklick oder F2)");
+		return html`
+			<section id="amountMenu" class="selection-info" tabindex="-1" aria-labelledby="amountMenuTitle"
+				@keydown=${this.handleAmountMenuKey}>
+				<div id="amountMenuTitle" class="selection-labels">
+					<sl-badge variant="primary">${from}</sl-badge>
+					<span class="amount-menu-arrow" aria-hidden="true">
+						<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+							<path d="M2.5 8h10m-4-4 4 4-4 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+					</span>
+					<sl-badge class="selection-info-title">${target}</sl-badge>
+				</div>
+				${!(menu.max > 0) ? html`
+					<div class="amount-menu-row">
+						<span role="status">${this.message("Keine Menge verfügbar.")}</span>
+						<sl-button size="small" @click=${() => {
+							this.closeAmountMenu();
+							this.app.canvas.focus({ preventScroll: true });
+						}}>${this.message("Schließen")}</sl-button>
+					</div>` : html`
+					<div class="amount-menu-row">
+						<button type="button" class="amount-menu-button" title=${decrease} aria-label=${decrease}
+							aria-disabled=${menu.amount <= 0}
+							@click=${(event: MouseEvent) => this.adjustAmount(event.shiftKey ? -10 : -1)}>−</button>
+						<div class="amount-menu-quantity volume-bar" style=${`--amount-progress: ${100 * menu.amount / menu.max}%`}>
+							<output class="amount-menu-value" for="amountMenuSlider" ?inert=${!!menu.editing}>${formattedAmount}</output>
+							${menu.editing ? html`
+								<input id="amountMenuValue" type="text" inputmode="decimal" autocomplete="off"
+									aria-label=${this.message("Menge in mL")}
+									.value=${menu.amount.toLocaleString("en", { useGrouping: false, maximumSignificantDigits: 17 })}
+									@input=${(event: Event) => (event.currentTarget as HTMLInputElement).setCustomValidity("")}>
+							` : html`
+								<input id="amountMenuSlider" type="range" dir="ltr" min="0" max=${menu.max} step="any"
+								.value=${String(menu.amount)}
+								aria-label=${this.message("Menge in mL")} aria-valuetext=${formattedAmount} title=${editLabel}
+								@input=${this.slideAmount} @dblclick=${this.editAmount}>
+							`}
+						</div>
+						<button type="button" class="amount-menu-button" title=${increase} aria-label=${increase}
+							aria-disabled=${menu.amount >= menu.max}
+							@click=${(event: MouseEvent) => this.adjustAmount(event.shiftKey ? 10 : 1)}>+</button>
+						<sl-button size="small" variant="default" class="amount-menu-confirm" title=${this.message("bestätigen")}
+							aria-label=${this.message("bestätigen")} ?disabled=${!menu.editing && menu.amount <= 0} @click=${this.confirmAmount}>
+							<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+								<path d="m3 8 3 3 7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+							</svg>
+						</sl-button>
+					</div>`}
+			</section>`;
 	}
 
 	private renderGroupSummary() {
@@ -3949,6 +4503,20 @@ export class ChemLab extends LitElementWw {
 
 	positionSelectionSummary(bounds: PIXI.Bounds | undefined, canvasWidth: number, canvasHeight: number, groupSelected: boolean): void {
 		const summary = groupSelected ? this.groupSummary : this.objectSummary;
+		this.positionCanvasPanel(summary, bounds, canvasWidth, canvasHeight);
+	}
+
+	positionAmountMenu(): void {
+		if (!this.amountMenu || !this.app) return;
+		const summary = this.shadowRoot.querySelector<HTMLElement>("#amountMenu");
+		const { width, height } = this.app.screen;
+		const anchor = this.amountMenu.anchor;
+		const bounds = anchor.parent && anchor.getBounds();
+		this.positionCanvasPanel(summary, bounds && bounds.maxX > 0 && bounds.maxY > 0 &&
+			bounds.minX < width && bounds.minY < height ? bounds : undefined, width, height);
+	}
+
+	private positionCanvasPanel(summary: HTMLElement, bounds: PIXI.Bounds | undefined, canvasWidth: number, canvasHeight: number): void {
 		if (!summary) return;
 		if (!bounds || summary.hidden) {
 			summary.removeAttribute("data-anchored");
