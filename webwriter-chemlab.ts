@@ -661,6 +661,7 @@ export class ChemLab extends LitElementWw {
 	@state() private accessor chemicalCatalogOpened = false;
 	@state() private accessor chemicalQuery = "";
 	@state() private accessor activeChemicalConcentrations: Record<string, number> = {};
+	@state() private accessor openConcentrationMenu: string | undefined;
 	/** the chemical category currently shown in the catalog */
 	@state() private accessor chemicalGroup = "Salze";
 	private stopDose?: (save?: boolean) => void;
@@ -4267,7 +4268,10 @@ export class ChemLab extends LitElementWw {
 	private onTeacherDrawerToggle(event: Event, open: boolean): void {
 		if (event.target !== event.currentTarget || this.teacherDrawerOpen === open) return;
 		this.teacherDrawerChoice = this.teacherDrawerOpen = open;
-		if (!open) this.permissionTooltip = undefined;
+		if (!open) {
+			this.permissionTooltip = undefined;
+			this.openConcentrationMenu = undefined;
+		}
 	}
 
 	private renderTeacherDrawer() {
@@ -4411,21 +4415,43 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderPaletteCard(name: string, variant: ReturnType<typeof this.palettePermissionVariant>,
-		badge: unknown, body: unknown, chemical = false, nameControl: unknown = nothing) {
+		badge: unknown, body: unknown, chemical = false, permissions?: { open: boolean; label: string; toggle: () => void; options: unknown }) {
 		return html`
 			<div class="palette-card${chemical ? " palette-card-chemical" : ""}" role="group" aria-label=${name}>
 				<div class="palette-card-header">
 					<div class="palette-card-name">
-						<sl-tag size="small" variant=${this.canAuthor ? variant : "neutral"} title=${name}>${name}${nameControl !== nothing ? html`
-							<svg class="palette-card-menu-indicator" width="10" height="10" viewBox="0 0 12 12"
-								fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
-								<path d="m2.5 4.5 3.5 3 3.5-3"/>
-							</svg>` : nothing}</sl-tag>
-						${nameControl}
+						${permissions ? html`
+							<button type="button" class="palette-card-menu-trigger" contenteditable="false"
+								aria-label=${permissions.label} aria-expanded=${permissions.open} @click=${permissions.toggle}
+								@keydown=${(event: KeyboardEvent) => {
+									if (event.key !== "Escape" || !permissions.open) return;
+									event.stopPropagation();
+									permissions.toggle();
+								}}>
+								<sl-tag size="small" variant=${variant} title=${name}>${name}<svg class="palette-card-menu-indicator"
+									width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+									<path d="m2.5 4.5 3.5 3 3.5-3"/>
+								</svg></sl-tag>
+							</button>` : html`<sl-tag size="small" variant=${this.canAuthor ? variant : "neutral"} title=${name}>${name}</sl-tag>`}
 					</div>
 					${this.canAuthor ? badge : nothing}
 				</div>
-				${body}
+				${permissions ? html`
+					<div class="chemical-card-body">
+						<div class="chemical-card-preview" ?inert=${permissions.open} ?data-menu-open=${permissions.open}>${body}</div>
+						${permissions.open ? html`
+							<div class="chemical-concentration-permissions palette-variant" role="group"
+								aria-label=${permissions.label} tabindex="0" contenteditable="false"
+								@keydown=${(event: KeyboardEvent) => {
+									if (event.key !== "Escape") return;
+									event.stopPropagation();
+									permissions.toggle();
+									(event.currentTarget as HTMLElement).closest(".palette-card")
+										?.querySelector<HTMLButtonElement>(".palette-card-menu-trigger")?.focus();
+								}}>
+								${permissions.options}
+							</div>` : nothing}
+					</div>` : body}
 			</div>`;
 	}
 
@@ -4518,20 +4544,35 @@ export class ChemLab extends LitElementWw {
 		const groupChoices = customItems.length ? [...groups, { id: "custom", category: "Eigene Stoffe", label: customLabel, items: customItems }] : groups;
 		const activeGroup = groupChoices.find((group) => group.id === this.chemicalGroup);
 		const allLabel = this.message("Alle Stoffe");
-		const visibleItems = new Map<string, (typeof groupChoices)[number]["items"][number]>();
-		for (const group of activeGroup ? [activeGroup] : groupChoices) {
+		type Item = (typeof groupChoices)[number]["items"][number];
+		const seen = new Set<string>();
+		const sections = (activeGroup ? [activeGroup] : groupChoices).flatMap((group) => {
+			const solutions: Item[] = [];
+			const other: Item[] = [];
 			for (const item of group.items) {
 				const label = "label" in item ? item.label : this.message(item.name);
-				if (!matches(group.category, group.label, item.name, label, item.formula)) continue;
-				visibleItems.set(item.name, item);
+				if (seen.has(item.name) || !matches(group.category, group.label, item.name, label, item.formula)) continue;
+				seen.add(item.name);
+				const isSolution = (item.recipe as ChemicalRecipe).aqueousMolar || chemicalConcentration(item) ||
+					(item.name.startsWith("mix:") && item.recipe.phase === "liquid");
+				(isSolution ? solutions : other).push(item);
 			}
-		}
-		const items = [...visibleItems.values()];
+			const subgroup = (id: string, label: string, items: Item[]) => ({ id, label, items });
+			const subgroups = [
+				subgroup("other", solutions.length ? this.message("Weitere Stoffe") : "", other),
+				subgroup("solutions", this.message("Lösungen"), solutions),
+			].filter(({ items }) => items.length);
+			return subgroups.length ? [{ ...group, subgroups }] : [];
+		});
+		const items = sections.flatMap(({ subgroups }) => subgroups.flatMap(({ items }) => items));
 		return html`
 			<div class="chemical-filters">
 				<sl-select class="chemical-group-select" size="small" hoist placement="top" contenteditable="false"
 					label=${this.message("Stoffklasse")} .value=${activeGroup?.id ?? "all"}
-					@sl-change=${(event: Event) => { this.chemicalGroup = String((event.currentTarget as SlSelect).value); }}>
+					@sl-change=${(event: Event) => {
+						this.chemicalGroup = String((event.currentTarget as SlSelect).value);
+						this.openConcentrationMenu = undefined;
+					}}>
 					<sl-option value="all">${allLabel}</sl-option>
 					${groupChoices.map((group) => html`<sl-option value=${group.id}>${group.label}</sl-option>`)}
 				</sl-select>
@@ -4544,8 +4585,20 @@ export class ChemLab extends LitElementWw {
 					<div class="chemical-filter-badge">${this.renderChemicalPermissionBadge(activeGroup?.label ?? allLabel, items)}</div>` : nothing}
 			</div>
 			${items.length ? keyed(activeGroup?.id ?? "all", html`
-				<div class="palette-strip">
-					${repeat(items, (item) => item.name, (item) => this.renderChemicalCard(item))}
+				<div class="palette-strip chemical-group-strip">
+					${repeat(sections, (section) => section.id, (section) => html`
+						<section class="chemical-palette-group" aria-label=${section.label}>
+							${activeGroup ? nothing : html`<sl-tag size="small">${section.label}</sl-tag>`}
+							<div class="chemical-palette-subgroups">
+								${repeat(section.subgroups, (subgroup) => subgroup.id, (subgroup) => html`
+									<div class="chemical-palette-subgroup" role="group" aria-label=${subgroup.label || section.label}>
+										${subgroup.label ? html`<span class="chemical-subgroup-label">${subgroup.label}</span>` : nothing}
+										<div class="chemical-palette-cards">
+											${repeat(subgroup.items, (item) => item.name, (item) => this.renderChemicalCard(item))}
+										</div>
+									</div>`)}
+							</div>
+						</section>`)}
 				</div>`) : html`<p role="status">${this.message("Keine Chemikalien gefunden.")}</p>`}
 		`;
 	}
@@ -4569,20 +4622,20 @@ export class ChemLab extends LitElementWw {
 		const variant = this.palettePermissionVariant(allowedCount, concentration ? values.length : 1);
 		const badge = this.canAuthor ? this.renderChemicalPermissionBadge(name, [item]) : nothing;
 		const concentrationLabel = (value: number) => `${this.formatAmount(value, 8)} mol/L`;
-		const nameControl = this.canAuthor && concentration ? html`
-			<sl-select class="chemical-concentration-permissions" size="small" multiple
-				hoist placement="top" contenteditable="false"
-				label=${`${name} · ${this.message("Freigegebene Konzentrationen")}`} .value=${allowed.map(String)}
-				@sl-change=${(event: Event) => {
-					const selected = (event.currentTarget as SlSelect).value;
-					if (Array.isArray(selected)) {
-						const selectedValues = new Set(selected);
-						this.setAllowedConcentrations(item.name, values.filter((value) => selectedValues.has(String(value))));
-					}
-				}}>
-				${repeat(values, (value) => value, (value) => html`
-					<sl-option value=${String(value)}>${concentrationLabel(value)}</sl-option>`)}
-			</sl-select>` : nothing;
+		const permissionsOpen = this.openConcentrationMenu === item.name;
+		const permissions = this.canAuthor && concentration ? {
+			open: permissionsOpen,
+			label: `${name} · ${this.message("Freigegebene Konzentrationen")}`,
+			toggle: () => { this.openConcentrationMenu = permissionsOpen ? undefined : item.name; },
+			options: permissionsOpen ? repeat(values, (value) => value, (value) => html`
+				<sl-checkbox size="small" .checked=${live(allowed.includes(value))}
+					@sl-change=${(event: Event) => {
+						const checked = (event.currentTarget as SlCheckbox).checked;
+						this.setAllowedConcentrations(item.name, checked ? [...allowed, value] : allowed.filter((entry) => entry !== value));
+					}}>
+					${concentrationLabel(value)}
+				</sl-checkbox>`) : nothing,
+		} : undefined;
 		const choose = (value: number) => {
 			if (value === active || !values.includes(value)) return;
 			this.activeChemicalConcentrations = { ...this.activeChemicalConcentrations, [item.name]: value };
@@ -4612,7 +4665,7 @@ export class ChemLab extends LitElementWw {
 				${preview}
 				${this.canAuthor ? this.renderChemicalPermission(item.name, label) : nothing}
 			</div>`;
-		return this.renderPaletteCard(name, variant, badge, body, true, nameControl);
+		return this.renderPaletteCard(name, variant, badge, body, true, permissions);
 	}
 
 	private renderChemicalPermission(name: string, label: string) {

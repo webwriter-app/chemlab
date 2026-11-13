@@ -1656,39 +1656,74 @@ export const style = css`
 	.chemical-solution .chemical-preview {
 		block-size: 42px;
 	}
+	.palette-card-menu-trigger {
+		display: block;
+		max-inline-size: 100%;
+		padding: 0;
+		border: 0;
+		border-radius: var(--sl-border-radius-medium);
+		background: transparent;
+		color: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+	.palette-card-menu-trigger > sl-tag {
+		max-inline-size: 100%;
+		pointer-events: none;
+	}
+	.palette-card-menu-trigger > sl-tag::part(base) {
+		block-size: auto;
+		min-block-size: 1.5em;
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+	.palette-card-menu-trigger[aria-expanded="true"] svg {
+		transform: rotate(180deg);
+	}
+	.chemical-card-body {
+		position: relative;
+		min-inline-size: 0;
+	}
+	.chemical-card-preview[data-menu-open] {
+		visibility: hidden;
+	}
 	.chemical-concentration-permissions {
 		position: absolute;
 		inset: 0;
-		--sl-input-height-small: 0px;
-	}
-	.chemical-concentration-permissions::part(form-control),
-	.chemical-concentration-permissions::part(form-control-input) {
-		block-size: 100%;
-	}
-	.chemical-concentration-permissions::part(form-control-input) {
-		display: flex;
-	}
-	.chemical-concentration-permissions::part(combobox) {
 		box-sizing: border-box;
-		block-size: 100%;
-		min-block-size: 0;
-		padding: 0;
-		opacity: 0;
+		padding: 3px 5px;
+		overflow-y: auto;
+		overscroll-behavior-y: contain;
+		scrollbar-width: thin;
 	}
-	.chemical-concentration-permissions::part(tags) {
-		display: none;
+	.chemical-concentration-permissions > sl-checkbox {
+		display: block;
+		padding-block: 2px;
 	}
-	.chemical-concentration-permissions::part(form-control-label) {
-		position: absolute;
-		inline-size: 1px;
-		block-size: 1px;
-		overflow: hidden;
-		clip-path: inset(50%);
+	.chemical-palette-group,
+	.chemical-palette-subgroup {
+		display: grid;
+		gap: 4px;
+		align-content: start;
+		justify-items: start;
 	}
-	/* Leave the popup visible; only the combobox over the name is transparent. */
-	.palette-card-name:focus-within > sl-tag::part(base),
-	.palette-card-name:has(.chemical-concentration-permissions:hover) > sl-tag::part(base) {
-		outline: 1px solid currentColor;
+	.chemical-palette-subgroups,
+	.chemical-palette-cards {
+		display: flex;
+		gap: 6px;
+	}
+	.chemical-group-strip {
+		gap: 12px;
+	}
+	.chemical-palette-subgroup + .chemical-palette-subgroup,
+	.chemical-palette-group + .chemical-palette-group {
+		border-inline-start: 1px solid var(--sl-color-neutral-200);
+		padding-inline-start: 8px;
+	}
+	.chemical-subgroup-label {
+		font-size: var(--sl-font-size-x-small);
+		color: var(--sl-color-neutral-600);
+		padding-inline: 5px;
 	}
 	.chemical-dose-carousel {
 		display: flex;
