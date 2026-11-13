@@ -1,5 +1,6 @@
 import type { Molecule } from "./Molecule";
 import type { Mixture } from "./Mixture";
+import { saltSolubility } from "./saltSolubility";
 
 /**
  * Densities in g/ml near 20 °C of water-immiscible organic liquids, keyed by
@@ -59,6 +60,7 @@ export function splitLiquidPhases(mixture: Mixture): LiquidPhase[] {
 	let nonpolarVolume = 0;
 	let nonpolarMass = 0;
 	let polarMass = 0;
+	let settledVolume = 0;
 	for (const molecule of mixture._activeMolecules) {
 		const mass = mixture._molProperties[molecule._id + "m"];
 		if (!(mass > 0)) continue;
@@ -66,18 +68,29 @@ export function splitLiquidPhases(mixture: Mixture): LiquidPhase[] {
 		if (density > 0) {
 			nonpolarMass += mass;
 			nonpolarVolume += mass / density / 1000;
-		} else if (!molecule.solidSaltFormula) polarMass += mass;
+		} else if (molecule.solidSaltFormula) {
+			// settled solid: rendered as the sediment bed, not part of a band
+			settledVolume += mass / (saltSolubility[molecule.solidSaltFormula]?.solidDensity ?? 2.2) / 1000;
+		} else polarMass += mass;
 	}
 	if (!(nonpolarVolume > 1e-12)) return [];
-	// The polar phase (water with everything dissolved in it) keeps a nominal
-	// 1 g/ml: the bulk volume model is too coarse for a phase band, while
-	// every water-immiscible catalog liquid is lighter than that anyway.
-	const polar: LiquidPhase = { volume: polarMass / 1000, density: 1, nonpolar: false };
+	// Volumes stay consistent with the mixture's volume model: the polar band
+	// is the aqueous solution (water plus everything dissolved in it), the
+	// nonpolar band covers the dosed organic liquids; settled solids surface
+	// through addedVolume and contentVolume.
+	const polarVolume = Math.max(0, mixture._solutionVolume) +
+		Math.max(0, mixture.addedVolume - nonpolarVolume);
 	const nonpolar: LiquidPhase = {
 		volume: nonpolarVolume,
 		density: nonpolarMass / (nonpolarVolume * 1000),
 		nonpolar: true,
 	};
-	const phases = polar.volume > 1e-9 ? [polar, nonpolar] : [nonpolar];
-	return phases.sort((left, right) => left.density - right.density);
+	if (!(polarMass > 0 && polarVolume > 1e-9)) return [nonpolar];
+	const polar: LiquidPhase = {
+		volume: polarVolume,
+		density: Math.min(1.35, Math.max(0.75,
+			polarMass / (Math.max(1e-9, polarVolume - settledVolume) * 1000))),
+		nonpolar: false,
+	};
+	return polar.density <= nonpolar.density ? [polar, nonpolar] : [nonpolar, polar];
 }

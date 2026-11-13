@@ -133,8 +133,23 @@ export abstract class Simulation {
 		return solid;
 	}
 
-	private static registerSolidSalt(mix: Mixture, molecule: Molecule, ions: [Molecule, Molecule]): boolean {
-		const pair = ions[0]._totalCharge > 0 ? ions : [ions[1], ions[0]] as const;
+	/**
+	 * Bulk volume in litres that one mole of a solid salt occupies. Used to
+	 * release the dosed bulk volume when a solid dissolves and to reclaim it
+	 * when ions precipitate, keeping {@link Mixture.addedVolume} consistent
+	 * with the dissolved and settled amounts.
+	 */
+	private static bulkLitresPerMol(
+		{ formula, cations, anions }: { formula: string; cations: number; anions: number },
+		cationIon: Molecule,
+		anionIon: Molecule
+	): number {
+		const molarMass = cationIon.getTotMolMass() * cations + anionIon.getTotMolMass() * anions;
+		const density = saltSolubility[formula]?.solidDensity ?? 2.2;
+		return molarMass / (density * 1000);
+	}
+
+	private static registerSolidSalt(mix: Mixture, molecule: Molecule, ions: [Molecule, Molecule]): boolean {		const pair = ions[0]._totalCharge > 0 ? ions : [ions[1], ions[0]] as const;
 		const salt = saltEquilibria.find(({ cation, anion, cations, anions }) =>
 			cations === 1 && anions === 1 && pair[0].smilesString === cation && pair[1].smilesString === anion);
 		if (!salt) return false;
@@ -189,6 +204,9 @@ export abstract class Simulation {
 					ions.set(anion, negativeIon);
 					mix.changeMolecule(solid._id, -amount);
 					if (!mix._molProperties[solid._id + "n"]) solids.delete(formula);
+					// the dissolved bulk no longer occupies its solid volume
+					mix.addedVolume = Math.max(0, mix.addedVolume -
+						this.bulkLitresPerMol({ formula, cations, anions }, positiveIon, negativeIon) * amount);
 				} else {
 					mix.changeMolecule(positive._id, amount * cations);
 					mix.changeMolecule(negative._id, amount * anions);
@@ -197,6 +215,8 @@ export abstract class Simulation {
 					const deposit = solid ?? this.makeSolidSalt(formula, [positive, negative], [cations, anions]);
 					mix.addMolecule(deposit, -amount);
 					solids.set(formula, deposit);
+					// newly settled solid takes up its bulk volume again
+					mix.addedVolume += this.bulkLitresPerMol({ formula, cations, anions }, positive, negative) * -amount;
 				}
 				changed = true;
 			}
@@ -480,6 +500,14 @@ export abstract class Simulation {
 		sMix.addMolecule(pMolecule1, amount);
 		sMix.addMolecule(pMolecule2, amount);
 		sMix.changeMolecule(cMolecule._id, -amount);
+		// release the bulk volume of the dissolved portion, keeping the dosed
+		// solid volume consistent with what actually stays solid
+		const cation = pMolecule1._totalCharge > 0 ? pMolecule1 : pMolecule2;
+		const anion = cation === pMolecule1 ? pMolecule2 : pMolecule1;
+		const entry = saltEquilibria.find(({ cation: c, anion: a }) =>
+			cation.smilesString === c && anion.smilesString === a);
+		if (entry) sMix.addedVolume = Math.max(0, sMix.addedVolume -
+			this.bulkLitresPerMol(entry, cation, anion) * amount);
 		return amount > 1e-5;
 	}
 
