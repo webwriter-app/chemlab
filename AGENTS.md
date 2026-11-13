@@ -34,3 +34,9 @@ Für die statische Prüfung im Repository-Stamm `npx tsc --noEmit` ausführen. B
 - Der Canvas unterstützt Maus, Touch und Stift. Ziehen behält den Griffpunkt bei. Das Pixi-Raster zeichnet den sichtbaren Ausschnitt. Geräte und Kabel liegen in Weltkoordinaten. Alt+Ziehen mit der Maus auf freier Fläche zieht einen Auswahlrahmen auf. Entf löscht die Einzel- oder Rahmenselektion. Ziehen auf freier Fläche, die mittlere Maustaste und die Zwei-Finger-Geste verschieben die Ansicht. Mausrad, Zwei-Finger-Geste und Zoomtasten ändern den Maßstab. Kabel werden als Bézierkurven gezeichnet.
 - Beide Rollen platzieren Geräte aus der unteren Palette. Der JSON-Datenblock speichert unter `invComponents` ausgeschlossene Gerätetypen und Größenvarianten. Ältere Einträge, die einen ganzen Typ ausschließen, gelten für alle Varianten dieses Typs.
 - Das Periodensystem verwendet feste, kompakte Grid-Spalten in seinem Split-Panel und umbrechende Filter. Das Auswahl-Popup behandelt Elektroden ohne Material. Fehler in einem Ticker-Callback können die gesamte Canvas-Schleife unterbrechen.
+
+## Geplante Darstellung von Feststoffen und Flüssigkeiten
+
+- Zuerst Salze und Niederschläge animieren. Bei der Zugabe fallen Körner ins Gefäß. Bei einer Ausfällung entstehen feine Partikel in der Flüssigkeit, sinken ab und bilden einen Bodensatz. Löst Chemlib beim Verdünnen einen Teil des Feststoffs wieder auf, nimmt der sichtbare Bodensatz entsprechend ab.
+- Chemlib berechnet die Feststoffmenge. Pixi visualisiert sie mit einer begrenzten Zahl von Partikeln. Die Animation nutzt den vorhandenen Ticker, solange sich Partikel bewegen. Abgesetztes Material bleibt als statische Grafik sichtbar.
+- Für Flüssigkeiten die vorhandene Füllfläche weiterverwenden. Beim Gießen einen Strahl und eine kurz schwingende Oberfläche ergänzen. Der aus dem Volumen berechnete Füllstand bleibt an der Geräteskala ablesbar.
