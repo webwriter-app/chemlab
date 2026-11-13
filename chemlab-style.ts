@@ -1297,43 +1297,30 @@ export const style = css`
 		margin-block: 2px;
 	}
 	.vessel-carousel-card {
-		box-sizing: border-box;
 		display: flex;
+		flex-direction: row;
 		justify-content: space-between;
-		align-items: center;
-		inline-size: 150px;
-		max-inline-size: 100%;
-		block-size: 80px;
 		overflow: hidden;
+		width: 150px;
+		height: 80px;
 		border: 2px solid #0284c7;
 		border-radius: 5px;
 	}
 	.vessel-carousel-thumbnail {
-		display: grid;
-		place-items: center;
-		flex: 1 1 0;
-		min-inline-size: 0;
-		font-size: var(--sl-font-size-small);
+		display: contents;
 	}
 	.vessel-carousel-thumbnail > :is(svg, img) {
-		width: 100%;
-		height: 76px;
-		object-fit: contain;
+		width: 190px;
+		height: 80px;
 	}
 	.vessel-carousel-quantities {
-		background: #fdfdfd;
+		display: block;
+		background-color: #fdfdfd;
 		border-radius: 5px;
-		font-size: var(--sl-font-size-x-small);
-		white-space: nowrap;
-	}
-	.vessel-carousel-quantities > h5,
-	.vessel-carousel-quantities > p {
-		margin: 0 2px 0 0;
-	}
-	.vessel-carousel-quantities > h5 {
-		max-inline-size: 80px;
 		overflow: hidden;
-		text-overflow: ellipsis;
+	}
+	.vessel-carousel-quantities > p {
+		margin-bottom: 0;
 	}
 	.selection-info:not([data-anchored]) {
 		visibility: hidden;

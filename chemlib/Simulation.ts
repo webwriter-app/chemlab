@@ -18,6 +18,77 @@ export interface AcidEquilibriumSpecies {
 	formula: string;
 	amount: number;
 	concentration: number;
+	/** A representative structure for this protonation state, built only when drawn. */
+	structure: () => Molecule | undefined;
+}
+
+// Draw a representative structure for each macroscopic protonation state.
+const protonationStructures = new WeakMap<Molecule, Map<number, Molecule | undefined>>();
+function protonationStructure(source: Molecule, removed: number): Molecule | undefined {
+	if (!removed) return source;
+	let cache = protonationStructures.get(source);
+	if (!cache) protonationStructures.set(source, cache = new Map());
+	if (cache.has(removed)) return cache.get(removed);
+
+	const atoms = new Set(source._atoms);
+	const charges = new Map(source._atoms.map((atom) => [atom, atom.getIonicCharge()]));
+	const neighbors = (atom: typeof source._atoms[number]) => source._bonds.flatMap((bond) =>
+		bond._from === atom ? [{ atom: bond._to, order: bond._magnitude }] :
+		bond._to === atom ? [{ atom: bond._from, order: bond._magnitude }] : []);
+	for (let step = 0; step < Math.abs(removed); step++) {
+		if (removed > 0) {
+			const sites = [...atoms].filter((atom) => ["O", "S"].includes(atom.getSymbol())).flatMap((site) => {
+				const links = neighbors(site);
+				const hydrogen = links.find(({ atom }) => atom.getSymbol() === "H" && atoms.has(atom))?.atom;
+				if (!hydrogen) return [];
+				// Prefer carboxyl protons over alcohol protons (e.g. citric acid).
+				const carboxyl = links.some(({ atom }) => atom.getSymbol() === "C" &&
+					neighbors(atom).some(({ atom, order }) => atom.getSymbol() === "O" && order === 2));
+				return [{ site, hydrogen, carboxyl }];
+			}).sort((a, b) => Number(b.carboxyl) - Number(a.carboxyl));
+			if (!sites.length) { cache.set(removed, undefined); return; }
+			const { site, hydrogen } = sites[0];
+			atoms.delete(hydrogen);
+			charges.set(site, charges.get(site) - 1);
+		} else {
+			const site = [...atoms].find((atom) => ["O", "S"].includes(atom.getSymbol()) && charges.get(atom) < 0);
+			if (!site) { cache.set(removed, undefined); return; }
+			charges.set(site, charges.get(site) + 1);
+		}
+	}
+	const structure = StructureManager.newMolecule();
+	const copies = new Map([...atoms].map((atom) => [atom,
+		structure.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), charges.get(atom))]));
+	for (const bond of source._bonds) {
+		const from = copies.get(bond._from);
+		const to = copies.get(bond._to);
+		if (from && to) structure.addBond(from._id, to._id, bond._magnitude, bond._length, bond._type);
+	}
+	if (removed < 0) {
+		for (const [atom, copy] of copies) {
+			for (let count = atom.getIonicCharge(); count < charges.get(atom); count++) {
+				const hydrogen = structure.addAtom("hydrogen", "H");
+				structure.addBond(copy._id, hydrogen._id, 1, 100, "covalent");
+			}
+		}
+	}
+	cache.set(removed, structure);
+	return structure;
+}
+
+const waterIonStructures = new Map<number, Molecule>();
+function waterIonStructure(charge: number): Molecule {
+	let structure = waterIonStructures.get(charge);
+	if (!structure) {
+		structure = StructureManager.newMolecule();
+		const oxygen = structure.addAtom("oxygen", "O", charge);
+		for (let i = 0; i < 2 + charge; i++) {
+			const hydrogen = structure.addAtom("hydrogen", "H");
+			structure.addBond(oxygen._id, hydrogen._id, 1, 100, "covalent");
+		}
+		waterIonStructures.set(charge, structure);
+	}
+	return structure;
 }
 
 const subscript = (count: number) => count === 1 ? "" : String(count).replace(/\d/g, (digit) => "₀₁₂₃₄₅₆₇₈₉"[Number(digit)]);
@@ -572,13 +643,14 @@ export abstract class Simulation {
 					const count = symbol === "H" ? protonatedHydrogens - step : elements.get(symbol);
 					return count > 0 ? symbol + subscript(count) : "";
 				}).join("") + superscript(family.protonatedCharge - step);
-				species.push({ formula, concentration, amount: concentration * volume });
+				species.push({ formula, concentration, amount: concentration * volume,
+					structure: () => protonationStructure(family.representative, step - family.step) });
 			});
 		}
 		if (species.length) {
 			const OH = AcidBase.Kw / H;
-			species.push({ formula: "H₃O⁺", concentration: H, amount: H * volume },
-				{ formula: "OH⁻", concentration: OH, amount: OH * volume });
+			species.push({ formula: "H₃O⁺", concentration: H, amount: H * volume, structure: () => waterIonStructure(1) },
+				{ formula: "OH⁻", concentration: OH, amount: OH * volume, structure: () => waterIonStructure(-1) });
 		}
 		return { pH: Math.round(-Math.log10(H) * 1000) / 1000, species, analyticalMolecules };
 	}

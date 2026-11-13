@@ -2083,8 +2083,11 @@ export class ChemLab extends LitElementWw {
 			</sl-carousel-item>`;
 		render(html`
 			${repeat(equilibrium?.species ?? [], ({ formula }, index) => `${formula}:${index}`,
-				({ formula, amount, concentration }) => slide(html`<span class="vessel-carousel-thumbnail">${formula}</span>`,
-					formula, amount, html`<p>c: ${concentration.toExponential(2)} mol/L</p>`))}
+				({ formula, amount, concentration, structure }) => {
+					const molecule = structure();
+					return slide(molecule ? this.vesselThumbnail(molecule, formula) : html`<span>${formula}</span>`,
+						formula, amount, html`<p>c: ${concentration.toExponential(2)} mol/L</p>`);
+				})}
 			${repeat(molecules, (molecule) => molecule, (molecule) => {
 				const formula = molecule._kekule_obj.calcFormula().getDisplayText();
 				if (!molecule.name && !molecule.solidSaltFormula && !this.vesselNameRequests.has(molecule)) {

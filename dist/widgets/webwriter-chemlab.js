@@ -103781,43 +103781,30 @@ var style = i`
 		margin-block: 2px;
 	}
 	.vessel-carousel-card {
-		box-sizing: border-box;
 		display: flex;
+		flex-direction: row;
 		justify-content: space-between;
-		align-items: center;
-		inline-size: 150px;
-		max-inline-size: 100%;
-		block-size: 80px;
 		overflow: hidden;
+		width: 150px;
+		height: 80px;
 		border: 2px solid #0284c7;
 		border-radius: 5px;
 	}
 	.vessel-carousel-thumbnail {
-		display: grid;
-		place-items: center;
-		flex: 1 1 0;
-		min-inline-size: 0;
-		font-size: var(--sl-font-size-small);
+		display: contents;
 	}
 	.vessel-carousel-thumbnail > :is(svg, img) {
-		width: 100%;
-		height: 76px;
-		object-fit: contain;
+		width: 190px;
+		height: 80px;
 	}
 	.vessel-carousel-quantities {
-		background: #fdfdfd;
+		display: block;
+		background-color: #fdfdfd;
 		border-radius: 5px;
-		font-size: var(--sl-font-size-x-small);
-		white-space: nowrap;
-	}
-	.vessel-carousel-quantities > h5,
-	.vessel-carousel-quantities > p {
-		margin: 0 2px 0 0;
-	}
-	.vessel-carousel-quantities > h5 {
-		max-inline-size: 80px;
 		overflow: hidden;
-		text-overflow: ellipsis;
+	}
+	.vessel-carousel-quantities > p {
+		margin-bottom: 0;
 	}
 	.selection-info:not([data-anchored]) {
 		visibility: hidden;
@@ -148843,6 +148830,75 @@ var saltEquilibria = Object.entries(saltSolubility).map(([formula, data2]) => {
   const product = data2.ksp ?? (cations * data2.saturation) ** cations * (anions * data2.saturation) ** anions;
   return { formula, cation, anion, cations, anions, product };
 }).sort((a7, b5) => a7.product - b5.product);
+var protonationStructures = /* @__PURE__ */ new WeakMap();
+function protonationStructure(source3, removed) {
+  if (!removed) return source3;
+  let cache = protonationStructures.get(source3);
+  if (!cache) protonationStructures.set(source3, cache = /* @__PURE__ */ new Map());
+  if (cache.has(removed)) return cache.get(removed);
+  const atoms = new Set(source3._atoms);
+  const charges = new Map(source3._atoms.map((atom) => [atom, atom.getIonicCharge()]));
+  const neighbors = (atom) => source3._bonds.flatMap((bond) => bond._from === atom ? [{ atom: bond._to, order: bond._magnitude }] : bond._to === atom ? [{ atom: bond._from, order: bond._magnitude }] : []);
+  for (let step = 0; step < Math.abs(removed); step++) {
+    if (removed > 0) {
+      const sites = [...atoms].filter((atom) => ["O", "S"].includes(atom.getSymbol())).flatMap((site2) => {
+        const links = neighbors(site2);
+        const hydrogen2 = links.find(({ atom }) => atom.getSymbol() === "H" && atoms.has(atom))?.atom;
+        if (!hydrogen2) return [];
+        const carboxyl = links.some(({ atom }) => atom.getSymbol() === "C" && neighbors(atom).some(({ atom: atom2, order }) => atom2.getSymbol() === "O" && order === 2));
+        return [{ site: site2, hydrogen: hydrogen2, carboxyl }];
+      }).sort((a7, b5) => Number(b5.carboxyl) - Number(a7.carboxyl));
+      if (!sites.length) {
+        cache.set(removed, void 0);
+        return;
+      }
+      const { site, hydrogen } = sites[0];
+      atoms.delete(hydrogen);
+      charges.set(site, charges.get(site) - 1);
+    } else {
+      const site = [...atoms].find((atom) => ["O", "S"].includes(atom.getSymbol()) && charges.get(atom) < 0);
+      if (!site) {
+        cache.set(removed, void 0);
+        return;
+      }
+      charges.set(site, charges.get(site) + 1);
+    }
+  }
+  const structure = StructureManager.newMolecule();
+  const copies = new Map([...atoms].map((atom) => [
+    atom,
+    structure.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), charges.get(atom))
+  ]));
+  for (const bond of source3._bonds) {
+    const from2 = copies.get(bond._from);
+    const to2 = copies.get(bond._to);
+    if (from2 && to2) structure.addBond(from2._id, to2._id, bond._magnitude, bond._length, bond._type);
+  }
+  if (removed < 0) {
+    for (const [atom, copy] of copies) {
+      for (let count2 = atom.getIonicCharge(); count2 < charges.get(atom); count2++) {
+        const hydrogen = structure.addAtom("hydrogen", "H");
+        structure.addBond(copy._id, hydrogen._id, 1, 100, "covalent");
+      }
+    }
+  }
+  cache.set(removed, structure);
+  return structure;
+}
+var waterIonStructures = /* @__PURE__ */ new Map();
+function waterIonStructure(charge) {
+  let structure = waterIonStructures.get(charge);
+  if (!structure) {
+    structure = StructureManager.newMolecule();
+    const oxygen = structure.addAtom("oxygen", "O", charge);
+    for (let i12 = 0; i12 < 2 + charge; i12++) {
+      const hydrogen = structure.addAtom("hydrogen", "H");
+      structure.addBond(oxygen._id, hydrogen._id, 1, 100, "covalent");
+    }
+    waterIonStructures.set(charge, structure);
+  }
+  return structure;
+}
 var subscript = (count2) => count2 === 1 ? "" : String(count2).replace(/\d/g, (digit) => "\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089"[Number(digit)]);
 var superscript = (charge) => charge === 0 ? "" : (Math.abs(charge) === 1 ? "" : String(Math.abs(charge)).replace(/\d/g, (digit) => "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078\u2079"[Number(digit)])) + (charge < 0 ? "\u207B" : "\u207A");
 var Simulation = class {
@@ -149281,14 +149337,19 @@ var Simulation = class {
           const count2 = symbol === "H" ? protonatedHydrogens - step : elements2.get(symbol);
           return count2 > 0 ? symbol + subscript(count2) : "";
         }).join("") + superscript(family.protonatedCharge - step);
-        species.push({ formula, concentration, amount: concentration * volume });
+        species.push({
+          formula,
+          concentration,
+          amount: concentration * volume,
+          structure: () => protonationStructure(family.representative, step - family.step)
+        });
       });
     }
     if (species.length) {
       const OH = AcidBase.Kw / H3;
       species.push(
-        { formula: "H\u2083O\u207A", concentration: H3, amount: H3 * volume },
-        { formula: "OH\u207B", concentration: OH, amount: OH * volume }
+        { formula: "H\u2083O\u207A", concentration: H3, amount: H3 * volume, structure: () => waterIonStructure(1) },
+        { formula: "OH\u207B", concentration: OH, amount: OH * volume, structure: () => waterIonStructure(-1) }
       );
     }
     return { pH: Math.round(-Math.log10(H3) * 1e3) / 1e3, species, analyticalMolecules };
@@ -184772,12 +184833,15 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 			${c4(
       equilibrium?.species ?? [],
       ({ formula }, index2) => `${formula}:${index2}`,
-      ({ formula, amount, concentration }) => slide(
-        x`<span class="vessel-carousel-thumbnail">${formula}</span>`,
-        formula,
-        amount,
-        x`<p>c: ${concentration.toExponential(2)} mol/L</p>`
-      )
+      ({ formula, amount, concentration, structure }) => {
+        const molecule2 = structure();
+        return slide(
+          molecule2 ? this.vesselThumbnail(molecule2, formula) : x`<span>${formula}</span>`,
+          formula,
+          amount,
+          x`<p>c: ${concentration.toExponential(2)} mol/L</p>`
+        );
+      }
     )}
 			${c4(molecules, (molecule2) => molecule2, (molecule2) => {
       const formula = molecule2._kekule_obj.calcFormula().getDisplayText();
