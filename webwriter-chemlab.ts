@@ -4510,7 +4510,7 @@ export class ChemLab extends LitElementWw {
 			const label = this.message(category);
 			const visible = matches(category, label) ? items : items.filter((item) =>
 				matches(item.name, this.message(item.name), item.formula, item.category, this.message(item.category)));
-			const allowed = this.canAuthor ? visible : visible.filter((item) => this.isChemicalAllowed(item.name));
+			const allowed = visible.filter((item) => this.isChemicalAllowed(item.name));
 			return visible.length ? [{ category, label, visible, allowed }] : [];
 		});
 		const renderedGroups = repeat(groups, ({ category }) => category, ({ category, label, visible, allowed }) => {
