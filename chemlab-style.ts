@@ -1625,23 +1625,25 @@ export const style = css`
 		display: grid;
 		align-content: start;
 	}
-	.chemical-group-tabs::part(tabs) {
+	.chemical-group-tabs {
+		display: flex;
+		flex-wrap: wrap;
 		gap: 4px;
+		margin-block-end: 8px;
 	}
-	.chemical-group-tabs > sl-tab::part(base) {
-		padding: 4px 10px;
+	.chemical-group-tab {
+		padding: 3px 10px;
 		border: 1px solid var(--sl-color-neutral-300);
 		border-radius: var(--sl-border-radius-medium);
 		background: var(--sl-color-neutral-0);
 		color: var(--sl-color-neutral-700);
+		font-size: var(--sl-font-size-small);
+		cursor: pointer;
 	}
-	.chemical-group-tabs > sl-tab[active]::part(base) {
+	.chemical-group-tab[aria-selected="true"] {
 		border-color: var(--sl-color-primary-300);
 		background: var(--sl-color-primary-100);
 		color: var(--sl-color-primary-800);
-	}
-	.chemical-group-tabs::part(base) {
-		--padding: 0;
 	}
 	.chemical-card {
 		position: relative;

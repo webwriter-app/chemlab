@@ -651,6 +651,8 @@ export class ChemLab extends LitElementWw {
 	@state() private accessor chemicalQuery = "";
 	/** how many chemical tiles fit side by side, derived from the available width */
 	@state() private accessor chemicalSlidesPerPage = 4;
+	/** the chemical category currently shown in the catalog */
+	@state() private accessor chemicalGroup = "Salze";
 	private stopDose?: (save?: boolean) => void;
 	private paletteDrag?: AbortController;
 	private suppressPaletteClick = false;
@@ -4420,42 +4422,6 @@ export class ChemLab extends LitElementWw {
 			const allowed = visible.filter((item) => this.isChemicalAllowed(item.name));
 			return visible.length ? [{ category, label, visible, allowed }] : [];
 		});
-		const groupSlides = groups.flatMap(({ category, label, visible, allowed }) => {
-			const items = chemicalCatalogGroups.find((group) => group.category === category)!.items;
-			const toggleAll = () => this.toggleAllChemicals(items.map(({ name }) => ({ name })));
-			const count = this.message("{allowed} von {total} Chemikalien freigegeben",
-				{ allowed: allowed.length, total: visible.length });
-			const toggleLabel = this.message(allowed.length === visible.length ? "Alle Chemikalien sperren" : "Alle Chemikalien freigeben");
-			const slides = visible.flatMap((item) => this.renderChemicalSlides(item, item.concentrationLimit && {
-				initial: Math.min(1, item.concentrationLimit), max: item.concentrationLimit,
-				saturation: item.category === "Salze",
-			}));
-			if (!(this.canAuthor || slides.length)) return [];
-			return [html`
-				<sl-tab slot="nav" panel=${`chemical-${category}`}>${label}</sl-tab>
-				<sl-tab-panel name=${`chemical-${category}`}>
-					<div class="chemical-carousel-section">
-						${this.canAuthor ? html`
-							<div class="chemical-section-header">
-								<button type="button" class="component-permission-toggle" contenteditable="false"
-									title=${allowed.length
-										? `${this.message("Freigaben")}: ${allowed.map(({ name }) => this.message(name)).join(", ")}`
-										: this.message("Keine Chemikalien freigegeben.")}
-									aria-label=${`${label} · ${count} · ${toggleLabel}`}
-									@dblclick=${toggleAll}
-									@click=${(event: MouseEvent) => { if (event.detail === 0) toggleAll(); }}>
-									<sl-badge pill variant=${allowed.length === 0 ? "danger" : allowed.length < visible.length ? "primary" : "success"}>
-										${allowed.length} / ${visible.length}
-									</sl-badge>
-								</button>
-							</div>` : nothing}
-						<sl-carousel class="chemical-carousel" navigation mouse-dragging
-							slides-per-page=${this.chemicalSlidesPerPage} slides-per-move="1">
-							${slides}
-						</sl-carousel>
-					</div>
-				</sl-tab-panel>`];
-		});
 		const customLabel = this.message("Eigene Stoffe");
 		const customMolecules = molecules.filter((molecule) =>
 			matches(molecule.formula, customLabel) && (this.canAuthor || this.isChemicalAllowed("mol:" + molecule.formula)));
@@ -4484,28 +4450,66 @@ export class ChemLab extends LitElementWw {
 				}, false, true);
 			}),
 		];
-		const outerSlides = [
-			...groupSlides,
-			...(customSlides.length ? [html`
-				<sl-tab slot="nav" panel="chemicalCustom">${customLabel}</sl-tab>
-				<sl-tab-panel name="chemicalCustom">
-					<div class="chemical-carousel-section">
-						<sl-carousel class="chemical-carousel" navigation mouse-dragging
-							slides-per-page=${this.chemicalSlidesPerPage} slides-per-move="1">
-							${customSlides}
-						</sl-carousel>
-					</div>
-				</sl-tab-panel>`] : []),
-		];
+		interface ChemicalGroupChoice {
+			id: string; label: string; slides: unknown[];
+			visible: number; allowed: number; toggleAll?: () => void;
+			count?: string; toggleLabel?: string;
+		}
+		const groupChoices: ChemicalGroupChoice[] = groups.flatMap(({ category, label, visible, allowed }) => {
+			const items = chemicalCatalogGroups.find((group) => group.category === category)!.items;
+			const slides = visible.flatMap((item) => this.renderChemicalSlides(item, item.concentrationLimit && {
+				initial: Math.min(1, item.concentrationLimit), max: item.concentrationLimit,
+				saturation: item.category === "Salze",
+			}));
+			if (!(this.canAuthor || slides.length)) return [];
+			return [{
+				id: category, label, slides, visible: visible.length, allowed: allowed.length,
+				toggleAll: () => this.toggleAllChemicals(items.map(({ name }) => ({ name }))),
+				count: this.message("{allowed} von {total} Chemikalien freigegeben",
+					{ allowed: allowed.length, total: visible.length }),
+				toggleLabel: this.message(allowed.length === visible.length ? "Alle Chemikalien sperren" : "Alle Chemikalien freigeben"),
+			}];
+		});
+		if (customSlides.length) {
+			groupChoices.push({ id: "custom", label: customLabel, slides: customSlides, visible: 0, allowed: 0 });
+		}
+		const activeGroup = groupChoices.find((group) => group.id === this.chemicalGroup) ?? groupChoices[0];
 		return html`
 			<sl-input class="chemical-search" size="small" type="search" clearable contenteditable="false"
 				label=${this.message("Chemikalien suchen")} .value=${this.chemicalQuery}
 				@sl-input=${(event: Event) => { this.chemicalQuery = (event.currentTarget as SlInput).value; }}>
 			</sl-input>
-			${outerSlides.length ? html`
-				<sl-tab-group id="chemicalGroupTabs" class="chemical-group-tabs">
-					${outerSlides}
-				</sl-tab-group>` : html`<p>${this.message("Keine Chemikalien gefunden.")}</p>`}
+			${groupChoices.length ? html`
+				<div class="chemical-group-tabs" role="tablist" aria-label=${this.message("Chemikalien")}>
+					${groupChoices.map((group) => html`
+						<button type="button" role="tab" contenteditable="false" class="chemical-group-tab"
+							aria-selected=${activeGroup === group}
+							@click=${() => { this.chemicalGroup = group.id; }}>
+							${group.label}
+						</button>`)}
+				</div>` : html`<p>${this.message("Keine Chemikalien gefunden.")}</p>`}
+			${activeGroup ? html`
+				<div class="chemical-carousel-section">
+					${activeGroup.toggleAll ? html`
+						<div class="chemical-section-header">
+							<button type="button" class="component-permission-toggle" contenteditable="false"
+								title=${activeGroup.allowed
+									? `${this.message("Freigaben")}: ${groups.find(({ category }) => category === activeGroup.id)!.allowed
+										.map(({ name }) => this.message(name)).join(", ")}`
+									: this.message("Keine Chemikalien freigegeben.")}
+								aria-label=${`${activeGroup.label} · ${activeGroup.count} · ${activeGroup.toggleLabel}`}
+								@dblclick=${activeGroup.toggleAll}
+								@click=${(event: MouseEvent) => { if (event.detail === 0) activeGroup.toggleAll!(); }}>
+								<sl-badge pill variant=${activeGroup.allowed === 0 ? "danger" : activeGroup.allowed < activeGroup.visible ? "primary" : "success"}>
+									${activeGroup.allowed} / ${activeGroup.visible}
+								</sl-badge>
+							</button>
+						</div>` : nothing}
+					<sl-carousel class="chemical-carousel" navigation mouse-dragging
+						slides-per-page=${this.chemicalSlidesPerPage} slides-per-move="1">
+						${activeGroup.slides}
+					</sl-carousel>
+				</div>` : nothing}
 		`;
 	}
 
