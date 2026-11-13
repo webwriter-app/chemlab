@@ -1277,6 +1277,20 @@ export const style = css`
 	#contextInfoBox p {
 		margin: 0.25em 0;
 	}
+	.vessel-equilibrium {
+		padding-block: 4px;
+	}
+	.vessel-species {
+		display: flex;
+		justify-content: space-between;
+		align-items: start;
+		gap: 8px;
+		padding: 4px 2px;
+		border-block-end: 1px solid var(--sl-color-neutral-200);
+	}
+	.vessel-species p {
+		margin: 0;
+	}
 	.selection-info:not([data-anchored]) {
 		visibility: hidden;
 	}

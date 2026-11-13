@@ -1,5 +1,5 @@
 import { drawerLabels, effectiveLanguage, localize } from "./localization/localization";
-import { html, LitElement, nothing, PropertyValueMap } from "lit";
+import { html, LitElement, nothing, PropertyValueMap, render } from "lit";
 import { keyed } from "lit/directives/keyed.js";
 import { repeat } from "lit/directives/repeat.js";
 import { live } from "lit/directives/live.js";
@@ -2026,6 +2026,14 @@ export class ChemLab extends LitElementWw {
 		return true;
 	}
 
+	private renderVesselSpecies(formula: string, amount: number, quantity: unknown, title = formula) {
+		return html`
+			<div class="vessel-species">
+				<sl-tag size="small" variant="neutral" title=${title}>${formula}</sl-tag>
+				<div><p>n: ${amount.toExponential(2)} mol</p><p>${quantity}</p></div>
+			</div>`;
+	}
+
 	/**
 	 * updates the information shown for the selected object
 	 *
@@ -2044,51 +2052,39 @@ export class ChemLab extends LitElementWw {
 			)
 		) {
 			this.contextMolInfo.style.display = "";
-			this.contextMolInfo.innerHTML = "";
 			this.contextMixInfo.innerHTML = "";
-			this.curr_obj._content._activeMolecules.forEach((mol) => {
-				let formula: string = mol._kekule_obj
-					.calcFormula()
-					.getDisplayText();
-				this.contextMolInfo.innerHTML += `
-                <div style="display:flex; align-items: flex-start; justify-content: space-between; padding-top: 5px; padding-bottom: 5px">
-                    <sl-tag id="contextTag" size="small" variant="neutral" title=${
-						mol.name
-					} style="margin-right: 10px; margin-left: 5px">${formula}</sl-tag>
-                    <div style="display:flex; flex-direction:column; border-radius: 2px; background-color: #fff; margin-right: 5px">
-                    <p>
-                    n: ${this.curr_obj._content._molProperties[
-						mol._id + "n"
-					].toExponential(2)} mol
-                    </p>
-                    <p>
-                    m: ${this.curr_obj._content._molProperties[
-						mol._id + "m"
-					].toExponential(2)} g
-                    </p>
-                    </div>
-                </div>
-                `;
-				this.contextMolInfo.innerHTML += `<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl-divider>`;
-			});
+			const mixture = this.curr_obj._content as chemlib.Mixture;
+			const equilibrium = mixture._isSolution ? chemlib.Simulation.getPolyproticEquilibrium(mixture) : undefined;
+			const species = equilibrium?.species ?? [];
+			const equilibriumRows = species.length ? html`
+				<div class="vessel-equilibrium">
+					<strong>${this.message("Spezies im Säure-Base-Gleichgewicht")}</strong>
+					${species.map(({ formula, amount, concentration }) => this.renderVesselSpecies(formula, amount,
+						html`c: ${concentration.toExponential(2)} mol/L`))}
+				</div>` : nothing;
+			render(html`
+				${equilibriumRows}
+				${mixture._activeMolecules.filter((molecule) => !equilibrium?.analyticalMolecules.has(molecule))
+					.map((molecule) => this.renderVesselSpecies(molecule._kekule_obj.calcFormula().getDisplayText(),
+						mixture._molProperties[molecule._id + "n"],
+						html`m: ${mixture._molProperties[molecule._id + "m"].toExponential(2)} g`, molecule.name))}
+			`, this.contextMolInfo);
+			render(equilibriumRows, this.shadowRoot.getElementById("vesselEquilibriumDetails"));
 			if (
 				this.curr_obj._type === chemlib.ComponentType.Burette ||
 				this.curr_obj._type === chemlib.ComponentType.Separatingfunnel
 			) {
 				this.openBtn.style.display = "";
 			}
-			const mixture = this.curr_obj._content as chemlib.Mixture;
 			const volume = mixture.contentVolume;
 			if (volume > 0) {
 				this.contextMixInfo.style.display = "";
-				const pH = mixture._isSolution ? chemlib.Simulation.getpH(mixture) : undefined;
-				this.contextMixInfo.innerHTML += `
-					<div style="display: flex; flex-direction: column">
-				<p>vol: ${(volume * 1000).toFixed(1)} mL</p>
+				const pH = equilibrium?.pH;
+				this.contextMixInfo.innerHTML = `
+					<div>
+						<p>vol: ${(volume * 1000).toFixed(1)} mL</p>
 						${pH === undefined ? "" : `<p>pH: ${pH}</p>`}
-						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-					</div>
-                `;
+					</div>`;
 				this.contextMixInfo.style.borderLeftColor = pH === undefined ? "" : this.pHColors[Math.round(pH)];
 			}
 		}
@@ -5137,6 +5133,7 @@ export class ChemLab extends LitElementWw {
 															id="mixCarousel"
 														>
 														</sl-carousel>
+													<div id="vesselEquilibriumDetails"></div>
 													</div>
 												</div>
 												<div

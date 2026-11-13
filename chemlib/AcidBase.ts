@@ -75,25 +75,19 @@ export abstract class AcidBase {
 	 * @returns {number} the signed charge concentration in mol/L
 	 */
 	public static systemCharge(system: AcidBaseSystem, H: number): number {
-		const Ka: number[] = system.pKa.map((p) => Math.pow(10, -p));
+		const fractions = AcidBase.speciesFractions(system, H);
+		return system.totalC * fractions.reduce((charge, fraction, step) =>
+			charge + fraction * (system.protonatedCharge - step), 0);
+	}
 
-		// unnormalised abundances of each protonation state (delta_0 = 1)
-		const delta: number[] = [1];
-		for (let k = 0; k < Ka.length; k++) {
-			delta.push((delta[k] * Ka[k]) / H);
+	/** Fractions from the fully protonated form through each deprotonation step. */
+	public static speciesFractions(system: AcidBaseSystem, H: number): number[] {
+		const weights = [1];
+		for (const pKa of system.pKa) {
+			weights.push(weights[weights.length - 1] * Math.pow(10, -pKa) / H);
 		}
-
-		let sum: number = 0;
-		for (const d of delta) {
-			sum += d;
-		}
-
-		let averageCharge: number = 0;
-		for (let k = 0; k < delta.length; k++) {
-			averageCharge += (delta[k] / sum) * (system.protonatedCharge - k);
-		}
-
-		return system.totalC * averageCharge;
+		const sum = weights.reduce((total, weight) => total + weight, 0);
+		return weights.map((weight) => weight / sum);
 	}
 
 	/**

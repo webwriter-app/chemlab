@@ -45,17 +45,14 @@ export abstract class StructureManager {
 		//         molecular base (e.g. NH3); pks then holds the pKa of its
 		//         conjugate acid (NH4+), and its protonated charge is the key
 		//         charge plus the number of protons it can accept.
-		//   conj: SMILES of conjugate species that may appear WITHOUT the parent
-		//         acid (e.g. carbonate from a dissolving carbonate salt). They
-		//         are folded into this family so their hydrolysis is modelled
-		//         instead of being counted as inert spectator ions. Only anions
-		//         whose exact SMILES already occur in the salt table are listed,
-		//         so the strings are guaranteed to match what Kekule emits.
+		//   conj: conjugate SMILES by deprotonation step; a step can have several
+		//         equivalent SMILES. These species can also enter from a salt.
+		//   alias: alternate SMILES for the same fully protonated acid.
 		acidbase: {
 			"Cl": { "pks": -6 },
 			"CC(O)=O": { "pks": 4.75 },
-			"OS(=O)(=O)O": { "pks": [-3, 1.99] },
-			"O=S(O)(O)=O": { "pks": [-3, 1.99] },
+			"OS(=O)(=O)O": { "alias": "O=S(O)(O)=O" },
+			"O=S(O)(O)=O": { "pks": [-3, 1.99], "conj": ["[O-]S(=O)(=O)O", "[O-]S(=O)(=O)[O-]"] },
 			"O=CO": { "pks": 3.77 },
 			"CCC(O)=O": { "pks": 4.87 },
 			"O=C(O)C(O)C": { "pks": 3.86 },
@@ -71,11 +68,13 @@ export abstract class StructureManager {
 			"O=C(C)O": { "pks": 4.76 },
 			"NCC(=O)O": { "pks": 9.25 },
 			"[N+](=O)(O)[O-]": { "pks": -1.3 },
-			"OP(=O)(O)O": { "pks": [2.15, 7.21, 12.35], "conj": ["[HPO4-]", "[PO4-3]"] },
-			"O=P(O)(O)O": { "pks": [2.15, 7.21, 12.35] },
+			"OP(=O)(O)O": { "alias": "O=P(O)(O)O" },
+			"O=P(O)(O)O": { "pks": [2.15, 7.21, 12.35], "conj": [
+				["[O-]P(=O)(O)O"], ["[O-]P(=O)(O)[O-]"], ["[PO4-3]", "[O-]P(=O)([O-])[O-]"],
+			] },
 			"F": { "pks": 3.17, "conj": ["[F-]"] },
-			"C(=O)(O)O": { "pks": [6.35, 10.33], "conj": ["[CO3-2]", "[O-]C(=O)[O-]"] },
-			"S": { "pks": [7.0, 12.9], "conj": ["[S-2]"] },
+			"C(=O)(O)O": { "pks": [6.35, 10.33], "conj": ["[O-]C(=O)O", ["[CO3-2]", "[O-]C(=O)[O-]"]] },
+			"S": { "pks": [7.0, 12.9], "conj": ["[SH-]", "[S-2]"] },
 			"B(O)(O)O": { "pks": 9.24 },
 			"[K]O": { "pks": -1.1 },
 			"N": { "pks": 9.25, "base": true }

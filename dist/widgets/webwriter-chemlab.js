@@ -70136,6 +70136,7 @@ var messages_default = {
     "Experimentelle Molek\xFCldarstellung": "Experimental molecule drawing",
     "Galvanische Zelle": "Galvanic cell",
     Inhalt: "Content",
+    "Spezies im S\xE4ure-Base-Gleichgewicht": "Acid\u2013base equilibrium species",
     "Inhalt aus {from} zu {to} transferieren.": "Transfer contents from {from} to {to}.",
     "Inhalt aus {from} zu {to} \xFCberf\xFChrt.": "Transferred contents from {from} to {to}.",
     "Inhalt und Molek\xFCl": "Content and molecule",
@@ -103759,6 +103760,20 @@ var style = i`
 	}
 	#contextInfoBox p {
 		margin: 0.25em 0;
+	}
+	.vessel-equilibrium {
+		padding-block: 4px;
+	}
+	.vessel-species {
+		display: flex;
+		justify-content: space-between;
+		align-items: start;
+		gap: 8px;
+		padding: 4px 2px;
+		border-block-end: 1px solid var(--sl-color-neutral-200);
+	}
+	.vessel-species p {
+		margin: 0;
 	}
 	.selection-info:not([data-anchored]) {
 		visibility: hidden;
@@ -147923,17 +147938,14 @@ var StructureManager = class _StructureManager {
     //         molecular base (e.g. NH3); pks then holds the pKa of its
     //         conjugate acid (NH4+), and its protonated charge is the key
     //         charge plus the number of protons it can accept.
-    //   conj: SMILES of conjugate species that may appear WITHOUT the parent
-    //         acid (e.g. carbonate from a dissolving carbonate salt). They
-    //         are folded into this family so their hydrolysis is modelled
-    //         instead of being counted as inert spectator ions. Only anions
-    //         whose exact SMILES already occur in the salt table are listed,
-    //         so the strings are guaranteed to match what Kekule emits.
+    //   conj: conjugate SMILES by deprotonation step; a step can have several
+    //         equivalent SMILES. These species can also enter from a salt.
+    //   alias: alternate SMILES for the same fully protonated acid.
     acidbase: {
       "Cl": { "pks": -6 },
       "CC(O)=O": { "pks": 4.75 },
-      "OS(=O)(=O)O": { "pks": [-3, 1.99] },
-      "O=S(O)(O)=O": { "pks": [-3, 1.99] },
+      "OS(=O)(=O)O": { "alias": "O=S(O)(O)=O" },
+      "O=S(O)(O)=O": { "pks": [-3, 1.99], "conj": ["[O-]S(=O)(=O)O", "[O-]S(=O)(=O)[O-]"] },
       "O=CO": { "pks": 3.77 },
       "CCC(O)=O": { "pks": 4.87 },
       "O=C(O)C(O)C": { "pks": 3.86 },
@@ -147949,11 +147961,15 @@ var StructureManager = class _StructureManager {
       "O=C(C)O": { "pks": 4.76 },
       "NCC(=O)O": { "pks": 9.25 },
       "[N+](=O)(O)[O-]": { "pks": -1.3 },
-      "OP(=O)(O)O": { "pks": [2.15, 7.21, 12.35], "conj": ["[HPO4-]", "[PO4-3]"] },
-      "O=P(O)(O)O": { "pks": [2.15, 7.21, 12.35] },
+      "OP(=O)(O)O": { "alias": "O=P(O)(O)O" },
+      "O=P(O)(O)O": { "pks": [2.15, 7.21, 12.35], "conj": [
+        ["[O-]P(=O)(O)O"],
+        ["[O-]P(=O)(O)[O-]"],
+        ["[PO4-3]", "[O-]P(=O)([O-])[O-]"]
+      ] },
       "F": { "pks": 3.17, "conj": ["[F-]"] },
-      "C(=O)(O)O": { "pks": [6.35, 10.33], "conj": ["[CO3-2]", "[O-]C(=O)[O-]"] },
-      "S": { "pks": [7, 12.9], "conj": ["[S-2]"] },
+      "C(=O)(O)O": { "pks": [6.35, 10.33], "conj": ["[O-]C(=O)O", ["[CO3-2]", "[O-]C(=O)[O-]"]] },
+      "S": { "pks": [7, 12.9], "conj": ["[SH-]", "[S-2]"] },
       "B(O)(O)O": { "pks": 9.24 },
       "[K]O": { "pks": -1.1 },
       "N": { "pks": 9.25, "base": true }
@@ -148695,20 +148711,17 @@ var AcidBase = class _AcidBase {
    * @returns {number} the signed charge concentration in mol/L
    */
   static systemCharge(system, H3) {
-    const Ka = system.pKa.map((p6) => Math.pow(10, -p6));
-    const delta = [1];
-    for (let k4 = 0; k4 < Ka.length; k4++) {
-      delta.push(delta[k4] * Ka[k4] / H3);
+    const fractions = _AcidBase.speciesFractions(system, H3);
+    return system.totalC * fractions.reduce((charge, fraction, step) => charge + fraction * (system.protonatedCharge - step), 0);
+  }
+  /** Fractions from the fully protonated form through each deprotonation step. */
+  static speciesFractions(system, H3) {
+    const weights = [1];
+    for (const pKa of system.pKa) {
+      weights.push(weights[weights.length - 1] * Math.pow(10, -pKa) / H3);
     }
-    let sum = 0;
-    for (const d5 of delta) {
-      sum += d5;
-    }
-    let averageCharge = 0;
-    for (let k4 = 0; k4 < delta.length; k4++) {
-      averageCharge += delta[k4] / sum * (system.protonatedCharge - k4);
-    }
-    return system.totalC * averageCharge;
+    const sum = weights.reduce((total, weight) => total + weight, 0);
+    return weights.map((weight) => weight / sum);
   }
   /**
    * Electroneutrality residual: the net charge concentration of the whole
@@ -148785,6 +148798,8 @@ var saltEquilibria = Object.entries(saltSolubility).map(([formula, data2]) => {
   const product = data2.ksp ?? (cations * data2.saturation) ** cations * (anions * data2.saturation) ** anions;
   return { formula, cation, anion, cations, anions, product };
 }).sort((a7, b5) => a7.product - b5.product);
+var subscript = (count2) => count2 === 1 ? "" : String(count2).replace(/\d/g, (digit) => "\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089"[Number(digit)]);
+var superscript = (charge) => charge === 0 ? "" : (Math.abs(charge) === 1 ? "" : String(Math.abs(charge)).replace(/\d/g, (digit) => "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078\u2079"[Number(digit)])) + (charge < 0 ? "\u207B" : "\u207A");
 var Simulation = class {
   /**
    * The default volume for transfer of chemicals in litres (default: 1mL)
@@ -149186,14 +149201,60 @@ var Simulation = class {
    * @returns {number}
    */
   static getpH(sMix) {
-    if (!sMix._isSolution || sMix._solutionVolume <= 0) {
-      return 7;
+    if (!sMix._isSolution || !(sMix._solutionVolume > 0)) return 7;
+    const { systems: systems4, spectatorCharge } = this.acidBaseComposition(sMix);
+    return Math.round(AcidBase.pH(systems4, spectatorCharge) * 1e3) / 1e3;
+  }
+  /** Read-only equilibrium view of modeled polyprotic families; stored amounts remain analytical totals. */
+  static getPolyproticEquilibrium(sMix) {
+    const { systems: systems4, spectatorCharge } = this.acidBaseComposition(sMix);
+    const H3 = AcidBase.solveProton(systems4, spectatorCharge);
+    const volume = sMix._solutionVolume;
+    const species = [];
+    const analyticalMolecules = /* @__PURE__ */ new Set();
+    for (const family of systems4) {
+      if (family.pKa.length < 2 || !(family.totalC > 0)) continue;
+      const elements2 = /* @__PURE__ */ new Map();
+      for (const section of family.representative._kekule_obj.calcFormula().getSections()) {
+        const symbol = section.obj.getSymbol();
+        elements2.set(symbol, (elements2.get(symbol) ?? 0) + section.count);
+      }
+      const protonatedHydrogens = (elements2.get("H") ?? 0) + family.step;
+      if (protonatedHydrogens < family.pKa.length) continue;
+      elements2.delete("H");
+      const symbols = [...elements2.keys()].sort();
+      if (elements2.has("C")) symbols.splice(symbols.indexOf("C") + 1, 0, "H");
+      else {
+        const oxygen = symbols.indexOf("O");
+        if (oxygen >= 0) symbols.push(...symbols.splice(oxygen, 1));
+        symbols.unshift("H");
+      }
+      family.members.forEach((molecule2) => analyticalMolecules.add(molecule2));
+      AcidBase.speciesFractions(family, H3).forEach((fraction, step) => {
+        const concentration = family.totalC * fraction;
+        const formula = symbols.map((symbol) => {
+          const count2 = symbol === "H" ? protonatedHydrogens - step : elements2.get(symbol);
+          return count2 > 0 ? symbol + subscript(count2) : "";
+        }).join("") + superscript(family.protonatedCharge - step);
+        species.push({ formula, concentration, amount: concentration * volume });
+      });
     }
-    const acidbaseData = StructureManager._moleculeData["acidbase"];
+    if (species.length) {
+      const OH = AcidBase.Kw / H3;
+      species.push(
+        { formula: "H\u2083O\u207A", concentration: H3, amount: H3 * volume },
+        { formula: "OH\u207B", concentration: OH, amount: OH * volume }
+      );
+    }
+    return { pH: Math.round(-Math.log10(H3) * 1e3) / 1e3, species, analyticalMolecules };
+  }
+  static acidBaseComposition(sMix) {
     const systems4 = [];
+    let spectatorCharge = 0;
+    if (!sMix._isSolution || !(sMix._solutionVolume > 0)) return { systems: systems4, spectatorCharge };
+    const acidbaseData = StructureManager._moleculeData["acidbase"];
     const familyIndex = {};
     const conjugateToFamily = {};
-    let spectatorCharge = 0;
     const conc = (molecule2) => {
       const c8 = sMix._molProperties[molecule2._id + "c"];
       return c8 === void 0 ? 0 : c8;
@@ -149202,7 +149263,7 @@ var Simulation = class {
       const p6 = entry["pks"];
       return Array.isArray(p6) ? p6.slice() : [p6 === void 0 ? 0 : p6];
     };
-    const familyFor = (key, protonatedCharge) => {
+    const familyFor = (key, protonatedCharge, representative, step) => {
       let idx = familyIndex[key];
       if (idx === void 0) {
         idx = systems4.length;
@@ -149210,7 +149271,10 @@ var Simulation = class {
         systems4.push({
           totalC: 0,
           pKa: pKaList(acidbaseData[key]),
-          protonatedCharge
+          protonatedCharge,
+          representative,
+          step,
+          members: []
         });
       }
       return systems4[idx];
@@ -149218,14 +149282,17 @@ var Simulation = class {
     for (const key in acidbaseData) {
       const conjList = acidbaseData[key]["conj"];
       if (Array.isArray(conjList)) {
-        for (const c8 of conjList) {
-          conjugateToFamily[c8] = key;
+        for (const [index2, aliases] of conjList.entries()) {
+          for (const alias of Array.isArray(aliases) ? aliases : [aliases]) {
+            conjugateToFamily[alias] = { key, step: index2 + 1 };
+          }
         }
       }
     }
     sMix._activeMolecules.forEach((molecule2) => {
       const smiles = molecule2.smilesString;
-      const entry = acidbaseData[smiles];
+      const key = acidbaseData[smiles]?.alias ?? smiles;
+      const entry = acidbaseData[key];
       if (entry === void 0 || smiles === "[H+]" || smiles === "[OH-]" || StructureManager.isWater(molecule2)) {
         return;
       }
@@ -149237,11 +149304,13 @@ var Simulation = class {
         return;
       }
       const protonatedCharge = entry["base"] ? molecule2._totalCharge + pKaList(entry).length : molecule2._totalCharge;
-      familyFor(smiles, protonatedCharge).totalC += conc(molecule2);
+      const family = familyFor(key, protonatedCharge, molecule2, entry["base"] ? pKaList(entry).length : 0);
+      family.totalC += conc(molecule2);
+      family.members.push(molecule2);
       if (!entry["base"] && parts != void 0) {
         const conjugate = parts[0].smilesString === "[H+]" ? parts[1] : parts[0];
         if (conjugate != void 0 && conjugate.smilesString != "") {
-          conjugateToFamily[conjugate.smilesString] = smiles;
+          conjugateToFamily[conjugate.smilesString] = { key, step: 1 };
         }
       }
     });
@@ -149250,15 +149319,16 @@ var Simulation = class {
       if (smiles === "[H+]" || smiles === "[OH-]" || molecule2._totalCharge === 0 || StructureManager.isWater(molecule2) || acidbaseData[smiles] != void 0) {
         return;
       }
-      const familyKey = conjugateToFamily[smiles];
-      if (familyKey != void 0) {
-        familyFor(familyKey, 0).totalC += conc(molecule2);
+      const conjugate = conjugateToFamily[smiles];
+      if (conjugate != void 0) {
+        const family = familyFor(conjugate.key, molecule2._totalCharge + conjugate.step, molecule2, conjugate.step);
+        family.totalC += conc(molecule2);
+        family.members.push(molecule2);
       } else {
         spectatorCharge += molecule2._totalCharge * conc(molecule2);
       }
     });
-    const pH = AcidBase.pH(systems4, spectatorCharge);
-    return Math.round(pH * 1e3) / 1e3;
+    return { systems: systems4, spectatorCharge };
   }
 };
 
@@ -184600,6 +184670,13 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.updateFillMeter(sprite, target);
     return true;
   }
+  renderVesselSpecies(formula, amount, quantity, title = formula) {
+    return x`
+			<div class="vessel-species">
+				<sl-tag size="small" variant="neutral" title=${title}>${formula}</sl-tag>
+				<div><p>n: ${amount.toExponential(2)} mol</p><p>${quantity}</p></div>
+			</div>`;
+  }
   /**
    * updates the information shown for the selected object
    *
@@ -184616,40 +184693,41 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.curr_obj._type.toLowerCase()
     )) {
       this.contextMolInfo.style.display = "";
-      this.contextMolInfo.innerHTML = "";
       this.contextMixInfo.innerHTML = "";
-      this.curr_obj._content._activeMolecules.forEach((mol) => {
-        let formula = mol._kekule_obj.calcFormula().getDisplayText();
-        this.contextMolInfo.innerHTML += `
-                <div style="display:flex; align-items: flex-start; justify-content: space-between; padding-top: 5px; padding-bottom: 5px">
-                    <sl-tag id="contextTag" size="small" variant="neutral" title=${mol.name} style="margin-right: 10px; margin-left: 5px">${formula}</sl-tag>
-                    <div style="display:flex; flex-direction:column; border-radius: 2px; background-color: #fff; margin-right: 5px">
-                    <p>
-                    n: ${this.curr_obj._content._molProperties[mol._id + "n"].toExponential(2)} mol
-                    </p>
-                    <p>
-                    m: ${this.curr_obj._content._molProperties[mol._id + "m"].toExponential(2)} g
-                    </p>
-                    </div>
-                </div>
-                `;
-        this.contextMolInfo.innerHTML += `<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl-divider>`;
-      });
+      const mixture = this.curr_obj._content;
+      const equilibrium = mixture._isSolution ? Simulation.getPolyproticEquilibrium(mixture) : void 0;
+      const species = equilibrium?.species ?? [];
+      const equilibriumRows = species.length ? x`
+				<div class="vessel-equilibrium">
+					<strong>${this.message("Spezies im S\xE4ure-Base-Gleichgewicht")}</strong>
+					${species.map(({ formula, amount, concentration }) => this.renderVesselSpecies(
+        formula,
+        amount,
+        x`c: ${concentration.toExponential(2)} mol/L`
+      ))}
+				</div>` : E;
+      B(x`
+				${equilibriumRows}
+				${mixture._activeMolecules.filter((molecule2) => !equilibrium?.analyticalMolecules.has(molecule2)).map((molecule2) => this.renderVesselSpecies(
+        molecule2._kekule_obj.calcFormula().getDisplayText(),
+        mixture._molProperties[molecule2._id + "n"],
+        x`m: ${mixture._molProperties[molecule2._id + "m"].toExponential(2)} g`,
+        molecule2.name
+      ))}
+			`, this.contextMolInfo);
+      B(equilibriumRows, this.shadowRoot.getElementById("vesselEquilibriumDetails"));
       if (this.curr_obj._type === "burette" /* Burette */ || this.curr_obj._type === "separatingfunnel" /* Separatingfunnel */) {
         this.openBtn.style.display = "";
       }
-      const mixture = this.curr_obj._content;
       const volume = mixture.contentVolume;
       if (volume > 0) {
         this.contextMixInfo.style.display = "";
-        const pH = mixture._isSolution ? Simulation.getpH(mixture) : void 0;
-        this.contextMixInfo.innerHTML += `
-					<div style="display: flex; flex-direction: column">
-				<p>vol: ${(volume * 1e3).toFixed(1)} mL</p>
+        const pH = equilibrium?.pH;
+        this.contextMixInfo.innerHTML = `
+					<div>
+						<p>vol: ${(volume * 1e3).toFixed(1)} mL</p>
 						${pH === void 0 ? "" : `<p>pH: ${pH}</p>`}
-						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-					</div>
-                `;
+					</div>`;
         this.contextMixInfo.style.borderLeftColor = pH === void 0 ? "" : this.pHColors[Math.round(pH)];
       }
     }
@@ -187245,6 +187323,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 															id="mixCarousel"
 														>
 														</sl-carousel>
+													<div id="vesselEquilibriumDetails"></div>
 													</div>
 												</div>
 												<div

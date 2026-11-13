@@ -12,6 +12,19 @@ const saltEquilibria = Object.entries(saltSolubility).map(([formula, data]) => {
 	return { formula, cation, anion, cations, anions, product };
 }).sort((a, b) => a.product - b.product);
 
+type AcidBaseFamily = AcidBaseSystem & { representative: Molecule; step: number; members: Molecule[] };
+
+export interface AcidEquilibriumSpecies {
+	formula: string;
+	amount: number;
+	concentration: number;
+}
+
+const subscript = (count: number) => count === 1 ? "" : String(count).replace(/\d/g, (digit) => "₀₁₂₃₄₅₆₇₈₉"[Number(digit)]);
+const superscript = (charge: number) => charge === 0 ? "" :
+	(Math.abs(charge) === 1 ? "" : String(Math.abs(charge)).replace(/\d/g, (digit) => "⁰¹²³⁴⁵⁶⁷⁸⁹"[Number(digit)])) +
+	(charge < 0 ? "⁻" : "⁺");
+
 /**
  * A static class used to access all chemical simulations
  *
@@ -521,13 +534,62 @@ export abstract class Simulation {
 	 * @returns {number}
 	 */
 	public static getpH(sMix: Mixture): number {
-		if (!sMix._isSolution || sMix._solutionVolume <= 0) {
-			return 7.0;
+		if (!sMix._isSolution || !(sMix._solutionVolume > 0)) return 7;
+		const { systems, spectatorCharge } = this.acidBaseComposition(sMix);
+		return Math.round(AcidBase.pH(systems, spectatorCharge) * 1000) / 1000;
+	}
+
+	/** Read-only equilibrium view of modeled polyprotic families; stored amounts remain analytical totals. */
+	public static getPolyproticEquilibrium(sMix: Mixture): {
+		pH: number; species: AcidEquilibriumSpecies[]; analyticalMolecules: Set<Molecule>;
+	} {
+		const { systems, spectatorCharge } = this.acidBaseComposition(sMix);
+		const H = AcidBase.solveProton(systems, spectatorCharge);
+		const volume = sMix._solutionVolume;
+		const species: AcidEquilibriumSpecies[] = [];
+		const analyticalMolecules = new Set<Molecule>();
+		for (const family of systems) {
+			if (family.pKa.length < 2 || !(family.totalC > 0)) continue;
+			const elements = new Map<string, number>();
+			for (const section of family.representative._kekule_obj.calcFormula().getSections()) {
+				const symbol = section.obj.getSymbol();
+				elements.set(symbol, (elements.get(symbol) ?? 0) + section.count);
+			}
+			const protonatedHydrogens = (elements.get("H") ?? 0) + family.step;
+			if (protonatedHydrogens < family.pKa.length) continue;
+			elements.delete("H");
+			const symbols = [...elements.keys()].sort();
+			if (elements.has("C")) symbols.splice(symbols.indexOf("C") + 1, 0, "H");
+			else {
+				const oxygen = symbols.indexOf("O");
+				if (oxygen >= 0) symbols.push(...symbols.splice(oxygen, 1));
+				symbols.unshift("H");
+			}
+			family.members.forEach((molecule) => analyticalMolecules.add(molecule));
+			AcidBase.speciesFractions(family, H).forEach((fraction, step) => {
+				const concentration = family.totalC * fraction;
+				const formula = symbols.map((symbol) => {
+					const count = symbol === "H" ? protonatedHydrogens - step : elements.get(symbol);
+					return count > 0 ? symbol + subscript(count) : "";
+				}).join("") + superscript(family.protonatedCharge - step);
+				species.push({ formula, concentration, amount: concentration * volume });
+			});
 		}
+		if (species.length) {
+			const OH = AcidBase.Kw / H;
+			species.push({ formula: "H₃O⁺", concentration: H, amount: H * volume },
+				{ formula: "OH⁻", concentration: OH, amount: OH * volume });
+		}
+		return { pH: Math.round(-Math.log10(H) * 1000) / 1000, species, analyticalMolecules };
+	}
+
+	private static acidBaseComposition(sMix: Mixture) {
+		const systems: AcidBaseFamily[] = [];
+		let spectatorCharge = 0;
+		if (!sMix._isSolution || !(sMix._solutionVolume > 0)) return { systems, spectatorCharge };
 
 		const acidbaseData: object = StructureManager._moleculeData["acidbase"];
 
-		const systems: AcidBaseSystem[] = [];
 		// data key (protonated-acid SMILES) -> index of its system in `systems`,
 		// so every protonation state of one acid family lands in a single system
 		const familyIndex: { [key: string]: number } = {};
@@ -535,8 +597,7 @@ export abstract class Simulation {
 		// to, so a conjugate supplied on its own (buffer anion, or the anion of a
 		// dissolving salt) is folded into that family instead of being treated as
 		// an unrelated spectator ion
-		const conjugateToFamily: { [smiles: string]: string } = {};
-		let spectatorCharge: number = 0;
+		const conjugateToFamily: Record<string, { key: string; step: number }> = {};
 
 		const conc = (molecule: Molecule): number => {
 			const c: number = sMix._molProperties[molecule._id + "c"];
@@ -552,8 +613,10 @@ export abstract class Simulation {
 		// creates (once) and returns the system for an acid family
 		const familyFor = (
 			key: string,
-			protonatedCharge: number
-		): AcidBaseSystem => {
+			protonatedCharge: number,
+			representative: Molecule,
+			step: number,
+		): AcidBaseFamily => {
 			let idx: number = familyIndex[key];
 			if (idx === undefined) {
 				idx = systems.length;
@@ -561,7 +624,10 @@ export abstract class Simulation {
 				systems.push({
 					totalC: 0,
 					pKa: pKaList(acidbaseData[key]),
-					protonatedCharge: protonatedCharge,
+					protonatedCharge,
+					representative,
+					step,
+					members: [],
 				});
 			}
 			return systems[idx];
@@ -573,8 +639,10 @@ export abstract class Simulation {
 		for (const key in acidbaseData) {
 			const conjList = acidbaseData[key]["conj"];
 			if (Array.isArray(conjList)) {
-				for (const c of conjList) {
-					conjugateToFamily[c] = key;
+				for (const [index, aliases] of conjList.entries()) {
+					for (const alias of Array.isArray(aliases) ? aliases : [aliases]) {
+						conjugateToFamily[alias] = { key, step: index + 1 };
+					}
 				}
 			}
 		}
@@ -582,7 +650,8 @@ export abstract class Simulation {
 		// pass 1: molecules that are themselves listed acids or bases
 		sMix._activeMolecules.forEach((molecule) => {
 			const smiles: string = molecule.smilesString;
-			const entry: object = acidbaseData[smiles];
+			const key: string = acidbaseData[smiles]?.alias ?? smiles;
+			const entry: object = acidbaseData[key];
 			if (
 				entry === undefined ||
 				smiles === "[H+]" ||
@@ -616,7 +685,9 @@ export abstract class Simulation {
 			const protonatedCharge: number = entry["base"]
 				? molecule._totalCharge + pKaList(entry).length
 				: molecule._totalCharge;
-			familyFor(smiles, protonatedCharge).totalC += conc(molecule);
+			const family = familyFor(key, protonatedCharge, molecule, entry["base"] ? pKaList(entry).length : 0);
+			family.totalC += conc(molecule);
+			family.members.push(molecule);
 
 			// map the actual conjugate base so a buffer built from this acid plus
 			// its conjugate salt folds into the same family
@@ -624,7 +695,7 @@ export abstract class Simulation {
 				const conjugate: Molecule =
 					parts[0].smilesString === "[H+]" ? parts[1] : parts[0];
 				if (conjugate != undefined && conjugate.smilesString != "") {
-					conjugateToFamily[conjugate.smilesString] = smiles;
+					conjugateToFamily[conjugate.smilesString] = { key, step: 1 };
 				}
 			}
 		});
@@ -644,18 +715,17 @@ export abstract class Simulation {
 				return;
 			}
 
-			const familyKey: string = conjugateToFamily[smiles];
-			if (familyKey != undefined) {
-				// every parent acid in the data is neutral when fully protonated,
-				// so a family created here has protonatedCharge 0
-				familyFor(familyKey, 0).totalC += conc(molecule);
+			const conjugate = conjugateToFamily[smiles];
+			if (conjugate != undefined) {
+				const family = familyFor(conjugate.key, molecule._totalCharge + conjugate.step, molecule, conjugate.step);
+				family.totalC += conc(molecule);
+				family.members.push(molecule);
 			} else {
 				spectatorCharge += molecule._totalCharge * conc(molecule);
 			}
 		});
 
-		const pH: number = AcidBase.pH(systems, spectatorCharge);
-		return Math.round(pH * 1000) / 1000;
+		return { systems, spectatorCharge };
 	}
 
 }
