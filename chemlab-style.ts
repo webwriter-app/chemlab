@@ -1472,7 +1472,7 @@ export const style = css`
 	#teacherTabs > sl-tab-panel {
 		--padding: 0;
 	}
-	.component-palette {
+	.palette-strip {
 		display: grid;
 		grid-template-rows: auto;
 		grid-auto-flow: column;
@@ -1482,7 +1482,7 @@ export const style = css`
 		overscroll-behavior-x: contain;
 		padding: 2px 2px 5px;
 	}
-	.teacher-card {
+	.palette-card {
 		display: grid;
 		grid-template-rows: auto 1fr;
 		gap: 5px;
@@ -1491,14 +1491,25 @@ export const style = css`
 		border: 1px solid var(--sl-color-neutral-200);
 		border-radius: 4px;
 	}
-	.component-card-header {
+	.palette-card-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		gap: 6px;
 	}
+	.palette-card-header > sl-tag {
+		min-inline-size: 0;
+	}
+	.palette-card-header > sl-tag::part(base) {
+		block-size: auto;
+		min-block-size: 1.5em;
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
 	.component-permission-toggle {
 		display: inline-flex;
+		flex: none;
+		cursor: pointer;
 		margin: 0;
 		padding: 0;
 		border: 0;
@@ -1531,6 +1542,8 @@ export const style = css`
 	.component-variant {
 		display: grid;
 		grid-template-rows: auto 1fr auto;
+	}
+	.palette-variant {
 		border: 1px solid var(--sl-color-neutral-200);
 		border-radius: var(--sl-border-radius-medium);
 		background: var(--sl-color-neutral-50);
@@ -1550,10 +1563,12 @@ export const style = css`
 		margin-inline-end: 7px;
 		margin-block-end: 4px;
 	}
-	.component-permission sl-tooltip {
+	.component-permission sl-tooltip,
+	.chemical-permission sl-tooltip {
 		--show-delay: 650ms;
 	}
-	.component-permission sl-checkbox::part(label) {
+	.component-permission sl-checkbox::part(label),
+	.chemical-permission sl-checkbox::part(label) {
 		position: absolute;
 		width: 1px;
 		height: 1px;
@@ -1575,109 +1590,133 @@ export const style = css`
 		justify-content: center;
 		padding: 0;
 	}
-	.component-tile,
+	.chemical-filters {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		padding: 2px;
+		margin-block-end: 6px;
+	}
+	.chemical-group-select {
+		flex: 0 1 13rem;
+		min-inline-size: 0;
+	}
 	.chemical-search {
-		margin-block-end: 8px;
+		flex: 1 1 12rem;
+		min-inline-size: 0;
 	}
-	.chemical-tile-cell {
-		position: relative;
-		display: grid;
-		gap: 4px;
-		align-content: start;
-		height: 100%;
-	}
-	.chemical-permission {
+	.chemical-filters ::part(form-control-label) {
 		position: absolute;
-		top: 5px;
-		right: 5px;
-		z-index: 1;
-	}
-	.chemical-permission sl-tooltip {
-		--show-delay: 650ms;
-	}
-	.chemical-permission sl-checkbox::part(label) {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		margin: 0;
+		inline-size: 1px;
+		block-size: 1px;
 		overflow: hidden;
 		clip-path: inset(50%);
 	}
-	.chemical-carousel-section {
-		margin-block-end: 10px;
+	@container (max-width: 28rem) {
+		.chemical-group-select {
+			flex: 1 1 0;
+		}
+		.chemical-search {
+			flex: 1 1 100%;
+			order: 1;
+		}
 	}
-	.chemical-section-header {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		margin-block-end: 6px;
+	.palette-card-chemical {
+		box-sizing: border-box;
+		inline-size: 12.25rem;
+		align-self: start;
 	}
-	.chemical-section-header .component-permission-toggle {
-		margin-inline-start: auto;
-		margin-inline-end: 4px;
+	.chemical-single {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: start;
 	}
-	.chemical-carousel {
-		height: auto;
+	.chemical-single > .chemical-tile,
+	.chemical-single > .chemical-permission {
+		grid-row: 1;
 	}
-	.chemical-carousel .chemical-slide {
-		min-width: 0;
-		height: 100%;
+	.chemical-single > .chemical-tile {
+		grid-column: 1 / -1;
+	}
+	.chemical-single > .chemical-permission {
+		grid-column: 2;
+		align-self: end;
+		padding: 4px;
+	}
+	.chemical-stack {
 		display: grid;
 		align-content: start;
 	}
-	.chemical-group-tabs {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px;
-		margin-block-end: 8px;
+	.chemical-stack-header,
+	.chemical-stack-preview {
+		margin-inline-start: var(--stack-offset);
+		border: 1px solid var(--sl-color-neutral-200);
+		background: var(--sl-color-neutral-50);
 	}
-	.chemical-group-tab {
-		padding: 3px 10px;
-		border: 1px solid var(--sl-color-neutral-300);
-		border-radius: var(--sl-border-radius-medium);
-		background: var(--sl-color-neutral-0);
-		color: var(--sl-color-neutral-700);
-		font-size: var(--sl-font-size-small);
+	.chemical-stack-header {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		min-block-size: 25px;
+		padding-inline-end: 5px;
+		border-radius: var(--sl-border-radius-medium) var(--sl-border-radius-medium) 0 0;
+	}
+	.chemical-stack-header + .chemical-stack-header,
+	.chemical-stack-preview {
+		margin-block-start: -1px;
+	}
+	.chemical-stack-header[data-active],
+	.chemical-stack-preview {
+		border-color: var(--sl-color-primary-300);
+		background: var(--sl-color-primary-50);
+	}
+	.chemical-stack-preview {
+		border-block-start: 0;
+		border-radius: 0 0 var(--sl-border-radius-medium) var(--sl-border-radius-medium);
+	}
+	.chemical-stack-single > .chemical-stack-header,
+	.chemical-stack-single > .chemical-stack-preview {
+		border: 0;
+		background: transparent;
+	}
+	.chemical-stack-label {
+		flex: 1;
+		padding: 2px 5px;
+	}
+	.chemical-stack-title {
+		flex: 1;
+		min-inline-size: 0;
+		padding: 2px 5px;
+		border: 0;
+		border-radius: inherit;
+		background: transparent;
+		text-align: start;
 		cursor: pointer;
 	}
-	.chemical-group-tab[aria-selected="true"] {
-		border-color: var(--sl-color-primary-300);
-		background: var(--sl-color-primary-100);
-		color: var(--sl-color-primary-800);
+	.chemical-stack-title:hover {
+		background: var(--sl-color-neutral-100);
 	}
-	.chemical-card {
-		position: relative;
-		width: 100%;
+	.chemical-stack-title:focus-visible {
+		outline: 2px solid var(--sl-color-primary-600);
+		outline-offset: -2px;
 	}
-	.chemical-card::part(base) {
-		height: 100%;
-		padding: 0;
+	.chemical-permission {
+		display: grid;
+		flex: none;
+		place-items: center;
 	}
-	.chemical-card::part(header) {
-		padding: 4px 22px 4px 8px;
-		font-size: var(--sl-font-size-small);
-		font-weight: 600;
-		overflow-wrap: anywhere;
-	}
-	.chemical-card::part(body) {
-		padding: 4px;
-	}
-	.chemical-card-selected::part(base) {
-		border-color: var(--sl-color-primary-500);
-		box-shadow: 0 0 0 1px var(--sl-color-primary-500) inset;
-	}
-	.chemical-tile,
-	.chemical-tile-button {
+	.chemical-tile {
 		box-sizing: border-box;
 		display: grid;
 		justify-items: center;
 		align-content: start;
-		gap: 3px;
+		gap: 2px;
 		width: 100%;
 		padding: 4px;
 		white-space: normal;
 		overflow-wrap: anywhere;
-		background: var(--sl-color-neutral-0);
+		background: transparent;
 	}
 	.component-tile {
 		grid-area: 1 / 1 / 2 / -1;
@@ -1687,6 +1726,7 @@ export const style = css`
 		margin: 0;
 		min-width: 0;
 		padding: 2px 26px 3px;
+		margin-block-end: 8px;
 		border: 1px solid transparent;
 		background: transparent;
 	}
@@ -1703,14 +1743,13 @@ export const style = css`
 		user-select: none;
 		min-inline-size: 0;
 		margin: 0;
-		border: 1px solid var(--sl-color-neutral-200);
-		border-radius: 4px;
+		border: 1px solid transparent;
+		border-radius: var(--sl-border-radius-medium);
 	}
 	.palette-dragging {
 		cursor: grabbing;
 	}
 	.component-tile > *,
-	.chemical-tile-button > *,
 	button.chemical-tile > * {
 		pointer-events: none;
 	}
@@ -1729,18 +1768,7 @@ export const style = css`
 		block-size: 36px;
 		object-fit: contain;
 	}
-	.chemical-tile > sl-badge,
-	.chemical-tile-button > sl-badge {
-		max-inline-size: 100%;
-	}
-	.chemical-tile > sl-badge::part(base),
-	.chemical-tile-button > sl-badge::part(base) {
-		white-space: normal;
-		overflow-wrap: anywhere;
-		line-height: 1.2;
-	}
 	.component-tile[aria-pressed="true"],
-	.chemical-tile-button[aria-pressed="true"],
 	.chemical-tile[aria-pressed="true"] {
 		background: var(--sl-color-primary-100);
 		border-color: var(--sl-color-primary-600);

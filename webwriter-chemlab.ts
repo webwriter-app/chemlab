@@ -1,6 +1,7 @@
 import { drawerLabels, effectiveLanguage, localize } from "./localization/localization";
 import { html, LitElement, nothing, PropertyValueMap } from "lit";
 import { keyed } from "lit/directives/keyed.js";
+import { repeat } from "lit/directives/repeat.js";
 import { live } from "lit/directives/live.js";
 import { LitElementWw } from "@webwriter/lit";
 import {
@@ -27,7 +28,6 @@ import SlOption from "@shoelace-style/shoelace/dist/components/option/option.com
 import SlInput from "@shoelace-style/shoelace/dist/components/input/input.component.js";
 import SlAlert from "@shoelace-style/shoelace/dist/components/alert/alert.component.js";
 import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
-import SlCard from "@shoelace-style/shoelace/dist/components/card/card.component.js";
 import SlButtonGroup from "@shoelace-style/shoelace/dist/components/button-group/button-group.component.js";
 import SlSplitPanel from "@shoelace-style/shoelace/dist/components/split-panel/split-panel.component.js";
 import SlDivider from "@shoelace-style/shoelace/dist/components/divider/divider.component.js";
@@ -660,8 +660,7 @@ export class ChemLab extends LitElementWw {
 	private chemicalPreviewFrame?: number;
 	@state() private accessor chemicalCatalogOpened = false;
 	@state() private accessor chemicalQuery = "";
-	/** how many chemical tiles fit side by side, derived from the available width */
-	@state() private accessor chemicalSlidesPerPage = 4;
+	@state() private accessor activeChemicalConcentrations: Record<string, number> = {};
 	/** the chemical category currently shown in the catalog */
 	@state() private accessor chemicalGroup = "Salze";
 	private stopDose?: (save?: boolean) => void;
@@ -843,7 +842,6 @@ export class ChemLab extends LitElementWw {
 			"sl-carousel": SlCarousel,
 			"sl-carousel-item": SlCarouselItem,
 
-			"sl-card": SlCard,
 			"sl-checkbox": SlCheckbox,
 
 			"sl-tooltip": SlTooltip,
@@ -914,9 +912,6 @@ export class ChemLab extends LitElementWw {
 		const standardDrawerBody = 240;
 		this.teacherDrawerOpen = this.teacherDrawerChoice ??
 			(this.containerDiv.clientHeight >= STANDARD_CANVAS_HEIGHT + standardDrawerBody + triggerHeight + 2 * triggerInset);
-		// keep the chemical carousels tuned to the available width
-		const columns = Math.floor((this.containerDiv.clientWidth - 56) / 156);
-		this.chemicalSlidesPerPage = Math.max(1, Math.min(6, columns));
 	}
 
 	protected updated(changed: PropertyValueMap<any>): void {
@@ -4334,7 +4329,7 @@ export class ChemLab extends LitElementWw {
 			const name = this.itemName(type);
 			const variantLabel = current.material ? this.message(current.material.name) : current.size || this.message("Standard");
 			const partiallyAllowed = allowed.length > 0 && allowed.length < variants.length;
-			const permissionVariant = allowed.length === 0 ? "danger" : partiallyAllowed ? "primary" : "success";
+			const permissionVariant = this.palettePermissionVariant(allowed.length, variants.length);
 			const currentAllowed = allowed.includes(current);
 			const showPermissionTooltip = (event: Event) => {
 				if (!partiallyAllowed) return;
@@ -4372,17 +4367,10 @@ export class ChemLab extends LitElementWw {
 					@keydown=${(event: KeyboardEvent) => { if (event.key === "Escape") hidePermissionTooltip(event); }}
 					@dblclick=${() => this.toggleAllVariants(type)}
 					@click=${(event: MouseEvent) => { if (event.detail === 0) this.toggleAllVariants(type); }}>
-					<sl-badge pill variant=${permissionVariant}>
-						${allowed.length} / ${variants.length}
-					</sl-badge>
+					${this.renderPaletteBadge(allowed.length, variants.length)}
 				</button>`;
-			return html`
-				<div class="teacher-card" role="group" aria-label=${name}>
-					<div class="component-card-header">
-						<sl-tag size="small" variant=${this.canAuthor ? permissionVariant : "neutral"}>${name}</sl-tag>
-						${this.canAuthor ? badge : nothing}
-					</div>
-					<div class="component-variant">
+			return this.renderPaletteCard(name, permissionVariant, badge, html`
+					<div class="component-variant palette-variant">
 						${arrow(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Größe"))}
 						<div class="component-variant-body">
 							<button type="button" class="component-tile" contenteditable="false"
@@ -4410,15 +4398,55 @@ export class ChemLab extends LitElementWw {
 						</div>
 						${arrow(1, this.message(current.material ? "Nächstes Material" : "Nächste Größe"))}
 					</div>
-				</div>`;
+			`);
 		});
 		if (cards.every((card) => card === nothing)) return html`<p>${this.message("Keine Geräte freigegeben.")}</p>`;
-		return html`<div class="component-palette">${cards}</div>`;
+		return html`<div class="palette-strip">${cards}</div>`;
+	}
+
+	private palettePermissionVariant(allowed: number, total: number) {
+		return allowed === 0 ? "danger" : allowed < total ? "primary" : "success";
+	}
+
+	private renderPaletteBadge(allowed: number, total: number) {
+		return html`<sl-badge pill variant=${this.palettePermissionVariant(allowed, total)}>${allowed} / ${total}</sl-badge>`;
+	}
+
+	private renderPaletteCard(name: string, variant: ReturnType<typeof this.palettePermissionVariant>,
+		badge: unknown, body: unknown, chemical = false) {
+		return html`
+			<div class="palette-card${chemical ? " palette-card-chemical" : ""}" role="group" aria-label=${name}>
+				<div class="palette-card-header">
+					<sl-tag size="small" variant=${this.canAuthor ? variant : "neutral"} title=${name}>${name}</sl-tag>
+					${this.canAuthor ? badge : nothing}
+				</div>
+				${body}
+			</div>`;
+	}
+
+	private renderChemicalPermissionBadge(label: string, items: (ChemicalPermissionItem & { label?: string })[]) {
+		const { allowed, total, labels } = this.chemicalPermissionSummary(items);
+		const allAllowed = allowed === total;
+		const toggle = () => this.toggleAllChemicals(items, allAllowed);
+		const count = this.message("{allowed} von {total} Varianten freigegeben", { allowed, total });
+		const action = this.message(allAllowed ? "Alle Varianten sperren" : "Alle Varianten freigeben");
+		return html`
+			<button type="button" class="component-permission-toggle" contenteditable="false"
+				title=${allowed && !allAllowed ? `${this.message("Freigaben")}: ${labels.join(", ")}`
+					: this.message("Doppelklick zum Umschalten aller Varianten")}
+				aria-label=${`${label} · ${count} · ${action}`}
+				@dblclick=${toggle}
+				@click=${(event: MouseEvent) => { if (event.detail === 0) toggle(); }}>
+				${this.renderPaletteBadge(allowed, total)}
+			</button>`;
 	}
 
 	private chemicalTileLabel(name: string, concentrationMolPerL?: number): string {
-		return concentrationMolPerL == null ? name
-			: `${name.replace(/ \(\d+(?:[.,]\d+)? mol\/L\)$/, "")} (${this.formatAmount(concentrationMolPerL, 8)} mol/L)`;
+		return concentrationMolPerL == null ? name : `${this.chemicalBaseLabel(name)} (${this.formatAmount(concentrationMolPerL, 8)} mol/L)`;
+	}
+
+	private chemicalBaseLabel(name: string): string {
+		return name.replace(/ \(\d+(?:[.,]\d+)? mol\/L\)$/, "");
 	}
 
 	private renderChemicalTile(key: string, name: string, formula: string, recipe: ChemicalRecipe, src?: string,
@@ -4426,26 +4454,23 @@ export class ChemLab extends LitElementWw {
 		const label = this.chemicalTileLabel(name, concentrationMolPerL);
 		const chemical = { key, name: label, recipe };
 		return html`
-			<sl-card class="chemical-card${this.selectedChemical?.key === key ? " chemical-card-selected" : ""}" contenteditable="false">
-				<div slot="header" class="chemical-card-header">${label}</div>
-				<button type="button" class="chemical-tile" contenteditable="false"
-					aria-label=${chemical.name} aria-pressed=${this.selectedChemical?.key === key}
-					@pointerdown=${(event: PointerEvent) => this.startChemicalDrag(event, chemical, src)}
-					@dragstart=${this.preventNativePaletteDrag}
-					@click=${(event: MouseEvent) => {
-						if (this.consumePaletteClick(event)) return;
-						const wasSelected = this.selectedChemical?.key === key;
-						this.clearChemicalSelection();
-						this.componentToPlace = undefined;
-						if (wasSelected) return;
-						this.clearObjectSelection(true);
-						this.selectedChemical = chemical;
-					}}>
-					<span class="chemical-preview">${src ? html`<img src=${src} alt="" draggable="false" decoding="async" loading="lazy"/>`
-						: html`<span>${formula}</span>`}</span>
-					${src ? html`<small>${formula}</small>` : nothing}
-				</button>
-			</sl-card>`;
+			<button type="button" class="chemical-tile" contenteditable="false"
+				aria-label=${chemical.name} aria-pressed=${this.selectedChemical?.key === key}
+				@pointerdown=${(event: PointerEvent) => this.startChemicalDrag(event, chemical, src)}
+				@dragstart=${this.preventNativePaletteDrag}
+				@click=${(event: MouseEvent) => {
+					if (this.consumePaletteClick(event)) return;
+					const wasSelected = this.selectedChemical?.key === key;
+					this.clearChemicalSelection();
+					this.componentToPlace = undefined;
+					if (wasSelected) return;
+					this.clearObjectSelection(true);
+					this.selectedChemical = chemical;
+				}}>
+				<span class="chemical-preview">${src ? html`<img src=${src} alt="" draggable="false" decoding="async" loading="lazy"/>`
+					: html`<span>${formula}</span>`}</span>
+				${src ? html`<small>${formula}</small>` : nothing}
+			</button>`;
 	}
 
 	private renderChemicalCatalog() {
@@ -4454,17 +4479,12 @@ export class ChemLab extends LitElementWw {
 		const query = normalize(this.chemicalQuery.trim());
 		const matches = (...values: string[]) => !query || values.some((value) => normalize(value).includes(query));
 		const groups = chemicalCatalogGroups.flatMap(({ category, items }) => {
-			const label = this.message(category);
-			const visible = matches(category, label) ? items : items.filter((item) =>
-				matches(item.name, this.message(item.name), item.formula, item.category, this.message(item.category)));
-			const entries = this.canAuthor ? visible : visible.filter((item) => this.isChemicalAllowed(item.name));
-			return entries.length ? [{ id: category, label, items: entries }] : [];
+			const entries = this.canAuthor ? items : items.filter((item) => this.isChemicalAllowed(item.name));
+			return entries.length ? [{ id: category.replace(/ /g, "_"), category, label: this.message(category), items: entries }] : [];
 		});
 		const customLabel = this.message("Eigene Stoffe");
-		const customMolecules = molecules.filter((molecule) =>
-			matches(molecule.formula, customLabel) && (this.canAuthor || this.isChemicalAllowed("mol:" + molecule.formula)));
-		const customMixtures = this.availableMixtures.filter((mixture) =>
-			matches(mixture["name"], customLabel) && (this.canAuthor || this.isChemicalAllowed("mix:" + mixture["name"])));
+		const customMolecules = molecules.filter((molecule) => this.canAuthor || this.isChemicalAllowed("mol:" + molecule.formula));
+		const customMixtures = this.availableMixtures.filter((mixture) => this.canAuthor || this.isChemicalAllowed("mix:" + mixture["name"]));
 		const customItems = [
 			...customMolecules.map((molecule) => ({
 				name: "mol:" + molecule.formula, label: molecule.formula, formula: molecule.formula, preview: molecule,
@@ -4490,86 +4510,95 @@ export class ChemLab extends LitElementWw {
 				}] : [];
 			}),
 		];
-		const groupChoices = customItems.length ? [...groups, { id: "custom", label: customLabel, items: customItems }] : groups;
-		const activeGroup = groupChoices.find((group) => group.id === this.chemicalGroup) ?? groupChoices[0];
-		const summary = this.canAuthor && activeGroup ? this.chemicalPermissionSummary(activeGroup.items) : undefined;
-		const allAllowed = summary && summary.allowed === summary.total;
-		const toggleAll = () => this.toggleAllChemicals(activeGroup.items, allAllowed === true);
-		const slides = activeGroup?.items.flatMap((item) => this.renderChemicalSlides(item)) ?? [];
-		const tabId = (id: string) => "chemical-group-tab-" + groupChoices.findIndex((group) => group.id === id);
-		const panelId = (id: string) => tabId(id) + "-panel";
-		const handleTabKey = (event: KeyboardEvent) => {
-			const index = groupChoices.indexOf(activeGroup);
-			const rtl = getComputedStyle(event.currentTarget as HTMLElement).direction === "rtl";
-			const next = event.key === "Home" ? 0 : event.key === "End" ? groupChoices.length - 1
-				: event.key === "ArrowRight" || event.key === "ArrowLeft"
-					? (index + ((event.key === "ArrowRight") !== rtl ? 1 : -1) + groupChoices.length) % groupChoices.length : -1;
-			if (next < 0) return;
-			event.preventDefault();
-			event.stopPropagation();
-			this.chemicalGroup = groupChoices[next].id;
-			this.shadowRoot.getElementById(tabId(this.chemicalGroup))?.focus();
-		};
+		const groupChoices = customItems.length ? [...groups, { id: "custom", category: "Eigene Stoffe", label: customLabel, items: customItems }] : groups;
+		const activeGroup = groupChoices.find((group) => group.id === this.chemicalGroup);
+		const allLabel = this.message("Alle Stoffe");
+		const visibleItems = new Map<string, (typeof groupChoices)[number]["items"][number]>();
+		for (const group of activeGroup ? [activeGroup] : groupChoices) {
+			for (const item of group.items) {
+				const label = "label" in item ? item.label : this.message(item.name);
+				if (!matches(group.category, group.label, item.name, label, item.formula)) continue;
+				visibleItems.set(item.name, item);
+			}
+		}
+		const items = [...visibleItems.values()];
 		return html`
-			<sl-input class="chemical-search" size="small" type="search" clearable contenteditable="false"
-				label=${this.message("Chemikalien suchen")} .value=${this.chemicalQuery}
-				@sl-input=${(event: Event) => { this.chemicalQuery = (event.currentTarget as SlInput).value; }}>
-			</sl-input>
-			${groupChoices.length ? html`
-				<div class="chemical-group-tabs" role="tablist" aria-label=${this.message("Chemikalien")} @keydown=${handleTabKey}>
-					${groupChoices.map((group) => html`
-						<button type="button" role="tab" contenteditable="false" class="chemical-group-tab"
-							id=${tabId(group.id)} aria-selected=${activeGroup === group} tabindex=${activeGroup === group ? 0 : -1}
-							aria-controls=${panelId(group.id)}
-							@click=${() => { this.chemicalGroup = group.id; }}>
-							${group.label}
-						</button>`)}
-				</div>` : html`<p>${this.message("Keine Chemikalien gefunden.")}</p>`}
-			${groupChoices.filter((group) => group !== activeGroup).map((group) => html`
-				<div role="tabpanel" id=${panelId(group.id)} aria-labelledby=${tabId(group.id)} hidden></div>`)}
-			${activeGroup ? html`
-				<div class="chemical-carousel-section" role="tabpanel" id=${panelId(activeGroup.id)} aria-labelledby=${tabId(activeGroup.id)}>
-					${summary ? html`
-						<div class="chemical-section-header">
-							<button type="button" class="component-permission-toggle" contenteditable="false"
-								title=${summary.allowed && !allAllowed ? `${this.message("Freigaben")}: ${summary.labels.join(", ")}`
-									: this.message("Doppelklick zum Umschalten aller Varianten")}
-								aria-label=${`${activeGroup.label} · ${this.message("{allowed} von {total} Varianten freigegeben", { allowed: summary.allowed, total: summary.total })} · ${
-									this.message(allAllowed ? "Alle Varianten sperren" : "Alle Varianten freigeben")}`}
-								@dblclick=${toggleAll}
-								@click=${(event: MouseEvent) => { if (event.detail === 0) toggleAll(); }}>
-								<sl-badge pill variant=${summary.allowed === 0 ? "danger" : allAllowed ? "success" : "primary"}>
-									${summary.allowed} / ${summary.total}
-								</sl-badge>
-							</button>
-						</div>` : nothing}
-					${keyed(`${activeGroup.id}:${query}`, html`
-						<sl-carousel class="chemical-carousel" navigation mouse-dragging
-							slides-per-page=${Math.min(this.chemicalSlidesPerPage, slides.length)} slides-per-move="1">
-							${slides}
-						</sl-carousel>`)}
-				</div>` : nothing}
+			<div class="chemical-filters">
+				<sl-select class="chemical-group-select" size="small" hoist placement="top" contenteditable="false"
+					label=${this.message("Stoffklasse")} .value=${activeGroup?.id ?? "all"}
+					@sl-change=${(event: Event) => { this.chemicalGroup = String((event.currentTarget as SlSelect).value); }}>
+					<sl-option value="all">${allLabel}</sl-option>
+					${groupChoices.map((group) => html`<sl-option value=${group.id}>${group.label}</sl-option>`)}
+				</sl-select>
+				<sl-input class="chemical-search" size="small" type="search" clearable contenteditable="false"
+					label=${this.message("Chemikalien suchen")} placeholder=${this.message("Name oder Formel suchen")}
+					.value=${this.chemicalQuery}
+					@sl-input=${(event: Event) => { this.chemicalQuery = (event.currentTarget as SlInput).value; }}>
+				</sl-input>
+				${this.canAuthor && items.length ? html`
+					<div class="chemical-filter-badge">${this.renderChemicalPermissionBadge(activeGroup?.label ?? allLabel, items)}</div>` : nothing}
+			</div>
+			${items.length ? keyed(activeGroup?.id ?? "all", html`
+				<div class="palette-strip">
+					${repeat(items, (item) => item.name, (item) => this.renderChemicalCard(item))}
+				</div>`) : html`<p role="status">${this.message("Keine Chemikalien gefunden.")}</p>`}
 		`;
 	}
 
-	private renderChemicalSlides(item: ChemicalPermissionItem & {
+	private renderChemicalCard(item: ChemicalPermissionItem & {
 		formula: string; recipe: ChemicalRecipe; label?: string; preview?: MoleculeDefinition;
 	}) {
-		const label = item.label ?? this.message(item.name);
-		const src = item.label && item.preview ? this.previewMolecule(item.preview) : catalogPreviews[item.name];
 		const concentration = chemicalConcentration(item);
-		const slide = (value?: number) => html`
-			<sl-carousel-item class="chemical-slide" contenteditable="false">
-				<div class="chemical-tile-cell">
-					${this.renderChemicalTile(value == null ? item.name : `${item.name}@${value}`, label, item.formula,
-						value == null ? item.recipe : withConcentration(item.recipe, value), src, value)}
-					${this.canAuthor ? this.renderChemicalPermission(item.name, label, value, concentration?.initial) : nothing}
-				</div>
-			</sl-carousel-item>`;
-		if (!concentration) return [slide()];
-		const values = this.canAuthor ? this.concentrationVariants(item.name, concentration)
-			: this.allowedConcentrationsFor(item.name, concentration.initial);
-		return values.map((value) => slide(value));
+		const label = item.label ?? this.message(item.name);
+		const name = concentration ? this.chemicalBaseLabel(label) : label;
+		const src = item.label && item.preview ? this.previewMolecule(item.preview) : catalogPreviews[item.name];
+		const allowed = concentration ? this.allowedConcentrationsFor(item.name, concentration.initial) : [];
+		const values = concentration ? this.canAuthor ? this.concentrationVariants(item.name, concentration) : allowed : [];
+		const saved = this.activeChemicalConcentrations[item.name];
+		const active = values.includes(saved) ? saved
+			: concentration && values.includes(concentration.initial) ? concentration.initial : values[0];
+		const stack = active === undefined ? [] : [...values.filter((value) => value !== active), active];
+		const activeKey = active === undefined ? item.name : `${item.name}@${active}`;
+		const preview = this.renderChemicalTile(activeKey, label, item.formula,
+			active === undefined ? item.recipe : withConcentration(item.recipe, active), src, active);
+		const allowedCount = concentration ? allowed.length : Number(this.isChemicalAllowed(item.name));
+		const variant = this.palettePermissionVariant(allowedCount, concentration ? values.length : 1);
+		const badge = this.canAuthor ? this.renderChemicalPermissionBadge(name, [item]) : nothing;
+		const body = stack.length ? html`
+			<div class=${stack.length === 1 ? "chemical-stack chemical-stack-single palette-variant" : "chemical-stack"}>
+				${repeat(stack, (value) => value, (value, index) => {
+					const isActive = value === active;
+					const isAllowed = allowed.includes(value);
+					const offset = Math.min(index, 7) * 2;
+					const title = html`<sl-tag size="small" variant=${isAllowed ? "primary" : "neutral"}>${this.formatAmount(value, 8)} mol/L</sl-tag>`;
+					return html`
+						<div class="chemical-stack-header" ?data-active=${isActive} style=${`--stack-offset: ${offset}px`}>
+							${stack.length === 1 ? html`<span class="chemical-stack-label">${title}</span>` : html`
+							<button class="chemical-stack-title" type="button" contenteditable="false"
+								aria-label=${this.chemicalTileLabel(label, value)} aria-pressed=${isActive}
+								@click=${async (event: MouseEvent) => {
+									if (isActive) return;
+									const button = event.currentTarget as HTMLButtonElement;
+									const restoreFocus = this.shadowRoot.activeElement === button;
+									this.activeChemicalConcentrations = { ...this.activeChemicalConcentrations, [item.name]: value };
+									if (this.selectedChemical?.key === activeKey) this.clearChemicalSelection();
+									if (restoreFocus) {
+										await this.updateComplete;
+										if (button.isConnected && !this.shadowRoot.activeElement) button.focus({ preventScroll: true });
+									}
+								}}>
+								${title}
+							</button>`}
+							${this.canAuthor ? this.renderChemicalPermission(item.name, label, value, concentration?.initial) : nothing}
+						</div>`;
+				})}
+				<div class="chemical-stack-preview" style=${`--stack-offset: ${Math.min(stack.length - 1, 7) * 2}px`}>${preview}</div>
+			</div>` : html`
+			<div class="chemical-single palette-variant">
+				${preview}
+				${this.canAuthor ? this.renderChemicalPermission(item.name, label) : nothing}
+			</div>`;
+		return this.renderPaletteCard(name, variant, badge, body, true);
 	}
 
 	/** The author-side permission checkbox on a chemical tile. */
