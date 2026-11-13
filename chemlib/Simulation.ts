@@ -4,6 +4,13 @@ import { Molecule } from "./Molecule";
 import { ElectricComponent, EComponentType } from "./ElectricComponent";
 import { ComponentManager } from "./ComponentManager";
 import { AcidBase, AcidBaseSystem } from "./AcidBase";
+import { saltSolubility } from "./saltSolubility";
+
+const saltEquilibria = Object.entries(saltSolubility).map(([formula, data]) => {
+	const [cation, anion, cations = 1, anions = 1] = data.ions;
+	const product = data.ksp ?? (cations * data.saturation) ** cations * (anions * data.saturation) ** anions;
+	return { formula, cation, anion, cations, anions, product };
+}).sort((a, b) => a.product - b.product);
 
 /**
  * A static class used to access all chemical simulations
@@ -75,7 +82,7 @@ export abstract class Simulation {
 	 * @param {Mixture} cMixture - the solution to simulate
 	 */
 	public static sSolvation(cMixture: Mixture): void {
-		if (!cMixture._isSolution) {
+		if (!cMixture._isSolution || !(cMixture._solutionVolume > 0)) {
 			return;
 		}
 
@@ -98,11 +105,103 @@ export abstract class Simulation {
 			const salts = cMixture._activeMolecules.filter((molecule) => StructureManager.isSalt(molecule));
 			for (const salt of salts) {
 				const parts = this.cacheDissociation(salt);
+				if (parts && this.registerSolidSalt(cMixture, salt, parts)) {
+					changed = true;
+					continue;
+				}
 				if (parts && this.sEquilibriumSalt(cMixture, salt, parts[0], parts[1])) {
 					changed = true;
 				}
 			}
 		} while (changed);
+		this.equilibrateSalts(cMixture);
+	}
+
+	private static makeSolidSalt(formula: string, ions: readonly [Molecule, Molecule], counts: readonly [number, number]): Molecule {
+		const solid = StructureManager.newMolecule();
+		solid.name = solid.solidSaltFormula = formula;
+		solid.solidSaltIons = ions;
+		ions.forEach((ion, index) => {
+			for (let unit = 0; unit < counts[index]; unit++) {
+				const atoms = new Map(ion._atoms.map((atom) => [atom._id,
+					solid.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), atom.getIonicCharge())._id]));
+				for (const bond of ion._bonds) {
+					solid.addBond(atoms.get(bond._from._id), atoms.get(bond._to._id), bond._magnitude, bond._length, bond._type);
+				}
+			}
+		});
+		return solid;
+	}
+
+	private static registerSolidSalt(mix: Mixture, molecule: Molecule, ions: [Molecule, Molecule]): boolean {
+		const pair = ions[0]._totalCharge > 0 ? ions : [ions[1], ions[0]] as const;
+		const salt = saltEquilibria.find(({ cation, anion, cations, anions }) =>
+			cations === 1 && anions === 1 && pair[0].smilesString === cation && pair[1].smilesString === anion);
+		if (!salt) return false;
+		const amount = mix._molProperties[molecule._id + "n"];
+		mix.remMolecule(molecule._id);
+		const existing = mix._activeMolecules.find((item) => item.solidSaltFormula === salt.formula);
+		mix.addMolecule(existing ?? this.makeSolidSalt(salt.formula, pair, [1, 1]), amount);
+		return true;
+	}
+
+	private static equilibrateSalts(mix: Mixture): void {
+		const volume = mix._solutionVolume;
+		const ions = new Map(mix._activeMolecules.filter((item) => item._totalCharge !== 0)
+			.map((item) => [item.smilesString, item]));
+		const solids = new Map(mix._activeMolecules.filter((item) => item.solidSaltFormula)
+			.map((item) => [item.solidSaltFormula, item]));
+		if (!ions.size && !solids.size) return;
+		for (let pass = 0; pass < 32; pass++) {
+			let changed = false;
+			for (const { formula, cation, anion, cations, anions, product } of saltEquilibria) {
+				const positive = ions.get(cation);
+				const negative = ions.get(anion);
+				const solid = solids.get(formula);
+				if ((!positive || !negative) && !solid) continue;
+				const p = positive ? mix._molProperties[positive._id + "n"] / volume : 0;
+				const n = negative ? mix._molProperties[negative._id + "n"] / volume : 0;
+				const ionProduct = (delta: number) =>
+					Math.max(0, p + delta * cations) ** cations * Math.max(0, n + delta * anions) ** anions;
+				const current = ionProduct(0);
+				if (Math.abs(current - product) <= product * 1e-8) continue;
+				const available = solid ? mix._molProperties[solid._id + "n"] / volume : 0;
+				let low = current > product ? -Math.min(p / cations, n / anions) : 0;
+				let high = current > product ? 0 : available;
+				if (low === high) continue;
+				let delta = high;
+				if (ionProduct(high) > product) {
+					for (let step = 0; step < 52; step++) {
+						const middle = (low + high) / 2;
+						if (ionProduct(middle) > product) high = middle;
+						else low = middle;
+					}
+					delta = (low + high) / 2;
+				}
+				const amount = delta * volume;
+				if (Math.abs(amount) <= 1e-14) continue;
+				if (amount > 0) {
+					const positiveIon = positive ?? solid.solidSaltIons[0];
+					const negativeIon = negative ?? solid.solidSaltIons[1];
+					mix.addMolecule(positiveIon, amount * cations);
+					mix.addMolecule(negativeIon, amount * anions);
+					ions.set(cation, positiveIon);
+					ions.set(anion, negativeIon);
+					mix.changeMolecule(solid._id, -amount);
+					if (!mix._molProperties[solid._id + "n"]) solids.delete(formula);
+				} else {
+					mix.changeMolecule(positive._id, amount * cations);
+					mix.changeMolecule(negative._id, amount * anions);
+					if (!mix._molProperties[positive._id + "n"]) ions.delete(cation);
+					if (!mix._molProperties[negative._id + "n"]) ions.delete(anion);
+					const deposit = solid ?? this.makeSolidSalt(formula, [positive, negative], [cations, anions]);
+					mix.addMolecule(deposit, -amount);
+					solids.set(formula, deposit);
+				}
+				changed = true;
+			}
+			if (!changed) break;
+		}
 	}
 
 	/**
@@ -369,7 +468,7 @@ export abstract class Simulation {
 			StructureManager._moleculeData["salt"][cMolecule.smilesString] ===
 			undefined
 				? -1
-				: StructureManager._moleculeData["salt"][cMolecule.smilesString]["pkl"];
+			: StructureManager._moleculeData["salt"][cMolecule.smilesString]["pKL"];
 		var molKl: number = Math.pow(10, -molPKl);
 
 		const deficit = molKl - cMolP1 * cMolP2;

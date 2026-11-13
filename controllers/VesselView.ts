@@ -42,6 +42,8 @@ export class VesselView extends Container {
 	private lastFraction = -1;
 	private lastAngle = 0;
 	private lastLiquid = false;
+	private lastSediment = 0;
+	private lastSedimentColor = 0;
 
 	constructor(readonly component: ChemComponent, type: VesselType, texture: Texture, width: number, height: number,
 		scaleTextures: Map<string, Texture>) {
@@ -131,19 +133,26 @@ export class VesselView extends Container {
 		const fraction = mixture.contentVolume * 1000 / this.component._volume;
 		// Older solid mixtures store moles without a bulk volume.
 		const fill = fraction > 0 ? Math.min(1, fraction) : !liquid && mixture._activeMolecules.length ? 0.035 : 0;
-		this.updateFill(fill, liquid);
+		const sediment = mixture.saltSediment;
+		// Keep small precipitates visible in the teaching view.
+		const sedimentFraction = liquid && sediment.mass > 1e-6
+			? Math.min(fill, Math.max(0.012, sediment.mass / (2 * this.component._volume))) : 0;
+		this.updateFill(fill, liquid, sedimentFraction, sediment.color);
 	}
 
 	updateAngle(): void {
-		this.updateFill(this.lastFraction, this.lastLiquid);
+		this.updateFill(this.lastFraction, this.lastLiquid, this.lastSediment, this.lastSedimentColor);
 	}
 
-	private updateFill(fraction: number, liquid: boolean): void {
+	private updateFill(fraction: number, liquid: boolean, sediment: number, color: number): void {
 		const angle = liquid ? this.rotation : 0;
-		if (fraction === this.lastFraction && angle === this.lastAngle && liquid === this.lastLiquid) return;
+		if (fraction === this.lastFraction && angle === this.lastAngle && liquid === this.lastLiquid &&
+			sediment === this.lastSediment && color === this.lastSedimentColor) return;
 		this.lastFraction = fraction;
 		this.lastAngle = angle;
 		this.lastLiquid = liquid;
+		this.lastSediment = sediment;
+		this.lastSedimentColor = color;
 		this.fillShape.clear();
 		if (fraction <= 0) return;
 
@@ -153,6 +162,30 @@ export class VesselView extends Container {
 		const depth = ({ x, y }: Point) => x * sin + y * cos;
 		const depths = this.outline.map(depth);
 		const surface = this.surfaceAt(fraction, Math.min(...depths), Math.max(...depths), sin, cos);
+		const { submerged, edges } = this.clipAtSurface(surface, depth);
+		if (submerged.length < 3) return;
+		this.fillShape.poly(submerged).fill(liquid ? { color: 0x4592b7, alpha: 0.55 } : { color: 0x827d6f, alpha: 0.72 });
+		if (sediment > 0) {
+			const floor = this.surfaceAt(sediment, Math.min(...depths), Math.max(...depths), sin, cos);
+			const deposit = this.clipAtSurface(floor, depth).submerged;
+			if (deposit.length >= 3) this.fillShape.poly(deposit).fill({ color, alpha: 0.95 })
+				.stroke({ color: 0x726a59, alpha: 0.8, width: 0.18 });
+		}
+		if (!liquid) return;
+		if (fraction === 1 && angle === 0) edges.push(this.outline[0], this.outline[this.outline.length - 1]);
+		for (let i = 0; i + 1 < edges.length; i += 2) {
+			const [a, b] = [edges[i], edges[i + 1]];
+			this.fillShape.moveTo(a.x, a.y);
+			if (angle === 0) {
+				const bend = Math.min(Math.abs(b.x - a.x) * 0.08, 0.65,
+					(this.profile[this.profile.length - 1][0] - a.y) / 2);
+				this.fillShape.quadraticCurveTo((a.x + b.x) / 2, a.y + bend, b.x, b.y);
+			} else this.fillShape.lineTo(b.x, b.y);
+			this.fillShape.stroke({ color: 0x287399, alpha: 0.8, width: 0.24 });
+		}
+	}
+
+	private clipAtSurface(surface: number, depth: (point: Point) => number) {
 		const submerged: Point[] = [];
 		const edges: Point[] = [];
 		for (const [index, point] of this.outline.entries()) {
@@ -167,20 +200,7 @@ export class VesselView extends Container {
 			}
 			if (b >= surface) submerged.push(point);
 		}
-		if (submerged.length < 3) return;
-		this.fillShape.poly(submerged).fill(liquid ? { color: 0x4592b7, alpha: 0.55 } : { color: 0x827d6f, alpha: 0.72 });
-		if (!liquid) return;
-		if (fraction === 1 && angle === 0) edges.push(this.outline[0], this.outline[this.outline.length - 1]);
-		for (let i = 0; i + 1 < edges.length; i += 2) {
-			const [a, b] = [edges[i], edges[i + 1]];
-			this.fillShape.moveTo(a.x, a.y);
-			if (angle === 0) {
-				const bend = Math.min(Math.abs(b.x - a.x) * 0.08, 0.65,
-					(this.profile[this.profile.length - 1][0] - a.y) / 2);
-				this.fillShape.quadraticCurveTo((a.x + b.x) / 2, a.y + bend, b.x, b.y);
-			} else this.fillShape.lineTo(b.x, b.y);
-			this.fillShape.stroke({ color: 0x287399, alpha: 0.8, width: 0.24 });
-		}
+		return { submerged, edges };
 	}
 
 	private surfaceAt(fraction: number, top: number, bottom: number, sin: number, cos: number): number {

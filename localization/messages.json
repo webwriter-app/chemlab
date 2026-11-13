@@ -184,6 +184,8 @@
     "Eigene Stoffe": "Custom chemicals",
     "Eigene Moleküle und Gemische": "Custom molecules and mixtures",
     "Füllstand": "Fill level",
+    "Bodensatz": "Sediment",
+    "Sättigung bei {max} mol/L": "Saturation at {max} mol/L",
     "Natriumchlorid": "Sodium chloride",
     "Kaliumchlorid": "Potassium chloride",
     "Natriumbromid": "Sodium bromide",

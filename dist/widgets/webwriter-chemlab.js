@@ -69996,6 +69996,8 @@ var messages_default = {
     "Eigene Stoffe": "Custom chemicals",
     "Eigene Molek\xFCle und Gemische": "Custom molecules and mixtures",
     F\u00FCllstand: "Fill level",
+    Bodensatz: "Sediment",
+    "S\xE4ttigung bei {max} mol/L": "Saturation at {max} mol/L",
     Natriumchlorid: "Sodium chloride",
     Kaliumchlorid: "Potassium chloride",
     Natriumbromid: "Sodium bromide",
@@ -147037,6 +147039,9 @@ if (typeof Kekule2 !== "undefined") {
 
 // chemlib/Molecule.ts
 var Molecule = class {
+  /** Formula of a solid phase tracked by the salt equilibrium. */
+  solidSaltFormula;
+  solidSaltIons;
   /**
    * A list of all available bond types
    *
@@ -147359,6 +147364,35 @@ function ethanolWaterExcessVolume(waterGrams, ethanolGrams) {
   return mass / density(ethanolGrams / mass) - waterGrams / waterDensity - ethanolGrams / ethanolDensity;
 }
 
+// chemlib/saltSolubility.ts
+var saltSolubility = {
+  NaCl: { ions: ["[Na+]", "[Cl-]"], saturation: 5.43 },
+  KCl: { ions: ["[K+]", "[Cl-]"], saturation: 4.02 },
+  KBr: { ions: ["[K+]", "[Br-]"], saturation: 4.57 },
+  KI: { ions: ["[K+]", "[I-]"], saturation: 6.09 },
+  CuSO4: { ions: ["[Cu2+]", "[O-]S(=O)(=O)[O-]"], saturation: 1.29, color: 5409201 },
+  ZnSO4: { ions: ["[Zn2+]", "[O-]S(=O)(=O)[O-]"], saturation: 1.79 },
+  FeSO4: { ions: ["[Fe2+]", "[O-]S(=O)(=O)[O-]"], saturation: 0.93, color: 9939851 },
+  AgNO3: { ions: ["[Ag+]", "[O-][N+](=O)[O-]"], saturation: 8.8 },
+  BaCl2: { ions: ["[Ba2+]", "[Cl-]", 1, 2], saturation: 1.38 },
+  CaCl2: { ions: ["[Ca2+]", "[Cl-]", 1, 2], saturation: 5.04 },
+  FeCl3: { ions: ["[Fe3+]", "[Cl-]", 1, 3], saturation: 2.69, color: 12092742 },
+  Na2CO3: { ions: ["[Na+]", "[O-]C(=O)[O-]", 2, 1], saturation: 2.01 },
+  Na2SO4: { ions: ["[Na+]", "[O-]S(=O)(=O)[O-]", 2, 1], saturation: 1.3 },
+  KNO3: { ions: ["[K+]", "[O-][N+](=O)[O-]"], saturation: 2.77 },
+  // Dilute-solution products near 25 °C. Solve with concentrations as
+  // activities. The concentrated salts above use empirical model thresholds.
+  // https://openstax.org/books/chemistry-2e/pages/j-solubility-products
+  AgCl: { ions: ["[Ag+]", "[Cl-]"], ksp: 18e-11 },
+  AgBr: { ions: ["[Ag+]", "[Br-]"], ksp: 5e-13, color: 15195053 },
+  AgI: { ions: ["[Ag+]", "[I-]"], ksp: 83e-18, color: 14073189 },
+  BaSO4: { ions: ["[Ba2+]", "[O-]S(=O)(=O)[O-]"], ksp: 11e-11 },
+  CaSO4: { ions: ["[Ca2+]", "[O-]S(=O)(=O)[O-]"], ksp: 49e-6 },
+  CaCO3: { ions: ["[Ca2+]", "[O-]C(=O)[O-]"], ksp: 34e-10 },
+  BaCO3: { ions: ["[Ba2+]", "[O-]C(=O)[O-]"], ksp: 26e-10 },
+  Ag2SO4: { ions: ["[Ag+]", "[O-]S(=O)(=O)[O-]", 2, 1], ksp: 12e-6 }
+};
+
 // chemlib/Mixture.ts
 function isEthanol(molecule2) {
   if (molecule2._totalCharge !== 0 || molecule2._atoms.length !== 9 || molecule2._bonds.length !== 8) return false;
@@ -147396,6 +147430,21 @@ var Mixture = class {
   /** Measured volume of additions beyond the water tracked by the solution model, in L. */
   addedVolume = 0;
   hasLiquidVolume = false;
+  get saltSediment() {
+    let mass = 0;
+    let color2 = 15986401;
+    let largest = 0;
+    for (const molecule2 of this._activeMolecules) {
+      if (!molecule2.solidSaltFormula) continue;
+      const grams = this._molProperties[molecule2._id + "m"];
+      mass += grams;
+      if (grams > largest) {
+        largest = grams;
+        color2 = saltSolubility[molecule2.solidSaltFormula]?.color ?? 15986401;
+      }
+    }
+    return { mass, color: color2 };
+  }
   get contentVolume() {
     return this.contentVolumeWith();
   }
@@ -147472,6 +147521,12 @@ var Mixture = class {
     var bIncluded = false;
     var usedIndex = -1;
     this._activeMolecules.forEach((molecule2) => {
+      if (nMolecule.solidSaltFormula !== molecule2.solidSaltFormula) return;
+      if (nMolecule.solidSaltFormula) {
+        bIncluded = true;
+        usedIndex = molecule2._id;
+        return;
+      }
       if (nMolecule._atoms.length === 1) {
         if (molecule2._atoms.length === 1 && nMolecule._atoms[0].getSymbol() === molecule2._atoms[0].getSymbol() && nMolecule._totalCharge === molecule2._totalCharge) {
           bIncluded = true;
@@ -147499,7 +147554,7 @@ var Mixture = class {
     this._activeMolecules.push(nMolecule);
     this._molProperties[nMolecule._id + "n"] = amountMol;
     this._molProperties[nMolecule._id + "m"] = amountMol * nMolecule.getTotMolMass();
-    if (this._isSolution) {
+    if (this._isSolution && !nMolecule.solidSaltFormula) {
       this._molProperties[nMolecule._id + "c"] = amountMol / this._solutionVolume;
     }
     if (StructureManager.isWater(nMolecule)) {
@@ -147548,7 +147603,7 @@ var Mixture = class {
     if (StructureManager.isWater(cMol)) {
       this._solutionVolume = this._molProperties[iMol + "m"] / 1e3;
     }
-    if (this._isSolution) {
+    if (this._isSolution && !cMol.solidSaltFormula) {
       this._molProperties[iMol + "c"] = this._molProperties[iMol + "n"] / this._solutionVolume;
     }
     if (this._molProperties[iMol + "n"] <= 0) {
@@ -148448,6 +148503,11 @@ var AcidBase = class _AcidBase {
 };
 
 // chemlib/Simulation.ts
+var saltEquilibria = Object.entries(saltSolubility).map(([formula, data2]) => {
+  const [cation, anion, cations = 1, anions = 1] = data2.ions;
+  const product = data2.ksp ?? (cations * data2.saturation) ** cations * (anions * data2.saturation) ** anions;
+  return { formula, cation, anion, cations, anions, product };
+}).sort((a7, b5) => a7.product - b5.product);
 var Simulation = class {
   /**
    * The default volume for transfer of chemicals in litres (default: 1mL)
@@ -148507,7 +148567,7 @@ var Simulation = class {
    * @param {Mixture} cMixture - the solution to simulate
    */
   static sSolvation(cMixture) {
-    if (!cMixture._isSolution) {
+    if (!cMixture._isSolution || !(cMixture._solutionVolume > 0)) {
       return;
     }
     cMixture._activeMolecules.forEach((molecule2) => {
@@ -148521,11 +148581,98 @@ var Simulation = class {
       const salts = cMixture._activeMolecules.filter((molecule2) => StructureManager.isSalt(molecule2));
       for (const salt2 of salts) {
         const parts = this.cacheDissociation(salt2);
+        if (parts && this.registerSolidSalt(cMixture, salt2, parts)) {
+          changed = true;
+          continue;
+        }
         if (parts && this.sEquilibriumSalt(cMixture, salt2, parts[0], parts[1])) {
           changed = true;
         }
       }
     } while (changed);
+    this.equilibrateSalts(cMixture);
+  }
+  static makeSolidSalt(formula, ions, counts2) {
+    const solid = StructureManager.newMolecule();
+    solid.name = solid.solidSaltFormula = formula;
+    solid.solidSaltIons = ions;
+    ions.forEach((ion2, index2) => {
+      for (let unit = 0; unit < counts2[index2]; unit++) {
+        const atoms = new Map(ion2._atoms.map((atom) => [
+          atom._id,
+          solid.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), atom.getIonicCharge())._id
+        ]));
+        for (const bond of ion2._bonds) {
+          solid.addBond(atoms.get(bond._from._id), atoms.get(bond._to._id), bond._magnitude, bond._length, bond._type);
+        }
+      }
+    });
+    return solid;
+  }
+  static registerSolidSalt(mix, molecule2, ions) {
+    const pair = ions[0]._totalCharge > 0 ? ions : [ions[1], ions[0]];
+    const salt2 = saltEquilibria.find(({ cation, anion, cations, anions }) => cations === 1 && anions === 1 && pair[0].smilesString === cation && pair[1].smilesString === anion);
+    if (!salt2) return false;
+    const amount = mix._molProperties[molecule2._id + "n"];
+    mix.remMolecule(molecule2._id);
+    const existing = mix._activeMolecules.find((item) => item.solidSaltFormula === salt2.formula);
+    mix.addMolecule(existing ?? this.makeSolidSalt(salt2.formula, pair, [1, 1]), amount);
+    return true;
+  }
+  static equilibrateSalts(mix) {
+    const volume = mix._solutionVolume;
+    const ions = new Map(mix._activeMolecules.filter((item) => item._totalCharge !== 0).map((item) => [item.smilesString, item]));
+    const solids = new Map(mix._activeMolecules.filter((item) => item.solidSaltFormula).map((item) => [item.solidSaltFormula, item]));
+    if (!ions.size && !solids.size) return;
+    for (let pass = 0; pass < 32; pass++) {
+      let changed = false;
+      for (const { formula, cation, anion, cations, anions, product } of saltEquilibria) {
+        const positive = ions.get(cation);
+        const negative = ions.get(anion);
+        const solid = solids.get(formula);
+        if ((!positive || !negative) && !solid) continue;
+        const p6 = positive ? mix._molProperties[positive._id + "n"] / volume : 0;
+        const n10 = negative ? mix._molProperties[negative._id + "n"] / volume : 0;
+        const ionProduct = (delta2) => Math.max(0, p6 + delta2 * cations) ** cations * Math.max(0, n10 + delta2 * anions) ** anions;
+        const current = ionProduct(0);
+        if (Math.abs(current - product) <= product * 1e-8) continue;
+        const available = solid ? mix._molProperties[solid._id + "n"] / volume : 0;
+        let low = current > product ? -Math.min(p6 / cations, n10 / anions) : 0;
+        let high = current > product ? 0 : available;
+        if (low === high) continue;
+        let delta = high;
+        if (ionProduct(high) > product) {
+          for (let step = 0; step < 52; step++) {
+            const middle = (low + high) / 2;
+            if (ionProduct(middle) > product) high = middle;
+            else low = middle;
+          }
+          delta = (low + high) / 2;
+        }
+        const amount = delta * volume;
+        if (Math.abs(amount) <= 1e-14) continue;
+        if (amount > 0) {
+          const positiveIon = positive ?? solid.solidSaltIons[0];
+          const negativeIon = negative ?? solid.solidSaltIons[1];
+          mix.addMolecule(positiveIon, amount * cations);
+          mix.addMolecule(negativeIon, amount * anions);
+          ions.set(cation, positiveIon);
+          ions.set(anion, negativeIon);
+          mix.changeMolecule(solid._id, -amount);
+          if (!mix._molProperties[solid._id + "n"]) solids.delete(formula);
+        } else {
+          mix.changeMolecule(positive._id, amount * cations);
+          mix.changeMolecule(negative._id, amount * anions);
+          if (!mix._molProperties[positive._id + "n"]) ions.delete(cation);
+          if (!mix._molProperties[negative._id + "n"]) ions.delete(anion);
+          const deposit = solid ?? this.makeSolidSalt(formula, [positive, negative], [cations, anions]);
+          mix.addMolecule(deposit, -amount);
+          solids.set(formula, deposit);
+        }
+        changed = true;
+      }
+      if (!changed) break;
+    }
   }
   /**
    * Splits a molecule at its first ionic or acidbase bond into two conjugate
@@ -148723,7 +148870,7 @@ var Simulation = class {
     var nMolC = sMix._molProperties[cMolecule._id + "n"] === void 0 ? 0 : sMix._molProperties[cMolecule._id + "n"];
     var cMolP1 = sMix._molProperties[pMolecule1._id + "c"] === void 0 ? 0 : sMix._molProperties[pMolecule1._id + "c"];
     var cMolP2 = sMix._molProperties[pMolecule2._id + "c"] === void 0 ? 0 : sMix._molProperties[pMolecule2._id + "c"];
-    var molPKl = StructureManager._moleculeData["salt"][cMolecule.smilesString] === void 0 ? -1 : StructureManager._moleculeData["salt"][cMolecule.smilesString]["pkl"];
+    var molPKl = StructureManager._moleculeData["salt"][cMolecule.smilesString] === void 0 ? -1 : StructureManager._moleculeData["salt"][cMolecule.smilesString]["pKL"];
     var molKl = Math.pow(10, -molPKl);
     const deficit = molKl - cMolP1 * cMolP2;
     if (deficit <= 0 || nMolC <= 0 || sMix._solutionVolume <= 0) return false;
@@ -148963,6 +149110,7 @@ var ChemComponent = class {
       if (this._content == null) {
         if (nMolAmount == null) {
           this._content = nMix;
+          Simulation.sSolvation(this._content);
           return;
         } else {
           this._content = StructureManager.newMixture();
@@ -149026,6 +149174,7 @@ var ChemComponent = class {
         portion.addedVolume = this._content.addedVolume * fraction;
         this._content.addedVolume -= portion.addedVolume;
         if (fraction === 1) this._content.hasLiquidVolume = false;
+        Simulation.sSolvation(this._content);
         tDest.addContents({ nMix: portion });
         if (tDest._content._isSolution) Simulation.sNeutralize(tDest._content);
         return volume * fraction;
@@ -176191,8 +176340,8 @@ function oxoanion(formula, center, double, single) {
     charges: [0, ...Array(double).fill(0), ...Array(single).fill(-1)]
   };
 }
-function saltSolution(name2, formula, cation, anion, cations = 1, anions = 1) {
-  return { name: name2, formula, category: "Salze", concentrationLimit: 1, recipe: { phase: "liquid", density: 1, aqueousMolar: true, parts: [
+function saltSolution(name2, formula, salt2, cation, anion, cations = 1, anions = 1) {
+  return { name: name2, formula, category: "Salze", concentrationLimit: saltSolubility[salt2].saturation, recipe: { phase: "liquid", density: 1, aqueousMolar: true, parts: [
     { molecule: water, amount: 55.5 },
     { molecule: cation, amount: cations },
     { molecule: anion, amount: anions }
@@ -176238,17 +176387,17 @@ var chemicalCatalog = [
   salt("Kaliumbromid", "KBr", "potassium", "bromine", 2.75),
   salt("Natriumiodid", "NaI", "sodium", "iodine", 3.67),
   salt("Kaliumiodid", "KI", "potassium", "iodine", 3.12),
-  aqueous("Natriumchloridl\xF6sung (1 mol/L)", "Salze", sodiumChloride.preview, 2),
-  saltSolution("Kupfer(II)-sulfatl\xF6sung", "CuSO\u2084", ion("Cu\xB2\u207A", "copper", 2), sulfate),
-  saltSolution("Zinksulfatl\xF6sung", "ZnSO\u2084", ion("Zn\xB2\u207A", "zinc", 2), sulfate),
-  saltSolution("Eisen(II)-sulfatl\xF6sung", "FeSO\u2084", ion("Fe\xB2\u207A", "iron", 2), sulfate),
-  saltSolution("Silbernitratl\xF6sung", "AgNO\u2083", ion("Ag\u207A", "silver", 1), nitrate),
-  saltSolution("Bariumchloridl\xF6sung", "BaCl\u2082", ion("Ba\xB2\u207A", "barium", 2), chloride, 1, 2),
-  saltSolution("Calciumchloridl\xF6sung", "CaCl\u2082", ion("Ca\xB2\u207A", "calcium", 2), chloride, 1, 2),
-  saltSolution("Eisen(III)-chloridl\xF6sung", "FeCl\u2083", ion("Fe\xB3\u207A", "iron", 3), chloride, 1, 3),
-  saltSolution("Natriumcarbonatl\xF6sung", "Na\u2082CO\u2083", sodium, carbonate, 2),
-  saltSolution("Natriumsulfatl\xF6sung", "Na\u2082SO\u2084", sodium, sulfate, 2),
-  saltSolution("Kaliumnitratl\xF6sung", "KNO\u2083", ion("K\u207A", "potassium", 1), nitrate),
+  aqueous("Natriumchloridl\xF6sung (1 mol/L)", "Salze", sodiumChloride.preview, saltSolubility.NaCl.saturation),
+  saltSolution("Kupfer(II)-sulfatl\xF6sung", "CuSO\u2084", "CuSO4", ion("Cu\xB2\u207A", "copper", 2), sulfate),
+  saltSolution("Zinksulfatl\xF6sung", "ZnSO\u2084", "ZnSO4", ion("Zn\xB2\u207A", "zinc", 2), sulfate),
+  saltSolution("Eisen(II)-sulfatl\xF6sung", "FeSO\u2084", "FeSO4", ion("Fe\xB2\u207A", "iron", 2), sulfate),
+  saltSolution("Silbernitratl\xF6sung", "AgNO\u2083", "AgNO3", ion("Ag\u207A", "silver", 1), nitrate),
+  saltSolution("Bariumchloridl\xF6sung", "BaCl\u2082", "BaCl2", ion("Ba\xB2\u207A", "barium", 2), chloride, 1, 2),
+  saltSolution("Calciumchloridl\xF6sung", "CaCl\u2082", "CaCl2", ion("Ca\xB2\u207A", "calcium", 2), chloride, 1, 2),
+  saltSolution("Eisen(III)-chloridl\xF6sung", "FeCl\u2083", "FeCl3", ion("Fe\xB3\u207A", "iron", 3), chloride, 1, 3),
+  saltSolution("Natriumcarbonatl\xF6sung", "Na\u2082CO\u2083", "Na2CO3", sodium, carbonate, 2),
+  saltSolution("Natriumsulfatl\xF6sung", "Na\u2082SO\u2084", "Na2SO4", sodium, sulfate, 2),
+  saltSolution("Kaliumnitratl\xF6sung", "KNO\u2083", "KNO3", ion("K\u207A", "potassium", 1), nitrate),
   reference("Kupfer(II)-sulfat-Pentahydrat", "Salze", "CuSO\u2084\xB75 H\u2082O"),
   reference("Calciumcarbonat", "Salze", "CaCO\u2083"),
   reference("Calciumsulfat-Dihydrat", "Salze", "CaSO\u2084\xB72 H\u2082O"),
@@ -181425,6 +181574,8 @@ var VesselView = class extends Container {
   lastFraction = -1;
   lastAngle = 0;
   lastLiquid = false;
+  lastSediment = 0;
+  lastSedimentColor = 0;
   createScale(type, width, height) {
     const resolution = 3;
     const canvas = DOMAdapter.get().createCanvas(Math.ceil(width * resolution), Math.ceil(height * resolution));
@@ -181484,17 +181635,21 @@ var VesselView = class extends Container {
     const liquid = mixture.hasLiquidContents;
     const fraction = mixture.contentVolume * 1e3 / this.component._volume;
     const fill2 = fraction > 0 ? Math.min(1, fraction) : !liquid && mixture._activeMolecules.length ? 0.035 : 0;
-    this.updateFill(fill2, liquid);
+    const sediment = mixture.saltSediment;
+    const sedimentFraction = liquid && sediment.mass > 1e-6 ? Math.min(fill2, Math.max(0.012, sediment.mass / (2 * this.component._volume))) : 0;
+    this.updateFill(fill2, liquid, sedimentFraction, sediment.color);
   }
   updateAngle() {
-    this.updateFill(this.lastFraction, this.lastLiquid);
+    this.updateFill(this.lastFraction, this.lastLiquid, this.lastSediment, this.lastSedimentColor);
   }
-  updateFill(fraction, liquid) {
+  updateFill(fraction, liquid, sediment, color2) {
     const angle = liquid ? this.rotation : 0;
-    if (fraction === this.lastFraction && angle === this.lastAngle && liquid === this.lastLiquid) return;
+    if (fraction === this.lastFraction && angle === this.lastAngle && liquid === this.lastLiquid && sediment === this.lastSediment && color2 === this.lastSedimentColor) return;
     this.lastFraction = fraction;
     this.lastAngle = angle;
     this.lastLiquid = liquid;
+    this.lastSediment = sediment;
+    this.lastSedimentColor = color2;
     this.fillShape.clear();
     if (fraction <= 0) return;
     const sin5 = Math.sin(angle) * this.fillShape.scale.x / this.fillShape.scale.y;
@@ -181502,22 +181657,14 @@ var VesselView = class extends Container {
     const depth = ({ x: x4, y: y5 }) => x4 * sin5 + y5 * cos6;
     const depths = this.outline.map(depth);
     const surface = this.surfaceAt(fraction, Math.min(...depths), Math.max(...depths), sin5, cos6);
-    const submerged = [];
-    const edges = [];
-    for (const [index2, point] of this.outline.entries()) {
-      const previous = this.outline[(index2 + this.outline.length - 1) % this.outline.length];
-      const a7 = depth(previous);
-      const b5 = depth(point);
-      if (a7 < surface !== b5 < surface) {
-        const t10 = (surface - a7) / (b5 - a7);
-        const edge = { x: previous.x + (point.x - previous.x) * t10, y: previous.y + (point.y - previous.y) * t10 };
-        submerged.push(edge);
-        edges.push(edge);
-      }
-      if (b5 >= surface) submerged.push(point);
-    }
+    const { submerged, edges } = this.clipAtSurface(surface, depth);
     if (submerged.length < 3) return;
     this.fillShape.poly(submerged).fill(liquid ? { color: 4559543, alpha: 0.55 } : { color: 8551791, alpha: 0.72 });
+    if (sediment > 0) {
+      const floor6 = this.surfaceAt(sediment, Math.min(...depths), Math.max(...depths), sin5, cos6);
+      const deposit = this.clipAtSurface(floor6, depth).submerged;
+      if (deposit.length >= 3) this.fillShape.poly(deposit).fill({ color: color2, alpha: 0.95 }).stroke({ color: 7498329, alpha: 0.8, width: 0.18 });
+    }
     if (!liquid) return;
     if (fraction === 1 && angle === 0) edges.push(this.outline[0], this.outline[this.outline.length - 1]);
     for (let i11 = 0; i11 + 1 < edges.length; i11 += 2) {
@@ -181533,6 +181680,23 @@ var VesselView = class extends Container {
       } else this.fillShape.lineTo(b5.x, b5.y);
       this.fillShape.stroke({ color: 2651033, alpha: 0.8, width: 0.24 });
     }
+  }
+  clipAtSurface(surface, depth) {
+    const submerged = [];
+    const edges = [];
+    for (const [index2, point] of this.outline.entries()) {
+      const previous = this.outline[(index2 + this.outline.length - 1) % this.outline.length];
+      const a7 = depth(previous);
+      const b5 = depth(point);
+      if (a7 < surface !== b5 < surface) {
+        const t10 = (surface - a7) / (b5 - a7);
+        const edge = { x: previous.x + (point.x - previous.x) * t10, y: previous.y + (point.y - previous.y) * t10 };
+        submerged.push(edge);
+        edges.push(edge);
+      }
+      if (b5 >= surface) submerged.push(point);
+    }
+    return { submerged, edges };
   }
   surfaceAt(fraction, top, bottom, sin5, cos6) {
     if (fraction >= 1) return top;
@@ -184105,7 +184269,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         100
       );
       chemlib_obj._content._activeMolecules.forEach(async (mol) => {
-        let currIndex = chemlib_obj._content._activeMolecules.indexOf(mol);
         let img = document.createElement("svg");
         img.style.width = "190px";
         img.style.height = "80px";
@@ -184146,19 +184309,18 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         );
         cItem.appendChild(infoDiv);
         this.mixCarousel.appendChild(cItem);
-        StructureManager.getChemData(
-          chemlib_obj._content._activeMolecules[currIndex]
-        );
-        await this.waitUntil(
-          () => chemlib_obj._content._activeMolecules[currIndex].name != ""
-        );
+        if (!mol.solidSaltFormula) {
+          StructureManager.getChemData(mol);
+          await this.waitUntil(() => mol.name !== "" || !chemlib_obj._content._activeMolecules.includes(mol));
+        }
+        if (!chemlib_obj._content._activeMolecules.includes(mol)) return;
         if (this.curr_obj === chemlib_obj) this._updatePopup();
         infoDiv.innerHTML += `
                         <div style="display: block; background-color: #fdfdfd; border-radius: 5px; overflow: hidden">
-                            <h5 title="${chemlib_obj._content._activeMolecules[currIndex].name}">${chemlib_obj._content._activeMolecules[currIndex].name}</h5>
+                            <h5 title="${mol.name}">${mol.name}</h5>
                             <p style="margin-bottom: 0px">${"n: " + chemlib_obj._content._molProperties[mol._id + "n"].toExponential(2)}</p>
                             <p style="margin-bottom: 0px">${"m: " + chemlib_obj._content._molProperties[mol._id + "m"].toExponential(2)}</p>
-                            <p style="margin-bottom: 0px">${chemlib_obj._content._isSolution ? "c:" + chemlib_obj._content._molProperties[mol._id + "c"].toExponential(2) : ""}</p>
+                            <p style="margin-bottom: 0px">${mol.solidSaltFormula ? this.message("Bodensatz") : chemlib_obj._content._isSolution ? "c:" + chemlib_obj._content._molProperties[mol._id + "c"].toExponential(2) : ""}</p>
                         </div>
                     `;
       });
@@ -185959,10 +186121,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     return x`
 			<div class="chemical-tile chemical-tile-with-concentration" contenteditable="false">
 				${tile}
-				${this.renderConcentrationControl(key, label, value, concentration.max, concentrationLabel, setValue)}
+				${this.renderConcentrationControl(key, label, value, concentration, concentrationLabel, setValue)}
 			</div>`;
   }
-  renderConcentrationControl(key, name2, value, max6, label, setValue) {
+  renderConcentrationControl(key, name2, value, { max: max6, saturation }, label, setValue) {
     const presets = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2].filter((preset) => preset < max6);
     presets.push(max6);
     const index2 = presets.reduce((nearest, preset, i11) => Math.abs(value - preset) < Math.abs(value - presets[nearest]) ? i11 : nearest, 0);
@@ -185997,6 +186159,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     };
     const changeBy = (delta) => setValue(Number((value + delta).toPrecision(15)));
     const accessibleName = `${name2} \xB7 ${this.message("Konzentration in mol/L")}`;
+    const saturationLabel = saturation ? this.message("S\xE4ttigung bei {max} mol/L", { max: this.formatAmount(max6, 8) }) : "";
+    const editLabel = this.message("Konzentration bearbeiten (Doppelklick oder F2)");
     return x`
 			<div class="chemical-concentration">
 				<button type="button" class="amount-menu-button" aria-label=${this.message("Konzentration verringern")}
@@ -186015,8 +186179,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}>
 					` : x`
 						<input class="amount-slider" type="range" dir="ltr" min="0" max=${presets.length - 1} step="1" .value=${String(index2)}
-							aria-label=${accessibleName} aria-valuetext=${label}
-							title=${this.message("Konzentration bearbeiten (Doppelklick oder F2)")}
+							aria-label=${accessibleName} aria-valuetext=${saturation && value === max6 ? saturationLabel : label}
+							title=${saturation ? `${editLabel} \xB7 ${saturationLabel}` : editLabel}
 							@input=${(event) => setValue(presets[event.currentTarget.valueAsNumber])}
 							@dblclick=${edit} @keydown=${(event) => {
       if (event.key !== "F2") return;
@@ -186063,7 +186227,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       item.formula,
       item.recipe,
       catalogPreviews[item.name],
-      item.concentrationLimit && { initial: 1, max: item.concentrationLimit }
+      item.concentrationLimit && {
+        initial: Math.min(1, item.concentrationLimit),
+        max: item.concentrationLimit,
+        saturation: item.category === "Salze"
+      }
     ))}
 					</div>` : E}
 				</sl-details>`);

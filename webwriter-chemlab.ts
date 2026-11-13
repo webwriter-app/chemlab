@@ -74,7 +74,7 @@ import { STANDARD_CANVAS_HEIGHT } from "./controllers/WorkspaceCamera";
 import { CanvasController } from "./controllers/CanvasController";
 
 type SelectedChemical = { key: string; name: string; recipe: ChemicalRecipe };
-type ChemicalConcentration = { initial: number; max: number; stock?: number };
+type ChemicalConcentration = { initial: number; max: number; stock?: number; saturation?: boolean };
 const MIN_CONCENTRATION = 0.001;
 type AmountSource = { name: string; recipe: ChemicalRecipe; dose: (volumeMl: number) => chemlib.Mixture } |
 	{ vessel: chemlib.ChemComponent };
@@ -2161,8 +2161,6 @@ export class ChemLab extends LitElementWw {
 					100
 				);
 			chemlib_obj._content._activeMolecules.forEach(async (mol) => {
-				let currIndex =
-					chemlib_obj._content._activeMolecules.indexOf(mol);
 				let img = document.createElement("svg");
 				img.style.width = "190px"
 				img.style.height = "80px"
@@ -2204,22 +2202,18 @@ export class ChemLab extends LitElementWw {
 				) as SlCarouselItem;
 				cItem.appendChild(infoDiv);
 				this.mixCarousel.appendChild(cItem);
-				chemlib.StructureManager.getChemData(
-					chemlib_obj._content._activeMolecules[currIndex]
-				);
-				await this.waitUntil(
-					() =>
-						chemlib_obj._content._activeMolecules[currIndex].name !=
-						""
-				);
+				if (!mol.solidSaltFormula) {
+					chemlib.StructureManager.getChemData(mol);
+					await this.waitUntil(() => mol.name !== "" || !chemlib_obj._content._activeMolecules.includes(mol));
+				}
+				if (!chemlib_obj._content._activeMolecules.includes(mol)) return;
 				if (this.curr_obj === chemlib_obj) this._updatePopup();
 				infoDiv.innerHTML += `
                         <div style="display: block; background-color: #fdfdfd; border-radius: 5px; overflow: hidden">
                             <h5 title="${
-								chemlib_obj._content._activeMolecules[currIndex]
-									.name
+								mol.name
 							}">${
-					chemlib_obj._content._activeMolecules[currIndex].name
+					mol.name
 				}</h5>
                             <p style="margin-bottom: 0px">${
 								"n: " +
@@ -2234,7 +2228,9 @@ export class ChemLab extends LitElementWw {
 								].toExponential(2)
 							}</p>
                             <p style="margin-bottom: 0px">${
-								chemlib_obj._content._isSolution
+								mol.solidSaltFormula
+									? this.message("Bodensatz")
+									: chemlib_obj._content._isSolution
 									? "c:" +
 									  chemlib_obj._content._molProperties[
 											mol._id + "c"
@@ -4359,11 +4355,11 @@ export class ChemLab extends LitElementWw {
 		return html`
 			<div class="chemical-tile chemical-tile-with-concentration" contenteditable="false">
 				${tile}
-				${this.renderConcentrationControl(key, label, value, concentration.max, concentrationLabel, setValue)}
+				${this.renderConcentrationControl(key, label, value, concentration, concentrationLabel, setValue)}
 			</div>`;
 	}
 
-	private renderConcentrationControl(key: string, name: string, value: number, max: number, label: string,
+	private renderConcentrationControl(key: string, name: string, value: number, { max, saturation }: ChemicalConcentration, label: string,
 		setValue: (next: number) => void) {
 		const presets = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2].filter((preset) => preset < max);
 		presets.push(max);
@@ -4398,6 +4394,8 @@ export class ChemLab extends LitElementWw {
 		};
 		const changeBy = (delta: number) => setValue(Number((value + delta).toPrecision(15)));
 		const accessibleName = `${name} · ${this.message("Konzentration in mol/L")}`;
+		const saturationLabel = saturation ? this.message("Sättigung bei {max} mol/L", { max: this.formatAmount(max, 8) }) : "";
+		const editLabel = this.message("Konzentration bearbeiten (Doppelklick oder F2)");
 		return html`
 			<div class="chemical-concentration">
 				<button type="button" class="amount-menu-button" aria-label=${this.message("Konzentration verringern")}
@@ -4416,8 +4414,8 @@ export class ChemLab extends LitElementWw {
 							}}>
 					` : html`
 						<input class="amount-slider" type="range" dir="ltr" min="0" max=${presets.length - 1} step="1" .value=${String(index)}
-							aria-label=${accessibleName} aria-valuetext=${label}
-							title=${this.message("Konzentration bearbeiten (Doppelklick oder F2)")}
+							aria-label=${accessibleName} aria-valuetext=${saturation && value === max ? saturationLabel : label}
+							title=${saturation ? `${editLabel} · ${saturationLabel}` : editLabel}
 							@input=${(event: Event) => setValue(presets[(event.currentTarget as HTMLInputElement).valueAsNumber])}
 							@dblclick=${edit} @keydown=${(event: KeyboardEvent) => {
 								if (event.key !== "F2") return;
@@ -4466,7 +4464,9 @@ export class ChemLab extends LitElementWw {
 					<sl-tag slot="summary" size="small">${label}</sl-tag>
 					${query || this.openedChemicalSections.has(category) ? html`<div class="chemical-grid">
 						${items.map((item) => this.renderChemicalTile(item.name, this.message(item.name), item.formula,
-							item.recipe, catalogPreviews[item.name], item.concentrationLimit && { initial: 1, max: item.concentrationLimit }))}
+							item.recipe, catalogPreviews[item.name], item.concentrationLimit &&
+								{ initial: Math.min(1, item.concentrationLimit), max: item.concentrationLimit,
+									saturation: item.category === "Salze" }))}
 					</div>` : nothing}
 				</sl-details>`);
 		const customLabel = this.message("Eigene Stoffe");

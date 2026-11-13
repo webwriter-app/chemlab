@@ -1,3 +1,5 @@
+import { saltSolubility } from "../chemlib/saltSolubility";
+
 export interface MoleculeDefinition {
 	formula: string;
 	atoms: string[];
@@ -132,9 +134,9 @@ function oxoanion(formula: string, center: string, double: number, single: numbe
 		charges: [0, ...Array<number>(double).fill(0), ...Array<number>(single).fill(-1)] };
 }
 
-function saltSolution(name: string, formula: string, cation: MoleculeDefinition, anion: MoleculeDefinition,
+function saltSolution(name: string, formula: string, salt: string, cation: MoleculeDefinition, anion: MoleculeDefinition,
 	cations = 1, anions = 1): CatalogChemical {
-	return { name, formula, category: "Salze", concentrationLimit: 1, recipe: { phase: "liquid", density: 1, aqueousMolar: true, parts: [
+	return { name, formula, category: "Salze", concentrationLimit: saltSolubility[salt].saturation, recipe: { phase: "liquid", density: 1, aqueousMolar: true, parts: [
 		{ molecule: water, amount: 55.5 }, { molecule: cation, amount: cations }, { molecule: anion, amount: anions },
 	] } };
 }
@@ -180,17 +182,17 @@ export const chemicalCatalog: CatalogChemical[] = [
 	salt("Kaliumbromid", "KBr", "potassium", "bromine", 2.75),
 	salt("Natriumiodid", "NaI", "sodium", "iodine", 3.67),
 	salt("Kaliumiodid", "KI", "potassium", "iodine", 3.12),
-	aqueous("Natriumchloridlösung (1 mol/L)", "Salze", sodiumChloride.preview, 2),
-	saltSolution("Kupfer(II)-sulfatlösung", "CuSO₄", ion("Cu²⁺", "copper", 2), sulfate),
-	saltSolution("Zinksulfatlösung", "ZnSO₄", ion("Zn²⁺", "zinc", 2), sulfate),
-	saltSolution("Eisen(II)-sulfatlösung", "FeSO₄", ion("Fe²⁺", "iron", 2), sulfate),
-	saltSolution("Silbernitratlösung", "AgNO₃", ion("Ag⁺", "silver", 1), nitrate),
-	saltSolution("Bariumchloridlösung", "BaCl₂", ion("Ba²⁺", "barium", 2), chloride, 1, 2),
-	saltSolution("Calciumchloridlösung", "CaCl₂", ion("Ca²⁺", "calcium", 2), chloride, 1, 2),
-	saltSolution("Eisen(III)-chloridlösung", "FeCl₃", ion("Fe³⁺", "iron", 3), chloride, 1, 3),
-	saltSolution("Natriumcarbonatlösung", "Na₂CO₃", sodium, carbonate, 2),
-	saltSolution("Natriumsulfatlösung", "Na₂SO₄", sodium, sulfate, 2),
-	saltSolution("Kaliumnitratlösung", "KNO₃", ion("K⁺", "potassium", 1), nitrate),
+	aqueous("Natriumchloridlösung (1 mol/L)", "Salze", sodiumChloride.preview, saltSolubility.NaCl.saturation),
+	saltSolution("Kupfer(II)-sulfatlösung", "CuSO₄", "CuSO4", ion("Cu²⁺", "copper", 2), sulfate),
+	saltSolution("Zinksulfatlösung", "ZnSO₄", "ZnSO4", ion("Zn²⁺", "zinc", 2), sulfate),
+	saltSolution("Eisen(II)-sulfatlösung", "FeSO₄", "FeSO4", ion("Fe²⁺", "iron", 2), sulfate),
+	saltSolution("Silbernitratlösung", "AgNO₃", "AgNO3", ion("Ag⁺", "silver", 1), nitrate),
+	saltSolution("Bariumchloridlösung", "BaCl₂", "BaCl2", ion("Ba²⁺", "barium", 2), chloride, 1, 2),
+	saltSolution("Calciumchloridlösung", "CaCl₂", "CaCl2", ion("Ca²⁺", "calcium", 2), chloride, 1, 2),
+	saltSolution("Eisen(III)-chloridlösung", "FeCl₃", "FeCl3", ion("Fe³⁺", "iron", 3), chloride, 1, 3),
+	saltSolution("Natriumcarbonatlösung", "Na₂CO₃", "Na2CO3", sodium, carbonate, 2),
+	saltSolution("Natriumsulfatlösung", "Na₂SO₄", "Na2SO4", sodium, sulfate, 2),
+	saltSolution("Kaliumnitratlösung", "KNO₃", "KNO3", ion("K⁺", "potassium", 1), nitrate),
 	reference("Kupfer(II)-sulfat-Pentahydrat", "Salze", "CuSO₄·5 H₂O"),
 	reference("Calciumcarbonat", "Salze", "CaCO₃"),
 	reference("Calciumsulfat-Dihydrat", "Salze", "CaSO₄·2 H₂O"),

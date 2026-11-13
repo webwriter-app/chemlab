@@ -10,6 +10,9 @@ import { Kekule } from "kekule";
  * @typedef {Molecule}
  */
 class Molecule {
+	/** Formula of a solid phase tracked by the salt equilibrium. */
+	solidSaltFormula?: string;
+	solidSaltIons?: readonly [Molecule, Molecule];
 	/**
 	 * A list of all available bond types
 	 *

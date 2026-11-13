@@ -1,6 +1,7 @@
 import { Molecule } from "./Molecule";
 import { StructureManager } from "./StructureManager";
 import { ethanolWaterExcessVolume } from "./ethanolWaterVolume";
+import { saltSolubility } from "./saltSolubility";
 
 function isEthanol(molecule: Molecule): boolean {
 	if (molecule._totalCharge !== 0 || molecule._atoms.length !== 9 || molecule._bonds.length !== 8) return false;
@@ -52,6 +53,22 @@ class Mixture {
 	/** Measured volume of additions beyond the water tracked by the solution model, in L. */
 	addedVolume = 0;
 	hasLiquidVolume = false;
+
+	get saltSediment(): { mass: number; color: number } {
+		let mass = 0;
+		let color = 0xf3eee1;
+		let largest = 0;
+		for (const molecule of this._activeMolecules) {
+			if (!molecule.solidSaltFormula) continue;
+			const grams = this._molProperties[molecule._id + "m"];
+			mass += grams;
+			if (grams > largest) {
+				largest = grams;
+				color = saltSolubility[molecule.solidSaltFormula]?.color ?? 0xf3eee1;
+			}
+		}
+		return { mass, color };
+	}
 
 	get contentVolume(): number {
 		return this.contentVolumeWith();
@@ -138,6 +155,12 @@ class Mixture {
 		var usedIndex: number = -1;
 
 		this._activeMolecules.forEach((molecule) => {
+			if (nMolecule.solidSaltFormula !== molecule.solidSaltFormula) return;
+			if (nMolecule.solidSaltFormula) {
+				bIncluded = true;
+				usedIndex = molecule._id;
+				return;
+			}
 			if (nMolecule._atoms.length === 1) {
 				if (
 					molecule._atoms.length === 1 &&
@@ -176,7 +199,7 @@ class Mixture {
 		this._molProperties[nMolecule._id + "m"] =
 			amountMol * nMolecule.getTotMolMass();
 
-		if (this._isSolution) {
+		if (this._isSolution && !nMolecule.solidSaltFormula) {
 			this._molProperties[nMolecule._id + "c"] =
 				amountMol / this._solutionVolume;
 		}
@@ -237,7 +260,7 @@ class Mixture {
 			this._solutionVolume = this._molProperties[iMol + "m"] / 1000;
 		}
 
-		if (this._isSolution) {
+		if (this._isSolution && !cMol.solidSaltFormula) {
 			this._molProperties[iMol + "c"] =
 				this._molProperties[iMol + "n"] / this._solutionVolume;
 		}

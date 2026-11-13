@@ -172,6 +172,7 @@ class ChemComponent {
 			if (this._content == null) {
 				if (nMolAmount == null) {
 					this._content = nMix;
+					Simulation.sSolvation(this._content);
 					return;
 				} else {
 					this._content = StructureManager.newMixture();
@@ -243,6 +244,7 @@ class ChemComponent {
 				portion.addedVolume = this._content.addedVolume * fraction;
 				this._content.addedVolume -= portion.addedVolume;
 				if (fraction === 1) this._content.hasLiquidVolume = false;
+				Simulation.sSolvation(this._content);
 				tDest.addContents({ nMix: portion });
 				if (tDest._content._isSolution) Simulation.sNeutralize(tDest._content);
 				return volume * fraction;
