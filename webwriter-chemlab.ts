@@ -4313,17 +4313,12 @@ export class ChemLab extends LitElementWw {
 		return html`<div class="component-palette">${cards}</div>`;
 	}
 
-	private renderChemicalTile(key: string, name: string, formula: string, src?: string, recipe?: ChemicalRecipe) {
+	private renderChemicalTile(key: string, name: string, formula: string, recipe: ChemicalRecipe, src?: string) {
 		const contents = html`
 			<span class="chemical-preview">${src ? html`<img src=${src} alt="" draggable="false" decoding="async" loading="lazy"/>`
 				: html`<span>${formula}</span>`}</span>
 			<sl-badge pill variant="neutral">${name}</sl-badge>
 			${src ? html`<small>${formula}</small>` : nothing}`;
-		if (!recipe) return html`
-			<div class="chemical-tile chemical-reference">
-				${contents}
-				<small>${this.message("Nur Katalogeintrag")}</small>
-			</div>`;
 		return html`
 			<button type="button" class="chemical-tile" contenteditable="false" aria-pressed=${this.selectedChemical?.key === key}
 				@pointerdown=${(event: PointerEvent) => this.startChemicalDrag(event, { key, name, recipe }, src)}
@@ -4345,7 +4340,7 @@ export class ChemLab extends LitElementWw {
 		const preview = recipe.parts.find(({ molecule }) =>
 			!["H₂O", "OH2", "H2O"].includes(molecule.formula))?.molecule ?? recipe.parts[0]?.molecule;
 		if (!preview) return nothing;
-		return this.renderChemicalTile(key, name, preview.formula, this.previewMolecule(preview), recipe);
+		return this.renderChemicalTile(key, name, preview.formula, recipe, this.previewMolecule(preview));
 	}
 
 	private rememberChemicalSection(event: Event, category: string): void {
@@ -4370,7 +4365,7 @@ export class ChemLab extends LitElementWw {
 					<sl-tag slot="summary" size="small">${label}</sl-tag>
 					${query || this.openedChemicalSections.has(category) ? html`<div class="chemical-grid">
 						${items.map((item) => this.renderChemicalTile(item.name, this.message(item.name), item.formula,
-							catalogPreviews[item.name], item.recipe))}
+							item.recipe, catalogPreviews[item.name]))}
 					</div>` : nothing}
 				</sl-details>`);
 		const customLabel = this.message("Eigene Stoffe");

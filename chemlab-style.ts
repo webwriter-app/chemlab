@@ -1632,14 +1632,6 @@ export const style = css`
 		border: 1px solid var(--sl-color-neutral-200);
 		border-radius: 4px;
 	}
-	.chemical-reference {
-		cursor: default;
-		touch-action: auto;
-		user-select: text;
-	}
-	.chemical-reference small {
-		color: var(--sl-color-neutral-700);
-	}
 	.palette-dragging {
 		cursor: grabbing;
 	}

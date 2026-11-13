@@ -69863,7 +69863,6 @@ var messages_default = {
     "Kunststoffe und Monomere": "Plastics and monomers",
     "Chemikalien suchen": "Search chemicals",
     "Keine Chemikalien gefunden.": "No chemicals found.",
-    "Nur Katalogeintrag": "Catalog entry only",
     Kohlenstoffdioxid: "Carbon dioxide",
     "Kupfer(II)-sulfatl\xF6sung": "Copper(II) sulfate solution",
     Zinksulfatl\u00F6sung: "Zinc sulfate solution",
@@ -104044,14 +104043,6 @@ var style = i`
 		margin: 0;
 		border: 1px solid var(--sl-color-neutral-200);
 		border-radius: 4px;
-	}
-	.chemical-reference {
-		cursor: default;
-		touch-action: auto;
-		user-select: text;
-	}
-	.chemical-reference small {
-		color: var(--sl-color-neutral-700);
 	}
 	.palette-dragging {
 		cursor: grabbing;
@@ -176381,10 +176372,13 @@ var chemicalCatalog = [
 var catalogAliases = {
   "L\xF6sungsmittel": ["Ethanol", "Methanol", "Propan-2-ol", "Aceton", "Butan-2-on", "Ethylacetat", "Cyclohexan", "Hexan", "Heptan"]
 };
+var dosableChemicals = chemicalCatalog.filter(
+  (item) => item.recipe !== void 0
+);
 var chemicalCatalogGroups = chemicalClasses.map((category) => ({
   category,
-  items: chemicalCatalog.filter((item) => item.category === category || catalogAliases[category]?.includes(item.name))
-}));
+  items: dosableChemicals.filter((item) => item.category === category || catalogAliases[category]?.includes(item.name))
+})).filter(({ items }) => items.length > 0);
 
 // data/moleculeDefinition.ts
 function loadMoleculeDefinition(definition, onAtom) {
@@ -185852,16 +185846,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (cards.every((card) => card === E)) return x`<p>${this.message("Keine Ger\xE4te freigegeben.")}</p>`;
     return x`<div class="component-palette">${cards}</div>`;
   }
-  renderChemicalTile(key, name2, formula, src, recipe) {
+  renderChemicalTile(key, name2, formula, recipe, src) {
     const contents = x`
 			<span class="chemical-preview">${src ? x`<img src=${src} alt="" draggable="false" decoding="async" loading="lazy"/>` : x`<span>${formula}</span>`}</span>
 			<sl-badge pill variant="neutral">${name2}</sl-badge>
 			${src ? x`<small>${formula}</small>` : E}`;
-    if (!recipe) return x`
-			<div class="chemical-tile chemical-reference">
-				${contents}
-				<small>${this.message("Nur Katalogeintrag")}</small>
-			</div>`;
     return x`
 			<button type="button" class="chemical-tile" contenteditable="false" aria-pressed=${this.selectedChemical?.key === key}
 				@pointerdown=${(event) => this.startChemicalDrag(event, { key, name: name2, recipe }, src)}
@@ -185881,7 +185870,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   renderCustomChemical(key, name2, recipe) {
     const preview = recipe.parts.find(({ molecule: molecule2 }) => !["H\u2082O", "OH2", "H2O"].includes(molecule2.formula))?.molecule ?? recipe.parts[0]?.molecule;
     if (!preview) return E;
-    return this.renderChemicalTile(key, name2, preview.formula, this.previewMolecule(preview), recipe);
+    return this.renderChemicalTile(key, name2, preview.formula, recipe, this.previewMolecule(preview));
   }
   rememberChemicalSection(event, category) {
     if (event.target !== event.currentTarget || this.openedChemicalSections.has(category)) return;
@@ -185906,8 +185895,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       item.name,
       this.message(item.name),
       item.formula,
-      catalogPreviews[item.name],
-      item.recipe
+      item.recipe,
+      catalogPreviews[item.name]
     ))}
 					</div>` : E}
 				</sl-details>`);

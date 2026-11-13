@@ -314,7 +314,12 @@ const catalogAliases: Partial<Record<ChemicalClass, readonly string[]>> = {
 	"Lösungsmittel": ["Ethanol", "Methanol", "Propan-2-ol", "Aceton", "Butan-2-on", "Ethylacetat", "Cyclohexan", "Hexan", "Heptan"],
 };
 
+// Keep reference entries in the catalog for preview generation and future recipes.
+const dosableChemicals = chemicalCatalog.filter(
+	(item): item is CatalogChemical & { recipe: ChemicalRecipe } => item.recipe !== undefined,
+);
+
 export const chemicalCatalogGroups = chemicalClasses.map((category) => ({
 	category,
-	items: chemicalCatalog.filter((item) => item.category === category || catalogAliases[category]?.includes(item.name)),
-}));
+	items: dosableChemicals.filter((item) => item.category === category || catalogAliases[category]?.includes(item.name)),
+})).filter(({ items }) => items.length > 0);
