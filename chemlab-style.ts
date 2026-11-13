@@ -1625,8 +1625,19 @@ export const style = css`
 		display: grid;
 		align-content: start;
 	}
-	.chemical-tile-button,
-	.chemical-tile {
+	.chemical-groups-carousel {
+		height: min(52vh, 420px);
+	}
+	.chemical-groups-carousel .chemical-group-slide {
+		display: grid;
+		align-content: start;
+		overflow: hidden;
+	}
+	.chemical-groups-carousel::part(navigation-button) {
+		--sl-input-height-small: 1.6rem;
+	}
+	.chemical-tile,
+	.chemical-tile-button {
 		box-sizing: border-box;
 		display: grid;
 		justify-items: center;
@@ -1664,37 +1675,6 @@ export const style = css`
 		margin: 0;
 		border: 1px solid var(--sl-color-neutral-200);
 		border-radius: 4px;
-	}
-	.chemical-tile-with-concentration {
-		cursor: auto;
-		touch-action: auto;
-		padding: 0 0 4px;
-	}
-	.chemical-tile-button {
-		margin: 0;
-		border: 1px solid transparent;
-		cursor: grab;
-		touch-action: none;
-	}
-	.chemical-concentration {
-		--amount-control-height: 24px;
-		display: flex;
-		align-items: center;
-		gap: 2px;
-		font-size: var(--sl-font-size-small);
-		max-inline-size: 100%;
-	}
-	.chemical-concentration .amount-menu-value {
-		max-inline-size: 100%;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		padding-inline: 4px;
-	}
-	.chemical-concentration .amount-menu-quantity {
-		min-inline-size: 0;
-	}
-	.chemical-concentration .amount-menu-button {
-		flex: none;
 	}
 	.palette-dragging {
 		cursor: grabbing;
