@@ -916,6 +916,8 @@ export class ChemLab extends LitElementWw {
 
 	protected updated(changed: PropertyValueMap<any>): void {
 		super.updated(changed);
+		if (["chemicalCatalogOpened", "chemicalGroup", "chemicalQuery", "chemicalPermissions", "activeChemicalConcentrations",
+			"teacherDrawerOpen", "teacherTab"].some((name) => changed.has(name))) this.revealDoseOptions();
 		if (!this.canAuthor || changed.has("invComponents") || changed.has("chemicalPermissions")) this.permissionTooltip = undefined;
 		if (changed.has("panelVariant")) this._changePanelVariant();
 		if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions"].some((name) => changed.has(name))) {
@@ -4411,11 +4413,14 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderPaletteCard(name: string, variant: ReturnType<typeof this.palettePermissionVariant>,
-		badge: unknown, body: unknown, chemical = false) {
+		badge: unknown, body: unknown, chemical = false, nameControl: unknown = nothing) {
 		return html`
 			<div class="palette-card${chemical ? " palette-card-chemical" : ""}" role="group" aria-label=${name}>
 				<div class="palette-card-header">
-					<sl-tag size="small" variant=${this.canAuthor ? variant : "neutral"} title=${name}>${name}</sl-tag>
+					<div class="palette-card-name">
+						<sl-tag size="small" variant=${this.canAuthor ? variant : "neutral"} title=${name}>${name}</sl-tag>
+						${nameControl}
+					</div>
 					${this.canAuthor ? badge : nothing}
 				</div>
 				${body}
@@ -4562,43 +4567,75 @@ export class ChemLab extends LitElementWw {
 		const variant = this.palettePermissionVariant(allowedCount, concentration ? values.length : 1);
 		const badge = this.canAuthor ? this.renderChemicalPermissionBadge(name, [item]) : nothing;
 		const concentrationLabel = (value: number) => `${this.formatAmount(value, 8)} mol/L`;
-		const options = () => repeat(values, (value) => value, (value) => html`
-			<sl-option value=${String(value)}>${concentrationLabel(value)}</sl-option>`);
+		const nameControl = this.canAuthor && concentration ? html`
+			<sl-select class="chemical-concentration-permissions" size="small" multiple
+				hoist placement="top" contenteditable="false"
+				label=${`${name} · ${this.message("Freigegebene Konzentrationen")}`} .value=${allowed.map(String)}
+				@sl-change=${(event: Event) => {
+					const selected = (event.currentTarget as SlSelect).value;
+					if (Array.isArray(selected)) {
+						const selectedValues = new Set(selected);
+						this.setAllowedConcentrations(item.name, values.filter((value) => selectedValues.has(String(value))));
+					}
+				}}>
+				${repeat(values, (value) => value, (value) => html`
+					<sl-option value=${String(value)}>${concentrationLabel(value)}</sl-option>`)}
+			</sl-select>` : nothing;
+		const choose = (value: number) => {
+			if (value === active || !values.includes(value)) return;
+			this.activeChemicalConcentrations = { ...this.activeChemicalConcentrations, [item.name]: value };
+			if (this.selectedChemical?.key === activeKey) this.clearChemicalSelection();
+		};
+		const position = values.indexOf(active);
+		const arrow = (step: -1 | 1) => html`
+			<button type="button" class="chemical-carousel-arrow" contenteditable="false"
+				aria-label=${this.message(step < 0 ? "Vorherige Konzentration" : "Nächste Konzentration")}
+				?disabled=${position + step < 0 || position + step >= values.length}
+				@click=${() => choose(values[position + step])}>
+				<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+					<path d=${step < 0 ? "m10 4-4 4 4 4" : "m6 4 4 4-4 4"}/>
+				</svg>
+			</button>`;
 		const body = active !== undefined ? html`
 			<div class="chemical-solution palette-variant">
 				${preview}
-				<div class="chemical-solution-controls">
-					${values.length === 1 ? html`<sl-tag size="small">${concentrationLabel(active)}</sl-tag>` : html`
-						<sl-select class="chemical-active-concentration" size="small" hoist placement="top" contenteditable="false"
-							label=${`${name} · ${this.message("Konzentration zum Dosieren")}`} .value=${String(active)}
-							@sl-change=${(event: Event) => {
-								const value = Number((event.currentTarget as SlSelect).value);
-								if (value === active || !values.includes(value)) return;
-								this.activeChemicalConcentrations = { ...this.activeChemicalConcentrations, [item.name]: value };
-								if (this.selectedChemical?.key === activeKey) this.clearChemicalSelection();
-							}}>
-							${options()}
-						</sl-select>`}
-					${this.canAuthor ? html`
-						<sl-select class="chemical-concentration-permissions" size="small" multiple max-options-visible="1"
-							hoist placement="top" contenteditable="false" label=${this.message("Freigegebene Konzentrationen")}
-							placeholder=${this.message("Keine Freigaben")} .value=${allowed.map(String)}
-							@sl-change=${(event: Event) => {
-								const selected = (event.currentTarget as SlSelect).value;
-								if (Array.isArray(selected)) {
-									const selectedValues = new Set(selected);
-									this.setAllowedConcentrations(item.name, values.filter((value) => selectedValues.has(String(value))));
-								}
-							}}>
-							${options()}
-						</sl-select>` : nothing}
+				<div class="chemical-dose-carousel" role="group" aria-label=${`${name} · ${this.message("Konzentration zum Dosieren")}`}>
+					${values.length > 1 ? arrow(-1) : nothing}
+					<div class="chemical-dose-track">
+						${values.length === 1 ? this.renderConcentrationBadge(concentrationLabel(active)) :
+							repeat(values, (value) => value, (value) => html`
+								<button type="button" class="chemical-dose-option" contenteditable="false"
+									aria-pressed=${value === active}
+									@click=${() => choose(value)}>
+									${this.renderConcentrationBadge(concentrationLabel(value))}
+								</button>`)}
+					</div>
+					${values.length > 1 ? arrow(1) : nothing}
 				</div>
 			</div>` : html`
 			<div class="chemical-single palette-variant">
 				${preview}
 				${this.canAuthor ? this.renderChemicalPermission(item.name, label) : nothing}
 			</div>`;
-		return this.renderPaletteCard(name, variant, badge, body, true);
+		return this.renderPaletteCard(name, variant, badge, body, true, nameControl);
+	}
+
+	private renderConcentrationBadge(label: string) {
+		return html`<sl-badge>${label}</sl-badge>`;
+	}
+
+
+	private revealDoseOptions(): void {
+		if (this.teacherTab !== "chemicals" || !this.teacherDrawerOpen) return;
+		for (const option of this.shadowRoot.querySelectorAll<HTMLButtonElement>('.chemical-dose-option[aria-pressed="true"]')) {
+			const track = option.parentElement;
+			if (track.scrollWidth <= track.clientWidth) continue;
+			const item = option.getBoundingClientRect();
+			const viewport = track.getBoundingClientRect();
+			if (item.left < viewport.left || item.right > viewport.right) {
+				track.scrollLeft += (item.left + item.right - viewport.left - viewport.right) / 2;
+			}
+		}
 	}
 
 	private renderChemicalPermission(name: string, label: string) {

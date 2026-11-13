@@ -1497,10 +1497,11 @@ export const style = css`
 		align-items: center;
 		gap: 6px;
 	}
-	.palette-card-header > sl-tag {
+	.palette-card-name {
+		position: relative;
 		min-inline-size: 0;
 	}
-	.palette-card-header > sl-tag::part(base) {
+	.palette-card-name > sl-tag::part(base) {
 		block-size: auto;
 		min-block-size: 1.5em;
 		white-space: normal;
@@ -1651,27 +1652,91 @@ export const style = css`
 	.chemical-solution .chemical-preview {
 		block-size: 42px;
 	}
-	.chemical-solution-controls {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		gap: 4px;
-		padding: 0 4px 4px;
+	.chemical-concentration-permissions {
+		position: absolute;
+		inset: 0;
+		--sl-input-height-small: 0px;
 	}
-	.chemical-solution-controls > sl-tag {
-		justify-self: center;
+	.chemical-concentration-permissions::part(form-control),
+	.chemical-concentration-permissions::part(form-control-input) {
+		block-size: 100%;
 	}
-	.chemical-active-concentration::part(form-control-label) {
+	.chemical-concentration-permissions::part(form-control-input) {
+		display: flex;
+	}
+	.chemical-concentration-permissions::part(combobox) {
+		box-sizing: border-box;
+		block-size: 100%;
+		min-block-size: 0;
+		padding: 0;
+		opacity: 0;
+	}
+	.chemical-concentration-permissions::part(tags) {
+		display: none;
+	}
+	.chemical-concentration-permissions::part(form-control-label) {
 		position: absolute;
 		inline-size: 1px;
 		block-size: 1px;
 		overflow: hidden;
 		clip-path: inset(50%);
 	}
-	.chemical-concentration-permissions::part(form-control-label) {
-		font-size: var(--sl-font-size-x-small);
+	/* Leave the popup visible; only the combobox over the name is transparent. */
+	.palette-card-name:focus-within > sl-tag::part(base),
+	.palette-card-name:has(.chemical-concentration-permissions:hover) > sl-tag::part(base) {
+		outline: 1px solid currentColor;
 	}
-	.chemical-concentration-permissions::part(tags) {
-		flex-wrap: nowrap;
+	.chemical-dose-carousel {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+		padding: 0 3px 3px;
+	}
+	.chemical-dose-track {
+		display: flex;
+		align-items: center;
+		gap: 3px;
+		min-inline-size: 0;
+		padding: 2px;
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		scrollbar-width: none;
+	}
+	.chemical-dose-carousel button {
+		display: inline-grid;
+		place-items: center;
+		flex: none;
+		border: 0;
+		padding: 0;
+		color: var(--sl-color-neutral-700);
+		background: transparent;
+		cursor: pointer;
+	}
+	.chemical-dose-carousel button:focus-visible {
+		outline: 2px solid var(--sl-color-primary-600);
+		outline-offset: 0;
+		border-radius: var(--sl-border-radius-small);
+	}
+	.chemical-dose-carousel .chemical-carousel-arrow {
+		inline-size: 20px;
+		block-size: 22px;
+	}
+	.chemical-carousel-arrow:dir(rtl) svg {
+		transform: scaleX(-1);
+	}
+	.chemical-carousel-arrow:disabled {
+		opacity: 0.3;
+		cursor: default;
+	}
+	.chemical-dose-track sl-badge::part(base) {
+		padding: 2px 4px;
+		font-size: var(--sl-font-size-x-small);
+		white-space: nowrap;
+	}
+	.chemical-dose-option[aria-pressed="true"] sl-badge::part(base) {
+		outline: 1px solid var(--sl-color-primary-800);
+		outline-offset: 1px;
 	}
 	.chemical-permission {
 		display: grid;

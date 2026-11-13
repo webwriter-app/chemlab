@@ -69839,7 +69839,8 @@ var messages_default = {
     "F\xFCr Lernende erlauben": "Allow for learners",
     "Konzentration zum Dosieren": "Concentration to dispense",
     "Freigegebene Konzentrationen": "Allowed concentrations",
-    "Keine Freigaben": "None allowed",
+    "Vorherige Konzentration": "Previous concentration",
+    "N\xE4chste Konzentration": "Next concentration",
     Freigaben: "Allowed",
     "Alle Chemikalien sperren": "Disallow all chemicals",
     "Alle Chemikalien freigeben": "Allow all chemicals",
@@ -103962,10 +103963,11 @@ var style = i`
 		align-items: center;
 		gap: 6px;
 	}
-	.palette-card-header > sl-tag {
+	.palette-card-name {
+		position: relative;
 		min-inline-size: 0;
 	}
-	.palette-card-header > sl-tag::part(base) {
+	.palette-card-name > sl-tag::part(base) {
 		block-size: auto;
 		min-block-size: 1.5em;
 		white-space: normal;
@@ -104116,27 +104118,91 @@ var style = i`
 	.chemical-solution .chemical-preview {
 		block-size: 42px;
 	}
-	.chemical-solution-controls {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		gap: 4px;
-		padding: 0 4px 4px;
+	.chemical-concentration-permissions {
+		position: absolute;
+		inset: 0;
+		--sl-input-height-small: 0px;
 	}
-	.chemical-solution-controls > sl-tag {
-		justify-self: center;
+	.chemical-concentration-permissions::part(form-control),
+	.chemical-concentration-permissions::part(form-control-input) {
+		block-size: 100%;
 	}
-	.chemical-active-concentration::part(form-control-label) {
+	.chemical-concentration-permissions::part(form-control-input) {
+		display: flex;
+	}
+	.chemical-concentration-permissions::part(combobox) {
+		box-sizing: border-box;
+		block-size: 100%;
+		min-block-size: 0;
+		padding: 0;
+		opacity: 0;
+	}
+	.chemical-concentration-permissions::part(tags) {
+		display: none;
+	}
+	.chemical-concentration-permissions::part(form-control-label) {
 		position: absolute;
 		inline-size: 1px;
 		block-size: 1px;
 		overflow: hidden;
 		clip-path: inset(50%);
 	}
-	.chemical-concentration-permissions::part(form-control-label) {
-		font-size: var(--sl-font-size-x-small);
+	/* Leave the popup visible; only the combobox over the name is transparent. */
+	.palette-card-name:focus-within > sl-tag::part(base),
+	.palette-card-name:has(.chemical-concentration-permissions:hover) > sl-tag::part(base) {
+		outline: 1px solid currentColor;
 	}
-	.chemical-concentration-permissions::part(tags) {
-		flex-wrap: nowrap;
+	.chemical-dose-carousel {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+		padding: 0 3px 3px;
+	}
+	.chemical-dose-track {
+		display: flex;
+		align-items: center;
+		gap: 3px;
+		min-inline-size: 0;
+		padding: 2px;
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		scrollbar-width: none;
+	}
+	.chemical-dose-carousel button {
+		display: inline-grid;
+		place-items: center;
+		flex: none;
+		border: 0;
+		padding: 0;
+		color: var(--sl-color-neutral-700);
+		background: transparent;
+		cursor: pointer;
+	}
+	.chemical-dose-carousel button:focus-visible {
+		outline: 2px solid var(--sl-color-primary-600);
+		outline-offset: 0;
+		border-radius: var(--sl-border-radius-small);
+	}
+	.chemical-dose-carousel .chemical-carousel-arrow {
+		inline-size: 20px;
+		block-size: 22px;
+	}
+	.chemical-carousel-arrow:dir(rtl) svg {
+		transform: scaleX(-1);
+	}
+	.chemical-carousel-arrow:disabled {
+		opacity: 0.3;
+		cursor: default;
+	}
+	.chemical-dose-track sl-badge::part(base) {
+		padding: 2px 4px;
+		font-size: var(--sl-font-size-x-small);
+		white-space: nowrap;
+	}
+	.chemical-dose-option[aria-pressed="true"] sl-badge::part(base) {
+		outline: 1px solid var(--sl-color-primary-800);
+		outline-offset: 1px;
 	}
 	.chemical-permission {
 		display: grid;
@@ -183447,6 +183513,15 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   updated(changed) {
     super.updated(changed);
+    if ([
+      "chemicalCatalogOpened",
+      "chemicalGroup",
+      "chemicalQuery",
+      "chemicalPermissions",
+      "activeChemicalConcentrations",
+      "teacherDrawerOpen",
+      "teacherTab"
+    ].some((name2) => changed.has(name2))) this.revealDoseOptions();
     if (!this.canAuthor || changed.has("invComponents") || changed.has("chemicalPermissions")) this.permissionTooltip = void 0;
     if (changed.has("panelVariant")) this._changePanelVariant();
     if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions"].some((name2) => changed.has(name2))) {
@@ -186432,11 +186507,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   renderPaletteBadge(allowed, total) {
     return x`<sl-badge pill variant=${this.palettePermissionVariant(allowed, total)}>${allowed} / ${total}</sl-badge>`;
   }
-  renderPaletteCard(name2, variant, badge, body2, chemical = false) {
+  renderPaletteCard(name2, variant, badge, body2, chemical = false, nameControl = E) {
     return x`
 			<div class="palette-card${chemical ? " palette-card-chemical" : ""}" role="group" aria-label=${name2}>
 				<div class="palette-card-header">
-					<sl-tag size="small" variant=${this.canAuthor ? variant : "neutral"} title=${name2}>${name2}</sl-tag>
+					<div class="palette-card-name">
+						<sl-tag size="small" variant=${this.canAuthor ? variant : "neutral"} title=${name2}>${name2}</sl-tag>
+						${nameControl}
+					</div>
 					${this.canAuthor ? badge : E}
 				</div>
 				${body2}
@@ -186591,43 +186669,71 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const variant = this.palettePermissionVariant(allowedCount, concentration ? values.length : 1);
     const badge = this.canAuthor ? this.renderChemicalPermissionBadge(name2, [item]) : E;
     const concentrationLabel = (value) => `${this.formatAmount(value, 8)} mol/L`;
-    const options2 = () => c4(values, (value) => value, (value) => x`
-			<sl-option value=${String(value)}>${concentrationLabel(value)}</sl-option>`);
-    const body2 = active !== void 0 ? x`
-			<div class="chemical-solution palette-variant">
-				${preview}
-				<div class="chemical-solution-controls">
-					${values.length === 1 ? x`<sl-tag size="small">${concentrationLabel(active)}</sl-tag>` : x`
-						<sl-select class="chemical-active-concentration" size="small" hoist placement="top" contenteditable="false"
-							label=${`${name2} \xB7 ${this.message("Konzentration zum Dosieren")}`} .value=${String(active)}
-							@sl-change=${(event) => {
-      const value = Number(event.currentTarget.value);
-      if (value === active || !values.includes(value)) return;
-      this.activeChemicalConcentrations = { ...this.activeChemicalConcentrations, [item.name]: value };
-      if (this.selectedChemical?.key === activeKey) this.clearChemicalSelection();
-    }}>
-							${options2()}
-						</sl-select>`}
-					${this.canAuthor ? x`
-						<sl-select class="chemical-concentration-permissions" size="small" multiple max-options-visible="1"
-							hoist placement="top" contenteditable="false" label=${this.message("Freigegebene Konzentrationen")}
-							placeholder=${this.message("Keine Freigaben")} .value=${allowed.map(String)}
-							@sl-change=${(event) => {
+    const nameControl = this.canAuthor && concentration ? x`
+			<sl-select class="chemical-concentration-permissions" size="small" multiple
+				hoist placement="top" contenteditable="false"
+				label=${`${name2} \xB7 ${this.message("Freigegebene Konzentrationen")}`} .value=${allowed.map(String)}
+				@sl-change=${(event) => {
       const selected = event.currentTarget.value;
       if (Array.isArray(selected)) {
         const selectedValues = new Set(selected);
         this.setAllowedConcentrations(item.name, values.filter((value) => selectedValues.has(String(value))));
       }
     }}>
-							${options2()}
-						</sl-select>` : E}
+				${c4(values, (value) => value, (value) => x`
+					<sl-option value=${String(value)}>${concentrationLabel(value)}</sl-option>`)}
+			</sl-select>` : E;
+    const choose = (value) => {
+      if (value === active || !values.includes(value)) return;
+      this.activeChemicalConcentrations = { ...this.activeChemicalConcentrations, [item.name]: value };
+      if (this.selectedChemical?.key === activeKey) this.clearChemicalSelection();
+    };
+    const position = values.indexOf(active);
+    const arrow3 = (step) => x`
+			<button type="button" class="chemical-carousel-arrow" contenteditable="false"
+				aria-label=${this.message(step < 0 ? "Vorherige Konzentration" : "N\xE4chste Konzentration")}
+				?disabled=${position + step < 0 || position + step >= values.length}
+				@click=${() => choose(values[position + step])}>
+				<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+					<path d=${step < 0 ? "m10 4-4 4 4 4" : "m6 4 4 4-4 4"}/>
+				</svg>
+			</button>`;
+    const body2 = active !== void 0 ? x`
+			<div class="chemical-solution palette-variant">
+				${preview}
+				<div class="chemical-dose-carousel" role="group" aria-label=${`${name2} \xB7 ${this.message("Konzentration zum Dosieren")}`}>
+					${values.length > 1 ? arrow3(-1) : E}
+					<div class="chemical-dose-track">
+						${values.length === 1 ? this.renderConcentrationBadge(concentrationLabel(active)) : c4(values, (value) => value, (value) => x`
+								<button type="button" class="chemical-dose-option" contenteditable="false"
+									aria-pressed=${value === active}
+									@click=${() => choose(value)}>
+									${this.renderConcentrationBadge(concentrationLabel(value))}
+								</button>`)}
+					</div>
+					${values.length > 1 ? arrow3(1) : E}
 				</div>
 			</div>` : x`
 			<div class="chemical-single palette-variant">
 				${preview}
 				${this.canAuthor ? this.renderChemicalPermission(item.name, label) : E}
 			</div>`;
-    return this.renderPaletteCard(name2, variant, badge, body2, true);
+    return this.renderPaletteCard(name2, variant, badge, body2, true, nameControl);
+  }
+  renderConcentrationBadge(label) {
+    return x`<sl-badge>${label}</sl-badge>`;
+  }
+  revealDoseOptions() {
+    if (this.teacherTab !== "chemicals" || !this.teacherDrawerOpen) return;
+    for (const option of this.shadowRoot.querySelectorAll('.chemical-dose-option[aria-pressed="true"]')) {
+      const track = option.parentElement;
+      if (track.scrollWidth <= track.clientWidth) continue;
+      const item = option.getBoundingClientRect();
+      const viewport = track.getBoundingClientRect();
+      if (item.left < viewport.left || item.right > viewport.right) {
+        track.scrollLeft += (item.left + item.right - viewport.left - viewport.right) / 2;
+      }
+    }
   }
   renderChemicalPermission(name2, label) {
     const checked = this.isChemicalAllowed(name2);
