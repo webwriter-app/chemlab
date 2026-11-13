@@ -9,6 +9,22 @@ export interface ChemicalRecipe {
 	phase: "solid" | "liquid";
 	parts: Array<{ molecule: MoleculeDefinition; amount: number }>;
 	density: number;
+	/** Solute amounts are expressed in mol per model litre of aqueous solution. */
+	aqueousMolar?: true;
+}
+
+export function isWaterDefinition(molecule: MoleculeDefinition): boolean {
+	return molecule.atoms.length === 3 && molecule.atoms.filter((atom) => atom === "hydrogen").length === 2 &&
+		molecule.atoms.includes("oxygen") && molecule.bonds.length === 2;
+}
+
+export function withConcentration(recipe: ChemicalRecipe, concentration: number, stockConcentration = 1): ChemicalRecipe {
+	const parts = recipe.parts.filter(({ molecule }) => !isWaterDefinition(molecule));
+	return {
+		phase: "liquid", density: 1, aqueousMolar: true,
+		parts: [{ molecule: water, amount: 55.5 }, ...parts.map(({ molecule, amount }) =>
+			({ molecule, amount: amount * concentration / stockConcentration }))],
+	};
 }
 
 export const chemicalClasses = [
@@ -27,11 +43,13 @@ export interface CatalogChemical {
 	category: ChemicalClass;
 	recipe?: ChemicalRecipe;
 	preview?: MoleculeDefinition;
+	concentrationLimit?: number;
 }
 
 function pure(name: string, category: ChemicalClass, preview: MoleculeDefinition,
 	phase: ChemicalRecipe["phase"], density: number): CatalogChemical {
-	return { name, category, formula: preview.formula, preview, recipe: { phase, density, parts: [{ molecule: preview, amount: 1 }] } };
+	return { name, category, formula: preview.formula, preview, recipe: { phase, density, parts: [{ molecule: preview, amount: 1 }] },
+		concentrationLimit: category === "Carbonsäuren" || category === "Basen" ? 1 : undefined };
 }
 
 function element(name: string, formula: string, atom: string, density: number, category: ChemicalClass = "Metalle"): CatalogChemical {
@@ -63,9 +81,10 @@ const water = molecule("H₂O", ["oxygen"], [], [2]);
 const hcl: MoleculeDefinition = { formula: "HCl", atoms: ["hydrogen", "chlorine"], bonds: ["0-1:acidbase:1"] };
 const naoh: MoleculeDefinition = { formula: "NaOH", atoms: ["sodium", "oxygen", "hydrogen"], bonds: ["0-1:acidbase:1", "1-2:covalent:1"] };
 
-function aqueous(name: string, category: ChemicalClass, solute: MoleculeDefinition, concentration = 1): CatalogChemical {
+function aqueous(name: string, category: ChemicalClass, solute: MoleculeDefinition, concentrationLimit = 1): CatalogChemical {
 	return { name, category, formula: solute.formula, preview: solute,
-		recipe: { phase: "liquid", density: 1, parts: [{ molecule: water, amount: 55.5 }, { molecule: solute, amount: concentration }] } };
+		concentrationLimit,
+		recipe: { phase: "liquid", density: 1, aqueousMolar: true, parts: [{ molecule: water, amount: 55.5 }, { molecule: solute, amount: 1 }] } };
 }
 
 function covalent(formula: string, atoms: string[], links: readonly (readonly [number, number, number?])[], hydrogens: number[]): MoleculeDefinition {
@@ -115,7 +134,7 @@ function oxoanion(formula: string, center: string, double: number, single: numbe
 
 function saltSolution(name: string, formula: string, cation: MoleculeDefinition, anion: MoleculeDefinition,
 	cations = 1, anions = 1): CatalogChemical {
-	return { name, formula, category: "Salze", recipe: { phase: "liquid", density: 1, parts: [
+	return { name, formula, category: "Salze", concentrationLimit: 1, recipe: { phase: "liquid", density: 1, aqueousMolar: true, parts: [
 		{ molecule: water, amount: 55.5 }, { molecule: cation, amount: cations }, { molecule: anion, amount: anions },
 	] } };
 }
@@ -161,7 +180,7 @@ export const chemicalCatalog: CatalogChemical[] = [
 	salt("Kaliumbromid", "KBr", "potassium", "bromine", 2.75),
 	salt("Natriumiodid", "NaI", "sodium", "iodine", 3.67),
 	salt("Kaliumiodid", "KI", "potassium", "iodine", 3.12),
-	aqueous("Natriumchloridlösung (1 mol/L)", "Salze", sodiumChloride.preview),
+	aqueous("Natriumchloridlösung (1 mol/L)", "Salze", sodiumChloride.preview, 2),
 	saltSolution("Kupfer(II)-sulfatlösung", "CuSO₄", ion("Cu²⁺", "copper", 2), sulfate),
 	saltSolution("Zinksulfatlösung", "ZnSO₄", ion("Zn²⁺", "zinc", 2), sulfate),
 	saltSolution("Eisen(II)-sulfatlösung", "FeSO₄", ion("Fe²⁺", "iron", 2), sulfate),
@@ -191,12 +210,12 @@ export const chemicalCatalog: CatalogChemical[] = [
 	reference("Silberchlorid", "Salze", "AgCl"),
 	reference("Bariumsulfat", "Salze", "BaSO₄"),
 	pure("Natriumhydroxid", "Basen", naoh, "solid", 2.13),
-	aqueous("Natronlauge (1 mol/L)", "Basen", naoh),
+	aqueous("Natronlauge (1 mol/L)", "Basen", naoh, 2),
 	aqueous("Kalilauge (1 mol/L)", "Basen", { formula: "KOH", atoms: ["potassium", "oxygen", "hydrogen"], bonds: ["0-1:acidbase:1", "1-2:covalent:1"] }),
 	aqueous("Ammoniaklösung", "Basen", ammonia),
 	reference("Calciumhydroxid", "Basen", "Ca(OH)₂"),
 	reference("Kalkwasser", "Basen", "Ca(OH)₂ (aq)"),
-	aqueous("Salzsäure (1 mol/L)", "Anorganische Säuren", hcl),
+	aqueous("Salzsäure (1 mol/L)", "Anorganische Säuren", hcl, 2),
 	aqueous("Schwefelsäure (1 mol/L)", "Anorganische Säuren", sulfuricAcid),
 	aqueous("Phosphorsäure (1 mol/L)", "Anorganische Säuren", phosphoricAcid),
 	reference("Salpetersäure", "Anorganische Säuren", "HNO₃"),

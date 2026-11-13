@@ -66,7 +66,7 @@ import { DiagramController } from "./controllers/DiagramController";
 import { SimulationController } from "./controllers/SimulationController";
 import { componentGraphic, componentVariant, componentVariants, type ComponentVariant, type PaletteComponent } from "./data/componentGraphics";
 import { renderComponentPaletteIcon } from "./data/componentPaletteIcons";
-import { chemicalCatalogGroups, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
+import { chemicalCatalogGroups, isWaterDefinition, withConcentration, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
 import { loadMoleculeDefinition } from "./data/moleculeDefinition";
 import { catalogPreviews } from "./data/chemicalPreviews.generated";
 import { prepareDose, type SavedDose } from "./data/measuredDose";
@@ -74,6 +74,8 @@ import { STANDARD_CANVAS_HEIGHT } from "./controllers/WorkspaceCamera";
 import { CanvasController } from "./controllers/CanvasController";
 
 type SelectedChemical = { key: string; name: string; recipe: ChemicalRecipe };
+type ChemicalConcentration = { initial: number; max: number; stock?: number };
+const MIN_CONCENTRATION = 0.001;
 type AmountSource = { name: string; recipe: ChemicalRecipe; dose: (volumeMl: number) => chemlib.Mixture } |
 	{ vessel: chemlib.ChemComponent };
 
@@ -630,6 +632,8 @@ export class ChemLab extends LitElementWw {
 	@state() private accessor visibleVariants: Partial<Record<PaletteComponent, string>> = {};
 	@state() private accessor componentToPlace: string | undefined;
 	@state() private accessor selectedChemical: SelectedChemical | undefined;
+	@state() private accessor chemicalConcentrations = new Map<string, number>();
+	@state() private accessor editingConcentration: string | undefined;
 	@state() private accessor amountMenu: {
 		target: chemlib.ChemComponent;
 		anchor: PIXI.Container;
@@ -4313,15 +4317,17 @@ export class ChemLab extends LitElementWw {
 		return html`<div class="component-palette">${cards}</div>`;
 	}
 
-	private renderChemicalTile(key: string, name: string, formula: string, recipe: ChemicalRecipe, src?: string) {
-		const contents = html`
-			<span class="chemical-preview">${src ? html`<img src=${src} alt="" draggable="false" decoding="async" loading="lazy"/>`
-				: html`<span>${formula}</span>`}</span>
-			<sl-badge pill variant="neutral">${name}</sl-badge>
-			${src ? html`<small>${formula}</small>` : nothing}`;
-		return html`
-			<button type="button" class="chemical-tile" contenteditable="false" aria-pressed=${this.selectedChemical?.key === key}
-				@pointerdown=${(event: PointerEvent) => this.startChemicalDrag(event, { key, name, recipe }, src)}
+	private renderChemicalTile(key: string, name: string, formula: string, recipe: ChemicalRecipe, src?: string,
+		concentration?: ChemicalConcentration) {
+		const value = this.chemicalConcentrations.get(key) ?? concentration?.initial ?? 0;
+		const concentrationLabel = concentration ? `${this.formatAmount(value, 8)} mol/L` : "";
+		const label = concentration ? name.replace(/ \(1 mol\/L\)$/, "") : name;
+		const chemical = { key, name: concentration ? `${label} (${concentrationLabel})` : name,
+			recipe: concentration ? withConcentration(recipe, value, concentration.stock) : recipe };
+		const tile = html`
+			<button type="button" class=${concentration ? "chemical-tile-button" : "chemical-tile"} contenteditable="false"
+				aria-label=${chemical.name} aria-pressed=${this.selectedChemical?.key === key}
+				@pointerdown=${(event: PointerEvent) => this.startChemicalDrag(event, chemical, src)}
 				@dragstart=${this.preventNativePaletteDrag}
 				@click=${(event: MouseEvent) => {
 					if (this.consumePaletteClick(event)) return;
@@ -4330,17 +4336,112 @@ export class ChemLab extends LitElementWw {
 					this.componentToPlace = undefined;
 					if (wasSelected) return;
 					this.clearObjectSelection(true);
-					this.selectedChemical = { key, name, recipe };
+					this.selectedChemical = chemical;
 				}}>
-				${contents}
+			<span class="chemical-preview">${src ? html`<img src=${src} alt="" draggable="false" decoding="async" loading="lazy"/>`
+				: html`<span>${formula}</span>`}</span>
+			<sl-badge pill variant="neutral">${label}</sl-badge>
+			${src ? html`<small>${formula}</small>` : nothing}
 			</button>`;
+		if (!concentration) return tile;
+		const setValue = (next: number) => {
+			const bounded = Math.max(MIN_CONCENTRATION, Math.min(concentration.max, next));
+			this.chemicalConcentrations = new Map(this.chemicalConcentrations).set(key, bounded);
+			if (this.selectedChemical?.key === key) {
+				this.cancelDoseForNavigation();
+				this.closeAmountMenu();
+				this.selectedChemical = {
+					key, name: `${label} (${this.formatAmount(bounded, 8)} mol/L)`,
+					recipe: withConcentration(recipe, bounded, concentration.stock),
+				};
+			}
+		};
+		return html`
+			<div class="chemical-tile chemical-tile-with-concentration" contenteditable="false">
+				${tile}
+				${this.renderConcentrationControl(key, label, value, concentration.max, concentrationLabel, setValue)}
+			</div>`;
+	}
+
+	private renderConcentrationControl(key: string, name: string, value: number, max: number, label: string,
+		setValue: (next: number) => void) {
+		const presets = [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2].filter((preset) => preset < max);
+		presets.push(max);
+		const index = presets.reduce((nearest, preset, i) =>
+			Math.abs(value - preset) < Math.abs(value - presets[nearest]) ? i : nearest, 0);
+		const editing = this.editingConcentration === key;
+		const edit = async (event: Event) => {
+			const control = (event.currentTarget as HTMLElement).parentElement;
+			this.editingConcentration = key;
+			await this.updateComplete;
+			const input = control?.querySelector<HTMLInputElement>("input[type=text]");
+			input?.focus({ preventScroll: true });
+			input?.select();
+		};
+		const finish = (input: HTMLInputElement, cancel = false, restoreFocus = false) => {
+			if (this.editingConcentration !== key) return;
+			const raw = input.value.trim();
+			const next = /^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(raw) ? Number(raw.replace(",", ".")) : NaN;
+			if (!cancel && (!Number.isFinite(next) || next < MIN_CONCENTRATION || next > max)) {
+				if (restoreFocus) {
+					input.setCustomValidity(this.message("Gib eine Konzentration zwischen {min} und {max} mol/L ein.",
+						{ min: this.formatAmount(MIN_CONCENTRATION, 15), max: this.formatAmount(max, 15) }));
+					input.reportValidity();
+					return;
+				}
+			} else if (!cancel) setValue(next);
+			this.editingConcentration = undefined;
+			if (restoreFocus) {
+				const control = input.parentElement;
+				void this.updateComplete.then(() => control?.querySelector<HTMLInputElement>("input[type=range]")?.focus({ preventScroll: true }));
+			}
+		};
+		const changeBy = (delta: number) => setValue(Number((value + delta).toPrecision(15)));
+		const accessibleName = `${name} · ${this.message("Konzentration in mol/L")}`;
+		return html`
+			<div class="chemical-concentration">
+				<button type="button" class="amount-menu-button" aria-label=${this.message("Konzentration verringern")}
+					?disabled=${value <= MIN_CONCENTRATION} @click=${() => changeBy(-0.1)}>−</button>
+				<div class="amount-menu-quantity volume-bar" style=${`--amount-progress: ${100 * index / (presets.length - 1)}%`}>
+					<span class="amount-menu-value" ?inert=${editing}>${label}</span>
+					${editing ? html`
+						<input class="amount-editor" type="text" inputmode="decimal" autocomplete="off" aria-label=${accessibleName}
+							.value=${String(value)} @input=${(event: Event) => (event.currentTarget as HTMLInputElement).setCustomValidity("")}
+							@blur=${(event: FocusEvent) => finish(event.currentTarget as HTMLInputElement)}
+							@keydown=${(event: KeyboardEvent) => {
+								if (event.key !== "Enter" && event.key !== "Escape") return;
+								event.preventDefault();
+								event.stopPropagation();
+								finish(event.currentTarget as HTMLInputElement, event.key === "Escape", true);
+							}}>
+					` : html`
+						<input class="amount-slider" type="range" dir="ltr" min="0" max=${presets.length - 1} step="1" .value=${String(index)}
+							aria-label=${accessibleName} aria-valuetext=${label}
+							title=${this.message("Konzentration bearbeiten (Doppelklick oder F2)")}
+							@input=${(event: Event) => setValue(presets[(event.currentTarget as HTMLInputElement).valueAsNumber])}
+							@dblclick=${edit} @keydown=${(event: KeyboardEvent) => {
+								if (event.key !== "F2") return;
+								event.preventDefault();
+								void edit(event);
+							}}>
+					`}
+				</div>
+				<button type="button" class="amount-menu-button" aria-label=${this.message("Konzentration erhöhen")}
+					?disabled=${value >= max} @click=${() => changeBy(0.1)}>+</button>
+			</div>`;
 	}
 
 	private renderCustomChemical(key: string, name: string, recipe: ChemicalRecipe) {
 		const preview = recipe.parts.find(({ molecule }) =>
 			!["H₂O", "OH2", "H2O"].includes(molecule.formula))?.molecule ?? recipe.parts[0]?.molecule;
 		if (!preview) return nothing;
-		return this.renderChemicalTile(key, name, preview.formula, recipe, this.previewMolecule(preview));
+		const waterMoles = recipe.parts.reduce((sum, part) => sum + (isWaterDefinition(part.molecule) ? part.amount : 0), 0);
+		const soluteMoles = recipe.parts.reduce((sum, part) => sum + (!isWaterDefinition(part.molecule) ? part.amount : 0), 0);
+		const stock = waterMoles > 0 ? soluteMoles / (waterMoles * 0.018015) : 0;
+		const concentration = Number.isFinite(stock) && stock > 0
+			? { initial: Math.max(MIN_CONCENTRATION, stock), max: Math.max(1, stock), stock: soluteMoles }
+			: undefined;
+		return this.renderChemicalTile(key, name, preview.formula, recipe, this.previewMolecule(preview), concentration);
 	}
 
 	private rememberChemicalSection(event: Event, category: string): void {
@@ -4365,7 +4466,7 @@ export class ChemLab extends LitElementWw {
 					<sl-tag slot="summary" size="small">${label}</sl-tag>
 					${query || this.openedChemicalSections.has(category) ? html`<div class="chemical-grid">
 						${items.map((item) => this.renderChemicalTile(item.name, this.message(item.name), item.formula,
-							item.recipe, catalogPreviews[item.name]))}
+							item.recipe, catalogPreviews[item.name], item.concentrationLimit && { initial: 1, max: item.concentrationLimit }))}
 					</div>` : nothing}
 				</sl-details>`);
 		const customLabel = this.message("Eigene Stoffe");

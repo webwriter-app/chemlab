@@ -1320,7 +1320,8 @@ export const style = css`
 	.amount-menu-value[inert] {
 		visibility: hidden;
 	}
-	#amountMenuValue {
+	#amountMenuValue,
+	.amount-editor {
 		position: absolute;
 		inset: 0;
 		box-sizing: border-box;
@@ -1332,7 +1333,8 @@ export const style = css`
 		font: inherit;
 		text-align: center;
 	}
-	#amountMenuSlider {
+	#amountMenuSlider,
+	.amount-slider {
 		position: absolute;
 		inset: 0;
 		appearance: none;
@@ -1348,13 +1350,15 @@ export const style = css`
 		cursor: ew-resize;
 		touch-action: none;
 	}
-	#amountMenuSlider::-webkit-slider-thumb {
+	#amountMenuSlider::-webkit-slider-thumb,
+	.amount-slider::-webkit-slider-thumb {
 		appearance: none;
 		inline-size: 1px;
 		block-size: 100%;
 		background: transparent;
 	}
-	#amountMenuSlider::-moz-range-thumb {
+	#amountMenuSlider::-moz-range-thumb,
+	.amount-slider::-moz-range-thumb {
 		inline-size: 1px;
 		block-size: 100%;
 		border: 0;
@@ -1593,6 +1597,7 @@ export const style = css`
 		padding: 0;
 	}
 	.component-tile,
+	.chemical-tile-button,
 	.chemical-tile {
 		box-sizing: border-box;
 		display: grid;
@@ -1632,11 +1637,43 @@ export const style = css`
 		border: 1px solid var(--sl-color-neutral-200);
 		border-radius: 4px;
 	}
+	.chemical-tile-with-concentration {
+		cursor: auto;
+		touch-action: auto;
+		padding: 0 0 4px;
+	}
+	.chemical-tile-button {
+		margin: 0;
+		border: 1px solid transparent;
+		cursor: grab;
+		touch-action: none;
+	}
+	.chemical-concentration {
+		--amount-control-height: 24px;
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		font-size: var(--sl-font-size-small);
+		max-inline-size: 100%;
+	}
+	.chemical-concentration .amount-menu-value {
+		max-inline-size: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		padding-inline: 4px;
+	}
+	.chemical-concentration .amount-menu-quantity {
+		min-inline-size: 0;
+	}
+	.chemical-concentration .amount-menu-button {
+		flex: none;
+	}
 	.palette-dragging {
 		cursor: grabbing;
 	}
 	.component-tile > *,
-	.chemical-tile > * {
+	.chemical-tile-button > *,
+	button.chemical-tile > * {
 		pointer-events: none;
 	}
 	.chemical-drag-preview {
@@ -1654,15 +1691,18 @@ export const style = css`
 		block-size: 36px;
 		object-fit: contain;
 	}
-	.chemical-tile > sl-badge {
+	.chemical-tile > sl-badge,
+	.chemical-tile-button > sl-badge {
 		max-inline-size: 100%;
 	}
-	.chemical-tile > sl-badge::part(base) {
+	.chemical-tile > sl-badge::part(base),
+	.chemical-tile-button > sl-badge::part(base) {
 		white-space: normal;
 		overflow-wrap: anywhere;
 		line-height: 1.2;
 	}
 	.component-tile[aria-pressed="true"],
+	.chemical-tile-button[aria-pressed="true"],
 	.chemical-tile[aria-pressed="true"] {
 		background: var(--sl-color-primary-100);
 		border-color: var(--sl-color-primary-600);

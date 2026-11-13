@@ -14,13 +14,16 @@ export function prepareDose(recipe: ChemicalRecipe, load: (definition: MoleculeD
 	const waterMass = parts.reduce((sum, part) => StructureManager.isWater(part.molecule)
 		? sum + part.amount * part.molecule.getTotMolMass()
 		: sum, 0);
-	const gramsPerMl = waterMass > 0 ? waterMass : mass / recipe.density;
+	const gramsPerMl = recipe.aqueousMolar ? 1000 : waterMass > 0 ? waterMass : mass / recipe.density;
 	if (!(gramsPerMl > 0 && Number.isFinite(gramsPerMl))) return;
 
 	const makeDose = (volumeMl: number): Mixture => {
 		const dose = StructureManager.newMixture();
 		for (const { molecule, amount } of parts) {
-			dose.addMolecule(molecule, amount * volumeMl / gramsPerMl);
+			const moles = recipe.aqueousMolar && StructureManager.isWater(molecule)
+				? volumeMl / molecule.getTotMolMass()
+				: amount * volumeMl / gramsPerMl;
+			dose.addMolecule(molecule, moles);
 		}
 		dose.hasLiquidVolume = recipe.phase === "liquid";
 		dose.addedVolume = Math.max(0, volumeMl / 1000 - dose._solutionVolume);
