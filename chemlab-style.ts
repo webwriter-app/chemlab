@@ -1277,19 +1277,63 @@ export const style = css`
 	#contextInfoBox p {
 		margin: 0.25em 0;
 	}
-	.vessel-equilibrium {
-		padding-block: 4px;
-	}
 	.vessel-species {
 		display: flex;
 		justify-content: space-between;
-		align-items: start;
-		gap: 8px;
-		padding: 4px 2px;
-		border-block-end: 1px solid var(--sl-color-neutral-200);
+		align-items: flex-start;
+		padding-block: 5px;
 	}
-	.vessel-species p {
-		margin: 0;
+	.vessel-species-tag {
+		margin-inline: 5px 10px;
+	}
+	.vessel-species > div {
+		display: flex;
+		flex-direction: column;
+		border-radius: 2px;
+		background: #fff;
+		margin-inline-end: 5px;
+	}
+	.vessel-divider {
+		margin-block: 2px;
+	}
+	.vessel-carousel-card {
+		box-sizing: border-box;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		inline-size: 150px;
+		max-inline-size: 100%;
+		block-size: 80px;
+		overflow: hidden;
+		border: 2px solid #0284c7;
+		border-radius: 5px;
+	}
+	.vessel-carousel-thumbnail {
+		display: grid;
+		place-items: center;
+		flex: 1 1 0;
+		min-inline-size: 0;
+		font-size: var(--sl-font-size-small);
+	}
+	.vessel-carousel-thumbnail > :is(svg, img) {
+		width: 100%;
+		height: 76px;
+		object-fit: contain;
+	}
+	.vessel-carousel-quantities {
+		background: #fdfdfd;
+		border-radius: 5px;
+		font-size: var(--sl-font-size-x-small);
+		white-space: nowrap;
+	}
+	.vessel-carousel-quantities > h5,
+	.vessel-carousel-quantities > p {
+		margin: 0 2px 0 0;
+	}
+	.vessel-carousel-quantities > h5 {
+		max-inline-size: 80px;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	.selection-info:not([data-anchored]) {
 		visibility: hidden;
@@ -2065,7 +2109,8 @@ export const style = css`
 	.selection-info-title::part(base) {
 		background-color: #ff1f66;
 	}
-	#contextTag::part(base) {
+	#contextTag::part(base),
+	.vessel-species-tag::part(base) {
 		background-color: #51a332;
 		color: #fff;
 	}

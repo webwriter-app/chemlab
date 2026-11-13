@@ -103761,19 +103761,63 @@ var style = i`
 	#contextInfoBox p {
 		margin: 0.25em 0;
 	}
-	.vessel-equilibrium {
-		padding-block: 4px;
-	}
 	.vessel-species {
 		display: flex;
 		justify-content: space-between;
-		align-items: start;
-		gap: 8px;
-		padding: 4px 2px;
-		border-block-end: 1px solid var(--sl-color-neutral-200);
+		align-items: flex-start;
+		padding-block: 5px;
 	}
-	.vessel-species p {
-		margin: 0;
+	.vessel-species-tag {
+		margin-inline: 5px 10px;
+	}
+	.vessel-species > div {
+		display: flex;
+		flex-direction: column;
+		border-radius: 2px;
+		background: #fff;
+		margin-inline-end: 5px;
+	}
+	.vessel-divider {
+		margin-block: 2px;
+	}
+	.vessel-carousel-card {
+		box-sizing: border-box;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		inline-size: 150px;
+		max-inline-size: 100%;
+		block-size: 80px;
+		overflow: hidden;
+		border: 2px solid #0284c7;
+		border-radius: 5px;
+	}
+	.vessel-carousel-thumbnail {
+		display: grid;
+		place-items: center;
+		flex: 1 1 0;
+		min-inline-size: 0;
+		font-size: var(--sl-font-size-small);
+	}
+	.vessel-carousel-thumbnail > :is(svg, img) {
+		width: 100%;
+		height: 76px;
+		object-fit: contain;
+	}
+	.vessel-carousel-quantities {
+		background: #fdfdfd;
+		border-radius: 5px;
+		font-size: var(--sl-font-size-x-small);
+		white-space: nowrap;
+	}
+	.vessel-carousel-quantities > h5,
+	.vessel-carousel-quantities > p {
+		margin: 0 2px 0 0;
+	}
+	.vessel-carousel-quantities > h5 {
+		max-inline-size: 80px;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	.selection-info:not([data-anchored]) {
 		visibility: hidden;
@@ -104549,7 +104593,8 @@ var style = i`
 	.selection-info-title::part(base) {
 		background-color: #ff1f66;
 	}
-	#contextTag::part(base) {
+	#contextTag::part(base),
+	.vessel-species-tag::part(base) {
 		background-color: #51a332;
 		color: #fff;
 	}
@@ -148646,7 +148691,7 @@ var StructureManager = class _StructureManager {
    * @returns {*}
    */
   static async getChemData(molecule2) {
-    this.fetchChemData(molecule2.smilesString).then((data2) => {
+    return this.fetchChemData(molecule2.smilesString).then((data2) => {
       if (this.fetchSuccess) {
         molecule2.InChiString = data2["PC_Compounds"][0]["props"][12]["value"]["sval"];
         molecule2.InChIKey = data2["PC_Compounds"][0]["props"][13]["value"]["sval"];
@@ -183414,6 +183459,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __privateAdd(this, _molConfig, __runInitializers(_init2, 12, this)), __runInitializers(_init2, 15, this);
     __privateAdd(this, _mixConfig, __runInitializers(_init2, 16, this)), __runInitializers(_init2, 19, this);
     __privateAdd(this, _mixCarousel, __runInitializers(_init2, 20, this)), __runInitializers(_init2, 23, this);
+    __publicField(this, "vesselThumbnails", /* @__PURE__ */ new WeakMap());
+    __publicField(this, "vesselNameRequests", /* @__PURE__ */ new WeakSet());
     __privateAdd(this, _confirmDialog, __runInitializers(_init2, 24, this)), __runInitializers(_init2, 27, this);
     __privateAdd(this, _molAmount, __runInitializers(_init2, 28, this)), __runInitializers(_init2, 31, this);
     __privateAdd(this, _elemSearch, __runInitializers(_init2, 32, this)), __runInitializers(_init2, 35, this);
@@ -184673,9 +184720,81 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   renderVesselSpecies(formula, amount, quantity, title = formula) {
     return x`
 			<div class="vessel-species">
-				<sl-tag size="small" variant="neutral" title=${title}>${formula}</sl-tag>
+				<sl-tag class="vessel-species-tag" size="small" variant="neutral" title=${title}>${formula}</sl-tag>
 				<div><p>n: ${amount.toExponential(2)} mol</p><p>${quantity}</p></div>
-			</div>`;
+			</div>
+			<sl-divider class="vessel-divider"></sl-divider>`;
+  }
+  vesselThumbnail(molecule2, formula) {
+    const cached = this.vesselThumbnails.get(molecule2);
+    if (cached?.drawer === this.newSmilesDrawer) return cached.element;
+    const document2 = this.ownerDocument;
+    const container2 = document2.createElement("span");
+    container2.className = "vessel-carousel-thumbnail";
+    const fallback2 = () => {
+      try {
+        const image = document2.createElement("img");
+        image.src = StructureManager.printMolecule(molecule2, 100, 100);
+        image.alt = formula;
+        container2.replaceChildren(image);
+      } catch {
+        container2.textContent = formula;
+      }
+    };
+    if (this.newSmilesDrawer === 1) {
+      try {
+        import_smiles_drawer.default.parse(molecule2.smilesString, (tree) => {
+          const svg = document2.createElementNS("http://www.w3.org/2000/svg", "svg");
+          this.smilesDrawer100.draw(tree, svg, "light");
+          container2.replaceChildren(svg);
+        }, fallback2);
+      } catch {
+        fallback2();
+      }
+    } else fallback2();
+    this.vesselThumbnails.set(molecule2, { drawer: this.newSmilesDrawer, element: container2 });
+    return container2;
+  }
+  renderVesselCarousel(mixture, equilibrium) {
+    const molecules = mixture._activeMolecules.filter((molecule2) => !equilibrium?.analyticalMolecules.has(molecule2));
+    const slide = (thumbnail, title, amount, details2) => x`
+			<sl-carousel-item>
+				<div class="vessel-carousel-card">
+					${thumbnail}
+					<div class="vessel-carousel-quantities">
+						<h5 title=${title}>${title}</h5>
+						<p>n: ${amount.toExponential(2)} mol</p>
+						${details2}
+					</div>
+				</div>
+			</sl-carousel-item>`;
+    B(x`
+			${c4(
+      equilibrium?.species ?? [],
+      ({ formula }, index2) => `${formula}:${index2}`,
+      ({ formula, amount, concentration }) => slide(
+        x`<span class="vessel-carousel-thumbnail">${formula}</span>`,
+        formula,
+        amount,
+        x`<p>c: ${concentration.toExponential(2)} mol/L</p>`
+      )
+    )}
+			${c4(molecules, (molecule2) => molecule2, (molecule2) => {
+      const formula = molecule2._kekule_obj.calcFormula().getDisplayText();
+      if (!molecule2.name && !molecule2.solidSaltFormula && !this.vesselNameRequests.has(molecule2)) {
+        this.vesselNameRequests.add(molecule2);
+        void StructureManager.getChemData(molecule2).then(() => {
+          if (this.curr_obj?._content === mixture && molecule2.name) this._updatePopup();
+        }).catch(() => {
+        });
+      }
+      const { _id: id3 } = molecule2;
+      const properties = mixture._molProperties;
+      return slide(this.vesselThumbnail(molecule2, formula), molecule2.name || formula, properties[id3 + "n"], x`
+					<p>m: ${properties[id3 + "m"].toExponential(2)} g</p>
+					${molecule2.solidSaltFormula ? x`<p>${this.message("Bodensatz")}</p>` : mixture._isSolution ? x`<p>c: ${properties[id3 + "c"].toExponential(2)} mol/L</p>` : E}`);
+    })}
+		`, this.mixCarousel);
   }
   /**
    * updates the information shown for the selected object
@@ -184715,7 +184834,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         molecule2.name
       ))}
 			`, this.contextMolInfo);
-      B(equilibriumRows, this.shadowRoot.getElementById("vesselEquilibriumDetails"));
+      if (this.objectPanelOpen) this.renderVesselCarousel(mixture, equilibrium);
       if (this.curr_obj._type === "burette" /* Burette */ || this.curr_obj._type === "separatingfunnel" /* Separatingfunnel */) {
         this.openBtn.style.display = "";
       }
@@ -184727,6 +184846,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					<div>
 						<p>vol: ${(volume * 1e3).toFixed(1)} mL</p>
 						${pH === void 0 ? "" : `<p>pH: ${pH}</p>`}
+						<sl-divider class="vessel-divider"></sl-divider>
 					</div>`;
         this.contextMixInfo.style.borderLeftColor = pH === void 0 ? "" : this.pHColors[Math.round(pH)];
       }
@@ -184820,7 +184940,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     )) {
       this.shadowRoot.getElementById("ecomp_panel").style.display = "none";
       this.shadowRoot.getElementById("comp_panel").style.display = "";
-      this.mixCarousel.innerHTML = "";
       this._listAtoms();
       this.curr_mol = null;
       this._newMol();
@@ -184849,67 +184968,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.property_tag.variant = "warning";
         this.localizeControl(this.property_tag, "textContent", "leer");
       }
-      let canvas_arr = StructureManager.printMolecules_arr(
-        chemlib_obj._content,
-        100,
-        100
-      );
-      chemlib_obj._content._activeMolecules.forEach(async (mol) => {
-        let img = document.createElement("svg");
-        img.style.width = "190px";
-        img.style.height = "80px";
-        let infoDiv = document.createElement("div");
-        infoDiv.style.display = "flex";
-        infoDiv.style.flexDirection = "row";
-        infoDiv.style.justifyContent = "space-between";
-        infoDiv.style.overflow = "hidden";
-        infoDiv.style.width = "150px";
-        infoDiv.style.height = "80px";
-        infoDiv.style.borderStyle = "solid";
-        infoDiv.style.borderRadius = "5px";
-        infoDiv.style.borderWidth = "2px";
-        infoDiv.style.borderColor = "#0284c7";
-        infoDiv.appendChild(img);
-        if (this.newSmilesDrawer === 1) {
-          import_smiles_drawer.default.parse(mol.smilesString, (tree) => {
-            this.smilesDrawer100.draw(tree, img, "light");
-          }, (err) => {
-            console.log("Fallback rendering for " + mol.name + "(" + mol.smilesString + ")");
-            img.remove();
-            let fallbackImg = document.createElement("img");
-            fallbackImg.style.width = "190px";
-            fallbackImg.style.height = "80px";
-            fallbackImg.src = canvas_arr[chemlib_obj._content._activeMolecules.indexOf(mol)];
-            infoDiv.appendChild(fallbackImg);
-          });
-        } else {
-          img.remove();
-          let fallbackImg = document.createElement("img");
-          fallbackImg.style.width = "190px";
-          fallbackImg.style.height = "80px";
-          fallbackImg.src = canvas_arr[chemlib_obj._content._activeMolecules.indexOf(mol)];
-          infoDiv.appendChild(fallbackImg);
-        }
-        let cItem = this.shadowRoot.createElement(
-          "sl-carousel-item"
-        );
-        cItem.appendChild(infoDiv);
-        this.mixCarousel.appendChild(cItem);
-        if (!mol.solidSaltFormula) {
-          StructureManager.getChemData(mol);
-          await this.waitUntil(() => mol.name !== "" || !chemlib_obj._content._activeMolecules.includes(mol));
-        }
-        if (!chemlib_obj._content._activeMolecules.includes(mol)) return;
-        if (this.curr_obj === chemlib_obj) this._updatePopup();
-        infoDiv.innerHTML += `
-                        <div style="display: block; background-color: #fdfdfd; border-radius: 5px; overflow: hidden">
-                            <h5 title="${mol.name}">${mol.name}</h5>
-                            <p style="margin-bottom: 0px">${"n: " + chemlib_obj._content._molProperties[mol._id + "n"].toExponential(2)}</p>
-                            <p style="margin-bottom: 0px">${"m: " + chemlib_obj._content._molProperties[mol._id + "m"].toExponential(2)}</p>
-                            <p style="margin-bottom: 0px">${mol.solidSaltFormula ? this.message("Bodensatz") : chemlib_obj._content._isSolution ? "c:" + chemlib_obj._content._molProperties[mol._id + "c"].toExponential(2) : ""}</p>
-                        </div>
-                    `;
-      });
     }
     if (Object.values(EComponentType).includes(
       type.toLowerCase()
@@ -186393,6 +186451,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (open && this.canvas.selectedObjects.length) return;
     if (this.objectPanelOpen === open) return;
     this.objectPanelOpen = open;
+    if (open) this._updatePopup();
     this._sendxAPiStatement(open ? "opened" : "closed", "objectPanel");
   }
   renderObjectDetails() {
@@ -187323,7 +187382,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 															id="mixCarousel"
 														>
 														</sl-carousel>
-													<div id="vesselEquilibriumDetails"></div>
 													</div>
 												</div>
 												<div

@@ -864,7 +864,7 @@ export abstract class StructureManager {
 	 * @returns {*}
 	 */
 	public static async getChemData(molecule: Molecule) {
-		this.fetchChemData(molecule.smilesString).then((data) => {
+		return this.fetchChemData(molecule.smilesString).then((data) => {
 			if(this.fetchSuccess){
 				molecule.InChiString = data["PC_Compounds"][0]["props"][12]["value"]["sval"];
 				molecule.InChIKey = data["PC_Compounds"][0]["props"][13]["value"]["sval"];
