@@ -649,6 +649,8 @@ export class ChemLab extends LitElementWw {
 	private chemicalPreviewFrame?: number;
 	@state() private accessor chemicalCatalogOpened = false;
 	@state() private accessor chemicalQuery = "";
+	/** how many chemical tiles fit side by side, derived from the available width */
+	@state() private accessor chemicalSlidesPerPage = 4;
 	private stopDose?: (save?: boolean) => void;
 	private paletteDrag?: AbortController;
 	private suppressPaletteClick = false;
@@ -899,6 +901,9 @@ export class ChemLab extends LitElementWw {
 		const standardDrawerBody = 240;
 		this.teacherDrawerOpen = this.teacherDrawerChoice ??
 			(this.containerDiv.clientHeight >= STANDARD_CANVAS_HEIGHT + standardDrawerBody + triggerHeight + 2 * triggerInset);
+		// keep the chemical carousels tuned to the available width
+		const columns = Math.floor((this.containerDiv.clientWidth - 56) / 156);
+		this.chemicalSlidesPerPage = Math.max(2, Math.min(6, columns));
 	}
 
 	protected updated(changed: PropertyValueMap<any>): void {
@@ -4367,24 +4372,26 @@ export class ChemLab extends LitElementWw {
 			: `${name.replace(/ \(\d+(?:[.,]\d+)? mol\/L\)$/, "")} (${this.formatAmount(concentrationMolPerL, 8)} mol/L)`;
 		const chemical = { key, name: label, recipe };
 		return html`
-			<button type="button" class="chemical-tile" contenteditable="false"
-				aria-label=${chemical.name} aria-pressed=${this.selectedChemical?.key === key}
-				@pointerdown=${(event: PointerEvent) => this.startChemicalDrag(event, chemical, src)}
-				@dragstart=${this.preventNativePaletteDrag}
-				@click=${(event: MouseEvent) => {
-					if (this.consumePaletteClick(event)) return;
-					const wasSelected = this.selectedChemical?.key === key;
-					this.clearChemicalSelection();
-					this.componentToPlace = undefined;
-					if (wasSelected) return;
-					this.clearObjectSelection(true);
-					this.selectedChemical = chemical;
-				}}>
-			<span class="chemical-preview">${src ? html`<img src=${src} alt="" draggable="false" decoding="async" loading="lazy"/>`
-				: html`<span>${formula}</span>`}</span>
-			<sl-badge pill variant="neutral">${label}</sl-badge>
-			${src ? html`<small>${formula}</small>` : nothing}
-			</button>`;
+			<sl-card class="chemical-card${this.selectedChemical?.key === key ? " chemical-card-selected" : ""}" contenteditable="false">
+				<div slot="header" class="chemical-card-header">${label}</div>
+				<button type="button" class="chemical-tile" contenteditable="false"
+					aria-label=${chemical.name} aria-pressed=${this.selectedChemical?.key === key}
+					@pointerdown=${(event: PointerEvent) => this.startChemicalDrag(event, chemical, src)}
+					@dragstart=${this.preventNativePaletteDrag}
+					@click=${(event: MouseEvent) => {
+						if (this.consumePaletteClick(event)) return;
+						const wasSelected = this.selectedChemical?.key === key;
+						this.clearChemicalSelection();
+						this.componentToPlace = undefined;
+						if (wasSelected) return;
+						this.clearObjectSelection(true);
+						this.selectedChemical = chemical;
+					}}>
+					<span class="chemical-preview">${src ? html`<img src=${src} alt="" draggable="false" decoding="async" loading="lazy"/>`
+						: html`<span>${formula}</span>`}</span>
+					${src ? html`<small>${formula}</small>` : nothing}
+				</button>
+			</sl-card>`;
 	}
 
 	/** The slider preset scale, offered as separate fixed tiles per concentration. */
@@ -4413,7 +4420,7 @@ export class ChemLab extends LitElementWw {
 			const allowed = visible.filter((item) => this.isChemicalAllowed(item.name));
 			return visible.length ? [{ category, label, visible, allowed }] : [];
 		});
-		const groupSlides = groups.map(({ category, label, visible, allowed }) => {
+		const groupSlides = groups.flatMap(({ category, label, visible, allowed }) => {
 			const items = chemicalCatalogGroups.find((group) => group.category === category)!.items;
 			const toggleAll = () => this.toggleAllChemicals(items.map(({ name }) => ({ name })));
 			const count = this.message("{allowed} von {total} Chemikalien freigegeben",
@@ -4423,13 +4430,13 @@ export class ChemLab extends LitElementWw {
 				initial: Math.min(1, item.concentrationLimit), max: item.concentrationLimit,
 				saturation: item.category === "Salze",
 			}));
-			if (!(this.canAuthor || slides.length)) return nothing;
-			return html`
-				<sl-carousel-item class="chemical-group-slide" contenteditable="false">
+			if (!(this.canAuthor || slides.length)) return [];
+			return [html`
+				<sl-tab slot="nav" panel=${`chemical-${category}`}>${label}</sl-tab>
+				<sl-tab-panel name=${`chemical-${category}`}>
 					<div class="chemical-carousel-section">
-						<div class="chemical-section-header">
-							<sl-tag size="small">${label}</sl-tag>
-							${this.canAuthor ? html`
+						${this.canAuthor ? html`
+							<div class="chemical-section-header">
 								<button type="button" class="component-permission-toggle" contenteditable="false"
 									title=${allowed.length
 										? `${this.message("Freigaben")}: ${allowed.map(({ name }) => this.message(name)).join(", ")}`
@@ -4440,14 +4447,15 @@ export class ChemLab extends LitElementWw {
 									<sl-badge pill variant=${allowed.length === 0 ? "danger" : allowed.length < visible.length ? "primary" : "success"}>
 										${allowed.length} / ${visible.length}
 									</sl-badge>
-								</button>` : nothing}
-						</div>
-						<sl-carousel class="chemical-carousel" navigation mouse-dragging slides-per-page="4" slides-per-move="1">
+								</button>
+							</div>` : nothing}
+						<sl-carousel class="chemical-carousel" navigation mouse-dragging
+							slides-per-page=${this.chemicalSlidesPerPage} slides-per-move="1">
 							${slides}
 						</sl-carousel>
 					</div>
-				</sl-carousel-item>`;
-		}).filter((slide) => slide !== nothing);
+				</sl-tab-panel>`];
+		});
 		const customLabel = this.message("Eigene Stoffe");
 		const customMolecules = molecules.filter((molecule) =>
 			matches(molecule.formula, customLabel) && (this.canAuthor || this.isChemicalAllowed("mol:" + molecule.formula)));
@@ -4479,16 +4487,15 @@ export class ChemLab extends LitElementWw {
 		const outerSlides = [
 			...groupSlides,
 			...(customSlides.length ? [html`
-				<sl-carousel-item class="chemical-group-slide" contenteditable="false">
+				<sl-tab slot="nav" panel="chemicalCustom">${customLabel}</sl-tab>
+				<sl-tab-panel name="chemicalCustom">
 					<div class="chemical-carousel-section">
-						<div class="chemical-section-header">
-							<sl-tag size="small">${customLabel}</sl-tag>
-						</div>
-						<sl-carousel class="chemical-carousel" navigation mouse-dragging slides-per-page="4" slides-per-move="1">
+						<sl-carousel class="chemical-carousel" navigation mouse-dragging
+							slides-per-page=${this.chemicalSlidesPerPage} slides-per-move="1">
 							${customSlides}
 						</sl-carousel>
 					</div>
-				</sl-carousel-item>`] : []),
+				</sl-tab-panel>`] : []),
 		];
 		return html`
 			<sl-input class="chemical-search" size="small" type="search" clearable contenteditable="false"
@@ -4496,9 +4503,9 @@ export class ChemLab extends LitElementWw {
 				@sl-input=${(event: Event) => { this.chemicalQuery = (event.currentTarget as SlInput).value; }}>
 			</sl-input>
 			${outerSlides.length ? html`
-				<sl-carousel class="chemical-groups-carousel" orientation="vertical" navigation slides-per-page="1" slides-per-move="1">
+				<sl-tab-group id="chemicalGroupTabs" class="chemical-group-tabs">
 					${outerSlides}
-				</sl-carousel>` : html`<p>${this.message("Keine Chemikalien gefunden.")}</p>`}
+				</sl-tab-group>` : html`<p>${this.message("Keine Chemikalien gefunden.")}</p>`}
 		`;
 	}
 

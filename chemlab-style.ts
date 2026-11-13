@@ -1625,16 +1625,44 @@ export const style = css`
 		display: grid;
 		align-content: start;
 	}
-	.chemical-groups-carousel {
-		height: min(52vh, 420px);
+	.chemical-group-tabs::part(tabs) {
+		gap: 4px;
 	}
-	.chemical-groups-carousel .chemical-group-slide {
-		display: grid;
-		align-content: start;
-		overflow: hidden;
+	.chemical-group-tabs > sl-tab::part(base) {
+		padding: 4px 10px;
+		border: 1px solid var(--sl-color-neutral-300);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--sl-color-neutral-0);
+		color: var(--sl-color-neutral-700);
 	}
-	.chemical-groups-carousel::part(navigation-button) {
-		--sl-input-height-small: 1.6rem;
+	.chemical-group-tabs > sl-tab[active]::part(base) {
+		border-color: var(--sl-color-primary-300);
+		background: var(--sl-color-primary-100);
+		color: var(--sl-color-primary-800);
+	}
+	.chemical-group-tabs::part(base) {
+		--padding: 0;
+	}
+	.chemical-card {
+		position: relative;
+		width: 100%;
+	}
+	.chemical-card::part(base) {
+		height: 100%;
+		padding: 0;
+	}
+	.chemical-card::part(header) {
+		padding: 4px 22px 4px 8px;
+		font-size: var(--sl-font-size-small);
+		font-weight: 600;
+		overflow-wrap: anywhere;
+	}
+	.chemical-card::part(body) {
+		padding: 4px;
+	}
+	.chemical-card-selected::part(base) {
+		border-color: var(--sl-color-primary-500);
+		box-shadow: 0 0 0 1px var(--sl-color-primary-500) inset;
 	}
 	.chemical-tile,
 	.chemical-tile-button {
