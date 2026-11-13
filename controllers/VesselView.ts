@@ -17,6 +17,13 @@ interface SolidParticle {
 	floor: number;
 }
 
+/** one liquid band in the vessel, bottom-most first; fractions sum to 1 */
+interface LiquidLayer {
+	fraction: number;
+	color: number;
+	alpha: number;
+}
+
 // Interior cross sections, in the corresponding SVG viewBox coordinates.
 const interiors = {
 	beaker: { center: 13.23, width: 26.458333, height: 34.395833,
@@ -56,6 +63,9 @@ export class VesselView extends Container {
 	private static readonly PRECIPITATE_GRAVITY = 22;
 	private static readonly GRAIN_TERMINAL = 80;
 	private static readonly PRECIPITATE_TERMINAL = 7;
+	/** tint of the aqueous phase and of water-immiscible organic liquids */
+	private static readonly AQUEOUS = { color: 0x4592b7, alpha: 0.55 };
+	private static readonly NONPOLAR = { color: 0xcbb984, alpha: 0.6 };
 
 	private fillShape = new Graphics({ eventMode: "none" });
 	private particlesShape = new Graphics({ eventMode: "none" });
@@ -67,6 +77,7 @@ export class VesselView extends Container {
 	private lastSediment = 0;
 	private lastSedimentColor = 0;
 	private lastWobble = 0;
+	private lastLayerKey = "";
 	/** last reported sediment mass, to detect precipitation and dissolution */
 	private sedimentMass = 0;
 	/** sediment fraction the fill graphics currently show, eased to the target */
@@ -75,6 +86,8 @@ export class VesselView extends Container {
 	private fillFraction = 0;
 	private liquidFilled = false;
 	private sedimentColor = 0;
+	/** liquid bands for immiscible phases, bottom-most first; [] for one phase */
+	private liquidLayers: LiquidLayer[] = [];
 	/** solid particles falling or sinking in the liquid */
 	private particles: SolidParticle[] = [];
 	/** remaining pour stream visibility in ms */
@@ -192,6 +205,15 @@ export class VesselView extends Container {
 		this.liquidFilled = liquid;
 		this.sedimentFraction = sedimentFraction;
 		this.sedimentColor = sediment.color;
+		// immiscible liquids stack in bands, lightest phase on top
+		const phases = mixture.liquidPhases;
+		const phaseVolume = phases.reduce((sum, phase) => sum + phase.volume, 0);
+		this.liquidLayers = phaseVolume > 0
+			? [...phases].sort((left, right) => right.density - left.density).map((phase) => ({
+					fraction: phase.volume / phaseVolume,
+					...(phase.nonpolar ? VesselView.NONPOLAR : VesselView.AQUEOUS),
+				}))
+			: [];
 		if (hint === "pour" && liquid) {
 			this.streamMs = 450;
 			this.wobbleMs = 850;
@@ -344,14 +366,17 @@ export class VesselView extends Container {
 
 	private updateFill(fraction: number, liquid: boolean, sediment: number, color: number, wobble: number = 0): void {
 		const angle = liquid ? this.rotation : 0;
+		const layerKey = this.liquidLayers.map((layer) => `${layer.fraction.toFixed(4)}:${layer.color}`).join("|");
 		if (fraction === this.lastFraction && angle === this.lastAngle && liquid === this.lastLiquid &&
-			sediment === this.lastSediment && color === this.lastSedimentColor && wobble === this.lastWobble) return;
+			sediment === this.lastSediment && color === this.lastSedimentColor && wobble === this.lastWobble &&
+			layerKey === this.lastLayerKey) return;
 		this.lastFraction = fraction;
 		this.lastAngle = angle;
 		this.lastLiquid = liquid;
 		this.lastSediment = sediment;
 		this.lastSedimentColor = color;
 		this.lastWobble = wobble;
+		this.lastLayerKey = layerKey;
 		this.fillShape.clear();
 		if (fraction <= 0) return;
 
@@ -364,7 +389,34 @@ export class VesselView extends Container {
 		const surface = this.surfaceAt(Math.max(0, Math.min(1, fraction + wobble)), Math.min(...depths), Math.max(...depths), sin, cos);
 		const { submerged, edges } = this.clipAtSurface(surface, depth);
 		if (submerged.length < 3) return;
-		this.fillShape.poly(submerged).fill(liquid ? { color: 0x4592b7, alpha: 0.55 } : { color: 0x827d6f, alpha: 0.72 });
+		const layers = liquid ? this.liquidLayers : [];
+		if (layers.length) {
+			// Bands paint from the surface downwards, so each lower band covers
+			// the deeper region up to its boundary above.
+			const top = Math.min(...depths);
+			const bottom = Math.max(...depths);
+			let boundaryFraction = 1;
+			for (let index = layers.length - 1; index >= 0; index--) {
+				const { submerged: band } = this.clipAtSurface(
+					index === layers.length - 1 ? surface : this.surfaceAt(fraction * boundaryFraction, top, bottom, sin, cos), depth);
+				if (band.length >= 3) this.fillShape.poly(band).fill({ color: layers[index].color, alpha: layers[index].alpha });
+				boundaryFraction -= layers[index].fraction;
+			}
+			// faint line at each phase boundary above the bottom band
+			let cumulative = layers[0].fraction;
+			for (let index = 1; index < layers.length; index++) {
+				const level = this.surfaceAt(fraction * cumulative, top, bottom, sin, cos);
+				const { edges: seam } = this.clipAtSurface(level, depth);
+				for (let i = 0; i + 1 < seam.length; i += 2) {
+					this.fillShape.moveTo(seam[i].x, seam[i].y)
+						.lineTo(seam[i + 1].x, seam[i + 1].y)
+						.stroke({ color: 0x6b6350, alpha: 0.55, width: 0.18 });
+				}
+				cumulative += layers[index].fraction;
+			}
+		} else {
+			this.fillShape.poly(submerged).fill(liquid ? { color: VesselView.AQUEOUS.color, alpha: VesselView.AQUEOUS.alpha } : { color: 0x827d6f, alpha: 0.72 });
+		}
 		if (sediment > 0) {
 			const floor = this.surfaceAt(sediment, Math.min(...depths), Math.max(...depths), sin, cos);
 			const deposit = this.clipAtSurface(floor, depth).submerged;

@@ -2,6 +2,7 @@ import { Molecule } from "./Molecule";
 import { StructureManager } from "./StructureManager";
 import { ethanolWaterExcessVolume } from "./ethanolWaterVolume";
 import { saltSolubility } from "./saltSolubility";
+import { splitLiquidPhases, type LiquidPhase } from "./liquidPhases";
 
 function isEthanol(molecule: Molecule): boolean {
 	if (molecule._totalCharge !== 0 || molecule._atoms.length !== 9 || molecule._bonds.length !== 8) return false;
@@ -72,6 +73,11 @@ class Mixture {
 
 	get contentVolume(): number {
 		return this.contentVolumeWith();
+	}
+
+	/** Immiscible liquid phases, lightest first, or [] while all is miscible. */
+	get liquidPhases(): LiquidPhase[] {
+		return splitLiquidPhases(this);
 	}
 
 	get hasLiquidContents(): boolean {

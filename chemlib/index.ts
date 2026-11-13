@@ -11,4 +11,5 @@ import {StructureManager} from './StructureManager'
 import {AcidBase} from './AcidBase'
 
 export {Atom, Bond, ChemComponent, ComponentType, ComponentManager, ElectricComponent, EComponentType, ElementData, Mixture, Molecule, Simulation, StructureManager, AcidBase}
+export {nonpolarDensity, splitLiquidPhases, type LiquidPhase} from './liquidPhases'
 export type {AcidBaseSystem} from './AcidBase'
