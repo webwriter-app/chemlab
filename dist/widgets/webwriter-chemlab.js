@@ -184513,10 +184513,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         });
       }
     } else {
-      if (!this.selectedChemical) {
-        this.closeAmountMenu();
-        return;
-      }
       result = this.addMeasuredDose(target, from2.dose, amount, from2.recipe.phase === "solid" ? "grain" : "pour");
       this.saveMeasuredDose(anchor, from2.recipe, result);
     }

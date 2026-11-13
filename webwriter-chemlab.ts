@@ -1933,10 +1933,7 @@ export class ChemLab extends LitElementWw {
 				});
 			}
 		} else {
-			if (!this.selectedChemical) {
-				this.closeAmountMenu();
-				return;
-			}
+			// A palette drag clears the selection. The open menu owns the recipe for this dose.
 			result = this.addMeasuredDose(target, from.dose, amount, from.recipe.phase === "solid" ? "grain" : "pour");
 			this.saveMeasuredDose(anchor, from.recipe, result);
 		}
