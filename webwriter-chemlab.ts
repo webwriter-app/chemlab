@@ -910,7 +910,7 @@ export class ChemLab extends LitElementWw {
 		const drawerStyle = getComputedStyle(drawer);
 		const triggerHeight = Number.parseFloat(drawerStyle.getPropertyValue("--panel-trigger-height"));
 		const triggerInset = Number.parseFloat(drawerStyle.getPropertyValue("--teacher-drawer-trigger-inset"));
-		const standardDrawerBody = 240;
+		const standardDrawerBody = Number.parseFloat(drawerStyle.getPropertyValue("--teacher-drawer-body-height"));
 		this.teacherDrawerOpen = this.teacherDrawerChoice ??
 			(this.containerDiv.clientHeight >= STANDARD_CANVAS_HEIGHT + standardDrawerBody + triggerHeight + 2 * triggerInset);
 	}

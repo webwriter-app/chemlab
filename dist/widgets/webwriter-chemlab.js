@@ -103523,7 +103523,7 @@ var style = i`
 		display: block;
 		inline-size: 800px;
 		max-inline-size: 100%;
-		block-size: 920px;
+		block-size: 1000px;
 		min-inline-size: min(260px, 100%);
 		min-block-size: 280px;
 		container-type: size;
@@ -103915,6 +103915,7 @@ var style = i`
 	}
 	#teacherDrawer {
 		--teacher-drawer-trigger-inset: 4px;
+		--teacher-drawer-body-height: 340px;
 		grid-column: 1 / -1;
 		grid-row: 2;
 		position: relative;
@@ -103934,7 +103935,7 @@ var style = i`
 	}
 	#teacherDrawerContent {
 		box-sizing: border-box;
-		max-height: min(240px, 45cqh);
+		max-block-size: min(var(--teacher-drawer-body-height), 60cqh);
 		overflow: auto;
 		padding: 4px 0;
 	}
@@ -183597,7 +183598,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const drawerStyle = getComputedStyle(drawer);
     const triggerHeight = Number.parseFloat(drawerStyle.getPropertyValue("--panel-trigger-height"));
     const triggerInset = Number.parseFloat(drawerStyle.getPropertyValue("--teacher-drawer-trigger-inset"));
-    const standardDrawerBody = 240;
+    const standardDrawerBody = Number.parseFloat(drawerStyle.getPropertyValue("--teacher-drawer-body-height"));
     this.teacherDrawerOpen = this.teacherDrawerChoice ?? this.containerDiv.clientHeight >= STANDARD_CANVAS_HEIGHT + standardDrawerBody + triggerHeight + 2 * triggerInset;
   }
   updated(changed) {

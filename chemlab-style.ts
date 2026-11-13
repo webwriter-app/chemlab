@@ -1040,7 +1040,7 @@ export const style = css`
 		display: block;
 		inline-size: 800px;
 		max-inline-size: 100%;
-		block-size: 920px;
+		block-size: 1000px;
 		min-inline-size: min(260px, 100%);
 		min-block-size: 280px;
 		container-type: size;
@@ -1432,6 +1432,7 @@ export const style = css`
 	}
 	#teacherDrawer {
 		--teacher-drawer-trigger-inset: 4px;
+		--teacher-drawer-body-height: 340px;
 		grid-column: 1 / -1;
 		grid-row: 2;
 		position: relative;
@@ -1451,7 +1452,7 @@ export const style = css`
 	}
 	#teacherDrawerContent {
 		box-sizing: border-box;
-		max-height: min(240px, 45cqh);
+		max-block-size: min(var(--teacher-drawer-body-height), 60cqh);
 		overflow: auto;
 		padding: 4px 0;
 	}
