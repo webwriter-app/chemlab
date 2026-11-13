@@ -1644,62 +1644,34 @@ export const style = css`
 		align-self: end;
 		padding: 4px;
 	}
-	.chemical-stack {
+	.chemical-solution {
 		display: grid;
-		align-content: start;
-	}
-	.chemical-stack-header,
-	.chemical-stack-preview {
-		margin-inline-start: var(--stack-offset);
-		border: 1px solid var(--sl-color-neutral-200);
-		background: var(--sl-color-neutral-50);
-	}
-	.chemical-stack-header {
-		display: flex;
-		align-items: center;
-		gap: 2px;
-		min-block-size: 25px;
-		padding-inline-end: 5px;
-		border-radius: var(--sl-border-radius-medium) var(--sl-border-radius-medium) 0 0;
-	}
-	.chemical-stack-header + .chemical-stack-header,
-	.chemical-stack-preview {
-		margin-block-start: -1px;
-	}
-	.chemical-stack-header[data-active],
-	.chemical-stack-preview {
-		border-color: var(--sl-color-primary-300);
-		background: var(--sl-color-primary-50);
-	}
-	.chemical-stack-preview {
-		border-block-start: 0;
-		border-radius: 0 0 var(--sl-border-radius-medium) var(--sl-border-radius-medium);
-	}
-	.chemical-stack-single > .chemical-stack-header,
-	.chemical-stack-single > .chemical-stack-preview {
-		border: 0;
-		background: transparent;
-	}
-	.chemical-stack-label {
-		flex: 1;
-		padding: 2px 5px;
-	}
-	.chemical-stack-title {
-		flex: 1;
 		min-inline-size: 0;
-		padding: 2px 5px;
-		border: 0;
-		border-radius: inherit;
-		background: transparent;
-		text-align: start;
-		cursor: pointer;
 	}
-	.chemical-stack-title:hover {
-		background: var(--sl-color-neutral-100);
+	.chemical-solution .chemical-preview {
+		block-size: 42px;
 	}
-	.chemical-stack-title:focus-visible {
-		outline: 2px solid var(--sl-color-primary-600);
-		outline-offset: -2px;
+	.chemical-solution-controls {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 4px;
+		padding: 0 4px 4px;
+	}
+	.chemical-solution-controls > sl-tag {
+		justify-self: center;
+	}
+	.chemical-active-concentration::part(form-control-label) {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+	.chemical-concentration-permissions::part(form-control-label) {
+		font-size: var(--sl-font-size-x-small);
+	}
+	.chemical-concentration-permissions::part(tags) {
+		flex-wrap: nowrap;
 	}
 	.chemical-permission {
 		display: grid;

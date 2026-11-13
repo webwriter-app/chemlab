@@ -1321,18 +1321,16 @@ export class ChemLab extends LitElementWw {
 		this.chemicalPermissions = blocked ? { ...rest, [name]: { blocked: true } } : rest;
 	}
 
-	private toggleChemicalConcentration(name: string, initial: number, variant: number, allow: boolean): void {
+	private setAllowedConcentrations(name: string, values: number[]): void {
 		if (!this.canAuthor) return;
-		const concentrations = new Set(this.allowedConcentrationsFor(name, initial));
-		if (allow) concentrations.add(variant);
-		else concentrations.delete(variant);
-		const list = [...concentrations].sort((left, right) => left - right);
-		const next = { ...this.chemicalPermissions };
-		next[name] = list.length ? { concentrations: list } : { blocked: true };
-		this.chemicalPermissions = next;
+		const concentrations = [...new Set(values)].sort((left, right) => left - right);
+		this.chemicalPermissions = {
+			...this.chemicalPermissions,
+			[name]: concentrations.length ? { concentrations } : { blocked: true },
+		};
 	}
 
-	/** Permission counts use the same tiles that the bulk action toggles. */
+	/** Permission counts use the same variants that the bulk action toggles. */
 	private chemicalPermissionSummary(items: (ChemicalPermissionItem & { label?: string })[]) {
 		let allowed = 0;
 		let total = 0;
@@ -4557,42 +4555,44 @@ export class ChemLab extends LitElementWw {
 		const saved = this.activeChemicalConcentrations[item.name];
 		const active = values.includes(saved) ? saved
 			: concentration && values.includes(concentration.initial) ? concentration.initial : values[0];
-		const stack = active === undefined ? [] : [...values.filter((value) => value !== active), active];
 		const activeKey = active === undefined ? item.name : `${item.name}@${active}`;
 		const preview = this.renderChemicalTile(activeKey, label, item.formula,
 			active === undefined ? item.recipe : withConcentration(item.recipe, active), src, active);
 		const allowedCount = concentration ? allowed.length : Number(this.isChemicalAllowed(item.name));
 		const variant = this.palettePermissionVariant(allowedCount, concentration ? values.length : 1);
 		const badge = this.canAuthor ? this.renderChemicalPermissionBadge(name, [item]) : nothing;
-		const body = stack.length ? html`
-			<div class=${stack.length === 1 ? "chemical-stack chemical-stack-single palette-variant" : "chemical-stack"}>
-				${repeat(stack, (value) => value, (value, index) => {
-					const isActive = value === active;
-					const isAllowed = allowed.includes(value);
-					const offset = Math.min(index, 7) * 2;
-					const title = html`<sl-tag size="small" variant=${isAllowed ? "primary" : "neutral"}>${this.formatAmount(value, 8)} mol/L</sl-tag>`;
-					return html`
-						<div class="chemical-stack-header" ?data-active=${isActive} style=${`--stack-offset: ${offset}px`}>
-							${stack.length === 1 ? html`<span class="chemical-stack-label">${title}</span>` : html`
-							<button class="chemical-stack-title" type="button" contenteditable="false"
-								aria-label=${this.chemicalTileLabel(label, value)} aria-pressed=${isActive}
-								@click=${async (event: MouseEvent) => {
-									if (isActive) return;
-									const button = event.currentTarget as HTMLButtonElement;
-									const restoreFocus = this.shadowRoot.activeElement === button;
-									this.activeChemicalConcentrations = { ...this.activeChemicalConcentrations, [item.name]: value };
-									if (this.selectedChemical?.key === activeKey) this.clearChemicalSelection();
-									if (restoreFocus) {
-										await this.updateComplete;
-										if (button.isConnected && !this.shadowRoot.activeElement) button.focus({ preventScroll: true });
-									}
-								}}>
-								${title}
-							</button>`}
-							${this.canAuthor ? this.renderChemicalPermission(item.name, label, value, concentration?.initial) : nothing}
-						</div>`;
-				})}
-				<div class="chemical-stack-preview" style=${`--stack-offset: ${Math.min(stack.length - 1, 7) * 2}px`}>${preview}</div>
+		const concentrationLabel = (value: number) => `${this.formatAmount(value, 8)} mol/L`;
+		const options = () => repeat(values, (value) => value, (value) => html`
+			<sl-option value=${String(value)}>${concentrationLabel(value)}</sl-option>`);
+		const body = active !== undefined ? html`
+			<div class="chemical-solution palette-variant">
+				${preview}
+				<div class="chemical-solution-controls">
+					${values.length === 1 ? html`<sl-tag size="small">${concentrationLabel(active)}</sl-tag>` : html`
+						<sl-select class="chemical-active-concentration" size="small" hoist placement="top" contenteditable="false"
+							label=${`${name} · ${this.message("Konzentration zum Dosieren")}`} .value=${String(active)}
+							@sl-change=${(event: Event) => {
+								const value = Number((event.currentTarget as SlSelect).value);
+								if (value === active || !values.includes(value)) return;
+								this.activeChemicalConcentrations = { ...this.activeChemicalConcentrations, [item.name]: value };
+								if (this.selectedChemical?.key === activeKey) this.clearChemicalSelection();
+							}}>
+							${options()}
+						</sl-select>`}
+					${this.canAuthor ? html`
+						<sl-select class="chemical-concentration-permissions" size="small" multiple max-options-visible="1"
+							hoist placement="top" contenteditable="false" label=${this.message("Freigegebene Konzentrationen")}
+							placeholder=${this.message("Keine Freigaben")} .value=${allowed.map(String)}
+							@sl-change=${(event: Event) => {
+								const selected = (event.currentTarget as SlSelect).value;
+								if (Array.isArray(selected)) {
+									const selectedValues = new Set(selected);
+									this.setAllowedConcentrations(item.name, values.filter((value) => selectedValues.has(String(value))));
+								}
+							}}>
+							${options()}
+						</sl-select>` : nothing}
+				</div>
 			</div>` : html`
 			<div class="chemical-single palette-variant">
 				${preview}
@@ -4601,33 +4601,16 @@ export class ChemLab extends LitElementWw {
 		return this.renderPaletteCard(name, variant, badge, body, true);
 	}
 
-	/** The author-side permission checkbox on a chemical tile. */
-	private renderChemicalPermission(name: string, label: string, concentrationMolPerL?: number, initial?: number): unknown {
-		let checked: boolean;
-		let toggle: (event: Event) => void;
-		let changeText: string;
-		let tooltipText: string;
-		if (concentrationMolPerL != null) {
-			const base = initial ?? concentrationMolPerL;
-			const variants = this.allowedConcentrationsFor(name, base);
-			checked = variants.includes(concentrationMolPerL);
-			toggle = (event: Event) => this.toggleChemicalConcentration(name, base, concentrationMolPerL,
-				(event.currentTarget as SlCheckbox).checked);
-			changeText = this.message("Diese Konzentration für Lernende erlauben");
-			tooltipText = variants.length
-				? `${this.message("Freigegebene Konzentrationen")}: ${variants.map((variant) => `${this.formatAmount(variant, 8)} mol/L`).join(", ")}`
-				: this.message("Nicht für Lernende freigegeben");
-		} else {
-			checked = this.isChemicalAllowed(name);
-			toggle = (event: Event) => this.setChemicalBlocked(name, !(event.currentTarget as SlCheckbox).checked);
-			changeText = this.message("Für Lernende erlauben");
-			tooltipText = changeText;
-		}
+	private renderChemicalPermission(name: string, label: string) {
+		const checked = this.isChemicalAllowed(name);
+		const changeText = this.message("Für Lernende erlauben");
 		return html`
 			<div class="chemical-permission">
-				<sl-tooltip hoist content=${tooltipText}>
-					<sl-checkbox size="small" .checked=${live(checked)} aria-label=${`${this.chemicalTileLabel(label, concentrationMolPerL)} · ${changeText}`}
-						@sl-change=${toggle}>${changeText}</sl-checkbox>
+				<sl-tooltip hoist content=${changeText}>
+					<sl-checkbox size="small" .checked=${live(checked)} aria-label=${`${label} · ${changeText}`}
+						@sl-change=${(event: Event) => this.setChemicalBlocked(name, !(event.currentTarget as SlCheckbox).checked)}>
+						${changeText}
+					</sl-checkbox>
 				</sl-tooltip>
 			</div>`;
 	}
