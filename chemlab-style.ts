@@ -1449,9 +1449,6 @@ export const style = css`
 	#teacherTabs::part(nav) {
 		margin-bottom: 6px;
 	}
-	#teacherTabs.learner-tabs::part(nav) {
-		display: none;
-	}
 	#teacherTabs::part(tabs) {
 		gap: 4px;
 		border-radius: 0;
@@ -1487,6 +1484,37 @@ export const style = css`
 	.chemical-section::part(header),
 	.chemical-section::part(content) {
 		padding: 5px;
+	}
+	.chemical-section::part(header) {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.chemical-section .component-permission-toggle {
+		margin-inline-start: auto;
+		margin-inline-end: 4px;
+	}
+	.chemical-tile-cell {
+		display: grid;
+		gap: 4px;
+		align-content: start;
+	}
+	.chemical-permission {
+		display: grid;
+		place-items: center;
+		justify-self: center;
+		z-index: 1;
+	}
+	.chemical-permission sl-tooltip {
+		--show-delay: 650ms;
+	}
+	.chemical-permission sl-checkbox::part(label) {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
 	}
 	.chemical-grid {
 		display: grid;

@@ -67,6 +67,7 @@ import { SimulationController } from "./controllers/SimulationController";
 import { componentGraphic, componentVariant, componentVariants, type ComponentVariant, type PaletteComponent } from "./data/componentGraphics";
 import { renderComponentPaletteIcon } from "./data/componentPaletteIcons";
 import { chemicalCatalogGroups, isWaterDefinition, withConcentration, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
+import type { chemicalCatalog } from "./data/chemicals";
 import { loadMoleculeDefinition } from "./data/moleculeDefinition";
 import { catalogPreviews } from "./data/chemicalPreviews.generated";
 import { prepareDose, type SavedDose } from "./data/measuredDose";
@@ -629,11 +630,13 @@ export class ChemLab extends LitElementWw {
 	private workspaceResizeObserver?: ResizeObserver;
 	private workspaceClassObserver?: MutationObserver;
 	@state() private accessor teacherTab: "components" | "chemicals" = "components";
-	@state() private accessor permissionTooltip: { anchor: HTMLElement; type: PaletteComponent; text: string } | undefined;
+	@state() private accessor permissionTooltip: { anchor: HTMLElement; type: string; text: string } | undefined;
 	@state() private accessor visibleVariants: Partial<Record<PaletteComponent, string>> = {};
 	@state() private accessor componentToPlace: string | undefined;
 	@state() private accessor selectedChemical: SelectedChemical | undefined;
 	@state() private accessor chemicalConcentrations = new Map<string, number>();
+	/** per chemical: blocked for learners, or the concentrations offered as separate tiles */
+	@state() private accessor chemicalPermissions: Record<string, { blocked?: true; concentrations?: number[] }> = {};
 	@state() private accessor editingConcentration: string | undefined;
 	@state() private accessor amountMenu: {
 		target: chemlib.ChemComponent;
@@ -904,12 +907,9 @@ export class ChemLab extends LitElementWw {
 
 	protected updated(changed: PropertyValueMap<any>): void {
 		super.updated(changed);
-		if (!this.canAuthor && this.teacherTab === "chemicals") {
-			this.shadowRoot.querySelector<SlTabGroup>("#teacherTabs").show("components");
-		}
-		if (!this.canAuthor || changed.has("invComponents")) this.permissionTooltip = undefined;
+		if (!this.canAuthor || changed.has("invComponents") || changed.has("chemicalPermissions")) this.permissionTooltip = undefined;
 		if (changed.has("panelVariant")) this._changePanelVariant();
-		if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents"].some((name) => changed.has(name))) {
+		if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions"].some((name) => changed.has(name))) {
 			this.persistAuthoredData();
 		}
 		if (this.app && this.refreshFromRemoteData) {
@@ -974,6 +974,18 @@ export class ChemLab extends LitElementWw {
 				componentNames.find(key => this.dictionary[key.toLowerCase()] === value)?.toLowerCase() ?? value.toLowerCase()
 			);
 		}
+		if (value.chemicalPermissions && typeof value.chemicalPermissions === "object") {
+			const permissions: typeof this.chemicalPermissions = {};
+			for (const [name, entry] of Object.entries(value.chemicalPermissions as Record<string, any>)) {
+				if (!entry || typeof entry !== "object") continue;
+				const concentrations = Array.isArray(entry.concentrations)
+					? entry.concentrations.filter((value: unknown) => Number.isFinite(value) && (value as number) > 0)
+					: undefined;
+				if (entry.blocked) permissions[name] = { blocked: true };
+				else if (concentrations?.length) permissions[name] = { concentrations };
+			}
+			this.chemicalPermissions = permissions;
+		}
 	}
 
 	private readAuthoredData() {
@@ -987,6 +999,7 @@ export class ChemLab extends LitElementWw {
 				availableMixtures: value.availableMixtures ?? this.availableMixtures,
 				availableComponents: value.availableComponents ?? this.availableComponents,
 				invComponents: value.invComponents ?? this.invComponents,
+				chemicalPermissions: value.chemicalPermissions ?? this.chemicalPermissions,
 			});
 			if (incoming === this.savedDataSnapshot) return;
 			this.refreshFromRemoteData = this.hasUpdated;
@@ -1007,6 +1020,7 @@ export class ChemLab extends LitElementWw {
 			availableMixtures: this.availableMixtures,
 			availableComponents: this.availableComponents,
 			invComponents: this.invComponents,
+			chemicalPermissions: this.chemicalPermissions,
 		});
 	}
 
@@ -1277,6 +1291,47 @@ export class ChemLab extends LitElementWw {
 		this.invComponents = [...blocked];
 	}
 
+	/** true unless the chemical is blocked for learners */
+	private isChemicalAllowed(name: string): boolean {
+		return !this.chemicalPermissions[name]?.blocked;
+	}
+
+	/** the concentrations currently offered for a concentration-capable chemical */
+	private allowedConcentrationsFor(name: string, initial: number): number[] {
+		const stored = this.chemicalPermissions[name]?.concentrations;
+		return stored?.length ? [...stored] : [initial];
+	}
+
+	private setChemicalBlocked(name: string, blocked: boolean): void {
+		if (!this.canAuthor) return;
+		const { [name]: _removed, ...rest } = this.chemicalPermissions;
+		this.chemicalPermissions = blocked ? { ...rest, [name]: { blocked: true } } : rest;
+	}
+
+	private toggleChemicalConcentration(name: string, initial: number, variant: number, allow: boolean): void {
+		if (!this.canAuthor) return;
+		const entry = this.chemicalPermissions[name] ?? {};
+		const concentrations = new Set(entry.concentrations ?? [initial]);
+		if (allow) concentrations.add(variant);
+		else concentrations.delete(variant);
+		const list = [...concentrations].sort((left, right) => left - right);
+		const next = { ...this.chemicalPermissions };
+		next[name] = list.length ? { concentrations: list } : { blocked: true };
+		this.chemicalPermissions = next;
+	}
+
+	/** allows (or blocks) every chemical of a catalog category for learners */
+	private toggleAllChemicals(items: Array<{ name: string; concentration?: number }>): void {
+		if (!this.canAuthor) return;
+		const wereAllAllowed = items.every(({ name }) => this.isChemicalAllowed(name));
+		const next = { ...this.chemicalPermissions };
+		for (const { name } of items) {
+			if (wereAllAllowed) next[name] = { blocked: true };
+			else delete next[name];
+		}
+		this.chemicalPermissions = next;
+	}
+
 	private startComponentDrag(event: PointerEvent, variant: ComponentVariant): void {
 		if (!this.canAuthor && !this.isVariantAllowed(variant)) return;
 		let preview: PIXI.Container | undefined;
@@ -1412,7 +1467,7 @@ export class ChemLab extends LitElementWw {
 		if (this.chemicalPreviewFrame !== undefined) return;
 		this.chemicalPreviewFrame = this.ownerDocument.defaultView?.requestAnimationFrame(() => {
 			this.chemicalPreviewFrame = undefined;
-			if (!this.isConnected || !this.canAuthor || !this.teacherDrawerOpen || this.teacherTab !== "chemicals") {
+			if (!this.isConnected || !this.teacherDrawerOpen || this.teacherTab !== "chemicals") {
 				this.pendingChemicalPreviews.clear();
 				return;
 			}
@@ -1491,7 +1546,7 @@ export class ChemLab extends LitElementWw {
 
 	openChemicalAmountMenu(sprite: PIXI.Container): boolean {
 		const selected = this.selectedChemical;
-		if (!this.canAuthor || !selected) return false;
+		if (!selected) return false;
 		const target = this.doseTarget(sprite);
 		if (!target) return false;
 		this.cancelDoseForNavigation();
@@ -1529,10 +1584,6 @@ export class ChemLab extends LitElementWw {
 		this.dragTransfer = drag;
 		this.canvas.drawSelection();
 		this.simulation.startTask(DRAG_TRANSFER_TASK, (elapsedMs) => {
-			if (!("vessel" in from) && !this.canAuthor) {
-				this.finishDragTransfer();
-				return;
-			}
 			drag.heldMs += elapsedMs;
 			if (drag.heldMs < drag.nextDoseMs) return;
 			drag.active = true;
@@ -1648,7 +1699,6 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private startChemicalDrag(event: PointerEvent, chemical: SelectedChemical, src: string): void {
-		if (!this.canAuthor) return;
 		let from: Extract<AmountSource, { recipe: ChemicalRecipe }> | undefined;
 		let preview: HTMLDivElement | undefined;
 		const track = (pointer: PointerEvent) => {
@@ -1838,7 +1888,7 @@ export class ChemLab extends LitElementWw {
 				});
 			}
 		} else {
-			if (!this.canAuthor) {
+			if (!this.selectedChemical) {
 				this.closeAmountMenu();
 				return;
 			}
@@ -1869,7 +1919,7 @@ export class ChemLab extends LitElementWw {
 
 	beginChemicalDose(sprite: PIXI.Container, pointerId: number): boolean {
 		const selected = this.selectedChemical;
-		if (!this.canAuthor || !selected) return false;
+		if (!selected) return false;
 		if (this.stopDose) return true;
 		const target = this.doseTarget(sprite);
 		if (!target) return false;
@@ -4194,7 +4244,7 @@ export class ChemLab extends LitElementWw {
 						<sl-button size="small" @click=${this.clearChemicalSelection}>
 							${this.selectedChemical.name} ×
 						</sl-button>` : ""}
-					<sl-tab-group id="teacherTabs" class=${this.canAuthor ? "" : "learner-tabs"}
+					<sl-tab-group id="teacherTabs"
 						@sl-tab-show=${(event: CustomEvent<{ name: "components" | "chemicals" }>) => {
 							if (event.target === event.currentTarget) {
 								this.teacherTab = event.detail.name;
@@ -4203,11 +4253,11 @@ export class ChemLab extends LitElementWw {
 							}
 						}}>
 						<sl-tab slot="nav" panel="components" active>${this.message("Komponenten")}</sl-tab>
-						<sl-tab slot="nav" panel="chemicals" ?disabled=${!this.canAuthor}>${this.message("Chemikalien")}</sl-tab>
+						<sl-tab slot="nav" panel="chemicals">${this.message("Chemikalien")}</sl-tab>
 						<sl-tab-panel name="components" active>${this.renderComponentPalette()}</sl-tab-panel>
-						<sl-tab-panel name="chemicals" class="author-only">
-							${this.canAuthor && this.chemicalCatalogOpened ? this.renderChemicalCatalog() : nothing}
-							<sl-details summary=${this.message("Eigene Moleküle und Gemische")}>
+						<sl-tab-panel name="chemicals">
+							${this.chemicalCatalogOpened ? this.renderChemicalCatalog() : nothing}
+							<sl-details summary=${this.message("Eigene Moleküle und Gemische")} class="author-only">
 								<div class="teacher-editors">
 									<section><h3>${this.message("Moleküle")}</h3><div id="molConfig"></div></section>
 									<section><h3>${this.message("Gemische")}</h3><div id="mixConfig"></div></section>
@@ -4316,8 +4366,9 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderChemicalTile(key: string, name: string, formula: string, recipe: ChemicalRecipe, src?: string,
-		concentration?: ChemicalConcentration) {
-		const value = this.chemicalConcentrations.get(key) ?? concentration?.initial ?? 0;
+		concentration?: ChemicalConcentration, locked = false) {
+		const value = locked ? (concentration?.initial ?? 0)
+			: (this.chemicalConcentrations.get(key) ?? concentration?.initial ?? 0);
 		const concentrationLabel = concentration ? `${this.formatAmount(value, 8)} mol/L` : "";
 		const label = concentration ? name.replace(/ \(1 mol\/L\)$/, "") : name;
 		const chemical = { key, name: concentration ? `${label} (${concentrationLabel})` : name,
@@ -4341,7 +4392,7 @@ export class ChemLab extends LitElementWw {
 			<sl-badge pill variant="neutral">${label}</sl-badge>
 			${src ? html`<small>${formula}</small>` : nothing}
 			</button>`;
-		if (!concentration) return tile;
+		if (!concentration || locked) return tile;
 		const setValue = (next: number) => {
 			const bounded = Math.max(MIN_CONCENTRATION, Math.min(concentration.max, next));
 			this.chemicalConcentrations = new Map(this.chemicalConcentrations).set(key, bounded);
@@ -4459,22 +4510,44 @@ export class ChemLab extends LitElementWw {
 			const label = this.message(category);
 			const visible = matches(category, label) ? items : items.filter((item) =>
 				matches(item.name, this.message(item.name), item.formula, item.category, this.message(item.category)));
-			return visible.length ? [{ category, label, items: visible }] : [];
+			const allowed = this.canAuthor ? visible : visible.filter((item) => this.isChemicalAllowed(item.name));
+			return visible.length ? [{ category, label, visible, allowed }] : [];
 		});
-		const renderedGroups = repeat(groups, ({ category }) => category, ({ category, label, items }) => html`
+		const renderedGroups = repeat(groups, ({ category }) => category, ({ category, label, visible, allowed }) => {
+			const items = chemicalCatalogGroups.find((group) => group.category === category)!.items;
+			const toggleAll = () => this.toggleAllChemicals(items.map(({ name }) => ({ name })));
+			const count = this.message("{allowed} von {total} Chemikalien freigegeben",
+				{ allowed: allowed.length, total: visible.length });
+			const toggleLabel = this.message(allowed.length === visible.length ? "Alle Chemikalien sperren" : "Alle Chemikalien freigeben");
+			return html`
 				<sl-details class="chemical-section" ?open=${!!query || category === "Salze"}
 					@sl-show=${(event: Event) => this.rememberChemicalSection(event, category)}>
 					<sl-tag slot="summary" size="small">${label}</sl-tag>
+					${this.canAuthor ? html`
+						<button type="button" class="component-permission-toggle" contenteditable="false" slot="summary"
+							title=${allowed.length
+								? `${this.message("Freigaben")}: ${allowed.map(({ name }) => this.message(name)).join(", ")}`
+								: this.message("Keine Chemikalien freigegeben.")}
+							aria-label=${`${label} · ${count} · ${toggleLabel}`}
+							@dblclick=${toggleAll}
+							@click=${(event: MouseEvent) => { if (event.detail === 0) toggleAll(); }}>
+							<sl-badge pill variant=${allowed.length === 0 ? "danger" : allowed.length < visible.length ? "primary" : "success"}>
+								${allowed.length} / ${visible.length}
+							</sl-badge>
+						</button>` : nothing}
 					${query || this.openedChemicalSections.has(category) ? html`<div class="chemical-grid">
-						${items.map((item) => this.renderChemicalTile(item.name, this.message(item.name), item.formula,
-							item.recipe, catalogPreviews[item.name], item.concentrationLimit &&
-								{ initial: Math.min(1, item.concentrationLimit), max: item.concentrationLimit,
-									saturation: item.category === "Salze" }))}
+						${visible.map((item) => this.renderCatalogEntry(item, item.concentrationLimit && {
+							initial: Math.min(1, item.concentrationLimit), max: item.concentrationLimit,
+							saturation: item.category === "Salze",
+						}))}
 					</div>` : nothing}
-				</sl-details>`);
+				</sl-details>`;
+		});
 		const customLabel = this.message("Eigene Stoffe");
-		const customMolecules = molecules.filter((molecule) => matches(molecule.formula, customLabel));
-		const customMixtures = this.availableMixtures.filter((mixture) => matches(mixture["name"], customLabel));
+		const customMolecules = molecules.filter((molecule) =>
+			matches(molecule.formula, customLabel) && (this.canAuthor || this.isChemicalAllowed("mol:" + molecule.formula)));
+		const customMixtures = this.availableMixtures.filter((mixture) =>
+			matches(mixture["name"], customLabel) && (this.canAuthor || this.isChemicalAllowed("mix:" + mixture["name"])));
 		return html`
 			<sl-input class="chemical-search" size="small" type="search" clearable contenteditable="false"
 				label=${this.message("Chemikalien suchen")} .value=${this.chemicalQuery}
@@ -4486,7 +4559,7 @@ export class ChemLab extends LitElementWw {
 					@sl-show=${(event: Event) => this.rememberChemicalSection(event, "Eigene Stoffe")}>
 					<sl-tag slot="summary" size="small">${customLabel}</sl-tag>
 					${query || this.openedChemicalSections.has("Eigene Stoffe") ? html`<div class="chemical-grid">
-						${customMolecules.map((molecule) => this.renderCustomChemical("mol:" + molecule.formula, molecule.formula, {
+						${customMolecules.map((molecule) => this.renderCustomEntry("mol:" + molecule.formula, molecule.formula, {
 							phase: ["OH2", "H2O"].includes(molecule.formula) ? "liquid" : "solid",
 							density: 1, parts: [{ molecule, amount: 1 }],
 						}))}
@@ -4497,7 +4570,7 @@ export class ChemLab extends LitElementWw {
 								const amount = Number(rawAmount);
 								return molecule && Number.isFinite(amount) && amount > 0 ? [{ molecule, amount }] : [];
 							});
-							return this.renderCustomChemical("mix:" + mixture["name"], mixture["name"], {
+							return this.renderCustomEntry("mix:" + mixture["name"], mixture["name"], {
 								phase: parts.some(({ molecule }) => ["OH2", "H2O"].includes(molecule.formula)) ? "liquid" : "solid",
 								density: 1, parts,
 							});
@@ -4505,6 +4578,68 @@ export class ChemLab extends LitElementWw {
 					</div>` : nothing}
 				</sl-details>` : !groups.length ? html`<p>${this.message("Keine Chemikalien gefunden.")}</p>` : nothing}
 		`;
+	}
+
+	/**
+	 * Renders one catalog entry: for authors the tile with its permission
+	 * checkbox, for learners one fixed tile per allowed concentration.
+	 */
+	private renderCatalogEntry(item: typeof chemicalCatalog[number], concentration: ChemicalConcentration | false): unknown {
+		const label = this.message(item.name) || item.name;
+		const src = catalogPreviews[item.name];
+		const conc = concentration || undefined;
+		if (this.canAuthor) {
+			return html`<div class="chemical-tile-cell">
+				${this.renderChemicalTile(item.name, label, item.formula, item.recipe, src, conc)}
+				${this.renderChemicalPermission(item.name, label, conc)}
+			</div>`;
+		}
+		if (!this.isChemicalAllowed(item.name)) return nothing;
+		if (!conc) return this.renderChemicalTile(item.name, label, item.formula, item.recipe, src);
+		return this.allowedConcentrationsFor(item.name, conc.initial).map((value) =>
+			this.renderChemicalTile(`${item.name}@${value}`,
+				`${label.replace(/ \(\d+(?:[.,]\d+)? mol\/L\)$/, "")} (${this.formatAmount(value, 8)} mol/L)`,
+				item.formula, withConcentration(item.recipe, value, conc.stock), src, conc, true));
+	}
+
+	/** Renders one custom (own) chemical with its author-side permission checkbox. */
+	private renderCustomEntry(key: string, name: string, recipe: ChemicalRecipe): unknown {
+		const tile = this.renderCustomChemical(key, this.message(name) || name, recipe);
+		if (tile === nothing) return nothing;
+		return html`<div class="chemical-tile-cell">
+			${tile}${this.canAuthor ? this.renderChemicalPermission(key, name) : nothing}
+		</div>`;
+	}
+
+	/** The author-side permission checkbox below a chemical tile. */
+	private renderChemicalPermission(name: string, label: string, concentration?: ChemicalConcentration): unknown {
+		let checked: boolean;
+		let toggle: (event: Event) => void;
+		let changeText: string;
+		let tooltipText: string;
+		if (concentration) {
+			const value = Number((this.chemicalConcentrations.get(name) ?? concentration.initial).toPrecision(8));
+			const variants = this.allowedConcentrationsFor(name, concentration.initial);
+			checked = variants.some((variant) => Math.abs(variant - value) < 1e-12);
+			toggle = (event: Event) => this.toggleChemicalConcentration(name, concentration.initial,
+				this.chemicalConcentrations.get(name) ?? concentration.initial, (event.currentTarget as SlCheckbox).checked);
+			changeText = this.message("Diese Konzentration für Lernende erlauben");
+			tooltipText = variants.length
+				? `${this.message("Freigegebene Konzentrationen")}: ${variants.map((variant) => `${this.formatAmount(variant, 8)} mol/L`).join(", ")}`
+				: this.message("Nicht für Lernende freigegeben");
+		} else {
+			checked = this.isChemicalAllowed(name);
+			toggle = (event: Event) => this.setChemicalBlocked(name, !(event.currentTarget as SlCheckbox).checked);
+			changeText = this.message("Für Lernende erlauben");
+			tooltipText = changeText;
+		}
+		return html`
+			<div class="chemical-permission">
+				<sl-tooltip hoist content=${tooltipText}>
+					<sl-checkbox size="small" .checked=${checked} aria-label=${`${label} · ${changeText}`}
+						@sl-change=${toggle}>${changeText}</sl-checkbox>
+				</sl-tooltip>
+			</div>`;
 	}
 
 	private renderFillMeter() {

@@ -6,14 +6,8 @@
  * presets default to an empty list.
  */
 
-/** Molecules offered by default (water). */
-export const defaultMolecules: Array<object> = [
-	{
-		formula: "OH2",
-		atoms: ["oxygen", "hydrogen", "hydrogen"],
-		bonds: ["0-1:covalent:1", "0-2:covalent:1"],
-	},
-];
+/** Molecules offered by default (none; water comes from the chemical catalog). */
+export const defaultMolecules: Array<object> = [];
 
 /** Mixtures offered by default (none). */
 export const defaultMixtures: Array<object> = [];
