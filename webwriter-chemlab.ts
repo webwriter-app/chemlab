@@ -652,7 +652,6 @@ export class ChemLab extends LitElementWw {
 	private chemicalPreviewFrame?: number;
 	@state() private accessor chemicalCatalogOpened = false;
 	@state() private accessor chemicalQuery = "";
-	@state() private accessor openedChemicalSections = new Set(["Salze"]);
 	private stopDose?: (save?: boolean) => void;
 	private paletteDrag?: AbortController;
 	private suppressPaletteClick = false;
@@ -4496,11 +4495,6 @@ export class ChemLab extends LitElementWw {
 		return this.renderChemicalTile(key, name, preview.formula, recipe, this.previewMolecule(preview), concentration);
 	}
 
-	private rememberChemicalSection(event: Event, category: string): void {
-		if (event.target !== event.currentTarget || this.openedChemicalSections.has(category)) return;
-		this.openedChemicalSections = new Set([...this.openedChemicalSections, category]);
-	}
-
 	private renderChemicalCatalog() {
 		const molecules = this.availableMolecules as MoleculeDefinition[];
 		const normalize = (value: string) => value.normalize("NFKC").toLowerCase();
@@ -4519,97 +4513,113 @@ export class ChemLab extends LitElementWw {
 			const count = this.message("{allowed} von {total} Chemikalien freigegeben",
 				{ allowed: allowed.length, total: visible.length });
 			const toggleLabel = this.message(allowed.length === visible.length ? "Alle Chemikalien sperren" : "Alle Chemikalien freigeben");
-			return html`
-				<sl-details class="chemical-section" ?open=${!!query || category === "Salze"}
-					@sl-show=${(event: Event) => this.rememberChemicalSection(event, category)}>
-					<sl-tag slot="summary" size="small">${label}</sl-tag>
-					${this.canAuthor ? html`
-						<button type="button" class="component-permission-toggle" contenteditable="false" slot="summary"
-							title=${allowed.length
-								? `${this.message("Freigaben")}: ${allowed.map(({ name }) => this.message(name)).join(", ")}`
-								: this.message("Keine Chemikalien freigegeben.")}
-							aria-label=${`${label} · ${count} · ${toggleLabel}`}
-							@dblclick=${toggleAll}
-							@click=${(event: MouseEvent) => { if (event.detail === 0) toggleAll(); }}>
-							<sl-badge pill variant=${allowed.length === 0 ? "danger" : allowed.length < visible.length ? "primary" : "success"}>
-								${allowed.length} / ${visible.length}
-							</sl-badge>
-						</button>` : nothing}
-					${query || this.openedChemicalSections.has(category) ? html`<div class="chemical-grid">
-						${visible.map((item) => this.renderCatalogEntry(item, item.concentrationLimit && {
-							initial: Math.min(1, item.concentrationLimit), max: item.concentrationLimit,
-							saturation: item.category === "Salze",
-						}))}
-					</div>` : nothing}
-				</sl-details>`;
+			const slides = visible.flatMap((item) => this.renderChemicalSlides(item, item.concentrationLimit && {
+				initial: Math.min(1, item.concentrationLimit), max: item.concentrationLimit,
+				saturation: item.category === "Salze",
+			}));
+			if (this.canAuthor || slides.length) {
+				return html`
+					<div class="chemical-carousel-section">
+						<div class="chemical-section-header">
+							<sl-tag size="small">${label}</sl-tag>
+							${this.canAuthor ? html`
+								<button type="button" class="component-permission-toggle" contenteditable="false"
+									title=${allowed.length
+										? `${this.message("Freigaben")}: ${allowed.map(({ name }) => this.message(name)).join(", ")}`
+										: this.message("Keine Chemikalien freigegeben.")}
+									aria-label=${`${label} · ${count} · ${toggleLabel}`}
+									@dblclick=${toggleAll}
+									@click=${(event: MouseEvent) => { if (event.detail === 0) toggleAll(); }}>
+									<sl-badge pill variant=${allowed.length === 0 ? "danger" : allowed.length < visible.length ? "primary" : "success"}>
+										${allowed.length} / ${visible.length}
+									</sl-badge>
+								</button>` : nothing}
+						</div>
+						<sl-carousel class="chemical-carousel" navigation mouse-dragging slides-per-page="4" slides-per-move="1">
+							${slides}
+						</sl-carousel>
+					</div>`;
+			}
 		});
 		const customLabel = this.message("Eigene Stoffe");
 		const customMolecules = molecules.filter((molecule) =>
 			matches(molecule.formula, customLabel) && (this.canAuthor || this.isChemicalAllowed("mol:" + molecule.formula)));
 		const customMixtures = this.availableMixtures.filter((mixture) =>
 			matches(mixture["name"], customLabel) && (this.canAuthor || this.isChemicalAllowed("mix:" + mixture["name"])));
+		const customSlides = [
+			...customMolecules.flatMap((molecule) => this.renderChemicalSlides({
+				name: "mol:" + molecule.formula, formula: molecule.formula, preview: molecule,
+				recipe: {
+					phase: ["OH2", "H2O"].includes(molecule.formula) ? "liquid" : "solid",
+					density: 1, parts: [{ molecule, amount: 1 }],
+				},
+			}, false, true)),
+			...customMixtures.flatMap((mixture) => {
+				const parts = (mixture["content"] as string[]).flatMap((entry) => {
+					const [formula, rawAmount] = entry.split(":");
+					const molecule = molecules.find((item) => item.formula === formula.trim());
+					const amount = Number(rawAmount);
+					return molecule && Number.isFinite(amount) && amount > 0 ? [{ molecule, amount }] : [];
+				});
+				return this.renderChemicalSlides({
+					name: "mix:" + mixture["name"], formula: "", recipe: {
+						phase: parts.some(({ molecule }) => ["OH2", "H2O"].includes(molecule.formula)) ? "liquid" : "solid",
+						density: 1, parts,
+					},
+				}, false, true);
+			}),
+		];
 		return html`
 			<sl-input class="chemical-search" size="small" type="search" clearable contenteditable="false"
 				label=${this.message("Chemikalien suchen")} .value=${this.chemicalQuery}
 				@sl-input=${(event: Event) => { this.chemicalQuery = (event.currentTarget as SlInput).value; }}>
 			</sl-input>
 			${renderedGroups}
-			${customMolecules.length || customMixtures.length ? html`
-				<sl-details class="chemical-section" ?open=${!!query}
-					@sl-show=${(event: Event) => this.rememberChemicalSection(event, "Eigene Stoffe")}>
-					<sl-tag slot="summary" size="small">${customLabel}</sl-tag>
-					${query || this.openedChemicalSections.has("Eigene Stoffe") ? html`<div class="chemical-grid">
-						${customMolecules.map((molecule) => this.renderCustomEntry("mol:" + molecule.formula, molecule.formula, {
-							phase: ["OH2", "H2O"].includes(molecule.formula) ? "liquid" : "solid",
-							density: 1, parts: [{ molecule, amount: 1 }],
-						}))}
-						${customMixtures.map((mixture) => {
-							const parts = (mixture["content"] as string[]).flatMap((entry) => {
-								const [formula, rawAmount] = entry.split(":");
-								const molecule = molecules.find((item) => item.formula === formula.trim());
-								const amount = Number(rawAmount);
-								return molecule && Number.isFinite(amount) && amount > 0 ? [{ molecule, amount }] : [];
-							});
-							return this.renderCustomEntry("mix:" + mixture["name"], mixture["name"], {
-								phase: parts.some(({ molecule }) => ["OH2", "H2O"].includes(molecule.formula)) ? "liquid" : "solid",
-								density: 1, parts,
-							});
-						})}
-					</div>` : nothing}
-				</sl-details>` : !groups.length ? html`<p>${this.message("Keine Chemikalien gefunden.")}</p>` : nothing}
+			${customSlides.length ? html`
+				<div class="chemical-carousel-section">
+					<div class="chemical-section-header">
+						<sl-tag size="small">${customLabel}</sl-tag>
+					</div>
+					<sl-carousel class="chemical-carousel" navigation mouse-dragging slides-per-page="4" slides-per-move="1">
+						${customSlides}
+					</sl-carousel>
+				</div>` : !groups.length ? html`<p>${this.message("Keine Chemikalien gefunden.")}</p>` : nothing}
 		`;
 	}
 
 	/**
-	 * Renders one catalog entry: for authors the tile with its permission
-	 * checkbox, for learners one fixed tile per allowed concentration.
+	 * Renders the carousel slides of one catalog entry: for authors the tile
+	 * with its permission checkbox, for learners one fixed tile per allowed
+	 * concentration.
 	 */
-	private renderCatalogEntry(item: typeof chemicalCatalog[number], concentration: ChemicalConcentration | false): unknown {
+	private renderChemicalSlides(item: { name: string; formula: string; recipe: ChemicalRecipe; preview?: MoleculeDefinition },
+		concentration: ChemicalConcentration | false, custom = false): unknown[] {
 		const label = this.message(item.name) || item.name;
-		const src = catalogPreviews[item.name];
 		const conc = concentration || undefined;
+		const slide = (content: unknown) => html`<sl-carousel-item class="chemical-slide" contenteditable="false">${content}</sl-carousel-item>`;
 		if (this.canAuthor) {
-			return html`<div class="chemical-tile-cell">
-				${this.renderChemicalTile(item.name, label, item.formula, item.recipe, src, conc)}
-				${this.renderChemicalPermission(item.name, label, conc)}
-			</div>`;
+			const src = custom ? undefined : catalogPreviews[item.name];
+			const tile = custom
+				? this.renderCustomChemical(item.name, label, item.recipe)
+				: this.renderChemicalTile(item.name, label, item.formula, item.recipe, src, conc);
+			if (tile === nothing) return [];
+			return [slide(html`<div class="chemical-tile-cell">
+				${tile}${this.renderChemicalPermission(item.name, label, conc)}
+			</div>`)];
 		}
-		if (!this.isChemicalAllowed(item.name)) return nothing;
-		if (!conc) return this.renderChemicalTile(item.name, label, item.formula, item.recipe, src);
-		return this.allowedConcentrationsFor(item.name, conc.initial).map((value) =>
+		if (!this.isChemicalAllowed(item.name)) return [];
+		if (custom) {
+			const preview = item.preview ?? item.recipe.parts.find(({ molecule }) => !isWaterDefinition(molecule))?.molecule;
+			if (!preview) return [];
+			return [slide(this.renderChemicalTile(item.name, label, preview.formula, item.recipe, this.previewMolecule(preview)))];
+		}
+		if (!conc) return [slide(this.renderChemicalTile(item.name, label, item.formula, item.recipe, catalogPreviews[item.name]))];
+		return this.allowedConcentrationsFor(item.name, conc.initial).map((value) => slide(
 			this.renderChemicalTile(`${item.name}@${value}`,
 				`${label.replace(/ \(\d+(?:[.,]\d+)? mol\/L\)$/, "")} (${this.formatAmount(value, 8)} mol/L)`,
-				item.formula, withConcentration(item.recipe, value, conc.stock), src, conc, true));
+				item.formula, withConcentration(item.recipe, value, conc.stock), catalogPreviews[item.name], conc, true)));
 	}
 
-	/** Renders one custom (own) chemical with its author-side permission checkbox. */
-	private renderCustomEntry(key: string, name: string, recipe: ChemicalRecipe): unknown {
-		const tile = this.renderCustomChemical(key, this.message(name) || name, recipe);
-		if (tile === nothing) return nothing;
-		return html`<div class="chemical-tile-cell">
-			${tile}${this.canAuthor ? this.renderChemicalPermission(key, name) : nothing}
-		</div>`;
-	}
 
 	/** The author-side permission checkbox below a chemical tile. */
 	private renderChemicalPermission(name: string, label: string, concentration?: ChemicalConcentration): unknown {

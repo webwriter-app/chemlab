@@ -1472,55 +1472,6 @@ export const style = css`
 	#teacherTabs > sl-tab-panel {
 		--padding: 0;
 	}
-	.chemical-section {
-		margin-block-end: 6px;
-	}
-	.chemical-search {
-		margin-block-end: 8px;
-	}
-	.chemical-section::part(base) {
-		background: var(--sl-color-neutral-50);
-	}
-	.chemical-section::part(header),
-	.chemical-section::part(content) {
-		padding: 5px;
-	}
-	.chemical-section::part(header) {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-	.chemical-section .component-permission-toggle {
-		margin-inline-start: auto;
-		margin-inline-end: 4px;
-	}
-	.chemical-tile-cell {
-		display: grid;
-		gap: 4px;
-		align-content: start;
-	}
-	.chemical-permission {
-		display: grid;
-		place-items: center;
-		justify-self: center;
-		z-index: 1;
-	}
-	.chemical-permission sl-tooltip {
-		--show-delay: 650ms;
-	}
-	.chemical-permission sl-checkbox::part(label) {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		margin: 0;
-		overflow: hidden;
-		clip-path: inset(50%);
-	}
-	.chemical-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(min(8.5rem, 100%), 1fr));
-		gap: 6px;
-	}
 	.component-palette {
 		display: grid;
 		grid-template-rows: auto;
@@ -1625,6 +1576,55 @@ export const style = css`
 		padding: 0;
 	}
 	.component-tile,
+	.chemical-search {
+		margin-block-end: 8px;
+	}
+	.chemical-tile-cell {
+		position: relative;
+		display: grid;
+		gap: 4px;
+		align-content: start;
+		height: 100%;
+	}
+	.chemical-permission {
+		position: absolute;
+		top: 5px;
+		right: 5px;
+		z-index: 1;
+	}
+	.chemical-permission sl-tooltip {
+		--show-delay: 650ms;
+	}
+	.chemical-permission sl-checkbox::part(label) {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+	.chemical-carousel-section {
+		margin-block-end: 10px;
+	}
+	.chemical-section-header {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin-block-end: 6px;
+	}
+	.chemical-section-header .component-permission-toggle {
+		margin-inline-start: auto;
+		margin-inline-end: 4px;
+	}
+	.chemical-carousel {
+		height: auto;
+	}
+	.chemical-carousel .chemical-slide {
+		min-width: 0;
+		height: 100%;
+		display: grid;
+		align-content: start;
+	}
 	.chemical-tile-button,
 	.chemical-tile {
 		box-sizing: border-box;
