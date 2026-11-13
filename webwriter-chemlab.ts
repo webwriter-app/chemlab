@@ -72,6 +72,7 @@ import { catalogPreviews } from "./data/chemicalPreviews.generated";
 import { prepareDose, type SavedDose } from "./data/measuredDose";
 import { STANDARD_CANVAS_HEIGHT } from "./controllers/WorkspaceCamera";
 import { CanvasController } from "./controllers/CanvasController";
+import type { VesselHint } from "./controllers/VesselView";
 
 type SelectedChemical = { key: string; name: string; recipe: ChemicalRecipe };
 type ChemicalConcentration = { initial: number; max: number; stock?: number; saturation?: boolean };
@@ -1470,13 +1471,13 @@ export class ChemLab extends LitElementWw {
 			`${component._type}:${component._id}` === sprite.label && Number.isFinite(component._volume) && component._volume > 0);
 	}
 
-	private addMeasuredDose(target: chemlib.ChemComponent, dose: (volumeMl: number) => chemlib.Mixture, requestedMl: number): number {
+	private addMeasuredDose(target: chemlib.ChemComponent, dose: (volumeMl: number) => chemlib.Mixture, requestedMl: number, hint?: VesselHint): number {
 		const portion = dose(requestedMl);
 		const fraction = target._content.fractionThatFits(portion, target._volume / 1000);
 		const volumeMl = requestedMl * fraction;
 		if (volumeMl <= 1e-8) return 0;
 		target.addContents({ nMix: fraction === 1 ? portion : dose(volumeMl) });
-		this.canvas.markVesselChanged(target);
+		this.canvas.markVesselChanged(target, hint);
 		return volumeMl;
 	}
 
@@ -1540,7 +1541,7 @@ export class ChemLab extends LitElementWw {
 			const requestedMl = steps * 0.4;
 			const added = "vessel" in from
 				? this.transferMeasuredVolume(from.vessel, target, requestedMl)
-				: this.addMeasuredDose(target, from.dose, requestedMl);
+				: this.addMeasuredDose(target, from.dose, requestedMl, from.recipe.phase === "solid" ? "grain" : "pour");
 			drag.totalMl += added;
 			this.updateFillMeter(anchor, target);
 			if (added < requestedMl - 1e-8 || target._content.contentVolume * 1000 >= target._volume - 1e-8) {
@@ -1571,8 +1572,8 @@ export class ChemLab extends LitElementWw {
 	private transferMeasuredVolume(source: chemlib.ChemComponent, target: chemlib.ChemComponent, amount: number): number {
 		const result = source.transferContents({ tVolume: amount / 1000 }, target) * 1000;
 		if (result > 0) {
-			this.canvas.markVesselChanged(source);
-			this.canvas.markVesselChanged(target);
+			this.canvas.markVesselChanged(source, "pour");
+			this.canvas.markVesselChanged(target, "pour");
 		}
 		return result;
 	}
@@ -1841,7 +1842,7 @@ export class ChemLab extends LitElementWw {
 				this.closeAmountMenu();
 				return;
 			}
-			result = this.addMeasuredDose(target, from.dose, amount);
+			result = this.addMeasuredDose(target, from.dose, amount, from.recipe.phase === "solid" ? "grain" : "pour");
 			this.saveMeasuredDose(anchor, from.recipe, result);
 		}
 		if (this.curr_obj === target || ("vessel" in from && this.curr_obj === from.vessel)) this._updatePopup();
@@ -1892,7 +1893,8 @@ export class ChemLab extends LitElementWw {
 		let nextStatusMs = 500;
 		const task = "chemical-dose";
 		const add = (requestedMl: number) => {
-			totalMl += this.addMeasuredDose(target, dose, requestedMl);
+			const hint: VesselHint = selected.recipe.phase === "solid" ? "grain" : "pour";
+			totalMl += this.addMeasuredDose(target, dose, requestedMl, hint);
 			return target._volume - this.updateFillMeter(sprite, target) <= 1e-8;
 		};
 		const finish = (click: boolean, save = true) => {

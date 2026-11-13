@@ -7,7 +7,7 @@ import { CABLE_DIAMETER_MM, componentArtboardMm, componentGraphic, componentText
 import { MILLIMETERS_PER_WORLD_UNIT, STANDARD_CANVAS_HEIGHT, STANDARD_CANVAS_WIDTH, WorkspaceCamera } from "./WorkspaceCamera";
 import { WorkspaceGrid } from "./WorkspaceGrid";
 import { ElectricDeviceView } from "./ElectricDeviceView";
-import { isVesselType, VesselView } from "./VesselView";
+import { isVesselType, VesselView, type VesselHint } from "./VesselView";
 
 import type { ChemLab } from "../webwriter-chemlab";
 
@@ -28,6 +28,8 @@ const CABLE_SLACK = 1.1;
 const CABLE_SETTLE = 0.25;
 /** Name of the background task that keeps the canvas refreshing while cables move. */
 const CABLE_TASK = "cables";
+/** Name of the background task that keeps the canvas refreshing while vessel particles move. */
+const VESSEL_TASK = "vessel-anim";
 
 /**
  * Simulation state of one rope-simulated cable: a verlet point chain
@@ -77,7 +79,7 @@ export class CanvasController implements ReactiveController {
 	private spritesByLabel = new Map<string, PIXI.Container>();
 	private vessels = new Map<chemlib.ChemComponent, VesselView>();
 	private scaleTextures = new Map<string, PIXI.Texture>();
-	private changedVessels = new Set<VesselView>();
+	private changedVessels = new Map<VesselView, VesselHint | undefined>();
 	private cables = new Map<PIXI.Graphics, chemlib.ElectricComponent>();
 	private cableRopes = new Map<PIXI.Graphics, CableRope>();
 	private cablesDirty = false;
@@ -615,7 +617,7 @@ export class CanvasController implements ReactiveController {
 		this.spritesByLabel.set(info, sprite);
 		if (sprite instanceof VesselView) {
 			this.vessels.set(sprite.component, sprite);
-			this.changedVessels.add(sprite);
+			this.changedVessels.set(sprite, undefined);
 		}
 		if (component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable) {
 			this.cables.set(sprite as PIXI.Graphics, component);
@@ -1065,15 +1067,15 @@ export class CanvasController implements ReactiveController {
 		stage.on("pointerupoutside", finishPointer);
 	}
 
-	markVesselChanged(component: chemlib.ChemComponent): void {
+	markVesselChanged(component: chemlib.ChemComponent, hint?: VesselHint): void {
 		const view = this.vessels.get(component);
 		if (!view) return;
-		this.changedVessels.add(view);
+		this.changedVessels.set(view, hint ?? this.changedVessels.get(view));
 		this.host.requestCanvasRender();
 	}
 
 	flushChanges(): void {
-		for (const view of this.changedVessels) view.updateContents();
+		for (const [view, hint] of this.changedVessels) view.updateContents(hint);
 		this.changedVessels.clear();
 		this.updateElectrodeStacking();
 		if (this.cablesDirty || this.cables.size) {
@@ -1081,6 +1083,19 @@ export class CanvasController implements ReactiveController {
 			// requests a render again while any rope is awake, which keeps
 			// the sim loop ticking until all cables have settled
 			this.updateCablePositions();
+		}
+		// Vessel particle / pour animations advance per frame here; the keep
+		// -alive task below holds the ticker open until none is active.
+		const dtMs = this.host.app?.ticker.deltaMS ?? 16.67;
+		let vesselsActive = false;
+		for (const view of this.vessels.values()) vesselsActive = view.stepAnimation(dtMs) || vesselsActive;
+		const simulation = this.host.simulation;
+		if (vesselsActive) {
+			if (!simulation.hasTask(VESSEL_TASK)) {
+				simulation.startTask(VESSEL_TASK, () => this.host.requestCanvasRender());
+			}
+		} else if (simulation.hasTask(VESSEL_TASK)) {
+			simulation.stopTask(VESSEL_TASK);
 		}
 	}
 

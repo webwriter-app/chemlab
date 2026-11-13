@@ -1,8 +1,21 @@
 import { CanvasSource, Container, DOMAdapter, Graphics, Rectangle, Sprite, Texture } from "pixi.js";
 import type { ChemComponent } from "../chemlib";
 
+export type VesselHint = "grain" | "pour";
+
 type Slice = readonly [height: number, radius: number];
 type Point = { x: number; y: number };
+
+interface SolidParticle {
+	x: number;
+	y: number;
+	vx: number;
+	vy: number;
+	size: number;
+	color: number;
+	/** depth at which the particle lands and disappears into the sediment */
+	floor: number;
+}
 
 // Interior cross sections, in the corresponding SVG viewBox coordinates.
 const interiors = {
@@ -36,7 +49,16 @@ function circularSegment(cut: number): number {
 }
 
 export class VesselView extends Container {
+	/** max particles animated per vessel, keeps small mixtures cheap */
+	private static readonly MAX_PARTICLES = 70;
+	/** profile-space accelerations and speed limits, tuned per particle kind */
+	private static readonly GRAIN_GRAVITY = 60;
+	private static readonly PRECIPITATE_GRAVITY = 22;
+	private static readonly GRAIN_TERMINAL = 80;
+	private static readonly PRECIPITATE_TERMINAL = 7;
+
 	private fillShape = new Graphics({ eventMode: "none" });
+	private particlesShape = new Graphics({ eventMode: "none" });
 	private outline: Point[];
 	private profile: Slice[];
 	private lastFraction = -1;
@@ -44,6 +66,23 @@ export class VesselView extends Container {
 	private lastLiquid = false;
 	private lastSediment = 0;
 	private lastSedimentColor = 0;
+	private lastWobble = 0;
+	/** last reported sediment mass, to detect precipitation and dissolution */
+	private sedimentMass = 0;
+	/** sediment fraction the fill graphics currently show, eased to the target */
+	private sedimentDrawn = -1;
+	private sedimentFraction = 0;
+	private fillFraction = 0;
+	private liquidFilled = false;
+	private sedimentColor = 0;
+	/** solid particles falling or sinking in the liquid */
+	private particles: SolidParticle[] = [];
+	/** remaining pour stream visibility in ms */
+	private streamMs = 0;
+	/** remaining surface wobble in ms, plus its age for the decay curve */
+	private wobbleMs = 0;
+	private wobbleAge = 0;
+	private initialized = false;
 
 	constructor(readonly component: ChemComponent, type: VesselType, texture: Texture, width: number, height: number,
 		scaleTextures: Map<string, Texture>) {
@@ -57,8 +96,11 @@ export class VesselView extends Container {
 		];
 		this.fillShape.position.set(width * (center / svgWidth - 0.5), -height / 2);
 		this.fillShape.scale.set(width / svgWidth, height / svgHeight);
+		this.particlesShape.position = this.fillShape.position;
+		this.particlesShape.scale = this.fillShape.scale;
 		this.hitArea = new Rectangle(-width / 2, -height / 2, width, height);
-		this.addChild(this.fillShape, glass);
+		// Particles swim in the liquid (above the fill) but behind the glass.
+		this.addChild(this.fillShape, this.particlesShape, glass);
 		if (Number.isFinite(component._volume) && component._volume > 0) {
 			const key = `${type}:${component._volume}`;
 			let scale = scaleTextures.get(key);
@@ -127,7 +169,7 @@ export class VesselView extends Container {
 		return this.profile[this.profile.length - 1][1];
 	}
 
-	updateContents(): void {
+	updateContents(hint?: VesselHint): void {
 		const mixture = this.component._content;
 		const liquid = mixture.hasLiquidContents;
 		const fraction = mixture.contentVolume * 1000 / this.component._volume;
@@ -137,22 +179,179 @@ export class VesselView extends Container {
 		// Keep small precipitates visible in the teaching view.
 		const sedimentFraction = liquid && sediment.mass > 1e-6
 			? Math.min(fill, Math.max(0.012, sediment.mass / (2 * this.component._volume))) : 0;
-		this.updateFill(fill, liquid, sedimentFraction, sediment.color);
+
+		if (!this.initialized) {
+			// First draw (or a restored document): show the state as it is.
+			this.initialized = true;
+		} else if (sediment.mass > this.sedimentMass + 1e-9 && liquid) {
+			this.spawnSolidParticles(hint === "grain", sediment.mass - this.sedimentMass, fill, sedimentFraction, sediment.color);
+		}
+		this.sedimentMass = sediment.mass;
+		if (this.sedimentDrawn < 0) this.sedimentDrawn = sedimentFraction;
+		this.fillFraction = fill;
+		this.liquidFilled = liquid;
+		this.sedimentFraction = sedimentFraction;
+		this.sedimentColor = sediment.color;
+		if (hint === "pour" && liquid) {
+			this.streamMs = 450;
+			this.wobbleMs = 850;
+			this.wobbleAge = 0;
+		}
+		this.updateFill(fill, liquid, this.sedimentDrawn, sediment.color);
+	}
+
+	/**
+	 * Spawns particles for newly appeared solid material: dosed grains fall
+	 * from the mouth into the vessel, precipitated solid suspends as fine
+	 * particles in the liquid and sinks onto the sediment bed.
+	 *
+	 * @private
+	 * @param {boolean} grains - true for a solid dose, false for precipitation
+	 * @param {number} massDelta - the added solid mass in grams
+	 * @param {number} fill - the current fill fraction
+	 * @param {number} sedimentFraction - the target sediment fraction
+	 * @param {number} color - the sediment colour
+	 */
+	private spawnSolidParticles(grains: boolean, massDelta: number, fill: number, sedimentFraction: number, color: number): void {
+		const top = this.profile[0][0];
+		const floor = this.surfaceAt(sedimentFraction, top, this.profile[this.profile.length - 1][0], 0, 1);
+		const count = Math.min(16, Math.max(grains ? 10 : 4, Math.round(massDelta * 40)));
+		const angle = this.rotation;
+		const depth = ({ x, y }: Point) => x * Math.sin(angle) + y * Math.cos(angle);
+		const floorDepth = depth({ x: 0, y: floor });
+		for (let i = 0; i < count && this.particles.length < VesselView.MAX_PARTICLES; i++) {
+			let x: number, y: number;
+			if (grains) {
+				// fall from the mouth inward
+				x = (Math.random() * 2 - 1) * this.radiusAt(top) * 0.45;
+				y = top - 1.5;
+			} else {
+				// suspend anywhere in the liquid between surface and floor
+				const level = this.surfaceAt(fill, top, this.profile[this.profile.length - 1][0], 0, 1);
+				const span = Math.max(floor - level, 0.5);
+				y = level + Math.random() * span;
+				x = (Math.random() * 2 - 1) * this.radiusAt(y) * 0.7;
+			}
+			this.particles.push({
+				x, y,
+				vx: (Math.random() * 2 - 1) * (grains ? 1.5 : 0.8),
+				vy: Math.random() * 1.5,
+				size: grains ? 0.55 + Math.random() * 0.45 : 0.28 + Math.random() * 0.3,
+				color,
+				floor: floorDepth,
+			});
+		}
+	}
+
+	/**
+	 * Advances the vessel animations by one frame: settles the drawn
+	 * sediment onto its target, integrates the solid particles, and runs
+	 * the pour stream and the decaying surface wobble.
+	 *
+	 * @private
+	 * @param {number} dtMs - elapsed time in milliseconds
+	 * @returns {boolean} true while any animation stays active
+	 */
+	stepAnimation(dtMs: number): boolean {
+		let active = false;
+		let drawn = this.sedimentDrawn;
+
+		// ease the drawn sediment towards its target
+		const target = this.sedimentFraction;
+		if (Math.abs(target - drawn) > 1e-5) {
+			const step = (target - drawn) * Math.min(1, dtMs / 450);
+			drawn = Math.abs(target - drawn) < 0.0008 ? target : drawn + step;
+			this.sedimentDrawn = drawn;
+			this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor);
+			active = true;
+		}
+
+		// solid particles fall / sink and land in the sediment
+		if (this.particles.length) {
+			const angle = this.rotation;
+			const sin = Math.sin(angle);
+			const cos = Math.cos(angle);
+			const seconds = Math.min(dtMs, 50) / 1000;
+			// local gravity direction: the vessel may sit tilted
+			const gx = sin * cos;
+			const gy = cos * cos;
+			const remaining: SolidParticle[] = [];
+			for (const particle of this.particles) {
+				const grain = particle.size > 0.35;
+				const gravity = grain
+					? VesselView.GRAIN_GRAVITY
+					: VesselView.PRECIPITATE_GRAVITY;
+				const terminal = grain
+					? VesselView.GRAIN_TERMINAL
+					: VesselView.PRECIPITATE_TERMINAL;
+				particle.vx = particle.vx * 0.96 + gx * gravity * seconds;
+				particle.vy = Math.min(particle.vy + gy * gravity * seconds, terminal);
+				particle.x += particle.vx * seconds;
+				particle.y += particle.vy * seconds;
+				const depth = particle.x * sin + particle.y * cos;
+				if (depth < particle.floor - particle.size * 0.4) remaining.push(particle);
+			}
+			this.particles = remaining;
+			this.drawParticles();
+			active = true;
+		}
+
+		// pour stream and surface wobble decay after a dose
+		if (this.streamMs > 0 || this.wobbleMs > 0) {
+			this.streamMs = Math.max(0, this.streamMs - dtMs);
+			this.wobbleMs = Math.max(0, this.wobbleMs - dtMs);
+			this.wobbleAge = 850 - this.wobbleMs;
+			this.drawStream();
+			if (this.wobbleMs > 0) {
+				const amplitude = 0.0035 * Math.exp(-this.wobbleAge / 300)
+					* Math.sin(this.wobbleAge * Math.PI * 2 / 260);
+				this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor, amplitude);
+			}
+			active = true;
+		}
+
+		if (!this.particles.length && this.streamMs <= 0 && this.wobbleMs <= 0) {
+			this.particlesShape.clear();
+		}
+		return active;
+	}
+
+	/** Redraws the solid particle layer within the interior profile. */
+	private drawParticles(): void {
+		this.particlesShape.clear();
+		for (const particle of this.particles) {
+			this.particlesShape.circle(particle.x, particle.y, particle.size).fill({ color: particle.color, alpha: 0.9 });
+		}
+	}
+
+	/** Draws the short pour stream from the mouth to the liquid surface. */
+	private drawStream(): void {
+		this.drawParticles();
+		if (this.streamMs <= 0) return;
+		const alpha = Math.min(1, this.streamMs / 200) * 0.6;
+		const top = this.profile[0][0];
+		const surface = this.surfaceAt(this.fillFraction, top, this.profile[this.profile.length - 1][0], 0, 1);
+		const x = this.radiusAt(top) * 0.25;
+		this.particlesShape.moveTo(x, top - 8)
+			.lineTo(x, surface - 0.3)
+			.stroke({ color: 0x4592b7, width: 0.55, alpha, cap: "round" });
+		this.particlesShape.circle(x, surface, 0.9).fill({ color: 0x4592b7, alpha: alpha * 0.8 });
 	}
 
 	updateAngle(): void {
-		this.updateFill(this.lastFraction, this.lastLiquid, this.lastSediment, this.lastSedimentColor);
+		this.updateFill(this.lastFraction, this.lastLiquid, this.lastSediment, this.lastSedimentColor, this.lastWobble);
 	}
 
-	private updateFill(fraction: number, liquid: boolean, sediment: number, color: number): void {
+	private updateFill(fraction: number, liquid: boolean, sediment: number, color: number, wobble: number = 0): void {
 		const angle = liquid ? this.rotation : 0;
 		if (fraction === this.lastFraction && angle === this.lastAngle && liquid === this.lastLiquid &&
-			sediment === this.lastSediment && color === this.lastSedimentColor) return;
+			sediment === this.lastSediment && color === this.lastSedimentColor && wobble === this.lastWobble) return;
 		this.lastFraction = fraction;
 		this.lastAngle = angle;
 		this.lastLiquid = liquid;
 		this.lastSediment = sediment;
 		this.lastSedimentColor = color;
+		this.lastWobble = wobble;
 		this.fillShape.clear();
 		if (fraction <= 0) return;
 
@@ -161,7 +360,8 @@ export class VesselView extends Container {
 		const cos = Math.cos(angle);
 		const depth = ({ x, y }: Point) => x * sin + y * cos;
 		const depths = this.outline.map(depth);
-		const surface = this.surfaceAt(fraction, Math.min(...depths), Math.max(...depths), sin, cos);
+		// wobble: the pour briefly pushes the filling level up and down
+		const surface = this.surfaceAt(Math.max(0, Math.min(1, fraction + wobble)), Math.min(...depths), Math.max(...depths), sin, cos);
 		const { submerged, edges } = this.clipAtSurface(surface, depth);
 		if (submerged.length < 3) return;
 		this.fillShape.poly(submerged).fill(liquid ? { color: 0x4592b7, alpha: 0.55 } : { color: 0x827d6f, alpha: 0.72 });
