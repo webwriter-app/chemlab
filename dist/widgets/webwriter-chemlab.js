@@ -103973,6 +103973,10 @@ var style = i`
 		white-space: normal;
 		overflow-wrap: anywhere;
 	}
+	.palette-card-menu-indicator {
+		margin-inline-start: 3px;
+		vertical-align: -1px;
+	}
 	.component-permission-toggle {
 		display: inline-flex;
 		flex: none;
@@ -104159,15 +104163,10 @@ var style = i`
 		gap: 2px;
 		padding: 0 3px 3px;
 	}
-	.chemical-dose-track {
-		display: flex;
-		align-items: center;
-		gap: 3px;
-		min-inline-size: 0;
-		padding: 2px;
-		overflow-x: auto;
-		overscroll-behavior-x: contain;
-		scrollbar-width: none;
+	.chemical-dose-value {
+		display: grid;
+		place-items: center;
+		min-inline-size: 5.5em;
 	}
 	.chemical-dose-carousel button {
 		display: inline-grid;
@@ -104191,18 +104190,11 @@ var style = i`
 	.chemical-carousel-arrow:dir(rtl) svg {
 		transform: scaleX(-1);
 	}
-	.chemical-carousel-arrow:disabled {
-		opacity: 0.3;
-		cursor: default;
-	}
-	.chemical-dose-track sl-badge::part(base) {
+	.chemical-dose-value sl-badge::part(base) {
 		padding: 2px 4px;
 		font-size: var(--sl-font-size-x-small);
 		white-space: nowrap;
-	}
-	.chemical-dose-option[aria-pressed="true"] sl-badge::part(base) {
-		outline: 1px solid var(--sl-color-primary-800);
-		outline-offset: 1px;
+		opacity: 0.82;
 	}
 	.chemical-permission {
 		display: grid;
@@ -183513,15 +183505,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   updated(changed) {
     super.updated(changed);
-    if ([
-      "chemicalCatalogOpened",
-      "chemicalGroup",
-      "chemicalQuery",
-      "chemicalPermissions",
-      "activeChemicalConcentrations",
-      "teacherDrawerOpen",
-      "teacherTab"
-    ].some((name2) => changed.has(name2))) this.revealDoseOptions();
     if (!this.canAuthor || changed.has("invComponents") || changed.has("chemicalPermissions")) this.permissionTooltip = void 0;
     if (changed.has("panelVariant")) this._changePanelVariant();
     if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions"].some((name2) => changed.has(name2))) {
@@ -186512,7 +186495,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 			<div class="palette-card${chemical ? " palette-card-chemical" : ""}" role="group" aria-label=${name2}>
 				<div class="palette-card-header">
 					<div class="palette-card-name">
-						<sl-tag size="small" variant=${this.canAuthor ? variant : "neutral"} title=${name2}>${name2}</sl-tag>
+						<sl-tag size="small" variant=${this.canAuthor ? variant : "neutral"} title=${name2}>${name2}${nameControl !== E ? x`
+							<svg class="palette-card-menu-indicator" width="10" height="10" viewBox="0 0 12 12"
+								fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+								<path d="m2.5 4.5 3.5 3 3.5-3"/>
+							</svg>` : E}</sl-tag>
 						${nameControl}
 					</div>
 					${this.canAuthor ? badge : E}
@@ -186692,8 +186679,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const arrow3 = (step) => x`
 			<button type="button" class="chemical-carousel-arrow" contenteditable="false"
 				aria-label=${this.message(step < 0 ? "Vorherige Konzentration" : "N\xE4chste Konzentration")}
-				?disabled=${position + step < 0 || position + step >= values.length}
-				@click=${() => choose(values[position + step])}>
+				@click=${() => choose(values[(position + step + values.length) % values.length])}>
 				<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
 					<path d=${step < 0 ? "m10 4-4 4 4 4" : "m6 4 4 4-4 4"}/>
 				</svg>
@@ -186703,14 +186689,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				${preview}
 				<div class="chemical-dose-carousel" role="group" aria-label=${`${name2} \xB7 ${this.message("Konzentration zum Dosieren")}`}>
 					${values.length > 1 ? arrow3(-1) : E}
-					<div class="chemical-dose-track">
-						${values.length === 1 ? this.renderConcentrationBadge(concentrationLabel(active)) : c4(values, (value) => value, (value) => x`
-								<button type="button" class="chemical-dose-option" contenteditable="false"
-									aria-pressed=${value === active}
-									@click=${() => choose(value)}>
-									${this.renderConcentrationBadge(concentrationLabel(value))}
-								</button>`)}
-					</div>
+					<span class="chemical-dose-value" aria-live="polite">
+						<sl-badge>${concentrationLabel(active)}</sl-badge>
+					</span>
 					${values.length > 1 ? arrow3(1) : E}
 				</div>
 			</div>` : x`
@@ -186719,21 +186700,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				${this.canAuthor ? this.renderChemicalPermission(item.name, label) : E}
 			</div>`;
     return this.renderPaletteCard(name2, variant, badge, body2, true, nameControl);
-  }
-  renderConcentrationBadge(label) {
-    return x`<sl-badge>${label}</sl-badge>`;
-  }
-  revealDoseOptions() {
-    if (this.teacherTab !== "chemicals" || !this.teacherDrawerOpen) return;
-    for (const option of this.shadowRoot.querySelectorAll('.chemical-dose-option[aria-pressed="true"]')) {
-      const track = option.parentElement;
-      if (track.scrollWidth <= track.clientWidth) continue;
-      const item = option.getBoundingClientRect();
-      const viewport = track.getBoundingClientRect();
-      if (item.left < viewport.left || item.right > viewport.right) {
-        track.scrollLeft += (item.left + item.right - viewport.left - viewport.right) / 2;
-      }
-    }
   }
   renderChemicalPermission(name2, label) {
     const checked = this.isChemicalAllowed(name2);

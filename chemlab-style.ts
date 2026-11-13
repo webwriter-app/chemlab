@@ -1507,6 +1507,10 @@ export const style = css`
 		white-space: normal;
 		overflow-wrap: anywhere;
 	}
+	.palette-card-menu-indicator {
+		margin-inline-start: 3px;
+		vertical-align: -1px;
+	}
 	.component-permission-toggle {
 		display: inline-flex;
 		flex: none;
@@ -1693,15 +1697,10 @@ export const style = css`
 		gap: 2px;
 		padding: 0 3px 3px;
 	}
-	.chemical-dose-track {
-		display: flex;
-		align-items: center;
-		gap: 3px;
-		min-inline-size: 0;
-		padding: 2px;
-		overflow-x: auto;
-		overscroll-behavior-x: contain;
-		scrollbar-width: none;
+	.chemical-dose-value {
+		display: grid;
+		place-items: center;
+		min-inline-size: 5.5em;
 	}
 	.chemical-dose-carousel button {
 		display: inline-grid;
@@ -1725,18 +1724,11 @@ export const style = css`
 	.chemical-carousel-arrow:dir(rtl) svg {
 		transform: scaleX(-1);
 	}
-	.chemical-carousel-arrow:disabled {
-		opacity: 0.3;
-		cursor: default;
-	}
-	.chemical-dose-track sl-badge::part(base) {
+	.chemical-dose-value sl-badge::part(base) {
 		padding: 2px 4px;
 		font-size: var(--sl-font-size-x-small);
 		white-space: nowrap;
-	}
-	.chemical-dose-option[aria-pressed="true"] sl-badge::part(base) {
-		outline: 1px solid var(--sl-color-primary-800);
-		outline-offset: 1px;
+		opacity: 0.82;
 	}
 	.chemical-permission {
 		display: grid;
