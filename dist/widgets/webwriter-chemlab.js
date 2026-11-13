@@ -103758,27 +103758,51 @@ var style = i`
 		font-size: 0.85rem;
 		overflow-wrap: anywhere;
 	}
+	#contextInfoBox {
+		max-block-size: min(14rem, calc(100% - 8px));
+	}
 	#contextInfoBox p {
 		margin: 0.25em 0;
 	}
-	.vessel-species {
+	.object-summary-heading,
+	#contextMixInfo {
 		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		padding-block: 5px;
+		align-items: center;
+		gap: 4px;
 	}
-	.vessel-species-tag {
-		margin-inline: 5px 10px;
+	.object-summary-heading > .remObj {
+		display: grid;
+		place-items: center;
+		margin: 0;
+		padding: 2px 4px;
 	}
-	.vessel-species > div {
-		display: flex;
-		flex-direction: column;
-		border-radius: 2px;
-		background: #fff;
-		margin-inline-end: 5px;
+	#contextMolInfo {
+		inline-size: 162px;
+		max-inline-size: 100%;
+		margin-block: 5px;
+		--slide-gap: 0px;
 	}
-	.vessel-divider {
-		margin-block: 2px;
+	#contextMolInfo::part(base) {
+		gap: 4px 0;
+	}
+	#contextMolInfo::part(scroll-container) {
+		height: 84px;
+		aspect-ratio: auto;
+	}
+	#contextMolInfo::part(pagination) {
+		gap: 5px;
+	}
+	#contextMolInfo .vessel-carousel-card p {
+		margin-bottom: 0;
+	}
+	#contextMolInfo::part(pagination-item) {
+		width: 6px;
+		height: 6px;
+	}
+	.vessel-ph-tag::part(base) {
+		background: var(--indicator-color);
+		border-color: var(--indicator-color);
+		color: var(--indicator-text);
 	}
 	.vessel-carousel-card {
 		display: flex;
@@ -104580,8 +104604,7 @@ var style = i`
 	.selection-info-title::part(base) {
 		background-color: #ff1f66;
 	}
-	#contextTag::part(base),
-	.vessel-species-tag::part(base) {
+	#contextTag::part(base) {
 		background-color: #51a332;
 		color: #fff;
 	}
@@ -183522,6 +183545,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __privateAdd(this, _mixCarousel, __runInitializers(_init2, 20, this)), __runInitializers(_init2, 23, this);
     __publicField(this, "vesselThumbnails", /* @__PURE__ */ new WeakMap());
     __publicField(this, "vesselNameRequests", /* @__PURE__ */ new WeakSet());
+    __publicField(this, "carouselMixtures", /* @__PURE__ */ new WeakMap());
     __privateAdd(this, _confirmDialog, __runInitializers(_init2, 24, this)), __runInitializers(_init2, 27, this);
     __privateAdd(this, _molAmount, __runInitializers(_init2, 28, this)), __runInitializers(_init2, 31, this);
     __privateAdd(this, _elemSearch, __runInitializers(_init2, 32, this)), __runInitializers(_init2, 35, this);
@@ -184778,16 +184802,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.updateFillMeter(sprite, target);
     return true;
   }
-  renderVesselSpecies(formula, amount, quantity, title = formula) {
-    return x`
-			<div class="vessel-species">
-				<sl-tag class="vessel-species-tag" size="small" variant="neutral" title=${title}>${formula}</sl-tag>
-				<div><p>n: ${amount.toExponential(2)} mol</p><p>${quantity}</p></div>
-			</div>
-			<sl-divider class="vessel-divider"></sl-divider>`;
-  }
-  vesselThumbnail(molecule2, formula) {
-    const cached = this.vesselThumbnails.get(molecule2);
+  vesselThumbnail(carousel, molecule2, formula) {
+    let thumbnails = this.vesselThumbnails.get(carousel);
+    if (!thumbnails) this.vesselThumbnails.set(carousel, thumbnails = /* @__PURE__ */ new WeakMap());
+    const cached = thumbnails.get(molecule2);
     if (cached?.drawer === this.newSmilesDrawer) return cached.element;
     const document2 = this.ownerDocument;
     const container2 = document2.createElement("span");
@@ -184813,10 +184831,12 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         fallback2();
       }
     } else fallback2();
-    this.vesselThumbnails.set(molecule2, { drawer: this.newSmilesDrawer, element: container2 });
+    thumbnails.set(molecule2, { drawer: this.newSmilesDrawer, element: container2 });
     return container2;
   }
-  renderVesselCarousel(mixture, equilibrium) {
+  renderVesselCarousel(carousel, mixture, equilibrium) {
+    const reset = this.carouselMixtures.get(carousel) !== mixture;
+    this.carouselMixtures.set(carousel, mixture);
     const molecules = mixture._activeMolecules.filter((molecule2) => !equilibrium?.analyticalMolecules.has(molecule2));
     const slide = (thumbnail, title, amount, details2) => x`
 			<sl-carousel-item>
@@ -184836,7 +184856,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       ({ formula, amount, concentration, structure }) => {
         const molecule2 = structure();
         return slide(
-          molecule2 ? this.vesselThumbnail(molecule2, formula) : x`<span>${formula}</span>`,
+          molecule2 ? this.vesselThumbnail(carousel, molecule2, formula) : x`<span>${formula}</span>`,
           formula,
           amount,
           x`<p>c: ${concentration.toExponential(2)} mol/L</p>`
@@ -184854,11 +184874,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       }
       const { _id: id3 } = molecule2;
       const properties = mixture._molProperties;
-      return slide(this.vesselThumbnail(molecule2, formula), molecule2.name || formula, properties[id3 + "n"], x`
+      return slide(this.vesselThumbnail(carousel, molecule2, formula), molecule2.name || formula, properties[id3 + "n"], x`
 					<p>m: ${properties[id3 + "m"].toExponential(2)} g</p>
 					${molecule2.solidSaltFormula ? x`<p>${this.message("Bodensatz")}</p>` : mixture._isSolution ? x`<p>c: ${properties[id3 + "c"].toExponential(2)} mol/L</p>` : E}`);
     })}
-		`, this.mixCarousel);
+		`, carousel);
+    if (reset) void carousel.updateComplete.then(() => {
+      if (this.carouselMixtures.get(carousel) === mixture) carousel.goToSlide(0, "instant");
+    });
   }
   /**
    * updates the information shown for the selected object
@@ -184875,44 +184898,27 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (Object.values(ComponentType2).includes(
       this.curr_obj._type.toLowerCase()
     )) {
-      this.contextMolInfo.style.display = "";
-      this.contextMixInfo.innerHTML = "";
       const mixture = this.curr_obj._content;
       const equilibrium = mixture._isSolution ? Simulation.getPolyproticEquilibrium(mixture) : void 0;
-      const species = equilibrium?.species ?? [];
-      const equilibriumRows = species.length ? x`
-				<div class="vessel-equilibrium">
-					<strong>${this.message("Spezies im S\xE4ure-Base-Gleichgewicht")}</strong>
-					${species.map(({ formula, amount, concentration }) => this.renderVesselSpecies(
-        formula,
-        amount,
-        x`c: ${concentration.toExponential(2)} mol/L`
-      ))}
-				</div>` : E;
-      B(x`
-				${equilibriumRows}
-				${mixture._activeMolecules.filter((molecule2) => !equilibrium?.analyticalMolecules.has(molecule2)).map((molecule2) => this.renderVesselSpecies(
-        molecule2._kekule_obj.calcFormula().getDisplayText(),
-        mixture._molProperties[molecule2._id + "n"],
-        x`m: ${mixture._molProperties[molecule2._id + "m"].toExponential(2)} g`,
-        molecule2.name
-      ))}
-			`, this.contextMolInfo);
-      if (this.objectPanelOpen) this.renderVesselCarousel(mixture, equilibrium);
+      if (mixture._activeMolecules.length) {
+        this.contextMolInfo.style.display = "";
+        this.renderVesselCarousel(this.contextMolInfo, mixture, equilibrium);
+      }
+      if (this.objectPanelOpen) this.renderVesselCarousel(this.mixCarousel, mixture, equilibrium);
       if (this.curr_obj._type === "burette" /* Burette */ || this.curr_obj._type === "separatingfunnel" /* Separatingfunnel */) {
         this.openBtn.style.display = "";
       }
       const volume = mixture.contentVolume;
       if (volume > 0) {
-        this.contextMixInfo.style.display = "";
         const pH = equilibrium?.pH;
-        this.contextMixInfo.innerHTML = `
-					<div>
-						<p>vol: ${(volume * 1e3).toFixed(1)} mL</p>
-						${pH === void 0 ? "" : `<p>pH: ${pH}</p>`}
-						<sl-divider class="vessel-divider"></sl-divider>
-					</div>`;
-        this.contextMixInfo.style.borderLeftColor = pH === void 0 ? "" : this.pHColors[Math.round(pH)];
+        const color2 = pH === void 0 ? void 0 : this.pHColors[Math.max(0, Math.min(14, Math.round(pH)))];
+        this.contextMixInfo.style.display = "";
+        B(x`
+					<sl-tag size="small" variant="neutral">${(volume * 1e3).toFixed(1)} mL</sl-tag>
+					${color2 === void 0 ? E : x`
+						<sl-tag class="vessel-ph-tag" size="small" variant="neutral"
+							style=${`--indicator-color: ${color2}; --indicator-text: ${pH >= 11 ? "#fff" : "#171717"}`}>pH ${pH}</sl-tag>`}
+				`, this.contextMixInfo);
       }
     }
     if (Object.values(EComponentType).includes(
@@ -187192,9 +187198,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     summary.style.transform = `translate(${Math.max(padding, Math.min(x4, maxX))}px, ${Math.max(padding, Math.min(y5, maxY))}px)`;
     summary.setAttribute("data-anchored", "");
   }
-  renderSelectionDeleteButton(remove) {
+  renderSelectionDeleteButton(remove, iconOnly = false) {
     return x`
-			<button type="button" class="remObj" @click=${remove}>
+			<button type="button" class="remObj" aria-label=${this.message("l\xF6schen")} title=${this.message("l\xF6schen")} @click=${remove}>
 				<svg
 					aria-hidden="true"
 					width="12"
@@ -187206,28 +187212,22 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 						d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"
 					/>
 				</svg>
-				${this.message("l\xF6schen")}
+				${iconOnly ? E : this.message("l\xF6schen")}
 			</button>`;
   }
   renderObjectSummary() {
     const name2 = this.itemName(this.curr_name.split(":")[0]);
     return x`
 			<section id="contextInfoBox" class="selection-info" ?hidden=${!this.curr_obj || this.editingMolecule}>
-				<sl-badge class="selection-info-title">${name2}</sl-badge>
-				<div
-					id="contextEchemInfo"
-					style="display: flex; flex-direction: column"
-				></div>
-				<div
-					id="contextMolInfo"
-					style="display: flex; flex-direction: column"
-				></div>
-				<div
-					id="contextMixInfo"
-					style="display: flex; flex-direction: column; border-left: 5px solid; margin-left: 5px"
-				></div>
+				<div class="object-summary-heading">
+					<sl-badge class="selection-info-title">${name2}</sl-badge>
+					${this.renderSelectionDeleteButton(() => this._removeSprite(), true)}
+				</div>
+				<div id="contextEchemInfo"></div>
+				<sl-carousel id="contextMolInfo" pagination mouse-dragging slides-per-page="1" slides-per-move="1"
+					aria-label=${this.message("Inhalt")} style="display: none"></sl-carousel>
+				<div id="contextMixInfo" style="display: none"></div>
 				<div class="selection-actions">
-					${this.renderSelectionDeleteButton(() => this._removeSprite())}
 					<button
 						id="openComp"
 						@click="${(event) => {

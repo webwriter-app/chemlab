@@ -1274,27 +1274,51 @@ export const style = css`
 		font-size: 0.85rem;
 		overflow-wrap: anywhere;
 	}
+	#contextInfoBox {
+		max-block-size: min(14rem, calc(100% - 8px));
+	}
 	#contextInfoBox p {
 		margin: 0.25em 0;
 	}
-	.vessel-species {
+	.object-summary-heading,
+	#contextMixInfo {
 		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		padding-block: 5px;
+		align-items: center;
+		gap: 4px;
 	}
-	.vessel-species-tag {
-		margin-inline: 5px 10px;
+	.object-summary-heading > .remObj {
+		display: grid;
+		place-items: center;
+		margin: 0;
+		padding: 2px 4px;
 	}
-	.vessel-species > div {
-		display: flex;
-		flex-direction: column;
-		border-radius: 2px;
-		background: #fff;
-		margin-inline-end: 5px;
+	#contextMolInfo {
+		inline-size: 162px;
+		max-inline-size: 100%;
+		margin-block: 5px;
+		--slide-gap: 0px;
 	}
-	.vessel-divider {
-		margin-block: 2px;
+	#contextMolInfo::part(base) {
+		gap: 4px 0;
+	}
+	#contextMolInfo::part(scroll-container) {
+		height: 84px;
+		aspect-ratio: auto;
+	}
+	#contextMolInfo::part(pagination) {
+		gap: 5px;
+	}
+	#contextMolInfo .vessel-carousel-card p {
+		margin-bottom: 0;
+	}
+	#contextMolInfo::part(pagination-item) {
+		width: 6px;
+		height: 6px;
+	}
+	.vessel-ph-tag::part(base) {
+		background: var(--indicator-color);
+		border-color: var(--indicator-color);
+		color: var(--indicator-text);
 	}
 	.vessel-carousel-card {
 		display: flex;
@@ -2096,8 +2120,7 @@ export const style = css`
 	.selection-info-title::part(base) {
 		background-color: #ff1f66;
 	}
-	#contextTag::part(base),
-	.vessel-species-tag::part(base) {
+	#contextTag::part(base) {
 		background-color: #51a332;
 		color: #fff;
 	}

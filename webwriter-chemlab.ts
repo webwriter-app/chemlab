@@ -220,8 +220,9 @@ export class ChemLab extends LitElementWw {
 	 */
 	@query("#mixCarousel")
 	private accessor mixCarousel: SlCarousel;
-	private vesselThumbnails = new WeakMap<chemlib.Molecule, { drawer: number; element: Element }>();
+	private vesselThumbnails = new WeakMap<SlCarousel, WeakMap<chemlib.Molecule, { drawer: number; element: Element }>>();
 	private vesselNameRequests = new WeakSet<chemlib.Molecule>();
+	private carouselMixtures = new WeakMap<SlCarousel, chemlib.Mixture>();
 	/**
 	 * confirmation dialog box element
 	 *
@@ -333,7 +334,7 @@ export class ChemLab extends LitElementWw {
 	 * @type {HTMLDivElement}
 	 */
 	@query("#contextMolInfo")
-	private accessor contextMolInfo: HTMLDivElement;
+	private accessor contextMolInfo: SlCarousel;
 	@query("#contextInfoBox")
 	private accessor objectSummary: HTMLElement;
 	@query("#groupSelectionInfo")
@@ -462,7 +463,7 @@ export class ChemLab extends LitElementWw {
 	 * @type {object}
 	 */
 	@property({ attribute: false })
-	private accessor pHColors: object = phColorScale;
+	private accessor pHColors = phColorScale;
 	/**
 	 * dictionary for german translation of all internal keywords
 	 *
@@ -2028,17 +2029,11 @@ export class ChemLab extends LitElementWw {
 		return true;
 	}
 
-	private renderVesselSpecies(formula: string, amount: number, quantity: unknown, title = formula) {
-		return html`
-			<div class="vessel-species">
-				<sl-tag class="vessel-species-tag" size="small" variant="neutral" title=${title}>${formula}</sl-tag>
-				<div><p>n: ${amount.toExponential(2)} mol</p><p>${quantity}</p></div>
-			</div>
-			<sl-divider class="vessel-divider"></sl-divider>`;
-	}
-
-	private vesselThumbnail(molecule: chemlib.Molecule, formula: string): Element {
-		const cached = this.vesselThumbnails.get(molecule);
+	private vesselThumbnail(carousel: SlCarousel, molecule: chemlib.Molecule, formula: string): Element {
+		// The two carousels need separate nodes and separate SVG mask IDs.
+		let thumbnails = this.vesselThumbnails.get(carousel);
+		if (!thumbnails) this.vesselThumbnails.set(carousel, thumbnails = new WeakMap());
+		const cached = thumbnails.get(molecule);
 		if (cached?.drawer === this.newSmilesDrawer) return cached.element;
 		const document = this.ownerDocument;
 		const container = document.createElement("span");
@@ -2064,11 +2059,13 @@ export class ChemLab extends LitElementWw {
 				fallback();
 			}
 		} else fallback();
-		this.vesselThumbnails.set(molecule, { drawer: this.newSmilesDrawer, element: container });
+		thumbnails.set(molecule, { drawer: this.newSmilesDrawer, element: container });
 		return container;
 	}
 
-	private renderVesselCarousel(mixture: chemlib.Mixture, equilibrium?: ReturnType<typeof chemlib.Simulation.getPolyproticEquilibrium>): void {
+	private renderVesselCarousel(carousel: SlCarousel, mixture: chemlib.Mixture, equilibrium?: ReturnType<typeof chemlib.Simulation.getPolyproticEquilibrium>): void {
+		const reset = this.carouselMixtures.get(carousel) !== mixture;
+		this.carouselMixtures.set(carousel, mixture);
 		const molecules = mixture._activeMolecules.filter((molecule) => !equilibrium?.analyticalMolecules.has(molecule));
 		const slide = (thumbnail: unknown, title: string, amount: number, details: unknown) => html`
 			<sl-carousel-item>
@@ -2085,7 +2082,7 @@ export class ChemLab extends LitElementWw {
 			${repeat(equilibrium?.species ?? [], ({ formula }, index) => `${formula}:${index}`,
 				({ formula, amount, concentration, structure }) => {
 					const molecule = structure();
-					return slide(molecule ? this.vesselThumbnail(molecule, formula) : html`<span>${formula}</span>`,
+					return slide(molecule ? this.vesselThumbnail(carousel, molecule, formula) : html`<span>${formula}</span>`,
 						formula, amount, html`<p>c: ${concentration.toExponential(2)} mol/L</p>`);
 				})}
 			${repeat(molecules, (molecule) => molecule, (molecule) => {
@@ -2098,12 +2095,15 @@ export class ChemLab extends LitElementWw {
 				}
 				const { _id: id } = molecule;
 				const properties = mixture._molProperties;
-				return slide(this.vesselThumbnail(molecule, formula), molecule.name || formula, properties[id + "n"], html`
+				return slide(this.vesselThumbnail(carousel, molecule, formula), molecule.name || formula, properties[id + "n"], html`
 					<p>m: ${properties[id + "m"].toExponential(2)} g</p>
 					${molecule.solidSaltFormula ? html`<p>${this.message("Bodensatz")}</p>` :
 						mixture._isSolution ? html`<p>c: ${properties[id + "c"].toExponential(2)} mol/L</p>` : nothing}`);
 			})}
-		`, this.mixCarousel);
+		`, carousel);
+		if (reset) void carousel.updateComplete.then(() => {
+			if (this.carouselMixtures.get(carousel) === mixture) carousel.goToSlide(0, "instant");
+		});
 	}
 
 	/**
@@ -2123,25 +2123,13 @@ export class ChemLab extends LitElementWw {
 				this.curr_obj._type.toLowerCase() as chemlib.ComponentType
 			)
 		) {
-			this.contextMolInfo.style.display = "";
-			this.contextMixInfo.innerHTML = "";
 			const mixture = this.curr_obj._content as chemlib.Mixture;
 			const equilibrium = mixture._isSolution ? chemlib.Simulation.getPolyproticEquilibrium(mixture) : undefined;
-			const species = equilibrium?.species ?? [];
-			const equilibriumRows = species.length ? html`
-				<div class="vessel-equilibrium">
-					<strong>${this.message("Spezies im Säure-Base-Gleichgewicht")}</strong>
-					${species.map(({ formula, amount, concentration }) => this.renderVesselSpecies(formula, amount,
-						html`c: ${concentration.toExponential(2)} mol/L`))}
-				</div>` : nothing;
-			render(html`
-				${equilibriumRows}
-				${mixture._activeMolecules.filter((molecule) => !equilibrium?.analyticalMolecules.has(molecule))
-					.map((molecule) => this.renderVesselSpecies(molecule._kekule_obj.calcFormula().getDisplayText(),
-						mixture._molProperties[molecule._id + "n"],
-						html`m: ${mixture._molProperties[molecule._id + "m"].toExponential(2)} g`, molecule.name))}
-			`, this.contextMolInfo);
-			if (this.objectPanelOpen) this.renderVesselCarousel(mixture, equilibrium);
+			if (mixture._activeMolecules.length) {
+				this.contextMolInfo.style.display = "";
+				this.renderVesselCarousel(this.contextMolInfo, mixture, equilibrium);
+			}
+			if (this.objectPanelOpen) this.renderVesselCarousel(this.mixCarousel, mixture, equilibrium);
 			if (
 				this.curr_obj._type === chemlib.ComponentType.Burette ||
 				this.curr_obj._type === chemlib.ComponentType.Separatingfunnel
@@ -2150,15 +2138,15 @@ export class ChemLab extends LitElementWw {
 			}
 			const volume = mixture.contentVolume;
 			if (volume > 0) {
-				this.contextMixInfo.style.display = "";
 				const pH = equilibrium?.pH;
-				this.contextMixInfo.innerHTML = `
-					<div>
-						<p>vol: ${(volume * 1000).toFixed(1)} mL</p>
-						${pH === undefined ? "" : `<p>pH: ${pH}</p>`}
-						<sl-divider class="vessel-divider"></sl-divider>
-					</div>`;
-				this.contextMixInfo.style.borderLeftColor = pH === undefined ? "" : this.pHColors[Math.round(pH)];
+				const color = pH === undefined ? undefined : this.pHColors[Math.max(0, Math.min(14, Math.round(pH)))];
+				this.contextMixInfo.style.display = "";
+				render(html`
+					<sl-tag size="small" variant="neutral">${(volume * 1000).toFixed(1)} mL</sl-tag>
+					${color === undefined ? nothing : html`
+						<sl-tag class="vessel-ph-tag" size="small" variant="neutral"
+							style=${`--indicator-color: ${color}; --indicator-text: ${pH >= 11 ? "#fff" : "#171717"}`}>pH ${pH}</sl-tag>`}
+				`, this.contextMixInfo);
 			}
 		}
 		if (
@@ -4805,9 +4793,9 @@ export class ChemLab extends LitElementWw {
 		summary.setAttribute("data-anchored", "");
 	}
 
-	private renderSelectionDeleteButton(remove: () => void) {
+	private renderSelectionDeleteButton(remove: () => void, iconOnly = false) {
 		return html`
-			<button type="button" class="remObj" @click=${remove}>
+			<button type="button" class="remObj" aria-label=${this.message("löschen")} title=${this.message("löschen")} @click=${remove}>
 				<svg
 					aria-hidden="true"
 					width="12"
@@ -4819,7 +4807,7 @@ export class ChemLab extends LitElementWw {
 						d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"
 					/>
 				</svg>
-				${this.message("löschen")}
+				${iconOnly ? nothing : this.message("löschen")}
 			</button>`;
 	}
 
@@ -4827,21 +4815,15 @@ export class ChemLab extends LitElementWw {
 		const name = this.itemName(this.curr_name.split(":")[0]);
 		return html`
 			<section id="contextInfoBox" class="selection-info" ?hidden=${!this.curr_obj || this.editingMolecule}>
-				<sl-badge class="selection-info-title">${name}</sl-badge>
-				<div
-					id="contextEchemInfo"
-					style="display: flex; flex-direction: column"
-				></div>
-				<div
-					id="contextMolInfo"
-					style="display: flex; flex-direction: column"
-				></div>
-				<div
-					id="contextMixInfo"
-					style="display: flex; flex-direction: column; border-left: 5px solid; margin-left: 5px"
-				></div>
+				<div class="object-summary-heading">
+					<sl-badge class="selection-info-title">${name}</sl-badge>
+					${this.renderSelectionDeleteButton(() => this._removeSprite(), true)}
+				</div>
+				<div id="contextEchemInfo"></div>
+				<sl-carousel id="contextMolInfo" pagination mouse-dragging slides-per-page="1" slides-per-move="1"
+					aria-label=${this.message("Inhalt")} style="display: none"></sl-carousel>
+				<div id="contextMixInfo" style="display: none"></div>
 				<div class="selection-actions">
-					${this.renderSelectionDeleteButton(() => this._removeSprite())}
 					<button
 						id="openComp"
 						@click="${(event) => {
