@@ -69848,7 +69848,8 @@ var messages_default = {
     "Konzentration verringern": "Decrease concentration",
     "Konzentration erh\xF6hen": "Increase concentration",
     "Konzentration bearbeiten (Doppelklick oder F2)": "Edit concentration (double-click or F2)",
-    "Gib eine Konzentration zwischen {min} und {max} mol/L ein.": "Enter a concentration between {min} and {max} mol/L.",
+    "Gib eine Konzentration von mindestens {min} mol/L ein.": "Enter a concentration of at least {min} mol/L.",
+    "Maximal {max} mol/L": "Maximum {max} mol/L",
     Salze: "Salts",
     "Anorganische S\xE4uren": "Inorganic acids",
     Basen: "Bases",
@@ -176251,14 +176252,36 @@ var chemicalClasses = [
   "Kunststoffe und Monomere",
   "Stoffgemische"
 ];
-function pure(name2, category, preview, phase, density2) {
+var concentratedReagent = {
+  hydrochloricAcid: 12.1,
+  sulfuricAcid: 18.4,
+  // 98%, 1.84 g/mL, Merck 112080
+  phosphoricAcid: 14.7,
+  ammonia: 14.8,
+  sodiumHydroxide: 19,
+  // 50%, 1.52 g/mL, Merck 100238
+  potassiumHydroxide: 11.6,
+  // 45%, 1.45 g/mL, Evonik Pure Grade
+  aceticAcid: 17.5,
+  formicAcid: 26,
+  propionicAcid: 13.3,
+  // 99.5%, 0.993 g/mL, Sigma 402907
+  lacticAcid: 11.3,
+  // 85%, Sigma L1250
+  // For solid acids use aqueous reference limits near room temperature.
+  citricAcid: 4,
+  // Approximate saturation from 59.2 wt% at 20 °C, Sigma C1909
+  oxalicAcid: 1
+  // Verified aqueous stock at 20 °C, Sigma 247537
+};
+function pure(name2, category, preview, phase, density2, concentrationLimit) {
   return {
     name: name2,
     category,
     formula: preview.formula,
     preview,
     recipe: { phase, density: density2, parts: [{ molecule: preview, amount: 1 }] },
-    concentrationLimit: category === "Carbons\xE4uren" || category === "Basen" ? 1 : void 0
+    concentrationLimit
   };
 }
 function element(name2, formula, atom, density2, category = "Metalle") {
@@ -176316,8 +176339,8 @@ function alkanol(formula, length2, position) {
     [...atoms.map((_3, index2) => (index2 === 0 || index2 === length2 - 1 ? 3 : 2) - Number(index2 === position)), 1]
   );
 }
-function organic(name2, category, structure, density2, phase = "liquid") {
-  return pure(name2, category, structure, phase, density2);
+function organic(name2, category, structure, density2, phase = "liquid", concentrationLimit) {
+  return pure(name2, category, structure, phase, density2, concentrationLimit);
 }
 var propanone = covalent("C\u2083H\u2086O", ["carbon", "carbon", "carbon", "oxygen"], [[0, 1], [1, 2], [1, 3, 2]], [3, 0, 3, 0]);
 var sulfuricAcid = covalent("H\u2082SO\u2084", ["sulfur", "oxygen", "oxygen", "oxygen", "oxygen"], [[0, 1, 2], [0, 2, 2], [0, 3], [0, 4]], [0, 0, 0, 1, 1]);
@@ -176416,15 +176439,19 @@ var chemicalCatalog = [
   reference("Calciumchlorid", "Salze", "CaCl\u2082"),
   reference("Silberchlorid", "Salze", "AgCl"),
   reference("Bariumsulfat", "Salze", "BaSO\u2084"),
-  pure("Natriumhydroxid", "Basen", naoh, "solid", 2.13),
-  aqueous("Natronlauge (1 mol/L)", "Basen", naoh, 2),
-  aqueous("Kalilauge (1 mol/L)", "Basen", { formula: "KOH", atoms: ["potassium", "oxygen", "hydrogen"], bonds: ["0-1:acidbase:1", "1-2:covalent:1"] }),
-  aqueous("Ammoniakl\xF6sung", "Basen", ammonia),
+  pure("Natriumhydroxid", "Basen", naoh, "solid", 2.13, concentratedReagent.sodiumHydroxide),
+  aqueous("Natronlauge (1 mol/L)", "Basen", naoh, concentratedReagent.sodiumHydroxide),
+  aqueous("Kalilauge (1 mol/L)", "Basen", {
+    formula: "KOH",
+    atoms: ["potassium", "oxygen", "hydrogen"],
+    bonds: ["0-1:acidbase:1", "1-2:covalent:1"]
+  }, concentratedReagent.potassiumHydroxide),
+  aqueous("Ammoniakl\xF6sung", "Basen", ammonia, concentratedReagent.ammonia),
   reference("Calciumhydroxid", "Basen", "Ca(OH)\u2082"),
   reference("Kalkwasser", "Basen", "Ca(OH)\u2082 (aq)"),
-  aqueous("Salzs\xE4ure (1 mol/L)", "Anorganische S\xE4uren", hcl, 2),
-  aqueous("Schwefels\xE4ure (1 mol/L)", "Anorganische S\xE4uren", sulfuricAcid),
-  aqueous("Phosphors\xE4ure (1 mol/L)", "Anorganische S\xE4uren", phosphoricAcid),
+  aqueous("Salzs\xE4ure (1 mol/L)", "Anorganische S\xE4uren", hcl, concentratedReagent.hydrochloricAcid),
+  aqueous("Schwefels\xE4ure (1 mol/L)", "Anorganische S\xE4uren", sulfuricAcid, concentratedReagent.sulfuricAcid),
+  aqueous("Phosphors\xE4ure (1 mol/L)", "Anorganische S\xE4uren", phosphoricAcid, concentratedReagent.phosphoricAcid),
   reference("Salpeters\xE4ure", "Anorganische S\xE4uren", "HNO\u2083"),
   pure("Wasser", "L\xF6sungsmittel", water, "liquid", 1),
   organic("Cyclohexan", "Kohlenwasserstoffe", covalent(
@@ -176488,32 +176515,32 @@ var chemicalCatalog = [
     [[0, 1], [1, 2], [2, 3], [1, 4, 2]],
     [3, 0, 2, 3, 0]
   ), 0.805),
-  organic("Essigs\xE4ure", "Carbons\xE4uren", aceticAcid, 1.05),
-  organic("Ameisens\xE4ure", "Carbons\xE4uren", formicAcid, 1.22),
+  organic("Essigs\xE4ure", "Carbons\xE4uren", aceticAcid, 1.05, "liquid", concentratedReagent.aceticAcid),
+  organic("Ameisens\xE4ure", "Carbons\xE4uren", formicAcid, 1.22, "liquid", concentratedReagent.formicAcid),
   organic("Propions\xE4ure", "Carbons\xE4uren", covalent(
     "C\u2083H\u2086O\u2082",
     ["carbon", "carbon", "carbon", "oxygen", "oxygen"],
     [[0, 1], [1, 2], [2, 3, 2], [2, 4]],
     [3, 2, 0, 0, 1]
-  ), 0.993),
+  ), 0.993, "liquid", concentratedReagent.propionicAcid),
   organic("Milchs\xE4ure", "Carbons\xE4uren", covalent(
     "C\u2083H\u2086O\u2083",
     ["carbon", "carbon", "carbon", "oxygen", "oxygen", "oxygen"],
     [[0, 1], [1, 2], [1, 3], [2, 4, 2], [2, 5]],
     [3, 1, 0, 1, 0, 1]
-  ), 1.21),
+  ), 1.21, "liquid", concentratedReagent.lacticAcid),
   organic("Zitronens\xE4ure", "Carbons\xE4uren", covalent(
     "C\u2086H\u2088O\u2087",
     [...Array(6).fill("carbon"), ...Array(7).fill("oxygen")],
     [[0, 1], [1, 2], [2, 3], [3, 4], [2, 5], [2, 6], [0, 7, 2], [0, 8], [4, 9, 2], [4, 10], [5, 11, 2], [5, 12]],
     [0, 2, 0, 2, 0, 0, 1, 0, 1, 0, 1, 0, 1]
-  ), 1.665, "solid"),
+  ), 1.665, "solid", concentratedReagent.citricAcid),
   organic("Oxals\xE4ure", "Carbons\xE4uren", covalent(
     "C\u2082H\u2082O\u2084",
     ["carbon", "carbon", "oxygen", "oxygen", "oxygen", "oxygen"],
     [[0, 1], [0, 2, 2], [0, 3], [1, 4, 2], [1, 5]],
     [0, 0, 0, 1, 0, 1]
-  ), 1.9, "solid"),
+  ), 1.9, "solid", concentratedReagent.oxalicAcid),
   reference("Benzoes\xE4ure", "Carbons\xE4uren", "C\u2087H\u2086O\u2082"),
   reference("Sorbins\xE4ure", "Carbons\xE4uren", "C\u2086H\u2088O\u2082"),
   reference("Tetradecans\xE4ure (Myristins\xE4ure)", "Carbons\xE4uren", "C\u2081\u2084H\u2082\u2088O\u2082"),
@@ -186141,11 +186168,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       if (this.editingConcentration !== key) return;
       const raw = input.value.trim();
       const next = /^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(raw) ? Number(raw.replace(",", ".")) : NaN;
-      if (!cancel && (!Number.isFinite(next) || next < MIN_CONCENTRATION || next > max6)) {
+      if (!cancel && (!Number.isFinite(next) || next < MIN_CONCENTRATION)) {
         if (restoreFocus) {
           input.setCustomValidity(this.message(
-            "Gib eine Konzentration zwischen {min} und {max} mol/L ein.",
-            { min: this.formatAmount(MIN_CONCENTRATION, 15), max: this.formatAmount(max6, 15) }
+            "Gib eine Konzentration von mindestens {min} mol/L ein.",
+            { min: this.formatAmount(MIN_CONCENTRATION, 15) }
           ));
           input.reportValidity();
           return;
@@ -186160,6 +186187,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const changeBy = (delta) => setValue(Number((value + delta).toPrecision(15)));
     const accessibleName = `${name2} \xB7 ${this.message("Konzentration in mol/L")}`;
     const saturationLabel = saturation ? this.message("S\xE4ttigung bei {max} mol/L", { max: this.formatAmount(max6, 8) }) : "";
+    const limitLabel = saturationLabel || this.message("Maximal {max} mol/L", { max: this.formatAmount(max6, 8) });
     const editLabel = this.message("Konzentration bearbeiten (Doppelklick oder F2)");
     return x`
 			<div class="chemical-concentration">
@@ -186180,7 +186208,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					` : x`
 						<input class="amount-slider" type="range" dir="ltr" min="0" max=${presets.length - 1} step="1" .value=${String(index2)}
 							aria-label=${accessibleName} aria-valuetext=${saturation && value === max6 ? saturationLabel : label}
-							title=${saturation ? `${editLabel} \xB7 ${saturationLabel}` : editLabel}
+							title=${`${editLabel} \xB7 ${limitLabel}`}
 							@input=${(event) => setValue(presets[event.currentTarget.valueAsNumber])}
 							@dblclick=${edit} @keydown=${(event) => {
       if (event.key !== "F2") return;

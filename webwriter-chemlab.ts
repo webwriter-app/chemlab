@@ -4378,10 +4378,10 @@ export class ChemLab extends LitElementWw {
 			if (this.editingConcentration !== key) return;
 			const raw = input.value.trim();
 			const next = /^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(raw) ? Number(raw.replace(",", ".")) : NaN;
-			if (!cancel && (!Number.isFinite(next) || next < MIN_CONCENTRATION || next > max)) {
+			if (!cancel && (!Number.isFinite(next) || next < MIN_CONCENTRATION)) {
 				if (restoreFocus) {
-					input.setCustomValidity(this.message("Gib eine Konzentration zwischen {min} und {max} mol/L ein.",
-						{ min: this.formatAmount(MIN_CONCENTRATION, 15), max: this.formatAmount(max, 15) }));
+					input.setCustomValidity(this.message("Gib eine Konzentration von mindestens {min} mol/L ein.",
+						{ min: this.formatAmount(MIN_CONCENTRATION, 15) }));
 					input.reportValidity();
 					return;
 				}
@@ -4395,6 +4395,7 @@ export class ChemLab extends LitElementWw {
 		const changeBy = (delta: number) => setValue(Number((value + delta).toPrecision(15)));
 		const accessibleName = `${name} · ${this.message("Konzentration in mol/L")}`;
 		const saturationLabel = saturation ? this.message("Sättigung bei {max} mol/L", { max: this.formatAmount(max, 8) }) : "";
+		const limitLabel = saturationLabel || this.message("Maximal {max} mol/L", { max: this.formatAmount(max, 8) });
 		const editLabel = this.message("Konzentration bearbeiten (Doppelklick oder F2)");
 		return html`
 			<div class="chemical-concentration">
@@ -4415,7 +4416,7 @@ export class ChemLab extends LitElementWw {
 					` : html`
 						<input class="amount-slider" type="range" dir="ltr" min="0" max=${presets.length - 1} step="1" .value=${String(index)}
 							aria-label=${accessibleName} aria-valuetext=${saturation && value === max ? saturationLabel : label}
-							title=${saturation ? `${editLabel} · ${saturationLabel}` : editLabel}
+							title=${`${editLabel} · ${limitLabel}`}
 							@input=${(event: Event) => setValue(presets[(event.currentTarget as HTMLInputElement).valueAsNumber])}
 							@dblclick=${edit} @keydown=${(event: KeyboardEvent) => {
 								if (event.key !== "F2") return;

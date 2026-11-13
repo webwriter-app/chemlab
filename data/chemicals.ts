@@ -48,10 +48,30 @@ export interface CatalogChemical {
 	concentrationLimit?: number;
 }
 
+// Nominal concentrations of concentrated reagent stocks, in mol/L.
+// HCl 37%, NH3 28%, H3PO4 85%, acetic acid 99–100% and formic acid 98–100%:
+// https://www.sigmaaldrich.com/deepweb/assets/sigmaaldrich/product/documents/391/185/merc130093-w281145-acid-emsure-emparta-mk.pdf
+// https://www.sigmaaldrich.com/deepweb/assets/sigmaaldrich/product/documents/331/248/emd-solutions-ms.pdf
+const concentratedReagent = {
+	hydrochloricAcid: 12.1,
+	sulfuricAcid: 18.4, // 98%, 1.84 g/mL, Merck 112080
+	phosphoricAcid: 14.7,
+	ammonia: 14.8,
+	sodiumHydroxide: 19, // 50%, 1.52 g/mL, Merck 100238
+	potassiumHydroxide: 11.6, // 45%, 1.45 g/mL, Evonik Pure Grade
+	aceticAcid: 17.5,
+	formicAcid: 26,
+	propionicAcid: 13.3, // 99.5%, 0.993 g/mL, Sigma 402907
+	lacticAcid: 11.3, // 85%, Sigma L1250
+	// For solid acids use aqueous reference limits near room temperature.
+	citricAcid: 4, // Approximate saturation from 59.2 wt% at 20 °C, Sigma C1909
+	oxalicAcid: 1, // Verified aqueous stock at 20 °C, Sigma 247537
+};
+
 function pure(name: string, category: ChemicalClass, preview: MoleculeDefinition,
-	phase: ChemicalRecipe["phase"], density: number): CatalogChemical {
+	phase: ChemicalRecipe["phase"], density: number, concentrationLimit?: number): CatalogChemical {
 	return { name, category, formula: preview.formula, preview, recipe: { phase, density, parts: [{ molecule: preview, amount: 1 }] },
-		concentrationLimit: category === "Carbonsäuren" || category === "Basen" ? 1 : undefined };
+		concentrationLimit };
 }
 
 function element(name: string, formula: string, atom: string, density: number, category: ChemicalClass = "Metalle"): CatalogChemical {
@@ -109,8 +129,9 @@ function alkanol(formula: string, length: number, position: number): MoleculeDef
 		[...atoms.map((_, index) => (index === 0 || index === length - 1 ? 3 : 2) - Number(index === position)), 1]);
 }
 
-function organic(name: string, category: ChemicalClass, structure: MoleculeDefinition, density: number, phase: ChemicalRecipe["phase"] = "liquid") {
-	return pure(name, category, structure, phase, density);
+function organic(name: string, category: ChemicalClass, structure: MoleculeDefinition, density: number,
+	phase: ChemicalRecipe["phase"] = "liquid", concentrationLimit?: number) {
+	return pure(name, category, structure, phase, density, concentrationLimit);
 }
 
 const propanone = covalent("C₃H₆O", ["carbon", "carbon", "carbon", "oxygen"], [[0, 1], [1, 2], [1, 3, 2]], [3, 0, 3, 0]);
@@ -211,15 +232,16 @@ export const chemicalCatalog: CatalogChemical[] = [
 	reference("Calciumchlorid", "Salze", "CaCl₂"),
 	reference("Silberchlorid", "Salze", "AgCl"),
 	reference("Bariumsulfat", "Salze", "BaSO₄"),
-	pure("Natriumhydroxid", "Basen", naoh, "solid", 2.13),
-	aqueous("Natronlauge (1 mol/L)", "Basen", naoh, 2),
-	aqueous("Kalilauge (1 mol/L)", "Basen", { formula: "KOH", atoms: ["potassium", "oxygen", "hydrogen"], bonds: ["0-1:acidbase:1", "1-2:covalent:1"] }),
-	aqueous("Ammoniaklösung", "Basen", ammonia),
+	pure("Natriumhydroxid", "Basen", naoh, "solid", 2.13, concentratedReagent.sodiumHydroxide),
+	aqueous("Natronlauge (1 mol/L)", "Basen", naoh, concentratedReagent.sodiumHydroxide),
+	aqueous("Kalilauge (1 mol/L)", "Basen", { formula: "KOH", atoms: ["potassium", "oxygen", "hydrogen"],
+		bonds: ["0-1:acidbase:1", "1-2:covalent:1"] }, concentratedReagent.potassiumHydroxide),
+	aqueous("Ammoniaklösung", "Basen", ammonia, concentratedReagent.ammonia),
 	reference("Calciumhydroxid", "Basen", "Ca(OH)₂"),
 	reference("Kalkwasser", "Basen", "Ca(OH)₂ (aq)"),
-	aqueous("Salzsäure (1 mol/L)", "Anorganische Säuren", hcl, 2),
-	aqueous("Schwefelsäure (1 mol/L)", "Anorganische Säuren", sulfuricAcid),
-	aqueous("Phosphorsäure (1 mol/L)", "Anorganische Säuren", phosphoricAcid),
+	aqueous("Salzsäure (1 mol/L)", "Anorganische Säuren", hcl, concentratedReagent.hydrochloricAcid),
+	aqueous("Schwefelsäure (1 mol/L)", "Anorganische Säuren", sulfuricAcid, concentratedReagent.sulfuricAcid),
+	aqueous("Phosphorsäure (1 mol/L)", "Anorganische Säuren", phosphoricAcid, concentratedReagent.phosphoricAcid),
 	reference("Salpetersäure", "Anorganische Säuren", "HNO₃"),
 	pure("Wasser", "Lösungsmittel", water, "liquid", 1),
 	organic("Cyclohexan", "Kohlenwasserstoffe", covalent("C₆H₁₂", Array(6).fill("carbon"),
@@ -259,18 +281,18 @@ export const chemicalCatalog: CatalogChemical[] = [
 	organic("Aceton", "Ketone", propanone, 0.791),
 	organic("Butan-2-on", "Ketone", covalent("C₄H₈O", ["carbon", "carbon", "carbon", "carbon", "oxygen"],
 		[[0, 1], [1, 2], [2, 3], [1, 4, 2]], [3, 0, 2, 3, 0]), 0.805),
-	organic("Essigsäure", "Carbonsäuren", aceticAcid, 1.05),
-	organic("Ameisensäure", "Carbonsäuren", formicAcid, 1.22),
+	organic("Essigsäure", "Carbonsäuren", aceticAcid, 1.05, "liquid", concentratedReagent.aceticAcid),
+	organic("Ameisensäure", "Carbonsäuren", formicAcid, 1.22, "liquid", concentratedReagent.formicAcid),
 	organic("Propionsäure", "Carbonsäuren", covalent("C₃H₆O₂", ["carbon", "carbon", "carbon", "oxygen", "oxygen"],
-		[[0, 1], [1, 2], [2, 3, 2], [2, 4]], [3, 2, 0, 0, 1]), 0.993),
+		[[0, 1], [1, 2], [2, 3, 2], [2, 4]], [3, 2, 0, 0, 1]), 0.993, "liquid", concentratedReagent.propionicAcid),
 	organic("Milchsäure", "Carbonsäuren", covalent("C₃H₆O₃", ["carbon", "carbon", "carbon", "oxygen", "oxygen", "oxygen"],
-		[[0, 1], [1, 2], [1, 3], [2, 4, 2], [2, 5]], [3, 1, 0, 1, 0, 1]), 1.21),
+		[[0, 1], [1, 2], [1, 3], [2, 4, 2], [2, 5]], [3, 1, 0, 1, 0, 1]), 1.21, "liquid", concentratedReagent.lacticAcid),
 	organic("Zitronensäure", "Carbonsäuren", covalent("C₆H₈O₇",
 		[...Array(6).fill("carbon"), ...Array(7).fill("oxygen")],
 		[[0, 1], [1, 2], [2, 3], [3, 4], [2, 5], [2, 6], [0, 7, 2], [0, 8], [4, 9, 2], [4, 10], [5, 11, 2], [5, 12]],
-		[0, 2, 0, 2, 0, 0, 1, 0, 1, 0, 1, 0, 1]), 1.665, "solid"),
+		[0, 2, 0, 2, 0, 0, 1, 0, 1, 0, 1, 0, 1]), 1.665, "solid", concentratedReagent.citricAcid),
 	organic("Oxalsäure", "Carbonsäuren", covalent("C₂H₂O₄", ["carbon", "carbon", "oxygen", "oxygen", "oxygen", "oxygen"],
-		[[0, 1], [0, 2, 2], [0, 3], [1, 4, 2], [1, 5]], [0, 0, 0, 1, 0, 1]), 1.90, "solid"),
+		[[0, 1], [0, 2, 2], [0, 3], [1, 4, 2], [1, 5]], [0, 0, 0, 1, 0, 1]), 1.90, "solid", concentratedReagent.oxalicAcid),
 	reference("Benzoesäure", "Carbonsäuren", "C₇H₆O₂"),
 	reference("Sorbinsäure", "Carbonsäuren", "C₆H₈O₂"),
 	reference("Tetradecansäure (Myristinsäure)", "Carbonsäuren", "C₁₄H₂₈O₂"),
