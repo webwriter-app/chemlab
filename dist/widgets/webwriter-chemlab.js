@@ -184809,7 +184809,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     return x`
 			<section id="contextInfoBox" class="selection-info" ?hidden=${!this.curr_obj}>
 				<div class="object-summary-heading">
-					<sl-badge pill variant="primary">${name2}</sl-badge>
+					<sl-tag size="small" variant="primary">${name2}</sl-tag>
 					${vessel?._content._activeMolecules.length ? x`
 						<button type="button" class="object-summary-action empty-vessel"
 							aria-label=${emptyLabel} title=${emptyLabel} @click=${() => this.emptyVessel(vessel)}>

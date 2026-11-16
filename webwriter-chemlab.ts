@@ -3296,7 +3296,7 @@ export class ChemLab extends LitElementWw {
 		return html`
 			<section id="contextInfoBox" class="selection-info" ?hidden=${!this.curr_obj}>
 				<div class="object-summary-heading">
-					<sl-badge pill variant="primary">${name}</sl-badge>
+					<sl-tag size="small" variant="primary">${name}</sl-tag>
 					${vessel?._content._activeMolecules.length ? html`
 						<button type="button" class="object-summary-action empty-vessel"
 							aria-label=${emptyLabel} title=${emptyLabel} @click=${() => this.emptyVessel(vessel)}>
