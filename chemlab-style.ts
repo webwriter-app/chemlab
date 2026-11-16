@@ -1914,7 +1914,7 @@ export const style = css`
 	}
 	.chemical-palette-group {
 		--chemical-group-heading: #f3eff8;
-		--chemical-subgroup-heading: #e2dde7;
+		--chemical-subgroup-heading: #e0ebe3;
 		gap: 0;
 		border-inline-end: 8px solid var(--chemical-group-heading);
 		border-radius: var(--sl-border-radius-medium);
@@ -1975,8 +1975,8 @@ export const style = css`
 	.chemical-subgroup-label > sl-badge::part(base) {
 		padding: 1px 5px;
 		background: var(--chemical-subgroup-heading);
-		border-color: #d1c9d9;
-		color: var(--lab-card-secondary-text);
+		border-color: #c9d9ce;
+		color: #395344;
 		font-weight: var(--sl-font-weight-normal);
 	}
 	.chemical-dose-carousel {
