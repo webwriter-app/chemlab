@@ -4,6 +4,37 @@ import { Mixture } from "./Mixture";
 import { Kekule } from "kekule";
 
 /**
+ * One redox couple of the table.
+ *
+ * `red` and `ox` are the reduced and the oxidised form. Where each of them
+ * sits follows from `redPhase` and `oxPhase`: a metal electrode dissolves into
+ * a dissolved cation, a dissolved halide is oxidised to a gas, and water is
+ * oxidised to oxygen. The defaults describe the metal couples, so only the
+ * couples that leave that pattern carry the phase fields.
+ *
+ * @export
+ * @interface RedoxCouple
+ */
+export interface RedoxCouple {
+	/** SMILES of the reduced form. */
+	red: string;
+	/** SMILES of the oxidised form. */
+	ox: string;
+	/** Electrons transferred per formula unit of the couple. */
+	el: number;
+	/** Standard electrode potential in V. */
+	sep: number;
+	/** Bulk density in g/mL, for the volume a deposit takes. */
+	density?: number;
+	/** Where the reduced form sits; a solid electrode unless stated. */
+	redPhase?: "solid" | "solution" | "gas";
+	/** Where the oxidised form sits; the solution unless stated. */
+	oxPhase?: "solution" | "gas";
+	/** Id in `evolvedGases` of the gaseous form, if the couple produces one. */
+	gas?: string;
+}
+
+/**
  * Static management class for {@link Mixture} and {@link Molecule} objects
  *
  * @export
@@ -127,7 +158,22 @@ export abstract class StructureManager {
 				"ox": "[H+]",
 				"el": 1,
 				"sep": 0.0,
-				"density": 0.00009
+				"redPhase": "gas",
+				"oxPhase": "solution",
+				"gas": "H2"
+			},
+			// Water is oxidised to oxygen at an inert electrode. The couple is
+			// keyed by the mass of H2O because that is the species the lookup
+			// receives; `el` counts the electrons per oxygen atom, so one O2
+			// takes four.
+			"18.015": {
+				"red": "O",
+				"ox": "[O2]",
+				"el": 2,
+				"sep": 1.229,
+				"redPhase": "solution",
+				"oxPhase": "gas",
+				"gas": "O2"
 			},
 			"6.94": {
 				"red": "[Li]",
@@ -143,12 +189,18 @@ export abstract class StructureManager {
 				"sep": -1.85,
 				"density": 1.85
 			},
-			// "15.999": {
-			// 	"red": "[O2-]",
-			// 	"ox": "[O2]",
-			// 	"el": 2,
-			// 	"sep": 0.4
-			// },
+			// A dissolved halide is oxidised to the halogen at an inert
+			// electrode, so the reduced form sits in the solution and the
+			// oxidised form leaves as a gas.
+			"35.45": {
+				"red": "[Cl-]",
+				"ox": "[Cl2]",
+				"el": 1,
+				"sep": 1.358,
+				"redPhase": "solution",
+				"oxPhase": "gas",
+				"gas": "Cl2"
+			},
 			"22.989769282": {
 				"red": "[Na]",
 				"ox": "[Na+]",
@@ -177,12 +229,6 @@ export abstract class StructureManager {
 				"sep": -0.141,
 				"density": 7.31
 			},
-			// "35.45": {
-			// 	"red": "[Cl-]",
-			// 	"ox": "[Cl2]",
-			// 	"el": 1,
-			// 	"sep": 1.36
-			// },
 			"39.09831": {
 				"red": "[K]",
 				"ox": "[K+]",
@@ -232,18 +278,24 @@ export abstract class StructureManager {
 				"sep": -0.762,
 				"density": 7.14
 			},
-			// "79.904": {
-			// 	"red": "[Br-]",
-			// 	"ox": "[Br2]",
-			// 	"el": 1,
-			// 	"sep": 1.07
-			// },
-			// "126.904473": {
-			// 	"red": "[I-]",
-			// 	"ox": "[I2]",
-			// 	"el": 1,
-			// 	"sep": 0.54
-			// },
+			"79.904": {
+				"red": "[Br-]",
+				"ox": "[Br2]",
+				"el": 1,
+				"sep": 1.066,
+				"redPhase": "solution",
+				"oxPhase": "gas",
+				"gas": "Br2"
+			},
+			"126.904473": {
+				"red": "[I-]",
+				"ox": "[I2]",
+				"el": 1,
+				"sep": 0.536,
+				"redPhase": "solution",
+				"oxPhase": "gas",
+				"gas": "I2"
+			},
 			"207.21": {
 				"red": "[Pb]",
 				"ox": "[Pb2+]",

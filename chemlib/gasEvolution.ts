@@ -38,4 +38,10 @@ export const evolvedGases: Readonly<Record<string, EvolvedGas>> = {
 	NH3: { formula: "NH₃", family: "N", solubility: 15 },
 	// H2: practically insoluble, and only formed on a metal surface
 	H2: { formula: "H₂" },
+	// The halogens and oxygen leave an electrode as a gas and do not stay
+	// dissolved, so they carry no solubility: whatever is produced escapes.
+	Cl2: { formula: "Cl₂" },
+	Br2: { formula: "Br₂" },
+	I2: { formula: "I₂" },
+	O2: { formula: "O₂" },
 };

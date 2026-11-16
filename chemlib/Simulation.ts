@@ -1,5 +1,5 @@
 import { Mixture } from "./Mixture";
-import { StructureManager } from "./StructureManager";
+import { StructureManager, RedoxCouple } from "./StructureManager";
 import { Molecule } from "./Molecule";
 import { Atom } from "./Atom";
 import { ElectricComponent, EComponentType } from "./ElectricComponent";
@@ -39,6 +39,34 @@ function saltIonProduct(positive: number, negative: number, cations: number, ani
 	return Math.max(0, positive) ** cations * Math.max(0, negative) ** anions;
 }
 
+/**
+ * The proton, built once so the H⁺/H₂ couple can be looked up by its mass.
+ * Protons are never stored in a mixture, so the couple needs a stand-in
+ * molecule to reach the redox table.
+ */
+let protonIon: Molecule | undefined;
+function proton(): Molecule {
+	if (!protonIon) {
+		protonIon = StructureManager.newMolecule();
+		protonIon.addAtom("hydrogen", "H", 1);
+	}
+	return protonIon;
+}
+
+/** Water, built once so the O₂/H₂O couple can be looked up by its mass. */
+let waterMolecule: Molecule | undefined;
+function water(): Molecule {
+	if (!waterMolecule) {
+		waterMolecule = StructureManager.newMolecule();
+		const oxygen = waterMolecule.addAtom("oxygen", "O");
+		const first = waterMolecule.addAtom("hydrogen", "H");
+		const second = waterMolecule.addAtom("hydrogen", "H");
+		waterMolecule.addBond(oxygen._id, first._id, 1, 100, "covalent");
+		waterMolecule.addBond(oxygen._id, second._id, 1, 100, "covalent");
+	}
+	return waterMolecule;
+}
+
 type AcidBaseFamily = AcidBaseSystem & { key: string; representative: Molecule; step: number; members: Molecule[] };
 
 /** One ion of a salt formula unit, with how many of it the unit contains. */
@@ -59,6 +87,29 @@ interface SaltIon {
 	readonly removable: number;
 	/** Apply a change in mol/L of this ion. */
 	change(delta: number): void;
+}
+
+/**
+ * One half-reaction a vessel can run at an electrode, with the potential the
+ * couple has in that vessel and the amount it can convert.
+ *
+ * @interface HalfCandidate
+ */
+interface HalfCandidate {
+	/** The redox couple behind the half-reaction. */
+	couple: RedoxCouple;
+	/** Electrode potential of the couple in this vessel, in V. */
+	potential: number;
+	/** Largest amount that can react, in mol of electrons. */
+	available: number;
+	/**
+	 * Whether the half-reaction consumes a dissolved anion. Water reduction at
+	 * the cathode is only offered against such an anode, because that is the
+	 * pairing whose charge balance the vessel can carry.
+	 */
+	anion: boolean;
+	/** Apply the half-reaction for `electronMol` electrons. */
+	apply(electronMol: number): void;
 }
 
 export interface AcidEquilibriumSpecies {
@@ -814,11 +865,9 @@ export abstract class Simulation {
 	 * @public
 	 * @static
 	 * @param {Molecule} molecule - a neutral element or its ion
-	 * @returns {({ red: string; ox: string; el: number; sep: number; density: number } | undefined)}
+	 * @returns {(RedoxCouple | undefined)}
 	 */
-	public static getRedoxData(
-		molecule: Molecule
-	): { red: string; ox: string; el: number; sep: number; density: number } | undefined {
+	public static getRedoxData(molecule: Molecule): RedoxCouple | undefined {
 		return StructureManager._moleculeData["redox"][
 			molecule.getTotMolMass().toString()
 		];
@@ -876,64 +925,251 @@ export abstract class Simulation {
 
 		const bElectrolysis = sDevice._type === EComponentType.Source;
 		if (!bElectrolysis) sDevice._visibleVoltage = null;
-		type HalfReaction = NonNullable<ReturnType<typeof Simulation.getRedoxData>>;
-		let reaction: {
-			anode: Mixture; cathode: Mixture; material: Molecule; cathodeIon: Molecule;
-			oxidation: HalfReaction; reduction: HalfReaction; voltage: number;
-		} | undefined;
-
-		// Nernst: E = E° + RT/(zF) * ln(activity of the oxidised form). The term
-		// belongs in the pair selection, not only in the display, because a
-		// concentration cell has equal standard potentials on both sides and
-		// its whole voltage comes from the two activities differing.
-		const potential = (standard: number, mix: Mixture, ion: Molecule | undefined, electrons: number) => {
-			const concentration = ion ? mix._molProperties[ion._id + "c"] : undefined;
-			const activity = Number.isFinite(concentration) && concentration > 0 ? concentration : 1;
-			return standard + this._gasConst * mix._temperature / (electrons * this._faradayConst) * Math.log(activity);
-		};
+		let reaction: { anode: HalfCandidate; cathode: HalfCandidate; voltage: number; standard: number } | undefined;
 
 		for (const [anodeElectrode, cathodeElectrode] of [[sElectrode1, sElectrode2], [sElectrode2, sElectrode1]]) {
-			const material = anodeElectrode._material;
-			const oxidation = material && this.getRedoxData(material);
-			if (!oxidation || material.smilesString !== oxidation.red) continue;
-			const anode = anodeElectrode._connectedMix;
-			const cathode = cathodeElectrode._connectedMix;
-			const anodeIon = anode._activeMolecules.find((molecule) => molecule.smilesString === oxidation.ox);
-			for (const cathodeIon of cathode._activeMolecules) {
-				if (cathodeIon._totalCharge <= 0) continue;
-				const reduction = this.getRedoxData(cathodeIon);
-				if (!reduction || cathodeIon.smilesString !== reduction.ox) continue;
-				const voltage = potential(reduction.sep, cathode, cathodeIon, reduction.el) -
-					potential(oxidation.sep, anode, anodeIon, oxidation.el);
-				if (bElectrolysis) {
-					if (voltage > 0 || !(sDevice._sourceVoltage >= -voltage) ||
-						(reaction && voltage <= reaction.voltage)) continue;
-				} else if (voltage <= 0 || (reaction && voltage <= reaction.voltage)) continue;
-				reaction = { anode, cathode, material, cathodeIon, oxidation, reduction, voltage };
+			for (const anode of this.anodeCandidates(anodeElectrode)) {
+				for (const cathode of this.cathodeCandidates(cathodeElectrode, anode)) {
+					const voltage = cathode.potential - anode.potential;
+					const standard = cathode.couple.sep - anode.couple.sep;
+					if (bElectrolysis) {
+						if (voltage > 0 || !(sDevice._sourceVoltage >= -voltage)) continue;
+						// The source fixes which electrode is the anode, but the
+						// model stores no polarity, so both orientations are
+						// tried. Ranking them by the standard potentials keeps
+						// the choice stable: the Nernst potentials drift while
+						// the cell runs and would otherwise let the two
+						// orientations alternate and evolve both gases in both
+						// vessels.
+						if (reaction && !(standard > reaction.standard)) continue;
+					} else if (voltage <= 0 || (reaction && voltage <= reaction.voltage)) continue;
+					reaction = { anode, cathode, voltage, standard };
+				}
 			}
 		}
 		if (!reaction) return;
-		const { anode, cathode, material, cathodeIon, oxidation, reduction, voltage } = reaction;
-		const zAnode = oxidation.el;
-		const zCathode = reduction.el;
-		const current = sDevice._sourceCurrent;
+		const { anode, cathode, voltage } = reaction;
 		const electronMol = Math.min(
-			current * this._simTimeStep / this._faradayConst,
-			cathode._molProperties[cathodeIon._id + "n"] * zCathode
+			sDevice._sourceCurrent * this._simTimeStep / this._faradayConst,
+			anode.available,
+			cathode.available
 		);
 		if (!(electronMol > 0)) return;
 
 		if (!bElectrolysis) sDevice._visibleVoltage = Math.max(0, voltage);
+		anode.apply(electronMol);
+		cathode.apply(electronMol);
+	}
 
-		const anodeAtom = material._atoms[0];
-		const cathodeAtom = cathodeIon._atoms[0];
-		const anodeProduct = StructureManager.newMolecule();
-		anodeProduct.addAtom(anodeAtom.getName().toLowerCase(), anodeAtom.getSymbol(), zAnode);
-		anode.addMolecule(anodeProduct, electronMol / zAnode);
-		const cathodeProduct = StructureManager.newMolecule();
-		cathodeProduct.addAtom(cathodeAtom.getName().toLowerCase(), cathodeAtom.getSymbol(), cathodeIon._totalCharge - zCathode);
-		cathode.addMolecule(cathodeProduct, electronMol / zCathode);
-		cathode.changeMolecule(cathodeIon._id, -electronMol / zCathode);
+	/**
+	 * Nernst correction for the couple's dissolved species: the oxidised form
+	 * of a metal couple (its cation) or the reduced form of an anion couple
+	 * (its halide). Both enter the potential with a positive sign, so one
+	 * helper serves both directions.
+	 *
+	 * The term belongs in the pair selection, not only in the display, because
+	 * a concentration cell has equal standard potentials on both sides and its
+	 * whole voltage comes from the two activities differing.
+	 *
+	 * @private
+	 * @static
+	 * @param {number} standard - standard electrode potential in V
+	 * @param {Mixture} mix - the vessel the couple sits in
+	 * @param {number} [activity] - concentration of the dissolved species in mol/L
+	 * @param {number} electrons - electrons transferred per formula unit
+	 * @returns {number} the electrode potential in V
+	 */
+	private static nernst(
+		standard: number,
+		mix: Mixture,
+		activity: number | undefined,
+		electrons: number
+	): number {
+		const value = Number.isFinite(activity) && activity > 0 ? activity : 1;
+		return standard + this._gasConst * mix._temperature / (electrons * this._faradayConst) * Math.log(value);
+	}
+
+	/**
+	 * Free proton concentration of a solution in mol/L. A solution without an
+	 * acid family is not neutral: an excess of a spectator cation is a
+	 * hydroxide base, so the charge balance has to run even with no systems.
+	 */
+	private static protonConcentration(mix: Mixture): number {
+		const { systems, spectatorCharge } = this.acidBaseComposition(mix);
+		return AcidBase.solveProton(systems, spectatorCharge, AcidBase.kwAt(mix._temperature),
+			this.complexChargeHook(systems));
+	}
+
+	/**
+	 * The acid family that supplies protons to a cathode, with the number of
+	 * protons one mole of its analytical total carries. The strongest acid
+	 * present gives up its protons first, so a mixture spends the strong acid
+	 * before the weak one starts to buffer.
+	 *
+	 * @private
+	 * @static
+	 * @param {Mixture} mix - the solution to read
+	 * @returns {({ family: AcidBaseFamily; protons: number } | undefined)}
+	 */
+	private static protonSource(mix: Mixture): { family: AcidBaseFamily; protons: number } | undefined {
+		let best: { family: AcidBaseFamily; protons: number } | undefined;
+		for (const family of this.acidBaseComposition(mix).systems) {
+			// A base family is stored at its neutral step and would consume
+			// protons instead of releasing them, so only acids qualify.
+			if (!(family.totalC > 0) || family.step !== 0 || family.protonatedCharge > 0) continue;
+			if (!(family.pKa.length > 0)) continue;
+			if (!best || family.pKa[0] < best.family.pKa[0]) best = { family, protons: family.pKa.length };
+		}
+		return best;
+	}
+
+	/**
+	 * Half-reactions an electrode can run as the anode of its vessel: a metal
+	 * body dissolving, a dissolved anion giving up electrons, or water being
+	 * oxidised to oxygen.
+	 *
+	 * @private
+	 * @static
+	 * @param {ElectricComponent} electrode - the electrode and its vessel
+	 * @returns {HalfCandidate[]}
+	 */
+	private static anodeCandidates(electrode: ElectricComponent): HalfCandidate[] {
+		const mix = electrode._connectedMix;
+		if (!mix) return [];
+		const candidates: HalfCandidate[] = [];
+		const volume = mix._solutionVolume;
+		const material = electrode._material;
+		const couple = material ? this.getRedoxData(material) : undefined;
+		// A metal body dissolves into its own cation. The electrode is not
+		// tracked as an amount, so only the other half-reaction limits it.
+		if (couple && material.smilesString === couple.red && (couple.redPhase ?? "solid") === "solid") {
+			const ion = mix._activeMolecules.find((molecule) => molecule.smilesString === couple.ox);
+			candidates.push({
+				couple,
+				potential: this.nernst(couple.sep, mix, ion ? mix._molProperties[ion._id + "c"] : undefined, couple.el),
+				available: Infinity,
+				anion: false,
+				apply: (electronMol) => mix.addMolecule(this.redoxProduct(material, couple.el), electronMol / couple.el),
+			});
+		}
+		// A dissolved anion is oxidised at an inert electrode. Its conjugate
+		// form may only exist as computed speciation (chloride from
+		// hydrochloric acid), so the salt-ion view supplies it.
+		for (const ion of this.saltIons(mix).values()) {
+			if (!(ion.molecule._totalCharge < 0)) continue;
+			const anionCouple = this.getRedoxData(ion.molecule);
+			if (!anionCouple || anionCouple.red !== ion.molecule.smilesString) continue;
+			if ((anionCouple.redPhase ?? "solid") !== "solution") continue;
+			// An exhausted ion must not win the pair selection with an
+			// availability of zero, or the electrode would stop instead of
+			// falling back to the next couple.
+			if (!(ion.removable > 0)) continue;
+			const gas = anionCouple.gas;
+			candidates.push({
+				couple: anionCouple,
+				potential: this.nernst(anionCouple.sep, mix, ion.concentration, anionCouple.el),
+				available: ion.removable * volume * anionCouple.el,
+				anion: true,
+				apply: (electronMol) => {
+					ion.change(-electronMol / anionCouple.el / volume);
+					if (gas) mix.evolveGas(gas, electronMol / 2);
+				},
+			});
+		}
+		// Water is oxidised to oxygen once the solution carries an acid family
+		// to take up the protons; without one the model has no way to store
+		// them. A halide is preferred over water even where water is the
+		// thermodynamically easier oxidation, because the model has no oxygen
+		// overpotential and would otherwise never show a chlorine evolution.
+		const oxygen = this.getRedoxData(water());
+		const source = this.protonSource(mix);
+		if (oxygen && source && !candidates.some((candidate) => candidate.anion)) {
+			candidates.push({
+				couple: oxygen,
+				potential: oxygen.sep,
+				available: Infinity,
+				anion: true,
+				apply: (electronMol) => {
+					// 2 H2O -> O2 + 4 H+ + 4 e-: one proton per electron, booked
+					// against the acid family so the vessel stays neutral.
+					this.changeFamily(mix, source.family, electronMol / source.protons);
+					mix.evolveGas("O2", electronMol / 4);
+				},
+			});
+		}
+		return candidates;
+	}
+
+	/**
+	 * Half-reactions an electrode can run as the cathode of its vessel: a
+	 * dissolved cation taking up electrons, or the protons of the solution
+	 * forming hydrogen. `anode` decides whether water may be reduced instead,
+	 * because that only balances an anode that removes anions.
+	 *
+	 * @private
+	 * @static
+	 * @param {ElectricComponent} electrode - the electrode and its vessel
+	 * @param {HalfCandidate} anode - the anode half-reaction it is paired with
+	 * @returns {HalfCandidate[]}
+	 */
+	private static cathodeCandidates(electrode: ElectricComponent, anode: HalfCandidate): HalfCandidate[] {
+		const mix = electrode._connectedMix;
+		if (!mix) return [];
+		const candidates: HalfCandidate[] = [];
+		const volume = mix._solutionVolume;
+		for (const ion of mix._activeMolecules) {
+			if (!(ion._totalCharge > 0)) continue;
+			const couple = this.getRedoxData(ion);
+			if (!couple || couple.ox !== ion.smilesString) continue;
+			if ((couple.oxPhase ?? "solution") !== "solution") continue;
+			// Same as on the anode: a depleted cation must not block the
+			// selection with an availability of zero.
+			if (!((mix._molProperties[ion._id + "n"] ?? 0) > 0)) continue;
+			candidates.push({
+				couple,
+				potential: this.nernst(couple.sep, mix, mix._molProperties[ion._id + "c"], couple.el),
+				available: (mix._molProperties[ion._id + "n"] ?? 0) * couple.el,
+				anion: false,
+				apply: (electronMol) => {
+					mix.addMolecule(this.redoxProduct(ion, -couple.el), electronMol / couple.el);
+					mix.changeMolecule(ion._id, -electronMol / couple.el);
+				},
+			});
+		}
+		const hydrogen = this.getRedoxData(proton());
+		if (!hydrogen) return candidates;
+		const potential = this.nernst(hydrogen.sep, mix, this.protonConcentration(mix), hydrogen.el);
+		const source = this.protonSource(mix);
+		if (source) {
+			// The protons are not stored, so the couple is read from the
+			// acid-base speciation and booked against the acid family that
+			// supplies them: consuming one mole of the family takes its whole
+			// proton count out of the solution.
+			candidates.push({
+				couple: hydrogen,
+				potential,
+				available: source.family.totalC * source.protons * volume * hydrogen.el,
+				anion: false,
+				apply: (electronMol) => {
+					this.changeFamily(mix, source.family, -electronMol / source.protons);
+					mix.evolveGas("H2", electronMol / 2);
+				},
+			});
+		} else if (anode.anion) {
+			// 2 H2O + 2 e- -> H2 + 2 OH-. The hydroxide is not a stored species
+			// either, so the couple only runs against an anode that removes
+			// anions: the vessel's charge balance then turns the missing anion
+			// into hydroxide, which is the net
+			// 2 NaCl + 2 H2O -> 2 NaOH + Cl2 + H2.
+			candidates.push({
+				couple: hydrogen,
+				potential,
+				available: Infinity,
+				anion: false,
+				apply: (electronMol) => mix.evolveGas("H2", electronMol / 2),
+			});
+		}
+		return candidates;
 	}
 
 	/**
@@ -995,7 +1231,7 @@ export abstract class Simulation {
 	/** Bulk volume of one mole of a solid metal in litres. */
 	private static metalBulkLitresPerMol(
 		molecule: Molecule,
-		{ density }: { density: number }
+		{ density }: { density?: number }
 	): number {
 		return density > 0 ? molecule.getTotMolMass() / (density * 1000) : 0;
 	}
