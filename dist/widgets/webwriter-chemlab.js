@@ -184634,6 +184634,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 			</button>`;
     const body2 = active !== void 0 ? x`
 			<div class="palette-variant">
+				<div class="palette-preview-area">${preview}</div>
 				<div class="palette-variant-controls" role="group" aria-label=${`${name2} \xB7 ${this.message("Konzentration zum Dosieren")}`}>
 					${values.length > 1 ? arrow3(-1) : E}
 					<span class="palette-variant-value chemical-dose-value" aria-live="polite">
@@ -184641,7 +184642,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					</span>
 					${values.length > 1 ? arrow3(1) : E}
 				</div>
-				<div class="palette-preview-area">${preview}</div>
 			</div>` : x`
 			<div class="palette-preview-area palette-variant">
 				${preview}

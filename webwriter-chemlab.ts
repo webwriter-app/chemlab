@@ -3052,6 +3052,7 @@ export class ChemLab extends LitElementWw {
 			</button>`;
 		const body = active !== undefined ? html`
 			<div class="palette-variant">
+				<div class="palette-preview-area">${preview}</div>
 				<div class="palette-variant-controls" role="group" aria-label=${`${name} · ${this.message("Konzentration zum Dosieren")}`}>
 					${values.length > 1 ? arrow(-1) : nothing}
 					<span class="palette-variant-value chemical-dose-value" aria-live="polite">
@@ -3059,7 +3060,6 @@ export class ChemLab extends LitElementWw {
 					</span>
 					${values.length > 1 ? arrow(1) : nothing}
 				</div>
-				<div class="palette-preview-area">${preview}</div>
 			</div>` : html`
 			<div class="palette-preview-area palette-variant">
 				${preview}
