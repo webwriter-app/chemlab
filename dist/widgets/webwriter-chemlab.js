@@ -104242,8 +104242,7 @@ var style = i`
 		align-items: center;
 		padding-block-start: 2px;
 	}
-	.component-variant-controls sl-tag::part(base),
-	.chemical-palette-group > sl-tag::part(base) {
+	.component-variant-controls sl-tag::part(base) {
 		block-size: auto;
 		min-block-size: calc(var(--sl-input-height-small) * 0.8);
 		line-height: 1.2;
@@ -104405,14 +104404,14 @@ var style = i`
 		border-radius: var(--sl-border-radius-medium);
 		background: var(--lab-card-inset);
 	}
-	.chemical-palette-group > sl-tag::part(base) {
+	.chemical-group-label {
 		padding: 4px 6px;
-		border: 0;
 		border-block-end: 1px solid var(--lab-card-border);
-		border-end-start-radius: 0;
-		border-end-end-radius: 0;
+	}
+	.chemical-group-label > sl-badge::part(base) {
 		background: var(--sl-color-primary-50);
-		color: var(--sl-color-primary-800);
+		border-color: var(--sl-color-primary-200);
+		color: var(--sl-color-primary-700);
 		font-weight: var(--sl-font-weight-semibold);
 	}
 	.chemical-palette-subgroups {
@@ -104434,8 +104433,21 @@ var style = i`
 		align-items: center;
 		gap: 6px;
 	}
+	.chemical-group-label > sl-badge,
 	.chemical-subgroup-label > sl-badge {
+		max-inline-size: 100%;
 		margin: 0;
+	}
+	.chemical-group-label > sl-badge::part(base),
+	.chemical-subgroup-label > sl-badge::part(base) {
+		white-space: normal;
+		overflow-wrap: anywhere;
+		line-height: 1.25;
+	}
+	.chemical-subgroup-label > sl-badge::part(base) {
+		background: var(--sl-color-neutral-100);
+		border-color: var(--lab-card-border);
+		color: var(--lab-card-secondary-text);
 	}
 	.chemical-subgroup-label::after {
 		content: "";
@@ -184563,7 +184575,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				<div class="palette-strip chemical-group-strip">
 					${c4(sections, (section) => section.id, (section) => x`
 						<section class="chemical-palette-group" aria-label=${section.label}>
-							${activeGroup ? E : x`<sl-tag size="small">${section.label}</sl-tag>`}
+							${activeGroup ? E : x`
+								<div class="chemical-group-label">
+									<sl-badge pill variant="primary">${section.label}</sl-badge>
+								</div>`}
 							<div class="chemical-palette-subgroups">
 								${c4(section.subgroups, (subgroup) => subgroup.id, (subgroup) => x`
 									<div class="chemical-palette-subgroup" role="group" aria-label=${subgroup.label || section.label}>
