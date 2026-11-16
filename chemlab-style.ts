@@ -1580,6 +1580,7 @@ export const style = css`
 	}
 	#paletteArea {
 		grid-column: 3;
+		background: var(--lab-card-inset);
 	}
 	#teacherDrawer::part(base) {
 		box-sizing: border-box;
@@ -1627,7 +1628,7 @@ export const style = css`
 		--track-color: transparent;
 		block-size: 100%;
 		border-radius: var(--sl-border-radius-medium);
-		background: var(--lab-card-surface);
+		background: var(--lab-card-inset);
 		box-shadow: 0 1px 5px rgb(0 0 0 / 10%);
 	}
 	#teacherTabs::part(base) {
@@ -1636,6 +1637,7 @@ export const style = css`
 	#teacherTabs::part(body) {
 		flex: 1 1 auto;
 		min-block-size: 0;
+		background: var(--lab-card-surface);
 		overflow: hidden auto;
 		overscroll-behavior-y: contain;
 		scrollbar-width: thin;
