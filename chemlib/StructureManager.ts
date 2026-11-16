@@ -95,13 +95,19 @@ export abstract class StructureManager {
 			// M(H2O)n^z+ -> M(OH)^(z-1)+ + H+. Its own charge is the fully
 			// protonated charge, so no `base` flag is needed. These entries also
 			// let Simulation.equilibrateHydroxides pin the free cation.
+			// Amphoteric cations list the whole hydroxo chain, so the last state
+			// is the anionic hydroxo complex (zincate, aluminate, plumbite,
+			// chromite) and the hydroxide redissolves in excess base. The sum of
+			// the pKa values follows from the overall formation constant of that
+			// complex, sum(pKa) = 14 n - log(beta_n); the split between the steps
+			// is smoothed to stay monotonic.
 			"[Fe3+]": { "pks": [2.19, 3.5, 6.0] },
-			"[Al3+]": { "pks": [5.0] },
-			"[Cr3+]": { "pks": [3.9] },
+			"[Al3+]": { "pks": [5.0, 5.5, 6.0, 6.2] },
+			"[Cr3+]": { "pks": [3.9, 6.0, 7.5, 8.6] },
 			"[Hg2+]": { "pks": [3.7] },
 			"[Cu2+]": { "pks": [7.5] },
-			"[Pb2+]": { "pks": [7.7] },
-			"[Zn2+]": { "pks": [9.0] },
+			"[Pb2+]": { "pks": [7.7, 9.0, 10.3] },
+			"[Zn2+]": { "pks": [9.0, 9.5, 10.5, 11.5] },
 			"[Fe2+]": { "pks": [9.5] },
 			"[Co2+]": { "pks": [9.65] },
 			"[Ni2+]": { "pks": [9.9] },

@@ -5,12 +5,15 @@ import { ElectricComponent, EComponentType } from "./ElectricComponent";
 import { ComponentManager } from "./ComponentManager";
 import { AcidBase, AcidBaseSystem } from "./AcidBase";
 import { saltSolubility } from "./saltSolubility";
+import { complexFormation } from "./complexes";
 
 const saltEquilibria = Object.entries(saltSolubility).map(([formula, data]) => {
 	const [cation, anion, cations = 1, anions = 1] = data.ions;
 	const product = data.ksp ?? (cations * data.saturation) ** cations * (anions * data.saturation) ** anions;
 	return { formula, cation, anion, cations, anions, product };
 }).sort((a, b) => a.product - b.product);
+
+const complexEquilibria = Object.values(complexFormation);
 
 // A hydroxide's anion is the water equilibrium's OH-, not a stored ion, so the
 // generic salt loop cannot see it. Those entries are solved separately by
@@ -305,6 +308,75 @@ export abstract class Simulation {
 	}
 
 	/**
+	 * How far a soluble complex lifts a cation's analytical total above its free
+	 * concentration. The ligand mass balance is solved by fixed-point iteration
+	 * because the bound share is not always negligible next to the free ligand.
+	 */
+	private static complexFactor(smiles: string, systems: AcidBaseFamily[], H: number): number {
+		let factor = 1;
+		for (const complex of complexEquilibria) {
+			if (complex.metal !== smiles) continue;
+			const metalFamily = systems.find((item) => item.representative.smilesString === complex.metal);
+			const ligandFamily = systems.find((item) => item.representative.smilesString === complex.ligand);
+			if (!metalFamily || !ligandFamily) continue;
+			// A molecular base is stored at its own protonation step, so the free
+			// ligand is the fraction at that step, not the fully protonated one.
+			const neutral = AcidBase.speciesFractions(ligandFamily, H)[ligandFamily.step] ?? 0;
+			const metal = metalFamily.totalC;
+			let free = ligandFamily.totalC * neutral;
+			for (let step = 0; step < 24; step++) {
+				const bound = complex.count * metal * complex.beta * Math.pow(free, complex.count) /
+					(1 + complex.beta * Math.pow(free, complex.count));
+				free = Math.max(0, (ligandFamily.totalC - bound) * neutral);
+			}
+			factor *= 1 + complex.beta * Math.pow(free, complex.count);
+		}
+		return factor;
+	}
+
+	/**
+	 * Charge the complexed share of a cation family adds on top of what its
+	 * protonation states already contribute.
+	 *
+	 * A complex keeps the cation's own charge, so the bound share must not be
+	 * hydrolysed. The charge balance sees the whole family at its analytical
+	 * total, which under-counts the bound share by the hydrolysis it would have
+	 * lost; that deficit is what this returns.
+	 *
+	 * @private
+	 * @static
+	 * @param {AcidBaseFamily[]} systems - all conjugate families of the solution
+	 * @param {number} H - the proton concentration [H+] in mol/L
+	 * @param {string} [skip] - a cation whose complex the caller handles itself
+	 * @returns {number} the signed charge concentration in mol/L
+	 */
+	private static complexCharge(systems: AcidBaseFamily[], H: number, skip?: string): number {
+		let charge = 0;
+		for (const family of systems) {
+			const smiles = family.representative.smilesString;
+			if (smiles === skip) continue;
+			if (!complexEquilibria.some((item) => item.metal === smiles)) continue;
+			const factor = this.complexFactor(smiles, systems, H);
+			if (!(factor > 1)) continue;
+			const fractions = AcidBase.speciesFractions(family, H);
+			const free = family.totalC / (1 / fractions[0] + factor - 1);
+			const removed = fractions.reduce((sum, fraction, step) => sum + fraction * step, 0);
+			charge += free * (factor - 1) * removed;
+		}
+		return charge;
+	}
+
+	/**
+	 * {@link complexCharge} as the optional hook of the acid–base solver, or
+	 * undefined when no family of the solution forms a complex.
+	 */
+	private static complexChargeHook(systems: AcidBaseFamily[]): ((H: number) => number) | undefined {
+		const present = systems.some((family) => complexEquilibria.some((item) =>
+			item.metal === family.representative.smilesString));
+		return present ? (H: number) => this.complexCharge(systems, H) : undefined;
+	}
+
+	/**
 	 * Free-ion view of a solution for the salt equilibria. Stored ions are read
 	 * directly. Conjugate anions of stored acids exist only as computed
 	 * speciation, so they are exposed here as well; a change to one of them is
@@ -313,12 +385,19 @@ export abstract class Simulation {
 	private static saltIons(mix: Mixture): Map<string, SaltIon> {
 		const volume = mix._solutionVolume;
 		const ions = new Map<string, SaltIon>();
+		const { systems, spectatorCharge } = this.acidBaseComposition(mix);
+		const H = systems.length ?
+			AcidBase.solveProton(systems, spectatorCharge, AcidBase.kwAt(mix._temperature),
+				this.complexChargeHook(systems)) : 0;
 		const stored = (molecule: Molecule): SaltIon => {
 			const current = () => (mix._molProperties[molecule._id + "n"] ?? 0) / volume;
+			// A complexed cation is present but not free, so the salt equilibria
+			// see the analytical total divided by the complex factor.
+			const factor = H > 0 ? this.complexFactor(molecule.smilesString, systems, H) : 1;
 			return {
 				molecule,
-				get concentration() { return current(); },
-				concentrationAt: (delta) => current() + delta,
+				get concentration() { return current() / factor; },
+				concentrationAt: (delta) => (current() + delta) / factor,
 				get removable() { return current(); },
 				change: (delta) => mix.changeMolecule(molecule._id, delta * volume),
 			};
@@ -327,9 +406,7 @@ export abstract class Simulation {
 			if (!molecule._totalCharge || molecule.solidSaltFormula) continue;
 			ions.set(molecule.smilesString, stored(molecule));
 		}
-		const { systems, spectatorCharge } = this.acidBaseComposition(mix);
 		if (!systems.length) return ions;
-		const H = AcidBase.solveProton(systems, spectatorCharge, AcidBase.kwAt(mix._temperature));
 		for (const family of systems) {
 			const fractions = AcidBase.speciesFractions(family, H);
 			const total = () => family.members.reduce((sum, member) =>
@@ -494,9 +571,20 @@ export abstract class Simulation {
 					for (const system of systems) {
 						if (system !== family) net += AcidBase.systemCharge(system, H);
 					}
-					const free = freeAt(H);
+					// Complexes of the other cations keep their charge too.
+					net += this.complexCharge(systems, H, family.representative.smilesString);
 					const fraction = AcidBase.speciesFractions(family, H)[0];
-					return net + AcidBase.systemCharge({ ...family, totalC: free / fraction }, H);
+					// A complex keeps the cation's own charge, so it adds charge
+					// directly instead of through the hydrolysis fractions.
+					const factor = this.complexFactor(family.representative.smilesString, systems, H);
+					const capacity = 1 / fraction + factor - 1;
+					// While the solid is present the free cation is pinned by the
+					// solubility product; once the complex has taken up everything
+					// there is no solid left and the analytical total rules.
+					const dissolved = Math.min(total, freeAt(H) * capacity);
+					const free = dissolved / capacity;
+					return net + AcidBase.systemCharge({ ...family, totalC: free / fraction }, H) +
+						free * (factor - 1) * family.protonatedCharge;
 				};
 				let low = -2;
 				let high = 16;
@@ -506,7 +594,9 @@ export abstract class Simulation {
 					else high = middle;
 				}
 				const H = Math.pow(10, -(low + high) / 2);
-				const pinned = freeAt(H) / AcidBase.speciesFractions(family, H)[0];
+				const factor = this.complexFactor(family.representative.smilesString, systems, H);
+				const pinned = freeAt(H) *
+					(1 / AcidBase.speciesFractions(family, H)[0] + factor - 1);
 				// A pinned total above what is present means the solid has dissolved.
 				const next = Math.min(total, pinned);
 				const nextSolid = (total - next) * volume;
@@ -817,7 +907,8 @@ export abstract class Simulation {
 	public static getpH(sMix: Mixture): number {
 		if (!sMix._isSolution || !(sMix._solutionVolume > 0)) return 7;
 		const { systems, spectatorCharge } = this.acidBaseComposition(sMix);
-		return Math.round(AcidBase.pH(systems, spectatorCharge, AcidBase.kwAt(sMix._temperature)) * 1000) / 1000;
+		return Math.round(AcidBase.pH(systems, spectatorCharge, AcidBase.kwAt(sMix._temperature),
+			this.complexChargeHook(systems)) * 1000) / 1000;
 	}
 
 	/** Read-only equilibrium view of modeled polyprotic families; stored amounts remain analytical totals. */
@@ -826,7 +917,7 @@ export abstract class Simulation {
 	} {
 		const { systems, spectatorCharge } = this.acidBaseComposition(sMix);
 		const Kw = AcidBase.kwAt(sMix._temperature);
-		const H = AcidBase.solveProton(systems, spectatorCharge, Kw);
+		const H = AcidBase.solveProton(systems, spectatorCharge, Kw, this.complexChargeHook(systems));
 		const volume = sMix._solutionVolume;
 		const species: AcidEquilibriumSpecies[] = [];
 		const analyticalMolecules = new Set<Molecule>();

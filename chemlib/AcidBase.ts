@@ -119,18 +119,24 @@ export abstract class AcidBase {
 	 * @param {AcidBaseSystem[]} systems - all conjugate acid/base systems
 	 * @param {number} spectatorCharge - net charge of spectator ions (mol/L)
 	 * @param {number} Kw - ion product of water
+	 * @param {(H: number) => number} [extraCharge] - additional net charge
+	 *   concentration that the caller derives from [H+] itself, e.g. a complex
+	 *   that holds part of a family at a charge the protonation states do not
+	 *   describe
 	 * @returns {number}
 	 */
 	private static chargeResidual(
 		H: number,
 		systems: AcidBaseSystem[],
 		spectatorCharge: number,
-		Kw: number
+		Kw: number,
+		extraCharge?: (H: number) => number
 	): number {
 		let net: number = H - Kw / H + spectatorCharge;
 		for (const system of systems) {
 			net += AcidBase.systemCharge(system, H);
 		}
+		if (extraCharge) net += extraCharge(H);
 		return net;
 	}
 
@@ -147,12 +153,15 @@ export abstract class AcidBase {
 	 *   ions in mol/L (strong-base cations positive, strong-acid anions
 	 *   negative)
 	 * @param {number} [Kw=AcidBase.Kw] - ion product of water
+	 * @param {(H: number) => number} [extraCharge] - additional net charge
+	 *   concentration as a function of [H+], see {@link chargeResidual}
 	 * @returns {number} the proton concentration [H+] in mol/L
 	 */
 	public static solveProton(
 		systems: AcidBaseSystem[],
 		spectatorCharge: number,
-		Kw: number = AcidBase.Kw
+		Kw: number = AcidBase.Kw,
+		extraCharge?: (H: number) => number
 	): number {
 		// bracket the root on the pH scale; residual is positive at high [H+]
 		// (low pH) and negative at low [H+] (high pH)
@@ -165,7 +174,8 @@ export abstract class AcidBase {
 				Math.pow(10, -pHmid),
 				systems,
 				spectatorCharge,
-				Kw
+				Kw,
+				extraCharge
 			);
 			if (residual > 0) {
 				// too acidic, move to higher pH
@@ -186,13 +196,16 @@ export abstract class AcidBase {
 	 * @param {AcidBaseSystem[]} systems - all conjugate acid/base systems
 	 * @param {number} spectatorCharge - net spectator ion charge (mol/L)
 	 * @param {number} [Kw=AcidBase.Kw] - ion product of water
+	 * @param {(H: number) => number} [extraCharge] - additional net charge
+	 *   concentration as a function of [H+], see {@link chargeResidual}
 	 * @returns {number} the pH of the solution
 	 */
 	public static pH(
 		systems: AcidBaseSystem[],
 		spectatorCharge: number,
-		Kw: number = AcidBase.Kw
+		Kw: number = AcidBase.Kw,
+		extraCharge?: (H: number) => number
 	): number {
-		return -Math.log10(AcidBase.solveProton(systems, spectatorCharge, Kw));
+		return -Math.log10(AcidBase.solveProton(systems, spectatorCharge, Kw, extraCharge));
 	}
 }
