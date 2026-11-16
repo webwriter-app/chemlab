@@ -1587,6 +1587,10 @@ export const style = css`
 		inset-inline-end: 4px;
 		flex-direction: row-reverse;
 	}
+	#teacherDrawer::part(header):focus-visible {
+		outline: 2px solid var(--sl-color-neutral-600);
+		outline-offset: -3px;
+	}
 	#teacherDrawer::part(content) {
 		overflow: hidden;
 		padding: 0;
@@ -1597,9 +1601,7 @@ export const style = css`
 		block-size: calc(100cqh - 4px);
 		margin-inline-start: min(0px, calc(100% - var(--palette-panel-width)));
 		padding: 4px 6px 6px;
-		overflow: hidden auto;
-		overscroll-behavior-y: contain;
-		scrollbar-width: thin;
+		overflow: hidden;
 	}
 	.selected-chemical {
 		max-inline-size: 100%;
@@ -1610,16 +1612,28 @@ export const style = css`
 		overflow-wrap: anywhere;
 	}
 	#teacherTabs::part(nav) {
+		flex: none;
 		margin-inline-end: calc(var(--panel-trigger-width) + 4px);
 		margin-bottom: 6px;
 		background: var(--lab-card-inset);
 	}
 	#teacherTabs::part(tabs) {
 		gap: 4px;
-		border-radius: 0;
+		background: transparent;
 	}
 	#teacherTabs {
-		--track-color: var(--lab-card-border);
+		--track-color: transparent;
+		block-size: 100%;
+	}
+	#teacherTabs::part(base) {
+		block-size: 100%;
+	}
+	#teacherTabs::part(body) {
+		flex: 1 1 auto;
+		min-block-size: 0;
+		overflow: hidden auto;
+		overscroll-behavior-y: contain;
+		scrollbar-width: thin;
 	}
 	#teacherTabs > sl-tab {
 		flex: 0 1 auto;
@@ -2172,10 +2186,6 @@ export const style = css`
 	sl-option::part(base) {
 		font-size: 10pt;
 		padding: 5px;
-	}
-	sl-tab-group::part(tabs) {
-		background-color: #ffff;
-		border-radius: 5px;
 	}
 	sl-carousel::part(base) {
 		gap: var(--sl-spacing-small);
