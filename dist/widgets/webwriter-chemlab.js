@@ -104400,9 +104400,13 @@ var style = i`
 	}
 	.chemical-palette-group {
 		gap: 0;
-		border: 1px solid var(--lab-card-border);
+		border-inline-end: 2px solid #c2acd2;
 		border-radius: var(--sl-border-radius-medium);
 		background: var(--lab-card-inset);
+	}
+	.chemical-palette-subgroup:has(> .chemical-subgroup-label) {
+		border-inline-end: 1px solid var(--sl-color-neutral-400);
+		padding-inline-end: 4px;
 	}
 	.chemical-group-label {
 		padding: 4px 6px;
