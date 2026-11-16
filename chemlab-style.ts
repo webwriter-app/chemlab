@@ -1914,14 +1914,16 @@ export const style = css`
 	}
 	.chemical-palette-group {
 		--chemical-group-heading: #f3eff8;
-		--chemical-subgroup-heading: var(--sl-color-neutral-300);
+		--chemical-subgroup-heading: #e2dde7;
 		gap: 0;
-		border-inline-end: 4px solid var(--chemical-group-heading);
+		border-inline-end: 8px solid var(--chemical-group-heading);
 		border-radius: var(--sl-border-radius-medium);
 		background: var(--lab-card-inset);
 	}
 	.chemical-palette-subgroup:has(> .chemical-subgroup-label) {
-		border-inline-end: 3px solid var(--chemical-subgroup-heading);
+		border-inline-end: 6px solid var(--chemical-subgroup-heading);
+	}
+	.chemical-palette-subgroup:has(> .chemical-subgroup-label) > .chemical-palette-cards {
 		padding-inline-end: 4px;
 	}
 	.chemical-group-label {
@@ -1954,7 +1956,9 @@ export const style = css`
 	.chemical-subgroup-label {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		padding: 2px 4px;
+		border-start-start-radius: var(--sl-border-radius-small);
+		background: var(--chemical-subgroup-heading);
 	}
 	.chemical-group-label > sl-badge,
 	.chemical-subgroup-label > sl-badge {
@@ -1971,7 +1975,7 @@ export const style = css`
 	.chemical-subgroup-label > sl-badge::part(base) {
 		padding: 1px 5px;
 		background: var(--chemical-subgroup-heading);
-		border-color: var(--chemical-subgroup-heading);
+		border-color: #d1c9d9;
 		color: var(--lab-card-secondary-text);
 		font-weight: var(--sl-font-weight-normal);
 	}
