@@ -933,11 +933,16 @@ export class ChemLab extends LitElementWw {
 			let destSprite: PIXI.Container = undefined;
 			this.canvas.world.children.forEach((sprite) => {
 				if (sprite != currSprite) {
+					// Only vessels that sit below the burette and overlap it
+					// horizontally receive the dose. Without the overlap test a
+					// row of setups would all pour into the lowest vessel.
+					const overlapsHorizontally =
+						sprite.x - sprite.width / 2 < currSprite.x + currSprite.width / 2 &&
+						sprite.x + sprite.width / 2 > currSprite.x - currSprite.width / 2;
 					if (
 						sprite.y - sprite.height / 2 >
 							currSprite.y + currSprite.height / 2 &&
-						(sprite.x < currSprite.x + currSprite.width / 2 ||
-							sprite.x > currSprite.x - currSprite.width / 2)
+						overlapsHorizontally
 					) {
 						if (typeof destSprite === "undefined") {
 							destSprite = sprite;

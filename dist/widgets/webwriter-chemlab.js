@@ -183452,7 +183452,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       let destSprite = void 0;
       this.canvas.world.children.forEach((sprite) => {
         if (sprite != currSprite) {
-          if (sprite.y - sprite.height / 2 > currSprite.y + currSprite.height / 2 && (sprite.x < currSprite.x + currSprite.width / 2 || sprite.x > currSprite.x - currSprite.width / 2)) {
+          const overlapsHorizontally = sprite.x - sprite.width / 2 < currSprite.x + currSprite.width / 2 && sprite.x + sprite.width / 2 > currSprite.x - currSprite.width / 2;
+          if (sprite.y - sprite.height / 2 > currSprite.y + currSprite.height / 2 && overlapsHorizontally) {
             if (typeof destSprite === "undefined") {
               destSprite = sprite;
             } else {
