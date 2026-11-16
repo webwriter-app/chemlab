@@ -89,7 +89,29 @@ export abstract class StructureManager {
 			"OB(O)O": { "alias": "B(O)(O)O" },
 			"B(O)(O)O": { "pks": 9.24 },
 			"[K]O": { "pks": -1.1 },
-			"N": { "pks": 9.25, "base": true, "conj": ["[N+]", "[NH4+]"] }
+			"N": { "pks": 9.25, "base": true, "conj": ["[N+]", "[NH4+]"] },
+			// Cation hydrolysis: the aquo complex is a weak acid, so a metal ion
+			// is listed with the pKa of its first deprotonation,
+			// M(H2O)n^z+ -> M(OH)^(z-1)+ + H+. Its own charge is the fully
+			// protonated charge, so no `base` flag is needed. These entries also
+			// let Simulation.equilibrateHydroxides pin the free cation.
+			"[Fe3+]": { "pks": [2.19, 3.5, 6.0] },
+			"[Al3+]": { "pks": [5.0] },
+			"[Cr3+]": { "pks": [3.9] },
+			"[Hg2+]": { "pks": [3.7] },
+			"[Cu2+]": { "pks": [7.5] },
+			"[Pb2+]": { "pks": [7.7] },
+			"[Zn2+]": { "pks": [9.0] },
+			"[Fe2+]": { "pks": [9.5] },
+			"[Co2+]": { "pks": [9.65] },
+			"[Ni2+]": { "pks": [9.9] },
+			"[Cr2+]": { "pks": [10.0] },
+			"[Cd2+]": { "pks": [10.1] },
+			"[Mn2+]": { "pks": [10.6] },
+			"[Mg2+]": { "pks": [11.4] },
+			"[Ag+]": { "pks": [12.0] },
+			"[Ca2+]": { "pks": [12.6] },
+			"[Ba2+]": { "pks": [13.4] }
 			},
 		salt: {
 			"O[Al](O)O": { "pKL": 31.17 },

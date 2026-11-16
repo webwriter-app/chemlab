@@ -147727,7 +147727,26 @@ var saltSolubility = {
   CaSO4: { ions: ["[Ca2+]", "[O-]S(=O)(=O)[O-]"], ksp: 49e-6, solidDensity: 2.97 },
   CaCO3: { ions: ["[Ca2+]", "[O-]C(=O)[O-]"], ksp: 34e-10, solidDensity: 2.71 },
   BaCO3: { ions: ["[Ba2+]", "[O-]C(=O)[O-]"], ksp: 26e-10, solidDensity: 4.29 },
-  Ag2SO4: { ions: ["[Ag+]", "[O-]S(=O)(=O)[O-]", 2, 1], ksp: 12e-6 }
+  Ag2SO4: { ions: ["[Ag+]", "[O-]S(=O)(=O)[O-]", 2, 1], ksp: 12e-6 },
+  // Hydroxides. Their anion is the water equilibrium's OH-, not a stored ion,
+  // so Simulation.equilibrateHydroxides solves them instead of the generic
+  // salt loop. Ksp values follow the legacy pKL table in StructureManager
+  // (pKL = -log10 Ksp); Ag2O is the stable silver hydroxide and is written as
+  // Ag2O + H2O -> 2 Ag+ + 2 OH-.
+  "Cu(OH)2": { ions: ["[Cu2+]", "[OH-]", 1, 2], ksp: 46e-21, color: 4886724, solidDensity: 3.37 },
+  "Fe(OH)2": { ions: ["[Fe2+]", "[OH-]", 1, 2], ksp: 83e-16, color: 7311210, solidDensity: 3.4 },
+  "Fe(OH)3": { ions: ["[Fe3+]", "[OH-]", 1, 3], ksp: 83e-39, color: 10115890, solidDensity: 3.4 },
+  "Zn(OH)2": { ions: ["[Zn2+]", "[OH-]", 1, 2], ksp: 17e-17, color: 14672870, solidDensity: 3.05 },
+  "Ca(OH)2": { ions: ["[Ca2+]", "[OH-]", 1, 2], ksp: 66e-7, color: 15921902, solidDensity: 2.21 },
+  "Mg(OH)2": { ions: ["[Mg2+]", "[OH-]", 1, 2], ksp: 72e-13, color: 16053488, solidDensity: 2.34 },
+  "Ni(OH)2": { ions: ["[Ni2+]", "[OH-]", 1, 2], ksp: 66e-19, color: 9420650, solidDensity: 4.1 },
+  "Mn(OH)2": { ions: ["[Mn2+]", "[OH-]", 1, 2], ksp: 17e-14, color: 14207408, solidDensity: 3.26 },
+  "Cd(OH)2": { ions: ["[Cd2+]", "[OH-]", 1, 2], ksp: 56e-16, color: 15790314, solidDensity: 4.79 },
+  "Pb(OH)2": { ions: ["[Pb2+]", "[OH-]", 1, 2], ksp: 15e-21, color: 15263968, solidDensity: 7.41 },
+  "Cr(OH)2": { ions: ["[Cr2+]", "[OH-]", 1, 2], ksp: 69e-19, color: 10129258, solidDensity: 3 },
+  "Hg(OH)2": { ions: ["[Hg2+]", "[OH-]", 1, 2], ksp: 42e-27, color: 14204960, solidDensity: 6 },
+  "Al(OH)3": { ions: ["[Al3+]", "[OH-]", 1, 3], ksp: 68e-33, color: 15790314, solidDensity: 2.42 },
+  Ag2O: { ions: ["[Ag+]", "[OH-]", 2, 2], ksp: 2e-8, color: 4864554, solidDensity: 7.14 }
 };
 
 // chemlib/liquidPhases.ts
@@ -148088,7 +148107,29 @@ var StructureManager = class _StructureManager {
       "OB(O)O": { "alias": "B(O)(O)O" },
       "B(O)(O)O": { "pks": 9.24 },
       "[K]O": { "pks": -1.1 },
-      "N": { "pks": 9.25, "base": true, "conj": ["[N+]", "[NH4+]"] }
+      "N": { "pks": 9.25, "base": true, "conj": ["[N+]", "[NH4+]"] },
+      // Cation hydrolysis: the aquo complex is a weak acid, so a metal ion
+      // is listed with the pKa of its first deprotonation,
+      // M(H2O)n^z+ -> M(OH)^(z-1)+ + H+. Its own charge is the fully
+      // protonated charge, so no `base` flag is needed. These entries also
+      // let Simulation.equilibrateHydroxides pin the free cation.
+      "[Fe3+]": { "pks": [2.19, 3.5, 6] },
+      "[Al3+]": { "pks": [5] },
+      "[Cr3+]": { "pks": [3.9] },
+      "[Hg2+]": { "pks": [3.7] },
+      "[Cu2+]": { "pks": [7.5] },
+      "[Pb2+]": { "pks": [7.7] },
+      "[Zn2+]": { "pks": [9] },
+      "[Fe2+]": { "pks": [9.5] },
+      "[Co2+]": { "pks": [9.65] },
+      "[Ni2+]": { "pks": [9.9] },
+      "[Cr2+]": { "pks": [10] },
+      "[Cd2+]": { "pks": [10.1] },
+      "[Mn2+]": { "pks": [10.6] },
+      "[Mg2+]": { "pks": [11.4] },
+      "[Ag+]": { "pks": [12] },
+      "[Ca2+]": { "pks": [12.6] },
+      "[Ba2+]": { "pks": [13.4] }
     },
     salt: {
       "O[Al](O)O": { "pKL": 31.17 },
@@ -148931,6 +148972,18 @@ var saltEquilibria = Object.entries(saltSolubility).map(([formula, data2]) => {
   const product = data2.ksp ?? (cations * data2.saturation) ** cations * (anions * data2.saturation) ** anions;
   return { formula, cation, anion, cations, anions, product };
 }).sort((a7, b5) => a7.product - b5.product);
+var hydroxideEquilibria = saltEquilibria.filter(({ anion }) => anion === "[OH-]");
+var otherSaltEquilibria = saltEquilibria.filter(({ anion }) => anion !== "[OH-]");
+var hydroxideIon;
+function hydroxideMolecule() {
+  if (!hydroxideIon) {
+    hydroxideIon = StructureManager.newMolecule();
+    const oxygen = hydroxideIon.addAtom("oxygen", "O", -1);
+    const hydrogen = hydroxideIon.addAtom("hydrogen", "H");
+    hydroxideIon.addBond(oxygen._id, hydrogen._id, 1, 100, "covalent");
+  }
+  return hydroxideIon;
+}
 function saltIonProduct(positive, negative, cations, anions) {
   return Math.max(0, positive) ** cations * Math.max(0, negative) ** anions;
 }
@@ -149098,6 +149151,7 @@ var Simulation = class {
       }
     } while (changed);
     this.equilibrateSalts(cMixture);
+    if (this.equilibrateHydroxides(cMixture)) this.equilibrateSalts(cMixture);
   }
   static makeSolidSalt(formula, ions, counts2) {
     const solid = StructureManager.newMolecule();
@@ -149224,7 +149278,7 @@ var Simulation = class {
     for (let pass = 0; pass < 32; pass++) {
       const ions = this.saltIons(mix);
       let changed = false;
-      for (const { formula, cation, anion, cations, anions, product } of saltEquilibria) {
+      for (const { formula, cation, anion, cations, anions, product } of otherSaltEquilibria) {
         const positive = ions.get(cation);
         const negative = ions.get(anion);
         const solid = solids.get(formula);
@@ -149286,6 +149340,82 @@ var Simulation = class {
       }
       if (!changed) break;
     }
+  }
+  /**
+   * Hydroxide equilibria. The anion of a hydroxide is the water equilibrium's
+   * OH-, so the free cation and the pH determine each other and the generic
+   * salt loop cannot solve them. While the solid is present the cation is
+   * pinned by its solubility product, which makes its charge a function of
+   * [H+] alone; one charge-balance solve then gives the pH and the mass
+   * balance gives the amount of solid.
+   *
+   * @private
+   * @static
+   * @param {Mixture} mix - the solution to equilibrate
+   * @returns {boolean} whether any hydroxide amount changed
+   */
+  static equilibrateHydroxides(mix) {
+    const volume = mix._solutionVolume;
+    if (!(volume > 0) || !hydroxideEquilibria.length) return false;
+    const Kw = AcidBase.kwAt(mix._temperature);
+    let changed = false;
+    for (let pass = 0; pass < 32; pass++) {
+      const { systems: systems4, spectatorCharge } = this.acidBaseComposition(mix);
+      let moved = false;
+      for (const { formula, cation, cations, anions, product } of hydroxideEquilibria) {
+        const family = systems4.find((item) => item.representative.smilesString === cation);
+        if (!family) continue;
+        const solid = mix._activeMolecules.find((item) => item.solidSaltFormula === formula);
+        const solidMol = solid ? mix._molProperties[solid._id + "n"] ?? 0 : 0;
+        const dissolved = family.totalC;
+        const total = dissolved + solidMol / volume;
+        if (!(total > 0)) continue;
+        const freeAt = (H4) => Math.pow(product * Math.pow(H4 / Kw, anions), 1 / cations);
+        const residual = (H4) => {
+          let net = H4 - Kw / H4 + spectatorCharge;
+          for (const system of systems4) {
+            if (system !== family) net += AcidBase.systemCharge(system, H4);
+          }
+          const free = freeAt(H4);
+          const fraction = AcidBase.speciesFractions(family, H4)[0];
+          return net + AcidBase.systemCharge({ ...family, totalC: free / fraction }, H4);
+        };
+        let low = -2;
+        let high = 16;
+        for (let step = 0; step < 100; step++) {
+          const middle = (low + high) / 2;
+          if (residual(Math.pow(10, -middle)) > 0) low = middle;
+          else high = middle;
+        }
+        const H3 = Math.pow(10, -(low + high) / 2);
+        const pinned = freeAt(H3) / AcidBase.speciesFractions(family, H3)[0];
+        const next = Math.min(total, pinned);
+        const nextSolid = (total - next) * volume;
+        if (Math.abs(next - dissolved) <= total * 1e-9 && Math.abs(nextSolid - solidMol) <= total * volume * 1e-9) continue;
+        const bulk = this.bulkLitresPerMol(
+          { formula, cations, anions },
+          family.representative,
+          hydroxideMolecule()
+        );
+        this.changeFamily(mix, family, (next - dissolved) * volume);
+        if (nextSolid > 0) {
+          if (solid) mix.changeMolecule(solid._id, nextSolid - solidMol);
+          else mix.addMolecule(this.makeSolidSalt(
+            formula,
+            [family.representative, hydroxideMolecule()],
+            [cations, anions]
+          ), nextSolid);
+          mix.addedVolume += bulk * (nextSolid - solidMol);
+        } else if (solid) {
+          mix.changeMolecule(solid._id, -solidMol);
+          mix.addedVolume = Math.max(0, mix.addedVolume - bulk * solidMol);
+        }
+        moved = true;
+      }
+      if (!moved) break;
+      changed = true;
+    }
+    return changed;
   }
   /** Read-only fraction of saturation for the modeled salt closest to its limit. */
   static getSaltSaturation(mix) {

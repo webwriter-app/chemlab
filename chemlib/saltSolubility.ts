@@ -40,4 +40,24 @@ export const saltSolubility: Readonly<Record<string, SaltSolubility>> = {
 	CaCO3: { ions: ["[Ca2+]", "[O-]C(=O)[O-]"], ksp: 3.4e-9, solidDensity: 2.71 },
 	BaCO3: { ions: ["[Ba2+]", "[O-]C(=O)[O-]"], ksp: 2.6e-9, solidDensity: 4.29 },
 	Ag2SO4: { ions: ["[Ag+]", "[O-]S(=O)(=O)[O-]", 2, 1], ksp: 1.2e-5 },
+
+	// Hydroxides. Their anion is the water equilibrium's OH-, not a stored ion,
+	// so Simulation.equilibrateHydroxides solves them instead of the generic
+	// salt loop. Ksp values follow the legacy pKL table in StructureManager
+	// (pKL = -log10 Ksp); Ag2O is the stable silver hydroxide and is written as
+	// Ag2O + H2O -> 2 Ag+ + 2 OH-.
+	"Cu(OH)2": { ions: ["[Cu2+]", "[OH-]", 1, 2], ksp: 4.6e-20, color: 0x4a90c4, solidDensity: 3.37 },
+	"Fe(OH)2": { ions: ["[Fe2+]", "[OH-]", 1, 2], ksp: 8.3e-15, color: 0x6f8f6a, solidDensity: 3.4 },
+	"Fe(OH)3": { ions: ["[Fe3+]", "[OH-]", 1, 3], ksp: 8.3e-38, color: 0x9a5b32, solidDensity: 3.4 },
+	"Zn(OH)2": { ions: ["[Zn2+]", "[OH-]", 1, 2], ksp: 1.7e-16, color: 0xdfe3e6, solidDensity: 3.05 },
+	"Ca(OH)2": { ions: ["[Ca2+]", "[OH-]", 1, 2], ksp: 6.6e-6, color: 0xf2f2ee, solidDensity: 2.21 },
+	"Mg(OH)2": { ions: ["[Mg2+]", "[OH-]", 1, 2], ksp: 7.2e-12, color: 0xf4f4f0, solidDensity: 2.34 },
+	"Ni(OH)2": { ions: ["[Ni2+]", "[OH-]", 1, 2], ksp: 6.6e-18, color: 0x8fbf6a, solidDensity: 4.1 },
+	"Mn(OH)2": { ions: ["[Mn2+]", "[OH-]", 1, 2], ksp: 1.7e-13, color: 0xd8c9b0, solidDensity: 3.26 },
+	"Cd(OH)2": { ions: ["[Cd2+]", "[OH-]", 1, 2], ksp: 5.6e-15, color: 0xf0f0ea, solidDensity: 4.79 },
+	"Pb(OH)2": { ions: ["[Pb2+]", "[OH-]", 1, 2], ksp: 1.5e-20, color: 0xe8e8e0, solidDensity: 7.41 },
+	"Cr(OH)2": { ions: ["[Cr2+]", "[OH-]", 1, 2], ksp: 6.9e-18, color: 0x9a8f6a, solidDensity: 3.0 },
+	"Hg(OH)2": { ions: ["[Hg2+]", "[OH-]", 1, 2], ksp: 4.2e-26, color: 0xd8c020, solidDensity: 6.0 },
+	"Al(OH)3": { ions: ["[Al3+]", "[OH-]", 1, 3], ksp: 6.8e-32, color: 0xf0f0ea, solidDensity: 2.42 },
+	Ag2O: { ions: ["[Ag+]", "[OH-]", 2, 2], ksp: 2.0e-8, color: 0x4a3a2a, solidDensity: 7.14 },
 };

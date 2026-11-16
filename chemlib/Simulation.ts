@@ -12,6 +12,24 @@ const saltEquilibria = Object.entries(saltSolubility).map(([formula, data]) => {
 	return { formula, cation, anion, cations, anions, product };
 }).sort((a, b) => a.product - b.product);
 
+// A hydroxide's anion is the water equilibrium's OH-, not a stored ion, so the
+// generic salt loop cannot see it. Those entries are solved separately by
+// {@link Simulation.equilibrateHydroxides}.
+const hydroxideEquilibria = saltEquilibria.filter(({ anion }) => anion === "[OH-]");
+const otherSaltEquilibria = saltEquilibria.filter(({ anion }) => anion !== "[OH-]");
+
+/** The hydroxide ion, built once for the solids that precipitate from it. */
+let hydroxideIon: Molecule | undefined;
+function hydroxideMolecule(): Molecule {
+	if (!hydroxideIon) {
+		hydroxideIon = StructureManager.newMolecule();
+		const oxygen = hydroxideIon.addAtom("oxygen", "O", -1);
+		const hydrogen = hydroxideIon.addAtom("hydrogen", "H");
+		hydroxideIon.addBond(oxygen._id, hydrogen._id, 1, 100, "covalent");
+	}
+	return hydroxideIon;
+}
+
 function saltIonProduct(positive: number, negative: number, cations: number, anions: number): number {
 	return Math.max(0, positive) ** cations * Math.max(0, negative) ** anions;
 }
@@ -238,6 +256,8 @@ export abstract class Simulation {
 			}
 		} while (changed);
 		this.equilibrateSalts(cMixture);
+		// Hydroxides consume cations, which shifts the other salt equilibria.
+		if (this.equilibrateHydroxides(cMixture)) this.equilibrateSalts(cMixture);
 	}
 
 	private static makeSolidSalt(formula: string, ions: readonly [Molecule, Molecule], counts: readonly [number, number]): Molecule {
@@ -375,7 +395,7 @@ export abstract class Simulation {
 		for (let pass = 0; pass < 32; pass++) {
 			const ions = this.saltIons(mix);
 			let changed = false;
-			for (const { formula, cation, anion, cations, anions, product } of saltEquilibria) {
+			for (const { formula, cation, anion, cations, anions, product } of otherSaltEquilibria) {
 				const positive = ions.get(cation);
 				const negative = ions.get(anion);
 				const solid = solids.get(formula);
@@ -431,6 +451,87 @@ export abstract class Simulation {
 			}
 			if (!changed) break;
 		}
+	}
+
+	/**
+	 * Hydroxide equilibria. The anion of a hydroxide is the water equilibrium's
+	 * OH-, so the free cation and the pH determine each other and the generic
+	 * salt loop cannot solve them. While the solid is present the cation is
+	 * pinned by its solubility product, which makes its charge a function of
+	 * [H+] alone; one charge-balance solve then gives the pH and the mass
+	 * balance gives the amount of solid.
+	 *
+	 * @private
+	 * @static
+	 * @param {Mixture} mix - the solution to equilibrate
+	 * @returns {boolean} whether any hydroxide amount changed
+	 */
+	private static equilibrateHydroxides(mix: Mixture): boolean {
+		const volume = mix._solutionVolume;
+		if (!(volume > 0) || !hydroxideEquilibria.length) return false;
+		const Kw = AcidBase.kwAt(mix._temperature);
+		let changed = false;
+
+		// Pinning one cation shifts the pH, which shifts every other family and
+		// with it the pinned amount again. Iterate until a pass settles.
+		for (let pass = 0; pass < 32; pass++) {
+			const { systems, spectatorCharge } = this.acidBaseComposition(mix);
+			let moved = false;
+
+			for (const { formula, cation, cations, anions, product } of hydroxideEquilibria) {
+				const family = systems.find((item) => item.representative.smilesString === cation);
+				if (!family) continue;
+				const solid = mix._activeMolecules.find((item) => item.solidSaltFormula === formula);
+				const solidMol = solid ? mix._molProperties[solid._id + "n"] ?? 0 : 0;
+				const dissolved = family.totalC;
+				const total = dissolved + solidMol / volume;
+				if (!(total > 0)) continue;
+
+				// free cation concentration while the solid is present
+				const freeAt = (H: number) => Math.pow(product * Math.pow(H / Kw, anions), 1 / cations);
+				const residual = (H: number) => {
+					let net = H - Kw / H + spectatorCharge;
+					for (const system of systems) {
+						if (system !== family) net += AcidBase.systemCharge(system, H);
+					}
+					const free = freeAt(H);
+					const fraction = AcidBase.speciesFractions(family, H)[0];
+					return net + AcidBase.systemCharge({ ...family, totalC: free / fraction }, H);
+				};
+				let low = -2;
+				let high = 16;
+				for (let step = 0; step < 100; step++) {
+					const middle = (low + high) / 2;
+					if (residual(Math.pow(10, -middle)) > 0) low = middle;
+					else high = middle;
+				}
+				const H = Math.pow(10, -(low + high) / 2);
+				const pinned = freeAt(H) / AcidBase.speciesFractions(family, H)[0];
+				// A pinned total above what is present means the solid has dissolved.
+				const next = Math.min(total, pinned);
+				const nextSolid = (total - next) * volume;
+				if (Math.abs(next - dissolved) <= total * 1e-9 &&
+					Math.abs(nextSolid - solidMol) <= total * volume * 1e-9) continue;
+
+				const bulk = this.bulkLitresPerMol({ formula, cations, anions },
+					family.representative, hydroxideMolecule());
+				this.changeFamily(mix, family, (next - dissolved) * volume);
+				if (nextSolid > 0) {
+					if (solid) mix.changeMolecule(solid._id, nextSolid - solidMol);
+					else mix.addMolecule(this.makeSolidSalt(formula,
+						[family.representative, hydroxideMolecule()], [cations, anions]), nextSolid);
+					mix.addedVolume += bulk * (nextSolid - solidMol);
+				} else if (solid) {
+					mix.changeMolecule(solid._id, -solidMol);
+					mix.addedVolume = Math.max(0, mix.addedVolume - bulk * solidMol);
+				}
+				moved = true;
+			}
+
+			if (!moved) break;
+			changed = true;
+		}
+		return changed;
 	}
 
 	/** Read-only fraction of saturation for the modeled salt closest to its limit. */
