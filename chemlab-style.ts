@@ -1922,11 +1922,14 @@ export const style = css`
 	.chemical-group-label {
 		padding: 4px 6px;
 		border-block-end: 1px solid var(--lab-card-border);
+		border-start-start-radius: inherit;
+		border-start-end-radius: inherit;
+		background: var(--sl-color-primary-50);
 	}
 	.chemical-group-label > sl-badge::part(base) {
-		background: var(--sl-color-primary-50);
+		background: var(--sl-color-primary-100);
 		border-color: var(--sl-color-primary-200);
-		color: var(--sl-color-primary-700);
+		color: var(--sl-color-primary-800);
 		font-weight: var(--sl-font-weight-semibold);
 	}
 	.chemical-palette-subgroups {
@@ -1958,10 +1961,11 @@ export const style = css`
 		white-space: normal;
 		overflow-wrap: anywhere;
 		line-height: 1.25;
+		box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
 	}
 	.chemical-subgroup-label > sl-badge::part(base) {
-		background: var(--sl-color-neutral-100);
-		border-color: var(--lab-card-border);
+		background: var(--sl-color-neutral-200);
+		border-color: var(--sl-color-neutral-300);
 		color: var(--lab-card-secondary-text);
 	}
 	.chemical-subgroup-label::after {

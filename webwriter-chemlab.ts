@@ -2964,14 +2964,14 @@ export class ChemLab extends LitElementWw {
 						<section class="chemical-palette-group" aria-label=${section.label}>
 							${activeGroup ? nothing : html`
 								<div class="chemical-group-label">
-									<sl-badge pill variant="primary">${section.label}</sl-badge>
+									<sl-badge variant="primary">${section.label}</sl-badge>
 								</div>`}
 							<div class="chemical-palette-subgroups">
 								${repeat(section.subgroups, (subgroup) => subgroup.id, (subgroup) => html`
 									<div class="chemical-palette-subgroup" role="group" aria-label=${subgroup.label || section.label}>
 										${subgroup.label ? html`
 											<div class="chemical-subgroup-label">
-												<sl-badge pill variant="neutral">${subgroup.label}</sl-badge>
+												<sl-badge variant="neutral">${subgroup.label}</sl-badge>
 											</div>` : nothing}
 										<div class="chemical-palette-cards">
 											${repeat(subgroup.items, (item) => item.name, (item) => this.renderChemicalCard(item))}

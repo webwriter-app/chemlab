@@ -104407,11 +104407,14 @@ var style = i`
 	.chemical-group-label {
 		padding: 4px 6px;
 		border-block-end: 1px solid var(--lab-card-border);
+		border-start-start-radius: inherit;
+		border-start-end-radius: inherit;
+		background: var(--sl-color-primary-50);
 	}
 	.chemical-group-label > sl-badge::part(base) {
-		background: var(--sl-color-primary-50);
+		background: var(--sl-color-primary-100);
 		border-color: var(--sl-color-primary-200);
-		color: var(--sl-color-primary-700);
+		color: var(--sl-color-primary-800);
 		font-weight: var(--sl-font-weight-semibold);
 	}
 	.chemical-palette-subgroups {
@@ -104443,10 +104446,11 @@ var style = i`
 		white-space: normal;
 		overflow-wrap: anywhere;
 		line-height: 1.25;
+		box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
 	}
 	.chemical-subgroup-label > sl-badge::part(base) {
-		background: var(--sl-color-neutral-100);
-		border-color: var(--lab-card-border);
+		background: var(--sl-color-neutral-200);
+		border-color: var(--sl-color-neutral-300);
 		color: var(--lab-card-secondary-text);
 	}
 	.chemical-subgroup-label::after {
@@ -184577,14 +184581,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 						<section class="chemical-palette-group" aria-label=${section.label}>
 							${activeGroup ? E : x`
 								<div class="chemical-group-label">
-									<sl-badge pill variant="primary">${section.label}</sl-badge>
+									<sl-badge variant="primary">${section.label}</sl-badge>
 								</div>`}
 							<div class="chemical-palette-subgroups">
 								${c4(section.subgroups, (subgroup) => subgroup.id, (subgroup) => x`
 									<div class="chemical-palette-subgroup" role="group" aria-label=${subgroup.label || section.label}>
 										${subgroup.label ? x`
 											<div class="chemical-subgroup-label">
-												<sl-badge pill variant="neutral">${subgroup.label}</sl-badge>
+												<sl-badge variant="neutral">${subgroup.label}</sl-badge>
 											</div>` : E}
 										<div class="chemical-palette-cards">
 											${c4(subgroup.items, (item) => item.name, (item) => this.renderChemicalCard(item))}
