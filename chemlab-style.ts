@@ -1058,6 +1058,8 @@ export const style = css`
 		--panel-trigger-width: 38px;
 		--panel-trigger-height: 28px;
 		--panel-handle-width: 23px;
+		--panel-handle-top: 4px;
+		--panel-outline: var(--sl-color-neutral-300);
 		--diagram-panel-width: min(27cqw, 24rem);
 		--diagram-width: 0px;
 		--palette-panel-width: min(58cqw, clamp(10rem, 44cqw, 24rem));
@@ -1107,7 +1109,7 @@ export const style = css`
 		inline-size: var(--panel-trigger-width);
 		block-size: var(--panel-trigger-height);
 		background: var(--sl-color-neutral-0);
-		border: 1px solid var(--sl-color-neutral-300);
+		border: 1px solid var(--panel-outline);
 		border-radius: var(--sl-border-radius-medium);
 	}
 	.workspace-details::part(summary) {
@@ -1135,13 +1137,32 @@ export const style = css`
 	#upper.show-palette #paletteArea {
 		box-shadow: var(--lab-panel-shadow);
 	}
+	#upper.show-diagram-panel #diagramArea::after,
+	#upper.show-palette #paletteArea::after {
+		--handle-end: calc(var(--panel-handle-top) + var(--panel-trigger-height));
+		content: "";
+		position: absolute;
+		inset-block: 0;
+		inline-size: 1px;
+		background: linear-gradient(to bottom,
+			var(--panel-outline) 0 var(--panel-handle-top),
+			transparent var(--panel-handle-top) var(--handle-end),
+			var(--panel-outline) var(--handle-end) 100%);
+		pointer-events: none;
+	}
+	#diagramArea::after {
+		inset-inline-start: 100%;
+	}
+	#paletteArea::after {
+		inset-inline-end: 100%;
+	}
 	.workspace-side .workspace-details {
 		block-size: 100%;
 		min-block-size: 0;
 	}
 	.workspace-side .workspace-details::part(header) {
 		position: absolute;
-		inset-block-start: 4px;
+		inset-block-start: var(--panel-handle-top);
 		z-index: 1;
 		pointer-events: auto;
 	}
