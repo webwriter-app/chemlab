@@ -1617,7 +1617,6 @@ export const style = css`
 	#teacherTabs::part(nav) {
 		flex: none;
 		margin-inline-end: calc(var(--panel-trigger-width) + 4px);
-		margin-bottom: 6px;
 		background: transparent;
 	}
 	#teacherTabs::part(tabs) {
@@ -1625,7 +1624,8 @@ export const style = css`
 		background: var(--lab-card-inset);
 	}
 	#teacherTabs {
-		--track-color: transparent;
+		/* Shoelace's shared indicator does not include the gap between tabs. */
+		--track-width: 0px;
 		block-size: 100%;
 		border-radius: var(--sl-border-radius-medium);
 		background: var(--lab-card-inset);
@@ -1666,6 +1666,7 @@ export const style = css`
 	#teacherTabs > sl-tab[active]::part(base) {
 		border-color: var(--sl-color-primary-200);
 		color: var(--sl-color-primary-800);
+		box-shadow: inset 0 -2px var(--sl-color-primary-600);
 	}
 	#teacherTabs > sl-tab-panel {
 		--padding: 0;
