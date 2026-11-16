@@ -104106,7 +104106,7 @@ var style = i`
 	}
 	#teacherTabs::part(tabs) {
 		gap: 4px;
-		background: transparent;
+		background: var(--lab-card-inset);
 	}
 	#teacherTabs {
 		--track-color: transparent;
