@@ -65,7 +65,7 @@ import { chemicalCatalog, chemicalCatalogGroups, solutionDisplayNames, withConce
 import { loadMoleculeDefinition } from "./data/moleculeDefinition";
 import { catalogPreviews } from "./data/chemicalPreviews.generated";
 import { prepareDose, type SavedDose } from "./data/measuredDose";
-import { vesselCarouselEntries } from "./data/vesselCarousel";
+import { vesselCarouselEntries, type VesselPlating } from "./data/vesselCarousel";
 import { STANDARD_CANVAS_WIDTH } from "./controllers/WorkspaceCamera";
 import { CanvasController } from "./controllers/CanvasController";
 import type { VesselHint } from "./controllers/VesselView";
@@ -1794,16 +1794,34 @@ export class ChemLab extends LitElementWw {
 		return container;
 	}
 
+	/**
+	 * Metals deposited on the electrodes that dip into this vessel. They are
+	 * species of the cell, so the vessel card lists them, but they sit on the
+	 * strip and not in the solution.
+	 *
+	 * @private
+	 * @param {chemlib.Mixture} mixture - the vessel to read
+	 * @returns {VesselPlating[]}
+	 */
+	private vesselPlatings(mixture: chemlib.Mixture): VesselPlating[] {
+		const platings: VesselPlating[] = [];
+		for (const device of this.allEComponents) {
+			if (device._type !== chemlib.EComponentType.Electrode || device._connectedMix !== mixture) continue;
+			for (const entry of device.platings) platings.push({ molecule: entry.molecule, mol: entry.mol });
+		}
+		return platings;
+	}
+
 	private renderVesselCarousel(mixture: chemlib.Mixture, equilibrium?: ReturnType<typeof chemlib.Simulation.getPolyproticEquilibrium>): void {
 		const carousel = this.contextMolInfo;
 		const reset = this.carouselMixture !== mixture;
 		this.carouselMixture = mixture;
-		const entries = vesselCarouselEntries(mixture, equilibrium);
+		const entries = vesselCarouselEntries(mixture, equilibrium, this.vesselPlatings(mixture));
 		const concentrationLine = (concentration: number) => Number.isFinite(concentration)
 			? html`<p>c: ${concentration.toExponential(2)} mol/L</p>` : nothing;
-		const slide = (thumbnail: unknown, title: string, details: unknown) => html`
+		const slide = (thumbnail: unknown, title: string, details: unknown, cardClass = "") => html`
 			<sl-carousel-item>
-				<div class="vessel-carousel-card">
+				<div class="vessel-carousel-card ${cardClass}">
 					${thumbnail}
 					<div class="vessel-carousel-quantities">
 						<h5 title=${title}>${title}</h5>
@@ -1812,10 +1830,19 @@ export class ChemLab extends LitElementWw {
 				</div>
 			</sl-carousel-item>`;
 		render(html`
-			${repeat(entries, ({ key }) => key, ({ molecule, species, gas, phase }) => {
+			${repeat(entries, ({ key }) => key, ({ molecule, species, gas, plating, phase }) => {
 				if (gas) {
 					return slide(html`<span class="vessel-carousel-thumbnail">${gas.formula}</span>`,
 						gas.formula, html`<p>n: ${this.formatAmount(gas.amount * 1000, 3)} mmol</p>`);
+				}
+				if (plating) {
+					// The deposit is a bare element, so its formula is the
+					// clearest title; a PubChem name would come back in English.
+					const metal = plating.molecule;
+					const formula = metal._kekule_obj.calcFormula().getDisplayText();
+					return slide(this.vesselThumbnail(metal, formula), formula, html`
+						<p class="vessel-carousel-location">${this.message("auf der Elektrode")}</p>
+						<p>m: ${this.formatAmount(plating.mol * metal.getTotMolMass(), 3)} g</p>`, "plated");
 				}
 				if (species) {
 					const { formula, concentration, structure, name } = species;
@@ -1938,6 +1965,16 @@ export class ChemLab extends LitElementWw {
 				this.contextEchemInfo.querySelector("#contextTag").textContent = material
 					? this.itemName(material.name || "unbekannt")
 					: this.message("kein Material");
+				// Metal deposited on the strip is part of the cell, so the
+				// electrode reports how much of it sits on the surface.
+				const deposit = this.curr_obj.plating;
+				if (deposit) {
+					const line = this.ownerDocument.createElement("p");
+					line.textContent = `${this.message("abgeschieden")}: ` +
+						`${this.formatAmount(deposit.mol * deposit.molecule.getTotMolMass(), 3)} g ` +
+						deposit.molecule._kekule_obj.calcFormula().getDisplayText();
+					this.contextEchemInfo.querySelector("div").append(line);
+				}
 				let circuitComps: chemlib.ElectricComponent[] =
 					typeof material != "undefined"
 						? chemlib.ComponentManager.isCircuit(this.curr_obj)

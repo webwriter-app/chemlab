@@ -70029,7 +70029,9 @@ var messages_default = {
     "Eigene Molek\xFCle und Gemische": "Custom molecules and mixtures",
     F\u00FCllstand: "Fill level",
     Bodensatz: "Sediment",
+    abgeschieden: "deposited",
     "Salzs\xE4ttigung: {salt}": "Salt saturation: {salt}",
+    "auf der Elektrode": "on the electrode",
     "S\xE4ttigung bei {max} mol/L": "Saturation at {max} mol/L",
     Natriumchlorid: "Sodium chloride",
     Kaliumchlorid: "Potassium chloride",
@@ -103955,6 +103957,16 @@ var style = i`
 		font-variant-numeric: tabular-nums;
 		color: var(--lab-card-secondary-text);
 	}
+	/* A deposit sits on the electrode, not in the vessel, so its card is
+	   outlined differently and says where the metal is. */
+	#contextMolInfo .vessel-carousel-card.plated {
+		border-style: dashed;
+		border-color: var(--sl-color-primary-600);
+	}
+	#contextMolInfo .vessel-carousel-quantities > p.vessel-carousel-location {
+		color: var(--sl-color-primary-700);
+		font-weight: 600;
+	}
 	#contextMolInfo::part(pagination) {
 		gap: 5px;
 	}
@@ -110888,10 +110900,39 @@ var ElectricComponent = class {
     const entry = this._plating.get(key);
     if (entry) {
       entry.mol += amountMol;
-      entry.litres += amountMol * litresPerMol;
+      entry.litres = entry.mol * entry.litresPerMol;
       return;
     }
-    this._plating.set(key, { molecule: molecule2, mol: amountMol, litres: amountMol * litresPerMol });
+    this._plating.set(key, { molecule: molecule2, mol: amountMol, litres: amountMol * litresPerMol, litresPerMol });
+  }
+  /**
+   * for electrodes: takes metal off the deposit again, as the anode of a
+   * reversed cell does. A layer that is used up disappears, so the electrode
+   * is bare again and its own material takes over.
+   *
+   * @public
+   * @param {Molecule} molecule - the deposited metal
+   * @param {number} amountMol - amount to remove in mol
+   */
+  unplate(molecule2, amountMol) {
+    if (this._type !== "electrode" /* Electrode */ || !(amountMol > 0)) return;
+    const key = molecule2.smilesString;
+    const entry = this._plating.get(key);
+    if (!entry) return;
+    entry.mol = Math.max(0, entry.mol - amountMol);
+    entry.litres = entry.mol * entry.litresPerMol;
+    if (!(entry.mol > 1e-12)) this._plating.delete(key);
+  }
+  /**
+   * for electrodes: every layer of the deposit, thickest first. The vessel
+   * card lists them as species that sit on the electrode rather than in the
+   * solution.
+   *
+   * @readonly
+   * @type {ElectrodePlating[]}
+   */
+  get platings() {
+    return [...this._plating.values()].sort((a7, b5) => b5.litres - a7.litres);
   }
   /**
    * for electrodes: the deposit with the largest volume, or undefined while
@@ -110902,11 +110943,7 @@ var ElectricComponent = class {
    * @type {(ElectrodePlating | undefined)}
    */
   get plating() {
-    let largest;
-    for (const entry of this._plating.values()) {
-      if (!largest || entry.litres > largest.litres) largest = entry;
-    }
-    return largest;
+    return this.platings[0];
   }
 };
 
@@ -149920,9 +149957,26 @@ var Simulation = class {
     if (!mix) return [];
     const candidates = [];
     const volume = mix._solutionVolume;
+    const plating = electrode.plating;
+    const platingCouple = plating ? this.getRedoxData(plating.molecule) : void 0;
+    const plated = plating && platingCouple && plating.mol > 0 && plating.molecule.smilesString === platingCouple.red && (platingCouple.redPhase ?? "solid") === "solid";
+    if (plated && plating && platingCouple) {
+      const ion2 = mix._activeMolecules.find((molecule2) => molecule2.smilesString === platingCouple.ox);
+      candidates.push({
+        couple: platingCouple,
+        potential: this.nernst(platingCouple.sep, mix, ion2 ? mix._molProperties[ion2._id + "c"] : void 0, platingCouple.el),
+        available: plating.mol * platingCouple.el,
+        anion: false,
+        apply: (electronMol) => {
+          const mol = electronMol / platingCouple.el;
+          electrode.unplate(plating.molecule, mol);
+          mix.addMolecule(this.redoxProduct(plating.molecule, platingCouple.el), mol);
+        }
+      });
+    }
     const material = electrode._material;
     const couple = material ? this.getRedoxData(material) : void 0;
-    if (couple && material.smilesString === couple.red && (couple.redPhase ?? "solid") === "solid") {
+    if (!plated && couple && material.smilesString === couple.red && (couple.redPhase ?? "solid") === "solid") {
       const ion2 = mix._activeMolecules.find((molecule2) => molecule2.smilesString === couple.ox);
       candidates.push({
         couple,
@@ -176819,7 +176873,7 @@ function prepareDose(recipe, load) {
 }
 
 // data/vesselCarousel.ts
-function vesselCarouselEntries(mixture, equilibrium) {
+function vesselCarouselEntries(mixture, equilibrium, platings = []) {
   const solids = [];
   const liquids = [];
   const ions = [];
@@ -176849,6 +176903,10 @@ function vesselCarouselEntries(mixture, equilibrium) {
     else liquids.push({ key, species, phase: "liquid" });
   }
   ions.sort((a7, b5) => a7.concentration === b5.concentration ? 0 : b5.concentration - a7.concentration);
+  for (const plating of platings) {
+    if (!(plating.mol > 0)) continue;
+    solids.push({ key: `plated:${plating.molecule.smilesString}`, plating, phase: "solid" });
+  }
   const gases = [];
   for (const [id3, amount] of mixture.evolvedGas) {
     const gas = evolvedGases[id3];
@@ -184515,15 +184573,32 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.vesselThumbnails.set(molecule2, { drawer: this.newSmilesDrawer, element: container2 });
     return container2;
   }
+  /**
+   * Metals deposited on the electrodes that dip into this vessel. They are
+   * species of the cell, so the vessel card lists them, but they sit on the
+   * strip and not in the solution.
+   *
+   * @private
+   * @param {chemlib.Mixture} mixture - the vessel to read
+   * @returns {VesselPlating[]}
+   */
+  vesselPlatings(mixture) {
+    const platings = [];
+    for (const device of this.allEComponents) {
+      if (device._type !== "electrode" /* Electrode */ || device._connectedMix !== mixture) continue;
+      for (const entry of device.platings) platings.push({ molecule: entry.molecule, mol: entry.mol });
+    }
+    return platings;
+  }
   renderVesselCarousel(mixture, equilibrium) {
     const carousel = this.contextMolInfo;
     const reset = this.carouselMixture !== mixture;
     this.carouselMixture = mixture;
-    const entries = vesselCarouselEntries(mixture, equilibrium);
+    const entries = vesselCarouselEntries(mixture, equilibrium, this.vesselPlatings(mixture));
     const concentrationLine = (concentration) => Number.isFinite(concentration) ? x`<p>c: ${concentration.toExponential(2)} mol/L</p>` : E;
-    const slide = (thumbnail, title, details2) => x`
+    const slide = (thumbnail, title, details2, cardClass = "") => x`
 			<sl-carousel-item>
-				<div class="vessel-carousel-card">
+				<div class="vessel-carousel-card ${cardClass}">
 					${thumbnail}
 					<div class="vessel-carousel-quantities">
 						<h5 title=${title}>${title}</h5>
@@ -184532,13 +184607,20 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				</div>
 			</sl-carousel-item>`;
     B(x`
-			${c4(entries, ({ key }) => key, ({ molecule: molecule2, species, gas, phase }) => {
+			${c4(entries, ({ key }) => key, ({ molecule: molecule2, species, gas, plating, phase }) => {
       if (gas) {
         return slide(
           x`<span class="vessel-carousel-thumbnail">${gas.formula}</span>`,
           gas.formula,
           x`<p>n: ${this.formatAmount(gas.amount * 1e3, 3)} mmol</p>`
         );
+      }
+      if (plating) {
+        const metal = plating.molecule;
+        const formula2 = metal._kekule_obj.calcFormula().getDisplayText();
+        return slide(this.vesselThumbnail(metal, formula2), formula2, x`
+						<p class="vessel-carousel-location">${this.message("auf der Elektrode")}</p>
+						<p>m: ${this.formatAmount(plating.mol * metal.getTotMolMass(), 3)} g</p>`, "plated");
       }
       if (species) {
         const { formula: formula2, concentration: concentration2, structure, name: name2 } = species;
@@ -184646,6 +184728,12 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 						`;
         this.contextEchemInfo.querySelector("#contextTag").textContent = material ? this.itemName(material.name || "unbekannt") : this.message("kein Material");
+        const deposit = this.curr_obj.plating;
+        if (deposit) {
+          const line = this.ownerDocument.createElement("p");
+          line.textContent = `${this.message("abgeschieden")}: ${this.formatAmount(deposit.mol * deposit.molecule.getTotMolMass(), 3)} g ` + deposit.molecule._kekule_obj.calcFormula().getDisplayText();
+          this.contextEchemInfo.querySelector("div").append(line);
+        }
         let circuitComps = typeof material != "undefined" ? ComponentManager.isCircuit(this.curr_obj) : [];
         if (circuitComps.length === 3 && circuitComps[2]._type === "source" /* Source */) {
           let device = circuitComps[2];

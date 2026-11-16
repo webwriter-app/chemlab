@@ -1468,6 +1468,16 @@ export const style = css`
 		font-variant-numeric: tabular-nums;
 		color: var(--lab-card-secondary-text);
 	}
+	/* A deposit sits on the electrode, not in the vessel, so its card is
+	   outlined differently and says where the metal is. */
+	#contextMolInfo .vessel-carousel-card.plated {
+		border-style: dashed;
+		border-color: var(--sl-color-primary-600);
+	}
+	#contextMolInfo .vessel-carousel-quantities > p.vessel-carousel-location {
+		color: var(--sl-color-primary-700);
+		font-weight: 600;
+	}
 	#contextMolInfo::part(pagination) {
 		gap: 5px;
 	}

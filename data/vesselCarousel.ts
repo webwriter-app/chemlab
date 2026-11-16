@@ -9,14 +9,29 @@ export interface VesselGas {
 	amount: number;
 }
 
+/**
+ * Metal deposited on an electrode. It is a species of the cell like any other,
+ * but it sits on the strip instead of in the solution, so the card marks it.
+ */
+export interface VesselPlating {
+	molecule: Molecule;
+	/** Deposited amount in mol. */
+	mol: number;
+}
+
 type VesselEntry = (
-	{ key: Molecule; molecule: Molecule; species?: never; gas?: never } |
-	{ key: string; species: AcidEquilibriumSpecies; molecule?: never; gas?: never } |
-	{ key: string; gas: VesselGas; molecule?: never; species?: never }
+	{ key: Molecule; molecule: Molecule; species?: never; gas?: never; plating?: never } |
+	{ key: string; species: AcidEquilibriumSpecies; molecule?: never; gas?: never; plating?: never } |
+	{ key: string; gas: VesselGas; molecule?: never; species?: never; plating?: never } |
+	{ key: string; plating: VesselPlating; molecule?: never; species?: never; gas?: never }
 ) & { phase: "solid" | "liquid" | "ion" | "gas" };
 
 /** Keep insertion order within condensed phases; sort all aqueous ions together. */
-export function vesselCarouselEntries(mixture: Mixture, equilibrium?: ReturnType<typeof Simulation.getPolyproticEquilibrium>): VesselEntry[] {
+export function vesselCarouselEntries(
+	mixture: Mixture,
+	equilibrium?: ReturnType<typeof Simulation.getPolyproticEquilibrium>,
+	platings: VesselPlating[] = []
+): VesselEntry[] {
 	const solids: VesselEntry[] = [];
 	const liquids: VesselEntry[] = [];
 	const ions: Array<{ entry: VesselEntry; concentration: number }> = [];
@@ -45,6 +60,12 @@ export function vesselCarouselEntries(mixture: Mixture, equilibrium?: ReturnType
 		else liquids.push({ key, species, phase: "liquid" });
 	}
 	ions.sort((a, b) => a.concentration === b.concentration ? 0 : b.concentration - a.concentration);
+	// A deposit is a condensed phase of the cell, so it follows the vessel's
+	// own solids and is marked as sitting on the electrode.
+	for (const plating of platings) {
+		if (!(plating.mol > 0)) continue;
+		solids.push({ key: `plated:${plating.molecule.smilesString}`, plating, phase: "solid" });
+	}
 	// Escaped gas sits beside the condensed phases, last so it never displaces
 	// the contents the learner is watching.
 	const gases: VesselEntry[] = [];

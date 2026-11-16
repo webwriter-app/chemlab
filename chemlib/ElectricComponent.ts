@@ -33,6 +33,8 @@ export interface ElectrodePlating {
 	mol: number;
 	/** Bulk volume of the deposit in litres, for the coating thickness. */
 	litres: number;
+	/** Bulk volume of one mole of the metal in litres. */
+	litresPerMol: number;
 }
 
 /**
@@ -240,10 +242,41 @@ class ElectricComponent {
 		const entry: ElectrodePlating = this._plating.get(key);
 		if (entry) {
 			entry.mol += amountMol;
-			entry.litres += amountMol * litresPerMol;
+			entry.litres = entry.mol * entry.litresPerMol;
 			return;
 		}
-		this._plating.set(key, { molecule, mol: amountMol, litres: amountMol * litresPerMol });
+		this._plating.set(key, { molecule, mol: amountMol, litres: amountMol * litresPerMol, litresPerMol });
+	}
+
+	/**
+	 * for electrodes: takes metal off the deposit again, as the anode of a
+	 * reversed cell does. A layer that is used up disappears, so the electrode
+	 * is bare again and its own material takes over.
+	 *
+	 * @public
+	 * @param {Molecule} molecule - the deposited metal
+	 * @param {number} amountMol - amount to remove in mol
+	 */
+	public unplate(molecule: Molecule, amountMol: number): void {
+		if (this._type !== EComponentType.Electrode || !(amountMol > 0)) return;
+		const key: string = molecule.smilesString;
+		const entry: ElectrodePlating = this._plating.get(key);
+		if (!entry) return;
+		entry.mol = Math.max(0, entry.mol - amountMol);
+		entry.litres = entry.mol * entry.litresPerMol;
+		if (!(entry.mol > 1e-12)) this._plating.delete(key);
+	}
+
+	/**
+	 * for electrodes: every layer of the deposit, thickest first. The vessel
+	 * card lists them as species that sit on the electrode rather than in the
+	 * solution.
+	 *
+	 * @readonly
+	 * @type {ElectrodePlating[]}
+	 */
+	get platings(): ElectrodePlating[] {
+		return [...this._plating.values()].sort((a, b) => b.litres - a.litres);
 	}
 
 	/**
@@ -255,11 +288,7 @@ class ElectricComponent {
 	 * @type {(ElectrodePlating | undefined)}
 	 */
 	get plating(): ElectrodePlating | undefined {
-		let largest: ElectrodePlating | undefined;
-		for (const entry of this._plating.values()) {
-			if (!largest || entry.litres > largest.litres) largest = entry;
-		}
-		return largest;
+		return this.platings[0];
 	}
 }
 

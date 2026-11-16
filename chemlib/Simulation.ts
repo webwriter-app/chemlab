@@ -1038,11 +1038,34 @@ export abstract class Simulation {
 		if (!mix) return [];
 		const candidates: HalfCandidate[] = [];
 		const volume = mix._solutionVolume;
+		// A deposit covers the strip, so it is the surface that reacts: the
+		// plated metal goes back into solution as its cation, and the electrode
+		// body is only attacked once the layer is gone. That is what makes a
+		// plating reversible, as in a rechargeable cell.
+		const plating = electrode.plating;
+		const platingCouple = plating ? this.getRedoxData(plating.molecule) : undefined;
+		const plated = plating && platingCouple && plating.mol > 0 &&
+			plating.molecule.smilesString === platingCouple.red &&
+			(platingCouple.redPhase ?? "solid") === "solid";
+		if (plated && plating && platingCouple) {
+			const ion = mix._activeMolecules.find((molecule) => molecule.smilesString === platingCouple.ox);
+			candidates.push({
+				couple: platingCouple,
+				potential: this.nernst(platingCouple.sep, mix, ion ? mix._molProperties[ion._id + "c"] : undefined, platingCouple.el),
+				available: plating.mol * platingCouple.el,
+				anion: false,
+				apply: (electronMol) => {
+					const mol = electronMol / platingCouple.el;
+					electrode.unplate(plating.molecule, mol);
+					mix.addMolecule(this.redoxProduct(plating.molecule, platingCouple.el), mol);
+				},
+			});
+		}
 		const material = electrode._material;
 		const couple = material ? this.getRedoxData(material) : undefined;
 		// A metal body dissolves into its own cation. The electrode is not
 		// tracked as an amount, so only the other half-reaction limits it.
-		if (couple && material.smilesString === couple.red && (couple.redPhase ?? "solid") === "solid") {
+		if (!plated && couple && material.smilesString === couple.red && (couple.redPhase ?? "solid") === "solid") {
 			const ion = mix._activeMolecules.find((molecule) => molecule.smilesString === couple.ox);
 			candidates.push({
 				couple,
