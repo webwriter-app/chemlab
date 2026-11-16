@@ -1066,6 +1066,7 @@ export const style = css`
 		--lab-card-border: var(--sl-color-neutral-200);
 		--lab-card-text: var(--sl-color-neutral-800);
 		--lab-card-secondary-text: var(--sl-color-neutral-700);
+		--lab-panel-shadow: 0 2px 8px rgb(0 0 0 / 9%);
 		position: relative;
 		box-sizing: border-box;
 		display: grid;
@@ -1126,8 +1127,12 @@ export const style = css`
 		min-inline-size: 0;
 		min-block-size: 0;
 		z-index: 1;
-		background: var(--sl-color-neutral-0);
+		background: var(--lab-card-surface);
 		pointer-events: none;
+	}
+	#upper.show-diagram-panel #diagramArea,
+	#upper.show-palette #paletteArea {
+		box-shadow: var(--lab-panel-shadow);
 	}
 	.workspace-side .workspace-details {
 		block-size: 100%;
@@ -1148,7 +1153,6 @@ export const style = css`
 	}
 	#diagramArea {
 		grid-column: 1;
-		box-shadow: inset -1px 0 var(--sl-color-neutral-200);
 	}
 	#diagramArea .workspace-details::part(header) {
 		inset-inline-start: 4px;
@@ -1252,12 +1256,12 @@ export const style = css`
 		background: var(--lab-card-surface);
 		border: 1px solid var(--lab-card-border);
 		border-radius: 5px;
+		box-shadow: var(--lab-panel-shadow);
 		font-size: 0.85rem;
 		overflow-wrap: anywhere;
 	}
 	#contextInfoBox {
 		max-block-size: min(14rem, calc(100% - 8px));
-		box-shadow: 0 2px 6px rgb(0 0 0 / 7%);
 	}
 	#contextInfoBox p {
 		margin: 0.25em 0;
@@ -1576,8 +1580,6 @@ export const style = css`
 	}
 	#paletteArea {
 		grid-column: 3;
-		background: var(--lab-card-inset);
-		box-shadow: inset 1px 0 var(--lab-card-border);
 	}
 	#teacherDrawer::part(base) {
 		box-sizing: border-box;
@@ -1615,7 +1617,7 @@ export const style = css`
 		flex: none;
 		margin-inline-end: calc(var(--panel-trigger-width) + 4px);
 		margin-bottom: 6px;
-		background: var(--lab-card-inset);
+		background: transparent;
 	}
 	#teacherTabs::part(tabs) {
 		gap: 4px;
@@ -1646,7 +1648,7 @@ export const style = css`
 		border: 1px solid var(--lab-card-border);
 		border-bottom: 0;
 		border-radius: var(--sl-border-radius-medium) var(--sl-border-radius-medium) 0 0;
-		background: var(--lab-card-inset);
+		background: var(--lab-card-surface);
 		color: var(--lab-card-secondary-text);
 		text-align: center;
 		line-height: 1.2;
