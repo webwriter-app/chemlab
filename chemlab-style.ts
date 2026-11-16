@@ -1924,12 +1924,12 @@ export const style = css`
 		border-block-end: 1px solid var(--lab-card-border);
 		border-start-start-radius: inherit;
 		border-start-end-radius: inherit;
-		background: var(--sl-color-primary-50);
+		background: #f3eff8;
 	}
 	.chemical-group-label > sl-badge::part(base) {
-		background: var(--sl-color-primary-100);
-		border-color: var(--sl-color-primary-200);
-		color: var(--sl-color-primary-800);
+		background: #e7dcef;
+		border-color: #d9c9e4;
+		color: #543f66;
 		font-weight: var(--sl-font-weight-semibold);
 	}
 	.chemical-palette-subgroups {
