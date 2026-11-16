@@ -651,7 +651,7 @@ export abstract class Simulation {
 		const species: AcidEquilibriumSpecies[] = [];
 		const analyticalMolecules = new Set<Molecule>();
 		for (const family of systems) {
-			if (family.pKa.length < 2 || !(family.totalC > 0)) continue;
+			if (family.pKa.length < 1 || !(family.totalC > 0)) continue;
 			const elements = new Map<string, number>();
 			for (const section of family.representative._kekule_obj.calcFormula().getSections()) {
 				const symbol = section.obj.getSymbol();
@@ -662,6 +662,7 @@ export abstract class Simulation {
 			elements.delete("H");
 			const symbols = [...elements.keys()].sort();
 			if (elements.has("C")) symbols.splice(symbols.indexOf("C") + 1, 0, "H");
+			else if (family.protonatedCharge > 0) symbols.push("H");
 			else {
 				const oxygen = symbols.indexOf("O");
 				if (oxygen >= 0) symbols.push(...symbols.splice(oxygen, 1));
