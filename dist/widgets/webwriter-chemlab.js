@@ -149403,25 +149403,31 @@ var Simulation = class {
     const bElectrolysis = sDevice._type === "source" /* Source */;
     if (!bElectrolysis) sDevice._visibleVoltage = null;
     let reaction;
+    const potential = (standard, mix, ion2, electrons) => {
+      const concentration = ion2 ? mix._molProperties[ion2._id + "c"] : void 0;
+      const activity = Number.isFinite(concentration) && concentration > 0 ? concentration : 1;
+      return standard + this._gasConst * mix._temperature / (electrons * this._faradayConst) * Math.log(activity);
+    };
     for (const [anodeElectrode, cathodeElectrode] of [[sElectrode1, sElectrode2], [sElectrode2, sElectrode1]]) {
       const material2 = anodeElectrode._material;
       const oxidation2 = material2 && this.getRedoxData(material2);
       if (!oxidation2 || material2.smilesString !== oxidation2.red) continue;
       const anode2 = anodeElectrode._connectedMix;
       const cathode2 = cathodeElectrode._connectedMix;
+      const anodeIon = anode2._activeMolecules.find((molecule2) => molecule2.smilesString === oxidation2.ox);
       for (const cathodeIon2 of cathode2._activeMolecules) {
         if (cathodeIon2._totalCharge <= 0) continue;
         const reduction2 = this.getRedoxData(cathodeIon2);
         if (!reduction2 || cathodeIon2.smilesString !== reduction2.ox) continue;
-        const voltage = reduction2.sep - oxidation2.sep;
+        const voltage2 = potential(reduction2.sep, cathode2, cathodeIon2, reduction2.el) - potential(oxidation2.sep, anode2, anodeIon, oxidation2.el);
         if (bElectrolysis) {
-          if (voltage > 0 || !(sDevice._sourceVoltage >= -voltage) || reaction && voltage <= reaction.voltage) continue;
-        } else if (voltage <= 0 || reaction && voltage <= reaction.voltage) continue;
-        reaction = { anode: anode2, cathode: cathode2, material: material2, cathodeIon: cathodeIon2, oxidation: oxidation2, reduction: reduction2, voltage };
+          if (voltage2 > 0 || !(sDevice._sourceVoltage >= -voltage2) || reaction && voltage2 <= reaction.voltage) continue;
+        } else if (voltage2 <= 0 || reaction && voltage2 <= reaction.voltage) continue;
+        reaction = { anode: anode2, cathode: cathode2, material: material2, cathodeIon: cathodeIon2, oxidation: oxidation2, reduction: reduction2, voltage: voltage2 };
       }
     }
     if (!reaction) return;
-    const { anode, cathode, material, cathodeIon, oxidation, reduction } = reaction;
+    const { anode, cathode, material, cathodeIon, oxidation, reduction, voltage } = reaction;
     const zAnode = oxidation.el;
     const zCathode = reduction.el;
     const current = sDevice._sourceCurrent;
@@ -149430,18 +149436,7 @@ var Simulation = class {
       cathode._molProperties[cathodeIon._id + "n"] * zCathode
     );
     if (!(electronMol > 0)) return;
-    if (!bElectrolysis) {
-      const anodeIon = anode._activeMolecules.find((molecule2) => molecule2.smilesString === oxidation.ox);
-      const potential = (standard, mix, ion2, electrons) => {
-        const concentration = ion2 ? mix._molProperties[ion2._id + "c"] : void 0;
-        const activity = Number.isFinite(concentration) && concentration > 0 ? concentration : 1;
-        return standard + this._gasConst * mix._temperature / (electrons * this._faradayConst) * Math.log(activity);
-      };
-      sDevice._visibleVoltage = Math.max(
-        0,
-        potential(reduction.sep, cathode, cathodeIon, zCathode) - potential(oxidation.sep, anode, anodeIon, zAnode)
-      );
-    }
+    if (!bElectrolysis) sDevice._visibleVoltage = Math.max(0, voltage);
     const anodeAtom = material._atoms[0];
     const cathodeAtom = cathodeIon._atoms[0];
     const anodeProduct = StructureManager.newMolecule();

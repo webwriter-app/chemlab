@@ -595,17 +595,29 @@ export abstract class Simulation {
 			oxidation: HalfReaction; reduction: HalfReaction; voltage: number;
 		} | undefined;
 
+		// Nernst: E = E° + RT/(zF) * ln(activity of the oxidised form). The term
+		// belongs in the pair selection, not only in the display, because a
+		// concentration cell has equal standard potentials on both sides and
+		// its whole voltage comes from the two activities differing.
+		const potential = (standard: number, mix: Mixture, ion: Molecule | undefined, electrons: number) => {
+			const concentration = ion ? mix._molProperties[ion._id + "c"] : undefined;
+			const activity = Number.isFinite(concentration) && concentration > 0 ? concentration : 1;
+			return standard + this._gasConst * mix._temperature / (electrons * this._faradayConst) * Math.log(activity);
+		};
+
 		for (const [anodeElectrode, cathodeElectrode] of [[sElectrode1, sElectrode2], [sElectrode2, sElectrode1]]) {
 			const material = anodeElectrode._material;
 			const oxidation = material && this.getRedoxData(material);
 			if (!oxidation || material.smilesString !== oxidation.red) continue;
 			const anode = anodeElectrode._connectedMix;
 			const cathode = cathodeElectrode._connectedMix;
+			const anodeIon = anode._activeMolecules.find((molecule) => molecule.smilesString === oxidation.ox);
 			for (const cathodeIon of cathode._activeMolecules) {
 				if (cathodeIon._totalCharge <= 0) continue;
 				const reduction = this.getRedoxData(cathodeIon);
 				if (!reduction || cathodeIon.smilesString !== reduction.ox) continue;
-				const voltage = reduction.sep - oxidation.sep;
+				const voltage = potential(reduction.sep, cathode, cathodeIon, reduction.el) -
+					potential(oxidation.sep, anode, anodeIon, oxidation.el);
 				if (bElectrolysis) {
 					if (voltage > 0 || !(sDevice._sourceVoltage >= -voltage) ||
 						(reaction && voltage <= reaction.voltage)) continue;
@@ -614,7 +626,7 @@ export abstract class Simulation {
 			}
 		}
 		if (!reaction) return;
-		const { anode, cathode, material, cathodeIon, oxidation, reduction } = reaction;
+		const { anode, cathode, material, cathodeIon, oxidation, reduction, voltage } = reaction;
 		const zAnode = oxidation.el;
 		const zCathode = reduction.el;
 		const current = sDevice._sourceCurrent;
@@ -624,17 +636,7 @@ export abstract class Simulation {
 		);
 		if (!(electronMol > 0)) return;
 
-		if (!bElectrolysis) {
-			const anodeIon = anode._activeMolecules.find((molecule) => molecule.smilesString === oxidation.ox);
-			const potential = (standard: number, mix: Mixture, ion: Molecule | undefined, electrons: number) => {
-				const concentration = ion ? mix._molProperties[ion._id + "c"] : undefined;
-				const activity = Number.isFinite(concentration) && concentration > 0 ? concentration : 1;
-				return standard + this._gasConst * mix._temperature / (electrons * this._faradayConst) * Math.log(activity);
-			};
-			sDevice._visibleVoltage = Math.max(0,
-				potential(reduction.sep, cathode, cathodeIon, zCathode) -
-				potential(oxidation.sep, anode, anodeIon, zAnode));
-		}
+		if (!bElectrolysis) sDevice._visibleVoltage = Math.max(0, voltage);
 
 		const anodeAtom = material._atoms[0];
 		const cathodeAtom = cathodeIon._atoms[0];
