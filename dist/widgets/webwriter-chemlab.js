@@ -103547,6 +103547,8 @@ var style = i`
 		--panel-handle-width: 23px;
 		--panel-handle-top: 4px;
 		--panel-outline: var(--sl-color-neutral-300);
+		--workspace-outline-width: 1px;
+		--workspace-inner-height: calc(100cqh - 2 * var(--workspace-outline-width));
 		--diagram-panel-width: min(27cqw, 24rem);
 		--diagram-width: 0px;
 		--palette-panel-width: min(58cqw, clamp(10rem, 44cqw, 24rem));
@@ -103565,7 +103567,7 @@ var style = i`
 		transition: grid-template-columns 220ms ease;
 		width: 100%;
 		height: 100%;
-		border: 2px solid #6a6a6a;
+		border: var(--workspace-outline-width) solid var(--panel-outline);
 		border-radius: 5px;
 		background: #f7f7f5;
 	}
@@ -103689,7 +103691,7 @@ var style = i`
 	#inlineDiagramPanel {
 		box-sizing: border-box;
 		inline-size: var(--diagram-panel-width);
-		block-size: calc(100cqh - 4px);
+		block-size: var(--workspace-inner-height);
 		overflow: hidden auto;
 		scrollbar-width: thin;
 		padding: 4px 8px;
@@ -104138,7 +104140,7 @@ var style = i`
 	#teacherDrawerContent {
 		box-sizing: border-box;
 		inline-size: var(--palette-panel-width);
-		block-size: calc(100cqh - 4px);
+		block-size: var(--workspace-inner-height);
 		margin-inline-start: min(0px, calc(100% - var(--palette-panel-width)));
 		padding: 4px 6px 6px;
 		overflow: hidden;
