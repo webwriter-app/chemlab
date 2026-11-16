@@ -147387,6 +147387,8 @@ if (typeof Kekule2 !== "undefined") {
 
 // chemlib/Molecule.ts
 var Molecule = class {
+  /** Catalog phase at the time of dosing, used when no phase change is modeled. */
+  dosedAsSolid;
   /** Formula of a solid phase tracked by the salt equilibrium. */
   solidSaltFormula;
   solidSaltIons;
@@ -149439,12 +149441,14 @@ var Simulation = class {
       family.members.forEach((molecule2) => analyticalMolecules.add(molecule2));
       AcidBase.speciesFractions(family, H3).forEach((fraction, step) => {
         const concentration = family.totalC * fraction;
+        const charge = family.protonatedCharge - step;
         const formula = symbols.map((symbol) => {
           const count2 = symbol === "H" ? protonatedHydrogens - step : elements2.get(symbol);
           return count2 > 0 ? symbol + subscript(count2) : "";
-        }).join("") + superscript(family.protonatedCharge - step);
+        }).join("") + superscript(charge);
         species.push({
           formula,
+          charge,
           concentration,
           amount: concentration * volume,
           structure: () => protonationStructure(family.representative, step - family.step)
@@ -149454,8 +149458,8 @@ var Simulation = class {
     if (species.length) {
       const OH = AcidBase.Kw / H3;
       species.push(
-        { formula: "H\u2083O\u207A", concentration: H3, amount: H3 * volume, structure: () => waterIonStructure(1) },
-        { formula: "OH\u207B", concentration: OH, amount: OH * volume, structure: () => waterIonStructure(-1) }
+        { formula: "H\u2083O\u207A", charge: 1, concentration: H3, amount: H3 * volume, structure: () => waterIonStructure(1) },
+        { formula: "OH\u207B", charge: -1, concentration: OH, amount: OH * volume, structure: () => waterIonStructure(-1) }
       );
     }
     return { pH: Math.round(-Math.log10(H3) * 1e3) / 1e3, species, analyticalMolecules };
@@ -177251,7 +177255,11 @@ var catalogPreviews = {
 
 // data/measuredDose.ts
 function prepareDose(recipe, load) {
-  const parts = recipe.parts.filter(({ amount }) => Number.isFinite(amount) && amount > 0).map(({ molecule: molecule2, amount }) => ({ molecule: load(molecule2), amount }));
+  const parts = recipe.parts.filter(({ amount }) => Number.isFinite(amount) && amount > 0).map(({ molecule: molecule2, amount }) => {
+    const loaded = load(molecule2);
+    if (recipe.phase === "solid") loaded.dosedAsSolid = true;
+    return { molecule: loaded, amount };
+  });
   const mass = parts.reduce((sum, part) => sum + part.amount * part.molecule.getTotMolMass(), 0);
   const waterMass = parts.reduce((sum, part) => StructureManager.isWater(part.molecule) ? sum + part.amount * part.molecule.getTotMolMass() : sum, 0);
   const gramsPerMl = recipe.aqueousMolar ? 1e3 : waterMass > 0 ? waterMass : mass / recipe.density;
@@ -177269,6 +177277,39 @@ function prepareDose(recipe, load) {
   const referenceMl = makeDose(1).contentVolume * 1e3;
   if (!(referenceMl > 0 && Number.isFinite(referenceMl))) return;
   return (volumeMl) => makeDose(volumeMl / referenceMl);
+}
+
+// data/vesselCarousel.ts
+function vesselCarouselEntries(mixture, equilibrium) {
+  const solids = [];
+  const liquids = [];
+  const ions = [];
+  const liquid = mixture.hasLiquidContents;
+  for (const molecule2 of mixture._activeMolecules) {
+    if (equilibrium?.analyticalMolecules.has(molecule2)) continue;
+    const storedSolid = molecule2.dosedAsSolid && !(equilibrium && StructureManager.isAcidBase(molecule2));
+    if (molecule2.solidSaltFormula || storedSolid || !liquid && !molecule2._totalCharge) {
+      solids.push({ key: molecule2, molecule: molecule2, phase: "solid" });
+    } else if (molecule2._totalCharge) {
+      const concentration = mixture._molProperties[molecule2._id + "c"];
+      ions.push({
+        entry: { key: molecule2, molecule: molecule2, phase: "ion" },
+        concentration: Number.isFinite(concentration) ? concentration : -Infinity
+      });
+    } else {
+      liquids.push({ key: molecule2, molecule: molecule2, phase: "liquid" });
+    }
+  }
+  const occurrences = /* @__PURE__ */ new Map();
+  for (const species of equilibrium?.species ?? []) {
+    const index2 = occurrences.get(species.formula) ?? 0;
+    occurrences.set(species.formula, index2 + 1);
+    const key = `${species.formula}:${index2}`;
+    if (species.charge) ions.push({ entry: { key, species, phase: "ion" }, concentration: species.concentration });
+    else liquids.push({ key, species, phase: "liquid" });
+  }
+  ions.sort((a7, b5) => a7.concentration === b5.concentration ? 0 : b5.concentration - a7.concentration);
+  return [...solids, ...liquids, ...ions.map(({ entry }) => entry)];
 }
 
 // controllers/WorkspaceCamera.ts
@@ -184928,7 +184969,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const reset = this.carouselMixtures.get(carousel) !== mixture;
     this.carouselMixtures.set(carousel, mixture);
     const compact = carousel === this.contextMolInfo;
-    const molecules = mixture._activeMolecules.filter((molecule2) => !equilibrium?.analyticalMolecules.has(molecule2));
+    const entries = vesselCarouselEntries(mixture, equilibrium);
     const amountLine = (amount) => Number.isFinite(amount) ? x`<p>n: ${amount.toExponential(2)} mol</p>` : E;
     const concentrationLine = (concentration) => Number.isFinite(concentration) ? x`<p>c: ${concentration.toExponential(2)} mol/L</p>` : E;
     const slide = (thumbnail, title, details2) => x`
@@ -184942,19 +184983,16 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				</div>
 			</sl-carousel-item>`;
     B(x`
-			${c4(
-      equilibrium?.species ?? [],
-      ({ formula }, index2) => `${formula}:${index2}`,
-      ({ formula, amount, concentration, structure }) => {
-        const molecule2 = structure();
+			${c4(entries, ({ key }) => key, ({ molecule: molecule2, species, phase }) => {
+      if (species) {
+        const { formula: formula2, amount, concentration: concentration2, structure } = species;
+        const thumbnail = structure();
         return slide(
-          molecule2 ? this.vesselThumbnail(carousel, molecule2, formula) : x`<span class="vessel-carousel-thumbnail">${formula}</span>`,
-          formula,
-          x`${compact ? E : amountLine(amount)}${concentrationLine(concentration)}`
+          thumbnail ? this.vesselThumbnail(carousel, thumbnail, formula2) : x`<span class="vessel-carousel-thumbnail">${formula2}</span>`,
+          formula2,
+          x`${compact ? E : amountLine(amount)}${concentrationLine(concentration2)}`
         );
       }
-    )}
-			${c4(molecules, (molecule2) => molecule2, (molecule2) => {
       const formula = molecule2._kekule_obj.calcFormula().getDisplayText();
       if (!molecule2.name && !molecule2.solidSaltFormula && !this.vesselNameRequests.has(molecule2)) {
         this.vesselNameRequests.add(molecule2);
@@ -184965,9 +185003,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       }
       const { _id: id3 } = molecule2;
       const properties = mixture._molProperties;
-      const sediment = !!molecule2.solidSaltFormula && mixture.hasLiquidContents;
-      const concentration = equilibrium && !molecule2.solidSaltFormula && !nonpolarDensity(molecule2) && (!compact || !StructureManager.isWater(molecule2)) ? concentrationLine(properties[id3 + "c"]) : E;
-      const showMass = !compact || sediment || !equilibrium && molecules.length > 1;
+      const concentration = equilibrium && phase !== "solid" && !nonpolarDensity(molecule2) && (!compact || !StructureManager.isWater(molecule2)) ? concentrationLine(properties[id3 + "c"]) : E;
+      const showMass = !compact || phase === "solid" && mixture.hasLiquidContents || !equilibrium && entries.length > 1;
       const mass = properties[id3 + "m"];
       return slide(this.vesselThumbnail(carousel, molecule2, formula), molecule2.name || formula, x`
 					${compact ? E : amountLine(properties[id3 + "n"])}

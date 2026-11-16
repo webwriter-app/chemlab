@@ -20,6 +20,7 @@ type AcidBaseFamily = AcidBaseSystem & { representative: Molecule; step: number;
 
 export interface AcidEquilibriumSpecies {
 	formula: string;
+	charge: number;
 	amount: number;
 	concentration: number;
 	/** A representative structure for this protonation state, built only when drawn. */
@@ -667,18 +668,19 @@ export abstract class Simulation {
 			family.members.forEach((molecule) => analyticalMolecules.add(molecule));
 			AcidBase.speciesFractions(family, H).forEach((fraction, step) => {
 				const concentration = family.totalC * fraction;
+				const charge = family.protonatedCharge - step;
 				const formula = symbols.map((symbol) => {
 					const count = symbol === "H" ? protonatedHydrogens - step : elements.get(symbol);
 					return count > 0 ? symbol + subscript(count) : "";
-				}).join("") + superscript(family.protonatedCharge - step);
-				species.push({ formula, concentration, amount: concentration * volume,
+				}).join("") + superscript(charge);
+				species.push({ formula, charge, concentration, amount: concentration * volume,
 					structure: () => protonationStructure(family.representative, step - family.step) });
 			});
 		}
 		if (species.length) {
 			const OH = AcidBase.Kw / H;
-			species.push({ formula: "H₃O⁺", concentration: H, amount: H * volume, structure: () => waterIonStructure(1) },
-				{ formula: "OH⁻", concentration: OH, amount: OH * volume, structure: () => waterIonStructure(-1) });
+			species.push({ formula: "H₃O⁺", charge: 1, concentration: H, amount: H * volume, structure: () => waterIonStructure(1) },
+				{ formula: "OH⁻", charge: -1, concentration: OH, amount: OH * volume, structure: () => waterIonStructure(-1) });
 		}
 		return { pH: Math.round(-Math.log10(H) * 1000) / 1000, species, analyticalMolecules };
 	}

@@ -10,6 +10,8 @@ import { Kekule } from "kekule";
  * @typedef {Molecule}
  */
 class Molecule {
+	/** Catalog phase at the time of dosing, used when no phase change is modeled. */
+	dosedAsSolid?: boolean;
 	/** Formula of a solid phase tracked by the salt equilibrium. */
 	solidSaltFormula?: string;
 	solidSaltIons?: readonly [Molecule, Molecule];

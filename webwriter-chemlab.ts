@@ -71,6 +71,7 @@ import { chemicalCatalog, chemicalCatalogGroups, isWaterDefinition, solutionDisp
 import { loadMoleculeDefinition } from "./data/moleculeDefinition";
 import { catalogPreviews } from "./data/chemicalPreviews.generated";
 import { prepareDose, type SavedDose } from "./data/measuredDose";
+import { vesselCarouselEntries } from "./data/vesselCarousel";
 import { STANDARD_CANVAS_HEIGHT } from "./controllers/WorkspaceCamera";
 import { CanvasController } from "./controllers/CanvasController";
 import type { VesselHint } from "./controllers/VesselView";
@@ -2067,7 +2068,7 @@ export class ChemLab extends LitElementWw {
 		const reset = this.carouselMixtures.get(carousel) !== mixture;
 		this.carouselMixtures.set(carousel, mixture);
 		const compact = carousel === this.contextMolInfo;
-		const molecules = mixture._activeMolecules.filter((molecule) => !equilibrium?.analyticalMolecules.has(molecule));
+		const entries = vesselCarouselEntries(mixture, equilibrium);
 		const amountLine = (amount: number) => Number.isFinite(amount) ? html`<p>n: ${amount.toExponential(2)} mol</p>` : nothing;
 		const concentrationLine = (concentration: number) => Number.isFinite(concentration)
 			? html`<p>c: ${concentration.toExponential(2)} mol/L</p>` : nothing;
@@ -2082,13 +2083,13 @@ export class ChemLab extends LitElementWw {
 				</div>
 			</sl-carousel-item>`;
 		render(html`
-			${repeat(equilibrium?.species ?? [], ({ formula }, index) => `${formula}:${index}`,
-				({ formula, amount, concentration, structure }) => {
-					const molecule = structure();
-					return slide(molecule ? this.vesselThumbnail(carousel, molecule, formula) : html`<span class="vessel-carousel-thumbnail">${formula}</span>`,
+			${repeat(entries, ({ key }) => key, ({ molecule, species, phase }) => {
+				if (species) {
+					const { formula, amount, concentration, structure } = species;
+					const thumbnail = structure();
+					return slide(thumbnail ? this.vesselThumbnail(carousel, thumbnail, formula) : html`<span class="vessel-carousel-thumbnail">${formula}</span>`,
 						formula, html`${compact ? nothing : amountLine(amount)}${concentrationLine(concentration)}`);
-				})}
-			${repeat(molecules, (molecule) => molecule, (molecule) => {
+				}
 				const formula = molecule._kekule_obj.calcFormula().getDisplayText();
 				if (!molecule.name && !molecule.solidSaltFormula && !this.vesselNameRequests.has(molecule)) {
 					this.vesselNameRequests.add(molecule);
@@ -2098,11 +2099,10 @@ export class ChemLab extends LitElementWw {
 				}
 				const { _id: id } = molecule;
 				const properties = mixture._molProperties;
-				const sediment = !!molecule.solidSaltFormula && mixture.hasLiquidContents;
-				const concentration = equilibrium && !molecule.solidSaltFormula && !chemlib.nonpolarDensity(molecule) &&
+				const concentration = equilibrium && phase !== "solid" && !chemlib.nonpolarDensity(molecule) &&
 					(!compact || !chemlib.StructureManager.isWater(molecule))
 					? concentrationLine(properties[id + "c"]) : nothing;
-				const showMass = !compact || sediment || (!equilibrium && molecules.length > 1);
+				const showMass = !compact || (phase === "solid" && mixture.hasLiquidContents) || (!equilibrium && entries.length > 1);
 				const mass = properties[id + "m"];
 				return slide(this.vesselThumbnail(carousel, molecule, formula), molecule.name || formula, html`
 					${compact ? nothing : amountLine(properties[id + "n"])}

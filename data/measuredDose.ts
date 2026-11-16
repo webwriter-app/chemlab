@@ -9,7 +9,11 @@ export interface SavedDose {
 export function prepareDose(recipe: ChemicalRecipe, load: (definition: MoleculeDefinition) => Molecule) {
 	const parts = recipe.parts
 		.filter(({ amount }) => Number.isFinite(amount) && amount > 0)
-		.map(({ molecule, amount }) => ({ molecule: load(molecule), amount }));
+		.map(({ molecule, amount }) => {
+			const loaded = load(molecule);
+			if (recipe.phase === "solid") loaded.dosedAsSolid = true;
+			return { molecule: loaded, amount };
+		});
 	const mass = parts.reduce((sum, part) => sum + part.amount * part.molecule.getTotMolMass(), 0);
 	const waterMass = parts.reduce((sum, part) => StructureManager.isWater(part.molecule)
 		? sum + part.amount * part.molecule.getTotMolMass()
