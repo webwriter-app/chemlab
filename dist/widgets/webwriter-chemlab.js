@@ -104419,9 +104419,6 @@ var style = i`
 		color: var(--sl-color-primary-800);
 		font-weight: var(--sl-font-weight-semibold);
 	}
-	.chemical-subgroup-label {
-		justify-self: start;
-	}
 	.chemical-palette-subgroups {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
@@ -104436,16 +104433,18 @@ var style = i`
 	.chemical-group-strip {
 		gap: 10px;
 	}
-	.chemical-palette-subgroup + .chemical-palette-subgroup {
-		border-block-start: 1px solid var(--lab-card-border);
-		padding-block-start: 6px;
-	}
 	.chemical-subgroup-label {
+		display: flex;
+		align-items: center;
+		gap: 6px;
 		font-size: var(--sl-font-size-x-small);
+		font-weight: var(--sl-font-weight-semibold);
 		color: var(--lab-card-secondary-text);
-		padding-inline: 5px;
-		border-radius: var(--sl-border-radius-small);
-		background: var(--sl-color-neutral-100);
+	}
+	.chemical-subgroup-label::after {
+		content: "";
+		flex: 1;
+		border-block-start: 1px solid var(--lab-card-border);
 	}
 	.chemical-dose-carousel {
 		display: flex;
