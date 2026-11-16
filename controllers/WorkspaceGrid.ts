@@ -20,7 +20,8 @@ const fragment = `
 		vec2 cell = (vScreenUv * uViewport - uGridOrigin) / uGridStep;
 		vec2 distancePx = abs(fract(cell + 0.5) - 0.5) * uGridStep;
 		float line = 1.0 - smoothstep(0.15, 0.95, min(distancePx.x, distancePx.y));
-		finalColor = vec4(mix(vec3(0.969, 0.969, 0.961), vec3(0.847), line), 1.0);
+		// Match the canvas backdrop when the grid is hidden.
+		finalColor = vec4(mix(vec3(251.0, 251.0, 250.0) / 255.0, vec3(0.847), line), 1.0);
 	}
 `;
 

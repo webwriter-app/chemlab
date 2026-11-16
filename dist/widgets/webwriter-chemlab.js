@@ -103559,6 +103559,7 @@ var style = i`
 		--lab-card-text: var(--sl-color-neutral-800);
 		--lab-card-secondary-text: var(--sl-color-neutral-700);
 		--lab-panel-shadow: 0 2px 8px rgb(0 0 0 / 9%);
+		--canvas-control-shadow: 0 1px 3px rgb(0 0 0 / 14%);
 		position: relative;
 		box-sizing: border-box;
 		display: grid;
@@ -103569,7 +103570,7 @@ var style = i`
 		height: 100%;
 		border: var(--workspace-outline-width) solid var(--panel-outline);
 		border-radius: 5px;
-		background: #f7f7f5;
+		background: #fbfbfa;
 	}
 	#upper.show-diagram-panel {
 		--diagram-width: var(--diagram-panel-width);
@@ -103600,6 +103601,7 @@ var style = i`
 		background: var(--sl-color-neutral-0);
 		border: 1px solid var(--panel-outline);
 		border-radius: var(--sl-border-radius-medium);
+		box-shadow: var(--canvas-control-shadow);
 	}
 	.workspace-details::part(summary) {
 		flex: none;
@@ -103777,6 +103779,10 @@ var style = i`
 		justify-content: center;
 		min-width: 24px;
 		padding-inline: 3px;
+	}
+	#canvasZoom sl-button::part(base),
+	#canvasZoom sl-tag::part(base) {
+		box-shadow: var(--canvas-control-shadow);
 	}
 	.selection-info {
 		position: absolute;
@@ -180583,7 +180589,8 @@ var fragment3 = `
 		vec2 cell = (vScreenUv * uViewport - uGridOrigin) / uGridStep;
 		vec2 distancePx = abs(fract(cell + 0.5) - 0.5) * uGridStep;
 		float line = 1.0 - smoothstep(0.15, 0.95, min(distancePx.x, distancePx.y));
-		finalColor = vec4(mix(vec3(0.969, 0.969, 0.961), vec3(0.847), line), 1.0);
+		// Match the canvas backdrop when the grid is hidden.
+		finalColor = vec4(mix(vec3(251.0, 251.0, 250.0) / 255.0, vec3(0.847), line), 1.0);
 	}
 `;
 var WorkspaceGrid = class {
