@@ -103803,11 +103803,10 @@ var style = i`
 		display: grid;
 		grid-template-columns: minmax(0, 3.5rem) minmax(0, 1fr);
 		align-items: center;
-		gap: 5px;
+		gap: 4px;
 		inline-size: 100%;
 		block-size: auto;
-		min-block-size: 80px;
-		padding: 5px;
+		padding: 2px 3px;
 	}
 	#contextMolInfo .vessel-carousel-thumbnail {
 		display: grid;
