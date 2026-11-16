@@ -15,7 +15,7 @@ npm ci
 npx @webwriter/build dev
 ```
 
-Der WebWriter-Build schreibt nach `dist/widgets/` und überwacht Änderungen. Der Nutzer importiert das Widget manuell in WebWriter. Dort werden Layout und Interaktionen im tatsächlichen Einbettungskontext geprüft. Das Widget ist standardmäßig 1000 px hoch und lässt sich außerhalb des Vollbilds in beiden Achsen an der Ecke vergrößern und verkleinern. Vorlagen liegen unter `snippets/` für Titration, Titrationstypen und Batterie. Die frühere Vite-Testseite ist ein historisches Hilfsmittel.
+Der WebWriter-Build schreibt nach `dist/widgets/` und überwacht Änderungen. Der Nutzer importiert das Widget manuell in WebWriter. Dort werden Layout und Interaktionen im tatsächlichen Einbettungskontext geprüft. Das Widget ist standardmäßig 1000 px hoch und lässt sich außerhalb des Vollbilds in beiden Achsen an der Ecke vergrößern und verkleinern. Vorlagen liegen unter `snippets/` für Titration, Titrationstypen und Batterie. Eine neue Vorlage erscheint erst in WebWriter, wenn sie zusätzlich in `package.json` unter `exports` eingetragen und in `editingConfig` mit einem `label` versehen ist; die Datei allein im Ordner `snippets/` wird nicht gefunden. Die frühere Vite-Testseite ist ein historisches Hilfsmittel.
 
 Der Widget-Build verarbeitet den TypeScript-Quellcode in `chemlib/` direkt. `kekule` ist eine Abhängigkeit im zentralen `package.json`. Änderungen an der Simulation laufen durch denselben Build wie Änderungen am Widget.
 
