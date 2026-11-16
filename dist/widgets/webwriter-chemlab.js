@@ -103544,6 +103544,7 @@ var style = i`
 	#upper {
 		--panel-trigger-width: 38px;
 		--panel-trigger-height: 28px;
+		--panel-handle-width: 23px;
 		--diagram-panel-width: min(27cqw, 24rem);
 		--diagram-width: 0px;
 		--palette-panel-width: min(58cqw, clamp(10rem, 44cqw, 24rem));
@@ -103631,9 +103632,23 @@ var style = i`
 		z-index: 1;
 		pointer-events: auto;
 	}
+	.workspace-side .workspace-details::part(header):focus-visible {
+		outline: 2px solid var(--sl-color-neutral-600);
+		outline-offset: -3px;
+	}
+	.workspace-side .workspace-details[open]::part(header) {
+		inline-size: var(--panel-handle-width);
+		gap: 0;
+	}
+	.workspace-side .workspace-details[open] .workspace-summary > svg {
+		display: none;
+	}
+	.workspace-side .workspace-details:dir(rtl) > svg {
+		transform: scaleX(-1);
+	}
 	.workspace-side .workspace-details::part(base) {
 		block-size: 100%;
-		overflow: hidden auto;
+		overflow: visible;
 	}
 	.workspace-side .workspace-details[open]::part(base) {
 		pointer-events: auto;
@@ -103642,12 +103657,21 @@ var style = i`
 		grid-column: 1;
 	}
 	#diagramArea .workspace-details::part(header) {
-		inset-inline-start: 4px;
+		inset-inline-start: 100%;
+		border-inline-start: 0;
+		border-start-start-radius: 0;
+		border-end-start-radius: 0;
+	}
+	#diagramArea .workspace-details::part(content) {
+		overflow: hidden;
 	}
 	#inlineDiagramPanel {
 		box-sizing: border-box;
 		inline-size: var(--diagram-panel-width);
-		padding: calc(var(--panel-trigger-height) + 12px) 8px 4px;
+		block-size: calc(100cqh - 4px);
+		overflow: hidden auto;
+		scrollbar-width: thin;
+		padding: 4px 8px;
 	}
 	#inlineDiagramPanel > sl-checkbox {
 		display: block;
@@ -104076,17 +104100,15 @@ var style = i`
 		grid-column: 3;
 		background: var(--lab-card-inset);
 	}
-	#teacherDrawer::part(base) {
-		box-sizing: border-box;
-		overflow: visible;
-	}
 	#teacherDrawer::part(header) {
-		inset-inline-end: 4px;
+		inset-inline-end: 100%;
 		flex-direction: row-reverse;
+		border-inline-end: 0;
+		border-start-end-radius: 0;
+		border-end-end-radius: 0;
 	}
-	#teacherDrawer::part(header):focus-visible {
-		outline: 2px solid var(--sl-color-neutral-600);
-		outline-offset: -3px;
+	#teacherDrawer[open]::part(header) {
+		background: var(--lab-card-inset);
 	}
 	#teacherDrawer::part(content) {
 		overflow: hidden;
@@ -104110,7 +104132,6 @@ var style = i`
 	}
 	#teacherTabs::part(nav) {
 		flex: none;
-		margin-inline-end: calc(var(--panel-trigger-width) + 4px);
 		background: transparent;
 	}
 	#teacherTabs::part(tabs) {
