@@ -104398,8 +104398,8 @@ var style = i`
 		align-content: start;
 	}
 	.chemical-palette-group {
-		--chemical-group-heading: #f3eff8;
-		--chemical-subgroup-heading: #e0ebe3;
+		--chemical-group-heading: #e6ddec;
+		--chemical-subgroup-heading: #f4f0eb;
 		gap: 0;
 		border-inline-end: 8px solid var(--chemical-group-heading);
 		border-radius: var(--sl-border-radius-medium);
@@ -104419,8 +104419,8 @@ var style = i`
 		background: var(--chemical-group-heading);
 	}
 	.chemical-group-label > sl-badge::part(base) {
-		background: #e7dcef;
-		border-color: #d9c9e4;
+		background: #d9cbe3;
+		border-color: #cebbdb;
 		color: #543f66;
 		font-weight: var(--sl-font-weight-semibold);
 	}
@@ -104460,8 +104460,8 @@ var style = i`
 	.chemical-subgroup-label > sl-badge::part(base) {
 		padding: 1px 5px;
 		background: var(--chemical-subgroup-heading);
-		border-color: #c9d9ce;
-		color: #395344;
+		border-color: #e4dad0;
+		color: #62574e;
 		font-weight: var(--sl-font-weight-normal);
 	}
 	.chemical-dose-carousel {
