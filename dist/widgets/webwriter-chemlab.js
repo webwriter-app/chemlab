@@ -103559,6 +103559,7 @@ var style = i`
 		--lab-card-text: var(--sl-color-neutral-800);
 		--lab-card-secondary-text: var(--sl-color-neutral-700);
 		--lab-panel-shadow: 0 2px 8px rgb(0 0 0 / 9%);
+		--canvas-control-surface: #f9f9f9;
 		--canvas-control-shadow: 0 1px 3px rgb(0 0 0 / 14%);
 		position: relative;
 		box-sizing: border-box;
@@ -103598,7 +103599,7 @@ var style = i`
 		padding: 0 2px;
 		inline-size: var(--panel-trigger-width);
 		block-size: var(--panel-trigger-height);
-		background: var(--sl-color-neutral-0);
+		background: var(--canvas-control-surface);
 		border: 1px solid var(--panel-outline);
 		border-radius: var(--sl-border-radius-medium);
 		box-shadow: var(--canvas-control-shadow);
@@ -103783,6 +103784,10 @@ var style = i`
 	#canvasZoom sl-button::part(base),
 	#canvasZoom sl-tag::part(base) {
 		box-shadow: var(--canvas-control-shadow);
+	}
+	#canvasZoom sl-button:not([aria-pressed="true"])::part(base):not(:hover):not(:active),
+	#canvasZoom sl-tag::part(base) {
+		background: var(--canvas-control-surface);
 	}
 	.selection-info {
 		position: absolute;
@@ -104127,7 +104132,7 @@ var style = i`
 		--palette-subheading-fill: #f1edf4;
 		--palette-subheading-ink: #5e5367;
 		grid-column: 3;
-		background: var(--lab-card-inset);
+		background: var(--canvas-control-surface);
 	}
 	#teacherDrawer::part(header) {
 		inset-inline-end: 100%;
@@ -104135,9 +104140,6 @@ var style = i`
 		border-inline-end: 0;
 		border-start-end-radius: 0;
 		border-end-end-radius: 0;
-	}
-	#teacherDrawer[open]::part(header) {
-		background: var(--lab-card-inset);
 	}
 	#teacherDrawer::part(content) {
 		overflow: hidden;
@@ -104165,14 +104167,14 @@ var style = i`
 	}
 	#teacherTabs::part(tabs) {
 		gap: 4px;
-		background: var(--lab-card-inset);
+		background: var(--canvas-control-surface);
 	}
 	#teacherTabs {
 		/* Shoelace's shared indicator does not include the gap between tabs. */
 		--track-width: 0px;
 		block-size: 100%;
 		border-radius: var(--sl-border-radius-medium);
-		background: var(--lab-card-inset);
+		background: var(--canvas-control-surface);
 		box-shadow: 0 1px 5px rgb(0 0 0 / 10%);
 	}
 	#teacherTabs::part(base) {
