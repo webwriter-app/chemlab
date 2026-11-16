@@ -104067,7 +104067,6 @@ var style = i`
 	#teacherDrawer::part(base) {
 		box-sizing: border-box;
 		overflow: visible;
-		padding-block-start: calc(var(--panel-trigger-height) + 8px);
 	}
 	#teacherDrawer::part(header) {
 		inset-inline-end: 4px;
@@ -104080,7 +104079,7 @@ var style = i`
 	#teacherDrawerContent {
 		box-sizing: border-box;
 		inline-size: var(--palette-panel-width);
-		block-size: calc(100cqh - var(--panel-trigger-height) - 12px);
+		block-size: calc(100cqh - 4px);
 		margin-inline-start: min(0px, calc(100% - var(--palette-panel-width)));
 		padding: 4px 6px 6px;
 		overflow: hidden auto;
@@ -104096,7 +104095,9 @@ var style = i`
 		overflow-wrap: anywhere;
 	}
 	#teacherTabs::part(nav) {
+		margin-inline-end: calc(var(--panel-trigger-width) + 4px);
 		margin-bottom: 6px;
+		background: var(--lab-card-inset);
 	}
 	#teacherTabs::part(tabs) {
 		gap: 4px;
@@ -104106,17 +104107,20 @@ var style = i`
 		--track-color: var(--lab-card-border);
 	}
 	#teacherTabs > sl-tab {
-		flex: 1 1 0;
+		flex: 0 1 auto;
 		min-inline-size: 0;
 	}
 	#teacherTabs > sl-tab::part(base) {
-		padding: 5px 7px;
+		box-sizing: border-box;
+		min-block-size: var(--panel-trigger-height);
+		padding: 3px 7px;
 		border: 1px solid var(--lab-card-border);
 		border-bottom: 0;
 		border-radius: var(--sl-border-radius-medium) var(--sl-border-radius-medium) 0 0;
-		background: var(--lab-card-surface);
+		background: var(--lab-card-inset);
 		color: var(--lab-card-secondary-text);
 		text-align: center;
+		line-height: 1.2;
 		white-space: normal;
 		overflow-wrap: anywhere;
 	}
@@ -104125,7 +104129,6 @@ var style = i`
 	}
 	#teacherTabs > sl-tab[active]::part(base) {
 		border-color: var(--sl-color-primary-200);
-		background: var(--sl-color-primary-50);
 		color: var(--sl-color-primary-800);
 	}
 	#teacherTabs > sl-tab-panel {
@@ -184257,6 +184260,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   renderTeacherDrawer() {
     const label = this.message(this.canAuthor ? "Lehrkraft Steuerung" : "Komponenten");
+    const selected = this.selectedChemical ? x`
+			<sl-button class="selected-chemical" size="small" @click=${this.clearChemicalSelection}>
+				${this.selectedChemical.name} ×
+			</sl-button>` : E;
     return x`
 			<aside id="paletteArea" class="workspace-side" aria-label=${label}>
 				<sl-details id="teacherDrawer" class="workspace-details" .open=${this.teacherDrawerOpen}
@@ -184270,10 +184277,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					</span>
 					${this.renderPanelArrows("left")}
 					<div id="teacherDrawerContent">
-						${this.selectedChemical ? x`
-							<sl-button class="selected-chemical" size="small" @click=${this.clearChemicalSelection}>
-								${this.selectedChemical.name} ×
-							</sl-button>` : ""}
 						<sl-tab-group id="teacherTabs"
 							@sl-tab-show=${(event) => {
       if (event.target === event.currentTarget) {
@@ -184284,8 +184287,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}>
 							<sl-tab slot="nav" panel="components" active>${this.message("Komponenten")}</sl-tab>
 							<sl-tab slot="nav" panel="chemicals">${this.message("Chemikalien")}</sl-tab>
-							<sl-tab-panel name="components" active>${this.renderComponentPalette()}</sl-tab-panel>
+							<sl-tab-panel name="components" active>${selected}${this.renderComponentPalette()}</sl-tab-panel>
 							<sl-tab-panel name="chemicals">
+								${selected}
 								${this.chemicalCatalogOpened ? this.renderChemicalCatalog() : E}
 							</sl-tab-panel>
 						</sl-tab-group>

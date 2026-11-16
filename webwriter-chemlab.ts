@@ -2683,6 +2683,10 @@ export class ChemLab extends LitElementWw {
 
 	private renderTeacherDrawer() {
 		const label = this.message(this.canAuthor ? "Lehrkraft Steuerung" : "Komponenten");
+		const selected = this.selectedChemical ? html`
+			<sl-button class="selected-chemical" size="small" @click=${this.clearChemicalSelection}>
+				${this.selectedChemical.name} ×
+			</sl-button>` : nothing;
 		return html`
 			<aside id="paletteArea" class="workspace-side" aria-label=${label}>
 				<sl-details id="teacherDrawer" class="workspace-details" .open=${this.teacherDrawerOpen}
@@ -2696,10 +2700,6 @@ export class ChemLab extends LitElementWw {
 					</span>
 					${this.renderPanelArrows("left")}
 					<div id="teacherDrawerContent">
-						${this.selectedChemical ? html`
-							<sl-button class="selected-chemical" size="small" @click=${this.clearChemicalSelection}>
-								${this.selectedChemical.name} ×
-							</sl-button>` : ""}
 						<sl-tab-group id="teacherTabs"
 							@sl-tab-show=${(event: CustomEvent<{ name: "components" | "chemicals" }>) => {
 								if (event.target === event.currentTarget) {
@@ -2710,8 +2710,9 @@ export class ChemLab extends LitElementWw {
 							}}>
 							<sl-tab slot="nav" panel="components" active>${this.message("Komponenten")}</sl-tab>
 							<sl-tab slot="nav" panel="chemicals">${this.message("Chemikalien")}</sl-tab>
-							<sl-tab-panel name="components" active>${this.renderComponentPalette()}</sl-tab-panel>
+							<sl-tab-panel name="components" active>${selected}${this.renderComponentPalette()}</sl-tab-panel>
 							<sl-tab-panel name="chemicals">
+								${selected}
 								${this.chemicalCatalogOpened ? this.renderChemicalCatalog() : nothing}
 							</sl-tab-panel>
 						</sl-tab-group>

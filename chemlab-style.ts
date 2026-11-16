@@ -1582,7 +1582,6 @@ export const style = css`
 	#teacherDrawer::part(base) {
 		box-sizing: border-box;
 		overflow: visible;
-		padding-block-start: calc(var(--panel-trigger-height) + 8px);
 	}
 	#teacherDrawer::part(header) {
 		inset-inline-end: 4px;
@@ -1595,7 +1594,7 @@ export const style = css`
 	#teacherDrawerContent {
 		box-sizing: border-box;
 		inline-size: var(--palette-panel-width);
-		block-size: calc(100cqh - var(--panel-trigger-height) - 12px);
+		block-size: calc(100cqh - 4px);
 		margin-inline-start: min(0px, calc(100% - var(--palette-panel-width)));
 		padding: 4px 6px 6px;
 		overflow: hidden auto;
@@ -1611,7 +1610,9 @@ export const style = css`
 		overflow-wrap: anywhere;
 	}
 	#teacherTabs::part(nav) {
+		margin-inline-end: calc(var(--panel-trigger-width) + 4px);
 		margin-bottom: 6px;
+		background: var(--lab-card-inset);
 	}
 	#teacherTabs::part(tabs) {
 		gap: 4px;
@@ -1621,17 +1622,20 @@ export const style = css`
 		--track-color: var(--lab-card-border);
 	}
 	#teacherTabs > sl-tab {
-		flex: 1 1 0;
+		flex: 0 1 auto;
 		min-inline-size: 0;
 	}
 	#teacherTabs > sl-tab::part(base) {
-		padding: 5px 7px;
+		box-sizing: border-box;
+		min-block-size: var(--panel-trigger-height);
+		padding: 3px 7px;
 		border: 1px solid var(--lab-card-border);
 		border-bottom: 0;
 		border-radius: var(--sl-border-radius-medium) var(--sl-border-radius-medium) 0 0;
-		background: var(--lab-card-surface);
+		background: var(--lab-card-inset);
 		color: var(--lab-card-secondary-text);
 		text-align: center;
+		line-height: 1.2;
 		white-space: normal;
 		overflow-wrap: anywhere;
 	}
@@ -1640,7 +1644,6 @@ export const style = css`
 	}
 	#teacherTabs > sl-tab[active]::part(base) {
 		border-color: var(--sl-color-primary-200);
-		background: var(--sl-color-primary-50);
 		color: var(--sl-color-primary-800);
 	}
 	#teacherTabs > sl-tab-panel {
