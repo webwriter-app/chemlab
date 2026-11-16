@@ -1964,9 +1964,11 @@ export const style = css`
 		box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
 	}
 	.chemical-subgroup-label > sl-badge::part(base) {
+		padding: 1px 5px;
 		background: var(--sl-color-neutral-200);
 		border-color: var(--sl-color-neutral-300);
 		color: var(--lab-card-secondary-text);
+		font-weight: var(--sl-font-weight-normal);
 	}
 	.chemical-subgroup-label::after {
 		content: "";
