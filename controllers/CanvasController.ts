@@ -436,6 +436,9 @@ export class CanvasController implements ReactiveController {
 			if (app.screen.width !== width || app.screen.height !== height || app.renderer.resolution !== resolution) {
 				app.renderer.resize(width, height, resolution);
 				app.stage.hitArea = app.screen;
+				// A resized backing store stays blank until the next render,
+				// so paint synchronously instead of waiting for the idle ticker.
+				app.render();
 			}
 			this.camera.resize(width, height);
 			this.applyCamera();
