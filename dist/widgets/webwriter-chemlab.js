@@ -103544,6 +103544,11 @@ var style = i`
 		--panel-trigger-height: 28px;
 		--diagram-panel-width: min(27cqw, 24rem);
 		--diagram-width: 0px;
+		--lab-card-surface: var(--sl-color-neutral-0);
+		--lab-card-inset: var(--sl-color-neutral-50);
+		--lab-card-border: var(--sl-color-neutral-200);
+		--lab-card-text: var(--sl-color-neutral-800);
+		--lab-card-secondary-text: var(--sl-color-neutral-700);
 		position: relative;
 		box-sizing: border-box;
 		display: grid;
@@ -103724,14 +103729,15 @@ var style = i`
 		max-block-size: min(11rem, 36vh, calc(100% - 8px));
 		overflow: auto;
 		padding: 5px;
-		background: var(--sl-color-neutral-0);
-		border: 1px solid var(--sl-color-neutral-200);
+		background: var(--lab-card-surface);
+		border: 1px solid var(--lab-card-border);
 		border-radius: 5px;
 		font-size: 0.85rem;
 		overflow-wrap: anywhere;
 	}
 	#contextInfoBox {
 		max-block-size: min(14rem, calc(100% - 8px));
+		box-shadow: 0 2px 6px rgb(0 0 0 / 7%);
 	}
 	#contextInfoBox p {
 		margin: 0.25em 0;
@@ -103754,12 +103760,26 @@ var style = i`
 		block-size: 20px;
 		margin: 0;
 		padding: 0;
+		border-color: var(--lab-card-border);
+		background: var(--lab-card-inset);
+	}
+	.object-summary-action:focus-visible {
+		outline: var(--sl-focus-ring);
+		outline-offset: var(--sl-focus-ring-offset);
 	}
 	.empty-vessel {
 		color: var(--sl-color-primary-700);
 	}
 	.empty-vessel:hover {
 		background: var(--sl-color-primary-100);
+		border-color: var(--sl-color-primary-200);
+	}
+	.object-summary-action.remObj {
+		color: var(--sl-color-danger-700);
+	}
+	.object-summary-action.remObj:hover {
+		background: var(--sl-color-danger-50);
+		border-color: var(--sl-color-danger-200);
 	}
 	.electrical-settings {
 		inline-size: 11rem;
@@ -103810,6 +103830,11 @@ var style = i`
 		inline-size: 100%;
 		block-size: auto;
 		padding: 2px 3px;
+		overflow: hidden;
+		border: 2px solid var(--lab-card-border);
+		border-radius: 5px;
+		background: var(--lab-card-inset);
+		color: var(--lab-card-text);
 	}
 	#contextMolInfo .vessel-carousel-thumbnail {
 		display: grid;
@@ -103838,6 +103863,7 @@ var style = i`
 	#contextMolInfo .vessel-carousel-quantities > p {
 		display: block;
 		font-variant-numeric: tabular-nums;
+		color: var(--lab-card-secondary-text);
 	}
 	#contextMolInfo::part(pagination) {
 		gap: 5px;
@@ -103845,10 +103871,19 @@ var style = i`
 	#contextMolInfo::part(pagination-item) {
 		width: 6px;
 		height: 6px;
+		background-color: var(--sl-color-neutral-400);
+	}
+	#contextMolInfo::part(pagination-item--active) {
+		background-color: var(--sl-color-primary-700);
+	}
+	#contextMixInfo sl-tag:not(.vessel-ph-tag)::part(base) {
+		background: var(--lab-card-inset);
+		border-color: var(--lab-card-border);
+		color: var(--lab-card-text);
 	}
 	.vessel-ph-tag::part(base) {
 		background: var(--indicator-color);
-		border-color: var(--indicator-color);
+		border-color: color-mix(in srgb, var(--indicator-color), currentColor 15%);
 		color: var(--indicator-text);
 	}
 	.vessel-saturation-tag::part(base) {
@@ -103865,32 +103900,6 @@ var style = i`
 		border-radius: 50%;
 		background: linear-gradient(to top, var(--sl-color-primary-600) var(--saturation-fill),
 			transparent var(--saturation-fill));
-	}
-	.vessel-carousel-card {
-		display: flex;
-		flex-direction: row;
-		justify-content: space-between;
-		overflow: hidden;
-		width: 150px;
-		height: 80px;
-		border: 2px solid #0284c7;
-		border-radius: 5px;
-	}
-	.vessel-carousel-thumbnail {
-		display: contents;
-	}
-	.vessel-carousel-thumbnail > :is(svg, img) {
-		width: 190px;
-		height: 80px;
-	}
-	.vessel-carousel-quantities {
-		display: block;
-		background-color: #fdfdfd;
-		border-radius: 5px;
-		overflow: hidden;
-	}
-	.vessel-carousel-quantities > p {
-		margin-bottom: 0;
 	}
 	.selection-info:not([data-anchored]) {
 		visibility: hidden;
@@ -104062,8 +104071,8 @@ var style = i`
 	#teacherDrawer::part(content) {
 		padding-inline: 6px;
 		padding-block-end: calc(var(--panel-trigger-height) + 2 * var(--teacher-drawer-trigger-inset));
-		box-shadow: inset 0 1px var(--sl-color-neutral-200);
-		background: var(--sl-color-neutral-0);
+		box-shadow: inset 0 1px var(--lab-card-border);
+		background: var(--lab-card-inset);
 	}
 	#teacherDrawerContent {
 		box-sizing: border-box;
@@ -104078,20 +104087,23 @@ var style = i`
 		gap: 4px;
 		border-radius: 0;
 	}
+	#teacherTabs {
+		--track-color: var(--lab-card-border);
+	}
 	#teacherTabs > sl-tab::part(base) {
 		padding: 5px 12px;
-		border: 1px solid var(--sl-color-neutral-300);
+		border: 1px solid var(--lab-card-border);
 		border-bottom: 0;
 		border-radius: var(--sl-border-radius-medium) var(--sl-border-radius-medium) 0 0;
-		background: var(--sl-color-neutral-0);
-		color: var(--sl-color-neutral-700);
+		background: var(--lab-card-surface);
+		color: var(--lab-card-secondary-text);
 	}
 	#teacherTabs > sl-tab:hover::part(base) {
 		background: var(--sl-color-neutral-100);
 	}
 	#teacherTabs > sl-tab[active]::part(base) {
-		border-color: var(--sl-color-primary-300);
-		background: var(--sl-color-primary-100);
+		border-color: var(--sl-color-primary-200);
+		background: var(--sl-color-primary-50);
 		color: var(--sl-color-primary-800);
 	}
 	#teacherTabs > sl-tab-panel {
@@ -104113,8 +104125,10 @@ var style = i`
 		gap: 5px;
 		min-inline-size: 10.5rem;
 		padding: 5px;
-		border: 1px solid var(--sl-color-neutral-200);
+		border: 1px solid var(--lab-card-border);
 		border-radius: 4px;
+		background: var(--lab-card-surface);
+		color: var(--lab-card-text);
 	}
 	.palette-card-header {
 		display: flex;
@@ -104180,9 +104194,9 @@ var style = i`
 		padding-block-start: 2px;
 	}
 	.palette-variant {
-		border: 1px solid var(--sl-color-neutral-200);
+		border: 1px solid var(--lab-card-border);
 		border-radius: var(--sl-border-radius-medium);
-		background: var(--sl-color-neutral-50);
+		background: var(--lab-card-inset);
 	}
 	.component-variant-body {
 		display: grid;
@@ -104358,13 +104372,15 @@ var style = i`
 	}
 	.chemical-palette-subgroup + .chemical-palette-subgroup,
 	.chemical-palette-group + .chemical-palette-group {
-		border-inline-start: 1px solid var(--sl-color-neutral-200);
+		border-inline-start: 1px solid var(--lab-card-border);
 		padding-inline-start: 8px;
 	}
 	.chemical-subgroup-label {
 		font-size: var(--sl-font-size-x-small);
-		color: var(--sl-color-neutral-600);
+		color: var(--lab-card-secondary-text);
 		padding-inline: 5px;
+		border-radius: var(--sl-border-radius-small);
+		background: var(--sl-color-neutral-100);
 	}
 	.chemical-dose-carousel {
 		display: flex;
