@@ -2792,11 +2792,6 @@ export class ChemLab extends LitElementWw {
 			</button>`;
 		return this.renderPaletteCard(name, permissionVariant, badge, html`
 				<div class="palette-variant">
-					<div class="palette-variant-controls">
-						${arrow(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Größe"))}
-						<sl-tag class="palette-variant-value" size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
-						${arrow(1, this.message(current.material ? "Nächstes Material" : "Nächste Größe"))}
-					</div>
 					<div class="palette-preview-area">
 						<button type="button" class="component-tile" contenteditable="false"
 							aria-label=${itemLabel} aria-pressed=${this.componentToPlace === current.id}
@@ -2819,6 +2814,11 @@ export class ChemLab extends LitElementWw {
 									</sl-checkbox>
 								</sl-tooltip>
 							</div>` : nothing}
+					</div>
+					<div class="palette-variant-controls">
+						${arrow(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Größe"))}
+						<sl-tag class="palette-variant-value" size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
+						${arrow(1, this.message(current.material ? "Nächstes Material" : "Nächste Größe"))}
 					</div>
 				</div>
 		`);

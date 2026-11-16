@@ -184380,11 +184380,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 			</button>`;
     return this.renderPaletteCard(name2, permissionVariant, badge, x`
 				<div class="palette-variant">
-					<div class="palette-variant-controls">
-						${arrow3(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Gr\xF6\xDFe"))}
-						<sl-tag class="palette-variant-value" size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
-						${arrow3(1, this.message(current.material ? "N\xE4chstes Material" : "N\xE4chste Gr\xF6\xDFe"))}
-					</div>
 					<div class="palette-preview-area">
 						<button type="button" class="component-tile" contenteditable="false"
 							aria-label=${itemLabel} aria-pressed=${this.componentToPlace === current.id}
@@ -184407,6 +184402,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 									</sl-checkbox>
 								</sl-tooltip>
 							</div>` : E}
+					</div>
+					<div class="palette-variant-controls">
+						${arrow3(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Gr\xF6\xDFe"))}
+						<sl-tag class="palette-variant-value" size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
+						${arrow3(1, this.message(current.material ? "N\xE4chstes Material" : "N\xE4chste Gr\xF6\xDFe"))}
 					</div>
 				</div>
 		`);
