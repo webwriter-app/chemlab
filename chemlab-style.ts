@@ -1702,9 +1702,11 @@ export const style = css`
 	.palette-card-name > sl-tag {
 		max-inline-size: 100%;
 	}
-	.palette-card-name > sl-tag::part(base) {
+	.palette-card-name sl-tag::part(base) {
 		block-size: auto;
 		min-block-size: 1.5em;
+		padding: 1px 5px;
+		line-height: 1.25;
 		white-space: normal;
 		overflow-wrap: anywhere;
 	}
@@ -1869,6 +1871,7 @@ export const style = css`
 	.palette-card-menu-trigger {
 		display: block;
 		max-inline-size: 100%;
+		margin: 0;
 		padding: 0;
 		border: 0;
 		border-radius: var(--sl-border-radius-medium);
@@ -1880,13 +1883,6 @@ export const style = css`
 	.palette-card-menu-trigger > sl-tag {
 		max-inline-size: 100%;
 		pointer-events: none;
-	}
-	.palette-card-menu-trigger > sl-tag::part(base) {
-		block-size: auto;
-		min-block-size: 1.5em;
-		line-height: 1.25;
-		white-space: normal;
-		overflow-wrap: anywhere;
 	}
 	.palette-card-menu-trigger[aria-expanded="true"] svg {
 		transform: rotate(180deg);
@@ -1952,9 +1948,9 @@ export const style = css`
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		font-size: var(--sl-font-size-x-small);
-		font-weight: var(--sl-font-weight-semibold);
-		color: var(--lab-card-secondary-text);
+	}
+	.chemical-subgroup-label > sl-badge {
+		margin: 0;
 	}
 	.chemical-subgroup-label::after {
 		content: "";

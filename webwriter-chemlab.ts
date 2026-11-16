@@ -2962,11 +2962,14 @@ export class ChemLab extends LitElementWw {
 				<div class="palette-strip chemical-group-strip">
 					${repeat(sections, (section) => section.id, (section) => html`
 						<section class="chemical-palette-group" aria-label=${section.label}>
-							<sl-tag size="small">${section.label}</sl-tag>
+							${activeGroup ? nothing : html`<sl-tag size="small">${section.label}</sl-tag>`}
 							<div class="chemical-palette-subgroups">
 								${repeat(section.subgroups, (subgroup) => subgroup.id, (subgroup) => html`
 									<div class="chemical-palette-subgroup" role="group" aria-label=${subgroup.label || section.label}>
-										${subgroup.label ? html`<span class="chemical-subgroup-label">${subgroup.label}</span>` : nothing}
+										${subgroup.label ? html`
+											<div class="chemical-subgroup-label">
+												<sl-badge pill variant="neutral">${subgroup.label}</sl-badge>
+											</div>` : nothing}
 										<div class="chemical-palette-cards">
 											${repeat(subgroup.items, (item) => item.name, (item) => this.renderChemicalCard(item))}
 										</div>

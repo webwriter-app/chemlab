@@ -104187,9 +104187,11 @@ var style = i`
 	.palette-card-name > sl-tag {
 		max-inline-size: 100%;
 	}
-	.palette-card-name > sl-tag::part(base) {
+	.palette-card-name sl-tag::part(base) {
 		block-size: auto;
 		min-block-size: 1.5em;
+		padding: 1px 5px;
+		line-height: 1.25;
 		white-space: normal;
 		overflow-wrap: anywhere;
 	}
@@ -104354,6 +104356,7 @@ var style = i`
 	.palette-card-menu-trigger {
 		display: block;
 		max-inline-size: 100%;
+		margin: 0;
 		padding: 0;
 		border: 0;
 		border-radius: var(--sl-border-radius-medium);
@@ -104365,13 +104368,6 @@ var style = i`
 	.palette-card-menu-trigger > sl-tag {
 		max-inline-size: 100%;
 		pointer-events: none;
-	}
-	.palette-card-menu-trigger > sl-tag::part(base) {
-		block-size: auto;
-		min-block-size: 1.5em;
-		line-height: 1.25;
-		white-space: normal;
-		overflow-wrap: anywhere;
 	}
 	.palette-card-menu-trigger[aria-expanded="true"] svg {
 		transform: rotate(180deg);
@@ -104437,9 +104433,9 @@ var style = i`
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		font-size: var(--sl-font-size-x-small);
-		font-weight: var(--sl-font-weight-semibold);
-		color: var(--lab-card-secondary-text);
+	}
+	.chemical-subgroup-label > sl-badge {
+		margin: 0;
 	}
 	.chemical-subgroup-label::after {
 		content: "";
@@ -184567,11 +184563,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				<div class="palette-strip chemical-group-strip">
 					${c4(sections, (section) => section.id, (section) => x`
 						<section class="chemical-palette-group" aria-label=${section.label}>
-							<sl-tag size="small">${section.label}</sl-tag>
+							${activeGroup ? E : x`<sl-tag size="small">${section.label}</sl-tag>`}
 							<div class="chemical-palette-subgroups">
 								${c4(section.subgroups, (subgroup) => subgroup.id, (subgroup) => x`
 									<div class="chemical-palette-subgroup" role="group" aria-label=${subgroup.label || section.label}>
-										${subgroup.label ? x`<span class="chemical-subgroup-label">${subgroup.label}</span>` : E}
+										${subgroup.label ? x`
+											<div class="chemical-subgroup-label">
+												<sl-badge pill variant="neutral">${subgroup.label}</sl-badge>
+											</div>` : E}
 										<div class="chemical-palette-cards">
 											${c4(subgroup.items, (item) => item.name, (item) => this.renderChemicalCard(item))}
 										</div>
