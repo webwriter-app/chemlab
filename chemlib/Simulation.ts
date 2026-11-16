@@ -680,11 +680,11 @@ export abstract class Simulation {
 					structure: () => protonationStructure(family.representative, step - family.step) });
 			});
 		}
-		if (species.length) {
-			const OH = AcidBase.Kw / H;
-			species.push({ formula: "H₃O⁺", charge: 1, concentration: H, amount: H * volume, structure: () => waterIonStructure(1) },
-				{ formula: "OH⁻", charge: -1, concentration: OH, amount: OH * volume, structure: () => waterIonStructure(-1) });
-		}
+		// Water ions are listed for every solution: hydroxide bases only act
+		// through spectator charge, so without them OH- would stay invisible.
+		const OH = AcidBase.Kw / H;
+		species.push({ formula: "H₃O⁺", charge: 1, concentration: H, amount: H * volume, structure: () => waterIonStructure(1) },
+			{ formula: "OH⁻", charge: -1, concentration: OH, amount: OH * volume, structure: () => waterIonStructure(-1) });
 		return { pH: Math.round(-Math.log10(H) * 1000) / 1000, species, analyticalMolecules };
 	}
 

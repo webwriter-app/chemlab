@@ -1422,6 +1422,11 @@ export const style = css`
 		display: grid;
 		place-items: center;
 		text-align: center;
+		/* Text thumbnails (ion formulas without a drawn structure) keep the
+		   square size of the structure thumbnails so all cards share a height. */
+		aspect-ratio: 1;
+		align-self: center;
+		overflow: hidden;
 	}
 	#contextMolInfo .vessel-carousel-thumbnail > :is(svg, img) {
 		display: block;
