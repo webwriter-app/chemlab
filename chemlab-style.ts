@@ -1040,7 +1040,7 @@ export const style = css`
 		display: block;
 		inline-size: 800px;
 		max-inline-size: 100%;
-		block-size: 1000px;
+		block-size: 600px;
 		min-inline-size: min(260px, 100%);
 		min-block-size: 280px;
 		container-type: size;
