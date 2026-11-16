@@ -60,6 +60,24 @@ export abstract class AcidBase {
 	static Kw: number = 1e-14;
 
 	/**
+	 * Ion product of water at a given temperature.
+	 *
+	 * Anchored exactly at {@link Kw} for 25 °C and extrapolated with the van't
+	 * Hoff relation, using ΔH ≈ 55.8 kJ/mol for the autoionisation of water.
+	 * That gives pKw ≈ 14.9 at 0 °C and ≈ 12.0 at 100 °C, close to the
+	 * measured values.
+	 *
+	 * @public
+	 * @static
+	 * @param {number} temperature - absolute temperature in kelvin
+	 * @returns {number} the ion product of water in mol^2/L^2
+	 */
+	public static kwAt(temperature: number): number {
+		if (!(temperature > 0) || temperature === 298.15) return AcidBase.Kw;
+		return AcidBase.Kw * Math.exp(-55800 / 8.31446261815324 * (1 / temperature - 1 / 298.15));
+	}
+
+	/**
 	 * Net charge concentration contributed by one {@link AcidBaseSystem} at a
 	 * given proton concentration.
 	 *

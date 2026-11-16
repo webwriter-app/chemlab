@@ -246,7 +246,6 @@ class ChemComponent {
 				if (fraction === 1) this._content.hasLiquidVolume = false;
 				Simulation.sSolvation(this._content);
 				tDest.addContents({ nMix: portion });
-				if (tDest._content._isSolution) Simulation.sNeutralize(tDest._content);
 				return volume * fraction;
 			}
 			if (tMol == null && tVolume !== undefined) return 0;
@@ -310,9 +309,6 @@ class ChemComponent {
 			// if(this._content._activeMolecules.length === 0){
 			// 	this._content._isSolution = false
 			// }
-			if(tDest._content._isSolution){
-				Simulation.sNeutralize(tDest._content)
-			}
 		}
 		return 0;
 	}

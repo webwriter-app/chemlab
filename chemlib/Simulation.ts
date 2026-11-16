@@ -269,13 +269,13 @@ export abstract class Simulation {
 
 	private static registerSolidSalt(mix: Mixture, molecule: Molecule, ions: [Molecule, Molecule]): boolean {
 		const pair = ions[0]._totalCharge > 0 ? ions : [ions[1], ions[0]] as const;
-		const salt = saltEquilibria.find(({ cation, anion, cations, anions }) =>
-			cations === 1 && anions === 1 && pair[0].smilesString === cation && pair[1].smilesString === anion);
+		const salt = saltEquilibria.find(({ cation, anion }) =>
+			pair[0].smilesString === cation && pair[1].smilesString === anion);
 		if (!salt) return false;
 		const amount = mix._molProperties[molecule._id + "n"];
 		mix.remMolecule(molecule._id);
 		const existing = mix._activeMolecules.find((item) => item.solidSaltFormula === salt.formula);
-		mix.addMolecule(existing ?? this.makeSolidSalt(salt.formula, pair, [1, 1]), amount);
+		mix.addMolecule(existing ?? this.makeSolidSalt(salt.formula, pair, [salt.cations, salt.anions]), amount);
 		return true;
 	}
 
@@ -304,7 +304,7 @@ export abstract class Simulation {
 		}
 		const { systems, spectatorCharge } = this.acidBaseComposition(mix);
 		if (!systems.length) return ions;
-		const H = AcidBase.solveProton(systems, spectatorCharge);
+		const H = AcidBase.solveProton(systems, spectatorCharge, AcidBase.kwAt(mix._temperature));
 		for (const family of systems) {
 			const fractions = AcidBase.speciesFractions(family, H);
 			const total = () => family.members.reduce((sum, member) =>
@@ -643,42 +643,6 @@ export abstract class Simulation {
 	}
 
 	/**
-	 * neutralizes H+ ions and OH- ions and adds water accordingly: Returns the molar amount if neutralized ions
-	 *
-	 * @public
-	 * @static
-	 * @param {Mixture} sMix - the current solution
-	 * @returns {number}
-	 */
-	public static sNeutralize(sMix: Mixture): number {
-		let iWater: number, mH: Molecule, mOH: Molecule, cH: number, cOH: number;
-		sMix._activeMolecules.forEach((molecule) => {
-			if (molecule.smilesString === "[H+]") {
-				mH = molecule;
-				cH = sMix._molProperties[molecule._id + "c"];
-			} else if (molecule.smilesString === "[OH-]") {
-				mOH = molecule;
-				cOH = sMix._molProperties[molecule._id + "c"];
-			} else if (StructureManager.isWater(molecule)) {
-				iWater = molecule._id;
-			}
-		});
-
-		if (mH != undefined && mOH != undefined) {
-			var nNeutralize = Math.min(
-				cH * sMix._solutionVolume,
-				cOH * sMix._solutionVolume
-			);
-
-			sMix.addMolecule(mH, -nNeutralize);
-			sMix.addMolecule(mOH, -nNeutralize);
-			sMix.changeMolecule(iWater, nNeutralize);
-		}
-
-		return nNeutralize == null ? 0 : nNeutralize;
-	}
-
-	/**
 	 * Dissoziation of salts: Returns true because salts dissoziate completely
 	 *
 	 * @private
@@ -745,7 +709,7 @@ export abstract class Simulation {
 	public static getpH(sMix: Mixture): number {
 		if (!sMix._isSolution || !(sMix._solutionVolume > 0)) return 7;
 		const { systems, spectatorCharge } = this.acidBaseComposition(sMix);
-		return Math.round(AcidBase.pH(systems, spectatorCharge) * 1000) / 1000;
+		return Math.round(AcidBase.pH(systems, spectatorCharge, AcidBase.kwAt(sMix._temperature)) * 1000) / 1000;
 	}
 
 	/** Read-only equilibrium view of modeled polyprotic families; stored amounts remain analytical totals. */
@@ -753,7 +717,8 @@ export abstract class Simulation {
 		pH: number; species: AcidEquilibriumSpecies[]; analyticalMolecules: Set<Molecule>;
 	} {
 		const { systems, spectatorCharge } = this.acidBaseComposition(sMix);
-		const H = AcidBase.solveProton(systems, spectatorCharge);
+		const Kw = AcidBase.kwAt(sMix._temperature);
+		const H = AcidBase.solveProton(systems, spectatorCharge, Kw);
 		const volume = sMix._solutionVolume;
 		const species: AcidEquilibriumSpecies[] = [];
 		const analyticalMolecules = new Set<Molecule>();
@@ -844,7 +809,7 @@ export abstract class Simulation {
 		});
 		// Water ions are listed for every solution: hydroxide bases only act
 		// through spectator charge, so without them OH- would stay invisible.
-		const OH = AcidBase.Kw / H;
+		const OH = Kw / H;
 		species.push({ formula: "H₃O⁺", charge: 1, concentration: H, amount: H * volume, structure: () => waterIonStructure(1) },
 			{ formula: "OH⁻", charge: -1, concentration: OH, amount: OH * volume, structure: () => waterIonStructure(-1) });
 		return { pH: Math.round(-Math.log10(H) * 1000) / 1000, species, analyticalMolecules };

@@ -148799,6 +148799,23 @@ var AcidBase = class _AcidBase {
    */
   static Kw = 1e-14;
   /**
+   * Ion product of water at a given temperature.
+   *
+   * Anchored exactly at {@link Kw} for 25 °C and extrapolated with the van't
+   * Hoff relation, using ΔH ≈ 55.8 kJ/mol for the autoionisation of water.
+   * That gives pKw ≈ 14.9 at 0 °C and ≈ 12.0 at 100 °C, close to the
+   * measured values.
+   *
+   * @public
+   * @static
+   * @param {number} temperature - absolute temperature in kelvin
+   * @returns {number} the ion product of water in mol^2/L^2
+   */
+  static kwAt(temperature) {
+    if (!(temperature > 0) || temperature === 298.15) return _AcidBase.Kw;
+    return _AcidBase.Kw * Math.exp(-55800 / 8.31446261815324 * (1 / temperature - 1 / 298.15));
+  }
+  /**
    * Net charge concentration contributed by one {@link AcidBaseSystem} at a
    * given proton concentration.
    *
@@ -149098,12 +149115,12 @@ var Simulation = class {
   }
   static registerSolidSalt(mix, molecule2, ions) {
     const pair = ions[0]._totalCharge > 0 ? ions : [ions[1], ions[0]];
-    const salt2 = saltEquilibria.find(({ cation, anion, cations, anions }) => cations === 1 && anions === 1 && pair[0].smilesString === cation && pair[1].smilesString === anion);
+    const salt2 = saltEquilibria.find(({ cation, anion }) => pair[0].smilesString === cation && pair[1].smilesString === anion);
     if (!salt2) return false;
     const amount = mix._molProperties[molecule2._id + "n"];
     mix.remMolecule(molecule2._id);
     const existing = mix._activeMolecules.find((item) => item.solidSaltFormula === salt2.formula);
-    mix.addMolecule(existing ?? this.makeSolidSalt(salt2.formula, pair, [1, 1]), amount);
+    mix.addMolecule(existing ?? this.makeSolidSalt(salt2.formula, pair, [salt2.cations, salt2.anions]), amount);
     return true;
   }
   /**
@@ -149135,7 +149152,7 @@ var Simulation = class {
     }
     const { systems: systems4, spectatorCharge } = this.acidBaseComposition(mix);
     if (!systems4.length) return ions;
-    const H3 = AcidBase.solveProton(systems4, spectatorCharge);
+    const H3 = AcidBase.solveProton(systems4, spectatorCharge, AcidBase.kwAt(mix._temperature));
     for (const family of systems4) {
       const fractions = AcidBase.speciesFractions(family, H3);
       const total = () => family.members.reduce((sum, member) => sum + (mix._molProperties[member._id + "n"] ?? 0), 0) / volume;
@@ -149422,38 +149439,6 @@ var Simulation = class {
     cathode.changeMolecule(cathodeIon._id, -electronMol / zCathode);
   }
   /**
-   * neutralizes H+ ions and OH- ions and adds water accordingly: Returns the molar amount if neutralized ions
-   *
-   * @public
-   * @static
-   * @param {Mixture} sMix - the current solution
-   * @returns {number}
-   */
-  static sNeutralize(sMix) {
-    let iWater, mH, mOH, cH, cOH;
-    sMix._activeMolecules.forEach((molecule2) => {
-      if (molecule2.smilesString === "[H+]") {
-        mH = molecule2;
-        cH = sMix._molProperties[molecule2._id + "c"];
-      } else if (molecule2.smilesString === "[OH-]") {
-        mOH = molecule2;
-        cOH = sMix._molProperties[molecule2._id + "c"];
-      } else if (StructureManager.isWater(molecule2)) {
-        iWater = molecule2._id;
-      }
-    });
-    if (mH != void 0 && mOH != void 0) {
-      var nNeutralize = Math.min(
-        cH * sMix._solutionVolume,
-        cOH * sMix._solutionVolume
-      );
-      sMix.addMolecule(mH, -nNeutralize);
-      sMix.addMolecule(mOH, -nNeutralize);
-      sMix.changeMolecule(iWater, nNeutralize);
-    }
-    return nNeutralize == null ? 0 : nNeutralize;
-  }
-  /**
    * Dissoziation of salts: Returns true because salts dissoziate completely
    *
    * @private
@@ -149496,12 +149481,13 @@ var Simulation = class {
   static getpH(sMix) {
     if (!sMix._isSolution || !(sMix._solutionVolume > 0)) return 7;
     const { systems: systems4, spectatorCharge } = this.acidBaseComposition(sMix);
-    return Math.round(AcidBase.pH(systems4, spectatorCharge) * 1e3) / 1e3;
+    return Math.round(AcidBase.pH(systems4, spectatorCharge, AcidBase.kwAt(sMix._temperature)) * 1e3) / 1e3;
   }
   /** Read-only equilibrium view of modeled polyprotic families; stored amounts remain analytical totals. */
   static getPolyproticEquilibrium(sMix) {
     const { systems: systems4, spectatorCharge } = this.acidBaseComposition(sMix);
-    const H3 = AcidBase.solveProton(systems4, spectatorCharge);
+    const Kw = AcidBase.kwAt(sMix._temperature);
+    const H3 = AcidBase.solveProton(systems4, spectatorCharge, Kw);
     const volume = sMix._solutionVolume;
     const species = [];
     const analyticalMolecules = /* @__PURE__ */ new Set();
@@ -149581,7 +149567,7 @@ var Simulation = class {
         structure
       });
     });
-    const OH = AcidBase.Kw / H3;
+    const OH = Kw / H3;
     species.push(
       { formula: "H\u2083O\u207A", charge: 1, concentration: H3, amount: H3 * volume, structure: () => waterIonStructure(1) },
       { formula: "OH\u207B", charge: -1, concentration: OH, amount: OH * volume, structure: () => waterIonStructure(-1) }
@@ -149880,7 +149866,6 @@ var ChemComponent = class {
         if (fraction === 1) this._content.hasLiquidVolume = false;
         Simulation.sSolvation(this._content);
         tDest.addContents({ nMix: portion });
-        if (tDest._content._isSolution) Simulation.sNeutralize(tDest._content);
         return volume * fraction;
       }
       if (tMol == null && tVolume !== void 0) return 0;
@@ -149922,9 +149907,6 @@ var ChemComponent = class {
             -(tVolume == null ? this._outVol === 0 ? data2[2] : this._outVol * data2[1] : tVolume * data2[1])
           );
         });
-      }
-      if (tDest._content._isSolution) {
-        Simulation.sNeutralize(tDest._content);
       }
     }
     return 0;
