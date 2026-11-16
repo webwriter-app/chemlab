@@ -3188,7 +3188,7 @@ export class ChemLab extends LitElementWw {
 
 	private renderSelectionDeleteButton(remove: () => void, iconOnly = false) {
 		return html`
-			<button type="button" class="remObj" aria-label=${this.message("löschen")} title=${this.message("löschen")} @click=${remove}>
+			<button type="button" class=${iconOnly ? "remObj object-summary-action" : "remObj"} aria-label=${this.message("löschen")} title=${this.message("löschen")} @click=${remove}>
 				<svg
 					aria-hidden="true"
 					width="12"
@@ -3292,10 +3292,20 @@ export class ChemLab extends LitElementWw {
 		const name = this.itemName(this.curr_name.split(":")[0]);
 		const vessel = this.curr_obj instanceof chemlib.ChemComponent ? this.curr_obj : undefined;
 		const device = this.curr_obj instanceof chemlib.ElectricComponent ? this.curr_obj : undefined;
+		const emptyLabel = this.message("Objekt leeren");
 		return html`
 			<section id="contextInfoBox" class="selection-info" ?hidden=${!this.curr_obj}>
 				<div class="object-summary-heading">
-					<sl-badge class="selection-info-title">${name}</sl-badge>
+					<sl-badge pill variant="primary">${name}</sl-badge>
+					${vessel?._content._activeMolecules.length ? html`
+						<button type="button" class="object-summary-action empty-vessel"
+							aria-label=${emptyLabel} title=${emptyLabel} @click=${() => this.emptyVessel(vessel)}>
+							<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor"
+								stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M1.5 7 7 1.5 11 5.5 9 5.5 5 9.5a1 1 0 0 1-1.5 0L1.5 7Z"/>
+								<path d="M11.5 8.5c.8 1 2 2.4 2 3.5a2 2 0 0 1-4 0c0-1.1 1.2-2.5 2-3.5Z"/>
+							</svg>
+						</button>` : nothing}
 					${this.renderSelectionDeleteButton(() => this._removeSprite(), true)}
 				</div>
 				<div id="contextEchemInfo"></div>
@@ -3381,8 +3391,6 @@ export class ChemLab extends LitElementWw {
 					>
 						${this.message(this.simulation.hasTask("echem" + this.curr_name) ? "Ausschalten" : "Einschalten")}
 					</button>
-					${vessel?._content._activeMolecules.length ? html`
-						<sl-button size="small" @click=${() => this.emptyVessel(vessel)}>${this.message("Objekt leeren")}</sl-button>` : nothing}
 				</div>
 				${device ? this.renderElectricalSettings(device) : nothing}
 			</section>

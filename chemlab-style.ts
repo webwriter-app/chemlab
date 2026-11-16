@@ -1260,11 +1260,21 @@ export const style = css`
 	#contextMixInfo {
 		flex-wrap: wrap;
 	}
-	.object-summary-heading > .remObj {
+	.object-summary-action {
 		display: grid;
 		place-items: center;
+		box-sizing: border-box;
+		flex: none;
+		inline-size: 22px;
+		block-size: 20px;
 		margin: 0;
-		padding: 2px 4px;
+		padding: 0;
+	}
+	.empty-vessel {
+		color: var(--sl-color-primary-700);
+	}
+	.empty-vessel:hover {
+		background: var(--sl-color-primary-100);
 	}
 	.electrical-settings {
 		inline-size: 11rem;
