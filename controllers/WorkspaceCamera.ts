@@ -1,6 +1,6 @@
 export const STANDARD_CANVAS_WIDTH = 800;
 export const STANDARD_CANVAS_HEIGHT = 600;
-export const MILLIMETERS_PER_WORLD_UNIT = 1.5;
+export const MILLIMETERS_PER_WORLD_UNIT = 1;
 const MIN_ZOOM = 0.025;
 const MAX_ZOOM = 8;
 const GRID_BASE_MM = 20;

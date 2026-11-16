@@ -716,7 +716,17 @@ export class ChemLab extends LitElementWw {
 	private applyAuthoredData(value: Record<string, unknown>) {
 		if (Array.isArray(value.availableMolecules)) this.availableMolecules = value.availableMolecules;
 		if (Array.isArray(value.availableMixtures)) this.availableMixtures = value.availableMixtures;
-		if (Array.isArray(value.availableComponents)) this.availableComponents = value.availableComponents;
+		if (Array.isArray(value.availableComponents)) {
+			// Setups authored before `layoutScale` carry world-unit positions
+			// from the 1.5 mm-per-unit era; scale them once to the 1 mm unit.
+			const needsScale = value.layoutScale !== 1;
+			this.availableComponents = value.availableComponents.map((component) => {
+				if (!needsScale || typeof component !== "object" || component === null) return component;
+				const pos = (component as Record<string, unknown>)["pos"];
+				if (!Array.isArray(pos) || pos.length !== 2 || !pos.every(Number.isFinite)) return component;
+				return { ...component, pos: [pos[0] * 1.5, pos[1] * 1.5] };
+			});
+		}
 		if (Array.isArray(value.invComponents)) {
 			const componentNames = Object.keys(chemlib.ComponentType).concat(Object.keys(chemlib.EComponentType));
 			this.invComponents = value.invComponents.map(value => String(value).trim()).filter(Boolean).map(value =>
@@ -747,6 +757,7 @@ export class ChemLab extends LitElementWw {
 			const value = JSON.parse(block.textContent ?? "");
 			if (!value || typeof value !== "object") return;
 			const incoming = JSON.stringify({
+				layoutScale: 1,
 				availableMolecules: value.availableMolecules ?? this.availableMolecules,
 				availableMixtures: value.availableMixtures ?? this.availableMixtures,
 				availableComponents: value.availableComponents ?? this.availableComponents,
@@ -768,6 +779,7 @@ export class ChemLab extends LitElementWw {
 
 	private serializeAuthoredData() {
 		return JSON.stringify({
+			layoutScale: 1,
 			availableMolecules: this.availableMolecules,
 			availableMixtures: this.availableMixtures,
 			availableComponents: this.availableComponents,
