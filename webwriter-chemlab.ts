@@ -120,6 +120,11 @@ export class ChemLab extends LitElementWw {
 				{ value: "0", label: { _: "Disabled", "de-DE": "Deaktiviert" } },
 			],
 		},
+		thumbnailBadges: {
+			type: Boolean,
+			group: "appearance",
+			label: { _: "Label thumbnail sources", "de-DE": "Vorschaubild-Quellen anzeigen" },
+		},
 		enablexAPI: {
 			type: Boolean,
 			group: "analytics",
@@ -330,7 +335,7 @@ export class ChemLab extends LitElementWw {
 	 *
 	 * @property {boolean} thumbnailBadges
 	 */
-	@property({ type: Boolean, attribute: "thumbnail-badges", reflect: true })
+	@property({ type: Boolean, reflect: true })
 	accessor thumbnailBadges = false;
 	private dataObserver?: MutationObserver;
 	private savedDataSnapshot: string | null = null;
@@ -704,6 +709,12 @@ export class ChemLab extends LitElementWw {
 			this.canvas.drawSelection();
 		}
 		if (changed.has("amountMenu")) this.positionAmountMenu();
+		if (changed.has("thumbnailBadges")) {
+			// Thumbnails are cached per molecule; rebuild them so the labels
+			// appear or disappear immediately when the option toggles.
+			this.vesselThumbnails = new WeakMap();
+			if (this.hasUpdated) this._updatePopup();
+		}
 	}
 
 	private readLegacyArray(name: string): object[] | undefined {
@@ -1795,10 +1806,16 @@ export class ChemLab extends LitElementWw {
 		render(html`
 			${repeat(entries, ({ key }) => key, ({ molecule, species, phase }) => {
 				if (species) {
-					const { formula, concentration, structure } = species;
+					const { formula, concentration, structure, name } = species;
 					const thumbnail = structure();
+					if (thumbnail && !thumbnail.name && !this.vesselNameRequests.has(thumbnail)) {
+						this.vesselNameRequests.add(thumbnail);
+						void chemlib.StructureManager.getChemData(thumbnail).then(() => {
+							if (this.curr_obj?._content === mixture) this._updatePopup();
+						}).catch(() => { /* Keep the formula as the fallback title. */ });
+					}
 					return slide(thumbnail ? this.vesselThumbnail(thumbnail, formula) : html`<span class="vessel-carousel-thumbnail">${formula}</span>`,
-						formula, concentrationLine(concentration));
+						name || formula, concentrationLine(concentration));
 				}
 				const formula = molecule._kekule_obj.calcFormula().getDisplayText();
 				if (!molecule.name && !molecule.solidSaltFormula && !this.vesselNameRequests.has(molecule)) {

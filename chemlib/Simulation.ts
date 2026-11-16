@@ -23,6 +23,8 @@ export interface AcidEquilibriumSpecies {
 	charge: number;
 	amount: number;
 	concentration: number;
+	/** Substance name carried over from a folded stored ion, if any. */
+	name?: string;
 	/** Share of its acid family; solvent ions do not belong to a displayed family. */
 	fraction?: number;
 	/** A representative structure for this protonation state, built only when drawn. */
@@ -680,20 +682,35 @@ export abstract class Simulation {
 				symbols.unshift("H");
 			}
 			family.members.forEach((molecule) => analyticalMolecules.add(molecule));
+			// Chemical-bond dissociation parts give species with a real SMILES
+			// (e.g. [Cl-] from HCl), so cards can carry name and drawing even
+			// when nothing was stored at that protonation state.
+			const conjugates = this.cacheDissociation(family.representative);
 			AcidBase.speciesFractions(family, H).forEach((fraction, step) => {
 				const concentration = family.totalC * fraction;
 				const charge = family.protonatedCharge - step;
+				// A stored species of this protonation state (or its dissociation
+				// part) keeps its name and drawn structure on the species card.
+				const molecule = family.members.find((item) => item._totalCharge === charge) ??
+					conjugates?.find((item) => item && item !== family.representative &&
+						item.smilesString !== "[H+]" && item._totalCharge === charge);
 				const formula = symbols.map((symbol) => {
 					const count = symbol === "H" ? protonatedHydrogens - step : elements.get(symbol);
 					return count > 0 ? symbol + subscript(count) : "";
 				}).join("") + superscript(charge);
 				species.push({ formula, charge, fraction, concentration, amount: concentration * volume,
-					structure: () => protonationStructure(family.representative, step - family.step) });
+					name: molecule?.name, structure: () => molecule ??
+						protonationStructure(family.representative, step - family.step) });
 			});
 		}
 		// Hydroxide bases stay whole and their cation never becomes a mixture
 		// ion, because only its charge feeds the pH balance. Surface each
-		// stored base's cation as a computed species beside the OH-.
+		// stored base's cation as a computed species beside the OH-, folding
+		// an existing stored ion of the same identity into one card instead
+		// of showing the cation twice.
+		const cationCards = new Map<string, {
+			charge: number; concentration: number; name?: string; structure: () => Molecule;
+		}>();
 		sMix._activeMolecules.forEach((molecule) => {
 			const smiles = molecule.smilesString;
 			if (analyticalMolecules.has(molecule) || molecule.solidSaltFormula ||
@@ -706,12 +723,29 @@ export abstract class Simulation {
 			const cation = hydroxide === parts[0] ? parts[1] : parts[0];
 			const moles = sMix._molProperties[molecule._id + "n"];
 			if (!Number.isFinite(moles) || moles <= 0) return;
-			const concentration = moles / volume;
 			analyticalMolecules.add(molecule);
+			let card = cationCards.get(cation.smilesString);
+			if (!card) {
+				const stored = sMix._activeMolecules.find((item) => item !== molecule &&
+					!analyticalMolecules.has(item) && !item.solidSaltFormula &&
+					item._totalCharge !== 0 && item.smilesString === cation.smilesString);
+				const storedMoles = stored ? sMix._molProperties[stored._id + "n"] : NaN;
+				if (stored) analyticalMolecules.add(stored);
+				card = {
+					charge: cation._totalCharge,
+					concentration: Number.isFinite(storedMoles) ? storedMoles / volume : 0,
+					name: stored?.name,
+					structure: () => stored ?? cation,
+				};
+				cationCards.set(cation.smilesString, card);
+			}
+			card.concentration += moles / volume;
+		});
+		cationCards.forEach(({ charge, concentration, name, structure }) => {
 			species.push({
-				formula: ionFormula(cation), charge: cation._totalCharge, concentration,
+				formula: ionFormula(structure()), charge, concentration, name,
 				amount: concentration * volume,
-				structure: () => cation,
+				structure,
 			});
 		});
 		// Water ions are listed for every solution: hydroxide bases only act
