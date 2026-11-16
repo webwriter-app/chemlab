@@ -1579,6 +1579,13 @@ export const style = css`
 		white-space: nowrap;
 	}
 	#paletteArea {
+		--palette-inset: 8px;
+		--palette-section-fill: #f8f6fa;
+		--palette-heading-fill: #e8e0ee;
+		--palette-heading-badge: #ded3e7;
+		--palette-heading-ink: #4e3e5d;
+		--palette-subheading-fill: #f1edf4;
+		--palette-subheading-ink: #5e5367;
 		grid-column: 3;
 		background: var(--lab-card-inset);
 	}
@@ -1608,7 +1615,7 @@ export const style = css`
 	}
 	.selected-chemical {
 		max-inline-size: 100%;
-		margin-block-end: 5px;
+		justify-self: start;
 	}
 	.selected-chemical::part(label) {
 		white-space: normal;
@@ -1641,13 +1648,17 @@ export const style = css`
 		overflow: hidden auto;
 		overscroll-behavior-y: contain;
 		scrollbar-width: thin;
+		scrollbar-gutter: stable;
 	}
 	#teacherTabs > sl-tab {
 		flex: 0 1 auto;
 		min-inline-size: 0;
 	}
 	#teacherTabs > sl-tab::part(base) {
+		display: flex;
+		justify-content: center;
 		box-sizing: border-box;
+		block-size: 100%;
 		min-block-size: var(--panel-trigger-height);
 		padding: 3px 7px;
 		border: 1px solid var(--lab-card-border);
@@ -1671,11 +1682,15 @@ export const style = css`
 	#teacherTabs > sl-tab-panel {
 		--padding: 0;
 	}
-	.palette-strip {
+	.palette-content {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
-		gap: 6px;
-		padding: 2px 2px 5px;
+		gap: var(--palette-inset);
+		padding: var(--palette-inset);
+	}
+	.palette-empty {
+		margin: 0;
+		color: var(--lab-card-secondary-text);
 	}
 	.palette-card {
 		display: grid;
@@ -1746,19 +1761,22 @@ export const style = css`
 		font-size: var(--sl-tooltip-font-size);
 		line-height: var(--sl-tooltip-line-height);
 	}
-	.component-variant {
-		display: grid;
-		grid-template-rows: auto 1fr;
-	}
-	.component-variant-controls {
+	.palette-variant-controls {
 		display: grid;
 		grid-template-columns: minmax(16px, 1fr) minmax(0, max-content) minmax(16px, 1fr);
 		align-items: center;
-		padding-block-start: 2px;
+		gap: 2px;
+		min-block-size: 25px;
+		padding-inline: 2px;
 	}
-	.component-variant-controls sl-tag::part(base) {
+	.palette-variant-value {
+		grid-area: 1 / 2;
+		min-inline-size: 0;
+	}
+	.palette-variant-controls sl-tag::part(base) {
 		block-size: auto;
-		min-block-size: calc(var(--sl-input-height-small) * 0.8);
+		min-block-size: 18px;
+		justify-content: center;
 		line-height: 1.2;
 		white-space: normal;
 		overflow-wrap: anywhere;
@@ -1768,27 +1786,23 @@ export const style = css`
 		border-radius: var(--sl-border-radius-medium);
 		background: var(--lab-card-inset);
 	}
-	.component-variant-body {
+	.palette-preview-area {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-columns: minmax(0, 1fr);
 	}
-	.component-permission {
-		grid-area: 1 / 2;
+	.palette-card-permission {
+		grid-area: 1 / 1;
 		z-index: 1;
 		display: grid;
 		place-items: center;
 		justify-self: end;
 		align-self: end;
-		block-size: calc(var(--sl-input-height-small) * 0.8);
-		margin-inline-end: 7px;
-		margin-block-end: 4px;
+		margin: 0 6px 4px;
 	}
-	.component-permission sl-tooltip,
-	.chemical-permission sl-tooltip {
+	.palette-card-permission sl-tooltip {
 		--show-delay: 650ms;
 	}
-	.component-permission sl-checkbox::part(label),
-	.chemical-permission sl-checkbox::part(label) {
+	.palette-card-permission sl-checkbox::part(label) {
 		position: absolute;
 		width: 1px;
 		height: 1px;
@@ -1818,19 +1832,25 @@ export const style = css`
 		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
 		gap: 6px;
-		padding: 2px;
-		margin-block-end: 6px;
+		padding: 0;
 	}
 	.chemical-group-select {
 		grid-area: 1 / 1 / 2 / -1;
 		min-inline-size: 0;
 	}
+	#teacherTabs .chemical-group-select::part(combobox) {
+		margin: 0;
+	}
 	.chemical-search {
-		grid-area: 2 / 1;
+		grid-area: 2 / 1 / 3 / -1;
 		min-inline-size: 0;
+	}
+	.chemical-filters:has(.chemical-filter-badge) .chemical-search {
+		grid-column-end: 2;
 	}
 	.chemical-filter-badge {
 		grid-area: 2 / 2;
+		justify-self: end;
 	}
 	.chemical-filters ::part(form-control-label) {
 		position: absolute;
@@ -1841,30 +1861,6 @@ export const style = css`
 	}
 	.palette-card-chemical > :not(.palette-card-header) {
 		contain: inline-size;
-	}
-	.chemical-single {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		align-items: start;
-	}
-	.chemical-single > .chemical-tile,
-	.chemical-single > .chemical-permission {
-		grid-row: 1;
-	}
-	.chemical-single > .chemical-tile {
-		grid-column: 1 / -1;
-	}
-	.chemical-single > .chemical-permission {
-		grid-column: 2;
-		align-self: end;
-		padding: 4px;
-	}
-	.chemical-solution {
-		display: grid;
-		min-inline-size: 0;
-	}
-	.chemical-solution .chemical-preview {
-		block-size: 42px;
 	}
 	.palette-card-menu-trigger {
 		display: block;
@@ -1905,112 +1901,90 @@ export const style = css`
 		display: block;
 		padding-block: 2px;
 	}
-	.chemical-palette-group,
-	.chemical-palette-subgroup {
+	.palette-section,
+	.palette-section-body,
+	.palette-subgroup,
+	.palette-card-list {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
-		gap: 4px;
-		align-content: start;
 	}
-	.chemical-palette-group {
-		--chemical-group-heading: #e6ddec;
-		--chemical-subgroup-heading: #f4f0eb;
-		gap: 0;
+	.palette-section {
 		border-radius: var(--sl-border-radius-medium);
 	}
-	.chemical-palette-group:has(> .chemical-group-label) {
-		border-inline-end: 8px solid var(--chemical-group-heading);
+	.palette-section:has(> .palette-section-heading) {
+		background: var(--palette-section-fill);
 	}
-	.chemical-palette-subgroup:has(> .chemical-subgroup-label) {
-		border-inline-end: 6px solid var(--chemical-subgroup-heading);
-		background: var(--chemical-subgroup-heading);
+	.palette-section-heading,
+	.palette-subgroup-heading {
+		padding: 4px var(--palette-inset);
 	}
-	.chemical-palette-subgroup:has(> .chemical-subgroup-label) > .chemical-palette-cards {
-		padding-inline-end: 4px;
-	}
-	.chemical-group-label {
-		padding: 4px 6px;
-		border-block-end: 1px solid var(--lab-card-border);
+	.palette-section-heading {
 		border-start-start-radius: inherit;
 		border-start-end-radius: inherit;
-		background: var(--chemical-group-heading);
+		background: var(--palette-heading-fill);
+		color: var(--palette-heading-ink);
 	}
-	.chemical-group-label > sl-badge::part(base) {
-		background: #d9cbe3;
-		border-color: #cebbdb;
-		color: #543f66;
-		font-weight: var(--sl-font-weight-semibold);
+	.palette-section-body {
+		gap: 12px;
+		padding: var(--palette-inset);
 	}
-	.chemical-palette-subgroups {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		gap: 8px;
-		padding: 6px;
-	}
-	.chemical-palette-cards {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
+	.palette-subgroup {
 		gap: 6px;
 	}
-	.chemical-group-strip {
-		gap: 10px;
+	.palette-subgroup-heading {
+		border-radius: var(--sl-border-radius-small);
+		background: var(--palette-subheading-fill);
+		color: var(--palette-subheading-ink);
 	}
-	.chemical-subgroup-label {
-		display: flex;
-		align-items: center;
-		padding: 2px 4px;
-		border-start-start-radius: var(--sl-border-radius-small);
-		background: var(--chemical-subgroup-heading);
+	.palette-card-list {
+		gap: var(--palette-inset);
 	}
-	.chemical-group-label > sl-badge,
-	.chemical-subgroup-label > sl-badge {
+	.palette-section-heading > sl-badge,
+	.palette-subgroup-heading > sl-badge {
 		max-inline-size: 100%;
 		margin: 0;
 	}
-	.chemical-group-label > sl-badge::part(base),
-	.chemical-subgroup-label > sl-badge::part(base) {
+	.palette-section-heading > sl-badge::part(base),
+	.palette-subgroup-heading > sl-badge::part(base) {
+		padding: 1px 5px;
+		border: 0;
+		background: transparent;
+		color: inherit;
 		white-space: normal;
 		overflow-wrap: anywhere;
 		line-height: 1.25;
-		box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
 	}
-	.chemical-subgroup-label > sl-badge::part(base) {
-		padding: 1px 5px;
-		background: var(--chemical-subgroup-heading);
-		border-color: #e4dad0;
-		color: #62574e;
+	.palette-section-heading > sl-badge::part(base) {
+		background: var(--palette-heading-badge);
+	}
+	.palette-subgroup-heading > sl-badge::part(base) {
 		font-weight: var(--sl-font-weight-normal);
-	}
-	.chemical-dose-carousel {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 2px;
-		padding: 2px 3px 0;
 	}
 	.chemical-dose-value {
 		display: grid;
 		place-items: center;
-		min-inline-size: 5.5em;
 	}
-	.chemical-dose-carousel button {
+	.chemical-dose-value > sl-badge {
+		max-inline-size: 100%;
+		margin: 0;
+	}
+	.chemical-carousel-arrow {
 		display: inline-grid;
 		place-items: center;
-		flex: none;
+		justify-self: center;
+		inline-size: min(20px, 100%);
+		block-size: 22px;
 		border: 0;
+		margin: 0;
 		padding: 0;
 		color: var(--sl-color-neutral-700);
 		background: transparent;
 		cursor: pointer;
 	}
-	.chemical-dose-carousel button:focus-visible {
+	.chemical-carousel-arrow:focus-visible {
 		outline: 2px solid var(--sl-color-primary-600);
 		outline-offset: 0;
 		border-radius: var(--sl-border-radius-small);
-	}
-	.chemical-dose-carousel .chemical-carousel-arrow {
-		inline-size: 20px;
-		block-size: 22px;
 	}
 	.chemical-carousel-arrow:dir(rtl) svg {
 		transform: scaleX(-1);
@@ -2018,38 +1992,25 @@ export const style = css`
 	.chemical-dose-value sl-badge::part(base) {
 		padding: 2px 4px;
 		font-size: var(--sl-font-size-x-small);
-		white-space: nowrap;
-		opacity: 0.82;
-	}
-	.chemical-permission {
-		display: grid;
-		flex: none;
-		place-items: center;
-	}
-	.chemical-tile {
-		box-sizing: border-box;
-		display: grid;
-		justify-items: center;
-		align-content: start;
-		gap: 2px;
-		width: 100%;
-		padding: 4px;
+		line-height: 1.2;
 		white-space: normal;
 		overflow-wrap: anywhere;
-		background: transparent;
 	}
-	.component-tile {
-		grid-area: 1 / 1 / 2 / -1;
+	.palette-preview-area > :is(.component-tile, .chemical-tile) {
+		grid-area: 1 / 1;
+		box-sizing: border-box;
 		display: grid;
 		place-items: center;
+		inline-size: 100%;
+		min-inline-size: 0;
+		margin: 0;
+		padding: 3px 22px;
+		border: 1px solid transparent;
+		border-radius: var(--sl-border-radius-medium);
+		background: transparent;
 		cursor: grab;
 		touch-action: pan-y;
 		user-select: none;
-		margin: 0;
-		min-width: 0;
-		padding: 2px min(18px, 4cqw) 3px;
-		border: 1px solid transparent;
-		background: transparent;
 	}
 	.component-preview {
 		display: block;
@@ -2058,15 +2019,6 @@ export const style = css`
 		block-size: 57px;
 		color: #285160;
 		pointer-events: none;
-	}
-	.chemical-tile {
-		cursor: grab;
-		touch-action: pan-y;
-		user-select: none;
-		min-inline-size: 0;
-		margin: 0;
-		border: 1px solid transparent;
-		border-radius: var(--sl-border-radius-medium);
 	}
 	.palette-dragging {
 		cursor: grabbing;

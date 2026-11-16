@@ -2710,10 +2710,14 @@ export class ChemLab extends LitElementWw {
 							}}>
 							<sl-tab slot="nav" panel="components" active>${this.message("Komponenten")}</sl-tab>
 							<sl-tab slot="nav" panel="chemicals">${this.message("Chemikalien")}</sl-tab>
-							<sl-tab-panel name="components" active>${selected}${this.renderComponentPalette()}</sl-tab-panel>
+							<sl-tab-panel name="components" active>
+								<div class="palette-content">${selected}${this.renderComponentPalette()}</div>
+							</sl-tab-panel>
 							<sl-tab-panel name="chemicals">
-								${selected}
-								${this.chemicalCatalogOpened ? this.renderChemicalCatalog() : nothing}
+								<div class="palette-content">
+									${selected}
+									${this.chemicalCatalogOpened ? this.renderChemicalCatalog() : nothing}
+								</div>
 							</sl-tab-panel>
 						</sl-tab-group>
 					</div>
@@ -2723,93 +2727,123 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderComponentPalette() {
-		const cards = (Object.keys(componentVariants) as PaletteComponent[]).map((type) => {
-			const variants: ComponentVariant[] = componentVariants[type];
-			const allowed = variants.filter((variant) => this.isVariantAllowed(variant));
-			const visible = this.canAuthor ? variants : allowed;
-			if (!visible.length) return nothing;
-			const graphic = componentGraphic(type);
-			const current = visible.find(({ id }) => id === this.visibleVariants[type]) ??
-				visible.find(({ capacityMl }) => capacityMl === graphic.capacityMl) ?? visible[0];
-			const position = visible.indexOf(current);
-			const name = this.itemName(type);
-			const variantLabel = current.material ? this.message(current.material.name) : current.size || this.message("Standard");
-			const partiallyAllowed = allowed.length > 0 && allowed.length < variants.length;
-			const permissionVariant = this.palettePermissionVariant(allowed.length, variants.length);
-			const currentAllowed = allowed.includes(current);
-			const showPermissionTooltip = (event: Event) => {
-				if (!partiallyAllowed) return;
-				this.permissionTooltip = {
-					anchor: event.currentTarget as HTMLElement,
-					type,
-					text: allowed.map((variant) => variant.material ? this.message(variant.material.name) : variant.size).join(", "),
-				};
-			};
-			const hidePermissionTooltip = (event: Event) => {
-				if (this.permissionTooltip?.anchor === event.currentTarget) this.permissionTooltip = undefined;
-			};
-			const itemLabel = `${name} · ${variantLabel}`;
-			const changeVariant = (step: number) => {
-				const next = visible[(position + step + visible.length) % visible.length];
-				this.visibleVariants = { ...this.visibleVariants, [type]: next.id };
-				if (this.componentToPlace === current.id) this.componentToPlace = undefined;
-			};
-			const arrow = (step: number, label: string) => html`
-				<sl-button class="variant-arrow" size="small" variant="text" ?disabled=${visible.length < 2}
-					aria-label=${`${name} · ${label}`} title=${label} @click=${() => changeVariant(step)}>
-					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
-						<path d=${step < 0 ? "m10 4-4 4 4 4" : "m6 4 4 4-4 4"}/>
-					</svg>
-				</sl-button>`;
-			const permissionCount = this.message("{allowed} von {total} Varianten freigegeben", { allowed: allowed.length, total: variants.length });
-			const permissionAction = this.message(allowed.length === variants.length ? "Alle Varianten sperren" : "Alle Varianten freigeben");
-			const badge = html`
-				<button type="button" class="component-permission-toggle"
-					title=${partiallyAllowed ? nothing : this.message("Doppelklick zum Umschalten aller Varianten")}
-					aria-label=${`${name} · ${permissionCount} · ${permissionAction}`}
-					aria-describedby=${this.permissionTooltip?.type === type ? "permissionTooltip" : nothing}
-					@pointerenter=${showPermissionTooltip} @pointerleave=${hidePermissionTooltip}
-					@focus=${showPermissionTooltip} @blur=${hidePermissionTooltip}
-					@keydown=${(event: KeyboardEvent) => { if (event.key === "Escape") hidePermissionTooltip(event); }}
-					@dblclick=${() => this.toggleAllVariants(type)}
-					@click=${(event: MouseEvent) => { if (event.detail === 0) this.toggleAllVariants(type); }}>
-					${this.renderPaletteBadge(allowed.length, variants.length)}
-				</button>`;
-			return this.renderPaletteCard(name, permissionVariant, badge, html`
-					<div class="component-variant palette-variant">
-						<div class="component-variant-controls">
-							${arrow(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Größe"))}
-							<sl-tag size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
-							${arrow(1, this.message(current.material ? "Nächstes Material" : "Nächste Größe"))}
-						</div>
-						<div class="component-variant-body">
-							<button type="button" class="component-tile" contenteditable="false"
-								aria-label=${itemLabel} aria-pressed=${this.componentToPlace === current.id}
-								@pointerdown=${(event: PointerEvent) => this.startComponentDrag(event, current)}
-								@dragstart=${this.preventNativePaletteDrag}
-								@click=${(event: MouseEvent) => {
-									if (this.consumePaletteClick(event)) return;
-									this.componentToPlace = this.componentToPlace === current.id ? undefined : current.id;
-									this.clearChemicalSelection();
-								}}>
-								${renderComponentPaletteIcon(current, variants.indexOf(current) / Math.max(1, variants.length - 1))}
-							</button>
-							${this.canAuthor ? html`
-								<div class="component-permission">
-									<sl-tooltip hoist content=${this.message("Für Lernende erlauben")}>
-									<sl-checkbox size="small" .checked=${currentAllowed}
-											aria-label=${`${itemLabel} · ${this.message("Für Lernende erlauben")}`}
-											@sl-change=${(event: Event) => this.setVariantAllowed(current, (event.currentTarget as SlCheckbox).checked)}>
-											${this.message("Für Lernende erlauben")}
-										</sl-checkbox>
-									</sl-tooltip>
-								</div>` : nothing}
-						</div>
-					</div>
-			`);
+		const types = Object.keys(componentVariants) as PaletteComponent[];
+		const groups = [
+			{ label: this.message("Glasgeräte"), types: types.filter(type => componentGraphic(type).capacityMl !== undefined) },
+			{ label: this.message("Elektrogeräte"), types: types.filter(type => componentGraphic(type).capacityMl === undefined) },
+		].flatMap(({ label, types }) => {
+			const cards = types.map(type => this.renderComponentCard(type)).filter(card => card !== nothing);
+			return cards.length ? [this.renderPaletteSection(label, this.renderPaletteSubgroup("", label, cards))] : [];
 		});
-		if (cards.every((card) => card === nothing)) return html`<p>${this.message("Keine Geräte freigegeben.")}</p>`;
-		return html`<div class="palette-strip">${cards}</div>`;
+		return groups.length ? groups : html`<p class="palette-empty">${this.message("Keine Geräte freigegeben.")}</p>`;
+	}
+
+	private renderComponentCard(type: PaletteComponent) {
+		const variants: ComponentVariant[] = componentVariants[type];
+		const allowed = variants.filter((variant) => this.isVariantAllowed(variant));
+		const visible = this.canAuthor ? variants : allowed;
+		if (!visible.length) return nothing;
+		const graphic = componentGraphic(type);
+		const current = visible.find(({ id }) => id === this.visibleVariants[type]) ??
+			visible.find(({ capacityMl }) => capacityMl === graphic.capacityMl) ?? visible[0];
+		const position = visible.indexOf(current);
+		const name = this.itemName(type);
+		const variantLabel = current.material ? this.message(current.material.name) : current.size || this.message("Standard");
+		const partiallyAllowed = allowed.length > 0 && allowed.length < variants.length;
+		const permissionVariant = this.palettePermissionVariant(allowed.length, variants.length);
+		const currentAllowed = allowed.includes(current);
+		const showPermissionTooltip = (event: Event) => {
+			if (!partiallyAllowed) return;
+			this.permissionTooltip = {
+				anchor: event.currentTarget as HTMLElement,
+				type,
+				text: allowed.map((variant) => variant.material ? this.message(variant.material.name) : variant.size).join(", "),
+			};
+		};
+		const hidePermissionTooltip = (event: Event) => {
+			if (this.permissionTooltip?.anchor === event.currentTarget) this.permissionTooltip = undefined;
+		};
+		const itemLabel = `${name} · ${variantLabel}`;
+		const changeVariant = (step: number) => {
+			const next = visible[(position + step + visible.length) % visible.length];
+			this.visibleVariants = { ...this.visibleVariants, [type]: next.id };
+			if (this.componentToPlace === current.id) this.componentToPlace = undefined;
+		};
+		const arrow = (step: number, label: string) => html`
+			<sl-button class="variant-arrow" size="small" variant="text" ?disabled=${visible.length < 2}
+				aria-label=${`${name} · ${label}`} title=${label} @click=${() => changeVariant(step)}>
+				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+					<path d=${step < 0 ? "m10 4-4 4 4 4" : "m6 4 4 4-4 4"}/>
+				</svg>
+			</sl-button>`;
+		const permissionCount = this.message("{allowed} von {total} Varianten freigegeben", { allowed: allowed.length, total: variants.length });
+		const permissionAction = this.message(allowed.length === variants.length ? "Alle Varianten sperren" : "Alle Varianten freigeben");
+		const badge = html`
+			<button type="button" class="component-permission-toggle"
+				title=${partiallyAllowed ? nothing : this.message("Doppelklick zum Umschalten aller Varianten")}
+				aria-label=${`${name} · ${permissionCount} · ${permissionAction}`}
+				aria-describedby=${this.permissionTooltip?.type === type ? "permissionTooltip" : nothing}
+				@pointerenter=${showPermissionTooltip} @pointerleave=${hidePermissionTooltip}
+				@focus=${showPermissionTooltip} @blur=${hidePermissionTooltip}
+				@keydown=${(event: KeyboardEvent) => { if (event.key === "Escape") hidePermissionTooltip(event); }}
+				@dblclick=${() => this.toggleAllVariants(type)}
+				@click=${(event: MouseEvent) => { if (event.detail === 0) this.toggleAllVariants(type); }}>
+				${this.renderPaletteBadge(allowed.length, variants.length)}
+			</button>`;
+		return this.renderPaletteCard(name, permissionVariant, badge, html`
+				<div class="palette-variant">
+					<div class="palette-variant-controls">
+						${arrow(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Größe"))}
+						<sl-tag class="palette-variant-value" size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
+						${arrow(1, this.message(current.material ? "Nächstes Material" : "Nächste Größe"))}
+					</div>
+					<div class="palette-preview-area">
+						<button type="button" class="component-tile" contenteditable="false"
+							aria-label=${itemLabel} aria-pressed=${this.componentToPlace === current.id}
+							@pointerdown=${(event: PointerEvent) => this.startComponentDrag(event, current)}
+							@dragstart=${this.preventNativePaletteDrag}
+							@click=${(event: MouseEvent) => {
+								if (this.consumePaletteClick(event)) return;
+								this.componentToPlace = this.componentToPlace === current.id ? undefined : current.id;
+								this.clearChemicalSelection();
+							}}>
+							${renderComponentPaletteIcon(current, variants.indexOf(current) / Math.max(1, variants.length - 1))}
+						</button>
+						${this.canAuthor ? html`
+							<div class="palette-card-permission">
+								<sl-tooltip hoist content=${this.message("Für Lernende erlauben")}>
+									<sl-checkbox size="small" .checked=${currentAllowed}
+										aria-label=${`${itemLabel} · ${this.message("Für Lernende erlauben")}`}
+										@sl-change=${(event: Event) => this.setVariantAllowed(current, (event.currentTarget as SlCheckbox).checked)}>
+										${this.message("Für Lernende erlauben")}
+									</sl-checkbox>
+								</sl-tooltip>
+							</div>` : nothing}
+					</div>
+				</div>
+		`);
+	}
+
+	private renderPaletteSection(label: string, content: unknown, showHeading = true) {
+		return html`
+			<section class="palette-section" aria-label=${label}>
+				${showHeading ? html`
+					<div class="palette-section-heading" role="heading" aria-level="3">
+						<sl-badge variant="primary">${label}</sl-badge>
+					</div>` : nothing}
+				<div class="palette-section-body">${content}</div>
+			</section>`;
+	}
+
+	private renderPaletteSubgroup(label: string, sectionLabel: string, cards: unknown, headingLevel = 4) {
+		return html`
+			<div class="palette-subgroup" role="group" aria-label=${label || sectionLabel}>
+				${label ? html`
+					<div class="palette-subgroup-heading" role="heading" aria-level=${headingLevel}>
+						<sl-badge variant="neutral">${label}</sl-badge>
+					</div>` : nothing}
+				<div class="palette-card-list">${cards}</div>
+			</div>`;
 	}
 
 	private palettePermissionVariant(allowed: number, total: number) {
@@ -2959,27 +2993,14 @@ export class ChemLab extends LitElementWw {
 					<div class="chemical-filter-badge">${this.renderChemicalPermissionBadge(activeGroup?.label ?? allLabel, items)}</div>` : nothing}
 			</div>
 			${items.length ? keyed(activeGroup?.id ?? "all", html`
-				<div class="palette-strip chemical-group-strip">
-					${repeat(sections, (section) => section.id, (section) => html`
-						<section class="chemical-palette-group" aria-label=${section.label}>
-							${activeGroup ? nothing : html`
-								<div class="chemical-group-label">
-									<sl-badge variant="primary">${section.label}</sl-badge>
-								</div>`}
-							<div class="chemical-palette-subgroups">
-								${repeat(section.subgroups, (subgroup) => subgroup.id, (subgroup) => html`
-									<div class="chemical-palette-subgroup" role="group" aria-label=${subgroup.label || section.label}>
-										${subgroup.label ? html`
-											<div class="chemical-subgroup-label">
-												<sl-badge variant="neutral">${subgroup.label}</sl-badge>
-											</div>` : nothing}
-										<div class="chemical-palette-cards">
-											${repeat(subgroup.items, (item) => item.name, (item) => this.renderChemicalCard(item))}
-										</div>
-									</div>`)}
-							</div>
-						</section>`)}
-				</div>`) : html`<p role="status">${this.message("Keine Chemikalien gefunden.")}</p>`}
+				${repeat(sections, (section) => section.id, (section) => this.renderPaletteSection(
+					section.label,
+					repeat(section.subgroups, (subgroup) => subgroup.id, (subgroup) => this.renderPaletteSubgroup(
+						subgroup.label, section.label,
+						repeat(subgroup.items, (item) => item.name, (item) => this.renderChemicalCard(item)),
+						activeGroup ? 3 : 4
+					)), !activeGroup
+				))}`) : html`<p class="palette-empty" role="status">${this.message("Keine Chemikalien gefunden.")}</p>`}
 		`;
 	}
 
@@ -3030,17 +3051,17 @@ export class ChemLab extends LitElementWw {
 				</svg>
 			</button>`;
 		const body = active !== undefined ? html`
-			<div class="chemical-solution palette-variant">
-				<div class="chemical-dose-carousel" role="group" aria-label=${`${name} · ${this.message("Konzentration zum Dosieren")}`}>
+			<div class="palette-variant">
+				<div class="palette-variant-controls" role="group" aria-label=${`${name} · ${this.message("Konzentration zum Dosieren")}`}>
 					${values.length > 1 ? arrow(-1) : nothing}
-					<span class="chemical-dose-value" aria-live="polite">
+					<span class="palette-variant-value chemical-dose-value" aria-live="polite">
 						<sl-badge>${concentrationLabel(active)}</sl-badge>
 					</span>
 					${values.length > 1 ? arrow(1) : nothing}
 				</div>
-				${preview}
+				<div class="palette-preview-area">${preview}</div>
 			</div>` : html`
-			<div class="chemical-single palette-variant">
+			<div class="palette-preview-area palette-variant">
 				${preview}
 				${this.canAuthor ? this.renderChemicalPermission(item.name, name) : nothing}
 			</div>`;
@@ -3051,7 +3072,7 @@ export class ChemLab extends LitElementWw {
 		const checked = this.isChemicalAllowed(name);
 		const changeText = this.message("Für Lernende erlauben");
 		return html`
-			<div class="chemical-permission">
+			<div class="palette-card-permission">
 				<sl-tooltip hoist content=${changeText}>
 					<sl-checkbox size="small" .checked=${live(checked)} aria-label=${`${label} · ${changeText}`}
 						@sl-change=${(event: Event) => this.setChemicalBlocked(name, !(event.currentTarget as SlCheckbox).checked)}>
