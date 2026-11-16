@@ -104170,7 +104170,7 @@ var style = i`
 		padding: 5px;
 		border-radius: 4px;
 		background: var(--lab-card-surface);
-		box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+		box-shadow: 0 1px 2px rgb(0 0 0 / 8%), 0 2px 5px rgb(0 0 0 / 13%);
 		color: var(--lab-card-text);
 	}
 	.palette-card-header {
