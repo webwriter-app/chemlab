@@ -47,12 +47,19 @@ export abstract class StructureManager {
 		//         charge plus the number of protons it can accept.
 		//   conj: conjugate SMILES by deprotonation step; a step can have several
 		//         equivalent SMILES. These species can also enter from a salt.
+		//         A base lists its protonated acid here as step 0.
 		//   alias: alternate SMILES for the same fully protonated acid.
+		// SMILES are matched as strings, and Molecule.setSmilesString writes the
+		// heavy-atom skeleton in Kekule's own atom order. Every entry therefore
+		// lists the hand-written form and the form the code generates for the
+		// same species, so a stored ion is recognised whichever way it was built.
 		acidbase: {
 			"Cl": { "pks": -6 },
 			"CC(O)=O": { "pks": 4.75 },
 			"OS(=O)(=O)O": { "alias": "O=S(O)(O)=O" },
-			"O=S(O)(O)=O": { "pks": [-3, 1.99], "conj": ["[O-]S(=O)(=O)O", "[O-]S(=O)(=O)[O-]"] },
+			"O=S(O)(O)=O": { "pks": [-3, 1.99], "conj": [
+				["[O-]S(=O)(=O)O", "[O-]S(=O)(O)=O"], ["[O-]S(=O)(=O)[O-]"],
+			] },
 			"O=CO": { "pks": 3.77 },
 			"CCC(O)=O": { "pks": 4.87 },
 			"O=C(O)C(O)C": { "pks": 3.86 },
@@ -70,14 +77,19 @@ export abstract class StructureManager {
 			"[N+](=O)(O)[O-]": { "pks": -1.3 },
 			"OP(=O)(O)O": { "alias": "O=P(O)(O)O" },
 			"O=P(O)(O)O": { "pks": [2.15, 7.21, 12.35], "conj": [
-				["[O-]P(=O)(O)O"], ["[O-]P(=O)(O)[O-]"], ["[PO4-3]", "[O-]P(=O)([O-])[O-]"],
+				["[O-]P(=O)(O)O", "[O-]P(O)(O)=O"], ["[O-]P(=O)(O)[O-]"],
+				["[PO4-3]", "[O-]P(=O)([O-])[O-]", "[O-]P([O-])(=O)[O-]"],
 			] },
 			"F": { "pks": 3.17, "conj": ["[F-]"] },
-			"C(=O)(O)O": { "pks": [6.35, 10.33], "conj": ["[O-]C(=O)O", ["[CO3-2]", "[O-]C(=O)[O-]"]] },
-			"S": { "pks": [7.0, 12.9], "conj": ["[SH-]", "[S-2]"] },
+			"O=C(O)O": { "alias": "C(=O)(O)O" },
+			"C(=O)(O)O": { "pks": [6.35, 10.33], "conj": [
+				["[O-]C(=O)O", "[O-]C(O)=O"], ["[CO3-2]", "[O-]C(=O)[O-]"],
+			] },
+			"S": { "pks": [7.0, 12.9], "conj": [["[SH-]", "[S-]"], ["[S-2]", "[S2-]"]] },
+			"OB(O)O": { "alias": "B(O)(O)O" },
 			"B(O)(O)O": { "pks": 9.24 },
 			"[K]O": { "pks": -1.1 },
-			"N": { "pks": 9.25, "base": true }
+			"N": { "pks": 9.25, "base": true, "conj": ["[N+]", "[NH4+]"] }
 			},
 		salt: {
 			"O[Al](O)O": { "pKL": 31.17 },

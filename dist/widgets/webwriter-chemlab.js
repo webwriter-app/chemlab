@@ -148043,12 +148043,20 @@ var StructureManager = class _StructureManager {
     //         charge plus the number of protons it can accept.
     //   conj: conjugate SMILES by deprotonation step; a step can have several
     //         equivalent SMILES. These species can also enter from a salt.
+    //         A base lists its protonated acid here as step 0.
     //   alias: alternate SMILES for the same fully protonated acid.
+    // SMILES are matched as strings, and Molecule.setSmilesString writes the
+    // heavy-atom skeleton in Kekule's own atom order. Every entry therefore
+    // lists the hand-written form and the form the code generates for the
+    // same species, so a stored ion is recognised whichever way it was built.
     acidbase: {
       "Cl": { "pks": -6 },
       "CC(O)=O": { "pks": 4.75 },
       "OS(=O)(=O)O": { "alias": "O=S(O)(O)=O" },
-      "O=S(O)(O)=O": { "pks": [-3, 1.99], "conj": ["[O-]S(=O)(=O)O", "[O-]S(=O)(=O)[O-]"] },
+      "O=S(O)(O)=O": { "pks": [-3, 1.99], "conj": [
+        ["[O-]S(=O)(=O)O", "[O-]S(=O)(O)=O"],
+        ["[O-]S(=O)(=O)[O-]"]
+      ] },
       "O=CO": { "pks": 3.77 },
       "CCC(O)=O": { "pks": 4.87 },
       "O=C(O)C(O)C": { "pks": 3.86 },
@@ -148066,16 +148074,21 @@ var StructureManager = class _StructureManager {
       "[N+](=O)(O)[O-]": { "pks": -1.3 },
       "OP(=O)(O)O": { "alias": "O=P(O)(O)O" },
       "O=P(O)(O)O": { "pks": [2.15, 7.21, 12.35], "conj": [
-        ["[O-]P(=O)(O)O"],
+        ["[O-]P(=O)(O)O", "[O-]P(O)(O)=O"],
         ["[O-]P(=O)(O)[O-]"],
-        ["[PO4-3]", "[O-]P(=O)([O-])[O-]"]
+        ["[PO4-3]", "[O-]P(=O)([O-])[O-]", "[O-]P([O-])(=O)[O-]"]
       ] },
       "F": { "pks": 3.17, "conj": ["[F-]"] },
-      "C(=O)(O)O": { "pks": [6.35, 10.33], "conj": ["[O-]C(=O)O", ["[CO3-2]", "[O-]C(=O)[O-]"]] },
-      "S": { "pks": [7, 12.9], "conj": ["[SH-]", "[S-2]"] },
+      "O=C(O)O": { "alias": "C(=O)(O)O" },
+      "C(=O)(O)O": { "pks": [6.35, 10.33], "conj": [
+        ["[O-]C(=O)O", "[O-]C(O)=O"],
+        ["[CO3-2]", "[O-]C(=O)[O-]"]
+      ] },
+      "S": { "pks": [7, 12.9], "conj": [["[SH-]", "[S-]"], ["[S-2]", "[S2-]"]] },
+      "OB(O)O": { "alias": "B(O)(O)O" },
       "B(O)(O)O": { "pks": 9.24 },
       "[K]O": { "pks": -1.1 },
-      "N": { "pks": 9.25, "base": true }
+      "N": { "pks": 9.25, "base": true, "conj": ["[N+]", "[NH4+]"] }
     },
     salt: {
       "O[Al](O)O": { "pKL": 31.17 },
@@ -148941,13 +148954,14 @@ function protonationStructure(source3, removed) {
   const neighbors = (atom) => source3._bonds.flatMap((bond) => bond._from === atom ? [{ atom: bond._to, order: bond._magnitude }] : bond._to === atom ? [{ atom: bond._from, order: bond._magnitude }] : []);
   for (let step = 0; step < Math.abs(removed); step++) {
     if (removed > 0) {
-      const sites = [...atoms].filter((atom) => ["O", "S"].includes(atom.getSymbol())).flatMap((site2) => {
+      const sites = [...atoms].filter((atom) => ["O", "S", "N", "P"].includes(atom.getSymbol())).flatMap((site2) => {
         const links = neighbors(site2);
         const hydrogen2 = links.find(({ atom }) => atom.getSymbol() === "H" && atoms.has(atom))?.atom;
         if (!hydrogen2) return [];
         const carboxyl = links.some(({ atom }) => atom.getSymbol() === "C" && neighbors(atom).some(({ atom: atom2, order }) => atom2.getSymbol() === "O" && order === 2));
-        return [{ site: site2, hydrogen: hydrogen2, carboxyl }];
-      }).sort((a7, b5) => Number(b5.carboxyl) - Number(a7.carboxyl));
+        const rank = carboxyl ? 0 : ["O", "S"].includes(site2.getSymbol()) ? 1 : 2;
+        return [{ site: site2, hydrogen: hydrogen2, rank }];
+      }).sort((a7, b5) => a7.rank - b5.rank);
       if (!sites.length) {
         cache.set(removed, void 0);
         return;
@@ -148956,7 +148970,7 @@ function protonationStructure(source3, removed) {
       atoms.delete(hydrogen);
       charges.set(site, charges.get(site) - 1);
     } else {
-      const site = [...atoms].find((atom) => ["O", "S"].includes(atom.getSymbol()) && charges.get(atom) < 0);
+      const site = [...atoms].find((atom) => ["O", "S"].includes(atom.getSymbol()) && charges.get(atom) < 0) ?? [...atoms].find((atom) => ["N", "P"].includes(atom.getSymbol()) && charges.get(atom) === 0);
       if (!site) {
         cache.set(removed, void 0);
         return;
@@ -149606,11 +149620,13 @@ var Simulation = class {
       return systems4[idx];
     };
     for (const key in acidbaseData) {
-      const conjList = acidbaseData[key]["conj"];
+      const entry = acidbaseData[key];
+      const conjList = entry["conj"];
       if (Array.isArray(conjList)) {
+        const offset3 = entry["base"] ? 0 : 1;
         for (const [index2, aliases] of conjList.entries()) {
           for (const alias of Array.isArray(aliases) ? aliases : [aliases]) {
-            conjugateToFamily[alias] = { key, step: index2 + 1 };
+            conjugateToFamily[alias] = { key, step: index2 + offset3 };
           }
         }
       }

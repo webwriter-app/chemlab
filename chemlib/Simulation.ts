@@ -71,21 +71,26 @@ function protonationStructure(source: Molecule, removed: number): Molecule | und
 		bond._to === atom ? [{ atom: bond._from, order: bond._magnitude }] : []);
 	for (let step = 0; step < Math.abs(removed); step++) {
 		if (removed > 0) {
-			const sites = [...atoms].filter((atom) => ["O", "S"].includes(atom.getSymbol())).flatMap((site) => {
+			const sites = [...atoms].filter((atom) => ["O", "S", "N", "P"].includes(atom.getSymbol())).flatMap((site) => {
 				const links = neighbors(site);
 				const hydrogen = links.find(({ atom }) => atom.getSymbol() === "H" && atoms.has(atom))?.atom;
 				if (!hydrogen) return [];
-				// Prefer carboxyl protons over alcohol protons (e.g. citric acid).
+				// Prefer carboxyl protons over alcohol protons (e.g. citric acid),
+				// and both over an ammonium proton (e.g. glycine).
 				const carboxyl = links.some(({ atom }) => atom.getSymbol() === "C" &&
 					neighbors(atom).some(({ atom, order }) => atom.getSymbol() === "O" && order === 2));
-				return [{ site, hydrogen, carboxyl }];
-			}).sort((a, b) => Number(b.carboxyl) - Number(a.carboxyl));
+				const rank = carboxyl ? 0 : ["O", "S"].includes(site.getSymbol()) ? 1 : 2;
+				return [{ site, hydrogen, rank }];
+			}).sort((a, b) => a.rank - b.rank);
 			if (!sites.length) { cache.set(removed, undefined); return; }
 			const { site, hydrogen } = sites[0];
 			atoms.delete(hydrogen);
 			charges.set(site, charges.get(site) - 1);
 		} else {
-			const site = [...atoms].find((atom) => ["O", "S"].includes(atom.getSymbol()) && charges.get(atom) < 0);
+			// Protonate an anionic O/S first; a molecular base (ammonia, amines)
+			// has no anion, so its basic heteroatom takes the proton instead.
+			const site = [...atoms].find((atom) => ["O", "S"].includes(atom.getSymbol()) && charges.get(atom) < 0) ??
+				[...atoms].find((atom) => ["N", "P"].includes(atom.getSymbol()) && charges.get(atom) === 0);
 			if (!site) { cache.set(removed, undefined); return; }
 			charges.set(site, charges.get(site) + 1);
 		}
@@ -869,11 +874,15 @@ export abstract class Simulation {
 		// parent acid (e.g. carbonate from a carbonate salt) — registered up
 		// front so their hydrolysis is modelled even if the acid is absent
 		for (const key in acidbaseData) {
-			const conjList = acidbaseData[key]["conj"];
+			const entry: object = acidbaseData[key];
+			const conjList = entry["conj"];
 			if (Array.isArray(conjList)) {
+				// A base is stored in its neutral form, so its first conjugate is
+				// the protonated acid at step 0, not the first deprotonation.
+				const offset: number = entry["base"] ? 0 : 1;
 				for (const [index, aliases] of conjList.entries()) {
 					for (const alias of Array.isArray(aliases) ? aliases : [aliases]) {
-						conjugateToFamily[alias] = { key, step: index + 1 };
+						conjugateToFamily[alias] = { key, step: index + offset };
 					}
 				}
 			}
