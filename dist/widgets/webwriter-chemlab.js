@@ -104402,13 +104402,13 @@ var style = i`
 		--chemical-subgroup-heading: #f4f0eb;
 		gap: 0;
 		border-radius: var(--sl-border-radius-medium);
-		background: var(--lab-card-inset);
 	}
 	.chemical-palette-group:has(> .chemical-group-label) {
 		border-inline-end: 8px solid var(--chemical-group-heading);
 	}
 	.chemical-palette-subgroup:has(> .chemical-subgroup-label) {
 		border-inline-end: 6px solid var(--chemical-subgroup-heading);
+		background: var(--chemical-subgroup-heading);
 	}
 	.chemical-palette-subgroup:has(> .chemical-subgroup-label) > .chemical-palette-cards {
 		padding-inline-end: 4px;
