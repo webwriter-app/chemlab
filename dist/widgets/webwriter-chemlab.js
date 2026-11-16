@@ -103777,7 +103777,7 @@ var style = i`
 		padding: 2px 4px;
 	}
 	#contextMolInfo {
-		inline-size: 162px;
+		inline-size: 12rem;
 		max-inline-size: 100%;
 		margin-block: 5px;
 		--slide-gap: 0px;
@@ -103786,14 +103786,55 @@ var style = i`
 		gap: 4px 0;
 	}
 	#contextMolInfo::part(scroll-container) {
-		height: 84px;
+		height: auto;
 		aspect-ratio: auto;
+		grid-auto-rows: auto;
+	}
+	#contextMolInfo sl-carousel-item {
+		--aspect-ratio: auto;
+		min-inline-size: 0;
+	}
+	#contextMolInfo .vessel-carousel-card {
+		box-sizing: border-box;
+		display: grid;
+		grid-template-columns: minmax(0, 3.5rem) minmax(0, 1fr);
+		align-items: center;
+		gap: 5px;
+		inline-size: 100%;
+		block-size: auto;
+		min-block-size: 80px;
+		padding: 5px;
+	}
+	#contextMolInfo .vessel-carousel-thumbnail {
+		display: grid;
+		place-items: center;
+		text-align: center;
+	}
+	#contextMolInfo .vessel-carousel-thumbnail > :is(svg, img) {
+		display: block;
+		inline-size: 100%;
+		block-size: auto;
+		aspect-ratio: 1;
+		object-fit: contain;
+	}
+	#contextMolInfo .vessel-carousel-quantities {
+		display: grid;
+		gap: 2px;
+		line-height: 1.25;
+	}
+	#contextMolInfo .vessel-carousel-quantities > :is(h5, p) {
+		margin: 0;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		word-break: normal;
+		hyphens: none;
+	}
+	#contextMolInfo .vessel-carousel-quantities > p {
+		display: block;
+		font-variant-numeric: tabular-nums;
 	}
 	#contextMolInfo::part(pagination) {
 		gap: 5px;
-	}
-	#contextMolInfo .vessel-carousel-card p {
-		margin-bottom: 0;
 	}
 	#contextMolInfo::part(pagination-item) {
 		width: 6px;
@@ -184856,7 +184897,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       ({ formula, amount, concentration, structure }) => {
         const molecule2 = structure();
         return slide(
-          molecule2 ? this.vesselThumbnail(carousel, molecule2, formula) : x`<span>${formula}</span>`,
+          molecule2 ? this.vesselThumbnail(carousel, molecule2, formula) : x`<span class="vessel-carousel-thumbnail">${formula}</span>`,
           formula,
           amount,
           x`<p>c: ${concentration.toExponential(2)} mol/L</p>`

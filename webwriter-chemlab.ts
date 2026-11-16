@@ -2082,7 +2082,7 @@ export class ChemLab extends LitElementWw {
 			${repeat(equilibrium?.species ?? [], ({ formula }, index) => `${formula}:${index}`,
 				({ formula, amount, concentration, structure }) => {
 					const molecule = structure();
-					return slide(molecule ? this.vesselThumbnail(carousel, molecule, formula) : html`<span>${formula}</span>`,
+					return slide(molecule ? this.vesselThumbnail(carousel, molecule, formula) : html`<span class="vessel-carousel-thumbnail">${formula}</span>`,
 						formula, amount, html`<p>c: ${concentration.toExponential(2)} mol/L</p>`);
 				})}
 			${repeat(molecules, (molecule) => molecule, (molecule) => {
