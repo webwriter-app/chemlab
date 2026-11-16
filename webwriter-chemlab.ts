@@ -66,7 +66,7 @@ import { loadMoleculeDefinition } from "./data/moleculeDefinition";
 import { catalogPreviews } from "./data/chemicalPreviews.generated";
 import { prepareDose, type SavedDose } from "./data/measuredDose";
 import { vesselCarouselEntries } from "./data/vesselCarousel";
-import { STANDARD_CANVAS_HEIGHT } from "./controllers/WorkspaceCamera";
+import { STANDARD_CANVAS_WIDTH } from "./controllers/WorkspaceCamera";
 import { CanvasController } from "./controllers/CanvasController";
 import type { VesselHint } from "./controllers/VesselView";
 
@@ -89,6 +89,7 @@ type AmountSource = { name: string; recipe: ChemicalRecipe; dose: (volumeMl: num
 const TRANSFER_HOLD_MS = 1500;
 const TRANSFER_HOLD_RADIUS = 6;
 const DRAG_TRANSFER_TASK = "drag-transfer";
+const MIN_TWO_PANELS_WIDTH = 480;
 
 /**
  * chemlab webwriter widget for presenting interactive chemistry experiments
@@ -656,13 +657,13 @@ export class ChemLab extends LitElementWw {
 			this.fullWidthMode = wide;
 			this.diagramPanelOpen = wide;
 		}
-		const drawer = this.shadowRoot.getElementById("teacherDrawer");
-		const drawerStyle = getComputedStyle(drawer);
-		const triggerHeight = Number.parseFloat(drawerStyle.getPropertyValue("--panel-trigger-height"));
-		const triggerInset = Number.parseFloat(drawerStyle.getPropertyValue("--teacher-drawer-trigger-inset"));
-		const standardDrawerBody = Number.parseFloat(drawerStyle.getPropertyValue("--teacher-drawer-body-height"));
-		this.teacherDrawerOpen = this.teacherDrawerChoice ??
-			(this.containerDiv.clientHeight >= STANDARD_CANVAS_HEIGHT + standardDrawerBody + triggerHeight + 2 * triggerInset);
+		const width = this.containerDiv.clientWidth;
+		const panelMax = parseFloat(getComputedStyle(this.ownerDocument.documentElement).fontSize) * 24;
+		const diagramWidth = this.diagramPanelAvailable && this.diagramPanelOpen ? Math.min(width * 0.27, panelMax) : 0;
+		this.teacherDrawerOpen = this.teacherDrawerChoice ?? (width >= STANDARD_CANVAS_WIDTH + panelMax + diagramWidth);
+		if (width < MIN_TWO_PANELS_WIDTH && this.teacherDrawerOpen && this.diagramPanelAvailable) {
+			this.diagramPanelOpen = false;
+		}
 	}
 
 	protected updated(changed: PropertyValueMap<any>): void {
@@ -2482,7 +2483,7 @@ export class ChemLab extends LitElementWw {
 			<div
 				id="upper"
 				@keydown=${this.deleteSelection}
-				class=${diagramOpen ? "show-diagram-panel" : ""}
+				class=${`${diagramOpen ? "show-diagram-panel" : ""} ${this.teacherDrawerOpen ? "show-palette" : ""}`}
 			>
 				<div id="canvasArea">
 					${this.pix_canvas}
@@ -2588,13 +2589,14 @@ export class ChemLab extends LitElementWw {
 	private onDiagramToggle(event: Event, open: boolean): void {
 		if (event.target !== event.currentTarget || !this.diagramPanelAvailable || this.diagramPanelOpen === open) return;
 		this.diagramPanelOpen = open;
+		if (open && this.teacherDrawerOpen && this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.closeTeacherDrawer();
 		this._sendxAPiStatement(open ? "opened" : "closed", "diagramPanel");
 	}
 
-	private renderPanelArrows(direction: "right" | "up") {
+	private renderPanelArrows(direction: "right" | "left") {
 		const paths = {
 			right: ["m5 3 4 4-4 4", "m9 3-4 4 4 4"],
-			up: ["m3 9 4-4 4 4", "m3 5 4 4 4-4"],
+			left: ["m9 3-4 4 4 4", "m5 3 4 4-4 4"],
 		};
 		return html`
 			<svg slot="expand-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" aria-hidden="true"><path d=${paths[direction][0]}/></svg>
@@ -2665,48 +2667,57 @@ export class ChemLab extends LitElementWw {
 
 	private onTeacherDrawerToggle(event: Event, open: boolean): void {
 		if (event.target !== event.currentTarget || this.teacherDrawerOpen === open) return;
-		this.teacherDrawerChoice = this.teacherDrawerOpen = open;
-		if (!open) {
-			this.permissionTooltip = undefined;
-			this.openConcentrationMenu = undefined;
+		if (open) {
+			this.teacherDrawerChoice = this.teacherDrawerOpen = true;
+			if (this.diagramPanelAvailable && this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.diagramPanelOpen = false;
+		} else {
+			this.closeTeacherDrawer();
 		}
+	}
+
+	private closeTeacherDrawer(): void {
+		this.teacherDrawerChoice = this.teacherDrawerOpen = false;
+		this.permissionTooltip = undefined;
+		this.openConcentrationMenu = undefined;
 	}
 
 	private renderTeacherDrawer() {
 		const label = this.message(this.canAuthor ? "Lehrkraft Steuerung" : "Komponenten");
 		return html`
-			<sl-details id="teacherDrawer" class="workspace-details" .open=${this.teacherDrawerOpen}
-				@sl-show=${(event: Event) => this.onTeacherDrawerToggle(event, true)}
-				@sl-hide=${(event: Event) => this.onTeacherDrawerToggle(event, false)}>
-				<span slot="summary" class="workspace-summary" title=${label}>
-					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
-						<path d="M2 6h12v7H2zM5 6V3h6v3M2 9h12"/>
-					</svg>
-					<span class="panel-button-label">${label}</span>
-				</span>
-				${this.renderPanelArrows("up")}
-				<div id="teacherDrawerContent">
-					${this.selectedChemical ? html`
-						<sl-button size="small" @click=${this.clearChemicalSelection}>
-							${this.selectedChemical.name} ×
-						</sl-button>` : ""}
-					<sl-tab-group id="teacherTabs"
-						@sl-tab-show=${(event: CustomEvent<{ name: "components" | "chemicals" }>) => {
-							if (event.target === event.currentTarget) {
-								this.teacherTab = event.detail.name;
-								if (this.teacherTab === "chemicals") this.chemicalCatalogOpened = true;
-								this.permissionTooltip = undefined;
-							}
-						}}>
-						<sl-tab slot="nav" panel="components" active>${this.message("Komponenten")}</sl-tab>
-						<sl-tab slot="nav" panel="chemicals">${this.message("Chemikalien")}</sl-tab>
-						<sl-tab-panel name="components" active>${this.renderComponentPalette()}</sl-tab-panel>
-						<sl-tab-panel name="chemicals">
-							${this.chemicalCatalogOpened ? this.renderChemicalCatalog() : nothing}
-						</sl-tab-panel>
-					</sl-tab-group>
-				</div>
-			</sl-details>
+			<aside id="paletteArea" class="workspace-side" aria-label=${label}>
+				<sl-details id="teacherDrawer" class="workspace-details" .open=${this.teacherDrawerOpen}
+					@sl-show=${(event: Event) => this.onTeacherDrawerToggle(event, true)}
+					@sl-hide=${(event: Event) => this.onTeacherDrawerToggle(event, false)}>
+					<span slot="summary" class="workspace-summary" title=${label}>
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+							<path d="M2 6h12v7H2zM5 6V3h6v3M2 9h12"/>
+						</svg>
+						<span class="panel-button-label">${label}</span>
+					</span>
+					${this.renderPanelArrows("left")}
+					<div id="teacherDrawerContent">
+						${this.selectedChemical ? html`
+							<sl-button class="selected-chemical" size="small" @click=${this.clearChemicalSelection}>
+								${this.selectedChemical.name} ×
+							</sl-button>` : ""}
+						<sl-tab-group id="teacherTabs"
+							@sl-tab-show=${(event: CustomEvent<{ name: "components" | "chemicals" }>) => {
+								if (event.target === event.currentTarget) {
+									this.teacherTab = event.detail.name;
+									if (this.teacherTab === "chemicals") this.chemicalCatalogOpened = true;
+									this.permissionTooltip = undefined;
+								}
+							}}>
+							<sl-tab slot="nav" panel="components" active>${this.message("Komponenten")}</sl-tab>
+							<sl-tab slot="nav" panel="chemicals">${this.message("Chemikalien")}</sl-tab>
+							<sl-tab-panel name="components" active>${this.renderComponentPalette()}</sl-tab-panel>
+							<sl-tab-panel name="chemicals">
+								${this.chemicalCatalogOpened ? this.renderChemicalCatalog() : nothing}
+							</sl-tab-panel>
+						</sl-tab-group>
+					</div>
+				</sl-details>
+			</aside>
 		`;
 	}
 
@@ -2929,7 +2940,7 @@ export class ChemLab extends LitElementWw {
 		const items = sections.flatMap(({ subgroups }) => subgroups.flatMap(({ items }) => items));
 		return html`
 			<div class="chemical-filters">
-				<sl-select class="chemical-group-select" size="small" hoist placement="top" contenteditable="false"
+				<sl-select class="chemical-group-select" size="small" hoist contenteditable="false"
 					label=${this.message("Stoffklasse")} .value=${activeGroup?.id ?? "all"}
 					@sl-change=${(event: Event) => {
 						this.chemicalGroup = String((event.currentTarget as SlSelect).value);

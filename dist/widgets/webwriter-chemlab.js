@@ -103544,6 +103544,8 @@ var style = i`
 		--panel-trigger-height: 28px;
 		--diagram-panel-width: min(27cqw, 24rem);
 		--diagram-width: 0px;
+		--palette-panel-width: min(58cqw, clamp(10rem, 44cqw, 24rem));
+		--palette-width: 0px;
 		--lab-card-surface: var(--sl-color-neutral-0);
 		--lab-card-inset: var(--sl-color-neutral-50);
 		--lab-card-border: var(--sl-color-neutral-200);
@@ -103552,8 +103554,8 @@ var style = i`
 		position: relative;
 		box-sizing: border-box;
 		display: grid;
-		grid-template-columns: var(--diagram-width) minmax(0, 1fr);
-		grid-template-rows: minmax(0, 1fr) auto;
+		grid-template-columns: var(--diagram-width) minmax(0, 1fr) var(--palette-width);
+		grid-template-rows: minmax(0, 1fr);
 		transition: grid-template-columns 220ms ease;
 		width: 100%;
 		height: 100%;
@@ -103563,6 +103565,9 @@ var style = i`
 	}
 	#upper.show-diagram-panel {
 		--diagram-width: var(--diagram-panel-width);
+	}
+	#upper.show-palette {
+		--palette-width: var(--palette-panel-width);
 	}
 	:host(:fullscreen),
 	:host(:fullscreen) #upper {
@@ -104054,31 +104059,41 @@ var style = i`
 		line-height: 1.1;
 		white-space: nowrap;
 	}
-	#teacherDrawer {
-		--teacher-drawer-trigger-inset: 4px;
-		--teacher-drawer-body-height: 340px;
-		grid-column: 1 / -1;
-		grid-row: 2;
-		position: relative;
-		z-index: 1;
-		min-inline-size: 0;
+	#paletteArea {
+		grid-column: 3;
+		background: var(--lab-card-inset);
+		box-shadow: inset 1px 0 var(--lab-card-border);
+	}
+	#teacherDrawer::part(base) {
+		box-sizing: border-box;
+		overflow: visible;
+		padding-block-start: calc(var(--panel-trigger-height) + 8px);
 	}
 	#teacherDrawer::part(header) {
-		position: absolute;
-		inset-block-end: var(--teacher-drawer-trigger-inset);
-		inset-inline-start: var(--teacher-drawer-trigger-inset);
+		inset-inline-end: 4px;
+		flex-direction: row-reverse;
 	}
 	#teacherDrawer::part(content) {
-		padding-inline: 6px;
-		padding-block-end: calc(var(--panel-trigger-height) + 2 * var(--teacher-drawer-trigger-inset));
-		box-shadow: inset 0 1px var(--lab-card-border);
-		background: var(--lab-card-inset);
+		overflow: hidden;
+		padding: 0;
 	}
 	#teacherDrawerContent {
 		box-sizing: border-box;
-		max-block-size: min(var(--teacher-drawer-body-height), 60cqh);
-		overflow: auto;
-		padding: 4px 0;
+		inline-size: var(--palette-panel-width);
+		block-size: calc(100cqh - var(--panel-trigger-height) - 12px);
+		margin-inline-start: min(0px, calc(100% - var(--palette-panel-width)));
+		padding: 4px 6px 6px;
+		overflow: hidden auto;
+		overscroll-behavior-y: contain;
+		scrollbar-width: thin;
+	}
+	.selected-chemical {
+		max-inline-size: 100%;
+		margin-block-end: 5px;
+	}
+	.selected-chemical::part(label) {
+		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 	#teacherTabs::part(nav) {
 		margin-bottom: 6px;
@@ -104090,13 +104105,20 @@ var style = i`
 	#teacherTabs {
 		--track-color: var(--lab-card-border);
 	}
+	#teacherTabs > sl-tab {
+		flex: 1 1 0;
+		min-inline-size: 0;
+	}
 	#teacherTabs > sl-tab::part(base) {
-		padding: 5px 12px;
+		padding: 5px 7px;
 		border: 1px solid var(--lab-card-border);
 		border-bottom: 0;
 		border-radius: var(--sl-border-radius-medium) var(--sl-border-radius-medium) 0 0;
 		background: var(--lab-card-surface);
 		color: var(--lab-card-secondary-text);
+		text-align: center;
+		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 	#teacherTabs > sl-tab:hover::part(base) {
 		background: var(--sl-color-neutral-100);
@@ -104111,19 +104133,15 @@ var style = i`
 	}
 	.palette-strip {
 		display: grid;
-		grid-template-rows: auto;
-		grid-auto-flow: column;
-		grid-auto-columns: max-content;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
 		gap: 6px;
-		overflow-x: auto;
-		overscroll-behavior-x: contain;
 		padding: 2px 2px 5px;
 	}
 	.palette-card {
 		display: grid;
 		grid-template-rows: auto 1fr;
 		gap: 5px;
-		min-inline-size: 10.5rem;
+		min-inline-size: 0;
 		padding: 5px;
 		border: 1px solid var(--lab-card-border);
 		border-radius: 4px;
@@ -104189,9 +104207,17 @@ var style = i`
 	}
 	.component-variant-controls {
 		display: grid;
-		grid-template-columns: 1fr auto 1fr;
+		grid-template-columns: minmax(16px, 1fr) minmax(0, max-content) minmax(16px, 1fr);
 		align-items: center;
 		padding-block-start: 2px;
+	}
+	.component-variant-controls sl-tag::part(base),
+	.chemical-palette-group > sl-tag::part(base) {
+		block-size: auto;
+		min-block-size: calc(var(--sl-input-height-small) * 0.8);
+		line-height: 1.2;
+		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 	.palette-variant {
 		border: 1px solid var(--lab-card-border);
@@ -104244,20 +104270,23 @@ var style = i`
 		padding: 0;
 	}
 	.chemical-filters {
-		display: flex;
-		flex-wrap: wrap;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
 		gap: 6px;
 		padding: 2px;
 		margin-block-end: 6px;
 	}
 	.chemical-group-select {
-		flex: 0 1 13rem;
+		grid-area: 1 / 1 / 2 / -1;
 		min-inline-size: 0;
 	}
 	.chemical-search {
-		flex: 1 1 12rem;
+		grid-area: 2 / 1;
 		min-inline-size: 0;
+	}
+	.chemical-filter-badge {
+		grid-area: 2 / 2;
 	}
 	.chemical-filters ::part(form-control-label) {
 		position: absolute;
@@ -104265,24 +104294,6 @@ var style = i`
 		block-size: 1px;
 		overflow: hidden;
 		clip-path: inset(50%);
-	}
-	@container (max-width: 28rem) {
-		.chemical-group-select {
-			flex: 1 1 0;
-		}
-		.chemical-search {
-			flex: 1 1 100%;
-			order: 1;
-		}
-	}
-	.palette-card-chemical {
-		box-sizing: border-box;
-		inline-size: max-content;
-		min-inline-size: 5.5rem;
-		align-self: start;
-	}
-	.palette-card-chemical:has(.chemical-solution) {
-		min-inline-size: 9rem;
 	}
 	.palette-card-chemical > :not(.palette-card-header) {
 		contain: inline-size;
@@ -104358,22 +104369,32 @@ var style = i`
 	.chemical-palette-group,
 	.chemical-palette-subgroup {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 4px;
 		align-content: start;
-		justify-items: start;
 	}
-	.chemical-palette-subgroups,
+	.chemical-palette-group > sl-tag,
+	.chemical-subgroup-label {
+		justify-self: start;
+	}
+	.chemical-palette-subgroups {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 8px;
+	}
 	.chemical-palette-cards {
-		display: flex;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
 		gap: 6px;
 	}
 	.chemical-group-strip {
-		gap: 12px;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 10px;
 	}
 	.chemical-palette-subgroup + .chemical-palette-subgroup,
 	.chemical-palette-group + .chemical-palette-group {
-		border-inline-start: 1px solid var(--lab-card-border);
-		padding-inline-start: 8px;
+		border-block-start: 1px solid var(--lab-card-border);
+		padding-block-start: 6px;
 	}
 	.chemical-subgroup-label {
 		font-size: var(--sl-font-size-x-small);
@@ -104441,25 +104462,28 @@ var style = i`
 	}
 	.component-tile {
 		grid-area: 1 / 1 / 2 / -1;
+		display: grid;
+		place-items: center;
 		cursor: grab;
-		touch-action: pan-x;
+		touch-action: pan-y;
 		user-select: none;
 		margin: 0;
 		min-width: 0;
-		padding: 2px 26px 3px;
+		padding: 2px min(18px, 4cqw) 3px;
 		border: 1px solid transparent;
 		background: transparent;
 	}
 	.component-preview {
 		display: block;
 		inline-size: 76px;
+		max-inline-size: 100%;
 		block-size: 57px;
 		color: #285160;
 		pointer-events: none;
 	}
 	.chemical-tile {
 		cursor: grab;
-		touch-action: none;
+		touch-action: pan-y;
 		user-select: none;
 		min-inline-size: 0;
 		margin: 0;
@@ -182195,6 +182219,7 @@ function concentrationPresets({ max: max6 }) {
 var TRANSFER_HOLD_MS = 1500;
 var TRANSFER_HOLD_RADIUS = 6;
 var DRAG_TRANSFER_TASK = "drag-transfer";
+var MIN_TWO_PANELS_WIDTH = 480;
 var _newSmilesDrawer_dec, _smilesDrawer100_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _confirmAction_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _chemicalCatalogOpened_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _app_dec, _pix_canvas_dec, _mousePos_dec, _dragObject_dec, _avComponentsSprites_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _dialogAlert_dec, _confirmDialog_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _confirmDialog, _dialogAlert, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _avComponentsSprites, _dragObject, _mousePos, _pix_canvas, _app, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _teacherDrawerOpen, _teacherTab, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalCatalogOpened, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _confirmAction, _RndName, _invComponents, _enablexAPI, _xAPIKey, _smilesDrawer100, _newSmilesDrawer;
 _ChemLab_decorators = [t6("webwriter-chemlab")];
 var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [e8("#upper")], _confirmDialog_dec = [e8("#confirmDialog")], _dialogAlert_dec = [e8("#dialogOverview")], _contextMolInfo_dec = [e8("#contextMolInfo")], _objectSummary_dec = [e8("#contextInfoBox")], _groupSummary_dec = [e8("#groupSelectionInfo")], _contextMixInfo_dec = [e8("#contextMixInfo")], _openBtn_dec = [e8("#openComp")], _activateEComp_dec = [e8("#activateEComp")], _contextEchemInfo_dec = [e8("#contextEchemInfo")], _xAPICheck_dec = [e8("#xAPICheck")], _xAPIKeyInput_dec = [e8("#xAPIKeyInput")], _canvasArea_dec = [e8("#canvasArea")], _canvasZoom_dec = [e8("#canvasZoom")], _zoomLevel_dec = [e8("#zoomLevel", true)], _gridScale_dec = [e8("#gridScale", true)], _gridScaleValue_dec = [e8("#gridScaleValue", true)], _pHColors_dec = [n5({ attribute: false })], _dictionary_dec = [n5({ attribute: false })], _availableMolecules_dec = [n5({
@@ -182443,12 +182468,13 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.fullWidthMode = wide;
       this.diagramPanelOpen = wide;
     }
-    const drawer = this.shadowRoot.getElementById("teacherDrawer");
-    const drawerStyle = getComputedStyle(drawer);
-    const triggerHeight = Number.parseFloat(drawerStyle.getPropertyValue("--panel-trigger-height"));
-    const triggerInset = Number.parseFloat(drawerStyle.getPropertyValue("--teacher-drawer-trigger-inset"));
-    const standardDrawerBody = Number.parseFloat(drawerStyle.getPropertyValue("--teacher-drawer-body-height"));
-    this.teacherDrawerOpen = this.teacherDrawerChoice ?? this.containerDiv.clientHeight >= STANDARD_CANVAS_HEIGHT + standardDrawerBody + triggerHeight + 2 * triggerInset;
+    const width = this.containerDiv.clientWidth;
+    const panelMax = parseFloat(getComputedStyle(this.ownerDocument.documentElement).fontSize) * 24;
+    const diagramWidth = this.diagramPanelAvailable && this.diagramPanelOpen ? Math.min(width * 0.27, panelMax) : 0;
+    this.teacherDrawerOpen = this.teacherDrawerChoice ?? width >= STANDARD_CANVAS_WIDTH + panelMax + diagramWidth;
+    if (width < MIN_TWO_PANELS_WIDTH && this.teacherDrawerOpen && this.diagramPanelAvailable) {
+      this.diagramPanelOpen = false;
+    }
   }
   updated(changed) {
     super.updated(changed);
@@ -184042,7 +184068,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 			<div
 				id="upper"
 				@keydown=${this.deleteSelection}
-				class=${diagramOpen ? "show-diagram-panel" : ""}
+				class=${`${diagramOpen ? "show-diagram-panel" : ""} ${this.teacherDrawerOpen ? "show-palette" : ""}`}
 			>
 				<div id="canvasArea">
 					${this.pix_canvas}
@@ -184143,12 +184169,13 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   onDiagramToggle(event, open) {
     if (event.target !== event.currentTarget || !this.diagramPanelAvailable || this.diagramPanelOpen === open) return;
     this.diagramPanelOpen = open;
+    if (open && this.teacherDrawerOpen && this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.closeTeacherDrawer();
     this._sendxAPiStatement(open ? "opened" : "closed", "diagramPanel");
   }
   renderPanelArrows(direction) {
     const paths = {
       right: ["m5 3 4 4-4 4", "m9 3-4 4 4 4"],
-      up: ["m3 9 4-4 4 4", "m3 5 4 4 4-4"]
+      left: ["m9 3-4 4 4 4", "m5 3 4 4-4 4"]
     };
     return x`
 			<svg slot="expand-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" aria-hidden="true"><path d=${paths[direction][0]}/></svg>
@@ -184216,47 +184243,55 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   onTeacherDrawerToggle(event, open) {
     if (event.target !== event.currentTarget || this.teacherDrawerOpen === open) return;
-    this.teacherDrawerChoice = this.teacherDrawerOpen = open;
-    if (!open) {
-      this.permissionTooltip = void 0;
-      this.openConcentrationMenu = void 0;
+    if (open) {
+      this.teacherDrawerChoice = this.teacherDrawerOpen = true;
+      if (this.diagramPanelAvailable && this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.diagramPanelOpen = false;
+    } else {
+      this.closeTeacherDrawer();
     }
+  }
+  closeTeacherDrawer() {
+    this.teacherDrawerChoice = this.teacherDrawerOpen = false;
+    this.permissionTooltip = void 0;
+    this.openConcentrationMenu = void 0;
   }
   renderTeacherDrawer() {
     const label = this.message(this.canAuthor ? "Lehrkraft Steuerung" : "Komponenten");
     return x`
-			<sl-details id="teacherDrawer" class="workspace-details" .open=${this.teacherDrawerOpen}
-				@sl-show=${(event) => this.onTeacherDrawerToggle(event, true)}
-				@sl-hide=${(event) => this.onTeacherDrawerToggle(event, false)}>
-				<span slot="summary" class="workspace-summary" title=${label}>
-					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
-						<path d="M2 6h12v7H2zM5 6V3h6v3M2 9h12"/>
-					</svg>
-					<span class="panel-button-label">${label}</span>
-				</span>
-				${this.renderPanelArrows("up")}
-				<div id="teacherDrawerContent">
-					${this.selectedChemical ? x`
-						<sl-button size="small" @click=${this.clearChemicalSelection}>
-							${this.selectedChemical.name} ×
-						</sl-button>` : ""}
-					<sl-tab-group id="teacherTabs"
-						@sl-tab-show=${(event) => {
+			<aside id="paletteArea" class="workspace-side" aria-label=${label}>
+				<sl-details id="teacherDrawer" class="workspace-details" .open=${this.teacherDrawerOpen}
+					@sl-show=${(event) => this.onTeacherDrawerToggle(event, true)}
+					@sl-hide=${(event) => this.onTeacherDrawerToggle(event, false)}>
+					<span slot="summary" class="workspace-summary" title=${label}>
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+							<path d="M2 6h12v7H2zM5 6V3h6v3M2 9h12"/>
+						</svg>
+						<span class="panel-button-label">${label}</span>
+					</span>
+					${this.renderPanelArrows("left")}
+					<div id="teacherDrawerContent">
+						${this.selectedChemical ? x`
+							<sl-button class="selected-chemical" size="small" @click=${this.clearChemicalSelection}>
+								${this.selectedChemical.name} ×
+							</sl-button>` : ""}
+						<sl-tab-group id="teacherTabs"
+							@sl-tab-show=${(event) => {
       if (event.target === event.currentTarget) {
         this.teacherTab = event.detail.name;
         if (this.teacherTab === "chemicals") this.chemicalCatalogOpened = true;
         this.permissionTooltip = void 0;
       }
     }}>
-						<sl-tab slot="nav" panel="components" active>${this.message("Komponenten")}</sl-tab>
-						<sl-tab slot="nav" panel="chemicals">${this.message("Chemikalien")}</sl-tab>
-						<sl-tab-panel name="components" active>${this.renderComponentPalette()}</sl-tab-panel>
-						<sl-tab-panel name="chemicals">
-							${this.chemicalCatalogOpened ? this.renderChemicalCatalog() : E}
-						</sl-tab-panel>
-					</sl-tab-group>
-				</div>
-			</sl-details>
+							<sl-tab slot="nav" panel="components" active>${this.message("Komponenten")}</sl-tab>
+							<sl-tab slot="nav" panel="chemicals">${this.message("Chemikalien")}</sl-tab>
+							<sl-tab-panel name="components" active>${this.renderComponentPalette()}</sl-tab-panel>
+							<sl-tab-panel name="chemicals">
+								${this.chemicalCatalogOpened ? this.renderChemicalCatalog() : E}
+							</sl-tab-panel>
+						</sl-tab-group>
+					</div>
+				</sl-details>
+			</aside>
 		`;
   }
   renderComponentPalette() {
@@ -184469,7 +184504,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const items = sections.flatMap(({ subgroups }) => subgroups.flatMap(({ items: items2 }) => items2));
     return x`
 			<div class="chemical-filters">
-				<sl-select class="chemical-group-select" size="small" hoist placement="top" contenteditable="false"
+				<sl-select class="chemical-group-select" size="small" hoist contenteditable="false"
 					label=${this.message("Stoffklasse")} .value=${activeGroup?.id ?? "all"}
 					@sl-change=${(event) => {
       this.chemicalGroup = String(event.currentTarget.value);

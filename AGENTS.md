@@ -25,7 +25,7 @@ Für die statische Prüfung im Repository-Stamm `npx tsc --noEmit` ausführen. B
 
 - `controllers/` enthält die Lit-Controller für Pixi-Canvas, Chart.js und Simulationsschleife. `data/` enthält Wörterbuch, pH-Farben und Standardaufbauten. `services/xapi.ts` kapselt das optionale Reporting.
 - Die Widgetklasse hält den Zustand, die Versuchsansteuerung, die Objektübersicht und die Serialisierung der Aufbauten in JSON-Datenblöcken. Ältere Aufbauten aus HTML-Attributen werden eingelesen. Gespeicherte Moleküle und Gemische bleiben für solche Aufbauten erhalten.
-- Die Objektübersicht am Canvas ersetzt das frühere rechte Gerätepanel. Die bisherige Bearbeitung eigener Stoffe wurde aus der Palette entfernt. Als Nächstes sollen Gemische neu gestaltet werden; der Moleküleditor ist als separat einbettbares WebWriter-Widget vorgesehen.
+- Die Objektübersicht am Canvas ersetzt das frühere rechte Gerätepanel. Rechts liegt jetzt die Palette für Komponenten und Chemikalien. Sie nutzt eine eigene, animierte Spalte; die Canvas-Bedienelemente bleiben am Rand des Canvas. Die bisherige Bearbeitung eigener Stoffe wurde aus der Palette entfernt. Als Nächstes sollen Gemische neu gestaltet werden; der Moleküleditor ist als separat einbettbares WebWriter-Widget vorgesehen.
 - `chemlib/StructureManager.ts` enthält Stoffdaten und Strukturverwaltung, `ComponentManager.ts` die Geräte- und Stromkreiserkennung, `Simulation.ts` die chemischen Abläufe und `AcidBase.ts` den wiederverwendbaren pH-Löser.
 
 ## Übernommener Entwicklungsstand

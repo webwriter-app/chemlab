@@ -1059,6 +1059,8 @@ export const style = css`
 		--panel-trigger-height: 28px;
 		--diagram-panel-width: min(27cqw, 24rem);
 		--diagram-width: 0px;
+		--palette-panel-width: min(58cqw, clamp(10rem, 44cqw, 24rem));
+		--palette-width: 0px;
 		--lab-card-surface: var(--sl-color-neutral-0);
 		--lab-card-inset: var(--sl-color-neutral-50);
 		--lab-card-border: var(--sl-color-neutral-200);
@@ -1067,8 +1069,8 @@ export const style = css`
 		position: relative;
 		box-sizing: border-box;
 		display: grid;
-		grid-template-columns: var(--diagram-width) minmax(0, 1fr);
-		grid-template-rows: minmax(0, 1fr) auto;
+		grid-template-columns: var(--diagram-width) minmax(0, 1fr) var(--palette-width);
+		grid-template-rows: minmax(0, 1fr);
 		transition: grid-template-columns 220ms ease;
 		width: 100%;
 		height: 100%;
@@ -1078,6 +1080,9 @@ export const style = css`
 	}
 	#upper.show-diagram-panel {
 		--diagram-width: var(--diagram-panel-width);
+	}
+	#upper.show-palette {
+		--palette-width: var(--palette-panel-width);
 	}
 	:host(:fullscreen),
 	:host(:fullscreen) #upper {
@@ -1569,31 +1574,41 @@ export const style = css`
 		line-height: 1.1;
 		white-space: nowrap;
 	}
-	#teacherDrawer {
-		--teacher-drawer-trigger-inset: 4px;
-		--teacher-drawer-body-height: 340px;
-		grid-column: 1 / -1;
-		grid-row: 2;
-		position: relative;
-		z-index: 1;
-		min-inline-size: 0;
+	#paletteArea {
+		grid-column: 3;
+		background: var(--lab-card-inset);
+		box-shadow: inset 1px 0 var(--lab-card-border);
+	}
+	#teacherDrawer::part(base) {
+		box-sizing: border-box;
+		overflow: visible;
+		padding-block-start: calc(var(--panel-trigger-height) + 8px);
 	}
 	#teacherDrawer::part(header) {
-		position: absolute;
-		inset-block-end: var(--teacher-drawer-trigger-inset);
-		inset-inline-start: var(--teacher-drawer-trigger-inset);
+		inset-inline-end: 4px;
+		flex-direction: row-reverse;
 	}
 	#teacherDrawer::part(content) {
-		padding-inline: 6px;
-		padding-block-end: calc(var(--panel-trigger-height) + 2 * var(--teacher-drawer-trigger-inset));
-		box-shadow: inset 0 1px var(--lab-card-border);
-		background: var(--lab-card-inset);
+		overflow: hidden;
+		padding: 0;
 	}
 	#teacherDrawerContent {
 		box-sizing: border-box;
-		max-block-size: min(var(--teacher-drawer-body-height), 60cqh);
-		overflow: auto;
-		padding: 4px 0;
+		inline-size: var(--palette-panel-width);
+		block-size: calc(100cqh - var(--panel-trigger-height) - 12px);
+		margin-inline-start: min(0px, calc(100% - var(--palette-panel-width)));
+		padding: 4px 6px 6px;
+		overflow: hidden auto;
+		overscroll-behavior-y: contain;
+		scrollbar-width: thin;
+	}
+	.selected-chemical {
+		max-inline-size: 100%;
+		margin-block-end: 5px;
+	}
+	.selected-chemical::part(label) {
+		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 	#teacherTabs::part(nav) {
 		margin-bottom: 6px;
@@ -1605,13 +1620,20 @@ export const style = css`
 	#teacherTabs {
 		--track-color: var(--lab-card-border);
 	}
+	#teacherTabs > sl-tab {
+		flex: 1 1 0;
+		min-inline-size: 0;
+	}
 	#teacherTabs > sl-tab::part(base) {
-		padding: 5px 12px;
+		padding: 5px 7px;
 		border: 1px solid var(--lab-card-border);
 		border-bottom: 0;
 		border-radius: var(--sl-border-radius-medium) var(--sl-border-radius-medium) 0 0;
 		background: var(--lab-card-surface);
 		color: var(--lab-card-secondary-text);
+		text-align: center;
+		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 	#teacherTabs > sl-tab:hover::part(base) {
 		background: var(--sl-color-neutral-100);
@@ -1626,19 +1648,15 @@ export const style = css`
 	}
 	.palette-strip {
 		display: grid;
-		grid-template-rows: auto;
-		grid-auto-flow: column;
-		grid-auto-columns: max-content;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
 		gap: 6px;
-		overflow-x: auto;
-		overscroll-behavior-x: contain;
 		padding: 2px 2px 5px;
 	}
 	.palette-card {
 		display: grid;
 		grid-template-rows: auto 1fr;
 		gap: 5px;
-		min-inline-size: 10.5rem;
+		min-inline-size: 0;
 		padding: 5px;
 		border: 1px solid var(--lab-card-border);
 		border-radius: 4px;
@@ -1704,9 +1722,17 @@ export const style = css`
 	}
 	.component-variant-controls {
 		display: grid;
-		grid-template-columns: 1fr auto 1fr;
+		grid-template-columns: minmax(16px, 1fr) minmax(0, max-content) minmax(16px, 1fr);
 		align-items: center;
 		padding-block-start: 2px;
+	}
+	.component-variant-controls sl-tag::part(base),
+	.chemical-palette-group > sl-tag::part(base) {
+		block-size: auto;
+		min-block-size: calc(var(--sl-input-height-small) * 0.8);
+		line-height: 1.2;
+		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 	.palette-variant {
 		border: 1px solid var(--lab-card-border);
@@ -1759,20 +1785,23 @@ export const style = css`
 		padding: 0;
 	}
 	.chemical-filters {
-		display: flex;
-		flex-wrap: wrap;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
 		gap: 6px;
 		padding: 2px;
 		margin-block-end: 6px;
 	}
 	.chemical-group-select {
-		flex: 0 1 13rem;
+		grid-area: 1 / 1 / 2 / -1;
 		min-inline-size: 0;
 	}
 	.chemical-search {
-		flex: 1 1 12rem;
+		grid-area: 2 / 1;
 		min-inline-size: 0;
+	}
+	.chemical-filter-badge {
+		grid-area: 2 / 2;
 	}
 	.chemical-filters ::part(form-control-label) {
 		position: absolute;
@@ -1780,24 +1809,6 @@ export const style = css`
 		block-size: 1px;
 		overflow: hidden;
 		clip-path: inset(50%);
-	}
-	@container (max-width: 28rem) {
-		.chemical-group-select {
-			flex: 1 1 0;
-		}
-		.chemical-search {
-			flex: 1 1 100%;
-			order: 1;
-		}
-	}
-	.palette-card-chemical {
-		box-sizing: border-box;
-		inline-size: max-content;
-		min-inline-size: 5.5rem;
-		align-self: start;
-	}
-	.palette-card-chemical:has(.chemical-solution) {
-		min-inline-size: 9rem;
 	}
 	.palette-card-chemical > :not(.palette-card-header) {
 		contain: inline-size;
@@ -1873,22 +1884,32 @@ export const style = css`
 	.chemical-palette-group,
 	.chemical-palette-subgroup {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 4px;
 		align-content: start;
-		justify-items: start;
 	}
-	.chemical-palette-subgroups,
+	.chemical-palette-group > sl-tag,
+	.chemical-subgroup-label {
+		justify-self: start;
+	}
+	.chemical-palette-subgroups {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 8px;
+	}
 	.chemical-palette-cards {
-		display: flex;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
 		gap: 6px;
 	}
 	.chemical-group-strip {
-		gap: 12px;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 10px;
 	}
 	.chemical-palette-subgroup + .chemical-palette-subgroup,
 	.chemical-palette-group + .chemical-palette-group {
-		border-inline-start: 1px solid var(--lab-card-border);
-		padding-inline-start: 8px;
+		border-block-start: 1px solid var(--lab-card-border);
+		padding-block-start: 6px;
 	}
 	.chemical-subgroup-label {
 		font-size: var(--sl-font-size-x-small);
@@ -1956,25 +1977,28 @@ export const style = css`
 	}
 	.component-tile {
 		grid-area: 1 / 1 / 2 / -1;
+		display: grid;
+		place-items: center;
 		cursor: grab;
-		touch-action: pan-x;
+		touch-action: pan-y;
 		user-select: none;
 		margin: 0;
 		min-width: 0;
-		padding: 2px 26px 3px;
+		padding: 2px min(18px, 4cqw) 3px;
 		border: 1px solid transparent;
 		background: transparent;
 	}
 	.component-preview {
 		display: block;
 		inline-size: 76px;
+		max-inline-size: 100%;
 		block-size: 57px;
 		color: #285160;
 		pointer-events: none;
 	}
 	.chemical-tile {
 		cursor: grab;
-		touch-action: none;
+		touch-action: pan-y;
 		user-select: none;
 		min-inline-size: 0;
 		margin: 0;
