@@ -1916,9 +1916,11 @@ export const style = css`
 		--chemical-group-heading: #e6ddec;
 		--chemical-subgroup-heading: #f4f0eb;
 		gap: 0;
-		border-inline-end: 8px solid var(--chemical-group-heading);
 		border-radius: var(--sl-border-radius-medium);
 		background: var(--lab-card-inset);
+	}
+	.chemical-palette-group:has(> .chemical-group-label) {
+		border-inline-end: 8px solid var(--chemical-group-heading);
 	}
 	.chemical-palette-subgroup:has(> .chemical-subgroup-label) {
 		border-inline-end: 6px solid var(--chemical-subgroup-heading);
