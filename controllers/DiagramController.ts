@@ -293,37 +293,27 @@ export class DiagramController implements ReactiveController {
 						  )
 						: 0) + 1
 				);
-				chart.data.datasets.forEach((dataset) => {
+				chart.data.datasets.forEach((dataset, datasetId) => {
 					if (
 						source._type ===
 						chemlib.EComponentType.Voltmeter
 					) {
 						dataset.data.push(source._visibleVoltage);
 					} else {
-						let datasetId: number =
-							chart.data.datasets.indexOf(dataset);
-						circuitComps[
-							datasetId
-						]._connectedMix._activeMolecules.forEach(
-							(mol) => {
-								if (
-									mol._atomCount === 1 &&
-									mol._totalCharge != 0 &&
-									mol._atoms[0].getName() ===
-										circuitComps[
-											datasetId
-										]._material._atoms[0].getName()
-								) {
-									dataset.data.push(
-										circuitComps[datasetId]
-											._connectedMix
-											._molProperties[
-											mol._id + "n"
-										]
-									);
-								}
-							}
-						);
+						// Exactly one value per step and dataset, otherwise the
+						// series drifts out of step with the labels: an electrode
+						// whose ion is absent used to push nothing, one with two
+						// ions of the same element pushed twice. The oxidised form
+						// of the electrode's couple is the species that changes.
+						const electrode = circuitComps[datasetId];
+						const couple = electrode?._material
+							? chemlib.Simulation.getRedoxData(electrode._material)
+							: undefined;
+						const mix = electrode?._connectedMix;
+						const ion = couple && mix
+							? mix._activeMolecules.find((mol) => mol.smilesString === couple.ox)
+							: undefined;
+						dataset.data.push(ion && mix ? mix._molProperties[ion._id + "n"] : 0);
 					}
 				});
 				chart.update();

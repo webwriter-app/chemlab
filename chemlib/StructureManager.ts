@@ -262,7 +262,7 @@ export abstract class StructureManager {
 				"red": "[Cs]",
 				"ox": "[Cs+]",
 				"el": 1,
-				"sep": -3.9,
+				"sep": -2.92,
 				"density": 1.93
 			},
 			"107.86822": {
@@ -276,7 +276,7 @@ export abstract class StructureManager {
 				"red": "[Sb]",
 				"ox": "[Sb3+]",
 				"el": 3,
-				"sep": 0.0,
+				"sep": 0.152,
 				"density": 6.69
 			},
 			"196.9665695": {

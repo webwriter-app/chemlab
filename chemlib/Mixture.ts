@@ -279,8 +279,13 @@ class Mixture {
 	 * @param {number} amountMol - the amount to add (positive) ore remove (negative)
 	 */
 	public changeMolecule(iMol: number, amountMol: number): void {
-		let molMass: number =
-			this._molProperties[iMol + "m"] / this._molProperties[iMol + "n"];
+		const amount: number = this._molProperties[iMol + "n"];
+		// A molecule that was added with zero amount carries no mass yet, so
+		// deriving the molar mass from the amount would make it Infinity and
+		// poison every later mass update. Fall back to the molecule itself.
+		let molMass: number = amount > 0
+			? this._molProperties[iMol + "m"] / amount
+			: this._activeMolecules.find((mol) => mol._id === iMol)?.getTotMolMass() ?? 0;
 
 		this._molProperties[iMol + "n"] += amountMol;
 		this._molProperties[iMol + "m"] += amountMol * molMass;

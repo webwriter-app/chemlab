@@ -148058,7 +148058,8 @@ var Mixture = class {
    * @param {number} amountMol - the amount to add (positive) ore remove (negative)
    */
   changeMolecule(iMol, amountMol) {
-    let molMass = this._molProperties[iMol + "m"] / this._molProperties[iMol + "n"];
+    const amount = this._molProperties[iMol + "n"];
+    let molMass = amount > 0 ? this._molProperties[iMol + "m"] / amount : this._activeMolecules.find((mol) => mol._id === iMol)?.getTotMolMass() ?? 0;
     this._molProperties[iMol + "n"] += amountMol;
     this._molProperties[iMol + "m"] += amountMol * molMass;
     let cMol = this._activeMolecules.find((mol) => {
@@ -148330,7 +148331,7 @@ var StructureManager = class _StructureManager {
         "red": "[Cs]",
         "ox": "[Cs+]",
         "el": 1,
-        "sep": -3.9,
+        "sep": -2.92,
         "density": 1.93
       },
       "107.86822": {
@@ -148344,7 +148345,7 @@ var StructureManager = class _StructureManager {
         "red": "[Sb]",
         "ox": "[Sb3+]",
         "el": 3,
-        "sep": 0,
+        "sep": 0.152,
         "density": 6.69
       },
       "196.9665695": {
@@ -175653,20 +175654,15 @@ var DiagramController = class {
             chart.data.labels[chart.data.labels.length - 1]
           ) : 0) + 1
         );
-        chart.data.datasets.forEach((dataset) => {
+        chart.data.datasets.forEach((dataset, datasetId) => {
           if (source3._type === "voltmeter" /* Voltmeter */) {
             dataset.data.push(source3._visibleVoltage);
           } else {
-            let datasetId = chart.data.datasets.indexOf(dataset);
-            circuitComps[datasetId]._connectedMix._activeMolecules.forEach(
-              (mol) => {
-                if (mol._atomCount === 1 && mol._totalCharge != 0 && mol._atoms[0].getName() === circuitComps[datasetId]._material._atoms[0].getName()) {
-                  dataset.data.push(
-                    circuitComps[datasetId]._connectedMix._molProperties[mol._id + "n"]
-                  );
-                }
-              }
-            );
+            const electrode = circuitComps[datasetId];
+            const couple = electrode?._material ? Simulation.getRedoxData(electrode._material) : void 0;
+            const mix = electrode?._connectedMix;
+            const ion2 = couple && mix ? mix._activeMolecules.find((mol) => mol.smilesString === couple.ox) : void 0;
+            dataset.data.push(ion2 && mix ? mix._molProperties[ion2._id + "n"] : 0);
           }
         });
         chart.update();
