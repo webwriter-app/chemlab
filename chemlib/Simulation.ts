@@ -18,6 +18,20 @@ function saltIonProduct(positive: number, negative: number, cations: number, ani
 
 type AcidBaseFamily = AcidBaseSystem & { representative: Molecule; step: number; members: Molecule[] };
 
+/** A free ion as the salt equilibria see it: stored as a molecule, or computed from an acid family. */
+interface SaltIon {
+	/** Structure used when a solid precipitates from this ion. */
+	molecule: Molecule;
+	/** Current concentration in mol/L. */
+	readonly concentration: number;
+	/** Concentration if `delta` mol/L of this ion were added (negative removes). */
+	concentrationAt(delta: number): number;
+	/** Largest concentration that can be removed without going negative. */
+	readonly removable: number;
+	/** Apply a change in mol/L of this ion. */
+	change(delta: number): void;
+}
+
 export interface AcidEquilibriumSpecies {
 	formula: string;
 	charge: number;
@@ -265,30 +279,115 @@ export abstract class Simulation {
 		return true;
 	}
 
+	/**
+	 * Free-ion view of a solution for the salt equilibria. Stored ions are read
+	 * directly. Conjugate anions of stored acids exist only as computed
+	 * speciation, so they are exposed here as well; a change to one of them is
+	 * booked against its analytical parent, which keeps the acid whole.
+	 */
+	private static saltIons(mix: Mixture): Map<string, SaltIon> {
+		const volume = mix._solutionVolume;
+		const ions = new Map<string, SaltIon>();
+		const stored = (molecule: Molecule): SaltIon => {
+			const current = () => (mix._molProperties[molecule._id + "n"] ?? 0) / volume;
+			return {
+				molecule,
+				get concentration() { return current(); },
+				concentrationAt: (delta) => current() + delta,
+				get removable() { return current(); },
+				change: (delta) => mix.changeMolecule(molecule._id, delta * volume),
+			};
+		};
+		for (const molecule of mix._activeMolecules) {
+			if (!molecule._totalCharge || molecule.solidSaltFormula) continue;
+			ions.set(molecule.smilesString, stored(molecule));
+		}
+		const { systems, spectatorCharge } = this.acidBaseComposition(mix);
+		if (!systems.length) return ions;
+		const H = AcidBase.solveProton(systems, spectatorCharge);
+		for (const family of systems) {
+			const fractions = AcidBase.speciesFractions(family, H);
+			const total = () => family.members.reduce((sum, member) =>
+				sum + (mix._molProperties[member._id + "n"] ?? 0), 0) / volume;
+			for (let step = 1; step < fractions.length; step++) {
+				const molecule = this.familySpecies(family, step);
+				if (!molecule || molecule._totalCharge >= 0) continue;
+				const smiles = molecule.smilesString;
+				if (!saltEquilibria.some(({ anion }) => anion === smiles)) continue;
+				ions.set(smiles, {
+					molecule,
+					get concentration() { return total() * fractions[step]; },
+					concentrationAt: (delta) => (total() + delta) * fractions[step],
+					get removable() { return total(); },
+					change: (delta) => this.changeFamily(mix, family, delta * volume),
+				});
+			}
+		}
+		return ions;
+	}
+
+	/** Representative molecule for one protonation step of a family, if one can be built. */
+	private static familySpecies(family: AcidBaseFamily, step: number): Molecule | undefined {
+		const charge = family.protonatedCharge - step;
+		const stored = family.members.find((member) => member._totalCharge === charge);
+		if (stored) return stored;
+		const parts = this.cacheDissociation(family.representative);
+		const part = parts?.find((item) => item && item !== family.representative &&
+			item.smilesString !== "[H+]" && item._totalCharge === charge);
+		return part ?? protonationStructure(family.representative, step - family.step);
+	}
+
+	/** Adds to or removes from a family's analytical total, keeping its members consistent. */
+	private static changeFamily(mix: Mixture, family: AcidBaseFamily, amountMol: number): void {
+		if (amountMol > 0) {
+			mix.addMolecule(family.representative, amountMol);
+			return;
+		}
+		let remaining = -amountMol;
+		// Prefer the analytical acid over a stored conjugate ion, so a dosed
+		// acid keeps its identity while its computed anion precipitates.
+		const members = [...family.members].sort((a, b) =>
+			Number(a._totalCharge !== 0) - Number(b._totalCharge !== 0));
+		for (const member of members) {
+			if (!(remaining > 0)) break;
+			const available = mix._molProperties[member._id + "n"];
+			if (!(available > 0)) continue;
+			const take = Math.min(available, remaining);
+			mix.changeMolecule(member._id, -take);
+			remaining -= take;
+		}
+	}
+
 	private static equilibrateSalts(mix: Mixture): void {
 		const volume = mix._solutionVolume;
-		const ions = new Map(mix._activeMolecules.filter((item) => item._totalCharge !== 0)
-			.map((item) => [item.smilesString, item]));
+		const acidbaseData = StructureManager._moleculeData["acidbase"];
+		// Acids stay whole, so their conjugate anions only exist as computed
+		// speciation; {@link saltIons} exposes those too.
+		if (!mix._activeMolecules.some((item) => item._totalCharge || item.solidSaltFormula ||
+			acidbaseData[item.smilesString] !== undefined)) return;
 		const solids = new Map(mix._activeMolecules.filter((item) => item.solidSaltFormula)
 			.map((item) => [item.solidSaltFormula, item]));
-		if (!ions.size && !solids.size) return;
 		for (let pass = 0; pass < 32; pass++) {
+			const ions = this.saltIons(mix);
 			let changed = false;
 			for (const { formula, cation, anion, cations, anions, product } of saltEquilibria) {
 				const positive = ions.get(cation);
 				const negative = ions.get(anion);
 				const solid = solids.get(formula);
 				if ((!positive || !negative) && !solid) continue;
-				const p = positive ? mix._molProperties[positive._id + "n"] / volume : 0;
-				const n = negative ? mix._molProperties[negative._id + "n"] / volume : 0;
-				const ionProduct = (delta: number) =>
-					saltIonProduct(p + delta * cations, n + delta * anions, cations, anions);
+				const ionProduct = (delta: number) => saltIonProduct(
+					positive ? positive.concentrationAt(delta * cations) : 0,
+					negative ? negative.concentrationAt(delta * anions) : 0,
+					cations, anions);
 				const current = ionProduct(0);
 				if (Math.abs(current - product) <= product * 1e-8) continue;
 				const available = solid ? mix._molProperties[solid._id + "n"] / volume : 0;
-				let low = current > product ? -Math.min(p / cations, n / anions) : 0;
+				const removable = Math.min(
+					positive ? positive.removable / cations : Infinity,
+					negative ? negative.removable / anions : Infinity);
+				let low = current > product ? -removable : 0;
 				let high = current > product ? 0 : available;
-				if (low === high) continue;
+				if (!(low < high)) continue;
 				let delta = high;
 				if (ionProduct(high) > product) {
 					for (let step = 0; step < 52; step++) {
@@ -301,27 +400,27 @@ export abstract class Simulation {
 				const amount = delta * volume;
 				if (Math.abs(amount) <= 1e-14) continue;
 				if (amount > 0) {
-					const positiveIon = positive ?? solid.solidSaltIons[0];
-					const negativeIon = negative ?? solid.solidSaltIons[1];
-					mix.addMolecule(positiveIon, amount * cations);
-					mix.addMolecule(negativeIon, amount * anions);
-					ions.set(cation, positiveIon);
-					ions.set(anion, negativeIon);
+					const positiveIon = positive?.molecule ?? solid.solidSaltIons[0];
+					const negativeIon = negative?.molecule ?? solid.solidSaltIons[1];
+					if (positive) positive.change(amount * cations / volume);
+					else mix.addMolecule(positiveIon, amount * cations);
+					if (negative) negative.change(amount * anions / volume);
+					else mix.addMolecule(negativeIon, amount * anions);
 					mix.changeMolecule(solid._id, -amount);
 					if (!mix._molProperties[solid._id + "n"]) solids.delete(formula);
 					// the dissolved bulk no longer occupies its solid volume
 					mix.addedVolume = Math.max(0, mix.addedVolume -
 						this.bulkLitresPerMol({ formula, cations, anions }, positiveIon, negativeIon) * amount);
 				} else {
-					mix.changeMolecule(positive._id, amount * cations);
-					mix.changeMolecule(negative._id, amount * anions);
-					if (!mix._molProperties[positive._id + "n"]) ions.delete(cation);
-					if (!mix._molProperties[negative._id + "n"]) ions.delete(anion);
-					const deposit = solid ?? this.makeSolidSalt(formula, [positive, negative], [cations, anions]);
+					positive.change(amount * cations / volume);
+					negative.change(amount * anions / volume);
+					const deposit = solid ?? this.makeSolidSalt(formula,
+						[positive.molecule, negative.molecule], [cations, anions]);
 					mix.addMolecule(deposit, -amount);
 					solids.set(formula, deposit);
 					// newly settled solid takes up its bulk volume again
-					mix.addedVolume += this.bulkLitresPerMol({ formula, cations, anions }, positive, negative) * -amount;
+					mix.addedVolume += this.bulkLitresPerMol({ formula, cations, anions },
+						positive.molecule, negative.molecule) * -amount;
 				}
 				changed = true;
 			}
@@ -333,17 +432,12 @@ export abstract class Simulation {
 	public static getSaltSaturation(mix: Mixture): { formula: string; fraction: number } | undefined {
 		const volume = mix._solutionVolume;
 		if (!mix._isSolution || !(volume > 0)) return;
-		const concentrations = new Map<string, number>();
-		for (const ion of mix._activeMolecules) {
-			if (!ion._totalCharge || ion.solidSaltFormula) continue;
-			const moles = mix._molProperties[ion._id + "n"];
-			if (moles > 0 && Number.isFinite(moles)) concentrations.set(ion.smilesString, moles / volume);
-		}
+		const ions = this.saltIons(mix);
 		let closest: { formula: string; fraction: number } | undefined;
 		for (const { formula, cation, anion, cations, anions, product } of saltEquilibria) {
-			const positive = concentrations.get(cation);
-			const negative = concentrations.get(anion);
-			if (positive === undefined || negative === undefined) continue;
+			const positive = ions.get(cation)?.concentration;
+			const negative = ions.get(anion)?.concentration;
+			if (!(positive > 0) || !(negative > 0)) continue;
 			// Use a concentration-scale fraction: scaling all ion concentrations
 			// by one half scales the gauge by one half, regardless of stoichiometry.
 			const ratio = saltIonProduct(positive, negative, cations, anions) / product;

@@ -103527,7 +103527,7 @@ var style = i`
 		display: block;
 		inline-size: 800px;
 		max-inline-size: 100%;
-		block-size: 1000px;
+		block-size: 600px;
 		min-inline-size: min(260px, 100%);
 		min-block-size: 280px;
 		container-type: size;
@@ -103909,6 +103909,27 @@ var style = i`
 		display: grid;
 		place-items: center;
 		text-align: center;
+		/* Text thumbnails (ion formulas without a drawn structure) keep the
+		   square size of the structure thumbnails so all cards share a height. */
+		aspect-ratio: 1;
+		align-self: center;
+		overflow: hidden;
+	}
+	#contextMolInfo .vessel-thumbnail-source {
+		position: absolute;
+		inset-block-start: 2px;
+		inset-inline-start: 2px;
+		z-index: 1;
+		padding: 0 2px;
+		border-radius: 3px;
+		background: var(--sl-color-primary-600);
+		color: var(--sl-color-neutral-0);
+		font-size: 8px;
+		line-height: 1.4;
+		pointer-events: none;
+	}
+	#contextMolInfo .vessel-carousel-thumbnail {
+		position: relative;
 	}
 	#contextMolInfo .vessel-carousel-thumbnail > :is(svg, img) {
 		display: block;
@@ -148883,6 +148904,15 @@ var saltEquilibria = Object.entries(saltSolubility).map(([formula, data2]) => {
 function saltIonProduct(positive, negative, cations, anions) {
   return Math.max(0, positive) ** cations * Math.max(0, negative) ** anions;
 }
+function ionFormula(ion2) {
+  const counts2 = /* @__PURE__ */ new Map();
+  for (const atom of ion2._atoms) {
+    counts2.set(atom.getSymbol(), (counts2.get(atom.getSymbol()) ?? 0) + 1);
+  }
+  let symbols = [...counts2.keys()].sort();
+  if (counts2.has("C")) symbols = ["C", ...symbols.filter((symbol) => symbol !== "C")];
+  return symbols.map((symbol) => symbol + subscript(counts2.get(symbol))).join("") + superscript(ion2._totalCharge);
+}
 var protonationStructures = /* @__PURE__ */ new WeakMap();
 function protonationStructure(source3, removed) {
   if (!removed) return source3;
@@ -149076,27 +149106,114 @@ var Simulation = class {
     mix.addMolecule(existing ?? this.makeSolidSalt(salt2.formula, pair, [1, 1]), amount);
     return true;
   }
+  /**
+   * Free-ion view of a solution for the salt equilibria. Stored ions are read
+   * directly. Conjugate anions of stored acids exist only as computed
+   * speciation, so they are exposed here as well; a change to one of them is
+   * booked against its analytical parent, which keeps the acid whole.
+   */
+  static saltIons(mix) {
+    const volume = mix._solutionVolume;
+    const ions = /* @__PURE__ */ new Map();
+    const stored = (molecule2) => {
+      const current = () => (mix._molProperties[molecule2._id + "n"] ?? 0) / volume;
+      return {
+        molecule: molecule2,
+        get concentration() {
+          return current();
+        },
+        concentrationAt: (delta) => current() + delta,
+        get removable() {
+          return current();
+        },
+        change: (delta) => mix.changeMolecule(molecule2._id, delta * volume)
+      };
+    };
+    for (const molecule2 of mix._activeMolecules) {
+      if (!molecule2._totalCharge || molecule2.solidSaltFormula) continue;
+      ions.set(molecule2.smilesString, stored(molecule2));
+    }
+    const { systems: systems4, spectatorCharge } = this.acidBaseComposition(mix);
+    if (!systems4.length) return ions;
+    const H3 = AcidBase.solveProton(systems4, spectatorCharge);
+    for (const family of systems4) {
+      const fractions = AcidBase.speciesFractions(family, H3);
+      const total = () => family.members.reduce((sum, member) => sum + (mix._molProperties[member._id + "n"] ?? 0), 0) / volume;
+      for (let step = 1; step < fractions.length; step++) {
+        const molecule2 = this.familySpecies(family, step);
+        if (!molecule2 || molecule2._totalCharge >= 0) continue;
+        const smiles = molecule2.smilesString;
+        if (!saltEquilibria.some(({ anion }) => anion === smiles)) continue;
+        ions.set(smiles, {
+          molecule: molecule2,
+          get concentration() {
+            return total() * fractions[step];
+          },
+          concentrationAt: (delta) => (total() + delta) * fractions[step],
+          get removable() {
+            return total();
+          },
+          change: (delta) => this.changeFamily(mix, family, delta * volume)
+        });
+      }
+    }
+    return ions;
+  }
+  /** Representative molecule for one protonation step of a family, if one can be built. */
+  static familySpecies(family, step) {
+    const charge = family.protonatedCharge - step;
+    const stored = family.members.find((member) => member._totalCharge === charge);
+    if (stored) return stored;
+    const parts = this.cacheDissociation(family.representative);
+    const part = parts?.find((item) => item && item !== family.representative && item.smilesString !== "[H+]" && item._totalCharge === charge);
+    return part ?? protonationStructure(family.representative, step - family.step);
+  }
+  /** Adds to or removes from a family's analytical total, keeping its members consistent. */
+  static changeFamily(mix, family, amountMol) {
+    if (amountMol > 0) {
+      mix.addMolecule(family.representative, amountMol);
+      return;
+    }
+    let remaining = -amountMol;
+    const members = [...family.members].sort((a7, b5) => Number(a7._totalCharge !== 0) - Number(b5._totalCharge !== 0));
+    for (const member of members) {
+      if (!(remaining > 0)) break;
+      const available = mix._molProperties[member._id + "n"];
+      if (!(available > 0)) continue;
+      const take = Math.min(available, remaining);
+      mix.changeMolecule(member._id, -take);
+      remaining -= take;
+    }
+  }
   static equilibrateSalts(mix) {
     const volume = mix._solutionVolume;
-    const ions = new Map(mix._activeMolecules.filter((item) => item._totalCharge !== 0).map((item) => [item.smilesString, item]));
+    const acidbaseData = StructureManager._moleculeData["acidbase"];
+    if (!mix._activeMolecules.some((item) => item._totalCharge || item.solidSaltFormula || acidbaseData[item.smilesString] !== void 0)) return;
     const solids = new Map(mix._activeMolecules.filter((item) => item.solidSaltFormula).map((item) => [item.solidSaltFormula, item]));
-    if (!ions.size && !solids.size) return;
     for (let pass = 0; pass < 32; pass++) {
+      const ions = this.saltIons(mix);
       let changed = false;
       for (const { formula, cation, anion, cations, anions, product } of saltEquilibria) {
         const positive = ions.get(cation);
         const negative = ions.get(anion);
         const solid = solids.get(formula);
         if ((!positive || !negative) && !solid) continue;
-        const p6 = positive ? mix._molProperties[positive._id + "n"] / volume : 0;
-        const n9 = negative ? mix._molProperties[negative._id + "n"] / volume : 0;
-        const ionProduct = (delta2) => saltIonProduct(p6 + delta2 * cations, n9 + delta2 * anions, cations, anions);
+        const ionProduct = (delta2) => saltIonProduct(
+          positive ? positive.concentrationAt(delta2 * cations) : 0,
+          negative ? negative.concentrationAt(delta2 * anions) : 0,
+          cations,
+          anions
+        );
         const current = ionProduct(0);
         if (Math.abs(current - product) <= product * 1e-8) continue;
         const available = solid ? mix._molProperties[solid._id + "n"] / volume : 0;
-        let low = current > product ? -Math.min(p6 / cations, n9 / anions) : 0;
+        const removable = Math.min(
+          positive ? positive.removable / cations : Infinity,
+          negative ? negative.removable / anions : Infinity
+        );
+        let low = current > product ? -removable : 0;
         let high = current > product ? 0 : available;
-        if (low === high) continue;
+        if (!(low < high)) continue;
         let delta = high;
         if (ionProduct(high) > product) {
           for (let step = 0; step < 52; step++) {
@@ -149109,24 +149226,30 @@ var Simulation = class {
         const amount = delta * volume;
         if (Math.abs(amount) <= 1e-14) continue;
         if (amount > 0) {
-          const positiveIon = positive ?? solid.solidSaltIons[0];
-          const negativeIon = negative ?? solid.solidSaltIons[1];
-          mix.addMolecule(positiveIon, amount * cations);
-          mix.addMolecule(negativeIon, amount * anions);
-          ions.set(cation, positiveIon);
-          ions.set(anion, negativeIon);
+          const positiveIon = positive?.molecule ?? solid.solidSaltIons[0];
+          const negativeIon = negative?.molecule ?? solid.solidSaltIons[1];
+          if (positive) positive.change(amount * cations / volume);
+          else mix.addMolecule(positiveIon, amount * cations);
+          if (negative) negative.change(amount * anions / volume);
+          else mix.addMolecule(negativeIon, amount * anions);
           mix.changeMolecule(solid._id, -amount);
           if (!mix._molProperties[solid._id + "n"]) solids.delete(formula);
           mix.addedVolume = Math.max(0, mix.addedVolume - this.bulkLitresPerMol({ formula, cations, anions }, positiveIon, negativeIon) * amount);
         } else {
-          mix.changeMolecule(positive._id, amount * cations);
-          mix.changeMolecule(negative._id, amount * anions);
-          if (!mix._molProperties[positive._id + "n"]) ions.delete(cation);
-          if (!mix._molProperties[negative._id + "n"]) ions.delete(anion);
-          const deposit = solid ?? this.makeSolidSalt(formula, [positive, negative], [cations, anions]);
+          positive.change(amount * cations / volume);
+          negative.change(amount * anions / volume);
+          const deposit = solid ?? this.makeSolidSalt(
+            formula,
+            [positive.molecule, negative.molecule],
+            [cations, anions]
+          );
           mix.addMolecule(deposit, -amount);
           solids.set(formula, deposit);
-          mix.addedVolume += this.bulkLitresPerMol({ formula, cations, anions }, positive, negative) * -amount;
+          mix.addedVolume += this.bulkLitresPerMol(
+            { formula, cations, anions },
+            positive.molecule,
+            negative.molecule
+          ) * -amount;
         }
         changed = true;
       }
@@ -149137,17 +149260,12 @@ var Simulation = class {
   static getSaltSaturation(mix) {
     const volume = mix._solutionVolume;
     if (!mix._isSolution || !(volume > 0)) return;
-    const concentrations = /* @__PURE__ */ new Map();
-    for (const ion2 of mix._activeMolecules) {
-      if (!ion2._totalCharge || ion2.solidSaltFormula) continue;
-      const moles = mix._molProperties[ion2._id + "n"];
-      if (moles > 0 && Number.isFinite(moles)) concentrations.set(ion2.smilesString, moles / volume);
-    }
+    const ions = this.saltIons(mix);
     let closest;
     for (const { formula, cation, anion, cations, anions, product } of saltEquilibria) {
-      const positive = concentrations.get(cation);
-      const negative = concentrations.get(anion);
-      if (positive === void 0 || negative === void 0) continue;
+      const positive = ions.get(cation)?.concentration;
+      const negative = ions.get(anion)?.concentration;
+      if (!(positive > 0) || !(negative > 0)) continue;
       const ratio = saltIonProduct(positive, negative, cations, anions) / product;
       const fraction = Math.min(1, ratio ** (1 / (cations + anions)));
       if (!closest || fraction > closest.fraction) closest = { formula, fraction };
@@ -149388,7 +149506,7 @@ var Simulation = class {
     const species = [];
     const analyticalMolecules = /* @__PURE__ */ new Set();
     for (const family of systems4) {
-      if (family.pKa.length < 2 || !(family.totalC > 0)) continue;
+      if (family.pKa.length < 1 || !(family.totalC > 0)) continue;
       const elements2 = /* @__PURE__ */ new Map();
       for (const section of family.representative._kekule_obj.calcFormula().getSections()) {
         const symbol = section.obj.getSymbol();
@@ -149399,15 +149517,18 @@ var Simulation = class {
       elements2.delete("H");
       const symbols = [...elements2.keys()].sort();
       if (elements2.has("C")) symbols.splice(symbols.indexOf("C") + 1, 0, "H");
+      else if (family.protonatedCharge > 0) symbols.push("H");
       else {
         const oxygen = symbols.indexOf("O");
         if (oxygen >= 0) symbols.push(...symbols.splice(oxygen, 1));
         symbols.unshift("H");
       }
       family.members.forEach((molecule2) => analyticalMolecules.add(molecule2));
+      const conjugates = this.cacheDissociation(family.representative);
       AcidBase.speciesFractions(family, H3).forEach((fraction, step) => {
         const concentration = family.totalC * fraction;
         const charge = family.protonatedCharge - step;
+        const molecule2 = family.members.find((item) => item._totalCharge === charge) ?? conjugates?.find((item) => item && item !== family.representative && item.smilesString !== "[H+]" && item._totalCharge === charge);
         const formula = symbols.map((symbol) => {
           const count2 = symbol === "H" ? protonatedHydrogens - step : elements2.get(symbol);
           return count2 > 0 ? symbol + subscript(count2) : "";
@@ -149418,17 +149539,53 @@ var Simulation = class {
           fraction,
           concentration,
           amount: concentration * volume,
-          structure: () => protonationStructure(family.representative, step - family.step)
+          name: molecule2?.name,
+          structure: () => molecule2 ?? protonationStructure(family.representative, step - family.step)
         });
       });
     }
-    if (species.length) {
-      const OH = AcidBase.Kw / H3;
-      species.push(
-        { formula: "H\u2083O\u207A", charge: 1, concentration: H3, amount: H3 * volume, structure: () => waterIonStructure(1) },
-        { formula: "OH\u207B", charge: -1, concentration: OH, amount: OH * volume, structure: () => waterIonStructure(-1) }
-      );
-    }
+    const cationCards = /* @__PURE__ */ new Map();
+    sMix._activeMolecules.forEach((molecule2) => {
+      const smiles = molecule2.smilesString;
+      if (analyticalMolecules.has(molecule2) || molecule2.solidSaltFormula || smiles === "[OH-]" || smiles === "[H+]" || StructureManager.isWater(molecule2)) return;
+      const parts = this.cacheDissociation(molecule2);
+      if (!parts || !parts[0] || !parts[1]) return;
+      const hydroxide = parts[0].smilesString === "[OH-]" ? parts[0] : parts[1].smilesString === "[OH-]" ? parts[1] : void 0;
+      if (!hydroxide) return;
+      const cation = hydroxide === parts[0] ? parts[1] : parts[0];
+      const moles = sMix._molProperties[molecule2._id + "n"];
+      if (!Number.isFinite(moles) || moles <= 0) return;
+      analyticalMolecules.add(molecule2);
+      let card = cationCards.get(cation.smilesString);
+      if (!card) {
+        const stored = sMix._activeMolecules.find((item) => item !== molecule2 && !analyticalMolecules.has(item) && !item.solidSaltFormula && item._totalCharge !== 0 && item.smilesString === cation.smilesString);
+        const storedMoles = stored ? sMix._molProperties[stored._id + "n"] : NaN;
+        if (stored) analyticalMolecules.add(stored);
+        card = {
+          charge: cation._totalCharge,
+          concentration: Number.isFinite(storedMoles) ? storedMoles / volume : 0,
+          name: stored?.name,
+          structure: () => stored ?? cation
+        };
+        cationCards.set(cation.smilesString, card);
+      }
+      card.concentration += moles / volume;
+    });
+    cationCards.forEach(({ charge, concentration, name: name2, structure }) => {
+      species.push({
+        formula: ionFormula(structure()),
+        charge,
+        concentration,
+        name: name2,
+        amount: concentration * volume,
+        structure
+      });
+    });
+    const OH = AcidBase.Kw / H3;
+    species.push(
+      { formula: "H\u2083O\u207A", charge: 1, concentration: H3, amount: H3 * volume, structure: () => waterIonStructure(1) },
+      { formula: "OH\u207B", charge: -1, concentration: OH, amount: OH * volume, structure: () => waterIonStructure(-1) }
+    );
     return { pH: Math.round(-Math.log10(H3) * 1e3) / 1e3, species, analyticalMolecules };
   }
   static acidBaseComposition(sMix) {
@@ -175980,7 +176137,7 @@ function vesselCarouselEntries(mixture, equilibrium) {
 // controllers/WorkspaceCamera.ts
 var STANDARD_CANVAS_WIDTH = 800;
 var STANDARD_CANVAS_HEIGHT = 600;
-var MILLIMETERS_PER_WORLD_UNIT = 1.5;
+var MILLIMETERS_PER_WORLD_UNIT = 1;
 var MIN_ZOOM = 0.025;
 var MAX_ZOOM = 8;
 var GRID_BASE_MM = 20;
@@ -181497,6 +181654,7 @@ var CanvasController = class {
       if (app.screen.width !== width || app.screen.height !== height || app.renderer.resolution !== resolution) {
         app.renderer.resize(width, height, resolution);
         app.stage.hitArea = app.screen;
+        app.render();
       }
       this.camera.resize(width, height);
       this.applyCamera();
@@ -182286,7 +182444,7 @@ var TRANSFER_HOLD_MS = 1500;
 var TRANSFER_HOLD_RADIUS = 6;
 var DRAG_TRANSFER_TASK = "drag-transfer";
 var MIN_TWO_PANELS_WIDTH = 480;
-var _newSmilesDrawer_dec, _smilesDrawer100_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _confirmAction_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _chemicalCatalogOpened_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _app_dec, _pix_canvas_dec, _mousePos_dec, _dragObject_dec, _avComponentsSprites_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _dialogAlert_dec, _confirmDialog_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _confirmDialog, _dialogAlert, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _avComponentsSprites, _dragObject, _mousePos, _pix_canvas, _app, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _teacherDrawerOpen, _teacherTab, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalCatalogOpened, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _confirmAction, _RndName, _invComponents, _enablexAPI, _xAPIKey, _smilesDrawer100, _newSmilesDrawer;
+var _newSmilesDrawer_dec, _smilesDrawer100_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _confirmAction_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _chemicalCatalogOpened_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _app_dec, _pix_canvas_dec, _mousePos_dec, _dragObject_dec, _avComponentsSprites_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _dialogAlert_dec, _confirmDialog_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _confirmDialog, _dialogAlert, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _avComponentsSprites, _dragObject, _mousePos, _pix_canvas, _app, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _teacherDrawerOpen, _teacherTab, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalCatalogOpened, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _confirmAction, _RndName, _invComponents, _enablexAPI, _xAPIKey, _smilesDrawer100, _newSmilesDrawer;
 _ChemLab_decorators = [t6("webwriter-chemlab")];
 var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [e8("#upper")], _confirmDialog_dec = [e8("#confirmDialog")], _dialogAlert_dec = [e8("#dialogOverview")], _contextMolInfo_dec = [e8("#contextMolInfo")], _objectSummary_dec = [e8("#contextInfoBox")], _groupSummary_dec = [e8("#groupSelectionInfo")], _contextMixInfo_dec = [e8("#contextMixInfo")], _openBtn_dec = [e8("#openComp")], _activateEComp_dec = [e8("#activateEComp")], _contextEchemInfo_dec = [e8("#contextEchemInfo")], _xAPICheck_dec = [e8("#xAPICheck")], _xAPIKeyInput_dec = [e8("#xAPIKeyInput")], _canvasArea_dec = [e8("#canvasArea")], _canvasZoom_dec = [e8("#canvasZoom")], _zoomLevel_dec = [e8("#zoomLevel", true)], _gridScale_dec = [e8("#gridScale", true)], _gridScaleValue_dec = [e8("#gridScaleValue", true)], _pHColors_dec = [n5({ attribute: false })], _dictionary_dec = [n5({ attribute: false })], _availableMolecules_dec = [n5({
   type: Array,
@@ -182297,7 +182455,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 })], _availableComponents_dec = [n5({
   type: Array,
   attribute: false
-})], _avComponentsSprites_dec = [n5({ attribute: false })], _dragObject_dec = [n5({ attribute: false })], _mousePos_dec = [n5({ attribute: false })], _pix_canvas_dec = [n5({ attribute: false })], _app_dec = [n5({ attribute: false })], _allChemComponents_dec = [n5({ attribute: false })], _allEComponents_dec = [n5({ attribute: false })], _curr_obj_dec = [n5({ attribute: false })], _fullWidthMode_dec = [r8()], _diagramPanelOpen_dec = [r8()], _teacherDrawerOpen_dec = [r8()], _teacherTab_dec = [r8()], _permissionTooltip_dec = [r8()], _visibleVariants_dec = [r8()], _componentToPlace_dec = [r8()], _selectedChemical_dec = [r8()], _chemicalPermissions_dec = [r8()], _amountMenu_dec = [r8()], _fillMeter_dec = [r8()], _chemicalCatalogOpened_dec = [r8()], _chemicalQuery_dec = [r8()], _activeChemicalConcentrations_dec = [r8()], _openConcentrationMenu_dec = [r8()], _chemicalGroup_dec = [r8()], _curr_name_dec = [n5({ attribute: false })], _curr_stage_index_dec = [n5({ attribute: false })], _confirmAction_dec = [n5({ attribute: false })], _RndName_dec = [n5({ attribute: false })], _invComponents_dec = [n5({
+})], _thumbnailBadges_dec = [n5({ type: Boolean, reflect: true })], _avComponentsSprites_dec = [n5({ attribute: false })], _dragObject_dec = [n5({ attribute: false })], _mousePos_dec = [n5({ attribute: false })], _pix_canvas_dec = [n5({ attribute: false })], _app_dec = [n5({ attribute: false })], _allChemComponents_dec = [n5({ attribute: false })], _allEComponents_dec = [n5({ attribute: false })], _curr_obj_dec = [n5({ attribute: false })], _fullWidthMode_dec = [r8()], _diagramPanelOpen_dec = [r8()], _teacherDrawerOpen_dec = [r8()], _teacherTab_dec = [r8()], _permissionTooltip_dec = [r8()], _visibleVariants_dec = [r8()], _componentToPlace_dec = [r8()], _selectedChemical_dec = [r8()], _chemicalPermissions_dec = [r8()], _amountMenu_dec = [r8()], _fillMeter_dec = [r8()], _chemicalCatalogOpened_dec = [r8()], _chemicalQuery_dec = [r8()], _activeChemicalConcentrations_dec = [r8()], _openConcentrationMenu_dec = [r8()], _chemicalGroup_dec = [r8()], _curr_name_dec = [n5({ attribute: false })], _curr_stage_index_dec = [n5({ attribute: false })], _confirmAction_dec = [n5({ attribute: false })], _RndName_dec = [n5({ attribute: false })], _invComponents_dec = [n5({
   type: Array,
   attribute: false
 })], _enablexAPI_dec = [n5({
@@ -182370,11 +182528,12 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __privateAdd(this, _availableMolecules, __runInitializers(_init2, 84, this, defaultMolecules)), __runInitializers(_init2, 87, this);
     __privateAdd(this, _availableMixtures, __runInitializers(_init2, 88, this, defaultMixtures)), __runInitializers(_init2, 91, this);
     __privateAdd(this, _availableComponents, __runInitializers(_init2, 92, this, [])), __runInitializers(_init2, 95, this);
+    __privateAdd(this, _thumbnailBadges, __runInitializers(_init2, 96, this, false)), __runInitializers(_init2, 99, this);
     __publicField(this, "dataObserver");
     __publicField(this, "savedDataSnapshot", null);
     __publicField(this, "updatingDataBlock", false);
     __publicField(this, "refreshFromRemoteData", false);
-    __privateAdd(this, _avComponentsSprites, __runInitializers(_init2, 96, this, [])), __runInitializers(_init2, 99, this);
+    __privateAdd(this, _avComponentsSprites, __runInitializers(_init2, 100, this, [])), __runInitializers(_init2, 103, this);
     /**
      * controller owning all Chart.js diagrams (titration / e-chem)
      *
@@ -182393,49 +182552,49 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
      * @type {CanvasController}
      */
     __publicField(this, "canvas", new CanvasController(this));
-    __privateAdd(this, _dragObject, __runInitializers(_init2, 100, this)), __runInitializers(_init2, 103, this);
-    __privateAdd(this, _mousePos, __runInitializers(_init2, 104, this, [0, 0])), __runInitializers(_init2, 107, this);
-    __privateAdd(this, _pix_canvas, __runInitializers(_init2, 108, this, document.createElement("p_c"))), __runInitializers(_init2, 111, this);
-    __privateAdd(this, _app, __runInitializers(_init2, 112, this, null)), __runInitializers(_init2, 115, this);
+    __privateAdd(this, _dragObject, __runInitializers(_init2, 104, this)), __runInitializers(_init2, 107, this);
+    __privateAdd(this, _mousePos, __runInitializers(_init2, 108, this, [0, 0])), __runInitializers(_init2, 111, this);
+    __privateAdd(this, _pix_canvas, __runInitializers(_init2, 112, this, document.createElement("p_c"))), __runInitializers(_init2, 115, this);
+    __privateAdd(this, _app, __runInitializers(_init2, 116, this, null)), __runInitializers(_init2, 119, this);
     __publicField(this, "canvasReady");
-    __privateAdd(this, _allChemComponents, __runInitializers(_init2, 116, this, [])), __runInitializers(_init2, 119, this);
-    __privateAdd(this, _allEComponents, __runInitializers(_init2, 120, this, [])), __runInitializers(_init2, 123, this);
-    __privateAdd(this, _curr_obj, __runInitializers(_init2, 124, this, null)), __runInitializers(_init2, 127, this);
-    __privateAdd(this, _fullWidthMode, __runInitializers(_init2, 128, this, false)), __runInitializers(_init2, 131, this);
-    __privateAdd(this, _diagramPanelOpen, __runInitializers(_init2, 132, this, false)), __runInitializers(_init2, 135, this);
-    __privateAdd(this, _teacherDrawerOpen, __runInitializers(_init2, 136, this, false)), __runInitializers(_init2, 139, this);
+    __privateAdd(this, _allChemComponents, __runInitializers(_init2, 120, this, [])), __runInitializers(_init2, 123, this);
+    __privateAdd(this, _allEComponents, __runInitializers(_init2, 124, this, [])), __runInitializers(_init2, 127, this);
+    __privateAdd(this, _curr_obj, __runInitializers(_init2, 128, this, null)), __runInitializers(_init2, 131, this);
+    __privateAdd(this, _fullWidthMode, __runInitializers(_init2, 132, this, false)), __runInitializers(_init2, 135, this);
+    __privateAdd(this, _diagramPanelOpen, __runInitializers(_init2, 136, this, false)), __runInitializers(_init2, 139, this);
+    __privateAdd(this, _teacherDrawerOpen, __runInitializers(_init2, 140, this, false)), __runInitializers(_init2, 143, this);
     __publicField(this, "teacherDrawerChoice");
     __publicField(this, "workspaceResizeObserver");
     __publicField(this, "workspaceClassObserver");
-    __privateAdd(this, _teacherTab, __runInitializers(_init2, 140, this, "components")), __runInitializers(_init2, 143, this);
-    __privateAdd(this, _permissionTooltip, __runInitializers(_init2, 144, this)), __runInitializers(_init2, 147, this);
-    __privateAdd(this, _visibleVariants, __runInitializers(_init2, 148, this, {})), __runInitializers(_init2, 151, this);
-    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 152, this)), __runInitializers(_init2, 155, this);
-    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 156, this)), __runInitializers(_init2, 159, this);
-    __privateAdd(this, _chemicalPermissions, __runInitializers(_init2, 160, this, {})), __runInitializers(_init2, 163, this);
-    __privateAdd(this, _amountMenu, __runInitializers(_init2, 164, this)), __runInitializers(_init2, 167, this);
-    __privateAdd(this, _fillMeter, __runInitializers(_init2, 168, this)), __runInitializers(_init2, 171, this);
-    __privateAdd(this, _chemicalCatalogOpened, __runInitializers(_init2, 172, this, false)), __runInitializers(_init2, 175, this);
-    __privateAdd(this, _chemicalQuery, __runInitializers(_init2, 176, this, "")), __runInitializers(_init2, 179, this);
-    __privateAdd(this, _activeChemicalConcentrations, __runInitializers(_init2, 180, this, {})), __runInitializers(_init2, 183, this);
-    __privateAdd(this, _openConcentrationMenu, __runInitializers(_init2, 184, this)), __runInitializers(_init2, 187, this);
-    __privateAdd(this, _chemicalGroup, __runInitializers(_init2, 188, this, "Salze")), __runInitializers(_init2, 191, this);
+    __privateAdd(this, _teacherTab, __runInitializers(_init2, 144, this, "components")), __runInitializers(_init2, 147, this);
+    __privateAdd(this, _permissionTooltip, __runInitializers(_init2, 148, this)), __runInitializers(_init2, 151, this);
+    __privateAdd(this, _visibleVariants, __runInitializers(_init2, 152, this, {})), __runInitializers(_init2, 155, this);
+    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 156, this)), __runInitializers(_init2, 159, this);
+    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 160, this)), __runInitializers(_init2, 163, this);
+    __privateAdd(this, _chemicalPermissions, __runInitializers(_init2, 164, this, {})), __runInitializers(_init2, 167, this);
+    __privateAdd(this, _amountMenu, __runInitializers(_init2, 168, this)), __runInitializers(_init2, 171, this);
+    __privateAdd(this, _fillMeter, __runInitializers(_init2, 172, this)), __runInitializers(_init2, 175, this);
+    __privateAdd(this, _chemicalCatalogOpened, __runInitializers(_init2, 176, this, false)), __runInitializers(_init2, 179, this);
+    __privateAdd(this, _chemicalQuery, __runInitializers(_init2, 180, this, "")), __runInitializers(_init2, 183, this);
+    __privateAdd(this, _activeChemicalConcentrations, __runInitializers(_init2, 184, this, {})), __runInitializers(_init2, 187, this);
+    __privateAdd(this, _openConcentrationMenu, __runInitializers(_init2, 188, this)), __runInitializers(_init2, 191, this);
+    __privateAdd(this, _chemicalGroup, __runInitializers(_init2, 192, this, "Salze")), __runInitializers(_init2, 195, this);
     __publicField(this, "stopDose");
     __publicField(this, "paletteDrag");
     __publicField(this, "suppressPaletteClick", false);
     __publicField(this, "dragTransfer");
     __publicField(this, "meterTimeout");
-    __privateAdd(this, _curr_name, __runInitializers(_init2, 192, this, "")), __runInitializers(_init2, 195, this);
-    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 196, this, -1)), __runInitializers(_init2, 199, this);
-    __privateAdd(this, _confirmAction, __runInitializers(_init2, 200, this, 0)), __runInitializers(_init2, 203, this);
-    __privateAdd(this, _RndName, __runInitializers(_init2, 204, this, n7({
+    __privateAdd(this, _curr_name, __runInitializers(_init2, 196, this, "")), __runInitializers(_init2, 199, this);
+    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 200, this, -1)), __runInitializers(_init2, 203, this);
+    __privateAdd(this, _confirmAction, __runInitializers(_init2, 204, this, 0)), __runInitializers(_init2, 207, this);
+    __privateAdd(this, _RndName, __runInitializers(_init2, 208, this, n7({
       dictionaries: [l6, t8, r10]
-    }))), __runInitializers(_init2, 207, this);
-    __privateAdd(this, _invComponents, __runInitializers(_init2, 208, this, [])), __runInitializers(_init2, 211, this);
-    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 212, this, false)), __runInitializers(_init2, 215, this);
-    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 216, this, "")), __runInitializers(_init2, 219, this);
-    __privateAdd(this, _smilesDrawer100, __runInitializers(_init2, 220, this, null)), __runInitializers(_init2, 223, this);
-    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 224, this, 1)), __runInitializers(_init2, 227, this);
+    }))), __runInitializers(_init2, 211, this);
+    __privateAdd(this, _invComponents, __runInitializers(_init2, 212, this, [])), __runInitializers(_init2, 215, this);
+    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 216, this, false)), __runInitializers(_init2, 219, this);
+    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 220, this, "")), __runInitializers(_init2, 223, this);
+    __privateAdd(this, _smilesDrawer100, __runInitializers(_init2, 224, this, null)), __runInitializers(_init2, 227, this);
+    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 228, this, 1)), __runInitializers(_init2, 231, this);
     /**
      * asynchronous timer function to be used in other functions; returns, if the condition is met 
      *
@@ -182570,6 +182729,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.canvas.drawSelection();
     }
     if (changed.has("amountMenu")) this.positionAmountMenu();
+    if (changed.has("thumbnailBadges")) {
+      this.vesselThumbnails = /* @__PURE__ */ new WeakMap();
+      if (this.hasUpdated) this._updatePopup();
+    }
   }
   readLegacyArray(name2) {
     const raw = this.getAttribute(name2);
@@ -182587,7 +182750,15 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   applyAuthoredData(value) {
     if (Array.isArray(value.availableMolecules)) this.availableMolecules = value.availableMolecules;
     if (Array.isArray(value.availableMixtures)) this.availableMixtures = value.availableMixtures;
-    if (Array.isArray(value.availableComponents)) this.availableComponents = value.availableComponents;
+    if (Array.isArray(value.availableComponents)) {
+      const needsScale = value.layoutScale !== 1;
+      this.availableComponents = value.availableComponents.map((component) => {
+        if (!needsScale || typeof component !== "object" || component === null) return component;
+        const pos = component["pos"];
+        if (!Array.isArray(pos) || pos.length !== 2 || !pos.every(Number.isFinite)) return component;
+        return { ...component, pos: [pos[0] * 1.5, pos[1] * 1.5] };
+      });
+    }
     if (Array.isArray(value.invComponents)) {
       const componentNames = Object.keys(ComponentType2).concat(Object.keys(EComponentType));
       this.invComponents = value.invComponents.map((value2) => String(value2).trim()).filter(Boolean).map(
@@ -182613,6 +182784,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       const value = JSON.parse(block.textContent ?? "");
       if (!value || typeof value !== "object") return;
       const incoming = JSON.stringify({
+        layoutScale: 1,
         availableMolecules: value.availableMolecules ?? this.availableMolecules,
         availableMixtures: value.availableMixtures ?? this.availableMixtures,
         availableComponents: value.availableComponents ?? this.availableComponents,
@@ -182633,6 +182805,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   serializeAuthoredData() {
     return JSON.stringify({
+      layoutScale: 1,
       availableMolecules: this.availableMolecules,
       availableMixtures: this.availableMixtures,
       availableComponents: this.availableComponents,
@@ -183471,28 +183644,49 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.updateFillMeter(sprite, target);
     return true;
   }
+  labelThumbnailSource(container2, source3) {
+    if (!this.thumbnailBadges) return;
+    container2.dataset.source = source3;
+    let badge = container2.querySelector(":scope > .vessel-thumbnail-source");
+    if (!badge) {
+      badge = this.ownerDocument.createElement("span");
+      badge.className = "vessel-thumbnail-source";
+      container2.append(badge);
+    }
+    badge.textContent = source3;
+  }
   vesselThumbnail(molecule2, formula) {
     const cached = this.vesselThumbnails.get(molecule2);
     if (cached?.drawer === this.newSmilesDrawer) return cached.element;
     const document2 = this.ownerDocument;
     const container2 = document2.createElement("span");
     container2.className = "vessel-carousel-thumbnail";
+    const badge = () => {
+      if (!this.thumbnailBadges) return;
+      const tag = document2.createElement("span");
+      tag.className = "vessel-thumbnail-source";
+      container2.append(tag);
+    };
     const fallback2 = () => {
       try {
         const image = document2.createElement("img");
         image.src = StructureManager.printMolecule(molecule2, 100, 100);
         image.alt = formula;
         container2.replaceChildren(image);
+        this.labelThumbnailSource(container2, "kekule");
       } catch {
         container2.textContent = formula;
+        this.labelThumbnailSource(container2, "text");
       }
     };
+    badge();
     if (this.newSmilesDrawer === 1) {
       try {
         import_smiles_drawer.default.parse(molecule2.smilesString, (tree) => {
           const svg = document2.createElementNS("http://www.w3.org/2000/svg", "svg");
           this.smilesDrawer100.draw(tree, svg, "light");
           container2.replaceChildren(svg);
+          this.labelThumbnailSource(container2, "smilesdrawer");
         }, fallback2);
       } catch {
         fallback2();
@@ -183520,11 +183714,18 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     B(x`
 			${c4(entries, ({ key }) => key, ({ molecule: molecule2, species, phase }) => {
       if (species) {
-        const { formula: formula2, concentration: concentration2, structure } = species;
+        const { formula: formula2, concentration: concentration2, structure, name: name2 } = species;
         const thumbnail = structure();
+        if (thumbnail && !thumbnail.name && !this.vesselNameRequests.has(thumbnail)) {
+          this.vesselNameRequests.add(thumbnail);
+          void StructureManager.getChemData(thumbnail).then(() => {
+            if (this.curr_obj?._content === mixture) this._updatePopup();
+          }).catch(() => {
+          });
+        }
         return slide(
           thumbnail ? this.vesselThumbnail(thumbnail, formula2) : x`<span class="vessel-carousel-thumbnail">${formula2}</span>`,
-          formula2,
+          name2 || formula2,
           concentrationLine(concentration2)
         );
       }
@@ -184830,21 +185031,17 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const right = Math.min(canvasWidth, bounds.maxX);
     const top = Math.max(0, bounds.minY);
     const bottom = Math.min(canvasHeight, bounds.maxY);
-    const above = top - gap - height;
-    const below = bottom + gap;
     const maxX = Math.max(padding, canvasWidth - padding - width);
     const maxY = Math.max(padding, canvasHeight - padding - height);
+    const rightSide = right + gap;
+    const leftSide = left - gap - width;
     let x4 = (left + right - width) / 2;
-    let y5 = above;
-    if (above < padding) {
-      if (below <= maxY) {
-        y5 = below;
-      } else if (right + gap <= maxX || left - gap - width >= padding) {
-        x4 = right + gap <= maxX ? right + gap : left - gap - width;
-        y5 = (top + bottom - height) / 2;
-      } else if (canvasHeight - bottom > top) {
-        y5 = below;
-      }
+    let y5 = top - gap - height;
+    if (rightSide <= maxX || leftSide >= padding) {
+      x4 = rightSide <= maxX ? rightSide : leftSide;
+      y5 = (top + bottom - height) / 2;
+    } else if (y5 < padding) {
+      y5 = bottom + gap <= maxY || canvasHeight - bottom > top ? bottom + gap : y5;
     }
     summary.style.transform = `translate(${Math.max(padding, Math.min(x4, maxX))}px, ${Math.max(padding, Math.min(y5, maxY))}px)`;
     summary.setAttribute("data-anchored", "");
@@ -185066,6 +185263,7 @@ _dictionary = new WeakMap();
 _availableMolecules = new WeakMap();
 _availableMixtures = new WeakMap();
 _availableComponents = new WeakMap();
+_thumbnailBadges = new WeakMap();
 _avComponentsSprites = new WeakMap();
 _dragObject = new WeakMap();
 _mousePos = new WeakMap();
@@ -185121,6 +185319,7 @@ __decorateElement(_init2, 4, "dictionary", _dictionary_dec, _ChemLab, _dictionar
 __decorateElement(_init2, 4, "availableMolecules", _availableMolecules_dec, _ChemLab, _availableMolecules);
 __decorateElement(_init2, 4, "availableMixtures", _availableMixtures_dec, _ChemLab, _availableMixtures);
 __decorateElement(_init2, 4, "availableComponents", _availableComponents_dec, _ChemLab, _availableComponents);
+__decorateElement(_init2, 4, "thumbnailBadges", _thumbnailBadges_dec, _ChemLab, _thumbnailBadges);
 __decorateElement(_init2, 4, "avComponentsSprites", _avComponentsSprites_dec, _ChemLab, _avComponentsSprites);
 __decorateElement(_init2, 4, "dragObject", _dragObject_dec, _ChemLab, _dragObject);
 __decorateElement(_init2, 4, "mousePos", _mousePos_dec, _ChemLab, _mousePos);
@@ -185169,6 +185368,11 @@ __publicField(_ChemLab, "options", {
       { value: "1", label: { _: "Enabled", "de-DE": "Aktiviert" } },
       { value: "0", label: { _: "Disabled", "de-DE": "Deaktiviert" } }
     ]
+  },
+  thumbnailBadges: {
+    type: Boolean,
+    group: "appearance",
+    label: { _: "Label thumbnail sources", "de-DE": "Vorschaubild-Quellen anzeigen" }
   },
   enablexAPI: {
     type: Boolean,
