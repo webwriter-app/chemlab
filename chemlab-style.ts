@@ -1286,6 +1286,9 @@ export const style = css`
 		align-items: center;
 		gap: 4px;
 	}
+	#contextMixInfo {
+		flex-wrap: wrap;
+	}
 	.object-summary-heading > .remObj {
 		display: grid;
 		place-items: center;
@@ -1360,6 +1363,21 @@ export const style = css`
 		background: var(--indicator-color);
 		border-color: var(--indicator-color);
 		color: var(--indicator-text);
+	}
+	.vessel-saturation-tag::part(base) {
+		aspect-ratio: 1;
+		justify-content: center;
+		padding-inline: 0;
+	}
+	.vessel-saturation-circle {
+		display: block;
+		box-sizing: border-box;
+		inline-size: 13px;
+		block-size: 13px;
+		border: 1px solid var(--sl-color-primary-600);
+		border-radius: 50%;
+		background: linear-gradient(to top, var(--sl-color-primary-600) var(--saturation-fill),
+			transparent var(--saturation-fill));
 	}
 	.vessel-carousel-card {
 		display: flex;

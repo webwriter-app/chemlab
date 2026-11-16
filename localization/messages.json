@@ -215,6 +215,7 @@
     "Eigene Moleküle und Gemische": "Custom molecules and mixtures",
     "Füllstand": "Fill level",
     "Bodensatz": "Sediment",
+    "Salzsättigung: {salt}": "Salt saturation: {salt}",
     "Sättigung bei {max} mol/L": "Saturation at {max} mol/L",
     "Natriumchlorid": "Sodium chloride",
     "Kaliumchlorid": "Potassium chloride",

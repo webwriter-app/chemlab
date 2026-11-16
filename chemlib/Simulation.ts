@@ -12,6 +12,10 @@ const saltEquilibria = Object.entries(saltSolubility).map(([formula, data]) => {
 	return { formula, cation, anion, cations, anions, product };
 }).sort((a, b) => a.product - b.product);
 
+function saltIonProduct(positive: number, negative: number, cations: number, anions: number): number {
+	return Math.max(0, positive) ** cations * Math.max(0, negative) ** anions;
+}
+
 type AcidBaseFamily = AcidBaseSystem & { representative: Molecule; step: number; members: Molecule[] };
 
 export interface AcidEquilibriumSpecies {
@@ -262,7 +266,7 @@ export abstract class Simulation {
 				const p = positive ? mix._molProperties[positive._id + "n"] / volume : 0;
 				const n = negative ? mix._molProperties[negative._id + "n"] / volume : 0;
 				const ionProduct = (delta: number) =>
-					Math.max(0, p + delta * cations) ** cations * Math.max(0, n + delta * anions) ** anions;
+					saltIonProduct(p + delta * cations, n + delta * anions, cations, anions);
 				const current = ionProduct(0);
 				if (Math.abs(current - product) <= product * 1e-8) continue;
 				const available = solid ? mix._molProperties[solid._id + "n"] / volume : 0;
@@ -307,6 +311,30 @@ export abstract class Simulation {
 			}
 			if (!changed) break;
 		}
+	}
+
+	/** Read-only fraction of saturation for the modeled salt closest to its limit. */
+	public static getSaltSaturation(mix: Mixture): { formula: string; fraction: number } | undefined {
+		const volume = mix._solutionVolume;
+		if (!mix._isSolution || !(volume > 0)) return;
+		const concentrations = new Map<string, number>();
+		for (const ion of mix._activeMolecules) {
+			if (!ion._totalCharge || ion.solidSaltFormula) continue;
+			const moles = mix._molProperties[ion._id + "n"];
+			if (moles > 0 && Number.isFinite(moles)) concentrations.set(ion.smilesString, moles / volume);
+		}
+		let closest: { formula: string; fraction: number } | undefined;
+		for (const { formula, cation, anion, cations, anions, product } of saltEquilibria) {
+			const positive = concentrations.get(cation);
+			const negative = concentrations.get(anion);
+			if (positive === undefined || negative === undefined) continue;
+			// Use a concentration-scale fraction: scaling all ion concentrations
+			// by one half scales the gauge by one half, regardless of stoichiometry.
+			const ratio = saltIonProduct(positive, negative, cations, anions) / product;
+			const fraction = Math.min(1, ratio ** (1 / (cations + anions)));
+			if (!closest || fraction > closest.fraction) closest = { formula, fraction };
+		}
+		return closest;
 	}
 
 	/**

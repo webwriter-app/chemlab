@@ -70027,6 +70027,7 @@ var messages_default = {
     "Eigene Molek\xFCle und Gemische": "Custom molecules and mixtures",
     F\u00FCllstand: "Fill level",
     Bodensatz: "Sediment",
+    "Salzs\xE4ttigung: {salt}": "Salt saturation: {salt}",
     "S\xE4ttigung bei {max} mol/L": "Saturation at {max} mol/L",
     Natriumchlorid: "Sodium chloride",
     Kaliumchlorid: "Potassium chloride",
@@ -103770,6 +103771,9 @@ var style = i`
 		align-items: center;
 		gap: 4px;
 	}
+	#contextMixInfo {
+		flex-wrap: wrap;
+	}
 	.object-summary-heading > .remObj {
 		display: grid;
 		place-items: center;
@@ -103844,6 +103848,21 @@ var style = i`
 		background: var(--indicator-color);
 		border-color: var(--indicator-color);
 		color: var(--indicator-text);
+	}
+	.vessel-saturation-tag::part(base) {
+		aspect-ratio: 1;
+		justify-content: center;
+		padding-inline: 0;
+	}
+	.vessel-saturation-circle {
+		display: block;
+		box-sizing: border-box;
+		inline-size: 13px;
+		block-size: 13px;
+		border: 1px solid var(--sl-color-primary-600);
+		border-radius: 50%;
+		background: linear-gradient(to top, var(--sl-color-primary-600) var(--saturation-fill),
+			transparent var(--saturation-fill));
 	}
 	.vessel-carousel-card {
 		display: flex;
@@ -148894,6 +148913,9 @@ var saltEquilibria = Object.entries(saltSolubility).map(([formula, data2]) => {
   const product = data2.ksp ?? (cations * data2.saturation) ** cations * (anions * data2.saturation) ** anions;
   return { formula, cation, anion, cations, anions, product };
 }).sort((a7, b5) => a7.product - b5.product);
+function saltIonProduct(positive, negative, cations, anions) {
+  return Math.max(0, positive) ** cations * Math.max(0, negative) ** anions;
+}
 var protonationStructures = /* @__PURE__ */ new WeakMap();
 function protonationStructure(source3, removed) {
   if (!removed) return source3;
@@ -149101,7 +149123,7 @@ var Simulation = class {
         if ((!positive || !negative) && !solid) continue;
         const p6 = positive ? mix._molProperties[positive._id + "n"] / volume : 0;
         const n10 = negative ? mix._molProperties[negative._id + "n"] / volume : 0;
-        const ionProduct = (delta2) => Math.max(0, p6 + delta2 * cations) ** cations * Math.max(0, n10 + delta2 * anions) ** anions;
+        const ionProduct = (delta2) => saltIonProduct(p6 + delta2 * cations, n10 + delta2 * anions, cations, anions);
         const current = ionProduct(0);
         if (Math.abs(current - product) <= product * 1e-8) continue;
         const available = solid ? mix._molProperties[solid._id + "n"] / volume : 0;
@@ -149143,6 +149165,27 @@ var Simulation = class {
       }
       if (!changed) break;
     }
+  }
+  /** Read-only fraction of saturation for the modeled salt closest to its limit. */
+  static getSaltSaturation(mix) {
+    const volume = mix._solutionVolume;
+    if (!mix._isSolution || !(volume > 0)) return;
+    const concentrations = /* @__PURE__ */ new Map();
+    for (const ion2 of mix._activeMolecules) {
+      if (!ion2._totalCharge || ion2.solidSaltFormula) continue;
+      const moles = mix._molProperties[ion2._id + "n"];
+      if (moles > 0 && Number.isFinite(moles)) concentrations.set(ion2.smilesString, moles / volume);
+    }
+    let closest;
+    for (const { formula, cation, anion, cations, anions, product } of saltEquilibria) {
+      const positive = concentrations.get(cation);
+      const negative = concentrations.get(anion);
+      if (positive === void 0 || negative === void 0) continue;
+      const ratio = saltIonProduct(positive, negative, cations, anions) / product;
+      const fraction = Math.min(1, ratio ** (1 / (cations + anions)));
+      if (!closest || fraction > closest.fraction) closest = { formula, fraction };
+    }
+    return closest;
   }
   /**
    * Splits a molecule at its first ionic or acidbase bond into two conjugate
@@ -164548,23 +164591,30 @@ var dictionary = {
 
 // data/phColors.ts
 var pHColors = {
-  // *pride*
-  0: "#ee1c25",
-  1: "#f26724",
-  2: "#f9c511",
-  3: "#f5ed1c",
-  4: "#b5d333",
-  5: "#83c241",
-  6: "#33a94b",
-  7: "#33a94b",
-  8: "#22b46b",
-  9: "#0bb8b6",
-  10: "#4690cd",
-  11: "#3853a4",
-  12: "#5a51a2",
-  13: "#63459d",
-  14: "#462c83"
+  0: "#a92257",
+  1: "#c93045",
+  2: "#df5036",
+  3: "#ed7929",
+  4: "#f3ac28",
+  5: "#ebd538",
+  6: "#adc33e",
+  7: "#5f9d45",
+  8: "#397d4e",
+  9: "#28715f",
+  10: "#246973",
+  11: "#265d80",
+  12: "#284d78",
+  13: "#303b68",
+  14: "#352e58"
 };
+function pHTextColor(background) {
+  const linear = (start) => {
+    const channel = parseInt(background.slice(start, start + 2), 16) / 255;
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = 0.2126 * linear(1) + 0.7152 * linear(3) + 0.0722 * linear(5);
+  return luminance >= Math.sqrt(0.05 * 1.05) - 0.05 ? "#000" : "#fff";
+}
 
 // data/presets.ts
 var defaultMolecules = [];
@@ -184923,7 +184973,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       return slide(this.vesselThumbnail(carousel, molecule2, formula), molecule2.name || formula, x`
 					${compact ? E : amountLine(properties[id3 + "n"])}
 					${showMass && Number.isFinite(mass) ? x`<p>m: ${compact ? this.formatAmount(mass, 3) : mass.toExponential(2)} g</p>` : E}
-					${sediment ? x`<p>${this.message("Bodensatz")}</p>` : concentration}`);
+					${concentration}`);
     })}
 		`, carousel);
     if (reset) void carousel.updateComplete.then(() => {
@@ -185033,6 +185083,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       return mass > 0 && Number.isFinite(mass) ? sum + mass : sum;
     }, 0);
     const color2 = Number.isFinite(pH) ? this.pHColors[Math.max(0, Math.min(14, Math.round(pH)))] : void 0;
+    const saturation = color2 === void 0 ? void 0 : Simulation.getSaltSaturation(mixture);
+    const percent = saturation && (saturation.fraction >= 1 - 1e-8 ? 100 : Math.min(99, Math.round(100 * saturation.fraction)));
+    const saturationLabel = saturation && this.message("Salzs\xE4ttigung: {salt}", { salt: saturation.formula });
     if (!(amount > 0 && Number.isFinite(amount)) && color2 === void 0) return;
     this.contextMixInfo.style.display = "";
     B(x`
@@ -185040,7 +185093,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				<sl-tag size="small" variant="neutral">${liquid ? `${amount.toFixed(1)} mL` : `${this.formatAmount(amount, 3)} g`}</sl-tag>` : E}
 			${color2 === void 0 ? E : x`
 				<sl-tag class="vessel-ph-tag" size="small" variant="neutral"
-					style=${`--indicator-color: ${color2}; --indicator-text: ${pH >= 11 ? "#fff" : "#171717"}`}>pH ${pH}</sl-tag>`}
+					style=${`--indicator-color: ${color2}; --indicator-text: ${pHTextColor(color2)}`}>pH ${pH}</sl-tag>`}
+			${saturation ? x`
+				<sl-tag class="vessel-saturation-tag" size="small" variant="neutral" role="meter"
+					aria-label=${saturationLabel} aria-valuemin="0" aria-valuemax="100" aria-valuenow=${percent}
+					title=${`${saturationLabel} \xB7 ${percent}%`}>
+					<span class="vessel-saturation-circle" aria-hidden="true"
+						style=${`--saturation-fill: ${percent}%`}></span>
+				</sl-tag>` : E}
 		`, this.contextMixInfo);
   }
   /**

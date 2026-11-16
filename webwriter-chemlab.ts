@@ -60,7 +60,7 @@ import Chart from "chart.js/auto";
 import { HALF_PI, isNumber } from "chart.js/helpers";
 
 import { dictionary as germanDictionary } from "./data/dictionary";
-import { pHColors as phColorScale } from "./data/phColors";
+import { pHColors as phColorScale, pHTextColor } from "./data/phColors";
 import { defaultMolecules, defaultMixtures } from "./data/presets";
 import { sendXApiStatement } from "./services/xapi";
 import { DiagramController } from "./controllers/DiagramController";
@@ -2107,7 +2107,7 @@ export class ChemLab extends LitElementWw {
 				return slide(this.vesselThumbnail(carousel, molecule, formula), molecule.name || formula, html`
 					${compact ? nothing : amountLine(properties[id + "n"])}
 					${showMass && Number.isFinite(mass) ? html`<p>m: ${compact ? this.formatAmount(mass, 3) : mass.toExponential(2)} g</p>` : nothing}
-					${sediment ? html`<p>${this.message("Bodensatz")}</p>` : concentration}`);
+					${concentration}`);
 			})}
 		`, carousel);
 		if (reset) void carousel.updateComplete.then(() => {
@@ -2245,6 +2245,9 @@ export class ChemLab extends LitElementWw {
 			return mass > 0 && Number.isFinite(mass) ? sum + mass : sum;
 		}, 0);
 		const color = Number.isFinite(pH) ? this.pHColors[Math.max(0, Math.min(14, Math.round(pH)))] : undefined;
+		const saturation = color === undefined ? undefined : chemlib.Simulation.getSaltSaturation(mixture);
+		const percent = saturation && (saturation.fraction >= 1 - 1e-8 ? 100 : Math.min(99, Math.round(100 * saturation.fraction)));
+		const saturationLabel = saturation && this.message("Salzsättigung: {salt}", { salt: saturation.formula });
 		if (!(amount > 0 && Number.isFinite(amount)) && color === undefined) return;
 		this.contextMixInfo.style.display = "";
 		render(html`
@@ -2252,7 +2255,14 @@ export class ChemLab extends LitElementWw {
 				<sl-tag size="small" variant="neutral">${liquid ? `${amount.toFixed(1)} mL` : `${this.formatAmount(amount, 3)} g`}</sl-tag>` : nothing}
 			${color === undefined ? nothing : html`
 				<sl-tag class="vessel-ph-tag" size="small" variant="neutral"
-					style=${`--indicator-color: ${color}; --indicator-text: ${pH >= 11 ? "#fff" : "#171717"}`}>pH ${pH}</sl-tag>`}
+					style=${`--indicator-color: ${color}; --indicator-text: ${pHTextColor(color)}`}>pH ${pH}</sl-tag>`}
+			${saturation ? html`
+				<sl-tag class="vessel-saturation-tag" size="small" variant="neutral" role="meter"
+					aria-label=${saturationLabel} aria-valuemin="0" aria-valuemax="100" aria-valuenow=${percent}
+					title=${`${saturationLabel} · ${percent}%`}>
+					<span class="vessel-saturation-circle" aria-hidden="true"
+						style=${`--saturation-fill: ${percent}%`}></span>
+				</sl-tag>` : nothing}
 		`, this.contextMixInfo);
 	}
 
