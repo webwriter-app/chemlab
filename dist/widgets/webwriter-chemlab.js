@@ -147840,6 +147840,13 @@ var Mixture = class {
   /** Measured volume of additions beyond the water tracked by the solution model, in L. */
   addedVolume = 0;
   hasLiquidVolume = false;
+  /** Gas that has left the solution, keyed by the id in `evolvedGases`, in mol. */
+  evolvedGas = /* @__PURE__ */ new Map();
+  /** Records `amountMol` of a gas as escaped from the solution. */
+  evolveGas(gas, amountMol) {
+    if (!(amountMol > 0)) return;
+    this.evolvedGas.set(gas, (this.evolvedGas.get(gas) ?? 0) + amountMol);
+  }
   get saltSediment() {
     let mass = 0;
     let color2 = 15986401;
@@ -149012,6 +149019,18 @@ var complexFormation = {
   "[Ni(NH3)6]2+": { metal: "[Ni2+]", ligand: "N", count: 6, beta: 55e7, formula: "Ni(NH\u2083)\u2086\xB2\u207A", color: 4878261 }
 };
 
+// chemlib/gasEvolution.ts
+var evolvedGases = {
+  // CO2: 0.034 mol/L in water at 25 °C and 1 atm
+  CO2: { formula: "CO\u2082", family: "C(=O)(O)O", solubility: 0.034 },
+  // H2S: about 0.1 mol/L in saturated water
+  H2S: { formula: "H\u2082S", family: "S", solubility: 0.1 },
+  // NH3: about 15 mol/L in the concentrated solution, so a lab solution stays
+  NH3: { formula: "NH\u2083", family: "N", solubility: 15 },
+  // H2: practically insoluble, and only formed on a metal surface
+  H2: { formula: "H\u2082" }
+};
+
 // chemlib/Simulation.ts
 var saltEquilibria = Object.entries(saltSolubility).map(([formula, data2]) => {
   const [cation, anion, cations = 1, anions = 1] = data2.ions;
@@ -149183,6 +149202,7 @@ var Simulation = class {
       }
     });
     this.sRedoxSolution(cMixture);
+    this.sMetalAcid(cMixture);
     let changed;
     do {
       changed = false;
@@ -149200,6 +149220,10 @@ var Simulation = class {
     } while (changed);
     this.equilibrateSalts(cMixture);
     if (this.equilibrateHydroxides(cMixture)) this.equilibrateSalts(cMixture);
+    for (let pass = 0; pass < 4 && this.sGasEvolution(cMixture); pass++) {
+      this.equilibrateSalts(cMixture);
+      if (this.equilibrateHydroxides(cMixture)) this.equilibrateSalts(cMixture);
+    }
   }
   static makeSolidSalt(formula, ions, counts2) {
     const solid = StructureManager.newMolecule();
@@ -149753,6 +149777,98 @@ var Simulation = class {
     return density2 > 0 ? molecule2.getTotMolMass() / (density2 * 1e3) : 0;
   }
   /**
+   * A dosed metal reduces the protons of an acid to hydrogen. The reaction
+   * runs until the metal or the acid is spent, so the extent follows the
+   * titratable acidity of the solution rather than its free proton
+   * concentration alone: a weak acid keeps delivering protons as they are
+   * taken up, while a neutral or basic solution leaves the metal alone.
+   *
+   * @private
+   * @static
+   * @param {Mixture} mix - the solution to react
+   * @returns {boolean} whether any amount changed
+   */
+  static sMetalAcid(mix) {
+    if (!mix._isSolution || !(mix._solutionVolume > 0)) return false;
+    const metals = mix._activeMolecules.filter((molecule2) => {
+      if (!molecule2.dosedAsSolid) return false;
+      const couple = this.getRedoxData(molecule2);
+      return couple !== void 0 && couple.red === molecule2.smilesString && couple.sep < 0;
+    });
+    if (metals.length === 0) return false;
+    const volume = mix._solutionVolume;
+    const { systems: systems4, spectatorCharge } = this.acidBaseComposition(mix);
+    const H3 = AcidBase.solveProton(
+      systems4,
+      spectatorCharge,
+      AcidBase.kwAt(mix._temperature),
+      this.complexChargeHook(systems4)
+    );
+    if (!(H3 > 1e-7)) return false;
+    const bound = (family, h5) => AcidBase.speciesFractions(family, h5).reduce((sum, fraction, step) => sum + fraction * (family.pKa.length - step), 0);
+    let capacity = (H3 - 1e-7) * volume;
+    for (const family of systems4) {
+      if (!(family.totalC > 0) || family.pKa.length < 1) continue;
+      if (family.protonatedCharge > 0 || !(family.pKa[0] < 7)) continue;
+      capacity += family.totalC * Math.max(0, bound(family, H3) - bound(family, 1e-7)) * volume;
+    }
+    let changed = false;
+    for (const metal of metals) {
+      const couple = this.getRedoxData(metal);
+      if (!couple) continue;
+      const available = mix._molProperties[metal._id + "n"] ?? 0;
+      const atoms = Math.min(available, capacity / couple.el);
+      if (!(atoms > 1e-12)) continue;
+      const protons = atoms * couple.el;
+      mix.changeMolecule(metal._id, -atoms);
+      mix.addMolecule(this.redoxProduct(metal, couple.el), atoms);
+      mix.addedVolume = Math.max(0, mix.addedVolume - this.metalBulkLitresPerMol(metal, couple) * atoms);
+      mix.evolveGas("H2", protons / 2);
+      capacity -= protons;
+      changed = true;
+    }
+    return changed;
+  }
+  /**
+   * Volatile solutes leave the open vessel once their dissolved
+   * concentration passes the saturation value at room temperature. The
+   * escaped amount is kept on the mixture so the vessel can show the gas.
+   *
+   * @private
+   * @static
+   * @param {Mixture} mix - the solution to degas
+   * @returns {boolean} whether any amount changed
+   */
+  static sGasEvolution(mix) {
+    if (!mix._isSolution || !(mix._solutionVolume > 0)) return false;
+    const volume = mix._solutionVolume;
+    const { systems: systems4, spectatorCharge } = this.acidBaseComposition(mix);
+    const H3 = AcidBase.solveProton(
+      systems4,
+      spectatorCharge,
+      AcidBase.kwAt(mix._temperature),
+      this.complexChargeHook(systems4)
+    );
+    let changed = false;
+    for (const family of systems4) {
+      if (!(family.totalC > 0)) continue;
+      const entry = Object.entries(evolvedGases).find(([, gas]) => gas.family === family.key);
+      if (!entry) continue;
+      const [id3, { solubility }] = entry;
+      if (!(solubility > 0)) continue;
+      const neutral = family.protonatedCharge;
+      if (neutral < 0 || neutral > family.pKa.length) continue;
+      const excess = family.totalC * AcidBase.speciesFractions(family, H3)[neutral] - solubility;
+      if (!(excess > 1e-9)) continue;
+      const amount = Math.min(excess * volume, family.totalC * volume);
+      if (!(amount > 1e-12)) continue;
+      this.changeFamily(mix, family, -amount);
+      mix.evolveGas(id3, amount);
+      changed = true;
+    }
+    return changed;
+  }
+  /**
    * Dissoziation of salts: Returns true because salts dissoziate completely
    *
    * @private
@@ -149914,6 +150030,7 @@ var Simulation = class {
         idx = systems4.length;
         familyIndex[key] = idx;
         systems4.push({
+          key,
           totalC: 0,
           pKa: pKaList(acidbaseData[key]),
           protonatedCharge,
@@ -176434,7 +176551,13 @@ function vesselCarouselEntries(mixture, equilibrium) {
     else liquids.push({ key, species, phase: "liquid" });
   }
   ions.sort((a7, b5) => a7.concentration === b5.concentration ? 0 : b5.concentration - a7.concentration);
-  return [...solids, ...liquids, ...ions.map(({ entry }) => entry)];
+  const gases = [];
+  for (const [id3, amount] of mixture.evolvedGas) {
+    const gas = evolvedGases[id3];
+    if (!gas || !(amount > 0)) continue;
+    gases.push({ key: `gas:${id3}`, gas: { formula: gas.formula, amount }, phase: "gas" });
+  }
+  return [...solids, ...liquids, ...ions.map(({ entry }) => entry), ...gases];
 }
 
 // controllers/WorkspaceCamera.ts
@@ -181251,6 +181374,9 @@ var VesselView = class _VesselView extends Container {
   static PRECIPITATE_GRAVITY = 22;
   static GRAIN_TERMINAL = 80;
   static PRECIPITATE_TERMINAL = 7;
+  /** upward acceleration and speed limit of a gas bubble */
+  static BUBBLE_RISE = 26;
+  static BUBBLE_TERMINAL = 9;
   /** tint of the aqueous phase and of water-immiscible organic liquids */
   static AQUEOUS = { color: 4559543, alpha: 0.55 };
   static NONPOLAR = { color: 13351300, alpha: 0.6 };
@@ -181277,6 +181403,8 @@ var VesselView = class _VesselView extends Container {
   liquidLayers = [];
   /** solid particles falling or sinking in the liquid */
   particles = [];
+  /** last reported escaped gas amount, to detect a new evolution */
+  gasAmount = 0;
   /** remaining pour stream visibility in ms */
   streamMs = 0;
   /** remaining surface wobble in ms, plus its age for the decay curve */
@@ -181344,7 +181472,8 @@ var VesselView = class _VesselView extends Container {
     const fill2 = fraction > 0 ? Math.min(1, fraction) : !liquid && mixture._activeMolecules.length ? 0.035 : 0;
     const sediment = mixture.saltSediment;
     const sedimentFraction = liquid && sediment.mass > 1e-6 ? Math.min(fill2, Math.max(0.012, sediment.mass / (2 * this.component._volume))) : 0;
-    if (!this.initialized) {
+    const firstDraw = !this.initialized;
+    if (firstDraw) {
       this.initialized = true;
     } else if (hint === "grain") {
       this.spawnSolidParticles(
@@ -181357,6 +181486,11 @@ var VesselView = class _VesselView extends Container {
     } else if (sediment.mass > this.sedimentMass + 1e-9 && liquid) {
       this.spawnSolidParticles(false, sediment.mass - this.sedimentMass, fill2, sedimentFraction, sediment.color);
     }
+    const gasAmount = [...mixture.evolvedGas.values()].reduce((sum, amount) => sum + amount, 0);
+    if (!firstDraw && liquid && gasAmount > this.gasAmount + 1e-12) {
+      this.spawnGasParticles(gasAmount - this.gasAmount, fill2);
+    }
+    this.gasAmount = gasAmount;
     this.sedimentMass = sediment.mass;
     if (this.sedimentDrawn < 0) this.sedimentDrawn = sedimentFraction;
     this.fillFraction = fill2;
@@ -181420,6 +181554,38 @@ var VesselView = class _VesselView extends Container {
     }
   }
   /**
+   * Spawns bubbles for gas that just left the solution. They start at the
+   * bottom of the liquid and rise to its surface, where they pop.
+   *
+   * @private
+   * @param {number} amountMol - the newly escaped amount in mol
+   * @param {number} fill - the current fill fraction
+   */
+  spawnGasParticles(amountMol, fill2) {
+    const top = this.profile[0][0];
+    const bottom = this.profile[this.profile.length - 1][0];
+    const surface = this.surfaceAt(fill2, top, bottom, 0, 1);
+    const angle = this.rotation;
+    const depth = ({ x: x4, y: y5 }) => x4 * Math.sin(angle) + y5 * Math.cos(angle);
+    const surfaceDepth = depth({ x: 0, y: surface });
+    const count2 = Math.min(14, Math.max(6, Math.round(amountMol * 2e4)));
+    for (let i11 = 0; i11 < count2 && this.particles.length < _VesselView.MAX_PARTICLES; i11++) {
+      const y5 = surface + (bottom - surface) * (0.35 + Math.random() * 0.6);
+      this.particles.push({
+        x: (Math.random() * 2 - 1) * this.radiusAt(y5) * 0.6,
+        y: y5,
+        vx: (Math.random() * 2 - 1) * 0.4,
+        vy: -1 - Math.random(),
+        size: 0.3 + Math.random() * 0.35,
+        grain: false,
+        bubble: true,
+        ageMs: 0,
+        color: 16777215,
+        floor: surfaceDepth
+      });
+    }
+  }
+  /**
    * Advances the vessel animations by one frame: settles the drawn
    * sediment onto its target, integrates the solid particles, and runs
    * the pour stream and the decaying surface wobble.
@@ -181449,6 +181615,15 @@ var VesselView = class _VesselView extends Container {
       const remaining = [];
       for (const particle of this.particles) {
         particle.ageMs += dtMs;
+        if (particle.bubble) {
+          particle.vx = particle.vx * 0.9 + Math.sin(particle.ageMs / 90) * 0.25 * seconds;
+          particle.vy = Math.max(particle.vy - _VesselView.BUBBLE_RISE * seconds, -_VesselView.BUBBLE_TERMINAL);
+          particle.x += particle.vx * seconds;
+          particle.y += particle.vy * seconds;
+          const depth2 = particle.x * sin5 + particle.y * cos6;
+          if (depth2 > particle.floor + particle.size * 0.4) remaining.push(particle);
+          continue;
+        }
         const gravity = particle.grain ? _VesselView.GRAIN_GRAVITY : _VesselView.PRECIPITATE_GRAVITY;
         const terminal = particle.grain ? _VesselView.GRAIN_TERMINAL : _VesselView.PRECIPITATE_TERMINAL;
         particle.vx = particle.vx * 0.96 + gx * gravity * seconds;
@@ -181477,6 +181652,10 @@ var VesselView = class _VesselView extends Container {
   drawParticles() {
     this.particlesShape.clear();
     for (const particle of this.particles) {
+      if (particle.bubble) {
+        this.particlesShape.circle(particle.x, particle.y, particle.size).stroke({ color: particle.color, alpha: 0.75, width: 0.12 });
+        continue;
+      }
       this.particlesShape.circle(particle.x, particle.y, particle.size).fill({ color: particle.color, alpha: 0.9 });
     }
   }
@@ -184015,7 +184194,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				</div>
 			</sl-carousel-item>`;
     B(x`
-			${c4(entries, ({ key }) => key, ({ molecule: molecule2, species, phase }) => {
+			${c4(entries, ({ key }) => key, ({ molecule: molecule2, species, gas, phase }) => {
+      if (gas) {
+        return slide(
+          x`<span class="vessel-carousel-thumbnail">${gas.formula}</span>`,
+          gas.formula,
+          x`<p>n: ${this.formatAmount(gas.amount * 1e3, 3)} mmol</p>`
+        );
+      }
       if (species) {
         const { formula: formula2, concentration: concentration2, structure, name: name2 } = species;
         const thumbnail = structure();

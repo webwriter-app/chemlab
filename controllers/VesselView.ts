@@ -13,6 +13,8 @@ interface SolidParticle {
 	vy: number;
 	size: number;
 	grain: boolean;
+	/** true for a gas bubble, which rises to the surface instead of settling */
+	bubble?: boolean;
 	ageMs: number;
 	color: number;
 	/** depth at which the particle lands and disappears into the sediment */
@@ -65,6 +67,9 @@ export class VesselView extends Container {
 	private static readonly PRECIPITATE_GRAVITY = 22;
 	private static readonly GRAIN_TERMINAL = 80;
 	private static readonly PRECIPITATE_TERMINAL = 7;
+	/** upward acceleration and speed limit of a gas bubble */
+	private static readonly BUBBLE_RISE = 26;
+	private static readonly BUBBLE_TERMINAL = 9;
 	/** tint of the aqueous phase and of water-immiscible organic liquids */
 	private static readonly AQUEOUS = { color: 0x4592b7, alpha: 0.55 };
 	private static readonly NONPOLAR = { color: 0xcbb984, alpha: 0.6 };
@@ -92,6 +97,8 @@ export class VesselView extends Container {
 	private liquidLayers: LiquidLayer[] = [];
 	/** solid particles falling or sinking in the liquid */
 	private particles: SolidParticle[] = [];
+	/** last reported escaped gas amount, to detect a new evolution */
+	private gasAmount = 0;
 	/** remaining pour stream visibility in ms */
 	private streamMs = 0;
 	/** remaining surface wobble in ms, plus its age for the decay curve */
@@ -195,7 +202,8 @@ export class VesselView extends Container {
 		const sedimentFraction = liquid && sediment.mass > 1e-6
 			? Math.min(fill, Math.max(0.012, sediment.mass / (2 * this.component._volume))) : 0;
 
-		if (!this.initialized) {
+		const firstDraw = !this.initialized;
+		if (firstDraw) {
 			// First draw (or a restored document): show the state as it is.
 			this.initialized = true;
 		} else if (hint === "grain") {
@@ -204,6 +212,12 @@ export class VesselView extends Container {
 		} else if (sediment.mass > this.sedimentMass + 1e-9 && liquid) {
 			this.spawnSolidParticles(false, sediment.mass - this.sedimentMass, fill, sedimentFraction, sediment.color);
 		}
+		// A newly escaped gas bubbles up through the liquid.
+		const gasAmount = [...mixture.evolvedGas.values()].reduce((sum, amount) => sum + amount, 0);
+		if (!firstDraw && liquid && gasAmount > this.gasAmount + 1e-12) {
+			this.spawnGasParticles(gasAmount - this.gasAmount, fill);
+		}
+		this.gasAmount = gasAmount;
 		this.sedimentMass = sediment.mass;
 		if (this.sedimentDrawn < 0) this.sedimentDrawn = sedimentFraction;
 		this.fillFraction = fill;
@@ -273,6 +287,39 @@ export class VesselView extends Container {
 	}
 
 	/**
+	 * Spawns bubbles for gas that just left the solution. They start at the
+	 * bottom of the liquid and rise to its surface, where they pop.
+	 *
+	 * @private
+	 * @param {number} amountMol - the newly escaped amount in mol
+	 * @param {number} fill - the current fill fraction
+	 */
+	private spawnGasParticles(amountMol: number, fill: number): void {
+		const top = this.profile[0][0];
+		const bottom = this.profile[this.profile.length - 1][0];
+		const surface = this.surfaceAt(fill, top, bottom, 0, 1);
+		const angle = this.rotation;
+		const depth = ({ x, y }: Point) => x * Math.sin(angle) + y * Math.cos(angle);
+		const surfaceDepth = depth({ x: 0, y: surface });
+		const count = Math.min(14, Math.max(6, Math.round(amountMol * 20000)));
+		for (let i = 0; i < count && this.particles.length < VesselView.MAX_PARTICLES; i++) {
+			const y = surface + (bottom - surface) * (0.35 + Math.random() * 0.6);
+			this.particles.push({
+				x: (Math.random() * 2 - 1) * this.radiusAt(y) * 0.6,
+				y,
+				vx: (Math.random() * 2 - 1) * 0.4,
+				vy: -1 - Math.random(),
+				size: 0.3 + Math.random() * 0.35,
+				grain: false,
+				bubble: true,
+				ageMs: 0,
+				color: 0xffffff,
+				floor: surfaceDepth,
+			});
+		}
+	}
+
+	/**
 	 * Advances the vessel animations by one frame: settles the drawn
 	 * sediment onto its target, integrates the solid particles, and runs
 	 * the pour stream and the decaying surface wobble.
@@ -307,6 +354,16 @@ export class VesselView extends Container {
 			const remaining: SolidParticle[] = [];
 			for (const particle of this.particles) {
 				particle.ageMs += dtMs;
+				if (particle.bubble) {
+					// bubbles rise against gravity and pop at the liquid surface
+					particle.vx = particle.vx * 0.9 + Math.sin(particle.ageMs / 90) * 0.25 * seconds;
+					particle.vy = Math.max(particle.vy - VesselView.BUBBLE_RISE * seconds, -VesselView.BUBBLE_TERMINAL);
+					particle.x += particle.vx * seconds;
+					particle.y += particle.vy * seconds;
+					const depth = particle.x * sin + particle.y * cos;
+					if (depth > particle.floor + particle.size * 0.4) remaining.push(particle);
+					continue;
+				}
 				const gravity = particle.grain
 					? VesselView.GRAIN_GRAVITY
 					: VesselView.PRECIPITATE_GRAVITY;
@@ -345,6 +402,12 @@ export class VesselView extends Container {
 	private drawParticles(): void {
 		this.particlesShape.clear();
 		for (const particle of this.particles) {
+			if (particle.bubble) {
+				// a bubble is a hollow ring, so it reads against the liquid
+				this.particlesShape.circle(particle.x, particle.y, particle.size)
+					.stroke({ color: particle.color, alpha: 0.75, width: 0.12 });
+				continue;
+			}
 			this.particlesShape.circle(particle.x, particle.y, particle.size).fill({ color: particle.color, alpha: 0.9 });
 		}
 	}

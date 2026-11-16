@@ -1,10 +1,19 @@
 import { StructureManager, type Mixture, type Molecule } from "../chemlib";
+import { evolvedGases } from "../chemlib/gasEvolution";
 import type { AcidEquilibriumSpecies, Simulation } from "../chemlib/Simulation";
 
+/** A gas that has left the solution, as the vessel card shows it. */
+export interface VesselGas {
+	formula: string;
+	/** Escaped amount in mol. */
+	amount: number;
+}
+
 type VesselEntry = (
-	{ key: Molecule; molecule: Molecule; species?: never } |
-	{ key: string; species: AcidEquilibriumSpecies; molecule?: never }
-) & { phase: "solid" | "liquid" | "ion" };
+	{ key: Molecule; molecule: Molecule; species?: never; gas?: never } |
+	{ key: string; species: AcidEquilibriumSpecies; molecule?: never; gas?: never } |
+	{ key: string; gas: VesselGas; molecule?: never; species?: never }
+) & { phase: "solid" | "liquid" | "ion" | "gas" };
 
 /** Keep insertion order within condensed phases; sort all aqueous ions together. */
 export function vesselCarouselEntries(mixture: Mixture, equilibrium?: ReturnType<typeof Simulation.getPolyproticEquilibrium>): VesselEntry[] {
@@ -36,5 +45,13 @@ export function vesselCarouselEntries(mixture: Mixture, equilibrium?: ReturnType
 		else liquids.push({ key, species, phase: "liquid" });
 	}
 	ions.sort((a, b) => a.concentration === b.concentration ? 0 : b.concentration - a.concentration);
-	return [...solids, ...liquids, ...ions.map(({ entry }) => entry)];
+	// Escaped gas sits beside the condensed phases, last so it never displaces
+	// the contents the learner is watching.
+	const gases: VesselEntry[] = [];
+	for (const [id, amount] of mixture.evolvedGas) {
+		const gas = evolvedGases[id];
+		if (!gas || !(amount > 0)) continue;
+		gases.push({ key: `gas:${id}`, gas: { formula: gas.formula, amount }, phase: "gas" });
+	}
+	return [...solids, ...liquids, ...ions.map(({ entry }) => entry), ...gases];
 }

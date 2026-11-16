@@ -1804,7 +1804,11 @@ export class ChemLab extends LitElementWw {
 				</div>
 			</sl-carousel-item>`;
 		render(html`
-			${repeat(entries, ({ key }) => key, ({ molecule, species, phase }) => {
+			${repeat(entries, ({ key }) => key, ({ molecule, species, gas, phase }) => {
+				if (gas) {
+					return slide(html`<span class="vessel-carousel-thumbnail">${gas.formula}</span>`,
+						gas.formula, html`<p>n: ${this.formatAmount(gas.amount * 1000, 3)} mmol</p>`);
+				}
 				if (species) {
 					const { formula, concentration, structure, name } = species;
 					const thumbnail = structure();

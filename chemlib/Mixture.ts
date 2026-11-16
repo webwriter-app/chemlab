@@ -54,6 +54,14 @@ class Mixture {
 	/** Measured volume of additions beyond the water tracked by the solution model, in L. */
 	addedVolume = 0;
 	hasLiquidVolume = false;
+	/** Gas that has left the solution, keyed by the id in `evolvedGases`, in mol. */
+	evolvedGas: Map<string, number> = new Map();
+
+	/** Records `amountMol` of a gas as escaped from the solution. */
+	evolveGas(gas: string, amountMol: number): void {
+		if (!(amountMol > 0)) return;
+		this.evolvedGas.set(gas, (this.evolvedGas.get(gas) ?? 0) + amountMol);
+	}
 
 	get saltSediment(): { mass: number; color: number } {
 		let mass = 0;

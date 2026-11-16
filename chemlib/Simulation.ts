@@ -6,6 +6,7 @@ import { ComponentManager } from "./ComponentManager";
 import { AcidBase, AcidBaseSystem } from "./AcidBase";
 import { saltSolubility } from "./saltSolubility";
 import { complexFormation } from "./complexes";
+import { evolvedGases } from "./gasEvolution";
 
 const saltEquilibria = Object.entries(saltSolubility).map(([formula, data]) => {
 	const [cation, anion, cations = 1, anions = 1] = data.ions;
@@ -37,7 +38,7 @@ function saltIonProduct(positive: number, negative: number, cations: number, ani
 	return Math.max(0, positive) ** cations * Math.max(0, negative) ** anions;
 }
 
-type AcidBaseFamily = AcidBaseSystem & { representative: Molecule; step: number; members: Molecule[] };
+type AcidBaseFamily = AcidBaseSystem & { key: string; representative: Molecule; step: number; members: Molecule[] };
 
 /** A free ion as the salt equilibria see it: stored as a molecule, or computed from an acid family. */
 interface SaltIon {
@@ -243,6 +244,8 @@ export abstract class Simulation {
 		// A dosed metal reacts with the cations of less noble elements before the
 		// salt equilibria run, so the ions it releases take part in them.
 		this.sRedoxSolution(cMixture);
+		// The same metal surface reduces the protons of an acid to hydrogen.
+		this.sMetalAcid(cMixture);
 
 		// Salts still dissociate explicitly into their ions, which feed the
 		// solubility model and the electrochemistry code. Iterate until the
@@ -265,6 +268,12 @@ export abstract class Simulation {
 		this.equilibrateSalts(cMixture);
 		// Hydroxides consume cations, which shifts the other salt equilibria.
 		if (this.equilibrateHydroxides(cMixture)) this.equilibrateSalts(cMixture);
+		// Escaping gas removes solute and shifts the acid-base balance, so the
+		// salt equilibria have to settle again after each pass.
+		for (let pass = 0; pass < 4 && this.sGasEvolution(cMixture); pass++) {
+			this.equilibrateSalts(cMixture);
+			if (this.equilibrateHydroxides(cMixture)) this.equilibrateSalts(cMixture);
+		}
 	}
 
 	private static makeSolidSalt(formula: string, ions: readonly [Molecule, Molecule], counts: readonly [number, number]): Molecule {
@@ -909,6 +918,101 @@ export abstract class Simulation {
 	}
 
 	/**
+	 * A dosed metal reduces the protons of an acid to hydrogen. The reaction
+	 * runs until the metal or the acid is spent, so the extent follows the
+	 * titratable acidity of the solution rather than its free proton
+	 * concentration alone: a weak acid keeps delivering protons as they are
+	 * taken up, while a neutral or basic solution leaves the metal alone.
+	 *
+	 * @private
+	 * @static
+	 * @param {Mixture} mix - the solution to react
+	 * @returns {boolean} whether any amount changed
+	 */
+	private static sMetalAcid(mix: Mixture): boolean {
+		if (!mix._isSolution || !(mix._solutionVolume > 0)) return false;
+		const metals = mix._activeMolecules.filter((molecule) => {
+			if (!molecule.dosedAsSolid) return false;
+			const couple = this.getRedoxData(molecule);
+			return couple !== undefined && couple.red === molecule.smilesString && couple.sep < 0;
+		});
+		if (metals.length === 0) return false;
+		const volume = mix._solutionVolume;
+		const { systems, spectatorCharge } = this.acidBaseComposition(mix);
+		const H = AcidBase.solveProton(systems, spectatorCharge, AcidBase.kwAt(mix._temperature),
+			this.complexChargeHook(systems));
+		// only an acidic solution attacks a metal
+		if (!(H > 1e-7)) return false;
+		// Titratable acidity: the free protons plus the protons the acids still
+		// hold above pH 7, which is what the metal can take up in total. Cation
+		// acids such as Fe3+ hydrolyse instead of delivering protons, so only
+		// neutral and anionic families count.
+		const bound = (family: AcidBaseFamily, h: number) => AcidBase.speciesFractions(family, h)
+			.reduce((sum, fraction, step) => sum + fraction * (family.pKa.length - step), 0);
+		let capacity = (H - 1e-7) * volume;
+		for (const family of systems) {
+			if (!(family.totalC > 0) || family.pKa.length < 1) continue;
+			if (family.protonatedCharge > 0 || !(family.pKa[0] < 7)) continue;
+			capacity += family.totalC * Math.max(0, bound(family, H) - bound(family, 1e-7)) * volume;
+		}
+		let changed = false;
+		for (const metal of metals) {
+			const couple = this.getRedoxData(metal);
+			if (!couple) continue;
+			const available = mix._molProperties[metal._id + "n"] ?? 0;
+			const atoms = Math.min(available, capacity / couple.el);
+			if (!(atoms > 1e-12)) continue;
+			const protons = atoms * couple.el;
+			mix.changeMolecule(metal._id, -atoms);
+			mix.addMolecule(this.redoxProduct(metal, couple.el), atoms);
+			mix.addedVolume = Math.max(0, mix.addedVolume -
+				this.metalBulkLitresPerMol(metal, couple) * atoms);
+			mix.evolveGas("H2", protons / 2);
+			capacity -= protons;
+			changed = true;
+		}
+		return changed;
+	}
+
+	/**
+	 * Volatile solutes leave the open vessel once their dissolved
+	 * concentration passes the saturation value at room temperature. The
+	 * escaped amount is kept on the mixture so the vessel can show the gas.
+	 *
+	 * @private
+	 * @static
+	 * @param {Mixture} mix - the solution to degas
+	 * @returns {boolean} whether any amount changed
+	 */
+	private static sGasEvolution(mix: Mixture): boolean {
+		if (!mix._isSolution || !(mix._solutionVolume > 0)) return false;
+		const volume = mix._solutionVolume;
+		const { systems, spectatorCharge } = this.acidBaseComposition(mix);
+		const H = AcidBase.solveProton(systems, spectatorCharge, AcidBase.kwAt(mix._temperature),
+			this.complexChargeHook(systems));
+		let changed = false;
+		for (const family of systems) {
+			if (!(family.totalC > 0)) continue;
+			const entry = Object.entries(evolvedGases)
+				.find(([, gas]) => gas.family === family.key);
+			if (!entry) continue;
+			const [id, { solubility }] = entry;
+			if (!(solubility > 0)) continue;
+			// the neutral dissolved form is the one that leaves the solution
+			const neutral = family.protonatedCharge;
+			if (neutral < 0 || neutral > family.pKa.length) continue;
+			const excess = family.totalC * AcidBase.speciesFractions(family, H)[neutral] - solubility;
+			if (!(excess > 1e-9)) continue;
+			const amount = Math.min(excess * volume, family.totalC * volume);
+			if (!(amount > 1e-12)) continue;
+			this.changeFamily(mix, family, -amount);
+			mix.evolveGas(id, amount);
+			changed = true;
+		}
+		return changed;
+	}
+
+	/**
 	 * Dissoziation of salts: Returns true because salts dissoziate completely
 	 *
 	 * @private
@@ -1121,6 +1225,7 @@ export abstract class Simulation {
 				idx = systems.length;
 				familyIndex[key] = idx;
 				systems.push({
+					key,
 					totalC: 0,
 					pKa: pKaList(acidbaseData[key]),
 					protonatedCharge,
