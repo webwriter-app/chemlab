@@ -3217,21 +3217,18 @@ export class ChemLab extends LitElementWw {
 		const right = Math.min(canvasWidth, bounds.maxX);
 		const top = Math.max(0, bounds.minY);
 		const bottom = Math.min(canvasHeight, bounds.maxY);
-		const above = top - gap - height;
-		const below = bottom + gap;
 		const maxX = Math.max(padding, canvasWidth - padding - width);
 		const maxY = Math.max(padding, canvasHeight - padding - height);
+		const rightSide = right + gap;
+		const leftSide = left - gap - width;
 		let x = (left + right - width) / 2;
-		let y = above;
-		if (above < padding) {
-			if (below <= maxY) {
-				y = below;
-			} else if (right + gap <= maxX || left - gap - width >= padding) {
-				x = right + gap <= maxX ? right + gap : left - gap - width;
-				y = (top + bottom - height) / 2;
-			} else if (canvasHeight - bottom > top) {
-				y = below;
-			}
+		let y = top - gap - height;
+		if (rightSide <= maxX || leftSide >= padding) {
+			// Prefer sitting beside the object; use the right side by default.
+			x = rightSide <= maxX ? rightSide : leftSide;
+			y = (top + bottom - height) / 2;
+		} else if (y < padding) {
+			y = bottom + gap <= maxY || canvasHeight - bottom > top ? bottom + gap : y;
 		}
 		summary.style.transform = `translate(${Math.max(padding, Math.min(x, maxX))}px, ${Math.max(padding, Math.min(y, maxY))}px)`;
 		summary.setAttribute("data-anchored", "");
