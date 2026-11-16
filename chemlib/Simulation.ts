@@ -240,6 +240,10 @@ export abstract class Simulation {
 			}
 		});
 
+		// A dosed metal reacts with the cations of less noble elements before the
+		// salt equilibria run, so the ions it releases take part in them.
+		this.sRedoxSolution(cMixture);
+
 		// Salts still dissociate explicitly into their ions, which feed the
 		// solubility model and the electrochemistry code. Iterate until the
 		// dissolution has stabilised.
@@ -718,11 +722,11 @@ export abstract class Simulation {
 	 * @public
 	 * @static
 	 * @param {Molecule} molecule - a neutral element or its ion
-	 * @returns {({ red: string; ox: string; el: number; sep: number } | undefined)}
+	 * @returns {({ red: string; ox: string; el: number; sep: number; density: number } | undefined)}
 	 */
 	public static getRedoxData(
 		molecule: Molecule
-	): { red: string; ox: string; el: number; sep: number } | undefined {
+	): { red: string; ox: string; el: number; sep: number; density: number } | undefined {
 		return StructureManager._moleculeData["redox"][
 			molecule.getTotMolMass().toString()
 		];
@@ -838,6 +842,70 @@ export abstract class Simulation {
 		cathodeProduct.addAtom(cathodeAtom.getName().toLowerCase(), cathodeAtom.getSymbol(), cathodeIon._totalCharge - zCathode);
 		cathode.addMolecule(cathodeProduct, electronMol / zCathode);
 		cathode.changeMolecule(cathodeIon._id, -electronMol / zCathode);
+	}
+
+	/**
+	 * Metal displacement without a circuit: a dosed metal reduces the cation of
+	 * a less noble element and goes into solution itself. {@link sEChem} drives
+	 * the same couples through electrodes; on a bare metal surface the reaction
+	 * runs directly, so Zn in CuSO₄ leaves Zn²⁺ and a copper deposit.
+	 *
+	 * @private
+	 * @static
+	 * @param {Mixture} mix - the solution to react
+	 * @returns {boolean} whether any amount changed
+	 */
+	private static sRedoxSolution(mix: Mixture): boolean {
+		if (!mix._isSolution || !(mix._solutionVolume > 0)) return false;
+		let changed = false;
+		for (const metal of mix._activeMolecules) {
+			if (!metal.dosedAsSolid) continue;
+			const oxidation = this.getRedoxData(metal);
+			if (!oxidation || oxidation.red !== metal.smilesString) continue;
+			for (const ion of mix._activeMolecules) {
+				if (ion === metal || !(ion._totalCharge > 0)) continue;
+				const reduction = this.getRedoxData(ion);
+				if (!reduction || reduction.ox !== ion.smilesString) continue;
+				if (!(reduction.sep > oxidation.sep)) continue;
+				// the electrons must balance: z_metal * n_metal = z_ion * n_ion
+				const extent = Math.min(
+					(mix._molProperties[metal._id + "n"] ?? 0) / oxidation.el,
+					(mix._molProperties[ion._id + "n"] ?? 0) / reduction.el
+				);
+				if (!(extent > 1e-12)) continue;
+				const metalMol = extent * oxidation.el;
+				const ionMol = extent * reduction.el;
+				const oxidised = this.redoxProduct(metal, oxidation.el);
+				const reduced = this.redoxProduct(ion, -reduction.el);
+				reduced.dosedAsSolid = true;
+				mix.changeMolecule(metal._id, -metalMol);
+				mix.changeMolecule(ion._id, -ionMol);
+				mix.addMolecule(oxidised, metalMol);
+				mix.addMolecule(reduced, ionMol);
+				// the dissolving metal frees its bulk volume, the deposit takes its own
+				mix.addedVolume = Math.max(0, mix.addedVolume -
+					this.metalBulkLitresPerMol(metal, oxidation) * metalMol +
+					this.metalBulkLitresPerMol(reduced, reduction) * ionMol);
+				changed = true;
+			}
+		}
+		return changed;
+	}
+
+	/** Single-atom molecule of the same element at a charge shifted by `delta`. */
+	private static redoxProduct(molecule: Molecule, delta: number): Molecule {
+		const atom = molecule._atoms[0];
+		const product = StructureManager.newMolecule();
+		product.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), molecule._totalCharge + delta);
+		return product;
+	}
+
+	/** Bulk volume of one mole of a solid metal in litres. */
+	private static metalBulkLitresPerMol(
+		molecule: Molecule,
+		{ density }: { density: number }
+	): number {
+		return density > 0 ? molecule.getTotMolMass() / (density * 1000) : 0;
 	}
 
 	/**

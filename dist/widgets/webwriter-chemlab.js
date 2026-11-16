@@ -148200,23 +148200,28 @@ var StructureManager = class _StructureManager {
       "[Zn+2].[S-2]": { "pKL": 23.04 }
     },
     redox: {
+      // the reduced form of the H+/H2 couple is molecular hydrogen, not
+      // atomic H: a metal in acid evolves H2 instead of binding H
       "1.008": {
-        "red": "[H]",
+        "red": "[H][H]",
         "ox": "[H+]",
         "el": 1,
-        "sep": 0
+        "sep": 0,
+        "density": 9e-5
       },
       "6.94": {
         "red": "[Li]",
         "ox": "[Li+]",
         "el": 1,
-        "sep": -3.04
+        "sep": -3.04,
+        "density": 0.534
       },
       "9.01218315": {
         "red": "[Be]",
         "ox": "[Be2+]",
         "el": 2,
-        "sep": -1.85
+        "sep": -1.85,
+        "density": 1.85
       },
       // "15.999": {
       // 	"red": "[O2-]",
@@ -148228,25 +148233,29 @@ var StructureManager = class _StructureManager {
         "red": "[Na]",
         "ox": "[Na+]",
         "el": 1,
-        "sep": -2.71
+        "sep": -2.71,
+        "density": 0.968
       },
       "24.305": {
         "red": "[Mg]",
         "ox": "[Mg2+]",
         "el": 2,
-        "sep": -2.372
+        "sep": -2.372,
+        "density": 1.738
       },
       "26.98153857": {
         "red": "[Al]",
         "ox": "[Al3+]",
         "el": 3,
-        "sep": -1.66
+        "sep": -1.66,
+        "density": 2.7
       },
       "118.7107": {
         "red": "[Sn]",
         "ox": "[Sn2+]",
         "el": 2,
-        "sep": -0.141
+        "sep": -0.141,
+        "density": 7.31
       },
       // "35.45": {
       // 	"red": "[Cl-]",
@@ -148258,43 +148267,50 @@ var StructureManager = class _StructureManager {
         "red": "[K]",
         "ox": "[K+]",
         "el": 1,
-        "sep": -2.93
+        "sep": -2.93,
+        "density": 0.862
       },
       "40.0784": {
         "red": "[Ca]",
         "ox": "[Ca2+]",
         "el": 2,
-        "sep": -2.87
+        "sep": -2.87,
+        "density": 1.55
       },
       "51.99616": {
         "red": "[Cr]",
         "ox": "[Cr3+]",
         "el": 3,
-        "sep": -0.74
+        "sep": -0.74,
+        "density": 7.19
       },
       "55.8452": {
         "red": "[Fe]",
         "ox": "[Fe2+]",
         "el": 2,
-        "sep": -0.44
+        "sep": -0.44,
+        "density": 7.874
       },
       "58.9331944": {
         "red": "[Co]",
         "ox": "[Co2+]",
         "el": 2,
-        "sep": -0.28
+        "sep": -0.28,
+        "density": 8.9
       },
       "63.5463": {
         "red": "[Cu]",
         "ox": "[Cu2+]",
         "el": 2,
-        "sep": 0.339
+        "sep": 0.339,
+        "density": 8.96
       },
       "65.382": {
         "red": "[Zn]",
         "ox": "[Zn2+]",
         "el": 2,
-        "sep": -0.762
+        "sep": -0.762,
+        "density": 7.14
       },
       // "79.904": {
       // 	"red": "[Br-]",
@@ -148312,37 +148328,43 @@ var StructureManager = class _StructureManager {
         "red": "[Pb]",
         "ox": "[Pb2+]",
         "el": 2,
-        "sep": -0.126
+        "sep": -0.126,
+        "density": 11.34
       },
       "137.3277": {
         "red": "[Ba]",
         "ox": "[Ba2+]",
         "el": 2,
-        "sep": -2.9
+        "sep": -2.9,
+        "density": 3.51
       },
       "132.905451966": {
         "red": "[Cs]",
         "ox": "[Cs+]",
         "el": 1,
-        "sep": -3.9
+        "sep": -3.9,
+        "density": 1.93
       },
       "107.86822": {
         "red": "[Ag]",
         "ox": "[Ag+]",
         "el": 1,
-        "sep": 0.799
+        "sep": 0.799,
+        "density": 10.49
       },
       "121.7601": {
         "red": "[Sb]",
         "ox": "[Sb3+]",
         "el": 3,
-        "sep": 0
+        "sep": 0,
+        "density": 6.69
       },
       "196.9665695": {
         "red": "[Au]",
         "ox": "[Au3+]",
         "el": 3,
-        "sep": 1.5
+        "sep": 1.5,
+        "density": 19.32
       }
     }
   };
@@ -149160,6 +149182,7 @@ var Simulation = class {
         this.cacheDissociation(molecule2);
       }
     });
+    this.sRedoxSolution(cMixture);
     let changed;
     do {
       changed = false;
@@ -149588,7 +149611,7 @@ var Simulation = class {
    * @public
    * @static
    * @param {Molecule} molecule - a neutral element or its ion
-   * @returns {({ red: string; ox: string; el: number; sep: number } | undefined)}
+   * @returns {({ red: string; ox: string; el: number; sep: number; density: number } | undefined)}
    */
   static getRedoxData(molecule2) {
     return StructureManager._moleculeData["redox"][molecule2.getTotMolMass().toString()];
@@ -149674,6 +149697,60 @@ var Simulation = class {
     cathodeProduct.addAtom(cathodeAtom.getName().toLowerCase(), cathodeAtom.getSymbol(), cathodeIon._totalCharge - zCathode);
     cathode.addMolecule(cathodeProduct, electronMol / zCathode);
     cathode.changeMolecule(cathodeIon._id, -electronMol / zCathode);
+  }
+  /**
+   * Metal displacement without a circuit: a dosed metal reduces the cation of
+   * a less noble element and goes into solution itself. {@link sEChem} drives
+   * the same couples through electrodes; on a bare metal surface the reaction
+   * runs directly, so Zn in CuSO₄ leaves Zn²⁺ and a copper deposit.
+   *
+   * @private
+   * @static
+   * @param {Mixture} mix - the solution to react
+   * @returns {boolean} whether any amount changed
+   */
+  static sRedoxSolution(mix) {
+    if (!mix._isSolution || !(mix._solutionVolume > 0)) return false;
+    let changed = false;
+    for (const metal of mix._activeMolecules) {
+      if (!metal.dosedAsSolid) continue;
+      const oxidation = this.getRedoxData(metal);
+      if (!oxidation || oxidation.red !== metal.smilesString) continue;
+      for (const ion2 of mix._activeMolecules) {
+        if (ion2 === metal || !(ion2._totalCharge > 0)) continue;
+        const reduction = this.getRedoxData(ion2);
+        if (!reduction || reduction.ox !== ion2.smilesString) continue;
+        if (!(reduction.sep > oxidation.sep)) continue;
+        const extent = Math.min(
+          (mix._molProperties[metal._id + "n"] ?? 0) / oxidation.el,
+          (mix._molProperties[ion2._id + "n"] ?? 0) / reduction.el
+        );
+        if (!(extent > 1e-12)) continue;
+        const metalMol = extent * oxidation.el;
+        const ionMol = extent * reduction.el;
+        const oxidised = this.redoxProduct(metal, oxidation.el);
+        const reduced = this.redoxProduct(ion2, -reduction.el);
+        reduced.dosedAsSolid = true;
+        mix.changeMolecule(metal._id, -metalMol);
+        mix.changeMolecule(ion2._id, -ionMol);
+        mix.addMolecule(oxidised, metalMol);
+        mix.addMolecule(reduced, ionMol);
+        mix.addedVolume = Math.max(0, mix.addedVolume - this.metalBulkLitresPerMol(metal, oxidation) * metalMol + this.metalBulkLitresPerMol(reduced, reduction) * ionMol);
+        changed = true;
+      }
+    }
+    return changed;
+  }
+  /** Single-atom molecule of the same element at a charge shifted by `delta`. */
+  static redoxProduct(molecule2, delta) {
+    const atom = molecule2._atoms[0];
+    const product = StructureManager.newMolecule();
+    product.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), molecule2._totalCharge + delta);
+    return product;
+  }
+  /** Bulk volume of one mole of a solid metal in litres. */
+  static metalBulkLitresPerMol(molecule2, { density: density2 }) {
+    return density2 > 0 ? molecule2.getTotMolMass() / (density2 * 1e3) : 0;
   }
   /**
    * Dissoziation of salts: Returns true because salts dissoziate completely

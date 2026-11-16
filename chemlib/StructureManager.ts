@@ -182,23 +182,28 @@ export abstract class StructureManager {
 			"[Zn+2].[S-2]": { "pKL": 23.04 }
 		},
 		redox: {
+			// the reduced form of the H+/H2 couple is molecular hydrogen, not
+			// atomic H: a metal in acid evolves H2 instead of binding H
 			"1.008": {
-				"red": "[H]",
+				"red": "[H][H]",
 				"ox": "[H+]",
 				"el": 1,
-				"sep": 0.0
+				"sep": 0.0,
+				"density": 0.00009
 			},
 			"6.94": {
 				"red": "[Li]",
 				"ox": "[Li+]",
 				"el": 1,
-				"sep": -3.04
+				"sep": -3.04,
+				"density": 0.534
 			},
 			"9.01218315": {
 				"red": "[Be]",
 				"ox": "[Be2+]",
 				"el": 2,
-				"sep": -1.85
+				"sep": -1.85,
+				"density": 1.85
 			},
 			// "15.999": {
 			// 	"red": "[O2-]",
@@ -210,25 +215,29 @@ export abstract class StructureManager {
 				"red": "[Na]",
 				"ox": "[Na+]",
 				"el": 1,
-				"sep": -2.71
+				"sep": -2.71,
+				"density": 0.968
 			},
 			"24.305": {
 				"red": "[Mg]",
 				"ox": "[Mg2+]",
 				"el": 2,
-				"sep": -2.372
+				"sep": -2.372,
+				"density": 1.738
 			},
 			"26.98153857": {
 				"red": "[Al]",
 				"ox": "[Al3+]",
 				"el": 3,
-				"sep": -1.66
+				"sep": -1.66,
+				"density": 2.70
 			},
 			"118.7107": {
 				"red": "[Sn]",
 				"ox": "[Sn2+]",
 				"el": 2,
-				"sep": -0.141
+				"sep": -0.141,
+				"density": 7.31
 			},
 			// "35.45": {
 			// 	"red": "[Cl-]",
@@ -240,43 +249,50 @@ export abstract class StructureManager {
 				"red": "[K]",
 				"ox": "[K+]",
 				"el": 1,
-				"sep": -2.93
+				"sep": -2.93,
+				"density": 0.862
 			},
 			"40.0784": {
 				"red": "[Ca]",
 				"ox": "[Ca2+]",
 				"el": 2,
-				"sep": -2.87
+				"sep": -2.87,
+				"density": 1.55
 			},
 			"51.99616": {
 				"red": "[Cr]",
 				"ox": "[Cr3+]",
 				"el": 3,
-				"sep": -0.74
+				"sep": -0.74,
+				"density": 7.19
 			},
 			"55.8452": {
 				"red": "[Fe]",
 				"ox": "[Fe2+]",
 				"el": 2,
-				"sep": -0.44
+				"sep": -0.44,
+				"density": 7.874
 			},
 			"58.9331944": {
 				"red": "[Co]",
 				"ox": "[Co2+]",
 				"el": 2,
-				"sep": -0.28
+				"sep": -0.28,
+				"density": 8.90
 			},
 			"63.5463": {
 				"red": "[Cu]",
 				"ox": "[Cu2+]",
 				"el": 2,
-				"sep": 0.339
+				"sep": 0.339,
+				"density": 8.96
 			},
 			"65.382": {
 				"red": "[Zn]",
 				"ox": "[Zn2+]",
 				"el": 2,
-				"sep": -0.762
+				"sep": -0.762,
+				"density": 7.14
 			},
 			// "79.904": {
 			// 	"red": "[Br-]",
@@ -294,37 +310,43 @@ export abstract class StructureManager {
 				"red": "[Pb]",
 				"ox": "[Pb2+]",
 				"el": 2,
-				"sep": -0.126
+				"sep": -0.126,
+				"density": 11.34
 			},
 			"137.3277": {
 				"red": "[Ba]",
 				"ox": "[Ba2+]",
 				"el": 2,
-				"sep": -2.9
+				"sep": -2.9,
+				"density": 3.51
 			},
 			"132.905451966": {
 				"red": "[Cs]",
 				"ox": "[Cs+]",
 				"el": 1,
-				"sep": -3.9
+				"sep": -3.9,
+				"density": 1.93
 			},
 			"107.86822": {
 				"red": "[Ag]",
 				"ox": "[Ag+]",
 				"el": 1,
-				"sep": 0.799
+				"sep": 0.799,
+				"density": 10.49
 			},
 			"121.7601": {
 				"red": "[Sb]",
 				"ox": "[Sb3+]",
 				"el": 3,
-				"sep": 0.0
+				"sep": 0.0,
+				"density": 6.69
 			},
 			"196.9665695": {
 				"red": "[Au]",
 				"ox": "[Au3+]",
 				"el": 3,
-				"sep": 1.50
+				"sep": 1.50,
+				"density": 19.32
 			},
 		},
 	};
