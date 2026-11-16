@@ -104111,6 +104111,9 @@ var style = i`
 	#teacherTabs {
 		--track-color: transparent;
 		block-size: 100%;
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-surface);
+		box-shadow: 0 1px 5px rgb(0 0 0 / 10%);
 	}
 	#teacherTabs::part(base) {
 		block-size: 100%;
@@ -104165,6 +104168,7 @@ var style = i`
 		border: 1px solid var(--lab-card-border);
 		border-radius: 4px;
 		background: var(--lab-card-surface);
+		box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
 		color: var(--lab-card-text);
 	}
 	.palette-card-header {
