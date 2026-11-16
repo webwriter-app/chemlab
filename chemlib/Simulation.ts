@@ -30,6 +30,17 @@ export interface AcidEquilibriumSpecies {
 }
 
 // Draw a representative structure for each macroscopic protonation state.
+/** Charge-suffixed formula (Hill order) for programmatically built ions. */
+function ionFormula(ion: Molecule): string {
+	const counts = new Map<string, number>();
+	for (const atom of ion._atoms) {
+		counts.set(atom.getSymbol(), (counts.get(atom.getSymbol()) ?? 0) + 1);
+	}
+	let symbols = [...counts.keys()].sort();
+	if (counts.has("C")) symbols = ["C", ...symbols.filter((symbol) => symbol !== "C")];
+	return symbols.map((symbol) => symbol + subscript(counts.get(symbol))).join("") +
+		superscript(ion._totalCharge);
+}
 const protonationStructures = new WeakMap<Molecule, Map<number, Molecule | undefined>>();
 function protonationStructure(source: Molecule, removed: number): Molecule | undefined {
 	if (!removed) return source;
@@ -680,6 +691,29 @@ export abstract class Simulation {
 					structure: () => protonationStructure(family.representative, step - family.step) });
 			});
 		}
+		// Hydroxide bases stay whole and their cation never becomes a mixture
+		// ion, because only its charge feeds the pH balance. Surface each
+		// stored base's cation as a computed species beside the OH-.
+		sMix._activeMolecules.forEach((molecule) => {
+			const smiles = molecule.smilesString;
+			if (analyticalMolecules.has(molecule) || molecule.solidSaltFormula ||
+				smiles === "[OH-]" || smiles === "[H+]" || StructureManager.isWater(molecule)) return;
+			const parts = this.cacheDissociation(molecule);
+			if (!parts || !parts[0] || !parts[1]) return;
+			const hydroxide = parts[0].smilesString === "[OH-]" ? parts[0] :
+				parts[1].smilesString === "[OH-]" ? parts[1] : undefined;
+			if (!hydroxide) return;
+			const cation = hydroxide === parts[0] ? parts[1] : parts[0];
+			const moles = sMix._molProperties[molecule._id + "n"];
+			if (!Number.isFinite(moles) || moles <= 0) return;
+			const concentration = moles / volume;
+			analyticalMolecules.add(molecule);
+			species.push({
+				formula: ionFormula(cation), charge: cation._totalCharge, concentration,
+				amount: concentration * volume,
+				structure: () => cation,
+			});
+		});
 		// Water ions are listed for every solution: hydroxide bases only act
 		// through spectator charge, so without them OH- would stay invisible.
 		const OH = AcidBase.Kw / H;
