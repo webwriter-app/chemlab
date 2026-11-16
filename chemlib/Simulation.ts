@@ -1131,7 +1131,11 @@ export abstract class Simulation {
 				available: (mix._molProperties[ion._id + "n"] ?? 0) * couple.el,
 				anion: false,
 				apply: (electronMol) => {
-					mix.addMolecule(this.redoxProduct(ion, -couple.el), electronMol / couple.el);
+					// The reduced metal stays on the electrode: it is a coating
+					// on the strip, not a sediment in the vessel.
+					const product = this.redoxProduct(ion, -couple.el);
+					electrode.plate(product, electronMol / couple.el,
+						this.metalBulkLitresPerMol(product, couple));
 					mix.changeMolecule(ion._id, -electronMol / couple.el);
 				},
 			});

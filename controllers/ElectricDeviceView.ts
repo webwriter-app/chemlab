@@ -5,11 +5,21 @@ function reading(value: number | null | undefined, unit: string): string {
 	return `${Number.isFinite(value) ? Number(value.toPrecision(4)) : "—"} ${unit}`;
 }
 
+/**
+ * Bulk volume of metal that fills the electrode strip as a coating. The strip
+ * measures 15 x 75 mm, so this is a layer of about 10 µm, which is already a
+ * clearly visible plating after a minute at one ampere.
+ */
+const PLATING_REFERENCE_LITRES = 1.125e-5;
+
 export class ElectricDeviceView extends Container {
 	private lines: { text: Text; maxWidth: number }[] = [];
 	private indicator?: Graphics;
 	private active = false;
 	private measuredVoltage: number | null = null;
+	private coating?: Graphics;
+	private strip?: { left: number; right: number; top: number; bottom: number };
+	private coatingKey = "";
 
 	constructor(readonly component: ElectricComponent, texture: Texture, width: number, height: number) {
 		super({ interactiveChildren: false });
@@ -44,6 +54,16 @@ export class ElectricDeviceView extends Container {
 				addLine(0.5, 52 / 106, 0.085, 0.65);
 				break;
 			case EComponentType.Electrode:
+				// The strip of the electrode graphic spans 0.4..14.6 of 15 across
+				// and 0.4..74.6 of 75 down; the material label ends at y = 16.
+				this.strip = {
+					left: width * (0.4 / 15 - 0.5),
+					right: width * (14.6 / 15 - 0.5),
+					top: height * (16 / 75 - 0.5),
+					bottom: height * (74.6 / 75 - 0.5),
+				};
+				this.coating = new Graphics({ eventMode: "none" });
+				this.addChild(this.coating);
 				addLine(0.5, 10 / 75, 0.103, 0.72);
 				break;
 		}
@@ -90,6 +110,34 @@ export class ElectricDeviceView extends Container {
 			if (text.width > maxWidth) text.scale.set(maxWidth / text.width);
 			changed = true;
 		});
-		return changed;
+		return this.refreshCoating() || changed;
+	}
+
+	/**
+	 * Draws the metal deposited on an electrode as a coating on the strip. The
+	 * layer grows from the lower end upwards, so a thin deposit stays where the
+	 * electrode dips into the solution.
+	 *
+	 * @private
+	 * @return {boolean} whether the drawing changed
+	 */
+	private refreshCoating(): boolean {
+		const coating = this.coating;
+		const strip = this.strip;
+		if (!coating || !strip) return false;
+		const plating = this.component.plating;
+		const coverage = plating ? Math.min(1, plating.litres / PLATING_REFERENCE_LITRES) : 0;
+		const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}` : "";
+		if (key === this.coatingKey) return false;
+		this.coatingKey = key;
+		coating.clear();
+		if (!plating || !key) return true;
+		const hex = plating.molecule._atoms[0]?.getCPKHEX();
+		const parsed = hex ? parseInt(hex, 16) : NaN;
+		const height = (strip.bottom - strip.top) * coverage;
+		coating.rect(strip.left, strip.bottom - height, strip.right - strip.left, height)
+			.fill({ color: Number.isFinite(parsed) ? parsed : 0x84949b, alpha: 0.88 })
+			.stroke({ color: 0x36515d, width: 0.6, alpha: 0.55 });
+		return true;
 	}
 }

@@ -19,6 +19,23 @@ export const VOLTMETER_MODEL_CURRENT = 2;
 export const AMMETER_MODEL_VOLTAGE = 10;
 
 /**
+ * Metal deposited on an electrode by reduction. The deposit belongs to the
+ * electrode and not to the solution, so it shows as a coating on the strip
+ * instead of as a sediment in the vessel.
+ *
+ * @export
+ * @interface ElectrodePlating
+ */
+export interface ElectrodePlating {
+	/** The deposited metal, neutral. */
+	molecule: Molecule;
+	/** Deposited amount in mol. */
+	mol: number;
+	/** Bulk volume of the deposit in litres, for the coating thickness. */
+	litres: number;
+}
+
+/**
  * Representation of an electric component
  *
  * @class ElectricComponent
@@ -82,6 +99,13 @@ class ElectricComponent {
 	 * @type {number}
 	 */
 	_visibleVoltage: number | null;
+	/**
+	 * for electrodes: metal deposited on the electrode by reduction, keyed by
+	 * the SMILES of the deposited element
+	 *
+	 * @type {Map<string, ElectrodePlating>}
+	 */
+	_plating: Map<string, ElectrodePlating> = new Map();
 
 	/**
 	 * Creates a new electric component.
@@ -198,6 +222,44 @@ class ElectricComponent {
 		if (this._type === EComponentType.Electrode) {
 			this._connectedMix = nMix;
 		}
+	}
+
+	/**
+	 * for electrodes: deposits a metal on the electrode. The deposit stays on
+	 * the electrode instead of entering the solution, so it shows as a coating
+	 * rather than as a sediment.
+	 *
+	 * @public
+	 * @param {Molecule} molecule - the neutral deposited metal
+	 * @param {number} amountMol - deposited amount in mol
+	 * @param {number} litresPerMol - bulk volume of one mole of the metal in litres
+	 */
+	public plate(molecule: Molecule, amountMol: number, litresPerMol: number): void {
+		if (this._type !== EComponentType.Electrode || !(amountMol > 0)) return;
+		const key: string = molecule.smilesString;
+		const entry: ElectrodePlating = this._plating.get(key);
+		if (entry) {
+			entry.mol += amountMol;
+			entry.litres += amountMol * litresPerMol;
+			return;
+		}
+		this._plating.set(key, { molecule, mol: amountMol, litres: amountMol * litresPerMol });
+	}
+
+	/**
+	 * for electrodes: the deposit with the largest volume, or undefined while
+	 * the electrode is bare. Successive layers of different metals are kept
+	 * apart, and the thickest one is the one the surface shows.
+	 *
+	 * @readonly
+	 * @type {(ElectrodePlating | undefined)}
+	 */
+	get plating(): ElectrodePlating | undefined {
+		let largest: ElectrodePlating | undefined;
+		for (const entry of this._plating.values()) {
+			if (!largest || entry.litres > largest.litres) largest = entry;
+		}
+		return largest;
 	}
 }
 

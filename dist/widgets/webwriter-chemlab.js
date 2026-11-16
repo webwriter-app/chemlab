@@ -110770,6 +110770,13 @@ var ElectricComponent = class {
    */
   _visibleVoltage;
   /**
+   * for electrodes: metal deposited on the electrode by reduction, keyed by
+   * the SMILES of the deposited element
+   *
+   * @type {Map<string, ElectrodePlating>}
+   */
+  _plating = /* @__PURE__ */ new Map();
+  /**
    * Creates a new electric component.
    *
    * @constructor
@@ -110864,6 +110871,42 @@ var ElectricComponent = class {
     if (this._type === "electrode" /* Electrode */) {
       this._connectedMix = nMix;
     }
+  }
+  /**
+   * for electrodes: deposits a metal on the electrode. The deposit stays on
+   * the electrode instead of entering the solution, so it shows as a coating
+   * rather than as a sediment.
+   *
+   * @public
+   * @param {Molecule} molecule - the neutral deposited metal
+   * @param {number} amountMol - deposited amount in mol
+   * @param {number} litresPerMol - bulk volume of one mole of the metal in litres
+   */
+  plate(molecule2, amountMol, litresPerMol) {
+    if (this._type !== "electrode" /* Electrode */ || !(amountMol > 0)) return;
+    const key = molecule2.smilesString;
+    const entry = this._plating.get(key);
+    if (entry) {
+      entry.mol += amountMol;
+      entry.litres += amountMol * litresPerMol;
+      return;
+    }
+    this._plating.set(key, { molecule: molecule2, mol: amountMol, litres: amountMol * litresPerMol });
+  }
+  /**
+   * for electrodes: the deposit with the largest volume, or undefined while
+   * the electrode is bare. Successive layers of different metals are kept
+   * apart, and the thickest one is the one the surface shows.
+   *
+   * @readonly
+   * @type {(ElectrodePlating | undefined)}
+   */
+  get plating() {
+    let largest;
+    for (const entry of this._plating.values()) {
+      if (!largest || entry.litres > largest.litres) largest = entry;
+    }
+    return largest;
   }
 };
 
@@ -149952,7 +149995,12 @@ var Simulation = class {
         available: (mix._molProperties[ion2._id + "n"] ?? 0) * couple.el,
         anion: false,
         apply: (electronMol) => {
-          mix.addMolecule(this.redoxProduct(ion2, -couple.el), electronMol / couple.el);
+          const product = this.redoxProduct(ion2, -couple.el);
+          electrode.plate(
+            product,
+            electronMol / couple.el,
+            this.metalBulkLitresPerMol(product, couple)
+          );
           mix.changeMolecule(ion2._id, -electronMol / couple.el);
         }
       });
@@ -181458,6 +181506,7 @@ var WorkspaceGrid = class {
 function reading(value, unit) {
   return `${Number.isFinite(value) ? Number(value.toPrecision(4)) : "\u2014"} ${unit}`;
 }
+var PLATING_REFERENCE_LITRES = 1125e-8;
 var ElectricDeviceView = class extends Container {
   constructor(component, texture, width, height) {
     super({ interactiveChildren: false });
@@ -181495,6 +181544,14 @@ var ElectricDeviceView = class extends Container {
         addLine(0.5, 52 / 106, 0.085, 0.65);
         break;
       case "electrode" /* Electrode */:
+        this.strip = {
+          left: width * (0.4 / 15 - 0.5),
+          right: width * (14.6 / 15 - 0.5),
+          top: height * (16 / 75 - 0.5),
+          bottom: height * (74.6 / 75 - 0.5)
+        };
+        this.coating = new Graphics({ eventMode: "none" });
+        this.addChild(this.coating);
         addLine(0.5, 10 / 75, 0.103, 0.72);
         break;
     }
@@ -181504,6 +181561,9 @@ var ElectricDeviceView = class extends Container {
   indicator;
   active = false;
   measuredVoltage = null;
+  coating;
+  strip;
+  coatingKey = "";
   setActive(active) {
     if (this.active === active) return;
     this.active = active;
@@ -181542,7 +181602,32 @@ var ElectricDeviceView = class extends Container {
       if (text.width > maxWidth) text.scale.set(maxWidth / text.width);
       changed = true;
     });
-    return changed;
+    return this.refreshCoating() || changed;
+  }
+  /**
+   * Draws the metal deposited on an electrode as a coating on the strip. The
+   * layer grows from the lower end upwards, so a thin deposit stays where the
+   * electrode dips into the solution.
+   *
+   * @private
+   * @return {boolean} whether the drawing changed
+   */
+  refreshCoating() {
+    const coating = this.coating;
+    const strip = this.strip;
+    if (!coating || !strip) return false;
+    const plating = this.component.plating;
+    const coverage = plating ? Math.min(1, plating.litres / PLATING_REFERENCE_LITRES) : 0;
+    const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}` : "";
+    if (key === this.coatingKey) return false;
+    this.coatingKey = key;
+    coating.clear();
+    if (!plating || !key) return true;
+    const hex2 = plating.molecule._atoms[0]?.getCPKHEX();
+    const parsed = hex2 ? parseInt(hex2, 16) : NaN;
+    const height = (strip.bottom - strip.top) * coverage;
+    coating.rect(strip.left, strip.bottom - height, strip.right - strip.left, height).fill({ color: Number.isFinite(parsed) ? parsed : 8688795, alpha: 0.88 }).stroke({ color: 3559773, width: 0.6, alpha: 0.55 });
+    return true;
   }
 };
 
@@ -183701,6 +183786,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         if (vessel._content === firstMix || vessel._content === secondMix) this.canvas.markVesselChanged(vessel);
       }
       if (circuitComps.includes(this.curr_obj) || this.curr_obj?._content === firstMix || this.curr_obj?._content === secondMix) this._updatePopup();
+      this.canvas.refreshDeviceDisplay(circuitComps[0]);
+      this.canvas.refreshDeviceDisplay(circuitComps[1]);
       this.diagrams.appendEChemPoint(source3, circuitComps);
     }
     this.canvas.refreshDeviceDisplay(source3, !!circuitComps);
