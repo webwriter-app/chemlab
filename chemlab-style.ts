@@ -1683,7 +1683,6 @@ export const style = css`
 		gap: 5px;
 		min-inline-size: 0;
 		padding: 5px;
-		border: 1px solid var(--lab-card-border);
 		border-radius: 4px;
 		background: var(--lab-card-surface);
 		box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
@@ -1914,13 +1913,15 @@ export const style = css`
 		align-content: start;
 	}
 	.chemical-palette-group {
+		--chemical-group-heading: #f3eff8;
+		--chemical-subgroup-heading: var(--sl-color-neutral-300);
 		gap: 0;
-		border-inline-end: 2px solid #c2acd2;
+		border-inline-end: 4px solid var(--chemical-group-heading);
 		border-radius: var(--sl-border-radius-medium);
 		background: var(--lab-card-inset);
 	}
 	.chemical-palette-subgroup:has(> .chemical-subgroup-label) {
-		border-inline-end: 1px solid var(--sl-color-neutral-400);
+		border-inline-end: 3px solid var(--chemical-subgroup-heading);
 		padding-inline-end: 4px;
 	}
 	.chemical-group-label {
@@ -1928,7 +1929,7 @@ export const style = css`
 		border-block-end: 1px solid var(--lab-card-border);
 		border-start-start-radius: inherit;
 		border-start-end-radius: inherit;
-		background: #f3eff8;
+		background: var(--chemical-group-heading);
 	}
 	.chemical-group-label > sl-badge::part(base) {
 		background: #e7dcef;
@@ -1969,15 +1970,10 @@ export const style = css`
 	}
 	.chemical-subgroup-label > sl-badge::part(base) {
 		padding: 1px 5px;
-		background: var(--sl-color-neutral-200);
-		border-color: var(--sl-color-neutral-300);
+		background: var(--chemical-subgroup-heading);
+		border-color: var(--chemical-subgroup-heading);
 		color: var(--lab-card-secondary-text);
 		font-weight: var(--sl-font-weight-normal);
-	}
-	.chemical-subgroup-label::after {
-		content: "";
-		flex: 1;
-		border-block-start: 1px solid var(--lab-card-border);
 	}
 	.chemical-dose-carousel {
 		display: flex;
