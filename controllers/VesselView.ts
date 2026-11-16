@@ -197,7 +197,7 @@ export class VesselView extends Container {
 		const fraction = mixture.contentVolume * 1000 / this.component._volume;
 		// Older solid mixtures store moles without a bulk volume.
 		const fill = fraction > 0 ? Math.min(1, fraction) : !liquid && mixture._activeMolecules.length ? 0.035 : 0;
-		const sediment = mixture.saltSediment;
+		const sediment = mixture.solidSediment;
 		// Keep small precipitates visible in the teaching view.
 		const sedimentFraction = liquid && sediment.mass > 1e-6
 			? Math.min(fill, Math.max(0.012, sediment.mass / (2 * this.component._volume))) : 0;

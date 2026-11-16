@@ -4,6 +4,17 @@ import { ethanolWaterExcessVolume } from "./ethanolWaterVolume";
 import { saltSolubility } from "./saltSolubility";
 import { splitLiquidPhases, type LiquidPhase } from "./liquidPhases";
 
+/**
+ * Colour of a solid that has no tabulated one, taken from the CPK colour of
+ * its first atom so an undissolved metal matches how the app draws it
+ * elsewhere.
+ */
+function elementColor(molecule: Molecule): number {
+	const hex = molecule._atoms[0]?.getCPKHEX();
+	const value = hex ? parseInt(hex, 16) : NaN;
+	return Number.isFinite(value) ? value : 0xf3eee1;
+}
+
 function isEthanol(molecule: Molecule): boolean {
 	if (molecule._totalCharge !== 0 || molecule._atoms.length !== 9 || molecule._bonds.length !== 8) return false;
 	const atoms = molecule._atoms.map((atom) => atom.getSymbol());
@@ -63,17 +74,24 @@ class Mixture {
 		this.evolvedGas.set(gas, (this.evolvedGas.get(gas) ?? 0) + amountMol);
 	}
 
-	get saltSediment(): { mass: number; color: number } {
+	/**
+	 * Solid material sitting in the vessel: precipitated salts and doses that
+	 * have not dissolved yet. A metal that the acid could not consume stays
+	 * here, so the vessel keeps showing it.
+	 */
+	get solidSediment(): { mass: number; color: number } {
 		let mass = 0;
 		let color = 0xf3eee1;
 		let largest = 0;
 		for (const molecule of this._activeMolecules) {
-			if (!molecule.solidSaltFormula) continue;
+			if (!molecule.solidSaltFormula && !molecule.dosedAsSolid) continue;
 			const grams = this._molProperties[molecule._id + "m"];
 			mass += grams;
 			if (grams > largest) {
 				largest = grams;
-				color = saltSolubility[molecule.solidSaltFormula]?.color ?? 0xf3eee1;
+				color = molecule.solidSaltFormula
+					? saltSolubility[molecule.solidSaltFormula]?.color ?? 0xf3eee1
+					: elementColor(molecule);
 			}
 		}
 		return { mass, color };

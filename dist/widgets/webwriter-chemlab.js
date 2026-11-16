@@ -147837,6 +147837,11 @@ function splitLiquidPhases(mixture) {
 }
 
 // chemlib/Mixture.ts
+function elementColor(molecule2) {
+  const hex2 = molecule2._atoms[0]?.getCPKHEX();
+  const value = hex2 ? parseInt(hex2, 16) : NaN;
+  return Number.isFinite(value) ? value : 15986401;
+}
 function isEthanol(molecule2) {
   if (molecule2._totalCharge !== 0 || molecule2._atoms.length !== 9 || molecule2._bonds.length !== 8) return false;
   const atoms = molecule2._atoms.map((atom) => atom.getSymbol());
@@ -147880,17 +147885,22 @@ var Mixture = class {
     if (!(amountMol > 0)) return;
     this.evolvedGas.set(gas, (this.evolvedGas.get(gas) ?? 0) + amountMol);
   }
-  get saltSediment() {
+  /**
+   * Solid material sitting in the vessel: precipitated salts and doses that
+   * have not dissolved yet. A metal that the acid could not consume stays
+   * here, so the vessel keeps showing it.
+   */
+  get solidSediment() {
     let mass = 0;
     let color2 = 15986401;
     let largest = 0;
     for (const molecule2 of this._activeMolecules) {
-      if (!molecule2.solidSaltFormula) continue;
+      if (!molecule2.solidSaltFormula && !molecule2.dosedAsSolid) continue;
       const grams = this._molProperties[molecule2._id + "m"];
       mass += grams;
       if (grams > largest) {
         largest = grams;
-        color2 = saltSolubility[molecule2.solidSaltFormula]?.color ?? 15986401;
+        color2 = molecule2.solidSaltFormula ? saltSolubility[molecule2.solidSaltFormula]?.color ?? 15986401 : elementColor(molecule2);
       }
     }
     return { mass, color: color2 };
@@ -181509,7 +181519,7 @@ var VesselView = class _VesselView extends Container {
     const liquid = mixture.hasLiquidContents;
     const fraction = mixture.contentVolume * 1e3 / this.component._volume;
     const fill2 = fraction > 0 ? Math.min(1, fraction) : !liquid && mixture._activeMolecules.length ? 0.035 : 0;
-    const sediment = mixture.saltSediment;
+    const sediment = mixture.solidSediment;
     const sedimentFraction = liquid && sediment.mass > 1e-6 ? Math.min(fill2, Math.max(0.012, sediment.mass / (2 * this.component._volume))) : 0;
     const firstDraw = !this.initialized;
     if (firstDraw) {
