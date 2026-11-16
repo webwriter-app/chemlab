@@ -104158,7 +104158,7 @@ var style = i`
 	}
 	.palette-strip {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+		grid-template-columns: minmax(0, 1fr);
 		gap: 6px;
 		padding: 2px 2px 5px;
 	}
@@ -104183,6 +104183,9 @@ var style = i`
 	.palette-card-name {
 		position: relative;
 		min-inline-size: 0;
+	}
+	.palette-card-name > sl-tag {
+		max-inline-size: 100%;
 	}
 	.palette-card-name > sl-tag::part(base) {
 		block-size: auto;
@@ -104366,6 +104369,7 @@ var style = i`
 	.palette-card-menu-trigger > sl-tag::part(base) {
 		block-size: auto;
 		min-block-size: 1.5em;
+		line-height: 1.25;
 		white-space: normal;
 		overflow-wrap: anywhere;
 	}
@@ -104399,7 +104403,22 @@ var style = i`
 		gap: 4px;
 		align-content: start;
 	}
-	.chemical-palette-group > sl-tag,
+	.chemical-palette-group {
+		gap: 0;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-inset);
+	}
+	.chemical-palette-group > sl-tag::part(base) {
+		padding: 4px 6px;
+		border: 0;
+		border-block-end: 1px solid var(--lab-card-border);
+		border-end-start-radius: 0;
+		border-end-end-radius: 0;
+		background: var(--sl-color-primary-50);
+		color: var(--sl-color-primary-800);
+		font-weight: var(--sl-font-weight-semibold);
+	}
 	.chemical-subgroup-label {
 		justify-self: start;
 	}
@@ -104407,18 +104426,17 @@ var style = i`
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		gap: 8px;
+		padding: 6px;
 	}
 	.chemical-palette-cards {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+		grid-template-columns: minmax(0, 1fr);
 		gap: 6px;
 	}
 	.chemical-group-strip {
-		grid-template-columns: minmax(0, 1fr);
 		gap: 10px;
 	}
-	.chemical-palette-subgroup + .chemical-palette-subgroup,
-	.chemical-palette-group + .chemical-palette-group {
+	.chemical-palette-subgroup + .chemical-palette-subgroup {
 		border-block-start: 1px solid var(--lab-card-border);
 		padding-block-start: 6px;
 	}
@@ -184550,7 +184568,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				<div class="palette-strip chemical-group-strip">
 					${c4(sections, (section) => section.id, (section) => x`
 						<section class="chemical-palette-group" aria-label=${section.label}>
-							${activeGroup ? E : x`<sl-tag size="small">${section.label}</sl-tag>`}
+							<sl-tag size="small">${section.label}</sl-tag>
 							<div class="chemical-palette-subgroups">
 								${c4(section.subgroups, (subgroup) => subgroup.id, (subgroup) => x`
 									<div class="chemical-palette-subgroup" role="group" aria-label=${subgroup.label || section.label}>

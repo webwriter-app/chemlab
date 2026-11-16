@@ -1673,7 +1673,7 @@ export const style = css`
 	}
 	.palette-strip {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+		grid-template-columns: minmax(0, 1fr);
 		gap: 6px;
 		padding: 2px 2px 5px;
 	}
@@ -1698,6 +1698,9 @@ export const style = css`
 	.palette-card-name {
 		position: relative;
 		min-inline-size: 0;
+	}
+	.palette-card-name > sl-tag {
+		max-inline-size: 100%;
 	}
 	.palette-card-name > sl-tag::part(base) {
 		block-size: auto;
@@ -1881,6 +1884,7 @@ export const style = css`
 	.palette-card-menu-trigger > sl-tag::part(base) {
 		block-size: auto;
 		min-block-size: 1.5em;
+		line-height: 1.25;
 		white-space: normal;
 		overflow-wrap: anywhere;
 	}
@@ -1914,7 +1918,22 @@ export const style = css`
 		gap: 4px;
 		align-content: start;
 	}
-	.chemical-palette-group > sl-tag,
+	.chemical-palette-group {
+		gap: 0;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-inset);
+	}
+	.chemical-palette-group > sl-tag::part(base) {
+		padding: 4px 6px;
+		border: 0;
+		border-block-end: 1px solid var(--lab-card-border);
+		border-end-start-radius: 0;
+		border-end-end-radius: 0;
+		background: var(--sl-color-primary-50);
+		color: var(--sl-color-primary-800);
+		font-weight: var(--sl-font-weight-semibold);
+	}
 	.chemical-subgroup-label {
 		justify-self: start;
 	}
@@ -1922,18 +1941,17 @@ export const style = css`
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		gap: 8px;
+		padding: 6px;
 	}
 	.chemical-palette-cards {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+		grid-template-columns: minmax(0, 1fr);
 		gap: 6px;
 	}
 	.chemical-group-strip {
-		grid-template-columns: minmax(0, 1fr);
 		gap: 10px;
 	}
-	.chemical-palette-subgroup + .chemical-palette-subgroup,
-	.chemical-palette-group + .chemical-palette-group {
+	.chemical-palette-subgroup + .chemical-palette-subgroup {
 		border-block-start: 1px solid var(--lab-card-border);
 		padding-block-start: 6px;
 	}
