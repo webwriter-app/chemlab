@@ -1,25 +1,24 @@
 /**
- * Screen approximation of broad-range universal indicator paper.
- * Reference: University of Montana spectrUM, Paper Chemistry, p. 3.
- * https://www.umt.edu/spectrum/education/resources/resources-images/monte-kit-web-version---paper-chemistry.pdf
- * The darkest alkaline swatch extends to pH 14.
+ * Screen approximation of the supplied pH 1–14 indicator paper reel.
+ * The reel skips 4, 11 and 13, so those colors blend adjacent swatches.
+ * pH 0 uses the lowest printed swatch (pH 1).
  */
 export const pHColors: Record<number, string> = {
-	0: "#a92257",
-	1: "#c93045",
-	2: "#df5036",
-	3: "#ed7929",
-	4: "#f3ac28",
-	5: "#ebd538",
-	6: "#adc33e",
-	7: "#5f9d45",
-	8: "#397d4e",
-	9: "#28715f",
-	10: "#246973",
-	11: "#265d80",
-	12: "#284d78",
-	13: "#303b68",
-	14: "#352e58",
+	0: "#e96a55",
+	1: "#e96a55",
+	2: "#ed8839",
+	3: "#eca23e",
+	4: "#eda63a",
+	5: "#edaa35",
+	6: "#edc039",
+	7: "#ebd234",
+	8: "#c9c83f",
+	9: "#77833a",
+	10: "#4d6436",
+	11: "#3a5536",
+	12: "#274535",
+	13: "#203838",
+	14: "#182b3a",
 };
 
 /** Use whichever foreground gives higher contrast on the paper swatch. */
