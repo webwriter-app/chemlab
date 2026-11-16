@@ -147728,10 +147728,43 @@ var saltSolubility = {
   CaCO3: { ions: ["[Ca2+]", "[O-]C(=O)[O-]"], ksp: 34e-10, solidDensity: 2.71 },
   BaCO3: { ions: ["[Ba2+]", "[O-]C(=O)[O-]"], ksp: 26e-10, solidDensity: 4.29 },
   Ag2SO4: { ions: ["[Ag+]", "[O-]S(=O)(=O)[O-]", 2, 1], ksp: 12e-6 },
+  // Sparingly soluble salts of the heavier cations, carried over from the
+  // retired pKL table in StructureManager (ksp = 10^-pKL). The values are
+  // approximate and a few are loose against the literature (CdCO3, CdI2,
+  // MgCO3 sit one to three orders high); they are kept because the salts are
+  // not dosable yet and the constants are worth having when they become so.
+  // Ca3(PO4)2 is written with the correct 3:2 stoichiometry, which the old
+  // key got wrong, and uses the usual Ksp for the apatite phase.
+  //
+  // CuCO3 is deliberately absent. Copper does not precipitate as the simple
+  // carbonate but as a basic carbonate such as Cu2(OH)2CO3, which needs two
+  // anions per formula unit and does not fit SaltIons. A plain CuCO3 entry
+  // also fights Cu(OH)2 for the same cation: both pin the free copper, and
+  // the alternating salt and hydroxide solves then converge only very slowly
+  // around pH 5.6, where the carbonate speciation is steep.
+  BaCrO4: { ions: ["[Ba2+]", "[O-][Cr](=O)(=O)[O-]"], ksp: 21e-11, solidDensity: 4.5 },
+  BaF2: { ions: ["[Ba2+]", "[F-]", 1, 2], ksp: 17e-7, solidDensity: 4.89 },
+  CaCrO4: { ions: ["[Ca2+]", "[O-][Cr](=O)(=O)[O-]"], ksp: 54e-4, solidDensity: 3.12 },
+  CaF2: { ions: ["[Ca2+]", "[F-]", 1, 2], ksp: 25e-12, solidDensity: 3.18 },
+  CaHPO4: { ions: ["[Ca2+]", "[O-]P(=O)(O)[O-]"], ksp: 12e-8, solidDensity: 2.93 },
+  "Ca3(PO4)2": { ions: ["[Ca2+]", "[O-]P([O-])(=O)[O-]", 3, 2], ksp: 2e-29, solidDensity: 3.14 },
+  CdCO3: { ions: ["[Cd2+]", "[O-]C(=O)[O-]"], ksp: 79e-14, solidDensity: 4.26 },
+  CdF2: { ions: ["[Cd2+]", "[F-]", 1, 2], ksp: 11e-4, solidDensity: 6.33 },
+  CdI2: { ions: ["[Cd2+]", "[I-]", 1, 2], ksp: 25e-5, solidDensity: 5.67 },
+  CdS: { ions: ["[Cd2+]", "[S2-]"], ksp: 12e-31, color: 15259722, solidDensity: 4.82 },
+  CuCrO4: { ions: ["[Cu2+]", "[O-][Cr](=O)(=O)[O-]"], ksp: 33e-7, solidDensity: 4.3 },
+  CuF2: { ions: ["[Cu2+]", "[F-]", 1, 2], ksp: 0.24, solidDensity: 4.23 },
+  CuS: { ions: ["[Cu2+]", "[S2-]"], ksp: 12e-49, color: 1842210, solidDensity: 4.6 },
+  FeCrO4: { ions: ["[Fe2+]", "[O-][Cr](=O)(=O)[O-]"], ksp: 81e-12, solidDensity: 5.2 },
+  MgCO3: { ions: ["[Mg2+]", "[O-]C(=O)[O-]"], ksp: 93e-10, solidDensity: 2.96 },
+  MgHPO4: { ions: ["[Mg2+]", "[O-]P(=O)(O)[O-]"], ksp: 11e-14, solidDensity: 2.13 },
+  PbCO3: { ions: ["[Pb2+]", "[O-]C(=O)[O-]"], ksp: 74e-15, solidDensity: 6.58 },
+  PbCrO4: { ions: ["[Pb2+]", "[O-][Cr](=O)(=O)[O-]"], ksp: 21e-15, color: 15253536, solidDensity: 6.12 },
+  ZnCO3: { ions: ["[Zn2+]", "[O-]C(=O)[O-]"], ksp: 1e-10, solidDensity: 4.4 },
+  ZnS: { ions: ["[Zn2+]", "[S2-]"], ksp: 91e-25, color: 15262928, solidDensity: 4.09 },
   // Hydroxides. Their anion is the water equilibrium's OH-, not a stored ion,
   // so Simulation.equilibrateHydroxides solves them instead of the generic
-  // salt loop. Ksp values follow the legacy pKL table in StructureManager
-  // (pKL = -log10 Ksp); Ag2O is the stable silver hydroxide and is written as
+  // salt loop. Ag2O is the stable silver hydroxide and is written as
   // Ag2O + H2O -> 2 Ag+ + 2 OH-.
   "Cu(OH)2": { ions: ["[Cu2+]", "[OH-]", 1, 2], ksp: 46e-21, color: 4886724, solidDensity: 3.37 },
   "Fe(OH)2": { ions: ["[Fe2+]", "[OH-]", 1, 2], ksp: 83e-16, color: 7311210, solidDensity: 3.4 },
@@ -148143,68 +148176,6 @@ var StructureManager = class _StructureManager {
       "[Ag+]": { "pks": [12] },
       "[Ca2+]": { "pks": [12.6] },
       "[Ba2+]": { "pks": [13.4] }
-    },
-    salt: {
-      "O[Al](O)O": { "pKL": 31.17 },
-      "[Al]": { "pKL": 33.86 },
-      "[Ba+2].[CO3-2]": { "pKL": 8.56 },
-      "[Ba+2].[CrO4-2]": { "pKL": 9.67 },
-      "[Ba+2].[F-].[F-]": { "pKL": 5.76 },
-      "[Ba+2].[SO4-2]": { "pKL": 9.97 },
-      "[Ca+2].[OH-].[OH-]": { "pKL": 5.18 },
-      "[Ca+2].[PO4-3].[PO4-3].[PO4-3]": { "pKL": 54.45 },
-      "[Ca+2].[SO4-2].[H2O]": { "pKL": -62.54 },
-      "[Ca+2].[CO3-2]": { "pKL": 8.34 },
-      "[Ca+2].[CO3-2].[H2O]": { "pKL": 6.4 },
-      "[Ca+2].[CrO4-2]": { "pKL": 2.27 },
-      "[Ca+2].[F-].[F-]": { "pKL": 10.6 },
-      "[Ca+2].[PO4-3].[H2O]": { "pKL": 6.91 },
-      "[Ca+2].[Mg+2].[CO3-2].[CO3-2]": { "pKL": 17.09 },
-      "[Cd+2].[BO2-].[BO2-]": { "pKL": -0.6 },
-      "[Cd+2].[OH-].[OH-]": { "pKL": 14.25 },
-      "[Cd+2].[Cl-].[Cl-]": { "pKL": 0.68 },
-      "[Cd+2].[Cl-].[Cl-].[H2O]": { "pKL": 1.71 },
-      "[Cd+2].[CO3-2]": { "pKL": 12.1 },
-      "[Cd+2].[F-].[F-]": { "pKL": 2.98 },
-      "[Cd+2].[I-].[I-]": { "pKL": 3.61 },
-      "[Cd+2].[S-2]": { "pKL": 29.92 },
-      "[Cd+2].[SO4-2]": { "pKL": 0.1 },
-      "[Cd+2].[SO4-2].[H2O]": { "pKL": 1.66 },
-      "[Cr+2].[OH-].[OH-]": { "pKL": 17.16 },
-      "[Cr+3].[Br-].[Br-].[Br-]": { "pKL": -29.53 },
-      "[Cr+2].[Cl-].[Cl-]": { "pKL": -15.87 },
-      "[Cr+3].[Cl-].[Cl-].[Cl-]": { "pKL": -23.13 },
-      "[Cr+3].[F-].[F-].[F-]": { "pKL": 3.64 },
-      "[Cr+3].[I-].[I-].[I-]": { "pKL": -30.1 },
-      "[Cu+2].[OH-].[OH-]": { "pKL": 19.34 },
-      "[Cu+2].[S-2]": { "pKL": 47.91 },
-      "[Cu+2].[CrO4-2]": { "pKL": 5.48 },
-      "[Cu+2].[CO3-2]": { "pKL": 9.63 },
-      "[Cu+2].[F-].[F-]": { "pKL": 0.62 },
-      "[Fe+2].[OH-].[OH-]": { "pKL": 14.08 },
-      "[Fe+3].[OH-].[OH-].[OH-]": { "pKL": 37.08 },
-      "[Fe+3].[CO3-2]": { "pKL": 10.89 },
-      "[Fe+2].[CrO4-2]": { "pKL": 10.09 },
-      "[Hg+2].[OH-].[OH-]": { "pKL": 25.38 },
-      "[Hg+2].[Cl-].[Cl-]": { "pKL": 15.69 },
-      "[Hg+2].[SO4-2]": { "pKL": 3.32 },
-      "[K+].[CO3-2]": { "pKL": 3.3 },
-      "[K+].[Cr2O7-2]": { "pKL": 15.67 },
-      "[K+].[CrO4-2]": { "pKL": -0.01 },
-      "[K+].[SO4-2]": { "pKL": 1.8 },
-      "[Mg+2].[OH-].[OH-]": { "pKL": 11.14 },
-      "[Mg+2].[CO3-2]": { "pKL": 8.03 },
-      "[Mg+2].[HPO4-]": { "pKL": 12.95 },
-      "[Mn+2].[OH-].[OH-]": { "pKL": 12.78 },
-      "[Mn+2].[SO4-2]": { "pKL": 5.71 },
-      "[Ni+2].[OH-].[OH-]": { "pKL": 17.18 },
-      "[Pb+2].[OH-].[OH-]": { "pKL": 19.83 },
-      "[Pb+2].[CO3-2]": { "pKL": 13.13 },
-      "[Pb+2].[CrO4-2]": { "pKL": 13.68 },
-      "[SiO2]": { "pKL": 2.71 },
-      "[Zn+2].[OH-].[OH-]": { "pKL": 15.78 },
-      "[Zn+2].[CO3-2]": { "pKL": 10 },
-      "[Zn+2].[S-2]": { "pKL": 23.04 }
     },
     redox: {
       // the reduced form of the H+/H2 couple is molecular hydrogen, not
@@ -149214,16 +149185,33 @@ var Simulation = class {
           changed = true;
           continue;
         }
-        if (this.sEquilibriumSalt(cMixture, salt2, ions)) {
+        if (this.sDissolveSalt(cMixture, salt2, ions)) {
           changed = true;
         }
       }
     } while (changed);
-    this.equilibrateSalts(cMixture);
-    if (this.equilibrateHydroxides(cMixture)) this.equilibrateSalts(cMixture);
+    this.settleSaltsAndHydroxides(cMixture);
     for (let pass = 0; pass < 4 && this.sGasEvolution(cMixture); pass++) {
-      this.equilibrateSalts(cMixture);
-      if (this.equilibrateHydroxides(cMixture)) this.equilibrateSalts(cMixture);
+      this.settleSaltsAndHydroxides(cMixture);
+    }
+  }
+  /**
+   * Settles the salt and hydroxide equilibria together.
+   *
+   * Both consume the same cations and both move the pH, so one pass of each
+   * is not a fixed point: a salt that precipitates lowers the free cation and
+   * lets the hydroxide dissolve, and the other way round. CuSO₄ + Na₂CO₃
+   * needs this, because CuCO₃ and Cu(OH)₂ compete for the copper.
+   *
+   * @private
+   * @static
+   * @param {Mixture} mix - the solution to equilibrate
+   */
+  static settleSaltsAndHydroxides(mix) {
+    for (let pass = 0; pass < 8; pass++) {
+      const saltsMoved = this.equilibrateSalts(mix);
+      const hydroxidesMoved = this.equilibrateHydroxides(mix);
+      if (!saltsMoved && !hydroxidesMoved) break;
     }
   }
   static makeSolidSalt(formula, ions, counts2) {
@@ -149468,11 +149456,12 @@ var Simulation = class {
   static equilibrateSalts(mix) {
     const volume = mix._solutionVolume;
     const acidbaseData = StructureManager._moleculeData["acidbase"];
-    if (!mix._activeMolecules.some((item) => item._totalCharge || item.solidSaltFormula || acidbaseData[item.smilesString] !== void 0)) return;
+    if (!mix._activeMolecules.some((item) => item._totalCharge || item.solidSaltFormula || acidbaseData[item.smilesString] !== void 0)) return false;
     const solids = new Map(mix._activeMolecules.filter((item) => item.solidSaltFormula).map((item) => [item.solidSaltFormula, item]));
+    let changed = false;
     for (let pass = 0; pass < 32; pass++) {
       const ions = this.saltIons(mix);
-      let changed = false;
+      let moved = false;
       for (const { formula, cation, anion, cations, anions, product } of otherSaltEquilibria) {
         const positive = ions.get(cation);
         const negative = ions.get(anion);
@@ -149533,8 +149522,9 @@ var Simulation = class {
         }
         changed = true;
       }
-      if (!changed) break;
+      if (!moved) break;
     }
+    return changed;
   }
   /**
    * Hydroxide equilibria. The anion of a hydroxide is the water equilibrium's
@@ -149926,10 +149916,10 @@ var Simulation = class {
   /**
    * Dissoziation of salts: Returns true because salts dissoziate completely
    *
-   * The dissolved amount follows the solubility product of the salt,
-   * `prod (c_i + n_i x)^n_i = K`, where `n_i` is how many ions of species `i`
-   * one formula unit contains. A salt without a tabulated pKL counts as
-   * freely soluble, so it dissolves up to the dosed amount.
+   * A salt without a tabulated solubility product dissolves up to the dosed
+   * amount. The sparingly soluble ones never reach this point: their solid
+   * reservoir is registered by `registerSolidSalt` and kept in equilibrium
+   * with the solution by `equilibrateSalts`.
    *
    * @private
    * @static
@@ -149938,31 +149928,9 @@ var Simulation = class {
    * @param {SaltFragment[]} ions - the ions of one formula unit with their counts
    * @returns {boolean}
    */
-  static sEquilibriumSalt(sMix, cMolecule, ions) {
-    const nMolC = sMix._molProperties[cMolecule._id + "n"] ?? 0;
-    if (!(nMolC > 0) || !(sMix._solutionVolume > 0)) return false;
-    const molPKl = StructureManager._moleculeData["salt"][cMolecule.smilesString] === void 0 ? -1 : StructureManager._moleculeData["salt"][cMolecule.smilesString]["pKL"];
-    const molKl = Math.pow(10, -molPKl);
-    const volume = sMix._solutionVolume;
-    const current = ions.map(({ ion: ion2 }) => (sMix._molProperties[ion2._id + "n"] ?? 0) / volume);
-    const ionProduct = (dissolved) => ions.reduce(
-      (product, { count: count2 }, index2) => product * Math.pow(current[index2] + count2 * dissolved, count2),
-      1
-    );
-    const limit = nMolC / volume;
-    let concentration = limit;
-    if (ionProduct(limit) > molKl) {
-      let low = 0;
-      let high = limit;
-      for (let step = 0; step < 60; step++) {
-        const middle = (low + high) / 2;
-        if (ionProduct(middle) > molKl) high = middle;
-        else low = middle;
-      }
-      concentration = low;
-    }
-    const amount = concentration * volume;
-    if (!(amount > 0)) return false;
+  static sDissolveSalt(sMix, cMolecule, ions) {
+    const amount = sMix._molProperties[cMolecule._id + "n"] ?? 0;
+    if (!(amount > 0) || !(sMix._solutionVolume > 0)) return false;
     for (const { ion: ion2, count: count2 } of ions) sMix.addMolecule(ion2, amount * count2);
     sMix.changeMolecule(cMolecule._id, -amount);
     const cation = ions.find(({ ion: ion2 }) => ion2._totalCharge > 0)?.ion;

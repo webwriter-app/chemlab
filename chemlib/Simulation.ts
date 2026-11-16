@@ -268,19 +268,36 @@ export abstract class Simulation {
 					changed = true;
 					continue;
 				}
-				if (this.sEquilibriumSalt(cMixture, salt, ions)) {
+				if (this.sDissolveSalt(cMixture, salt, ions)) {
 					changed = true;
 				}
 			}
 		} while (changed);
-		this.equilibrateSalts(cMixture);
-		// Hydroxides consume cations, which shifts the other salt equilibria.
-		if (this.equilibrateHydroxides(cMixture)) this.equilibrateSalts(cMixture);
+		this.settleSaltsAndHydroxides(cMixture);
 		// Escaping gas removes solute and shifts the acid-base balance, so the
-		// salt equilibria have to settle again after each pass.
+		// equilibria have to settle again after each pass.
 		for (let pass = 0; pass < 4 && this.sGasEvolution(cMixture); pass++) {
-			this.equilibrateSalts(cMixture);
-			if (this.equilibrateHydroxides(cMixture)) this.equilibrateSalts(cMixture);
+			this.settleSaltsAndHydroxides(cMixture);
+		}
+	}
+
+	/**
+	 * Settles the salt and hydroxide equilibria together.
+	 *
+	 * Both consume the same cations and both move the pH, so one pass of each
+	 * is not a fixed point: a salt that precipitates lowers the free cation and
+	 * lets the hydroxide dissolve, and the other way round. CuSO₄ + Na₂CO₃
+	 * needs this, because CuCO₃ and Cu(OH)₂ compete for the copper.
+	 *
+	 * @private
+	 * @static
+	 * @param {Mixture} mix - the solution to equilibrate
+	 */
+	private static settleSaltsAndHydroxides(mix: Mixture): void {
+		for (let pass = 0; pass < 8; pass++) {
+			const saltsMoved = this.equilibrateSalts(mix);
+			const hydroxidesMoved = this.equilibrateHydroxides(mix);
+			if (!saltsMoved && !hydroxidesMoved) break;
 		}
 	}
 
@@ -537,18 +554,19 @@ export abstract class Simulation {
 		}
 	}
 
-	private static equilibrateSalts(mix: Mixture): void {
+	private static equilibrateSalts(mix: Mixture): boolean {
 		const volume = mix._solutionVolume;
 		const acidbaseData = StructureManager._moleculeData["acidbase"];
 		// Acids stay whole, so their conjugate anions only exist as computed
 		// speciation; {@link saltIons} exposes those too.
 		if (!mix._activeMolecules.some((item) => item._totalCharge || item.solidSaltFormula ||
-			acidbaseData[item.smilesString] !== undefined)) return;
+			acidbaseData[item.smilesString] !== undefined)) return false;
 		const solids = new Map(mix._activeMolecules.filter((item) => item.solidSaltFormula)
 			.map((item) => [item.solidSaltFormula, item]));
+		let changed = false;
 		for (let pass = 0; pass < 32; pass++) {
 			const ions = this.saltIons(mix);
-			let changed = false;
+			let moved = false;
 			for (const { formula, cation, anion, cations, anions, product } of otherSaltEquilibria) {
 				const positive = ions.get(cation);
 				const negative = ions.get(anion);
@@ -603,8 +621,9 @@ export abstract class Simulation {
 				}
 				changed = true;
 			}
-			if (!changed) break;
+			if (!moved) break;
 		}
+		return changed;
 	}
 
 	/**
@@ -1079,10 +1098,10 @@ export abstract class Simulation {
 	/**
 	 * Dissoziation of salts: Returns true because salts dissoziate completely
 	 *
-	 * The dissolved amount follows the solubility product of the salt,
-	 * `prod (c_i + n_i x)^n_i = K`, where `n_i` is how many ions of species `i`
-	 * one formula unit contains. A salt without a tabulated pKL counts as
-	 * freely soluble, so it dissolves up to the dosed amount.
+	 * A salt without a tabulated solubility product dissolves up to the dosed
+	 * amount. The sparingly soluble ones never reach this point: their solid
+	 * reservoir is registered by `registerSolidSalt` and kept in equilibrium
+	 * with the solution by `equilibrateSalts`.
 	 *
 	 * @private
 	 * @static
@@ -1091,38 +1110,13 @@ export abstract class Simulation {
 	 * @param {SaltFragment[]} ions - the ions of one formula unit with their counts
 	 * @returns {boolean}
 	 */
-	private static sEquilibriumSalt(
+	private static sDissolveSalt(
 		sMix: Mixture,
 		cMolecule: Molecule,
 		ions: SaltFragment[]
 	): boolean {
-		const nMolC: number = sMix._molProperties[cMolecule._id + "n"] ?? 0;
-		if (!(nMolC > 0) || !(sMix._solutionVolume > 0)) return false;
-		const molPKl: number =
-			StructureManager._moleculeData["salt"][cMolecule.smilesString] === undefined
-				? -1
-				: StructureManager._moleculeData["salt"][cMolecule.smilesString]["pKL"];
-		const molKl: number = Math.pow(10, -molPKl);
-
-		const volume = sMix._solutionVolume;
-		const current = ions.map(({ ion }) => (sMix._molProperties[ion._id + "n"] ?? 0) / volume);
-		const ionProduct = (dissolved: number) => ions.reduce(
-			(product, { count }, index) => product * Math.pow(current[index] + count * dissolved, count), 1);
-		// the dosed amount caps how much of the salt can enter the solution
-		const limit = nMolC / volume;
-		let concentration = limit;
-		if (ionProduct(limit) > molKl) {
-			let low = 0;
-			let high = limit;
-			for (let step = 0; step < 60; step++) {
-				const middle = (low + high) / 2;
-				if (ionProduct(middle) > molKl) high = middle;
-				else low = middle;
-			}
-			concentration = low;
-		}
-		const amount = concentration * volume;
-		if (!(amount > 0)) return false;
+		const amount: number = sMix._molProperties[cMolecule._id + "n"] ?? 0;
+		if (!(amount > 0) || !(sMix._solutionVolume > 0)) return false;
 		for (const { ion, count } of ions) sMix.addMolecule(ion, amount * count);
 		sMix.changeMolecule(cMolecule._id, -amount);
 		// release the bulk volume of the dissolved portion, keeping the dosed

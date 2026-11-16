@@ -41,10 +41,44 @@ export const saltSolubility: Readonly<Record<string, SaltSolubility>> = {
 	BaCO3: { ions: ["[Ba2+]", "[O-]C(=O)[O-]"], ksp: 2.6e-9, solidDensity: 4.29 },
 	Ag2SO4: { ions: ["[Ag+]", "[O-]S(=O)(=O)[O-]", 2, 1], ksp: 1.2e-5 },
 
+	// Sparingly soluble salts of the heavier cations, carried over from the
+	// retired pKL table in StructureManager (ksp = 10^-pKL). The values are
+	// approximate and a few are loose against the literature (CdCO3, CdI2,
+	// MgCO3 sit one to three orders high); they are kept because the salts are
+	// not dosable yet and the constants are worth having when they become so.
+	// Ca3(PO4)2 is written with the correct 3:2 stoichiometry, which the old
+	// key got wrong, and uses the usual Ksp for the apatite phase.
+	//
+	// CuCO3 is deliberately absent. Copper does not precipitate as the simple
+	// carbonate but as a basic carbonate such as Cu2(OH)2CO3, which needs two
+	// anions per formula unit and does not fit SaltIons. A plain CuCO3 entry
+	// also fights Cu(OH)2 for the same cation: both pin the free copper, and
+	// the alternating salt and hydroxide solves then converge only very slowly
+	// around pH 5.6, where the carbonate speciation is steep.
+	BaCrO4: { ions: ["[Ba2+]", "[O-][Cr](=O)(=O)[O-]"], ksp: 2.1e-10, solidDensity: 4.50 },
+	BaF2: { ions: ["[Ba2+]", "[F-]", 1, 2], ksp: 1.7e-6, solidDensity: 4.89 },
+	CaCrO4: { ions: ["[Ca2+]", "[O-][Cr](=O)(=O)[O-]"], ksp: 5.4e-3, solidDensity: 3.12 },
+	CaF2: { ions: ["[Ca2+]", "[F-]", 1, 2], ksp: 2.5e-11, solidDensity: 3.18 },
+	CaHPO4: { ions: ["[Ca2+]", "[O-]P(=O)(O)[O-]"], ksp: 1.2e-7, solidDensity: 2.93 },
+	"Ca3(PO4)2": { ions: ["[Ca2+]", "[O-]P([O-])(=O)[O-]", 3, 2], ksp: 2.0e-29, solidDensity: 3.14 },
+	CdCO3: { ions: ["[Cd2+]", "[O-]C(=O)[O-]"], ksp: 7.9e-13, solidDensity: 4.26 },
+	CdF2: { ions: ["[Cd2+]", "[F-]", 1, 2], ksp: 1.1e-3, solidDensity: 6.33 },
+	CdI2: { ions: ["[Cd2+]", "[I-]", 1, 2], ksp: 2.5e-4, solidDensity: 5.67 },
+	CdS: { ions: ["[Cd2+]", "[S2-]"], ksp: 1.2e-30, color: 0xe8d84a, solidDensity: 4.82 },
+	CuCrO4: { ions: ["[Cu2+]", "[O-][Cr](=O)(=O)[O-]"], ksp: 3.3e-6, solidDensity: 4.30 },
+	CuF2: { ions: ["[Cu2+]", "[F-]", 1, 2], ksp: 2.4e-1, solidDensity: 4.23 },
+	CuS: { ions: ["[Cu2+]", "[S2-]"], ksp: 1.2e-48, color: 0x1c1c22, solidDensity: 4.60 },
+	FeCrO4: { ions: ["[Fe2+]", "[O-][Cr](=O)(=O)[O-]"], ksp: 8.1e-11, solidDensity: 5.20 },
+	MgCO3: { ions: ["[Mg2+]", "[O-]C(=O)[O-]"], ksp: 9.3e-9, solidDensity: 2.96 },
+	MgHPO4: { ions: ["[Mg2+]", "[O-]P(=O)(O)[O-]"], ksp: 1.1e-13, solidDensity: 2.13 },
+	PbCO3: { ions: ["[Pb2+]", "[O-]C(=O)[O-]"], ksp: 7.4e-14, solidDensity: 6.58 },
+	PbCrO4: { ions: ["[Pb2+]", "[O-][Cr](=O)(=O)[O-]"], ksp: 2.1e-14, color: 0xe8c020, solidDensity: 6.12 },
+	ZnCO3: { ions: ["[Zn2+]", "[O-]C(=O)[O-]"], ksp: 1.0e-10, solidDensity: 4.40 },
+	ZnS: { ions: ["[Zn2+]", "[S2-]"], ksp: 9.1e-24, color: 0xe8e4d0, solidDensity: 4.09 },
+
 	// Hydroxides. Their anion is the water equilibrium's OH-, not a stored ion,
 	// so Simulation.equilibrateHydroxides solves them instead of the generic
-	// salt loop. Ksp values follow the legacy pKL table in StructureManager
-	// (pKL = -log10 Ksp); Ag2O is the stable silver hydroxide and is written as
+	// salt loop. Ag2O is the stable silver hydroxide and is written as
 	// Ag2O + H2O -> 2 Ag+ + 2 OH-.
 	"Cu(OH)2": { ions: ["[Cu2+]", "[OH-]", 1, 2], ksp: 4.6e-20, color: 0x4a90c4, solidDensity: 3.37 },
 	"Fe(OH)2": { ions: ["[Fe2+]", "[OH-]", 1, 2], ksp: 8.3e-15, color: 0x6f8f6a, solidDensity: 3.4 },
