@@ -184878,14 +184878,16 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   renderVesselCarousel(carousel, mixture, equilibrium) {
     const reset = this.carouselMixtures.get(carousel) !== mixture;
     this.carouselMixtures.set(carousel, mixture);
+    const compact = carousel === this.contextMolInfo;
     const molecules = mixture._activeMolecules.filter((molecule2) => !equilibrium?.analyticalMolecules.has(molecule2));
-    const slide = (thumbnail, title, amount, details2) => x`
+    const amountLine = (amount) => Number.isFinite(amount) ? x`<p>n: ${amount.toExponential(2)} mol</p>` : E;
+    const concentrationLine = (concentration) => Number.isFinite(concentration) ? x`<p>c: ${concentration.toExponential(2)} mol/L</p>` : E;
+    const slide = (thumbnail, title, details2) => x`
 			<sl-carousel-item>
 				<div class="vessel-carousel-card">
 					${thumbnail}
 					<div class="vessel-carousel-quantities">
 						<h5 title=${title}>${title}</h5>
-						<p>n: ${amount.toExponential(2)} mol</p>
 						${details2}
 					</div>
 				</div>
@@ -184899,8 +184901,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         return slide(
           molecule2 ? this.vesselThumbnail(carousel, molecule2, formula) : x`<span class="vessel-carousel-thumbnail">${formula}</span>`,
           formula,
-          amount,
-          x`<p>c: ${concentration.toExponential(2)} mol/L</p>`
+          x`${compact ? E : amountLine(amount)}${concentrationLine(concentration)}`
         );
       }
     )}
@@ -184915,9 +184916,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       }
       const { _id: id3 } = molecule2;
       const properties = mixture._molProperties;
-      return slide(this.vesselThumbnail(carousel, molecule2, formula), molecule2.name || formula, properties[id3 + "n"], x`
-					<p>m: ${properties[id3 + "m"].toExponential(2)} g</p>
-					${molecule2.solidSaltFormula ? x`<p>${this.message("Bodensatz")}</p>` : mixture._isSolution ? x`<p>c: ${properties[id3 + "c"].toExponential(2)} mol/L</p>` : E}`);
+      const sediment = !!molecule2.solidSaltFormula && mixture.hasLiquidContents;
+      const concentration = equilibrium && !molecule2.solidSaltFormula && !nonpolarDensity(molecule2) && (!compact || !StructureManager.isWater(molecule2)) ? concentrationLine(properties[id3 + "c"]) : E;
+      const showMass = !compact || sediment || !equilibrium && molecules.length > 1;
+      const mass = properties[id3 + "m"];
+      return slide(this.vesselThumbnail(carousel, molecule2, formula), molecule2.name || formula, x`
+					${compact ? E : amountLine(properties[id3 + "n"])}
+					${showMass && Number.isFinite(mass) ? x`<p>m: ${compact ? this.formatAmount(mass, 3) : mass.toExponential(2)} g</p>` : E}
+					${sediment ? x`<p>${this.message("Bodensatz")}</p>` : concentration}`);
     })}
 		`, carousel);
     if (reset) void carousel.updateComplete.then(() => {
@@ -184940,8 +184946,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.curr_obj._type.toLowerCase()
     )) {
       const mixture = this.curr_obj._content;
-      const equilibrium = mixture._isSolution ? Simulation.getPolyproticEquilibrium(mixture) : void 0;
-      if (mixture._activeMolecules.length) {
+      const hasContents = mixture._activeMolecules.length > 0;
+      const equilibrium = hasContents && mixture._isSolution && mixture._solutionVolume > 0 ? Simulation.getPolyproticEquilibrium(mixture) : void 0;
+      if (hasContents) {
         this.contextMolInfo.style.display = "";
         this.renderVesselCarousel(this.contextMolInfo, mixture, equilibrium);
       }
@@ -184949,18 +184956,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       if (this.curr_obj._type === "burette" /* Burette */ || this.curr_obj._type === "separatingfunnel" /* Separatingfunnel */) {
         this.openBtn.style.display = "";
       }
-      const volume = mixture.contentVolume;
-      if (volume > 0) {
-        const pH = equilibrium?.pH;
-        const color2 = pH === void 0 ? void 0 : this.pHColors[Math.max(0, Math.min(14, Math.round(pH)))];
-        this.contextMixInfo.style.display = "";
-        B(x`
-					<sl-tag size="small" variant="neutral">${(volume * 1e3).toFixed(1)} mL</sl-tag>
-					${color2 === void 0 ? E : x`
-						<sl-tag class="vessel-ph-tag" size="small" variant="neutral"
-							style=${`--indicator-color: ${color2}; --indicator-text: ${pH >= 11 ? "#fff" : "#171717"}`}>pH ${pH}</sl-tag>`}
-				`, this.contextMixInfo);
-      }
+      if (hasContents) this.renderVesselSummary(mixture, equilibrium?.pH);
     }
     if (Object.values(EComponentType).includes(
       this.curr_obj._type.toLowerCase()
@@ -185029,6 +185025,23 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       }
     }
     this.canvas.drawSelection();
+  }
+  renderVesselSummary(mixture, pH) {
+    const liquid = mixture.hasLiquidContents;
+    const amount = liquid ? mixture.contentVolume * 1e3 : mixture._activeMolecules.reduce((sum, { _id }) => {
+      const mass = mixture._molProperties[_id + "m"];
+      return mass > 0 && Number.isFinite(mass) ? sum + mass : sum;
+    }, 0);
+    const color2 = Number.isFinite(pH) ? this.pHColors[Math.max(0, Math.min(14, Math.round(pH)))] : void 0;
+    if (!(amount > 0 && Number.isFinite(amount)) && color2 === void 0) return;
+    this.contextMixInfo.style.display = "";
+    B(x`
+			${amount > 0 && Number.isFinite(amount) ? x`
+				<sl-tag size="small" variant="neutral">${liquid ? `${amount.toFixed(1)} mL` : `${this.formatAmount(amount, 3)} g`}</sl-tag>` : E}
+			${color2 === void 0 ? E : x`
+				<sl-tag class="vessel-ph-tag" size="small" variant="neutral"
+					style=${`--indicator-color: ${color2}; --indicator-text: ${pH >= 11 ? "#fff" : "#171717"}`}>pH ${pH}</sl-tag>`}
+		`, this.contextMixInfo);
   }
   /**
    * retrieves object information for a given sprite, updates the panel
