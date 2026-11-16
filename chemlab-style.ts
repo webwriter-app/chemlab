@@ -1428,6 +1428,22 @@ export const style = css`
 		align-self: center;
 		overflow: hidden;
 	}
+	#contextMolInfo .vessel-thumbnail-source {
+		position: absolute;
+		inset-block-start: 2px;
+		inset-inline-start: 2px;
+		z-index: 1;
+		padding: 0 2px;
+		border-radius: 3px;
+		background: var(--sl-color-primary-600);
+		color: var(--sl-color-neutral-0);
+		font-size: 8px;
+		line-height: 1.4;
+		pointer-events: none;
+	}
+	#contextMolInfo .vessel-carousel-thumbnail {
+		position: relative;
+	}
 	#contextMolInfo .vessel-carousel-thumbnail > :is(svg, img) {
 		display: block;
 		inline-size: 100%;

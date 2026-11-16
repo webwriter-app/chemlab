@@ -324,6 +324,14 @@ export class ChemLab extends LitElementWw {
 		attribute: false,
 	})
 	accessor availableComponents: Array<object> = [];
+	/**
+	 * temporary debug toggle: label each vessel thumbnail with its render
+	 * source (smilesdrawer / kekule / text)
+	 *
+	 * @property {boolean} thumbnailBadges
+	 */
+	@property({ type: Boolean, attribute: "thumbnail-badges", reflect: true })
+	accessor thumbnailBadges = false;
 	private dataObserver?: MutationObserver;
 	private savedDataSnapshot: string | null = null;
 	private updatingDataBlock = false;
@@ -1714,28 +1722,50 @@ export class ChemLab extends LitElementWw {
 		return true;
 	}
 
+	private labelThumbnailSource(container: HTMLElement, source: string): void {
+		if (!this.thumbnailBadges) return;
+		container.dataset.source = source;
+		let badge = container.querySelector<HTMLElement>(":scope > .vessel-thumbnail-source");
+		if (!badge) {
+			badge = this.ownerDocument.createElement("span");
+			badge.className = "vessel-thumbnail-source";
+			container.append(badge);
+		}
+		badge.textContent = source;
+	}
+
 	private vesselThumbnail(molecule: chemlib.Molecule, formula: string): Element {
 		const cached = this.vesselThumbnails.get(molecule);
 		if (cached?.drawer === this.newSmilesDrawer) return cached.element;
 		const document = this.ownerDocument;
 		const container = document.createElement("span");
 		container.className = "vessel-carousel-thumbnail";
+		const badge = () => {
+			if (!this.thumbnailBadges) return;
+			const tag = document.createElement("span");
+			tag.className = "vessel-thumbnail-source";
+			container.append(tag);
+		};
 		const fallback = () => {
 			try {
 				const image = document.createElement("img");
 				image.src = chemlib.StructureManager.printMolecule(molecule, 100, 100);
 				image.alt = formula;
 				container.replaceChildren(image);
+				this.labelThumbnailSource(container, "kekule");
 			} catch {
 				container.textContent = formula;
+				this.labelThumbnailSource(container, "text");
 			}
 		};
+		badge();
 		if (this.newSmilesDrawer === 1) {
 			try {
 				SmilesDrawer.parse(molecule.smilesString, (tree) => {
 					const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 					this.smilesDrawer100.draw(tree, svg, "light");
 					container.replaceChildren(svg);
+					this.labelThumbnailSource(container, "smilesdrawer");
 				}, fallback);
 			} catch {
 				fallback();
