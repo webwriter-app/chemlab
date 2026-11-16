@@ -27,6 +27,8 @@ export function vesselCarouselEntries(mixture: Mixture, equilibrium?: ReturnType
 	}
 	const occurrences = new Map<string, number>();
 	for (const species of equilibrium?.species ?? []) {
+		// Hide model-generated traces, but keep the dominant species even in a dilute solution.
+		if (species.concentration < 1e-6 && (species.fraction ?? 0) < 1e-3) continue;
 		const index = occurrences.get(species.formula) ?? 0;
 		occurrences.set(species.formula, index + 1);
 		const key = `${species.formula}:${index}`;

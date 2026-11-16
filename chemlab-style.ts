@@ -1058,13 +1058,11 @@ export const style = css`
 		--panel-trigger-width: 38px;
 		--panel-trigger-height: 28px;
 		--diagram-panel-width: min(27cqw, 24rem);
-		--object-panel-width: min(44cqw, 38rem);
 		--diagram-width: 0px;
-		--object-width: 0px;
 		position: relative;
 		box-sizing: border-box;
 		display: grid;
-		grid-template-columns: var(--diagram-width) minmax(0, 1fr) var(--object-width);
+		grid-template-columns: var(--diagram-width) minmax(0, 1fr);
 		grid-template-rows: minmax(0, 1fr) auto;
 		transition: grid-template-columns 220ms ease;
 		width: 100%;
@@ -1075,12 +1073,6 @@ export const style = css`
 	}
 	#upper.show-diagram-panel {
 		--diagram-width: var(--diagram-panel-width);
-	}
-	#upper.show-object-panel {
-		--object-width: var(--object-panel-width);
-	}
-	#upper.show-diagram-panel.show-object-panel {
-		--object-panel-width: min(36cqw, 38rem);
 	}
 	:host(:fullscreen),
 	:host(:fullscreen) #upper {
@@ -1159,27 +1151,6 @@ export const style = css`
 	#inlineDiagramPanel > sl-checkbox {
 		display: block;
 		margin-block: 6px;
-	}
-	#objectArea {
-		grid-column: 3;
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		grid-template-rows: minmax(calc(var(--panel-trigger-height) + 8px), auto) minmax(0, 1fr);
-		box-shadow: inset 1px 0 var(--sl-color-neutral-200);
-	}
-	#objectArea .workspace-details::part(header) {
-		inset-inline-end: 4px;
-		flex-direction: row-reverse;
-	}
-	#objectArea .workspace-details {
-		grid-row: 2;
-	}
-	#objectPanel {
-		position: relative;
-		box-sizing: border-box;
-		inline-size: var(--object-panel-width);
-		inset-inline-start: min(0px, calc(100% - var(--object-panel-width)));
-		padding: 4px 8px;
 	}
 	@media (prefers-reduced-motion: reduce) {
 		#upper {
@@ -1294,6 +1265,28 @@ export const style = css`
 		place-items: center;
 		margin: 0;
 		padding: 2px 4px;
+	}
+	.electrical-settings {
+		inline-size: 11rem;
+		max-inline-size: 100%;
+	}
+	.electrical-settings::part(header),
+	.electrical-settings::part(content) {
+		padding: 4px;
+	}
+	.electrical-settings sl-input,
+	.electrical-settings label {
+		display: block;
+		margin-block-end: 4px;
+	}
+	.electrical-settings select {
+		display: block;
+		box-sizing: border-box;
+		inline-size: 100%;
+		min-block-size: var(--sl-input-height-small);
+		border: 1px solid var(--sl-input-border-color);
+		border-radius: var(--sl-input-border-radius-medium);
+		font: inherit;
 	}
 	#contextMolInfo {
 		inline-size: 12rem;
@@ -2003,15 +1996,6 @@ export const style = css`
 		block-size: 100%;
 		object-fit: contain;
 	}
-	.teacher-editors {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
-		gap: 8px;
-	}
-	#teacherDrawer h3 {
-		font-size: 0.9rem;
-		margin: 0.4rem 0;
-	}
 	.fill-meter {
 		position: absolute;
 		padding: 2px 4px;
@@ -2019,124 +2003,6 @@ export const style = css`
 		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
 		pointer-events: none;
-	}
-	#settings_drawer {
-		font-size: 1rem;
-		margin: 0.25rem 0 0.5rem;
-	}
-	/* Stack the original settings sections within the narrower side panel. */
-	#objectPanel #atom_panel,
-	#objectPanel #molecule_panel {
-		display: block;
-	}
-	#objectPanel #atom_panel::part(panel),
-	#objectPanel #molecule_panel::part(panel) {
-		display: block;
-	}
-	#objectPanel #atom_panel::part(divider),
-	#objectPanel #molecule_panel::part(divider),
-	:host([panelvariant="2"]) #atom_panel::part(end),
-	:host([panelvariant="3"]) #atom_panel::part(end),
-	:host([panelvariant="3"]) #molecule_panel::part(end) {
-		display: none;
-	}
-	#objectPanel #ecomp_panel {
-		flex-wrap: wrap;
-	}
-	#objectPanel #atom_panel > [slot="end"] > div {
-		max-width: 100%;
-	}
-	#molecule_container {
-		display: block;
-		width: 100%;
-	}
-
-	#atoms {
-		display: block !important;
-		height: auto;
-		max-height: 200px;
-		overflow: auto;
-	}
-
-	atom_container {
-		display: grid;
-		/* Fixed, compact cells. #atom_panel is an sl-split-panel whose end
-		   track is sized to its content (auto) and clips the overflow, so
-		   the table's width has to stay inside the ~328px elements column
-		   or most of it gets cut off. 18*17 + 17*1 = 323px. */
-		grid-template-columns: repeat(18, 17px);
-		grid-auto-rows: 18px;
-		gap: 1px;
-		width: max-content;
-	}
-
-	#ecomp_panel {
-		display: flex;
-		flex-direction: row;
-	}
-	#eCompInnerInfo {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		margin: 5px;
-	}
-	#filterButton {
-		/* compact enough that all ten category filters fit the elements
-		   column in a couple of wrapped rows instead of overflowing it */
-		height: auto;
-		padding: 1px 4px;
-		font-size: 9px;
-		line-height: 1.4;
-		border-radius: 5px;
-		align-items: flex-end;
-	}
-	#filterDiv::-webkit-scrollbar {
-		display: none;
-	}
-	#filterDiv {
-		-ms-overflow-style: none;
-		scrollbar-width: none;
-	}
-	#bondSelect {
-		display: flex;
-		flex-direction: column;
-		justify-content: space-between;
-		align-items: flex-end;
-		margin-inline: 5px;
-	}
-	#mol_prev_div {
-		display: flex;
-		align-items: center;
-		padding-inline: 10px;
-	}
-	#mol_preview {
-		margin-top: 10px;
-		height: 150px;
-		width: 150px;
-		display: block;
-		margin-inline: 5px;
-		border-style: dashed;
-		border-width: 1px;
-		border-color: #787878;
-	}
-	#enter {
-		color: #288d00;
-		display: inline;
-	}
-	#enter:hover {
-		color: #ffff;
-		background-color: #288d00;
-	}
-	#addToElectrode {
-		color: #b47b00;
-	}
-	#addToElectrode:hover {
-		color: #ffff;
-		background-color: #b47b00;
-	}
-
-	#charge_range {
-		margin: 15px;
 	}
 	.remObj {
 		/* position: absolute;
@@ -2159,21 +2025,6 @@ export const style = css`
 	#foldMenu:hover {
 		background-color: #0074aa;
 		color: #ffff;
-	}
-	#buttonAtom {
-		border-radius: 3px;
-		/* sized to fill one atom_container grid cell exactly. width:100% is
-		   needed because a button's auto width is shrink-to-fit, so it would
-		   not stretch to the grid track on its own. */
-		height: 18px;
-		width: 100%;
-		min-width: 0;
-		padding: 0;
-		font-size: 8px;
-		line-height: 1;
-		overflow: hidden;
-		align-items: center;
-		justify-content: center;
 	}
 	.selection-info-title::part(base) {
 		background-color: #ff1f66;

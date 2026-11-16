@@ -312,7 +312,7 @@ export class CanvasController implements ReactiveController {
 			const bounds = sprite.getBounds();
 			return bounds.minX <= rect.right && bounds.maxX >= rect.left && bounds.minY <= rect.bottom && bounds.maxY >= rect.top;
 		});
-		this.host.clearObjectSelection(true);
+		this.host.clearObjectSelection();
 		this.selection = selected;
 		this.drawSelection();
 		this.host.requestUpdate();

@@ -23,6 +23,8 @@ export interface AcidEquilibriumSpecies {
 	charge: number;
 	amount: number;
 	concentration: number;
+	/** Share of its acid family; solvent ions do not belong to a displayed family. */
+	fraction?: number;
 	/** A representative structure for this protonation state, built only when drawn. */
 	structure: () => Molecule | undefined;
 }
@@ -673,7 +675,7 @@ export abstract class Simulation {
 					const count = symbol === "H" ? protonatedHydrogens - step : elements.get(symbol);
 					return count > 0 ? symbol + subscript(count) : "";
 				}).join("") + superscript(charge);
-				species.push({ formula, charge, concentration, amount: concentration * volume,
+				species.push({ formula, charge, fraction, concentration, amount: concentration * volume,
 					structure: () => protonationStructure(family.representative, step - family.step) });
 			});
 		}
