@@ -118,6 +118,10 @@ interface HalfCandidate {
 	anodicLimit: number;
 	/** Largest cathodic extent, in mol of electrons. */
 	cathodicLimit: number;
+	/** Largest anodic current density the extent allows in one step, A/cm². */
+	anodicDensity: number;
+	/** Largest cathodic current density the extent allows in one step, A/cm². */
+	cathodicDensity: number;
 	/** Apply the half-reaction for `electronMol` electrons; positive is oxidation. */
 	apply(electronMol: number): void;
 }
@@ -1042,13 +1046,27 @@ export abstract class Simulation {
 	 * sides is present; which direction it may actually run is decided by the
 	 * mixed-potential solve, not here.
 	 *
+	 * Each candidate also carries the largest current density its two
+	 * directions can carry in one step, taken from the amount of the species
+	 * they consume. The solve has to respect that: a couple whose gas has only
+	 * just started to form can carry a few microamps, not the current of a
+	 * full electrode. Without the bound the two gas couples of a water
+	 * electrolysis cancelled each other at a potential where the current was
+	 * set by the resistance alone, and the cell oscillated between that
+	 * degenerate root and the real one.
+	 *
 	 * @private
 	 * @static
 	 * @param {ElectricComponent} electrode - the electrode and its vessel
 	 * @param {VesselView} view - the vessel it dips into
+	 * @param {number} dt - length of the step in s
 	 * @returns {HalfCandidate[]}
 	 */
-	private static electrodeCandidates(electrode: ElectricComponent, view: VesselView): HalfCandidate[] {
+	private static electrodeCandidates(
+		electrode: ElectricComponent,
+		view: VesselView,
+		dt: number
+	): HalfCandidate[] {
 		const candidates: HalfCandidate[] = [];
 		const material = electrode._material;
 		const volume = view.mix._solutionVolume;
@@ -1092,6 +1110,10 @@ export abstract class Simulation {
 				}
 			}
 			if (!canOxidise && !canReduce) continue;
+			// A step may not convert more than the vessel holds, so the same
+			// bound the booking applies also bounds the current density.
+			const densityOf = (limit: number) => Number.isFinite(limit)
+				? limit * this._faradayConst / (ELECTRODE_AREA * dt) : Infinity;
 			candidates.push({
 				reaction,
 				equilibrium,
@@ -1099,6 +1121,8 @@ export abstract class Simulation {
 				canReduce,
 				anodicLimit,
 				cathodicLimit,
+				anodicDensity: densityOf(anodicLimit),
+				cathodicDensity: densityOf(cathodicLimit),
 				apply: (electronMol) => this.applyHalfReaction(reaction, electronMol, electrode, view),
 			});
 		}
@@ -1261,9 +1285,11 @@ export abstract class Simulation {
 	 */
 	private static candidateCurrent(candidate: HalfCandidate, potential: number): number {
 		const density = currentDensity(candidate.reaction, potential - candidate.equilibrium);
-		if (!candidate.canOxidise) return Math.min(0, density);
-		if (!candidate.canReduce) return Math.max(0, density);
-		return density;
+		const bounded = Math.max(-candidate.cathodicDensity,
+			Math.min(candidate.anodicDensity, density));
+		if (!candidate.canOxidise) return Math.min(0, bounded);
+		if (!candidate.canReduce) return Math.max(0, bounded);
+		return bounded;
 	}
 
 	/** Slope of {@link candidateCurrent}, zero on the clamped side. */
@@ -1271,6 +1297,7 @@ export abstract class Simulation {
 		const density = currentDensity(candidate.reaction, potential - candidate.equilibrium);
 		if (!candidate.canOxidise && density > 0) return 0;
 		if (!candidate.canReduce && density < 0) return 0;
+		if (density > candidate.anodicDensity || density < -candidate.cathodicDensity) return 0;
 		return currentDensitySlope(candidate.reaction, potential - candidate.equilibrium);
 	}
 
@@ -1573,8 +1600,9 @@ export abstract class Simulation {
 		if (!mix1?._isSolution || !mix2?._isSolution) return;
 		if (!ComponentManager.isConnected(sElectrode1, sElectrode2)) return;
 
-		const first = this.electrodeCandidates(sElectrode1, this.vesselView(mix1));
-		const second = this.electrodeCandidates(sElectrode2, this.vesselView(mix2));
+		const dt = this._simTimeStep;
+		const first = this.electrodeCandidates(sElectrode1, this.vesselView(mix1), dt);
+		const second = this.electrodeCandidates(sElectrode2, this.vesselView(mix2), dt);
 		if (first.length === 0 || second.length === 0) return;
 
 		const limits = this.cellLimits(first, second);
@@ -1593,7 +1621,6 @@ export abstract class Simulation {
 			}
 		}
 
-		const dt = this._simTimeStep;
 		this.applyElectrode(first, solution.firstCurrents, dt);
 		this.applyElectrode(second, solution.secondCurrents, dt);
 	}
