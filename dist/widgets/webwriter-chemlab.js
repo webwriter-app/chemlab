@@ -181945,7 +181945,8 @@ function currentReading(value) {
   return `${magnitude(value)} A`;
 }
 var PLATING_REFERENCE_LITRES = 18e-7;
-var PLATING_MIN_COVERAGE = 0.025;
+var PLATING_OPAQUE_AT = 0.35;
+var PLATING_MAX_BULGE = 1.25;
 var platingTextures = /* @__PURE__ */ new Map();
 function platingTexture(color2) {
   const cached = platingTextures.get(color2);
@@ -181968,31 +181969,37 @@ function platingTexture(color2) {
     return `rgba(${channel(16)}, ${channel(8)}, ${channel(0)}, ${alpha2})`;
   };
   const body2 = context2.createLinearGradient(0, 0, 0, height);
-  body2.addColorStop(0, shade(0.95));
-  body2.addColorStop(0.55, shade(0.74));
-  body2.addColorStop(1, shade(0.56));
+  body2.addColorStop(0, shade(0.86));
+  body2.addColorStop(0.5, shade(0.68));
+  body2.addColorStop(1, shade(0.52));
   context2.fillStyle = body2;
   context2.fillRect(0, 0, width, height);
-  for (let layer = 1; layer < 9; layer++) {
-    const y5 = height * layer / 9 + layer * 37 % 11 - 5;
-    context2.fillStyle = shade(0.45, 0.5);
-    context2.fillRect(0, y5, width, 1.4);
-    context2.fillStyle = lighten2(0.35, 0.35);
-    context2.fillRect(0, y5 - 1.2, width, 1);
+  let seed = color2 >>> 0 || 1;
+  const random2 = () => {
+    seed = seed * 1664525 + 1013904223 >>> 0;
+    return seed / 4294967296;
+  };
+  for (let patch = 0; patch < 320; patch++) {
+    const x4 = random2() * width;
+    const y5 = random2() * height;
+    const radiusX = 0.5 + random2() * 1.3;
+    const radiusY = 0.7 + random2() * 1.9;
+    context2.fillStyle = random2() > 0.45 ? lighten2(0.16 + random2() * 0.3, 0.07 + random2() * 0.11) : shade(0.5 + random2() * 0.22, 0.06 + random2() * 0.1);
+    context2.beginPath();
+    context2.ellipse(x4, y5, radiusX, radiusY, random2() * Math.PI, 0, Math.PI * 2);
+    context2.fill();
   }
-  const streak = context2.createLinearGradient(width * 0.12, 0, width * 0.42, 0);
-  streak.addColorStop(0, lighten2(0.6, 0));
-  streak.addColorStop(0.5, lighten2(0.6, 0.6));
-  streak.addColorStop(1, lighten2(0.6, 0));
-  context2.fillStyle = streak;
-  context2.fillRect(width * 0.12, 0, width * 0.3, height);
-  const edge = context2.createLinearGradient(width * 0.78, 0, width, 0);
-  edge.addColorStop(0, shade(0.4, 0));
-  edge.addColorStop(1, shade(0.4, 0.55));
-  context2.fillStyle = edge;
-  context2.fillRect(width * 0.78, 0, width * 0.22, height);
-  context2.fillStyle = lighten2(0.75, 0.85);
-  context2.fillRect(0, 0, width, 2.6);
+  for (let line = 0, dark = true; line < height; line += 1, dark = !dark) {
+    context2.fillStyle = dark ? shade(0.5, 0.05) : lighten2(0.3, 0.04);
+    context2.fillRect(0, line, width, 0.6);
+  }
+  const flank = context2.createLinearGradient(0, 0, width, 0);
+  flank.addColorStop(0, lighten2(0.55, 0.5));
+  flank.addColorStop(0.22, lighten2(0.4, 0.16));
+  flank.addColorStop(0.62, shade(0.85, 0));
+  flank.addColorStop(1, shade(0.35, 0.5));
+  context2.fillStyle = flank;
+  context2.fillRect(0, 0, width, height);
   const texture = new Texture({
     source: new CanvasSource({ resource: canvas, resolution, autoGenerateMipmaps: true })
   });
@@ -182067,7 +182074,7 @@ var ElectricDeviceView = class extends Container {
           top: height * (16 / 75 - 0.5),
           bottom: height * (74.6 / 75 - 0.5)
         };
-        this.coating = new Sprite({ anchor: { x: 0.5, y: 1 }, eventMode: "none", visible: false });
+        this.coating = new Sprite({ anchor: 0.5, eventMode: "none", visible: false });
         this.addChild(this.coating);
         addLine(0.5, 10 / 75, 0.103, 0.72);
         break;
@@ -182302,8 +182309,9 @@ var ElectricDeviceView = class extends Container {
   }
   /**
    * Draws the metal deposited on an electrode as a coating on the strip. The
-   * layer grows from the lower end upwards, so a thin deposit stays where the
-   * electrode dips into the solution.
+   * layer covers the whole strip from the first moment and only thickens
+   * with the deposit: the alpha climbs until the metal is opaque, then the
+   * silhouette widens past the strip.
    *
    * @private
    * @return {boolean} whether the drawing changed
@@ -182315,7 +182323,7 @@ var ElectricDeviceView = class extends Container {
     const plating = this.component.plating;
     const area2 = this.component._area > 0 ? this.component._area : ELECTRODE_AREA;
     const reference2 = PLATING_REFERENCE_LITRES * area2 / ELECTRODE_AREA;
-    const coverage = plating ? Math.min(1, Math.max(PLATING_MIN_COVERAGE, plating.litres / reference2)) : 0;
+    const coverage = plating ? Math.min(1, plating.litres / reference2) : 0;
     const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}` : "";
     if (key === this.coatingKey) return false;
     this.coatingKey = key;
@@ -182326,9 +182334,11 @@ var ElectricDeviceView = class extends Container {
     const hex2 = plating.molecule._atoms[0]?.getCPKHEX();
     const parsed = hex2 ? parseInt(hex2, 16) : NaN;
     coating.texture = platingTexture(Number.isFinite(parsed) ? parsed : 8688795);
-    coating.position.set((strip.left + strip.right) / 2, strip.bottom);
-    coating.width = strip.right - strip.left;
-    coating.height = (strip.bottom - strip.top) * coverage;
+    const grown = Math.max(0, (coverage - PLATING_OPAQUE_AT) / (1 - PLATING_OPAQUE_AT));
+    coating.alpha = Math.min(1, coverage / PLATING_OPAQUE_AT);
+    coating.position.set((strip.left + strip.right) / 2, (strip.top + strip.bottom) / 2);
+    coating.width = (strip.right - strip.left) * (1 + (PLATING_MAX_BULGE - 1) * grown);
+    coating.height = strip.bottom - strip.top;
     coating.visible = true;
     return true;
   }

@@ -34,11 +34,19 @@ function currentReading(value: number | null | undefined): string {
 const PLATING_REFERENCE_LITRES = 1.8e-6;
 
 /**
- * The thinnest band a deposit draws. The first metal to arrive is far below
- * the reference thickness, and a coating that is invisible until it reaches a
- * few percent would look like nothing happened.
+ * The share of the reference volume at which the coating has become fully
+ * opaque. A fresh deposit first tints the whole strip and only then thickens,
+ * so the first metal to arrive reads as a haze over the metal instead of a
+ * band at its lower end.
  */
-const PLATING_MIN_COVERAGE = 0.025;
+const PLATING_OPAQUE_AT = 0.35;
+
+/**
+ * How far the coating bulges past the strip once the deposit reaches the
+ * reference thickness. A layer grows in thickness, which in a flat drawing
+ * reads as a wider silhouette, not as a taller one.
+ */
+const PLATING_MAX_BULGE = 1.25;
 
 /**
  * The drawn coating textures, one per metal colour. A deposit is a sprite
@@ -49,10 +57,10 @@ const platingTextures = new Map<number, Texture>();
 
 /**
  * Builds the look of a metal coating: a body that darkens towards the lower,
- * older end, thin seams between growth layers, a specular streak down the
- * left where the electrode graphic is lit, and a bright rim at the growth
- * front. The colour comes from the metal, so copper, zinc and silver each
- * read as themselves.
+ * older end, crystalline grains that catch the light at different angles,
+ * fine horizontal grain, and a lit left flank with a shadowed right edge, the
+ * way the electrode graphic itself is lit. The colour comes from the metal,
+ * so copper, zinc and silver each read as themselves.
  *
  * @param {number} color - the metal colour as 0xRRGGBB
  * @returns {Texture} the coating texture, cached per colour
@@ -83,34 +91,45 @@ function platingTexture(color: number): Texture {
 		return `rgba(${channel(16)}, ${channel(8)}, ${channel(0)}, ${alpha})`;
 	};
 	const body = context.createLinearGradient(0, 0, 0, height);
-	body.addColorStop(0, shade(0.95));
-	body.addColorStop(0.55, shade(0.74));
-	body.addColorStop(1, shade(0.56));
+	body.addColorStop(0, shade(0.86));
+	body.addColorStop(0.5, shade(0.68));
+	body.addColorStop(1, shade(0.52));
 	context.fillStyle = body;
 	context.fillRect(0, 0, width, height);
-	// Growth layers: a dark seam with a lit edge above it, the way a thick
-	// deposit builds up in steps.
-	for (let layer = 1; layer < 9; layer++) {
-		const y = height * layer / 9 + (layer * 37) % 11 - 5;
-		context.fillStyle = shade(0.45, 0.5);
-		context.fillRect(0, y, width, 1.4);
-		context.fillStyle = lighten(0.35, 0.35);
-		context.fillRect(0, y - 1.2, width, 1);
+	// A deposit is crystalline: grains grow side by side and catch the light
+	// at different angles. The patches are seeded from the colour, so a metal
+	// always looks the same and the texture stays cacheable.
+	let seed = (color >>> 0) || 1;
+	const random = () => {
+		seed = (seed * 1664525 + 1013904223) >>> 0;
+		return seed / 0x100000000;
+	};
+	for (let patch = 0; patch < 320; patch++) {
+		const x = random() * width;
+		const y = random() * height;
+		const radiusX = 0.5 + random() * 1.3;
+		const radiusY = 0.7 + random() * 1.9;
+		context.fillStyle = random() > 0.45
+			? lighten(0.16 + random() * 0.3, 0.07 + random() * 0.11)
+			: shade(0.5 + random() * 0.22, 0.06 + random() * 0.1);
+		context.beginPath();
+		context.ellipse(x, y, radiusX, radiusY, random() * Math.PI, 0, Math.PI * 2);
+		context.fill();
 	}
-	const streak = context.createLinearGradient(width * 0.12, 0, width * 0.42, 0);
-	streak.addColorStop(0, lighten(0.6, 0));
-	streak.addColorStop(0.5, lighten(0.6, 0.6));
-	streak.addColorStop(1, lighten(0.6, 0));
-	context.fillStyle = streak;
-	context.fillRect(width * 0.12, 0, width * 0.3, height);
-	const edge = context.createLinearGradient(width * 0.78, 0, width, 0);
-	edge.addColorStop(0, shade(0.4, 0));
-	edge.addColorStop(1, shade(0.4, 0.55));
-	context.fillStyle = edge;
-	context.fillRect(width * 0.78, 0, width * 0.22, height);
-	// Fresh metal at the growth front catches the light.
-	context.fillStyle = lighten(0.75, 0.85);
-	context.fillRect(0, 0, width, 2.6);
+	// Fine horizontal grain: a grown layer is never perfectly even.
+	for (let line = 0, dark = true; line < height; line += 1, dark = !dark) {
+		context.fillStyle = dark ? shade(0.5, 0.05) : lighten(0.3, 0.04);
+		context.fillRect(0, line, width, 0.6);
+	}
+	// The strip is lit from the left, so the coating is too: a bright flank, a
+	// dull middle and a shadowed right edge.
+	const flank = context.createLinearGradient(0, 0, width, 0);
+	flank.addColorStop(0, lighten(0.55, 0.5));
+	flank.addColorStop(0.22, lighten(0.4, 0.16));
+	flank.addColorStop(0.62, shade(0.85, 0));
+	flank.addColorStop(1, shade(0.35, 0.5));
+	context.fillStyle = flank;
+	context.fillRect(0, 0, width, height);
 	const texture = new Texture({
 		source: new CanvasSource({ resource: canvas, resolution, autoGenerateMipmaps: true }),
 	});
@@ -228,7 +247,7 @@ export class ElectricDeviceView extends Container {
 					top: height * (16 / 75 - 0.5),
 					bottom: height * (74.6 / 75 - 0.5),
 				};
-				this.coating = new Sprite({ anchor: { x: 0.5, y: 1 }, eventMode: "none", visible: false });
+				this.coating = new Sprite({ anchor: 0.5, eventMode: "none", visible: false });
 				this.addChild(this.coating);
 				addLine(0.5, 10 / 75, 0.103, 0.72);
 				break;
@@ -479,8 +498,9 @@ export class ElectricDeviceView extends Container {
 
 	/**
 	 * Draws the metal deposited on an electrode as a coating on the strip. The
-	 * layer grows from the lower end upwards, so a thin deposit stays where the
-	 * electrode dips into the solution.
+	 * layer covers the whole strip from the first moment and only thickens
+	 * with the deposit: the alpha climbs until the metal is opaque, then the
+	 * silhouette widens past the strip.
 	 *
 	 * @private
 	 * @return {boolean} whether the drawing changed
@@ -495,9 +515,7 @@ export class ElectricDeviceView extends Container {
 		// with the area keeps the drawn thickness the real one.
 		const area = this.component._area > 0 ? this.component._area : ELECTRODE_AREA;
 		const reference = PLATING_REFERENCE_LITRES * area / ELECTRODE_AREA;
-		const coverage = plating
-			? Math.min(1, Math.max(PLATING_MIN_COVERAGE, plating.litres / reference))
-			: 0;
+		const coverage = plating ? Math.min(1, plating.litres / reference) : 0;
 		const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}` : "";
 		if (key === this.coatingKey) return false;
 		this.coatingKey = key;
@@ -508,9 +526,11 @@ export class ElectricDeviceView extends Container {
 		const hex = plating.molecule._atoms[0]?.getCPKHEX();
 		const parsed = hex ? parseInt(hex, 16) : NaN;
 		coating.texture = platingTexture(Number.isFinite(parsed) ? parsed : 0x84949b);
-		coating.position.set((strip.left + strip.right) / 2, strip.bottom);
-		coating.width = strip.right - strip.left;
-		coating.height = (strip.bottom - strip.top) * coverage;
+		const grown = Math.max(0, (coverage - PLATING_OPAQUE_AT) / (1 - PLATING_OPAQUE_AT));
+		coating.alpha = Math.min(1, coverage / PLATING_OPAQUE_AT);
+		coating.position.set((strip.left + strip.right) / 2, (strip.top + strip.bottom) / 2);
+		coating.width = (strip.right - strip.left) * (1 + (PLATING_MAX_BULGE - 1) * grown);
+		coating.height = strip.bottom - strip.top;
 		coating.visible = true;
 		return true;
 	}
