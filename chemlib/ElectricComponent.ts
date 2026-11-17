@@ -20,8 +20,27 @@ export enum EComponentType {
 	Label = "label",
 }
 
-export const VOLTMETER_MODEL_CURRENT = 2;
-export const AMMETER_MODEL_VOLTAGE = 10;
+/**
+ * Resistance of one lab lead, in Ω. A lead is a wire, so it is a short in
+ * every calculation that does not ask for millivolts.
+ */
+export const CABLE_RESISTANCE = 0.02;
+/**
+ * Input resistance of a bench voltmeter, in Ω. A meter that reads a voltage
+ * has to draw almost nothing, otherwise it changes the voltage it measures;
+ * 10 MΩ is the usual figure for a digital instrument.
+ */
+export const VOLTMETER_RESISTANCE = 1e7;
+/**
+ * Shunt resistance of a bench ammeter, in Ω. A meter that reads a current is
+ * wired into the loop, so it has to drop as little as possible.
+ */
+export const AMMETER_RESISTANCE = 0.1;
+/**
+ * Internal resistance of the lab supply's output stage, in Ω. It is what
+ * limits the current a source can push into a short.
+ */
+export const SOURCE_RESISTANCE = 0.5;
 
 /**
  * The plug on one end of a cable. A banana plug goes into the binding post of
@@ -126,7 +145,10 @@ class ElectricComponent {
 	 */
 	_sourceVoltage: number;
 	/**
-	 * for voltage sources: the source current in ampere
+	 * for voltage sources: the source current in ampere. In current mode it is
+	 * the current the source forces; in voltage mode it is the largest current
+	 * the source delivers, and a cell that would draw more makes it drop into
+	 * constant-current operation. Zero leaves the current unlimited.
 	 *
 	 * @readonly
 	 * @type {number}
@@ -195,10 +217,12 @@ class ElectricComponent {
 	 */
 	_variantId?: string;
 	/**
-	 * for voltmeters, multimeters in voltage mode and sources in current mode:
-	 * the voltage the cell solve found, in volt. `null` until the cell has been
-	 * solved once, so a meter that is not in a running circuit shows a dash
-	 * instead of a zero it never measured.
+	 * for voltmeters, multimeters in voltage mode and sources: the voltage the
+	 * cell solve found, in volt. A source in current mode shows the voltage it
+	 * had to apply, one in voltage mode the voltage left after its current
+	 * limit took over. `null` until the cell has been solved once, so a meter
+	 * that is not in a running circuit shows a dash instead of a zero it never
+	 * measured.
 	 *
 	 * @type {(number | null)}
 	 */
@@ -275,12 +299,8 @@ class ElectricComponent {
 				this._sourceCurrent = nSourceCurrent;
 				break;
 			case EComponentType.Voltmeter:
-				this._conCount = 2;
-				this._sourceCurrent = VOLTMETER_MODEL_CURRENT;
-				break;
 			case EComponentType.Ammeter:
 				this._conCount = 2;
-				this._sourceVoltage = AMMETER_MODEL_VOLTAGE;
 				break;
 			case EComponentType.Multimeter:
 				this._conCount = 2;
@@ -402,6 +422,35 @@ class ElectricComponent {
 				return this._reference === undefined ? "clip" : "banana";
 			default:
 				return undefined;
+		}
+	}
+
+	/**
+	 * The resistance the device brings into the circuit, in Ω. A lead is a
+	 * wire, a voltmeter is a high-impedance load, an ammeter is a shunt, and a
+	 * supply has the internal resistance of its output stage. An electrode is
+	 * a terminal of the cell rather than an element of the external circuit,
+	 * so it has none of its own.
+	 *
+	 * @readonly
+	 * @type {number}
+	 */
+	get resistance(): number {
+		switch (this._type) {
+			case EComponentType.Cable:
+				return CABLE_RESISTANCE;
+			case EComponentType.Voltmeter:
+				return VOLTMETER_RESISTANCE;
+			case EComponentType.Ammeter:
+				return AMMETER_RESISTANCE;
+			case EComponentType.Multimeter:
+				// The mode decides what the meter does to the circuit, not only
+				// what it shows: a voltmeter is a load, an ammeter a shunt.
+				return this._meterMode === "voltage" ? VOLTMETER_RESISTANCE : AMMETER_RESISTANCE;
+			case EComponentType.Source:
+				return SOURCE_RESISTANCE;
+			default:
+				return Infinity;
 		}
 	}
 

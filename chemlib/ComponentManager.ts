@@ -99,6 +99,12 @@ export abstract class ComponentManager {
 	/**
 	 * returns whether two objects are electrically connected
 	 *
+	 * A circuit branches: a voltmeter may hang on the same post as the
+	 * supply, and a lead that is plugged in at one end only ends in nothing.
+	 * A walk that follows a single branch and stops at its end would miss
+	 * the other one, so every reached device is kept and the search
+	 * continues from each of them.
+	 *
 	 * @public
 	 * @static
 	 * @param {ElectricComponent} component1 - the first object
@@ -109,30 +115,16 @@ export abstract class ComponentManager {
 		component1: ElectricComponent,
 		component2: ElectricComponent
 	): boolean {
-		let conStatus: boolean = false;
-		let visited: Array<number> = new Array<number>();
-
-		let currComponent: ElectricComponent = component1;
-
-		while (!conStatus) {
-			visited.push(currComponent._id);
-			if (currComponent === component2) {
-				conStatus = true;
-			} else {
-				var hasNext: boolean = false;
-				currComponent._connections.forEach((conElem) => {
-					if (conElem && !visited.includes(conElem._id)) {
-						hasNext = true;
-						currComponent = conElem;
-					}
-				});
-
-				if (!hasNext) {
-					break;
-				}
+		if (component1 === component2) return true;
+		const visited: ElectricComponent[] = [component1];
+		for (let cursor = 0; cursor < visited.length; cursor++) {
+			for (const partner of visited[cursor]._connections) {
+				if (!partner) continue;
+				if (partner === component2) return true;
+				if (!visited.includes(partner)) visited.push(partner);
 			}
 		}
-		return conStatus;
+		return false;
 	}
 
 	/**

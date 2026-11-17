@@ -110725,7 +110725,9 @@ var Bond = class {
 // chemlib/halfReactions.ts
 var REFERENCE_CURRENT_DENSITY = 0.02;
 var ELECTRODE_AREA = 4.5;
-var SERIES_RESISTANCE = 2;
+var ELECTROLYTE_RESISTANCE = 2;
+var BRIDGE_RESISTANCE = 60;
+var OPEN_CIRCUIT_RESISTANCE = 1e5;
 var GAS_PARTIAL_PRESSURE = 1;
 function metalCouple(id3, metal, ion2, el, sep, density2, etaRef, b5) {
   return {
@@ -110889,8 +110891,10 @@ var EComponentType = /* @__PURE__ */ ((EComponentType2) => {
   EComponentType2["Label"] = "label";
   return EComponentType2;
 })(EComponentType || {});
-var VOLTMETER_MODEL_CURRENT = 2;
-var AMMETER_MODEL_VOLTAGE = 10;
+var CABLE_RESISTANCE = 0.02;
+var VOLTMETER_RESISTANCE = 1e7;
+var AMMETER_RESISTANCE = 0.1;
+var SOURCE_RESISTANCE = 0.5;
 var ElectricComponent = class {
   /**
    * The type of the component
@@ -110950,7 +110954,10 @@ var ElectricComponent = class {
    */
   _sourceVoltage;
   /**
-   * for voltage sources: the source current in ampere
+   * for voltage sources: the source current in ampere. In current mode it is
+   * the current the source forces; in voltage mode it is the largest current
+   * the source delivers, and a cell that would draw more makes it drop into
+   * constant-current operation. Zero leaves the current unlimited.
    *
    * @readonly
    * @type {number}
@@ -111019,10 +111026,12 @@ var ElectricComponent = class {
    */
   _variantId;
   /**
-   * for voltmeters, multimeters in voltage mode and sources in current mode:
-   * the voltage the cell solve found, in volt. `null` until the cell has been
-   * solved once, so a meter that is not in a running circuit shows a dash
-   * instead of a zero it never measured.
+   * for voltmeters, multimeters in voltage mode and sources: the voltage the
+   * cell solve found, in volt. A source in current mode shows the voltage it
+   * had to apply, one in voltage mode the voltage left after its current
+   * limit took over. `null` until the cell has been solved once, so a meter
+   * that is not in a running circuit shows a dash instead of a zero it never
+   * measured.
    *
    * @type {(number | null)}
    */
@@ -111089,12 +111098,8 @@ var ElectricComponent = class {
         this._sourceCurrent = nSourceCurrent;
         break;
       case "voltmeter" /* Voltmeter */:
-        this._conCount = 2;
-        this._sourceCurrent = VOLTMETER_MODEL_CURRENT;
-        break;
       case "ammeter" /* Ammeter */:
         this._conCount = 2;
-        this._sourceVoltage = AMMETER_MODEL_VOLTAGE;
         break;
       case "multimeter" /* Multimeter */:
         this._conCount = 2;
@@ -111209,6 +111214,32 @@ var ElectricComponent = class {
         return this._reference === void 0 ? "clip" : "banana";
       default:
         return void 0;
+    }
+  }
+  /**
+   * The resistance the device brings into the circuit, in Ω. A lead is a
+   * wire, a voltmeter is a high-impedance load, an ammeter is a shunt, and a
+   * supply has the internal resistance of its output stage. An electrode is
+   * a terminal of the cell rather than an element of the external circuit,
+   * so it has none of its own.
+   *
+   * @readonly
+   * @type {number}
+   */
+  get resistance() {
+    switch (this._type) {
+      case "cable" /* Cable */:
+        return CABLE_RESISTANCE;
+      case "voltmeter" /* Voltmeter */:
+        return VOLTMETER_RESISTANCE;
+      case "ammeter" /* Ammeter */:
+        return AMMETER_RESISTANCE;
+      case "multimeter" /* Multimeter */:
+        return this._meterMode === "voltage" ? VOLTMETER_RESISTANCE : AMMETER_RESISTANCE;
+      case "source" /* Source */:
+        return SOURCE_RESISTANCE;
+      default:
+        return Infinity;
     }
   }
   /**
@@ -111361,6 +111392,12 @@ var ComponentManager = class {
   /**
    * returns whether two objects are electrically connected
    *
+   * A circuit branches: a voltmeter may hang on the same post as the
+   * supply, and a lead that is plugged in at one end only ends in nothing.
+   * A walk that follows a single branch and stops at its end would miss
+   * the other one, so every reached device is kept and the search
+   * continues from each of them.
+   *
    * @public
    * @static
    * @param {ElectricComponent} component1 - the first object
@@ -111368,27 +111405,16 @@ var ComponentManager = class {
    * @returns {boolean}
    */
   static isConnected(component1, component2) {
-    let conStatus = false;
-    let visited = new Array();
-    let currComponent = component1;
-    while (!conStatus) {
-      visited.push(currComponent._id);
-      if (currComponent === component2) {
-        conStatus = true;
-      } else {
-        var hasNext = false;
-        currComponent._connections.forEach((conElem) => {
-          if (conElem && !visited.includes(conElem._id)) {
-            hasNext = true;
-            currComponent = conElem;
-          }
-        });
-        if (!hasNext) {
-          break;
-        }
+    if (component1 === component2) return true;
+    const visited = [component1];
+    for (let cursor = 0; cursor < visited.length; cursor++) {
+      for (const partner of visited[cursor]._connections) {
+        if (!partner) continue;
+        if (partner === component2) return true;
+        if (!visited.includes(partner)) visited.push(partner);
       }
     }
-    return conStatus;
+    return false;
   }
   /**
    * The electrode that sits on one pole of a device, following the cables
@@ -149326,6 +149352,195 @@ var evolvedGases = {
   O2: { formula: "O\u2082" }
 };
 
+// chemlib/circuit.ts
+function solveLinear(matrix, rhs) {
+  const size3 = rhs.length;
+  const rows = matrix.map((row, index2) => [...row, rhs[index2]]);
+  for (let column = 0; column < size3; column++) {
+    let pivot = column;
+    for (let row = column + 1; row < size3; row++) {
+      if (Math.abs(rows[row][column]) > Math.abs(rows[pivot][column])) pivot = row;
+    }
+    if (!(Math.abs(rows[pivot][column]) > 1e-18)) return void 0;
+    if (pivot !== column) {
+      const swap2 = rows[pivot];
+      rows[pivot] = rows[column];
+      rows[column] = swap2;
+    }
+    const lead = rows[column][column];
+    for (let row = column + 1; row < size3; row++) {
+      const factor = rows[row][column] / lead;
+      if (factor === 0) continue;
+      for (let k4 = column; k4 <= size3; k4++) rows[row][k4] -= factor * rows[column][k4];
+    }
+  }
+  const solution = new Array(size3).fill(0);
+  for (let row = size3 - 1; row >= 0; row--) {
+    let sum = rows[row][size3];
+    for (let k4 = row + 1; k4 < size3; k4++) sum -= rows[row][k4] * solution[k4];
+    solution[row] = sum / rows[row][row];
+  }
+  return solution;
+}
+function nodeVoltages(network, injections, withEmf, extra) {
+  const ground = network.second;
+  const row = /* @__PURE__ */ new Map();
+  for (let node = 0; node < network.nodes; node++) {
+    if (node !== ground) row.set(node, row.size);
+  }
+  const size3 = row.size;
+  const matrix = Array.from({ length: size3 }, () => new Array(size3).fill(0));
+  const rhs = new Array(size3).fill(0);
+  const add = (node, value) => {
+    const index2 = row.get(node);
+    if (index2 !== void 0) rhs[index2] += value;
+  };
+  const stamp = (element2) => {
+    const conductance = 1 / element2.resistance;
+    if (!Number.isFinite(conductance) || !(conductance > 0)) return;
+    const a7 = row.get(element2.a);
+    const b5 = row.get(element2.b);
+    if (a7 !== void 0) matrix[a7][a7] += conductance;
+    if (b5 !== void 0) matrix[b5][b5] += conductance;
+    if (a7 !== void 0 && b5 !== void 0) {
+      matrix[a7][b5] -= conductance;
+      matrix[b5][a7] -= conductance;
+    }
+    if (withEmf && element2.emf) {
+      add(element2.a, conductance * element2.emf);
+      add(element2.b, -conductance * element2.emf);
+    }
+  };
+  for (const element2 of network.elements) stamp(element2);
+  if (extra) stamp(extra);
+  for (const [node, value] of injections) add(node, value);
+  const solved = solveLinear(matrix, rhs);
+  if (!solved) return void 0;
+  const voltages = new Array(network.nodes).fill(0);
+  for (const [node, index2] of row) voltages[node] = solved[index2];
+  return voltages;
+}
+function circuitNetwork(first, second) {
+  const visited = [first];
+  for (let cursor = 0; cursor < visited.length; cursor++) {
+    for (const partner of visited[cursor]._connections) {
+      if (partner && !visited.includes(partner)) visited.push(partner);
+    }
+  }
+  if (!visited.includes(second)) return void 0;
+  const slots = /* @__PURE__ */ new Map();
+  const parent2 = [];
+  const slotOf = (device, terminal) => {
+    const key = `${device._id}:${terminal}`;
+    let index2 = slots.get(key);
+    if (index2 === void 0) {
+      index2 = slots.size;
+      slots.set(key, index2);
+      parent2.push(index2);
+    }
+    return index2;
+  };
+  const find = (index2) => {
+    let root = index2;
+    while (parent2[root] !== root) root = parent2[root];
+    while (parent2[index2] !== root) {
+      const next = parent2[index2];
+      parent2[index2] = root;
+      index2 = next;
+    }
+    return root;
+  };
+  const join = (a7, b5) => {
+    const rootA = find(a7);
+    const rootB = find(b5);
+    if (rootA !== rootB) parent2[rootB] = rootA;
+  };
+  for (const device of visited) {
+    for (let terminal = 0; terminal < device._conCount; terminal++) slotOf(device, terminal);
+  }
+  for (const device of visited) {
+    for (let terminal = 0; terminal < device._conCount; terminal++) {
+      const partner = device._connections[terminal];
+      if (!partner) continue;
+      const back = partner._connections.indexOf(device);
+      if (back < 0) continue;
+      join(slotOf(device, terminal), slotOf(partner, back));
+    }
+  }
+  for (const device of visited) {
+    if (Number.isFinite(device.resistance)) continue;
+    for (let terminal = 1; terminal < device._conCount; terminal++) {
+      join(slotOf(device, 0), slotOf(device, terminal));
+    }
+  }
+  const nodes = /* @__PURE__ */ new Map();
+  const nodeOf = (device, terminal) => {
+    const root = find(slotOf(device, terminal));
+    let index2 = nodes.get(root);
+    if (index2 === void 0) {
+      index2 = nodes.size;
+      nodes.set(root, index2);
+    }
+    return index2;
+  };
+  const elements2 = [];
+  for (const device of visited) {
+    if (device._conCount !== 2) continue;
+    const resistance = device.resistance;
+    if (!Number.isFinite(resistance) || !(resistance > 0)) continue;
+    const a7 = nodeOf(device, 0);
+    const b5 = nodeOf(device, 1);
+    if (a7 === b5) continue;
+    elements2.push({ device, a: a7, b: b5, resistance, emf: 0 });
+  }
+  return {
+    first: nodeOf(first, 0),
+    second: nodeOf(second, 0),
+    nodes: nodes.size,
+    elements: elements2
+  };
+}
+function circuitThevenin(network) {
+  const open = nodeVoltages(network, /* @__PURE__ */ new Map(), true);
+  if (!open) return void 0;
+  const driven = /* @__PURE__ */ new Map([[network.first, 1], [network.second, -1]]);
+  const loaded = nodeVoltages(network, driven, false);
+  if (!loaded) return void 0;
+  return {
+    voltage: open[network.first] - open[network.second],
+    resistance: loaded[network.first] - loaded[network.second]
+  };
+}
+function circuitReadings(network, cell) {
+  const injections = /* @__PURE__ */ new Map();
+  let branch;
+  if (cell.open) {
+    if (Number.isFinite(cell.emf)) {
+      branch = {
+        a: network.first,
+        b: network.second,
+        resistance: cell.resistance > 0 ? cell.resistance : 1,
+        emf: cell.emf
+      };
+    }
+  } else {
+    injections.set(network.first, -cell.current);
+    injections.set(network.second, cell.current);
+  }
+  const voltages = nodeVoltages(network, injections, true, branch);
+  if (!voltages) return void 0;
+  const readings = /* @__PURE__ */ new Map();
+  for (const element2 of network.elements) {
+    if (!element2.device) continue;
+    const voltage = voltages[element2.a] - voltages[element2.b];
+    readings.set(element2.device, {
+      voltage,
+      current: (voltage - element2.emf) / element2.resistance
+    });
+  }
+  return readings;
+}
+
 // chemlib/Simulation.ts
 var saltEquilibria = Object.entries(saltSolubility).map(([formula, data2]) => {
   const [cation, anion, cations = 1, anions = 1] = data2.ions;
@@ -150449,13 +150664,13 @@ var Simulation = class {
    * @static
    * @param {HalfCandidate[]} first - first electrode's half-reactions
    * @param {HalfCandidate[]} second - second electrode's half-reactions
-   * @param {number} voltage - how much the source raises the first terminal
-   * @param {number} resistance - external resistance in Ω
+   * @param {number} source - how much the source raises the first electrode above the second, in V
+   * @param {number} resistance - resistance of the whole loop in Ω
    * @param {CellLimits} limits - the open-circuit potentials to start from
    * @param {CellAreas} areas - the wetted area of both electrodes in cm²
    * @returns {(CellSolution | undefined)}
    */
-  static solveCurrent(first, second, voltage, resistance, limits2, areas) {
+  static solveCurrent(first, second, source3, resistance, limits2, areas) {
     let probedAt = NaN;
     let probedResidual = NaN;
     let probedSlope = NaN;
@@ -150475,7 +150690,7 @@ var Simulation = class {
         probedSlope = NaN;
         return;
       }
-      probedResidual = p1.potential - p22.potential + voltage + current2 * resistance;
+      probedResidual = p1.potential - p22.potential - source3 + current2 * resistance;
       probedSlope = 1 / (areas.first * p1.slope) + 1 / (areas.second * p22.slope) + resistance;
     };
     probe(0);
@@ -150508,7 +150723,7 @@ var Simulation = class {
    * current; the source fixes the difference of the potentials and the
    * resistance closes the loop:
    *
-   *   I₁(E₁) = I,  I₂(E₂) = −I,  E₁ − E₂ + U + I·R = 0
+   *   I₁(E₁) = I,  I₂(E₂) = −I,  E₁ − E₂ − U + I·R = 0
    *
    * Below the decomposition voltage the system has no root, because the model
    * has no double-layer capacitance: at I = 0 each electrode sits at the
@@ -150520,14 +150735,14 @@ var Simulation = class {
    * @static
    * @param {HalfCandidate[]} first - first electrode's half-reactions
    * @param {HalfCandidate[]} second - second electrode's half-reactions
-   * @param {number} voltage - how much the source raises the first terminal
-   * @param {number} resistance - external resistance in Ω
+   * @param {number} source - how much the source raises the first electrode above the second, in V
+   * @param {number} resistance - resistance of the whole loop in Ω
    * @param {boolean} ideal - a voltmeter draws no current
    * @param {CellLimits} limits - the one-sided limits of the cell
    * @param {CellAreas} areas - the wetted area of both electrodes in cm²
    * @returns {(CellSolution | undefined)}
    */
-  static solveCell(first, second, voltage, resistance, ideal, limits2, areas) {
+  static solveCell(first, second, source3, resistance, ideal, limits2, areas) {
     const a7 = this.mixedPotential(first);
     const b5 = this.mixedPotential(second);
     const idle = () => ({
@@ -150543,7 +150758,7 @@ var Simulation = class {
     }
     const open = limits2.openFirst - limits2.openSecond;
     if (!Number.isFinite(open)) {
-      if (!voltage && !Number.isFinite(a7.potential) && !Number.isFinite(b5.potential)) {
+      if (!source3 && !Number.isFinite(a7.potential) && !Number.isFinite(b5.potential)) {
         return {
           first: a7.guess,
           second: b5.guess,
@@ -150552,15 +150767,15 @@ var Simulation = class {
           secondCurrents: b5.currents
         };
       }
-      return this.solveCurrent(first, second, voltage, resistance, limits2, areas);
+      return this.solveCurrent(first, second, source3, resistance, limits2, areas);
     }
-    const anodic = open + voltage < 0;
-    const cathodic = open + voltage > 0;
+    const anodic = open - source3 < 0;
+    const cathodic = open - source3 > 0;
     if (!anodic && !cathodic) {
       if (!Number.isFinite(a7.potential) || !Number.isFinite(b5.potential)) return void 0;
       return idle();
     }
-    return this.solveCurrent(first, second, voltage, resistance, limits2, areas);
+    return this.solveCurrent(first, second, source3, resistance, limits2, areas);
   }
   /**
    * Solves a cell whose source sets the current instead of the voltage. The
@@ -150568,14 +150783,14 @@ var Simulation = class {
    * sits at the potential that density needs; the loop equation then says
    * which voltage the source has to apply to hold it:
    *
-   *   U = −(E₁ − E₂ + I·R)
+   *   U = E₁ − E₂ + I·R
    *
    * @private
    * @static
    * @param {HalfCandidate[]} first - first electrode's half-reactions
    * @param {HalfCandidate[]} second - second electrode's half-reactions
    * @param {number} current - the current to force, A; positive makes the first electrode the anode
-   * @param {number} resistance - external resistance in Ω
+   * @param {number} resistance - resistance of the whole loop in Ω
    * @param {CellLimits} limits - the open-circuit potentials to start from
    * @param {CellAreas} areas - the wetted area of both electrodes in cm²
    * @returns {({solution: CellSolution, voltage: number} | undefined)}
@@ -150594,7 +150809,7 @@ var Simulation = class {
         firstCurrents: p1.currents,
         secondCurrents: p22.currents
       },
-      voltage: -(p1.potential - p22.potential + current * resistance)
+      voltage: p1.potential - p22.potential + current * resistance
     };
   }
   /**
@@ -150616,10 +150831,26 @@ var Simulation = class {
     const magnitude2 = Math.abs(device._sourceVoltage ?? 0);
     if (device._polarity !== 0) {
       const plus = ComponentManager.terminalElectrode(device, device._polarity > 0 ? 0 : 1);
-      return plus === second ? magnitude2 : -magnitude2;
+      return plus === second ? -magnitude2 : magnitude2;
     }
     const open = limits2.openFirst - limits2.openSecond;
-    return Number.isFinite(open) && open >= 0 ? -magnitude2 : magnitude2;
+    return Number.isFinite(open) && open >= 0 ? magnitude2 : -magnitude2;
+  }
+  /**
+   * The EMF a source has to drive so that it raises the first electrode
+   * above the second by `voltage`. The EMF is written from the source's own
+   * first terminal, which may reach either electrode depending on how the
+   * leads were laid.
+   *
+   * @private
+   * @static
+   * @param {ElectricComponent} device - the source
+   * @param {ElectricComponent} first - first electrode
+   * @param {number} voltage - the voltage to raise the first electrode by, in V
+   * @returns {number}
+   */
+  static sourceEmf(device, first, voltage) {
+    return ComponentManager.terminalElectrode(device, 0) === first ? voltage : -voltage;
   }
   /**
    * The current a galvanostat forces, signed so that a positive value makes
@@ -150748,7 +150979,7 @@ var Simulation = class {
     const unsolved = () => {
       for (const device of sDevices) {
         device._visibleCurrent = null;
-        if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ || device._type === "source" /* Source */ && device._sourceMode === "current") {
+        if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ || device._type === "source" /* Source */) {
           device._visibleVoltage = null;
         }
       }
@@ -150765,33 +150996,69 @@ var Simulation = class {
       second: sElectrode2._area > 0 ? sElectrode2._area : ELECTRODE_AREA
     };
     const limits2 = this.cellLimits(first, second);
+    const network = circuitNetwork(sElectrode1, sElectrode2);
+    const thevenin = network ? circuitThevenin(network) : void 0;
+    if (!network || !thevenin) return unsolved();
+    const electrolyte = ELECTROLYTE_RESISTANCE + (options2.bridge ? BRIDGE_RESISTANCE : 0);
+    const resistance = thevenin.resistance + electrolyte;
     const source3 = sDevices.find((device) => device._type === "source" /* Source */);
-    const ideal = !source3 && sDevices.some((device) => device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage");
+    const ideal = !source3 && thevenin.resistance > OPEN_CIRCUIT_RESISTANCE && sDevices.some((device) => device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage");
     let solution;
     let applied = 0;
+    let limited = false;
     if (source3?._sourceMode === "current") {
       const wanted = this.sourceCurrent(source3, sElectrode1, sElectrode2, limits2);
-      const driven = this.solveGalvanostat(first, second, wanted, SERIES_RESISTANCE, limits2, areas);
+      const driven = this.solveGalvanostat(first, second, wanted, resistance, limits2, areas);
       if (!driven) return unsolved();
       const compliance = Math.abs(source3._complianceVoltage ?? 0);
       if (Math.abs(driven.voltage) > compliance) {
-        applied = driven.voltage > 0 ? compliance : -compliance;
-        solution = this.solveCell(first, second, applied, SERIES_RESISTANCE, false, limits2, areas);
+        const sign4 = driven.voltage > 0 ? 1 : -1;
+        let emf = sign4 * compliance;
+        for (let pass = 0; pass < 8; pass++) {
+          const probe = this.solveCell(first, second, emf, resistance, false, limits2, areas);
+          if (!probe) break;
+          const next = sign4 * compliance + probe.current * SOURCE_RESISTANCE;
+          if (Math.abs(next - emf) < 1e-7) break;
+          emf = next;
+        }
+        applied = emf;
+        solution = this.solveCell(first, second, applied, resistance, false, limits2, areas);
       } else {
         applied = driven.voltage;
         solution = driven.solution;
       }
     } else {
       applied = source3 ? this.sourceVoltage(source3, sElectrode1, sElectrode2, limits2) : 0;
-      solution = this.solveCell(first, second, applied, SERIES_RESISTANCE, ideal, limits2, areas);
+      solution = this.solveCell(first, second, applied, resistance, ideal, limits2, areas);
+      const limit = source3 ? Math.abs(source3._sourceCurrent ?? 0) : 0;
+      if (source3 && limit > 0 && solution && Math.abs(solution.current) > limit) {
+        const sign4 = solution.current > 0 ? 1 : -1;
+        const driven = this.solveGalvanostat(first, second, sign4 * limit, resistance, limits2, areas);
+        if (driven) {
+          applied = driven.voltage;
+          solution = driven.solution;
+          limited = true;
+        }
+      }
     }
     if (!solution) return unsolved();
+    if (source3) {
+      const element2 = network.elements.find((entry) => entry.device === source3);
+      if (element2) element2.emf = this.sourceEmf(source3, sElectrode1, applied);
+    }
+    const readings = circuitReadings(network, {
+      emf: solution.first - solution.second,
+      resistance: electrolyte,
+      current: solution.current,
+      open: ideal
+    });
     for (const device of sDevices) {
-      device._visibleCurrent = solution.current;
+      const reading2 = readings?.get(device);
+      device._visibleCurrent = reading2 ? reading2.current : null;
       if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage") {
-        device._visibleVoltage = Math.abs(solution.first - solution.second);
-      } else if (device._type === "source" /* Source */ && device._sourceMode === "current") {
-        device._visibleVoltage = Math.abs(applied);
+        device._visibleVoltage = reading2 ? Math.abs(reading2.voltage) : null;
+      } else if (device._type === "source" /* Source */) {
+        device._visibleVoltage = device._sourceMode === "current" ? reading2 ? Math.abs(reading2.voltage) : Math.abs(applied) : limited ? Math.abs(applied - solution.current * SOURCE_RESISTANCE) : null;
       }
     }
     this.applyElectrode(first, solution.firstCurrents, dt, areas.first);
@@ -176079,8 +176346,10 @@ var componentVariants = {
     // The same instrument at the full housing, for a bench that has room.
     { id: "source:large", type: "source", size: "gro\xDF", artboard: [206, 130] }
   ],
-  voltmeter: [{ id: "voltmeter:standard", type: "voltmeter", size: `${VOLTMETER_MODEL_CURRENT} A` }],
-  ammeter: [{ id: "ammeter:standard", type: "ammeter", size: `${AMMETER_MODEL_VOLTAGE} V` }],
+  // The label names the property that decides what the meter does to the
+  // circuit, which is the one thing that distinguishes the two instruments.
+  voltmeter: [{ id: "voltmeter:standard", type: "voltmeter", size: `${VOLTMETER_RESISTANCE / 1e6} M\u03A9` }],
+  ammeter: [{ id: "ammeter:standard", type: "ammeter", size: `${AMMETER_RESISTANCE} \u03A9` }],
   multimeter: [{ id: "multimeter:standard", type: "multimeter", size: "" }],
   bridge: [{ id: "bridge:standard", type: "bridge", size: "" }],
   gascollector: [{ id: "gascollector:standard", type: "gascollector", size: "" }],
@@ -182344,7 +182613,7 @@ var ElectricDeviceView = class extends Container {
     switch (component._type) {
       case "source" /* Source */:
         values = component._sourceMode === "current" ? [reading(component._visibleVoltage, "V"), currentReading(component._sourceCurrent)] : [
-          reading(component._sourceVoltage, "V"),
+          reading(component._visibleVoltage ?? component._sourceVoltage, "V"),
           currentReading(component._visibleCurrent ?? component._sourceCurrent)
         ];
         break;

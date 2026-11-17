@@ -23,7 +23,9 @@ export {
 	currentDensity,
 	REFERENCE_CURRENT_DENSITY,
 	ELECTRODE_AREA,
-	SERIES_RESISTANCE,
+	ELECTROLYTE_RESISTANCE,
+	BRIDGE_RESISTANCE,
+	OPEN_CIRCUIT_RESISTANCE,
 	GAS_PARTIAL_PRESSURE,
 } from './halfReactions'
 export type {HalfReaction, HalfReactionTerm} from './halfReactions'
@@ -31,3 +33,11 @@ export {MOLAR_GAS_VOLUME, MOLAR_GAS_VOLUME_ML} from './gasEvolution'
 export {canConnect, canPlug, connectDevices, connectionPairs, plugCable, restoreCables, restoreConnections} from './terminals'
 export type {ConnectionEntry} from './terminals'
 export type {CableEnd, TerminalSocket} from './ElectricComponent'
+export {
+	CABLE_RESISTANCE,
+	VOLTMETER_RESISTANCE,
+	AMMETER_RESISTANCE,
+	SOURCE_RESISTANCE,
+} from './ElectricComponent'
+export {circuitNetwork, circuitThevenin, circuitReadings} from './circuit'
+export type {CircuitElement, CircuitNetwork, CircuitReading} from './circuit'

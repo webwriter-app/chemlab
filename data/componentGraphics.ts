@@ -16,7 +16,7 @@ import separatingfunnel from "../media/separatingfunnel.svg";
 import condenser from "../media/condenser.svg";
 import fallback from "../media/default.svg";
 import cable from "../media/cable.svg";
-import { AMMETER_MODEL_VOLTAGE, VOLTMETER_MODEL_CURRENT, type CableEnd } from "../chemlib/ElectricComponent";
+import { AMMETER_RESISTANCE, VOLTMETER_RESISTANCE, type CableEnd } from "../chemlib/ElectricComponent";
 
 interface ComponentGraphic {
 	url: string;
@@ -168,8 +168,10 @@ export const componentVariants = {
 		// The same instrument at the full housing, for a bench that has room.
 		{ id: "source:large", type: "source", size: "groß", artboard: [206, 130] },
 	],
-	voltmeter: [{ id: "voltmeter:standard", type: "voltmeter", size: `${VOLTMETER_MODEL_CURRENT} A` }],
-	ammeter: [{ id: "ammeter:standard", type: "ammeter", size: `${AMMETER_MODEL_VOLTAGE} V` }],
+	// The label names the property that decides what the meter does to the
+	// circuit, which is the one thing that distinguishes the two instruments.
+	voltmeter: [{ id: "voltmeter:standard", type: "voltmeter", size: `${VOLTMETER_RESISTANCE / 1e6} MΩ` }],
+	ammeter: [{ id: "ammeter:standard", type: "ammeter", size: `${AMMETER_RESISTANCE} Ω` }],
 	multimeter: [{ id: "multimeter:standard", type: "multimeter", size: "" }],
 	bridge: [{ id: "bridge:standard", type: "bridge", size: "" }],
 	gascollector: [{ id: "gascollector:standard", type: "gascollector", size: "" }],
