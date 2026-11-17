@@ -1,8 +1,9 @@
-import { Container, Graphics, Rectangle, Sprite, Text, type Texture } from "pixi.js";
+import { CanvasSource, Container, DOMAdapter, Graphics, Rectangle, Sprite, Text, Texture } from "pixi.js";
 import { EComponentType, type ElectricComponent } from "../chemlib/ElectricComponent";
 import { ELECTRODE_AREA } from "../chemlib/halfReactions";
 import { MOLAR_GAS_VOLUME_ML } from "../chemlib/gasEvolution";
-import { componentTerminals, type TerminalPoint } from "../data/componentGraphics";
+import { componentTerminals, componentVariant, type TerminalPoint } from "../data/componentGraphics";
+import { AQUEOUS_FILL } from "./VesselView";
 
 function reading(value: number | null | undefined, unit: string): string {
 	return `${Number.isFinite(value) ? Number(value.toPrecision(4)) : "—"} ${unit}`;
@@ -26,27 +27,136 @@ function currentReading(value: number | null | undefined): string {
 
 /**
  * Bulk volume of metal that fills the electrode strip as a coating. The strip
- * measures 15 x 75 mm, so this is a layer of about 10 µm, which is already a
- * clearly visible plating after a minute at one ampere.
+ * is a gauge rather than a scale: a layer of about 4 µm is a plating that is
+ * already clearly visible after a minute at a few hundred milliamps, so that
+ * is what fills it. A thicker deposit keeps the strip full.
  */
-const PLATING_REFERENCE_LITRES = 1.125e-5;
+const PLATING_REFERENCE_LITRES = 1.8e-6;
+
+/**
+ * The thinnest band a deposit draws. The first metal to arrive is far below
+ * the reference thickness, and a coating that is invisible until it reaches a
+ * few percent would look like nothing happened.
+ */
+const PLATING_MIN_COVERAGE = 0.025;
+
+/**
+ * The drawn coating textures, one per metal colour. A deposit is a sprite
+ * scaled to its thickness, so the texture is built once and the per-frame
+ * work stays a transform instead of a geometry rebuild.
+ */
+const platingTextures = new Map<number, Texture>();
+
+/**
+ * Builds the look of a metal coating: a body that darkens towards the lower,
+ * older end, thin seams between growth layers, a specular streak down the
+ * left where the electrode graphic is lit, and a bright rim at the growth
+ * front. The colour comes from the metal, so copper, zinc and silver each
+ * read as themselves.
+ *
+ * @param {number} color - the metal colour as 0xRRGGBB
+ * @returns {Texture} the coating texture, cached per colour
+ */
+function platingTexture(color: number): Texture {
+	const cached = platingTextures.get(color);
+	if (cached) return cached;
+	const resolution = 3;
+	const width = 32;
+	const height = 128;
+	const canvas = DOMAdapter.get().createCanvas(width * resolution, height * resolution);
+	const context = canvas.getContext("2d");
+	context.scale(resolution, resolution);
+	const shade = (factor: number, alpha = 1) => {
+		const channel = (shift: number) =>
+			Math.min(255, Math.round(((color >> shift) & 0xff) * factor));
+		return `rgba(${channel(16)}, ${channel(8)}, ${channel(0)}, ${alpha})`;
+	};
+	// The deposit is seen through the solution, which pulls every colour
+	// towards its own blue. A dark, saturated body keeps the contrast against
+	// the pale electrode, and a highlight mixed towards white is the only
+	// thing that can still read as a sheen under that overlay.
+	const lighten = (amount: number, alpha = 1) => {
+		const channel = (shift: number) => {
+			const base = (color >> shift) & 0xff;
+			return Math.round(base + (255 - base) * amount);
+		};
+		return `rgba(${channel(16)}, ${channel(8)}, ${channel(0)}, ${alpha})`;
+	};
+	const body = context.createLinearGradient(0, 0, 0, height);
+	body.addColorStop(0, shade(0.95));
+	body.addColorStop(0.55, shade(0.74));
+	body.addColorStop(1, shade(0.56));
+	context.fillStyle = body;
+	context.fillRect(0, 0, width, height);
+	// Growth layers: a dark seam with a lit edge above it, the way a thick
+	// deposit builds up in steps.
+	for (let layer = 1; layer < 9; layer++) {
+		const y = height * layer / 9 + (layer * 37) % 11 - 5;
+		context.fillStyle = shade(0.45, 0.5);
+		context.fillRect(0, y, width, 1.4);
+		context.fillStyle = lighten(0.35, 0.35);
+		context.fillRect(0, y - 1.2, width, 1);
+	}
+	const streak = context.createLinearGradient(width * 0.12, 0, width * 0.42, 0);
+	streak.addColorStop(0, lighten(0.6, 0));
+	streak.addColorStop(0.5, lighten(0.6, 0.6));
+	streak.addColorStop(1, lighten(0.6, 0));
+	context.fillStyle = streak;
+	context.fillRect(width * 0.12, 0, width * 0.3, height);
+	const edge = context.createLinearGradient(width * 0.78, 0, width, 0);
+	edge.addColorStop(0, shade(0.4, 0));
+	edge.addColorStop(1, shade(0.4, 0.55));
+	context.fillStyle = edge;
+	context.fillRect(width * 0.78, 0, width * 0.22, height);
+	// Fresh metal at the growth front catches the light.
+	context.fillStyle = lighten(0.75, 0.85);
+	context.fillRect(0, 0, width, 2.6);
+	const texture = new Texture({
+		source: new CanvasSource({ resource: canvas, resolution, autoGenerateMipmaps: true }),
+	});
+	platingTextures.set(color, texture);
+	return texture;
+}
+
+/**
+ * The drawn interior of the gas collection tube, in artboard fractions of the
+ * 20 x 120 mm graphic: the glass wall is 1.2 mm thick, so the bore runs from
+ * 2.6 to 17.4 across and from 2.6 to 115.4 down, with the rounded closed top
+ * of 5.4 mm.
+ */
+const TUBE_BORE = { left: 2.6 / 20, right: 17.4 / 20, top: 2.6 / 120, bottom: 115.4 / 120, radius: 5.4 / 120 };
+
+/**
+ * Volume of that bore in millilitres, so the collected gas can be turned into
+ * a filling level. A 14.8 mm bore over 112.8 mm holds about 19.4 mL.
+ */
+const TUBE_VOLUME_ML = Math.PI * (14.8 / 2) ** 2 * 112.8 / 1000;
 
 export class ElectricDeviceView extends Container {
 	private lines: { text: Text; maxWidth: number }[] = [];
 	private indicator?: Graphics;
 	private active = false;
-	private measuredVoltage: number | null = null;
-	private coating?: Graphics;
+	private coating?: Sprite;
 	private strip?: { left: number; right: number; top: number; bottom: number };
 	private coatingKey = "";
+	/** the liquid column inside a gas collection tube, drawn behind the glass */
+	private tubeFill?: Graphics;
+	/** the drawn bore of the tube in local coordinates */
+	private tube?: { left: number; right: number; top: number; bottom: number; radius: number };
+	/** what the tube currently shows, so it is only redrawn on change */
+	private tubeKey = "";
 	/** the terminals of this device in local coordinates, empty if it has none */
 	private readonly terminals: TerminalPoint[];
 	/** the drawn size in world units, for the port marker radius */
 	private readonly artboard: { width: number; height: number };
-	/** the drawn terminal markers, created on first use */
+	/** the permanent terminal markers, created for a device that has terminals */
 	private portLayer?: Graphics;
 	/** what the port layer currently shows, so it is only redrawn on change */
 	private portKey = "";
+	/** whether the pointer rests on this device, which brightens its free plugs */
+	private portHover = false;
+	/** the terminal a dragged cable would land on, or -1 */
+	private portHighlight = -1;
 
 	constructor(readonly component: ElectricComponent, texture: Texture, width: number, height: number) {
 		super({ interactiveChildren: false });
@@ -55,9 +165,10 @@ export class ElectricDeviceView extends Container {
 		this.artboard = { width, height };
 		// The artboard coordinates of the terminals become local offsets from
 		// the sprite centre, which is where the texture is anchored.
-		this.terminals = componentTerminals(component._type).map(({ x, y }) => ({
+		this.terminals = componentTerminals(component._type).map(({ x, y, r }) => ({
 			x: width * (x - 0.5),
 			y: height * (y - 0.5),
+			r: height * (r ?? 0),
 		}));
 		const addLine = (x: number, y: number, fontSize: number, maxWidth: number) => {
 			const text = new Text({ anchor: 0.5, resolution: 3, eventMode: "none",
@@ -91,9 +202,19 @@ export class ElectricDeviceView extends Container {
 				addLine(0.5, 41 / 106, 0.17, 0.65);
 				break;
 			case EComponentType.GasCollector:
-				// The tube occupies the left half of the artboard; the reading
-				// sits beside it so it stays legible on a narrow sprite.
-				addLine(0.72, 0.5, 0.05, 0.5);
+				// The tube shows what it holds as a liquid column, so it needs
+				// no text of its own; the collected volume is in the panel.
+				this.tube = {
+					left: width * (TUBE_BORE.left - 0.5),
+					right: width * (TUBE_BORE.right - 0.5),
+					top: height * (TUBE_BORE.top - 0.5),
+					bottom: height * (TUBE_BORE.bottom - 0.5),
+					radius: height * TUBE_BORE.radius,
+				};
+				this.tubeFill = new Graphics({ eventMode: "none" });
+				// Behind the glass, so the outline, the graduation and the
+				// highlight stay on top of the liquid.
+				this.addChildAt(this.tubeFill, 0);
 				break;
 			case EComponentType.Label:
 				addLine(0.5, 0.5, 0.46, 0.9);
@@ -107,10 +228,16 @@ export class ElectricDeviceView extends Container {
 					top: height * (16 / 75 - 0.5),
 					bottom: height * (74.6 / 75 - 0.5),
 				};
-				this.coating = new Graphics({ eventMode: "none" });
+				this.coating = new Sprite({ anchor: { x: 0.5, y: 1 }, eventMode: "none", visible: false });
 				this.addChild(this.coating);
 				addLine(0.5, 10 / 75, 0.103, 0.72);
 				break;
+		}
+		// The plugs are permanent, so they sit above the graphic and above the
+		// coating an electrode carries.
+		if (this.terminals.length) {
+			this.portLayer = new Graphics({ eventMode: "none" });
+			this.addChild(this.portLayer);
 		}
 		this.refresh();
 	}
@@ -118,7 +245,6 @@ export class ElectricDeviceView extends Container {
 	setActive(active: boolean): void {
 		if (this.active === active) return;
 		this.active = active;
-		this.measuredVoltage = null;
 		if (this.indicator) this.indicator.tint = active ? 0x68d681 : 0x3b5255;
 		this.refresh();
 	}
@@ -168,45 +294,77 @@ export class ElectricDeviceView extends Container {
 	}
 
 	/**
-	 * Shows the terminal markers of this device. A device only shows the
-	 * terminals that are still free, so the marker doubles as a hint about
-	 * where another cable can go.
+	 * Draws the terminal markers of this device. They are permanent, so the
+	 * plugs of the graphic always read as the places a cable goes; a terminal
+	 * that already carries a cable is drawn dimmer, and the one a dragged
+	 * cable would land on is drawn in the accent colour.
 	 *
-	 * @param {number[]} free - the terminals without a cable
-	 * @param {number} [highlight] - a terminal to draw as the current target
+	 * @private
 	 */
-	showPorts(free: readonly number[], highlight = -1): void {
-		const key = `${free.join(",")}|${highlight}`;
+	private drawPorts(): void {
+		const layer = this.portLayer;
+		if (!layer) return;
+		const free = this.component.freeTerminals;
+		const key = `${free.join(",")}|${this.portHover}|${this.portHighlight}`;
 		if (key === this.portKey) return;
 		this.portKey = key;
-		if (!this.portLayer) {
-			this.portLayer = new Graphics({ eventMode: "none" });
-			this.addChild(this.portLayer);
-		}
-		const layer = this.portLayer;
 		layer.clear();
-		const radius = this.portRadius;
-		for (const terminal of free) {
-			const point = this.terminals[terminal];
-			if (!point) continue;
-			const active = terminal === highlight;
-			layer.circle(point.x, point.y, active ? radius * 1.35 : radius)
-				.fill({ color: active ? 0x0284c7 : 0xffffff, alpha: active ? 0.95 : 0.8 })
-				.stroke({ color: active ? 0x075985 : 0x334155, width: 0.5, alpha: 0.9 });
-		}
+		this.terminals.forEach((point, terminal) => {
+			const isFree = free.includes(terminal);
+			const active = terminal === this.portHighlight;
+			// The ring sits just outside the drawn post, so the plus and minus
+			// marks of the graphic stay readable under it.
+			const radius = (point.r ?? 0) + Math.max(0.7, this.portRadius * 0.35);
+			if (active) {
+				layer.circle(point.x, point.y, radius + 0.6)
+					.fill({ color: 0x0284c7, alpha: 0.35 })
+					.stroke({ color: 0x0284c7, width: 1.1, alpha: 0.95 });
+				return;
+			}
+			layer.circle(point.x, point.y, radius).stroke({
+				color: isFree ? 0xf1f4f5 : 0x263844,
+				width: isFree && this.portHover ? 1.3 : 1,
+				alpha: isFree ? (this.portHover ? 0.95 : 0.6) : 0.45,
+			});
+		});
 	}
 
 	/**
-	 * Hides the terminal markers again.
+	 * Marks the terminal a dragged cable would land on. The markers themselves
+	 * stay visible, so this only changes the emphasis.
+	 *
+	 * @param {number} [highlight=-1] - the terminal to draw as the target
 	 */
-	hidePorts(): void {
-		if (this.portKey === "") return;
-		this.portKey = "";
-		this.portLayer?.clear();
+	showPorts(highlight = -1): void {
+		this.portHighlight = highlight;
+		this.drawPorts();
 	}
 
-	refresh(hasVoltageReading?: boolean): boolean {
+	/**
+	 * Drops the target emphasis again. The markers stay, because they are part
+	 * of the device.
+	 */
+	hidePorts(): void {
+		this.portHighlight = -1;
+		this.drawPorts();
+	}
+
+	/**
+	 * Brightens the free plugs while the pointer rests on the device, which
+	 * hints that a cable can be pulled from them.
+	 *
+	 * @param {boolean} hovered - whether the pointer is on the device
+	 */
+	setPortHover(hovered: boolean): void {
+		if (this.portHover === hovered) return;
+		this.portHover = hovered;
+		this.drawPorts();
+	}
+
+	refresh(): boolean {
 		const component = this.component;
+		// A cable that was laid or removed changes which plugs are free.
+		this.drawPorts();
 		let values: string[];
 		switch (component._type) {
 			case EComponentType.Source:
@@ -219,10 +377,7 @@ export class ElectricDeviceView extends Container {
 						currentReading(component._visibleCurrent ?? component._sourceCurrent)];
 				break;
 			case EComponentType.Voltmeter:
-				if (hasVoltageReading !== undefined) {
-					this.measuredVoltage = this.active && hasVoltageReading ? component._visibleVoltage : null;
-				}
-				values = [reading(this.measuredVoltage, "V")];
+				values = [reading(component._visibleVoltage, "V")];
 				break;
 			case EComponentType.Ammeter:
 				// The LCD has two rows: the reading on top and its unit below,
@@ -230,23 +385,22 @@ export class ElectricDeviceView extends Container {
 				values = [magnitude(component._visibleCurrent), "A"];
 				break;
 			case EComponentType.Multimeter:
-				if (hasVoltageReading !== undefined) {
-					this.measuredVoltage = this.active && hasVoltageReading ? component._visibleVoltage : null;
-				}
 				values = [component._meterMode === "voltage"
-					? reading(this.measuredVoltage, "V")
+					? reading(component._visibleVoltage, "V")
 					: currentReading(component._visibleCurrent)];
 				break;
 			case EComponentType.GasCollector:
-				// The tube collects what has bubbled out of the vessel it
-				// stands in, reported as the volume at lab conditions.
-				values = [reading((component._connectedMix?.evolvedGasMol ?? 0) * MOLAR_GAS_VOLUME_ML, "mL")];
+				// The tube draws its contents instead of a reading.
+				values = [];
 				break;
 			case EComponentType.Label:
 				values = [component._labelText];
 				break;
 			case EComponentType.Electrode:
-				values = [component._material?._atoms[0]?.getSymbol() ?? ""];
+				// A metal strip is labelled with its element; a reference
+				// electrode has no material and carries its own short name.
+				values = [component._material?._atoms[0]?.getSymbol()
+					?? componentVariant(component._variantId)?.short ?? ""];
 				break;
 			default:
 				return false;
@@ -263,7 +417,64 @@ export class ElectricDeviceView extends Container {
 			if (text.width > maxWidth) text.scale.set(maxWidth / text.width);
 			changed = true;
 		});
-		return this.refreshCoating() || changed;
+		return this.refreshCoating() || this.refreshTube() || changed;
+	}
+
+	/**
+	 * Draws the liquid column inside a gas collection tube. The tube hangs in a
+	 * solution, so it starts full; the gas that bubbles up gathers at the
+	 * closed top and pushes the meniscus down, the same way a vessel shows its
+	 * filling.
+	 *
+	 * @private
+	 * @return {boolean} whether the drawing changed
+	 */
+	private refreshTube(): boolean {
+		const fill = this.tubeFill;
+		const tube = this.tube;
+		if (!fill || !tube) return false;
+		const mix = this.component._connectedMix;
+		const inSolution = !!mix?._isSolution;
+		const gasMl = (mix?.evolvedGasMol ?? 0) * MOLAR_GAS_VOLUME_ML;
+		const gasFraction = inSolution ? Math.max(0, Math.min(1, gasMl / TUBE_VOLUME_ML)) : 0;
+		const key = inSolution ? gasFraction.toFixed(4) : "";
+		if (key === this.tubeKey) return false;
+		this.tubeKey = key;
+		fill.clear();
+		if (!key) return true;
+
+		const { left, right, top, bottom, radius } = tube;
+		const surface = top + (bottom - top) * gasFraction;
+		const dome = top + radius;
+		// The closed top is rounded, so a surface inside the dome has to follow
+		// the corner arc instead of spanning the full bore.
+		const inset = (y: number) => radius - Math.sqrt(Math.max(0, radius * radius - (dome - y) ** 2));
+		const points: { x: number; y: number }[] = [{ x: left, y: bottom }];
+		if (surface < dome) {
+			const steps = 8;
+			points.push({ x: left, y: dome });
+			for (let step = 1; step <= steps; step++) {
+				const y = dome - (dome - surface) * (step / steps);
+				points.push({ x: left + inset(y), y });
+			}
+			for (let step = steps; step >= 0; step--) {
+				const y = dome - (dome - surface) * (step / steps);
+				points.push({ x: right - inset(y), y });
+			}
+		} else {
+			points.push({ x: left, y: surface }, { x: right, y: surface });
+		}
+		points.push({ x: right, y: bottom });
+		fill.poly(points).fill({ color: AQUEOUS_FILL.color, alpha: AQUEOUS_FILL.alpha });
+
+		// A water meniscus curves down in the middle, so the surface line bends
+		// away from the wall it touches.
+		const edge = surface < dome ? inset(surface) : 0;
+		const bend = Math.min((right - left - 2 * edge) * 0.08, 0.6);
+		fill.moveTo(left + edge, surface)
+			.quadraticCurveTo((left + right) / 2, surface + bend, right - edge, surface)
+			.stroke({ color: 0x287399, alpha: 0.8, width: 0.24 });
+		return true;
 	}
 
 	/**
@@ -284,18 +495,23 @@ export class ElectricDeviceView extends Container {
 		// with the area keeps the drawn thickness the real one.
 		const area = this.component._area > 0 ? this.component._area : ELECTRODE_AREA;
 		const reference = PLATING_REFERENCE_LITRES * area / ELECTRODE_AREA;
-		const coverage = plating ? Math.min(1, plating.litres / reference) : 0;
+		const coverage = plating
+			? Math.min(1, Math.max(PLATING_MIN_COVERAGE, plating.litres / reference))
+			: 0;
 		const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}` : "";
 		if (key === this.coatingKey) return false;
 		this.coatingKey = key;
-		coating.clear();
-		if (!plating || !key) return true;
+		if (!plating || !key) {
+			coating.visible = false;
+			return true;
+		}
 		const hex = plating.molecule._atoms[0]?.getCPKHEX();
 		const parsed = hex ? parseInt(hex, 16) : NaN;
-		const height = (strip.bottom - strip.top) * coverage;
-		coating.rect(strip.left, strip.bottom - height, strip.right - strip.left, height)
-			.fill({ color: Number.isFinite(parsed) ? parsed : 0x84949b, alpha: 0.88 })
-			.stroke({ color: 0x36515d, width: 0.6, alpha: 0.55 });
+		coating.texture = platingTexture(Number.isFinite(parsed) ? parsed : 0x84949b);
+		coating.position.set((strip.left + strip.right) / 2, strip.bottom);
+		coating.width = strip.right - strip.left;
+		coating.height = (strip.bottom - strip.top) * coverage;
+		coating.visible = true;
 		return true;
 	}
 }

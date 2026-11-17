@@ -10,6 +10,8 @@ import bridge from "../media/bridge.svg";
 import gascollector from "../media/gascollector.svg";
 import label from "../media/label.svg";
 import electrode from "../media/electrode.svg";
+import referenceShe from "../media/reference_she.svg";
+import referenceCalomel from "../media/reference_calomel.svg";
 import separatingfunnel from "../media/separatingfunnel.svg";
 import condenser from "../media/condenser.svg";
 import fallback from "../media/default.svg";
@@ -86,9 +88,9 @@ const fixedDimensions: Readonly<Partial<Record<string, DimensionsMm>>> = {
 	// for the vessels it joins.
 	bridge: [120, 60],
 	// A gas collection tube stands over an electrode and reaches above the
-	// vessel rim, like the graduated tube it models. The right half of the
-	// artboard carries the collected volume.
-	gascollector: [40, 120],
+	// vessel rim, like the graduated tube it models. The artboard is the tube
+	// itself, so the sprite centre is the axis the tube hangs on.
+	gascollector: [20, 120],
 	label: [100, 22],
 	cable: [CABLE_DIAMETER_MM, CABLE_DIAMETER_MM],
 	// Legacy components outside the palette.
@@ -106,6 +108,16 @@ export interface ComponentVariant {
 	material?: { element: string; name: string };
 	/** Artboard override in mm, for a variant that is the same device at another size. */
 	artboard?: DimensionsMm;
+	/** Graphic override, for a variant that is a different device of the same type. */
+	url?: string;
+	/** Short label drawn on the device itself, where the graphic has room for one. */
+	short?: string;
+	/**
+	 * Fixed electrode potential in V against the standard hydrogen electrode.
+	 * A reference electrode holds this potential instead of reacting, so it
+	 * carries no material and needs no vessel.
+	 */
+	reference?: number;
 }
 
 function capacities(type: keyof typeof vesselDimensions): ComponentVariant[] {
@@ -119,16 +131,27 @@ export const componentVariants = {
 	burette: capacities("burette"),
 	testtube: capacities("testtube"),
 	// Ordered from noble to base, so the carousel follows the
-	// electrochemical series and a neighbouring step is a small one.
+	// electrochemical series and a neighbouring step is a small one. The two
+	// reference electrodes close the list: they are electrodes that hold a
+	// potential instead of taking part in the reaction.
 	electrode: [
-		["carbon", "Graphit"], ["platinum", "Platin"], ["gold", "Gold"],
-		["silver", "Silber"], ["copper", "Kupfer"], ["lead", "Blei"],
-		["tin", "Zinn"], ["iron", "Eisen"], ["nickel", "Nickel"],
-		["cobalt", "Cobalt"], ["chromium", "Chrom"], ["zinc", "Zink"],
-		["aluminum", "Aluminium"], ["magnesium", "Magnesium"], ["antimony", "Antimon"],
-	].map(([element, name]): ComponentVariant => ({
-		id: `electrode:${element}`, type: "electrode", size: "", material: { element, name },
-	})),
+		...[
+			["carbon", "Graphit"], ["platinum", "Platin"], ["gold", "Gold"],
+			["silver", "Silber"], ["copper", "Kupfer"], ["lead", "Blei"],
+			["tin", "Zinn"], ["iron", "Eisen"], ["nickel", "Nickel"],
+			["cobalt", "Cobalt"], ["chromium", "Chrom"], ["zinc", "Zink"],
+			["aluminum", "Aluminium"], ["magnesium", "Magnesium"], ["antimony", "Antimon"],
+		].map(([element, name]): ComponentVariant => ({
+			id: `electrode:${element}`, type: "electrode", size: "", material: { element, name },
+		})),
+		// Standard hydrogen electrode: platinised platinum under 1 bar H2 in
+		// 1 mol/L H+, which defines the zero of the potential scale.
+		{ id: "electrode:she", type: "electrode", size: "SHE", short: "SHE",
+			url: referenceShe, reference: 0 },
+		// Saturated calomel electrode: Hg2Cl2 over mercury in saturated KCl.
+		{ id: "electrode:calomel", type: "electrode", size: "Kalomel", short: "KCl",
+			url: referenceCalomel, reference: 0.241 },
+	],
 	source: [
 		// The compact housing is the default, so a freshly placed source does
 		// not dwarf the vessels it drives.
@@ -172,7 +195,19 @@ const otherGraphics: Record<string, ComponentGraphic> = {
 	condenser: { url: condenser },
 };
 
-export function componentGraphic(type: string): ComponentGraphic {
+/**
+ * The graphic of a component. A variant may bring its own artboard, which is
+ * how the two reference electrodes share the electrode type with the metal
+ * strips while looking like the instruments they are.
+ *
+ * @export
+ * @param {string} type - the component type
+ * @param {string} [variantId] - the variant, when the caller knows it
+ * @returns {ComponentGraphic}
+ */
+export function componentGraphic(type: string, variantId?: string): ComponentGraphic {
+	const override = componentVariant(variantId)?.url;
+	if (override) return { url: override };
 	if (Object.hasOwnProperty.call(componentGraphics, type)) return componentGraphics[type];
 	if (Object.hasOwnProperty.call(otherGraphics, type)) return otherGraphics[type];
 	return { url: fallback };
@@ -189,17 +224,23 @@ export function componentGraphic(type: string): ComponentGraphic {
 export interface TerminalPoint {
 	x: number;
 	y: number;
+	/**
+	 * radius of the drawn binding post, as a fraction of the artboard height.
+	 * The marker ring is drawn around it, so the plug of the graphic stays
+	 * visible under the ring.
+	 */
+	r?: number;
 }
 
 // The posts are the coloured binding posts of the drawn front panels: the red
 // one is the plus pole and comes first, so terminal 0 is always plus.
 const terminalTable: Readonly<Record<string, readonly TerminalPoint[]>> = {
 	// PHYWE 13506-93: red post at (174, 108), black post at (191, 108) of 206 x 130.
-	source: [{ x: 174 / 206, y: 108 / 130 }, { x: 191 / 206, y: 108 / 130 }],
+	source: [{ x: 174 / 206, y: 108 / 130, r: 8 / 130 }, { x: 191 / 206, y: 108 / 130, r: 8 / 130 }],
 	// PeakTech P 205: red post at (30, 88), black post at (60, 88) of 90 x 106.
-	voltmeter: [{ x: 30 / 90, y: 88 / 106 }, { x: 60 / 90, y: 88 / 106 }],
-	ammeter: [{ x: 30 / 90, y: 88 / 106 }, { x: 60 / 90, y: 88 / 106 }],
-	multimeter: [{ x: 30 / 90, y: 88 / 106 }, { x: 60 / 90, y: 88 / 106 }],
+	voltmeter: [{ x: 30 / 90, y: 88 / 106, r: 8 / 106 }, { x: 60 / 90, y: 88 / 106, r: 8 / 106 }],
+	ammeter: [{ x: 30 / 90, y: 88 / 106, r: 8 / 106 }, { x: 60 / 90, y: 88 / 106, r: 8 / 106 }],
+	multimeter: [{ x: 30 / 90, y: 88 / 106, r: 8 / 106 }, { x: 60 / 90, y: 88 / 106, r: 8 / 106 }],
 	// The strip of the electrode graphic starts at y = 0.4 of 75; the cable
 	// clips onto the top of the strip, above the material label.
 	electrode: [{ x: 0.5, y: 0.02 }],
@@ -222,4 +263,7 @@ export const componentTextureUrls = [
 	fallback,
 	...Object.values(componentGraphics).map(({ url }) => url),
 	...Object.values(otherGraphics).map(({ url }) => url),
+	// Variant graphics are not part of the type table, so they are listed here
+	// to be loaded with the rest.
+	...Object.values(componentVariants).flat().flatMap((variant) => ("url" in variant && variant.url ? [variant.url] : [])),
 ];

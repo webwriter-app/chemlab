@@ -62,9 +62,27 @@ export function renderComponentPaletteIcon(variant: ComponentVariant, sizeFracti
 	let drawing;
 	switch (variant.type) {
 		case "electrode":
-			drawing = svg`
-				<path d="M33 7h14v46H33z" fill=${materialColors[variant.material?.element ?? "carbon"]}/>
-				<path d="M37 12v35" stroke="#f4f8fb" stroke-opacity="0.8"/>`;
+			// A reference electrode is a tube with a frit, not a metal strip.
+			// The hydrogen electrode shows its gas inlet and the platinum
+			// foil, the calomel one the paste and the mercury pool below it.
+			drawing = variant.reference === undefined
+				? svg`
+					<path d="M33 7h14v46H33z" fill=${materialColors[variant.material?.element ?? "carbon"]}/>
+					<path d="M37 12v35" stroke="#f4f8fb" stroke-opacity="0.8"/>`
+				: variant.reference === 0
+				? svg`
+					<path d="M32 9h16v37a8 8 0 0 1-16 0z" fill=${glass}/>
+					<path d="M32 9h16M32 41h16"/>
+					<path d="M40 4v9"/>
+					<path d="M35.5 9v19"/>
+					<path d="M37.5 20h6v11h-6z" fill="#c7ccd8"/>`
+				: svg`
+					<path d="M32 9h16v37a8 8 0 0 1-16 0z" fill=${glass}/>
+					<path d="M32 9h16M32 41h16"/>
+					<path d="M40 4v9"/>
+					<path d="M36.5 13h7v18a3.5 3.5 0 0 1-7 0z"/>
+					<path d="M36.5 20h7v5h-7z" fill="#eef2f7"/>
+					<path d="M36.5 25h7v6a3.5 3.5 0 0 1-7 0z" fill="#8d99a6"/>`;
 			break;
 		case "voltmeter":
 			drawing = meter("m34 22 6 10 6-10");

@@ -973,7 +973,7 @@ export class ChemLab extends LitElementWw {
 			this.canvas.refreshDeviceDisplay(circuitComps[1]);
 			this.diagrams.appendEChemPoint(source, circuitComps);
 		}
-		this.canvas.refreshDeviceDisplay(source, !!circuitComps);
+		this.canvas.refreshDeviceDisplay(source);
 	}
 
 	private operatingCircuit(device: chemlib.ElectricComponent): chemlib.ElectricComponent[] | undefined {
@@ -1006,6 +1006,21 @@ export class ChemLab extends LitElementWw {
 		// the ammeter shows a magnitude and the Faraday rate needs one.
 		return this.simulation.hasTask(ticker) && this.operatingCircuit(source)
 			? Math.abs(source._visibleCurrent ?? 0) : 0;
+	}
+
+	/**
+	 * Clears the readings a stopped experiment left behind. The cell solve
+	 * writes the voltage and the current of every device in the circuit, not
+	 * only of the one that was switched on, so the meters would otherwise keep
+	 * showing the last value they saw.
+	 */
+	private clearEChemReadings(): void {
+		for (const device of this.allEComponents) {
+			if (device._visibleVoltage === null && device._visibleCurrent === null) continue;
+			device._visibleVoltage = null;
+			device._visibleCurrent = null;
+			this.canvas.refreshDeviceDisplay(device);
+		}
 	}
 
 	get canAuthor(): boolean {
@@ -1164,6 +1179,7 @@ export class ChemLab extends LitElementWw {
 			nSourceCurrent: type === chemlib.EComponentType.Source && this.canAuthor ? 0 : undefined,
 		});
 		device._variantId = variantId;
+		if (variant.reference !== undefined) device._reference = variant.reference;
 		return device;
 	}
 
@@ -1209,6 +1225,7 @@ export class ChemLab extends LitElementWw {
 				const device = chemlib.ComponentManager.newElectricComponent(type as chemlib.EComponentType);
 				device._variantId = variantId;
 				if (material) device._material = this.newElectrodeMaterial(material);
+				if (variant.reference !== undefined) device._reference = variant.reference;
 				this.allEComponents.push(device);
 				component = device;
 			}
@@ -1220,6 +1237,9 @@ export class ChemLab extends LitElementWw {
 		const entry = {
 			type, variantId, pos: [position.x, position.y], capacityMl, vol: 0, content: "",
 			voltage: 0, current: 0, material: "", connections: [], labelText: "",
+			// A reference electrode brings its potential with it, so the
+			// authored entry has to carry it or the restore loses it.
+			reference: variant.reference,
 		};
 		this.availableComponents = [...this.availableComponents, entry];
 		this._loadComponents(entry);
@@ -2226,7 +2246,7 @@ export class ChemLab extends LitElementWw {
 		if ((component._type !== Source && component._type !== Voltmeter &&
 			component._type !== Ammeter && component._type !== Multimeter) ||
 			this.operatingCircuit(component)) return;
-		if (component._type === Voltmeter || component._type === Multimeter) component._visibleVoltage = 0;
+		if (component._type === Voltmeter || component._type === Multimeter) component._visibleVoltage = null;
 		component._visibleCurrent = null;
 		const label = `${component._type}:${component._id}`;
 		const ticker = "echem" + label;
@@ -2445,6 +2465,9 @@ export class ChemLab extends LitElementWw {
 		if (!cable) return false;
 		this.allEComponents.push(cable);
 		this.canvas.addComponentView(cable, false);
+		// The plugs of both devices change from free to occupied.
+		this.canvas.refreshDeviceDisplay(from);
+		this.canvas.refreshDeviceDisplay(to);
 		if (!authored) return true;
 		this.syncAuthoredConnections(from);
 		this.syncAuthoredConnections(to);
@@ -2520,6 +2543,9 @@ export class ChemLab extends LitElementWw {
 		if (message === "") {
 			this.syncAuthoredConnections(component);
 			this.syncAuthoredConnections(partner);
+			// The freed plug has to read as free again.
+			this.canvas.refreshDeviceDisplay(component);
+			this.canvas.refreshDeviceDisplay(partner);
 			this._sendxAPiStatement(
 				"removed",
 				"eCon " + component._type + component._id,
@@ -3333,8 +3359,12 @@ export class ChemLab extends LitElementWw {
 			const other = cable._connections.find(end => end && end !== device);
 			return other ? [{ cable, other }] : [];
 		});
-		const materials = this.canAuthor && device._type === Electrode ? componentVariants.electrode : [];
-		const material = materials.find(variant => variant.material.name === device._material?.name);
+		// A reference electrode is a variant without a material, so the list
+		// only offers the metal strips.
+		const materials = this.canAuthor && device._type === Electrode
+			? componentVariants.electrode.filter(variant => variant.material)
+			: [];
+		const material = materials.find(variant => variant.material?.name === device._material?.name);
 		const hasSource = device._type === Source;
 		const hasMeter = device._type === chemlib.EComponentType.Multimeter;
 		const hasLabel = device._type === chemlib.EComponentType.Label;
@@ -3448,7 +3478,7 @@ export class ChemLab extends LitElementWw {
 							this._sendxAPiStatement("submitted", `ElectrodeMaterlial ${formula}:${device._id}`);
 						}}>
 						<option value="" ?selected=${!material} disabled>${device._material ? this.itemName(device._material.name) : this.message("kein Material")}</option>
-						${materials.map(variant => html`<option value=${variant.id} ?selected=${variant === material}>${this.message(variant.material.name)}</option>`)}
+						${materials.map(variant => html`<option value=${variant.id} ?selected=${variant === material}>${this.message(variant.material?.name ?? "")}</option>`)}
 					</select></label>` : nothing}
 				${connections.length ? html`
 					<div class="connection-list">
@@ -3549,6 +3579,7 @@ export class ChemLab extends LitElementWw {
 									"echem" +
 										this.curr_name
 								);
+								this.clearEChemReadings();
 								this._updatePopup();
 								this._sendxAPiStatement(
 									"completed",

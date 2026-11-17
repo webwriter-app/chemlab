@@ -176,11 +176,14 @@ class ElectricComponent {
 	 */
 	_variantId?: string;
 	/**
-	 * for voltmeter: the indicated voltage
+	 * for voltmeters, multimeters in voltage mode and sources in current mode:
+	 * the voltage the cell solve found, in volt. `null` until the cell has been
+	 * solved once, so a meter that is not in a running circuit shows a dash
+	 * instead of a zero it never measured.
 	 *
-	 * @type {number}
+	 * @type {(number | null)}
 	 */
-	_visibleVoltage: number | null;
+	_visibleVoltage: number | null = null;
 	/**
 	 * for sources and ammeters: the current the cell solve found, in ampere.
 	 * `null` until the cell has been solved once.
@@ -240,7 +243,6 @@ class ElectricComponent {
 			case EComponentType.Voltmeter:
 				this._conCount = 2;
 				this._sourceCurrent = VOLTMETER_MODEL_CURRENT;
-				this._visibleVoltage = 0;
 				break;
 			case EComponentType.Ammeter:
 				this._conCount = 2;
@@ -248,7 +250,6 @@ class ElectricComponent {
 				break;
 			case EComponentType.Multimeter:
 				this._conCount = 2;
-				this._visibleVoltage = 0;
 				break;
 			case EComponentType.Cable:
 				this._conCount = 2;

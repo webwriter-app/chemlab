@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="150" viewBox="0 0 15 75">
+  <defs>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#b9d3de"/><stop offset=".3" stop-color="#f4fafc"/><stop offset=".72" stop-color="#d5e6ec"/><stop offset="1" stop-color="#a6c0cc"/>
+    </linearGradient>
+    <linearGradient id="acid" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#a8cbd9"/><stop offset=".45" stop-color="#dceef4"/><stop offset="1" stop-color="#9dc0d0"/>
+    </linearGradient>
+    <linearGradient id="platinum" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#5f6d76"/><stop offset=".34" stop-color="#e4ecf0"/><stop offset=".62" stop-color="#aab7be"/><stop offset="1" stop-color="#6b7982"/>
+    </linearGradient>
+  </defs>
+  <rect x="1.5" y="4" width="12" height="12" rx="1" fill="#f1f5f5" stroke="#76919b" stroke-width=".45"/>
+  <path d="M2.6 16h9.8v51.5a2.5 2.5 0 0 1-2.5 2.5H5.1a2.5 2.5 0 0 1-2.5-2.5z" fill="url(#glass)" stroke="#36515d" stroke-width=".8"/>
+  <path d="M3.4 24h8.2v38.8H3.4z" fill="url(#acid)"/>
+  <path d="M3.4 24h8.2" stroke="#7fa8b8" stroke-width=".4"/>
+  <path d="M4.4 16v24" stroke="#7d949e" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M4.4 16v24" stroke="#eef6f9" stroke-width=".55" stroke-linecap="round"/>
+  <path d="M8.5 16v11" stroke="#6b7982" stroke-width="1.2"/>
+  <path d="M8.5 16v11" stroke="#eef3f5" stroke-width=".4"/>
+  <path d="M6.6 27h3.8v21H6.6z" fill="url(#platinum)" stroke="#4a5a63" stroke-width=".45"/>
+  <circle cx="5.6" cy="42.5" r=".85" fill="#f7fbfd" stroke="#7fa8b8" stroke-width=".3"/>
+  <circle cx="6.5" cy="46.4" r=".7" fill="#f7fbfd" stroke="#7fa8b8" stroke-width=".3"/>
+  <circle cx="5.2" cy="50.2" r=".55" fill="#f7fbfd" stroke="#7fa8b8" stroke-width=".3"/>
+  <path d="M2.6 63.4h9.8v3.6H2.6z" fill="#c3cfd4" stroke="#6d858f" stroke-width=".45"/>
+  <path d="M3.4 64.2h1.2m1.4 0h1.2m1.4 0h1.2m1.4 0h1.2" stroke="#7d949e" stroke-width=".4"/>
+  <path d="M4 19v43" stroke="#f7fcfd" stroke-width=".5" stroke-opacity=".85"/>
+</svg>

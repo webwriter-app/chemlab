@@ -59,6 +59,13 @@ function circularSegment(cut: number): number {
 	return (Math.acos(cut) - cut * Math.sqrt(1 - cut * cut)) / Math.PI;
 }
 
+/**
+ * Tint of an aqueous filling. The gas collection tube draws its liquid column
+ * with the same colour, so a tube hanging in a vessel reads as the same
+ * solution.
+ */
+export const AQUEOUS_FILL = { color: 0x4592b7, alpha: 0.55 };
+
 export class VesselView extends Container {
 	/** max particles animated per vessel, keeps small mixtures cheap */
 	private static readonly MAX_PARTICLES = 70;
@@ -70,8 +77,7 @@ export class VesselView extends Container {
 	/** upward acceleration and speed limit of a gas bubble */
 	private static readonly BUBBLE_RISE = 26;
 	private static readonly BUBBLE_TERMINAL = 9;
-	/** tint of the aqueous phase and of water-immiscible organic liquids */
-	private static readonly AQUEOUS = { color: 0x4592b7, alpha: 0.55 };
+	/** tint of water-immiscible organic liquids */
 	private static readonly NONPOLAR = { color: 0xcbb984, alpha: 0.6 };
 
 	private fillShape = new Graphics({ eventMode: "none" });
@@ -230,7 +236,7 @@ export class VesselView extends Container {
 		this.liquidLayers = phaseVolume > 0
 			? [...phases].sort((left, right) => right.density - left.density).map((phase) => ({
 					fraction: phase.volume / phaseVolume,
-					...(phase.nonpolar ? VesselView.NONPOLAR : VesselView.AQUEOUS),
+					...(phase.nonpolar ? VesselView.NONPOLAR : AQUEOUS_FILL),
 				}))
 			: [];
 		if (hint === "pour" && liquid) {
@@ -481,7 +487,7 @@ export class VesselView extends Container {
 				cumulative += layers[index].fraction;
 			}
 		} else {
-			this.fillShape.poly(submerged).fill(liquid ? { color: VesselView.AQUEOUS.color, alpha: VesselView.AQUEOUS.alpha } : { color: 0x827d6f, alpha: 0.72 });
+			this.fillShape.poly(submerged).fill(liquid ? { color: AQUEOUS_FILL.color, alpha: AQUEOUS_FILL.alpha } : { color: 0x827d6f, alpha: 0.72 });
 		}
 		if (sediment > 0) {
 			const floor = this.surfaceAt(sediment, Math.min(...depths), Math.max(...depths), sin, cos);

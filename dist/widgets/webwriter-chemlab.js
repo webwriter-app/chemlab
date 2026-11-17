@@ -111019,11 +111019,14 @@ var ElectricComponent = class {
    */
   _variantId;
   /**
-   * for voltmeter: the indicated voltage
+   * for voltmeters, multimeters in voltage mode and sources in current mode:
+   * the voltage the cell solve found, in volt. `null` until the cell has been
+   * solved once, so a meter that is not in a running circuit shows a dash
+   * instead of a zero it never measured.
    *
-   * @type {number}
+   * @type {(number | null)}
    */
-  _visibleVoltage;
+  _visibleVoltage = null;
   /**
    * for sources and ammeters: the current the cell solve found, in ampere.
    * `null` until the cell has been solved once.
@@ -111072,7 +111075,6 @@ var ElectricComponent = class {
       case "voltmeter" /* Voltmeter */:
         this._conCount = 2;
         this._sourceCurrent = VOLTMETER_MODEL_CURRENT;
-        this._visibleVoltage = 0;
         break;
       case "ammeter" /* Ammeter */:
         this._conCount = 2;
@@ -111080,7 +111082,6 @@ var ElectricComponent = class {
         break;
       case "multimeter" /* Multimeter */:
         this._conCount = 2;
-        this._visibleVoltage = 0;
         break;
       case "cable" /* Cable */:
         this._conCount = 2;
@@ -175823,13 +175824,19 @@ var multimeter_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/
 var bridge_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="120" viewBox="0 0 120 60">%0A  <path d="M15 58V18a10 10 0 0 1 10-10h70a10 10 0 0 1 10 10v40" fill="none" stroke="%234a6b78" stroke-width="13"/>%0A  <path d="M15 58V18a10 10 0 0 1 10-10h70a10 10 0 0 1 10 10v40" fill="none" stroke="%23dceff5" stroke-width="10"/>%0A  <path d="M15 58V18a10 10 0 0 1 10-10h70a10 10 0 0 1 10 10v40" fill="none" stroke="%23f4fbfd" stroke-width="2.4" stroke-dasharray="26 8"/>%0A  <ellipse cx="15" cy="55" rx="5" ry="3.4" fill="%23f2efe4" stroke="%234a6b78" stroke-width="1.1"/>%0A  <ellipse cx="105" cy="55" rx="5" ry="3.4" fill="%23f2efe4" stroke="%234a6b78" stroke-width="1.1"/>%0A</svg>%0A';
 
 // media/gascollector.svg
-var gascollector_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="240" viewBox="0 0 40 120">%0A  <path d="M2 116V8a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v108" fill="%23dceff5" stroke="%234a6b78" stroke-width="1.2"/>%0A  <path d="M5 14v96" stroke="%23f4fbfd" stroke-width="1.6"/>%0A  <g stroke="%234a6b78" stroke-width=".7">%0A    <path d="M12 20h5m-5 10h3m-3 10h5m-5 10h3m-3 10h5m-5 10h3m-3 10h5m-5 10h3m-3 10h5"/>%0A  </g>%0A  <path d="M2 116h16" stroke="%234a6b78" stroke-width="1.6"/>%0A</svg>%0A';
+var gascollector_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="240" viewBox="0 0 20 120">%0A  <path d="M2 116V8a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v108" fill="none" stroke="%234a6b78" stroke-width="1.2"/>%0A  <path d="M5 14v96" stroke="%23f4fbfd" stroke-width="1.6"/>%0A  <g stroke="%234a6b78" stroke-width=".7">%0A    <path d="M12 20h5m-5 10h3m-3 10h5m-5 10h3m-3 10h5m-5 10h3m-3 10h5m-5 10h3m-3 10h5"/>%0A  </g>%0A  <path d="M2 116h16" stroke="%234a6b78" stroke-width="1.6"/>%0A</svg>%0A';
 
 // media/label.svg
 var label_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="44" viewBox="0 0 100 22">%0A  <rect x=".8" y=".8" width="98.4" height="20.4" rx="3" fill="%23f4f7f8" fill-opacity=".92" stroke="%237d949e" stroke-width="1.1"/>%0A  <path d="M6 6h30" stroke="%23b9c9d0" stroke-width="1.4" stroke-linecap="round"/>%0A</svg>%0A';
 
 // media/electrode.svg
 var electrode_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="150" viewBox="0 0 15 75">%0A  <defs><linearGradient id="metal"><stop stop-color="%2384949b"/><stop offset=".37" stop-color="%23e5eef0"/><stop offset=".7" stop-color="%23bdcbd0"/><stop offset="1" stop-color="%23879ba4"/></linearGradient></defs>%0A  <path d="M.4.4h14.2v74.2H.4z" fill="url(%23metal)" stroke="%2336515d" stroke-width=".8"/>%0A  <path d="M2.5 20v50" stroke="%23f0f5f6" stroke-width=".55"/>%0A  <rect x="1.5" y="4" width="12" height="12" rx="1" fill="%23f1f5f5" stroke="%2376919b" stroke-width=".45"/>%0A</svg>%0A';
+
+// media/reference_she.svg
+var reference_she_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="150" viewBox="0 0 15 75">%0A  <defs>%0A    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%23b9d3de"/><stop offset=".3" stop-color="%23f4fafc"/><stop offset=".72" stop-color="%23d5e6ec"/><stop offset="1" stop-color="%23a6c0cc"/>%0A    </linearGradient>%0A    <linearGradient id="acid" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%23a8cbd9"/><stop offset=".45" stop-color="%23dceef4"/><stop offset="1" stop-color="%239dc0d0"/>%0A    </linearGradient>%0A    <linearGradient id="platinum" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%235f6d76"/><stop offset=".34" stop-color="%23e4ecf0"/><stop offset=".62" stop-color="%23aab7be"/><stop offset="1" stop-color="%236b7982"/>%0A    </linearGradient>%0A  </defs>%0A  <rect x="1.5" y="4" width="12" height="12" rx="1" fill="%23f1f5f5" stroke="%2376919b" stroke-width=".45"/>%0A  <path d="M2.6 16h9.8v51.5a2.5 2.5 0 0 1-2.5 2.5H5.1a2.5 2.5 0 0 1-2.5-2.5z" fill="url(%23glass)" stroke="%2336515d" stroke-width=".8"/>%0A  <path d="M3.4 24h8.2v38.8H3.4z" fill="url(%23acid)"/>%0A  <path d="M3.4 24h8.2" stroke="%237fa8b8" stroke-width=".4"/>%0A  <path d="M4.4 16v24" stroke="%237d949e" stroke-width="1.6" stroke-linecap="round"/>%0A  <path d="M4.4 16v24" stroke="%23eef6f9" stroke-width=".55" stroke-linecap="round"/>%0A  <path d="M8.5 16v11" stroke="%236b7982" stroke-width="1.2"/>%0A  <path d="M8.5 16v11" stroke="%23eef3f5" stroke-width=".4"/>%0A  <path d="M6.6 27h3.8v21H6.6z" fill="url(%23platinum)" stroke="%234a5a63" stroke-width=".45"/>%0A  <circle cx="5.6" cy="42.5" r=".85" fill="%23f7fbfd" stroke="%237fa8b8" stroke-width=".3"/>%0A  <circle cx="6.5" cy="46.4" r=".7" fill="%23f7fbfd" stroke="%237fa8b8" stroke-width=".3"/>%0A  <circle cx="5.2" cy="50.2" r=".55" fill="%23f7fbfd" stroke="%237fa8b8" stroke-width=".3"/>%0A  <path d="M2.6 63.4h9.8v3.6H2.6z" fill="%23c3cfd4" stroke="%236d858f" stroke-width=".45"/>%0A  <path d="M3.4 64.2h1.2m1.4 0h1.2m1.4 0h1.2m1.4 0h1.2" stroke="%237d949e" stroke-width=".4"/>%0A  <path d="M4 19v43" stroke="%23f7fcfd" stroke-width=".5" stroke-opacity=".85"/>%0A</svg>%0A';
+
+// media/reference_calomel.svg
+var reference_calomel_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="150" viewBox="0 0 15 75">%0A  <defs>%0A    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%23b9d3de"/><stop offset=".3" stop-color="%23f4fafc"/><stop offset=".72" stop-color="%23d5e6ec"/><stop offset="1" stop-color="%23a6c0cc"/>%0A    </linearGradient>%0A    <linearGradient id="kcl" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%239dc0d0"/><stop offset=".45" stop-color="%23d8ebf1"/><stop offset="1" stop-color="%2393b6c7"/>%0A    </linearGradient>%0A    <linearGradient id="mercury" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%234a545b"/><stop offset=".38" stop-color="%23a3adb3"/><stop offset="1" stop-color="%235b656c"/>%0A    </linearGradient>%0A  </defs>%0A  <rect x="1.5" y="4" width="12" height="12" rx="1" fill="%23f1f5f5" stroke="%2376919b" stroke-width=".45"/>%0A  <path d="M2.6 16h9.8v51.5a2.5 2.5 0 0 1-2.5 2.5H5.1a2.5 2.5 0 0 1-2.5-2.5z" fill="url(%23glass)" stroke="%2336515d" stroke-width=".8"/>%0A  <path d="M3.4 19h8.2v43.8H3.4z" fill="url(%23kcl)"/>%0A  <path d="M3.4 19h8.2" stroke="%237fa8b8" stroke-width=".4"/>%0A  <path d="M5.4 18h4.2v30.2a2.1 2.1 0 0 1-4.2 0z" fill="%23eef5f8" stroke="%236d858f" stroke-width=".5"/>%0A  <path d="M5.4 30h4.2v9.4H5.4z" fill="%23dfe6e9" stroke="%238b9ba3" stroke-width=".35"/>%0A  <path d="M5.9 32.2h3.2m-3.2 2.2h3.2m-3.2 2.2h3.2" stroke="%23aebbc2" stroke-width=".35"/>%0A  <path d="M5.4 39.4h4.2v6.7a2.1 2.1 0 0 1-4.2 0z" fill="url(%23mercury)" stroke="%233f4950" stroke-width=".4"/>%0A  <path d="M7.5 8v32.5" stroke="%236b7982" stroke-width="1.2"/>%0A  <path d="M7.5 8v32.5" stroke="%23eef3f5" stroke-width=".4"/>%0A  <path d="M2.6 63.4h9.8v3.6H2.6z" fill="%23c3cfd4" stroke="%236d858f" stroke-width=".45"/>%0A  <path d="M3.4 64.2h1.2m1.4 0h1.2m1.4 0h1.2m1.4 0h1.2" stroke="%237d949e" stroke-width=".4"/>%0A  <path d="M4 19v43" stroke="%23f7fcfd" stroke-width=".5" stroke-opacity=".8"/>%0A</svg>%0A';
 
 // media/separatingfunnel.svg
 var separatingfunnel_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="90" height="235" viewBox="0 0 90 235">%0A  <path d="M35 16v24C35 62 1 71 1 102c0 27 17 40 32 55l8 16v10h8v-10l8-16c15-15 32-28 32-55 0-31-34-40-34-62V16" fill="%23e8f7fb" fill-opacity=".25" stroke="%23325664" stroke-width="1.4"/>%0A  <path d="M34 1h22l-3 16H37Z" fill="%23dde7ec" stroke="%23325664" stroke-width="1.4"/>%0A  <path d="M8 100c0-17 12-27 23-38m51 38c0-17-12-27-23-38" fill="none" stroke="%2388aeb9" stroke-width="1"/>%0A  <path d="M42 190h6v44h-6z" fill="%23e8f7fb" fill-opacity=".3" stroke="%23325664" stroke-width="1.2"/>%0A  <rect x="30" y="182" width="30" height="10" rx="3" fill="%23cedce2" stroke="%23325664" stroke-width="1.4"/>%0A  <path d="M60 181v12" stroke="%23a84438" stroke-width="3" stroke-linecap="round"/>%0A</svg>%0A';
@@ -175897,9 +175904,9 @@ var fixedDimensions = {
   // for the vessels it joins.
   bridge: [120, 60],
   // A gas collection tube stands over an electrode and reaches above the
-  // vessel rim, like the graduated tube it models. The right half of the
-  // artboard carries the collected volume.
-  gascollector: [40, 120],
+  // vessel rim, like the graduated tube it models. The artboard is the tube
+  // itself, so the sprite centre is the axis the tube hangs on.
+  gascollector: [20, 120],
   label: [100, 22],
   cable: [CABLE_DIAMETER_MM, CABLE_DIAMETER_MM],
   // Legacy components outside the palette.
@@ -175917,29 +175924,52 @@ var componentVariants = {
   burette: capacities("burette"),
   testtube: capacities("testtube"),
   // Ordered from noble to base, so the carousel follows the
-  // electrochemical series and a neighbouring step is a small one.
+  // electrochemical series and a neighbouring step is a small one. The two
+  // reference electrodes close the list: they are electrodes that hold a
+  // potential instead of taking part in the reaction.
   electrode: [
-    ["carbon", "Graphit"],
-    ["platinum", "Platin"],
-    ["gold", "Gold"],
-    ["silver", "Silber"],
-    ["copper", "Kupfer"],
-    ["lead", "Blei"],
-    ["tin", "Zinn"],
-    ["iron", "Eisen"],
-    ["nickel", "Nickel"],
-    ["cobalt", "Cobalt"],
-    ["chromium", "Chrom"],
-    ["zinc", "Zink"],
-    ["aluminum", "Aluminium"],
-    ["magnesium", "Magnesium"],
-    ["antimony", "Antimon"]
-  ].map(([element2, name2]) => ({
-    id: `electrode:${element2}`,
-    type: "electrode",
-    size: "",
-    material: { element: element2, name: name2 }
-  })),
+    ...[
+      ["carbon", "Graphit"],
+      ["platinum", "Platin"],
+      ["gold", "Gold"],
+      ["silver", "Silber"],
+      ["copper", "Kupfer"],
+      ["lead", "Blei"],
+      ["tin", "Zinn"],
+      ["iron", "Eisen"],
+      ["nickel", "Nickel"],
+      ["cobalt", "Cobalt"],
+      ["chromium", "Chrom"],
+      ["zinc", "Zink"],
+      ["aluminum", "Aluminium"],
+      ["magnesium", "Magnesium"],
+      ["antimony", "Antimon"]
+    ].map(([element2, name2]) => ({
+      id: `electrode:${element2}`,
+      type: "electrode",
+      size: "",
+      material: { element: element2, name: name2 }
+    })),
+    // Standard hydrogen electrode: platinised platinum under 1 bar H2 in
+    // 1 mol/L H+, which defines the zero of the potential scale.
+    {
+      id: "electrode:she",
+      type: "electrode",
+      size: "SHE",
+      short: "SHE",
+      url: reference_she_default,
+      reference: 0
+    },
+    // Saturated calomel electrode: Hg2Cl2 over mercury in saturated KCl.
+    {
+      id: "electrode:calomel",
+      type: "electrode",
+      size: "Kalomel",
+      short: "KCl",
+      url: reference_calomel_default,
+      reference: 0.241
+    }
+  ],
   source: [
     // The compact housing is the default, so a freshly placed source does
     // not dwarf the vessels it drives.
@@ -175977,18 +176007,20 @@ var otherGraphics = {
   separatingfunnel: { url: separatingfunnel_default },
   condenser: { url: condenser_default }
 };
-function componentGraphic(type) {
+function componentGraphic(type, variantId) {
+  const override = componentVariant(variantId)?.url;
+  if (override) return { url: override };
   if (Object.hasOwnProperty.call(componentGraphics, type)) return componentGraphics[type];
   if (Object.hasOwnProperty.call(otherGraphics, type)) return otherGraphics[type];
   return { url: default_default };
 }
 var terminalTable = {
   // PHYWE 13506-93: red post at (174, 108), black post at (191, 108) of 206 x 130.
-  source: [{ x: 174 / 206, y: 108 / 130 }, { x: 191 / 206, y: 108 / 130 }],
+  source: [{ x: 174 / 206, y: 108 / 130, r: 8 / 130 }, { x: 191 / 206, y: 108 / 130, r: 8 / 130 }],
   // PeakTech P 205: red post at (30, 88), black post at (60, 88) of 90 x 106.
-  voltmeter: [{ x: 30 / 90, y: 88 / 106 }, { x: 60 / 90, y: 88 / 106 }],
-  ammeter: [{ x: 30 / 90, y: 88 / 106 }, { x: 60 / 90, y: 88 / 106 }],
-  multimeter: [{ x: 30 / 90, y: 88 / 106 }, { x: 60 / 90, y: 88 / 106 }],
+  voltmeter: [{ x: 30 / 90, y: 88 / 106, r: 8 / 106 }, { x: 60 / 90, y: 88 / 106, r: 8 / 106 }],
+  ammeter: [{ x: 30 / 90, y: 88 / 106, r: 8 / 106 }, { x: 60 / 90, y: 88 / 106, r: 8 / 106 }],
+  multimeter: [{ x: 30 / 90, y: 88 / 106, r: 8 / 106 }, { x: 60 / 90, y: 88 / 106, r: 8 / 106 }],
   // The strip of the electrode graphic starts at y = 0.4 of 75; the cable
   // clips onto the top of the strip, above the material label.
   electrode: [{ x: 0.5, y: 0.02 }]
@@ -175999,7 +176031,10 @@ function componentTerminals(type) {
 var componentTextureUrls = [
   default_default,
   ...Object.values(componentGraphics).map(({ url }) => url),
-  ...Object.values(otherGraphics).map(({ url }) => url)
+  ...Object.values(otherGraphics).map(({ url }) => url),
+  // Variant graphics are not part of the type table, so they are listed here
+  // to be loaded with the rest.
+  ...Object.values(componentVariants).flat().flatMap((variant) => "url" in variant && variant.url ? [variant.url] : [])
 ];
 
 // data/componentPaletteIcons.ts
@@ -176060,9 +176095,20 @@ function renderComponentPaletteIcon(variant, sizeFraction) {
   let drawing;
   switch (variant.type) {
     case "electrode":
-      drawing = b2`
-				<path d="M33 7h14v46H33z" fill=${materialColors[variant.material?.element ?? "carbon"]}/>
-				<path d="M37 12v35" stroke="#f4f8fb" stroke-opacity="0.8"/>`;
+      drawing = variant.reference === void 0 ? b2`
+					<path d="M33 7h14v46H33z" fill=${materialColors[variant.material?.element ?? "carbon"]}/>
+					<path d="M37 12v35" stroke="#f4f8fb" stroke-opacity="0.8"/>` : variant.reference === 0 ? b2`
+					<path d="M32 9h16v37a8 8 0 0 1-16 0z" fill=${glass}/>
+					<path d="M32 9h16M32 41h16"/>
+					<path d="M40 4v9"/>
+					<path d="M35.5 9v19"/>
+					<path d="M37.5 20h6v11h-6z" fill="#c7ccd8"/>` : b2`
+					<path d="M32 9h16v37a8 8 0 0 1-16 0z" fill=${glass}/>
+					<path d="M32 9h16M32 41h16"/>
+					<path d="M40 4v9"/>
+					<path d="M36.5 13h7v18a3.5 3.5 0 0 1-7 0z"/>
+					<path d="M36.5 20h7v5h-7z" fill="#eef2f7"/>
+					<path d="M36.5 25h7v6a3.5 3.5 0 0 1-7 0z" fill="#8d99a6"/>`;
       break;
     case "voltmeter":
       drawing = meter("m34 22 6 10 6-10");
@@ -181393,255 +181439,6 @@ var WorkspaceGrid = class {
   }
 };
 
-// controllers/ElectricDeviceView.ts
-function reading(value, unit) {
-  return `${Number.isFinite(value) ? Number(value.toPrecision(4)) : "\u2014"} ${unit}`;
-}
-function magnitude(value) {
-  return `${Number.isFinite(value) ? Number(Math.abs(value).toPrecision(4)) : "\u2014"}`;
-}
-function currentReading(value) {
-  return `${magnitude(value)} A`;
-}
-var PLATING_REFERENCE_LITRES = 1125e-8;
-var ElectricDeviceView = class extends Container {
-  constructor(component, texture, width, height) {
-    super({ interactiveChildren: false });
-    this.component = component;
-    this.hitArea = new Rectangle(-width / 2, -height / 2, width, height);
-    this.addChild(new Sprite({ texture, anchor: 0.5, width, height, eventMode: "none" }));
-    this.artboard = { width, height };
-    this.terminals = componentTerminals(component._type).map(({ x: x4, y: y5 }) => ({
-      x: width * (x4 - 0.5),
-      y: height * (y5 - 0.5)
-    }));
-    const addLine = (x4, y5, fontSize, maxWidth) => {
-      const text = new Text({
-        anchor: 0.5,
-        resolution: 3,
-        eventMode: "none",
-        style: { fontFamily: "monospace", fontSize: height * fontSize, fontWeight: "bold", fill: 2177580 }
-      });
-      text.position.set(width * (x4 - 0.5), height * (y5 - 0.5));
-      this.lines.push({ text, maxWidth: width * maxWidth });
-      this.addChild(text);
-    };
-    const addIndicator = (x4, y5, radius) => {
-      this.indicator = new Graphics({ eventMode: "none" }).circle(width * (x4 - 0.5), height * (y5 - 0.5), height * radius).fill(16777215);
-      this.indicator.tint = 3887701;
-      this.addChild(this.indicator);
-    };
-    switch (component._type) {
-      case "source" /* Source */:
-        addLine(65.5 / 206, 41 / 130, 0.16, 0.43);
-        addLine(65.5 / 206, 72 / 130, 0.16, 0.43);
-        addIndicator(46 / 206, 106.5 / 130, 0.028);
-        break;
-      case "voltmeter" /* Voltmeter */:
-        addLine(0.5, 42 / 106, 0.17, 0.65);
-        addIndicator(15 / 90, 73 / 106, 0.026);
-        break;
-      case "ammeter" /* Ammeter */:
-        addLine(0.5, 37.5 / 106, 0.155, 0.65);
-        addLine(0.5, 52 / 106, 0.085, 0.65);
-        break;
-      case "multimeter" /* Multimeter */:
-        addLine(0.5, 41 / 106, 0.17, 0.65);
-        break;
-      case "gascollector" /* GasCollector */:
-        addLine(0.72, 0.5, 0.05, 0.5);
-        break;
-      case "label" /* Label */:
-        addLine(0.5, 0.5, 0.46, 0.9);
-        break;
-      case "electrode" /* Electrode */:
-        this.strip = {
-          left: width * (0.4 / 15 - 0.5),
-          right: width * (14.6 / 15 - 0.5),
-          top: height * (16 / 75 - 0.5),
-          bottom: height * (74.6 / 75 - 0.5)
-        };
-        this.coating = new Graphics({ eventMode: "none" });
-        this.addChild(this.coating);
-        addLine(0.5, 10 / 75, 0.103, 0.72);
-        break;
-    }
-    this.refresh();
-  }
-  lines = [];
-  indicator;
-  active = false;
-  measuredVoltage = null;
-  coating;
-  strip;
-  coatingKey = "";
-  /** the terminals of this device in local coordinates, empty if it has none */
-  terminals;
-  /** the drawn size in world units, for the port marker radius */
-  artboard;
-  /** the drawn terminal markers, created on first use */
-  portLayer;
-  /** what the port layer currently shows, so it is only redrawn on change */
-  portKey = "";
-  setActive(active) {
-    if (this.active === active) return;
-    this.active = active;
-    this.measuredVoltage = null;
-    if (this.indicator) this.indicator.tint = active ? 6870657 : 3887701;
-    this.refresh();
-  }
-  /**
-   * The radius of a terminal marker in world units. It grows with the device
-   * so a post on the large source stays as easy to hit as one on a meter.
-   *
-   * @readonly
-   * @type {number}
-   */
-  get portRadius() {
-    return Math.max(1.2, Math.min(2.6, this.artboard.height * 0.028));
-  }
-  /**
-   * The terminal whose marker lies under a point in local coordinates, or -1
-   * when the point is on none of them. The grab radius is wider than the
-   * drawn marker, so a terminal is easy to pick without aiming.
-   *
-   * @param {number} x - local x
-   * @param {number} y - local y
-   * @returns {number} the terminal index, or -1
-   */
-  portAt(x4, y5) {
-    const reach = this.portRadius * 1.9;
-    let best = -1;
-    let bestDistance = reach;
-    this.terminals.forEach((terminal, index2) => {
-      const distance = Math.hypot(x4 - terminal.x, y5 - terminal.y);
-      if (distance <= bestDistance) {
-        best = index2;
-        bestDistance = distance;
-      }
-    });
-    return best;
-  }
-  /**
-   * The local position of one terminal, for drawing a wire that starts there.
-   *
-   * @param {number} terminal - the terminal index
-   * @returns {(TerminalPoint | undefined)}
-   */
-  terminalPoint(terminal) {
-    return this.terminals[terminal];
-  }
-  /**
-   * Shows the terminal markers of this device. A device only shows the
-   * terminals that are still free, so the marker doubles as a hint about
-   * where another cable can go.
-   *
-   * @param {number[]} free - the terminals without a cable
-   * @param {number} [highlight] - a terminal to draw as the current target
-   */
-  showPorts(free, highlight2 = -1) {
-    const key = `${free.join(",")}|${highlight2}`;
-    if (key === this.portKey) return;
-    this.portKey = key;
-    if (!this.portLayer) {
-      this.portLayer = new Graphics({ eventMode: "none" });
-      this.addChild(this.portLayer);
-    }
-    const layer = this.portLayer;
-    layer.clear();
-    const radius = this.portRadius;
-    for (const terminal of free) {
-      const point = this.terminals[terminal];
-      if (!point) continue;
-      const active = terminal === highlight2;
-      layer.circle(point.x, point.y, active ? radius * 1.35 : radius).fill({ color: active ? 165063 : 16777215, alpha: active ? 0.95 : 0.8 }).stroke({ color: active ? 481669 : 3359061, width: 0.5, alpha: 0.9 });
-    }
-  }
-  /**
-   * Hides the terminal markers again.
-   */
-  hidePorts() {
-    if (this.portKey === "") return;
-    this.portKey = "";
-    this.portLayer?.clear();
-  }
-  refresh(hasVoltageReading) {
-    const component = this.component;
-    let values;
-    switch (component._type) {
-      case "source" /* Source */:
-        values = component._sourceMode === "current" ? [reading(component._visibleVoltage, "V"), currentReading(component._sourceCurrent)] : [
-          reading(component._sourceVoltage, "V"),
-          currentReading(component._visibleCurrent ?? component._sourceCurrent)
-        ];
-        break;
-      case "voltmeter" /* Voltmeter */:
-        if (hasVoltageReading !== void 0) {
-          this.measuredVoltage = this.active && hasVoltageReading ? component._visibleVoltage : null;
-        }
-        values = [reading(this.measuredVoltage, "V")];
-        break;
-      case "ammeter" /* Ammeter */:
-        values = [magnitude(component._visibleCurrent), "A"];
-        break;
-      case "multimeter" /* Multimeter */:
-        if (hasVoltageReading !== void 0) {
-          this.measuredVoltage = this.active && hasVoltageReading ? component._visibleVoltage : null;
-        }
-        values = [component._meterMode === "voltage" ? reading(this.measuredVoltage, "V") : currentReading(component._visibleCurrent)];
-        break;
-      case "gascollector" /* GasCollector */:
-        values = [reading((component._connectedMix?.evolvedGasMol ?? 0) * MOLAR_GAS_VOLUME_ML, "mL")];
-        break;
-      case "label" /* Label */:
-        values = [component._labelText];
-        break;
-      case "electrode" /* Electrode */:
-        values = [component._material?._atoms[0]?.getSymbol() ?? ""];
-        break;
-      default:
-        return false;
-    }
-    let changed = false;
-    this.lines.forEach(({ text, maxWidth }, index2) => {
-      const value = values[index2] ?? "";
-      if (text.text === value) return;
-      text.text = value;
-      text.scale.set(1);
-      if (text.width > maxWidth) text.scale.set(maxWidth / text.width);
-      changed = true;
-    });
-    return this.refreshCoating() || changed;
-  }
-  /**
-   * Draws the metal deposited on an electrode as a coating on the strip. The
-   * layer grows from the lower end upwards, so a thin deposit stays where the
-   * electrode dips into the solution.
-   *
-   * @private
-   * @return {boolean} whether the drawing changed
-   */
-  refreshCoating() {
-    const coating = this.coating;
-    const strip = this.strip;
-    if (!coating || !strip) return false;
-    const plating = this.component.plating;
-    const area2 = this.component._area > 0 ? this.component._area : ELECTRODE_AREA;
-    const reference2 = PLATING_REFERENCE_LITRES * area2 / ELECTRODE_AREA;
-    const coverage = plating ? Math.min(1, plating.litres / reference2) : 0;
-    const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}` : "";
-    if (key === this.coatingKey) return false;
-    this.coatingKey = key;
-    coating.clear();
-    if (!plating || !key) return true;
-    const hex2 = plating.molecule._atoms[0]?.getCPKHEX();
-    const parsed = hex2 ? parseInt(hex2, 16) : NaN;
-    const height = (strip.bottom - strip.top) * coverage;
-    coating.rect(strip.left, strip.bottom - height, strip.right - strip.left, height).fill({ color: Number.isFinite(parsed) ? parsed : 8688795, alpha: 0.88 }).stroke({ color: 3559773, width: 0.6, alpha: 0.55 });
-    return true;
-  }
-};
-
 // controllers/VesselView.ts
 var interiors = {
   beaker: {
@@ -181686,6 +181483,7 @@ function circularSegment(cut) {
   if (cut >= 1) return 0;
   return (Math.acos(cut) - cut * Math.sqrt(1 - cut * cut)) / Math.PI;
 }
+var AQUEOUS_FILL = { color: 4559543, alpha: 0.55 };
 var VesselView = class _VesselView extends Container {
   constructor(component, type, texture, width, height, scaleTextures) {
     super({ interactiveChildren: false });
@@ -181723,8 +181521,7 @@ var VesselView = class _VesselView extends Container {
   /** upward acceleration and speed limit of a gas bubble */
   static BUBBLE_RISE = 26;
   static BUBBLE_TERMINAL = 9;
-  /** tint of the aqueous phase and of water-immiscible organic liquids */
-  static AQUEOUS = { color: 4559543, alpha: 0.55 };
+  /** tint of water-immiscible organic liquids */
   static NONPOLAR = { color: 13351300, alpha: 0.6 };
   fillShape = new Graphics({ eventMode: "none" });
   particlesShape = new Graphics({ eventMode: "none" });
@@ -181847,7 +181644,7 @@ var VesselView = class _VesselView extends Container {
     const phaseVolume = phases.reduce((sum, phase) => sum + phase.volume, 0);
     this.liquidLayers = phaseVolume > 0 ? [...phases].sort((left, right) => right.density - left.density).map((phase) => ({
       fraction: phase.volume / phaseVolume,
-      ...phase.nonpolar ? _VesselView.NONPOLAR : _VesselView.AQUEOUS
+      ...phase.nonpolar ? _VesselView.NONPOLAR : AQUEOUS_FILL
     })) : [];
     if (hint === "pour" && liquid) {
       this.streamMs = 450;
@@ -182062,7 +181859,7 @@ var VesselView = class _VesselView extends Container {
         cumulative += layers[index2].fraction;
       }
     } else {
-      this.fillShape.poly(submerged).fill(liquid ? { color: _VesselView.AQUEOUS.color, alpha: _VesselView.AQUEOUS.alpha } : { color: 8551791, alpha: 0.72 });
+      this.fillShape.poly(submerged).fill(liquid ? { color: AQUEOUS_FILL.color, alpha: AQUEOUS_FILL.alpha } : { color: 8551791, alpha: 0.72 });
     }
     if (sediment > 0) {
       const floor6 = this.surfaceAt(sediment, Math.min(...depths), Math.max(...depths), sin5, cos6);
@@ -182134,6 +181931,406 @@ var VesselView = class _VesselView extends Container {
       }
     }
     return volume;
+  }
+};
+
+// controllers/ElectricDeviceView.ts
+function reading(value, unit) {
+  return `${Number.isFinite(value) ? Number(value.toPrecision(4)) : "\u2014"} ${unit}`;
+}
+function magnitude(value) {
+  return `${Number.isFinite(value) ? Number(Math.abs(value).toPrecision(4)) : "\u2014"}`;
+}
+function currentReading(value) {
+  return `${magnitude(value)} A`;
+}
+var PLATING_REFERENCE_LITRES = 18e-7;
+var PLATING_MIN_COVERAGE = 0.025;
+var platingTextures = /* @__PURE__ */ new Map();
+function platingTexture(color2) {
+  const cached = platingTextures.get(color2);
+  if (cached) return cached;
+  const resolution = 3;
+  const width = 32;
+  const height = 128;
+  const canvas = DOMAdapter.get().createCanvas(width * resolution, height * resolution);
+  const context2 = canvas.getContext("2d");
+  context2.scale(resolution, resolution);
+  const shade = (factor, alpha2 = 1) => {
+    const channel = (shift3) => Math.min(255, Math.round((color2 >> shift3 & 255) * factor));
+    return `rgba(${channel(16)}, ${channel(8)}, ${channel(0)}, ${alpha2})`;
+  };
+  const lighten2 = (amount, alpha2 = 1) => {
+    const channel = (shift3) => {
+      const base = color2 >> shift3 & 255;
+      return Math.round(base + (255 - base) * amount);
+    };
+    return `rgba(${channel(16)}, ${channel(8)}, ${channel(0)}, ${alpha2})`;
+  };
+  const body2 = context2.createLinearGradient(0, 0, 0, height);
+  body2.addColorStop(0, shade(0.95));
+  body2.addColorStop(0.55, shade(0.74));
+  body2.addColorStop(1, shade(0.56));
+  context2.fillStyle = body2;
+  context2.fillRect(0, 0, width, height);
+  for (let layer = 1; layer < 9; layer++) {
+    const y5 = height * layer / 9 + layer * 37 % 11 - 5;
+    context2.fillStyle = shade(0.45, 0.5);
+    context2.fillRect(0, y5, width, 1.4);
+    context2.fillStyle = lighten2(0.35, 0.35);
+    context2.fillRect(0, y5 - 1.2, width, 1);
+  }
+  const streak = context2.createLinearGradient(width * 0.12, 0, width * 0.42, 0);
+  streak.addColorStop(0, lighten2(0.6, 0));
+  streak.addColorStop(0.5, lighten2(0.6, 0.6));
+  streak.addColorStop(1, lighten2(0.6, 0));
+  context2.fillStyle = streak;
+  context2.fillRect(width * 0.12, 0, width * 0.3, height);
+  const edge = context2.createLinearGradient(width * 0.78, 0, width, 0);
+  edge.addColorStop(0, shade(0.4, 0));
+  edge.addColorStop(1, shade(0.4, 0.55));
+  context2.fillStyle = edge;
+  context2.fillRect(width * 0.78, 0, width * 0.22, height);
+  context2.fillStyle = lighten2(0.75, 0.85);
+  context2.fillRect(0, 0, width, 2.6);
+  const texture = new Texture({
+    source: new CanvasSource({ resource: canvas, resolution, autoGenerateMipmaps: true })
+  });
+  platingTextures.set(color2, texture);
+  return texture;
+}
+var TUBE_BORE = { left: 2.6 / 20, right: 17.4 / 20, top: 2.6 / 120, bottom: 115.4 / 120, radius: 5.4 / 120 };
+var TUBE_VOLUME_ML = Math.PI * (14.8 / 2) ** 2 * 112.8 / 1e3;
+var ElectricDeviceView = class extends Container {
+  constructor(component, texture, width, height) {
+    super({ interactiveChildren: false });
+    this.component = component;
+    this.hitArea = new Rectangle(-width / 2, -height / 2, width, height);
+    this.addChild(new Sprite({ texture, anchor: 0.5, width, height, eventMode: "none" }));
+    this.artboard = { width, height };
+    this.terminals = componentTerminals(component._type).map(({ x: x4, y: y5, r: r12 }) => ({
+      x: width * (x4 - 0.5),
+      y: height * (y5 - 0.5),
+      r: height * (r12 ?? 0)
+    }));
+    const addLine = (x4, y5, fontSize, maxWidth) => {
+      const text = new Text({
+        anchor: 0.5,
+        resolution: 3,
+        eventMode: "none",
+        style: { fontFamily: "monospace", fontSize: height * fontSize, fontWeight: "bold", fill: 2177580 }
+      });
+      text.position.set(width * (x4 - 0.5), height * (y5 - 0.5));
+      this.lines.push({ text, maxWidth: width * maxWidth });
+      this.addChild(text);
+    };
+    const addIndicator = (x4, y5, radius) => {
+      this.indicator = new Graphics({ eventMode: "none" }).circle(width * (x4 - 0.5), height * (y5 - 0.5), height * radius).fill(16777215);
+      this.indicator.tint = 3887701;
+      this.addChild(this.indicator);
+    };
+    switch (component._type) {
+      case "source" /* Source */:
+        addLine(65.5 / 206, 41 / 130, 0.16, 0.43);
+        addLine(65.5 / 206, 72 / 130, 0.16, 0.43);
+        addIndicator(46 / 206, 106.5 / 130, 0.028);
+        break;
+      case "voltmeter" /* Voltmeter */:
+        addLine(0.5, 42 / 106, 0.17, 0.65);
+        addIndicator(15 / 90, 73 / 106, 0.026);
+        break;
+      case "ammeter" /* Ammeter */:
+        addLine(0.5, 37.5 / 106, 0.155, 0.65);
+        addLine(0.5, 52 / 106, 0.085, 0.65);
+        break;
+      case "multimeter" /* Multimeter */:
+        addLine(0.5, 41 / 106, 0.17, 0.65);
+        break;
+      case "gascollector" /* GasCollector */:
+        this.tube = {
+          left: width * (TUBE_BORE.left - 0.5),
+          right: width * (TUBE_BORE.right - 0.5),
+          top: height * (TUBE_BORE.top - 0.5),
+          bottom: height * (TUBE_BORE.bottom - 0.5),
+          radius: height * TUBE_BORE.radius
+        };
+        this.tubeFill = new Graphics({ eventMode: "none" });
+        this.addChildAt(this.tubeFill, 0);
+        break;
+      case "label" /* Label */:
+        addLine(0.5, 0.5, 0.46, 0.9);
+        break;
+      case "electrode" /* Electrode */:
+        this.strip = {
+          left: width * (0.4 / 15 - 0.5),
+          right: width * (14.6 / 15 - 0.5),
+          top: height * (16 / 75 - 0.5),
+          bottom: height * (74.6 / 75 - 0.5)
+        };
+        this.coating = new Sprite({ anchor: { x: 0.5, y: 1 }, eventMode: "none", visible: false });
+        this.addChild(this.coating);
+        addLine(0.5, 10 / 75, 0.103, 0.72);
+        break;
+    }
+    if (this.terminals.length) {
+      this.portLayer = new Graphics({ eventMode: "none" });
+      this.addChild(this.portLayer);
+    }
+    this.refresh();
+  }
+  lines = [];
+  indicator;
+  active = false;
+  coating;
+  strip;
+  coatingKey = "";
+  /** the liquid column inside a gas collection tube, drawn behind the glass */
+  tubeFill;
+  /** the drawn bore of the tube in local coordinates */
+  tube;
+  /** what the tube currently shows, so it is only redrawn on change */
+  tubeKey = "";
+  /** the terminals of this device in local coordinates, empty if it has none */
+  terminals;
+  /** the drawn size in world units, for the port marker radius */
+  artboard;
+  /** the permanent terminal markers, created for a device that has terminals */
+  portLayer;
+  /** what the port layer currently shows, so it is only redrawn on change */
+  portKey = "";
+  /** whether the pointer rests on this device, which brightens its free plugs */
+  portHover = false;
+  /** the terminal a dragged cable would land on, or -1 */
+  portHighlight = -1;
+  setActive(active) {
+    if (this.active === active) return;
+    this.active = active;
+    if (this.indicator) this.indicator.tint = active ? 6870657 : 3887701;
+    this.refresh();
+  }
+  /**
+   * The radius of a terminal marker in world units. It grows with the device
+   * so a post on the large source stays as easy to hit as one on a meter.
+   *
+   * @readonly
+   * @type {number}
+   */
+  get portRadius() {
+    return Math.max(1.2, Math.min(2.6, this.artboard.height * 0.028));
+  }
+  /**
+   * The terminal whose marker lies under a point in local coordinates, or -1
+   * when the point is on none of them. The grab radius is wider than the
+   * drawn marker, so a terminal is easy to pick without aiming.
+   *
+   * @param {number} x - local x
+   * @param {number} y - local y
+   * @returns {number} the terminal index, or -1
+   */
+  portAt(x4, y5) {
+    const reach = this.portRadius * 1.9;
+    let best = -1;
+    let bestDistance = reach;
+    this.terminals.forEach((terminal, index2) => {
+      const distance = Math.hypot(x4 - terminal.x, y5 - terminal.y);
+      if (distance <= bestDistance) {
+        best = index2;
+        bestDistance = distance;
+      }
+    });
+    return best;
+  }
+  /**
+   * The local position of one terminal, for drawing a wire that starts there.
+   *
+   * @param {number} terminal - the terminal index
+   * @returns {(TerminalPoint | undefined)}
+   */
+  terminalPoint(terminal) {
+    return this.terminals[terminal];
+  }
+  /**
+   * Draws the terminal markers of this device. They are permanent, so the
+   * plugs of the graphic always read as the places a cable goes; a terminal
+   * that already carries a cable is drawn dimmer, and the one a dragged
+   * cable would land on is drawn in the accent colour.
+   *
+   * @private
+   */
+  drawPorts() {
+    const layer = this.portLayer;
+    if (!layer) return;
+    const free = this.component.freeTerminals;
+    const key = `${free.join(",")}|${this.portHover}|${this.portHighlight}`;
+    if (key === this.portKey) return;
+    this.portKey = key;
+    layer.clear();
+    this.terminals.forEach((point, terminal) => {
+      const isFree = free.includes(terminal);
+      const active = terminal === this.portHighlight;
+      const radius = (point.r ?? 0) + Math.max(0.7, this.portRadius * 0.35);
+      if (active) {
+        layer.circle(point.x, point.y, radius + 0.6).fill({ color: 165063, alpha: 0.35 }).stroke({ color: 165063, width: 1.1, alpha: 0.95 });
+        return;
+      }
+      layer.circle(point.x, point.y, radius).stroke({
+        color: isFree ? 15856885 : 2504772,
+        width: isFree && this.portHover ? 1.3 : 1,
+        alpha: isFree ? this.portHover ? 0.95 : 0.6 : 0.45
+      });
+    });
+  }
+  /**
+   * Marks the terminal a dragged cable would land on. The markers themselves
+   * stay visible, so this only changes the emphasis.
+   *
+   * @param {number} [highlight=-1] - the terminal to draw as the target
+   */
+  showPorts(highlight2 = -1) {
+    this.portHighlight = highlight2;
+    this.drawPorts();
+  }
+  /**
+   * Drops the target emphasis again. The markers stay, because they are part
+   * of the device.
+   */
+  hidePorts() {
+    this.portHighlight = -1;
+    this.drawPorts();
+  }
+  /**
+   * Brightens the free plugs while the pointer rests on the device, which
+   * hints that a cable can be pulled from them.
+   *
+   * @param {boolean} hovered - whether the pointer is on the device
+   */
+  setPortHover(hovered) {
+    if (this.portHover === hovered) return;
+    this.portHover = hovered;
+    this.drawPorts();
+  }
+  refresh() {
+    const component = this.component;
+    this.drawPorts();
+    let values;
+    switch (component._type) {
+      case "source" /* Source */:
+        values = component._sourceMode === "current" ? [reading(component._visibleVoltage, "V"), currentReading(component._sourceCurrent)] : [
+          reading(component._sourceVoltage, "V"),
+          currentReading(component._visibleCurrent ?? component._sourceCurrent)
+        ];
+        break;
+      case "voltmeter" /* Voltmeter */:
+        values = [reading(component._visibleVoltage, "V")];
+        break;
+      case "ammeter" /* Ammeter */:
+        values = [magnitude(component._visibleCurrent), "A"];
+        break;
+      case "multimeter" /* Multimeter */:
+        values = [component._meterMode === "voltage" ? reading(component._visibleVoltage, "V") : currentReading(component._visibleCurrent)];
+        break;
+      case "gascollector" /* GasCollector */:
+        values = [];
+        break;
+      case "label" /* Label */:
+        values = [component._labelText];
+        break;
+      case "electrode" /* Electrode */:
+        values = [component._material?._atoms[0]?.getSymbol() ?? componentVariant(component._variantId)?.short ?? ""];
+        break;
+      default:
+        return false;
+    }
+    let changed = false;
+    this.lines.forEach(({ text, maxWidth }, index2) => {
+      const value = values[index2] ?? "";
+      if (text.text === value) return;
+      text.text = value;
+      text.scale.set(1);
+      if (text.width > maxWidth) text.scale.set(maxWidth / text.width);
+      changed = true;
+    });
+    return this.refreshCoating() || this.refreshTube() || changed;
+  }
+  /**
+   * Draws the liquid column inside a gas collection tube. The tube hangs in a
+   * solution, so it starts full; the gas that bubbles up gathers at the
+   * closed top and pushes the meniscus down, the same way a vessel shows its
+   * filling.
+   *
+   * @private
+   * @return {boolean} whether the drawing changed
+   */
+  refreshTube() {
+    const fill2 = this.tubeFill;
+    const tube = this.tube;
+    if (!fill2 || !tube) return false;
+    const mix = this.component._connectedMix;
+    const inSolution = !!mix?._isSolution;
+    const gasMl = (mix?.evolvedGasMol ?? 0) * MOLAR_GAS_VOLUME_ML;
+    const gasFraction = inSolution ? Math.max(0, Math.min(1, gasMl / TUBE_VOLUME_ML)) : 0;
+    const key = inSolution ? gasFraction.toFixed(4) : "";
+    if (key === this.tubeKey) return false;
+    this.tubeKey = key;
+    fill2.clear();
+    if (!key) return true;
+    const { left, right, top, bottom, radius } = tube;
+    const surface = top + (bottom - top) * gasFraction;
+    const dome = top + radius;
+    const inset = (y5) => radius - Math.sqrt(Math.max(0, radius * radius - (dome - y5) ** 2));
+    const points = [{ x: left, y: bottom }];
+    if (surface < dome) {
+      const steps2 = 8;
+      points.push({ x: left, y: dome });
+      for (let step = 1; step <= steps2; step++) {
+        const y5 = dome - (dome - surface) * (step / steps2);
+        points.push({ x: left + inset(y5), y: y5 });
+      }
+      for (let step = steps2; step >= 0; step--) {
+        const y5 = dome - (dome - surface) * (step / steps2);
+        points.push({ x: right - inset(y5), y: y5 });
+      }
+    } else {
+      points.push({ x: left, y: surface }, { x: right, y: surface });
+    }
+    points.push({ x: right, y: bottom });
+    fill2.poly(points).fill({ color: AQUEOUS_FILL.color, alpha: AQUEOUS_FILL.alpha });
+    const edge = surface < dome ? inset(surface) : 0;
+    const bend = Math.min((right - left - 2 * edge) * 0.08, 0.6);
+    fill2.moveTo(left + edge, surface).quadraticCurveTo((left + right) / 2, surface + bend, right - edge, surface).stroke({ color: 2651033, alpha: 0.8, width: 0.24 });
+    return true;
+  }
+  /**
+   * Draws the metal deposited on an electrode as a coating on the strip. The
+   * layer grows from the lower end upwards, so a thin deposit stays where the
+   * electrode dips into the solution.
+   *
+   * @private
+   * @return {boolean} whether the drawing changed
+   */
+  refreshCoating() {
+    const coating = this.coating;
+    const strip = this.strip;
+    if (!coating || !strip) return false;
+    const plating = this.component.plating;
+    const area2 = this.component._area > 0 ? this.component._area : ELECTRODE_AREA;
+    const reference2 = PLATING_REFERENCE_LITRES * area2 / ELECTRODE_AREA;
+    const coverage = plating ? Math.min(1, Math.max(PLATING_MIN_COVERAGE, plating.litres / reference2)) : 0;
+    const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}` : "";
+    if (key === this.coatingKey) return false;
+    this.coatingKey = key;
+    if (!plating || !key) {
+      coating.visible = false;
+      return true;
+    }
+    const hex2 = plating.molecule._atoms[0]?.getCPKHEX();
+    const parsed = hex2 ? parseInt(hex2, 16) : NaN;
+    coating.texture = platingTexture(Number.isFinite(parsed) ? parsed : 8688795);
+    coating.position.set((strip.left + strip.right) / 2, strip.bottom);
+    coating.width = strip.right - strip.left;
+    coating.height = (strip.bottom - strip.top) * coverage;
+    coating.visible = true;
+    return true;
   }
 };
 
@@ -182795,16 +182992,16 @@ var CanvasController = class _CanvasController {
     view.setActive(active);
     this.host.requestCanvasRender();
   }
-  refreshDeviceDisplay(component, hasVoltageReading) {
+  refreshDeviceDisplay(component) {
     const view = this.spritesByLabel.get(`${component._type}:${component._id}`);
-    if (view instanceof ElectricDeviceView && view.refresh(hasVoltageReading)) this.host.requestCanvasRender();
+    if (view instanceof ElectricDeviceView && view.refresh()) this.host.requestCanvasRender();
   }
   createComponentView(component) {
     const type = component._type;
-    const graphic = componentGraphic(type);
-    const texture = Assets.get(graphic.url);
     const capacityMl = component instanceof ChemComponent ? component._volume : void 0;
     const variantId = component instanceof ElectricComponent ? component._variantId : void 0;
+    const graphic = componentGraphic(type, variantId);
+    const texture = Assets.get(graphic.url);
     const [widthMm, heightMm] = componentArtboardMm(type, capacityMl, variantId);
     const width = widthMm / MILLIMETERS_PER_WORLD_UNIT;
     const height = heightMm / MILLIMETERS_PER_WORLD_UNIT;
@@ -182872,6 +183069,8 @@ var CanvasController = class _CanvasController {
     if (component instanceof ElectricComponent && type === "cable" /* Cable */) {
       this.cables.set(sprite, component);
       this.cableRopes.delete(sprite);
+      this.cablesDirty = true;
+    } else if (this.cables.size && !(sprite instanceof VesselView)) {
       this.cablesDirty = true;
     }
     if (select && !sprite.label.includes("cable")) {
@@ -182962,7 +183161,7 @@ var CanvasController = class _CanvasController {
     const terminal = sprite.portAt(local.x, local.y);
     if (terminal < 0 || !free.includes(terminal)) return false;
     this.wire = { id: event.pointerId, from: device, terminal, sprite };
-    sprite.showPorts(free, terminal);
+    sprite.showPorts(terminal);
     this.host.app.stage.on("globalpointermove", this._wireMoveHandler);
     this.drawWire(event.global);
     return true;
@@ -183020,8 +183219,9 @@ var CanvasController = class _CanvasController {
     this.host.connectElectrical(wire.from, target.device, wire.terminal, terminal >= 0 ? terminal : void 0);
   }
   /**
-   * Shows the free terminals of the device under the pointer, and while a
-   * wire is dragged also those of the device it would land on.
+   * Marks the terminal a dragged cable would land on, and brightens the free
+   * plugs of the device under the pointer. The markers themselves are part of
+   * the device and stay visible either way.
    *
    * @private
    * @param {PIXI.PointData} global - the pointer in stage coordinates
@@ -183038,23 +183238,23 @@ var CanvasController = class _CanvasController {
       }
       if (sprite2 && target) {
         const local = sprite2.toLocal(new Point(global2.x, global2.y));
-        sprite2.showPorts(target.device.freeTerminals, sprite2.portAt(local.x, local.y));
+        sprite2.showPorts(sprite2.portAt(local.x, local.y));
       }
       return;
     }
     const sprite = target?.sprite;
     if (sprite === this.hoveredPorts) return;
-    this.hoveredPorts?.hidePorts();
+    this.hoveredPorts?.setPortHover(false);
     this.hoveredPorts = sprite;
-    if (sprite && target) sprite.showPorts(target.device.freeTerminals);
+    sprite?.setPortHover(true);
   }
   /**
-   * Hides every terminal marker again.
+   * Drops the target emphasis and the hover emphasis again.
    *
    * @private
    */
   clearPorts() {
-    this.hoveredPorts?.hidePorts();
+    this.hoveredPorts?.setPortHover(false);
     this.hoveredPorts = void 0;
     this.wireTarget?.hidePorts();
     this.wireTarget = void 0;
@@ -183291,8 +183491,14 @@ var CanvasController = class _CanvasController {
     this.host.requestCanvasRender();
   }
   flushChanges() {
+    const changed = [...this.changedVessels.keys()].map((view) => view.component._content);
     for (const [view, hint] of this.changedVessels) view.updateContents(hint);
     this.changedVessels.clear();
+    if (changed.length) {
+      for (const device of this.host.allEComponents) {
+        if (device._type === "gascollector" /* GasCollector */ && changed.includes(device._connectedMix)) this.refreshDeviceDisplay(device);
+      }
+    }
     this.updateDippedStacking();
     if (this.cablesDirty || this.cables.size) {
       this.cablesDirty = false;
@@ -183464,8 +183670,6 @@ var CanvasController = class _CanvasController {
       }
       const endpoints = this.cableEndpoints(cable);
       if (!endpoints) continue;
-      const from2 = this.spritesByLabel.get(`${first._type}:${first._id}`);
-      const to2 = this.spritesByLabel.get(`${second._type}:${second._id}`);
       let rope = this.cableRopes.get(sprite);
       if (!rope) {
         rope = { points: [], prev: [], restLength: 0, awake: true, idleFrames: 0, endpoints };
@@ -183481,7 +183685,7 @@ var CanvasController = class _CanvasController {
           rope.prev.push({ x: point.x, y: point.y });
         }
         this.cableRopes.set(sprite, rope);
-      } else if (endpoints.some((value, index3) => value !== rope.endpoints[index3])) {
+      } else if (endpoints.some((value, index2) => value !== rope.endpoints[index2])) {
         rope.endpoints = endpoints;
         rope.awake = true;
         rope.idleFrames = 0;
@@ -183491,9 +183695,8 @@ var CanvasController = class _CanvasController {
         this.drawRope(sprite, rope);
         anyAwake = true;
       }
-      const index2 = stage.getChildIndex(sprite);
-      const behindDevices = Math.min(stage.getChildIndex(from2), stage.getChildIndex(to2));
-      if (index2 > behindDevices) stage.setChildIndex(sprite, behindDevices);
+      const top = stage.children.length - 1;
+      if (stage.getChildIndex(sprite) !== top) stage.setChildIndex(sprite, top);
     }
     const simulation = this.host.simulation;
     if (anyAwake) {
@@ -184139,7 +184342,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.canvas.refreshDeviceDisplay(circuitComps[1]);
       this.diagrams.appendEChemPoint(source3, circuitComps);
     }
-    this.canvas.refreshDeviceDisplay(source3, !!circuitComps);
+    this.canvas.refreshDeviceDisplay(source3);
   }
   operatingCircuit(device) {
     const circuit = ComponentManager.isCircuit(device);
@@ -184159,6 +184362,20 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   runningCurrent(source3) {
     const ticker = `echem${source3._type}:${source3._id}`;
     return this.simulation.hasTask(ticker) && this.operatingCircuit(source3) ? Math.abs(source3._visibleCurrent ?? 0) : 0;
+  }
+  /**
+   * Clears the readings a stopped experiment left behind. The cell solve
+   * writes the voltage and the current of every device in the circuit, not
+   * only of the one that was switched on, so the meters would otherwise keep
+   * showing the last value they saw.
+   */
+  clearEChemReadings() {
+    for (const device of this.allEComponents) {
+      if (device._visibleVoltage === null && device._visibleCurrent === null) continue;
+      device._visibleVoltage = null;
+      device._visibleCurrent = null;
+      this.canvas.refreshDeviceDisplay(device);
+    }
   }
   get canAuthor() {
     const editable = this.getAttribute("contenteditable");
@@ -184303,6 +184520,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       nSourceCurrent: type === "source" /* Source */ && this.canAuthor ? 0 : void 0
     });
     device._variantId = variantId;
+    if (variant.reference !== void 0) device._reference = variant.reference;
     return device;
   }
   /**
@@ -184345,6 +184563,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         const device = ComponentManager.newElectricComponent(type);
         device._variantId = variantId;
         if (material) device._material = this.newElectrodeMaterial(material);
+        if (variant.reference !== void 0) device._reference = variant.reference;
         this.allEComponents.push(device);
         component = device;
       }
@@ -184364,7 +184583,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       current: 0,
       material: "",
       connections: [],
-      labelText: ""
+      labelText: "",
+      // A reference electrode brings its potential with it, so the
+      // authored entry has to carry it or the restore loses it.
+      reference: variant.reference
     };
     this.availableComponents = [...this.availableComponents, entry];
     this._loadComponents(entry);
@@ -185265,7 +185487,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   refreshDeviceAfterRemoval(component) {
     const { Source, Voltmeter, Ammeter, Multimeter } = EComponentType;
     if (component._type !== Source && component._type !== Voltmeter && component._type !== Ammeter && component._type !== Multimeter || this.operatingCircuit(component)) return;
-    if (component._type === Voltmeter || component._type === Multimeter) component._visibleVoltage = 0;
+    if (component._type === Voltmeter || component._type === Multimeter) component._visibleVoltage = null;
     component._visibleCurrent = null;
     const label = `${component._type}:${component._id}`;
     const ticker = "echem" + label;
@@ -185438,6 +185660,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (!cable) return false;
     this.allEComponents.push(cable);
     this.canvas.addComponentView(cable, false);
+    this.canvas.refreshDeviceDisplay(from2);
+    this.canvas.refreshDeviceDisplay(to2);
     if (!authored) return true;
     this.syncAuthoredConnections(from2);
     this.syncAuthoredConnections(to2);
@@ -185510,6 +185734,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (message === "") {
       this.syncAuthoredConnections(component);
       this.syncAuthoredConnections(partner);
+      this.canvas.refreshDeviceDisplay(component);
+      this.canvas.refreshDeviceDisplay(partner);
       this._sendxAPiStatement(
         "removed",
         "eCon " + component._type + component._id,
@@ -186289,8 +186515,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       const other = cable._connections.find((end) => end && end !== device);
       return other ? [{ cable, other }] : [];
     });
-    const materials = this.canAuthor && device._type === Electrode ? componentVariants.electrode : [];
-    const material = materials.find((variant) => variant.material.name === device._material?.name);
+    const materials = this.canAuthor && device._type === Electrode ? componentVariants.electrode.filter((variant) => variant.material) : [];
+    const material = materials.find((variant) => variant.material?.name === device._material?.name);
     const hasSource = device._type === Source;
     const hasMeter = device._type === "multimeter" /* Multimeter */;
     const hasLabel = device._type === "label" /* Label */;
@@ -186400,7 +186626,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this._sendxAPiStatement("submitted", `ElectrodeMaterlial ${formula}:${device._id}`);
     }}>
 						<option value="" ?selected=${!material} disabled>${device._material ? this.itemName(device._material.name) : this.message("kein Material")}</option>
-						${materials.map((variant) => x`<option value=${variant.id} ?selected=${variant === material}>${this.message(variant.material.name)}</option>`)}
+						${materials.map((variant) => x`<option value=${variant.id} ?selected=${variant === material}>${this.message(variant.material?.name ?? "")}</option>`)}
 					</select></label>` : E}
 				${connections.length ? x`
 					<div class="connection-list">
@@ -186488,6 +186714,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.simulation.stopTask(
           "echem" + this.curr_name
         );
+        this.clearEChemReadings();
         this._updatePopup();
         this._sendxAPiStatement(
           "completed",

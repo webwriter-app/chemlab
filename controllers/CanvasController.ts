@@ -788,16 +788,16 @@ export class CanvasController implements ReactiveController {
 		this.host.requestCanvasRender();
 	}
 
-	refreshDeviceDisplay(component: chemlib.ElectricComponent, hasVoltageReading?: boolean): void {
+	refreshDeviceDisplay(component: chemlib.ElectricComponent): void {
 		const view = this.spritesByLabel.get(`${component._type}:${component._id}`);
-		if (view instanceof ElectricDeviceView && view.refresh(hasVoltageReading)) this.host.requestCanvasRender();
+		if (view instanceof ElectricDeviceView && view.refresh()) this.host.requestCanvasRender();
 	}
 	private createComponentView(component: chemlib.ChemComponent | chemlib.ElectricComponent): PIXI.Container {
 		const type = component._type;
-		const graphic = componentGraphic(type);
-		const texture = PIXI.Assets.get<PIXI.Texture>(graphic.url);
 		const capacityMl = component instanceof chemlib.ChemComponent ? component._volume : undefined;
 		const variantId = component instanceof chemlib.ElectricComponent ? component._variantId : undefined;
+		const graphic = componentGraphic(type, variantId);
+		const texture = PIXI.Assets.get<PIXI.Texture>(graphic.url);
 		const [widthMm, heightMm] = componentArtboardMm(type, capacityMl, variantId);
 		const width = widthMm / MILLIMETERS_PER_WORLD_UNIT;
 		const height = heightMm / MILLIMETERS_PER_WORLD_UNIT;
@@ -880,6 +880,10 @@ export class CanvasController implements ReactiveController {
 		if (component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable) {
 			this.cables.set(sprite as PIXI.Graphics, component);
 			this.cableRopes.delete(sprite as PIXI.Graphics);
+			this.cablesDirty = true;
+		} else if (this.cables.size && !(sprite instanceof VesselView)) {
+			// A new device lands on top of the world, so the cables have to be
+			// raised above it again.
 			this.cablesDirty = true;
 		}
 		if (select && !sprite.label.includes("cable")) {
@@ -976,7 +980,7 @@ export class CanvasController implements ReactiveController {
 		const terminal = sprite.portAt(local.x, local.y);
 		if (terminal < 0 || !free.includes(terminal)) return false;
 		this.wire = { id: event.pointerId, from: device, terminal, sprite };
-		sprite.showPorts(free, terminal);
+		sprite.showPorts(terminal);
 		this.host.app.stage.on("globalpointermove", this._wireMoveHandler);
 		this.drawWire(event.global);
 		return true;
@@ -1040,8 +1044,9 @@ export class CanvasController implements ReactiveController {
 	}
 
 	/**
-	 * Shows the free terminals of the device under the pointer, and while a
-	 * wire is dragged also those of the device it would land on.
+	 * Marks the terminal a dragged cable would land on, and brightens the free
+	 * plugs of the device under the pointer. The markers themselves are part of
+	 * the device and stay visible either way.
 	 *
 	 * @private
 	 * @param {PIXI.PointData} global - the pointer in stage coordinates
@@ -1058,24 +1063,24 @@ export class CanvasController implements ReactiveController {
 			}
 			if (sprite && target) {
 				const local = sprite.toLocal(new PIXI.Point(global.x, global.y));
-				sprite.showPorts(target.device.freeTerminals, sprite.portAt(local.x, local.y));
+				sprite.showPorts(sprite.portAt(local.x, local.y));
 			}
 			return;
 		}
 		const sprite = target?.sprite;
 		if (sprite === this.hoveredPorts) return;
-		this.hoveredPorts?.hidePorts();
+		this.hoveredPorts?.setPortHover(false);
 		this.hoveredPorts = sprite;
-		if (sprite && target) sprite.showPorts(target.device.freeTerminals);
+		sprite?.setPortHover(true);
 	}
 
 	/**
-	 * Hides every terminal marker again.
+	 * Drops the target emphasis and the hover emphasis again.
 	 *
 	 * @private
 	 */
 	private clearPorts(): void {
-		this.hoveredPorts?.hidePorts();
+		this.hoveredPorts?.setPortHover(false);
 		this.hoveredPorts = undefined;
 		this.wireTarget?.hidePorts();
 		this.wireTarget = undefined;
@@ -1340,8 +1345,18 @@ export class CanvasController implements ReactiveController {
 	}
 
 	flushChanges(): void {
+		const changed = [...this.changedVessels.keys()].map((view) => view.component._content);
 		for (const [view, hint] of this.changedVessels) view.updateContents(hint);
 		this.changedVessels.clear();
+		// A gas collection tube shows what bubbled out of its vessel, so it
+		// follows every change of that vessel, not only the electrochemical
+		// ones.
+		if (changed.length) {
+			for (const device of this.host.allEComponents) {
+				if (device._type === chemlib.EComponentType.GasCollector &&
+					changed.includes(device._connectedMix)) this.refreshDeviceDisplay(device);
+			}
+		}
 		this.updateDippedStacking();
 		if (this.cablesDirty || this.cables.size) {
 			this.cablesDirty = false;
@@ -1540,8 +1555,6 @@ export class CanvasController implements ReactiveController {
 			}
 			const endpoints = this.cableEndpoints(cable);
 			if (!endpoints) continue;
-			const from = this.spritesByLabel.get(`${first._type}:${first._id}`)!;
-			const to = this.spritesByLabel.get(`${second._type}:${second._id}`)!;
 
 			let rope = this.cableRopes.get(sprite);
 			if (!rope) {
@@ -1575,9 +1588,10 @@ export class CanvasController implements ReactiveController {
 				anyAwake = true;
 			}
 
-			const index = stage.getChildIndex(sprite);
-			const behindDevices = Math.min(stage.getChildIndex(from), stage.getChildIndex(to));
-			if (index > behindDevices) stage.setChildIndex(sprite, behindDevices);
+			// Cables lie on top of the devices, so a cable visibly ends at the
+			// plug it is clamped to instead of vanishing under the device body.
+			const top = stage.children.length - 1;
+			if (stage.getChildIndex(sprite) !== top) stage.setChildIndex(sprite, top);
 		}
 		// Keep the ticker running while any cable moves: the task requests a
 		// render every frame, and the flush below steps the ropes. Only when

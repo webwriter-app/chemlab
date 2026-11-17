@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="150" viewBox="0 0 15 75">
+  <defs>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#b9d3de"/><stop offset=".3" stop-color="#f4fafc"/><stop offset=".72" stop-color="#d5e6ec"/><stop offset="1" stop-color="#a6c0cc"/>
+    </linearGradient>
+    <linearGradient id="kcl" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#9dc0d0"/><stop offset=".45" stop-color="#d8ebf1"/><stop offset="1" stop-color="#93b6c7"/>
+    </linearGradient>
+    <linearGradient id="mercury" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#4a545b"/><stop offset=".38" stop-color="#a3adb3"/><stop offset="1" stop-color="#5b656c"/>
+    </linearGradient>
+  </defs>
+  <rect x="1.5" y="4" width="12" height="12" rx="1" fill="#f1f5f5" stroke="#76919b" stroke-width=".45"/>
+  <path d="M2.6 16h9.8v51.5a2.5 2.5 0 0 1-2.5 2.5H5.1a2.5 2.5 0 0 1-2.5-2.5z" fill="url(#glass)" stroke="#36515d" stroke-width=".8"/>
+  <path d="M3.4 19h8.2v43.8H3.4z" fill="url(#kcl)"/>
+  <path d="M3.4 19h8.2" stroke="#7fa8b8" stroke-width=".4"/>
+  <path d="M5.4 18h4.2v30.2a2.1 2.1 0 0 1-4.2 0z" fill="#eef5f8" stroke="#6d858f" stroke-width=".5"/>
+  <path d="M5.4 30h4.2v9.4H5.4z" fill="#dfe6e9" stroke="#8b9ba3" stroke-width=".35"/>
+  <path d="M5.9 32.2h3.2m-3.2 2.2h3.2m-3.2 2.2h3.2" stroke="#aebbc2" stroke-width=".35"/>
+  <path d="M5.4 39.4h4.2v6.7a2.1 2.1 0 0 1-4.2 0z" fill="url(#mercury)" stroke="#3f4950" stroke-width=".4"/>
+  <path d="M7.5 8v32.5" stroke="#6b7982" stroke-width="1.2"/>
+  <path d="M7.5 8v32.5" stroke="#eef3f5" stroke-width=".4"/>
+  <path d="M2.6 63.4h9.8v3.6H2.6z" fill="#c3cfd4" stroke="#6d858f" stroke-width=".45"/>
+  <path d="M3.4 64.2h1.2m1.4 0h1.2m1.4 0h1.2m1.4 0h1.2" stroke="#7d949e" stroke-width=".4"/>
+  <path d="M4 19v43" stroke="#f7fcfd" stroke-width=".5" stroke-opacity=".8"/>
+</svg>
