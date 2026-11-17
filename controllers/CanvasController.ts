@@ -69,6 +69,15 @@ export class CanvasController implements ReactiveController {
 	private pan?: { id: number; x: number; y: number; moved: boolean; deselectOnTap: boolean };
 	private selectionOverlay = new PIXI.Graphics({ eventMode: "none" });
 	private placementPreviewLayer = new PIXI.Container({ eventMode: "none" });
+	/** draws the rubber-band wire of a connection drag, in world coordinates */
+	private wireLayer = new PIXI.Container({ eventMode: "none" });
+	private wireGraphics = new PIXI.Graphics({ eventMode: "none" });
+	/** the connection drag in progress, if any */
+	private wire?: { id: number; from: chemlib.ElectricComponent; terminal: number; sprite: ElectricDeviceView };
+	/** the device under the pointer whose free terminals are shown */
+	private hoveredPorts?: ElectricDeviceView;
+	/** the device under the pointer while a wire is being dragged */
+	private wireTarget?: ElectricDeviceView;
 	private selection: PIXI.Container[] = [];
 	private marquee?: { id: number; start: PIXI.PointData; end?: PIXI.PointData };
 	private groupDrag?: { id: number; origin: PIXI.PointData; anchor: PIXI.PointData; moved: boolean;
@@ -363,7 +372,6 @@ export class CanvasController implements ReactiveController {
 		if (this._dragMoved && sprite) {
 			sprite.rotation = 0;
 			if (sprite instanceof VesselView) sprite.updateAngle();
-			this.host._hideAlert();
 			this.host.saveComponentPosition(sprite);
 		}
 		this.cancelPointerInteraction();
@@ -411,6 +419,8 @@ export class CanvasController implements ReactiveController {
 		this.world.scale.set(this.camera.zoom);
 		this.placementPreviewLayer.position.copyFrom(this.world.position);
 		this.placementPreviewLayer.scale.copyFrom(this.world.scale);
+		this.wireLayer.position.copyFrom(this.world.position);
+		this.wireLayer.scale.copyFrom(this.world.scale);
 		if (this.showGrid) this.grid?.update(this.camera);
 		this.updateScaleReadouts();
 		if (this.selection.length || this.marquee || this.host.selectedObjectSprite) this.drawSelection();
@@ -498,6 +508,12 @@ export class CanvasController implements ReactiveController {
 		}
 		const redrawSelection = (this._dragActive && this._dragMoved) || this.groupDrag || this.marquee;
 		this.host.app?.stage.off("globalpointermove", this._dragMoveHandler);
+		if (this.wire) {
+			this.host.app?.stage.off("globalpointermove", this._wireMoveHandler);
+			this.wire = undefined;
+			this.wireGraphics.clear();
+			this.clearPorts();
+		}
 		this._dragActive = false;
 		this.dragPointerId = undefined;
 		this.pan = undefined;
@@ -581,14 +597,16 @@ export class CanvasController implements ReactiveController {
 		const info = `${type}:${component._id}`;
 		const sprite = this.createComponentView(component);
 
+		const isCable = component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable;
 		// Cables draw in world coordinates and carry their own transform at (0,0).
-		if (!(component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable)) {
+		if (!isCable) {
 			sprite.x = this.host.mousePos[0];
 			sprite.y = this.host.mousePos[1];
 		}
-		sprite.eventMode = component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable
-			? "none"
-			: "static";
+		// A cable is a thin rope, so it gets a hit area that follows the drawn
+		// polyline instead of the bounding box, which would swallow the canvas.
+		sprite.eventMode = "static";
+		if (isCable) (sprite as PIXI.Graphics).hitArea = this.cableHitArea(sprite as PIXI.Graphics);
 		sprite.cursor = "pointer";
 		sprite.on("pointerdown", (event) => {
 			event.stopPropagation();
@@ -600,6 +618,9 @@ export class CanvasController implements ReactiveController {
 			this.updateMousePosition(event);
 			if (event.button === 0) this.host.closeAmountMenu();
 			if (event.button === 2) return;
+			// Pressing on a free terminal starts a wire instead of moving the
+			// device, which is what makes connecting a single gesture.
+			if (event.button === 0 && this.beginWire(sprite, event)) return;
 			if (event.button === 0 && this.selection.includes(sprite)) {
 				const items = this.selection.filter((item) => !item.label.startsWith("cable:"))
 					.map((item) => ({ sprite: item, x: item.x, y: item.y }));
@@ -634,6 +655,197 @@ export class CanvasController implements ReactiveController {
 		this.host.reportXApi("inserted", sprite.label);
 		this.host.requestCanvasRender();
 		return sprite;
+	}
+
+	/**
+	 * A hit area that follows the drawn rope of a cable. The bounding box of a
+	 * sagging cable covers a large part of the canvas, so a click would land on
+	 * the cable instead of on the device behind it.
+	 *
+	 * @private
+	 * @param {PIXI.Graphics} sprite - the cable sprite
+	 * @returns {PIXI.IHitArea}
+	 */
+	private cableHitArea(sprite: PIXI.Graphics): PIXI.IHitArea {
+		return {
+			contains: (x: number, y: number): boolean => {
+				const rope = this.cableRopes.get(sprite);
+				if (!rope) return false;
+				const reach = 3;
+				for (let index = 1; index < rope.points.length; index++) {
+					const a = rope.points[index - 1];
+					const b = rope.points[index];
+					const dx = b.x - a.x;
+					const dy = b.y - a.y;
+					const lengthSquared = dx * dx + dy * dy;
+					const t = lengthSquared > 0
+						? Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / lengthSquared))
+						: 0;
+					if (Math.hypot(x - (a.x + dx * t), y - (a.y + dy * t)) <= reach) return true;
+				}
+				return false;
+			},
+		};
+	}
+
+	/**
+	 * The device whose drawn area contains a point in world coordinates. The
+	 * topmost one wins, so a device lying over another is the one that answers.
+	 *
+	 * @private
+	 * @param {number} x - world-space x
+	 * @param {number} y - world-space y
+	 * @returns {?{ device: chemlib.ElectricComponent; sprite: ElectricDeviceView }}
+	 */
+	private deviceAtWorld(x: number, y: number): { device: chemlib.ElectricComponent; sprite: ElectricDeviceView } | undefined {
+		for (let index = this.world.children.length - 1; index >= 0; index--) {
+			const sprite = this.world.children[index];
+			if (!(sprite instanceof ElectricDeviceView) || !sprite.visible) continue;
+			if (Math.abs(x - sprite.x) > sprite.width / 2 || Math.abs(y - sprite.y) > sprite.height / 2) continue;
+			const device = this.host.allEComponents.find((component) => `${component._type}:${component._id}` === sprite.label);
+			if (device) return { device, sprite };
+		}
+		return undefined;
+	}
+
+	/**
+	 * The world position of one terminal of a device. Devices are drawn without
+	 * rotation or scale, so the local offset of the terminal is also its world
+	 * offset from the sprite centre.
+	 *
+	 * @private
+	 * @param {ElectricDeviceView} sprite - the device view
+	 * @param {number} terminal - the terminal index
+	 * @returns {?PIXI.PointData}
+	 */
+	private portWorld(sprite: ElectricDeviceView, terminal: number): PIXI.PointData | undefined {
+		const point = sprite.terminalPoint(terminal);
+		return point ? { x: sprite.x + point.x, y: sprite.y + point.y } : undefined;
+	}
+
+	/**
+	 * Starts a connection drag when the pointer went down on a free terminal of
+	 * a device. Returns whether the press was consumed, so the caller can skip
+	 * the device drag.
+	 *
+	 * @private
+	 * @param {PIXI.Container} sprite - the pressed sprite
+	 * @param {PIXI.FederatedPointerEvent} event - the press
+	 * @returns {boolean}
+	 */
+	private beginWire(sprite: PIXI.Container, event: PIXI.FederatedPointerEvent): boolean {
+		if (!(sprite instanceof ElectricDeviceView)) return false;
+		const device = this.host.allEComponents.find((component) => `${component._type}:${component._id}` === sprite.label);
+		if (!device) return false;
+		const free = device.freeTerminals;
+		if (!free.length) return false;
+		const local = sprite.toLocal(event.global);
+		const terminal = sprite.portAt(local.x, local.y);
+		if (terminal < 0 || !free.includes(terminal)) return false;
+		this.wire = { id: event.pointerId, from: device, terminal, sprite };
+		sprite.showPorts(free, terminal);
+		this.host.app.stage.on("globalpointermove", this._wireMoveHandler);
+		this.drawWire(event.global);
+		return true;
+	}
+
+	/** Stable pointermove handler of a connection drag, so it can be removed. */
+	private _wireMoveHandler = (event: PIXI.FederatedPointerEvent): void => {
+		if (event.pointerId !== this.wire?.id) return;
+		this.updateMousePosition(event);
+		this.drawWire(event.global);
+	};
+
+	/**
+	 * Draws the rubber band of a connection drag and marks the terminal it
+	 * would land on. The band turns blue over a device that accepts it, so the
+	 * drop target is visible before the release.
+	 *
+	 * @private
+	 * @param {PIXI.PointData} global - the pointer in stage coordinates
+	 */
+	private drawWire(global: PIXI.PointData): void {
+		const wire = this.wire;
+		const graphics = this.wireGraphics;
+		graphics.clear();
+		if (!wire) return;
+		const start = this.portWorld(wire.sprite, wire.terminal);
+		if (!start) return;
+		const end = this.camera.toWorld(global.x, global.y);
+		const target = this.deviceAtWorld(end.x, end.y);
+		const accepts = !!target && target.device !== wire.from && chemlib.canConnect(wire.from, target.device);
+		graphics.moveTo(start.x, start.y).lineTo(end.x, end.y)
+			.stroke({ color: accepts ? 0x0284c7 : 0x64748b, width: 1.2, alpha: 0.9 });
+		graphics.circle(start.x, start.y, 1.4).fill(0x0284c7);
+		graphics.circle(end.x, end.y, accepts ? 2.2 : 1.4)
+			.fill({ color: accepts ? 0x0284c7 : 0x94a3b8, alpha: 0.9 });
+		this.updatePorts(global);
+	}
+
+	/**
+	 * Ends a connection drag. Releasing over a device wires the two together,
+	 * releasing anywhere else cancels without a message: a stray release is not
+	 * an error worth reporting.
+	 *
+	 * @private
+	 * @param {PIXI.FederatedPointerEvent} event - the release
+	 */
+	private finishWire(event: PIXI.FederatedPointerEvent): void {
+		const wire = this.wire;
+		this.wire = undefined;
+		this.host.app.stage.off("globalpointermove", this._wireMoveHandler);
+		this.wireGraphics.clear();
+		wire?.sprite.hidePorts();
+		this.clearPorts();
+		if (!wire) return;
+		const point = this.camera.toWorld(event.global.x, event.global.y);
+		const target = this.deviceAtWorld(point.x, point.y);
+		if (!target || target.device === wire.from) return;
+		const local = target.sprite.toLocal(event.global);
+		const terminal = target.sprite.portAt(local.x, local.y);
+		this.host.connectElectrical(wire.from, target.device, wire.terminal, terminal >= 0 ? terminal : undefined);
+	}
+
+	/**
+	 * Shows the free terminals of the device under the pointer, and while a
+	 * wire is dragged also those of the device it would land on.
+	 *
+	 * @private
+	 * @param {PIXI.PointData} global - the pointer in stage coordinates
+	 */
+	private updatePorts(global: PIXI.PointData): void {
+		const world = this.camera.toWorld(global.x, global.y);
+		const target = this.deviceAtWorld(world.x, world.y);
+		const wire = this.wire;
+		if (wire) {
+			const sprite = target && target.device !== wire.from ? target.sprite : undefined;
+			if (sprite !== this.wireTarget) {
+				this.wireTarget?.hidePorts();
+				this.wireTarget = sprite;
+			}
+			if (sprite && target) {
+				const local = sprite.toLocal(new PIXI.Point(global.x, global.y));
+				sprite.showPorts(target.device.freeTerminals, sprite.portAt(local.x, local.y));
+			}
+			return;
+		}
+		const sprite = target?.sprite;
+		if (sprite === this.hoveredPorts) return;
+		this.hoveredPorts?.hidePorts();
+		this.hoveredPorts = sprite;
+		if (sprite && target) sprite.showPorts(target.device.freeTerminals);
+	}
+
+	/**
+	 * Hides every terminal marker again.
+	 *
+	 * @private
+	 */
+	private clearPorts(): void {
+		this.hoveredPorts?.hidePorts();
+		this.hoveredPorts = undefined;
+		this.wireTarget?.hidePorts();
+		this.wireTarget = undefined;
 	}
 
 	/**
@@ -680,91 +892,6 @@ export class CanvasController implements ReactiveController {
 					? (this.host.dragObject.x > transferTarget.x ? -0.35 : 0.35) : 0;
 				return;
 			}
-
-			let mouseHoverObject: number = -1;
-			for (let i = 0; i < this.world.children.length; i++) {
-				if (
-					this.world.children[i] !== this.host.dragObject &&
-					this._mouseInbounds(
-						i,
-						50
-					)
-				) {
-					const upperSprite = this.host.dragObject
-					let bottomSprite = this.world.children[i];
-					let cObj: any = undefined;
-					let cOType: string = bottomSprite.label
-						.split(":")[0]
-						.toLowerCase();
-					let cOId: number = Number.parseInt(
-						bottomSprite.label.split(":")[1]
-					);
-					if (
-						chemlib.ComponentType.Beaker ===
-							(cOType as chemlib.ComponentType) ||
-						chemlib.ComponentType.Flask ===
-							(cOType as chemlib.ComponentType)
-					) {
-						this.host.allChemComponents.forEach((comp) => {
-							if (comp._id === cOId) {
-								cObj = comp;
-							}
-						});
-						if (
-							this.host.curr_obj._type ===
-								chemlib.EComponentType.Electrode &&
-							cObj
-							&& (upperSprite.y > bottomSprite.y - bottomSprite.height/2 && upperSprite.y < bottomSprite.y + upperSprite.height/2 && upperSprite.x > bottomSprite.x - bottomSprite.width/2 && upperSprite.x < bottomSprite.x + bottomSprite.width/2)
-						) {
-							this.host._emitAlert(
-								this.host.message("{from} in {to} einfügen.", {
-									from: this.host.itemName(this.host.curr_obj._type),
-									to: this.host.itemName(cObj._type),
-								}),
-								"primary",
-								false
-							);
-							mouseHoverObject = i;
-						}
-					}
-					if (
-						Object.values(chemlib.EComponentType).includes(
-							cOType as chemlib.EComponentType
-						)
-					) {
-						this.host.allEComponents.forEach((comp) => {
-							if (comp._id === cOId) {
-								cObj = comp;
-							}
-						});
-						if (
-							Object.values(chemlib.EComponentType).includes(
-								this.host.curr_obj._type
-							)
-						) {
-							if (
-								this.host.curr_obj._type !=
-									chemlib.EComponentType.Cable &&
-								cObj._type != chemlib.EComponentType.Cable
-							) {
-								this.host._emitAlert(
-									this.host.message("{from} und {to} verbinden.", {
-										from: this.host.itemName(this.host.curr_obj._type),
-										to: this.host.itemName(cObj._type),
-									}),
-									"primary",
-									false
-								);
-								mouseHoverObject = i;
-							}
-						}
-					}
-				}
-			}
-			if (mouseHoverObject === -1) {
-				this.host.dragObject.rotation = 0;
-				this.host._hideAlert();
-			}
 		}
 	}
 
@@ -772,10 +899,9 @@ export class CanvasController implements ReactiveController {
 	 * function to be called when a sprite is placed. Handles interactions
 	 *
 	 * @private
-	 * @async
-	 * @returns {Promise<void>}
+	 * @returns {void}
 	 */
-	async _dragEnd(event: PIXI.FederatedPointerEvent): Promise<void> {
+	_dragEnd(event: PIXI.FederatedPointerEvent): void {
 		if (!this._dragActive) return;
 		this.host.app.stage.off("globalpointermove", this._dragMoveHandler);
 		this._dragActive = false;
@@ -799,122 +925,9 @@ export class CanvasController implements ReactiveController {
 		const draggedDevice = this.host.allEComponents.find((component) =>
 			`${component._type}:${component._id}` === dragged.label);
 		if (draggedDevice) this.attachDevice(draggedDevice, dragged);
-		for (let i = 0; i < this.world.children.length; i++) {
-			if (
-				this.world.children[i] !== this.host.dragObject &&
-				this._mouseInbounds(
-					i,
-				50
-				)
-			) {
-				const upperSprite = this.host.dragObject
-				let bottomSprite = this.world.children[i];
-				let cObj: any = undefined;
-				let cOType: string = bottomSprite.label
-					.split(":")[0]
-					.toLowerCase();
-				let cOId: number = Number.parseInt(
-					bottomSprite.label.split(":")[1]
-				);
-				let dialogPanel =
-					this.host.confirmDialog.shadowRoot.querySelector(
-						".dialog__panel"
-					) as HTMLDivElement;
-				if (
-					chemlib.ComponentType.Beaker ===
-						(cOType as chemlib.ComponentType) ||
-					chemlib.ComponentType.Flask ===
-						(cOType as chemlib.ComponentType)
-				) {
-					this.host.allChemComponents.forEach((comp) => {
-						if (comp._id === cOId) {
-							cObj = comp;
-						}
-					});
-					if (
-						this.host.curr_obj._type ===
-							chemlib.EComponentType.Electrode &&
-						cObj &&
-						(upperSprite.y > bottomSprite.y - bottomSprite.height/2 && upperSprite.y < bottomSprite.y + upperSprite.height/2 && upperSprite.x > bottomSprite.x - bottomSprite.width/2 && upperSprite.x < bottomSprite.x + bottomSprite.width/2)
-					) {
-						const point = this.viewportPoint(this.host.mousePos[0], this.host.mousePos[1]);
-						dialogPanel.style.top = `${point.y}px`;
-						dialogPanel.style.left = `${point.x}px`;
-						this.host.confirmDialog.show();
-						await this.host.waitUntil(
-							() => this.host.confirmAction != 0
-						);
-						// console.log(this.host.confirmAction);
-						if (this.host.confirmAction === 1) {
-							this.host.curr_obj._connectedMix = cObj._content;
-							this.host._emitAlert(
-								this.host.message("{from} in {to} eingefügt.", {
-									from: this.host.itemName(this.host.curr_obj._type),
-									to: this.host.itemName(cObj._type),
-								}),
-								"success",
-								false,
-								1500
-							);
-							this.host.reportXApi(
-								"added",
-								this.host.curr_obj._type +
-									":" +
-									this.host.curr_obj._id,
-								{
-									response: cOType + ":" + cOId,
-									success: true,
-									completion: true,
-								}
-							);
-							this.host._getObject(
-								this.world.children[
-									this.host.curr_stage_index
-								]
-							);
-						}
-						this.host.confirmAction = 0;
-					}
-					cObj = undefined;
-				}
-				if (
-					Object.values(chemlib.EComponentType).includes(
-						cOType as chemlib.EComponentType
-					)
-				) {
-					this.host.allEComponents.forEach((comp) => {
-						if (comp._id === cOId) {
-							cObj = comp;
-						}
-					});
-					if (
-						Object.values(chemlib.EComponentType).includes(
-							this.host.curr_obj._type
-						)
-					) {
-						if (
-							this.host.curr_obj._type !=
-								chemlib.EComponentType.Cable &&
-							cObj._type != chemlib.EComponentType.Cable
-						) {
-							const point = this.viewportPoint(this.host.mousePos[0], this.host.mousePos[1]);
-							dialogPanel.style.top = `${point.y}px`;
-							dialogPanel.style.left = `${point.x}px`;
-							this.host.confirmDialog.show();
-							await this.host.waitUntil(
-								() => this.host.confirmAction != 0
-							);
-							// console.log(this.host.confirmAction);
-							if (this.host.confirmAction === 1) {
-								this.host._addEcon(cObj);
-							}
-							this.host.confirmAction = 0;
-						}
-						cObj = undefined;
-					}
-				}
-			}
-		}
+		// Moving a vessel changes what the devices around it sit in, so the
+		// whole set is re-evaluated and not only the dragged sprite.
+		if (dragged instanceof VesselView) this.attachDevices();
 		const movedElectrodes = [...this.attachedElectrodesMoved];
 		this.attachedElectrodesMoved.clear();
 		if (this.host.dragObject) this.host.saveComponentPositions([this.host.dragObject, ...movedElectrodes]);
@@ -997,7 +1010,8 @@ export class CanvasController implements ReactiveController {
 		this.host.app.stage.hitArea = this.host.app.screen;
 		this.grid = new WorkspaceGrid();
 		this.grid.mesh.visible = this.showGrid;
-		app.stage.addChild(this.grid.mesh, this.world, this.placementPreviewLayer, this.selectionOverlay);
+		this.wireLayer.addChild(this.wireGraphics);
+		app.stage.addChild(this.grid.mesh, this.world, this.wireLayer, this.placementPreviewLayer, this.selectionOverlay);
 		app.canvas.addEventListener("contextmenu", (event) => {
 			if (this.pointerBusy) {
 				event.preventDefault();
@@ -1019,6 +1033,7 @@ export class CanvasController implements ReactiveController {
 		// pointer briefly leaves the sprite bounds during a fast drag.
 		stage.on("pointermove", (event) => {
 			this.updateMousePosition(event);
+			this.updatePorts(event.global);
 		});
 		stage.on("globalpointermove", (event) => {
 			this.movePan(event);
@@ -1041,7 +1056,9 @@ export class CanvasController implements ReactiveController {
 			}
 		});
 		const finishPointer = (event: PIXI.FederatedPointerEvent) => {
-			if (this.marquee?.id === event.pointerId) {
+			if (this.wire?.id === event.pointerId) {
+				this.finishWire(event);
+			} else if (this.marquee?.id === event.pointerId) {
 				this.finishMarquee(event);
 			} else if (this.groupDrag?.id === event.pointerId) {
 				this.moveGroup(event);
@@ -1069,7 +1086,7 @@ export class CanvasController implements ReactiveController {
 					this.host.clearObjectSelection();
 				}
 			} else if (this._dragActive && event.pointerId === this.dragPointerId) {
-				void this._dragEnd(event);
+				this._dragEnd(event);
 			}
 		};
 		stage.on("pointerup", finishPointer);
@@ -1128,14 +1145,16 @@ export class CanvasController implements ReactiveController {
 	}
 
 	/**
-	 * Dips restored devices into the vessels they were saved in.
+	 * Dips every device into the vessel it currently sits in.
 	 *
 	 * A saved layout does not record which vessel an electrode belongs to, so
 	 * the position decides, using the same test as a manual drop. Without this
 	 * an imported layout would show a cell whose electrodes are in no
-	 * solution, and the simulation would never start.
+	 * solution, and the simulation would never start. The same sweep runs
+	 * after a vessel was moved, because that changes what the devices around
+	 * it sit in.
 	 */
-	attachAuthoredDevices(): void {
+	attachDevices(): void {
 		for (const eComp of this.host.allEComponents) {
 			const sprite = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
 			if (sprite) this.attachDevice(eComp, sprite);
@@ -1144,9 +1163,9 @@ export class CanvasController implements ReactiveController {
 
 	/**
 	 * Resolves what a device without a cable sits in or on. An electrode dips
-	 * into the vessel under its centre, a gas collection tube into the vessel
-	 * under its lower end, and a salt bridge into the two vessels under its
-	 * legs.
+	 * into the vessel under its centre or under its lower end, a gas collection
+	 * tube into the vessel under its lower end, and a salt bridge into the two
+	 * vessels under its legs.
 	 *
 	 * @param {chemlib.ElectricComponent} eComp - the device to attach
 	 * @param {PIXI.Container} sprite - its view, which carries the position
@@ -1157,9 +1176,12 @@ export class CanvasController implements ReactiveController {
 		const bottom = sprite.y + sprite.height * 0.4667;
 		switch (eComp._type) {
 			case chemlib.EComponentType.Electrode: {
-				if (eComp._connectedMix) return;
-				const vessel = this.vesselAt(sprite.x, sprite.y);
-				if (vessel) eComp._connectedMix = vessel.component._content;
+				// An electrode is long and thin, so it counts as dipped in when
+				// either its centre or its lower end is inside the vessel. That
+				// is what a drop looks like: the strip hangs into the beaker
+				// while its centre is still above the rim.
+				const vessel = this.vesselAt(sprite.x, sprite.y) ?? this.vesselAt(sprite.x, bottom);
+				eComp._connectedMix = vessel?.component._content;
 				return;
 			}
 			case chemlib.EComponentType.GasCollector: {
@@ -1229,12 +1251,18 @@ export class CanvasController implements ReactiveController {
 		let anyAwake = false;
 		for (const [sprite, cable] of this.cables) {
 			const [first, second] = cable._connections;
-			const from = first && this.spritesByLabel.get(`${first._type}:${first._id}`);
-			const to = second && this.spritesByLabel.get(`${second._type}:${second._id}`);
-			if (!from || !to) {
+			// A cable is only dropped when one of its devices is really gone.
+			// A missing sprite alone is not enough: during a restore the views
+			// are added one by one, so a cable can be laid before its partner
+			// has a view, and deleting it then would silently unwire the cell.
+			if (!first || !this.host.allEComponents.includes(first)
+				|| !second || !this.host.allEComponents.includes(second)) {
 				this.host.removeObjects([sprite]);
 				continue;
 			}
+			const from = this.spritesByLabel.get(`${first._type}:${first._id}`);
+			const to = this.spritesByLabel.get(`${second._type}:${second._id}`);
+			if (!from || !to) continue;
 			const endpoints: [number, number, number, number] = [from.x, from.y, to.x, to.y];
 
 			let rope = this.cableRopes.get(sprite);

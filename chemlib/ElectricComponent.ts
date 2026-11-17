@@ -62,11 +62,15 @@ class ElectricComponent {
 	 */
 	_id: number;
 	/**
-	 * A list containing all connected objects
+	 * The partners on each terminal, indexed by terminal. The array always has
+	 * `_conCount` slots and a slot that carries no cable stays empty, so the
+	 * index of a partner is the terminal it sits on. That is what makes
+	 * `_connections[0]` a stable reference for the first pole of a source even
+	 * when the second pole was wired first.
 	 *
-	 * @type {Array<ElectricComponent>}
+	 * @type {Array<ElectricComponent | undefined>}
 	 */
-	_connections: Array<ElectricComponent>;
+	_connections: Array<ElectricComponent | undefined>;
 	/**
 	 * for electrodes: The solutiuon, the electrode is connected to
 	 *
@@ -226,7 +230,6 @@ class ElectricComponent {
 	) {
 		this._type = nType;
 		this._id = nIndex;
-		this._connections = new Array<ElectricComponent>();
 
 		switch (this._type) {
 			case EComponentType.Source:
@@ -265,47 +268,82 @@ class ElectricComponent {
 			default:
 				break;
 		}
+		// One slot per terminal, so the index of a partner is the terminal it
+		// sits on. A device without terminals gets an empty array.
+		this._connections = new Array<ElectricComponent | undefined>(this._conCount > 0 ? this._conCount : 0);
 	}
 
 	/**
-	 * Connects one electric component to another
+	 * The terminals that carry no cable yet.
+	 *
+	 * @readonly
+	 * @type {number[]}
+	 */
+	get freeTerminals(): number[] {
+		const free: number[] = [];
+		for (let terminal = 0; terminal < this._conCount; terminal++) {
+			if (!this._connections[terminal]) free.push(terminal);
+		}
+		return free;
+	}
+
+	/**
+	 * Puts a partner on one terminal of this device, without touching the
+	 * partner. The caller that wires both sides is {@link connect} or
+	 * `connectDevices`.
+	 *
+	 * @public
+	 * @param {ElectricComponent} partner - the component to place
+	 * @param {number} terminal - the terminal to place it on
+	 * @returns {boolean} whether the terminal was free
+	 */
+	public attach(partner: ElectricComponent, terminal: number): boolean {
+		if (!(terminal >= 0) || terminal >= this._conCount) return false;
+		if (this._connections[terminal]) return false;
+		this._connections[terminal] = partner;
+		return true;
+	}
+
+	/**
+	 * Connects one electric component to another. The partner takes its first
+	 * free terminal; the terminal of this device can be chosen, which is what
+	 * lets a source keep its plus pole on terminal 0.
 	 *
 	 * @public
 	 * @param {ElectricComponent} nComposite - the other component
+	 * @param {number} [terminal] - the terminal of this device to use
+	 * @returns {string} an empty string on success, a message otherwise
 	 */
-	public connect(nComposite: ElectricComponent): string {
-		let message: string = ""
-		if (
-			this._conCount > this._connections.length &&
-			nComposite._conCount > nComposite._connections.length
-		) {
-			this._connections.push(nComposite);
-			nComposite._connections.push(this);
-		}else{
-			message = "Mindestens eine Komponente hat keine Ein/Ausgänge mehr."
+	public connect(nComposite: ElectricComponent, terminal?: number): string {
+		if (!(this._conCount > 0) || !(nComposite._conCount > 0)) {
+			return "Mindestens eine Komponente hat keine Ein/Ausgänge.";
 		}
-
-		return message
+		const free = this.freeTerminals;
+		const partnerFree = nComposite.freeTerminals;
+		if (free.length === 0 || partnerFree.length === 0) {
+			return "Mindestens eine Komponente hat keine Ein/Ausgänge mehr.";
+		}
+		const slot = terminal !== undefined && free.includes(terminal) ? terminal : free[0];
+		this._connections[slot] = nComposite;
+		nComposite._connections[partnerFree[0]] = this;
+		return "";
 	}
 
 	/**
-	 * Removes an existing connection
+	 * Removes an existing connection. The terminal keeps its slot, so the
+	 * remaining partners stay on the terminals they were put on.
 	 *
 	 * @public
 	 * @param {ElectricComponent} rComposite - the connected component
+	 * @returns {string} an empty string on success, a message otherwise
 	 */
 	public disconnect(rComposite: ElectricComponent): string {
-		let message: string = ""
-
-		if(this._connections.includes(rComposite) && rComposite._connections.includes(this)){
-			this._connections.splice(this._connections.indexOf(rComposite), 1)
-			rComposite._connections.splice(rComposite._connections.indexOf(this), 1)
-		}else{
-			message = "Die gewählten Komponenten sind nicht verbunden."
-		}
-
-
-		return message
+		const index = this._connections.indexOf(rComposite);
+		if (index < 0) return "Die gewählten Komponenten sind nicht verbunden.";
+		this._connections[index] = undefined;
+		const back = rComposite._connections.indexOf(this);
+		if (back >= 0) rComposite._connections[back] = undefined;
+		return "";
 	}
 
 	/**

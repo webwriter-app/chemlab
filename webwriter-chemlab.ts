@@ -25,10 +25,8 @@ import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js
 import SlSelect from "@shoelace-style/shoelace/dist/components/select/select.component.js";
 import SlOption from "@shoelace-style/shoelace/dist/components/option/option.component.js";
 import SlInput from "@shoelace-style/shoelace/dist/components/input/input.component.js";
-import SlAlert from "@shoelace-style/shoelace/dist/components/alert/alert.component.js";
 import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 import SlDivider from "@shoelace-style/shoelace/dist/components/divider/divider.component.js";
-import SlDialog from "@shoelace-style/shoelace/dist/components/dialog/dialog.component.js";
 import SlCarousel from "@shoelace-style/shoelace/dist/components/carousel/carousel.component.js";
 import SlCarouselItem from "@shoelace-style/shoelace/dist/components/carousel-item/carousel-item.component.js";
 import SlCheckbox from "@shoelace-style/shoelace/dist/components/checkbox/checkbox.component.js";
@@ -176,21 +174,13 @@ export class ChemLab extends LitElementWw {
 	private vesselNameRequests = new WeakSet<chemlib.Molecule>();
 	private carouselMixture?: chemlib.Mixture;
 	/**
-	 * confirmation dialog box element
+	 * status strip element for short, non-blocking notices
 	 *
 	 * @private
-	 * @type {SlDialog}
+	 * @type {HTMLDivElement}
 	 */
-	@query("#confirmDialog")
-	accessor confirmDialog: SlDialog;
-	/**
-	 * shoelace alert element for all messages
-	 *
-	 * @private
-	 * @type {SlAlert}
-	 */
-	@query("#dialogOverview")
-	private accessor dialogAlert: SlAlert;
+	@query("#statusStrip")
+	private accessor statusStrip: HTMLDivElement;
 	/**
 	 * container inside object context menu showing molar info
 	 *
@@ -469,6 +459,7 @@ export class ChemLab extends LitElementWw {
 		totalMl: number;
 	};
 	private meterTimeout?: number;
+	private statusTimeout?: number;
 
 	/**
 	 * the name of the current object
@@ -486,14 +477,6 @@ export class ChemLab extends LitElementWw {
 	 */
 	@property({ attribute: false })
 	accessor curr_stage_index: number = -1;
-	/**
-	 * if an action is permitted or aborted
-	 *
-	 * @private
-	 * @type {number}
-	 */
-	@property({ attribute: false })
-	accessor confirmAction: number = 0; //0-pending,1-true,2-false
 	/**
 	 * the random pseudonym of the current session
 	 *
@@ -606,7 +589,6 @@ export class ChemLab extends LitElementWw {
 			"sl-select": SlSelect,
 			"sl-option": SlOption,
 			"sl-input": SlInput,
-			"sl-alert": SlAlert,
 			"sl-carousel": SlCarousel,
 			"sl-carousel-item": SlCarouselItem,
 
@@ -617,7 +599,6 @@ export class ChemLab extends LitElementWw {
 			"sl-tab": SlTab,
 			"sl-tab-group": SlTabGroup,
 			"sl-tab-panel": SlTabPanel,
-			"sl-dialog": SlDialog,
 		};
 	}
 
@@ -858,35 +839,16 @@ export class ChemLab extends LitElementWw {
 			await this.canvas.init();
 		} catch (error) {
 			console.error("Unable to initialize the Chemlab canvas", error);
-			this._emitAlert(this.message("Die Arbeitsfläche konnte nicht geladen werden."), "danger", true);
+			this._notify(this.message("Die Arbeitsfläche konnte nicht geladen werden."), "danger");
 			return;
 		}
 		// The first load uses the latest authored data, including updates during asset loading.
 		this.refreshFromRemoteData = false;
 		this.focus();
-		setAnimation(this.dialogAlert, "alert.show", {
-			keyframes: [{ opacity: "0" }, { opacity: "1" }],
-			options: {
-				duration: 50,
-			},
-		});
-
-		setAnimation(this.dialogAlert, "alert.hide", {
-			keyframes: [{ opacity: "1" }, { opacity: "0" }],
-			options: {
-				duration: 50,
-			},
-		});
-
 		this.simulation.startLoop(() => this.canvas.flushChanges());
 		this._loadComponents();
 		this._sendxAPiStatement("registered", "chemlab");
-		this._emitAlert(
-			this.message("klicke zum Starten in das Fenster!"),
-			"success",
-			true,
-			10000
-		);
+		this._notify(this.message("klicke zum Starten in das Fenster!"), "neutral", 10000);
 	}
 
 	requestCanvasRender(): void {
@@ -2133,23 +2095,6 @@ export class ChemLab extends LitElementWw {
 
 
 	/**
-	 * asynchronous timer function to be used in other functions; returns, if the condition is met 
-	 *
-	 * @param {*} condition - a condition to check
-	 * @param {number} [checkInterval=10] - the check interval
-	 * @returns {*}
-	 */
-	waitUntil = (condition, checkInterval = 10) => {
-		return new Promise<void>((resolve) => {
-			let interval = setInterval(() => {
-				if (!condition()) return;
-				clearInterval(interval);
-				resolve();
-			}, checkInterval);
-		});
-	};
-
-	/**
 	 * removes an object and its corresponding sprite
 	 * 
 	 * @private
@@ -2160,7 +2105,7 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private deleteSelection(event: KeyboardEvent): void {
-		if (event.key === "Escape" && !event.defaultPrevented && !event.isComposing && !this.confirmDialog?.open &&
+		if (event.key === "Escape" && !event.defaultPrevented && !event.isComposing &&
 			(this.selectedChemical || this.amountMenu || this.paletteDrag || this.dragTransfer)) {
 			event.preventDefault();
 			event.stopPropagation();
@@ -2171,7 +2116,7 @@ export class ChemLab extends LitElementWw {
 			return;
 		}
 		if (event.key !== "Delete" || event.defaultPrevented || event.isComposing ||
-			event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || this.confirmDialog?.open) return;
+			event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
 		for (const target of event.composedPath()) {
 			if (target === event.currentTarget) break;
 			if (target instanceof Element && target.matches("input, textarea, select, sl-input, sl-select, [role='textbox'], [contenteditable]:not([contenteditable='false'])")) return;
@@ -2191,7 +2136,7 @@ export class ChemLab extends LitElementWw {
 		const labelOf = (component: chemlib.ChemComponent | chemlib.ElectricComponent) => `${component._type}:${component._id}`;
 		const labels = new Set(targets.map(({ label }) => label));
 		const removedElectrical = this.allEComponents.filter((component) => labels.has(labelOf(component)) ||
-			(component._type === chemlib.EComponentType.Cable && component._connections.some((end) => labels.has(labelOf(end)))));
+			(component._type === chemlib.EComponentType.Cable && component._connections.some((end) => end && labels.has(labelOf(end)))));
 		const removedChemical = this.allChemComponents.filter((component) => labels.has(labelOf(component)));
 		const drag = this.dragTransfer;
 		if (drag && (removedChemical.includes(drag.target) ||
@@ -2205,7 +2150,7 @@ export class ChemLab extends LitElementWw {
 		// Collect the affected circuit while the connections still exist.
 		const affectedElectrical = new Set([...removedElectrical, ...detachedElectrodes]);
 		for (const component of affectedElectrical) {
-			for (const partner of component._connections) affectedElectrical.add(partner);
+			for (const partner of component._connections.filter(Boolean)) affectedElectrical.add(partner);
 		}
 		for (const component of removedElectrical) labels.add(labelOf(component));
 		const selected = world.children[this.curr_stage_index];
@@ -2215,17 +2160,14 @@ export class ChemLab extends LitElementWw {
 			this.clearObjectSelection();
 		}
 		for (const component of removedElectrical) {
-			if (component._type === chemlib.EComponentType.Cable) this.removeAuthoredCableConnection(component);
-		}
-		for (const component of removedElectrical) {
-			for (const partner of [...component._connections]) this._remEcon(component, partner);
+			for (const partner of [...component._connections].filter(Boolean)) this._remEcon(component, partner);
 		}
 		for (const electrode of detachedElectrodes) {
 			const vessel = removedMixtures.get(electrode._connectedMix);
 			electrode._connectedMix = undefined;
-			this._emitAlert(this.message("{from} aus {to} entfernt.", {
+			this._notify(this.message("{from} aus {to} entfernt.", {
 				from: this.itemName(electrode._type), to: this.itemName(vessel._type),
-			}), "danger", false, 1500);
+			}), "warning", 1500);
 		}
 		this.allChemComponents = this.allChemComponents.filter((component) => !labels.has(labelOf(component)));
 		this.allEComponents = this.allEComponents.filter((component) => !labels.has(labelOf(component)));
@@ -2261,22 +2203,6 @@ export class ChemLab extends LitElementWw {
 		this.canvas.setDeviceActive(component, false);
 		this._sendxAPiStatement("completed", ticker);
 		this.requestUpdate();
-	}
-
-	private removeAuthoredCableConnection(cable: chemlib.ElectricComponent): void {
-		if (!this.canAuthor || cable._connections.length !== 2) return;
-		const indices = cable._connections.map((end) => {
-			const sprite = this.canvas.world.children.find(({ label }) => label === `${end._type}:${end._id}`);
-			return sprite ? this.availableComponents.indexOf(this.findAuthoredComponent(sprite)) : -1;
-		});
-		if (indices.some((index) => index < 0)) return;
-		const [first, second] = indices;
-		this.availableComponents = this.availableComponents.map((entry, index) => {
-			if (index !== first && index !== second) return entry;
-			const partner = index === first ? second : first;
-			entry["connections"] = (entry["connections"] ?? []).filter((connection: number) => connection !== partner);
-			return entry;
-		});
 	}
 
 	clearObjectSelection(): void {
@@ -2430,41 +2356,17 @@ export class ChemLab extends LitElementWw {
 			this.avComponentsSprites.push([sprite, newComp._id]);
 			component["id"] = newComp._id;
 		}
-		this.availableComponents.forEach((comp) => {
-			comp["connections"].forEach((index) => {
-				let id = this.availableComponents[index]["id"];
-				let source: chemlib.ElectricComponent;
-				let partner: chemlib.ElectricComponent;
-				this.allEComponents.forEach((eComp) => {
-					if (eComp._type.toLowerCase() != "cable") {
-						if (eComp._id === id) {
-							partner = eComp;
-						}
-						if (eComp._id === comp["id"]) {
-							source = eComp;
-						}
-					}
-				});
-				// console.log(source._type, partner._type);
-				let save: boolean = true;
-				this.allEComponents.forEach((eComp) => {
-					if (eComp._type.toLowerCase() === "cable") {
-						if (
-							eComp._connections.includes(partner) &&
-							eComp._connections.includes(source)
-						) {
-							// console.log("false");
-							save = false;
-						}
-					}
-				});
-				if (save) {
-					// console.log("attempt connection");
-					this._addEcon(partner, source);
-				}
-			});
-		});
-		if (entry === undefined) this.canvas.attachAuthoredDevices();
+		// Rebuild the wiring from the authored indices. Each entry now carries
+		// the runtime id of the component it became, so the lookup is exact;
+		// the pairs are deduplicated and a pair that is already wired is left
+		// alone, which makes this safe to run again when a single component is
+		// added to an existing layout.
+		chemlib.restoreConnections(
+			this.availableComponents as chemlib.ConnectionEntry[],
+			(id) => this.allEComponents.find((component) => component._id === id),
+			(a, b) => this.connectElectrical(a, b, undefined, undefined, false)
+		);
+		if (entry === undefined) this.canvas.attachDevices();
 	}
 
 
@@ -2477,111 +2379,104 @@ export class ChemLab extends LitElementWw {
 	}
 
 	/**
-	 * adds a ne connection between two electric components
+	 * Joins two devices with a cable. This is the single entry point for
+	 * wiring: the canvas drag, the restore path and the settings panel all go
+	 * through it, so a cable always lands in the same three places - the
+	 * device terminals, the component list and the canvas.
 	 *
-	 * @private
-	 * @param {chemlib.ElectricComponent} partner - the component to connect to
-	 * @param {?chemlib.ElectricComponent} [source] - the component to connect from
+	 * @param {chemlib.ElectricComponent} from - the device the cable starts at
+	 * @param {chemlib.ElectricComponent} to - the device it ends at
+	 * @param {?number} [terminalFrom] - the terminal of `from`, first free by default
+	 * @param {?number} [terminalTo] - the terminal of `to`, first free by default
+	 * @param {boolean} [authored=true] - whether to record the cable in the data block
+	 * @returns {boolean} whether a cable was laid
 	 */
-	_addEcon(
-		partner: chemlib.ElectricComponent,
-		source?: chemlib.ElectricComponent
-	): void {
-		let cable: chemlib.ElectricComponent =
-			chemlib.ComponentManager.newElectricComponent(
-				chemlib.EComponentType.Cable
-			);
-		let message: string = "";
-		let ret1: string = "";
-		let ret2: string = "";
-		let sComp: chemlib.ElectricComponent = source ?? this.curr_obj;
-		ret1 += sComp.connect(cable);
-		ret2 += cable.connect(partner);
-		if (ret1 != ret2) {
-			message = ret1 + "\n" + ret2;
-		} else {
-			message = ret1;
-		}
+	connectElectrical(
+		from: chemlib.ElectricComponent,
+		to: chemlib.ElectricComponent,
+		terminalFrom?: number,
+		terminalTo?: number,
+		authored = true
+	): boolean {
+		const cable = chemlib.connectDevices(from, to, terminalFrom, terminalTo);
+		if (!cable) return false;
 		this.allEComponents.push(cable);
 		this.canvas.addComponentView(cable, false);
-		if (!source) {
-			const sprite = this.canvas.world.children.find(
-				(sprite) => sprite.label === sComp._type + ":" + sComp._id
-			);
-			this._getObject(sprite);
-		}
-		let isAvail1, isAvail2;
-		if (message === "" && typeof source === "undefined") {
-			this.availableComponents.forEach((comp) => {
-				if (comp["id"] === sComp._id) {
-					isAvail1 = [true, this.availableComponents.indexOf(comp)];
-				}
-				if (comp["id"] === partner._id) {
-					isAvail2 = [true, this.availableComponents.indexOf(comp)];
-				}
-			});
-			if (
-				typeof isAvail1 != "undefined" &&
-				typeof isAvail2 != "undefined"
-			) {
-				if (isAvail1[0] && isAvail2[0]) {
-					this.availableComponents[isAvail1[1]]["connections"].push(
-						isAvail2[1]
-					);
-					this.availableComponents[isAvail2[1]]["connections"].push(
-						isAvail1[1]
-					);
+		if (!authored) return true;
+		this.syncAuthoredConnections(from);
+		this.syncAuthoredConnections(to);
+		this._notify(this.message("Neue Verbindung zwischen {from} und {to}", {
+			from: this.itemName(from._type), to: this.itemName(to._type),
+		}), "success", 1500);
+		this._sendxAPiStatement("joined", from._type + from._id, {
+			response: to._type + ":" + to._id,
+			success: true,
+			completion: true,
+		});
+		return true;
+	}
 
-					let arrCopy: object[] = [];
-					this.availableComponents.forEach((comp) => {
-						arrCopy.push(comp);
-					});
-					this.availableComponents = [];
-					this.availableComponents = arrCopy;
-				}
-			}
-			if(this.curr_obj._type != "cable" && partner._type != "cable"){
-				this._emitAlert(
-					message === ""
-						? this.message("Neue Verbindung zwischen {from} und {to}", { from: this.itemName(this.curr_obj._type), to: this.itemName(partner._type) })
-						: message,
-					"success",
-					false,
-					1500
-				);
-			}
-			this._sendxAPiStatement(
-				"joined",
-				this.curr_obj._type + this.curr_obj._id,
-				{
-					response: partner._type + ":" + partner._id,
-					success: true,
-					completion: true,
-				}
-			);
-		} else if (message != "") {
-			this._emitAlert(message.split("\n").filter(Boolean).map(line => this.message(line)).join("\n"), "warning", true);
-			this._sendxAPiStatement(
-				"joined",
-				this.curr_obj._type + this.curr_obj._id,
-				{
-					response: partner._type + ":" + partner._id,
-					success: false,
-					completion: true,
-				}
-			);
+	/**
+	 * Rewrites the authored connection list of a device from its live
+	 * terminals. The order is what matters: `polarity` names the electrode on
+	 * terminal 0, so a rewire has to be written back in terminal order rather
+	 * than appended.
+	 *
+	 * @private
+	 * @param {chemlib.ElectricComponent} device - the device to write back
+	 */
+	private syncAuthoredConnections(device: chemlib.ElectricComponent): void {
+		if (!this.canAuthor) return;
+		const entry = this.authoredEntryOf(device);
+		if (!entry) return;
+		const partners: number[] = [];
+		for (const cable of device._connections) {
+			if (!cable) continue;
+			const other = cable._connections.find((end) => end && end !== device);
+			const index = other ? this.authoredIndexOf(other) : -1;
+			if (index >= 0 && !partners.includes(index)) partners.push(index);
 		}
+		entry["connections"] = partners;
+		this.availableComponents = [...this.availableComponents];
+	}
+
+	/**
+	 * The authored entry a live device came from, or undefined when the device
+	 * was placed in this session and has no entry yet.
+	 *
+	 * @private
+	 * @param {chemlib.ElectricComponent} device - the live device
+	 * @returns {?object}
+	 */
+	private authoredEntryOf(device: chemlib.ElectricComponent): object | undefined {
+		const sprite = this.canvas.world.children.find(({ label }) => label === `${device._type}:${device._id}`);
+		return sprite ? this.findAuthoredComponent(sprite) : undefined;
+	}
+
+	/**
+	 * The index of a live device in the authored component list, or -1.
+	 *
+	 * @private
+	 * @param {chemlib.ElectricComponent} device - the live device
+	 * @returns {number}
+	 */
+	private authoredIndexOf(device: chemlib.ElectricComponent): number {
+		const entry = this.authoredEntryOf(device);
+		return entry ? this.availableComponents.indexOf(entry) : -1;
 	}
 
 	/**
 	 * removes a connection between a selected sprites object an its partner
 	 *
 	 * @private
+	 * @param {chemlib.ElectricComponent} component - the object to disconnect
 	 * @param {chemlib.ElectricComponent} partner - the object to which the connection is to be removed
 	 */
 	private _remEcon(component: chemlib.ElectricComponent, partner: chemlib.ElectricComponent): void {
 		const message: string = component.disconnect(partner);
 		if (message === "") {
+			this.syncAuthoredConnections(component);
+			this.syncAuthoredConnections(partner);
 			this._sendxAPiStatement(
 				"removed",
 				"eCon " + component._type + component._id,
@@ -2592,7 +2487,7 @@ export class ChemLab extends LitElementWw {
 				}
 			);
 		} else {
-			this._emitAlert(message.split("\n").filter(Boolean).map(line => this.message(line)).join("\n"), "warning", true);
+			this._notify(message.split("\n").filter(Boolean).map(line => this.message(line)).join("\n"), "warning", 4000);
 			this._sendxAPiStatement(
 				"removed",
 				"eCon " + component._type + component._id,
@@ -2605,36 +2500,25 @@ export class ChemLab extends LitElementWw {
 		}
 	}
 
-
 	/**
-	 * shows an alert with given properties
+	 * Shows a short notice in the status strip above the canvas. The strip is
+	 * not modal and never blocks the canvas, so a notice can appear while the
+	 * user keeps working; a new notice replaces the previous one.
 	 *
 	 * @private
-	 * @param {string} text - the content of the alert
-	 * @param {string} variant - the showlace color variant
-	 * @param {boolean} closable - if the alert box can be closed
-	 * @param {?number} [duration] - how long the alert box will be shown
+	 * @param {string} text - the notice
+	 * @param {string} [variant="neutral"] - neutral, success, warning or danger
+	 * @param {number} [duration=2000] - how long the notice stays, in ms
 	 */
-	_emitAlert(
-		text: string,
-		variant: string,
-		closable: boolean,
-		duration?: number
-	) {
-		this.shadowRoot.getElementById("dialogText").textContent = text;
-		// @ts-ignore
-		this.dialogAlert.variant = variant;
-		this.dialogAlert.closable = closable;
-		if (duration) {
-			this.dialogAlert.duration = duration;
-		} else {
-			this.dialogAlert.duration = Infinity;
-		}
-		this.dialogAlert.show();
-	}
-
-	_hideAlert(): void {
-		this.dialogAlert.hide();
+	_notify(text: string, variant: "neutral" | "success" | "warning" | "danger" = "neutral", duration = 2000): void {
+		const strip = this.statusStrip;
+		if (!strip) return;
+		strip.textContent = text;
+		strip.dataset.variant = variant;
+		strip.hidden = false;
+		const view = this.ownerDocument.defaultView;
+		view?.clearTimeout(this.statusTimeout);
+		this.statusTimeout = view?.setTimeout(() => { strip.hidden = true; }, duration);
 	}
 
 	/**
@@ -2699,7 +2583,6 @@ export class ChemLab extends LitElementWw {
 					${this.renderControlButtons()}
 				</div>
 				${this.renderDiagramDetails(diagramAvailable, diagramOpen)}
-				${this.renderConfirmDialog()}
 				${this.renderTeacherDrawer()}
 				<sl-popup id="permissionPopup" placement="top" distance="8" flip shift arrow
 					.anchor=${this.permissionTooltip?.anchor} .active=${!!this.permissionTooltip}>
@@ -2708,61 +2591,6 @@ export class ChemLab extends LitElementWw {
 			</div>
 		`;
 	}
-
-	private renderConfirmDialog() {
-		return html`
-				<sl-dialog id="confirmDialog" no-header label=${this.message("bestätigen")}>
-					<div
-						style="display: flex; flex-direction: row; align-items: center"
-					>
-						<p>${this.message("Aktion bestätigen:")}</p>
-						<button
-							aria-label=${this.message("bestätigen")}
-							@click="${(event) => {
-								this.confirmAction = 1;
-								this.confirmDialog.hide();
-							}}"
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="20"
-								height="20"
-								viewBox="0 0 48 48"
-							>
-								<path
-									fill="#288d00"
-									fill-rule="evenodd"
-									d="M24 44c11.046 0 20-8.954 20-20S35.046 4 24 4S4 12.954 4 24s8.954 20 20 20m10.742-26.33a1 1 0 1 0-1.483-1.34L21.28 29.567l-6.59-6.291a1 1 0 0 0-1.382 1.446l7.334 7l.743.71l.689-.762z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-						</button>
-						<button
-							aria-label=${this.message("Abbrechen")}
-							@click="${(event) => {
-								this.confirmAction = 2;
-								this.confirmDialog.hide();
-							}}"
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="20"
-								height="20"
-								viewBox="0 0 48 48"
-							>
-								<path
-									fill="#d10000"
-									fill-rule="evenodd"
-									d="M44 24c0 11.046-8.954 20-20 20S4 35.046 4 24S12.954 4 24 4s20 8.954 20 20m-27.778 7.778a1 1 0 0 1 0-1.414L22.586 24l-6.364-6.364a1 1 0 0 1 1.414-1.414L24 22.586l6.364-6.364a1 1 0 0 1 1.414 1.414L25.414 24l6.364 6.364a1 1 0 0 1-1.414 1.414L24 25.414l-6.364 6.364a1 1 0 0 1-1.414 0"
-									clip-rule="evenodd"
-								/>
-							</svg>
-						</button>
-					</div>
-				</sl-dialog>
-		`;
-	}
-
 
 	private get diagramPanelAvailable(): boolean {
 		return this.diagrams.hasDiagrams || this.simulation.hasRunningExperiments;
@@ -2849,13 +2677,7 @@ export class ChemLab extends LitElementWw {
 						</svg>
 					</sl-button>
 				</div>
-				<sl-alert
-					id="dialogOverview"
-					style="top: 0px; left: 0px"
-					closable
-				>
-					<p id="dialogText"></p>
-				</sl-alert>
+				<div id="statusStrip" role="status" aria-live="polite" hidden></div>
 		`;
 	}
 
@@ -3464,21 +3286,17 @@ export class ChemLab extends LitElementWw {
 	private renderElectricalSettings(device: chemlib.ElectricComponent) {
 		const { Cable, Electrode, Source } = chemlib.EComponentType;
 		if (device._type === Cable) return nothing;
-		const connections = device._connections.flatMap(cable => {
-			const other = cable._connections.find(end => end !== device);
+		const connections = device._connections.filter(Boolean).flatMap(cable => {
+			const other = cable._connections.find(end => end && end !== device);
 			return other ? [{ cable, other }] : [];
 		});
-		const candidates = device._connections.length < device._conCount
-			? this.allEComponents.filter(other => other !== device && other._type !== Cable &&
-				other._connections.length < other._conCount && !connections.some(link => link.other === other))
-			: [];
 		const materials = this.canAuthor && device._type === Electrode ? componentVariants.electrode : [];
 		const material = materials.find(variant => variant.material.name === device._material?.name);
 		const hasSource = device._type === Source;
 		const hasMeter = device._type === chemlib.EComponentType.Multimeter;
 		const hasLabel = device._type === chemlib.EComponentType.Label;
 		const hasElectrode = device._type === Electrode;
-		if (!hasSource && !hasMeter && !hasLabel && !hasElectrode && !connections.length && !candidates.length) return nothing;
+		if (!hasSource && !hasMeter && !hasLabel && !hasElectrode && !connections.length) return nothing;
 		const label = (other: chemlib.ElectricComponent) => `${this.itemName(other._type)} · ${other._id + 1}`;
 		// A source has two poles, and the electrode on the plus pole is the
 		// anode. The select names the electrodes, so the user never has to
@@ -3589,22 +3407,11 @@ export class ChemLab extends LitElementWw {
 						<option value="" ?selected=${!material} disabled>${device._material ? this.itemName(device._material.name) : this.message("kein Material")}</option>
 						${materials.map(variant => html`<option value=${variant.id} ?selected=${variant === material}>${this.message(variant.material.name)}</option>`)}
 					</select></label>` : nothing}
-				${candidates.length ? html`
-					<label>${this.message("Verbindungen")}
-					<select contenteditable="false" @change=${(event: Event) => {
-							const select = event.currentTarget as HTMLSelectElement;
-							const other = candidates.find(candidate => String(candidate._id) === select.value);
-							select.value = "";
-							if (other) this._addEcon(other);
-						}}>
-						<option value="" selected disabled>${this.message("Gegenstück")}</option>
-						${candidates.map(other => html`<option value=${other._id}>${label(other)}</option>`)}
-					</select></label>` : nothing}
-				${connections.map(({ cable, other }) => html`
-					<sl-button size="small" variant="default" @click=${() => {
-						const sprite = this.canvas.world.children.find(({ label }) => label === `cable:${cable._id}`);
-						if (sprite) this.removeObjects([sprite]);
-					}}>${label(other)} ×</sl-button>`)}
+				${connections.length ? html`
+					<div class="connection-list">
+						<span class="connection-list-label">${this.message("Verbunden mit")}</span>
+						${connections.map(({ other }) => html`<sl-tag size="small" variant="neutral">${label(other)}</sl-tag>`)}
+					</div>` : nothing}
 			</sl-details>
 		`);
 	}

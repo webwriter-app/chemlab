@@ -175,6 +175,46 @@ export function componentGraphic(type: string): ComponentGraphic {
 	return { url: fallback };
 }
 
+/**
+ * A terminal of a device, in normalized artboard coordinates (0..1 from the
+ * top left). Normalized coordinates survive a variant that stretches the same
+ * texture onto another artboard, so `source:compact` keeps its posts.
+ *
+ * @export
+ * @interface TerminalPoint
+ */
+export interface TerminalPoint {
+	x: number;
+	y: number;
+}
+
+// The posts are the coloured binding posts of the drawn front panels: the red
+// one is the plus pole and comes first, so terminal 0 is always plus.
+const terminalTable: Readonly<Record<string, readonly TerminalPoint[]>> = {
+	// PHYWE 13506-93: red post at (174, 108), black post at (191, 108) of 206 x 130.
+	source: [{ x: 174 / 206, y: 108 / 130 }, { x: 191 / 206, y: 108 / 130 }],
+	// PeakTech P 205: red post at (30, 88), black post at (60, 88) of 90 x 106.
+	voltmeter: [{ x: 30 / 90, y: 88 / 106 }, { x: 60 / 90, y: 88 / 106 }],
+	ammeter: [{ x: 30 / 90, y: 88 / 106 }, { x: 60 / 90, y: 88 / 106 }],
+	multimeter: [{ x: 30 / 90, y: 88 / 106 }, { x: 60 / 90, y: 88 / 106 }],
+	// The strip of the electrode graphic starts at y = 0.4 of 75; the cable
+	// clips onto the top of the strip, above the material label.
+	electrode: [{ x: 0.5, y: 0.02 }],
+};
+
+/**
+ * The terminals of a device type, in normalized artboard coordinates. A device
+ * that carries no cable (a salt bridge, a gas collection tube, a label) has
+ * none.
+ *
+ * @export
+ * @param {string} type - the component type
+ * @returns {readonly TerminalPoint[]}
+ */
+export function componentTerminals(type: string): readonly TerminalPoint[] {
+	return terminalTable[type] ?? [];
+}
+
 export const componentTextureUrls = [
 	fallback,
 	...Object.values(componentGraphics).map(({ url }) => url),

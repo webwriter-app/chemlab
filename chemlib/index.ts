@@ -28,3 +28,5 @@ export {
 } from './halfReactions'
 export type {HalfReaction, HalfReactionTerm} from './halfReactions'
 export {MOLAR_GAS_VOLUME, MOLAR_GAS_VOLUME_ML} from './gasEvolution'
+export {canConnect, connectDevices, connectionPairs, restoreConnections} from './terminals'
+export type {ConnectionEntry} from './terminals'

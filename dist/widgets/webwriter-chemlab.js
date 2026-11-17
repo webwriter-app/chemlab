@@ -104673,37 +104673,44 @@ var style = i`
 		background-color: #51a332;
 		color: #fff;
 	}
-	#dialogOverview {
+	#statusStrip {
 		position: absolute;
-		bottom: 0px;
-		right: 0px;
-		top: revert !important;
-		left: revert !important;
-		display: block;
-
-		margin-bottom: 5px;
-		margin-right: 5px;
-	}
-	#dialogOverview::part(base) {
-		background-color: #ffffff8d;
+		top: 8px;
+		left: 50%;
+		transform: translateX(-50%);
+		max-width: min(70%, 420px);
+		padding: 4px 12px;
+		border-radius: 999px;
+		background-color: #ffffffd9;
 		backdrop-filter: blur(20px);
-		border-radius: 5px;
-		box-shadow: 0px 6px 12px 0px rgba(0, 0, 0, 0.33);
+		box-shadow: 0px 4px 10px 0px rgba(0, 0, 0, 0.22);
+		font-size: 10pt;
+		line-height: 14pt;
+		text-align: center;
+		pointer-events: none;
+		z-index: 20;
 	}
-	#confirmDialog::part(overlay) {
-		visibility: hidden;
+	#statusStrip[hidden] {
+		display: none;
 	}
-	#confirmDialog::part(panel) {
-		width: 215px;
-		background-color: #ffffff8d;
-		backdrop-filter: blur(20px);
-		border-radius: 5px;
-		box-shadow: 0px 0px 12px 3px rgba(0, 0, 0, 0.33);
-
-		position: absolute;
+	#statusStrip[data-variant="success"] {
+		border-left: 3px solid #51a332;
 	}
-	#confirmDialog::part(body) {
-		padding: 5px;
+	#statusStrip[data-variant="warning"] {
+		border-left: 3px solid #d19a00;
+	}
+	#statusStrip[data-variant="danger"] {
+		border-left: 3px solid #d10000;
+	}
+	.connection-list {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px;
+	}
+	.connection-list-label {
+		font-size: 9pt;
+		opacity: 0.7;
 	}
 	#smilesSwitch::part(label){
 		font-size: 10pt;
@@ -110898,9 +110905,13 @@ var ElectricComponent = class {
    */
   _id;
   /**
-   * A list containing all connected objects
+   * The partners on each terminal, indexed by terminal. The array always has
+   * `_conCount` slots and a slot that carries no cable stays empty, so the
+   * index of a partner is the terminal it sits on. That is what makes
+   * `_connections[0]` a stable reference for the first pole of a source even
+   * when the second pole was wired first.
    *
-   * @type {Array<ElectricComponent>}
+   * @type {Array<ElectricComponent | undefined>}
    */
   _connections;
   /**
@@ -111052,7 +111063,6 @@ var ElectricComponent = class {
   } = {}) {
     this._type = nType;
     this._id = nIndex;
-    this._connections = new Array();
     switch (this._type) {
       case "source" /* Source */:
         this._conCount = 2;
@@ -111090,38 +111100,76 @@ var ElectricComponent = class {
       default:
         break;
     }
+    this._connections = new Array(this._conCount > 0 ? this._conCount : 0);
   }
   /**
-   * Connects one electric component to another
+   * The terminals that carry no cable yet.
+   *
+   * @readonly
+   * @type {number[]}
+   */
+  get freeTerminals() {
+    const free = [];
+    for (let terminal = 0; terminal < this._conCount; terminal++) {
+      if (!this._connections[terminal]) free.push(terminal);
+    }
+    return free;
+  }
+  /**
+   * Puts a partner on one terminal of this device, without touching the
+   * partner. The caller that wires both sides is {@link connect} or
+   * `connectDevices`.
+   *
+   * @public
+   * @param {ElectricComponent} partner - the component to place
+   * @param {number} terminal - the terminal to place it on
+   * @returns {boolean} whether the terminal was free
+   */
+  attach(partner, terminal) {
+    if (!(terminal >= 0) || terminal >= this._conCount) return false;
+    if (this._connections[terminal]) return false;
+    this._connections[terminal] = partner;
+    return true;
+  }
+  /**
+   * Connects one electric component to another. The partner takes its first
+   * free terminal; the terminal of this device can be chosen, which is what
+   * lets a source keep its plus pole on terminal 0.
    *
    * @public
    * @param {ElectricComponent} nComposite - the other component
+   * @param {number} [terminal] - the terminal of this device to use
+   * @returns {string} an empty string on success, a message otherwise
    */
-  connect(nComposite) {
-    let message = "";
-    if (this._conCount > this._connections.length && nComposite._conCount > nComposite._connections.length) {
-      this._connections.push(nComposite);
-      nComposite._connections.push(this);
-    } else {
-      message = "Mindestens eine Komponente hat keine Ein/Ausg\xE4nge mehr.";
+  connect(nComposite, terminal) {
+    if (!(this._conCount > 0) || !(nComposite._conCount > 0)) {
+      return "Mindestens eine Komponente hat keine Ein/Ausg\xE4nge.";
     }
-    return message;
+    const free = this.freeTerminals;
+    const partnerFree = nComposite.freeTerminals;
+    if (free.length === 0 || partnerFree.length === 0) {
+      return "Mindestens eine Komponente hat keine Ein/Ausg\xE4nge mehr.";
+    }
+    const slot = terminal !== void 0 && free.includes(terminal) ? terminal : free[0];
+    this._connections[slot] = nComposite;
+    nComposite._connections[partnerFree[0]] = this;
+    return "";
   }
   /**
-   * Removes an existing connection
+   * Removes an existing connection. The terminal keeps its slot, so the
+   * remaining partners stay on the terminals they were put on.
    *
    * @public
    * @param {ElectricComponent} rComposite - the connected component
+   * @returns {string} an empty string on success, a message otherwise
    */
   disconnect(rComposite) {
-    let message = "";
-    if (this._connections.includes(rComposite) && rComposite._connections.includes(this)) {
-      this._connections.splice(this._connections.indexOf(rComposite), 1);
-      rComposite._connections.splice(rComposite._connections.indexOf(this), 1);
-    } else {
-      message = "Die gew\xE4hlten Komponenten sind nicht verbunden.";
-    }
-    return message;
+    const index2 = this._connections.indexOf(rComposite);
+    if (index2 < 0) return "Die gew\xE4hlten Komponenten sind nicht verbunden.";
+    this._connections[index2] = void 0;
+    const back = rComposite._connections.indexOf(this);
+    if (back >= 0) rComposite._connections[back] = void 0;
+    return "";
   }
   /**
    * for electrodes: sets the connected mixture
@@ -111290,7 +111338,7 @@ var ComponentManager = class {
       } else {
         var hasNext = false;
         currComponent._connections.forEach((conElem) => {
-          if (!visited.includes(conElem._id)) {
+          if (conElem && !visited.includes(conElem._id)) {
             hasNext = true;
             currComponent = conElem;
           }
@@ -111324,7 +111372,7 @@ var ComponentManager = class {
       visited.push(current);
       if (current._type === "electrode" /* Electrode */) return current;
       if (current._type !== "cable" /* Cable */) continue;
-      queue.push(...current._connections);
+      queue.push(...current._connections.filter(Boolean));
     }
     return void 0;
   }
@@ -151373,6 +151421,61 @@ var ChemComponent = class {
   }
 };
 
+// chemlib/terminals.ts
+function canConnect(a7, b5) {
+  if (!a7 || !b5 || a7 === b5) return false;
+  if (!(a7._conCount > 0) || !(b5._conCount > 0)) return false;
+  if (a7._connections.includes(b5)) return false;
+  return a7.freeTerminals.length > 0 && b5.freeTerminals.length > 0;
+}
+function connectDevices(a7, b5, terminalA, terminalB) {
+  if (!canConnect(a7, b5)) return void 0;
+  const freeA = a7.freeTerminals;
+  const freeB = b5.freeTerminals;
+  const slotA = terminalA !== void 0 && freeA.includes(terminalA) ? terminalA : freeA[0];
+  const slotB = terminalB !== void 0 && freeB.includes(terminalB) ? terminalB : freeB[0];
+  if (slotA === void 0 || slotB === void 0) return void 0;
+  const cable = ComponentManager.newElectricComponent("cable" /* Cable */);
+  a7.attach(cable, slotA);
+  b5.attach(cable, slotB);
+  cable.attach(a7, 0);
+  cable.attach(b5, 1);
+  return cable;
+}
+function connectionPairs(entries) {
+  const seen = /* @__PURE__ */ new Set();
+  const pairs = [];
+  entries.forEach((entry, index2) => {
+    for (const partner of entry.connections ?? []) {
+      if (!Number.isInteger(partner) || partner < 0 || partner >= entries.length) continue;
+      if (partner === index2) continue;
+      const key = index2 < partner ? `${index2}:${partner}` : `${partner}:${index2}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      pairs.push([index2, partner]);
+    }
+  });
+  return pairs;
+}
+function restoreConnections(entries, lookup, connect) {
+  let connected = 0;
+  let skipped = 0;
+  let missing = 0;
+  for (const [first, second] of connectionPairs(entries)) {
+    const idA = entries[first].id;
+    const idB = entries[second].id;
+    const a7 = idA === void 0 ? void 0 : lookup(idA);
+    const b5 = idB === void 0 ? void 0 : lookup(idB);
+    if (!a7 || !b5) {
+      missing += 1;
+      continue;
+    }
+    if (connect(a7, b5)) connected += 1;
+    else skipped += 1;
+  }
+  return { connected, skipped, missing };
+}
+
 // webwriter-chemlab.ts
 var import_smiles_drawer = __toESM(require_app(), 1);
 
@@ -151469,7 +151572,6 @@ var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
 var __getOwnPropSymbols = Object.getOwnPropertySymbols;
 var __hasOwnProp2 = Object.prototype.hasOwnProperty;
 var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __knownSymbol3 = (name2, symbol) => (symbol = Symbol[name2]) ? symbol : Symbol.for("Symbol." + name2);
 var __typeError3 = (msg) => {
   throw TypeError(msg);
 };
@@ -151498,38 +151600,6 @@ var __accessCheck3 = (obj, member, msg) => member.has(obj) || __typeError3("Cann
 var __privateGet3 = (obj, member, getter) => (__accessCheck3(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
 var __privateAdd3 = (obj, member, value) => member.has(obj) ? __typeError3("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
 var __privateSet3 = (obj, member, value, setter) => (__accessCheck3(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
-var __await = function(promise2, isYieldStar) {
-  this[0] = promise2;
-  this[1] = isYieldStar;
-};
-var __yieldStar = (value) => {
-  var obj = value[__knownSymbol3("asyncIterator")], isAwait = false, method, it = {};
-  if (obj == null) {
-    obj = value[__knownSymbol3("iterator")]();
-    method = (k4) => it[k4] = (x4) => obj[k4](x4);
-  } else {
-    obj = obj.call(value);
-    method = (k4) => it[k4] = (v5) => {
-      if (isAwait) {
-        isAwait = false;
-        if (k4 === "throw") throw v5;
-        return v5;
-      }
-      isAwait = true;
-      return {
-        done: false,
-        value: new __await(new Promise((resolve2) => {
-          var x4 = obj[k4](v5);
-          if (!(x4 instanceof Object)) __typeError3("Object expected");
-          resolve2(x4);
-        }), 1)
-      };
-    };
-  }
-  return it[__knownSymbol3("iterator")] = () => it, method("next"), "throw" in obj ? method("throw") : it.throw = (x4) => {
-    throw x4;
-  }, "return" in obj && method("return"), it;
-};
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.K7JGTRV7.js
 var defaultAnimationRegistry = /* @__PURE__ */ new Map();
@@ -154430,41 +154500,6 @@ function getOffset(element2, parent2) {
     top: Math.round(element2.getBoundingClientRect().top - parent2.getBoundingClientRect().top),
     left: Math.round(element2.getBoundingClientRect().left - parent2.getBoundingClientRect().left)
   };
-}
-var locks = /* @__PURE__ */ new Set();
-function getScrollbarWidth() {
-  const documentWidth = document.documentElement.clientWidth;
-  return Math.abs(window.innerWidth - documentWidth);
-}
-function getExistingBodyPadding() {
-  const padding = Number(getComputedStyle(document.body).paddingRight.replace(/px/, ""));
-  if (isNaN(padding) || !padding) {
-    return 0;
-  }
-  return padding;
-}
-function lockBodyScrolling(lockingEl) {
-  locks.add(lockingEl);
-  if (!document.documentElement.classList.contains("sl-scroll-lock")) {
-    const scrollbarWidth = getScrollbarWidth() + getExistingBodyPadding();
-    let scrollbarGutterProperty = getComputedStyle(document.documentElement).scrollbarGutter;
-    if (!scrollbarGutterProperty || scrollbarGutterProperty === "auto") {
-      scrollbarGutterProperty = "stable";
-    }
-    if (scrollbarWidth < 2) {
-      scrollbarGutterProperty = "";
-    }
-    document.documentElement.style.setProperty("--sl-scroll-lock-gutter", scrollbarGutterProperty);
-    document.documentElement.classList.add("sl-scroll-lock");
-    document.documentElement.style.setProperty("--sl-scroll-lock-size", `${scrollbarWidth}px`);
-  }
-}
-function unlockBodyScrolling(lockingEl) {
-  locks.delete(lockingEl);
-  if (locks.size === 0) {
-    document.documentElement.classList.remove("sl-scroll-lock");
-    document.documentElement.style.removeProperty("--sl-scroll-lock-size");
-  }
 }
 function scrollIntoView(element2, container2, direction = "vertical", behavior = "smooth") {
   const offset3 = getOffset(element2, container2);
@@ -158200,380 +158235,6 @@ __decorateClass([
   watch("value", { waitUntilFirstUpdate: true })
 ], SlInput.prototype, "handleValueChange", 1);
 
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.62HVOPEB.js
-var alert_styles_default = i`
-  :host {
-    display: contents;
-
-    /* For better DX, we'll reset the margin here so the base part can inherit it */
-    margin: 0;
-  }
-
-  .alert {
-    position: relative;
-    display: flex;
-    align-items: stretch;
-    background-color: var(--sl-panel-background-color);
-    border: solid var(--sl-panel-border-width) var(--sl-panel-border-color);
-    border-top-width: calc(var(--sl-panel-border-width) * 3);
-    border-radius: var(--sl-border-radius-medium);
-    font-family: var(--sl-font-sans);
-    font-size: var(--sl-font-size-small);
-    font-weight: var(--sl-font-weight-normal);
-    line-height: 1.6;
-    color: var(--sl-color-neutral-700);
-    margin: inherit;
-    overflow: hidden;
-  }
-
-  .alert:not(.alert--has-icon) .alert__icon,
-  .alert:not(.alert--closable) .alert__close-button {
-    display: none;
-  }
-
-  .alert__icon {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    font-size: var(--sl-font-size-large);
-    padding-inline-start: var(--sl-spacing-large);
-  }
-
-  .alert--has-countdown {
-    border-bottom: none;
-  }
-
-  .alert--primary {
-    border-top-color: var(--sl-color-primary-600);
-  }
-
-  .alert--primary .alert__icon {
-    color: var(--sl-color-primary-600);
-  }
-
-  .alert--success {
-    border-top-color: var(--sl-color-success-600);
-  }
-
-  .alert--success .alert__icon {
-    color: var(--sl-color-success-600);
-  }
-
-  .alert--neutral {
-    border-top-color: var(--sl-color-neutral-600);
-  }
-
-  .alert--neutral .alert__icon {
-    color: var(--sl-color-neutral-600);
-  }
-
-  .alert--warning {
-    border-top-color: var(--sl-color-warning-600);
-  }
-
-  .alert--warning .alert__icon {
-    color: var(--sl-color-warning-600);
-  }
-
-  .alert--danger {
-    border-top-color: var(--sl-color-danger-600);
-  }
-
-  .alert--danger .alert__icon {
-    color: var(--sl-color-danger-600);
-  }
-
-  .alert__message {
-    flex: 1 1 auto;
-    display: block;
-    padding: var(--sl-spacing-large);
-    overflow: hidden;
-  }
-
-  .alert__close-button {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    font-size: var(--sl-font-size-medium);
-    padding-inline-end: var(--sl-spacing-medium);
-  }
-
-  .alert__countdown {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: calc(var(--sl-panel-border-width) * 3);
-    background-color: var(--sl-panel-border-color);
-    display: flex;
-  }
-
-  .alert__countdown--ltr {
-    justify-content: flex-end;
-  }
-
-  .alert__countdown .alert__countdown-elapsed {
-    height: 100%;
-    width: 0;
-  }
-
-  .alert--primary .alert__countdown-elapsed {
-    background-color: var(--sl-color-primary-600);
-  }
-
-  .alert--success .alert__countdown-elapsed {
-    background-color: var(--sl-color-success-600);
-  }
-
-  .alert--neutral .alert__countdown-elapsed {
-    background-color: var(--sl-color-neutral-600);
-  }
-
-  .alert--warning .alert__countdown-elapsed {
-    background-color: var(--sl-color-warning-600);
-  }
-
-  .alert--danger .alert__countdown-elapsed {
-    background-color: var(--sl-color-danger-600);
-  }
-
-  .alert__timer {
-    display: none;
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.QI2PUKCF.js
-var toastStack = Object.assign(document.createElement("div"), { className: "sl-toast-stack" });
-var SlAlert = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.hasSlotController = new HasSlotController(this, "icon", "suffix");
-    this.localize = new LocalizeController2(this);
-    this.open = false;
-    this.closable = false;
-    this.variant = "primary";
-    this.duration = Infinity;
-    this.remainingTime = this.duration;
-  }
-  firstUpdated() {
-    this.base.hidden = !this.open;
-  }
-  restartAutoHide() {
-    this.handleCountdownChange();
-    clearTimeout(this.autoHideTimeout);
-    clearInterval(this.remainingTimeInterval);
-    if (this.open && this.duration < Infinity) {
-      this.autoHideTimeout = window.setTimeout(() => this.hide(), this.duration);
-      this.remainingTime = this.duration;
-      this.remainingTimeInterval = window.setInterval(() => {
-        this.remainingTime -= 100;
-      }, 100);
-    }
-  }
-  pauseAutoHide() {
-    var _a3;
-    (_a3 = this.countdownAnimation) == null ? void 0 : _a3.pause();
-    clearTimeout(this.autoHideTimeout);
-    clearInterval(this.remainingTimeInterval);
-  }
-  resumeAutoHide() {
-    var _a3;
-    if (this.duration < Infinity) {
-      this.autoHideTimeout = window.setTimeout(() => this.hide(), this.remainingTime);
-      this.remainingTimeInterval = window.setInterval(() => {
-        this.remainingTime -= 100;
-      }, 100);
-      (_a3 = this.countdownAnimation) == null ? void 0 : _a3.play();
-    }
-  }
-  handleCountdownChange() {
-    if (this.open && this.duration < Infinity && this.countdown) {
-      const { countdownElement } = this;
-      const start = "100%";
-      const end = "0";
-      this.countdownAnimation = countdownElement.animate([{ width: start }, { width: end }], {
-        duration: this.duration,
-        easing: "linear"
-      });
-    }
-  }
-  handleCloseClick() {
-    this.hide();
-  }
-  async handleOpenChange() {
-    if (this.open) {
-      this.emit("sl-show");
-      if (this.duration < Infinity) {
-        this.restartAutoHide();
-      }
-      await stopAnimations(this.base);
-      this.base.hidden = false;
-      const { keyframes, options: options2 } = getAnimation(this, "alert.show", { dir: this.localize.dir() });
-      await animateTo(this.base, keyframes, options2);
-      this.emit("sl-after-show");
-    } else {
-      this.emit("sl-hide");
-      clearTimeout(this.autoHideTimeout);
-      clearInterval(this.remainingTimeInterval);
-      await stopAnimations(this.base);
-      const { keyframes, options: options2 } = getAnimation(this, "alert.hide", { dir: this.localize.dir() });
-      await animateTo(this.base, keyframes, options2);
-      this.base.hidden = true;
-      this.emit("sl-after-hide");
-    }
-  }
-  handleDurationChange() {
-    this.restartAutoHide();
-  }
-  /** Shows the alert. */
-  async show() {
-    if (this.open) {
-      return void 0;
-    }
-    this.open = true;
-    return waitForEvent(this, "sl-after-show");
-  }
-  /** Hides the alert */
-  async hide() {
-    if (!this.open) {
-      return void 0;
-    }
-    this.open = false;
-    return waitForEvent(this, "sl-after-hide");
-  }
-  /**
-   * Displays the alert as a toast notification. This will move the alert out of its position in the DOM and, when
-   * dismissed, it will be removed from the DOM completely. By storing a reference to the alert, you can reuse it by
-   * calling this method again. The returned promise will resolve after the alert is hidden.
-   */
-  async toast() {
-    return new Promise((resolve2) => {
-      this.handleCountdownChange();
-      if (toastStack.parentElement === null) {
-        document.body.append(toastStack);
-      }
-      toastStack.appendChild(this);
-      requestAnimationFrame(() => {
-        this.clientWidth;
-        this.show();
-      });
-      this.addEventListener(
-        "sl-after-hide",
-        () => {
-          toastStack.removeChild(this);
-          resolve2();
-          if (toastStack.querySelector("sl-alert") === null) {
-            toastStack.remove();
-          }
-        },
-        { once: true }
-      );
-    });
-  }
-  render() {
-    return x`
-      <div
-        part="base"
-        class=${e9({
-      alert: true,
-      "alert--open": this.open,
-      "alert--closable": this.closable,
-      "alert--has-countdown": !!this.countdown,
-      "alert--has-icon": this.hasSlotController.test("icon"),
-      "alert--primary": this.variant === "primary",
-      "alert--success": this.variant === "success",
-      "alert--neutral": this.variant === "neutral",
-      "alert--warning": this.variant === "warning",
-      "alert--danger": this.variant === "danger"
-    })}
-        role="alert"
-        aria-hidden=${this.open ? "false" : "true"}
-        @mouseenter=${this.pauseAutoHide}
-        @mouseleave=${this.resumeAutoHide}
-      >
-        <div part="icon" class="alert__icon">
-          <slot name="icon"></slot>
-        </div>
-
-        <div part="message" class="alert__message" aria-live="polite">
-          <slot></slot>
-        </div>
-
-        ${this.closable ? x`
-              <sl-icon-button
-                part="close-button"
-                exportparts="base:close-button__base"
-                class="alert__close-button"
-                name="x-lg"
-                library="system"
-                label=${this.localize.term("close")}
-                @click=${this.handleCloseClick}
-              ></sl-icon-button>
-            ` : ""}
-
-        <div role="timer" class="alert__timer">${this.remainingTime}</div>
-
-        ${this.countdown ? x`
-              <div
-                class=${e9({
-      alert__countdown: true,
-      "alert__countdown--ltr": this.countdown === "ltr"
-    })}
-              >
-                <div class="alert__countdown-elapsed"></div>
-              </div>
-            ` : ""}
-      </div>
-    `;
-  }
-};
-SlAlert.styles = [component_styles_default, alert_styles_default];
-SlAlert.dependencies = { "sl-icon-button": SlIconButton };
-__decorateClass([
-  e8('[part~="base"]')
-], SlAlert.prototype, "base", 2);
-__decorateClass([
-  e8(".alert__countdown-elapsed")
-], SlAlert.prototype, "countdownElement", 2);
-__decorateClass([
-  n5({ type: Boolean, reflect: true })
-], SlAlert.prototype, "open", 2);
-__decorateClass([
-  n5({ type: Boolean, reflect: true })
-], SlAlert.prototype, "closable", 2);
-__decorateClass([
-  n5({ reflect: true })
-], SlAlert.prototype, "variant", 2);
-__decorateClass([
-  n5({ type: Number })
-], SlAlert.prototype, "duration", 2);
-__decorateClass([
-  n5({ type: String, reflect: true })
-], SlAlert.prototype, "countdown", 2);
-__decorateClass([
-  r8()
-], SlAlert.prototype, "remainingTime", 2);
-__decorateClass([
-  watch("open", { waitUntilFirstUpdate: true })
-], SlAlert.prototype, "handleOpenChange", 1);
-__decorateClass([
-  watch("duration")
-], SlAlert.prototype, "handleDurationChange", 1);
-setDefaultAnimation("alert.show", {
-  keyframes: [
-    { opacity: 0, scale: 0.8 },
-    { opacity: 1, scale: 1 }
-  ],
-  options: { duration: 250, easing: "ease" }
-});
-setDefaultAnimation("alert.hide", {
-  keyframes: [
-    { opacity: 1, scale: 1 },
-    { opacity: 0, scale: 0.8 }
-  ],
-  options: { duration: 250, easing: "ease" }
-});
-
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.WQC6OWUE.js
 var badge_styles_default = i`
   :host {
@@ -158749,603 +158410,6 @@ __decorateClass([
 __decorateClass([
   watch("vertical")
 ], SlDivider.prototype, "handleVerticalChange", 1);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.LXDTFLWU.js
-var computedStyleMap = /* @__PURE__ */ new WeakMap();
-function getCachedComputedStyle(el) {
-  let computedStyle = computedStyleMap.get(el);
-  if (!computedStyle) {
-    computedStyle = window.getComputedStyle(el, null);
-    computedStyleMap.set(el, computedStyle);
-  }
-  return computedStyle;
-}
-function isVisible(el) {
-  if (typeof el.checkVisibility === "function") {
-    return el.checkVisibility({ checkOpacity: false, checkVisibilityCSS: true });
-  }
-  const computedStyle = getCachedComputedStyle(el);
-  return computedStyle.visibility !== "hidden" && computedStyle.display !== "none";
-}
-function isOverflowingAndTabbable(el) {
-  const computedStyle = getCachedComputedStyle(el);
-  const { overflowY, overflowX } = computedStyle;
-  if (overflowY === "scroll" || overflowX === "scroll") {
-    return true;
-  }
-  if (overflowY !== "auto" || overflowX !== "auto") {
-    return false;
-  }
-  const isOverflowingY = el.scrollHeight > el.clientHeight;
-  if (isOverflowingY && overflowY === "auto") {
-    return true;
-  }
-  const isOverflowingX = el.scrollWidth > el.clientWidth;
-  if (isOverflowingX && overflowX === "auto") {
-    return true;
-  }
-  return false;
-}
-function isTabbable(el) {
-  const tag = el.tagName.toLowerCase();
-  const tabindex = Number(el.getAttribute("tabindex"));
-  const hasTabindex = el.hasAttribute("tabindex");
-  if (hasTabindex && (isNaN(tabindex) || tabindex <= -1)) {
-    return false;
-  }
-  if (el.hasAttribute("disabled")) {
-    return false;
-  }
-  if (el.closest("[inert]")) {
-    return false;
-  }
-  if (tag === "input" && el.getAttribute("type") === "radio" && !el.hasAttribute("checked")) {
-    return false;
-  }
-  if (!isVisible(el)) {
-    return false;
-  }
-  if ((tag === "audio" || tag === "video") && el.hasAttribute("controls")) {
-    return true;
-  }
-  if (el.hasAttribute("tabindex")) {
-    return true;
-  }
-  if (el.hasAttribute("contenteditable") && el.getAttribute("contenteditable") !== "false") {
-    return true;
-  }
-  const isNativelyTabbable = [
-    "button",
-    "input",
-    "select",
-    "textarea",
-    "a",
-    "audio",
-    "video",
-    "summary",
-    "iframe"
-  ].includes(tag);
-  if (isNativelyTabbable) {
-    return true;
-  }
-  return isOverflowingAndTabbable(el);
-}
-function getSlottedChildrenOutsideRootElement(slotElement, root) {
-  var _a3;
-  return ((_a3 = slotElement.getRootNode({ composed: true })) == null ? void 0 : _a3.host) !== root;
-}
-function getTabbableElements(root) {
-  const walkedEls = /* @__PURE__ */ new WeakMap();
-  const tabbableElements = [];
-  function walk(el) {
-    if (el instanceof Element) {
-      if (el.hasAttribute("inert") || el.closest("[inert]")) {
-        return;
-      }
-      if (walkedEls.has(el)) {
-        return;
-      }
-      walkedEls.set(el, true);
-      if (!tabbableElements.includes(el) && isTabbable(el)) {
-        tabbableElements.push(el);
-      }
-      if (el instanceof HTMLSlotElement && getSlottedChildrenOutsideRootElement(el, root)) {
-        el.assignedElements({ flatten: true }).forEach((assignedEl) => {
-          walk(assignedEl);
-        });
-      }
-      if (el.shadowRoot !== null && el.shadowRoot.mode === "open") {
-        walk(el.shadowRoot);
-      }
-    }
-    for (const e14 of el.children) {
-      walk(e14);
-    }
-  }
-  walk(root);
-  return tabbableElements.sort((a7, b5) => {
-    const aTabindex = Number(a7.getAttribute("tabindex")) || 0;
-    const bTabindex = Number(b5.getAttribute("tabindex")) || 0;
-    return bTabindex - aTabindex;
-  });
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FRD7DRZ6.js
-function* activeElements(activeElement = document.activeElement) {
-  if (activeElement === null || activeElement === void 0) return;
-  yield activeElement;
-  if ("shadowRoot" in activeElement && activeElement.shadowRoot && activeElement.shadowRoot.mode !== "closed") {
-    yield* __yieldStar(activeElements(activeElement.shadowRoot.activeElement));
-  }
-}
-function getDeepestActiveElement() {
-  return [...activeElements()].pop();
-}
-var activeModals = [];
-var Modal = class {
-  constructor(element2) {
-    this.tabDirection = "forward";
-    this.handleFocusIn = () => {
-      if (!this.isActive()) return;
-      this.checkFocus();
-    };
-    this.handleKeyDown = (event) => {
-      var _a3;
-      if (event.key !== "Tab" || this.isExternalActivated) return;
-      if (!this.isActive()) return;
-      const currentActiveElement = getDeepestActiveElement();
-      this.previousFocus = currentActiveElement;
-      if (this.previousFocus && this.possiblyHasTabbableChildren(this.previousFocus)) {
-        return;
-      }
-      if (event.shiftKey) {
-        this.tabDirection = "backward";
-      } else {
-        this.tabDirection = "forward";
-      }
-      const tabbableElements = getTabbableElements(this.element);
-      let currentFocusIndex = tabbableElements.findIndex((el) => el === currentActiveElement);
-      this.previousFocus = this.currentFocus;
-      const addition = this.tabDirection === "forward" ? 1 : -1;
-      while (true) {
-        if (currentFocusIndex + addition >= tabbableElements.length) {
-          currentFocusIndex = 0;
-        } else if (currentFocusIndex + addition < 0) {
-          currentFocusIndex = tabbableElements.length - 1;
-        } else {
-          currentFocusIndex += addition;
-        }
-        this.previousFocus = this.currentFocus;
-        const nextFocus = (
-          /** @type {HTMLElement} */
-          tabbableElements[currentFocusIndex]
-        );
-        if (this.tabDirection === "backward") {
-          if (this.previousFocus && this.possiblyHasTabbableChildren(this.previousFocus)) {
-            return;
-          }
-        }
-        if (nextFocus && this.possiblyHasTabbableChildren(nextFocus)) {
-          return;
-        }
-        event.preventDefault();
-        this.currentFocus = nextFocus;
-        (_a3 = this.currentFocus) == null ? void 0 : _a3.focus({ preventScroll: false });
-        const allActiveElements = [...activeElements()];
-        if (allActiveElements.includes(this.currentFocus) || !allActiveElements.includes(this.previousFocus)) {
-          break;
-        }
-      }
-      setTimeout(() => this.checkFocus());
-    };
-    this.handleKeyUp = () => {
-      this.tabDirection = "forward";
-    };
-    this.element = element2;
-    this.elementsWithTabbableControls = ["iframe"];
-  }
-  /** Activates focus trapping. */
-  activate() {
-    activeModals.push(this.element);
-    document.addEventListener("focusin", this.handleFocusIn);
-    document.addEventListener("keydown", this.handleKeyDown);
-    document.addEventListener("keyup", this.handleKeyUp);
-  }
-  /** Deactivates focus trapping. */
-  deactivate() {
-    activeModals = activeModals.filter((modal) => modal !== this.element);
-    this.currentFocus = null;
-    document.removeEventListener("focusin", this.handleFocusIn);
-    document.removeEventListener("keydown", this.handleKeyDown);
-    document.removeEventListener("keyup", this.handleKeyUp);
-  }
-  /** Determines if this modal element is currently active or not. */
-  isActive() {
-    return activeModals[activeModals.length - 1] === this.element;
-  }
-  /** Activates external modal behavior and temporarily disables focus trapping. */
-  activateExternal() {
-    this.isExternalActivated = true;
-  }
-  /** Deactivates external modal behavior and re-enables focus trapping. */
-  deactivateExternal() {
-    this.isExternalActivated = false;
-  }
-  checkFocus() {
-    if (this.isActive() && !this.isExternalActivated) {
-      const tabbableElements = getTabbableElements(this.element);
-      if (!this.element.matches(":focus-within")) {
-        const start = tabbableElements[0];
-        const end = tabbableElements[tabbableElements.length - 1];
-        const target = this.tabDirection === "forward" ? start : end;
-        if (typeof (target == null ? void 0 : target.focus) === "function") {
-          this.currentFocus = target;
-          target.focus({ preventScroll: false });
-        }
-      }
-    }
-  }
-  possiblyHasTabbableChildren(element2) {
-    return this.elementsWithTabbableControls.includes(element2.tagName.toLowerCase()) || element2.hasAttribute("controls");
-  }
-};
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.G5RKA5HF.js
-var dialog_styles_default = i`
-  :host {
-    --width: 31rem;
-    --header-spacing: var(--sl-spacing-large);
-    --body-spacing: var(--sl-spacing-large);
-    --footer-spacing: var(--sl-spacing-large);
-
-    display: contents;
-  }
-
-  .dialog {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: var(--sl-z-index-dialog);
-  }
-
-  .dialog__panel {
-    display: flex;
-    flex-direction: column;
-    z-index: 2;
-    width: var(--width);
-    max-width: calc(100% - var(--sl-spacing-2x-large));
-    max-height: calc(100% - var(--sl-spacing-2x-large));
-    background-color: var(--sl-panel-background-color);
-    border-radius: var(--sl-border-radius-medium);
-    box-shadow: var(--sl-shadow-x-large);
-  }
-
-  .dialog__panel:focus {
-    outline: none;
-  }
-
-  /* Ensure there's enough vertical padding for phones that don't update vh when chrome appears (e.g. iPhone) */
-  @media screen and (max-width: 420px) {
-    .dialog__panel {
-      max-height: 80vh;
-    }
-  }
-
-  .dialog--open .dialog__panel {
-    display: flex;
-    opacity: 1;
-  }
-
-  .dialog__header {
-    flex: 0 0 auto;
-    display: flex;
-  }
-
-  .dialog__title {
-    flex: 1 1 auto;
-    font: inherit;
-    font-size: var(--sl-font-size-large);
-    line-height: var(--sl-line-height-dense);
-    padding: var(--header-spacing);
-    margin: 0;
-  }
-
-  .dialog__header-actions {
-    flex-shrink: 0;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: end;
-    gap: var(--sl-spacing-2x-small);
-    padding: 0 var(--header-spacing);
-  }
-
-  .dialog__header-actions sl-icon-button,
-  .dialog__header-actions ::slotted(sl-icon-button) {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    font-size: var(--sl-font-size-medium);
-  }
-
-  .dialog__body {
-    flex: 1 1 auto;
-    display: block;
-    padding: var(--body-spacing);
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .dialog__footer {
-    flex: 0 0 auto;
-    text-align: right;
-    padding: var(--footer-spacing);
-  }
-
-  .dialog__footer ::slotted(sl-button:not(:first-of-type)) {
-    margin-inline-start: var(--sl-spacing-x-small);
-  }
-
-  .dialog:not(.dialog--has-footer) .dialog__footer {
-    display: none;
-  }
-
-  .dialog__overlay {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    background-color: var(--sl-overlay-background-color);
-  }
-
-  @media (forced-colors: active) {
-    .dialog__panel {
-      border: solid 1px var(--sl-color-neutral-0);
-    }
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.6SBTOKGT.js
-var SlDialog = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.hasSlotController = new HasSlotController(this, "footer");
-    this.localize = new LocalizeController2(this);
-    this.modal = new Modal(this);
-    this.open = false;
-    this.label = "";
-    this.noHeader = false;
-    this.handleDocumentKeyDown = (event) => {
-      if (event.key === "Escape" && this.modal.isActive() && this.open) {
-        event.stopPropagation();
-        this.requestClose("keyboard");
-      }
-    };
-  }
-  firstUpdated() {
-    this.dialog.hidden = !this.open;
-    if (this.open) {
-      this.addOpenListeners();
-      this.modal.activate();
-      lockBodyScrolling(this);
-    }
-  }
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this.modal.deactivate();
-    unlockBodyScrolling(this);
-    this.removeOpenListeners();
-  }
-  requestClose(source3) {
-    const slRequestClose = this.emit("sl-request-close", {
-      cancelable: true,
-      detail: { source: source3 }
-    });
-    if (slRequestClose.defaultPrevented) {
-      const animation = getAnimation(this, "dialog.denyClose", { dir: this.localize.dir() });
-      animateTo(this.panel, animation.keyframes, animation.options);
-      return;
-    }
-    this.hide();
-  }
-  addOpenListeners() {
-    var _a3;
-    if ("CloseWatcher" in window) {
-      (_a3 = this.closeWatcher) == null ? void 0 : _a3.destroy();
-      this.closeWatcher = new CloseWatcher();
-      this.closeWatcher.onclose = () => this.requestClose("keyboard");
-    } else {
-      document.addEventListener("keydown", this.handleDocumentKeyDown);
-    }
-  }
-  removeOpenListeners() {
-    var _a3;
-    (_a3 = this.closeWatcher) == null ? void 0 : _a3.destroy();
-    document.removeEventListener("keydown", this.handleDocumentKeyDown);
-  }
-  async handleOpenChange() {
-    if (this.open) {
-      this.emit("sl-show");
-      this.addOpenListeners();
-      this.originalTrigger = document.activeElement;
-      this.modal.activate();
-      lockBodyScrolling(this);
-      const autoFocusTarget = this.querySelector("[autofocus]");
-      if (autoFocusTarget) {
-        autoFocusTarget.removeAttribute("autofocus");
-      }
-      await Promise.all([stopAnimations(this.dialog), stopAnimations(this.overlay)]);
-      this.dialog.hidden = false;
-      requestAnimationFrame(() => {
-        const slInitialFocus = this.emit("sl-initial-focus", { cancelable: true });
-        if (!slInitialFocus.defaultPrevented) {
-          if (autoFocusTarget) {
-            autoFocusTarget.focus({ preventScroll: true });
-          } else {
-            this.panel.focus({ preventScroll: true });
-          }
-        }
-        if (autoFocusTarget) {
-          autoFocusTarget.setAttribute("autofocus", "");
-        }
-      });
-      const panelAnimation = getAnimation(this, "dialog.show", { dir: this.localize.dir() });
-      const overlayAnimation = getAnimation(this, "dialog.overlay.show", { dir: this.localize.dir() });
-      await Promise.all([
-        animateTo(this.panel, panelAnimation.keyframes, panelAnimation.options),
-        animateTo(this.overlay, overlayAnimation.keyframes, overlayAnimation.options)
-      ]);
-      this.emit("sl-after-show");
-    } else {
-      this.emit("sl-hide");
-      this.removeOpenListeners();
-      this.modal.deactivate();
-      await Promise.all([stopAnimations(this.dialog), stopAnimations(this.overlay)]);
-      const panelAnimation = getAnimation(this, "dialog.hide", { dir: this.localize.dir() });
-      const overlayAnimation = getAnimation(this, "dialog.overlay.hide", { dir: this.localize.dir() });
-      await Promise.all([
-        animateTo(this.overlay, overlayAnimation.keyframes, overlayAnimation.options).then(() => {
-          this.overlay.hidden = true;
-        }),
-        animateTo(this.panel, panelAnimation.keyframes, panelAnimation.options).then(() => {
-          this.panel.hidden = true;
-        })
-      ]);
-      this.dialog.hidden = true;
-      this.overlay.hidden = false;
-      this.panel.hidden = false;
-      unlockBodyScrolling(this);
-      const trigger = this.originalTrigger;
-      if (typeof (trigger == null ? void 0 : trigger.focus) === "function") {
-        setTimeout(() => trigger.focus());
-      }
-      this.emit("sl-after-hide");
-    }
-  }
-  /** Shows the dialog. */
-  async show() {
-    if (this.open) {
-      return void 0;
-    }
-    this.open = true;
-    return waitForEvent(this, "sl-after-show");
-  }
-  /** Hides the dialog */
-  async hide() {
-    if (!this.open) {
-      return void 0;
-    }
-    this.open = false;
-    return waitForEvent(this, "sl-after-hide");
-  }
-  render() {
-    return x`
-      <div
-        part="base"
-        class=${e9({
-      dialog: true,
-      "dialog--open": this.open,
-      "dialog--has-footer": this.hasSlotController.test("footer")
-    })}
-      >
-        <div part="overlay" class="dialog__overlay" @click=${() => this.requestClose("overlay")} tabindex="-1"></div>
-
-        <div
-          part="panel"
-          class="dialog__panel"
-          role="dialog"
-          aria-modal="true"
-          aria-hidden=${this.open ? "false" : "true"}
-          aria-label=${o7(this.noHeader ? this.label : void 0)}
-          aria-labelledby=${o7(!this.noHeader ? "title" : void 0)}
-          tabindex="-1"
-        >
-          ${!this.noHeader ? x`
-                <header part="header" class="dialog__header">
-                  <h2 part="title" class="dialog__title" id="title">
-                    <slot name="label"> ${this.label.length > 0 ? this.label : String.fromCharCode(65279)} </slot>
-                  </h2>
-                  <div part="header-actions" class="dialog__header-actions">
-                    <slot name="header-actions"></slot>
-                    <sl-icon-button
-                      part="close-button"
-                      exportparts="base:close-button__base"
-                      class="dialog__close"
-                      name="x-lg"
-                      label=${this.localize.term("close")}
-                      library="system"
-                      @click="${() => this.requestClose("close-button")}"
-                    ></sl-icon-button>
-                  </div>
-                </header>
-              ` : ""}
-          ${""}
-          <div part="body" class="dialog__body" tabindex="-1"><slot></slot></div>
-
-          <footer part="footer" class="dialog__footer">
-            <slot name="footer"></slot>
-          </footer>
-        </div>
-      </div>
-    `;
-  }
-};
-SlDialog.styles = [component_styles_default, dialog_styles_default];
-SlDialog.dependencies = {
-  "sl-icon-button": SlIconButton
-};
-__decorateClass([
-  e8(".dialog")
-], SlDialog.prototype, "dialog", 2);
-__decorateClass([
-  e8(".dialog__panel")
-], SlDialog.prototype, "panel", 2);
-__decorateClass([
-  e8(".dialog__overlay")
-], SlDialog.prototype, "overlay", 2);
-__decorateClass([
-  n5({ type: Boolean, reflect: true })
-], SlDialog.prototype, "open", 2);
-__decorateClass([
-  n5({ reflect: true })
-], SlDialog.prototype, "label", 2);
-__decorateClass([
-  n5({ attribute: "no-header", type: Boolean, reflect: true })
-], SlDialog.prototype, "noHeader", 2);
-__decorateClass([
-  watch("open", { waitUntilFirstUpdate: true })
-], SlDialog.prototype, "handleOpenChange", 1);
-setDefaultAnimation("dialog.show", {
-  keyframes: [
-    { opacity: 0, scale: 0.8 },
-    { opacity: 1, scale: 1 }
-  ],
-  options: { duration: 250, easing: "ease" }
-});
-setDefaultAnimation("dialog.hide", {
-  keyframes: [
-    { opacity: 1, scale: 1 },
-    { opacity: 0, scale: 0.8 }
-  ],
-  options: { duration: 250, easing: "ease" }
-});
-setDefaultAnimation("dialog.denyClose", {
-  keyframes: [{ scale: 1 }, { scale: 1.02 }, { scale: 1 }],
-  options: { duration: 250 }
-});
-setDefaultAnimation("dialog.overlay.show", {
-  keyframes: [{ opacity: 0 }, { opacity: 1 }],
-  options: { duration: 250 }
-});
-setDefaultAnimation("dialog.overlay.hide", {
-  keyframes: [{ opacity: 1 }, { opacity: 0 }],
-  options: { duration: 250 }
-});
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.HF7GESMZ.js
 function clamp2(value, min6, max6) {
@@ -171324,9 +170388,9 @@ var Chart = class {
   getActiveElements() {
     return this._active || [];
   }
-  setActiveElements(activeElements2) {
+  setActiveElements(activeElements) {
     const lastActive = this._active || [];
-    const active = activeElements2.map(({ datasetIndex, index: index2 }) => {
+    const active = activeElements.map(({ datasetIndex, index: index2 }) => {
       const meta = this.getDatasetMeta(datasetIndex);
       if (!meta) {
         throw new Error("No dataset found at index " + datasetIndex);
@@ -174625,9 +173689,9 @@ var Tooltip = class extends Element2 {
   getActiveElements() {
     return this._active || [];
   }
-  setActiveElements(activeElements2, eventPosition) {
+  setActiveElements(activeElements, eventPosition) {
     const lastActive = this._active;
-    const active = activeElements2.map(({ datasetIndex, index: index2 }) => {
+    const active = activeElements.map(({ datasetIndex, index: index2 }) => {
       const meta = this.chart.getDatasetMeta(datasetIndex);
       if (!meta) {
         throw new Error("Cannot find a dataset at index " + datasetIndex);
@@ -176914,6 +175978,20 @@ function componentGraphic(type) {
   if (Object.hasOwnProperty.call(componentGraphics, type)) return componentGraphics[type];
   if (Object.hasOwnProperty.call(otherGraphics, type)) return otherGraphics[type];
   return { url: default_default };
+}
+var terminalTable = {
+  // PHYWE 13506-93: red post at (174, 108), black post at (191, 108) of 206 x 130.
+  source: [{ x: 174 / 206, y: 108 / 130 }, { x: 191 / 206, y: 108 / 130 }],
+  // PeakTech P 205: red post at (30, 88), black post at (60, 88) of 90 x 106.
+  voltmeter: [{ x: 30 / 90, y: 88 / 106 }, { x: 60 / 90, y: 88 / 106 }],
+  ammeter: [{ x: 30 / 90, y: 88 / 106 }, { x: 60 / 90, y: 88 / 106 }],
+  multimeter: [{ x: 30 / 90, y: 88 / 106 }, { x: 60 / 90, y: 88 / 106 }],
+  // The strip of the electrode graphic starts at y = 0.4 of 75; the cable
+  // clips onto the top of the strip, above the material label.
+  electrode: [{ x: 0.5, y: 0.02 }]
+};
+function componentTerminals(type) {
+  return terminalTable[type] ?? [];
 }
 var componentTextureUrls = [
   default_default,
@@ -182326,6 +181404,11 @@ var ElectricDeviceView = class extends Container {
     this.component = component;
     this.hitArea = new Rectangle(-width / 2, -height / 2, width, height);
     this.addChild(new Sprite({ texture, anchor: 0.5, width, height, eventMode: "none" }));
+    this.artboard = { width, height };
+    this.terminals = componentTerminals(component._type).map(({ x: x4, y: y5 }) => ({
+      x: width * (x4 - 0.5),
+      y: height * (y5 - 0.5)
+    }));
     const addLine = (x4, y5, fontSize, maxWidth) => {
       const text = new Text({
         anchor: 0.5,
@@ -182386,12 +181469,95 @@ var ElectricDeviceView = class extends Container {
   coating;
   strip;
   coatingKey = "";
+  /** the terminals of this device in local coordinates, empty if it has none */
+  terminals;
+  /** the drawn size in world units, for the port marker radius */
+  artboard;
+  /** the drawn terminal markers, created on first use */
+  portLayer;
+  /** what the port layer currently shows, so it is only redrawn on change */
+  portKey = "";
   setActive(active) {
     if (this.active === active) return;
     this.active = active;
     this.measuredVoltage = null;
     if (this.indicator) this.indicator.tint = active ? 6870657 : 3887701;
     this.refresh();
+  }
+  /**
+   * The radius of a terminal marker in world units. It grows with the device
+   * so a post on the large source stays as easy to hit as one on a meter.
+   *
+   * @readonly
+   * @type {number}
+   */
+  get portRadius() {
+    return Math.max(1.2, Math.min(2.6, this.artboard.height * 0.028));
+  }
+  /**
+   * The terminal whose marker lies under a point in local coordinates, or -1
+   * when the point is on none of them. The grab radius is wider than the
+   * drawn marker, so a terminal is easy to pick without aiming.
+   *
+   * @param {number} x - local x
+   * @param {number} y - local y
+   * @returns {number} the terminal index, or -1
+   */
+  portAt(x4, y5) {
+    const reach = this.portRadius * 1.9;
+    let best = -1;
+    let bestDistance = reach;
+    this.terminals.forEach((terminal, index2) => {
+      const distance = Math.hypot(x4 - terminal.x, y5 - terminal.y);
+      if (distance <= bestDistance) {
+        best = index2;
+        bestDistance = distance;
+      }
+    });
+    return best;
+  }
+  /**
+   * The local position of one terminal, for drawing a wire that starts there.
+   *
+   * @param {number} terminal - the terminal index
+   * @returns {(TerminalPoint | undefined)}
+   */
+  terminalPoint(terminal) {
+    return this.terminals[terminal];
+  }
+  /**
+   * Shows the terminal markers of this device. A device only shows the
+   * terminals that are still free, so the marker doubles as a hint about
+   * where another cable can go.
+   *
+   * @param {number[]} free - the terminals without a cable
+   * @param {number} [highlight] - a terminal to draw as the current target
+   */
+  showPorts(free, highlight2 = -1) {
+    const key = `${free.join(",")}|${highlight2}`;
+    if (key === this.portKey) return;
+    this.portKey = key;
+    if (!this.portLayer) {
+      this.portLayer = new Graphics({ eventMode: "none" });
+      this.addChild(this.portLayer);
+    }
+    const layer = this.portLayer;
+    layer.clear();
+    const radius = this.portRadius;
+    for (const terminal of free) {
+      const point = this.terminals[terminal];
+      if (!point) continue;
+      const active = terminal === highlight2;
+      layer.circle(point.x, point.y, active ? radius * 1.35 : radius).fill({ color: active ? 165063 : 16777215, alpha: active ? 0.95 : 0.8 }).stroke({ color: active ? 481669 : 3359061, width: 0.5, alpha: 0.9 });
+    }
+  }
+  /**
+   * Hides the terminal markers again.
+   */
+  hidePorts() {
+    if (this.portKey === "") return;
+    this.portKey = "";
+    this.portLayer?.clear();
   }
   refresh(hasVoltageReading) {
     const component = this.component;
@@ -182984,6 +182150,15 @@ var CanvasController = class {
   pan;
   selectionOverlay = new Graphics({ eventMode: "none" });
   placementPreviewLayer = new Container({ eventMode: "none" });
+  /** draws the rubber-band wire of a connection drag, in world coordinates */
+  wireLayer = new Container({ eventMode: "none" });
+  wireGraphics = new Graphics({ eventMode: "none" });
+  /** the connection drag in progress, if any */
+  wire;
+  /** the device under the pointer whose free terminals are shown */
+  hoveredPorts;
+  /** the device under the pointer while a wire is being dragged */
+  wireTarget;
   selection = [];
   marquee;
   groupDrag;
@@ -183245,7 +182420,6 @@ var CanvasController = class {
     if (this._dragMoved && sprite) {
       sprite.rotation = 0;
       if (sprite instanceof VesselView) sprite.updateAngle();
-      this.host._hideAlert();
       this.host.saveComponentPosition(sprite);
     }
     this.cancelPointerInteraction();
@@ -183287,6 +182461,8 @@ var CanvasController = class {
     this.world.scale.set(this.camera.zoom);
     this.placementPreviewLayer.position.copyFrom(this.world.position);
     this.placementPreviewLayer.scale.copyFrom(this.world.scale);
+    this.wireLayer.position.copyFrom(this.world.position);
+    this.wireLayer.scale.copyFrom(this.world.scale);
     if (this.showGrid) this.grid?.update(this.camera);
     this.updateScaleReadouts();
     if (this.selection.length || this.marquee || this.host.selectedObjectSprite) this.drawSelection();
@@ -183367,6 +182543,12 @@ var CanvasController = class {
     }
     const redrawSelection = this._dragActive && this._dragMoved || this.groupDrag || this.marquee;
     this.host.app?.stage.off("globalpointermove", this._dragMoveHandler);
+    if (this.wire) {
+      this.host.app?.stage.off("globalpointermove", this._wireMoveHandler);
+      this.wire = void 0;
+      this.wireGraphics.clear();
+      this.clearPorts();
+    }
     this._dragActive = false;
     this.dragPointerId = void 0;
     this.pan = void 0;
@@ -183436,11 +182618,13 @@ var CanvasController = class {
     const type = component._type;
     const info = `${type}:${component._id}`;
     const sprite = this.createComponentView(component);
-    if (!(component instanceof ElectricComponent && type === "cable" /* Cable */)) {
+    const isCable = component instanceof ElectricComponent && type === "cable" /* Cable */;
+    if (!isCable) {
       sprite.x = this.host.mousePos[0];
       sprite.y = this.host.mousePos[1];
     }
-    sprite.eventMode = component instanceof ElectricComponent && type === "cable" /* Cable */ ? "none" : "static";
+    sprite.eventMode = "static";
+    if (isCable) sprite.hitArea = this.cableHitArea(sprite);
     sprite.cursor = "pointer";
     sprite.on("pointerdown", (event) => {
       event.stopPropagation();
@@ -183452,6 +182636,7 @@ var CanvasController = class {
       this.updateMousePosition(event);
       if (event.button === 0) this.host.closeAmountMenu();
       if (event.button === 2) return;
+      if (event.button === 0 && this.beginWire(sprite, event)) return;
       if (event.button === 0 && this.selection.includes(sprite)) {
         const items = this.selection.filter((item) => !item.label.startsWith("cable:")).map((item) => ({ sprite: item, x: item.x, y: item.y }));
         const anchor = items.find((item) => item.sprite === sprite) ?? items[0];
@@ -183488,6 +182673,184 @@ var CanvasController = class {
     this.host.reportXApi("inserted", sprite.label);
     this.host.requestCanvasRender();
     return sprite;
+  }
+  /**
+   * A hit area that follows the drawn rope of a cable. The bounding box of a
+   * sagging cable covers a large part of the canvas, so a click would land on
+   * the cable instead of on the device behind it.
+   *
+   * @private
+   * @param {PIXI.Graphics} sprite - the cable sprite
+   * @returns {PIXI.IHitArea}
+   */
+  cableHitArea(sprite) {
+    return {
+      contains: (x4, y5) => {
+        const rope = this.cableRopes.get(sprite);
+        if (!rope) return false;
+        const reach = 3;
+        for (let index2 = 1; index2 < rope.points.length; index2++) {
+          const a7 = rope.points[index2 - 1];
+          const b5 = rope.points[index2];
+          const dx = b5.x - a7.x;
+          const dy = b5.y - a7.y;
+          const lengthSquared = dx * dx + dy * dy;
+          const t10 = lengthSquared > 0 ? Math.max(0, Math.min(1, ((x4 - a7.x) * dx + (y5 - a7.y) * dy) / lengthSquared)) : 0;
+          if (Math.hypot(x4 - (a7.x + dx * t10), y5 - (a7.y + dy * t10)) <= reach) return true;
+        }
+        return false;
+      }
+    };
+  }
+  /**
+   * The device whose drawn area contains a point in world coordinates. The
+   * topmost one wins, so a device lying over another is the one that answers.
+   *
+   * @private
+   * @param {number} x - world-space x
+   * @param {number} y - world-space y
+   * @returns {?{ device: chemlib.ElectricComponent; sprite: ElectricDeviceView }}
+   */
+  deviceAtWorld(x4, y5) {
+    for (let index2 = this.world.children.length - 1; index2 >= 0; index2--) {
+      const sprite = this.world.children[index2];
+      if (!(sprite instanceof ElectricDeviceView) || !sprite.visible) continue;
+      if (Math.abs(x4 - sprite.x) > sprite.width / 2 || Math.abs(y5 - sprite.y) > sprite.height / 2) continue;
+      const device = this.host.allEComponents.find((component) => `${component._type}:${component._id}` === sprite.label);
+      if (device) return { device, sprite };
+    }
+    return void 0;
+  }
+  /**
+   * The world position of one terminal of a device. Devices are drawn without
+   * rotation or scale, so the local offset of the terminal is also its world
+   * offset from the sprite centre.
+   *
+   * @private
+   * @param {ElectricDeviceView} sprite - the device view
+   * @param {number} terminal - the terminal index
+   * @returns {?PIXI.PointData}
+   */
+  portWorld(sprite, terminal) {
+    const point = sprite.terminalPoint(terminal);
+    return point ? { x: sprite.x + point.x, y: sprite.y + point.y } : void 0;
+  }
+  /**
+   * Starts a connection drag when the pointer went down on a free terminal of
+   * a device. Returns whether the press was consumed, so the caller can skip
+   * the device drag.
+   *
+   * @private
+   * @param {PIXI.Container} sprite - the pressed sprite
+   * @param {PIXI.FederatedPointerEvent} event - the press
+   * @returns {boolean}
+   */
+  beginWire(sprite, event) {
+    if (!(sprite instanceof ElectricDeviceView)) return false;
+    const device = this.host.allEComponents.find((component) => `${component._type}:${component._id}` === sprite.label);
+    if (!device) return false;
+    const free = device.freeTerminals;
+    if (!free.length) return false;
+    const local = sprite.toLocal(event.global);
+    const terminal = sprite.portAt(local.x, local.y);
+    if (terminal < 0 || !free.includes(terminal)) return false;
+    this.wire = { id: event.pointerId, from: device, terminal, sprite };
+    sprite.showPorts(free, terminal);
+    this.host.app.stage.on("globalpointermove", this._wireMoveHandler);
+    this.drawWire(event.global);
+    return true;
+  }
+  /** Stable pointermove handler of a connection drag, so it can be removed. */
+  _wireMoveHandler = (event) => {
+    if (event.pointerId !== this.wire?.id) return;
+    this.updateMousePosition(event);
+    this.drawWire(event.global);
+  };
+  /**
+   * Draws the rubber band of a connection drag and marks the terminal it
+   * would land on. The band turns blue over a device that accepts it, so the
+   * drop target is visible before the release.
+   *
+   * @private
+   * @param {PIXI.PointData} global - the pointer in stage coordinates
+   */
+  drawWire(global2) {
+    const wire = this.wire;
+    const graphics = this.wireGraphics;
+    graphics.clear();
+    if (!wire) return;
+    const start = this.portWorld(wire.sprite, wire.terminal);
+    if (!start) return;
+    const end = this.camera.toWorld(global2.x, global2.y);
+    const target = this.deviceAtWorld(end.x, end.y);
+    const accepts = !!target && target.device !== wire.from && canConnect(wire.from, target.device);
+    graphics.moveTo(start.x, start.y).lineTo(end.x, end.y).stroke({ color: accepts ? 165063 : 6583435, width: 1.2, alpha: 0.9 });
+    graphics.circle(start.x, start.y, 1.4).fill(165063);
+    graphics.circle(end.x, end.y, accepts ? 2.2 : 1.4).fill({ color: accepts ? 165063 : 9741240, alpha: 0.9 });
+    this.updatePorts(global2);
+  }
+  /**
+   * Ends a connection drag. Releasing over a device wires the two together,
+   * releasing anywhere else cancels without a message: a stray release is not
+   * an error worth reporting.
+   *
+   * @private
+   * @param {PIXI.FederatedPointerEvent} event - the release
+   */
+  finishWire(event) {
+    const wire = this.wire;
+    this.wire = void 0;
+    this.host.app.stage.off("globalpointermove", this._wireMoveHandler);
+    this.wireGraphics.clear();
+    wire?.sprite.hidePorts();
+    this.clearPorts();
+    if (!wire) return;
+    const point = this.camera.toWorld(event.global.x, event.global.y);
+    const target = this.deviceAtWorld(point.x, point.y);
+    if (!target || target.device === wire.from) return;
+    const local = target.sprite.toLocal(event.global);
+    const terminal = target.sprite.portAt(local.x, local.y);
+    this.host.connectElectrical(wire.from, target.device, wire.terminal, terminal >= 0 ? terminal : void 0);
+  }
+  /**
+   * Shows the free terminals of the device under the pointer, and while a
+   * wire is dragged also those of the device it would land on.
+   *
+   * @private
+   * @param {PIXI.PointData} global - the pointer in stage coordinates
+   */
+  updatePorts(global2) {
+    const world = this.camera.toWorld(global2.x, global2.y);
+    const target = this.deviceAtWorld(world.x, world.y);
+    const wire = this.wire;
+    if (wire) {
+      const sprite2 = target && target.device !== wire.from ? target.sprite : void 0;
+      if (sprite2 !== this.wireTarget) {
+        this.wireTarget?.hidePorts();
+        this.wireTarget = sprite2;
+      }
+      if (sprite2 && target) {
+        const local = sprite2.toLocal(new Point(global2.x, global2.y));
+        sprite2.showPorts(target.device.freeTerminals, sprite2.portAt(local.x, local.y));
+      }
+      return;
+    }
+    const sprite = target?.sprite;
+    if (sprite === this.hoveredPorts) return;
+    this.hoveredPorts?.hidePorts();
+    this.hoveredPorts = sprite;
+    if (sprite && target) sprite.showPorts(target.device.freeTerminals);
+  }
+  /**
+   * Hides every terminal marker again.
+   *
+   * @private
+   */
+  clearPorts() {
+    this.hoveredPorts?.hidePorts();
+    this.hoveredPorts = void 0;
+    this.wireTarget?.hidePorts();
+    this.wireTarget = void 0;
   }
   /**
    * modifies sprite events when an object gets dragged
@@ -183528,77 +182891,15 @@ var CanvasController = class {
         this.host.dragObject.rotation = transferTarget ? this.host.dragObject.x > transferTarget.x ? -0.35 : 0.35 : 0;
         return;
       }
-      let mouseHoverObject = -1;
-      for (let i11 = 0; i11 < this.world.children.length; i11++) {
-        if (this.world.children[i11] !== this.host.dragObject && this._mouseInbounds(
-          i11,
-          50
-        )) {
-          const upperSprite = this.host.dragObject;
-          let bottomSprite = this.world.children[i11];
-          let cObj = void 0;
-          let cOType = bottomSprite.label.split(":")[0].toLowerCase();
-          let cOId = Number.parseInt(
-            bottomSprite.label.split(":")[1]
-          );
-          if ("beaker" /* Beaker */ === cOType || "flask" /* Flask */ === cOType) {
-            this.host.allChemComponents.forEach((comp) => {
-              if (comp._id === cOId) {
-                cObj = comp;
-              }
-            });
-            if (this.host.curr_obj._type === "electrode" /* Electrode */ && cObj && (upperSprite.y > bottomSprite.y - bottomSprite.height / 2 && upperSprite.y < bottomSprite.y + upperSprite.height / 2 && upperSprite.x > bottomSprite.x - bottomSprite.width / 2 && upperSprite.x < bottomSprite.x + bottomSprite.width / 2)) {
-              this.host._emitAlert(
-                this.host.message("{from} in {to} einf\xFCgen.", {
-                  from: this.host.itemName(this.host.curr_obj._type),
-                  to: this.host.itemName(cObj._type)
-                }),
-                "primary",
-                false
-              );
-              mouseHoverObject = i11;
-            }
-          }
-          if (Object.values(EComponentType).includes(
-            cOType
-          )) {
-            this.host.allEComponents.forEach((comp) => {
-              if (comp._id === cOId) {
-                cObj = comp;
-              }
-            });
-            if (Object.values(EComponentType).includes(
-              this.host.curr_obj._type
-            )) {
-              if (this.host.curr_obj._type != "cable" /* Cable */ && cObj._type != "cable" /* Cable */) {
-                this.host._emitAlert(
-                  this.host.message("{from} und {to} verbinden.", {
-                    from: this.host.itemName(this.host.curr_obj._type),
-                    to: this.host.itemName(cObj._type)
-                  }),
-                  "primary",
-                  false
-                );
-                mouseHoverObject = i11;
-              }
-            }
-          }
-        }
-      }
-      if (mouseHoverObject === -1) {
-        this.host.dragObject.rotation = 0;
-        this.host._hideAlert();
-      }
     }
   }
   /**
    * function to be called when a sprite is placed. Handles interactions
    *
    * @private
-   * @async
-   * @returns {Promise<void>}
+   * @returns {void}
    */
-  async _dragEnd(event) {
+  _dragEnd(event) {
     if (!this._dragActive) return;
     this.host.app.stage.off("globalpointermove", this._dragMoveHandler);
     this._dragActive = false;
@@ -183619,92 +182920,7 @@ var CanvasController = class {
     this.relengthCablesAttachedTo([dragged]);
     const draggedDevice = this.host.allEComponents.find((component) => `${component._type}:${component._id}` === dragged.label);
     if (draggedDevice) this.attachDevice(draggedDevice, dragged);
-    for (let i11 = 0; i11 < this.world.children.length; i11++) {
-      if (this.world.children[i11] !== this.host.dragObject && this._mouseInbounds(
-        i11,
-        50
-      )) {
-        const upperSprite = this.host.dragObject;
-        let bottomSprite = this.world.children[i11];
-        let cObj = void 0;
-        let cOType = bottomSprite.label.split(":")[0].toLowerCase();
-        let cOId = Number.parseInt(
-          bottomSprite.label.split(":")[1]
-        );
-        let dialogPanel = this.host.confirmDialog.shadowRoot.querySelector(
-          ".dialog__panel"
-        );
-        if ("beaker" /* Beaker */ === cOType || "flask" /* Flask */ === cOType) {
-          this.host.allChemComponents.forEach((comp) => {
-            if (comp._id === cOId) {
-              cObj = comp;
-            }
-          });
-          if (this.host.curr_obj._type === "electrode" /* Electrode */ && cObj && (upperSprite.y > bottomSprite.y - bottomSprite.height / 2 && upperSprite.y < bottomSprite.y + upperSprite.height / 2 && upperSprite.x > bottomSprite.x - bottomSprite.width / 2 && upperSprite.x < bottomSprite.x + bottomSprite.width / 2)) {
-            const point = this.viewportPoint(this.host.mousePos[0], this.host.mousePos[1]);
-            dialogPanel.style.top = `${point.y}px`;
-            dialogPanel.style.left = `${point.x}px`;
-            this.host.confirmDialog.show();
-            await this.host.waitUntil(
-              () => this.host.confirmAction != 0
-            );
-            if (this.host.confirmAction === 1) {
-              this.host.curr_obj._connectedMix = cObj._content;
-              this.host._emitAlert(
-                this.host.message("{from} in {to} eingef\xFCgt.", {
-                  from: this.host.itemName(this.host.curr_obj._type),
-                  to: this.host.itemName(cObj._type)
-                }),
-                "success",
-                false,
-                1500
-              );
-              this.host.reportXApi(
-                "added",
-                this.host.curr_obj._type + ":" + this.host.curr_obj._id,
-                {
-                  response: cOType + ":" + cOId,
-                  success: true,
-                  completion: true
-                }
-              );
-              this.host._getObject(
-                this.world.children[this.host.curr_stage_index]
-              );
-            }
-            this.host.confirmAction = 0;
-          }
-          cObj = void 0;
-        }
-        if (Object.values(EComponentType).includes(
-          cOType
-        )) {
-          this.host.allEComponents.forEach((comp) => {
-            if (comp._id === cOId) {
-              cObj = comp;
-            }
-          });
-          if (Object.values(EComponentType).includes(
-            this.host.curr_obj._type
-          )) {
-            if (this.host.curr_obj._type != "cable" /* Cable */ && cObj._type != "cable" /* Cable */) {
-              const point = this.viewportPoint(this.host.mousePos[0], this.host.mousePos[1]);
-              dialogPanel.style.top = `${point.y}px`;
-              dialogPanel.style.left = `${point.x}px`;
-              this.host.confirmDialog.show();
-              await this.host.waitUntil(
-                () => this.host.confirmAction != 0
-              );
-              if (this.host.confirmAction === 1) {
-                this.host._addEcon(cObj);
-              }
-              this.host.confirmAction = 0;
-            }
-            cObj = void 0;
-          }
-        }
-      }
-    }
+    if (dragged instanceof VesselView) this.attachDevices();
     const movedElectrodes = [...this.attachedElectrodesMoved];
     this.attachedElectrodesMoved.clear();
     if (this.host.dragObject) this.host.saveComponentPositions([this.host.dragObject, ...movedElectrodes]);
@@ -183778,7 +182994,8 @@ var CanvasController = class {
     this.host.app.stage.hitArea = this.host.app.screen;
     this.grid = new WorkspaceGrid();
     this.grid.mesh.visible = this.showGrid;
-    app.stage.addChild(this.grid.mesh, this.world, this.placementPreviewLayer, this.selectionOverlay);
+    this.wireLayer.addChild(this.wireGraphics);
+    app.stage.addChild(this.grid.mesh, this.world, this.wireLayer, this.placementPreviewLayer, this.selectionOverlay);
     app.canvas.addEventListener("contextmenu", (event) => {
       if (this.pointerBusy) {
         event.preventDefault();
@@ -183796,6 +183013,7 @@ var CanvasController = class {
   bindPointerEvents(stage) {
     stage.on("pointermove", (event) => {
       this.updateMousePosition(event);
+      this.updatePorts(event.global);
     });
     stage.on("globalpointermove", (event) => {
       this.movePan(event);
@@ -183818,7 +183036,9 @@ var CanvasController = class {
       }
     });
     const finishPointer = (event) => {
-      if (this.marquee?.id === event.pointerId) {
+      if (this.wire?.id === event.pointerId) {
+        this.finishWire(event);
+      } else if (this.marquee?.id === event.pointerId) {
         this.finishMarquee(event);
       } else if (this.groupDrag?.id === event.pointerId) {
         this.moveGroup(event);
@@ -183846,7 +183066,7 @@ var CanvasController = class {
           this.host.clearObjectSelection();
         }
       } else if (this._dragActive && event.pointerId === this.dragPointerId) {
-        void this._dragEnd(event);
+        this._dragEnd(event);
       }
     };
     stage.on("pointerup", finishPointer);
@@ -183897,14 +183117,16 @@ var CanvasController = class {
     return found;
   }
   /**
-   * Dips restored devices into the vessels they were saved in.
+   * Dips every device into the vessel it currently sits in.
    *
    * A saved layout does not record which vessel an electrode belongs to, so
    * the position decides, using the same test as a manual drop. Without this
    * an imported layout would show a cell whose electrodes are in no
-   * solution, and the simulation would never start.
+   * solution, and the simulation would never start. The same sweep runs
+   * after a vessel was moved, because that changes what the devices around
+   * it sit in.
    */
-  attachAuthoredDevices() {
+  attachDevices() {
     for (const eComp of this.host.allEComponents) {
       const sprite = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
       if (sprite) this.attachDevice(eComp, sprite);
@@ -183912,9 +183134,9 @@ var CanvasController = class {
   }
   /**
    * Resolves what a device without a cable sits in or on. An electrode dips
-   * into the vessel under its centre, a gas collection tube into the vessel
-   * under its lower end, and a salt bridge into the two vessels under its
-   * legs.
+   * into the vessel under its centre or under its lower end, a gas collection
+   * tube into the vessel under its lower end, and a salt bridge into the two
+   * vessels under its legs.
    *
    * @param {chemlib.ElectricComponent} eComp - the device to attach
    * @param {PIXI.Container} sprite - its view, which carries the position
@@ -183923,9 +183145,8 @@ var CanvasController = class {
     const bottom = sprite.y + sprite.height * 0.4667;
     switch (eComp._type) {
       case "electrode" /* Electrode */: {
-        if (eComp._connectedMix) return;
-        const vessel = this.vesselAt(sprite.x, sprite.y);
-        if (vessel) eComp._connectedMix = vessel.component._content;
+        const vessel = this.vesselAt(sprite.x, sprite.y) ?? this.vesselAt(sprite.x, bottom);
+        eComp._connectedMix = vessel?.component._content;
         return;
       }
       case "gascollector" /* GasCollector */: {
@@ -183990,12 +183211,13 @@ var CanvasController = class {
     let anyAwake = false;
     for (const [sprite, cable] of this.cables) {
       const [first, second] = cable._connections;
-      const from2 = first && this.spritesByLabel.get(`${first._type}:${first._id}`);
-      const to2 = second && this.spritesByLabel.get(`${second._type}:${second._id}`);
-      if (!from2 || !to2) {
+      if (!first || !this.host.allEComponents.includes(first) || !second || !this.host.allEComponents.includes(second)) {
         this.host.removeObjects([sprite]);
         continue;
       }
+      const from2 = this.spritesByLabel.get(`${first._type}:${first._id}`);
+      const to2 = this.spritesByLabel.get(`${second._type}:${second._id}`);
+      if (!from2 || !to2) continue;
       const endpoints = [from2.x, from2.y, to2.x, to2.y];
       let rope = this.cableRopes.get(sprite);
       if (!rope) {
@@ -184168,9 +183390,9 @@ var TRANSFER_HOLD_MS = 1500;
 var TRANSFER_HOLD_RADIUS = 6;
 var DRAG_TRANSFER_TASK = "drag-transfer";
 var MIN_TWO_PANELS_WIDTH = 480;
-var _newSmilesDrawer_dec, _smilesDrawer100_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _confirmAction_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _chemicalCatalogOpened_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _app_dec, _pix_canvas_dec, _mousePos_dec, _dragObject_dec, _avComponentsSprites_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _dialogAlert_dec, _confirmDialog_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _confirmDialog, _dialogAlert, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _avComponentsSprites, _dragObject, _mousePos, _pix_canvas, _app, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _teacherDrawerOpen, _teacherTab, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalCatalogOpened, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _confirmAction, _RndName, _invComponents, _enablexAPI, _xAPIKey, _smilesDrawer100, _newSmilesDrawer;
+var _newSmilesDrawer_dec, _smilesDrawer100_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _chemicalCatalogOpened_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _app_dec, _pix_canvas_dec, _mousePos_dec, _dragObject_dec, _avComponentsSprites_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _statusStrip_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _statusStrip, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _avComponentsSprites, _dragObject, _mousePos, _pix_canvas, _app, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _teacherDrawerOpen, _teacherTab, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalCatalogOpened, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _RndName, _invComponents, _enablexAPI, _xAPIKey, _smilesDrawer100, _newSmilesDrawer;
 _ChemLab_decorators = [t6("webwriter-chemlab")];
-var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [e8("#upper")], _confirmDialog_dec = [e8("#confirmDialog")], _dialogAlert_dec = [e8("#dialogOverview")], _contextMolInfo_dec = [e8("#contextMolInfo")], _objectSummary_dec = [e8("#contextInfoBox")], _groupSummary_dec = [e8("#groupSelectionInfo")], _contextMixInfo_dec = [e8("#contextMixInfo")], _openBtn_dec = [e8("#openComp")], _activateEComp_dec = [e8("#activateEComp")], _contextEchemInfo_dec = [e8("#contextEchemInfo")], _xAPICheck_dec = [e8("#xAPICheck")], _xAPIKeyInput_dec = [e8("#xAPIKeyInput")], _canvasArea_dec = [e8("#canvasArea")], _canvasZoom_dec = [e8("#canvasZoom")], _zoomLevel_dec = [e8("#zoomLevel", true)], _gridScale_dec = [e8("#gridScale", true)], _gridScaleValue_dec = [e8("#gridScaleValue", true)], _pHColors_dec = [n5({ attribute: false })], _dictionary_dec = [n5({ attribute: false })], _availableMolecules_dec = [n5({
+var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [e8("#upper")], _statusStrip_dec = [e8("#statusStrip")], _contextMolInfo_dec = [e8("#contextMolInfo")], _objectSummary_dec = [e8("#contextInfoBox")], _groupSummary_dec = [e8("#groupSelectionInfo")], _contextMixInfo_dec = [e8("#contextMixInfo")], _openBtn_dec = [e8("#openComp")], _activateEComp_dec = [e8("#activateEComp")], _contextEchemInfo_dec = [e8("#contextEchemInfo")], _xAPICheck_dec = [e8("#xAPICheck")], _xAPIKeyInput_dec = [e8("#xAPIKeyInput")], _canvasArea_dec = [e8("#canvasArea")], _canvasZoom_dec = [e8("#canvasZoom")], _zoomLevel_dec = [e8("#zoomLevel", true)], _gridScale_dec = [e8("#gridScale", true)], _gridScaleValue_dec = [e8("#gridScaleValue", true)], _pHColors_dec = [n5({ attribute: false })], _dictionary_dec = [n5({ attribute: false })], _availableMolecules_dec = [n5({
   type: Array,
   attribute: false
 })], _availableMixtures_dec = [n5({
@@ -184179,7 +183401,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 })], _availableComponents_dec = [n5({
   type: Array,
   attribute: false
-})], _thumbnailBadges_dec = [n5({ type: Boolean, reflect: true })], _avComponentsSprites_dec = [n5({ attribute: false })], _dragObject_dec = [n5({ attribute: false })], _mousePos_dec = [n5({ attribute: false })], _pix_canvas_dec = [n5({ attribute: false })], _app_dec = [n5({ attribute: false })], _allChemComponents_dec = [n5({ attribute: false })], _allEComponents_dec = [n5({ attribute: false })], _curr_obj_dec = [n5({ attribute: false })], _fullWidthMode_dec = [r8()], _diagramPanelOpen_dec = [r8()], _teacherDrawerOpen_dec = [r8()], _teacherTab_dec = [r8()], _permissionTooltip_dec = [r8()], _visibleVariants_dec = [r8()], _componentToPlace_dec = [r8()], _selectedChemical_dec = [r8()], _chemicalPermissions_dec = [r8()], _amountMenu_dec = [r8()], _fillMeter_dec = [r8()], _chemicalCatalogOpened_dec = [r8()], _chemicalQuery_dec = [r8()], _activeChemicalConcentrations_dec = [r8()], _openConcentrationMenu_dec = [r8()], _chemicalGroup_dec = [r8()], _curr_name_dec = [n5({ attribute: false })], _curr_stage_index_dec = [n5({ attribute: false })], _confirmAction_dec = [n5({ attribute: false })], _RndName_dec = [n5({ attribute: false })], _invComponents_dec = [n5({
+})], _thumbnailBadges_dec = [n5({ type: Boolean, reflect: true })], _avComponentsSprites_dec = [n5({ attribute: false })], _dragObject_dec = [n5({ attribute: false })], _mousePos_dec = [n5({ attribute: false })], _pix_canvas_dec = [n5({ attribute: false })], _app_dec = [n5({ attribute: false })], _allChemComponents_dec = [n5({ attribute: false })], _allEComponents_dec = [n5({ attribute: false })], _curr_obj_dec = [n5({ attribute: false })], _fullWidthMode_dec = [r8()], _diagramPanelOpen_dec = [r8()], _teacherDrawerOpen_dec = [r8()], _teacherTab_dec = [r8()], _permissionTooltip_dec = [r8()], _visibleVariants_dec = [r8()], _componentToPlace_dec = [r8()], _selectedChemical_dec = [r8()], _chemicalPermissions_dec = [r8()], _amountMenu_dec = [r8()], _fillMeter_dec = [r8()], _chemicalCatalogOpened_dec = [r8()], _chemicalQuery_dec = [r8()], _activeChemicalConcentrations_dec = [r8()], _openConcentrationMenu_dec = [r8()], _chemicalGroup_dec = [r8()], _curr_name_dec = [n5({ attribute: false })], _curr_stage_index_dec = [n5({ attribute: false })], _RndName_dec = [n5({ attribute: false })], _invComponents_dec = [n5({
   type: Array,
   attribute: false
 })], _enablexAPI_dec = [n5({
@@ -184223,17 +183445,16 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __publicField(this, "vesselThumbnails", /* @__PURE__ */ new WeakMap());
     __publicField(this, "vesselNameRequests", /* @__PURE__ */ new WeakSet());
     __publicField(this, "carouselMixture");
-    __privateAdd(this, _confirmDialog, __runInitializers(_init2, 12, this)), __runInitializers(_init2, 15, this);
-    __privateAdd(this, _dialogAlert, __runInitializers(_init2, 16, this)), __runInitializers(_init2, 19, this);
-    __privateAdd(this, _contextMolInfo, __runInitializers(_init2, 20, this)), __runInitializers(_init2, 23, this);
-    __privateAdd(this, _objectSummary, __runInitializers(_init2, 24, this)), __runInitializers(_init2, 27, this);
-    __privateAdd(this, _groupSummary, __runInitializers(_init2, 28, this)), __runInitializers(_init2, 31, this);
-    __privateAdd(this, _contextMixInfo, __runInitializers(_init2, 32, this)), __runInitializers(_init2, 35, this);
-    __privateAdd(this, _openBtn, __runInitializers(_init2, 36, this)), __runInitializers(_init2, 39, this);
-    __privateAdd(this, _activateEComp, __runInitializers(_init2, 40, this)), __runInitializers(_init2, 43, this);
-    __privateAdd(this, _contextEchemInfo, __runInitializers(_init2, 44, this)), __runInitializers(_init2, 47, this);
-    __privateAdd(this, _xAPICheck, __runInitializers(_init2, 48, this)), __runInitializers(_init2, 51, this);
-    __privateAdd(this, _xAPIKeyInput, __runInitializers(_init2, 52, this)), __runInitializers(_init2, 55, this);
+    __privateAdd(this, _statusStrip, __runInitializers(_init2, 12, this)), __runInitializers(_init2, 15, this);
+    __privateAdd(this, _contextMolInfo, __runInitializers(_init2, 16, this)), __runInitializers(_init2, 19, this);
+    __privateAdd(this, _objectSummary, __runInitializers(_init2, 20, this)), __runInitializers(_init2, 23, this);
+    __privateAdd(this, _groupSummary, __runInitializers(_init2, 24, this)), __runInitializers(_init2, 27, this);
+    __privateAdd(this, _contextMixInfo, __runInitializers(_init2, 28, this)), __runInitializers(_init2, 31, this);
+    __privateAdd(this, _openBtn, __runInitializers(_init2, 32, this)), __runInitializers(_init2, 35, this);
+    __privateAdd(this, _activateEComp, __runInitializers(_init2, 36, this)), __runInitializers(_init2, 39, this);
+    __privateAdd(this, _contextEchemInfo, __runInitializers(_init2, 40, this)), __runInitializers(_init2, 43, this);
+    __privateAdd(this, _xAPICheck, __runInitializers(_init2, 44, this)), __runInitializers(_init2, 47, this);
+    __privateAdd(this, _xAPIKeyInput, __runInitializers(_init2, 48, this)), __runInitializers(_init2, 51, this);
     /**
      * main container inside diagram drawer for all diagrams and headings
      *
@@ -184241,23 +183462,23 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
      * @type {HTMLDivElement}
      */
     __publicField(this, "canvasContainer", Object.assign(document.createElement("div"), { id: "canvasContainer" }));
-    __privateAdd(this, _canvasArea, __runInitializers(_init2, 56, this)), __runInitializers(_init2, 59, this);
-    __privateAdd(this, _canvasZoom, __runInitializers(_init2, 60, this)), __runInitializers(_init2, 63, this);
-    __privateAdd(this, _zoomLevel, __runInitializers(_init2, 64, this)), __runInitializers(_init2, 67, this);
-    __privateAdd(this, _gridScale, __runInitializers(_init2, 68, this)), __runInitializers(_init2, 71, this);
-    __privateAdd(this, _gridScaleValue, __runInitializers(_init2, 72, this)), __runInitializers(_init2, 75, this);
+    __privateAdd(this, _canvasArea, __runInitializers(_init2, 52, this)), __runInitializers(_init2, 55, this);
+    __privateAdd(this, _canvasZoom, __runInitializers(_init2, 56, this)), __runInitializers(_init2, 59, this);
+    __privateAdd(this, _zoomLevel, __runInitializers(_init2, 60, this)), __runInitializers(_init2, 63, this);
+    __privateAdd(this, _gridScale, __runInitializers(_init2, 64, this)), __runInitializers(_init2, 67, this);
+    __privateAdd(this, _gridScaleValue, __runInitializers(_init2, 68, this)), __runInitializers(_init2, 71, this);
     __publicField(this, "displayedGridWidthMm");
-    __privateAdd(this, _pHColors, __runInitializers(_init2, 76, this, pHColors)), __runInitializers(_init2, 79, this);
-    __privateAdd(this, _dictionary, __runInitializers(_init2, 80, this, dictionary)), __runInitializers(_init2, 83, this);
-    __privateAdd(this, _availableMolecules, __runInitializers(_init2, 84, this, defaultMolecules)), __runInitializers(_init2, 87, this);
-    __privateAdd(this, _availableMixtures, __runInitializers(_init2, 88, this, defaultMixtures)), __runInitializers(_init2, 91, this);
-    __privateAdd(this, _availableComponents, __runInitializers(_init2, 92, this, [])), __runInitializers(_init2, 95, this);
-    __privateAdd(this, _thumbnailBadges, __runInitializers(_init2, 96, this, false)), __runInitializers(_init2, 99, this);
+    __privateAdd(this, _pHColors, __runInitializers(_init2, 72, this, pHColors)), __runInitializers(_init2, 75, this);
+    __privateAdd(this, _dictionary, __runInitializers(_init2, 76, this, dictionary)), __runInitializers(_init2, 79, this);
+    __privateAdd(this, _availableMolecules, __runInitializers(_init2, 80, this, defaultMolecules)), __runInitializers(_init2, 83, this);
+    __privateAdd(this, _availableMixtures, __runInitializers(_init2, 84, this, defaultMixtures)), __runInitializers(_init2, 87, this);
+    __privateAdd(this, _availableComponents, __runInitializers(_init2, 88, this, [])), __runInitializers(_init2, 91, this);
+    __privateAdd(this, _thumbnailBadges, __runInitializers(_init2, 92, this, false)), __runInitializers(_init2, 95, this);
     __publicField(this, "dataObserver");
     __publicField(this, "savedDataSnapshot", null);
     __publicField(this, "updatingDataBlock", false);
     __publicField(this, "refreshFromRemoteData", false);
-    __privateAdd(this, _avComponentsSprites, __runInitializers(_init2, 100, this, [])), __runInitializers(_init2, 103, this);
+    __privateAdd(this, _avComponentsSprites, __runInitializers(_init2, 96, this, [])), __runInitializers(_init2, 99, this);
     /**
      * controller owning all Chart.js diagrams (titration / e-chem)
      *
@@ -184276,65 +183497,49 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
      * @type {CanvasController}
      */
     __publicField(this, "canvas", new CanvasController(this));
-    __privateAdd(this, _dragObject, __runInitializers(_init2, 104, this)), __runInitializers(_init2, 107, this);
-    __privateAdd(this, _mousePos, __runInitializers(_init2, 108, this, [0, 0])), __runInitializers(_init2, 111, this);
-    __privateAdd(this, _pix_canvas, __runInitializers(_init2, 112, this, document.createElement("p_c"))), __runInitializers(_init2, 115, this);
-    __privateAdd(this, _app, __runInitializers(_init2, 116, this, null)), __runInitializers(_init2, 119, this);
+    __privateAdd(this, _dragObject, __runInitializers(_init2, 100, this)), __runInitializers(_init2, 103, this);
+    __privateAdd(this, _mousePos, __runInitializers(_init2, 104, this, [0, 0])), __runInitializers(_init2, 107, this);
+    __privateAdd(this, _pix_canvas, __runInitializers(_init2, 108, this, document.createElement("p_c"))), __runInitializers(_init2, 111, this);
+    __privateAdd(this, _app, __runInitializers(_init2, 112, this, null)), __runInitializers(_init2, 115, this);
     __publicField(this, "canvasReady");
-    __privateAdd(this, _allChemComponents, __runInitializers(_init2, 120, this, [])), __runInitializers(_init2, 123, this);
-    __privateAdd(this, _allEComponents, __runInitializers(_init2, 124, this, [])), __runInitializers(_init2, 127, this);
-    __privateAdd(this, _curr_obj, __runInitializers(_init2, 128, this, null)), __runInitializers(_init2, 131, this);
-    __privateAdd(this, _fullWidthMode, __runInitializers(_init2, 132, this, false)), __runInitializers(_init2, 135, this);
-    __privateAdd(this, _diagramPanelOpen, __runInitializers(_init2, 136, this, false)), __runInitializers(_init2, 139, this);
-    __privateAdd(this, _teacherDrawerOpen, __runInitializers(_init2, 140, this, false)), __runInitializers(_init2, 143, this);
+    __privateAdd(this, _allChemComponents, __runInitializers(_init2, 116, this, [])), __runInitializers(_init2, 119, this);
+    __privateAdd(this, _allEComponents, __runInitializers(_init2, 120, this, [])), __runInitializers(_init2, 123, this);
+    __privateAdd(this, _curr_obj, __runInitializers(_init2, 124, this, null)), __runInitializers(_init2, 127, this);
+    __privateAdd(this, _fullWidthMode, __runInitializers(_init2, 128, this, false)), __runInitializers(_init2, 131, this);
+    __privateAdd(this, _diagramPanelOpen, __runInitializers(_init2, 132, this, false)), __runInitializers(_init2, 135, this);
+    __privateAdd(this, _teacherDrawerOpen, __runInitializers(_init2, 136, this, false)), __runInitializers(_init2, 139, this);
     __publicField(this, "teacherDrawerChoice");
     __publicField(this, "workspaceResizeObserver");
     __publicField(this, "workspaceClassObserver");
-    __privateAdd(this, _teacherTab, __runInitializers(_init2, 144, this, "components")), __runInitializers(_init2, 147, this);
-    __privateAdd(this, _permissionTooltip, __runInitializers(_init2, 148, this)), __runInitializers(_init2, 151, this);
-    __privateAdd(this, _visibleVariants, __runInitializers(_init2, 152, this, {})), __runInitializers(_init2, 155, this);
-    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 156, this)), __runInitializers(_init2, 159, this);
-    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 160, this)), __runInitializers(_init2, 163, this);
-    __privateAdd(this, _chemicalPermissions, __runInitializers(_init2, 164, this, {})), __runInitializers(_init2, 167, this);
-    __privateAdd(this, _amountMenu, __runInitializers(_init2, 168, this)), __runInitializers(_init2, 171, this);
-    __privateAdd(this, _fillMeter, __runInitializers(_init2, 172, this)), __runInitializers(_init2, 175, this);
-    __privateAdd(this, _chemicalCatalogOpened, __runInitializers(_init2, 176, this, false)), __runInitializers(_init2, 179, this);
-    __privateAdd(this, _chemicalQuery, __runInitializers(_init2, 180, this, "")), __runInitializers(_init2, 183, this);
-    __privateAdd(this, _activeChemicalConcentrations, __runInitializers(_init2, 184, this, {})), __runInitializers(_init2, 187, this);
-    __privateAdd(this, _openConcentrationMenu, __runInitializers(_init2, 188, this)), __runInitializers(_init2, 191, this);
-    __privateAdd(this, _chemicalGroup, __runInitializers(_init2, 192, this, "Salze")), __runInitializers(_init2, 195, this);
+    __privateAdd(this, _teacherTab, __runInitializers(_init2, 140, this, "components")), __runInitializers(_init2, 143, this);
+    __privateAdd(this, _permissionTooltip, __runInitializers(_init2, 144, this)), __runInitializers(_init2, 147, this);
+    __privateAdd(this, _visibleVariants, __runInitializers(_init2, 148, this, {})), __runInitializers(_init2, 151, this);
+    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 152, this)), __runInitializers(_init2, 155, this);
+    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 156, this)), __runInitializers(_init2, 159, this);
+    __privateAdd(this, _chemicalPermissions, __runInitializers(_init2, 160, this, {})), __runInitializers(_init2, 163, this);
+    __privateAdd(this, _amountMenu, __runInitializers(_init2, 164, this)), __runInitializers(_init2, 167, this);
+    __privateAdd(this, _fillMeter, __runInitializers(_init2, 168, this)), __runInitializers(_init2, 171, this);
+    __privateAdd(this, _chemicalCatalogOpened, __runInitializers(_init2, 172, this, false)), __runInitializers(_init2, 175, this);
+    __privateAdd(this, _chemicalQuery, __runInitializers(_init2, 176, this, "")), __runInitializers(_init2, 179, this);
+    __privateAdd(this, _activeChemicalConcentrations, __runInitializers(_init2, 180, this, {})), __runInitializers(_init2, 183, this);
+    __privateAdd(this, _openConcentrationMenu, __runInitializers(_init2, 184, this)), __runInitializers(_init2, 187, this);
+    __privateAdd(this, _chemicalGroup, __runInitializers(_init2, 188, this, "Salze")), __runInitializers(_init2, 191, this);
     __publicField(this, "stopDose");
     __publicField(this, "paletteDrag");
     __publicField(this, "suppressPaletteClick", false);
     __publicField(this, "dragTransfer");
     __publicField(this, "meterTimeout");
-    __privateAdd(this, _curr_name, __runInitializers(_init2, 196, this, "")), __runInitializers(_init2, 199, this);
-    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 200, this, -1)), __runInitializers(_init2, 203, this);
-    __privateAdd(this, _confirmAction, __runInitializers(_init2, 204, this, 0)), __runInitializers(_init2, 207, this);
-    __privateAdd(this, _RndName, __runInitializers(_init2, 208, this, n7({
+    __publicField(this, "statusTimeout");
+    __privateAdd(this, _curr_name, __runInitializers(_init2, 192, this, "")), __runInitializers(_init2, 195, this);
+    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 196, this, -1)), __runInitializers(_init2, 199, this);
+    __privateAdd(this, _RndName, __runInitializers(_init2, 200, this, n7({
       dictionaries: [l6, t8, r10]
-    }))), __runInitializers(_init2, 211, this);
-    __privateAdd(this, _invComponents, __runInitializers(_init2, 212, this, [])), __runInitializers(_init2, 215, this);
-    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 216, this, false)), __runInitializers(_init2, 219, this);
-    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 220, this, "")), __runInitializers(_init2, 223, this);
-    __privateAdd(this, _smilesDrawer100, __runInitializers(_init2, 224, this, null)), __runInitializers(_init2, 227, this);
-    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 228, this, 1)), __runInitializers(_init2, 231, this);
-    /**
-     * asynchronous timer function to be used in other functions; returns, if the condition is met 
-     *
-     * @param {*} condition - a condition to check
-     * @param {number} [checkInterval=10] - the check interval
-     * @returns {*}
-     */
-    __publicField(this, "waitUntil", (condition, checkInterval = 10) => {
-      return new Promise((resolve2) => {
-        let interval = setInterval(() => {
-          if (!condition()) return;
-          clearInterval(interval);
-          resolve2();
-        }, checkInterval);
-      });
-    });
+    }))), __runInitializers(_init2, 203, this);
+    __privateAdd(this, _invComponents, __runInitializers(_init2, 204, this, [])), __runInitializers(_init2, 207, this);
+    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 208, this, false)), __runInitializers(_init2, 211, this);
+    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 212, this, "")), __runInitializers(_init2, 215, this);
+    __privateAdd(this, _smilesDrawer100, __runInitializers(_init2, 216, this, null)), __runInitializers(_init2, 219, this);
+    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 220, this, 1)), __runInitializers(_init2, 223, this);
     console.log(import_smiles_drawer.default);
     this.smilesDrawer100 = new import_smiles_drawer.default.SvgDrawer({ width: 100, height: 100, explicitHydrogens: true, compactDrawing: false, terminalCarbons: true });
   }
@@ -184359,7 +183564,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       "sl-select": SlSelect,
       "sl-option": SlOption,
       "sl-input": SlInput,
-      "sl-alert": SlAlert,
       "sl-carousel": SlCarousel,
       "sl-carousel-item": SlCarouselItem,
       "sl-checkbox": SlCheckbox,
@@ -184367,8 +183571,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       "sl-popup": SlPopup,
       "sl-tab": SlTab,
       "sl-tab-group": SlTabGroup,
-      "sl-tab-panel": SlTabPanel,
-      "sl-dialog": SlDialog
+      "sl-tab-panel": SlTabPanel
     };
   }
   connectedCallback() {
@@ -184582,32 +183785,15 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       await this.canvas.init();
     } catch (error) {
       console.error("Unable to initialize the Chemlab canvas", error);
-      this._emitAlert(this.message("Die Arbeitsfl\xE4che konnte nicht geladen werden."), "danger", true);
+      this._notify(this.message("Die Arbeitsfl\xE4che konnte nicht geladen werden."), "danger");
       return;
     }
     this.refreshFromRemoteData = false;
     this.focus();
-    setAnimation(this.dialogAlert, "alert.show", {
-      keyframes: [{ opacity: "0" }, { opacity: "1" }],
-      options: {
-        duration: 50
-      }
-    });
-    setAnimation(this.dialogAlert, "alert.hide", {
-      keyframes: [{ opacity: "1" }, { opacity: "0" }],
-      options: {
-        duration: 50
-      }
-    });
     this.simulation.startLoop(() => this.canvas.flushChanges());
     this._loadComponents();
     this._sendxAPiStatement("registered", "chemlab");
-    this._emitAlert(
-      this.message("klicke zum Starten in das Fenster!"),
-      "success",
-      true,
-      1e4
-    );
+    this._notify(this.message("klicke zum Starten in das Fenster!"), "neutral", 1e4);
   }
   requestCanvasRender() {
     this.simulation.requestRender();
@@ -185721,7 +184907,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (sprite) this.removeObjects([sprite]);
   }
   deleteSelection(event) {
-    if (event.key === "Escape" && !event.defaultPrevented && !event.isComposing && !this.confirmDialog?.open && (this.selectedChemical || this.amountMenu || this.paletteDrag || this.dragTransfer)) {
+    if (event.key === "Escape" && !event.defaultPrevented && !event.isComposing && (this.selectedChemical || this.amountMenu || this.paletteDrag || this.dragTransfer)) {
       event.preventDefault();
       event.stopPropagation();
       const focusCanvas = !!this.amountMenu;
@@ -185730,7 +184916,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       if (focusCanvas) this.app?.canvas.focus({ preventScroll: true });
       return;
     }
-    if (event.key !== "Delete" || event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || this.confirmDialog?.open) return;
+    if (event.key !== "Delete" || event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     for (const target of event.composedPath()) {
       if (target === event.currentTarget) break;
       if (target instanceof Element && target.matches("input, textarea, select, sl-input, sl-select, [role='textbox'], [contenteditable]:not([contenteditable='false'])")) return;
@@ -185748,7 +184934,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (!targets.length) return;
     const labelOf = (component) => `${component._type}:${component._id}`;
     const labels = new Set(targets.map(({ label }) => label));
-    const removedElectrical = this.allEComponents.filter((component) => labels.has(labelOf(component)) || component._type === "cable" /* Cable */ && component._connections.some((end) => labels.has(labelOf(end))));
+    const removedElectrical = this.allEComponents.filter((component) => labels.has(labelOf(component)) || component._type === "cable" /* Cable */ && component._connections.some((end) => end && labels.has(labelOf(end))));
     const removedChemical = this.allChemComponents.filter((component) => labels.has(labelOf(component)));
     const drag = this.dragTransfer;
     if (drag && (removedChemical.includes(drag.target) || "vessel" in drag.from && removedChemical.includes(drag.from.vessel))) this.finishDragTransfer();
@@ -185758,7 +184944,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const detachedElectrodes = this.allEComponents.filter((component) => component._type === "electrode" /* Electrode */ && removedMixtures.has(component._connectedMix) && !labels.has(labelOf(component)));
     const affectedElectrical = /* @__PURE__ */ new Set([...removedElectrical, ...detachedElectrodes]);
     for (const component of affectedElectrical) {
-      for (const partner of component._connections) affectedElectrical.add(partner);
+      for (const partner of component._connections.filter(Boolean)) affectedElectrical.add(partner);
     }
     for (const component of removedElectrical) labels.add(labelOf(component));
     const selected = world.children[this.curr_stage_index];
@@ -185768,18 +184954,15 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.clearObjectSelection();
     }
     for (const component of removedElectrical) {
-      if (component._type === "cable" /* Cable */) this.removeAuthoredCableConnection(component);
-    }
-    for (const component of removedElectrical) {
-      for (const partner of [...component._connections]) this._remEcon(component, partner);
+      for (const partner of [...component._connections].filter(Boolean)) this._remEcon(component, partner);
     }
     for (const electrode of detachedElectrodes) {
       const vessel = removedMixtures.get(electrode._connectedMix);
       electrode._connectedMix = void 0;
-      this._emitAlert(this.message("{from} aus {to} entfernt.", {
+      this._notify(this.message("{from} aus {to} entfernt.", {
         from: this.itemName(electrode._type),
         to: this.itemName(vessel._type)
-      }), "danger", false, 1500);
+      }), "warning", 1500);
     }
     this.allChemComponents = this.allChemComponents.filter((component) => !labels.has(labelOf(component)));
     this.allEComponents = this.allEComponents.filter((component) => !labels.has(labelOf(component)));
@@ -185811,21 +184994,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.canvas.setDeviceActive(component, false);
     this._sendxAPiStatement("completed", ticker);
     this.requestUpdate();
-  }
-  removeAuthoredCableConnection(cable) {
-    if (!this.canAuthor || cable._connections.length !== 2) return;
-    const indices = cable._connections.map((end) => {
-      const sprite = this.canvas.world.children.find(({ label }) => label === `${end._type}:${end._id}`);
-      return sprite ? this.availableComponents.indexOf(this.findAuthoredComponent(sprite)) : -1;
-    });
-    if (indices.some((index2) => index2 < 0)) return;
-    const [first, second] = indices;
-    this.availableComponents = this.availableComponents.map((entry, index2) => {
-      if (index2 !== first && index2 !== second) return entry;
-      const partner = index2 === first ? second : first;
-      entry["connections"] = (entry["connections"] ?? []).filter((connection) => connection !== partner);
-      return entry;
-    });
   }
   clearObjectSelection() {
     this.canvas.clearGroupSelection();
@@ -185952,35 +185120,12 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.avComponentsSprites.push([sprite, newComp._id]);
       component["id"] = newComp._id;
     }
-    this.availableComponents.forEach((comp) => {
-      comp["connections"].forEach((index2) => {
-        let id3 = this.availableComponents[index2]["id"];
-        let source3;
-        let partner;
-        this.allEComponents.forEach((eComp) => {
-          if (eComp._type.toLowerCase() != "cable") {
-            if (eComp._id === id3) {
-              partner = eComp;
-            }
-            if (eComp._id === comp["id"]) {
-              source3 = eComp;
-            }
-          }
-        });
-        let save = true;
-        this.allEComponents.forEach((eComp) => {
-          if (eComp._type.toLowerCase() === "cable") {
-            if (eComp._connections.includes(partner) && eComp._connections.includes(source3)) {
-              save = false;
-            }
-          }
-        });
-        if (save) {
-          this._addEcon(partner, source3);
-        }
-      });
-    });
-    if (entry === void 0) this.canvas.attachAuthoredDevices();
+    restoreConnections(
+      this.availableComponents,
+      (id3) => this.allEComponents.find((component) => component._id === id3),
+      (a7, b5) => this.connectElectrical(a7, b5, void 0, void 0, false)
+    );
+    if (entry === void 0) this.canvas.attachDevices();
   }
   _loadMolecule(formula) {
     const definitions = this.availableMolecules;
@@ -185990,100 +185135,95 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     return loadMoleculeDefinition();
   }
   /**
-   * adds a ne connection between two electric components
+   * Joins two devices with a cable. This is the single entry point for
+   * wiring: the canvas drag, the restore path and the settings panel all go
+   * through it, so a cable always lands in the same three places - the
+   * device terminals, the component list and the canvas.
    *
-   * @private
-   * @param {chemlib.ElectricComponent} partner - the component to connect to
-   * @param {?chemlib.ElectricComponent} [source] - the component to connect from
+   * @param {chemlib.ElectricComponent} from - the device the cable starts at
+   * @param {chemlib.ElectricComponent} to - the device it ends at
+   * @param {?number} [terminalFrom] - the terminal of `from`, first free by default
+   * @param {?number} [terminalTo] - the terminal of `to`, first free by default
+   * @param {boolean} [authored=true] - whether to record the cable in the data block
+   * @returns {boolean} whether a cable was laid
    */
-  _addEcon(partner, source3) {
-    let cable = ComponentManager.newElectricComponent(
-      "cable" /* Cable */
-    );
-    let message = "";
-    let ret1 = "";
-    let ret2 = "";
-    let sComp = source3 ?? this.curr_obj;
-    ret1 += sComp.connect(cable);
-    ret2 += cable.connect(partner);
-    if (ret1 != ret2) {
-      message = ret1 + "\n" + ret2;
-    } else {
-      message = ret1;
-    }
+  connectElectrical(from2, to2, terminalFrom, terminalTo, authored = true) {
+    const cable = connectDevices(from2, to2, terminalFrom, terminalTo);
+    if (!cable) return false;
     this.allEComponents.push(cable);
     this.canvas.addComponentView(cable, false);
-    if (!source3) {
-      const sprite = this.canvas.world.children.find(
-        (sprite2) => sprite2.label === sComp._type + ":" + sComp._id
-      );
-      this._getObject(sprite);
+    if (!authored) return true;
+    this.syncAuthoredConnections(from2);
+    this.syncAuthoredConnections(to2);
+    this._notify(this.message("Neue Verbindung zwischen {from} und {to}", {
+      from: this.itemName(from2._type),
+      to: this.itemName(to2._type)
+    }), "success", 1500);
+    this._sendxAPiStatement("joined", from2._type + from2._id, {
+      response: to2._type + ":" + to2._id,
+      success: true,
+      completion: true
+    });
+    return true;
+  }
+  /**
+   * Rewrites the authored connection list of a device from its live
+   * terminals. The order is what matters: `polarity` names the electrode on
+   * terminal 0, so a rewire has to be written back in terminal order rather
+   * than appended.
+   *
+   * @private
+   * @param {chemlib.ElectricComponent} device - the device to write back
+   */
+  syncAuthoredConnections(device) {
+    if (!this.canAuthor) return;
+    const entry = this.authoredEntryOf(device);
+    if (!entry) return;
+    const partners = [];
+    for (const cable of device._connections) {
+      if (!cable) continue;
+      const other = cable._connections.find((end) => end && end !== device);
+      const index2 = other ? this.authoredIndexOf(other) : -1;
+      if (index2 >= 0 && !partners.includes(index2)) partners.push(index2);
     }
-    let isAvail1, isAvail2;
-    if (message === "" && typeof source3 === "undefined") {
-      this.availableComponents.forEach((comp) => {
-        if (comp["id"] === sComp._id) {
-          isAvail1 = [true, this.availableComponents.indexOf(comp)];
-        }
-        if (comp["id"] === partner._id) {
-          isAvail2 = [true, this.availableComponents.indexOf(comp)];
-        }
-      });
-      if (typeof isAvail1 != "undefined" && typeof isAvail2 != "undefined") {
-        if (isAvail1[0] && isAvail2[0]) {
-          this.availableComponents[isAvail1[1]]["connections"].push(
-            isAvail2[1]
-          );
-          this.availableComponents[isAvail2[1]]["connections"].push(
-            isAvail1[1]
-          );
-          let arrCopy = [];
-          this.availableComponents.forEach((comp) => {
-            arrCopy.push(comp);
-          });
-          this.availableComponents = [];
-          this.availableComponents = arrCopy;
-        }
-      }
-      if (this.curr_obj._type != "cable" && partner._type != "cable") {
-        this._emitAlert(
-          message === "" ? this.message("Neue Verbindung zwischen {from} und {to}", { from: this.itemName(this.curr_obj._type), to: this.itemName(partner._type) }) : message,
-          "success",
-          false,
-          1500
-        );
-      }
-      this._sendxAPiStatement(
-        "joined",
-        this.curr_obj._type + this.curr_obj._id,
-        {
-          response: partner._type + ":" + partner._id,
-          success: true,
-          completion: true
-        }
-      );
-    } else if (message != "") {
-      this._emitAlert(message.split("\n").filter(Boolean).map((line) => this.message(line)).join("\n"), "warning", true);
-      this._sendxAPiStatement(
-        "joined",
-        this.curr_obj._type + this.curr_obj._id,
-        {
-          response: partner._type + ":" + partner._id,
-          success: false,
-          completion: true
-        }
-      );
-    }
+    entry["connections"] = partners;
+    this.availableComponents = [...this.availableComponents];
+  }
+  /**
+   * The authored entry a live device came from, or undefined when the device
+   * was placed in this session and has no entry yet.
+   *
+   * @private
+   * @param {chemlib.ElectricComponent} device - the live device
+   * @returns {?object}
+   */
+  authoredEntryOf(device) {
+    const sprite = this.canvas.world.children.find(({ label }) => label === `${device._type}:${device._id}`);
+    return sprite ? this.findAuthoredComponent(sprite) : void 0;
+  }
+  /**
+   * The index of a live device in the authored component list, or -1.
+   *
+   * @private
+   * @param {chemlib.ElectricComponent} device - the live device
+   * @returns {number}
+   */
+  authoredIndexOf(device) {
+    const entry = this.authoredEntryOf(device);
+    return entry ? this.availableComponents.indexOf(entry) : -1;
   }
   /**
    * removes a connection between a selected sprites object an its partner
    *
    * @private
+   * @param {chemlib.ElectricComponent} component - the object to disconnect
    * @param {chemlib.ElectricComponent} partner - the object to which the connection is to be removed
    */
   _remEcon(component, partner) {
     const message = component.disconnect(partner);
     if (message === "") {
+      this.syncAuthoredConnections(component);
+      this.syncAuthoredConnections(partner);
       this._sendxAPiStatement(
         "removed",
         "eCon " + component._type + component._id,
@@ -186094,7 +185234,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         }
       );
     } else {
-      this._emitAlert(message.split("\n").filter(Boolean).map((line) => this.message(line)).join("\n"), "warning", true);
+      this._notify(message.split("\n").filter(Boolean).map((line) => this.message(line)).join("\n"), "warning", 4e3);
       this._sendxAPiStatement(
         "removed",
         "eCon " + component._type + component._id,
@@ -186107,27 +185247,26 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }
   }
   /**
-   * shows an alert with given properties
+   * Shows a short notice in the status strip above the canvas. The strip is
+   * not modal and never blocks the canvas, so a notice can appear while the
+   * user keeps working; a new notice replaces the previous one.
    *
    * @private
-   * @param {string} text - the content of the alert
-   * @param {string} variant - the showlace color variant
-   * @param {boolean} closable - if the alert box can be closed
-   * @param {?number} [duration] - how long the alert box will be shown
+   * @param {string} text - the notice
+   * @param {string} [variant="neutral"] - neutral, success, warning or danger
+   * @param {number} [duration=2000] - how long the notice stays, in ms
    */
-  _emitAlert(text, variant, closable, duration) {
-    this.shadowRoot.getElementById("dialogText").textContent = text;
-    this.dialogAlert.variant = variant;
-    this.dialogAlert.closable = closable;
-    if (duration) {
-      this.dialogAlert.duration = duration;
-    } else {
-      this.dialogAlert.duration = Infinity;
-    }
-    this.dialogAlert.show();
-  }
-  _hideAlert() {
-    this.dialogAlert.hide();
+  _notify(text, variant = "neutral", duration = 2e3) {
+    const strip = this.statusStrip;
+    if (!strip) return;
+    strip.textContent = text;
+    strip.dataset.variant = variant;
+    strip.hidden = false;
+    const view = this.ownerDocument.defaultView;
+    view?.clearTimeout(this.statusTimeout);
+    this.statusTimeout = view?.setTimeout(() => {
+      strip.hidden = true;
+    }, duration);
   }
   /**
    * sends an xAPi statement with a fetch request
@@ -186185,66 +185324,12 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					${this.renderControlButtons()}
 				</div>
 				${this.renderDiagramDetails(diagramAvailable, diagramOpen)}
-				${this.renderConfirmDialog()}
 				${this.renderTeacherDrawer()}
 				<sl-popup id="permissionPopup" placement="top" distance="8" flip shift arrow
 					.anchor=${this.permissionTooltip?.anchor} .active=${!!this.permissionTooltip}>
 					<div id="permissionTooltip" role="tooltip">${this.permissionTooltip?.text}</div>
 				</sl-popup>
 			</div>
-		`;
-  }
-  renderConfirmDialog() {
-    return x`
-				<sl-dialog id="confirmDialog" no-header label=${this.message("best\xE4tigen")}>
-					<div
-						style="display: flex; flex-direction: row; align-items: center"
-					>
-						<p>${this.message("Aktion best\xE4tigen:")}</p>
-						<button
-							aria-label=${this.message("best\xE4tigen")}
-							@click="${(event) => {
-      this.confirmAction = 1;
-      this.confirmDialog.hide();
-    }}"
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="20"
-								height="20"
-								viewBox="0 0 48 48"
-							>
-								<path
-									fill="#288d00"
-									fill-rule="evenodd"
-									d="M24 44c11.046 0 20-8.954 20-20S35.046 4 24 4S4 12.954 4 24s8.954 20 20 20m10.742-26.33a1 1 0 1 0-1.483-1.34L21.28 29.567l-6.59-6.291a1 1 0 0 0-1.382 1.446l7.334 7l.743.71l.689-.762z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-						</button>
-						<button
-							aria-label=${this.message("Abbrechen")}
-							@click="${(event) => {
-      this.confirmAction = 2;
-      this.confirmDialog.hide();
-    }}"
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="20"
-								height="20"
-								viewBox="0 0 48 48"
-							>
-								<path
-									fill="#d10000"
-									fill-rule="evenodd"
-									d="M44 24c0 11.046-8.954 20-20 20S4 35.046 4 24S12.954 4 24 4s20 8.954 20 20m-27.778 7.778a1 1 0 0 1 0-1.414L22.586 24l-6.364-6.364a1 1 0 0 1 1.414-1.414L24 22.586l6.364-6.364a1 1 0 0 1 1.414 1.414L25.414 24l6.364 6.364a1 1 0 0 1-1.414 1.414L24 25.414l-6.364 6.364a1 1 0 0 1-1.414 0"
-									clip-rule="evenodd"
-								/>
-							</svg>
-						</button>
-					</div>
-				</sl-dialog>
 		`;
   }
   get diagramPanelAvailable() {
@@ -186328,13 +185413,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 						</svg>
 					</sl-button>
 				</div>
-				<sl-alert
-					id="dialogOverview"
-					style="top: 0px; left: 0px"
-					closable
-				>
-					<p id="dialogText"></p>
-				</sl-alert>
+				<div id="statusStrip" role="status" aria-live="polite" hidden></div>
 		`;
   }
   async toggleFullscreen() {
@@ -186920,18 +185999,17 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   renderElectricalSettings(device) {
     const { Cable, Electrode, Source } = EComponentType;
     if (device._type === Cable) return E;
-    const connections = device._connections.flatMap((cable) => {
-      const other = cable._connections.find((end) => end !== device);
+    const connections = device._connections.filter(Boolean).flatMap((cable) => {
+      const other = cable._connections.find((end) => end && end !== device);
       return other ? [{ cable, other }] : [];
     });
-    const candidates = device._connections.length < device._conCount ? this.allEComponents.filter((other) => other !== device && other._type !== Cable && other._connections.length < other._conCount && !connections.some((link) => link.other === other)) : [];
     const materials = this.canAuthor && device._type === Electrode ? componentVariants.electrode : [];
     const material = materials.find((variant) => variant.material.name === device._material?.name);
     const hasSource = device._type === Source;
     const hasMeter = device._type === "multimeter" /* Multimeter */;
     const hasLabel = device._type === "label" /* Label */;
     const hasElectrode = device._type === Electrode;
-    if (!hasSource && !hasMeter && !hasLabel && !hasElectrode && !connections.length && !candidates.length) return E;
+    if (!hasSource && !hasMeter && !hasLabel && !hasElectrode && !connections.length) return E;
     const label = (other) => `${this.itemName(other._type)} \xB7 ${other._id + 1}`;
     const plusPole = hasSource ? ComponentManager.terminalElectrode(device, 0) : void 0;
     const minusPole = hasSource ? ComponentManager.terminalElectrode(device, 1) : void 0;
@@ -187038,22 +186116,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 						<option value="" ?selected=${!material} disabled>${device._material ? this.itemName(device._material.name) : this.message("kein Material")}</option>
 						${materials.map((variant) => x`<option value=${variant.id} ?selected=${variant === material}>${this.message(variant.material.name)}</option>`)}
 					</select></label>` : E}
-				${candidates.length ? x`
-					<label>${this.message("Verbindungen")}
-					<select contenteditable="false" @change=${(event) => {
-      const select = event.currentTarget;
-      const other = candidates.find((candidate) => String(candidate._id) === select.value);
-      select.value = "";
-      if (other) this._addEcon(other);
-    }}>
-						<option value="" selected disabled>${this.message("Gegenst\xFCck")}</option>
-						${candidates.map((other) => x`<option value=${other._id}>${label(other)}</option>`)}
-					</select></label>` : E}
-				${connections.map(({ cable, other }) => x`
-					<sl-button size="small" variant="default" @click=${() => {
-      const sprite = this.canvas.world.children.find(({ label: label2 }) => label2 === `cable:${cable._id}`);
-      if (sprite) this.removeObjects([sprite]);
-    }}>${label(other)} ×</sl-button>`)}
+				${connections.length ? x`
+					<div class="connection-list">
+						<span class="connection-list-label">${this.message("Verbunden mit")}</span>
+						${connections.map(({ other }) => x`<sl-tag size="small" variant="neutral">${label(other)}</sl-tag>`)}
+					</div>` : E}
 			</sl-details>
 		`);
   }
@@ -187168,8 +186235,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 };
 _init2 = __decoratorStart(_a2);
 _containerDiv = new WeakMap();
-_confirmDialog = new WeakMap();
-_dialogAlert = new WeakMap();
+_statusStrip = new WeakMap();
 _contextMolInfo = new WeakMap();
 _objectSummary = new WeakMap();
 _groupSummary = new WeakMap();
@@ -187216,7 +186282,6 @@ _openConcentrationMenu = new WeakMap();
 _chemicalGroup = new WeakMap();
 _curr_name = new WeakMap();
 _curr_stage_index = new WeakMap();
-_confirmAction = new WeakMap();
 _RndName = new WeakMap();
 _invComponents = new WeakMap();
 _enablexAPI = new WeakMap();
@@ -187224,8 +186289,7 @@ _xAPIKey = new WeakMap();
 _smilesDrawer100 = new WeakMap();
 _newSmilesDrawer = new WeakMap();
 __decorateElement(_init2, 4, "containerDiv", _containerDiv_dec, _ChemLab, _containerDiv);
-__decorateElement(_init2, 4, "confirmDialog", _confirmDialog_dec, _ChemLab, _confirmDialog);
-__decorateElement(_init2, 4, "dialogAlert", _dialogAlert_dec, _ChemLab, _dialogAlert);
+__decorateElement(_init2, 4, "statusStrip", _statusStrip_dec, _ChemLab, _statusStrip);
 __decorateElement(_init2, 4, "contextMolInfo", _contextMolInfo_dec, _ChemLab, _contextMolInfo);
 __decorateElement(_init2, 4, "objectSummary", _objectSummary_dec, _ChemLab, _objectSummary);
 __decorateElement(_init2, 4, "groupSummary", _groupSummary_dec, _ChemLab, _groupSummary);
@@ -187272,7 +186336,6 @@ __decorateElement(_init2, 4, "openConcentrationMenu", _openConcentrationMenu_dec
 __decorateElement(_init2, 4, "chemicalGroup", _chemicalGroup_dec, _ChemLab, _chemicalGroup);
 __decorateElement(_init2, 4, "curr_name", _curr_name_dec, _ChemLab, _curr_name);
 __decorateElement(_init2, 4, "curr_stage_index", _curr_stage_index_dec, _ChemLab, _curr_stage_index);
-__decorateElement(_init2, 4, "confirmAction", _confirmAction_dec, _ChemLab, _confirmAction);
 __decorateElement(_init2, 4, "RndName", _RndName_dec, _ChemLab, _RndName);
 __decorateElement(_init2, 4, "invComponents", _invComponents_dec, _ChemLab, _invComponents);
 __decorateElement(_init2, 4, "enablexAPI", _enablexAPI_dec, _ChemLab, _enablexAPI);

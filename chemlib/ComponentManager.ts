@@ -121,7 +121,7 @@ export abstract class ComponentManager {
 			} else {
 				var hasNext: boolean = false;
 				currComponent._connections.forEach((conElem) => {
-					if (!visited.includes(conElem._id)) {
+					if (conElem && !visited.includes(conElem._id)) {
 						hasNext = true;
 						currComponent = conElem;
 					}
@@ -161,7 +161,9 @@ export abstract class ComponentManager {
 			if (current._type === EComponentType.Electrode) return current;
 			// Only cables are transparent: anything else ends the branch.
 			if (current._type !== EComponentType.Cable) continue;
-			queue.push(...current._connections);
+			// A cable always has both ends wired, but a device may have empty
+			// terminals, so the holes are dropped before they enter the queue.
+			queue.push(...current._connections.filter(Boolean));
 		}
 		return undefined;
 	}

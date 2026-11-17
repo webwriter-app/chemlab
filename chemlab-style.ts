@@ -2181,37 +2181,44 @@ export const style = css`
 		background-color: #51a332;
 		color: #fff;
 	}
-	#dialogOverview {
+	#statusStrip {
 		position: absolute;
-		bottom: 0px;
-		right: 0px;
-		top: revert !important;
-		left: revert !important;
-		display: block;
-
-		margin-bottom: 5px;
-		margin-right: 5px;
-	}
-	#dialogOverview::part(base) {
-		background-color: #ffffff8d;
+		top: 8px;
+		left: 50%;
+		transform: translateX(-50%);
+		max-width: min(70%, 420px);
+		padding: 4px 12px;
+		border-radius: 999px;
+		background-color: #ffffffd9;
 		backdrop-filter: blur(20px);
-		border-radius: 5px;
-		box-shadow: 0px 6px 12px 0px rgba(0, 0, 0, 0.33);
+		box-shadow: 0px 4px 10px 0px rgba(0, 0, 0, 0.22);
+		font-size: 10pt;
+		line-height: 14pt;
+		text-align: center;
+		pointer-events: none;
+		z-index: 20;
 	}
-	#confirmDialog::part(overlay) {
-		visibility: hidden;
+	#statusStrip[hidden] {
+		display: none;
 	}
-	#confirmDialog::part(panel) {
-		width: 215px;
-		background-color: #ffffff8d;
-		backdrop-filter: blur(20px);
-		border-radius: 5px;
-		box-shadow: 0px 0px 12px 3px rgba(0, 0, 0, 0.33);
-
-		position: absolute;
+	#statusStrip[data-variant="success"] {
+		border-left: 3px solid #51a332;
 	}
-	#confirmDialog::part(body) {
-		padding: 5px;
+	#statusStrip[data-variant="warning"] {
+		border-left: 3px solid #d19a00;
+	}
+	#statusStrip[data-variant="danger"] {
+		border-left: 3px solid #d10000;
+	}
+	.connection-list {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px;
+	}
+	.connection-list-label {
+		font-size: 9pt;
+		opacity: 0.7;
 	}
 	#smilesSwitch::part(label){
 		font-size: 10pt;

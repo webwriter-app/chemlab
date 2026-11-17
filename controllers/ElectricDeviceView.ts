@@ -2,6 +2,7 @@ import { Container, Graphics, Rectangle, Sprite, Text, type Texture } from "pixi
 import { EComponentType, type ElectricComponent } from "../chemlib/ElectricComponent";
 import { ELECTRODE_AREA } from "../chemlib/halfReactions";
 import { MOLAR_GAS_VOLUME_ML } from "../chemlib/gasEvolution";
+import { componentTerminals, type TerminalPoint } from "../data/componentGraphics";
 
 function reading(value: number | null | undefined, unit: string): string {
 	return `${Number.isFinite(value) ? Number(value.toPrecision(4)) : "—"} ${unit}`;
@@ -30,11 +31,26 @@ export class ElectricDeviceView extends Container {
 	private coating?: Graphics;
 	private strip?: { left: number; right: number; top: number; bottom: number };
 	private coatingKey = "";
+	/** the terminals of this device in local coordinates, empty if it has none */
+	private readonly terminals: TerminalPoint[];
+	/** the drawn size in world units, for the port marker radius */
+	private readonly artboard: { width: number; height: number };
+	/** the drawn terminal markers, created on first use */
+	private portLayer?: Graphics;
+	/** what the port layer currently shows, so it is only redrawn on change */
+	private portKey = "";
 
 	constructor(readonly component: ElectricComponent, texture: Texture, width: number, height: number) {
 		super({ interactiveChildren: false });
 		this.hitArea = new Rectangle(-width / 2, -height / 2, width, height);
 		this.addChild(new Sprite({ texture, anchor: 0.5, width, height, eventMode: "none" }));
+		this.artboard = { width, height };
+		// The artboard coordinates of the terminals become local offsets from
+		// the sprite centre, which is where the texture is anchored.
+		this.terminals = componentTerminals(component._type).map(({ x, y }) => ({
+			x: width * (x - 0.5),
+			y: height * (y - 0.5),
+		}));
 		const addLine = (x: number, y: number, fontSize: number, maxWidth: number) => {
 			const text = new Text({ anchor: 0.5, resolution: 3, eventMode: "none",
 				style: { fontFamily: "monospace", fontSize: height * fontSize, fontWeight: "bold", fill: 0x213a2c } });
@@ -97,6 +113,88 @@ export class ElectricDeviceView extends Container {
 		this.measuredVoltage = null;
 		if (this.indicator) this.indicator.tint = active ? 0x68d681 : 0x3b5255;
 		this.refresh();
+	}
+
+	/**
+	 * The radius of a terminal marker in world units. It grows with the device
+	 * so a post on the large source stays as easy to hit as one on a meter.
+	 *
+	 * @readonly
+	 * @type {number}
+	 */
+	get portRadius(): number {
+		return Math.max(1.2, Math.min(2.6, this.artboard.height * 0.028));
+	}
+
+	/**
+	 * The terminal whose marker lies under a point in local coordinates, or -1
+	 * when the point is on none of them. The grab radius is wider than the
+	 * drawn marker, so a terminal is easy to pick without aiming.
+	 *
+	 * @param {number} x - local x
+	 * @param {number} y - local y
+	 * @returns {number} the terminal index, or -1
+	 */
+	portAt(x: number, y: number): number {
+		const reach = this.portRadius * 1.9;
+		let best = -1;
+		let bestDistance = reach;
+		this.terminals.forEach((terminal, index) => {
+			const distance = Math.hypot(x - terminal.x, y - terminal.y);
+			if (distance <= bestDistance) {
+				best = index;
+				bestDistance = distance;
+			}
+		});
+		return best;
+	}
+
+	/**
+	 * The local position of one terminal, for drawing a wire that starts there.
+	 *
+	 * @param {number} terminal - the terminal index
+	 * @returns {(TerminalPoint | undefined)}
+	 */
+	terminalPoint(terminal: number): TerminalPoint | undefined {
+		return this.terminals[terminal];
+	}
+
+	/**
+	 * Shows the terminal markers of this device. A device only shows the
+	 * terminals that are still free, so the marker doubles as a hint about
+	 * where another cable can go.
+	 *
+	 * @param {number[]} free - the terminals without a cable
+	 * @param {number} [highlight] - a terminal to draw as the current target
+	 */
+	showPorts(free: readonly number[], highlight = -1): void {
+		const key = `${free.join(",")}|${highlight}`;
+		if (key === this.portKey) return;
+		this.portKey = key;
+		if (!this.portLayer) {
+			this.portLayer = new Graphics({ eventMode: "none" });
+			this.addChild(this.portLayer);
+		}
+		const layer = this.portLayer;
+		layer.clear();
+		const radius = this.portRadius;
+		for (const terminal of free) {
+			const point = this.terminals[terminal];
+			if (!point) continue;
+			const active = terminal === highlight;
+			layer.circle(point.x, point.y, active ? radius * 1.35 : radius)
+				.fill({ color: active ? 0x0284c7 : 0xffffff, alpha: active ? 0.95 : 0.8 })
+				.stroke({ color: active ? 0x075985 : 0x334155, width: 0.5, alpha: 0.9 });
+		}
+	}
+
+	/**
+	 * Hides the terminal markers again.
+	 */
+	hidePorts(): void {
+		if (this.portKey === "") return;
+		this.portKey = "";
+		this.portLayer?.clear();
 	}
 
 	refresh(hasVoltageReading?: boolean): boolean {
