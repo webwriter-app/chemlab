@@ -1103,6 +1103,43 @@ export class CanvasController implements ReactiveController {
 	}
 
 	/**
+	 * Finds the vessel a point in world coordinates falls into. Used both when
+	 * an electrode is dropped and when a saved layout is restored, so an
+	 * authored electrode ends up in the same vessel a manual drop would pick.
+	 *
+	 * @param {number} x - world-space x
+	 * @param {number} y - world-space y
+	 * @returns {?VesselView} the smallest vessel containing the point
+	 */
+	vesselAt(x: number, y: number): VesselView | undefined {
+		let found: VesselView | undefined;
+		for (const view of this.vessels.values()) {
+			if (x < view.x - view.width / 2 || x > view.x + view.width / 2) continue;
+			if (y < view.y - view.height / 2 || y > view.y + view.height / 2) continue;
+			if (!found || view.width * view.height < found.width * found.height) found = view;
+		}
+		return found;
+	}
+
+	/**
+	 * Dips restored electrodes into the vessel they were saved in.
+	 *
+	 * A saved layout does not record which vessel an electrode belongs to, so
+	 * the position decides, using the same test as a manual drop. Without this
+	 * an imported layout would show a cell whose electrodes are in no
+	 * solution, and the simulation would never start.
+	 */
+	attachAuthoredElectrodes(): void {
+		for (const eComp of this.host.allEComponents) {
+			if (eComp._type !== chemlib.EComponentType.Electrode || eComp._connectedMix) continue;
+			const electrode = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
+			if (!electrode) continue;
+			const vessel = this.vesselAt(electrode.x, electrode.y);
+			if (vessel) eComp._connectedMix = vessel.component._content;
+		}
+	}
+
+	/**
 	 * Moves the electrode sprites standing inside a vessel's contents by the
 	 * same offset the vessel itself was moved by, so electrodes travel with
 	 * their vessel.

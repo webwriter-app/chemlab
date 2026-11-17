@@ -2379,6 +2379,7 @@ export class ChemLab extends LitElementWw {
 				}
 			});
 		});
+		if (entry === undefined) this.canvas.attachAuthoredElectrodes();
 	}
 
 
