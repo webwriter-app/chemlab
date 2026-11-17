@@ -151019,15 +151019,8 @@ var Simulation = class {
   }
   /**
    * A salt bridge carries the ionic current between the two vessels, so it
-   * keeps each of them neutral: whatever charge the electrode reactions left
-   * behind is balanced by ions from the bridge. Without one, a half-cell that
-   * loses a cation turns acidic and one that gains a cation turns basic, which
-   * is what a single compartment without a bridge really does.
-   *
-   * Only the charge the electrode reactions moved is compensated, not the
-   * charge the vessel already carried: a salt bridge does not undo the
-   * protons an anodic water oxidation produced, it only supplies the
-   * counter-ion for the cations that stayed behind.
+   * compensates the charge moved by stored ions. The model keeps the
+   * bridge's countercharge as a spectator charge rather than named ions.
    *
    * @private
    * @static
@@ -151068,6 +151061,16 @@ var Simulation = class {
     };
     if (!usable(sElectrode1, mix1) || !usable(sElectrode2, mix2)) return unsolved();
     if (!ComponentManager.isConnected(sElectrode1, sElectrode2)) return unsolved();
+    const source3 = sDevices.find((device) => device._type === "source" /* Source */);
+    const separateBaths = !!mix1 && !!mix2 && mix1 !== mix2;
+    const bridged = separateBaths && options2.bridge === true;
+    if (separateBaths && !bridged) {
+      this.sCircuit(sDevices);
+      if (!source3) {
+        for (const device of sDevices) device._visibleVoltage = null;
+      }
+      return;
+    }
     const dt = this._simTimeStep;
     const candidatesOf = (electrode, mix) => electrode._reference !== void 0 ? this.referenceCandidates(electrode._reference) : mix?._isSolution ? this.electrodeCandidates(electrode, this.vesselView(mix), dt) : [];
     const first = candidatesOf(sElectrode1, mix1);
@@ -151081,9 +151084,8 @@ var Simulation = class {
     const network = circuitNetwork([sElectrode1, sElectrode2, ...sDevices]);
     const thevenin = network ? circuitThevenin(network) : void 0;
     if (!network || !thevenin) return unsolved();
-    const electrolyte = ELECTROLYTE_RESISTANCE + (options2.bridge ? BRIDGE_RESISTANCE : 0);
+    const electrolyte = ELECTROLYTE_RESISTANCE + (bridged ? BRIDGE_RESISTANCE : 0);
     const resistance = thevenin.resistance + electrolyte;
-    const source3 = sDevices.find((device) => device._type === "source" /* Source */);
     const ideal = !source3 && thevenin.resistance > OPEN_CIRCUIT_RESISTANCE && sDevices.some((device) => device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage");
     let solution;
     let applied = 0;
@@ -151145,9 +151147,9 @@ var Simulation = class {
     }
     this.applyElectrode(first, solution.firstCurrents, dt, areas.first);
     this.applyElectrode(second, solution.secondCurrents, dt, areas.second);
-    if (options2.bridge) {
-      if (mix1?._isSolution) this.balanceCharge(mix1);
-      if (mix2?._isSolution) this.balanceCharge(mix2);
+    if (bridged) {
+      this.balanceCharge(mix1);
+      this.balanceCharge(mix2);
     }
   }
   /**
@@ -185049,10 +185051,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         }
       }
       if (circuitComps.includes(this.curr_obj) || this.curr_obj?._content === firstMix || this.curr_obj?._content === secondMix) this._updatePopup();
-      this.canvas.refreshDeviceDisplay(circuitComps[0]);
-      this.canvas.refreshDeviceDisplay(circuitComps[1]);
+      for (const device of circuitComps) this.canvas.refreshDeviceDisplay(device);
       this.diagrams.appendEChemPoint(source3, circuitComps);
-      this.canvas.refreshDeviceDisplay(source3);
       return;
     }
     const network = this.meterCircuit(source3);

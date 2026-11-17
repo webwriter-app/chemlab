@@ -1835,15 +1835,8 @@ export abstract class Simulation {
 
 	/**
 	 * A salt bridge carries the ionic current between the two vessels, so it
-	 * keeps each of them neutral: whatever charge the electrode reactions left
-	 * behind is balanced by ions from the bridge. Without one, a half-cell that
-	 * loses a cation turns acidic and one that gains a cation turns basic, which
-	 * is what a single compartment without a bridge really does.
-	 *
-	 * Only the charge the electrode reactions moved is compensated, not the
-	 * charge the vessel already carried: a salt bridge does not undo the
-	 * protons an anodic water oxidation produced, it only supplies the
-	 * counter-ion for the cations that stayed behind.
+	 * compensates the charge moved by stored ions. The model keeps the
+	 * bridge's countercharge as a spectator charge rather than named ions.
 	 *
 	 * @private
 	 * @static
@@ -1896,6 +1889,23 @@ export abstract class Simulation {
 		if (!usable(sElectrode1, mix1) || !usable(sElectrode2, mix2)) return unsolved();
 		if (!ComponentManager.isConnected(sElectrode1, sElectrode2)) return unsolved();
 
+		const source = sDevices.find((device) => device._type === EComponentType.Source);
+		// Two electrolyte compartments need a salt bridge to sustain cell
+		// current. A missing mixture is still allowed by the ideal reference
+		// model above and is handled separately from two disconnected baths.
+		const separateBaths = !!mix1 && !!mix2 && mix1 !== mix2;
+		const bridged = separateBaths && options.bridge === true;
+		if (separateBaths && !bridged) {
+			// Leave the cell branch out. An independent load on the supply
+			// can still carry current, but a passive voltmeter has no cell
+			// voltage to read across the isolated electrolytes.
+			this.sCircuit(sDevices);
+			if (!source) {
+				for (const device of sDevices) device._visibleVoltage = null;
+			}
+			return;
+		}
+
 		const dt = this._simTimeStep;
 		const candidatesOf = (electrode: ElectricComponent, mix: Mixture | undefined) =>
 			electrode._reference !== undefined
@@ -1919,14 +1929,13 @@ export abstract class Simulation {
 		if (!network || !thevenin) return unsolved();
 		// The cell's own resistance is the electrolyte path between the
 		// electrodes; a salt bridge adds its ionic resistance to it.
-		const electrolyte = ELECTROLYTE_RESISTANCE + (options.bridge ? BRIDGE_RESISTANCE : 0);
+		const electrolyte = ELECTROLYTE_RESISTANCE + (bridged ? BRIDGE_RESISTANCE : 0);
 		const resistance = thevenin.resistance + electrolyte;
 		// A source drives the cell; without one the circuit is either open (a
 		// voltmeter, which draws no current) or shorted through the ammeter.
 		// Only a network that really presents no path counts as open: a lead
 		// laid straight across the electrodes lets the cell discharge even
 		// while a voltmeter hangs on the same posts.
-		const source = sDevices.find((device) => device._type === EComponentType.Source);
 		const ideal = !source && thevenin.resistance > OPEN_CIRCUIT_RESISTANCE && sDevices.some((device) =>
 			device._type === EComponentType.Voltmeter ||
 			(device._type === EComponentType.Multimeter && device._meterMode === "voltage"));
@@ -2016,9 +2025,9 @@ export abstract class Simulation {
 
 		this.applyElectrode(first, solution.firstCurrents, dt, areas.first);
 		this.applyElectrode(second, solution.secondCurrents, dt, areas.second);
-		if (options.bridge) {
-			if (mix1?._isSolution) this.balanceCharge(mix1);
-			if (mix2?._isSolution) this.balanceCharge(mix2);
+		if (bridged) {
+			this.balanceCharge(mix1);
+			this.balanceCharge(mix2);
 		}
 	}
 

@@ -969,10 +969,8 @@ export class ChemLab extends LitElementWw {
 			if (circuitComps.includes(this.curr_obj) ||
 				this.curr_obj?._content === firstMix || this.curr_obj?._content === secondMix) this._updatePopup();
 			// The electrodes carry the deposit, so their views need a redraw too.
-			this.canvas.refreshDeviceDisplay(circuitComps[0]);
-			this.canvas.refreshDeviceDisplay(circuitComps[1]);
+			for (const device of circuitComps) this.canvas.refreshDeviceDisplay(device);
 			this.diagrams.appendEChemPoint(source, circuitComps);
-			this.canvas.refreshDeviceDisplay(source);
 			return;
 		}
 		// A supply wired straight into a meter carries no cell, so the cell
