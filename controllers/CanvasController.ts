@@ -2,30 +2,16 @@ import { ReactiveController } from "lit";
 import * as PIXI from "pixi.js";
 import * as chemlib from "../chemlib";
 
-import { CABLE_DIAMETER_MM, componentArtboardMm, componentGraphic, componentTextureUrls } from "../data/componentGraphics";
+import { componentArtboardMm, componentGraphic, componentTextureUrls } from "../data/componentGraphics";
 
 import { MILLIMETERS_PER_WORLD_UNIT, STANDARD_CANVAS_HEIGHT, STANDARD_CANVAS_WIDTH, WorkspaceCamera } from "./WorkspaceCamera";
 import { WorkspaceGrid } from "./WorkspaceGrid";
 import { ElectricDeviceView } from "./ElectricDeviceView";
+import { CableView } from "./CableView";
 import { isVesselType, VesselView, type VesselHint } from "./VesselView";
 
 import type { ChemLab } from "../webwriter-chemlab";
 
-// Cables are rope-simulated polylines drawn into the canvas world.
-
-/** Number of rope chain points per cable, including the two pinned ends. */
-const CABLE_SEGMENTS = 14;
-/** Distance-constraint passes per simulation step. */
-const CABLE_ITERATIONS = 5;
-/** Gravity acting on rope points in world units per s^2 (1.5 mm per unit). */
-const CABLE_GRAVITY = 4000;
-/** Velocity damping applied per step. */
-const CABLE_DAMPING = 0.92;
-/** Extra length a cable keeps over the straight device distance, so a
- * fresh or re-dropped cable settles with a slight sag instead of taut. */
-const CABLE_SLACK = 1.1;
-/** Per-point movement in world units below which a rope counts as settled. */
-const CABLE_SETTLE = 0.25;
 /** Name of the background task that keeps the canvas refreshing while cables move. */
 const CABLE_TASK = "cables";
 /** Name of the background task that keeps the canvas refreshing while vessel particles move. */
@@ -56,27 +42,6 @@ const PLACEMENT_OFFSETS: readonly (readonly [number, number])[] = (() => {
 })();
 
 /**
- * Simulation state of one rope-simulated cable: a verlet point chain
- * pinned to the connected device sprites at both ends.
- *
- * @typedef {CableRope}
- */
-interface CableRope {
-	/** current positions of the chain; first/last are pinned */
-	points: Array<{ x: number; y: number }>;
-	/** positions of the previous integration step */
-	prev: Array<{ x: number; y: number }>;
-	/** unconstrained material length of the cable in world units */
-	restLength: number;
-	/** true while the rope keeps simulating until it settles */
-	awake: boolean;
-	/** consecutive settled frames; puts the rope back to sleep */
-	idleFrames: number;
-	/** device positions the rope is currently pinned to */
-	endpoints: [number, number, number, number];
-}
-
-/**
  * Owns the PixiJS canvas layer: application/stage lifecycle, sprite
  * creation and the custom drag interaction. These methods manipulate the
  * shared widget state and UI through the host reference.
@@ -93,15 +58,12 @@ export class CanvasController implements ReactiveController {
 	private pan?: { id: number; x: number; y: number; moved: boolean; deselectOnTap: boolean };
 	private selectionOverlay = new PIXI.Graphics({ eventMode: "none" });
 	private placementPreviewLayer = new PIXI.Container({ eventMode: "none" });
-	/** draws the rubber-band wire of a connection drag, in world coordinates */
-	private wireLayer = new PIXI.Container({ eventMode: "none" });
-	private wireGraphics = new PIXI.Graphics({ eventMode: "none" });
-	/** the connection drag in progress, if any */
-	private wire?: { id: number; from: chemlib.ElectricComponent; terminal: number; sprite: ElectricDeviceView };
+	/** the cable end the pointer currently drags, in the cable's local coordinates */
+	private endDrag?: { id: number; view: CableView; end: number; x: number; y: number };
 	/** the device under the pointer whose free terminals are shown */
 	private hoveredPorts?: ElectricDeviceView;
-	/** the device under the pointer while a wire is being dragged */
-	private wireTarget?: ElectricDeviceView;
+	/** the device whose terminal a dragged cable end would land on */
+	private endTarget?: ElectricDeviceView;
 	private selection: PIXI.Container[] = [];
 	private marquee?: { id: number; start: PIXI.PointData; end?: PIXI.PointData };
 	private groupDrag?: { id: number; origin: PIXI.PointData; anchor: PIXI.PointData; moved: boolean;
@@ -113,8 +75,7 @@ export class CanvasController implements ReactiveController {
 	private vessels = new Map<chemlib.ChemComponent, VesselView>();
 	private scaleTextures = new Map<string, PIXI.Texture>();
 	private changedVessels = new Map<VesselView, VesselHint | undefined>();
-	private cables = new Map<PIXI.Graphics, chemlib.ElectricComponent>();
-	private cableRopes = new Map<PIXI.Graphics, CableRope>();
+	private cables = new Map<CableView, chemlib.ElectricComponent>();
 	private cablesDirty = false;
 	/** electrode sprites moved along with a vessel since the last save */
 	private attachedElectrodesMoved = new Set<PIXI.Container>();
@@ -503,12 +464,6 @@ export class CanvasController implements ReactiveController {
 			return;
 		}
 		const selected = this.world.children.filter((sprite) => {
-			if (sprite.label.startsWith("cable:")) {
-				// Cables are dynamic links, not selectable objects: they redraw
-				// from their connected components and can only be removed by
-				// deleting a connected device.
-				return false;
-			}
 			const bounds = sprite.getBounds();
 			return bounds.minX <= rect.right && bounds.maxX >= rect.left && bounds.minY <= rect.bottom && bounds.maxY >= rect.top;
 		});
@@ -635,8 +590,6 @@ export class CanvasController implements ReactiveController {
 		this.world.scale.set(this.camera.zoom);
 		this.placementPreviewLayer.position.copyFrom(this.world.position);
 		this.placementPreviewLayer.scale.copyFrom(this.world.scale);
-		this.wireLayer.position.copyFrom(this.world.position);
-		this.wireLayer.scale.copyFrom(this.world.scale);
 		if (this.showGrid) this.grid?.update(this.camera);
 		this.updateScaleReadouts();
 		if (this.selection.length || this.marquee || this.host.selectedObjectSprite) this.drawSelection();
@@ -724,11 +677,11 @@ export class CanvasController implements ReactiveController {
 		}
 		const redrawSelection = (this._dragActive && this._dragMoved) || this.groupDrag || this.marquee;
 		this.host.app?.stage.off("globalpointermove", this._dragMoveHandler);
-		if (this.wire) {
-			this.host.app?.stage.off("globalpointermove", this._wireMoveHandler);
-			this.wire = undefined;
-			this.wireGraphics.clear();
-			this.clearPorts();
+		if (this.endDrag) {
+			this.host.app?.stage.off("globalpointermove", this._endMoveHandler);
+			this.endDrag = undefined;
+			this.endTarget?.hidePorts();
+			this.endTarget = undefined;
 		}
 		this._dragActive = false;
 		this.dragPointerId = undefined;
@@ -768,8 +721,7 @@ export class CanvasController implements ReactiveController {
 			this.vessels.delete(sprite.component);
 			this.changedVessels.delete(sprite);
 		}
-		this.cables.delete(sprite as PIXI.Graphics);
-		this.cableRopes.delete(sprite as PIXI.Graphics);
+		if (sprite instanceof CableView) this.cables.delete(sprite);
 		this.attachedElectrodesMoved.delete(sprite);
 		sprite.destroy({ children: true });
 		this.host.requestCanvasRender();
@@ -804,8 +756,8 @@ export class CanvasController implements ReactiveController {
 		const sprite = component instanceof chemlib.ChemComponent && isVesselType(type)
 			? new VesselView(component, type, texture, width, height, this.scaleTextures)
 			: component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable
-				// Cables render as rope polylines and carry no texture.
-				? new PIXI.Graphics()
+				// A cable draws its own rope and plugs and carries no texture.
+				? new CableView(component)
 				: component instanceof chemlib.ElectricComponent
 					? new ElectricDeviceView(component, texture, width, height)
 					: new PIXI.Sprite({ texture, width, height, anchor: 0.5 });
@@ -829,16 +781,9 @@ export class CanvasController implements ReactiveController {
 		const info = `${type}:${component._id}`;
 		const sprite = this.createComponentView(component);
 
-		const isCable = component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable;
-		// Cables draw in world coordinates and carry their own transform at (0,0).
-		if (!isCable) {
-			sprite.x = this.host.mousePos[0];
-			sprite.y = this.host.mousePos[1];
-		}
-		// A cable is a thin rope, so it gets a hit area that follows the drawn
-		// polyline instead of the bounding box, which would swallow the canvas.
+		sprite.x = this.host.mousePos[0];
+		sprite.y = this.host.mousePos[1];
 		sprite.eventMode = "static";
-		if (isCable) (sprite as PIXI.Graphics).hitArea = this.cableHitArea(sprite as PIXI.Graphics);
 		sprite.cursor = "pointer";
 		sprite.on("pointerdown", (event) => {
 			event.stopPropagation();
@@ -850,12 +795,18 @@ export class CanvasController implements ReactiveController {
 			this.updateMousePosition(event);
 			if (event.button === 0) this.host.closeAmountMenu();
 			if (event.button === 2) return;
-			// Pressing on a free terminal starts a wire instead of moving the
-			// device, which is what makes connecting a single gesture.
-			if (event.button === 0 && this.beginWire(sprite, event)) return;
+			// Pressing on a plug of a cable pulls that end out instead of
+			// moving the whole lead, which is what makes wiring one gesture.
+			if (event.button === 0 && sprite instanceof CableView) {
+				const local = sprite.toLocal(event.global);
+				const end = sprite.endAt(local.x, local.y);
+				if (end >= 0) {
+					this.beginEndDrag(sprite, end, event);
+					return;
+				}
+			}
 			if (event.button === 0 && this.selection.includes(sprite)) {
-				const items = this.selection.filter((item) => !item.label.startsWith("cable:"))
-					.map((item) => ({ sprite: item, x: item.x, y: item.y }));
+				const items = this.selection.map((item) => ({ sprite: item, x: item.x, y: item.y }));
 				const anchor = items.find((item) => item.sprite === sprite) ?? items[0];
 				if (anchor) this.groupDrag = {
 					id: event.pointerId, origin: this.camera.toWorld(event.global.x, event.global.y), anchor, items, moved: false,
@@ -864,10 +815,9 @@ export class CanvasController implements ReactiveController {
 				return;
 			}
 			if (event.button === 0 && this.host.beginChemicalDose(sprite, event.pointerId)) return;
-			const drag = event.button === 0 && !sprite.label.startsWith("cable:");
 			this.host._getObject(sprite);
 			this.host.reportXApi("focused", sprite.label);
-			if (drag) this._dragStart(sprite, event);
+			if (event.button === 0) this._dragStart(sprite, event);
 		});
 
 		sprite.label = info;
@@ -877,52 +827,18 @@ export class CanvasController implements ReactiveController {
 			this.vessels.set(sprite.component, sprite);
 			this.changedVessels.set(sprite, undefined);
 		}
-		if (component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable) {
-			this.cables.set(sprite as PIXI.Graphics, component);
-			this.cableRopes.delete(sprite as PIXI.Graphics);
+		if (sprite instanceof CableView) {
+			this.cables.set(sprite, sprite.component);
 			this.cablesDirty = true;
 		} else if (this.cables.size && !(sprite instanceof VesselView)) {
 			// A new device lands on top of the world, so the cables have to be
 			// raised above it again.
 			this.cablesDirty = true;
 		}
-		if (select && !sprite.label.includes("cable")) {
-			this.host._getObject(sprite);
-		}
+		if (select) this.host._getObject(sprite);
 		this.host.reportXApi("inserted", sprite.label);
 		this.host.requestCanvasRender();
 		return sprite;
-	}
-
-	/**
-	 * A hit area that follows the drawn rope of a cable. The bounding box of a
-	 * sagging cable covers a large part of the canvas, so a click would land on
-	 * the cable instead of on the device behind it.
-	 *
-	 * @private
-	 * @param {PIXI.Graphics} sprite - the cable sprite
-	 * @returns {PIXI.IHitArea}
-	 */
-	private cableHitArea(sprite: PIXI.Graphics): PIXI.IHitArea {
-		return {
-			contains: (x: number, y: number): boolean => {
-				const rope = this.cableRopes.get(sprite);
-				if (!rope) return false;
-				const reach = 3;
-				for (let index = 1; index < rope.points.length; index++) {
-					const a = rope.points[index - 1];
-					const b = rope.points[index];
-					const dx = b.x - a.x;
-					const dy = b.y - a.y;
-					const lengthSquared = dx * dx + dy * dy;
-					const t = lengthSquared > 0
-						? Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / lengthSquared))
-						: 0;
-					if (Math.hypot(x - (a.x + dx * t), y - (a.y + dy * t)) <= reach) return true;
-				}
-				return false;
-			},
-		};
 	}
 
 	/**
@@ -961,129 +877,172 @@ export class CanvasController implements ReactiveController {
 	}
 
 	/**
-	 * Starts a connection drag when the pointer went down on a free terminal of
-	 * a device. Returns whether the press was consumed, so the caller can skip
-	 * the device drag.
+	 * The local position of one end of a cable. An end that is plugged into a
+	 * device sits on the terminal it occupies, so the lead visibly ends at the
+	 * plug; a free end sits at the offset the component records, which is what
+	 * lets a cable be laid out before it is wired.
 	 *
 	 * @private
-	 * @param {PIXI.Container} sprite - the pressed sprite
-	 * @param {PIXI.FederatedPointerEvent} event - the press
-	 * @returns {boolean}
+	 * @param {CableView} view - the cable view
+	 * @param {number} end - the end index, 0 or 1
+	 * @returns {PIXI.PointData}
 	 */
-	private beginWire(sprite: PIXI.Container, event: PIXI.FederatedPointerEvent): boolean {
-		if (!(sprite instanceof ElectricDeviceView)) return false;
-		const device = this.host.allEComponents.find((component) => `${component._type}:${component._id}` === sprite.label);
-		if (!device) return false;
-		const free = device.freeTerminals;
-		if (!free.length) return false;
-		const local = sprite.toLocal(event.global);
-		const terminal = sprite.portAt(local.x, local.y);
-		if (terminal < 0 || !free.includes(terminal)) return false;
-		this.wire = { id: event.pointerId, from: device, terminal, sprite };
-		sprite.showPorts(terminal);
-		this.host.app.stage.on("globalpointermove", this._wireMoveHandler);
-		this.drawWire(event.global);
-		return true;
+	private cableEndLocal(view: CableView, end: number): PIXI.PointData {
+		const cable = view.component;
+		const device = cable._connections[end];
+		if (device) {
+			const sprite = this.spritesByLabel.get(`${device._type}:${device._id}`);
+			if (sprite) {
+				const point = this.cableTerminalPoint(sprite, device, cable);
+				return { x: point.x - view.x, y: point.y - view.y };
+			}
+		}
+		const offset = cable._endOffsets[end];
+		return { x: offset.x, y: offset.y };
 	}
 
-	/** Stable pointermove handler of a connection drag, so it can be removed. */
-	private _wireMoveHandler = (event: PIXI.FederatedPointerEvent): void => {
-		if (event.pointerId !== this.wire?.id) return;
+	/**
+	 * Starts dragging one end of a cable. The end is unplugged first, so it can
+	 * be pulled away from the terminal it sat on; the other end stays where it
+	 * is, which is what makes a lead re-pluggable one end at a time.
+	 *
+	 * @private
+	 * @param {CableView} view - the cable view
+	 * @param {number} end - the end index, 0 or 1
+	 * @param {PIXI.FederatedPointerEvent} event - the press
+	 */
+	private beginEndDrag(view: CableView, end: number, event: PIXI.FederatedPointerEvent): void {
+		const cable = view.component;
+		const device = cable._connections[end];
+		if (device) {
+			// The end keeps the place it was pulled from, so it does not jump
+			// back to the stored offset when it is let go in mid-air.
+			const local = this.cableEndLocal(view, end);
+			cable._endOffsets[end] = { x: local.x, y: local.y };
+			device.disconnect(cable);
+			this.refreshDeviceDisplay(device);
+			this.host.syncAuthoredConnections(device);
+			this.host.syncAuthoredConnections(cable);
+		}
+		this.endDrag = { id: event.pointerId, view, end, x: 0, y: 0 };
+		this.host.app.stage.on("globalpointermove", this._endMoveHandler);
+		this.moveEndDrag(event);
+	}
+
+	/** Stable pointermove handler of an end drag, so it can be removed. */
+	private _endMoveHandler = (event: PIXI.FederatedPointerEvent): void => {
+		if (event.pointerId !== this.endDrag?.id) return;
 		this.updateMousePosition(event);
-		this.drawWire(event.global);
+		this.moveEndDrag(event);
 	};
 
 	/**
-	 * Draws the rubber band of a connection drag and marks the terminal it
-	 * would land on. The band turns blue over a device that accepts it, so the
-	 * drop target is visible before the release.
+	 * Moves the dragged end to the pointer and marks the terminal it would land
+	 * on. The end is stored in the cable's local coordinates, so the lead
+	 * follows the pointer without moving its other end.
+	 *
+	 * @private
+	 * @param {PIXI.FederatedPointerEvent} event - the move
+	 */
+	private moveEndDrag(event: PIXI.FederatedPointerEvent): void {
+		const drag = this.endDrag;
+		if (!drag) return;
+		const local = drag.view.toLocal(event.global);
+		drag.view.component._endOffsets[drag.end] = { x: local.x, y: local.y };
+		this.highlightEndTarget(event.global);
+		this.host.requestCanvasRender();
+	}
+
+	/**
+	 * Marks the terminal a dragged cable end would land on. The plug has to fit
+	 * the socket: a crocodile clip clamps onto a metal strip, a banana plug
+	 * goes into a binding post.
 	 *
 	 * @private
 	 * @param {PIXI.PointData} global - the pointer in stage coordinates
 	 */
-	private drawWire(global: PIXI.PointData): void {
-		const wire = this.wire;
-		const graphics = this.wireGraphics;
-		graphics.clear();
-		if (!wire) return;
-		const start = this.portWorld(wire.sprite, wire.terminal);
-		if (!start) return;
-		const end = this.camera.toWorld(global.x, global.y);
-		const target = this.deviceAtWorld(end.x, end.y);
-		const accepts = !!target && target.device !== wire.from && chemlib.canConnect(wire.from, target.device);
-		graphics.moveTo(start.x, start.y).lineTo(end.x, end.y)
-			.stroke({ color: accepts ? 0x0284c7 : 0x64748b, width: 1.2, alpha: 0.9 });
-		graphics.circle(start.x, start.y, 1.4).fill(0x0284c7);
-		graphics.circle(end.x, end.y, accepts ? 2.2 : 1.4)
-			.fill({ color: accepts ? 0x0284c7 : 0x94a3b8, alpha: 0.9 });
-		this.updatePorts(global);
+	private highlightEndTarget(global: PIXI.PointData): void {
+		const drag = this.endDrag;
+		if (!drag) return;
+		const world = this.camera.toWorld(global.x, global.y);
+		const target = this.deviceAtWorld(world.x, world.y);
+		const local = target ? target.sprite.toLocal(new PIXI.Point(global.x, global.y)) : undefined;
+		const terminal = target && local ? target.sprite.portAt(local.x, local.y) : -1;
+		const accepts = !!target && chemlib.canPlug(
+			drag.view.component, drag.end, target.device, terminal >= 0 ? terminal : undefined
+		);
+		const sprite = accepts ? target.sprite : undefined;
+		if (sprite !== this.endTarget) {
+			this.endTarget?.hidePorts();
+			this.endTarget = sprite;
+		}
+		if (sprite) sprite.showPorts(terminal);
 	}
 
 	/**
-	 * Ends a connection drag. Releasing over a device wires the two together,
-	 * releasing anywhere else cancels without a message: a stray release is not
-	 * an error worth reporting.
+	 * Ends an end drag. Releasing over a device that takes the plug wires the
+	 * end into it; releasing anywhere else leaves the end hanging free where it
+	 * was let go.
 	 *
 	 * @private
 	 * @param {PIXI.FederatedPointerEvent} event - the release
 	 */
-	private finishWire(event: PIXI.FederatedPointerEvent): void {
-		const wire = this.wire;
-		this.wire = undefined;
-		this.host.app.stage.off("globalpointermove", this._wireMoveHandler);
-		this.wireGraphics.clear();
-		wire?.sprite.hidePorts();
-		this.clearPorts();
-		if (!wire) return;
-		const point = this.camera.toWorld(event.global.x, event.global.y);
-		const target = this.deviceAtWorld(point.x, point.y);
-		if (!target || target.device === wire.from) return;
-		const local = target.sprite.toLocal(event.global);
-		const terminal = target.sprite.portAt(local.x, local.y);
-		this.host.connectElectrical(wire.from, target.device, wire.terminal, terminal >= 0 ? terminal : undefined);
+	private finishEndDrag(event: PIXI.FederatedPointerEvent): void {
+		const drag = this.endDrag;
+		this.endDrag = undefined;
+		this.host.app.stage.off("globalpointermove", this._endMoveHandler);
+		this.endTarget?.hidePorts();
+		this.endTarget = undefined;
+		if (!drag) return;
+		const cable = drag.view.component;
+		const world = this.camera.toWorld(event.global.x, event.global.y);
+		const target = this.deviceAtWorld(world.x, world.y);
+		if (target) {
+			const local = target.sprite.toLocal(event.global);
+			const terminal = target.sprite.portAt(local.x, local.y);
+			if (chemlib.plugCable(cable, drag.end, target.device, terminal >= 0 ? terminal : undefined)) {
+				this.refreshDeviceDisplay(target.device);
+				this.host.syncAuthoredConnections(target.device);
+				this.host.syncAuthoredConnections(cable);
+				this.host.reportXApi("joined", `${cable._type}:${cable._id}`);
+			}
+		}
+		// The lead settles with a fresh sag over the span it now covers.
+		drag.view.resetLength(this.cableEndLocal(drag.view, 0), this.cableEndLocal(drag.view, 1));
+		this.host.requestCanvasRender();
 	}
 
 	/**
-	 * Marks the terminal a dragged cable would land on, and brightens the free
-	 * plugs of the device under the pointer. The markers themselves are part of
-	 * the device and stay visible either way.
+	 * Unplugs every end of the cables that sit on a device. Called before a
+	 * device is removed, so its leads survive with a free end where the plug
+	 * was instead of disappearing with it.
+	 *
+	 * @param {chemlib.ElectricComponent} device - the device that goes away
+	 */
+	releaseCableEnds(device: chemlib.ElectricComponent): void {
+		for (const [view, cable] of this.cables) {
+			cable._connections.forEach((partner, end) => {
+				if (partner !== device) return;
+				const local = this.cableEndLocal(view, end);
+				cable._endOffsets[end] = { x: local.x, y: local.y };
+			});
+		}
+	}
+
+	/**
+	 * Brightens the free plugs of the device under the pointer, which hints
+	 * that a cable can be plugged into it.
 	 *
 	 * @private
 	 * @param {PIXI.PointData} global - the pointer in stage coordinates
 	 */
-	private updatePorts(global: PIXI.PointData): void {
+	private updatePortHover(global: PIXI.PointData): void {
 		const world = this.camera.toWorld(global.x, global.y);
-		const target = this.deviceAtWorld(world.x, world.y);
-		const wire = this.wire;
-		if (wire) {
-			const sprite = target && target.device !== wire.from ? target.sprite : undefined;
-			if (sprite !== this.wireTarget) {
-				this.wireTarget?.hidePorts();
-				this.wireTarget = sprite;
-			}
-			if (sprite && target) {
-				const local = sprite.toLocal(new PIXI.Point(global.x, global.y));
-				sprite.showPorts(sprite.portAt(local.x, local.y));
-			}
-			return;
-		}
-		const sprite = target?.sprite;
+		const sprite = this.deviceAtWorld(world.x, world.y)?.sprite;
 		if (sprite === this.hoveredPorts) return;
 		this.hoveredPorts?.setPortHover(false);
 		this.hoveredPorts = sprite;
 		sprite?.setPortHover(true);
-	}
-
-	/**
-	 * Drops the target emphasis and the hover emphasis again.
-	 *
-	 * @private
-	 */
-	private clearPorts(): void {
-		this.hoveredPorts?.setPortHover(false);
-		this.hoveredPorts = undefined;
-		this.wireTarget?.hidePorts();
-		this.wireTarget = undefined;
 	}
 
 	/**
@@ -1254,8 +1213,7 @@ export class CanvasController implements ReactiveController {
 		this.host.app.stage.hitArea = this.host.app.screen;
 		this.grid = new WorkspaceGrid();
 		this.grid.mesh.visible = this.showGrid;
-		this.wireLayer.addChild(this.wireGraphics);
-		app.stage.addChild(this.grid.mesh, this.world, this.wireLayer, this.placementPreviewLayer, this.selectionOverlay);
+		app.stage.addChild(this.grid.mesh, this.world, this.placementPreviewLayer, this.selectionOverlay);
 		app.canvas.addEventListener("contextmenu", (event) => {
 			if (this.pointerBusy) {
 				event.preventDefault();
@@ -1277,7 +1235,7 @@ export class CanvasController implements ReactiveController {
 		// pointer briefly leaves the sprite bounds during a fast drag.
 		stage.on("pointermove", (event) => {
 			this.updateMousePosition(event);
-			this.updatePorts(event.global);
+			this.updatePortHover(event.global);
 		});
 		stage.on("globalpointermove", (event) => {
 			this.movePan(event);
@@ -1300,8 +1258,8 @@ export class CanvasController implements ReactiveController {
 			}
 		});
 		const finishPointer = (event: PIXI.FederatedPointerEvent) => {
-			if (this.wire?.id === event.pointerId) {
-				this.finishWire(event);
+			if (this.endDrag?.id === event.pointerId) {
+				this.finishEndDrag(event);
 			} else if (this.marquee?.id === event.pointerId) {
 				this.finishMarquee(event);
 			} else if (this.groupDrag?.id === event.pointerId) {
@@ -1520,78 +1478,31 @@ export class CanvasController implements ReactiveController {
 		return { x: sprite.x, y: sprite.y };
 	}
 
-	/**
-	 * The two world points a cable runs between, or undefined while one of its
-	 * devices has no view yet.
-	 *
-	 * @private
-	 * @param {chemlib.ElectricComponent} cable - the cable
-	 * @returns {?[number, number, number, number]}
-	 */
-	private cableEndpoints(cable: chemlib.ElectricComponent): [number, number, number, number] | undefined {
-		const [first, second] = cable._connections;
-		if (!first || !second) return undefined;
-		const from = this.spritesByLabel.get(`${first._type}:${first._id}`);
-		const to = this.spritesByLabel.get(`${second._type}:${second._id}`);
-		if (!from || !to) return undefined;
-		const start = this.cableTerminalPoint(from, first, cable);
-		const end = this.cableTerminalPoint(to, second, cable);
-		return [start.x, start.y, end.x, end.y];
-	}
-
 	private updateCablePositions(): void {
 		const stage = this.world;
+		const dt = Math.min(this.host.app?.ticker.deltaMS ?? 16.67, 40) / 1000;
 		let anyAwake = false;
-		for (const [sprite, cable] of this.cables) {
-			const [first, second] = cable._connections;
-			// A cable is only dropped when one of its devices is really gone.
-			// A missing sprite alone is not enough: during a restore the views
-			// are added one by one, so a cable can be laid before its partner
-			// has a view, and deleting it then would silently unwire the cell.
-			if (!first || !this.host.allEComponents.includes(first)
-				|| !second || !this.host.allEComponents.includes(second)) {
-				this.host.removeObjects([sprite]);
+		for (const [view, cable] of this.cables) {
+			// A cable is only dropped when its component is really gone. A
+			// missing view alone is not enough: during a restore the views are
+			// added one by one, so a cable can be laid before its partner has
+			// a view, and deleting it then would silently unwire the cell.
+			if (!this.host.allEComponents.includes(cable)) {
+				this.host.removeObjects([view]);
 				continue;
 			}
-			const endpoints = this.cableEndpoints(cable);
-			if (!endpoints) continue;
-
-			let rope = this.cableRopes.get(sprite);
-			if (!rope) {
-				// A fresh cable starts as a straight line between the devices,
-				// with its rest length set to the current span plus slack.
-				rope = { points: [], prev: [], restLength: 0, awake: true, idleFrames: 0, endpoints };
-				const dist = Math.hypot(endpoints[2] - endpoints[0], endpoints[3] - endpoints[1]);
-				rope.restLength = Math.max(dist, 1) * CABLE_SLACK;
-				for (let i = 0; i < CABLE_SEGMENTS; i++) {
-					const t = i / (CABLE_SEGMENTS - 1);
-					const point = {
-						x: endpoints[0] + (endpoints[2] - endpoints[0]) * t,
-						y: endpoints[1] + (endpoints[3] - endpoints[1]) * t,
-					};
-					rope.points.push(point);
-					rope.prev.push({ x: point.x, y: point.y });
-				}
-				this.cableRopes.set(sprite, rope);
-			} else if (endpoints.some((value, index) => value !== rope.endpoints[index])) {
-				// A connected device moved: keep the stored length so bringing
-				// devices closer relaxes the cable, while pulling them apart
-				// only strains it.
-				rope.endpoints = endpoints;
-				rope.awake = true;
-				rope.idleFrames = 0;
-			}
-
-			if (rope.awake) {
-				this.stepRope(rope);
-				this.drawRope(sprite, rope);
+			// The ends follow the terminals they are plugged into, so a cable
+			// stays attached while its devices are dragged around.
+			view.setEnds(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
+			if (view.moving) {
+				view.step(dt);
 				anyAwake = true;
 			}
-
+			view.draw();
 			// Cables lie on top of the devices, so a cable visibly ends at the
 			// plug it is clamped to instead of vanishing under the device body.
 			const top = stage.children.length - 1;
-			if (stage.getChildIndex(sprite) !== top) stage.setChildIndex(sprite, top);
+			if (stage.getChildIndex(view) !== top) stage.setChildIndex(view, top);
 		}
 		// Keep the ticker running while any cable moves: the task requests a
 		// render every frame, and the flush below steps the ropes. Only when
@@ -1607,114 +1518,8 @@ export class CanvasController implements ReactiveController {
 	}
 
 	/**
-	 * Integrates one simulation step of a cable rope: the interior points
-	 * fall under gravity with damping, while the distance constraints keep
-	 * every segment at `restLength / segments`. The pinned ends always win,
-	 * so pulling devices apart stretches the drawn cable into a taut line
-	 * instead of moving the devices.
-	 *
-	 * @private
-	 * @param {CableRope} rope - the rope to simulate
-	 */
-	private stepRope(rope: CableRope): void {
-		const { points, prev, endpoints } = rope;
-		const count = points.length;
-		const last = count - 1;
-
-		// verlet integration of the interior points: velocity, damping, gravity
-		const dt = Math.min(this.host.app?.ticker.deltaMS ?? 16.67, 40) / 1000;
-		for (let i = 1; i < last; i++) {
-			const vx = (points[i].x - prev[i].x) * CABLE_DAMPING;
-			const vy = (points[i].y - prev[i].y) * CABLE_DAMPING;
-			prev[i].x = points[i].x;
-			prev[i].y = points[i].y;
-			points[i].x += vx;
-			points[i].y += vy + CABLE_GRAVITY * dt * dt;
-		}
-
-		// pin the ends to their devices before and after the constraints
-		points[0].x = endpoints[0];
-		points[0].y = endpoints[1];
-		points[last].x = endpoints[2];
-		points[last].y = endpoints[3];
-
-		// distance constraints keep every segment at restLength / segments;
-		// pinned ends cannot move, so taut cables straighten while their
-		// drawn span grows with the device distance
-		const segLength = rope.restLength / last;
-		for (let iteration = 0; iteration < CABLE_ITERATIONS; iteration++) {
-			for (let k = 0; k < last; k++) {
-				const dx = points[k + 1].x - points[k].x;
-				const dy = points[k + 1].y - points[k].y;
-				const dist = Math.hypot(dx, dy) || 1e-9;
-				const correction = (dist - segLength) / dist;
-				if (k === 0) {
-					points[1].x -= dx * correction;
-					points[1].y -= dy * correction;
-				} else if (k + 1 === last) {
-					points[last - 1].x += dx * correction;
-					points[last - 1].y += dy * correction;
-				} else {
-					points[k].x += dx * correction * 0.5;
-					points[k].y += dy * correction * 0.5;
-					points[k + 1].x -= dx * correction * 0.5;
-					points[k + 1].y -= dy * correction * 0.5;
-				}
-			}
-			points[0].x = endpoints[0];
-			points[0].y = endpoints[1];
-			points[last].x = endpoints[2];
-			points[last].y = endpoints[3];
-		}
-
-		// the rope sleeps once it has calmed down
-		let maxMove = 0;
-		for (let i = 1; i < last; i++) {
-			maxMove = Math.max(
-				maxMove,
-				Math.abs(points[i].x - prev[i].x),
-				Math.abs(points[i].y - prev[i].y)
-			);
-		}
-		if (maxMove < CABLE_SETTLE) {
-			rope.idleFrames += 1;
-			if (rope.idleFrames > 6) rope.awake = false;
-		} else {
-			rope.idleFrames = 0;
-		}
-	}
-
-	/**
-	 * Draws a rope as a smooth polyline with the flat cable look: a dark
-	 * outer stroke and a lighter inner highlight.
-	 *
-	 * @private
-	 * @param {PIXI.Graphics} sprite - the cable's graphics object
-	 * @param {CableRope} rope - the simulated chain to draw
-	 */
-	private drawRope(sprite: PIXI.Graphics, rope: CableRope): void {
-		const lineWidth = CABLE_DIAMETER_MM / MILLIMETERS_PER_WORLD_UNIT;
-		const { points } = rope;
-		const trace = (graphics: PIXI.Graphics) => {
-			graphics.moveTo(points[0].x, points[0].y);
-			for (let k = 1; k < points.length - 1; k++) {
-				const mx = (points[k].x + points[k + 1].x) / 2;
-				const my = (points[k].y + points[k + 1].y) / 2;
-				graphics.quadraticCurveTo(points[k].x, points[k].y, mx, my);
-			}
-			const last = points[points.length - 1];
-			graphics.lineTo(last.x, last.y);
-		};
-		sprite.clear();
-		trace(sprite);
-		sprite.stroke({ width: lineWidth, color: 0x30404d, cap: "round", join: "round" });
-		trace(sprite);
-		sprite.stroke({ width: lineWidth * 0.35, color: 0x687d8b, cap: "round", join: "round" });
-	}
-
-	/**
-	 * Gives every cable connected to one of the moved sprites a new rest
-	 * length: the straight distance between its devices at the moment the
+	 * Gives every cable that was moved, or that hangs on a moved device, a new
+	 * rest length: the straight distance between its ends at the moment the
 	 * movement ends, plus the usual slack.
 	 *
 	 * @private
@@ -1722,20 +1527,18 @@ export class CanvasController implements ReactiveController {
 	 */
 	private relengthCablesAttachedTo(movedSprites: readonly PIXI.Container[]): void {
 		if (!this.cables.size) return;
-		for (const [sprite, cable] of this.cables) {
-			const rope = this.cableRopes.get(sprite);
-			if (!rope) continue;
+		for (const [view, cable] of this.cables) {
+			if (movedSprites.includes(view)) {
+				view.resetLength(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
+				continue;
+			}
 			const [first, second] = cable._connections;
 			if (!first || !second) continue;
 			const from = this.spritesByLabel.get(`${first._type}:${first._id}`);
 			const to = this.spritesByLabel.get(`${second._type}:${second._id}`);
 			if (!from || !to) continue;
 			if (!movedSprites.includes(from) && !movedSprites.includes(to)) continue;
-			const endpoints = this.cableEndpoints(cable);
-			if (!endpoints) continue;
-			rope.restLength = Math.max(Math.hypot(endpoints[2] - endpoints[0], endpoints[3] - endpoints[1]), 1) * CABLE_SLACK;
-			rope.awake = true;
-			rope.idleFrames = 0;
+			view.resetLength(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
 		}
 		this.host.requestCanvasRender();
 	}

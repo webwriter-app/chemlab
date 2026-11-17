@@ -1180,6 +1180,7 @@ export class ChemLab extends LitElementWw {
 		});
 		device._variantId = variantId;
 		if (variant.reference !== undefined) device._reference = variant.reference;
+		if (variant.ends) device._cableEnds = [...variant.ends];
 		return device;
 	}
 
@@ -1226,6 +1227,7 @@ export class ChemLab extends LitElementWw {
 				device._variantId = variantId;
 				if (material) device._material = this.newElectrodeMaterial(material);
 				if (variant.reference !== undefined) device._reference = variant.reference;
+				if (variant.ends) device._cableEnds = [...variant.ends];
 				this.allEComponents.push(device);
 				component = device;
 			}
@@ -1240,6 +1242,11 @@ export class ChemLab extends LitElementWw {
 			// A reference electrode brings its potential with it, so the
 			// authored entry has to carry it or the restore loses it.
 			reference: variant.reference,
+			// A cable carries the plug on each end and where a free end lies,
+			// so a lead that was laid out before it was wired comes back as it
+			// was left.
+			ends: variant.ends,
+			offsets: variant.ends ? [[-12, 0], [12, 0]] : undefined,
 		};
 		this.availableComponents = [...this.availableComponents, entry];
 		this._loadComponents(entry);
@@ -2187,8 +2194,7 @@ export class ChemLab extends LitElementWw {
 		if (!targets.length) return;
 		const labelOf = (component: chemlib.ChemComponent | chemlib.ElectricComponent) => `${component._type}:${component._id}`;
 		const labels = new Set(targets.map(({ label }) => label));
-		const removedElectrical = this.allEComponents.filter((component) => labels.has(labelOf(component)) ||
-			(component._type === chemlib.EComponentType.Cable && component._connections.some((end) => end && labels.has(labelOf(end)))));
+		const removedElectrical = this.allEComponents.filter((component) => labels.has(labelOf(component)));
 		const removedChemical = this.allChemComponents.filter((component) => labels.has(labelOf(component)));
 		const drag = this.dragTransfer;
 		if (drag && (removedChemical.includes(drag.target) ||
@@ -2211,6 +2217,9 @@ export class ChemLab extends LitElementWw {
 			this.hideFillMeter();
 			this.clearObjectSelection();
 		}
+		// A lead that hangs on a removed device survives with a free end where
+		// its plug was, so the rest of the wiring stays intact.
+		for (const component of removedElectrical) this.canvas.releaseCableEnds(component);
 		for (const component of removedElectrical) {
 			for (const partner of [...component._connections].filter(Boolean)) this._remEcon(component, partner);
 		}
@@ -2381,6 +2390,25 @@ export class ChemLab extends LitElementWw {
 					case chemlib.EComponentType.Label:
 						newComp._labelText = String(component["labelText"] ?? "");
 						break;
+					case chemlib.EComponentType.Cable: {
+						const ends = component["ends"];
+						if (Array.isArray(ends) && ends.length === 2) {
+							newComp._cableEnds = [
+								ends[0] === "crocodile" ? "crocodile" : "banana",
+								ends[1] === "crocodile" ? "crocodile" : "banana",
+							];
+						} else if (variant?.ends) {
+							newComp._cableEnds = [...variant.ends];
+						}
+						const offsets = component["offsets"];
+						if (Array.isArray(offsets) && offsets.length === 2) {
+							newComp._endOffsets = offsets.map((offset: number[]) => ({
+								x: Number(offset?.[0]) || 0,
+								y: Number(offset?.[1]) || 0,
+							})) as [{ x: number; y: number }, { x: number; y: number }];
+						}
+						break;
+					}
 					default:
 						break;
 				}
@@ -2424,6 +2452,13 @@ export class ChemLab extends LitElementWw {
 		// the pairs are deduplicated and a pair that is already wired is left
 		// alone, which makes this safe to run again when a single component is
 		// added to an existing layout.
+		// The explicit cables come first: a layout that carries both a cable
+		// entry and the partner indices of its devices is not wired twice.
+		chemlib.restoreCables(
+			this.availableComponents as chemlib.ConnectionEntry[],
+			(id) => this.allEComponents.find((component) => component._id === id),
+			(cable, end, device) => chemlib.plugCable(cable, end, device)
+		);
 		chemlib.restoreConnections(
 			this.availableComponents as chemlib.ConnectionEntry[],
 			(id) => this.allEComponents.find((component) => component._id === id),
@@ -2488,13 +2523,26 @@ export class ChemLab extends LitElementWw {
 	 * terminal 0, so a rewire has to be written back in terminal order rather
 	 * than appended.
 	 *
-	 * @private
+	 * A cable is written back as the device on each of its ends, with `null`
+	 * for an end that hangs free, so the position in the list is the end.
+	 *
 	 * @param {chemlib.ElectricComponent} device - the device to write back
 	 */
-	private syncAuthoredConnections(device: chemlib.ElectricComponent): void {
+	syncAuthoredConnections(device: chemlib.ElectricComponent): void {
 		if (!this.canAuthor) return;
 		const entry = this.authoredEntryOf(device);
 		if (!entry) return;
+		if (device._type === chemlib.EComponentType.Cable) {
+			// A cable names the device on each of its ends, so the position in
+			// the list is the end and a free end is `null`.
+			entry["connections"] = device._connections.map((end) => {
+				const index = end ? this.authoredIndexOf(end) : -1;
+				return index >= 0 ? index : null;
+			});
+			entry["offsets"] = device._endOffsets.map(({ x, y }) => [x, y]);
+			this.availableComponents = [...this.availableComponents];
+			return;
+		}
 		const partners: number[] = [];
 		for (const cable of device._connections) {
 			if (!cable) continue;

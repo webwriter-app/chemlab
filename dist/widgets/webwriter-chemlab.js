@@ -111042,6 +111042,22 @@ var ElectricComponent = class {
    */
   _plating = /* @__PURE__ */ new Map();
   /**
+   * for cables: the plug on each end, indexed by end. A cable that the
+   * restore path lays implicitly takes the plugs its two devices need, so an
+   * older layout keeps working without cable entries of its own.
+   *
+   * @type {[CableEnd, CableEnd]}
+   */
+  _cableEnds = ["banana", "banana"];
+  /**
+   * for cables: where an end that is plugged into nothing sits, as an offset
+   * from the cable's own position. A plugged end ignores this and follows
+   * its terminal instead, so a cable can be laid out before it is wired.
+   *
+   * @type {[{ x: number; y: number }, { x: number; y: number }]}
+   */
+  _endOffsets = [{ x: -12, y: 0 }, { x: 12, y: 0 }];
+  /**
    * Creates a new electric component.
    *
    * @constructor
@@ -111171,6 +111187,29 @@ var ElectricComponent = class {
     const back = rComposite._connections.indexOf(this);
     if (back >= 0) rComposite._connections[back] = void 0;
     return "";
+  }
+  /**
+   * The kind of plug a terminal of this device takes. An instrument offers
+   * binding posts, a metal strip is clamped by a crocodile clip, and a
+   * reference electrode carries a pin like an instrument does.
+   *
+   * @public
+   * @param {number} terminal - the terminal index
+   * @returns {(TerminalSocket | undefined)} the socket, or undefined for a device without terminals
+   */
+  socketAt(terminal) {
+    if (!(terminal >= 0) || terminal >= this._conCount) return void 0;
+    switch (this._type) {
+      case "source" /* Source */:
+      case "voltmeter" /* Voltmeter */:
+      case "ammeter" /* Ammeter */:
+      case "multimeter" /* Multimeter */:
+        return "banana";
+      case "electrode" /* Electrode */:
+        return this._reference === void 0 ? "clip" : "banana";
+      default:
+        return void 0;
+    }
   }
   /**
    * for electrodes: sets the connected mixture
@@ -151423,11 +151462,22 @@ var ChemComponent = class {
 };
 
 // chemlib/terminals.ts
+function alreadyWired(a7, b5) {
+  for (const partner of a7._connections) {
+    if (!partner) continue;
+    if (partner === b5) return true;
+    if (partner._type === "cable" /* Cable */ && partner._connections.includes(b5)) return true;
+  }
+  return false;
+}
 function canConnect(a7, b5) {
   if (!a7 || !b5 || a7 === b5) return false;
   if (!(a7._conCount > 0) || !(b5._conCount > 0)) return false;
-  if (a7._connections.includes(b5)) return false;
+  if (alreadyWired(a7, b5)) return false;
   return a7.freeTerminals.length > 0 && b5.freeTerminals.length > 0;
+}
+function endFor(device, terminal) {
+  return device.socketAt(terminal) === "clip" ? "crocodile" : "banana";
 }
 function connectDevices(a7, b5, terminalA, terminalB) {
   if (!canConnect(a7, b5)) return void 0;
@@ -151437,16 +151487,40 @@ function connectDevices(a7, b5, terminalA, terminalB) {
   const slotB = terminalB !== void 0 && freeB.includes(terminalB) ? terminalB : freeB[0];
   if (slotA === void 0 || slotB === void 0) return void 0;
   const cable = ComponentManager.newElectricComponent("cable" /* Cable */);
+  cable._cableEnds = [endFor(a7, slotA), endFor(b5, slotB)];
   a7.attach(cable, slotA);
   b5.attach(cable, slotB);
   cable.attach(a7, 0);
   cable.attach(b5, 1);
   return cable;
 }
+function canPlug(cable, end, device, terminal) {
+  if (!cable || !device || cable === device) return false;
+  if (cable._type !== "cable" /* Cable */) return false;
+  if (!(end === 0 || end === 1)) return false;
+  if (cable._connections[end]) return false;
+  if (cable._connections.includes(device)) return false;
+  const free = device.freeTerminals;
+  if (!free.length) return false;
+  const slot = terminal !== void 0 && free.includes(terminal) ? terminal : free[0];
+  const socket = device.socketAt(slot);
+  if (!socket) return false;
+  return socket === (cable._cableEnds[end] === "crocodile" ? "clip" : "banana");
+}
+function plugCable(cable, end, device, terminal) {
+  if (!canPlug(cable, end, device, terminal)) return false;
+  const free = device.freeTerminals;
+  const slot = terminal !== void 0 && free.includes(terminal) ? terminal : free[0];
+  if (slot === void 0) return false;
+  device.attach(cable, slot);
+  cable.attach(device, end);
+  return true;
+}
 function connectionPairs(entries) {
   const seen = /* @__PURE__ */ new Set();
   const pairs = [];
   entries.forEach((entry, index2) => {
+    if (entry.type === "cable" /* Cable */) return;
     for (const partner of entry.connections ?? []) {
       if (!Number.isInteger(partner) || partner < 0 || partner >= entries.length) continue;
       if (partner === index2) continue;
@@ -151475,6 +151549,30 @@ function restoreConnections(entries, lookup, connect) {
     else skipped += 1;
   }
   return { connected, skipped, missing };
+}
+function restoreCables(entries, lookup, plug) {
+  let plugged = 0;
+  let skipped = 0;
+  let missing = 0;
+  for (const entry of entries) {
+    if (entry.type !== "cable" /* Cable */ || entry.id === void 0) continue;
+    const cable = lookup(entry.id);
+    if (!cable) {
+      missing += 1;
+      continue;
+    }
+    (entry.connections ?? []).forEach((partner, end) => {
+      if (partner === null || partner === void 0) return;
+      const device = lookup(partner);
+      if (!device) {
+        missing += 1;
+        return;
+      }
+      if (plug(cable, end, device)) plugged += 1;
+      else skipped += 1;
+    });
+  }
+  return { plugged, skipped, missing };
 }
 
 // webwriter-chemlab.ts
@@ -175863,7 +175961,8 @@ var componentGraphics = {
   multimeter: { url: multimeter_default },
   bridge: { url: bridge_default },
   gascollector: { url: gascollector_default },
-  label: { url: label_default }
+  label: { url: label_default },
+  cable: { url: cable_default }
 };
 var vesselDimensions = {
   // Lenz DURAN low-form beakers, 7 0010 series.
@@ -175908,7 +176007,10 @@ var fixedDimensions = {
   // itself, so the sprite centre is the axis the tube hangs on.
   gascollector: [20, 120],
   label: [100, 22],
-  cable: [CABLE_DIAMETER_MM, CABLE_DIAMETER_MM],
+  // A freshly placed cable is a short lead with a plug on each end. The
+  // artboard is only the footprint of the drag ghost; the drawn cable grows
+  // with the distance between its ends.
+  cable: [30, 16],
   // Legacy components outside the palette.
   // https://www.dwk.com/duran-separating-funnel-spherical-pear-shape-250-ml-242913608
   separatingfunnel: [90, 235],
@@ -175982,7 +176084,14 @@ var componentVariants = {
   multimeter: [{ id: "multimeter:standard", type: "multimeter", size: "" }],
   bridge: [{ id: "bridge:standard", type: "bridge", size: "" }],
   gascollector: [{ id: "gascollector:standard", type: "gascollector", size: "" }],
-  label: [{ id: "label:standard", type: "label", size: "" }]
+  label: [{ id: "label:standard", type: "label", size: "" }],
+  // The three leads a bench has: two with the same plug on both ends and one
+  // that adapts between a post and a strip.
+  cable: [
+    { id: "cable:banana", type: "cable", size: "Banane", ends: ["banana", "banana"] },
+    { id: "cable:crocodile", type: "cable", size: "Krokodil", ends: ["crocodile", "crocodile"] },
+    { id: "cable:mixed", type: "cable", size: "Gemischt", ends: ["banana", "crocodile"] }
+  ]
 };
 var variantsById = new Map(Object.values(componentVariants).flat().map((variant) => [variant.id, variant]));
 function componentVariant(id3) {
@@ -176003,7 +176112,6 @@ function componentArtboardMm(type, capacityMl, variantId) {
   return [width / widthFraction, height / heightFraction];
 }
 var otherGraphics = {
-  cable: { url: cable_default },
   separatingfunnel: { url: separatingfunnel_default },
   condenser: { url: condenser_default }
 };
@@ -176142,6 +176250,19 @@ function renderComponentPaletteIcon(variant, sizeFraction) {
 				<rect x="12" y="20" width="56" height="20" rx="3" fill=${body}/>
 				<path d="M20 27h24m-24 6h16"/>`;
       break;
+    case "cable": {
+      const ends = variant.ends ?? ["banana", "banana"];
+      const plug = (x4, kind, dir) => b2`
+				<g transform=${`translate(${x4} 30) scale(${dir} 1)`}>
+					<rect x="-9" y="-4" width="9" height="8" rx="2.5" fill=${body}/>
+					${kind === "crocodile" ? b2`<path d="M0-3.5 4-1v2L0 3.5"/>` : b2`<path d="M0-1.6h4v3.2H0z" fill="#c9b27a"/>`}
+				</g>`;
+      drawing = b2`
+				<path d="M23 30c0-12 34-12 34 0" stroke-width="3"/>
+				${plug(14, ends[0], -1)}
+				${plug(66, ends[1], 1)}`;
+      break;
+    }
     default:
       drawing = icons2[variant.type];
   }
@@ -182344,13 +182465,324 @@ var ElectricDeviceView = class extends Container {
   }
 };
 
-// controllers/CanvasController.ts
+// controllers/CableView.ts
 var CABLE_SEGMENTS = 14;
 var CABLE_ITERATIONS = 5;
 var CABLE_GRAVITY = 4e3;
 var CABLE_DAMPING = 0.92;
+var CABLE_SUBSTEP = 1 / 240;
 var CABLE_SLACK = 1.1;
 var CABLE_SETTLE = 0.25;
+var END_REACH = 4.5;
+var ROPE_REACH = 3;
+var END_COLOURS = [12077642, 2832964];
+var CableView = class extends Container {
+  constructor(component) {
+    super({ interactiveChildren: false });
+    this.component = component;
+    const [first, second] = component._endOffsets;
+    this.ends = [{ x: first.x, y: first.y }, { x: second.x, y: second.y }];
+    this.markers = [
+      this.createMarker(component._cableEnds[0], END_COLOURS[0]),
+      this.createMarker(component._cableEnds[1], END_COLOURS[1])
+    ];
+    this.addChild(this.rope, ...this.markers);
+    this.hitArea = {
+      contains: (x4, y5) => this.contains(x4, y5)
+    };
+    this.reseed();
+    this.resetLength(this.ends[0], this.ends[1]);
+    this.draw();
+  }
+  /** the drawn rope, in local coordinates */
+  rope = new Graphics({ eventMode: "none" });
+  /** the two end markers, in local coordinates */
+  markers;
+  /** current positions of the chain; first and last are pinned */
+  points = [];
+  /** positions of the previous integration step */
+  prev = [];
+  /** unconstrained material length of the cable in world units */
+  restLength = 0;
+  /** true while the rope keeps simulating until it settles */
+  awake = true;
+  /** consecutive settled frames; puts the rope back to sleep */
+  idleFrames = 0;
+  /** the two pinned ends in local coordinates */
+  ends;
+  /** whether the drawn rope has to be rebuilt */
+  dirty = true;
+  /**
+   * Whether the rope is still moving, so the canvas keeps refreshing.
+   *
+   * @readonly
+   * @type {boolean}
+   */
+  get moving() {
+    return this.awake;
+  }
+  /**
+   * The end whose marker lies under a point in local coordinates, or -1. The
+   * grab radius is wider than the drawn plug, so an end is easy to pick.
+   *
+   * @param {number} x - local x
+   * @param {number} y - local y
+   * @returns {number} the end index, or -1
+   */
+  endAt(x4, y5) {
+    let best = -1;
+    let bestDistance = END_REACH;
+    this.ends.forEach((end, index2) => {
+      const distance = Math.hypot(x4 - end.x, y5 - end.y);
+      if (distance <= bestDistance) {
+        best = index2;
+        bestDistance = distance;
+      }
+    });
+    return best;
+  }
+  /**
+   * Whether a point in local coordinates lies on the drawn cable. The
+   * bounding box of a sagging rope covers a large part of the canvas, so the
+   * hit test follows the polyline and the two plugs instead.
+   *
+   * @param {number} x - local x
+   * @param {number} y - local y
+   * @returns {boolean}
+   */
+  contains(x4, y5) {
+    if (this.endAt(x4, y5) >= 0) return true;
+    for (let index2 = 1; index2 < this.points.length; index2++) {
+      const a7 = this.points[index2 - 1];
+      const b5 = this.points[index2];
+      const dx = b5.x - a7.x;
+      const dy = b5.y - a7.y;
+      const lengthSquared = dx * dx + dy * dy;
+      const t10 = lengthSquared > 0 ? Math.max(0, Math.min(1, ((x4 - a7.x) * dx + (y5 - a7.y) * dy) / lengthSquared)) : 0;
+      if (Math.hypot(x4 - (a7.x + dx * t10), y5 - (a7.y + dy * t10)) <= ROPE_REACH) return true;
+    }
+    return false;
+  }
+  /**
+   * Moves the two pinned ends. A moved end wakes the rope, so the cable
+   * follows a device that was dragged or an end that was pulled.
+   *
+   * A lead that is pulled apart lengthens with its usual slack. Without that
+   * the material length would stay at the span the cable was laid at, the
+   * distance constraints could never be satisfied, and the rope would keep
+   * jittering instead of settling into a sag.
+   *
+   * @param {PointData} first - the first end in local coordinates
+   * @param {PointData} second - the second end in local coordinates
+   */
+  setEnds(first, second) {
+    const [oldFirst, oldSecond] = this.ends;
+    if (oldFirst.x === first.x && oldFirst.y === first.y && oldSecond.x === second.x && oldSecond.y === second.y) return;
+    this.ends = [{ x: first.x, y: first.y }, { x: second.x, y: second.y }];
+    const span = Math.hypot(second.x - first.x, second.y - first.y);
+    this.restLength = Math.max(this.restLength, span * CABLE_SLACK);
+    this.awake = true;
+    this.idleFrames = 0;
+    this.dirty = true;
+  }
+  /**
+   * Sets the material length of the cable from the current end distance plus
+   * the usual slack. Called when an end is dropped, so a cable that was
+   * stretched while it was dragged settles with a sag again.
+   *
+   * @param {PointData} first - the first end in local coordinates
+   * @param {PointData} second - the second end in local coordinates
+   */
+  resetLength(first, second) {
+    this.restLength = Math.max(Math.hypot(second.x - first.x, second.y - first.y), 1) * CABLE_SLACK;
+    this.awake = true;
+    this.idleFrames = 0;
+    this.dirty = true;
+  }
+  /**
+   * Integrates one simulation step: the interior points fall under gravity
+   * with damping, while the distance constraints keep every segment at
+   * `restLength / segments`. The pinned ends always win, so the drawn cable
+   * hangs between them instead of pulling them together.
+   *
+   * @param {number} dt - the step in seconds
+   */
+  step(dt) {
+    const count2 = this.points.length;
+    if (count2 < 2) return;
+    const steps2 = Math.max(1, Math.ceil(dt / CABLE_SUBSTEP));
+    const sub = dt / steps2;
+    let maxMove = 0;
+    for (let s6 = 0; s6 < steps2; s6++) maxMove = this.integrate(sub);
+    if (maxMove < CABLE_SETTLE) {
+      this.idleFrames += 1;
+      if (this.idleFrames > 6) this.awake = false;
+    } else {
+      this.idleFrames = 0;
+    }
+    this.dirty = true;
+  }
+  /**
+   * One integration sub-step: verlet integration of the interior points
+   * under gravity and damping, then the distance constraints.
+   *
+   * @private
+   * @param {number} dt - the sub-step in seconds
+   * @returns {number} the largest movement of an interior point
+   */
+  integrate(dt) {
+    const { points, prev, ends } = this;
+    const last = points.length - 1;
+    const damping = Math.pow(CABLE_DAMPING, dt * 60);
+    for (let i11 = 1; i11 < last; i11++) {
+      const vx2 = (points[i11].x - prev[i11].x) * damping;
+      const vy2 = (points[i11].y - prev[i11].y) * damping;
+      prev[i11].x = points[i11].x;
+      prev[i11].y = points[i11].y;
+      points[i11].x += vx2;
+      points[i11].y += vy2 + CABLE_GRAVITY * dt * dt;
+    }
+    points[0].x = ends[0].x;
+    points[0].y = ends[0].y;
+    points[last].x = ends[1].x;
+    points[last].y = ends[1].y;
+    const segLength = this.restLength / last;
+    for (let iteration = 0; iteration < CABLE_ITERATIONS; iteration++) {
+      for (let k4 = 0; k4 < last; k4++) {
+        const dx = points[k4 + 1].x - points[k4].x;
+        const dy = points[k4 + 1].y - points[k4].y;
+        const dist = Math.hypot(dx, dy) || 1e-9;
+        const correction = (dist - segLength) / dist;
+        if (k4 === 0) {
+          points[1].x -= dx * correction;
+          points[1].y -= dy * correction;
+        } else if (k4 + 1 === last) {
+          points[last - 1].x += dx * correction;
+          points[last - 1].y += dy * correction;
+        } else {
+          points[k4].x += dx * correction * 0.5;
+          points[k4].y += dy * correction * 0.5;
+          points[k4 + 1].x -= dx * correction * 0.5;
+          points[k4 + 1].y -= dy * correction * 0.5;
+        }
+      }
+      points[0].x = ends[0].x;
+      points[0].y = ends[0].y;
+      points[last].x = ends[1].x;
+      points[last].y = ends[1].y;
+    }
+    let maxMove = 0;
+    for (let i11 = 1; i11 < last; i11++) {
+      maxMove = Math.max(
+        maxMove,
+        Math.abs(points[i11].x - prev[i11].x),
+        Math.abs(points[i11].y - prev[i11].y)
+      );
+    }
+    return maxMove;
+  }
+  /**
+   * Places the two end markers and rebuilds the rope when it moved. The
+   * markers are turned along the rope, so a plug points away from the lead
+   * and into the terminal it sits on.
+   */
+  draw() {
+    this.placeMarkers();
+    if (!this.dirty) return;
+    this.dirty = false;
+    this.drawRope();
+  }
+  /**
+   * Rebuilds the chain for the current ends. A fresh cable starts as a
+   * straight line between its two ends.
+   *
+   * @private
+   */
+  reseed() {
+    const [first, second] = this.ends;
+    this.points = [];
+    this.prev = [];
+    for (let i11 = 0; i11 < CABLE_SEGMENTS; i11++) {
+      const t10 = i11 / (CABLE_SEGMENTS - 1);
+      const point = {
+        x: first.x + (second.x - first.x) * t10,
+        y: first.y + (second.y - first.y) * t10
+      };
+      this.points.push(point);
+      this.prev.push({ x: point.x, y: point.y });
+    }
+  }
+  /**
+   * Draws the rope as a smooth polyline with the flat cable look: a dark
+   * outer stroke and a lighter inner highlight.
+   *
+   * @private
+   */
+  drawRope() {
+    if (this.points.length < 2) this.reseed();
+    const lineWidth = CABLE_DIAMETER_MM / MILLIMETERS_PER_WORLD_UNIT;
+    const { points } = this;
+    const trace = (graphics) => {
+      graphics.moveTo(points[0].x, points[0].y);
+      for (let k4 = 1; k4 < points.length - 1; k4++) {
+        const mx = (points[k4].x + points[k4 + 1].x) / 2;
+        const my = (points[k4].y + points[k4 + 1].y) / 2;
+        graphics.quadraticCurveTo(points[k4].x, points[k4].y, mx, my);
+      }
+      const last = points[points.length - 1];
+      graphics.lineTo(last.x, last.y);
+    };
+    this.rope.clear();
+    trace(this.rope);
+    this.rope.stroke({ width: lineWidth, color: 3162189, cap: "round", join: "round" });
+    trace(this.rope);
+    this.rope.stroke({ width: lineWidth * 0.35, color: 6847883, cap: "round", join: "round" });
+  }
+  /**
+   * Puts each marker on its end and turns it along the rope.
+   *
+   * @private
+   */
+  placeMarkers() {
+    const last = this.points.length - 1;
+    if (last < 1) return;
+    const angles = [
+      Math.atan2(this.ends[0].y - this.points[1].y, this.ends[0].x - this.points[1].x),
+      Math.atan2(this.ends[1].y - this.points[last - 1].y, this.ends[1].x - this.points[last - 1].x)
+    ];
+    this.markers.forEach((marker, index2) => {
+      marker.position.set(this.ends[index2].x, this.ends[index2].y);
+      marker.rotation = angles[index2];
+    });
+  }
+  /**
+   * Builds one end marker. The plug points along +x with its tip at the
+   * origin, so the marker can simply be turned along the rope.
+   *
+   * @private
+   * @param {CableEnd} end - the kind of plug
+   * @param {number} colour - the collar colour of this end
+   * @returns {Graphics}
+   */
+  createMarker(end, colour) {
+    const marker = new Graphics({ eventMode: "none" });
+    if (end === "crocodile") {
+      marker.roundRect(-8, -2.4, 6.4, 4.8, 1.8).fill(3096394);
+      marker.moveTo(-1.8, -2.2).lineTo(0.4, -0.5).lineTo(-1.8, -0.1).closePath().fill(10135218);
+      marker.moveTo(-1.8, 2.2).lineTo(0.4, 0.5).lineTo(-1.8, 0.1).closePath().fill(10135218);
+      marker.circle(-1.6, 0, 1).fill(7306634);
+      marker.roundRect(-7.6, -2.6, 1.6, 5.2, 0.7).fill(colour);
+      return marker;
+    }
+    marker.roundRect(-1.6, -1.1, 1.6, 2.2, 0.6).fill(13218426);
+    marker.roundRect(-8, -2.3, 6.4, 4.6, 1.6).fill(3096394);
+    marker.roundRect(-3.2, -2.6, 1.6, 5.2, 0.7).fill(colour);
+    marker.roundRect(-7.4, -1.6, 4.2, 1, 0.5).fill({ color: 16777215, alpha: 0.18 });
+    return marker;
+  }
+};
+
+// controllers/CanvasController.ts
 var CABLE_TASK = "cables";
 var VESSEL_TASK = "vessel-anim";
 var DIPPED_TYPES = /* @__PURE__ */ new Set(["electrode", "gascollector", "bridge", "burette"]);
@@ -182370,15 +182802,12 @@ var CanvasController = class _CanvasController {
   pan;
   selectionOverlay = new Graphics({ eventMode: "none" });
   placementPreviewLayer = new Container({ eventMode: "none" });
-  /** draws the rubber-band wire of a connection drag, in world coordinates */
-  wireLayer = new Container({ eventMode: "none" });
-  wireGraphics = new Graphics({ eventMode: "none" });
-  /** the connection drag in progress, if any */
-  wire;
+  /** the cable end the pointer currently drags, in the cable's local coordinates */
+  endDrag;
   /** the device under the pointer whose free terminals are shown */
   hoveredPorts;
-  /** the device under the pointer while a wire is being dragged */
-  wireTarget;
+  /** the device whose terminal a dragged cable end would land on */
+  endTarget;
   selection = [];
   marquee;
   groupDrag;
@@ -182390,7 +182819,6 @@ var CanvasController = class _CanvasController {
   scaleTextures = /* @__PURE__ */ new Map();
   changedVessels = /* @__PURE__ */ new Map();
   cables = /* @__PURE__ */ new Map();
-  cableRopes = /* @__PURE__ */ new Map();
   cablesDirty = false;
   /** electrode sprites moved along with a vessel since the last save */
   attachedElectrodesMoved = /* @__PURE__ */ new Set();
@@ -182744,9 +183172,6 @@ var CanvasController = class _CanvasController {
       return;
     }
     const selected = this.world.children.filter((sprite) => {
-      if (sprite.label.startsWith("cable:")) {
-        return false;
-      }
       const bounds = sprite.getBounds();
       return bounds.minX <= rect.right && bounds.maxX >= rect.left && bounds.minY <= rect.bottom && bounds.maxY >= rect.top;
     });
@@ -182861,8 +183286,6 @@ var CanvasController = class _CanvasController {
     this.world.scale.set(this.camera.zoom);
     this.placementPreviewLayer.position.copyFrom(this.world.position);
     this.placementPreviewLayer.scale.copyFrom(this.world.scale);
-    this.wireLayer.position.copyFrom(this.world.position);
-    this.wireLayer.scale.copyFrom(this.world.scale);
     if (this.showGrid) this.grid?.update(this.camera);
     this.updateScaleReadouts();
     if (this.selection.length || this.marquee || this.host.selectedObjectSprite) this.drawSelection();
@@ -182943,11 +183366,11 @@ var CanvasController = class _CanvasController {
     }
     const redrawSelection = this._dragActive && this._dragMoved || this.groupDrag || this.marquee;
     this.host.app?.stage.off("globalpointermove", this._dragMoveHandler);
-    if (this.wire) {
-      this.host.app?.stage.off("globalpointermove", this._wireMoveHandler);
-      this.wire = void 0;
-      this.wireGraphics.clear();
-      this.clearPorts();
+    if (this.endDrag) {
+      this.host.app?.stage.off("globalpointermove", this._endMoveHandler);
+      this.endDrag = void 0;
+      this.endTarget?.hidePorts();
+      this.endTarget = void 0;
     }
     this._dragActive = false;
     this.dragPointerId = void 0;
@@ -182985,8 +183408,7 @@ var CanvasController = class _CanvasController {
       this.vessels.delete(sprite.component);
       this.changedVessels.delete(sprite);
     }
-    this.cables.delete(sprite);
-    this.cableRopes.delete(sprite);
+    if (sprite instanceof CableView) this.cables.delete(sprite);
     this.attachedElectrodesMoved.delete(sprite);
     sprite.destroy({ children: true });
     this.host.requestCanvasRender();
@@ -183015,7 +183437,7 @@ var CanvasController = class _CanvasController {
     const [widthMm, heightMm] = componentArtboardMm(type, capacityMl, variantId);
     const width = widthMm / MILLIMETERS_PER_WORLD_UNIT;
     const height = heightMm / MILLIMETERS_PER_WORLD_UNIT;
-    const sprite = component instanceof ChemComponent && isVesselType(type) ? new VesselView(component, type, texture, width, height, this.scaleTextures) : component instanceof ElectricComponent && type === "cable" /* Cable */ ? new Graphics() : component instanceof ElectricComponent ? new ElectricDeviceView(component, texture, width, height) : new Sprite({ texture, width, height, anchor: 0.5 });
+    const sprite = component instanceof ChemComponent && isVesselType(type) ? new VesselView(component, type, texture, width, height, this.scaleTextures) : component instanceof ElectricComponent && type === "cable" /* Cable */ ? new CableView(component) : component instanceof ElectricComponent ? new ElectricDeviceView(component, texture, width, height) : new Sprite({ texture, width, height, anchor: 0.5 });
     this.footprints.set(sprite, { width, height });
     return sprite;
   }
@@ -183031,13 +183453,9 @@ var CanvasController = class _CanvasController {
     const type = component._type;
     const info = `${type}:${component._id}`;
     const sprite = this.createComponentView(component);
-    const isCable = component instanceof ElectricComponent && type === "cable" /* Cable */;
-    if (!isCable) {
-      sprite.x = this.host.mousePos[0];
-      sprite.y = this.host.mousePos[1];
-    }
+    sprite.x = this.host.mousePos[0];
+    sprite.y = this.host.mousePos[1];
     sprite.eventMode = "static";
-    if (isCable) sprite.hitArea = this.cableHitArea(sprite);
     sprite.cursor = "pointer";
     sprite.on("pointerdown", (event) => {
       event.stopPropagation();
@@ -183049,9 +183467,16 @@ var CanvasController = class _CanvasController {
       this.updateMousePosition(event);
       if (event.button === 0) this.host.closeAmountMenu();
       if (event.button === 2) return;
-      if (event.button === 0 && this.beginWire(sprite, event)) return;
+      if (event.button === 0 && sprite instanceof CableView) {
+        const local = sprite.toLocal(event.global);
+        const end = sprite.endAt(local.x, local.y);
+        if (end >= 0) {
+          this.beginEndDrag(sprite, end, event);
+          return;
+        }
+      }
       if (event.button === 0 && this.selection.includes(sprite)) {
-        const items = this.selection.filter((item) => !item.label.startsWith("cable:")).map((item) => ({ sprite: item, x: item.x, y: item.y }));
+        const items = this.selection.map((item) => ({ sprite: item, x: item.x, y: item.y }));
         const anchor = items.find((item) => item.sprite === sprite) ?? items[0];
         if (anchor) this.groupDrag = {
           id: event.pointerId,
@@ -183064,10 +183489,9 @@ var CanvasController = class _CanvasController {
         return;
       }
       if (event.button === 0 && this.host.beginChemicalDose(sprite, event.pointerId)) return;
-      const drag = event.button === 0 && !sprite.label.startsWith("cable:");
       this.host._getObject(sprite);
       this.host.reportXApi("focused", sprite.label);
-      if (drag) this._dragStart(sprite, event);
+      if (event.button === 0) this._dragStart(sprite, event);
     });
     sprite.label = info;
     this.world.addChild(sprite);
@@ -183076,47 +183500,16 @@ var CanvasController = class _CanvasController {
       this.vessels.set(sprite.component, sprite);
       this.changedVessels.set(sprite, void 0);
     }
-    if (component instanceof ElectricComponent && type === "cable" /* Cable */) {
-      this.cables.set(sprite, component);
-      this.cableRopes.delete(sprite);
+    if (sprite instanceof CableView) {
+      this.cables.set(sprite, sprite.component);
       this.cablesDirty = true;
     } else if (this.cables.size && !(sprite instanceof VesselView)) {
       this.cablesDirty = true;
     }
-    if (select && !sprite.label.includes("cable")) {
-      this.host._getObject(sprite);
-    }
+    if (select) this.host._getObject(sprite);
     this.host.reportXApi("inserted", sprite.label);
     this.host.requestCanvasRender();
     return sprite;
-  }
-  /**
-   * A hit area that follows the drawn rope of a cable. The bounding box of a
-   * sagging cable covers a large part of the canvas, so a click would land on
-   * the cable instead of on the device behind it.
-   *
-   * @private
-   * @param {PIXI.Graphics} sprite - the cable sprite
-   * @returns {PIXI.IHitArea}
-   */
-  cableHitArea(sprite) {
-    return {
-      contains: (x4, y5) => {
-        const rope = this.cableRopes.get(sprite);
-        if (!rope) return false;
-        const reach = 3;
-        for (let index2 = 1; index2 < rope.points.length; index2++) {
-          const a7 = rope.points[index2 - 1];
-          const b5 = rope.points[index2];
-          const dx = b5.x - a7.x;
-          const dy = b5.y - a7.y;
-          const lengthSquared = dx * dx + dy * dy;
-          const t10 = lengthSquared > 0 ? Math.max(0, Math.min(1, ((x4 - a7.x) * dx + (y5 - a7.y) * dy) / lengthSquared)) : 0;
-          if (Math.hypot(x4 - (a7.x + dx * t10), y5 - (a7.y + dy * t10)) <= reach) return true;
-        }
-        return false;
-      }
-    };
   }
   /**
    * The device whose drawn area contains a point in world coordinates. The
@@ -183152,122 +183545,165 @@ var CanvasController = class _CanvasController {
     return point ? { x: sprite.x + point.x, y: sprite.y + point.y } : void 0;
   }
   /**
-   * Starts a connection drag when the pointer went down on a free terminal of
-   * a device. Returns whether the press was consumed, so the caller can skip
-   * the device drag.
+   * The local position of one end of a cable. An end that is plugged into a
+   * device sits on the terminal it occupies, so the lead visibly ends at the
+   * plug; a free end sits at the offset the component records, which is what
+   * lets a cable be laid out before it is wired.
    *
    * @private
-   * @param {PIXI.Container} sprite - the pressed sprite
-   * @param {PIXI.FederatedPointerEvent} event - the press
-   * @returns {boolean}
+   * @param {CableView} view - the cable view
+   * @param {number} end - the end index, 0 or 1
+   * @returns {PIXI.PointData}
    */
-  beginWire(sprite, event) {
-    if (!(sprite instanceof ElectricDeviceView)) return false;
-    const device = this.host.allEComponents.find((component) => `${component._type}:${component._id}` === sprite.label);
-    if (!device) return false;
-    const free = device.freeTerminals;
-    if (!free.length) return false;
-    const local = sprite.toLocal(event.global);
-    const terminal = sprite.portAt(local.x, local.y);
-    if (terminal < 0 || !free.includes(terminal)) return false;
-    this.wire = { id: event.pointerId, from: device, terminal, sprite };
-    sprite.showPorts(terminal);
-    this.host.app.stage.on("globalpointermove", this._wireMoveHandler);
-    this.drawWire(event.global);
-    return true;
+  cableEndLocal(view, end) {
+    const cable = view.component;
+    const device = cable._connections[end];
+    if (device) {
+      const sprite = this.spritesByLabel.get(`${device._type}:${device._id}`);
+      if (sprite) {
+        const point = this.cableTerminalPoint(sprite, device, cable);
+        return { x: point.x - view.x, y: point.y - view.y };
+      }
+    }
+    const offset3 = cable._endOffsets[end];
+    return { x: offset3.x, y: offset3.y };
   }
-  /** Stable pointermove handler of a connection drag, so it can be removed. */
-  _wireMoveHandler = (event) => {
-    if (event.pointerId !== this.wire?.id) return;
+  /**
+   * Starts dragging one end of a cable. The end is unplugged first, so it can
+   * be pulled away from the terminal it sat on; the other end stays where it
+   * is, which is what makes a lead re-pluggable one end at a time.
+   *
+   * @private
+   * @param {CableView} view - the cable view
+   * @param {number} end - the end index, 0 or 1
+   * @param {PIXI.FederatedPointerEvent} event - the press
+   */
+  beginEndDrag(view, end, event) {
+    const cable = view.component;
+    const device = cable._connections[end];
+    if (device) {
+      const local = this.cableEndLocal(view, end);
+      cable._endOffsets[end] = { x: local.x, y: local.y };
+      device.disconnect(cable);
+      this.refreshDeviceDisplay(device);
+      this.host.syncAuthoredConnections(device);
+      this.host.syncAuthoredConnections(cable);
+    }
+    this.endDrag = { id: event.pointerId, view, end, x: 0, y: 0 };
+    this.host.app.stage.on("globalpointermove", this._endMoveHandler);
+    this.moveEndDrag(event);
+  }
+  /** Stable pointermove handler of an end drag, so it can be removed. */
+  _endMoveHandler = (event) => {
+    if (event.pointerId !== this.endDrag?.id) return;
     this.updateMousePosition(event);
-    this.drawWire(event.global);
+    this.moveEndDrag(event);
   };
   /**
-   * Draws the rubber band of a connection drag and marks the terminal it
-   * would land on. The band turns blue over a device that accepts it, so the
-   * drop target is visible before the release.
+   * Moves the dragged end to the pointer and marks the terminal it would land
+   * on. The end is stored in the cable's local coordinates, so the lead
+   * follows the pointer without moving its other end.
+   *
+   * @private
+   * @param {PIXI.FederatedPointerEvent} event - the move
+   */
+  moveEndDrag(event) {
+    const drag = this.endDrag;
+    if (!drag) return;
+    const local = drag.view.toLocal(event.global);
+    drag.view.component._endOffsets[drag.end] = { x: local.x, y: local.y };
+    this.highlightEndTarget(event.global);
+    this.host.requestCanvasRender();
+  }
+  /**
+   * Marks the terminal a dragged cable end would land on. The plug has to fit
+   * the socket: a crocodile clip clamps onto a metal strip, a banana plug
+   * goes into a binding post.
    *
    * @private
    * @param {PIXI.PointData} global - the pointer in stage coordinates
    */
-  drawWire(global2) {
-    const wire = this.wire;
-    const graphics = this.wireGraphics;
-    graphics.clear();
-    if (!wire) return;
-    const start = this.portWorld(wire.sprite, wire.terminal);
-    if (!start) return;
-    const end = this.camera.toWorld(global2.x, global2.y);
-    const target = this.deviceAtWorld(end.x, end.y);
-    const accepts = !!target && target.device !== wire.from && canConnect(wire.from, target.device);
-    graphics.moveTo(start.x, start.y).lineTo(end.x, end.y).stroke({ color: accepts ? 165063 : 6583435, width: 1.2, alpha: 0.9 });
-    graphics.circle(start.x, start.y, 1.4).fill(165063);
-    graphics.circle(end.x, end.y, accepts ? 2.2 : 1.4).fill({ color: accepts ? 165063 : 9741240, alpha: 0.9 });
-    this.updatePorts(global2);
+  highlightEndTarget(global2) {
+    const drag = this.endDrag;
+    if (!drag) return;
+    const world = this.camera.toWorld(global2.x, global2.y);
+    const target = this.deviceAtWorld(world.x, world.y);
+    const local = target ? target.sprite.toLocal(new Point(global2.x, global2.y)) : void 0;
+    const terminal = target && local ? target.sprite.portAt(local.x, local.y) : -1;
+    const accepts = !!target && canPlug(
+      drag.view.component,
+      drag.end,
+      target.device,
+      terminal >= 0 ? terminal : void 0
+    );
+    const sprite = accepts ? target.sprite : void 0;
+    if (sprite !== this.endTarget) {
+      this.endTarget?.hidePorts();
+      this.endTarget = sprite;
+    }
+    if (sprite) sprite.showPorts(terminal);
   }
   /**
-   * Ends a connection drag. Releasing over a device wires the two together,
-   * releasing anywhere else cancels without a message: a stray release is not
-   * an error worth reporting.
+   * Ends an end drag. Releasing over a device that takes the plug wires the
+   * end into it; releasing anywhere else leaves the end hanging free where it
+   * was let go.
    *
    * @private
    * @param {PIXI.FederatedPointerEvent} event - the release
    */
-  finishWire(event) {
-    const wire = this.wire;
-    this.wire = void 0;
-    this.host.app.stage.off("globalpointermove", this._wireMoveHandler);
-    this.wireGraphics.clear();
-    wire?.sprite.hidePorts();
-    this.clearPorts();
-    if (!wire) return;
-    const point = this.camera.toWorld(event.global.x, event.global.y);
-    const target = this.deviceAtWorld(point.x, point.y);
-    if (!target || target.device === wire.from) return;
-    const local = target.sprite.toLocal(event.global);
-    const terminal = target.sprite.portAt(local.x, local.y);
-    this.host.connectElectrical(wire.from, target.device, wire.terminal, terminal >= 0 ? terminal : void 0);
+  finishEndDrag(event) {
+    const drag = this.endDrag;
+    this.endDrag = void 0;
+    this.host.app.stage.off("globalpointermove", this._endMoveHandler);
+    this.endTarget?.hidePorts();
+    this.endTarget = void 0;
+    if (!drag) return;
+    const cable = drag.view.component;
+    const world = this.camera.toWorld(event.global.x, event.global.y);
+    const target = this.deviceAtWorld(world.x, world.y);
+    if (target) {
+      const local = target.sprite.toLocal(event.global);
+      const terminal = target.sprite.portAt(local.x, local.y);
+      if (plugCable(cable, drag.end, target.device, terminal >= 0 ? terminal : void 0)) {
+        this.refreshDeviceDisplay(target.device);
+        this.host.syncAuthoredConnections(target.device);
+        this.host.syncAuthoredConnections(cable);
+        this.host.reportXApi("joined", `${cable._type}:${cable._id}`);
+      }
+    }
+    drag.view.resetLength(this.cableEndLocal(drag.view, 0), this.cableEndLocal(drag.view, 1));
+    this.host.requestCanvasRender();
   }
   /**
-   * Marks the terminal a dragged cable would land on, and brightens the free
-   * plugs of the device under the pointer. The markers themselves are part of
-   * the device and stay visible either way.
+   * Unplugs every end of the cables that sit on a device. Called before a
+   * device is removed, so its leads survive with a free end where the plug
+   * was instead of disappearing with it.
+   *
+   * @param {chemlib.ElectricComponent} device - the device that goes away
+   */
+  releaseCableEnds(device) {
+    for (const [view, cable] of this.cables) {
+      cable._connections.forEach((partner, end) => {
+        if (partner !== device) return;
+        const local = this.cableEndLocal(view, end);
+        cable._endOffsets[end] = { x: local.x, y: local.y };
+      });
+    }
+  }
+  /**
+   * Brightens the free plugs of the device under the pointer, which hints
+   * that a cable can be plugged into it.
    *
    * @private
    * @param {PIXI.PointData} global - the pointer in stage coordinates
    */
-  updatePorts(global2) {
+  updatePortHover(global2) {
     const world = this.camera.toWorld(global2.x, global2.y);
-    const target = this.deviceAtWorld(world.x, world.y);
-    const wire = this.wire;
-    if (wire) {
-      const sprite2 = target && target.device !== wire.from ? target.sprite : void 0;
-      if (sprite2 !== this.wireTarget) {
-        this.wireTarget?.hidePorts();
-        this.wireTarget = sprite2;
-      }
-      if (sprite2 && target) {
-        const local = sprite2.toLocal(new Point(global2.x, global2.y));
-        sprite2.showPorts(sprite2.portAt(local.x, local.y));
-      }
-      return;
-    }
-    const sprite = target?.sprite;
+    const sprite = this.deviceAtWorld(world.x, world.y)?.sprite;
     if (sprite === this.hoveredPorts) return;
     this.hoveredPorts?.setPortHover(false);
     this.hoveredPorts = sprite;
     sprite?.setPortHover(true);
-  }
-  /**
-   * Drops the target emphasis and the hover emphasis again.
-   *
-   * @private
-   */
-  clearPorts() {
-    this.hoveredPorts?.setPortHover(false);
-    this.hoveredPorts = void 0;
-    this.wireTarget?.hidePorts();
-    this.wireTarget = void 0;
   }
   /**
    * modifies sprite events when an object gets dragged
@@ -183416,8 +183852,7 @@ var CanvasController = class _CanvasController {
     this.host.app.stage.hitArea = this.host.app.screen;
     this.grid = new WorkspaceGrid();
     this.grid.mesh.visible = this.showGrid;
-    this.wireLayer.addChild(this.wireGraphics);
-    app.stage.addChild(this.grid.mesh, this.world, this.wireLayer, this.placementPreviewLayer, this.selectionOverlay);
+    app.stage.addChild(this.grid.mesh, this.world, this.placementPreviewLayer, this.selectionOverlay);
     app.canvas.addEventListener("contextmenu", (event) => {
       if (this.pointerBusy) {
         event.preventDefault();
@@ -183435,7 +183870,7 @@ var CanvasController = class _CanvasController {
   bindPointerEvents(stage) {
     stage.on("pointermove", (event) => {
       this.updateMousePosition(event);
-      this.updatePorts(event.global);
+      this.updatePortHover(event.global);
     });
     stage.on("globalpointermove", (event) => {
       this.movePan(event);
@@ -183458,8 +183893,8 @@ var CanvasController = class _CanvasController {
       }
     });
     const finishPointer = (event) => {
-      if (this.wire?.id === event.pointerId) {
-        this.finishWire(event);
+      if (this.endDrag?.id === event.pointerId) {
+        this.finishEndDrag(event);
       } else if (this.marquee?.id === event.pointerId) {
         this.finishMarquee(event);
       } else if (this.groupDrag?.id === event.pointerId) {
@@ -183651,62 +184086,23 @@ var CanvasController = class _CanvasController {
     }
     return { x: sprite.x, y: sprite.y };
   }
-  /**
-   * The two world points a cable runs between, or undefined while one of its
-   * devices has no view yet.
-   *
-   * @private
-   * @param {chemlib.ElectricComponent} cable - the cable
-   * @returns {?[number, number, number, number]}
-   */
-  cableEndpoints(cable) {
-    const [first, second] = cable._connections;
-    if (!first || !second) return void 0;
-    const from2 = this.spritesByLabel.get(`${first._type}:${first._id}`);
-    const to2 = this.spritesByLabel.get(`${second._type}:${second._id}`);
-    if (!from2 || !to2) return void 0;
-    const start = this.cableTerminalPoint(from2, first, cable);
-    const end = this.cableTerminalPoint(to2, second, cable);
-    return [start.x, start.y, end.x, end.y];
-  }
   updateCablePositions() {
     const stage = this.world;
+    const dt = Math.min(this.host.app?.ticker.deltaMS ?? 16.67, 40) / 1e3;
     let anyAwake = false;
-    for (const [sprite, cable] of this.cables) {
-      const [first, second] = cable._connections;
-      if (!first || !this.host.allEComponents.includes(first) || !second || !this.host.allEComponents.includes(second)) {
-        this.host.removeObjects([sprite]);
+    for (const [view, cable] of this.cables) {
+      if (!this.host.allEComponents.includes(cable)) {
+        this.host.removeObjects([view]);
         continue;
       }
-      const endpoints = this.cableEndpoints(cable);
-      if (!endpoints) continue;
-      let rope = this.cableRopes.get(sprite);
-      if (!rope) {
-        rope = { points: [], prev: [], restLength: 0, awake: true, idleFrames: 0, endpoints };
-        const dist = Math.hypot(endpoints[2] - endpoints[0], endpoints[3] - endpoints[1]);
-        rope.restLength = Math.max(dist, 1) * CABLE_SLACK;
-        for (let i11 = 0; i11 < CABLE_SEGMENTS; i11++) {
-          const t10 = i11 / (CABLE_SEGMENTS - 1);
-          const point = {
-            x: endpoints[0] + (endpoints[2] - endpoints[0]) * t10,
-            y: endpoints[1] + (endpoints[3] - endpoints[1]) * t10
-          };
-          rope.points.push(point);
-          rope.prev.push({ x: point.x, y: point.y });
-        }
-        this.cableRopes.set(sprite, rope);
-      } else if (endpoints.some((value, index2) => value !== rope.endpoints[index2])) {
-        rope.endpoints = endpoints;
-        rope.awake = true;
-        rope.idleFrames = 0;
-      }
-      if (rope.awake) {
-        this.stepRope(rope);
-        this.drawRope(sprite, rope);
+      view.setEnds(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
+      if (view.moving) {
+        view.step(dt);
         anyAwake = true;
       }
+      view.draw();
       const top = stage.children.length - 1;
-      if (stage.getChildIndex(sprite) !== top) stage.setChildIndex(sprite, top);
+      if (stage.getChildIndex(view) !== top) stage.setChildIndex(view, top);
     }
     const simulation = this.host.simulation;
     if (anyAwake) {
@@ -183718,102 +184114,8 @@ var CanvasController = class _CanvasController {
     }
   }
   /**
-   * Integrates one simulation step of a cable rope: the interior points
-   * fall under gravity with damping, while the distance constraints keep
-   * every segment at `restLength / segments`. The pinned ends always win,
-   * so pulling devices apart stretches the drawn cable into a taut line
-   * instead of moving the devices.
-   *
-   * @private
-   * @param {CableRope} rope - the rope to simulate
-   */
-  stepRope(rope) {
-    const { points, prev, endpoints } = rope;
-    const count2 = points.length;
-    const last = count2 - 1;
-    const dt = Math.min(this.host.app?.ticker.deltaMS ?? 16.67, 40) / 1e3;
-    for (let i11 = 1; i11 < last; i11++) {
-      const vx2 = (points[i11].x - prev[i11].x) * CABLE_DAMPING;
-      const vy2 = (points[i11].y - prev[i11].y) * CABLE_DAMPING;
-      prev[i11].x = points[i11].x;
-      prev[i11].y = points[i11].y;
-      points[i11].x += vx2;
-      points[i11].y += vy2 + CABLE_GRAVITY * dt * dt;
-    }
-    points[0].x = endpoints[0];
-    points[0].y = endpoints[1];
-    points[last].x = endpoints[2];
-    points[last].y = endpoints[3];
-    const segLength = rope.restLength / last;
-    for (let iteration = 0; iteration < CABLE_ITERATIONS; iteration++) {
-      for (let k4 = 0; k4 < last; k4++) {
-        const dx = points[k4 + 1].x - points[k4].x;
-        const dy = points[k4 + 1].y - points[k4].y;
-        const dist = Math.hypot(dx, dy) || 1e-9;
-        const correction = (dist - segLength) / dist;
-        if (k4 === 0) {
-          points[1].x -= dx * correction;
-          points[1].y -= dy * correction;
-        } else if (k4 + 1 === last) {
-          points[last - 1].x += dx * correction;
-          points[last - 1].y += dy * correction;
-        } else {
-          points[k4].x += dx * correction * 0.5;
-          points[k4].y += dy * correction * 0.5;
-          points[k4 + 1].x -= dx * correction * 0.5;
-          points[k4 + 1].y -= dy * correction * 0.5;
-        }
-      }
-      points[0].x = endpoints[0];
-      points[0].y = endpoints[1];
-      points[last].x = endpoints[2];
-      points[last].y = endpoints[3];
-    }
-    let maxMove = 0;
-    for (let i11 = 1; i11 < last; i11++) {
-      maxMove = Math.max(
-        maxMove,
-        Math.abs(points[i11].x - prev[i11].x),
-        Math.abs(points[i11].y - prev[i11].y)
-      );
-    }
-    if (maxMove < CABLE_SETTLE) {
-      rope.idleFrames += 1;
-      if (rope.idleFrames > 6) rope.awake = false;
-    } else {
-      rope.idleFrames = 0;
-    }
-  }
-  /**
-   * Draws a rope as a smooth polyline with the flat cable look: a dark
-   * outer stroke and a lighter inner highlight.
-   *
-   * @private
-   * @param {PIXI.Graphics} sprite - the cable's graphics object
-   * @param {CableRope} rope - the simulated chain to draw
-   */
-  drawRope(sprite, rope) {
-    const lineWidth = CABLE_DIAMETER_MM / MILLIMETERS_PER_WORLD_UNIT;
-    const { points } = rope;
-    const trace = (graphics) => {
-      graphics.moveTo(points[0].x, points[0].y);
-      for (let k4 = 1; k4 < points.length - 1; k4++) {
-        const mx = (points[k4].x + points[k4 + 1].x) / 2;
-        const my = (points[k4].y + points[k4 + 1].y) / 2;
-        graphics.quadraticCurveTo(points[k4].x, points[k4].y, mx, my);
-      }
-      const last = points[points.length - 1];
-      graphics.lineTo(last.x, last.y);
-    };
-    sprite.clear();
-    trace(sprite);
-    sprite.stroke({ width: lineWidth, color: 3162189, cap: "round", join: "round" });
-    trace(sprite);
-    sprite.stroke({ width: lineWidth * 0.35, color: 6847883, cap: "round", join: "round" });
-  }
-  /**
-   * Gives every cable connected to one of the moved sprites a new rest
-   * length: the straight distance between its devices at the moment the
+   * Gives every cable that was moved, or that hangs on a moved device, a new
+   * rest length: the straight distance between its ends at the moment the
    * movement ends, plus the usual slack.
    *
    * @private
@@ -183821,20 +184123,18 @@ var CanvasController = class _CanvasController {
    */
   relengthCablesAttachedTo(movedSprites) {
     if (!this.cables.size) return;
-    for (const [sprite, cable] of this.cables) {
-      const rope = this.cableRopes.get(sprite);
-      if (!rope) continue;
+    for (const [view, cable] of this.cables) {
+      if (movedSprites.includes(view)) {
+        view.resetLength(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
+        continue;
+      }
       const [first, second] = cable._connections;
       if (!first || !second) continue;
       const from2 = this.spritesByLabel.get(`${first._type}:${first._id}`);
       const to2 = this.spritesByLabel.get(`${second._type}:${second._id}`);
       if (!from2 || !to2) continue;
       if (!movedSprites.includes(from2) && !movedSprites.includes(to2)) continue;
-      const endpoints = this.cableEndpoints(cable);
-      if (!endpoints) continue;
-      rope.restLength = Math.max(Math.hypot(endpoints[2] - endpoints[0], endpoints[3] - endpoints[1]), 1) * CABLE_SLACK;
-      rope.awake = true;
-      rope.idleFrames = 0;
+      view.resetLength(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
     }
     this.host.requestCanvasRender();
   }
@@ -184531,6 +184831,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     });
     device._variantId = variantId;
     if (variant.reference !== void 0) device._reference = variant.reference;
+    if (variant.ends) device._cableEnds = [...variant.ends];
     return device;
   }
   /**
@@ -184574,6 +184875,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         device._variantId = variantId;
         if (material) device._material = this.newElectrodeMaterial(material);
         if (variant.reference !== void 0) device._reference = variant.reference;
+        if (variant.ends) device._cableEnds = [...variant.ends];
         this.allEComponents.push(device);
         component = device;
       }
@@ -184596,7 +184898,12 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       labelText: "",
       // A reference electrode brings its potential with it, so the
       // authored entry has to carry it or the restore loses it.
-      reference: variant.reference
+      reference: variant.reference,
+      // A cable carries the plug on each end and where a free end lies,
+      // so a lead that was laid out before it was wired comes back as it
+      // was left.
+      ends: variant.ends,
+      offsets: variant.ends ? [[-12, 0], [12, 0]] : void 0
     };
     this.availableComponents = [...this.availableComponents, entry];
     this._loadComponents(entry);
@@ -185446,7 +185753,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (!targets.length) return;
     const labelOf = (component) => `${component._type}:${component._id}`;
     const labels = new Set(targets.map(({ label }) => label));
-    const removedElectrical = this.allEComponents.filter((component) => labels.has(labelOf(component)) || component._type === "cable" /* Cable */ && component._connections.some((end) => end && labels.has(labelOf(end))));
+    const removedElectrical = this.allEComponents.filter((component) => labels.has(labelOf(component)));
     const removedChemical = this.allChemComponents.filter((component) => labels.has(labelOf(component)));
     const drag = this.dragTransfer;
     if (drag && (removedChemical.includes(drag.target) || "vessel" in drag.from && removedChemical.includes(drag.from.vessel))) this.finishDragTransfer();
@@ -185465,6 +185772,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.hideFillMeter();
       this.clearObjectSelection();
     }
+    for (const component of removedElectrical) this.canvas.releaseCableEnds(component);
     for (const component of removedElectrical) {
       for (const partner of [...component._connections].filter(Boolean)) this._remEcon(component, partner);
     }
@@ -185610,6 +185918,25 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
           case "label" /* Label */:
             newComp._labelText = String(component["labelText"] ?? "");
             break;
+          case "cable" /* Cable */: {
+            const ends = component["ends"];
+            if (Array.isArray(ends) && ends.length === 2) {
+              newComp._cableEnds = [
+                ends[0] === "crocodile" ? "crocodile" : "banana",
+                ends[1] === "crocodile" ? "crocodile" : "banana"
+              ];
+            } else if (variant?.ends) {
+              newComp._cableEnds = [...variant.ends];
+            }
+            const offsets = component["offsets"];
+            if (Array.isArray(offsets) && offsets.length === 2) {
+              newComp._endOffsets = offsets.map((offset3) => ({
+                x: Number(offset3?.[0]) || 0,
+                y: Number(offset3?.[1]) || 0
+              }));
+            }
+            break;
+          }
           default:
             break;
         }
@@ -185638,6 +185965,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       }
       this.avComponentsSprites.push([sprite, newComp._id]);
     }
+    restoreCables(
+      this.availableComponents,
+      (id3) => this.allEComponents.find((component) => component._id === id3),
+      (cable, end, device) => plugCable(cable, end, device)
+    );
     restoreConnections(
       this.availableComponents,
       (id3) => this.allEComponents.find((component) => component._id === id3),
@@ -185692,13 +186024,24 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
    * terminal 0, so a rewire has to be written back in terminal order rather
    * than appended.
    *
-   * @private
+   * A cable is written back as the device on each of its ends, with `null`
+   * for an end that hangs free, so the position in the list is the end.
+   *
    * @param {chemlib.ElectricComponent} device - the device to write back
    */
   syncAuthoredConnections(device) {
     if (!this.canAuthor) return;
     const entry = this.authoredEntryOf(device);
     if (!entry) return;
+    if (device._type === "cable" /* Cable */) {
+      entry["connections"] = device._connections.map((end) => {
+        const index2 = end ? this.authoredIndexOf(end) : -1;
+        return index2 >= 0 ? index2 : null;
+      });
+      entry["offsets"] = device._endOffsets.map(({ x: x4, y: y5 }) => [x4, y5]);
+      this.availableComponents = [...this.availableComponents];
+      return;
+    }
     const partners = [];
     for (const cable of device._connections) {
       if (!cable) continue;

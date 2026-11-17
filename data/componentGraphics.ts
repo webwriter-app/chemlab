@@ -16,7 +16,7 @@ import separatingfunnel from "../media/separatingfunnel.svg";
 import condenser from "../media/condenser.svg";
 import fallback from "../media/default.svg";
 import cable from "../media/cable.svg";
-import { AMMETER_MODEL_VOLTAGE, VOLTMETER_MODEL_CURRENT } from "../chemlib/ElectricComponent";
+import { AMMETER_MODEL_VOLTAGE, VOLTMETER_MODEL_CURRENT, type CableEnd } from "../chemlib/ElectricComponent";
 
 interface ComponentGraphic {
 	url: string;
@@ -40,6 +40,7 @@ export const componentGraphics = {
 	bridge: { url: bridge },
 	gascollector: { url: gascollector },
 	label: { url: label },
+	cable: { url: cable },
 } satisfies Record<string, ComponentGraphic>;
 
 export type PaletteComponent = keyof typeof componentGraphics;
@@ -92,7 +93,10 @@ const fixedDimensions: Readonly<Partial<Record<string, DimensionsMm>>> = {
 	// itself, so the sprite centre is the axis the tube hangs on.
 	gascollector: [20, 120],
 	label: [100, 22],
-	cable: [CABLE_DIAMETER_MM, CABLE_DIAMETER_MM],
+	// A freshly placed cable is a short lead with a plug on each end. The
+	// artboard is only the footprint of the drag ghost; the drawn cable grows
+	// with the distance between its ends.
+	cable: [30, 16],
 	// Legacy components outside the palette.
 	// https://www.dwk.com/duran-separating-funnel-spherical-pear-shape-250-ml-242913608
 	separatingfunnel: [90, 235],
@@ -118,6 +122,11 @@ export interface ComponentVariant {
 	 * carries no material and needs no vessel.
 	 */
 	reference?: number;
+	/**
+	 * The plug on each end of a cable. A banana plug fits the binding post of
+	 * an instrument, a crocodile clip clamps onto a metal electrode.
+	 */
+	ends?: [CableEnd, CableEnd];
 }
 
 function capacities(type: keyof typeof vesselDimensions): ComponentVariant[] {
@@ -165,6 +174,13 @@ export const componentVariants = {
 	bridge: [{ id: "bridge:standard", type: "bridge", size: "" }],
 	gascollector: [{ id: "gascollector:standard", type: "gascollector", size: "" }],
 	label: [{ id: "label:standard", type: "label", size: "" }],
+	// The three leads a bench has: two with the same plug on both ends and one
+	// that adapts between a post and a strip.
+	cable: [
+		{ id: "cable:banana", type: "cable", size: "Banane", ends: ["banana", "banana"] },
+		{ id: "cable:crocodile", type: "cable", size: "Krokodil", ends: ["crocodile", "crocodile"] },
+		{ id: "cable:mixed", type: "cable", size: "Gemischt", ends: ["banana", "crocodile"] },
+	],
 } satisfies Record<PaletteComponent, ComponentVariant[]>;
 
 const variantsById = new Map(Object.values(componentVariants).flat().map((variant) => [variant.id, variant]));
@@ -190,7 +206,6 @@ export function componentArtboardMm(type: string, capacityMl?: number, variantId
 }
 
 const otherGraphics: Record<string, ComponentGraphic> = {
-	cable: { url: cable },
 	separatingfunnel: { url: separatingfunnel },
 	condenser: { url: condenser },
 };

@@ -24,6 +24,25 @@ export const VOLTMETER_MODEL_CURRENT = 2;
 export const AMMETER_MODEL_VOLTAGE = 10;
 
 /**
+ * The plug on one end of a cable. A banana plug goes into the binding post of
+ * an instrument, a crocodile clip clamps onto a metal electrode, so the two
+ * are not interchangeable.
+ *
+ * @export
+ * @typedef {("banana" | "crocodile")}
+ */
+export type CableEnd = "banana" | "crocodile";
+
+/**
+ * The kind of socket a terminal offers. A binding post takes a banana plug, a
+ * metal strip is clamped by a crocodile clip.
+ *
+ * @export
+ * @typedef {("banana" | "clip")}
+ */
+export type TerminalSocket = "banana" | "clip";
+
+/**
  * Metal deposited on an electrode by reduction. The deposit belongs to the
  * electrode and not to the solution, so it shows as a coating on the strip
  * instead of as a sediment in the vessel.
@@ -198,7 +217,22 @@ class ElectricComponent {
 	 * @type {Map<string, ElectrodePlating>}
 	 */
 	_plating: Map<string, ElectrodePlating> = new Map();
-
+	/**
+	 * for cables: the plug on each end, indexed by end. A cable that the
+	 * restore path lays implicitly takes the plugs its two devices need, so an
+	 * older layout keeps working without cable entries of its own.
+	 *
+	 * @type {[CableEnd, CableEnd]}
+	 */
+	_cableEnds: [CableEnd, CableEnd] = ["banana", "banana"];
+	/**
+	 * for cables: where an end that is plugged into nothing sits, as an offset
+	 * from the cable's own position. A plugged end ignores this and follows
+	 * its terminal instead, so a cable can be laid out before it is wired.
+	 *
+	 * @type {[{ x: number; y: number }, { x: number; y: number }]}
+	 */
+	_endOffsets: [{ x: number; y: number }, { x: number; y: number }] = [{ x: -12, y: 0 }, { x: 12, y: 0 }];
 	/**
 	 * Creates a new electric component.
 	 *
@@ -345,6 +379,30 @@ class ElectricComponent {
 		const back = rComposite._connections.indexOf(this);
 		if (back >= 0) rComposite._connections[back] = undefined;
 		return "";
+	}
+
+	/**
+	 * The kind of plug a terminal of this device takes. An instrument offers
+	 * binding posts, a metal strip is clamped by a crocodile clip, and a
+	 * reference electrode carries a pin like an instrument does.
+	 *
+	 * @public
+	 * @param {number} terminal - the terminal index
+	 * @returns {(TerminalSocket | undefined)} the socket, or undefined for a device without terminals
+	 */
+	public socketAt(terminal: number): TerminalSocket | undefined {
+		if (!(terminal >= 0) || terminal >= this._conCount) return undefined;
+		switch (this._type) {
+			case EComponentType.Source:
+			case EComponentType.Voltmeter:
+			case EComponentType.Ammeter:
+			case EComponentType.Multimeter:
+				return "banana";
+			case EComponentType.Electrode:
+				return this._reference === undefined ? "clip" : "banana";
+			default:
+				return undefined;
+		}
 	}
 
 	/**

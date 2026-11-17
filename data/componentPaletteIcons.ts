@@ -116,6 +116,23 @@ export function renderComponentPaletteIcon(variant: ComponentVariant, sizeFracti
 				<rect x="12" y="20" width="56" height="20" rx="3" fill=${body}/>
 				<path d="M20 27h24m-24 6h16"/>`;
 			break;
+		case "cable": {
+			// A short lead with a plug on each end. The tip of a plug sits at
+			// the origin and points along +x, so the left one is mirrored.
+			const ends = variant.ends ?? ["banana", "banana"];
+			const plug = (x: number, kind: string, dir: number) => svg`
+				<g transform=${`translate(${x} 30) scale(${dir} 1)`}>
+					<rect x="-9" y="-4" width="9" height="8" rx="2.5" fill=${body}/>
+					${kind === "crocodile"
+						? svg`<path d="M0-3.5 4-1v2L0 3.5"/>`
+						: svg`<path d="M0-1.6h4v3.2H0z" fill="#c9b27a"/>`}
+				</g>`;
+			drawing = svg`
+				<path d="M23 30c0-12 34-12 34 0" stroke-width="3"/>
+				${plug(14, ends[0], -1)}
+				${plug(66, ends[1], 1)}`;
+			break;
+		}
 		default:
 			drawing = icons[variant.type];
 	}
