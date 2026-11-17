@@ -26,6 +26,7 @@ import {
 	atomSymbol,
 } from "./halfReactions";
 import { circuitNetwork, circuitThevenin, circuitReadings, type CircuitNetwork, type CircuitReading } from "./circuit";
+import { NoIonicPathTransientModel, type NoIonicPathTransientSample } from "./NoIonicPathTransientModel";
 
 const saltEquilibria = Object.entries(saltSolubility).map(([formula, data]) => {
 	const [cation, anion, cations = 1, anions = 1] = data.ions;
@@ -1848,6 +1849,69 @@ export abstract class Simulation {
 		mix.electrodeCharge = 0;
 	}
 
+	/** Ionic resistance in Ω for the supported canvas setups. Infinity means zero ionic conductance. */
+	public static ionicResistance(first: ElectricComponent, second: ElectricComponent, bridge = false): number {
+		const firstMix = first._connectedMix;
+		const secondMix = second._connectedMix;
+		if (firstMix && secondMix && firstMix !== secondMix) {
+			return bridge ? ELECTROLYTE_RESISTANCE + BRIDGE_RESISTANCE : Infinity;
+		}
+		return ELECTROLYTE_RESISTANCE;
+	}
+
+	/** Prepares a passive galvanic RC experiment and projects its current onto the meters. */
+	public static prepareNoIonicPathTransient(
+		first: ElectricComponent,
+		second: ElectricComponent,
+		devices: readonly ElectricComponent[],
+		ionicResistance: number,
+		{ capacitance, seriesResistance = 0, initialCharge = 0 }:
+			{ capacitance: number; seriesResistance?: number; initialCharge?: number }
+	): { model: NoIonicPathTransientModel; readMeters: (sample: NoIonicPathTransientSample) => void } | undefined {
+		const firstMix = first._connectedMix;
+		const secondMix = second._connectedMix;
+		if (ionicResistance !== Infinity || firstMix === secondMix ||
+			first._reference !== undefined || second._reference !== undefined ||
+			!firstMix?._isSolution || !secondMix?._isSolution ||
+			!(firstMix._solutionVolume > 0 && secondMix._solutionVolume > 0) ||
+			!Number.isFinite(seriesResistance) || seriesResistance < 0 ||
+			!ComponentManager.isConnected(first, second)) return undefined;
+		const network = circuitNetwork([first, second, ...devices]);
+		if (!network || network.elements.some(({ device }) => device?._type === EComponentType.Source)) return undefined;
+		const external = circuitThevenin(network);
+		if (!external || !(external.resistance > 0)) return undefined;
+		// No inventory cap is needed to evaluate the initial mixed potentials.
+		const a = this.mixedPotential(this.electrodeCandidates(first, this.vesselView(firstMix), 0));
+		const b = this.mixedPotential(this.electrodeCandidates(second, this.vesselView(secondMix), 0));
+		const emf = a.potential - b.potential;
+		if (!Number.isFinite(emf)) return undefined;
+		let model: NoIonicPathTransientModel;
+		try {
+			model = new NoIonicPathTransientModel({ emf, capacitance, initialCharge,
+				resistance: external.resistance + seriesResistance });
+		} catch (error) {
+			if (error instanceof RangeError) return undefined;
+			throw error;
+		}
+		return {
+			model,
+			readMeters: (sample) => {
+				// Positive RC current is from the first electrode into the external load.
+				const readings = circuitReadings(network, {
+					emf: 0, resistance: 0, current: -sample.current, open: false,
+				});
+				for (const device of devices) {
+					const reading = readings?.get(device);
+					device._visibleCurrent = reading?.current ?? null;
+					if (device._type === EComponentType.Voltmeter ||
+						(device._type === EComponentType.Multimeter && device._meterMode === "voltage")) {
+						device._visibleVoltage = reading ? Math.abs(reading.voltage) : null;
+					}
+				}
+			},
+		};
+	}
+
 	/**
 	 * Simulation of a galvanic element or an electrolysis.
 	 *
@@ -1862,13 +1926,13 @@ export abstract class Simulation {
 	 * @param {ElectricComponent} sElectrode1 - first electrode
 	 * @param {ElectricComponent} sElectrode2 - second electrode
 	 * @param {ElectricComponent[]} sDevices - the devices between them: a source, a voltmeter, an ammeter, or a source with an ammeter in series
-	 * @param {{ bridge?: boolean }} [options] - whether a salt bridge joins the two vessels
+	 * @param [options] - an explicit ionic resistance (Infinity for zero conductance), or legacy bridge flag
 	 */
 	public static sEChem(
 		sElectrode1: ElectricComponent,
 		sElectrode2: ElectricComponent,
 		sDevices: ElectricComponent[],
-		options: { bridge?: boolean } = {}
+		options: { bridge?: boolean; ionicResistance?: number } = {}
 	): void {
 		const mix1 = sElectrode1._connectedMix;
 		const mix2 = sElectrode2._connectedMix;
@@ -1890,12 +1954,9 @@ export abstract class Simulation {
 		if (!ComponentManager.isConnected(sElectrode1, sElectrode2)) return unsolved();
 
 		const source = sDevices.find((device) => device._type === EComponentType.Source);
-		// Two electrolyte compartments need a salt bridge to sustain cell
-		// current. A missing mixture is still allowed by the ideal reference
-		// model above and is handled separately from two disconnected baths.
+		const electrolyte = options.ionicResistance ?? this.ionicResistance(sElectrode1, sElectrode2, options.bridge);
 		const separateBaths = !!mix1 && !!mix2 && mix1 !== mix2;
-		const bridged = separateBaths && options.bridge === true;
-		if (separateBaths && !bridged) {
+		if (electrolyte === Infinity) {
 			// Leave the cell branch out. An independent load on the supply
 			// can still carry current, but a passive voltmeter has no cell
 			// voltage to read across the isolated electrolytes.
@@ -1905,6 +1966,7 @@ export abstract class Simulation {
 			}
 			return;
 		}
+		if (!Number.isFinite(electrolyte) || electrolyte < 0) return unsolved();
 
 		const dt = this._simTimeStep;
 		const candidatesOf = (electrode: ElectricComponent, mix: Mixture | undefined) =>
@@ -1927,9 +1989,6 @@ export abstract class Simulation {
 		const network = circuitNetwork([sElectrode1, sElectrode2, ...sDevices]);
 		const thevenin = network ? circuitThevenin(network) : undefined;
 		if (!network || !thevenin) return unsolved();
-		// The cell's own resistance is the electrolyte path between the
-		// electrodes; a salt bridge adds its ionic resistance to it.
-		const electrolyte = ELECTROLYTE_RESISTANCE + (bridged ? BRIDGE_RESISTANCE : 0);
 		const resistance = thevenin.resistance + electrolyte;
 		// A source drives the cell; without one the circuit is either open (a
 		// voltmeter, which draws no current) or shorted through the ammeter.
@@ -2025,7 +2084,7 @@ export abstract class Simulation {
 
 		this.applyElectrode(first, solution.firstCurrents, dt, areas.first);
 		this.applyElectrode(second, solution.secondCurrents, dt, areas.second);
-		if (bridged) {
+		if (separateBaths) {
 			this.balanceCharge(mix1);
 			this.balanceCharge(mix2);
 		}

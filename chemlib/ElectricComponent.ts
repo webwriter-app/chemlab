@@ -208,6 +208,8 @@ class ElectricComponent {
 	 * @type {("voltage" | "current")}
 	 */
 	_meterMode: "voltage" | "current" = "voltage";
+	/** Optional settings for a passive RC experiment, in F, Ω and A. */
+	_rcSettings?: { capacitance: number; seriesResistance: number; cutoff?: number };
 	/**
 	 * for a label: the text it shows on the canvas.
 	 *

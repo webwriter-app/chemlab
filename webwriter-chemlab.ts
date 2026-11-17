@@ -88,6 +88,22 @@ const TRANSFER_HOLD_MS = 1500;
 const TRANSFER_HOLD_RADIUS = 6;
 const DRAG_TRANSFER_TASK = "drag-transfer";
 const MIN_TWO_PANELS_WIDTH = 480;
+const RC_UPDATE_MS = 50;
+type RCSettings = NonNullable<chemlib.ElectricComponent["_rcSettings"]>;
+type RCReadout = { sample: chemlib.NoIonicPathTransientSample; timeConstant: number; cutoffAt: number };
+
+function isPassiveMeter(device: chemlib.ElectricComponent): boolean {
+	const { Ammeter, Multimeter, Voltmeter } = chemlib.EComponentType;
+	return device._type === Ammeter || device._type === Multimeter || device._type === Voltmeter;
+}
+
+function validRCSettings(value: unknown): value is RCSettings {
+	if (!value || typeof value !== "object") return false;
+	const { capacitance, seriesResistance, cutoff } = value as RCSettings;
+	return Number.isFinite(capacitance) && capacitance > 0 &&
+		Number.isFinite(seriesResistance) && seriesResistance >= 0 &&
+		(cutoff === undefined || (Number.isFinite(cutoff) && cutoff > 0));
+}
 
 /**
  * chemlab webwriter widget for presenting interactive chemistry experiments
@@ -352,6 +368,8 @@ export class ChemLab extends LitElementWw {
 	 * @type {SimulationController}
 	 */
 	simulation = new SimulationController(this);
+	private readonly capacitorCharges = new Map<string, number>();
+	private readonly rcReadouts = new Map<chemlib.ElectricComponent, RCReadout>();
 	/**
 	 * controller owning the PixiJS canvas layer (app, sprites, drag)
 	 *
@@ -674,6 +692,8 @@ export class ChemLab extends LitElementWw {
 				this.closeAmountMenu();
 				this.hideFillMeter();
 				this.simulation.stopExperiments();
+				this.capacitorCharges.clear();
+				this.rcReadouts.clear();
 				this.curr_obj = null;
 				this.curr_name = "";
 				this.curr_stage_index = -1;
@@ -946,13 +966,14 @@ export class ChemLab extends LitElementWw {
 	private stepElectrochemistry(source: chemlib.ElectricComponent): void {
 		const circuitComps = this.operatingCircuit(source);
 		if (circuitComps) {
-			const firstMix = circuitComps[0]._connectedMix;
-			const secondMix = circuitComps[1]._connectedMix;
+			if (circuitComps.some((device) => this.hasRCReadout(device))) return;
+			const [first, second, ...devices] = circuitComps;
+			const firstMix = first._connectedMix;
+			const secondMix = second._connectedMix;
+			const ionicResistance = this.ionicResistance(first, second);
+			if (Number.isFinite(ionicResistance)) this.capacitorCharges.delete(this.rcCellKey(first, second));
 			chemlib.Simulation.sEChem(
-				circuitComps[0],
-				circuitComps[1],
-				circuitComps.slice(2),
-				{ bridge: this.bridgeJoins(firstMix, secondMix) }
+				first, second, devices, { ionicResistance }
 			);
 
 			for (const vessel of this.allChemComponents) {
@@ -982,6 +1003,106 @@ export class ChemLab extends LitElementWw {
 			if (network.includes(this.curr_obj)) this._updatePopup();
 		}
 		this.canvas.refreshDeviceDisplay(source);
+	}
+
+	private ionicResistance(first: chemlib.ElectricComponent, second: chemlib.ElectricComponent): number {
+		return chemlib.Simulation.ionicResistance(first, second,
+			this.bridgeJoins(first._connectedMix, second._connectedMix));
+	}
+
+	private hasRCReadout(device: chemlib.ElectricComponent): boolean {
+		return this.rcReadouts.has(device) && this.simulation.hasTask("echem" + device._type + ":" + device._id);
+	}
+
+	private rcCellKey(first: chemlib.ElectricComponent, second: chemlib.ElectricComponent): string {
+		return [first, second].sort((a, b) => a._id - b._id)
+			.map(electrode => `${electrode._id}/${electrode._connectedMix?._id}`).join(":");
+	}
+
+	private startElectricalExperiment(name: string, meter: chemlib.ElectricComponent): void {
+		const step = () => this.stepElectrochemistry(meter);
+		if (!isPassiveMeter(meter) || !meter._rcSettings) {
+			this.simulation.startExperiment(name, meter, step);
+			return;
+		}
+
+		let sinceRefresh = RC_UPDATE_MS;
+		let circuitKey: string | undefined;
+		let active: {
+			cell: string;
+			devices: chemlib.ElectricComponent[];
+			model: chemlib.NoIonicPathTransientModel;
+			readMeters: (sample: chemlib.NoIonicPathTransientSample) => void;
+			elapsed: number;
+			cutoffAt: number;
+			settled?: boolean;
+		} | undefined;
+
+		this.simulation.startExperiment(name, meter, step, (elapsedMs) => {
+			if (active && !active.settled) {
+				active.elapsed += elapsedMs / 1000;
+				this.capacitorCharges.set(active.cell, active.model.at(active.elapsed).charge);
+			}
+			sinceRefresh += elapsedMs;
+			if (sinceRefresh < RC_UPDATE_MS) return !!active;
+			sinceRefresh %= RC_UPDATE_MS;
+
+			const circuit = this.operatingCircuit(meter);
+			const electrodes = circuit?.slice(0, 2).sort((a, b) => a._id - b._id);
+			const [first, second] = electrodes ?? [];
+			const cell = first && second ? this.rcCellKey(first, second) : undefined;
+			const resistance = first && second ? this.ionicResistance(first, second) : undefined;
+			const config = meter._rcSettings;
+			const devices = circuit?.slice(2) ?? [];
+			const powered = devices.some((device) => device._type === chemlib.EComponentType.Source);
+			if (!active && devices.some((device) => device !== meter && this.hasRCReadout(device))) {
+				circuitKey = undefined;
+				return true;
+			}
+			const key = cell && config && resistance === Infinity && !powered
+				? JSON.stringify([cell, config, chemlib.ComponentManager.connectedDevices(meter).map(device =>
+					[device._id, device._meterMode, device._connections.map(post => post.map(partner => partner._id))])])
+				: undefined;
+			if (key !== circuitKey) {
+				circuitKey = key;
+				if (active) {
+					for (const device of active.devices) {
+						device._visibleCurrent = null;
+						device._visibleVoltage = null;
+						this.canvas.refreshDeviceDisplay(device);
+					}
+				}
+				active = undefined;
+				this.rcReadouts.delete(meter);
+				if (this.curr_obj === meter) this._updatePopup();
+				if (key && cell && config) {
+					const prepared = chemlib.Simulation.prepareNoIonicPathTransient(first, second, devices, resistance,
+						{ ...config, initialCharge: this.capacitorCharges.get(cell) });
+					if (prepared) {
+						const { model } = prepared;
+						const cutoff = config.cutoff ?? Math.max(Number.MIN_VALUE, Math.abs(model.initialCurrent) * 0.01);
+						active = { ...prepared, cell, devices, elapsed: 0, cutoffAt: model.timeToCutoff(cutoff) };
+						this.diagrams.setTransientCurve(meter, model);
+					}
+				}
+			}
+			if (!active) {
+				if (cell && resistance !== undefined && Number.isFinite(resistance)) this.capacitorCharges.delete(cell);
+				return false;
+			}
+
+			if (!active.settled) {
+				const sample = active.model.at(active.elapsed);
+				active.readMeters(sample);
+				active.settled = sample.current === 0 || active.elapsed / active.model.timeConstant >= 40;
+				this.rcReadouts.set(meter, {
+					sample, timeConstant: active.model.timeConstant, cutoffAt: active.cutoffAt,
+				});
+				for (const device of active.devices) this.canvas.refreshDeviceDisplay(device);
+				if (this.curr_obj === meter) this._updatePopup();
+			}
+			return true;
+		});
 	}
 
 	/**
@@ -1042,8 +1163,11 @@ export class ChemLab extends LitElementWw {
 	 * only of the one that was switched on, so the meters would otherwise keep
 	 * showing the last value they saw.
 	 */
-	private clearEChemReadings(): void {
-		for (const device of this.allEComponents) {
+	private clearEChemReadings(source: chemlib.ElectricComponent): void {
+		this.rcReadouts.delete(source);
+		const devices = chemlib.ComponentManager.connectedDevices(source);
+		if (devices.some((device) => this.hasRCReadout(device))) return;
+		for (const device of devices) {
 			if (device._visibleVoltage === null && device._visibleCurrent === null) continue;
 			device._visibleVoltage = null;
 			device._visibleCurrent = null;
@@ -2002,6 +2126,28 @@ export class ChemLab extends LitElementWw {
 			this.contextEchemInfo.style.display = "";
 			this.contextEchemInfo.innerHTML = "";
 			const type = this.curr_obj._type;
+			const rc = this.hasRCReadout(this.curr_obj) ? this.rcReadouts.get(this.curr_obj) : undefined;
+			if (rc) {
+				this.activateEComp.style.display = "";
+				const number = (value: number) => value.toPrecision(4);
+				const { sample, timeConstant, cutoffAt } = rc;
+				const rows = [
+					this.message("Kapazitiver Zellstrom (RC-Modell)"),
+					`I: ${number(sample.current)} A`,
+					`Q: ${number(sample.charge * 1e6)} µC`,
+					`ΔQ: ${number(sample.transferredCharge * 1e6)} µC`,
+					`${this.message("Gegenspannung")}: ${number(sample.opposingVoltage)} V`,
+					`${this.message("Treibende Spannung")}: ${number(sample.drivingVoltage)} V`,
+					`τ: ${number(timeConstant * 1000)} ms`,
+					`${this.message("Dauer bis zur Stromschwelle")}: ${number(cutoffAt * 1000)} ms`,
+				];
+				for (const row of rows) {
+					const line = this.ownerDocument.createElement("p");
+					line.textContent = row;
+					this.contextEchemInfo.append(line);
+				}
+				return;
+			}
 			// A multimeter reads whichever quantity its mode selects, and the
 			// mode also decides what the meter does to the circuit.
 			const meterReadsCurrent = type === chemlib.EComponentType.Multimeter &&
@@ -2040,6 +2186,7 @@ export class ChemLab extends LitElementWw {
 						`;
 				}
 			} else if (type === chemlib.EComponentType.Ammeter) {
+				this.activateEComp.style.display = "";
 				const current = this.runningCurrent(this.curr_obj);
 				this.contextEchemInfo.innerHTML = `
 					<p>Stromstärke: ${current.toExponential(2)} A</p>
@@ -2447,6 +2594,9 @@ export class ChemLab extends LitElementWw {
 					if (Number.isFinite(area) && area > 0) newComp._area = area;
 					const reference = Number.parseFloat(component["reference"]);
 					if (Number.isFinite(reference)) newComp._reference = reference;
+				}
+				if (isPassiveMeter(newComp) && validRCSettings(component["rcSettings"])) {
+					newComp._rcSettings = component["rcSettings"];
 				}
 				this.allEComponents.push(newComp);
 			}
@@ -3472,9 +3622,10 @@ export class ChemLab extends LitElementWw {
 		const material = materials.find(variant => variant.material?.name === device._material?.name);
 		const hasSource = device._type === Source;
 		const hasMeter = device._type === chemlib.EComponentType.Multimeter;
+		const passiveMeter = isPassiveMeter(device);
 		const hasLabel = device._type === chemlib.EComponentType.Label;
 		const hasElectrode = device._type === Electrode;
-		if (!hasSource && !hasMeter && !hasLabel && !hasElectrode && !connections.length) return nothing;
+		if (!hasSource && !passiveMeter && !hasLabel && !hasElectrode && !connections.length) return nothing;
 		const label = (other: chemlib.ElectricComponent) => `${this.itemName(other._type)} · ${other._id + 1}`;
 		// A source has two poles, and the electrode on the plus pole is the
 		// anode. The select names the electrodes, so the user never has to
@@ -3532,6 +3683,7 @@ export class ChemLab extends LitElementWw {
 						<option value="voltage" ?selected=${device._meterMode !== "current"}>${this.message("Spannung")}</option>
 						<option value="current" ?selected=${device._meterMode === "current"}>${this.message("Stromstärke")}</option>
 					</select></label>` : nothing}
+				${passiveMeter ? this.renderRCSettings(device) : nothing}
 				${hasLabel ? html`
 					<sl-input id="labelText" size="small" contenteditable="false"
 						label=${this.message("Beschriftung")} .value=${device._labelText ?? ""}></sl-input>
@@ -3592,6 +3744,41 @@ export class ChemLab extends LitElementWw {
 					</div>` : nothing}
 			</sl-details>
 		`);
+	}
+
+	private renderRCSettings(device: chemlib.ElectricComponent) {
+		const config = device._rcSettings;
+		return html`
+			<sl-details summary=${this.message("Kapazitiver Zellstrom (RC-Modell)")}
+				@sl-after-show=${() => this.canvas.drawSelection()} @sl-after-hide=${() => this.canvas.drawSelection()}>
+				<p>${this.message("Näherung für getrennte Halbzellen ohne Ionenverbindung. Mit leerer Kapazität bleibt sie aus.")}</p>
+				<sl-input id="rcCapacitance" type="number" step="any" size="small" contenteditable="false"
+					label=${this.message("Effektive Kapazität [µF]")}
+					.value=${config ? String(config.capacitance * 1e6) : ""}></sl-input>
+				<sl-input id="rcResistance" type="number" step="any" size="small" contenteditable="false"
+					label=${this.message("Zusätzlicher Reihenwiderstand [Ω]")}
+					.value=${String(config?.seriesResistance ?? 0)}></sl-input>
+				<sl-input id="rcCutoff" type="number" step="any" size="small" contenteditable="false"
+					label=${this.message("Stromschwelle [µA]")} placeholder="1 %"
+					.value=${config?.cutoff === undefined ? "" : String(config.cutoff * 1e6)}></sl-input>
+				<sl-button size="small" @click=${() => {
+					const value = (id: string) => this.shadowRoot.querySelector<SlInput>(id).value.trim();
+					const capacitance = value("#rcCapacitance");
+					const cutoff = value("#rcCutoff");
+					const next = capacitance ? {
+						capacitance: Number(capacitance) * 1e-6,
+						seriesResistance: Number(value("#rcResistance")),
+						cutoff: cutoff ? Number(cutoff) * 1e-6 : undefined,
+					} : undefined;
+					if (next && !validRCSettings(next)) {
+						this._notify(this.message("Kapazität und Stromschwelle müssen positiv sein. Der zusätzliche Widerstand darf null sein."), "warning");
+						return;
+					}
+					device._rcSettings = next;
+					this.saveSelectedComponent({ rcSettings: next });
+					this.requestUpdate();
+				}}>${this.message("bestätigen")}</sl-button>
+			</sl-details>`;
 	}
 
 	private renderObjectSummary() {
@@ -3667,8 +3854,7 @@ export class ChemLab extends LitElementWw {
 								this.requestUpdate();
 								this.canvas.setDeviceActive(this.curr_obj, true);
 								let source = this.curr_obj;
-								this.simulation.startExperiment("echem" + this.curr_name, source,
-									() => this.stepElectrochemistry(source));
+								this.startElectricalExperiment("echem" + this.curr_name, source);
 								this._updatePopup();
 								this._sendxAPiStatement(
 									"started",
@@ -3684,7 +3870,7 @@ export class ChemLab extends LitElementWw {
 									"echem" +
 										this.curr_name
 								);
-								this.clearEChemReadings();
+								this.clearEChemReadings(this.curr_obj);
 								this._updatePopup();
 								this._sendxAPiStatement(
 									"completed",

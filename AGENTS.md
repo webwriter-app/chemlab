@@ -21,6 +21,8 @@ Der Widget-Build verarbeitet den TypeScript-Quellcode in `chemlib/` direkt. `kek
 
 Für die statische Prüfung im Repository-Stamm `npx tsc --noEmit` ausführen. Bei Layoutfehlern das Panel über die normale Bedienung öffnen und Breiten, Überläufe und Grid-Spalten im Originalcontainer prüfen. Erzwungene CSS-Größen im Browser können den Fehler verdecken.
 
+Die analytischen RC-Referenzfälle laufen mit `node_modules/.bin/esbuild tests/no-ionic-path.test.ts --bundle --platform=node --format=esm | node --input-type=module`.
+
 ## Orientierung im Code
 
 - `controllers/` enthält die Lit-Controller für Pixi-Canvas, Chart.js und Simulationsschleife. `data/` enthält Wörterbuch, pH-Farben und Standardaufbauten. `services/xapi.ts` kapselt das optionale Reporting.
@@ -93,6 +95,8 @@ I₁(E₁) = I,   I₂(E₂) = −I,   E₁ − E₂ − U + I·R = 0
 - *Beschriftung.* Ein Textfeld ohne Anschluss, gezeichnet als Platte mit einer Zeile. Es benutzt `ElectricDeviceView`, damit `refreshDeviceDisplay` weiter über `instanceof` geht.
 
 **Elektrodenfläche und Referenz.** `ElectricComponent._area` überschreibt `ELECTRODE_AREA` je Blech; die Faraday-Rate und der Belag skalieren damit mit (`PLATING_REFERENCE_LITRES · area / ELECTRODE_AREA`). `_reference` macht aus einem Blech ohne Material eine Referenzelektrode: `Simulation.referenceCandidates` liefert ein einzelnes Paar mit festem Potential, `sEChem` und `operatingCircuit` lassen sie ohne Gefäß zu. Damit liest ein Voltmeter gegen Ag/AgCl (0,222 V) in CuSO₄ 1 mol/L 0,1170 V.
+
+**Kapazitiver Transient.** `Simulation.sEChem` akzeptiert einen expliziten Ionenwiderstand in Ω. `Infinity` bedeutet keine Ionenleitung. Damit kann auch ein anderer leitfähiger Pfad als eine Salzbrücke angegeben werden. Auf dem Canvas erkennt das Widget den gemeinsamen Elektrolyten und eine Salzbrücke zwischen beiden Gefäßen. Für zwei getrennte Halbzellen ohne Ionenpfad lässt sich am passiven Messgerät vor dem Einschalten eine effektive Kapazität in µF hinterlegen. Der Reihenwiderstand aus dem angeschlossenen Netzwerk zählt mit. Das optionale Feld für die Stromschwelle nimmt µA an und verwendet bei leerer Eingabe 1 % des Anfangsstrombetrags. Mit leerer Kapazität bleibt der Zellzweig offen. `NoIonicPathTransientModel` berechnet Strom, Ladung und Spannungen analytisch. Es bucht keine chemischen Umsätze. Die Anzeige erhält alle 50 ms einen Wert, und das Diagramm zeichnet einmalig 81 analytische Punkte über sechs Zeitkonstanten. Beim Wiederanlauf desselben Zellenpaars bleibt die Modellladung während der Sitzung erhalten. Nach einer ionischen Verbindung beginnt der nächste getrennte Versuch wieder ungeladen. Das RC-Modell gilt für passive galvanische Zellen.
 
 **Kompakte Quelle.** `source:compact` ist dasselbe Gerät mit einem Artboard von 120 × 76 mm statt 206 × 130 mm. `ComponentVariant.artboard` überschreibt die Größe, `componentArtboardMm` liest sie vor der Tabelle. Die Vorlage nutzt sie, weil zwei Standardgehäuse bei 200 Einheiten Spaltenabstand überlappen.
 

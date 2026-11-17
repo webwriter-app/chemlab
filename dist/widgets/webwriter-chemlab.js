@@ -69836,6 +69836,17 @@ var messages_default = {
     Modellspannung: "Model voltage",
     "Strommessung noch nicht verf\xFCgbar": "Current measurement is not yet available",
     "Spannung nicht berechenbar": "Voltage cannot be calculated",
+    "Kapazitiver Zellstrom (RC-Modell)": "Capacitive cell current (RC model)",
+    "Zellstrom [A]": "Cell current [A]",
+    "Stromst\xE4rke [A]": "Current [A]",
+    Gegenspannung: "Opposing voltage",
+    "Treibende Spannung": "Driving voltage",
+    "Dauer bis zur Stromschwelle": "Time to current cutoff",
+    "N\xE4herung f\xFCr getrennte Halbzellen ohne Ionenverbindung. Mit leerer Kapazit\xE4t bleibt sie aus.": "Approximation for half-cells with no ionic connection. Leave capacitance blank to disable it.",
+    "Effektive Kapazit\xE4t [\xB5F]": "Effective capacitance [\xB5F]",
+    "Zus\xE4tzlicher Reihenwiderstand [\u03A9]": "Additional series resistance [\u03A9]",
+    "Stromschwelle [\xB5A]": "Current cutoff [\xB5A]",
+    "Kapazit\xE4t und Stromschwelle m\xFCssen positiv sein. Der zus\xE4tzliche Widerstand darf null sein.": "Capacitance and cutoff must be positive. Additional resistance may be zero.",
     "F\xFCr Lernende erlauben": "Allow for learners",
     "Konzentration zum Dosieren": "Concentration to dispense",
     "Freigegebene Konzentrationen": "Allowed concentrations",
@@ -111017,6 +111028,8 @@ var ElectricComponent = class {
    * @type {("voltage" | "current")}
    */
   _meterMode = "voltage";
+  /** Optional settings for a passive RC experiment, in F, Ω and A. */
+  _rcSettings;
   /**
    * for a label: the text it shows on the canvas.
    *
@@ -149623,6 +149636,62 @@ function circuitReadings(network, cell) {
   return readings;
 }
 
+// chemlib/NoIonicPathTransientModel.ts
+var FARADAY_CONSTANT = 96485.33212;
+var NoIonicPathTransientModel = class {
+  timeConstant;
+  initialCurrent;
+  initialCharge;
+  initialOpposingVoltage;
+  initialDrive;
+  chargeSpan;
+  constructor({ emf, resistance, capacitance, initialCharge = 0 }) {
+    this.timeConstant = resistance * capacitance;
+    this.initialCharge = initialCharge;
+    this.initialOpposingVoltage = initialCharge / capacitance;
+    this.initialDrive = emf - this.initialOpposingVoltage;
+    this.initialCurrent = this.initialDrive / resistance;
+    this.chargeSpan = capacitance * this.initialDrive;
+    if (!(resistance > 0 && capacitance > 0 && this.timeConstant > 0) || ![
+      resistance,
+      capacitance,
+      emf,
+      initialCharge,
+      this.timeConstant,
+      this.initialDrive,
+      this.initialCurrent,
+      this.chargeSpan
+    ].every(Number.isFinite)) {
+      throw new RangeError("Expected finite RC parameters with positive resistance and capacitance");
+    }
+  }
+  at(elapsedSeconds) {
+    if (!Number.isFinite(elapsedSeconds) || elapsedSeconds < 0) {
+      throw new RangeError("Expected finite, nonnegative elapsed time");
+    }
+    const exponent = -elapsedSeconds / this.timeConstant;
+    const remaining = Math.exp(exponent);
+    const fraction = -Math.expm1(exponent);
+    const transferredCharge = this.chargeSpan * fraction;
+    return {
+      elapsedSeconds,
+      current: this.initialCurrent * remaining,
+      charge: this.initialCharge + transferredCharge,
+      transferredCharge,
+      electronEquivalents: transferredCharge / FARADAY_CONSTANT,
+      opposingVoltage: this.initialDrive * fraction + this.initialOpposingVoltage,
+      drivingVoltage: this.initialDrive * remaining
+    };
+  }
+  timeToCutoff(currentMagnitude) {
+    if (!Number.isFinite(currentMagnitude) || currentMagnitude <= 0) {
+      throw new RangeError("Expected a finite, positive cutoff current");
+    }
+    const initialMagnitude = Math.abs(this.initialCurrent);
+    return currentMagnitude >= initialMagnitude ? 0 : this.timeConstant * (Math.log(initialMagnitude) - Math.log(currentMagnitude));
+  }
+};
+
 // chemlib/Simulation.ts
 var saltEquilibria = Object.entries(saltSolubility).map(([formula, data2]) => {
   const [cation, anion, cations = 1, anions = 1] = data2.ions;
@@ -151031,6 +151100,59 @@ var Simulation = class {
     mix.excessCharge -= mix.electrodeCharge;
     mix.electrodeCharge = 0;
   }
+  /** Ionic resistance in Ω for the supported canvas setups. Infinity means zero ionic conductance. */
+  static ionicResistance(first, second, bridge = false) {
+    const firstMix = first._connectedMix;
+    const secondMix = second._connectedMix;
+    if (firstMix && secondMix && firstMix !== secondMix) {
+      return bridge ? ELECTROLYTE_RESISTANCE + BRIDGE_RESISTANCE : Infinity;
+    }
+    return ELECTROLYTE_RESISTANCE;
+  }
+  /** Prepares a passive galvanic RC experiment and projects its current onto the meters. */
+  static prepareNoIonicPathTransient(first, second, devices, ionicResistance, { capacitance, seriesResistance = 0, initialCharge = 0 }) {
+    const firstMix = first._connectedMix;
+    const secondMix = second._connectedMix;
+    if (ionicResistance !== Infinity || firstMix === secondMix || first._reference !== void 0 || second._reference !== void 0 || !firstMix?._isSolution || !secondMix?._isSolution || !(firstMix._solutionVolume > 0 && secondMix._solutionVolume > 0) || !Number.isFinite(seriesResistance) || seriesResistance < 0 || !ComponentManager.isConnected(first, second)) return void 0;
+    const network = circuitNetwork([first, second, ...devices]);
+    if (!network || network.elements.some(({ device }) => device?._type === "source" /* Source */)) return void 0;
+    const external = circuitThevenin(network);
+    if (!external || !(external.resistance > 0)) return void 0;
+    const a7 = this.mixedPotential(this.electrodeCandidates(first, this.vesselView(firstMix), 0));
+    const b5 = this.mixedPotential(this.electrodeCandidates(second, this.vesselView(secondMix), 0));
+    const emf = a7.potential - b5.potential;
+    if (!Number.isFinite(emf)) return void 0;
+    let model;
+    try {
+      model = new NoIonicPathTransientModel({
+        emf,
+        capacitance,
+        initialCharge,
+        resistance: external.resistance + seriesResistance
+      });
+    } catch (error) {
+      if (error instanceof RangeError) return void 0;
+      throw error;
+    }
+    return {
+      model,
+      readMeters: (sample2) => {
+        const readings = circuitReadings(network, {
+          emf: 0,
+          resistance: 0,
+          current: -sample2.current,
+          open: false
+        });
+        for (const device of devices) {
+          const reading2 = readings?.get(device);
+          device._visibleCurrent = reading2?.current ?? null;
+          if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage") {
+            device._visibleVoltage = reading2 ? Math.abs(reading2.voltage) : null;
+          }
+        }
+      }
+    };
+  }
   /**
    * Simulation of a galvanic element or an electrolysis.
    *
@@ -151045,7 +151167,7 @@ var Simulation = class {
    * @param {ElectricComponent} sElectrode1 - first electrode
    * @param {ElectricComponent} sElectrode2 - second electrode
    * @param {ElectricComponent[]} sDevices - the devices between them: a source, a voltmeter, an ammeter, or a source with an ammeter in series
-   * @param {{ bridge?: boolean }} [options] - whether a salt bridge joins the two vessels
+   * @param [options] - an explicit ionic resistance (Infinity for zero conductance), or legacy bridge flag
    */
   static sEChem(sElectrode1, sElectrode2, sDevices, options2 = {}) {
     const mix1 = sElectrode1._connectedMix;
@@ -151062,15 +151184,16 @@ var Simulation = class {
     if (!usable(sElectrode1, mix1) || !usable(sElectrode2, mix2)) return unsolved();
     if (!ComponentManager.isConnected(sElectrode1, sElectrode2)) return unsolved();
     const source3 = sDevices.find((device) => device._type === "source" /* Source */);
+    const electrolyte = options2.ionicResistance ?? this.ionicResistance(sElectrode1, sElectrode2, options2.bridge);
     const separateBaths = !!mix1 && !!mix2 && mix1 !== mix2;
-    const bridged = separateBaths && options2.bridge === true;
-    if (separateBaths && !bridged) {
+    if (electrolyte === Infinity) {
       this.sCircuit(sDevices);
       if (!source3) {
         for (const device of sDevices) device._visibleVoltage = null;
       }
       return;
     }
+    if (!Number.isFinite(electrolyte) || electrolyte < 0) return unsolved();
     const dt = this._simTimeStep;
     const candidatesOf = (electrode, mix) => electrode._reference !== void 0 ? this.referenceCandidates(electrode._reference) : mix?._isSolution ? this.electrodeCandidates(electrode, this.vesselView(mix), dt) : [];
     const first = candidatesOf(sElectrode1, mix1);
@@ -151084,7 +151207,6 @@ var Simulation = class {
     const network = circuitNetwork([sElectrode1, sElectrode2, ...sDevices]);
     const thevenin = network ? circuitThevenin(network) : void 0;
     if (!network || !thevenin) return unsolved();
-    const electrolyte = ELECTROLYTE_RESISTANCE + (bridged ? BRIDGE_RESISTANCE : 0);
     const resistance = thevenin.resistance + electrolyte;
     const ideal = !source3 && thevenin.resistance > OPEN_CIRCUIT_RESISTANCE && sDevices.some((device) => device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage");
     let solution;
@@ -151147,7 +151269,7 @@ var Simulation = class {
     }
     this.applyElectrode(first, solution.firstCurrents, dt, areas.first);
     this.applyElectrode(second, solution.secondCurrents, dt, areas.second);
-    if (bridged) {
+    if (separateBaths) {
       this.balanceCharge(mix1);
       this.balanceCharge(mix2);
     }
@@ -176010,6 +176132,7 @@ var DiagramController = class {
   toggleShowLine() {
     this.showLine = !this.showLine;
     this.diagramList.forEach((diag) => {
+      if (diag[0].canvas.id.startsWith("echem-transient-")) return;
       diag[0].data.datasets.forEach((dataset) => {
         dataset.showLine = this.showLine;
       });
@@ -176031,33 +176154,27 @@ var DiagramController = class {
         return;
       }
     }
-    let canvasBundle = this.host.shadowRoot.createElement(
-      "div"
-    );
+    const document2 = this.host.ownerDocument;
+    const canvasBundle = document2.createElement("div");
     canvasBundle.style.borderTopStyle = "solid";
     canvasBundle.style.borderTopWidth = "2px";
     canvasBundle.style.borderTopColor = "#e5e5e5";
     canvasBundle.style.marginBlock = "20px";
-    let canvasDiv = this.host.shadowRoot.createElement(
-      "div"
-    );
+    const canvasDiv = document2.createElement("div");
     canvasDiv.style.width = "100%";
     canvasDiv.style.maxWidth = "500px";
     canvasDiv.style.height = "400px";
-    let canvas = this.host.shadowRoot.createElement(
-      "canvas"
-    );
+    const canvas = document2.createElement("canvas");
     canvas.id = name2;
-    let canvasHeading = this.host.shadowRoot.createElement("h5");
+    const canvasHeading = document2.createElement("h5");
     const chartNumber = this.diagramList.length;
-    const chartHeading = name2.includes("transfer") ? "Titration" : name2.includes("source") ? "Elektrolyse" : "Galvanische Zelle";
+    const transient = name2.startsWith("echem-transient-");
+    const chartHeading = transient ? "Kapazitiver Zellstrom (RC-Modell)" : name2.includes("transfer") ? "Titration" : name2.includes("source") ? "Elektrolyse" : "Galvanische Zelle";
     canvasDiv.appendChild(canvas);
-    let canvasHeadingContainer = this.host.shadowRoot.createElement("div");
+    const canvasHeadingContainer = document2.createElement("div");
     canvasHeadingContainer.style.display = "flex";
     canvasHeadingContainer.style.alignItems = "baseline";
-    let trashButton = this.host.shadowRoot.createElement(
-      "button"
-    );
+    const trashButton = document2.createElement("button");
     trashButton.innerHTML += `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#d10000" d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/></svg>`;
     trashButton.onclick = () => {
       const index2 = this.diagramList.findIndex(([, container2]) => container2 === canvasDiv);
@@ -176082,16 +176199,21 @@ var DiagramController = class {
       chartTitleX = "Volumen [ml]";
       chartTitleY = "pH Wert";
     }
-    if (name2.includes("echem")) {
-      if (name2.includes("source")) {
+    if (transient) {
+      chartLabel = "Zellstrom [A]";
+      chartTitleX = "Zeit [s]";
+      chartTitleY = "Zellstrom [A]";
+    } else if (name2.includes("echem") && source3 instanceof ElectricComponent) {
+      chartTitleX = "Zeit [s]";
+      if (source3._type === "source" /* Source */) {
         chartLabel = "n";
-        chartTitleX = "Zeit [s]";
         chartTitleY = "umgesetzte Stoffmenge [mol]";
-      }
-      if (name2.includes("voltmeter")) {
+      } else if (source3._type === "voltmeter" /* Voltmeter */ || source3._type === "multimeter" /* Multimeter */ && source3._meterMode === "voltage") {
         chartLabel = "Spannung";
-        chartTitleX = "Zeit [s]";
         chartTitleY = "Zellspannung [V]";
+      } else {
+        chartLabel = "Stromst\xE4rke";
+        chartTitleY = "Stromst\xE4rke [A]";
       }
     }
     let chart = new auto_default(canvas, {
@@ -176105,6 +176227,7 @@ var DiagramController = class {
         maintainAspectRatio: false,
         scales: {
           x: {
+            type: transient ? "linear" : "category",
             beginAtZero: true,
             title: {
               text: chartTitleX,
@@ -176130,8 +176253,9 @@ var DiagramController = class {
     chart.data.datasets.push({
       label: chartLabel,
       data: [],
-      tension: 0.4,
-      showLine: this.showLine
+      tension: transient ? 0 : 0.4,
+      showLine: transient || this.showLine,
+      pointRadius: transient ? 0 : void 0
     });
     if (name2.includes("source")) {
       chart.data.datasets.push({
@@ -176157,6 +176281,18 @@ var DiagramController = class {
     this.host.requestUpdate();
     this.host.reportXApi("created", "diagram-" + name2);
   }
+  setTransientCurve(source3, model) {
+    const name2 = "echem-transient-" + source3._type + ":" + source3._id;
+    this.createDiagram(name2, source3);
+    const chart = this.diagramList.find(([chart2]) => chart2.canvas.id === name2)?.[0];
+    if (!chart) return;
+    const horizon = Math.min(Number.MAX_VALUE, 6 * model.timeConstant);
+    chart.data.datasets[0].data = Array.from({ length: 81 }, (_3, index2) => {
+      const x4 = index2 / 80 * horizon;
+      return { x: x4, y: model.at(x4).current };
+    });
+    chart.update("none");
+  }
   /**
    * Appends a titration data point (pH vs. added volume) to any diagram that
    * belongs to the given source component.
@@ -176166,9 +176302,7 @@ var DiagramController = class {
    */
   appendTitrationPoint(source3, dest) {
     for (let i11 = 0; i11 < this.diagramList.length; i11++) {
-      if (this.diagramList[i11][1].children[0].id.includes(
-        source3._type + ":" + source3._id
-      )) {
+      if (this.diagramList[i11][1].children[0].id === "transfer" + source3._type + ":" + source3._id) {
         const chart = this.diagramList[i11][0];
         chart.data.labels.push(
           (chart.data.labels.length > 0 ? Number.parseFloat(
@@ -176196,9 +176330,7 @@ var DiagramController = class {
    */
   appendEChemPoint(source3, circuitComps) {
     for (let i11 = 0; i11 < this.diagramList.length; i11++) {
-      if (this.diagramList[i11][1].children[0].id.includes(
-        source3._type + ":" + source3._id
-      )) {
+      if (this.diagramList[i11][1].children[0].id === "echem" + source3._type + ":" + source3._id) {
         const chart = this.diagramList[i11][0];
         chart.data.labels.push(
           (chart.data.labels.length > 0 ? Number.parseFloat(
@@ -176206,8 +176338,10 @@ var DiagramController = class {
           ) : 0) + 1
         );
         chart.data.datasets.forEach((dataset, datasetId) => {
-          if (source3._type === "voltmeter" /* Voltmeter */) {
+          if (source3._type === "voltmeter" /* Voltmeter */ || source3._type === "multimeter" /* Multimeter */ && source3._meterMode === "voltage") {
             dataset.data.push(source3._visibleVoltage);
+          } else if (source3._type === "ammeter" /* Ammeter */ || source3._type === "multimeter" /* Multimeter */) {
+            dataset.data.push(source3._visibleCurrent);
           } else {
             const electrode = circuitComps[datasetId];
             const couple = electrode?._material ? oxidationOf(electrode._material.smilesString) : void 0;
@@ -176272,10 +176406,20 @@ var SimulationController = class {
     this.tasks.set(name2, { startedAt: performance.now(), step });
     this.wake();
   }
-  startExperiment(name2, source3, step) {
-    this.host.diagrams.createDiagram(name2, source3);
+  startExperiment(name2, source3, step, live) {
+    let hasStandardDiagram = false;
+    const ensureStandardDiagram = () => {
+      if (hasStandardDiagram) return;
+      this.host.diagrams.createDiagram(name2, source3);
+      hasStandardDiagram = true;
+    };
     let remainingMs = 0;
     this.startTask(name2, (elapsedMs) => {
+      if (live?.(elapsedMs)) {
+        remainingMs = 0;
+        return;
+      }
+      ensureStandardDiagram();
       const stepMs = Simulation._simTimeStep * 1e3;
       if (!Number.isFinite(stepMs) || stepMs <= 0) return;
       remainingMs = Math.min(remainingMs + elapsedMs, 8 * stepMs);
@@ -176284,6 +176428,7 @@ var SimulationController = class {
         step();
       }
     });
+    if (!live?.(0)) ensureStandardDiagram();
     this.host.requestUpdate();
   }
   get hasRunningExperiments() {
@@ -184556,6 +184701,16 @@ var TRANSFER_HOLD_MS = 1500;
 var TRANSFER_HOLD_RADIUS = 6;
 var DRAG_TRANSFER_TASK = "drag-transfer";
 var MIN_TWO_PANELS_WIDTH = 480;
+var RC_UPDATE_MS = 50;
+function isPassiveMeter(device) {
+  const { Ammeter, Multimeter, Voltmeter } = EComponentType;
+  return device._type === Ammeter || device._type === Multimeter || device._type === Voltmeter;
+}
+function validRCSettings(value) {
+  if (!value || typeof value !== "object") return false;
+  const { capacitance, seriesResistance, cutoff } = value;
+  return Number.isFinite(capacitance) && capacitance > 0 && Number.isFinite(seriesResistance) && seriesResistance >= 0 && (cutoff === void 0 || Number.isFinite(cutoff) && cutoff > 0);
+}
 var _newSmilesDrawer_dec, _smilesDrawer100_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _chemicalCatalogOpened_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _app_dec, _pix_canvas_dec, _mousePos_dec, _dragObject_dec, _avComponentsSprites_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _statusStrip_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _statusStrip, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _avComponentsSprites, _dragObject, _mousePos, _pix_canvas, _app, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _teacherDrawerOpen, _teacherTab, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalCatalogOpened, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _RndName, _invComponents, _enablexAPI, _xAPIKey, _smilesDrawer100, _newSmilesDrawer;
 _ChemLab_decorators = [t6("webwriter-chemlab")];
 var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [e8("#upper")], _statusStrip_dec = [e8("#statusStrip")], _contextMolInfo_dec = [e8("#contextMolInfo")], _objectSummary_dec = [e8("#contextInfoBox")], _groupSummary_dec = [e8("#groupSelectionInfo")], _contextMixInfo_dec = [e8("#contextMixInfo")], _openBtn_dec = [e8("#openComp")], _activateEComp_dec = [e8("#activateEComp")], _contextEchemInfo_dec = [e8("#contextEchemInfo")], _xAPICheck_dec = [e8("#xAPICheck")], _xAPIKeyInput_dec = [e8("#xAPIKeyInput")], _canvasArea_dec = [e8("#canvasArea")], _canvasZoom_dec = [e8("#canvasZoom")], _zoomLevel_dec = [e8("#zoomLevel", true)], _gridScale_dec = [e8("#gridScale", true)], _gridScaleValue_dec = [e8("#gridScaleValue", true)], _pHColors_dec = [n5({ attribute: false })], _dictionary_dec = [n5({ attribute: false })], _availableMolecules_dec = [n5({
@@ -184657,6 +184812,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
      * @type {SimulationController}
      */
     __publicField(this, "simulation", new SimulationController(this));
+    __publicField(this, "capacitorCharges", /* @__PURE__ */ new Map());
+    __publicField(this, "rcReadouts", /* @__PURE__ */ new Map());
     /**
      * controller owning the PixiJS canvas layer (app, sprites, drag)
      *
@@ -184808,6 +184965,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.closeAmountMenu();
         this.hideFillMeter();
         this.simulation.stopExperiments();
+        this.capacitorCharges.clear();
+        this.rcReadouts.clear();
         this.curr_obj = null;
         this.curr_name = "";
         this.curr_stage_index = -1;
@@ -185034,13 +185193,17 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   stepElectrochemistry(source3) {
     const circuitComps = this.operatingCircuit(source3);
     if (circuitComps) {
-      const firstMix = circuitComps[0]._connectedMix;
-      const secondMix = circuitComps[1]._connectedMix;
+      if (circuitComps.some((device) => this.hasRCReadout(device))) return;
+      const [first, second, ...devices] = circuitComps;
+      const firstMix = first._connectedMix;
+      const secondMix = second._connectedMix;
+      const ionicResistance = this.ionicResistance(first, second);
+      if (Number.isFinite(ionicResistance)) this.capacitorCharges.delete(this.rcCellKey(first, second));
       Simulation.sEChem(
-        circuitComps[0],
-        circuitComps[1],
-        circuitComps.slice(2),
-        { bridge: this.bridgeJoins(firstMix, secondMix) }
+        first,
+        second,
+        devices,
+        { ionicResistance }
       );
       for (const vessel of this.allChemComponents) {
         if (vessel._content === firstMix || vessel._content === secondMix) this.canvas.markVesselChanged(vessel);
@@ -185062,6 +185225,96 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       if (network.includes(this.curr_obj)) this._updatePopup();
     }
     this.canvas.refreshDeviceDisplay(source3);
+  }
+  ionicResistance(first, second) {
+    return Simulation.ionicResistance(
+      first,
+      second,
+      this.bridgeJoins(first._connectedMix, second._connectedMix)
+    );
+  }
+  hasRCReadout(device) {
+    return this.rcReadouts.has(device) && this.simulation.hasTask("echem" + device._type + ":" + device._id);
+  }
+  rcCellKey(first, second) {
+    return [first, second].sort((a7, b5) => a7._id - b5._id).map((electrode) => `${electrode._id}/${electrode._connectedMix?._id}`).join(":");
+  }
+  startElectricalExperiment(name2, meter2) {
+    const step = () => this.stepElectrochemistry(meter2);
+    if (!isPassiveMeter(meter2) || !meter2._rcSettings) {
+      this.simulation.startExperiment(name2, meter2, step);
+      return;
+    }
+    let sinceRefresh = RC_UPDATE_MS;
+    let circuitKey;
+    let active;
+    this.simulation.startExperiment(name2, meter2, step, (elapsedMs) => {
+      if (active && !active.settled) {
+        active.elapsed += elapsedMs / 1e3;
+        this.capacitorCharges.set(active.cell, active.model.at(active.elapsed).charge);
+      }
+      sinceRefresh += elapsedMs;
+      if (sinceRefresh < RC_UPDATE_MS) return !!active;
+      sinceRefresh %= RC_UPDATE_MS;
+      const circuit = this.operatingCircuit(meter2);
+      const electrodes = circuit?.slice(0, 2).sort((a7, b5) => a7._id - b5._id);
+      const [first, second] = electrodes ?? [];
+      const cell = first && second ? this.rcCellKey(first, second) : void 0;
+      const resistance = first && second ? this.ionicResistance(first, second) : void 0;
+      const config = meter2._rcSettings;
+      const devices = circuit?.slice(2) ?? [];
+      const powered = devices.some((device) => device._type === "source" /* Source */);
+      if (!active && devices.some((device) => device !== meter2 && this.hasRCReadout(device))) {
+        circuitKey = void 0;
+        return true;
+      }
+      const key = cell && config && resistance === Infinity && !powered ? JSON.stringify([cell, config, ComponentManager.connectedDevices(meter2).map((device) => [device._id, device._meterMode, device._connections.map((post) => post.map((partner) => partner._id))])]) : void 0;
+      if (key !== circuitKey) {
+        circuitKey = key;
+        if (active) {
+          for (const device of active.devices) {
+            device._visibleCurrent = null;
+            device._visibleVoltage = null;
+            this.canvas.refreshDeviceDisplay(device);
+          }
+        }
+        active = void 0;
+        this.rcReadouts.delete(meter2);
+        if (this.curr_obj === meter2) this._updatePopup();
+        if (key && cell && config) {
+          const prepared = Simulation.prepareNoIonicPathTransient(
+            first,
+            second,
+            devices,
+            resistance,
+            { ...config, initialCharge: this.capacitorCharges.get(cell) }
+          );
+          if (prepared) {
+            const { model } = prepared;
+            const cutoff = config.cutoff ?? Math.max(Number.MIN_VALUE, Math.abs(model.initialCurrent) * 0.01);
+            active = { ...prepared, cell, devices, elapsed: 0, cutoffAt: model.timeToCutoff(cutoff) };
+            this.diagrams.setTransientCurve(meter2, model);
+          }
+        }
+      }
+      if (!active) {
+        if (cell && resistance !== void 0 && Number.isFinite(resistance)) this.capacitorCharges.delete(cell);
+        return false;
+      }
+      if (!active.settled) {
+        const sample2 = active.model.at(active.elapsed);
+        active.readMeters(sample2);
+        active.settled = sample2.current === 0 || active.elapsed / active.model.timeConstant >= 40;
+        this.rcReadouts.set(meter2, {
+          sample: sample2,
+          timeConstant: active.model.timeConstant,
+          cutoffAt: active.cutoffAt
+        });
+        for (const device of active.devices) this.canvas.refreshDeviceDisplay(device);
+        if (this.curr_obj === meter2) this._updatePopup();
+      }
+      return true;
+    });
   }
   /**
    * The devices of a network that carries no cell: a supply wired straight
@@ -185104,8 +185357,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
    * only of the one that was switched on, so the meters would otherwise keep
    * showing the last value they saw.
    */
-  clearEChemReadings() {
-    for (const device of this.allEComponents) {
+  clearEChemReadings(source3) {
+    this.rcReadouts.delete(source3);
+    const devices = ComponentManager.connectedDevices(source3);
+    if (devices.some((device) => this.hasRCReadout(device))) return;
+    for (const device of devices) {
       if (device._visibleVoltage === null && device._visibleCurrent === null) continue;
       device._visibleVoltage = null;
       device._visibleCurrent = null;
@@ -185993,6 +186249,28 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.contextEchemInfo.style.display = "";
       this.contextEchemInfo.innerHTML = "";
       const type = this.curr_obj._type;
+      const rc = this.hasRCReadout(this.curr_obj) ? this.rcReadouts.get(this.curr_obj) : void 0;
+      if (rc) {
+        this.activateEComp.style.display = "";
+        const number2 = (value) => value.toPrecision(4);
+        const { sample: sample2, timeConstant, cutoffAt } = rc;
+        const rows = [
+          this.message("Kapazitiver Zellstrom (RC-Modell)"),
+          `I: ${number2(sample2.current)} A`,
+          `Q: ${number2(sample2.charge * 1e6)} \xB5C`,
+          `\u0394Q: ${number2(sample2.transferredCharge * 1e6)} \xB5C`,
+          `${this.message("Gegenspannung")}: ${number2(sample2.opposingVoltage)} V`,
+          `${this.message("Treibende Spannung")}: ${number2(sample2.drivingVoltage)} V`,
+          `\u03C4: ${number2(timeConstant * 1e3)} ms`,
+          `${this.message("Dauer bis zur Stromschwelle")}: ${number2(cutoffAt * 1e3)} ms`
+        ];
+        for (const row of rows) {
+          const line = this.ownerDocument.createElement("p");
+          line.textContent = row;
+          this.contextEchemInfo.append(line);
+        }
+        return;
+      }
       const meterReadsCurrent = type === "multimeter" /* Multimeter */ && this.curr_obj._meterMode === "current";
       if (type === "source" /* Source */ || type === "voltmeter" /* Voltmeter */ || type === "multimeter" /* Multimeter */) {
         this.activateEComp.style.display = "";
@@ -186023,6 +186301,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 						`;
         }
       } else if (type === "ammeter" /* Ammeter */) {
+        this.activateEComp.style.display = "";
         const current = this.runningCurrent(this.curr_obj);
         this.contextEchemInfo.innerHTML = `
 					<p>Stromst\xE4rke: ${current.toExponential(2)} A</p>
@@ -186370,6 +186649,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
           if (Number.isFinite(area2) && area2 > 0) newComp._area = area2;
           const reference2 = Number.parseFloat(component["reference"]);
           if (Number.isFinite(reference2)) newComp._reference = reference2;
+        }
+        if (isPassiveMeter(newComp) && validRCSettings(component["rcSettings"])) {
+          newComp._rcSettings = component["rcSettings"];
         }
         this.allEComponents.push(newComp);
       }
@@ -187333,9 +187615,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const material = materials.find((variant) => variant.material?.name === device._material?.name);
     const hasSource = device._type === Source;
     const hasMeter = device._type === "multimeter" /* Multimeter */;
+    const passiveMeter = isPassiveMeter(device);
     const hasLabel = device._type === "label" /* Label */;
     const hasElectrode = device._type === Electrode;
-    if (!hasSource && !hasMeter && !hasLabel && !hasElectrode && !connections.length) return E;
+    if (!hasSource && !passiveMeter && !hasLabel && !hasElectrode && !connections.length) return E;
     const label = (other) => `${this.itemName(other._type)} \xB7 ${other._id + 1}`;
     const plusPole = hasSource ? ComponentManager.terminalElectrode(device, 0) : void 0;
     const minusPole = hasSource ? ComponentManager.terminalElectrode(device, 1) : void 0;
@@ -187389,6 +187672,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 						<option value="voltage" ?selected=${device._meterMode !== "current"}>${this.message("Spannung")}</option>
 						<option value="current" ?selected=${device._meterMode === "current"}>${this.message("Stromst\xE4rke")}</option>
 					</select></label>` : E}
+				${passiveMeter ? this.renderRCSettings(device) : E}
 				${hasLabel ? x`
 					<sl-input id="labelText" size="small" contenteditable="false"
 						label=${this.message("Beschriftung")} .value=${device._labelText ?? ""}></sl-input>
@@ -187449,6 +187733,40 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					</div>` : E}
 			</sl-details>
 		`);
+  }
+  renderRCSettings(device) {
+    const config = device._rcSettings;
+    return x`
+			<sl-details summary=${this.message("Kapazitiver Zellstrom (RC-Modell)")}
+				@sl-after-show=${() => this.canvas.drawSelection()} @sl-after-hide=${() => this.canvas.drawSelection()}>
+				<p>${this.message("N\xE4herung f\xFCr getrennte Halbzellen ohne Ionenverbindung. Mit leerer Kapazit\xE4t bleibt sie aus.")}</p>
+				<sl-input id="rcCapacitance" type="number" step="any" size="small" contenteditable="false"
+					label=${this.message("Effektive Kapazit\xE4t [\xB5F]")}
+					.value=${config ? String(config.capacitance * 1e6) : ""}></sl-input>
+				<sl-input id="rcResistance" type="number" step="any" size="small" contenteditable="false"
+					label=${this.message("Zus\xE4tzlicher Reihenwiderstand [\u03A9]")}
+					.value=${String(config?.seriesResistance ?? 0)}></sl-input>
+				<sl-input id="rcCutoff" type="number" step="any" size="small" contenteditable="false"
+					label=${this.message("Stromschwelle [\xB5A]")} placeholder="1 %"
+					.value=${config?.cutoff === void 0 ? "" : String(config.cutoff * 1e6)}></sl-input>
+				<sl-button size="small" @click=${() => {
+      const value = (id3) => this.shadowRoot.querySelector(id3).value.trim();
+      const capacitance = value("#rcCapacitance");
+      const cutoff = value("#rcCutoff");
+      const next = capacitance ? {
+        capacitance: Number(capacitance) * 1e-6,
+        seriesResistance: Number(value("#rcResistance")),
+        cutoff: cutoff ? Number(cutoff) * 1e-6 : void 0
+      } : void 0;
+      if (next && !validRCSettings(next)) {
+        this._notify(this.message("Kapazit\xE4t und Stromschwelle m\xFCssen positiv sein. Der zus\xE4tzliche Widerstand darf null sein."), "warning");
+        return;
+      }
+      device._rcSettings = next;
+      this.saveSelectedComponent({ rcSettings: next });
+      this.requestUpdate();
+    }}>${this.message("best\xE4tigen")}</sl-button>
+			</sl-details>`;
   }
   renderObjectSummary() {
     const name2 = this.itemName(this.curr_name.split(":")[0]);
@@ -187512,11 +187830,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.requestUpdate();
         this.canvas.setDeviceActive(this.curr_obj, true);
         let source3 = this.curr_obj;
-        this.simulation.startExperiment(
-          "echem" + this.curr_name,
-          source3,
-          () => this.stepElectrochemistry(source3)
-        );
+        this.startElectricalExperiment("echem" + this.curr_name, source3);
         this._updatePopup();
         this._sendxAPiStatement(
           "started",
@@ -187528,7 +187842,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.simulation.stopTask(
           "echem" + this.curr_name
         );
-        this.clearEChemReadings();
+        this.clearEChemReadings(this.curr_obj);
         this._updatePopup();
         this._sendxAPiStatement(
           "completed",

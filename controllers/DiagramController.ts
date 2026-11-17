@@ -49,6 +49,7 @@ export class DiagramController implements ReactiveController {
 	public toggleShowLine(): void {
 		this.showLine = !this.showLine;
 		this.diagramList.forEach((diag) => {
+			if (diag[0].canvas.id.startsWith("echem-transient-")) return;
 			diag[0].data.datasets.forEach((dataset) => {
 				dataset.showLine = this.showLine;
 			});
@@ -74,43 +75,31 @@ export class DiagramController implements ReactiveController {
 				return;
 			}
 		}
-		// @ts-ignore
-		let canvasBundle: HTMLDivElement = this.host.shadowRoot.createElement(
-			"div"
-		) as HTMLDivElement;
+		const document = this.host.ownerDocument;
+		const canvasBundle = document.createElement("div");
 		canvasBundle.style.borderTopStyle = "solid";
 		canvasBundle.style.borderTopWidth = "2px";
 		canvasBundle.style.borderTopColor = "#e5e5e5";
 		canvasBundle.style.marginBlock = "20px";
-		// @ts-ignore
-		let canvasDiv: HTMLDivElement = this.host.shadowRoot.createElement(
-			"div"
-		) as HTMLDivElement;
+		const canvasDiv = document.createElement("div");
 		canvasDiv.style.width = "100%";
 		canvasDiv.style.maxWidth = "500px";
 		canvasDiv.style.height = "400px";
-		// @ts-ignore
-		let canvas: HTMLCanvasElement = this.host.shadowRoot.createElement(
-			"canvas"
-		) as HTMLCanvasElement;
+		const canvas = document.createElement("canvas");
 		canvas.id = name;
 
-		// @ts-ignore
-		let canvasHeading: HTMLHeadingElement = this.host.shadowRoot.createElement("h5") as HTMLHeadingElement;
+		const canvasHeading = document.createElement("h5");
 		const chartNumber = this.diagramList.length;
-		const chartHeading = name.includes("transfer")
+		const transient = name.startsWith("echem-transient-");
+		const chartHeading = transient ? "Kapazitiver Zellstrom (RC-Modell)" : name.includes("transfer")
 			? "Titration"
 			: name.includes("source") ? "Elektrolyse" : "Galvanische Zelle";
 
 		canvasDiv.appendChild(canvas);
-		// @ts-ignore
-		let canvasHeadingContainer: HTMLDivElement = this.host.shadowRoot.createElement("div") as HTMLDivElement;
+		const canvasHeadingContainer = document.createElement("div");
 		canvasHeadingContainer.style.display = "flex";
 		canvasHeadingContainer.style.alignItems = "baseline";
-		// @ts-ignore
-		let trashButton: HTMLButtonElement = this.host.shadowRoot.createElement(
-			"button"
-		) as HTMLButtonElement;
+		const trashButton = document.createElement("button");
 		trashButton.innerHTML += `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#d10000" d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/></svg>`;
 		trashButton.onclick = () => {
 			const index = this.diagramList.findIndex(([, container]) => container === canvasDiv);
@@ -137,16 +126,22 @@ export class DiagramController implements ReactiveController {
 			chartTitleX = "Volumen [ml]";
 			chartTitleY = "pH Wert";
 		}
-		if (name.includes("echem")) {
-			if (name.includes("source")) {
+		if (transient) {
+			chartLabel = "Zellstrom [A]";
+			chartTitleX = "Zeit [s]";
+			chartTitleY = "Zellstrom [A]";
+		} else if (name.includes("echem") && source instanceof chemlib.ElectricComponent) {
+			chartTitleX = "Zeit [s]";
+			if (source._type === chemlib.EComponentType.Source) {
 				chartLabel = "n";
-				chartTitleX = "Zeit [s]";
 				chartTitleY = "umgesetzte Stoffmenge [mol]";
-			}
-			if (name.includes("voltmeter")) {
+			} else if (source._type === chemlib.EComponentType.Voltmeter ||
+				(source._type === chemlib.EComponentType.Multimeter && source._meterMode === "voltage")) {
 				chartLabel = "Spannung";
-				chartTitleX = "Zeit [s]";
 				chartTitleY = "Zellspannung [V]";
+			} else {
+				chartLabel = "Stromstärke";
+				chartTitleY = "Stromstärke [A]";
 			}
 		}
 		let chart = new Chart(canvas, {
@@ -160,6 +155,7 @@ export class DiagramController implements ReactiveController {
 				maintainAspectRatio: false,
 				scales: {
 					x: {
+						type: transient ? "linear" : "category",
 						beginAtZero: true,
 						title: {
 							text: chartTitleX,
@@ -186,8 +182,9 @@ export class DiagramController implements ReactiveController {
 		chart.data.datasets.push({
 			label: chartLabel,
 			data: [],
-			tension: 0.4,
-			showLine: this.showLine,
+			tension: transient ? 0 : 0.4,
+			showLine: transient || this.showLine,
+			pointRadius: transient ? 0 : undefined,
 		});
 		if (name.includes("source")) {
 			chart.data.datasets.push({
@@ -221,6 +218,21 @@ export class DiagramController implements ReactiveController {
 		this.host.reportXApi("created", "diagram-" + name);
 	}
 
+	public setTransientCurve(source: chemlib.ElectricComponent, model: chemlib.NoIonicPathTransientModel): void {
+		const name = "echem-transient-" + source._type + ":" + source._id;
+		this.createDiagram(name, source);
+		const chart = this.diagramList.find(([chart]) => chart.canvas.id === name)?.[0];
+		if (!chart) return;
+		// Draw six time constants from the exact solution. Live UI cadence does
+		// not determine the resolution of a brief current pulse.
+		const horizon = Math.min(Number.MAX_VALUE, 6 * model.timeConstant);
+		chart.data.datasets[0].data = Array.from({ length: 81 }, (_, index) => {
+			const x = (index / 80) * horizon;
+			return { x, y: model.at(x).current };
+		});
+		chart.update("none");
+	}
+
 	/**
 	 * Appends a titration data point (pH vs. added volume) to any diagram that
 	 * belongs to the given source component.
@@ -236,9 +248,7 @@ export class DiagramController implements ReactiveController {
 			if (
 				(
 					this.diagramList[i][1] as HTMLDivElement
-				).children[0].id.includes(
-					source._type + ":" + source._id
-				)
+				).children[0].id === "transfer" + source._type + ":" + source._id
 			) {
 				const chart = this.diagramList[i][0];
 				chart.data.labels.push(
@@ -279,9 +289,7 @@ export class DiagramController implements ReactiveController {
 			if (
 				(
 					this.diagramList[i][1] as HTMLDivElement
-				).children[0].id.includes(
-					source._type + ":" + source._id
-				)
+				).children[0].id === "echem" + source._type + ":" + source._id
 			) {
 				const chart = this.diagramList[i][0];
 				chart.data.labels.push(
@@ -294,11 +302,12 @@ export class DiagramController implements ReactiveController {
 						: 0) + 1
 				);
 				chart.data.datasets.forEach((dataset, datasetId) => {
-					if (
-						source._type ===
-						chemlib.EComponentType.Voltmeter
-					) {
+					if (source._type === chemlib.EComponentType.Voltmeter ||
+						(source._type === chemlib.EComponentType.Multimeter && source._meterMode === "voltage")) {
 						dataset.data.push(source._visibleVoltage);
+					} else if (source._type === chemlib.EComponentType.Ammeter ||
+						source._type === chemlib.EComponentType.Multimeter) {
+						dataset.data.push(source._visibleCurrent);
 					} else {
 						// Exactly one value per step and dataset, otherwise the
 						// series drifts out of step with the labels: an electrode

@@ -41,3 +41,5 @@ export {
 } from './ElectricComponent'
 export {circuitNetwork, circuitThevenin, circuitReadings} from './circuit'
 export type {CircuitElement, CircuitNetwork, CircuitReading} from './circuit'
+export {NoIonicPathTransientModel} from './NoIonicPathTransientModel'
+export type {NoIonicPathTransientParameters, NoIonicPathTransientSample} from './NoIonicPathTransientModel'

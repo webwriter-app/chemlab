@@ -65,10 +65,25 @@ export class SimulationController implements ReactiveController {
 		this.wake();
 	}
 
-	startExperiment(name: string, source: ChemComponent | ElectricComponent, step: () => void): void {
-		this.host.diagrams.createDiagram(name, source);
+	startExperiment(
+		name: string,
+		source: ChemComponent | ElectricComponent,
+		step: () => void,
+		live?: (elapsedMs: number) => boolean
+	): void {
+		let hasStandardDiagram = false;
+		const ensureStandardDiagram = () => {
+			if (hasStandardDiagram) return;
+			this.host.diagrams.createDiagram(name, source);
+			hasStandardDiagram = true;
+		};
 		let remainingMs = 0;
 		this.startTask(name, (elapsedMs) => {
+			if (live?.(elapsedMs)) {
+				remainingMs = 0;
+				return;
+			}
+			ensureStandardDiagram();
 			const stepMs = Simulation._simTimeStep * 1000;
 			if (!Number.isFinite(stepMs) || stepMs <= 0) return;
 			remainingMs = Math.min(remainingMs + elapsedMs, 8 * stepMs);
@@ -77,6 +92,7 @@ export class SimulationController implements ReactiveController {
 				step();
 			}
 		});
+		if (!live?.(0)) ensureStandardDiagram();
 		this.host.requestUpdate();
 	}
 
