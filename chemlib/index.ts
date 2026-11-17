@@ -13,3 +13,17 @@ import {AcidBase} from './AcidBase'
 export {Atom, Bond, ChemComponent, ComponentType, ComponentManager, ElectricComponent, EComponentType, ElementData, Mixture, Molecule, Simulation, StructureManager, AcidBase}
 export {nonpolarDensity, splitLiquidPhases, type LiquidPhase} from './liquidPhases'
 export type {AcidBaseSystem} from './AcidBase'
+export {
+	halfReactions,
+	halfReactionsOn,
+	oxidationOf,
+	reductionOf,
+	materialName,
+	exchangeCurrentDensity,
+	currentDensity,
+	REFERENCE_CURRENT_DENSITY,
+	ELECTRODE_AREA,
+	SERIES_RESISTANCE,
+	GAS_PARTIAL_PRESSURE,
+} from './halfReactions'
+export type {HalfReaction, HalfReactionTerm} from './halfReactions'

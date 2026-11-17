@@ -111,6 +111,13 @@ class ElectricComponent {
 	 */
 	_visibleVoltage: number | null;
 	/**
+	 * for sources and ammeters: the current the cell solve found, in ampere.
+	 * `null` until the cell has been solved once.
+	 *
+	 * @type {(number | null)}
+	 */
+	_visibleCurrent: number | null = null;
+	/**
 	 * for electrodes: metal deposited on the electrode by reduction, keyed by
 	 * the SMILES of the deposited element
 	 *

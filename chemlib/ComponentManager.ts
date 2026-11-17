@@ -190,22 +190,26 @@ export abstract class ComponentManager {
 			cursor += 1;
 		}
 
-		let componentsNoCables: ElectricComponent[] = [];
+		// A cell needs exactly two electrodes and at least one device between
+		// them. An ammeter in series adds a second device, so the count is not
+		// fixed: the electrodes come first, the devices follow.
+		const electrodes: ElectricComponent[] = [];
+		const devices: ElectricComponent[] = [];
 		visited.forEach((component) => {
 			if (component._type === EComponentType.Electrode) {
-				componentsNoCables.unshift(component);
+				electrodes.unshift(component);
 			}
 			if (
 				component._type === EComponentType.Source ||
 				component._type === EComponentType.Voltmeter ||
 				component._type === EComponentType.Ammeter
 			) {
-				componentsNoCables.push(component);
+				devices.push(component);
 			}
 		});
 
-		if (componentsNoCables.length === 3) {
-			return componentsNoCables;
+		if (electrodes.length === 2 && devices.length > 0) {
+			return [...electrodes, ...devices];
 		}
 
 		return [];

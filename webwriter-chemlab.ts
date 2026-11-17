@@ -987,7 +987,7 @@ export class ChemLab extends LitElementWw {
 			chemlib.Simulation.sEChem(
 				circuitComps[0],
 				circuitComps[1],
-				circuitComps[2]
+				circuitComps.slice(2)
 			);
 
 			const firstMix = circuitComps[0]._connectedMix;
@@ -1007,14 +1007,19 @@ export class ChemLab extends LitElementWw {
 
 	private operatingCircuit(device: chemlib.ElectricComponent): chemlib.ElectricComponent[] | undefined {
 		const circuit = chemlib.ComponentManager.isCircuit(device);
-		if (circuit[2] === device && circuit.slice(0, 2).every((electrode) =>
-			electrode._type === chemlib.EComponentType.Electrode && electrode._connectedMix?._isSolution)) return circuit;
+		if (circuit.length < 3 || !circuit.slice(2).includes(device)) return undefined;
+		if (!circuit.slice(0, 2).every((electrode) =>
+			electrode._type === chemlib.EComponentType.Electrode && electrode._connectedMix?._isSolution)) return undefined;
+		return circuit;
 	}
 
 	private runningCurrent(source: chemlib.ElectricComponent): number {
 		const ticker = `echem${source._type}:${source._id}`;
+		// The solved current is signed by which electrode happens to come
+		// first in the circuit walk, so only its magnitude is meaningful here:
+		// the ammeter shows a magnitude and the Faraday rate needs one.
 		return this.simulation.hasTask(ticker) && this.operatingCircuit(source)
-			? source._sourceCurrent || 0 : 0;
+			? Math.abs(source._visibleCurrent ?? 0) : 0;
 	}
 
 	get canAuthor(): boolean {
@@ -1929,7 +1934,6 @@ export class ChemLab extends LitElementWw {
 					const reading = this.voltageReading(this.curr_obj);
 					this.contextEchemInfo.innerHTML = `
 						<p>${this.message("Spannung")}: ${reading}</p>
-						<p>${this.message("Modellstrom")}: ${this.curr_obj._sourceCurrent} A</p>
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 						`;
 				} else {
@@ -1948,8 +1952,11 @@ export class ChemLab extends LitElementWw {
 						`;
 				}
 			} else if (this.curr_obj._type === chemlib.EComponentType.Ammeter) {
-				this.contextEchemInfo.innerHTML = `<p>${this.message("Modellspannung")}: ${this.curr_obj._sourceVoltage} V</p>
-					<p>${this.message("Strommessung noch nicht verfügbar")}</p>`;
+				const current = this.runningCurrent(this.curr_obj);
+				this.contextEchemInfo.innerHTML = `
+					<p>Stromstärke: ${current.toExponential(2)} A</p>
+					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
+					`;
 			} else if (this.curr_obj._type === chemlib.EComponentType.Electrode){
 				this.activateEComp.style.display = "none";
 				// an electrode has no material until one is assigned in the
@@ -1980,12 +1987,11 @@ export class ChemLab extends LitElementWw {
 					typeof material != "undefined"
 						? chemlib.ComponentManager.isCircuit(this.curr_obj)
 						: [];
-				if (
-					circuitComps.length === 3 &&
-					circuitComps[2]._type === chemlib.EComponentType.Source
-				) {
-					let device: chemlib.ElectricComponent = circuitComps[2];
-					let redox = chemlib.Simulation.getRedoxData(material);
+				const source = circuitComps.slice(2)
+					.find((comp) => comp._type === chemlib.EComponentType.Source);
+				if (source) {
+					let device: chemlib.ElectricComponent = source;
+					let redox = chemlib.oxidationOf(material.smilesString);
 					if (typeof redox != "undefined") {
 						// charge for exactly 1s at the source current, so
 						// faradayLaw's output doubles as a per-second rate
@@ -2177,9 +2183,11 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private refreshDeviceAfterRemoval(component: chemlib.ElectricComponent): void {
-		const { Source, Voltmeter } = chemlib.EComponentType;
-		if ((component._type !== Source && component._type !== Voltmeter) || this.operatingCircuit(component)) return;
+		const { Source, Voltmeter, Ammeter } = chemlib.EComponentType;
+		if ((component._type !== Source && component._type !== Voltmeter && component._type !== Ammeter) ||
+			this.operatingCircuit(component)) return;
 		if (component._type === Voltmeter) component._visibleVoltage = 0;
+		component._visibleCurrent = null;
 		const label = `${component._type}:${component._id}`;
 		const ticker = "echem" + label;
 		if (!this.simulation.hasTask(ticker)) return;

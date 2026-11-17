@@ -6,6 +6,14 @@ function reading(value: number | null | undefined, unit: string): string {
 }
 
 /**
+ * A device shows the magnitude of the current: the sign of the solved value
+ * only says which electrode came first in the circuit walk.
+ */
+function currentReading(value: number | null | undefined): string {
+	return reading(Number.isFinite(value) ? Math.abs(value as number) : value, "A");
+}
+
+/**
  * Bulk volume of metal that fills the electrode strip as a coating. The strip
  * measures 15 x 75 mm, so this is a layer of about 10 µm, which is already a
  * clearly visible plating after a minute at one ampere.
@@ -83,7 +91,9 @@ export class ElectricDeviceView extends Container {
 		let values: string[];
 		switch (component._type) {
 			case EComponentType.Source:
-				values = [reading(component._sourceVoltage, "V"), reading(component._sourceCurrent, "A")];
+				// the current is solved from the cell, not set on the source
+				values = [reading(component._sourceVoltage, "V"),
+					currentReading(component._visibleCurrent ?? component._sourceCurrent)];
 				break;
 			case EComponentType.Voltmeter:
 				if (hasVoltageReading !== undefined) {
@@ -92,7 +102,7 @@ export class ElectricDeviceView extends Container {
 				values = [reading(this.measuredVoltage, "V")];
 				break;
 			case EComponentType.Ammeter:
-				values = ["— A", `SET ${reading(component._sourceVoltage, "V")}`];
+				values = [currentReading(component._visibleCurrent)];
 				break;
 			case EComponentType.Electrode:
 				values = [component._material?._atoms[0]?.getSymbol() ?? ""];

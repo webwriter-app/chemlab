@@ -307,11 +307,14 @@ export class DiagramController implements ReactiveController {
 						// of the electrode's couple is the species that changes.
 						const electrode = circuitComps[datasetId];
 						const couple = electrode?._material
-							? chemlib.Simulation.getRedoxData(electrode._material)
+							? chemlib.oxidationOf(electrode._material.smilesString)
 							: undefined;
+						// the dissolved species the electrode gives off
+						const dissolved = couple?.terms.find((term) =>
+							term.coefficient > 0 && term.phase === "solution");
 						const mix = electrode?._connectedMix;
-						const ion = couple && mix
-							? mix._activeMolecules.find((mol) => mol.smilesString === couple.ox)
+						const ion = dissolved && mix
+							? mix._activeMolecules.find((mol) => mol.smilesString === dissolved.smiles)
 							: undefined;
 						dataset.data.push(ion && mix ? mix._molProperties[ion._id + "n"] : 0);
 					}
