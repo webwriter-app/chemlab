@@ -33,11 +33,13 @@ const UNBODIED_TYPES: ReadonlySet<string> = new Set(["label", "cable"]);
 
 /**
  * Offsets tried when a component is dropped from the palette onto an occupied
- * spot, ordered by distance so the nearest free place wins.
+ * spot, ordered by distance so the nearest free place wins. The step is half a
+ * footprint, which is the coarsest lattice that still lets a component clear
+ * one of its own size in two steps instead of overshooting it.
  */
 const PLACEMENT_OFFSETS: readonly (readonly [number, number])[] = (() => {
 	const offsets: Array<[number, number]> = [];
-	for (let dx = -4; dx <= 4; dx++) for (let dy = -4; dy <= 4; dy++) offsets.push([dx, dy]);
+	for (let dx = -6; dx <= 6; dx++) for (let dy = -6; dy <= 6; dy++) offsets.push([dx, dy]);
 	return offsets.sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1]));
 })();
 
@@ -210,8 +212,11 @@ export class CanvasController implements ReactiveController {
 	/**
 	 * The nearest position to a wanted one at which a sprite does not land on
 	 * another component. Used when a component is dropped from the palette, so
-	 * a drop never stacks two components on the same place. A spot that also
-	 * stays on the standard canvas wins over a nearer one that would leave it.
+	 * a drop never stacks two components on the same place. The wanted spot
+	 * itself wins whenever it is free, because the preview has to stay under
+	 * the pointer: the standard canvas is only the nominal artboard and is
+	 * smaller than the visible area of a resized widget, so pulling a drop onto
+	 * it would tear the preview away from the cursor.
 	 *
 	 * @param {PIXI.Container} sprite - the sprite about to be placed
 	 * @param {number} x - the wanted world x
@@ -220,29 +225,11 @@ export class CanvasController implements ReactiveController {
 	 */
 	freePlacement(sprite: PIXI.Container, x: number, y: number): PIXI.PointData {
 		const { width, height } = this.footprintSize(sprite);
-		let fallback: PIXI.PointData | undefined;
 		for (const [stepX, stepY] of PLACEMENT_OFFSETS) {
-			const candidate = { x: x + stepX * width * 0.75, y: y + stepY * height * 0.75 };
-			if (this.collidesAt([{ sprite, x: candidate.x, y: candidate.y }])) continue;
-			if (this.onCanvas(candidate, width, height)) return candidate;
-			fallback ??= candidate;
+			const candidate = { x: x + stepX * width * 0.5, y: y + stepY * height * 0.5 };
+			if (!this.collidesAt([{ sprite, x: candidate.x, y: candidate.y }])) return candidate;
 		}
-		return fallback ?? { x, y };
-	}
-
-	/**
-	 * Whether a box of the given size, centred on a point, lies on the standard
-	 * canvas.
-	 *
-	 * @private
-	 * @param {PIXI.PointData} centre - the centre of the box
-	 * @param {number} width - the box width
-	 * @param {number} height - the box height
-	 * @returns {boolean}
-	 */
-	private onCanvas(centre: PIXI.PointData, width: number, height: number): boolean {
-		return centre.x - width / 2 >= 0 && centre.x + width / 2 <= STANDARD_CANVAS_WIDTH
-			&& centre.y - height / 2 >= 0 && centre.y + height / 2 <= STANDARD_CANVAS_HEIGHT;
+		return { x, y };
 	}
 
 	/**

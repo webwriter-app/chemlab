@@ -183058,7 +183058,7 @@ var DIPPED_TYPES = /* @__PURE__ */ new Set(["electrode", "gascollector", "bridge
 var UNBODIED_TYPES = /* @__PURE__ */ new Set(["label", "cable"]);
 var PLACEMENT_OFFSETS = (() => {
   const offsets = [];
-  for (let dx = -4; dx <= 4; dx++) for (let dy = -4; dy <= 4; dy++) offsets.push([dx, dy]);
+  for (let dx = -6; dx <= 6; dx++) for (let dy = -6; dy <= 6; dy++) offsets.push([dx, dy]);
   return offsets.sort((a7, b5) => Math.hypot(a7[0], a7[1]) - Math.hypot(b5[0], b5[1]));
 })();
 var CanvasController = class _CanvasController {
@@ -183204,8 +183204,11 @@ var CanvasController = class _CanvasController {
   /**
    * The nearest position to a wanted one at which a sprite does not land on
    * another component. Used when a component is dropped from the palette, so
-   * a drop never stacks two components on the same place. A spot that also
-   * stays on the standard canvas wins over a nearer one that would leave it.
+   * a drop never stacks two components on the same place. The wanted spot
+   * itself wins whenever it is free, because the preview has to stay under
+   * the pointer: the standard canvas is only the nominal artboard and is
+   * smaller than the visible area of a resized widget, so pulling a drop onto
+   * it would tear the preview away from the cursor.
    *
    * @param {PIXI.Container} sprite - the sprite about to be placed
    * @param {number} x - the wanted world x
@@ -183214,27 +183217,11 @@ var CanvasController = class _CanvasController {
    */
   freePlacement(sprite, x4, y5) {
     const { width, height } = this.footprintSize(sprite);
-    let fallback2;
     for (const [stepX, stepY] of PLACEMENT_OFFSETS) {
-      const candidate = { x: x4 + stepX * width * 0.75, y: y5 + stepY * height * 0.75 };
-      if (this.collidesAt([{ sprite, x: candidate.x, y: candidate.y }])) continue;
-      if (this.onCanvas(candidate, width, height)) return candidate;
-      fallback2 ??= candidate;
+      const candidate = { x: x4 + stepX * width * 0.5, y: y5 + stepY * height * 0.5 };
+      if (!this.collidesAt([{ sprite, x: candidate.x, y: candidate.y }])) return candidate;
     }
-    return fallback2 ?? { x: x4, y: y5 };
-  }
-  /**
-   * Whether a box of the given size, centred on a point, lies on the standard
-   * canvas.
-   *
-   * @private
-   * @param {PIXI.PointData} centre - the centre of the box
-   * @param {number} width - the box width
-   * @param {number} height - the box height
-   * @returns {boolean}
-   */
-  onCanvas(centre, width, height) {
-    return centre.x - width / 2 >= 0 && centre.x + width / 2 <= STANDARD_CANVAS_WIDTH && centre.y - height / 2 >= 0 && centre.y + height / 2 <= STANDARD_CANVAS_HEIGHT;
+    return { x: x4, y: y5 };
   }
   /**
    * The drawn size of a sprite in world units. The artboard is recorded when
