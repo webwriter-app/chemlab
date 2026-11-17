@@ -1111,8 +1111,10 @@ export abstract class Simulation {
 			}
 			if (!canOxidise && !canReduce) continue;
 			// A step may not convert more than the vessel holds, so the same
-			// bound the booking applies also bounds the current density.
-			const densityOf = (limit: number) => Number.isFinite(limit)
+			// bound the booking applies also bounds the current density. A
+			// missing step length leaves the bound open instead of making it
+			// NaN, which would poison the whole solve.
+			const densityOf = (limit: number) => Number.isFinite(limit) && dt > 0
 				? limit * this._faradayConst / (ELECTRODE_AREA * dt) : Infinity;
 			candidates.push({
 				reaction,
@@ -1539,8 +1541,11 @@ export abstract class Simulation {
 		if (device._type !== EComponentType.Source) return 0;
 		const magnitude = Math.abs(device._sourceVoltage ?? 0);
 		if (device._polarity !== 0) {
+			// The residual is E₁ − E₂ + U + I·R, so raising the first terminal
+			// above the second means a negative U. The electrode on the plus
+			// pole is the one where oxidation runs, so it must end up higher.
 			const plus = ComponentManager.terminalElectrode(device, device._polarity > 0 ? 0 : 1);
-			return plus === second ? -magnitude : magnitude;
+			return plus === second ? magnitude : -magnitude;
 		}
 		// The loop residual E₁ − E₂ + U + I·R grows with I, so a root with
 		// I > 0 needs U below −(E₁ − E₂) and one with I < 0 needs U above it.

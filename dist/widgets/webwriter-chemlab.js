@@ -149996,7 +149996,7 @@ var Simulation = class {
         }
       }
       if (!canOxidise && !canReduce) continue;
-      const densityOf = (limit) => Number.isFinite(limit) ? limit * this._faradayConst / (ELECTRODE_AREA * dt) : Infinity;
+      const densityOf = (limit) => Number.isFinite(limit) && dt > 0 ? limit * this._faradayConst / (ELECTRODE_AREA * dt) : Infinity;
       candidates.push({
         reaction,
         equilibrium,
@@ -150369,7 +150369,7 @@ var Simulation = class {
     const magnitude = Math.abs(device._sourceVoltage ?? 0);
     if (device._polarity !== 0) {
       const plus = ComponentManager.terminalElectrode(device, device._polarity > 0 ? 0 : 1);
-      return plus === second ? -magnitude : magnitude;
+      return plus === second ? magnitude : -magnitude;
     }
     const open = limits2.openFirst - limits2.openSecond;
     return Number.isFinite(open) && open >= 0 ? -magnitude : magnitude;
@@ -183459,6 +183459,41 @@ var CanvasController = class {
     }
   }
   /**
+   * Finds the vessel a point in world coordinates falls into. Used both when
+   * an electrode is dropped and when a saved layout is restored, so an
+   * authored electrode ends up in the same vessel a manual drop would pick.
+   *
+   * @param {number} x - world-space x
+   * @param {number} y - world-space y
+   * @returns {?VesselView} the smallest vessel containing the point
+   */
+  vesselAt(x4, y5) {
+    let found;
+    for (const view of this.vessels.values()) {
+      if (x4 < view.x - view.width / 2 || x4 > view.x + view.width / 2) continue;
+      if (y5 < view.y - view.height / 2 || y5 > view.y + view.height / 2) continue;
+      if (!found || view.width * view.height < found.width * found.height) found = view;
+    }
+    return found;
+  }
+  /**
+   * Dips restored electrodes into the vessel they were saved in.
+   *
+   * A saved layout does not record which vessel an electrode belongs to, so
+   * the position decides, using the same test as a manual drop. Without this
+   * an imported layout would show a cell whose electrodes are in no
+   * solution, and the simulation would never start.
+   */
+  attachAuthoredElectrodes() {
+    for (const eComp of this.host.allEComponents) {
+      if (eComp._type !== "electrode" /* Electrode */ || eComp._connectedMix) continue;
+      const electrode = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
+      if (!electrode) continue;
+      const vessel = this.vesselAt(electrode.x, electrode.y);
+      if (vessel) eComp._connectedMix = vessel.component._content;
+    }
+  }
+  /**
    * Moves the electrode sprites standing inside a vessel's contents by the
    * same offset the vessel itself was moved by, so electrodes travel with
    * their vessel.
@@ -185429,6 +185464,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         }
       });
     });
+    if (entry === void 0) this.canvas.attachAuthoredElectrodes();
   }
   _loadMolecule(formula) {
     const definitions = this.availableMolecules;
