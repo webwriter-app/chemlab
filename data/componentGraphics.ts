@@ -73,7 +73,9 @@ const fixedDimensions: Readonly<Partial<Record<string, DimensionsMm>>> = {
 	electrode: [15, 75],
 	// PHYWE 13506-93, front of housing (W × H).
 	// https://repository.phywe.com/v1/get-file/?path=bedienungsanleitungen%2F13506.93%2F1350693e.pdf
-	source: [206, 130],
+	// The default artboard is the compact housing: the full-size one is four
+	// times as wide as a 100 mL beaker and pushes the vessels off the canvas.
+	source: [120, 76],
 	// PeakTech P 205-05 and P 205-04, front of housing (W × H).
 	// https://www.peaktech.de/media/7c/56/30/1617257827/Products_2021_EN.pdf
 	voltmeter: [90, 106],
@@ -128,10 +130,11 @@ export const componentVariants = {
 		id: `electrode:${element}`, type: "electrode", size: "", material: { element, name },
 	})),
 	source: [
-		{ id: "source:standard", type: "source", size: "" },
-		// The same instrument at a smaller artboard, for cells that need the
-		// room for vessels and electrodes.
-		{ id: "source:compact", type: "source", size: "kompakt", artboard: [120, 76] },
+		// The compact housing is the default, so a freshly placed source does
+		// not dwarf the vessels it drives.
+		{ id: "source:compact", type: "source", size: "" },
+		// The same instrument at the full housing, for a bench that has room.
+		{ id: "source:large", type: "source", size: "groß", artboard: [206, 130] },
 	],
 	voltmeter: [{ id: "voltmeter:standard", type: "voltmeter", size: `${VOLTMETER_MODEL_CURRENT} A` }],
 	ammeter: [{ id: "ammeter:standard", type: "ammeter", size: `${AMMETER_MODEL_VOLTAGE} V` }],

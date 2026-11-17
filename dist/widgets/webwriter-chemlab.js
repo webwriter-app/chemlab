@@ -175884,7 +175884,9 @@ var fixedDimensions = {
   electrode: [15, 75],
   // PHYWE 13506-93, front of housing (W × H).
   // https://repository.phywe.com/v1/get-file/?path=bedienungsanleitungen%2F13506.93%2F1350693e.pdf
-  source: [206, 130],
+  // The default artboard is the compact housing: the full-size one is four
+  // times as wide as a 100 mL beaker and pushes the vessels off the canvas.
+  source: [120, 76],
   // PeakTech P 205-05 and P 205-04, front of housing (W × H).
   // https://www.peaktech.de/media/7c/56/30/1617257827/Products_2021_EN.pdf
   voltmeter: [90, 106],
@@ -175939,10 +175941,11 @@ var componentVariants = {
     material: { element: element2, name: name2 }
   })),
   source: [
-    { id: "source:standard", type: "source", size: "" },
-    // The same instrument at a smaller artboard, for cells that need the
-    // room for vessels and electrodes.
-    { id: "source:compact", type: "source", size: "kompakt", artboard: [120, 76] }
+    // The compact housing is the default, so a freshly placed source does
+    // not dwarf the vessels it drives.
+    { id: "source:compact", type: "source", size: "" },
+    // The same instrument at the full housing, for a bench that has room.
+    { id: "source:large", type: "source", size: "gro\xDF", artboard: [206, 130] }
   ],
   voltmeter: [{ id: "voltmeter:standard", type: "voltmeter", size: `${VOLTMETER_MODEL_CURRENT} A` }],
   ammeter: [{ id: "ammeter:standard", type: "ammeter", size: `${AMMETER_MODEL_VOLTAGE} V` }],
@@ -182143,7 +182146,14 @@ var CABLE_SLACK = 1.1;
 var CABLE_SETTLE = 0.25;
 var CABLE_TASK = "cables";
 var VESSEL_TASK = "vessel-anim";
-var CanvasController = class {
+var DIPPED_TYPES = /* @__PURE__ */ new Set(["electrode", "gascollector", "bridge", "burette"]);
+var UNBODIED_TYPES = /* @__PURE__ */ new Set(["label", "cable"]);
+var PLACEMENT_OFFSETS = (() => {
+  const offsets = [];
+  for (let dx = -4; dx <= 4; dx++) for (let dy = -4; dy <= 4; dy++) offsets.push([dx, dy]);
+  return offsets.sort((a7, b5) => Math.hypot(a7[0], a7[1]) - Math.hypot(b5[0], b5[1]));
+})();
+var CanvasController = class _CanvasController {
   host;
   world = new Container({ sortableChildren: true, eventMode: "passive" });
   camera = new WorkspaceCamera();
@@ -182177,6 +182187,8 @@ var CanvasController = class {
   cablesDirty = false;
   /** electrode sprites moved along with a vessel since the last save */
   attachedElectrodesMoved = /* @__PURE__ */ new Set();
+  /** the drawn artboard of each sprite, in world units, for the collision test */
+  footprints = /* @__PURE__ */ new WeakMap();
   /** true while a sprite drag is in progress (pointermove listener attached) */
   _dragActive = false;
   _dragMoved = false;
@@ -182285,6 +182297,161 @@ var CanvasController = class {
   snapPosition(x4, y5) {
     return this.showGrid ? this.camera.snapToGrid(x4, y5) : { x: x4, y: y5 };
   }
+  /**
+   * The nearest position to a wanted one at which a sprite does not land on
+   * another component. Used when a component is dropped from the palette, so
+   * a drop never stacks two components on the same place. A spot that also
+   * stays on the standard canvas wins over a nearer one that would leave it.
+   *
+   * @param {PIXI.Container} sprite - the sprite about to be placed
+   * @param {number} x - the wanted world x
+   * @param {number} y - the wanted world y
+   * @returns {PIXI.PointData}
+   */
+  freePlacement(sprite, x4, y5) {
+    const { width, height } = this.footprintSize(sprite);
+    let fallback2;
+    for (const [stepX, stepY] of PLACEMENT_OFFSETS) {
+      const candidate = { x: x4 + stepX * width * 0.75, y: y5 + stepY * height * 0.75 };
+      if (this.collidesAt([{ sprite, x: candidate.x, y: candidate.y }])) continue;
+      if (this.onCanvas(candidate, width, height)) return candidate;
+      fallback2 ??= candidate;
+    }
+    return fallback2 ?? { x: x4, y: y5 };
+  }
+  /**
+   * Whether a box of the given size, centred on a point, lies on the standard
+   * canvas.
+   *
+   * @private
+   * @param {PIXI.PointData} centre - the centre of the box
+   * @param {number} width - the box width
+   * @param {number} height - the box height
+   * @returns {boolean}
+   */
+  onCanvas(centre, width, height) {
+    return centre.x - width / 2 >= 0 && centre.x + width / 2 <= STANDARD_CANVAS_WIDTH && centre.y - height / 2 >= 0 && centre.y + height / 2 <= STANDARD_CANVAS_HEIGHT;
+  }
+  /**
+   * The drawn size of a sprite in world units. The artboard is recorded when
+   * the view is built, because the bounds of a container also cover the
+   * particles and the pour stream a vessel draws outside its glass.
+   *
+   * @private
+   * @param {PIXI.Container} sprite - the sprite
+   * @returns {{ width: number; height: number }}
+   */
+  footprintSize(sprite) {
+    return this.footprints.get(sprite) ?? { width: sprite.width, height: sprite.height };
+  }
+  /**
+   * The component type of a sprite, taken from its label, which is always
+   * `type:id`.
+   *
+   * @private
+   * @param {PIXI.Container} sprite - the sprite
+   * @returns {string}
+   */
+  static spriteType(sprite) {
+    const label = sprite.label ?? "";
+    const colon = label.indexOf(":");
+    return colon < 0 ? label : label.slice(0, colon);
+  }
+  /**
+   * Whether two sprites are allowed to share the same place. A device that
+   * hangs into a vessel has to overlap it, and a label or a cable is not a
+   * physical object at all.
+   *
+   * @private
+   * @param {PIXI.Container} first - one sprite
+   * @param {PIXI.Container} second - the other sprite
+   * @returns {boolean}
+   */
+  mayOverlap(first, second) {
+    const firstType = _CanvasController.spriteType(first);
+    const secondType = _CanvasController.spriteType(second);
+    if (UNBODIED_TYPES.has(firstType) || UNBODIED_TYPES.has(secondType)) return true;
+    if (isVesselType(firstType) && DIPPED_TYPES.has(secondType)) return true;
+    if (isVesselType(secondType) && DIPPED_TYPES.has(firstType)) return true;
+    return false;
+  }
+  /**
+   * Whether any of the given sprites, placed at the given positions, would
+   * land on a component it may not overlap. The sprites in the list are not
+   * obstacles for each other, so a selection moves as one rigid body.
+   *
+   * @private
+   * @param {readonly { sprite: PIXI.Container; x: number; y: number }[]} moving - the sprites and their wanted positions
+   * @returns {boolean}
+   */
+  collidesAt(moving) {
+    const moved = new Set(moving.map(({ sprite }) => sprite));
+    const wanted = moving.map(({ sprite, x: x4, y: y5 }) => {
+      const { width, height } = this.footprintSize(sprite);
+      return { sprite, left: x4 - width / 2, right: x4 + width / 2, top: y5 - height / 2, bottom: y5 + height / 2 };
+    });
+    for (const other of this.world.children) {
+      if (moved.has(other) || !other.visible) continue;
+      const { width, height } = this.footprintSize(other);
+      const left = other.x - width / 2;
+      const right = other.x + width / 2;
+      const top = other.y - height / 2;
+      const bottom = other.y + height / 2;
+      for (const box of wanted) {
+        if (this.mayOverlap(box.sprite, other)) continue;
+        if (box.left < right && box.right > left && box.top < bottom && box.bottom > top) return true;
+      }
+    }
+    return false;
+  }
+  /**
+   * The offset a set of sprites can really be moved by: the wanted one, else
+   * the same x at the old y, else the old x at the new y, else no movement.
+   * Sliding along one axis is what lets a component be pushed along the side
+   * of another instead of sticking to it.
+   *
+   * @private
+   * @param {readonly PIXI.Container[]} moving - the sprites that travel together
+   * @param {number} dx - the wanted x offset
+   * @param {number} dy - the wanted y offset
+   * @returns {PIXI.PointData}
+   */
+  freeOffset(moving, dx, dy) {
+    for (const [stepX, stepY] of [[dx, dy], [dx, 0], [0, dy], [0, 0]]) {
+      const wanted = moving.map((sprite) => ({ sprite, x: sprite.x + stepX, y: sprite.y + stepY }));
+      if (!this.collidesAt(wanted)) return { x: stepX, y: stepY };
+    }
+    return { x: 0, y: 0 };
+  }
+  /**
+   * The sprites that travel with a dragged one: a vessel carries the
+   * electrodes standing in it.
+   *
+   * @private
+   * @param {PIXI.Container} sprite - the dragged sprite
+   * @returns {PIXI.Container[]}
+   */
+  movingWith(sprite) {
+    if (!(sprite instanceof VesselView)) return [sprite];
+    return [sprite, ...this.attachedElectrodesOf(sprite)];
+  }
+  /**
+   * The electrode sprites standing in a vessel.
+   *
+   * @private
+   * @param {VesselView} vessel - the vessel view
+   * @returns {PIXI.Container[]}
+   */
+  attachedElectrodesOf(vessel) {
+    const mix = vessel.component._content;
+    const found = [];
+    for (const eComp of this.host.allEComponents) {
+      if (eComp._type !== "electrode" /* Electrode */ || eComp._connectedMix !== mix) continue;
+      const electrode = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
+      if (electrode) found.push(electrode);
+    }
+    return found;
+  }
   fitObjects() {
     if (!this.host.app || this.pointerBusy || !this.world.children.length) return;
     this.camera.fit(this.world.getLocalBounds(), this.host.canvasZoom.offsetHeight + 4);
@@ -182390,14 +182557,37 @@ var CanvasController = class {
     if (!drag.moved && dx === 0 && dy === 0) return;
     drag.moved = true;
     const anchor = this.snapPosition(drag.anchor.x + dx, drag.anchor.y + dy);
-    const snappedDx = anchor.x - drag.anchor.x;
-    const snappedDy = anchor.y - drag.anchor.y;
-    for (const { sprite, x: x4, y: y5 } of drag.items) {
-      sprite.position.set(x4 + snappedDx, y5 + snappedDy);
-      if (sprite instanceof VesselView) this.moveAttachedElectrodes(sprite, snappedDx, snappedDy);
+    const wantedX = anchor.x - drag.anchor.x;
+    const wantedY = anchor.y - drag.anchor.y;
+    const moving = this.groupMoving(drag.items);
+    const step = this.freeOffset(moving, wantedX - drag.offset.x, wantedY - drag.offset.y);
+    if (!step.x && !step.y) return;
+    drag.offset = { x: drag.offset.x + step.x, y: drag.offset.y + step.y };
+    const selected = new Set(drag.items.map(({ sprite }) => sprite));
+    for (const sprite of moving) {
+      sprite.position.set(sprite.x + step.x, sprite.y + step.y);
+      if (!selected.has(sprite)) this.attachedElectrodesMoved.add(sprite);
       if (this.cables.size && !(sprite instanceof VesselView)) this.cablesDirty = true;
     }
     this.drawSelection();
+  }
+  /**
+   * The sprites a group drag has to move: the selected ones and the
+   * electrodes standing in a selected vessel. Each sprite appears once, so a
+   * selected electrode that also stands in a selected vessel is not moved
+   * twice.
+   *
+   * @private
+   * @param {readonly { sprite: PIXI.Container }[]} items - the selected sprites
+   * @returns {PIXI.Container[]}
+   */
+  groupMoving(items) {
+    const moving = new Set(items.map(({ sprite }) => sprite));
+    for (const { sprite } of items) {
+      if (!(sprite instanceof VesselView)) continue;
+      for (const electrode of this.attachedElectrodesOf(sprite)) moving.add(electrode);
+    }
+    return [...moving];
   }
   observeTouches() {
     const view = this.host.ownerDocument.defaultView;
@@ -182556,10 +182746,20 @@ var CanvasController = class {
     this.dragPointerId = void 0;
     this.pan = void 0;
     this.host.dragObject = void 0;
-    for (const { sprite: sprite2, x: x4, y: y5 } of this.groupDrag?.items ?? []) {
+    const items = this.groupDrag?.items ?? [];
+    const selected = new Set(items.map(({ sprite: sprite2 }) => sprite2));
+    for (const { sprite: sprite2, x: x4, y: y5 } of items) {
+      const dx = sprite2.x - x4;
+      const dy = sprite2.y - y5;
       sprite2.position.set(x4, y5);
+      if (sprite2 instanceof VesselView && (dx || dy)) {
+        for (const electrode of this.attachedElectrodesOf(sprite2)) {
+          if (!selected.has(electrode)) electrode.position.set(electrode.x - dx, electrode.y - dy);
+        }
+      }
       if (this.cables.size && !(sprite2 instanceof VesselView)) this.cablesDirty = true;
     }
+    if (this.groupDrag) this.attachedElectrodesMoved.clear();
     this.groupDrag = void 0;
     this.marquee = void 0;
     if (redrawSelection) this.drawSelection();
@@ -182608,10 +182808,13 @@ var CanvasController = class {
     const [widthMm, heightMm] = componentArtboardMm(type, capacityMl, variantId);
     const width = widthMm / MILLIMETERS_PER_WORLD_UNIT;
     const height = heightMm / MILLIMETERS_PER_WORLD_UNIT;
-    return component instanceof ChemComponent && isVesselType(type) ? new VesselView(component, type, texture, width, height, this.scaleTextures) : component instanceof ElectricComponent && type === "cable" /* Cable */ ? new Graphics() : component instanceof ElectricComponent ? new ElectricDeviceView(component, texture, width, height) : new Sprite({ texture, width, height, anchor: 0.5 });
+    const sprite = component instanceof ChemComponent && isVesselType(type) ? new VesselView(component, type, texture, width, height, this.scaleTextures) : component instanceof ElectricComponent && type === "cable" /* Cable */ ? new Graphics() : component instanceof ElectricComponent ? new ElectricDeviceView(component, texture, width, height) : new Sprite({ texture, width, height, anchor: 0.5 });
+    this.footprints.set(sprite, { width, height });
+    return sprite;
   }
   createPlacementPreview(component) {
     const preview = this.createComponentView(component);
+    preview.label = `${component._type}:${component._id}`;
     preview.alpha = 0.5;
     preview.visible = false;
     this.placementPreviewLayer.addChild(preview);
@@ -182648,7 +182851,8 @@ var CanvasController = class {
           origin: this.camera.toWorld(event.global.x, event.global.y),
           anchor,
           items,
-          moved: false
+          moved: false,
+          offset: { x: 0, y: 0 }
         };
         return;
       }
@@ -182885,9 +183089,14 @@ var CanvasController = class {
       );
       const dx = position.x - this.host.dragObject.x;
       const dy = position.y - this.host.dragObject.y;
-      this.host.dragObject.position.copyFrom(position);
-      if (this.host.dragObject instanceof VesselView) {
-        this.moveAttachedElectrodes(this.host.dragObject, dx, dy);
+      const moving = this.movingWith(this.host.dragObject);
+      const offset3 = this.freeOffset(moving, dx, dy);
+      if (offset3.x || offset3.y) {
+        for (const sprite of moving) {
+          sprite.position.set(sprite.x + offset3.x, sprite.y + offset3.y);
+          if (sprite !== this.host.dragObject) this.attachedElectrodesMoved.add(sprite);
+        }
+        if (this.cables.size) this.cablesDirty = true;
       }
       const transferTarget = this.trackVesselTransfer(event);
       if (this.host.dragObject instanceof VesselView) {
@@ -183084,7 +183293,7 @@ var CanvasController = class {
   flushChanges() {
     for (const [view, hint] of this.changedVessels) view.updateContents(hint);
     this.changedVessels.clear();
-    this.updateElectrodeStacking();
+    this.updateDippedStacking();
     if (this.cablesDirty || this.cables.size) {
       this.cablesDirty = false;
       this.updateCablePositions();
@@ -183168,46 +183377,81 @@ var CanvasController = class {
     }
   }
   /**
-   * Moves the electrode sprites standing inside a vessel's contents by the
-   * same offset the vessel itself was moved by, so electrodes travel with
-   * their vessel.
-   *
-   * @private
-   * @param {VesselView} vessel - the moved vessel view
-   * @param {number} dx - the world-space x offset
-   * @param {number} dy - the world-space y offset
-   */
-  moveAttachedElectrodes(vessel, dx, dy) {
-    if (!(dx || dy) || !this.host.allEComponents.length) return;
-    const mix = vessel.component._content;
-    for (const eComp of this.host.allEComponents) {
-      if (eComp._type !== "electrode" /* Electrode */ || eComp._connectedMix !== mix) continue;
-      const electrode = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
-      if (!electrode || this.host.dragObject === electrode) continue;
-      electrode.x += dx;
-      electrode.y += dy;
-      this.attachedElectrodesMoved.add(electrode);
-    }
-    if (this.cables.size) this.cablesDirty = true;
-  }
-  /**
-   * Keeps an inserted electrode behind its vessel's glass and contents by
-   * lowering it below the vessel sprite in the world ordering.
+   * Keeps every device that dips into a vessel behind that vessel's glass and
+   * contents by lowering it below the vessel sprite in the world ordering.
+   * An electrode and a gas collection tube hang in one vessel, a salt bridge
+   * in two, so a bridge is lowered behind the earlier of its two vessels and
+   * is thereby behind both.
    *
    * @private
    */
-  updateElectrodeStacking() {
+  updateDippedStacking() {
     const stage = this.world;
+    const behind = /* @__PURE__ */ new Map();
+    const dip = (sprite, view) => {
+      if (!sprite || !sprite.parent) return;
+      const views = behind.get(sprite) ?? [];
+      if (!views.includes(view)) views.push(view);
+      behind.set(sprite, views);
+    };
     for (const [component, view] of this.vessels) {
+      const mix = component._content;
       for (const eComp of this.host.allEComponents) {
-        if (eComp._type !== "electrode" /* Electrode */ || eComp._connectedMix !== component._content) continue;
-        const electrode = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
-        if (!electrode || !electrode.parent) continue;
-        if (stage.getChildIndex(electrode) > stage.getChildIndex(view)) {
-          stage.setChildIndex(electrode, stage.getChildIndex(view));
+        const sprite = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
+        if (!sprite) continue;
+        switch (eComp._type) {
+          case "electrode" /* Electrode */:
+          case "gascollector" /* GasCollector */:
+            if (eComp._connectedMix === mix) dip(sprite, view);
+            break;
+          case "bridge" /* Bridge */:
+            if (eComp._bridgeMixes?.includes(mix)) dip(sprite, view);
+            break;
         }
       }
     }
+    for (const [sprite, views] of behind) {
+      const target = Math.min(...views.map((view) => stage.getChildIndex(view)));
+      if (stage.getChildIndex(sprite) > target) stage.setChildIndex(sprite, target);
+    }
+  }
+  /**
+   * The world point where a cable leaves a device: the terminal that carries
+   * it, so a cable clips onto the top of an electrode instead of running to
+   * the middle of the strip. Falls back to the sprite centre for a device
+   * without terminals or without a recorded connection.
+   *
+   * @private
+   * @param {PIXI.Container} sprite - the device view
+   * @param {chemlib.ElectricComponent} device - the device behind the view
+   * @param {chemlib.ElectricComponent} cable - the cable that leaves it
+   * @returns {PIXI.PointData}
+   */
+  cableTerminalPoint(sprite, device, cable) {
+    if (sprite instanceof ElectricDeviceView) {
+      const terminal = device._connections.indexOf(cable);
+      const point = terminal >= 0 ? this.portWorld(sprite, terminal) : void 0;
+      if (point) return point;
+    }
+    return { x: sprite.x, y: sprite.y };
+  }
+  /**
+   * The two world points a cable runs between, or undefined while one of its
+   * devices has no view yet.
+   *
+   * @private
+   * @param {chemlib.ElectricComponent} cable - the cable
+   * @returns {?[number, number, number, number]}
+   */
+  cableEndpoints(cable) {
+    const [first, second] = cable._connections;
+    if (!first || !second) return void 0;
+    const from2 = this.spritesByLabel.get(`${first._type}:${first._id}`);
+    const to2 = this.spritesByLabel.get(`${second._type}:${second._id}`);
+    if (!from2 || !to2) return void 0;
+    const start = this.cableTerminalPoint(from2, first, cable);
+    const end = this.cableTerminalPoint(to2, second, cable);
+    return [start.x, start.y, end.x, end.y];
   }
   updateCablePositions() {
     const stage = this.world;
@@ -183218,10 +183462,10 @@ var CanvasController = class {
         this.host.removeObjects([sprite]);
         continue;
       }
+      const endpoints = this.cableEndpoints(cable);
+      if (!endpoints) continue;
       const from2 = this.spritesByLabel.get(`${first._type}:${first._id}`);
       const to2 = this.spritesByLabel.get(`${second._type}:${second._id}`);
-      if (!from2 || !to2) continue;
-      const endpoints = [from2.x, from2.y, to2.x, to2.y];
       let rope = this.cableRopes.get(sprite);
       if (!rope) {
         rope = { points: [], prev: [], restLength: 0, awake: true, idleFrames: 0, endpoints };
@@ -183368,11 +183612,14 @@ var CanvasController = class {
       const rope = this.cableRopes.get(sprite);
       if (!rope) continue;
       const [first, second] = cable._connections;
-      const from2 = first && this.spritesByLabel.get(`${first._type}:${first._id}`);
-      const to2 = second && this.spritesByLabel.get(`${second._type}:${second._id}`);
+      if (!first || !second) continue;
+      const from2 = this.spritesByLabel.get(`${first._type}:${first._id}`);
+      const to2 = this.spritesByLabel.get(`${second._type}:${second._id}`);
       if (!from2 || !to2) continue;
       if (!movedSprites.includes(from2) && !movedSprites.includes(to2)) continue;
-      rope.restLength = Math.max(Math.hypot(to2.x - from2.x, to2.y - from2.y), 1) * CABLE_SLACK;
+      const endpoints = this.cableEndpoints(cable);
+      if (!endpoints) continue;
+      rope.restLength = Math.max(Math.hypot(endpoints[2] - endpoints[0], endpoints[3] - endpoints[1]), 1) * CABLE_SLACK;
       rope.awake = true;
       rope.idleFrames = 0;
     }
@@ -184013,26 +184260,15 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     let preview;
     this.startPaletteDrag(event, {
       start: () => {
-        const { id: variantId, type, capacityMl, material } = variant;
-        let model;
-        if (capacityMl !== void 0) {
-          const vessel = new ChemComponent(-1, type);
-          vessel._volume = capacityMl;
-          model = vessel;
-        } else {
-          model = new ElectricComponent(-1, type, {
-            nMaterial: material && this.newElectrodeMaterial(material),
-            nSourceVoltage: type === "source" /* Source */ && this.canAuthor ? 0 : void 0,
-            nSourceCurrent: type === "source" /* Source */ && this.canAuthor ? 0 : void 0
-          });
-          model._variantId = variantId;
-        }
-        preview = this.canvas.createPlacementPreview(model);
+        preview = this.canvas.createPlacementPreview(this.previewModel(variant));
       },
       move: (pointer) => {
         const point = this.canvas.worldPointFromViewport(pointer.clientX, pointer.clientY);
         preview.visible = !!point;
-        if (point) preview.position.copyFrom(this.canvas.snapPosition(point.x, point.y));
+        if (point) {
+          const snapped = this.canvas.snapPosition(point.x, point.y);
+          preview.position.copyFrom(this.canvas.freePlacement(preview, snapped.x, snapped.y));
+        }
         this.requestCanvasRender();
       },
       drop: (pointer) => {
@@ -184046,6 +184282,47 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       }
     });
   }
+  /**
+   * A throwaway component for a palette variant, used to draw the drag ghost
+   * and to measure the footprint before the real component exists.
+   *
+   * @private
+   * @param {ComponentVariant} variant - the palette variant
+   * @returns {chemlib.ChemComponent | chemlib.ElectricComponent}
+   */
+  previewModel(variant) {
+    const { id: variantId, type, capacityMl, material } = variant;
+    if (capacityMl !== void 0) {
+      const vessel = new ChemComponent(-1, type);
+      vessel._volume = capacityMl;
+      return vessel;
+    }
+    const device = new ElectricComponent(-1, type, {
+      nMaterial: material && this.newElectrodeMaterial(material),
+      nSourceVoltage: type === "source" /* Source */ && this.canAuthor ? 0 : void 0,
+      nSourceCurrent: type === "source" /* Source */ && this.canAuthor ? 0 : void 0
+    });
+    device._variantId = variantId;
+    return device;
+  }
+  /**
+   * The nearest free spot to a wanted one for a component from the palette.
+   * The footprint is measured on a throwaway preview, because the real view
+   * is built later and would otherwise land on top of what is already there.
+   *
+   * @private
+   * @param {ComponentVariant} variant - the palette variant
+   * @param {number} x - the wanted world x
+   * @param {number} y - the wanted world y
+   * @returns {PIXI.PointData}
+   */
+  freePlacementFor(variant, x4, y5) {
+    const snapped = this.canvas.snapPosition(x4, y5);
+    const preview = this.canvas.createPlacementPreview(this.previewModel(variant));
+    const position = this.canvas.freePlacement(preview, snapped.x, snapped.y);
+    preview.destroy({ children: true });
+    return position;
+  }
   placeSelectedComponent(x4, y5) {
     const variant = componentVariant(this.componentToPlace);
     this.componentToPlace = void 0;
@@ -184053,7 +184330,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   addPaletteComponent(variant, x4, y5) {
     if (!this.canAuthor && !this.isVariantAllowed(variant)) return false;
-    const position = this.canvas.snapPosition(x4, y5);
+    const position = this.freePlacementFor(variant, x4, y5);
     this.componentToPlace = void 0;
     this.clearChemicalSelection();
     const { id: variantId, type, capacityMl, material } = variant;

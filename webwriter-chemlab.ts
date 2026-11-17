@@ -1120,26 +1120,15 @@ export class ChemLab extends LitElementWw {
 		let preview: PIXI.Container | undefined;
 		this.startPaletteDrag(event, {
 			start: () => {
-				const { id: variantId, type, capacityMl, material } = variant;
-				let model: chemlib.ChemComponent | chemlib.ElectricComponent;
-				if (capacityMl !== undefined) {
-					const vessel = new chemlib.ChemComponent(-1, type as chemlib.ComponentType);
-					vessel._volume = capacityMl;
-					model = vessel;
-				} else {
-					model = new chemlib.ElectricComponent(-1, type as chemlib.EComponentType, {
-						nMaterial: material && this.newElectrodeMaterial(material),
-						nSourceVoltage: type === chemlib.EComponentType.Source && this.canAuthor ? 0 : undefined,
-						nSourceCurrent: type === chemlib.EComponentType.Source && this.canAuthor ? 0 : undefined,
-					});
-					model._variantId = variantId;
-				}
-				preview = this.canvas.createPlacementPreview(model);
+				preview = this.canvas.createPlacementPreview(this.previewModel(variant));
 			},
 			move: (pointer) => {
 				const point = this.canvas.worldPointFromViewport(pointer.clientX, pointer.clientY);
 				preview.visible = !!point;
-				if (point) preview.position.copyFrom(this.canvas.snapPosition(point.x, point.y));
+				if (point) {
+					const snapped = this.canvas.snapPosition(point.x, point.y);
+					preview.position.copyFrom(this.canvas.freePlacement(preview, snapped.x, snapped.y));
+				}
 				this.requestCanvasRender();
 			},
 			drop: (pointer) => {
@@ -1154,6 +1143,49 @@ export class ChemLab extends LitElementWw {
 		});
 	}
 
+	/**
+	 * A throwaway component for a palette variant, used to draw the drag ghost
+	 * and to measure the footprint before the real component exists.
+	 *
+	 * @private
+	 * @param {ComponentVariant} variant - the palette variant
+	 * @returns {chemlib.ChemComponent | chemlib.ElectricComponent}
+	 */
+	private previewModel(variant: ComponentVariant): chemlib.ChemComponent | chemlib.ElectricComponent {
+		const { id: variantId, type, capacityMl, material } = variant;
+		if (capacityMl !== undefined) {
+			const vessel = new chemlib.ChemComponent(-1, type as chemlib.ComponentType);
+			vessel._volume = capacityMl;
+			return vessel;
+		}
+		const device = new chemlib.ElectricComponent(-1, type as chemlib.EComponentType, {
+			nMaterial: material && this.newElectrodeMaterial(material),
+			nSourceVoltage: type === chemlib.EComponentType.Source && this.canAuthor ? 0 : undefined,
+			nSourceCurrent: type === chemlib.EComponentType.Source && this.canAuthor ? 0 : undefined,
+		});
+		device._variantId = variantId;
+		return device;
+	}
+
+	/**
+	 * The nearest free spot to a wanted one for a component from the palette.
+	 * The footprint is measured on a throwaway preview, because the real view
+	 * is built later and would otherwise land on top of what is already there.
+	 *
+	 * @private
+	 * @param {ComponentVariant} variant - the palette variant
+	 * @param {number} x - the wanted world x
+	 * @param {number} y - the wanted world y
+	 * @returns {PIXI.PointData}
+	 */
+	private freePlacementFor(variant: ComponentVariant, x: number, y: number): PIXI.PointData {
+		const snapped = this.canvas.snapPosition(x, y);
+		const preview = this.canvas.createPlacementPreview(this.previewModel(variant));
+		const position = this.canvas.freePlacement(preview, snapped.x, snapped.y);
+		preview.destroy({ children: true });
+		return position;
+	}
+
 	placeSelectedComponent(x: number, y: number): boolean {
 		const variant = componentVariant(this.componentToPlace);
 		this.componentToPlace = undefined;
@@ -1162,7 +1194,7 @@ export class ChemLab extends LitElementWw {
 
 	private addPaletteComponent(variant: ComponentVariant, x: number, y: number): boolean {
 		if (!this.canAuthor && !this.isVariantAllowed(variant)) return false;
-		const position = this.canvas.snapPosition(x, y);
+		const position = this.freePlacementFor(variant, x, y);
 		this.componentToPlace = undefined;
 		this.clearChemicalSelection();
 		const { id: variantId, type, capacityMl, material } = variant;

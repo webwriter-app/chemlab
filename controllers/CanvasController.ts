@@ -32,6 +32,30 @@ const CABLE_TASK = "cables";
 const VESSEL_TASK = "vessel-anim";
 
 /**
+ * Component types that hang into a vessel and therefore have to overlap it:
+ * an electrode and a gas collection tube stand in the solution, a salt bridge
+ * reaches into two vessels, and a burette is clamped above its vessel with the
+ * tip in the mouth.
+ */
+const DIPPED_TYPES: ReadonlySet<string> = new Set(["electrode", "gascollector", "bridge", "burette"]);
+
+/**
+ * Component types that are not physical: a label lies over whatever it
+ * annotates and a cable runs between devices, so neither takes up room.
+ */
+const UNBODIED_TYPES: ReadonlySet<string> = new Set(["label", "cable"]);
+
+/**
+ * Offsets tried when a component is dropped from the palette onto an occupied
+ * spot, ordered by distance so the nearest free place wins.
+ */
+const PLACEMENT_OFFSETS: readonly (readonly [number, number])[] = (() => {
+	const offsets: Array<[number, number]> = [];
+	for (let dx = -4; dx <= 4; dx++) for (let dy = -4; dy <= 4; dy++) offsets.push([dx, dy]);
+	return offsets.sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1]));
+})();
+
+/**
  * Simulation state of one rope-simulated cable: a verlet point chain
  * pinned to the connected device sprites at both ends.
  *
@@ -81,7 +105,7 @@ export class CanvasController implements ReactiveController {
 	private selection: PIXI.Container[] = [];
 	private marquee?: { id: number; start: PIXI.PointData; end?: PIXI.PointData };
 	private groupDrag?: { id: number; origin: PIXI.PointData; anchor: PIXI.PointData; moved: boolean;
-		items: { sprite: PIXI.Container; x: number; y: number }[] };
+		offset: PIXI.PointData; items: { sprite: PIXI.Container; x: number; y: number }[] };
 	private touchListeners?: AbortController;
 	private touches = new Map<number, { x: number; y: number }>();
 	private pinching = false;
@@ -94,6 +118,8 @@ export class CanvasController implements ReactiveController {
 	private cablesDirty = false;
 	/** electrode sprites moved along with a vessel since the last save */
 	private attachedElectrodesMoved = new Set<PIXI.Container>();
+	/** the drawn artboard of each sprite, in world units, for the collision test */
+	private footprints = new WeakMap<PIXI.Container, { width: number; height: number }>();
 
 	/** true while a sprite drag is in progress (pointermove listener attached) */
 	private _dragActive: boolean = false;
@@ -220,6 +246,171 @@ export class CanvasController implements ReactiveController {
 		return this.showGrid ? this.camera.snapToGrid(x, y) : { x, y };
 	}
 
+	/**
+	 * The nearest position to a wanted one at which a sprite does not land on
+	 * another component. Used when a component is dropped from the palette, so
+	 * a drop never stacks two components on the same place. A spot that also
+	 * stays on the standard canvas wins over a nearer one that would leave it.
+	 *
+	 * @param {PIXI.Container} sprite - the sprite about to be placed
+	 * @param {number} x - the wanted world x
+	 * @param {number} y - the wanted world y
+	 * @returns {PIXI.PointData}
+	 */
+	freePlacement(sprite: PIXI.Container, x: number, y: number): PIXI.PointData {
+		const { width, height } = this.footprintSize(sprite);
+		let fallback: PIXI.PointData | undefined;
+		for (const [stepX, stepY] of PLACEMENT_OFFSETS) {
+			const candidate = { x: x + stepX * width * 0.75, y: y + stepY * height * 0.75 };
+			if (this.collidesAt([{ sprite, x: candidate.x, y: candidate.y }])) continue;
+			if (this.onCanvas(candidate, width, height)) return candidate;
+			fallback ??= candidate;
+		}
+		return fallback ?? { x, y };
+	}
+
+	/**
+	 * Whether a box of the given size, centred on a point, lies on the standard
+	 * canvas.
+	 *
+	 * @private
+	 * @param {PIXI.PointData} centre - the centre of the box
+	 * @param {number} width - the box width
+	 * @param {number} height - the box height
+	 * @returns {boolean}
+	 */
+	private onCanvas(centre: PIXI.PointData, width: number, height: number): boolean {
+		return centre.x - width / 2 >= 0 && centre.x + width / 2 <= STANDARD_CANVAS_WIDTH
+			&& centre.y - height / 2 >= 0 && centre.y + height / 2 <= STANDARD_CANVAS_HEIGHT;
+	}
+
+	/**
+	 * The drawn size of a sprite in world units. The artboard is recorded when
+	 * the view is built, because the bounds of a container also cover the
+	 * particles and the pour stream a vessel draws outside its glass.
+	 *
+	 * @private
+	 * @param {PIXI.Container} sprite - the sprite
+	 * @returns {{ width: number; height: number }}
+	 */
+	private footprintSize(sprite: PIXI.Container): { width: number; height: number } {
+		return this.footprints.get(sprite) ?? { width: sprite.width, height: sprite.height };
+	}
+
+	/**
+	 * The component type of a sprite, taken from its label, which is always
+	 * `type:id`.
+	 *
+	 * @private
+	 * @param {PIXI.Container} sprite - the sprite
+	 * @returns {string}
+	 */
+	private static spriteType(sprite: PIXI.Container): string {
+		const label = sprite.label ?? "";
+		const colon = label.indexOf(":");
+		return colon < 0 ? label : label.slice(0, colon);
+	}
+
+	/**
+	 * Whether two sprites are allowed to share the same place. A device that
+	 * hangs into a vessel has to overlap it, and a label or a cable is not a
+	 * physical object at all.
+	 *
+	 * @private
+	 * @param {PIXI.Container} first - one sprite
+	 * @param {PIXI.Container} second - the other sprite
+	 * @returns {boolean}
+	 */
+	private mayOverlap(first: PIXI.Container, second: PIXI.Container): boolean {
+		const firstType = CanvasController.spriteType(first);
+		const secondType = CanvasController.spriteType(second);
+		if (UNBODIED_TYPES.has(firstType) || UNBODIED_TYPES.has(secondType)) return true;
+		if (isVesselType(firstType) && DIPPED_TYPES.has(secondType)) return true;
+		if (isVesselType(secondType) && DIPPED_TYPES.has(firstType)) return true;
+		return false;
+	}
+
+	/**
+	 * Whether any of the given sprites, placed at the given positions, would
+	 * land on a component it may not overlap. The sprites in the list are not
+	 * obstacles for each other, so a selection moves as one rigid body.
+	 *
+	 * @private
+	 * @param {readonly { sprite: PIXI.Container; x: number; y: number }[]} moving - the sprites and their wanted positions
+	 * @returns {boolean}
+	 */
+	private collidesAt(moving: readonly { sprite: PIXI.Container; x: number; y: number }[]): boolean {
+		const moved = new Set(moving.map(({ sprite }) => sprite));
+		const wanted = moving.map(({ sprite, x, y }) => {
+			const { width, height } = this.footprintSize(sprite);
+			return { sprite, left: x - width / 2, right: x + width / 2, top: y - height / 2, bottom: y + height / 2 };
+		});
+		for (const other of this.world.children) {
+			if (moved.has(other) || !other.visible) continue;
+			const { width, height } = this.footprintSize(other);
+			const left = other.x - width / 2;
+			const right = other.x + width / 2;
+			const top = other.y - height / 2;
+			const bottom = other.y + height / 2;
+			for (const box of wanted) {
+				if (this.mayOverlap(box.sprite, other)) continue;
+				if (box.left < right && box.right > left && box.top < bottom && box.bottom > top) return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * The offset a set of sprites can really be moved by: the wanted one, else
+	 * the same x at the old y, else the old x at the new y, else no movement.
+	 * Sliding along one axis is what lets a component be pushed along the side
+	 * of another instead of sticking to it.
+	 *
+	 * @private
+	 * @param {readonly PIXI.Container[]} moving - the sprites that travel together
+	 * @param {number} dx - the wanted x offset
+	 * @param {number} dy - the wanted y offset
+	 * @returns {PIXI.PointData}
+	 */
+	private freeOffset(moving: readonly PIXI.Container[], dx: number, dy: number): PIXI.PointData {
+		for (const [stepX, stepY] of [[dx, dy], [dx, 0], [0, dy], [0, 0]]) {
+			const wanted = moving.map((sprite) => ({ sprite, x: sprite.x + stepX, y: sprite.y + stepY }));
+			if (!this.collidesAt(wanted)) return { x: stepX, y: stepY };
+		}
+		return { x: 0, y: 0 };
+	}
+
+	/**
+	 * The sprites that travel with a dragged one: a vessel carries the
+	 * electrodes standing in it.
+	 *
+	 * @private
+	 * @param {PIXI.Container} sprite - the dragged sprite
+	 * @returns {PIXI.Container[]}
+	 */
+	private movingWith(sprite: PIXI.Container): PIXI.Container[] {
+		if (!(sprite instanceof VesselView)) return [sprite];
+		return [sprite, ...this.attachedElectrodesOf(sprite)];
+	}
+
+	/**
+	 * The electrode sprites standing in a vessel.
+	 *
+	 * @private
+	 * @param {VesselView} vessel - the vessel view
+	 * @returns {PIXI.Container[]}
+	 */
+	private attachedElectrodesOf(vessel: VesselView): PIXI.Container[] {
+		const mix = vessel.component._content;
+		const found: PIXI.Container[] = [];
+		for (const eComp of this.host.allEComponents) {
+			if (eComp._type !== chemlib.EComponentType.Electrode || eComp._connectedMix !== mix) continue;
+			const electrode = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
+			if (electrode) found.push(electrode);
+		}
+		return found;
+	}
+
 	fitObjects(): void {
 		if (!this.host.app || this.pointerBusy || !this.world.children.length) return;
 		this.camera.fit(this.world.getLocalBounds(), this.host.canvasZoom.offsetHeight + 4);
@@ -336,14 +527,39 @@ export class CanvasController implements ReactiveController {
 		if (!drag.moved && dx === 0 && dy === 0) return;
 		drag.moved = true;
 		const anchor = this.snapPosition(drag.anchor.x + dx, drag.anchor.y + dy);
-		const snappedDx = anchor.x - drag.anchor.x;
-		const snappedDy = anchor.y - drag.anchor.y;
-		for (const { sprite, x, y } of drag.items) {
-			sprite.position.set(x + snappedDx, y + snappedDy);
-			if (sprite instanceof VesselView) this.moveAttachedElectrodes(sprite, snappedDx, snappedDy);
+		const wantedX = anchor.x - drag.anchor.x;
+		const wantedY = anchor.y - drag.anchor.y;
+		const moving = this.groupMoving(drag.items);
+		const step = this.freeOffset(moving, wantedX - drag.offset.x, wantedY - drag.offset.y);
+		if (!step.x && !step.y) return;
+		drag.offset = { x: drag.offset.x + step.x, y: drag.offset.y + step.y };
+		const selected = new Set(drag.items.map(({ sprite }) => sprite));
+		for (const sprite of moving) {
+			sprite.position.set(sprite.x + step.x, sprite.y + step.y);
+			// Electrodes carried along by their vessel still have to be saved.
+			if (!selected.has(sprite)) this.attachedElectrodesMoved.add(sprite);
 			if (this.cables.size && !(sprite instanceof VesselView)) this.cablesDirty = true;
 		}
 		this.drawSelection();
+	}
+
+	/**
+	 * The sprites a group drag has to move: the selected ones and the
+	 * electrodes standing in a selected vessel. Each sprite appears once, so a
+	 * selected electrode that also stands in a selected vessel is not moved
+	 * twice.
+	 *
+	 * @private
+	 * @param {readonly { sprite: PIXI.Container }[]} items - the selected sprites
+	 * @returns {PIXI.Container[]}
+	 */
+	private groupMoving(items: readonly { sprite: PIXI.Container }[]): PIXI.Container[] {
+		const moving = new Set(items.map(({ sprite }) => sprite));
+		for (const { sprite } of items) {
+			if (!(sprite instanceof VesselView)) continue;
+			for (const electrode of this.attachedElectrodesOf(sprite)) moving.add(electrode);
+		}
+		return [...moving];
 	}
 
 	private observeTouches(): void {
@@ -518,10 +734,21 @@ export class CanvasController implements ReactiveController {
 		this.dragPointerId = undefined;
 		this.pan = undefined;
 		this.host.dragObject = undefined;
-		for (const { sprite, x, y } of this.groupDrag?.items ?? []) {
+		const items = this.groupDrag?.items ?? [];
+		const selected = new Set(items.map(({ sprite }) => sprite));
+		for (const { sprite, x, y } of items) {
+			const dx = sprite.x - x;
+			const dy = sprite.y - y;
 			sprite.position.set(x, y);
+			// The electrodes a vessel carried along have to go back with it.
+			if (sprite instanceof VesselView && (dx || dy)) {
+				for (const electrode of this.attachedElectrodesOf(sprite)) {
+					if (!selected.has(electrode)) electrode.position.set(electrode.x - dx, electrode.y - dy);
+				}
+			}
 			if (this.cables.size && !(sprite instanceof VesselView)) this.cablesDirty = true;
 		}
+		if (this.groupDrag) this.attachedElectrodesMoved.clear();
 		this.groupDrag = undefined;
 		this.marquee = undefined;
 		if (redrawSelection) this.drawSelection();
@@ -574,7 +801,7 @@ export class CanvasController implements ReactiveController {
 		const [widthMm, heightMm] = componentArtboardMm(type, capacityMl, variantId);
 		const width = widthMm / MILLIMETERS_PER_WORLD_UNIT;
 		const height = heightMm / MILLIMETERS_PER_WORLD_UNIT;
-		return component instanceof chemlib.ChemComponent && isVesselType(type)
+		const sprite = component instanceof chemlib.ChemComponent && isVesselType(type)
 			? new VesselView(component, type, texture, width, height, this.scaleTextures)
 			: component instanceof chemlib.ElectricComponent && type === chemlib.EComponentType.Cable
 				// Cables render as rope polylines and carry no texture.
@@ -582,10 +809,15 @@ export class CanvasController implements ReactiveController {
 				: component instanceof chemlib.ElectricComponent
 					? new ElectricDeviceView(component, texture, width, height)
 					: new PIXI.Sprite({ texture, width, height, anchor: 0.5 });
+		this.footprints.set(sprite, { width, height });
+		return sprite;
 	}
 
 	createPlacementPreview(component: chemlib.ChemComponent | chemlib.ElectricComponent): PIXI.Container {
 		const preview = this.createComponentView(component);
+		// The collision test reads the type off the label, so a preview has to
+		// carry one too, or a dropped electrode would be refused by its vessel.
+		preview.label = `${component._type}:${component._id}`;
 		preview.alpha = 0.5;
 		preview.visible = false;
 		this.placementPreviewLayer.addChild(preview);
@@ -627,6 +859,7 @@ export class CanvasController implements ReactiveController {
 				const anchor = items.find((item) => item.sprite === sprite) ?? items[0];
 				if (anchor) this.groupDrag = {
 					id: event.pointerId, origin: this.camera.toWorld(event.global.x, event.global.y), anchor, items, moved: false,
+					offset: { x: 0, y: 0 },
 				};
 				return;
 			}
@@ -881,9 +1114,15 @@ export class CanvasController implements ReactiveController {
 			);
 			const dx = position.x - this.host.dragObject.x;
 			const dy = position.y - this.host.dragObject.y;
-			this.host.dragObject.position.copyFrom(position);
-			if (this.host.dragObject instanceof VesselView) {
-				this.moveAttachedElectrodes(this.host.dragObject, dx, dy);
+			const moving = this.movingWith(this.host.dragObject);
+			const offset = this.freeOffset(moving, dx, dy);
+			if (offset.x || offset.y) {
+				for (const sprite of moving) {
+					sprite.position.set(sprite.x + offset.x, sprite.y + offset.y);
+					// Electrodes carried along by their vessel still have to be saved.
+					if (sprite !== this.host.dragObject) this.attachedElectrodesMoved.add(sprite);
+				}
+				if (this.cables.size) this.cablesDirty = true;
 			}
 
 			const transferTarget = this.trackVesselTransfer(event);
@@ -1103,7 +1342,7 @@ export class CanvasController implements ReactiveController {
 	flushChanges(): void {
 		for (const [view, hint] of this.changedVessels) view.updateContents(hint);
 		this.changedVessels.clear();
-		this.updateElectrodeStacking();
+		this.updateDippedStacking();
 		if (this.cablesDirty || this.cables.size) {
 			this.cablesDirty = false;
 			// requests a render again while any rope is awake, which keeps
@@ -1203,47 +1442,86 @@ export class CanvasController implements ReactiveController {
 	}
 
 	/**
-	 * Moves the electrode sprites standing inside a vessel's contents by the
-	 * same offset the vessel itself was moved by, so electrodes travel with
-	 * their vessel.
-	 *
-	 * @private
-	 * @param {VesselView} vessel - the moved vessel view
-	 * @param {number} dx - the world-space x offset
-	 * @param {number} dy - the world-space y offset
-	 */
-	private moveAttachedElectrodes(vessel: VesselView, dx: number, dy: number): void {
-		if (!(dx || dy) || !this.host.allEComponents.length) return;
-		const mix = vessel.component._content;
-		for (const eComp of this.host.allEComponents) {
-			if (eComp._type !== chemlib.EComponentType.Electrode || eComp._connectedMix !== mix) continue;
-			const electrode = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
-			if (!electrode || this.host.dragObject === electrode) continue;
-			electrode.x += dx;
-			electrode.y += dy;
-			this.attachedElectrodesMoved.add(electrode);
-		}
-		if (this.cables.size) this.cablesDirty = true;
-	}
-
-	/**
-	 * Keeps an inserted electrode behind its vessel's glass and contents by
-	 * lowering it below the vessel sprite in the world ordering.
+	 * Keeps every device that dips into a vessel behind that vessel's glass and
+	 * contents by lowering it below the vessel sprite in the world ordering.
+	 * An electrode and a gas collection tube hang in one vessel, a salt bridge
+	 * in two, so a bridge is lowered behind the earlier of its two vessels and
+	 * is thereby behind both.
 	 *
 	 * @private
 	 */
-	private updateElectrodeStacking(): void {
+	private updateDippedStacking(): void {
 		const stage = this.world;
+		// The vessel views each dipped device has to disappear behind.
+		const behind = new Map<PIXI.Container, VesselView[]>();
+		const dip = (sprite: PIXI.Container | undefined, view: VesselView) => {
+			if (!sprite || !sprite.parent) return;
+			const views = behind.get(sprite) ?? [];
+			if (!views.includes(view)) views.push(view);
+			behind.set(sprite, views);
+		};
 		for (const [component, view] of this.vessels) {
+			const mix = component._content;
 			for (const eComp of this.host.allEComponents) {
-				if (eComp._type !== chemlib.EComponentType.Electrode || eComp._connectedMix !== component._content) continue;
-				const electrode = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
-				if (!electrode || !electrode.parent) continue;
-				if (stage.getChildIndex(electrode) > stage.getChildIndex(view)) {
-					stage.setChildIndex(electrode, stage.getChildIndex(view));
+				const sprite = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
+				if (!sprite) continue;
+				switch (eComp._type) {
+					case chemlib.EComponentType.Electrode:
+					case chemlib.EComponentType.GasCollector:
+						if (eComp._connectedMix === mix) dip(sprite, view);
+						break;
+					case chemlib.EComponentType.Bridge:
+						if (eComp._bridgeMixes?.includes(mix)) dip(sprite, view);
+						break;
 				}
 			}
 		}
+		for (const [sprite, views] of behind) {
+			const target = Math.min(...views.map((view) => stage.getChildIndex(view)));
+			if (stage.getChildIndex(sprite) > target) stage.setChildIndex(sprite, target);
+		}
+	}
+
+	/**
+	 * The world point where a cable leaves a device: the terminal that carries
+	 * it, so a cable clips onto the top of an electrode instead of running to
+	 * the middle of the strip. Falls back to the sprite centre for a device
+	 * without terminals or without a recorded connection.
+	 *
+	 * @private
+	 * @param {PIXI.Container} sprite - the device view
+	 * @param {chemlib.ElectricComponent} device - the device behind the view
+	 * @param {chemlib.ElectricComponent} cable - the cable that leaves it
+	 * @returns {PIXI.PointData}
+	 */
+	private cableTerminalPoint(sprite: PIXI.Container, device: chemlib.ElectricComponent, cable: chemlib.ElectricComponent): PIXI.PointData {
+		if (sprite instanceof ElectricDeviceView) {
+			// A device slot holds the cable that occupies it, not the device at
+			// the far end, so the slot index is the terminal the cable sits on.
+			const terminal = device._connections.indexOf(cable);
+			const point = terminal >= 0 ? this.portWorld(sprite, terminal) : undefined;
+			if (point) return point;
+		}
+		return { x: sprite.x, y: sprite.y };
+	}
+
+	/**
+	 * The two world points a cable runs between, or undefined while one of its
+	 * devices has no view yet.
+	 *
+	 * @private
+	 * @param {chemlib.ElectricComponent} cable - the cable
+	 * @returns {?[number, number, number, number]}
+	 */
+	private cableEndpoints(cable: chemlib.ElectricComponent): [number, number, number, number] | undefined {
+		const [first, second] = cable._connections;
+		if (!first || !second) return undefined;
+		const from = this.spritesByLabel.get(`${first._type}:${first._id}`);
+		const to = this.spritesByLabel.get(`${second._type}:${second._id}`);
+		if (!from || !to) return undefined;
+		const start = this.cableTerminalPoint(from, first, cable);
+		const end = this.cableTerminalPoint(to, second, cable);
+		return [start.x, start.y, end.x, end.y];
 	}
 
 	private updateCablePositions(): void {
@@ -1260,10 +1538,10 @@ export class CanvasController implements ReactiveController {
 				this.host.removeObjects([sprite]);
 				continue;
 			}
-			const from = this.spritesByLabel.get(`${first._type}:${first._id}`);
-			const to = this.spritesByLabel.get(`${second._type}:${second._id}`);
-			if (!from || !to) continue;
-			const endpoints: [number, number, number, number] = [from.x, from.y, to.x, to.y];
+			const endpoints = this.cableEndpoints(cable);
+			if (!endpoints) continue;
+			const from = this.spritesByLabel.get(`${first._type}:${first._id}`)!;
+			const to = this.spritesByLabel.get(`${second._type}:${second._id}`)!;
 
 			let rope = this.cableRopes.get(sprite);
 			if (!rope) {
@@ -1434,11 +1712,14 @@ export class CanvasController implements ReactiveController {
 			const rope = this.cableRopes.get(sprite);
 			if (!rope) continue;
 			const [first, second] = cable._connections;
-			const from = first && this.spritesByLabel.get(`${first._type}:${first._id}`);
-			const to = second && this.spritesByLabel.get(`${second._type}:${second._id}`);
+			if (!first || !second) continue;
+			const from = this.spritesByLabel.get(`${first._type}:${first._id}`);
+			const to = this.spritesByLabel.get(`${second._type}:${second._id}`);
 			if (!from || !to) continue;
 			if (!movedSprites.includes(from) && !movedSprites.includes(to)) continue;
-			rope.restLength = Math.max(Math.hypot(to.x - from.x, to.y - from.y), 1) * CABLE_SLACK;
+			const endpoints = this.cableEndpoints(cable);
+			if (!endpoints) continue;
+			rope.restLength = Math.max(Math.hypot(endpoints[2] - endpoints[0], endpoints[3] - endpoints[1]), 1) * CABLE_SLACK;
 			rope.awake = true;
 			rope.idleFrames = 0;
 		}
