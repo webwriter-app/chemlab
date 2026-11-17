@@ -1062,9 +1062,9 @@ export const style = css`
 		--panel-outline: var(--sl-color-neutral-300);
 		--workspace-outline-width: 1px;
 		--workspace-inner-height: calc(100cqh - 2 * var(--workspace-outline-width));
-		--diagram-panel-width: min(27cqw, 24rem);
+		--diagram-panel-width: min(58cqw, clamp(10rem, 44cqw, 24rem));
 		--diagram-width: 0px;
-		--palette-panel-width: min(58cqw, clamp(10rem, 44cqw, 24rem));
+		--palette-panel-width: min(58cqw, clamp(10rem, 27cqw, 24rem));
 		--palette-width: 0px;
 		--lab-card-surface: var(--sl-color-neutral-0);
 		--lab-card-inset: var(--sl-color-neutral-50);

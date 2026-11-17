@@ -653,7 +653,7 @@ export class ChemLab extends LitElementWw {
 		}
 		const width = this.containerDiv.clientWidth;
 		const panelMax = parseFloat(getComputedStyle(this.ownerDocument.documentElement).fontSize) * 24;
-		const diagramWidth = this.diagramPanelAvailable && this.diagramPanelOpen ? Math.min(width * 0.27, panelMax) : 0;
+		const diagramWidth = this.diagramPanelAvailable && this.diagramPanelOpen ? Math.min(width * 0.44, panelMax) : 0;
 		this.teacherDrawerOpen = this.teacherDrawerChoice ?? (width >= STANDARD_CANVAS_WIDTH + panelMax + diagramWidth);
 		if (width < MIN_TWO_PANELS_WIDTH && this.teacherDrawerOpen && this.diagramPanelAvailable) {
 			this.diagramPanelOpen = false;

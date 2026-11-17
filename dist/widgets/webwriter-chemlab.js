@@ -103554,9 +103554,9 @@ var style = i`
 		--panel-outline: var(--sl-color-neutral-300);
 		--workspace-outline-width: 1px;
 		--workspace-inner-height: calc(100cqh - 2 * var(--workspace-outline-width));
-		--diagram-panel-width: min(27cqw, 24rem);
+		--diagram-panel-width: min(58cqw, clamp(10rem, 44cqw, 24rem));
 		--diagram-width: 0px;
-		--palette-panel-width: min(58cqw, clamp(10rem, 44cqw, 24rem));
+		--palette-panel-width: min(58cqw, clamp(10rem, 27cqw, 24rem));
 		--palette-width: 0px;
 		--lab-card-surface: var(--sl-color-neutral-0);
 		--lab-card-inset: var(--sl-color-neutral-50);
@@ -184786,7 +184786,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }
     const width = this.containerDiv.clientWidth;
     const panelMax = parseFloat(getComputedStyle(this.ownerDocument.documentElement).fontSize) * 24;
-    const diagramWidth = this.diagramPanelAvailable && this.diagramPanelOpen ? Math.min(width * 0.27, panelMax) : 0;
+    const diagramWidth = this.diagramPanelAvailable && this.diagramPanelOpen ? Math.min(width * 0.44, panelMax) : 0;
     this.teacherDrawerOpen = this.teacherDrawerChoice ?? width >= STANDARD_CANVAS_WIDTH + panelMax + diagramWidth;
     if (width < MIN_TWO_PANELS_WIDTH && this.teacherDrawerOpen && this.diagramPanelAvailable) {
       this.diagramPanelOpen = false;
