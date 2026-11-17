@@ -1,4 +1,4 @@
-import { ElectricComponent } from "./ElectricComponent";
+import { EComponentType, ElectricComponent } from "./ElectricComponent";
 
 /**
  * One two-terminal device of the network between the two electrodes, with the
@@ -24,8 +24,8 @@ export interface CircuitElement {
 }
 
 /**
- * The devices between two electrodes, reduced to the nodes and elements of a
- * linear network.
+ * The devices of a circuit, reduced to the nodes and elements of a linear
+ * network.
  *
  * A lab circuit is not a single loop. A voltmeter sits across the cell while
  * the supply drives it, an ammeter sits in series with the supply, and a
@@ -35,14 +35,20 @@ export interface CircuitElement {
  * electrode nodes, and {@link circuitReadings} adds it once its current is
  * known.
  *
+ * A network without electrodes is a supply wired straight into a meter. It
+ * has no cell, so `first` and `second` are -1 and the elements' own EMFs are
+ * the only thing that drives it.
+ *
  * @export
  * @interface CircuitNetwork
  */
 export interface CircuitNetwork {
-	/** Node of the first electrode. */
+	/** Node of the first electrode, or -1 when the network carries no cell. */
 	first: number;
-	/** Node of the second electrode. */
+	/** Node of the second electrode, or -1 when the network carries no cell. */
 	second: number;
+	/** Node held at zero volts. */
+	ground: number;
 	/** Number of nodes. */
 	nodes: number;
 	/** The elements between them. */
@@ -104,7 +110,7 @@ function solveLinear(matrix: number[][], rhs: number[]): number[] | undefined {
 }
 
 /**
- * The node voltages of the network, with the second electrode's node held at
+ * The node voltages of the network, with the network's ground node held at
  * zero. `injections` are currents pushed into a node in A; `withEmf` decides
  * whether the elements' own sources drive the network or are shorted out,
  * which is what the Thevenin resistance needs.
@@ -122,7 +128,7 @@ function nodeVoltages(
 	withEmf: boolean,
 	extra?: CircuitElement
 ): number[] | undefined {
-	const ground = network.second;
+	const ground = network.ground;
 	const row = new Map<number, number>();
 	for (let node = 0; node < network.nodes; node++) {
 		if (node !== ground) row.set(node, row.size);
@@ -161,34 +167,38 @@ function nodeVoltages(
 }
 
 /**
- * Builds the network of devices that sits between two electrodes.
+ * Builds the network of a set of devices.
  *
- * Every terminal of every device in the circuit becomes a node, and a
- * connection joins the two terminals it sits between. A cable is therefore
- * not a node of its own but an element between the posts it is plugged into,
- * which is what lets a meter be read across itself.
+ * Every terminal of every device becomes a node, and a connection joins the
+ * two terminals it sits between. A cable is therefore not a node of its own
+ * but an element between the posts it is plugged into, which is what lets a
+ * meter be read across itself.
  *
  * The elements start without an EMF: which way a source drives is a question
  * about the cell, so the caller sets it once it knows the cell's potentials.
  *
  * @export
- * @param {ElectricComponent} first - first electrode
- * @param {ElectricComponent} second - second electrode
- * @returns {(CircuitNetwork | undefined)} the network, or undefined when the two electrodes are not wired together
+ * @param {readonly ElectricComponent[]} devices - the devices of the circuit
+ * @returns {(CircuitNetwork | undefined)} the network, or undefined when the devices are not wired together
  */
 export function circuitNetwork(
-	first: ElectricComponent,
-	second: ElectricComponent
+	devices: readonly ElectricComponent[]
 ): CircuitNetwork | undefined {
-	// The walk from one electrode reaches everything wired to it, cables
-	// included: they are devices of their own since they became placeable.
-	const visited: ElectricComponent[] = [first];
+	// The walk from the given devices reaches everything wired to them,
+	// cables included: they are devices of their own since they became
+	// placeable.
+	const visited: ElectricComponent[] = [];
+	for (const device of devices) {
+		if (!visited.includes(device)) visited.push(device);
+	}
 	for (let cursor = 0; cursor < visited.length; cursor++) {
-		for (const partner of visited[cursor]._connections) {
-			if (partner && !visited.includes(partner)) visited.push(partner);
+		for (const partner of visited[cursor].partners) {
+			if (!visited.includes(partner)) visited.push(partner);
 		}
 	}
-	if (!visited.includes(second)) return undefined;
+	for (const device of devices) {
+		if (!visited.includes(device)) return undefined;
+	}
 
 	// One slot per terminal, joined wherever a connection sits between two of
 	// them. The slots are merged with a union-find, so a chain of cables ends
@@ -225,11 +235,10 @@ export function circuitNetwork(
 	}
 	for (const device of visited) {
 		for (let terminal = 0; terminal < device._conCount; terminal++) {
-			const partner = device._connections[terminal];
-			if (!partner) continue;
-			const back = partner._connections.indexOf(device);
-			if (back < 0) continue;
-			join(slotOf(device, terminal), slotOf(partner, back));
+			for (const partner of device._connections[terminal]) {
+				const back = partner.terminalsOf(device);
+				for (const other of back) join(slotOf(device, terminal), slotOf(partner, other));
+			}
 		}
 	}
 	// A device that is not an element of the circuit is a piece of metal: the
@@ -265,9 +274,15 @@ export function circuitNetwork(
 		if (a === b) continue;
 		elements.push({ device, a, b, resistance, emf: 0 });
 	}
+	const electrodes = visited.filter((device) => device._type === EComponentType.Electrode);
+	const first = electrodes[0] ? nodeOf(electrodes[0], 0) : -1;
+	const second = electrodes[1] ? nodeOf(electrodes[1], 0) : -1;
 	return {
-		first: nodeOf(first, 0),
-		second: nodeOf(second, 0),
+		first,
+		second,
+		// A network without a cell still needs a reference, and the first
+		// node is as good as any: only differences are ever read.
+		ground: second >= 0 ? second : 0,
 		nodes: nodes.size,
 		elements,
 	};
@@ -288,6 +303,7 @@ export function circuitNetwork(
 export function circuitThevenin(
 	network: CircuitNetwork
 ): { voltage: number; resistance: number } | undefined {
+	if (network.first < 0 || network.second < 0) return undefined;
 	const open = nodeVoltages(network, new Map(), true);
 	if (!open) return undefined;
 	const driven = new Map<number, number>([[network.first, 1], [network.second, -1]]);
@@ -308,18 +324,21 @@ export function circuitThevenin(
  * is then the branch that drives the network, which is what a voltmeter
  * across an idle cell reads.
  *
+ * Without a cell the elements' own EMFs are the only drive, which is what a
+ * supply wired straight into a meter needs.
+ *
  * @export
  * @param {CircuitNetwork} network - the network to read
- * @param {{ emf: number; resistance: number; current: number; open: boolean }} cell - the cell's voltage in V, its electrolyte resistance in Ω, the current it carries in A, and whether it is open
+ * @param {{ emf: number; resistance: number; current: number; open: boolean }} [cell] - the cell's voltage in V, its electrolyte resistance in Ω, the current it carries in A, and whether it is open
  * @returns {(Map<ElectricComponent, CircuitReading> | undefined)} the reading of each device, or undefined when the system is singular
  */
 export function circuitReadings(
 	network: CircuitNetwork,
-	cell: { emf: number; resistance: number; current: number; open: boolean }
+	cell?: { emf: number; resistance: number; current: number; open: boolean }
 ): Map<ElectricComponent, CircuitReading> | undefined {
 	const injections = new Map<number, number>();
 	let branch: CircuitElement | undefined;
-	if (cell.open) {
+	if (cell?.open) {
 		if (Number.isFinite(cell.emf)) {
 			branch = {
 				a: network.first, b: network.second,
@@ -327,7 +346,7 @@ export function circuitReadings(
 				emf: cell.emf,
 			};
 		}
-	} else {
+	} else if (cell) {
 		// The cell's current leaves it at the second electrode and returns at
 		// the first, so that is how it enters the network.
 		injections.set(network.first, -cell.current);

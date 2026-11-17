@@ -106,9 +106,14 @@ class ElectricComponent {
 	 * `_connections[0]` a stable reference for the first pole of a source even
 	 * when the second pole was wired first.
 	 *
-	 * @type {Array<ElectricComponent | undefined>}
+	 * A slot is a list because a binding post takes any number of plugs: the
+	 * supply and a voltmeter can share a post, and a stack of leads on one
+	 * terminal is what a bench looks like. The one place that holds a single
+	 * partner is the end of a cable, because a plug goes into one socket.
+	 *
+	 * @type {Array<ElectricComponent[]>}
 	 */
-	_connections: Array<ElectricComponent | undefined>;
+	_connections: Array<ElectricComponent[]>;
 	/**
 	 * for electrodes: The solutiuon, the electrode is connected to
 	 *
@@ -325,21 +330,72 @@ class ElectricComponent {
 		}
 		// One slot per terminal, so the index of a partner is the terminal it
 		// sits on. A device without terminals gets an empty array.
-		this._connections = new Array<ElectricComponent | undefined>(this._conCount > 0 ? this._conCount : 0);
+		this._connections = Array.from(
+			{ length: this._conCount > 0 ? this._conCount : 0 },
+			() => [] as ElectricComponent[]
+		);
 	}
 
 	/**
-	 * The terminals that carry no cable yet.
+	 * Every partner of this device, whatever terminal it sits on.
 	 *
 	 * @readonly
-	 * @type {number[]}
+	 * @type {ElectricComponent[]}
 	 */
-	get freeTerminals(): number[] {
-		const free: number[] = [];
+	get partners(): ElectricComponent[] {
+		return this._connections.flat();
+	}
+
+	/**
+	 * Whether a terminal can take one more partner. A post on a device takes
+	 * any number of plugs; an end of a cable takes one, because a plug goes
+	 * into a single socket.
+	 *
+	 * @public
+	 * @param {number} terminal - the terminal index
+	 * @returns {boolean}
+	 */
+	public hasRoom(terminal: number): boolean {
+		if (!(terminal >= 0) || terminal >= this._conCount) return false;
+		return this._type === EComponentType.Cable ? this._connections[terminal].length === 0 : true;
+	}
+
+	/**
+	 * The terminal a new partner should go on: the first one that carries
+	 * nothing yet, so both poles of a source are used before a post is
+	 * shared, and otherwise the least loaded one. -1 when nothing is free.
+	 *
+	 * @public
+	 * @returns {number}
+	 */
+	public preferredTerminal(): number {
+		let best = -1;
+		let bestLoad = Infinity;
 		for (let terminal = 0; terminal < this._conCount; terminal++) {
-			if (!this._connections[terminal]) free.push(terminal);
+			if (!this.hasRoom(terminal)) continue;
+			const load = this._connections[terminal].length;
+			if (load === 0) return terminal;
+			if (load < bestLoad) {
+				best = terminal;
+				bestLoad = load;
+			}
 		}
-		return free;
+		return best;
+	}
+
+	/**
+	 * The terminals of this device that carry the given partner.
+	 *
+	 * @public
+	 * @param {ElectricComponent} partner - the partner to look for
+	 * @returns {number[]}
+	 */
+	public terminalsOf(partner: ElectricComponent): number[] {
+		const found: number[] = [];
+		for (let terminal = 0; terminal < this._conCount; terminal++) {
+			if (this._connections[terminal].includes(partner)) found.push(terminal);
+		}
+		return found;
 	}
 
 	/**
@@ -350,13 +406,38 @@ class ElectricComponent {
 	 * @public
 	 * @param {ElectricComponent} partner - the component to place
 	 * @param {number} terminal - the terminal to place it on
-	 * @returns {boolean} whether the terminal was free
+	 * @returns {boolean} whether the terminal took the partner
 	 */
 	public attach(partner: ElectricComponent, terminal: number): boolean {
-		if (!(terminal >= 0) || terminal >= this._conCount) return false;
-		if (this._connections[terminal]) return false;
-		this._connections[terminal] = partner;
+		if (!this.hasRoom(terminal)) return false;
+		const list = this._connections[terminal];
+		if (list.includes(partner)) return false;
+		list.push(partner);
 		return true;
+	}
+
+	/**
+	 * Takes a partner off this device. Without a terminal the first one that
+	 * carries it is used, which is what a cable end drag needs.
+	 *
+	 * @public
+	 * @param {ElectricComponent} partner - the partner to remove
+	 * @param {number} [terminal] - the terminal to remove it from
+	 * @returns {boolean} whether the partner was there
+	 */
+	public detach(partner: ElectricComponent, terminal?: number): boolean {
+		const terminals = terminal === undefined
+			? this._connections.map((_, index) => index)
+			: [terminal];
+		for (const index of terminals) {
+			const list = this._connections[index];
+			if (!list) continue;
+			const at = list.indexOf(partner);
+			if (at < 0) continue;
+			list.splice(at, 1);
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -373,14 +454,13 @@ class ElectricComponent {
 		if (!(this._conCount > 0) || !(nComposite._conCount > 0)) {
 			return "Mindestens eine Komponente hat keine Ein/Ausgänge.";
 		}
-		const free = this.freeTerminals;
-		const partnerFree = nComposite.freeTerminals;
-		if (free.length === 0 || partnerFree.length === 0) {
+		const slot = terminal !== undefined && this.hasRoom(terminal) ? terminal : this.preferredTerminal();
+		const partnerSlot = nComposite.preferredTerminal();
+		if (slot < 0 || partnerSlot < 0) {
 			return "Mindestens eine Komponente hat keine Ein/Ausgänge mehr.";
 		}
-		const slot = terminal !== undefined && free.includes(terminal) ? terminal : free[0];
-		this._connections[slot] = nComposite;
-		nComposite._connections[partnerFree[0]] = this;
+		this.attach(nComposite, slot);
+		nComposite.attach(this, partnerSlot);
 		return "";
 	}
 
@@ -393,11 +473,8 @@ class ElectricComponent {
 	 * @returns {string} an empty string on success, a message otherwise
 	 */
 	public disconnect(rComposite: ElectricComponent): string {
-		const index = this._connections.indexOf(rComposite);
-		if (index < 0) return "Die gewählten Komponenten sind nicht verbunden.";
-		this._connections[index] = undefined;
-		const back = rComposite._connections.indexOf(this);
-		if (back >= 0) rComposite._connections[back] = undefined;
+		if (!this.detach(rComposite)) return "Die gewählten Komponenten sind nicht verbunden.";
+		rComposite.detach(this);
 		return "";
 	}
 

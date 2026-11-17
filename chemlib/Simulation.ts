@@ -25,7 +25,7 @@ import {
 	materialName,
 	atomSymbol,
 } from "./halfReactions";
-import { circuitNetwork, circuitThevenin, circuitReadings } from "./circuit";
+import { circuitNetwork, circuitThevenin, circuitReadings, type CircuitNetwork, type CircuitReading } from "./circuit";
 
 const saltEquilibria = Object.entries(saltSolubility).map(([formula, data]) => {
 	const [cation, anion, cations = 1, anions = 1] = data.ions;
@@ -1914,7 +1914,7 @@ export abstract class Simulation {
 		// loop: a voltmeter may sit across the cell while the supply drives
 		// it, or in series with it. Its Thevenin equivalent is what the cell
 		// is solved against, so every meter is read where it actually is.
-		const network = circuitNetwork(sElectrode1, sElectrode2);
+		const network = circuitNetwork([sElectrode1, sElectrode2, ...sDevices]);
 		const thevenin = network ? circuitThevenin(network) : undefined;
 		if (!network || !thevenin) return unsolved();
 		// The cell's own resistance is the electrolyte path between the
@@ -2020,6 +2020,85 @@ export abstract class Simulation {
 			if (mix1?._isSolution) this.balanceCharge(mix1);
 			if (mix2?._isSolution) this.balanceCharge(mix2);
 		}
+	}
+
+	/**
+	 * Simulation of a network that carries no cell: a supply wired straight
+	 * into a meter, or a meter on its own.
+	 *
+	 * {@link sEChem} needs two electrodes, so a supply and a meter would
+	 * otherwise read nothing at all. Here the supply is an EMF behind its
+	 * output resistance and the meters are the loads it drives, which is what
+	 * makes a voltmeter on a 2 V supply show 2 V.
+	 *
+	 * @public
+	 * @static
+	 * @param {ElectricComponent[]} devices - the devices of the network
+	 */
+	public static sCircuit(devices: ElectricComponent[]): void {
+		const network = circuitNetwork(devices);
+		const source = devices.find((device) => device._type === EComponentType.Source);
+		const readings = network ? this.driveNetwork(network, source) : undefined;
+		for (const device of devices) {
+			const reading = readings?.get(device);
+			device._visibleCurrent = reading ? reading.current : null;
+			if (device._type === EComponentType.Voltmeter ||
+				(device._type === EComponentType.Multimeter && device._meterMode === "voltage")) {
+				device._visibleVoltage = reading ? Math.abs(reading.voltage) : null;
+			} else if (device._type === EComponentType.Source) {
+				// Without a cell the supply holds its own voltage, so the
+				// terminal voltage is what it shows.
+				device._visibleVoltage = reading ? Math.abs(reading.voltage) : null;
+			}
+		}
+	}
+
+	/**
+	 * The readings of a network a supply drives on its own.
+	 *
+	 * The supply is an EMF behind its output resistance. A network of
+	 * resistors is linear, so a supply that would deliver more than its
+	 * current limit allows is brought to the limit by scaling its EMF: the
+	 * current follows the EMF exactly, and the voltage then falls to what the
+	 * load needs at that current.
+	 *
+	 * @private
+	 * @static
+	 * @param {CircuitNetwork} network - the network to drive
+	 * @param {ElectricComponent} [source] - the supply, if the network has one
+	 * @returns {(Map<ElectricComponent, CircuitReading> | undefined)} the reading of each device
+	 */
+	private static driveNetwork(
+		network: CircuitNetwork,
+		source?: ElectricComponent
+	): Map<ElectricComponent, CircuitReading> | undefined {
+		const element = source ? network.elements.find((entry) => entry.device === source) : undefined;
+		if (!source || !element) return circuitReadings(network);
+		const magnitude = Math.abs(source._sourceVoltage ?? 0);
+		const limit = Math.abs(source._sourceCurrent ?? 0);
+		// The plus pole is the terminal the supply raises, so the EMF points
+		// from the first terminal to the second unless the polarity says the
+		// first one is the minus pole.
+		const sign = source._polarity < 0 ? -1 : 1;
+		if (source._sourceMode === "current") {
+			// A galvanostat sets the current, so the EMF is only a probe: the
+			// current follows it linearly, and the compliance voltage caps
+			// what the supply may apply.
+			element.emf = 1;
+			const probe = circuitReadings(network);
+			const drawn = probe?.get(source)?.current ?? 0;
+			if (!(Math.abs(drawn) > 0)) return probe;
+			const compliance = Math.abs(source._complianceVoltage ?? 0);
+			const wanted = limit / Math.abs(drawn);
+			element.emf = sign * (compliance > 0 ? Math.min(wanted, compliance) : wanted);
+			return circuitReadings(network);
+		}
+		element.emf = sign * magnitude;
+		const driven = circuitReadings(network);
+		const drawn = driven?.get(source)?.current ?? 0;
+		if (!(limit > 0) || Math.abs(drawn) <= limit) return driven;
+		element.emf *= limit / Math.abs(drawn);
+		return circuitReadings(network);
 	}
 
 	/**

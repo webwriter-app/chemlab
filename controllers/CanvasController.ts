@@ -876,7 +876,7 @@ export class CanvasController implements ReactiveController {
 	 */
 	private cableEndLocal(view: CableView, end: number): PIXI.PointData {
 		const cable = view.component;
-		const device = cable._connections[end];
+		const device = cable._connections[end][0];
 		if (device) {
 			const sprite = this.spritesByLabel.get(`${device._type}:${device._id}`);
 			if (sprite) {
@@ -900,7 +900,7 @@ export class CanvasController implements ReactiveController {
 	 */
 	private beginEndDrag(view: CableView, end: number, event: PIXI.FederatedPointerEvent): void {
 		const cable = view.component;
-		const device = cable._connections[end];
+		const device = cable._connections[end][0];
 		if (device) {
 			// The end keeps the place it was pulled from, so it does not jump
 			// back to the stored offset when it is let go in mid-air.
@@ -1008,8 +1008,8 @@ export class CanvasController implements ReactiveController {
 	 */
 	releaseCableEnds(device: chemlib.ElectricComponent): void {
 		for (const [view, cable] of this.cables) {
-			cable._connections.forEach((partner, end) => {
-				if (partner !== device) return;
+			cable._connections.forEach((partners, end) => {
+				if (!partners.includes(device)) return;
 				const local = this.cableEndLocal(view, end);
 				cable._endOffsets[end] = { x: local.x, y: local.y };
 			});
@@ -1456,10 +1456,10 @@ export class CanvasController implements ReactiveController {
 	 */
 	private cableTerminalPoint(sprite: PIXI.Container, device: chemlib.ElectricComponent, cable: chemlib.ElectricComponent): PIXI.PointData {
 		if (sprite instanceof ElectricDeviceView) {
-			// A device slot holds the cable that occupies it, not the device at
+			// A device slot holds the cables that occupy it, not the device at
 			// the far end, so the slot index is the terminal the cable sits on.
-			const terminal = device._connections.indexOf(cable);
-			const point = terminal >= 0 ? this.portWorld(sprite, terminal) : undefined;
+			const terminal = device.terminalsOf(cable)[0];
+			const point = terminal !== undefined ? this.portWorld(sprite, terminal) : undefined;
 			if (point) return point;
 		}
 		return { x: sprite.x, y: sprite.y };
@@ -1519,7 +1519,7 @@ export class CanvasController implements ReactiveController {
 				view.resetLength(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
 				continue;
 			}
-			const [first, second] = cable._connections;
+			const [first, second] = cable._connections.map((partners) => partners[0]);
 			if (!first || !second) continue;
 			const from = this.spritesByLabel.get(`${first._type}:${first._id}`);
 			const to = this.spritesByLabel.get(`${second._type}:${second._id}`);

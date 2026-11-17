@@ -110915,7 +110915,12 @@ var ElectricComponent = class {
    * `_connections[0]` a stable reference for the first pole of a source even
    * when the second pole was wired first.
    *
-   * @type {Array<ElectricComponent | undefined>}
+   * A slot is a list because a binding post takes any number of plugs: the
+   * supply and a voltmeter can share a post, and a stack of leads on one
+   * terminal is what a bench looks like. The one place that holds a single
+   * partner is the end of a cable, because a plug goes into one socket.
+   *
+   * @type {Array<ElectricComponent[]>}
    */
   _connections;
   /**
@@ -111122,20 +111127,68 @@ var ElectricComponent = class {
       default:
         break;
     }
-    this._connections = new Array(this._conCount > 0 ? this._conCount : 0);
+    this._connections = Array.from(
+      { length: this._conCount > 0 ? this._conCount : 0 },
+      () => []
+    );
   }
   /**
-   * The terminals that carry no cable yet.
+   * Every partner of this device, whatever terminal it sits on.
    *
    * @readonly
-   * @type {number[]}
+   * @type {ElectricComponent[]}
    */
-  get freeTerminals() {
-    const free = [];
+  get partners() {
+    return this._connections.flat();
+  }
+  /**
+   * Whether a terminal can take one more partner. A post on a device takes
+   * any number of plugs; an end of a cable takes one, because a plug goes
+   * into a single socket.
+   *
+   * @public
+   * @param {number} terminal - the terminal index
+   * @returns {boolean}
+   */
+  hasRoom(terminal) {
+    if (!(terminal >= 0) || terminal >= this._conCount) return false;
+    return this._type === "cable" /* Cable */ ? this._connections[terminal].length === 0 : true;
+  }
+  /**
+   * The terminal a new partner should go on: the first one that carries
+   * nothing yet, so both poles of a source are used before a post is
+   * shared, and otherwise the least loaded one. -1 when nothing is free.
+   *
+   * @public
+   * @returns {number}
+   */
+  preferredTerminal() {
+    let best = -1;
+    let bestLoad = Infinity;
     for (let terminal = 0; terminal < this._conCount; terminal++) {
-      if (!this._connections[terminal]) free.push(terminal);
+      if (!this.hasRoom(terminal)) continue;
+      const load = this._connections[terminal].length;
+      if (load === 0) return terminal;
+      if (load < bestLoad) {
+        best = terminal;
+        bestLoad = load;
+      }
     }
-    return free;
+    return best;
+  }
+  /**
+   * The terminals of this device that carry the given partner.
+   *
+   * @public
+   * @param {ElectricComponent} partner - the partner to look for
+   * @returns {number[]}
+   */
+  terminalsOf(partner) {
+    const found = [];
+    for (let terminal = 0; terminal < this._conCount; terminal++) {
+      if (this._connections[terminal].includes(partner)) found.push(terminal);
+    }
+    return found;
   }
   /**
    * Puts a partner on one terminal of this device, without touching the
@@ -111145,13 +111198,35 @@ var ElectricComponent = class {
    * @public
    * @param {ElectricComponent} partner - the component to place
    * @param {number} terminal - the terminal to place it on
-   * @returns {boolean} whether the terminal was free
+   * @returns {boolean} whether the terminal took the partner
    */
   attach(partner, terminal) {
-    if (!(terminal >= 0) || terminal >= this._conCount) return false;
-    if (this._connections[terminal]) return false;
-    this._connections[terminal] = partner;
+    if (!this.hasRoom(terminal)) return false;
+    const list = this._connections[terminal];
+    if (list.includes(partner)) return false;
+    list.push(partner);
     return true;
+  }
+  /**
+   * Takes a partner off this device. Without a terminal the first one that
+   * carries it is used, which is what a cable end drag needs.
+   *
+   * @public
+   * @param {ElectricComponent} partner - the partner to remove
+   * @param {number} [terminal] - the terminal to remove it from
+   * @returns {boolean} whether the partner was there
+   */
+  detach(partner, terminal) {
+    const terminals = terminal === void 0 ? this._connections.map((_3, index2) => index2) : [terminal];
+    for (const index2 of terminals) {
+      const list = this._connections[index2];
+      if (!list) continue;
+      const at = list.indexOf(partner);
+      if (at < 0) continue;
+      list.splice(at, 1);
+      return true;
+    }
+    return false;
   }
   /**
    * Connects one electric component to another. The partner takes its first
@@ -111167,14 +111242,13 @@ var ElectricComponent = class {
     if (!(this._conCount > 0) || !(nComposite._conCount > 0)) {
       return "Mindestens eine Komponente hat keine Ein/Ausg\xE4nge.";
     }
-    const free = this.freeTerminals;
-    const partnerFree = nComposite.freeTerminals;
-    if (free.length === 0 || partnerFree.length === 0) {
+    const slot = terminal !== void 0 && this.hasRoom(terminal) ? terminal : this.preferredTerminal();
+    const partnerSlot = nComposite.preferredTerminal();
+    if (slot < 0 || partnerSlot < 0) {
       return "Mindestens eine Komponente hat keine Ein/Ausg\xE4nge mehr.";
     }
-    const slot = terminal !== void 0 && free.includes(terminal) ? terminal : free[0];
-    this._connections[slot] = nComposite;
-    nComposite._connections[partnerFree[0]] = this;
+    this.attach(nComposite, slot);
+    nComposite.attach(this, partnerSlot);
     return "";
   }
   /**
@@ -111186,11 +111260,8 @@ var ElectricComponent = class {
    * @returns {string} an empty string on success, a message otherwise
    */
   disconnect(rComposite) {
-    const index2 = this._connections.indexOf(rComposite);
-    if (index2 < 0) return "Die gew\xE4hlten Komponenten sind nicht verbunden.";
-    this._connections[index2] = void 0;
-    const back = rComposite._connections.indexOf(this);
-    if (back >= 0) rComposite._connections[back] = void 0;
+    if (!this.detach(rComposite)) return "Die gew\xE4hlten Komponenten sind nicht verbunden.";
+    rComposite.detach(this);
     return "";
   }
   /**
@@ -111390,7 +111461,7 @@ var ComponentManager = class {
     });
   }
   /**
-   * returns whether two objects are electrically connected
+   * Every device wired to the given one, the device itself included.
    *
    * A circuit branches: a voltmeter may hang on the same post as the
    * supply, and a lead that is plugged in at one end only ends in nothing.
@@ -111400,21 +111471,30 @@ var ComponentManager = class {
    *
    * @public
    * @static
+   * @param {ElectricComponent} device - the device to start from
+   * @returns {ElectricComponent[]}
+   */
+  static connectedDevices(device) {
+    const visited = [device];
+    for (let cursor = 0; cursor < visited.length; cursor++) {
+      for (const partner of visited[cursor].partners) {
+        if (!visited.includes(partner)) visited.push(partner);
+      }
+    }
+    return visited;
+  }
+  /**
+   * returns whether two objects are electrically connected
+   *
+   * @public
+   * @static
    * @param {ElectricComponent} component1 - the first object
    * @param {ElectricComponent} component2 - the second object
    * @returns {boolean}
    */
   static isConnected(component1, component2) {
     if (component1 === component2) return true;
-    const visited = [component1];
-    for (let cursor = 0; cursor < visited.length; cursor++) {
-      for (const partner of visited[cursor]._connections) {
-        if (!partner) continue;
-        if (partner === component2) return true;
-        if (!visited.includes(partner)) visited.push(partner);
-      }
-    }
-    return false;
+    return this.connectedDevices(component1).includes(component2);
   }
   /**
    * The electrode that sits on one pole of a device, following the cables
@@ -111428,17 +111508,17 @@ var ComponentManager = class {
    * @returns {(ElectricComponent | undefined)}
    */
   static terminalElectrode(device, terminal) {
-    const start = device._connections[terminal];
-    if (!start) return void 0;
+    const starts = device._connections[terminal] ?? [];
+    if (!starts.length) return void 0;
     const visited = [device];
-    const queue = [start];
+    const queue = [...starts];
     while (queue.length > 0) {
       const current = queue.shift();
       if (visited.includes(current)) continue;
       visited.push(current);
       if (current._type === "electrode" /* Electrode */) return current;
       if (current._type !== "cable" /* Cable */) continue;
-      queue.push(...current._connections.filter(Boolean));
+      queue.push(...current.partners);
     }
     return void 0;
   }
@@ -111451,16 +111531,7 @@ var ComponentManager = class {
    * @returns {ElectricComponent[]}
    */
   static isCircuit(testComponent) {
-    let visited = [testComponent];
-    let cursor = 0;
-    while (cursor < visited.length) {
-      visited[cursor]._connections.forEach((component) => {
-        if (typeof component != "undefined" && !visited.includes(component)) {
-          visited.push(component);
-        }
-      });
-      cursor += 1;
-    }
+    const visited = this.connectedDevices(testComponent);
     const electrodes = [];
     const devices = [];
     visited.forEach((component) => {
@@ -149383,7 +149454,7 @@ function solveLinear(matrix, rhs) {
   return solution;
 }
 function nodeVoltages(network, injections, withEmf, extra) {
-  const ground = network.second;
+  const ground = network.ground;
   const row = /* @__PURE__ */ new Map();
   for (let node = 0; node < network.nodes; node++) {
     if (node !== ground) row.set(node, row.size);
@@ -149420,14 +149491,19 @@ function nodeVoltages(network, injections, withEmf, extra) {
   for (const [node, index2] of row) voltages[node] = solved[index2];
   return voltages;
 }
-function circuitNetwork(first, second) {
-  const visited = [first];
+function circuitNetwork(devices) {
+  const visited = [];
+  for (const device of devices) {
+    if (!visited.includes(device)) visited.push(device);
+  }
   for (let cursor = 0; cursor < visited.length; cursor++) {
-    for (const partner of visited[cursor]._connections) {
-      if (partner && !visited.includes(partner)) visited.push(partner);
+    for (const partner of visited[cursor].partners) {
+      if (!visited.includes(partner)) visited.push(partner);
     }
   }
-  if (!visited.includes(second)) return void 0;
+  for (const device of devices) {
+    if (!visited.includes(device)) return void 0;
+  }
   const slots = /* @__PURE__ */ new Map();
   const parent2 = [];
   const slotOf = (device, terminal) => {
@@ -149460,11 +149536,10 @@ function circuitNetwork(first, second) {
   }
   for (const device of visited) {
     for (let terminal = 0; terminal < device._conCount; terminal++) {
-      const partner = device._connections[terminal];
-      if (!partner) continue;
-      const back = partner._connections.indexOf(device);
-      if (back < 0) continue;
-      join(slotOf(device, terminal), slotOf(partner, back));
+      for (const partner of device._connections[terminal]) {
+        const back = partner.terminalsOf(device);
+        for (const other of back) join(slotOf(device, terminal), slotOf(partner, other));
+      }
     }
   }
   for (const device of visited) {
@@ -149493,14 +149568,21 @@ function circuitNetwork(first, second) {
     if (a7 === b5) continue;
     elements2.push({ device, a: a7, b: b5, resistance, emf: 0 });
   }
+  const electrodes = visited.filter((device) => device._type === "electrode" /* Electrode */);
+  const first = electrodes[0] ? nodeOf(electrodes[0], 0) : -1;
+  const second = electrodes[1] ? nodeOf(electrodes[1], 0) : -1;
   return {
-    first: nodeOf(first, 0),
-    second: nodeOf(second, 0),
+    first,
+    second,
+    // A network without a cell still needs a reference, and the first
+    // node is as good as any: only differences are ever read.
+    ground: second >= 0 ? second : 0,
     nodes: nodes.size,
     elements: elements2
   };
 }
 function circuitThevenin(network) {
+  if (network.first < 0 || network.second < 0) return void 0;
   const open = nodeVoltages(network, /* @__PURE__ */ new Map(), true);
   if (!open) return void 0;
   const driven = /* @__PURE__ */ new Map([[network.first, 1], [network.second, -1]]);
@@ -149514,7 +149596,7 @@ function circuitThevenin(network) {
 function circuitReadings(network, cell) {
   const injections = /* @__PURE__ */ new Map();
   let branch;
-  if (cell.open) {
+  if (cell?.open) {
     if (Number.isFinite(cell.emf)) {
       branch = {
         a: network.first,
@@ -149523,7 +149605,7 @@ function circuitReadings(network, cell) {
         emf: cell.emf
       };
     }
-  } else {
+  } else if (cell) {
     injections.set(network.first, -cell.current);
     injections.set(network.second, cell.current);
   }
@@ -150996,7 +151078,7 @@ var Simulation = class {
       second: sElectrode2._area > 0 ? sElectrode2._area : ELECTRODE_AREA
     };
     const limits2 = this.cellLimits(first, second);
-    const network = circuitNetwork(sElectrode1, sElectrode2);
+    const network = circuitNetwork([sElectrode1, sElectrode2, ...sDevices]);
     const thevenin = network ? circuitThevenin(network) : void 0;
     if (!network || !thevenin) return unsolved();
     const electrolyte = ELECTROLYTE_RESISTANCE + (options2.bridge ? BRIDGE_RESISTANCE : 0);
@@ -151067,6 +151149,71 @@ var Simulation = class {
       if (mix1?._isSolution) this.balanceCharge(mix1);
       if (mix2?._isSolution) this.balanceCharge(mix2);
     }
+  }
+  /**
+   * Simulation of a network that carries no cell: a supply wired straight
+   * into a meter, or a meter on its own.
+   *
+   * {@link sEChem} needs two electrodes, so a supply and a meter would
+   * otherwise read nothing at all. Here the supply is an EMF behind its
+   * output resistance and the meters are the loads it drives, which is what
+   * makes a voltmeter on a 2 V supply show 2 V.
+   *
+   * @public
+   * @static
+   * @param {ElectricComponent[]} devices - the devices of the network
+   */
+  static sCircuit(devices) {
+    const network = circuitNetwork(devices);
+    const source3 = devices.find((device) => device._type === "source" /* Source */);
+    const readings = network ? this.driveNetwork(network, source3) : void 0;
+    for (const device of devices) {
+      const reading2 = readings?.get(device);
+      device._visibleCurrent = reading2 ? reading2.current : null;
+      if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage") {
+        device._visibleVoltage = reading2 ? Math.abs(reading2.voltage) : null;
+      } else if (device._type === "source" /* Source */) {
+        device._visibleVoltage = reading2 ? Math.abs(reading2.voltage) : null;
+      }
+    }
+  }
+  /**
+   * The readings of a network a supply drives on its own.
+   *
+   * The supply is an EMF behind its output resistance. A network of
+   * resistors is linear, so a supply that would deliver more than its
+   * current limit allows is brought to the limit by scaling its EMF: the
+   * current follows the EMF exactly, and the voltage then falls to what the
+   * load needs at that current.
+   *
+   * @private
+   * @static
+   * @param {CircuitNetwork} network - the network to drive
+   * @param {ElectricComponent} [source] - the supply, if the network has one
+   * @returns {(Map<ElectricComponent, CircuitReading> | undefined)} the reading of each device
+   */
+  static driveNetwork(network, source3) {
+    const element2 = source3 ? network.elements.find((entry) => entry.device === source3) : void 0;
+    if (!source3 || !element2) return circuitReadings(network);
+    const magnitude2 = Math.abs(source3._sourceVoltage ?? 0);
+    const limit = Math.abs(source3._sourceCurrent ?? 0);
+    const sign4 = source3._polarity < 0 ? -1 : 1;
+    if (source3._sourceMode === "current") {
+      element2.emf = 1;
+      const probe = circuitReadings(network);
+      const drawn2 = probe?.get(source3)?.current ?? 0;
+      if (!(Math.abs(drawn2) > 0)) return probe;
+      const compliance = Math.abs(source3._complianceVoltage ?? 0);
+      const wanted = limit / Math.abs(drawn2);
+      element2.emf = sign4 * (compliance > 0 ? Math.min(wanted, compliance) : wanted);
+      return circuitReadings(network);
+    }
+    element2.emf = sign4 * magnitude2;
+    const driven = circuitReadings(network);
+    const drawn = driven?.get(source3)?.current ?? 0;
+    if (!(limit > 0) || Math.abs(drawn) <= limit) return driven;
+    element2.emf *= limit / Math.abs(drawn);
+    return circuitReadings(network);
   }
   /**
    * Metal displacement without a circuit: a dosed metal reduces the cation of
@@ -151730,29 +151877,25 @@ var ChemComponent = class {
 
 // chemlib/terminals.ts
 function alreadyWired(a7, b5) {
-  for (const partner of a7._connections) {
-    if (!partner) continue;
+  for (const partner of a7.partners) {
     if (partner === b5) return true;
-    if (partner._type === "cable" /* Cable */ && partner._connections.includes(b5)) return true;
+    if (partner._type === "cable" /* Cable */ && partner.terminalsOf(b5).length > 0) return true;
   }
   return false;
 }
 function canConnect(a7, b5) {
   if (!a7 || !b5 || a7 === b5) return false;
   if (!(a7._conCount > 0) || !(b5._conCount > 0)) return false;
-  if (alreadyWired(a7, b5)) return false;
-  return a7.freeTerminals.length > 0 && b5.freeTerminals.length > 0;
+  return a7.preferredTerminal() >= 0 && b5.preferredTerminal() >= 0;
 }
 function endFor(device, terminal) {
   return device.socketAt(terminal) === "clip" ? "crocodile" : "banana";
 }
 function connectDevices(a7, b5, terminalA, terminalB) {
   if (!canConnect(a7, b5)) return void 0;
-  const freeA = a7.freeTerminals;
-  const freeB = b5.freeTerminals;
-  const slotA = terminalA !== void 0 && freeA.includes(terminalA) ? terminalA : freeA[0];
-  const slotB = terminalB !== void 0 && freeB.includes(terminalB) ? terminalB : freeB[0];
-  if (slotA === void 0 || slotB === void 0) return void 0;
+  const slotA = terminalA !== void 0 && a7.hasRoom(terminalA) ? terminalA : a7.preferredTerminal();
+  const slotB = terminalB !== void 0 && b5.hasRoom(terminalB) ? terminalB : b5.preferredTerminal();
+  if (slotA < 0 || slotB < 0) return void 0;
   const cable = ComponentManager.newElectricComponent("cable" /* Cable */);
   cable._cableEnds = [endFor(a7, slotA), endFor(b5, slotB)];
   a7.attach(cable, slotA);
@@ -151765,20 +151908,18 @@ function canPlug(cable, end, device, terminal) {
   if (!cable || !device || cable === device) return false;
   if (cable._type !== "cable" /* Cable */) return false;
   if (!(end === 0 || end === 1)) return false;
-  if (cable._connections[end]) return false;
-  if (cable._connections.includes(device)) return false;
-  const free = device.freeTerminals;
-  if (!free.length) return false;
-  const slot = terminal !== void 0 && free.includes(terminal) ? terminal : free[0];
+  if (!cable.hasRoom(end)) return false;
+  if (cable.terminalsOf(device).length > 0) return false;
+  const slot = terminal !== void 0 && device.hasRoom(terminal) ? terminal : device.preferredTerminal();
+  if (slot < 0) return false;
   const socket = device.socketAt(slot);
   if (!socket) return false;
   return socket === (cable._cableEnds[end] === "crocodile" ? "clip" : "banana");
 }
 function plugCable(cable, end, device, terminal) {
   if (!canPlug(cable, end, device, terminal)) return false;
-  const free = device.freeTerminals;
-  const slot = terminal !== void 0 && free.includes(terminal) ? terminal : free[0];
-  if (slot === void 0) return false;
+  const slot = terminal !== void 0 && device.hasRoom(terminal) ? terminal : device.preferredTerminal();
+  if (slot < 0) return false;
   device.attach(cable, slot);
   cable.attach(device, end);
   return true;
@@ -151830,7 +151971,8 @@ function restoreCables(entries, lookup, plug) {
     }
     (entry.connections ?? []).forEach((partner, end) => {
       if (partner === null || partner === void 0) return;
-      const device = lookup(partner);
+      const id3 = entries[partner]?.id;
+      const device = id3 === void 0 ? void 0 : lookup(id3);
       if (!device) {
         missing += 1;
         return;
@@ -182552,18 +182694,21 @@ var ElectricDeviceView = class extends Container {
    * that already carries a cable is drawn dimmer, and the one a dragged
    * cable would land on is drawn in the accent colour.
    *
+   * A post takes any number of leads, so a taken terminal is not closed: it
+   * only stops being drawn as free.
+   *
    * @private
    */
   drawPorts() {
     const layer = this.portLayer;
     if (!layer) return;
-    const free = this.component.freeTerminals;
-    const key = `${free.join(",")}|${this.portHover}|${this.portHighlight}`;
+    const loads = this.component._connections.map((partners) => partners.length);
+    const key = `${loads.join(",")}|${this.portHover}|${this.portHighlight}`;
     if (key === this.portKey) return;
     this.portKey = key;
     layer.clear();
     this.terminals.forEach((point, terminal) => {
-      const isFree = free.includes(terminal);
+      const isFree = !loads[terminal];
       const active = terminal === this.portHighlight;
       const radius = (point.r ?? 0) + Math.max(0.7, this.portRadius * 0.35);
       if (active) {
@@ -183813,7 +183958,7 @@ var CanvasController = class _CanvasController {
    */
   cableEndLocal(view, end) {
     const cable = view.component;
-    const device = cable._connections[end];
+    const device = cable._connections[end][0];
     if (device) {
       const sprite = this.spritesByLabel.get(`${device._type}:${device._id}`);
       if (sprite) {
@@ -183836,7 +183981,7 @@ var CanvasController = class _CanvasController {
    */
   beginEndDrag(view, end, event) {
     const cable = view.component;
-    const device = cable._connections[end];
+    const device = cable._connections[end][0];
     if (device) {
       const local = this.cableEndLocal(view, end);
       cable._endOffsets[end] = { x: local.x, y: local.y };
@@ -183939,8 +184084,8 @@ var CanvasController = class _CanvasController {
    */
   releaseCableEnds(device) {
     for (const [view, cable] of this.cables) {
-      cable._connections.forEach((partner, end) => {
-        if (partner !== device) return;
+      cable._connections.forEach((partners, end) => {
+        if (!partners.includes(device)) return;
         const local = this.cableEndLocal(view, end);
         cable._endOffsets[end] = { x: local.x, y: local.y };
       });
@@ -184336,8 +184481,8 @@ var CanvasController = class _CanvasController {
    */
   cableTerminalPoint(sprite, device, cable) {
     if (sprite instanceof ElectricDeviceView) {
-      const terminal = device._connections.indexOf(cable);
-      const point = terminal >= 0 ? this.portWorld(sprite, terminal) : void 0;
+      const terminal = device.terminalsOf(cable)[0];
+      const point = terminal !== void 0 ? this.portWorld(sprite, terminal) : void 0;
       if (point) return point;
     }
     return { x: sprite.x, y: sprite.y };
@@ -184384,7 +184529,7 @@ var CanvasController = class _CanvasController {
         view.resetLength(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
         continue;
       }
-      const [first, second] = cable._connections;
+      const [first, second] = cable._connections.map((partners) => partners[0]);
       if (!first || !second) continue;
       const from2 = this.spritesByLabel.get(`${first._type}:${first._id}`);
       const to2 = this.spritesByLabel.get(`${second._type}:${second._id}`);
@@ -184907,8 +185052,32 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.canvas.refreshDeviceDisplay(circuitComps[0]);
       this.canvas.refreshDeviceDisplay(circuitComps[1]);
       this.diagrams.appendEChemPoint(source3, circuitComps);
+      this.canvas.refreshDeviceDisplay(source3);
+      return;
+    }
+    const network = this.meterCircuit(source3);
+    if (network) {
+      Simulation.sCircuit(network);
+      for (const device of network) this.canvas.refreshDeviceDisplay(device);
+      if (network.includes(this.curr_obj)) this._updatePopup();
     }
     this.canvas.refreshDeviceDisplay(source3);
+  }
+  /**
+   * The devices of a network that carries no cell: a supply wired straight
+   * into a meter.
+   *
+   * {@link chemlib.Simulation.sEChem} needs two electrodes, so a circuit
+   * without them is read by {@link chemlib.Simulation.sCircuit} instead. A
+   * network that carries an electrode is left to the cell solve, and one
+   * without a supply has nothing to measure.
+   */
+  meterCircuit(device) {
+    const connected = ComponentManager.connectedDevices(device);
+    if (connected.some((component) => component._type === "electrode" /* Electrode */)) return void 0;
+    if (!connected.some((component) => component._type === "source" /* Source */)) return void 0;
+    const meters = connected.filter((component) => component._type === "voltmeter" /* Voltmeter */ || component._type === "ammeter" /* Ammeter */ || component._type === "multimeter" /* Multimeter */);
+    return meters.length ? connected : void 0;
   }
   operatingCircuit(device) {
     const circuit = ComponentManager.isCircuit(device);
@@ -186019,7 +186188,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const detachedElectrodes = this.allEComponents.filter((component) => component._type === "electrode" /* Electrode */ && removedMixtures.has(component._connectedMix) && !labels.has(labelOf(component)));
     const affectedElectrical = /* @__PURE__ */ new Set([...removedElectrical, ...detachedElectrodes]);
     for (const component of affectedElectrical) {
-      for (const partner of component._connections.filter(Boolean)) affectedElectrical.add(partner);
+      for (const partner of component.partners) affectedElectrical.add(partner);
     }
     for (const component of removedElectrical) labels.add(labelOf(component));
     const selected = world.children[this.curr_stage_index];
@@ -186030,7 +186199,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }
     for (const component of removedElectrical) this.canvas.releaseCableEnds(component);
     for (const component of removedElectrical) {
-      for (const partner of [...component._connections].filter(Boolean)) this._remEcon(component, partner);
+      for (const partner of [...component.partners]) this._remEcon(component, partner);
     }
     for (const electrode of detachedElectrodes) {
       const vessel = removedMixtures.get(electrode._connectedMix);
@@ -186229,7 +186398,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     restoreConnections(
       this.availableComponents,
       (id3) => this.allEComponents.find((component) => component._id === id3),
-      (a7, b5) => this.connectElectrical(a7, b5, void 0, void 0, false)
+      // A pair the cable entries already joined is left alone. Wiring is
+      // otherwise free to lay a second lead between the same two devices,
+      // which is what a supply and a meter need.
+      (a7, b5) => !alreadyWired(a7, b5) && this.connectElectrical(a7, b5, void 0, void 0, false)
     );
     if (entry === void 0) this.canvas.attachDevices();
   }
@@ -186257,10 +186429,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const cable = connectDevices(from2, to2, terminalFrom, terminalTo);
     if (!cable) return false;
     this.allEComponents.push(cable);
-    this.canvas.addComponentView(cable, false);
+    const sprite = this.canvas.addComponentView(cable, false);
     this.canvas.refreshDeviceDisplay(from2);
     this.canvas.refreshDeviceDisplay(to2);
     if (!authored) return true;
+    this.authorCable(cable, sprite);
     this.syncAuthoredConnections(from2);
     this.syncAuthoredConnections(to2);
     this._notify(this.message("Neue Verbindung zwischen {from} und {to}", {
@@ -186273,6 +186446,39 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       completion: true
     });
     return true;
+  }
+  /**
+   * Records a cable that was laid by dragging in the data block. The partner
+   * lists of the two devices cannot carry it: they name each partner once,
+   * so a second lead between the same pair would be lost. The cable entry
+   * names the device on each of its ends instead, which keeps parallel leads
+   * apart and brings them back one by one.
+   *
+   * @private
+   * @param {chemlib.ElectricComponent} cable - the cable to record
+   * @param {PIXI.Container} sprite - its view, which the entry is found by
+   */
+  authorCable(cable, sprite) {
+    if (!this.canAuthor) return;
+    const entry = {
+      id: cable._id,
+      type: cable._type,
+      variantId: cable._variantId,
+      pos: [sprite.x, sprite.y],
+      capacityMl: 0,
+      vol: 0,
+      content: "",
+      voltage: 0,
+      current: 0,
+      material: "",
+      connections: [],
+      labelText: "",
+      ends: [...cable._cableEnds],
+      offsets: cable._endOffsets.map(({ x: x4, y: y5 }) => [x4, y5])
+    };
+    this.availableComponents = [...this.availableComponents, entry];
+    this.avComponentsSprites.push([sprite, cable._id]);
+    this.syncAuthoredConnections(cable);
   }
   /**
    * Rewrites the authored connection list of a device from its live
@@ -186291,7 +186497,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (!entry) return;
     if (device._type === "cable" /* Cable */) {
       entry["connections"] = device._connections.map((end) => {
-        const index2 = end ? this.authoredIndexOf(end) : -1;
+        const index2 = end.length ? this.authoredIndexOf(end[0]) : -1;
         return index2 >= 0 ? index2 : null;
       });
       entry["offsets"] = device._endOffsets.map(({ x: x4, y: y5 }) => [x4, y5]);
@@ -186299,9 +186505,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       return;
     }
     const partners = [];
-    for (const cable of device._connections) {
-      if (!cable) continue;
-      const other = cable._connections.find((end) => end && end !== device);
+    for (const cable of device.partners) {
+      const other = cable.partners.find((end) => end !== device);
       const index2 = other ? this.authoredIndexOf(other) : -1;
       if (index2 >= 0 && !partners.includes(index2)) partners.push(index2);
     }
@@ -187120,8 +187325,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   renderElectricalSettings(device) {
     const { Cable, Electrode, Source } = EComponentType;
     if (device._type === Cable) return E;
-    const connections = device._connections.filter(Boolean).flatMap((cable) => {
-      const other = cable._connections.find((end) => end && end !== device);
+    const connections = device.partners.flatMap((cable) => {
+      const other = cable.partners.find((end) => end !== device);
       return other ? [{ cable, other }] : [];
     });
     const materials = this.canAuthor && device._type === Electrode ? componentVariants.electrode.filter((variant) => variant.material) : [];

@@ -30,19 +30,19 @@ export interface ConnectionEntry {
  * @returns {boolean}
  */
 export function alreadyWired(a: ElectricComponent, b: ElectricComponent): boolean {
-	for (const partner of a._connections) {
-		if (!partner) continue;
+	for (const partner of a.partners) {
 		if (partner === b) return true;
-		if (partner._type === EComponentType.Cable && partner._connections.includes(b)) return true;
+		if (partner._type === EComponentType.Cable && partner.terminalsOf(b).length > 0) return true;
 	}
 	return false;
 }
 
 /**
  * Whether two devices may be joined by a cable. A device without terminals (a
- * salt bridge, a gas collection tube, a label) never takes one, a device whose
- * terminals are all taken cannot take another, and a pair that is already
- * wired is not wired a second time.
+ * salt bridge, a gas collection tube, a label) never takes one. A post that
+ * already holds a lead still takes another, and a pair that is already wired
+ * takes a second lead as well: a supply and a meter need one per pole, and a
+ * binding post has no limit on how many plugs it holds.
  *
  * @export
  * @param {ElectricComponent} a - the first device
@@ -52,8 +52,7 @@ export function alreadyWired(a: ElectricComponent, b: ElectricComponent): boolea
 export function canConnect(a: ElectricComponent, b: ElectricComponent): boolean {
 	if (!a || !b || a === b) return false;
 	if (!(a._conCount > 0) || !(b._conCount > 0)) return false;
-	if (alreadyWired(a, b)) return false;
-	return a.freeTerminals.length > 0 && b.freeTerminals.length > 0;
+	return a.preferredTerminal() >= 0 && b.preferredTerminal() >= 0;
 }
 
 /**
@@ -92,14 +91,12 @@ export function connectDevices(
 	terminalB?: number
 ): ElectricComponent | undefined {
 	if (!canConnect(a, b)) return undefined;
-	const freeA = a.freeTerminals;
-	const freeB = b.freeTerminals;
-	const slotA = terminalA !== undefined && freeA.includes(terminalA) ? terminalA : freeA[0];
-	const slotB = terminalB !== undefined && freeB.includes(terminalB) ? terminalB : freeB[0];
-	if (slotA === undefined || slotB === undefined) return undefined;
+	const slotA = terminalA !== undefined && a.hasRoom(terminalA) ? terminalA : a.preferredTerminal();
+	const slotB = terminalB !== undefined && b.hasRoom(terminalB) ? terminalB : b.preferredTerminal();
+	if (slotA < 0 || slotB < 0) return undefined;
 	const cable = ComponentManager.newElectricComponent(EComponentType.Cable);
 	cable._cableEnds = [endFor(a, slotA), endFor(b, slotB)];
-	// `canConnect` guarantees both slots are free, so neither attach can fail.
+	// `canConnect` guarantees both sides have room, so neither attach can fail.
 	a.attach(cable, slotA);
 	b.attach(cable, slotB);
 	cable.attach(a, 0);
@@ -109,9 +106,9 @@ export function connectDevices(
 
 /**
  * Whether one end of a cable fits a terminal of a device. The end has to be
- * free, the device must not already sit on the other end, the terminal has to
- * be free, and the plug has to match the socket: a crocodile clip clamps onto
- * a metal electrode, a banana plug goes into a binding post.
+ * free, the device must not already sit on the other end, the device has to
+ * take another lead, and the plug has to match the socket: a crocodile clip
+ * clamps onto a metal electrode, a banana plug goes into a binding post.
  *
  * @export
  * @param {ElectricComponent} cable - the cable
@@ -129,11 +126,10 @@ export function canPlug(
 	if (!cable || !device || cable === device) return false;
 	if (cable._type !== EComponentType.Cable) return false;
 	if (!(end === 0 || end === 1)) return false;
-	if (cable._connections[end]) return false;
-	if (cable._connections.includes(device)) return false;
-	const free = device.freeTerminals;
-	if (!free.length) return false;
-	const slot = terminal !== undefined && free.includes(terminal) ? terminal : free[0];
+	if (!cable.hasRoom(end)) return false;
+	if (cable.terminalsOf(device).length > 0) return false;
+	const slot = terminal !== undefined && device.hasRoom(terminal) ? terminal : device.preferredTerminal();
+	if (slot < 0) return false;
 	const socket = device.socketAt(slot);
 	if (!socket) return false;
 	return socket === (cable._cableEnds[end] === "crocodile" ? "clip" : "banana");
@@ -157,9 +153,8 @@ export function plugCable(
 	terminal?: number
 ): boolean {
 	if (!canPlug(cable, end, device, terminal)) return false;
-	const free = device.freeTerminals;
-	const slot = terminal !== undefined && free.includes(terminal) ? terminal : free[0];
-	if (slot === undefined) return false;
+	const slot = terminal !== undefined && device.hasRoom(terminal) ? terminal : device.preferredTerminal();
+	if (slot < 0) return false;
 	device.attach(cable, slot);
 	cable.attach(device, end);
 	return true;
@@ -233,9 +228,10 @@ export function restoreConnections<T>(
 
 /**
  * Plugs the ends of the cables a layout was saved with. A cable entry names
- * the device on each of its ends, so the position in the list is the end; an
- * end that was saved as `null` stays free. This runs before the implicit
- * wiring, so a layout that carries both descriptions is not wired twice.
+ * the entry of the device on each of its ends, so the position in the list is
+ * the end; an end that was saved as `null` stays free. This runs before the
+ * implicit wiring, so a layout that carries both descriptions is not wired
+ * twice.
  *
  * @export
  * @template T
@@ -261,7 +257,10 @@ export function restoreCables<T>(
 		}
 		(entry.connections ?? []).forEach((partner, end) => {
 			if (partner === null || partner === undefined) return;
-			const device = lookup(partner);
+			// The list holds entry indices, the lookup wants the runtime id the
+			// entry became.
+			const id = entries[partner]?.id;
+			const device = id === undefined ? undefined : lookup(id);
 			if (!device) {
 				missing += 1;
 				return;

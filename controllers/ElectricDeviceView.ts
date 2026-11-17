@@ -318,18 +318,21 @@ export class ElectricDeviceView extends Container {
 	 * that already carries a cable is drawn dimmer, and the one a dragged
 	 * cable would land on is drawn in the accent colour.
 	 *
+	 * A post takes any number of leads, so a taken terminal is not closed: it
+	 * only stops being drawn as free.
+	 *
 	 * @private
 	 */
 	private drawPorts(): void {
 		const layer = this.portLayer;
 		if (!layer) return;
-		const free = this.component.freeTerminals;
-		const key = `${free.join(",")}|${this.portHover}|${this.portHighlight}`;
+		const loads = this.component._connections.map((partners) => partners.length);
+		const key = `${loads.join(",")}|${this.portHover}|${this.portHighlight}`;
 		if (key === this.portKey) return;
 		this.portKey = key;
 		layer.clear();
 		this.terminals.forEach((point, terminal) => {
-			const isFree = free.includes(terminal);
+			const isFree = !loads[terminal];
 			const active = terminal === this.portHighlight;
 			// The ring sits just outside the drawn post, so the plus and minus
 			// marks of the graphic stay readable under it.

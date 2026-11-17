@@ -972,8 +972,38 @@ export class ChemLab extends LitElementWw {
 			this.canvas.refreshDeviceDisplay(circuitComps[0]);
 			this.canvas.refreshDeviceDisplay(circuitComps[1]);
 			this.diagrams.appendEChemPoint(source, circuitComps);
+			this.canvas.refreshDeviceDisplay(source);
+			return;
+		}
+		// A supply wired straight into a meter carries no cell, so the cell
+		// solve has nothing to work on; the network is still driven.
+		const network = this.meterCircuit(source);
+		if (network) {
+			chemlib.Simulation.sCircuit(network);
+			for (const device of network) this.canvas.refreshDeviceDisplay(device);
+			if (network.includes(this.curr_obj)) this._updatePopup();
 		}
 		this.canvas.refreshDeviceDisplay(source);
+	}
+
+	/**
+	 * The devices of a network that carries no cell: a supply wired straight
+	 * into a meter.
+	 *
+	 * {@link chemlib.Simulation.sEChem} needs two electrodes, so a circuit
+	 * without them is read by {@link chemlib.Simulation.sCircuit} instead. A
+	 * network that carries an electrode is left to the cell solve, and one
+	 * without a supply has nothing to measure.
+	 */
+	private meterCircuit(device: chemlib.ElectricComponent): chemlib.ElectricComponent[] | undefined {
+		const connected = chemlib.ComponentManager.connectedDevices(device);
+		if (connected.some((component) => component._type === chemlib.EComponentType.Electrode)) return undefined;
+		if (!connected.some((component) => component._type === chemlib.EComponentType.Source)) return undefined;
+		const meters = connected.filter((component) =>
+			component._type === chemlib.EComponentType.Voltmeter ||
+			component._type === chemlib.EComponentType.Ammeter ||
+			component._type === chemlib.EComponentType.Multimeter);
+		return meters.length ? connected : undefined;
 	}
 
 	private operatingCircuit(device: chemlib.ElectricComponent): chemlib.ElectricComponent[] | undefined {
@@ -2208,7 +2238,7 @@ export class ChemLab extends LitElementWw {
 		// Collect the affected circuit while the connections still exist.
 		const affectedElectrical = new Set([...removedElectrical, ...detachedElectrodes]);
 		for (const component of affectedElectrical) {
-			for (const partner of component._connections.filter(Boolean)) affectedElectrical.add(partner);
+			for (const partner of component.partners) affectedElectrical.add(partner);
 		}
 		for (const component of removedElectrical) labels.add(labelOf(component));
 		const selected = world.children[this.curr_stage_index];
@@ -2221,7 +2251,7 @@ export class ChemLab extends LitElementWw {
 		// its plug was, so the rest of the wiring stays intact.
 		for (const component of removedElectrical) this.canvas.releaseCableEnds(component);
 		for (const component of removedElectrical) {
-			for (const partner of [...component._connections].filter(Boolean)) this._remEcon(component, partner);
+			for (const partner of [...component.partners]) this._remEcon(component, partner);
 		}
 		for (const electrode of detachedElectrodes) {
 			const vessel = removedMixtures.get(electrode._connectedMix);
@@ -2462,7 +2492,11 @@ export class ChemLab extends LitElementWw {
 		chemlib.restoreConnections(
 			this.availableComponents as chemlib.ConnectionEntry[],
 			(id) => this.allEComponents.find((component) => component._id === id),
-			(a, b) => this.connectElectrical(a, b, undefined, undefined, false)
+			// A pair the cable entries already joined is left alone. Wiring is
+			// otherwise free to lay a second lead between the same two devices,
+			// which is what a supply and a meter need.
+			(a, b) => !chemlib.alreadyWired(a, b) &&
+				this.connectElectrical(a, b, undefined, undefined, false)
 		);
 		if (entry === undefined) this.canvas.attachDevices();
 	}
@@ -2499,11 +2533,12 @@ export class ChemLab extends LitElementWw {
 		const cable = chemlib.connectDevices(from, to, terminalFrom, terminalTo);
 		if (!cable) return false;
 		this.allEComponents.push(cable);
-		this.canvas.addComponentView(cable, false);
+		const sprite = this.canvas.addComponentView(cable, false);
 		// The plugs of both devices change from free to occupied.
 		this.canvas.refreshDeviceDisplay(from);
 		this.canvas.refreshDeviceDisplay(to);
 		if (!authored) return true;
+		this.authorCable(cable, sprite);
 		this.syncAuthoredConnections(from);
 		this.syncAuthoredConnections(to);
 		this._notify(this.message("Neue Verbindung zwischen {from} und {to}", {
@@ -2515,6 +2550,31 @@ export class ChemLab extends LitElementWw {
 			completion: true,
 		});
 		return true;
+	}
+
+	/**
+	 * Records a cable that was laid by dragging in the data block. The partner
+	 * lists of the two devices cannot carry it: they name each partner once,
+	 * so a second lead between the same pair would be lost. The cable entry
+	 * names the device on each of its ends instead, which keeps parallel leads
+	 * apart and brings them back one by one.
+	 *
+	 * @private
+	 * @param {chemlib.ElectricComponent} cable - the cable to record
+	 * @param {PIXI.Container} sprite - its view, which the entry is found by
+	 */
+	private authorCable(cable: chemlib.ElectricComponent, sprite: PIXI.Container): void {
+		if (!this.canAuthor) return;
+		const entry = {
+			id: cable._id, type: cable._type, variantId: cable._variantId,
+			pos: [sprite.x, sprite.y], capacityMl: 0, vol: 0, content: "",
+			voltage: 0, current: 0, material: "", connections: [], labelText: "",
+			ends: [...cable._cableEnds],
+			offsets: cable._endOffsets.map(({ x, y }) => [x, y]),
+		};
+		this.availableComponents = [...this.availableComponents, entry];
+		this.avComponentsSprites.push([sprite, cable._id]);
+		this.syncAuthoredConnections(cable);
 	}
 
 	/**
@@ -2536,7 +2596,7 @@ export class ChemLab extends LitElementWw {
 			// A cable names the device on each of its ends, so the position in
 			// the list is the end and a free end is `null`.
 			entry["connections"] = device._connections.map((end) => {
-				const index = end ? this.authoredIndexOf(end) : -1;
+				const index = end.length ? this.authoredIndexOf(end[0]) : -1;
 				return index >= 0 ? index : null;
 			});
 			entry["offsets"] = device._endOffsets.map(({ x, y }) => [x, y]);
@@ -2544,9 +2604,8 @@ export class ChemLab extends LitElementWw {
 			return;
 		}
 		const partners: number[] = [];
-		for (const cable of device._connections) {
-			if (!cable) continue;
-			const other = cable._connections.find((end) => end && end !== device);
+		for (const cable of device.partners) {
+			const other = cable.partners.find((end) => end !== device);
 			const index = other ? this.authoredIndexOf(other) : -1;
 			if (index >= 0 && !partners.includes(index)) partners.push(index);
 		}
@@ -3403,8 +3462,8 @@ export class ChemLab extends LitElementWw {
 	private renderElectricalSettings(device: chemlib.ElectricComponent) {
 		const { Cable, Electrode, Source } = chemlib.EComponentType;
 		if (device._type === Cable) return nothing;
-		const connections = device._connections.filter(Boolean).flatMap(cable => {
-			const other = cable._connections.find(end => end && end !== device);
+		const connections = device.partners.flatMap(cable => {
+			const other = cable.partners.find(end => end !== device);
 			return other ? [{ cable, other }] : [];
 		});
 		// A reference electrode is a variant without a material, so the list

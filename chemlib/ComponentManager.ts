@@ -97,13 +97,31 @@ export abstract class ComponentManager {
 	}
 
 	/**
-	 * returns whether two objects are electrically connected
+	 * Every device wired to the given one, the device itself included.
 	 *
 	 * A circuit branches: a voltmeter may hang on the same post as the
 	 * supply, and a lead that is plugged in at one end only ends in nothing.
 	 * A walk that follows a single branch and stops at its end would miss
 	 * the other one, so every reached device is kept and the search
 	 * continues from each of them.
+	 *
+	 * @public
+	 * @static
+	 * @param {ElectricComponent} device - the device to start from
+	 * @returns {ElectricComponent[]}
+	 */
+	public static connectedDevices(device: ElectricComponent): ElectricComponent[] {
+		const visited: ElectricComponent[] = [device];
+		for (let cursor = 0; cursor < visited.length; cursor++) {
+			for (const partner of visited[cursor].partners) {
+				if (!visited.includes(partner)) visited.push(partner);
+			}
+		}
+		return visited;
+	}
+
+	/**
+	 * returns whether two objects are electrically connected
 	 *
 	 * @public
 	 * @static
@@ -116,15 +134,7 @@ export abstract class ComponentManager {
 		component2: ElectricComponent
 	): boolean {
 		if (component1 === component2) return true;
-		const visited: ElectricComponent[] = [component1];
-		for (let cursor = 0; cursor < visited.length; cursor++) {
-			for (const partner of visited[cursor]._connections) {
-				if (!partner) continue;
-				if (partner === component2) return true;
-				if (!visited.includes(partner)) visited.push(partner);
-			}
-		}
-		return false;
+		return this.connectedDevices(component1).includes(component2);
 	}
 
 	/**
@@ -142,10 +152,10 @@ export abstract class ComponentManager {
 		device: ElectricComponent,
 		terminal: number
 	): ElectricComponent | undefined {
-		const start: ElectricComponent = device._connections[terminal];
-		if (!start) return undefined;
+		const starts = device._connections[terminal] ?? [];
+		if (!starts.length) return undefined;
 		const visited: ElectricComponent[] = [device];
-		const queue: ElectricComponent[] = [start];
+		const queue: ElectricComponent[] = [...starts];
 		while (queue.length > 0) {
 			const current: ElectricComponent = queue.shift();
 			if (visited.includes(current)) continue;
@@ -153,9 +163,7 @@ export abstract class ComponentManager {
 			if (current._type === EComponentType.Electrode) return current;
 			// Only cables are transparent: anything else ends the branch.
 			if (current._type !== EComponentType.Cable) continue;
-			// A cable always has both ends wired, but a device may have empty
-			// terminals, so the holes are dropped before they enter the queue.
-			queue.push(...current._connections.filter(Boolean));
+			queue.push(...current.partners);
 		}
 		return undefined;
 	}
@@ -171,18 +179,7 @@ export abstract class ComponentManager {
 	public static isCircuit(
 		testComponent: ElectricComponent
 	): ElectricComponent[] {
-		// breadth-first traversal of the connection graph, using `visited`
-		// itself as the queue with `cursor` as the read pointer
-		let visited: ElectricComponent[] = [testComponent];
-		let cursor: number = 0;
-		while (cursor < visited.length) {
-			visited[cursor]._connections.forEach((component) => {
-				if (typeof(component) != 'undefined' && !visited.includes(component)) {
-					visited.push(component);
-				}
-			});
-			cursor += 1;
-		}
+		const visited = this.connectedDevices(testComponent);
 
 		// A cell needs exactly two electrodes and at least one device between
 		// them. An ammeter in series adds a second device, so the count is not
