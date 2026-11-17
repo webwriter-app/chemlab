@@ -2343,7 +2343,19 @@ export class ChemLab extends LitElementWw {
 				this.allEComponents.push(newComp);
 			}
 
-			const sprite = this.canvas.addComponentView(newComp, entry !== undefined);
+			// The id is recorded before the view is built, so a component whose
+			// view fails still takes part in the wiring below.
+			component["id"] = newComp._id;
+			let sprite: PIXI.Container;
+			try {
+				sprite = this.canvas.addComponentView(newComp, entry !== undefined);
+			} catch (error) {
+				// One device that cannot be drawn must not take the rest of the
+				// layout with it: the wiring is restored after this loop, and a
+				// throw here would leave the whole setup without cables.
+				console.error("Unable to build the view of", newComp._type, newComp._id, error);
+				continue;
+			}
 			sprite.x = component["pos"][0];
 			sprite.y = component["pos"][1];
 
@@ -2354,7 +2366,6 @@ export class ChemLab extends LitElementWw {
 			}
 
 			this.avComponentsSprites.push([sprite, newComp._id]);
-			component["id"] = newComp._id;
 		}
 		// Rebuild the wiring from the authored indices. Each entry now carries
 		// the runtime id of the component it became, so the lookup is exact;

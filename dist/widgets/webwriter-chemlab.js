@@ -150573,13 +150573,13 @@ var Simulation = class {
    */
   static sourceVoltage(device, first, second, limits2) {
     if (device._type !== "source" /* Source */) return 0;
-    const magnitude = Math.abs(device._sourceVoltage ?? 0);
+    const magnitude2 = Math.abs(device._sourceVoltage ?? 0);
     if (device._polarity !== 0) {
       const plus = ComponentManager.terminalElectrode(device, device._polarity > 0 ? 0 : 1);
-      return plus === second ? magnitude : -magnitude;
+      return plus === second ? magnitude2 : -magnitude2;
     }
     const open = limits2.openFirst - limits2.openSecond;
-    return Number.isFinite(open) && open >= 0 ? -magnitude : magnitude;
+    return Number.isFinite(open) && open >= 0 ? -magnitude2 : magnitude2;
   }
   /**
    * The current a galvanostat forces, signed so that a positive value makes
@@ -150598,13 +150598,13 @@ var Simulation = class {
    */
   static sourceCurrent(device, first, second, limits2) {
     if (device._type !== "source" /* Source */) return 0;
-    const magnitude = Math.abs(device._sourceCurrent ?? 0);
+    const magnitude2 = Math.abs(device._sourceCurrent ?? 0);
     if (device._polarity !== 0) {
       const plus = ComponentManager.terminalElectrode(device, device._polarity > 0 ? 0 : 1);
-      return plus === second ? -magnitude : magnitude;
+      return plus === second ? -magnitude2 : magnitude2;
     }
     const open = limits2.openFirst - limits2.openSecond;
-    return Number.isFinite(open) && open >= 0 ? magnitude : -magnitude;
+    return Number.isFinite(open) && open >= 0 ? magnitude2 : -magnitude2;
   }
   /**
    * Books the current each half-reaction of one electrode carries over the
@@ -181394,8 +181394,11 @@ var WorkspaceGrid = class {
 function reading(value, unit) {
   return `${Number.isFinite(value) ? Number(value.toPrecision(4)) : "\u2014"} ${unit}`;
 }
+function magnitude(value) {
+  return `${Number.isFinite(value) ? Number(Math.abs(value).toPrecision(4)) : "\u2014"}`;
+}
 function currentReading(value) {
-  return reading(Number.isFinite(value) ? Math.abs(value) : value, "A");
+  return `${magnitude(value)} A`;
 }
 var PLATING_REFERENCE_LITRES = 1125e-8;
 var ElectricDeviceView = class extends Container {
@@ -181576,7 +181579,7 @@ var ElectricDeviceView = class extends Container {
         values = [reading(this.measuredVoltage, "V")];
         break;
       case "ammeter" /* Ammeter */:
-        values = [currentReading(component._visibleCurrent)];
+        values = [magnitude(component._visibleCurrent), "A"];
         break;
       case "multimeter" /* Multimeter */:
         if (hasVoltageReading !== void 0) {
@@ -181598,7 +181601,7 @@ var ElectricDeviceView = class extends Container {
     }
     let changed = false;
     this.lines.forEach(({ text, maxWidth }, index2) => {
-      const value = values[index2];
+      const value = values[index2] ?? "";
       if (text.text === value) return;
       text.text = value;
       text.scale.set(1);
@@ -181760,8 +181763,8 @@ var VesselView = class _VesselView extends Container {
     const burette = type === "burette";
     const narrow = burette || type === "testtube";
     const target = capacity / (burette ? 5 : 4);
-    const magnitude = 10 ** Math.floor(Math.log10(target));
-    const major = burette ? target : magnitude * [10, 5, 2.5, 2, 1].find((step) => step <= target / magnitude);
+    const magnitude2 = 10 ** Math.floor(Math.log10(target));
+    const major = burette ? target : magnitude2 * [10, 5, 2.5, 2, 1].find((step) => step <= target / magnitude2);
     const subdivisions = burette ? capacity <= 10 ? 40 : capacity <= 25 ? 50 : 100 : 2;
     const tickCount = Math.floor(capacity / major * subdivisions + 1e-6);
     const { center, width: svgWidth, height: svgHeight } = interiors[type];
@@ -185109,7 +185112,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         }
         this.allEComponents.push(newComp);
       }
-      const sprite = this.canvas.addComponentView(newComp, entry !== void 0);
+      component["id"] = newComp._id;
+      let sprite;
+      try {
+        sprite = this.canvas.addComponentView(newComp, entry !== void 0);
+      } catch (error) {
+        console.error("Unable to build the view of", newComp._type, newComp._id, error);
+        continue;
+      }
       sprite.x = component["pos"][0];
       sprite.y = component["pos"][1];
       if (this.hasAttribute("contenteditable")) {
@@ -185118,7 +185128,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.canvas._tintSprite(sprite, 16777215);
       }
       this.avComponentsSprites.push([sprite, newComp._id]);
-      component["id"] = newComp._id;
     }
     restoreConnections(
       this.availableComponents,

@@ -9,11 +9,19 @@ function reading(value: number | null | undefined, unit: string): string {
 }
 
 /**
+ * The bare magnitude of a reading, without its unit, for a display that
+ * prints the unit on a line of its own.
+ */
+function magnitude(value: number | null | undefined): string {
+	return `${Number.isFinite(value) ? Number(Math.abs(value as number).toPrecision(4)) : "—"}`;
+}
+
+/**
  * A device shows the magnitude of the current: the sign of the solved value
  * only says which electrode came first in the circuit walk.
  */
 function currentReading(value: number | null | undefined): string {
-	return reading(Number.isFinite(value) ? Math.abs(value as number) : value, "A");
+	return `${magnitude(value)} A`;
 }
 
 /**
@@ -217,7 +225,9 @@ export class ElectricDeviceView extends Container {
 				values = [reading(this.measuredVoltage, "V")];
 				break;
 			case EComponentType.Ammeter:
-				values = [currentReading(component._visibleCurrent)];
+				// The LCD has two rows: the reading on top and its unit below,
+				// the way a bench meter prints them.
+				values = [magnitude(component._visibleCurrent), "A"];
 				break;
 			case EComponentType.Multimeter:
 				if (hasVoltageReading !== undefined) {
@@ -244,7 +254,9 @@ export class ElectricDeviceView extends Container {
 
 		let changed = false;
 		this.lines.forEach(({ text, maxWidth }, index) => {
-			const value = values[index];
+			// A display may draw more rows than a state supplies; the spare row
+			// stays blank instead of taking the whole view down.
+			const value = values[index] ?? "";
 			if (text.text === value) return;
 			text.text = value;
 			text.scale.set(1);
