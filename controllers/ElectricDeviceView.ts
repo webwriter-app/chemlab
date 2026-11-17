@@ -1,5 +1,7 @@
 import { Container, Graphics, Rectangle, Sprite, Text, type Texture } from "pixi.js";
 import { EComponentType, type ElectricComponent } from "../chemlib/ElectricComponent";
+import { ELECTRODE_AREA } from "../chemlib/halfReactions";
+import { MOLAR_GAS_VOLUME_ML } from "../chemlib/gasEvolution";
 
 function reading(value: number | null | undefined, unit: string): string {
 	return `${Number.isFinite(value) ? Number(value.toPrecision(4)) : "—"} ${unit}`;
@@ -61,6 +63,17 @@ export class ElectricDeviceView extends Container {
 				addLine(0.5, 37.5 / 106, 0.155, 0.65);
 				addLine(0.5, 52 / 106, 0.085, 0.65);
 				break;
+			case EComponentType.Multimeter:
+				addLine(0.5, 41 / 106, 0.17, 0.65);
+				break;
+			case EComponentType.GasCollector:
+				// The tube occupies the left half of the artboard; the reading
+				// sits beside it so it stays legible on a narrow sprite.
+				addLine(0.72, 0.5, 0.05, 0.5);
+				break;
+			case EComponentType.Label:
+				addLine(0.5, 0.5, 0.46, 0.9);
+				break;
 			case EComponentType.Electrode:
 				// The strip of the electrode graphic spans 0.4..14.6 of 15 across
 				// and 0.4..74.6 of 75 down; the material label ends at y = 16.
@@ -91,9 +104,13 @@ export class ElectricDeviceView extends Container {
 		let values: string[];
 		switch (component._type) {
 			case EComponentType.Source:
-				// the current is solved from the cell, not set on the source
-				values = [reading(component._sourceVoltage, "V"),
-					currentReading(component._visibleCurrent ?? component._sourceCurrent)];
+				// A source in voltage mode shows the voltage it is set to and
+				// the current the cell solves; in current mode it shows the
+				// current it is set to and the voltage it had to apply.
+				values = component._sourceMode === "current"
+					? [reading(component._visibleVoltage, "V"), currentReading(component._sourceCurrent)]
+					: [reading(component._sourceVoltage, "V"),
+						currentReading(component._visibleCurrent ?? component._sourceCurrent)];
 				break;
 			case EComponentType.Voltmeter:
 				if (hasVoltageReading !== undefined) {
@@ -103,6 +120,22 @@ export class ElectricDeviceView extends Container {
 				break;
 			case EComponentType.Ammeter:
 				values = [currentReading(component._visibleCurrent)];
+				break;
+			case EComponentType.Multimeter:
+				if (hasVoltageReading !== undefined) {
+					this.measuredVoltage = this.active && hasVoltageReading ? component._visibleVoltage : null;
+				}
+				values = [component._meterMode === "voltage"
+					? reading(this.measuredVoltage, "V")
+					: currentReading(component._visibleCurrent)];
+				break;
+			case EComponentType.GasCollector:
+				// The tube collects what has bubbled out of the vessel it
+				// stands in, reported as the volume at lab conditions.
+				values = [reading((component._connectedMix?.evolvedGasMol ?? 0) * MOLAR_GAS_VOLUME_ML, "mL")];
+				break;
+			case EComponentType.Label:
+				values = [component._labelText];
 				break;
 			case EComponentType.Electrode:
 				values = [component._material?._atoms[0]?.getSymbol() ?? ""];
@@ -136,7 +169,12 @@ export class ElectricDeviceView extends Container {
 		const strip = this.strip;
 		if (!coating || !strip) return false;
 		const plating = this.component.plating;
-		const coverage = plating ? Math.min(1, plating.litres / PLATING_REFERENCE_LITRES) : 0;
+		// A wider electrode carries more current at the same density, so the
+		// same deposit is a thinner layer on it. Scaling the reference volume
+		// with the area keeps the drawn thickness the real one.
+		const area = this.component._area > 0 ? this.component._area : ELECTRODE_AREA;
+		const reference = PLATING_REFERENCE_LITRES * area / ELECTRODE_AREA;
+		const coverage = plating ? Math.min(1, plating.litres / reference) : 0;
 		const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}` : "";
 		if (key === this.coatingKey) return false;
 		this.coatingKey = key;

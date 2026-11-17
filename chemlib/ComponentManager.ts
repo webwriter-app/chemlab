@@ -202,7 +202,8 @@ export abstract class ComponentManager {
 			if (
 				component._type === EComponentType.Source ||
 				component._type === EComponentType.Voltmeter ||
-				component._type === EComponentType.Ammeter
+				component._type === EComponentType.Ammeter ||
+				component._type === EComponentType.Multimeter
 			) {
 				devices.push(component);
 			}

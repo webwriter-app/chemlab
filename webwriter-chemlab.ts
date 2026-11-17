@@ -984,16 +984,25 @@ export class ChemLab extends LitElementWw {
 	private stepElectrochemistry(source: chemlib.ElectricComponent): void {
 		const circuitComps = this.operatingCircuit(source);
 		if (circuitComps) {
+			const firstMix = circuitComps[0]._connectedMix;
+			const secondMix = circuitComps[1]._connectedMix;
 			chemlib.Simulation.sEChem(
 				circuitComps[0],
 				circuitComps[1],
-				circuitComps.slice(2)
+				circuitComps.slice(2),
+				{ bridge: this.bridgeJoins(firstMix, secondMix) }
 			);
 
-			const firstMix = circuitComps[0]._connectedMix;
-			const secondMix = circuitComps[1]._connectedMix;
 			for (const vessel of this.allChemComponents) {
 				if (vessel._content === firstMix || vessel._content === secondMix) this.canvas.markVesselChanged(vessel);
+			}
+			// A gas collection tube shows what has bubbled out of its vessel,
+			// so it needs a redraw whenever that vessel reacted.
+			for (const device of this.allEComponents) {
+				if (device._type === chemlib.EComponentType.GasCollector &&
+					(device._connectedMix === firstMix || device._connectedMix === secondMix)) {
+					this.canvas.refreshDeviceDisplay(device);
+				}
 			}
 			if (circuitComps.includes(this.curr_obj) ||
 				this.curr_obj?._content === firstMix || this.curr_obj?._content === secondMix) this._updatePopup();
@@ -1008,9 +1017,24 @@ export class ChemLab extends LitElementWw {
 	private operatingCircuit(device: chemlib.ElectricComponent): chemlib.ElectricComponent[] | undefined {
 		const circuit = chemlib.ComponentManager.isCircuit(device);
 		if (circuit.length < 3 || !circuit.slice(2).includes(device)) return undefined;
+		// A reference electrode holds its potential without a vessel of its
+		// own, so only an electrode that has to react needs a solution.
 		if (!circuit.slice(0, 2).every((electrode) =>
-			electrode._type === chemlib.EComponentType.Electrode && electrode._connectedMix?._isSolution)) return undefined;
+			electrode._type === chemlib.EComponentType.Electrode &&
+			(electrode._reference !== undefined || electrode._connectedMix?._isSolution))) return undefined;
 		return circuit;
+	}
+
+	/**
+	 * Whether a salt bridge on the canvas joins the two half-cells of a
+	 * circuit. The bridge carries no cable, so its two legs decide: it has to
+	 * dip into both vessels for the ionic current to close the cell.
+	 */
+	private bridgeJoins(first?: chemlib.Mixture, second?: chemlib.Mixture): boolean {
+		if (!first || !second || first === second) return false;
+		return this.allEComponents.some((device) =>
+			device._type === chemlib.EComponentType.Bridge &&
+			device._bridgeMixes.includes(first) && device._bridgeMixes.includes(second));
 	}
 
 	private runningCurrent(source: chemlib.ElectricComponent): number {
@@ -1134,7 +1158,7 @@ export class ChemLab extends LitElementWw {
 		let preview: PIXI.Container | undefined;
 		this.startPaletteDrag(event, {
 			start: () => {
-				const { type, capacityMl, material } = variant;
+				const { id: variantId, type, capacityMl, material } = variant;
 				let model: chemlib.ChemComponent | chemlib.ElectricComponent;
 				if (capacityMl !== undefined) {
 					const vessel = new chemlib.ChemComponent(-1, type as chemlib.ComponentType);
@@ -1146,6 +1170,7 @@ export class ChemLab extends LitElementWw {
 						nSourceVoltage: type === chemlib.EComponentType.Source && this.canAuthor ? 0 : undefined,
 						nSourceCurrent: type === chemlib.EComponentType.Source && this.canAuthor ? 0 : undefined,
 					});
+					model._variantId = variantId;
 				}
 				preview = this.canvas.createPlacementPreview(model);
 			},
@@ -1188,17 +1213,19 @@ export class ChemLab extends LitElementWw {
 				component = vessel;
 			} else {
 				const device = chemlib.ComponentManager.newElectricComponent(type as chemlib.EComponentType);
+				device._variantId = variantId;
 				if (material) device._material = this.newElectrodeMaterial(material);
 				this.allEComponents.push(device);
 				component = device;
 			}
 			const sprite = this.canvas.addComponentView(component);
 			sprite.position.copyFrom(position);
+			if (component instanceof chemlib.ElectricComponent) this.canvas.attachDevice(component, sprite);
 			return true;
 		}
 		const entry = {
 			type, variantId, pos: [position.x, position.y], capacityMl, vol: 0, content: "",
-			voltage: 0, current: 0, material: "", connections: [],
+			voltage: 0, current: 0, material: "", connections: [], labelText: "",
 		};
 		this.availableComponents = [...this.availableComponents, entry];
 		this._loadComponents(entry);
@@ -1925,18 +1952,18 @@ export class ChemLab extends LitElementWw {
 		) {
 			this.contextEchemInfo.style.display = "";
 			this.contextEchemInfo.innerHTML = "";
+			const type = this.curr_obj._type;
+			// A multimeter reads whichever quantity its mode selects, and the
+			// mode also decides what the meter does to the circuit.
+			const meterReadsCurrent = type === chemlib.EComponentType.Multimeter &&
+				this.curr_obj._meterMode === "current";
 			if (
-				this.curr_obj._type === chemlib.EComponentType.Source ||
-				this.curr_obj._type === chemlib.EComponentType.Voltmeter
+				type === chemlib.EComponentType.Source ||
+				type === chemlib.EComponentType.Voltmeter ||
+				type === chemlib.EComponentType.Multimeter
 			) {
 				this.activateEComp.style.display = "";
-				if (this.curr_obj._type === chemlib.EComponentType.Voltmeter) {
-					const reading = this.voltageReading(this.curr_obj);
-					this.contextEchemInfo.innerHTML = `
-						<p>${this.message("Spannung")}: ${reading}</p>
-						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-						`;
-				} else {
+				if (type === chemlib.EComponentType.Source) {
 					const current = this.runningCurrent(this.curr_obj);
 					let electronMolRate: number =
 						current / chemlib.Simulation._faradayConst;
@@ -1950,11 +1977,49 @@ export class ChemLab extends LitElementWw {
 						</div>
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 						`;
+				} else if (meterReadsCurrent) {
+					const current = this.runningCurrent(this.curr_obj);
+					this.contextEchemInfo.innerHTML = `
+						<p>Stromstärke: ${current.toExponential(2)} A</p>
+						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
+						`;
+				} else {
+					const reading = this.voltageReading(this.curr_obj);
+					this.contextEchemInfo.innerHTML = `
+						<p>${this.message("Spannung")}: ${reading}</p>
+						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
+						`;
 				}
-			} else if (this.curr_obj._type === chemlib.EComponentType.Ammeter) {
+			} else if (type === chemlib.EComponentType.Ammeter) {
 				const current = this.runningCurrent(this.curr_obj);
 				this.contextEchemInfo.innerHTML = `
 					<p>Stromstärke: ${current.toExponential(2)} A</p>
+					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
+					`;
+			} else if (type === chemlib.EComponentType.Bridge) {
+				// A bridge carries no cable, so the legs are the only thing
+				// that says which two half-cells it joins.
+				const vesselName = (mix?: chemlib.Mixture) => {
+					const vessel = this.allChemComponents.find((component) => component._content === mix);
+					return vessel ? `${this.itemName(vessel._type)} · ${vessel._id + 1}` : this.message("kein Gefäß");
+				};
+				const legs = this.curr_obj._bridgeMixes;
+				this.contextEchemInfo.innerHTML = `
+					<div style="display: flex; flex-direction: column">
+						<p>${this.message("Schenkel")}: ${legs.length}</p>
+						${legs.map((mix) => `<p>${vesselName(mix)}</p>`).join("")}
+					</div>
+					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
+					`;
+			} else if (type === chemlib.EComponentType.GasCollector) {
+				const collected = (this.curr_obj._connectedMix?.evolvedGasMol ?? 0) * chemlib.MOLAR_GAS_VOLUME_ML;
+				this.contextEchemInfo.innerHTML = `
+					<p>${this.message("gesammelt")}: ${this.formatAmount(collected, 3)} mL</p>
+					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
+					`;
+			} else if (type === chemlib.EComponentType.Label) {
+				this.contextEchemInfo.innerHTML = `
+					<p>${this.curr_obj._labelText || this.message("kein Text")}</p>
 					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 					`;
 			} else if (this.curr_obj._type === chemlib.EComponentType.Electrode){
@@ -2183,10 +2248,11 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private refreshDeviceAfterRemoval(component: chemlib.ElectricComponent): void {
-		const { Source, Voltmeter, Ammeter } = chemlib.EComponentType;
-		if ((component._type !== Source && component._type !== Voltmeter && component._type !== Ammeter) ||
+		const { Source, Voltmeter, Ammeter, Multimeter } = chemlib.EComponentType;
+		if ((component._type !== Source && component._type !== Voltmeter &&
+			component._type !== Ammeter && component._type !== Multimeter) ||
 			this.operatingCircuit(component)) return;
-		if (component._type === Voltmeter) component._visibleVoltage = 0;
+		if (component._type === Voltmeter || component._type === Multimeter) component._visibleVoltage = 0;
 		component._visibleCurrent = null;
 		const label = `${component._type}:${component._id}`;
 		const ticker = "echem" + label;
@@ -2307,6 +2373,9 @@ export class ChemLab extends LitElementWw {
 				newComp = chemlib.ComponentManager.newElectricComponent(
 					type
 				);
+				// The variant decides the artboard, so a compact source keeps
+				// its size when the layout is restored.
+				newComp._variantId = variant?.id;
 				switch (newComp._type) {
 					case chemlib.EComponentType.Electrode:
 						if (variant?.material) newComp._material = this.newElectrodeMaterial(variant.material);
@@ -2325,9 +2394,25 @@ export class ChemLab extends LitElementWw {
 						newComp._sourceCurrent = Number.parseFloat(component["current"]) || 0;
 						newComp._polarity = Number.parseInt(component["polarity"]) === 1 ? 1
 							: Number.parseInt(component["polarity"]) === -1 ? -1 : 0;
+						newComp._sourceMode = component["sourceMode"] === "current" ? "current" : "voltage";
+						newComp._complianceVoltage = Number.parseFloat(component["complianceVoltage"]) || 30;
+						break;
+					case chemlib.EComponentType.Multimeter:
+						newComp._meterMode = component["meterMode"] === "current" ? "current" : "voltage";
+						break;
+					case chemlib.EComponentType.Label:
+						newComp._labelText = String(component["labelText"] ?? "");
 						break;
 					default:
 						break;
+				}
+				// An electrode's wetted area and a reference electrode's fixed
+				// potential are properties of the electrode, not of its type.
+				if (newComp._type === chemlib.EComponentType.Electrode) {
+					const area = Number.parseFloat(component["area"]);
+					if (Number.isFinite(area) && area > 0) newComp._area = area;
+					const reference = Number.parseFloat(component["reference"]);
+					if (Number.isFinite(reference)) newComp._reference = reference;
 				}
 				this.allEComponents.push(newComp);
 			}
@@ -2379,7 +2464,7 @@ export class ChemLab extends LitElementWw {
 				}
 			});
 		});
-		if (entry === undefined) this.canvas.attachAuthoredElectrodes();
+		if (entry === undefined) this.canvas.attachAuthoredDevices();
 	}
 
 
@@ -3390,7 +3475,10 @@ export class ChemLab extends LitElementWw {
 		const materials = this.canAuthor && device._type === Electrode ? componentVariants.electrode : [];
 		const material = materials.find(variant => variant.material.name === device._material?.name);
 		const hasSource = device._type === Source;
-		if (!hasSource && !connections.length && !candidates.length && !materials.length) return nothing;
+		const hasMeter = device._type === chemlib.EComponentType.Multimeter;
+		const hasLabel = device._type === chemlib.EComponentType.Label;
+		const hasElectrode = device._type === Electrode;
+		if (!hasSource && !hasMeter && !hasLabel && !hasElectrode && !connections.length && !candidates.length) return nothing;
 		const label = (other: chemlib.ElectricComponent) => `${this.itemName(other._type)} · ${other._id + 1}`;
 		// A source has two poles, and the electrode on the plus pole is the
 		// anode. The select names the electrodes, so the user never has to
@@ -3403,6 +3491,20 @@ export class ChemLab extends LitElementWw {
 			<sl-details class="electrical-settings" summary=${this.message("Eigenschaften")}
 				@sl-after-show=${() => this.canvas.drawSelection()} @sl-after-hide=${() => this.canvas.drawSelection()}>
 				${hasSource ? html`
+					<label>${this.message("Betriebsart")}
+					<select contenteditable="false" @change=${(event: Event) => {
+							const mode = (event.currentTarget as HTMLSelectElement).value === "current" ? "current" : "voltage";
+							device._sourceMode = mode;
+							this.saveSelectedComponent({ sourceMode: mode });
+							this.canvas.refreshDeviceDisplay(device);
+							this._updatePopup();
+					}}>
+						<option value="voltage" ?selected=${device._sourceMode !== "current"}>${this.message("Spannung vorgeben")}</option>
+						<option value="current" ?selected=${device._sourceMode === "current"}>${this.message("Stromstärke vorgeben")}</option>
+					</select></label>
+					${device._sourceMode === "current" ? html`
+						<sl-input id="complianceVoltage" size="small" type="number" contenteditable="false"
+							label=${this.message("Grenzspannung")} .value=${String(device._complianceVoltage ?? 30)}></sl-input>` : nothing}
 					<sl-input id="sourceVoltage" size="small" type="number" contenteditable="false"
 						label=${this.message("Quellspannung")} .value=${String(device._sourceVoltage ?? 0)}></sl-input>
 					<sl-input id="sourceCurrent" size="small" type="number" contenteditable="false"
@@ -3411,10 +3513,53 @@ export class ChemLab extends LitElementWw {
 						const value = (id: string) => Number.parseFloat(this.shadowRoot.querySelector<SlInput>(id).value) || 0;
 						device._sourceVoltage = value("#sourceVoltage");
 						device._sourceCurrent = value("#sourceCurrent");
-						this.saveSelectedComponent({ voltage: device._sourceVoltage, current: device._sourceCurrent });
+						const compliance = this.shadowRoot.querySelector<SlInput>("#complianceVoltage");
+						if (compliance) device._complianceVoltage = Math.abs(Number.parseFloat(compliance.value)) || 30;
+						this.saveSelectedComponent({
+							voltage: device._sourceVoltage,
+							current: device._sourceCurrent,
+							complianceVoltage: device._complianceVoltage,
+						});
 						this.canvas.refreshDeviceDisplay(device);
 						this._updatePopup();
 						this._sendxAPiStatement("submitted", "voltage " + device._type + ":" + device._id);
+					}}>${this.message("bestätigen")}</sl-button>` : nothing}
+				${hasMeter ? html`
+					<label>${this.message("Messbereich")}
+					<select contenteditable="false" @change=${(event: Event) => {
+							const mode = (event.currentTarget as HTMLSelectElement).value === "current" ? "current" : "voltage";
+							device._meterMode = mode;
+							this.saveSelectedComponent({ meterMode: mode });
+							this.canvas.refreshDeviceDisplay(device);
+							this._updatePopup();
+					}}>
+						<option value="voltage" ?selected=${device._meterMode !== "current"}>${this.message("Spannung")}</option>
+						<option value="current" ?selected=${device._meterMode === "current"}>${this.message("Stromstärke")}</option>
+					</select></label>` : nothing}
+				${hasLabel ? html`
+					<sl-input id="labelText" size="small" contenteditable="false"
+						label=${this.message("Beschriftung")} .value=${device._labelText ?? ""}></sl-input>
+					<sl-button size="small" @click=${() => {
+						device._labelText = this.shadowRoot.querySelector<SlInput>("#labelText").value;
+						this.saveSelectedComponent({ labelText: device._labelText });
+						this.canvas.refreshDeviceDisplay(device);
+						this._updatePopup();
+					}}>${this.message("bestätigen")}</sl-button>` : nothing}
+				${hasElectrode ? html`
+					<sl-input id="electrodeArea" size="small" type="number" min="0.1" step="0.1" contenteditable="false"
+						label=${this.message("Benetzte Fläche in cm²")} .value=${String(device._area ?? chemlib.ELECTRODE_AREA)}></sl-input>
+					<sl-input id="electrodeReference" size="small" type="number" step="0.01" contenteditable="false"
+						label=${this.message("Bezugspotential in V (leer = keine Referenz)")}
+						.value=${device._reference === undefined ? "" : String(device._reference)}></sl-input>
+					<sl-button size="small" @click=${() => {
+						const area = Number.parseFloat(this.shadowRoot.querySelector<SlInput>("#electrodeArea").value);
+						const raw = this.shadowRoot.querySelector<SlInput>("#electrodeReference").value.trim();
+						const reference = raw === "" ? Number.NaN : Number.parseFloat(raw);
+						device._area = Number.isFinite(area) && area > 0 ? area : chemlib.ELECTRODE_AREA;
+						device._reference = Number.isFinite(reference) ? reference : undefined;
+						this.saveSelectedComponent({ area: device._area, reference: device._reference });
+						this.canvas.refreshDeviceDisplay(device);
+						this._updatePopup();
 					}}>${this.message("bestätigen")}</sl-button>` : nothing}
 				${poles ? html`
 					<label>${this.message("Polung")}

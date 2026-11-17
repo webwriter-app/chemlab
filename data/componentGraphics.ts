@@ -5,6 +5,10 @@ import testtube from "../media/testtube.svg";
 import source from "../media/source_off.svg";
 import voltmeter from "../media/voltmeter_off.svg";
 import ammeter from "../media/ammeter.svg";
+import multimeter from "../media/multimeter.svg";
+import bridge from "../media/bridge.svg";
+import gascollector from "../media/gascollector.svg";
+import label from "../media/label.svg";
 import electrode from "../media/electrode.svg";
 import separatingfunnel from "../media/separatingfunnel.svg";
 import condenser from "../media/condenser.svg";
@@ -30,6 +34,10 @@ export const componentGraphics = {
 	source: { url: source },
 	voltmeter: { url: voltmeter },
 	ammeter: { url: ammeter },
+	multimeter: { url: multimeter },
+	bridge: { url: bridge },
+	gascollector: { url: gascollector },
+	label: { url: label },
 } satisfies Record<string, ComponentGraphic>;
 
 export type PaletteComponent = keyof typeof componentGraphics;
@@ -70,6 +78,16 @@ const fixedDimensions: Readonly<Partial<Record<string, DimensionsMm>>> = {
 	// https://www.peaktech.de/media/7c/56/30/1617257827/Products_2021_EN.pdf
 	voltmeter: [90, 106],
 	ammeter: [90, 106],
+	multimeter: [90, 106],
+	// A salt bridge spans two vessels, so its artboard is wide and flat. The
+	// two legs sit at 1/8 and 7/8 of the width, which is where the view looks
+	// for the vessels it joins.
+	bridge: [120, 60],
+	// A gas collection tube stands over an electrode and reaches above the
+	// vessel rim, like the graduated tube it models. The right half of the
+	// artboard carries the collected volume.
+	gascollector: [40, 120],
+	label: [100, 22],
 	cable: [CABLE_DIAMETER_MM, CABLE_DIAMETER_MM],
 	// Legacy components outside the palette.
 	// https://www.dwk.com/duran-separating-funnel-spherical-pear-shape-250-ml-242913608
@@ -84,6 +102,8 @@ export interface ComponentVariant {
 	size: string;
 	capacityMl?: number;
 	material?: { element: string; name: string };
+	/** Artboard override in mm, for a variant that is the same device at another size. */
+	artboard?: DimensionsMm;
 }
 
 function capacities(type: keyof typeof vesselDimensions): ComponentVariant[] {
@@ -96,15 +116,29 @@ export const componentVariants = {
 	flask: capacities("flask"),
 	burette: capacities("burette"),
 	testtube: capacities("testtube"),
+	// Ordered from noble to base, so the carousel follows the
+	// electrochemical series and a neighbouring step is a small one.
 	electrode: [
-		["carbon", "Graphit"], ["platinum", "Platin"], ["copper", "Kupfer"],
-		["zinc", "Zink"], ["iron", "Eisen"], ["magnesium", "Magnesium"], ["nickel", "Nickel"],
+		["carbon", "Graphit"], ["platinum", "Platin"], ["gold", "Gold"],
+		["silver", "Silber"], ["copper", "Kupfer"], ["lead", "Blei"],
+		["tin", "Zinn"], ["iron", "Eisen"], ["nickel", "Nickel"],
+		["cobalt", "Cobalt"], ["chromium", "Chrom"], ["zinc", "Zink"],
+		["aluminum", "Aluminium"], ["magnesium", "Magnesium"], ["antimony", "Antimon"],
 	].map(([element, name]): ComponentVariant => ({
 		id: `electrode:${element}`, type: "electrode", size: "", material: { element, name },
 	})),
-	source: [{ id: "source:standard", type: "source", size: "" }],
+	source: [
+		{ id: "source:standard", type: "source", size: "" },
+		// The same instrument at a smaller artboard, for cells that need the
+		// room for vessels and electrodes.
+		{ id: "source:compact", type: "source", size: "kompakt", artboard: [120, 76] },
+	],
 	voltmeter: [{ id: "voltmeter:standard", type: "voltmeter", size: `${VOLTMETER_MODEL_CURRENT} A` }],
 	ammeter: [{ id: "ammeter:standard", type: "ammeter", size: `${AMMETER_MODEL_VOLTAGE} V` }],
+	multimeter: [{ id: "multimeter:standard", type: "multimeter", size: "" }],
+	bridge: [{ id: "bridge:standard", type: "bridge", size: "" }],
+	gascollector: [{ id: "gascollector:standard", type: "gascollector", size: "" }],
+	label: [{ id: "label:standard", type: "label", size: "" }],
 } satisfies Record<PaletteComponent, ComponentVariant[]>;
 
 const variantsById = new Map(Object.values(componentVariants).flat().map((variant) => [variant.id, variant]));
@@ -113,7 +147,9 @@ export function componentVariant(id?: string): ComponentVariant | undefined {
 	return id === undefined ? undefined : variantsById.get(id);
 }
 
-export function componentArtboardMm(type: string, capacityMl?: number): DimensionsMm {
+export function componentArtboardMm(type: string, capacityMl?: number, variantId?: string): DimensionsMm {
+	const override = componentVariant(variantId)?.artboard;
+	if (override) return override;
 	const { capacityMl: standard, widthFraction = 1, heightFraction = 1 } = componentGraphic(type);
 	if (standard) {
 		const sizes: Record<number, DimensionsMm> = vesselDimensions[type];

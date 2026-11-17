@@ -110715,6 +110715,160 @@ var Bond = class {
   }
 };
 
+// chemlib/halfReactions.ts
+var REFERENCE_CURRENT_DENSITY = 0.02;
+var ELECTRODE_AREA = 4.5;
+var SERIES_RESISTANCE = 2;
+var GAS_PARTIAL_PRESSURE = 1;
+function metalCouple(id3, metal, ion2, el, sep, density2, etaRef, b5) {
+  return {
+    id: id3,
+    terms: [
+      { smiles: ion2, coefficient: 1, phase: "solution" },
+      { smiles: metal, coefficient: -1, phase: "solid" }
+    ],
+    el,
+    sep,
+    density: density2,
+    etaRef,
+    b: b5,
+    materials: []
+  };
+}
+function hydrogenCouple(materials, etaRef, b5) {
+  return {
+    id: materials.length ? `H+/H2@${materials.join("+")}` : "H+/H2",
+    terms: [
+      { smiles: "[H+]", coefficient: 2, phase: "solution" },
+      { smiles: "[H][H]", coefficient: -1, phase: "gas" }
+    ],
+    el: 2,
+    sep: 0,
+    gas: "H2",
+    etaRef,
+    b: b5,
+    materials
+  };
+}
+function oxygenCouple(materials, etaRef, b5) {
+  return {
+    id: materials.length ? `O2/H2O@${materials.join("+")}` : "O2/H2O",
+    terms: [
+      { smiles: "[O2]", coefficient: 1, phase: "gas" },
+      { smiles: "[H+]", coefficient: 4, phase: "solution" },
+      { smiles: "O", coefficient: -2, phase: "solution" }
+    ],
+    el: 4,
+    sep: 1.229,
+    gas: "O2",
+    etaRef,
+    b: b5,
+    materials
+  };
+}
+function halogenCouple(id3, halogen, halide, sep, gas, etaRef, b5) {
+  return {
+    id: id3,
+    terms: [
+      { smiles: halogen, coefficient: 1, phase: "gas" },
+      { smiles: halide, coefficient: -2, phase: "solution" }
+    ],
+    el: 2,
+    sep,
+    gas,
+    etaRef,
+    b: b5,
+    materials: []
+  };
+}
+var halfReactions = [
+  // Base metals: hydrogen evolution on them is slow, so they polarise hard.
+  metalCouple("Li+/Li", "[Li]", "[Li+]", 1, -3.04, 0.534, 0.9, 0.12),
+  metalCouple("K+/K", "[K]", "[K+]", 1, -2.93, 0.862, 0.9, 0.12),
+  metalCouple("Cs+/Cs", "[Cs]", "[Cs+]", 1, -2.92, 1.93, 0.9, 0.12),
+  metalCouple("Ba2+/Ba", "[Ba]", "[Ba2+]", 2, -2.9, 3.51, 0.9, 0.12),
+  metalCouple("Ca2+/Ca", "[Ca]", "[Ca2+]", 2, -2.87, 1.55, 0.9, 0.12),
+  metalCouple("Na+/Na", "[Na]", "[Na+]", 1, -2.71, 0.968, 0.9, 0.12),
+  metalCouple("Mg2+/Mg", "[Mg]", "[Mg2+]", 2, -2.372, 1.738, 0.9, 0.12),
+  metalCouple("Be2+/Be", "[Be]", "[Be2+]", 2, -1.85, 1.85, 0.9, 0.12),
+  metalCouple("Al3+/Al", "[Al]", "[Al3+]", 3, -1.66, 2.7, 0.9, 0.12),
+  // Common metals.
+  metalCouple("Zn2+/Zn", "[Zn]", "[Zn2+]", 2, -0.762, 7.14, 0.1, 0.06),
+  metalCouple("Cr3+/Cr", "[Cr]", "[Cr3+]", 3, -0.74, 7.19, 0.1, 0.06),
+  metalCouple("Fe2+/Fe", "[Fe]", "[Fe2+]", 2, -0.44, 7.874, 0.1, 0.06),
+  metalCouple("Co2+/Co", "[Co]", "[Co2+]", 2, -0.28, 8.9, 0.1, 0.06),
+  metalCouple("Ni2+/Ni", "[Ni]", "[Ni2+]", 2, -0.257, 8.908, 0.1, 0.06),
+  metalCouple("Sn2+/Sn", "[Sn]", "[Sn2+]", 2, -0.141, 7.31, 0.1, 0.06),
+  metalCouple("Pb2+/Pb", "[Pb]", "[Pb2+]", 2, -0.126, 11.34, 0.1, 0.06),
+  // Noble metals and the fast outer-sphere couple.
+  metalCouple("Cu2+/Cu", "[Cu]", "[Cu2+]", 2, 0.339, 8.96, 0.05, 0.06),
+  metalCouple("Sb3+/Sb", "[Sb]", "[Sb3+]", 3, 0.152, 6.69, 0.05, 0.06),
+  metalCouple("Ag+/Ag", "[Ag]", "[Ag+]", 1, 0.799, 10.49, 0.05, 0.06),
+  metalCouple("Au3+/Au", "[Au]", "[Au3+]", 3, 1.5, 19.32, 0.05, 0.06),
+  // Both forms are dissolved, so this couple needs no electrode material of
+  // its own and runs on any conductor.
+  {
+    id: "Fe3+/Fe2+",
+    terms: [
+      { smiles: "[Fe3+]", coefficient: 1, phase: "solution" },
+      { smiles: "[Fe2+]", coefficient: -1, phase: "solution" }
+    ],
+    el: 1,
+    sep: 0.771,
+    etaRef: 0.05,
+    b: 0.06,
+    materials: []
+  },
+  // Hydrogen evolution: very fast on platinum, slow on zinc.
+  hydrogenCouple([], 0.4, 0.12),
+  hydrogenCouple(["platinum"], 0.03, 0.03),
+  hydrogenCouple(["copper"], 0.3, 0.12),
+  hydrogenCouple(["zinc"], 0.8, 0.12),
+  hydrogenCouple(["carbon"], 0.4, 0.12),
+  // Oxygen evolution: the overpotential that decides whether a halide wins
+  // the anode. Platinum is the better catalyst by a factor of two.
+  oxygenCouple([], 0.9, 0.12),
+  oxygenCouple(["platinum"], 0.45, 0.06),
+  // Halogen evolution.
+  halogenCouple("Cl2/Cl-", "[Cl2]", "[Cl-]", 1.358, "Cl2", 0.1, 0.04),
+  halogenCouple("Br2/Br-", "[Br2]", "[Br-]", 1.066, "Br2", 0.1, 0.04),
+  halogenCouple("I2/I-", "[I2]", "[I-]", 0.536, "I2", 0.1, 0.04)
+];
+function coupleKey(reaction) {
+  return reaction.terms.map((term) => `${term.coefficient}:${term.smiles}`).sort().join("|");
+}
+function materialName(material) {
+  return material?._atoms[0]?.getName().toLowerCase();
+}
+function halfReactionsOn(material) {
+  const specific = halfReactions.filter((reaction) => reaction.materials.length > 0 && material !== void 0 && reaction.materials.includes(material));
+  const covered = new Set(specific.map(coupleKey));
+  return [
+    ...specific,
+    ...halfReactions.filter((reaction) => reaction.materials.length === 0 && !covered.has(coupleKey(reaction)))
+  ];
+}
+function oxidationOf(smiles) {
+  return halfReactions.find((reaction) => reaction.terms.some((term) => term.smiles === smiles && term.coefficient < 0));
+}
+function reductionOf(smiles) {
+  return halfReactions.find((reaction) => reaction.terms.some((term) => term.smiles === smiles && term.coefficient > 0));
+}
+function exchangeCurrentDensity(reaction) {
+  return REFERENCE_CURRENT_DENSITY / Math.pow(10, reaction.etaRef / reaction.b);
+}
+function currentDensity(reaction, eta) {
+  const decade = Math.pow(10, Math.max(-300, Math.min(300, eta / reaction.b)));
+  return exchangeCurrentDensity(reaction) * (decade - 1 / decade);
+}
+function currentDensitySlope(reaction, eta) {
+  const decade = Math.pow(10, Math.max(-300, Math.min(300, eta / reaction.b)));
+  return exchangeCurrentDensity(reaction) * Math.LN10 / reaction.b * (decade + 1 / decade);
+}
+function atomSymbol(smiles) {
+  return /^\[([A-Z][a-z]?)(?:\d*[+-]?)\]$/.exec(smiles)?.[1];
+}
+
 // chemlib/ElectricComponent.ts
 var EComponentType = /* @__PURE__ */ ((EComponentType2) => {
   EComponentType2["Electrode"] = "electrode";
@@ -110722,6 +110876,10 @@ var EComponentType = /* @__PURE__ */ ((EComponentType2) => {
   EComponentType2["Source"] = "source";
   EComponentType2["Voltmeter"] = "voltmeter";
   EComponentType2["Ammeter"] = "ammeter";
+  EComponentType2["Multimeter"] = "multimeter";
+  EComponentType2["Bridge"] = "bridge";
+  EComponentType2["GasCollector"] = "gascollector";
+  EComponentType2["Label"] = "label";
   return EComponentType2;
 })(EComponentType || {});
 var VOLTMETER_MODEL_CURRENT = 2;
@@ -110751,6 +110909,15 @@ var ElectricComponent = class {
    * @type {Mixture}
    */
   _connectedMix;
+  /**
+   * for a salt bridge: the two vessels its legs dip into, in the order of
+   * the legs. A bridge carries no cable, so this is what joins it to the
+   * cell; the simulation closes the charge balance of both vessels when a
+   * bridge spans the two half-cells of a running circuit.
+   *
+   * @type {Mixture[]}
+   */
+  _bridgeMixes = [];
   /**
    * The number of possible connections
    *
@@ -110787,6 +110954,59 @@ var ElectricComponent = class {
    * @type {(-1 | 0 | 1)}
    */
   _polarity = 0;
+  /**
+   * for electrodes: the wetted area in cm². The current density the kinetics
+   * are written in follows from it, so a wider strip carries more current at
+   * the same overpotential.
+   *
+   * @type {number}
+   */
+  _area = ELECTRODE_AREA;
+  /**
+   * for electrodes: the fixed potential in V against the standard hydrogen
+   * electrode when the electrode is a reference electrode. Such an electrode
+   * holds its potential instead of settling at a mixed potential, so it needs
+   * no vessel of its own.
+   *
+   * @type {(number | undefined)}
+   */
+  _reference;
+  /**
+   * for sources: whether the source sets the voltage and lets the cell solve
+   * the current, or sets the current and lets the cell solve the voltage it
+   * needs. A galvanostat is the second kind.
+   *
+   * @type {("voltage" | "current")}
+   */
+  _sourceMode = "voltage";
+  /**
+   * for sources in current mode: the largest voltage the source may apply
+   * before it gives up and behaves like a voltage source at that limit, in V.
+   *
+   * @type {number}
+   */
+  _complianceVoltage = 30;
+  /**
+   * for a multimeter: whether it reads the voltage across the cell or the
+   * current through it. The two modes differ in what the meter does to the
+   * circuit, not only in what it shows.
+   *
+   * @type {("voltage" | "current")}
+   */
+  _meterMode = "voltage";
+  /**
+   * for a label: the text it shows on the canvas.
+   *
+   * @type {string}
+   */
+  _labelText = "";
+  /**
+   * the palette variant the component was placed as, so a saved layout can
+   * restore the size and the material it was authored with.
+   *
+   * @type {(string | undefined)}
+   */
+  _variantId;
   /**
    * for voltmeter: the indicated voltage
    *
@@ -110848,6 +111068,10 @@ var ElectricComponent = class {
         this._conCount = 2;
         this._sourceVoltage = AMMETER_MODEL_VOLTAGE;
         break;
+      case "multimeter" /* Multimeter */:
+        this._conCount = 2;
+        this._visibleVoltage = 0;
+        break;
       case "cable" /* Cable */:
         this._conCount = 2;
         break;
@@ -110855,6 +111079,13 @@ var ElectricComponent = class {
         this._conCount = 1;
         this._material = nMaterial;
         this._connectedMix = nMixture;
+        break;
+      // A salt bridge, a gas collector and a label carry no cables: they
+      // act on the vessel they sit in or on, not on the circuit.
+      case "bridge" /* Bridge */:
+      case "gascollector" /* GasCollector */:
+      case "label" /* Label */:
+        this._conCount = 0;
         break;
       default:
         break;
@@ -111122,7 +111353,7 @@ var ComponentManager = class {
       if (component._type === "electrode" /* Electrode */) {
         electrodes.unshift(component);
       }
-      if (component._type === "source" /* Source */ || component._type === "voltmeter" /* Voltmeter */ || component._type === "ammeter" /* Ammeter */) {
+      if (component._type === "source" /* Source */ || component._type === "voltmeter" /* Voltmeter */ || component._type === "ammeter" /* Ammeter */ || component._type === "multimeter" /* Multimeter */) {
         devices.push(component);
       }
     });
@@ -148019,10 +148250,25 @@ var Mixture = class {
    * portion carries its share.
    */
   excessCharge = 0;
+  /**
+   * Charge the electrode reactions have moved into the vessel as stored
+   * species, in mol. A dissolving anode leaves its cation behind and the
+   * electrons leave through the wire, so the compartment would turn
+   * positive; a salt bridge carries the counter-ion in and keeps it
+   * neutral. {@link Simulation.sEChem} books the opposite into
+   * `excessCharge` when a bridge joins the two vessels.
+   */
+  electrodeCharge = 0;
   /** Records `amountMol` of a gas as escaped from the solution. */
   evolveGas(gas, amountMol) {
     if (!(amountMol > 0)) return;
     this.evolvedGas.set(gas, (this.evolvedGas.get(gas) ?? 0) + amountMol);
+  }
+  /** Total gas that has left the solution, in mol. */
+  get evolvedGasMol() {
+    let total = 0;
+    for (const amount of this.evolvedGas.values()) total += amount;
+    return total;
   }
   /**
    * Solid material sitting in the vessel: precipitated salts and doses that
@@ -148973,6 +149219,8 @@ var complexFormation = {
 };
 
 // chemlib/gasEvolution.ts
+var MOLAR_GAS_VOLUME = 24.47;
+var MOLAR_GAS_VOLUME_ML = MOLAR_GAS_VOLUME * 1e3;
 var evolvedGases = {
   // CO2: 0.034 mol/L in water at 25 °C and 1 atm
   CO2: { formula: "CO\u2082", family: "C(=O)(O)O", solubility: 0.034 },
@@ -148990,160 +149238,6 @@ var evolvedGases = {
   O2: { formula: "O\u2082" }
 };
 
-// chemlib/halfReactions.ts
-var REFERENCE_CURRENT_DENSITY = 0.02;
-var ELECTRODE_AREA = 4.5;
-var SERIES_RESISTANCE = 2;
-var GAS_PARTIAL_PRESSURE = 1;
-function metalCouple(id3, metal, ion2, el, sep, density2, etaRef, b5) {
-  return {
-    id: id3,
-    terms: [
-      { smiles: ion2, coefficient: 1, phase: "solution" },
-      { smiles: metal, coefficient: -1, phase: "solid" }
-    ],
-    el,
-    sep,
-    density: density2,
-    etaRef,
-    b: b5,
-    materials: []
-  };
-}
-function hydrogenCouple(materials, etaRef, b5) {
-  return {
-    id: materials.length ? `H+/H2@${materials.join("+")}` : "H+/H2",
-    terms: [
-      { smiles: "[H+]", coefficient: 2, phase: "solution" },
-      { smiles: "[H][H]", coefficient: -1, phase: "gas" }
-    ],
-    el: 2,
-    sep: 0,
-    gas: "H2",
-    etaRef,
-    b: b5,
-    materials
-  };
-}
-function oxygenCouple(materials, etaRef, b5) {
-  return {
-    id: materials.length ? `O2/H2O@${materials.join("+")}` : "O2/H2O",
-    terms: [
-      { smiles: "[O2]", coefficient: 1, phase: "gas" },
-      { smiles: "[H+]", coefficient: 4, phase: "solution" },
-      { smiles: "O", coefficient: -2, phase: "solution" }
-    ],
-    el: 4,
-    sep: 1.229,
-    gas: "O2",
-    etaRef,
-    b: b5,
-    materials
-  };
-}
-function halogenCouple(id3, halogen, halide, sep, gas, etaRef, b5) {
-  return {
-    id: id3,
-    terms: [
-      { smiles: halogen, coefficient: 1, phase: "gas" },
-      { smiles: halide, coefficient: -2, phase: "solution" }
-    ],
-    el: 2,
-    sep,
-    gas,
-    etaRef,
-    b: b5,
-    materials: []
-  };
-}
-var halfReactions = [
-  // Base metals: hydrogen evolution on them is slow, so they polarise hard.
-  metalCouple("Li+/Li", "[Li]", "[Li+]", 1, -3.04, 0.534, 0.9, 0.12),
-  metalCouple("K+/K", "[K]", "[K+]", 1, -2.93, 0.862, 0.9, 0.12),
-  metalCouple("Cs+/Cs", "[Cs]", "[Cs+]", 1, -2.92, 1.93, 0.9, 0.12),
-  metalCouple("Ba2+/Ba", "[Ba]", "[Ba2+]", 2, -2.9, 3.51, 0.9, 0.12),
-  metalCouple("Ca2+/Ca", "[Ca]", "[Ca2+]", 2, -2.87, 1.55, 0.9, 0.12),
-  metalCouple("Na+/Na", "[Na]", "[Na+]", 1, -2.71, 0.968, 0.9, 0.12),
-  metalCouple("Mg2+/Mg", "[Mg]", "[Mg2+]", 2, -2.372, 1.738, 0.9, 0.12),
-  metalCouple("Be2+/Be", "[Be]", "[Be2+]", 2, -1.85, 1.85, 0.9, 0.12),
-  metalCouple("Al3+/Al", "[Al]", "[Al3+]", 3, -1.66, 2.7, 0.9, 0.12),
-  // Common metals.
-  metalCouple("Zn2+/Zn", "[Zn]", "[Zn2+]", 2, -0.762, 7.14, 0.1, 0.06),
-  metalCouple("Cr3+/Cr", "[Cr]", "[Cr3+]", 3, -0.74, 7.19, 0.1, 0.06),
-  metalCouple("Fe2+/Fe", "[Fe]", "[Fe2+]", 2, -0.44, 7.874, 0.1, 0.06),
-  metalCouple("Co2+/Co", "[Co]", "[Co2+]", 2, -0.28, 8.9, 0.1, 0.06),
-  metalCouple("Ni2+/Ni", "[Ni]", "[Ni2+]", 2, -0.257, 8.908, 0.1, 0.06),
-  metalCouple("Sn2+/Sn", "[Sn]", "[Sn2+]", 2, -0.141, 7.31, 0.1, 0.06),
-  metalCouple("Pb2+/Pb", "[Pb]", "[Pb2+]", 2, -0.126, 11.34, 0.1, 0.06),
-  // Noble metals and the fast outer-sphere couple.
-  metalCouple("Cu2+/Cu", "[Cu]", "[Cu2+]", 2, 0.339, 8.96, 0.05, 0.06),
-  metalCouple("Sb3+/Sb", "[Sb]", "[Sb3+]", 3, 0.152, 6.69, 0.05, 0.06),
-  metalCouple("Ag+/Ag", "[Ag]", "[Ag+]", 1, 0.799, 10.49, 0.05, 0.06),
-  metalCouple("Au3+/Au", "[Au]", "[Au3+]", 3, 1.5, 19.32, 0.05, 0.06),
-  // Both forms are dissolved, so this couple needs no electrode material of
-  // its own and runs on any conductor.
-  {
-    id: "Fe3+/Fe2+",
-    terms: [
-      { smiles: "[Fe3+]", coefficient: 1, phase: "solution" },
-      { smiles: "[Fe2+]", coefficient: -1, phase: "solution" }
-    ],
-    el: 1,
-    sep: 0.771,
-    etaRef: 0.05,
-    b: 0.06,
-    materials: []
-  },
-  // Hydrogen evolution: very fast on platinum, slow on zinc.
-  hydrogenCouple([], 0.4, 0.12),
-  hydrogenCouple(["platinum"], 0.03, 0.03),
-  hydrogenCouple(["copper"], 0.3, 0.12),
-  hydrogenCouple(["zinc"], 0.8, 0.12),
-  hydrogenCouple(["carbon"], 0.4, 0.12),
-  // Oxygen evolution: the overpotential that decides whether a halide wins
-  // the anode. Platinum is the better catalyst by a factor of two.
-  oxygenCouple([], 0.9, 0.12),
-  oxygenCouple(["platinum"], 0.45, 0.06),
-  // Halogen evolution.
-  halogenCouple("Cl2/Cl-", "[Cl2]", "[Cl-]", 1.358, "Cl2", 0.1, 0.04),
-  halogenCouple("Br2/Br-", "[Br2]", "[Br-]", 1.066, "Br2", 0.1, 0.04),
-  halogenCouple("I2/I-", "[I2]", "[I-]", 0.536, "I2", 0.1, 0.04)
-];
-function coupleKey(reaction) {
-  return reaction.terms.map((term) => `${term.coefficient}:${term.smiles}`).sort().join("|");
-}
-function materialName(material) {
-  return material?._atoms[0]?.getName().toLowerCase();
-}
-function halfReactionsOn(material) {
-  const specific = halfReactions.filter((reaction) => reaction.materials.length > 0 && material !== void 0 && reaction.materials.includes(material));
-  const covered = new Set(specific.map(coupleKey));
-  return [
-    ...specific,
-    ...halfReactions.filter((reaction) => reaction.materials.length === 0 && !covered.has(coupleKey(reaction)))
-  ];
-}
-function oxidationOf(smiles) {
-  return halfReactions.find((reaction) => reaction.terms.some((term) => term.smiles === smiles && term.coefficient < 0));
-}
-function reductionOf(smiles) {
-  return halfReactions.find((reaction) => reaction.terms.some((term) => term.smiles === smiles && term.coefficient > 0));
-}
-function exchangeCurrentDensity(reaction) {
-  return REFERENCE_CURRENT_DENSITY / Math.pow(10, reaction.etaRef / reaction.b);
-}
-function currentDensity(reaction, eta) {
-  const decade = Math.pow(10, Math.max(-300, Math.min(300, eta / reaction.b)));
-  return exchangeCurrentDensity(reaction) * (decade - 1 / decade);
-}
-function currentDensitySlope(reaction, eta) {
-  const decade = Math.pow(10, Math.max(-300, Math.min(300, eta / reaction.b)));
-  return exchangeCurrentDensity(reaction) * Math.LN10 / reaction.b * (decade + 1 / decade);
-}
-function atomSymbol(smiles) {
-  return /^\[([A-Z][a-z]?)(?:\d*[+-]?)\]$/.exec(smiles)?.[1];
-}
-
 // chemlib/Simulation.ts
 var saltEquilibria = Object.entries(saltSolubility).map(([formula, data2]) => {
   const [cation, anion, cations = 1, anions = 1] = data2.ions;
@@ -149151,6 +149245,9 @@ var saltEquilibria = Object.entries(saltSolubility).map(([formula, data2]) => {
   return { formula, cation, anion, cations, anions, product };
 }).sort((a7, b5) => a7.product - b5.product);
 var complexEquilibria = Object.values(complexFormation);
+var PLATEAU_CURRENT = 1e-12;
+var TRACE_ACTIVITY = 1e-9;
+var REFERENCE_STIFFNESS = 1e3;
 var hydroxideEquilibria = saltEquilibria.filter(({ anion }) => anion === "[OH-]");
 var otherSaltEquilibria = saltEquilibria.filter(({ anion }) => anion !== "[OH-]");
 var hydroxideIon;
@@ -149963,6 +150060,7 @@ var Simulation = class {
     const candidates = [];
     const material = electrode._material;
     const volume = view.mix._solutionVolume;
+    const area2 = electrode._area > 0 ? electrode._area : ELECTRODE_AREA;
     const platings = electrode.platings;
     const solidAmount = (smiles) => {
       if (material !== void 0 && material.smilesString === smiles) return Infinity;
@@ -149996,7 +150094,7 @@ var Simulation = class {
         }
       }
       if (!canOxidise && !canReduce) continue;
-      const densityOf = (limit) => Number.isFinite(limit) && dt > 0 ? limit * this._faradayConst / (ELECTRODE_AREA * dt) : Infinity;
+      const densityOf = (limit) => Number.isFinite(limit) && dt > 0 ? limit * this._faradayConst / (area2 * dt) : Infinity;
       candidates.push({
         reaction,
         equilibrium,
@@ -150067,11 +150165,17 @@ var Simulation = class {
       const ion2 = view.ions.get(term.smiles);
       if (ion2) {
         ion2.change(delta / volume);
-        if (ion2.computed && delta < 0) mix.excessCharge -= -delta;
+        mix.electrodeCharge += delta * ion2.molecule._totalCharge;
+        if (ion2.computed && delta < 0) {
+          mix.excessCharge += delta * Math.abs(ion2.molecule._totalCharge);
+        }
         continue;
       }
       const stored = mix._activeMolecules.find((molecule2) => molecule2.smilesString === term.smiles);
-      if (stored) mix.changeMolecule(stored._id, delta);
+      if (stored) {
+        mix.changeMolecule(stored._id, delta);
+        mix.electrodeCharge += delta * stored._totalCharge;
+      }
     }
   }
   /**
@@ -150144,7 +150248,7 @@ var Simulation = class {
    * @returns {number} current density in A/cm²
    */
   static candidateCurrent(candidate, potential) {
-    const density2 = currentDensity(candidate.reaction, potential - candidate.equilibrium);
+    const density2 = candidate.stiffness !== void 0 ? candidate.stiffness * (potential - candidate.equilibrium) : currentDensity(candidate.reaction, potential - candidate.equilibrium);
     const bounded = Math.max(
       -candidate.cathodicDensity,
       Math.min(candidate.anodicDensity, density2)
@@ -150155,6 +150259,7 @@ var Simulation = class {
   }
   /** Slope of {@link candidateCurrent}, zero on the clamped side. */
   static candidateSlope(candidate, potential) {
+    if (candidate.stiffness !== void 0) return candidate.stiffness;
     const density2 = currentDensity(candidate.reaction, potential - candidate.equilibrium);
     if (!candidate.canOxidise && density2 > 0) return 0;
     if (!candidate.canReduce && density2 < 0) return 0;
@@ -150164,33 +150269,40 @@ var Simulation = class {
   /**
    * Potential at which one electrode carries no net current: its mixed
    * potential. The sum is non-decreasing in the potential, so the root is
-   * unique. The start is the mean of the equilibria, which is already within
-   * a few hundred millivolts of the root.
+   * unique — unless the sum vanishes over a whole interval, which is what an
+   * ideally polarisable electrode does. Such an electrode has no potential of
+   * its own, and reporting the starting guess as one would put a noble metal
+   * in an acid at the mean of its couples instead of leaving it undefined.
    *
    * @private
    * @static
    * @param {HalfCandidate[]} candidates - the electrode's half-reactions
    * @param {number} [start] - potential to start from
-   * @returns {{potential: number, currents: number[]}}
+   * @returns {MixedPotential}
    */
   static mixedPotential(candidates, start) {
     const currents = candidates.map(() => 0);
-    if (candidates.length === 0) return { potential: NaN, currents };
+    if (candidates.length === 0) return { potential: NaN, currents, guess: NaN };
     const total = (potential2) => candidates.reduce((sum, candidate) => sum + this.candidateCurrent(candidate, potential2), 0);
     const slope = (potential2) => candidates.reduce((sum, candidate) => sum + this.candidateSlope(candidate, potential2), 0);
     const guess = start ?? candidates.reduce((sum, candidate) => sum + candidate.equilibrium, 0) / candidates.length;
     const potential = this.solveMonotone(total, slope, 0, guess);
-    if (potential === void 0) return { potential: NaN, currents };
+    if (potential === void 0) return { potential: NaN, currents, guess };
     candidates.forEach((candidate, index2) => {
       currents[index2] = this.candidateCurrent(candidate, potential);
     });
-    return { potential, currents };
+    const reversible = candidates.some((candidate) => candidate.canOxidise && candidate.canReduce);
+    const carrying = currents.some((current) => Math.abs(current) > PLATEAU_CURRENT);
+    if (!reversible && !carrying) return { potential: NaN, currents, guess };
+    return { potential, currents, guess };
   }
   /**
    * The open-circuit potentials of a cell: the mixed potential each electrode
    * settles at with no current flowing. The loop residual is continuous in
    * the potential but jumps in the current at I = 0, so these two values are
-   * the one-sided limits that decide which way the cell runs.
+   * the one-sided limits that decide which way the cell runs. An electrode
+   * without a potential of its own leaves its limit undefined, and the cell
+   * solve then has to start from the guesses instead.
    *
    * @private
    * @static
@@ -150199,9 +150311,13 @@ var Simulation = class {
    * @returns {CellLimits}
    */
   static cellLimits(first, second) {
+    const a7 = this.mixedPotential(first);
+    const b5 = this.mixedPotential(second);
     return {
-      openFirst: this.mixedPotential(first).potential,
-      openSecond: this.mixedPotential(second).potential
+      openFirst: a7.potential,
+      openSecond: b5.potential,
+      guessFirst: a7.guess,
+      guessSecond: b5.guess
     };
   }
   /**
@@ -150248,20 +150364,22 @@ var Simulation = class {
    * @param {number} voltage - how much the source raises the first terminal
    * @param {number} resistance - external resistance in Ω
    * @param {CellLimits} limits - the open-circuit potentials to start from
+   * @param {CellAreas} areas - the wetted area of both electrodes in cm²
    * @returns {(CellSolution | undefined)}
    */
-  static solveCurrent(first, second, voltage, resistance, limits2) {
+  static solveCurrent(first, second, voltage, resistance, limits2, areas) {
     let probedAt = NaN;
     let probedResidual = NaN;
     let probedSlope = NaN;
     let probedFirst;
     let probedSecond;
+    const startFirst = Number.isFinite(limits2.openFirst) ? limits2.openFirst : limits2.guessFirst;
+    const startSecond = Number.isFinite(limits2.openSecond) ? limits2.openSecond : limits2.guessSecond;
     const probe = (current2) => {
       if (current2 === probedAt) return;
       probedAt = current2;
-      const density2 = current2 / ELECTRODE_AREA;
-      const p1 = this.electrodePotential(first, density2, limits2.openFirst);
-      const p22 = this.electrodePotential(second, -density2, limits2.openSecond);
+      const p1 = this.electrodePotential(first, current2 / areas.first, startFirst);
+      const p22 = this.electrodePotential(second, -current2 / areas.second, startSecond);
       probedFirst = p1;
       probedSecond = p22;
       if (p1 === void 0 || p22 === void 0) {
@@ -150270,7 +150388,7 @@ var Simulation = class {
         return;
       }
       probedResidual = p1.potential - p22.potential + voltage + current2 * resistance;
-      probedSlope = 1 / (ELECTRODE_AREA * p1.slope) + 1 / (ELECTRODE_AREA * p22.slope) + resistance;
+      probedSlope = 1 / (areas.first * p1.slope) + 1 / (areas.second * p22.slope) + resistance;
     };
     probe(0);
     const start = resistance > 0 && Number.isFinite(probedResidual) ? -probedResidual / resistance : 0;
@@ -150318,37 +150436,78 @@ var Simulation = class {
    * @param {number} resistance - external resistance in Ω
    * @param {boolean} ideal - a voltmeter draws no current
    * @param {CellLimits} limits - the one-sided limits of the cell
+   * @param {CellAreas} areas - the wetted area of both electrodes in cm²
    * @returns {(CellSolution | undefined)}
    */
-  static solveCell(first, second, voltage, resistance, ideal, limits2) {
+  static solveCell(first, second, voltage, resistance, ideal, limits2, areas) {
+    const a7 = this.mixedPotential(first);
+    const b5 = this.mixedPotential(second);
+    const idle = () => ({
+      first: a7.potential,
+      second: b5.potential,
+      current: 0,
+      firstCurrents: a7.currents,
+      secondCurrents: b5.currents
+    });
     if (ideal) {
-      const a7 = this.mixedPotential(first);
-      const b5 = this.mixedPotential(second);
       if (!Number.isFinite(a7.potential) || !Number.isFinite(b5.potential)) return void 0;
-      return {
-        first: a7.potential,
-        second: b5.potential,
-        current: 0,
-        firstCurrents: a7.currents,
-        secondCurrents: b5.currents
-      };
+      return idle();
     }
     const open = limits2.openFirst - limits2.openSecond;
-    const anodic = Number.isFinite(open) && open + voltage < 0;
-    const cathodic = Number.isFinite(open) && open + voltage > 0;
-    if (!anodic && !cathodic) {
-      const a7 = this.mixedPotential(first);
-      const b5 = this.mixedPotential(second);
-      if (!Number.isFinite(a7.potential) || !Number.isFinite(b5.potential)) return void 0;
-      return {
-        first: a7.potential,
-        second: b5.potential,
-        current: 0,
-        firstCurrents: a7.currents,
-        secondCurrents: b5.currents
-      };
+    if (!Number.isFinite(open)) {
+      if (!voltage && !Number.isFinite(a7.potential) && !Number.isFinite(b5.potential)) {
+        return {
+          first: a7.guess,
+          second: b5.guess,
+          current: 0,
+          firstCurrents: a7.currents,
+          secondCurrents: b5.currents
+        };
+      }
+      return this.solveCurrent(first, second, voltage, resistance, limits2, areas);
     }
-    return this.solveCurrent(first, second, voltage, resistance, limits2);
+    const anodic = open + voltage < 0;
+    const cathodic = open + voltage > 0;
+    if (!anodic && !cathodic) {
+      if (!Number.isFinite(a7.potential) || !Number.isFinite(b5.potential)) return void 0;
+      return idle();
+    }
+    return this.solveCurrent(first, second, voltage, resistance, limits2, areas);
+  }
+  /**
+   * Solves a cell whose source sets the current instead of the voltage. The
+   * current fixes the current density at both electrodes, so each of them
+   * sits at the potential that density needs; the loop equation then says
+   * which voltage the source has to apply to hold it:
+   *
+   *   U = −(E₁ − E₂ + I·R)
+   *
+   * @private
+   * @static
+   * @param {HalfCandidate[]} first - first electrode's half-reactions
+   * @param {HalfCandidate[]} second - second electrode's half-reactions
+   * @param {number} current - the current to force, A; positive makes the first electrode the anode
+   * @param {number} resistance - external resistance in Ω
+   * @param {CellLimits} limits - the open-circuit potentials to start from
+   * @param {CellAreas} areas - the wetted area of both electrodes in cm²
+   * @returns {({solution: CellSolution, voltage: number} | undefined)}
+   */
+  static solveGalvanostat(first, second, current, resistance, limits2, areas) {
+    const startFirst = Number.isFinite(limits2.openFirst) ? limits2.openFirst : limits2.guessFirst;
+    const startSecond = Number.isFinite(limits2.openSecond) ? limits2.openSecond : limits2.guessSecond;
+    const p1 = this.electrodePotential(first, current / areas.first, startFirst);
+    const p22 = this.electrodePotential(second, -current / areas.second, startSecond);
+    if (p1 === void 0 || p22 === void 0) return void 0;
+    return {
+      solution: {
+        first: p1.potential,
+        second: p22.potential,
+        current,
+        firstCurrents: p1.currents,
+        secondCurrents: p22.currents
+      },
+      voltage: -(p1.potential - p22.potential + current * resistance)
+    };
   }
   /**
    * How much the source raises the first electrode's terminal above the
@@ -150375,6 +150534,31 @@ var Simulation = class {
     return Number.isFinite(open) && open >= 0 ? -magnitude : magnitude;
   }
   /**
+   * The current a galvanostat forces, signed so that a positive value makes
+   * the first electrode the anode. A set polarity names the electrode on the
+   * plus pole, which is the one the current leaves into the wire, so that
+   * electrode is the anode. Without one the source drives the cell against
+   * its own voltage, exactly as a voltage source does.
+   *
+   * @private
+   * @static
+   * @param {ElectricComponent} device - the source
+   * @param {ElectricComponent} first - first electrode
+   * @param {ElectricComponent} second - second electrode
+   * @param {CellLimits} limits - the one-sided limits of the cell
+   * @returns {number}
+   */
+  static sourceCurrent(device, first, second, limits2) {
+    if (device._type !== "source" /* Source */) return 0;
+    const magnitude = Math.abs(device._sourceCurrent ?? 0);
+    if (device._polarity !== 0) {
+      const plus = ComponentManager.terminalElectrode(device, device._polarity > 0 ? 0 : 1);
+      return plus === second ? -magnitude : magnitude;
+    }
+    const open = limits2.openFirst - limits2.openSecond;
+    return Number.isFinite(open) && open >= 0 ? magnitude : -magnitude;
+  }
+  /**
    * Books the current each half-reaction of one electrode carries over the
    * step, clamped by what the vessel can supply.
    *
@@ -150383,12 +150567,13 @@ var Simulation = class {
    * @param {HalfCandidate[]} candidates - the electrode's half-reactions
    * @param {number[]} currents - current density each of them carries, A/cm²
    * @param {number} dt - length of the step in s
+   * @param {number} area - wetted area of the electrode in cm²
    */
-  static applyElectrode(candidates, currents, dt) {
+  static applyElectrode(candidates, currents, dt, area2) {
     candidates.forEach((candidate, index2) => {
       const density2 = currents[index2];
       if (!(Math.abs(density2) > 0)) return;
-      const electronMol = density2 * ELECTRODE_AREA * dt / this._faradayConst;
+      const electronMol = density2 * area2 * dt / this._faradayConst;
       const clamped = Math.max(
         -candidate.cathodicLimit,
         Math.min(candidate.anodicLimit, electronMol)
@@ -150396,6 +150581,61 @@ var Simulation = class {
       if (!(Math.abs(clamped) > 0)) return;
       candidate.apply(clamped);
     });
+  }
+  /**
+   * The single candidate of a reference electrode. It is not a reaction: it
+   * holds the potential it is built for, carries whatever current the cell
+   * needs, and is never consumed. That is what makes it a reference against
+   * which the other electrode's potential can be read.
+   *
+   * @private
+   * @static
+   * @param {number} potential - the fixed potential in V against the SHE
+   * @returns {HalfCandidate[]}
+   */
+  static referenceCandidates(potential) {
+    const reaction = {
+      id: `reference@${potential}`,
+      terms: [],
+      el: 1,
+      sep: potential,
+      etaRef: 0,
+      b: 0.06,
+      materials: []
+    };
+    return [{
+      reaction,
+      equilibrium: potential,
+      canOxidise: true,
+      canReduce: true,
+      anodicLimit: Infinity,
+      cathodicLimit: Infinity,
+      anodicDensity: Infinity,
+      cathodicDensity: Infinity,
+      stiffness: REFERENCE_STIFFNESS,
+      apply: () => void 0
+    }];
+  }
+  /**
+   * A salt bridge carries the ionic current between the two vessels, so it
+   * keeps each of them neutral: whatever charge the electrode reactions left
+   * behind is balanced by ions from the bridge. Without one, a half-cell that
+   * loses a cation turns acidic and one that gains a cation turns basic, which
+   * is what a single compartment without a bridge really does.
+   *
+   * Only the charge the electrode reactions moved is compensated, not the
+   * charge the vessel already carried: a salt bridge does not undo the
+   * protons an anodic water oxidation produced, it only supplies the
+   * counter-ion for the cations that stayed behind.
+   *
+   * @private
+   * @static
+   * @param {Mixture} mix - the vessel to neutralise
+   */
+  static balanceCharge(mix) {
+    if (!mix._isSolution || !(mix._solutionVolume > 0)) return;
+    mix.excessCharge -= mix.electrodeCharge;
+    mix.electrodeCharge = 0;
   }
   /**
    * Simulation of a galvanic element or an electrolysis.
@@ -150411,30 +150651,67 @@ var Simulation = class {
    * @param {ElectricComponent} sElectrode1 - first electrode
    * @param {ElectricComponent} sElectrode2 - second electrode
    * @param {ElectricComponent[]} sDevices - the devices between them: a source, a voltmeter, an ammeter, or a source with an ammeter in series
+   * @param {{ bridge?: boolean }} [options] - whether a salt bridge joins the two vessels
    */
-  static sEChem(sElectrode1, sElectrode2, sDevices) {
+  static sEChem(sElectrode1, sElectrode2, sDevices, options2 = {}) {
     const mix1 = sElectrode1._connectedMix;
     const mix2 = sElectrode2._connectedMix;
-    if (!mix1?._isSolution || !mix2?._isSolution) return;
-    if (!ComponentManager.isConnected(sElectrode1, sElectrode2)) return;
+    const usable = (electrode, mix) => electrode._reference !== void 0 || !!mix?._isSolution;
+    const unsolved = () => {
+      for (const device of sDevices) {
+        device._visibleCurrent = null;
+        if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ || device._type === "source" /* Source */ && device._sourceMode === "current") {
+          device._visibleVoltage = null;
+        }
+      }
+    };
+    if (!usable(sElectrode1, mix1) || !usable(sElectrode2, mix2)) return unsolved();
+    if (!ComponentManager.isConnected(sElectrode1, sElectrode2)) return unsolved();
     const dt = this._simTimeStep;
-    const first = this.electrodeCandidates(sElectrode1, this.vesselView(mix1), dt);
-    const second = this.electrodeCandidates(sElectrode2, this.vesselView(mix2), dt);
-    if (first.length === 0 || second.length === 0) return;
+    const candidatesOf = (electrode, mix) => electrode._reference !== void 0 ? this.referenceCandidates(electrode._reference) : mix?._isSolution ? this.electrodeCandidates(electrode, this.vesselView(mix), dt) : [];
+    const first = candidatesOf(sElectrode1, mix1);
+    const second = candidatesOf(sElectrode2, mix2);
+    if (first.length === 0 || second.length === 0) return unsolved();
+    const areas = {
+      first: sElectrode1._area > 0 ? sElectrode1._area : ELECTRODE_AREA,
+      second: sElectrode2._area > 0 ? sElectrode2._area : ELECTRODE_AREA
+    };
     const limits2 = this.cellLimits(first, second);
     const source3 = sDevices.find((device) => device._type === "source" /* Source */);
-    const ideal = !source3 && sDevices.some((device) => device._type === "voltmeter" /* Voltmeter */);
-    const voltage = source3 ? this.sourceVoltage(source3, sElectrode1, sElectrode2, limits2) : 0;
-    const solution = this.solveCell(first, second, voltage, SERIES_RESISTANCE, ideal, limits2);
-    if (!solution) return;
+    const ideal = !source3 && sDevices.some((device) => device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage");
+    let solution;
+    let applied = 0;
+    if (source3?._sourceMode === "current") {
+      const wanted = this.sourceCurrent(source3, sElectrode1, sElectrode2, limits2);
+      const driven = this.solveGalvanostat(first, second, wanted, SERIES_RESISTANCE, limits2, areas);
+      if (!driven) return unsolved();
+      const compliance = Math.abs(source3._complianceVoltage ?? 0);
+      if (Math.abs(driven.voltage) > compliance) {
+        applied = driven.voltage > 0 ? compliance : -compliance;
+        solution = this.solveCell(first, second, applied, SERIES_RESISTANCE, false, limits2, areas);
+      } else {
+        applied = driven.voltage;
+        solution = driven.solution;
+      }
+    } else {
+      applied = source3 ? this.sourceVoltage(source3, sElectrode1, sElectrode2, limits2) : 0;
+      solution = this.solveCell(first, second, applied, SERIES_RESISTANCE, ideal, limits2, areas);
+    }
+    if (!solution) return unsolved();
     for (const device of sDevices) {
       device._visibleCurrent = solution.current;
-      if (device._type === "voltmeter" /* Voltmeter */) {
+      if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage") {
         device._visibleVoltage = Math.abs(solution.first - solution.second);
+      } else if (device._type === "source" /* Source */ && device._sourceMode === "current") {
+        device._visibleVoltage = Math.abs(applied);
       }
     }
-    this.applyElectrode(first, solution.firstCurrents, dt);
-    this.applyElectrode(second, solution.secondCurrents, dt);
+    this.applyElectrode(first, solution.firstCurrents, dt, areas.first);
+    this.applyElectrode(second, solution.secondCurrents, dt, areas.second);
+    if (options2.bridge) {
+      if (mix1?._isSolution) this.balanceCharge(mix1);
+      if (mix2?._isSolution) this.balanceCharge(mix2);
+    }
   }
   /**
    * Metal displacement without a circuit: a dosed metal reduces the cation of
@@ -150458,7 +150735,7 @@ var Simulation = class {
         if (ion2 === metal || !(ion2._totalCharge > 0)) continue;
         const reduction = reductionOf(ion2.smilesString);
         if (!reduction || !reduction.terms.some((term) => term.coefficient < 0 && term.phase === "solid")) continue;
-        if (!(reduction.sep > oxidation.sep)) continue;
+        if (!(this.metalPotential(reduction, mix) > this.metalPotential(oxidation, mix))) continue;
         const extent = Math.min(
           (mix._molProperties[metal._id + "n"] ?? 0) / oxidation.el,
           (mix._molProperties[ion2._id + "n"] ?? 0) / reduction.el
@@ -150491,6 +150768,34 @@ var Simulation = class {
     return density2 > 0 ? molecule2.getTotMolMass() / (density2 * 1e3) : 0;
   }
   /**
+   * Nernst potential of a metal couple in a vessel, read from the stored
+   * species. A missing ion counts as a trace rather than as zero, because a
+   * reaction that produces it cannot be blocked by its own absence: a
+   * dissolving metal always leaves a trace of its own cation.
+   *
+   * The reactions without a circuit used to compare standard potentials,
+   * which ignores the concentrations the vessel actually holds. Reading the
+   * Nernst potential instead makes a displacement stop when the two couples
+   * meet, and lets a metal dissolve in acid only while the couple is below
+   * the hydrogen couple at the solution's own pH.
+   *
+   * @private
+   * @static
+   * @param {HalfReaction} reaction - the metal couple
+   * @param {Mixture} mix - the vessel it sits in
+   * @returns {number} the potential in V
+   */
+  static metalPotential(reaction, mix) {
+    let sum = 0;
+    for (const term of reaction.terms) {
+      if (term.phase !== "solution") continue;
+      const stored = mix._activeMolecules.find((molecule2) => molecule2.smilesString === term.smiles);
+      const concentration = stored ? mix._molProperties[stored._id + "c"] ?? 0 : 0;
+      sum += term.coefficient * Math.log(concentration > 0 ? concentration : TRACE_ACTIVITY);
+    }
+    return reaction.sep + this._gasConst * mix._temperature / (reaction.el * this._faradayConst) * sum;
+  }
+  /**
    * A dosed metal reduces the protons of an acid to hydrogen. The reaction
    * runs until the metal or the acid is spent, so the extent follows the
    * titratable acidity of the solution rather than its free proton
@@ -150504,12 +150809,6 @@ var Simulation = class {
    */
   static sMetalAcid(mix) {
     if (!mix._isSolution || !(mix._solutionVolume > 0)) return false;
-    const metals = mix._activeMolecules.filter((molecule2) => {
-      if (!molecule2.dosedAsSolid) return false;
-      const couple = oxidationOf(molecule2.smilesString);
-      return couple !== void 0 && couple.sep < 0 && couple.terms.some((term) => term.coefficient > 0 && term.phase === "solution");
-    });
-    if (metals.length === 0) return false;
     const volume = mix._solutionVolume;
     const { systems: systems4, spectatorCharge } = this.acidBaseComposition(mix);
     const H3 = AcidBase.solveProton(
@@ -150519,6 +150818,15 @@ var Simulation = class {
       this.complexChargeHook(systems4)
     );
     if (!(H3 > 1e-7)) return false;
+    const hydrogen = this._gasConst * mix._temperature / this._faradayConst * Math.log(H3);
+    const metals = mix._activeMolecules.filter((molecule2) => {
+      if (!molecule2.dosedAsSolid) return false;
+      const couple = oxidationOf(molecule2.smilesString);
+      if (couple === void 0) return false;
+      if (!couple.terms.some((term) => term.coefficient > 0 && term.phase === "solution")) return false;
+      return this.metalPotential(couple, mix) < hydrogen;
+    });
+    if (metals.length === 0) return false;
     const bound = (family, h5) => AcidBase.speciesFractions(family, h5).reduce((sum, fraction, step) => sum + fraction * (family.pKa.length - step), 0);
     let capacity = (H3 - 1e-7) * volume;
     for (const family of systems4) {
@@ -161470,6 +161778,11 @@ var dictionary = {
   source: "Spannungsquelle",
   voltmeter: "Voltmeter",
   ammeter: "Amperemeter",
+  multimeter: "Multimeter",
+  bridge: "Salzbr\xFCcke",
+  gascollector: "Gassammelrohr",
+  label: "Beschriftung",
+  kompakt: "kompakt",
   hydrogen: "Wasserstoff",
   helium: "Helium",
   lithium: "Lithium",
@@ -176439,6 +176752,18 @@ var voltmeter_off_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/20
 // media/ammeter.svg
 var ammeter_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="90" height="106" viewBox="0 0 90 106">%0A  <rect x="1" y="1" width="88" height="104" rx="6" fill="%234c606d" stroke="%23263844" stroke-width="2"/>%0A  <path d="M6 68V11q0-5 5-5h68q5 0 5 5v57Z" fill="%23e6ece7" stroke="%23627984" stroke-width="1.3"/>%0A  <text x="12" y="20" fill="%23294551" font-family="sans-serif" font-size="8" font-weight="bold">AMMETER</text>%0A  <rect x="11" y="26" width="68" height="36" rx="3" fill="%23263d3a"/>%0A  <rect x="14" y="29" width="62" height="30" rx="2" fill="%23b8d0aa"/>%0A  <path d="M19 46h52" stroke="%237f9a76" stroke-width=".7"/>%0A  <g stroke="%23243641" stroke-width="1.5"><circle cx="30" cy="88" r="8" fill="%23ad453f"/><circle cx="60" cy="88" r="8" fill="%23344752"/></g>%0A  <path d="M27 88h6m-3-3v6m27-3h6" stroke="%23fff" stroke-width="1.3"/>%0A</svg>%0A';
 
+// media/multimeter.svg
+var multimeter_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="90" height="106" viewBox="0 0 90 106">%0A  <rect x="1" y="1" width="88" height="104" rx="6" fill="%234c606d" stroke="%23263844" stroke-width="2"/>%0A  <path d="M6 68V11q0-5 5-5h68q5 0 5 5v57Z" fill="%23e6ece7" stroke="%23627984" stroke-width="1.3"/>%0A  <text x="12" y="20" fill="%23294551" font-family="sans-serif" font-size="8" font-weight="bold">MULTIMETER</text>%0A  <rect x="11" y="26" width="68" height="30" rx="3" fill="%23263d3a"/>%0A  <rect x="14" y="29" width="62" height="24" rx="2" fill="%23b8d0aa"/>%0A  <path d="M19 41h52" stroke="%237f9a76" stroke-width=".7"/>%0A  <circle cx="45" cy="62" r="9" fill="%23637a85" stroke="%23263844" stroke-width="1.5"/>%0A  <path d="M45 62 39 55" stroke="%23f1f4f5" stroke-width="2" stroke-linecap="round"/>%0A  <g stroke="%23243641" stroke-width="1.5"><circle cx="30" cy="88" r="8" fill="%23ad453f"/><circle cx="60" cy="88" r="8" fill="%23344752"/></g>%0A  <path d="M27 88h6m-3-3v6m27-3h6" stroke="%23fff" stroke-width="1.3"/>%0A</svg>%0A';
+
+// media/bridge.svg
+var bridge_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="120" viewBox="0 0 120 60">%0A  <path d="M15 58V18a10 10 0 0 1 10-10h70a10 10 0 0 1 10 10v40" fill="none" stroke="%234a6b78" stroke-width="13"/>%0A  <path d="M15 58V18a10 10 0 0 1 10-10h70a10 10 0 0 1 10 10v40" fill="none" stroke="%23dceff5" stroke-width="10"/>%0A  <path d="M15 58V18a10 10 0 0 1 10-10h70a10 10 0 0 1 10 10v40" fill="none" stroke="%23f4fbfd" stroke-width="2.4" stroke-dasharray="26 8"/>%0A  <ellipse cx="15" cy="55" rx="5" ry="3.4" fill="%23f2efe4" stroke="%234a6b78" stroke-width="1.1"/>%0A  <ellipse cx="105" cy="55" rx="5" ry="3.4" fill="%23f2efe4" stroke="%234a6b78" stroke-width="1.1"/>%0A</svg>%0A';
+
+// media/gascollector.svg
+var gascollector_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="240" viewBox="0 0 40 120">%0A  <path d="M2 116V8a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v108" fill="%23dceff5" stroke="%234a6b78" stroke-width="1.2"/>%0A  <path d="M5 14v96" stroke="%23f4fbfd" stroke-width="1.6"/>%0A  <g stroke="%234a6b78" stroke-width=".7">%0A    <path d="M12 20h5m-5 10h3m-3 10h5m-5 10h3m-3 10h5m-5 10h3m-3 10h5m-5 10h3m-3 10h5"/>%0A  </g>%0A  <path d="M2 116h16" stroke="%234a6b78" stroke-width="1.6"/>%0A</svg>%0A';
+
+// media/label.svg
+var label_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="44" viewBox="0 0 100 22">%0A  <rect x=".8" y=".8" width="98.4" height="20.4" rx="3" fill="%23f4f7f8" fill-opacity=".92" stroke="%237d949e" stroke-width="1.1"/>%0A  <path d="M6 6h30" stroke="%23b9c9d0" stroke-width="1.4" stroke-linecap="round"/>%0A</svg>%0A';
+
 // media/electrode.svg
 var electrode_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="150" viewBox="0 0 15 75">%0A  <defs><linearGradient id="metal"><stop stop-color="%2384949b"/><stop offset=".37" stop-color="%23e5eef0"/><stop offset=".7" stop-color="%23bdcbd0"/><stop offset="1" stop-color="%23879ba4"/></linearGradient></defs>%0A  <path d="M.4.4h14.2v74.2H.4z" fill="url(%23metal)" stroke="%2336515d" stroke-width=".8"/>%0A  <path d="M2.5 20v50" stroke="%23f0f5f6" stroke-width=".55"/>%0A  <rect x="1.5" y="4" width="12" height="12" rx="1" fill="%23f1f5f5" stroke="%2376919b" stroke-width=".45"/>%0A</svg>%0A';
 
@@ -176463,7 +176788,11 @@ var componentGraphics = {
   electrode: { url: electrode_default },
   source: { url: source_off_default },
   voltmeter: { url: voltmeter_off_default },
-  ammeter: { url: ammeter_default }
+  ammeter: { url: ammeter_default },
+  multimeter: { url: multimeter_default },
+  bridge: { url: bridge_default },
+  gascollector: { url: gascollector_default },
+  label: { url: label_default }
 };
 var vesselDimensions = {
   // Lenz DURAN low-form beakers, 7 0010 series.
@@ -176496,6 +176825,16 @@ var fixedDimensions = {
   // https://www.peaktech.de/media/7c/56/30/1617257827/Products_2021_EN.pdf
   voltmeter: [90, 106],
   ammeter: [90, 106],
+  multimeter: [90, 106],
+  // A salt bridge spans two vessels, so its artboard is wide and flat. The
+  // two legs sit at 1/8 and 7/8 of the width, which is where the view looks
+  // for the vessels it joins.
+  bridge: [120, 60],
+  // A gas collection tube stands over an electrode and reaches above the
+  // vessel rim, like the graduated tube it models. The right half of the
+  // artboard carries the collected volume.
+  gascollector: [40, 120],
+  label: [100, 22],
   cable: [CABLE_DIAMETER_MM, CABLE_DIAMETER_MM],
   // Legacy components outside the palette.
   // https://www.dwk.com/duran-separating-funnel-spherical-pear-shape-250-ml-242913608
@@ -176511,29 +176850,50 @@ var componentVariants = {
   flask: capacities("flask"),
   burette: capacities("burette"),
   testtube: capacities("testtube"),
+  // Ordered from noble to base, so the carousel follows the
+  // electrochemical series and a neighbouring step is a small one.
   electrode: [
     ["carbon", "Graphit"],
     ["platinum", "Platin"],
+    ["gold", "Gold"],
+    ["silver", "Silber"],
     ["copper", "Kupfer"],
-    ["zinc", "Zink"],
+    ["lead", "Blei"],
+    ["tin", "Zinn"],
     ["iron", "Eisen"],
+    ["nickel", "Nickel"],
+    ["cobalt", "Cobalt"],
+    ["chromium", "Chrom"],
+    ["zinc", "Zink"],
+    ["aluminum", "Aluminium"],
     ["magnesium", "Magnesium"],
-    ["nickel", "Nickel"]
+    ["antimony", "Antimon"]
   ].map(([element2, name2]) => ({
     id: `electrode:${element2}`,
     type: "electrode",
     size: "",
     material: { element: element2, name: name2 }
   })),
-  source: [{ id: "source:standard", type: "source", size: "" }],
+  source: [
+    { id: "source:standard", type: "source", size: "" },
+    // The same instrument at a smaller artboard, for cells that need the
+    // room for vessels and electrodes.
+    { id: "source:compact", type: "source", size: "kompakt", artboard: [120, 76] }
+  ],
   voltmeter: [{ id: "voltmeter:standard", type: "voltmeter", size: `${VOLTMETER_MODEL_CURRENT} A` }],
-  ammeter: [{ id: "ammeter:standard", type: "ammeter", size: `${AMMETER_MODEL_VOLTAGE} V` }]
+  ammeter: [{ id: "ammeter:standard", type: "ammeter", size: `${AMMETER_MODEL_VOLTAGE} V` }],
+  multimeter: [{ id: "multimeter:standard", type: "multimeter", size: "" }],
+  bridge: [{ id: "bridge:standard", type: "bridge", size: "" }],
+  gascollector: [{ id: "gascollector:standard", type: "gascollector", size: "" }],
+  label: [{ id: "label:standard", type: "label", size: "" }]
 };
 var variantsById = new Map(Object.values(componentVariants).flat().map((variant) => [variant.id, variant]));
 function componentVariant(id3) {
   return id3 === void 0 ? void 0 : variantsById.get(id3);
 }
-function componentArtboardMm(type, capacityMl) {
+function componentArtboardMm(type, capacityMl, variantId) {
+  const override = componentVariant(variantId)?.artboard;
+  if (override) return override;
   const { capacityMl: standard, widthFraction = 1, heightFraction = 1 } = componentGraphic(type);
   if (standard) {
     const sizes = vesselDimensions[type];
@@ -176600,11 +176960,19 @@ var meter = (symbol) => b2`
 var materialColors = {
   carbon: "#54606a",
   platinum: "#c7ccd8",
+  gold: "#d9b64a",
+  silver: "#c9cdd2",
   copper: "#ca8053",
-  zinc: "#98adbb",
+  lead: "#6f7784",
+  tin: "#b8bcc0",
   iron: "#788696",
+  nickel: "#b4b1a0",
+  cobalt: "#5a7fb0",
+  chromium: "#a8b4bd",
+  zinc: "#98adbb",
+  aluminum: "#cfd6da",
   magnesium: "#d4d9dd",
-  nickel: "#b4b1a0"
+  antimony: "#9aa3ad"
 };
 function renderComponentPaletteIcon(variant, sizeFraction) {
   const scale = variant.capacityMl === void 0 ? 1 : 0.87 + sizeFraction * 0.13;
@@ -176620,6 +176988,32 @@ function renderComponentPaletteIcon(variant, sizeFraction) {
       break;
     case "ammeter":
       drawing = meter("m34 32 6-10 6 10m-10-4h8");
+      break;
+    case "multimeter":
+      drawing = b2`
+				<rect x="15" y="10" width="50" height="40" rx="5" fill=${body}/>
+				<rect x="22" y="16" width="36" height="15" rx="2" fill=${screen2}/>
+				<path d="m34 21 6 6 6-6"/>
+				<circle cx="40" cy="40" r="5" fill="#b8c6d0"/>
+				<path d="m40 40-3-3"/>`;
+      break;
+    case "bridge":
+      drawing = b2`
+				<path d="M22 48V26a6 6 0 0 1 6-6h24a6 6 0 0 1 6 6v22" fill=${glass}/>
+				<path d="M22 48V26a6 6 0 0 1 6-6h24a6 6 0 0 1 6 6v22"/>
+				<circle cx="22" cy="46" r="3" fill=${highlight}/>
+				<circle cx="58" cy="46" r="3" fill=${highlight}/>`;
+      break;
+    case "gascollector":
+      drawing = b2`
+				<path d="M32 8h16v40a8 8 0 0 1-16 0z" fill=${glass}/>
+				<path d="M32 8h16M32 48h16"/>
+				<path d="M36 16h5m-5 7h3m-3 7h5m-5 7h3"/>`;
+      break;
+    case "label":
+      drawing = b2`
+				<rect x="12" y="20" width="56" height="20" rx="3" fill=${body}/>
+				<path d="M20 27h24m-24 6h16"/>`;
       break;
     default:
       drawing = icons2[variant.type];
@@ -181962,6 +182356,15 @@ var ElectricDeviceView = class extends Container {
         addLine(0.5, 37.5 / 106, 0.155, 0.65);
         addLine(0.5, 52 / 106, 0.085, 0.65);
         break;
+      case "multimeter" /* Multimeter */:
+        addLine(0.5, 41 / 106, 0.17, 0.65);
+        break;
+      case "gascollector" /* GasCollector */:
+        addLine(0.72, 0.5, 0.05, 0.5);
+        break;
+      case "label" /* Label */:
+        addLine(0.5, 0.5, 0.46, 0.9);
+        break;
       case "electrode" /* Electrode */:
         this.strip = {
           left: width * (0.4 / 15 - 0.5),
@@ -181995,7 +182398,7 @@ var ElectricDeviceView = class extends Container {
     let values;
     switch (component._type) {
       case "source" /* Source */:
-        values = [
+        values = component._sourceMode === "current" ? [reading(component._visibleVoltage, "V"), currentReading(component._sourceCurrent)] : [
           reading(component._sourceVoltage, "V"),
           currentReading(component._visibleCurrent ?? component._sourceCurrent)
         ];
@@ -182008,6 +182411,18 @@ var ElectricDeviceView = class extends Container {
         break;
       case "ammeter" /* Ammeter */:
         values = [currentReading(component._visibleCurrent)];
+        break;
+      case "multimeter" /* Multimeter */:
+        if (hasVoltageReading !== void 0) {
+          this.measuredVoltage = this.active && hasVoltageReading ? component._visibleVoltage : null;
+        }
+        values = [component._meterMode === "voltage" ? reading(this.measuredVoltage, "V") : currentReading(component._visibleCurrent)];
+        break;
+      case "gascollector" /* GasCollector */:
+        values = [reading((component._connectedMix?.evolvedGasMol ?? 0) * MOLAR_GAS_VOLUME_ML, "mL")];
+        break;
+      case "label" /* Label */:
+        values = [component._labelText];
         break;
       case "electrode" /* Electrode */:
         values = [component._material?._atoms[0]?.getSymbol() ?? ""];
@@ -182039,7 +182454,9 @@ var ElectricDeviceView = class extends Container {
     const strip = this.strip;
     if (!coating || !strip) return false;
     const plating = this.component.plating;
-    const coverage = plating ? Math.min(1, plating.litres / PLATING_REFERENCE_LITRES) : 0;
+    const area2 = this.component._area > 0 ? this.component._area : ELECTRODE_AREA;
+    const reference2 = PLATING_REFERENCE_LITRES * area2 / ELECTRODE_AREA;
+    const coverage = plating ? Math.min(1, plating.litres / reference2) : 0;
     const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}` : "";
     if (key === this.coatingKey) return false;
     this.coatingKey = key;
@@ -182243,7 +182660,7 @@ var VesselView = class _VesselView extends Container {
     } else if (sediment.mass > this.sedimentMass + 1e-9 && liquid) {
       this.spawnSolidParticles(false, sediment.mass - this.sedimentMass, fill2, sedimentFraction, sediment.color);
     }
-    const gasAmount = [...mixture.evolvedGas.values()].reduce((sum, amount) => sum + amount, 0);
+    const gasAmount = mixture.evolvedGasMol;
     if (!firstDraw && liquid && gasAmount > this.gasAmount + 1e-12) {
       this.spawnGasParticles(gasAmount - this.gasAmount, fill2);
     }
@@ -183002,7 +183419,8 @@ var CanvasController = class {
     const graphic = componentGraphic(type);
     const texture = Assets.get(graphic.url);
     const capacityMl = component instanceof ChemComponent ? component._volume : void 0;
-    const [widthMm, heightMm] = componentArtboardMm(type, capacityMl);
+    const variantId = component instanceof ElectricComponent ? component._variantId : void 0;
+    const [widthMm, heightMm] = componentArtboardMm(type, capacityMl, variantId);
     const width = widthMm / MILLIMETERS_PER_WORLD_UNIT;
     const height = heightMm / MILLIMETERS_PER_WORLD_UNIT;
     return component instanceof ChemComponent && isVesselType(type) ? new VesselView(component, type, texture, width, height, this.scaleTextures) : component instanceof ElectricComponent && type === "cable" /* Cable */ ? new Graphics() : component instanceof ElectricComponent ? new ElectricDeviceView(component, texture, width, height) : new Sprite({ texture, width, height, anchor: 0.5 });
@@ -183199,6 +183617,8 @@ var CanvasController = class {
     }
     this.drawSelection();
     this.relengthCablesAttachedTo([dragged]);
+    const draggedDevice = this.host.allEComponents.find((component) => `${component._type}:${component._id}` === dragged.label);
+    if (draggedDevice) this.attachDevice(draggedDevice, dragged);
     for (let i11 = 0; i11 < this.world.children.length; i11++) {
       if (this.world.children[i11] !== this.host.dragObject && this._mouseInbounds(
         i11,
@@ -183477,20 +183897,50 @@ var CanvasController = class {
     return found;
   }
   /**
-   * Dips restored electrodes into the vessel they were saved in.
+   * Dips restored devices into the vessels they were saved in.
    *
    * A saved layout does not record which vessel an electrode belongs to, so
    * the position decides, using the same test as a manual drop. Without this
    * an imported layout would show a cell whose electrodes are in no
    * solution, and the simulation would never start.
    */
-  attachAuthoredElectrodes() {
+  attachAuthoredDevices() {
     for (const eComp of this.host.allEComponents) {
-      if (eComp._type !== "electrode" /* Electrode */ || eComp._connectedMix) continue;
-      const electrode = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
-      if (!electrode) continue;
-      const vessel = this.vesselAt(electrode.x, electrode.y);
-      if (vessel) eComp._connectedMix = vessel.component._content;
+      const sprite = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
+      if (sprite) this.attachDevice(eComp, sprite);
+    }
+  }
+  /**
+   * Resolves what a device without a cable sits in or on. An electrode dips
+   * into the vessel under its centre, a gas collection tube into the vessel
+   * under its lower end, and a salt bridge into the two vessels under its
+   * legs.
+   *
+   * @param {chemlib.ElectricComponent} eComp - the device to attach
+   * @param {PIXI.Container} sprite - its view, which carries the position
+   */
+  attachDevice(eComp, sprite) {
+    const bottom = sprite.y + sprite.height * 0.4667;
+    switch (eComp._type) {
+      case "electrode" /* Electrode */: {
+        if (eComp._connectedMix) return;
+        const vessel = this.vesselAt(sprite.x, sprite.y);
+        if (vessel) eComp._connectedMix = vessel.component._content;
+        return;
+      }
+      case "gascollector" /* GasCollector */: {
+        eComp._connectedMix = this.vesselAt(sprite.x, bottom)?.component._content;
+        return;
+      }
+      case "bridge" /* Bridge */: {
+        const leg = sprite.width * 0.375;
+        const first = this.vesselAt(sprite.x - leg, bottom);
+        const second = this.vesselAt(sprite.x + leg, bottom);
+        eComp._bridgeMixes = first && second && first !== second ? [first.component._content, second.component._content] : [];
+        return;
+      }
+      default:
+        return;
     }
   }
   /**
@@ -184232,15 +184682,21 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   stepElectrochemistry(source3) {
     const circuitComps = this.operatingCircuit(source3);
     if (circuitComps) {
+      const firstMix = circuitComps[0]._connectedMix;
+      const secondMix = circuitComps[1]._connectedMix;
       Simulation.sEChem(
         circuitComps[0],
         circuitComps[1],
-        circuitComps.slice(2)
+        circuitComps.slice(2),
+        { bridge: this.bridgeJoins(firstMix, secondMix) }
       );
-      const firstMix = circuitComps[0]._connectedMix;
-      const secondMix = circuitComps[1]._connectedMix;
       for (const vessel of this.allChemComponents) {
         if (vessel._content === firstMix || vessel._content === secondMix) this.canvas.markVesselChanged(vessel);
+      }
+      for (const device of this.allEComponents) {
+        if (device._type === "gascollector" /* GasCollector */ && (device._connectedMix === firstMix || device._connectedMix === secondMix)) {
+          this.canvas.refreshDeviceDisplay(device);
+        }
       }
       if (circuitComps.includes(this.curr_obj) || this.curr_obj?._content === firstMix || this.curr_obj?._content === secondMix) this._updatePopup();
       this.canvas.refreshDeviceDisplay(circuitComps[0]);
@@ -184252,8 +184708,17 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   operatingCircuit(device) {
     const circuit = ComponentManager.isCircuit(device);
     if (circuit.length < 3 || !circuit.slice(2).includes(device)) return void 0;
-    if (!circuit.slice(0, 2).every((electrode) => electrode._type === "electrode" /* Electrode */ && electrode._connectedMix?._isSolution)) return void 0;
+    if (!circuit.slice(0, 2).every((electrode) => electrode._type === "electrode" /* Electrode */ && (electrode._reference !== void 0 || electrode._connectedMix?._isSolution))) return void 0;
     return circuit;
+  }
+  /**
+   * Whether a salt bridge on the canvas joins the two half-cells of a
+   * circuit. The bridge carries no cable, so its two legs decide: it has to
+   * dip into both vessels for the ionic current to close the cell.
+   */
+  bridgeJoins(first, second) {
+    if (!first || !second || first === second) return false;
+    return this.allEComponents.some((device) => device._type === "bridge" /* Bridge */ && device._bridgeMixes.includes(first) && device._bridgeMixes.includes(second));
   }
   runningCurrent(source3) {
     const ticker = `echem${source3._type}:${source3._id}`;
@@ -184359,7 +184824,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     let preview;
     this.startPaletteDrag(event, {
       start: () => {
-        const { type, capacityMl, material } = variant;
+        const { id: variantId, type, capacityMl, material } = variant;
         let model;
         if (capacityMl !== void 0) {
           const vessel = new ChemComponent(-1, type);
@@ -184371,6 +184836,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
             nSourceVoltage: type === "source" /* Source */ && this.canAuthor ? 0 : void 0,
             nSourceCurrent: type === "source" /* Source */ && this.canAuthor ? 0 : void 0
           });
+          model._variantId = variantId;
         }
         preview = this.canvas.createPlacementPreview(model);
       },
@@ -184411,12 +184877,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         component = vessel;
       } else {
         const device = ComponentManager.newElectricComponent(type);
+        device._variantId = variantId;
         if (material) device._material = this.newElectrodeMaterial(material);
         this.allEComponents.push(device);
         component = device;
       }
       const sprite = this.canvas.addComponentView(component);
       sprite.position.copyFrom(position);
+      if (component instanceof ElectricComponent) this.canvas.attachDevice(component, sprite);
       return true;
     }
     const entry = {
@@ -184429,7 +184897,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       voltage: 0,
       current: 0,
       material: "",
-      connections: []
+      connections: [],
+      labelText: ""
     };
     this.availableComponents = [...this.availableComponents, entry];
     this._loadComponents(entry);
@@ -185093,15 +185562,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     )) {
       this.contextEchemInfo.style.display = "";
       this.contextEchemInfo.innerHTML = "";
-      if (this.curr_obj._type === "source" /* Source */ || this.curr_obj._type === "voltmeter" /* Voltmeter */) {
+      const type = this.curr_obj._type;
+      const meterReadsCurrent = type === "multimeter" /* Multimeter */ && this.curr_obj._meterMode === "current";
+      if (type === "source" /* Source */ || type === "voltmeter" /* Voltmeter */ || type === "multimeter" /* Multimeter */) {
         this.activateEComp.style.display = "";
-        if (this.curr_obj._type === "voltmeter" /* Voltmeter */) {
-          const reading2 = this.voltageReading(this.curr_obj);
-          this.contextEchemInfo.innerHTML = `
-						<p>${this.message("Spannung")}: ${reading2}</p>
-						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-						`;
-        } else {
+        if (type === "source" /* Source */) {
           const current = this.runningCurrent(this.curr_obj);
           let electronMolRate = current / Simulation._faradayConst;
           this.contextEchemInfo.innerHTML = `
@@ -185114,11 +185579,47 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 						</div>
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 						`;
+        } else if (meterReadsCurrent) {
+          const current = this.runningCurrent(this.curr_obj);
+          this.contextEchemInfo.innerHTML = `
+						<p>Stromst\xE4rke: ${current.toExponential(2)} A</p>
+						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
+						`;
+        } else {
+          const reading2 = this.voltageReading(this.curr_obj);
+          this.contextEchemInfo.innerHTML = `
+						<p>${this.message("Spannung")}: ${reading2}</p>
+						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
+						`;
         }
-      } else if (this.curr_obj._type === "ammeter" /* Ammeter */) {
+      } else if (type === "ammeter" /* Ammeter */) {
         const current = this.runningCurrent(this.curr_obj);
         this.contextEchemInfo.innerHTML = `
 					<p>Stromst\xE4rke: ${current.toExponential(2)} A</p>
+					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
+					`;
+      } else if (type === "bridge" /* Bridge */) {
+        const vesselName = (mix) => {
+          const vessel = this.allChemComponents.find((component) => component._content === mix);
+          return vessel ? `${this.itemName(vessel._type)} \xB7 ${vessel._id + 1}` : this.message("kein Gef\xE4\xDF");
+        };
+        const legs = this.curr_obj._bridgeMixes;
+        this.contextEchemInfo.innerHTML = `
+					<div style="display: flex; flex-direction: column">
+						<p>${this.message("Schenkel")}: ${legs.length}</p>
+						${legs.map((mix) => `<p>${vesselName(mix)}</p>`).join("")}
+					</div>
+					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
+					`;
+      } else if (type === "gascollector" /* GasCollector */) {
+        const collected = (this.curr_obj._connectedMix?.evolvedGasMol ?? 0) * MOLAR_GAS_VOLUME_ML;
+        this.contextEchemInfo.innerHTML = `
+					<p>${this.message("gesammelt")}: ${this.formatAmount(collected, 3)} mL</p>
+					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
+					`;
+      } else if (type === "label" /* Label */) {
+        this.contextEchemInfo.innerHTML = `
+					<p>${this.curr_obj._labelText || this.message("kein Text")}</p>
 					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 					`;
       } else if (this.curr_obj._type === "electrode" /* Electrode */) {
@@ -185299,9 +185800,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }
   }
   refreshDeviceAfterRemoval(component) {
-    const { Source, Voltmeter, Ammeter } = EComponentType;
-    if (component._type !== Source && component._type !== Voltmeter && component._type !== Ammeter || this.operatingCircuit(component)) return;
-    if (component._type === Voltmeter) component._visibleVoltage = 0;
+    const { Source, Voltmeter, Ammeter, Multimeter } = EComponentType;
+    if (component._type !== Source && component._type !== Voltmeter && component._type !== Ammeter && component._type !== Multimeter || this.operatingCircuit(component)) return;
+    if (component._type === Voltmeter || component._type === Multimeter) component._visibleVoltage = 0;
     component._visibleCurrent = null;
     const label = `${component._type}:${component._id}`;
     const ticker = "echem" + label;
@@ -185402,6 +185903,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         newComp = ComponentManager.newElectricComponent(
           type
         );
+        newComp._variantId = variant?.id;
         switch (newComp._type) {
           case "electrode" /* Electrode */:
             if (variant?.material) newComp._material = this.newElectrodeMaterial(variant.material);
@@ -185419,9 +185921,23 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
             newComp._sourceVoltage = Number.parseFloat(component["voltage"]) || 0;
             newComp._sourceCurrent = Number.parseFloat(component["current"]) || 0;
             newComp._polarity = Number.parseInt(component["polarity"]) === 1 ? 1 : Number.parseInt(component["polarity"]) === -1 ? -1 : 0;
+            newComp._sourceMode = component["sourceMode"] === "current" ? "current" : "voltage";
+            newComp._complianceVoltage = Number.parseFloat(component["complianceVoltage"]) || 30;
+            break;
+          case "multimeter" /* Multimeter */:
+            newComp._meterMode = component["meterMode"] === "current" ? "current" : "voltage";
+            break;
+          case "label" /* Label */:
+            newComp._labelText = String(component["labelText"] ?? "");
             break;
           default:
             break;
+        }
+        if (newComp._type === "electrode" /* Electrode */) {
+          const area2 = Number.parseFloat(component["area"]);
+          if (Number.isFinite(area2) && area2 > 0) newComp._area = area2;
+          const reference2 = Number.parseFloat(component["reference"]);
+          if (Number.isFinite(reference2)) newComp._reference = reference2;
         }
         this.allEComponents.push(newComp);
       }
@@ -185464,7 +185980,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         }
       });
     });
-    if (entry === void 0) this.canvas.attachAuthoredElectrodes();
+    if (entry === void 0) this.canvas.attachAuthoredDevices();
   }
   _loadMolecule(formula) {
     const definitions = this.availableMolecules;
@@ -186412,7 +186928,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const materials = this.canAuthor && device._type === Electrode ? componentVariants.electrode : [];
     const material = materials.find((variant) => variant.material.name === device._material?.name);
     const hasSource = device._type === Source;
-    if (!hasSource && !connections.length && !candidates.length && !materials.length) return E;
+    const hasMeter = device._type === "multimeter" /* Multimeter */;
+    const hasLabel = device._type === "label" /* Label */;
+    const hasElectrode = device._type === Electrode;
+    if (!hasSource && !hasMeter && !hasLabel && !hasElectrode && !connections.length && !candidates.length) return E;
     const label = (other) => `${this.itemName(other._type)} \xB7 ${other._id + 1}`;
     const plusPole = hasSource ? ComponentManager.terminalElectrode(device, 0) : void 0;
     const minusPole = hasSource ? ComponentManager.terminalElectrode(device, 1) : void 0;
@@ -186421,6 +186940,20 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 			<sl-details class="electrical-settings" summary=${this.message("Eigenschaften")}
 				@sl-after-show=${() => this.canvas.drawSelection()} @sl-after-hide=${() => this.canvas.drawSelection()}>
 				${hasSource ? x`
+					<label>${this.message("Betriebsart")}
+					<select contenteditable="false" @change=${(event) => {
+      const mode = event.currentTarget.value === "current" ? "current" : "voltage";
+      device._sourceMode = mode;
+      this.saveSelectedComponent({ sourceMode: mode });
+      this.canvas.refreshDeviceDisplay(device);
+      this._updatePopup();
+    }}>
+						<option value="voltage" ?selected=${device._sourceMode !== "current"}>${this.message("Spannung vorgeben")}</option>
+						<option value="current" ?selected=${device._sourceMode === "current"}>${this.message("Stromst\xE4rke vorgeben")}</option>
+					</select></label>
+					${device._sourceMode === "current" ? x`
+						<sl-input id="complianceVoltage" size="small" type="number" contenteditable="false"
+							label=${this.message("Grenzspannung")} .value=${String(device._complianceVoltage ?? 30)}></sl-input>` : E}
 					<sl-input id="sourceVoltage" size="small" type="number" contenteditable="false"
 						label=${this.message("Quellspannung")} .value=${String(device._sourceVoltage ?? 0)}></sl-input>
 					<sl-input id="sourceCurrent" size="small" type="number" contenteditable="false"
@@ -186429,10 +186962,53 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       const value = (id3) => Number.parseFloat(this.shadowRoot.querySelector(id3).value) || 0;
       device._sourceVoltage = value("#sourceVoltage");
       device._sourceCurrent = value("#sourceCurrent");
-      this.saveSelectedComponent({ voltage: device._sourceVoltage, current: device._sourceCurrent });
+      const compliance = this.shadowRoot.querySelector("#complianceVoltage");
+      if (compliance) device._complianceVoltage = Math.abs(Number.parseFloat(compliance.value)) || 30;
+      this.saveSelectedComponent({
+        voltage: device._sourceVoltage,
+        current: device._sourceCurrent,
+        complianceVoltage: device._complianceVoltage
+      });
       this.canvas.refreshDeviceDisplay(device);
       this._updatePopup();
       this._sendxAPiStatement("submitted", "voltage " + device._type + ":" + device._id);
+    }}>${this.message("best\xE4tigen")}</sl-button>` : E}
+				${hasMeter ? x`
+					<label>${this.message("Messbereich")}
+					<select contenteditable="false" @change=${(event) => {
+      const mode = event.currentTarget.value === "current" ? "current" : "voltage";
+      device._meterMode = mode;
+      this.saveSelectedComponent({ meterMode: mode });
+      this.canvas.refreshDeviceDisplay(device);
+      this._updatePopup();
+    }}>
+						<option value="voltage" ?selected=${device._meterMode !== "current"}>${this.message("Spannung")}</option>
+						<option value="current" ?selected=${device._meterMode === "current"}>${this.message("Stromst\xE4rke")}</option>
+					</select></label>` : E}
+				${hasLabel ? x`
+					<sl-input id="labelText" size="small" contenteditable="false"
+						label=${this.message("Beschriftung")} .value=${device._labelText ?? ""}></sl-input>
+					<sl-button size="small" @click=${() => {
+      device._labelText = this.shadowRoot.querySelector("#labelText").value;
+      this.saveSelectedComponent({ labelText: device._labelText });
+      this.canvas.refreshDeviceDisplay(device);
+      this._updatePopup();
+    }}>${this.message("best\xE4tigen")}</sl-button>` : E}
+				${hasElectrode ? x`
+					<sl-input id="electrodeArea" size="small" type="number" min="0.1" step="0.1" contenteditable="false"
+						label=${this.message("Benetzte Fl\xE4che in cm\xB2")} .value=${String(device._area ?? ELECTRODE_AREA)}></sl-input>
+					<sl-input id="electrodeReference" size="small" type="number" step="0.01" contenteditable="false"
+						label=${this.message("Bezugspotential in V (leer = keine Referenz)")}
+						.value=${device._reference === void 0 ? "" : String(device._reference)}></sl-input>
+					<sl-button size="small" @click=${() => {
+      const area2 = Number.parseFloat(this.shadowRoot.querySelector("#electrodeArea").value);
+      const raw = this.shadowRoot.querySelector("#electrodeReference").value.trim();
+      const reference2 = raw === "" ? Number.NaN : Number.parseFloat(raw);
+      device._area = Number.isFinite(area2) && area2 > 0 ? area2 : ELECTRODE_AREA;
+      device._reference = Number.isFinite(reference2) ? reference2 : void 0;
+      this.saveSelectedComponent({ area: device._area, reference: device._reference });
+      this.canvas.refreshDeviceDisplay(device);
+      this._updatePopup();
     }}>${this.message("best\xE4tigen")}</sl-button>` : E}
 				${poles ? x`
 					<label>${this.message("Polung")}

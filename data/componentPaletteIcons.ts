@@ -42,11 +42,19 @@ const meter = (symbol: string) => svg`
 const materialColors: Record<string, string> = {
 	carbon: "#54606a",
 	platinum: "#c7ccd8",
+	gold: "#d9b64a",
+	silver: "#c9cdd2",
 	copper: "#ca8053",
-	zinc: "#98adbb",
+	lead: "#6f7784",
+	tin: "#b8bcc0",
 	iron: "#788696",
-	magnesium: "#d4d9dd",
 	nickel: "#b4b1a0",
+	cobalt: "#5a7fb0",
+	chromium: "#a8b4bd",
+	zinc: "#98adbb",
+	aluminum: "#cfd6da",
+	magnesium: "#d4d9dd",
+	antimony: "#9aa3ad",
 };
 
 export function renderComponentPaletteIcon(variant: ComponentVariant, sizeFraction: number) {
@@ -63,6 +71,32 @@ export function renderComponentPaletteIcon(variant: ComponentVariant, sizeFracti
 			break;
 		case "ammeter":
 			drawing = meter("m34 32 6-10 6 10m-10-4h8");
+			break;
+		case "multimeter":
+			drawing = svg`
+				<rect x="15" y="10" width="50" height="40" rx="5" fill=${body}/>
+				<rect x="22" y="16" width="36" height="15" rx="2" fill=${screen}/>
+				<path d="m34 21 6 6 6-6"/>
+				<circle cx="40" cy="40" r="5" fill="#b8c6d0"/>
+				<path d="m40 40-3-3"/>`;
+			break;
+		case "bridge":
+			drawing = svg`
+				<path d="M22 48V26a6 6 0 0 1 6-6h24a6 6 0 0 1 6 6v22" fill=${glass}/>
+				<path d="M22 48V26a6 6 0 0 1 6-6h24a6 6 0 0 1 6 6v22"/>
+				<circle cx="22" cy="46" r="3" fill=${highlight}/>
+				<circle cx="58" cy="46" r="3" fill=${highlight}/>`;
+			break;
+		case "gascollector":
+			drawing = svg`
+				<path d="M32 8h16v40a8 8 0 0 1-16 0z" fill=${glass}/>
+				<path d="M32 8h16M32 48h16"/>
+				<path d="M36 16h5m-5 7h3m-3 7h5m-5 7h3"/>`;
+			break;
+		case "label":
+			drawing = svg`
+				<rect x="12" y="20" width="56" height="20" rx="3" fill=${body}/>
+				<path d="M20 27h24m-24 6h16"/>`;
 			break;
 		default:
 			drawing = icons[variant.type];

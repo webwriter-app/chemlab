@@ -213,7 +213,7 @@ export class VesselView extends Container {
 			this.spawnSolidParticles(false, sediment.mass - this.sedimentMass, fill, sedimentFraction, sediment.color);
 		}
 		// A newly escaped gas bubbles up through the liquid.
-		const gasAmount = [...mixture.evolvedGas.values()].reduce((sum, amount) => sum + amount, 0);
+		const gasAmount = mixture.evolvedGasMol;
 		if (!firstDraw && liquid && gasAmount > this.gasAmount + 1e-12) {
 			this.spawnGasParticles(gasAmount - this.gasAmount, fill);
 		}

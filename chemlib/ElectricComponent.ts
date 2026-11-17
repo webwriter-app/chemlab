@@ -74,6 +74,15 @@ class ElectricComponent {
 	 */
 	_connectedMix: Mixture;
 	/**
+	 * for a salt bridge: the two vessels its legs dip into, in the order of
+	 * the legs. A bridge carries no cable, so this is what joins it to the
+	 * cell; the simulation closes the charge balance of both vessels when a
+	 * bridge spans the two half-cells of a running circuit.
+	 *
+	 * @type {Mixture[]}
+	 */
+	_bridgeMixes: Mixture[] = [];
+	/**
 	 * The number of possible connections
 	 *
 	 * @type {number}

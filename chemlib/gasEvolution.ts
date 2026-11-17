@@ -25,6 +25,21 @@ export interface EvolvedGas {
 }
 
 /**
+ * Molar volume of an ideal gas at 25 °C and 1 bar, in L/mol. A collected gas
+ * is reported as the volume it would take up at lab conditions.
+ *
+ * @type {number}
+ */
+export const MOLAR_GAS_VOLUME = 24.47;
+
+/**
+ * The same molar volume in mL/mol, which is the unit a collection tube reads.
+ *
+ * @type {number}
+ */
+export const MOLAR_GAS_VOLUME_ML = MOLAR_GAS_VOLUME * 1000;
+
+/**
  * Gases keyed by the id used on {@link Mixture.evolvedGas}.
  *
  * @type {Readonly<Record<string, EvolvedGas>>}

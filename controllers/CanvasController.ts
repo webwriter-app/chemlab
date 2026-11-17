@@ -554,7 +554,8 @@ export class CanvasController implements ReactiveController {
 		const graphic = componentGraphic(type);
 		const texture = PIXI.Assets.get<PIXI.Texture>(graphic.url);
 		const capacityMl = component instanceof chemlib.ChemComponent ? component._volume : undefined;
-		const [widthMm, heightMm] = componentArtboardMm(type, capacityMl);
+		const variantId = component instanceof chemlib.ElectricComponent ? component._variantId : undefined;
+		const [widthMm, heightMm] = componentArtboardMm(type, capacityMl, variantId);
 		const width = widthMm / MILLIMETERS_PER_WORLD_UNIT;
 		const height = heightMm / MILLIMETERS_PER_WORLD_UNIT;
 		return component instanceof chemlib.ChemComponent && isVesselType(type)
@@ -793,6 +794,11 @@ export class CanvasController implements ReactiveController {
 		}
 		this.drawSelection();
 		this.relengthCablesAttachedTo([dragged]);
+		// A bridge or a gas collection tube has no cable, so where it was put
+		// decides which vessel it acts on.
+		const draggedDevice = this.host.allEComponents.find((component) =>
+			`${component._type}:${component._id}` === dragged.label);
+		if (draggedDevice) this.attachDevice(draggedDevice, dragged);
 		for (let i = 0; i < this.world.children.length; i++) {
 			if (
 				this.world.children[i] !== this.host.dragObject &&
@@ -1122,20 +1128,55 @@ export class CanvasController implements ReactiveController {
 	}
 
 	/**
-	 * Dips restored electrodes into the vessel they were saved in.
+	 * Dips restored devices into the vessels they were saved in.
 	 *
 	 * A saved layout does not record which vessel an electrode belongs to, so
 	 * the position decides, using the same test as a manual drop. Without this
 	 * an imported layout would show a cell whose electrodes are in no
 	 * solution, and the simulation would never start.
 	 */
-	attachAuthoredElectrodes(): void {
+	attachAuthoredDevices(): void {
 		for (const eComp of this.host.allEComponents) {
-			if (eComp._type !== chemlib.EComponentType.Electrode || eComp._connectedMix) continue;
-			const electrode = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
-			if (!electrode) continue;
-			const vessel = this.vesselAt(electrode.x, electrode.y);
-			if (vessel) eComp._connectedMix = vessel.component._content;
+			const sprite = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
+			if (sprite) this.attachDevice(eComp, sprite);
+		}
+	}
+
+	/**
+	 * Resolves what a device without a cable sits in or on. An electrode dips
+	 * into the vessel under its centre, a gas collection tube into the vessel
+	 * under its lower end, and a salt bridge into the two vessels under its
+	 * legs.
+	 *
+	 * @param {chemlib.ElectricComponent} eComp - the device to attach
+	 * @param {PIXI.Container} sprite - its view, which carries the position
+	 */
+	attachDevice(eComp: chemlib.ElectricComponent, sprite: PIXI.Container): void {
+		// The lower end of a tube or a bridge leg sits at 0.4667 of the
+		// artboard height below the centre.
+		const bottom = sprite.y + sprite.height * 0.4667;
+		switch (eComp._type) {
+			case chemlib.EComponentType.Electrode: {
+				if (eComp._connectedMix) return;
+				const vessel = this.vesselAt(sprite.x, sprite.y);
+				if (vessel) eComp._connectedMix = vessel.component._content;
+				return;
+			}
+			case chemlib.EComponentType.GasCollector: {
+				eComp._connectedMix = this.vesselAt(sprite.x, bottom)?.component._content;
+				return;
+			}
+			case chemlib.EComponentType.Bridge: {
+				// The legs of the bridge graphic sit at 1/8 and 7/8 of its width.
+				const leg = sprite.width * 0.375;
+				const first = this.vesselAt(sprite.x - leg, bottom);
+				const second = this.vesselAt(sprite.x + leg, bottom);
+				eComp._bridgeMixes = first && second && first !== second
+					? [first.component._content, second.component._content] : [];
+				return;
+			}
+			default:
+				return;
 		}
 	}
 

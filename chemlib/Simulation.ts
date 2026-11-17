@@ -1637,6 +1637,46 @@ export abstract class Simulation {
 	}
 
 	/**
+	 * Solves a cell whose source sets the current instead of the voltage. The
+	 * current fixes the current density at both electrodes, so each of them
+	 * sits at the potential that density needs; the loop equation then says
+	 * which voltage the source has to apply to hold it:
+	 *
+	 *   U = −(E₁ − E₂ + I·R)
+	 *
+	 * @private
+	 * @static
+	 * @param {HalfCandidate[]} first - first electrode's half-reactions
+	 * @param {HalfCandidate[]} second - second electrode's half-reactions
+	 * @param {number} current - the current to force, A; positive makes the first electrode the anode
+	 * @param {number} resistance - external resistance in Ω
+	 * @param {CellLimits} limits - the open-circuit potentials to start from
+	 * @param {CellAreas} areas - the wetted area of both electrodes in cm²
+	 * @returns {({solution: CellSolution, voltage: number} | undefined)}
+	 */
+	private static solveGalvanostat(
+		first: HalfCandidate[],
+		second: HalfCandidate[],
+		current: number,
+		resistance: number,
+		limits: CellLimits,
+		areas: CellAreas
+	): { solution: CellSolution; voltage: number } | undefined {
+		const startFirst = Number.isFinite(limits.openFirst) ? limits.openFirst : limits.guessFirst;
+		const startSecond = Number.isFinite(limits.openSecond) ? limits.openSecond : limits.guessSecond;
+		const p1 = this.electrodePotential(first, current / areas.first, startFirst);
+		const p2 = this.electrodePotential(second, -current / areas.second, startSecond);
+		if (p1 === undefined || p2 === undefined) return undefined;
+		return {
+			solution: {
+				first: p1.potential, second: p2.potential, current,
+				firstCurrents: p1.currents, secondCurrents: p2.currents,
+			},
+			voltage: -(p1.potential - p2.potential + current * resistance),
+		};
+	}
+
+	/**
 	 * How much the source raises the first electrode's terminal above the
 	 * second's. A source with a set polarity puts the electrode on its plus
 	 * pole at the higher potential; without one it drives the cell against its
@@ -1674,6 +1714,37 @@ export abstract class Simulation {
 		// With no cell voltage of its own the first electrode becomes the
 		// anode, so the supply's plus pole sits where the user wired it.
 		return Number.isFinite(open) && open >= 0 ? -magnitude : magnitude;
+	}
+
+	/**
+	 * The current a galvanostat forces, signed so that a positive value makes
+	 * the first electrode the anode. A set polarity names the electrode on the
+	 * plus pole, which is the one the current leaves into the wire, so that
+	 * electrode is the anode. Without one the source drives the cell against
+	 * its own voltage, exactly as a voltage source does.
+	 *
+	 * @private
+	 * @static
+	 * @param {ElectricComponent} device - the source
+	 * @param {ElectricComponent} first - first electrode
+	 * @param {ElectricComponent} second - second electrode
+	 * @param {CellLimits} limits - the one-sided limits of the cell
+	 * @returns {number}
+	 */
+	private static sourceCurrent(
+		device: ElectricComponent,
+		first: ElectricComponent,
+		second: ElectricComponent,
+		limits: CellLimits
+	): number {
+		if (device._type !== EComponentType.Source) return 0;
+		const magnitude = Math.abs(device._sourceCurrent ?? 0);
+		if (device._polarity !== 0) {
+			const plus = ComponentManager.terminalElectrode(device, device._polarity > 0 ? 0 : 1);
+			return plus === second ? -magnitude : magnitude;
+		}
+		const open = limits.openFirst - limits.openSecond;
+		return Number.isFinite(open) && open >= 0 ? magnitude : -magnitude;
 	}
 
 	/**
@@ -1793,7 +1864,10 @@ export abstract class Simulation {
 			for (const device of sDevices) {
 				device._visibleCurrent = null;
 				if (device._type === EComponentType.Voltmeter ||
-					device._type === EComponentType.Multimeter) device._visibleVoltage = null;
+					device._type === EComponentType.Multimeter ||
+					(device._type === EComponentType.Source && device._sourceMode === "current")) {
+					device._visibleVoltage = null;
+				}
 			}
 		};
 		if (!usable(sElectrode1, mix1) || !usable(sElectrode2, mix2)) return unsolved();
@@ -1819,8 +1893,27 @@ export abstract class Simulation {
 		const ideal = !source && sDevices.some((device) =>
 			device._type === EComponentType.Voltmeter ||
 			(device._type === EComponentType.Multimeter && device._meterMode === "voltage"));
-		const voltage = source ? this.sourceVoltage(source, sElectrode1, sElectrode2, limits) : 0;
-		const solution = this.solveCell(first, second, voltage, SERIES_RESISTANCE, ideal, limits, areas);
+		let solution: CellSolution | undefined;
+		let applied = 0;
+		if (source?._sourceMode === "current") {
+			// A galvanostat fixes the current and lets the cell decide the
+			// voltage. Its compliance limit is the largest voltage it may
+			// apply; beyond that it saturates and the cell sets the current.
+			const wanted = this.sourceCurrent(source, sElectrode1, sElectrode2, limits);
+			const driven = this.solveGalvanostat(first, second, wanted, SERIES_RESISTANCE, limits, areas);
+			if (!driven) return unsolved();
+			const compliance = Math.abs(source._complianceVoltage ?? 0);
+			if (Math.abs(driven.voltage) > compliance) {
+				applied = driven.voltage > 0 ? compliance : -compliance;
+				solution = this.solveCell(first, second, applied, SERIES_RESISTANCE, false, limits, areas);
+			} else {
+				applied = driven.voltage;
+				solution = driven.solution;
+			}
+		} else {
+			applied = source ? this.sourceVoltage(source, sElectrode1, sElectrode2, limits) : 0;
+			solution = this.solveCell(first, second, applied, SERIES_RESISTANCE, ideal, limits, areas);
+		}
 		if (!solution) return unsolved();
 
 		for (const device of sDevices) {
@@ -1828,6 +1921,10 @@ export abstract class Simulation {
 			if (device._type === EComponentType.Voltmeter ||
 				(device._type === EComponentType.Multimeter && device._meterMode === "voltage")) {
 				device._visibleVoltage = Math.abs(solution.first - solution.second);
+			} else if (device._type === EComponentType.Source && device._sourceMode === "current") {
+				// The source shows the voltage it had to apply to hold the
+				// current, which is what the user cannot set in this mode.
+				device._visibleVoltage = Math.abs(applied);
 			}
 		}
 

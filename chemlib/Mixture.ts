@@ -96,6 +96,13 @@ class Mixture {
 		this.evolvedGas.set(gas, (this.evolvedGas.get(gas) ?? 0) + amountMol);
 	}
 
+	/** Total gas that has left the solution, in mol. */
+	get evolvedGasMol(): number {
+		let total = 0;
+		for (const amount of this.evolvedGas.values()) total += amount;
+		return total;
+	}
+
 	/**
 	 * Solid material sitting in the vessel: precipitated salts and doses that
 	 * have not dissolved yet. A metal that the acid could not consume stays
