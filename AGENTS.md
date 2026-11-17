@@ -30,6 +30,64 @@ Die analytischen RC-Referenzfälle laufen mit `node_modules/.bin/esbuild tests/n
 - Die Objektübersicht am Canvas ersetzt das frühere rechte Gerätepanel. Rechts liegt jetzt die Palette für Komponenten und Chemikalien. Sie nutzt eine eigene, animierte Spalte; die Canvas-Bedienelemente bleiben am Rand des Canvas. Die bisherige Bearbeitung eigener Stoffe wurde aus der Palette entfernt. Als Nächstes sollen Gemische neu gestaltet werden; der Moleküleditor ist als separat einbettbares WebWriter-Widget vorgesehen.
 - `chemlib/StructureManager.ts` enthält Stoffdaten und Strukturverwaltung, `ComponentManager.ts` die Geräte- und Stromkreiserkennung, `Simulation.ts` die chemischen Abläufe und `AcidBase.ts` den wiederverwendbaren pH-Löser.
 
+## Geplant: Messdaten und frei konfigurierbare Diagramme
+
+Die Aufzeichnung soll unabhängig vom Diagramm-Drawer laufen. Der `SimulationController` steuert weiterhin die Versuche. Der `DiagramController` liest aus dem gemeinsamen Messdatenspeicher. Die bisherigen Aufrufe zum automatischen Erstellen und Befüllen von Versuchsdiagrammen entfallen. Ein Diagramm entsteht aus zwei ausgewählten Datenquellen und zeigt auch Werte, die vor seiner Erstellung aufgezeichnet wurden.
+
+### Daten aufzeichnen
+
+- Je Widget speichert eine gemeinsame Zeitreihe für jede Kombination aus Objekt und Messgröße die Werte kompakt im Arbeitsspeicher. Ein Kanal hat eine stabile Kennung, einen Namen und eine Einheit. Zusammengehörige Werte aus demselben Simulationsschritt erhalten denselben Zeitstempel einer monotonen Uhr.
+- Bei Änderungen im Gefäß werden pH, Volumen, Masse und die verfügbaren Stoffmengen und Konzentrationen aufgezeichnet. Das gilt auch für Zugabe, Umgießen und Entleeren. Beim Transfer werden Quelle und Ziel gemeinsam erfasst. Büretten liefern zusätzlich das kumulierte, tatsächlich abgegebene Volumen, damit sich eine klassische Titrationskurve aus abgegebenem Volumen und pH des Zielgefäßes erstellen lässt.
+- Nach einer Messung werden die Werte aller beteiligten Geräte erfasst, einschließlich parallel angeschlossener Messgeräte, die den Versuch selbst nicht gestartet haben. Die ersten Kanäle sind Spannung, Stromstärke und erfasstes Gasvolumen. Ein nicht verfügbarer Messwert wird als solcher erfasst. Die Aufzeichnung liest aus dem Modell, unabhängig von Auswahl-Popup, Canvas und Diagramm.
+
+### Achsen wählen und Diagramme anzeigen
+
+- Der Griff des Diagramm-Drawers bleibt sichtbar, auch wenn es noch kein Diagramm gibt. Darüberfahren öffnet eine kompakte Auswahl für die **X-Achse** und **Y-Achse**. Die Auswahl bleibt beim Wechsel vom Griff in das Menü bedienbar. Auf Touchgeräten und per Tastatur gibt es einen gleichwertigen Zugang.
+- Die Quellen sind nach **Zeit**, **Gefäßen** und **Messgeräten** gruppiert. Einträge nennen Objekt, Messgröße und Einheit, etwa „Becherglas 2 · pH“ oder „Voltmeter 1 · Spannung [V]“. Sobald beide Quellen feststehen, ist das Diagramm bereit und der Drawer lässt sich öffnen, um es anzuzeigen. Weitere Diagramme können separat hinzugefügt werden.
+- Neue Diagramme übernehmen die passende Historie und ergänzen eingehende Punkte. Zwei Messachsen werden anhand der Zeitstempel zusammengeführt. Gültige Gefäßwerte können bis zur nächsten Änderung fortgeschrieben werden. Ein fehlender Wert oder ein getrenntes Messgerät erzeugt eine Lücke. Die Reihenfolge folgt den Zeitstempeln, auch wenn X zwischendurch abnimmt.
+- Die 50-ms-Anzeige reicht für kurze RC-Impulse nicht aus. Pro Transient werden deshalb die Modellparameter und das tatsächlich verstrichene Zeitintervall gespeichert. Daraus lässt sich die Kurve auch nach dem Ausschalten fein genug rekonstruieren. Eine optionale Vorhersage über das beobachtete Intervall hinaus muss als Vorhersage erkennbar sein.
+
+### Historie, Verdichtung und Speicherbedarf
+
+- Die letzten fünf Minuten bleiben in voller zeitlicher Auflösung. Ältere Daten, die kein Diagramm nutzt, werden gelöscht. Ältere Daten, die ein Diagramm nutzt, bleiben in geringerer zeitlicher Auflösung erhalten. Referenzieren mehrere Diagramme dieselben Daten, werden sie im gemeinsamen Speicher gehalten. Nach dem Löschen des letzten referenzierenden Diagramms sind die älteren Daten wieder löschbar.
+- Bei der Verdichtung schneller Zeitreihen bleiben je Zeitfenster erster, letzter, kleinster und größter Wert mit ihren ursprünglichen Zeitstempeln erhalten. Ein Fenster von einer Sekunde hält bei 20 Hz höchstens vier statt 20 Punkte pro Reihe. Bei Diagrammen mit zwei gemessenen Achsen werden die Wertepaarungen gemeinsam verdichtet, damit X und Y zusammenpassen. RC-Abschnitte bleiben als Modellparameter erhalten.
+- Als Richtwert gelten 16–24 Byte pro regulärem Messpunkt. Bei 20 Kanälen mit 1 Hz und vier schnellen Kanälen mit 20 Hz sind das ungefähr 0,5–0,7 MB für fünf Minuten. Bei durchgehend von Diagrammen genutzten Daten sinkt der Richtwert durch Verdichtung nach einer Stunde von 5,8–8,6 MB auf 2,4–3,6 MB und nach acht Stunden von 46–69 MB auf 17–25 MB. Diese Schätzung betrifft die Aufzeichnung. Die Darstellung braucht zusätzlich Speicher. Zielwert für den üblichen Betrieb ist etwa 1 MB pro Widget.
+- Die erste Version hält Messdaten und Diagramme für die laufende Widget-Sitzung im Arbeitsspeicher. Das Zeichnen wird gebündelt und auf sichtbare Diagramme beschränkt.
+
+### Arbeitspakete und Prüfung
+
+1. Aufzeichnung mit Zeitstempeln, Kanälen, Aufbewahrung und Verdichtung einführen.
+2. Achsenauswahl und Diagramme mit Historie und Live-Daten umsetzen und die automatisch erzeugten Versuchsdiagramme ablösen.
+3. Analytische RC-Abschnitte anbinden und in WebWriter prüfen. Dazu eine Daniell-Zelle ohne Brücke starten, stoppen und erst danach ein Strom-Zeit-Diagramm erstellen. Der Impuls muss sichtbar bleiben. Zusätzlich prüfen, dass beide Achsen bei der Verdichtung zusammenbleiben, geteilte Daten beim Löschen eines einzelnen Diagramms erhalten bleiben und ungenutzte Daten nach fünf Minuten verschwinden.
+
+Jedes Arbeitspaket separat prüfen und committen.
+
+## Elektrochemie: nächste Korrekturen und spätere Arbeiten
+
+Der [Elektrochemie-Audit](docs/electrochemistry-audit.md) hält die Befunde, Reproduktionen und Quellen zum geprüften Stand fest. EC-01 wurde seitdem umgesetzt. Die getrennten Halbzellen tragen keinen stationären Zellstrom, und für passive Messungen gibt es den analytischen RC-Transienten.
+
+Offene kritische Arbeitspakete, jeweils einzeln bearbeiten, prüfen, committen und danach anhalten:
+
+1. **EC-02:** Den Zelllöser und das elektrische Netz auf dieselbe Klemmenspannung koppeln. Stromvorgabe und Strombegrenzung müssen sich am Strom durch die Quelle orientieren, einschließlich paralleler Lasten. [Audit: Quellen und Netzwerk](docs/electrochemistry-audit.md#ec-02--critical--the-cell-solve-and-the-instrument-network-use-different-source-voltages)
+2. **EC-03:** Referenzelektroden an einen ionischen Kontakt binden und als Spannungssensor behandeln. Ein Arbeitselektroden-Gegenelektroden-Paar trägt den Reaktionsstrom. Eine zusätzliche Referenz darf diese Schaltung nicht aus der Erkennung werfen. [Audit: Referenzelektroden](docs/electrochemistry-audit.md#ec-03--critical--a-dry-reference-electrode-supplies-a-reaction-free-return-path)
+
+Die übrigen Auditbefunde bleiben als **spätere Änderungen** vorgemerkt:
+
+| Befund | Spätere Arbeit |
+| --- | --- |
+| EC-04 | Halbreaktionen beim Fehlen eines Produkts zulassen und Eduktverfügbarkeit je Richtung prüfen. |
+| EC-05 | Die doppelte Anrechnung der Alkalität bei der NaCl-Elektrolyse korrigieren. |
+| EC-06 | Die Elektronenbilanz bei der Metallverdrängung für unterschiedliche Wertigkeiten korrigieren. |
+| EC-07 | Nach elektrochemischen Änderungen die Salz- und Hydroxidgleichgewichte neu berechnen und den Wasserumsatz buchen. |
+| EC-08 | Vorzeichen, fehlende Messwerte und Sollwerte bei Instrumenten eindeutig ausweisen und Faraday-Angaben aus dem Zellstrom ableiten. |
+| EC-09 | Elektrolytwiderstand und aktive Elektrodenfläche aus Leitfähigkeit, Geometrie und tatsächlicher Benetzung ableiten. |
+| EC-10 | Aktivitäten, Stofftransport und den gemeinsamen Eduktvorrat konkurrierender Halbreaktionen berücksichtigen. |
+| EC-11 | Die Lösungssuche an Stromgrenzen und bei erschöpften Edukten robuster machen. |
+| EC-12 | Gelöste und entwichene Gase trennen, Halogenphasen und Folgereaktionen abbilden und die Gassammlung als eigenen Vorgang berechnen. |
+| EC-13 | Beläge, Passivierung und begrenzte Elektrodenvorräte in die Oberflächenreaktionen einbeziehen. |
+
+Die bestätigten chemischen Fehler stehen unter [Confirmed defects](docs/electrochemistry-audit.md#confirmed-defects), die Modellgrenzen und numerischen Risiken unter [Model limitations and numerical risks](docs/electrochemistry-audit.md#model-limitations-and-numerical-risks).
+
 ## Übernommener Entwicklungsstand
 
 - Der pH-Löser verwendet Ladungsbilanz und Bisektion. `Simulation.getpH` fasst Protonierungsstufen zu Stofffamilien zusammen, berücksichtigt mehrprotonige Säuren, molekulare Basen und hinterlegte konjugierte Anionen. Im kompakten Karussell bleiben berechnete Spuren unter 1 µmol/L verborgen, wenn sie weniger als 0,1 % ihrer Stofffamilie ausmachen. Bei berechnetem Hydronium und Hydroxid gilt nur die Konzentrationsgrenze. Die gespeicherte Zusammensetzung bleibt die Grundlage für Transfer und Wiederherstellung. Kationen mit hinterlegter Hydrolyse laufen als Säurefamilie durch denselben Löser: die Ladung des Ions ist die vollprotonierte Ladung, die pKa-Werte beschreiben das Aquokomplex-Proton. FeCl₃ 0,1 mol/L ergibt damit pH 1,64, CuSO₄ 0,1 mol/L pH 4,77, ZnSO₄ 0,1 mol/L pH 5,52. Die Abdeckung hängt von den Stoffdaten ab. Die alten Notizen nennen unter anderem Hydrogencarbonat, Hydrogensulfid und Ammoniumsalze als offene Fälle.
