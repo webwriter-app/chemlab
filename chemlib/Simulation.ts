@@ -1164,7 +1164,7 @@ export abstract class Simulation {
 				// Protons are not stored as a molecule. The vessel keeps them as
 				// excess charge, which the charge balance turns into a pH and
 				// into the protonation state of whatever acid families it holds.
-				if (volume > 0) mix.excessCharge -= delta / volume;
+				mix.excessCharge -= delta;
 				continue;
 			}
 			const ion = view.ions.get(term.smiles);
@@ -1174,7 +1174,7 @@ export abstract class Simulation {
 				// family also moves its protons. Only the anion was meant to
 				// change, so the protons are put back. The halide families are
 				// monoprotic, so one proton per anion is exact.
-				if (ion.computed && delta < 0) mix.excessCharge -= -delta / volume;
+				if (ion.computed && delta < 0) mix.excessCharge -= -delta;
 				continue;
 			}
 			const stored = mix._activeMolecules.find((molecule) => molecule.smilesString === term.smiles);
@@ -2064,7 +2064,10 @@ export abstract class Simulation {
 
 		// Charge the half-reactions have left behind without a stored
 		// counter-ion, as after an electrolysis in a neutral salt solution.
-		spectatorCharge += sMix.excessCharge;
+		// It is kept as an amount, so it becomes a concentration here.
+		if (sMix._solutionVolume > 0) {
+			spectatorCharge += sMix.excessCharge / sMix._solutionVolume;
+		}
 		return { systems, spectatorCharge };
 	}
 

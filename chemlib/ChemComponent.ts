@@ -188,6 +188,7 @@ class ChemComponent {
 					Math.min(nMix._molProperties[mol._id + "n"], nMolAmount ?? Infinity), 0);
 				if (incomingMol > 0 && addedMol > 0) {
 					this._content.addedVolume += nMix.addedVolume * addedMol / incomingMol;
+					this._content.excessCharge += nMix.excessCharge * addedMol / incomingMol;
 					this._content.hasLiquidVolume ||= nMix.hasLiquidVolume;
 				}
 				for (let mol of nMix._activeMolecules) {
@@ -243,6 +244,10 @@ class ChemComponent {
 				portion.hasLiquidVolume = this._content.hasLiquidVolume;
 				portion.addedVolume = this._content.addedVolume * fraction;
 				this._content.addedVolume -= portion.addedVolume;
+				// The excess charge is an amount, so a portion carries its
+				// share of it and the source keeps the rest.
+				portion.excessCharge = this._content.excessCharge * fraction;
+				this._content.excessCharge -= portion.excessCharge;
 				if (fraction === 1) this._content.hasLiquidVolume = false;
 				Simulation.sSolvation(this._content);
 				tDest.addContents({ nMix: portion });

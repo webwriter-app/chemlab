@@ -148008,25 +148008,17 @@ var Mixture = class {
   evolvedGas = /* @__PURE__ */ new Map();
   /**
    * Net charge the half-reactions have left in the vessel without a stored
-   * counter-ion, in mol/L. Positive means excess cations, as after a cathodic
+   * counter-ion, in mol. Positive means excess cations, as after a cathodic
    * water reduction that leaves hydroxide; negative means excess anions, as
    * after an anodic water oxidation that leaves protons. The acid–base charge
    * balance reads it as a spectator charge, so an electrolysis in a neutral
    * salt solution still closes.
+   *
+   * It is an amount rather than a concentration so that it survives dilution
+   * and pouring unchanged: adding water moves no charge, and a transferred
+   * portion carries its share.
    */
   excessCharge = 0;
-  /**
-   * Sets the solution volume and keeps the excess charge consistent with it.
-   * The excess charge is a concentration, so adding water dilutes it like
-   * every other concentration; without this an electrolysis followed by a
-   * dilution would keep the old pH shift.
-   */
-  setSolutionVolume(volume) {
-    if (this._solutionVolume > 0 && volume > 0) {
-      this.excessCharge *= this._solutionVolume / volume;
-    }
-    this._solutionVolume = volume;
-  }
   /** Records `amountMol` of a gas as escaped from the solution. */
   evolveGas(gas, amountMol) {
     if (!(amountMol > 0)) return;
@@ -148153,7 +148145,7 @@ var Mixture = class {
     if (bIncluded) {
       this.changeMolecule(usedIndex, amountMol);
       if (StructureManager.isWater(nMolecule)) {
-        this.setSolutionVolume(this._molProperties[usedIndex + "m"] / 1e3);
+        this._solutionVolume = this._molProperties[usedIndex + "m"] / 1e3;
         if (this._activeMolecules.length - 1 > 0) {
           this._activeMolecules.forEach((molecule2) => {
             this.changeMolecule(molecule2._id, 0);
@@ -148170,7 +148162,7 @@ var Mixture = class {
     }
     if (StructureManager.isWater(nMolecule)) {
       this._isSolution = true;
-      this.setSolutionVolume(this._molProperties[nMolecule._id + "m"] / 1e3);
+      this._solutionVolume = this._molProperties[nMolecule._id + "m"] / 1e3;
       this._molProperties[nMolecule._id + "c"] = this._molProperties[nMolecule._id + "n"] / this._solutionVolume;
       if (this._activeMolecules.length - 1 > 0) {
         this._activeMolecules.forEach((molecule2) => {
@@ -148213,7 +148205,7 @@ var Mixture = class {
       return mol._id === iMol;
     });
     if (StructureManager.isWater(cMol)) {
-      this.setSolutionVolume(this._molProperties[iMol + "m"] / 1e3);
+      this._solutionVolume = this._molProperties[iMol + "m"] / 1e3;
     }
     if (this._isSolution && !cMol.solidSaltFormula) {
       this._molProperties[iMol + "c"] = this._molProperties[iMol + "n"] / this._solutionVolume;
@@ -150056,13 +150048,13 @@ var Simulation = class {
       }
       if (term.smiles === "O") continue;
       if (term.smiles === "[H+]") {
-        if (volume > 0) mix.excessCharge -= delta / volume;
+        mix.excessCharge -= delta;
         continue;
       }
       const ion2 = view.ions.get(term.smiles);
       if (ion2) {
         ion2.change(delta / volume);
-        if (ion2.computed && delta < 0) mix.excessCharge -= -delta / volume;
+        if (ion2.computed && delta < 0) mix.excessCharge -= -delta;
         continue;
       }
       const stored = mix._activeMolecules.find((molecule2) => molecule2.smilesString === term.smiles);
@@ -150790,7 +150782,9 @@ var Simulation = class {
         spectatorCharge += molecule2._totalCharge * conc(molecule2);
       }
     });
-    spectatorCharge += sMix.excessCharge;
+    if (sMix._solutionVolume > 0) {
+      spectatorCharge += sMix.excessCharge / sMix._solutionVolume;
+    }
     return { systems: systems4, spectatorCharge };
   }
 };
@@ -150952,6 +150946,7 @@ var ChemComponent = class {
         const addedMol = nMix._activeMolecules.reduce((sum, mol) => sum + Math.min(nMix._molProperties[mol._id + "n"], nMolAmount ?? Infinity), 0);
         if (incomingMol > 0 && addedMol > 0) {
           this._content.addedVolume += nMix.addedVolume * addedMol / incomingMol;
+          this._content.excessCharge += nMix.excessCharge * addedMol / incomingMol;
           this._content.hasLiquidVolume ||= nMix.hasLiquidVolume;
         }
         for (let mol of nMix._activeMolecules) {
@@ -151000,6 +150995,8 @@ var ChemComponent = class {
         portion.hasLiquidVolume = this._content.hasLiquidVolume;
         portion.addedVolume = this._content.addedVolume * fraction;
         this._content.addedVolume -= portion.addedVolume;
+        portion.excessCharge = this._content.excessCharge * fraction;
+        this._content.excessCharge -= portion.excessCharge;
         if (fraction === 1) this._content.hasLiquidVolume = false;
         Simulation.sSolvation(this._content);
         tDest.addContents({ nMix: portion });

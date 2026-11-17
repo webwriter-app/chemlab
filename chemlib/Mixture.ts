@@ -69,26 +69,17 @@ class Mixture {
 	evolvedGas: Map<string, number> = new Map();
 	/**
 	 * Net charge the half-reactions have left in the vessel without a stored
-	 * counter-ion, in mol/L. Positive means excess cations, as after a cathodic
+	 * counter-ion, in mol. Positive means excess cations, as after a cathodic
 	 * water reduction that leaves hydroxide; negative means excess anions, as
 	 * after an anodic water oxidation that leaves protons. The acid–base charge
 	 * balance reads it as a spectator charge, so an electrolysis in a neutral
 	 * salt solution still closes.
+	 *
+	 * It is an amount rather than a concentration so that it survives dilution
+	 * and pouring unchanged: adding water moves no charge, and a transferred
+	 * portion carries its share.
 	 */
 	excessCharge = 0;
-
-	/**
-	 * Sets the solution volume and keeps the excess charge consistent with it.
-	 * The excess charge is a concentration, so adding water dilutes it like
-	 * every other concentration; without this an electrolysis followed by a
-	 * dilution would keep the old pH shift.
-	 */
-	private setSolutionVolume(volume: number): void {
-		if (this._solutionVolume > 0 && volume > 0) {
-			this.excessCharge *= this._solutionVolume / volume;
-		}
-		this._solutionVolume = volume;
-	}
 
 	/** Records `amountMol` of a gas as escaped from the solution. */
 	evolveGas(gas: string, amountMol: number): void {
@@ -238,7 +229,7 @@ class Mixture {
 		if (bIncluded) {
 			this.changeMolecule(usedIndex, amountMol);
 			if (StructureManager.isWater(nMolecule)) {
-				this.setSolutionVolume(this._molProperties[usedIndex + "m"] / 1000);
+				this._solutionVolume = this._molProperties[usedIndex + "m"] / 1000;
 				if (this._activeMolecules.length - 1 > 0) {
 					this._activeMolecules.forEach((molecule) => {
 						this.changeMolecule(molecule._id, 0);
@@ -260,7 +251,7 @@ class Mixture {
 
 		if (StructureManager.isWater(nMolecule)) {
 			this._isSolution = true;
-			this.setSolutionVolume(this._molProperties[nMolecule._id + "m"] / 1000);
+			this._solutionVolume = this._molProperties[nMolecule._id + "m"] / 1000;
 			this._molProperties[nMolecule._id + "c"] =
 				this._molProperties[nMolecule._id + "n"] / this._solutionVolume;
 
@@ -316,7 +307,7 @@ class Mixture {
 			return mol._id === iMol;
 		});
 		if (StructureManager.isWater(cMol)) {
-			this.setSolutionVolume(this._molProperties[iMol + "m"] / 1000);
+			this._solutionVolume = this._molProperties[iMol + "m"] / 1000;
 		}
 
 		if (this._isSolution && !cMol.solidSaltFormula) {
