@@ -136,6 +136,37 @@ export abstract class ComponentManager {
 	}
 
 	/**
+	 * The electrode that sits on one pole of a device, following the cables
+	 * from that terminal. A source has two poles, and which electrode hangs on
+	 * which pole is what gives the cell its direction.
+	 *
+	 * @public
+	 * @static
+	 * @param {ElectricComponent} device - the device whose terminal to follow
+	 * @param {number} terminal - index of the terminal in `_connections`
+	 * @returns {(ElectricComponent | undefined)}
+	 */
+	public static terminalElectrode(
+		device: ElectricComponent,
+		terminal: number
+	): ElectricComponent | undefined {
+		const start: ElectricComponent = device._connections[terminal];
+		if (!start) return undefined;
+		const visited: ElectricComponent[] = [device];
+		const queue: ElectricComponent[] = [start];
+		while (queue.length > 0) {
+			const current: ElectricComponent = queue.shift();
+			if (visited.includes(current)) continue;
+			visited.push(current);
+			if (current._type === EComponentType.Electrode) return current;
+			// Only cables are transparent: anything else ends the branch.
+			if (current._type !== EComponentType.Cable) continue;
+			queue.push(...current._connections);
+		}
+		return undefined;
+	}
+
+	/**
 	 * checks if a complete circuit is available
 	 *
 	 * @public

@@ -70030,6 +70030,9 @@ var messages_default = {
     F\u00FCllstand: "Fill level",
     Bodensatz: "Sediment",
     abgeschieden: "deposited",
+    Polung: "Polarity",
+    automatisch: "automatic",
+    "Plus an": "Plus at",
     "Salzs\xE4ttigung: {salt}": "Salt saturation: {salt}",
     "auf der Elektrode": "on the electrode",
     "S\xE4ttigung bei {max} mol/L": "Saturation at {max} mol/L",
@@ -110776,6 +110779,15 @@ var ElectricComponent = class {
    */
   _sourceCurrent;
   /**
+   * for voltage sources: which pole the electrode at `_connections[0]` sits
+   * on. 1 puts it on the plus pole, -1 on the minus pole, and 0 leaves the
+   * direction to the model, which then drives the couple pair that needs
+   * driving.
+   *
+   * @type {(-1 | 0 | 1)}
+   */
+  _polarity = 0;
+  /**
    * for voltmeter: the indicated voltage
    *
    * @type {number}
@@ -111051,6 +111063,32 @@ var ComponentManager = class {
       }
     }
     return conStatus;
+  }
+  /**
+   * The electrode that sits on one pole of a device, following the cables
+   * from that terminal. A source has two poles, and which electrode hangs on
+   * which pole is what gives the cell its direction.
+   *
+   * @public
+   * @static
+   * @param {ElectricComponent} device - the device whose terminal to follow
+   * @param {number} terminal - index of the terminal in `_connections`
+   * @returns {(ElectricComponent | undefined)}
+   */
+  static terminalElectrode(device, terminal) {
+    const start = device._connections[terminal];
+    if (!start) return void 0;
+    const visited = [device];
+    const queue = [start];
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (visited.includes(current)) continue;
+      visited.push(current);
+      if (current._type === "electrode" /* Electrode */) return current;
+      if (current._type !== "cable" /* Cable */) continue;
+      queue.push(...current._connections);
+    }
+    return void 0;
   }
   /**
    * checks if a complete circuit is available
@@ -149860,14 +149898,18 @@ var Simulation = class {
     }
     const bElectrolysis = sDevice._type === "source" /* Source */;
     if (!bElectrolysis) sDevice._visibleVoltage = null;
+    const plus = bElectrolysis && sDevice._polarity !== 0 ? ComponentManager.terminalElectrode(sDevice, sDevice._polarity > 0 ? 0 : 1) : void 0;
+    const forced = plus === sElectrode1 ? [sElectrode1, sElectrode2] : plus === sElectrode2 ? [sElectrode2, sElectrode1] : void 0;
+    const orientations = forced ? [forced] : [[sElectrode1, sElectrode2], [sElectrode2, sElectrode1]];
     let reaction;
-    for (const [anodeElectrode, cathodeElectrode] of [[sElectrode1, sElectrode2], [sElectrode2, sElectrode1]]) {
+    for (const [anodeElectrode, cathodeElectrode] of orientations) {
       for (const anode2 of this.anodeCandidates(anodeElectrode)) {
         for (const cathode2 of this.cathodeCandidates(cathodeElectrode, anode2)) {
           const voltage2 = cathode2.potential - anode2.potential;
           const standard = cathode2.couple.sep - anode2.couple.sep;
           if (bElectrolysis) {
-            if (voltage2 > 0 || !(sDevice._sourceVoltage >= -voltage2)) continue;
+            if (!forced && voltage2 > 0) continue;
+            if (!(Math.abs(sDevice._sourceVoltage) >= -voltage2)) continue;
             if (reaction && !(standard > reaction.standard)) continue;
           } else if (voltage2 <= 0 || reaction && voltage2 <= reaction.voltage) continue;
           reaction = { anode: anode2, cathode: cathode2, voltage: voltage2, standard };
@@ -184710,6 +184752,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 							<p>Faraday, 1. Gesetz: ${electronMolRate.toExponential(
             2
           )} mol e\u207B/s</p>
+							<p>${this.message("Polung")}: ${this.polarityReading(this.curr_obj)}</p>
 						</div>
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 						`;
@@ -185012,6 +185055,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
           case "source" /* Source */:
             newComp._sourceVoltage = Number.parseFloat(component["voltage"]) || 0;
             newComp._sourceCurrent = Number.parseFloat(component["current"]) || 0;
+            newComp._polarity = Number.parseInt(component["polarity"]) === 1 ? 1 : Number.parseInt(component["polarity"]) === -1 ? -1 : 0;
             break;
           default:
             break;
@@ -186006,6 +186050,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const hasSource = device._type === Source;
     if (!hasSource && !connections.length && !candidates.length && !materials.length) return E;
     const label = (other) => `${this.itemName(other._type)} \xB7 ${other._id + 1}`;
+    const plusPole = hasSource ? ComponentManager.terminalElectrode(device, 0) : void 0;
+    const minusPole = hasSource ? ComponentManager.terminalElectrode(device, 1) : void 0;
+    const poles = plusPole && minusPole && plusPole !== minusPole ? { plus: plusPole, minus: minusPole } : void 0;
     return i6(device, x`
 			<sl-details class="electrical-settings" summary=${this.message("Eigenschaften")}
 				@sl-after-show=${() => this.canvas.drawSelection()} @sl-after-hide=${() => this.canvas.drawSelection()}>
@@ -186023,6 +186070,19 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this._updatePopup();
       this._sendxAPiStatement("submitted", "voltage " + device._type + ":" + device._id);
     }}>${this.message("best\xE4tigen")}</sl-button>` : E}
+				${poles ? x`
+					<label>${this.message("Polung")}
+					<select contenteditable="false" @change=${(event) => {
+      const polarity = Number.parseInt(event.currentTarget.value);
+      device._polarity = polarity === 1 ? 1 : polarity === -1 ? -1 : 0;
+      this.saveSelectedComponent({ polarity: device._polarity });
+      this.canvas.refreshDeviceDisplay(device);
+      this._updatePopup();
+    }}>
+						<option value="0" ?selected=${device._polarity === 0}>${this.message("automatisch")}</option>
+						<option value="1" ?selected=${device._polarity === 1}>${this.message("Plus an")} ${label(poles.plus)}</option>
+						<option value="-1" ?selected=${device._polarity === -1}>${this.message("Plus an")} ${label(poles.minus)}</option>
+					</select></label>` : E}
 				${materials.length ? x`
 					<label>${this.message("Elektrodenmaterial")}
 					<select contenteditable="false" @change=${(event) => {
@@ -186153,6 +186213,17 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   voltageReading(device) {
     if (device?._visibleVoltage === null) return this.message("Spannung nicht berechenbar");
     return `${(device?._visibleVoltage ?? 0).toExponential(2)} V`;
+  }
+  /**
+   * Names the electrode that sits on the plus pole of a source, which is the
+   * one where oxidation runs. Without a set polarity the model picks the
+   * direction itself, so there is no pole to name.
+   */
+  polarityReading(device) {
+    if (device._polarity === 0) return this.message("automatisch");
+    const pole = ComponentManager.terminalElectrode(device, device._polarity > 0 ? 0 : 1);
+    if (!pole) return this.message("automatisch");
+    return `${this.message("Plus an")} ${this.itemName(pole._type)} \xB7 ${pole._id + 1}`;
   }
 };
 _init2 = __decoratorStart(_a2);

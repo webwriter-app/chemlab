@@ -1942,6 +1942,7 @@ export class ChemLab extends LitElementWw {
 							<p>Faraday, 1. Gesetz: ${electronMolRate.toExponential(
 								2
 							)} mol e⁻/s</p>
+							<p>${this.message("Polung")}: ${this.polarityReading(this.curr_obj)}</p>
 						</div>
 						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 						`;
@@ -2314,6 +2315,8 @@ export class ChemLab extends LitElementWw {
 					case chemlib.EComponentType.Source:
 						newComp._sourceVoltage = Number.parseFloat(component["voltage"]) || 0;
 						newComp._sourceCurrent = Number.parseFloat(component["current"]) || 0;
+						newComp._polarity = Number.parseInt(component["polarity"]) === 1 ? 1
+							: Number.parseInt(component["polarity"]) === -1 ? -1 : 0;
 						break;
 					default:
 						break;
@@ -3380,6 +3383,13 @@ export class ChemLab extends LitElementWw {
 		const hasSource = device._type === Source;
 		if (!hasSource && !connections.length && !candidates.length && !materials.length) return nothing;
 		const label = (other: chemlib.ElectricComponent) => `${this.itemName(other._type)} · ${other._id + 1}`;
+		// A source has two poles, and the electrode on the plus pole is the
+		// anode. The select names the electrodes, so the user never has to
+		// think about which cable went into which terminal.
+		const plusPole = hasSource ? chemlib.ComponentManager.terminalElectrode(device, 0) : undefined;
+		const minusPole = hasSource ? chemlib.ComponentManager.terminalElectrode(device, 1) : undefined;
+		const poles = plusPole && minusPole && plusPole !== minusPole
+			? { plus: plusPole, minus: minusPole } : undefined;
 		return keyed(device, html`
 			<sl-details class="electrical-settings" summary=${this.message("Eigenschaften")}
 				@sl-after-show=${() => this.canvas.drawSelection()} @sl-after-hide=${() => this.canvas.drawSelection()}>
@@ -3397,6 +3407,19 @@ export class ChemLab extends LitElementWw {
 						this._updatePopup();
 						this._sendxAPiStatement("submitted", "voltage " + device._type + ":" + device._id);
 					}}>${this.message("bestätigen")}</sl-button>` : nothing}
+				${poles ? html`
+					<label>${this.message("Polung")}
+					<select contenteditable="false" @change=${(event: Event) => {
+							const polarity = Number.parseInt((event.currentTarget as HTMLSelectElement).value);
+							device._polarity = polarity === 1 ? 1 : polarity === -1 ? -1 : 0;
+							this.saveSelectedComponent({ polarity: device._polarity });
+							this.canvas.refreshDeviceDisplay(device);
+							this._updatePopup();
+					}}>
+						<option value="0" ?selected=${device._polarity === 0}>${this.message("automatisch")}</option>
+						<option value="1" ?selected=${device._polarity === 1}>${this.message("Plus an")} ${label(poles.plus)}</option>
+						<option value="-1" ?selected=${device._polarity === -1}>${this.message("Plus an")} ${label(poles.minus)}</option>
+					</select></label>` : nothing}
 				${materials.length ? html`
 					<label>${this.message("Elektrodenmaterial")}
 					<select contenteditable="false" @change=${(event: Event) => {
@@ -3545,5 +3568,17 @@ export class ChemLab extends LitElementWw {
 	private voltageReading(device?: chemlib.ElectricComponent): string {
 		if (device?._visibleVoltage === null) return this.message("Spannung nicht berechenbar");
 		return `${(device?._visibleVoltage ?? 0).toExponential(2)} V`;
+	}
+
+	/**
+	 * Names the electrode that sits on the plus pole of a source, which is the
+	 * one where oxidation runs. Without a set polarity the model picks the
+	 * direction itself, so there is no pole to name.
+	 */
+	private polarityReading(device: chemlib.ElectricComponent): string {
+		if (device._polarity === 0) return this.message("automatisch");
+		const pole = chemlib.ComponentManager.terminalElectrode(device, device._polarity > 0 ? 0 : 1);
+		if (!pole) return this.message("automatisch");
+		return `${this.message("Plus an")} ${this.itemName(pole._type)} · ${pole._id + 1}`;
 	}
 }

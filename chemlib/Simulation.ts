@@ -925,22 +925,41 @@ export abstract class Simulation {
 
 		const bElectrolysis = sDevice._type === EComponentType.Source;
 		if (!bElectrolysis) sDevice._visibleVoltage = null;
+		// A source has two poles, and the electrode on the plus pole is the
+		// anode: that is where oxidation takes place. With a polarity set the
+		// direction is fixed, so the cell can be driven either way without
+		// swapping the source for a voltmeter. Without one the model picks the
+		// direction itself, which is what a supply does when the wiring is
+		// left to it.
+		const plus = bElectrolysis && sDevice._polarity !== 0
+			? ComponentManager.terminalElectrode(sDevice, sDevice._polarity > 0 ? 0 : 1)
+			: undefined;
+		const forced: [ElectricComponent, ElectricComponent] | undefined =
+			plus === sElectrode1 ? [sElectrode1, sElectrode2]
+				: plus === sElectrode2 ? [sElectrode2, sElectrode1]
+					: undefined;
+		const orientations: [ElectricComponent, ElectricComponent][] = forced
+			? [forced]
+			: [[sElectrode1, sElectrode2], [sElectrode2, sElectrode1]];
 		let reaction: { anode: HalfCandidate; cathode: HalfCandidate; voltage: number; standard: number } | undefined;
 
-		for (const [anodeElectrode, cathodeElectrode] of [[sElectrode1, sElectrode2], [sElectrode2, sElectrode1]]) {
+		for (const [anodeElectrode, cathodeElectrode] of orientations) {
 			for (const anode of this.anodeCandidates(anodeElectrode)) {
 				for (const cathode of this.cathodeCandidates(cathodeElectrode, anode)) {
 					const voltage = cathode.potential - anode.potential;
 					const standard = cathode.couple.sep - anode.couple.sep;
 					if (bElectrolysis) {
-						if (voltage > 0 || !(sDevice._sourceVoltage >= -voltage)) continue;
-						// The source fixes which electrode is the anode, but the
-						// model stores no polarity, so both orientations are
-						// tried. Ranking them by the standard potentials keeps
-						// the choice stable: the Nernst potentials drift while
-						// the cell runs and would otherwise let the two
-						// orientations alternate and evolve both gases in both
-						// vessels.
+						// Without a fixed polarity the source drives the cell
+						// against its own voltage, so a pair that would run on
+						// its own is not what a supply does. A fixed polarity is
+						// not negotiable, so there such a pair runs too: the
+						// source then only adds to the cell.
+						if (!forced && voltage > 0) continue;
+						// The source has to reach the decomposition voltage.
+						if (!(Math.abs(sDevice._sourceVoltage) >= -voltage)) continue;
+						// Ranking by the standard potentials keeps the choice
+						// stable: the Nernst potentials drift while the cell runs
+						// and would otherwise let two pairs alternate.
 						if (reaction && !(standard > reaction.standard)) continue;
 					} else if (voltage <= 0 || (reaction && voltage <= reaction.voltage)) continue;
 					reaction = { anode, cathode, voltage, standard };

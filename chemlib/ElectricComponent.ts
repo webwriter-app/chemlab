@@ -96,6 +96,15 @@ class ElectricComponent {
 	 */
 	_sourceCurrent: number;
 	/**
+	 * for voltage sources: which pole the electrode at `_connections[0]` sits
+	 * on. 1 puts it on the plus pole, -1 on the minus pole, and 0 leaves the
+	 * direction to the model, which then drives the couple pair that needs
+	 * driving.
+	 *
+	 * @type {(-1 | 0 | 1)}
+	 */
+	_polarity: -1 | 0 | 1 = 0;
+	/**
 	 * for voltmeter: the indicated voltage
 	 *
 	 * @type {number}
