@@ -1,5 +1,6 @@
 import { Mixture } from "./Mixture";
 import { Molecule } from "./Molecule";
+import { ELECTRODE_AREA } from "./halfReactions";
 
 /**
  * An enum for the specific electric component types, used for identification
@@ -13,6 +14,10 @@ export enum EComponentType {
 	Source = "source",
 	Voltmeter = "voltmeter",
 	Ammeter = "ammeter",
+	Multimeter = "multimeter",
+	Bridge = "bridge",
+	GasCollector = "gascollector",
+	Label = "label",
 }
 
 export const VOLTMETER_MODEL_CURRENT = 2;
@@ -105,6 +110,59 @@ class ElectricComponent {
 	 */
 	_polarity: -1 | 0 | 1 = 0;
 	/**
+	 * for electrodes: the wetted area in cm². The current density the kinetics
+	 * are written in follows from it, so a wider strip carries more current at
+	 * the same overpotential.
+	 *
+	 * @type {number}
+	 */
+	_area: number = ELECTRODE_AREA;
+	/**
+	 * for electrodes: the fixed potential in V against the standard hydrogen
+	 * electrode when the electrode is a reference electrode. Such an electrode
+	 * holds its potential instead of settling at a mixed potential, so it needs
+	 * no vessel of its own.
+	 *
+	 * @type {(number | undefined)}
+	 */
+	_reference?: number;
+	/**
+	 * for sources: whether the source sets the voltage and lets the cell solve
+	 * the current, or sets the current and lets the cell solve the voltage it
+	 * needs. A galvanostat is the second kind.
+	 *
+	 * @type {("voltage" | "current")}
+	 */
+	_sourceMode: "voltage" | "current" = "voltage";
+	/**
+	 * for sources in current mode: the largest voltage the source may apply
+	 * before it gives up and behaves like a voltage source at that limit, in V.
+	 *
+	 * @type {number}
+	 */
+	_complianceVoltage: number = 30;
+	/**
+	 * for a multimeter: whether it reads the voltage across the cell or the
+	 * current through it. The two modes differ in what the meter does to the
+	 * circuit, not only in what it shows.
+	 *
+	 * @type {("voltage" | "current")}
+	 */
+	_meterMode: "voltage" | "current" = "voltage";
+	/**
+	 * for a label: the text it shows on the canvas.
+	 *
+	 * @type {string}
+	 */
+	_labelText: string = "";
+	/**
+	 * the palette variant the component was placed as, so a saved layout can
+	 * restore the size and the material it was authored with.
+	 *
+	 * @type {(string | undefined)}
+	 */
+	_variantId?: string;
+	/**
 	 * for voltmeter: the indicated voltage
 	 *
 	 * @type {number}
@@ -176,6 +234,10 @@ class ElectricComponent {
 				this._conCount = 2;
 				this._sourceVoltage = AMMETER_MODEL_VOLTAGE;
 				break;
+			case EComponentType.Multimeter:
+				this._conCount = 2;
+				this._visibleVoltage = 0;
+				break;
 			case EComponentType.Cable:
 				this._conCount = 2;
 				break;
@@ -183,6 +245,13 @@ class ElectricComponent {
 				this._conCount = 1;
 				this._material = nMaterial;
 				this._connectedMix = nMixture;
+				break;
+			// A salt bridge, a gas collector and a label carry no cables: they
+			// act on the vessel they sit in or on, not on the circuit.
+			case EComponentType.Bridge:
+			case EComponentType.GasCollector:
+			case EComponentType.Label:
+				this._conCount = 0;
 				break;
 			default:
 				break;

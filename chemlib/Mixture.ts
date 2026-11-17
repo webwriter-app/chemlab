@@ -80,6 +80,15 @@ class Mixture {
 	 * portion carries its share.
 	 */
 	excessCharge = 0;
+	/**
+	 * Charge the electrode reactions have moved into the vessel as stored
+	 * species, in mol. A dissolving anode leaves its cation behind and the
+	 * electrons leave through the wire, so the compartment would turn
+	 * positive; a salt bridge carries the counter-ion in and keeps it
+	 * neutral. {@link Simulation.sEChem} books the opposite into
+	 * `excessCharge` when a bridge joins the two vessels.
+	 */
+	electrodeCharge = 0;
 
 	/** Records `amountMol` of a gas as escaped from the solution. */
 	evolveGas(gas: string, amountMol: number): void {
