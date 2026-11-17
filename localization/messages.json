@@ -31,6 +31,8 @@
     "Treibende Spannung": "Driving voltage",
     "Dauer bis zur Stromschwelle": "Time to current cutoff",
     "Näherung für getrennte Halbzellen ohne Ionenverbindung. Mit leerer Kapazität bleibt sie aus.": "Approximation for half-cells with no ionic connection. Leave capacitance blank to disable it.",
+    "Für getrennte Halbzellen gilt standardmäßig ein Modellwert von {value} µF. 0 schaltet das RC-Modell aus.": "For isolated half-cells, the illustrative default is {value} µF. Enter 0 to disable the RC model.",
+    "Modellwert: {value} µF": "Illustrative value: {value} µF",
     "Effektive Kapazität [µF]": "Effective capacitance [µF]",
     "Zusätzlicher Reihenwiderstand [Ω]": "Additional series resistance [Ω]",
     "Stromschwelle [µA]": "Current cutoff [µA]",

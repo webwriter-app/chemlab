@@ -1021,7 +1021,7 @@ export class ChemLab extends LitElementWw {
 
 	private startElectricalExperiment(name: string, meter: chemlib.ElectricComponent): void {
 		const step = () => this.stepElectrochemistry(meter);
-		if (!isPassiveMeter(meter) || !meter._rcSettings) {
+		if (!isPassiveMeter(meter) || !meter.rcSettings) {
 			this.simulation.startExperiment(name, meter, step);
 			return;
 		}
@@ -1052,7 +1052,7 @@ export class ChemLab extends LitElementWw {
 			const [first, second] = electrodes ?? [];
 			const cell = first && second ? this.rcCellKey(first, second) : undefined;
 			const resistance = first && second ? this.ionicResistance(first, second) : undefined;
-			const config = meter._rcSettings;
+			const config = meter.rcSettings;
 			const devices = circuit?.slice(2) ?? [];
 			const powered = devices.some((device) => device._type === chemlib.EComponentType.Source);
 			if (!active && devices.some((device) => device !== meter && this.hasRCReadout(device))) {
@@ -2124,30 +2124,14 @@ export class ChemLab extends LitElementWw {
 			)
 		) {
 			this.contextEchemInfo.style.display = "";
-			this.contextEchemInfo.innerHTML = "";
 			const type = this.curr_obj._type;
 			const rc = this.hasRCReadout(this.curr_obj) ? this.rcReadouts.get(this.curr_obj) : undefined;
 			if (rc) {
 				this.activateEComp.style.display = "";
-				const number = (value: number) => value.toPrecision(4);
-				const { sample, timeConstant, cutoffAt } = rc;
-				const rows = [
-					this.message("Kapazitiver Zellstrom (RC-Modell)"),
-					`I: ${number(sample.current)} A`,
-					`Q: ${number(sample.charge * 1e6)} µC`,
-					`ΔQ: ${number(sample.transferredCharge * 1e6)} µC`,
-					`${this.message("Gegenspannung")}: ${number(sample.opposingVoltage)} V`,
-					`${this.message("Treibende Spannung")}: ${number(sample.drivingVoltage)} V`,
-					`τ: ${number(timeConstant * 1000)} ms`,
-					`${this.message("Dauer bis zur Stromschwelle")}: ${number(cutoffAt * 1000)} ms`,
-				];
-				for (const row of rows) {
-					const line = this.ownerDocument.createElement("p");
-					line.textContent = row;
-					this.contextEchemInfo.append(line);
-				}
+				this.renderRCReadout(this.curr_obj, rc);
 				return;
 			}
+			this.contextEchemInfo.replaceChildren();
 			// A multimeter reads whichever quantity its mode selects, and the
 			// mode also decides what the meter does to the circuit.
 			const meterReadsCurrent = type === chemlib.EComponentType.Multimeter &&
@@ -2595,8 +2579,9 @@ export class ChemLab extends LitElementWw {
 					const reference = Number.parseFloat(component["reference"]);
 					if (Number.isFinite(reference)) newComp._reference = reference;
 				}
-				if (isPassiveMeter(newComp) && validRCSettings(component["rcSettings"])) {
-					newComp._rcSettings = component["rcSettings"];
+				const config = component["rcSettings"];
+				if (isPassiveMeter(newComp) && (config === null || validRCSettings(config))) {
+					newComp._rcSettings = config;
 				}
 				this.allEComponents.push(newComp);
 			}
@@ -3748,13 +3733,17 @@ export class ChemLab extends LitElementWw {
 
 	private renderRCSettings(device: chemlib.ElectricComponent) {
 		const config = device._rcSettings;
+		const defaultMicrofarads = (device.defaultRCCapacitance ?? 0) * 1e6;
 		return html`
 			<sl-details summary=${this.message("Kapazitiver Zellstrom (RC-Modell)")}
 				@sl-after-show=${() => this.canvas.drawSelection()} @sl-after-hide=${() => this.canvas.drawSelection()}>
-				<p>${this.message("Näherung für getrennte Halbzellen ohne Ionenverbindung. Mit leerer Kapazität bleibt sie aus.")}</p>
+				<p>${defaultMicrofarads > 0
+					? this.message("Für getrennte Halbzellen gilt standardmäßig ein Modellwert von {value} µF. 0 schaltet das RC-Modell aus.", { value: defaultMicrofarads })
+					: this.message("Näherung für getrennte Halbzellen ohne Ionenverbindung. Mit leerer Kapazität bleibt sie aus.")}</p>
 				<sl-input id="rcCapacitance" type="number" step="any" size="small" contenteditable="false"
 					label=${this.message("Effektive Kapazität [µF]")}
-					.value=${config ? String(config.capacitance * 1e6) : ""}></sl-input>
+					placeholder=${defaultMicrofarads > 0 ? String(defaultMicrofarads) : ""}
+					.value=${config === null ? "0" : config ? String(config.capacitance * 1e6) : ""}></sl-input>
 				<sl-input id="rcResistance" type="number" step="any" size="small" contenteditable="false"
 					label=${this.message("Zusätzlicher Reihenwiderstand [Ω]")}
 					.value=${String(config?.seriesResistance ?? 0)}></sl-input>
@@ -3763,13 +3752,16 @@ export class ChemLab extends LitElementWw {
 					.value=${config?.cutoff === undefined ? "" : String(config.cutoff * 1e6)}></sl-input>
 				<sl-button size="small" @click=${() => {
 					const value = (id: string) => this.shadowRoot.querySelector<SlInput>(id).value.trim();
-					const capacitance = value("#rcCapacitance");
-					const cutoff = value("#rcCutoff");
-					const next = capacitance ? {
-						capacitance: Number(capacitance) * 1e-6,
-						seriesResistance: Number(value("#rcResistance")),
-						cutoff: cutoff ? Number(cutoff) * 1e-6 : undefined,
-					} : undefined;
+					const rawCapacitance = value("#rcCapacitance");
+					const capacitance = rawCapacitance ? Number(rawCapacitance) * 1e-6 : device.defaultRCCapacitance;
+					const seriesResistance = Number(value("#rcResistance"));
+					const rawCutoff = value("#rcCutoff");
+					const cutoff = rawCutoff ? Number(rawCutoff) * 1e-6 : undefined;
+					let next: chemlib.ElectricComponent["_rcSettings"];
+					if (capacitance === 0) next = null;
+					else if (capacitance !== undefined && (rawCapacitance || seriesResistance !== 0 || rawCutoff)) {
+						next = { capacitance, seriesResistance, cutoff };
+					}
 					if (next && !validRCSettings(next)) {
 						this._notify(this.message("Kapazität und Stromschwelle müssen positiv sein. Der zusätzliche Widerstand darf null sein."), "warning");
 						return;
@@ -3779,6 +3771,41 @@ export class ChemLab extends LitElementWw {
 					this.requestUpdate();
 				}}>${this.message("bestätigen")}</sl-button>
 			</sl-details>`;
+	}
+
+	private renderRCReadout(device: chemlib.ElectricComponent, { sample, timeConstant, cutoffAt }: RCReadout): void {
+		const info = this.contextEchemInfo;
+		let readout = info.querySelector<HTMLDivElement>(".rc-readout");
+		const isNew = !readout;
+		if (!readout) {
+			readout = this.ownerDocument.createElement("div");
+			readout.className = "rc-readout";
+			info.replaceChildren(readout);
+		}
+		const { Voltmeter, Multimeter } = chemlib.EComponentType;
+		const voltage = device._type === Voltmeter || (device._type === Multimeter && device._meterMode === "voltage");
+		const value = voltage ? device._visibleVoltage : device._visibleCurrent;
+		const number = (value: number) => value.toPrecision(4);
+		const duration = (seconds: number) => {
+			if (seconds >= 1) return `${number(seconds)} s`;
+			if (seconds >= 1e-3 || seconds === 0) return `${number(seconds * 1000)} ms`;
+			return `${number(seconds * 1e6)} µs`;
+		};
+		render(keyed(device, html`
+			<p>${value === null ? "—" : `${number(Math.abs(value))} ${voltage ? "V" : "A"}`}</p>
+			<details @toggle=${() => this.canvas.drawSelection()}>
+				<summary>${this.message("Kapazitiver Zellstrom (RC-Modell)")}</summary>
+				${device._rcSettings === undefined && device.defaultRCCapacitance
+					? html`<p>${this.message("Modellwert: {value} µF", { value: device.defaultRCCapacitance * 1e6 })}</p>` : nothing}
+				<p>I: ${number(sample.current)} A</p>
+				<p>Q: ${number(sample.charge * 1e6)} µC</p>
+				<p>ΔQ: ${number(sample.transferredCharge * 1e6)} µC</p>
+				<p>${this.message("Gegenspannung")}: ${number(sample.opposingVoltage)} V</p>
+				<p>${this.message("Treibende Spannung")}: ${number(sample.drivingVoltage)} V</p>
+				<p>τ: ${duration(timeConstant)}</p>
+				<p>${this.message("Dauer bis zur Stromschwelle")}: ${duration(cutoffAt)}</p>
+			</details>`), readout);
+		if (isNew) this.canvas.drawSelection();
 	}
 
 	private renderObjectSummary() {

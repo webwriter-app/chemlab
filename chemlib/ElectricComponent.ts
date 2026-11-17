@@ -42,6 +42,9 @@ export const AMMETER_RESISTANCE = 0.1;
  */
 export const SOURCE_RESISTANCE = 0.5;
 
+/** Illustrative effective cell capacitance, in F, from the RC reference example. */
+const ILLUSTRATIVE_CELL_CAPACITANCE = 10e-6;
+
 /**
  * The plug on one end of a cable. A banana plug goes into the binding post of
  * an instrument, a crocodile clip clamps onto a metal electrode, so the two
@@ -208,8 +211,19 @@ class ElectricComponent {
 	 * @type {("voltage" | "current")}
 	 */
 	_meterMode: "voltage" | "current" = "voltage";
-	/** Optional settings for a passive RC experiment, in F, Ω and A. */
-	_rcSettings?: { capacitance: number; seriesResistance: number; cutoff?: number };
+	/** Custom RC settings in F, Ω and A. Null explicitly disables the model. */
+	_rcSettings?: { capacitance: number; seriesResistance: number; cutoff?: number } | null;
+
+	get defaultRCCapacitance(): number | undefined {
+		return this._type === EComponentType.Voltmeter || this._type === EComponentType.Ammeter
+			? ILLUSTRATIVE_CELL_CAPACITANCE : undefined;
+	}
+
+	get rcSettings() {
+		if (this._rcSettings !== undefined) return this._rcSettings ?? undefined;
+		const capacitance = this.defaultRCCapacitance;
+		return capacitance === undefined ? undefined : { capacitance, seriesResistance: 0 };
+	}
 	/**
 	 * for a label: the text it shows on the canvas.
 	 *

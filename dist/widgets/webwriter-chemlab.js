@@ -69843,6 +69843,8 @@ var messages_default = {
     "Treibende Spannung": "Driving voltage",
     "Dauer bis zur Stromschwelle": "Time to current cutoff",
     "N\xE4herung f\xFCr getrennte Halbzellen ohne Ionenverbindung. Mit leerer Kapazit\xE4t bleibt sie aus.": "Approximation for half-cells with no ionic connection. Leave capacitance blank to disable it.",
+    "F\xFCr getrennte Halbzellen gilt standardm\xE4\xDFig ein Modellwert von {value} \xB5F. 0 schaltet das RC-Modell aus.": "For isolated half-cells, the illustrative default is {value} \xB5F. Enter 0 to disable the RC model.",
+    "Modellwert: {value} \xB5F": "Illustrative value: {value} \xB5F",
     "Effektive Kapazit\xE4t [\xB5F]": "Effective capacitance [\xB5F]",
     "Zus\xE4tzlicher Reihenwiderstand [\u03A9]": "Additional series resistance [\u03A9]",
     "Stromschwelle [\xB5A]": "Current cutoff [\xB5A]",
@@ -110906,6 +110908,7 @@ var CABLE_RESISTANCE = 0.02;
 var VOLTMETER_RESISTANCE = 1e7;
 var AMMETER_RESISTANCE = 0.1;
 var SOURCE_RESISTANCE = 0.5;
+var ILLUSTRATIVE_CELL_CAPACITANCE = 1e-5;
 var ElectricComponent = class {
   /**
    * The type of the component
@@ -111028,8 +111031,16 @@ var ElectricComponent = class {
    * @type {("voltage" | "current")}
    */
   _meterMode = "voltage";
-  /** Optional settings for a passive RC experiment, in F, Ω and A. */
+  /** Custom RC settings in F, Ω and A. Null explicitly disables the model. */
   _rcSettings;
+  get defaultRCCapacitance() {
+    return this._type === "voltmeter" /* Voltmeter */ || this._type === "ammeter" /* Ammeter */ ? ILLUSTRATIVE_CELL_CAPACITANCE : void 0;
+  }
+  get rcSettings() {
+    if (this._rcSettings !== void 0) return this._rcSettings ?? void 0;
+    const capacitance = this.defaultRCCapacitance;
+    return capacitance === void 0 ? void 0 : { capacitance, seriesResistance: 0 };
+  }
   /**
    * for a label: the text it shows on the canvas.
    *
@@ -185241,7 +185252,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   startElectricalExperiment(name2, meter2) {
     const step = () => this.stepElectrochemistry(meter2);
-    if (!isPassiveMeter(meter2) || !meter2._rcSettings) {
+    if (!isPassiveMeter(meter2) || !meter2.rcSettings) {
       this.simulation.startExperiment(name2, meter2, step);
       return;
     }
@@ -185261,7 +185272,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       const [first, second] = electrodes ?? [];
       const cell = first && second ? this.rcCellKey(first, second) : void 0;
       const resistance = first && second ? this.ionicResistance(first, second) : void 0;
-      const config = meter2._rcSettings;
+      const config = meter2.rcSettings;
       const devices = circuit?.slice(2) ?? [];
       const powered = devices.some((device) => device._type === "source" /* Source */);
       if (!active && devices.some((device) => device !== meter2 && this.hasRCReadout(device))) {
@@ -186247,30 +186258,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.curr_obj._type.toLowerCase()
     )) {
       this.contextEchemInfo.style.display = "";
-      this.contextEchemInfo.innerHTML = "";
       const type = this.curr_obj._type;
       const rc = this.hasRCReadout(this.curr_obj) ? this.rcReadouts.get(this.curr_obj) : void 0;
       if (rc) {
         this.activateEComp.style.display = "";
-        const number2 = (value) => value.toPrecision(4);
-        const { sample: sample2, timeConstant, cutoffAt } = rc;
-        const rows = [
-          this.message("Kapazitiver Zellstrom (RC-Modell)"),
-          `I: ${number2(sample2.current)} A`,
-          `Q: ${number2(sample2.charge * 1e6)} \xB5C`,
-          `\u0394Q: ${number2(sample2.transferredCharge * 1e6)} \xB5C`,
-          `${this.message("Gegenspannung")}: ${number2(sample2.opposingVoltage)} V`,
-          `${this.message("Treibende Spannung")}: ${number2(sample2.drivingVoltage)} V`,
-          `\u03C4: ${number2(timeConstant * 1e3)} ms`,
-          `${this.message("Dauer bis zur Stromschwelle")}: ${number2(cutoffAt * 1e3)} ms`
-        ];
-        for (const row of rows) {
-          const line = this.ownerDocument.createElement("p");
-          line.textContent = row;
-          this.contextEchemInfo.append(line);
-        }
+        this.renderRCReadout(this.curr_obj, rc);
         return;
       }
+      this.contextEchemInfo.replaceChildren();
       const meterReadsCurrent = type === "multimeter" /* Multimeter */ && this.curr_obj._meterMode === "current";
       if (type === "source" /* Source */ || type === "voltmeter" /* Voltmeter */ || type === "multimeter" /* Multimeter */) {
         this.activateEComp.style.display = "";
@@ -186650,8 +186645,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
           const reference2 = Number.parseFloat(component["reference"]);
           if (Number.isFinite(reference2)) newComp._reference = reference2;
         }
-        if (isPassiveMeter(newComp) && validRCSettings(component["rcSettings"])) {
-          newComp._rcSettings = component["rcSettings"];
+        const config = component["rcSettings"];
+        if (isPassiveMeter(newComp) && (config === null || validRCSettings(config))) {
+          newComp._rcSettings = config;
         }
         this.allEComponents.push(newComp);
       }
@@ -187736,13 +187732,15 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   renderRCSettings(device) {
     const config = device._rcSettings;
+    const defaultMicrofarads = (device.defaultRCCapacitance ?? 0) * 1e6;
     return x`
 			<sl-details summary=${this.message("Kapazitiver Zellstrom (RC-Modell)")}
 				@sl-after-show=${() => this.canvas.drawSelection()} @sl-after-hide=${() => this.canvas.drawSelection()}>
-				<p>${this.message("N\xE4herung f\xFCr getrennte Halbzellen ohne Ionenverbindung. Mit leerer Kapazit\xE4t bleibt sie aus.")}</p>
+				<p>${defaultMicrofarads > 0 ? this.message("F\xFCr getrennte Halbzellen gilt standardm\xE4\xDFig ein Modellwert von {value} \xB5F. 0 schaltet das RC-Modell aus.", { value: defaultMicrofarads }) : this.message("N\xE4herung f\xFCr getrennte Halbzellen ohne Ionenverbindung. Mit leerer Kapazit\xE4t bleibt sie aus.")}</p>
 				<sl-input id="rcCapacitance" type="number" step="any" size="small" contenteditable="false"
 					label=${this.message("Effektive Kapazit\xE4t [\xB5F]")}
-					.value=${config ? String(config.capacitance * 1e6) : ""}></sl-input>
+					placeholder=${defaultMicrofarads > 0 ? String(defaultMicrofarads) : ""}
+					.value=${config === null ? "0" : config ? String(config.capacitance * 1e6) : ""}></sl-input>
 				<sl-input id="rcResistance" type="number" step="any" size="small" contenteditable="false"
 					label=${this.message("Zus\xE4tzlicher Reihenwiderstand [\u03A9]")}
 					.value=${String(config?.seriesResistance ?? 0)}></sl-input>
@@ -187751,13 +187749,16 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					.value=${config?.cutoff === void 0 ? "" : String(config.cutoff * 1e6)}></sl-input>
 				<sl-button size="small" @click=${() => {
       const value = (id3) => this.shadowRoot.querySelector(id3).value.trim();
-      const capacitance = value("#rcCapacitance");
-      const cutoff = value("#rcCutoff");
-      const next = capacitance ? {
-        capacitance: Number(capacitance) * 1e-6,
-        seriesResistance: Number(value("#rcResistance")),
-        cutoff: cutoff ? Number(cutoff) * 1e-6 : void 0
-      } : void 0;
+      const rawCapacitance = value("#rcCapacitance");
+      const capacitance = rawCapacitance ? Number(rawCapacitance) * 1e-6 : device.defaultRCCapacitance;
+      const seriesResistance = Number(value("#rcResistance"));
+      const rawCutoff = value("#rcCutoff");
+      const cutoff = rawCutoff ? Number(rawCutoff) * 1e-6 : void 0;
+      let next;
+      if (capacitance === 0) next = null;
+      else if (capacitance !== void 0 && (rawCapacitance || seriesResistance !== 0 || rawCutoff)) {
+        next = { capacitance, seriesResistance, cutoff };
+      }
       if (next && !validRCSettings(next)) {
         this._notify(this.message("Kapazit\xE4t und Stromschwelle m\xFCssen positiv sein. Der zus\xE4tzliche Widerstand darf null sein."), "warning");
         return;
@@ -187767,6 +187768,39 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.requestUpdate();
     }}>${this.message("best\xE4tigen")}</sl-button>
 			</sl-details>`;
+  }
+  renderRCReadout(device, { sample: sample2, timeConstant, cutoffAt }) {
+    const info = this.contextEchemInfo;
+    let readout = info.querySelector(".rc-readout");
+    const isNew = !readout;
+    if (!readout) {
+      readout = this.ownerDocument.createElement("div");
+      readout.className = "rc-readout";
+      info.replaceChildren(readout);
+    }
+    const { Voltmeter, Multimeter } = EComponentType;
+    const voltage = device._type === Voltmeter || device._type === Multimeter && device._meterMode === "voltage";
+    const value = voltage ? device._visibleVoltage : device._visibleCurrent;
+    const number2 = (value2) => value2.toPrecision(4);
+    const duration = (seconds) => {
+      if (seconds >= 1) return `${number2(seconds)} s`;
+      if (seconds >= 1e-3 || seconds === 0) return `${number2(seconds * 1e3)} ms`;
+      return `${number2(seconds * 1e6)} \xB5s`;
+    };
+    B(i6(device, x`
+			<p>${value === null ? "\u2014" : `${number2(Math.abs(value))} ${voltage ? "V" : "A"}`}</p>
+			<details @toggle=${() => this.canvas.drawSelection()}>
+				<summary>${this.message("Kapazitiver Zellstrom (RC-Modell)")}</summary>
+				${device._rcSettings === void 0 && device.defaultRCCapacitance ? x`<p>${this.message("Modellwert: {value} \xB5F", { value: device.defaultRCCapacitance * 1e6 })}</p>` : E}
+				<p>I: ${number2(sample2.current)} A</p>
+				<p>Q: ${number2(sample2.charge * 1e6)} µC</p>
+				<p>ΔQ: ${number2(sample2.transferredCharge * 1e6)} µC</p>
+				<p>${this.message("Gegenspannung")}: ${number2(sample2.opposingVoltage)} V</p>
+				<p>${this.message("Treibende Spannung")}: ${number2(sample2.drivingVoltage)} V</p>
+				<p>τ: ${duration(timeConstant)}</p>
+				<p>${this.message("Dauer bis zur Stromschwelle")}: ${duration(cutoffAt)}</p>
+			</details>`), readout);
+    if (isNew) this.canvas.drawSelection();
   }
   renderObjectSummary() {
     const name2 = this.itemName(this.curr_name.split(":")[0]);
