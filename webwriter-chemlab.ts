@@ -2937,9 +2937,10 @@ export class ChemLab extends LitElementWw {
 		if (version !== this.diagramChannelVersion) {
 			this.diagramChannelVersion = version;
 			this.collectDiagramSuggestions();
+			// Only the axis menus read the channel list, and only while they are shown.
+			if (this.diagramPickerOpen || this.isDiagramPanelOpen) this.requestUpdate();
 		}
-		const pruned = this.pruneDiagramSuggestions();
-		if (pruned || this.diagramPickerOpen || this.isDiagramPanelOpen || this.suggestionQueue.size) this.requestUpdate();
+		if (this.pruneDiagramSuggestions()) this.requestUpdate();
 	}
 
 	collectDiagramSuggestions(): void {

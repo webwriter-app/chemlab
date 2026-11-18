@@ -189619,9 +189619,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (version4 !== this.diagramChannelVersion) {
       this.diagramChannelVersion = version4;
       this.collectDiagramSuggestions();
+      if (this.diagramPickerOpen || this.isDiagramPanelOpen) this.requestUpdate();
     }
-    const pruned = this.pruneDiagramSuggestions();
-    if (pruned || this.diagramPickerOpen || this.isDiagramPanelOpen || this.suggestionQueue.size) this.requestUpdate();
+    if (this.pruneDiagramSuggestions()) this.requestUpdate();
   }
   collectDiagramSuggestions() {
     if (this.simulation.hasRunningExperiments && this.suggestionQueue.collect(this.diagramSuggestions(this.measurements.history.channels))) this.requestUpdate();
