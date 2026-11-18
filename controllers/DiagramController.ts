@@ -2,7 +2,7 @@ import { html, type ReactiveController } from "lit";
 import { createRef, ref, type Ref } from "lit/directives/ref.js";
 import { repeat } from "lit/directives/repeat.js";
 import Chart from "chart.js/auto";
-import { TIME_CHANNEL } from "../data/measurementHistory";
+import { TIME_CHANNEL, type MeasurementChannel } from "../data/measurementHistory";
 import { axisId, type DiagramAxis } from "../data/diagramSources";
 import type { ChemLab } from "../webwriter-chemlab";
 
@@ -89,11 +89,18 @@ export class DiagramController implements ReactiveController {
 	label(axis: DiagramAxis): string {
 		const message = this.host.message;
 		if (axis === TIME_CHANNEL) return message("Zeit") + " [s]";
-		const component = this.host.itemName(axis.component);
-		const quantity = message(axis.quantity);
-		const species = axis.species ? " · " + axis.species : "";
-		const unit = axis.unit ? " [" + axis.unit + "]" : "";
-		return `${component} ${axis.number} · ${quantity}${species}${unit}`;
+		return `${this.objectLabel(axis)} · ${this.measurementLabel(axis)}`;
+	}
+
+	objectLabel(channel: MeasurementChannel): string {
+		return `${this.host.itemName(channel.component)} ${channel.number}`;
+	}
+
+	measurementLabel(channel: MeasurementChannel): string {
+		const quantity = this.host.message(channel.quantity);
+		const species = channel.species ? " · " + channel.species : "";
+		const unit = channel.unit ? " [" + channel.unit + "]" : "";
+		return quantity + species + unit;
 	}
 
 	hasPair(x: DiagramAxis, y: DiagramAxis): boolean {

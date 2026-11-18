@@ -103725,7 +103725,7 @@ var style = i`
 		background: var(--canvas-control-surface);
 		font-family: var(--sl-font-sans);
 	}
-	#diagramArea:has(#diagramAxisPicker) {
+	#diagramArea:has(.diagram-builder-popup) {
 		z-index: 2;
 	}
 	#diagramControls {
@@ -103769,24 +103769,32 @@ var style = i`
 		color: var(--lab-card-text);
 		box-shadow: var(--lab-panel-shadow);
 	}
-	#diagramAxisPicker {
-		--diagram-picker-width: min(18rem, 85cqw);
+	.diagram-builder {
 		box-sizing: border-box;
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		gap: 6px;
-		inline-size: var(--diagram-picker-width);
+		padding: 6px;
+		pointer-events: auto;
+	}
+	.diagram-builder-popup {
+		inline-size: min(18rem, 85cqw);
 		max-block-size: max(0px, calc(var(--workspace-inner-height) - var(--panel-trigger-height) - 10px));
 		overflow: auto;
 		overscroll-behavior: contain;
 		scrollbar-width: thin;
-		padding: 6px;
-		pointer-events: auto;
 	}
-	.show-diagram-panel #diagramAxisPicker {
-		position: relative;
-		inset-inline-start: min(0px, 100cqw - var(--diagram-panel-width) - var(--diagram-picker-width) - 4px);
+	.diagram-builder-inline {
+		margin-block-end: 6px;
 	}
+	.diagram-builder-inline .diagram-suggestions {
+		max-block-size: min(13rem, 30cqh);
+		overflow: auto;
+		overscroll-behavior: contain;
+		scrollbar-width: thin;
+		padding: 2px;
+	}
+
 	.diagram-section-tag {
 		justify-self: start;
 		max-inline-size: 100%;
@@ -103808,6 +103816,16 @@ var style = i`
 	}
 	.diagram-axis-select::part(listbox) {
 		scrollbar-width: thin;
+	}
+	.diagram-axis-select sl-divider {
+		--spacing: 3px;
+	}
+	.diagram-axis-group-label {
+		padding: 3px 8px;
+		color: var(--lab-card-secondary-text);
+		font-size: var(--sl-font-size-x-small);
+		font-weight: var(--sl-font-weight-semibold);
+		overflow-wrap: anywhere;
 	}
 	.diagram-axis-select sl-option::part(label) {
 		white-space: normal;
@@ -177691,8 +177709,16 @@ function axisId(axis) {
 function componentKey(channel) {
   return `${channel.component}:${channel.number - 1}`;
 }
-function selectedDiagramSources(channels, selection) {
-  return channels.filter((channel) => selection.has(componentKey(channel)));
+function selectedDiagramSourceGroups(channels, selection) {
+  const groups = /* @__PURE__ */ new Map();
+  for (const channel of channels) {
+    const key = componentKey(channel);
+    if (!selection.has(key)) continue;
+    let sources2 = groups.get(key);
+    if (!sources2) groups.set(key, sources2 = []);
+    sources2.push(channel);
+  }
+  return [...groups].map(([key, sources2]) => ({ key, sources: sources2 }));
 }
 function suggestDiagrams(channels, titrations, instruments, hasReading) {
   const byComponent = /* @__PURE__ */ new Map();
@@ -177793,11 +177819,16 @@ var DiagramController = class {
   label(axis) {
     const message = this.host.message;
     if (axis === TIME_CHANNEL) return message("Zeit") + " [s]";
-    const component = this.host.itemName(axis.component);
-    const quantity = message(axis.quantity);
-    const species = axis.species ? " \xB7 " + axis.species : "";
-    const unit = axis.unit ? " [" + axis.unit + "]" : "";
-    return `${component} ${axis.number} \xB7 ${quantity}${species}${unit}`;
+    return `${this.objectLabel(axis)} \xB7 ${this.measurementLabel(axis)}`;
+  }
+  objectLabel(channel) {
+    return `${this.host.itemName(channel.component)} ${channel.number}`;
+  }
+  measurementLabel(channel) {
+    const quantity = this.host.message(channel.quantity);
+    const species = channel.species ? " \xB7 " + channel.species : "";
+    const unit = channel.unit ? " [" + channel.unit + "]" : "";
+    return quantity + species + unit;
   }
   hasPair(x4, y5) {
     return this.diagrams.some((diagram) => axisId(diagram.x) === axisId(x4) && axisId(diagram.y) === axisId(y5));
@@ -186632,8 +186663,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __privateAdd(this, _fullWidthMode, __runInitializers(_init2, 128, this, false)), __runInitializers(_init2, 131, this);
     __privateAdd(this, _diagramPanelOpen, __runInitializers(_init2, 132, this, false)), __runInitializers(_init2, 135, this);
     __privateAdd(this, _diagramPickerOpen, __runInitializers(_init2, 136, this, false)), __runInitializers(_init2, 139, this);
-    __publicField(this, "diagramPickerTimer");
-    __publicField(this, "diagramPickerEscape", false);
     __publicField(this, "diagramChannelVersion", 0);
     __publicField(this, "diagramX", "");
     __publicField(this, "diagramY", "");
@@ -186750,6 +186779,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (wide !== this.fullWidthMode) {
       this.fullWidthMode = wide;
       this.diagramPanelOpen = wide;
+      this.closeDiagramPicker();
     }
     const width = this.containerDiv.clientWidth;
     const panelMax = parseFloat(getComputedStyle(this.ownerDocument.documentElement).fontSize) * 24;
@@ -188756,24 +188786,12 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   refreshDiagramPicker() {
     const version4 = this.measurements.history.channelVersion;
-    if (this.diagramPickerOpen && version4 !== this.diagramChannelVersion) this.requestUpdate();
+    if ((this.diagramPickerOpen || this.isDiagramPanelOpen) && version4 !== this.diagramChannelVersion) this.requestUpdate();
     this.diagramChannelVersion = version4;
   }
-  openDiagramPicker() {
-    clearTimeout(this.diagramPickerTimer);
-    if (!this.diagramPickerEscape) this.diagramPickerOpen = true;
-  }
   closeDiagramPicker() {
-    clearTimeout(this.diagramPickerTimer);
     this.diagramPickerOpen = false;
     this.diagramX = this.diagramY = "";
-  }
-  deferDiagramPickerClose() {
-    clearTimeout(this.diagramPickerTimer);
-    this.diagramPickerTimer = setTimeout(() => {
-      const controls = this.shadowRoot.querySelector("#diagramControls");
-      if (!controls?.matches(":hover, :focus-within")) this.closeDiagramPicker();
-    }, 180);
   }
   get diagramSelection() {
     const group = this.canvas.selectedObjects;
@@ -188783,12 +188801,15 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (!this.diagramPanelAvailable) this.closeDiagramPanel();
     this.diagrams.create(x4, y5, title);
     this.closeDiagramPicker();
-    this.diagramPickerEscape = true;
-    this.shadowRoot.querySelector("#diagramHandle")?.focus();
+    if (!this.isDiagramPanelOpen) this.shadowRoot.querySelector("#diagramHandle")?.focus();
   }
   renderSelectedDiagramAxes(channels, selection) {
-    const sources2 = [TIME_CHANNEL, ...selectedDiagramSources(channels, selection).sort((a7, b5) => a7.number - b5.number || this.diagrams.label(a7).localeCompare(this.diagrams.label(b5), this.lang))];
-    if (sources2.length === 1) return x`
+    const groups = selectedDiagramSourceGroups(channels, selection).sort((a7, b5) => a7.sources[0].number - b5.sources[0].number);
+    for (const { sources: sources3 } of groups) {
+      sources3.sort((a7, b5) => this.diagrams.measurementLabel(a7).localeCompare(this.diagrams.measurementLabel(b5), this.lang));
+    }
+    const sources2 = [TIME_CHANNEL, ...groups.flatMap((group) => group.sources)];
+    if (!groups.length) return x`
 			<p class="diagram-empty">${this.message("Die ausgew\xE4hlten Objekte liefern keine Messdaten.")}</p>`;
     const current = (id3) => sources2.find((axis) => axisId(axis) === id3);
     const x4 = current(this.diagramX);
@@ -188806,10 +188827,19 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       if (nextX && nextY && nextX !== nextY) this.createDiagram(nextX, nextY);
       else this.requestUpdate();
     }}>
-				${c4(sources2, axisId, (source3) => x`
-					<sl-option value=${encodeURIComponent(axisId(source3))} ?disabled=${source3 === excluded}>
-						${this.diagrams.label(source3)}
-					</sl-option>`)}
+				<sl-option value=${TIME_CHANNEL} ?disabled=${excluded === TIME_CHANNEL}>${this.diagrams.label(TIME_CHANNEL)}</sl-option>
+				${c4(groups, (group) => group.key, ({ sources: sources3 }) => {
+      const owner = this.diagrams.objectLabel(sources3[0]);
+      return x`
+						<sl-divider></sl-divider>
+						<div role="group" aria-label=${owner}>
+							<div class="diagram-axis-group-label" aria-hidden="true">${owner}</div>
+							${c4(sources3, (source3) => source3.id, (source3) => x`
+								<sl-option value=${encodeURIComponent(source3.id)} ?disabled=${source3 === excluded}>
+									${this.diagrams.measurementLabel(source3)}<span hidden> · ${owner}</span>
+								</sl-option>`)}
+						</div>`;
+    })}
 			</sl-select>`;
     return x`${select("x", "X-Achse", x4, y5)}${select("y", "Y-Achse", y5, x4)}`;
   }
@@ -188849,57 +188879,57 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }
     return suggestDiagrams(channels, titrations, instruments, (id3) => this.measurements.history.hasReading(id3));
   }
-  renderDiagramAxisPicker() {
+  renderDiagramBuilder(embedded) {
     const selection = this.diagramSelection;
     const channels = this.measurements.history.channels;
     const suggestions = selection.size ? [] : this.diagramSuggestions(channels).filter(({ x: x4, y: y5 }) => !this.diagrams.hasPair(x4, y5));
-    return x`<div id="diagramAxisPicker" class="diagram-surface" role="group" aria-label=${this.message("Diagramm erstellen")}>
+    const title = this.message(embedded ? "Diagramm hinzuf\xFCgen" : selection.size ? "Achsen w\xE4hlen" : "Diagrammvorschl\xE4ge");
+    return x`<section class="diagram-builder diagram-surface ${embedded ? "diagram-builder-inline" : "diagram-builder-popup"}"
+			id=${embedded ? "diagramBuilderInline" : "diagramBuilderPopup"} aria-label=${title}>
 			<sl-tag class="diagram-section-tag" size="small" variant="primary">
-				${this.message(selection.size ? "Achsen w\xE4hlen" : "Diagrammvorschl\xE4ge")}
+				${title}
 			</sl-tag>
 			${selection.size ? this.renderSelectedDiagramAxes(channels, selection) : suggestions.length ? x`
 				<div class="diagram-suggestions">
-					${c4(suggestions, ({ x: x4, y: y5 }) => JSON.stringify([axisId(x4), axisId(y5)]), ({ title, x: x4, y: y5 }) => x`
-						<sl-button class="diagram-suggestion" size="small" @click=${() => this.createDiagram(x4, y5, title)}>
-							<span class="diagram-suggestion-title">${this.message(title)}</span>
+					${c4(suggestions, ({ x: x4, y: y5 }) => JSON.stringify([axisId(x4), axisId(y5)]), ({ title: title2, x: x4, y: y5 }) => x`
+						<sl-button class="diagram-suggestion" size="small" @click=${() => this.createDiagram(x4, y5, title2)}>
+							<span class="diagram-suggestion-title">${this.message(title2)}</span>
 							<span class="diagram-suggestion-axis"><b>Y</b> ${this.diagrams.label(y5)}</span>
 							<span class="diagram-suggestion-axis"><b>X</b> ${this.diagrams.label(x4)}</span>
 						</sl-button>`)}
 				</div>` : x`<p class="diagram-empty">${this.message("W\xE4hle Objekte auf dem Canvas, um ein eigenes Diagramm zu erstellen.")}</p>`}
-		</div>`;
+		</section>`;
   }
   renderDiagramDetails(available, open) {
     return x`
 			<aside id="diagramArea" class="workspace-side">
 				<div id="diagramControls"
-					@pointerleave=${() => {
-      this.diagramPickerEscape = false;
-      this.deferDiagramPickerClose();
+					@pointerleave=${(event) => {
+      if (!open && this.diagramPickerOpen && event.pointerType === "mouse") this.closeDiagramPicker();
     }}
-					@focusout=${() => this.deferDiagramPickerClose()}
+					@focusout=${(event) => {
+      const controls = event.currentTarget;
+      queueMicrotask(() => {
+        if (this.diagramPickerOpen && !controls.matches(":hover, :focus-within")) this.closeDiagramPicker();
+      });
+    }}
 					@keydown=${(event) => {
-      if (event.key !== "Escape" || !this.diagramPickerOpen) return;
+      if (event.key !== "Escape" || event.defaultPrevented || !this.diagramPickerOpen) return;
       event.stopPropagation();
       this.closeDiagramPicker();
-      this.diagramPickerEscape = true;
       this.shadowRoot.querySelector("#diagramHandle")?.focus();
     }}>
-					<button id="diagramHandle" type="button" aria-expanded=${String(open)}
-						aria-controls="inlineDiagramPanel" aria-label=${this.message("Diagramme")}
+					<button id="diagramHandle" type="button" aria-expanded=${String(open || this.diagramPickerOpen)}
+						aria-controls=${!open && this.diagramPickerOpen ? "diagramBuilderPopup" : "inlineDiagramPanel"} aria-label=${this.message("Diagramme")}
 						title=${this.message("Diagramme")} class=${available ? "" : "diagram-handle-idle"}
 						@pointerenter=${(event) => {
-      if (event.pointerType === "mouse") this.openDiagramPicker();
-    }}
-						@focusin=${() => this.openDiagramPicker()}
-						@blur=${() => {
-      this.diagramPickerEscape = false;
+      if (!open && event.pointerType === "mouse") this.diagramPickerOpen = true;
     }}
 						@click=${() => {
-      this.diagramPickerEscape = false;
       if (available) {
         this.closeDiagramPicker();
         this.onDiagramToggle(!open);
-      } else this.openDiagramPicker();
+      } else this.diagramPickerOpen = true;
     }}>
 						${open ? E : x`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
 							<path d="M2 2v12h12M4 11l3-4 3 2 4-5"/>
@@ -188908,19 +188938,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 							<path d=${open ? "m9 3-4 4 4 4" : "m5 3 4 4-4 4"}/>
 						</svg>
 					</button>
-					${this.diagramPickerOpen ? this.renderDiagramAxisPicker() : E}
+					${!open && this.diagramPickerOpen ? this.renderDiagramBuilder(false) : E}
 				</div>
 				<div id="inlineDiagramPanel" ?inert=${!open} aria-hidden=${String(!open)}>
+					${open ? this.renderDiagramBuilder(true) : E}
 					<div class="diagram-toolbar diagram-surface">
 						<sl-checkbox .checked=${this.diagrams.showLine} @sl-change=${() => this.diagrams.toggleShowLine()}>
 							${this.message("Kurven anzeigen")}
 						</sl-checkbox>
-						<sl-button class="diagram-control" size="small" @click=${async () => {
-      this.diagramPickerEscape = false;
-      this.openDiagramPicker();
-      await this.updateComplete;
-      this.shadowRoot.querySelector("#diagramAxisPicker sl-select, #diagramAxisPicker sl-button")?.focus();
-    }}>${this.message("Diagramm hinzuf\xFCgen")}</sl-button>
 					</div>
 					${this.diagrams.renderCards()}
 				</div>

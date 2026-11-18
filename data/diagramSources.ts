@@ -13,8 +13,16 @@ function componentKey(channel: MeasurementChannel): string {
 	return `${channel.component}:${channel.number - 1}`;
 }
 
-export function selectedDiagramSources(channels: readonly MeasurementChannel[], selection: ReadonlySet<string>): MeasurementChannel[] {
-	return channels.filter(channel => selection.has(componentKey(channel)));
+export function selectedDiagramSourceGroups(channels: readonly MeasurementChannel[], selection: ReadonlySet<string>) {
+	const groups = new Map<string, MeasurementChannel[]>();
+	for (const channel of channels) {
+		const key = componentKey(channel);
+		if (!selection.has(key)) continue;
+		let sources = groups.get(key);
+		if (!sources) groups.set(key, sources = []);
+		sources.push(channel);
+	}
+	return [...groups].map(([key, sources]) => ({ key, sources }));
 }
 
 /** Only propose signals that belong to the identified setup or have recorded values. */

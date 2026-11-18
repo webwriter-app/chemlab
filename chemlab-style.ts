@@ -1198,7 +1198,7 @@ export const style = css`
 		background: var(--canvas-control-surface);
 		font-family: var(--sl-font-sans);
 	}
-	#diagramArea:has(#diagramAxisPicker) {
+	#diagramArea:has(.diagram-builder-popup) {
 		z-index: 2;
 	}
 	#diagramControls {
@@ -1242,24 +1242,32 @@ export const style = css`
 		color: var(--lab-card-text);
 		box-shadow: var(--lab-panel-shadow);
 	}
-	#diagramAxisPicker {
-		--diagram-picker-width: min(18rem, 85cqw);
+	.diagram-builder {
 		box-sizing: border-box;
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		gap: 6px;
-		inline-size: var(--diagram-picker-width);
+		padding: 6px;
+		pointer-events: auto;
+	}
+	.diagram-builder-popup {
+		inline-size: min(18rem, 85cqw);
 		max-block-size: max(0px, calc(var(--workspace-inner-height) - var(--panel-trigger-height) - 10px));
 		overflow: auto;
 		overscroll-behavior: contain;
 		scrollbar-width: thin;
-		padding: 6px;
-		pointer-events: auto;
 	}
-	.show-diagram-panel #diagramAxisPicker {
-		position: relative;
-		inset-inline-start: min(0px, 100cqw - var(--diagram-panel-width) - var(--diagram-picker-width) - 4px);
+	.diagram-builder-inline {
+		margin-block-end: 6px;
 	}
+	.diagram-builder-inline .diagram-suggestions {
+		max-block-size: min(13rem, 30cqh);
+		overflow: auto;
+		overscroll-behavior: contain;
+		scrollbar-width: thin;
+		padding: 2px;
+	}
+
 	.diagram-section-tag {
 		justify-self: start;
 		max-inline-size: 100%;
@@ -1281,6 +1289,16 @@ export const style = css`
 	}
 	.diagram-axis-select::part(listbox) {
 		scrollbar-width: thin;
+	}
+	.diagram-axis-select sl-divider {
+		--spacing: 3px;
+	}
+	.diagram-axis-group-label {
+		padding: 3px 8px;
+		color: var(--lab-card-secondary-text);
+		font-size: var(--sl-font-size-x-small);
+		font-weight: var(--sl-font-weight-semibold);
+		overflow-wrap: anywhere;
 	}
 	.diagram-axis-select sl-option::part(label) {
 		white-space: normal;

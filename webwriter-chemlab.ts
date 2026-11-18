@@ -53,7 +53,7 @@ import { pHColors as phColorScale, pHTextColor } from "./data/phColors";
 import { defaultMolecules, defaultMixtures } from "./data/presets";
 import { sendXApiStatement } from "./services/xapi";
 import { DiagramController } from "./controllers/DiagramController";
-import { axisId, selectedDiagramSources, suggestDiagrams, type DiagramAxis, type InstrumentSuggestion } from "./data/diagramSources";
+import { axisId, selectedDiagramSourceGroups, suggestDiagrams, type DiagramAxis, type InstrumentSuggestion } from "./data/diagramSources";
 import { TIME_CHANNEL, type MeasurementChannel } from "./data/measurementHistory";
 import { MeasurementRecorder } from "./controllers/MeasurementRecorder";
 import { SimulationController } from "./controllers/SimulationController";
@@ -430,8 +430,6 @@ export class ChemLab extends LitElementWw {
 	@state() private accessor fullWidthMode = false;
 	@state() private accessor diagramPanelOpen = false;
 	@state() private accessor diagramPickerOpen = false;
-	private diagramPickerTimer?: ReturnType<typeof setTimeout>;
-	private diagramPickerEscape = false;
 	private diagramChannelVersion = 0;
 	private diagramX = "";
 	private diagramY = "";
@@ -667,6 +665,7 @@ export class ChemLab extends LitElementWw {
 		if (wide !== this.fullWidthMode) {
 			this.fullWidthMode = wide;
 			this.diagramPanelOpen = wide;
+			this.closeDiagramPicker();
 		}
 		const width = this.containerDiv.clientWidth;
 		const panelMax = parseFloat(getComputedStyle(this.ownerDocument.documentElement).fontSize) * 24;
@@ -2910,27 +2909,13 @@ export class ChemLab extends LitElementWw {
 
 	refreshDiagramPicker(): void {
 		const version = this.measurements.history.channelVersion;
-		if (this.diagramPickerOpen && version !== this.diagramChannelVersion) this.requestUpdate();
+		if ((this.diagramPickerOpen || this.isDiagramPanelOpen) && version !== this.diagramChannelVersion) this.requestUpdate();
 		this.diagramChannelVersion = version;
 	}
 
-	private openDiagramPicker(): void {
-		clearTimeout(this.diagramPickerTimer);
-		if (!this.diagramPickerEscape) this.diagramPickerOpen = true;
-	}
-
 	private closeDiagramPicker(): void {
-		clearTimeout(this.diagramPickerTimer);
 		this.diagramPickerOpen = false;
 		this.diagramX = this.diagramY = "";
-	}
-
-	private deferDiagramPickerClose(): void {
-		clearTimeout(this.diagramPickerTimer);
-		this.diagramPickerTimer = setTimeout(() => {
-			const controls = this.shadowRoot.querySelector("#diagramControls");
-			if (!controls?.matches(":hover, :focus-within")) this.closeDiagramPicker();
-		}, 180);
 	}
 
 	private get diagramSelection(): Set<string> {
@@ -2942,14 +2927,17 @@ export class ChemLab extends LitElementWw {
 		if (!this.diagramPanelAvailable) this.closeDiagramPanel();
 		this.diagrams.create(x, y, title);
 		this.closeDiagramPicker();
-		this.diagramPickerEscape = true;
-		this.shadowRoot.querySelector<HTMLElement>("#diagramHandle")?.focus();
+		if (!this.isDiagramPanelOpen) this.shadowRoot.querySelector<HTMLElement>("#diagramHandle")?.focus();
 	}
 
 	private renderSelectedDiagramAxes(channels: MeasurementChannel[], selection: ReadonlySet<string>) {
-		const sources: DiagramAxis[] = [TIME_CHANNEL, ...selectedDiagramSources(channels, selection).sort((a, b) =>
-			a.number - b.number || this.diagrams.label(a).localeCompare(this.diagrams.label(b), this.lang))];
-		if (sources.length === 1) return html`
+		const groups = selectedDiagramSourceGroups(channels, selection)
+			.sort((a, b) => a.sources[0].number - b.sources[0].number);
+		for (const { sources } of groups) {
+			sources.sort((a, b) => this.diagrams.measurementLabel(a).localeCompare(this.diagrams.measurementLabel(b), this.lang));
+		}
+		const sources: DiagramAxis[] = [TIME_CHANNEL, ...groups.flatMap(group => group.sources)];
+		if (!groups.length) return html`
 			<p class="diagram-empty">${this.message("Die ausgewählten Objekte liefern keine Messdaten.")}</p>`;
 		const current = (id: string) => sources.find(axis => axisId(axis) === id);
 		const x = current(this.diagramX);
@@ -2967,10 +2955,19 @@ export class ChemLab extends LitElementWw {
 					if (nextX && nextY && nextX !== nextY) this.createDiagram(nextX, nextY);
 					else this.requestUpdate();
 				}}>
-				${repeat(sources, axisId, source => html`
-					<sl-option value=${encodeURIComponent(axisId(source))} ?disabled=${source === excluded}>
-						${this.diagrams.label(source)}
-					</sl-option>`)}
+				<sl-option value=${TIME_CHANNEL} ?disabled=${excluded === TIME_CHANNEL}>${this.diagrams.label(TIME_CHANNEL)}</sl-option>
+				${repeat(groups, group => group.key, ({ sources }) => {
+					const owner = this.diagrams.objectLabel(sources[0]);
+					return html`
+						<sl-divider></sl-divider>
+						<div role="group" aria-label=${owner}>
+							<div class="diagram-axis-group-label" aria-hidden="true">${owner}</div>
+							${repeat(sources, source => source.id, source => html`
+								<sl-option value=${encodeURIComponent(source.id)} ?disabled=${source === excluded}>
+									${this.diagrams.measurementLabel(source)}<span hidden> · ${owner}</span>
+								</sl-option>`)}
+						</div>`;
+				})}
 			</sl-select>`;
 		return html`${select("x", "X-Achse", x, y)}${select("y", "Y-Achse", y, x)}`;
 	}
@@ -3015,14 +3012,16 @@ export class ChemLab extends LitElementWw {
 		return suggestDiagrams(channels, titrations, instruments, id => this.measurements.history.hasReading(id));
 	}
 
-	private renderDiagramAxisPicker() {
+	private renderDiagramBuilder(embedded: boolean) {
 		const selection = this.diagramSelection;
 		const channels = this.measurements.history.channels;
 		const suggestions = selection.size ? [] : this.diagramSuggestions(channels)
 			.filter(({ x, y }) => !this.diagrams.hasPair(x, y));
-		return html`<div id="diagramAxisPicker" class="diagram-surface" role="group" aria-label=${this.message("Diagramm erstellen")}>
+		const title = this.message(embedded ? "Diagramm hinzufügen" : selection.size ? "Achsen wählen" : "Diagrammvorschläge");
+		return html`<section class="diagram-builder diagram-surface ${embedded ? "diagram-builder-inline" : "diagram-builder-popup"}"
+			id=${embedded ? "diagramBuilderInline" : "diagramBuilderPopup"} aria-label=${title}>
 			<sl-tag class="diagram-section-tag" size="small" variant="primary">
-				${this.message(selection.size ? "Achsen wählen" : "Diagrammvorschläge")}
+				${title}
 			</sl-tag>
 			${selection.size ? this.renderSelectedDiagramAxes(channels, selection) : suggestions.length ? html`
 				<div class="diagram-suggestions">
@@ -3033,36 +3032,39 @@ export class ChemLab extends LitElementWw {
 							<span class="diagram-suggestion-axis"><b>X</b> ${this.diagrams.label(x)}</span>
 						</sl-button>`)}
 				</div>` : html`<p class="diagram-empty">${this.message("Wähle Objekte auf dem Canvas, um ein eigenes Diagramm zu erstellen.")}</p>`}
-		</div>`;
+		</section>`;
 	}
 
 	private renderDiagramDetails(available: boolean, open: boolean) {
 		return html`
 			<aside id="diagramArea" class="workspace-side">
 				<div id="diagramControls"
-					@pointerleave=${() => { this.diagramPickerEscape = false; this.deferDiagramPickerClose(); }}
-					@focusout=${() => this.deferDiagramPickerClose()}
+					@pointerleave=${(event: PointerEvent) => {
+						if (!open && this.diagramPickerOpen && event.pointerType === "mouse") this.closeDiagramPicker();
+					}}
+					@focusout=${(event: FocusEvent) => {
+						const controls = event.currentTarget as HTMLElement;
+						queueMicrotask(() => {
+							if (this.diagramPickerOpen && !controls.matches(":hover, :focus-within")) this.closeDiagramPicker();
+						});
+					}}
 					@keydown=${(event: KeyboardEvent) => {
-						if (event.key !== "Escape" || !this.diagramPickerOpen) return;
+						if (event.key !== "Escape" || event.defaultPrevented || !this.diagramPickerOpen) return;
 						event.stopPropagation();
 						this.closeDiagramPicker();
-						this.diagramPickerEscape = true;
 						this.shadowRoot.querySelector<HTMLElement>("#diagramHandle")?.focus();
 					}}>
-					<button id="diagramHandle" type="button" aria-expanded=${String(open)}
-						aria-controls="inlineDiagramPanel" aria-label=${this.message("Diagramme")}
+					<button id="diagramHandle" type="button" aria-expanded=${String(open || this.diagramPickerOpen)}
+						aria-controls=${!open && this.diagramPickerOpen ? "diagramBuilderPopup" : "inlineDiagramPanel"} aria-label=${this.message("Diagramme")}
 						title=${this.message("Diagramme")} class=${available ? "" : "diagram-handle-idle"}
 						@pointerenter=${(event: PointerEvent) => {
-							if (event.pointerType === "mouse") this.openDiagramPicker();
+							if (!open && event.pointerType === "mouse") this.diagramPickerOpen = true;
 						}}
-						@focusin=${() => this.openDiagramPicker()}
-						@blur=${() => { this.diagramPickerEscape = false; }}
 						@click=${() => {
-							this.diagramPickerEscape = false;
 							if (available) {
 								this.closeDiagramPicker();
 								this.onDiagramToggle(!open);
-							} else this.openDiagramPicker();
+							} else this.diagramPickerOpen = true;
 						}}>
 						${open ? nothing : html`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
 							<path d="M2 2v12h12M4 11l3-4 3 2 4-5"/>
@@ -3071,19 +3073,14 @@ export class ChemLab extends LitElementWw {
 							<path d=${open ? "m9 3-4 4 4 4" : "m5 3 4 4-4 4"}/>
 						</svg>
 					</button>
-					${this.diagramPickerOpen ? this.renderDiagramAxisPicker() : nothing}
+					${!open && this.diagramPickerOpen ? this.renderDiagramBuilder(false) : nothing}
 				</div>
 				<div id="inlineDiagramPanel" ?inert=${!open} aria-hidden=${String(!open)}>
+					${open ? this.renderDiagramBuilder(true) : nothing}
 					<div class="diagram-toolbar diagram-surface">
 						<sl-checkbox .checked=${this.diagrams.showLine} @sl-change=${() => this.diagrams.toggleShowLine()}>
 							${this.message("Kurven anzeigen")}
 						</sl-checkbox>
-						<sl-button class="diagram-control" size="small" @click=${async () => {
-							this.diagramPickerEscape = false;
-							this.openDiagramPicker();
-							await this.updateComplete;
-							this.shadowRoot.querySelector<HTMLElement>("#diagramAxisPicker sl-select, #diagramAxisPicker sl-button")?.focus();
-						}}>${this.message("Diagramm hinzufügen")}</sl-button>
 					</div>
 					${this.diagrams.renderCards()}
 				</div>

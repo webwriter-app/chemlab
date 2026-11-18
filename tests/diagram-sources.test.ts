@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { selectedDiagramSources, suggestDiagrams } from "../data/diagramSources";
+import { selectedDiagramSourceGroups, suggestDiagrams } from "../data/diagramSources";
 import { MeasurementHistory, TIME_CHANNEL, type MeasurementChannel } from "../data/measurementHistory";
 
 function source(component: string, index: number, quantity: string, group: MeasurementChannel["group"] = "vessel", species?: string): MeasurementChannel {
@@ -15,10 +15,16 @@ const amps = source("multimeter", 3, "Stromstärke", "instrument");
 const volts = source("multimeter", 3, "Spannung", "instrument");
 const channels = [pH, sodium, otherPH, delivery, amps, volts];
 
-test("only the selected object IDs contribute custom sources", () => {
-	assert.deepEqual(selectedDiagramSources(channels, new Set(["beaker:0"])), [pH, sodium]);
-	assert.deepEqual(selectedDiagramSources(channels, new Set(["beaker:1", "multimeter:3"])), [otherPH, amps, volts]);
-	assert.deepEqual(selectedDiagramSources(channels, new Set(["cable:4"])), []);
+test("axis menus have a separate group for each selected object", () => {
+	assert.deepEqual(selectedDiagramSourceGroups(channels, new Set(["beaker:0", "beaker:1"])), [
+		{ key: "beaker:0", sources: [pH, sodium] },
+		{ key: "beaker:1", sources: [otherPH] },
+	]);
+	assert.deepEqual(selectedDiagramSourceGroups(channels, new Set(["beaker:1", "multimeter:3"])), [
+		{ key: "beaker:1", sources: [otherPH] },
+		{ key: "multimeter:3", sources: [amps, volts] },
+	]);
+	assert.deepEqual(selectedDiagramSourceGroups(channels, new Set(["cable:4"])), []);
 });
 
 test("titration uses the receiver's pH and a wired meter uses its active mode", () => {
