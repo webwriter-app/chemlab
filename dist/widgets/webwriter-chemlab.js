@@ -177520,10 +177520,6 @@ var MeasurementHistory = class {
   get channels() {
     return [...this.series.values()].map(({ channel }) => channel);
   }
-  hasReading(id3) {
-    const time = this.series.get(id3)?.lastReading;
-    return time !== void 0 && time >= this.now() - RETENTION_MS;
-  }
   record(channel, value, time, changesOnly = false) {
     time = Math.max(this.latestTime, time);
     this.latestTime = time;
@@ -177543,10 +177539,6 @@ var MeasurementHistory = class {
     } else {
       if ((changesOnly || value === null) && previous === value) return false;
       samples.push(time, value);
-    }
-    if (value !== null) {
-      if (series.lastReading === void 0 || series.lastReading < time - RETENTION_MS) this.channelVersion++;
-      series.lastReading = time;
     }
     return true;
   }
@@ -177734,7 +177726,7 @@ function selectedDiagramSourceGroups(channels, selection) {
   }
   return [...groups].map(([key, sources2]) => ({ key, sources: sources2 }));
 }
-function suggestDiagrams(channels, titrations, instruments, hasReading) {
+function suggestDiagrams(channels, titrations, instruments) {
   const byComponent = /* @__PURE__ */ new Map();
   for (const channel of channels) {
     if (channel.species) continue;
@@ -177749,19 +177741,10 @@ function suggestDiagrams(channels, titrations, instruments, hasReading) {
     const y5 = byComponent.get(vessel)?.get("pH");
     if (x4 && y5) suggestions.push({ title: "Titration", x: x4, y: y5 });
   }
-  for (const [key, quantities] of byComponent) {
-    const experiment = instruments.get(key);
-    for (const quantity of ["Stromst\xE4rke", "Spannung", "Gesammeltes Gasvolumen"]) {
-      const y5 = quantities.get(quantity);
-      const title = experiment?.quantities.includes(quantity) ? experiment.title : void 0;
-      if (!y5 || !title && !hasReading(y5.id)) continue;
-      suggestions.push({ title: title ?? quantity, x: TIME_CHANNEL, y: y5 });
-    }
-  }
-  if (!suggestions.length) {
-    for (const quantities of byComponent.values()) {
-      const y5 = [quantities.get("pH"), quantities.get("Volumen"), quantities.get("Masse")].find((channel) => channel && hasReading(channel.id));
-      if (y5) suggestions.push({ title: y5.quantity, x: TIME_CHANNEL, y: y5 });
+  for (const [key, { title, quantities }] of instruments) {
+    for (const quantity of quantities) {
+      const y5 = byComponent.get(key)?.get(quantity);
+      if (y5) suggestions.push({ title, x: TIME_CHANNEL, y: y5 });
     }
   }
   return suggestions;
@@ -188927,40 +188910,56 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     return x`${select("x", "X-Achse", x4, y5)}${select("y", "Y-Achse", y5, x4)}`;
   }
   diagramSuggestions(channels) {
+    if (!this.simulation.hasRunningExperiments) return [];
     const key = (object) => `${object._type}:${object._id}`;
+    const gasVessels = /* @__PURE__ */ new Set();
     const titrations = this.allChemComponents.flatMap((source3) => {
-      if (source3._type !== "burette" /* Burette */) return [];
+      if (source3._type !== "burette" /* Burette */ || !this.simulation.hasTask("transfer" + key(source3))) return [];
       const target = this.canvas.titrationTarget(source3);
-      return target ? [{ burette: key(source3), vessel: key(target) }] : [];
+      if (!target) return [];
+      gasVessels.add(target._content);
+      return [{ burette: key(source3), vessel: key(target) }];
     });
     const instruments = /* @__PURE__ */ new Map();
-    const { GasCollector, Source, Ammeter, Multimeter } = EComponentType;
-    for (const device of this.allEComponents) {
-      if (device._type === GasCollector && device._connectedMix?._isSolution) {
-        instruments.set(key(device), { title: "Gasentwicklung", quantities: ["Gesammeltes Gasvolumen"] });
-        continue;
+    const { GasCollector, Source, Ammeter, Multimeter, Cable } = EComponentType;
+    const addInstruments = (devices, title) => {
+      for (const device of devices) {
+        if (device._type !== Source && !isPassiveMeter(device)) continue;
+        const wired = device._connections.every((terminal) => terminal.some((partner) => partner._type !== Cable || partner.partners.length === 2));
+        if (!wired) continue;
+        const quantities = device._type === Source ? ["Stromst\xE4rke", "Spannung"] : [device._type === Ammeter || device._type === Multimeter && device._meterMode === "current" ? "Stromst\xE4rke" : "Spannung"];
+        instruments.set(key(device), { title, quantities });
       }
-      if (device._type !== Source && !isPassiveMeter(device)) continue;
-      const wired = device._connections.every((terminal) => terminal.some((partner) => partner._type !== "cable" /* Cable */ || partner.partners.length === 2));
-      if (!wired) continue;
-      const quantities = device._type === Source ? ["Stromst\xE4rke", "Spannung"] : [device._type === Ammeter || device._type === Multimeter && device._meterMode === "current" ? "Stromst\xE4rke" : "Spannung"];
-      const circuit = this.operatingCircuit(device);
+    };
+    for (const starter of this.allEComponents) {
+      if (!this.simulation.hasTask("echem" + key(starter))) continue;
+      const circuit = this.operatingCircuit(starter);
       if (!circuit) {
-        if (this.meterCircuit(device)) instruments.set(key(device), { title: "Stromkreis", quantities });
+        const network = this.meterCircuit(starter);
+        if (network) addInstruments(network, "Stromkreis");
         continue;
       }
       const [first, second, ...devices] = circuit;
       if ([first, second].some((electrode) => electrode._immersion?.area === 0)) continue;
-      const powered = devices.some((other) => other._type === Source);
       const a7 = first._connectedMix;
       const b5 = second._connectedMix;
       if (a7 === b5 || this.bridgeBetween(a7, b5)) {
-        instruments.set(key(device), { title: powered ? "Elektrolyse" : "Galvanische Zelle", quantities });
-      } else if (!powered && devices.some((other) => isPassiveMeter(other) && other.rcSettings)) {
-        instruments.set(key(device), { title: "Kapazitiver Impuls", quantities });
+        const powered = devices.some((device) => device._type === Source);
+        addInstruments(devices, powered ? "Elektrolyse" : "Galvanische Zelle");
+        if (powered) {
+          gasVessels.add(a7);
+          gasVessels.add(b5);
+        }
+      } else if (this.hasRCReadout(starter)) {
+        addInstruments(devices, "Kapazitiver Impuls");
       }
     }
-    return suggestDiagrams(channels, titrations, instruments, (id3) => this.measurements.history.hasReading(id3));
+    for (const device of this.allEComponents) {
+      if (device._type === GasCollector && device._connectedMix?._isSolution && gasVessels.has(device._connectedMix)) {
+        instruments.set(key(device), { title: "Gasentwicklung", quantities: ["Gesammeltes Gasvolumen"] });
+      }
+    }
+    return suggestDiagrams(channels, titrations, instruments);
   }
   renderDiagramBuilder(embedded) {
     const selection = this.diagramSelection;

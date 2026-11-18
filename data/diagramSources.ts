@@ -25,12 +25,11 @@ export function selectedDiagramSourceGroups(channels: readonly MeasurementChanne
 	return [...groups].map(([key, sources]) => ({ key, sources }));
 }
 
-/** Only propose signals that belong to the identified setup or have recorded values. */
+/** Build proposals from the sources of currently running experiments. */
 export function suggestDiagrams(
 	channels: readonly MeasurementChannel[],
 	titrations: readonly Titration[],
 	instruments: ReadonlyMap<string, InstrumentSuggestion>,
-	hasReading: (id: string) => boolean,
 ): DiagramSuggestion[] {
 	const byComponent = new Map<string, Map<string, MeasurementChannel>>();
 	for (const channel of channels) {
@@ -46,21 +45,10 @@ export function suggestDiagrams(
 		const y = byComponent.get(vessel)?.get("pH");
 		if (x && y) suggestions.push({ title: "Titration", x, y });
 	}
-	for (const [key, quantities] of byComponent) {
-		const experiment = instruments.get(key);
-		for (const quantity of ["Stromstärke", "Spannung", "Gesammeltes Gasvolumen"]) {
-			const y = quantities.get(quantity);
-			const title = experiment?.quantities.includes(quantity) ? experiment.title : undefined;
-			if (!y || (!title && !hasReading(y.id))) continue;
-			suggestions.push({ title: title ?? quantity, x: TIME_CHANNEL, y });
-		}
-	}
-	// A typical standalone vessel needs at most one useful overview.
-	if (!suggestions.length) {
-		for (const quantities of byComponent.values()) {
-			const y = [quantities.get("pH"), quantities.get("Volumen"), quantities.get("Masse")]
-				.find(channel => channel && hasReading(channel.id));
-			if (y) suggestions.push({ title: y.quantity, x: TIME_CHANNEL, y });
+	for (const [key, { title, quantities }] of instruments) {
+		for (const quantity of quantities) {
+			const y = byComponent.get(key)?.get(quantity);
+			if (y) suggestions.push({ title, x: TIME_CHANNEL, y });
 		}
 	}
 	return suggestions;

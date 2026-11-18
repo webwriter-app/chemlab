@@ -14,7 +14,7 @@ export type MeasurementChannel = {
 
 type Reading = number | null;
 type Sample = { time: number; value: Reading; analytic?: boolean };
-type Series = { channel: MeasurementChannel; samples: SampleBuffer; current: boolean; lastReading?: number };
+type Series = { channel: MeasurementChannel; samples: SampleBuffer; current: boolean };
 
 interface Samples {
 	readonly length: number;
@@ -99,11 +99,6 @@ export class MeasurementHistory {
 		return [...this.series.values()].map(({ channel }) => channel);
 	}
 
-	hasReading(id: string): boolean {
-		const time = this.series.get(id)?.lastReading;
-		return time !== undefined && time >= this.now() - RETENTION_MS;
-	}
-
 	record(channel: MeasurementChannel, value: Reading, time: number, changesOnly = false): boolean {
 		time = Math.max(this.latestTime, time);
 		this.latestTime = time;
@@ -123,10 +118,6 @@ export class MeasurementHistory {
 		} else {
 			if ((changesOnly || value === null) && previous === value) return false;
 			samples.push(time, value);
-		}
-		if (value !== null) {
-			if (series.lastReading === undefined || series.lastReading < time - RETENTION_MS) this.channelVersion++;
-			series.lastReading = time;
 		}
 		return true;
 	}

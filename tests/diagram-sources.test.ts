@@ -27,27 +27,21 @@ test("axis menus have a separate group for each selected object", () => {
 	assert.deepEqual(selectedDiagramSourceGroups(channels, new Set(["cable:4"])), []);
 });
 
-test("titration uses the receiver's pH and a wired meter uses its active mode", () => {
+test("running titration uses the receiver's pH and the running circuit uses the meter mode", () => {
 	const candidates = suggestDiagrams(channels, [{ burette: "burette:2", vessel: "beaker:1" }],
-		new Map([["multimeter:3", { title: "Elektrolyse", quantities: ["Stromstärke"] }]]), () => false);
+		new Map([["multimeter:3", { title: "Elektrolyse", quantities: ["Stromstärke"] }]]));
 	assert.deepEqual(candidates, [
 		{ title: "Titration", x: delivery, y: otherPH },
 		{ title: "Elektrolyse", x: TIME_CHANNEL, y: amps },
 	]);
 });
 
-test("recorded signals can be suggested after unplugging without listing unavailable meters", () => {
+test("existing channels and recordings from stopped experiments do not create suggestions", () => {
 	const history = new MeasurementHistory();
 	const time = history.now();
+	history.record(pH, 7, time);
 	history.record(amps, 0.9, time);
-	history.record(volts, null, time + 1);
-	history.record(amps, null, time + 2);
-	assert.deepEqual(suggestDiagrams(channels, [], new Map(), id => history.hasReading(id)),
-		[{ title: "Stromstärke", x: TIME_CHANNEL, y: amps }]);
-});
-
-test("fallback proposes a single overview per vessel with data", () => {
-	const volume = source("beaker", 0, "Volumen");
-	assert.deepEqual(suggestDiagrams([volume, ...channels], [], new Map(), id => id === volume.id || id === pH.id),
-		[{ title: "pH", x: TIME_CHANNEL, y: pH }]);
+	history.record(amps, null, time + 1);
+	assert.deepEqual(suggestDiagrams(history.channels, [], new Map()), []);
+	assert.equal(history.points(TIME_CHANNEL, amps.id)[0].y, 0.9);
 });

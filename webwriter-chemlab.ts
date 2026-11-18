@@ -2989,43 +2989,59 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private diagramSuggestions(channels: MeasurementChannel[]) {
+		if (!this.simulation.hasRunningExperiments) return [];
 		const key = (object: chemlib.ChemComponent | chemlib.ElectricComponent) => `${object._type}:${object._id}`;
+		const gasVessels = new Set<chemlib.Mixture>();
 		const titrations = this.allChemComponents.flatMap(source => {
-			if (source._type !== chemlib.ComponentType.Burette) return [];
+			if (source._type !== chemlib.ComponentType.Burette || !this.simulation.hasTask("transfer" + key(source))) return [];
 			const target = this.canvas.titrationTarget(source);
-			return target ? [{ burette: key(source), vessel: key(target) }] : [];
+			if (!target) return [];
+			gasVessels.add(target._content);
+			return [{ burette: key(source), vessel: key(target) }];
 		});
 		const instruments = new Map<string, InstrumentSuggestion>();
-		const { GasCollector, Source, Ammeter, Multimeter } = chemlib.EComponentType;
-		for (const device of this.allEComponents) {
-			if (device._type === GasCollector && device._connectedMix?._isSolution) {
-				instruments.set(key(device), { title: "Gasentwicklung", quantities: ["Gesammeltes Gasvolumen"] });
-				continue;
+		const { GasCollector, Source, Ammeter, Multimeter, Cable } = chemlib.EComponentType;
+		const addInstruments = (devices: readonly chemlib.ElectricComponent[], title: string) => {
+			for (const device of devices) {
+				if (device._type !== Source && !isPassiveMeter(device)) continue;
+				const wired = device._connections.every(terminal => terminal.some(partner =>
+					partner._type !== Cable || partner.partners.length === 2));
+				if (!wired) continue;
+				const quantities = device._type === Source ? ["Stromstärke", "Spannung"] :
+					[device._type === Ammeter || (device._type === Multimeter && device._meterMode === "current")
+						? "Stromstärke" : "Spannung"];
+				instruments.set(key(device), { title, quantities });
 			}
-			if (device._type !== Source && !isPassiveMeter(device)) continue;
-			const wired = device._connections.every(terminal => terminal.some(partner =>
-				partner._type !== chemlib.EComponentType.Cable || partner.partners.length === 2));
-			if (!wired) continue;
-			const quantities = device._type === Source ? ["Stromstärke", "Spannung"] :
-				[device._type === Ammeter || (device._type === Multimeter && device._meterMode === "current")
-					? "Stromstärke" : "Spannung"];
-			const circuit = this.operatingCircuit(device);
+		};
+		for (const starter of this.allEComponents) {
+			if (!this.simulation.hasTask("echem" + key(starter))) continue;
+			const circuit = this.operatingCircuit(starter);
 			if (!circuit) {
-				if (this.meterCircuit(device)) instruments.set(key(device), { title: "Stromkreis", quantities });
+				const network = this.meterCircuit(starter);
+				if (network) addInstruments(network, "Stromkreis");
 				continue;
 			}
 			const [first, second, ...devices] = circuit;
 			if ([first, second].some(electrode => electrode._immersion?.area === 0)) continue;
-			const powered = devices.some(other => other._type === Source);
 			const a = first._connectedMix;
 			const b = second._connectedMix;
 			if (a === b || this.bridgeBetween(a, b)) {
-				instruments.set(key(device), { title: powered ? "Elektrolyse" : "Galvanische Zelle", quantities });
-			} else if (!powered && devices.some(other => isPassiveMeter(other) && other.rcSettings)) {
-				instruments.set(key(device), { title: "Kapazitiver Impuls", quantities });
+				const powered = devices.some(device => device._type === Source);
+				addInstruments(devices, powered ? "Elektrolyse" : "Galvanische Zelle");
+				if (powered) {
+					gasVessels.add(a);
+					gasVessels.add(b);
+				}
+			} else if (this.hasRCReadout(starter)) {
+				addInstruments(devices, "Kapazitiver Impuls");
 			}
 		}
-		return suggestDiagrams(channels, titrations, instruments, id => this.measurements.history.hasReading(id));
+		for (const device of this.allEComponents) {
+			if (device._type === GasCollector && device._connectedMix?._isSolution && gasVessels.has(device._connectedMix)) {
+				instruments.set(key(device), { title: "Gasentwicklung", quantities: ["Gesammeltes Gasvolumen"] });
+			}
+		}
+		return suggestDiagrams(channels, titrations, instruments);
 	}
 
 	private renderDiagramBuilder(embedded: boolean) {
