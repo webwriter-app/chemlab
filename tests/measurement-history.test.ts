@@ -32,6 +32,17 @@ assert.equal(store.points(x.id, y.id).at(-1).y, null);
 store.prune(302_000);
 assert.equal(store.channels.some(channel => channel.id === "y"), false);
 
+// The time axis counts from the first sample of the pair, not from the session start.
+const late = new MeasurementHistory(performance.now() - 60_000);
+const reading = channel("reading");
+late.record(reading, 1.5, 60_000);
+late.record(reading, 1.4, 60_500);
+late.retain(TIME_CHANNEL, reading.id);
+assert.deepEqual(late.points(TIME_CHANNEL, reading.id).map(({ x, y }) => [x, y]), [[0, 1.5], [0.5, 1.4]]);
+assert.deepEqual(late.points(reading.id, TIME_CHANNEL).map(({ x, y }) => [x, y]), [[1.5, 0], [1.4, 0.5]]);
+late.prune(360_000);
+assert.deepEqual(late.points(TIME_CHANNEL, reading.id).map(({ x, y }) => [x, y]), [[0, 1.5], [0.5, 1.4]]);
+
 const pulse = new MeasurementHistory(performance.now() - 1000);
 const current = channel("current");
 const voltage = channel("voltage");

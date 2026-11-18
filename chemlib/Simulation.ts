@@ -469,10 +469,14 @@ export abstract class Simulation {
 	/**
 	 * The default time step used for simuations in seconds
 	 *
+	 * The step is also the interval at which a running experiment is solved,
+	 * so the chemistry keeps its real-time speed: ten steps of 0.1 s book the
+	 * same turnover as one step of 1 s, only with ten times the samples.
+	 *
 	 * @static
 	 * @type {number}
 	 */
-	static _simTimeStep: number = 1;
+	static _simTimeStep: number = 0.1;
 	/**
 	 * Faradays constant: The charge contained in one mole in C/mol
 	 *

@@ -150723,10 +150723,14 @@ var Simulation = class {
   /**
    * The default time step used for simuations in seconds
    *
+   * The step is also the interval at which a running experiment is solved,
+   * so the chemistry keeps its real-time speed: ten steps of 0.1 s book the
+   * same turnover as one step of 1 s, only with ten times the samples.
+   *
    * @static
    * @type {number}
    */
-  static _simTimeStep = 1;
+  static _simTimeStep = 0.1;
   /**
    * Faradays constant: The charge contained in one mole in C/mol
    *
@@ -177957,7 +177961,17 @@ var MeasurementHistory = class {
   points(x4, y5) {
     const pair = this.pairs.get(this.pairKey(x4, y5));
     const archive = pair?.x === y5 && x4 !== y5 ? pair.archive.map((point) => ({ time: point.time, x: point.y, y: point.x })) : pair?.archive ?? [];
-    return archive.concat(this.join(x4, y5, this.archivedUntil, Infinity));
+    const points = archive.concat(this.join(x4, y5, this.archivedUntil, Infinity));
+    if (!pair || x4 !== TIME_CHANNEL && y5 !== TIME_CHANNEL) return points;
+    pair.origin ??= points[0]?.time;
+    const origin = pair.origin;
+    if (origin === void 0) return points;
+    const offset3 = origin / 1e3;
+    return points.map((point) => ({
+      ...point,
+      x: x4 === TIME_CHANNEL && point.x !== null ? point.x - offset3 : point.x,
+      y: y5 === TIME_CHANNEL && point.y !== null ? point.y - offset3 : point.y
+    }));
   }
   join(x4, y5, start, end) {
     const xSamples = this.samplesFor(x4, start, end);

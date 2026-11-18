@@ -78,7 +78,7 @@ type Transient = {
 	factors: ReadonlyMap<string, number>;
 };
 
-type AxisPair = { x: string; y: string; references: number; archive: PlotPoint[] };
+type AxisPair = { x: string; y: string; references: number; archive: PlotPoint[]; origin?: number };
 
 /** A common timeline, independent of the canvas and of Chart.js. */
 export class MeasurementHistory {
@@ -205,7 +205,19 @@ export class MeasurementHistory {
 		const archive = pair?.x === y && x !== y
 			? pair.archive.map(point => ({ time: point.time, x: point.y, y: point.x }))
 			: pair?.archive ?? [];
-		return archive.concat(this.join(x, y, this.archivedUntil, Infinity));
+		const points = archive.concat(this.join(x, y, this.archivedUntil, Infinity));
+		if (!pair || (x !== TIME_CHANNEL && y !== TIME_CHANNEL)) return points;
+		// The time axis counts from the first sample of this pair, so a diagram
+		// created later still starts at zero instead of at the session uptime.
+		pair.origin ??= points[0]?.time;
+		const origin = pair.origin;
+		if (origin === undefined) return points;
+		const offset = origin / 1000;
+		return points.map(point => ({
+			...point,
+			x: x === TIME_CHANNEL && point.x !== null ? point.x - offset : point.x,
+			y: y === TIME_CHANNEL && point.y !== null ? point.y - offset : point.y,
+		}));
 	}
 
 	private join(x: string, y: string, start: number, end: number): PlotPoint[] {
