@@ -1038,6 +1038,7 @@ export class ChemLab extends LitElementWw {
 			model: chemlib.NoIonicPathTransientModel;
 			readMeters: (sample: chemlib.NoIonicPathTransientSample) => void;
 			elapsed: number;
+			advanceRecording: (elapsed: number) => void;
 			cutoffAt: number;
 			settled?: boolean;
 		} | undefined;
@@ -1045,6 +1046,7 @@ export class ChemLab extends LitElementWw {
 		this.simulation.startExperiment(name, step, (elapsedMs) => {
 			if (active && !active.settled) {
 				active.elapsed += elapsedMs / 1000;
+				active.advanceRecording(active.elapsed);
 				this.capacitorCharges.set(active.cell, active.model.at(active.elapsed).charge);
 			}
 			sinceRefresh += elapsedMs;
@@ -1087,7 +1089,8 @@ export class ChemLab extends LitElementWw {
 					if (prepared) {
 						const { model } = prepared;
 						const cutoff = config.cutoff ?? Math.max(Number.MIN_VALUE, Math.abs(model.initialCurrent) * 0.01);
-						active = { ...prepared, cell, devices, elapsed: 0, cutoffAt: model.timeToCutoff(cutoff) };
+						active = { ...prepared, cell, devices, elapsed: 0, cutoffAt: model.timeToCutoff(cutoff),
+							advanceRecording: this.measurements.startTransient(model, prepared.meterFactors) };
 					}
 				}
 			}

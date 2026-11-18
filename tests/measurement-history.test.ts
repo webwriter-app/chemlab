@@ -31,3 +31,20 @@ store.retire("y", 1300);
 assert.equal(store.points(x.id, y.id).at(-1).y, null);
 store.prune(302_000);
 assert.equal(store.channels.some(channel => channel.id === "y"), false);
+
+const pulse = new MeasurementHistory(performance.now() - 1000);
+const current = channel("current");
+const voltage = channel("voltage");
+const tau = 1e-6;
+const advance = pulse.startTransient(tau, elapsed => 3 * Math.exp(-elapsed / tau),
+	new Map([[current.id, -1], [voltage.id, 0.1]]));
+advance(2 * tau); // Stop before the six-time-constant display horizon.
+const recovered = pulse.points(current.id, voltage.id);
+assert.equal(recovered.length, 81);
+assert.equal(recovered[0].x, -3);
+assert.ok(Math.abs(recovered.at(-1).time - recovered[0].time - 0.002) < 1e-9);
+assert.ok(recovered.every(({ x, y }) => Math.abs(y + 0.1 * x) < 1e-14));
+pulse.retain(current.id, voltage.id);
+pulse.prune(302_000);
+assert.deepEqual(pulse.points(current.id, voltage.id), recovered);
+assert.deepEqual(pulse.points(TIME_CHANNEL, current.id), []);

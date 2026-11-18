@@ -13,15 +13,24 @@ export type MeasurementChannel = {
 };
 
 type Reading = number | null;
-type Sample = { time: number; value: Reading };
+type Sample = { time: number; value: Reading; analytic?: boolean };
 type Series = { channel: MeasurementChannel; samples: Sample[]; current: boolean };
-export type PlotPoint = { time: number; x: number | null; y: number | null };
+export type PlotPoint = { time: number; x: number | null; y: number | null; analytic?: boolean };
+type Transient = {
+	start: number;
+	duration: number;
+	timeConstant: number;
+	currentAt: (elapsed: number) => number;
+	factors: ReadonlyMap<string, number>;
+};
+
 type AxisPair = { x: string; y: string; references: number; archive: PlotPoint[] };
 
 /** A common timeline, independent of the canvas and of Chart.js. */
 export class MeasurementHistory {
 	private readonly series = new Map<string, Series>();
 	private readonly pairs = new Map<string, AxisPair>();
+	private transients: Transient[] = [];
 	private archivedUntil = 0;
 	private latestTime = 0;
 	channelVersion = 0;
@@ -55,6 +64,13 @@ export class MeasurementHistory {
 			series.samples.push({ time, value });
 		}
 		return true;
+	}
+
+	startTransient(timeConstant: number, currentAt: Transient["currentAt"],
+		factors: Transient["factors"]): (elapsed: number) => void {
+		const transient = { start: this.now(), duration: 0, timeConstant, currentAt, factors };
+		this.transients.push(transient);
+		return elapsed => { transient.duration = Math.max(transient.duration, elapsed); };
 	}
 
 	retire(prefix: string, time: number): void {
@@ -108,6 +124,7 @@ export class MeasurementHistory {
 				changed = true;
 			} else if (end > 1) series.samples.splice(0, end - 1);
 		}
+		this.transients = this.transients.filter(segment => segment.start + segment.duration * 1000 >= cutoff);
 		this.archivedUntil = cutoff;
 		return changed;
 	}
@@ -117,6 +134,10 @@ export class MeasurementHistory {
 		for (const { samples } of this.series.values()) {
 			const sample = samples[lowerBound(samples, this.archivedUntil)];
 			if (sample) earliest = Math.min(earliest, sample.time);
+		}
+		for (const transient of this.transients) {
+			const latest = transient.start + transient.duration * 1000;
+			earliest = Math.min(earliest, Math.max(this.archivedUntil, latest));
 		}
 		return earliest < Infinity
 			? (Math.floor(earliest / ARCHIVE_WINDOW_MS) + 1) * ARCHIVE_WINDOW_MS + RETENTION_MS
@@ -132,8 +153,8 @@ export class MeasurementHistory {
 	}
 
 	private join(x: string, y: string, start: number, end: number): PlotPoint[] {
-		const xSamples = this.series.get(x)?.samples ?? [];
-		const ySamples = this.series.get(y)?.samples ?? [];
+		const xSamples = this.samplesFor(x, start, end);
+		const ySamples = this.samplesFor(y, start, end);
 		let i = lowerBound(xSamples, start);
 		let j = lowerBound(ySamples, start);
 		let xValue = xSamples[i - 1]?.value;
@@ -142,13 +163,38 @@ export class MeasurementHistory {
 		while (i < xSamples.length || j < ySamples.length) {
 			const time = Math.min(xSamples[i]?.time ?? Infinity, ySamples[j]?.time ?? Infinity);
 			if (time >= end) break;
+			const analytic = (xSamples[i]?.time === time && xSamples[i].analytic) ||
+				(ySamples[j]?.time === time && ySamples[j].analytic);
 			if (xSamples[i]?.time === time) xValue = xSamples[i++].value;
 			if (ySamples[j]?.time === time) yValue = ySamples[j++].value;
 			const xReading = x === TIME_CHANNEL ? time / 1000 : xValue;
 			const yReading = y === TIME_CHANNEL ? time / 1000 : yValue;
-			if (xReading !== undefined && yReading !== undefined) points.push({ time, x: xReading, y: yReading });
+			if (xReading !== undefined && yReading !== undefined) points.push(analytic
+				? { time, x: xReading, y: yReading, analytic: true } : { time, x: xReading, y: yReading });
 		}
 		return points;
+	}
+
+	private samplesFor(id: string, start: number, end: number): Sample[] {
+		const samples = this.series.get(id)?.samples ?? [];
+		const synthetic = new Map<number, Sample>();
+		for (const segment of this.transients) {
+			const factor = segment.factors.get(id);
+			if (factor === undefined || segment.start >= end || segment.start + segment.duration * 1000 < start) continue;
+			const horizon = Math.min(segment.duration, 6 * segment.timeConstant);
+			const record = (elapsed: number) => {
+				const time = segment.start + elapsed * 1000;
+				if (time < end) synthetic.set(time, { time, value: segment.currentAt(elapsed) * factor, analytic: true });
+			};
+			if (horizon > 0) for (let i = 0; i <= 80; i++) record(horizon * i / 80);
+			if (segment.duration > horizon || horizon === 0) record(segment.duration);
+		}
+		if (!synthetic.size) return samples;
+		for (const sample of samples) {
+			// A stopped or disconnected device always wins at a boundary.
+			if (sample.value === null || !synthetic.has(sample.time)) synthetic.set(sample.time, sample);
+		}
+		return [...synthetic.values()].sort((a, b) => a.time - b.time);
 	}
 
 	private compact(points: PlotPoint[], start: number, end: number): PlotPoint[] {
@@ -159,6 +205,7 @@ export class MeasurementHistory {
 			let minIndex = start;
 			let maxIndex = start;
 			for (let i = start; i < end; i++) {
+				if (points[i].analytic) keep.add(i);
 				const value = points[i][axis];
 				if (i > start && (value === null) !== (points[i - 1][axis] === null)) {
 					keep.add(i - 1);

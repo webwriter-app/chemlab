@@ -152045,21 +152045,22 @@ var Simulation = class {
       if (error instanceof RangeError) return void 0;
       throw error;
     }
+    const meterFactors = circuitReadings(network, {
+      emf: 0,
+      resistance: 0,
+      current: -1,
+      open: false
+    }) ?? /* @__PURE__ */ new Map();
     return {
       model,
+      meterFactors,
       readMeters: (sample2) => {
-        const readings = circuitReadings(network, {
-          emf: 0,
-          resistance: 0,
-          current: -sample2.current,
-          open: false
-        });
         for (const device of devices) {
-          const reading2 = readings?.get(device);
-          device._visibleCurrent = reading2?.current ?? null;
+          const reading2 = meterFactors.get(device);
+          device._visibleCurrent = reading2 ? reading2.current * sample2.current : null;
           device._cellCurrent = null;
           if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage") {
-            device._visibleVoltage = reading2 ? reading2.voltage : null;
+            device._visibleVoltage = reading2 ? reading2.voltage * sample2.current : null;
           }
         }
       }
@@ -177125,6 +177126,7 @@ var MeasurementHistory = class {
   }
   series = /* @__PURE__ */ new Map();
   pairs = /* @__PURE__ */ new Map();
+  transients = [];
   archivedUntil = 0;
   latestTime = 0;
   channelVersion = 0;
@@ -177153,6 +177155,13 @@ var MeasurementHistory = class {
       series.samples.push({ time, value });
     }
     return true;
+  }
+  startTransient(timeConstant, currentAt, factors) {
+    const transient = { start: this.now(), duration: 0, timeConstant, currentAt, factors };
+    this.transients.push(transient);
+    return (elapsed) => {
+      transient.duration = Math.max(transient.duration, elapsed);
+    };
   }
   retire(prefix, time) {
     for (const series of this.series.values()) {
@@ -177200,6 +177209,7 @@ var MeasurementHistory = class {
         changed = true;
       } else if (end > 1) series.samples.splice(0, end - 1);
     }
+    this.transients = this.transients.filter((segment2) => segment2.start + segment2.duration * 1e3 >= cutoff);
     this.archivedUntil = cutoff;
     return changed;
   }
@@ -177209,6 +177219,10 @@ var MeasurementHistory = class {
       const sample2 = samples[lowerBound(samples, this.archivedUntil)];
       if (sample2) earliest = Math.min(earliest, sample2.time);
     }
+    for (const transient of this.transients) {
+      const latest = transient.start + transient.duration * 1e3;
+      earliest = Math.min(earliest, Math.max(this.archivedUntil, latest));
+    }
     return earliest < Infinity ? (Math.floor(earliest / ARCHIVE_WINDOW_MS) + 1) * ARCHIVE_WINDOW_MS + RETENTION_MS : void 0;
   }
   points(x4, y5) {
@@ -177217,8 +177231,8 @@ var MeasurementHistory = class {
     return archive.concat(this.join(x4, y5, this.archivedUntil, Infinity));
   }
   join(x4, y5, start, end) {
-    const xSamples = this.series.get(x4)?.samples ?? [];
-    const ySamples = this.series.get(y5)?.samples ?? [];
+    const xSamples = this.samplesFor(x4, start, end);
+    const ySamples = this.samplesFor(y5, start, end);
     let i11 = lowerBound(xSamples, start);
     let j4 = lowerBound(ySamples, start);
     let xValue = xSamples[i11 - 1]?.value;
@@ -177227,13 +177241,34 @@ var MeasurementHistory = class {
     while (i11 < xSamples.length || j4 < ySamples.length) {
       const time = Math.min(xSamples[i11]?.time ?? Infinity, ySamples[j4]?.time ?? Infinity);
       if (time >= end) break;
+      const analytic = xSamples[i11]?.time === time && xSamples[i11].analytic || ySamples[j4]?.time === time && ySamples[j4].analytic;
       if (xSamples[i11]?.time === time) xValue = xSamples[i11++].value;
       if (ySamples[j4]?.time === time) yValue = ySamples[j4++].value;
       const xReading = x4 === TIME_CHANNEL ? time / 1e3 : xValue;
       const yReading = y5 === TIME_CHANNEL ? time / 1e3 : yValue;
-      if (xReading !== void 0 && yReading !== void 0) points.push({ time, x: xReading, y: yReading });
+      if (xReading !== void 0 && yReading !== void 0) points.push(analytic ? { time, x: xReading, y: yReading, analytic: true } : { time, x: xReading, y: yReading });
     }
     return points;
+  }
+  samplesFor(id3, start, end) {
+    const samples = this.series.get(id3)?.samples ?? [];
+    const synthetic = /* @__PURE__ */ new Map();
+    for (const segment2 of this.transients) {
+      const factor = segment2.factors.get(id3);
+      if (factor === void 0 || segment2.start >= end || segment2.start + segment2.duration * 1e3 < start) continue;
+      const horizon = Math.min(segment2.duration, 6 * segment2.timeConstant);
+      const record = (elapsed) => {
+        const time = segment2.start + elapsed * 1e3;
+        if (time < end) synthetic.set(time, { time, value: segment2.currentAt(elapsed) * factor, analytic: true });
+      };
+      if (horizon > 0) for (let i11 = 0; i11 <= 80; i11++) record(horizon * i11 / 80);
+      if (segment2.duration > horizon || horizon === 0) record(segment2.duration);
+    }
+    if (!synthetic.size) return samples;
+    for (const sample2 of samples) {
+      if (sample2.value === null || !synthetic.has(sample2.time)) synthetic.set(sample2.time, sample2);
+    }
+    return [...synthetic.values()].sort((a7, b5) => a7.time - b5.time);
   }
   compact(points, start, end) {
     const keep = /* @__PURE__ */ new Set([start, end - 1]);
@@ -177243,6 +177278,7 @@ var MeasurementHistory = class {
       let minIndex = start;
       let maxIndex = start;
       for (let i11 = start; i11 < end; i11++) {
+        if (points[i11].analytic) keep.add(i11);
         const value = points[i11][axis];
         if (i11 > start && value === null !== (points[i11 - 1][axis] === null)) {
           keep.add(i11 - 1);
@@ -177512,6 +177548,19 @@ var MeasurementRecorder = class {
       this.onChange?.();
       this.scheduleExpiry();
     }
+  }
+  startTransient(model, meterFactors) {
+    const factors = /* @__PURE__ */ new Map();
+    for (const [device, { voltage, current }] of meterFactors) {
+      if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage") {
+        factors.set(this.channel(device, "instrument", "Spannung", "V").id, voltage);
+      } else if (device._type === "ammeter" /* Ammeter */ || device._type === "multimeter" /* Multimeter */) {
+        factors.set(this.channel(device, "instrument", "Stromst\xE4rke", "A").id, current);
+      }
+    }
+    const advance = this.history.startTransient(model.timeConstant, (elapsed) => model.at(elapsed).current, factors);
+    this.scheduleExpiry();
+    return advance;
   }
   retire(components) {
     if (!components.length) return;
@@ -186516,6 +186565,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.simulation.startExperiment(name2, step, (elapsedMs) => {
       if (active && !active.settled) {
         active.elapsed += elapsedMs / 1e3;
+        active.advanceRecording(active.elapsed);
         this.capacitorCharges.set(active.cell, active.model.at(active.elapsed).charge);
       }
       sinceRefresh += elapsedMs;
@@ -186559,7 +186609,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
           if (prepared) {
             const { model } = prepared;
             const cutoff = config.cutoff ?? Math.max(Number.MIN_VALUE, Math.abs(model.initialCurrent) * 0.01);
-            active = { ...prepared, cell, devices, elapsed: 0, cutoffAt: model.timeToCutoff(cutoff) };
+            active = {
+              ...prepared,
+              cell,
+              devices,
+              elapsed: 0,
+              cutoffAt: model.timeToCutoff(cutoff),
+              advanceRecording: this.measurements.startTransient(model, prepared.meterFactors)
+            };
           }
         }
       }

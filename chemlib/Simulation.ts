@@ -2597,7 +2597,11 @@ export abstract class Simulation {
 		ionicResistance: number,
 		{ capacitance, seriesResistance = 0, initialCharge = 0 }:
 			{ capacitance: number; seriesResistance?: number; initialCharge?: number }
-	): { model: NoIonicPathTransientModel; readMeters: (sample: NoIonicPathTransientSample) => void } | undefined {
+	): {
+		model: NoIonicPathTransientModel;
+		meterFactors: ReadonlyMap<ElectricComponent, { voltage: number; current: number }>;
+		readMeters: (sample: NoIonicPathTransientSample) => void;
+	} | undefined {
 		const firstMix = first._connectedMix;
 		const secondMix = second._connectedMix;
 		if (ionicResistance !== Infinity || firstMix === secondMix ||
@@ -2623,23 +2627,25 @@ export abstract class Simulation {
 			if (error instanceof RangeError) return undefined;
 			throw error;
 		}
+		// A passive network is linear. Solve once per topology at unit RC
+		// current so the same signed factors can project live and past values.
+		const meterFactors = circuitReadings(network, {
+			emf: 0, resistance: 0, current: -1, open: false,
+		}) ?? new Map<ElectricComponent, { voltage: number; current: number }>();
 		return {
 			model,
+			meterFactors,
 			readMeters: (sample) => {
-				// Positive RC current is from the first electrode into the external load.
-				const readings = circuitReadings(network, {
-					emf: 0, resistance: 0, current: -sample.current, open: false,
-				});
 				for (const device of devices) {
-					const reading = readings?.get(device);
-					device._visibleCurrent = reading?.current ?? null;
+					const reading = meterFactors.get(device);
+					device._visibleCurrent = reading ? reading.current * sample.current : null;
 					// The RC model books no chemical turnover, so there is no
 					// cell current to report.
 					device._cellCurrent = null;
 					if (device._type === EComponentType.Voltmeter ||
 						(device._type === EComponentType.Multimeter && device._meterMode === "voltage")) {
 						// The sign is the lead orientation, as on a bench meter.
-						device._visibleVoltage = reading ? reading.voltage : null;
+						device._visibleVoltage = reading ? reading.voltage * sample.current : null;
 					}
 				}
 			},

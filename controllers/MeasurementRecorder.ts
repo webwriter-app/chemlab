@@ -1,5 +1,5 @@
 import type { ReactiveController } from "lit";
-import { EComponentType, Simulation, molarGasVolume, type ChemComponent, type ElectricComponent } from "../chemlib";
+import { EComponentType, Simulation, molarGasVolume, type ChemComponent, type ElectricComponent, type NoIonicPathTransientModel } from "../chemlib";
 import { MeasurementHistory, type MeasurementChannel } from "../data/measurementHistory";
 import type { ChemLab } from "../webwriter-chemlab";
 
@@ -66,6 +66,22 @@ export class MeasurementRecorder implements ReactiveController {
 			this.onChange?.();
 			this.scheduleExpiry();
 		}
+	}
+
+	startTransient(model: NoIonicPathTransientModel,
+		meterFactors: ReadonlyMap<ElectricComponent, { voltage: number; current: number }>): (elapsed: number) => void {
+		const factors = new Map<string, number>();
+		for (const [device, { voltage, current }] of meterFactors) {
+			if (device._type === EComponentType.Voltmeter ||
+				(device._type === EComponentType.Multimeter && device._meterMode === "voltage")) {
+				factors.set(this.channel(device, "instrument", "Spannung", "V").id, voltage);
+			} else if (device._type === EComponentType.Ammeter || device._type === EComponentType.Multimeter) {
+				factors.set(this.channel(device, "instrument", "Stromstärke", "A").id, current);
+			}
+		}
+		const advance = this.history.startTransient(model.timeConstant, elapsed => model.at(elapsed).current, factors);
+		this.scheduleExpiry();
+		return advance;
 	}
 
 	retire(components: readonly Component[]): void {
