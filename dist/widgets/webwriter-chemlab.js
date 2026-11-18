@@ -151278,9 +151278,17 @@ var Simulation = class {
     }];
   }
   /**
-   * A salt bridge carries the ionic current between the two vessels, so it
-   * compensates the charge moved by stored ions. The model keeps the
-   * bridge's countercharge as a spectator charge rather than named ions.
+   * The ionic current closes the charge balance of a vessel. A salt bridge
+   * carries it between two half-cells, and a shared electrolyte carries it
+   * on its own, so both cases end here. The model keeps the countercharge
+   * as a spectator charge rather than named ions.
+   *
+   * The electrode reactions book the charge they move twice: once as the
+   * change of the stored ions, which the charge balance already sees, and
+   * once as `electrodeCharge`, which only exists to be compensated here.
+   * Without this step a one-beaker cell counts the same charge twice, so
+   * removing chloride and producing hydroxide would both raise the
+   * alkalinity.
    *
    * @private
    * @static
@@ -151456,10 +151464,8 @@ var Simulation = class {
     }
     this.applyElectrode(first, solution.firstCurrents, dt, areas.first);
     this.applyElectrode(second, solution.secondCurrents, dt, areas.second);
-    if (separateBaths) {
-      this.balanceCharge(mix1);
-      this.balanceCharge(mix2);
-    }
+    this.balanceCharge(mix1);
+    if (separateBaths) this.balanceCharge(mix2);
   }
   /**
    * Simulation of a network that carries no cell: a supply wired straight
