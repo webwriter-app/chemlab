@@ -1195,6 +1195,9 @@ export const style = css`
 	#diagramArea {
 		grid-column: 1;
 	}
+	#diagramArea:has(#diagramAxisPicker) {
+		z-index: 2;
+	}
 	#diagramControls {
 		position: absolute;
 		inset-block-start: var(--panel-handle-top);

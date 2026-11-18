@@ -103713,6 +103713,9 @@ var style = i`
 	#diagramArea {
 		grid-column: 1;
 	}
+	#diagramArea:has(#diagramAxisPicker) {
+		z-index: 2;
+	}
 	#diagramControls {
 		position: absolute;
 		inset-block-start: var(--panel-handle-top);
@@ -177253,6 +177256,45 @@ var auto_default = Chart;
 var TIME_CHANNEL = "time";
 var RETENTION_MS = 3e5;
 var ARCHIVE_WINDOW_MS = 1e3;
+var SampleBuffer = class {
+  data = new Float64Array(0);
+  start = 0;
+  length = 0;
+  time(index2) {
+    return this.data[2 * (this.start + index2)];
+  }
+  value(index2) {
+    const value = this.data[2 * (this.start + index2) + 1];
+    return Number.isNaN(value) ? null : value;
+  }
+  replace(index2, value) {
+    this.data[2 * (this.start + index2) + 1] = value ?? NaN;
+  }
+  push(time, value) {
+    if (2 * (this.start + this.length) === this.data.length) {
+      if (this.start > this.length / 2) {
+        this.data.copyWithin(0, this.start * 2);
+      } else {
+        const expanded = new Float64Array(Math.max(8, this.data.length * 2));
+        expanded.set(this.data.subarray(this.start * 2));
+        this.data = expanded;
+      }
+      this.start = 0;
+    }
+    const end = this.length++;
+    this.data[2 * (this.start + end)] = time;
+    this.replace(end, value);
+  }
+  discard(count2) {
+    this.start += count2;
+    this.length -= count2;
+    if (this.data.length > Math.max(8, 8 * this.length)) {
+      this.data = this.data.slice(this.start * 2, (this.start + this.length) * 2);
+      this.start = 0;
+    }
+  }
+};
+var EMPTY_SAMPLES = new SampleBuffer();
 var MeasurementHistory = class {
   constructor(epoch = performance.now()) {
     this.epoch = epoch;
@@ -177274,18 +177316,20 @@ var MeasurementHistory = class {
     this.latestTime = time;
     let series = this.series.get(channel.id);
     if (!series) {
-      series = { channel, samples: [], current: true };
+      series = { channel, samples: new SampleBuffer(), current: true };
       this.series.set(channel.id, series);
       this.channelVersion++;
     }
     if (value !== null && !Number.isFinite(value)) value = null;
-    const last = series.samples[series.samples.length - 1];
-    if (last?.time === time) {
-      if (last.value === value) return false;
-      last.value = value;
+    const samples = series.samples;
+    const last = samples.length - 1;
+    const previous = last < 0 ? void 0 : samples.value(last);
+    if (last >= 0 && samples.time(last) === time) {
+      if (previous === value) return false;
+      samples.replace(last, value);
     } else {
-      if ((changesOnly || value === null) && last?.value === value) return false;
-      series.samples.push({ time, value });
+      if ((changesOnly || value === null) && previous === value) return false;
+      samples.push(time, value);
     }
     return true;
   }
@@ -177340,7 +177384,7 @@ var MeasurementHistory = class {
         this.series.delete(id3);
         this.channelVersion++;
         changed = true;
-      } else if (end > 1) series.samples.splice(0, end - 1);
+      } else if (end > 1) series.samples.discard(end - 1);
     }
     this.transients = this.transients.filter((segment2) => segment2.start + segment2.duration * 1e3 >= cutoff);
     this.archivedUntil = cutoff;
@@ -177349,8 +177393,8 @@ var MeasurementHistory = class {
   get nextExpiry() {
     let earliest = Infinity;
     for (const { samples } of this.series.values()) {
-      const sample2 = samples[lowerBound(samples, this.archivedUntil)];
-      if (sample2) earliest = Math.min(earliest, sample2.time);
+      const start = lowerBound(samples, this.archivedUntil);
+      if (start < samples.length) earliest = Math.min(earliest, samples.time(start));
     }
     for (const transient of this.transients) {
       const latest = transient.start + transient.duration * 1e3;
@@ -177368,15 +177412,17 @@ var MeasurementHistory = class {
     const ySamples = this.samplesFor(y5, start, end);
     let i11 = lowerBound(xSamples, start);
     let j4 = lowerBound(ySamples, start);
-    let xValue = xSamples[i11 - 1]?.value;
-    let yValue = ySamples[j4 - 1]?.value;
+    let xValue = i11 > 0 ? xSamples.value(i11 - 1) : void 0;
+    let yValue = j4 > 0 ? ySamples.value(j4 - 1) : void 0;
     const points = [];
     while (i11 < xSamples.length || j4 < ySamples.length) {
-      const time = Math.min(xSamples[i11]?.time ?? Infinity, ySamples[j4]?.time ?? Infinity);
+      const xTime = i11 < xSamples.length ? xSamples.time(i11) : Infinity;
+      const yTime = j4 < ySamples.length ? ySamples.time(j4) : Infinity;
+      const time = Math.min(xTime, yTime);
       if (time >= end) break;
-      const analytic = xSamples[i11]?.time === time && xSamples[i11].analytic || ySamples[j4]?.time === time && ySamples[j4].analytic;
-      if (xSamples[i11]?.time === time) xValue = xSamples[i11++].value;
-      if (ySamples[j4]?.time === time) yValue = ySamples[j4++].value;
+      const analytic = xTime === time && xSamples.analytic?.(i11) || yTime === time && ySamples.analytic?.(j4);
+      if (xTime === time) xValue = xSamples.value(i11++);
+      if (yTime === time) yValue = ySamples.value(j4++);
       const xReading = x4 === TIME_CHANNEL ? time / 1e3 : xValue;
       const yReading = y5 === TIME_CHANNEL ? time / 1e3 : yValue;
       if (xReading !== void 0 && yReading !== void 0) points.push(analytic ? { time, x: xReading, y: yReading, analytic: true } : { time, x: xReading, y: yReading });
@@ -177384,7 +177430,7 @@ var MeasurementHistory = class {
     return points;
   }
   samplesFor(id3, start, end) {
-    const samples = this.series.get(id3)?.samples ?? [];
+    const samples = this.series.get(id3)?.samples ?? EMPTY_SAMPLES;
     const synthetic = /* @__PURE__ */ new Map();
     for (const segment2 of this.transients) {
       const factor = segment2.factors.get(id3);
@@ -177398,10 +177444,19 @@ var MeasurementHistory = class {
       if (segment2.duration > horizon || horizon === 0) record(segment2.duration);
     }
     if (!synthetic.size) return samples;
-    for (const sample2 of samples) {
-      if (sample2.value === null || !synthetic.has(sample2.time)) synthetic.set(sample2.time, sample2);
+    const first = Math.max(0, lowerBound(samples, start) - 1);
+    for (let i11 = first; i11 < samples.length && samples.time(i11) < end; i11++) {
+      const time = samples.time(i11);
+      const value = samples.value(i11);
+      if (value === null || !synthetic.has(time)) synthetic.set(time, { time, value });
     }
-    return [...synthetic.values()].sort((a7, b5) => a7.time - b5.time);
+    const merged = [...synthetic.values()].sort((a7, b5) => a7.time - b5.time);
+    return {
+      length: merged.length,
+      time: (index2) => merged[index2].time,
+      value: (index2) => merged[index2].value,
+      analytic: (index2) => merged[index2].analytic
+    };
   }
   compact(points, start, end) {
     const keep = /* @__PURE__ */ new Set([start, end - 1]);
@@ -177438,7 +177493,7 @@ function lowerBound(samples, time) {
   let hi = samples.length;
   while (lo < hi) {
     const mid = Math.floor((lo + hi) / 2);
-    if (samples[mid].time < time) lo = mid + 1;
+    if (samples.time(mid) < time) lo = mid + 1;
     else hi = mid;
   }
   return lo;
@@ -177712,7 +177767,7 @@ var MeasurementRecorder = class {
       const amount = mix._molProperties[molecule2._id + "n"];
       mass += mix._molProperties[molecule2._id + "m"] || 0;
       if (!Number.isFinite(amount) || equilibrium?.analyticalMolecules.has(molecule2)) continue;
-      const phase = molecule2.solidSaltFormula ? "solid" : "bulk";
+      const phase = molecule2.solidSaltFormula || molecule2.dosedAsSolid && !(solution && StructureManager.isAcidBase(molecule2)) ? "solid" : "bulk";
       const key = `${phase}/${molecule2.smilesString}`;
       const previous = inventory.get(key);
       inventory.set(key, {
@@ -177730,6 +177785,25 @@ var MeasurementRecorder = class {
         concentration: species.concentration + (previous?.concentration ?? 0)
       });
     }
+    for (const [id3, amount] of mix.dissolvedGas) {
+      const gas = evolvedGases[id3];
+      if (!gas) continue;
+      inventory.set("dissolved/" + id3, {
+        name: gas.formula + " (aq)",
+        amount,
+        concentration: solution ? amount / mix._solutionVolume : null
+      });
+    }
+    for (const [id3, amount] of mix.evolvedGas) {
+      const gas = evolvedGases[id3];
+      if (!gas) continue;
+      if (gas.phase !== "gas") mass += amount * (gas.molarMass ?? 0);
+      inventory.set("separated/" + id3, {
+        name: gas.formula + " (" + { gas: "g", liquid: "l", solid: "s" }[gas.phase] + ")",
+        amount,
+        concentration: null
+      });
+    }
     let known = this.groups.get(vessel);
     if (!known) this.groups.set(vessel, known = /* @__PURE__ */ new Map());
     for (const [key, { name: name2 }] of inventory) known.set(key, name2);
@@ -177741,7 +177815,9 @@ var MeasurementRecorder = class {
     for (const [key, name2] of known) {
       const species = inventory.get(key);
       changed = record("Stoffmenge", species?.amount ?? 0, "mol", name2, key) || changed;
-      changed = record("Konzentration", species ? species.concentration : solution ? 0 : null, "mol/L", name2, key) || changed;
+      if (!key.startsWith("solid/") && !key.startsWith("separated/")) {
+        changed = record("Konzentration", species ? species.concentration : solution ? 0 : null, "mol/L", name2, key) || changed;
+      }
     }
     return changed;
   }

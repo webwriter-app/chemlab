@@ -1,5 +1,6 @@
 import type { ReactiveController } from "lit";
-import { EComponentType, Simulation, molarGasVolume, type ChemComponent, type ElectricComponent, type NoIonicPathTransientModel } from "../chemlib";
+import { EComponentType, Simulation, StructureManager, molarGasVolume, type ChemComponent, type ElectricComponent, type NoIonicPathTransientModel } from "../chemlib";
+import { evolvedGases } from "../chemlib/gasEvolution";
 import { MeasurementHistory, type MeasurementChannel } from "../data/measurementHistory";
 import type { ChemLab } from "../webwriter-chemlab";
 
@@ -102,7 +103,8 @@ export class MeasurementRecorder implements ReactiveController {
 			const amount = mix._molProperties[molecule._id + "n"];
 			mass += mix._molProperties[molecule._id + "m"] || 0;
 			if (!Number.isFinite(amount) || equilibrium?.analyticalMolecules.has(molecule)) continue;
-			const phase = molecule.solidSaltFormula ? "solid" : "bulk";
+			const phase = molecule.solidSaltFormula ||
+				(molecule.dosedAsSolid && !(solution && StructureManager.isAcidBase(molecule))) ? "solid" : "bulk";
 			const key = `${phase}/${molecule.smilesString}`;
 			const previous = inventory.get(key);
 			inventory.set(key, { name: molecule.name ?? molecule.smilesString, amount: amount + (previous?.amount ?? 0),
@@ -113,6 +115,19 @@ export class MeasurementRecorder implements ReactiveController {
 			const previous = inventory.get(key);
 			inventory.set(key, { name: species.formula, amount: species.amount + (previous?.amount ?? 0),
 				concentration: species.concentration + (previous?.concentration ?? 0) });
+		}
+		for (const [id, amount] of mix.dissolvedGas) {
+			const gas = evolvedGases[id];
+			if (!gas) continue;
+			inventory.set("dissolved/" + id, { name: gas.formula + " (aq)", amount,
+				concentration: solution ? amount / mix._solutionVolume : null });
+		}
+		for (const [id, amount] of mix.evolvedGas) {
+			const gas = evolvedGases[id];
+			if (!gas) continue;
+			if (gas.phase !== "gas") mass += amount * (gas.molarMass ?? 0);
+			inventory.set("separated/" + id, { name: gas.formula + " (" + ({ gas: "g", liquid: "l", solid: "s" })[gas.phase] + ")",
+				amount, concentration: null });
 		}
 		let known = this.groups.get(vessel);
 		if (!known) this.groups.set(vessel, known = new Map());
@@ -127,7 +142,9 @@ export class MeasurementRecorder implements ReactiveController {
 		for (const [key, name] of known) {
 			const species = inventory.get(key);
 			changed = record("Stoffmenge", species?.amount ?? 0, "mol", name, key) || changed;
-			changed = record("Konzentration", species ? species.concentration : solution ? 0 : null, "mol/L", name, key) || changed;
+			if (!key.startsWith("solid/") && !key.startsWith("separated/")) {
+				changed = record("Konzentration", species ? species.concentration : solution ? 0 : null, "mol/L", name, key) || changed;
+			}
 		}
 		return changed;
 	}

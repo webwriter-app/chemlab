@@ -14,7 +14,61 @@ export type MeasurementChannel = {
 
 type Reading = number | null;
 type Sample = { time: number; value: Reading; analytic?: boolean };
-type Series = { channel: MeasurementChannel; samples: Sample[]; current: boolean };
+type Series = { channel: MeasurementChannel; samples: SampleBuffer; current: boolean };
+
+interface Samples {
+	readonly length: number;
+	time(index: number): number;
+	value(index: number): Reading;
+	analytic?(index: number): boolean;
+}
+
+/** Interleaved Float64 timestamp/value pairs. NaN encodes an unavailable sample. */
+class SampleBuffer implements Samples {
+	private data = new Float64Array(0);
+	private start = 0;
+	length = 0;
+
+	time(index: number): number {
+		return this.data[2 * (this.start + index)];
+	}
+
+	value(index: number): Reading {
+		const value = this.data[2 * (this.start + index) + 1];
+		return Number.isNaN(value) ? null : value;
+	}
+
+	replace(index: number, value: Reading): void {
+		this.data[2 * (this.start + index) + 1] = value ?? NaN;
+	}
+
+	push(time: number, value: Reading): void {
+		if (2 * (this.start + this.length) === this.data.length) {
+			if (this.start > this.length / 2) {
+				this.data.copyWithin(0, this.start * 2);
+			} else {
+				const expanded = new Float64Array(Math.max(8, this.data.length * 2));
+				expanded.set(this.data.subarray(this.start * 2));
+				this.data = expanded;
+			}
+			this.start = 0;
+		}
+		const end = this.length++;
+		this.data[2 * (this.start + end)] = time;
+		this.replace(end, value);
+	}
+
+	discard(count: number): void {
+		this.start += count;
+		this.length -= count;
+		if (this.data.length > Math.max(8, 8 * this.length)) {
+			this.data = this.data.slice(this.start * 2, (this.start + this.length) * 2);
+			this.start = 0;
+		}
+	}
+}
+
+const EMPTY_SAMPLES = new SampleBuffer();
 export type PlotPoint = { time: number; x: number | null; y: number | null; analytic?: boolean };
 type Transient = {
 	start: number;
@@ -50,18 +104,20 @@ export class MeasurementHistory {
 		this.latestTime = time;
 		let series = this.series.get(channel.id);
 		if (!series) {
-			series = { channel, samples: [], current: true };
+			series = { channel, samples: new SampleBuffer(), current: true };
 			this.series.set(channel.id, series);
 			this.channelVersion++;
 		}
 		if (value !== null && !Number.isFinite(value)) value = null;
-		const last = series.samples[series.samples.length - 1];
-		if (last?.time === time) {
-			if (last.value === value) return false;
-			last.value = value;
+		const samples = series.samples;
+		const last = samples.length - 1;
+		const previous = last < 0 ? undefined : samples.value(last);
+		if (last >= 0 && samples.time(last) === time) {
+			if (previous === value) return false;
+			samples.replace(last, value);
 		} else {
-			if ((changesOnly || value === null) && last?.value === value) return false;
-			series.samples.push({ time, value });
+			if ((changesOnly || value === null) && previous === value) return false;
+			samples.push(time, value);
 		}
 		return true;
 	}
@@ -122,7 +178,7 @@ export class MeasurementHistory {
 				this.series.delete(id);
 				this.channelVersion++;
 				changed = true;
-			} else if (end > 1) series.samples.splice(0, end - 1);
+			} else if (end > 1) series.samples.discard(end - 1);
 		}
 		this.transients = this.transients.filter(segment => segment.start + segment.duration * 1000 >= cutoff);
 		this.archivedUntil = cutoff;
@@ -132,8 +188,8 @@ export class MeasurementHistory {
 	get nextExpiry(): number | undefined {
 		let earliest = Infinity;
 		for (const { samples } of this.series.values()) {
-			const sample = samples[lowerBound(samples, this.archivedUntil)];
-			if (sample) earliest = Math.min(earliest, sample.time);
+			const start = lowerBound(samples, this.archivedUntil);
+			if (start < samples.length) earliest = Math.min(earliest, samples.time(start));
 		}
 		for (const transient of this.transients) {
 			const latest = transient.start + transient.duration * 1000;
@@ -157,16 +213,18 @@ export class MeasurementHistory {
 		const ySamples = this.samplesFor(y, start, end);
 		let i = lowerBound(xSamples, start);
 		let j = lowerBound(ySamples, start);
-		let xValue = xSamples[i - 1]?.value;
-		let yValue = ySamples[j - 1]?.value;
+		let xValue = i > 0 ? xSamples.value(i - 1) : undefined;
+		let yValue = j > 0 ? ySamples.value(j - 1) : undefined;
 		const points: PlotPoint[] = [];
 		while (i < xSamples.length || j < ySamples.length) {
-			const time = Math.min(xSamples[i]?.time ?? Infinity, ySamples[j]?.time ?? Infinity);
+			const xTime = i < xSamples.length ? xSamples.time(i) : Infinity;
+			const yTime = j < ySamples.length ? ySamples.time(j) : Infinity;
+			const time = Math.min(xTime, yTime);
 			if (time >= end) break;
-			const analytic = (xSamples[i]?.time === time && xSamples[i].analytic) ||
-				(ySamples[j]?.time === time && ySamples[j].analytic);
-			if (xSamples[i]?.time === time) xValue = xSamples[i++].value;
-			if (ySamples[j]?.time === time) yValue = ySamples[j++].value;
+			const analytic = (xTime === time && xSamples.analytic?.(i)) ||
+				(yTime === time && ySamples.analytic?.(j));
+			if (xTime === time) xValue = xSamples.value(i++);
+			if (yTime === time) yValue = ySamples.value(j++);
 			const xReading = x === TIME_CHANNEL ? time / 1000 : xValue;
 			const yReading = y === TIME_CHANNEL ? time / 1000 : yValue;
 			if (xReading !== undefined && yReading !== undefined) points.push(analytic
@@ -175,8 +233,8 @@ export class MeasurementHistory {
 		return points;
 	}
 
-	private samplesFor(id: string, start: number, end: number): Sample[] {
-		const samples = this.series.get(id)?.samples ?? [];
+	private samplesFor(id: string, start: number, end: number): Samples {
+		const samples = this.series.get(id)?.samples ?? EMPTY_SAMPLES;
 		const synthetic = new Map<number, Sample>();
 		for (const segment of this.transients) {
 			const factor = segment.factors.get(id);
@@ -190,11 +248,20 @@ export class MeasurementHistory {
 			if (segment.duration > horizon || horizon === 0) record(segment.duration);
 		}
 		if (!synthetic.size) return samples;
-		for (const sample of samples) {
+		const first = Math.max(0, lowerBound(samples, start) - 1);
+		for (let i = first; i < samples.length && samples.time(i) < end; i++) {
+			const time = samples.time(i);
+			const value = samples.value(i);
 			// A stopped or disconnected device always wins at a boundary.
-			if (sample.value === null || !synthetic.has(sample.time)) synthetic.set(sample.time, sample);
+			if (value === null || !synthetic.has(time)) synthetic.set(time, { time, value });
 		}
-		return [...synthetic.values()].sort((a, b) => a.time - b.time);
+		const merged = [...synthetic.values()].sort((a, b) => a.time - b.time);
+		return {
+			length: merged.length,
+			time: index => merged[index].time,
+			value: index => merged[index].value,
+			analytic: index => merged[index].analytic,
+		};
 	}
 
 	private compact(points: PlotPoint[], start: number, end: number): PlotPoint[] {
@@ -222,12 +289,12 @@ export class MeasurementHistory {
 	}
 }
 
-function lowerBound(samples: Sample[], time: number): number {
+function lowerBound(samples: Samples, time: number): number {
 	let lo = 0;
 	let hi = samples.length;
 	while (lo < hi) {
 		const mid = Math.floor((lo + hi) / 2);
-		if (samples[mid].time < time) lo = mid + 1;
+		if (samples.time(mid) < time) lo = mid + 1;
 		else hi = mid;
 	}
 	return lo;
