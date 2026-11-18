@@ -523,7 +523,7 @@ export class ElectricDeviceView extends Container {
 		// A wider electrode carries more current at the same density, so the
 		// same deposit is a thinner layer on it. Scaling the reference volume
 		// with the area keeps the drawn thickness the real one.
-		const area = this.component._area > 0 ? this.component._area : ELECTRODE_AREA;
+		const area = this.component.activeArea || ELECTRODE_AREA;
 		const reference = PLATING_REFERENCE_LITRES * area / ELECTRODE_AREA;
 		const coverage = plating ? Math.min(1, plating.litres / reference) : 0;
 		const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}` : "";

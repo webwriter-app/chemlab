@@ -1007,7 +1007,7 @@ export class ChemLab extends LitElementWw {
 
 	private ionicResistance(first: chemlib.ElectricComponent, second: chemlib.ElectricComponent): number {
 		return chemlib.Simulation.ionicResistance(first, second,
-			this.bridgeJoins(first._connectedMix, second._connectedMix));
+			this.bridgeBetween(first._connectedMix, second._connectedMix));
 	}
 
 	private hasRCReadout(device: chemlib.ElectricComponent): boolean {
@@ -1138,13 +1138,15 @@ export class ChemLab extends LitElementWw {
 	}
 
 	/**
-	 * Whether a salt bridge on the canvas joins the two half-cells of a
-	 * circuit. The bridge carries no cable, so its two legs decide: it has to
-	 * dip into both vessels for the ionic current to close the cell.
+	 * The salt bridge on the canvas that joins the two half-cells of a
+	 * circuit, if there is one. The bridge carries no cable, so its two legs
+	 * decide: it has to dip into both vessels for the ionic current to close
+	 * the cell. The bridge itself is returned because its length and bore
+	 * decide how well it conducts.
 	 */
-	private bridgeJoins(first?: chemlib.Mixture, second?: chemlib.Mixture): boolean {
-		if (!first || !second || first === second) return false;
-		return this.allEComponents.some((device) =>
+	private bridgeBetween(first?: chemlib.Mixture, second?: chemlib.Mixture): chemlib.ElectricComponent | undefined {
+		if (!first || !second || first === second) return undefined;
+		return this.allEComponents.find((device) =>
 			device._type === chemlib.EComponentType.Bridge &&
 			device._bridgeMixes.includes(first) && device._bridgeMixes.includes(second));
 	}
@@ -3693,7 +3695,9 @@ export class ChemLab extends LitElementWw {
 					}}>${this.message("bestätigen")}</sl-button>` : nothing}
 				${hasElectrode ? html`
 					<sl-input id="electrodeArea" size="small" type="number" min="0.1" step="0.1" contenteditable="false"
-						label=${this.message("Benetzte Fläche in cm²")} .value=${String(device._area ?? chemlib.ELECTRODE_AREA)}></sl-input>
+						label=${this.message("Benetzte Fläche in cm²")}
+						.value=${device._area > 0 ? String(device._area) : ""}
+						placeholder=${String(Math.round(device.activeArea * 100) / 100)}></sl-input>
 					<sl-input id="electrodeReference" size="small" type="number" step="0.01" contenteditable="false"
 						label=${this.message("Bezugspotential in V (leer = keine Referenz)")}
 						.value=${device._reference === undefined ? "" : String(device._reference)}></sl-input>
@@ -3701,7 +3705,7 @@ export class ChemLab extends LitElementWw {
 						const area = Number.parseFloat(this.shadowRoot.querySelector<SlInput>("#electrodeArea").value);
 						const raw = this.shadowRoot.querySelector<SlInput>("#electrodeReference").value.trim();
 						const reference = raw === "" ? Number.NaN : Number.parseFloat(raw);
-						device._area = Number.isFinite(area) && area > 0 ? area : chemlib.ELECTRODE_AREA;
+						device._area = Number.isFinite(area) && area > 0 ? area : 0;
 						device._reference = Number.isFinite(reference) ? reference : undefined;
 						this.saveSelectedComponent({ area: device._area, reference: device._reference });
 						this.canvas.refreshDeviceDisplay(device);

@@ -23,8 +23,6 @@ export {
 	currentDensity,
 	REFERENCE_CURRENT_DENSITY,
 	ELECTRODE_AREA,
-	ELECTROLYTE_RESISTANCE,
-	BRIDGE_RESISTANCE,
 	OPEN_CIRCUIT_RESISTANCE,
 	GAS_PARTIAL_PRESSURE,
 } from './halfReactions'
@@ -41,5 +39,19 @@ export {
 } from './ElectricComponent'
 export {circuitNetwork, circuitThevenin, circuitReadings} from './circuit'
 export type {CircuitElement, CircuitNetwork, CircuitReading} from './circuit'
+export {
+	solutionConductivity,
+	pathResistance,
+	bridgeResistance,
+	MOLAR_CONDUCTIVITY,
+	DEFAULT_MOLAR_CONDUCTIVITY,
+	KOHLRAUSCH_CONSTANT,
+	CONDUCTIVITY_TEMPERATURE_COEFFICIENT,
+	SATURATED_KCL_CONDUCTIVITY,
+	BRIDGE_BORE_MM,
+	DEFAULT_ELECTRODE_SPACING,
+	MIN_ELECTRODE_SPACING,
+} from './conductivity'
+export type {ConductingIon} from './conductivity'
 export {NoIonicPathTransientModel} from './NoIonicPathTransientModel'
 export type {NoIonicPathTransientParameters, NoIonicPathTransientSample} from './NoIonicPathTransientModel'

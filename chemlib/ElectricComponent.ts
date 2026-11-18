@@ -172,13 +172,45 @@ class ElectricComponent {
 	 */
 	_polarity: -1 | 0 | 1 = 0;
 	/**
-	 * for electrodes: the wetted area in cm². The current density the kinetics
-	 * are written in follows from it, so a wider strip carries more current at
-	 * the same overpotential.
+	 * for electrodes: the wetted area in cm², when the author set it. The
+	 * current density the kinetics are written in follows from it, so a wider
+	 * strip carries more current at the same overpotential. Zero means the
+	 * area is the one the canvas measured from the liquid surface, see
+	 * {@link _immersion}.
 	 *
 	 * @type {number}
 	 */
-	_area: number = ELECTRODE_AREA;
+	_area: number = 0;
+	/**
+	 * for electrodes: where the strip sits in its vessel and how much of it the
+	 * liquid covers. The canvas writes it whenever a device is dipped or a
+	 * vessel changes its contents, because only the view knows the position of
+	 * the strip and the height of the liquid surface. A strip whose lower end
+	 * hangs above the surface has an area of zero and takes no part in the
+	 * cell.
+	 *
+	 * @type {({ x: number; area: number } | undefined)}
+	 */
+	_immersion?: { x: number; area: number };
+	/**
+	 * for a salt bridge: the horizontal positions of its two legs in mm of the
+	 * canvas, in the order of {@link _bridgeMixes}. The bridge is a narrow tube
+	 * of saturated KCl, so its length and bore decide its resistance.
+	 *
+	 * @type {([number, number] | undefined)}
+	 */
+	_bridgeLegs?: [number, number];
+
+	/**
+	 * The area of an electrode that actually carries current, in cm². An
+	 * authored value wins, otherwise the wetted area the canvas measured
+	 * decides, and a strip the canvas has not measured falls back to the
+	 * standard strip. A dry strip reports zero.
+	 */
+	get activeArea(): number {
+		if (this._area > 0) return this._area;
+		return this._immersion?.area ?? ELECTRODE_AREA;
+	}
 	/**
 	 * for electrodes: the fixed potential in V against the standard hydrogen
 	 * electrode when the electrode is a reference electrode. Such an electrode

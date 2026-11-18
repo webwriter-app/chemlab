@@ -1301,6 +1301,9 @@ export class CanvasController implements ReactiveController {
 				if (device._type === chemlib.EComponentType.GasCollector &&
 					changed.includes(device._connectedMix)) this.refreshDeviceDisplay(device);
 			}
+			// A dose raises the liquid surface, so the wetted area of every
+			// strip in the vessel changes with it.
+			this.attachDevices();
 		}
 		this.updateDippedStacking();
 		if (this.cablesDirty || this.cables.size) {
@@ -1381,6 +1384,16 @@ export class CanvasController implements ReactiveController {
 				// while its centre is still above the rim.
 				const vessel = this.vesselAt(sprite.x, sprite.y) ?? this.vesselAt(sprite.x, bottom);
 				eComp._connectedMix = vessel?.component._content;
+				// Only the part below the liquid surface carries current, so
+				// the strip records how much of it the liquid covers. A strip
+				// that hangs above the surface ends up with no area at all and
+				// takes no part in the cell.
+				const surface = vessel?.liquidSurfaceY();
+				const top = sprite.y - sprite.height / 2;
+				const lower = sprite.y + sprite.height / 2;
+				const immersed = surface === undefined ? 0
+					: Math.max(0, Math.min(lower, surface) - top);
+				eComp._immersion = { x: sprite.x, area: sprite.width * immersed / 100 };
 				return;
 			}
 			case chemlib.EComponentType.GasCollector: {
@@ -1394,6 +1407,9 @@ export class CanvasController implements ReactiveController {
 				const second = this.vesselAt(sprite.x + leg, bottom);
 				eComp._bridgeMixes = first && second && first !== second
 					? [first.component._content, second.component._content] : [];
+				// The span between the legs is the length of the tube the
+				// current has to cross, so the bridge records where they sit.
+				eComp._bridgeLegs = [sprite.x - leg, sprite.x + leg];
 				return;
 			}
 			default:

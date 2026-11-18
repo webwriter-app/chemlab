@@ -69,20 +69,6 @@ export const REFERENCE_CURRENT_DENSITY = 0.02;
 /** Geometric area of one electrode strip, in cm². */
 export const ELECTRODE_AREA = 4.5;
 /**
- * Resistance of the electrolyte path between the two electrodes, in Ω. It is
- * the cell's own internal resistance: the ionic path through the solution
- * plus the contact between the strips and it. The leads, the meters and the
- * supply add their own resistances on top, so this is not the resistance of
- * the whole loop.
- */
-export const ELECTROLYTE_RESISTANCE = 2;
-/**
- * Ionic resistance of a salt bridge, in Ω. A bridge is a narrow tube of
- * saturated KCl, so it conducts far worse than the vessels it joins; a cell
- * that is driven through one carries only a few tens of milliamps.
- */
-export const BRIDGE_RESISTANCE = 60;
-/**
  * Resistance above which the circuit between the two electrodes counts as
  * open, in Ω. A voltmeter is the only device that reaches it, and a cell that
  * is read by one carries no current worth booking; a lead laid straight

@@ -110738,8 +110738,6 @@ var Bond = class {
 // chemlib/halfReactions.ts
 var REFERENCE_CURRENT_DENSITY = 0.02;
 var ELECTRODE_AREA = 4.5;
-var ELECTROLYTE_RESISTANCE = 2;
-var BRIDGE_RESISTANCE = 60;
 var OPEN_CIRCUIT_RESISTANCE = 1e5;
 var GAS_PARTIAL_PRESSURE = 1;
 function metalCouple(id3, metal, ion2, el, sep, density2, etaRef, b5) {
@@ -110992,13 +110990,44 @@ var ElectricComponent = class {
    */
   _polarity = 0;
   /**
-   * for electrodes: the wetted area in cm². The current density the kinetics
-   * are written in follows from it, so a wider strip carries more current at
-   * the same overpotential.
+   * for electrodes: the wetted area in cm², when the author set it. The
+   * current density the kinetics are written in follows from it, so a wider
+   * strip carries more current at the same overpotential. Zero means the
+   * area is the one the canvas measured from the liquid surface, see
+   * {@link _immersion}.
    *
    * @type {number}
    */
-  _area = ELECTRODE_AREA;
+  _area = 0;
+  /**
+   * for electrodes: where the strip sits in its vessel and how much of it the
+   * liquid covers. The canvas writes it whenever a device is dipped or a
+   * vessel changes its contents, because only the view knows the position of
+   * the strip and the height of the liquid surface. A strip whose lower end
+   * hangs above the surface has an area of zero and takes no part in the
+   * cell.
+   *
+   * @type {({ x: number; area: number } | undefined)}
+   */
+  _immersion;
+  /**
+   * for a salt bridge: the horizontal positions of its two legs in mm of the
+   * canvas, in the order of {@link _bridgeMixes}. The bridge is a narrow tube
+   * of saturated KCl, so its length and bore decide its resistance.
+   *
+   * @type {([number, number] | undefined)}
+   */
+  _bridgeLegs;
+  /**
+   * The area of an electrode that actually carries current, in cm². An
+   * authored value wins, otherwise the wetted area the canvas measured
+   * decides, and a strip the canvas has not measured falls back to the
+   * standard strip. A dry strip reports zero.
+   */
+  get activeArea() {
+    if (this._area > 0) return this._area;
+    return this._immersion?.area ?? ELECTRODE_AREA;
+  }
   /**
    * for electrodes: the fixed potential in V against the standard hydrogen
    * electrode when the electrode is a reference electrode. Such an electrode
@@ -149731,6 +149760,86 @@ var NoIonicPathTransientModel = class {
   }
 };
 
+// chemlib/conductivity.ts
+var MOLAR_CONDUCTIVITY = {
+  "[H+]": 349.8,
+  "[OH-]": 198.3,
+  "[Na+]": 50.1,
+  "[K+]": 73.5,
+  "[Li+]": 38.7,
+  "[NH4+]": 73.5,
+  "[Ag+]": 61.9,
+  "[Cu2+]": 107.2,
+  "[Zn+2]": 105.6,
+  "[Fe2+]": 108,
+  "[Fe3+]": 204,
+  "[Ca2+]": 119,
+  "[Mg2+]": 106.2,
+  "[Ba2+]": 127.2,
+  "[Sr2+]": 119,
+  "[Pb2+]": 142,
+  "[Ni2+]": 108,
+  "[Co2+]": 110,
+  "[Mn2+]": 107,
+  "[Cd2+]": 108,
+  "[Sn2+]": 118,
+  "[Hg2+]": 127,
+  "[Al3+]": 189,
+  "[Cl-]": 76.3,
+  "[Br-]": 78.1,
+  "[I-]": 76.8,
+  "[F-]": 55.4,
+  "[NO3-]": 71.4,
+  "[O-]S(=O)(=O)[O-]": 160,
+  "[O-]S(=O)(=O)[O-].[H+]": 50,
+  "[O-]C([O-])=O": 138.6,
+  "OC([O-])=O": 44.5,
+  "CC([O-])=O": 40.9,
+  "[O-]Cl(=O)(=O)=O": 67.3,
+  "[O-]Cl(=O)=O": 64.6,
+  "[O-]Br(=O)=O": 55.7,
+  "[O-]I(=O)=O": 40.7,
+  "[O-]C#N": 82,
+  "[S-]C#N": 66,
+  "[O-]S([O-])(=O)=O": 160,
+  "[O-]C([O-])=O.[O-]C([O-])=O": 148.4,
+  "[O-]P([O-])([O-])=O": 207,
+  "OP([O-])([O-])=O": 114,
+  "OP(=O)(O)[O-]": 36,
+  "[O-][Mn](=O)(=O)=O": 61.3,
+  "[O-]S(=O)(=O)[O-].[O-]S(=O)(=O)[O-]": 170
+};
+var DEFAULT_MOLAR_CONDUCTIVITY = 50;
+var KOHLRAUSCH_CONSTANT = 0.6;
+var CONDUCTIVITY_TEMPERATURE_COEFFICIENT = 0.02;
+var SATURATED_KCL_CONDUCTIVITY = 0.2;
+var BRIDGE_BORE_MM = 8;
+var DEFAULT_ELECTRODE_SPACING = 2.5;
+var MIN_ELECTRODE_SPACING = 0.2;
+function solutionConductivity(ions, temperature = 25) {
+  let sum = 0;
+  let strength = 0;
+  for (const ion2 of ions) {
+    const concentration = ion2.concentration;
+    if (!(concentration > 0) || !Number.isFinite(concentration)) continue;
+    const charge = Math.abs(ion2.charge) || 1;
+    sum += concentration * (MOLAR_CONDUCTIVITY[ion2.smiles] ?? DEFAULT_MOLAR_CONDUCTIVITY);
+    strength += 0.5 * concentration * charge * charge;
+  }
+  if (!(sum > 0)) return 0;
+  const interaction = 1 + KOHLRAUSCH_CONSTANT * Math.sqrt(strength);
+  const warm = 1 + CONDUCTIVITY_TEMPERATURE_COEFFICIENT * (temperature - 25);
+  return sum / (1e3 * interaction) * Math.max(0.2, warm);
+}
+function pathResistance(conductivity, length2, area2) {
+  if (!(conductivity > 0) || !(length2 > 0) || !(area2 > 0)) return Infinity;
+  return length2 / (conductivity * area2);
+}
+function bridgeResistance(length2) {
+  const bore = Math.PI * (BRIDGE_BORE_MM / 20) ** 2;
+  return pathResistance(SATURATED_KCL_CONDUCTIVITY, length2, bore);
+}
+
 // chemlib/Simulation.ts
 var saltEquilibria = Object.entries(saltSolubility).map(([formula, data2]) => {
   const [cation, anion, cations = 1, anions = 1] = data2.ions;
@@ -150598,7 +150707,7 @@ var Simulation = class {
     const candidates = [];
     const material = electrode._material;
     const volume = view.mix._solutionVolume;
-    const area2 = electrode._area > 0 ? electrode._area : ELECTRODE_AREA;
+    const area2 = electrode.activeArea;
     const platings = electrode.platings;
     const solidAmount = (smiles) => {
       if (material !== void 0 && material.smilesString === smiles) return Infinity;
@@ -151330,16 +151439,123 @@ var Simulation = class {
    * An electrode reaches the electrolyte through the vessel it dips into, so
    * an electrode without a solution has no ionic contact at all. That holds
    * for a reference electrode too: it senses a potential through the same
-   * contact, and a dry one is not part of the cell.
+   * contact, and a dry one is not part of the cell. A strip whose lower end
+   * hangs above the liquid surface is dry in the same sense, even though it
+   * sits inside the vessel.
+   *
+   * The resistance is not a constant: it follows the conductivity of the
+   * solution, the distance between the strips and the area of them the liquid
+   * covers. A salt bridge adds its own tube, which is the narrowest part of
+   * the path and therefore the one that limits the current.
    */
   static ionicResistance(first, second, bridge = false) {
     const firstMix = first._connectedMix;
     const secondMix = second._connectedMix;
     if (!firstMix?._isSolution || !secondMix?._isSolution) return Infinity;
+    if (!this.isWetted(first) || !this.isWetted(second)) return Infinity;
     if (firstMix !== secondMix) {
-      return bridge ? ELECTROLYTE_RESISTANCE + BRIDGE_RESISTANCE : Infinity;
+      if (!bridge) return Infinity;
+      return this.bridgedResistance(first, second, typeof bridge === "object" ? bridge : void 0);
     }
-    return ELECTROLYTE_RESISTANCE;
+    return this.sharedResistance(first, second);
+  }
+  /**
+   * Whether an electrode touches the liquid of its vessel. An electrode the
+   * canvas has not measured counts as wetted, so a probe or an authored
+   * layout without positions keeps working.
+   *
+   * @private
+   * @static
+   * @param {ElectricComponent} electrode - the strip to test
+   * @returns {boolean} true when the strip carries ionic contact
+   */
+  static isWetted(electrode) {
+    return electrode._immersion === void 0 || electrode._immersion.area > 0;
+  }
+  /**
+   * Resistance of the path through one electrolyte, in Ω.
+   *
+   * @private
+   * @static
+   * @param {ElectricComponent} first - one strip
+   * @param {ElectricComponent} second - the other strip
+   * @returns {number} the resistance in Ω
+   */
+  static sharedResistance(first, second) {
+    const mix = first._connectedMix;
+    if (!mix) return Infinity;
+    const spacing = this.electrodeSpacing(first, second);
+    const area2 = Math.min(first.activeArea, second.activeArea);
+    return pathResistance(this.conductivity(mix), spacing, area2);
+  }
+  /**
+   * Resistance of a cell whose two half-cells a salt bridge joins, in Ω.
+   *
+   * The current crosses both electrolytes and the bridge, so the three
+   * lengths add up. Each vessel contributes the stretch from its strip to the
+   * bridge leg that dips into it, and the bridge contributes its own tube.
+   *
+   * @private
+   * @static
+   * @param {ElectricComponent} first - the strip of the first half-cell
+   * @param {ElectricComponent} second - the strip of the second half-cell
+   * @param {ElectricComponent} [bridge] - the bridge that joins the vessels
+   * @returns {number} the resistance in Ω
+   */
+  static bridgedResistance(first, second, bridge) {
+    const legs = bridge?._bridgeLegs;
+    const firstLeg = legs?.[0];
+    const secondLeg = legs?.[1];
+    const firstX = first._immersion?.x;
+    const secondX = second._immersion?.x;
+    const firstLength = firstLeg === void 0 || firstX === void 0 ? DEFAULT_ELECTRODE_SPACING : Math.max(MIN_ELECTRODE_SPACING, Math.abs(firstX - firstLeg) / 10);
+    const secondLength = secondLeg === void 0 || secondX === void 0 ? DEFAULT_ELECTRODE_SPACING : Math.max(MIN_ELECTRODE_SPACING, Math.abs(secondX - secondLeg) / 10);
+    const span = firstLeg === void 0 || secondLeg === void 0 ? DEFAULT_ELECTRODE_SPACING * 2 : Math.max(MIN_ELECTRODE_SPACING, Math.abs(secondLeg - firstLeg) / 10);
+    const firstMix = first._connectedMix;
+    const secondMix = second._connectedMix;
+    if (!firstMix || !secondMix) return Infinity;
+    return pathResistance(this.conductivity(firstMix), firstLength, first.activeArea) + bridgeResistance(span) + pathResistance(this.conductivity(secondMix), secondLength, second.activeArea);
+  }
+  /**
+   * Horizontal distance between two strips, in cm. The canvas measures it in
+   * mm; a layout the canvas has not measured falls back to a bench spacing.
+   *
+   * @private
+   * @static
+   * @param {ElectricComponent} first - one strip
+   * @param {ElectricComponent} second - the other strip
+   * @returns {number} the distance in cm
+   */
+  static electrodeSpacing(first, second) {
+    const a7 = first._immersion?.x;
+    const b5 = second._immersion?.x;
+    if (a7 === void 0 || b5 === void 0) return DEFAULT_ELECTRODE_SPACING;
+    return Math.max(MIN_ELECTRODE_SPACING, Math.abs(a7 - b5) / 10);
+  }
+  /**
+   * Conductivity of a vessel's electrolyte, in S/cm.
+   *
+   * The free ions of the salt equilibria carry the current, together with the
+   * protons and hydroxide ions of the water equilibrium. A vessel of pure
+   * water therefore conducts about a million times worse than one with a
+   * supporting electrolyte, which is what makes the difference between them
+   * visible in the cell current.
+   *
+   * @private
+   * @static
+   * @param {Mixture} mix - the vessel
+   * @returns {number} the conductivity in S/cm
+   */
+  static conductivity(mix) {
+    const view = this.vesselView(mix);
+    const ions = [];
+    for (const [smiles, ion2] of view.ions) {
+      ions.push({ smiles, concentration: ion2.concentration, charge: ion2.molecule._totalCharge });
+    }
+    const kw = AcidBase.kwAt(mix._temperature);
+    ions.push({ smiles: "[H+]", concentration: view.protons, charge: 1 });
+    ions.push({ smiles: "[OH-]", concentration: view.protons > 0 ? kw / view.protons : 0, charge: 1 });
+    return solutionConductivity(ions, mix._temperature - 273.15);
   }
   /** Prepares a passive galvanic RC experiment and projects its current onto the meters. */
   static prepareNoIonicPathTransient(first, second, devices, ionicResistance, { capacitance, seriesResistance = 0, initialCharge = 0 }) {
@@ -151434,8 +151650,8 @@ var Simulation = class {
     const second = candidatesOf(sElectrode2, mix2);
     if (first.length === 0 || second.length === 0) return unsolved();
     const areas = {
-      first: sElectrode1._area > 0 ? sElectrode1._area : ELECTRODE_AREA,
-      second: sElectrode2._area > 0 ? sElectrode2._area : ELECTRODE_AREA
+      first: sElectrode1.activeArea,
+      second: sElectrode2.activeArea
     };
     const limits2 = this.cellLimits(first, second);
     const network = circuitNetwork([sElectrode1, sElectrode2, ...sDevices]);
@@ -182393,6 +182609,7 @@ var VesselView = class _VesselView extends Container {
     const glass2 = new Sprite({ texture, anchor: 0.5, width, height, eventMode: "none" });
     const { center, width: svgWidth, height: svgHeight, profile } = interiors[type];
     this.profile = profile;
+    this.svgHeight = svgHeight;
     this.outline = [
       ...profile.map(([y5, r12]) => ({ x: -r12, y: y5 })),
       ...profile.map(([y5, r12]) => ({ x: r12, y: y5 })).reverse()
@@ -182429,6 +182646,8 @@ var VesselView = class _VesselView extends Container {
   particlesShape = new Graphics({ eventMode: "none" });
   outline;
   profile;
+  /** height of the artboard the profile is written in, in SVG units */
+  svgHeight;
   lastFraction = -1;
   lastAngle = 0;
   lastLiquid = false;
@@ -182500,6 +182719,19 @@ var VesselView = class _VesselView extends Container {
       context2.stroke();
     }
     return new Texture({ source: new CanvasSource({ resource: canvas, resolution, autoGenerateMipmaps: true }) });
+  }
+  /**
+   * World y of the liquid surface, in canvas units. The canvas needs it to
+   * tell how much of an electrode strip the liquid covers: a strip whose
+   * lower end hangs above this line is dry and carries no ionic current.
+   *
+   * @returns {number} the y coordinate of the surface in world space
+   */
+  liquidSurfaceY() {
+    const top = this.profile[0][0];
+    const bottom = this.profile[this.profile.length - 1][0];
+    const level = this.surfaceAt(this.fillFraction, top, bottom, 0, 1);
+    return this.y - this.height / 2 + level * this.height / this.svgHeight;
   }
   radiusAt(y5) {
     for (let index2 = 1; index2 < this.profile.length; index2++) {
@@ -183230,7 +183462,7 @@ var ElectricDeviceView = class extends Container {
     const strip = this.strip;
     if (!coating || !strip) return false;
     const plating = this.component.plating;
-    const area2 = this.component._area > 0 ? this.component._area : ELECTRODE_AREA;
+    const area2 = this.component.activeArea || ELECTRODE_AREA;
     const reference2 = PLATING_REFERENCE_LITRES * area2 / ELECTRODE_AREA;
     const coverage = plating ? Math.min(1, plating.litres / reference2) : 0;
     const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}` : "";
@@ -184718,6 +184950,7 @@ var CanvasController = class _CanvasController {
       for (const device of this.host.allEComponents) {
         if (device._type === "gascollector" /* GasCollector */ && changed.includes(device._connectedMix)) this.refreshDeviceDisplay(device);
       }
+      this.attachDevices();
     }
     this.updateDippedStacking();
     if (this.cablesDirty || this.cables.size) {
@@ -184785,6 +185018,11 @@ var CanvasController = class _CanvasController {
       case "electrode" /* Electrode */: {
         const vessel = this.vesselAt(sprite.x, sprite.y) ?? this.vesselAt(sprite.x, bottom);
         eComp._connectedMix = vessel?.component._content;
+        const surface = vessel?.liquidSurfaceY();
+        const top = sprite.y - sprite.height / 2;
+        const lower = sprite.y + sprite.height / 2;
+        const immersed = surface === void 0 ? 0 : Math.max(0, Math.min(lower, surface) - top);
+        eComp._immersion = { x: sprite.x, area: sprite.width * immersed / 100 };
         return;
       }
       case "gascollector" /* GasCollector */: {
@@ -184796,6 +185034,7 @@ var CanvasController = class _CanvasController {
         const first = this.vesselAt(sprite.x - leg, bottom);
         const second = this.vesselAt(sprite.x + leg, bottom);
         eComp._bridgeMixes = first && second && first !== second ? [first.component._content, second.component._content] : [];
+        eComp._bridgeLegs = [sprite.x - leg, sprite.x + leg];
         return;
       }
       default:
@@ -185457,7 +185696,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     return Simulation.ionicResistance(
       first,
       second,
-      this.bridgeJoins(first._connectedMix, second._connectedMix)
+      this.bridgeBetween(first._connectedMix, second._connectedMix)
     );
   }
   hasRCReadout(device) {
@@ -185567,13 +185806,15 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     return circuit;
   }
   /**
-   * Whether a salt bridge on the canvas joins the two half-cells of a
-   * circuit. The bridge carries no cable, so its two legs decide: it has to
-   * dip into both vessels for the ionic current to close the cell.
+   * The salt bridge on the canvas that joins the two half-cells of a
+   * circuit, if there is one. The bridge carries no cable, so its two legs
+   * decide: it has to dip into both vessels for the ionic current to close
+   * the cell. The bridge itself is returned because its length and bore
+   * decide how well it conducts.
    */
-  bridgeJoins(first, second) {
-    if (!first || !second || first === second) return false;
-    return this.allEComponents.some((device) => device._type === "bridge" /* Bridge */ && device._bridgeMixes.includes(first) && device._bridgeMixes.includes(second));
+  bridgeBetween(first, second) {
+    if (!first || !second || first === second) return void 0;
+    return this.allEComponents.find((device) => device._type === "bridge" /* Bridge */ && device._bridgeMixes.includes(first) && device._bridgeMixes.includes(second));
   }
   runningCurrent(source3) {
     const ticker = `echem${source3._type}:${source3._id}`;
@@ -187907,7 +188148,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}>${this.message("best\xE4tigen")}</sl-button>` : E}
 				${hasElectrode ? x`
 					<sl-input id="electrodeArea" size="small" type="number" min="0.1" step="0.1" contenteditable="false"
-						label=${this.message("Benetzte Fl\xE4che in cm\xB2")} .value=${String(device._area ?? ELECTRODE_AREA)}></sl-input>
+						label=${this.message("Benetzte Fl\xE4che in cm\xB2")}
+						.value=${device._area > 0 ? String(device._area) : ""}
+						placeholder=${String(Math.round(device.activeArea * 100) / 100)}></sl-input>
 					<sl-input id="electrodeReference" size="small" type="number" step="0.01" contenteditable="false"
 						label=${this.message("Bezugspotential in V (leer = keine Referenz)")}
 						.value=${device._reference === void 0 ? "" : String(device._reference)}></sl-input>
@@ -187915,7 +188158,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       const area2 = Number.parseFloat(this.shadowRoot.querySelector("#electrodeArea").value);
       const raw = this.shadowRoot.querySelector("#electrodeReference").value.trim();
       const reference2 = raw === "" ? Number.NaN : Number.parseFloat(raw);
-      device._area = Number.isFinite(area2) && area2 > 0 ? area2 : ELECTRODE_AREA;
+      device._area = Number.isFinite(area2) && area2 > 0 ? area2 : 0;
       device._reference = Number.isFinite(reference2) ? reference2 : void 0;
       this.saveSelectedComponent({ area: device._area, reference: device._reference });
       this.canvas.refreshDeviceDisplay(device);

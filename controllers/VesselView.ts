@@ -84,6 +84,8 @@ export class VesselView extends Container {
 	private particlesShape = new Graphics({ eventMode: "none" });
 	private outline: Point[];
 	private profile: Slice[];
+	/** height of the artboard the profile is written in, in SVG units */
+	private svgHeight: number;
 	private lastFraction = -1;
 	private lastAngle = 0;
 	private lastLiquid = false;
@@ -118,6 +120,7 @@ export class VesselView extends Container {
 		const glass = new Sprite({ texture, anchor: 0.5, width, height, eventMode: "none" });
 		const { center, width: svgWidth, height: svgHeight, profile } = interiors[type];
 		this.profile = profile;
+		this.svgHeight = svgHeight;
 		this.outline = [
 			...profile.map(([y, r]) => ({ x: -r, y })),
 			...profile.map(([y, r]) => ({ x: r, y })).reverse(),
@@ -185,6 +188,20 @@ export class VesselView extends Container {
 			context.stroke();
 		}
 		return new Texture({ source: new CanvasSource({ resource: canvas, resolution, autoGenerateMipmaps: true }) });
+	}
+
+	/**
+	 * World y of the liquid surface, in canvas units. The canvas needs it to
+	 * tell how much of an electrode strip the liquid covers: a strip whose
+	 * lower end hangs above this line is dry and carries no ionic current.
+	 *
+	 * @returns {number} the y coordinate of the surface in world space
+	 */
+	liquidSurfaceY(): number {
+		const top = this.profile[0][0];
+		const bottom = this.profile[this.profile.length - 1][0];
+		const level = this.surfaceAt(this.fillFraction, top, bottom, 0, 1);
+		return this.y - this.height / 2 + level * this.height / this.svgHeight;
 	}
 
 	private radiusAt(y: number): number {

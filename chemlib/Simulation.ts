@@ -12,9 +12,6 @@ import { evolvedGases } from "./gasEvolution";
 import {
 	HalfReaction,
 	HalfReactionTerm,
-	ELECTRODE_AREA,
-	ELECTROLYTE_RESISTANCE,
-	BRIDGE_RESISTANCE,
 	OPEN_CIRCUIT_RESISTANCE,
 	GAS_PARTIAL_PRESSURE,
 	halfReactionsOn,
@@ -27,6 +24,14 @@ import {
 } from "./halfReactions";
 import { circuitNetwork, circuitThevenin, circuitReadings, type CircuitElement, type CircuitNetwork, type CircuitReading } from "./circuit";
 import { NoIonicPathTransientModel, type NoIonicPathTransientSample } from "./NoIonicPathTransientModel";
+import {
+	pathResistance,
+	bridgeResistance,
+	solutionConductivity,
+	DEFAULT_ELECTRODE_SPACING,
+	MIN_ELECTRODE_SPACING,
+	type ConductingIon,
+} from "./conductivity";
 
 const saltEquilibria = Object.entries(saltSolubility).map(([formula, data]) => {
 	const [cation, anion, cations = 1, anions = 1] = data.ions;
@@ -1201,7 +1206,7 @@ export abstract class Simulation {
 		const candidates: HalfCandidate[] = [];
 		const material = electrode._material;
 		const volume = view.mix._solutionVolume;
-		const area = electrode._area > 0 ? electrode._area : ELECTRODE_AREA;
+		const area = electrode.activeArea;
 		const platings = electrode.platings;
 		// A deposit covers the strip, so it is the surface that reacts: the
 		// plated metal goes back into solution as its cation, and the electrode
@@ -2057,16 +2062,143 @@ export abstract class Simulation {
 	 * An electrode reaches the electrolyte through the vessel it dips into, so
 	 * an electrode without a solution has no ionic contact at all. That holds
 	 * for a reference electrode too: it senses a potential through the same
-	 * contact, and a dry one is not part of the cell.
+	 * contact, and a dry one is not part of the cell. A strip whose lower end
+	 * hangs above the liquid surface is dry in the same sense, even though it
+	 * sits inside the vessel.
+	 *
+	 * The resistance is not a constant: it follows the conductivity of the
+	 * solution, the distance between the strips and the area of them the liquid
+	 * covers. A salt bridge adds its own tube, which is the narrowest part of
+	 * the path and therefore the one that limits the current.
 	 */
-	public static ionicResistance(first: ElectricComponent, second: ElectricComponent, bridge = false): number {
+	public static ionicResistance(
+		first: ElectricComponent,
+		second: ElectricComponent,
+		bridge: boolean | ElectricComponent = false
+	): number {
 		const firstMix = first._connectedMix;
 		const secondMix = second._connectedMix;
 		if (!firstMix?._isSolution || !secondMix?._isSolution) return Infinity;
+		if (!this.isWetted(first) || !this.isWetted(second)) return Infinity;
 		if (firstMix !== secondMix) {
-			return bridge ? ELECTROLYTE_RESISTANCE + BRIDGE_RESISTANCE : Infinity;
+			if (!bridge) return Infinity;
+			return this.bridgedResistance(first, second, typeof bridge === "object" ? bridge : undefined);
 		}
-		return ELECTROLYTE_RESISTANCE;
+		return this.sharedResistance(first, second);
+	}
+
+	/**
+	 * Whether an electrode touches the liquid of its vessel. An electrode the
+	 * canvas has not measured counts as wetted, so a probe or an authored
+	 * layout without positions keeps working.
+	 *
+	 * @private
+	 * @static
+	 * @param {ElectricComponent} electrode - the strip to test
+	 * @returns {boolean} true when the strip carries ionic contact
+	 */
+	private static isWetted(electrode: ElectricComponent): boolean {
+		return electrode._immersion === undefined || electrode._immersion.area > 0;
+	}
+
+	/**
+	 * Resistance of the path through one electrolyte, in Ω.
+	 *
+	 * @private
+	 * @static
+	 * @param {ElectricComponent} first - one strip
+	 * @param {ElectricComponent} second - the other strip
+	 * @returns {number} the resistance in Ω
+	 */
+	private static sharedResistance(first: ElectricComponent, second: ElectricComponent): number {
+		const mix = first._connectedMix;
+		if (!mix) return Infinity;
+		const spacing = this.electrodeSpacing(first, second);
+		const area = Math.min(first.activeArea, second.activeArea);
+		return pathResistance(this.conductivity(mix), spacing, area);
+	}
+
+	/**
+	 * Resistance of a cell whose two half-cells a salt bridge joins, in Ω.
+	 *
+	 * The current crosses both electrolytes and the bridge, so the three
+	 * lengths add up. Each vessel contributes the stretch from its strip to the
+	 * bridge leg that dips into it, and the bridge contributes its own tube.
+	 *
+	 * @private
+	 * @static
+	 * @param {ElectricComponent} first - the strip of the first half-cell
+	 * @param {ElectricComponent} second - the strip of the second half-cell
+	 * @param {ElectricComponent} [bridge] - the bridge that joins the vessels
+	 * @returns {number} the resistance in Ω
+	 */
+	private static bridgedResistance(
+		first: ElectricComponent,
+		second: ElectricComponent,
+		bridge?: ElectricComponent
+	): number {
+		const legs = bridge?._bridgeLegs;
+		const firstLeg = legs?.[0];
+		const secondLeg = legs?.[1];
+		const firstX = first._immersion?.x;
+		const secondX = second._immersion?.x;
+		const firstLength = firstLeg === undefined || firstX === undefined ? DEFAULT_ELECTRODE_SPACING
+			: Math.max(MIN_ELECTRODE_SPACING, Math.abs(firstX - firstLeg) / 10);
+		const secondLength = secondLeg === undefined || secondX === undefined ? DEFAULT_ELECTRODE_SPACING
+			: Math.max(MIN_ELECTRODE_SPACING, Math.abs(secondX - secondLeg) / 10);
+		const span = firstLeg === undefined || secondLeg === undefined ? DEFAULT_ELECTRODE_SPACING * 2
+			: Math.max(MIN_ELECTRODE_SPACING, Math.abs(secondLeg - firstLeg) / 10);
+		const firstMix = first._connectedMix;
+		const secondMix = second._connectedMix;
+		if (!firstMix || !secondMix) return Infinity;
+		return pathResistance(this.conductivity(firstMix), firstLength, first.activeArea) +
+			bridgeResistance(span) +
+			pathResistance(this.conductivity(secondMix), secondLength, second.activeArea);
+	}
+
+	/**
+	 * Horizontal distance between two strips, in cm. The canvas measures it in
+	 * mm; a layout the canvas has not measured falls back to a bench spacing.
+	 *
+	 * @private
+	 * @static
+	 * @param {ElectricComponent} first - one strip
+	 * @param {ElectricComponent} second - the other strip
+	 * @returns {number} the distance in cm
+	 */
+	private static electrodeSpacing(first: ElectricComponent, second: ElectricComponent): number {
+		const a = first._immersion?.x;
+		const b = second._immersion?.x;
+		if (a === undefined || b === undefined) return DEFAULT_ELECTRODE_SPACING;
+		return Math.max(MIN_ELECTRODE_SPACING, Math.abs(a - b) / 10);
+	}
+
+	/**
+	 * Conductivity of a vessel's electrolyte, in S/cm.
+	 *
+	 * The free ions of the salt equilibria carry the current, together with the
+	 * protons and hydroxide ions of the water equilibrium. A vessel of pure
+	 * water therefore conducts about a million times worse than one with a
+	 * supporting electrolyte, which is what makes the difference between them
+	 * visible in the cell current.
+	 *
+	 * @private
+	 * @static
+	 * @param {Mixture} mix - the vessel
+	 * @returns {number} the conductivity in S/cm
+	 */
+	private static conductivity(mix: Mixture): number {
+		const view = this.vesselView(mix);
+		const ions: ConductingIon[] = [];
+		for (const [smiles, ion] of view.ions) {
+			ions.push({ smiles, concentration: ion.concentration, charge: ion.molecule._totalCharge });
+		}
+		const kw = AcidBase.kwAt(mix._temperature);
+		ions.push({ smiles: "[H+]", concentration: view.protons, charge: 1 });
+		ions.push({ smiles: "[OH-]", concentration: view.protons > 0 ? kw / view.protons : 0, charge: 1 });
+		// The vessel keeps its temperature in kelvin, the conductivity table in
+		// degrees Celsius.
+		return solutionConductivity(ions, mix._temperature - 273.15);
 	}
 
 	/** Prepares a passive galvanic RC experiment and projects its current onto the meters. */
@@ -2193,8 +2325,8 @@ export abstract class Simulation {
 		if (first.length === 0 || second.length === 0) return unsolved();
 
 		const areas: CellAreas = {
-			first: sElectrode1._area > 0 ? sElectrode1._area : ELECTRODE_AREA,
-			second: sElectrode2._area > 0 ? sElectrode2._area : ELECTRODE_AREA,
+			first: sElectrode1.activeArea,
+			second: sElectrode2.activeArea,
 		};
 		const limits = this.cellLimits(first, second);
 		// The devices between the electrodes form a network, not a single
