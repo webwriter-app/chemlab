@@ -435,6 +435,7 @@ export class ChemLab extends LitElementWw {
 	@state() private accessor fullWidthMode = false;
 	@state() private accessor diagramPanelOpen = false;
 	@state() private accessor diagramPickerOpen = false;
+	@state() private accessor diagramDismissedOpen = false;
 	private diagramPickerListeners?: AbortController;
 	private diagramPickerCloseTimer?: ReturnType<typeof setTimeout>;
 	private readonly diagramMenus = new Set<HTMLElement>();
@@ -3016,6 +3017,7 @@ export class ChemLab extends LitElementWw {
 		this.diagramPickerListeners = undefined;
 		this.diagramMenus.clear();
 		this.diagramPickerOpen = false;
+		this.diagramDismissedOpen = false;
 		this.diagramX = this.diagramY = "";
 	}
 
@@ -3033,6 +3035,7 @@ export class ChemLab extends LitElementWw {
 
 	private selectDiagramSuggestion({ key, title, x, y }: QueuedDiagramSuggestion): void {
 		this.suggestionQueue.remove(key);
+		this.diagramDismissedOpen = false;
 		if (!this.diagrams.hasPair(x, y)) this.createDiagram(x, y, title);
 		this.onDiagramToggle(true);
 		void this.updateComplete.then(() => {
@@ -3150,39 +3153,50 @@ export class ChemLab extends LitElementWw {
 		return suggestDiagrams(channels, titrations, instruments);
 	}
 
+	/** One suggestion as a button that turns it into a diagram. */
+	private renderDiagramSuggestion(suggestion: QueuedDiagramSuggestion) {
+		return html`<sl-button class="diagram-suggestion" size="small" @click=${() => this.selectDiagramSuggestion(suggestion)}>
+			<span class="diagram-suggestion-title">${this.message(suggestion.title)}</span>
+			<span class="diagram-suggestion-axis"><b>Y</b> ${this.diagrams.label(suggestion.y)}</span>
+			<span class="diagram-suggestion-axis"><b>X</b> ${this.diagrams.label(suggestion.x)}</span>
+		</sl-button>`;
+	}
+
 	private renderDiagramBuilder(embedded: boolean, channels: MeasurementChannel[],
 		{ pending, dismissed }: ReturnType<DiagramSuggestionQueue["list"]>) {
 		const selection = this.diagramSelection;
 		const title = this.message(embedded ? "Diagramm hinzufügen" :
 			selection.size && !pending.length && !dismissed.length ? "Achsen wählen" : "Diagrammvorschläge");
 		const dismiss = this.message("Vorschlag ausblenden");
+		const dismissedLabel = this.message("Ausgeblendete Vorschläge");
 		return html`<section class="diagram-builder diagram-surface ${embedded ? "diagram-builder-inline" : "diagram-builder-popup"}"
 			id=${embedded ? "diagramBuilderInline" : "diagramBuilderPopup"} aria-label=${title}>
 			<sl-tag class="diagram-section-tag" size="small" variant="primary">
 				${title}
 			</sl-tag>
 			${dismissed.length ? html`
-				<sl-select class="diagram-axis-select" size="small" hoist contenteditable="false"
-					label=${this.message("Ausgeblendete Vorschläge")} placeholder=${this.message("Diagramm wählen")}
-					.value=${live("")} @sl-show=${this.boundDiagramMenu}
-					@sl-change=${(event: Event) => {
-						const select = event.currentTarget as SlSelect;
-						const suggestion = dismissed.find(({ key }) => encodeURIComponent(key) === select.value);
-						if (suggestion) this.selectDiagramSuggestion(suggestion);
+				<button type="button" class="diagram-dismissed-trigger" aria-expanded=${String(this.diagramDismissedOpen)}
+					aria-controls="diagramDismissedList" aria-label=${dismissedLabel} title=${dismissedLabel}
+					@click=${() => { this.diagramDismissedOpen = !this.diagramDismissedOpen; }}
+					@keydown=${(event: KeyboardEvent) => {
+						if (event.key !== "Escape" || !this.diagramDismissedOpen) return;
+						event.stopPropagation();
+						this.diagramDismissedOpen = false;
 					}}>
-					${repeat(dismissed, ({ key }) => key, ({ key, title, x, y }) => html`
-						<sl-option value=${encodeURIComponent(key)}>${this.message(title)} · ${this.diagrams.label(y)}${
-							x !== TIME_CHANNEL ? ` · ${this.diagrams.label(x)}` : ""}</sl-option>`)}
-				</sl-select>` : nothing}
+					<sl-tag size="small" variant="warning">${dismissedLabel}<svg class="palette-card-menu-indicator"
+						width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+						<path d="m2.5 4.5 3.5 3 3.5-3"/>
+					</svg></sl-tag>
+				</button>
+				${this.diagramDismissedOpen ? html`
+					<div class="diagram-suggestions" id="diagramDismissedList" role="group" aria-label=${dismissedLabel}>
+						${repeat(dismissed, ({ key }) => key, suggestion => this.renderDiagramSuggestion(suggestion))}
+					</div>` : nothing}` : nothing}
 			${pending.length ? html`
 				<div class="diagram-suggestions">
 					${repeat(pending, ({ key }) => key, suggestion => html`
 						<div class="diagram-suggestion-row">
-							<sl-button class="diagram-suggestion" size="small" @click=${() => this.selectDiagramSuggestion(suggestion)}>
-								<span class="diagram-suggestion-title">${this.message(suggestion.title)}</span>
-								<span class="diagram-suggestion-axis"><b>Y</b> ${this.diagrams.label(suggestion.y)}</span>
-								<span class="diagram-suggestion-axis"><b>X</b> ${this.diagrams.label(suggestion.x)}</span>
-							</sl-button>
+							${this.renderDiagramSuggestion(suggestion)}
 							<sl-button class="diagram-control diagram-dismiss" size="small" title=${dismiss} aria-label=${dismiss}
 								@click=${(event: MouseEvent) => {
 									if (event.detail === 0) this.shadowRoot.querySelector<HTMLElement>("#diagramHandle")?.focus({ preventScroll: true });

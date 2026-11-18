@@ -1286,7 +1286,27 @@ export const style = css`
 		justify-self: start;
 		max-inline-size: 100%;
 	}
+	.diagram-dismissed-trigger {
+		justify-self: start;
+		max-inline-size: 100%;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-radius: var(--sl-border-radius-medium);
+		background: transparent;
+		color: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+	.diagram-dismissed-trigger > sl-tag {
+		max-inline-size: 100%;
+		pointer-events: none;
+	}
+	.diagram-dismissed-trigger[aria-expanded="true"] svg {
+		transform: rotate(180deg);
+	}
 	.diagram-section-tag::part(base),
+	.diagram-dismissed-trigger sl-tag::part(base),
 	.diagram-sources sl-tag::part(base) {
 		block-size: auto;
 		min-block-size: 19px;
@@ -1294,9 +1314,13 @@ export const style = css`
 		padding-block: 1px;
 	}
 	.diagram-section-tag::part(content),
+	.diagram-dismissed-trigger sl-tag::part(content),
 	.diagram-sources sl-tag::part(content) {
 		white-space: normal;
 		overflow-wrap: anywhere;
+	}
+	.diagram-dismissed-trigger sl-tag::part(base) {
+		font-size: var(--diagram-axis-font-size);
 	}
 	.diagram-axis-select {
 		--sl-input-height-small: 24px;
