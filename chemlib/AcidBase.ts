@@ -168,7 +168,7 @@ export abstract class AcidBase {
 		let pHlow: number = -2; // [H+] = 100 mol/L, strongly acidic bound
 		let pHhigh: number = 16; // [H+] = 1e-16 mol/L, strongly basic bound
 
-		for (let i = 0; i < 100; i++) {
+		for (let i = 0; i < 100 && pHhigh - pHlow > 1e-12; i++) {
 			const pHmid: number = (pHlow + pHhigh) / 2;
 			const residual: number = AcidBase.chargeResidual(
 				Math.pow(10, -pHmid),

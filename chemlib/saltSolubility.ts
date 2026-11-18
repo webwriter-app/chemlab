@@ -37,6 +37,9 @@ export const saltSolubility: Readonly<Record<string, SaltSolubility>> = {
 	AgI: { ions: ["[Ag+]", "[I-]"], ksp: 8.3e-17, color: 0xd6bd65, solidDensity: 5.68 },
 	BaSO4: { ions: ["[Ba2+]", "[O-]S(=O)(=O)[O-]"], ksp: 1.1e-10, solidDensity: 4.49 },
 	CaSO4: { ions: ["[Ca2+]", "[O-]S(=O)(=O)[O-]"], ksp: 4.9e-5, solidDensity: 2.97 },
+	// Calcium oxalate monohydrate, approximate dilute-solution product at 25 °C.
+	// https://doi.org/10.3390/cryst10100924
+	CaC2O4: { ions: ["[Ca2+]", "[O-]C(=O)C(=O)[O-]"], ksp: 1.7e-9 },
 	CaCO3: { ions: ["[Ca2+]", "[O-]C(=O)[O-]"], ksp: 3.4e-9, solidDensity: 2.71 },
 	BaCO3: { ions: ["[Ba2+]", "[O-]C(=O)[O-]"], ksp: 2.6e-9, solidDensity: 4.29 },
 	Ag2SO4: { ions: ["[Ag+]", "[O-]S(=O)(=O)[O-]", 2, 1], ksp: 1.2e-5 },

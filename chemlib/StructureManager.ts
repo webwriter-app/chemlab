@@ -48,32 +48,45 @@ export abstract class StructureManager {
 		//   conj: conjugate SMILES by deprotonation step; a step can have several
 		//         equivalent SMILES. These species can also enter from a salt.
 		//         A base lists its protonated acid here as step 0.
-		//   alias: alternate SMILES for the same fully protonated acid.
+		//   alias: alternate SMILES for the same stored acid/base form.
+		//   step: stored form's protonation step for an ampholyte.
 		// SMILES are matched as strings, and Molecule.setSmilesString writes the
 		// heavy-atom skeleton in Kekule's own atom order. Every entry therefore
 		// lists the hand-written form and the form the code generates for the
 		// same species, so a stored ion is recognised whichever way it was built.
 		acidbase: {
 			"Cl": { "pks": -6 },
-			"CC(O)=O": { "pks": 4.75 },
+			"CC(O)=O": { "pks": 4.75, "conj": [["CC(=O)[O-]", "CC([O-])=O", "[O-]C(C)=O", "[O-]C(=O)C", "O=C(C)[O-]"]] },
 			"OS(=O)(=O)O": { "alias": "O=S(O)(O)=O" },
 			"O=S(O)(O)=O": { "pks": [-3, 1.99], "conj": [
 				["[O-]S(=O)(=O)O", "[O-]S(=O)(O)=O"], ["[O-]S(=O)(=O)[O-]"],
 			] },
-			"O=CO": { "pks": 3.77 },
-			"CCC(O)=O": { "pks": 4.87 },
-			"O=C(O)C(O)C": { "pks": 3.86 },
-			"O=C(O)C(O)=O": { "pks": [1.25, 4.27] },
+			"O=CO": { "pks": 3.77, "conj": [["[O-]C=O", "O=C[O-]"]] },
+			"CCC(O)=O": { "pks": 4.87, "conj": [["CCC(=O)[O-]", "CCC([O-])=O", "[O-]C(=O)CC"]] },
+			"O=C(O)C(O)C": { "pks": 3.86, "conj": [["CC(O)C(=O)[O-]", "[O-]C(=O)C(O)C", "O=C([O-])C(O)C"]] },
+			"O=C(O)C(O)=O": { "pks": [1.25, 4.27], "conj": [
+				["[O-]C(=O)C(O)=O", "O=C(O)C(=O)[O-]", "O=C(O)C([O-])=O"],
+				["[O-]C(=O)C(=O)[O-]", "[O-]C(=O)C([O-])=O", "O=C([O-])C(=O)[O-]"],
+			] },
 			"O=C(O)CC(O)(C(O)=O)CC(O)=O": { "pks": [3.13, 4.76, 6.40] },
 			"[Na]O": { "pks": -0.56 },
-			"CC(=O)O": { "pks": 4.76 },
+			"CC(=O)O": { "alias": "CC(O)=O" },
 			"C1=CC=C(C=C1)C(=O)O": { "pks": 4.19 },
 			"O=C(O)C(C(=O)O)C(=O)O": { "pks": [3.13, 4.76, 6.40] },
 			"C(C(=O)O)C(=O)O": { "pks": [2.83, 5.69] },
 			"N#CC(=O)O": { "pks": 4.62 },
-			"C(C(=O)O)N": { "pks": 10.70 },
-			"O=C(C)O": { "pks": 4.76 },
-			"NCC(=O)O": { "pks": 9.25 },
+			"C(C(=O)O)N": { "alias": "NCC(O)=O" },
+			"O=C(C)O": { "alias": "CC(O)=O" },
+			"NCC(=O)O": { "alias": "NCC(O)=O" },
+			"[NH3+]CC(=O)[O-]": { "alias": "NCC(O)=O" },
+			"[N+]CC([O-])=O": { "alias": "NCC(O)=O" },
+			// Glycine: glycinium, zwitterion (stored neutral), glycinate.
+			// https://doi.org/10.1002/anie.202014133
+			"NCC(O)=O": { "pks": [2.34, 9.58], "step": 1, "conjOffset": 0, "conj": [
+				["[NH3+]CC(=O)O", "[N+]CC(O)=O", "[N+]CC(=O)O"],
+				[],
+				["NCC(=O)[O-]", "NCC([O-])=O", "[O-]C(=O)CN"],
+			] },
 			"[N+](=O)(O)[O-]": { "pks": -1.3 },
 			"OP(=O)(O)O": { "alias": "O=P(O)(O)O" },
 			"O=P(O)(O)O": { "pks": [2.15, 7.21, 12.35], "conj": [
@@ -87,7 +100,7 @@ export abstract class StructureManager {
 			] },
 			"S": { "pks": [7.0, 12.9], "conj": [["[SH-]", "[S-]"], ["[S-2]", "[S2-]"]] },
 			"OB(O)O": { "alias": "B(O)(O)O" },
-			"B(O)(O)O": { "pks": 9.24 },
+			"B(O)(O)O": { "pks": 9.24, "conj": [["[B-](O)(O)(O)O", "O[B-](O)(O)O"]] },
 			"[K]O": { "pks": -1.1 },
 			"N": { "pks": 9.25, "base": true, "conj": ["[N+]", "[NH4+]"] },
 			// Cation hydrolysis: the aquo complex is a weak acid, so a metal ion
