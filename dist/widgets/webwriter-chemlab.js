@@ -178043,6 +178043,20 @@ var DiagramSuggestionQueue = class {
     const suggestion = this.suggestions.get(key);
     if (suggestion) suggestion.dismissed = true;
   }
+  /** Drops a suggestion for good, for instance once it became a diagram. */
+  remove(key) {
+    return this.suggestions.delete(key);
+  }
+  /** Drops every suggestion the predicate rejects and reports whether the queue changed. */
+  prune(keep) {
+    let changed = false;
+    for (const [key, suggestion] of this.suggestions) {
+      if (keep(suggestion)) continue;
+      this.suggestions.delete(key);
+      changed = true;
+    }
+    return changed;
+  }
   list(available) {
     const pending = [];
     const dismissed = [];
@@ -187578,6 +187592,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.canvas.clearSprites();
         this.allChemComponents = [];
         this.allEComponents = [];
+        this.pruneDiagramSuggestions();
         this.avComponentsSprites = [];
         this._loadComponents();
       }
@@ -189081,6 +189096,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.measurements.retire([...removedChemical, ...removedElectrical]);
     this.allChemComponents = this.allChemComponents.filter((component) => !labels.has(labelOf(component)));
     this.allEComponents = this.allEComponents.filter((component) => !labels.has(labelOf(component)));
+    this.pruneDiagramSuggestions();
     for (const sprite of [...world.children]) {
       if (!labels.has(sprite.label)) continue;
       this.removeAuthoredComponent(sprite);
@@ -189565,13 +189581,28 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   refreshDiagramPicker() {
     const version4 = this.measurements.history.channelVersion;
-    if (version4 === this.diagramChannelVersion) return;
-    this.diagramChannelVersion = version4;
-    this.collectDiagramSuggestions();
-    if (this.diagramPickerOpen || this.isDiagramPanelOpen || this.suggestionQueue.size) this.requestUpdate();
+    if (version4 !== this.diagramChannelVersion) {
+      this.diagramChannelVersion = version4;
+      this.collectDiagramSuggestions();
+    }
+    const pruned = this.pruneDiagramSuggestions();
+    if (pruned || this.diagramPickerOpen || this.isDiagramPanelOpen || this.suggestionQueue.size) this.requestUpdate();
   }
   collectDiagramSuggestions() {
     if (this.simulation.hasRunningExperiments && this.suggestionQueue.collect(this.diagramSuggestions(this.measurements.history.channels))) this.requestUpdate();
+  }
+  /** The objects that are on the canvas right now, keyed like a channel's component. */
+  liveDiagramSources() {
+    return new Set([...this.allChemComponents, ...this.allEComponents].map(({ _type, _id }) => `${_type}:${_id}`));
+  }
+  /** Both objects of a suggestion are still on the canvas. */
+  diagramSourcesLive(x4, y5, live) {
+    return live.has(componentKey(y5)) && (x4 === TIME_CHANNEL || live.has(componentKey(x4)));
+  }
+  /** Forgets suggestions whose objects left the canvas, dismissed ones included. */
+  pruneDiagramSuggestions() {
+    const live = this.liveDiagramSources();
+    return this.suggestionQueue.prune(({ x: x4, y: y5 }) => this.diagramSourcesLive(x4, y5, live));
   }
   openDiagramPicker(controls) {
     if (this.isDiagramPanelOpen || this.diagramPickerOpen) return;
@@ -189614,7 +189645,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (!this.isDiagramPanelOpen) this.shadowRoot.querySelector("#diagramHandle")?.focus({ preventScroll: true });
   }
   selectDiagramSuggestion({ key, title, x: x4, y: y5 }) {
-    this.suggestionQueue.dismiss(key);
+    this.suggestionQueue.remove(key);
     if (!this.diagrams.hasPair(x4, y5)) this.createDiagram(x4, y5, title);
     this.onDiagramToggle(true);
     void this.updateComplete.then(() => {
@@ -189771,8 +189802,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   renderDiagramDetails(available, open) {
     const channels = open || this.diagramPickerOpen || this.suggestionQueue.size ? this.measurements.history.channels : [];
-    const channelIds = new Set(channels.map(({ id: id3 }) => id3));
-    const suggestions = this.suggestionQueue.list(({ x: x4, y: y5 }) => channelIds.has(y5.id) && (x4 === TIME_CHANNEL || channelIds.has(x4.id)) && !this.diagrams.hasPair(x4, y5));
+    const live = this.liveDiagramSources();
+    const suggestions = this.suggestionQueue.list(({ x: x4, y: y5 }) => this.diagramSourcesLive(x4, y5, live) && !this.diagrams.hasPair(x4, y5));
     const handleLabel = suggestions.pending.length ? this.message("Diagramme ({count} Vorschl\xE4ge)", { count: suggestions.pending.length }) : this.message("Diagramme");
     return x`
 			<aside id="diagramArea" class="workspace-side">

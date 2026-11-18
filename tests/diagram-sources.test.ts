@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { DiagramSuggestionQueue, selectedDiagramSourceGroups, suggestDiagrams } from "../data/diagramSources";
+import { DiagramSuggestionQueue, componentKey, selectedDiagramSourceGroups, suggestDiagrams,
+	type DiagramSuggestion } from "../data/diagramSources";
 import { MeasurementHistory, TIME_CHANNEL, type MeasurementChannel } from "../data/measurementHistory";
 
 function source(component: string, index: number, quantity: string, group: MeasurementChannel["group"] = "vessel", species?: string): MeasurementChannel {
@@ -61,4 +62,33 @@ test("suggestions accumulate across starts and remain selectable after dismissal
 	assert.deepEqual(list().pending.map(({ y }) => y.id), [amps.id]);
 	assert.deepEqual(list().dismissed.map(({ y }) => y.id), [pH.id]);
 	assert.deepEqual(queue.list(({ y }) => y.id !== pH.id).dismissed, []);
+});
+
+test("a selected suggestion leaves the queue for good", () => {
+	const queue = new DiagramSuggestionQueue();
+	queue.collect([{ title: "Titration", x: delivery, y: pH }, { title: "Stromkreis", x: TIME_CHANNEL, y: amps }]);
+	const [titration, circuit] = queue.list(() => true).pending;
+	queue.dismiss(circuit.key);
+	assert.equal(queue.remove(titration.key), true);
+	assert.equal(queue.remove(titration.key), false);
+	assert.deepEqual(queue.list(() => true).dismissed.map(({ y }) => y.id), [amps.id]);
+});
+
+test("a removed object clears its suggestions, dismissed ones included", () => {
+	const queue = new DiagramSuggestionQueue();
+	queue.collect([{ title: "Titration", x: delivery, y: pH }, { title: "Stromkreis", x: TIME_CHANNEL, y: amps }]);
+	const [, circuit] = queue.list(() => true).pending;
+	queue.dismiss(circuit.key);
+	const keep = (...live: string[]) => {
+		const sources = new Set(live);
+		return ({ x, y }: DiagramSuggestion) =>
+			sources.has(componentKey(y)) && (x === TIME_CHANNEL || sources.has(componentKey(x)));
+	};
+	assert.equal(queue.prune(keep("burette:2", "beaker:0", "multimeter:3")), false);
+	// One removed object is enough: the burette takes the titration with it.
+	assert.equal(queue.prune(keep("beaker:0", "multimeter:3")), true);
+	assert.deepEqual(queue.list(() => true).pending, []);
+	// The dismissed circuit goes with its meter.
+	assert.equal(queue.prune(keep("beaker:0")), true);
+	assert.equal(queue.size, 0);
 });

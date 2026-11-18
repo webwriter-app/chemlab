@@ -31,6 +31,22 @@ export class DiagramSuggestionQueue {
 		if (suggestion) suggestion.dismissed = true;
 	}
 
+	/** Drops a suggestion for good, for instance once it became a diagram. */
+	remove(key: string): boolean {
+		return this.suggestions.delete(key);
+	}
+
+	/** Drops every suggestion the predicate rejects and reports whether the queue changed. */
+	prune(keep: (suggestion: DiagramSuggestion) => boolean): boolean {
+		let changed = false;
+		for (const [key, suggestion] of this.suggestions) {
+			if (keep(suggestion)) continue;
+			this.suggestions.delete(key);
+			changed = true;
+		}
+		return changed;
+	}
+
 	list(available: (suggestion: DiagramSuggestion) => boolean) {
 		const pending: QueuedDiagramSuggestion[] = [];
 		const dismissed: QueuedDiagramSuggestion[] = [];

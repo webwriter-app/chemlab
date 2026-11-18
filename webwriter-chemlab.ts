@@ -53,7 +53,7 @@ import { pHColors as phColorScale, pHTextColor } from "./data/phColors";
 import { defaultMolecules, defaultMixtures } from "./data/presets";
 import { sendXApiStatement } from "./services/xapi";
 import { DiagramController } from "./controllers/DiagramController";
-import { axisId, DiagramSuggestionQueue, selectedDiagramSourceGroups, suggestDiagrams,
+import { axisId, componentKey, DiagramSuggestionQueue, selectedDiagramSourceGroups, suggestDiagrams,
 	type DiagramAxis, type InstrumentSuggestion, type QueuedDiagramSuggestion } from "./data/diagramSources";
 import { TIME_CHANNEL, type MeasurementChannel } from "./data/measurementHistory";
 import { MeasurementRecorder } from "./controllers/MeasurementRecorder";
@@ -706,6 +706,7 @@ export class ChemLab extends LitElementWw {
 				this.canvas.clearSprites();
 				this.allChemComponents = [];
 				this.allEComponents = [];
+				this.pruneDiagramSuggestions();
 
 				this.avComponentsSprites = [];
 				this._loadComponents();
@@ -2384,6 +2385,7 @@ export class ChemLab extends LitElementWw {
 		this.measurements.retire([...removedChemical, ...removedElectrical]);
 		this.allChemComponents = this.allChemComponents.filter((component) => !labels.has(labelOf(component)));
 		this.allEComponents = this.allEComponents.filter((component) => !labels.has(labelOf(component)));
+		this.pruneDiagramSuggestions();
 		for (const sprite of [...world.children]) {
 			if (!labels.has(sprite.label)) continue;
 			this.removeAuthoredComponent(sprite);
@@ -2932,15 +2934,34 @@ export class ChemLab extends LitElementWw {
 
 	refreshDiagramPicker(): void {
 		const version = this.measurements.history.channelVersion;
-		if (version === this.diagramChannelVersion) return;
-		this.diagramChannelVersion = version;
-		this.collectDiagramSuggestions();
-		if (this.diagramPickerOpen || this.isDiagramPanelOpen || this.suggestionQueue.size) this.requestUpdate();
+		if (version !== this.diagramChannelVersion) {
+			this.diagramChannelVersion = version;
+			this.collectDiagramSuggestions();
+		}
+		const pruned = this.pruneDiagramSuggestions();
+		if (pruned || this.diagramPickerOpen || this.isDiagramPanelOpen || this.suggestionQueue.size) this.requestUpdate();
 	}
 
 	collectDiagramSuggestions(): void {
 		if (this.simulation.hasRunningExperiments &&
 			this.suggestionQueue.collect(this.diagramSuggestions(this.measurements.history.channels))) this.requestUpdate();
+	}
+
+	/** The objects that are on the canvas right now, keyed like a channel's component. */
+	private liveDiagramSources(): Set<string> {
+		return new Set([...this.allChemComponents, ...this.allEComponents]
+			.map(({ _type, _id }) => `${_type}:${_id}`));
+	}
+
+	/** Both objects of a suggestion are still on the canvas. */
+	private diagramSourcesLive(x: DiagramAxis, y: MeasurementChannel, live: ReadonlySet<string>): boolean {
+		return live.has(componentKey(y)) && (x === TIME_CHANNEL || live.has(componentKey(x)));
+	}
+
+	/** Forgets suggestions whose objects left the canvas, dismissed ones included. */
+	private pruneDiagramSuggestions(): boolean {
+		const live = this.liveDiagramSources();
+		return this.suggestionQueue.prune(({ x, y }) => this.diagramSourcesLive(x, y, live));
 	}
 
 	private openDiagramPicker(controls: HTMLElement): void {
@@ -2988,7 +3009,7 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private selectDiagramSuggestion({ key, title, x, y }: QueuedDiagramSuggestion): void {
-		this.suggestionQueue.dismiss(key);
+		this.suggestionQueue.remove(key);
 		if (!this.diagrams.hasPair(x, y)) this.createDiagram(x, y, title);
 		this.onDiagramToggle(true);
 		void this.updateComplete.then(() => {
@@ -3158,9 +3179,9 @@ export class ChemLab extends LitElementWw {
 
 	private renderDiagramDetails(available: boolean, open: boolean) {
 		const channels = open || this.diagramPickerOpen || this.suggestionQueue.size ? this.measurements.history.channels : [];
-		const channelIds = new Set(channels.map(({ id }) => id));
+		const live = this.liveDiagramSources();
 		const suggestions = this.suggestionQueue.list(({ x, y }) =>
-			channelIds.has(y.id) && (x === TIME_CHANNEL || channelIds.has(x.id)) && !this.diagrams.hasPair(x, y));
+			this.diagramSourcesLive(x, y, live) && !this.diagrams.hasPair(x, y));
 		const handleLabel = suggestions.pending.length
 			? this.message("Diagramme ({count} Vorschläge)", { count: suggestions.pending.length }) : this.message("Diagramme");
 		return html`
