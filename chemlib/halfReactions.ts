@@ -87,6 +87,93 @@ export const GAS_PARTIAL_PRESSURE = 1;
  */
 export const MASS_TRANSFER_COEFFICIENT = 5e-3;
 
+/**
+ * Bulk volume of the metal of one electrode strip, in litres: the 15 × 75 mm
+ * face of the standard strip at 1 mm thickness. A strip is a finite piece of
+ * metal, so a cell that keeps dissolving it runs out instead of drawing on an
+ * endless supply, and plating its own metal back onto it builds the strip up
+ * again.
+ */
+export const ELECTRODE_BODY_LITRES = 1.125e-3;
+
+/**
+ * The pH window in which a metal covers itself with an oxide film that blocks
+ * its own metal/metal-ion couple. Outside the window the film dissolves or
+ * never forms, and the bare couple decides the potential again.
+ *
+ * @export
+ * @interface Passivation
+ */
+export interface Passivation {
+	/** Lowest pH at which the film holds. */
+	from: number;
+	/** Highest pH at which the film holds. */
+	to: number;
+}
+
+/**
+ * Metals that passivate, keyed by the element name the half-reaction table
+ * uses for electrode materials. Aluminium is amphoteric and loses its film in
+ * acid as well as in strong alkali; chromium and nickel hold theirs over a
+ * wide window, which is what makes them usable as inert anodes.
+ *
+ * @export
+ * @type {Record<string, Passivation>}
+ */
+export const passivatingMetals: Record<string, Passivation> = {
+	aluminium: { from: 4, to: 9 },
+	chromium: { from: 2, to: 12 },
+	nickel: { from: 5, to: 12 },
+};
+
+/**
+ * The passivation window of an electrode material, or undefined for a metal
+ * that does not passivate.
+ *
+ * @export
+ * @param {(string | undefined)} material - element name of the electrode
+ * @returns {(Passivation | undefined)}
+ */
+export function passivationOf(material: string | undefined): Passivation | undefined {
+	return material === undefined ? undefined : passivatingMetals[material];
+}
+
+/**
+ * Whether a material is covered by its oxide film at `pH`, so its own
+ * metal/metal-ion couple is blocked and only the couples of the solution run
+ * on it.
+ *
+ * @export
+ * @param {(string | undefined)} material - element name of the electrode
+ * @param {number} pH - pH of the vessel it dips into
+ * @returns {boolean}
+ */
+export function isPassive(material: string | undefined, pH: number): boolean {
+	const window = passivationOf(material);
+	return window !== undefined && pH >= window.from && pH <= window.to;
+}
+
+/**
+ * Metals that reduce water on contact, so a deposit of them cannot survive in
+ * an aqueous solution. Keyed by element symbol, because the deposit is read
+ * from the SMILES of the reduced term of a half-reaction.
+ *
+ * @export
+ * @type {string[]}
+ */
+export const waterReactiveSymbols = ["Li", "K", "Cs", "Ba", "Ca", "Na"];
+
+/**
+ * Whether a metal reduces water on contact.
+ *
+ * @export
+ * @param {(string | undefined)} symbol - element symbol
+ * @returns {boolean}
+ */
+export function reactsWithWater(symbol: string | undefined): boolean {
+	return symbol !== undefined && waterReactiveSymbols.includes(symbol);
+}
+
 /** A metal/metal-ion couple: the body dissolves into its own cation. */
 function metalCouple(
 	id: string,

@@ -110741,6 +110741,23 @@ var ELECTRODE_AREA = 4.5;
 var OPEN_CIRCUIT_RESISTANCE = 1e5;
 var GAS_PARTIAL_PRESSURE = 1;
 var MASS_TRANSFER_COEFFICIENT = 5e-3;
+var ELECTRODE_BODY_LITRES = 1125e-6;
+var passivatingMetals = {
+  aluminium: { from: 4, to: 9 },
+  chromium: { from: 2, to: 12 },
+  nickel: { from: 5, to: 12 }
+};
+function passivationOf(material) {
+  return material === void 0 ? void 0 : passivatingMetals[material];
+}
+function isPassive(material, pH) {
+  const window2 = passivationOf(material);
+  return window2 !== void 0 && pH >= window2.from && pH <= window2.to;
+}
+var waterReactiveSymbols = ["Li", "K", "Cs", "Ba", "Ca", "Na"];
+function reactsWithWater(symbol) {
+  return symbol !== void 0 && waterReactiveSymbols.includes(symbol);
+}
 function metalCouple(id3, metal, ion2, el, sep, density2, etaRef, b5) {
   return {
     id: id3,
@@ -111027,6 +111044,16 @@ var ElectricComponent = class {
    * @type {number}
    */
   _tubeBaseline = 0;
+  /**
+   * for electrodes: the strip's own metal, in mol. A strip is a finite piece
+   * of metal, so the amount is counted down as it dissolves and back up as
+   * its own cation is deposited on it. `null` until a reaction first reads
+   * it, because the amount follows from the material's molar mass and
+   * density rather than from the layout.
+   *
+   * @type {(number | null)}
+   */
+  _bodyMol = null;
   /**
    * The area of an electrode that actually carries current, in cm². An
    * authored value wins, otherwise the wetted area the canvas measured
@@ -150844,11 +150871,16 @@ var Simulation = class {
     const candidates = [];
     const material = electrode._material;
     const volume = view.mix._solutionVolume;
-    const platings = electrode.platings;
+    const top = electrode.plating;
+    const surface = top?.molecule ?? material;
+    const surfaceName = materialName(surface);
+    const surfaceSmiles = surface?.smilesString;
     const solidAmount = (smiles) => {
-      if (material !== void 0 && material.smilesString === smiles) return Infinity;
-      const plating = platings.find((item) => item.molecule.smilesString === smiles);
-      return plating ? plating.mol : 0;
+      if (material !== void 0 && material.smilesString === smiles) {
+        if (top && top.molecule.smilesString !== smiles) return 0;
+        return this.bodyAmount(electrode) + (top ? top.mol : 0);
+      }
+      return top && top.molecule.smilesString === smiles ? top.mol : 0;
     };
     const gasAmount = (reaction) => {
       if (!reaction.gas) return 0;
@@ -150882,7 +150914,8 @@ var Simulation = class {
       const concentration = transferConcentration(term, reaction) / 1e3;
       return Number.isFinite(concentration) ? reaction.el * this._faradayConst * MASS_TRANSFER_COEFFICIENT * concentration / coefficient : Infinity;
     };
-    for (const reaction of halfReactionsOn(materialName(material))) {
+    for (const reaction of halfReactionsOn(surfaceName)) {
+      if (isPassive(surfaceName, -Math.log10(view.protons)) && reaction.terms.some((term) => term.phase === "solid" && term.coefficient < 0 && term.smiles === surfaceSmiles)) continue;
       const equilibrium = this.halfReactionPotential(reaction, view);
       if (!Number.isFinite(equilibrium)) continue;
       let canOxidise = true;
@@ -150941,9 +150974,11 @@ var Simulation = class {
     const volume = mix._solutionVolume;
     const extent = electronMol / reaction.el;
     const material = electrode._material;
+    const waterReactive = extent < 0 && reaction.terms.some((term) => term.phase === "solid" && term.coefficient < 0 && reactsWithWater(atomSymbol(term.smiles)) && !(material !== void 0 && material.smilesString === term.smiles));
     for (const term of reaction.terms) {
       const delta = term.coefficient * extent;
       if (!(Math.abs(delta) > 0)) continue;
+      if (waterReactive && term.phase === "solution") continue;
       const gas = gasForSmiles(term.smiles);
       if (gas) {
         if (!reaction.gas) continue;
@@ -150962,10 +150997,24 @@ var Simulation = class {
         continue;
       }
       if (term.phase === "solid") {
+        if (waterReactive) {
+          mix.admitGas("H2", delta / 2, evolvedGases.H2.solubility);
+          mix.excessCharge += delta;
+          continue;
+        }
         if (material !== void 0 && material.smilesString === term.smiles) {
           if (delta < 0) {
+            const own = electrode.platings.find((item) => item.molecule.smilesString === term.smiles);
+            const fromLayer = own ? Math.min(own.mol, -delta) : 0;
+            if (fromLayer > 0) electrode.unplate(own.molecule, fromLayer);
+            const fromBody = -delta - fromLayer;
+            if (fromBody > 0) {
+              electrode._bodyMol = Math.max(0, this.bodyAmount(electrode) - fromBody);
+            }
             mix.addedVolume = Math.max(0, mix.addedVolume + this.metalBulkLitresPerMol(material, reaction) * delta);
+            continue;
           }
+          electrode.plate(material, delta, this.metalBulkLitresPerMol(material, reaction));
           continue;
         }
         const plating = electrode.platings.find((item) => item.molecule.smilesString === term.smiles);
@@ -152191,6 +152240,29 @@ var Simulation = class {
   /** Bulk volume of one mole of a solid metal in litres. */
   static metalBulkLitresPerMol(molecule2, { density: density2 }) {
     return density2 > 0 ? molecule2.getTotMolMass() / (density2 * 1e3) : 0;
+  }
+  /**
+   * Amount of metal the strip of an electrode still holds, in mol. The strip
+   * is a finite piece of metal of {@link ELECTRODE_BODY_LITRES}, so its
+   * inventory follows from the molar mass and the density of its material
+   * and is counted down as the cell dissolves it. A material without a
+   * metal/metal-ion couple, and a reference electrode without a material,
+   * hold nothing and are not consumed.
+   *
+   * @private
+   * @static
+   * @param {ElectricComponent} electrode - the electrode
+   * @returns {number} the amount in mol
+   */
+  static bodyAmount(electrode) {
+    const material = electrode._material;
+    if (material === void 0) return 0;
+    if (electrode._bodyMol === null) {
+      const couple = oxidationOf(material.smilesString);
+      const litresPerMol = couple ? this.metalBulkLitresPerMol(material, couple) : 0;
+      electrode._bodyMol = litresPerMol > 0 ? ELECTRODE_BODY_LITRES / litresPerMol : 0;
+    }
+    return electrode._bodyMol;
   }
   /**
    * Nernst potential of a metal couple in a vessel, read from the stored

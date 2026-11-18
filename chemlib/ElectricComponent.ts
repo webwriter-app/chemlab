@@ -208,6 +208,16 @@ class ElectricComponent {
 	 * @type {number}
 	 */
 	_tubeBaseline = 0;
+	/**
+	 * for electrodes: the strip's own metal, in mol. A strip is a finite piece
+	 * of metal, so the amount is counted down as it dissolves and back up as
+	 * its own cation is deposited on it. `null` until a reaction first reads
+	 * it, because the amount follows from the material's molar mass and
+	 * density rather than from the layout.
+	 *
+	 * @type {(number | null)}
+	 */
+	_bodyMol: number | null = null;
 
 	/**
 	 * The area of an electrode that actually carries current, in cm². An

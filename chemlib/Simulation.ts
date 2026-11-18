@@ -15,6 +15,7 @@ import {
 	OPEN_CIRCUIT_RESISTANCE,
 	GAS_PARTIAL_PRESSURE,
 	MASS_TRANSFER_COEFFICIENT,
+	ELECTRODE_BODY_LITRES,
 	halfReactionsOn,
 	oxidationOf,
 	reductionOf,
@@ -22,6 +23,8 @@ import {
 	currentDensitySlope,
 	materialName,
 	atomSymbol,
+	isPassive,
+	reactsWithWater,
 } from "./halfReactions";
 import { circuitNetwork, circuitThevenin, circuitReadings, type CircuitElement, type CircuitNetwork, type CircuitReading } from "./circuit";
 import { NoIonicPathTransientModel, type NoIonicPathTransientSample } from "./NoIonicPathTransientModel";
@@ -1317,15 +1320,22 @@ export abstract class Simulation {
 		const candidates: HalfCandidate[] = [];
 		const material = electrode._material;
 		const volume = view.mix._solutionVolume;
-		const platings = electrode.platings;
 		// A deposit covers the strip, so it is the surface that reacts: the
 		// plated metal goes back into solution as its cation, and the electrode
 		// body is only attacked once the layer is gone. That is what makes a
-		// plating reversible, as in a rechargeable cell.
+		// plating reversible, as in a rechargeable cell, and what makes a
+		// coating protect the metal underneath it.
+		const top = electrode.plating;
+		const surface = top?.molecule ?? material;
+		const surfaceName = materialName(surface);
+		const surfaceSmiles = surface?.smilesString;
 		const solidAmount = (smiles: string): number => {
-			if (material !== undefined && material.smilesString === smiles) return Infinity;
-			const plating = platings.find((item) => item.molecule.smilesString === smiles);
-			return plating ? plating.mol : 0;
+			if (material !== undefined && material.smilesString === smiles) {
+				// The body is only within reach while nothing else covers it.
+				if (top && top.molecule.smilesString !== smiles) return 0;
+				return this.bodyAmount(electrode) + (top ? top.mol : 0);
+			}
+			return top && top.molecule.smilesString === smiles ? top.mol : 0;
 		};
 		/**
 		 * Amount of a gas species the vessel can give up. Only the dissolved
@@ -1384,7 +1394,15 @@ export abstract class Simulation {
 				? reaction.el * this._faradayConst * MASS_TRANSFER_COEFFICIENT * concentration / coefficient
 				: Infinity;
 		};
-		for (const reaction of halfReactionsOn(materialName(material))) {
+		for (const reaction of halfReactionsOn(surfaceName)) {
+			// A passive film blocks the couple of the metal it covers, so the
+			// strip behaves as an inert conductor and only the couples of the
+			// solution run on it. The film is read from the pH the vessel
+			// already has; solving it again here would cost a bisection per
+			// candidate.
+			if (isPassive(surfaceName, -Math.log10(view.protons)) &&
+				reaction.terms.some((term) =>
+					term.phase === "solid" && term.coefficient < 0 && term.smiles === surfaceSmiles)) continue;
 			const equilibrium = this.halfReactionPotential(reaction, view);
 			if (!Number.isFinite(equilibrium)) continue;
 			let canOxidise = true;
@@ -1449,9 +1467,19 @@ export abstract class Simulation {
 		const volume = mix._solutionVolume;
 		const extent = electronMol / reaction.el;
 		const material = electrode._material;
+		// A metal that reduces water cannot be deposited from an aqueous
+		// solution: the deposit is oxidised again as fast as it forms, so the
+		// electrode only sees hydrogen evolution and hydroxide. The cation is
+		// a catalyst and stays in solution. A strip of such a metal is not a
+		// deposit and keeps its own couple.
+		const waterReactive = extent < 0 && reaction.terms.some((term) =>
+			term.phase === "solid" && term.coefficient < 0 &&
+			reactsWithWater(atomSymbol(term.smiles)) &&
+			!(material !== undefined && material.smilesString === term.smiles));
 		for (const term of reaction.terms) {
 			const delta = term.coefficient * extent;
 			if (!(Math.abs(delta) > 0)) continue;
+			if (waterReactive && term.phase === "solution") continue;
 			// A halogen is a gas species whatever phase it separates in, so it
 			// is booked before the solid branch can mistake it for a deposit.
 			const gas = gasForSmiles(term.smiles);
@@ -1477,13 +1505,35 @@ export abstract class Simulation {
 				continue;
 			}
 			if (term.phase === "solid") {
+				if (waterReactive) {
+					// The deposit is destroyed by the solvent as it forms,
+					// `Na + H₂O → Na⁺ + OH⁻ + ½ H₂`, with the cation left in
+					// solution by the skip above.
+					mix.admitGas("H2", delta / 2, evolvedGases.H2.solubility);
+					mix.excessCharge += delta;
+					continue;
+				}
 				if (material !== undefined && material.smilesString === term.smiles) {
-					// The electrode body itself: it is not tracked as an amount,
-					// so only the volume it frees is booked.
 					if (delta < 0) {
+						// The strip dissolves. Its own metal may sit on top of
+						// it as a deposit, and that layer goes first; only what
+						// is left over thins the body itself.
+						const own = electrode.platings.find((item) =>
+							item.molecule.smilesString === term.smiles);
+						const fromLayer = own ? Math.min(own.mol, -delta) : 0;
+						if (fromLayer > 0) electrode.unplate(own.molecule, fromLayer);
+						const fromBody = -delta - fromLayer;
+						if (fromBody > 0) {
+							electrode._bodyMol = Math.max(0, this.bodyAmount(electrode) - fromBody);
+						}
 						mix.addedVolume = Math.max(0, mix.addedVolume +
 							this.metalBulkLitresPerMol(material, reaction) * delta);
+						continue;
 					}
+					// Its own cation is deposited on the strip, which builds
+					// the body up again. It is booked as a layer so the coating
+					// shows and so the next dissolution takes it first.
+					electrode.plate(material, delta, this.metalBulkLitresPerMol(material, reaction));
 					continue;
 				}
 				const plating = electrode.platings.find((item) => item.molecule.smilesString === term.smiles);
@@ -2983,6 +3033,30 @@ export abstract class Simulation {
 		{ density }: { density?: number }
 	): number {
 		return density > 0 ? molecule.getTotMolMass() / (density * 1000) : 0;
+	}
+
+	/**
+	 * Amount of metal the strip of an electrode still holds, in mol. The strip
+	 * is a finite piece of metal of {@link ELECTRODE_BODY_LITRES}, so its
+	 * inventory follows from the molar mass and the density of its material
+	 * and is counted down as the cell dissolves it. A material without a
+	 * metal/metal-ion couple, and a reference electrode without a material,
+	 * hold nothing and are not consumed.
+	 *
+	 * @private
+	 * @static
+	 * @param {ElectricComponent} electrode - the electrode
+	 * @returns {number} the amount in mol
+	 */
+	private static bodyAmount(electrode: ElectricComponent): number {
+		const material = electrode._material;
+		if (material === undefined) return 0;
+		if (electrode._bodyMol === null) {
+			const couple = oxidationOf(material.smilesString);
+			const litresPerMol = couple ? this.metalBulkLitresPerMol(material, couple) : 0;
+			electrode._bodyMol = litresPerMol > 0 ? ELECTRODE_BODY_LITRES / litresPerMol : 0;
+		}
+		return electrode._bodyMol;
 	}
 
 	/**
