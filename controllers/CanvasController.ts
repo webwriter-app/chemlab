@@ -1401,8 +1401,11 @@ export class CanvasController implements ReactiveController {
 				// The tube collects what bubbles into it, so a vessel that
 				// already lost gas before the tube was put in place starts
 				// the scale at that tally instead of at zero.
-				if (mix !== eComp._connectedMix) eComp._tubeBaseline = mix?.evolvedGasMol ?? 0;
-				eComp._connectedMix = mix;
+				if (mix !== eComp._connectedMix) {
+					eComp._tubeBaseline = mix?.evolvedGasMol ?? 0;
+					eComp._connectedMix = mix;
+					this.host.measurements.record([], [eComp]);
+				}
 				return;
 			}
 			case chemlib.EComponentType.Bridge: {

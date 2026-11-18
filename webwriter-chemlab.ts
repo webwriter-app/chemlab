@@ -56,6 +56,7 @@ import { pHColors as phColorScale, pHTextColor } from "./data/phColors";
 import { defaultMolecules, defaultMixtures } from "./data/presets";
 import { sendXApiStatement } from "./services/xapi";
 import { DiagramController } from "./controllers/DiagramController";
+import { MeasurementRecorder } from "./controllers/MeasurementRecorder";
 import { SimulationController } from "./controllers/SimulationController";
 import { componentGraphic, componentVariant, componentVariants, type ComponentVariant, type PaletteComponent } from "./data/componentGraphics";
 import { renderComponentPaletteIcon } from "./data/componentPaletteIcons";
@@ -361,6 +362,7 @@ export class ChemLab extends LitElementWw {
 	 *
 	 * @type {DiagramController}
 	 */
+	readonly measurements = new MeasurementRecorder(this);
 	diagrams = new DiagramController(this);
 	/**
 	 * controller owning the PixiJS ticker system (loop + registered functions)
@@ -698,6 +700,7 @@ export class ChemLab extends LitElementWw {
 				this.curr_name = "";
 				this.curr_stage_index = -1;
 
+				this.measurements.retire([...this.allChemComponents, ...this.allEComponents]);
 				this.canvas.clearSprites();
 				this.allChemComponents = [];
 				this.allEComponents = [];
@@ -950,7 +953,9 @@ export class ChemLab extends LitElementWw {
 			});
 			if (typeof destObj != "undefined") {
 				if (source._content._activeMolecules.length > 0) {
-					source.transferContents({}, destObj);
+					const transferredMl = source.transferContents({}, destObj) * 1000;
+					if (!(transferredMl > 0)) return;
+					this.measurements.record([source, destObj], [], { source, volume: transferredMl });
 					this.canvas.markVesselChanged(source);
 					this.canvas.markVesselChanged(destObj);
 					if (this.curr_obj === source || this.curr_obj === destObj) this._updatePopup();
@@ -976,17 +981,9 @@ export class ChemLab extends LitElementWw {
 				first, second, devices, { ionicResistance }
 			);
 
-			for (const vessel of this.allChemComponents) {
-				if (vessel._content === firstMix || vessel._content === secondMix) this.canvas.markVesselChanged(vessel);
-			}
-			// A gas collection tube shows what has bubbled out of its vessel,
-			// so it needs a redraw whenever that vessel reacted.
-			for (const device of this.allEComponents) {
-				if (device._type === chemlib.EComponentType.GasCollector &&
-					(device._connectedMix === firstMix || device._connectedMix === secondMix)) {
-					this.canvas.refreshDeviceDisplay(device);
-				}
-			}
+			const vessels = this.allChemComponents.filter(vessel => vessel._content === firstMix || vessel._content === secondMix);
+			this.measurements.record(vessels, circuitComps);
+			for (const vessel of vessels) this.canvas.markVesselChanged(vessel);
 			if (circuitComps.includes(this.curr_obj) ||
 				this.curr_obj?._content === firstMix || this.curr_obj?._content === secondMix) this._updatePopup();
 			// The electrodes carry the deposit, so their views need a redraw too.
@@ -999,6 +996,7 @@ export class ChemLab extends LitElementWw {
 		const network = this.meterCircuit(source);
 		if (network) {
 			chemlib.Simulation.sCircuit(network);
+			this.measurements.record([], network);
 			for (const device of network) this.canvas.refreshDeviceDisplay(device);
 			if (network.includes(this.curr_obj)) this._updatePopup();
 		}
@@ -1072,6 +1070,7 @@ export class ChemLab extends LitElementWw {
 						device._cellCurrent = null;
 						this.canvas.refreshDeviceDisplay(device);
 					}
+					this.measurements.record([], active.devices);
 				}
 				active = undefined;
 				this.rcReadouts.delete(meter);
@@ -1095,6 +1094,7 @@ export class ChemLab extends LitElementWw {
 			if (!active.settled) {
 				const sample = active.model.at(active.elapsed);
 				active.readMeters(sample);
+				this.measurements.record([], active.devices);
 				active.settled = sample.current === 0 || active.elapsed / active.model.timeConstant >= 40;
 				this.rcReadouts.set(meter, {
 					sample, timeConstant: active.model.timeConstant, cutoffAt: active.cutoffAt,
@@ -1188,6 +1188,7 @@ export class ChemLab extends LitElementWw {
 			device._visibleCurrent = null;
 			this.canvas.refreshDeviceDisplay(device);
 		}
+		this.measurements.record([], devices);
 	}
 
 	get canAuthor(): boolean {
@@ -1400,7 +1401,10 @@ export class ChemLab extends LitElementWw {
 			}
 			const sprite = this.canvas.addComponentView(component);
 			sprite.position.copyFrom(position);
-			if (component instanceof chemlib.ElectricComponent) this.canvas.attachDevice(component, sprite);
+			if (component instanceof chemlib.ElectricComponent) {
+				this.canvas.attachDevice(component, sprite);
+				this.measurements.record([], [component]);
+			} else this.measurements.record([component]);
 			return true;
 		}
 		const entry = {
@@ -1512,6 +1516,7 @@ export class ChemLab extends LitElementWw {
 		const volumeMl = requestedMl * fraction;
 		if (volumeMl <= 1e-8) return 0;
 		target.addContents({ nMix: fraction === 1 ? portion : dose(volumeMl) });
+		this.measurements.record([target]);
 		this.canvas.markVesselChanged(target, hint);
 		return volumeMl;
 	}
@@ -1603,6 +1608,7 @@ export class ChemLab extends LitElementWw {
 	private transferMeasuredVolume(source: chemlib.ChemComponent, target: chemlib.ChemComponent, amount: number): number {
 		const result = source.transferContents({ tVolume: amount / 1000 }, target) * 1000;
 		if (result > 0) {
+			this.measurements.record([source, target], [], { source, volume: result });
 			this.canvas.markVesselChanged(source, "pour");
 			this.canvas.markVesselChanged(target, "pour");
 		}
@@ -2415,6 +2421,7 @@ export class ChemLab extends LitElementWw {
 				from: this.itemName(electrode._type), to: this.itemName(vessel._type),
 			}), "warning", 1500);
 		}
+		this.measurements.retire([...removedChemical, ...removedElectrical]);
 		this.allChemComponents = this.allChemComponents.filter((component) => !labels.has(labelOf(component)));
 		this.allEComponents = this.allEComponents.filter((component) => !labels.has(labelOf(component)));
 		for (const sprite of [...world.children]) {
@@ -2442,6 +2449,7 @@ export class ChemLab extends LitElementWw {
 			this.operatingCircuit(component)) return;
 		if (component._type === Voltmeter || component._type === Multimeter) component._visibleVoltage = null;
 		component._visibleCurrent = null;
+		this.measurements.record([], [component]);
 		const label = `${component._type}:${component._id}`;
 		const ticker = "echem" + label;
 		if (!this.simulation.hasTask(ticker)) return;
@@ -2657,7 +2665,11 @@ export class ChemLab extends LitElementWw {
 			(a, b) => !chemlib.alreadyWired(a, b) &&
 				this.connectElectrical(a, b, undefined, undefined, false)
 		);
-		if (entry === undefined) this.canvas.attachDevices();
+		this.canvas.attachDevices();
+		const added = entry && this.allChemComponents.find(component => component._id === entry["id"] && component._type === entry["type"]);
+		const device = entry && this.allEComponents.find(component => component._id === entry["id"] && component._type === entry["type"]);
+		this.measurements.record(entry ? added ? [added] : [] : this.allChemComponents,
+			entry ? device ? [device] : [] : this.allEComponents);
 	}
 
 
@@ -3612,6 +3624,7 @@ export class ChemLab extends LitElementWw {
 		for (const device of this.allEComponents) {
 			if (device._connectedMix === previous) device._connectedMix = vessel._content;
 		}
+		this.measurements.record([vessel]);
 		this.canvas.markVesselChanged(vessel);
 		this.saveSelectedComponent({ content: "", vol: 0, doses: [] });
 		this._updatePopup();

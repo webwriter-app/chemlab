@@ -177254,6 +177254,297 @@ var DiagramController = class {
   }
 };
 
+// data/measurementHistory.ts
+var TIME_CHANNEL = "time";
+var RETENTION_MS = 3e5;
+var ARCHIVE_WINDOW_MS = 1e3;
+var MeasurementHistory = class {
+  constructor(epoch = performance.now()) {
+    this.epoch = epoch;
+  }
+  series = /* @__PURE__ */ new Map();
+  pairs = /* @__PURE__ */ new Map();
+  archivedUntil = 0;
+  latestTime = 0;
+  now() {
+    return Math.max(this.latestTime, performance.now() - this.epoch);
+  }
+  get channels() {
+    return [...this.series.values()].map(({ channel }) => channel);
+  }
+  record(channel, value, time, changesOnly = false) {
+    time = Math.max(this.latestTime, time);
+    this.latestTime = time;
+    let series = this.series.get(channel.id);
+    if (!series) {
+      series = { channel, samples: [], current: true };
+      this.series.set(channel.id, series);
+    }
+    if (value !== null && !Number.isFinite(value)) value = null;
+    const last = series.samples[series.samples.length - 1];
+    if (last?.time === time) {
+      if (last.value === value) return false;
+      last.value = value;
+    } else {
+      if ((changesOnly || value === null) && last?.value === value) return false;
+      series.samples.push({ time, value });
+    }
+    return true;
+  }
+  retire(prefix, time) {
+    for (const series of this.series.values()) {
+      if (!series.channel.id.startsWith(prefix)) continue;
+      this.record(series.channel, null, time);
+      series.current = false;
+    }
+  }
+  retain(x4, y5) {
+    const key = this.pairKey(x4, y5);
+    const pair = this.pairs.get(key);
+    if (pair) pair.references++;
+    else this.pairs.set(key, { x: x4, y: y5, references: 1, archive: [] });
+  }
+  release(x4, y5) {
+    const key = this.pairKey(x4, y5);
+    const pair = this.pairs.get(key);
+    if (pair && --pair.references === 0) this.pairs.delete(key);
+  }
+  pairKey(x4, y5) {
+    return JSON.stringify([x4, y5].sort());
+  }
+  /** Recent samples have full resolution. Older referenced pairs are compacted together. */
+  prune(now = this.now()) {
+    const cutoff = Math.floor((now - RETENTION_MS) / ARCHIVE_WINDOW_MS) * ARCHIVE_WINDOW_MS;
+    if (cutoff <= this.archivedUntil) return false;
+    let changed = false;
+    for (const pair of this.pairs.values()) {
+      const points = this.join(pair.x, pair.y, this.archivedUntil, cutoff);
+      let start = 0;
+      while (start < points.length) {
+        const endTime = (Math.floor(points[start].time / ARCHIVE_WINDOW_MS) + 1) * ARCHIVE_WINDOW_MS;
+        let end = start + 1;
+        while (end < points.length && points[end].time < endTime) end++;
+        pair.archive.push(...this.compact(points, start, end));
+        start = end;
+      }
+      changed ||= points.length > 0;
+    }
+    for (const [id3, series] of this.series) {
+      const end = lowerBound(series.samples, cutoff);
+      if (!series.current && end === series.samples.length) this.series.delete(id3);
+      else if (end > 1) series.samples.splice(0, end - 1);
+    }
+    this.archivedUntil = cutoff;
+    return changed;
+  }
+  get nextExpiry() {
+    let earliest = Infinity;
+    for (const { samples } of this.series.values()) {
+      const sample2 = samples[lowerBound(samples, this.archivedUntil)];
+      if (sample2) earliest = Math.min(earliest, sample2.time);
+    }
+    return earliest < Infinity ? (Math.floor(earliest / ARCHIVE_WINDOW_MS) + 1) * ARCHIVE_WINDOW_MS + RETENTION_MS : void 0;
+  }
+  points(x4, y5) {
+    const pair = this.pairs.get(this.pairKey(x4, y5));
+    const archive = pair?.x === y5 && x4 !== y5 ? pair.archive.map((point) => ({ time: point.time, x: point.y, y: point.x })) : pair?.archive ?? [];
+    return archive.concat(this.join(x4, y5, this.archivedUntil, Infinity));
+  }
+  join(x4, y5, start, end) {
+    const xSamples = this.series.get(x4)?.samples ?? [];
+    const ySamples = this.series.get(y5)?.samples ?? [];
+    let i11 = lowerBound(xSamples, start);
+    let j4 = lowerBound(ySamples, start);
+    let xValue = xSamples[i11 - 1]?.value;
+    let yValue = ySamples[j4 - 1]?.value;
+    const points = [];
+    while (i11 < xSamples.length || j4 < ySamples.length) {
+      const time = Math.min(xSamples[i11]?.time ?? Infinity, ySamples[j4]?.time ?? Infinity);
+      if (time >= end) break;
+      if (xSamples[i11]?.time === time) xValue = xSamples[i11++].value;
+      if (ySamples[j4]?.time === time) yValue = ySamples[j4++].value;
+      const xReading = x4 === TIME_CHANNEL ? time / 1e3 : xValue;
+      const yReading = y5 === TIME_CHANNEL ? time / 1e3 : yValue;
+      if (xReading !== void 0 && yReading !== void 0) points.push({ time, x: xReading, y: yReading });
+    }
+    return points;
+  }
+  compact(points, start, end) {
+    const keep = /* @__PURE__ */ new Set([start, end - 1]);
+    for (const axis of ["x", "y"]) {
+      let min6 = Infinity;
+      let max6 = -Infinity;
+      let minIndex = start;
+      let maxIndex = start;
+      for (let i11 = start; i11 < end; i11++) {
+        const value = points[i11][axis];
+        if (i11 > start && value === null !== (points[i11 - 1][axis] === null)) {
+          keep.add(i11 - 1);
+          keep.add(i11);
+        }
+        if (value === null) continue;
+        if (value < min6) {
+          min6 = value;
+          minIndex = i11;
+        }
+        if (value > max6) {
+          max6 = value;
+          maxIndex = i11;
+        }
+      }
+      keep.add(minIndex);
+      keep.add(maxIndex);
+    }
+    return [...keep].sort((a7, b5) => a7 - b5).map((index2) => points[index2]);
+  }
+};
+function lowerBound(samples, time) {
+  let lo = 0;
+  let hi = samples.length;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (samples[mid].time < time) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+// controllers/MeasurementRecorder.ts
+var MeasurementRecorder = class {
+  constructor(host) {
+    this.host = host;
+    host.addController(this);
+  }
+  history = new MeasurementHistory();
+  groups = /* @__PURE__ */ new WeakMap();
+  delivery = /* @__PURE__ */ new WeakMap();
+  expiry;
+  onChange;
+  hostConnected() {
+    this.scheduleExpiry();
+  }
+  hostDisconnected() {
+    clearTimeout(this.expiry);
+    this.expiry = void 0;
+  }
+  scheduleExpiry() {
+    if (!this.host.isConnected || this.expiry !== void 0) return;
+    const next = this.history.nextExpiry;
+    if (next === void 0) return;
+    this.expiry = setTimeout(() => {
+      this.expiry = void 0;
+      if (this.history.prune()) this.onChange?.();
+      this.scheduleExpiry();
+    }, Math.max(0, Math.ceil(next - this.history.now())));
+  }
+  prefix(component) {
+    return `${component._type}:${component._id}/`;
+  }
+  channel(component, group, quantity, unit, species, key = "") {
+    return {
+      id: this.prefix(component) + quantity + key,
+      group,
+      component: component._type,
+      number: component._id + 1,
+      quantity,
+      unit,
+      species
+    };
+  }
+  record(vessels = [], instruments = [], delivery) {
+    const time = this.history.now();
+    let changed = false;
+    for (const vessel of vessels) changed = this.recordVessel(vessel, time) || changed;
+    if (delivery && delivery.source._type === "burette") {
+      const total = (this.delivery.get(delivery.source) ?? 0) + delivery.volume;
+      this.delivery.set(delivery.source, total);
+      changed = this.history.record(this.channel(delivery.source, "vessel", "Abgegebenes Volumen", "mL"), total, time, true) || changed;
+    }
+    const mixtures = new Set(vessels.map((vessel) => vessel._content));
+    const meters = new Set(instruments);
+    for (const device of this.host.allEComponents) {
+      if (device._type === "gascollector" /* GasCollector */ && mixtures.has(device._connectedMix)) meters.add(device);
+    }
+    for (const device of meters) changed = this.recordInstrument(device, time) || changed;
+    if (changed) {
+      this.onChange?.();
+      this.scheduleExpiry();
+    }
+  }
+  retire(components) {
+    if (!components.length) return;
+    const time = this.history.now();
+    for (const component of components) this.history.retire(this.prefix(component), time);
+    this.onChange?.();
+    this.scheduleExpiry();
+  }
+  recordVessel(vessel, time) {
+    const mix = vessel._content;
+    const inventory = /* @__PURE__ */ new Map();
+    let mass = 0;
+    const solution = mix._isSolution && mix._solutionVolume > 0;
+    const equilibrium = solution ? Simulation.getPolyproticEquilibrium(mix) : void 0;
+    for (const molecule2 of mix._activeMolecules) {
+      const amount = mix._molProperties[molecule2._id + "n"];
+      mass += mix._molProperties[molecule2._id + "m"] || 0;
+      if (!Number.isFinite(amount) || equilibrium?.analyticalMolecules.has(molecule2)) continue;
+      const phase = molecule2.solidSaltFormula ? "solid" : "bulk";
+      const key = `${phase}/${molecule2.smilesString}`;
+      const previous = inventory.get(key);
+      inventory.set(key, {
+        name: molecule2.name ?? molecule2.smilesString,
+        amount: amount + (previous?.amount ?? 0),
+        concentration: solution && phase !== "solid" ? (amount + (previous?.amount ?? 0)) / mix._solutionVolume : null
+      });
+    }
+    for (const species of equilibrium?.species ?? []) {
+      const key = "equilibrium/" + species.formula;
+      const previous = inventory.get(key);
+      inventory.set(key, {
+        name: species.formula,
+        amount: species.amount + (previous?.amount ?? 0),
+        concentration: species.concentration + (previous?.concentration ?? 0)
+      });
+    }
+    let known = this.groups.get(vessel);
+    if (!known) this.groups.set(vessel, known = /* @__PURE__ */ new Map());
+    for (const [key, { name: name2 }] of inventory) known.set(key, name2);
+    const record = (quantity, value, unit, species, key) => this.history.record(this.channel(vessel, "vessel", quantity, unit, species, key), value, time, true);
+    let changed = record("pH", equilibrium?.pH ?? null);
+    changed = record("Volumen", mix.contentVolume * 1e3, "mL") || changed;
+    changed = record("Masse", mass, "g") || changed;
+    if (vessel._type === "burette") changed = record("Abgegebenes Volumen", this.delivery.get(vessel) ?? 0, "mL") || changed;
+    for (const [key, name2] of known) {
+      const species = inventory.get(key);
+      changed = record("Stoffmenge", species?.amount ?? 0, "mol", name2, key) || changed;
+      changed = record("Konzentration", species ? species.concentration : solution ? 0 : null, "mol/L", name2, key) || changed;
+    }
+    return changed;
+  }
+  recordInstrument(device, time) {
+    const record = (quantity, value, unit, changesOnly = false) => this.history.record(this.channel(device, "instrument", quantity, unit), value, time, changesOnly);
+    switch (device._type) {
+      case "gascollector" /* GasCollector */: {
+        const mix = device._connectedMix;
+        const ml = mix ? Math.max(0, mix.evolvedGasMol - device._tubeBaseline) * molarGasVolume(mix._temperature, mix._pressure) * 1e3 : null;
+        return record("Gesammeltes Gasvolumen", ml, "mL", true);
+      }
+      case "source" /* Source */:
+      case "multimeter" /* Multimeter */: {
+        const voltage = record("Spannung", device._type === "source" /* Source */ || device._meterMode === "voltage" ? device._visibleVoltage : null, "V");
+        const current = record("Stromst\xE4rke", device._type === "source" /* Source */ || device._meterMode === "current" ? device._visibleCurrent : null, "A");
+        return voltage || current;
+      }
+      case "voltmeter" /* Voltmeter */:
+        return record("Spannung", device._visibleVoltage, "V");
+      case "ammeter" /* Ammeter */:
+        return record("Stromst\xE4rke", device._visibleCurrent, "A");
+      default:
+        return false;
+    }
+  }
+};
+
 // controllers/SimulationController.ts
 function isExperimentTask(name2) {
   return name2.startsWith("transfer") || name2.startsWith("echem");
@@ -185490,8 +185781,11 @@ var CanvasController = class _CanvasController {
       }
       case "gascollector" /* GasCollector */: {
         const mix = this.vesselAt(sprite.x, bottom)?.component._content;
-        if (mix !== eComp._connectedMix) eComp._tubeBaseline = mix?.evolvedGasMol ?? 0;
-        eComp._connectedMix = mix;
+        if (mix !== eComp._connectedMix) {
+          eComp._tubeBaseline = mix?.evolvedGasMol ?? 0;
+          eComp._connectedMix = mix;
+          this.host.measurements.record([], [eComp]);
+        }
         return;
       }
       case "bridge" /* Bridge */: {
@@ -185736,6 +186030,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
      *
      * @type {DiagramController}
      */
+    __publicField(this, "measurements", new MeasurementRecorder(this));
     __publicField(this, "diagrams", new DiagramController(this));
     /**
      * controller owning the PixiJS ticker system (loop + registered functions)
@@ -185901,6 +186196,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.curr_obj = null;
         this.curr_name = "";
         this.curr_stage_index = -1;
+        this.measurements.retire([...this.allChemComponents, ...this.allEComponents]);
         this.canvas.clearSprites();
         this.allChemComponents = [];
         this.allEComponents = [];
@@ -186109,7 +186405,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       });
       if (typeof destObj != "undefined") {
         if (source3._content._activeMolecules.length > 0) {
-          source3.transferContents({}, destObj);
+          const transferredMl = source3.transferContents({}, destObj) * 1e3;
+          if (!(transferredMl > 0)) return;
+          this.measurements.record([source3, destObj], [], { source: source3, volume: transferredMl });
           this.canvas.markVesselChanged(source3);
           this.canvas.markVesselChanged(destObj);
           if (this.curr_obj === source3 || this.curr_obj === destObj) this._updatePopup();
@@ -186136,14 +186434,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         devices,
         { ionicResistance }
       );
-      for (const vessel of this.allChemComponents) {
-        if (vessel._content === firstMix || vessel._content === secondMix) this.canvas.markVesselChanged(vessel);
-      }
-      for (const device of this.allEComponents) {
-        if (device._type === "gascollector" /* GasCollector */ && (device._connectedMix === firstMix || device._connectedMix === secondMix)) {
-          this.canvas.refreshDeviceDisplay(device);
-        }
-      }
+      const vessels = this.allChemComponents.filter((vessel) => vessel._content === firstMix || vessel._content === secondMix);
+      this.measurements.record(vessels, circuitComps);
+      for (const vessel of vessels) this.canvas.markVesselChanged(vessel);
       if (circuitComps.includes(this.curr_obj) || this.curr_obj?._content === firstMix || this.curr_obj?._content === secondMix) this._updatePopup();
       for (const device of circuitComps) this.canvas.refreshDeviceDisplay(device);
       this.diagrams.appendEChemPoint(source3, circuitComps);
@@ -186152,6 +186445,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const network = this.meterCircuit(source3);
     if (network) {
       Simulation.sCircuit(network);
+      this.measurements.record([], network);
       for (const device of network) this.canvas.refreshDeviceDisplay(device);
       if (network.includes(this.curr_obj)) this._updatePopup();
     }
@@ -186209,6 +186503,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
             device._cellCurrent = null;
             this.canvas.refreshDeviceDisplay(device);
           }
+          this.measurements.record([], active.devices);
         }
         active = void 0;
         this.rcReadouts.delete(meter2);
@@ -186236,6 +186531,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       if (!active.settled) {
         const sample2 = active.model.at(active.elapsed);
         active.readMeters(sample2);
+        this.measurements.record([], active.devices);
         active.settled = sample2.current === 0 || active.elapsed / active.model.timeConstant >= 40;
         this.rcReadouts.set(meter2, {
           sample: sample2,
@@ -186311,6 +186607,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       device._visibleCurrent = null;
       this.canvas.refreshDeviceDisplay(device);
     }
+    this.measurements.record([], devices);
   }
   get canAuthor() {
     const editable = this.getAttribute("contenteditable");
@@ -186506,7 +186803,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       }
       const sprite = this.canvas.addComponentView(component);
       sprite.position.copyFrom(position);
-      if (component instanceof ElectricComponent) this.canvas.attachDevice(component, sprite);
+      if (component instanceof ElectricComponent) {
+        this.canvas.attachDevice(component, sprite);
+        this.measurements.record([], [component]);
+      } else this.measurements.record([component]);
       return true;
     }
     const entry = {
@@ -186608,6 +186908,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const volumeMl = requestedMl * fraction;
     if (volumeMl <= 1e-8) return 0;
     target.addContents({ nMix: fraction === 1 ? portion : dose(volumeMl) });
+    this.measurements.record([target]);
     this.canvas.markVesselChanged(target, hint);
     return volumeMl;
   }
@@ -186691,6 +186992,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   transferMeasuredVolume(source3, target, amount) {
     const result = source3.transferContents({ tVolume: amount / 1e3 }, target) * 1e3;
     if (result > 0) {
+      this.measurements.record([source3, target], [], { source: source3, volume: result });
       this.canvas.markVesselChanged(source3, "pour");
       this.canvas.markVesselChanged(target, "pour");
     }
@@ -187420,6 +187722,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         to: this.itemName(vessel._type)
       }), "warning", 1500);
     }
+    this.measurements.retire([...removedChemical, ...removedElectrical]);
     this.allChemComponents = this.allChemComponents.filter((component) => !labels.has(labelOf(component)));
     this.allEComponents = this.allEComponents.filter((component) => !labels.has(labelOf(component)));
     for (const sprite of [...world.children]) {
@@ -187443,6 +187746,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (component._type !== Source && component._type !== Voltmeter && component._type !== Ammeter && component._type !== Multimeter || this.operatingCircuit(component)) return;
     if (component._type === Voltmeter || component._type === Multimeter) component._visibleVoltage = null;
     component._visibleCurrent = null;
+    this.measurements.record([], [component]);
     const label = `${component._type}:${component._id}`;
     const ticker = "echem" + label;
     if (!this.simulation.hasTask(ticker)) return;
@@ -187608,7 +187912,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     restoreCables(
       this.availableComponents,
       (id3) => this.allEComponents.find((component) => component._id === id3),
-      (cable, end, device) => plugCable(cable, end, device)
+      (cable, end, device2) => plugCable(cable, end, device2)
     );
     restoreConnections(
       this.availableComponents,
@@ -187618,7 +187922,13 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       // which is what a supply and a meter need.
       (a7, b5) => !alreadyWired(a7, b5) && this.connectElectrical(a7, b5, void 0, void 0, false)
     );
-    if (entry === void 0) this.canvas.attachDevices();
+    this.canvas.attachDevices();
+    const added = entry && this.allChemComponents.find((component) => component._id === entry["id"] && component._type === entry["type"]);
+    const device = entry && this.allEComponents.find((component) => component._id === entry["id"] && component._type === entry["type"]);
+    this.measurements.record(
+      entry ? added ? [added] : [] : this.allChemComponents,
+      entry ? device ? [device] : [] : this.allEComponents
+    );
   }
   _loadMolecule(formula) {
     const definitions = this.availableMolecules;
@@ -188532,6 +188842,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     for (const device of this.allEComponents) {
       if (device._connectedMix === previous) device._connectedMix = vessel._content;
     }
+    this.measurements.record([vessel]);
     this.canvas.markVesselChanged(vessel);
     this.saveSelectedComponent({ content: "", vol: 0, doses: [] });
     this._updatePopup();
