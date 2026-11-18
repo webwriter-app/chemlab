@@ -1073,9 +1073,16 @@ export abstract class Simulation {
 
 	/**
 	 * Nernst potential of a half-reaction in a vessel:
-	 * `E = sep + RT/(zF) · Σ νᵢ ln aᵢ`. A species that is absent makes the
-	 * potential undefined, which is how the candidate list learns that the
-	 * reaction cannot run at all.
+	 * `E = sep + RT/(zF) · Σ νᵢ ln aᵢ`.
+	 *
+	 * A species that is absent makes the logarithm singular, but it does not
+	 * rule the couple out: the reaction can still run in the direction that
+	 * produces it. The trace activity keeps the potential finite and puts it
+	 * on the correct side of the standard value — a couple whose product is
+	 * missing sits far above it and drives towards forming that product, a
+	 * metal whose cation is missing far below it and drives towards
+	 * dissolving. Which direction may actually run is decided by the educt
+	 * check in {@link electrodeCandidates}, which reads the true zero.
 	 *
 	 * @private
 	 * @static
@@ -1087,8 +1094,7 @@ export abstract class Simulation {
 		let sum = 0;
 		for (const term of reaction.terms) {
 			const activity = this.termActivity(term, view);
-			if (!(activity > 0)) return NaN;
-			sum += term.coefficient * Math.log(activity);
+			sum += term.coefficient * Math.log(activity > 0 ? activity : TRACE_ACTIVITY);
 		}
 		return reaction.sep + this._gasConst * view.mix._temperature /
 			(reaction.el * this._faradayConst) * sum;
@@ -1110,14 +1116,7 @@ export abstract class Simulation {
 		if (cached) return cached;
 		const symbol = atomSymbol(smiles);
 		if (!symbol) return undefined;
-		if (!this._elementNames) {
-			this._elementNames = new Map();
-			for (const name of ElementData.getElementList()) {
-				const data = ElementData.getData(name);
-				if (data?.["symbol"]) this._elementNames.set(data["symbol"], name);
-			}
-		}
-		const name = this._elementNames.get(symbol);
+		const name = this.elementName(symbol);
 		if (!name) return undefined;
 		const molecule = StructureManager.newMolecule();
 		molecule.addAtom(name, symbol);
@@ -1126,10 +1125,57 @@ export abstract class Simulation {
 	}
 
 	/**
+	 * English element name of a symbol, as the element table and the
+	 * half-reaction table spell it. Built once and reused.
+	 *
+	 * @private
+	 * @static
+	 * @param {string} symbol - the element symbol
+	 * @returns {(string | undefined)}
+	 */
+	private static elementName(symbol: string): string | undefined {
+		if (!this._elementNames) {
+			this._elementNames = new Map();
+			for (const name of ElementData.getElementList()) {
+				const data = ElementData.getData(name);
+				if (data?.["symbol"]) this._elementNames.set(data["symbol"], name);
+			}
+		}
+		return this._elementNames.get(symbol);
+	}
+
+	/**
+	 * Single-atom ion for a SMILES such as `[Zn2+]`, built once and reused. A
+	 * half-reaction that produces an ion the vessel does not hold yet has no
+	 * stored molecule to book against, so the ion is built from its own
+	 * SMILES; without it the reaction would run and leave no trace.
+	 *
+	 * @private
+	 * @static
+	 * @param {string} smiles - SMILES of the ion
+	 * @returns {(Molecule | undefined)}
+	 */
+	private static ionMolecule(smiles: string): Molecule | undefined {
+		const cached = this._metalMolecules.get(smiles);
+		if (cached) return cached;
+		const symbol = atomSymbol(smiles);
+		const charge = /^\[[A-Z][a-z]?(\d*)([+-])\]$/.exec(smiles);
+		if (!symbol || !charge) return undefined;
+		const name = this.elementName(symbol);
+		if (!name) return undefined;
+		const magnitude = charge[1] ? Number(charge[1]) : 1;
+		const molecule = StructureManager.newMolecule();
+		molecule.addAtom(name, symbol, charge[2] === "-" ? -magnitude : magnitude);
+		this._metalMolecules.set(smiles, molecule);
+		return molecule;
+	}
+
+	/**
 	 * Half-reactions an electrode can run in its vessel. A reaction is offered
-	 * when its equilibrium potential is defined and at least one of its two
-	 * sides is present; which direction it may actually run is decided by the
-	 * mixed-potential solve, not here.
+	 * when at least one of its two sides is present; which direction it may
+	 * actually run is decided by the mixed-potential solve, not here. A
+	 * couple whose product is missing is therefore still offered, and the
+	 * direction check below is what keeps it from running backwards.
 	 *
 	 * Each candidate also carries the largest current density its two
 	 * directions can carry in one step, taken from the amount of the species
@@ -1300,7 +1346,17 @@ export abstract class Simulation {
 			if (stored) {
 				mix.changeMolecule(stored._id, delta);
 				mix.electrodeCharge += delta * stored._totalCharge;
+				continue;
 			}
+			// A reaction that produces an ion the vessel does not hold yet has
+			// nothing to book against, so the ion is built from its own SMILES
+			// and the product really appears. Removing an absent species has
+			// nothing to take and is skipped.
+			if (!(delta > 0)) continue;
+			const created = this.ionMolecule(term.smiles);
+			if (!created) continue;
+			mix.addMolecule(created, delta);
+			mix.electrodeCharge += delta * created._totalCharge;
 		}
 	}
 
