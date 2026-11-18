@@ -14,6 +14,7 @@ import {
 	HalfReactionTerm,
 	OPEN_CIRCUIT_RESISTANCE,
 	GAS_PARTIAL_PRESSURE,
+	MASS_TRANSFER_COEFFICIENT,
 	halfReactionsOn,
 	oxidationOf,
 	reductionOf,
@@ -109,6 +110,14 @@ interface SaltIon {
 	molecule: Molecule;
 	/** Current concentration in mol/L. */
 	readonly concentration: number;
+	/**
+	 * Activity the Nernst equation reads, in mol/L. A hydrolysing cation is
+	 * only partly present as the free ion — the rest sits in its hydrolysis
+	 * products — so this is the analytical total of its acid family times the
+	 * fraction of this very protonation step, divided by the complex factor.
+	 * For a spectator ion it equals {@link concentration}.
+	 */
+	readonly activity: number;
 	/** Concentration if `delta` mol/L of this ion were added (negative removes). */
 	concentrationAt(delta: number): number;
 	/** Largest concentration that can be removed without going negative. */
@@ -231,6 +240,30 @@ interface CellAreas {
 	first: number;
 	/** Second electrode's area in cm². */
 	second: number;
+}
+
+/**
+ * What one electrode is about to convert in a step, before anything is booked.
+ *
+ * The extents of both electrodes are collected first and only then applied,
+ * because two electrodes of the same vessel can draw on the same inventory:
+ * an anode and a cathode in one beaker both consume the salt they share, and
+ * booking them one after the other would let the second one spend what the
+ * first one already took.
+ *
+ * @interface ElectrodeBooking
+ */
+interface ElectrodeBooking {
+	/** The electrode's half-reactions. */
+	candidates: HalfCandidate[];
+	/** Current density each of them carries, A/cm². */
+	currents: number[];
+	/** Length of the step in s. */
+	dt: number;
+	/** Wetted area of the electrode in cm². */
+	area: number;
+	/** The vessel it dips into, if it has one. */
+	view?: VesselView;
 }
 
 /**
@@ -683,9 +716,20 @@ export abstract class Simulation {
 			// A complexed cation is present but not free, so the salt equilibria
 			// see the analytical total divided by the complex factor.
 			const factor = H > 0 ? this.complexFactor(molecule.smilesString, systems, H) : 1;
+			// A hydrolysing cation is only partly free as well: the rest sits in
+			// its hydrolysis products, which the acid–base solver already knows.
+			// The Nernst equation reads the free ion, so the analytical total of
+			// the family is scaled by the fraction of this protonation step.
+			const family = systems.find((item) => item.members.includes(molecule));
+			const free = () => family
+				? family.members.reduce((sum, member) =>
+					sum + (mix._molProperties[member._id + "n"] ?? 0), 0) / volume *
+					this.speciesFraction(family, molecule, H)
+				: current();
 			return {
 				molecule,
 				get concentration() { return current() / factor; },
+				get activity() { return free() / factor; },
 				concentrationAt: (delta) => (current() + delta) / factor,
 				get removable() { return current(); },
 				change: (delta) => mix.changeMolecule(molecule._id, delta * volume),
@@ -709,6 +753,7 @@ export abstract class Simulation {
 				ions.set(smiles, {
 					molecule,
 					get concentration() { return total() * fractions[step]; },
+					get activity() { return total() * fractions[step]; },
 					concentrationAt: (delta) => (total() + delta) * fractions[step],
 					get removable() { return total(); },
 					change: (delta) => this.changeFamily(mix, family, delta * volume),
@@ -728,6 +773,20 @@ export abstract class Simulation {
 		const part = parts?.find((item) => item && item !== family.representative &&
 			item.smilesString !== "[H+]" && item._totalCharge === charge);
 		return part ?? protonationStructure(family.representative, step - family.step);
+	}
+
+	/**
+	 * Share of a family's analytical total that sits in one of its members.
+	 *
+	 * The step of a member follows from its own charge, not from the step of the
+	 * family's representative: a stored chloride belongs to the HCl family whose
+	 * representative is the neutral acid, but the chloride itself is the second
+	 * step. Reading the representative's step would report the acid's share.
+	 */
+	private static speciesFraction(family: AcidBaseFamily, molecule: Molecule, H: number): number {
+		const fractions = AcidBase.speciesFractions(family, H);
+		const step = family.protonatedCharge - molecule._totalCharge;
+		return fractions[Math.min(Math.max(step, 0), fractions.length - 1)] ?? 0;
 	}
 
 	/** Adds to or removes from a family's analytical total, keeping its members consistent. */
@@ -1057,7 +1116,8 @@ export abstract class Simulation {
 	 * phase and a gas that has left the solution sits at
 	 * {@link GAS_PARTIAL_PRESSURE}; water is the solvent. Everything else is
 	 * read from the free-ion view, so a computed conjugate anion counts as much
-	 * as a stored one.
+	 * as a stored one, and a hydrolysing cation counts with the share that is
+	 * actually free rather than with its analytical total.
 	 *
 	 * @private
 	 * @static
@@ -1071,7 +1131,7 @@ export abstract class Simulation {
 		if (term.smiles === "[H+]") return view.protons;
 		if (term.smiles === "O") return 1;
 		const ion = view.ions.get(term.smiles);
-		if (ion) return ion.concentration;
+		if (ion) return ion.activity;
 		const stored = view.mix._activeMolecules.find((molecule) => molecule.smilesString === term.smiles);
 		return stored ? (view.mix._molProperties[stored._id + "c"] ?? 0) : 0;
 	}
@@ -1183,30 +1243,28 @@ export abstract class Simulation {
 	 * direction check below is what keeps it from running backwards.
 	 *
 	 * Each candidate also carries the largest current density its two
-	 * directions can carry in one step, taken from the amount of the species
-	 * they consume. The solve has to respect that: a couple whose gas has only
-	 * just started to form can carry a few microamps, not the current of a
-	 * full electrode. Without the bound the two gas couples of a water
-	 * electrolysis cancelled each other at a potential where the current was
-	 * set by the resistance alone, and the cell oscillated between that
-	 * degenerate root and the real one.
+	 * directions can carry, taken from the concentration of the species they
+	 * consume and a mass-transfer coefficient. The solve has to respect that:
+	 * a couple whose gas has only just started to form can carry a few
+	 * microamps, not the current of a full electrode. Without the bound the two
+	 * gas couples of a water electrolysis cancelled each other at a potential
+	 * where the current was set by the resistance alone, and the cell
+	 * oscillated between that degenerate root and the real one. The bound is a
+	 * transport limit, so it does not move with the integration step.
 	 *
 	 * @private
 	 * @static
 	 * @param {ElectricComponent} electrode - the electrode and its vessel
 	 * @param {VesselView} view - the vessel it dips into
-	 * @param {number} dt - length of the step in s
 	 * @returns {HalfCandidate[]}
 	 */
 	private static electrodeCandidates(
 		electrode: ElectricComponent,
-		view: VesselView,
-		dt: number
+		view: VesselView
 	): HalfCandidate[] {
 		const candidates: HalfCandidate[] = [];
 		const material = electrode._material;
 		const volume = view.mix._solutionVolume;
-		const area = electrode.activeArea;
 		const platings = electrode.platings;
 		// A deposit covers the strip, so it is the surface that reacts: the
 		// plated metal goes back into solution as its cation, and the electrode
@@ -1227,7 +1285,34 @@ export abstract class Simulation {
 			// they are taken and water supplies them otherwise, so only the
 			// current bounds how many a step may convert.
 			if (term.smiles === "[H+]") return Infinity;
-			return this.termActivity(term, view) * volume;
+			// The bound is the analytical inventory, not the free-ion activity:
+			// a hydrolysed cation can still be consumed down to its last trace,
+			// because its hydrolysis equilibrium releases more as it is taken.
+			const ion = view.ions.get(term.smiles);
+			if (ion) return ion.concentration * volume;
+			const stored = view.mix._activeMolecules.find((molecule) => molecule.smilesString === term.smiles);
+			return stored ? (view.mix._molProperties[stored._id + "c"] ?? 0) * volume : 0;
+		};
+		// Concentration the transport limit reads. A solid body and the solvent
+		// are reservoirs, and protons are replenished by their acid family, so
+		// none of them limits the rate. A gas is limited by the part that is
+		// still dissolved, which is its amount over the solution volume.
+		const transferConcentration = (term: HalfReactionTerm, reaction: HalfReaction): number => {
+			if (term.phase === "solid") return Infinity;
+			if (term.phase === "gas") {
+				const amount = reaction.gas ? view.mix.evolvedGas.get(reaction.gas) ?? 0 : 0;
+				return amount / volume;
+			}
+			if (term.smiles === "O" || term.smiles === "[H+]") return Infinity;
+			return this.termActivity(term, view);
+		};
+		// `i = z F k c / ν` in A/cm², with the concentration in mol/cm³. The
+		// slowest species of a direction sets the rate.
+		const transferDensity = (term: HalfReactionTerm, reaction: HalfReaction, coefficient: number): number => {
+			const concentration = transferConcentration(term, reaction) / 1000;
+			return Number.isFinite(concentration)
+				? reaction.el * this._faradayConst * MASS_TRANSFER_COEFFICIENT * concentration / coefficient
+				: Infinity;
 		};
 		for (const reaction of halfReactionsOn(materialName(material))) {
 			const equilibrium = this.halfReactionPotential(reaction, view);
@@ -1236,23 +1321,25 @@ export abstract class Simulation {
 			let canReduce = true;
 			let anodicLimit = Infinity;
 			let cathodicLimit = Infinity;
+			let anodicDensity = Infinity;
+			let cathodicDensity = Infinity;
 			for (const term of reaction.terms) {
 				const amount = amountOf(term, reaction);
 				if (term.coefficient < 0) {
 					if (!(amount > 0)) canOxidise = false;
-					else anodicLimit = Math.min(anodicLimit, amount / -term.coefficient * reaction.el);
+					else {
+						anodicLimit = Math.min(anodicLimit, amount / -term.coefficient * reaction.el);
+						anodicDensity = Math.min(anodicDensity, transferDensity(term, reaction, -term.coefficient));
+					}
 				} else {
 					if (!(amount > 0)) canReduce = false;
-					else cathodicLimit = Math.min(cathodicLimit, amount / term.coefficient * reaction.el);
+					else {
+						cathodicLimit = Math.min(cathodicLimit, amount / term.coefficient * reaction.el);
+						cathodicDensity = Math.min(cathodicDensity, transferDensity(term, reaction, term.coefficient));
+					}
 				}
 			}
 			if (!canOxidise && !canReduce) continue;
-			// A step may not convert more than the vessel holds, so the same
-			// bound the booking applies also bounds the current density. A
-			// missing step length leaves the bound open instead of making it
-			// NaN, which would poison the whole solve.
-			const densityOf = (limit: number) => Number.isFinite(limit) && dt > 0
-				? limit * this._faradayConst / (area * dt) : Infinity;
 			candidates.push({
 				reaction,
 				equilibrium,
@@ -1260,8 +1347,8 @@ export abstract class Simulation {
 				canReduce,
 				anodicLimit,
 				cathodicLimit,
-				anodicDensity: densityOf(anodicLimit),
-				cathodicDensity: densityOf(cathodicLimit),
+				anodicDensity,
+				cathodicDensity,
 				apply: (electronMol) => this.applyHalfReaction(reaction, electronMol, electrode, view),
 			});
 		}
@@ -1592,6 +1679,7 @@ export abstract class Simulation {
 	 * @param {number} resistance - resistance of the whole loop in Ω
 	 * @param {CellLimits} limits - the open-circuit potentials to start from
 	 * @param {CellAreas} areas - the wetted area of both electrodes in cm²
+	 * @param {number} [cap] - largest current the vessels can supply, in A
 	 * @returns {(CellSolution | undefined)}
 	 */
 	private static solveCurrent(
@@ -1600,7 +1688,8 @@ export abstract class Simulation {
 		source: number,
 		resistance: number,
 		limits: CellLimits,
-		areas: CellAreas
+		areas: CellAreas,
+		cap = Infinity
 	): CellSolution | undefined {
 		// Both the residual and its slope need the same pair of electrode
 		// solves, so the last probe is kept and reused.
@@ -1639,12 +1728,16 @@ export abstract class Simulation {
 			start
 		);
 		if (current === undefined) return undefined;
-		probe(current);
+		// A vessel that cannot supply the solved current holds the cell at the
+		// current it can supply, so the electrodes sit at that current's
+		// potentials instead of the ones the solve asked for.
+		const held = Math.abs(current) > cap ? Math.sign(current) * cap : current;
+		probe(held);
 		if (probedFirst === undefined || probedSecond === undefined) return undefined;
 		return {
 			first: probedFirst.potential,
 			second: probedSecond.potential,
-			current,
+			current: held,
 			firstCurrents: probedFirst.currents,
 			secondCurrents: probedSecond.currents,
 		};
@@ -1672,6 +1765,7 @@ export abstract class Simulation {
 	 * @param {boolean} ideal - a voltmeter draws no current
 	 * @param {CellLimits} limits - the one-sided limits of the cell
 	 * @param {CellAreas} areas - the wetted area of both electrodes in cm²
+	 * @param {number} [cap] - largest current the vessels can supply, in A
 	 * @returns {(CellSolution | undefined)}
 	 */
 	private static solveCell(
@@ -1681,7 +1775,8 @@ export abstract class Simulation {
 		resistance: number,
 		ideal: boolean,
 		limits: CellLimits,
-		areas: CellAreas
+		areas: CellAreas,
+		cap = Infinity
 	): CellSolution | undefined {
 		const a = this.mixedPotential(first);
 		const b = this.mixedPotential(second);
@@ -1705,7 +1800,7 @@ export abstract class Simulation {
 				return { first: a.guess, second: b.guess, current: 0,
 					firstCurrents: a.currents, secondCurrents: b.currents };
 			}
-			return this.solveCurrent(first, second, source, resistance, limits, areas);
+			return this.solveCurrent(first, second, source, resistance, limits, areas, cap);
 		}
 		// The residual E₁ − E₂ − U + I·R grows with I, so a root with I > 0
 		// needs it negative at I = 0 and one with I < 0 needs it positive.
@@ -1717,7 +1812,7 @@ export abstract class Simulation {
 			if (!Number.isFinite(a.potential) || !Number.isFinite(b.potential)) return undefined;
 			return idle();
 		}
-		return this.solveCurrent(first, second, source, resistance, limits, areas);
+		return this.solveCurrent(first, second, source, resistance, limits, areas, cap);
 	}
 
 	/**
@@ -1852,6 +1947,7 @@ export abstract class Simulation {
 	 * @param {number} electrolyte - resistance of the ionic path in Ω
 	 * @param {CellLimits} limits - the open-circuit potentials to start from
 	 * @param {CellAreas} areas - the wetted area of both electrodes in cm²
+	 * @param {number} [cap] - largest current the vessels can supply, in A
 	 * @returns {({solution: CellSolution, limited: boolean} | undefined)}
 	 */
 	private static solveSupply(
@@ -1862,7 +1958,8 @@ export abstract class Simulation {
 		second: HalfCandidate[],
 		electrolyte: number,
 		limits: CellLimits,
-		areas: CellAreas
+		areas: CellAreas,
+		cap = Infinity
 	): { solution: CellSolution; limited: boolean } | undefined {
 		// The network's answer to the supply's EMF and to the cell current,
 		// taken apart so that only the cell solve has to run for the EMF.
@@ -1891,7 +1988,7 @@ export abstract class Simulation {
 			// readings taken afterwards see the same network.
 			element.emf = emf;
 			const solution = this.solveCell(first, second, transfer * emf,
-				thevenin.resistance + electrolyte, false, limits, areas);
+				thevenin.resistance + electrolyte, false, limits, areas, cap);
 			if (!solution) return undefined;
 			return {
 				solution,
@@ -1915,7 +2012,10 @@ export abstract class Simulation {
 			// A galvanostat fixes the current through itself; the cell then
 			// decides the voltage, and the compliance limit caps what the
 			// supply may hold at its terminals.
-			const magnitude = Math.abs(source._sourceCurrent ?? 0);
+			// A vessel that cannot supply the setpoint holds the cell at the
+			// current it can supply, as a supply in constant-current mode does
+			// when its compliance runs out.
+			const magnitude = Math.min(Math.abs(source._sourceCurrent ?? 0), cap);
 			const wanted = source._polarity === 0 ? openSign * magnitude
 				: (source._polarity > 0) === plusAtFirst ? magnitude : -magnitude;
 			// The supply's own reading runs against the current it delivers,
@@ -1967,30 +2067,126 @@ export abstract class Simulation {
 	}
 
 	/**
-	 * Books the current each half-reaction of one electrode carries over the
-	 * step, clamped by what the vessel can supply.
+	 * Electrons each half-reaction of one electrode converts over the step,
+	 * clamped by what its own candidate can supply. Positive is oxidation.
 	 *
 	 * @private
 	 * @static
-	 * @param {HalfCandidate[]} candidates - the electrode's half-reactions
-	 * @param {number[]} currents - current density each of them carries, A/cm²
-	 * @param {number} dt - length of the step in s
-	 * @param {number} area - wetted area of the electrode in cm²
+	 * @param {ElectrodeBooking} booking - the electrode and its currents
+	 * @returns {number[]} electrons per candidate, in mol
 	 */
-	private static applyElectrode(
-		candidates: HalfCandidate[],
-		currents: number[],
-		dt: number,
-		area: number
-	): void {
-		candidates.forEach((candidate, index) => {
-			const density = currents[index];
-			if (!(Math.abs(density) > 0)) return;
-			const electronMol = density * area * dt / this._faradayConst;
-			const clamped = Math.max(-candidate.cathodicLimit,
+	private static bookingExtents(booking: ElectrodeBooking): number[] {
+		return booking.candidates.map((candidate, index) => {
+			const density = booking.currents[index];
+			if (!(Math.abs(density) > 0)) return 0;
+			const electronMol = density * booking.area * booking.dt / this._faradayConst;
+			return Math.max(-candidate.cathodicLimit,
 				Math.min(candidate.anodicLimit, electronMol));
-			if (!(Math.abs(clamped) > 0)) return;
-			candidate.apply(clamped);
+		});
+	}
+
+	/**
+	 * How much of one species a vessel still holds, in mol. A gas counts with
+	 * what has left the solution, an ion with its analytical total — a
+	 * hydrolysed or complexed cation releases more as it is taken, so the
+	 * stored amount is what can really be consumed.
+	 *
+	 * @private
+	 * @static
+	 * @param {VesselView} view - the vessel
+	 * @param {string} key - SMILES of the species, or the gas it is
+	 * @param {boolean} gas - whether the key names an evolved gas
+	 * @returns {number}
+	 */
+	private static vesselInventory(view: VesselView, key: string, gas: boolean): number {
+		if (gas) return view.mix.evolvedGas.get(key) ?? 0;
+		const ion = view.ions.get(key);
+		if (ion) return ion.removable * view.mix._solutionVolume;
+		const stored = view.mix._activeMolecules.find((molecule) => molecule.smilesString === key);
+		return stored ? view.mix._molProperties[stored._id + "n"] ?? 0 : 0;
+	}
+
+	/**
+	 * The factor by which each vessel's bookings have to shrink so that no
+	 * species is spent twice.
+	 *
+	 * Two electrodes in one beaker draw on the same inventory, and so do two
+	 * half-reactions of one electrode. The solve decides the currents before
+	 * anything is booked, so it cannot know that the sum of the demands
+	 * exceeds what the vessel holds. This compares the summed demand of every
+	 * species with the inventory and returns the tightest ratio per vessel;
+	 * the caller feeds it back as a current cap and books the scaled extents.
+	 *
+	 * @private
+	 * @static
+	 * @param {ElectrodeBooking[]} bookings - both electrodes
+	 * @param {number[][]} extents - electrons per candidate, in mol
+	 * @returns {Map<Mixture, number>} the factor per vessel, at most 1
+	 */
+	private static inventoryScale(
+		bookings: ElectrodeBooking[],
+		extents: number[][]
+	): Map<Mixture, number> {
+		const demand = new Map<Mixture, Map<string, { view: VesselView; gas: boolean; amount: number }>>();
+		bookings.forEach((booking, index) => {
+			const view = booking.view;
+			if (!view) return;
+			const perVessel = demand.get(view.mix) ?? new Map();
+			demand.set(view.mix, perVessel);
+			booking.candidates.forEach((candidate, position) => {
+				const electronMol = extents[index]?.[position] ?? 0;
+				if (!(Math.abs(electronMol) > 0)) return;
+				const extent = electronMol / candidate.reaction.el;
+				for (const term of candidate.reaction.terms) {
+					// Only the side that is consumed draws on the inventory.
+					if (Math.sign(term.coefficient) === Math.sign(extent)) continue;
+					// A solid body and the solvent are reservoirs, and protons
+					// are replenished by their acid family.
+					if (term.phase === "solid") continue;
+					if (term.smiles === "O" || term.smiles === "[H+]") continue;
+					const gas = term.phase === "gas";
+					const key = gas ? candidate.reaction.gas : term.smiles;
+					if (!key) continue;
+					const entry = perVessel.get(key) ?? { view, gas, amount: 0 };
+					entry.amount += Math.abs(extent * term.coefficient);
+					perVessel.set(key, entry);
+				}
+			});
+		});
+		const scales = new Map<Mixture, number>();
+		for (const [mix, perVessel] of demand) {
+			let scale = 1;
+			for (const [key, entry] of perVessel) {
+				if (!(entry.amount > 0)) continue;
+				scale = Math.min(scale, this.vesselInventory(entry.view, key, entry.gas) / entry.amount);
+			}
+			scales.set(mix, Math.max(0, scale));
+		}
+		return scales;
+	}
+
+	/**
+	 * Books the extents of both electrodes, scaled so that a shared vessel is
+	 * not overdrawn.
+	 *
+	 * @private
+	 * @static
+	 * @param {ElectrodeBooking[]} bookings - both electrodes
+	 * @param {number[][]} extents - electrons per candidate, in mol
+	 * @param {Map<Mixture, number>} scales - the factor per vessel
+	 */
+	private static applyExtents(
+		bookings: ElectrodeBooking[],
+		extents: number[][],
+		scales: Map<Mixture, number>
+	): void {
+		bookings.forEach((booking, index) => {
+			const scale = booking.view ? scales.get(booking.view.mix) ?? 1 : 1;
+			booking.candidates.forEach((candidate, position) => {
+				const electronMol = (extents[index]?.[position] ?? 0) * scale;
+				if (!(Math.abs(electronMol) > 0)) return;
+				candidate.apply(electronMol);
+			});
 		});
 	}
 
@@ -2223,8 +2419,8 @@ export abstract class Simulation {
 		const external = circuitThevenin(network);
 		if (!external || !(external.resistance > 0)) return undefined;
 		// No inventory cap is needed to evaluate the initial mixed potentials.
-		const a = this.mixedPotential(this.electrodeCandidates(first, this.vesselView(firstMix), 0));
-		const b = this.mixedPotential(this.electrodeCandidates(second, this.vesselView(secondMix), 0));
+		const a = this.mixedPotential(this.electrodeCandidates(first, this.vesselView(firstMix)));
+		const b = this.mixedPotential(this.electrodeCandidates(second, this.vesselView(secondMix)));
 		const emf = a.potential - b.potential;
 		if (!Number.isFinite(emf)) return undefined;
 		let model: NoIonicPathTransientModel;
@@ -2316,12 +2512,16 @@ export abstract class Simulation {
 		if (!Number.isFinite(electrolyte) || electrolyte < 0) return unsolved();
 
 		const dt = this._simTimeStep;
-		const candidatesOf = (electrode: ElectricComponent, mix: Mixture | undefined) =>
+		// The vessel views are read once: the solve probes them many times and
+		// nothing is booked until it has settled.
+		const view1 = mix1?._isSolution ? this.vesselView(mix1) : undefined;
+		const view2 = mix2?._isSolution ? this.vesselView(mix2) : undefined;
+		const candidatesOf = (electrode: ElectricComponent, view: VesselView | undefined) =>
 			electrode._reference !== undefined
 				? this.referenceCandidates(electrode._reference)
-				: mix?._isSolution ? this.electrodeCandidates(electrode, this.vesselView(mix), dt) : [];
-		const first = candidatesOf(sElectrode1, mix1);
-		const second = candidatesOf(sElectrode2, mix2);
+				: view ? this.electrodeCandidates(electrode, view) : [];
+		const first = candidatesOf(sElectrode1, view1);
+		const second = candidatesOf(sElectrode2, view2);
 		if (first.length === 0 || second.length === 0) return unsolved();
 
 		const areas: CellAreas = {
@@ -2336,33 +2536,57 @@ export abstract class Simulation {
 		const network = circuitNetwork([sElectrode1, sElectrode2, ...sDevices]);
 		if (!network) return unsolved();
 		const element = source ? network.elements.find((entry) => entry.device === source) : undefined;
+		// Without a supply the circuit is either open (a voltmeter, which draws
+		// no current) or shorted through the ammeter. Only a network that
+		// really presents no path counts as open: a lead laid straight across
+		// the electrodes lets the cell discharge even while a voltmeter hangs
+		// on the same posts. The equivalent is read once, because the supply
+		// path rewrites the network's EMF while it matches.
+		const thevenin = source && element ? undefined : circuitThevenin(network);
+		if (!source && !thevenin) return unsolved();
+		const ideal = !!thevenin && thevenin.resistance > OPEN_CIRCUIT_RESISTANCE && sDevices.some((device) =>
+			device._type === EComponentType.Voltmeter ||
+			(device._type === EComponentType.Multimeter && device._meterMode === "voltage"));
 		let solution: CellSolution | undefined;
 		// Whether the supply had to give up its setpoint because the load
 		// would have drawn more than it allows.
 		let limited = false;
-		let ideal = false;
-		if (source && element) {
-			// The supply's EMF is part of the network, so the cell is solved
-			// against the voltage the network really presents at the supply's
-			// terminals, and the supply's own current is what gets regulated.
-			const point = this.solveSupply(network, element, source, first, second,
-				electrolyte, limits, areas);
-			if (!point) return unsolved();
-			solution = point.solution;
-			limited = point.limited;
-		} else {
-			const thevenin = circuitThevenin(network);
-			if (!thevenin) return unsolved();
-			// Without a supply the circuit is either open (a voltmeter, which
-			// draws no current) or shorted through the ammeter. Only a network
-			// that really presents no path counts as open: a lead laid straight
-			// across the electrodes lets the cell discharge even while a
-			// voltmeter hangs on the same posts.
-			ideal = thevenin.resistance > OPEN_CIRCUIT_RESISTANCE && sDevices.some((device) =>
-				device._type === EComponentType.Voltmeter ||
-				(device._type === EComponentType.Multimeter && device._meterMode === "voltage"));
-			solution = this.solveCell(first, second, thevenin.voltage,
-				thevenin.resistance + electrolyte, ideal, limits, areas);
+		let extents: number[][] = [];
+		let scales = new Map<Mixture, number>();
+		// The solve decides the currents before anything is booked, so it
+		// cannot know that two electrodes of one vessel would spend the same
+		// inventory. The tightest ratio is fed back as a current cap and the
+		// cell is solved again, which is what a shared electrolyte really does:
+		// it holds the current at what the solution can supply.
+		let cap = Infinity;
+		for (let pass = 0; pass < 3; pass++) {
+			if (source && element) {
+				// The supply's EMF is part of the network, so the cell is solved
+				// against the voltage the network really presents at the
+				// supply's terminals, and the supply's own current is what gets
+				// regulated.
+				const point = this.solveSupply(network, element, source, first, second,
+					electrolyte, limits, areas, cap);
+				if (!point) return unsolved();
+				solution = point.solution;
+				limited = point.limited;
+			} else {
+				solution = this.solveCell(first, second, thevenin.voltage,
+					thevenin.resistance + electrolyte, ideal, limits, areas, cap);
+			}
+			if (!solution) return unsolved();
+			const bookings: ElectrodeBooking[] = [
+				{ candidates: first, currents: solution.firstCurrents, dt, area: areas.first, view: view1 },
+				{ candidates: second, currents: solution.secondCurrents, dt, area: areas.second, view: view2 },
+			];
+			extents = bookings.map((booking) => this.bookingExtents(booking));
+			scales = this.inventoryScale(bookings, extents);
+			let tightest = 1;
+			for (const scale of scales.values()) tightest = Math.min(tightest, scale);
+			if (!(tightest < 1)) break;
+			const next = Math.abs(solution.current) * tightest;
+			if (!(next < Math.abs(solution.current))) break;
+			cap = next;
 		}
 		if (!solution) return unsolved();
 		const readings = circuitReadings(network, {
@@ -2399,8 +2623,10 @@ export abstract class Simulation {
 			}
 		}
 
-		this.applyElectrode(first, solution.firstCurrents, dt, areas.first);
-		this.applyElectrode(second, solution.secondCurrents, dt, areas.second);
+		this.applyExtents([
+			{ candidates: first, currents: solution.firstCurrents, dt, area: areas.first, view: view1 },
+			{ candidates: second, currents: solution.secondCurrents, dt, area: areas.second, view: view2 },
+		], extents, scales);
 		// A shared electrolyte carries the ionic current itself, so the two
 		// electrodes' bookings cancel in one vessel. Two half-cells need one
 		// countercharge each.

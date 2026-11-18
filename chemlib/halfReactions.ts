@@ -77,6 +77,15 @@ export const ELECTRODE_AREA = 4.5;
 export const OPEN_CIRCUIT_RESISTANCE = 1e5;
 /** Partial pressure a gas is assumed to have once it has left the solution, in bar. */
 export const GAS_PARTIAL_PRESSURE = 1;
+/**
+ * Mass-transfer coefficient of the model's unstirred vessels, in cm/s. It
+ * lumps diffusion and natural convection into one number: a diffusion
+ * coefficient of about 10⁻⁵ cm²/s over a Nernst layer of about 20 µm. It
+ * turns a concentration into the largest current density the electrode can
+ * draw from it, `i = z F k_m c`, which is what bounds a half-reaction instead
+ * of the amount the vessel happens to hold at the start of a step.
+ */
+export const MASS_TRANSFER_COEFFICIENT = 5e-3;
 
 /** A metal/metal-ion couple: the body dissolves into its own cation. */
 function metalCouple(
