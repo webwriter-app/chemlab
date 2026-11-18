@@ -8,7 +8,7 @@ import { ComponentManager } from "./ComponentManager";
 import { AcidBase, AcidBaseSystem } from "./AcidBase";
 import { saltSolubility } from "./saltSolubility";
 import { complexFormation } from "./complexes";
-import { evolvedGases } from "./gasEvolution";
+import { evolvedGases, gasForSmiles } from "./gasEvolution";
 import {
 	HalfReaction,
 	HalfReactionTerm,
@@ -74,6 +74,14 @@ const REFERENCE_STIFFNESS = 1e3;
  */
 const REFERENCE_CURRENT_DENSITY = 1e-6;
 
+/**
+ * Equilibrium constant of the chlorine hydrolysis
+ * `Cl₂ + H₂O ⇌ HOCl + H⁺ + Cl⁻` at 25 °C. It is small, so most of the
+ * dissolved chlorine stays as Cl₂ and only a little of it acidifies the
+ * solution, which is what a chlorine water smells and bleaches like.
+ */
+const CHLORINE_HYDROLYSIS = 4.2e-4;
+
 // A hydroxide's anion is the water equilibrium's OH-, not a stored ion, so the
 // generic salt loop cannot see it. Those entries are solved separately by
 // {@link Simulation.equilibrateHydroxides}.
@@ -96,7 +104,17 @@ function saltIonProduct(positive: number, negative: number, cations: number, ani
 	return Math.max(0, positive) ** cations * Math.max(0, negative) ** anions;
 }
 
-type AcidBaseFamily = AcidBaseSystem & { key: string; representative: Molecule; step: number; members: Molecule[] };
+/**
+ * One conjugate family of a solution. A family built from stored molecules
+ * carries a representative and its members; a family that exists only as
+ * numbers, such as the hypochlorite from chlorine hydrolysis, has neither.
+ */
+type AcidBaseFamily = AcidBaseSystem & {
+	key: string;
+	representative?: Molecule;
+	step: number;
+	members: Molecule[];
+};
 
 /** One ion of a salt formula unit, with how many of it the unit contains. */
 interface SaltFragment {
@@ -638,8 +656,8 @@ export abstract class Simulation {
 		let factor = 1;
 		for (const complex of complexEquilibria) {
 			if (complex.metal !== smiles) continue;
-			const metalFamily = systems.find((item) => item.representative.smilesString === complex.metal);
-			const ligandFamily = systems.find((item) => item.representative.smilesString === complex.ligand);
+			const metalFamily = systems.find((item) => item.representative?.smilesString === complex.metal);
+			const ligandFamily = systems.find((item) => item.representative?.smilesString === complex.ligand);
 			if (!metalFamily || !ligandFamily) continue;
 			// A molecular base is stored at its own protonation step, so the free
 			// ligand is the fraction at that step, not the fully protonated one.
@@ -675,8 +693,8 @@ export abstract class Simulation {
 	private static complexCharge(systems: AcidBaseFamily[], H: number, skip?: string): number {
 		let charge = 0;
 		for (const family of systems) {
-			const smiles = family.representative.smilesString;
-			if (smiles === skip) continue;
+			const smiles = family.representative?.smilesString;
+			if (smiles === undefined || smiles === skip) continue;
 			if (!complexEquilibria.some((item) => item.metal === smiles)) continue;
 			const factor = this.complexFactor(smiles, systems, H);
 			if (!(factor > 1)) continue;
@@ -694,7 +712,7 @@ export abstract class Simulation {
 	 */
 	private static complexChargeHook(systems: AcidBaseFamily[]): ((H: number) => number) | undefined {
 		const present = systems.some((family) => complexEquilibria.some((item) =>
-			item.metal === family.representative.smilesString));
+			item.metal === family.representative?.smilesString));
 		return present ? (H: number) => this.complexCharge(systems, H) : undefined;
 	}
 
@@ -766,6 +784,7 @@ export abstract class Simulation {
 
 	/** Representative molecule for one protonation step of a family, if one can be built. */
 	private static familySpecies(family: AcidBaseFamily, step: number): Molecule | undefined {
+		if (!family.representative) return undefined;
 		const charge = family.protonatedCharge - step;
 		const stored = family.members.find((member) => member._totalCharge === charge);
 		if (stored) return stored;
@@ -908,7 +927,7 @@ export abstract class Simulation {
 			let moved = false;
 
 			for (const { formula, cation, cations, anions, product } of hydroxideEquilibria) {
-				const family = systems.find((item) => item.representative.smilesString === cation);
+				const family = systems.find((item) => item.representative?.smilesString === cation);
 				if (!family) continue;
 				const solid = mix._activeMolecules.find((item) => item.solidSaltFormula === formula);
 				const solidMol = solid ? mix._molProperties[solid._id + "n"] ?? 0 : 0;
@@ -1112,12 +1131,37 @@ export abstract class Simulation {
 	}
 
 	/**
+	 * Activity of a gas in a vessel. A solution that holds the gas dissolved
+	 * reads the fraction of its saturation concentration it actually carries,
+	 * capped at {@link GAS_PARTIAL_PRESSURE}; a solution that holds none reads
+	 * the standard state, because a gas-evolving electrode sits in contact
+	 * with its own gas at that pressure and the model has no headspace to read
+	 * a lower value from. The dissolved amount is what an electrode can reach,
+	 * so a couple that has used it up falls below the standard state instead
+	 * of drawing on gas that has already left the vessel.
+	 *
+	 * @private
+	 * @static
+	 * @param {string} gas - id in `evolvedGases`
+	 * @param {Mixture} mix - the vessel
+	 * @returns {number}
+	 */
+	private static gasActivity(gas: string, mix: Mixture): number {
+		const dissolved = mix.dissolvedGas.get(gas) ?? 0;
+		if (!(dissolved > 0)) return GAS_PARTIAL_PRESSURE;
+		const solubility = evolvedGases[gas]?.solubility;
+		if (!(solubility > 0) || !(mix._solutionVolume > 0)) return GAS_PARTIAL_PRESSURE;
+		return Math.min(GAS_PARTIAL_PRESSURE, dissolved / (solubility * mix._solutionVolume));
+	}
+
+	/**
 	 * Activity of one species of a half-reaction in a vessel. A solid is a pure
-	 * phase and a gas that has left the solution sits at
-	 * {@link GAS_PARTIAL_PRESSURE}; water is the solvent. Everything else is
-	 * read from the free-ion view, so a computed conjugate anion counts as much
-	 * as a stored one, and a hydrolysing cation counts with the share that is
-	 * actually free rather than with its analytical total.
+	 * phase; a gas or a separated halogen reads {@link gasActivity}, and a
+	 * halogen that has already separated as a liquid or a solid is a pure
+	 * phase of its own. Water is the solvent. Everything else is read from the
+	 * free-ion view, so a computed conjugate anion counts as much as a stored
+	 * one, and a hydrolysing cation counts with the share that is actually
+	 * free rather than with its analytical total.
 	 *
 	 * @private
 	 * @static
@@ -1126,8 +1170,16 @@ export abstract class Simulation {
 	 * @returns {number}
 	 */
 	private static termActivity(term: HalfReactionTerm, view: VesselView): number {
+		const gas = gasForSmiles(term.smiles);
+		if (gas) {
+			const id = Object.keys(evolvedGases).find((key) => evolvedGases[key] === gas);
+			// A halogen that has separated as a liquid or a solid is a pure
+			// phase of its own, so it reads 1 as soon as any of it is there.
+			if (gas.phase !== "gas" && id && (view.mix.evolvedGas.get(id) ?? 0) > 0) return 1;
+			return id ? this.gasActivity(id, view.mix) : GAS_PARTIAL_PRESSURE;
+		}
 		if (term.phase === "solid") return 1;
-		if (term.phase === "gas") return GAS_PARTIAL_PRESSURE;
+		if (term.phase === "gas" || term.phase === "liquid") return GAS_PARTIAL_PRESSURE;
 		if (term.smiles === "[H+]") return view.protons;
 		if (term.smiles === "O") return 1;
 		const ion = view.ions.get(term.smiles);
@@ -1275,11 +1327,23 @@ export abstract class Simulation {
 			const plating = platings.find((item) => item.molecule.smilesString === smiles);
 			return plating ? plating.mol : 0;
 		};
+		/**
+		 * Amount of a gas species the vessel can give up. Only the dissolved
+		 * part is within reach of an electrode; a halogen that separated as a
+		 * liquid or a solid is still there to be consumed, but a gas that has
+		 * left the vessel is gone.
+		 */
+		const gasAmount = (reaction: HalfReaction): number => {
+			if (!reaction.gas) return 0;
+			const dissolved = view.mix.dissolvedGas.get(reaction.gas) ?? 0;
+			const separated = evolvedGases[reaction.gas]?.phase === "gas"
+				? 0
+				: view.mix.evolvedGas.get(reaction.gas) ?? 0;
+			return dissolved + separated;
+		};
 		const amountOf = (term: HalfReactionTerm, reaction: HalfReaction): number => {
+			if (gasForSmiles(term.smiles)) return gasAmount(reaction);
 			if (term.phase === "solid") return solidAmount(term.smiles);
-			if (term.phase === "gas") {
-				return reaction.gas ? view.mix.evolvedGas.get(reaction.gas) ?? 0 : 0;
-			}
 			if (term.smiles === "O") return Infinity;
 			// Protons are not a stored species: an acid family releases more as
 			// they are taken and water supplies them otherwise, so only the
@@ -1296,13 +1360,19 @@ export abstract class Simulation {
 		// Concentration the transport limit reads. A solid body and the solvent
 		// are reservoirs, and protons are replenished by their acid family, so
 		// none of them limits the rate. A gas is limited by the part that is
-		// still dissolved, which is its amount over the solution volume.
+		// still dissolved, which is its amount over the solution volume; a
+		// separated halogen is a reservoir of its own.
 		const transferConcentration = (term: HalfReactionTerm, reaction: HalfReaction): number => {
-			if (term.phase === "solid") return Infinity;
-			if (term.phase === "gas") {
-				const amount = reaction.gas ? view.mix.evolvedGas.get(reaction.gas) ?? 0 : 0;
-				return amount / volume;
+			if (gasForSmiles(term.smiles)) {
+				const id = reaction.gas;
+				if (!id) return 0;
+				const separated = evolvedGases[id]?.phase === "gas"
+					? 0
+					: view.mix.evolvedGas.get(id) ?? 0;
+				if (separated > 0) return Infinity;
+				return (view.mix.dissolvedGas.get(id) ?? 0) / volume;
 			}
+			if (term.phase === "solid") return Infinity;
 			if (term.smiles === "O" || term.smiles === "[H+]") return Infinity;
 			return this.termActivity(term, view);
 		};
@@ -1382,6 +1452,30 @@ export abstract class Simulation {
 		for (const term of reaction.terms) {
 			const delta = term.coefficient * extent;
 			if (!(Math.abs(delta) > 0)) continue;
+			// A halogen is a gas species whatever phase it separates in, so it
+			// is booked before the solid branch can mistake it for a deposit.
+			const gas = gasForSmiles(term.smiles);
+			if (gas) {
+				if (!reaction.gas) continue;
+				if (delta > 0) {
+					// The solution takes up to its saturation concentration and
+					// only the rest separates, so a gas that is still dissolved
+					// stays available to the electrode.
+					mix.admitGas(reaction.gas, delta, gas.solubility);
+					continue;
+				}
+				// Consumption reaches the dissolved part first. A halogen that
+				// separated as a liquid or a solid is still in the vessel and
+				// goes back into solution as it is used up; a gas that escaped
+				// is gone.
+				const wanted = -delta;
+				const left = wanted - mix.takeGas(reaction.gas, wanted);
+				if (left > 0 && gas.phase !== "gas") {
+					mix.evolvedGas.set(reaction.gas,
+						Math.max(0, (mix.evolvedGas.get(reaction.gas) ?? 0) - left));
+				}
+				continue;
+			}
 			if (term.phase === "solid") {
 				if (material !== undefined && material.smilesString === term.smiles) {
 					// The electrode body itself: it is not tracked as an amount,
@@ -1400,13 +1494,6 @@ export abstract class Simulation {
 				const metal = plating?.molecule ?? this.metalMolecule(term.smiles);
 				if (!metal) continue;
 				electrode.plate(metal, delta, this.metalBulkLitresPerMol(metal, reaction));
-				continue;
-			}
-			if (term.phase === "gas") {
-				if (!reaction.gas) continue;
-				if (delta > 0) mix.evolveGas(reaction.gas, delta);
-				else mix.evolvedGas.set(reaction.gas,
-					Math.max(0, (mix.evolvedGas.get(reaction.gas) ?? 0) + delta));
 				continue;
 			}
 			if (term.smiles === "O") {
@@ -2143,7 +2230,16 @@ export abstract class Simulation {
 	 * @returns {number}
 	 */
 	private static vesselInventory(view: VesselView, key: string, gas: boolean): number {
-		if (gas) return view.mix.evolvedGas.get(key) ?? 0;
+		if (gas) {
+			// Only the dissolved part is within reach of an electrode. A
+			// halogen that separated as a liquid or a solid is still in the
+			// vessel and counts; a gas that escaped is gone.
+			const dissolved = view.mix.dissolvedGas.get(key) ?? 0;
+			const separated = evolvedGases[key]?.phase === "gas"
+				? 0
+				: view.mix.evolvedGas.get(key) ?? 0;
+			return dissolved + separated;
+		}
 		const ion = view.ions.get(key);
 		if (ion) return ion.removable * view.mix._solutionVolume;
 		const stored = view.mix._activeMolecules.find((molecule) => molecule.smilesString === key);
@@ -2188,7 +2284,9 @@ export abstract class Simulation {
 					// are replenished by their acid family.
 					if (term.phase === "solid") continue;
 					if (term.smiles === "O" || term.smiles === "[H+]") continue;
-					const gas = term.phase === "gas";
+					// A halogen is a gas species whatever phase it separates
+					// in, so the phase alone does not tell them apart.
+					const gas = !!gasForSmiles(term.smiles);
 					const key = gas ? candidate.reaction.gas : term.smiles;
 					if (!key) continue;
 					const entry = perVessel.get(key) ?? { view, gas, amount: 0 };
@@ -2682,6 +2780,52 @@ export abstract class Simulation {
 		// pH no longer supports stays in the beaker.
 		this.settleSaltsAndHydroxides(mix1);
 		if (separateBaths) this.settleSaltsAndHydroxides(mix2);
+		// Chlorine that dissolved at the anode hydrolyses, which is what makes
+		// a chlorine electrolysis acidic and bleaching. It runs after the
+		// electrode step so the extent follows the chlorine that is there.
+		this.equilibrateChlorineHydrolysis(mix1);
+		if (separateBaths) this.equilibrateChlorineHydrolysis(mix2);
+	}
+
+	/**
+	 * Hydrolysis of dissolved chlorine, `Cl₂ + H₂O ⇌ HOCl + H⁺ + Cl⁻` with
+	 * `K = 4.2e-4`. Chlorine water is acidic and oxidising for exactly this
+	 * reason, and without it a chlorine electrolysis would report a neutral
+	 * anolyte. The hypochlorite stays as an analytical family on the mixture
+	 * and the chloride is booked as a stored ion; the proton comes out of the
+	 * charge balance, which is where every other proton in the model comes
+	 * from. Only the dissolved part takes part: chlorine that has already
+	 * bubbled out is not in the solution any more.
+	 *
+	 * @private
+	 * @static
+	 * @param {Mixture} mix - the vessel
+	 */
+	private static equilibrateChlorineHydrolysis(mix: Mixture): void {
+		const dissolved = mix.dissolvedGas.get("Cl2") ?? 0;
+		const volume = mix._solutionVolume;
+		if (!(dissolved > 0) || !(volume > 0)) return;
+		const view = this.vesselView(mix);
+		const protons = view.protons;
+		const chloride = view.ions.get("[Cl-]")?.concentration ?? 0;
+		const total = dissolved / volume;
+		// The residual is strictly increasing in the extent, so a bisection on
+		// [0, total] finds the root without a cubic solver.
+		const residual = (x: number): number =>
+			x * (x + protons) * (x + chloride) - CHLORINE_HYDROLYSIS * (total - x);
+		let low = 0;
+		let high = total;
+		for (let i = 0; i < 60; i++) {
+			const mid = (low + high) / 2;
+			if (residual(mid) > 0) high = mid;
+			else low = mid;
+		}
+		const extent = (low + high) / 2 * volume;
+		if (!(extent > 0)) return;
+		mix.takeGas("Cl2", extent);
+		mix.hypochlorite += extent;
+		const ion = this.ionMolecule("[Cl-]");
+		if (ion) mix.addMolecule(ion, extent);
 	}
 
 	/**
@@ -3035,6 +3179,8 @@ export abstract class Simulation {
 		const analyticalMolecules = new Set<Molecule>();
 		for (const family of systems) {
 			if (family.pKa.length < 1 || !(family.totalC > 0)) continue;
+			// A family that exists only as numbers has no structure to draw.
+			if (!family.representative) continue;
 			const elements = new Map<string, number>();
 			for (const section of family.representative._kekule_obj.calcFormula().getSections()) {
 				const symbol = section.obj.getSymbol();
@@ -3278,6 +3424,20 @@ export abstract class Simulation {
 		// It is kept as an amount, so it becomes a concentration here.
 		if (sMix._solutionVolume > 0) {
 			spectatorCharge += sMix.excessCharge / sMix._solutionVolume;
+		}
+		// Dissolved chlorine hydrolyses to hypochlorous acid, a weak acid of
+		// its own. Neither HOCl nor ClO⁻ is a stored molecule, so the family
+		// enters the balance as numbers; its chloride is a stored ion and is
+		// already counted above.
+		if (sMix._solutionVolume > 0 && sMix.hypochlorite > 0) {
+			systems.push({
+				key: "hypochlorite",
+				totalC: sMix.hypochlorite / sMix._solutionVolume,
+				pKa: [7.5],
+				protonatedCharge: 0,
+				step: 0,
+				members: [],
+			});
 		}
 		return { systems, spectatorCharge };
 	}

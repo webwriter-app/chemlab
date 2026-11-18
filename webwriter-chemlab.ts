@@ -2052,8 +2052,17 @@ export class ChemLab extends LitElementWw {
 		render(html`
 			${repeat(entries, ({ key }) => key, ({ molecule, species, gas, plating, phase }) => {
 				if (gas) {
+					// A halogen that left the solution is a liquid or a solid
+					// at room conditions, so the card reports the amount in
+					// the unit its phase calls for instead of a gas volume.
+					const mass = gas.amount * (gas.molarMass ?? 0);
+					const details = gas.phase === "liquid"
+						? html`<p>V: ${this.formatAmount(mass / (gas.density || 1), 3)} mL</p>`
+						: gas.phase === "solid"
+							? html`<p>m: ${this.formatAmount(mass, 3)} g</p>`
+							: html`<p>n: ${this.formatAmount(gas.amount * 1000, 3)} mmol</p>`;
 					return slide(html`<span class="vessel-carousel-thumbnail">${gas.formula}</span>`,
-						gas.formula, html`<p>n: ${this.formatAmount(gas.amount * 1000, 3)} mmol</p>`);
+						gas.formula, details);
 				}
 				if (plating) {
 					// The deposit is a bare element, so its formula is the
@@ -2207,7 +2216,9 @@ export class ChemLab extends LitElementWw {
 					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 					`;
 			} else if (type === chemlib.EComponentType.GasCollector) {
-				const collected = (this.curr_obj._connectedMix?.evolvedGasMol ?? 0) * chemlib.MOLAR_GAS_VOLUME_ML;
+				const mix = this.curr_obj._connectedMix;
+				const escaped = Math.max(0, (mix?.evolvedGasMol ?? 0) - this.curr_obj._tubeBaseline);
+				const collected = escaped * chemlib.molarGasVolume(mix?._temperature, mix?._pressure) * 1000;
 				this.contextEchemInfo.innerHTML = `
 					<p>${this.message("gesammelt")}: ${this.formatAmount(collected, 3)} mL</p>
 					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>

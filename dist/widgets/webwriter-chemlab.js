@@ -110787,11 +110787,11 @@ function oxygenCouple(materials, etaRef, b5) {
     materials
   };
 }
-function halogenCouple(id3, halogen, halide, sep, gas, etaRef, b5) {
+function halogenCouple(id3, halogen, halide, sep, gas, phase, etaRef, b5) {
   return {
     id: id3,
     terms: [
-      { smiles: halogen, coefficient: 1, phase: "gas" },
+      { smiles: halogen, coefficient: 1, phase },
       { smiles: halide, coefficient: -2, phase: "solution" }
     ],
     el: 2,
@@ -110851,9 +110851,9 @@ var halfReactions = [
   oxygenCouple([], 0.9, 0.12),
   oxygenCouple(["platinum"], 0.45, 0.06),
   // Halogen evolution.
-  halogenCouple("Cl2/Cl-", "[Cl2]", "[Cl-]", 1.358, "Cl2", 0.1, 0.04),
-  halogenCouple("Br2/Br-", "[Br2]", "[Br-]", 1.066, "Br2", 0.1, 0.04),
-  halogenCouple("I2/I-", "[I2]", "[I-]", 0.536, "I2", 0.1, 0.04)
+  halogenCouple("Cl2/Cl-", "[Cl2]", "[Cl-]", 1.358, "Cl2", "gas", 0.1, 0.04),
+  halogenCouple("Br2/Br-", "[Br2]", "[Br-]", 1.066, "Br2", "liquid", 0.1, 0.04),
+  halogenCouple("I2/I-", "[I2]", "[I-]", 0.536, "I2", "solid", 0.1, 0.04)
 ];
 function coupleKey(reaction) {
   return reaction.terms.map((term) => `${term.coefficient}:${term.smiles}`).sort().join("|");
@@ -111019,6 +111019,14 @@ var ElectricComponent = class {
    * @type {([number, number] | undefined)}
    */
   _bridgeLegs;
+  /**
+   * for a gas collection tube: the escaped gas its vessel already held when
+   * the tube was put in place, in mol. The tube only shows what bubbled into
+   * it since then, so this is subtracted from the vessel tally.
+   *
+   * @type {number}
+   */
+  _tubeBaseline = 0;
   /**
    * The area of an electrode that actually carries current, in cm². An
    * authored value wins, otherwise the wetted area the canvas measured
@@ -148450,6 +148458,39 @@ function splitLiquidPhases(mixture) {
   return polar.density <= nonpolar.density ? [polar, nonpolar] : [nonpolar, polar];
 }
 
+// chemlib/gasEvolution.ts
+var MOLAR_GAS_VOLUME = 24.47;
+var MOLAR_GAS_VOLUME_ML = MOLAR_GAS_VOLUME * 1e3;
+var GAS_CONSTANT = 0.0831446;
+function molarGasVolume(temperature, pressure = 101325) {
+  if (!(temperature > 0) || !(pressure > 0)) return MOLAR_GAS_VOLUME;
+  return GAS_CONSTANT * temperature / (pressure / 1e5);
+}
+var evolvedGases = {
+  // CO2: 0.034 mol/L in water at 25 °C and 1 atm
+  CO2: { formula: "CO\u2082", phase: "gas", family: "C(=O)(O)O", solubility: 0.034 },
+  // H2S: about 0.1 mol/L in saturated water
+  H2S: { formula: "H\u2082S", phase: "gas", family: "S", solubility: 0.1 },
+  // NH3: about 15 mol/L in the concentrated solution, so a lab solution stays
+  NH3: { formula: "NH\u2083", phase: "gas", family: "N", solubility: 15 },
+  // H2: 0.78 mmol/L, practically insoluble, and only formed on a metal surface
+  H2: { formula: "H\u2082", phase: "gas", solubility: 78e-5, smiles: "[H][H]" },
+  // O2: 1.3 mmol/L, the value that makes a water electrolysis bubble at all
+  O2: { formula: "O\u2082", phase: "gas", solubility: 13e-4, smiles: "[O2]" },
+  // Cl2: about 0.09 mol/L apparent, part of it already hydrolysed
+  Cl2: { formula: "Cl\u2082", phase: "gas", solubility: 0.09, smiles: "[Cl2]" },
+  // Br2: 0.21 mol/L, and the excess separates as a heavy liquid
+  Br2: { formula: "Br\u2082", phase: "liquid", solubility: 0.21, smiles: "[Br2]", molarMass: 159.808, density: 3.1028 },
+  // I2: 1.3 mmol/L, and the excess settles as a solid
+  I2: { formula: "I\u2082", phase: "solid", solubility: 13e-4, smiles: "[I2]", molarMass: 253.809, density: 4.933 }
+};
+function gasForSmiles(smiles) {
+  for (const gas of Object.values(evolvedGases)) {
+    if (gas.smiles === smiles) return gas;
+  }
+  return void 0;
+}
+
 // chemlib/Mixture.ts
 function elementColor(molecule2) {
   const hex2 = molecule2._atoms[0]?.getCPKHEX();
@@ -148492,8 +148533,27 @@ var Mixture = class {
   /** Measured volume of additions beyond the water tracked by the solution model, in L. */
   addedVolume = 0;
   hasLiquidVolume = false;
-  /** Gas that has left the solution, keyed by the id in `evolvedGases`, in mol. */
+  /**
+   * Gas that has left the solution, keyed by the id in `evolvedGases`, in
+   * mol. This is the separated tally: it sits in the headspace, as a second
+   * liquid or as a solid, and it is no longer available to an electrode.
+   */
   evolvedGas = /* @__PURE__ */ new Map();
+  /**
+   * Gas still dissolved in the solution, keyed by the id in `evolvedGases`,
+   * in mol. A gas produced at an electrode enters here first and only the
+   * part above the saturation concentration separates into
+   * {@link evolvedGas}. The dissolved part is what the Nernst term reads and
+   * what a half-reaction can consume again.
+   */
+  dissolvedGas = /* @__PURE__ */ new Map();
+  /**
+   * Analytical hypochlorous acid and hypochlorite together, in mol. Chlorine
+   * that dissolves hydrolyses to HOCl, H⁺ and Cl⁻; the family is kept as one
+   * number because neither HOCl nor ClO⁻ is a stored molecule, and the
+   * acid–base solver splits it by its own pKa.
+   */
+  hypochlorite = 0;
   /**
    * Net charge the half-reactions have left in the vessel without a stored
    * counter-ion, in mol. Positive means excess cations, as after a cathodic
@@ -148521,10 +148581,52 @@ var Mixture = class {
     if (!(amountMol > 0)) return;
     this.evolvedGas.set(gas, (this.evolvedGas.get(gas) ?? 0) + amountMol);
   }
-  /** Total gas that has left the solution, in mol. */
+  /**
+   * Brings `amountMol` of a gas into the vessel. The solution takes up to its
+   * saturation concentration and the rest separates as the phase the gas
+   * takes at lab conditions. A gas without a tabulated solubility is
+   * insoluble and separates at once.
+   *
+   * @param {string} gas - id in `evolvedGases`
+   * @param {number} amountMol - amount offered to the vessel
+   * @param {number} [solubility] - saturation concentration in mol/L
+   */
+  admitGas(gas, amountMol, solubility) {
+    if (!(amountMol > 0)) return;
+    const volume = this._solutionVolume;
+    const capacity = solubility > 0 && volume > 0 ? solubility * volume : 0;
+    const held = this.dissolvedGas.get(gas) ?? 0;
+    const dissolved = Math.min(amountMol, Math.max(0, capacity - held));
+    if (dissolved > 0) this.dissolvedGas.set(gas, held + dissolved);
+    this.evolveGas(gas, amountMol - dissolved);
+  }
+  /**
+   * Removes up to `amountMol` of a gas from the solution and returns what it
+   * could take. Only the dissolved part is available; the separated tally is
+   * out of reach of an electrode.
+   *
+   * @param {string} gas - id in `evolvedGases`
+   * @param {number} amountMol - amount asked for
+   * @returns {number} amount actually taken from the solution
+   */
+  takeGas(gas, amountMol) {
+    if (!(amountMol > 0)) return 0;
+    const held = this.dissolvedGas.get(gas) ?? 0;
+    const taken = Math.min(held, amountMol);
+    if (taken > 0) this.dissolvedGas.set(gas, held - taken);
+    return taken;
+  }
+  /**
+   * Total gas that has left the solution as a gas, in mol. A halogen that
+   * separated as a liquid or a solid is not part of this: it never reaches a
+   * collection tube.
+   */
   get evolvedGasMol() {
     let total = 0;
-    for (const amount of this.evolvedGas.values()) total += amount;
+    for (const [gas, amount] of this.evolvedGas) {
+      if (evolvedGases[gas]?.phase !== "gas") continue;
+      total += amount;
+    }
     return total;
   }
   /**
@@ -149475,26 +149577,6 @@ var complexFormation = {
   "[Ni(NH3)6]2+": { metal: "[Ni2+]", ligand: "N", count: 6, beta: 55e7, formula: "Ni(NH\u2083)\u2086\xB2\u207A", color: 4878261 }
 };
 
-// chemlib/gasEvolution.ts
-var MOLAR_GAS_VOLUME = 24.47;
-var MOLAR_GAS_VOLUME_ML = MOLAR_GAS_VOLUME * 1e3;
-var evolvedGases = {
-  // CO2: 0.034 mol/L in water at 25 °C and 1 atm
-  CO2: { formula: "CO\u2082", family: "C(=O)(O)O", solubility: 0.034 },
-  // H2S: about 0.1 mol/L in saturated water
-  H2S: { formula: "H\u2082S", family: "S", solubility: 0.1 },
-  // NH3: about 15 mol/L in the concentrated solution, so a lab solution stays
-  NH3: { formula: "NH\u2083", family: "N", solubility: 15 },
-  // H2: practically insoluble, and only formed on a metal surface
-  H2: { formula: "H\u2082" },
-  // The halogens and oxygen leave an electrode as a gas and do not stay
-  // dissolved, so they carry no solubility: whatever is produced escapes.
-  Cl2: { formula: "Cl\u2082" },
-  Br2: { formula: "Br\u2082" },
-  I2: { formula: "I\u2082" },
-  O2: { formula: "O\u2082" }
-};
-
 // chemlib/circuit.ts
 function solveLinear(matrix, rhs) {
   const size3 = rhs.length;
@@ -149852,6 +149934,7 @@ var PLATEAU_CURRENT = 1e-12;
 var TRACE_ACTIVITY = 1e-9;
 var REFERENCE_STIFFNESS = 1e3;
 var REFERENCE_CURRENT_DENSITY2 = 1e-6;
+var CHLORINE_HYDROLYSIS = 42e-5;
 var hydroxideEquilibria = saltEquilibria.filter(({ anion }) => anion === "[OH-]");
 var otherSaltEquilibria = saltEquilibria.filter(({ anion }) => anion !== "[OH-]");
 var hydroxideIon;
@@ -150162,8 +150245,8 @@ var Simulation = class {
     let factor = 1;
     for (const complex of complexEquilibria) {
       if (complex.metal !== smiles) continue;
-      const metalFamily = systems4.find((item) => item.representative.smilesString === complex.metal);
-      const ligandFamily = systems4.find((item) => item.representative.smilesString === complex.ligand);
+      const metalFamily = systems4.find((item) => item.representative?.smilesString === complex.metal);
+      const ligandFamily = systems4.find((item) => item.representative?.smilesString === complex.ligand);
       if (!metalFamily || !ligandFamily) continue;
       const neutral = AcidBase.speciesFractions(ligandFamily, H3)[ligandFamily.step] ?? 0;
       const metal = metalFamily.totalC;
@@ -150195,8 +150278,8 @@ var Simulation = class {
   static complexCharge(systems4, H3, skip2) {
     let charge = 0;
     for (const family of systems4) {
-      const smiles = family.representative.smilesString;
-      if (smiles === skip2) continue;
+      const smiles = family.representative?.smilesString;
+      if (smiles === void 0 || smiles === skip2) continue;
       if (!complexEquilibria.some((item) => item.metal === smiles)) continue;
       const factor = this.complexFactor(smiles, systems4, H3);
       if (!(factor > 1)) continue;
@@ -150212,7 +150295,7 @@ var Simulation = class {
    * undefined when no family of the solution forms a complex.
    */
   static complexChargeHook(systems4) {
-    const present = systems4.some((family) => complexEquilibria.some((item) => item.metal === family.representative.smilesString));
+    const present = systems4.some((family) => complexEquilibria.some((item) => item.metal === family.representative?.smilesString));
     return present ? (H3) => this.complexCharge(systems4, H3) : void 0;
   }
   /**
@@ -150286,6 +150369,7 @@ var Simulation = class {
   }
   /** Representative molecule for one protonation step of a family, if one can be built. */
   static familySpecies(family, step) {
+    if (!family.representative) return void 0;
     const charge = family.protonatedCharge - step;
     const stored = family.members.find((member) => member._totalCharge === charge);
     if (stored) return stored;
@@ -150418,7 +150502,7 @@ var Simulation = class {
       const { systems: systems4, spectatorCharge } = this.acidBaseComposition(mix);
       let moved = false;
       for (const { formula, cation, cations, anions, product } of hydroxideEquilibria) {
-        const family = systems4.find((item) => item.representative.smilesString === cation);
+        const family = systems4.find((item) => item.representative?.smilesString === cation);
         if (!family) continue;
         const solid = mix._activeMolecules.find((item) => item.solidSaltFormula === formula);
         const solidMol = solid ? mix._molProperties[solid._id + "n"] ?? 0 : 0;
@@ -150586,12 +150670,36 @@ var Simulation = class {
     return { mix, ions, protons };
   }
   /**
+   * Activity of a gas in a vessel. A solution that holds the gas dissolved
+   * reads the fraction of its saturation concentration it actually carries,
+   * capped at {@link GAS_PARTIAL_PRESSURE}; a solution that holds none reads
+   * the standard state, because a gas-evolving electrode sits in contact
+   * with its own gas at that pressure and the model has no headspace to read
+   * a lower value from. The dissolved amount is what an electrode can reach,
+   * so a couple that has used it up falls below the standard state instead
+   * of drawing on gas that has already left the vessel.
+   *
+   * @private
+   * @static
+   * @param {string} gas - id in `evolvedGases`
+   * @param {Mixture} mix - the vessel
+   * @returns {number}
+   */
+  static gasActivity(gas, mix) {
+    const dissolved = mix.dissolvedGas.get(gas) ?? 0;
+    if (!(dissolved > 0)) return GAS_PARTIAL_PRESSURE;
+    const solubility = evolvedGases[gas]?.solubility;
+    if (!(solubility > 0) || !(mix._solutionVolume > 0)) return GAS_PARTIAL_PRESSURE;
+    return Math.min(GAS_PARTIAL_PRESSURE, dissolved / (solubility * mix._solutionVolume));
+  }
+  /**
    * Activity of one species of a half-reaction in a vessel. A solid is a pure
-   * phase and a gas that has left the solution sits at
-   * {@link GAS_PARTIAL_PRESSURE}; water is the solvent. Everything else is
-   * read from the free-ion view, so a computed conjugate anion counts as much
-   * as a stored one, and a hydrolysing cation counts with the share that is
-   * actually free rather than with its analytical total.
+   * phase; a gas or a separated halogen reads {@link gasActivity}, and a
+   * halogen that has already separated as a liquid or a solid is a pure
+   * phase of its own. Water is the solvent. Everything else is read from the
+   * free-ion view, so a computed conjugate anion counts as much as a stored
+   * one, and a hydrolysing cation counts with the share that is actually
+   * free rather than with its analytical total.
    *
    * @private
    * @static
@@ -150600,8 +150708,14 @@ var Simulation = class {
    * @returns {number}
    */
   static termActivity(term, view) {
+    const gas = gasForSmiles(term.smiles);
+    if (gas) {
+      const id3 = Object.keys(evolvedGases).find((key) => evolvedGases[key] === gas);
+      if (gas.phase !== "gas" && id3 && (view.mix.evolvedGas.get(id3) ?? 0) > 0) return 1;
+      return id3 ? this.gasActivity(id3, view.mix) : GAS_PARTIAL_PRESSURE;
+    }
     if (term.phase === "solid") return 1;
-    if (term.phase === "gas") return GAS_PARTIAL_PRESSURE;
+    if (term.phase === "gas" || term.phase === "liquid") return GAS_PARTIAL_PRESSURE;
     if (term.smiles === "[H+]") return view.protons;
     if (term.smiles === "O") return 1;
     const ion2 = view.ions.get(term.smiles);
@@ -150736,11 +150850,15 @@ var Simulation = class {
       const plating = platings.find((item) => item.molecule.smilesString === smiles);
       return plating ? plating.mol : 0;
     };
+    const gasAmount = (reaction) => {
+      if (!reaction.gas) return 0;
+      const dissolved = view.mix.dissolvedGas.get(reaction.gas) ?? 0;
+      const separated = evolvedGases[reaction.gas]?.phase === "gas" ? 0 : view.mix.evolvedGas.get(reaction.gas) ?? 0;
+      return dissolved + separated;
+    };
     const amountOf = (term, reaction) => {
+      if (gasForSmiles(term.smiles)) return gasAmount(reaction);
       if (term.phase === "solid") return solidAmount(term.smiles);
-      if (term.phase === "gas") {
-        return reaction.gas ? view.mix.evolvedGas.get(reaction.gas) ?? 0 : 0;
-      }
       if (term.smiles === "O") return Infinity;
       if (term.smiles === "[H+]") return Infinity;
       const ion2 = view.ions.get(term.smiles);
@@ -150749,11 +150867,14 @@ var Simulation = class {
       return stored ? (view.mix._molProperties[stored._id + "c"] ?? 0) * volume : 0;
     };
     const transferConcentration = (term, reaction) => {
-      if (term.phase === "solid") return Infinity;
-      if (term.phase === "gas") {
-        const amount = reaction.gas ? view.mix.evolvedGas.get(reaction.gas) ?? 0 : 0;
-        return amount / volume;
+      if (gasForSmiles(term.smiles)) {
+        const id3 = reaction.gas;
+        if (!id3) return 0;
+        const separated = evolvedGases[id3]?.phase === "gas" ? 0 : view.mix.evolvedGas.get(id3) ?? 0;
+        if (separated > 0) return Infinity;
+        return (view.mix.dissolvedGas.get(id3) ?? 0) / volume;
       }
+      if (term.phase === "solid") return Infinity;
       if (term.smiles === "O" || term.smiles === "[H+]") return Infinity;
       return this.termActivity(term, view);
     };
@@ -150823,6 +150944,23 @@ var Simulation = class {
     for (const term of reaction.terms) {
       const delta = term.coefficient * extent;
       if (!(Math.abs(delta) > 0)) continue;
+      const gas = gasForSmiles(term.smiles);
+      if (gas) {
+        if (!reaction.gas) continue;
+        if (delta > 0) {
+          mix.admitGas(reaction.gas, delta, gas.solubility);
+          continue;
+        }
+        const wanted = -delta;
+        const left = wanted - mix.takeGas(reaction.gas, wanted);
+        if (left > 0 && gas.phase !== "gas") {
+          mix.evolvedGas.set(
+            reaction.gas,
+            Math.max(0, (mix.evolvedGas.get(reaction.gas) ?? 0) - left)
+          );
+        }
+        continue;
+      }
       if (term.phase === "solid") {
         if (material !== void 0 && material.smilesString === term.smiles) {
           if (delta < 0) {
@@ -150838,15 +150976,6 @@ var Simulation = class {
         const metal = plating?.molecule ?? this.metalMolecule(term.smiles);
         if (!metal) continue;
         electrode.plate(metal, delta, this.metalBulkLitresPerMol(metal, reaction));
-        continue;
-      }
-      if (term.phase === "gas") {
-        if (!reaction.gas) continue;
-        if (delta > 0) mix.evolveGas(reaction.gas, delta);
-        else mix.evolvedGas.set(
-          reaction.gas,
-          Math.max(0, (mix.evolvedGas.get(reaction.gas) ?? 0) + delta)
-        );
         continue;
       }
       if (term.smiles === "O") {
@@ -151460,7 +151589,11 @@ var Simulation = class {
    * @returns {number}
    */
   static vesselInventory(view, key, gas) {
-    if (gas) return view.mix.evolvedGas.get(key) ?? 0;
+    if (gas) {
+      const dissolved = view.mix.dissolvedGas.get(key) ?? 0;
+      const separated = evolvedGases[key]?.phase === "gas" ? 0 : view.mix.evolvedGas.get(key) ?? 0;
+      return dissolved + separated;
+    }
     const ion2 = view.ions.get(key);
     if (ion2) return ion2.removable * view.mix._solutionVolume;
     const stored = view.mix._activeMolecules.find((molecule2) => molecule2.smilesString === key);
@@ -151498,7 +151631,7 @@ var Simulation = class {
           if (Math.sign(term.coefficient) === Math.sign(extent)) continue;
           if (term.phase === "solid") continue;
           if (term.smiles === "O" || term.smiles === "[H+]") continue;
-          const gas = term.phase === "gas";
+          const gas = !!gasForSmiles(term.smiles);
           const key = gas ? candidate.reaction.gas : term.smiles;
           if (!key) continue;
           const entry = perVessel.get(key) ?? { view, gas, amount: 0 };
@@ -151899,6 +152032,45 @@ var Simulation = class {
     if (separateBaths) this.balanceCharge(mix2);
     this.settleSaltsAndHydroxides(mix1);
     if (separateBaths) this.settleSaltsAndHydroxides(mix2);
+    this.equilibrateChlorineHydrolysis(mix1);
+    if (separateBaths) this.equilibrateChlorineHydrolysis(mix2);
+  }
+  /**
+   * Hydrolysis of dissolved chlorine, `Cl₂ + H₂O ⇌ HOCl + H⁺ + Cl⁻` with
+   * `K = 4.2e-4`. Chlorine water is acidic and oxidising for exactly this
+   * reason, and without it a chlorine electrolysis would report a neutral
+   * anolyte. The hypochlorite stays as an analytical family on the mixture
+   * and the chloride is booked as a stored ion; the proton comes out of the
+   * charge balance, which is where every other proton in the model comes
+   * from. Only the dissolved part takes part: chlorine that has already
+   * bubbled out is not in the solution any more.
+   *
+   * @private
+   * @static
+   * @param {Mixture} mix - the vessel
+   */
+  static equilibrateChlorineHydrolysis(mix) {
+    const dissolved = mix.dissolvedGas.get("Cl2") ?? 0;
+    const volume = mix._solutionVolume;
+    if (!(dissolved > 0) || !(volume > 0)) return;
+    const view = this.vesselView(mix);
+    const protons = view.protons;
+    const chloride2 = view.ions.get("[Cl-]")?.concentration ?? 0;
+    const total = dissolved / volume;
+    const residual = (x4) => x4 * (x4 + protons) * (x4 + chloride2) - CHLORINE_HYDROLYSIS * (total - x4);
+    let low = 0;
+    let high = total;
+    for (let i11 = 0; i11 < 60; i11++) {
+      const mid = (low + high) / 2;
+      if (residual(mid) > 0) high = mid;
+      else low = mid;
+    }
+    const extent = (low + high) / 2 * volume;
+    if (!(extent > 0)) return;
+    mix.takeGas("Cl2", extent);
+    mix.hypochlorite += extent;
+    const ion2 = this.ionMolecule("[Cl-]");
+    if (ion2) mix.addMolecule(ion2, extent);
   }
   /**
    * Simulation of a network that carries no cell: a supply wired straight
@@ -152197,6 +152369,7 @@ var Simulation = class {
     const analyticalMolecules = /* @__PURE__ */ new Set();
     for (const family of systems4) {
       if (family.pKa.length < 1 || !(family.totalC > 0)) continue;
+      if (!family.representative) continue;
       const elements2 = /* @__PURE__ */ new Map();
       for (const section of family.representative._kekule_obj.calcFormula().getSections()) {
         const symbol = section.obj.getSymbol();
@@ -152364,6 +152537,16 @@ var Simulation = class {
     if (sMix._solutionVolume > 0) {
       spectatorCharge += sMix.excessCharge / sMix._solutionVolume;
     }
+    if (sMix._solutionVolume > 0 && sMix.hypochlorite > 0) {
+      systems4.push({
+        key: "hypochlorite",
+        totalC: sMix.hypochlorite / sMix._solutionVolume,
+        pKa: [7.5],
+        protonatedCharge: 0,
+        step: 0,
+        members: []
+      });
+    }
     return { systems: systems4, spectatorCharge };
   }
 };
@@ -152524,8 +152707,16 @@ var ChemComponent = class {
         const incomingMol = nMix._activeMolecules.reduce((sum, mol) => sum + nMix._molProperties[mol._id + "n"], 0);
         const addedMol = nMix._activeMolecules.reduce((sum, mol) => sum + Math.min(nMix._molProperties[mol._id + "n"], nMolAmount ?? Infinity), 0);
         if (incomingMol > 0 && addedMol > 0) {
-          this._content.addedVolume += nMix.addedVolume * addedMol / incomingMol;
-          this._content.excessCharge += nMix.excessCharge * addedMol / incomingMol;
+          const share = addedMol / incomingMol;
+          this._content.addedVolume += nMix.addedVolume * share;
+          this._content.excessCharge += nMix.excessCharge * share;
+          this._content.hypochlorite += nMix.hypochlorite * share;
+          for (const [gas, amount] of nMix.dissolvedGas) {
+            this._content.dissolvedGas.set(
+              gas,
+              (this._content.dissolvedGas.get(gas) ?? 0) + amount * share
+            );
+          }
           this._content.hasLiquidVolume ||= nMix.hasLiquidVolume;
         }
         for (let mol of nMix._activeMolecules) {
@@ -152576,6 +152767,13 @@ var ChemComponent = class {
         this._content.addedVolume -= portion.addedVolume;
         portion.excessCharge = this._content.excessCharge * fraction;
         this._content.excessCharge -= portion.excessCharge;
+        portion.hypochlorite = this._content.hypochlorite * fraction;
+        this._content.hypochlorite -= portion.hypochlorite;
+        for (const [gas, amount] of this._content.dissolvedGas) {
+          const share = amount * fraction;
+          portion.dissolvedGas.set(gas, share);
+          this._content.dissolvedGas.set(gas, amount - share);
+        }
         if (fraction === 1) this._content.hasLiquidVolume = false;
         Simulation.sSolvation(this._content);
         tDest.addContents({ nMix: portion });
@@ -178096,7 +178294,11 @@ function vesselCarouselEntries(mixture, equilibrium, platings = []) {
   for (const [id3, amount] of mixture.evolvedGas) {
     const gas = evolvedGases[id3];
     if (!gas || !(amount > 0)) continue;
-    gases.push({ key: `gas:${id3}`, gas: { formula: gas.formula, amount }, phase: "gas" });
+    gases.push({
+      key: `gas:${id3}`,
+      gas: { formula: gas.formula, amount, phase: gas.phase, molarMass: gas.molarMass, density: gas.density },
+      phase: gas.phase
+    });
   }
   return [...solids, ...liquids, ...ions.map(({ entry }) => entry), ...gases];
 }
@@ -183603,7 +183805,8 @@ var ElectricDeviceView = class extends Container {
     if (!fill2 || !tube) return false;
     const mix = this.component._connectedMix;
     const inSolution = !!mix?._isSolution;
-    const gasMl = (mix?.evolvedGasMol ?? 0) * MOLAR_GAS_VOLUME_ML;
+    const collected = Math.max(0, (mix?.evolvedGasMol ?? 0) - this.component._tubeBaseline);
+    const gasMl = collected * molarGasVolume(mix?._temperature, mix?._pressure) * 1e3;
     const gasFraction = inSolution ? Math.max(0, Math.min(1, gasMl / TUBE_VOLUME_ML)) : 0;
     const key = inSolution ? gasFraction.toFixed(4) : "";
     if (key === this.tubeKey) return false;
@@ -185214,7 +185417,9 @@ var CanvasController = class _CanvasController {
         return;
       }
       case "gascollector" /* GasCollector */: {
-        eComp._connectedMix = this.vesselAt(sprite.x, bottom)?.component._content;
+        const mix = this.vesselAt(sprite.x, bottom)?.component._content;
+        if (mix !== eComp._connectedMix) eComp._tubeBaseline = mix?.evolvedGasMol ?? 0;
+        eComp._connectedMix = mix;
         return;
       }
       case "bridge" /* Bridge */: {
@@ -186832,10 +187037,12 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     B(x`
 			${c4(entries, ({ key }) => key, ({ molecule: molecule2, species, gas, plating, phase }) => {
       if (gas) {
+        const mass2 = gas.amount * (gas.molarMass ?? 0);
+        const details2 = gas.phase === "liquid" ? x`<p>V: ${this.formatAmount(mass2 / (gas.density || 1), 3)} mL</p>` : gas.phase === "solid" ? x`<p>m: ${this.formatAmount(mass2, 3)} g</p>` : x`<p>n: ${this.formatAmount(gas.amount * 1e3, 3)} mmol</p>`;
         return slide(
           x`<span class="vessel-carousel-thumbnail">${gas.formula}</span>`,
           gas.formula,
-          x`<p>n: ${this.formatAmount(gas.amount * 1e3, 3)} mmol</p>`
+          details2
         );
       }
       if (plating) {
@@ -186972,7 +187179,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
 					`;
       } else if (type === "gascollector" /* GasCollector */) {
-        const collected = (this.curr_obj._connectedMix?.evolvedGasMol ?? 0) * MOLAR_GAS_VOLUME_ML;
+        const mix = this.curr_obj._connectedMix;
+        const escaped = Math.max(0, (mix?.evolvedGasMol ?? 0) - this.curr_obj._tubeBaseline);
+        const collected = escaped * molarGasVolume(mix?._temperature, mix?._pressure) * 1e3;
         this.contextEchemInfo.innerHTML = `
 					<p>${this.message("gesammelt")}: ${this.formatAmount(collected, 3)} mL</p>
 					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>

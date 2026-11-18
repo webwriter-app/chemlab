@@ -3,6 +3,7 @@ import { StructureManager } from "./StructureManager";
 import { ethanolWaterExcessVolume } from "./ethanolWaterVolume";
 import { saltSolubility } from "./saltSolubility";
 import { splitLiquidPhases, type LiquidPhase } from "./liquidPhases";
+import { evolvedGases } from "./gasEvolution";
 
 /**
  * Colour of a solid that has no tabulated one, taken from the CPK colour of
@@ -65,8 +66,27 @@ class Mixture {
 	/** Measured volume of additions beyond the water tracked by the solution model, in L. */
 	addedVolume = 0;
 	hasLiquidVolume = false;
-	/** Gas that has left the solution, keyed by the id in `evolvedGases`, in mol. */
+	/**
+	 * Gas that has left the solution, keyed by the id in `evolvedGases`, in
+	 * mol. This is the separated tally: it sits in the headspace, as a second
+	 * liquid or as a solid, and it is no longer available to an electrode.
+	 */
 	evolvedGas: Map<string, number> = new Map();
+	/**
+	 * Gas still dissolved in the solution, keyed by the id in `evolvedGases`,
+	 * in mol. A gas produced at an electrode enters here first and only the
+	 * part above the saturation concentration separates into
+	 * {@link evolvedGas}. The dissolved part is what the Nernst term reads and
+	 * what a half-reaction can consume again.
+	 */
+	dissolvedGas: Map<string, number> = new Map();
+	/**
+	 * Analytical hypochlorous acid and hypochlorite together, in mol. Chlorine
+	 * that dissolves hydrolyses to HOCl, H⁺ and Cl⁻; the family is kept as one
+	 * number because neither HOCl nor ClO⁻ is a stored molecule, and the
+	 * acid–base solver splits it by its own pKa.
+	 */
+	hypochlorite = 0;
 	/**
 	 * Net charge the half-reactions have left in the vessel without a stored
 	 * counter-ion, in mol. Positive means excess cations, as after a cathodic
@@ -96,10 +116,54 @@ class Mixture {
 		this.evolvedGas.set(gas, (this.evolvedGas.get(gas) ?? 0) + amountMol);
 	}
 
-	/** Total gas that has left the solution, in mol. */
+	/**
+	 * Brings `amountMol` of a gas into the vessel. The solution takes up to its
+	 * saturation concentration and the rest separates as the phase the gas
+	 * takes at lab conditions. A gas without a tabulated solubility is
+	 * insoluble and separates at once.
+	 *
+	 * @param {string} gas - id in `evolvedGases`
+	 * @param {number} amountMol - amount offered to the vessel
+	 * @param {number} [solubility] - saturation concentration in mol/L
+	 */
+	admitGas(gas: string, amountMol: number, solubility?: number): void {
+		if (!(amountMol > 0)) return;
+		const volume = this._solutionVolume;
+		const capacity = solubility > 0 && volume > 0 ? solubility * volume : 0;
+		const held = this.dissolvedGas.get(gas) ?? 0;
+		const dissolved = Math.min(amountMol, Math.max(0, capacity - held));
+		if (dissolved > 0) this.dissolvedGas.set(gas, held + dissolved);
+		this.evolveGas(gas, amountMol - dissolved);
+	}
+
+	/**
+	 * Removes up to `amountMol` of a gas from the solution and returns what it
+	 * could take. Only the dissolved part is available; the separated tally is
+	 * out of reach of an electrode.
+	 *
+	 * @param {string} gas - id in `evolvedGases`
+	 * @param {number} amountMol - amount asked for
+	 * @returns {number} amount actually taken from the solution
+	 */
+	takeGas(gas: string, amountMol: number): number {
+		if (!(amountMol > 0)) return 0;
+		const held = this.dissolvedGas.get(gas) ?? 0;
+		const taken = Math.min(held, amountMol);
+		if (taken > 0) this.dissolvedGas.set(gas, held - taken);
+		return taken;
+	}
+
+	/**
+	 * Total gas that has left the solution as a gas, in mol. A halogen that
+	 * separated as a liquid or a solid is not part of this: it never reaches a
+	 * collection tube.
+	 */
 	get evolvedGasMol(): number {
 		let total = 0;
-		for (const amount of this.evolvedGas.values()) total += amount;
+		for (const [gas, amount] of this.evolvedGas) {
+			if (evolvedGases[gas]?.phase !== "gas") continue;
+			total += amount;
+		}
 		return total;
 	}
 

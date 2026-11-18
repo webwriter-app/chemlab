@@ -1,7 +1,7 @@
 import { CanvasSource, Container, DOMAdapter, Graphics, Rectangle, Sprite, Text, Texture } from "pixi.js";
 import { EComponentType, type ElectricComponent } from "../chemlib/ElectricComponent";
 import { ELECTRODE_AREA } from "../chemlib/halfReactions";
-import { MOLAR_GAS_VOLUME_ML } from "../chemlib/gasEvolution";
+import { molarGasVolume } from "../chemlib/gasEvolution";
 import { componentTerminals, componentVariant, type TerminalPoint } from "../data/componentGraphics";
 import { AQUEOUS_FILL } from "./VesselView";
 
@@ -464,7 +464,10 @@ export class ElectricDeviceView extends Container {
 		if (!fill || !tube) return false;
 		const mix = this.component._connectedMix;
 		const inSolution = !!mix?._isSolution;
-		const gasMl = (mix?.evolvedGasMol ?? 0) * MOLAR_GAS_VOLUME_ML;
+		// Only the gas that entered the tube counts, and the molar volume
+		// follows the temperature and pressure of the vessel.
+		const collected = Math.max(0, (mix?.evolvedGasMol ?? 0) - this.component._tubeBaseline);
+		const gasMl = collected * molarGasVolume(mix?._temperature, mix?._pressure) * 1000;
 		const gasFraction = inSolution ? Math.max(0, Math.min(1, gasMl / TUBE_VOLUME_ML)) : 0;
 		const key = inSolution ? gasFraction.toFixed(4) : "";
 		if (key === this.tubeKey) return false;

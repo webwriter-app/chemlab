@@ -200,6 +200,14 @@ class ElectricComponent {
 	 * @type {([number, number] | undefined)}
 	 */
 	_bridgeLegs?: [number, number];
+	/**
+	 * for a gas collection tube: the escaped gas its vessel already held when
+	 * the tube was put in place, in mol. The tube only shows what bubbled into
+	 * it since then, so this is subtracted from the vessel tally.
+	 *
+	 * @type {number}
+	 */
+	_tubeBaseline = 0;
 
 	/**
 	 * The area of an electrode that actually carries current, in cm². An

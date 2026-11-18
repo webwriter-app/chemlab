@@ -2,11 +2,21 @@ import { StructureManager, type Mixture, type Molecule } from "../chemlib";
 import { evolvedGases } from "../chemlib/gasEvolution";
 import type { AcidEquilibriumSpecies, Simulation } from "../chemlib/Simulation";
 
-/** A gas that has left the solution, as the vessel card shows it. */
+/**
+ * A volatile substance that has left the solution, as the vessel card shows
+ * it. Chlorine leaves as a gas, bromine as a second liquid and iodine as a
+ * solid, so the card reports the amount in the unit the phase calls for.
+ */
 export interface VesselGas {
 	formula: string;
-	/** Escaped amount in mol. */
+	/** Separated amount in mol. */
 	amount: number;
+	/** Phase the substance took once it left the solution. */
+	phase: "gas" | "liquid" | "solid";
+	/** Molar mass in g/mol, for a condensed phase. */
+	molarMass?: number;
+	/** Density in g/mL, for a separated liquid. */
+	density?: number;
 }
 
 /**
@@ -66,13 +76,18 @@ export function vesselCarouselEntries(
 		if (!(plating.mol > 0)) continue;
 		solids.push({ key: `plated:${plating.molecule.smilesString}`, plating, phase: "solid" });
 	}
-	// Escaped gas sits beside the condensed phases, last so it never displaces
-	// the contents the learner is watching.
+	// Separated volatiles sit beside the condensed phases, last so they never
+	// displace the contents the learner is watching. A halogen that left as a
+	// liquid or a solid is not a gas any more, so it carries its own phase.
 	const gases: VesselEntry[] = [];
 	for (const [id, amount] of mixture.evolvedGas) {
 		const gas = evolvedGases[id];
 		if (!gas || !(amount > 0)) continue;
-		gases.push({ key: `gas:${id}`, gas: { formula: gas.formula, amount }, phase: "gas" });
+		gases.push({
+			key: `gas:${id}`,
+			gas: { formula: gas.formula, amount, phase: gas.phase, molarMass: gas.molarMass, density: gas.density },
+			phase: gas.phase,
+		});
 	}
 	return [...solids, ...liquids, ...ions.map(({ entry }) => entry), ...gases];
 }

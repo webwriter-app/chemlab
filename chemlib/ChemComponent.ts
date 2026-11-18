@@ -187,8 +187,19 @@ class ChemComponent {
 				const addedMol = nMix._activeMolecules.reduce((sum, mol) => sum +
 					Math.min(nMix._molProperties[mol._id + "n"], nMolAmount ?? Infinity), 0);
 				if (incomingMol > 0 && addedMol > 0) {
-					this._content.addedVolume += nMix.addedVolume * addedMol / incomingMol;
-					this._content.excessCharge += nMix.excessCharge * addedMol / incomingMol;
+					const share = addedMol / incomingMol;
+					this._content.addedVolume += nMix.addedVolume * share;
+					this._content.excessCharge += nMix.excessCharge * share;
+					// Dissolved gas and the hypochlorite family are amounts, so
+					// the added share moves with the molecules. The separated
+					// gas stays where it is: it sits in the headspace.
+					this._content.hypochlorite += nMix.hypochlorite * share;
+					for (const [gas, amount] of nMix.dissolvedGas) {
+						this._content.dissolvedGas.set(
+							gas,
+							(this._content.dissolvedGas.get(gas) ?? 0) + amount * share
+						);
+					}
 					this._content.hasLiquidVolume ||= nMix.hasLiquidVolume;
 				}
 				for (let mol of nMix._activeMolecules) {
@@ -248,6 +259,13 @@ class ChemComponent {
 				// share of it and the source keeps the rest.
 				portion.excessCharge = this._content.excessCharge * fraction;
 				this._content.excessCharge -= portion.excessCharge;
+				portion.hypochlorite = this._content.hypochlorite * fraction;
+				this._content.hypochlorite -= portion.hypochlorite;
+				for (const [gas, amount] of this._content.dissolvedGas) {
+					const share = amount * fraction;
+					portion.dissolvedGas.set(gas, share);
+					this._content.dissolvedGas.set(gas, amount - share);
+				}
 				if (fraction === 1) this._content.hasLiquidVolume = false;
 				Simulation.sSolvation(this._content);
 				tDest.addContents({ nMix: portion });

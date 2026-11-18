@@ -17,7 +17,7 @@ export interface HalfReactionTerm {
 	 */
 	coefficient: number;
 	/** Where the species sits. */
-	phase: "solid" | "solution" | "gas";
+	phase: "solid" | "liquid" | "solution" | "gas";
 }
 
 /**
@@ -148,20 +148,26 @@ function oxygenCouple(materials: string[], etaRef: number, b: number): HalfReact
 	};
 }
 
-/** `X₂ + 2 e⁻ → 2 X⁻` for a dissolved halide. */
+/**
+ * `X₂ + 2 e⁻ → 2 X⁻` for a dissolved halide. The halogen leaves the electrode
+ * in the phase it takes at room conditions, which is why the product term
+ * carries it: chlorine bubbles out, bromine forms a second liquid and iodine
+ * settles as a solid.
+ */
 function halogenCouple(
 	id: string,
 	halogen: string,
 	halide: string,
 	sep: number,
 	gas: string,
+	phase: "gas" | "liquid" | "solid",
 	etaRef: number,
 	b: number
 ): HalfReaction {
 	return {
 		id,
 		terms: [
-			{ smiles: halogen, coefficient: 1, phase: "gas" },
+			{ smiles: halogen, coefficient: 1, phase },
 			{ smiles: halide, coefficient: -2, phase: "solution" },
 		],
 		el: 2,
@@ -230,9 +236,9 @@ export const halfReactions: HalfReaction[] = [
 	oxygenCouple([], 0.90, 0.120),
 	oxygenCouple(["platinum"], 0.45, 0.060),
 	// Halogen evolution.
-	halogenCouple("Cl2/Cl-", "[Cl2]", "[Cl-]", 1.358, "Cl2", 0.10, 0.040),
-	halogenCouple("Br2/Br-", "[Br2]", "[Br-]", 1.066, "Br2", 0.10, 0.040),
-	halogenCouple("I2/I-", "[I2]", "[I-]", 0.536, "I2", 0.10, 0.040),
+	halogenCouple("Cl2/Cl-", "[Cl2]", "[Cl-]", 1.358, "Cl2", "gas", 0.10, 0.040),
+	halogenCouple("Br2/Br-", "[Br2]", "[Br-]", 1.066, "Br2", "liquid", 0.10, 0.040),
+	halogenCouple("I2/I-", "[I2]", "[I-]", 0.536, "I2", "solid", 0.10, 0.040),
 ];
 
 /**
