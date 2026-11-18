@@ -162,6 +162,19 @@ export class CanvasController implements ReactiveController {
 		}
 	}
 
+	titrationTarget(source: chemlib.ChemComponent): chemlib.ChemComponent | undefined {
+		const view = this.vessels.get(source);
+		if (!view) return undefined;
+		let target: VesselView | undefined;
+		for (const vessel of this.vessels.values()) {
+			if (vessel === view || vessel.component._inOutLimits[0] <= 0) continue;
+			if (vessel.y - vessel.height / 2 <= view.y + view.height / 2) continue;
+			if (Math.abs(vessel.x - view.x) >= (view.width + vessel.width) / 2) continue;
+			if (!target || target.y <= vessel.y) target = vessel;
+		}
+		return target?.component;
+	}
+
 	private trackVesselTransfer(event: PIXI.FederatedPointerEvent): VesselView | undefined {
 		const source = this.host.dragObject;
 		if (!(source instanceof VesselView)) return;

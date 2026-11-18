@@ -1,5 +1,14 @@
 {
   "en": {
+    "Achsen wählen": "Choose axes",
+    "Diagrammvorschläge": "Suggested charts",
+    "Die ausgewählten Objekte liefern keine Messdaten.": "The selected objects have no measurement sources.",
+    "Wähle Objekte auf dem Canvas, um ein eigenes Diagramm zu erstellen.": "Select objects on the canvas to create a custom chart.",
+    "Gasentwicklung": "Gas evolution",
+    "Kapazitiver Impuls": "Capacitive pulse",
+    "Stromkreis": "Electrical circuit",
+    "Volumen": "Volume",
+    "Masse": "Mass",
     "Zeit": "Time",
     "Gefäße": "Vessels",
     "Messgeräte": "Instruments",

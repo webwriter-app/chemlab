@@ -48,14 +48,12 @@ import {
 	colors,
 	animals,
 } from "unique-names-generator";
-import Chart from "chart.js/auto";
-
-
 import { dictionary as germanDictionary } from "./data/dictionary";
 import { pHColors as phColorScale, pHTextColor } from "./data/phColors";
 import { defaultMolecules, defaultMixtures } from "./data/presets";
 import { sendXApiStatement } from "./services/xapi";
-import { DiagramController, type DiagramAxis } from "./controllers/DiagramController";
+import { DiagramController } from "./controllers/DiagramController";
+import { axisId, selectedDiagramSources, suggestDiagrams, type DiagramAxis, type InstrumentSuggestion } from "./data/diagramSources";
 import { TIME_CHANNEL, type MeasurementChannel } from "./data/measurementHistory";
 import { MeasurementRecorder } from "./controllers/MeasurementRecorder";
 import { SimulationController } from "./controllers/SimulationController";
@@ -259,15 +257,6 @@ export class ChemLab extends LitElementWw {
 	 */
 	@query("#xAPIKeyInput")
 	private accessor xAPIKeyInput: SlInput;
-	/**
-	 * main container inside diagram drawer for all diagrams and headings
-	 *
-	 * @private
-	 * @type {HTMLDivElement}
-	 */
-
-	readonly canvasContainer = Object.assign(document.createElement("div"), { id: "canvasContainer" });
-
 	@query("#canvasArea")
 	accessor canvasArea: HTMLDivElement;
 
@@ -911,65 +900,17 @@ export class ChemLab extends LitElementWw {
 		this.gridScaleValue.textContent = length;
 	}
 
-	/**
-	 * Transfers one titration dose to the vessel below the burette and updates the diagram.
-	 *
-	 * @private
-	 * @param {PIXI.Container} currSprite - the view of the burette
-	 * @param {chemlib.ChemComponent} source - the chemlib object of the burette
-	 */
-	private stepTitration(
-		currSprite: PIXI.Container,
-		source: chemlib.ChemComponent
-	): void {
-		if (source._content._activeMolecules.length > 0) {
-			let destSprite: PIXI.Container = undefined;
-			this.canvas.world.children.forEach((sprite) => {
-				if (sprite != currSprite) {
-					// Only vessels that sit below the burette and overlap it
-					// horizontally receive the dose. Without the overlap test a
-					// row of setups would all pour into the lowest vessel.
-					const overlapsHorizontally =
-						sprite.x - sprite.width / 2 < currSprite.x + currSprite.width / 2 &&
-						sprite.x + sprite.width / 2 > currSprite.x - currSprite.width / 2;
-					if (
-						sprite.y - sprite.height / 2 >
-							currSprite.y + currSprite.height / 2 &&
-						overlapsHorizontally
-					) {
-						if (typeof destSprite === "undefined") {
-							destSprite = sprite;
-						} else {
-							if (destSprite.y - sprite.y > 0) {
-								destSprite = sprite;
-							}
-						}
-					}
-				}
-			});
-			let destObj: chemlib.ChemComponent = undefined;
-			this.allChemComponents.forEach((comp) => {
-				if (typeof destSprite != "undefined") {
-					if (
-						destSprite.label.split(":")[0] === comp._type &&
-						Number.parseInt(destSprite.label.split(":")[1]) ===
-							comp._id
-					) {
-						destObj = comp;
-					}
-				}
-			});
-			if (typeof destObj != "undefined") {
-				if (source._content._activeMolecules.length > 0) {
-					const transferredMl = source.transferContents({}, destObj) * 1000;
-					if (!(transferredMl > 0)) return;
-					this.measurements.record([source, destObj], [], { source, volume: transferredMl });
-					this.canvas.markVesselChanged(source);
-					this.canvas.markVesselChanged(destObj);
-					if (this.curr_obj === source || this.curr_obj === destObj) this._updatePopup();
-				}
-			}
-		}
+	/** Transfers one titration dose to the receiving vessel. */
+	private stepTitration(source: chemlib.ChemComponent): void {
+		if (!source._content._activeMolecules.length) return;
+		const target = this.canvas.titrationTarget(source);
+		if (!target) return;
+		const transferredMl = source.transferContents({}, target) * 1000;
+		if (!(transferredMl > 0)) return;
+		this.measurements.record([source, target], [], { source, volume: transferredMl });
+		this.canvas.markVesselChanged(source);
+		this.canvas.markVesselChanged(target);
+		if (this.curr_obj === source || this.curr_obj === target) this._updatePopup();
 	}
 
 	/**
@@ -2992,47 +2933,106 @@ export class ChemLab extends LitElementWw {
 		}, 180);
 	}
 
-	private changeDiagramAxis(axis: "x" | "y", id: string): void {
-		if (axis === "x") this.diagramX = id;
-		else this.diagramY = id;
-		const channels = this.measurements.history.channels;
-		const find = (key: string): DiagramAxis | undefined =>
-			key === TIME_CHANNEL ? key : channels.find(channel => channel.id === key);
-		const x = find(this.diagramX);
-		const y = find(this.diagramY);
-		if (x && y && this.diagramX !== this.diagramY) {
-			if (!this.diagramPanelAvailable) this.closeDiagramPanel();
-			this.diagrams.create(x, y);
-			this.closeDiagramPicker();
-			this.diagramPickerEscape = true;
-			this.shadowRoot.querySelector<HTMLElement>("#diagramHandle")?.focus();
-		} else this.requestUpdate();
+	private get diagramSelection(): Set<string> {
+		const group = this.canvas.selectedObjects;
+		return new Set(group.length ? group.map(sprite => sprite.label) : this.curr_obj ? [this.curr_name] : []);
+	}
+
+	private createDiagram(x: DiagramAxis, y: DiagramAxis, title?: string): void {
+		if (!this.diagramPanelAvailable) this.closeDiagramPanel();
+		this.diagrams.create(x, y, title);
+		this.closeDiagramPicker();
+		this.diagramPickerEscape = true;
+		this.shadowRoot.querySelector<HTMLElement>("#diagramHandle")?.focus();
+	}
+
+	private renderSelectedDiagramAxes(channels: MeasurementChannel[], selection: ReadonlySet<string>) {
+		const sources: DiagramAxis[] = [TIME_CHANNEL, ...selectedDiagramSources(channels, selection).sort((a, b) =>
+			a.number - b.number || this.diagrams.label(a).localeCompare(this.diagrams.label(b), this.lang))];
+		if (sources.length === 1) return html`
+			<p class="diagram-empty">${this.message("Die ausgewählten Objekte liefern keine Messdaten.")}</p>`;
+		const current = (id: string) => sources.find(axis => axisId(axis) === id);
+		const x = current(this.diagramX);
+		const y = current(this.diagramY);
+		const select = (axis: "x" | "y", label: string, value?: DiagramAxis, excluded?: DiagramAxis) => html`
+			<sl-select class="diagram-axis-select" size="small" hoist contenteditable="false"
+				label=${this.message(label)} placeholder=${this.message("Datenquelle wählen")}
+				.value=${live(value ? encodeURIComponent(axisId(value)) : "")}
+				@sl-change=${(event: Event) => {
+					const selected = decodeURIComponent(String((event.currentTarget as SlSelect).value));
+					if (axis === "x") this.diagramX = selected;
+					else this.diagramY = selected;
+					const nextX = current(this.diagramX);
+					const nextY = current(this.diagramY);
+					if (nextX && nextY && nextX !== nextY) this.createDiagram(nextX, nextY);
+					else this.requestUpdate();
+				}}>
+				${repeat(sources, axisId, source => html`
+					<sl-option value=${encodeURIComponent(axisId(source))} ?disabled=${source === excluded}>
+						${this.diagrams.label(source)}
+					</sl-option>`)}
+			</sl-select>`;
+		return html`${select("x", "X-Achse", x, y)}${select("y", "Y-Achse", y, x)}`;
+	}
+
+	private diagramSuggestions(channels: MeasurementChannel[]) {
+		const key = (object: chemlib.ChemComponent | chemlib.ElectricComponent) => `${object._type}:${object._id}`;
+		const titrations = this.allChemComponents.flatMap(source => {
+			if (source._type !== chemlib.ComponentType.Burette) return [];
+			const target = this.canvas.titrationTarget(source);
+			return target ? [{ burette: key(source), vessel: key(target) }] : [];
+		});
+		const instruments = new Map<string, InstrumentSuggestion>();
+		const { GasCollector, Source, Ammeter, Multimeter } = chemlib.EComponentType;
+		for (const device of this.allEComponents) {
+			if (device._type === GasCollector && device._connectedMix?._isSolution) {
+				instruments.set(key(device), { title: "Gasentwicklung", quantities: ["Gesammeltes Gasvolumen"] });
+				continue;
+			}
+			if (device._type !== Source && !isPassiveMeter(device)) continue;
+			const wired = device._connections.every(terminal => terminal.some(partner =>
+				partner._type !== chemlib.EComponentType.Cable || partner.partners.length === 2));
+			if (!wired) continue;
+			const quantities = device._type === Source ? ["Stromstärke", "Spannung"] :
+				[device._type === Ammeter || (device._type === Multimeter && device._meterMode === "current")
+					? "Stromstärke" : "Spannung"];
+			const circuit = this.operatingCircuit(device);
+			if (!circuit) {
+				if (this.meterCircuit(device)) instruments.set(key(device), { title: "Stromkreis", quantities });
+				continue;
+			}
+			const [first, second, ...devices] = circuit;
+			if ([first, second].some(electrode => electrode._immersion?.area === 0)) continue;
+			const powered = devices.some(other => other._type === Source);
+			const a = first._connectedMix;
+			const b = second._connectedMix;
+			if (a === b || this.bridgeBetween(a, b)) {
+				instruments.set(key(device), { title: powered ? "Elektrolyse" : "Galvanische Zelle", quantities });
+			} else if (!powered && devices.some(other => isPassiveMeter(other) && other.rcSettings)) {
+				instruments.set(key(device), { title: "Kapazitiver Impuls", quantities });
+			}
+		}
+		return suggestDiagrams(channels, titrations, instruments, id => this.measurements.history.hasReading(id));
 	}
 
 	private renderDiagramAxisPicker() {
+		const selection = this.diagramSelection;
 		const channels = this.measurements.history.channels;
-		const group = (type: MeasurementChannel["group"], label: string, selected: string, excluded: string) => {
-			const entries = channels.filter(channel => channel.group === type).sort((a, b) =>
-				a.number - b.number || this.diagrams.label(a).localeCompare(this.diagrams.label(b), this.lang));
-			return entries.length ? html`<optgroup label=${this.message(label)}>
-				${entries.map(channel => html`<option value=${channel.id} ?selected=${channel.id === selected} ?disabled=${channel.id === excluded}>
-					${this.diagrams.label(channel)}
-				</option>`)}
-			</optgroup>` : nothing;
-		};
-		const select = (axis: "x" | "y", label: string, selected: string, excluded: string) => html`
-			<label>${this.message(label)}
-				<select .value=${selected} @change=${(event: Event) =>
-					this.changeDiagramAxis(axis, (event.currentTarget as HTMLSelectElement).value)}>
-					<option value="">${this.message("Datenquelle wählen")}</option>
-					<option value=${TIME_CHANNEL} ?selected=${selected === TIME_CHANNEL} ?disabled=${excluded === TIME_CHANNEL}>${this.diagrams.label(TIME_CHANNEL)}</option>
-					${group("vessel", "Gefäße", selected, excluded)}
-					${group("instrument", "Messgeräte", selected, excluded)}
-				</select>
-			</label>`;
-		return html`<div id="diagramAxisPicker" role="group" aria-label=${this.message("Diagramm erstellen")}>
-			${select("x", "X-Achse", this.diagramX, this.diagramY)}
-			${select("y", "Y-Achse", this.diagramY, this.diagramX)}
+		const suggestions = selection.size ? [] : this.diagramSuggestions(channels)
+			.filter(({ x, y }) => !this.diagrams.hasPair(x, y));
+		return html`<div id="diagramAxisPicker" class="diagram-surface" role="group" aria-label=${this.message("Diagramm erstellen")}>
+			<sl-tag class="diagram-section-tag" size="small" variant="primary">
+				${this.message(selection.size ? "Achsen wählen" : "Diagrammvorschläge")}
+			</sl-tag>
+			${selection.size ? this.renderSelectedDiagramAxes(channels, selection) : suggestions.length ? html`
+				<div class="diagram-suggestions">
+					${repeat(suggestions, ({ x, y }) => JSON.stringify([axisId(x), axisId(y)]), ({ title, x, y }) => html`
+						<sl-button class="diagram-suggestion" size="small" @click=${() => this.createDiagram(x, y, title)}>
+							<span class="diagram-suggestion-title">${this.message(title)}</span>
+							<span class="diagram-suggestion-axis"><b>Y</b> ${this.diagrams.label(y)}</span>
+							<span class="diagram-suggestion-axis"><b>X</b> ${this.diagrams.label(x)}</span>
+						</sl-button>`)}
+				</div>` : html`<p class="diagram-empty">${this.message("Wähle Objekte auf dem Canvas, um ein eigenes Diagramm zu erstellen.")}</p>`}
 		</div>`;
 	}
 
@@ -3074,18 +3074,18 @@ export class ChemLab extends LitElementWw {
 					${this.diagramPickerOpen ? this.renderDiagramAxisPicker() : nothing}
 				</div>
 				<div id="inlineDiagramPanel" ?inert=${!open} aria-hidden=${String(!open)}>
-					<div class="diagram-toolbar">
+					<div class="diagram-toolbar diagram-surface">
 						<sl-checkbox .checked=${this.diagrams.showLine} @sl-change=${() => this.diagrams.toggleShowLine()}>
 							${this.message("Kurven anzeigen")}
 						</sl-checkbox>
-						<sl-button size="small" @click=${async () => {
+						<sl-button class="diagram-control" size="small" @click=${async () => {
 							this.diagramPickerEscape = false;
 							this.openDiagramPicker();
 							await this.updateComplete;
-							this.shadowRoot.querySelector<HTMLSelectElement>("#diagramAxisPicker select")?.focus();
+							this.shadowRoot.querySelector<HTMLElement>("#diagramAxisPicker sl-select, #diagramAxisPicker sl-button")?.focus();
 						}}>${this.message("Diagramm hinzufügen")}</sl-button>
 					</div>
-					${this.canvasContainer}
+					${this.diagrams.renderCards()}
 				</div>
 			</aside>`;
 	}
@@ -4001,17 +4001,13 @@ export class ChemLab extends LitElementWw {
 					<button
 						id="openComp"
 						@click="${(event) => {
-							let currSprite =
-								this.canvas.world.children[
-									this.curr_stage_index
-								];
 							if (
 								!this.simulation.hasTask("transfer" + this.curr_name)
 							) {
 								this.requestUpdate();
 								let source = this.curr_obj;
 								this.simulation.startExperiment("transfer" + this.curr_name,
-									() => this.stepTitration(currSprite, source));
+									() => this.stepTitration(source));
 								this._sendxAPiStatement(
 									"started",
 									"transfer" +

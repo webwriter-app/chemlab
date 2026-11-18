@@ -1,23 +1,20 @@
-import type { ReactiveController } from "lit";
+import { html, type ReactiveController } from "lit";
+import { createRef, ref, type Ref } from "lit/directives/ref.js";
+import { repeat } from "lit/directives/repeat.js";
 import Chart from "chart.js/auto";
-import { TIME_CHANNEL, type MeasurementChannel } from "../data/measurementHistory";
+import { TIME_CHANNEL } from "../data/measurementHistory";
+import { axisId, type DiagramAxis } from "../data/diagramSources";
 import type { ChemLab } from "../webwriter-chemlab";
-
-export type DiagramAxis = typeof TIME_CHANNEL | MeasurementChannel;
 
 type Diagram = {
 	id: number;
 	x: DiagramAxis;
 	y: DiagramAxis;
-	card: HTMLElement;
-	title: HTMLElement;
-	canvas: HTMLCanvasElement;
+	card: Ref<HTMLElement>;
+	title?: string;
+	canvas: Ref<HTMLCanvasElement>;
 	chart?: Chart<"line", { x: number; y: number | null }[]>;
 };
-
-export function axisId(axis: DiagramAxis): string {
-	return axis === TIME_CHANNEL ? axis : axis.id;
-}
 
 /** Owns the plots and their references to the shared recording. */
 export class DiagramController implements ReactiveController {
@@ -26,6 +23,7 @@ export class DiagramController implements ReactiveController {
 	private frame?: number;
 	private viewport?: IntersectionObserver;
 	private readonly visible = new Set<Element>();
+	private readonly observed = new Set<Element>();
 	private dirty = true;
 	showLine = true;
 
@@ -42,17 +40,21 @@ export class DiagramController implements ReactiveController {
 	}
 
 	hostUpdated(): void {
-		if (this.host.isDiagramPanelOpen && !this.viewport) {
-			this.viewport = new IntersectionObserver(entries => {
-				for (const entry of entries) {
-					if (entry.isIntersecting) this.visible.add(entry.target);
-					else this.visible.delete(entry.target);
-				}
-				this.invalidate();
-			}, { root: this.host.canvasContainer.parentElement });
-			for (const diagram of this.diagrams) this.viewport.observe(diagram.card);
-		} else if (!this.host.isDiagramPanelOpen && this.viewport) {
-			this.releaseViewport();
+		if (!this.host.isDiagramPanelOpen) {
+			if (this.viewport) this.releaseViewport();
+			return;
+		}
+		this.viewport ??= new IntersectionObserver(entries => {
+			for (const entry of entries) {
+				if (entry.isIntersecting) this.visible.add(entry.target);
+				else this.visible.delete(entry.target);
+			}
+			this.invalidate();
+		}, { root: this.host.shadowRoot.querySelector("#inlineDiagramPanel") });
+		for (const { card } of this.diagrams) {
+			if (!card.value || this.observed.has(card.value)) continue;
+			this.observed.add(card.value);
+			this.viewport.observe(card.value);
 		}
 		this.schedule();
 	}
@@ -67,6 +69,7 @@ export class DiagramController implements ReactiveController {
 		this.viewport?.disconnect();
 		this.viewport = undefined;
 		this.visible.clear();
+		this.observed.clear();
 		for (const diagram of this.diagrams) {
 			diagram.chart?.destroy();
 			diagram.chart = undefined;
@@ -75,7 +78,6 @@ export class DiagramController implements ReactiveController {
 	}
 
 	updateLabels(): void {
-		for (const diagram of this.diagrams) this.updateTitle(diagram);
 		this.invalidate();
 	}
 
@@ -94,41 +96,16 @@ export class DiagramController implements ReactiveController {
 		return `${component} ${axis.number} · ${quantity}${species}${unit}`;
 	}
 
-	create(x: DiagramAxis, y: DiagramAxis): void {
-		const { ownerDocument: document, canvasContainer } = this.host;
-		const id = this.nextId++;
-		const card = document.createElement("section");
-		card.className = "diagram-card";
-		const heading = document.createElement("div");
-		heading.className = "diagram-heading";
-		const title = document.createElement("h4");
-		const remove = document.createElement("button");
-		remove.type = "button";
-		const trash = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-		trash.setAttribute("viewBox", "0 0 16 16");
-		trash.setAttribute("aria-hidden", "true");
-		const path = document.createElementNS(trash.namespaceURI, "path");
-		path.setAttribute("fill", "currentColor");
-		path.setAttribute("d", "M2.5 1a1 1 0 0 0-1 1v1v1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h1.5V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 5.5 5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m2.5.5a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0z");
-		trash.append(path);
-		remove.append(trash);
-		remove.addEventListener("click", () => this.remove(diagram));
-		heading.append(title, remove);
-		const plot = document.createElement("div");
-		plot.className = "diagram-plot";
-		const canvas = document.createElement("canvas");
-		canvas.setAttribute("role", "img");
-		plot.append(canvas);
-		card.append(heading, plot);
-		canvasContainer.append(card);
+	hasPair(x: DiagramAxis, y: DiagramAxis): boolean {
+		return this.diagrams.some(diagram => axisId(diagram.x) === axisId(x) && axisId(diagram.y) === axisId(y));
+	}
 
-		const diagram: Diagram = { id, x, y, card, title, canvas };
+	create(x: DiagramAxis, y: DiagramAxis, title?: string): void {
+		const id = this.nextId++;
 		const history = this.host.measurements.history;
 		history.prune();
 		history.retain(axisId(x), axisId(y));
-		this.diagrams.push(diagram);
-		this.viewport?.observe(card);
-		this.updateTitle(diagram);
+		this.diagrams.push({ id, x, y, title, card: createRef(), canvas: createRef() });
 		this.host.requestUpdate();
 		this.host.reportXApi("created", "diagram-" + id);
 		this.invalidate();
@@ -137,23 +114,90 @@ export class DiagramController implements ReactiveController {
 	private remove(diagram: Diagram): void {
 		this.host.measurements.history.release(axisId(diagram.x), axisId(diagram.y));
 		this.diagrams.splice(this.diagrams.indexOf(diagram), 1);
-		this.viewport?.unobserve(diagram.card);
-		this.visible.delete(diagram.card);
+		if (diagram.card.value) {
+			this.viewport?.unobserve(diagram.card.value);
+			this.observed.delete(diagram.card.value);
+			this.visible.delete(diagram.card.value);
+		}
 		diagram.chart?.destroy();
-		diagram.card.remove();
 		if (!this.hasDiagrams) this.host.closeDiagramPanel();
 		this.host.requestUpdate();
 		this.host.reportXApi("removed", "diagram-" + diagram.id);
 	}
 
-	private updateTitle(diagram: Diagram): void {
-		const title = this.host.message("Diagramm {number}", { number: diagram.id });
-		diagram.title.textContent = title;
-		diagram.canvas.setAttribute("aria-label", `${title} · ${this.label(diagram.y)} / ${this.label(diagram.x)}`);
-		const remove = diagram.card.querySelector("button");
-		const removeLabel = this.host.message("Diagramm löschen");
-		remove.setAttribute("aria-label", removeLabel);
-		remove.title = removeLabel;
+	renderCards() {
+		const message = this.host.message;
+		return html`<div class="diagram-cards">
+			${repeat(this.diagrams, diagram => diagram.id, diagram => {
+				const title = diagram.title ? message(diagram.title) : message("Diagramm {number}", { number: diagram.id });
+				const x = this.label(diagram.x);
+				const y = this.label(diagram.y);
+				return html`
+					<section class="diagram-card" aria-label=${title} ${ref(diagram.card)}>
+						<div class="diagram-heading">
+							<sl-tag class="diagram-section-tag" variant="primary" size="small">${title}</sl-tag>
+							<sl-button class="diagram-control diagram-remove" size="small" aria-label=${message("Diagramm löschen")}
+								title=${message("Diagramm löschen")} @click=${() => this.remove(diagram)}>
+								<span class="panel-button-label">${message("Diagramm löschen")}</span>
+								<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="currentColor">
+									<path d="M2.5 1a1 1 0 0 0-1 1v2H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h1.5V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 5.5 5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m2.5.5a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0z"/>
+								</svg>
+							</sl-button>
+						</div>
+						<div class="diagram-plot">
+							<canvas role="img" aria-label=${`${title} · Y: ${y} · X: ${x}`} ${ref(diagram.canvas)}></canvas>
+						</div>
+						<div class="diagram-axes">
+							<sl-tag size="small" variant="neutral"><b>Y</b> ${y}</sl-tag>
+							<sl-tag size="small" variant="neutral"><b>X</b> ${x}</sl-tag>
+						</div>
+					</section>`;
+			})}
+		</div>`;
+	}
+
+	private scaleLabel(axis: DiagramAxis): string {
+		if (axis === TIME_CHANNEL) return this.label(axis);
+		return this.host.message(axis.quantity) + (axis.unit ? ` [${axis.unit}]` : "");
+	}
+
+	private createChart(canvas: HTMLCanvasElement, card: HTMLElement) {
+		const style = getComputedStyle(card);
+		const ink = style.color;
+		const accent = style.getPropertyValue("--sl-color-primary-600").trim() || "#0284c7";
+		const grid = style.getPropertyValue("--sl-color-neutral-200").trim() || "#e5e7eb";
+		const surface = style.getPropertyValue("--sl-color-neutral-0").trim() || "#fff";
+		const font = { family: style.fontFamily, size: 11 };
+		const scale = () => ({
+			type: "linear" as const,
+			ticks: { color: ink, font, maxTicksLimit: 6 },
+			border: { color: grid },
+			grid: { color: grid, tickLength: 3 },
+			title: { color: ink, font, display: true, text: "" },
+		});
+		return new Chart<"line", { x: number; y: number | null }[]>(canvas, {
+			type: "line",
+			data: { datasets: [{
+				data: [], borderColor: accent, backgroundColor: accent, borderWidth: 1.6,
+				pointRadius: 1.5, pointHoverRadius: 4, pointHitRadius: 4, spanGaps: false,
+			}] },
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				animation: false,
+				layout: { padding: 4 },
+				interaction: { mode: "nearest", intersect: false },
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						backgroundColor: surface, titleColor: ink, bodyColor: ink, borderColor: grid,
+						borderWidth: 1, cornerRadius: 4, padding: 6, displayColors: false,
+						titleFont: font, bodyFont: font,
+					},
+				},
+				scales: { x: scale(), y: scale() },
+			},
+		});
 	}
 
 	private invalidate(): void {
@@ -173,23 +217,9 @@ export class DiagramController implements ReactiveController {
 	private draw(): void {
 		this.dirty = false;
 		for (const diagram of this.diagrams) {
-			if (!this.visible.has(diagram.card)) continue;
-			const xLabel = this.label(diagram.x);
-			const yLabel = this.label(diagram.y);
-			const chart = diagram.chart ??= new Chart(diagram.canvas, {
-				type: "line",
-				data: { datasets: [{ data: [], borderWidth: 1.5, pointRadius: 1.5, spanGaps: false }] },
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					animation: false,
-					plugins: { legend: { display: false } },
-					scales: {
-						x: { type: "linear", title: { display: true, text: xLabel } },
-						y: { type: "linear", title: { display: true, text: yLabel } },
-					},
-				},
-			});
+			const { card, canvas } = diagram;
+			if (!this.visible.has(card.value) || !canvas.value) continue;
+			const chart = diagram.chart ??= this.createChart(canvas.value, card.value);
 			const points = this.host.measurements.history.points(axisId(diagram.x), axisId(diagram.y));
 			let latestX: number | undefined;
 			const data: { x: number; y: number | null }[] = [];
@@ -199,8 +229,8 @@ export class DiagramController implements ReactiveController {
 			}
 			chart.data.datasets[0].data = data;
 			chart.data.datasets[0].showLine = this.showLine;
-			chart.options.scales.x.title.text = xLabel;
-			chart.options.scales.y.title.text = yLabel;
+			chart.options.scales.x.title.text = this.scaleLabel(diagram.x);
+			chart.options.scales.y.title.text = this.scaleLabel(diagram.y);
 			chart.update("none");
 		}
 	}

@@ -1072,6 +1072,7 @@ export const style = css`
 		--lab-card-text: var(--sl-color-neutral-800);
 		--lab-card-secondary-text: var(--sl-color-neutral-700);
 		--lab-panel-shadow: 0 2px 8px rgb(0 0 0 / 9%);
+		--lab-card-shadow: 0 1px 2px rgb(0 0 0 / 8%), 0 2px 5px rgb(0 0 0 / 13%);
 		--canvas-control-surface: #f9f9f9;
 		--canvas-control-shadow: 0 1px 3px rgb(0 0 0 / 14%);
 		position: relative;
@@ -1194,6 +1195,8 @@ export const style = css`
 	}
 	#diagramArea {
 		grid-column: 1;
+		background: var(--canvas-control-surface);
+		font-family: var(--sl-font-sans);
 	}
 	#diagramArea:has(#diagramAxisPicker) {
 		z-index: 2;
@@ -1232,48 +1235,102 @@ export const style = css`
 	.show-diagram-panel #diagramHandle {
 		inline-size: var(--panel-handle-width);
 	}
-	#diagramAxisPicker {
-		box-sizing: border-box;
-		display: grid;
-		gap: 8px;
-		inline-size: min(16rem, 80cqw);
-		max-block-size: calc(var(--workspace-inner-height) - 34px);
-		overflow: auto;
-		padding: 8px;
+	.diagram-surface {
 		border: 1px solid var(--lab-card-border);
 		border-radius: var(--sl-border-radius-medium);
-		background: var(--lab-card-surface);
+		background: var(--canvas-control-surface);
 		color: var(--lab-card-text);
 		box-shadow: var(--lab-panel-shadow);
+	}
+	#diagramAxisPicker {
+		--diagram-picker-width: min(18rem, 85cqw);
+		box-sizing: border-box;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 6px;
+		inline-size: var(--diagram-picker-width);
+		max-block-size: max(0px, calc(var(--workspace-inner-height) - var(--panel-trigger-height) - 10px));
+		overflow: auto;
+		overscroll-behavior: contain;
+		scrollbar-width: thin;
+		padding: 6px;
 		pointer-events: auto;
 	}
 	.show-diagram-panel #diagramAxisPicker {
 		position: relative;
-		inset-inline-start: min(0px, 100cqw - var(--diagram-panel-width) - min(16rem, 80cqw) - 4px);
+		inset-inline-start: min(0px, 100cqw - var(--diagram-panel-width) - var(--diagram-picker-width) - 4px);
 	}
-	#diagramAxisPicker label {
-		display: grid;
-		gap: 3px;
-		min-inline-size: 0;
+	.diagram-section-tag {
+		justify-self: start;
+		max-inline-size: 100%;
+	}
+	.diagram-section-tag::part(base),
+	.diagram-axes sl-tag::part(base) {
+		block-size: auto;
+		min-block-size: 19px;
+		line-height: 1.3;
+		padding-block: 1px;
+	}
+	.diagram-section-tag::part(content),
+	.diagram-axes sl-tag::part(content) {
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+	.diagram-axis-select::part(form-control-label) {
 		font-size: var(--sl-font-size-small);
 	}
-	#diagramAxisPicker select {
+	.diagram-axis-select::part(listbox) {
+		scrollbar-width: thin;
+	}
+	.diagram-axis-select sl-option::part(label) {
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+	.diagram-suggestions {
+		display: grid;
+		gap: 5px;
+	}
+	.diagram-suggestion::part(base) {
 		inline-size: 100%;
+		justify-content: start;
+		border-color: var(--lab-card-border);
+		box-shadow: var(--canvas-control-shadow);
+	}
+	.diagram-suggestion::part(label) {
+		display: grid;
+		gap: 2px;
 		min-inline-size: 0;
-		min-block-size: var(--sl-input-height-small);
-		border: 1px solid var(--panel-outline);
-		border-radius: var(--sl-border-radius-medium);
-		background: var(--lab-card-surface);
-		color: inherit;
-		font: inherit;
+		padding: 4px 6px;
+		text-align: start;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		line-height: 1.25;
+	}
+	.diagram-suggestion-title {
+		font-weight: 600;
+		color: var(--sl-color-primary-800);
+	}
+	.diagram-suggestion-axis,
+	.diagram-empty {
+		color: var(--lab-card-secondary-text);
+		font-size: var(--sl-font-size-x-small);
+	}
+	.diagram-empty {
+		margin: 2px 0;
+		line-height: 1.4;
+	}
+	.diagram-suggestion-axis b,
+	.diagram-axes b {
+		color: var(--sl-color-primary-800);
 	}
 	#inlineDiagramPanel {
 		box-sizing: border-box;
 		inline-size: 100%;
 		block-size: var(--workspace-inner-height);
 		overflow: hidden auto;
+		overscroll-behavior-y: contain;
 		scrollbar-width: thin;
-		padding: 4px 8px;
+		padding: 4px 6px 6px;
 		pointer-events: auto;
 	}
 	#inlineDiagramPanel[inert] {
@@ -1289,38 +1346,61 @@ export const style = css`
 		gap: 6px;
 	}
 	.diagram-toolbar {
-		margin-block: 6px;
+		margin-block-end: 6px;
+		padding: 5px;
+	}
+	.diagram-toolbar sl-checkbox {
+		--sl-input-font-size-medium: var(--sl-font-size-small);
+	}
+	.diagram-control::part(base) {
+		background: var(--canvas-control-surface);
+		box-shadow: var(--canvas-control-shadow);
+	}
+	.diagram-control::part(base):hover {
+		background: var(--sl-color-neutral-100);
+	}
+	.diagram-control::part(label) {
+		display: flex;
+		align-items: center;
+		white-space: normal;
+	}
+	.diagram-remove::part(base) {
+		min-block-size: 22px;
+		color: var(--sl-color-danger-600);
+	}
+	.diagram-remove::part(label) {
+		padding-inline: 4px;
+	}
+	.diagram-cards {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 8px;
+		padding: 2px 2px 5px;
 	}
 	.diagram-card {
-		margin-block: 8px;
-		padding: 6px;
-		border: 1px solid var(--lab-card-border);
-		border-radius: var(--sl-border-radius-medium);
-		background: var(--lab-card-surface);
-		box-shadow: var(--lab-panel-shadow);
-	}
-	.diagram-heading h4 {
-		margin: 0;
-		font-size: var(--sl-font-size-small);
-	}
-	.diagram-heading button {
 		display: grid;
-		place-items: center;
-		padding: 3px;
-		border: 1px solid var(--lab-card-border);
-		border-radius: var(--sl-border-radius-medium);
-		background: var(--canvas-control-surface);
-		color: var(--sl-color-danger-600);
-		cursor: pointer;
+		gap: 5px;
+		padding: 5px;
+		border-radius: 4px;
+		background: var(--lab-card-surface);
+		color: var(--lab-card-text);
+		box-shadow: var(--lab-card-shadow);
 	}
-	.diagram-heading button svg {
-		inline-size: 12px;
-		block-size: 12px;
+	.diagram-axes {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 3px;
+	}
+	.diagram-axes sl-tag {
+		max-inline-size: 100%;
 	}
 	.diagram-plot {
 		position: relative;
-		block-size: 270px;
+		block-size: 230px;
 		min-inline-size: 0;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-inset);
 	}
 	@media (prefers-reduced-motion: reduce) {
 		#upper {
@@ -1889,7 +1969,7 @@ export const style = css`
 		padding: 5px;
 		border-radius: 4px;
 		background: var(--lab-card-surface);
-		box-shadow: 0 1px 2px rgb(0 0 0 / 8%), 0 2px 5px rgb(0 0 0 / 13%);
+		box-shadow: var(--lab-card-shadow);
 		color: var(--lab-card-text);
 	}
 	.palette-card-header {
