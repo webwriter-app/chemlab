@@ -150888,6 +150888,14 @@ var Simulation = class {
    * from the start, and the iteration falls back to bisection whenever a
    * Newton step would leave the bracket.
    *
+   * A residual of `±Infinity` is a statement about the side, not a failure:
+   * the caller reports it where the argument lies outside the range the
+   * function is defined on, and the function is non-decreasing, so the root
+   * is below a `+Infinity` and above a `-Infinity`. Treating it as a bracket
+   * edge lets the search close on the edge of the defined range, which is
+   * the largest value the model can really reach. Only `NaN` — a value that
+   * says nothing at all — ends the search.
+   *
    * @private
    * @static
    * @param {(potential: number) => number} value - the increasing function
@@ -150902,19 +150910,19 @@ var Simulation = class {
     let high = start;
     let fLow = residual(low);
     let fHigh = fLow;
-    if (!Number.isFinite(fLow)) return void 0;
+    if (Number.isNaN(fLow)) return void 0;
     if (fLow === 0) return start;
     let distance = 0.05;
     for (let step = 0; step < 40; step++) {
       if (fLow > 0) {
         low = start - distance;
         fLow = residual(low);
-        if (!Number.isFinite(fLow)) return void 0;
+        if (Number.isNaN(fLow)) return void 0;
         if (fLow < 0) break;
       } else {
         high = start + distance;
         fHigh = residual(high);
-        if (!Number.isFinite(fHigh)) return void 0;
+        if (Number.isNaN(fHigh)) return void 0;
         if (fHigh > 0) break;
       }
       distance *= 2;
@@ -150923,7 +150931,7 @@ var Simulation = class {
     let potential = Math.max(low, Math.min(high, start));
     for (let step = 0; step < 100; step++) {
       const current = residual(potential);
-      if (!Number.isFinite(current)) return void 0;
+      if (Number.isNaN(current)) return void 0;
       if (current === 0) return potential;
       if (current < 0) low = potential;
       else high = potential;
@@ -150961,7 +150969,11 @@ var Simulation = class {
   }
   /** Slope of {@link candidateCurrent}, zero on the clamped side. */
   static candidateSlope(candidate, potential) {
-    if (candidate.stiffness !== void 0) return candidate.stiffness;
+    if (candidate.stiffness !== void 0) {
+      const linear = candidate.stiffness * (potential - candidate.equilibrium);
+      if (linear > candidate.anodicDensity || linear < -candidate.cathodicDensity) return 0;
+      return candidate.stiffness;
+    }
     const density2 = currentDensity(candidate.reaction, potential - candidate.equilibrium);
     if (!candidate.canOxidise && density2 > 0) return 0;
     if (!candidate.canReduce && density2 < 0) return 0;
@@ -151086,7 +151098,7 @@ var Simulation = class {
       probedFirst = p1;
       probedSecond = p22;
       if (p1 === void 0 || p22 === void 0) {
-        probedResidual = NaN;
+        probedResidual = current2 === 0 ? NaN : Math.sign(current2) * Infinity;
         probedSlope = NaN;
         return;
       }
@@ -151109,12 +151121,27 @@ var Simulation = class {
     );
     if (current === void 0) return void 0;
     const held = Math.abs(current) > cap ? Math.sign(current) * cap : current;
-    probe(held);
-    if (probedFirst === void 0 || probedSecond === void 0) return void 0;
+    const settle = (value) => {
+      probe(value);
+      if (probedFirst !== void 0 && probedSecond !== void 0) return value;
+      let inside = 0;
+      let outside = value;
+      for (let step = 0; step < 60; step++) {
+        const middle = (inside + outside) / 2;
+        probe(middle);
+        if (probedFirst !== void 0 && probedSecond !== void 0) inside = middle;
+        else outside = middle;
+        if (Math.abs(outside - inside) < 1e-15 * Math.max(1, Math.abs(value))) break;
+      }
+      probe(inside);
+      return probedFirst !== void 0 && probedSecond !== void 0 ? inside : void 0;
+    };
+    const settled = settle(held);
+    if (settled === void 0) return void 0;
     return {
       first: probedFirst.potential,
       second: probedSecond.potential,
-      current: held,
+      current: settled,
       firstCurrents: probedFirst.currents,
       secondCurrents: probedSecond.currents
     };
@@ -151363,21 +151390,21 @@ var Simulation = class {
       const magnitude3 = Math.min(Math.abs(source3._sourceCurrent ?? 0), cap);
       const wanted = source3._polarity === 0 ? openSign * magnitude3 : source3._polarity > 0 === plusAtFirst ? magnitude3 : -magnitude3;
       const target2 = -wanted;
+      const compliance = Math.abs(source3._complianceVoltage ?? 0);
       const emf2 = this.matchSourceEmf((probe2) => {
         const point3 = solveAt(probe2);
         return point3 ? point3.current - target2 : void 0;
       }, startFor(wanted));
-      if (emf2 === void 0) return void 0;
-      const point2 = solveAt(emf2);
-      if (!point2) return void 0;
-      const compliance = Math.abs(source3._complianceVoltage ?? 0);
-      if (!(compliance > 0) || Math.abs(point2.voltage) <= compliance) {
+      const point2 = emf2 === void 0 ? void 0 : solveAt(emf2);
+      if (point2 && (!(compliance > 0) || Math.abs(point2.voltage) <= compliance)) {
         return { solution: point2.solution, limited: false };
       }
+      if (!(compliance > 0)) return void 0;
+      const sign4 = (point2 ? Math.sign(point2.voltage) : Math.sign(target2)) || 1;
       const capped2 = this.matchSourceEmf((probe2) => {
         const next = solveAt(probe2);
-        return next ? Math.sign(point2.voltage) * compliance - next.voltage : void 0;
-      }, emf2);
+        return next ? sign4 * compliance - next.voltage : void 0;
+      }, emf2 ?? startFor(wanted));
       if (capped2 === void 0) return void 0;
       const held2 = solveAt(capped2);
       return held2 ? { solution: held2.solution, limited: true } : void 0;

@@ -1469,6 +1469,14 @@ export abstract class Simulation {
 	 * from the start, and the iteration falls back to bisection whenever a
 	 * Newton step would leave the bracket.
 	 *
+	 * A residual of `±Infinity` is a statement about the side, not a failure:
+	 * the caller reports it where the argument lies outside the range the
+	 * function is defined on, and the function is non-decreasing, so the root
+	 * is below a `+Infinity` and above a `-Infinity`. Treating it as a bracket
+	 * edge lets the search close on the edge of the defined range, which is
+	 * the largest value the model can really reach. Only `NaN` — a value that
+	 * says nothing at all — ends the search.
+	 *
 	 * @private
 	 * @static
 	 * @param {(potential: number) => number} value - the increasing function
@@ -1488,19 +1496,19 @@ export abstract class Simulation {
 		let high = start;
 		let fLow = residual(low);
 		let fHigh = fLow;
-		if (!Number.isFinite(fLow)) return undefined;
+		if (Number.isNaN(fLow)) return undefined;
 		if (fLow === 0) return start;
 		let distance = 0.05;
 		for (let step = 0; step < 40; step++) {
 			if (fLow > 0) {
 				low = start - distance;
 				fLow = residual(low);
-				if (!Number.isFinite(fLow)) return undefined;
+				if (Number.isNaN(fLow)) return undefined;
 				if (fLow < 0) break;
 			} else {
 				high = start + distance;
 				fHigh = residual(high);
-				if (!Number.isFinite(fHigh)) return undefined;
+				if (Number.isNaN(fHigh)) return undefined;
 				if (fHigh > 0) break;
 			}
 			distance *= 2;
@@ -1509,7 +1517,7 @@ export abstract class Simulation {
 		let potential = Math.max(low, Math.min(high, start));
 		for (let step = 0; step < 100; step++) {
 			const current = residual(potential);
-			if (!Number.isFinite(current)) return undefined;
+			if (Number.isNaN(current)) return undefined;
 			if (current === 0) return potential;
 			if (current < 0) low = potential;
 			else high = potential;
@@ -1551,7 +1559,13 @@ export abstract class Simulation {
 
 	/** Slope of {@link candidateCurrent}, zero on the clamped side. */
 	private static candidateSlope(candidate: HalfCandidate, potential: number): number {
-		if (candidate.stiffness !== undefined) return candidate.stiffness;
+		if (candidate.stiffness !== undefined) {
+			// A stiff candidate is clamped by its own density limits too, and
+			// the plateau it reaches there is flat like any other.
+			const linear = candidate.stiffness * (potential - candidate.equilibrium);
+			if (linear > candidate.anodicDensity || linear < -candidate.cathodicDensity) return 0;
+			return candidate.stiffness;
+		}
 		const density = currentDensity(candidate.reaction, potential - candidate.equilibrium);
 		if (!candidate.canOxidise && density > 0) return 0;
 		if (!candidate.canReduce && density < 0) return 0;
@@ -1710,7 +1724,13 @@ export abstract class Simulation {
 			probedFirst = p1;
 			probedSecond = p2;
 			if (p1 === undefined || p2 === undefined) {
-				probedResidual = NaN;
+				// A trial current outside what an electrode can carry has no
+				// potential, and the residual is increasing in the current, so
+				// the sign of the trial says which side of the root it lies
+				// on. Reporting the side instead of NaN lets the bracket close
+				// on the largest current the cell can really carry; zero is
+				// always inside the range, so only a nonzero trial gets here.
+				probedResidual = current === 0 ? NaN : Math.sign(current) * Infinity;
 				probedSlope = NaN;
 				return;
 			}
@@ -1732,12 +1752,31 @@ export abstract class Simulation {
 		// current it can supply, so the electrodes sit at that current's
 		// potentials instead of the ones the solve asked for.
 		const held = Math.abs(current) > cap ? Math.sign(current) * cap : current;
-		probe(held);
-		if (probedFirst === undefined || probedSecond === undefined) return undefined;
+		// The root can sit exactly on the edge of what an electrode can carry,
+		// and the search lands on either side of that edge. A current just
+		// outside it has no potential at all, so the last feasible current is
+		// taken instead of reporting nothing.
+		const settle = (value: number): number | undefined => {
+			probe(value);
+			if (probedFirst !== undefined && probedSecond !== undefined) return value;
+			let inside = 0;
+			let outside = value;
+			for (let step = 0; step < 60; step++) {
+				const middle = (inside + outside) / 2;
+				probe(middle);
+				if (probedFirst !== undefined && probedSecond !== undefined) inside = middle;
+				else outside = middle;
+				if (Math.abs(outside - inside) < 1e-15 * Math.max(1, Math.abs(value))) break;
+			}
+			probe(inside);
+			return probedFirst !== undefined && probedSecond !== undefined ? inside : undefined;
+		};
+		const settled = settle(held);
+		if (settled === undefined) return undefined;
 		return {
 			first: probedFirst.potential,
 			second: probedSecond.potential,
-			current: held,
+			current: settled,
 			firstCurrents: probedFirst.currents,
 			secondCurrents: probedSecond.currents,
 		};
@@ -2022,21 +2061,26 @@ export abstract class Simulation {
 			// so a setpoint that makes the first electrode the anode is a
 			// negative reading.
 			const target = -wanted;
+			const compliance = Math.abs(source._complianceVoltage ?? 0);
 			const emf = this.matchSourceEmf((probe) => {
 				const point = solveAt(probe);
 				return point ? point.current - target : undefined;
 			}, startFor(wanted));
-			if (emf === undefined) return undefined;
-			const point = solveAt(emf);
-			if (!point) return undefined;
-			const compliance = Math.abs(source._complianceVoltage ?? 0);
-			if (!(compliance > 0) || Math.abs(point.voltage) <= compliance) {
+			const point = emf === undefined ? undefined : solveAt(emf);
+			if (point && (!(compliance > 0) || Math.abs(point.voltage) <= compliance)) {
 				return { solution: point.solution, limited: false };
 			}
+			// Either the setpoint needs more voltage than the supply may hold,
+			// or no EMF drives it through the cell at all — a vessel that
+			// cannot carry that current. Both leave the supply at its
+			// compliance limit, where the cell decides the current, so the
+			// solve is retried there instead of giving up.
+			if (!(compliance > 0)) return undefined;
+			const sign = (point ? Math.sign(point.voltage) : Math.sign(target)) || 1;
 			const capped = this.matchSourceEmf((probe) => {
 				const next = solveAt(probe);
-				return next ? Math.sign(point.voltage) * compliance - next.voltage : undefined;
-			}, emf);
+				return next ? sign * compliance - next.voltage : undefined;
+			}, emf ?? startFor(wanted));
 			if (capped === undefined) return undefined;
 			const held = solveAt(capped);
 			return held ? { solution: held.solution, limited: true } : undefined;
