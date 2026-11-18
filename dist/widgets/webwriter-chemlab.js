@@ -69826,6 +69826,10 @@ var messages_default = {
     "Zu {name} springen": "Go to {name}",
     "Achsen w\xE4hlen": "Choose axes",
     Diagrammvorschl\u00E4ge: "Suggested charts",
+    "Diagramme ({count} Vorschl\xE4ge)": "Charts ({count} suggestions)",
+    "Ausgeblendete Vorschl\xE4ge": "Dismissed suggestions",
+    "Diagramm w\xE4hlen": "Choose a chart",
+    "Vorschlag ausblenden": "Dismiss suggestion",
     "Die ausgew\xE4hlten Objekte liefern keine Messdaten.": "The selected objects have no measurement sources.",
     "W\xE4hle Objekte auf dem Canvas, um ein eigenes Diagramm zu erstellen.": "Select objects on the canvas to create a custom chart.",
     Gasentwicklung: "Gas evolution",
@@ -103747,8 +103751,10 @@ var style = i`
 		inset-block-start: var(--panel-handle-top);
 		inset-inline-start: 100%;
 		z-index: 2;
+		pointer-events: none;
 	}
 	#diagramHandle {
+		position: relative;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -103772,6 +103778,16 @@ var style = i`
 	}
 	#diagramHandle.diagram-handle-idle {
 		color: var(--sl-color-neutral-500);
+	}
+	.diagram-suggestion-count {
+		position: absolute;
+		inset-block-start: -4px;
+		inset-inline-end: -5px;
+		pointer-events: none;
+	}
+	.diagram-suggestion-count::part(base) {
+		padding: 1px 4px;
+		font-size: 9px;
 	}
 	.show-diagram-panel #diagramHandle {
 		inline-size: var(--panel-handle-width);
@@ -103863,6 +103879,19 @@ var style = i`
 	.diagram-suggestions {
 		display: grid;
 		gap: 5px;
+	}
+	.diagram-suggestion-row {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: start;
+		gap: 4px;
+	}
+	.diagram-dismiss::part(base) {
+		min-block-size: 22px;
+		color: var(--lab-card-secondary-text);
+	}
+	.diagram-dismiss::part(label) {
+		padding-inline: 4px;
 	}
 	.diagram-suggestion::part(base) {
 		inline-size: 100%;
@@ -177997,6 +178026,32 @@ function lowerBound(samples, time) {
 function axisId(axis) {
   return axis === TIME_CHANNEL ? axis : axis.id;
 }
+var DiagramSuggestionQueue = class {
+  suggestions = /* @__PURE__ */ new Map();
+  get size() {
+    return this.suggestions.size;
+  }
+  collect(candidates) {
+    const previousSize = this.size;
+    for (const candidate of candidates) {
+      const key = JSON.stringify([axisId(candidate.x), axisId(candidate.y)]);
+      if (!this.suggestions.has(key)) this.suggestions.set(key, { ...candidate, key, dismissed: false });
+    }
+    return this.size !== previousSize;
+  }
+  dismiss(key) {
+    const suggestion = this.suggestions.get(key);
+    if (suggestion) suggestion.dismissed = true;
+  }
+  list(available) {
+    const pending = [];
+    const dismissed = [];
+    for (const suggestion of this.suggestions.values()) {
+      if (available(suggestion)) (suggestion.dismissed ? dismissed : pending).push(suggestion);
+    }
+    return { pending, dismissed };
+  }
+};
 function componentKey(channel) {
   return `${channel.component}:${channel.number - 1}`;
 }
@@ -178443,10 +178498,11 @@ var DiagramController = class {
       const highlight2 = (active) => this.host.highlightDiagramSource(key, active);
       return x`
 					<button type="button" class="diagram-source" title=${this.host.message("Zu {name} springen", { name: name2 })}
-						@pointerenter=${() => highlight2(true)}
-						@pointerleave=${(event) => {
-        if (!event.currentTarget.matches(":focus-visible")) highlight2(false);
+						@pointerenter=${(event) => {
+        if (event.pointerType !== "touch") highlight2(true);
       }}
+						@pointerleave=${() => highlight2(false)}
+						@pointercancel=${() => highlight2(false)}
 						@focus=${(event) => {
         if (event.currentTarget.matches(":focus-visible")) highlight2(true);
       }}
@@ -178886,6 +178942,7 @@ var SimulationController = class {
       }
     });
     live?.(0);
+    this.host.collectDiagramSuggestions();
     this.host.requestUpdate();
   }
   get hasRunningExperiments() {
@@ -186311,6 +186368,7 @@ var CanvasController = class _CanvasController {
     view.addEventListener("blur", () => {
       if (this.pointerBusy) this.cancelPointerInteraction();
       this.resetTouches();
+      this.clearDiagramSourceHighlight();
     }, { signal });
   }
   touchDown = (event) => {
@@ -187369,7 +187427,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __privateAdd(this, _fullWidthMode, __runInitializers(_init2, 132, this, false)), __runInitializers(_init2, 135, this);
     __privateAdd(this, _diagramPanelOpen, __runInitializers(_init2, 136, this, false)), __runInitializers(_init2, 139, this);
     __privateAdd(this, _diagramPickerOpen, __runInitializers(_init2, 140, this, false)), __runInitializers(_init2, 143, this);
+    __publicField(this, "diagramPickerListeners");
     __publicField(this, "diagramChannelVersion", 0);
+    __publicField(this, "suggestionQueue", new DiagramSuggestionQueue());
     __publicField(this, "diagramX", "");
     __publicField(this, "diagramY", "");
     __privateAdd(this, _teacherDrawerOpen, __runInitializers(_init2, 144, this, false)), __runInitializers(_init2, 147, this);
@@ -189505,10 +189565,41 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   refreshDiagramPicker() {
     const version4 = this.measurements.history.channelVersion;
-    if ((this.diagramPickerOpen || this.isDiagramPanelOpen) && version4 !== this.diagramChannelVersion) this.requestUpdate();
+    if (version4 === this.diagramChannelVersion) return;
     this.diagramChannelVersion = version4;
+    this.collectDiagramSuggestions();
+    if (this.diagramPickerOpen || this.isDiagramPanelOpen || this.suggestionQueue.size) this.requestUpdate();
+  }
+  collectDiagramSuggestions() {
+    if (this.simulation.hasRunningExperiments && this.suggestionQueue.collect(this.diagramSuggestions(this.measurements.history.channels))) this.requestUpdate();
+  }
+  openDiagramPicker(controls) {
+    if (this.isDiagramPanelOpen || this.diagramPickerOpen) return;
+    this.collectDiagramSuggestions();
+    this.diagramPickerOpen = true;
+    this.diagramPickerListeners = new AbortController();
+    const { signal } = this.diagramPickerListeners;
+    const closeOutside = (event) => {
+      if (!event.composedPath().includes(controls)) this.closeDiagramPicker();
+    };
+    const options2 = { capture: true, signal };
+    const view = this.ownerDocument.defaultView;
+    view?.addEventListener("pointerdown", closeOutside, options2);
+    view?.addEventListener("pointermove", (event) => {
+      if (event.pointerType !== "touch") closeOutside(event);
+    }, options2);
+    view?.addEventListener("focusin", closeOutside, options2);
+    view?.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+      const restoreFocus = event.composedPath().includes(controls);
+      this.closeDiagramPicker();
+      if (restoreFocus) controls.querySelector("#diagramHandle")?.focus({ preventScroll: true });
+    }, { signal });
+    view?.addEventListener("blur", () => this.closeDiagramPicker(), { signal });
   }
   closeDiagramPicker() {
+    this.diagramPickerListeners?.abort();
+    this.diagramPickerListeners = void 0;
     this.diagramPickerOpen = false;
     this.diagramX = this.diagramY = "";
   }
@@ -189520,7 +189611,24 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (!this.diagramPanelAvailable) this.closeDiagramPanel();
     this.diagrams.create(x4, y5, title);
     this.closeDiagramPicker();
-    if (!this.isDiagramPanelOpen) this.shadowRoot.querySelector("#diagramHandle")?.focus();
+    if (!this.isDiagramPanelOpen) this.shadowRoot.querySelector("#diagramHandle")?.focus({ preventScroll: true });
+  }
+  selectDiagramSuggestion({ key, title, x: x4, y: y5 }) {
+    this.suggestionQueue.dismiss(key);
+    if (!this.diagrams.hasPair(x4, y5)) this.createDiagram(x4, y5, title);
+    this.onDiagramToggle(true);
+    void this.updateComplete.then(() => {
+      if (!this.isDiagramPanelOpen) return;
+      const drawer = this.shadowRoot.querySelector("#inlineDiagramPanel");
+      if (drawer) drawer.scrollTop = drawer.scrollHeight;
+    });
+  }
+  boundDiagramMenu(event) {
+    const popup = event.currentTarget.popup;
+    popup.flipBoundary = this.containerDiv;
+    popup.shiftBoundary = this.containerDiv;
+    popup.autoSizeBoundary = this.containerDiv;
+    popup.flipPadding = popup.shiftPadding = popup.autoSizePadding = 4;
   }
   renderSelectedDiagramAxes(channels, selection) {
     const groups = selectedDiagramSourceGroups(channels, selection).sort((a7, b5) => a7.sources[0].number - b5.sources[0].number);
@@ -189536,13 +189644,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const select = (axis, label, value, excluded) => x`
 			<sl-select class="diagram-axis-select" size="small" hoist contenteditable="false"
 				label=${this.message(label)} placeholder=${this.message("Datenquelle w\xE4hlen")}
-				@sl-show=${(event) => {
-      const popup = event.currentTarget.popup;
-      popup.flipBoundary = this.containerDiv;
-      popup.shiftBoundary = this.containerDiv;
-      popup.autoSizeBoundary = this.containerDiv;
-      popup.flipPadding = popup.shiftPadding = popup.autoSizePadding = 4;
-    }}
+				@sl-show=${this.boundDiagramMenu}
 				.value=${l3(value ? encodeURIComponent(axisId(value)) : "")}
 				@sl-change=${(event) => {
       const selected = decodeURIComponent(String(event.currentTarget.value));
@@ -189570,7 +189672,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     return x`${select("x", "X-Achse", x4, y5)}${select("y", "Y-Achse", y5, x4)}`;
   }
   diagramSuggestions(channels) {
-    if (!this.simulation.hasRunningExperiments) return [];
     const key = (object) => `${object._type}:${object._id}`;
     const gasVessels = /* @__PURE__ */ new Set();
     const titrations = this.allChemComponents.flatMap((source3) => {
@@ -189621,57 +189722,74 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }
     return suggestDiagrams(channels, titrations, instruments);
   }
-  renderDiagramBuilder(embedded) {
+  renderDiagramBuilder(embedded, channels, { pending, dismissed }) {
     const selection = this.diagramSelection;
-    const channels = this.measurements.history.channels;
-    const suggestions = selection.size ? [] : this.diagramSuggestions(channels).filter(({ x: x4, y: y5 }) => !this.diagrams.hasPair(x4, y5));
-    const title = this.message(embedded ? "Diagramm hinzuf\xFCgen" : selection.size ? "Achsen w\xE4hlen" : "Diagrammvorschl\xE4ge");
+    const title = this.message(embedded ? "Diagramm hinzuf\xFCgen" : selection.size && !pending.length && !dismissed.length ? "Achsen w\xE4hlen" : "Diagrammvorschl\xE4ge");
+    const dismiss = this.message("Vorschlag ausblenden");
     return x`<section class="diagram-builder diagram-surface ${embedded ? "diagram-builder-inline" : "diagram-builder-popup"}"
 			id=${embedded ? "diagramBuilderInline" : "diagramBuilderPopup"} aria-label=${title}>
 			<sl-tag class="diagram-section-tag" size="small" variant="primary">
 				${title}
 			</sl-tag>
-			${selection.size ? this.renderSelectedDiagramAxes(channels, selection) : suggestions.length ? x`
+			${dismissed.length ? x`
+				<sl-select class="diagram-axis-select" size="small" hoist contenteditable="false"
+					label=${this.message("Ausgeblendete Vorschl\xE4ge")} placeholder=${this.message("Diagramm w\xE4hlen")}
+					.value=${l3("")} @sl-show=${this.boundDiagramMenu}
+					@sl-change=${(event) => {
+      const select = event.currentTarget;
+      const suggestion = dismissed.find(({ key }) => encodeURIComponent(key) === select.value);
+      if (suggestion) this.selectDiagramSuggestion(suggestion);
+    }}>
+					${c4(dismissed, ({ key }) => key, ({ key, title: title2, x: x4, y: y5 }) => x`
+						<sl-option value=${encodeURIComponent(key)}>${this.message(title2)} · ${this.diagrams.label(y5)}${x4 !== TIME_CHANNEL ? ` \xB7 ${this.diagrams.label(x4)}` : ""}</sl-option>`)}
+				</sl-select>` : E}
+			${pending.length ? x`
 				<div class="diagram-suggestions">
-					${c4(suggestions, ({ x: x4, y: y5 }) => JSON.stringify([axisId(x4), axisId(y5)]), ({ title: title2, x: x4, y: y5 }) => x`
-						<sl-button class="diagram-suggestion" size="small" @click=${() => this.createDiagram(x4, y5, title2)}>
-							<span class="diagram-suggestion-title">${this.message(title2)}</span>
-							<span class="diagram-suggestion-axis"><b>Y</b> ${this.diagrams.label(y5)}</span>
-							<span class="diagram-suggestion-axis"><b>X</b> ${this.diagrams.label(x4)}</span>
-						</sl-button>`)}
-				</div>` : x`<p class="diagram-empty">${this.message("W\xE4hle Objekte auf dem Canvas, um ein eigenes Diagramm zu erstellen.")}</p>`}
+					${c4(pending, ({ key }) => key, (suggestion) => x`
+						<div class="diagram-suggestion-row">
+							<sl-button class="diagram-suggestion" size="small" @click=${() => this.selectDiagramSuggestion(suggestion)}>
+								<span class="diagram-suggestion-title">${this.message(suggestion.title)}</span>
+								<span class="diagram-suggestion-axis"><b>Y</b> ${this.diagrams.label(suggestion.y)}</span>
+								<span class="diagram-suggestion-axis"><b>X</b> ${this.diagrams.label(suggestion.x)}</span>
+							</sl-button>
+							<sl-button class="diagram-control diagram-dismiss" size="small" title=${dismiss} aria-label=${dismiss}
+								@click=${(event) => {
+      if (event.detail === 0) this.shadowRoot.querySelector("#diagramHandle")?.focus({ preventScroll: true });
+      this.suggestionQueue.dismiss(suggestion.key);
+      this.requestUpdate();
+    }}>
+								<span class="panel-button-label">${dismiss}</span>
+								<svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" aria-hidden="true">
+									<path d="m3 3 6 6m0-6-6 6"/>
+								</svg>
+							</sl-button>
+						</div>`)}
+				</div>` : E}
+			${selection.size ? this.renderSelectedDiagramAxes(channels, selection) : !pending.length && !dismissed.length ? x`
+				<p class="diagram-empty">${this.message("W\xE4hle Objekte auf dem Canvas, um ein eigenes Diagramm zu erstellen.")}</p>` : E}
 		</section>`;
   }
   renderDiagramDetails(available, open) {
+    const channels = open || this.diagramPickerOpen || this.suggestionQueue.size ? this.measurements.history.channels : [];
+    const channelIds = new Set(channels.map(({ id: id3 }) => id3));
+    const suggestions = this.suggestionQueue.list(({ x: x4, y: y5 }) => channelIds.has(y5.id) && (x4 === TIME_CHANNEL || channelIds.has(x4.id)) && !this.diagrams.hasPair(x4, y5));
+    const handleLabel = suggestions.pending.length ? this.message("Diagramme ({count} Vorschl\xE4ge)", { count: suggestions.pending.length }) : this.message("Diagramme");
     return x`
 			<aside id="diagramArea" class="workspace-side">
 				<div id="diagramControls"
 					@pointerleave=${(event) => {
-      if (!open && this.diagramPickerOpen && event.pointerType === "mouse") this.closeDiagramPicker();
-    }}
-					@focusout=${(event) => {
-      const controls = event.currentTarget;
-      queueMicrotask(() => {
-        if (this.diagramPickerOpen && !controls.matches(":hover, :focus-within")) this.closeDiagramPicker();
-      });
-    }}
-					@keydown=${(event) => {
-      if (event.key !== "Escape" || event.defaultPrevented || !this.diagramPickerOpen) return;
-      event.stopPropagation();
-      this.closeDiagramPicker();
-      this.shadowRoot.querySelector("#diagramHandle")?.focus();
+      if (this.diagramPickerOpen && event.pointerType !== "touch") this.closeDiagramPicker();
     }}>
 					<button id="diagramHandle" type="button" aria-expanded=${String(open || this.diagramPickerOpen)}
-						aria-controls=${!open && this.diagramPickerOpen ? "diagramBuilderPopup" : "inlineDiagramPanel"} aria-label=${this.message("Diagramme")}
-						title=${this.message("Diagramme")} class=${available ? "" : "diagram-handle-idle"}
+						aria-controls=${!open && this.diagramPickerOpen ? "diagramBuilderPopup" : "inlineDiagramPanel"} aria-label=${handleLabel}
+						title=${handleLabel} class=${available || suggestions.pending.length ? "" : "diagram-handle-idle"}
 						@pointerenter=${(event) => {
-      if (!open && event.pointerType === "mouse") this.diagramPickerOpen = true;
+      if (!open && event.pointerType === "mouse") this.openDiagramPicker(event.currentTarget.parentElement);
     }}
-						@click=${() => {
-      if (available) {
-        this.closeDiagramPicker();
-        this.onDiagramToggle(!open);
-      } else this.diagramPickerOpen = true;
+						@click=${(event) => {
+      if (available) this.onDiagramToggle(!open);
+      else if (this.diagramPickerOpen && event.pointerType !== "mouse") this.closeDiagramPicker();
+      else this.openDiagramPicker(event.currentTarget.parentElement);
     }}>
 						${open ? E : x`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
 							<path d="M2 2v12h12M4 11l3-4 3 2 4-5"/>
@@ -189679,11 +189797,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 						<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" aria-hidden="true">
 							<path d=${open ? "m9 3-4 4 4 4" : "m5 3 4 4-4 4"}/>
 						</svg>
+						${!open && suggestions.pending.length ? x`
+							<sl-badge class="diagram-suggestion-count" variant="primary" pill aria-hidden="true">${suggestions.pending.length}</sl-badge>` : E}
 					</button>
-					${!open && this.diagramPickerOpen ? this.renderDiagramBuilder(false) : E}
+					${!open && this.diagramPickerOpen ? this.renderDiagramBuilder(false, channels, suggestions) : E}
 				</div>
-				<div id="inlineDiagramPanel" ?inert=${!open} aria-hidden=${String(!open)}>
-					${open ? this.renderDiagramBuilder(true) : E}
+				<div id="inlineDiagramPanel" ?inert=${!open} aria-hidden=${String(!open)}
+					@pointerleave=${() => this.clearDiagramSourceHighlight()}>
+					${open ? this.renderDiagramBuilder(true, channels, suggestions) : E}
 					<div class="diagram-toolbar diagram-surface">
 						<sl-checkbox .checked=${this.diagrams.showLine} @sl-change=${() => this.diagrams.toggleShowLine()}>
 							${this.message("Kurven anzeigen")}
@@ -189701,6 +189822,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   onDiagramToggle(open) {
     if (!this.diagramPanelAvailable || this.diagramPanelOpen === open) return;
+    this.closeDiagramPicker();
     this.diagramPanelOpen = open;
     if (open && this.teacherDrawerOpen && this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.closeTeacherDrawer();
     this._sendxAPiStatement(open ? "opened" : "closed", "diagramPanel");

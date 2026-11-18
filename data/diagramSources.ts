@@ -2,11 +2,43 @@ import { TIME_CHANNEL, type MeasurementChannel } from "./measurementHistory";
 
 export type DiagramAxis = typeof TIME_CHANNEL | MeasurementChannel;
 export type DiagramSuggestion = { title: string; x: DiagramAxis; y: MeasurementChannel };
+export type QueuedDiagramSuggestion = DiagramSuggestion & { key: string; dismissed: boolean };
 export type InstrumentSuggestion = { title: string; quantities: readonly string[] };
 type Titration = { burette: string; vessel: string };
 
 export function axisId(axis: DiagramAxis): string {
 	return axis === TIME_CHANNEL ? axis : axis.id;
+}
+
+export class DiagramSuggestionQueue {
+	private readonly suggestions = new Map<string, QueuedDiagramSuggestion>();
+
+	get size(): number {
+		return this.suggestions.size;
+	}
+
+	collect(candidates: readonly DiagramSuggestion[]): boolean {
+		const previousSize = this.size;
+		for (const candidate of candidates) {
+			const key = JSON.stringify([axisId(candidate.x), axisId(candidate.y)]);
+			if (!this.suggestions.has(key)) this.suggestions.set(key, { ...candidate, key, dismissed: false });
+		}
+		return this.size !== previousSize;
+	}
+
+	dismiss(key: string): void {
+		const suggestion = this.suggestions.get(key);
+		if (suggestion) suggestion.dismissed = true;
+	}
+
+	list(available: (suggestion: DiagramSuggestion) => boolean) {
+		const pending: QueuedDiagramSuggestion[] = [];
+		const dismissed: QueuedDiagramSuggestion[] = [];
+		for (const suggestion of this.suggestions.values()) {
+			if (available(suggestion)) (suggestion.dismissed ? dismissed : pending).push(suggestion);
+		}
+		return { pending, dismissed };
+	}
 }
 
 export function componentKey(channel: MeasurementChannel): string {

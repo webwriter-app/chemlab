@@ -1208,8 +1208,10 @@ export const style = css`
 		inset-block-start: var(--panel-handle-top);
 		inset-inline-start: 100%;
 		z-index: 2;
+		pointer-events: none;
 	}
 	#diagramHandle {
+		position: relative;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -1233,6 +1235,16 @@ export const style = css`
 	}
 	#diagramHandle.diagram-handle-idle {
 		color: var(--sl-color-neutral-500);
+	}
+	.diagram-suggestion-count {
+		position: absolute;
+		inset-block-start: -4px;
+		inset-inline-end: -5px;
+		pointer-events: none;
+	}
+	.diagram-suggestion-count::part(base) {
+		padding: 1px 4px;
+		font-size: 9px;
 	}
 	.show-diagram-panel #diagramHandle {
 		inline-size: var(--panel-handle-width);
@@ -1324,6 +1336,19 @@ export const style = css`
 	.diagram-suggestions {
 		display: grid;
 		gap: 5px;
+	}
+	.diagram-suggestion-row {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: start;
+		gap: 4px;
+	}
+	.diagram-dismiss::part(base) {
+		min-block-size: 22px;
+		color: var(--lab-card-secondary-text);
+	}
+	.diagram-dismiss::part(label) {
+		padding-inline: 4px;
 	}
 	.diagram-suggestion::part(base) {
 		inline-size: 100%;

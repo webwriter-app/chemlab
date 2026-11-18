@@ -53,7 +53,8 @@ import { pHColors as phColorScale, pHTextColor } from "./data/phColors";
 import { defaultMolecules, defaultMixtures } from "./data/presets";
 import { sendXApiStatement } from "./services/xapi";
 import { DiagramController } from "./controllers/DiagramController";
-import { axisId, selectedDiagramSourceGroups, suggestDiagrams, type DiagramAxis, type InstrumentSuggestion } from "./data/diagramSources";
+import { axisId, DiagramSuggestionQueue, selectedDiagramSourceGroups, suggestDiagrams,
+	type DiagramAxis, type InstrumentSuggestion, type QueuedDiagramSuggestion } from "./data/diagramSources";
 import { TIME_CHANNEL, type MeasurementChannel } from "./data/measurementHistory";
 import { MeasurementRecorder } from "./controllers/MeasurementRecorder";
 import { SimulationController } from "./controllers/SimulationController";
@@ -433,7 +434,9 @@ export class ChemLab extends LitElementWw {
 	@state() private accessor fullWidthMode = false;
 	@state() private accessor diagramPanelOpen = false;
 	@state() private accessor diagramPickerOpen = false;
+	private diagramPickerListeners?: AbortController;
 	private diagramChannelVersion = 0;
+	private readonly suggestionQueue = new DiagramSuggestionQueue();
 	private diagramX = "";
 	private diagramY = "";
 	@state() private accessor teacherDrawerOpen = false;
@@ -2929,11 +2932,45 @@ export class ChemLab extends LitElementWw {
 
 	refreshDiagramPicker(): void {
 		const version = this.measurements.history.channelVersion;
-		if ((this.diagramPickerOpen || this.isDiagramPanelOpen) && version !== this.diagramChannelVersion) this.requestUpdate();
+		if (version === this.diagramChannelVersion) return;
 		this.diagramChannelVersion = version;
+		this.collectDiagramSuggestions();
+		if (this.diagramPickerOpen || this.isDiagramPanelOpen || this.suggestionQueue.size) this.requestUpdate();
+	}
+
+	collectDiagramSuggestions(): void {
+		if (this.simulation.hasRunningExperiments &&
+			this.suggestionQueue.collect(this.diagramSuggestions(this.measurements.history.channels))) this.requestUpdate();
+	}
+
+	private openDiagramPicker(controls: HTMLElement): void {
+		if (this.isDiagramPanelOpen || this.diagramPickerOpen) return;
+		this.collectDiagramSuggestions();
+		this.diagramPickerOpen = true;
+		this.diagramPickerListeners = new AbortController();
+		const { signal } = this.diagramPickerListeners;
+		const closeOutside = (event: Event) => {
+			if (!event.composedPath().includes(controls)) this.closeDiagramPicker();
+		};
+		const options = { capture: true, signal };
+		const view = this.ownerDocument.defaultView;
+		view?.addEventListener("pointerdown", closeOutside, options);
+		view?.addEventListener("pointermove", event => {
+			if (event.pointerType !== "touch") closeOutside(event);
+		}, options);
+		view?.addEventListener("focusin", closeOutside, options);
+		view?.addEventListener("keydown", event => {
+			if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+			const restoreFocus = event.composedPath().includes(controls);
+			this.closeDiagramPicker();
+			if (restoreFocus) controls.querySelector<HTMLElement>("#diagramHandle")?.focus({ preventScroll: true });
+		}, { signal });
+		view?.addEventListener("blur", () => this.closeDiagramPicker(), { signal });
 	}
 
 	private closeDiagramPicker(): void {
+		this.diagramPickerListeners?.abort();
+		this.diagramPickerListeners = undefined;
 		this.diagramPickerOpen = false;
 		this.diagramX = this.diagramY = "";
 	}
@@ -2947,7 +2984,27 @@ export class ChemLab extends LitElementWw {
 		if (!this.diagramPanelAvailable) this.closeDiagramPanel();
 		this.diagrams.create(x, y, title);
 		this.closeDiagramPicker();
-		if (!this.isDiagramPanelOpen) this.shadowRoot.querySelector<HTMLElement>("#diagramHandle")?.focus();
+		if (!this.isDiagramPanelOpen) this.shadowRoot.querySelector<HTMLElement>("#diagramHandle")?.focus({ preventScroll: true });
+	}
+
+	private selectDiagramSuggestion({ key, title, x, y }: QueuedDiagramSuggestion): void {
+		this.suggestionQueue.dismiss(key);
+		if (!this.diagrams.hasPair(x, y)) this.createDiagram(x, y, title);
+		this.onDiagramToggle(true);
+		void this.updateComplete.then(() => {
+			if (!this.isDiagramPanelOpen) return;
+			const drawer = this.shadowRoot.querySelector<HTMLElement>("#inlineDiagramPanel");
+			if (drawer) drawer.scrollTop = drawer.scrollHeight;
+		});
+	}
+
+	private boundDiagramMenu(event: Event): void {
+		const popup = (event.currentTarget as SlSelect).popup;
+		// The hoisted listbox escapes the drawer scroll area. Keep it inside the widget.
+		popup.flipBoundary = this.containerDiv;
+		popup.shiftBoundary = this.containerDiv;
+		popup.autoSizeBoundary = this.containerDiv;
+		popup.flipPadding = popup.shiftPadding = popup.autoSizePadding = 4;
 	}
 
 	private renderSelectedDiagramAxes(channels: MeasurementChannel[], selection: ReadonlySet<string>) {
@@ -2965,15 +3022,7 @@ export class ChemLab extends LitElementWw {
 		const select = (axis: "x" | "y", label: string, value?: DiagramAxis, excluded?: DiagramAxis) => html`
 			<sl-select class="diagram-axis-select" size="small" hoist contenteditable="false"
 				label=${this.message(label)} placeholder=${this.message("Datenquelle wählen")}
-				@sl-show=${(event: Event) => {
-					const popup = (event.currentTarget as SlSelect).popup;
-					// A hoisted listbox escapes the drawer’s scroll container.
-					// Keep its flip, shift and available height inside this widget.
-					popup.flipBoundary = this.containerDiv;
-					popup.shiftBoundary = this.containerDiv;
-					popup.autoSizeBoundary = this.containerDiv;
-					popup.flipPadding = popup.shiftPadding = popup.autoSizePadding = 4;
-				}}
+				@sl-show=${this.boundDiagramMenu}
 				.value=${live(value ? encodeURIComponent(axisId(value)) : "")}
 				@sl-change=${(event: Event) => {
 					const selected = decodeURIComponent(String((event.currentTarget as SlSelect).value));
@@ -3002,7 +3051,6 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private diagramSuggestions(channels: MeasurementChannel[]) {
-		if (!this.simulation.hasRunningExperiments) return [];
 		const key = (object: chemlib.ChemComponent | chemlib.ElectricComponent) => `${object._type}:${object._id}`;
 		const gasVessels = new Set<chemlib.Mixture>();
 		const titrations = this.allChemComponents.flatMap(source => {
@@ -3057,59 +3105,80 @@ export class ChemLab extends LitElementWw {
 		return suggestDiagrams(channels, titrations, instruments);
 	}
 
-	private renderDiagramBuilder(embedded: boolean) {
+	private renderDiagramBuilder(embedded: boolean, channels: MeasurementChannel[],
+		{ pending, dismissed }: ReturnType<DiagramSuggestionQueue["list"]>) {
 		const selection = this.diagramSelection;
-		const channels = this.measurements.history.channels;
-		const suggestions = selection.size ? [] : this.diagramSuggestions(channels)
-			.filter(({ x, y }) => !this.diagrams.hasPair(x, y));
-		const title = this.message(embedded ? "Diagramm hinzufügen" : selection.size ? "Achsen wählen" : "Diagrammvorschläge");
+		const title = this.message(embedded ? "Diagramm hinzufügen" :
+			selection.size && !pending.length && !dismissed.length ? "Achsen wählen" : "Diagrammvorschläge");
+		const dismiss = this.message("Vorschlag ausblenden");
 		return html`<section class="diagram-builder diagram-surface ${embedded ? "diagram-builder-inline" : "diagram-builder-popup"}"
 			id=${embedded ? "diagramBuilderInline" : "diagramBuilderPopup"} aria-label=${title}>
 			<sl-tag class="diagram-section-tag" size="small" variant="primary">
 				${title}
 			</sl-tag>
-			${selection.size ? this.renderSelectedDiagramAxes(channels, selection) : suggestions.length ? html`
+			${dismissed.length ? html`
+				<sl-select class="diagram-axis-select" size="small" hoist contenteditable="false"
+					label=${this.message("Ausgeblendete Vorschläge")} placeholder=${this.message("Diagramm wählen")}
+					.value=${live("")} @sl-show=${this.boundDiagramMenu}
+					@sl-change=${(event: Event) => {
+						const select = event.currentTarget as SlSelect;
+						const suggestion = dismissed.find(({ key }) => encodeURIComponent(key) === select.value);
+						if (suggestion) this.selectDiagramSuggestion(suggestion);
+					}}>
+					${repeat(dismissed, ({ key }) => key, ({ key, title, x, y }) => html`
+						<sl-option value=${encodeURIComponent(key)}>${this.message(title)} · ${this.diagrams.label(y)}${
+							x !== TIME_CHANNEL ? ` · ${this.diagrams.label(x)}` : ""}</sl-option>`)}
+				</sl-select>` : nothing}
+			${pending.length ? html`
 				<div class="diagram-suggestions">
-					${repeat(suggestions, ({ x, y }) => JSON.stringify([axisId(x), axisId(y)]), ({ title, x, y }) => html`
-						<sl-button class="diagram-suggestion" size="small" @click=${() => this.createDiagram(x, y, title)}>
-							<span class="diagram-suggestion-title">${this.message(title)}</span>
-							<span class="diagram-suggestion-axis"><b>Y</b> ${this.diagrams.label(y)}</span>
-							<span class="diagram-suggestion-axis"><b>X</b> ${this.diagrams.label(x)}</span>
-						</sl-button>`)}
-				</div>` : html`<p class="diagram-empty">${this.message("Wähle Objekte auf dem Canvas, um ein eigenes Diagramm zu erstellen.")}</p>`}
+					${repeat(pending, ({ key }) => key, suggestion => html`
+						<div class="diagram-suggestion-row">
+							<sl-button class="diagram-suggestion" size="small" @click=${() => this.selectDiagramSuggestion(suggestion)}>
+								<span class="diagram-suggestion-title">${this.message(suggestion.title)}</span>
+								<span class="diagram-suggestion-axis"><b>Y</b> ${this.diagrams.label(suggestion.y)}</span>
+								<span class="diagram-suggestion-axis"><b>X</b> ${this.diagrams.label(suggestion.x)}</span>
+							</sl-button>
+							<sl-button class="diagram-control diagram-dismiss" size="small" title=${dismiss} aria-label=${dismiss}
+								@click=${(event: MouseEvent) => {
+									if (event.detail === 0) this.shadowRoot.querySelector<HTMLElement>("#diagramHandle")?.focus({ preventScroll: true });
+									this.suggestionQueue.dismiss(suggestion.key);
+									this.requestUpdate();
+								}}>
+								<span class="panel-button-label">${dismiss}</span>
+								<svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" aria-hidden="true">
+									<path d="m3 3 6 6m0-6-6 6"/>
+								</svg>
+							</sl-button>
+						</div>`)}
+				</div>` : nothing}
+			${selection.size ? this.renderSelectedDiagramAxes(channels, selection) : !pending.length && !dismissed.length ? html`
+				<p class="diagram-empty">${this.message("Wähle Objekte auf dem Canvas, um ein eigenes Diagramm zu erstellen.")}</p>` : nothing}
 		</section>`;
 	}
 
 	private renderDiagramDetails(available: boolean, open: boolean) {
+		const channels = open || this.diagramPickerOpen || this.suggestionQueue.size ? this.measurements.history.channels : [];
+		const channelIds = new Set(channels.map(({ id }) => id));
+		const suggestions = this.suggestionQueue.list(({ x, y }) =>
+			channelIds.has(y.id) && (x === TIME_CHANNEL || channelIds.has(x.id)) && !this.diagrams.hasPair(x, y));
+		const handleLabel = suggestions.pending.length
+			? this.message("Diagramme ({count} Vorschläge)", { count: suggestions.pending.length }) : this.message("Diagramme");
 		return html`
 			<aside id="diagramArea" class="workspace-side">
 				<div id="diagramControls"
 					@pointerleave=${(event: PointerEvent) => {
-						if (!open && this.diagramPickerOpen && event.pointerType === "mouse") this.closeDiagramPicker();
-					}}
-					@focusout=${(event: FocusEvent) => {
-						const controls = event.currentTarget as HTMLElement;
-						queueMicrotask(() => {
-							if (this.diagramPickerOpen && !controls.matches(":hover, :focus-within")) this.closeDiagramPicker();
-						});
-					}}
-					@keydown=${(event: KeyboardEvent) => {
-						if (event.key !== "Escape" || event.defaultPrevented || !this.diagramPickerOpen) return;
-						event.stopPropagation();
-						this.closeDiagramPicker();
-						this.shadowRoot.querySelector<HTMLElement>("#diagramHandle")?.focus();
+						if (this.diagramPickerOpen && event.pointerType !== "touch") this.closeDiagramPicker();
 					}}>
 					<button id="diagramHandle" type="button" aria-expanded=${String(open || this.diagramPickerOpen)}
-						aria-controls=${!open && this.diagramPickerOpen ? "diagramBuilderPopup" : "inlineDiagramPanel"} aria-label=${this.message("Diagramme")}
-						title=${this.message("Diagramme")} class=${available ? "" : "diagram-handle-idle"}
+						aria-controls=${!open && this.diagramPickerOpen ? "diagramBuilderPopup" : "inlineDiagramPanel"} aria-label=${handleLabel}
+						title=${handleLabel} class=${available || suggestions.pending.length ? "" : "diagram-handle-idle"}
 						@pointerenter=${(event: PointerEvent) => {
-							if (!open && event.pointerType === "mouse") this.diagramPickerOpen = true;
+							if (!open && event.pointerType === "mouse") this.openDiagramPicker((event.currentTarget as HTMLElement).parentElement);
 						}}
-						@click=${() => {
-							if (available) {
-								this.closeDiagramPicker();
-								this.onDiagramToggle(!open);
-							} else this.diagramPickerOpen = true;
+						@click=${(event: PointerEvent) => {
+							if (available) this.onDiagramToggle(!open);
+							else if (this.diagramPickerOpen && event.pointerType !== "mouse") this.closeDiagramPicker();
+							else this.openDiagramPicker((event.currentTarget as HTMLElement).parentElement);
 						}}>
 						${open ? nothing : html`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
 							<path d="M2 2v12h12M4 11l3-4 3 2 4-5"/>
@@ -3117,11 +3186,14 @@ export class ChemLab extends LitElementWw {
 						<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" aria-hidden="true">
 							<path d=${open ? "m9 3-4 4 4 4" : "m5 3 4 4-4 4"}/>
 						</svg>
+						${!open && suggestions.pending.length ? html`
+							<sl-badge class="diagram-suggestion-count" variant="primary" pill aria-hidden="true">${suggestions.pending.length}</sl-badge>` : nothing}
 					</button>
-					${!open && this.diagramPickerOpen ? this.renderDiagramBuilder(false) : nothing}
+					${!open && this.diagramPickerOpen ? this.renderDiagramBuilder(false, channels, suggestions) : nothing}
 				</div>
-				<div id="inlineDiagramPanel" ?inert=${!open} aria-hidden=${String(!open)}>
-					${open ? this.renderDiagramBuilder(true) : nothing}
+				<div id="inlineDiagramPanel" ?inert=${!open} aria-hidden=${String(!open)}
+					@pointerleave=${() => this.clearDiagramSourceHighlight()}>
+					${open ? this.renderDiagramBuilder(true, channels, suggestions) : nothing}
 					<div class="diagram-toolbar diagram-surface">
 						<sl-checkbox .checked=${this.diagrams.showLine} @sl-change=${() => this.diagrams.toggleShowLine()}>
 							${this.message("Kurven anzeigen")}
@@ -3140,6 +3212,7 @@ export class ChemLab extends LitElementWw {
 
 	private onDiagramToggle(open: boolean): void {
 		if (!this.diagramPanelAvailable || this.diagramPanelOpen === open) return;
+		this.closeDiagramPicker();
 		this.diagramPanelOpen = open;
 		if (open && this.teacherDrawerOpen && this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.closeTeacherDrawer();
 		this._sendxAPiStatement(open ? "opened" : "closed", "diagramPanel");

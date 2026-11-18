@@ -564,6 +564,7 @@ export class CanvasController implements ReactiveController {
 		view.addEventListener("blur", () => {
 			if (this.pointerBusy) this.cancelPointerInteraction();
 			this.resetTouches();
+			this.clearDiagramSourceHighlight();
 		}, { signal });
 	}
 

@@ -85,6 +85,7 @@ export class SimulationController implements ReactiveController {
 			}
 		});
 		live?.(0);
+		this.host.collectDiagramSuggestions();
 		this.host.requestUpdate();
 	}
 

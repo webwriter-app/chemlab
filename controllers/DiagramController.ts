@@ -320,10 +320,9 @@ export class DiagramController implements ReactiveController {
 				const highlight = (active: boolean) => this.host.highlightDiagramSource(key, active);
 				return html`
 					<button type="button" class="diagram-source" title=${this.host.message("Zu {name} springen", { name })}
-						@pointerenter=${() => highlight(true)}
-						@pointerleave=${(event: PointerEvent) => {
-							if (!(event.currentTarget as HTMLElement).matches(":focus-visible")) highlight(false);
-						}}
+						@pointerenter=${(event: PointerEvent) => { if (event.pointerType !== "touch") highlight(true); }}
+						@pointerleave=${() => highlight(false)}
+						@pointercancel=${() => highlight(false)}
 						@focus=${(event: FocusEvent) => {
 							if ((event.currentTarget as HTMLElement).matches(":focus-visible")) highlight(true);
 						}}

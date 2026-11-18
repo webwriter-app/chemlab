@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { selectedDiagramSourceGroups, suggestDiagrams } from "../data/diagramSources";
+import { DiagramSuggestionQueue, selectedDiagramSourceGroups, suggestDiagrams } from "../data/diagramSources";
 import { MeasurementHistory, TIME_CHANNEL, type MeasurementChannel } from "../data/measurementHistory";
 
 function source(component: string, index: number, quantity: string, group: MeasurementChannel["group"] = "vessel", species?: string): MeasurementChannel {
@@ -44,4 +44,21 @@ test("existing channels and recordings from stopped experiments do not create su
 	history.record(amps, null, time + 1);
 	assert.deepEqual(suggestDiagrams(history.channels, [], new Map()), []);
 	assert.equal(history.points(TIME_CHANNEL, amps.id)[0].y, 0.9);
+});
+
+test("suggestions accumulate across starts and remain selectable after dismissal", () => {
+	const queue = new DiagramSuggestionQueue();
+	const titration = { title: "Titration", x: delivery, y: pH };
+	const circuit = { title: "Stromkreis", x: TIME_CHANNEL, y: amps } as const;
+	const list = () => queue.list(() => true);
+	assert.equal(queue.collect([titration]), true);
+	assert.equal(queue.collect([circuit]), true);
+	assert.equal(queue.collect([]), false);
+	assert.deepEqual(list().pending.map(({ y }) => y.id), [pH.id, amps.id]);
+
+	queue.dismiss(list().pending[0].key);
+	assert.equal(queue.collect([titration, circuit]), false);
+	assert.deepEqual(list().pending.map(({ y }) => y.id), [amps.id]);
+	assert.deepEqual(list().dismissed.map(({ y }) => y.id), [pH.id]);
+	assert.deepEqual(queue.list(({ y }) => y.id !== pH.id).dismissed, []);
 });
