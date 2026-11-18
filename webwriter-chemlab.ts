@@ -1069,6 +1069,7 @@ export class ChemLab extends LitElementWw {
 					for (const device of active.devices) {
 						device._visibleCurrent = null;
 						device._visibleVoltage = null;
+						device._cellCurrent = null;
 						this.canvas.refreshDeviceDisplay(device);
 					}
 				}
@@ -1155,6 +1156,18 @@ export class ChemLab extends LitElementWw {
 		// the ammeter shows a magnitude and the Faraday rate needs one.
 		return this.simulation.hasTask(ticker) && this.operatingCircuit(source)
 			? Math.abs(source._visibleCurrent ?? 0) : 0;
+	}
+
+	/**
+	 * The current the cell between the two electrodes carries, in ampere.
+	 * A supply that also feeds a lead laid across the electrodes delivers
+	 * more than the cell takes, and the law of Faraday is about what happens
+	 * at the electrodes, not about what leaves the supply.
+	 */
+	private cellCurrent(source: chemlib.ElectricComponent): number {
+		const ticker = `echem${source._type}:${source._id}`;
+		return this.simulation.hasTask(ticker) && this.operatingCircuit(source)
+			? Math.abs(source._cellCurrent ?? 0) : 0;
 	}
 
 	/**
@@ -2145,7 +2158,7 @@ export class ChemLab extends LitElementWw {
 				if (type === chemlib.EComponentType.Source) {
 					const current = this.runningCurrent(this.curr_obj);
 					let electronMolRate: number =
-						current / chemlib.Simulation._faradayConst;
+						this.cellCurrent(this.curr_obj) / chemlib.Simulation._faradayConst;
 					this.contextEchemInfo.innerHTML = `
 						<div style="display: flex; flex-direction: column">
 							<p>Stromstärke: ${current.toExponential(2)} A</p>

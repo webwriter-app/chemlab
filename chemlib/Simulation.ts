@@ -2113,9 +2113,13 @@ export abstract class Simulation {
 				for (const device of devices) {
 					const reading = readings?.get(device);
 					device._visibleCurrent = reading?.current ?? null;
+					// The RC model books no chemical turnover, so there is no
+					// cell current to report.
+					device._cellCurrent = null;
 					if (device._type === EComponentType.Voltmeter ||
 						(device._type === EComponentType.Multimeter && device._meterMode === "voltage")) {
-						device._visibleVoltage = reading ? Math.abs(reading.voltage) : null;
+						// The sign is the lead orientation, as on a bench meter.
+						device._visibleVoltage = reading ? reading.voltage : null;
 					}
 				}
 			},
@@ -2153,6 +2157,7 @@ export abstract class Simulation {
 		const unsolved = () => {
 			for (const device of sDevices) {
 				device._visibleCurrent = null;
+				device._cellCurrent = null;
 				if (device._type === EComponentType.Voltmeter ||
 					device._type === EComponentType.Multimeter ||
 					device._type === EComponentType.Source) {
@@ -2239,10 +2244,18 @@ export abstract class Simulation {
 			const reading = readings?.get(device);
 			// A device whose lead hangs on one post only is not part of the
 			// circuit, so it reads nothing instead of the cell's own values.
-			device._visibleCurrent = reading ? reading.current : null;
+			// An open cell carries no external current either: the leakage a
+			// voltmeter's input would draw is what the chemistry deliberately
+			// leaves out, so the meter reports none rather than a current that
+			// changes nothing.
+			device._visibleCurrent = reading ? (ideal ? 0 : reading.current) : null;
+			device._cellCurrent = solution.current;
 			if (device._type === EComponentType.Voltmeter ||
 				(device._type === EComponentType.Multimeter && device._meterMode === "voltage")) {
-				device._visibleVoltage = reading ? Math.abs(reading.voltage) : null;
+				// The sign is the lead orientation, as on a bench meter: the
+				// reading is positive while the first post sits above the
+				// second one.
+				device._visibleVoltage = reading ? reading.voltage : null;
 			} else if (device._type === EComponentType.Source) {
 				// A source shows the voltage it actually holds: the one it had
 				// to apply in current mode, and the one left over once the
@@ -2289,9 +2302,12 @@ export abstract class Simulation {
 		for (const device of devices) {
 			const reading = readings?.get(device);
 			device._visibleCurrent = reading ? reading.current : null;
+			// A network without a cell carries no cell current.
+			device._cellCurrent = null;
 			if (device._type === EComponentType.Voltmeter ||
 				(device._type === EComponentType.Multimeter && device._meterMode === "voltage")) {
-				device._visibleVoltage = reading ? Math.abs(reading.voltage) : null;
+				// The sign is the lead orientation, as on a bench meter.
+				device._visibleVoltage = reading ? reading.voltage : null;
 			} else if (device._type === EComponentType.Source) {
 				// Without a cell the supply holds its own voltage, so the
 				// terminal voltage is what it shows.

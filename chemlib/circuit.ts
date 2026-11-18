@@ -233,11 +233,21 @@ export function circuitNetwork(
 	for (const device of visited) {
 		for (let terminal = 0; terminal < device._conCount; terminal++) slotOf(device, terminal);
 	}
+	const paired = new Map<string, number>();
 	for (const device of visited) {
 		for (let terminal = 0; terminal < device._conCount; terminal++) {
 			for (const partner of device._connections[terminal]) {
-				const back = partner.terminalsOf(device);
-				for (const other of back) join(slotOf(device, terminal), slotOf(partner, other));
+				// A connection is symmetric but does not record which post of
+				// the partner it sits on, so the posts are paired in the order
+				// they appear. Joining every post of the partner instead would
+				// short two devices that are wired to each other on both of
+				// them, which is what a supply wired straight into a meter is.
+				const key = `${device._id}:${partner._id}`;
+				const used = paired.get(key) ?? 0;
+				paired.set(key, used + 1);
+				const other = partner.terminalsOf(device)[used];
+				if (other === undefined) continue;
+				join(slotOf(device, terminal), slotOf(partner, other));
 			}
 		}
 	}
@@ -267,6 +277,14 @@ export function circuitNetwork(
 		if (device._conCount !== 2) continue;
 		const resistance = device.resistance;
 		if (!Number.isFinite(resistance) || !(resistance > 0)) continue;
+		// A device with a free post is not part of the circuit. Its floating
+		// post would otherwise take the potential of the connected one, and a
+		// meter with a single lead would report a valid-looking zero.
+		let wired = true;
+		for (let terminal = 0; terminal < device._conCount; terminal++) {
+			if (!device._connections[terminal]?.length) wired = false;
+		}
+		if (!wired) continue;
 		const a = nodeOf(device, 0);
 		const b = nodeOf(device, 1);
 		// A device whose two terminals sit on the same node is shorted out by

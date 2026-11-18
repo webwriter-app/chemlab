@@ -389,17 +389,22 @@ export class ElectricDeviceView extends Container {
 		this.drawPorts();
 		let values: string[];
 		switch (component._type) {
-			case EComponentType.Source:
-				// A source in voltage mode shows the voltage it is set to and
-				// the current the cell solves; in current mode it shows the
-				// current it is set to and the voltage it had to apply. A
-				// supply that limits its current shows the voltage it holds
-				// instead of the setpoint, the way a bench supply does.
-				values = component._sourceMode === "current"
-					? [reading(component._visibleVoltage, "V"), currentReading(component._sourceCurrent)]
-					: [reading(component._visibleVoltage ?? component._sourceVoltage, "V"),
-						currentReading(component._visibleCurrent ?? component._sourceCurrent)];
+			case EComponentType.Source: {
+				// A supply that is wired to nothing shows its setting. One
+				// that is wired shows what it measures, and a dash where
+				// there is no measurement: a supply whose lead hangs on one
+				// post must not present its setpoint as the terminal voltage,
+				// and one that cannot deliver its set current must not
+				// present that either.
+				const idle = !component._connections.some((list) => list.length > 0);
+				const solved = component._visibleVoltage !== null || component._visibleCurrent !== null;
+				const setpoint = idle || solved;
+				values = [
+					reading(component._visibleVoltage ?? (setpoint ? component._sourceVoltage : null), "V"),
+					currentReading(component._visibleCurrent ?? (setpoint ? component._sourceCurrent : null)),
+				];
 				break;
+			}
 			case EComponentType.Voltmeter:
 				values = [reading(component._visibleVoltage, "V")];
 				break;

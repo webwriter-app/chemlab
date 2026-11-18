@@ -256,6 +256,16 @@ class ElectricComponent {
 	 */
 	_visibleCurrent: number | null = null;
 	/**
+	 * the current the cell between the two electrodes carried in the last
+	 * solve, in ampere. It is not the current of the device itself: a supply
+	 * that also feeds a lead laid across the electrodes delivers more than
+	 * the cell takes, and the Faraday rate belongs to the cell. `null` until
+	 * a cell has been solved.
+	 *
+	 * @type {(number | null)}
+	 */
+	_cellCurrent: number | null = null;
+	/**
 	 * for electrodes: metal deposited on the electrode by reduction, keyed by
 	 * the SMILES of the deposited element
 	 *

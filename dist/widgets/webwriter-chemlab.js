@@ -111073,6 +111073,16 @@ var ElectricComponent = class {
    */
   _visibleCurrent = null;
   /**
+   * the current the cell between the two electrodes carried in the last
+   * solve, in ampere. It is not the current of the device itself: a supply
+   * that also feeds a lead laid across the electrodes delivers more than
+   * the cell takes, and the Faraday rate belongs to the cell. `null` until
+   * a cell has been solved.
+   *
+   * @type {(number | null)}
+   */
+  _cellCurrent = null;
+  /**
    * for electrodes: metal deposited on the electrode by reduction, keyed by
    * the SMILES of the deposited element
    *
@@ -149566,11 +149576,16 @@ function circuitNetwork(devices) {
   for (const device of visited) {
     for (let terminal = 0; terminal < device._conCount; terminal++) slotOf(device, terminal);
   }
+  const paired = /* @__PURE__ */ new Map();
   for (const device of visited) {
     for (let terminal = 0; terminal < device._conCount; terminal++) {
       for (const partner of device._connections[terminal]) {
-        const back = partner.terminalsOf(device);
-        for (const other of back) join(slotOf(device, terminal), slotOf(partner, other));
+        const key = `${device._id}:${partner._id}`;
+        const used = paired.get(key) ?? 0;
+        paired.set(key, used + 1);
+        const other = partner.terminalsOf(device)[used];
+        if (other === void 0) continue;
+        join(slotOf(device, terminal), slotOf(partner, other));
       }
     }
   }
@@ -149595,6 +149610,11 @@ function circuitNetwork(devices) {
     if (device._conCount !== 2) continue;
     const resistance = device.resistance;
     if (!Number.isFinite(resistance) || !(resistance > 0)) continue;
+    let wired = true;
+    for (let terminal = 0; terminal < device._conCount; terminal++) {
+      if (!device._connections[terminal]?.length) wired = false;
+    }
+    if (!wired) continue;
     const a7 = nodeOf(device, 0);
     const b5 = nodeOf(device, 1);
     if (a7 === b5) continue;
@@ -151358,8 +151378,9 @@ var Simulation = class {
         for (const device of devices) {
           const reading2 = readings?.get(device);
           device._visibleCurrent = reading2?.current ?? null;
+          device._cellCurrent = null;
           if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage") {
-            device._visibleVoltage = reading2 ? Math.abs(reading2.voltage) : null;
+            device._visibleVoltage = reading2 ? reading2.voltage : null;
           }
         }
       }
@@ -151388,6 +151409,7 @@ var Simulation = class {
     const unsolved = () => {
       for (const device of sDevices) {
         device._visibleCurrent = null;
+        device._cellCurrent = null;
         if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ || device._type === "source" /* Source */) {
           device._visibleVoltage = null;
         }
@@ -151459,9 +151481,10 @@ var Simulation = class {
     });
     for (const device of sDevices) {
       const reading2 = readings?.get(device);
-      device._visibleCurrent = reading2 ? reading2.current : null;
+      device._visibleCurrent = reading2 ? ideal ? 0 : reading2.current : null;
+      device._cellCurrent = solution.current;
       if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage") {
-        device._visibleVoltage = reading2 ? Math.abs(reading2.voltage) : null;
+        device._visibleVoltage = reading2 ? reading2.voltage : null;
       } else if (device._type === "source" /* Source */) {
         device._visibleVoltage = device._sourceMode === "current" || limited ? reading2 ? Math.abs(reading2.voltage) : null : null;
       }
@@ -151493,8 +151516,9 @@ var Simulation = class {
     for (const device of devices) {
       const reading2 = readings?.get(device);
       device._visibleCurrent = reading2 ? reading2.current : null;
+      device._cellCurrent = null;
       if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage") {
-        device._visibleVoltage = reading2 ? Math.abs(reading2.voltage) : null;
+        device._visibleVoltage = reading2 ? reading2.voltage : null;
       } else if (device._type === "source" /* Source */) {
         device._visibleVoltage = reading2 ? Math.abs(reading2.voltage) : null;
       }
@@ -183102,12 +183126,16 @@ var ElectricDeviceView = class extends Container {
     this.drawPorts();
     let values;
     switch (component._type) {
-      case "source" /* Source */:
-        values = component._sourceMode === "current" ? [reading(component._visibleVoltage, "V"), currentReading(component._sourceCurrent)] : [
-          reading(component._visibleVoltage ?? component._sourceVoltage, "V"),
-          currentReading(component._visibleCurrent ?? component._sourceCurrent)
+      case "source" /* Source */: {
+        const idle = !component._connections.some((list) => list.length > 0);
+        const solved = component._visibleVoltage !== null || component._visibleCurrent !== null;
+        const setpoint = idle || solved;
+        values = [
+          reading(component._visibleVoltage ?? (setpoint ? component._sourceVoltage : null), "V"),
+          currentReading(component._visibleCurrent ?? (setpoint ? component._sourceCurrent : null))
         ];
         break;
+      }
       case "voltmeter" /* Voltmeter */:
         values = [reading(component._visibleVoltage, "V")];
         break;
@@ -185474,6 +185502,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
           for (const device of active.devices) {
             device._visibleCurrent = null;
             device._visibleVoltage = null;
+            device._cellCurrent = null;
             this.canvas.refreshDeviceDisplay(device);
           }
         }
@@ -185549,6 +185578,16 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   runningCurrent(source3) {
     const ticker = `echem${source3._type}:${source3._id}`;
     return this.simulation.hasTask(ticker) && this.operatingCircuit(source3) ? Math.abs(source3._visibleCurrent ?? 0) : 0;
+  }
+  /**
+   * The current the cell between the two electrodes carries, in ampere.
+   * A supply that also feeds a lead laid across the electrodes delivers
+   * more than the cell takes, and the law of Faraday is about what happens
+   * at the electrodes, not about what leaves the supply.
+   */
+  cellCurrent(source3) {
+    const ticker = `echem${source3._type}:${source3._id}`;
+    return this.simulation.hasTask(ticker) && this.operatingCircuit(source3) ? Math.abs(source3._cellCurrent ?? 0) : 0;
   }
   /**
    * Clears the readings a stopped experiment left behind. The cell solve
@@ -186459,7 +186498,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.activateEComp.style.display = "";
         if (type === "source" /* Source */) {
           const current = this.runningCurrent(this.curr_obj);
-          let electronMolRate = current / Simulation._faradayConst;
+          let electronMolRate = this.cellCurrent(this.curr_obj) / Simulation._faradayConst;
           this.contextEchemInfo.innerHTML = `
 						<div style="display: flex; flex-direction: column">
 							<p>Stromst\xE4rke: ${current.toExponential(2)} A</p>
