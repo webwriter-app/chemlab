@@ -187317,6 +187317,7 @@ var TRANSFER_HOLD_RADIUS = 6;
 var DRAG_TRANSFER_TASK = "drag-transfer";
 var MIN_TWO_PANELS_WIDTH = 480;
 var RC_UPDATE_MS = 50;
+var DIAGRAM_PICKER_CLOSE_MS = 2e3;
 function isPassiveMeter(device) {
   const { Ammeter, Multimeter, Voltmeter } = EComponentType;
   return device._type === Ammeter || device._type === Multimeter || device._type === Voltmeter;
@@ -187442,6 +187443,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __privateAdd(this, _diagramPanelOpen, __runInitializers(_init2, 136, this, false)), __runInitializers(_init2, 139, this);
     __privateAdd(this, _diagramPickerOpen, __runInitializers(_init2, 140, this, false)), __runInitializers(_init2, 143, this);
     __publicField(this, "diagramPickerListeners");
+    __publicField(this, "diagramPickerCloseTimer");
+    __publicField(this, "diagramMenus", /* @__PURE__ */ new Set());
     __publicField(this, "diagramChannelVersion", 0);
     __publicField(this, "suggestionQueue", new DiagramSuggestionQueue());
     __publicField(this, "diagramX", "");
@@ -189610,16 +189613,23 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.diagramPickerOpen = true;
     this.diagramPickerListeners = new AbortController();
     const { signal } = this.diagramPickerListeners;
-    const closeOutside = (event) => {
-      if (!event.composedPath().includes(controls)) this.closeDiagramPicker();
+    const outside = (event) => {
+      const path2 = event.composedPath();
+      return !path2.includes(controls) && !path2.some((node) => this.diagramMenus.has(node));
     };
     const options2 = { capture: true, signal };
     const view = this.ownerDocument.defaultView;
-    view?.addEventListener("pointerdown", closeOutside, options2);
-    view?.addEventListener("pointermove", (event) => {
-      if (event.pointerType !== "touch") closeOutside(event);
+    view?.addEventListener("pointerdown", (event) => {
+      if (outside(event)) this.closeDiagramPicker();
     }, options2);
-    view?.addEventListener("focusin", closeOutside, options2);
+    view?.addEventListener("pointermove", (event) => {
+      if (event.pointerType === "touch") return;
+      if (outside(event)) this.scheduleDiagramPickerClose();
+      else this.cancelDiagramPickerClose();
+    }, options2);
+    view?.addEventListener("focusin", (event) => {
+      if (outside(event)) this.closeDiagramPicker();
+    }, options2);
     view?.addEventListener("keydown", (event) => {
       if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
       const restoreFocus = event.composedPath().includes(controls);
@@ -189628,9 +189638,23 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }, { signal });
     view?.addEventListener("blur", () => this.closeDiagramPicker(), { signal });
   }
+  /** The picker waits a moment before it closes, so the pointer can reach a dropdown. */
+  scheduleDiagramPickerClose() {
+    if (this.diagramPickerCloseTimer !== void 0) return;
+    this.diagramPickerCloseTimer = setTimeout(() => {
+      this.diagramPickerCloseTimer = void 0;
+      this.closeDiagramPicker();
+    }, DIAGRAM_PICKER_CLOSE_MS);
+  }
+  cancelDiagramPickerClose() {
+    clearTimeout(this.diagramPickerCloseTimer);
+    this.diagramPickerCloseTimer = void 0;
+  }
   closeDiagramPicker() {
+    this.cancelDiagramPickerClose();
     this.diagramPickerListeners?.abort();
     this.diagramPickerListeners = void 0;
+    this.diagramMenus.clear();
     this.diagramPickerOpen = false;
     this.diagramX = this.diagramY = "";
   }
@@ -189660,6 +189684,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     popup.shiftBoundary = this.containerDiv;
     popup.autoSizeBoundary = this.containerDiv;
     popup.flipPadding = popup.shiftPadding = popup.autoSizePadding = 4;
+    this.diagramMenus.add(popup);
   }
   renderSelectedDiagramAxes(channels, selection) {
     const groups = selectedDiagramSourceGroups(channels, selection).sort((a7, b5) => a7.sources[0].number - b5.sources[0].number);
@@ -189808,8 +189833,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     return x`
 			<aside id="diagramArea" class="workspace-side">
 				<div id="diagramControls"
+					@pointerenter=${() => this.cancelDiagramPickerClose()}
 					@pointerleave=${(event) => {
-      if (this.diagramPickerOpen && event.pointerType !== "touch") this.closeDiagramPicker();
+      if (this.diagramPickerOpen && event.pointerType !== "touch") this.scheduleDiagramPickerClose();
     }}>
 					<button id="diagramHandle" type="button" aria-expanded=${String(open || this.diagramPickerOpen)}
 						aria-controls=${!open && this.diagramPickerOpen ? "diagramBuilderPopup" : "inlineDiagramPanel"} aria-label=${handleLabel}

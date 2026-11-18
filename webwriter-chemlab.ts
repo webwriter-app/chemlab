@@ -90,6 +90,7 @@ const TRANSFER_HOLD_RADIUS = 6;
 const DRAG_TRANSFER_TASK = "drag-transfer";
 const MIN_TWO_PANELS_WIDTH = 480;
 const RC_UPDATE_MS = 50;
+const DIAGRAM_PICKER_CLOSE_MS = 2000;
 type RCSettings = NonNullable<chemlib.ElectricComponent["_rcSettings"]>;
 type RCReadout = { sample: chemlib.NoIonicPathTransientSample; timeConstant: number; cutoffAt: number };
 
@@ -435,6 +436,8 @@ export class ChemLab extends LitElementWw {
 	@state() private accessor diagramPanelOpen = false;
 	@state() private accessor diagramPickerOpen = false;
 	private diagramPickerListeners?: AbortController;
+	private diagramPickerCloseTimer?: ReturnType<typeof setTimeout>;
+	private readonly diagramMenus = new Set<HTMLElement>();
 	private diagramChannelVersion = 0;
 	private readonly suggestionQueue = new DiagramSuggestionQueue();
 	private diagramX = "";
@@ -2970,16 +2973,24 @@ export class ChemLab extends LitElementWw {
 		this.diagramPickerOpen = true;
 		this.diagramPickerListeners = new AbortController();
 		const { signal } = this.diagramPickerListeners;
-		const closeOutside = (event: Event) => {
-			if (!event.composedPath().includes(controls)) this.closeDiagramPicker();
+		// A hoisted dropdown leaves the panel, so the pointer over it still counts as inside.
+		const outside = (event: Event) => {
+			const path = event.composedPath();
+			return !path.includes(controls) && !path.some(node => this.diagramMenus.has(node as HTMLElement));
 		};
 		const options = { capture: true, signal };
 		const view = this.ownerDocument.defaultView;
-		view?.addEventListener("pointerdown", closeOutside, options);
-		view?.addEventListener("pointermove", event => {
-			if (event.pointerType !== "touch") closeOutside(event);
+		view?.addEventListener("pointerdown", event => {
+			if (outside(event)) this.closeDiagramPicker();
 		}, options);
-		view?.addEventListener("focusin", closeOutside, options);
+		view?.addEventListener("pointermove", event => {
+			if (event.pointerType === "touch") return;
+			if (outside(event)) this.scheduleDiagramPickerClose();
+			else this.cancelDiagramPickerClose();
+		}, options);
+		view?.addEventListener("focusin", event => {
+			if (outside(event)) this.closeDiagramPicker();
+		}, options);
 		view?.addEventListener("keydown", event => {
 			if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
 			const restoreFocus = event.composedPath().includes(controls);
@@ -2989,9 +3000,25 @@ export class ChemLab extends LitElementWw {
 		view?.addEventListener("blur", () => this.closeDiagramPicker(), { signal });
 	}
 
+	/** The picker waits a moment before it closes, so the pointer can reach a dropdown. */
+	private scheduleDiagramPickerClose(): void {
+		if (this.diagramPickerCloseTimer !== undefined) return;
+		this.diagramPickerCloseTimer = setTimeout(() => {
+			this.diagramPickerCloseTimer = undefined;
+			this.closeDiagramPicker();
+		}, DIAGRAM_PICKER_CLOSE_MS);
+	}
+
+	private cancelDiagramPickerClose(): void {
+		clearTimeout(this.diagramPickerCloseTimer);
+		this.diagramPickerCloseTimer = undefined;
+	}
+
 	private closeDiagramPicker(): void {
+		this.cancelDiagramPickerClose();
 		this.diagramPickerListeners?.abort();
 		this.diagramPickerListeners = undefined;
+		this.diagramMenus.clear();
 		this.diagramPickerOpen = false;
 		this.diagramX = this.diagramY = "";
 	}
@@ -3026,6 +3053,7 @@ export class ChemLab extends LitElementWw {
 		popup.shiftBoundary = this.containerDiv;
 		popup.autoSizeBoundary = this.containerDiv;
 		popup.flipPadding = popup.shiftPadding = popup.autoSizePadding = 4;
+		this.diagramMenus.add(popup);
 	}
 
 	private renderSelectedDiagramAxes(channels: MeasurementChannel[], selection: ReadonlySet<string>) {
@@ -3187,8 +3215,9 @@ export class ChemLab extends LitElementWw {
 		return html`
 			<aside id="diagramArea" class="workspace-side">
 				<div id="diagramControls"
+					@pointerenter=${() => this.cancelDiagramPickerClose()}
 					@pointerleave=${(event: PointerEvent) => {
-						if (this.diagramPickerOpen && event.pointerType !== "touch") this.closeDiagramPicker();
+						if (this.diagramPickerOpen && event.pointerType !== "touch") this.scheduleDiagramPickerClose();
 					}}>
 					<button id="diagramHandle" type="button" aria-expanded=${String(open || this.diagramPickerOpen)}
 						aria-controls=${!open && this.diagramPickerOpen ? "diagramBuilderPopup" : "inlineDiagramPanel"} aria-label=${handleLabel}
