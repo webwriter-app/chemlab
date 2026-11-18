@@ -30,14 +30,16 @@ function vessel(type: ComponentType, config: Vessel) {
 }
 
 const expected = [
-	{ volumes: [10], pH: [7], neutralMl: 10 },
-	{ volumes: [10], pH: [4.775], neutralMl: 10.056 },
-	{ volumes: [10], pH: [9.224], neutralMl: 9.944 },
-	{ volumes: [10], pH: [7], neutralMl: 10 },
-	{ volumes: [10], pH: [8.734], neutralMl: 9.994 },
+	// At 5 mL both HCl titrations have about 5 mmol excess strong acid in 15 mL.
+	{ volumes: [10], pH: [7], halfPH: [0.4771], neutralMl: 10 },
+	{ volumes: [10], pH: [4.775], halfPH: [0.4771], neutralMl: 10.056 },
+	{ volumes: [10], pH: [9.224], halfPH: [4.75], neutralMl: 9.944 },
+	{ volumes: [10], pH: [7], halfPH: [4.75], neutralMl: 10 },
+	{ volumes: [10], pH: [8.734], halfPH: [3.77], neutralMl: 9.994 },
 	// The third phosphate equivalent at 30 mL falls on a broad shoulder
 	// in the simulated aqueous trace, which does not give a resolved peak.
-	{ volumes: [10, 20], pH: [4.683, 9.766], neutralMl: 13.815 },
+	// Free H+ in the first phosphate buffer shifts its pH above pKa1 (2.15).
+	{ volumes: [10, 20], pH: [4.683, 9.766], halfPH: [2.168, 7.21], neutralMl: 13.815 },
 ];
 
 for (const [index, reference] of expected.entries()) {
@@ -69,8 +71,10 @@ for (const [index, reference] of expected.entries()) {
 		}
 		const halfEquivalences = markers.filter(marker => marker.kind === "half-equivalence");
 		assert.equal(halfEquivalences.length, reference.volumes.length);
-		for (const [i, { volume }] of halfEquivalences.entries()) {
+		for (const [i, { volume, pH }] of halfEquivalences.entries()) {
 			assert.ok(Math.abs(volume - ((reference.volumes[i - 1] ?? 0) + reference.volumes[i]) / 2) < 0.005);
+			assert.ok(Math.abs(pH - reference.halfPH[i]) < 0.005,
+				`Expected pH ${reference.halfPH[i]} near ${volume.toFixed(3)} mL, got ${pH}`);
 		}
 
 		const neutral = markers.filter(marker => marker.kind === "neutral");
