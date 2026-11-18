@@ -906,7 +906,9 @@ export class CanvasController implements ReactiveController {
 			// back to the stored offset when it is let go in mid-air.
 			const local = this.cableEndLocal(view, end);
 			cable._endOffsets[end] = { x: local.x, y: local.y };
+			const affected = chemlib.ComponentManager.connectedDevices(device);
 			device.disconnect(cable);
+			this.host.invalidateElectricalReadings(affected);
 			this.refreshDeviceDisplay(device);
 			this.host.syncAuthoredConnections(device);
 			this.host.syncAuthoredConnections(cable);
@@ -1388,11 +1390,8 @@ export class CanvasController implements ReactiveController {
 				// the strip records how much of it the liquid covers. A strip
 				// that hangs above the surface ends up with no area at all and
 				// takes no part in the cell.
-				const surface = vessel?.liquidSurfaceY();
-				const top = sprite.y - sprite.height / 2;
-				const lower = sprite.y + sprite.height / 2;
-				const immersed = surface === undefined ? 0
-					: Math.max(0, Math.min(lower, surface) - top);
+				const top = sprite.y - sprite.height * 0.4667;
+				const immersed = vessel?.immersedLength(top, bottom) ?? 0;
 				eComp._immersion = { x: sprite.x, area: sprite.width * immersed / 100 };
 				return;
 			}
@@ -1413,7 +1412,8 @@ export class CanvasController implements ReactiveController {
 				const leg = sprite.width * 0.375;
 				const first = this.vesselAt(sprite.x - leg, bottom);
 				const second = this.vesselAt(sprite.x + leg, bottom);
-				eComp._bridgeMixes = first && second && first !== second
+				const wet = (vessel?: VesselView) => (vessel?.immersedLength(bottom - 0.5, bottom) ?? 0) > 0;
+				eComp._bridgeMixes = first && second && first !== second && wet(first) && wet(second)
 					? [first.component._content, second.component._content] : [];
 				// The span between the legs is the length of the tube the
 				// current has to cross, so the bridge records where they sit.

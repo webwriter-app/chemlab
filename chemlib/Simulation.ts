@@ -84,6 +84,7 @@ const REFERENCE_CURRENT_DENSITY = 1e-6;
  * solution, which is what a chlorine water smells and bleaches like.
  */
 const CHLORINE_HYDROLYSIS = 4.2e-4;
+const HYPOCHLOROUS_PKA = 7.5;
 
 // A hydroxide's anion is the water equilibrium's OH-, not a stored ion, so the
 // generic salt loop cannot see it. Those entries are solved separately by
@@ -544,9 +545,10 @@ export abstract class Simulation {
 	 */
 	private static settleSaltsAndHydroxides(mix: Mixture): void {
 		for (let pass = 0; pass < 8; pass++) {
+			const chlorineMoved = this.equilibrateChlorineHydrolysis(mix);
 			const saltsMoved = this.equilibrateSalts(mix);
 			const hydroxidesMoved = this.equilibrateHydroxides(mix);
-			if (!saltsMoved && !hydroxidesMoved) break;
+			if (!chlorineMoved && !saltsMoved && !hydroxidesMoved) break;
 		}
 	}
 
@@ -2124,7 +2126,7 @@ export abstract class Simulation {
 	 * @param {CellLimits} limits - the open-circuit potentials to start from
 	 * @param {CellAreas} areas - the wetted area of both electrodes in cm²
 	 * @param {number} [cap] - largest current the vessels can supply, in A
-	 * @returns {({solution: CellSolution, limited: boolean} | undefined)}
+	 * @returns {(CellSolution | undefined)}
 	 */
 	private static solveSupply(
 		network: CircuitNetwork,
@@ -2136,7 +2138,7 @@ export abstract class Simulation {
 		limits: CellLimits,
 		areas: CellAreas,
 		cap = Infinity
-	): { solution: CellSolution; limited: boolean } | undefined {
+	): CellSolution | undefined {
 		// The network's answer to the supply's EMF and to the cell current,
 		// taken apart so that only the cell solve has to run for the EMF.
 		const probe = (emf: number, current: number) => {
@@ -2191,7 +2193,7 @@ export abstract class Simulation {
 			// A vessel that cannot supply the setpoint holds the cell at the
 			// current it can supply, as a supply in constant-current mode does
 			// when its compliance runs out.
-			const magnitude = Math.min(Math.abs(source._sourceCurrent ?? 0), cap);
+			const magnitude = Math.abs(source._sourceCurrent ?? 0);
 			const wanted = source._polarity === 0 ? openSign * magnitude
 				: (source._polarity > 0) === plusAtFirst ? magnitude : -magnitude;
 			// The supply's own reading runs against the current it delivers,
@@ -2205,7 +2207,7 @@ export abstract class Simulation {
 			}, startFor(wanted));
 			const point = emf === undefined ? undefined : solveAt(emf);
 			if (point && (!(compliance > 0) || Math.abs(point.voltage) <= compliance)) {
-				return { solution: point.solution, limited: false };
+				return point.solution;
 			}
 			// Either the setpoint needs more voltage than the supply may hold,
 			// or no EMF drives it through the cell at all — a vessel that
@@ -2220,7 +2222,7 @@ export abstract class Simulation {
 			}, emf ?? startFor(wanted));
 			if (capped === undefined) return undefined;
 			const held = solveAt(capped);
-			return held ? { solution: held.solution, limited: true } : undefined;
+			return held?.solution;
 		}
 		// A voltage source holds its setpoint at the terminals. Without a set
 		// polarity the setpoint is the cell voltage it has to overcome, so the
@@ -2233,7 +2235,7 @@ export abstract class Simulation {
 		if (!point) return undefined;
 		const limit = Math.abs(source._sourceCurrent ?? 0);
 		if (!(limit > 0) || Math.abs(point.current) <= limit) {
-			return { solution: point.solution, limited: false };
+			return point.solution;
 		}
 		// Beyond the setpoint the supply drops into constant-current operation
 		// and the voltage falls to what the load needs at that current.
@@ -2244,7 +2246,7 @@ export abstract class Simulation {
 		}, startFor(-target));
 		if (capped === undefined) return undefined;
 		const held = solveAt(capped);
-		return held ? { solution: held.solution, limited: true } : undefined;
+		return held?.solution;
 	}
 
 	/**
@@ -2526,8 +2528,9 @@ export abstract class Simulation {
 		bridge?: ElectricComponent
 	): number {
 		const legs = bridge?._bridgeLegs;
-		const firstLeg = legs?.[0];
-		const secondLeg = legs?.[1];
+		const leftFirst = bridge?._bridgeMixes[1] !== first._connectedMix;
+		const firstLeg = legs?.[leftFirst ? 0 : 1];
+		const secondLeg = legs?.[leftFirst ? 1 : 0];
 		const firstX = first._immersion?.x;
 		const secondX = second._immersion?.x;
 		const firstLength = firstLeg === undefined || firstX === undefined ? DEFAULT_ELECTRODE_SPACING
@@ -2605,6 +2608,7 @@ export abstract class Simulation {
 		const firstMix = first._connectedMix;
 		const secondMix = second._connectedMix;
 		if (ionicResistance !== Infinity || firstMix === secondMix ||
+			!this.isWetted(first) || !this.isWetted(second) ||
 			first._reference !== undefined || second._reference !== undefined ||
 			!firstMix?._isSolution || !secondMix?._isSolution ||
 			!(firstMix._solutionVolume > 0 && secondMix._solutionVolume > 0) ||
@@ -2691,10 +2695,21 @@ export abstract class Simulation {
 				}
 			}
 		};
-		if (!usable(mix1) || !usable(mix2)) return unsolved();
+		if (!usable(mix1) || !usable(mix2) || !this.isWetted(sElectrode1) || !this.isWetted(sElectrode2)) {
+			// The open cell cannot carry current. An independent load may
+			// still be connected across the supply.
+			return this.sCircuit(sDevices);
+		}
 		if (!ComponentManager.isConnected(sElectrode1, sElectrode2)) return unsolved();
 
 		const source = sDevices.find((device) => device._type === EComponentType.Source);
+		const referenceInPair = sElectrode1._reference !== undefined || sElectrode2._reference !== undefined;
+		if (referenceInPair && (source || sDevices.some(device =>
+			device._type === EComponentType.Ammeter ||
+			(device._type === EComponentType.Multimeter && device._meterMode === "current")))) {
+			// A reference in a two-electrode setup is only a voltage sensor.
+			return this.sCircuit(sDevices);
+		}
 		const electrolyte = options.ionicResistance ?? this.ionicResistance(sElectrode1, sElectrode2, options.bridge);
 		const separateBaths = !!mix1 && !!mix2 && mix1 !== mix2;
 		if (electrolyte === Infinity) {
@@ -2746,9 +2761,6 @@ export abstract class Simulation {
 			device._type === EComponentType.Voltmeter ||
 			(device._type === EComponentType.Multimeter && device._meterMode === "voltage"));
 		let solution: CellSolution | undefined;
-		// Whether the supply had to give up its setpoint because the load
-		// would have drawn more than it allows.
-		let limited = false;
 		let extents: number[][] = [];
 		let scales = new Map<Mixture, number>();
 		// The solve decides the currents before anything is booked, so it
@@ -2763,11 +2775,8 @@ export abstract class Simulation {
 				// against the voltage the network really presents at the
 				// supply's terminals, and the supply's own current is what gets
 				// regulated.
-				const point = this.solveSupply(network, element, source, first, second,
+				solution = this.solveSupply(network, element, source, first, second,
 					electrolyte, limits, areas, cap);
-				if (!point) return unsolved();
-				solution = point.solution;
-				limited = point.limited;
 			} else {
 				solution = this.solveCell(first, second, thevenin.voltage,
 					thevenin.resistance + electrolyte, ideal, limits, areas, cap);
@@ -2787,12 +2796,24 @@ export abstract class Simulation {
 			cap = next;
 		}
 		if (!solution) return unsolved();
+		const references = new Map<ElectricComponent, { electrode: ElectricComponent; offset: number } | null>();
+		for (const device of sDevices) {
+			if (device._reference === undefined) continue;
+			const local = [sElectrode1, sElectrode2].filter(electrode =>
+				electrode._connectedMix === device._connectedMix).sort((a, b) => {
+				const distance = (electrode: ElectricComponent) =>
+					Math.abs((device._immersion?.x ?? 0) - (electrode._immersion?.x ?? 0));
+				return distance(a) - distance(b);
+			})[0];
+			const potential = local === sElectrode1 ? solution.first : solution.second;
+			references.set(device, local && this.isWetted(device) ? { electrode: local, offset: device._reference - potential } : null);
+		}
 		const readings = circuitReadings(network, {
 			emf: solution.first - solution.second,
 			resistance: electrolyte,
 			current: solution.current,
 			open: ideal,
-		});
+		}, references);
 
 		for (const device of sDevices) {
 			const reading = readings?.get(device);
@@ -2811,13 +2832,7 @@ export abstract class Simulation {
 				// second one.
 				device._visibleVoltage = reading ? reading.voltage : null;
 			} else if (device._type === EComponentType.Source) {
-				// A source shows the voltage it actually holds: the one it had
-				// to apply in current mode, and the one left over once the
-				// current limit took over in voltage mode. Without a limit the
-				// setpoint stands, so the display keeps showing it.
-				device._visibleVoltage = device._sourceMode === "current" || limited
-					? (reading ? Math.abs(reading.voltage) : null)
-					: null;
+				device._visibleVoltage = reading ? Math.abs(reading.voltage) : null;
 			}
 		}
 
@@ -2836,52 +2851,62 @@ export abstract class Simulation {
 		// pH no longer supports stays in the beaker.
 		this.settleSaltsAndHydroxides(mix1);
 		if (separateBaths) this.settleSaltsAndHydroxides(mix2);
-		// Chlorine that dissolved at the anode hydrolyses, which is what makes
-		// a chlorine electrolysis acidic and bleaching. It runs after the
-		// electrode step so the extent follows the chlorine that is there.
-		this.equilibrateChlorineHydrolysis(mix1);
-		if (separateBaths) this.equilibrateChlorineHydrolysis(mix2);
 	}
 
 	/**
-	 * Hydrolysis of dissolved chlorine, `Cl₂ + H₂O ⇌ HOCl + H⁺ + Cl⁻` with
-	 * `K = 4.2e-4`. Chlorine water is acidic and oxidising for exactly this
-	 * reason, and without it a chlorine electrolysis would report a neutral
-	 * anolyte. The hypochlorite stays as an analytical family on the mixture
-	 * and the chloride is booked as a stored ion; the proton comes out of the
-	 * charge balance, which is where every other proton in the model comes
-	 * from. Only the dissolved part takes part: chlorine that has already
-	 * bubbled out is not in the solution any more.
-	 *
-	 * @private
-	 * @static
-	 * @param {Mixture} mix - the vessel
+	 * Cl₂(aq) + H₂O ⇌ HOCl + H⁺ + Cl⁻. Solve both directions with the
+	 * current chloride and hypochlorite inventories and the coupled pH.
 	 */
-	private static equilibrateChlorineHydrolysis(mix: Mixture): void {
-		const dissolved = mix.dissolvedGas.get("Cl2") ?? 0;
+	private static equilibrateChlorineHydrolysis(mix: Mixture): boolean {
+		const chlorine = mix.dissolvedGas.get("Cl2") ?? 0;
+		const hypochlorite = mix.hypochlorite;
 		const volume = mix._solutionVolume;
-		if (!(dissolved > 0) || !(volume > 0)) return;
-		const view = this.vesselView(mix);
-		const protons = view.protons;
-		const chloride = view.ions.get("[Cl-]")?.concentration ?? 0;
-		const total = dissolved / volume;
-		// The residual is strictly increasing in the extent, so a bisection on
-		// [0, total] finds the root without a cubic solver.
-		const residual = (x: number): number =>
-			x * (x + protons) * (x + chloride) - CHLORINE_HYDROLYSIS * (total - x);
-		let low = 0;
-		let high = total;
-		for (let i = 0; i < 60; i++) {
+		if (!(volume > 0) || !(chlorine > 0 || hypochlorite > 0)) return false;
+
+		const { systems, spectatorCharge } = this.acidBaseComposition(mix);
+		const chlorineFamily = systems.find(system => system.representative?.smilesString === "Cl" &&
+			system.protonatedCharge === 0 && system.pKa.length === 1);
+		const chloride = mix._activeMolecules.find(molecule => molecule.smilesString === "[Cl-]");
+		const stored = chloride ? (mix._molProperties[chloride._id + "n"] ?? 0) / volume : 0;
+		const aqueous = chlorine / volume;
+		const initialHypochlorite = hypochlorite / volume;
+		const trialHypochlorite = { totalC: initialHypochlorite, pKa: [HYPOCHLOROUS_PKA], protonatedCharge: 0 };
+		const base = systems.filter(system => system.key !== "hypochlorite");
+		const trial = [...base, trialHypochlorite];
+		const Kw = AcidBase.kwAt(mix._temperature);
+		const extraCharge = this.complexChargeHook(base);
+		const residual = (extent: number): number => {
+			trialHypochlorite.totalC = initialHypochlorite + extent;
+			// Chloride created here is stored as free chloride, including in
+			// concentrated HCl. The strong acid inventory stays whole.
+			const H = AcidBase.solveProton(trial, spectatorCharge - extent, Kw, extraCharge);
+			const acidChloride = chlorineFamily
+				? Math.max(0, chlorineFamily.totalC - stored) * AcidBase.speciesFractions(chlorineFamily, H)[1] : 0;
+			const HOCl = trialHypochlorite.totalC * AcidBase.speciesFractions(trialHypochlorite, H)[0];
+			return HOCl * H * (stored + extent + acidChloride) - CHLORINE_HYDROLYSIS * (aqueous - extent);
+		};
+		let low = -Math.min(initialHypochlorite, stored);
+		let high = aqueous;
+		for (let i = 0; i < 48 && high - low > 1e-12; i++) {
 			const mid = (low + high) / 2;
 			if (residual(mid) > 0) high = mid;
 			else low = mid;
 		}
 		const extent = (low + high) / 2 * volume;
-		if (!(extent > 0)) return;
-		mix.takeGas("Cl2", extent);
+		if (Math.abs(extent) <= 1e-12) return false;
+		const ion = chloride ?? this.ionMolecule("[Cl-]");
+		if (!ion) return false;
+		const water = mix._activeMolecules.find(StructureManager.isWater);
+		if (extent > 0) {
+			mix.takeGas("Cl2", extent);
+			mix.addMolecule(ion, extent);
+		} else {
+			mix.admitGas("Cl2", -extent, evolvedGases.Cl2.solubility);
+			mix.changeMolecule(ion._id, extent);
+		}
 		mix.hypochlorite += extent;
-		const ion = this.ionMolecule("[Cl-]");
-		if (ion) mix.addMolecule(ion, extent);
+		if (water) mix.changeMolecule(water._id, -extent);
+		return true;
 	}
 
 	/**
@@ -2938,7 +2963,7 @@ export abstract class Simulation {
 		source?: ElectricComponent
 	): Map<ElectricComponent, CircuitReading> | undefined {
 		const element = source ? network.elements.find((entry) => entry.device === source) : undefined;
-		if (!source || !element) return circuitReadings(network);
+		if (!source || !element) return undefined;
 		const magnitude = Math.abs(source._sourceVoltage ?? 0);
 		const limit = Math.abs(source._sourceCurrent ?? 0);
 		// The plus pole is the terminal the supply raises, so the EMF points
@@ -3513,7 +3538,7 @@ export abstract class Simulation {
 			systems.push({
 				key: "hypochlorite",
 				totalC: sMix.hypochlorite / sMix._solutionVolume,
-				pKa: [7.5],
+				pKa: [HYPOCHLOROUS_PKA],
 				protonatedCharge: 0,
 				step: 0,
 				members: [],

@@ -397,11 +397,9 @@ export class ElectricDeviceView extends Container {
 				// and one that cannot deliver its set current must not
 				// present that either.
 				const idle = !component._connections.some((list) => list.length > 0);
-				const solved = component._visibleVoltage !== null || component._visibleCurrent !== null;
-				const setpoint = idle || solved;
 				values = [
-					reading(component._visibleVoltage ?? (setpoint ? component._sourceVoltage : null), "V"),
-					currentReading(component._visibleCurrent ?? (setpoint ? component._sourceCurrent : null)),
+					reading(component._visibleVoltage ?? (idle ? component._sourceVoltage : null), "V"),
+					currentReading(component._visibleCurrent ?? (idle ? component._sourceCurrent : null)),
 				];
 				break;
 			}

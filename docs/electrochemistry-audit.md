@@ -6,6 +6,28 @@ TypeScript passed with `node node_modules/typescript/bin/tsc --noEmit`. The nume
 
 Code links pin the audited revision. They become available on GitHub once it has that commit. The cited files and line numbers are also available locally at that revision, for example with `git show c8c0ea08312d9217824944d54618c378088411c1:chemlib/Simulation.ts | nl -ba`.
 
+## Follow-up review
+
+The original observations below refer to the audited revision. The follow-up reviewed the implementation through `edffc34` and its thirteen audit commits.
+
+| Finding | Follow-up |
+| --- | --- |
+| EC-01 | No steady current without an ionic path. The analytical RC pulse now also requires two wetted electrodes. |
+| EC-02 | Cell and instrument network share the source EMF. Parallel-load tests confirm both voltage-mode current limiting and constant-current regulation at the source terminals. A reagent limit caps the cell branch. |
+| EC-03 | A dry reference gives no reading. A third reference now measures against the local electrolyte through a dedicated voltage lead. A two-electrode reference pair no longer provides a driven current path. |
+| EC-04 | Fe(III)/Fe(II) and metal couples accept an absent product and can create the currently tabulated ions. A future polyatomic product still needs a molecule definition. |
+| EC-05 | A shared electrolyte balances the total electrode charge once. The chlorine equilibrium now also accounts for acidification through dissolved chlorine. |
+| EC-06 | Metal displacement limits the extent in electron equivalents and converts back to moles with each species' own valence. |
+| EC-07 | Electrolysis books water and settles the electrolyte after changing inventory. |
+| EC-08 | The source reports its solved terminal voltage and current. Removing a lead invalidates measurements across the affected network. |
+| EC-09 | The conductivity, separation and immersed area set the resistance. Electrode wetting now measures below the surface, and both bridge legs have to reach the liquid. The bridge resistance is invariant to electrode ordering. |
+| EC-10 | Free-ion concentrations and a transfer-limited current bound replaced analytical totals and step-size-only limits. Shared reagent spending is capped. Activity coefficients, explicit migration and flow-dependent mass transport remain model extensions. |
+| EC-11 | The root finder treats out-of-range trials as bracket limits and retries at source compliance. |
+| EC-12 | Escaped gas is unavailable for reaction. Chlorine hydrolysis now solves a reversible equilibrium with the actual pH and inventory. The collector still assumes gas reaching its attached vessel outlet is routed into the tube. |
+| EC-13 | The exposed layer controls chemistry with a finite inventory. Partial surface coverage and a potential-dependent passivation model remain extensions. |
+
+The three-electrode voltage estimate uses the lumped solution potential at the nearest current-carrying electrode in the same bath. It does not resolve spatial solution gradients. The chlorine equilibrium uses the existing ideal-concentration constant. The measured equilibrium constant varies with ionic strength. [Gamry, Potentiostat Fundamentals](https://www.gamry.com/application-notes/instrumentation/potentiostat-fundamentals/), [Cherney et al., aqueous free chlorine speciation](https://journals.sagepub.com/doi/10.1366/000370206777887062).
+
 ## Confirmed defects
 
 ### EC-01 · Critical · Separated half-cells sustain current with no ionic connection

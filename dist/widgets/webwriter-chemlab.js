@@ -149876,8 +149876,9 @@ function circuitNetwork(devices) {
     elements2.push({ device, a: a7, b: b5, resistance, emf: 0 });
   }
   const electrodes = visited.filter((device) => device._type === "electrode" /* Electrode */);
-  const first = electrodes[0] ? nodeOf(electrodes[0], 0) : -1;
-  const second = electrodes[1] ? nodeOf(electrodes[1], 0) : -1;
+  const electrodeNodes = new Map(electrodes.map((electrode) => [electrode, nodeOf(electrode, 0)]));
+  const first = electrodeNodes.get(electrodes[0]) ?? -1;
+  const second = electrodeNodes.get(electrodes[1]) ?? -1;
   return {
     first,
     second,
@@ -149885,6 +149886,7 @@ function circuitNetwork(devices) {
     // node is as good as any: only differences are ever read.
     ground: second >= 0 ? second : 0,
     nodes: nodes.size,
+    electrodeNodes,
     elements: elements2
   };
 }
@@ -149900,7 +149902,7 @@ function circuitThevenin(network) {
     resistance: loaded[network.first] - loaded[network.second]
   };
 }
-function circuitReadings(network, cell) {
+function circuitReadings(network, cell, references) {
   const injections = /* @__PURE__ */ new Map();
   let branch;
   if (cell?.open) {
@@ -149918,9 +149920,33 @@ function circuitReadings(network, cell) {
   }
   const voltages = nodeVoltages(network, injections, true, branch);
   if (!voltages) return void 0;
+  const sense = /* @__PURE__ */ new Map();
+  for (const [reference2, local] of references ?? []) {
+    const node = network.electrodeNodes.get(reference2);
+    if (node === void 0) continue;
+    const leads = /* @__PURE__ */ new Set([node]);
+    for (const lead of leads) {
+      for (const element2 of network.elements) {
+        if (element2.device?._type !== "cable" /* Cable */) continue;
+        if (element2.a === lead) leads.add(element2.b);
+        if (element2.b === lead) leads.add(element2.a);
+      }
+    }
+    if (leads.has(network.first) || leads.has(network.second)) continue;
+    const anchor = local && network.electrodeNodes.get(local.electrode);
+    const value = anchor == null ? null : voltages[anchor] + local.offset;
+    for (const lead of leads) sense.set(lead, sense.has(lead) ? null : value);
+  }
   const readings = /* @__PURE__ */ new Map();
   for (const element2 of network.elements) {
     if (!element2.device) continue;
+    const type = element2.device._type;
+    if ((sense.has(element2.a) || sense.has(element2.b)) && (type === "voltmeter" /* Voltmeter */ || type === "multimeter" /* Multimeter */ && element2.device._meterMode === "voltage")) {
+      const a7 = sense.has(element2.a) ? sense.get(element2.a) : voltages[element2.a];
+      const b5 = sense.has(element2.b) ? sense.get(element2.b) : voltages[element2.b];
+      if (a7 != null && b5 != null) readings.set(element2.device, { voltage: a7 - b5, current: 0 });
+      continue;
+    }
     const voltage = voltages[element2.a] - voltages[element2.b];
     readings.set(element2.device, {
       voltage,
@@ -150078,6 +150104,7 @@ var TRACE_ACTIVITY = 1e-9;
 var REFERENCE_STIFFNESS = 1e3;
 var REFERENCE_CURRENT_DENSITY2 = 1e-6;
 var CHLORINE_HYDROLYSIS = 42e-5;
+var HYPOCHLOROUS_PKA = 7.5;
 var hydroxideEquilibria = saltEquilibria.filter(({ anion }) => anion === "[OH-]");
 var otherSaltEquilibria = saltEquilibria.filter(({ anion }) => anion !== "[OH-]");
 var hydroxideIon;
@@ -150282,9 +150309,10 @@ var Simulation = class {
    */
   static settleSaltsAndHydroxides(mix) {
     for (let pass = 0; pass < 8; pass++) {
+      const chlorineMoved = this.equilibrateChlorineHydrolysis(mix);
       const saltsMoved = this.equilibrateSalts(mix);
       const hydroxidesMoved = this.equilibrateHydroxides(mix);
-      if (!saltsMoved && !hydroxidesMoved) break;
+      if (!chlorineMoved && !saltsMoved && !hydroxidesMoved) break;
     }
   }
   static makeSolidSalt(formula, ions, counts2) {
@@ -151624,7 +151652,7 @@ var Simulation = class {
    * @param {CellLimits} limits - the open-circuit potentials to start from
    * @param {CellAreas} areas - the wetted area of both electrodes in cm²
    * @param {number} [cap] - largest current the vessels can supply, in A
-   * @returns {({solution: CellSolution, limited: boolean} | undefined)}
+   * @returns {(CellSolution | undefined)}
    */
   static solveSupply(network, element2, source3, first, second, electrolyte, limits2, areas, cap = Infinity) {
     const probe = (emf2, current) => {
@@ -151681,7 +151709,7 @@ var Simulation = class {
     const openSign = Number.isFinite(open) && open >= 0 ? 1 : -1;
     const plusAtFirst = transfer >= 0;
     if (source3._sourceMode === "current") {
-      const magnitude3 = Math.min(Math.abs(source3._sourceCurrent ?? 0), cap);
+      const magnitude3 = Math.abs(source3._sourceCurrent ?? 0);
       const wanted = source3._polarity === 0 ? openSign * magnitude3 : source3._polarity > 0 === plusAtFirst ? magnitude3 : -magnitude3;
       const target2 = -wanted;
       const compliance = Math.abs(source3._complianceVoltage ?? 0);
@@ -151691,7 +151719,7 @@ var Simulation = class {
       }, startFor(wanted));
       const point2 = emf2 === void 0 ? void 0 : solveAt(emf2);
       if (point2 && (!(compliance > 0) || Math.abs(point2.voltage) <= compliance)) {
-        return { solution: point2.solution, limited: false };
+        return point2.solution;
       }
       if (!(compliance > 0)) return void 0;
       const sign4 = (point2 ? Math.sign(point2.voltage) : Math.sign(target2)) || 1;
@@ -151701,7 +151729,7 @@ var Simulation = class {
       }, emf2 ?? startFor(wanted));
       if (capped2 === void 0) return void 0;
       const held2 = solveAt(capped2);
-      return held2 ? { solution: held2.solution, limited: true } : void 0;
+      return held2?.solution;
     }
     const magnitude2 = Math.abs(source3._sourceVoltage ?? 0);
     const emf = source3._polarity === 0 ? Math.abs(transfer) > 1e-9 ? openSign * magnitude2 / transfer : openSign * magnitude2 : source3._polarity < 0 ? -magnitude2 : magnitude2;
@@ -151709,7 +151737,7 @@ var Simulation = class {
     if (!point) return void 0;
     const limit = Math.abs(source3._sourceCurrent ?? 0);
     if (!(limit > 0) || Math.abs(point.current) <= limit) {
-      return { solution: point.solution, limited: false };
+      return point.solution;
     }
     const target = Math.sign(point.current) * limit;
     const capped = this.matchSourceEmf((probe2) => {
@@ -151718,7 +151746,7 @@ var Simulation = class {
     }, startFor(-target));
     if (capped === void 0) return void 0;
     const held = solveAt(capped);
-    return held ? { solution: held.solution, limited: true } : void 0;
+    return held?.solution;
   }
   /**
    * Electrons each half-reaction of one electrode converts over the step,
@@ -151967,8 +151995,9 @@ var Simulation = class {
    */
   static bridgedResistance(first, second, bridge) {
     const legs = bridge?._bridgeLegs;
-    const firstLeg = legs?.[0];
-    const secondLeg = legs?.[1];
+    const leftFirst = bridge?._bridgeMixes[1] !== first._connectedMix;
+    const firstLeg = legs?.[leftFirst ? 0 : 1];
+    const secondLeg = legs?.[leftFirst ? 1 : 0];
     const firstX = first._immersion?.x;
     const secondX = second._immersion?.x;
     const firstLength = firstLeg === void 0 || firstX === void 0 ? DEFAULT_ELECTRODE_SPACING : Math.max(MIN_ELECTRODE_SPACING, Math.abs(firstX - firstLeg) / 10);
@@ -152024,7 +152053,7 @@ var Simulation = class {
   static prepareNoIonicPathTransient(first, second, devices, ionicResistance, { capacitance, seriesResistance = 0, initialCharge = 0 }) {
     const firstMix = first._connectedMix;
     const secondMix = second._connectedMix;
-    if (ionicResistance !== Infinity || firstMix === secondMix || first._reference !== void 0 || second._reference !== void 0 || !firstMix?._isSolution || !secondMix?._isSolution || !(firstMix._solutionVolume > 0 && secondMix._solutionVolume > 0) || !Number.isFinite(seriesResistance) || seriesResistance < 0 || !ComponentManager.isConnected(first, second)) return void 0;
+    if (ionicResistance !== Infinity || firstMix === secondMix || !this.isWetted(first) || !this.isWetted(second) || first._reference !== void 0 || second._reference !== void 0 || !firstMix?._isSolution || !secondMix?._isSolution || !(firstMix._solutionVolume > 0 && secondMix._solutionVolume > 0) || !Number.isFinite(seriesResistance) || seriesResistance < 0 || !ComponentManager.isConnected(first, second)) return void 0;
     const network = circuitNetwork([first, second, ...devices]);
     if (!network || network.elements.some(({ device }) => device?._type === "source" /* Source */)) return void 0;
     const external = circuitThevenin(network);
@@ -152095,9 +152124,15 @@ var Simulation = class {
         }
       }
     };
-    if (!usable(mix1) || !usable(mix2)) return unsolved();
+    if (!usable(mix1) || !usable(mix2) || !this.isWetted(sElectrode1) || !this.isWetted(sElectrode2)) {
+      return this.sCircuit(sDevices);
+    }
     if (!ComponentManager.isConnected(sElectrode1, sElectrode2)) return unsolved();
     const source3 = sDevices.find((device) => device._type === "source" /* Source */);
+    const referenceInPair = sElectrode1._reference !== void 0 || sElectrode2._reference !== void 0;
+    if (referenceInPair && (source3 || sDevices.some((device) => device._type === "ammeter" /* Ammeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "current"))) {
+      return this.sCircuit(sDevices);
+    }
     const electrolyte = options2.ionicResistance ?? this.ionicResistance(sElectrode1, sElectrode2, options2.bridge);
     const separateBaths = !!mix1 && !!mix2 && mix1 !== mix2;
     if (electrolyte === Infinity) {
@@ -152127,13 +152162,12 @@ var Simulation = class {
     if (!source3 && !thevenin) return unsolved();
     const ideal = !!thevenin && thevenin.resistance > OPEN_CIRCUIT_RESISTANCE && sDevices.some((device) => device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage");
     let solution;
-    let limited = false;
     let extents = [];
     let scales2 = /* @__PURE__ */ new Map();
     let cap = Infinity;
     for (let pass = 0; pass < 3; pass++) {
       if (source3 && element2) {
-        const point = this.solveSupply(
+        solution = this.solveSupply(
           network,
           element2,
           source3,
@@ -152144,9 +152178,6 @@ var Simulation = class {
           areas,
           cap
         );
-        if (!point) return unsolved();
-        solution = point.solution;
-        limited = point.limited;
       } else {
         solution = this.solveCell(
           first,
@@ -152174,12 +152205,22 @@ var Simulation = class {
       cap = next;
     }
     if (!solution) return unsolved();
+    const references = /* @__PURE__ */ new Map();
+    for (const device of sDevices) {
+      if (device._reference === void 0) continue;
+      const local = [sElectrode1, sElectrode2].filter((electrode) => electrode._connectedMix === device._connectedMix).sort((a7, b5) => {
+        const distance = (electrode) => Math.abs((device._immersion?.x ?? 0) - (electrode._immersion?.x ?? 0));
+        return distance(a7) - distance(b5);
+      })[0];
+      const potential = local === sElectrode1 ? solution.first : solution.second;
+      references.set(device, local && this.isWetted(device) ? { electrode: local, offset: device._reference - potential } : null);
+    }
     const readings = circuitReadings(network, {
       emf: solution.first - solution.second,
       resistance: electrolyte,
       current: solution.current,
       open: ideal
-    });
+    }, references);
     for (const device of sDevices) {
       const reading2 = readings?.get(device);
       device._visibleCurrent = reading2 ? ideal ? 0 : reading2.current : null;
@@ -152187,7 +152228,7 @@ var Simulation = class {
       if (device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage") {
         device._visibleVoltage = reading2 ? reading2.voltage : null;
       } else if (device._type === "source" /* Source */) {
-        device._visibleVoltage = device._sourceMode === "current" || limited ? reading2 ? Math.abs(reading2.voltage) : null : null;
+        device._visibleVoltage = reading2 ? Math.abs(reading2.voltage) : null;
       }
     }
     this.applyExtents([
@@ -152198,45 +152239,56 @@ var Simulation = class {
     if (separateBaths) this.balanceCharge(mix2);
     this.settleSaltsAndHydroxides(mix1);
     if (separateBaths) this.settleSaltsAndHydroxides(mix2);
-    this.equilibrateChlorineHydrolysis(mix1);
-    if (separateBaths) this.equilibrateChlorineHydrolysis(mix2);
   }
   /**
-   * Hydrolysis of dissolved chlorine, `Cl₂ + H₂O ⇌ HOCl + H⁺ + Cl⁻` with
-   * `K = 4.2e-4`. Chlorine water is acidic and oxidising for exactly this
-   * reason, and without it a chlorine electrolysis would report a neutral
-   * anolyte. The hypochlorite stays as an analytical family on the mixture
-   * and the chloride is booked as a stored ion; the proton comes out of the
-   * charge balance, which is where every other proton in the model comes
-   * from. Only the dissolved part takes part: chlorine that has already
-   * bubbled out is not in the solution any more.
-   *
-   * @private
-   * @static
-   * @param {Mixture} mix - the vessel
+   * Cl₂(aq) + H₂O ⇌ HOCl + H⁺ + Cl⁻. Solve both directions with the
+   * current chloride and hypochlorite inventories and the coupled pH.
    */
   static equilibrateChlorineHydrolysis(mix) {
-    const dissolved = mix.dissolvedGas.get("Cl2") ?? 0;
+    const chlorine = mix.dissolvedGas.get("Cl2") ?? 0;
+    const hypochlorite = mix.hypochlorite;
     const volume = mix._solutionVolume;
-    if (!(dissolved > 0) || !(volume > 0)) return;
-    const view = this.vesselView(mix);
-    const protons = view.protons;
-    const chloride2 = view.ions.get("[Cl-]")?.concentration ?? 0;
-    const total = dissolved / volume;
-    const residual = (x4) => x4 * (x4 + protons) * (x4 + chloride2) - CHLORINE_HYDROLYSIS * (total - x4);
-    let low = 0;
-    let high = total;
-    for (let i11 = 0; i11 < 60; i11++) {
+    if (!(volume > 0) || !(chlorine > 0 || hypochlorite > 0)) return false;
+    const { systems: systems4, spectatorCharge } = this.acidBaseComposition(mix);
+    const chlorineFamily = systems4.find((system) => system.representative?.smilesString === "Cl" && system.protonatedCharge === 0 && system.pKa.length === 1);
+    const chloride2 = mix._activeMolecules.find((molecule2) => molecule2.smilesString === "[Cl-]");
+    const stored = chloride2 ? (mix._molProperties[chloride2._id + "n"] ?? 0) / volume : 0;
+    const aqueous2 = chlorine / volume;
+    const initialHypochlorite = hypochlorite / volume;
+    const trialHypochlorite = { totalC: initialHypochlorite, pKa: [HYPOCHLOROUS_PKA], protonatedCharge: 0 };
+    const base = systems4.filter((system) => system.key !== "hypochlorite");
+    const trial = [...base, trialHypochlorite];
+    const Kw = AcidBase.kwAt(mix._temperature);
+    const extraCharge = this.complexChargeHook(base);
+    const residual = (extent2) => {
+      trialHypochlorite.totalC = initialHypochlorite + extent2;
+      const H3 = AcidBase.solveProton(trial, spectatorCharge - extent2, Kw, extraCharge);
+      const acidChloride = chlorineFamily ? Math.max(0, chlorineFamily.totalC - stored) * AcidBase.speciesFractions(chlorineFamily, H3)[1] : 0;
+      const HOCl = trialHypochlorite.totalC * AcidBase.speciesFractions(trialHypochlorite, H3)[0];
+      return HOCl * H3 * (stored + extent2 + acidChloride) - CHLORINE_HYDROLYSIS * (aqueous2 - extent2);
+    };
+    let low = -Math.min(initialHypochlorite, stored);
+    let high = aqueous2;
+    for (let i11 = 0; i11 < 48 && high - low > 1e-12; i11++) {
       const mid = (low + high) / 2;
       if (residual(mid) > 0) high = mid;
       else low = mid;
     }
     const extent = (low + high) / 2 * volume;
-    if (!(extent > 0)) return;
-    mix.takeGas("Cl2", extent);
+    if (Math.abs(extent) <= 1e-12) return false;
+    const ion2 = chloride2 ?? this.ionMolecule("[Cl-]");
+    if (!ion2) return false;
+    const water2 = mix._activeMolecules.find(StructureManager.isWater);
+    if (extent > 0) {
+      mix.takeGas("Cl2", extent);
+      mix.addMolecule(ion2, extent);
+    } else {
+      mix.admitGas("Cl2", -extent, evolvedGases.Cl2.solubility);
+      mix.changeMolecule(ion2._id, extent);
+    }
     mix.hypochlorite += extent;
-    const ion2 = this.ionMolecule("[Cl-]");
-    if (ion2) mix.addMolecule(ion2, extent);
+    if (water2) mix.changeMolecule(water2._id, -extent);
+    return true;
   }
   /**
    * Simulation of a network that carries no cell: a supply wired straight
@@ -152283,7 +152335,7 @@ var Simulation = class {
    */
   static driveNetwork(network, source3) {
     const element2 = source3 ? network.elements.find((entry) => entry.device === source3) : void 0;
-    if (!source3 || !element2) return circuitReadings(network);
+    if (!source3 || !element2) return void 0;
     const magnitude2 = Math.abs(source3._sourceVoltage ?? 0);
     const limit = Math.abs(source3._sourceCurrent ?? 0);
     const sign4 = source3._polarity < 0 ? -1 : 1;
@@ -152730,7 +152782,7 @@ var Simulation = class {
       systems4.push({
         key: "hypochlorite",
         totalC: sMix.hypochlorite / sMix._solutionVolume,
-        pKa: [7.5],
+        pKa: [HYPOCHLOROUS_PKA],
         protonatedCharge: 0,
         step: 0,
         members: []
@@ -183567,8 +183619,17 @@ var VesselView = class _VesselView extends Container {
   liquidSurfaceY() {
     const top = this.profile[0][0];
     const bottom = this.profile[this.profile.length - 1][0];
-    const level = this.surfaceAt(this.fillFraction, top, bottom, 0, 1);
+    const volume = this.component._content.contentVolume * 1e3;
+    const fill2 = Math.min(1, volume / this.component._volume);
+    const level = this.surfaceAt(fill2, top, bottom, 0, 1);
     return this.y - this.height / 2 + level * this.height / this.svgHeight;
+  }
+  /** Length of a vertical electrode strip in the vessel's electrolyte. */
+  immersedLength(top, bottom) {
+    const mix = this.component._content;
+    if (!mix._isSolution || !(mix._solutionVolume > 0)) return 0;
+    const floor6 = this.y - this.height / 2 + this.profile[this.profile.length - 1][0] * this.height / this.svgHeight;
+    return Math.max(0, Math.min(bottom, floor6) - Math.max(top, this.liquidSurfaceY()));
   }
   radiusAt(y5) {
     for (let index2 = 1; index2 < this.profile.length; index2++) {
@@ -184197,11 +184258,9 @@ var ElectricDeviceView = class extends Container {
     switch (component._type) {
       case "source" /* Source */: {
         const idle = !component._connections.some((list) => list.length > 0);
-        const solved = component._visibleVoltage !== null || component._visibleCurrent !== null;
-        const setpoint = idle || solved;
         values = [
-          reading(component._visibleVoltage ?? (setpoint ? component._sourceVoltage : null), "V"),
-          currentReading(component._visibleCurrent ?? (setpoint ? component._sourceCurrent : null))
+          reading(component._visibleVoltage ?? (idle ? component._sourceVoltage : null), "V"),
+          currentReading(component._visibleCurrent ?? (idle ? component._sourceCurrent : null))
         ];
         break;
       }
@@ -185429,7 +185488,9 @@ var CanvasController = class _CanvasController {
     if (device) {
       const local = this.cableEndLocal(view, end);
       cable._endOffsets[end] = { x: local.x, y: local.y };
+      const affected = ComponentManager.connectedDevices(device);
       device.disconnect(cable);
+      this.host.invalidateElectricalReadings(affected);
       this.refreshDeviceDisplay(device);
       this.host.syncAuthoredConnections(device);
       this.host.syncAuthoredConnections(cable);
@@ -185856,10 +185917,8 @@ var CanvasController = class _CanvasController {
       case "electrode" /* Electrode */: {
         const vessel = this.vesselAt(sprite.x, sprite.y) ?? this.vesselAt(sprite.x, bottom);
         eComp._connectedMix = vessel?.component._content;
-        const surface = vessel?.liquidSurfaceY();
-        const top = sprite.y - sprite.height / 2;
-        const lower = sprite.y + sprite.height / 2;
-        const immersed = surface === void 0 ? 0 : Math.max(0, Math.min(lower, surface) - top);
+        const top = sprite.y - sprite.height * 0.4667;
+        const immersed = vessel?.immersedLength(top, bottom) ?? 0;
         eComp._immersion = { x: sprite.x, area: sprite.width * immersed / 100 };
         return;
       }
@@ -185876,7 +185935,8 @@ var CanvasController = class _CanvasController {
         const leg = sprite.width * 0.375;
         const first = this.vesselAt(sprite.x - leg, bottom);
         const second = this.vesselAt(sprite.x + leg, bottom);
-        eComp._bridgeMixes = first && second && first !== second ? [first.component._content, second.component._content] : [];
+        const wet = (vessel) => (vessel?.immersedLength(bottom - 0.5, bottom) ?? 0) > 0;
+        eComp._bridgeMixes = first && second && first !== second && wet(first) && wet(second) ? [first.component._content, second.component._content] : [];
         eComp._bridgeLegs = [sprite.x - leg, sprite.x + leg];
         return;
       }
@@ -186537,7 +186597,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.measurements.record([], network);
       for (const device of network) this.canvas.refreshDeviceDisplay(device);
       if (network.includes(this.curr_obj)) this._updatePopup();
-    }
+    } else this.clearEChemReadings(source3);
     this.canvas.refreshDeviceDisplay(source3);
   }
   ionicResistance(first, second) {
@@ -186697,7 +186757,12 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.rcReadouts.delete(source3);
     const devices = ComponentManager.connectedDevices(source3);
     if (devices.some((device) => this.hasRCReadout(device))) return;
+    this.invalidateElectricalReadings(devices);
+  }
+  invalidateElectricalReadings(devices) {
     for (const device of devices) {
+      this.rcReadouts.delete(device);
+      device._cellCurrent = null;
       if (device._visibleVoltage === null && device._visibleCurrent === null) continue;
       device._visibleVoltage = null;
       device._visibleCurrent = null;
@@ -188165,8 +188230,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
    * @param {chemlib.ElectricComponent} partner - the object to which the connection is to be removed
    */
   _remEcon(component, partner) {
+    const affected = ComponentManager.connectedDevices(component);
     const message = component.disconnect(partner);
     if (message === "") {
+      this.invalidateElectricalReadings(affected);
       this.syncAuthoredConnections(component);
       this.syncAuthoredConnections(partner);
       this.canvas.refreshDeviceDisplay(component);

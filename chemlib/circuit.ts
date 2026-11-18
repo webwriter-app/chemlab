@@ -51,6 +51,7 @@ export interface CircuitNetwork {
 	ground: number;
 	/** Number of nodes. */
 	nodes: number;
+	electrodeNodes: ReadonlyMap<ElectricComponent, number>;
 	/** The elements between them. */
 	elements: CircuitElement[];
 }
@@ -293,8 +294,9 @@ export function circuitNetwork(
 		elements.push({ device, a, b, resistance, emf: 0 });
 	}
 	const electrodes = visited.filter((device) => device._type === EComponentType.Electrode);
-	const first = electrodes[0] ? nodeOf(electrodes[0], 0) : -1;
-	const second = electrodes[1] ? nodeOf(electrodes[1], 0) : -1;
+	const electrodeNodes = new Map(electrodes.map(electrode => [electrode, nodeOf(electrode, 0)]));
+	const first = electrodeNodes.get(electrodes[0]) ?? -1;
+	const second = electrodeNodes.get(electrodes[1]) ?? -1;
 	return {
 		first,
 		second,
@@ -302,6 +304,7 @@ export function circuitNetwork(
 		// node is as good as any: only differences are ever read.
 		ground: second >= 0 ? second : 0,
 		nodes: nodes.size,
+		electrodeNodes,
 		elements,
 	};
 }
@@ -352,7 +355,8 @@ export function circuitThevenin(
  */
 export function circuitReadings(
 	network: CircuitNetwork,
-	cell?: { emf: number; resistance: number; current: number; open: boolean }
+	cell?: { emf: number; resistance: number; current: number; open: boolean },
+	references?: ReadonlyMap<ElectricComponent, { electrode: ElectricComponent; offset: number } | null>
 ): Map<ElectricComponent, CircuitReading> | undefined {
 	const injections = new Map<number, number>();
 	let branch: CircuitElement | undefined;
@@ -372,9 +376,37 @@ export function circuitReadings(
 	}
 	const voltages = nodeVoltages(network, injections, true, branch);
 	if (!voltages) return undefined;
+	const sense = new Map<number, number | null>();
+	// In a three-electrode setup a reference is a voltage probe in its
+	// electrolyte. Its dedicated leads are observed without loading the cell.
+	for (const [reference, local] of references ?? []) {
+		const node = network.electrodeNodes.get(reference);
+		if (node === undefined) continue;
+		const leads = new Set([node]);
+		for (const lead of leads) {
+			for (const element of network.elements) {
+				if (element.device?._type !== EComponentType.Cable) continue;
+				if (element.a === lead) leads.add(element.b);
+				if (element.b === lead) leads.add(element.a);
+			}
+		}
+		if (leads.has(network.first) || leads.has(network.second)) continue;
+		const anchor = local && network.electrodeNodes.get(local.electrode);
+		const value = anchor == null ? null : voltages[anchor] + local.offset;
+		for (const lead of leads) sense.set(lead, sense.has(lead) ? null : value);
+	}
 	const readings = new Map<ElectricComponent, CircuitReading>();
 	for (const element of network.elements) {
 		if (!element.device) continue;
+		const type = element.device._type;
+		if ((sense.has(element.a) || sense.has(element.b)) &&
+			(type === EComponentType.Voltmeter ||
+				(type === EComponentType.Multimeter && element.device._meterMode === "voltage"))) {
+			const a = sense.has(element.a) ? sense.get(element.a) : voltages[element.a];
+			const b = sense.has(element.b) ? sense.get(element.b) : voltages[element.b];
+			if (a != null && b != null) readings.set(element.device, { voltage: a - b, current: 0 });
+			continue;
+		}
 		const voltage = voltages[element.a] - voltages[element.b];
 		readings.set(element.device, {
 			voltage,

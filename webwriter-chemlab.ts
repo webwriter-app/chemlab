@@ -1005,7 +1005,7 @@ export class ChemLab extends LitElementWw {
 			this.measurements.record([], network);
 			for (const device of network) this.canvas.refreshDeviceDisplay(device);
 			if (network.includes(this.curr_obj)) this._updatePopup();
-		}
+		} else this.clearEChemReadings(source);
 		this.canvas.refreshDeviceDisplay(source);
 	}
 
@@ -1190,7 +1190,13 @@ export class ChemLab extends LitElementWw {
 		this.rcReadouts.delete(source);
 		const devices = chemlib.ComponentManager.connectedDevices(source);
 		if (devices.some((device) => this.hasRCReadout(device))) return;
+		this.invalidateElectricalReadings(devices);
+	}
+
+	invalidateElectricalReadings(devices: readonly chemlib.ElectricComponent[]): void {
 		for (const device of devices) {
+			this.rcReadouts.delete(device);
+			device._cellCurrent = null;
 			if (device._visibleVoltage === null && device._visibleCurrent === null) continue;
 			device._visibleVoltage = null;
 			device._visibleCurrent = null;
@@ -2825,8 +2831,10 @@ export class ChemLab extends LitElementWw {
 	 * @param {chemlib.ElectricComponent} partner - the object to which the connection is to be removed
 	 */
 	private _remEcon(component: chemlib.ElectricComponent, partner: chemlib.ElectricComponent): void {
+		const affected = chemlib.ComponentManager.connectedDevices(component);
 		const message: string = component.disconnect(partner);
 		if (message === "") {
+			this.invalidateElectricalReadings(affected);
 			this.syncAuthoredConnections(component);
 			this.syncAuthoredConnections(partner);
 			// The freed plug has to read as free again.

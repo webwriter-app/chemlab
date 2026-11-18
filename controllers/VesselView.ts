@@ -200,8 +200,18 @@ export class VesselView extends Container {
 	liquidSurfaceY(): number {
 		const top = this.profile[0][0];
 		const bottom = this.profile[this.profile.length - 1][0];
-		const level = this.surfaceAt(this.fillFraction, top, bottom, 0, 1);
+		const volume = this.component._content.contentVolume * 1000;
+		const fill = Math.min(1, volume / this.component._volume);
+		const level = this.surfaceAt(fill, top, bottom, 0, 1);
 		return this.y - this.height / 2 + level * this.height / this.svgHeight;
+	}
+
+	/** Length of a vertical electrode strip in the vessel's electrolyte. */
+	immersedLength(top: number, bottom: number): number {
+		const mix = this.component._content;
+		if (!mix._isSolution || !(mix._solutionVolume > 0)) return 0;
+		const floor = this.y - this.height / 2 + this.profile[this.profile.length - 1][0] * this.height / this.svgHeight;
+		return Math.max(0, Math.min(bottom, floor) - Math.max(top, this.liquidSurfaceY()));
 	}
 
 	private radiusAt(y: number): number {
