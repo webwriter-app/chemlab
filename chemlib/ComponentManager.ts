@@ -181,9 +181,9 @@ export abstract class ComponentManager {
 	): ElectricComponent[] {
 		const visited = this.connectedDevices(testComponent);
 
-		// A cell needs exactly two electrodes and at least one device between
-		// them. An ammeter in series adds a second device, so the count is not
-		// fixed: the electrodes come first, the devices follow.
+		// A cell needs two electrodes that carry its current and at least one
+		// device between them. An ammeter in series adds a second device, so
+		// the count is not fixed: the pair comes first, the devices follow.
 		const electrodes: ElectricComponent[] = [];
 		const devices: ElectricComponent[] = [];
 		visited.forEach((component) => {
@@ -200,8 +200,22 @@ export abstract class ComponentManager {
 			}
 		});
 
-		if (electrodes.length === 2 && devices.length > 0) {
-			return [...electrodes, ...devices];
+		// A reference electrode senses the potential of the cell instead of
+		// carrying its current, so it is not part of the pair that does. A
+		// third electrode that is a reference therefore leaves the cell intact
+		// and follows the pair, where the simulation treats it as a sensor.
+		// More than two reacting electrodes still describe no single cell.
+		const carrying = electrodes.filter((electrode) => electrode._reference === undefined);
+		const sensing = electrodes.filter((electrode) => electrode._reference !== undefined);
+		if (carrying.length > 2) return [];
+		const pair = [...carrying, ...sensing].slice(0, 2);
+
+		if (pair.length === 2 && devices.length > 0) {
+			return [
+				...pair,
+				...electrodes.filter((electrode) => !pair.includes(electrode)),
+				...devices,
+			];
 		}
 
 		return [];

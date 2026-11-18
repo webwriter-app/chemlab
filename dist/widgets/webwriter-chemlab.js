@@ -111566,8 +111566,16 @@ var ComponentManager = class {
         devices.push(component);
       }
     });
-    if (electrodes.length === 2 && devices.length > 0) {
-      return [...electrodes, ...devices];
+    const carrying = electrodes.filter((electrode) => electrode._reference === void 0);
+    const sensing = electrodes.filter((electrode) => electrode._reference !== void 0);
+    if (carrying.length > 2) return [];
+    const pair = [...carrying, ...sensing].slice(0, 2);
+    if (pair.length === 2 && devices.length > 0) {
+      return [
+        ...pair,
+        ...electrodes.filter((electrode) => !pair.includes(electrode)),
+        ...devices
+      ];
     }
     return [];
   }
@@ -149713,6 +149721,7 @@ var complexEquilibria = Object.values(complexFormation);
 var PLATEAU_CURRENT = 1e-12;
 var TRACE_ACTIVITY = 1e-9;
 var REFERENCE_STIFFNESS = 1e3;
+var REFERENCE_CURRENT_DENSITY2 = 1e-6;
 var hydroxideEquilibria = saltEquilibria.filter(({ anion }) => anion === "[OH-]");
 var otherSaltEquilibria = saltEquilibria.filter(({ anion }) => anion !== "[OH-]");
 var hydroxideIon;
@@ -151183,9 +151192,12 @@ var Simulation = class {
   }
   /**
    * The single candidate of a reference electrode. It is not a reaction: it
-   * holds the potential it is built for, carries whatever current the cell
-   * needs, and is never consumed. That is what makes it a reference against
-   * which the other electrode's potential can be read.
+   * holds the potential it is built for and is never consumed. It is also
+   * not a current path — a reference senses a potential through its ionic
+   * contact and carries a negligible current — so its extent is capped at
+   * {@link REFERENCE_CURRENT_DENSITY} instead of being unlimited. That is
+   * what keeps a driven cell from closing its loop through the reference and
+   * running a reaction at the other electrode with no counterreaction.
    *
    * @private
    * @static
@@ -151209,8 +151221,8 @@ var Simulation = class {
       canReduce: true,
       anodicLimit: Infinity,
       cathodicLimit: Infinity,
-      anodicDensity: Infinity,
-      cathodicDensity: Infinity,
+      anodicDensity: REFERENCE_CURRENT_DENSITY2,
+      cathodicDensity: REFERENCE_CURRENT_DENSITY2,
       stiffness: REFERENCE_STIFFNESS,
       apply: () => void 0
     }];
@@ -151229,11 +151241,20 @@ var Simulation = class {
     mix.excessCharge -= mix.electrodeCharge;
     mix.electrodeCharge = 0;
   }
-  /** Ionic resistance in Ω for the supported canvas setups. Infinity means zero ionic conductance. */
+  /**
+   * Ionic resistance in Ω for the supported canvas setups. Infinity means
+   * zero ionic conductance.
+   *
+   * An electrode reaches the electrolyte through the vessel it dips into, so
+   * an electrode without a solution has no ionic contact at all. That holds
+   * for a reference electrode too: it senses a potential through the same
+   * contact, and a dry one is not part of the cell.
+   */
   static ionicResistance(first, second, bridge = false) {
     const firstMix = first._connectedMix;
     const secondMix = second._connectedMix;
-    if (firstMix && secondMix && firstMix !== secondMix) {
+    if (!firstMix?._isSolution || !secondMix?._isSolution) return Infinity;
+    if (firstMix !== secondMix) {
       return bridge ? ELECTROLYTE_RESISTANCE + BRIDGE_RESISTANCE : Infinity;
     }
     return ELECTROLYTE_RESISTANCE;
@@ -151301,7 +151322,7 @@ var Simulation = class {
   static sEChem(sElectrode1, sElectrode2, sDevices, options2 = {}) {
     const mix1 = sElectrode1._connectedMix;
     const mix2 = sElectrode2._connectedMix;
-    const usable = (electrode, mix) => electrode._reference !== void 0 || !!mix?._isSolution;
+    const usable = (mix) => !!mix?._isSolution;
     const unsolved = () => {
       for (const device of sDevices) {
         device._visibleCurrent = null;
@@ -151310,7 +151331,7 @@ var Simulation = class {
         }
       }
     };
-    if (!usable(sElectrode1, mix1) || !usable(sElectrode2, mix2)) return unsolved();
+    if (!usable(mix1) || !usable(mix2)) return unsolved();
     if (!ComponentManager.isConnected(sElectrode1, sElectrode2)) return unsolved();
     const source3 = sDevices.find((device) => device._type === "source" /* Source */);
     const electrolyte = options2.ionicResistance ?? this.ionicResistance(sElectrode1, sElectrode2, options2.bridge);
@@ -185451,7 +185472,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   operatingCircuit(device) {
     const circuit = ComponentManager.isCircuit(device);
     if (circuit.length < 3 || !circuit.slice(2).includes(device)) return void 0;
-    if (!circuit.slice(0, 2).every((electrode) => electrode._type === "electrode" /* Electrode */ && (electrode._reference !== void 0 || electrode._connectedMix?._isSolution))) return void 0;
+    if (!circuit.slice(0, 2).every((electrode) => electrode._type === "electrode" /* Electrode */ && electrode._connectedMix?._isSolution)) return void 0;
     return circuit;
   }
   /**

@@ -1128,11 +1128,11 @@ export class ChemLab extends LitElementWw {
 	private operatingCircuit(device: chemlib.ElectricComponent): chemlib.ElectricComponent[] | undefined {
 		const circuit = chemlib.ComponentManager.isCircuit(device);
 		if (circuit.length < 3 || !circuit.slice(2).includes(device)) return undefined;
-		// A reference electrode holds its potential without a vessel of its
-		// own, so only an electrode that has to react needs a solution.
+		// Every electrode reaches the cell through the vessel it dips into, a
+		// reference included: it senses the potential through that contact.
 		if (!circuit.slice(0, 2).every((electrode) =>
 			electrode._type === chemlib.EComponentType.Electrode &&
-			(electrode._reference !== undefined || electrode._connectedMix?._isSolution))) return undefined;
+			electrode._connectedMix?._isSolution)) return undefined;
 		return circuit;
 	}
 

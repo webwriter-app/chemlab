@@ -58,6 +58,16 @@ const TRACE_ACTIVITY = 1e-9;
  */
 const REFERENCE_STIFFNESS = 1e3;
 
+/**
+ * Largest current density a reference electrode passes, in A/cm². A reference
+ * senses a potential through its ionic contact; it is not a current path, so
+ * the couple it stands for must not be able to carry the cell's current. The
+ * limit sits far above what a voltmeter draws — 0.1 µA over the default area is
+ * 2.2e-8 A/cm² — and far below any reaction current, so a measurement is
+ * unaffected while a driven cell cannot close its loop through the reference.
+ */
+const REFERENCE_CURRENT_DENSITY = 1e-6;
+
 // A hydroxide's anion is the water equilibrium's OH-, not a stored ion, so the
 // generic salt loop cannot see it. Those entries are solved separately by
 // {@link Simulation.equilibrateHydroxides}.
@@ -1916,9 +1926,12 @@ export abstract class Simulation {
 
 	/**
 	 * The single candidate of a reference electrode. It is not a reaction: it
-	 * holds the potential it is built for, carries whatever current the cell
-	 * needs, and is never consumed. That is what makes it a reference against
-	 * which the other electrode's potential can be read.
+	 * holds the potential it is built for and is never consumed. It is also
+	 * not a current path — a reference senses a potential through its ionic
+	 * contact and carries a negligible current — so its extent is capped at
+	 * {@link REFERENCE_CURRENT_DENSITY} instead of being unlimited. That is
+	 * what keeps a driven cell from closing its loop through the reference and
+	 * running a reaction at the other electrode with no counterreaction.
 	 *
 	 * @private
 	 * @static
@@ -1942,8 +1955,8 @@ export abstract class Simulation {
 			canReduce: true,
 			anodicLimit: Infinity,
 			cathodicLimit: Infinity,
-			anodicDensity: Infinity,
-			cathodicDensity: Infinity,
+			anodicDensity: REFERENCE_CURRENT_DENSITY,
+			cathodicDensity: REFERENCE_CURRENT_DENSITY,
 			stiffness: REFERENCE_STIFFNESS,
 			apply: () => undefined,
 		}];
@@ -1964,11 +1977,20 @@ export abstract class Simulation {
 		mix.electrodeCharge = 0;
 	}
 
-	/** Ionic resistance in Ω for the supported canvas setups. Infinity means zero ionic conductance. */
+	/**
+	 * Ionic resistance in Ω for the supported canvas setups. Infinity means
+	 * zero ionic conductance.
+	 *
+	 * An electrode reaches the electrolyte through the vessel it dips into, so
+	 * an electrode without a solution has no ionic contact at all. That holds
+	 * for a reference electrode too: it senses a potential through the same
+	 * contact, and a dry one is not part of the cell.
+	 */
 	public static ionicResistance(first: ElectricComponent, second: ElectricComponent, bridge = false): number {
 		const firstMix = first._connectedMix;
 		const secondMix = second._connectedMix;
-		if (firstMix && secondMix && firstMix !== secondMix) {
+		if (!firstMix?._isSolution || !secondMix?._isSolution) return Infinity;
+		if (firstMix !== secondMix) {
 			return bridge ? ELECTROLYTE_RESISTANCE + BRIDGE_RESISTANCE : Infinity;
 		}
 		return ELECTROLYTE_RESISTANCE;
@@ -2051,10 +2073,10 @@ export abstract class Simulation {
 	): void {
 		const mix1 = sElectrode1._connectedMix;
 		const mix2 = sElectrode2._connectedMix;
-		// A reference electrode holds its potential without a vessel, so only
-		// an electrode that has to react needs one.
-		const usable = (electrode: ElectricComponent, mix: Mixture | undefined) =>
-			electrode._reference !== undefined || !!mix?._isSolution;
+		// Every electrode reaches the cell through the vessel it dips into, a
+		// reference included: it senses the potential through that contact, so
+		// a dry one is not part of the cell and cannot close a loop.
+		const usable = (mix: Mixture | undefined) => !!mix?._isSolution;
 		const unsolved = () => {
 			for (const device of sDevices) {
 				device._visibleCurrent = null;
@@ -2065,7 +2087,7 @@ export abstract class Simulation {
 				}
 			}
 		};
-		if (!usable(sElectrode1, mix1) || !usable(sElectrode2, mix2)) return unsolved();
+		if (!usable(mix1) || !usable(mix2)) return unsolved();
 		if (!ComponentManager.isConnected(sElectrode1, sElectrode2)) return unsolved();
 
 		const source = sDevices.find((device) => device._type === EComponentType.Source);
