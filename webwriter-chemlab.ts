@@ -2907,6 +2907,22 @@ export class ChemLab extends LitElementWw {
 		this.diagramPanelOpen = false;
 	}
 
+	hasDiagramSource(label: string): boolean {
+		return this.canvas.hasComponent(label);
+	}
+
+	highlightDiagramSource(label: string, active: boolean): void {
+		this.canvas.highlightDiagramSource(label, active);
+	}
+
+	clearDiagramSourceHighlight(): void {
+		this.canvas.clearDiagramSourceHighlight();
+	}
+
+	centerDiagramSource(label: string): void {
+		this.canvas.centerComponent(label);
+	}
+
 	refreshDiagramPicker(): void {
 		const version = this.measurements.history.channelVersion;
 		if ((this.diagramPickerOpen || this.isDiagramPanelOpen) && version !== this.diagramChannelVersion) this.requestUpdate();

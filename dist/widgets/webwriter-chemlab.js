@@ -69812,6 +69812,7 @@ var init_BitmapFont = __esm({
 // localization/messages.json
 var messages_default = {
   en: {
+    "Zu {name} springen": "Go to {name}",
     "Achsen w\xE4hlen": "Choose axes",
     Diagrammvorschl\u00E4ge: "Suggested charts",
     "Die ausgew\xE4hlten Objekte liefern keine Messdaten.": "The selected objects have no measurement sources.",
@@ -103800,14 +103801,14 @@ var style = i`
 		max-inline-size: 100%;
 	}
 	.diagram-section-tag::part(base),
-	.diagram-axes sl-tag::part(base) {
+	.diagram-sources sl-tag::part(base) {
 		block-size: auto;
 		min-block-size: 19px;
 		line-height: 1.3;
 		padding-block: 1px;
 	}
 	.diagram-section-tag::part(content),
-	.diagram-axes sl-tag::part(content) {
+	.diagram-sources sl-tag::part(content) {
 		white-space: normal;
 		overflow-wrap: anywhere;
 	}
@@ -103864,8 +103865,7 @@ var style = i`
 		margin: 2px 0;
 		line-height: 1.4;
 	}
-	.diagram-suggestion-axis b,
-	.diagram-axes b {
+	.diagram-suggestion-axis b {
 		color: var(--sl-color-primary-800);
 	}
 	#inlineDiagramPanel {
@@ -103931,13 +103931,27 @@ var style = i`
 		color: var(--lab-card-text);
 		box-shadow: var(--lab-card-shadow);
 	}
-	.diagram-axes {
+	.diagram-sources {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 3px;
 	}
-	.diagram-axes sl-tag {
+	.diagram-source,
+	.diagram-sources sl-tag {
 		max-inline-size: 100%;
+	}
+	.diagram-source {
+		display: inline-flex;
+		padding: 0;
+		border: 0;
+		border-radius: var(--sl-border-radius-medium);
+		background: transparent;
+		cursor: pointer;
+	}
+	.diagram-source:is(:hover, :focus-visible) sl-tag::part(base) {
+		border-color: var(--sl-color-primary-300);
+		background: var(--sl-color-primary-50);
+		color: var(--sl-color-primary-800);
 	}
 	.diagram-plot {
 		position: relative;
@@ -177799,6 +177813,7 @@ var DiagramController = class {
     this.releaseViewport();
   }
   releaseViewport() {
+    this.host.clearDiagramSourceHighlight();
     this.viewport?.disconnect();
     this.viewport = void 0;
     this.visible.clear();
@@ -177844,6 +177859,7 @@ var DiagramController = class {
     this.invalidate();
   }
   remove(diagram) {
+    this.host.clearDiagramSourceHighlight();
     this.host.measurements.history.release(axisId(diagram.x), axisId(diagram.y));
     this.diagrams.splice(this.diagrams.indexOf(diagram), 1);
     if (diagram.card.value) {
@@ -177878,22 +177894,48 @@ var DiagramController = class {
 						<div class="diagram-plot">
 							<canvas role="img" aria-label=${`${title} \xB7 Y: ${y5} \xB7 X: ${x4}`} ${n9(diagram.canvas)}></canvas>
 						</div>
-						<div class="diagram-axes">
-							<sl-tag size="small" variant="neutral"><b>Y</b> ${y5}</sl-tag>
-							<sl-tag size="small" variant="neutral"><b>X</b> ${x4}</sl-tag>
-						</div>
+						${this.renderSources(diagram)}
 					</section>`;
     })}
 		</div>`;
   }
+  renderSources({ x: x4, y: y5 }) {
+    const sources2 = /* @__PURE__ */ new Map();
+    for (const axis of [y5, x4]) {
+      if (axis !== TIME_CHANNEL) sources2.set(componentKey(axis), axis);
+    }
+    if (!sources2.size) return E;
+    return x`<div class="diagram-sources">
+			${c4(sources2, ([key]) => key, ([key, source3]) => {
+      const name2 = this.objectLabel(source3);
+      if (!this.host.hasDiagramSource(key)) return x`<sl-tag size="small" variant="neutral">${name2}</sl-tag>`;
+      const highlight2 = (active) => this.host.highlightDiagramSource(key, active);
+      return x`
+					<button type="button" class="diagram-source" title=${this.host.message("Zu {name} springen", { name: name2 })}
+						@pointerenter=${() => highlight2(true)}
+						@pointerleave=${(event) => {
+        if (!event.currentTarget.matches(":focus-visible")) highlight2(false);
+      }}
+						@focus=${(event) => {
+        if (event.currentTarget.matches(":focus-visible")) highlight2(true);
+      }}
+						@blur=${(event) => {
+        if (!event.currentTarget.matches(":hover")) highlight2(false);
+      }}
+						@click=${() => this.host.centerDiagramSource(key)}>
+						<sl-tag size="small" variant="neutral">${name2}</sl-tag>
+					</button>`;
+    })}
+		</div>`;
+  }
   scaleLabel(axis) {
-    if (axis === TIME_CHANNEL) return this.label(axis);
-    return this.host.message(axis.quantity) + (axis.unit ? ` [${axis.unit}]` : "");
+    return axis === TIME_CHANNEL ? this.label(axis) : this.measurementLabel(axis);
   }
   createChart(canvas, card) {
     const style2 = getComputedStyle(card);
     const ink = style2.color;
     const accent = style2.getPropertyValue("--sl-color-primary-600").trim() || "#0284c7";
+    const axisTitleColor = style2.getPropertyValue("--sl-color-primary-800").trim() || "#075985";
     const grid = style2.getPropertyValue("--sl-color-neutral-200").trim() || "#e5e7eb";
     const surface = style2.getPropertyValue("--sl-color-neutral-0").trim() || "#fff";
     const font = { family: style2.fontFamily, size: 11 };
@@ -177902,7 +177944,7 @@ var DiagramController = class {
       ticks: { color: ink, font, maxTicksLimit: 6 },
       border: { color: grid },
       grid: { color: grid, tickLength: 3 },
-      title: { color: ink, font, display: true, text: "" }
+      title: { color: axisTitleColor, font: { ...font, weight: "bold" }, display: true, text: "" }
     });
     return new auto_default(canvas, {
       type: "line",
@@ -185175,6 +185217,7 @@ var CanvasController = class _CanvasController {
   resizeObserver;
   pan;
   selectionOverlay = new Graphics({ eventMode: "none" });
+  diagramSourceLabel;
   placementPreviewLayer = new Container({ eventMode: "none" });
   /** the cable end the pointer currently drags, in the cable's local coordinates */
   endDrag;
@@ -185465,6 +185508,28 @@ var CanvasController = class _CanvasController {
     this.camera.fit(this.world.getLocalBounds(), this.host.canvasZoom.offsetHeight + 4);
     this.applyCamera();
   }
+  hasComponent(label) {
+    return this.spritesByLabel.has(label);
+  }
+  highlightDiagramSource(label, active) {
+    if (active && this.hasComponent(label)) this.diagramSourceLabel = label;
+    else if (this.diagramSourceLabel === label) this.diagramSourceLabel = void 0;
+    else return;
+    this.drawSelection();
+  }
+  clearDiagramSourceHighlight() {
+    if (this.diagramSourceLabel) this.highlightDiagramSource(this.diagramSourceLabel, false);
+  }
+  centerComponent(label) {
+    const sprite = this.spritesByLabel.get(label);
+    if (!sprite || !this.host.app || this.pointerBusy) return;
+    const bounds = sprite.getBounds();
+    const x4 = bounds.x + bounds.width / 2;
+    const y5 = bounds.y + bounds.height / 2;
+    if (!Number.isFinite(x4) || !Number.isFinite(y5)) return;
+    this.camera.panBy(this.camera.width / 2 - x4, this.camera.height / 2 - y5);
+    this.applyCamera();
+  }
   zoomFromWheel = (event) => {
     if (!event.deltaY || this.pointerBusy) return;
     const bounds = this.host.app.canvas.getBoundingClientRect();
@@ -185519,6 +185584,11 @@ var CanvasController = class _CanvasController {
       if (!movingObjects && bounds.maxX > 0 && bounds.maxY > 0 && bounds.minX < canvasWidth && bounds.minY < canvasHeight) {
         visibleBounds.addBounds(bounds);
       }
+    }
+    const diagramSource = this.spritesByLabel.get(this.diagramSourceLabel);
+    if (diagramSource) {
+      const { x: x4, y: y5, width, height } = diagramSource.getBounds();
+      this.selectionOverlay.roundRect(x4 - 4, y5 - 4, width + 8, height + 8, 4).fill({ color: 165063, alpha: 0.12 }).stroke({ color: 165063, width: 2.5 });
     }
     const rect = this.selectionRectangle();
     if (rect) {
@@ -185661,7 +185731,7 @@ var CanvasController = class _CanvasController {
     this.placementPreviewLayer.scale.copyFrom(this.world.scale);
     if (this.showGrid) this.grid?.update(this.camera);
     this.updateScaleReadouts();
-    if (this.selection.length || this.marquee || this.host.selectedObjectSprite) this.drawSelection();
+    if (this.selection.length || this.marquee || this.host.selectedObjectSprite || this.diagramSourceLabel) this.drawSelection();
     else this.host.positionAmountMenu();
     this.host.requestCanvasRender();
   }
@@ -185783,6 +185853,7 @@ var CanvasController = class _CanvasController {
     }
     if (sprite instanceof CableView) this.cables.delete(sprite);
     this.attachedElectrodesMoved.delete(sprite);
+    this.highlightDiagramSource(sprite.label, false);
     sprite.destroy({ children: true });
     this.host.requestCanvasRender();
   }
@@ -188783,6 +188854,18 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   closeDiagramPanel() {
     this.diagramPanelOpen = false;
+  }
+  hasDiagramSource(label) {
+    return this.canvas.hasComponent(label);
+  }
+  highlightDiagramSource(label, active) {
+    this.canvas.highlightDiagramSource(label, active);
+  }
+  clearDiagramSourceHighlight() {
+    this.canvas.clearDiagramSourceHighlight();
+  }
+  centerDiagramSource(label) {
+    this.canvas.centerComponent(label);
   }
   refreshDiagramPicker() {
     const version4 = this.measurements.history.channelVersion;

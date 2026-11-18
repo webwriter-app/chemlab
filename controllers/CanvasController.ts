@@ -59,6 +59,7 @@ export class CanvasController implements ReactiveController {
 	private resizeObserver?: ResizeObserver;
 	private pan?: { id: number; x: number; y: number; moved: boolean; deselectOnTap: boolean };
 	private selectionOverlay = new PIXI.Graphics({ eventMode: "none" });
+	private diagramSourceLabel?: string;
 	private placementPreviewLayer = new PIXI.Container({ eventMode: "none" });
 	/** the cable end the pointer currently drags, in the cable's local coordinates */
 	private endDrag?: { id: number; view: CableView; end: number; x: number; y: number };
@@ -378,6 +379,32 @@ export class CanvasController implements ReactiveController {
 		this.applyCamera();
 	}
 
+	hasComponent(label: string): boolean {
+		return this.spritesByLabel.has(label);
+	}
+
+	highlightDiagramSource(label: string, active: boolean): void {
+		if (active && this.hasComponent(label)) this.diagramSourceLabel = label;
+		else if (this.diagramSourceLabel === label) this.diagramSourceLabel = undefined;
+		else return;
+		this.drawSelection();
+	}
+
+	clearDiagramSourceHighlight(): void {
+		if (this.diagramSourceLabel) this.highlightDiagramSource(this.diagramSourceLabel, false);
+	}
+
+	centerComponent(label: string): void {
+		const sprite = this.spritesByLabel.get(label);
+		if (!sprite || !this.host.app || this.pointerBusy) return;
+		const bounds = sprite.getBounds();
+		const x = bounds.x + bounds.width / 2;
+		const y = bounds.y + bounds.height / 2;
+		if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+		this.camera.panBy(this.camera.width / 2 - x, this.camera.height / 2 - y);
+		this.applyCamera();
+	}
+
 	private zoomFromWheel = (event: WheelEvent): void => {
 		if (!event.deltaY || this.pointerBusy) return;
 		const bounds = this.host.app.canvas.getBoundingClientRect();
@@ -435,6 +462,12 @@ export class CanvasController implements ReactiveController {
 			if (!movingObjects && bounds.maxX > 0 && bounds.maxY > 0 && bounds.minX < canvasWidth && bounds.minY < canvasHeight) {
 				visibleBounds.addBounds(bounds);
 			}
+		}
+		const diagramSource = this.spritesByLabel.get(this.diagramSourceLabel);
+		if (diagramSource) {
+			const { x, y, width, height } = diagramSource.getBounds();
+			this.selectionOverlay.roundRect(x - 4, y - 4, width + 8, height + 8, 4)
+				.fill({ color: 0x0284c7, alpha: 0.12 }).stroke({ color: 0x0284c7, width: 2.5 });
 		}
 		const rect = this.selectionRectangle();
 		if (rect) {
@@ -592,7 +625,7 @@ export class CanvasController implements ReactiveController {
 		this.placementPreviewLayer.scale.copyFrom(this.world.scale);
 		if (this.showGrid) this.grid?.update(this.camera);
 		this.updateScaleReadouts();
-		if (this.selection.length || this.marquee || this.host.selectedObjectSprite) this.drawSelection();
+		if (this.selection.length || this.marquee || this.host.selectedObjectSprite || this.diagramSourceLabel) this.drawSelection();
 		else this.host.positionAmountMenu();
 		this.host.requestCanvasRender();
 	}
@@ -723,6 +756,7 @@ export class CanvasController implements ReactiveController {
 		}
 		if (sprite instanceof CableView) this.cables.delete(sprite);
 		this.attachedElectrodesMoved.delete(sprite);
+		this.highlightDiagramSource(sprite.label, false);
 		sprite.destroy({ children: true });
 		this.host.requestCanvasRender();
 	}

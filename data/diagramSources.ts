@@ -9,7 +9,7 @@ export function axisId(axis: DiagramAxis): string {
 	return axis === TIME_CHANNEL ? axis : axis.id;
 }
 
-function componentKey(channel: MeasurementChannel): string {
+export function componentKey(channel: MeasurementChannel): string {
 	return `${channel.component}:${channel.number - 1}`;
 }
 

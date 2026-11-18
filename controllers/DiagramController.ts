@@ -1,9 +1,9 @@
-import { html, type ReactiveController } from "lit";
+import { html, nothing, type ReactiveController } from "lit";
 import { createRef, ref, type Ref } from "lit/directives/ref.js";
 import { repeat } from "lit/directives/repeat.js";
 import Chart from "chart.js/auto";
 import { TIME_CHANNEL, type MeasurementChannel } from "../data/measurementHistory";
-import { axisId, type DiagramAxis } from "../data/diagramSources";
+import { axisId, componentKey, type DiagramAxis } from "../data/diagramSources";
 import type { ChemLab } from "../webwriter-chemlab";
 
 type Diagram = {
@@ -66,6 +66,7 @@ export class DiagramController implements ReactiveController {
 	}
 
 	private releaseViewport(): void {
+		this.host.clearDiagramSourceHighlight();
 		this.viewport?.disconnect();
 		this.viewport = undefined;
 		this.visible.clear();
@@ -119,6 +120,7 @@ export class DiagramController implements ReactiveController {
 	}
 
 	private remove(diagram: Diagram): void {
+		this.host.clearDiagramSourceHighlight();
 		this.host.measurements.history.release(axisId(diagram.x), axisId(diagram.y));
 		this.diagrams.splice(this.diagrams.indexOf(diagram), 1);
 		if (diagram.card.value) {
@@ -154,24 +156,51 @@ export class DiagramController implements ReactiveController {
 						<div class="diagram-plot">
 							<canvas role="img" aria-label=${`${title} · Y: ${y} · X: ${x}`} ${ref(diagram.canvas)}></canvas>
 						</div>
-						<div class="diagram-axes">
-							<sl-tag size="small" variant="neutral"><b>Y</b> ${y}</sl-tag>
-							<sl-tag size="small" variant="neutral"><b>X</b> ${x}</sl-tag>
-						</div>
+						${this.renderSources(diagram)}
 					</section>`;
 			})}
 		</div>`;
 	}
 
+	private renderSources({ x, y }: Diagram) {
+		const sources = new Map<string, MeasurementChannel>();
+		for (const axis of [y, x]) {
+			if (axis !== TIME_CHANNEL) sources.set(componentKey(axis), axis);
+		}
+		if (!sources.size) return nothing;
+		return html`<div class="diagram-sources">
+			${repeat(sources, ([key]) => key, ([key, source]) => {
+				const name = this.objectLabel(source);
+				if (!this.host.hasDiagramSource(key)) return html`<sl-tag size="small" variant="neutral">${name}</sl-tag>`;
+				const highlight = (active: boolean) => this.host.highlightDiagramSource(key, active);
+				return html`
+					<button type="button" class="diagram-source" title=${this.host.message("Zu {name} springen", { name })}
+						@pointerenter=${() => highlight(true)}
+						@pointerleave=${(event: PointerEvent) => {
+							if (!(event.currentTarget as HTMLElement).matches(":focus-visible")) highlight(false);
+						}}
+						@focus=${(event: FocusEvent) => {
+							if ((event.currentTarget as HTMLElement).matches(":focus-visible")) highlight(true);
+						}}
+						@blur=${(event: FocusEvent) => {
+							if (!(event.currentTarget as HTMLElement).matches(":hover")) highlight(false);
+						}}
+						@click=${() => this.host.centerDiagramSource(key)}>
+						<sl-tag size="small" variant="neutral">${name}</sl-tag>
+					</button>`;
+			})}
+		</div>`;
+	}
+
 	private scaleLabel(axis: DiagramAxis): string {
-		if (axis === TIME_CHANNEL) return this.label(axis);
-		return this.host.message(axis.quantity) + (axis.unit ? ` [${axis.unit}]` : "");
+		return axis === TIME_CHANNEL ? this.label(axis) : this.measurementLabel(axis);
 	}
 
 	private createChart(canvas: HTMLCanvasElement, card: HTMLElement) {
 		const style = getComputedStyle(card);
 		const ink = style.color;
 		const accent = style.getPropertyValue("--sl-color-primary-600").trim() || "#0284c7";
+		const axisTitleColor = style.getPropertyValue("--sl-color-primary-800").trim() || "#075985";
 		const grid = style.getPropertyValue("--sl-color-neutral-200").trim() || "#e5e7eb";
 		const surface = style.getPropertyValue("--sl-color-neutral-0").trim() || "#fff";
 		const font = { family: style.fontFamily, size: 11 };
@@ -180,7 +209,7 @@ export class DiagramController implements ReactiveController {
 			ticks: { color: ink, font, maxTicksLimit: 6 },
 			border: { color: grid },
 			grid: { color: grid, tickLength: 3 },
-			title: { color: ink, font, display: true, text: "" },
+			title: { color: axisTitleColor, font: { ...font, weight: "bold" as const }, display: true, text: "" },
 		});
 		return new Chart<"line", { x: number; y: number | null }[]>(canvas, {
 			type: "line",

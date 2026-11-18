@@ -1273,14 +1273,14 @@ export const style = css`
 		max-inline-size: 100%;
 	}
 	.diagram-section-tag::part(base),
-	.diagram-axes sl-tag::part(base) {
+	.diagram-sources sl-tag::part(base) {
 		block-size: auto;
 		min-block-size: 19px;
 		line-height: 1.3;
 		padding-block: 1px;
 	}
 	.diagram-section-tag::part(content),
-	.diagram-axes sl-tag::part(content) {
+	.diagram-sources sl-tag::part(content) {
 		white-space: normal;
 		overflow-wrap: anywhere;
 	}
@@ -1337,8 +1337,7 @@ export const style = css`
 		margin: 2px 0;
 		line-height: 1.4;
 	}
-	.diagram-suggestion-axis b,
-	.diagram-axes b {
+	.diagram-suggestion-axis b {
 		color: var(--sl-color-primary-800);
 	}
 	#inlineDiagramPanel {
@@ -1404,13 +1403,27 @@ export const style = css`
 		color: var(--lab-card-text);
 		box-shadow: var(--lab-card-shadow);
 	}
-	.diagram-axes {
+	.diagram-sources {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 3px;
 	}
-	.diagram-axes sl-tag {
+	.diagram-source,
+	.diagram-sources sl-tag {
 		max-inline-size: 100%;
+	}
+	.diagram-source {
+		display: inline-flex;
+		padding: 0;
+		border: 0;
+		border-radius: var(--sl-border-radius-medium);
+		background: transparent;
+		cursor: pointer;
+	}
+	.diagram-source:is(:hover, :focus-visible) sl-tag::part(base) {
+		border-color: var(--sl-color-primary-300);
+		background: var(--sl-color-primary-50);
+		color: var(--sl-color-primary-800);
 	}
 	.diagram-plot {
 		position: relative;

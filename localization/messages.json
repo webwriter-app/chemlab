@@ -1,5 +1,6 @@
 {
   "en": {
+    "Zu {name} springen": "Go to {name}",
     "Achsen wählen": "Choose axes",
     "Diagrammvorschläge": "Suggested charts",
     "Die ausgewählten Objekte liefern keine Messdaten.": "The selected objects have no measurement sources.",
