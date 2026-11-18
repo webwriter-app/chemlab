@@ -1,6 +1,6 @@
 import type { ReactiveController } from "lit";
 import type { Ticker } from "pixi.js";
-import { Simulation, type ChemComponent, type ElectricComponent } from "../chemlib";
+import { Simulation } from "../chemlib";
 
 import type { ChemLab } from "../webwriter-chemlab";
 
@@ -67,23 +67,15 @@ export class SimulationController implements ReactiveController {
 
 	startExperiment(
 		name: string,
-		source: ChemComponent | ElectricComponent,
 		step: () => void,
 		live?: (elapsedMs: number) => boolean
 	): void {
-		let hasStandardDiagram = false;
-		const ensureStandardDiagram = () => {
-			if (hasStandardDiagram) return;
-			this.host.diagrams.createDiagram(name, source);
-			hasStandardDiagram = true;
-		};
 		let remainingMs = 0;
 		this.startTask(name, (elapsedMs) => {
 			if (live?.(elapsedMs)) {
 				remainingMs = 0;
 				return;
 			}
-			ensureStandardDiagram();
 			const stepMs = Simulation._simTimeStep * 1000;
 			if (!Number.isFinite(stepMs) || stepMs <= 0) return;
 			remainingMs = Math.min(remainingMs + elapsedMs, 8 * stepMs);
@@ -92,7 +84,7 @@ export class SimulationController implements ReactiveController {
 				step();
 			}
 		});
-		if (!live?.(0)) ensureStandardDiagram();
+		live?.(0);
 		this.host.requestUpdate();
 	}
 

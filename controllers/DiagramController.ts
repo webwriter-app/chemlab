@@ -1,335 +1,207 @@
-import { ReactiveController } from "lit";
+import type { ReactiveController } from "lit";
 import Chart from "chart.js/auto";
-import * as chemlib from "../chemlib";
-
+import { TIME_CHANNEL, type MeasurementChannel } from "../data/measurementHistory";
 import type { ChemLab } from "../webwriter-chemlab";
 
-/**
- * Owns all Chart.js concerns for the widget: the live titration / e-chem
- * diagrams shown in the diagram drawer.
- *
- * The host's ticker functions drive the underlying chemlib simulation and then
- * delegate every charting side-effect to this controller, keeping the two
- * responsibilities separate.
- *
- * @implements {ReactiveController}
- */
-export class DiagramController implements ReactiveController {
-	private host: ChemLab;
+export type DiagramAxis = typeof TIME_CHANNEL | MeasurementChannel;
 
-	/**
-	 * List of active diagrams. Each entry is a `[Chart, containerDiv, updateLabels]` tuple,
-	 * where the container's first child carries the experiment id.
-	 */
-	private diagramList: Array<[Chart<"line">, HTMLDivElement, () => void]> = [];
+type Diagram = {
+	id: number;
+	x: DiagramAxis;
+	y: DiagramAxis;
+	card: HTMLElement;
+	title: HTMLElement;
+	canvas: HTMLCanvasElement;
+	chart?: Chart<"line", { x: number; y: number | null }[]>;
+};
+
+export function axisId(axis: DiagramAxis): string {
+	return axis === TIME_CHANNEL ? axis : axis.id;
+}
+
+/** Owns the plots and their references to the shared recording. */
+export class DiagramController implements ReactiveController {
+	private readonly diagrams: Diagram[] = [];
+	private nextId = 1;
+	private frame?: number;
+	private viewport?: IntersectionObserver;
+	private readonly visible = new Set<Element>();
+	private dirty = true;
+	showLine = true;
+
+	constructor(private readonly host: ChemLab) {
+		host.addController(this);
+		host.measurements.onChange = () => {
+			this.invalidate();
+			this.host.refreshDiagramPicker();
+		};
+	}
 
 	get hasDiagrams(): boolean {
-		return this.diagramList.length > 0;
+		return this.diagrams.length > 0;
 	}
 
-	public updateLabels(): void {
-		this.diagramList.forEach(([, , updateLabels]) => updateLabels());
+	hostUpdated(): void {
+		if (this.host.isDiagramPanelOpen && !this.viewport) {
+			this.viewport = new IntersectionObserver(entries => {
+				for (const entry of entries) {
+					if (entry.isIntersecting) this.visible.add(entry.target);
+					else this.visible.delete(entry.target);
+				}
+				this.invalidate();
+			}, { root: this.host.canvasContainer.parentElement });
+			for (const diagram of this.diagrams) this.viewport.observe(diagram.card);
+		} else if (!this.host.isDiagramPanelOpen && this.viewport) {
+			this.releaseViewport();
+		}
+		this.schedule();
 	}
 
-	/** Whether datasets should draw connecting lines between points. */
-	showLine: boolean = false;
-
-	constructor(host: ChemLab) {
-		this.host = host;
-		host.addController(this);
+	hostDisconnected(): void {
+		this.host.ownerDocument.defaultView?.cancelAnimationFrame(this.frame);
+		this.frame = undefined;
+		this.releaseViewport();
 	}
 
-	/** No reactive lifecycle work; diagrams are driven imperatively by the host. */
-	hostConnected(): void {}
+	private releaseViewport(): void {
+		this.viewport?.disconnect();
+		this.viewport = undefined;
+		this.visible.clear();
+		for (const diagram of this.diagrams) {
+			diagram.chart?.destroy();
+			diagram.chart = undefined;
+		}
+		this.dirty = true;
+	}
 
-	/**
-	 * Toggles line drawing for all existing diagrams and redraws them.
-	 * Bound to the "Kurven anzeigen" checkbox in the diagram drawer.
-	 */
-	public toggleShowLine(): void {
+	updateLabels(): void {
+		for (const diagram of this.diagrams) this.updateTitle(diagram);
+		this.invalidate();
+	}
+
+	toggleShowLine(): void {
 		this.showLine = !this.showLine;
-		this.diagramList.forEach((diag) => {
-			if (diag[0].canvas.id.startsWith("echem-transient-")) return;
-			diag[0].data.datasets.forEach((dataset) => {
-				dataset.showLine = this.showLine;
-			});
-			diag[0].update();
+		this.invalidate();
+	}
+
+	label(axis: DiagramAxis): string {
+		const message = this.host.message;
+		if (axis === TIME_CHANNEL) return message("Zeit") + " [s]";
+		const component = this.host.itemName(axis.component);
+		const quantity = message(axis.quantity);
+		const species = axis.species ? " · " + axis.species : "";
+		const unit = axis.unit ? " [" + axis.unit + "]" : "";
+		return `${component} ${axis.number} · ${quantity}${species}${unit}`;
+	}
+
+	create(x: DiagramAxis, y: DiagramAxis): void {
+		const { ownerDocument: document, canvasContainer } = this.host;
+		const id = this.nextId++;
+		const card = document.createElement("section");
+		card.className = "diagram-card";
+		const heading = document.createElement("div");
+		heading.className = "diagram-heading";
+		const title = document.createElement("h4");
+		const remove = document.createElement("button");
+		remove.type = "button";
+		const trash = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+		trash.setAttribute("viewBox", "0 0 16 16");
+		trash.setAttribute("aria-hidden", "true");
+		const path = document.createElementNS(trash.namespaceURI, "path");
+		path.setAttribute("fill", "currentColor");
+		path.setAttribute("d", "M2.5 1a1 1 0 0 0-1 1v1v1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h1.5V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 5.5 5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m2.5.5a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0z");
+		trash.append(path);
+		remove.append(trash);
+		remove.addEventListener("click", () => this.remove(diagram));
+		heading.append(title, remove);
+		const plot = document.createElement("div");
+		plot.className = "diagram-plot";
+		const canvas = document.createElement("canvas");
+		canvas.setAttribute("role", "img");
+		plot.append(canvas);
+		card.append(heading, plot);
+		canvasContainer.append(card);
+
+		const diagram: Diagram = { id, x, y, card, title, canvas };
+		const history = this.host.measurements.history;
+		history.prune();
+		history.retain(axisId(x), axisId(y));
+		this.diagrams.push(diagram);
+		this.viewport?.observe(card);
+		this.updateTitle(diagram);
+		this.host.requestUpdate();
+		this.host.reportXApi("created", "diagram-" + id);
+		this.invalidate();
+	}
+
+	private remove(diagram: Diagram): void {
+		this.host.measurements.history.release(axisId(diagram.x), axisId(diagram.y));
+		this.diagrams.splice(this.diagrams.indexOf(diagram), 1);
+		this.viewport?.unobserve(diagram.card);
+		this.visible.delete(diagram.card);
+		diagram.chart?.destroy();
+		diagram.card.remove();
+		if (!this.hasDiagrams) this.host.closeDiagramPanel();
+		this.host.requestUpdate();
+		this.host.reportXApi("removed", "diagram-" + diagram.id);
+	}
+
+	private updateTitle(diagram: Diagram): void {
+		const title = this.host.message("Diagramm {number}", { number: diagram.id });
+		diagram.title.textContent = title;
+		diagram.canvas.setAttribute("aria-label", `${title} · ${this.label(diagram.y)} / ${this.label(diagram.x)}`);
+		const remove = diagram.card.querySelector("button");
+		const removeLabel = this.host.message("Diagramm löschen");
+		remove.setAttribute("aria-label", removeLabel);
+		remove.title = removeLabel;
+	}
+
+	private invalidate(): void {
+		this.dirty = true;
+		this.schedule();
+	}
+
+	private schedule(): void {
+		if (!this.dirty || this.frame !== undefined || !this.host.isConnected || !this.host.isDiagramPanelOpen) return;
+		this.frame = this.host.ownerDocument.defaultView?.requestAnimationFrame(() => {
+			this.frame = undefined;
+			if (!this.host.isDiagramPanelOpen) return;
+			this.draw();
 		});
 	}
 
-	/**
-	 * Creates a new diagram (canvas + chart) for a titration or e-chem
-	 * experiment and appends it to the diagram drawer. No-op if a diagram for
-	 * this experiment already exists.
-	 *
-	 * @param name - the ticker/experiment name (e.g. "transfer...", "echem...")
-	 * @param source - the device that starts the experiment, used to label electrochemistry datasets
-	 *   datasets from the circuit's electrodes
-	 */
-	public createDiagram(name: string, source: chemlib.ChemComponent | chemlib.ElectricComponent): void {
-		for (let i = 0; i < this.diagramList.length; i++) {
-			if (
-				(this.diagramList[i][1] as HTMLDivElement).children[0]
-					.id === name
-			) {
-				return;
-			}
-		}
-		const document = this.host.ownerDocument;
-		const canvasBundle = document.createElement("div");
-		canvasBundle.style.borderTopStyle = "solid";
-		canvasBundle.style.borderTopWidth = "2px";
-		canvasBundle.style.borderTopColor = "#e5e5e5";
-		canvasBundle.style.marginBlock = "20px";
-		const canvasDiv = document.createElement("div");
-		canvasDiv.style.width = "100%";
-		canvasDiv.style.maxWidth = "500px";
-		canvasDiv.style.height = "400px";
-		const canvas = document.createElement("canvas");
-		canvas.id = name;
-
-		const canvasHeading = document.createElement("h5");
-		const chartNumber = this.diagramList.length;
-		const transient = name.startsWith("echem-transient-");
-		const chartHeading = transient ? "Kapazitiver Zellstrom (RC-Modell)" : name.includes("transfer")
-			? "Titration"
-			: name.includes("source") ? "Elektrolyse" : "Galvanische Zelle";
-
-		canvasDiv.appendChild(canvas);
-		const canvasHeadingContainer = document.createElement("div");
-		canvasHeadingContainer.style.display = "flex";
-		canvasHeadingContainer.style.alignItems = "baseline";
-		const trashButton = document.createElement("button");
-		trashButton.innerHTML += `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#d10000" d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/></svg>`;
-		trashButton.onclick = () => {
-			const index = this.diagramList.findIndex(([, container]) => container === canvasDiv);
-			if (index !== -1) {
-				this.diagramList[index][0].destroy();
-				this.diagramList.splice(index, 1);
-			}
-			canvasBundle.remove();
-			this.host.requestUpdate();
-			this.host.reportXApi("removed", "diagram-" + name);
-		};
-		canvasHeadingContainer.appendChild(canvasHeading);
-		canvasHeadingContainer.appendChild(trashButton);
-		canvasBundle.appendChild(canvasHeadingContainer);
-		canvasBundle.appendChild(canvasDiv);
-		this.host.canvasContainer.appendChild(canvasBundle);
-
-		let chartLabel: string;
-		let chartTitleX: string;
-		let chartTitleY: string;
-
-		if (name.includes("transfer")) {
-			chartLabel = "pH";
-			chartTitleX = "Volumen [ml]";
-			chartTitleY = "pH Wert";
-		}
-		if (transient) {
-			chartLabel = "Zellstrom [A]";
-			chartTitleX = "Zeit [s]";
-			chartTitleY = "Zellstrom [A]";
-		} else if (name.includes("echem") && source instanceof chemlib.ElectricComponent) {
-			chartTitleX = "Zeit [s]";
-			if (source._type === chemlib.EComponentType.Source) {
-				chartLabel = "n";
-				chartTitleY = "umgesetzte Stoffmenge [mol]";
-			} else if (source._type === chemlib.EComponentType.Voltmeter ||
-				(source._type === chemlib.EComponentType.Multimeter && source._meterMode === "voltage")) {
-				chartLabel = "Spannung";
-				chartTitleY = "Zellspannung [V]";
-			} else {
-				chartLabel = "Stromstärke";
-				chartTitleY = "Stromstärke [A]";
-			}
-		}
-		let chart = new Chart(canvas, {
-			type: "line",
-			data: {
-				labels: [],
-				datasets: [],
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				scales: {
-					x: {
-						type: transient ? "linear" : "category",
-						beginAtZero: true,
-						title: {
-							text: chartTitleX,
-							display: true,
-						},
-						grid: {
-							drawOnChartArea: false,
-						},
-					},
-					y: {
-						beginAtZero: true,
-						title: {
-							text: chartTitleY,
-							display: true,
-						},
-						grid: {
-							drawOnChartArea: false,
-						},
+	private draw(): void {
+		this.dirty = false;
+		for (const diagram of this.diagrams) {
+			if (!this.visible.has(diagram.card)) continue;
+			const xLabel = this.label(diagram.x);
+			const yLabel = this.label(diagram.y);
+			const chart = diagram.chart ??= new Chart(diagram.canvas, {
+				type: "line",
+				data: { datasets: [{ data: [], borderWidth: 1.5, pointRadius: 1.5, spanGaps: false }] },
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					animation: false,
+					plugins: { legend: { display: false } },
+					scales: {
+						x: { type: "linear", title: { display: true, text: xLabel } },
+						y: { type: "linear", title: { display: true, text: yLabel } },
 					},
 				},
-			},
-		});
-
-		chart.data.datasets.push({
-			label: chartLabel,
-			data: [],
-			tension: transient ? 0 : 0.4,
-			showLine: transient || this.showLine,
-			pointRadius: transient ? 0 : undefined,
-		});
-		if (name.includes("source")) {
-			chart.data.datasets.push({
-				label: chartLabel,
-				data: [],
-				tension: 0.4,
-				showLine: this.showLine,
 			});
-
-		}
-
-		const ionSymbols = name.includes("source")
-			? chemlib.ComponentManager.isCircuit(source as chemlib.ElectricComponent)
-				.map(electrode => electrode._material?._atoms[0]?.getSymbol())
-			: [];
-		const updateLabels = () => {
-			canvasHeading.innerText = chartNumber + ": " + this.host.message(chartHeading);
-			chart.options.scales.x.title.text = this.host.message(chartTitleX);
-			chart.options.scales.y.title.text = this.host.message(chartTitleY);
-			chart.data.datasets.forEach((dataset, index) => {
-				const symbol = ionSymbols[index];
-				dataset.label = symbol
-					? this.host.message("Stoffmenge {symbol} Ionen [mol]", { symbol })
-					: this.host.message(chartLabel);
-			});
+			const points = this.host.measurements.history.points(axisId(diagram.x), axisId(diagram.y));
+			let latestX: number | undefined;
+			const data: { x: number; y: number | null }[] = [];
+			for (const point of points) {
+				if (point.x !== null) latestX = point.x;
+				if (latestX !== undefined) data.push({ x: latestX, y: point.x === null ? null : point.y });
+			}
+			chart.data.datasets[0].data = data;
+			chart.data.datasets[0].showLine = this.showLine;
+			chart.options.scales.x.title.text = xLabel;
+			chart.options.scales.y.title.text = yLabel;
 			chart.update("none");
-		};
-		updateLabels();
-		this.diagramList.push([chart, canvasDiv, updateLabels]);
-		this.host.requestUpdate();
-		this.host.reportXApi("created", "diagram-" + name);
-	}
-
-	public setTransientCurve(source: chemlib.ElectricComponent, model: chemlib.NoIonicPathTransientModel): void {
-		const name = "echem-transient-" + source._type + ":" + source._id;
-		this.createDiagram(name, source);
-		const chart = this.diagramList.find(([chart]) => chart.canvas.id === name)?.[0];
-		if (!chart) return;
-		// Draw six time constants from the exact solution. Live UI cadence does
-		// not determine the resolution of a brief current pulse.
-		const horizon = Math.min(Number.MAX_VALUE, 6 * model.timeConstant);
-		chart.data.datasets[0].data = Array.from({ length: 81 }, (_, index) => {
-			const x = (index / 80) * horizon;
-			return { x, y: model.at(x).current };
-		});
-		chart.update("none");
-	}
-
-	/**
-	 * Appends a titration data point (pH vs. added volume) to any diagram that
-	 * belongs to the given source component.
-	 *
-	 * @param source - the burette / source component being titrated from
-	 * @param dest - the destination component whose pH is measured
-	 */
-	public appendTitrationPoint(
-		source: chemlib.ChemComponent,
-		dest: chemlib.ChemComponent
-	): void {
-		for (let i = 0; i < this.diagramList.length; i++) {
-			if (
-				(
-					this.diagramList[i][1] as HTMLDivElement
-				).children[0].id === "transfer" + source._type + ":" + source._id
-			) {
-				const chart = this.diagramList[i][0];
-				chart.data.labels.push(
-					(chart.data.labels.length > 0
-						? Number.parseFloat(
-								chart.data.labels[
-									chart.data.labels.length - 1
-								] as string
-						  )
-						: 0) +
-						source._outVol * 1000
-				);
-				chart.data.datasets.forEach((dataset) => {
-					dataset.data.push(
-						chemlib.Simulation.getpH(
-							dest._content
-						)
-					);
-				});
-				chart.update();
-			}
-		}
-	}
-
-	/**
-	 * Appends an electrochemistry data point to any diagram belonging to the
-	 * given source component: cell voltage for a voltmeter, or converted amount
-	 * of substance per electrode for a source (electrolysis).
-	 *
-	 * @param source - the voltmeter / source e-component
-	 * @param circuitComps - the resolved circuit `[electrode, electrode, device]`
-	 */
-	public appendEChemPoint(
-		source: chemlib.ElectricComponent,
-		circuitComps: Array<chemlib.ElectricComponent>
-	): void {
-		for (let i = 0; i < this.diagramList.length; i++) {
-			if (
-				(
-					this.diagramList[i][1] as HTMLDivElement
-				).children[0].id === "echem" + source._type + ":" + source._id
-			) {
-				const chart = this.diagramList[i][0];
-				chart.data.labels.push(
-					(chart.data.labels.length > 0
-						? Number.parseFloat(
-								chart.data.labels[
-									chart.data.labels.length - 1
-								] as string
-						  )
-						: 0) + 1
-				);
-				chart.data.datasets.forEach((dataset, datasetId) => {
-					if (source._type === chemlib.EComponentType.Voltmeter ||
-						(source._type === chemlib.EComponentType.Multimeter && source._meterMode === "voltage")) {
-						dataset.data.push(source._visibleVoltage);
-					} else if (source._type === chemlib.EComponentType.Ammeter ||
-						source._type === chemlib.EComponentType.Multimeter) {
-						dataset.data.push(source._visibleCurrent);
-					} else {
-						// Exactly one value per step and dataset, otherwise the
-						// series drifts out of step with the labels: an electrode
-						// whose ion is absent used to push nothing, one with two
-						// ions of the same element pushed twice. The oxidised form
-						// of the electrode's couple is the species that changes.
-						const electrode = circuitComps[datasetId];
-						const couple = electrode?._material
-							? chemlib.oxidationOf(electrode._material.smilesString)
-							: undefined;
-						// the dissolved species the electrode gives off
-						const dissolved = couple?.terms.find((term) =>
-							term.coefficient > 0 && term.phase === "solution");
-						const mix = electrode?._connectedMix;
-						const ion = dissolved && mix
-							? mix._activeMolecules.find((mol) => mol.smilesString === dissolved.smiles)
-							: undefined;
-						dataset.data.push(ion && mix ? mix._molProperties[ion._id + "n"] : 0);
-					}
-				});
-				chart.update();
-			}
 		}
 	}
 }

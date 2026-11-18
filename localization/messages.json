@@ -1,5 +1,18 @@
 {
   "en": {
+    "Zeit": "Time",
+    "Gefäße": "Vessels",
+    "Messgeräte": "Instruments",
+    "X-Achse": "X axis",
+    "Y-Achse": "Y axis",
+    "Diagramm erstellen": "Create chart",
+    "Diagramm hinzufügen": "Add chart",
+    "Diagramm löschen": "Delete chart",
+    "Diagramm {number}": "Chart {number}",
+    "Datenquelle wählen": "Choose a data source",
+    "Abgegebenes Volumen": "Delivered volume",
+    "Gesammeltes Gasvolumen": "Collected gas volume",
+    "Stoffmenge": "Amount of substance",
     "Verkleinern": "Zoom out",
     "Vergrößern": "Zoom in",
     "Zoom auf 100 % zurücksetzen": "Reset zoom to 100%",

@@ -69812,6 +69812,19 @@ var init_BitmapFont = __esm({
 // localization/messages.json
 var messages_default = {
   en: {
+    Zeit: "Time",
+    Gef\u00E4\u00DFe: "Vessels",
+    Messger\u00E4te: "Instruments",
+    "X-Achse": "X axis",
+    "Y-Achse": "Y axis",
+    "Diagramm erstellen": "Create chart",
+    "Diagramm hinzuf\xFCgen": "Add chart",
+    "Diagramm l\xF6schen": "Delete chart",
+    "Diagramm {number}": "Chart {number}",
+    "Datenquelle w\xE4hlen": "Choose a data source",
+    "Abgegebenes Volumen": "Delivered volume",
+    "Gesammeltes Gasvolumen": "Collected gas volume",
+    Stoffmenge: "Amount of substance",
     Verkleinern: "Zoom out",
     Vergr\u00F6\u00DFern: "Zoom in",
     "Zoom auf 100 % zur\xFCcksetzen": "Reset zoom to 100%",
@@ -103700,26 +103713,129 @@ var style = i`
 	#diagramArea {
 		grid-column: 1;
 	}
-	#diagramArea .workspace-details::part(header) {
+	#diagramControls {
+		position: absolute;
+		inset-block-start: var(--panel-handle-top);
 		inset-inline-start: 100%;
-		border-inline-start: 0;
-		border-start-start-radius: 0;
-		border-end-start-radius: 0;
+		z-index: 2;
 	}
-	#diagramArea .workspace-details::part(content) {
-		overflow: hidden;
+	#diagramHandle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+		box-sizing: border-box;
+		inline-size: var(--panel-trigger-width);
+		block-size: var(--panel-trigger-height);
+		padding: 0 2px;
+		border: 1px solid var(--panel-outline);
+		border-inline-start: 0;
+		border-radius: 0 var(--sl-border-radius-medium) var(--sl-border-radius-medium) 0;
+		background: var(--canvas-control-surface);
+		box-shadow: var(--canvas-control-shadow);
+		color: var(--lab-card-secondary-text);
+		cursor: pointer;
+		pointer-events: auto;
+	}
+	#diagramHandle:focus-visible {
+		outline: 2px solid var(--sl-color-neutral-600);
+		outline-offset: -3px;
+	}
+	#diagramHandle.diagram-handle-idle {
+		color: var(--sl-color-neutral-500);
+	}
+	.show-diagram-panel #diagramHandle {
+		inline-size: var(--panel-handle-width);
+	}
+	#diagramAxisPicker {
+		box-sizing: border-box;
+		display: grid;
+		gap: 8px;
+		inline-size: min(16rem, 80cqw);
+		max-block-size: calc(var(--workspace-inner-height) - 34px);
+		overflow: auto;
+		padding: 8px;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-surface);
+		color: var(--lab-card-text);
+		box-shadow: var(--lab-panel-shadow);
+		pointer-events: auto;
+	}
+	.show-diagram-panel #diagramAxisPicker {
+		position: relative;
+		inset-inline-start: min(0px, 100cqw - var(--diagram-panel-width) - min(16rem, 80cqw) - 4px);
+	}
+	#diagramAxisPicker label {
+		display: grid;
+		gap: 3px;
+		min-inline-size: 0;
+		font-size: var(--sl-font-size-small);
+	}
+	#diagramAxisPicker select {
+		inline-size: 100%;
+		min-inline-size: 0;
+		min-block-size: var(--sl-input-height-small);
+		border: 1px solid var(--panel-outline);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-surface);
+		color: inherit;
+		font: inherit;
 	}
 	#inlineDiagramPanel {
 		box-sizing: border-box;
-		inline-size: var(--diagram-panel-width);
+		inline-size: 100%;
 		block-size: var(--workspace-inner-height);
 		overflow: hidden auto;
 		scrollbar-width: thin;
 		padding: 4px 8px;
+		pointer-events: auto;
 	}
-	#inlineDiagramPanel > sl-checkbox {
-		display: block;
+	#inlineDiagramPanel[inert] {
+		visibility: hidden;
+		pointer-events: none;
+	}
+	.diagram-toolbar,
+	.diagram-heading {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 6px;
+	}
+	.diagram-toolbar {
 		margin-block: 6px;
+	}
+	.diagram-card {
+		margin-block: 8px;
+		padding: 6px;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-surface);
+		box-shadow: var(--lab-panel-shadow);
+	}
+	.diagram-heading h4 {
+		margin: 0;
+		font-size: var(--sl-font-size-small);
+	}
+	.diagram-heading button {
+		display: grid;
+		place-items: center;
+		padding: 3px;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--canvas-control-surface);
+		color: var(--sl-color-danger-600);
+		cursor: pointer;
+	}
+	.diagram-heading button svg {
+		inline-size: 12px;
+		block-size: 12px;
+	}
+	.diagram-plot {
+		position: relative;
+		block-size: 270px;
+		min-inline-size: 0;
 	}
 	@media (prefers-reduced-motion: reduce) {
 		#upper {
@@ -176999,261 +177115,6 @@ var registerables = [
 Chart.register(...registerables);
 var auto_default = Chart;
 
-// controllers/DiagramController.ts
-var DiagramController = class {
-  host;
-  /**
-   * List of active diagrams. Each entry is a `[Chart, containerDiv, updateLabels]` tuple,
-   * where the container's first child carries the experiment id.
-   */
-  diagramList = [];
-  get hasDiagrams() {
-    return this.diagramList.length > 0;
-  }
-  updateLabels() {
-    this.diagramList.forEach(([, , updateLabels]) => updateLabels());
-  }
-  /** Whether datasets should draw connecting lines between points. */
-  showLine = false;
-  constructor(host) {
-    this.host = host;
-    host.addController(this);
-  }
-  /** No reactive lifecycle work; diagrams are driven imperatively by the host. */
-  hostConnected() {
-  }
-  /**
-   * Toggles line drawing for all existing diagrams and redraws them.
-   * Bound to the "Kurven anzeigen" checkbox in the diagram drawer.
-   */
-  toggleShowLine() {
-    this.showLine = !this.showLine;
-    this.diagramList.forEach((diag) => {
-      if (diag[0].canvas.id.startsWith("echem-transient-")) return;
-      diag[0].data.datasets.forEach((dataset) => {
-        dataset.showLine = this.showLine;
-      });
-      diag[0].update();
-    });
-  }
-  /**
-   * Creates a new diagram (canvas + chart) for a titration or e-chem
-   * experiment and appends it to the diagram drawer. No-op if a diagram for
-   * this experiment already exists.
-   *
-   * @param name - the ticker/experiment name (e.g. "transfer...", "echem...")
-   * @param source - the device that starts the experiment, used to label electrochemistry datasets
-   *   datasets from the circuit's electrodes
-   */
-  createDiagram(name2, source3) {
-    for (let i11 = 0; i11 < this.diagramList.length; i11++) {
-      if (this.diagramList[i11][1].children[0].id === name2) {
-        return;
-      }
-    }
-    const document2 = this.host.ownerDocument;
-    const canvasBundle = document2.createElement("div");
-    canvasBundle.style.borderTopStyle = "solid";
-    canvasBundle.style.borderTopWidth = "2px";
-    canvasBundle.style.borderTopColor = "#e5e5e5";
-    canvasBundle.style.marginBlock = "20px";
-    const canvasDiv = document2.createElement("div");
-    canvasDiv.style.width = "100%";
-    canvasDiv.style.maxWidth = "500px";
-    canvasDiv.style.height = "400px";
-    const canvas = document2.createElement("canvas");
-    canvas.id = name2;
-    const canvasHeading = document2.createElement("h5");
-    const chartNumber = this.diagramList.length;
-    const transient = name2.startsWith("echem-transient-");
-    const chartHeading = transient ? "Kapazitiver Zellstrom (RC-Modell)" : name2.includes("transfer") ? "Titration" : name2.includes("source") ? "Elektrolyse" : "Galvanische Zelle";
-    canvasDiv.appendChild(canvas);
-    const canvasHeadingContainer = document2.createElement("div");
-    canvasHeadingContainer.style.display = "flex";
-    canvasHeadingContainer.style.alignItems = "baseline";
-    const trashButton = document2.createElement("button");
-    trashButton.innerHTML += `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16"><path fill="#d10000" d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/></svg>`;
-    trashButton.onclick = () => {
-      const index2 = this.diagramList.findIndex(([, container2]) => container2 === canvasDiv);
-      if (index2 !== -1) {
-        this.diagramList[index2][0].destroy();
-        this.diagramList.splice(index2, 1);
-      }
-      canvasBundle.remove();
-      this.host.requestUpdate();
-      this.host.reportXApi("removed", "diagram-" + name2);
-    };
-    canvasHeadingContainer.appendChild(canvasHeading);
-    canvasHeadingContainer.appendChild(trashButton);
-    canvasBundle.appendChild(canvasHeadingContainer);
-    canvasBundle.appendChild(canvasDiv);
-    this.host.canvasContainer.appendChild(canvasBundle);
-    let chartLabel;
-    let chartTitleX;
-    let chartTitleY;
-    if (name2.includes("transfer")) {
-      chartLabel = "pH";
-      chartTitleX = "Volumen [ml]";
-      chartTitleY = "pH Wert";
-    }
-    if (transient) {
-      chartLabel = "Zellstrom [A]";
-      chartTitleX = "Zeit [s]";
-      chartTitleY = "Zellstrom [A]";
-    } else if (name2.includes("echem") && source3 instanceof ElectricComponent) {
-      chartTitleX = "Zeit [s]";
-      if (source3._type === "source" /* Source */) {
-        chartLabel = "n";
-        chartTitleY = "umgesetzte Stoffmenge [mol]";
-      } else if (source3._type === "voltmeter" /* Voltmeter */ || source3._type === "multimeter" /* Multimeter */ && source3._meterMode === "voltage") {
-        chartLabel = "Spannung";
-        chartTitleY = "Zellspannung [V]";
-      } else {
-        chartLabel = "Stromst\xE4rke";
-        chartTitleY = "Stromst\xE4rke [A]";
-      }
-    }
-    let chart = new auto_default(canvas, {
-      type: "line",
-      data: {
-        labels: [],
-        datasets: []
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            type: transient ? "linear" : "category",
-            beginAtZero: true,
-            title: {
-              text: chartTitleX,
-              display: true
-            },
-            grid: {
-              drawOnChartArea: false
-            }
-          },
-          y: {
-            beginAtZero: true,
-            title: {
-              text: chartTitleY,
-              display: true
-            },
-            grid: {
-              drawOnChartArea: false
-            }
-          }
-        }
-      }
-    });
-    chart.data.datasets.push({
-      label: chartLabel,
-      data: [],
-      tension: transient ? 0 : 0.4,
-      showLine: transient || this.showLine,
-      pointRadius: transient ? 0 : void 0
-    });
-    if (name2.includes("source")) {
-      chart.data.datasets.push({
-        label: chartLabel,
-        data: [],
-        tension: 0.4,
-        showLine: this.showLine
-      });
-    }
-    const ionSymbols = name2.includes("source") ? ComponentManager.isCircuit(source3).map((electrode) => electrode._material?._atoms[0]?.getSymbol()) : [];
-    const updateLabels = () => {
-      canvasHeading.innerText = chartNumber + ": " + this.host.message(chartHeading);
-      chart.options.scales.x.title.text = this.host.message(chartTitleX);
-      chart.options.scales.y.title.text = this.host.message(chartTitleY);
-      chart.data.datasets.forEach((dataset, index2) => {
-        const symbol = ionSymbols[index2];
-        dataset.label = symbol ? this.host.message("Stoffmenge {symbol} Ionen [mol]", { symbol }) : this.host.message(chartLabel);
-      });
-      chart.update("none");
-    };
-    updateLabels();
-    this.diagramList.push([chart, canvasDiv, updateLabels]);
-    this.host.requestUpdate();
-    this.host.reportXApi("created", "diagram-" + name2);
-  }
-  setTransientCurve(source3, model) {
-    const name2 = "echem-transient-" + source3._type + ":" + source3._id;
-    this.createDiagram(name2, source3);
-    const chart = this.diagramList.find(([chart2]) => chart2.canvas.id === name2)?.[0];
-    if (!chart) return;
-    const horizon = Math.min(Number.MAX_VALUE, 6 * model.timeConstant);
-    chart.data.datasets[0].data = Array.from({ length: 81 }, (_3, index2) => {
-      const x4 = index2 / 80 * horizon;
-      return { x: x4, y: model.at(x4).current };
-    });
-    chart.update("none");
-  }
-  /**
-   * Appends a titration data point (pH vs. added volume) to any diagram that
-   * belongs to the given source component.
-   *
-   * @param source - the burette / source component being titrated from
-   * @param dest - the destination component whose pH is measured
-   */
-  appendTitrationPoint(source3, dest) {
-    for (let i11 = 0; i11 < this.diagramList.length; i11++) {
-      if (this.diagramList[i11][1].children[0].id === "transfer" + source3._type + ":" + source3._id) {
-        const chart = this.diagramList[i11][0];
-        chart.data.labels.push(
-          (chart.data.labels.length > 0 ? Number.parseFloat(
-            chart.data.labels[chart.data.labels.length - 1]
-          ) : 0) + source3._outVol * 1e3
-        );
-        chart.data.datasets.forEach((dataset) => {
-          dataset.data.push(
-            Simulation.getpH(
-              dest._content
-            )
-          );
-        });
-        chart.update();
-      }
-    }
-  }
-  /**
-   * Appends an electrochemistry data point to any diagram belonging to the
-   * given source component: cell voltage for a voltmeter, or converted amount
-   * of substance per electrode for a source (electrolysis).
-   *
-   * @param source - the voltmeter / source e-component
-   * @param circuitComps - the resolved circuit `[electrode, electrode, device]`
-   */
-  appendEChemPoint(source3, circuitComps) {
-    for (let i11 = 0; i11 < this.diagramList.length; i11++) {
-      if (this.diagramList[i11][1].children[0].id === "echem" + source3._type + ":" + source3._id) {
-        const chart = this.diagramList[i11][0];
-        chart.data.labels.push(
-          (chart.data.labels.length > 0 ? Number.parseFloat(
-            chart.data.labels[chart.data.labels.length - 1]
-          ) : 0) + 1
-        );
-        chart.data.datasets.forEach((dataset, datasetId) => {
-          if (source3._type === "voltmeter" /* Voltmeter */ || source3._type === "multimeter" /* Multimeter */ && source3._meterMode === "voltage") {
-            dataset.data.push(source3._visibleVoltage);
-          } else if (source3._type === "ammeter" /* Ammeter */ || source3._type === "multimeter" /* Multimeter */) {
-            dataset.data.push(source3._visibleCurrent);
-          } else {
-            const electrode = circuitComps[datasetId];
-            const couple = electrode?._material ? oxidationOf(electrode._material.smilesString) : void 0;
-            const dissolved = couple?.terms.find((term) => term.coefficient > 0 && term.phase === "solution");
-            const mix = electrode?._connectedMix;
-            const ion2 = dissolved && mix ? mix._activeMolecules.find((mol) => mol.smilesString === dissolved.smiles) : void 0;
-            dataset.data.push(ion2 && mix ? mix._molProperties[ion2._id + "n"] : 0);
-          }
-        });
-        chart.update();
-      }
-    }
-  }
-};
-
 // data/measurementHistory.ts
 var TIME_CHANNEL = "time";
 var RETENTION_MS = 3e5;
@@ -177266,6 +177127,7 @@ var MeasurementHistory = class {
   pairs = /* @__PURE__ */ new Map();
   archivedUntil = 0;
   latestTime = 0;
+  channelVersion = 0;
   now() {
     return Math.max(this.latestTime, performance.now() - this.epoch);
   }
@@ -177279,6 +177141,7 @@ var MeasurementHistory = class {
     if (!series) {
       series = { channel, samples: [], current: true };
       this.series.set(channel.id, series);
+      this.channelVersion++;
     }
     if (value !== null && !Number.isFinite(value)) value = null;
     const last = series.samples[series.samples.length - 1];
@@ -177331,8 +177194,11 @@ var MeasurementHistory = class {
     }
     for (const [id3, series] of this.series) {
       const end = lowerBound(series.samples, cutoff);
-      if (!series.current && end === series.samples.length) this.series.delete(id3);
-      else if (end > 1) series.samples.splice(0, end - 1);
+      if (!series.current && end === series.samples.length) {
+        this.series.delete(id3);
+        this.channelVersion++;
+        changed = true;
+      } else if (end > 1) series.samples.splice(0, end - 1);
     }
     this.archivedUntil = cutoff;
     return changed;
@@ -177408,6 +177274,182 @@ function lowerBound(samples, time) {
   }
   return lo;
 }
+
+// controllers/DiagramController.ts
+function axisId(axis) {
+  return axis === TIME_CHANNEL ? axis : axis.id;
+}
+var DiagramController = class {
+  constructor(host) {
+    this.host = host;
+    host.addController(this);
+    host.measurements.onChange = () => {
+      this.invalidate();
+      this.host.refreshDiagramPicker();
+    };
+  }
+  diagrams = [];
+  nextId = 1;
+  frame;
+  viewport;
+  visible = /* @__PURE__ */ new Set();
+  dirty = true;
+  showLine = true;
+  get hasDiagrams() {
+    return this.diagrams.length > 0;
+  }
+  hostUpdated() {
+    if (this.host.isDiagramPanelOpen && !this.viewport) {
+      this.viewport = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) this.visible.add(entry.target);
+          else this.visible.delete(entry.target);
+        }
+        this.invalidate();
+      }, { root: this.host.canvasContainer.parentElement });
+      for (const diagram of this.diagrams) this.viewport.observe(diagram.card);
+    } else if (!this.host.isDiagramPanelOpen && this.viewport) {
+      this.releaseViewport();
+    }
+    this.schedule();
+  }
+  hostDisconnected() {
+    this.host.ownerDocument.defaultView?.cancelAnimationFrame(this.frame);
+    this.frame = void 0;
+    this.releaseViewport();
+  }
+  releaseViewport() {
+    this.viewport?.disconnect();
+    this.viewport = void 0;
+    this.visible.clear();
+    for (const diagram of this.diagrams) {
+      diagram.chart?.destroy();
+      diagram.chart = void 0;
+    }
+    this.dirty = true;
+  }
+  updateLabels() {
+    for (const diagram of this.diagrams) this.updateTitle(diagram);
+    this.invalidate();
+  }
+  toggleShowLine() {
+    this.showLine = !this.showLine;
+    this.invalidate();
+  }
+  label(axis) {
+    const message = this.host.message;
+    if (axis === TIME_CHANNEL) return message("Zeit") + " [s]";
+    const component = this.host.itemName(axis.component);
+    const quantity = message(axis.quantity);
+    const species = axis.species ? " \xB7 " + axis.species : "";
+    const unit = axis.unit ? " [" + axis.unit + "]" : "";
+    return `${component} ${axis.number} \xB7 ${quantity}${species}${unit}`;
+  }
+  create(x4, y5) {
+    const { ownerDocument: document2, canvasContainer } = this.host;
+    const id3 = this.nextId++;
+    const card = document2.createElement("section");
+    card.className = "diagram-card";
+    const heading = document2.createElement("div");
+    heading.className = "diagram-heading";
+    const title = document2.createElement("h4");
+    const remove = document2.createElement("button");
+    remove.type = "button";
+    const trash = document2.createElementNS("http://www.w3.org/2000/svg", "svg");
+    trash.setAttribute("viewBox", "0 0 16 16");
+    trash.setAttribute("aria-hidden", "true");
+    const path2 = document2.createElementNS(trash.namespaceURI, "path");
+    path2.setAttribute("fill", "currentColor");
+    path2.setAttribute("d", "M2.5 1a1 1 0 0 0-1 1v1v1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h1.5V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 5.5 5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m2.5.5a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0z");
+    trash.append(path2);
+    remove.append(trash);
+    remove.addEventListener("click", () => this.remove(diagram));
+    heading.append(title, remove);
+    const plot = document2.createElement("div");
+    plot.className = "diagram-plot";
+    const canvas = document2.createElement("canvas");
+    canvas.setAttribute("role", "img");
+    plot.append(canvas);
+    card.append(heading, plot);
+    canvasContainer.append(card);
+    const diagram = { id: id3, x: x4, y: y5, card, title, canvas };
+    const history = this.host.measurements.history;
+    history.prune();
+    history.retain(axisId(x4), axisId(y5));
+    this.diagrams.push(diagram);
+    this.viewport?.observe(card);
+    this.updateTitle(diagram);
+    this.host.requestUpdate();
+    this.host.reportXApi("created", "diagram-" + id3);
+    this.invalidate();
+  }
+  remove(diagram) {
+    this.host.measurements.history.release(axisId(diagram.x), axisId(diagram.y));
+    this.diagrams.splice(this.diagrams.indexOf(diagram), 1);
+    this.viewport?.unobserve(diagram.card);
+    this.visible.delete(diagram.card);
+    diagram.chart?.destroy();
+    diagram.card.remove();
+    if (!this.hasDiagrams) this.host.closeDiagramPanel();
+    this.host.requestUpdate();
+    this.host.reportXApi("removed", "diagram-" + diagram.id);
+  }
+  updateTitle(diagram) {
+    const title = this.host.message("Diagramm {number}", { number: diagram.id });
+    diagram.title.textContent = title;
+    diagram.canvas.setAttribute("aria-label", `${title} \xB7 ${this.label(diagram.y)} / ${this.label(diagram.x)}`);
+    const remove = diagram.card.querySelector("button");
+    const removeLabel = this.host.message("Diagramm l\xF6schen");
+    remove.setAttribute("aria-label", removeLabel);
+    remove.title = removeLabel;
+  }
+  invalidate() {
+    this.dirty = true;
+    this.schedule();
+  }
+  schedule() {
+    if (!this.dirty || this.frame !== void 0 || !this.host.isConnected || !this.host.isDiagramPanelOpen) return;
+    this.frame = this.host.ownerDocument.defaultView?.requestAnimationFrame(() => {
+      this.frame = void 0;
+      if (!this.host.isDiagramPanelOpen) return;
+      this.draw();
+    });
+  }
+  draw() {
+    this.dirty = false;
+    for (const diagram of this.diagrams) {
+      if (!this.visible.has(diagram.card)) continue;
+      const xLabel = this.label(diagram.x);
+      const yLabel = this.label(diagram.y);
+      const chart = diagram.chart ??= new auto_default(diagram.canvas, {
+        type: "line",
+        data: { datasets: [{ data: [], borderWidth: 1.5, pointRadius: 1.5, spanGaps: false }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { type: "linear", title: { display: true, text: xLabel } },
+            y: { type: "linear", title: { display: true, text: yLabel } }
+          }
+        }
+      });
+      const points = this.host.measurements.history.points(axisId(diagram.x), axisId(diagram.y));
+      let latestX;
+      const data2 = [];
+      for (const point of points) {
+        if (point.x !== null) latestX = point.x;
+        if (latestX !== void 0) data2.push({ x: latestX, y: point.x === null ? null : point.y });
+      }
+      chart.data.datasets[0].data = data2;
+      chart.data.datasets[0].showLine = this.showLine;
+      chart.options.scales.x.title.text = xLabel;
+      chart.options.scales.y.title.text = yLabel;
+      chart.update("none");
+    }
+  }
+};
 
 // controllers/MeasurementRecorder.ts
 var MeasurementRecorder = class {
@@ -177594,20 +177636,13 @@ var SimulationController = class {
     this.tasks.set(name2, { startedAt: performance.now(), step });
     this.wake();
   }
-  startExperiment(name2, source3, step, live) {
-    let hasStandardDiagram = false;
-    const ensureStandardDiagram = () => {
-      if (hasStandardDiagram) return;
-      this.host.diagrams.createDiagram(name2, source3);
-      hasStandardDiagram = true;
-    };
+  startExperiment(name2, step, live) {
     let remainingMs = 0;
     this.startTask(name2, (elapsedMs) => {
       if (live?.(elapsedMs)) {
         remainingMs = 0;
         return;
       }
-      ensureStandardDiagram();
       const stepMs = Simulation._simTimeStep * 1e3;
       if (!Number.isFinite(stepMs) || stepMs <= 0) return;
       remainingMs = Math.min(remainingMs + elapsedMs, 8 * stepMs);
@@ -177616,7 +177651,7 @@ var SimulationController = class {
         step();
       }
     });
-    if (!live?.(0)) ensureStandardDiagram();
+    live?.(0);
     this.host.requestUpdate();
   }
   get hasRunningExperiments() {
@@ -185936,7 +185971,7 @@ function validRCSettings(value) {
   const { capacitance, seriesResistance, cutoff } = value;
   return Number.isFinite(capacitance) && capacitance > 0 && Number.isFinite(seriesResistance) && seriesResistance >= 0 && (cutoff === void 0 || Number.isFinite(cutoff) && cutoff > 0);
 }
-var _newSmilesDrawer_dec, _smilesDrawer100_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _chemicalCatalogOpened_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _app_dec, _pix_canvas_dec, _mousePos_dec, _dragObject_dec, _avComponentsSprites_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _statusStrip_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _statusStrip, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _avComponentsSprites, _dragObject, _mousePos, _pix_canvas, _app, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _teacherDrawerOpen, _teacherTab, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalCatalogOpened, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _RndName, _invComponents, _enablexAPI, _xAPIKey, _smilesDrawer100, _newSmilesDrawer;
+var _newSmilesDrawer_dec, _smilesDrawer100_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _chemicalCatalogOpened_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramPickerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _app_dec, _pix_canvas_dec, _mousePos_dec, _dragObject_dec, _avComponentsSprites_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _statusStrip_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _statusStrip, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _avComponentsSprites, _dragObject, _mousePos, _pix_canvas, _app, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _diagramPickerOpen, _teacherDrawerOpen, _teacherTab, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalCatalogOpened, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _RndName, _invComponents, _enablexAPI, _xAPIKey, _smilesDrawer100, _newSmilesDrawer;
 _ChemLab_decorators = [t6("webwriter-chemlab")];
 var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [e8("#upper")], _statusStrip_dec = [e8("#statusStrip")], _contextMolInfo_dec = [e8("#contextMolInfo")], _objectSummary_dec = [e8("#contextInfoBox")], _groupSummary_dec = [e8("#groupSelectionInfo")], _contextMixInfo_dec = [e8("#contextMixInfo")], _openBtn_dec = [e8("#openComp")], _activateEComp_dec = [e8("#activateEComp")], _contextEchemInfo_dec = [e8("#contextEchemInfo")], _xAPICheck_dec = [e8("#xAPICheck")], _xAPIKeyInput_dec = [e8("#xAPIKeyInput")], _canvasArea_dec = [e8("#canvasArea")], _canvasZoom_dec = [e8("#canvasZoom")], _zoomLevel_dec = [e8("#zoomLevel", true)], _gridScale_dec = [e8("#gridScale", true)], _gridScaleValue_dec = [e8("#gridScaleValue", true)], _pHColors_dec = [n5({ attribute: false })], _dictionary_dec = [n5({ attribute: false })], _availableMolecules_dec = [n5({
   type: Array,
@@ -185947,7 +185982,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 })], _availableComponents_dec = [n5({
   type: Array,
   attribute: false
-})], _thumbnailBadges_dec = [n5({ type: Boolean, reflect: true })], _avComponentsSprites_dec = [n5({ attribute: false })], _dragObject_dec = [n5({ attribute: false })], _mousePos_dec = [n5({ attribute: false })], _pix_canvas_dec = [n5({ attribute: false })], _app_dec = [n5({ attribute: false })], _allChemComponents_dec = [n5({ attribute: false })], _allEComponents_dec = [n5({ attribute: false })], _curr_obj_dec = [n5({ attribute: false })], _fullWidthMode_dec = [r8()], _diagramPanelOpen_dec = [r8()], _teacherDrawerOpen_dec = [r8()], _teacherTab_dec = [r8()], _permissionTooltip_dec = [r8()], _visibleVariants_dec = [r8()], _componentToPlace_dec = [r8()], _selectedChemical_dec = [r8()], _chemicalPermissions_dec = [r8()], _amountMenu_dec = [r8()], _fillMeter_dec = [r8()], _chemicalCatalogOpened_dec = [r8()], _chemicalQuery_dec = [r8()], _activeChemicalConcentrations_dec = [r8()], _openConcentrationMenu_dec = [r8()], _chemicalGroup_dec = [r8()], _curr_name_dec = [n5({ attribute: false })], _curr_stage_index_dec = [n5({ attribute: false })], _RndName_dec = [n5({ attribute: false })], _invComponents_dec = [n5({
+})], _thumbnailBadges_dec = [n5({ type: Boolean, reflect: true })], _avComponentsSprites_dec = [n5({ attribute: false })], _dragObject_dec = [n5({ attribute: false })], _mousePos_dec = [n5({ attribute: false })], _pix_canvas_dec = [n5({ attribute: false })], _app_dec = [n5({ attribute: false })], _allChemComponents_dec = [n5({ attribute: false })], _allEComponents_dec = [n5({ attribute: false })], _curr_obj_dec = [n5({ attribute: false })], _fullWidthMode_dec = [r8()], _diagramPanelOpen_dec = [r8()], _diagramPickerOpen_dec = [r8()], _teacherDrawerOpen_dec = [r8()], _teacherTab_dec = [r8()], _permissionTooltip_dec = [r8()], _visibleVariants_dec = [r8()], _componentToPlace_dec = [r8()], _selectedChemical_dec = [r8()], _chemicalPermissions_dec = [r8()], _amountMenu_dec = [r8()], _fillMeter_dec = [r8()], _chemicalCatalogOpened_dec = [r8()], _chemicalQuery_dec = [r8()], _activeChemicalConcentrations_dec = [r8()], _openConcentrationMenu_dec = [r8()], _chemicalGroup_dec = [r8()], _curr_name_dec = [n5({ attribute: false })], _curr_stage_index_dec = [n5({ attribute: false })], _RndName_dec = [n5({ attribute: false })], _invComponents_dec = [n5({
   type: Array,
   attribute: false
 })], _enablexAPI_dec = [n5({
@@ -186026,7 +186061,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __publicField(this, "refreshFromRemoteData", false);
     __privateAdd(this, _avComponentsSprites, __runInitializers(_init2, 96, this, [])), __runInitializers(_init2, 99, this);
     /**
-     * controller owning all Chart.js diagrams (titration / e-chem)
+     * controller owning all Chart.js diagrams
      *
      * @type {DiagramController}
      */
@@ -186056,39 +186091,45 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __privateAdd(this, _curr_obj, __runInitializers(_init2, 124, this, null)), __runInitializers(_init2, 127, this);
     __privateAdd(this, _fullWidthMode, __runInitializers(_init2, 128, this, false)), __runInitializers(_init2, 131, this);
     __privateAdd(this, _diagramPanelOpen, __runInitializers(_init2, 132, this, false)), __runInitializers(_init2, 135, this);
-    __privateAdd(this, _teacherDrawerOpen, __runInitializers(_init2, 136, this, false)), __runInitializers(_init2, 139, this);
+    __privateAdd(this, _diagramPickerOpen, __runInitializers(_init2, 136, this, false)), __runInitializers(_init2, 139, this);
+    __publicField(this, "diagramPickerTimer");
+    __publicField(this, "diagramPickerEscape", false);
+    __publicField(this, "diagramChannelVersion", 0);
+    __publicField(this, "diagramX", "");
+    __publicField(this, "diagramY", "");
+    __privateAdd(this, _teacherDrawerOpen, __runInitializers(_init2, 140, this, false)), __runInitializers(_init2, 143, this);
     __publicField(this, "teacherDrawerChoice");
     __publicField(this, "workspaceResizeObserver");
     __publicField(this, "workspaceClassObserver");
-    __privateAdd(this, _teacherTab, __runInitializers(_init2, 140, this, "components")), __runInitializers(_init2, 143, this);
-    __privateAdd(this, _permissionTooltip, __runInitializers(_init2, 144, this)), __runInitializers(_init2, 147, this);
-    __privateAdd(this, _visibleVariants, __runInitializers(_init2, 148, this, {})), __runInitializers(_init2, 151, this);
-    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 152, this)), __runInitializers(_init2, 155, this);
-    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 156, this)), __runInitializers(_init2, 159, this);
-    __privateAdd(this, _chemicalPermissions, __runInitializers(_init2, 160, this, {})), __runInitializers(_init2, 163, this);
-    __privateAdd(this, _amountMenu, __runInitializers(_init2, 164, this)), __runInitializers(_init2, 167, this);
-    __privateAdd(this, _fillMeter, __runInitializers(_init2, 168, this)), __runInitializers(_init2, 171, this);
-    __privateAdd(this, _chemicalCatalogOpened, __runInitializers(_init2, 172, this, false)), __runInitializers(_init2, 175, this);
-    __privateAdd(this, _chemicalQuery, __runInitializers(_init2, 176, this, "")), __runInitializers(_init2, 179, this);
-    __privateAdd(this, _activeChemicalConcentrations, __runInitializers(_init2, 180, this, {})), __runInitializers(_init2, 183, this);
-    __privateAdd(this, _openConcentrationMenu, __runInitializers(_init2, 184, this)), __runInitializers(_init2, 187, this);
-    __privateAdd(this, _chemicalGroup, __runInitializers(_init2, 188, this, "Salze")), __runInitializers(_init2, 191, this);
+    __privateAdd(this, _teacherTab, __runInitializers(_init2, 144, this, "components")), __runInitializers(_init2, 147, this);
+    __privateAdd(this, _permissionTooltip, __runInitializers(_init2, 148, this)), __runInitializers(_init2, 151, this);
+    __privateAdd(this, _visibleVariants, __runInitializers(_init2, 152, this, {})), __runInitializers(_init2, 155, this);
+    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 156, this)), __runInitializers(_init2, 159, this);
+    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 160, this)), __runInitializers(_init2, 163, this);
+    __privateAdd(this, _chemicalPermissions, __runInitializers(_init2, 164, this, {})), __runInitializers(_init2, 167, this);
+    __privateAdd(this, _amountMenu, __runInitializers(_init2, 168, this)), __runInitializers(_init2, 171, this);
+    __privateAdd(this, _fillMeter, __runInitializers(_init2, 172, this)), __runInitializers(_init2, 175, this);
+    __privateAdd(this, _chemicalCatalogOpened, __runInitializers(_init2, 176, this, false)), __runInitializers(_init2, 179, this);
+    __privateAdd(this, _chemicalQuery, __runInitializers(_init2, 180, this, "")), __runInitializers(_init2, 183, this);
+    __privateAdd(this, _activeChemicalConcentrations, __runInitializers(_init2, 184, this, {})), __runInitializers(_init2, 187, this);
+    __privateAdd(this, _openConcentrationMenu, __runInitializers(_init2, 188, this)), __runInitializers(_init2, 191, this);
+    __privateAdd(this, _chemicalGroup, __runInitializers(_init2, 192, this, "Salze")), __runInitializers(_init2, 195, this);
     __publicField(this, "stopDose");
     __publicField(this, "paletteDrag");
     __publicField(this, "suppressPaletteClick", false);
     __publicField(this, "dragTransfer");
     __publicField(this, "meterTimeout");
     __publicField(this, "statusTimeout");
-    __privateAdd(this, _curr_name, __runInitializers(_init2, 192, this, "")), __runInitializers(_init2, 195, this);
-    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 196, this, -1)), __runInitializers(_init2, 199, this);
-    __privateAdd(this, _RndName, __runInitializers(_init2, 200, this, n7({
+    __privateAdd(this, _curr_name, __runInitializers(_init2, 196, this, "")), __runInitializers(_init2, 199, this);
+    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 200, this, -1)), __runInitializers(_init2, 203, this);
+    __privateAdd(this, _RndName, __runInitializers(_init2, 204, this, n7({
       dictionaries: [l6, t8, r10]
-    }))), __runInitializers(_init2, 203, this);
-    __privateAdd(this, _invComponents, __runInitializers(_init2, 204, this, [])), __runInitializers(_init2, 207, this);
-    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 208, this, false)), __runInitializers(_init2, 211, this);
-    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 212, this, "")), __runInitializers(_init2, 215, this);
-    __privateAdd(this, _smilesDrawer100, __runInitializers(_init2, 216, this, null)), __runInitializers(_init2, 219, this);
-    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 220, this, 1)), __runInitializers(_init2, 223, this);
+    }))), __runInitializers(_init2, 207, this);
+    __privateAdd(this, _invComponents, __runInitializers(_init2, 208, this, [])), __runInitializers(_init2, 211, this);
+    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 212, this, false)), __runInitializers(_init2, 215, this);
+    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 216, this, "")), __runInitializers(_init2, 219, this);
+    __privateAdd(this, _smilesDrawer100, __runInitializers(_init2, 220, this, null)), __runInitializers(_init2, 223, this);
+    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 224, this, 1)), __runInitializers(_init2, 227, this);
     console.log(import_smiles_drawer.default);
     this.smilesDrawer100 = new import_smiles_drawer.default.SvgDrawer({ width: 100, height: 100, explicitHydrogens: true, compactDrawing: false, terminalCarbons: true });
   }
@@ -186139,6 +186180,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.observeWorkspaceLayout();
   }
   disconnectedCallback() {
+    this.closeDiagramPicker();
     this.stopDose?.();
     this.cancelDoseForNavigation();
     this.closeAmountMenu();
@@ -186411,7 +186453,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
           this.canvas.markVesselChanged(source3);
           this.canvas.markVesselChanged(destObj);
           if (this.curr_obj === source3 || this.curr_obj === destObj) this._updatePopup();
-          this.diagrams.appendTitrationPoint(source3, destObj);
         }
       }
     }
@@ -186439,7 +186480,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       for (const vessel of vessels) this.canvas.markVesselChanged(vessel);
       if (circuitComps.includes(this.curr_obj) || this.curr_obj?._content === firstMix || this.curr_obj?._content === secondMix) this._updatePopup();
       for (const device of circuitComps) this.canvas.refreshDeviceDisplay(device);
-      this.diagrams.appendEChemPoint(source3, circuitComps);
       return;
     }
     const network = this.meterCircuit(source3);
@@ -186467,13 +186507,13 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   startElectricalExperiment(name2, meter2) {
     const step = () => this.stepElectrochemistry(meter2);
     if (!isPassiveMeter(meter2) || !meter2.rcSettings) {
-      this.simulation.startExperiment(name2, meter2, step);
+      this.simulation.startExperiment(name2, step);
       return;
     }
     let sinceRefresh = RC_UPDATE_MS;
     let circuitKey;
     let active;
-    this.simulation.startExperiment(name2, meter2, step, (elapsedMs) => {
+    this.simulation.startExperiment(name2, step, (elapsedMs) => {
       if (active && !active.settled) {
         active.elapsed += elapsedMs / 1e3;
         this.capacitorCharges.set(active.cell, active.model.at(active.elapsed).charge);
@@ -186520,7 +186560,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
             const { model } = prepared;
             const cutoff = config.cutoff ?? Math.max(Number.MIN_VALUE, Math.abs(model.initialCurrent) * 0.01);
             active = { ...prepared, cell, devices, elapsed: 0, cutoffAt: model.timeToCutoff(cutoff) };
-            this.diagrams.setTransientCurve(meter2, model);
           }
         }
       }
@@ -188184,32 +188223,134 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 		`;
   }
   get diagramPanelAvailable() {
-    return this.diagrams.hasDiagrams || this.simulation.hasRunningExperiments;
+    return this.diagrams.hasDiagrams;
+  }
+  get isDiagramPanelOpen() {
+    return this.diagramPanelAvailable && this.diagramPanelOpen;
+  }
+  closeDiagramPanel() {
+    this.diagramPanelOpen = false;
+  }
+  refreshDiagramPicker() {
+    const version4 = this.measurements.history.channelVersion;
+    if (this.diagramPickerOpen && version4 !== this.diagramChannelVersion) this.requestUpdate();
+    this.diagramChannelVersion = version4;
+  }
+  openDiagramPicker() {
+    clearTimeout(this.diagramPickerTimer);
+    if (!this.diagramPickerEscape) this.diagramPickerOpen = true;
+  }
+  closeDiagramPicker() {
+    clearTimeout(this.diagramPickerTimer);
+    this.diagramPickerOpen = false;
+    this.diagramX = this.diagramY = "";
+  }
+  deferDiagramPickerClose() {
+    clearTimeout(this.diagramPickerTimer);
+    this.diagramPickerTimer = setTimeout(() => {
+      const controls = this.shadowRoot.querySelector("#diagramControls");
+      if (!controls?.matches(":hover, :focus-within")) this.closeDiagramPicker();
+    }, 180);
+  }
+  changeDiagramAxis(axis, id3) {
+    if (axis === "x") this.diagramX = id3;
+    else this.diagramY = id3;
+    const channels = this.measurements.history.channels;
+    const find = (key) => key === TIME_CHANNEL ? key : channels.find((channel) => channel.id === key);
+    const x4 = find(this.diagramX);
+    const y5 = find(this.diagramY);
+    if (x4 && y5 && this.diagramX !== this.diagramY) {
+      if (!this.diagramPanelAvailable) this.closeDiagramPanel();
+      this.diagrams.create(x4, y5);
+      this.closeDiagramPicker();
+      this.diagramPickerEscape = true;
+      this.shadowRoot.querySelector("#diagramHandle")?.focus();
+    } else this.requestUpdate();
+  }
+  renderDiagramAxisPicker() {
+    const channels = this.measurements.history.channels;
+    const group = (type, label, selected, excluded) => {
+      const entries = channels.filter((channel) => channel.group === type).sort((a7, b5) => a7.number - b5.number || this.diagrams.label(a7).localeCompare(this.diagrams.label(b5), this.lang));
+      return entries.length ? x`<optgroup label=${this.message(label)}>
+				${entries.map((channel) => x`<option value=${channel.id} ?selected=${channel.id === selected} ?disabled=${channel.id === excluded}>
+					${this.diagrams.label(channel)}
+				</option>`)}
+			</optgroup>` : E;
+    };
+    const select = (axis, label, selected, excluded) => x`
+			<label>${this.message(label)}
+				<select .value=${selected} @change=${(event) => this.changeDiagramAxis(axis, event.currentTarget.value)}>
+					<option value="">${this.message("Datenquelle w\xE4hlen")}</option>
+					<option value=${TIME_CHANNEL} ?selected=${selected === TIME_CHANNEL} ?disabled=${excluded === TIME_CHANNEL}>${this.diagrams.label(TIME_CHANNEL)}</option>
+					${group("vessel", "Gef\xE4\xDFe", selected, excluded)}
+					${group("instrument", "Messger\xE4te", selected, excluded)}
+				</select>
+			</label>`;
+    return x`<div id="diagramAxisPicker" role="group" aria-label=${this.message("Diagramm erstellen")}>
+			${select("x", "X-Achse", this.diagramX, this.diagramY)}
+			${select("y", "Y-Achse", this.diagramY, this.diagramX)}
+		</div>`;
   }
   renderDiagramDetails(available, open) {
     return x`
 			<aside id="diagramArea" class="workspace-side">
-				<sl-details class="workspace-details" .open=${open} ?disabled=${!available}
-					@sl-show=${(event) => this.onDiagramToggle(event, true)}
-					@sl-hide=${(event) => this.onDiagramToggle(event, false)}>
-					<span slot="summary" class="workspace-summary" title=${this.message("Diagramme")}>
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+				<div id="diagramControls"
+					@pointerleave=${() => {
+      this.diagramPickerEscape = false;
+      this.deferDiagramPickerClose();
+    }}
+					@focusout=${() => this.deferDiagramPickerClose()}
+					@keydown=${(event) => {
+      if (event.key !== "Escape" || !this.diagramPickerOpen) return;
+      event.stopPropagation();
+      this.closeDiagramPicker();
+      this.diagramPickerEscape = true;
+      this.shadowRoot.querySelector("#diagramHandle")?.focus();
+    }}>
+					<button id="diagramHandle" type="button" aria-expanded=${String(open)}
+						aria-controls="inlineDiagramPanel" aria-label=${this.message("Diagramme")}
+						title=${this.message("Diagramme")} class=${available ? "" : "diagram-handle-idle"}
+						@pointerenter=${(event) => {
+      if (event.pointerType === "mouse") this.openDiagramPicker();
+    }}
+						@focusin=${() => this.openDiagramPicker()}
+						@blur=${() => {
+      this.diagramPickerEscape = false;
+    }}
+						@click=${() => {
+      this.diagramPickerEscape = false;
+      if (available) {
+        this.closeDiagramPicker();
+        this.onDiagramToggle(!open);
+      } else this.openDiagramPicker();
+    }}>
+						${open ? E : x`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
 							<path d="M2 2v12h12M4 11l3-4 3 2 4-5"/>
+						</svg>`}
+						<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" aria-hidden="true">
+							<path d=${open ? "m9 3-4 4 4 4" : "m5 3 4 4-4 4"}/>
 						</svg>
-						<span class="panel-button-label">${this.message("Diagramme")}</span>
-					</span>
-					${this.renderPanelArrows("right")}
-					<div id="inlineDiagramPanel">
+					</button>
+					${this.diagramPickerOpen ? this.renderDiagramAxisPicker() : E}
+				</div>
+				<div id="inlineDiagramPanel" ?inert=${!open} aria-hidden=${String(!open)}>
+					<div class="diagram-toolbar">
 						<sl-checkbox .checked=${this.diagrams.showLine} @sl-change=${() => this.diagrams.toggleShowLine()}>
 							${this.message("Kurven anzeigen")}
 						</sl-checkbox>
-						${this.canvasContainer}
+						<sl-button size="small" @click=${async () => {
+      this.diagramPickerEscape = false;
+      this.openDiagramPicker();
+      await this.updateComplete;
+      this.shadowRoot.querySelector("#diagramAxisPicker select")?.focus();
+    }}>${this.message("Diagramm hinzuf\xFCgen")}</sl-button>
 					</div>
-				</sl-details>
+					${this.canvasContainer}
+				</div>
 			</aside>`;
   }
-  onDiagramToggle(event, open) {
-    if (event.target !== event.currentTarget || !this.diagramPanelAvailable || this.diagramPanelOpen === open) return;
+  onDiagramToggle(open) {
+    if (!this.diagramPanelAvailable || this.diagramPanelOpen === open) return;
     this.diagramPanelOpen = open;
     if (open && this.teacherDrawerOpen && this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.closeTeacherDrawer();
     this._sendxAPiStatement(open ? "opened" : "closed", "diagramPanel");
@@ -189086,7 +189227,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         let source3 = this.curr_obj;
         this.simulation.startExperiment(
           "transfer" + this.curr_name,
-          source3,
           () => this.stepTitration(currSprite, source3)
         );
         this._sendxAPiStatement(
@@ -189191,6 +189331,7 @@ _allEComponents = new WeakMap();
 _curr_obj = new WeakMap();
 _fullWidthMode = new WeakMap();
 _diagramPanelOpen = new WeakMap();
+_diagramPickerOpen = new WeakMap();
 _teacherDrawerOpen = new WeakMap();
 _teacherTab = new WeakMap();
 _permissionTooltip = new WeakMap();
@@ -189245,6 +189386,7 @@ __decorateElement(_init2, 4, "allEComponents", _allEComponents_dec, _ChemLab, _a
 __decorateElement(_init2, 4, "curr_obj", _curr_obj_dec, _ChemLab, _curr_obj);
 __decorateElement(_init2, 4, "fullWidthMode", _fullWidthMode_dec, _ChemLab, _fullWidthMode);
 __decorateElement(_init2, 4, "diagramPanelOpen", _diagramPanelOpen_dec, _ChemLab, _diagramPanelOpen);
+__decorateElement(_init2, 4, "diagramPickerOpen", _diagramPickerOpen_dec, _ChemLab, _diagramPickerOpen);
 __decorateElement(_init2, 4, "teacherDrawerOpen", _teacherDrawerOpen_dec, _ChemLab, _teacherDrawerOpen);
 __decorateElement(_init2, 4, "teacherTab", _teacherTab_dec, _ChemLab, _teacherTab);
 __decorateElement(_init2, 4, "permissionTooltip", _permissionTooltip_dec, _ChemLab, _permissionTooltip);

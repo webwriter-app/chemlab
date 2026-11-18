@@ -1195,26 +1195,129 @@ export const style = css`
 	#diagramArea {
 		grid-column: 1;
 	}
-	#diagramArea .workspace-details::part(header) {
+	#diagramControls {
+		position: absolute;
+		inset-block-start: var(--panel-handle-top);
 		inset-inline-start: 100%;
-		border-inline-start: 0;
-		border-start-start-radius: 0;
-		border-end-start-radius: 0;
+		z-index: 2;
 	}
-	#diagramArea .workspace-details::part(content) {
-		overflow: hidden;
+	#diagramHandle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+		box-sizing: border-box;
+		inline-size: var(--panel-trigger-width);
+		block-size: var(--panel-trigger-height);
+		padding: 0 2px;
+		border: 1px solid var(--panel-outline);
+		border-inline-start: 0;
+		border-radius: 0 var(--sl-border-radius-medium) var(--sl-border-radius-medium) 0;
+		background: var(--canvas-control-surface);
+		box-shadow: var(--canvas-control-shadow);
+		color: var(--lab-card-secondary-text);
+		cursor: pointer;
+		pointer-events: auto;
+	}
+	#diagramHandle:focus-visible {
+		outline: 2px solid var(--sl-color-neutral-600);
+		outline-offset: -3px;
+	}
+	#diagramHandle.diagram-handle-idle {
+		color: var(--sl-color-neutral-500);
+	}
+	.show-diagram-panel #diagramHandle {
+		inline-size: var(--panel-handle-width);
+	}
+	#diagramAxisPicker {
+		box-sizing: border-box;
+		display: grid;
+		gap: 8px;
+		inline-size: min(16rem, 80cqw);
+		max-block-size: calc(var(--workspace-inner-height) - 34px);
+		overflow: auto;
+		padding: 8px;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-surface);
+		color: var(--lab-card-text);
+		box-shadow: var(--lab-panel-shadow);
+		pointer-events: auto;
+	}
+	.show-diagram-panel #diagramAxisPicker {
+		position: relative;
+		inset-inline-start: min(0px, 100cqw - var(--diagram-panel-width) - min(16rem, 80cqw) - 4px);
+	}
+	#diagramAxisPicker label {
+		display: grid;
+		gap: 3px;
+		min-inline-size: 0;
+		font-size: var(--sl-font-size-small);
+	}
+	#diagramAxisPicker select {
+		inline-size: 100%;
+		min-inline-size: 0;
+		min-block-size: var(--sl-input-height-small);
+		border: 1px solid var(--panel-outline);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-surface);
+		color: inherit;
+		font: inherit;
 	}
 	#inlineDiagramPanel {
 		box-sizing: border-box;
-		inline-size: var(--diagram-panel-width);
+		inline-size: 100%;
 		block-size: var(--workspace-inner-height);
 		overflow: hidden auto;
 		scrollbar-width: thin;
 		padding: 4px 8px;
+		pointer-events: auto;
 	}
-	#inlineDiagramPanel > sl-checkbox {
-		display: block;
+	#inlineDiagramPanel[inert] {
+		visibility: hidden;
+		pointer-events: none;
+	}
+	.diagram-toolbar,
+	.diagram-heading {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 6px;
+	}
+	.diagram-toolbar {
 		margin-block: 6px;
+	}
+	.diagram-card {
+		margin-block: 8px;
+		padding: 6px;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-surface);
+		box-shadow: var(--lab-panel-shadow);
+	}
+	.diagram-heading h4 {
+		margin: 0;
+		font-size: var(--sl-font-size-small);
+	}
+	.diagram-heading button {
+		display: grid;
+		place-items: center;
+		padding: 3px;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--canvas-control-surface);
+		color: var(--sl-color-danger-600);
+		cursor: pointer;
+	}
+	.diagram-heading button svg {
+		inline-size: 12px;
+		block-size: 12px;
+	}
+	.diagram-plot {
+		position: relative;
+		block-size: 270px;
+		min-inline-size: 0;
 	}
 	@media (prefers-reduced-motion: reduce) {
 		#upper {

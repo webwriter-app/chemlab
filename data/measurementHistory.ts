@@ -24,6 +24,7 @@ export class MeasurementHistory {
 	private readonly pairs = new Map<string, AxisPair>();
 	private archivedUntil = 0;
 	private latestTime = 0;
+	channelVersion = 0;
 
 	constructor(private readonly epoch = performance.now()) {}
 
@@ -42,6 +43,7 @@ export class MeasurementHistory {
 		if (!series) {
 			series = { channel, samples: [], current: true };
 			this.series.set(channel.id, series);
+			this.channelVersion++;
 		}
 		if (value !== null && !Number.isFinite(value)) value = null;
 		const last = series.samples[series.samples.length - 1];
@@ -100,8 +102,11 @@ export class MeasurementHistory {
 		for (const [id, series] of this.series) {
 			const end = lowerBound(series.samples, cutoff);
 			// Keep one state at the boundary for a later sample on the other axis.
-			if (!series.current && end === series.samples.length) this.series.delete(id);
-			else if (end > 1) series.samples.splice(0, end - 1);
+			if (!series.current && end === series.samples.length) {
+				this.series.delete(id);
+				this.channelVersion++;
+				changed = true;
+			} else if (end > 1) series.samples.splice(0, end - 1);
 		}
 		this.archivedUntil = cutoff;
 		return changed;
