@@ -45,3 +45,15 @@ test("the recorded first dose allows interpolation at half-equivalence without e
 	assert.equal(hasHalf(samples.slice(2), 1), false);
 	assert.equal(hasHalf(samples.slice(3), 3), false);
 });
+
+test("a large crossing gives coarse markers without filling gaps or labeling a steady drift", () => {
+	const coarse = trace([11, 3]);
+	const markers = titrationPoints(coarse, "y");
+	assert.deepEqual(markers.filter(marker => marker.coarse), [
+		{ kind: "equivalence", volume: 0.5, pH: 7, coarse: true },
+		{ kind: "half-equivalence", volume: 0.25, pH: 9, coarse: true },
+	]);
+	assert.deepEqual(titrationPoints(coarse.map(({ time, x, y }) => ({ time, x: y, y: x })), "x"), markers);
+	assert.deepEqual(titrationPoints(trace([11, null, 3]), "y"), []);
+	assert.deepEqual(titrationPoints(trace([4, 5, 6, 7, 8, 9]), "y").map(marker => marker.kind), ["neutral"]);
+});

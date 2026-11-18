@@ -178066,7 +178066,27 @@ function analyseRun(points, firstDoseTime) {
     }
     slopes.push((b5.pH - a7.pH) / (b5.volume - a7.volume));
   }
+  const endpoints = resolvedEndpoints(points, slopes);
+  if (!endpoints.length && markers.length === 1) {
+    const coarse = coarseEndpoint(points, slopes, markers[0].volume);
+    if (coarse !== void 0) endpoints.push({ volume: coarse, coarse: true });
+  }
   let lastEquivalence = points[0].volume === 0 || points[0].time === firstDoseTime ? 0 : void 0;
+  for (const endpoint of endpoints) {
+    const { volume } = endpoint;
+    markers.push({ kind: "equivalence", ...endpoint, pH: interpolate3(points, volume) });
+    if (lastEquivalence !== void 0) {
+      const half = (lastEquivalence + volume) / 2;
+      if (half >= points[0].volume) {
+        markers.push({ kind: "half-equivalence", ...endpoint, volume: half, pH: interpolate3(points, half) });
+      }
+    }
+    lastEquivalence = volume;
+  }
+  return markers;
+}
+function resolvedEndpoints(points, slopes) {
+  const endpoints = [];
   for (let first = 1; first < slopes.length - 1; first++) {
     const sign4 = Math.sign(slopes[first]);
     const height = Math.abs(slopes[first]);
@@ -178085,18 +178105,32 @@ function analyseRun(points, firstDoseTime) {
       first = last;
       continue;
     }
-    const volume = peakVolume(points, slopes, first, last);
-    markers.push({ kind: "equivalence", volume, pH: interpolate3(points, volume) });
-    if (lastEquivalence !== void 0) {
-      const half = (lastEquivalence + volume) / 2;
-      if (half >= points[0].volume) {
-        markers.push({ kind: "half-equivalence", volume: half, pH: interpolate3(points, half) });
-      }
-    }
-    lastEquivalence = volume;
+    endpoints.push({ volume: peakVolume(points, slopes, first, last) });
     first = last;
   }
-  return markers;
+  return endpoints;
+}
+function coarseEndpoint(points, slopes, neutralVolume) {
+  const direction = Math.sign(points[points.length - 1].pH - points[0].pH);
+  const change = (i11) => direction * (points[i11 + 1].pH - points[i11].pH);
+  let peak = -1;
+  for (let i11 = 0; i11 < slopes.length; i11++) {
+    if (change(i11) < -1e-6) return void 0;
+    if (change(i11) >= 0.5 && (peak < 0 || Math.abs(slopes[i11]) > Math.abs(slopes[peak]))) peak = i11;
+  }
+  if (peak < 0) return void 0;
+  const comparable = (i11) => change(i11) >= 0.5 && Math.abs(slopes[i11]) >= 0.45 * Math.abs(slopes[peak]);
+  let left = peak;
+  let right = peak;
+  while (left > 0 && comparable(left - 1)) left--;
+  while (right + 1 < slopes.length && comparable(right + 1)) right++;
+  const start = points[left];
+  const end = points[right + 1];
+  if (right - left >= 3 || Math.abs(end.pH - start.pH) < 2 || neutralVolume < start.volume || neutralVolume > end.volume) return void 0;
+  for (let i11 = left + 1; i11 <= right; i11++) {
+    if (Math.abs(points[i11].pH - 7) < 0.05) return points[i11].volume;
+  }
+  return (start.volume + end.volume) / 2;
 }
 function peakVolume(points, slopes, first, last) {
   const low = points[first].volume;
@@ -178513,6 +178547,13 @@ var DiagramController = class {
                 if (item.datasetIndex === 0) return item.formattedValue;
                 const pH = item.parsed[phAxis];
                 const volume = item.parsed[phAxis === "x" ? "y" : "x"];
+                if (item.raw.coarse) {
+                  return [
+                    item.dataset.label,
+                    `\u2248 ${Number(volume.toPrecision(3))} mL \xB7 pH ${Number(pH.toFixed(2))}`,
+                    this.host.message("Grobe Sch\xE4tzung aus wenigen Messpunkten")
+                  ];
+                }
                 return `${item.dataset.label} \xB7 ${Number(volume.toPrecision(6))} mL \xB7 pH ${Number(pH.toPrecision(5))}`;
               }
             } : void 0
@@ -178564,7 +178605,7 @@ var DiagramController = class {
         const markers = this.canSeeMarkers ? titrationPoints(points, phAxis, doseTime) : [];
         const markerKinds = [];
         titrationMarkerKinds.forEach((kind, index2) => {
-          const markerData = markers.filter((marker) => marker.kind === kind).map(({ volume, pH }) => phAxis === "y" ? { x: volume, y: pH } : { x: pH, y: volume });
+          const markerData = markers.filter((marker) => marker.kind === kind).map(({ volume, pH, coarse }) => phAxis === "y" ? { x: volume, y: pH, coarse } : { x: pH, y: volume, coarse });
           const series = chart.data.datasets[index2 + 1];
           series.label = this.host.message(titrationMarkerStyles[kind].label);
           series.data = markerData;

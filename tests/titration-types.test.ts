@@ -115,3 +115,33 @@ test("acetic acid and ammonia show half-equivalence after the 0 mL sample expire
 	assert.ok(Math.abs(half.volume - 5) < 0.02);
 	assert.ok(Math.abs(half.pH - 4.75) < 0.005);
 });
+
+for (const [stepMl, expectedHalfPh] of [[5, 4.75], [10, 4.69], [20, 4.09]]) {
+	test(`acetic acid and ammonia show coarse estimates with ${stepMl} mL doses`, t => {
+		const [receiver, titrant] = availableComponents.slice(6, 8);
+		const beaker = vessel(ComponentType.Beaker, receiver);
+		const burette = vessel(ComponentType.Burette, titrant);
+		burette.setBuretteStepMl(stepMl);
+		const host = { addController() {}, allEComponents: [] } as unknown as ConstructorParameters<typeof MeasurementRecorder>[0];
+		const recorder = new MeasurementRecorder(host);
+		recorder.record([beaker, burette]);
+		while (burette._content.contentVolume > 1e-12) {
+			const volume = burette.transferContents({}, beaker) * 1000;
+			assert.ok(volume > 0);
+			recorder.record([burette, beaker], [], { source: burette, target: beaker, volume });
+		}
+
+		const { history } = recorder;
+		const x = history.channels.find(channel => channel.quantity === "Abgegebenes Volumen");
+		const y = history.channels.find(channel => channel.component === "beaker" && channel.quantity === "pH");
+		const markers = titrationPoints(history.points(x.id, y.id), "y");
+		const equivalence = markers.find(marker => marker.kind === "equivalence");
+		const half = markers.find(marker => marker.kind === "half-equivalence");
+		t.diagnostic(`Equivalence at ${equivalence?.volume.toFixed(2)} mL, midpoint pH ${half?.pH.toFixed(2)}`);
+		assert.equal(equivalence?.coarse, true);
+		assert.equal(half?.coarse, true);
+		assert.ok(Math.abs(equivalence.volume - 10) < 0.01);
+		assert.ok(Math.abs(half.volume - 5) < 0.005);
+		assert.ok(Math.abs(half.pH - expectedHalfPh) < 0.02);
+	});
+}

@@ -17,6 +17,8 @@ type AxisDrag = {
 	domain: AxisRange;
 };
 
+type DiagramPoint = { x: number; y: number | null; coarse?: true };
+
 type Diagram = {
 	id: number;
 	x: DiagramAxis;
@@ -29,7 +31,7 @@ type Diagram = {
 	zoom: Partial<AxisRanges>;
 	trimDomain: Partial<AxisRanges>;
 	drag: Partial<Record<ChartAxis, AxisDrag>>;
-	chart?: Chart<"line", { x: number; y: number | null }[]>;
+	chart?: Chart<"line", DiagramPoint[]>;
 };
 
 const titrationMarkerStyles = {
@@ -359,7 +361,7 @@ export class DiagramController implements ReactiveController {
 				display: true, text: "",
 			},
 		});
-		return new Chart<"line", { x: number; y: number | null }[]>(canvas, {
+		return new Chart<"line", DiagramPoint[]>(canvas, {
 			type: "line",
 			plugins: [{
 				id: "axis-trim-layout",
@@ -403,6 +405,10 @@ export class DiagramController implements ReactiveController {
 								if (item.datasetIndex === 0) return item.formattedValue;
 								const pH = item.parsed[phAxis];
 								const volume = item.parsed[phAxis === "x" ? "y" : "x"];
+								if ((item.raw as DiagramPoint).coarse) {
+									return [item.dataset.label, `≈ ${Number(volume.toPrecision(3))} mL · pH ${Number(pH.toFixed(2))}`,
+										this.host.message("Grobe Schätzung aus wenigen Messpunkten")];
+								}
 								return `${item.dataset.label} · ${Number(volume.toPrecision(6))} mL · pH ${Number(pH.toPrecision(5))}`;
 							},
 						} : undefined,
@@ -459,8 +465,8 @@ export class DiagramController implements ReactiveController {
 				const markers = this.canSeeMarkers ? titrationPoints(points, phAxis, doseTime) : [];
 				const markerKinds: TitrationMarkerKind[] = [];
 				titrationMarkerKinds.forEach((kind, index) => {
-					const markerData = markers.filter(marker => marker.kind === kind).map(({ volume, pH }) =>
-						phAxis === "y" ? { x: volume, y: pH } : { x: pH, y: volume });
+					const markerData = markers.filter(marker => marker.kind === kind).map(({ volume, pH, coarse }) =>
+						phAxis === "y" ? { x: volume, y: pH, coarse } : { x: pH, y: volume, coarse });
 					const series = chart.data.datasets[index + 1];
 					series.label = this.host.message(titrationMarkerStyles[kind].label);
 					series.data = markerData;

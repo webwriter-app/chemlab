@@ -4,7 +4,8 @@ import type { PlotPoint } from "./measurementHistory";
 export const titrationMarkerKinds = ["equivalence", "neutral", "half-equivalence"] as const;
 export type TitrationMarkerKind = typeof titrationMarkerKinds[number];
 type Sample = { volume: number; pH: number };
-export type TitrationMarker = Sample & { kind: TitrationMarkerKind };
+export type TitrationMarker = Sample & { kind: TitrationMarkerKind; coarse?: true };
+type Endpoint = { volume: number; coarse?: true };
 
 /** Find observed points on increasing-volume sections of a pH titration trace. */
 export function titrationPoints(points: readonly PlotPoint[], phAxis: ChartAxis, firstDoseTime?: number): TitrationMarker[] {
@@ -39,9 +40,31 @@ function analyseRun(points: readonly (Sample & { time: number })[], firstDoseTim
 		slopes.push((b.pH - a.pH) / (b.volume - a.volume));
 	}
 
+	const endpoints = resolvedEndpoints(points, slopes);
+	if (!endpoints.length && markers.length === 1) {
+		const coarse = coarseEndpoint(points, slopes, markers[0].volume);
+		if (coarse !== undefined) endpoints.push({ volume: coarse, coarse: true });
+	}
+
+	let lastEquivalence = points[0].volume === 0 || points[0].time === firstDoseTime ? 0 : undefined;
+	for (const endpoint of endpoints) {
+		const { volume } = endpoint;
+		markers.push({ kind: "equivalence", ...endpoint, pH: interpolate(points, volume) });
+		if (lastEquivalence !== undefined) {
+			const half = (lastEquivalence + volume) / 2;
+			if (half >= points[0].volume) {
+				markers.push({ kind: "half-equivalence", ...endpoint, volume: half, pH: interpolate(points, half) });
+			}
+		}
+		lastEquivalence = volume;
+	}
+	return markers;
+}
+
+function resolvedEndpoints(points: readonly Sample[], slopes: readonly number[]): Endpoint[] {
+	const endpoints: Endpoint[] = [];
 	// Bracket each peak by lower slopes on both sides. This excludes an
 	// unfinished rise and avoids treating pH rounding noise as an endpoint.
-	let lastEquivalence = points[0].volume === 0 || points[0].time === firstDoseTime ? 0 : undefined;
 	for (let first = 1; first < slopes.length - 1; first++) {
 		const sign = Math.sign(slopes[first]);
 		const height = Math.abs(slopes[first]);
@@ -63,18 +86,39 @@ function analyseRun(points: readonly (Sample & { time: number })[], firstDoseTim
 			first = last;
 			continue;
 		}
-		const volume = peakVolume(points, slopes, first, last);
-		markers.push({ kind: "equivalence", volume, pH: interpolate(points, volume) });
-		if (lastEquivalence !== undefined) {
-			const half = (lastEquivalence + volume) / 2;
-			if (half >= points[0].volume) {
-				markers.push({ kind: "half-equivalence", volume: half, pH: interpolate(points, half) });
-			}
-		}
-		lastEquivalence = volume;
+		endpoints.push({ volume: peakVolume(points, slopes, first, last) });
 		first = last;
 	}
-	return markers;
+	return endpoints;
+}
+
+/** Estimate an unresolved transition from one to three large, adjacent steps around pH 7. */
+function coarseEndpoint(points: readonly Sample[], slopes: readonly number[], neutralVolume: number): number | undefined {
+	const direction = Math.sign(points[points.length - 1].pH - points[0].pH);
+	const change = (i: number) => direction * (points[i + 1].pH - points[i].pH);
+	let peak = -1;
+	for (let i = 0; i < slopes.length; i++) {
+		if (change(i) < -1e-6) return undefined;
+		if (change(i) >= 0.5 && (peak < 0 || Math.abs(slopes[i]) > Math.abs(slopes[peak]))) peak = i;
+	}
+	if (peak < 0) return undefined;
+
+	const comparable = (i: number) => change(i) >= 0.5 && Math.abs(slopes[i]) >= 0.45 * Math.abs(slopes[peak]);
+	let left = peak;
+	let right = peak;
+	while (left > 0 && comparable(left - 1)) left--;
+	while (right + 1 < slopes.length && comparable(right + 1)) right++;
+	const start = points[left];
+	const end = points[right + 1];
+	if (right - left >= 3 || Math.abs(end.pH - start.pH) < 2 ||
+		neutralVolume < start.volume || neutralVolume > end.volume) return undefined;
+
+	// Prefer a measured near-neutral point between steep steps. This avoids
+	// shifting the estimate by half a dose when a step already landed there.
+	for (let i = left + 1; i <= right; i++) {
+		if (Math.abs(points[i].pH - 7) < 0.05) return points[i].volume;
+	}
+	return (start.volume + end.volume) / 2;
 }
 
 function peakVolume(points: readonly Sample[], slopes: readonly number[], first: number, last: number): number {
