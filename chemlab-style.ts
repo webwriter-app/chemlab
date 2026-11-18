@@ -1282,12 +1282,19 @@ export const style = css`
 		padding: 2px;
 	}
 
+	.diagram-builder-header {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px;
+		min-inline-size: 0;
+	}
 	.diagram-section-tag {
 		justify-self: start;
 		max-inline-size: 100%;
 	}
 	.diagram-dismissed-trigger {
-		justify-self: start;
+		flex: none;
 		max-inline-size: 100%;
 		margin: 0;
 		padding: 0;
@@ -1379,6 +1386,11 @@ export const style = css`
 		justify-content: start;
 		border-color: var(--lab-card-border);
 		box-shadow: var(--canvas-control-shadow);
+	}
+	.diagram-suggestion-dismissed::part(base) {
+		border: 1px solid var(--sl-color-warning-300);
+		background: var(--sl-color-warning-50);
+		box-shadow: none;
 	}
 	.diagram-suggestion::part(label) {
 		display: grid;

@@ -69828,6 +69828,7 @@ var messages_default = {
     Diagrammvorschl\u00E4ge: "Suggested charts",
     "Diagramme ({count} Vorschl\xE4ge)": "Charts ({count} suggestions)",
     "Ausgeblendete Vorschl\xE4ge": "Dismissed suggestions",
+    Ausgeblendet: "Dismissed",
     "Diagramm w\xE4hlen": "Choose a chart",
     "Vorschlag ausblenden": "Dismiss suggestion",
     "Die ausgew\xE4hlten Objekte liefern keine Messdaten.": "The selected objects have no measurement sources.",
@@ -103825,12 +103826,19 @@ var style = i`
 		padding: 2px;
 	}
 
+	.diagram-builder-header {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px;
+		min-inline-size: 0;
+	}
 	.diagram-section-tag {
 		justify-self: start;
 		max-inline-size: 100%;
 	}
 	.diagram-dismissed-trigger {
-		justify-self: start;
+		flex: none;
 		max-inline-size: 100%;
 		margin: 0;
 		padding: 0;
@@ -103922,6 +103930,11 @@ var style = i`
 		justify-content: start;
 		border-color: var(--lab-card-border);
 		box-shadow: var(--canvas-control-shadow);
+	}
+	.diagram-suggestion-dismissed::part(base) {
+		border: 1px solid var(--sl-color-warning-300);
+		background: var(--sl-color-warning-50);
+		box-shadow: none;
 	}
 	.diagram-suggestion::part(label) {
 		display: grid;
@@ -189800,8 +189813,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     return suggestDiagrams(channels, titrations, instruments);
   }
   /** One suggestion as a button that turns it into a diagram. */
-  renderDiagramSuggestion(suggestion) {
-    return x`<sl-button class="diagram-suggestion" size="small" @click=${() => this.selectDiagramSuggestion(suggestion)}>
+  renderDiagramSuggestion(suggestion, dismissed = false) {
+    return x`<sl-button class="diagram-suggestion${dismissed ? " diagram-suggestion-dismissed" : ""}" size="small"
+			@click=${() => this.selectDiagramSuggestion(suggestion)}>
 			<span class="diagram-suggestion-title">${this.message(suggestion.title)}</span>
 			<span class="diagram-suggestion-axis"><b>Y</b> ${this.diagrams.label(suggestion.y)}</span>
 			<span class="diagram-suggestion-axis"><b>X</b> ${this.diagrams.label(suggestion.x)}</span>
@@ -189811,32 +189825,36 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const selection = this.diagramSelection;
     const title = this.message(embedded ? "Diagramm hinzuf\xFCgen" : selection.size && !pending.length && !dismissed.length ? "Achsen w\xE4hlen" : "Diagrammvorschl\xE4ge");
     const dismiss = this.message("Vorschlag ausblenden");
-    const dismissedLabel = this.message("Ausgeblendete Vorschl\xE4ge");
+    const dismissedLabel = this.message("Ausgeblendet");
     return x`<section class="diagram-builder diagram-surface ${embedded ? "diagram-builder-inline" : "diagram-builder-popup"}"
 			id=${embedded ? "diagramBuilderInline" : "diagramBuilderPopup"} aria-label=${title}>
-			<sl-tag class="diagram-section-tag" size="small" variant="primary">
-				${title}
-			</sl-tag>
-			${dismissed.length ? x`
-				<button type="button" class="diagram-dismissed-trigger" aria-expanded=${String(this.diagramDismissedOpen)}
-					aria-controls="diagramDismissedList" aria-label=${dismissedLabel} title=${dismissedLabel}
-					@click=${() => {
+			<div class="diagram-builder-header">
+				<sl-tag class="diagram-section-tag" size="small" variant="primary">
+					${title}
+				</sl-tag>
+				${dismissed.length ? x`
+					<button type="button" class="diagram-dismissed-trigger" aria-expanded=${String(this.diagramDismissedOpen)}
+						aria-controls="diagramDismissedList" aria-label=${this.message("Ausgeblendete Vorschl\xE4ge")}
+						title=${this.message("Ausgeblendete Vorschl\xE4ge")}
+						@click=${() => {
       this.diagramDismissedOpen = !this.diagramDismissedOpen;
     }}
-					@keydown=${(event) => {
+						@keydown=${(event) => {
       if (event.key !== "Escape" || !this.diagramDismissedOpen) return;
       event.stopPropagation();
       this.diagramDismissedOpen = false;
     }}>
-					<sl-tag size="small" variant="warning">${dismissedLabel}<svg class="palette-card-menu-indicator"
-						width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
-						<path d="m2.5 4.5 3.5 3 3.5-3"/>
-					</svg></sl-tag>
-				</button>
-				${this.diagramDismissedOpen ? x`
-					<div class="diagram-suggestions" id="diagramDismissedList" role="group" aria-label=${dismissedLabel}>
-						${c4(dismissed, ({ key }) => key, (suggestion) => this.renderDiagramSuggestion(suggestion))}
-					</div>` : E}` : E}
+						<sl-tag size="small" variant="warning">${dismissedLabel}<svg class="palette-card-menu-indicator"
+							width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+							<path d="m2.5 4.5 3.5 3 3.5-3"/>
+						</svg></sl-tag>
+					</button>` : E}
+			</div>
+			${dismissed.length && this.diagramDismissedOpen ? x`
+				<div class="diagram-suggestions" id="diagramDismissedList" role="group"
+					aria-label=${this.message("Ausgeblendete Vorschl\xE4ge")}>
+					${c4(dismissed, ({ key }) => key, (suggestion) => this.renderDiagramSuggestion(suggestion, true))}
+				</div>` : E}
 			${pending.length ? x`
 				<div class="diagram-suggestions">
 					${c4(pending, ({ key }) => key, (suggestion) => x`

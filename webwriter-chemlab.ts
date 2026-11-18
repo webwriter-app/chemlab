@@ -3154,8 +3154,9 @@ export class ChemLab extends LitElementWw {
 	}
 
 	/** One suggestion as a button that turns it into a diagram. */
-	private renderDiagramSuggestion(suggestion: QueuedDiagramSuggestion) {
-		return html`<sl-button class="diagram-suggestion" size="small" @click=${() => this.selectDiagramSuggestion(suggestion)}>
+	private renderDiagramSuggestion(suggestion: QueuedDiagramSuggestion, dismissed = false) {
+		return html`<sl-button class="diagram-suggestion${dismissed ? " diagram-suggestion-dismissed" : ""}" size="small"
+			@click=${() => this.selectDiagramSuggestion(suggestion)}>
 			<span class="diagram-suggestion-title">${this.message(suggestion.title)}</span>
 			<span class="diagram-suggestion-axis"><b>Y</b> ${this.diagrams.label(suggestion.y)}</span>
 			<span class="diagram-suggestion-axis"><b>X</b> ${this.diagrams.label(suggestion.x)}</span>
@@ -3168,30 +3169,34 @@ export class ChemLab extends LitElementWw {
 		const title = this.message(embedded ? "Diagramm hinzufügen" :
 			selection.size && !pending.length && !dismissed.length ? "Achsen wählen" : "Diagrammvorschläge");
 		const dismiss = this.message("Vorschlag ausblenden");
-		const dismissedLabel = this.message("Ausgeblendete Vorschläge");
+		const dismissedLabel = this.message("Ausgeblendet");
 		return html`<section class="diagram-builder diagram-surface ${embedded ? "diagram-builder-inline" : "diagram-builder-popup"}"
 			id=${embedded ? "diagramBuilderInline" : "diagramBuilderPopup"} aria-label=${title}>
-			<sl-tag class="diagram-section-tag" size="small" variant="primary">
-				${title}
-			</sl-tag>
-			${dismissed.length ? html`
-				<button type="button" class="diagram-dismissed-trigger" aria-expanded=${String(this.diagramDismissedOpen)}
-					aria-controls="diagramDismissedList" aria-label=${dismissedLabel} title=${dismissedLabel}
-					@click=${() => { this.diagramDismissedOpen = !this.diagramDismissedOpen; }}
-					@keydown=${(event: KeyboardEvent) => {
-						if (event.key !== "Escape" || !this.diagramDismissedOpen) return;
-						event.stopPropagation();
-						this.diagramDismissedOpen = false;
-					}}>
-					<sl-tag size="small" variant="warning">${dismissedLabel}<svg class="palette-card-menu-indicator"
-						width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
-						<path d="m2.5 4.5 3.5 3 3.5-3"/>
-					</svg></sl-tag>
-				</button>
-				${this.diagramDismissedOpen ? html`
-					<div class="diagram-suggestions" id="diagramDismissedList" role="group" aria-label=${dismissedLabel}>
-						${repeat(dismissed, ({ key }) => key, suggestion => this.renderDiagramSuggestion(suggestion))}
-					</div>` : nothing}` : nothing}
+			<div class="diagram-builder-header">
+				<sl-tag class="diagram-section-tag" size="small" variant="primary">
+					${title}
+				</sl-tag>
+				${dismissed.length ? html`
+					<button type="button" class="diagram-dismissed-trigger" aria-expanded=${String(this.diagramDismissedOpen)}
+						aria-controls="diagramDismissedList" aria-label=${this.message("Ausgeblendete Vorschläge")}
+						title=${this.message("Ausgeblendete Vorschläge")}
+						@click=${() => { this.diagramDismissedOpen = !this.diagramDismissedOpen; }}
+						@keydown=${(event: KeyboardEvent) => {
+							if (event.key !== "Escape" || !this.diagramDismissedOpen) return;
+							event.stopPropagation();
+							this.diagramDismissedOpen = false;
+						}}>
+						<sl-tag size="small" variant="warning">${dismissedLabel}<svg class="palette-card-menu-indicator"
+							width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+							<path d="m2.5 4.5 3.5 3 3.5-3"/>
+						</svg></sl-tag>
+					</button>` : nothing}
+			</div>
+			${dismissed.length && this.diagramDismissedOpen ? html`
+				<div class="diagram-suggestions" id="diagramDismissedList" role="group"
+					aria-label=${this.message("Ausgeblendete Vorschläge")}>
+					${repeat(dismissed, ({ key }) => key, suggestion => this.renderDiagramSuggestion(suggestion, true))}
+				</div>` : nothing}
 			${pending.length ? html`
 				<div class="diagram-suggestions">
 					${repeat(pending, ({ key }) => key, suggestion => html`
