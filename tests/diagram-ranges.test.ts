@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { diagramData, moveTrimHandle, trimmedAxisRange, TRIM_STEPS } from "../data/diagramRanges";
+import { axisTrimSelection, diagramData, moveTrimHandle, trimmedAxisRange, TRIM_STEPS } from "../data/diagramRanges";
 
 test("fit both axes to the drawable data while keeping missing readings as gaps", () => {
 	const result = diagramData([
@@ -55,4 +55,12 @@ test("the trim track maps to the current axis window for finer zoom", () => {
 	assert.ok(Math.abs(further.min - 1.097) < 1e-14);
 	assert.equal(further.max, narrowed.max);
 	assert.deepEqual(trimmedAxisRange(domain, { min: 0, max: TRIM_STEPS }), domain);
+});
+
+test("the trim handles retain their numeric interval as the live axis grows", () => {
+	const domain = { min: 0, max: 60 };
+	const zoom = { min: 15, max: 45 };
+	assert.deepEqual(axisTrimSelection(domain, zoom), { min: 2500, max: 7500 });
+	assert.deepEqual(axisTrimSelection({ min: 0, max: 120 }, zoom), { min: 1250, max: 3750 });
+	assert.deepEqual(axisTrimSelection(zoom, zoom), { min: 0, max: TRIM_STEPS });
 });

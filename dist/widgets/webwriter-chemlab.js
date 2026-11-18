@@ -69812,8 +69812,9 @@ var init_BitmapFont = __esm({
 // localization/messages.json
 var messages_default = {
   en: {
-    "X-Bereich": "X range",
-    "Y-Bereich": "Y range",
+    "X-Achse automatisch skalieren": "Reset X axis to Auto",
+    "Y-Achse automatisch skalieren": "Reset Y axis to Auto",
+    "Doppelklick f\xFCr feinere Bereichsauswahl": "Double-click for finer trimming",
     "Untere Grenze": "Lower bound",
     "Obere Grenze": "Upper bound",
     Automatisch: "Auto",
@@ -103939,86 +103940,134 @@ var style = i`
 		color: var(--lab-card-text);
 		box-shadow: var(--lab-card-shadow);
 	}
-	.diagram-range-buttons {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px;
-	}
-	.diagram-range-buttons sl-button::part(label) {
-		padding-inline: 5px;
-		white-space: normal;
-	}
-	.diagram-range-editor {
-		display: grid;
-		min-inline-size: 0;
-		gap: 6px;
-		padding: 5px;
-		border: 1px solid var(--lab-card-border);
-		border-radius: var(--sl-border-radius-medium);
-		background: var(--lab-card-inset);
-	}
 	.diagram-trim-track {
-		position: relative;
-		block-size: 28px;
-		margin-inline: 12px;
+		position: absolute;
+	}
+	.diagram-trim-track-x {
+		left: var(--plot-left);
+		right: var(--plot-right);
+		bottom: 2px;
+		height: 20px;
+	}
+	.diagram-trim-track-y {
+		top: var(--plot-top);
+		bottom: var(--plot-bottom);
+		left: 2px;
+		width: 20px;
 	}
 	.diagram-trim-rail,
 	.diagram-trim-window {
 		position: absolute;
-		inset-block: 5px;
-		pointer-events: none;
 	}
 	.diagram-trim-rail {
-		inset-inline: 0;
 		border-radius: var(--sl-border-radius-small);
 		background: var(--sl-color-neutral-200);
+		pointer-events: none;
 	}
 	.diagram-trim-window {
-		inset-inline: var(--trim-min) calc(100% - var(--trim-max));
-		border-block: 1px solid var(--sl-color-primary-600);
 		background: var(--sl-color-primary-100);
+	}
+	.diagram-trim-track-x :is(.diagram-trim-rail, .diagram-trim-window) {
+		top: 4px;
+		bottom: 4px;
+	}
+	.diagram-trim-track-x .diagram-trim-rail {
+		left: 0;
+		right: 0;
+	}
+	.diagram-trim-track-x .diagram-trim-window {
+		left: var(--trim-min);
+		right: calc(100% - var(--trim-max));
+		border-block: 1px solid var(--sl-color-primary-600);
+	}
+	.diagram-trim-track-y :is(.diagram-trim-rail, .diagram-trim-window) {
+		left: 4px;
+		right: 4px;
+	}
+	.diagram-trim-track-y .diagram-trim-rail {
+		top: 0;
+		bottom: 0;
+	}
+	.diagram-trim-track-y .diagram-trim-window {
+		top: calc(100% - var(--trim-max));
+		bottom: var(--trim-min);
+		border-inline: 1px solid var(--sl-color-primary-600);
 	}
 	.diagram-trim-handle {
 		position: absolute;
-		inset-block: 1px;
-		inline-size: 12px;
 		padding: 0;
 		border: 1px solid var(--sl-color-primary-700);
 		border-radius: var(--sl-border-radius-small);
 		background: var(--sl-color-primary-600);
 		color: var(--sl-color-neutral-0);
-		cursor: ew-resize;
 		touch-action: none;
 		user-select: none;
 	}
 	.diagram-trim-handle::after {
 		content: "";
 		position: absolute;
-		inset: 7px 3px;
+	}
+	.diagram-trim-track-x .diagram-trim-handle {
+		top: 0;
+		bottom: 0;
+		width: 10px;
+		cursor: ew-resize;
+	}
+	.diagram-trim-track-x .diagram-trim-handle::after {
+		inset: 5px 2px;
 		border-inline: 1px solid currentColor;
 	}
-	.diagram-trim-min {
-		inset-inline-end: calc(100% - var(--trim-min));
+	.diagram-trim-track-x .diagram-trim-min {
+		right: calc(100% - var(--trim-min));
 	}
-	.diagram-trim-max {
-		inset-inline-start: var(--trim-max);
+	.diagram-trim-track-x .diagram-trim-max {
+		left: var(--trim-max);
+	}
+	.diagram-trim-track-y .diagram-trim-handle {
+		left: 0;
+		right: 0;
+		height: 10px;
+		cursor: ns-resize;
+	}
+	.diagram-trim-track-y .diagram-trim-handle::after {
+		inset: 2px 5px;
+		border-block: 1px solid currentColor;
+	}
+	.diagram-trim-track-y .diagram-trim-min {
+		top: calc(100% - var(--trim-min));
+	}
+	.diagram-trim-track-y .diagram-trim-max {
+		bottom: var(--trim-max);
 	}
 	.diagram-trim-handle:focus-visible {
 		outline: 2px solid var(--sl-color-primary-800);
 		outline-offset: 2px;
 		z-index: 1;
 	}
-	.diagram-trim-footer {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 4px;
-		font-size: var(--sl-font-size-x-small);
-		font-variant-numeric: tabular-nums;
+	.diagram-axis-reset {
+		position: absolute;
+		left: 2px;
+		display: grid;
+		place-items: center;
+		width: 24px;
+		height: 20px;
+		padding: 0;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-surface);
+		color: var(--sl-color-primary-800);
+		cursor: pointer;
+		font: 600 10px var(--sl-font-sans);
+		white-space: nowrap;
 	}
-	.diagram-trim-footer span {
-		overflow-wrap: anywhere;
+	.diagram-axis-reset:disabled {
+		visibility: hidden;
+	}
+	.diagram-axis-reset-x {
+		bottom: 2px;
+	}
+	.diagram-axis-reset-y {
+		bottom: 24px;
 	}
 
 	.diagram-sources {
@@ -104045,7 +104094,7 @@ var style = i`
 	}
 	.diagram-plot {
 		position: relative;
-		block-size: 230px;
+		block-size: 250px;
 		min-inline-size: 0;
 		border: 1px solid var(--lab-card-border);
 		border-radius: var(--sl-border-radius-medium);
@@ -177557,6 +177606,13 @@ function moveTrimHandle(selection, handle, position) {
   const step = Math.round(position);
   return handle === "min" ? { min: Math.max(0, Math.min(selection.max - 1, step)), max: selection.max } : { min: selection.min, max: Math.min(TRIM_STEPS, Math.max(selection.min + 1, step)) };
 }
+function axisTrimSelection(domain, range) {
+  const position = (value) => Math.max(0, Math.min(
+    TRIM_STEPS,
+    (value - domain.min) / (domain.max - domain.min) * TRIM_STEPS
+  ));
+  return { min: position(range.min), max: position(range.max) };
+}
 function trimmedAxisRange(domain, selection) {
   const span = domain.max - domain.min;
   const valueAt = (step) => step === 0 ? domain.min : step === TRIM_STEPS ? domain.max : domain.min + span * (step / TRIM_STEPS);
@@ -177937,6 +177993,7 @@ var DiagramController = class {
     for (const diagram of this.diagrams) {
       diagram.chart?.destroy();
       diagram.chart = void 0;
+      diagram.drag = {};
     }
     this.dirty = true;
   }
@@ -177969,7 +178026,7 @@ var DiagramController = class {
     const history = this.host.measurements.history;
     history.prune();
     history.retain(axisId(x4), axisId(y5));
-    this.diagrams.push({ id: id3, x: x4, y: y5, title, card: e13(), canvas: e13(), zoom: {} });
+    this.diagrams.push({ id: id3, x: x4, y: y5, title, card: e13(), canvas: e13(), zoom: {}, trimDomain: {}, drag: {} });
     this.host.requestUpdate();
     this.host.reportXApi("created", "diagram-" + id3);
     this.invalidate();
@@ -178009,72 +178066,77 @@ var DiagramController = class {
 						</div>
 						<div class="diagram-plot">
 							<canvas role="img" aria-label=${`${title} \xB7 Y: ${y5} \xB7 X: ${x4}`} ${n9(diagram.canvas)}></canvas>
+							${diagram.fitted ? x`${this.renderTrimTrack(diagram, "x")}${this.renderTrimTrack(diagram, "y")}` : E}
 						</div>
-						${this.renderRangeControls(diagram)}
 						${this.renderSources(diagram)}
 					</section>`;
     })}
 		</div>`;
   }
-  renderRangeControls(diagram) {
+  renderTrimTrack(diagram, axis) {
     const message = this.host.message;
-    const editor = diagram.editor;
-    const edit = (axis) => {
-      const initialZoom = diagram.zoom[axis];
-      const domain = initialZoom ?? diagram.fitted?.[axis];
-      diagram.editor = domain && editor?.axis !== axis ? { axis, domain, initialZoom, selection: { min: 0, max: TRIM_STEPS } } : void 0;
-      this.host.requestUpdate();
-    };
-    return x`
-			<div class="diagram-range-buttons">
-				${["x", "y"].map((axis) => x`
-					<sl-button size="small" ?disabled=${!diagram.fitted}
-						variant=${diagram.zoom[axis] ? "primary" : "default"}
-						aria-expanded=${String(editor?.axis === axis)}
-						@click=${() => edit(axis)}>${message(axis === "x" ? "X-Bereich" : "Y-Bereich")}</sl-button>`)}
-			</div>
-			${editor ? i6(editor, this.renderTrimTrack(diagram, editor)) : E}`;
-  }
-  renderTrimTrack(diagram, editor) {
-    const message = this.host.message;
-    const { axis, selection, domain } = editor;
-    const range = trimmedAxisRange(domain, selection);
+    const horizontal = axis === "x";
+    const full = diagram.fitted[axis];
+    const domain = diagram.drag[axis]?.domain ?? diagram.trimDomain[axis] ?? full;
+    const range = diagram.zoom[axis] ?? full;
+    const selection = axisTrimSelection(domain, range);
     const digits2 = Math.min(17, Math.max(4, Math.ceil(Math.log10(
       Math.max(Math.abs(range.min), Math.abs(range.max)) / (range.max - range.min)
     )) + 3));
     const format = new Intl.NumberFormat(this.host.lang || void 0, { maximumSignificantDigits: digits2, useGrouping: false });
     const percent = (step) => step / TRIM_STEPS * 100 + "%";
+    const axisLabel = message(horizontal ? "X-Achse" : "Y-Achse");
     const move = (handle, position) => {
-      const next = moveTrimHandle(editor.selection, handle, position);
-      if (next.min === editor.selection.min && next.max === editor.selection.max) return;
-      const selected = trimmedAxisRange(domain, next);
-      if (!(selected.min < selected.max)) return;
-      editor.selection = next;
-      diagram.zoom[axis] = next.min === 0 && next.max === TRIM_STEPS ? editor.initialZoom : selected;
+      const currentFull = diagram.fitted?.[axis] ?? full;
+      const currentDomain = diagram.drag[axis]?.domain ?? diagram.trimDomain[axis] ?? currentFull;
+      const current = diagram.zoom[axis] ?? diagram.drag[axis]?.domain ?? currentFull;
+      const next = moveTrimHandle(axisTrimSelection(currentDomain, current), handle, position);
+      const value = trimmedAxisRange(currentDomain, next)[handle];
+      if (value === current[handle]) return;
+      const zoom = { ...current, [handle]: value };
+      if (!(zoom.min < zoom.max)) return;
+      diagram.zoom[axis] = zoom.min === currentFull.min && zoom.max === currentFull.max ? void 0 : zoom;
       this.host.requestUpdate();
       this.invalidate();
     };
+    const pointerPosition = (event) => horizontal ? event.clientX : -event.clientY;
     const renderHandle = (handle) => x`
 			<button type="button" role="slider" class="diagram-trim-handle diagram-trim-${handle}"
-				aria-label=${message(handle === "min" ? "Untere Grenze" : "Obere Grenze")}
-				aria-valuemin=${handle === "min" ? domain.min : trimmedAxisRange(domain, { min: selection.min, max: selection.min + 1 }).max}
-				aria-valuemax=${handle === "max" ? domain.max : trimmedAxisRange(domain, { min: selection.max - 1, max: selection.max }).min}
+				aria-label=${`${axisLabel} \xB7 ${message(handle === "min" ? "Untere Grenze" : "Obere Grenze")}`}
+				aria-orientation=${horizontal ? "horizontal" : "vertical"}
+				aria-valuemin=${handle === "min" ? domain.min : range.min}
+				aria-valuemax=${handle === "max" ? domain.max : range.max}
 				aria-valuenow=${range[handle]} aria-valuetext=${format.format(range[handle])}
+				title=${format.format(range[handle])}
+				@pointerenter=${() => this.host.requestUpdate()}
+				@focus=${() => this.host.requestUpdate()}
 				@pointerdown=${(event) => {
-      if (event.button !== 0 || editor.drag) return;
+      if (event.button !== 0 || diagram.drag[axis]) return;
       const button = event.currentTarget;
-      const pixels = button.parentElement.getBoundingClientRect().width;
+      const rect = button.parentElement.getBoundingClientRect();
+      const pixels = horizontal ? rect.width : rect.height;
       if (!pixels) return;
-      editor.drag = { pointer: event.pointerId, startX: event.clientX, startStep: editor.selection[handle], pixels };
+      const currentFull = diagram.fitted?.[axis] ?? full;
+      const currentDomain = diagram.trimDomain[axis] ?? currentFull;
+      const startStep = axisTrimSelection(currentDomain, diagram.zoom[axis] ?? currentFull)[handle];
+      diagram.drag[axis] = {
+        pointer: event.pointerId,
+        startPixel: pointerPosition(event),
+        startStep,
+        pixels,
+        domain: currentDomain
+      };
       button.setPointerCapture(event.pointerId);
     }}
 				@pointermove=${(event) => {
-      const drag = editor.drag;
+      const drag = diagram.drag[axis];
       if (drag?.pointer !== event.pointerId) return;
-      move(handle, drag.startStep + (event.clientX - drag.startX) * TRIM_STEPS / drag.pixels);
+      move(handle, drag.startStep + (pointerPosition(event) - drag.startPixel) * TRIM_STEPS / drag.pixels);
     }}
 				@lostpointercapture=${(event) => {
-      if (editor.drag?.pointer === event.pointerId) editor.drag = void 0;
+      if (diagram.drag[axis]?.pointer !== event.pointerId) return;
+      delete diagram.drag[axis];
+      this.host.requestUpdate();
     }}
 				@keydown=${(event) => {
       const step = TRIM_STEPS / (event.shiftKey ? 1e3 : 100);
@@ -178082,11 +178144,11 @@ var DiagramController = class {
       switch (event.key) {
         case "ArrowLeft":
         case "ArrowDown":
-          position = editor.selection[handle] - step;
+          position = selection[handle] - step;
           break;
         case "ArrowRight":
         case "ArrowUp":
-          position = editor.selection[handle] + step;
+          position = selection[handle] + step;
           break;
         case "Home":
           position = 0;
@@ -178100,27 +178162,26 @@ var DiagramController = class {
       event.preventDefault();
       move(handle, position);
     }}></button>`;
+    const reset = message(horizontal ? "X-Achse automatisch skalieren" : "Y-Achse automatisch skalieren");
     return x`
-			<div class="diagram-range-editor" role="group" aria-label=${message(axis === "x" ? "X-Bereich" : "Y-Bereich")}>
-				<div class="diagram-trim-track" dir="ltr" style=${`--trim-min:${percent(selection.min)};--trim-max:${percent(selection.max)}`}>
-					<div class="diagram-trim-rail"></div>
-					<div class="diagram-trim-window"></div>
-					${renderHandle("min")}${renderHandle("max")}
-				</div>
-				<div class="diagram-trim-footer">
-					<span dir="ltr">${format.format(range.min)} – ${format.format(range.max)}</span>
-					<sl-button size="small" ?disabled=${!diagram.zoom[axis]} @click=${() => {
-      diagram.zoom[axis] = void 0;
-      if (diagram.fitted) {
-        editor.domain = diagram.fitted[axis];
-        editor.initialZoom = void 0;
-        editor.selection = { min: 0, max: TRIM_STEPS };
-      }
+			<div class="diagram-trim-track diagram-trim-track-${axis}" role="group" aria-label=${axisLabel}
+				style=${`--trim-min:${percent(selection.min)};--trim-max:${percent(selection.max)}`}>
+				<div class="diagram-trim-rail"></div>
+				<div class="diagram-trim-window" title=${message("Doppelklick f\xFCr feinere Bereichsauswahl")}
+					@dblclick=${() => {
+      if (!diagram.zoom[axis]) return;
+      diagram.trimDomain[axis] = diagram.zoom[axis];
+      this.host.requestUpdate();
+    }}></div>
+				${renderHandle("min")}${renderHandle("max")}
+			</div>
+			<button type="button" class="diagram-axis-reset diagram-axis-reset-${axis}" aria-label=${reset} title=${reset}
+				?disabled=${!diagram.zoom[axis]} @click=${() => {
+      delete diagram.zoom[axis];
+      delete diagram.trimDomain[axis];
       this.host.requestUpdate();
       this.invalidate();
-    }}>${message("Automatisch")}</sl-button>
-				</div>
-			</div>`;
+    }}>${axis.toUpperCase()} ↺</button>`;
   }
   renderSources({ x: x4, y: y5 }) {
     const sources2 = /* @__PURE__ */ new Map();
@@ -178172,6 +178233,17 @@ var DiagramController = class {
     });
     return new auto_default(canvas, {
       type: "line",
+      plugins: [{
+        id: "axis-trim-layout",
+        afterLayout(chart) {
+          const { left, right, top, bottom } = chart.chartArea;
+          const plot = canvas.parentElement;
+          plot.style.setProperty("--plot-left", `${left}px`);
+          plot.style.setProperty("--plot-right", `${chart.width - right}px`);
+          plot.style.setProperty("--plot-top", `${top}px`);
+          plot.style.setProperty("--plot-bottom", `${chart.height - bottom}px`);
+        }
+      }],
       data: { datasets: [{
         data: [],
         borderColor: accent,
@@ -178186,7 +178258,7 @@ var DiagramController = class {
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
-        layout: { padding: 4 },
+        layout: { padding: { top: 13, right: 13, bottom: 24, left: 24 } },
         interaction: { mode: "nearest", intersect: false },
         plugins: {
           legend: { display: false },
@@ -178227,8 +178299,11 @@ var DiagramController = class {
       const chart = diagram.chart ??= this.createChart(canvas.value, card.value);
       const points = this.host.measurements.history.points(axisId(diagram.x), axisId(diagram.y));
       const { data: data2, ranges } = diagramData(points);
-      if (Boolean(ranges) !== Boolean(diagram.fitted)) this.host.requestUpdate();
+      const previous = diagram.fitted;
       diagram.fitted = ranges;
+      if (Boolean(previous) !== Boolean(ranges) || ranges && previous && ["x", "y"].some((axis) => diagram.zoom[axis] && !diagram.trimDomain[axis] && !diagram.drag[axis] && (ranges[axis].min !== previous[axis].min || ranges[axis].max !== previous[axis].max))) {
+        this.host.requestUpdate();
+      }
       const dataset = chart.data.datasets[0];
       dataset.data = data2;
       dataset.showLine = this.showLine;

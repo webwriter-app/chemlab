@@ -1,20 +1,19 @@
 import { html, nothing, type ReactiveController } from "lit";
 import { createRef, ref, type Ref } from "lit/directives/ref.js";
-import { keyed } from "lit/directives/keyed.js";
 import { repeat } from "lit/directives/repeat.js";
 import Chart from "chart.js/auto";
-import { diagramData, moveTrimHandle, trimmedAxisRange, TRIM_STEPS,
+import { axisTrimSelection, diagramData, moveTrimHandle, trimmedAxisRange, TRIM_STEPS,
 	type AxisRange, type AxisRanges, type ChartAxis, type TrimHandle } from "../data/diagramRanges";
 import { TIME_CHANNEL, type MeasurementChannel } from "../data/measurementHistory";
 import { axisId, componentKey, type DiagramAxis } from "../data/diagramSources";
 import type { ChemLab } from "../webwriter-chemlab";
 
-type RangeEditor = {
-	axis: ChartAxis;
+type AxisDrag = {
+	pointer: number;
+	startPixel: number;
+	startStep: number;
+	pixels: number;
 	domain: AxisRange;
-	selection: AxisRange;
-	initialZoom?: AxisRange;
-	drag?: { pointer: number; startX: number; startStep: number; pixels: number };
 };
 
 type Diagram = {
@@ -26,7 +25,8 @@ type Diagram = {
 	canvas: Ref<HTMLCanvasElement>;
 	fitted?: AxisRanges;
 	zoom: Partial<AxisRanges>;
-	editor?: RangeEditor;
+	trimDomain: Partial<AxisRanges>;
+	drag: Partial<Record<ChartAxis, AxisDrag>>;
 	chart?: Chart<"line", { x: number; y: number | null }[]>;
 };
 
@@ -88,6 +88,7 @@ export class DiagramController implements ReactiveController {
 		for (const diagram of this.diagrams) {
 			diagram.chart?.destroy();
 			diagram.chart = undefined;
+			diagram.drag = {};
 		}
 		this.dirty = true;
 	}
@@ -127,7 +128,7 @@ export class DiagramController implements ReactiveController {
 		const history = this.host.measurements.history;
 		history.prune();
 		history.retain(axisId(x), axisId(y));
-		this.diagrams.push({ id, x, y, title, card: createRef(), canvas: createRef(), zoom: {} });
+		this.diagrams.push({ id, x, y, title, card: createRef(), canvas: createRef(), zoom: {}, trimDomain: {}, drag: {} });
 		this.host.requestUpdate();
 		this.host.reportXApi("created", "diagram-" + id);
 		this.invalidate();
@@ -169,84 +170,81 @@ export class DiagramController implements ReactiveController {
 						</div>
 						<div class="diagram-plot">
 							<canvas role="img" aria-label=${`${title} · Y: ${y} · X: ${x}`} ${ref(diagram.canvas)}></canvas>
+							${diagram.fitted ? html`${this.renderTrimTrack(diagram, "x")}${this.renderTrimTrack(diagram, "y")}` : nothing}
 						</div>
-						${this.renderRangeControls(diagram)}
 						${this.renderSources(diagram)}
 					</section>`;
 			})}
 		</div>`;
 	}
 
-	private renderRangeControls(diagram: Diagram) {
+	private renderTrimTrack(diagram: Diagram, axis: ChartAxis) {
 		const message = this.host.message;
-		const editor = diagram.editor;
-		const edit = (axis: ChartAxis) => {
-			const initialZoom = diagram.zoom[axis];
-			const domain = initialZoom ?? diagram.fitted?.[axis];
-			diagram.editor = domain && editor?.axis !== axis
-				? { axis, domain, initialZoom, selection: { min: 0, max: TRIM_STEPS } }
-				: undefined;
-			this.host.requestUpdate();
-		};
-		return html`
-			<div class="diagram-range-buttons">
-				${(["x", "y"] as const).map(axis => html`
-					<sl-button size="small" ?disabled=${!diagram.fitted}
-						variant=${diagram.zoom[axis] ? "primary" : "default"}
-						aria-expanded=${String(editor?.axis === axis)}
-						@click=${() => edit(axis)}>${message(axis === "x" ? "X-Bereich" : "Y-Bereich")}</sl-button>`)}
-			</div>
-			${editor ? keyed(editor, this.renderTrimTrack(diagram, editor)) : nothing}`;
-	}
-
-	private renderTrimTrack(diagram: Diagram, editor: RangeEditor) {
-		const message = this.host.message;
-		const { axis, selection, domain } = editor;
-		const range = trimmedAxisRange(domain, selection);
+		const horizontal = axis === "x";
+		const full = diagram.fitted[axis];
+		const domain = diagram.drag[axis]?.domain ?? diagram.trimDomain[axis] ?? full;
+		const range = diagram.zoom[axis] ?? full;
+		const selection = axisTrimSelection(domain, range);
 		const digits = Math.min(17, Math.max(4, Math.ceil(Math.log10(
 			Math.max(Math.abs(range.min), Math.abs(range.max)) / (range.max - range.min))) + 3));
 		const format = new Intl.NumberFormat(this.host.lang || undefined, { maximumSignificantDigits: digits, useGrouping: false });
 		const percent = (step: number) => step / TRIM_STEPS * 100 + "%";
+		const axisLabel = message(horizontal ? "X-Achse" : "Y-Achse");
 		const move = (handle: TrimHandle, position: number) => {
-			const next = moveTrimHandle(editor.selection, handle, position);
-			if (next.min === editor.selection.min && next.max === editor.selection.max) return;
-			const selected = trimmedAxisRange(domain, next);
-			if (!(selected.min < selected.max)) return;
-			editor.selection = next;
-			diagram.zoom[axis] = next.min === 0 && next.max === TRIM_STEPS ? editor.initialZoom : selected;
+			const currentFull = diagram.fitted?.[axis] ?? full;
+			const currentDomain = diagram.drag[axis]?.domain ?? diagram.trimDomain[axis] ?? currentFull;
+			const current = diagram.zoom[axis] ?? diagram.drag[axis]?.domain ?? currentFull;
+			const next = moveTrimHandle(axisTrimSelection(currentDomain, current), handle, position);
+			const value = trimmedAxisRange(currentDomain, next)[handle];
+			if (value === current[handle]) return;
+			const zoom = { ...current, [handle]: value };
+			if (!(zoom.min < zoom.max)) return;
+			diagram.zoom[axis] = zoom.min === currentFull.min && zoom.max === currentFull.max ? undefined : zoom;
 			this.host.requestUpdate();
 			this.invalidate();
 		};
+		const pointerPosition = (event: PointerEvent) => horizontal ? event.clientX : -event.clientY;
 		const renderHandle = (handle: TrimHandle) => html`
 			<button type="button" role="slider" class="diagram-trim-handle diagram-trim-${handle}"
-				aria-label=${message(handle === "min" ? "Untere Grenze" : "Obere Grenze")}
-				aria-valuemin=${handle === "min" ? domain.min : trimmedAxisRange(domain, { min: selection.min, max: selection.min + 1 }).max}
-				aria-valuemax=${handle === "max" ? domain.max : trimmedAxisRange(domain, { min: selection.max - 1, max: selection.max }).min}
+				aria-label=${`${axisLabel} · ${message(handle === "min" ? "Untere Grenze" : "Obere Grenze")}`}
+				aria-orientation=${horizontal ? "horizontal" : "vertical"}
+				aria-valuemin=${handle === "min" ? domain.min : range.min}
+				aria-valuemax=${handle === "max" ? domain.max : range.max}
 				aria-valuenow=${range[handle]} aria-valuetext=${format.format(range[handle])}
+				title=${format.format(range[handle])}
+				@pointerenter=${() => this.host.requestUpdate()}
+				@focus=${() => this.host.requestUpdate()}
 				@pointerdown=${(event: PointerEvent) => {
-					if (event.button !== 0 || editor.drag) return;
+					if (event.button !== 0 || diagram.drag[axis]) return;
 					const button = event.currentTarget as HTMLButtonElement;
-					const pixels = button.parentElement.getBoundingClientRect().width;
+					const rect = button.parentElement.getBoundingClientRect();
+					const pixels = horizontal ? rect.width : rect.height;
 					if (!pixels) return;
-					editor.drag = { pointer: event.pointerId, startX: event.clientX, startStep: editor.selection[handle], pixels };
+					const currentFull = diagram.fitted?.[axis] ?? full;
+					const currentDomain = diagram.trimDomain[axis] ?? currentFull;
+					const startStep = axisTrimSelection(currentDomain, diagram.zoom[axis] ?? currentFull)[handle];
+					diagram.drag[axis] = { pointer: event.pointerId, startPixel: pointerPosition(event),
+						startStep, pixels, domain: currentDomain };
 					button.setPointerCapture(event.pointerId);
 				}}
 				@pointermove=${(event: PointerEvent) => {
-					const drag = editor.drag;
+					const drag = diagram.drag[axis];
 					if (drag?.pointer !== event.pointerId) return;
-					move(handle, drag.startStep + (event.clientX - drag.startX) * TRIM_STEPS / drag.pixels);
+					move(handle, drag.startStep + (pointerPosition(event) - drag.startPixel) * TRIM_STEPS / drag.pixels);
 				}}
 				@lostpointercapture=${(event: PointerEvent) => {
-					if (editor.drag?.pointer === event.pointerId) editor.drag = undefined;
+					if (diagram.drag[axis]?.pointer !== event.pointerId) return;
+					delete diagram.drag[axis];
+					this.host.requestUpdate();
 				}}
 				@keydown=${(event: KeyboardEvent) => {
 					const step = TRIM_STEPS / (event.shiftKey ? 1000 : 100);
 					let position: number;
 					switch (event.key) {
 						case "ArrowLeft":
-						case "ArrowDown": position = editor.selection[handle] - step; break;
+						case "ArrowDown": position = selection[handle] - step; break;
 						case "ArrowRight":
-						case "ArrowUp": position = editor.selection[handle] + step; break;
+						case "ArrowUp": position = selection[handle] + step; break;
 						case "Home": position = 0; break;
 						case "End": position = TRIM_STEPS; break;
 						default: return;
@@ -254,27 +252,26 @@ export class DiagramController implements ReactiveController {
 					event.preventDefault();
 					move(handle, position);
 				}}></button>`;
+		const reset = message(horizontal ? "X-Achse automatisch skalieren" : "Y-Achse automatisch skalieren");
 		return html`
-			<div class="diagram-range-editor" role="group" aria-label=${message(axis === "x" ? "X-Bereich" : "Y-Bereich")}>
-				<div class="diagram-trim-track" dir="ltr" style=${`--trim-min:${percent(selection.min)};--trim-max:${percent(selection.max)}`}>
-					<div class="diagram-trim-rail"></div>
-					<div class="diagram-trim-window"></div>
-					${renderHandle("min")}${renderHandle("max")}
-				</div>
-				<div class="diagram-trim-footer">
-					<span dir="ltr">${format.format(range.min)} – ${format.format(range.max)}</span>
-					<sl-button size="small" ?disabled=${!diagram.zoom[axis]} @click=${() => {
-						diagram.zoom[axis] = undefined;
-						if (diagram.fitted) {
-							editor.domain = diagram.fitted[axis];
-							editor.initialZoom = undefined;
-							editor.selection = { min: 0, max: TRIM_STEPS };
-						}
+			<div class="diagram-trim-track diagram-trim-track-${axis}" role="group" aria-label=${axisLabel}
+				style=${`--trim-min:${percent(selection.min)};--trim-max:${percent(selection.max)}`}>
+				<div class="diagram-trim-rail"></div>
+				<div class="diagram-trim-window" title=${message("Doppelklick für feinere Bereichsauswahl")}
+					@dblclick=${() => {
+						if (!diagram.zoom[axis]) return;
+						diagram.trimDomain[axis] = diagram.zoom[axis];
 						this.host.requestUpdate();
-						this.invalidate();
-					}}>${message("Automatisch")}</sl-button>
-				</div>
-			</div>`;
+					}}></div>
+				${renderHandle("min")}${renderHandle("max")}
+			</div>
+			<button type="button" class="diagram-axis-reset diagram-axis-reset-${axis}" aria-label=${reset} title=${reset}
+				?disabled=${!diagram.zoom[axis]} @click=${() => {
+					delete diagram.zoom[axis];
+					delete diagram.trimDomain[axis];
+					this.host.requestUpdate();
+					this.invalidate();
+				}}>${axis.toUpperCase()} ↺</button>`;
 	}
 
 	private renderSources({ x, y }: Diagram) {
@@ -329,6 +326,17 @@ export class DiagramController implements ReactiveController {
 		});
 		return new Chart<"line", { x: number; y: number | null }[]>(canvas, {
 			type: "line",
+			plugins: [{
+				id: "axis-trim-layout",
+				afterLayout(chart) {
+					const { left, right, top, bottom } = chart.chartArea;
+					const plot = canvas.parentElement;
+					plot.style.setProperty("--plot-left", `${left}px`);
+					plot.style.setProperty("--plot-right", `${chart.width - right}px`);
+					plot.style.setProperty("--plot-top", `${top}px`);
+					plot.style.setProperty("--plot-bottom", `${chart.height - bottom}px`);
+				},
+			}],
 			data: { datasets: [{
 				data: [], borderColor: accent, backgroundColor: accent, borderWidth: 1.6,
 				pointRadius: 1.5, pointHoverRadius: 4, pointHitRadius: 4, spanGaps: false,
@@ -337,7 +345,7 @@ export class DiagramController implements ReactiveController {
 				responsive: true,
 				maintainAspectRatio: false,
 				animation: false,
-				layout: { padding: 4 },
+				layout: { padding: { top: 13, right: 13, bottom: 24, left: 24 } },
 				interaction: { mode: "nearest", intersect: false },
 				plugins: {
 					legend: { display: false },
@@ -374,8 +382,13 @@ export class DiagramController implements ReactiveController {
 			const chart = diagram.chart ??= this.createChart(canvas.value, card.value);
 			const points = this.host.measurements.history.points(axisId(diagram.x), axisId(diagram.y));
 			const { data, ranges } = diagramData(points);
-			if (Boolean(ranges) !== Boolean(diagram.fitted)) this.host.requestUpdate();
+			const previous = diagram.fitted;
 			diagram.fitted = ranges;
+			if (Boolean(previous) !== Boolean(ranges) || (ranges && previous &&
+				(["x", "y"] as const).some(axis => diagram.zoom[axis] && !diagram.trimDomain[axis] && !diagram.drag[axis] &&
+					(ranges[axis].min !== previous[axis].min || ranges[axis].max !== previous[axis].max)))) {
+				this.host.requestUpdate();
+			}
 			const dataset = chart.data.datasets[0];
 			dataset.data = data;
 			dataset.showLine = this.showLine;

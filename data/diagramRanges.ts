@@ -14,6 +14,12 @@ export function moveTrimHandle(selection: AxisRange, handle: TrimHandle, positio
 		: { min: selection.min, max: Math.min(TRIM_STEPS, Math.max(selection.min + 1, step)) };
 }
 
+export function axisTrimSelection(domain: AxisRange, range: AxisRange): AxisRange {
+	const position = (value: number) => Math.max(0, Math.min(TRIM_STEPS,
+		(value - domain.min) / (domain.max - domain.min) * TRIM_STEPS));
+	return { min: position(range.min), max: position(range.max) };
+}
+
 export function trimmedAxisRange(domain: AxisRange, selection: AxisRange): AxisRange {
 	const span = domain.max - domain.min;
 	const valueAt = (step: number) => step === 0 ? domain.min : step === TRIM_STEPS ? domain.max :

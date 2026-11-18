@@ -1406,86 +1406,134 @@ export const style = css`
 		color: var(--lab-card-text);
 		box-shadow: var(--lab-card-shadow);
 	}
-	.diagram-range-buttons {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px;
-	}
-	.diagram-range-buttons sl-button::part(label) {
-		padding-inline: 5px;
-		white-space: normal;
-	}
-	.diagram-range-editor {
-		display: grid;
-		min-inline-size: 0;
-		gap: 6px;
-		padding: 5px;
-		border: 1px solid var(--lab-card-border);
-		border-radius: var(--sl-border-radius-medium);
-		background: var(--lab-card-inset);
-	}
 	.diagram-trim-track {
-		position: relative;
-		block-size: 28px;
-		margin-inline: 12px;
+		position: absolute;
+	}
+	.diagram-trim-track-x {
+		left: var(--plot-left);
+		right: var(--plot-right);
+		bottom: 2px;
+		height: 20px;
+	}
+	.diagram-trim-track-y {
+		top: var(--plot-top);
+		bottom: var(--plot-bottom);
+		left: 2px;
+		width: 20px;
 	}
 	.diagram-trim-rail,
 	.diagram-trim-window {
 		position: absolute;
-		inset-block: 5px;
-		pointer-events: none;
 	}
 	.diagram-trim-rail {
-		inset-inline: 0;
 		border-radius: var(--sl-border-radius-small);
 		background: var(--sl-color-neutral-200);
+		pointer-events: none;
 	}
 	.diagram-trim-window {
-		inset-inline: var(--trim-min) calc(100% - var(--trim-max));
-		border-block: 1px solid var(--sl-color-primary-600);
 		background: var(--sl-color-primary-100);
+	}
+	.diagram-trim-track-x :is(.diagram-trim-rail, .diagram-trim-window) {
+		top: 4px;
+		bottom: 4px;
+	}
+	.diagram-trim-track-x .diagram-trim-rail {
+		left: 0;
+		right: 0;
+	}
+	.diagram-trim-track-x .diagram-trim-window {
+		left: var(--trim-min);
+		right: calc(100% - var(--trim-max));
+		border-block: 1px solid var(--sl-color-primary-600);
+	}
+	.diagram-trim-track-y :is(.diagram-trim-rail, .diagram-trim-window) {
+		left: 4px;
+		right: 4px;
+	}
+	.diagram-trim-track-y .diagram-trim-rail {
+		top: 0;
+		bottom: 0;
+	}
+	.diagram-trim-track-y .diagram-trim-window {
+		top: calc(100% - var(--trim-max));
+		bottom: var(--trim-min);
+		border-inline: 1px solid var(--sl-color-primary-600);
 	}
 	.diagram-trim-handle {
 		position: absolute;
-		inset-block: 1px;
-		inline-size: 12px;
 		padding: 0;
 		border: 1px solid var(--sl-color-primary-700);
 		border-radius: var(--sl-border-radius-small);
 		background: var(--sl-color-primary-600);
 		color: var(--sl-color-neutral-0);
-		cursor: ew-resize;
 		touch-action: none;
 		user-select: none;
 	}
 	.diagram-trim-handle::after {
 		content: "";
 		position: absolute;
-		inset: 7px 3px;
+	}
+	.diagram-trim-track-x .diagram-trim-handle {
+		top: 0;
+		bottom: 0;
+		width: 10px;
+		cursor: ew-resize;
+	}
+	.diagram-trim-track-x .diagram-trim-handle::after {
+		inset: 5px 2px;
 		border-inline: 1px solid currentColor;
 	}
-	.diagram-trim-min {
-		inset-inline-end: calc(100% - var(--trim-min));
+	.diagram-trim-track-x .diagram-trim-min {
+		right: calc(100% - var(--trim-min));
 	}
-	.diagram-trim-max {
-		inset-inline-start: var(--trim-max);
+	.diagram-trim-track-x .diagram-trim-max {
+		left: var(--trim-max);
+	}
+	.diagram-trim-track-y .diagram-trim-handle {
+		left: 0;
+		right: 0;
+		height: 10px;
+		cursor: ns-resize;
+	}
+	.diagram-trim-track-y .diagram-trim-handle::after {
+		inset: 2px 5px;
+		border-block: 1px solid currentColor;
+	}
+	.diagram-trim-track-y .diagram-trim-min {
+		top: calc(100% - var(--trim-min));
+	}
+	.diagram-trim-track-y .diagram-trim-max {
+		bottom: var(--trim-max);
 	}
 	.diagram-trim-handle:focus-visible {
 		outline: 2px solid var(--sl-color-primary-800);
 		outline-offset: 2px;
 		z-index: 1;
 	}
-	.diagram-trim-footer {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 4px;
-		font-size: var(--sl-font-size-x-small);
-		font-variant-numeric: tabular-nums;
+	.diagram-axis-reset {
+		position: absolute;
+		left: 2px;
+		display: grid;
+		place-items: center;
+		width: 24px;
+		height: 20px;
+		padding: 0;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-surface);
+		color: var(--sl-color-primary-800);
+		cursor: pointer;
+		font: 600 10px var(--sl-font-sans);
+		white-space: nowrap;
 	}
-	.diagram-trim-footer span {
-		overflow-wrap: anywhere;
+	.diagram-axis-reset:disabled {
+		visibility: hidden;
+	}
+	.diagram-axis-reset-x {
+		bottom: 2px;
+	}
+	.diagram-axis-reset-y {
+		bottom: 24px;
 	}
 
 	.diagram-sources {
@@ -1512,7 +1560,7 @@ export const style = css`
 	}
 	.diagram-plot {
 		position: relative;
-		block-size: 230px;
+		block-size: 250px;
 		min-inline-size: 0;
 		border: 1px solid var(--lab-card-border);
 		border-radius: var(--sl-border-radius-medium);

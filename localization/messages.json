@@ -1,7 +1,8 @@
 {
   "en": {
-    "X-Bereich": "X range",
-    "Y-Bereich": "Y range",
+    "X-Achse automatisch skalieren": "Reset X axis to Auto",
+    "Y-Achse automatisch skalieren": "Reset Y axis to Auto",
+    "Doppelklick für feinere Bereichsauswahl": "Double-click for finer trimming",
     "Untere Grenze": "Lower bound",
     "Obere Grenze": "Upper bound",
     "Automatisch": "Auto",
