@@ -151555,13 +151555,13 @@ var Simulation = class {
         const reduction = reductionOf(ion2.smilesString);
         if (!reduction || !reduction.terms.some((term) => term.coefficient < 0 && term.phase === "solid")) continue;
         if (!(this.metalPotential(reduction, mix) > this.metalPotential(oxidation, mix))) continue;
-        const extent = Math.min(
-          (mix._molProperties[metal._id + "n"] ?? 0) / oxidation.el,
-          (mix._molProperties[ion2._id + "n"] ?? 0) / reduction.el
+        const electrons = Math.min(
+          (mix._molProperties[metal._id + "n"] ?? 0) * oxidation.el,
+          (mix._molProperties[ion2._id + "n"] ?? 0) * reduction.el
         );
-        if (!(extent > 1e-12)) continue;
-        const metalMol = extent * oxidation.el;
-        const ionMol = extent * reduction.el;
+        if (!(electrons > 1e-12)) continue;
+        const metalMol = electrons / oxidation.el;
+        const ionMol = electrons / reduction.el;
         const oxidised = this.redoxProduct(metal, oxidation.el);
         const reduced = this.redoxProduct(ion2, -reduction.el);
         reduced.dosedAsSolid = true;

@@ -2363,14 +2363,18 @@ export abstract class Simulation {
 				// the couple of the metal, at the concentrations the vessel
 				// holds rather than at standard conditions.
 				if (!(this.metalPotential(reduction, mix) > this.metalPotential(oxidation, mix))) continue;
-				// the electrons must balance: z_metal * n_metal = z_ion * n_ion
-				const extent = Math.min(
-					(mix._molProperties[metal._id + "n"] ?? 0) / oxidation.el,
-					(mix._molProperties[ion._id + "n"] ?? 0) / reduction.el
+				// The electrons must balance: z_metal * n_metal = z_ion * n_ion.
+				// The limiting quantity is therefore an amount of electrons, and
+				// each species' share of it is that amount divided by its own
+				// electron count. Multiplying instead would let a monovalent ion
+				// consume twice its own amount of a divalent metal.
+				const electrons = Math.min(
+					(mix._molProperties[metal._id + "n"] ?? 0) * oxidation.el,
+					(mix._molProperties[ion._id + "n"] ?? 0) * reduction.el
 				);
-				if (!(extent > 1e-12)) continue;
-				const metalMol = extent * oxidation.el;
-				const ionMol = extent * reduction.el;
+				if (!(electrons > 1e-12)) continue;
+				const metalMol = electrons / oxidation.el;
+				const ionMol = electrons / reduction.el;
 				const oxidised = this.redoxProduct(metal, oxidation.el);
 				const reduced = this.redoxProduct(ion, -reduction.el);
 				reduced.dosedAsSolid = true;
