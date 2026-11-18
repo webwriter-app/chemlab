@@ -1317,7 +1317,16 @@ export abstract class Simulation {
 					Math.max(0, (mix.evolvedGas.get(reaction.gas) ?? 0) + delta));
 				continue;
 			}
-			if (term.smiles === "O") continue;
+			if (term.smiles === "O") {
+				// Water is the solvent, so a unit activity is right in the
+				// Nernst equation but wrong for the inventory: an oxygen
+				// evolution step really consumes it. Booking the term through
+				// addMolecule keeps the solution volume and every
+				// concentration in step with the smaller solvent amount.
+				const water = mix._activeMolecules.find((molecule) => StructureManager.isWater(molecule));
+				if (water) mix.addMolecule(water, delta);
+				continue;
+			}
 			if (term.smiles === "[H+]") {
 				// Protons are not stored as a molecule. The vessel keeps them as
 				// excess charge, which the charge balance turns into a pH and
@@ -2252,6 +2261,12 @@ export abstract class Simulation {
 		// countercharge each.
 		this.balanceCharge(mix1);
 		if (separateBaths) this.balanceCharge(mix2);
+		// The electrode reactions move ions and shift the pH, so the salt and
+		// hydroxide equilibria they disturb have to settle again before the
+		// next step reads the vessel. Without this a precipitate that the new
+		// pH no longer supports stays in the beaker.
+		this.settleSaltsAndHydroxides(mix1);
+		if (separateBaths) this.settleSaltsAndHydroxides(mix2);
 	}
 
 	/**

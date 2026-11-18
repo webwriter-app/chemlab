@@ -150675,7 +150675,11 @@ var Simulation = class {
         );
         continue;
       }
-      if (term.smiles === "O") continue;
+      if (term.smiles === "O") {
+        const water2 = mix._activeMolecules.find((molecule2) => StructureManager.isWater(molecule2));
+        if (water2) mix.addMolecule(water2, delta);
+        continue;
+      }
       if (term.smiles === "[H+]") {
         mix.excessCharge -= delta;
         continue;
@@ -151466,6 +151470,8 @@ var Simulation = class {
     this.applyElectrode(second, solution.secondCurrents, dt, areas.second);
     this.balanceCharge(mix1);
     if (separateBaths) this.balanceCharge(mix2);
+    this.settleSaltsAndHydroxides(mix1);
+    if (separateBaths) this.settleSaltsAndHydroxides(mix2);
   }
   /**
    * Simulation of a network that carries no cell: a supply wired straight
