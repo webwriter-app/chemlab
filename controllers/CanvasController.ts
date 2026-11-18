@@ -374,9 +374,22 @@ export class CanvasController implements ReactiveController {
 	}
 
 	fitObjects(): void {
-		if (!this.host.app || this.pointerBusy || !this.world.children.length) return;
-		this.camera.fit(this.world.getLocalBounds(), this.host.canvasZoom.offsetHeight + 4);
+		if (!this.fitCamera()) return;
 		this.applyCamera();
+	}
+
+	/**
+	 * Moves the camera so every object is inside the visible area, without
+	 * repainting. The caller decides whether to apply the result, because the
+	 * resize handler fits and repaints in one step.
+	 *
+	 * @private
+	 * @returns {boolean} whether the camera was moved
+	 */
+	private fitCamera(): boolean {
+		if (!this.host.app || this.pointerBusy || !this.world.children.length) return false;
+		this.camera.fit(this.world.getLocalBounds(), this.host.canvasZoom.offsetHeight + 4);
+		return true;
 	}
 
 	hasComponent(label: string): boolean {
@@ -654,6 +667,11 @@ export class CanvasController implements ReactiveController {
 				app.render();
 			}
 			this.camera.resize(width, height);
+			// A drawer opening or the widget being resized changes the visible
+			// area. Fitting here keeps the objects in frame instead of letting
+			// them drift out of it, and it follows the drawer's own animation
+			// because the observer fires on every step of it.
+			this.fitCamera();
 			this.applyCamera();
 		};
 		this.resizeObserver = new ResizeObserver(resize);

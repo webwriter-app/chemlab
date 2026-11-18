@@ -713,6 +713,9 @@ export class ChemLab extends LitElementWw {
 
 				this.avComponentsSprites = [];
 				this._loadComponents();
+				// A replaced layout is a fresh load, so it gets the same fit as
+				// the first one.
+				this.canvas.fitObjects();
 			}
 		}
 		if (this.canvas.selectedObjects.length || changed.has("curr_obj") || changed.has("curr_name")) {
@@ -876,6 +879,10 @@ export class ChemLab extends LitElementWw {
 		this.focus();
 		this.simulation.startLoop(() => this.canvas.flushChanges());
 		this._loadComponents();
+		// The authored layout is placed in world units, which need not match
+		// the visible area of the embedding page. Fit once so a restored setup
+		// is never partly out of frame.
+		this.canvas.fitObjects();
 		this._sendxAPiStatement("registered", "chemlab");
 		this._notify(this.message("klicke zum Starten in das Fenster!"), "neutral", 10000);
 	}

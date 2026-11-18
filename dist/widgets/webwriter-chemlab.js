@@ -186209,9 +186209,21 @@ var CanvasController = class _CanvasController {
     return found;
   }
   fitObjects() {
-    if (!this.host.app || this.pointerBusy || !this.world.children.length) return;
-    this.camera.fit(this.world.getLocalBounds(), this.host.canvasZoom.offsetHeight + 4);
+    if (!this.fitCamera()) return;
     this.applyCamera();
+  }
+  /**
+   * Moves the camera so every object is inside the visible area, without
+   * repainting. The caller decides whether to apply the result, because the
+   * resize handler fits and repaints in one step.
+   *
+   * @private
+   * @returns {boolean} whether the camera was moved
+   */
+  fitCamera() {
+    if (!this.host.app || this.pointerBusy || !this.world.children.length) return false;
+    this.camera.fit(this.world.getLocalBounds(), this.host.canvasZoom.offsetHeight + 4);
+    return true;
   }
   hasComponent(label) {
     return this.spritesByLabel.has(label);
@@ -186461,6 +186473,7 @@ var CanvasController = class _CanvasController {
         app.render();
       }
       this.camera.resize(width, height);
+      this.fitCamera();
       this.applyCamera();
     };
     this.resizeObserver = new ResizeObserver(resize);
@@ -187598,6 +187611,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.pruneDiagramSuggestions();
         this.avComponentsSprites = [];
         this._loadComponents();
+        this.canvas.fitObjects();
       }
     }
     if (this.canvas.selectedObjects.length || changed.has("curr_obj") || changed.has("curr_name")) {
@@ -187740,6 +187754,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.focus();
     this.simulation.startLoop(() => this.canvas.flushChanges());
     this._loadComponents();
+    this.canvas.fitObjects();
     this._sendxAPiStatement("registered", "chemlab");
     this._notify(this.message("klicke zum Starten in das Fenster!"), "neutral", 1e4);
   }
