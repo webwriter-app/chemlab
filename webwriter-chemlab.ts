@@ -334,6 +334,9 @@ export class ChemLab extends LitElementWw {
 	 */
 	@property({ type: Boolean, reflect: true })
 	accessor thumbnailBadges = false;
+
+	@property({ type: Boolean, reflect: true, attribute: "show-titration-markers" })
+	accessor showTitrationMarkers = false;
 	private dataObserver?: MutationObserver;
 	private savedDataSnapshot: string | null = null;
 	private updatingDataBlock = false;
@@ -3123,6 +3126,12 @@ export class ChemLab extends LitElementWw {
 						<sl-checkbox .checked=${this.diagrams.showLine} @sl-change=${() => this.diagrams.toggleShowLine()}>
 							${this.message("Kurven anzeigen")}
 						</sl-checkbox>
+						${this.canAuthor ? html`
+							<sl-checkbox .checked=${this.showTitrationMarkers} @sl-change=${(event: Event) => {
+								this.showTitrationMarkers = (event.currentTarget as SlCheckbox).checked;
+							}}>
+								${this.message("Titrationspunkte für Lernende anzeigen")}
+							</sl-checkbox>` : nothing}
 					</div>
 					${this.diagrams.renderCards()}
 				</div>

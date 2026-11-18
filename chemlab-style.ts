@@ -1432,22 +1432,22 @@ export const style = css`
 	.diagram-trim-window::after {
 		content: "";
 		position: absolute;
-		border-radius: 2px;
+		border-radius: var(--sl-border-radius-pill);
 		pointer-events: none;
 	}
 	.diagram-trim-rail::after {
-		background: var(--sl-color-neutral-300);
+		background: var(--sl-color-neutral-200);
 	}
 	.diagram-trim-window::after {
-		background: var(--sl-color-primary-500);
+		background: var(--sl-color-primary-300);
 	}
 	.diagram-trim-track-x :is(.diagram-trim-rail, .diagram-trim-window, .diagram-trim-handle) {
 		top: 0;
 		bottom: 0;
 	}
 	.diagram-trim-track-x :is(.diagram-trim-rail, .diagram-trim-window)::after {
-		inset: calc(50% - 1px) 0 auto;
-		height: 2px;
+		inset: calc(50% - 3px) 0 auto;
+		height: 6px;
 	}
 	.diagram-trim-track-x .diagram-trim-rail {
 		left: 0;
@@ -1462,8 +1462,8 @@ export const style = css`
 		right: 0;
 	}
 	.diagram-trim-track-y :is(.diagram-trim-rail, .diagram-trim-window)::after {
-		inset: 0 auto 0 calc(50% - 1px);
-		width: 2px;
+		inset: 0 auto 0 calc(50% - 3px);
+		width: 6px;
 	}
 	.diagram-trim-track-y .diagram-trim-rail {
 		top: 0;
@@ -1485,60 +1485,91 @@ export const style = css`
 	.diagram-trim-handle::after {
 		content: "";
 		position: absolute;
-		border-radius: 2px;
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
 		background: var(--sl-color-primary-600);
-		pointer-events: none;
 	}
 	.diagram-trim-handle:is(:hover, :active)::after {
-		background: var(--sl-color-primary-800);
+		background: var(--sl-color-primary-500);
 	}
 	.diagram-trim-track-x .diagram-trim-handle {
 		width: 10px;
 		cursor: ew-resize;
 	}
 	.diagram-trim-track-x .diagram-trim-handle::after {
-		top: 4px;
-		bottom: 4px;
-		width: 4px;
+		top: calc(50% - 8px);
 	}
 	.diagram-trim-track-x .diagram-trim-min {
 		right: calc(100% - var(--trim-min));
 	}
 	.diagram-trim-track-x .diagram-trim-min::after {
-		right: 0;
+		right: -8px;
 	}
 	.diagram-trim-track-x .diagram-trim-max {
 		left: var(--trim-max);
 	}
 	.diagram-trim-track-x .diagram-trim-max::after {
-		left: 0;
+		left: -8px;
 	}
 	.diagram-trim-track-y .diagram-trim-handle {
 		height: 10px;
 		cursor: ns-resize;
 	}
 	.diagram-trim-track-y .diagram-trim-handle::after {
-		left: 4px;
-		right: 4px;
-		height: 4px;
+		left: calc(50% - 8px);
 	}
 	.diagram-trim-track-y .diagram-trim-min {
 		top: calc(100% - var(--trim-min));
 	}
 	.diagram-trim-track-y .diagram-trim-min::after {
-		top: 0;
+		top: -8px;
 	}
 	.diagram-trim-track-y .diagram-trim-max {
 		bottom: var(--trim-max);
 	}
 	.diagram-trim-track-y .diagram-trim-max::after {
-		bottom: 0;
+		bottom: -8px;
 	}
 
 	.diagram-trim-handle:focus-visible {
-		outline: 2px solid var(--sl-color-primary-800);
-		outline-offset: 2px;
+		outline: none;
 		z-index: 1;
+	}
+	.diagram-trim-handle:focus-visible::after {
+		outline: var(--sl-focus-ring);
+		outline-offset: var(--sl-focus-ring-offset);
+	}
+	.diagram-marker-legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 3px 8px;
+		color: var(--lab-card-secondary-text);
+		font-size: var(--sl-font-size-x-small);
+	}
+	.diagram-marker-legend span {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+	.diagram-marker {
+		flex: none;
+		display: inline-block;
+		width: 8px;
+		height: 8px;
+	}
+	.diagram-marker-equivalence {
+		background: var(--sl-color-warning-600);
+		clip-path: polygon(50% 0, 100% 100%, 0 100%);
+	}
+	.diagram-marker-neutral {
+		box-sizing: border-box;
+		border: 1.5px solid var(--sl-color-success-600);
+		border-radius: 50%;
+	}
+	.diagram-marker-half-equivalence {
+		background: var(--sl-color-primary-600);
+		transform: scale(0.8) rotate(45deg);
 	}
 	.diagram-axis-reset {
 		position: absolute;

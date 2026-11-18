@@ -6,6 +6,7 @@ import { axisTrimSelection, diagramData, moveTrimHandle, trimmedAxisRange, TRIM_
 	type AxisRange, type AxisRanges, type ChartAxis, type TrimHandle } from "../data/diagramRanges";
 import { TIME_CHANNEL, type MeasurementChannel } from "../data/measurementHistory";
 import { axisId, componentKey, type DiagramAxis } from "../data/diagramSources";
+import { titrationMarkerKinds, titrationPoints, type TitrationMarkerKind } from "../data/titrationPoints";
 import type { ChemLab } from "../webwriter-chemlab";
 
 type AxisDrag = {
@@ -24,11 +25,26 @@ type Diagram = {
 	title?: string;
 	canvas: Ref<HTMLCanvasElement>;
 	fitted?: AxisRanges;
+	markerKinds?: TitrationMarkerKind[];
 	zoom: Partial<AxisRanges>;
 	trimDomain: Partial<AxisRanges>;
 	drag: Partial<Record<ChartAxis, AxisDrag>>;
 	chart?: Chart<"line", { x: number; y: number | null }[]>;
 };
+
+const titrationMarkerStyles = {
+	equivalence: { label: "Äquivalenzpunkt (geschätzt)", shape: "triangle", color: "warning" },
+	neutral: { label: "Neutralpunkt (25 °C)", shape: "circle", color: "success" },
+	"half-equivalence": { label: "Halbäquivalenzpunkt (geschätzt)", shape: "rectRot", color: "primary" },
+} as const;
+
+function titrationPhAxis({ x, y }: Diagram): ChartAxis | undefined {
+	if (x === TIME_CHANNEL || y === TIME_CHANNEL) return undefined;
+	const deliveredVolume = (axis: MeasurementChannel) => axis.component === "burette" && axis.quantity === "Abgegebenes Volumen";
+	if (y.quantity === "pH" && deliveredVolume(x)) return "y";
+	if (x.quantity === "pH" && deliveredVolume(y)) return "x";
+	return undefined;
+}
 
 /** Owns the plots and their references to the shared recording. */
 export class DiagramController implements ReactiveController {
@@ -39,6 +55,7 @@ export class DiagramController implements ReactiveController {
 	private readonly visible = new Set<Element>();
 	private readonly observed = new Set<Element>();
 	private dirty = true;
+	private markersVisible = false;
 	showLine = true;
 
 	constructor(private readonly host: ChemLab) {
@@ -53,7 +70,15 @@ export class DiagramController implements ReactiveController {
 		return this.diagrams.length > 0;
 	}
 
+	private get canSeeMarkers(): boolean {
+		return this.host.canAuthor || this.host.showTitrationMarkers;
+	}
+
 	hostUpdated(): void {
+		if (this.markersVisible !== this.canSeeMarkers) {
+			this.markersVisible = this.canSeeMarkers;
+			this.dirty = true;
+		}
 		if (!this.host.isDiagramPanelOpen) {
 			if (this.viewport) this.releaseViewport();
 			return;
@@ -172,6 +197,12 @@ export class DiagramController implements ReactiveController {
 							<canvas role="img" aria-label=${`${title} · Y: ${y} · X: ${x}`} ${ref(diagram.canvas)}></canvas>
 							${diagram.fitted ? html`${this.renderTrimTrack(diagram, "x")}${this.renderTrimTrack(diagram, "y")}` : nothing}
 						</div>
+						${this.canSeeMarkers && diagram.markerKinds?.length ? html`
+							<div class="diagram-marker-legend">
+								${diagram.markerKinds.map(kind => html`
+									<span><i class=${"diagram-marker diagram-marker-" + kind} aria-hidden="true"></i>
+										${message(titrationMarkerStyles[kind].label)}</span>`)}
+							</div>` : nothing}
 						${this.renderSources(diagram)}
 					</section>`;
 			})}
@@ -308,7 +339,7 @@ export class DiagramController implements ReactiveController {
 		return axis === TIME_CHANNEL ? this.label(axis) : this.measurementLabel(axis);
 	}
 
-	private createChart(canvas: HTMLCanvasElement, card: HTMLElement) {
+	private createChart(canvas: HTMLCanvasElement, card: HTMLElement, phAxis?: ChartAxis) {
 		const style = getComputedStyle(card);
 		const ink = style.color;
 		const accent = style.getPropertyValue("--sl-color-primary-600").trim() || "#0284c7";
@@ -339,8 +370,17 @@ export class DiagramController implements ReactiveController {
 			}],
 			data: { datasets: [{
 				data: [], borderColor: accent, backgroundColor: accent, borderWidth: 1.6,
-				pointRadius: 1.5, pointHoverRadius: 4, pointHitRadius: 4, spanGaps: false,
-			}] },
+				pointRadius: 1.5, pointHoverRadius: 4, pointHitRadius: 4, spanGaps: false, order: 1,
+			}, ...(phAxis ? titrationMarkerKinds.map(kind => {
+				const { shape, color, label } = titrationMarkerStyles[kind];
+				const ink = style.getPropertyValue(`--sl-color-${color}-600`).trim();
+				return {
+					data: [], label: this.host.message(label), pointStyle: shape, showLine: false,
+					pointRadius: kind === "neutral" ? 7 : 5, pointHoverRadius: 7, pointHitRadius: 7, pointBorderWidth: 1.5,
+					pointBorderColor: kind === "neutral" ? ink : surface,
+					pointBackgroundColor: kind === "neutral" ? "transparent" : ink,
+				};
+			}) : [])] },
 			options: {
 				responsive: true,
 				maintainAspectRatio: false,
@@ -353,6 +393,15 @@ export class DiagramController implements ReactiveController {
 						backgroundColor: surface, titleColor: ink, bodyColor: ink, borderColor: grid,
 						borderWidth: 1, cornerRadius: 4, padding: 6, displayColors: false,
 						titleFont: font, bodyFont: font,
+						callbacks: phAxis ? {
+							title: items => items.some(item => item.datasetIndex > 0) ? "" : items[0]?.label ?? "",
+							label: item => {
+								if (item.datasetIndex === 0) return item.formattedValue;
+								const pH = item.parsed[phAxis];
+								const volume = item.parsed[phAxis === "x" ? "y" : "x"];
+								return `${item.dataset.label} · ${Number(volume.toPrecision(6))} mL · pH ${Number(pH.toPrecision(5))}`;
+							},
+						} : undefined,
 					},
 				},
 				scales: { x: scale(), y: scale() },
@@ -379,7 +428,8 @@ export class DiagramController implements ReactiveController {
 		for (const diagram of this.diagrams) {
 			const { card, canvas } = diagram;
 			if (!this.visible.has(card.value) || !canvas.value) continue;
-			const chart = diagram.chart ??= this.createChart(canvas.value, card.value);
+			const phAxis = titrationPhAxis(diagram);
+			const chart = diagram.chart ??= this.createChart(canvas.value, card.value, phAxis);
 			const points = this.host.measurements.history.points(axisId(diagram.x), axisId(diagram.y));
 			const { data, ranges } = diagramData(points);
 			const previous = diagram.fitted;
@@ -397,6 +447,25 @@ export class DiagramController implements ReactiveController {
 			const xPadding = diagram.zoom.x ? 0 : 2;
 			const yPadding = diagram.zoom.y ? 0 : 2;
 			dataset.clip = { left: xPadding, right: xPadding, top: yPadding, bottom: yPadding };
+			if (phAxis) {
+				const markers = this.canSeeMarkers ? titrationPoints(points, phAxis) : [];
+				const markerKinds: TitrationMarkerKind[] = [];
+				titrationMarkerKinds.forEach((kind, index) => {
+					const markerData = markers.filter(marker => marker.kind === kind).map(({ volume, pH }) =>
+						phAxis === "y" ? { x: volume, y: pH } : { x: pH, y: volume });
+					const series = chart.data.datasets[index + 1];
+					series.label = this.host.message(titrationMarkerStyles[kind].label);
+					series.data = markerData;
+					series.clip = {
+						left: xPadding ? 8 : 0, right: xPadding ? 8 : 0, top: yPadding ? 8 : 0, bottom: yPadding ? 8 : 0,
+					};
+					if (markerData.length) markerKinds.push(kind);
+				});
+				if (markerKinds.join() !== (diagram.markerKinds ?? []).join()) {
+					diagram.markerKinds = markerKinds;
+					this.host.requestUpdate();
+				}
+			}
 			for (const axis of ["x", "y"] as const) {
 				const options = chart.options.scales[axis];
 				const range = diagram.zoom[axis] ?? ranges?.[axis];
