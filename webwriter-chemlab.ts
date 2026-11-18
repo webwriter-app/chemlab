@@ -909,7 +909,7 @@ export class ChemLab extends LitElementWw {
 		if (!target) return;
 		const transferredMl = source.transferContents({}, target) * 1000;
 		if (!(transferredMl > 0)) return;
-		this.measurements.record([source, target], [], { source, volume: transferredMl });
+		this.measurements.record([source, target], [], { source, target, volume: transferredMl });
 		this.canvas.markVesselChanged(source);
 		this.canvas.markVesselChanged(target);
 		if (this.curr_obj === source || this.curr_obj === target) this._updatePopup();
@@ -1565,7 +1565,7 @@ export class ChemLab extends LitElementWw {
 	private transferMeasuredVolume(source: chemlib.ChemComponent, target: chemlib.ChemComponent, amount: number): number {
 		const result = source.transferContents({ tVolume: amount / 1000 }, target) * 1000;
 		if (result > 0) {
-			this.measurements.record([source, target], [], { source, volume: result });
+			this.measurements.record([source, target], [], { source, target, volume: result });
 			this.canvas.markVesselChanged(source, "pour");
 			this.canvas.markVesselChanged(target, "pour");
 		}

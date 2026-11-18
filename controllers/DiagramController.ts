@@ -434,7 +434,9 @@ export class DiagramController implements ReactiveController {
 			if (!this.visible.has(card.value) || !canvas.value) continue;
 			const phAxis = titrationPhAxis(diagram);
 			const chart = diagram.chart ??= this.createChart(canvas.value, card.value, phAxis);
-			const points = this.host.measurements.history.points(axisId(diagram.x), axisId(diagram.y));
+			const xId = axisId(diagram.x);
+			const yId = axisId(diagram.y);
+			const points = this.host.measurements.history.points(xId, yId);
 			const { data, ranges } = diagramData(points);
 			const previous = diagram.fitted;
 			diagram.fitted = ranges;
@@ -452,7 +454,9 @@ export class DiagramController implements ReactiveController {
 			const yPadding = diagram.zoom.y ? 0 : 2;
 			dataset.clip = { left: xPadding, right: xPadding, top: yPadding, bottom: yPadding };
 			if (phAxis) {
-				const markers = this.canSeeMarkers ? titrationPoints(points, phAxis) : [];
+				const doseTime = this.host.measurements.firstTitrationDoseTime(
+					phAxis === "y" ? xId : yId, phAxis === "y" ? yId : xId);
+				const markers = this.canSeeMarkers ? titrationPoints(points, phAxis, doseTime) : [];
 				const markerKinds: TitrationMarkerKind[] = [];
 				titrationMarkerKinds.forEach((kind, index) => {
 					const markerData = markers.filter(marker => marker.kind === kind).map(({ volume, pH }) =>

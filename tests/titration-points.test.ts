@@ -36,3 +36,12 @@ test("an unfinished rise, steady drift or data gap produces no false equivalence
 	changedAtSameVolume[2].x = 1;
 	assert.deepEqual(titrationPoints(changedAtSameVolume, "y"), []);
 });
+
+test("the recorded first dose allows interpolation at half-equivalence without extrapolation", () => {
+	const samples = trace([2, 2.1, 2.2, 2.6, 3, 8.7, 10, 10.2]);
+	const hasHalf = (points: typeof samples, firstDoseTime: number) =>
+		titrationPoints(points, "y", firstDoseTime).some(marker => marker.kind === "half-equivalence");
+	assert.ok(hasHalf(samples.slice(1), 1));
+	assert.equal(hasHalf(samples.slice(2), 1), false);
+	assert.equal(hasHalf(samples.slice(3), 3), false);
+});

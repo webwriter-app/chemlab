@@ -10,6 +10,7 @@ export class MeasurementRecorder implements ReactiveController {
 	readonly history = new MeasurementHistory();
 	private readonly groups = new WeakMap<ChemComponent, Map<string, string>>();
 	private readonly delivery = new WeakMap<ChemComponent, number>();
+	private readonly firstDoses = new Map<string, { receiverPH: string; time: number }>();
 	private expiry?: ReturnType<typeof setTimeout>;
 	onChange?: () => void;
 
@@ -48,14 +49,20 @@ export class MeasurementRecorder implements ReactiveController {
 	}
 
 	record(vessels: readonly ChemComponent[] = [], instruments: readonly ElectricComponent[] = [],
-		delivery?: { source: ChemComponent; volume: number }): void {
+		delivery?: { source: ChemComponent; target: ChemComponent; volume: number }): void {
 		const time = this.history.now();
 		let changed = false;
 		for (const vessel of vessels) changed = this.recordVessel(vessel, time) || changed;
 		if (delivery && delivery.source._type === "burette") {
-			const total = (this.delivery.get(delivery.source) ?? 0) + delivery.volume;
-			this.delivery.set(delivery.source, total);
-			changed = this.history.record(this.channel(delivery.source, "vessel", "Abgegebenes Volumen", "mL"), total, time, true) || changed;
+			const { source, target, volume } = delivery;
+			const channel = this.deliveredVolumeChannel(source);
+			const previous = this.delivery.get(source);
+			if (previous === undefined) {
+				this.firstDoses.set(channel.id, { receiverPH: this.channel(target, "vessel", "pH").id, time });
+			}
+			const total = (previous ?? 0) + volume;
+			this.delivery.set(source, total);
+			changed = this.history.record(channel, total, time, true) || changed;
 		}
 		const mixtures = new Set(vessels.map(vessel => vessel._content));
 		const meters = new Set(instruments);
@@ -67,6 +74,12 @@ export class MeasurementRecorder implements ReactiveController {
 			this.onChange?.();
 			this.scheduleExpiry();
 		}
+	}
+
+	// The setup sample at 0 mL may expire while the titration itself is still recorded.
+	firstTitrationDoseTime(deliveredVolume: string, pH: string): number | undefined {
+		const dose = this.firstDoses.get(deliveredVolume);
+		return dose?.receiverPH === pH ? dose.time : undefined;
 	}
 
 	startTransient(model: NoIonicPathTransientModel,
@@ -138,7 +151,9 @@ export class MeasurementRecorder implements ReactiveController {
 		let changed = record("pH", equilibrium?.pH ?? null);
 		changed = record("Volumen", mix.contentVolume * 1000, "mL") || changed;
 		changed = record("Masse", mass, "g") || changed;
-		if (vessel._type === "burette") changed = record("Abgegebenes Volumen", this.delivery.get(vessel) ?? 0, "mL") || changed;
+		if (vessel._type === "burette") {
+			changed = this.history.record(this.deliveredVolumeChannel(vessel), this.delivery.get(vessel) ?? 0, time, true) || changed;
+		}
 		for (const [key, name] of known) {
 			const species = inventory.get(key);
 			changed = record("Stoffmenge", species?.amount ?? 0, "mol", name, key) || changed;
@@ -147,6 +162,10 @@ export class MeasurementRecorder implements ReactiveController {
 			}
 		}
 		return changed;
+	}
+
+	private deliveredVolumeChannel(vessel: ChemComponent): MeasurementChannel {
+		return this.channel(vessel, "vessel", "Abgegebenes Volumen", "mL");
 	}
 
 	private recordInstrument(device: ElectricComponent, time: number): boolean {

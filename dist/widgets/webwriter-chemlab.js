@@ -178037,7 +178037,7 @@ function suggestDiagrams(channels, titrations, instruments) {
 
 // data/titrationPoints.ts
 var titrationMarkerKinds = ["equivalence", "neutral", "half-equivalence"];
-function titrationPoints(points, phAxis) {
+function titrationPoints(points, phAxis, firstDoseTime) {
   const markers = [];
   const samples = [];
   for (const point of points) {
@@ -178045,15 +178045,15 @@ function titrationPoints(points, phAxis) {
     const volume = point[phAxis === "x" ? "y" : "x"];
     const previous = samples[samples.length - 1];
     if (pH === null || volume === null || previous && volume <= previous.volume) {
-      markers.push(...analyseRun(samples));
+      markers.push(...analyseRun(samples, firstDoseTime));
       samples.length = 0;
     }
-    if (pH !== null && volume !== null) samples.push({ volume, pH });
+    if (pH !== null && volume !== null) samples.push({ volume, pH, time: point.time });
   }
-  markers.push(...analyseRun(samples));
+  markers.push(...analyseRun(samples, firstDoseTime));
   return markers;
 }
-function analyseRun(points) {
+function analyseRun(points, firstDoseTime) {
   if (points.length < 2) return [];
   const markers = [];
   const slopes = [];
@@ -178066,7 +178066,7 @@ function analyseRun(points) {
     }
     slopes.push((b5.pH - a7.pH) / (b5.volume - a7.volume));
   }
-  let lastEquivalence = points[0].volume === 0 ? 0 : void 0;
+  let lastEquivalence = points[0].volume === 0 || points[0].time === firstDoseTime ? 0 : void 0;
   for (let first = 1; first < slopes.length - 1; first++) {
     const sign4 = Math.sign(slopes[first]);
     const height = Math.abs(slopes[first]);
@@ -178089,7 +178089,9 @@ function analyseRun(points) {
     markers.push({ kind: "equivalence", volume, pH: interpolate3(points, volume) });
     if (lastEquivalence !== void 0) {
       const half = (lastEquivalence + volume) / 2;
-      markers.push({ kind: "half-equivalence", volume: half, pH: interpolate3(points, half) });
+      if (half >= points[0].volume) {
+        markers.push({ kind: "half-equivalence", volume: half, pH: interpolate3(points, half) });
+      }
     }
     lastEquivalence = volume;
     first = last;
@@ -178539,7 +178541,9 @@ var DiagramController = class {
       if (!this.visible.has(card.value) || !canvas.value) continue;
       const phAxis = titrationPhAxis(diagram);
       const chart = diagram.chart ??= this.createChart(canvas.value, card.value, phAxis);
-      const points = this.host.measurements.history.points(axisId(diagram.x), axisId(diagram.y));
+      const xId = axisId(diagram.x);
+      const yId = axisId(diagram.y);
+      const points = this.host.measurements.history.points(xId, yId);
       const { data: data2, ranges } = diagramData(points);
       const previous = diagram.fitted;
       diagram.fitted = ranges;
@@ -178553,7 +178557,11 @@ var DiagramController = class {
       const yPadding = diagram.zoom.y ? 0 : 2;
       dataset.clip = { left: xPadding, right: xPadding, top: yPadding, bottom: yPadding };
       if (phAxis) {
-        const markers = this.canSeeMarkers ? titrationPoints(points, phAxis) : [];
+        const doseTime = this.host.measurements.firstTitrationDoseTime(
+          phAxis === "y" ? xId : yId,
+          phAxis === "y" ? yId : xId
+        );
+        const markers = this.canSeeMarkers ? titrationPoints(points, phAxis, doseTime) : [];
         const markerKinds = [];
         titrationMarkerKinds.forEach((kind, index2) => {
           const markerData = markers.filter((marker) => marker.kind === kind).map(({ volume, pH }) => phAxis === "y" ? { x: volume, y: pH } : { x: pH, y: volume });
@@ -178594,6 +178602,7 @@ var MeasurementRecorder = class {
   history = new MeasurementHistory();
   groups = /* @__PURE__ */ new WeakMap();
   delivery = /* @__PURE__ */ new WeakMap();
+  firstDoses = /* @__PURE__ */ new Map();
   expiry;
   onChange;
   hostConnected() {
@@ -178632,9 +178641,15 @@ var MeasurementRecorder = class {
     let changed = false;
     for (const vessel of vessels) changed = this.recordVessel(vessel, time) || changed;
     if (delivery && delivery.source._type === "burette") {
-      const total = (this.delivery.get(delivery.source) ?? 0) + delivery.volume;
-      this.delivery.set(delivery.source, total);
-      changed = this.history.record(this.channel(delivery.source, "vessel", "Abgegebenes Volumen", "mL"), total, time, true) || changed;
+      const { source: source3, target, volume } = delivery;
+      const channel = this.deliveredVolumeChannel(source3);
+      const previous = this.delivery.get(source3);
+      if (previous === void 0) {
+        this.firstDoses.set(channel.id, { receiverPH: this.channel(target, "vessel", "pH").id, time });
+      }
+      const total = (previous ?? 0) + volume;
+      this.delivery.set(source3, total);
+      changed = this.history.record(channel, total, time, true) || changed;
     }
     const mixtures = new Set(vessels.map((vessel) => vessel._content));
     const meters = new Set(instruments);
@@ -178646,6 +178661,11 @@ var MeasurementRecorder = class {
       this.onChange?.();
       this.scheduleExpiry();
     }
+  }
+  // The setup sample at 0 mL may expire while the titration itself is still recorded.
+  firstTitrationDoseTime(deliveredVolume, pH) {
+    const dose = this.firstDoses.get(deliveredVolume);
+    return dose?.receiverPH === pH ? dose.time : void 0;
   }
   startTransient(model, meterFactors) {
     const factors = /* @__PURE__ */ new Map();
@@ -178721,7 +178741,9 @@ var MeasurementRecorder = class {
     let changed = record("pH", equilibrium?.pH ?? null);
     changed = record("Volumen", mix.contentVolume * 1e3, "mL") || changed;
     changed = record("Masse", mass, "g") || changed;
-    if (vessel._type === "burette") changed = record("Abgegebenes Volumen", this.delivery.get(vessel) ?? 0, "mL") || changed;
+    if (vessel._type === "burette") {
+      changed = this.history.record(this.deliveredVolumeChannel(vessel), this.delivery.get(vessel) ?? 0, time, true) || changed;
+    }
     for (const [key, name2] of known) {
       const species = inventory.get(key);
       changed = record("Stoffmenge", species?.amount ?? 0, "mol", name2, key) || changed;
@@ -178730,6 +178752,9 @@ var MeasurementRecorder = class {
       }
     }
     return changed;
+  }
+  deliveredVolumeChannel(vessel) {
+    return this.channel(vessel, "vessel", "Abgegebenes Volumen", "mL");
   }
   recordInstrument(device, time) {
     const record = (quantity, value, unit, changesOnly = false) => this.history.record(this.channel(device, "instrument", quantity, unit), value, time, changesOnly);
@@ -187630,7 +187655,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (!target) return;
     const transferredMl = source3.transferContents({}, target) * 1e3;
     if (!(transferredMl > 0)) return;
-    this.measurements.record([source3, target], [], { source: source3, volume: transferredMl });
+    this.measurements.record([source3, target], [], { source: source3, target, volume: transferredMl });
     this.canvas.markVesselChanged(source3);
     this.canvas.markVesselChanged(target);
     if (this.curr_obj === source3 || this.curr_obj === target) this._updatePopup();
@@ -188222,7 +188247,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   transferMeasuredVolume(source3, target, amount) {
     const result = source3.transferContents({ tVolume: amount / 1e3 }, target) * 1e3;
     if (result > 0) {
-      this.measurements.record([source3, target], [], { source: source3, volume: result });
+      this.measurements.record([source3, target], [], { source: source3, target, volume: result });
       this.canvas.markVesselChanged(source3, "pour");
       this.canvas.markVesselChanged(target, "pour");
     }

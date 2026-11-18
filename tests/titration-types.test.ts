@@ -53,7 +53,7 @@ for (const [index, reference] of expected.entries()) {
 		while (burette._content.contentVolume > 1e-12) {
 			const volume = burette.transferContents({}, beaker) * 1000;
 			assert.ok(volume > 0);
-			recorder.record([burette, beaker], [], { source: burette, volume });
+			recorder.record([burette, beaker], [], { source: burette, target: beaker, volume });
 		}
 
 		const { history } = recorder;
@@ -83,3 +83,35 @@ for (const [index, reference] of expected.entries()) {
 		assert.ok(Math.abs(neutral[0].volume - reference.neutralMl) < 0.1);
 	});
 }
+
+test("acetic acid and ammonia show half-equivalence after the 0 mL sample expires", t => {
+	const [receiver, titrant] = availableComponents.slice(6, 8);
+	const beaker = vessel(ComponentType.Beaker, receiver);
+	const burette = vessel(ComponentType.Burette, titrant);
+	burette.setBuretteStepMl(0.3);
+	const host = { addController() {}, allEComponents: [] } as unknown as ConstructorParameters<typeof MeasurementRecorder>[0];
+	const recorder = new MeasurementRecorder(host);
+	const { history } = recorder;
+	let time = 1;
+	t.mock.method(history, "now", () => time);
+	recorder.record([beaker, burette]);
+	time = 301_000;
+	history.prune();
+	for (let i = 0; i < 61; i++) {
+		const volume = burette.transferContents({}, beaker) * 1000;
+		recorder.record([burette, beaker], [], { source: burette, target: beaker, volume });
+		time += 100;
+	}
+
+	const volume = history.channels.find(channel => channel.quantity === "Abgegebenes Volumen");
+	const pH = history.channels.find(channel => channel.component === "beaker" && channel.quantity === "pH");
+	const points = history.points(volume.id, pH.id);
+	assert.ok(Math.abs(points[0].x - 0.3) < 1e-9);
+	const firstDoseTime = recorder.firstTitrationDoseTime(volume.id, pH.id);
+	assert.equal(firstDoseTime, points[0].time);
+	assert.equal(recorder.firstTitrationDoseTime(volume.id, "different-beaker/pH"), undefined);
+	const half = titrationPoints(points, "y", firstDoseTime).find(marker => marker.kind === "half-equivalence");
+	assert.ok(half);
+	assert.ok(Math.abs(half.volume - 5) < 0.02);
+	assert.ok(Math.abs(half.pH - 4.75) < 0.005);
+});

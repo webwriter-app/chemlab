@@ -7,24 +7,24 @@ type Sample = { volume: number; pH: number };
 export type TitrationMarker = Sample & { kind: TitrationMarkerKind };
 
 /** Find observed points on increasing-volume sections of a pH titration trace. */
-export function titrationPoints(points: readonly PlotPoint[], phAxis: ChartAxis): TitrationMarker[] {
+export function titrationPoints(points: readonly PlotPoint[], phAxis: ChartAxis, firstDoseTime?: number): TitrationMarker[] {
 	const markers: TitrationMarker[] = [];
-	const samples: Sample[] = [];
+	const samples: (Sample & { time: number })[] = [];
 	for (const point of points) {
 		const pH = point[phAxis];
 		const volume = point[phAxis === "x" ? "y" : "x"];
 		const previous = samples[samples.length - 1];
 		if (pH === null || volume === null || (previous && volume <= previous.volume)) {
-			markers.push(...analyseRun(samples));
+			markers.push(...analyseRun(samples, firstDoseTime));
 			samples.length = 0;
 		}
-		if (pH !== null && volume !== null) samples.push({ volume, pH });
+		if (pH !== null && volume !== null) samples.push({ volume, pH, time: point.time });
 	}
-	markers.push(...analyseRun(samples));
+	markers.push(...analyseRun(samples, firstDoseTime));
 	return markers;
 }
 
-function analyseRun(points: readonly Sample[]): TitrationMarker[] {
+function analyseRun(points: readonly (Sample & { time: number })[], firstDoseTime?: number): TitrationMarker[] {
 	if (points.length < 2) return [];
 	const markers: TitrationMarker[] = [];
 	const slopes: number[] = [];
@@ -41,7 +41,7 @@ function analyseRun(points: readonly Sample[]): TitrationMarker[] {
 
 	// Bracket each peak by lower slopes on both sides. This excludes an
 	// unfinished rise and avoids treating pH rounding noise as an endpoint.
-	let lastEquivalence = points[0].volume === 0 ? 0 : undefined;
+	let lastEquivalence = points[0].volume === 0 || points[0].time === firstDoseTime ? 0 : undefined;
 	for (let first = 1; first < slopes.length - 1; first++) {
 		const sign = Math.sign(slopes[first]);
 		const height = Math.abs(slopes[first]);
@@ -67,7 +67,9 @@ function analyseRun(points: readonly Sample[]): TitrationMarker[] {
 		markers.push({ kind: "equivalence", volume, pH: interpolate(points, volume) });
 		if (lastEquivalence !== undefined) {
 			const half = (lastEquivalence + volume) / 2;
-			markers.push({ kind: "half-equivalence", volume: half, pH: interpolate(points, half) });
+			if (half >= points[0].volume) {
+				markers.push({ kind: "half-equivalence", volume: half, pH: interpolate(points, half) });
+			}
 		}
 		lastEquivalence = volume;
 		first = last;
