@@ -3,7 +3,7 @@ import { StructureManager } from "./StructureManager";
 import { Molecule } from "./Molecule";
 import { Atom } from "./Atom";
 import { ElementData } from "./ElementData";
-import { ElectricComponent, EComponentType, SOURCE_RESISTANCE } from "./ElectricComponent";
+import { ElectricComponent, EComponentType } from "./ElectricComponent";
 import { ComponentManager } from "./ComponentManager";
 import { AcidBase, AcidBaseSystem } from "./AcidBase";
 import { saltSolubility } from "./saltSolubility";
@@ -25,7 +25,7 @@ import {
 	materialName,
 	atomSymbol,
 } from "./halfReactions";
-import { circuitNetwork, circuitThevenin, circuitReadings, type CircuitNetwork, type CircuitReading } from "./circuit";
+import { circuitNetwork, circuitThevenin, circuitReadings, type CircuitElement, type CircuitNetwork, type CircuitReading } from "./circuit";
 import { NoIonicPathTransientModel, type NoIonicPathTransientSample } from "./NoIonicPathTransientModel";
 
 const saltEquilibria = Object.entries(saltSolubility).map(([formula, data]) => {
@@ -1681,94 +1681,209 @@ export abstract class Simulation {
 	}
 
 	/**
-	 * How much the source raises the first electrode's terminal above the
-	 * second's. A source with a set polarity puts the electrode on its plus
-	 * pole at the higher potential; without one it drives the cell against its
-	 * own voltage, which is what a supply in a school experiment does.
+	 * The EMF at which a residual that falls as the EMF rises vanishes.
+	 *
+	 * Every reading of a resistive network falls as the source's EMF rises, so
+	 * the root is unique. The bracket is opened by doubling the distance from
+	 * the start and then narrowed by false position with the Illinois
+	 * modification, which keeps one side from stalling.
 	 *
 	 * @private
 	 * @static
-	 * @param {ElectricComponent} device - the source
-	 * @param {ElectricComponent} first - first electrode
-	 * @param {ElectricComponent} second - second electrode
-	 * @param {CellLimits} limits - the one-sided limits of the cell
-	 * @returns {number}
+	 * @param {(emf: number) => (number | undefined)} residual - the value to zero, falling in `emf`
+	 * @param {number} start - the EMF to probe first, in V
+	 * @returns {(number | undefined)} the EMF that zeroes it, or undefined when it has no root
 	 */
-	private static sourceVoltage(
-		device: ElectricComponent,
-		first: ElectricComponent,
-		second: ElectricComponent,
-		limits: CellLimits
-	): number {
-		if (device._type !== EComponentType.Source) return 0;
-		const magnitude = Math.abs(device._sourceVoltage ?? 0);
-		if (device._polarity !== 0) {
-			// The electrode on the plus pole is the one where oxidation runs,
-			// so it must end up higher.
-			const plus = ComponentManager.terminalElectrode(device, device._polarity > 0 ? 0 : 1);
-			return plus === second ? -magnitude : magnitude;
+	private static matchSourceEmf(
+		residual: (emf: number) => number | undefined,
+		start: number
+	): number | undefined {
+		let low = start;
+		let high = start;
+		let fLow = residual(low);
+		if (fLow === undefined || !Number.isFinite(fLow)) return undefined;
+		if (fLow === 0) return start;
+		let fHigh = fLow;
+		let distance = 0.05;
+		for (let step = 0; step < 40; step++) {
+			if (fLow > 0) {
+				high = start + distance;
+				fHigh = residual(high);
+				if (fHigh === undefined || !Number.isFinite(fHigh)) return undefined;
+				if (fHigh < 0) break;
+			} else {
+				low = start - distance;
+				fLow = residual(low);
+				if (fLow === undefined || !Number.isFinite(fLow)) return undefined;
+				if (fLow > 0) break;
+			}
+			distance *= 2;
 		}
-		// The loop residual E₁ − E₂ − U + I·R grows with I, so a root with
-		// I > 0 needs U above E₁ − E₂ and one with I < 0 needs U below it.
-		// Opposing a cell that runs anodically at the first electrode (I > 0)
-		// therefore means a negative U, and one that runs cathodically there
-		// means a positive U.
-		const open = limits.openFirst - limits.openSecond;
-		// With no cell voltage of its own the first electrode becomes the
-		// anode, so the supply's plus pole sits where the user wired it.
-		return Number.isFinite(open) && open >= 0 ? magnitude : -magnitude;
+		if (!(fLow >= 0 && fHigh <= 0)) return undefined;
+		let emf = Math.max(low, Math.min(high, start));
+		let value = residual(emf);
+		let side = 0;
+		for (let step = 0; step < 60; step++) {
+			if (value === undefined || !Number.isFinite(value)) return undefined;
+			if (value === 0) return emf;
+			if (value > 0) {
+				low = emf;
+				fLow = value;
+				if (side > 0) fHigh /= 2;
+				side = 1;
+			} else {
+				high = emf;
+				fHigh = value;
+				if (side < 0) fLow /= 2;
+				side = -1;
+			}
+			const span = high - low;
+			if (span < 1e-12) return (low + high) / 2;
+			let next = fHigh === fLow ? NaN : low - fLow * span / (fHigh - fLow);
+			if (!(next > low && next < high)) next = (low + high) / 2;
+			if (Math.abs(next - emf) < 1e-12) return next;
+			emf = next;
+			value = residual(emf);
+		}
+		return emf;
 	}
 
 	/**
-	 * The EMF a source has to drive so that it raises the first electrode
-	 * above the second by `voltage`. The EMF is written from the source's own
-	 * first terminal, which may reach either electrode depending on how the
-	 * leads were laid.
+	 * The cell solve and the network on one terminal voltage.
+	 *
+	 * The supply's EMF goes into the network before the cell is solved, so the
+	 * cell sees the voltage the network really presents at the supply's
+	 * terminals, and the current the supply delivers is the current through its
+	 * own branch — parallel loads included. A current setpoint and a current
+	 * limit therefore regulate what the supply itself carries, not the cell
+	 * current alone.
+	 *
+	 * The network is linear, so the supply's own reading is affine in its EMF
+	 * and in the cell current. Three probes give the coefficients, and only the
+	 * cell solve has to be repeated while the EMF is matched.
 	 *
 	 * @private
 	 * @static
-	 * @param {ElectricComponent} device - the source
-	 * @param {ElectricComponent} first - first electrode
-	 * @param {number} voltage - the voltage to raise the first electrode by, in V
-	 * @returns {number}
+	 * @param {CircuitNetwork} network - the network between the electrodes
+	 * @param {CircuitElement} element - the supply's own branch
+	 * @param {ElectricComponent} source - the supply
+	 * @param {HalfCandidate[]} first - first electrode's half-reactions
+	 * @param {HalfCandidate[]} second - second electrode's half-reactions
+	 * @param {number} electrolyte - resistance of the ionic path in Ω
+	 * @param {CellLimits} limits - the open-circuit potentials to start from
+	 * @param {CellAreas} areas - the wetted area of both electrodes in cm²
+	 * @returns {({solution: CellSolution, limited: boolean} | undefined)}
 	 */
-	private static sourceEmf(
-		device: ElectricComponent,
-		first: ElectricComponent,
-		voltage: number
-	): number {
-		return ComponentManager.terminalElectrode(device, 0) === first ? voltage : -voltage;
-	}
-
-	/**
-	 * The current a galvanostat forces, signed so that a positive value makes
-	 * the first electrode the anode. A set polarity names the electrode on the
-	 * plus pole, which is the one the current leaves into the wire, so that
-	 * electrode is the anode. Without one the source drives the cell against
-	 * its own voltage, exactly as a voltage source does.
-	 *
-	 * @private
-	 * @static
-	 * @param {ElectricComponent} device - the source
-	 * @param {ElectricComponent} first - first electrode
-	 * @param {ElectricComponent} second - second electrode
-	 * @param {CellLimits} limits - the one-sided limits of the cell
-	 * @returns {number}
-	 */
-	private static sourceCurrent(
-		device: ElectricComponent,
-		first: ElectricComponent,
-		second: ElectricComponent,
-		limits: CellLimits
-	): number {
-		if (device._type !== EComponentType.Source) return 0;
-		const magnitude = Math.abs(device._sourceCurrent ?? 0);
-		if (device._polarity !== 0) {
-			const plus = ComponentManager.terminalElectrode(device, device._polarity > 0 ? 0 : 1);
-			return plus === second ? -magnitude : magnitude;
-		}
+	private static solveSupply(
+		network: CircuitNetwork,
+		element: CircuitElement,
+		source: ElectricComponent,
+		first: HalfCandidate[],
+		second: HalfCandidate[],
+		electrolyte: number,
+		limits: CellLimits,
+		areas: CellAreas
+	): { solution: CellSolution; limited: boolean } | undefined {
+		// The network's answer to the supply's EMF and to the cell current,
+		// taken apart so that only the cell solve has to run for the EMF.
+		const probe = (emf: number, current: number) => {
+			element.emf = emf;
+			return circuitReadings(network, {
+				emf: 0, resistance: electrolyte, current, open: false,
+			})?.get(source);
+		};
+		const rest = probe(0, 0);
+		const byEmf = probe(1, 0);
+		const byCell = probe(0, 1);
+		if (!rest || !byEmf || !byCell) return undefined;
+		const currentOf = (emf: number, cell: number) =>
+			rest.current + (byEmf.current - rest.current) * emf + (byCell.current - rest.current) * cell;
+		const voltageOf = (emf: number, cell: number) =>
+			rest.voltage + (byEmf.voltage - rest.voltage) * emf + (byCell.voltage - rest.voltage) * cell;
+		element.emf = 1;
+		const thevenin = circuitThevenin(network);
+		if (!thevenin) return undefined;
+		// How the supply's EMF reaches the electrodes: positive when it raises
+		// the first electrode, which is the one its plus pole reaches.
+		const transfer = thevenin.voltage;
+		const solveAt = (emf: number) => {
+			// The element keeps the EMF the cell was solved against, so the
+			// readings taken afterwards see the same network.
+			element.emf = emf;
+			const solution = this.solveCell(first, second, transfer * emf,
+				thevenin.resistance + electrolyte, false, limits, areas);
+			if (!solution) return undefined;
+			return {
+				solution,
+				current: currentOf(emf, solution.current),
+				voltage: voltageOf(emf, solution.current),
+			};
+		};
+		// The EMF that drives `wanted` through the cell, which is exact while
+		// the supply is the only path and a good start once it is not.
+		const startFor = (wanted: number) => {
+			const driven = this.solveGalvanostat(first, second, wanted,
+				thevenin.resistance + electrolyte, limits, areas);
+			if (!driven) return 0;
+			return Math.abs(transfer) > 1e-9 ? driven.voltage / transfer : driven.voltage;
+		};
 		const open = limits.openFirst - limits.openSecond;
-		return Number.isFinite(open) && open >= 0 ? magnitude : -magnitude;
+		const openSign = Number.isFinite(open) && open >= 0 ? 1 : -1;
+		// A positive transfer means the plus pole reaches the first electrode.
+		const plusAtFirst = transfer >= 0;
+		if (source._sourceMode === "current") {
+			// A galvanostat fixes the current through itself; the cell then
+			// decides the voltage, and the compliance limit caps what the
+			// supply may hold at its terminals.
+			const magnitude = Math.abs(source._sourceCurrent ?? 0);
+			const wanted = source._polarity === 0 ? openSign * magnitude
+				: (source._polarity > 0) === plusAtFirst ? magnitude : -magnitude;
+			// The supply's own reading runs against the current it delivers,
+			// so a setpoint that makes the first electrode the anode is a
+			// negative reading.
+			const target = -wanted;
+			const emf = this.matchSourceEmf((probe) => {
+				const point = solveAt(probe);
+				return point ? point.current - target : undefined;
+			}, startFor(wanted));
+			if (emf === undefined) return undefined;
+			const point = solveAt(emf);
+			if (!point) return undefined;
+			const compliance = Math.abs(source._complianceVoltage ?? 0);
+			if (!(compliance > 0) || Math.abs(point.voltage) <= compliance) {
+				return { solution: point.solution, limited: false };
+			}
+			const capped = this.matchSourceEmf((probe) => {
+				const next = solveAt(probe);
+				return next ? Math.sign(point.voltage) * compliance - next.voltage : undefined;
+			}, emf);
+			if (capped === undefined) return undefined;
+			const held = solveAt(capped);
+			return held ? { solution: held.solution, limited: true } : undefined;
+		}
+		// A voltage source holds its setpoint at the terminals. Without a set
+		// polarity the setpoint is the cell voltage it has to overcome, so the
+		// EMF is scaled by how the network transfers it to the electrodes.
+		const magnitude = Math.abs(source._sourceVoltage ?? 0);
+		const emf = source._polarity === 0
+			? (Math.abs(transfer) > 1e-9 ? openSign * magnitude / transfer : openSign * magnitude)
+			: source._polarity < 0 ? -magnitude : magnitude;
+		const point = solveAt(emf);
+		if (!point) return undefined;
+		const limit = Math.abs(source._sourceCurrent ?? 0);
+		if (!(limit > 0) || Math.abs(point.current) <= limit) {
+			return { solution: point.solution, limited: false };
+		}
+		// Beyond the setpoint the supply drops into constant-current operation
+		// and the voltage falls to what the load needs at that current.
+		const target = Math.sign(point.current) * limit;
+		const capped = this.matchSourceEmf((probe) => {
+			const next = solveAt(probe);
+			return next ? next.current - target : undefined;
+		}, startFor(-target));
+		if (capped === undefined) return undefined;
+		const held = solveAt(capped);
+		return held ? { solution: held.solution, limited: true } : undefined;
 	}
 
 	/**
@@ -1987,82 +2102,44 @@ export abstract class Simulation {
 		// it, or in series with it. Its Thevenin equivalent is what the cell
 		// is solved against, so every meter is read where it actually is.
 		const network = circuitNetwork([sElectrode1, sElectrode2, ...sDevices]);
-		const thevenin = network ? circuitThevenin(network) : undefined;
-		if (!network || !thevenin) return unsolved();
-		const resistance = thevenin.resistance + electrolyte;
-		// A source drives the cell; without one the circuit is either open (a
-		// voltmeter, which draws no current) or shorted through the ammeter.
-		// Only a network that really presents no path counts as open: a lead
-		// laid straight across the electrodes lets the cell discharge even
-		// while a voltmeter hangs on the same posts.
-		const ideal = !source && thevenin.resistance > OPEN_CIRCUIT_RESISTANCE && sDevices.some((device) =>
-			device._type === EComponentType.Voltmeter ||
-			(device._type === EComponentType.Multimeter && device._meterMode === "voltage"));
+		if (!network) return unsolved();
+		const element = source ? network.elements.find((entry) => entry.device === source) : undefined;
 		let solution: CellSolution | undefined;
-		let applied = 0;
-		// Whether the supply had to give up its voltage setpoint because the
-		// cell would have drawn more current than it allows.
+		// Whether the supply had to give up its setpoint because the load
+		// would have drawn more than it allows.
 		let limited = false;
-		if (source?._sourceMode === "current") {
-			// A galvanostat fixes the current and lets the cell decide the
-			// voltage. Its compliance limit is the largest voltage it may
-			// apply; beyond that it saturates and the cell sets the current.
-			const wanted = this.sourceCurrent(source, sElectrode1, sElectrode2, limits);
-			const driven = this.solveGalvanostat(first, second, wanted, resistance, limits, areas);
-			if (!driven) return unsolved();
-			const compliance = Math.abs(source._complianceVoltage ?? 0);
-			if (Math.abs(driven.voltage) > compliance) {
-				// The limit holds at the terminals, not behind the source's
-				// own resistance: the EMF has to make up for the drop the
-				// current causes, and the current follows from the EMF. The
-				// two are brought together in a few passes, which converge
-				// because the source's share of the loop is small.
-				const sign = driven.voltage > 0 ? 1 : -1;
-				let emf = sign * compliance;
-				for (let pass = 0; pass < 8; pass++) {
-					const probe = this.solveCell(first, second, emf, resistance, false, limits, areas);
-					if (!probe) break;
-					const next = sign * compliance + probe.current * SOURCE_RESISTANCE;
-					if (Math.abs(next - emf) < 1e-7) break;
-					emf = next;
-				}
-				applied = emf;
-				solution = this.solveCell(first, second, applied, resistance, false, limits, areas);
-			} else {
-				applied = driven.voltage;
-				solution = driven.solution;
-			}
+		let ideal = false;
+		if (source && element) {
+			// The supply's EMF is part of the network, so the cell is solved
+			// against the voltage the network really presents at the supply's
+			// terminals, and the supply's own current is what gets regulated.
+			const point = this.solveSupply(network, element, source, first, second,
+				electrolyte, limits, areas);
+			if (!point) return unsolved();
+			solution = point.solution;
+			limited = point.limited;
 		} else {
-			applied = source ? this.sourceVoltage(source, sElectrode1, sElectrode2, limits) : 0;
-			solution = this.solveCell(first, second, applied, resistance, ideal, limits, areas);
-			// A supply in voltage mode limits the current it delivers. Beyond
-			// the setpoint it drops into constant-current operation, and the
-			// voltage falls to whatever the cell needs at that current.
-			const limit = source ? Math.abs(source._sourceCurrent ?? 0) : 0;
-			if (source && limit > 0 && solution && Math.abs(solution.current) > limit) {
-				const sign = solution.current > 0 ? 1 : -1;
-				const driven = this.solveGalvanostat(first, second, sign * limit, resistance, limits, areas);
-				if (driven) {
-					applied = driven.voltage;
-					solution = driven.solution;
-					limited = true;
-				}
-			}
+			const thevenin = circuitThevenin(network);
+			if (!thevenin) return unsolved();
+			// Without a supply the circuit is either open (a voltmeter, which
+			// draws no current) or shorted through the ammeter. Only a network
+			// that really presents no path counts as open: a lead laid straight
+			// across the electrodes lets the cell discharge even while a
+			// voltmeter hangs on the same posts.
+			ideal = thevenin.resistance > OPEN_CIRCUIT_RESISTANCE && sDevices.some((device) =>
+				device._type === EComponentType.Voltmeter ||
+				(device._type === EComponentType.Multimeter && device._meterMode === "voltage"));
+			solution = this.solveCell(first, second, thevenin.voltage,
+				thevenin.resistance + electrolyte, ideal, limits, areas);
 		}
 		if (!solution) return unsolved();
-
-		// The source drives the network with the voltage the cell solve found
-		// for it; the other elements carry no EMF of their own.
-		if (source) {
-			const element = network.elements.find((entry) => entry.device === source);
-			if (element) element.emf = this.sourceEmf(source, sElectrode1, applied);
-		}
 		const readings = circuitReadings(network, {
 			emf: solution.first - solution.second,
 			resistance: electrolyte,
 			current: solution.current,
 			open: ideal,
 		});
+
 		for (const device of sDevices) {
 			const reading = readings?.get(device);
 			// A device whose lead hangs on one post only is not part of the
@@ -2076,9 +2153,9 @@ export abstract class Simulation {
 				// to apply in current mode, and the one left over once the
 				// current limit took over in voltage mode. Without a limit the
 				// setpoint stands, so the display keeps showing it.
-				device._visibleVoltage = device._sourceMode === "current"
-					? (reading ? Math.abs(reading.voltage) : Math.abs(applied))
-					: limited ? Math.abs(applied - solution.current * SOURCE_RESISTANCE) : null;
+				device._visibleVoltage = device._sourceMode === "current" || limited
+					? (reading ? Math.abs(reading.voltage) : null)
+					: null;
 			}
 		}
 
