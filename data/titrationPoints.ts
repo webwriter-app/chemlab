@@ -63,9 +63,7 @@ function analyseRun(points: readonly Sample[]): TitrationMarker[] {
 			first = last;
 			continue;
 		}
-		const a = points[first];
-		const b = points[last + 1];
-		const volume = (a.volume + b.volume) / 2;
+		const volume = peakVolume(points, slopes, first, last);
 		markers.push({ kind: "equivalence", volume, pH: interpolate(points, volume) });
 		if (lastEquivalence !== undefined) {
 			const half = (lastEquivalence + volume) / 2;
@@ -75,6 +73,25 @@ function analyseRun(points: readonly Sample[]): TitrationMarker[] {
 		first = last;
 	}
 	return markers;
+}
+
+function peakVolume(points: readonly Sample[], slopes: readonly number[], first: number, last: number): number {
+	const low = points[first].volume;
+	const high = points[last + 1].volume;
+	const middle = (low + high) / 2;
+	if (first !== last) return middle;
+
+	// Sub-step estimate from the maximum of a parabola fitted to the peak
+	// and its neighbours. Use the actual dose spacing of the secants.
+	const left = (points[first - 1].volume + low) / 2;
+	const right = (high + points[first + 2].volume) / 2;
+	const peak = Math.abs(slopes[first]);
+	const rising = (peak - Math.abs(slopes[first - 1])) / (middle - left);
+	const falling = (Math.abs(slopes[first + 1]) - peak) / (right - middle);
+	const curvature = (falling - rising) / (right - left);
+	if (!(curvature < 0)) return middle;
+	const maximum = (left + middle) / 2 - rising / (2 * curvature);
+	return Math.min(high, Math.max(low, maximum));
 }
 
 function interpolate(points: readonly Sample[], volume: number): number {

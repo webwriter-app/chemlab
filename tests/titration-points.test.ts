@@ -10,18 +10,22 @@ test("equivalence, neutral crossing and half-equivalence have distinct meanings"
 	const equivalence = markers.find(marker => marker.kind === "equivalence");
 	const neutral = markers.find(marker => marker.kind === "neutral");
 	const half = markers.find(marker => marker.kind === "half-equivalence");
-	assert.equal(equivalence.volume, 4.5);
+	assert.ok(Math.abs(equivalence.volume - 4.5) < 0.05);
 	assert.ok(neutral.volume > equivalence.volume);
 	assert.equal(neutral.pH, 7);
-	assert.equal(half.volume, 2.25);
+	assert.equal(half.volume, equivalence.volume / 2);
 	assert.deepEqual(titrationPoints(samples.map(({ time, x, y }) => ({ time, x: y, y: x })), "x"), markers);
 });
 
 test("the detector supports two separated equivalence points", () => {
 	const samples = trace([1, 1.1, 1.2, 1.6, 4.3, 4.8, 5, 5.1, 5.3, 5.8, 9.8, 10.2, 10.25]);
 	const markers = titrationPoints(samples, "y");
-	assert.deepEqual(markers.filter(marker => marker.kind === "equivalence").map(marker => marker.volume), [3.5, 9.5]);
-	assert.deepEqual(markers.filter(marker => marker.kind === "half-equivalence").map(marker => marker.volume), [1.75, 6.5]);
+	const equivalences = markers.filter(marker => marker.kind === "equivalence").map(marker => marker.volume);
+	assert.equal(equivalences.length, 2);
+	assert.ok(Math.abs(equivalences[0] - 3.5) < 0.05);
+	assert.ok(Math.abs(equivalences[1] - 9.5) < 0.05);
+	assert.deepEqual(markers.filter(marker => marker.kind === "half-equivalence").map(marker => marker.volume),
+		[equivalences[0] / 2, (equivalences[0] + equivalences[1]) / 2]);
 });
 
 test("an unfinished rise, steady drift or data gap produces no false equivalence", () => {

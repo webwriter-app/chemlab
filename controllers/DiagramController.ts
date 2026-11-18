@@ -343,7 +343,7 @@ export class DiagramController implements ReactiveController {
 		const style = getComputedStyle(card);
 		const ink = style.color;
 		const accent = style.getPropertyValue("--sl-color-primary-600").trim() || "#0284c7";
-		const axisTitleColor = style.getPropertyValue("--sl-color-primary-800").trim() || "#075985";
+		const axisTitleColor = style.getPropertyValue("--diagram-axis-color").trim() || "#075985";
 		const grid = style.getPropertyValue("--sl-color-neutral-200").trim() || "#e5e7eb";
 		const surface = style.getPropertyValue("--sl-color-neutral-0").trim() || "#fff";
 		const font = { family: style.fontFamily, size: 11 };
@@ -353,7 +353,11 @@ export class DiagramController implements ReactiveController {
 			ticks: { color: ink, font, maxTicksLimit: 6 },
 			border: { color: grid },
 			grid: { color: grid, tickLength: 3 },
-			title: { color: axisTitleColor, font: { ...font, weight: "bold" as const }, display: true, text: "" },
+			title: {
+				color: axisTitleColor,
+				font: { ...font, size: Number.parseFloat(style.getPropertyValue("--diagram-axis-font-size")) || 11, weight: "bold" as const },
+				display: true, text: "",
+			},
 		});
 		return new Chart<"line", { x: number; y: number | null }[]>(canvas, {
 			type: "line",

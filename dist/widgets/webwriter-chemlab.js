@@ -103733,6 +103733,8 @@ var style = i`
 		pointer-events: auto;
 	}
 	#diagramArea {
+		--diagram-axis-font-size: 11px;
+		--diagram-axis-color: var(--sl-color-primary-800);
 		grid-column: 1;
 		background: var(--canvas-control-surface);
 		font-family: var(--sl-font-sans);
@@ -103824,10 +103826,18 @@ var style = i`
 		overflow-wrap: anywhere;
 	}
 	.diagram-axis-select {
+		--sl-input-height-small: 24px;
+		--sl-input-font-size-small: var(--diagram-axis-font-size);
+		--sl-input-spacing-small: 6px;
 		min-inline-size: 0;
 	}
-	.diagram-axis-select::part(form-control-label) {
-		font-size: var(--sl-font-size-small);
+	.diagram-builder .diagram-section-tag::part(content),
+	.diagram-axis-select::part(form-control-label),
+	.diagram-suggestion-title,
+	.diagram-suggestion-axis b {
+		font-size: var(--diagram-axis-font-size);
+		font-weight: 700;
+		color: var(--diagram-axis-color);
 	}
 	.diagram-axis-select::part(listbox) {
 		scrollbar-width: thin;
@@ -103841,6 +103851,10 @@ var style = i`
 		font-size: var(--sl-font-size-x-small);
 		font-weight: var(--sl-font-weight-semibold);
 		overflow-wrap: anywhere;
+	}
+	.diagram-axis-select sl-option::part(base) {
+		padding: 3px 7px;
+		font-size: var(--diagram-axis-font-size);
 	}
 	.diagram-axis-select sl-option::part(label) {
 		white-space: normal;
@@ -103866,10 +103880,6 @@ var style = i`
 		overflow-wrap: anywhere;
 		line-height: 1.25;
 	}
-	.diagram-suggestion-title {
-		font-weight: 600;
-		color: var(--sl-color-primary-800);
-	}
 	.diagram-suggestion-axis,
 	.diagram-empty {
 		color: var(--lab-card-secondary-text);
@@ -103878,9 +103888,6 @@ var style = i`
 	.diagram-empty {
 		margin: 2px 0;
 		line-height: 1.4;
-	}
-	.diagram-suggestion-axis b {
-		color: var(--sl-color-primary-800);
 	}
 	#inlineDiagramPanel {
 		box-sizing: border-box;
@@ -103946,6 +103953,7 @@ var style = i`
 		box-shadow: var(--lab-card-shadow);
 	}
 	.diagram-trim-track {
+		--diagram-thumb-radius: 6px;
 		position: absolute;
 	}
 	.diagram-trim-track-x {
@@ -104024,8 +104032,8 @@ var style = i`
 	.diagram-trim-handle::after {
 		content: "";
 		position: absolute;
-		width: 16px;
-		height: 16px;
+		width: calc(2 * var(--diagram-thumb-radius));
+		height: calc(2 * var(--diagram-thumb-radius));
 		border-radius: 50%;
 		background: var(--sl-color-primary-600);
 	}
@@ -104037,32 +104045,32 @@ var style = i`
 		cursor: ew-resize;
 	}
 	.diagram-trim-track-x .diagram-trim-handle::after {
-		top: calc(50% - 8px);
+		top: calc(50% - var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-x .diagram-trim-min {
 		right: calc(100% - var(--trim-min));
 	}
 	.diagram-trim-track-x .diagram-trim-min::after {
-		right: -8px;
+		right: calc(-1 * var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-x .diagram-trim-max {
 		left: var(--trim-max);
 	}
 	.diagram-trim-track-x .diagram-trim-max::after {
-		left: -8px;
+		left: calc(-1 * var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-y .diagram-trim-handle {
 		height: 10px;
 		cursor: ns-resize;
 	}
 	.diagram-trim-track-y .diagram-trim-handle::after {
-		left: calc(50% - 8px);
+		left: calc(50% - var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-y .diagram-trim-min {
 		top: calc(100% - var(--trim-min));
 	}
 	.diagram-trim-track-y .diagram-trim-min::after {
-		top: -8px;
+		top: calc(-1 * var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-y .diagram-trim-max {
 		bottom: var(--trim-max);
@@ -178077,9 +178085,7 @@ function analyseRun(points) {
       first = last;
       continue;
     }
-    const a7 = points[first];
-    const b5 = points[last + 1];
-    const volume = (a7.volume + b5.volume) / 2;
+    const volume = peakVolume(points, slopes, first, last);
     markers.push({ kind: "equivalence", volume, pH: interpolate3(points, volume) });
     if (lastEquivalence !== void 0) {
       const half = (lastEquivalence + volume) / 2;
@@ -178089,6 +178095,21 @@ function analyseRun(points) {
     first = last;
   }
   return markers;
+}
+function peakVolume(points, slopes, first, last) {
+  const low = points[first].volume;
+  const high = points[last + 1].volume;
+  const middle = (low + high) / 2;
+  if (first !== last) return middle;
+  const left = (points[first - 1].volume + low) / 2;
+  const right = (high + points[first + 2].volume) / 2;
+  const peak = Math.abs(slopes[first]);
+  const rising = (peak - Math.abs(slopes[first - 1])) / (middle - left);
+  const falling = (Math.abs(slopes[first + 1]) - peak) / (right - middle);
+  const curvature = (falling - rising) / (right - left);
+  if (!(curvature < 0)) return middle;
+  const maximum = (left + middle) / 2 - rising / (2 * curvature);
+  return Math.min(high, Math.max(low, maximum));
 }
 function interpolate3(points, volume) {
   let lower = 0;
@@ -178409,7 +178430,7 @@ var DiagramController = class {
     const style2 = getComputedStyle(card);
     const ink = style2.color;
     const accent = style2.getPropertyValue("--sl-color-primary-600").trim() || "#0284c7";
-    const axisTitleColor = style2.getPropertyValue("--sl-color-primary-800").trim() || "#075985";
+    const axisTitleColor = style2.getPropertyValue("--diagram-axis-color").trim() || "#075985";
     const grid = style2.getPropertyValue("--sl-color-neutral-200").trim() || "#e5e7eb";
     const surface = style2.getPropertyValue("--sl-color-neutral-0").trim() || "#fff";
     const font = { family: style2.fontFamily, size: 11 };
@@ -178419,7 +178440,12 @@ var DiagramController = class {
       ticks: { color: ink, font, maxTicksLimit: 6 },
       border: { color: grid },
       grid: { color: grid, tickLength: 3 },
-      title: { color: axisTitleColor, font: { ...font, weight: "bold" }, display: true, text: "" }
+      title: {
+        color: axisTitleColor,
+        font: { ...font, size: Number.parseFloat(style2.getPropertyValue("--diagram-axis-font-size")) || 11, weight: "bold" },
+        display: true,
+        text: ""
+      }
     });
     return new auto_default(canvas, {
       type: "line",

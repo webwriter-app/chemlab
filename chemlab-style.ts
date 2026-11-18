@@ -1194,6 +1194,8 @@ export const style = css`
 		pointer-events: auto;
 	}
 	#diagramArea {
+		--diagram-axis-font-size: 11px;
+		--diagram-axis-color: var(--sl-color-primary-800);
 		grid-column: 1;
 		background: var(--canvas-control-surface);
 		font-family: var(--sl-font-sans);
@@ -1285,10 +1287,18 @@ export const style = css`
 		overflow-wrap: anywhere;
 	}
 	.diagram-axis-select {
+		--sl-input-height-small: 24px;
+		--sl-input-font-size-small: var(--diagram-axis-font-size);
+		--sl-input-spacing-small: 6px;
 		min-inline-size: 0;
 	}
-	.diagram-axis-select::part(form-control-label) {
-		font-size: var(--sl-font-size-small);
+	.diagram-builder .diagram-section-tag::part(content),
+	.diagram-axis-select::part(form-control-label),
+	.diagram-suggestion-title,
+	.diagram-suggestion-axis b {
+		font-size: var(--diagram-axis-font-size);
+		font-weight: 700;
+		color: var(--diagram-axis-color);
 	}
 	.diagram-axis-select::part(listbox) {
 		scrollbar-width: thin;
@@ -1302,6 +1312,10 @@ export const style = css`
 		font-size: var(--sl-font-size-x-small);
 		font-weight: var(--sl-font-weight-semibold);
 		overflow-wrap: anywhere;
+	}
+	.diagram-axis-select sl-option::part(base) {
+		padding: 3px 7px;
+		font-size: var(--diagram-axis-font-size);
 	}
 	.diagram-axis-select sl-option::part(label) {
 		white-space: normal;
@@ -1327,10 +1341,6 @@ export const style = css`
 		overflow-wrap: anywhere;
 		line-height: 1.25;
 	}
-	.diagram-suggestion-title {
-		font-weight: 600;
-		color: var(--sl-color-primary-800);
-	}
 	.diagram-suggestion-axis,
 	.diagram-empty {
 		color: var(--lab-card-secondary-text);
@@ -1339,9 +1349,6 @@ export const style = css`
 	.diagram-empty {
 		margin: 2px 0;
 		line-height: 1.4;
-	}
-	.diagram-suggestion-axis b {
-		color: var(--sl-color-primary-800);
 	}
 	#inlineDiagramPanel {
 		box-sizing: border-box;
@@ -1407,6 +1414,7 @@ export const style = css`
 		box-shadow: var(--lab-card-shadow);
 	}
 	.diagram-trim-track {
+		--diagram-thumb-radius: 6px;
 		position: absolute;
 	}
 	.diagram-trim-track-x {
@@ -1485,8 +1493,8 @@ export const style = css`
 	.diagram-trim-handle::after {
 		content: "";
 		position: absolute;
-		width: 16px;
-		height: 16px;
+		width: calc(2 * var(--diagram-thumb-radius));
+		height: calc(2 * var(--diagram-thumb-radius));
 		border-radius: 50%;
 		background: var(--sl-color-primary-600);
 	}
@@ -1498,32 +1506,32 @@ export const style = css`
 		cursor: ew-resize;
 	}
 	.diagram-trim-track-x .diagram-trim-handle::after {
-		top: calc(50% - 8px);
+		top: calc(50% - var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-x .diagram-trim-min {
 		right: calc(100% - var(--trim-min));
 	}
 	.diagram-trim-track-x .diagram-trim-min::after {
-		right: -8px;
+		right: calc(-1 * var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-x .diagram-trim-max {
 		left: var(--trim-max);
 	}
 	.diagram-trim-track-x .diagram-trim-max::after {
-		left: -8px;
+		left: calc(-1 * var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-y .diagram-trim-handle {
 		height: 10px;
 		cursor: ns-resize;
 	}
 	.diagram-trim-track-y .diagram-trim-handle::after {
-		left: calc(50% - 8px);
+		left: calc(50% - var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-y .diagram-trim-min {
 		top: calc(100% - var(--trim-min));
 	}
 	.diagram-trim-track-y .diagram-trim-min::after {
-		top: -8px;
+		top: calc(-1 * var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-y .diagram-trim-max {
 		bottom: var(--trim-max);
