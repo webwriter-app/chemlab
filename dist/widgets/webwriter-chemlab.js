@@ -69812,6 +69812,13 @@ var init_BitmapFont = __esm({
 // localization/messages.json
 var messages_default = {
   en: {
+    "X-Bereich": "X range",
+    "Y-Bereich": "Y range",
+    Von: "From",
+    Bis: "To",
+    Anwenden: "Apply",
+    Automatisch: "Auto",
+    "Der obere Wert muss gr\xF6\xDFer als der untere sein.": "The upper value must be greater than the lower value.",
     "Zu {name} springen": "Go to {name}",
     "Achsen w\xE4hlen": "Choose axes",
     Diagrammvorschl\u00E4ge: "Suggested charts",
@@ -103726,7 +103733,7 @@ var style = i`
 		background: var(--canvas-control-surface);
 		font-family: var(--sl-font-sans);
 	}
-	#diagramArea:has(.diagram-builder-popup) {
+	#diagramArea:has(.diagram-builder-popup, .diagram-axis-select[open]) {
 		z-index: 2;
 	}
 	#diagramControls {
@@ -103811,6 +103818,9 @@ var style = i`
 	.diagram-sources sl-tag::part(content) {
 		white-space: normal;
 		overflow-wrap: anywhere;
+	}
+	.diagram-axis-select {
+		min-inline-size: 0;
 	}
 	.diagram-axis-select::part(form-control-label) {
 		font-size: var(--sl-font-size-small);
@@ -103931,6 +103941,41 @@ var style = i`
 		color: var(--lab-card-text);
 		box-shadow: var(--lab-card-shadow);
 	}
+	.diagram-range-buttons {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+	}
+	.diagram-range-buttons sl-button::part(label) {
+		padding-inline: 5px;
+		white-space: normal;
+	}
+	.diagram-range-editor {
+		display: grid;
+		min-inline-size: 0;
+		gap: 6px;
+		padding: 5px;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-inset);
+	}
+	.diagram-range-fields {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 4px;
+	}
+	@container (max-width: 360px) {
+		.diagram-range-fields {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+	.diagram-range-fields sl-input {
+		min-inline-size: 0;
+	}
+	.diagram-range-fields sl-input::part(form-control-label) {
+		font-size: var(--sl-font-size-small);
+	}
+
 	.diagram-sources {
 		display: flex;
 		flex-wrap: wrap;
@@ -177461,6 +177506,39 @@ var registerables = [
 Chart.register(...registerables);
 var auto_default = Chart;
 
+// data/diagramRanges.ts
+function fitRange(min6, max6) {
+  if (min6 < max6) return { min: min6, max: max6 };
+  const padding = min6 === 0 ? 1 : Math.max(Math.abs(min6) / 100, Number.MIN_VALUE);
+  return { min: Math.max(-Number.MAX_VALUE, min6 - padding), max: Math.min(Number.MAX_VALUE, max6 + padding) };
+}
+function diagramData(points) {
+  const data2 = [];
+  let latestX;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const { x: x4, y: y5 } of points) {
+    if (x4 === null || !Number.isFinite(x4)) {
+      if (latestX !== void 0) data2.push({ x: latestX, y: null });
+      continue;
+    }
+    latestX = x4;
+    if (y5 === null || !Number.isFinite(y5)) {
+      data2.push({ x: x4, y: null });
+      continue;
+    }
+    data2.push({ x: x4, y: y5 });
+    minX = Math.min(minX, x4);
+    maxX = Math.max(maxX, x4);
+    minY = Math.min(minY, y5);
+    maxY = Math.max(maxY, y5);
+  }
+  const ranges = minX === Infinity ? void 0 : { x: fitRange(minX, maxX), y: fitRange(minY, maxY) };
+  return { data: data2, ranges };
+}
+
 // data/measurementHistory.ts
 var TIME_CHANNEL = "time";
 var RETENTION_MS = 3e5;
@@ -177836,7 +177914,7 @@ var DiagramController = class {
     const history = this.host.measurements.history;
     history.prune();
     history.retain(axisId(x4), axisId(y5));
-    this.diagrams.push({ id: id3, x: x4, y: y5, title, card: e13(), canvas: e13() });
+    this.diagrams.push({ id: id3, x: x4, y: y5, title, card: e13(), canvas: e13(), zoom: {} });
     this.host.requestUpdate();
     this.host.reportXApi("created", "diagram-" + id3);
     this.invalidate();
@@ -177877,10 +177955,65 @@ var DiagramController = class {
 						<div class="diagram-plot">
 							<canvas role="img" aria-label=${`${title} \xB7 Y: ${y5} \xB7 X: ${x4}`} ${n9(diagram.canvas)}></canvas>
 						</div>
+						${this.renderRangeControls(diagram)}
 						${this.renderSources(diagram)}
 					</section>`;
     })}
 		</div>`;
+  }
+  renderRangeControls(diagram) {
+    const message = this.host.message;
+    const editor = diagram.editor;
+    const edit = (axis) => {
+      const range = diagram.zoom[axis] ?? diagram.fitted?.[axis];
+      diagram.editor = range && editor?.axis !== axis ? { axis, range } : void 0;
+      this.host.requestUpdate();
+    };
+    const setRange = (axis, range) => {
+      diagram.zoom[axis] = range;
+      diagram.editor = void 0;
+      this.host.requestUpdate();
+      this.invalidate();
+      diagram.card.value?.querySelector(`[data-range-axis="${axis}"]`)?.focus({ preventScroll: true });
+    };
+    return x`
+			<div class="diagram-range-buttons">
+				${["x", "y"].map((axis) => x`
+					<sl-button size="small" data-range-axis=${axis} ?disabled=${!diagram.fitted}
+						variant=${diagram.zoom[axis] ? "primary" : "default"}
+						aria-expanded=${String(editor?.axis === axis)}
+						@click=${() => edit(axis)}>${message(axis === "x" ? "X-Bereich" : "Y-Bereich")}</sl-button>`)}
+			</div>
+			${editor ? i6(editor, x`
+				<form class="diagram-range-editor" aria-label=${message(editor.axis === "x" ? "X-Bereich" : "Y-Bereich")}
+					@sl-input=${(event) => {
+      event.currentTarget.querySelector('[name="max"]').setCustomValidity("");
+    }}
+					@submit=${(event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const min6 = form.querySelector('[name="min"]').valueAsNumber;
+      const upper = form.querySelector('[name="max"]');
+      const max6 = upper.valueAsNumber;
+      if (!Number.isFinite(min6) || !Number.isFinite(max6) || !(min6 < max6)) {
+        upper.setCustomValidity(message("Der obere Wert muss gr\xF6\xDFer als der untere sein."));
+        upper.reportValidity();
+        return;
+      }
+      setRange(editor.axis, { min: min6, max: max6 });
+    }}>
+					<div class="diagram-range-fields">
+						<sl-input size="small" name="min" type="number" step="any" required contenteditable="false"
+							label=${message("Von")} .value=${String(editor.range.min)}></sl-input>
+						<sl-input size="small" name="max" type="number" step="any" required contenteditable="false"
+							label=${message("Bis")} .value=${String(editor.range.max)}></sl-input>
+					</div>
+					<div class="diagram-range-buttons">
+						<sl-button size="small" type="submit" variant="primary">${message("Anwenden")}</sl-button>
+						<sl-button size="small" ?disabled=${!diagram.zoom[editor.axis]}
+							@click=${() => setRange(editor.axis)}>${message("Automatisch")}</sl-button>
+					</div>
+				</form>`) : E}`;
   }
   renderSources({ x: x4, y: y5 }) {
     const sources2 = /* @__PURE__ */ new Map();
@@ -177924,6 +178057,7 @@ var DiagramController = class {
     const font = { family: style2.fontFamily, size: 11 };
     const scale = () => ({
       type: "linear",
+      bounds: "data",
       ticks: { color: ink, font, maxTicksLimit: 6 },
       border: { color: grid },
       grid: { color: grid, tickLength: 3 },
@@ -177985,16 +178119,22 @@ var DiagramController = class {
       if (!this.visible.has(card.value) || !canvas.value) continue;
       const chart = diagram.chart ??= this.createChart(canvas.value, card.value);
       const points = this.host.measurements.history.points(axisId(diagram.x), axisId(diagram.y));
-      let latestX;
-      const data2 = [];
-      for (const point of points) {
-        if (point.x !== null) latestX = point.x;
-        if (latestX !== void 0) data2.push({ x: latestX, y: point.x === null ? null : point.y });
+      const { data: data2, ranges } = diagramData(points);
+      if (Boolean(ranges) !== Boolean(diagram.fitted)) this.host.requestUpdate();
+      diagram.fitted = ranges;
+      const dataset = chart.data.datasets[0];
+      dataset.data = data2;
+      dataset.showLine = this.showLine;
+      const xPadding = diagram.zoom.x ? 0 : 2;
+      const yPadding = diagram.zoom.y ? 0 : 2;
+      dataset.clip = { left: xPadding, right: xPadding, top: yPadding, bottom: yPadding };
+      for (const axis of ["x", "y"]) {
+        const options2 = chart.options.scales[axis];
+        const range = diagram.zoom[axis] ?? ranges?.[axis];
+        options2.min = range?.min;
+        options2.max = range?.max;
+        options2.title.text = this.scaleLabel(diagram[axis]);
       }
-      chart.data.datasets[0].data = data2;
-      chart.data.datasets[0].showLine = this.showLine;
-      chart.options.scales.x.title.text = this.scaleLabel(diagram.x);
-      chart.options.scales.y.title.text = this.scaleLabel(diagram.y);
       chart.update("none");
     }
   }
@@ -188883,6 +189023,13 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const select = (axis, label, value, excluded) => x`
 			<sl-select class="diagram-axis-select" size="small" hoist contenteditable="false"
 				label=${this.message(label)} placeholder=${this.message("Datenquelle w\xE4hlen")}
+				@sl-show=${(event) => {
+      const popup = event.currentTarget.popup;
+      popup.flipBoundary = this.containerDiv;
+      popup.shiftBoundary = this.containerDiv;
+      popup.autoSizeBoundary = this.containerDiv;
+      popup.flipPadding = popup.shiftPadding = popup.autoSizePadding = 4;
+    }}
 				.value=${l3(value ? encodeURIComponent(axisId(value)) : "")}
 				@sl-change=${(event) => {
       const selected = decodeURIComponent(String(event.currentTarget.value));

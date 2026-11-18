@@ -1,0 +1,41 @@
+import type { PlotPoint } from "./measurementHistory";
+
+export type ChartAxis = "x" | "y";
+export type AxisRange = { min: number; max: number };
+export type AxisRanges = Record<ChartAxis, AxisRange>;
+
+function fitRange(min: number, max: number): AxisRange {
+	if (min < max) return { min, max };
+	// A flat series still needs a nonzero scale to remain visible.
+	const padding = min === 0 ? 1 : Math.max(Math.abs(min) / 100, Number.MIN_VALUE);
+	return { min: Math.max(-Number.MAX_VALUE, min - padding), max: Math.min(Number.MAX_VALUE, max + padding) };
+}
+
+/** Collect the bounds of drawable points while preserving the gaps in the plot. */
+export function diagramData(points: readonly PlotPoint[]) {
+	const data: { x: number; y: number | null }[] = [];
+	let latestX: number | undefined;
+	let minX = Infinity;
+	let maxX = -Infinity;
+	let minY = Infinity;
+	let maxY = -Infinity;
+	for (const { x, y } of points) {
+		if (x === null || !Number.isFinite(x)) {
+			if (latestX !== undefined) data.push({ x: latestX, y: null });
+			continue;
+		}
+		latestX = x;
+		if (y === null || !Number.isFinite(y)) {
+			data.push({ x, y: null });
+			continue;
+		}
+		data.push({ x, y });
+		minX = Math.min(minX, x);
+		maxX = Math.max(maxX, x);
+		minY = Math.min(minY, y);
+		maxY = Math.max(maxY, y);
+	}
+	const ranges: AxisRanges | undefined = minX === Infinity ? undefined :
+		{ x: fitRange(minX, maxX), y: fitRange(minY, maxY) };
+	return { data, ranges };
+}

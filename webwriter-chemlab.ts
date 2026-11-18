@@ -2961,6 +2961,15 @@ export class ChemLab extends LitElementWw {
 		const select = (axis: "x" | "y", label: string, value?: DiagramAxis, excluded?: DiagramAxis) => html`
 			<sl-select class="diagram-axis-select" size="small" hoist contenteditable="false"
 				label=${this.message(label)} placeholder=${this.message("Datenquelle wählen")}
+				@sl-show=${(event: Event) => {
+					const popup = (event.currentTarget as SlSelect).popup;
+					// A hoisted listbox escapes the drawer’s scroll container.
+					// Keep its flip, shift and available height inside this widget.
+					popup.flipBoundary = this.containerDiv;
+					popup.shiftBoundary = this.containerDiv;
+					popup.autoSizeBoundary = this.containerDiv;
+					popup.flipPadding = popup.shiftPadding = popup.autoSizePadding = 4;
+				}}
 				.value=${live(value ? encodeURIComponent(axisId(value)) : "")}
 				@sl-change=${(event: Event) => {
 					const selected = decodeURIComponent(String((event.currentTarget as SlSelect).value));

@@ -1,7 +1,10 @@
 import { html, nothing, type ReactiveController } from "lit";
 import { createRef, ref, type Ref } from "lit/directives/ref.js";
+import { keyed } from "lit/directives/keyed.js";
 import { repeat } from "lit/directives/repeat.js";
 import Chart from "chart.js/auto";
+import type SlInput from "@shoelace-style/shoelace/dist/components/input/input.component.js";
+import { diagramData, type AxisRange, type AxisRanges, type ChartAxis } from "../data/diagramRanges";
 import { TIME_CHANNEL, type MeasurementChannel } from "../data/measurementHistory";
 import { axisId, componentKey, type DiagramAxis } from "../data/diagramSources";
 import type { ChemLab } from "../webwriter-chemlab";
@@ -13,6 +16,9 @@ type Diagram = {
 	card: Ref<HTMLElement>;
 	title?: string;
 	canvas: Ref<HTMLCanvasElement>;
+	fitted?: AxisRanges;
+	zoom: Partial<AxisRanges>;
+	editor?: { axis: ChartAxis; range: AxisRange };
 	chart?: Chart<"line", { x: number; y: number | null }[]>;
 };
 
@@ -113,7 +119,7 @@ export class DiagramController implements ReactiveController {
 		const history = this.host.measurements.history;
 		history.prune();
 		history.retain(axisId(x), axisId(y));
-		this.diagrams.push({ id, x, y, title, card: createRef(), canvas: createRef() });
+		this.diagrams.push({ id, x, y, title, card: createRef(), canvas: createRef(), zoom: {} });
 		this.host.requestUpdate();
 		this.host.reportXApi("created", "diagram-" + id);
 		this.invalidate();
@@ -156,10 +162,66 @@ export class DiagramController implements ReactiveController {
 						<div class="diagram-plot">
 							<canvas role="img" aria-label=${`${title} · Y: ${y} · X: ${x}`} ${ref(diagram.canvas)}></canvas>
 						</div>
+						${this.renderRangeControls(diagram)}
 						${this.renderSources(diagram)}
 					</section>`;
 			})}
 		</div>`;
+	}
+
+	private renderRangeControls(diagram: Diagram) {
+		const message = this.host.message;
+		const editor = diagram.editor;
+		const edit = (axis: ChartAxis) => {
+			const range = diagram.zoom[axis] ?? diagram.fitted?.[axis];
+			diagram.editor = range && editor?.axis !== axis ? { axis, range } : undefined;
+			this.host.requestUpdate();
+		};
+		const setRange = (axis: ChartAxis, range?: AxisRange) => {
+			diagram.zoom[axis] = range;
+			diagram.editor = undefined;
+			this.host.requestUpdate();
+			this.invalidate();
+			diagram.card.value?.querySelector<HTMLElement>(`[data-range-axis="${axis}"]`)?.focus({ preventScroll: true });
+		};
+		return html`
+			<div class="diagram-range-buttons">
+				${(["x", "y"] as const).map(axis => html`
+					<sl-button size="small" data-range-axis=${axis} ?disabled=${!diagram.fitted}
+						variant=${diagram.zoom[axis] ? "primary" : "default"}
+						aria-expanded=${String(editor?.axis === axis)}
+						@click=${() => edit(axis)}>${message(axis === "x" ? "X-Bereich" : "Y-Bereich")}</sl-button>`)}
+			</div>
+			${editor ? keyed(editor, html`
+				<form class="diagram-range-editor" aria-label=${message(editor.axis === "x" ? "X-Bereich" : "Y-Bereich")}
+					@sl-input=${(event: Event) => {
+						(event.currentTarget as HTMLFormElement).querySelector<SlInput>('[name="max"]').setCustomValidity("");
+					}}
+					@submit=${(event: SubmitEvent) => {
+						event.preventDefault();
+						const form = event.currentTarget as HTMLFormElement;
+						const min = form.querySelector<SlInput>('[name="min"]').valueAsNumber;
+						const upper = form.querySelector<SlInput>('[name="max"]');
+						const max = upper.valueAsNumber;
+						if (!Number.isFinite(min) || !Number.isFinite(max) || !(min < max)) {
+							upper.setCustomValidity(message("Der obere Wert muss größer als der untere sein."));
+							upper.reportValidity();
+							return;
+						}
+						setRange(editor.axis, { min, max });
+					}}>
+					<div class="diagram-range-fields">
+						<sl-input size="small" name="min" type="number" step="any" required contenteditable="false"
+							label=${message("Von")} .value=${String(editor.range.min)}></sl-input>
+						<sl-input size="small" name="max" type="number" step="any" required contenteditable="false"
+							label=${message("Bis")} .value=${String(editor.range.max)}></sl-input>
+					</div>
+					<div class="diagram-range-buttons">
+						<sl-button size="small" type="submit" variant="primary">${message("Anwenden")}</sl-button>
+						<sl-button size="small" ?disabled=${!diagram.zoom[editor.axis]}
+							@click=${() => setRange(editor.axis)}>${message("Automatisch")}</sl-button>
+					</div>
+				</form>`) : nothing}`;
 	}
 
 	private renderSources({ x, y }: Diagram) {
@@ -206,6 +268,7 @@ export class DiagramController implements ReactiveController {
 		const font = { family: style.fontFamily, size: 11 };
 		const scale = () => ({
 			type: "linear" as const,
+			bounds: "data" as const,
 			ticks: { color: ink, font, maxTicksLimit: 6 },
 			border: { color: grid },
 			grid: { color: grid, tickLength: 3 },
@@ -257,16 +320,24 @@ export class DiagramController implements ReactiveController {
 			if (!this.visible.has(card.value) || !canvas.value) continue;
 			const chart = diagram.chart ??= this.createChart(canvas.value, card.value);
 			const points = this.host.measurements.history.points(axisId(diagram.x), axisId(diagram.y));
-			let latestX: number | undefined;
-			const data: { x: number; y: number | null }[] = [];
-			for (const point of points) {
-				if (point.x !== null) latestX = point.x;
-				if (latestX !== undefined) data.push({ x: latestX, y: point.x === null ? null : point.y });
+			const { data, ranges } = diagramData(points);
+			if (Boolean(ranges) !== Boolean(diagram.fitted)) this.host.requestUpdate();
+			diagram.fitted = ranges;
+			const dataset = chart.data.datasets[0];
+			dataset.data = data;
+			dataset.showLine = this.showLine;
+			// Give points on the fitted bounds room for their marker. A manually
+			// zoomed axis clips exactly at its selected range.
+			const xPadding = diagram.zoom.x ? 0 : 2;
+			const yPadding = diagram.zoom.y ? 0 : 2;
+			dataset.clip = { left: xPadding, right: xPadding, top: yPadding, bottom: yPadding };
+			for (const axis of ["x", "y"] as const) {
+				const options = chart.options.scales[axis];
+				const range = diagram.zoom[axis] ?? ranges?.[axis];
+				options.min = range?.min;
+				options.max = range?.max;
+				options.title.text = this.scaleLabel(diagram[axis]);
 			}
-			chart.data.datasets[0].data = data;
-			chart.data.datasets[0].showLine = this.showLine;
-			chart.options.scales.x.title.text = this.scaleLabel(diagram.x);
-			chart.options.scales.y.title.text = this.scaleLabel(diagram.y);
 			chart.update("none");
 		}
 	}

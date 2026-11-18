@@ -1198,7 +1198,7 @@ export const style = css`
 		background: var(--canvas-control-surface);
 		font-family: var(--sl-font-sans);
 	}
-	#diagramArea:has(.diagram-builder-popup) {
+	#diagramArea:has(.diagram-builder-popup, .diagram-axis-select[open]) {
 		z-index: 2;
 	}
 	#diagramControls {
@@ -1283,6 +1283,9 @@ export const style = css`
 	.diagram-sources sl-tag::part(content) {
 		white-space: normal;
 		overflow-wrap: anywhere;
+	}
+	.diagram-axis-select {
+		min-inline-size: 0;
 	}
 	.diagram-axis-select::part(form-control-label) {
 		font-size: var(--sl-font-size-small);
@@ -1403,6 +1406,41 @@ export const style = css`
 		color: var(--lab-card-text);
 		box-shadow: var(--lab-card-shadow);
 	}
+	.diagram-range-buttons {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+	}
+	.diagram-range-buttons sl-button::part(label) {
+		padding-inline: 5px;
+		white-space: normal;
+	}
+	.diagram-range-editor {
+		display: grid;
+		min-inline-size: 0;
+		gap: 6px;
+		padding: 5px;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-inset);
+	}
+	.diagram-range-fields {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 4px;
+	}
+	@container (max-width: 360px) {
+		.diagram-range-fields {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+	.diagram-range-fields sl-input {
+		min-inline-size: 0;
+	}
+	.diagram-range-fields sl-input::part(form-control-label) {
+		font-size: var(--sl-font-size-small);
+	}
+
 	.diagram-sources {
 		display: flex;
 		flex-wrap: wrap;

@@ -1,5 +1,12 @@
 {
   "en": {
+    "X-Bereich": "X range",
+    "Y-Bereich": "Y range",
+    "Von": "From",
+    "Bis": "To",
+    "Anwenden": "Apply",
+    "Automatisch": "Auto",
+    "Der obere Wert muss größer als der untere sein.": "The upper value must be greater than the lower value.",
     "Zu {name} springen": "Go to {name}",
     "Achsen wählen": "Choose axes",
     "Diagrammvorschläge": "Suggested charts",
