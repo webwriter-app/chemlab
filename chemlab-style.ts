@@ -1424,21 +1424,68 @@ export const style = css`
 		border-radius: var(--sl-border-radius-medium);
 		background: var(--lab-card-inset);
 	}
-	.diagram-range-fields {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+	.diagram-trim-track {
+		position: relative;
+		block-size: 28px;
+		margin-inline: 12px;
+	}
+	.diagram-trim-rail,
+	.diagram-trim-window {
+		position: absolute;
+		inset-block: 5px;
+		pointer-events: none;
+	}
+	.diagram-trim-rail {
+		inset-inline: 0;
+		border-radius: var(--sl-border-radius-small);
+		background: var(--sl-color-neutral-200);
+	}
+	.diagram-trim-window {
+		inset-inline: var(--trim-min) calc(100% - var(--trim-max));
+		border-block: 1px solid var(--sl-color-primary-600);
+		background: var(--sl-color-primary-100);
+	}
+	.diagram-trim-handle {
+		position: absolute;
+		inset-block: 1px;
+		inline-size: 12px;
+		padding: 0;
+		border: 1px solid var(--sl-color-primary-700);
+		border-radius: var(--sl-border-radius-small);
+		background: var(--sl-color-primary-600);
+		color: var(--sl-color-neutral-0);
+		cursor: ew-resize;
+		touch-action: none;
+		user-select: none;
+	}
+	.diagram-trim-handle::after {
+		content: "";
+		position: absolute;
+		inset: 7px 3px;
+		border-inline: 1px solid currentColor;
+	}
+	.diagram-trim-min {
+		inset-inline-end: calc(100% - var(--trim-min));
+	}
+	.diagram-trim-max {
+		inset-inline-start: var(--trim-max);
+	}
+	.diagram-trim-handle:focus-visible {
+		outline: 2px solid var(--sl-color-primary-800);
+		outline-offset: 2px;
+		z-index: 1;
+	}
+	.diagram-trim-footer {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
 		gap: 4px;
+		font-size: var(--sl-font-size-x-small);
+		font-variant-numeric: tabular-nums;
 	}
-	@container (max-width: 360px) {
-		.diagram-range-fields {
-			grid-template-columns: minmax(0, 1fr);
-		}
-	}
-	.diagram-range-fields sl-input {
-		min-inline-size: 0;
-	}
-	.diagram-range-fields sl-input::part(form-control-label) {
-		font-size: var(--sl-font-size-small);
+	.diagram-trim-footer span {
+		overflow-wrap: anywhere;
 	}
 
 	.diagram-sources {

@@ -3,11 +3,19 @@ import { createRef, ref, type Ref } from "lit/directives/ref.js";
 import { keyed } from "lit/directives/keyed.js";
 import { repeat } from "lit/directives/repeat.js";
 import Chart from "chart.js/auto";
-import type SlInput from "@shoelace-style/shoelace/dist/components/input/input.component.js";
-import { diagramData, type AxisRange, type AxisRanges, type ChartAxis } from "../data/diagramRanges";
+import { diagramData, moveTrimHandle, trimmedAxisRange, TRIM_STEPS,
+	type AxisRange, type AxisRanges, type ChartAxis, type TrimHandle } from "../data/diagramRanges";
 import { TIME_CHANNEL, type MeasurementChannel } from "../data/measurementHistory";
 import { axisId, componentKey, type DiagramAxis } from "../data/diagramSources";
 import type { ChemLab } from "../webwriter-chemlab";
+
+type RangeEditor = {
+	axis: ChartAxis;
+	domain: AxisRange;
+	selection: AxisRange;
+	initialZoom?: AxisRange;
+	drag?: { pointer: number; startX: number; startStep: number; pixels: number };
+};
 
 type Diagram = {
 	id: number;
@@ -18,7 +26,7 @@ type Diagram = {
 	canvas: Ref<HTMLCanvasElement>;
 	fitted?: AxisRanges;
 	zoom: Partial<AxisRanges>;
-	editor?: { axis: ChartAxis; range: AxisRange };
+	editor?: RangeEditor;
 	chart?: Chart<"line", { x: number; y: number | null }[]>;
 };
 
@@ -173,55 +181,100 @@ export class DiagramController implements ReactiveController {
 		const message = this.host.message;
 		const editor = diagram.editor;
 		const edit = (axis: ChartAxis) => {
-			const range = diagram.zoom[axis] ?? diagram.fitted?.[axis];
-			diagram.editor = range && editor?.axis !== axis ? { axis, range } : undefined;
+			const initialZoom = diagram.zoom[axis];
+			const domain = initialZoom ?? diagram.fitted?.[axis];
+			diagram.editor = domain && editor?.axis !== axis
+				? { axis, domain, initialZoom, selection: { min: 0, max: TRIM_STEPS } }
+				: undefined;
 			this.host.requestUpdate();
-		};
-		const setRange = (axis: ChartAxis, range?: AxisRange) => {
-			diagram.zoom[axis] = range;
-			diagram.editor = undefined;
-			this.host.requestUpdate();
-			this.invalidate();
-			diagram.card.value?.querySelector<HTMLElement>(`[data-range-axis="${axis}"]`)?.focus({ preventScroll: true });
 		};
 		return html`
 			<div class="diagram-range-buttons">
 				${(["x", "y"] as const).map(axis => html`
-					<sl-button size="small" data-range-axis=${axis} ?disabled=${!diagram.fitted}
+					<sl-button size="small" ?disabled=${!diagram.fitted}
 						variant=${diagram.zoom[axis] ? "primary" : "default"}
 						aria-expanded=${String(editor?.axis === axis)}
 						@click=${() => edit(axis)}>${message(axis === "x" ? "X-Bereich" : "Y-Bereich")}</sl-button>`)}
 			</div>
-			${editor ? keyed(editor, html`
-				<form class="diagram-range-editor" aria-label=${message(editor.axis === "x" ? "X-Bereich" : "Y-Bereich")}
-					@sl-input=${(event: Event) => {
-						(event.currentTarget as HTMLFormElement).querySelector<SlInput>('[name="max"]').setCustomValidity("");
-					}}
-					@submit=${(event: SubmitEvent) => {
-						event.preventDefault();
-						const form = event.currentTarget as HTMLFormElement;
-						const min = form.querySelector<SlInput>('[name="min"]').valueAsNumber;
-						const upper = form.querySelector<SlInput>('[name="max"]');
-						const max = upper.valueAsNumber;
-						if (!Number.isFinite(min) || !Number.isFinite(max) || !(min < max)) {
-							upper.setCustomValidity(message("Der obere Wert muss größer als der untere sein."));
-							upper.reportValidity();
-							return;
+			${editor ? keyed(editor, this.renderTrimTrack(diagram, editor)) : nothing}`;
+	}
+
+	private renderTrimTrack(diagram: Diagram, editor: RangeEditor) {
+		const message = this.host.message;
+		const { axis, selection, domain } = editor;
+		const range = trimmedAxisRange(domain, selection);
+		const digits = Math.min(17, Math.max(4, Math.ceil(Math.log10(
+			Math.max(Math.abs(range.min), Math.abs(range.max)) / (range.max - range.min))) + 3));
+		const format = new Intl.NumberFormat(this.host.lang || undefined, { maximumSignificantDigits: digits, useGrouping: false });
+		const percent = (step: number) => step / TRIM_STEPS * 100 + "%";
+		const move = (handle: TrimHandle, position: number) => {
+			const next = moveTrimHandle(editor.selection, handle, position);
+			if (next.min === editor.selection.min && next.max === editor.selection.max) return;
+			const selected = trimmedAxisRange(domain, next);
+			if (!(selected.min < selected.max)) return;
+			editor.selection = next;
+			diagram.zoom[axis] = next.min === 0 && next.max === TRIM_STEPS ? editor.initialZoom : selected;
+			this.host.requestUpdate();
+			this.invalidate();
+		};
+		const renderHandle = (handle: TrimHandle) => html`
+			<button type="button" role="slider" class="diagram-trim-handle diagram-trim-${handle}"
+				aria-label=${message(handle === "min" ? "Untere Grenze" : "Obere Grenze")}
+				aria-valuemin=${handle === "min" ? domain.min : trimmedAxisRange(domain, { min: selection.min, max: selection.min + 1 }).max}
+				aria-valuemax=${handle === "max" ? domain.max : trimmedAxisRange(domain, { min: selection.max - 1, max: selection.max }).min}
+				aria-valuenow=${range[handle]} aria-valuetext=${format.format(range[handle])}
+				@pointerdown=${(event: PointerEvent) => {
+					if (event.button !== 0 || editor.drag) return;
+					const button = event.currentTarget as HTMLButtonElement;
+					const pixels = button.parentElement.getBoundingClientRect().width;
+					if (!pixels) return;
+					editor.drag = { pointer: event.pointerId, startX: event.clientX, startStep: editor.selection[handle], pixels };
+					button.setPointerCapture(event.pointerId);
+				}}
+				@pointermove=${(event: PointerEvent) => {
+					const drag = editor.drag;
+					if (drag?.pointer !== event.pointerId) return;
+					move(handle, drag.startStep + (event.clientX - drag.startX) * TRIM_STEPS / drag.pixels);
+				}}
+				@lostpointercapture=${(event: PointerEvent) => {
+					if (editor.drag?.pointer === event.pointerId) editor.drag = undefined;
+				}}
+				@keydown=${(event: KeyboardEvent) => {
+					const step = TRIM_STEPS / (event.shiftKey ? 1000 : 100);
+					let position: number;
+					switch (event.key) {
+						case "ArrowLeft":
+						case "ArrowDown": position = editor.selection[handle] - step; break;
+						case "ArrowRight":
+						case "ArrowUp": position = editor.selection[handle] + step; break;
+						case "Home": position = 0; break;
+						case "End": position = TRIM_STEPS; break;
+						default: return;
+					}
+					event.preventDefault();
+					move(handle, position);
+				}}></button>`;
+		return html`
+			<div class="diagram-range-editor" role="group" aria-label=${message(axis === "x" ? "X-Bereich" : "Y-Bereich")}>
+				<div class="diagram-trim-track" dir="ltr" style=${`--trim-min:${percent(selection.min)};--trim-max:${percent(selection.max)}`}>
+					<div class="diagram-trim-rail"></div>
+					<div class="diagram-trim-window"></div>
+					${renderHandle("min")}${renderHandle("max")}
+				</div>
+				<div class="diagram-trim-footer">
+					<span dir="ltr">${format.format(range.min)} – ${format.format(range.max)}</span>
+					<sl-button size="small" ?disabled=${!diagram.zoom[axis]} @click=${() => {
+						diagram.zoom[axis] = undefined;
+						if (diagram.fitted) {
+							editor.domain = diagram.fitted[axis];
+							editor.initialZoom = undefined;
+							editor.selection = { min: 0, max: TRIM_STEPS };
 						}
-						setRange(editor.axis, { min, max });
-					}}>
-					<div class="diagram-range-fields">
-						<sl-input size="small" name="min" type="number" step="any" required contenteditable="false"
-							label=${message("Von")} .value=${String(editor.range.min)}></sl-input>
-						<sl-input size="small" name="max" type="number" step="any" required contenteditable="false"
-							label=${message("Bis")} .value=${String(editor.range.max)}></sl-input>
-					</div>
-					<div class="diagram-range-buttons">
-						<sl-button size="small" type="submit" variant="primary">${message("Anwenden")}</sl-button>
-						<sl-button size="small" ?disabled=${!diagram.zoom[editor.axis]}
-							@click=${() => setRange(editor.axis)}>${message("Automatisch")}</sl-button>
-					</div>
-				</form>`) : nothing}`;
+						this.host.requestUpdate();
+						this.invalidate();
+					}}>${message("Automatisch")}</sl-button>
+				</div>
+			</div>`;
 	}
 
 	private renderSources({ x, y }: Diagram) {

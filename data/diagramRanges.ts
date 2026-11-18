@@ -4,6 +4,23 @@ export type ChartAxis = "x" | "y";
 export type AxisRange = { min: number; max: number };
 export type AxisRanges = Record<ChartAxis, AxisRange>;
 
+export const TRIM_STEPS = 10_000;
+export type TrimHandle = "min" | "max";
+
+export function moveTrimHandle(selection: AxisRange, handle: TrimHandle, position: number): AxisRange {
+	const step = Math.round(position);
+	return handle === "min"
+		? { min: Math.max(0, Math.min(selection.max - 1, step)), max: selection.max }
+		: { min: selection.min, max: Math.min(TRIM_STEPS, Math.max(selection.min + 1, step)) };
+}
+
+export function trimmedAxisRange(domain: AxisRange, selection: AxisRange): AxisRange {
+	const span = domain.max - domain.min;
+	const valueAt = (step: number) => step === 0 ? domain.min : step === TRIM_STEPS ? domain.max :
+		domain.min + span * (step / TRIM_STEPS);
+	return { min: valueAt(selection.min), max: valueAt(selection.max) };
+}
+
 function fitRange(min: number, max: number): AxisRange {
 	if (min < max) return { min, max };
 	// A flat series still needs a nonzero scale to remain visible.
