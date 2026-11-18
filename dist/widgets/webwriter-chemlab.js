@@ -69812,6 +69812,7 @@ var init_BitmapFont = __esm({
 // localization/messages.json
 var messages_default = {
   en: {
+    Dosierschritt: "Dose per step",
     "X-Achse automatisch skalieren": "Reset X axis to Auto",
     "Y-Achse automatisch skalieren": "Reset Y axis to Auto",
     "Doppelklick f\xFCr feinere Bereichsauswahl": "Double-click for finer trimming",
@@ -103960,16 +103961,28 @@ var style = i`
 		position: absolute;
 	}
 	.diagram-trim-rail {
-		border-radius: var(--sl-border-radius-small);
-		background: var(--sl-color-neutral-200);
 		pointer-events: none;
 	}
-	.diagram-trim-window {
-		background: var(--sl-color-primary-100);
+	.diagram-trim-rail::after,
+	.diagram-trim-window::after {
+		content: "";
+		position: absolute;
+		border-radius: 2px;
+		pointer-events: none;
 	}
-	.diagram-trim-track-x :is(.diagram-trim-rail, .diagram-trim-window) {
-		top: 4px;
-		bottom: 4px;
+	.diagram-trim-rail::after {
+		background: var(--sl-color-neutral-300);
+	}
+	.diagram-trim-window::after {
+		background: var(--sl-color-primary-500);
+	}
+	.diagram-trim-track-x :is(.diagram-trim-rail, .diagram-trim-window, .diagram-trim-handle) {
+		top: 0;
+		bottom: 0;
+	}
+	.diagram-trim-track-x :is(.diagram-trim-rail, .diagram-trim-window)::after {
+		inset: calc(50% - 1px) 0 auto;
+		height: 2px;
 	}
 	.diagram-trim-track-x .diagram-trim-rail {
 		left: 0;
@@ -103978,11 +103991,14 @@ var style = i`
 	.diagram-trim-track-x .diagram-trim-window {
 		left: var(--trim-min);
 		right: calc(100% - var(--trim-max));
-		border-block: 1px solid var(--sl-color-primary-600);
 	}
-	.diagram-trim-track-y :is(.diagram-trim-rail, .diagram-trim-window) {
-		left: 4px;
-		right: 4px;
+	.diagram-trim-track-y :is(.diagram-trim-rail, .diagram-trim-window, .diagram-trim-handle) {
+		left: 0;
+		right: 0;
+	}
+	.diagram-trim-track-y :is(.diagram-trim-rail, .diagram-trim-window)::after {
+		inset: 0 auto 0 calc(50% - 1px);
+		width: 2px;
 	}
 	.diagram-trim-track-y .diagram-trim-rail {
 		top: 0;
@@ -103991,54 +104007,69 @@ var style = i`
 	.diagram-trim-track-y .diagram-trim-window {
 		top: calc(100% - var(--trim-max));
 		bottom: var(--trim-min);
-		border-inline: 1px solid var(--sl-color-primary-600);
 	}
 	.diagram-trim-handle {
 		position: absolute;
 		padding: 0;
-		border: 1px solid var(--sl-color-primary-700);
+		border: 0;
 		border-radius: var(--sl-border-radius-small);
-		background: var(--sl-color-primary-600);
-		color: var(--sl-color-neutral-0);
+		background: transparent;
 		touch-action: none;
 		user-select: none;
 	}
 	.diagram-trim-handle::after {
 		content: "";
 		position: absolute;
+		border-radius: 2px;
+		background: var(--sl-color-primary-600);
+		pointer-events: none;
+	}
+	.diagram-trim-handle:is(:hover, :active)::after {
+		background: var(--sl-color-primary-800);
 	}
 	.diagram-trim-track-x .diagram-trim-handle {
-		top: 0;
-		bottom: 0;
 		width: 10px;
 		cursor: ew-resize;
 	}
 	.diagram-trim-track-x .diagram-trim-handle::after {
-		inset: 5px 2px;
-		border-inline: 1px solid currentColor;
+		top: 4px;
+		bottom: 4px;
+		width: 4px;
 	}
 	.diagram-trim-track-x .diagram-trim-min {
 		right: calc(100% - var(--trim-min));
 	}
+	.diagram-trim-track-x .diagram-trim-min::after {
+		right: 0;
+	}
 	.diagram-trim-track-x .diagram-trim-max {
 		left: var(--trim-max);
 	}
-	.diagram-trim-track-y .diagram-trim-handle {
+	.diagram-trim-track-x .diagram-trim-max::after {
 		left: 0;
-		right: 0;
+	}
+	.diagram-trim-track-y .diagram-trim-handle {
 		height: 10px;
 		cursor: ns-resize;
 	}
 	.diagram-trim-track-y .diagram-trim-handle::after {
-		inset: 2px 5px;
-		border-block: 1px solid currentColor;
+		left: 4px;
+		right: 4px;
+		height: 4px;
 	}
 	.diagram-trim-track-y .diagram-trim-min {
 		top: calc(100% - var(--trim-min));
 	}
+	.diagram-trim-track-y .diagram-trim-min::after {
+		top: 0;
+	}
 	.diagram-trim-track-y .diagram-trim-max {
 		bottom: var(--trim-max);
 	}
+	.diagram-trim-track-y .diagram-trim-max::after {
+		bottom: 0;
+	}
+
 	.diagram-trim-handle:focus-visible {
 		outline: 2px solid var(--sl-color-primary-800);
 		outline-offset: 2px;
@@ -104540,6 +104571,15 @@ var style = i`
 	.selection-actions {
 		display: flex;
 		flex-direction: column;
+	}
+	.burette-step {
+		inline-size: 7rem;
+		max-inline-size: 100%;
+		margin-block: 4px;
+	}
+	.burette-step::part(form-control-label),
+	.burette-step::part(suffix) {
+		font-size: var(--sl-font-size-x-small);
 	}
 	.selection-actions > .remObj {
 		align-self: flex-start;
@@ -153223,6 +153263,9 @@ var ChemComponent = class {
         this._inOutLimits = [1, 1];
         break;
       case "burette" /* Burette */:
+        this._inOutLimits = [0, 1];
+        this.setBuretteStepMl(0.1);
+        break;
       case "separatingfunnel" /* Separatingfunnel */:
         this._inOutLimits = [0, 1];
         this._outVol = Simulation._simStepSize;
@@ -153236,6 +153279,16 @@ var ChemComponent = class {
     this._influences = new Array();
     this._content = nMixture;
     this._volume = ComponentManager._standardVolumes[nType.toLowerCase()];
+  }
+  get buretteStepMl() {
+    return this._outVol * 1e3;
+  }
+  /** Sets the volume dispensed each time the open burette advances. */
+  setBuretteStepMl(volumeMl) {
+    const volume = volumeMl / 1e3;
+    if (this._type !== "burette" /* Burette */ || !Number.isFinite(volume) || volume <= 0) return false;
+    this.setOutVol(volume);
+    return true;
   }
   /**
    * Sets the default output volume in {@link _outVol}
@@ -188787,6 +188840,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         newComp.addContents({ nMix: newMix });
         const capacity = Number(component["capacityMl"] ?? variant?.capacityMl);
         if (Number.isFinite(capacity) && capacity > 0) newComp._volume = capacity;
+        if (typeof component["stepVolumeMl"] === "number") newComp.setBuretteStepMl(component["stepVolumeMl"]);
         for (const saved of component["doses"] ?? []) {
           const dose = this.buildDose(saved.recipe);
           if (dose && Number.isFinite(saved.volumeMl) && saved.volumeMl > 0) {
@@ -190231,6 +190285,20 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					aria-label=${this.message("Inhalt")} style="display: none"></sl-carousel>
 				<div id="contextMixInfo" style="display: none"></div>
 				<div class="selection-actions">
+					${vessel?._type === "burette" /* Burette */ ? i6(vessel, x`
+						<sl-input class="burette-step" size="small" type="number" min="0" step="any"
+							contenteditable="false" label=${this.message("Dosierschritt")}
+							.value=${String(Number(vessel.buretteStepMl.toPrecision(12)))}
+							@sl-change=${(event) => {
+      const input = event.currentTarget;
+      if (vessel.setBuretteStepMl(input.valueAsNumber)) {
+        this.saveSelectedComponent({ stepVolumeMl: input.valueAsNumber });
+        this.requestUpdate();
+      }
+      input.value = String(Number(vessel.buretteStepMl.toPrecision(12)));
+    }}>
+							<span slot="suffix">mL</span>
+						</sl-input>`) : E}
 					<button
 						id="openComp"
 						@click="${(event) => {

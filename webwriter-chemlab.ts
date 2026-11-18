@@ -2497,6 +2497,7 @@ export class ChemLab extends LitElementWw {
 				newComp.addContents({ nMix: newMix });
 				const capacity = Number(component["capacityMl"] ?? variant?.capacityMl);
 				if (Number.isFinite(capacity) && capacity > 0) newComp._volume = capacity;
+				if (typeof component["stepVolumeMl"] === "number") newComp.setBuretteStepMl(component["stepVolumeMl"]);
 				for (const saved of (component["doses"] ?? []) as SavedDose[]) {
 					const dose = this.buildDose(saved.recipe);
 					if (dose && Number.isFinite(saved.volumeMl) && saved.volumeMl > 0) {
@@ -4036,6 +4037,20 @@ export class ChemLab extends LitElementWw {
 					aria-label=${this.message("Inhalt")} style="display: none"></sl-carousel>
 				<div id="contextMixInfo" style="display: none"></div>
 				<div class="selection-actions">
+					${vessel?._type === chemlib.ComponentType.Burette ? keyed(vessel, html`
+						<sl-input class="burette-step" size="small" type="number" min="0" step="any"
+							contenteditable="false" label=${this.message("Dosierschritt")}
+							.value=${String(Number(vessel.buretteStepMl.toPrecision(12)))}
+							@sl-change=${(event: Event) => {
+								const input = event.currentTarget as SlInput;
+								if (vessel.setBuretteStepMl(input.valueAsNumber)) {
+									this.saveSelectedComponent({ stepVolumeMl: input.valueAsNumber });
+									this.requestUpdate();
+								}
+								input.value = String(Number(vessel.buretteStepMl.toPrecision(12)));
+							}}>
+							<span slot="suffix">mL</span>
+						</sl-input>`) : nothing}
 					<button
 						id="openComp"
 						@click="${(event) => {

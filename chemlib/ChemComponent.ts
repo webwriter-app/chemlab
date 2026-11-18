@@ -107,6 +107,9 @@ class ChemComponent {
 				this._inOutLimits = [1, 1];
 				break;
 			case ComponentType.Burette:
+				this._inOutLimits = [0, 1];
+				this.setBuretteStepMl(0.1);
+				break;
 			case ComponentType.Separatingfunnel:
 				this._inOutLimits = [0, 1];
 				this._outVol = Simulation._simStepSize;
@@ -121,6 +124,18 @@ class ChemComponent {
 		this._influences = new Array<ChemComponent>();
 		this._content = nMixture;
 		this._volume = ComponentManager._standardVolumes[nType.toLowerCase()]
+	}
+
+	get buretteStepMl(): number {
+		return this._outVol * 1000;
+	}
+
+	/** Sets the volume dispensed each time the open burette advances. */
+	setBuretteStepMl(volumeMl: number): boolean {
+		const volume = volumeMl / 1000;
+		if (this._type !== ComponentType.Burette || !Number.isFinite(volume) || volume <= 0) return false;
+		this.setOutVol(volume);
+		return true;
 	}
 
 	/**
