@@ -105185,6 +105185,7 @@ var style = i`
 		max-width: min(70%, 420px);
 		padding: 4px 12px;
 		border-radius: 999px;
+		border-left: 3px solid #d10000;
 		background-color: #ffffffd9;
 		backdrop-filter: blur(20px);
 		box-shadow: 0px 4px 10px 0px rgba(0, 0, 0, 0.22);
@@ -105196,15 +105197,6 @@ var style = i`
 	}
 	#statusStrip[hidden] {
 		display: none;
-	}
-	#statusStrip[data-variant="success"] {
-		border-left: 3px solid #51a332;
-	}
-	#statusStrip[data-variant="warning"] {
-		border-left: 3px solid #d19a00;
-	}
-	#statusStrip[data-variant="danger"] {
-		border-left: 3px solid #d10000;
 	}
 	.connection-list {
 		display: flex;
@@ -187747,7 +187739,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       await this.canvas.init();
     } catch (error) {
       console.error("Unable to initialize the Chemlab canvas", error);
-      this._notify(this.message("Die Arbeitsfl\xE4che konnte nicht geladen werden."), "danger");
+      this._notify(this.message("Die Arbeitsfl\xE4che konnte nicht geladen werden."));
       return;
     }
     this.refreshFromRemoteData = false;
@@ -187756,7 +187748,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this._loadComponents();
     this.canvas.fitObjects();
     this._sendxAPiStatement("registered", "chemlab");
-    this._notify(this.message("klicke zum Starten in das Fenster!"), "neutral", 1e4);
   }
   requestCanvasRender() {
     this.simulation.requestRender();
@@ -189103,14 +189094,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     for (const component of removedElectrical) {
       for (const partner of [...component.partners]) this._remEcon(component, partner);
     }
-    for (const electrode of detachedElectrodes) {
-      const vessel = removedMixtures.get(electrode._connectedMix);
-      electrode._connectedMix = void 0;
-      this._notify(this.message("{from} aus {to} entfernt.", {
-        from: this.itemName(electrode._type),
-        to: this.itemName(vessel._type)
-      }), "warning", 1500);
-    }
+    for (const electrode of detachedElectrodes) electrode._connectedMix = void 0;
     this.measurements.retire([...removedChemical, ...removedElectrical]);
     this.allChemComponents = this.allChemComponents.filter((component) => !labels.has(labelOf(component)));
     this.allEComponents = this.allEComponents.filter((component) => !labels.has(labelOf(component)));
@@ -189352,10 +189336,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.authorCable(cable, sprite);
     this.syncAuthoredConnections(from2);
     this.syncAuthoredConnections(to2);
-    this._notify(this.message("Neue Verbindung zwischen {from} und {to}", {
-      from: this.itemName(from2._type),
-      to: this.itemName(to2._type)
-    }), "success", 1500);
     this._sendxAPiStatement("joined", from2._type + from2._id, {
       response: to2._type + ":" + to2._id,
       success: true,
@@ -189478,7 +189458,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         }
       );
     } else {
-      this._notify(message.split("\n").filter(Boolean).map((line) => this.message(line)).join("\n"), "warning", 4e3);
       this._sendxAPiStatement(
         "removed",
         "eCon " + component._type + component._id,
@@ -189491,20 +189470,20 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }
   }
   /**
-   * Shows a short notice in the status strip above the canvas. The strip is
-   * not modal and never blocks the canvas, so a notice can appear while the
-   * user keeps working; a new notice replaces the previous one.
+   * Reports a failure in the status strip above the canvas. The strip is not
+   * modal and never blocks the canvas, so the notice can appear while the
+   * user keeps working; a new notice replaces the previous one. A failed
+   * canvas is the only thing it reports, so the strip carries the error
+   * styling itself.
    *
    * @private
    * @param {string} text - the notice
-   * @param {string} [variant="neutral"] - neutral, success, warning or danger
    * @param {number} [duration=2000] - how long the notice stays, in ms
    */
-  _notify(text, variant = "neutral", duration = 2e3) {
+  _notify(text, duration = 2e3) {
     const strip = this.statusStrip;
     if (!strip) return;
     strip.textContent = text;
-    strip.dataset.variant = variant;
     strip.hidden = false;
     const view = this.ownerDocument.defaultView;
     view?.clearTimeout(this.statusTimeout);
@@ -190694,10 +190673,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       else if (capacitance !== void 0 && (rawCapacitance || seriesResistance !== 0 || rawCutoff)) {
         next = { capacitance, seriesResistance, cutoff };
       }
-      if (next && !validRCSettings(next)) {
-        this._notify(this.message("Kapazit\xE4t und Stromschwelle m\xFCssen positiv sein. Der zus\xE4tzliche Widerstand darf null sein."), "warning");
-        return;
-      }
+      if (next && !validRCSettings(next)) return;
       device._rcSettings = next;
       this.saveSelectedComponent({ rcSettings: next });
       this.requestUpdate();

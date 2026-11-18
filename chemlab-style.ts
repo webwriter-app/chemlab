@@ -2642,6 +2642,7 @@ export const style = css`
 		max-width: min(70%, 420px);
 		padding: 4px 12px;
 		border-radius: 999px;
+		border-left: 3px solid #d10000;
 		background-color: #ffffffd9;
 		backdrop-filter: blur(20px);
 		box-shadow: 0px 4px 10px 0px rgba(0, 0, 0, 0.22);
@@ -2653,15 +2654,6 @@ export const style = css`
 	}
 	#statusStrip[hidden] {
 		display: none;
-	}
-	#statusStrip[data-variant="success"] {
-		border-left: 3px solid #51a332;
-	}
-	#statusStrip[data-variant="warning"] {
-		border-left: 3px solid #d19a00;
-	}
-	#statusStrip[data-variant="danger"] {
-		border-left: 3px solid #d10000;
 	}
 	.connection-list {
 		display: flex;

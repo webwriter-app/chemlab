@@ -871,7 +871,7 @@ export class ChemLab extends LitElementWw {
 			await this.canvas.init();
 		} catch (error) {
 			console.error("Unable to initialize the Chemlab canvas", error);
-			this._notify(this.message("Die Arbeitsfläche konnte nicht geladen werden."), "danger");
+			this._notify(this.message("Die Arbeitsfläche konnte nicht geladen werden."));
 			return;
 		}
 		// The first load uses the latest authored data, including updates during asset loading.
@@ -884,7 +884,6 @@ export class ChemLab extends LitElementWw {
 		// is never partly out of frame.
 		this.canvas.fitObjects();
 		this._sendxAPiStatement("registered", "chemlab");
-		this._notify(this.message("klicke zum Starten in das Fenster!"), "neutral", 10000);
 	}
 
 	requestCanvasRender(): void {
@@ -2385,13 +2384,7 @@ export class ChemLab extends LitElementWw {
 		for (const component of removedElectrical) {
 			for (const partner of [...component.partners]) this._remEcon(component, partner);
 		}
-		for (const electrode of detachedElectrodes) {
-			const vessel = removedMixtures.get(electrode._connectedMix);
-			electrode._connectedMix = undefined;
-			this._notify(this.message("{from} aus {to} entfernt.", {
-				from: this.itemName(electrode._type), to: this.itemName(vessel._type),
-			}), "warning", 1500);
-		}
+		for (const electrode of detachedElectrodes) electrode._connectedMix = undefined;
 		this.measurements.retire([...removedChemical, ...removedElectrical]);
 		this.allChemComponents = this.allChemComponents.filter((component) => !labels.has(labelOf(component)));
 		this.allEComponents = this.allEComponents.filter((component) => !labels.has(labelOf(component)));
@@ -2685,9 +2678,6 @@ export class ChemLab extends LitElementWw {
 		this.authorCable(cable, sprite);
 		this.syncAuthoredConnections(from);
 		this.syncAuthoredConnections(to);
-		this._notify(this.message("Neue Verbindung zwischen {from} und {to}", {
-			from: this.itemName(from._type), to: this.itemName(to._type),
-		}), "success", 1500);
 		this._sendxAPiStatement("joined", from._type + from._id, {
 			response: to._type + ":" + to._id,
 			success: true,
@@ -2809,7 +2799,6 @@ export class ChemLab extends LitElementWw {
 				}
 			);
 		} else {
-			this._notify(message.split("\n").filter(Boolean).map(line => this.message(line)).join("\n"), "warning", 4000);
 			this._sendxAPiStatement(
 				"removed",
 				"eCon " + component._type + component._id,
@@ -2823,20 +2812,20 @@ export class ChemLab extends LitElementWw {
 	}
 
 	/**
-	 * Shows a short notice in the status strip above the canvas. The strip is
-	 * not modal and never blocks the canvas, so a notice can appear while the
-	 * user keeps working; a new notice replaces the previous one.
+	 * Reports a failure in the status strip above the canvas. The strip is not
+	 * modal and never blocks the canvas, so the notice can appear while the
+	 * user keeps working; a new notice replaces the previous one. A failed
+	 * canvas is the only thing it reports, so the strip carries the error
+	 * styling itself.
 	 *
 	 * @private
 	 * @param {string} text - the notice
-	 * @param {string} [variant="neutral"] - neutral, success, warning or danger
 	 * @param {number} [duration=2000] - how long the notice stays, in ms
 	 */
-	_notify(text: string, variant: "neutral" | "success" | "warning" | "danger" = "neutral", duration = 2000): void {
+	_notify(text: string, duration = 2000): void {
 		const strip = this.statusStrip;
 		if (!strip) return;
 		strip.textContent = text;
-		strip.dataset.variant = variant;
 		strip.hidden = false;
 		const view = this.ownerDocument.defaultView;
 		view?.clearTimeout(this.statusTimeout);
@@ -4105,10 +4094,7 @@ export class ChemLab extends LitElementWw {
 					else if (capacitance !== undefined && (rawCapacitance || seriesResistance !== 0 || rawCutoff)) {
 						next = { capacitance, seriesResistance, cutoff };
 					}
-					if (next && !validRCSettings(next)) {
-						this._notify(this.message("Kapazität und Stromschwelle müssen positiv sein. Der zusätzliche Widerstand darf null sein."), "warning");
-						return;
-					}
+					if (next && !validRCSettings(next)) return;
 					device._rcSettings = next;
 					this.saveSelectedComponent({ rcSettings: next });
 					this.requestUpdate();
