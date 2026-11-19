@@ -65,8 +65,25 @@ Observations made while implementing the [handoff](periodic-table-implementation
 - **The snippet is table-only.** `snippets/Beispiel-Periodensystem.html` holds one `webwriter-chemlab-periodic-table` with `initial-element="8"` and `view="auto"` and no `lang` attribute, so the table inherits the language of the surrounding content. It loads no simulation assets: the entry imports only `periodic-table/` and `data/periodic-table/`.
 - **The snippet needs both registrations.** The file is listed under `exports` and carries a `label` in `editingConfig`; without either it does not appear in WebWriter.
 
+## Browser fixture for the routing contract
+
+`tests/fixtures/worksheet.html` holds two tables with one receiver stub each and runs nine exercises on load: pairing, clear plus reverse write, duplicate ID and removal, a child event with a matching `sourceId`, a composed event from inside the shadow root, a wrong version and an invalid atomic number, a property written before the element upgraded, an arrow-key step, and focus restoration across a switch to the list layout. Each row shows the expected and the actual value.
+
+The page needs a bundle, because the router is a module and not part of the widget:
+
+```sh
+node_modules/.bin/esbuild tests/fixtures/worksheet-browser.ts \
+    --bundle --format=esm --outfile=tests/fixtures/worksheet-browser.js
+```
+
+esbuild writes `worksheet-browser.css` next to it; the page links both and `.gitignore` keeps the generated files out of the repository. The fixture has not been run in a browser in this environment, so its results are still open; the Node suite covers the same contract against a fake worksheet.
+
 ## Open checks awaiting a manual WebWriter import
 
 - WebWriter version and the observed save/reopen behaviour of `initial-element` and `view`.
 - Whether the editor writes `initial-element=""` or removes the attribute when the number field is emptied.
 - Whether the widget ID survives save, reopen, duplicate, paste and undo/redo, which the worksheet linking fixture depends on.
+- Whether the table-only snippet inserts twice with isolated state, and whether a saved table-only worksheet reloads with external requests blocked.
+- Whether an existing ChemLab worksheet still opens and its controls work after the second entry was added.
+- Whether a copied worksheet fragment keeps a unique host ID, so a receiver cannot route to the earlier copy.
+- The browser fixture results, which are recorded separately from the WebWriter results.

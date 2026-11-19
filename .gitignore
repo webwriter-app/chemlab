@@ -64,3 +64,6 @@ TEST-results.xml
 *v8.log
 /lib/
 helpSystem.ts
+# Generated browser fixture bundle
+tests/fixtures/worksheet-browser.js
+tests/fixtures/worksheet-browser.css

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Periodic table worksheet fixture</title>
+<style>
+    :root { color-scheme: light; }
+    body {
+        margin: 0;
+        padding: 24px;
+        font: 14px/1.5 system-ui, sans-serif;
+        background: #f4f6f8;
+        color: #1d2733;
+    }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    p.lead { margin: 0 0 20px; color: #4a5a6a; }
+    #worksheet {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+        margin-bottom: 24px;
+    }
+    .pane {
+        background: #fff;
+        border: 1px solid #d3dbe3;
+        border-radius: 10px;
+        padding: 12px;
+    }
+    .pane h2 { font-size: 13px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; color: #5a6b7c; }
+    .stub { font-family: ui-monospace, monospace; font-size: 12px; color: #1d2733; }
+    webwriter-chemlab-periodic-table { display: block; }
+    table { border-collapse: collapse; width: 100%; background: #fff; }
+    th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #e2e8ee; font-size: 13px; }
+    th { background: #eef2f6; font-weight: 600; }
+    tr.pass td:last-child { color: #1a7f4b; font-weight: 600; }
+    tr.fail td:last-child { color: #b3261e; font-weight: 600; }
+    #summary { margin: 12px 0 0; font-weight: 600; }
+    button { font: inherit; padding: 6px 14px; border-radius: 8px; border: 1px solid #b9c5d1; background: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>Periodic table worksheet fixture</h1>
+<p class="lead">Two tables, one receiver stub each. The exercises run on load; reload or press the button to repeat them.</p>
+
+<div id="worksheet">
+    <div class="pane">
+        <h2>Table A · builder stub</h2>
+        <webwriter-chemlab-periodic-table id="table-a" initial-element="8" view="auto"></webwriter-chemlab-periodic-table>
+        <p class="stub" id="builder">last: – · deliveries: 0</p>
+    </div>
+    <div class="pane">
+        <h2>Table B · lab stub</h2>
+        <webwriter-chemlab-periodic-table id="table-b" view="auto"></webwriter-chemlab-periodic-table>
+        <p class="stub" id="lab">last: – · deliveries: 0</p>
+    </div>
+</div>
+
+<button id="run" type="button">Run exercises</button>
+<table>
+    <thead>
+        <tr><th>Exercise</th><th>Expected</th><th>Actual</th><th>Result</th></tr>
+    </thead>
+    <tbody id="results"></tbody>
+</table>
+<p id="summary"></p>
+
+<link rel="stylesheet" href="./worksheet-browser.css">
+<script type="module" src="./worksheet-browser.js"></script>
+</body>
+</html>
