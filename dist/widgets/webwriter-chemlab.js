@@ -177972,6 +177972,7 @@ var MeasurementHistory = class {
   transients = [];
   archivedUntil = 0;
   latestTime = 0;
+  nextRevision = 0;
   channelVersion = 0;
   now() {
     return Math.max(this.latestTime, performance.now() - this.epoch);
@@ -177984,7 +177985,7 @@ var MeasurementHistory = class {
     this.latestTime = time;
     let series = this.series.get(channel.id);
     if (!series) {
-      series = { channel, samples: new SampleBuffer(), current: true };
+      series = { channel, samples: new SampleBuffer(), current: true, revision: 0 };
       this.series.set(channel.id, series);
       this.channelVersion++;
     }
@@ -177999,13 +178000,16 @@ var MeasurementHistory = class {
       if ((changesOnly || value === null) && previous === value) return false;
       samples.push(time, value);
     }
+    series.revision = ++this.nextRevision;
     return true;
   }
   startTransient(timeConstant, currentAt, factors) {
-    const transient = { start: this.now(), duration: 0, timeConstant, currentAt, factors };
+    const transient = { start: this.now(), duration: 0, timeConstant, currentAt, factors, revision: ++this.nextRevision };
     this.transients.push(transient);
     return (elapsed) => {
-      transient.duration = Math.max(transient.duration, elapsed);
+      if (!(elapsed > transient.duration)) return;
+      transient.duration = elapsed;
+      transient.revision = ++this.nextRevision;
     };
   }
   retire(prefix, time) {
@@ -178019,7 +178023,7 @@ var MeasurementHistory = class {
     const key = this.pairKey(x4, y5);
     const pair = this.pairs.get(key);
     if (pair) pair.references++;
-    else this.pairs.set(key, { x: x4, y: y5, references: 1, archive: [] });
+    else this.pairs.set(key, { x: x4, y: y5, references: 1, archive: [], revision: ++this.nextRevision });
   }
   release(x4, y5) {
     const key = this.pairKey(x4, y5);
@@ -178034,6 +178038,7 @@ var MeasurementHistory = class {
     const cutoff = Math.floor((now - RETENTION_MS) / ARCHIVE_WINDOW_MS) * ARCHIVE_WINDOW_MS;
     if (cutoff <= this.archivedUntil) return false;
     let changed = false;
+    const expiredInputs = /* @__PURE__ */ new Set();
     for (const pair of this.pairs.values()) {
       const points = this.join(pair.x, pair.y, this.archivedUntil, cutoff);
       let start = 0;
@@ -178044,19 +178049,49 @@ var MeasurementHistory = class {
         pair.archive.push(...this.compact(points, start, end));
         start = end;
       }
-      changed ||= points.length > 0;
+      if (points.length) {
+        pair.revision = ++this.nextRevision;
+        changed = true;
+      }
     }
     for (const [id3, series] of this.series) {
       const end = lowerBound(series.samples, cutoff);
       if (!series.current && end === series.samples.length) {
         this.series.delete(id3);
+        expiredInputs.add(id3);
         this.channelVersion++;
         changed = true;
-      } else if (end > 1) series.samples.discard(end - 1);
+      } else if (end > 1) {
+        series.samples.discard(end - 1);
+        series.revision = ++this.nextRevision;
+      }
     }
-    this.transients = this.transients.filter((segment2) => segment2.start + segment2.duration * 1e3 >= cutoff);
+    this.transients = this.transients.filter((segment2) => {
+      if (segment2.start + segment2.duration * 1e3 >= cutoff) return true;
+      for (const id3 of segment2.factors.keys()) expiredInputs.add(id3);
+      return false;
+    });
+    if (expiredInputs.size) {
+      for (const pair of this.pairs.values()) {
+        if (!expiredInputs.has(pair.x) && !expiredInputs.has(pair.y)) continue;
+        pair.revision = ++this.nextRevision;
+        changed = true;
+      }
+    }
     this.archivedUntil = cutoff;
     return changed;
+  }
+  /** Changes when either input channel or the retained archive changes. */
+  pairRevision(x4, y5) {
+    let revision = Math.max(
+      this.pairs.get(this.pairKey(x4, y5))?.revision ?? 0,
+      this.series.get(x4)?.revision ?? 0,
+      this.series.get(y5)?.revision ?? 0
+    );
+    for (const segment2 of this.transients) {
+      if (segment2.factors.has(x4) || segment2.factors.has(y5)) revision = Math.max(revision, segment2.revision);
+    }
+    return revision;
   }
   get nextExpiry() {
     let earliest = Infinity;
@@ -178402,7 +178437,7 @@ var DiagramController = class {
     this.host = host;
     host.addController(this);
     host.measurements.onChange = () => {
-      this.invalidate();
+      this.requestDraw();
       this.host.refreshDiagramPicker();
     };
   }
@@ -178413,6 +178448,7 @@ var DiagramController = class {
   visible = /* @__PURE__ */ new Set();
   observed = /* @__PURE__ */ new Set();
   dirty = true;
+  viewRevision = 0;
   markersVisible = false;
   showLine = true;
   get hasDiagrams() {
@@ -178425,6 +178461,7 @@ var DiagramController = class {
     if (this.markersVisible !== this.canSeeMarkers) {
       this.markersVisible = this.canSeeMarkers;
       this.dirty = true;
+      this.viewRevision++;
     }
     if (!this.host.isDiagramPanelOpen) {
       if (this.viewport) this.releaseViewport();
@@ -178435,7 +178472,7 @@ var DiagramController = class {
         if (entry.isIntersecting) this.visible.add(entry.target);
         else this.visible.delete(entry.target);
       }
-      this.invalidate();
+      this.requestDraw();
     }, { root: this.host.shadowRoot.querySelector("#inlineDiagramPanel") });
     for (const { card } of this.diagrams) {
       if (!card.value || this.observed.has(card.value)) continue;
@@ -178458,6 +178495,9 @@ var DiagramController = class {
     for (const diagram of this.diagrams) {
       diagram.chart?.destroy();
       diagram.chart = void 0;
+      diagram.snapshot = void 0;
+      diagram.markers = void 0;
+      diagram.viewRevision = void 0;
       diagram.drag = {};
     }
     this.dirty = true;
@@ -178494,7 +178534,7 @@ var DiagramController = class {
     this.diagrams.push({ id: id3, x: x4, y: y5, title, card: e13(), canvas: e13(), zoom: {}, trimDomain: {}, drag: {} });
     this.host.requestUpdate();
     this.host.reportXApi("created", "diagram-" + id3);
-    this.invalidate();
+    this.requestDraw();
   }
   remove(diagram) {
     this.host.clearDiagramSourceHighlight();
@@ -178568,7 +178608,7 @@ var DiagramController = class {
       if (!(zoom.min < zoom.max)) return;
       diagram.zoom[axis] = zoom.min === currentFull.min && zoom.max === currentFull.max ? void 0 : zoom;
       this.host.requestUpdate();
-      this.invalidate();
+      this.invalidate(diagram);
     };
     const pointerPosition = (event) => horizontal ? event.clientX : -event.clientY;
     const renderHandle = (handle) => x`
@@ -178651,7 +178691,7 @@ var DiagramController = class {
       delete diagram.zoom[axis];
       delete diagram.trimDomain[axis];
       this.host.requestUpdate();
-      this.invalidate();
+      this.invalidate(diagram);
     }}>${axis.toUpperCase()} ↺</button>`;
   }
   renderSources({ x: x4, y: y5 }) {
@@ -178788,7 +178828,12 @@ var DiagramController = class {
       }
     });
   }
-  invalidate() {
+  invalidate(diagram) {
+    if (diagram) diagram.viewRevision = void 0;
+    else this.viewRevision++;
+    this.requestDraw();
+  }
+  requestDraw() {
     this.dirty = true;
     this.schedule();
   }
@@ -178806,11 +178851,19 @@ var DiagramController = class {
       const { card, canvas } = diagram;
       if (!this.visible.has(card.value) || !canvas.value) continue;
       const phAxis = titrationPhAxis(diagram);
-      const chart = diagram.chart ??= this.createChart(canvas.value, card.value, phAxis);
       const xId = axisId(diagram.x);
       const yId = axisId(diagram.y);
-      const points = this.host.measurements.history.points(xId, yId);
-      const { data: data2, ranges } = diagramData(points);
+      const history = this.host.measurements.history;
+      const revision = history.pairRevision(xId, yId);
+      let snapshot = diagram.snapshot;
+      const dataChanged = snapshot?.revision !== revision;
+      if (dataChanged) {
+        const points = history.points(xId, yId);
+        snapshot = diagram.snapshot = { ...diagramData(points), revision, points: phAxis ? points : void 0 };
+      }
+      if (!dataChanged && diagram.chart && diagram.viewRevision === this.viewRevision) continue;
+      const chart = diagram.chart ??= this.createChart(canvas.value, card.value, phAxis);
+      const { data: data2, ranges } = snapshot;
       const previous = diagram.fitted;
       diagram.fitted = ranges;
       if (Boolean(previous) !== Boolean(ranges) || ranges && previous && ["x", "y"].some((axis) => diagram.zoom[axis] && !diagram.trimDomain[axis] && !diagram.drag[axis] && (ranges[axis].min !== previous[axis].min || ranges[axis].max !== previous[axis].max))) {
@@ -178827,10 +178880,15 @@ var DiagramController = class {
           phAxis === "y" ? xId : yId,
           phAxis === "y" ? yId : xId
         );
-        const markers = this.canSeeMarkers ? titrationPoints(points, phAxis, doseTime) : [];
+        const visible = this.canSeeMarkers;
+        if (dataChanged || diagram.markers?.visible !== visible || diagram.markers.doseTime !== doseTime) {
+          const markers = visible ? titrationPoints(snapshot.points, phAxis, doseTime) : [];
+          const series = titrationMarkerKinds.map((kind) => markers.filter((marker) => marker.kind === kind).map(({ volume, pH, coarse }) => phAxis === "y" ? { x: volume, y: pH, coarse } : { x: pH, y: volume, coarse }));
+          diagram.markers = { visible, doseTime, series };
+        }
         const markerKinds = [];
         titrationMarkerKinds.forEach((kind, index2) => {
-          const markerData = markers.filter((marker) => marker.kind === kind).map(({ volume, pH, coarse }) => phAxis === "y" ? { x: volume, y: pH, coarse } : { x: pH, y: volume, coarse });
+          const markerData = diagram.markers.series[index2];
           const series = chart.data.datasets[index2 + 1];
           series.label = this.host.message(titrationMarkerStyles[kind].label);
           series.data = markerData;
@@ -178855,6 +178913,7 @@ var DiagramController = class {
         options2.title.text = this.scaleLabel(diagram[axis]);
       }
       chart.update("none");
+      diagram.viewRevision = this.viewRevision;
     }
   }
 };

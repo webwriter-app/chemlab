@@ -59,3 +59,21 @@ pulse.retain(current.id, voltage.id);
 pulse.prune(302_000);
 assert.deepEqual(pulse.points(current.id, voltage.id), recovered);
 assert.deepEqual(pulse.points(TIME_CHANNEL, current.id), []);
+
+// A visible chart can keep its current data for unrelated readings and rejoin
+// after a replacement at the same timestamp or an analytic RC advance.
+const revisions = new MeasurementHistory();
+revisions.retain(x.id, y.id);
+revisions.record(x, 1, 100);
+revisions.record(y, 2, 100);
+const initial = revisions.pairRevision(x.id, y.id);
+revisions.record(unused, 42, 100);
+assert.equal(revisions.pairRevision(x.id, y.id), initial);
+revisions.record(x, 3, 100);
+const replaced = revisions.pairRevision(x.id, y.id);
+assert.notEqual(replaced, initial);
+assert.equal(revisions.pairRevision(y.id, x.id), replaced);
+const extend = revisions.startTransient(tau, () => 1, new Map([[x.id, 1]]));
+const started = revisions.pairRevision(x.id, y.id);
+extend(tau);
+assert.notEqual(revisions.pairRevision(x.id, y.id), started);
