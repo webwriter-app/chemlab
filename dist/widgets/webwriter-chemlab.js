@@ -185216,15 +185216,18 @@ var VesselView = class _VesselView extends Container {
   stepAnimation(dtMs) {
     let active = false;
     let drawn = this.sedimentDrawn;
+    let fillChanged = false;
+    let amplitude = 0;
     const target = this.sedimentFraction;
     if (Math.abs(target - drawn) > 1e-5) {
       const step = (target - drawn) * Math.min(1, dtMs / 450);
       drawn = Math.abs(target - drawn) < 8e-4 ? target : drawn + step;
       this.sedimentDrawn = drawn;
-      this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor);
+      fillChanged = true;
       active = true;
     }
-    if (this.particles.length) {
+    const hadParticles = this.particles.length > 0;
+    if (hadParticles) {
       const angle = this.rotation;
       const sin5 = Math.sin(angle);
       const cos6 = Math.cos(angle);
@@ -185253,7 +185256,6 @@ var VesselView = class _VesselView extends Container {
         if (particle.ageMs < 6e3 && depth < particle.floor - particle.size * 0.4) remaining.push(particle);
       }
       this.particles = remaining;
-      this.drawParticles();
       active = true;
     }
     if (this.streamMs > 0 || this.wobbleMs > 0) {
@@ -185261,10 +185263,11 @@ var VesselView = class _VesselView extends Container {
       this.wobbleMs = Math.max(0, this.wobbleMs - dtMs);
       this.wobbleAge = 850 - this.wobbleMs;
       this.drawStream();
-      const amplitude = this.wobbleMs > 0 ? 35e-4 * Math.exp(-this.wobbleAge / 300) * Math.sin(this.wobbleAge * Math.PI * 2 / 260) : 0;
-      this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor, amplitude);
+      amplitude = this.wobbleMs > 0 ? 35e-4 * Math.exp(-this.wobbleAge / 300) * Math.sin(this.wobbleAge * Math.PI * 2 / 260) : 0;
+      fillChanged = true;
       active = true;
-    }
+    } else if (hadParticles) this.drawParticles();
+    if (fillChanged) this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor, amplitude);
     return active;
   }
   /** Redraws the solid particle layer within the interior profile. */
@@ -186183,6 +186186,7 @@ var CanvasController = class _CanvasController {
   vessels = /* @__PURE__ */ new Map();
   scaleTextures = /* @__PURE__ */ new Map();
   changedVessels = /* @__PURE__ */ new Map();
+  animatedVessels = /* @__PURE__ */ new Set();
   cables = /* @__PURE__ */ new Map();
   cablesDirty = false;
   cableOrderDirty = false;
@@ -186828,6 +186832,7 @@ var CanvasController = class _CanvasController {
     if (sprite instanceof VesselView) {
       this.vessels.delete(sprite.component);
       this.changedVessels.delete(sprite);
+      this.animatedVessels.delete(sprite);
     }
     if (sprite instanceof CableView) {
       this.cables.delete(sprite);
@@ -187370,8 +187375,12 @@ var CanvasController = class _CanvasController {
     this.host.requestCanvasRender();
   }
   flushChanges() {
-    const changed = new Set([...this.changedVessels.keys()].map((view) => view.component._content));
-    for (const [view, hint] of this.changedVessels) view.updateContents(hint);
+    const changed = /* @__PURE__ */ new Set();
+    for (const [view, hint] of this.changedVessels) {
+      view.updateContents(hint);
+      this.animatedVessels.add(view);
+      changed.add(view.component._content);
+    }
     this.changedVessels.clear();
     if (changed.size) {
       for (const device of this.host.allEComponents) {
@@ -187387,10 +187396,11 @@ var CanvasController = class _CanvasController {
       this.updateCablePositions();
     }
     const dtMs = this.host.app?.ticker.deltaMS ?? 16.67;
-    let vesselsActive = false;
-    for (const view of this.vessels.values()) vesselsActive = view.stepAnimation(dtMs) || vesselsActive;
+    for (const view of this.animatedVessels) {
+      if (!view.stepAnimation(dtMs)) this.animatedVessels.delete(view);
+    }
     const simulation = this.host.simulation;
-    if (vesselsActive) {
+    if (this.animatedVessels.size) {
       if (!simulation.hasTask(VESSEL_TASK)) {
         simulation.startTask(VESSEL_TASK, () => this.host.requestCanvasRender());
       }

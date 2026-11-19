@@ -79,6 +79,7 @@ export class CanvasController implements ReactiveController {
 	private vessels = new Map<chemlib.ChemComponent, VesselView>();
 	private scaleTextures = new Map<string, PIXI.Texture>();
 	private changedVessels = new Map<VesselView, VesselHint | undefined>();
+	private animatedVessels = new Set<VesselView>();
 	private cables = new Map<CableView, chemlib.ElectricComponent>();
 	private cablesDirty = false;
 	private cableOrderDirty = false;
@@ -791,6 +792,7 @@ export class CanvasController implements ReactiveController {
 		if (sprite instanceof VesselView) {
 			this.vessels.delete(sprite.component);
 			this.changedVessels.delete(sprite);
+			this.animatedVessels.delete(sprite);
 		}
 		if (sprite instanceof CableView) {
 			this.cables.delete(sprite);
@@ -1385,8 +1387,12 @@ export class CanvasController implements ReactiveController {
 	}
 
 	flushChanges(): void {
-		const changed = new Set([...this.changedVessels.keys()].map((view) => view.component._content));
-		for (const [view, hint] of this.changedVessels) view.updateContents(hint);
+		const changed = new Set<chemlib.Mixture>();
+		for (const [view, hint] of this.changedVessels) {
+			view.updateContents(hint);
+			this.animatedVessels.add(view);
+			changed.add(view.component._content);
+		}
 		this.changedVessels.clear();
 		// A gas collection tube shows what bubbled out of its vessel, so it
 		// follows every change of that vessel, not only the electrochemical
@@ -1410,10 +1416,11 @@ export class CanvasController implements ReactiveController {
 		// Vessel particle / pour animations advance per frame here; the keep
 		// -alive task below holds the ticker open until none is active.
 		const dtMs = this.host.app?.ticker.deltaMS ?? 16.67;
-		let vesselsActive = false;
-		for (const view of this.vessels.values()) vesselsActive = view.stepAnimation(dtMs) || vesselsActive;
+		for (const view of this.animatedVessels) {
+			if (!view.stepAnimation(dtMs)) this.animatedVessels.delete(view);
+		}
 		const simulation = this.host.simulation;
-		if (vesselsActive) {
+		if (this.animatedVessels.size) {
 			if (!simulation.hasTask(VESSEL_TASK)) {
 				simulation.startTask(VESSEL_TASK, () => this.host.requestCanvasRender());
 			}

@@ -379,6 +379,8 @@ export class VesselView extends Container {
 	stepAnimation(dtMs: number): boolean {
 		let active = false;
 		let drawn = this.sedimentDrawn;
+		let fillChanged = false;
+		let amplitude = 0;
 
 		// ease the drawn sediment towards its target
 		const target = this.sedimentFraction;
@@ -386,12 +388,13 @@ export class VesselView extends Container {
 			const step = (target - drawn) * Math.min(1, dtMs / 450);
 			drawn = Math.abs(target - drawn) < 0.0008 ? target : drawn + step;
 			this.sedimentDrawn = drawn;
-			this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor);
+			fillChanged = true;
 			active = true;
 		}
 
 		// solid particles fall / sink and land in the sediment
-		if (this.particles.length) {
+		const hadParticles = this.particles.length > 0;
+		if (hadParticles) {
 			const angle = this.rotation;
 			const sin = Math.sin(angle);
 			const cos = Math.cos(angle);
@@ -426,7 +429,6 @@ export class VesselView extends Container {
 				if (particle.ageMs < 6000 && depth < particle.floor - particle.size * 0.4) remaining.push(particle);
 			}
 			this.particles = remaining;
-			this.drawParticles();
 			active = true;
 		}
 
@@ -436,12 +438,13 @@ export class VesselView extends Container {
 			this.wobbleMs = Math.max(0, this.wobbleMs - dtMs);
 			this.wobbleAge = 850 - this.wobbleMs;
 			this.drawStream();
-			const amplitude = this.wobbleMs > 0
+			amplitude = this.wobbleMs > 0
 				? 0.0035 * Math.exp(-this.wobbleAge / 300) * Math.sin(this.wobbleAge * Math.PI * 2 / 260)
 				: 0;
-			this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor, amplitude);
+			fillChanged = true;
 			active = true;
-		}
+		} else if (hadParticles) this.drawParticles();
+		if (fillChanged) this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor, amplitude);
 
 		return active;
 	}
