@@ -68,7 +68,7 @@ export class CanvasController implements ReactiveController {
 	/** the device whose terminal a dragged cable end would land on */
 	private endTarget?: ElectricDeviceView;
 	private selection: PIXI.Container[] = [];
-	private marquee?: { id: number; start: PIXI.PointData; end?: PIXI.PointData };
+	private marquee?: { id: number; start: PIXI.PointData; end?: PIXI.PointData; pressed?: PIXI.Container };
 	private groupDrag?: { id: number; origin: PIXI.PointData; anchor: PIXI.PointData; moved: boolean;
 		offset: PIXI.PointData; items: { sprite: PIXI.Container; x: number; y: number }[] };
 	private touchListeners?: AbortController;
@@ -504,16 +504,26 @@ export class CanvasController implements ReactiveController {
 	private finishMarquee(event: PIXI.FederatedPointerEvent): void {
 		this.moveMarquee(event);
 		const rect = this.selectionRectangle();
+		const pressed = this.marquee?.pressed;
 		this.marquee = undefined;
 		if (!rect) {
-			this.host.clearObjectSelection();
+			if (!pressed) this.host.clearObjectSelection();
+			else if (event.type === "pointerup" && event.target === pressed && pressed.parent === this.world) {
+				const single = this.host.selectedObjectSprite;
+				const selected = single ? [single] : this.selection;
+				this.setGroupSelection(selected.includes(pressed)
+					? selected.filter(sprite => sprite !== pressed) : [...selected, pressed]);
+			}
 			return;
 		}
-		const selected = this.world.children.filter((sprite) => {
+		this.setGroupSelection(this.world.children.filter((sprite) => {
 			const bounds = sprite.getBounds();
 			return bounds.minX <= rect.right && bounds.maxX >= rect.left && bounds.minY <= rect.bottom && bounds.maxY >= rect.top;
-		});
-		this.host.clearObjectSelection();
+		}));
+	}
+
+	private setGroupSelection(selected: PIXI.Container[]): void {
+		if (this.host.selectedObjectSprite) this.host.clearObjectSelection();
 		this.selection = selected;
 		this.drawSelection();
 		this.host.requestUpdate();
@@ -849,6 +859,11 @@ export class CanvasController implements ReactiveController {
 			this.updateMousePosition(event);
 			if (event.button === 0) this.host.closeAmountMenu();
 			if (event.button === 2) return;
+			if (event.button === 0 && event.pointerType === "mouse" && event.altKey) {
+				const { x, y } = event.global;
+				this.marquee = { id: event.pointerId, start: { x, y }, pressed: sprite };
+				return;
+			}
 			// Pressing on a plug of a cable pulls that end out instead of
 			// moving the whole lead, which is what makes wiring one gesture.
 			if (event.button === 0 && sprite instanceof CableView) {

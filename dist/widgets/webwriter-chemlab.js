@@ -186437,16 +186437,24 @@ var CanvasController = class _CanvasController {
   finishMarquee(event) {
     this.moveMarquee(event);
     const rect = this.selectionRectangle();
+    const pressed = this.marquee?.pressed;
     this.marquee = void 0;
     if (!rect) {
-      this.host.clearObjectSelection();
+      if (!pressed) this.host.clearObjectSelection();
+      else if (event.type === "pointerup" && event.target === pressed && pressed.parent === this.world) {
+        const single = this.host.selectedObjectSprite;
+        const selected = single ? [single] : this.selection;
+        this.setGroupSelection(selected.includes(pressed) ? selected.filter((sprite) => sprite !== pressed) : [...selected, pressed]);
+      }
       return;
     }
-    const selected = this.world.children.filter((sprite) => {
+    this.setGroupSelection(this.world.children.filter((sprite) => {
       const bounds = sprite.getBounds();
       return bounds.minX <= rect.right && bounds.maxX >= rect.left && bounds.minY <= rect.bottom && bounds.maxY >= rect.top;
-    });
-    this.host.clearObjectSelection();
+    }));
+  }
+  setGroupSelection(selected) {
+    if (this.host.selectedObjectSprite) this.host.clearObjectSelection();
     this.selection = selected;
     this.drawSelection();
     this.host.requestUpdate();
@@ -186742,6 +186750,11 @@ var CanvasController = class _CanvasController {
       this.updateMousePosition(event);
       if (event.button === 0) this.host.closeAmountMenu();
       if (event.button === 2) return;
+      if (event.button === 0 && event.pointerType === "mouse" && event.altKey) {
+        const { x: x4, y: y5 } = event.global;
+        this.marquee = { id: event.pointerId, start: { x: x4, y: y5 }, pressed: sprite };
+        return;
+      }
       if (event.button === 0 && sprite instanceof CableView) {
         const local = sprite.toLocal(event.global);
         const end = sprite.endAt(local.x, local.y);
