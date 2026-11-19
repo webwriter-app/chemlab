@@ -16,6 +16,8 @@ import { html, type PropertyValues } from "lit";
 import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
 import SlCard from "@shoelace-style/shoelace/dist/components/card/card.component.js";
+import SlCarousel from "@shoelace-style/shoelace/dist/components/carousel/carousel.component.js";
+import SlCarouselItem from "@shoelace-style/shoelace/dist/components/carousel-item/carousel-item.component.js";
 import SlDialog from "@shoelace-style/shoelace/dist/components/dialog/dialog.component.js";
 import SlDivider from "@shoelace-style/shoelace/dist/components/divider/divider.component.js";
 import SlIcon from "@shoelace-style/shoelace/dist/components/icon/icon.component.js";
@@ -193,6 +195,26 @@ const CHEVRON_ICON = html`
 `;
 
 /**
+ * Arrows of the family carousel.
+ *
+ * The carousel renders its own navigation buttons and would fill them from the
+ * Shoelace icon library, which the widget does not ship; the slots take these
+ * inline arrows instead, so the buttons never wait for a missing asset.
+ */
+const CAROUSEL_PREVIOUS_ICON = html`
+	<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M10 3.5 5.5 8l4.5 4.5"/>
+	</svg>
+`;
+
+/** Next arrow of the family carousel. */
+const CAROUSEL_NEXT_ICON = html`
+	<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M6 3.5 10.5 8 6 12.5"/>
+	</svg>
+`;
+
+/**
  * Localizes one mode of the switch.
  *
  * @param mode - Mode of the switch.
@@ -255,6 +277,8 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		"sl-badge": SlBadge,
 		"sl-button": SlButton,
 		"sl-card": SlCard,
+		"sl-carousel": SlCarousel,
+		"sl-carousel-item": SlCarouselItem,
 		"sl-dialog": SlDialog,
 		"sl-divider": SlDivider,
 		"sl-icon": SlIcon,
@@ -327,6 +351,13 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#width: number | null = null;
 	#resizeObserver: ResizeObserver | null = null;
 	#languageObserver: MutationObserver | null = null;
+	/**
+	 * Atomic numbers the keyboard may reach.
+	 *
+	 * In the grid this is every cell the mode can place, because the family filter
+	 * only fades a cell and leaves it clickable; in the list it is the rows that
+	 * survive the filter, because the list drops the rest.
+	 */
 	#matching: ReadonlySet<number> = new Set();
 	#rovingOverride: number | null = null;
 	#focusBeforeLayout: number | null = null;
@@ -510,6 +541,25 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/** Temperature the state rows and the cell colours refer to. */
 	get #temperature(): number {
 		return this.#mode.temperatureK;
+	}
+
+	/**
+	 * Atomic numbers of the cells the mode can place.
+	 *
+	 * The grid renders these cells and fades the ones the family filter leaves
+	 * out, so this set is what the keyboard may reach there.
+	 *
+	 * @returns The atomic numbers of every cell the grid shows.
+	 */
+	#placeable(): ReadonlySet<number> {
+		const placeable = new Set<number>();
+		for (const cell of GRID.cells) {
+			const element = elementByAtomicNumber(cell.atomicNumber);
+			if (element !== undefined && !cellMode(element, this.#mode).hidden) {
+				placeable.add(cell.atomicNumber);
+			}
+		}
+		return placeable;
 	}
 
 	/**
@@ -751,14 +801,18 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * the layout switch.
 	 *
 	 * The whole row sits on one lightly shaded bar, so the controls read as one
-	 * unit. The families are a narrow carousel of tags instead of a dropdown plus a
-	 * legend, because the ribbon has no room for both and the tags double as the
-	 * filter. The reset sits right after the carousel rather than inside it, so it
-	 * never scrolls out of reach. The layout switch is a pair of compact icon
-	 * buttons with a tooltip and an accessible label, like the canvas controls of
-	 * the lab widget; the result count is a pill badge, and a hidden live region
-	 * keeps the full sentence for screen readers. The search field only appears in
-	 * the list, where the rows have no grid to scan.
+	 * unit. The families are a Shoelace carousel of tags instead of a dropdown
+	 * plus a legend, because the ribbon has no room for both and the tags double
+	 * as the filter. The carousel scrolls one tag at a time and keeps its arrows
+	 * at the ends, so the strip stays a single band at every width. It names
+	 * itself through a hidden label instead of an attribute, because the carousel
+	 * writes its own generic label when it connects. The reset sits
+	 * right after the carousel rather than inside it, so it never scrolls out of
+	 * reach. The layout switch is a pair of compact icon buttons with a tooltip
+	 * and an accessible label, like the canvas controls of the lab widget; the
+	 * result count is a pill badge, and a hidden live region keeps the full
+	 * sentence for screen readers. The search field only appears in the list,
+	 * where the rows have no grid to scan.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
@@ -791,18 +845,30 @@ export class ChemLabPeriodicTable extends LitElementWw {
 						></sl-input>
 					`
 					: null}
-				<div class="family-strip" role="group" aria-label=${t.legendLabel}>
+				<span class="visually-hidden" id="family-strip-label">${t.legendLabel}</span>
+				<sl-carousel
+					class="family-strip"
+					navigation
+					mouse-dragging
+					slides-per-page="4"
+					slides-per-move="1"
+					aria-labelledby="family-strip-label"
+				>
 					${Object.entries(CATEGORIES).map(([key, category]) => html`
-						<button
-							class="family-tag category-${key}"
-							type="button"
-							aria-pressed=${this.#category === key}
-							@click=${() => this.#toggleCategory(key)}
-						>
-							<span class="family-swatch"></span>${category[language]}
-						</button>
+						<sl-carousel-item>
+							<button
+								class="family-tag category-${key}"
+								type="button"
+								aria-pressed=${this.#category === key}
+								@click=${() => this.#toggleCategory(key)}
+							>
+								<span class="family-swatch"></span>${category[language]}
+							</button>
+						</sl-carousel-item>
 					`)}
-				</div>
+					<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
+					<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
+				</sl-carousel>
 				<sl-button
 					class="reset"
 					size="small"
@@ -946,17 +1012,19 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/**
 	 * Renders one element cell of the grid.
 	 *
-	 * Only matching cells are rendered at all, so a cell needs no disabled state:
-	 * an element the mode cannot place leaves a hole in the grid instead of a
-	 * greyed tile.
+	 * A cell the family filter does not match stays in place and fades instead of
+	 * disappearing: the table keeps its shape, so the learner still reads where
+	 * the family sits. Only a mode that cannot place an element removes its cell,
+	 * because a state or a year the model does not know would read as a value.
 	 *
 	 * @param cell - Cell of the display grid.
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
 	 * @param roving - Atomic number of the tabbable cell.
+	 * @param faded - Whether the family filter leaves the cell out.
 	 * @returns The grid cell.
 	 */
-	#renderCell(cell: GridCell, t: Strings, language: Language, roving: number | null) {
+	#renderCell(cell: GridCell, t: Strings, language: Language, roving: number | null, faded: boolean) {
 		const element = elementByAtomicNumber(cell.atomicNumber);
 		if (!element) return null;
 		const selected = this.#selection.value === cell.atomicNumber;
@@ -965,6 +1033,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const state = mode.state === null ? null : stateText(mode.state, t);
 		const classes = ["cell", `category-${cell.category}`];
 		if (mode.state !== null) classes.push(`state-${mode.state}`);
+		if (faded) classes.push("is-faded");
 		const label = format(t.cellLabel, {
 			number: element.atomicNumber,
 			name: element.names[language],
@@ -1000,6 +1069,11 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * its content, so the block keeps its own size and the periods around it never
 	 * stretch.
 	 *
+	 * Every cell the mode can place is rendered; the family filter only fades the
+	 * cells it leaves out, so the table keeps its shape while the filter is on.
+	 * The series labels and the placeholder cards belong to the detached rows and
+	 * fade with them, because they name the same family.
+	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
 	 * @param matching - Atomic numbers that pass the current filter.
@@ -1008,6 +1082,8 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 */
 	#renderGrid(t: Strings, language: Language, matching: ReadonlySet<number>, details: unknown) {
 		const roving = this.#rovingTarget(matching);
+		const fadedCategory = (category: string) =>
+			this.#category !== null && this.#category !== category;
 		const groupLabels = Array.from({ length: GRID.columns }, (_, index) => html`
 			<div
 				class="group-label"
@@ -1017,7 +1093,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		`);
 		const cells = (row: { readonly cells: readonly GridCell[] }) =>
 			row.cells.map(cell =>
-				matching.has(cell.atomicNumber) ? this.#renderCell(cell, t, language, roving) : null,
+				this.#renderCell(cell, t, language, roving, !matching.has(cell.atomicNumber)),
 			);
 		const mainRows = GRID.rows
 			.filter(row => row.section === "main")
@@ -1039,9 +1115,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					last: series.lastAtomicNumber,
 				})
 				: "";
+			const faded = fadedCategory(placeholder.category) ? " is-faded" : "";
 			return html`
 				<div
-					class="placeholder category-${placeholder.category}"
+					class="placeholder category-${placeholder.category}${faded}"
 					style="--pt-row:${placeholder.row + 1};--pt-column:${placeholder.column + 1}"
 				>
 					<span class="placeholder-text">${text}</span>
@@ -1053,10 +1130,11 @@ export class ChemLabPeriodicTable extends LitElementWw {
 			.map(row => {
 				const series = GRID.seriesRows.find(entry => entry.row === row.row);
 				const name = series ? CATEGORIES[series.category]?.[language] ?? series.category : "";
+				const faded = series && fadedCategory(series.category) ? " is-faded" : "";
 				return html`
 					<div class="grid-row" role="row">
 						<div
-							class="series-header"
+							class="series-header${faded}"
 							role="rowheader"
 							style="--pt-row:${row.row + 2};--pt-column:1 / span 3"
 						>${name}</div>
@@ -1469,7 +1547,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 			return element !== undefined && !cellMode(element, this.#mode).hidden;
 		});
 		const matching = new Set(matches.map(match => match.atomicNumber));
-		this.#matching = matching;
+		// The grid fades the cells the filter leaves out instead of dropping them,
+		// so every cell the mode can place stays under the pointer and in the tab
+		// order; the list keeps only the rows that match.
+		this.#matching = resolved === "table" ? this.#placeable() : matching;
 		const selected = this.#selection.value;
 		const element = selected === null ? null : elementByAtomicNumber(selected) ?? null;
 		const details = this.#renderDetails(t, language, element, {

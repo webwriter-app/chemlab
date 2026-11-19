@@ -32,6 +32,9 @@ export const periodicTableStyles = css`
 		background: var(--sl-color-neutral-0, #ffffff);
 
 		--pt-cell-height: 2.85rem;
+		/* Height of one control in the ribbon. The family tags, the icon buttons
+		   and the mode switch all take it, so the bar reads as one row of chips. */
+		--pt-chip-height: 1.35rem;
 		--pt-details-border: 1px;
 		--pt-cell-bar: 0.22rem;
 		--pt-gutter: 1.5rem;
@@ -200,6 +203,25 @@ export const periodicTableStyles = css`
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		padding: 0 0.4rem;
+	}
+
+	/* Every control in the ribbon takes the height of a family tag, so the bar
+	   reads as one row of equal chips instead of a mix of sizes. The mode switch
+	   sits in the row below and follows, because it belongs to the same band. */
+	.toolbar sl-button,
+	.modes sl-button {
+		--sl-input-height-small: var(--pt-chip-height);
+		--sl-button-font-size-small: 0.7rem;
+	}
+
+	.modes sl-button::part(label) {
+		padding: 0 0.4rem;
+	}
+
+	.toolbar sl-icon-button::part(base) {
+		padding: 0.25rem;
+		font-size: 0.85rem;
 	}
 
 	/* The pane is the only part that scrolls: the ribbon and the mode row stay
@@ -341,6 +363,23 @@ export const periodicTableStyles = css`
 		border-color: color-mix(in srgb, var(--pt-ink) 35%, var(--pt-border));
 	}
 
+	/* The family filter fades the cells it leaves out instead of removing them:
+	   the table keeps its shape, so the learner still reads where the family
+	   sits. A light blur keeps the faded text from competing with the matching
+	   cells, and the faded tile still answers a click. */
+	.cell.is-faded,
+	.placeholder.is-faded,
+	.series-header.is-faded {
+		opacity: 0.32;
+		filter: blur(0.4px) saturate(0.45);
+	}
+
+	.cell.is-faded:hover,
+	.cell.is-faded:focus-visible {
+		opacity: 0.75;
+		filter: none;
+	}
+
 	/* Selection stays ChemLab blue; keyboard focus gets its own dark outer ring,
 	   so the two states never look alike. */
 	.cell:focus-visible {
@@ -393,20 +432,39 @@ export const periodicTableStyles = css`
 		color: var(--pt-ink-soft);
 	}
 
-	/* The families are a narrow carousel in the ribbon: one row that scrolls
+	/* The families are a Shoelace carousel in the ribbon: one row that scrolls
 	   sideways instead of wrapping into a second and third line, which is what
 	   keeps the ribbon a single band at every width. The reset sits outside the
-	   strip, so it never scrolls out of reach. The small flex basis matters: a
+	   carousel, so it never scrolls out of reach. The small flex basis matters: a
 	   basis of auto would be the full width of all tags, and the toolbar would
 	   break the strip onto a line of its own before it ever shrank. */
 	.family-strip {
-		display: flex;
 		flex: 1 1 6rem;
-		gap: 0.25rem;
 		min-width: 7rem;
-		overflow-x: auto;
-		padding-bottom: 1px;
-		scrollbar-width: thin;
+		--slide-gap: 0.25rem;
+		/* The carousel sizes its slides from an aspect ratio, which would give a
+		   one-row strip the height of a picture. Auto lets the tags decide the
+		   height; the items inherit the same value. */
+		--aspect-ratio: auto;
+	}
+
+	/* The carousel brings its own grid, gaps and arrow padding. The ribbon needs
+	   the tags to sit as tightly as the rest of the bar, and each slide to take
+	   the width of its own tag instead of an equal share of the strip. */
+	.family-strip::part(base) {
+		gap: 0.1rem;
+	}
+
+	.family-strip::part(scroll-container) {
+		--slide-size: max-content;
+	}
+
+	/* The arrows take the height of a tag, so the strip reads as one row of
+	   chips instead of a row of tags with two small buttons beside them. */
+	.family-strip::part(navigation-button) {
+		min-height: var(--pt-chip-height);
+		padding: 0 0.1rem;
+		font-size: 0.8rem;
 	}
 
 	/* Family names and the temperature key share one treatment: narrow
@@ -428,6 +486,7 @@ export const periodicTableStyles = css`
 
 	.family-tag {
 		flex: 0 0 auto;
+		min-height: var(--pt-chip-height);
 		font: inherit;
 		font-size: 0.7rem;
 		white-space: nowrap;
@@ -607,10 +666,16 @@ export const periodicTableStyles = css`
 	.list-details .details-shell {
 		position: static;
 		max-height: none;
+		/* The card is always open here, so nothing needs clipping. The shell
+		   would otherwise cut off the focus ring of the card it holds. */
+		overflow: visible;
 	}
 
+	/* In the list the card sits in the flow of the rows instead of over the
+	   table, so it keeps the softer panel shadow. */
 	.list-details .details-card::part(base) {
 		height: auto;
+		box-shadow: var(--pt-panel-shadow);
 	}
 
 	.list-details .details-card::part(body) {
@@ -656,16 +721,21 @@ export const periodicTableStyles = css`
 	}
 
 	/* The card takes the height of its key rows instead of the height of the
-	   block, so the panel stays slim and the periods around it keep their cells. */
+	   block, so the panel stays slim and the periods around it keep their cells.
+	   It floats over the block even when it is collapsed, so it always carries
+	   the lifting shadow that sets it apart from the cells around it. */
 	.details-card::part(base) {
 		height: auto;
 		overflow: hidden;
-		box-shadow: var(--pt-panel-shadow);
+		box-shadow: var(--pt-overlay-shadow);
 	}
 
-	.details-shell.is-expanded .details-card::part(base) {
-		height: auto;
-		box-shadow: var(--pt-overlay-shadow);
+	/* The card takes focus when it replaces the selected list row, so it needs a
+	   ring of its own: the default one hugs the border and reads as a second
+	   frame. It takes the selection blue, because the card is the selection. */
+	.details-card:focus-visible {
+		outline: 2px solid var(--pt-accent);
+		outline-offset: 1px;
 	}
 
 	/* The header carries the identity of the element in one row: the coloured

@@ -822,8 +822,8 @@ __publicField2(LitElementWw, "options", {});
 __publicField2(LitElementWw, "actions", {});
 
 // node_modules/@lit/reactive-element/decorators/custom-element.js
-var t2 = (t8) => (e12, o10) => {
-  void 0 !== o10 ? o10.addInitializer((() => {
+var t2 = (t8) => (e12, o12) => {
+  void 0 !== o12 ? o12.addInitializer((() => {
     customElements.define(t8, e12);
   })) : customElements.define(t8, e12);
 };
@@ -834,8 +834,8 @@ var e3 = t3.ShadowRoot && (void 0 === t3.ShadyCSS || t3.ShadyCSS.nativeShadow) &
 var s2 = Symbol();
 var o4 = /* @__PURE__ */ new WeakMap();
 var n5 = class {
-  constructor(t8, e12, o10) {
-    if (this._$cssResult$ = true, o10 !== s2) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
+  constructor(t8, e12, o12) {
+    if (this._$cssResult$ = true, o12 !== s2) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
     this.cssText = t8, this.t = e12;
   }
   get styleSheet() {
@@ -853,18 +853,18 @@ var n5 = class {
 };
 var r4 = (t8) => new n5("string" == typeof t8 ? t8 : t8 + "", void 0, s2);
 var i = (t8, ...e12) => {
-  const o10 = 1 === t8.length ? t8[0] : e12.reduce(((e13, s4, o11) => e13 + ((t9) => {
+  const o12 = 1 === t8.length ? t8[0] : e12.reduce(((e13, s4, o13) => e13 + ((t9) => {
     if (true === t9._$cssResult$) return t9.cssText;
     if ("number" == typeof t9) return t9;
     throw Error("Value passed to 'css' function must be a 'css' function result: " + t9 + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
-  })(s4) + t8[o11 + 1]), t8[0]);
-  return new n5(o10, t8, s2);
+  })(s4) + t8[o13 + 1]), t8[0]);
+  return new n5(o12, t8, s2);
 };
-var S3 = (s4, o10) => {
-  if (e3) s4.adoptedStyleSheets = o10.map(((t8) => t8 instanceof CSSStyleSheet ? t8 : t8.styleSheet));
-  else for (const e12 of o10) {
-    const o11 = document.createElement("style"), n10 = t3.litNonce;
-    void 0 !== n10 && o11.setAttribute("nonce", n10), o11.textContent = e12.cssText, s4.appendChild(o11);
+var S3 = (s4, o12) => {
+  if (e3) s4.adoptedStyleSheets = o12.map(((t8) => t8 instanceof CSSStyleSheet ? t8 : t8.styleSheet));
+  else for (const e12 of o12) {
+    const o13 = document.createElement("style"), n10 = t3.litNonce;
+    void 0 !== n10 && o13.setAttribute("nonce", n10), o13.textContent = e12.cssText, s4.appendChild(o13);
   }
 };
 var c4 = e3 ? (t8) => t8 : (t8) => t8 instanceof CSSStyleSheet ? ((t9) => {
@@ -1097,28 +1097,28 @@ var r6 = (t8 = o6, e12, r11) => {
   const { kind: n10, metadata: i9 } = r11;
   let s4 = globalThis.litPropertyMetadata.get(i9);
   if (void 0 === s4 && globalThis.litPropertyMetadata.set(i9, s4 = /* @__PURE__ */ new Map()), s4.set(r11.name, t8), "accessor" === n10) {
-    const { name: o10 } = r11;
+    const { name: o12 } = r11;
     return { set(r12) {
       const n11 = e12.get.call(this);
-      e12.set.call(this, r12), this.requestUpdate(o10, n11, t8);
+      e12.set.call(this, r12), this.requestUpdate(o12, n11, t8);
     }, init(e13) {
-      return void 0 !== e13 && this.P(o10, void 0, t8), e13;
+      return void 0 !== e13 && this.P(o12, void 0, t8), e13;
     } };
   }
   if ("setter" === n10) {
-    const { name: o10 } = r11;
+    const { name: o12 } = r11;
     return function(r12) {
-      const n11 = this[o10];
-      e12.call(this, r12), this.requestUpdate(o10, n11, t8);
+      const n11 = this[o12];
+      e12.call(this, r12), this.requestUpdate(o12, n11, t8);
     };
   }
   throw Error("Unsupported decorator location: " + n10);
 };
 function n7(t8) {
-  return (e12, o10) => "object" == typeof o10 ? r6(t8, e12, o10) : ((t9, e13, o11) => {
-    const r11 = e13.hasOwnProperty(o11);
-    return e13.constructor.createProperty(o11, r11 ? { ...t9, wrapped: true } : t9), r11 ? Object.getOwnPropertyDescriptor(e13, o11) : void 0;
-  })(t8, e12, o10);
+  return (e12, o12) => "object" == typeof o12 ? r6(t8, e12, o12) : ((t9, e13, o13) => {
+    const r11 = e13.hasOwnProperty(o13);
+    return e13.constructor.createProperty(o13, r11 ? { ...t9, wrapped: true } : t9), r11 ? Object.getOwnPropertyDescriptor(e13, o13) : void 0;
+  })(t8, e12, o12);
 }
 
 // node_modules/@lit/reactive-element/decorators/state.js
@@ -1128,8 +1128,8 @@ function r7(r11) {
 
 // node_modules/@lit/reactive-element/decorators/event-options.js
 function t4(t8) {
-  return (n10, o10) => {
-    const c8 = "function" == typeof n10 ? n10 : n10[o10];
+  return (n10, o12) => {
+    const c8 = "function" == typeof n10 ? n10 : n10[o12];
     Object.assign(c8, t8);
   };
 }
@@ -1140,7 +1140,7 @@ var e5 = (e12, t8, c8) => (c8.configurable = true, c8.enumerable = true, Reflect
 // node_modules/@lit/reactive-element/decorators/query.js
 function e6(e12, r11) {
   return (n10, s4, i9) => {
-    const o10 = (t8) => t8.renderRoot?.querySelector(e12) ?? null;
+    const o12 = (t8) => t8.renderRoot?.querySelector(e12) ?? null;
     if (r11) {
       const { get: e13, set: r12 } = "object" == typeof s4 ? n10 : i9 ?? (() => {
         const t8 = Symbol();
@@ -1152,11 +1152,11 @@ function e6(e12, r11) {
       })();
       return e5(n10, s4, { get() {
         let t8 = e13.call(this);
-        return void 0 === t8 && (t8 = o10(this), (null !== t8 || this.hasUpdated) && r12.call(this, t8)), t8;
+        return void 0 === t8 && (t8 = o12(this), (null !== t8 || this.hasUpdated) && r12.call(this, t8)), t8;
       } });
     }
     return e5(n10, s4, { get() {
-      return o10(this);
+      return o12(this);
     } });
   };
 }
@@ -1196,16 +1196,16 @@ function P2(t8, i9) {
   return void 0 !== s3 ? s3.createHTML(i9) : i9;
 }
 var V2 = (t8, i9) => {
-  const s4 = t8.length - 1, o10 = [];
+  const s4 = t8.length - 1, o12 = [];
   let r11, l6 = 2 === i9 ? "<svg>" : 3 === i9 ? "<math>" : "", c8 = f5;
   for (let i10 = 0; i10 < s4; i10++) {
     const s5 = t8[i10];
     let a5, u6, d4 = -1, y4 = 0;
     for (; y4 < s5.length && (c8.lastIndex = y4, u6 = c8.exec(s5), null !== u6); ) y4 = c8.lastIndex, c8 === f5 ? "!--" === u6[1] ? c8 = v2 : void 0 !== u6[1] ? c8 = _2 : void 0 !== u6[2] ? ($2.test(u6[2]) && (r11 = RegExp("</" + u6[2], "g")), c8 = m2) : void 0 !== u6[3] && (c8 = m2) : c8 === m2 ? ">" === u6[0] ? (c8 = r11 ?? f5, d4 = -1) : void 0 === u6[1] ? d4 = -2 : (d4 = c8.lastIndex - u6[2].length, a5 = u6[1], c8 = void 0 === u6[3] ? m2 : '"' === u6[3] ? g2 : p3) : c8 === g2 || c8 === p3 ? c8 = m2 : c8 === v2 || c8 === _2 ? c8 = f5 : (c8 = m2, r11 = void 0);
     const x3 = c8 === m2 && t8[i10 + 1].startsWith("/>") ? " " : "";
-    l6 += c8 === f5 ? s5 + n8 : d4 >= 0 ? (o10.push(a5), s5.slice(0, d4) + e7 + s5.slice(d4) + h5 + x3) : s5 + h5 + (-2 === d4 ? i10 : x3);
+    l6 += c8 === f5 ? s5 + n8 : d4 >= 0 ? (o12.push(a5), s5.slice(0, d4) + e7 + s5.slice(d4) + h5 + x3) : s5 + h5 + (-2 === d4 ? i10 : x3);
   }
-  return [P2(t8, l6 + (t8[s4] || "<?>") + (2 === i9 ? "</svg>" : 3 === i9 ? "</math>" : "")), o10];
+  return [P2(t8, l6 + (t8[s4] || "<?>") + (2 === i9 ? "</svg>" : 3 === i9 ? "</math>" : "")), o12];
 };
 var N2 = class _N {
   constructor({ strings: t8, _$litType$: s4 }, n10) {
@@ -1247,8 +1247,8 @@ var N2 = class _N {
 function S4(t8, i9, s4 = t8, e12) {
   if (i9 === T2) return i9;
   let h6 = void 0 !== e12 ? s4._$Co?.[e12] : s4._$Cl;
-  const o10 = c6(i9) ? void 0 : i9._$litDirective$;
-  return h6?.constructor !== o10 && (h6?._$AO?.(false), void 0 === o10 ? h6 = void 0 : (h6 = new o10(t8), h6._$AT(t8, s4, e12)), void 0 !== e12 ? (s4._$Co ??= [])[e12] = h6 : s4._$Cl = h6), void 0 !== h6 && (i9 = S4(t8, h6._$AS(t8, i9.values), h6, e12)), i9;
+  const o12 = c6(i9) ? void 0 : i9._$litDirective$;
+  return h6?.constructor !== o12 && (h6?._$AO?.(false), void 0 === o12 ? h6 = void 0 : (h6 = new o12(t8), h6._$AT(t8, s4, e12)), void 0 !== e12 ? (s4._$Co ??= [])[e12] = h6 : s4._$Cl = h6), void 0 !== h6 && (i9 = S4(t8, h6._$AS(t8, i9.values), h6, e12)), i9;
 }
 var M2 = class {
   constructor(t8, i9) {
@@ -1263,13 +1263,13 @@ var M2 = class {
   u(t8) {
     const { el: { content: i9 }, parts: s4 } = this._$AD, e12 = (t8?.creationScope ?? r8).importNode(i9, true);
     C.currentNode = e12;
-    let h6 = C.nextNode(), o10 = 0, n10 = 0, l6 = s4[0];
+    let h6 = C.nextNode(), o12 = 0, n10 = 0, l6 = s4[0];
     for (; void 0 !== l6; ) {
-      if (o10 === l6.index) {
+      if (o12 === l6.index) {
         let i10;
         2 === l6.type ? i10 = new R2(h6, h6.nextSibling, this, t8) : 1 === l6.type ? i10 = new l6.ctor(h6, l6.name, l6.strings, this, t8) : 6 === l6.type && (i10 = new z2(h6, this, t8)), this._$AV.push(i10), l6 = s4[++n10];
       }
-      o10 !== l6?.index && (h6 = C.nextNode(), o10++);
+      o12 !== l6?.index && (h6 = C.nextNode(), o12++);
     }
     return C.currentNode = r8, e12;
   }
@@ -1349,14 +1349,14 @@ var k2 = class {
   }
   _$AI(t8, i9 = this, s4, e12) {
     const h6 = this.strings;
-    let o10 = false;
-    if (void 0 === h6) t8 = S4(this, t8, i9, 0), o10 = !c6(t8) || t8 !== this._$AH && t8 !== T2, o10 && (this._$AH = t8);
+    let o12 = false;
+    if (void 0 === h6) t8 = S4(this, t8, i9, 0), o12 = !c6(t8) || t8 !== this._$AH && t8 !== T2, o12 && (this._$AH = t8);
     else {
       const e13 = t8;
       let n10, r11;
-      for (t8 = h6[0], n10 = 0; n10 < h6.length - 1; n10++) r11 = S4(this, e13[s4 + n10], i9, n10), r11 === T2 && (r11 = this._$AH[n10]), o10 ||= !c6(r11) || r11 !== this._$AH[n10], r11 === E2 ? t8 = E2 : t8 !== E2 && (t8 += (r11 ?? "") + h6[n10 + 1]), this._$AH[n10] = r11;
+      for (t8 = h6[0], n10 = 0; n10 < h6.length - 1; n10++) r11 = S4(this, e13[s4 + n10], i9, n10), r11 === T2 && (r11 = this._$AH[n10]), o12 ||= !c6(r11) || r11 !== this._$AH[n10], r11 === E2 ? t8 = E2 : t8 !== E2 && (t8 += (r11 ?? "") + h6[n10 + 1]), this._$AH[n10] = r11;
     }
-    o10 && !e12 && this.j(t8);
+    o12 && !e12 && this.j(t8);
   }
   j(t8) {
     t8 === E2 ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t8 ?? "");
@@ -3154,10 +3154,10 @@ function watch(propertyName, options) {
 
 // node_modules/lit-html/directive-helpers.js
 var { I: t7 } = Z2;
-var e10 = (o10, t8) => void 0 === t8 ? void 0 !== o10?._$litType$ : o10?._$litType$ === t8;
-var f6 = (o10) => void 0 === o10.strings;
+var e10 = (o12, t8) => void 0 === t8 ? void 0 !== o12?._$litType$ : o12?._$litType$ === t8;
+var f6 = (o12) => void 0 === o12.strings;
 var u4 = {};
-var m3 = (o10, t8 = u4) => o10._$AH = t8;
+var m3 = (o12, t8 = u4) => o12._$AH = t8;
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.5YPURQKE.js
 var CACHEABLE_ERROR = Symbol();
@@ -3344,7 +3344,7 @@ var c7 = n9(b3);
 var $3 = n9(w2);
 
 // node_modules/lit-html/directives/if-defined.js
-var o9 = (o10) => o10 ?? E2;
+var o9 = (o12) => o12 ?? E2;
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.HSRY62XN.js
 var SlButton = class extends ShoelaceElement {
@@ -3694,6 +3694,884 @@ var SlCard = class extends ShoelaceElement {
   }
 };
 SlCard.styles = [component_styles_default, card_styles_default];
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.HF7GESMZ.js
+function clamp(value, min2, max2) {
+  const noNegativeZero = (n10) => Object.is(n10, -0) ? 0 : n10;
+  if (value < min2) {
+    return noNegativeZero(min2);
+  }
+  if (value > max2) {
+    return noNegativeZero(max2);
+  }
+  return noNegativeZero(value);
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.F4VGSDIW.js
+var AutoplayController = class {
+  constructor(host, tickCallback) {
+    this.timerId = 0;
+    this.activeInteractions = 0;
+    this.paused = false;
+    this.stopped = true;
+    this.pause = () => {
+      if (!this.activeInteractions++) {
+        this.paused = true;
+        this.host.requestUpdate();
+      }
+    };
+    this.resume = () => {
+      if (!--this.activeInteractions) {
+        this.paused = false;
+        this.host.requestUpdate();
+      }
+    };
+    host.addController(this);
+    this.host = host;
+    this.tickCallback = tickCallback;
+  }
+  hostConnected() {
+    this.host.addEventListener("mouseenter", this.pause);
+    this.host.addEventListener("mouseleave", this.resume);
+    this.host.addEventListener("focusin", this.pause);
+    this.host.addEventListener("focusout", this.resume);
+    this.host.addEventListener("touchstart", this.pause, { passive: true });
+    this.host.addEventListener("touchend", this.resume);
+  }
+  hostDisconnected() {
+    this.stop();
+    this.host.removeEventListener("mouseenter", this.pause);
+    this.host.removeEventListener("mouseleave", this.resume);
+    this.host.removeEventListener("focusin", this.pause);
+    this.host.removeEventListener("focusout", this.resume);
+    this.host.removeEventListener("touchstart", this.pause);
+    this.host.removeEventListener("touchend", this.resume);
+  }
+  start(interval) {
+    this.stop();
+    this.stopped = false;
+    this.timerId = window.setInterval(() => {
+      if (!this.paused) {
+        this.tickCallback();
+      }
+    }, interval);
+  }
+  stop() {
+    clearInterval(this.timerId);
+    this.stopped = true;
+    this.host.requestUpdate();
+  }
+};
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.BMOWACWC.js
+var carousel_styles_default = i`
+  :host {
+    --slide-gap: var(--sl-spacing-medium, 1rem);
+    --aspect-ratio: 16 / 9;
+    --scroll-hint: 0px;
+
+    display: flex;
+  }
+
+  .carousel {
+    display: grid;
+    grid-template-columns: min-content 1fr min-content;
+    grid-template-rows: 1fr min-content;
+    grid-template-areas:
+      '. slides .'
+      '. pagination .';
+    gap: var(--sl-spacing-medium);
+    align-items: center;
+    min-height: 100%;
+    min-width: 100%;
+    position: relative;
+  }
+
+  .carousel__pagination {
+    grid-area: pagination;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--sl-spacing-small);
+  }
+
+  .carousel__slides {
+    grid-area: slides;
+
+    display: grid;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+    justify-items: center;
+    overflow: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    aspect-ratio: calc(var(--aspect-ratio) * var(--slides-per-page));
+    border-radius: var(--sl-border-radius-small);
+
+    --slide-size: calc((100% - (var(--slides-per-page) - 1) * var(--slide-gap)) / var(--slides-per-page));
+  }
+
+  @media (prefers-reduced-motion) {
+    :where(.carousel__slides) {
+      scroll-behavior: auto;
+    }
+  }
+
+  .carousel__slides--horizontal {
+    grid-auto-flow: column;
+    grid-auto-columns: var(--slide-size);
+    grid-auto-rows: 100%;
+    column-gap: var(--slide-gap);
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--scroll-hint);
+    padding-inline: var(--scroll-hint);
+    overflow-y: hidden;
+  }
+
+  .carousel__slides--vertical {
+    grid-auto-flow: row;
+    grid-auto-columns: 100%;
+    grid-auto-rows: var(--slide-size);
+    row-gap: var(--slide-gap);
+    scroll-snap-type: y mandatory;
+    scroll-padding-block: var(--scroll-hint);
+    padding-block: var(--scroll-hint);
+    overflow-x: hidden;
+  }
+
+  .carousel__slides--dragging {
+  }
+
+  :host([vertical]) ::slotted(sl-carousel-item) {
+    height: 100%;
+  }
+
+  .carousel__slides::-webkit-scrollbar {
+    display: none;
+  }
+
+  .carousel__navigation {
+    grid-area: navigation;
+    display: contents;
+    font-size: var(--sl-font-size-x-large);
+  }
+
+  .carousel__navigation-button {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    border-radius: var(--sl-border-radius-small);
+    font-size: inherit;
+    color: var(--sl-color-neutral-600);
+    padding: var(--sl-spacing-x-small);
+    cursor: pointer;
+    transition: var(--sl-transition-medium) color;
+    appearance: none;
+  }
+
+  .carousel__navigation-button--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .carousel__navigation-button--disabled::part(base) {
+    pointer-events: none;
+  }
+
+  .carousel__navigation-button--previous {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .carousel__navigation-button--next {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .carousel__pagination-item {
+    display: block;
+    cursor: pointer;
+    background: none;
+    border: 0;
+    border-radius: var(--sl-border-radius-circle);
+    width: var(--sl-spacing-small);
+    height: var(--sl-spacing-small);
+    background-color: var(--sl-color-neutral-300);
+    padding: 0;
+    margin: 0;
+  }
+
+  .carousel__pagination-item--active {
+    background-color: var(--sl-color-neutral-700);
+    transform: scale(1.2);
+  }
+
+  /* Focus styles */
+  .carousel__slides:focus-visible,
+  .carousel__navigation-button:focus-visible,
+  .carousel__pagination-item:focus-visible {
+    outline: var(--sl-focus-ring);
+    outline-offset: var(--sl-focus-ring-offset);
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.B4BZKR24.js
+function waitForEvent(el, eventName) {
+  return new Promise((resolve) => {
+    function done(event) {
+      if (event.target === el) {
+        el.removeEventListener(eventName, done);
+        resolve();
+      }
+    }
+    el.addEventListener(eventName, done);
+  });
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AJ3ENQ5C.js
+function animateTo(el, keyframes, options) {
+  return new Promise((resolve) => {
+    if ((options == null ? void 0 : options.duration) === Infinity) {
+      throw new Error("Promise-based animations must be finite.");
+    }
+    const animation = el.animate(keyframes, __spreadProps(__spreadValues({}, options), {
+      duration: prefersReducedMotion() ? 0 : options.duration
+    }));
+    animation.addEventListener("cancel", resolve, { once: true });
+    animation.addEventListener("finish", resolve, { once: true });
+  });
+}
+function parseDuration(delay) {
+  delay = delay.toString().toLowerCase();
+  if (delay.indexOf("ms") > -1) {
+    return parseFloat(delay);
+  }
+  if (delay.indexOf("s") > -1) {
+    return parseFloat(delay) * 1e3;
+  }
+  return parseFloat(delay);
+}
+function prefersReducedMotion() {
+  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+  return query.matches;
+}
+function stopAnimations(el) {
+  return Promise.all(
+    el.getAnimations().map((animation) => {
+      return new Promise((resolve) => {
+        animation.cancel();
+        requestAnimationFrame(resolve);
+      });
+    })
+  );
+}
+
+// node_modules/lit-html/directives/map.js
+function* o10(o12, f7) {
+  if (void 0 !== o12) {
+    let i9 = 0;
+    for (const t8 of o12) yield f7(t8, i9++);
+  }
+}
+
+// node_modules/lit-html/directives/range.js
+function* o11(o12, t8, e12 = 1) {
+  const i9 = void 0 === t8 ? 0 : o12;
+  t8 ??= o12;
+  for (let o13 = i9; e12 > 0 ? o13 < t8 : t8 < o13; o13 += e12) yield o13;
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.WIPJVEWE.js
+var SlCarousel = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.loop = false;
+    this.navigation = false;
+    this.pagination = false;
+    this.autoplay = false;
+    this.autoplayInterval = 3e3;
+    this.slidesPerPage = 1;
+    this.slidesPerMove = 1;
+    this.orientation = "horizontal";
+    this.mouseDragging = false;
+    this.activeSlide = 0;
+    this.scrolling = false;
+    this.dragging = false;
+    this.autoplayController = new AutoplayController(this, () => this.next());
+    this.dragStartPosition = [-1, -1];
+    this.localize = new LocalizeController2(this);
+    this.pendingSlideChange = false;
+    this.handleMouseDrag = (event) => {
+      if (!this.dragging) {
+        this.scrollContainer.style.setProperty("scroll-snap-type", "none");
+        this.dragging = true;
+        this.dragStartPosition = [event.clientX, event.clientY];
+      }
+      this.scrollContainer.scrollBy({
+        left: -event.movementX,
+        top: -event.movementY,
+        behavior: "instant"
+      });
+    };
+    this.handleMouseDragEnd = () => {
+      const scrollContainer = this.scrollContainer;
+      document.removeEventListener("pointermove", this.handleMouseDrag, { capture: true });
+      const startLeft = scrollContainer.scrollLeft;
+      const startTop = scrollContainer.scrollTop;
+      scrollContainer.style.removeProperty("scroll-snap-type");
+      scrollContainer.style.setProperty("overflow", "hidden");
+      const finalLeft = scrollContainer.scrollLeft;
+      const finalTop = scrollContainer.scrollTop;
+      scrollContainer.style.removeProperty("overflow");
+      scrollContainer.style.setProperty("scroll-snap-type", "none");
+      scrollContainer.scrollTo({ left: startLeft, top: startTop, behavior: "instant" });
+      requestAnimationFrame(async () => {
+        if (startLeft !== finalLeft || startTop !== finalTop) {
+          scrollContainer.scrollTo({
+            left: finalLeft,
+            top: finalTop,
+            behavior: prefersReducedMotion() ? "auto" : "smooth"
+          });
+          await waitForEvent(scrollContainer, "scrollend");
+        }
+        scrollContainer.style.removeProperty("scroll-snap-type");
+        this.dragging = false;
+        this.dragStartPosition = [-1, -1];
+        this.handleScrollEnd();
+      });
+    };
+    this.handleSlotChange = (mutations) => {
+      const needsInitialization = mutations.some(
+        (mutation) => [...mutation.addedNodes, ...mutation.removedNodes].some(
+          (el) => this.isCarouselItem(el) && !el.hasAttribute("data-clone")
+        )
+      );
+      if (needsInitialization) {
+        this.initializeSlides();
+      }
+      this.requestUpdate();
+    };
+  }
+  connectedCallback() {
+    super.connectedCallback();
+    this.setAttribute("role", "region");
+    this.setAttribute("aria-label", this.localize.term("carousel"));
+  }
+  disconnectedCallback() {
+    var _a3;
+    super.disconnectedCallback();
+    (_a3 = this.mutationObserver) == null ? void 0 : _a3.disconnect();
+  }
+  firstUpdated() {
+    this.initializeSlides();
+    this.mutationObserver = new MutationObserver(this.handleSlotChange);
+    this.mutationObserver.observe(this, {
+      childList: true,
+      subtree: true
+    });
+  }
+  willUpdate(changedProperties) {
+    if (changedProperties.has("slidesPerMove") || changedProperties.has("slidesPerPage")) {
+      this.slidesPerMove = Math.min(this.slidesPerMove, this.slidesPerPage);
+    }
+  }
+  getPageCount() {
+    const slidesCount = this.getSlides().length;
+    const { slidesPerPage, slidesPerMove, loop } = this;
+    const pages = loop ? slidesCount / slidesPerMove : (slidesCount - slidesPerPage) / slidesPerMove + 1;
+    return Math.ceil(pages);
+  }
+  getCurrentPage() {
+    return Math.ceil(this.activeSlide / this.slidesPerMove);
+  }
+  canScrollNext() {
+    return this.loop || this.getCurrentPage() < this.getPageCount() - 1;
+  }
+  canScrollPrev() {
+    return this.loop || this.getCurrentPage() > 0;
+  }
+  /** @internal Gets all carousel items. */
+  getSlides({ excludeClones = true } = {}) {
+    return [...this.children].filter(
+      (el) => this.isCarouselItem(el) && (!excludeClones || !el.hasAttribute("data-clone"))
+    );
+  }
+  handleClick(event) {
+    if (this.dragging && this.dragStartPosition[0] > 0 && this.dragStartPosition[1] > 0) {
+      const deltaX = Math.abs(this.dragStartPosition[0] - event.clientX);
+      const deltaY = Math.abs(this.dragStartPosition[1] - event.clientY);
+      const delta = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      if (delta >= 10) {
+        event.preventDefault();
+      }
+    }
+  }
+  handleKeyDown(event) {
+    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+      const target = event.target;
+      const isRtl = this.localize.dir() === "rtl";
+      const isFocusInPagination = target.closest('[part~="pagination-item"]') !== null;
+      const isNext = event.key === "ArrowDown" || !isRtl && event.key === "ArrowRight" || isRtl && event.key === "ArrowLeft";
+      const isPrevious = event.key === "ArrowUp" || !isRtl && event.key === "ArrowLeft" || isRtl && event.key === "ArrowRight";
+      event.preventDefault();
+      if (isPrevious) {
+        this.previous();
+      }
+      if (isNext) {
+        this.next();
+      }
+      if (event.key === "Home") {
+        this.goToSlide(0);
+      }
+      if (event.key === "End") {
+        this.goToSlide(this.getSlides().length - 1);
+      }
+      if (isFocusInPagination) {
+        this.updateComplete.then(() => {
+          var _a3;
+          const activePaginationItem = (_a3 = this.shadowRoot) == null ? void 0 : _a3.querySelector(
+            '[part~="pagination-item--active"]'
+          );
+          if (activePaginationItem) {
+            activePaginationItem.focus();
+          }
+        });
+      }
+    }
+  }
+  handleMouseDragStart(event) {
+    const canDrag = this.mouseDragging && event.button === 0;
+    if (canDrag) {
+      event.preventDefault();
+      document.addEventListener("pointermove", this.handleMouseDrag, { capture: true, passive: true });
+      document.addEventListener("pointerup", this.handleMouseDragEnd, { capture: true, once: true });
+    }
+  }
+  handleScroll() {
+    this.scrolling = true;
+    if (!this.pendingSlideChange) {
+      this.synchronizeSlides();
+    }
+  }
+  /** @internal Synchronizes the slides with the IntersectionObserver API. */
+  synchronizeSlides() {
+    const io = new IntersectionObserver(
+      (entries) => {
+        io.disconnect();
+        for (const entry of entries) {
+          const slide = entry.target;
+          slide.toggleAttribute("inert", !entry.isIntersecting);
+          slide.classList.toggle("--in-view", entry.isIntersecting);
+          slide.setAttribute("aria-hidden", entry.isIntersecting ? "false" : "true");
+        }
+        const firstIntersecting = entries.find((entry) => entry.isIntersecting);
+        if (!firstIntersecting) {
+          return;
+        }
+        const slidesWithClones = this.getSlides({ excludeClones: false });
+        const slidesCount = this.getSlides().length;
+        const slideIndex = slidesWithClones.indexOf(firstIntersecting.target);
+        const normalizedIndex = this.loop ? slideIndex - this.slidesPerPage : slideIndex;
+        this.activeSlide = (Math.ceil(normalizedIndex / this.slidesPerMove) * this.slidesPerMove + slidesCount) % slidesCount;
+        if (!this.scrolling) {
+          if (this.loop && firstIntersecting.target.hasAttribute("data-clone")) {
+            const clonePosition = Number(firstIntersecting.target.getAttribute("data-clone"));
+            this.goToSlide(clonePosition, "instant");
+          }
+        }
+      },
+      {
+        root: this.scrollContainer,
+        threshold: 0.6
+      }
+    );
+    this.getSlides({ excludeClones: false }).forEach((slide) => {
+      io.observe(slide);
+    });
+  }
+  handleScrollEnd() {
+    if (!this.scrolling || this.dragging) return;
+    this.scrolling = false;
+    this.pendingSlideChange = false;
+    this.synchronizeSlides();
+  }
+  isCarouselItem(node) {
+    return node instanceof Element && node.tagName.toLowerCase() === "sl-carousel-item";
+  }
+  initializeSlides() {
+    this.getSlides({ excludeClones: false }).forEach((slide, index) => {
+      slide.classList.remove("--in-view");
+      slide.classList.remove("--is-active");
+      slide.setAttribute("aria-label", this.localize.term("slideNum", index + 1));
+      if (slide.hasAttribute("data-clone")) {
+        slide.remove();
+      }
+    });
+    this.updateSlidesSnap();
+    if (this.loop) {
+      this.createClones();
+    }
+    this.goToSlide(this.activeSlide, "auto");
+    this.synchronizeSlides();
+  }
+  createClones() {
+    const slides = this.getSlides();
+    const slidesPerPage = this.slidesPerPage;
+    const lastSlides = slides.slice(-slidesPerPage);
+    const firstSlides = slides.slice(0, slidesPerPage);
+    lastSlides.reverse().forEach((slide, i9) => {
+      const clone = slide.cloneNode(true);
+      clone.setAttribute("data-clone", String(slides.length - i9 - 1));
+      this.prepend(clone);
+    });
+    firstSlides.forEach((slide, i9) => {
+      const clone = slide.cloneNode(true);
+      clone.setAttribute("data-clone", String(i9));
+      this.append(clone);
+    });
+  }
+  handleSlideChange() {
+    const slides = this.getSlides();
+    slides.forEach((slide, i9) => {
+      slide.classList.toggle("--is-active", i9 === this.activeSlide);
+    });
+    if (this.hasUpdated) {
+      this.emit("sl-slide-change", {
+        detail: {
+          index: this.activeSlide,
+          slide: slides[this.activeSlide]
+        }
+      });
+    }
+  }
+  updateSlidesSnap() {
+    const slides = this.getSlides();
+    const slidesPerMove = this.slidesPerMove;
+    slides.forEach((slide, i9) => {
+      const shouldSnap = (i9 + slidesPerMove) % slidesPerMove === 0;
+      if (shouldSnap) {
+        slide.style.removeProperty("scroll-snap-align");
+      } else {
+        slide.style.setProperty("scroll-snap-align", "none");
+      }
+    });
+  }
+  handleAutoplayChange() {
+    this.autoplayController.stop();
+    if (this.autoplay) {
+      this.autoplayController.start(this.autoplayInterval);
+    }
+  }
+  /**
+   * Move the carousel backward by `slides-per-move` slides.
+   *
+   * @param behavior - The behavior used for scrolling.
+   */
+  previous(behavior = "smooth") {
+    this.goToSlide(this.activeSlide - this.slidesPerMove, behavior);
+  }
+  /**
+   * Move the carousel forward by `slides-per-move` slides.
+   *
+   * @param behavior - The behavior used for scrolling.
+   */
+  next(behavior = "smooth") {
+    this.goToSlide(this.activeSlide + this.slidesPerMove, behavior);
+  }
+  /**
+   * Scrolls the carousel to the slide specified by `index`.
+   *
+   * @param index - The slide index.
+   * @param behavior - The behavior used for scrolling.
+   */
+  goToSlide(index, behavior = "smooth") {
+    const { slidesPerPage, loop } = this;
+    const slides = this.getSlides();
+    const slidesWithClones = this.getSlides({ excludeClones: false });
+    if (!slides.length) {
+      return;
+    }
+    const newActiveSlide = loop ? (index + slides.length) % slides.length : clamp(index, 0, slides.length - slidesPerPage);
+    this.activeSlide = newActiveSlide;
+    const isRtl = this.localize.dir() === "rtl";
+    const nextSlideIndex = clamp(
+      index + (loop ? slidesPerPage : 0) + (isRtl ? slidesPerPage - 1 : 0),
+      0,
+      slidesWithClones.length - 1
+    );
+    const nextSlide = slidesWithClones[nextSlideIndex];
+    this.scrollToSlide(nextSlide, prefersReducedMotion() ? "auto" : behavior);
+  }
+  scrollToSlide(slide, behavior = "smooth") {
+    this.pendingSlideChange = true;
+    window.requestAnimationFrame(() => {
+      if (!this.scrollContainer) {
+        return;
+      }
+      const scrollContainer = this.scrollContainer;
+      const scrollContainerRect = scrollContainer.getBoundingClientRect();
+      const nextSlideRect = slide.getBoundingClientRect();
+      const nextLeft = nextSlideRect.left - scrollContainerRect.left;
+      const nextTop = nextSlideRect.top - scrollContainerRect.top;
+      if (nextLeft || nextTop) {
+        this.pendingSlideChange = true;
+        scrollContainer.scrollTo({
+          left: nextLeft + scrollContainer.scrollLeft,
+          top: nextTop + scrollContainer.scrollTop,
+          behavior
+        });
+      } else {
+        this.pendingSlideChange = false;
+      }
+    });
+  }
+  render() {
+    const { slidesPerMove, scrolling } = this;
+    const pagesCount = this.getPageCount();
+    const currentPage = this.getCurrentPage();
+    const prevEnabled = this.canScrollPrev();
+    const nextEnabled = this.canScrollNext();
+    const isLtr = this.localize.dir() === "ltr";
+    return x2`
+      <div part="base" class="carousel">
+        <div
+          id="scroll-container"
+          part="scroll-container"
+          class="${e9({
+      carousel__slides: true,
+      "carousel__slides--horizontal": this.orientation === "horizontal",
+      "carousel__slides--vertical": this.orientation === "vertical",
+      "carousel__slides--dragging": this.dragging
+    })}"
+          style="--slides-per-page: ${this.slidesPerPage};"
+          aria-busy="${scrolling ? "true" : "false"}"
+          aria-atomic="true"
+          tabindex="0"
+          @keydown=${this.handleKeyDown}
+          @mousedown="${this.handleMouseDragStart}"
+          @scroll="${this.handleScroll}"
+          @scrollend=${this.handleScrollEnd}
+          @click=${this.handleClick}
+        >
+          <slot></slot>
+        </div>
+
+        ${this.navigation ? x2`
+              <div part="navigation" class="carousel__navigation">
+                <button
+                  part="navigation-button navigation-button--previous"
+                  class="${e9({
+      "carousel__navigation-button": true,
+      "carousel__navigation-button--previous": true,
+      "carousel__navigation-button--disabled": !prevEnabled
+    })}"
+                  aria-label="${this.localize.term("previousSlide")}"
+                  aria-controls="scroll-container"
+                  aria-disabled="${prevEnabled ? "false" : "true"}"
+                  @click=${prevEnabled ? () => this.previous() : null}
+                >
+                  <slot name="previous-icon">
+                    <sl-icon library="system" name="${isLtr ? "chevron-left" : "chevron-right"}"></sl-icon>
+                  </slot>
+                </button>
+
+                <button
+                  part="navigation-button navigation-button--next"
+                  class=${e9({
+      "carousel__navigation-button": true,
+      "carousel__navigation-button--next": true,
+      "carousel__navigation-button--disabled": !nextEnabled
+    })}
+                  aria-label="${this.localize.term("nextSlide")}"
+                  aria-controls="scroll-container"
+                  aria-disabled="${nextEnabled ? "false" : "true"}"
+                  @click=${nextEnabled ? () => this.next() : null}
+                >
+                  <slot name="next-icon">
+                    <sl-icon library="system" name="${isLtr ? "chevron-right" : "chevron-left"}"></sl-icon>
+                  </slot>
+                </button>
+              </div>
+            ` : ""}
+        ${this.pagination ? x2`
+              <div part="pagination" role="tablist" class="carousel__pagination" aria-controls="scroll-container">
+                ${o10(o11(pagesCount), (index) => {
+      const isActive = index === currentPage;
+      return x2`
+                    <button
+                      part="pagination-item ${isActive ? "pagination-item--active" : ""}"
+                      class="${e9({
+        "carousel__pagination-item": true,
+        "carousel__pagination-item--active": isActive
+      })}"
+                      role="tab"
+                      aria-selected="${isActive ? "true" : "false"}"
+                      aria-label="${this.localize.term("goToSlide", index + 1, pagesCount)}"
+                      tabindex=${isActive ? "0" : "-1"}
+                      @click=${() => this.goToSlide(index * slidesPerMove)}
+                      @keydown=${this.handleKeyDown}
+                    ></button>
+                  `;
+    })}
+              </div>
+            ` : ""}
+      </div>
+    `;
+  }
+};
+SlCarousel.styles = [component_styles_default, carousel_styles_default];
+SlCarousel.dependencies = { "sl-icon": SlIcon };
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlCarousel.prototype, "loop", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlCarousel.prototype, "navigation", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlCarousel.prototype, "pagination", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlCarousel.prototype, "autoplay", 2);
+__decorateClass([
+  n7({ type: Number, attribute: "autoplay-interval" })
+], SlCarousel.prototype, "autoplayInterval", 2);
+__decorateClass([
+  n7({ type: Number, attribute: "slides-per-page" })
+], SlCarousel.prototype, "slidesPerPage", 2);
+__decorateClass([
+  n7({ type: Number, attribute: "slides-per-move" })
+], SlCarousel.prototype, "slidesPerMove", 2);
+__decorateClass([
+  n7()
+], SlCarousel.prototype, "orientation", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true, attribute: "mouse-dragging" })
+], SlCarousel.prototype, "mouseDragging", 2);
+__decorateClass([
+  e6(".carousel__slides")
+], SlCarousel.prototype, "scrollContainer", 2);
+__decorateClass([
+  e6(".carousel__pagination")
+], SlCarousel.prototype, "paginationContainer", 2);
+__decorateClass([
+  r7()
+], SlCarousel.prototype, "activeSlide", 2);
+__decorateClass([
+  r7()
+], SlCarousel.prototype, "scrolling", 2);
+__decorateClass([
+  r7()
+], SlCarousel.prototype, "dragging", 2);
+__decorateClass([
+  t4({ passive: true })
+], SlCarousel.prototype, "handleScroll", 1);
+__decorateClass([
+  watch("loop", { waitUntilFirstUpdate: true }),
+  watch("slidesPerPage", { waitUntilFirstUpdate: true })
+], SlCarousel.prototype, "initializeSlides", 1);
+__decorateClass([
+  watch("activeSlide")
+], SlCarousel.prototype, "handleSlideChange", 1);
+__decorateClass([
+  watch("slidesPerMove")
+], SlCarousel.prototype, "updateSlidesSnap", 1);
+__decorateClass([
+  watch("autoplay")
+], SlCarousel.prototype, "handleAutoplayChange", 1);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.OQXPL73S.js
+var debounce = (fn, delay) => {
+  let timerId = 0;
+  return function(...args) {
+    window.clearTimeout(timerId);
+    timerId = window.setTimeout(() => {
+      fn.call(this, ...args);
+    }, delay);
+  };
+};
+var decorate = (proto, method, decorateFn) => {
+  const superFn = proto[method];
+  proto[method] = function(...args) {
+    superFn.call(this, ...args);
+    decorateFn.call(this, superFn, ...args);
+  };
+};
+var isSupported = "onscrollend" in window;
+if (!isSupported) {
+  const pointers = /* @__PURE__ */ new Set();
+  const scrollHandlers = /* @__PURE__ */ new WeakMap();
+  const handlePointerDown = (event) => {
+    for (const touch of event.changedTouches) {
+      pointers.add(touch.identifier);
+    }
+  };
+  const handlePointerUp = (event) => {
+    for (const touch of event.changedTouches) {
+      pointers.delete(touch.identifier);
+    }
+  };
+  document.addEventListener("touchstart", handlePointerDown, true);
+  document.addEventListener("touchend", handlePointerUp, true);
+  document.addEventListener("touchcancel", handlePointerUp, true);
+  decorate(EventTarget.prototype, "addEventListener", function(addEventListener, type) {
+    if (type !== "scrollend") return;
+    const handleScrollEnd = debounce(() => {
+      if (!pointers.size) {
+        this.dispatchEvent(new Event("scrollend"));
+      } else {
+        handleScrollEnd();
+      }
+    }, 100);
+    addEventListener.call(this, "scroll", handleScrollEnd, { passive: true });
+    scrollHandlers.set(this, handleScrollEnd);
+  });
+  decorate(EventTarget.prototype, "removeEventListener", function(removeEventListener, type) {
+    if (type !== "scrollend") return;
+    const scrollHandler = scrollHandlers.get(this);
+    if (scrollHandler) {
+      removeEventListener.call(this, "scroll", scrollHandler, { passive: true });
+    }
+  });
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.NQ44LUGM.js
+var carousel_item_styles_default = i`
+  :host {
+    --aspect-ratio: inherit;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width: 100%;
+    max-height: 100%;
+    aspect-ratio: var(--aspect-ratio);
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  ::slotted(img) {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.XHATQV4E.js
+var SlCarouselItem = class extends ShoelaceElement {
+  connectedCallback() {
+    super.connectedCallback();
+    this.setAttribute("role", "group");
+  }
+  render() {
+    return x2` <slot></slot> `;
+  }
+};
+SlCarouselItem.styles = [component_styles_default, carousel_item_styles_default];
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.LXDTFLWU.js
 var computedStyleMap = /* @__PURE__ */ new WeakMap();
@@ -4276,57 +5154,6 @@ function getAnimation(el, animationName, options) {
     keyframes: [],
     options: { duration: 0 }
   };
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.B4BZKR24.js
-function waitForEvent(el, eventName) {
-  return new Promise((resolve) => {
-    function done(event) {
-      if (event.target === el) {
-        el.removeEventListener(eventName, done);
-        resolve();
-      }
-    }
-    el.addEventListener(eventName, done);
-  });
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AJ3ENQ5C.js
-function animateTo(el, keyframes, options) {
-  return new Promise((resolve) => {
-    if ((options == null ? void 0 : options.duration) === Infinity) {
-      throw new Error("Promise-based animations must be finite.");
-    }
-    const animation = el.animate(keyframes, __spreadProps(__spreadValues({}, options), {
-      duration: prefersReducedMotion() ? 0 : options.duration
-    }));
-    animation.addEventListener("cancel", resolve, { once: true });
-    animation.addEventListener("finish", resolve, { once: true });
-  });
-}
-function parseDuration(delay) {
-  delay = delay.toString().toLowerCase();
-  if (delay.indexOf("ms") > -1) {
-    return parseFloat(delay);
-  }
-  if (delay.indexOf("s") > -1) {
-    return parseFloat(delay) * 1e3;
-  }
-  return parseFloat(delay);
-}
-function prefersReducedMotion() {
-  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-  return query.matches;
-}
-function stopAnimations(el) {
-  return Promise.all(
-    el.getAnimations().map((animation) => {
-      return new Promise((resolve) => {
-        animation.cancel();
-        requestAnimationFrame(resolve);
-      });
-    })
-  );
 }
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.6SBTOKGT.js
@@ -4989,12 +5816,12 @@ var l5 = e8(class extends i6 {
   }
   update(i9, [t8]) {
     if (t8 === T2 || t8 === E2) return t8;
-    const o10 = i9.element, l6 = i9.name;
+    const o12 = i9.element, l6 = i9.name;
     if (i9.type === t6.PROPERTY) {
-      if (t8 === o10[l6]) return T2;
+      if (t8 === o12[l6]) return T2;
     } else if (i9.type === t6.BOOLEAN_ATTRIBUTE) {
-      if (!!t8 === o10.hasAttribute(l6)) return T2;
-    } else if (i9.type === t6.ATTRIBUTE && o10.getAttribute(l6) === t8 + "") return T2;
+      if (!!t8 === o12.hasAttribute(l6)) return T2;
+    } else if (i9.type === t6.ATTRIBUTE && o12.getAttribute(l6) === t8 + "") return T2;
     return m3(i9), t8;
   }
 });
@@ -5527,7 +6354,7 @@ var oppositeAlignmentMap = {
   start: "end",
   end: "start"
 };
-function clamp(start, value, end) {
+function clamp2(start, value, end) {
   return max(start, min(value, end));
 }
 function evaluate(value, param) {
@@ -5879,7 +6706,7 @@ var arrow = (options) => ({
     const min$1 = minPadding;
     const max2 = clientSize - arrowDimensions[length] - maxPadding;
     const center = clientSize / 2 - arrowDimensions[length] / 2 + centerToReference;
-    const offset3 = clamp(min$1, center, max2);
+    const offset3 = clamp2(min$1, center, max2);
     const shouldAddOffset = !middlewareData.arrow && getAlignment(placement) != null && center !== offset3 && rects.reference[length] / 2 - (center < min$1 ? minPadding : maxPadding) - arrowDimensions[length] / 2 < 0;
     const alignmentOffset = shouldAddOffset ? center < min$1 ? center - min$1 : center - max2 : 0;
     return {
@@ -6110,14 +6937,14 @@ var shift = function(options) {
         const maxSide = mainAxis === "y" ? "bottom" : "right";
         const min2 = mainAxisCoord + overflow[minSide];
         const max2 = mainAxisCoord - overflow[maxSide];
-        mainAxisCoord = clamp(min2, mainAxisCoord, max2);
+        mainAxisCoord = clamp2(min2, mainAxisCoord, max2);
       }
       if (checkCrossAxis) {
         const minSide = crossAxis === "y" ? "top" : "left";
         const maxSide = crossAxis === "y" ? "bottom" : "right";
         const min2 = crossAxisCoord + overflow[minSide];
         const max2 = crossAxisCoord - overflow[maxSide];
-        crossAxisCoord = clamp(min2, crossAxisCoord, max2);
+        crossAxisCoord = clamp2(min2, crossAxisCoord, max2);
       }
       const limitedCoords = limiter.fn({
         ...state,
@@ -9563,6 +10390,9 @@ var periodicTableStyles = i`
 		background: var(--sl-color-neutral-0, #ffffff);
 
 		--pt-cell-height: 2.85rem;
+		/* Height of one control in the ribbon. The family tags, the icon buttons
+		   and the mode switch all take it, so the bar reads as one row of chips. */
+		--pt-chip-height: 1.35rem;
 		--pt-details-border: 1px;
 		--pt-cell-bar: 0.22rem;
 		--pt-gutter: 1.5rem;
@@ -9731,6 +10561,25 @@ var periodicTableStyles = i`
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		padding: 0 0.4rem;
+	}
+
+	/* Every control in the ribbon takes the height of a family tag, so the bar
+	   reads as one row of equal chips instead of a mix of sizes. The mode switch
+	   sits in the row below and follows, because it belongs to the same band. */
+	.toolbar sl-button,
+	.modes sl-button {
+		--sl-input-height-small: var(--pt-chip-height);
+		--sl-button-font-size-small: 0.7rem;
+	}
+
+	.modes sl-button::part(label) {
+		padding: 0 0.4rem;
+	}
+
+	.toolbar sl-icon-button::part(base) {
+		padding: 0.25rem;
+		font-size: 0.85rem;
 	}
 
 	/* The pane is the only part that scrolls: the ribbon and the mode row stay
@@ -9872,6 +10721,23 @@ var periodicTableStyles = i`
 		border-color: color-mix(in srgb, var(--pt-ink) 35%, var(--pt-border));
 	}
 
+	/* The family filter fades the cells it leaves out instead of removing them:
+	   the table keeps its shape, so the learner still reads where the family
+	   sits. A light blur keeps the faded text from competing with the matching
+	   cells, and the faded tile still answers a click. */
+	.cell.is-faded,
+	.placeholder.is-faded,
+	.series-header.is-faded {
+		opacity: 0.32;
+		filter: blur(0.4px) saturate(0.45);
+	}
+
+	.cell.is-faded:hover,
+	.cell.is-faded:focus-visible {
+		opacity: 0.75;
+		filter: none;
+	}
+
 	/* Selection stays ChemLab blue; keyboard focus gets its own dark outer ring,
 	   so the two states never look alike. */
 	.cell:focus-visible {
@@ -9924,20 +10790,39 @@ var periodicTableStyles = i`
 		color: var(--pt-ink-soft);
 	}
 
-	/* The families are a narrow carousel in the ribbon: one row that scrolls
+	/* The families are a Shoelace carousel in the ribbon: one row that scrolls
 	   sideways instead of wrapping into a second and third line, which is what
 	   keeps the ribbon a single band at every width. The reset sits outside the
-	   strip, so it never scrolls out of reach. The small flex basis matters: a
+	   carousel, so it never scrolls out of reach. The small flex basis matters: a
 	   basis of auto would be the full width of all tags, and the toolbar would
 	   break the strip onto a line of its own before it ever shrank. */
 	.family-strip {
-		display: flex;
 		flex: 1 1 6rem;
-		gap: 0.25rem;
 		min-width: 7rem;
-		overflow-x: auto;
-		padding-bottom: 1px;
-		scrollbar-width: thin;
+		--slide-gap: 0.25rem;
+		/* The carousel sizes its slides from an aspect ratio, which would give a
+		   one-row strip the height of a picture. Auto lets the tags decide the
+		   height; the items inherit the same value. */
+		--aspect-ratio: auto;
+	}
+
+	/* The carousel brings its own grid, gaps and arrow padding. The ribbon needs
+	   the tags to sit as tightly as the rest of the bar, and each slide to take
+	   the width of its own tag instead of an equal share of the strip. */
+	.family-strip::part(base) {
+		gap: 0.1rem;
+	}
+
+	.family-strip::part(scroll-container) {
+		--slide-size: max-content;
+	}
+
+	/* The arrows take the height of a tag, so the strip reads as one row of
+	   chips instead of a row of tags with two small buttons beside them. */
+	.family-strip::part(navigation-button) {
+		min-height: var(--pt-chip-height);
+		padding: 0 0.1rem;
+		font-size: 0.8rem;
 	}
 
 	/* Family names and the temperature key share one treatment: narrow
@@ -9959,6 +10844,7 @@ var periodicTableStyles = i`
 
 	.family-tag {
 		flex: 0 0 auto;
+		min-height: var(--pt-chip-height);
 		font: inherit;
 		font-size: 0.7rem;
 		white-space: nowrap;
@@ -10138,10 +11024,16 @@ var periodicTableStyles = i`
 	.list-details .details-shell {
 		position: static;
 		max-height: none;
+		/* The card is always open here, so nothing needs clipping. The shell
+		   would otherwise cut off the focus ring of the card it holds. */
+		overflow: visible;
 	}
 
+	/* In the list the card sits in the flow of the rows instead of over the
+	   table, so it keeps the softer panel shadow. */
 	.list-details .details-card::part(base) {
 		height: auto;
+		box-shadow: var(--pt-panel-shadow);
 	}
 
 	.list-details .details-card::part(body) {
@@ -10187,16 +11079,21 @@ var periodicTableStyles = i`
 	}
 
 	/* The card takes the height of its key rows instead of the height of the
-	   block, so the panel stays slim and the periods around it keep their cells. */
+	   block, so the panel stays slim and the periods around it keep their cells.
+	   It floats over the block even when it is collapsed, so it always carries
+	   the lifting shadow that sets it apart from the cells around it. */
 	.details-card::part(base) {
 		height: auto;
 		overflow: hidden;
-		box-shadow: var(--pt-panel-shadow);
+		box-shadow: var(--pt-overlay-shadow);
 	}
 
-	.details-shell.is-expanded .details-card::part(base) {
-		height: auto;
-		box-shadow: var(--pt-overlay-shadow);
+	/* The card takes focus when it replaces the selected list row, so it needs a
+	   ring of its own: the default one hugs the border and reads as a second
+	   frame. It takes the selection blue, because the card is the selection. */
+	.details-card:focus-visible {
+		outline: 2px solid var(--pt-accent);
+		outline-offset: 1px;
 	}
 
 	/* The header carries the identity of the element in one row: the coloured
@@ -10798,6 +11695,16 @@ var CHEVRON_ICON = x2`
 		<path d="M4 6.2 8 10.2l4-4"/>
 	</svg>
 `;
+var CAROUSEL_PREVIOUS_ICON = x2`
+	<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M10 3.5 5.5 8l4.5 4.5"/>
+	</svg>
+`;
+var CAROUSEL_NEXT_ICON = x2`
+	<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M6 3.5 10.5 8 6 12.5"/>
+	</svg>
+`;
 function modeText(mode, t8) {
   switch (mode) {
     case "off":
@@ -10820,7 +11727,7 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _openInfo, _onInfoHide, focusElement_fn, reset_fn, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderToolbar_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
+var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _openInfo, _onInfoHide, focusElement_fn, reset_fn, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderToolbar_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
 _ChemLabPeriodicTable_decorators = [t2("webwriter-chemlab-periodic-table")];
 var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a2) {
   constructor() {
@@ -10839,6 +11746,13 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     __privateAdd(this, _width, null);
     __privateAdd(this, _resizeObserver, null);
     __privateAdd(this, _languageObserver, null);
+    /**
+     * Atomic numbers the keyboard may reach.
+     *
+     * In the grid this is every cell the mode can place, because the family filter
+     * only fades a cell and leaves it clickable; in the list it is the rows that
+     * survive the filter, because the list drops the rest.
+     */
     __privateAdd(this, _matching, /* @__PURE__ */ new Set());
     __privateAdd(this, _rovingOverride, null);
     __privateAdd(this, _focusBeforeLayout, null);
@@ -11021,7 +11935,7 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
       return element2 !== void 0 && !cellMode(element2, __privateGet(this, _mode)).hidden;
     });
     const matching = new Set(matches.map((match) => match.atomicNumber));
-    __privateSet(this, _matching, matching);
+    __privateSet(this, _matching, resolved === "table" ? __privateMethod(this, _ChemLabPeriodicTable_instances, placeable_fn).call(this) : matching);
     const selected = __privateGet(this, _selection).value;
     const element = selected === null ? null : elementByAtomicNumber(selected) ?? null;
     const details = __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetails_fn).call(this, t8, language, element, {
@@ -11122,6 +12036,24 @@ resolvedView_get = function() {
 };
 temperature_get = function() {
   return __privateGet(this, _mode).temperatureK;
+};
+/**
+ * Atomic numbers of the cells the mode can place.
+ *
+ * The grid renders these cells and fades the ones the family filter leaves
+ * out, so this set is what the keyboard may reach there.
+ *
+ * @returns The atomic numbers of every cell the grid shows.
+ */
+placeable_fn = function() {
+  const placeable = /* @__PURE__ */ new Set();
+  for (const cell of GRID.cells) {
+    const element = elementByAtomicNumber(cell.atomicNumber);
+    if (element !== void 0 && !cellMode(element, __privateGet(this, _mode)).hidden) {
+      placeable.add(cell.atomicNumber);
+    }
+  }
+  return placeable;
 };
 /**
  * Current search hits, best match first.
@@ -11267,14 +12199,18 @@ renderCount_fn = function(t8, count) {
  * the layout switch.
  *
  * The whole row sits on one lightly shaded bar, so the controls read as one
- * unit. The families are a narrow carousel of tags instead of a dropdown plus a
- * legend, because the ribbon has no room for both and the tags double as the
- * filter. The reset sits right after the carousel rather than inside it, so it
- * never scrolls out of reach. The layout switch is a pair of compact icon
- * buttons with a tooltip and an accessible label, like the canvas controls of
- * the lab widget; the result count is a pill badge, and a hidden live region
- * keeps the full sentence for screen readers. The search field only appears in
- * the list, where the rows have no grid to scan.
+ * unit. The families are a Shoelace carousel of tags instead of a dropdown
+ * plus a legend, because the ribbon has no room for both and the tags double
+ * as the filter. The carousel scrolls one tag at a time and keeps its arrows
+ * at the ends, so the strip stays a single band at every width. It names
+ * itself through a hidden label instead of an attribute, because the carousel
+ * writes its own generic label when it connects. The reset sits
+ * right after the carousel rather than inside it, so it never scrolls out of
+ * reach. The layout switch is a pair of compact icon buttons with a tooltip
+ * and an accessible label, like the canvas controls of the lab widget; the
+ * result count is a pill badge, and a hidden live region keeps the full
+ * sentence for screen readers. The search field only appears in the list,
+ * where the rows have no grid to scan.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
@@ -11305,18 +12241,30 @@ renderToolbar_fn = function(t8, language, count) {
 							@keydown=${__privateGet(this, _onSearchKeydown)}
 						></sl-input>
 					` : null}
-				<div class="family-strip" role="group" aria-label=${t8.legendLabel}>
+				<span class="visually-hidden" id="family-strip-label">${t8.legendLabel}</span>
+				<sl-carousel
+					class="family-strip"
+					navigation
+					mouse-dragging
+					slides-per-page="4"
+					slides-per-move="1"
+					aria-labelledby="family-strip-label"
+				>
 					${Object.entries(CATEGORIES).map(([key, category]) => x2`
-						<button
-							class="family-tag category-${key}"
-							type="button"
-							aria-pressed=${__privateGet(this, _category) === key}
-							@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, toggleCategory_fn).call(this, key)}
-						>
-							<span class="family-swatch"></span>${category[language]}
-						</button>
+						<sl-carousel-item>
+							<button
+								class="family-tag category-${key}"
+								type="button"
+								aria-pressed=${__privateGet(this, _category) === key}
+								@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, toggleCategory_fn).call(this, key)}
+							>
+								<span class="family-swatch"></span>${category[language]}
+							</button>
+						</sl-carousel-item>
 					`)}
-				</div>
+					<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
+					<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
+				</sl-carousel>
 				<sl-button
 					class="reset"
 					size="small"
@@ -11454,17 +12402,19 @@ renderStateLegend_fn = function(t8) {
 /**
  * Renders one element cell of the grid.
  *
- * Only matching cells are rendered at all, so a cell needs no disabled state:
- * an element the mode cannot place leaves a hole in the grid instead of a
- * greyed tile.
+ * A cell the family filter does not match stays in place and fades instead of
+ * disappearing: the table keeps its shape, so the learner still reads where
+ * the family sits. Only a mode that cannot place an element removes its cell,
+ * because a state or a year the model does not know would read as a value.
  *
  * @param cell - Cell of the display grid.
  * @param t - Interface strings.
  * @param language - Interface language.
  * @param roving - Atomic number of the tabbable cell.
+ * @param faded - Whether the family filter leaves the cell out.
  * @returns The grid cell.
  */
-renderCell_fn = function(cell, t8, language, roving) {
+renderCell_fn = function(cell, t8, language, roving, faded) {
   const element = elementByAtomicNumber(cell.atomicNumber);
   if (!element) return null;
   const selected = __privateGet(this, _selection).value === cell.atomicNumber;
@@ -11473,6 +12423,7 @@ renderCell_fn = function(cell, t8, language, roving) {
   const state = mode.state === null ? null : stateText(mode.state, t8);
   const classes = ["cell", `category-${cell.category}`];
   if (mode.state !== null) classes.push(`state-${mode.state}`);
+  if (faded) classes.push("is-faded");
   const label = format(t8.cellLabel, {
     number: element.atomicNumber,
     name: element.names[language],
@@ -11507,6 +12458,11 @@ renderCell_fn = function(cell, t8, language, roving) {
  * its content, so the block keeps its own size and the periods around it never
  * stretch.
  *
+ * Every cell the mode can place is rendered; the family filter only fades the
+ * cells it leaves out, so the table keeps its shape while the filter is on.
+ * The series labels and the placeholder cards belong to the detached rows and
+ * fade with them, because they name the same family.
+ *
  * @param t - Interface strings.
  * @param language - Interface language.
  * @param matching - Atomic numbers that pass the current filter.
@@ -11515,6 +12471,7 @@ renderCell_fn = function(cell, t8, language, roving) {
  */
 renderGrid_fn = function(t8, language, matching, details) {
   const roving = __privateMethod(this, _ChemLabPeriodicTable_instances, rovingTarget_fn).call(this, matching);
+  const fadedCategory = (category) => __privateGet(this, _category) !== null && __privateGet(this, _category) !== category;
   const groupLabels = Array.from({ length: GRID.columns }, (_3, index) => x2`
 			<div
 				class="group-label"
@@ -11523,7 +12480,7 @@ renderGrid_fn = function(t8, language, matching, details) {
 			>${index + 1}</div>
 		`);
   const cells = (row) => row.cells.map(
-    (cell) => matching.has(cell.atomicNumber) ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t8, language, roving) : null
+    (cell) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t8, language, roving, !matching.has(cell.atomicNumber))
   );
   const mainRows = GRID.rows.filter((row) => row.section === "main").map((row) => x2`
 				<div class="grid-row" role="row">
@@ -11541,9 +12498,10 @@ renderGrid_fn = function(t8, language, matching, details) {
       first: series.firstAtomicNumber,
       last: series.lastAtomicNumber
     }) : "";
+    const faded = fadedCategory(placeholder.category) ? " is-faded" : "";
     return x2`
 				<div
-					class="placeholder category-${placeholder.category}"
+					class="placeholder category-${placeholder.category}${faded}"
 					style="--pt-row:${placeholder.row + 1};--pt-column:${placeholder.column + 1}"
 				>
 					<span class="placeholder-text">${text}</span>
@@ -11553,10 +12511,11 @@ renderGrid_fn = function(t8, language, matching, details) {
   const seriesRows = GRID.rows.filter((row) => row.section === "series").map((row) => {
     const series = GRID.seriesRows.find((entry) => entry.row === row.row);
     const name = series ? CATEGORIES[series.category]?.[language] ?? series.category : "";
+    const faded = series && fadedCategory(series.category) ? " is-faded" : "";
     return x2`
 					<div class="grid-row" role="row">
 						<div
-							class="series-header"
+							class="series-header${faded}"
 							role="rowheader"
 							style="--pt-row:${row.row + 2};--pt-column:1 / span 3"
 						>${name}</div>
@@ -11943,6 +12902,8 @@ __publicField(_ChemLabPeriodicTable, "scopedElements", {
   "sl-badge": SlBadge,
   "sl-button": SlButton,
   "sl-card": SlCard,
+  "sl-carousel": SlCarousel,
+  "sl-carousel-item": SlCarouselItem,
   "sl-dialog": SlDialog,
   "sl-divider": SlDivider,
   "sl-icon": SlIcon,
@@ -12136,6 +13097,8 @@ lit-html/directive.js:
    *)
 
 @lit/reactive-element/decorators/query-assigned-elements.js:
+lit-html/directives/map.js:
+lit-html/directives/range.js:
   (**
    * @license
    * Copyright 2021 Google LLC
