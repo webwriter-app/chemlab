@@ -2960,6 +2960,7 @@ export class ChemLab extends LitElementWw {
 			<div
 				id="upper"
 				?data-loading=${!!this.canvasLoading}
+				?data-loading-grid=${!!this.canvasLoading && this.canvas.gridVisible}
 				@keydown=${this.deleteSelection}
 				class=${`${diagramOpen ? "show-diagram-panel" : ""} ${this.teacherDrawerOpen ? "show-palette" : ""}`}
 			>
@@ -2986,11 +2987,18 @@ export class ChemLab extends LitElementWw {
 		const label = this.message("Chemielabor wird geladen");
 		return html`
 			<div id="canvasLoading">
-				<strong>${label}</strong>
+				<div class="loading-heading">
+					<span class="loading-icon" aria-hidden="true">
+						<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M3 2.5h10M4 2.5v9.75c0 .7.55 1.25 1.25 1.25h5.5c.7 0 1.25-.55 1.25-1.25V2.5M4 7.5h8M4 10h2.5"/>
+						</svg>
+					</span>
+					<strong>${label}</strong>
+				</div>
 				<progress .value=${Math.round(value)} max="100" aria-label=${label}></progress>
 				<div class="loading-task">
 					<span role="status">${this.message(task)}</span>
-					${total ? html`<span aria-hidden="true"> (${restored}/${total})</span>` : nothing}
+					${total ? html`<sl-badge variant="neutral" pill aria-hidden="true">${restored} / ${total}</sl-badge>` : nothing}
 				</div>
 			</div>
 		`;

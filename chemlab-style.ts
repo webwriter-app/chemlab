@@ -1097,28 +1097,91 @@ export const style = css`
 		/* Keep the grid dimensions used to initialize the renderer. */
 		visibility: hidden;
 	}
+	#upper[data-loading-grid] {
+		--loading-grid-line: color-mix(in srgb, var(--panel-outline) 48%, transparent);
+		background-image:
+			linear-gradient(to right, var(--loading-grid-line) 1px, transparent 1px),
+			linear-gradient(to bottom, var(--loading-grid-line) 1px, transparent 1px);
+		background-size: 18px 18px;
+		background-position: center;
+	}
 	#canvasLoading {
 		grid-area: 1 / 1 / 2 / 4;
 		justify-self: center;
 		align-self: center;
 		box-sizing: border-box;
-		inline-size: min(22rem, calc(100% - 2rem));
+		inline-size: min(19rem, calc(100% - 1.5rem));
 		display: grid;
-		gap: 0.65rem;
-		padding: 1rem;
-		border: 1px solid var(--lab-card-border);
-		border-radius: var(--sl-border-radius-medium);
-		background: var(--lab-card-surface);
+		gap: 0.5rem;
+		padding: 0.65rem 0.75rem;
+		border: 1px solid var(--panel-outline);
+		border-radius: 5px;
+		background: var(--canvas-control-surface);
 		color: var(--lab-card-text);
 		box-shadow: var(--lab-panel-shadow);
 	}
+	#canvasLoading .loading-heading,
+	#canvasLoading .loading-task {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	#canvasLoading .loading-heading {
+		font-size: var(--sl-font-size-medium);
+		line-height: 1.2;
+	}
+	#canvasLoading .loading-icon {
+		flex: none;
+		display: grid;
+		place-items: center;
+		inline-size: 1.625rem;
+		block-size: 1.625rem;
+		border: 1px solid var(--sl-color-primary-200);
+		border-radius: var(--sl-border-radius-small);
+		background: var(--sl-color-primary-50);
+		color: var(--sl-color-primary-700);
+	}
+	#canvasLoading .loading-icon svg {
+		inline-size: 1rem;
+		block-size: 1rem;
+	}
 	#canvasLoading progress {
+		appearance: none;
+		display: block;
 		inline-size: 100%;
+		block-size: 0.375rem;
+		border: 0;
+		border-radius: var(--sl-border-radius-pill);
+		overflow: hidden;
+		background: var(--sl-color-neutral-200);
 		accent-color: var(--sl-color-primary-600);
 	}
+	#canvasLoading progress::-webkit-progress-bar {
+		background: var(--sl-color-neutral-200);
+	}
+	#canvasLoading progress::-webkit-progress-value {
+		border-radius: var(--sl-border-radius-pill);
+		background: var(--sl-color-primary-600);
+	}
+	#canvasLoading progress::-moz-progress-bar {
+		border-radius: var(--sl-border-radius-pill);
+		background: var(--sl-color-primary-600);
+	}
 	#canvasLoading .loading-task {
+		justify-content: space-between;
+		min-block-size: 1.25rem;
 		color: var(--lab-card-secondary-text);
 		font-size: var(--sl-font-size-small);
+		overflow-wrap: anywhere;
+	}
+	#canvasLoading sl-badge {
+		flex: none;
+		font-variant-numeric: tabular-nums;
+	}
+	@media (forced-colors: active) {
+		#canvasLoading progress {
+			appearance: auto;
+		}
 	}
 	:host(:fullscreen),
 	:host(:fullscreen) #upper {
