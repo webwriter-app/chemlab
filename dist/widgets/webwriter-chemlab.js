@@ -178964,7 +178964,12 @@ var MeasurementRecorder = class {
   record(vessels = [], instruments = [], delivery) {
     const time = this.history.now();
     let changed = false;
-    for (const vessel of vessels) changed = this.recordVessel(vessel, time) || changed;
+    const mixtures = /* @__PURE__ */ new Map();
+    for (const vessel of vessels) {
+      const mix = vessel._content;
+      if (!mixtures.has(mix)) mixtures.set(mix, mix._isSolution && mix._solutionVolume > 0 ? Simulation.getPolyproticEquilibrium(mix) : void 0);
+      changed = this.recordVessel(vessel, time, mixtures.get(mix)) || changed;
+    }
     if (delivery && delivery.source._type === "burette") {
       const { source: source3, target, volume } = delivery;
       const channel = this.deliveredVolumeChannel(source3);
@@ -178976,16 +178981,18 @@ var MeasurementRecorder = class {
       this.delivery.set(source3, total);
       changed = this.history.record(channel, total, time, true) || changed;
     }
-    const mixtures = new Set(vessels.map((vessel) => vessel._content));
     const meters = new Set(instruments);
-    for (const device of this.host.allEComponents) {
-      if (device._type === "gascollector" /* GasCollector */ && mixtures.has(device._connectedMix)) meters.add(device);
+    if (mixtures.size) {
+      for (const device of this.host.allEComponents) {
+        if (device._type === "gascollector" /* GasCollector */ && mixtures.has(device._connectedMix)) meters.add(device);
+      }
     }
     for (const device of meters) changed = this.recordInstrument(device, time) || changed;
     if (changed) {
       this.onChange?.();
       this.scheduleExpiry();
     }
+    return mixtures;
   }
   // The setup sample at 0 mL may expire while the titration itself is still recorded.
   firstTitrationDoseTime(deliveredVolume, pH) {
@@ -179012,12 +179019,11 @@ var MeasurementRecorder = class {
     this.onChange?.();
     this.scheduleExpiry();
   }
-  recordVessel(vessel, time) {
+  recordVessel(vessel, time, equilibrium) {
     const mix = vessel._content;
     const inventory = /* @__PURE__ */ new Map();
     let mass = 0;
     const solution = mix._isSolution && mix._solutionVolume > 0;
-    const equilibrium = solution ? Simulation.getPolyproticEquilibrium(mix) : void 0;
     for (const molecule2 of mix._activeMolecules) {
       const amount = mix._molProperties[molecule2._id + "n"];
       mass += mix._molProperties[molecule2._id + "m"] || 0;
@@ -188145,10 +188151,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (!target) return;
     const transferredMl = source3.transferContents({}, target) * 1e3;
     if (!(transferredMl > 0)) return;
-    this.measurements.record([source3, target], [], { source: source3, target, volume: transferredMl });
+    const equilibria = this.measurements.record([source3, target], [], { source: source3, target, volume: transferredMl });
     this.canvas.markVesselChanged(source3);
     this.canvas.markVesselChanged(target);
-    if (this.curr_obj === source3 || this.curr_obj === target) this._updatePopup();
+    if (this.curr_obj === source3 || this.curr_obj === target) this._updatePopup(equilibria.get(this.curr_obj._content));
   }
   /**
    * Advances a connected electrochemical experiment by one simulation step.
@@ -188166,9 +188172,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       if (Number.isFinite(ionicResistance)) this.capacitorCharges.delete(cell);
       Simulation.sEChem(first, second, devices, { bridge, ionicResistance });
       const vessels = this.allChemComponents.filter((vessel) => vessel._content === firstMix || vessel._content === secondMix);
-      this.measurements.record(vessels, circuitComps);
+      const equilibria = this.measurements.record(vessels, circuitComps);
       for (const vessel of vessels) this.canvas.markVesselChanged(vessel);
-      if (circuitComps.includes(this.curr_obj) || this.curr_obj?._content === firstMix || this.curr_obj?._content === secondMix) this._updatePopup();
+      if (circuitComps.includes(this.curr_obj) || this.curr_obj?._content === firstMix || this.curr_obj?._content === secondMix) {
+        this._updatePopup(equilibria.get(this.curr_obj?._content));
+      }
       for (const device of circuitComps) this.canvas.refreshDeviceDisplay(device);
       return;
     }
@@ -188208,9 +188216,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (!this.surfaceElectrodes.size) this.simulation.stopTask(SURFACE_DISPLACEMENT_TASK);
     if (!mixtures.size) return;
     const vessels = this.allChemComponents.filter((vessel) => mixtures.has(vessel._content));
-    this.measurements.record(vessels);
+    const equilibria = this.measurements.record(vessels);
     for (const vessel of vessels) this.canvas.markVesselChanged(vessel);
-    if (updateSelection || mixtures.has(this.curr_obj?._content)) this._updatePopup();
+    if (updateSelection || mixtures.has(this.curr_obj?._content)) {
+      this._updatePopup(equilibria.get(this.curr_obj?._content));
+    }
   }
   ionicResistance(first, second) {
     return Simulation.ionicResistance(
@@ -189253,7 +189263,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
    *
    * @private
    */
-  _updatePopup() {
+  _updatePopup(recordedEquilibrium) {
     if (!this.curr_obj) return;
     this.contextEchemInfo.style.display = "none";
     this.contextMolInfo.style.display = "none";
@@ -189265,7 +189275,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     )) {
       const mixture = this.curr_obj._content;
       const hasContents = mixture._activeMolecules.length > 0;
-      const equilibrium = hasContents && mixture._isSolution && mixture._solutionVolume > 0 ? Simulation.getPolyproticEquilibrium(mixture) : void 0;
+      const equilibrium = recordedEquilibrium ?? (hasContents && mixture._isSolution && mixture._solutionVolume > 0 ? Simulation.getPolyproticEquilibrium(mixture) : void 0);
       if (hasContents) {
         this.contextMolInfo.style.display = "";
         this.renderVesselCarousel(mixture, equilibrium);
@@ -190000,7 +190010,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.collectDiagramSuggestions();
       if (this.diagramPickerOpen || this.isDiagramPanelOpen) this.requestUpdate();
     }
-    if (this.pruneDiagramSuggestions()) this.requestUpdate();
   }
   collectDiagramSuggestions() {
     if (this.simulation.hasRunningExperiments && this.suggestionQueue.collect(this.diagramSuggestions(this.measurements.history.channels))) this.requestUpdate();

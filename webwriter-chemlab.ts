@@ -975,10 +975,10 @@ export class ChemLab extends LitElementWw {
 		if (!target) return;
 		const transferredMl = source.transferContents({}, target) * 1000;
 		if (!(transferredMl > 0)) return;
-		this.measurements.record([source, target], [], { source, target, volume: transferredMl });
+		const equilibria = this.measurements.record([source, target], [], { source, target, volume: transferredMl });
 		this.canvas.markVesselChanged(source);
 		this.canvas.markVesselChanged(target);
-		if (this.curr_obj === source || this.curr_obj === target) this._updatePopup();
+		if (this.curr_obj === source || this.curr_obj === target) this._updatePopup(equilibria.get(this.curr_obj._content));
 	}
 
 	/**
@@ -1001,10 +1001,12 @@ export class ChemLab extends LitElementWw {
 			chemlib.Simulation.sEChem(first, second, devices, { bridge, ionicResistance });
 
 			const vessels = this.allChemComponents.filter(vessel => vessel._content === firstMix || vessel._content === secondMix);
-			this.measurements.record(vessels, circuitComps);
+			const equilibria = this.measurements.record(vessels, circuitComps);
 			for (const vessel of vessels) this.canvas.markVesselChanged(vessel);
 			if (circuitComps.includes(this.curr_obj) ||
-				this.curr_obj?._content === firstMix || this.curr_obj?._content === secondMix) this._updatePopup();
+				this.curr_obj?._content === firstMix || this.curr_obj?._content === secondMix) {
+				this._updatePopup(equilibria.get(this.curr_obj?._content));
+			}
 			// The electrodes carry the deposit, so their views need a redraw too.
 			for (const device of circuitComps) this.canvas.refreshDeviceDisplay(device);
 			return;
@@ -1049,9 +1051,11 @@ export class ChemLab extends LitElementWw {
 		if (!this.surfaceElectrodes.size) this.simulation.stopTask(SURFACE_DISPLACEMENT_TASK);
 		if (!mixtures.size) return;
 		const vessels = this.allChemComponents.filter(vessel => mixtures.has(vessel._content));
-		this.measurements.record(vessels);
+		const equilibria = this.measurements.record(vessels);
 		for (const vessel of vessels) this.canvas.markVesselChanged(vessel);
-		if (updateSelection || mixtures.has(this.curr_obj?._content)) this._updatePopup();
+		if (updateSelection || mixtures.has(this.curr_obj?._content)) {
+			this._updatePopup(equilibria.get(this.curr_obj?._content));
+		}
 	}
 
 	private ionicResistance(first: chemlib.ElectricComponent, second: chemlib.ElectricComponent): number {
@@ -2190,7 +2194,7 @@ export class ChemLab extends LitElementWw {
 	 *
 	 * @private
 	 */
-	private _updatePopup(): void {
+	private _updatePopup(recordedEquilibrium?: ReturnType<typeof chemlib.Simulation.getPolyproticEquilibrium>): void {
 		if (!this.curr_obj) return;
 		this.contextEchemInfo.style.display = "none";
 		this.contextMolInfo.style.display = "none";
@@ -2204,8 +2208,8 @@ export class ChemLab extends LitElementWw {
 		) {
 			const mixture = this.curr_obj._content as chemlib.Mixture;
 			const hasContents = mixture._activeMolecules.length > 0;
-			const equilibrium = hasContents && mixture._isSolution && mixture._solutionVolume > 0
-				? chemlib.Simulation.getPolyproticEquilibrium(mixture) : undefined;
+			const equilibrium = recordedEquilibrium ?? (hasContents && mixture._isSolution && mixture._solutionVolume > 0
+				? chemlib.Simulation.getPolyproticEquilibrium(mixture) : undefined);
 			if (hasContents) {
 				this.contextMolInfo.style.display = "";
 				this.renderVesselCarousel(mixture, equilibrium);
@@ -3053,7 +3057,6 @@ export class ChemLab extends LitElementWw {
 			// Only the axis menus read the channel list, and only while they are shown.
 			if (this.diagramPickerOpen || this.isDiagramPanelOpen) this.requestUpdate();
 		}
-		if (this.pruneDiagramSuggestions()) this.requestUpdate();
 	}
 
 	collectDiagramSuggestions(): void {

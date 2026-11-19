@@ -1,10 +1,11 @@
 import type { ReactiveController } from "lit";
-import { EComponentType, Simulation, StructureManager, molarGasVolume, type ChemComponent, type ElectricComponent, type NoIonicPathTransientModel } from "../chemlib";
+import { EComponentType, Simulation, StructureManager, molarGasVolume, type ChemComponent, type ElectricComponent, type Mixture, type NoIonicPathTransientModel } from "../chemlib";
 import { evolvedGases } from "../chemlib/gasEvolution";
 import { MeasurementHistory, type MeasurementChannel } from "../data/measurementHistory";
 import type { ChemLab } from "../webwriter-chemlab";
 
 type Component = ChemComponent | ElectricComponent;
+type Equilibrium = ReturnType<typeof Simulation.getPolyproticEquilibrium>;
 
 export class MeasurementRecorder implements ReactiveController {
 	readonly history = new MeasurementHistory();
@@ -49,10 +50,18 @@ export class MeasurementRecorder implements ReactiveController {
 	}
 
 	record(vessels: readonly ChemComponent[] = [], instruments: readonly ElectricComponent[] = [],
-		delivery?: { source: ChemComponent; target: ChemComponent; volume: number }): void {
+		delivery?: { source: ChemComponent; target: ChemComponent; volume: number }): ReadonlyMap<Mixture, Equilibrium | undefined> {
 		const time = this.history.now();
 		let changed = false;
-		for (const vessel of vessels) changed = this.recordVessel(vessel, time) || changed;
+		// These snapshots belong to this measurement only. A caller can reuse
+		// them for an immediate readout before the next simulation mutation.
+		const mixtures = new Map<Mixture, Equilibrium | undefined>();
+		for (const vessel of vessels) {
+			const mix = vessel._content;
+			if (!mixtures.has(mix)) mixtures.set(mix, mix._isSolution && mix._solutionVolume > 0
+				? Simulation.getPolyproticEquilibrium(mix) : undefined);
+			changed = this.recordVessel(vessel, time, mixtures.get(mix)) || changed;
+		}
 		if (delivery && delivery.source._type === "burette") {
 			const { source, target, volume } = delivery;
 			const channel = this.deliveredVolumeChannel(source);
@@ -64,16 +73,18 @@ export class MeasurementRecorder implements ReactiveController {
 			this.delivery.set(source, total);
 			changed = this.history.record(channel, total, time, true) || changed;
 		}
-		const mixtures = new Set(vessels.map(vessel => vessel._content));
 		const meters = new Set(instruments);
-		for (const device of this.host.allEComponents) {
-			if (device._type === EComponentType.GasCollector && mixtures.has(device._connectedMix)) meters.add(device);
+		if (mixtures.size) {
+			for (const device of this.host.allEComponents) {
+				if (device._type === EComponentType.GasCollector && mixtures.has(device._connectedMix)) meters.add(device);
+			}
 		}
 		for (const device of meters) changed = this.recordInstrument(device, time) || changed;
 		if (changed) {
 			this.onChange?.();
 			this.scheduleExpiry();
 		}
+		return mixtures;
 	}
 
 	// The setup sample at 0 mL may expire while the titration itself is still recorded.
@@ -106,12 +117,11 @@ export class MeasurementRecorder implements ReactiveController {
 		this.scheduleExpiry();
 	}
 
-	private recordVessel(vessel: ChemComponent, time: number): boolean {
+	private recordVessel(vessel: ChemComponent, time: number, equilibrium?: Equilibrium): boolean {
 		const mix = vessel._content;
 		const inventory = new Map<string, { name: string; amount: number; concentration: number | null }>();
 		let mass = 0;
 		const solution = mix._isSolution && mix._solutionVolume > 0;
-		const equilibrium = solution ? Simulation.getPolyproticEquilibrium(mix) : undefined;
 		for (const molecule of mix._activeMolecules) {
 			const amount = mix._molProperties[molecule._id + "n"];
 			mass += mix._molProperties[molecule._id + "m"] || 0;
