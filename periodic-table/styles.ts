@@ -23,6 +23,10 @@ export const periodicTableStyles = css`
 		background: var(--sl-color-neutral-0, #ffffff);
 
 		--pt-cell-height: 3rem;
+		/* The detail card spans three rows of the table and the two gaps between
+		   them, so its height follows the cell height instead of its content. */
+		--pt-details-height: calc(3 * var(--pt-cell-height) + 4px);
+		--pt-details-border: 1px;
 		--pt-cell-bar: 0.4rem;
 		--pt-gutter: 1.5rem;
 		--pt-series-gap: 0.5rem;
@@ -174,11 +178,14 @@ export const periodicTableStyles = css`
 	}
 
 	/* The detail card is a grid item of the table, so it fills the free block
-	   above the transition metals and never covers a cell. */
+	   above the transition metals and never covers a cell. It is also the query
+	   container of the card, so the card can stack its columns when the block
+	   gets narrow. */
 	.details-slot {
 		display: grid;
 		grid-row: var(--pt-row) / span var(--pt-row-span, 1);
 		grid-column: var(--pt-column) / span var(--pt-column-span, 1);
+		container-type: inline-size;
 		min-width: 0;
 		min-height: 0;
 	}
@@ -533,86 +540,153 @@ export const periodicTableStyles = css`
 		margin: 0.25rem 0 0.5rem;
 	}
 
-	/* The card copies the object cards of the lab widget: a square thumbnail
-	   with a corner badge, a title, and short tabular lines underneath. It fills
-	   the free block of the table, so it stays compact and scrolls inside itself
-	   instead of pushing the periods apart. */
-	.details {
-		display: grid;
-		grid-template-columns: minmax(0, 3.5rem) minmax(0, 1fr);
-		align-items: stretch;
-		gap: 4px;
-		height: 100%;
+	/* The detail card is a Shoelace card, so it shares the surface, the border and
+	   the header rhythm of the rest of the widget. It fills the free block of the
+	   table, so its height is pinned to the three rows it spans: a card that grows
+	   with its content would stretch those rows and leave the periods with uneven
+	   cells. A long element scrolls inside the body instead. */
+	.details-card {
+		height: var(--pt-details-height);
 		min-width: 0;
-		min-height: 0;
-		padding: 2px 3px;
+		--padding: 0;
+		--border-color: var(--sl-color-neutral-300, #d4d4d8);
+		--border-width: var(--pt-details-border);
+		--border-radius: 6px;
+		--sl-panel-background-color: var(--pt-surface);
+	}
+
+	.details-card::part(base) {
+		height: 100%;
 		overflow: hidden;
-		border: 2px solid var(--pt-border);
-		border-radius: 5px;
-		background: var(--pt-inset);
-		color: var(--pt-ink);
+	}
+
+	/* The header carries the identity of the element in one row: the coloured
+	   thumbnail, the name, the atomic number, the family, and the conditions the
+	   state values refer to. It sits on the inset surface, so the card reads as a
+	   titled panel instead of a plain box. */
+	.details-card::part(header) {
+		padding: 3px 6px;
+		border-bottom: 1px solid var(--pt-border);
+		background: color-mix(in srgb, var(--pt-cell-fill, var(--pt-inset)) 16%, var(--pt-surface));
+	}
+
+	.details-head {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		min-width: 0;
 	}
 
 	.details-thumb {
-		position: relative;
 		display: grid;
+		flex: 0 0 auto;
 		place-items: center;
-		align-self: start;
-		aspect-ratio: 1;
+		width: 1.5rem;
+		height: 1.5rem;
 		border: 1px solid color-mix(in srgb, var(--pt-ink) 12%, transparent);
 		border-radius: var(--pt-radius);
 		background: var(--pt-cell-fill, var(--pt-surface));
+		font-size: 0.8rem;
+		font-weight: 600;
 		line-height: 1;
 	}
 
-	.details-badge {
-		position: absolute;
-		inset-block-start: 2px;
-		inset-inline-start: 2px;
-		padding: 0 2px;
-		border-radius: 3px;
-		background: var(--sl-color-primary-600, #0b6bcb);
-		color: var(--sl-color-neutral-0, #ffffff);
-		font-size: 8px;
-		font-weight: 400;
-		line-height: 1.4;
-		pointer-events: none;
-	}
-
-	.details-symbol {
-		font-size: 1.15rem;
-		font-weight: 600;
-	}
-
-	.details-body {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		min-width: 0;
-		min-height: 0;
-		overflow-y: auto;
-		line-height: 1.25;
-	}
-
-	.details-name {
+	.details-title {
 		margin: 0;
-		font-size: 0.85rem;
+		font-size: 0.9rem;
 		font-weight: 600;
-		overflow-wrap: anywhere;
+		line-height: 1.1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
-	.details-sub {
-		margin: 0;
-		font-size: 0.68rem;
+	/* The number is a quiet badge on the inset band, the family a tag in the
+	   colour of the cell, so the header names the element twice without shouting. */
+	.details-number::part(base) {
+		background: var(--pt-surface);
+		border-color: var(--pt-border);
+		color: var(--pt-ink-soft);
+		font-size: 0.6rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.details-family::part(base) {
+		height: auto;
+		padding: 1px 0.35rem;
+		border-color: color-mix(in srgb, var(--pt-cell-fill, var(--pt-border)) 55%, var(--pt-border));
+		background: color-mix(in srgb, var(--pt-cell-fill, var(--pt-inset)) 45%, var(--pt-surface));
+		color: var(--pt-ink);
+		font-size: 0.6rem;
+		line-height: 1.2;
+	}
+
+	.details-conditions {
+		margin-inline-start: auto;
+		padding-inline-start: 0.35rem;
+		font-size: 0.6rem;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 		color: var(--pt-ink-soft);
 	}
 
-	.details-fields {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-		gap: 0 0.75rem;
+	/* The body is the slot itself, so the two columns are its flex items. It takes
+	   the rest of the fixed card height and scrolls, which keeps the card at the
+	   height of the block it fills. */
+	.details-card::part(body) {
+		display: flex;
+		flex: 1;
+		min-height: 0;
+		padding: 4px 6px;
+		overflow: auto;
+	}
+
+	.details-sections {
+		display: flex;
+		align-items: stretch;
+		gap: 0.5rem;
+		width: 100%;
+		min-width: 0;
+	}
+
+	.details-column {
+		display: flex;
+		flex: 1 1 0;
+		flex-direction: column;
+		gap: 0.15rem;
+		min-width: 0;
+	}
+
+	.details-divider {
+		--spacing: 0;
+		--color: var(--pt-border);
+	}
+
+	/* A rule separates the two sections of a column, so the headings do not have
+	   to carry the whole structure on their own. */
+	.details-rule {
+		--spacing: 0.1rem;
+		--color: var(--pt-border);
+	}
+
+	.details-section {
+		min-width: 0;
+	}
+
+	.details-heading {
+		margin: 0 0 1px;
+		font-size: 0.55rem;
+		font-weight: 600;
+		line-height: 1.2;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--pt-ink-soft);
+	}
+
+	.details-rows {
+		display: flex;
+		flex-direction: column;
 		margin: 0;
-		font-size: 0.62rem;
 	}
 
 	/* Label and value share a row, the value keeps its own column so a long
@@ -622,6 +696,8 @@ export const periodicTableStyles = css`
 		grid-template-columns: max-content minmax(0, 1fr);
 		gap: 0 0.3rem;
 		min-width: 0;
+		font-size: 0.7rem;
+		line-height: 1.2;
 	}
 
 	.details-row dt {
@@ -634,32 +710,99 @@ export const periodicTableStyles = css`
 	}
 
 	.details-row dd {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
 		margin: 0;
 		overflow-wrap: anywhere;
 		font-variant-numeric: tabular-nums;
 	}
 
-	.qualifier {
-		margin-left: 0.25rem;
-		font-size: 0.55rem;
-		letter-spacing: 0.03em;
-		text-transform: uppercase;
-		color: var(--pt-ink-soft);
+	/* The state is a tag in the colour of the state, so the value is readable at a
+	   glance instead of hanging on a dot of half a millimetre. */
+	.details-state::part(base) {
+		height: auto;
+		padding: 0 0.3rem;
+		border-color: color-mix(in srgb, var(--pt-ink) 18%, transparent);
+		color: var(--pt-ink);
+		font-size: 0.6rem;
+		line-height: 1.35;
 	}
 
-	.details-hint {
-		margin: 0;
-		font-size: 0.58rem;
+	.details-state.state-solid::part(base) {
+		background: var(--pt-state-solid);
+	}
+
+	.details-state.state-liquid::part(base) {
+		background: var(--pt-state-liquid);
+	}
+
+	.details-state.state-gas::part(base) {
+		background: var(--pt-state-gas);
+	}
+
+	.details-state.state-unknown::part(base) {
+		background: var(--pt-state-unknown);
+	}
+
+	.details-qualifier::part(base) {
+		background: var(--pt-inset);
+		border-color: var(--pt-border);
 		color: var(--pt-ink-soft);
+		font-size: 0.5rem;
+		line-height: 1.3;
+	}
+
+	/* The empty card has no header, so its body takes the whole height. */
+	.details-card-empty::part(body) {
+		display: grid;
+		place-items: center;
 	}
 
 	.details-empty {
-		grid-column: 1 / -1;
-		align-self: center;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.3rem;
 		margin: 0;
-		font-size: 0.75rem;
+		font-size: 0.7rem;
 		color: var(--pt-ink-soft);
 		text-align: center;
+	}
+
+	.details-empty-icon {
+		font-size: 1.1rem;
+		color: var(--pt-ink-soft);
+	}
+
+	/* A narrow card stacks the two columns, because two half-width columns would
+	   break every value onto a second line. The threshold is the width of the card
+	   itself, not of the widget: the card spans ten of the eighteen columns, so it
+	   is already too narrow for two columns while the table still has room. The
+	   card then grows with its content, which keeps the cells of the periods even
+	   instead of squeezing the stacked rows into the height of three rows. */
+	@container (max-width: 28rem) {
+		.details-card {
+			height: auto;
+		}
+
+		.details-card::part(base) {
+			height: auto;
+			overflow: visible;
+		}
+
+		.details-card::part(body) {
+			flex: 0 0 auto;
+			overflow: visible;
+		}
+
+		.details-sections {
+			flex-direction: column;
+		}
+
+		.details-divider {
+			display: none;
+		}
 	}
 
 	/* The sources and the model notes live in a dialog behind the info button, so
@@ -899,7 +1042,7 @@ export const periodicTableStyles = css`
 		.cell,
 		.list-row,
 		.legend-item,
-		.details,
+		.details-card,
 		.placeholder-text {
 			border: 1px solid CanvasText;
 			background: Canvas;

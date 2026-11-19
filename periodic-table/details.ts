@@ -18,8 +18,11 @@ import {
 	type ElementReference,
 	type PeriodicTableSource,
 } from "./element-reference";
-import { celsiusFromKelvin, matterState, type MatterState, type PhaseConditions } from "./phase";
+import { celsiusFromKelvin, matterState, type MatterState } from "./phase";
 import { format, strings, type Language, type Strings } from "./strings";
+
+/** Section of the detail card a row belongs to. */
+export type DetailSection = "header" | "position" | "properties" | "history" | "structure";
 
 /** One row of the detail card. */
 export interface DetailRow {
@@ -29,24 +32,31 @@ export interface DetailRow {
 	readonly label: string;
 	/** Rendered value. */
 	readonly value: string;
+	/** Section of the card the row is grouped under. */
+	readonly section: DetailSection;
 	/** Optional qualifier such as `predicted`. */
 	readonly qualifier?: string;
+	/** State the row is about, so the card can draw its colour next to the value. */
+	readonly swatch?: MatterState;
 }
 
 /**
  * Renders the conditions the state values refer to.
  *
+ * The pressure is fixed: the bundle stores its thermal data at 1 bar and the
+ * table only varies the temperature.
+ *
  * @param language - Interface language.
- * @param conditions - Conditions to render, the bundle conditions by default.
+ * @param temperatureK - Temperature to render, the bundle temperature by default.
  * @returns The conditions as text, for example `25 °C · 1 bar`.
  */
 export function conditionsText(
 	language: Language,
-	conditions: PhaseConditions = CONDITIONS,
+	temperatureK: number = CONDITIONS.temperatureK,
 ): string {
 	return format(strings(language).conditions, {
-		temperature: numberText(celsiusFromKelvin(conditions.temperatureK), language),
-		pressure: numberText(conditions.pressureBar, language),
+		temperature: numberText(celsiusFromKelvin(temperatureK), language),
+		pressure: numberText(CONDITIONS.pressureBar, language),
 	});
 }
 
@@ -177,88 +187,116 @@ export function categoryText(element: ElementReference, language: Language): str
 /**
  * Builds the rows of the detail card.
  *
- * The state row follows the conditions the card names. At the bundle conditions
- * it shows the reported phase with its provenance, because that is the better
- * answer there: astatine carries a predicted phase but no thermal data, so the
- * computed state would be `unknown`. At any other condition the row is computed
- * from the melting and boiling points.
+ * The state row follows the temperature the card names. At the bundle
+ * temperature it shows the reported phase with its provenance, because that is
+ * the better answer there: astatine carries a predicted phase but no thermal
+ * data, so the computed state would be `unknown`. At any other temperature the
+ * row is computed from the melting and boiling points.
  *
  * @param element - Element of the reference bundle.
  * @param language - Interface language.
- * @param conditions - Conditions the state row refers to, the bundle conditions by default.
+ * @param temperatureK - Temperature the state row refers to, the bundle temperature by default.
  * @returns Group, period, family, block, weight, state, melting, boiling, sublimation, discovery, configuration and shells.
  */
 export function detailRows(
 	element: ElementReference,
 	language: Language,
-	conditions: PhaseConditions = CONDITIONS,
+	temperatureK: number = CONDITIONS.temperatureK,
 ): readonly DetailRow[] {
 	const t = strings(language);
 	const rows: DetailRow[] = [
-		{ key: "group", label: t.fieldGroup, value: groupText(element, language) },
-		{ key: "period", label: t.fieldPeriod, value: String(element.period) },
-		{ key: "family", label: t.fieldFamily, value: categoryText(element, language) },
+		{ key: "group", label: t.fieldGroup, value: groupText(element, language), section: "position" },
+		{ key: "period", label: t.fieldPeriod, value: String(element.period), section: "position" },
+		{ key: "family", label: t.fieldFamily, value: categoryText(element, language), section: "header" },
 	];
 	if (element.block.status === "unavailable") {
-		rows.push({ key: "block", label: t.fieldBlock, value: t.valueUnavailable });
+		rows.push({ key: "block", label: t.fieldBlock, value: t.valueUnavailable, section: "position" });
 	} else {
 		rows.push({
 			key: "block",
 			label: t.fieldBlock,
 			value: element.block.value,
+			section: "position",
 			...(element.block.status === "predicted" ? { qualifier: t.valuePredicted } : {}),
 		});
 	}
-	rows.push({ key: "weight", label: t.fieldWeight, value: weightText(element, language) });
-	const atBundle =
-		conditions.temperatureK === CONDITIONS.temperatureK &&
-		conditions.pressureBar === CONDITIONS.pressureBar;
+	rows.push({
+		key: "weight",
+		label: t.fieldWeight,
+		value: weightText(element, language),
+		section: "properties",
+	});
+	const atBundle = temperatureK === CONDITIONS.temperatureK;
 	if (!atBundle) {
+		const state = matterState(element, temperatureK);
 		rows.push({
 			key: "phase",
 			label: t.fieldPhase,
-			value: stateText(matterState(element, conditions), t),
+			value: stateText(state, t),
+			section: "properties",
+			swatch: state,
 		});
 	} else if (element.phase.status === "unavailable") {
-		rows.push({ key: "phase", label: t.fieldPhase, value: t.valueUnavailable });
+		rows.push({ key: "phase", label: t.fieldPhase, value: t.valueUnavailable, section: "properties" });
 	} else {
 		const phase = { solid: t.phaseSolid, liquid: t.phaseLiquid, gas: t.phaseGas }[element.phase.value];
 		rows.push({
 			key: "phase",
 			label: t.fieldPhase,
 			value: phase,
+			section: "properties",
+			swatch: element.phase.value,
 			...(element.phase.status === "predicted" ? { qualifier: t.valuePredicted } : {}),
 		});
 	}
 	rows.push({
 		key: "melting",
 		label: t.fieldMelting,
+		section: "properties",
 		...temperatureRow(element.melting, language, t),
 	});
 	rows.push({
 		key: "boiling",
 		label: t.fieldBoiling,
+		section: "properties",
 		...temperatureRow(element.boiling, language, t),
 	});
 	if (element.sublimation.status !== "unavailable") {
 		rows.push({
 			key: "sublimation",
 			label: t.fieldSublimation,
+			section: "properties",
 			...temperatureRow(element.sublimation, language, t),
 		});
 	}
-	rows.push({ key: "discovery", label: t.fieldDiscovery, value: discoveryText(element, language) });
+	rows.push({
+		key: "discovery",
+		label: t.fieldDiscovery,
+		value: discoveryText(element, language),
+		section: "history",
+	});
 	if (element.configuration.status === "unavailable") {
-		rows.push({ key: "configuration", label: t.fieldConfiguration, value: t.valueUnavailable });
+		rows.push({
+			key: "configuration",
+			label: t.fieldConfiguration,
+			value: t.valueUnavailable,
+			section: "structure",
+		});
 	} else {
 		rows.push({
 			key: "configuration",
 			label: t.fieldConfiguration,
 			value: element.configuration.value,
+			section: "structure",
 			...(element.configuration.status === "predicted" ? { qualifier: t.valuePredicted } : {}),
 		});
 	}
-	rows.push({ key: "shells", label: t.fieldShells, value: element.shells.join(" · ") });
+	rows.push({
+		key: "shells",
+		label: t.fieldShells,
+		value: element.shells.join(" · "),
+		section: "structure",
+	});
 	return rows;
 }
 

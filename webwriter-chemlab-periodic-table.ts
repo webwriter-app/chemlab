@@ -15,7 +15,9 @@ import { html, type PropertyValues } from "lit";
 
 import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
+import SlCard from "@shoelace-style/shoelace/dist/components/card/card.component.js";
 import SlDialog from "@shoelace-style/shoelace/dist/components/dialog/dialog.component.js";
+import SlDivider from "@shoelace-style/shoelace/dist/components/divider/divider.component.js";
 import SlIcon from "@shoelace-style/shoelace/dist/components/icon/icon.component.js";
 import SlIconButton from "@shoelace-style/shoelace/dist/components/icon-button/icon-button.component.js";
 import SlInput from "@shoelace-style/shoelace/dist/components/input/input.component.js";
@@ -25,6 +27,7 @@ import SlRange from "@shoelace-style/shoelace/dist/components/range/range.compon
 import SlSelect from "@shoelace-style/shoelace/dist/components/select/select.component.js";
 import SlSpinner from "@shoelace-style/shoelace/dist/components/spinner/spinner.component.js";
 import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js";
+import SlTooltip from "@shoelace-style/shoelace/dist/components/tooltip/tooltip.component.js";
 import { setBasePath } from "@shoelace-style/shoelace/dist/utilities/base-path.js";
 setBasePath("@shoelace-style/shoelace/dist");
 import "@shoelace-style/shoelace/dist/themes/light.css";
@@ -58,23 +61,20 @@ import {
 	sourceFieldText,
 	sourceList,
 	stateText,
+	type DetailRow,
+	type DetailSection,
 } from "./periodic-table/details";
 import {
 	DEFAULT_MODE_STATE,
 	DISCOVERY_RANGE,
-	PRESSURE_SLIDER,
 	TABLE_MODES,
 	TEMPERATURE_SLIDER,
 	cellMode,
 	celsiusFromKelvin,
 	celsiusText,
 	kelvinFromCelsius,
-	log10FromPressure,
-	pressureFromLog10,
-	pressureText,
 	type MatterState,
 	type ModeState,
-	type PhaseConditions,
 	type TableMode,
 } from "./periodic-table/phase";
 import { periodicTableStyles } from "./periodic-table/styles";
@@ -101,6 +101,14 @@ const LIST_BREAKPOINT = 680;
 /** States the legend of a mode lists, in the order of the phase model. */
 const STATES: readonly MatterState[] = ["solid", "liquid", "gas", "unknown"];
 
+/** One labelled section of a column of the detail card. */
+interface DetailColumnEntry {
+	/** Heading of the section. */
+	readonly label: string;
+	/** Section to pick from the rows of the card. */
+	readonly section: DetailSection;
+}
+
 /**
  * Info icon of the toolbar button.
  *
@@ -112,6 +120,18 @@ const INFO_ICON = `data:image/svg+xml,${encodeURIComponent(
 		'<circle cx="8" cy="8" r="6.5" fill="none" stroke="#3f3f46" stroke-width="1.3"/>' +
 		'<circle cx="8" cy="4.9" r=".95" fill="#3f3f46"/>' +
 		'<rect x="7.15" y="6.6" width="1.7" height="5.1" rx=".85" fill="#3f3f46"/>' +
+		"</svg>",
+)}`;
+
+/**
+ * Cursor icon of the empty detail card.
+ *
+ * It points at the table, which is where the missing selection comes from. Like
+ * the info icon it is a data URI, so the widget needs no icon assets.
+ */
+const POINTER_ICON = `data:image/svg+xml,${encodeURIComponent(
+	'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">' +
+		'<path d="M4 2v11l2.7-2.7 1.9 4 2-1-1.9-3.9H13z" fill="#3f3f46"/>' +
 		"</svg>",
 )}`;
 
@@ -128,8 +148,6 @@ function modeText(mode: TableMode, t: Strings): string {
 			return t.modeOff;
 		case "temperature":
 			return t.modeTemperature;
-		case "pressure":
-			return t.modePressure;
 		case "discovery":
 			return t.modeDiscovery;
 	}
@@ -179,7 +197,9 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	static scopedElements = {
 		"sl-badge": SlBadge,
 		"sl-button": SlButton,
+		"sl-card": SlCard,
 		"sl-dialog": SlDialog,
+		"sl-divider": SlDivider,
 		"sl-icon": SlIcon,
 		"sl-icon-button": SlIconButton,
 		"sl-input": SlInput,
@@ -189,6 +209,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		"sl-select": SlSelect,
 		"sl-spinner": SlSpinner,
 		"sl-tag": SlTag,
+		"sl-tooltip": SlTooltip,
 	};
 
 	static optionGroups = {
@@ -422,9 +443,9 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		return this.#width !== null && this.#width < LIST_BREAKPOINT ? "list" : "table";
 	}
 
-	/** Conditions the state rows and the cell colours refer to. */
-	get #conditions(): PhaseConditions {
-		return { temperatureK: this.#mode.temperatureK, pressureBar: this.#mode.pressureBar };
+	/** Temperature the state rows and the cell colours refer to. */
+	get #temperature(): number {
+		return this.#mode.temperatureK;
 	}
 
 	/** Current search hits, best match first. */
@@ -497,14 +518,6 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const value = Number((event.target as { value?: string }).value ?? "");
 		if (!Number.isFinite(value)) return;
 		this.#mode = { ...this.#mode, temperatureK: kelvinFromCelsius(value) };
-		this.requestUpdate();
-	};
-
-	/** Reads the pressure slider, which works on the decadic logarithm. */
-	#onPressureInput = (event: Event) => {
-		const value = Number((event.target as { value?: string }).value ?? "");
-		if (!Number.isFinite(value)) return;
-		this.#mode = { ...this.#mode, pressureBar: pressureFromLog10(value) };
 		this.requestUpdate();
 	};
 
@@ -726,17 +739,6 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					format: (value: number) => celsiusText(kelvinFromCelsius(value), language),
 					onInput: this.#onTemperatureInput,
 				};
-			case "pressure":
-				return {
-					label: t.pressureSlider,
-					min: PRESSURE_SLIDER.minLog10Bar,
-					max: PRESSURE_SLIDER.maxLog10Bar,
-					step: PRESSURE_SLIDER.stepLog10,
-					value: log10FromPressure(this.#mode.pressureBar),
-					readout: pressureText(this.#mode.pressureBar, language),
-					format: (value: number) => pressureText(pressureFromLog10(value), language),
-					onInput: this.#onPressureInput,
-				};
 			case "discovery":
 				return {
 					label: t.yearSlider,
@@ -755,9 +757,9 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * Renders the mode switch with its slider and the state legend.
 	 *
 	 * The switch decides what the cells are coloured by: nothing, the state at the
-	 * chosen temperature or pressure, or whether the element was already known in
-	 * the chosen year. The legend only appears for the two state modes, because
-	 * the discovery mode dims cells instead of colouring them.
+	 * chosen temperature, or whether the element was already known in the chosen
+	 * year. The legend only appears for the temperature mode, because the
+	 * discovery mode dims cells instead of colouring them.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
@@ -799,15 +801,13 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the colour key of the state modes.
+	 * Renders the colour key of the temperature mode.
 	 *
 	 * @param t - Interface strings.
-	 * @returns The legend, or nothing while no state mode is active.
+	 * @returns The legend, or nothing while the temperature mode is off.
 	 */
 	#renderStateLegend(t: Strings) {
-		if (this.#mode.mode !== "temperature" && this.#mode.mode !== "pressure") {
-			return null;
-		}
+		if (this.#mode.mode !== "temperature") return null;
 		return html`
 			<ul class="state-legend" aria-label=${t.stateLegend}>
 				${STATES.map(state => html`
@@ -1080,7 +1080,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 				style="--pt-row:${series.row + 2};--pt-column:1 / span 3"
 			>${CATEGORIES[series.category]?.[language] ?? series.category}</div>
 		`);
-		const rows = element ? detailRows(element, language, this.#conditions) : [];
+		const rows = element ? detailRows(element, language, this.#temperature) : [];
 		return html`
 			<div class="print-overview" aria-hidden="true">
 				<h2 class="print-title">${t.widgetLabel}</h2>
@@ -1104,7 +1104,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 									</div>
 								`)}
 							</dl>
-							<p class="print-hint">${t.detailsHint} ${conditionsText(language, this.#conditions)}</p>
+							<p class="print-hint">${t.detailsHint} ${conditionsText(language, this.#temperature)}</p>
 						`
 						: html`<p class="print-hint">${t.detailsEmpty}</p>`}
 				</div>
@@ -1115,10 +1115,11 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/**
 	 * Renders the detail card of one element.
 	 *
-	 * The card follows the object cards of the lab widget: a square thumbnail with
-	 * a small corner badge, a title, and short tabular lines underneath. It has to
-	 * stay compact, because it sits in the free block of the table and must not
-	 * push the periods apart.
+	 * The card is a Shoelace card, so it shares the surface and the border of the
+	 * rest of the widget. Its header carries the identity of the element in one
+	 * row, and its body splits the rows into two columns of labelled sections,
+	 * separated by Shoelace dividers. It has to stay compact, because it sits in
+	 * the free block of the table and must not push the periods apart.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
@@ -1127,33 +1128,121 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 */
 	#renderDetails(t: Strings, language: Language, element: ElementReference | null) {
 		if (!element) {
-			return html`<div class="details"><p class="details-empty">${t.detailsEmpty}</p></div>`;
+			return html`
+				<sl-card class="details-card details-card-empty">
+					<div class="details-empty">
+						<sl-icon class="details-empty-icon" src=${POINTER_ICON}></sl-icon>
+						<p>${t.detailsEmpty}</p>
+					</div>
+				</sl-card>
+			`;
 		}
-		const rows = detailRows(element, language, this.#conditions);
+		const rows = detailRows(element, language, this.#temperature);
 		const name = element.names[language];
+		const left: readonly DetailColumnEntry[] = [
+			{ label: t.sectionProperties, section: "properties" },
+			{ label: t.sectionHistory, section: "history" },
+		];
+		const right: readonly DetailColumnEntry[] = [
+			{ label: t.sectionPosition, section: "position" },
+			{ label: t.sectionStructure, section: "structure" },
+		];
 		return html`
-			<div class="details category-${categoryOf(element.atomicNumber) ?? "unknown"}">
-				<div class="details-thumb">
-					<span class="details-badge">${element.atomicNumber}</span>
-					<span class="details-symbol">${element.symbol}</span>
+			<sl-card class="details-card category-${categoryOf(element.atomicNumber) ?? "unknown"}">
+				<div slot="header" class="details-head">
+					<span class="details-thumb">${element.symbol}</span>
+					<h5 class="details-title" title=${name}>${name}</h5>
+					<sl-badge class="details-number" variant="neutral" pill>
+						${element.atomicNumber}
+					</sl-badge>
+					<sl-tag class="details-family" size="small" variant="neutral">
+						${categoryText(element, language)}
+					</sl-tag>
+					<sl-tooltip content=${t.detailsHint} hoist>
+						<span class="details-conditions">${conditionsText(language, this.#temperature)}</span>
+					</sl-tooltip>
 				</div>
-				<div class="details-body">
-					<h5 class="details-name" title=${name}>${name}</h5>
-					<p class="details-sub">${categoryText(element, language)}</p>
-					<dl class="details-fields">
-						${rows.map(row => html`
-							<div class="details-row">
-								<dt>${row.label}</dt>
-								<dd>
-									${row.value}${row.qualifier
-										? html`<span class="qualifier">${row.qualifier}</span>`
-										: null}
-								</dd>
-							</div>
-						`)}
-					</dl>
-					<p class="details-hint">${t.detailsHint} ${conditionsText(language, this.#conditions)}</p>
+				<div class="details-sections">
+					${this.#renderDetailColumn(t, left, rows)}
+					<sl-divider class="details-divider" vertical></sl-divider>
+					${this.#renderDetailColumn(t, right, rows)}
 				</div>
+			</sl-card>
+		`;
+	}
+
+	/**
+	 * Renders one column of the detail card.
+	 *
+	 * A column holds one or two sections, and a divider separates them, so the
+	 * headings do not have to carry the whole structure on their own. A section
+	 * without a row is dropped, which keeps the card free of empty headings.
+	 *
+	 * @param t - Interface strings.
+	 * @param entries - Sections of the column in display order.
+	 * @param rows - All rows of the card.
+	 * @returns The column, or nothing when none of its sections has a row.
+	 */
+	#renderDetailColumn(t: Strings, entries: readonly DetailColumnEntry[], rows: readonly DetailRow[]) {
+		const sections = entries
+			.map(entry => ({ entry, own: rows.filter(row => row.section === entry.section) }))
+			.filter(({ own }) => own.length > 0);
+		if (sections.length === 0) return null;
+		return html`
+			<div class="details-column">
+				${sections.map(
+					({ entry, own }, index) => html`
+						${index > 0 ? html`<sl-divider class="details-rule"></sl-divider>` : null}
+						<section class="details-section">
+							<h6 class="details-heading">${entry.label}</h6>
+							<dl class="details-rows">
+								${own.map(row => this.#renderDetailRow(t, row))}
+							</dl>
+						</section>
+					`,
+				)}
+			</div>
+		`;
+	}
+
+	/**
+	 * Renders one row of the detail card.
+	 *
+	 * The state value is a tag in the colour of the state, so the value is legible
+	 * at a glance. A predicted value carries a badge instead of a bare word, and
+	 * the badge explains itself in a tooltip, so the card stays short without
+	 * hiding what the qualifier means.
+	 *
+	 * @param t - Interface strings.
+	 * @param row - Row to render.
+	 * @returns The row.
+	 */
+	#renderDetailRow(t: Strings, row: DetailRow) {
+		return html`
+			<div class="details-row">
+				<dt>${row.label}</dt>
+				<dd>
+					${row.swatch
+						? html`
+							<sl-tag
+								class="details-state state-${row.swatch}"
+								size="small"
+								variant="neutral"
+							>
+								${row.value}
+							</sl-tag>
+						`
+						: html`<span>${row.value}</span>`}
+					${row.qualifier
+						? html`
+							<sl-tooltip content=${t.qualifierHint} hoist>
+								<sl-badge class="details-qualifier" variant="neutral" pill>
+									${row.qualifier}
+								</sl-badge>
+							</sl-tooltip>
+						`
+						: null}
+				</dd>
 			</div>
 		`;
 	}

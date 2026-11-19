@@ -45,6 +45,43 @@ test("the detail card lists the eleven reference fields in a fixed order", () =>
 	}
 });
 
+test("every row belongs to one section of the card", () => {
+	const rows = detailRows(element(26), "en");
+	const sections = new Map(rows.map((row) => [row.key, row.section]));
+	assert.equal(sections.get("family"), "header");
+	assert.equal(sections.get("group"), "position");
+	assert.equal(sections.get("period"), "position");
+	assert.equal(sections.get("block"), "position");
+	assert.equal(sections.get("weight"), "properties");
+	assert.equal(sections.get("phase"), "properties");
+	assert.equal(sections.get("melting"), "properties");
+	assert.equal(sections.get("boiling"), "properties");
+	assert.equal(sections.get("discovery"), "history");
+	assert.equal(sections.get("configuration"), "structure");
+	assert.equal(sections.get("shells"), "structure");
+	for (const entry of ELEMENTS) {
+		for (const row of detailRows(entry, "en")) {
+			assert.ok(
+				["header", "position", "properties", "history", "structure"].includes(row.section),
+				`${entry.symbol} ${row.key}`,
+			);
+		}
+	}
+});
+
+test("the state row carries the colour the card draws next to it", () => {
+	const phase = (atomicNumber: number, temperatureK?: number) =>
+		detailRows(element(atomicNumber), "en", temperatureK).find((row) => row.key === "phase");
+	assert.equal(phase(8)?.swatch, "gas");
+	assert.equal(phase(8, 70)?.swatch, "liquid");
+	assert.equal(phase(26)?.swatch, "solid");
+	assert.equal(phase(85, 400)?.swatch, "unknown");
+	for (const row of detailRows(element(26), "en")) {
+		if (row.key === "phase") continue;
+		assert.equal(row.swatch, undefined, row.key);
+	}
+});
+
 test("an element that sublimes gains a twelfth row", () => {
 	const carbon = detailRows(element(6), "en").map((row) => row.key);
 	assert.ok(carbon.includes("sublimation"));
@@ -104,11 +141,11 @@ test("the family label follows the placement table", () => {
 	assert.equal(categoryText(element(89), "de"), "Actinoid");
 });
 
-test("the conditions line names temperature and pressure", () => {
+test("the conditions line names the temperature and the fixed pressure", () => {
 	assert.equal(conditionsText("en"), "25 °C · 1 bar");
 	assert.equal(conditionsText("de"), "25 °C · 1 bar");
-	assert.equal(conditionsText("en", { temperatureK: 373.15, pressureBar: 0.1 }), "100 °C · 0.1 bar");
-	assert.equal(conditionsText("de", { temperatureK: 373.15, pressureBar: 0.1 }), "100 °C · 0,1 bar");
+	assert.equal(conditionsText("en", 373.15), "100 °C · 1 bar");
+	assert.equal(conditionsText("de", 373.15), "100 °C · 1 bar");
 });
 
 test("a temperature is rendered in kelvin with its Celsius equivalent", () => {
@@ -123,12 +160,12 @@ test("the state row follows the conditions the card names", () => {
 	assert.ok(atBundle);
 	assert.equal(atBundle.value, "Gas");
 	assert.equal(atBundle.qualifier, undefined);
-	const cold = detailRows(oxygen, "en", { temperatureK: 70, pressureBar: 1 });
+	const cold = detailRows(oxygen, "en", 70);
 	assert.equal(cold.find((row) => row.key === "phase")?.value, "Liquid");
 	const astatine = detailRows(element(85), "en").find((row) => row.key === "phase");
 	assert.equal(astatine?.value, "Solid", "the reported phase wins at bundle conditions");
 	assert.equal(astatine?.qualifier, undefined);
-	const computed = detailRows(element(85), "en", { temperatureK: 400, pressureBar: 1 });
+	const computed = detailRows(element(85), "en", 400);
 	assert.equal(computed.find((row) => row.key === "phase")?.value, "Unknown");
 	const labels = { solid: "Solid", liquid: "Liquid", gas: "Gas" } as const;
 	for (const entry of ELEMENTS) {

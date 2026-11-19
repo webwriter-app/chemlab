@@ -3600,6 +3600,101 @@ __decorateClass([
   watch("disabled", { waitUntilFirstUpdate: true })
 ], SlButton.prototype, "handleDisabledChange", 1);
 
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.A5D6FTFY.js
+var card_styles_default = i`
+  :host {
+    --border-color: var(--sl-color-neutral-200);
+    --border-radius: var(--sl-border-radius-medium);
+    --border-width: 1px;
+    --padding: var(--sl-spacing-large);
+
+    display: inline-block;
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--sl-panel-background-color);
+    box-shadow: var(--sl-shadow-x-small);
+    border: solid var(--border-width) var(--border-color);
+    border-radius: var(--border-radius);
+  }
+
+  .card__image {
+    display: flex;
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+    margin: calc(-1 * var(--border-width));
+    overflow: hidden;
+  }
+
+  .card__image::slotted(img) {
+    display: block;
+    width: 100%;
+  }
+
+  .card:not(.card--has-image) .card__image {
+    display: none;
+  }
+
+  .card__header {
+    display: block;
+    border-bottom: solid var(--border-width) var(--border-color);
+    padding: calc(var(--padding) / 2) var(--padding);
+  }
+
+  .card:not(.card--has-header) .card__header {
+    display: none;
+  }
+
+  .card:not(.card--has-image) .card__header {
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+  }
+
+  .card__body {
+    display: block;
+    padding: var(--padding);
+  }
+
+  .card--has-footer .card__footer {
+    display: block;
+    border-top: solid var(--border-width) var(--border-color);
+    padding: var(--padding);
+  }
+
+  .card:not(.card--has-footer) .card__footer {
+    display: none;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.X2VUYVGD.js
+var SlCard = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.hasSlotController = new HasSlotController(this, "footer", "header", "image");
+  }
+  render() {
+    return x2`
+      <div
+        part="base"
+        class=${e9({
+      card: true,
+      "card--has-footer": this.hasSlotController.test("footer"),
+      "card--has-image": this.hasSlotController.test("image"),
+      "card--has-header": this.hasSlotController.test("header")
+    })}
+      >
+        <slot name="image" part="image" class="card__image"></slot>
+        <slot name="header" part="header" class="card__header"></slot>
+        <slot part="body" class="card__body"></slot>
+        <slot name="footer" part="footer" class="card__footer"></slot>
+      </div>
+    `;
+  }
+};
+SlCard.styles = [component_styles_default, card_styles_default];
+
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.LXDTFLWU.js
 var computedStyleMap = /* @__PURE__ */ new WeakMap();
 function getCachedComputedStyle(el) {
@@ -4238,6 +4333,16 @@ function animateTo(el, keyframes, options) {
     animation.addEventListener("finish", resolve, { once: true });
   });
 }
+function parseDuration(delay) {
+  delay = delay.toString().toLowerCase();
+  if (delay.indexOf("ms") > -1) {
+    return parseFloat(delay);
+  }
+  if (delay.indexOf("s") > -1) {
+    return parseFloat(delay) * 1e3;
+  }
+  return parseFloat(delay);
+}
 function prefersReducedMotion() {
   const query = window.matchMedia("(prefers-reduced-motion: reduce)");
   return query.matches;
@@ -4489,6 +4594,50 @@ setDefaultAnimation("dialog.overlay.hide", {
   keyframes: [{ opacity: 1 }, { opacity: 0 }],
   options: { duration: 250 }
 });
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.SUSCR7CI.js
+var divider_styles_default = i`
+  :host {
+    --color: var(--sl-panel-border-color);
+    --width: var(--sl-panel-border-width);
+    --spacing: var(--sl-spacing-medium);
+  }
+
+  :host(:not([vertical])) {
+    display: block;
+    border-top: solid var(--width) var(--color);
+    margin: var(--spacing) 0;
+  }
+
+  :host([vertical]) {
+    display: inline-block;
+    height: 100%;
+    border-left: solid var(--width) var(--color);
+    margin: 0 var(--spacing);
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FWNMG5P5.js
+var SlDivider = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.vertical = false;
+  }
+  connectedCallback() {
+    super.connectedCallback();
+    this.setAttribute("role", "separator");
+  }
+  handleVerticalChange() {
+    this.setAttribute("aria-orientation", this.vertical ? "vertical" : "horizontal");
+  }
+};
+SlDivider.styles = [component_styles_default, divider_styles_default];
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlDivider.prototype, "vertical", 2);
+__decorateClass([
+  watch("vertical")
+], SlDivider.prototype, "handleVerticalChange", 1);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.GGT72J62.js
 var input_styles_default = i`
@@ -9277,6 +9426,295 @@ setDefaultAnimation("select.hide", {
   options: { duration: 100, easing: "ease" }
 });
 
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FW7UWQXB.js
+var tooltip_styles_default = i`
+  :host {
+    --max-width: 20rem;
+    --hide-delay: 0ms;
+    --show-delay: 150ms;
+
+    display: contents;
+  }
+
+  .tooltip {
+    --arrow-size: var(--sl-tooltip-arrow-size);
+    --arrow-color: var(--sl-tooltip-background-color);
+  }
+
+  .tooltip::part(popup) {
+    z-index: var(--sl-z-index-tooltip);
+  }
+
+  .tooltip[placement^='top']::part(popup) {
+    transform-origin: bottom;
+  }
+
+  .tooltip[placement^='bottom']::part(popup) {
+    transform-origin: top;
+  }
+
+  .tooltip[placement^='left']::part(popup) {
+    transform-origin: right;
+  }
+
+  .tooltip[placement^='right']::part(popup) {
+    transform-origin: left;
+  }
+
+  .tooltip__body {
+    display: block;
+    width: max-content;
+    max-width: var(--max-width);
+    border-radius: var(--sl-tooltip-border-radius);
+    background-color: var(--sl-tooltip-background-color);
+    font-family: var(--sl-tooltip-font-family);
+    font-size: var(--sl-tooltip-font-size);
+    font-weight: var(--sl-tooltip-font-weight);
+    line-height: var(--sl-tooltip-line-height);
+    text-align: start;
+    white-space: normal;
+    color: var(--sl-tooltip-color);
+    padding: var(--sl-tooltip-padding);
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.2E7JDME3.js
+var SlTooltip = class extends ShoelaceElement {
+  constructor() {
+    super();
+    this.localize = new LocalizeController2(this);
+    this.content = "";
+    this.placement = "top";
+    this.disabled = false;
+    this.distance = 8;
+    this.open = false;
+    this.skidding = 0;
+    this.trigger = "hover focus";
+    this.hoist = false;
+    this.handleBlur = () => {
+      if (this.hasTrigger("focus")) {
+        this.hide();
+      }
+    };
+    this.handleClick = () => {
+      if (this.hasTrigger("click")) {
+        if (this.open) {
+          this.hide();
+        } else {
+          this.show();
+        }
+      }
+    };
+    this.handleFocus = () => {
+      if (this.hasTrigger("focus")) {
+        this.show();
+      }
+    };
+    this.handleDocumentKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        this.hide();
+      }
+    };
+    this.handleMouseOver = () => {
+      if (this.hasTrigger("hover")) {
+        const delay = parseDuration(getComputedStyle(this).getPropertyValue("--show-delay"));
+        clearTimeout(this.hoverTimeout);
+        this.hoverTimeout = window.setTimeout(() => this.show(), delay);
+      }
+    };
+    this.handleMouseOut = () => {
+      if (this.hasTrigger("hover")) {
+        const delay = parseDuration(getComputedStyle(this).getPropertyValue("--hide-delay"));
+        clearTimeout(this.hoverTimeout);
+        this.hoverTimeout = window.setTimeout(() => this.hide(), delay);
+      }
+    };
+    this.addEventListener("blur", this.handleBlur, true);
+    this.addEventListener("focus", this.handleFocus, true);
+    this.addEventListener("click", this.handleClick);
+    this.addEventListener("mouseover", this.handleMouseOver);
+    this.addEventListener("mouseout", this.handleMouseOut);
+  }
+  disconnectedCallback() {
+    var _a3;
+    super.disconnectedCallback();
+    (_a3 = this.closeWatcher) == null ? void 0 : _a3.destroy();
+    document.removeEventListener("keydown", this.handleDocumentKeyDown);
+  }
+  firstUpdated() {
+    this.body.hidden = !this.open;
+    if (this.open) {
+      this.popup.active = true;
+      this.popup.reposition();
+    }
+  }
+  hasTrigger(triggerType) {
+    const triggers = this.trigger.split(" ");
+    return triggers.includes(triggerType);
+  }
+  async handleOpenChange() {
+    var _a3, _b;
+    if (this.open) {
+      if (this.disabled) {
+        return;
+      }
+      this.emit("sl-show");
+      if ("CloseWatcher" in window) {
+        (_a3 = this.closeWatcher) == null ? void 0 : _a3.destroy();
+        this.closeWatcher = new CloseWatcher();
+        this.closeWatcher.onclose = () => {
+          this.hide();
+        };
+      } else {
+        document.addEventListener("keydown", this.handleDocumentKeyDown);
+      }
+      await stopAnimations(this.body);
+      this.body.hidden = false;
+      this.popup.active = true;
+      const { keyframes, options } = getAnimation(this, "tooltip.show", { dir: this.localize.dir() });
+      await animateTo(this.popup.popup, keyframes, options);
+      this.popup.reposition();
+      this.emit("sl-after-show");
+    } else {
+      this.emit("sl-hide");
+      (_b = this.closeWatcher) == null ? void 0 : _b.destroy();
+      document.removeEventListener("keydown", this.handleDocumentKeyDown);
+      await stopAnimations(this.body);
+      const { keyframes, options } = getAnimation(this, "tooltip.hide", { dir: this.localize.dir() });
+      await animateTo(this.popup.popup, keyframes, options);
+      this.popup.active = false;
+      this.body.hidden = true;
+      this.emit("sl-after-hide");
+    }
+  }
+  async handleOptionsChange() {
+    if (this.hasUpdated) {
+      await this.updateComplete;
+      this.popup.reposition();
+    }
+  }
+  handleDisabledChange() {
+    if (this.disabled && this.open) {
+      this.hide();
+    }
+  }
+  /** Shows the tooltip. */
+  async show() {
+    if (this.open) {
+      return void 0;
+    }
+    this.open = true;
+    return waitForEvent(this, "sl-after-show");
+  }
+  /** Hides the tooltip */
+  async hide() {
+    if (!this.open) {
+      return void 0;
+    }
+    this.open = false;
+    return waitForEvent(this, "sl-after-hide");
+  }
+  //
+  // NOTE: Tooltip is a bit unique in that we're using aria-live instead of aria-labelledby to trick screen readers into
+  // announcing the content. It works really well, but it violates an accessibility rule. We're also adding the
+  // aria-describedby attribute to a slot, which is required by <sl-popup> to correctly locate the first assigned
+  // element, otherwise positioning is incorrect.
+  //
+  render() {
+    return x2`
+      <sl-popup
+        part="base"
+        exportparts="
+          popup:base__popup,
+          arrow:base__arrow
+        "
+        class=${e9({
+      tooltip: true,
+      "tooltip--open": this.open
+    })}
+        placement=${this.placement}
+        distance=${this.distance}
+        skidding=${this.skidding}
+        strategy=${this.hoist ? "fixed" : "absolute"}
+        flip
+        shift
+        arrow
+        hover-bridge
+      >
+        ${""}
+        <slot slot="anchor" aria-describedby="tooltip"></slot>
+
+        ${""}
+        <div part="body" id="tooltip" class="tooltip__body" role="tooltip" aria-live=${this.open ? "polite" : "off"}>
+          <slot name="content">${this.content}</slot>
+        </div>
+      </sl-popup>
+    `;
+  }
+};
+SlTooltip.styles = [component_styles_default, tooltip_styles_default];
+SlTooltip.dependencies = { "sl-popup": SlPopup };
+__decorateClass([
+  e6("slot:not([name])")
+], SlTooltip.prototype, "defaultSlot", 2);
+__decorateClass([
+  e6(".tooltip__body")
+], SlTooltip.prototype, "body", 2);
+__decorateClass([
+  e6("sl-popup")
+], SlTooltip.prototype, "popup", 2);
+__decorateClass([
+  n7()
+], SlTooltip.prototype, "content", 2);
+__decorateClass([
+  n7()
+], SlTooltip.prototype, "placement", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlTooltip.prototype, "disabled", 2);
+__decorateClass([
+  n7({ type: Number })
+], SlTooltip.prototype, "distance", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlTooltip.prototype, "open", 2);
+__decorateClass([
+  n7({ type: Number })
+], SlTooltip.prototype, "skidding", 2);
+__decorateClass([
+  n7()
+], SlTooltip.prototype, "trigger", 2);
+__decorateClass([
+  n7({ type: Boolean })
+], SlTooltip.prototype, "hoist", 2);
+__decorateClass([
+  watch("open", { waitUntilFirstUpdate: true })
+], SlTooltip.prototype, "handleOpenChange", 1);
+__decorateClass([
+  watch(["content", "distance", "hoist", "placement", "skidding"])
+], SlTooltip.prototype, "handleOptionsChange", 1);
+__decorateClass([
+  watch("disabled")
+], SlTooltip.prototype, "handleDisabledChange", 1);
+setDefaultAnimation("tooltip.show", {
+  keyframes: [
+    { opacity: 0, scale: 0.8 },
+    { opacity: 1, scale: 1 }
+  ],
+  options: { duration: 150, easing: "ease" }
+});
+setDefaultAnimation("tooltip.hide", {
+  keyframes: [
+    { opacity: 1, scale: 1 },
+    { opacity: 0, scale: 0.8 }
+  ],
+  options: { duration: 150, easing: "ease" }
+});
+
 // data/periodic-table/elements.generated.ts
 var PERIODIC_TABLE_CONDITIONS = {
   temperatureK: 298.15,
@@ -9954,9 +10392,6 @@ var SelectionModel = class {
 };
 
 // periodic-table/phase.ts
-var GAS_CONSTANT = 8.314462618;
-var TROUTON_ENTROPY = 88;
-var REFERENCE_PRESSURE_BAR = 1;
 var TEMPERATURE_SLIDER = {
   /** Lowest slider value in degrees Celsius, close to absolute zero. */
   minCelsius: -273,
@@ -9967,60 +10402,32 @@ var TEMPERATURE_SLIDER = {
   /** Value the table starts with, the reference temperature of the bundle. */
   defaultCelsius: 25
 };
-var PRESSURE_SLIDER = {
-  /** Lowest slider value, `log10(0.001 bar)`. */
-  minLog10Bar: -3,
-  /** Highest slider value, `log10(10 bar)`. */
-  maxLog10Bar: 1,
-  /** Slider step in decades. */
-  stepLog10: 0.01,
-  /** Value the table starts with, the reference pressure of the bundle. */
-  defaultLog10Bar: 0
-};
 function kelvinFromCelsius(celsius) {
   return celsius + 273.15;
 }
 function celsiusFromKelvin(kelvin) {
   return kelvin - 273.15;
 }
-function pressureFromLog10(log10Bar) {
-  return 10 ** log10Bar;
-}
-function log10FromPressure(bar) {
-  return Math.log10(bar);
-}
 function celsiusText(kelvin, language) {
   const celsius = Math.round(celsiusFromKelvin(kelvin));
   return `${localizeNumber(celsius, language)} \xB0C`;
-}
-function pressureText(bar, language) {
-  const rounded = Number(bar.toPrecision(3));
-  return `${localizeNumber(rounded, language)} bar`;
 }
 function localizeNumber(value, language) {
   const text = String(value);
   return language === "de" ? text.replace(".", ",") : text;
 }
-function boilingPointAt(element, pressureBar) {
-  if (element.boiling.status === "unavailable") return void 0;
-  const boiling = element.boiling.value;
-  if (!(pressureBar > 0) || pressureBar === REFERENCE_PRESSURE_BAR) return boiling;
-  const shift3 = GAS_CONSTANT * Math.log(pressureBar / REFERENCE_PRESSURE_BAR) / TROUTON_ENTROPY;
-  return boiling / (1 - shift3);
-}
-function matterState(element, conditions) {
-  const temperature = conditions.temperatureK;
-  if (!(temperature > 0)) return "unknown";
+function matterState(element, temperatureK) {
+  if (!(temperatureK > 0)) return "unknown";
   const melting = element.melting.status === "unavailable" ? void 0 : element.melting.value;
   if (melting !== void 0) {
-    const boiling = boilingPointAt(element, conditions.pressureBar);
-    if (boiling === void 0) return temperature < melting ? "solid" : "unknown";
-    if (boiling <= melting) return temperature < boiling ? "solid" : "gas";
-    if (temperature < melting) return "solid";
-    return temperature < boiling ? "liquid" : "gas";
+    const boiling = element.boiling.status === "unavailable" ? void 0 : element.boiling.value;
+    if (boiling === void 0) return temperatureK < melting ? "solid" : "unknown";
+    if (boiling <= melting) return temperatureK < boiling ? "solid" : "gas";
+    if (temperatureK < melting) return "solid";
+    return temperatureK < boiling ? "liquid" : "gas";
   }
   if (element.sublimation.status === "unavailable") return "unknown";
-  return temperature < element.sublimation.value ? "solid" : "gas";
+  return temperatureK < element.sublimation.value ? "solid" : "gas";
 }
 function discoveryYear(element) {
   return element.discovery.kind === "year" ? element.discovery.year : void 0;
@@ -10045,11 +10452,10 @@ var DISCOVERY_RANGE = (() => {
   }
   return Number.isFinite(min2) ? { min: min2, max: max2 } : { min: 0, max: 0 };
 })();
-var TABLE_MODES = ["off", "temperature", "pressure", "discovery"];
+var TABLE_MODES = ["off", "temperature", "discovery"];
 var DEFAULT_MODE_STATE = {
   mode: "off",
   temperatureK: kelvinFromCelsius(TEMPERATURE_SLIDER.defaultCelsius),
-  pressureBar: pressureFromLog10(PRESSURE_SLIDER.defaultLog10Bar),
   year: DISCOVERY_RANGE.max
 };
 function cellMode(element, state) {
@@ -10057,15 +10463,7 @@ function cellMode(element, state) {
     case "off":
       return { state: null, badge: null, dimmed: false };
     case "temperature":
-    case "pressure":
-      return {
-        state: matterState(element, {
-          temperatureK: state.temperatureK,
-          pressureBar: state.pressureBar
-        }),
-        badge: null,
-        dimmed: false
-      };
+      return { state: matterState(element, state.temperatureK), badge: null, dimmed: false };
     case "discovery": {
       const year = discoveryYear(element);
       return {
@@ -10114,6 +10512,11 @@ var EN = {
   fieldDiscovery: "Discovered",
   fieldConfiguration: "Electron configuration",
   fieldShells: "Electrons per shell",
+  sectionPosition: "Position",
+  sectionProperties: "Properties",
+  sectionHistory: "History",
+  sectionStructure: "Structure",
+  qualifierHint: "Predicted value, not measured",
   groupUnassigned: "Not assigned",
   groupConventionDependent: "Depends on the convention",
   weightNone: "No standard atomic weight",
@@ -10128,17 +10531,15 @@ var EN = {
   modeLabel: "Show",
   modeOff: "Off",
   modeTemperature: "Temperature",
-  modePressure: "Pressure",
   modeDiscovery: "Discovery",
   temperatureSlider: "Temperature",
-  pressureSlider: "Pressure",
   yearSlider: "Year",
   stateLegend: "State at these conditions",
   stateUnknown: "Unknown",
   infoLabel: "Sources and notes",
   infoIntro: "The table is built from the sources below. Every value keeps the state its source reports: reported, predicted or unavailable.",
   infoConditions: "States and temperatures refer to {conditions}.",
-  infoPhaseModel: "At other conditions the state follows the melting and boiling points. The melting point keeps its 1-bar value, the boiling point follows Clausius\u2013Clapeyron with Trouton's rule. Carbon and arsenic sublime, so they have no liquid range at standard pressure.",
+  infoPhaseModel: "At other temperatures the state follows the melting and boiling points at 1 bar. Carbon and arsenic sublime, so they have no liquid range at standard pressure.",
   infoDiscovery: "Years of discovery and first synthesis follow the source. Eleven elements have been in use since antiquity and carry no year.",
   infoFields: "Fields",
   infoSources: "Sources",
@@ -10191,6 +10592,11 @@ var DE = {
   fieldDiscovery: "Entdeckt",
   fieldConfiguration: "Elektronenkonfiguration",
   fieldShells: "Elektronen je Schale",
+  sectionPosition: "Position",
+  sectionProperties: "Eigenschaften",
+  sectionHistory: "Geschichte",
+  sectionStructure: "Aufbau",
+  qualifierHint: "Vorhergesagter Wert, nicht gemessen",
   groupUnassigned: "Nicht zugeordnet",
   groupConventionDependent: "H\xE4ngt von der Konvention ab",
   weightNone: "Keine Standardatommasse",
@@ -10205,17 +10611,15 @@ var DE = {
   modeLabel: "Anzeigen",
   modeOff: "Aus",
   modeTemperature: "Temperatur",
-  modePressure: "Druck",
   modeDiscovery: "Entdeckung",
   temperatureSlider: "Temperatur",
-  pressureSlider: "Druck",
   yearSlider: "Jahr",
   stateLegend: "Aggregatzustand bei diesen Bedingungen",
   stateUnknown: "Unbekannt",
   infoLabel: "Quellen und Hinweise",
   infoIntro: "Die Tabelle beruht auf den unten genannten Quellen. Jeder Wert beh\xE4lt den Stand seiner Quelle: berichtet, vorhergesagt oder nicht verf\xFCgbar.",
   infoConditions: "Aggregatzust\xE4nde und Temperaturen gelten f\xFCr {conditions}.",
-  infoPhaseModel: "Bei anderen Bedingungen folgt der Aggregatzustand dem Schmelz- und dem Siedepunkt. Der Schmelzpunkt beh\xE4lt seinen Wert bei 1 bar, der Siedepunkt folgt der Clausius-Clapeyron-Gleichung mit der Trouton-Regel. Kohlenstoff und Arsen sublimieren und haben bei Normaldruck keinen fl\xFCssigen Bereich.",
+  infoPhaseModel: "Bei anderen Temperaturen folgt der Aggregatzustand dem Schmelz- und dem Siedepunkt bei 1 bar. Kohlenstoff und Arsen sublimieren und haben bei Normaldruck keinen fl\xFCssigen Bereich.",
   infoDiscovery: "Jahreszahlen der Entdeckung und der ersten Darstellung folgen der Quelle. Elf Elemente sind seit der Antike in Gebrauch und tragen keine Jahreszahl.",
   infoFields: "Felder",
   infoSources: "Quellen",
@@ -10270,10 +10674,10 @@ function languageAncestors(node) {
 }
 
 // periodic-table/details.ts
-function conditionsText(language, conditions = CONDITIONS) {
+function conditionsText(language, temperatureK = CONDITIONS.temperatureK) {
   return format(strings(language).conditions, {
-    temperature: numberText(celsiusFromKelvin(conditions.temperatureK), language),
-    pressure: numberText(conditions.pressureBar, language)
+    temperature: numberText(celsiusFromKelvin(temperatureK), language),
+    pressure: numberText(CONDITIONS.pressureBar, language)
   });
 }
 function numberText(value, language) {
@@ -10338,71 +10742,101 @@ function categoryText(element, language) {
   const category = categoryOf(element.atomicNumber);
   return category ? CATEGORIES[category]?.[language] ?? category : "";
 }
-function detailRows(element, language, conditions = CONDITIONS) {
+function detailRows(element, language, temperatureK = CONDITIONS.temperatureK) {
   const t8 = strings(language);
   const rows = [
-    { key: "group", label: t8.fieldGroup, value: groupText(element, language) },
-    { key: "period", label: t8.fieldPeriod, value: String(element.period) },
-    { key: "family", label: t8.fieldFamily, value: categoryText(element, language) }
+    { key: "group", label: t8.fieldGroup, value: groupText(element, language), section: "position" },
+    { key: "period", label: t8.fieldPeriod, value: String(element.period), section: "position" },
+    { key: "family", label: t8.fieldFamily, value: categoryText(element, language), section: "header" }
   ];
   if (element.block.status === "unavailable") {
-    rows.push({ key: "block", label: t8.fieldBlock, value: t8.valueUnavailable });
+    rows.push({ key: "block", label: t8.fieldBlock, value: t8.valueUnavailable, section: "position" });
   } else {
     rows.push({
       key: "block",
       label: t8.fieldBlock,
       value: element.block.value,
+      section: "position",
       ...element.block.status === "predicted" ? { qualifier: t8.valuePredicted } : {}
     });
   }
-  rows.push({ key: "weight", label: t8.fieldWeight, value: weightText(element, language) });
-  const atBundle = conditions.temperatureK === CONDITIONS.temperatureK && conditions.pressureBar === CONDITIONS.pressureBar;
+  rows.push({
+    key: "weight",
+    label: t8.fieldWeight,
+    value: weightText(element, language),
+    section: "properties"
+  });
+  const atBundle = temperatureK === CONDITIONS.temperatureK;
   if (!atBundle) {
+    const state = matterState(element, temperatureK);
     rows.push({
       key: "phase",
       label: t8.fieldPhase,
-      value: stateText(matterState(element, conditions), t8)
+      value: stateText(state, t8),
+      section: "properties",
+      swatch: state
     });
   } else if (element.phase.status === "unavailable") {
-    rows.push({ key: "phase", label: t8.fieldPhase, value: t8.valueUnavailable });
+    rows.push({ key: "phase", label: t8.fieldPhase, value: t8.valueUnavailable, section: "properties" });
   } else {
     const phase = { solid: t8.phaseSolid, liquid: t8.phaseLiquid, gas: t8.phaseGas }[element.phase.value];
     rows.push({
       key: "phase",
       label: t8.fieldPhase,
       value: phase,
+      section: "properties",
+      swatch: element.phase.value,
       ...element.phase.status === "predicted" ? { qualifier: t8.valuePredicted } : {}
     });
   }
   rows.push({
     key: "melting",
     label: t8.fieldMelting,
+    section: "properties",
     ...temperatureRow(element.melting, language, t8)
   });
   rows.push({
     key: "boiling",
     label: t8.fieldBoiling,
+    section: "properties",
     ...temperatureRow(element.boiling, language, t8)
   });
   if (element.sublimation.status !== "unavailable") {
     rows.push({
       key: "sublimation",
       label: t8.fieldSublimation,
+      section: "properties",
       ...temperatureRow(element.sublimation, language, t8)
     });
   }
-  rows.push({ key: "discovery", label: t8.fieldDiscovery, value: discoveryText(element, language) });
+  rows.push({
+    key: "discovery",
+    label: t8.fieldDiscovery,
+    value: discoveryText(element, language),
+    section: "history"
+  });
   if (element.configuration.status === "unavailable") {
-    rows.push({ key: "configuration", label: t8.fieldConfiguration, value: t8.valueUnavailable });
+    rows.push({
+      key: "configuration",
+      label: t8.fieldConfiguration,
+      value: t8.valueUnavailable,
+      section: "structure"
+    });
   } else {
     rows.push({
       key: "configuration",
       label: t8.fieldConfiguration,
       value: element.configuration.value,
+      section: "structure",
       ...element.configuration.status === "predicted" ? { qualifier: t8.valuePredicted } : {}
     });
   }
-  rows.push({ key: "shells", label: t8.fieldShells, value: element.shells.join(" \xB7 ") });
+  rows.push({
+    key: "shells",
+    label: t8.fieldShells,
+    value: element.shells.join(" \xB7 "),
+    section: "structure"
+  });
   return rows;
 }
 function temperatureRow(value, language, t8) {
@@ -10467,6 +10901,10 @@ var periodicTableStyles = i`
 		background: var(--sl-color-neutral-0, #ffffff);
 
 		--pt-cell-height: 3rem;
+		/* The detail card spans three rows of the table and the two gaps between
+		   them, so its height follows the cell height instead of its content. */
+		--pt-details-height: calc(3 * var(--pt-cell-height) + 4px);
+		--pt-details-border: 1px;
 		--pt-cell-bar: 0.4rem;
 		--pt-gutter: 1.5rem;
 		--pt-series-gap: 0.5rem;
@@ -10618,11 +11056,14 @@ var periodicTableStyles = i`
 	}
 
 	/* The detail card is a grid item of the table, so it fills the free block
-	   above the transition metals and never covers a cell. */
+	   above the transition metals and never covers a cell. It is also the query
+	   container of the card, so the card can stack its columns when the block
+	   gets narrow. */
 	.details-slot {
 		display: grid;
 		grid-row: var(--pt-row) / span var(--pt-row-span, 1);
 		grid-column: var(--pt-column) / span var(--pt-column-span, 1);
+		container-type: inline-size;
 		min-width: 0;
 		min-height: 0;
 	}
@@ -10977,86 +11418,153 @@ var periodicTableStyles = i`
 		margin: 0.25rem 0 0.5rem;
 	}
 
-	/* The card copies the object cards of the lab widget: a square thumbnail
-	   with a corner badge, a title, and short tabular lines underneath. It fills
-	   the free block of the table, so it stays compact and scrolls inside itself
-	   instead of pushing the periods apart. */
-	.details {
-		display: grid;
-		grid-template-columns: minmax(0, 3.5rem) minmax(0, 1fr);
-		align-items: stretch;
-		gap: 4px;
-		height: 100%;
+	/* The detail card is a Shoelace card, so it shares the surface, the border and
+	   the header rhythm of the rest of the widget. It fills the free block of the
+	   table, so its height is pinned to the three rows it spans: a card that grows
+	   with its content would stretch those rows and leave the periods with uneven
+	   cells. A long element scrolls inside the body instead. */
+	.details-card {
+		height: var(--pt-details-height);
 		min-width: 0;
-		min-height: 0;
-		padding: 2px 3px;
+		--padding: 0;
+		--border-color: var(--sl-color-neutral-300, #d4d4d8);
+		--border-width: var(--pt-details-border);
+		--border-radius: 6px;
+		--sl-panel-background-color: var(--pt-surface);
+	}
+
+	.details-card::part(base) {
+		height: 100%;
 		overflow: hidden;
-		border: 2px solid var(--pt-border);
-		border-radius: 5px;
-		background: var(--pt-inset);
-		color: var(--pt-ink);
+	}
+
+	/* The header carries the identity of the element in one row: the coloured
+	   thumbnail, the name, the atomic number, the family, and the conditions the
+	   state values refer to. It sits on the inset surface, so the card reads as a
+	   titled panel instead of a plain box. */
+	.details-card::part(header) {
+		padding: 3px 6px;
+		border-bottom: 1px solid var(--pt-border);
+		background: color-mix(in srgb, var(--pt-cell-fill, var(--pt-inset)) 16%, var(--pt-surface));
+	}
+
+	.details-head {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		min-width: 0;
 	}
 
 	.details-thumb {
-		position: relative;
 		display: grid;
+		flex: 0 0 auto;
 		place-items: center;
-		align-self: start;
-		aspect-ratio: 1;
+		width: 1.5rem;
+		height: 1.5rem;
 		border: 1px solid color-mix(in srgb, var(--pt-ink) 12%, transparent);
 		border-radius: var(--pt-radius);
 		background: var(--pt-cell-fill, var(--pt-surface));
+		font-size: 0.8rem;
+		font-weight: 600;
 		line-height: 1;
 	}
 
-	.details-badge {
-		position: absolute;
-		inset-block-start: 2px;
-		inset-inline-start: 2px;
-		padding: 0 2px;
-		border-radius: 3px;
-		background: var(--sl-color-primary-600, #0b6bcb);
-		color: var(--sl-color-neutral-0, #ffffff);
-		font-size: 8px;
-		font-weight: 400;
-		line-height: 1.4;
-		pointer-events: none;
-	}
-
-	.details-symbol {
-		font-size: 1.15rem;
-		font-weight: 600;
-	}
-
-	.details-body {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		min-width: 0;
-		min-height: 0;
-		overflow-y: auto;
-		line-height: 1.25;
-	}
-
-	.details-name {
+	.details-title {
 		margin: 0;
-		font-size: 0.85rem;
+		font-size: 0.9rem;
 		font-weight: 600;
-		overflow-wrap: anywhere;
+		line-height: 1.1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
-	.details-sub {
-		margin: 0;
-		font-size: 0.68rem;
+	/* The number is a quiet badge on the inset band, the family a tag in the
+	   colour of the cell, so the header names the element twice without shouting. */
+	.details-number::part(base) {
+		background: var(--pt-surface);
+		border-color: var(--pt-border);
+		color: var(--pt-ink-soft);
+		font-size: 0.6rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.details-family::part(base) {
+		height: auto;
+		padding: 1px 0.35rem;
+		border-color: color-mix(in srgb, var(--pt-cell-fill, var(--pt-border)) 55%, var(--pt-border));
+		background: color-mix(in srgb, var(--pt-cell-fill, var(--pt-inset)) 45%, var(--pt-surface));
+		color: var(--pt-ink);
+		font-size: 0.6rem;
+		line-height: 1.2;
+	}
+
+	.details-conditions {
+		margin-inline-start: auto;
+		padding-inline-start: 0.35rem;
+		font-size: 0.6rem;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 		color: var(--pt-ink-soft);
 	}
 
-	.details-fields {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-		gap: 0 0.75rem;
+	/* The body is the slot itself, so the two columns are its flex items. It takes
+	   the rest of the fixed card height and scrolls, which keeps the card at the
+	   height of the block it fills. */
+	.details-card::part(body) {
+		display: flex;
+		flex: 1;
+		min-height: 0;
+		padding: 4px 6px;
+		overflow: auto;
+	}
+
+	.details-sections {
+		display: flex;
+		align-items: stretch;
+		gap: 0.5rem;
+		width: 100%;
+		min-width: 0;
+	}
+
+	.details-column {
+		display: flex;
+		flex: 1 1 0;
+		flex-direction: column;
+		gap: 0.15rem;
+		min-width: 0;
+	}
+
+	.details-divider {
+		--spacing: 0;
+		--color: var(--pt-border);
+	}
+
+	/* A rule separates the two sections of a column, so the headings do not have
+	   to carry the whole structure on their own. */
+	.details-rule {
+		--spacing: 0.1rem;
+		--color: var(--pt-border);
+	}
+
+	.details-section {
+		min-width: 0;
+	}
+
+	.details-heading {
+		margin: 0 0 1px;
+		font-size: 0.55rem;
+		font-weight: 600;
+		line-height: 1.2;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--pt-ink-soft);
+	}
+
+	.details-rows {
+		display: flex;
+		flex-direction: column;
 		margin: 0;
-		font-size: 0.62rem;
 	}
 
 	/* Label and value share a row, the value keeps its own column so a long
@@ -11066,6 +11574,8 @@ var periodicTableStyles = i`
 		grid-template-columns: max-content minmax(0, 1fr);
 		gap: 0 0.3rem;
 		min-width: 0;
+		font-size: 0.7rem;
+		line-height: 1.2;
 	}
 
 	.details-row dt {
@@ -11078,32 +11588,99 @@ var periodicTableStyles = i`
 	}
 
 	.details-row dd {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
 		margin: 0;
 		overflow-wrap: anywhere;
 		font-variant-numeric: tabular-nums;
 	}
 
-	.qualifier {
-		margin-left: 0.25rem;
-		font-size: 0.55rem;
-		letter-spacing: 0.03em;
-		text-transform: uppercase;
-		color: var(--pt-ink-soft);
+	/* The state is a tag in the colour of the state, so the value is readable at a
+	   glance instead of hanging on a dot of half a millimetre. */
+	.details-state::part(base) {
+		height: auto;
+		padding: 0 0.3rem;
+		border-color: color-mix(in srgb, var(--pt-ink) 18%, transparent);
+		color: var(--pt-ink);
+		font-size: 0.6rem;
+		line-height: 1.35;
 	}
 
-	.details-hint {
-		margin: 0;
-		font-size: 0.58rem;
+	.details-state.state-solid::part(base) {
+		background: var(--pt-state-solid);
+	}
+
+	.details-state.state-liquid::part(base) {
+		background: var(--pt-state-liquid);
+	}
+
+	.details-state.state-gas::part(base) {
+		background: var(--pt-state-gas);
+	}
+
+	.details-state.state-unknown::part(base) {
+		background: var(--pt-state-unknown);
+	}
+
+	.details-qualifier::part(base) {
+		background: var(--pt-inset);
+		border-color: var(--pt-border);
 		color: var(--pt-ink-soft);
+		font-size: 0.5rem;
+		line-height: 1.3;
+	}
+
+	/* The empty card has no header, so its body takes the whole height. */
+	.details-card-empty::part(body) {
+		display: grid;
+		place-items: center;
 	}
 
 	.details-empty {
-		grid-column: 1 / -1;
-		align-self: center;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.3rem;
 		margin: 0;
-		font-size: 0.75rem;
+		font-size: 0.7rem;
 		color: var(--pt-ink-soft);
 		text-align: center;
+	}
+
+	.details-empty-icon {
+		font-size: 1.1rem;
+		color: var(--pt-ink-soft);
+	}
+
+	/* A narrow card stacks the two columns, because two half-width columns would
+	   break every value onto a second line. The threshold is the width of the card
+	   itself, not of the widget: the card spans ten of the eighteen columns, so it
+	   is already too narrow for two columns while the table still has room. The
+	   card then grows with its content, which keeps the cells of the periods even
+	   instead of squeezing the stacked rows into the height of three rows. */
+	@container (max-width: 28rem) {
+		.details-card {
+			height: auto;
+		}
+
+		.details-card::part(base) {
+			height: auto;
+			overflow: visible;
+		}
+
+		.details-card::part(body) {
+			flex: 0 0 auto;
+			overflow: visible;
+		}
+
+		.details-sections {
+			flex-direction: column;
+		}
+
+		.details-divider {
+			display: none;
+		}
 	}
 
 	/* The sources and the model notes live in a dialog behind the info button, so
@@ -11343,7 +11920,7 @@ var periodicTableStyles = i`
 		.cell,
 		.list-row,
 		.legend-item,
-		.details,
+		.details-card,
 		.placeholder-text {
 			border: 1px solid CanvasText;
 			background: Canvas;
@@ -11370,14 +11947,15 @@ var STATES = ["solid", "liquid", "gas", "unknown"];
 var INFO_ICON = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#3f3f46" stroke-width="1.3"/><circle cx="8" cy="4.9" r=".95" fill="#3f3f46"/><rect x="7.15" y="6.6" width="1.7" height="5.1" rx=".85" fill="#3f3f46"/></svg>'
 )}`;
+var POINTER_ICON = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 2v11l2.7-2.7 1.9 4 2-1-1.9-3.9H13z" fill="#3f3f46"/></svg>'
+)}`;
 function modeText(mode, t8) {
   switch (mode) {
     case "off":
       return t8.modeOff;
     case "temperature":
       return t8.modeTemperature;
-    case "pressure":
-      return t8.modePressure;
     case "discovery":
       return t8.modeDiscovery;
   }
@@ -11394,7 +11972,7 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, conditions_get, matches_fn, selectFromUser_fn, clearFromUser_fn, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onPressureInput, _onYearInput, _openInfo, _onInfoHide, jumpToSeries_fn, focusElement_fn, reset_fn, _onQueryInput, _onSearchKeydown, _onCategoryChange, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderToolbar_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderInfo_fn;
+var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, matches_fn, selectFromUser_fn, clearFromUser_fn, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _openInfo, _onInfoHide, jumpToSeries_fn, focusElement_fn, reset_fn, _onQueryInput, _onSearchKeydown, _onCategoryChange, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderToolbar_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailColumn_fn, renderDetailRow_fn, renderInfo_fn;
 _ChemLabPeriodicTable_decorators = [t2("webwriter-chemlab-periodic-table")];
 var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a2) {
   constructor() {
@@ -11424,13 +12002,6 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
       const value = Number(event.target.value ?? "");
       if (!Number.isFinite(value)) return;
       __privateSet(this, _mode, { ...__privateGet(this, _mode), temperatureK: kelvinFromCelsius(value) });
-      this.requestUpdate();
-    });
-    /** Reads the pressure slider, which works on the decadic logarithm. */
-    __privateAdd(this, _onPressureInput, (event) => {
-      const value = Number(event.target.value ?? "");
-      if (!Number.isFinite(value)) return;
-      __privateSet(this, _mode, { ...__privateGet(this, _mode), pressureBar: pressureFromLog10(value) });
       this.requestUpdate();
     });
     /** Reads the year slider. */
@@ -11675,8 +12246,8 @@ resolvedView_get = function() {
   if (view !== "auto") return view;
   return __privateGet(this, _width) !== null && __privateGet(this, _width) < LIST_BREAKPOINT ? "list" : "table";
 };
-conditions_get = function() {
-  return { temperatureK: __privateGet(this, _mode).temperatureK, pressureBar: __privateGet(this, _mode).pressureBar };
+temperature_get = function() {
+  return __privateGet(this, _mode).temperatureK;
 };
 /** Current search hits, best match first. */
 matches_fn = function() {
@@ -11737,7 +12308,6 @@ setMode_fn = function(mode) {
   this.requestUpdate();
 };
 _onTemperatureInput = new WeakMap();
-_onPressureInput = new WeakMap();
 _onYearInput = new WeakMap();
 _openInfo = new WeakMap();
 _onInfoHide = new WeakMap();
@@ -11888,17 +12458,6 @@ slider_fn = function(t8, language) {
         format: (value) => celsiusText(kelvinFromCelsius(value), language),
         onInput: __privateGet(this, _onTemperatureInput)
       };
-    case "pressure":
-      return {
-        label: t8.pressureSlider,
-        min: PRESSURE_SLIDER.minLog10Bar,
-        max: PRESSURE_SLIDER.maxLog10Bar,
-        step: PRESSURE_SLIDER.stepLog10,
-        value: log10FromPressure(__privateGet(this, _mode).pressureBar),
-        readout: pressureText(__privateGet(this, _mode).pressureBar, language),
-        format: (value) => pressureText(pressureFromLog10(value), language),
-        onInput: __privateGet(this, _onPressureInput)
-      };
     case "discovery":
       return {
         label: t8.yearSlider,
@@ -11916,9 +12475,9 @@ slider_fn = function(t8, language) {
  * Renders the mode switch with its slider and the state legend.
  *
  * The switch decides what the cells are coloured by: nothing, the state at the
- * chosen temperature or pressure, or whether the element was already known in
- * the chosen year. The legend only appears for the two state modes, because
- * the discovery mode dims cells instead of colouring them.
+ * chosen temperature, or whether the element was already known in the chosen
+ * year. The legend only appears for the temperature mode, because the
+ * discovery mode dims cells instead of colouring them.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
@@ -11957,15 +12516,13 @@ renderModes_fn = function(t8, language) {
 		`;
 };
 /**
- * Renders the colour key of the state modes.
+ * Renders the colour key of the temperature mode.
  *
  * @param t - Interface strings.
- * @returns The legend, or nothing while no state mode is active.
+ * @returns The legend, or nothing while the temperature mode is off.
  */
 renderStateLegend_fn = function(t8) {
-  if (__privateGet(this, _mode).mode !== "temperature" && __privateGet(this, _mode).mode !== "pressure") {
-    return null;
-  }
+  if (__privateGet(this, _mode).mode !== "temperature") return null;
   return x2`
 			<ul class="state-legend" aria-label=${t8.stateLegend}>
 				${STATES.map((state) => x2`
@@ -12217,7 +12774,7 @@ renderPrintOverview_fn = function(t8, language, element) {
 				style="--pt-row:${series.row + 2};--pt-column:1 / span 3"
 			>${CATEGORIES[series.category]?.[language] ?? series.category}</div>
 		`);
-  const rows = element ? detailRows(element, language, __privateGet(this, _ChemLabPeriodicTable_instances, conditions_get)) : [];
+  const rows = element ? detailRows(element, language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get)) : [];
   return x2`
 			<div class="print-overview" aria-hidden="true">
 				<h2 class="print-title">${t8.widgetLabel}</h2>
@@ -12240,7 +12797,7 @@ renderPrintOverview_fn = function(t8, language, element) {
 									</div>
 								`)}
 							</dl>
-							<p class="print-hint">${t8.detailsHint} ${conditionsText(language, __privateGet(this, _ChemLabPeriodicTable_instances, conditions_get))}</p>
+							<p class="print-hint">${t8.detailsHint} ${conditionsText(language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get))}</p>
 						` : x2`<p class="print-hint">${t8.detailsEmpty}</p>`}
 				</div>
 			</div>
@@ -12249,10 +12806,11 @@ renderPrintOverview_fn = function(t8, language, element) {
 /**
  * Renders the detail card of one element.
  *
- * The card follows the object cards of the lab widget: a square thumbnail with
- * a small corner badge, a title, and short tabular lines underneath. It has to
- * stay compact, because it sits in the free block of the table and must not
- * push the periods apart.
+ * The card is a Shoelace card, so it shares the surface and the border of the
+ * rest of the widget. Its header carries the identity of the element in one
+ * row, and its body splits the rows into two columns of labelled sections,
+ * separated by Shoelace dividers. It has to stay compact, because it sits in
+ * the free block of the table and must not push the periods apart.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
@@ -12261,31 +12819,113 @@ renderPrintOverview_fn = function(t8, language, element) {
  */
 renderDetails_fn = function(t8, language, element) {
   if (!element) {
-    return x2`<div class="details"><p class="details-empty">${t8.detailsEmpty}</p></div>`;
+    return x2`
+				<sl-card class="details-card details-card-empty">
+					<div class="details-empty">
+						<sl-icon class="details-empty-icon" src=${POINTER_ICON}></sl-icon>
+						<p>${t8.detailsEmpty}</p>
+					</div>
+				</sl-card>
+			`;
   }
-  const rows = detailRows(element, language, __privateGet(this, _ChemLabPeriodicTable_instances, conditions_get));
+  const rows = detailRows(element, language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get));
   const name = element.names[language];
+  const left = [
+    { label: t8.sectionProperties, section: "properties" },
+    { label: t8.sectionHistory, section: "history" }
+  ];
+  const right = [
+    { label: t8.sectionPosition, section: "position" },
+    { label: t8.sectionStructure, section: "structure" }
+  ];
   return x2`
-			<div class="details category-${categoryOf(element.atomicNumber) ?? "unknown"}">
-				<div class="details-thumb">
-					<span class="details-badge">${element.atomicNumber}</span>
-					<span class="details-symbol">${element.symbol}</span>
+			<sl-card class="details-card category-${categoryOf(element.atomicNumber) ?? "unknown"}">
+				<div slot="header" class="details-head">
+					<span class="details-thumb">${element.symbol}</span>
+					<h5 class="details-title" title=${name}>${name}</h5>
+					<sl-badge class="details-number" variant="neutral" pill>
+						${element.atomicNumber}
+					</sl-badge>
+					<sl-tag class="details-family" size="small" variant="neutral">
+						${categoryText(element, language)}
+					</sl-tag>
+					<sl-tooltip content=${t8.detailsHint} hoist>
+						<span class="details-conditions">${conditionsText(language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get))}</span>
+					</sl-tooltip>
 				</div>
-				<div class="details-body">
-					<h5 class="details-name" title=${name}>${name}</h5>
-					<p class="details-sub">${categoryText(element, language)}</p>
-					<dl class="details-fields">
-						${rows.map((row) => x2`
-							<div class="details-row">
-								<dt>${row.label}</dt>
-								<dd>
-									${row.value}${row.qualifier ? x2`<span class="qualifier">${row.qualifier}</span>` : null}
-								</dd>
-							</div>
-						`)}
-					</dl>
-					<p class="details-hint">${t8.detailsHint} ${conditionsText(language, __privateGet(this, _ChemLabPeriodicTable_instances, conditions_get))}</p>
+				<div class="details-sections">
+					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailColumn_fn).call(this, t8, left, rows)}
+					<sl-divider class="details-divider" vertical></sl-divider>
+					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailColumn_fn).call(this, t8, right, rows)}
 				</div>
+			</sl-card>
+		`;
+};
+/**
+ * Renders one column of the detail card.
+ *
+ * A column holds one or two sections, and a divider separates them, so the
+ * headings do not have to carry the whole structure on their own. A section
+ * without a row is dropped, which keeps the card free of empty headings.
+ *
+ * @param t - Interface strings.
+ * @param entries - Sections of the column in display order.
+ * @param rows - All rows of the card.
+ * @returns The column, or nothing when none of its sections has a row.
+ */
+renderDetailColumn_fn = function(t8, entries, rows) {
+  const sections = entries.map((entry) => ({ entry, own: rows.filter((row) => row.section === entry.section) })).filter(({ own }) => own.length > 0);
+  if (sections.length === 0) return null;
+  return x2`
+			<div class="details-column">
+				${sections.map(
+    ({ entry, own }, index) => x2`
+						${index > 0 ? x2`<sl-divider class="details-rule"></sl-divider>` : null}
+						<section class="details-section">
+							<h6 class="details-heading">${entry.label}</h6>
+							<dl class="details-rows">
+								${own.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t8, row))}
+							</dl>
+						</section>
+					`
+  )}
+			</div>
+		`;
+};
+/**
+ * Renders one row of the detail card.
+ *
+ * The state value is a tag in the colour of the state, so the value is legible
+ * at a glance. A predicted value carries a badge instead of a bare word, and
+ * the badge explains itself in a tooltip, so the card stays short without
+ * hiding what the qualifier means.
+ *
+ * @param t - Interface strings.
+ * @param row - Row to render.
+ * @returns The row.
+ */
+renderDetailRow_fn = function(t8, row) {
+  return x2`
+			<div class="details-row">
+				<dt>${row.label}</dt>
+				<dd>
+					${row.swatch ? x2`
+							<sl-tag
+								class="details-state state-${row.swatch}"
+								size="small"
+								variant="neutral"
+							>
+								${row.value}
+							</sl-tag>
+						` : x2`<span>${row.value}</span>`}
+					${row.qualifier ? x2`
+							<sl-tooltip content=${t8.qualifierHint} hoist>
+								<sl-badge class="details-qualifier" variant="neutral" pill>
+									${row.qualifier}
+								</sl-badge>
+							</sl-tooltip>
+						` : null}
+				</dd>
 			</div>
 		`;
 };
@@ -12373,7 +13013,9 @@ _ChemLabPeriodicTable = __decorateElement(_init2, 0, "ChemLabPeriodicTable", _Ch
 __publicField(_ChemLabPeriodicTable, "scopedElements", {
   "sl-badge": SlBadge,
   "sl-button": SlButton,
+  "sl-card": SlCard,
   "sl-dialog": SlDialog,
+  "sl-divider": SlDivider,
   "sl-icon": SlIcon,
   "sl-icon-button": SlIconButton,
   "sl-input": SlInput,
@@ -12382,7 +13024,8 @@ __publicField(_ChemLabPeriodicTable, "scopedElements", {
   "sl-range": SlRange,
   "sl-select": SlSelect,
   "sl-spinner": SlSpinner,
-  "sl-tag": SlTag
+  "sl-tag": SlTag,
+  "sl-tooltip": SlTooltip
 });
 __publicField(_ChemLabPeriodicTable, "optionGroups", {
   content: { label: { _: "Content", "de-DE": "Inhalt" }, collapsible: true, advanced: false },
