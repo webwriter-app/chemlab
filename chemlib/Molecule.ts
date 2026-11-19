@@ -35,6 +35,7 @@ class Molecule {
 	 * @type {string}
 	 */
 	smilesString: string = "";
+	private smilesBatch?: { dirty: boolean };
 	/**
 	 * The current InChi representation of the molecule. Must be generated seperately
 	 *
@@ -146,6 +147,22 @@ class Molecule {
 		}
 	}
 
+	/** Refreshes SMILES once after synchronous graph edits. Atom and bond charges stay current during the edits. */
+	public batchStructureChanges(update: () => void): void {
+		if (this.smilesBatch !== undefined) {
+			update();
+			return;
+		}
+		const batch = { dirty: false };
+		this.smilesBatch = batch;
+		try {
+			update();
+		} finally {
+			this.smilesBatch = undefined;
+			if (batch.dirty) this.setSmilesString();
+		}
+	}
+
 	/**
 	 * Calculates and sets the {@link _totalCharge} of the molecule
 	 *
@@ -158,7 +175,8 @@ class Molecule {
 		});
 		this._kekule_obj.charge = this._totalCharge;
 
-		this.setSmilesString();
+		if (this.smilesBatch) this.smilesBatch.dirty = true;
+		else this.setSmilesString();
 	}
 
 	/**
@@ -211,7 +229,6 @@ class Molecule {
 		this._atomCount += 1;
 
 		this.calcTotalCharge();
-		this.setSmilesString();
 		return atom;
 	}
 

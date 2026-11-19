@@ -51,17 +51,21 @@ export function complexEquilibrium<T extends Family>(systems: readonly T[], pin?
 
 	return H => {
 		const neutralFraction = ligand ? AcidBase.speciesFractions(ligand, H)[ligand.protonatedCharge] ?? 0 : 0;
-		const states = metals.map(entry => ({ ...entry, fraction: AcidBase.speciesFractions(entry.family, H)[0] }));
+		const maxFree = pin?.maxFree(H);
+		const states = metals.map(entry => ({
+			...entry,
+			fraction: AcidBase.speciesFractions(entry.family, H)[0],
+			total: pin?.family === entry.family ? pin.total : entry.family.totalC,
+			cap: pin?.family === entry.family ? maxFree : Infinity,
+		}));
 		const unbound = new Map<T, number>();
 		const complexes: Species<T>[] = [];
 		const trial = (freePool: number, collect: boolean): number => {
 			const freeLigand = freePool * neutralFraction;
 			let used = freePool;
-			for (const { family, fraction, formation } of states) {
+			for (const { family, fraction, formation, total, cap } of states) {
 				const ratio = formation.beta * freeLigand ** formation.count;
-				const capped = pin?.family === family;
-				const total = capped ? pin.total : family.totalC;
-				const freeMetal = Math.min(total / (1 / fraction + ratio), capped ? pin.maxFree(H) : Infinity);
+				const freeMetal = Math.min(total / (1 / fraction + ratio), cap);
 				const bound = freeMetal * ratio;
 				used += formation.count * bound;
 				if (collect) {
@@ -86,7 +90,7 @@ export function complexEquilibrium<T extends Family>(systems: readonly T[], pin?
 		}
 		if (pin && !unbound.has(pin.family)) {
 			const fraction = AcidBase.speciesFractions(pin.family, H)[0];
-			unbound.set(pin.family, Math.min(pin.total, pin.maxFree(H) / fraction));
+			unbound.set(pin.family, Math.min(pin.total, maxFree / fraction));
 		}
 		let chargeCorrection = 0;
 		for (const [family, amount] of unbound) {

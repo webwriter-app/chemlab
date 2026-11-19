@@ -4,7 +4,7 @@ import { repeat } from "lit/directives/repeat.js";
 import Chart from "chart.js/auto";
 import { axisTrimSelection, diagramData, moveTrimHandle, trimmedAxisRange, TRIM_STEPS,
 	type AxisRange, type AxisRanges, type ChartAxis, type TrimHandle } from "../data/diagramRanges";
-import { TIME_CHANNEL, type MeasurementChannel } from "../data/measurementHistory";
+import { TIME_CHANNEL, type MeasurementChannel, type PlotPoint } from "../data/measurementHistory";
 import { axisId, componentKey, type DiagramAxis } from "../data/diagramSources";
 import { titrationMarkerKinds, titrationPoints, type TitrationMarkerKind } from "../data/titrationPoints";
 import type { ChemLab } from "../webwriter-chemlab";
@@ -32,6 +32,9 @@ type Diagram = {
 	trimDomain: Partial<AxisRanges>;
 	drag: Partial<Record<ChartAxis, AxisDrag>>;
 	chart?: Chart<"line", DiagramPoint[]>;
+	viewRevision?: number;
+	snapshot?: ReturnType<typeof diagramData> & { revision: number; points?: PlotPoint[] };
+	markers?: { visible: boolean; doseTime?: number; series: DiagramPoint[][] };
 };
 
 const titrationMarkerStyles = {
@@ -57,13 +60,14 @@ export class DiagramController implements ReactiveController {
 	private readonly visible = new Set<Element>();
 	private readonly observed = new Set<Element>();
 	private dirty = true;
+	private viewRevision = 0;
 	private markersVisible = false;
 	showLine = true;
 
 	constructor(private readonly host: ChemLab) {
 		host.addController(this);
 		host.measurements.onChange = () => {
-			this.invalidate();
+			this.requestDraw();
 			this.host.refreshDiagramPicker();
 		};
 	}
@@ -80,6 +84,7 @@ export class DiagramController implements ReactiveController {
 		if (this.markersVisible !== this.canSeeMarkers) {
 			this.markersVisible = this.canSeeMarkers;
 			this.dirty = true;
+			this.viewRevision++;
 		}
 		if (!this.host.isDiagramPanelOpen) {
 			if (this.viewport) this.releaseViewport();
@@ -90,7 +95,7 @@ export class DiagramController implements ReactiveController {
 				if (entry.isIntersecting) this.visible.add(entry.target);
 				else this.visible.delete(entry.target);
 			}
-			this.invalidate();
+			this.requestDraw();
 		}, { root: this.host.shadowRoot.querySelector("#inlineDiagramPanel") });
 		for (const { card } of this.diagrams) {
 			if (!card.value || this.observed.has(card.value)) continue;
@@ -115,6 +120,9 @@ export class DiagramController implements ReactiveController {
 		for (const diagram of this.diagrams) {
 			diagram.chart?.destroy();
 			diagram.chart = undefined;
+			diagram.snapshot = undefined;
+			diagram.markers = undefined;
+			diagram.viewRevision = undefined;
 			diagram.drag = {};
 		}
 		this.dirty = true;
@@ -158,7 +166,7 @@ export class DiagramController implements ReactiveController {
 		this.diagrams.push({ id, x, y, title, card: createRef(), canvas: createRef(), zoom: {}, trimDomain: {}, drag: {} });
 		this.host.requestUpdate();
 		this.host.reportXApi("created", "diagram-" + id);
-		this.invalidate();
+		this.requestDraw();
 	}
 
 	private remove(diagram: Diagram): void {
@@ -234,7 +242,7 @@ export class DiagramController implements ReactiveController {
 			if (!(zoom.min < zoom.max)) return;
 			diagram.zoom[axis] = zoom.min === currentFull.min && zoom.max === currentFull.max ? undefined : zoom;
 			this.host.requestUpdate();
-			this.invalidate();
+			this.invalidate(diagram);
 		};
 		const pointerPosition = (event: PointerEvent) => horizontal ? event.clientX : -event.clientY;
 		const renderHandle = (handle: TrimHandle) => html`
@@ -303,7 +311,7 @@ export class DiagramController implements ReactiveController {
 					delete diagram.zoom[axis];
 					delete diagram.trimDomain[axis];
 					this.host.requestUpdate();
-					this.invalidate();
+					this.invalidate(diagram);
 				}}>${axis.toUpperCase()} ↺</button>`;
 	}
 
@@ -418,7 +426,13 @@ export class DiagramController implements ReactiveController {
 		});
 	}
 
-	private invalidate(): void {
+	private invalidate(diagram?: Diagram): void {
+		if (diagram) diagram.viewRevision = undefined;
+		else this.viewRevision++;
+		this.requestDraw();
+	}
+
+	private requestDraw(): void {
 		this.dirty = true;
 		this.schedule();
 	}
@@ -438,11 +452,19 @@ export class DiagramController implements ReactiveController {
 			const { card, canvas } = diagram;
 			if (!this.visible.has(card.value) || !canvas.value) continue;
 			const phAxis = titrationPhAxis(diagram);
-			const chart = diagram.chart ??= this.createChart(canvas.value, card.value, phAxis);
 			const xId = axisId(diagram.x);
 			const yId = axisId(diagram.y);
-			const points = this.host.measurements.history.points(xId, yId);
-			const { data, ranges } = diagramData(points);
+			const history = this.host.measurements.history;
+			const revision = history.pairRevision(xId, yId);
+			let snapshot = diagram.snapshot;
+			const dataChanged = snapshot?.revision !== revision;
+			if (dataChanged) {
+				const points = history.points(xId, yId);
+				snapshot = diagram.snapshot = { ...diagramData(points), revision, points: phAxis ? points : undefined };
+			}
+			if (!dataChanged && diagram.chart && diagram.viewRevision === this.viewRevision) continue;
+			const chart = diagram.chart ??= this.createChart(canvas.value, card.value, phAxis);
+			const { data, ranges } = snapshot;
 			const previous = diagram.fitted;
 			diagram.fitted = ranges;
 			if (Boolean(previous) !== Boolean(ranges) || (ranges && previous &&
@@ -461,11 +483,16 @@ export class DiagramController implements ReactiveController {
 			if (phAxis) {
 				const doseTime = this.host.measurements.firstTitrationDoseTime(
 					phAxis === "y" ? xId : yId, phAxis === "y" ? yId : xId);
-				const markers = this.canSeeMarkers ? titrationPoints(points, phAxis, doseTime) : [];
+				const visible = this.canSeeMarkers;
+				if (dataChanged || diagram.markers?.visible !== visible || diagram.markers.doseTime !== doseTime) {
+					const markers = visible ? titrationPoints(snapshot.points, phAxis, doseTime) : [];
+					const series = titrationMarkerKinds.map(kind => markers.filter(marker => marker.kind === kind)
+						.map(({ volume, pH, coarse }) => phAxis === "y" ? { x: volume, y: pH, coarse } : { x: pH, y: volume, coarse }));
+					diagram.markers = { visible, doseTime, series };
+				}
 				const markerKinds: TitrationMarkerKind[] = [];
 				titrationMarkerKinds.forEach((kind, index) => {
-					const markerData = markers.filter(marker => marker.kind === kind).map(({ volume, pH, coarse }) =>
-						phAxis === "y" ? { x: volume, y: pH, coarse } : { x: pH, y: volume, coarse });
+					const markerData = diagram.markers.series[index];
 					const series = chart.data.datasets[index + 1];
 					series.label = this.host.message(titrationMarkerStyles[kind].label);
 					series.data = markerData;
@@ -487,6 +514,7 @@ export class DiagramController implements ReactiveController {
 				options.title.text = this.scaleLabel(diagram[axis]);
 			}
 			chart.update("none");
+			diagram.viewRevision = this.viewRevision;
 		}
 	}
 }

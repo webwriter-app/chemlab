@@ -14,7 +14,7 @@ export type MeasurementChannel = {
 
 type Reading = number | null;
 type Sample = { time: number; value: Reading; analytic?: boolean };
-type Series = { channel: MeasurementChannel; samples: SampleBuffer; current: boolean };
+type Series = { channel: MeasurementChannel; samples: SampleBuffer; current: boolean; revision: number };
 
 interface Samples {
 	readonly length: number;
@@ -71,6 +71,7 @@ class SampleBuffer implements Samples {
 const EMPTY_SAMPLES = new SampleBuffer();
 export type PlotPoint = { time: number; x: number | null; y: number | null; analytic?: boolean };
 type Transient = {
+	revision: number;
 	start: number;
 	duration: number;
 	timeConstant: number;
@@ -78,7 +79,7 @@ type Transient = {
 	factors: ReadonlyMap<string, number>;
 };
 
-type AxisPair = { x: string; y: string; references: number; archive: PlotPoint[]; origin?: number };
+type AxisPair = { x: string; y: string; references: number; archive: PlotPoint[]; revision: number; origin?: number };
 
 /** A common timeline, independent of the canvas and of Chart.js. */
 export class MeasurementHistory {
@@ -87,6 +88,7 @@ export class MeasurementHistory {
 	private transients: Transient[] = [];
 	private archivedUntil = 0;
 	private latestTime = 0;
+	private nextRevision = 0;
 	channelVersion = 0;
 
 	constructor(private readonly epoch = performance.now()) {}
@@ -104,7 +106,7 @@ export class MeasurementHistory {
 		this.latestTime = time;
 		let series = this.series.get(channel.id);
 		if (!series) {
-			series = { channel, samples: new SampleBuffer(), current: true };
+			series = { channel, samples: new SampleBuffer(), current: true, revision: 0 };
 			this.series.set(channel.id, series);
 			this.channelVersion++;
 		}
@@ -119,14 +121,19 @@ export class MeasurementHistory {
 			if ((changesOnly || value === null) && previous === value) return false;
 			samples.push(time, value);
 		}
+		series.revision = ++this.nextRevision;
 		return true;
 	}
 
 	startTransient(timeConstant: number, currentAt: Transient["currentAt"],
 		factors: Transient["factors"]): (elapsed: number) => void {
-		const transient = { start: this.now(), duration: 0, timeConstant, currentAt, factors };
+		const transient = { start: this.now(), duration: 0, timeConstant, currentAt, factors, revision: ++this.nextRevision };
 		this.transients.push(transient);
-		return elapsed => { transient.duration = Math.max(transient.duration, elapsed); };
+		return elapsed => {
+			if (!(elapsed > transient.duration)) return;
+			transient.duration = elapsed;
+			transient.revision = ++this.nextRevision;
+		};
 	}
 
 	retire(prefix: string, time: number): void {
@@ -141,7 +148,7 @@ export class MeasurementHistory {
 		const key = this.pairKey(x, y);
 		const pair = this.pairs.get(key);
 		if (pair) pair.references++;
-		else this.pairs.set(key, { x, y, references: 1, archive: [] });
+		else this.pairs.set(key, { x, y, references: 1, archive: [], revision: ++this.nextRevision });
 	}
 
 	release(x: string, y: string): void {
@@ -159,6 +166,7 @@ export class MeasurementHistory {
 		const cutoff = Math.floor((now - RETENTION_MS) / ARCHIVE_WINDOW_MS) * ARCHIVE_WINDOW_MS;
 		if (cutoff <= this.archivedUntil) return false;
 		let changed = false;
+		const expiredInputs = new Set<string>();
 		for (const pair of this.pairs.values()) {
 			const points = this.join(pair.x, pair.y, this.archivedUntil, cutoff);
 			let start = 0;
@@ -169,20 +177,48 @@ export class MeasurementHistory {
 				pair.archive.push(...this.compact(points, start, end));
 				start = end;
 			}
-			changed ||= points.length > 0;
+			if (points.length) {
+				pair.revision = ++this.nextRevision;
+				changed = true;
+			}
 		}
 		for (const [id, series] of this.series) {
 			const end = lowerBound(series.samples, cutoff);
 			// Keep one state at the boundary for a later sample on the other axis.
 			if (!series.current && end === series.samples.length) {
 				this.series.delete(id);
+				expiredInputs.add(id);
 				this.channelVersion++;
 				changed = true;
-			} else if (end > 1) series.samples.discard(end - 1);
+			} else if (end > 1) {
+				series.samples.discard(end - 1);
+				series.revision = ++this.nextRevision;
+			}
 		}
-		this.transients = this.transients.filter(segment => segment.start + segment.duration * 1000 >= cutoff);
+		this.transients = this.transients.filter(segment => {
+			if (segment.start + segment.duration * 1000 >= cutoff) return true;
+			for (const id of segment.factors.keys()) expiredInputs.add(id);
+			return false;
+		});
+		if (expiredInputs.size) {
+			for (const pair of this.pairs.values()) {
+				if (!expiredInputs.has(pair.x) && !expiredInputs.has(pair.y)) continue;
+				pair.revision = ++this.nextRevision;
+				changed = true;
+			}
+		}
 		this.archivedUntil = cutoff;
 		return changed;
+	}
+
+	/** Changes when either input channel or the retained archive changes. */
+	pairRevision(x: string, y: string): number {
+		let revision = Math.max(this.pairs.get(this.pairKey(x, y))?.revision ?? 0,
+			this.series.get(x)?.revision ?? 0, this.series.get(y)?.revision ?? 0);
+		for (const segment of this.transients) {
+			if (segment.factors.has(x) || segment.factors.has(y)) revision = Math.max(revision, segment.revision);
+		}
+		return revision;
 	}
 
 	get nextExpiry(): number | undefined {

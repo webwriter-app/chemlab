@@ -198,12 +198,20 @@ export class VesselView extends Container {
 	 * @returns {number} the y coordinate of the surface in world space
 	 */
 	liquidSurfaceY(): number {
-		const top = this.profile[0][0];
-		const bottom = this.profile[this.profile.length - 1][0];
 		const volume = this.component._content.contentVolume * 1000;
 		const fill = Math.min(1, volume / this.component._volume);
-		const level = this.surfaceAt(fill, top, bottom, 0, 1);
+		const level = this.uprightSurface(fill);
 		return this.y - this.height / 2 + level * this.height / this.svgHeight;
+	}
+
+	private uprightLevel?: { fill: number; y: number };
+
+	private uprightSurface(fill: number): number {
+		if (this.uprightLevel?.fill !== fill) {
+			const y = this.surfaceAt(fill, this.profile[0][0], this.profile[this.profile.length - 1][0], 0, 1);
+			this.uprightLevel = { fill, y };
+		}
+		return this.uprightLevel.y;
 	}
 
 	/** Length of a vertical electrode strip in the vessel's electrolyte. */
@@ -300,6 +308,7 @@ export class VesselView extends Container {
 		const angle = this.rotation;
 		const depth = ({ x, y }: Point) => x * Math.sin(angle) + y * Math.cos(angle);
 		const floorDepth = depth({ x: 0, y: floor });
+		const level = grains ? top : this.uprightSurface(fill);
 		for (let i = 0; i < count && this.particles.length < VesselView.MAX_PARTICLES; i++) {
 			let x: number, y: number;
 			if (grains) {
@@ -308,7 +317,6 @@ export class VesselView extends Container {
 				y = top - 1.5;
 			} else {
 				// suspend anywhere in the liquid between surface and floor
-				const level = this.surfaceAt(fill, top, this.profile[this.profile.length - 1][0], 0, 1);
 				const span = Math.max(floor - level, 0.5);
 				y = level + Math.random() * span;
 				x = (Math.random() * 2 - 1) * this.radiusAt(y) * 0.7;
@@ -371,6 +379,8 @@ export class VesselView extends Container {
 	stepAnimation(dtMs: number): boolean {
 		let active = false;
 		let drawn = this.sedimentDrawn;
+		let fillChanged = false;
+		let amplitude = 0;
 
 		// ease the drawn sediment towards its target
 		const target = this.sedimentFraction;
@@ -378,12 +388,13 @@ export class VesselView extends Container {
 			const step = (target - drawn) * Math.min(1, dtMs / 450);
 			drawn = Math.abs(target - drawn) < 0.0008 ? target : drawn + step;
 			this.sedimentDrawn = drawn;
-			this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor);
+			fillChanged = true;
 			active = true;
 		}
 
 		// solid particles fall / sink and land in the sediment
-		if (this.particles.length) {
+		const hadParticles = this.particles.length > 0;
+		if (hadParticles) {
 			const angle = this.rotation;
 			const sin = Math.sin(angle);
 			const cos = Math.cos(angle);
@@ -418,7 +429,6 @@ export class VesselView extends Container {
 				if (particle.ageMs < 6000 && depth < particle.floor - particle.size * 0.4) remaining.push(particle);
 			}
 			this.particles = remaining;
-			this.drawParticles();
 			active = true;
 		}
 
@@ -428,12 +438,13 @@ export class VesselView extends Container {
 			this.wobbleMs = Math.max(0, this.wobbleMs - dtMs);
 			this.wobbleAge = 850 - this.wobbleMs;
 			this.drawStream();
-			const amplitude = this.wobbleMs > 0
+			amplitude = this.wobbleMs > 0
 				? 0.0035 * Math.exp(-this.wobbleAge / 300) * Math.sin(this.wobbleAge * Math.PI * 2 / 260)
 				: 0;
-			this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor, amplitude);
+			fillChanged = true;
 			active = true;
-		}
+		} else if (hadParticles) this.drawParticles();
+		if (fillChanged) this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor, amplitude);
 
 		return active;
 	}
@@ -458,7 +469,7 @@ export class VesselView extends Container {
 		if (this.streamMs <= 0) return;
 		const alpha = Math.min(1, this.streamMs / 200) * 0.6;
 		const top = this.profile[0][0];
-		const surface = this.surfaceAt(this.fillFraction, top, this.profile[this.profile.length - 1][0], 0, 1);
+		const surface = this.uprightSurface(this.fillFraction);
 		const x = this.radiusAt(top) * 0.25;
 		this.particlesShape.moveTo(x, top - 8)
 			.lineTo(x, surface - 0.3)

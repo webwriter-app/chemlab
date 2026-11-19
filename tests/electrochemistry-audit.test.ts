@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ComponentManager, EComponentType as Type, Simulation, StructureManager, connectDevices, connectionPairs, plugCable,
+import { AcidBase, ComponentManager, EComponentType as Type, Simulation, StructureManager, connectDevices, connectionPairs, plugCable,
 	restoreCables, type ElectricComponent } from "../chemlib";
 import { chemicalCatalog } from "../data/chemicals";
 import { prepareDose } from "../data/measuredDose";
@@ -39,6 +39,30 @@ function metalMoles(mix: ReturnType<typeof dose>, symbol: string): number {
 	return mix._activeMolecules.reduce((sum, molecule) => sum + mix._molProperties[molecule._id + "n"] *
 		molecule._atoms.filter(atom => atom.getSymbol() === symbol).length, 0);
 }
+
+test("a bridged step shares bath equilibria between conductivity and electrode candidates", t => {
+	const implicit = cell();
+	const explicit = cell();
+	const connect = ([first, second]: ReturnType<typeof cell>) => {
+		const meter = ComponentManager.newElectricComponent(Type.Voltmeter);
+		wire(first, meter, 0);
+		wire(second, meter, 0);
+		return meter;
+	};
+	const implicitMeter = connect(implicit);
+	const explicitMeter = connect(explicit);
+	const proton = t.mock.method(AcidBase, "solveProton");
+	const resistance = Simulation.ionicResistance(...explicit, true);
+	Simulation.sEChem(...explicit, [explicitMeter], { ionicResistance: resistance });
+	const separateSolves = proton.mock.callCount();
+	proton.mock.resetCalls();
+
+	Simulation.sEChem(...implicit, [implicitMeter], { bridge: true });
+	assert.equal(proton.mock.callCount(), separateSolves - 2);
+	assert.equal(implicitMeter._visibleCurrent, explicitMeter._visibleCurrent);
+	assert.equal(implicitMeter._visibleVoltage, explicitMeter._visibleVoltage);
+	assert.ok(implicitMeter._visibleVoltage > 1);
+});
 
 test("unwired iron and zinc acquire a copper coating while their own metal dissolves", () => {
 	for (const [element, symbol] of [["iron", "Fe"], ["zinc", "Zn"]]) {

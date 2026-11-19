@@ -65,6 +65,7 @@ export class CanvasController implements ReactiveController {
 	private endDrag?: { id: number; view: CableView; end: number; x: number; y: number };
 	/** the device under the pointer whose free terminals are shown */
 	private hoveredPorts?: ElectricDeviceView;
+	private pointerWorld: PIXI.PointData = { x: 0, y: 0 };
 	/** the device whose terminal a dragged cable end would land on */
 	private endTarget?: ElectricDeviceView;
 	private selection: PIXI.Container[] = [];
@@ -78,8 +79,12 @@ export class CanvasController implements ReactiveController {
 	private vessels = new Map<chemlib.ChemComponent, VesselView>();
 	private scaleTextures = new Map<string, PIXI.Texture>();
 	private changedVessels = new Map<VesselView, VesselHint | undefined>();
+	private animatedVessels = new Set<VesselView>();
 	private cables = new Map<CableView, chemlib.ElectricComponent>();
 	private cablesDirty = false;
+	private cableOrderDirty = false;
+	private dippedOrderDirty = false;
+	private awakeCables = new Set<CableView>();
 	/** electrode sprites moved along with a vessel since the last save */
 	private attachedElectrodesMoved = new Set<PIXI.Container>();
 	/** the drawn artboard of each sprite, in world units, for the collision test */
@@ -99,7 +104,7 @@ export class CanvasController implements ReactiveController {
 		this._dragMove(event);
 		if (sprite instanceof VesselView) {
 			if (sprite.rotation !== angle) sprite.updateAngle();
-		} else if (this.cables.size) this.cablesDirty = true;
+		}
 		this.drawSelection();
 	};
 	/** offset from the sprite's origin to the point where it was grabbed, so a
@@ -112,8 +117,7 @@ export class CanvasController implements ReactiveController {
 	}
 
 	private updateMousePosition(event: PIXI.FederatedPointerEvent): void {
-		const world = this.camera.toWorld(event.global.x, event.global.y);
-		this.host.mousePos = [world.x, world.y];
+		this.pointerWorld = this.camera.toWorld(event.global.x, event.global.y);
 	}
 
 	private screenToViewport(x: number, y: number): PIXI.Point {
@@ -453,7 +457,7 @@ export class CanvasController implements ReactiveController {
 			Math.abs(end.x - start.x), Math.abs(end.y - start.y));
 	}
 
-	drawSelection(): void {
+	drawSelection(requestRender = true): void {
 		this.selectionOverlay.clear();
 		const transferTarget = this.host.transferTarget;
 		if (transferTarget) {
@@ -489,7 +493,7 @@ export class CanvasController implements ReactiveController {
 		}
 		this.host.positionSelectionSummary(visibleBounds.isValid ? visibleBounds : undefined, canvasWidth, canvasHeight, groupSelected);
 		this.host.positionAmountMenu();
-		this.host.requestCanvasRender();
+		if (requestRender) this.host.requestCanvasRender();
 	}
 
 	private moveMarquee(event: PIXI.FederatedPointerEvent): void {
@@ -644,16 +648,16 @@ export class CanvasController implements ReactiveController {
 		this.pinching = false;
 	}
 
-	private applyCamera(): void {
+	private applyCamera(requestRender = true): void {
 		this.world.position.set(this.camera.offsetX, this.camera.offsetY);
 		this.world.scale.set(this.camera.zoom);
 		this.placementPreviewLayer.position.copyFrom(this.world.position);
 		this.placementPreviewLayer.scale.copyFrom(this.world.scale);
 		if (this.showGrid) this.grid?.update(this.camera);
 		this.updateScaleReadouts();
-		if (this.selection.length || this.marquee || this.host.selectedObjectSprite || this.diagramSourceLabel) this.drawSelection();
+		if (this.selection.length || this.marquee || this.host.selectedObjectSprite || this.diagramSourceLabel) this.drawSelection(false);
 		else this.host.positionAmountMenu();
-		this.host.requestCanvasRender();
+		if (requestRender) this.host.requestCanvasRender();
 	}
 
 	updateScaleReadouts(): void {
@@ -671,20 +675,19 @@ export class CanvasController implements ReactiveController {
 			const height = area.clientHeight;
 			if (width < 1 || height < 1) return;
 			const resolution = Math.max(1, Math.min(2, this.host.ownerDocument.defaultView.devicePixelRatio));
-			if (app.screen.width !== width || app.screen.height !== height || app.renderer.resolution !== resolution) {
-				app.renderer.resize(width, height, resolution);
-				app.stage.hitArea = app.screen;
-				// A resized backing store stays blank until the next render,
-				// so paint synchronously instead of waiting for the idle ticker.
-				app.render();
-			}
+			if (app.screen.width === width && app.screen.height === height && app.renderer.resolution === resolution) return;
+			app.renderer.resize(width, height, resolution);
+			app.stage.hitArea = app.screen;
 			this.camera.resize(width, height);
 			// A drawer opening or the widget being resized changes the visible
 			// area. Fitting here keeps the objects in frame instead of letting
 			// them drift out of it, and it follows the drawer's own animation
 			// because the observer fires on every step of it.
 			this.fitCamera();
-			this.applyCamera();
+			// The resized backing store is blank. Paint with the fitted camera
+			// now so the resize does not also schedule an identical ticker draw.
+			this.applyCamera(false);
+			app.render();
 		};
 		this.resizeObserver = new ResizeObserver(resize);
 		this.resizeObserver.observe(area);
@@ -720,6 +723,7 @@ export class CanvasController implements ReactiveController {
 	}
 
 	hostDisconnected(): void {
+		this.setHoveredPorts();
 		this.cancelPointerInteraction();
 		this.touchListeners?.abort();
 		this.touchListeners = undefined;
@@ -760,7 +764,10 @@ export class CanvasController implements ReactiveController {
 			// The electrodes a vessel carried along have to go back with it.
 			if (sprite instanceof VesselView && (dx || dy)) {
 				for (const electrode of this.attachedElectrodesOf(sprite)) {
-					if (!selected.has(electrode)) electrode.position.set(electrode.x - dx, electrode.y - dy);
+					if (!selected.has(electrode)) {
+						electrode.position.set(electrode.x - dx, electrode.y - dy);
+						this.cablesDirty ||= this.cables.size > 0;
+					}
 				}
 			}
 			if (this.cables.size && !(sprite instanceof VesselView)) this.cablesDirty = true;
@@ -772,6 +779,7 @@ export class CanvasController implements ReactiveController {
 	}
 
 	removeSprite(sprite: PIXI.Container): void {
+		if (sprite === this.hoveredPorts) this.setHoveredPorts();
 		if (this._dragActive && this.host.dragObject === sprite) this.cancelPointerInteraction();
 		if (this.selection.includes(sprite)) {
 			if (this.groupDrag) this.cancelPointerInteraction();
@@ -784,8 +792,12 @@ export class CanvasController implements ReactiveController {
 		if (sprite instanceof VesselView) {
 			this.vessels.delete(sprite.component);
 			this.changedVessels.delete(sprite);
+			this.animatedVessels.delete(sprite);
 		}
-		if (sprite instanceof CableView) this.cables.delete(sprite);
+		if (sprite instanceof CableView) {
+			this.cables.delete(sprite);
+			this.awakeCables.delete(sprite);
+		}
 		this.attachedElectrodesMoved.delete(sprite);
 		this.highlightDiagramSource(sprite.label, false);
 		sprite.destroy({ children: true });
@@ -846,8 +858,8 @@ export class CanvasController implements ReactiveController {
 		const info = `${type}:${component._id}`;
 		const sprite = this.createComponentView(component);
 
-		sprite.x = this.host.mousePos[0];
-		sprite.y = this.host.mousePos[1];
+		sprite.x = this.pointerWorld.x;
+		sprite.y = this.pointerWorld.y;
 		sprite.eventMode = "static";
 		sprite.cursor = "pointer";
 		sprite.on("pointerdown", (event) => {
@@ -892,6 +904,8 @@ export class CanvasController implements ReactiveController {
 
 		sprite.label = info;
 		this.world.addChild(sprite);
+		this.cableOrderDirty = this.cables.size > 0 || sprite instanceof CableView;
+		this.dippedOrderDirty = true;
 		this.spritesByLabel.set(info, sprite);
 		if (sprite instanceof VesselView) {
 			this.vessels.set(sprite.component, sprite);
@@ -899,10 +913,6 @@ export class CanvasController implements ReactiveController {
 		}
 		if (sprite instanceof CableView) {
 			this.cables.set(sprite, sprite.component);
-			this.cablesDirty = true;
-		} else if (this.cables.size && !(sprite instanceof VesselView)) {
-			// A new device lands on top of the world, so the cables have to be
-			// raised above it again.
 			this.cablesDirty = true;
 		}
 		if (select) this.host._getObject(sprite);
@@ -925,8 +935,7 @@ export class CanvasController implements ReactiveController {
 			const sprite = this.world.children[index];
 			if (!(sprite instanceof ElectricDeviceView) || !sprite.visible) continue;
 			if (Math.abs(x - sprite.x) > sprite.width / 2 || Math.abs(y - sprite.y) > sprite.height / 2) continue;
-			const device = this.host.allEComponents.find((component) => `${component._type}:${component._id}` === sprite.label);
-			if (device) return { device, sprite };
+			return { device: sprite.component, sprite };
 		}
 		return undefined;
 	}
@@ -1021,6 +1030,7 @@ export class CanvasController implements ReactiveController {
 		if (!drag) return;
 		const local = drag.view.toLocal(event.global);
 		drag.view.component._endOffsets[drag.end] = { x: local.x, y: local.y };
+		this.cablesDirty = true;
 		this.highlightEndTarget(event.global);
 		this.host.requestCanvasRender();
 	}
@@ -1082,6 +1092,7 @@ export class CanvasController implements ReactiveController {
 		}
 		// The lead settles with a fresh sag over the span it now covers.
 		drag.view.resetLength(this.cableEndLocal(drag.view, 0), this.cableEndLocal(drag.view, 1));
+		this.cablesDirty = true;
 		this.host.requestCanvasRender();
 	}
 
@@ -1098,24 +1109,21 @@ export class CanvasController implements ReactiveController {
 				if (!partners.includes(device)) return;
 				const local = this.cableEndLocal(view, end);
 				cable._endOffsets[end] = { x: local.x, y: local.y };
+				this.cablesDirty = true;
 			});
 		}
 	}
 
 	/**
-	 * Brightens the free plugs of the device under the pointer, which hints
-	 * that a cable can be plugged into it.
-	 *
-	 * @private
-	 * @param {PIXI.PointData} global - the pointer in stage coordinates
+	 * Brightens the free plugs of the hovered device and requests a frame
+	 * only when the hover target changes.
 	 */
-	private updatePortHover(global: PIXI.PointData): void {
-		const world = this.camera.toWorld(global.x, global.y);
-		const sprite = this.deviceAtWorld(world.x, world.y)?.sprite;
+	private setHoveredPorts(sprite?: ElectricDeviceView): void {
 		if (sprite === this.hoveredPorts) return;
 		this.hoveredPorts?.setPortHover(false);
 		this.hoveredPorts = sprite;
 		sprite?.setPortHover(true);
+		this.host.requestCanvasRender();
 	}
 
 	/**
@@ -1245,10 +1253,10 @@ export class CanvasController implements ReactiveController {
 		let objY: number = this.world.children[index].y - 0.5 * objHeight;
 
 		return (
-			this.host.mousePos[0] > objX - offset &&
-			this.host.mousePos[0] < objWidth + objX + offset &&
-			this.host.mousePos[1] > objY - offset &&
-			this.host.mousePos[1] < objHeight + objY + offset
+			this.pointerWorld.x > objX - offset &&
+			this.pointerWorld.x < objWidth + objX + offset &&
+			this.pointerWorld.y > objY - offset &&
+			this.pointerWorld.y < objHeight + objY + offset
 		);
 	}
 
@@ -1257,7 +1265,7 @@ export class CanvasController implements ReactiveController {
 	 *
 	 * @private
 	 */
-	async init(): Promise<void> {
+	async init(onTextureProgress?: (fraction: number) => void): Promise<void> {
 		const app = new PIXI.Application<PIXI.WebGLRenderer<HTMLCanvasElement>>();
 		await app.init({
 			preference: ["webgl"],
@@ -1267,12 +1275,13 @@ export class CanvasController implements ReactiveController {
 			height: STANDARD_CANVAS_HEIGHT,
 		});
 		try {
+			onTextureProgress?.(0);
 			await PIXI.Assets.load(componentTextureUrls.map((src) => ({
 				src,
 				// Filter the SVG textures when zooming out, including narrow sprites
 				// whose horizontal and vertical scales differ substantially.
 				data: { resolution: 2, scaleMode: "linear", autoGenerateMipmaps: true, maxAnisotropy: 4 },
-			})));
+			})), onTextureProgress);
 		} catch (error) {
 			app.destroy(true, { children: true });
 			throw error;
@@ -1280,6 +1289,7 @@ export class CanvasController implements ReactiveController {
 		this.host.app = app;
 		this.host.pix_canvas.appendChild(app.canvas);
 		app.canvas.tabIndex = 0;
+		app.canvas.addEventListener("pointerleave", () => this.setHoveredPorts());
 		app.canvas.addEventListener("pointerdown", (event) => {
 			if (event.button === 0) app.canvas.focus({ preventScroll: true });
 		});
@@ -1304,12 +1314,12 @@ export class CanvasController implements ReactiveController {
 	}
 
 	private bindPointerEvents(stage: PIXI.Container): void {
-		// pointermove (not mousemove) so mousePos stays current for touch too.
+		// pointermove (not mousemove) so pointerWorld stays current for touch too.
 		// A drag is ended only on pointerup/pointerupoutside — not when the
 		// pointer briefly leaves the sprite bounds during a fast drag.
 		stage.on("pointermove", (event) => {
 			this.updateMousePosition(event);
-			this.updatePortHover(event.global);
+			this.setHoveredPorts(this.deviceAtWorld(this.pointerWorld.x, this.pointerWorld.y)?.sprite);
 		});
 		stage.on("globalpointermove", (event) => {
 			this.movePan(event);
@@ -1327,7 +1337,7 @@ export class CanvasController implements ReactiveController {
 					this.marquee = { id: event.pointerId, start: { x, y } };
 					return;
 				}
-				if (event.pointerType !== "touch" && this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+				if (event.pointerType !== "touch" && this.host.placeSelectedComponent(this.pointerWorld.x, this.pointerWorld.y)) return;
 				this.beginPan(event, true);
 			}
 		});
@@ -1356,7 +1366,7 @@ export class CanvasController implements ReactiveController {
 				if (deselectOnTap && !moved) {
 					if (event.pointerType === "touch" && event.type === "pointerup" && event.target === stage) {
 						this.updateMousePosition(event);
-						if (this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+						if (this.host.placeSelectedComponent(this.pointerWorld.x, this.pointerWorld.y)) return;
 					}
 					this.host.clearChemicalSelection();
 					this.host.clearObjectSelection();
@@ -1377,8 +1387,12 @@ export class CanvasController implements ReactiveController {
 	}
 
 	flushChanges(): void {
-		const changed = new Set([...this.changedVessels.keys()].map((view) => view.component._content));
-		for (const [view, hint] of this.changedVessels) view.updateContents(hint);
+		const changed = new Set<chemlib.Mixture>();
+		for (const [view, hint] of this.changedVessels) {
+			view.updateContents(hint);
+			this.animatedVessels.add(view);
+			changed.add(view.component._content);
+		}
 		this.changedVessels.clear();
 		// A gas collection tube shows what bubbled out of its vessel, so it
 		// follows every change of that vessel, not only the electrochemical
@@ -1392,20 +1406,21 @@ export class CanvasController implements ReactiveController {
 			// strip in the vessel changes with it.
 			this.attachDevices(changed);
 		}
-		this.updateDippedStacking();
-		if (this.cablesDirty || this.cables.size) {
-			this.cablesDirty = false;
-			// requests a render again while any rope is awake, which keeps
-			// the sim loop ticking until all cables have settled
+		if (this.dippedOrderDirty) {
+			this.dippedOrderDirty = false;
+			this.updateDippedStacking();
+		}
+		if (this.cablesDirty || this.cableOrderDirty || this.awakeCables.size || this.host.simulation.hasTask(CABLE_TASK)) {
 			this.updateCablePositions();
 		}
 		// Vessel particle / pour animations advance per frame here; the keep
 		// -alive task below holds the ticker open until none is active.
 		const dtMs = this.host.app?.ticker.deltaMS ?? 16.67;
-		let vesselsActive = false;
-		for (const view of this.vessels.values()) vesselsActive = view.stepAnimation(dtMs) || vesselsActive;
+		for (const view of this.animatedVessels) {
+			if (!view.stepAnimation(dtMs)) this.animatedVessels.delete(view);
+		}
 		const simulation = this.host.simulation;
-		if (vesselsActive) {
+		if (this.animatedVessels.size) {
 			if (!simulation.hasTask(VESSEL_TASK)) {
 				simulation.startTask(VESSEL_TASK, () => this.host.requestCanvasRender());
 			}
@@ -1481,6 +1496,7 @@ export class CanvasController implements ReactiveController {
 				const vessel = this.vesselAt(sprite.x, sprite.y) ?? this.vesselAt(sprite.x, bottom);
 				const previousMix = eComp._connectedMix;
 				eComp._connectedMix = vessel?.component._content;
+				this.dippedOrderDirty ||= previousMix !== eComp._connectedMix;
 				// Only the part below the liquid surface carries current, so
 				// the strip records how much of it the liquid covers. A strip
 				// that hangs above the surface ends up with no area at all and
@@ -1500,6 +1516,7 @@ export class CanvasController implements ReactiveController {
 				// already lost gas before the tube was put in place starts
 				// the scale at that tally instead of at zero.
 				if (mix !== eComp._connectedMix) {
+					this.dippedOrderDirty = true;
 					eComp._tubeBaseline = mix?.evolvedGasMol ?? 0;
 					eComp._connectedMix = mix;
 					this.host.measurements.record([], [eComp]);
@@ -1512,8 +1529,13 @@ export class CanvasController implements ReactiveController {
 				const first = this.vesselAt(sprite.x - leg, bottom);
 				const second = this.vesselAt(sprite.x + leg, bottom);
 				const wet = (vessel?: VesselView) => (vessel?.immersedLength(bottom - 0.5, bottom) ?? 0) > 0;
-				eComp._bridgeMixes = first && second && first !== second && wet(first) && wet(second)
+				const mixtures = first && second && first !== second && wet(first) && wet(second)
 					? [first.component._content, second.component._content] : [];
+				const previous = eComp._bridgeMixes;
+				if (mixtures.length !== previous.length || mixtures.some((mix, index) => mix !== previous[index])) {
+					this.dippedOrderDirty = true;
+					eComp._bridgeMixes = mixtures;
+				}
 				// The span between the legs is the length of the tube the
 				// current has to cross, so the bridge records where they sit.
 				eComp._bridgeLegs = [sprite.x - leg, sprite.x + leg];
@@ -1589,36 +1611,29 @@ export class CanvasController implements ReactiveController {
 	}
 
 	private updateCablePositions(): void {
-		const stage = this.world;
+		if (this.cablesDirty) {
+			this.cablesDirty = false;
+			for (const view of this.cables.keys()) {
+				view.setEnds(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
+				if (view.moving) this.awakeCables.add(view);
+			}
+		}
+		if (this.cableOrderDirty) {
+			this.cableOrderDirty = false;
+			const top = this.world.children.length - 1;
+			for (const view of this.cables.keys()) this.world.setChildIndex(view, top);
+		}
 		const dt = Math.min(this.host.app?.ticker.deltaMS ?? 16.67, 40) / 1000;
-		let anyAwake = false;
-		for (const [view, cable] of this.cables) {
-			// A cable is only dropped when its component is really gone. A
-			// missing view alone is not enough: during a restore the views are
-			// added one by one, so a cable can be laid before its partner has
-			// a view, and deleting it then would silently unwire the cell.
-			if (!this.host.allEComponents.includes(cable)) {
-				this.host.removeObjects([view]);
-				continue;
-			}
-			// The ends follow the terminals they are plugged into, so a cable
-			// stays attached while its devices are dragged around.
-			view.setEnds(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
-			if (view.moving) {
-				view.step(dt);
-				anyAwake = true;
-			}
+		for (const view of this.awakeCables) {
+			view.step(dt);
 			view.draw();
-			// Cables lie on top of the devices, so a cable visibly ends at the
-			// plug it is clamped to instead of vanishing under the device body.
-			const top = stage.children.length - 1;
-			if (stage.getChildIndex(view) !== top) stage.setChildIndex(view, top);
+			if (!view.moving) this.awakeCables.delete(view);
 		}
 		// Keep the ticker running while any cable moves: the task requests a
 		// render every frame, and the flush below steps the ropes. Only when
 		// all cables have settled does the canvas go back to sleep.
 		const simulation = this.host.simulation;
-		if (anyAwake) {
+		if (this.awakeCables.size) {
 			if (!simulation.hasTask(CABLE_TASK)) {
 				simulation.startTask(CABLE_TASK, () => this.host.requestCanvasRender());
 			}
@@ -1637,6 +1652,7 @@ export class CanvasController implements ReactiveController {
 	 */
 	private relengthCablesAttachedTo(movedSprites: readonly PIXI.Container[]): void {
 		if (!this.cables.size) return;
+		this.cablesDirty = true;
 		for (const [view, cable] of this.cables) {
 			if (movedSprites.includes(view)) {
 				view.resetLength(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
