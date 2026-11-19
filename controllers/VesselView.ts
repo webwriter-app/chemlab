@@ -198,12 +198,20 @@ export class VesselView extends Container {
 	 * @returns {number} the y coordinate of the surface in world space
 	 */
 	liquidSurfaceY(): number {
-		const top = this.profile[0][0];
-		const bottom = this.profile[this.profile.length - 1][0];
 		const volume = this.component._content.contentVolume * 1000;
 		const fill = Math.min(1, volume / this.component._volume);
-		const level = this.surfaceAt(fill, top, bottom, 0, 1);
+		const level = this.uprightSurface(fill);
 		return this.y - this.height / 2 + level * this.height / this.svgHeight;
+	}
+
+	private uprightLevel?: { fill: number; y: number };
+
+	private uprightSurface(fill: number): number {
+		if (this.uprightLevel?.fill !== fill) {
+			const y = this.surfaceAt(fill, this.profile[0][0], this.profile[this.profile.length - 1][0], 0, 1);
+			this.uprightLevel = { fill, y };
+		}
+		return this.uprightLevel.y;
 	}
 
 	/** Length of a vertical electrode strip in the vessel's electrolyte. */
@@ -300,6 +308,7 @@ export class VesselView extends Container {
 		const angle = this.rotation;
 		const depth = ({ x, y }: Point) => x * Math.sin(angle) + y * Math.cos(angle);
 		const floorDepth = depth({ x: 0, y: floor });
+		const level = grains ? top : this.uprightSurface(fill);
 		for (let i = 0; i < count && this.particles.length < VesselView.MAX_PARTICLES; i++) {
 			let x: number, y: number;
 			if (grains) {
@@ -308,7 +317,6 @@ export class VesselView extends Container {
 				y = top - 1.5;
 			} else {
 				// suspend anywhere in the liquid between surface and floor
-				const level = this.surfaceAt(fill, top, this.profile[this.profile.length - 1][0], 0, 1);
 				const span = Math.max(floor - level, 0.5);
 				y = level + Math.random() * span;
 				x = (Math.random() * 2 - 1) * this.radiusAt(y) * 0.7;
@@ -458,7 +466,7 @@ export class VesselView extends Container {
 		if (this.streamMs <= 0) return;
 		const alpha = Math.min(1, this.streamMs / 200) * 0.6;
 		const top = this.profile[0][0];
-		const surface = this.surfaceAt(this.fillFraction, top, this.profile[this.profile.length - 1][0], 0, 1);
+		const surface = this.uprightSurface(this.fillFraction);
 		const x = this.radiusAt(top) * 0.25;
 		this.particlesShape.moveTo(x, top - 8)
 			.lineTo(x, surface - 0.3)

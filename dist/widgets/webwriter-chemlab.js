@@ -185049,12 +185049,18 @@ var VesselView = class _VesselView extends Container {
    * @returns {number} the y coordinate of the surface in world space
    */
   liquidSurfaceY() {
-    const top = this.profile[0][0];
-    const bottom = this.profile[this.profile.length - 1][0];
     const volume = this.component._content.contentVolume * 1e3;
     const fill2 = Math.min(1, volume / this.component._volume);
-    const level = this.surfaceAt(fill2, top, bottom, 0, 1);
+    const level = this.uprightSurface(fill2);
     return this.y - this.height / 2 + level * this.height / this.svgHeight;
+  }
+  uprightLevel;
+  uprightSurface(fill2) {
+    if (this.uprightLevel?.fill !== fill2) {
+      const y5 = this.surfaceAt(fill2, this.profile[0][0], this.profile[this.profile.length - 1][0], 0, 1);
+      this.uprightLevel = { fill: fill2, y: y5 };
+    }
+    return this.uprightLevel.y;
   }
   /** Length of a vertical electrode strip in the vessel's electrolyte. */
   immersedLength(top, bottom) {
@@ -185142,13 +185148,13 @@ var VesselView = class _VesselView extends Container {
     const angle = this.rotation;
     const depth = ({ x: x4, y: y5 }) => x4 * Math.sin(angle) + y5 * Math.cos(angle);
     const floorDepth = depth({ x: 0, y: floor6 });
+    const level = grains ? top : this.uprightSurface(fill2);
     for (let i12 = 0; i12 < count2 && this.particles.length < _VesselView.MAX_PARTICLES; i12++) {
       let x4, y5;
       if (grains) {
         x4 = (Math.random() * 2 - 1) * this.radiusAt(top) * 0.45;
         y5 = top - 1.5;
       } else {
-        const level = this.surfaceAt(fill2, top, this.profile[this.profile.length - 1][0], 0, 1);
         const span = Math.max(floor6 - level, 0.5);
         y5 = level + Math.random() * span;
         x4 = (Math.random() * 2 - 1) * this.radiusAt(y5) * 0.7;
@@ -185278,7 +185284,7 @@ var VesselView = class _VesselView extends Container {
     if (this.streamMs <= 0) return;
     const alpha2 = Math.min(1, this.streamMs / 200) * 0.6;
     const top = this.profile[0][0];
-    const surface = this.surfaceAt(this.fillFraction, top, this.profile[this.profile.length - 1][0], 0, 1);
+    const surface = this.uprightSurface(this.fillFraction);
     const x4 = this.radiusAt(top) * 0.25;
     this.particlesShape.moveTo(x4, top - 8).lineTo(x4, surface - 0.3).stroke({ color: 4559543, width: 0.55, alpha: alpha2, cap: "round" });
     this.particlesShape.circle(x4, surface, 0.9).fill({ color: 4559543, alpha: alpha2 * 0.8 });
@@ -186520,7 +186526,7 @@ var CanvasController = class _CanvasController {
       Math.abs(end.y - start.y)
     );
   }
-  drawSelection() {
+  drawSelection(requestRender = true) {
     this.selectionOverlay.clear();
     const transferTarget = this.host.transferTarget;
     if (transferTarget) {
@@ -186552,7 +186558,7 @@ var CanvasController = class _CanvasController {
     }
     this.host.positionSelectionSummary(visibleBounds.isValid ? visibleBounds : void 0, canvasWidth, canvasHeight, groupSelected);
     this.host.positionAmountMenu();
-    this.host.requestCanvasRender();
+    if (requestRender) this.host.requestCanvasRender();
   }
   moveMarquee(event) {
     if (this.marquee?.id !== event.pointerId) return;
@@ -186691,16 +186697,16 @@ var CanvasController = class _CanvasController {
     this.touches.clear();
     this.pinching = false;
   }
-  applyCamera() {
+  applyCamera(requestRender = true) {
     this.world.position.set(this.camera.offsetX, this.camera.offsetY);
     this.world.scale.set(this.camera.zoom);
     this.placementPreviewLayer.position.copyFrom(this.world.position);
     this.placementPreviewLayer.scale.copyFrom(this.world.scale);
     if (this.showGrid) this.grid?.update(this.camera);
     this.updateScaleReadouts();
-    if (this.selection.length || this.marquee || this.host.selectedObjectSprite || this.diagramSourceLabel) this.drawSelection();
+    if (this.selection.length || this.marquee || this.host.selectedObjectSprite || this.diagramSourceLabel) this.drawSelection(false);
     else this.host.positionAmountMenu();
-    this.host.requestCanvasRender();
+    if (requestRender) this.host.requestCanvasRender();
   }
   updateScaleReadouts() {
     const { zoom, gridCellWidth } = this.camera;
@@ -186716,14 +186722,13 @@ var CanvasController = class _CanvasController {
       const height = area2.clientHeight;
       if (width < 1 || height < 1) return;
       const resolution = Math.max(1, Math.min(2, this.host.ownerDocument.defaultView.devicePixelRatio));
-      if (app.screen.width !== width || app.screen.height !== height || app.renderer.resolution !== resolution) {
-        app.renderer.resize(width, height, resolution);
-        app.stage.hitArea = app.screen;
-        app.render();
-      }
+      if (app.screen.width === width && app.screen.height === height && app.renderer.resolution === resolution) return;
+      app.renderer.resize(width, height, resolution);
+      app.stage.hitArea = app.screen;
       this.camera.resize(width, height);
       this.fitCamera();
-      this.applyCamera();
+      this.applyCamera(false);
+      app.render();
     };
     this.resizeObserver = new ResizeObserver(resize);
     this.resizeObserver.observe(area2);

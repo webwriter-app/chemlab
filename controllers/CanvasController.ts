@@ -456,7 +456,7 @@ export class CanvasController implements ReactiveController {
 			Math.abs(end.x - start.x), Math.abs(end.y - start.y));
 	}
 
-	drawSelection(): void {
+	drawSelection(requestRender = true): void {
 		this.selectionOverlay.clear();
 		const transferTarget = this.host.transferTarget;
 		if (transferTarget) {
@@ -492,7 +492,7 @@ export class CanvasController implements ReactiveController {
 		}
 		this.host.positionSelectionSummary(visibleBounds.isValid ? visibleBounds : undefined, canvasWidth, canvasHeight, groupSelected);
 		this.host.positionAmountMenu();
-		this.host.requestCanvasRender();
+		if (requestRender) this.host.requestCanvasRender();
 	}
 
 	private moveMarquee(event: PIXI.FederatedPointerEvent): void {
@@ -647,16 +647,16 @@ export class CanvasController implements ReactiveController {
 		this.pinching = false;
 	}
 
-	private applyCamera(): void {
+	private applyCamera(requestRender = true): void {
 		this.world.position.set(this.camera.offsetX, this.camera.offsetY);
 		this.world.scale.set(this.camera.zoom);
 		this.placementPreviewLayer.position.copyFrom(this.world.position);
 		this.placementPreviewLayer.scale.copyFrom(this.world.scale);
 		if (this.showGrid) this.grid?.update(this.camera);
 		this.updateScaleReadouts();
-		if (this.selection.length || this.marquee || this.host.selectedObjectSprite || this.diagramSourceLabel) this.drawSelection();
+		if (this.selection.length || this.marquee || this.host.selectedObjectSprite || this.diagramSourceLabel) this.drawSelection(false);
 		else this.host.positionAmountMenu();
-		this.host.requestCanvasRender();
+		if (requestRender) this.host.requestCanvasRender();
 	}
 
 	updateScaleReadouts(): void {
@@ -674,20 +674,19 @@ export class CanvasController implements ReactiveController {
 			const height = area.clientHeight;
 			if (width < 1 || height < 1) return;
 			const resolution = Math.max(1, Math.min(2, this.host.ownerDocument.defaultView.devicePixelRatio));
-			if (app.screen.width !== width || app.screen.height !== height || app.renderer.resolution !== resolution) {
-				app.renderer.resize(width, height, resolution);
-				app.stage.hitArea = app.screen;
-				// A resized backing store stays blank until the next render,
-				// so paint synchronously instead of waiting for the idle ticker.
-				app.render();
-			}
+			if (app.screen.width === width && app.screen.height === height && app.renderer.resolution === resolution) return;
+			app.renderer.resize(width, height, resolution);
+			app.stage.hitArea = app.screen;
 			this.camera.resize(width, height);
 			// A drawer opening or the widget being resized changes the visible
 			// area. Fitting here keeps the objects in frame instead of letting
 			// them drift out of it, and it follows the drawer's own animation
 			// because the observer fires on every step of it.
 			this.fitCamera();
-			this.applyCamera();
+			// The resized backing store is blank. Paint with the fitted camera
+			// now so the resize does not also schedule an identical ticker draw.
+			this.applyCamera(false);
+			app.render();
 		};
 		this.resizeObserver = new ResizeObserver(resize);
 		this.resizeObserver.observe(area);
