@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { ComponentManager, ComponentType, StructureManager } from "../chemlib";
+import { ComponentManager, ComponentType, Simulation, StructureManager } from "../chemlib";
 import { MeasurementRecorder } from "../controllers/MeasurementRecorder";
 import type { MoleculeDefinition } from "../data/chemicals";
 import { loadMoleculeDefinition } from "../data/moleculeDefinition";
@@ -145,3 +145,28 @@ for (const [stepMl, expectedHalfPh] of [[5, 4.75], [10, 4.69], [20, 4.09]]) {
 		assert.ok(Math.abs(half.pH - expectedHalfPh) < 0.02);
 	});
 }
+
+test("the boric acid example buffers near pH 9.24 at half-equivalence", () => {
+	const acid = availableComponents.find(({ content }) => content === "Borsäure 0,10 M");
+	const base = availableComponents.find(({ content }) => content === "Natronlauge 0,10 M");
+	const beaker = vessel(ComponentType.Beaker, acid);
+	const burette = vessel(ComponentType.Burette, base);
+	let deliveredMl = 0;
+	for (let i = 0; i < 50; i++) deliveredMl += burette.transferContents({}, beaker) * 1000;
+	const equilibrium = Simulation.getPolyproticEquilibrium(beaker._content);
+	assert.ok(Math.abs(deliveredMl - 5) < 1e-9);
+	assert.ok(Math.abs(equilibrium.pH - 9.24) < 0.005);
+	assert.ok(equilibrium.species.some(({ formula }) => formula === "B(OH)₄⁻"));
+});
+
+test("the acid/base examples load the intended complexes and precipitates", () => {
+	const mixture = (name: string) => vessel(ComponentType.Beaker,
+		availableComponents.find(({ content }) => content === name))._content;
+	const glycine = Simulation.getPolyproticEquilibrium(mixture("Glycin"));
+	assert.ok(Math.abs(glycine.pH - 5.97) < 0.02);
+	const silver = Simulation.getPolyproticEquilibrium(mixture("Silber + Ammoniak"));
+	assert.ok(silver.species.some(({ formula, concentration }) => formula === "Ag(NH₃)₂⁺" && concentration > 0.009));
+	const solids = (name: string) => mixture(name)._activeMolecules.map(({ solidSaltFormula }) => solidSaltFormula).filter(Boolean);
+	assert.deepEqual(solids("Calciumoxalat"), ["CaC2O4"]);
+	assert.deepEqual(new Set(solids("Carbonat + Phosphat")), new Set(["Ca3(PO4)2", "CaCO3"]));
+});
