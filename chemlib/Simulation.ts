@@ -672,14 +672,16 @@ export abstract class Simulation {
 			}
 			const ion = StructureManager.newMolecule();
 			const ids = new Map<number, number>();
-			for (const atom of members) {
-				ids.set(atom._id, ion.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), atom.getIonicCharge())._id);
-			}
-			for (const bond of molecule._bonds) {
-				if (bond._type === "ionic") continue;
-				if (!ids.has(bond._from._id) || !ids.has(bond._to._id)) continue;
-				ion.addBond(ids.get(bond._from._id), ids.get(bond._to._id), bond._magnitude, bond._length, bond._type);
-			}
+			ion.batchStructureChanges(() => {
+				for (const atom of members) {
+					ids.set(atom._id, ion.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), atom.getIonicCharge())._id);
+				}
+				for (const bond of molecule._bonds) {
+					if (bond._type === "ionic") continue;
+					if (!ids.has(bond._from._id) || !ids.has(bond._to._id)) continue;
+					ion.addBond(ids.get(bond._from._id), ids.get(bond._to._id), bond._magnitude, bond._length, bond._type);
+				}
+			});
 			const known = fragments.find(({ ion: other }) => other.smilesString === ion.smilesString);
 			if (known) known.count += 1;
 			else fragments.push({ ion, count: 1 });

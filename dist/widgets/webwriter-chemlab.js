@@ -148578,6 +148578,7 @@ var Molecule = class {
    * @type {string}
    */
   smilesString = "";
+  smilesBatch;
   /**
    * The current InChi representation of the molecule. Must be generated seperately
    *
@@ -148675,6 +148676,21 @@ var Molecule = class {
       this.smilesString = "[OH-]";
     }
   }
+  /** Refreshes SMILES once after synchronous graph edits. Atom and bond charges stay current during the edits. */
+  batchStructureChanges(update2) {
+    if (this.smilesBatch !== void 0) {
+      update2();
+      return;
+    }
+    const batch = { dirty: false };
+    this.smilesBatch = batch;
+    try {
+      update2();
+    } finally {
+      this.smilesBatch = void 0;
+      if (batch.dirty) this.setSmilesString();
+    }
+  }
   /**
    * Calculates and sets the {@link _totalCharge} of the molecule
    *
@@ -148686,7 +148702,8 @@ var Molecule = class {
       this._totalCharge += atom.getIonicCharge();
     });
     this._kekule_obj.charge = this._totalCharge;
-    this.setSmilesString();
+    if (this.smilesBatch) this.smilesBatch.dirty = true;
+    else this.setSmilesString();
   }
   /**
    * Returns the total molar mass of the molecule
@@ -148727,7 +148744,6 @@ var Molecule = class {
     this._atoms.push(atom);
     this._atomCount += 1;
     this.calcTotalCharge();
-    this.setSmilesString();
     return atom;
   }
   /**
@@ -150908,14 +150924,16 @@ var Simulation = class {
       }
       const ion2 = StructureManager.newMolecule();
       const ids = /* @__PURE__ */ new Map();
-      for (const atom of members) {
-        ids.set(atom._id, ion2.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), atom.getIonicCharge())._id);
-      }
-      for (const bond of molecule2._bonds) {
-        if (bond._type === "ionic") continue;
-        if (!ids.has(bond._from._id) || !ids.has(bond._to._id)) continue;
-        ion2.addBond(ids.get(bond._from._id), ids.get(bond._to._id), bond._magnitude, bond._length, bond._type);
-      }
+      ion2.batchStructureChanges(() => {
+        for (const atom of members) {
+          ids.set(atom._id, ion2.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), atom.getIonicCharge())._id);
+        }
+        for (const bond of molecule2._bonds) {
+          if (bond._type === "ionic") continue;
+          if (!ids.has(bond._from._id) || !ids.has(bond._to._id)) continue;
+          ion2.addBond(ids.get(bond._from._id), ids.get(bond._to._id), bond._magnitude, bond._length, bond._type);
+        }
+      });
       const known = fragments.find(({ ion: other }) => other.smilesString === ion2.smilesString);
       if (known) known.count += 1;
       else fragments.push({ ion: ion2, count: 1 });
@@ -179890,16 +179908,21 @@ var chemicalCatalogGroups = chemicalClasses.map((category) => ({
 // data/moleculeDefinition.ts
 function loadMoleculeDefinition(definition, onAtom) {
   const molecule2 = StructureManager.newMolecule();
-  definition?.atoms.forEach((element2, index2) => {
-    const atom = molecule2.addAtom(element2, ElementData.getData(element2)["symbol"], definition.charges?.[index2]);
-    onAtom?.(atom);
-  });
-  for (const entry of definition?.bonds ?? []) {
-    if (!entry) continue;
-    const [pair, type, order] = entry.split(":");
-    const [from2, to2] = pair.split("-").map((value) => Number.parseInt(value, 10));
-    molecule2.addBond(from2, to2, Number.parseInt(order, 10), 100, type);
-  }
+  if (!definition) return molecule2;
+  const buildStructure = () => {
+    definition.atoms.forEach((element2, index2) => {
+      const atom = molecule2.addAtom(element2, ElementData.getData(element2)["symbol"], definition.charges?.[index2]);
+      onAtom?.(atom);
+    });
+    for (const entry of definition.bonds ?? []) {
+      if (!entry) continue;
+      const [pair, type, order] = entry.split(":");
+      const [from2, to2] = pair.split("-").map((value) => Number.parseInt(value, 10));
+      molecule2.addBond(from2, to2, Number.parseInt(order, 10), 100, type);
+    }
+  };
+  if (onAtom) buildStructure();
+  else molecule2.batchStructureChanges(buildStructure);
   return molecule2;
 }
 
