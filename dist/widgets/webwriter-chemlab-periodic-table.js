@@ -13,7 +13,7 @@ var __expectFn = (fn) => fn !== void 0 && typeof fn !== "function" ? __typeError
 var __decoratorContext = (kind, name, done, metadata, fns) => ({ kind: __decoratorStrings[kind], name, metadata, addInitializer: (fn) => done._ ? __typeError("Already initialized") : fns.push(__expectFn(fn || null)) });
 var __decoratorMetadata = (array, target) => __defNormalProp(target, __knownSymbol("metadata"), array[3]);
 var __runInitializers = (array, flags, self, value) => {
-  for (var i6 = 0, fns = array[flags >> 1], n9 = fns && fns.length; i6 < n9; i6++) flags & 1 ? fns[i6].call(self) : value = fns[i6].call(self, value);
+  for (var i9 = 0, fns = array[flags >> 1], n10 = fns && fns.length; i9 < n10; i9++) flags & 1 ? fns[i9].call(self) : value = fns[i9].call(self, value);
   return value;
 };
 var __decorateElement = (array, flags, name, decorators, target, extra) => {
@@ -26,14 +26,14 @@ var __decorateElement = (array, flags, name, decorators, target, extra) => {
     return __privateSet(this, extra, x3);
   } }, name));
   k3 ? p4 && k3 < 4 && __name(extra, (k3 > 2 ? "set " : k3 > 1 ? "get " : "") + name) : __name(target, name);
-  for (var i6 = decorators.length - 1; i6 >= 0; i6--) {
+  for (var i9 = decorators.length - 1; i9 >= 0; i9--) {
     ctx = __decoratorContext(k3, name, done = {}, array[3], extraInitializers);
     if (k3) {
       ctx.static = s4, ctx.private = p4, access = ctx.access = { has: p4 ? (x3) => __privateIn(target, x3) : (x3) => name in x3 };
       if (k3 ^ 3) access.get = p4 ? (x3) => (k3 ^ 1 ? __privateGet : __privateMethod)(x3, target, k3 ^ 4 ? extra : desc.get) : (x3) => x3[name];
       if (k3 > 2) access.set = p4 ? (x3, y4) => __privateSet(x3, target, y4, k3 ^ 4 ? extra : desc.set) : (x3, y4) => x3[name] = y4;
     }
-    it = (0, decorators[i6])(k3 ? k3 < 4 ? p4 ? extra : desc[key] : k3 > 4 ? void 0 : { get: desc.get, set: desc.set } : target, ctx), done._ = 1;
+    it = (0, decorators[i9])(k3 ? k3 < 4 ? p4 ? extra : desc[key] : k3 > 4 ? void 0 : { get: desc.get, set: desc.set } : target, ctx), done._ = 1;
     if (k3 ^ 4 || it === void 0) __expectFn(it) && (k3 > 4 ? initializers.unshift(it) : k3 ? p4 ? extra = it : desc[key] = it : target = it);
     else if (typeof it !== "object" || it === null) __typeError("Object expected");
     else __expectFn(fn = it.get) && (desc.get = fn), __expectFn(fn = it.set) && (desc.set = fn), __expectFn(fn = it.init) && initializers.unshift(fn);
@@ -710,8 +710,8 @@ var ScopedElementsMixinImplementation = (superclass) => (
      *
      * @param {CustomElementRegistry} registry
      */
-    set registry(registry) {
-      this.constructor.__registry = registry;
+    set registry(registry2) {
+      this.constructor.__registry = registry2;
     }
     /**
      * @param {ShadowRootInit} options
@@ -822,10 +822,10 @@ __publicField2(LitElementWw, "options", {});
 __publicField2(LitElementWw, "actions", {});
 
 // node_modules/@lit/reactive-element/decorators/custom-element.js
-var t2 = (t5) => (e7, o8) => {
-  void 0 !== o8 ? o8.addInitializer((() => {
-    customElements.define(t5, e7);
-  })) : customElements.define(t5, e7);
+var t2 = (t7) => (e13, o11) => {
+  void 0 !== o11 ? o11.addInitializer((() => {
+    customElements.define(t7, e13);
+  })) : customElements.define(t7, e13);
 };
 
 // node_modules/@lit/reactive-element/css-tag.js
@@ -834,44 +834,44 @@ var e3 = t3.ShadowRoot && (void 0 === t3.ShadyCSS || t3.ShadyCSS.nativeShadow) &
 var s2 = Symbol();
 var o4 = /* @__PURE__ */ new WeakMap();
 var n5 = class {
-  constructor(t5, e7, o8) {
-    if (this._$cssResult$ = true, o8 !== s2) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
-    this.cssText = t5, this.t = e7;
+  constructor(t7, e13, o11) {
+    if (this._$cssResult$ = true, o11 !== s2) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
+    this.cssText = t7, this.t = e13;
   }
   get styleSheet() {
-    let t5 = this.o;
+    let t7 = this.o;
     const s4 = this.t;
-    if (e3 && void 0 === t5) {
-      const e7 = void 0 !== s4 && 1 === s4.length;
-      e7 && (t5 = o4.get(s4)), void 0 === t5 && ((this.o = t5 = new CSSStyleSheet()).replaceSync(this.cssText), e7 && o4.set(s4, t5));
+    if (e3 && void 0 === t7) {
+      const e13 = void 0 !== s4 && 1 === s4.length;
+      e13 && (t7 = o4.get(s4)), void 0 === t7 && ((this.o = t7 = new CSSStyleSheet()).replaceSync(this.cssText), e13 && o4.set(s4, t7));
     }
-    return t5;
+    return t7;
   }
   toString() {
     return this.cssText;
   }
 };
-var r4 = (t5) => new n5("string" == typeof t5 ? t5 : t5 + "", void 0, s2);
-var i = (t5, ...e7) => {
-  const o8 = 1 === t5.length ? t5[0] : e7.reduce(((e8, s4, o9) => e8 + ((t6) => {
-    if (true === t6._$cssResult$) return t6.cssText;
-    if ("number" == typeof t6) return t6;
-    throw Error("Value passed to 'css' function must be a 'css' function result: " + t6 + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
-  })(s4) + t5[o9 + 1]), t5[0]);
-  return new n5(o8, t5, s2);
+var r4 = (t7) => new n5("string" == typeof t7 ? t7 : t7 + "", void 0, s2);
+var i = (t7, ...e13) => {
+  const o11 = 1 === t7.length ? t7[0] : e13.reduce(((e14, s4, o12) => e14 + ((t8) => {
+    if (true === t8._$cssResult$) return t8.cssText;
+    if ("number" == typeof t8) return t8;
+    throw Error("Value passed to 'css' function must be a 'css' function result: " + t8 + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
+  })(s4) + t7[o12 + 1]), t7[0]);
+  return new n5(o11, t7, s2);
 };
-var S3 = (s4, o8) => {
-  if (e3) s4.adoptedStyleSheets = o8.map(((t5) => t5 instanceof CSSStyleSheet ? t5 : t5.styleSheet));
-  else for (const e7 of o8) {
-    const o9 = document.createElement("style"), n9 = t3.litNonce;
-    void 0 !== n9 && o9.setAttribute("nonce", n9), o9.textContent = e7.cssText, s4.appendChild(o9);
+var S3 = (s4, o11) => {
+  if (e3) s4.adoptedStyleSheets = o11.map(((t7) => t7 instanceof CSSStyleSheet ? t7 : t7.styleSheet));
+  else for (const e13 of o11) {
+    const o12 = document.createElement("style"), n10 = t3.litNonce;
+    void 0 !== n10 && o12.setAttribute("nonce", n10), o12.textContent = e13.cssText, s4.appendChild(o12);
   }
 };
-var c4 = e3 ? (t5) => t5 : (t5) => t5 instanceof CSSStyleSheet ? ((t6) => {
-  let e7 = "";
-  for (const s4 of t6.cssRules) e7 += s4.cssText;
-  return r4(e7);
-})(t5) : t5;
+var c4 = e3 ? (t7) => t7 : (t7) => t7 instanceof CSSStyleSheet ? ((t8) => {
+  let e13 = "";
+  for (const s4 of t8.cssRules) e13 += s4.cssText;
+  return r4(e13);
+})(t7) : t7;
 
 // node_modules/@lit/reactive-element/reactive-element.js
 var { is: i3, defineProperty: e4, getOwnPropertyDescriptor: r5, getOwnPropertyNames: h4, getOwnPropertySymbols: o5, getPrototypeOf: n6 } = Object;
@@ -879,168 +879,168 @@ var a2 = globalThis;
 var c5 = a2.trustedTypes;
 var l2 = c5 ? c5.emptyScript : "";
 var p2 = a2.reactiveElementPolyfillSupport;
-var d2 = (t5, s4) => t5;
-var u2 = { toAttribute(t5, s4) {
+var d2 = (t7, s4) => t7;
+var u2 = { toAttribute(t7, s4) {
   switch (s4) {
     case Boolean:
-      t5 = t5 ? l2 : null;
+      t7 = t7 ? l2 : null;
       break;
     case Object:
     case Array:
-      t5 = null == t5 ? t5 : JSON.stringify(t5);
+      t7 = null == t7 ? t7 : JSON.stringify(t7);
   }
-  return t5;
-}, fromAttribute(t5, s4) {
-  let i6 = t5;
+  return t7;
+}, fromAttribute(t7, s4) {
+  let i9 = t7;
   switch (s4) {
     case Boolean:
-      i6 = null !== t5;
+      i9 = null !== t7;
       break;
     case Number:
-      i6 = null === t5 ? null : Number(t5);
+      i9 = null === t7 ? null : Number(t7);
       break;
     case Object:
     case Array:
       try {
-        i6 = JSON.parse(t5);
-      } catch (t6) {
-        i6 = null;
+        i9 = JSON.parse(t7);
+      } catch (t8) {
+        i9 = null;
       }
   }
-  return i6;
+  return i9;
 } };
-var f4 = (t5, s4) => !i3(t5, s4);
+var f4 = (t7, s4) => !i3(t7, s4);
 var y2 = { attribute: true, type: String, converter: u2, reflect: false, hasChanged: f4 };
 Symbol.metadata ??= Symbol("metadata"), a2.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
 var b2 = class extends HTMLElement {
-  static addInitializer(t5) {
-    this._$Ei(), (this.l ??= []).push(t5);
+  static addInitializer(t7) {
+    this._$Ei(), (this.l ??= []).push(t7);
   }
   static get observedAttributes() {
     return this.finalize(), this._$Eh && [...this._$Eh.keys()];
   }
-  static createProperty(t5, s4 = y2) {
-    if (s4.state && (s4.attribute = false), this._$Ei(), this.elementProperties.set(t5, s4), !s4.noAccessor) {
-      const i6 = Symbol(), r9 = this.getPropertyDescriptor(t5, i6, s4);
-      void 0 !== r9 && e4(this.prototype, t5, r9);
+  static createProperty(t7, s4 = y2) {
+    if (s4.state && (s4.attribute = false), this._$Ei(), this.elementProperties.set(t7, s4), !s4.noAccessor) {
+      const i9 = Symbol(), r11 = this.getPropertyDescriptor(t7, i9, s4);
+      void 0 !== r11 && e4(this.prototype, t7, r11);
     }
   }
-  static getPropertyDescriptor(t5, s4, i6) {
-    const { get: e7, set: h6 } = r5(this.prototype, t5) ?? { get() {
+  static getPropertyDescriptor(t7, s4, i9) {
+    const { get: e13, set: h6 } = r5(this.prototype, t7) ?? { get() {
       return this[s4];
-    }, set(t6) {
-      this[s4] = t6;
+    }, set(t8) {
+      this[s4] = t8;
     } };
     return { get() {
-      return e7?.call(this);
+      return e13?.call(this);
     }, set(s5) {
-      const r9 = e7?.call(this);
-      h6.call(this, s5), this.requestUpdate(t5, r9, i6);
+      const r11 = e13?.call(this);
+      h6.call(this, s5), this.requestUpdate(t7, r11, i9);
     }, configurable: true, enumerable: true };
   }
-  static getPropertyOptions(t5) {
-    return this.elementProperties.get(t5) ?? y2;
+  static getPropertyOptions(t7) {
+    return this.elementProperties.get(t7) ?? y2;
   }
   static _$Ei() {
     if (this.hasOwnProperty(d2("elementProperties"))) return;
-    const t5 = n6(this);
-    t5.finalize(), void 0 !== t5.l && (this.l = [...t5.l]), this.elementProperties = new Map(t5.elementProperties);
+    const t7 = n6(this);
+    t7.finalize(), void 0 !== t7.l && (this.l = [...t7.l]), this.elementProperties = new Map(t7.elementProperties);
   }
   static finalize() {
     if (this.hasOwnProperty(d2("finalized"))) return;
     if (this.finalized = true, this._$Ei(), this.hasOwnProperty(d2("properties"))) {
-      const t6 = this.properties, s4 = [...h4(t6), ...o5(t6)];
-      for (const i6 of s4) this.createProperty(i6, t6[i6]);
+      const t8 = this.properties, s4 = [...h4(t8), ...o5(t8)];
+      for (const i9 of s4) this.createProperty(i9, t8[i9]);
     }
-    const t5 = this[Symbol.metadata];
-    if (null !== t5) {
-      const s4 = litPropertyMetadata.get(t5);
-      if (void 0 !== s4) for (const [t6, i6] of s4) this.elementProperties.set(t6, i6);
+    const t7 = this[Symbol.metadata];
+    if (null !== t7) {
+      const s4 = litPropertyMetadata.get(t7);
+      if (void 0 !== s4) for (const [t8, i9] of s4) this.elementProperties.set(t8, i9);
     }
     this._$Eh = /* @__PURE__ */ new Map();
-    for (const [t6, s4] of this.elementProperties) {
-      const i6 = this._$Eu(t6, s4);
-      void 0 !== i6 && this._$Eh.set(i6, t6);
+    for (const [t8, s4] of this.elementProperties) {
+      const i9 = this._$Eu(t8, s4);
+      void 0 !== i9 && this._$Eh.set(i9, t8);
     }
     this.elementStyles = this.finalizeStyles(this.styles);
   }
   static finalizeStyles(s4) {
-    const i6 = [];
+    const i9 = [];
     if (Array.isArray(s4)) {
-      const e7 = new Set(s4.flat(1 / 0).reverse());
-      for (const s5 of e7) i6.unshift(c4(s5));
-    } else void 0 !== s4 && i6.push(c4(s4));
-    return i6;
+      const e13 = new Set(s4.flat(1 / 0).reverse());
+      for (const s5 of e13) i9.unshift(c4(s5));
+    } else void 0 !== s4 && i9.push(c4(s4));
+    return i9;
   }
-  static _$Eu(t5, s4) {
-    const i6 = s4.attribute;
-    return false === i6 ? void 0 : "string" == typeof i6 ? i6 : "string" == typeof t5 ? t5.toLowerCase() : void 0;
+  static _$Eu(t7, s4) {
+    const i9 = s4.attribute;
+    return false === i9 ? void 0 : "string" == typeof i9 ? i9 : "string" == typeof t7 ? t7.toLowerCase() : void 0;
   }
   constructor() {
     super(), this._$Ep = void 0, this.isUpdatePending = false, this.hasUpdated = false, this._$Em = null, this._$Ev();
   }
   _$Ev() {
-    this._$ES = new Promise(((t5) => this.enableUpdating = t5)), this._$AL = /* @__PURE__ */ new Map(), this._$E_(), this.requestUpdate(), this.constructor.l?.forEach(((t5) => t5(this)));
+    this._$ES = new Promise(((t7) => this.enableUpdating = t7)), this._$AL = /* @__PURE__ */ new Map(), this._$E_(), this.requestUpdate(), this.constructor.l?.forEach(((t7) => t7(this)));
   }
-  addController(t5) {
-    (this._$EO ??= /* @__PURE__ */ new Set()).add(t5), void 0 !== this.renderRoot && this.isConnected && t5.hostConnected?.();
+  addController(t7) {
+    (this._$EO ??= /* @__PURE__ */ new Set()).add(t7), void 0 !== this.renderRoot && this.isConnected && t7.hostConnected?.();
   }
-  removeController(t5) {
-    this._$EO?.delete(t5);
+  removeController(t7) {
+    this._$EO?.delete(t7);
   }
   _$E_() {
-    const t5 = /* @__PURE__ */ new Map(), s4 = this.constructor.elementProperties;
-    for (const i6 of s4.keys()) this.hasOwnProperty(i6) && (t5.set(i6, this[i6]), delete this[i6]);
-    t5.size > 0 && (this._$Ep = t5);
+    const t7 = /* @__PURE__ */ new Map(), s4 = this.constructor.elementProperties;
+    for (const i9 of s4.keys()) this.hasOwnProperty(i9) && (t7.set(i9, this[i9]), delete this[i9]);
+    t7.size > 0 && (this._$Ep = t7);
   }
   createRenderRoot() {
-    const t5 = this.shadowRoot ?? this.attachShadow(this.constructor.shadowRootOptions);
-    return S3(t5, this.constructor.elementStyles), t5;
+    const t7 = this.shadowRoot ?? this.attachShadow(this.constructor.shadowRootOptions);
+    return S3(t7, this.constructor.elementStyles), t7;
   }
   connectedCallback() {
-    this.renderRoot ??= this.createRenderRoot(), this.enableUpdating(true), this._$EO?.forEach(((t5) => t5.hostConnected?.()));
+    this.renderRoot ??= this.createRenderRoot(), this.enableUpdating(true), this._$EO?.forEach(((t7) => t7.hostConnected?.()));
   }
-  enableUpdating(t5) {
+  enableUpdating(t7) {
   }
   disconnectedCallback() {
-    this._$EO?.forEach(((t5) => t5.hostDisconnected?.()));
+    this._$EO?.forEach(((t7) => t7.hostDisconnected?.()));
   }
-  attributeChangedCallback(t5, s4, i6) {
-    this._$AK(t5, i6);
+  attributeChangedCallback(t7, s4, i9) {
+    this._$AK(t7, i9);
   }
-  _$EC(t5, s4) {
-    const i6 = this.constructor.elementProperties.get(t5), e7 = this.constructor._$Eu(t5, i6);
-    if (void 0 !== e7 && true === i6.reflect) {
-      const r9 = (void 0 !== i6.converter?.toAttribute ? i6.converter : u2).toAttribute(s4, i6.type);
-      this._$Em = t5, null == r9 ? this.removeAttribute(e7) : this.setAttribute(e7, r9), this._$Em = null;
+  _$EC(t7, s4) {
+    const i9 = this.constructor.elementProperties.get(t7), e13 = this.constructor._$Eu(t7, i9);
+    if (void 0 !== e13 && true === i9.reflect) {
+      const r11 = (void 0 !== i9.converter?.toAttribute ? i9.converter : u2).toAttribute(s4, i9.type);
+      this._$Em = t7, null == r11 ? this.removeAttribute(e13) : this.setAttribute(e13, r11), this._$Em = null;
     }
   }
-  _$AK(t5, s4) {
-    const i6 = this.constructor, e7 = i6._$Eh.get(t5);
-    if (void 0 !== e7 && this._$Em !== e7) {
-      const t6 = i6.getPropertyOptions(e7), r9 = "function" == typeof t6.converter ? { fromAttribute: t6.converter } : void 0 !== t6.converter?.fromAttribute ? t6.converter : u2;
-      this._$Em = e7, this[e7] = r9.fromAttribute(s4, t6.type), this._$Em = null;
+  _$AK(t7, s4) {
+    const i9 = this.constructor, e13 = i9._$Eh.get(t7);
+    if (void 0 !== e13 && this._$Em !== e13) {
+      const t8 = i9.getPropertyOptions(e13), r11 = "function" == typeof t8.converter ? { fromAttribute: t8.converter } : void 0 !== t8.converter?.fromAttribute ? t8.converter : u2;
+      this._$Em = e13, this[e13] = r11.fromAttribute(s4, t8.type), this._$Em = null;
     }
   }
-  requestUpdate(t5, s4, i6) {
-    if (void 0 !== t5) {
-      if (i6 ??= this.constructor.getPropertyOptions(t5), !(i6.hasChanged ?? f4)(this[t5], s4)) return;
-      this.P(t5, s4, i6);
+  requestUpdate(t7, s4, i9) {
+    if (void 0 !== t7) {
+      if (i9 ??= this.constructor.getPropertyOptions(t7), !(i9.hasChanged ?? f4)(this[t7], s4)) return;
+      this.P(t7, s4, i9);
     }
     false === this.isUpdatePending && (this._$ES = this._$ET());
   }
-  P(t5, s4, i6) {
-    this._$AL.has(t5) || this._$AL.set(t5, s4), true === i6.reflect && this._$Em !== t5 && (this._$Ej ??= /* @__PURE__ */ new Set()).add(t5);
+  P(t7, s4, i9) {
+    this._$AL.has(t7) || this._$AL.set(t7, s4), true === i9.reflect && this._$Em !== t7 && (this._$Ej ??= /* @__PURE__ */ new Set()).add(t7);
   }
   async _$ET() {
     this.isUpdatePending = true;
     try {
       await this._$ES;
-    } catch (t6) {
-      Promise.reject(t6);
+    } catch (t8) {
+      Promise.reject(t8);
     }
-    const t5 = this.scheduleUpdate();
-    return null != t5 && await t5, !this.isUpdatePending;
+    const t7 = this.scheduleUpdate();
+    return null != t7 && await t7, !this.isUpdatePending;
   }
   scheduleUpdate() {
     return this.performUpdate();
@@ -1049,25 +1049,25 @@ var b2 = class extends HTMLElement {
     if (!this.isUpdatePending) return;
     if (!this.hasUpdated) {
       if (this.renderRoot ??= this.createRenderRoot(), this._$Ep) {
-        for (const [t7, s5] of this._$Ep) this[t7] = s5;
+        for (const [t9, s5] of this._$Ep) this[t9] = s5;
         this._$Ep = void 0;
       }
-      const t6 = this.constructor.elementProperties;
-      if (t6.size > 0) for (const [s5, i6] of t6) true !== i6.wrapped || this._$AL.has(s5) || void 0 === this[s5] || this.P(s5, this[s5], i6);
+      const t8 = this.constructor.elementProperties;
+      if (t8.size > 0) for (const [s5, i9] of t8) true !== i9.wrapped || this._$AL.has(s5) || void 0 === this[s5] || this.P(s5, this[s5], i9);
     }
-    let t5 = false;
+    let t7 = false;
     const s4 = this._$AL;
     try {
-      t5 = this.shouldUpdate(s4), t5 ? (this.willUpdate(s4), this._$EO?.forEach(((t6) => t6.hostUpdate?.())), this.update(s4)) : this._$EU();
+      t7 = this.shouldUpdate(s4), t7 ? (this.willUpdate(s4), this._$EO?.forEach(((t8) => t8.hostUpdate?.())), this.update(s4)) : this._$EU();
     } catch (s5) {
-      throw t5 = false, this._$EU(), s5;
+      throw t7 = false, this._$EU(), s5;
     }
-    t5 && this._$AE(s4);
+    t7 && this._$AE(s4);
   }
-  willUpdate(t5) {
+  willUpdate(t7) {
   }
-  _$AE(t5) {
-    this._$EO?.forEach(((t6) => t6.hostUpdated?.())), this.hasUpdated || (this.hasUpdated = true, this.firstUpdated(t5)), this.updated(t5);
+  _$AE(t7) {
+    this._$EO?.forEach(((t8) => t8.hostUpdated?.())), this.hasUpdated || (this.hasUpdated = true, this.firstUpdated(t7)), this.updated(t7);
   }
   _$EU() {
     this._$AL = /* @__PURE__ */ new Map(), this.isUpdatePending = false;
@@ -1078,62 +1078,94 @@ var b2 = class extends HTMLElement {
   getUpdateComplete() {
     return this._$ES;
   }
-  shouldUpdate(t5) {
+  shouldUpdate(t7) {
     return true;
   }
-  update(t5) {
-    this._$Ej &&= this._$Ej.forEach(((t6) => this._$EC(t6, this[t6]))), this._$EU();
+  update(t7) {
+    this._$Ej &&= this._$Ej.forEach(((t8) => this._$EC(t8, this[t8]))), this._$EU();
   }
-  updated(t5) {
+  updated(t7) {
   }
-  firstUpdated(t5) {
+  firstUpdated(t7) {
   }
 };
 b2.elementStyles = [], b2.shadowRootOptions = { mode: "open" }, b2[d2("elementProperties")] = /* @__PURE__ */ new Map(), b2[d2("finalized")] = /* @__PURE__ */ new Map(), p2?.({ ReactiveElement: b2 }), (a2.reactiveElementVersions ??= []).push("2.0.4");
 
 // node_modules/@lit/reactive-element/decorators/property.js
 var o6 = { attribute: true, type: String, converter: u2, reflect: false, hasChanged: f4 };
-var r6 = (t5 = o6, e7, r9) => {
-  const { kind: n9, metadata: i6 } = r9;
-  let s4 = globalThis.litPropertyMetadata.get(i6);
-  if (void 0 === s4 && globalThis.litPropertyMetadata.set(i6, s4 = /* @__PURE__ */ new Map()), s4.set(r9.name, t5), "accessor" === n9) {
-    const { name: o8 } = r9;
-    return { set(r10) {
-      const n10 = e7.get.call(this);
-      e7.set.call(this, r10), this.requestUpdate(o8, n10, t5);
-    }, init(e8) {
-      return void 0 !== e8 && this.P(o8, void 0, t5), e8;
+var r6 = (t7 = o6, e13, r11) => {
+  const { kind: n10, metadata: i9 } = r11;
+  let s4 = globalThis.litPropertyMetadata.get(i9);
+  if (void 0 === s4 && globalThis.litPropertyMetadata.set(i9, s4 = /* @__PURE__ */ new Map()), s4.set(r11.name, t7), "accessor" === n10) {
+    const { name: o11 } = r11;
+    return { set(r12) {
+      const n11 = e13.get.call(this);
+      e13.set.call(this, r12), this.requestUpdate(o11, n11, t7);
+    }, init(e14) {
+      return void 0 !== e14 && this.P(o11, void 0, t7), e14;
     } };
   }
-  if ("setter" === n9) {
-    const { name: o8 } = r9;
-    return function(r10) {
-      const n10 = this[o8];
-      e7.call(this, r10), this.requestUpdate(o8, n10, t5);
+  if ("setter" === n10) {
+    const { name: o11 } = r11;
+    return function(r12) {
+      const n11 = this[o11];
+      e13.call(this, r12), this.requestUpdate(o11, n11, t7);
     };
   }
-  throw Error("Unsupported decorator location: " + n9);
+  throw Error("Unsupported decorator location: " + n10);
 };
-function n7(t5) {
-  return (e7, o8) => "object" == typeof o8 ? r6(t5, e7, o8) : ((t6, e8, o9) => {
-    const r9 = e8.hasOwnProperty(o9);
-    return e8.constructor.createProperty(o9, r9 ? { ...t6, wrapped: true } : t6), r9 ? Object.getOwnPropertyDescriptor(e8, o9) : void 0;
-  })(t5, e7, o8);
+function n7(t7) {
+  return (e13, o11) => "object" == typeof o11 ? r6(t7, e13, o11) : ((t8, e14, o12) => {
+    const r11 = e14.hasOwnProperty(o12);
+    return e14.constructor.createProperty(o12, r11 ? { ...t8, wrapped: true } : t8), r11 ? Object.getOwnPropertyDescriptor(e14, o12) : void 0;
+  })(t7, e13, o11);
+}
+
+// node_modules/@lit/reactive-element/decorators/state.js
+function r7(r11) {
+  return n7({ ...r11, state: true, attribute: false });
+}
+
+// node_modules/@lit/reactive-element/decorators/base.js
+var e5 = (e13, t7, c8) => (c8.configurable = true, c8.enumerable = true, Reflect.decorate && "object" != typeof t7 && Object.defineProperty(e13, t7, c8), c8);
+
+// node_modules/@lit/reactive-element/decorators/query.js
+function e6(e13, r11) {
+  return (n10, s4, i9) => {
+    const o11 = (t7) => t7.renderRoot?.querySelector(e13) ?? null;
+    if (r11) {
+      const { get: e14, set: r12 } = "object" == typeof s4 ? n10 : i9 ?? (() => {
+        const t7 = Symbol();
+        return { get() {
+          return this[t7];
+        }, set(e15) {
+          this[t7] = e15;
+        } };
+      })();
+      return e5(n10, s4, { get() {
+        let t7 = e14.call(this);
+        return void 0 === t7 && (t7 = o11(this), (null !== t7 || this.hasUpdated) && r12.call(this, t7)), t7;
+      } });
+    }
+    return e5(n10, s4, { get() {
+      return o11(this);
+    } });
+  };
 }
 
 // node_modules/lit-html/lit-html.js
 var t4 = globalThis;
 var i4 = t4.trustedTypes;
-var s3 = i4 ? i4.createPolicy("lit-html", { createHTML: (t5) => t5 }) : void 0;
-var e6 = "$lit$";
+var s3 = i4 ? i4.createPolicy("lit-html", { createHTML: (t7) => t7 }) : void 0;
+var e7 = "$lit$";
 var h5 = `lit$${Math.random().toFixed(9).slice(2)}$`;
 var o7 = "?" + h5;
 var n8 = `<${o7}>`;
-var r7 = document;
-var l3 = () => r7.createComment("");
-var c6 = (t5) => null === t5 || "object" != typeof t5 && "function" != typeof t5;
+var r8 = document;
+var l3 = () => r8.createComment("");
+var c6 = (t7) => null === t7 || "object" != typeof t7 && "function" != typeof t7;
 var a3 = Array.isArray;
-var u3 = (t5) => a3(t5) || "function" == typeof t5?.[Symbol.iterator];
+var u3 = (t7) => a3(t7) || "function" == typeof t7?.[Symbol.iterator];
 var d3 = "[ 	\n\f\r]";
 var f5 = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g;
 var v2 = /-->/g;
@@ -1143,76 +1175,76 @@ var m2 = RegExp(`>|${d3}(?:([^\\s"'>=/]+)(${d3}*=${d3}*(?:[^
 var p3 = /'/g;
 var g2 = /"/g;
 var $2 = /^(?:script|style|textarea|title)$/i;
-var y3 = (t5) => (i6, ...s4) => ({ _$litType$: t5, strings: i6, values: s4 });
+var y3 = (t7) => (i9, ...s4) => ({ _$litType$: t7, strings: i9, values: s4 });
 var x2 = y3(1);
 var b3 = y3(2);
 var w2 = y3(3);
 var T2 = Symbol.for("lit-noChange");
 var E2 = Symbol.for("lit-nothing");
 var A = /* @__PURE__ */ new WeakMap();
-var C = r7.createTreeWalker(r7, 129);
-function P2(t5, i6) {
-  if (!a3(t5) || !t5.hasOwnProperty("raw")) throw Error("invalid template strings array");
-  return void 0 !== s3 ? s3.createHTML(i6) : i6;
+var C = r8.createTreeWalker(r8, 129);
+function P2(t7, i9) {
+  if (!a3(t7) || !t7.hasOwnProperty("raw")) throw Error("invalid template strings array");
+  return void 0 !== s3 ? s3.createHTML(i9) : i9;
 }
-var V2 = (t5, i6) => {
-  const s4 = t5.length - 1, o8 = [];
-  let r9, l4 = 2 === i6 ? "<svg>" : 3 === i6 ? "<math>" : "", c7 = f5;
-  for (let i7 = 0; i7 < s4; i7++) {
-    const s5 = t5[i7];
-    let a4, u4, d4 = -1, y4 = 0;
-    for (; y4 < s5.length && (c7.lastIndex = y4, u4 = c7.exec(s5), null !== u4); ) y4 = c7.lastIndex, c7 === f5 ? "!--" === u4[1] ? c7 = v2 : void 0 !== u4[1] ? c7 = _2 : void 0 !== u4[2] ? ($2.test(u4[2]) && (r9 = RegExp("</" + u4[2], "g")), c7 = m2) : void 0 !== u4[3] && (c7 = m2) : c7 === m2 ? ">" === u4[0] ? (c7 = r9 ?? f5, d4 = -1) : void 0 === u4[1] ? d4 = -2 : (d4 = c7.lastIndex - u4[2].length, a4 = u4[1], c7 = void 0 === u4[3] ? m2 : '"' === u4[3] ? g2 : p3) : c7 === g2 || c7 === p3 ? c7 = m2 : c7 === v2 || c7 === _2 ? c7 = f5 : (c7 = m2, r9 = void 0);
-    const x3 = c7 === m2 && t5[i7 + 1].startsWith("/>") ? " " : "";
-    l4 += c7 === f5 ? s5 + n8 : d4 >= 0 ? (o8.push(a4), s5.slice(0, d4) + e6 + s5.slice(d4) + h5 + x3) : s5 + h5 + (-2 === d4 ? i7 : x3);
+var V2 = (t7, i9) => {
+  const s4 = t7.length - 1, o11 = [];
+  let r11, l6 = 2 === i9 ? "<svg>" : 3 === i9 ? "<math>" : "", c8 = f5;
+  for (let i10 = 0; i10 < s4; i10++) {
+    const s5 = t7[i10];
+    let a5, u6, d4 = -1, y4 = 0;
+    for (; y4 < s5.length && (c8.lastIndex = y4, u6 = c8.exec(s5), null !== u6); ) y4 = c8.lastIndex, c8 === f5 ? "!--" === u6[1] ? c8 = v2 : void 0 !== u6[1] ? c8 = _2 : void 0 !== u6[2] ? ($2.test(u6[2]) && (r11 = RegExp("</" + u6[2], "g")), c8 = m2) : void 0 !== u6[3] && (c8 = m2) : c8 === m2 ? ">" === u6[0] ? (c8 = r11 ?? f5, d4 = -1) : void 0 === u6[1] ? d4 = -2 : (d4 = c8.lastIndex - u6[2].length, a5 = u6[1], c8 = void 0 === u6[3] ? m2 : '"' === u6[3] ? g2 : p3) : c8 === g2 || c8 === p3 ? c8 = m2 : c8 === v2 || c8 === _2 ? c8 = f5 : (c8 = m2, r11 = void 0);
+    const x3 = c8 === m2 && t7[i10 + 1].startsWith("/>") ? " " : "";
+    l6 += c8 === f5 ? s5 + n8 : d4 >= 0 ? (o11.push(a5), s5.slice(0, d4) + e7 + s5.slice(d4) + h5 + x3) : s5 + h5 + (-2 === d4 ? i10 : x3);
   }
-  return [P2(t5, l4 + (t5[s4] || "<?>") + (2 === i6 ? "</svg>" : 3 === i6 ? "</math>" : "")), o8];
+  return [P2(t7, l6 + (t7[s4] || "<?>") + (2 === i9 ? "</svg>" : 3 === i9 ? "</math>" : "")), o11];
 };
 var N2 = class _N {
-  constructor({ strings: t5, _$litType$: s4 }, n9) {
-    let r9;
+  constructor({ strings: t7, _$litType$: s4 }, n10) {
+    let r11;
     this.parts = [];
-    let c7 = 0, a4 = 0;
-    const u4 = t5.length - 1, d4 = this.parts, [f6, v3] = V2(t5, s4);
-    if (this.el = _N.createElement(f6, n9), C.currentNode = this.el.content, 2 === s4 || 3 === s4) {
-      const t6 = this.el.content.firstChild;
-      t6.replaceWith(...t6.childNodes);
+    let c8 = 0, a5 = 0;
+    const u6 = t7.length - 1, d4 = this.parts, [f7, v3] = V2(t7, s4);
+    if (this.el = _N.createElement(f7, n10), C.currentNode = this.el.content, 2 === s4 || 3 === s4) {
+      const t8 = this.el.content.firstChild;
+      t8.replaceWith(...t8.childNodes);
     }
-    for (; null !== (r9 = C.nextNode()) && d4.length < u4; ) {
-      if (1 === r9.nodeType) {
-        if (r9.hasAttributes()) for (const t6 of r9.getAttributeNames()) if (t6.endsWith(e6)) {
-          const i6 = v3[a4++], s5 = r9.getAttribute(t6).split(h5), e7 = /([.?@])?(.*)/.exec(i6);
-          d4.push({ type: 1, index: c7, name: e7[2], strings: s5, ctor: "." === e7[1] ? H : "?" === e7[1] ? I2 : "@" === e7[1] ? L : k2 }), r9.removeAttribute(t6);
-        } else t6.startsWith(h5) && (d4.push({ type: 6, index: c7 }), r9.removeAttribute(t6));
-        if ($2.test(r9.tagName)) {
-          const t6 = r9.textContent.split(h5), s5 = t6.length - 1;
+    for (; null !== (r11 = C.nextNode()) && d4.length < u6; ) {
+      if (1 === r11.nodeType) {
+        if (r11.hasAttributes()) for (const t8 of r11.getAttributeNames()) if (t8.endsWith(e7)) {
+          const i9 = v3[a5++], s5 = r11.getAttribute(t8).split(h5), e13 = /([.?@])?(.*)/.exec(i9);
+          d4.push({ type: 1, index: c8, name: e13[2], strings: s5, ctor: "." === e13[1] ? H : "?" === e13[1] ? I2 : "@" === e13[1] ? L : k2 }), r11.removeAttribute(t8);
+        } else t8.startsWith(h5) && (d4.push({ type: 6, index: c8 }), r11.removeAttribute(t8));
+        if ($2.test(r11.tagName)) {
+          const t8 = r11.textContent.split(h5), s5 = t8.length - 1;
           if (s5 > 0) {
-            r9.textContent = i4 ? i4.emptyScript : "";
-            for (let i6 = 0; i6 < s5; i6++) r9.append(t6[i6], l3()), C.nextNode(), d4.push({ type: 2, index: ++c7 });
-            r9.append(t6[s5], l3());
+            r11.textContent = i4 ? i4.emptyScript : "";
+            for (let i9 = 0; i9 < s5; i9++) r11.append(t8[i9], l3()), C.nextNode(), d4.push({ type: 2, index: ++c8 });
+            r11.append(t8[s5], l3());
           }
         }
-      } else if (8 === r9.nodeType) if (r9.data === o7) d4.push({ type: 2, index: c7 });
+      } else if (8 === r11.nodeType) if (r11.data === o7) d4.push({ type: 2, index: c8 });
       else {
-        let t6 = -1;
-        for (; -1 !== (t6 = r9.data.indexOf(h5, t6 + 1)); ) d4.push({ type: 7, index: c7 }), t6 += h5.length - 1;
+        let t8 = -1;
+        for (; -1 !== (t8 = r11.data.indexOf(h5, t8 + 1)); ) d4.push({ type: 7, index: c8 }), t8 += h5.length - 1;
       }
-      c7++;
+      c8++;
     }
   }
-  static createElement(t5, i6) {
-    const s4 = r7.createElement("template");
-    return s4.innerHTML = t5, s4;
+  static createElement(t7, i9) {
+    const s4 = r8.createElement("template");
+    return s4.innerHTML = t7, s4;
   }
 };
-function S4(t5, i6, s4 = t5, e7) {
-  if (i6 === T2) return i6;
-  let h6 = void 0 !== e7 ? s4._$Co?.[e7] : s4._$Cl;
-  const o8 = c6(i6) ? void 0 : i6._$litDirective$;
-  return h6?.constructor !== o8 && (h6?._$AO?.(false), void 0 === o8 ? h6 = void 0 : (h6 = new o8(t5), h6._$AT(t5, s4, e7)), void 0 !== e7 ? (s4._$Co ??= [])[e7] = h6 : s4._$Cl = h6), void 0 !== h6 && (i6 = S4(t5, h6._$AS(t5, i6.values), h6, e7)), i6;
+function S4(t7, i9, s4 = t7, e13) {
+  if (i9 === T2) return i9;
+  let h6 = void 0 !== e13 ? s4._$Co?.[e13] : s4._$Cl;
+  const o11 = c6(i9) ? void 0 : i9._$litDirective$;
+  return h6?.constructor !== o11 && (h6?._$AO?.(false), void 0 === o11 ? h6 = void 0 : (h6 = new o11(t7), h6._$AT(t7, s4, e13)), void 0 !== e13 ? (s4._$Co ??= [])[e13] = h6 : s4._$Cl = h6), void 0 !== h6 && (i9 = S4(t7, h6._$AS(t7, i9.values), h6, e13)), i9;
 }
 var M2 = class {
-  constructor(t5, i6) {
-    this._$AV = [], this._$AN = void 0, this._$AD = t5, this._$AM = i6;
+  constructor(t7, i9) {
+    this._$AV = [], this._$AN = void 0, this._$AD = t7, this._$AM = i9;
   }
   get parentNode() {
     return this._$AM.parentNode;
@@ -1220,35 +1252,35 @@ var M2 = class {
   get _$AU() {
     return this._$AM._$AU;
   }
-  u(t5) {
-    const { el: { content: i6 }, parts: s4 } = this._$AD, e7 = (t5?.creationScope ?? r7).importNode(i6, true);
-    C.currentNode = e7;
-    let h6 = C.nextNode(), o8 = 0, n9 = 0, l4 = s4[0];
-    for (; void 0 !== l4; ) {
-      if (o8 === l4.index) {
-        let i7;
-        2 === l4.type ? i7 = new R2(h6, h6.nextSibling, this, t5) : 1 === l4.type ? i7 = new l4.ctor(h6, l4.name, l4.strings, this, t5) : 6 === l4.type && (i7 = new z2(h6, this, t5)), this._$AV.push(i7), l4 = s4[++n9];
+  u(t7) {
+    const { el: { content: i9 }, parts: s4 } = this._$AD, e13 = (t7?.creationScope ?? r8).importNode(i9, true);
+    C.currentNode = e13;
+    let h6 = C.nextNode(), o11 = 0, n10 = 0, l6 = s4[0];
+    for (; void 0 !== l6; ) {
+      if (o11 === l6.index) {
+        let i10;
+        2 === l6.type ? i10 = new R2(h6, h6.nextSibling, this, t7) : 1 === l6.type ? i10 = new l6.ctor(h6, l6.name, l6.strings, this, t7) : 6 === l6.type && (i10 = new z2(h6, this, t7)), this._$AV.push(i10), l6 = s4[++n10];
       }
-      o8 !== l4?.index && (h6 = C.nextNode(), o8++);
+      o11 !== l6?.index && (h6 = C.nextNode(), o11++);
     }
-    return C.currentNode = r7, e7;
+    return C.currentNode = r8, e13;
   }
-  p(t5) {
-    let i6 = 0;
-    for (const s4 of this._$AV) void 0 !== s4 && (void 0 !== s4.strings ? (s4._$AI(t5, s4, i6), i6 += s4.strings.length - 2) : s4._$AI(t5[i6])), i6++;
+  p(t7) {
+    let i9 = 0;
+    for (const s4 of this._$AV) void 0 !== s4 && (void 0 !== s4.strings ? (s4._$AI(t7, s4, i9), i9 += s4.strings.length - 2) : s4._$AI(t7[i9])), i9++;
   }
 };
 var R2 = class _R {
   get _$AU() {
     return this._$AM?._$AU ?? this._$Cv;
   }
-  constructor(t5, i6, s4, e7) {
-    this.type = 2, this._$AH = E2, this._$AN = void 0, this._$AA = t5, this._$AB = i6, this._$AM = s4, this.options = e7, this._$Cv = e7?.isConnected ?? true;
+  constructor(t7, i9, s4, e13) {
+    this.type = 2, this._$AH = E2, this._$AN = void 0, this._$AA = t7, this._$AB = i9, this._$AM = s4, this.options = e13, this._$Cv = e13?.isConnected ?? true;
   }
   get parentNode() {
-    let t5 = this._$AA.parentNode;
-    const i6 = this._$AM;
-    return void 0 !== i6 && 11 === t5?.nodeType && (t5 = i6.parentNode), t5;
+    let t7 = this._$AA.parentNode;
+    const i9 = this._$AM;
+    return void 0 !== i9 && 11 === t7?.nodeType && (t7 = i9.parentNode), t7;
   }
   get startNode() {
     return this._$AA;
@@ -1256,45 +1288,45 @@ var R2 = class _R {
   get endNode() {
     return this._$AB;
   }
-  _$AI(t5, i6 = this) {
-    t5 = S4(this, t5, i6), c6(t5) ? t5 === E2 || null == t5 || "" === t5 ? (this._$AH !== E2 && this._$AR(), this._$AH = E2) : t5 !== this._$AH && t5 !== T2 && this._(t5) : void 0 !== t5._$litType$ ? this.$(t5) : void 0 !== t5.nodeType ? this.T(t5) : u3(t5) ? this.k(t5) : this._(t5);
+  _$AI(t7, i9 = this) {
+    t7 = S4(this, t7, i9), c6(t7) ? t7 === E2 || null == t7 || "" === t7 ? (this._$AH !== E2 && this._$AR(), this._$AH = E2) : t7 !== this._$AH && t7 !== T2 && this._(t7) : void 0 !== t7._$litType$ ? this.$(t7) : void 0 !== t7.nodeType ? this.T(t7) : u3(t7) ? this.k(t7) : this._(t7);
   }
-  O(t5) {
-    return this._$AA.parentNode.insertBefore(t5, this._$AB);
+  O(t7) {
+    return this._$AA.parentNode.insertBefore(t7, this._$AB);
   }
-  T(t5) {
-    this._$AH !== t5 && (this._$AR(), this._$AH = this.O(t5));
+  T(t7) {
+    this._$AH !== t7 && (this._$AR(), this._$AH = this.O(t7));
   }
-  _(t5) {
-    this._$AH !== E2 && c6(this._$AH) ? this._$AA.nextSibling.data = t5 : this.T(r7.createTextNode(t5)), this._$AH = t5;
+  _(t7) {
+    this._$AH !== E2 && c6(this._$AH) ? this._$AA.nextSibling.data = t7 : this.T(r8.createTextNode(t7)), this._$AH = t7;
   }
-  $(t5) {
-    const { values: i6, _$litType$: s4 } = t5, e7 = "number" == typeof s4 ? this._$AC(t5) : (void 0 === s4.el && (s4.el = N2.createElement(P2(s4.h, s4.h[0]), this.options)), s4);
-    if (this._$AH?._$AD === e7) this._$AH.p(i6);
+  $(t7) {
+    const { values: i9, _$litType$: s4 } = t7, e13 = "number" == typeof s4 ? this._$AC(t7) : (void 0 === s4.el && (s4.el = N2.createElement(P2(s4.h, s4.h[0]), this.options)), s4);
+    if (this._$AH?._$AD === e13) this._$AH.p(i9);
     else {
-      const t6 = new M2(e7, this), s5 = t6.u(this.options);
-      t6.p(i6), this.T(s5), this._$AH = t6;
+      const t8 = new M2(e13, this), s5 = t8.u(this.options);
+      t8.p(i9), this.T(s5), this._$AH = t8;
     }
   }
-  _$AC(t5) {
-    let i6 = A.get(t5.strings);
-    return void 0 === i6 && A.set(t5.strings, i6 = new N2(t5)), i6;
+  _$AC(t7) {
+    let i9 = A.get(t7.strings);
+    return void 0 === i9 && A.set(t7.strings, i9 = new N2(t7)), i9;
   }
-  k(t5) {
+  k(t7) {
     a3(this._$AH) || (this._$AH = [], this._$AR());
-    const i6 = this._$AH;
-    let s4, e7 = 0;
-    for (const h6 of t5) e7 === i6.length ? i6.push(s4 = new _R(this.O(l3()), this.O(l3()), this, this.options)) : s4 = i6[e7], s4._$AI(h6), e7++;
-    e7 < i6.length && (this._$AR(s4 && s4._$AB.nextSibling, e7), i6.length = e7);
+    const i9 = this._$AH;
+    let s4, e13 = 0;
+    for (const h6 of t7) e13 === i9.length ? i9.push(s4 = new _R(this.O(l3()), this.O(l3()), this, this.options)) : s4 = i9[e13], s4._$AI(h6), e13++;
+    e13 < i9.length && (this._$AR(s4 && s4._$AB.nextSibling, e13), i9.length = e13);
   }
-  _$AR(t5 = this._$AA.nextSibling, i6) {
-    for (this._$AP?.(false, true, i6); t5 && t5 !== this._$AB; ) {
-      const i7 = t5.nextSibling;
-      t5.remove(), t5 = i7;
+  _$AR(t7 = this._$AA.nextSibling, i9) {
+    for (this._$AP?.(false, true, i9); t7 && t7 !== this._$AB; ) {
+      const i10 = t7.nextSibling;
+      t7.remove(), t7 = i10;
     }
   }
-  setConnected(t5) {
-    void 0 === this._$AM && (this._$Cv = t5, this._$AP?.(t5));
+  setConnected(t7) {
+    void 0 === this._$AM && (this._$Cv = t7, this._$AP?.(t7));
   }
 };
 var k2 = class {
@@ -1304,88 +1336,89 @@ var k2 = class {
   get _$AU() {
     return this._$AM._$AU;
   }
-  constructor(t5, i6, s4, e7, h6) {
-    this.type = 1, this._$AH = E2, this._$AN = void 0, this.element = t5, this.name = i6, this._$AM = e7, this.options = h6, s4.length > 2 || "" !== s4[0] || "" !== s4[1] ? (this._$AH = Array(s4.length - 1).fill(new String()), this.strings = s4) : this._$AH = E2;
+  constructor(t7, i9, s4, e13, h6) {
+    this.type = 1, this._$AH = E2, this._$AN = void 0, this.element = t7, this.name = i9, this._$AM = e13, this.options = h6, s4.length > 2 || "" !== s4[0] || "" !== s4[1] ? (this._$AH = Array(s4.length - 1).fill(new String()), this.strings = s4) : this._$AH = E2;
   }
-  _$AI(t5, i6 = this, s4, e7) {
+  _$AI(t7, i9 = this, s4, e13) {
     const h6 = this.strings;
-    let o8 = false;
-    if (void 0 === h6) t5 = S4(this, t5, i6, 0), o8 = !c6(t5) || t5 !== this._$AH && t5 !== T2, o8 && (this._$AH = t5);
+    let o11 = false;
+    if (void 0 === h6) t7 = S4(this, t7, i9, 0), o11 = !c6(t7) || t7 !== this._$AH && t7 !== T2, o11 && (this._$AH = t7);
     else {
-      const e8 = t5;
-      let n9, r9;
-      for (t5 = h6[0], n9 = 0; n9 < h6.length - 1; n9++) r9 = S4(this, e8[s4 + n9], i6, n9), r9 === T2 && (r9 = this._$AH[n9]), o8 ||= !c6(r9) || r9 !== this._$AH[n9], r9 === E2 ? t5 = E2 : t5 !== E2 && (t5 += (r9 ?? "") + h6[n9 + 1]), this._$AH[n9] = r9;
+      const e14 = t7;
+      let n10, r11;
+      for (t7 = h6[0], n10 = 0; n10 < h6.length - 1; n10++) r11 = S4(this, e14[s4 + n10], i9, n10), r11 === T2 && (r11 = this._$AH[n10]), o11 ||= !c6(r11) || r11 !== this._$AH[n10], r11 === E2 ? t7 = E2 : t7 !== E2 && (t7 += (r11 ?? "") + h6[n10 + 1]), this._$AH[n10] = r11;
     }
-    o8 && !e7 && this.j(t5);
+    o11 && !e13 && this.j(t7);
   }
-  j(t5) {
-    t5 === E2 ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t5 ?? "");
+  j(t7) {
+    t7 === E2 ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t7 ?? "");
   }
 };
 var H = class extends k2 {
   constructor() {
     super(...arguments), this.type = 3;
   }
-  j(t5) {
-    this.element[this.name] = t5 === E2 ? void 0 : t5;
+  j(t7) {
+    this.element[this.name] = t7 === E2 ? void 0 : t7;
   }
 };
 var I2 = class extends k2 {
   constructor() {
     super(...arguments), this.type = 4;
   }
-  j(t5) {
-    this.element.toggleAttribute(this.name, !!t5 && t5 !== E2);
+  j(t7) {
+    this.element.toggleAttribute(this.name, !!t7 && t7 !== E2);
   }
 };
 var L = class extends k2 {
-  constructor(t5, i6, s4, e7, h6) {
-    super(t5, i6, s4, e7, h6), this.type = 5;
+  constructor(t7, i9, s4, e13, h6) {
+    super(t7, i9, s4, e13, h6), this.type = 5;
   }
-  _$AI(t5, i6 = this) {
-    if ((t5 = S4(this, t5, i6, 0) ?? E2) === T2) return;
-    const s4 = this._$AH, e7 = t5 === E2 && s4 !== E2 || t5.capture !== s4.capture || t5.once !== s4.once || t5.passive !== s4.passive, h6 = t5 !== E2 && (s4 === E2 || e7);
-    e7 && this.element.removeEventListener(this.name, this, s4), h6 && this.element.addEventListener(this.name, this, t5), this._$AH = t5;
+  _$AI(t7, i9 = this) {
+    if ((t7 = S4(this, t7, i9, 0) ?? E2) === T2) return;
+    const s4 = this._$AH, e13 = t7 === E2 && s4 !== E2 || t7.capture !== s4.capture || t7.once !== s4.once || t7.passive !== s4.passive, h6 = t7 !== E2 && (s4 === E2 || e13);
+    e13 && this.element.removeEventListener(this.name, this, s4), h6 && this.element.addEventListener(this.name, this, t7), this._$AH = t7;
   }
-  handleEvent(t5) {
-    "function" == typeof this._$AH ? this._$AH.call(this.options?.host ?? this.element, t5) : this._$AH.handleEvent(t5);
+  handleEvent(t7) {
+    "function" == typeof this._$AH ? this._$AH.call(this.options?.host ?? this.element, t7) : this._$AH.handleEvent(t7);
   }
 };
 var z2 = class {
-  constructor(t5, i6, s4) {
-    this.element = t5, this.type = 6, this._$AN = void 0, this._$AM = i6, this.options = s4;
+  constructor(t7, i9, s4) {
+    this.element = t7, this.type = 6, this._$AN = void 0, this._$AM = i9, this.options = s4;
   }
   get _$AU() {
     return this._$AM._$AU;
   }
-  _$AI(t5) {
-    S4(this, t5);
+  _$AI(t7) {
+    S4(this, t7);
   }
 };
+var Z2 = { M: e7, P: h5, A: o7, C: 1, L: V2, R: M2, D: u3, V: S4, I: R2, H: k2, N: I2, U: L, B: H, F: z2 };
 var j2 = t4.litHtmlPolyfillSupport;
 j2?.(N2, R2), (t4.litHtmlVersions ??= []).push("3.2.1");
-var B2 = (t5, i6, s4) => {
-  const e7 = s4?.renderBefore ?? i6;
-  let h6 = e7._$litPart$;
+var B2 = (t7, i9, s4) => {
+  const e13 = s4?.renderBefore ?? i9;
+  let h6 = e13._$litPart$;
   if (void 0 === h6) {
-    const t6 = s4?.renderBefore ?? null;
-    e7._$litPart$ = h6 = new R2(i6.insertBefore(l3(), t6), t6, void 0, s4 ?? {});
+    const t8 = s4?.renderBefore ?? null;
+    e13._$litPart$ = h6 = new R2(i9.insertBefore(l3(), t8), t8, void 0, s4 ?? {});
   }
-  return h6._$AI(t5), h6;
+  return h6._$AI(t7), h6;
 };
 
 // node_modules/lit-element/lit-element.js
-var r8 = class extends b2 {
+var r9 = class extends b2 {
   constructor() {
     super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
   }
   createRenderRoot() {
-    const t5 = super.createRenderRoot();
-    return this.renderOptions.renderBefore ??= t5.firstChild, t5;
+    const t7 = super.createRenderRoot();
+    return this.renderOptions.renderBefore ??= t7.firstChild, t7;
   }
-  update(t5) {
+  update(t7) {
     const s4 = this.render();
-    this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(t5), this._$Do = B2(s4, this.renderRoot, this.renderOptions);
+    this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(t7), this._$Do = B2(s4, this.renderRoot, this.renderOptions);
   }
   connectedCallback() {
     super.connectedCallback(), this._$Do?.setConnected(true);
@@ -1397,16 +1430,6801 @@ var r8 = class extends b2 {
     return T2;
   }
 };
-r8._$litElement$ = true, r8["finalized"] = true, globalThis.litElementHydrateSupport?.({ LitElement: r8 });
+r9._$litElement$ = true, r9["finalized"] = true, globalThis.litElementHydrateSupport?.({ LitElement: r9 });
 var i5 = globalThis.litElementPolyfillSupport;
-i5?.({ LitElement: r8 });
+i5?.({ LitElement: r9 });
 (globalThis.litElementVersions ??= []).push("4.1.1");
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.7DUCI5S4.js
+var spinner_styles_default = i`
+  :host {
+    --track-width: 2px;
+    --track-color: rgb(128 128 128 / 25%);
+    --indicator-color: var(--sl-color-primary-600);
+    --speed: 2s;
+
+    display: inline-flex;
+    width: 1em;
+    height: 1em;
+    flex: none;
+  }
+
+  .spinner {
+    flex: 1 1 auto;
+    height: 100%;
+    width: 100%;
+  }
+
+  .spinner__track,
+  .spinner__indicator {
+    fill: none;
+    stroke-width: var(--track-width);
+    r: calc(0.5em - var(--track-width) / 2);
+    cx: 0.5em;
+    cy: 0.5em;
+    transform-origin: 50% 50%;
+  }
+
+  .spinner__track {
+    stroke: var(--track-color);
+    transform-origin: 0% 0%;
+  }
+
+  .spinner__indicator {
+    stroke: var(--indicator-color);
+    stroke-linecap: round;
+    stroke-dasharray: 150% 75%;
+    animation: spin var(--speed) linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+      stroke-dasharray: 0.05em, 3em;
+    }
+
+    50% {
+      transform: rotate(450deg);
+      stroke-dasharray: 1.375em, 1.375em;
+    }
+
+    100% {
+      transform: rotate(1080deg);
+      stroke-dasharray: 0.05em, 3em;
+    }
+  }
+`;
+
+// node_modules/@shoelace-style/localize/dist/index.js
+var connectedElements = /* @__PURE__ */ new Set();
+var translations = /* @__PURE__ */ new Map();
+var fallback;
+var documentDirection = "ltr";
+var documentLanguage = "en";
+var isClient = typeof MutationObserver !== "undefined" && typeof document !== "undefined" && typeof document.documentElement !== "undefined";
+if (isClient) {
+  const documentElementObserver = new MutationObserver(update);
+  documentDirection = document.documentElement.dir || "ltr";
+  documentLanguage = document.documentElement.lang || navigator.language;
+  documentElementObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["dir", "lang"]
+  });
+}
+function registerTranslation(...translation2) {
+  translation2.map((t7) => {
+    const code = t7.$code.toLowerCase();
+    if (translations.has(code)) {
+      translations.set(code, Object.assign(Object.assign({}, translations.get(code)), t7));
+    } else {
+      translations.set(code, t7);
+    }
+    if (!fallback) {
+      fallback = t7;
+    }
+  });
+  update();
+}
+function update() {
+  if (isClient) {
+    documentDirection = document.documentElement.dir || "ltr";
+    documentLanguage = document.documentElement.lang || navigator.language;
+  }
+  [...connectedElements.keys()].map((el) => {
+    if (typeof el.requestUpdate === "function") {
+      el.requestUpdate();
+    }
+  });
+}
+var LocalizeController = class {
+  constructor(host) {
+    this.host = host;
+    this.host.addController(this);
+  }
+  hostConnected() {
+    connectedElements.add(this.host);
+  }
+  hostDisconnected() {
+    connectedElements.delete(this.host);
+  }
+  dir() {
+    return `${this.host.dir || documentDirection}`.toLowerCase();
+  }
+  lang() {
+    return `${this.host.lang || documentLanguage}`.toLowerCase();
+  }
+  getTranslationData(lang) {
+    var _a3, _b;
+    const locale = new Intl.Locale(lang.replace(/_/g, "-"));
+    const language = locale === null || locale === void 0 ? void 0 : locale.language.toLowerCase();
+    const region = (_b = (_a3 = locale === null || locale === void 0 ? void 0 : locale.region) === null || _a3 === void 0 ? void 0 : _a3.toLowerCase()) !== null && _b !== void 0 ? _b : "";
+    const primary = translations.get(`${language}-${region}`);
+    const secondary = translations.get(language);
+    return { locale, language, region, primary, secondary };
+  }
+  exists(key, options) {
+    var _a3;
+    const { primary, secondary } = this.getTranslationData((_a3 = options.lang) !== null && _a3 !== void 0 ? _a3 : this.lang());
+    options = Object.assign({ includeFallback: false }, options);
+    if (primary && primary[key] || secondary && secondary[key] || options.includeFallback && fallback && fallback[key]) {
+      return true;
+    }
+    return false;
+  }
+  term(key, ...args) {
+    const { primary, secondary } = this.getTranslationData(this.lang());
+    let term;
+    if (primary && primary[key]) {
+      term = primary[key];
+    } else if (secondary && secondary[key]) {
+      term = secondary[key];
+    } else if (fallback && fallback[key]) {
+      term = fallback[key];
+    } else {
+      console.error(`No translation found for: ${String(key)}`);
+      return String(key);
+    }
+    if (typeof term === "function") {
+      return term(...args);
+    }
+    return term;
+  }
+  date(dateToFormat, options) {
+    dateToFormat = new Date(dateToFormat);
+    return new Intl.DateTimeFormat(this.lang(), options).format(dateToFormat);
+  }
+  number(numberToFormat, options) {
+    numberToFormat = Number(numberToFormat);
+    return isNaN(numberToFormat) ? "" : new Intl.NumberFormat(this.lang(), options).format(numberToFormat);
+  }
+  relativeTime(value, unit, options) {
+    return new Intl.RelativeTimeFormat(this.lang(), options).format(value, unit);
+  }
+};
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.7BTDLTNI.js
+var translation = {
+  $code: "en",
+  $name: "English",
+  $dir: "ltr",
+  carousel: "Carousel",
+  clearEntry: "Clear entry",
+  close: "Close",
+  copied: "Copied",
+  copy: "Copy",
+  currentValue: "Current value",
+  error: "Error",
+  goToSlide: (slide, count) => `Go to slide ${slide} of ${count}`,
+  hidePassword: "Hide password",
+  loading: "Loading",
+  nextSlide: "Next slide",
+  numOptionsSelected: (num) => {
+    if (num === 0) return "No options selected";
+    if (num === 1) return "1 option selected";
+    return `${num} options selected`;
+  },
+  previousSlide: "Previous slide",
+  progress: "Progress",
+  remove: "Remove",
+  resize: "Resize",
+  scrollToEnd: "Scroll to end",
+  scrollToStart: "Scroll to start",
+  selectAColorFromTheScreen: "Select a color from the screen",
+  showPassword: "Show password",
+  slideNum: (slide) => `Slide ${slide}`,
+  toggleColorFormat: "Toggle color format"
+};
+registerTranslation(translation);
+var en_default = translation;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.6CTB5ZDJ.js
+var LocalizeController2 = class extends LocalizeController {
+};
+registerTranslation(en_default);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.TUVJKY7S.js
+var component_styles_default = i`
+  :host {
+    box-sizing: border-box;
+  }
+
+  :host *,
+  :host *::before,
+  :host *::after {
+    box-sizing: inherit;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.KAW7D32O.js
+var __defProp3 = Object.defineProperty;
+var __defProps = Object.defineProperties;
+var __getOwnPropDesc3 = Object.getOwnPropertyDescriptor;
+var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
+var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __propIsEnum = Object.prototype.propertyIsEnumerable;
+var __typeError3 = (msg) => {
+  throw TypeError(msg);
+};
+var __defNormalProp3 = (obj, key, value) => key in obj ? __defProp3(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues = (a5, b4) => {
+  for (var prop in b4 || (b4 = {}))
+    if (__hasOwnProp.call(b4, prop))
+      __defNormalProp3(a5, prop, b4[prop]);
+  if (__getOwnPropSymbols)
+    for (var prop of __getOwnPropSymbols(b4)) {
+      if (__propIsEnum.call(b4, prop))
+        __defNormalProp3(a5, prop, b4[prop]);
+    }
+  return a5;
+};
+var __spreadProps = (a5, b4) => __defProps(a5, __getOwnPropDescs(b4));
+var __decorateClass = (decorators, target, key, kind) => {
+  var result = kind > 1 ? void 0 : kind ? __getOwnPropDesc3(target, key) : target;
+  for (var i9 = decorators.length - 1, decorator; i9 >= 0; i9--)
+    if (decorator = decorators[i9])
+      result = (kind ? decorator(target, key, result) : decorator(result)) || result;
+  if (kind && result) __defProp3(target, key, result);
+  return result;
+};
+var __accessCheck3 = (obj, member, msg) => member.has(obj) || __typeError3("Cannot " + msg);
+var __privateGet3 = (obj, member, getter) => (__accessCheck3(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
+var __privateAdd3 = (obj, member, value) => member.has(obj) ? __typeError3("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+var __privateSet3 = (obj, member, value, setter) => (__accessCheck3(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.EMG3ZSPT.js
+var _hasRecordedInitialProperties;
+var ShoelaceElement = class extends r9 {
+  constructor() {
+    super();
+    __privateAdd3(this, _hasRecordedInitialProperties, false);
+    this.initialReflectedProperties = /* @__PURE__ */ new Map();
+    Object.entries(this.constructor.dependencies).forEach(([name, component]) => {
+      this.constructor.define(name, component);
+    });
+  }
+  emit(name, options) {
+    const event = new CustomEvent(name, __spreadValues({
+      bubbles: true,
+      cancelable: false,
+      composed: true,
+      detail: {}
+    }, options));
+    this.dispatchEvent(event);
+    return event;
+  }
+  /* eslint-enable */
+  static define(name, elementConstructor = this, options = {}) {
+    const currentlyRegisteredConstructor = customElements.get(name);
+    if (!currentlyRegisteredConstructor) {
+      try {
+        customElements.define(name, elementConstructor, options);
+      } catch (_err) {
+        customElements.define(name, class extends elementConstructor {
+        }, options);
+      }
+      return;
+    }
+    let newVersion = " (unknown version)";
+    let existingVersion = newVersion;
+    if ("version" in elementConstructor && elementConstructor.version) {
+      newVersion = " v" + elementConstructor.version;
+    }
+    if ("version" in currentlyRegisteredConstructor && currentlyRegisteredConstructor.version) {
+      existingVersion = " v" + currentlyRegisteredConstructor.version;
+    }
+    if (newVersion && existingVersion && newVersion === existingVersion) {
+      return;
+    }
+    console.warn(
+      `Attempted to register <${name}>${newVersion}, but <${name}>${existingVersion} has already been registered.`
+    );
+  }
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (!__privateGet3(this, _hasRecordedInitialProperties)) {
+      this.constructor.elementProperties.forEach(
+        (obj, prop) => {
+          if (obj.reflect && this[prop] != null) {
+            this.initialReflectedProperties.set(prop, this[prop]);
+          }
+        }
+      );
+      __privateSet3(this, _hasRecordedInitialProperties, true);
+    }
+    super.attributeChangedCallback(name, oldValue, newValue);
+  }
+  willUpdate(changedProperties) {
+    super.willUpdate(changedProperties);
+    this.initialReflectedProperties.forEach((value, prop) => {
+      if (changedProperties.has(prop) && this[prop] == null) {
+        this[prop] = value;
+      }
+    });
+  }
+};
+_hasRecordedInitialProperties = /* @__PURE__ */ new WeakMap();
+ShoelaceElement.version = "2.19.1";
+ShoelaceElement.dependencies = {};
+__decorateClass([
+  n7()
+], ShoelaceElement.prototype, "dir", 2);
+__decorateClass([
+  n7()
+], ShoelaceElement.prototype, "lang", 2);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.YB3JVLEN.js
+var SlSpinner = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.localize = new LocalizeController2(this);
+  }
+  render() {
+    return x2`
+      <svg part="base" class="spinner" role="progressbar" aria-label=${this.localize.term("loading")}>
+        <circle class="spinner__track"></circle>
+        <circle class="spinner__indicator"></circle>
+      </svg>
+    `;
+  }
+};
+SlSpinner.styles = [component_styles_default, spinner_styles_default];
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.3RPBFEDE.js
+var formCollections = /* @__PURE__ */ new WeakMap();
+var reportValidityOverloads = /* @__PURE__ */ new WeakMap();
+var checkValidityOverloads = /* @__PURE__ */ new WeakMap();
+var userInteractedControls = /* @__PURE__ */ new WeakSet();
+var interactions = /* @__PURE__ */ new WeakMap();
+var FormControlController = class {
+  constructor(host, options) {
+    this.handleFormData = (event) => {
+      const disabled = this.options.disabled(this.host);
+      const name = this.options.name(this.host);
+      const value = this.options.value(this.host);
+      const isButton = this.host.tagName.toLowerCase() === "sl-button";
+      if (this.host.isConnected && !disabled && !isButton && typeof name === "string" && name.length > 0 && typeof value !== "undefined") {
+        if (Array.isArray(value)) {
+          value.forEach((val) => {
+            event.formData.append(name, val.toString());
+          });
+        } else {
+          event.formData.append(name, value.toString());
+        }
+      }
+    };
+    this.handleFormSubmit = (event) => {
+      var _a3;
+      const disabled = this.options.disabled(this.host);
+      const reportValidity = this.options.reportValidity;
+      if (this.form && !this.form.noValidate) {
+        (_a3 = formCollections.get(this.form)) == null ? void 0 : _a3.forEach((control) => {
+          this.setUserInteracted(control, true);
+        });
+      }
+      if (this.form && !this.form.noValidate && !disabled && !reportValidity(this.host)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    };
+    this.handleFormReset = () => {
+      this.options.setValue(this.host, this.options.defaultValue(this.host));
+      this.setUserInteracted(this.host, false);
+      interactions.set(this.host, []);
+    };
+    this.handleInteraction = (event) => {
+      const emittedEvents = interactions.get(this.host);
+      if (!emittedEvents.includes(event.type)) {
+        emittedEvents.push(event.type);
+      }
+      if (emittedEvents.length === this.options.assumeInteractionOn.length) {
+        this.setUserInteracted(this.host, true);
+      }
+    };
+    this.checkFormValidity = () => {
+      if (this.form && !this.form.noValidate) {
+        const elements = this.form.querySelectorAll("*");
+        for (const element of elements) {
+          if (typeof element.checkValidity === "function") {
+            if (!element.checkValidity()) {
+              return false;
+            }
+          }
+        }
+      }
+      return true;
+    };
+    this.reportFormValidity = () => {
+      if (this.form && !this.form.noValidate) {
+        const elements = this.form.querySelectorAll("*");
+        for (const element of elements) {
+          if (typeof element.reportValidity === "function") {
+            if (!element.reportValidity()) {
+              return false;
+            }
+          }
+        }
+      }
+      return true;
+    };
+    (this.host = host).addController(this);
+    this.options = __spreadValues({
+      form: (input) => {
+        const formId = input.form;
+        if (formId) {
+          const root = input.getRootNode();
+          const form = root.querySelector(`#${formId}`);
+          if (form) {
+            return form;
+          }
+        }
+        return input.closest("form");
+      },
+      name: (input) => input.name,
+      value: (input) => input.value,
+      defaultValue: (input) => input.defaultValue,
+      disabled: (input) => {
+        var _a3;
+        return (_a3 = input.disabled) != null ? _a3 : false;
+      },
+      reportValidity: (input) => typeof input.reportValidity === "function" ? input.reportValidity() : true,
+      checkValidity: (input) => typeof input.checkValidity === "function" ? input.checkValidity() : true,
+      setValue: (input, value) => input.value = value,
+      assumeInteractionOn: ["sl-input"]
+    }, options);
+  }
+  hostConnected() {
+    const form = this.options.form(this.host);
+    if (form) {
+      this.attachForm(form);
+    }
+    interactions.set(this.host, []);
+    this.options.assumeInteractionOn.forEach((event) => {
+      this.host.addEventListener(event, this.handleInteraction);
+    });
+  }
+  hostDisconnected() {
+    this.detachForm();
+    interactions.delete(this.host);
+    this.options.assumeInteractionOn.forEach((event) => {
+      this.host.removeEventListener(event, this.handleInteraction);
+    });
+  }
+  hostUpdated() {
+    const form = this.options.form(this.host);
+    if (!form) {
+      this.detachForm();
+    }
+    if (form && this.form !== form) {
+      this.detachForm();
+      this.attachForm(form);
+    }
+    if (this.host.hasUpdated) {
+      this.setValidity(this.host.validity.valid);
+    }
+  }
+  attachForm(form) {
+    if (form) {
+      this.form = form;
+      if (formCollections.has(this.form)) {
+        formCollections.get(this.form).add(this.host);
+      } else {
+        formCollections.set(this.form, /* @__PURE__ */ new Set([this.host]));
+      }
+      this.form.addEventListener("formdata", this.handleFormData);
+      this.form.addEventListener("submit", this.handleFormSubmit);
+      this.form.addEventListener("reset", this.handleFormReset);
+      if (!reportValidityOverloads.has(this.form)) {
+        reportValidityOverloads.set(this.form, this.form.reportValidity);
+        this.form.reportValidity = () => this.reportFormValidity();
+      }
+      if (!checkValidityOverloads.has(this.form)) {
+        checkValidityOverloads.set(this.form, this.form.checkValidity);
+        this.form.checkValidity = () => this.checkFormValidity();
+      }
+    } else {
+      this.form = void 0;
+    }
+  }
+  detachForm() {
+    if (!this.form) return;
+    const formCollection = formCollections.get(this.form);
+    if (!formCollection) {
+      return;
+    }
+    formCollection.delete(this.host);
+    if (formCollection.size <= 0) {
+      this.form.removeEventListener("formdata", this.handleFormData);
+      this.form.removeEventListener("submit", this.handleFormSubmit);
+      this.form.removeEventListener("reset", this.handleFormReset);
+      if (reportValidityOverloads.has(this.form)) {
+        this.form.reportValidity = reportValidityOverloads.get(this.form);
+        reportValidityOverloads.delete(this.form);
+      }
+      if (checkValidityOverloads.has(this.form)) {
+        this.form.checkValidity = checkValidityOverloads.get(this.form);
+        checkValidityOverloads.delete(this.form);
+      }
+      this.form = void 0;
+    }
+  }
+  setUserInteracted(el, hasInteracted) {
+    if (hasInteracted) {
+      userInteractedControls.add(el);
+    } else {
+      userInteractedControls.delete(el);
+    }
+    el.requestUpdate();
+  }
+  doAction(type, submitter) {
+    if (this.form) {
+      const button = document.createElement("button");
+      button.type = type;
+      button.style.position = "absolute";
+      button.style.width = "0";
+      button.style.height = "0";
+      button.style.clipPath = "inset(50%)";
+      button.style.overflow = "hidden";
+      button.style.whiteSpace = "nowrap";
+      if (submitter) {
+        button.name = submitter.name;
+        button.value = submitter.value;
+        ["formaction", "formenctype", "formmethod", "formnovalidate", "formtarget"].forEach((attr) => {
+          if (submitter.hasAttribute(attr)) {
+            button.setAttribute(attr, submitter.getAttribute(attr));
+          }
+        });
+      }
+      this.form.append(button);
+      button.click();
+      button.remove();
+    }
+  }
+  /** Returns the associated `<form>` element, if one exists. */
+  getForm() {
+    var _a3;
+    return (_a3 = this.form) != null ? _a3 : null;
+  }
+  /** Resets the form, restoring all the control to their default value */
+  reset(submitter) {
+    this.doAction("reset", submitter);
+  }
+  /** Submits the form, triggering validation and form data injection. */
+  submit(submitter) {
+    this.doAction("submit", submitter);
+  }
+  /**
+   * Synchronously sets the form control's validity. Call this when you know the future validity but need to update
+   * the host element immediately, i.e. before Lit updates the component in the next update.
+   */
+  setValidity(isValid) {
+    const host = this.host;
+    const hasInteracted = Boolean(userInteractedControls.has(host));
+    const required = Boolean(host.required);
+    host.toggleAttribute("data-required", required);
+    host.toggleAttribute("data-optional", !required);
+    host.toggleAttribute("data-invalid", !isValid);
+    host.toggleAttribute("data-valid", isValid);
+    host.toggleAttribute("data-user-invalid", !isValid && hasInteracted);
+    host.toggleAttribute("data-user-valid", isValid && hasInteracted);
+  }
+  /**
+   * Updates the form control's validity based on the current value of `host.validity.valid`. Call this when anything
+   * that affects constraint validation changes so the component receives the correct validity states.
+   */
+  updateValidity() {
+    const host = this.host;
+    this.setValidity(host.validity.valid);
+  }
+  /**
+   * Dispatches a non-bubbling, cancelable custom event of type `sl-invalid`.
+   * If the `sl-invalid` event will be cancelled then the original `invalid`
+   * event (which may have been passed as argument) will also be cancelled.
+   * If no original `invalid` event has been passed then the `sl-invalid`
+   * event will be cancelled before being dispatched.
+   */
+  emitInvalidEvent(originalInvalidEvent) {
+    const slInvalidEvent = new CustomEvent("sl-invalid", {
+      bubbles: false,
+      composed: false,
+      cancelable: true,
+      detail: {}
+    });
+    if (!originalInvalidEvent) {
+      slInvalidEvent.preventDefault();
+    }
+    if (!this.host.dispatchEvent(slInvalidEvent)) {
+      originalInvalidEvent == null ? void 0 : originalInvalidEvent.preventDefault();
+    }
+  }
+};
+var validValidityState = Object.freeze({
+  badInput: false,
+  customError: false,
+  patternMismatch: false,
+  rangeOverflow: false,
+  rangeUnderflow: false,
+  stepMismatch: false,
+  tooLong: false,
+  tooShort: false,
+  typeMismatch: false,
+  valid: true,
+  valueMissing: false
+});
+var valueMissingValidityState = Object.freeze(__spreadProps(__spreadValues({}, validValidityState), {
+  valid: false,
+  valueMissing: true
+}));
+var customErrorValidityState = Object.freeze(__spreadProps(__spreadValues({}, validValidityState), {
+  valid: false,
+  customError: true
+}));
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.MAQXLKQ7.js
+var button_styles_default = i`
+  :host {
+    display: inline-block;
+    position: relative;
+    width: auto;
+    cursor: pointer;
+  }
+
+  .button {
+    display: inline-flex;
+    align-items: stretch;
+    justify-content: center;
+    width: 100%;
+    border-style: solid;
+    border-width: var(--sl-input-border-width);
+    font-family: var(--sl-input-font-family);
+    font-weight: var(--sl-font-weight-semibold);
+    text-decoration: none;
+    user-select: none;
+    -webkit-user-select: none;
+    white-space: nowrap;
+    vertical-align: middle;
+    padding: 0;
+    transition:
+      var(--sl-transition-x-fast) background-color,
+      var(--sl-transition-x-fast) color,
+      var(--sl-transition-x-fast) border,
+      var(--sl-transition-x-fast) box-shadow;
+    cursor: inherit;
+  }
+
+  .button::-moz-focus-inner {
+    border: 0;
+  }
+
+  .button:focus {
+    outline: none;
+  }
+
+  .button:focus-visible {
+    outline: var(--sl-focus-ring);
+    outline-offset: var(--sl-focus-ring-offset);
+  }
+
+  .button--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* When disabled, prevent mouse events from bubbling up from children */
+  .button--disabled * {
+    pointer-events: none;
+  }
+
+  .button__prefix,
+  .button__suffix {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .button__label {
+    display: inline-block;
+  }
+
+  .button__label::slotted(sl-icon) {
+    vertical-align: -2px;
+  }
+
+  /*
+   * Standard buttons
+   */
+
+  /* Default */
+  .button--standard.button--default {
+    background-color: var(--sl-color-neutral-0);
+    border-color: var(--sl-input-border-color);
+    color: var(--sl-color-neutral-700);
+  }
+
+  .button--standard.button--default:hover:not(.button--disabled) {
+    background-color: var(--sl-color-primary-50);
+    border-color: var(--sl-color-primary-300);
+    color: var(--sl-color-primary-700);
+  }
+
+  .button--standard.button--default:active:not(.button--disabled) {
+    background-color: var(--sl-color-primary-100);
+    border-color: var(--sl-color-primary-400);
+    color: var(--sl-color-primary-700);
+  }
+
+  /* Primary */
+  .button--standard.button--primary {
+    background-color: var(--sl-color-primary-600);
+    border-color: var(--sl-color-primary-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--standard.button--primary:hover:not(.button--disabled) {
+    background-color: var(--sl-color-primary-500);
+    border-color: var(--sl-color-primary-500);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--standard.button--primary:active:not(.button--disabled) {
+    background-color: var(--sl-color-primary-600);
+    border-color: var(--sl-color-primary-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  /* Success */
+  .button--standard.button--success {
+    background-color: var(--sl-color-success-600);
+    border-color: var(--sl-color-success-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--standard.button--success:hover:not(.button--disabled) {
+    background-color: var(--sl-color-success-500);
+    border-color: var(--sl-color-success-500);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--standard.button--success:active:not(.button--disabled) {
+    background-color: var(--sl-color-success-600);
+    border-color: var(--sl-color-success-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  /* Neutral */
+  .button--standard.button--neutral {
+    background-color: var(--sl-color-neutral-600);
+    border-color: var(--sl-color-neutral-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--standard.button--neutral:hover:not(.button--disabled) {
+    background-color: var(--sl-color-neutral-500);
+    border-color: var(--sl-color-neutral-500);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--standard.button--neutral:active:not(.button--disabled) {
+    background-color: var(--sl-color-neutral-600);
+    border-color: var(--sl-color-neutral-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  /* Warning */
+  .button--standard.button--warning {
+    background-color: var(--sl-color-warning-600);
+    border-color: var(--sl-color-warning-600);
+    color: var(--sl-color-neutral-0);
+  }
+  .button--standard.button--warning:hover:not(.button--disabled) {
+    background-color: var(--sl-color-warning-500);
+    border-color: var(--sl-color-warning-500);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--standard.button--warning:active:not(.button--disabled) {
+    background-color: var(--sl-color-warning-600);
+    border-color: var(--sl-color-warning-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  /* Danger */
+  .button--standard.button--danger {
+    background-color: var(--sl-color-danger-600);
+    border-color: var(--sl-color-danger-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--standard.button--danger:hover:not(.button--disabled) {
+    background-color: var(--sl-color-danger-500);
+    border-color: var(--sl-color-danger-500);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--standard.button--danger:active:not(.button--disabled) {
+    background-color: var(--sl-color-danger-600);
+    border-color: var(--sl-color-danger-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  /*
+   * Outline buttons
+   */
+
+  .button--outline {
+    background: none;
+    border: solid 1px;
+  }
+
+  /* Default */
+  .button--outline.button--default {
+    border-color: var(--sl-input-border-color);
+    color: var(--sl-color-neutral-700);
+  }
+
+  .button--outline.button--default:hover:not(.button--disabled),
+  .button--outline.button--default.button--checked:not(.button--disabled) {
+    border-color: var(--sl-color-primary-600);
+    background-color: var(--sl-color-primary-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--outline.button--default:active:not(.button--disabled) {
+    border-color: var(--sl-color-primary-700);
+    background-color: var(--sl-color-primary-700);
+    color: var(--sl-color-neutral-0);
+  }
+
+  /* Primary */
+  .button--outline.button--primary {
+    border-color: var(--sl-color-primary-600);
+    color: var(--sl-color-primary-600);
+  }
+
+  .button--outline.button--primary:hover:not(.button--disabled),
+  .button--outline.button--primary.button--checked:not(.button--disabled) {
+    background-color: var(--sl-color-primary-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--outline.button--primary:active:not(.button--disabled) {
+    border-color: var(--sl-color-primary-700);
+    background-color: var(--sl-color-primary-700);
+    color: var(--sl-color-neutral-0);
+  }
+
+  /* Success */
+  .button--outline.button--success {
+    border-color: var(--sl-color-success-600);
+    color: var(--sl-color-success-600);
+  }
+
+  .button--outline.button--success:hover:not(.button--disabled),
+  .button--outline.button--success.button--checked:not(.button--disabled) {
+    background-color: var(--sl-color-success-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--outline.button--success:active:not(.button--disabled) {
+    border-color: var(--sl-color-success-700);
+    background-color: var(--sl-color-success-700);
+    color: var(--sl-color-neutral-0);
+  }
+
+  /* Neutral */
+  .button--outline.button--neutral {
+    border-color: var(--sl-color-neutral-600);
+    color: var(--sl-color-neutral-600);
+  }
+
+  .button--outline.button--neutral:hover:not(.button--disabled),
+  .button--outline.button--neutral.button--checked:not(.button--disabled) {
+    background-color: var(--sl-color-neutral-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--outline.button--neutral:active:not(.button--disabled) {
+    border-color: var(--sl-color-neutral-700);
+    background-color: var(--sl-color-neutral-700);
+    color: var(--sl-color-neutral-0);
+  }
+
+  /* Warning */
+  .button--outline.button--warning {
+    border-color: var(--sl-color-warning-600);
+    color: var(--sl-color-warning-600);
+  }
+
+  .button--outline.button--warning:hover:not(.button--disabled),
+  .button--outline.button--warning.button--checked:not(.button--disabled) {
+    background-color: var(--sl-color-warning-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--outline.button--warning:active:not(.button--disabled) {
+    border-color: var(--sl-color-warning-700);
+    background-color: var(--sl-color-warning-700);
+    color: var(--sl-color-neutral-0);
+  }
+
+  /* Danger */
+  .button--outline.button--danger {
+    border-color: var(--sl-color-danger-600);
+    color: var(--sl-color-danger-600);
+  }
+
+  .button--outline.button--danger:hover:not(.button--disabled),
+  .button--outline.button--danger.button--checked:not(.button--disabled) {
+    background-color: var(--sl-color-danger-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .button--outline.button--danger:active:not(.button--disabled) {
+    border-color: var(--sl-color-danger-700);
+    background-color: var(--sl-color-danger-700);
+    color: var(--sl-color-neutral-0);
+  }
+
+  @media (forced-colors: active) {
+    .button.button--outline.button--checked:not(.button--disabled) {
+      outline: solid 2px transparent;
+    }
+  }
+
+  /*
+   * Text buttons
+   */
+
+  .button--text {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--sl-color-primary-600);
+  }
+
+  .button--text:hover:not(.button--disabled) {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--sl-color-primary-500);
+  }
+
+  .button--text:focus-visible:not(.button--disabled) {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--sl-color-primary-500);
+  }
+
+  .button--text:active:not(.button--disabled) {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--sl-color-primary-700);
+  }
+
+  /*
+   * Size modifiers
+   */
+
+  .button--small {
+    height: auto;
+    min-height: var(--sl-input-height-small);
+    font-size: var(--sl-button-font-size-small);
+    line-height: calc(var(--sl-input-height-small) - var(--sl-input-border-width) * 2);
+    border-radius: var(--sl-input-border-radius-small);
+  }
+
+  .button--medium {
+    height: auto;
+    min-height: var(--sl-input-height-medium);
+    font-size: var(--sl-button-font-size-medium);
+    line-height: calc(var(--sl-input-height-medium) - var(--sl-input-border-width) * 2);
+    border-radius: var(--sl-input-border-radius-medium);
+  }
+
+  .button--large {
+    height: auto;
+    min-height: var(--sl-input-height-large);
+    font-size: var(--sl-button-font-size-large);
+    line-height: calc(var(--sl-input-height-large) - var(--sl-input-border-width) * 2);
+    border-radius: var(--sl-input-border-radius-large);
+  }
+
+  /*
+   * Pill modifier
+   */
+
+  .button--pill.button--small {
+    border-radius: var(--sl-input-height-small);
+  }
+
+  .button--pill.button--medium {
+    border-radius: var(--sl-input-height-medium);
+  }
+
+  .button--pill.button--large {
+    border-radius: var(--sl-input-height-large);
+  }
+
+  /*
+   * Circle modifier
+   */
+
+  .button--circle {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .button--circle.button--small {
+    width: var(--sl-input-height-small);
+    border-radius: 50%;
+  }
+
+  .button--circle.button--medium {
+    width: var(--sl-input-height-medium);
+    border-radius: 50%;
+  }
+
+  .button--circle.button--large {
+    width: var(--sl-input-height-large);
+    border-radius: 50%;
+  }
+
+  .button--circle .button__prefix,
+  .button--circle .button__suffix,
+  .button--circle .button__caret {
+    display: none;
+  }
+
+  /*
+   * Caret modifier
+   */
+
+  .button--caret .button__suffix {
+    display: none;
+  }
+
+  .button--caret .button__caret {
+    height: auto;
+  }
+
+  /*
+   * Loading modifier
+   */
+
+  .button--loading {
+    position: relative;
+    cursor: wait;
+  }
+
+  .button--loading .button__prefix,
+  .button--loading .button__label,
+  .button--loading .button__suffix,
+  .button--loading .button__caret {
+    visibility: hidden;
+  }
+
+  .button--loading sl-spinner {
+    --indicator-color: currentColor;
+    position: absolute;
+    font-size: 1em;
+    height: 1em;
+    width: 1em;
+    top: calc(50% - 0.5em);
+    left: calc(50% - 0.5em);
+  }
+
+  /*
+   * Badges
+   */
+
+  .button ::slotted(sl-badge) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    translate: 50% -50%;
+    pointer-events: none;
+  }
+
+  .button--rtl ::slotted(sl-badge) {
+    right: auto;
+    left: 0;
+    translate: -50% -50%;
+  }
+
+  /*
+   * Button spacing
+   */
+
+  .button--has-label.button--small .button__label {
+    padding: 0 var(--sl-spacing-small);
+  }
+
+  .button--has-label.button--medium .button__label {
+    padding: 0 var(--sl-spacing-medium);
+  }
+
+  .button--has-label.button--large .button__label {
+    padding: 0 var(--sl-spacing-large);
+  }
+
+  .button--has-prefix.button--small {
+    padding-inline-start: var(--sl-spacing-x-small);
+  }
+
+  .button--has-prefix.button--small .button__label {
+    padding-inline-start: var(--sl-spacing-x-small);
+  }
+
+  .button--has-prefix.button--medium {
+    padding-inline-start: var(--sl-spacing-small);
+  }
+
+  .button--has-prefix.button--medium .button__label {
+    padding-inline-start: var(--sl-spacing-small);
+  }
+
+  .button--has-prefix.button--large {
+    padding-inline-start: var(--sl-spacing-small);
+  }
+
+  .button--has-prefix.button--large .button__label {
+    padding-inline-start: var(--sl-spacing-small);
+  }
+
+  .button--has-suffix.button--small,
+  .button--caret.button--small {
+    padding-inline-end: var(--sl-spacing-x-small);
+  }
+
+  .button--has-suffix.button--small .button__label,
+  .button--caret.button--small .button__label {
+    padding-inline-end: var(--sl-spacing-x-small);
+  }
+
+  .button--has-suffix.button--medium,
+  .button--caret.button--medium {
+    padding-inline-end: var(--sl-spacing-small);
+  }
+
+  .button--has-suffix.button--medium .button__label,
+  .button--caret.button--medium .button__label {
+    padding-inline-end: var(--sl-spacing-small);
+  }
+
+  .button--has-suffix.button--large,
+  .button--caret.button--large {
+    padding-inline-end: var(--sl-spacing-small);
+  }
+
+  .button--has-suffix.button--large .button__label,
+  .button--caret.button--large .button__label {
+    padding-inline-end: var(--sl-spacing-small);
+  }
+
+  /*
+   * Button groups support a variety of button types (e.g. buttons with tooltips, buttons as dropdown triggers, etc.).
+   * This means buttons aren't always direct descendants of the button group, thus we can't target them with the
+   * ::slotted selector. To work around this, the button group component does some magic to add these special classes to
+   * buttons and we style them here instead.
+   */
+
+  :host([data-sl-button-group__button--first]:not([data-sl-button-group__button--last])) .button {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+  }
+
+  :host([data-sl-button-group__button--inner]) .button {
+    border-radius: 0;
+  }
+
+  :host([data-sl-button-group__button--last]:not([data-sl-button-group__button--first])) .button {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+  }
+
+  /* All except the first */
+  :host([data-sl-button-group__button]:not([data-sl-button-group__button--first])) {
+    margin-inline-start: calc(-1 * var(--sl-input-border-width));
+  }
+
+  /* Add a visual separator between solid buttons */
+  :host(
+      [data-sl-button-group__button]:not(
+          [data-sl-button-group__button--first],
+          [data-sl-button-group__button--radio],
+          [variant='default']
+        ):not(:hover)
+    )
+    .button:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    inset-inline-start: 0;
+    bottom: 0;
+    border-left: solid 1px rgb(128 128 128 / 33%);
+    mix-blend-mode: multiply;
+  }
+
+  /* Bump hovered, focused, and checked buttons up so their focus ring isn't clipped */
+  :host([data-sl-button-group__button--hover]) {
+    z-index: 1;
+  }
+
+  /* Focus and checked are always on top */
+  :host([data-sl-button-group__button--focus]),
+  :host([data-sl-button-group__button][checked]) {
+    z-index: 2;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.NYIIDP5N.js
+var HasSlotController = class {
+  constructor(host, ...slotNames) {
+    this.slotNames = [];
+    this.handleSlotChange = (event) => {
+      const slot = event.target;
+      if (this.slotNames.includes("[default]") && !slot.name || slot.name && this.slotNames.includes(slot.name)) {
+        this.host.requestUpdate();
+      }
+    };
+    (this.host = host).addController(this);
+    this.slotNames = slotNames;
+  }
+  hasDefaultSlot() {
+    return [...this.host.childNodes].some((node) => {
+      if (node.nodeType === node.TEXT_NODE && node.textContent.trim() !== "") {
+        return true;
+      }
+      if (node.nodeType === node.ELEMENT_NODE) {
+        const el = node;
+        const tagName = el.tagName.toLowerCase();
+        if (tagName === "sl-visually-hidden") {
+          return false;
+        }
+        if (!el.hasAttribute("slot")) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }
+  hasNamedSlot(name) {
+    return this.host.querySelector(`:scope > [slot="${name}"]`) !== null;
+  }
+  test(slotName) {
+    return slotName === "[default]" ? this.hasDefaultSlot() : this.hasNamedSlot(slotName);
+  }
+  hostConnected() {
+    this.host.shadowRoot.addEventListener("slotchange", this.handleSlotChange);
+  }
+  hostDisconnected() {
+    this.host.shadowRoot.removeEventListener("slotchange", this.handleSlotChange);
+  }
+};
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.QLXRCYS4.js
+var icon_styles_default = i`
+  :host {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    box-sizing: content-box !important;
+  }
+
+  svg {
+    display: block;
+    height: 100%;
+    width: 100%;
+  }
+`;
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.3Y6SB6QS.js
 var basePath = "";
 function setBasePath(path) {
   basePath = path;
 }
+function getBasePath(subpath = "") {
+  if (!basePath) {
+    const scripts = [...document.getElementsByTagName("script")];
+    const configScript = scripts.find((script) => script.hasAttribute("data-shoelace"));
+    if (configScript) {
+      setBasePath(configScript.getAttribute("data-shoelace"));
+    } else {
+      const fallbackScript = scripts.find((s4) => {
+        return /shoelace(\.min)?\.js($|\?)/.test(s4.src) || /shoelace-autoloader(\.min)?\.js($|\?)/.test(s4.src);
+      });
+      let path = "";
+      if (fallbackScript) {
+        path = fallbackScript.getAttribute("src");
+      }
+      setBasePath(path.split("/").slice(0, -1).join("/"));
+    }
+  }
+  return basePath.replace(/\/$/, "") + (subpath ? `/${subpath.replace(/^\//, "")}` : ``);
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.P7ZG6EMR.js
+var library = {
+  name: "default",
+  resolver: (name) => getBasePath(`assets/icons/${name}.svg`)
+};
+var library_default_default = library;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.3TFKS637.js
+var icons = {
+  caret: `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  `,
+  check: `
+    <svg part="checked-icon" class="checkbox__icon" viewBox="0 0 16 16">
+      <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linecap="round">
+        <g stroke="currentColor">
+          <g transform="translate(3.428571, 3.428571)">
+            <path d="M0,5.71428571 L3.42857143,9.14285714"></path>
+            <path d="M9.14285714,0 L3.42857143,9.14285714"></path>
+          </g>
+        </g>
+      </g>
+    </svg>
+  `,
+  "chevron-down": `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+    </svg>
+  `,
+  "chevron-left": `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+    </svg>
+  `,
+  "chevron-right": `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+    </svg>
+  `,
+  copy: `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2Zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6ZM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2Z"/>
+    </svg>
+  `,
+  eye: `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
+      <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+      <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+    </svg>
+  `,
+  "eye-slash": `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-slash" viewBox="0 0 16 16">
+      <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/>
+      <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/>
+      <path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/>
+    </svg>
+  `,
+  eyedropper: `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eyedropper" viewBox="0 0 16 16">
+      <path d="M13.354.646a1.207 1.207 0 0 0-1.708 0L8.5 3.793l-.646-.647a.5.5 0 1 0-.708.708L8.293 5l-7.147 7.146A.5.5 0 0 0 1 12.5v1.793l-.854.853a.5.5 0 1 0 .708.707L1.707 15H3.5a.5.5 0 0 0 .354-.146L11 7.707l1.146 1.147a.5.5 0 0 0 .708-.708l-.647-.646 3.147-3.146a1.207 1.207 0 0 0 0-1.708l-2-2zM2 12.707l7-7L10.293 7l-7 7H2v-1.293z"></path>
+    </svg>
+  `,
+  "grip-vertical": `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grip-vertical" viewBox="0 0 16 16">
+      <path d="M7 2a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM7 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM7 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-3 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-3 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"></path>
+    </svg>
+  `,
+  indeterminate: `
+    <svg part="indeterminate-icon" class="checkbox__icon" viewBox="0 0 16 16">
+      <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linecap="round">
+        <g stroke="currentColor" stroke-width="2">
+          <g transform="translate(2.285714, 6.857143)">
+            <path d="M10.2857143,1.14285714 L1.14285714,1.14285714"></path>
+          </g>
+        </g>
+      </g>
+    </svg>
+  `,
+  "person-fill": `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16">
+      <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+    </svg>
+  `,
+  "play-fill": `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
+      <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"></path>
+    </svg>
+  `,
+  "pause-fill": `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pause-fill" viewBox="0 0 16 16">
+      <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"></path>
+    </svg>
+  `,
+  radio: `
+    <svg part="checked-icon" class="radio__icon" viewBox="0 0 16 16">
+      <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g fill="currentColor">
+          <circle cx="8" cy="8" r="3.42857143"></circle>
+        </g>
+      </g>
+    </svg>
+  `,
+  "star-fill": `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-star-fill" viewBox="0 0 16 16">
+      <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
+    </svg>
+  `,
+  "x-lg": `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+      <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+    </svg>
+  `,
+  "x-circle-fill": `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-circle-fill" viewBox="0 0 16 16">
+      <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"></path>
+    </svg>
+  `
+};
+var systemLibrary = {
+  name: "system",
+  resolver: (name) => {
+    if (name in icons) {
+      return `data:image/svg+xml,${encodeURIComponent(icons[name])}`;
+    }
+    return "";
+  }
+};
+var library_system_default = systemLibrary;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.ZL53POKZ.js
+var registry = [library_default_default, library_system_default];
+var watchedIcons = [];
+function watchIcon(icon) {
+  watchedIcons.push(icon);
+}
+function unwatchIcon(icon) {
+  watchedIcons = watchedIcons.filter((el) => el !== icon);
+}
+function getIconLibrary(name) {
+  return registry.find((lib) => lib.name === name);
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.GMYPQTFK.js
+function watch(propertyName, options) {
+  const resolvedOptions = __spreadValues({
+    waitUntilFirstUpdate: false
+  }, options);
+  return (proto, decoratedFnName) => {
+    const { update: update2 } = proto;
+    const watchedProperties = Array.isArray(propertyName) ? propertyName : [propertyName];
+    proto.update = function(changedProps) {
+      watchedProperties.forEach((property) => {
+        const key = property;
+        if (changedProps.has(key)) {
+          const oldValue = changedProps.get(key);
+          const newValue = this[key];
+          if (oldValue !== newValue) {
+            if (!resolvedOptions.waitUntilFirstUpdate || this.hasUpdated) {
+              this[decoratedFnName](oldValue, newValue);
+            }
+          }
+        }
+      });
+      update2.call(this, changedProps);
+    };
+  };
+}
+
+// node_modules/lit-html/directive-helpers.js
+var { I: t5 } = Z2;
+var e8 = (o11, t7) => void 0 === t7 ? void 0 !== o11?._$litType$ : o11?._$litType$ === t7;
+var f6 = (o11) => void 0 === o11.strings;
+var u4 = {};
+var m3 = (o11, t7 = u4) => o11._$AH = t7;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.5YPURQKE.js
+var CACHEABLE_ERROR = Symbol();
+var RETRYABLE_ERROR = Symbol();
+var parser;
+var iconCache = /* @__PURE__ */ new Map();
+var SlIcon = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.initialRender = false;
+    this.svg = null;
+    this.label = "";
+    this.library = "default";
+  }
+  /** Given a URL, this function returns the resulting SVG element or an appropriate error symbol. */
+  async resolveIcon(url, library2) {
+    var _a3;
+    let fileData;
+    if (library2 == null ? void 0 : library2.spriteSheet) {
+      this.svg = x2`<svg part="svg">
+        <use part="use" href="${url}"></use>
+      </svg>`;
+      return this.svg;
+    }
+    try {
+      fileData = await fetch(url, { mode: "cors" });
+      if (!fileData.ok) return fileData.status === 410 ? CACHEABLE_ERROR : RETRYABLE_ERROR;
+    } catch (e13) {
+      return RETRYABLE_ERROR;
+    }
+    try {
+      const div = document.createElement("div");
+      div.innerHTML = await fileData.text();
+      const svg = div.firstElementChild;
+      if (((_a3 = svg == null ? void 0 : svg.tagName) == null ? void 0 : _a3.toLowerCase()) !== "svg") return CACHEABLE_ERROR;
+      if (!parser) parser = new DOMParser();
+      const doc = parser.parseFromString(svg.outerHTML, "text/html");
+      const svgEl = doc.body.querySelector("svg");
+      if (!svgEl) return CACHEABLE_ERROR;
+      svgEl.part.add("svg");
+      return document.adoptNode(svgEl);
+    } catch (e13) {
+      return CACHEABLE_ERROR;
+    }
+  }
+  connectedCallback() {
+    super.connectedCallback();
+    watchIcon(this);
+  }
+  firstUpdated() {
+    this.initialRender = true;
+    this.setIcon();
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    unwatchIcon(this);
+  }
+  getIconSource() {
+    const library2 = getIconLibrary(this.library);
+    if (this.name && library2) {
+      return {
+        url: library2.resolver(this.name),
+        fromLibrary: true
+      };
+    }
+    return {
+      url: this.src,
+      fromLibrary: false
+    };
+  }
+  handleLabelChange() {
+    const hasLabel = typeof this.label === "string" && this.label.length > 0;
+    if (hasLabel) {
+      this.setAttribute("role", "img");
+      this.setAttribute("aria-label", this.label);
+      this.removeAttribute("aria-hidden");
+    } else {
+      this.removeAttribute("role");
+      this.removeAttribute("aria-label");
+      this.setAttribute("aria-hidden", "true");
+    }
+  }
+  async setIcon() {
+    var _a3;
+    const { url, fromLibrary } = this.getIconSource();
+    const library2 = fromLibrary ? getIconLibrary(this.library) : void 0;
+    if (!url) {
+      this.svg = null;
+      return;
+    }
+    let iconResolver = iconCache.get(url);
+    if (!iconResolver) {
+      iconResolver = this.resolveIcon(url, library2);
+      iconCache.set(url, iconResolver);
+    }
+    if (!this.initialRender) {
+      return;
+    }
+    const svg = await iconResolver;
+    if (svg === RETRYABLE_ERROR) {
+      iconCache.delete(url);
+    }
+    if (url !== this.getIconSource().url) {
+      return;
+    }
+    if (e8(svg)) {
+      this.svg = svg;
+      if (library2) {
+        await this.updateComplete;
+        const shadowSVG = this.shadowRoot.querySelector("[part='svg']");
+        if (typeof library2.mutator === "function" && shadowSVG) {
+          library2.mutator(shadowSVG);
+        }
+      }
+      return;
+    }
+    switch (svg) {
+      case RETRYABLE_ERROR:
+      case CACHEABLE_ERROR:
+        this.svg = null;
+        this.emit("sl-error");
+        break;
+      default:
+        this.svg = svg.cloneNode(true);
+        (_a3 = library2 == null ? void 0 : library2.mutator) == null ? void 0 : _a3.call(library2, this.svg);
+        this.emit("sl-load");
+    }
+  }
+  render() {
+    return this.svg;
+  }
+};
+SlIcon.styles = [component_styles_default, icon_styles_default];
+__decorateClass([
+  r7()
+], SlIcon.prototype, "svg", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlIcon.prototype, "name", 2);
+__decorateClass([
+  n7()
+], SlIcon.prototype, "src", 2);
+__decorateClass([
+  n7()
+], SlIcon.prototype, "label", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlIcon.prototype, "library", 2);
+__decorateClass([
+  watch("label")
+], SlIcon.prototype, "handleLabelChange", 1);
+__decorateClass([
+  watch(["name", "src", "library"])
+], SlIcon.prototype, "setIcon", 1);
+
+// node_modules/lit-html/directive.js
+var t6 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
+var e9 = (t7) => (...e13) => ({ _$litDirective$: t7, values: e13 });
+var i6 = class {
+  constructor(t7) {
+  }
+  get _$AU() {
+    return this._$AM._$AU;
+  }
+  _$AT(t7, e13, i9) {
+    this._$Ct = t7, this._$AM = e13, this._$Ci = i9;
+  }
+  _$AS(t7, e13) {
+    return this.update(t7, e13);
+  }
+  update(t7, e13) {
+    return this.render(...e13);
+  }
+};
+
+// node_modules/lit-html/directives/class-map.js
+var e10 = e9(class extends i6 {
+  constructor(t7) {
+    if (super(t7), t7.type !== t6.ATTRIBUTE || "class" !== t7.name || t7.strings?.length > 2) throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.");
+  }
+  render(t7) {
+    return " " + Object.keys(t7).filter(((s4) => t7[s4])).join(" ") + " ";
+  }
+  update(s4, [i9]) {
+    if (void 0 === this.st) {
+      this.st = /* @__PURE__ */ new Set(), void 0 !== s4.strings && (this.nt = new Set(s4.strings.join(" ").split(/\s/).filter(((t7) => "" !== t7))));
+      for (const t7 in i9) i9[t7] && !this.nt?.has(t7) && this.st.add(t7);
+      return this.render(i9);
+    }
+    const r11 = s4.element.classList;
+    for (const t7 of this.st) t7 in i9 || (r11.remove(t7), this.st.delete(t7));
+    for (const t7 in i9) {
+      const s5 = !!i9[t7];
+      s5 === this.st.has(t7) || this.nt?.has(t7) || (s5 ? (r11.add(t7), this.st.add(t7)) : (r11.remove(t7), this.st.delete(t7)));
+    }
+    return T2;
+  }
+});
+
+// node_modules/lit-html/static.js
+var a4 = Symbol.for("");
+var o8 = (t7) => {
+  if (t7?.r === a4) return t7?._$litStatic$;
+};
+var i7 = (t7, ...r11) => ({ _$litStatic$: r11.reduce(((r12, e13, a5) => r12 + ((t8) => {
+  if (void 0 !== t8._$litStatic$) return t8._$litStatic$;
+  throw Error(`Value passed to 'literal' function must be a 'literal' result: ${t8}. Use 'unsafeStatic' to pass non-literal values, but
+            take care to ensure page security.`);
+})(e13) + t7[a5 + 1]), t7[0]), r: a4 });
+var l4 = /* @__PURE__ */ new Map();
+var n9 = (t7) => (r11, ...e13) => {
+  const a5 = e13.length;
+  let s4, i9;
+  const n10 = [], u6 = [];
+  let c8, $4 = 0, f7 = false;
+  for (; $4 < a5; ) {
+    for (c8 = r11[$4]; $4 < a5 && void 0 !== (i9 = e13[$4], s4 = o8(i9)); ) c8 += s4 + r11[++$4], f7 = true;
+    $4 !== a5 && u6.push(i9), n10.push(c8), $4++;
+  }
+  if ($4 === a5 && n10.push(r11[a5]), f7) {
+    const t8 = n10.join("$$lit$$");
+    void 0 === (r11 = l4.get(t8)) && (n10.raw = n10, l4.set(t8, r11 = n10)), e13 = u6;
+  }
+  return t7(r11, ...e13);
+};
+var u5 = n9(x2);
+var c7 = n9(b3);
+var $3 = n9(w2);
+
+// node_modules/lit-html/directives/if-defined.js
+var o9 = (o11) => o11 ?? E2;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.HSRY62XN.js
+var SlButton = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.formControlController = new FormControlController(this, {
+      assumeInteractionOn: ["click"]
+    });
+    this.hasSlotController = new HasSlotController(this, "[default]", "prefix", "suffix");
+    this.localize = new LocalizeController2(this);
+    this.hasFocus = false;
+    this.invalid = false;
+    this.title = "";
+    this.variant = "default";
+    this.size = "medium";
+    this.caret = false;
+    this.disabled = false;
+    this.loading = false;
+    this.outline = false;
+    this.pill = false;
+    this.circle = false;
+    this.type = "button";
+    this.name = "";
+    this.value = "";
+    this.href = "";
+    this.rel = "noreferrer noopener";
+  }
+  /** Gets the validity state object */
+  get validity() {
+    if (this.isButton()) {
+      return this.button.validity;
+    }
+    return validValidityState;
+  }
+  /** Gets the validation message */
+  get validationMessage() {
+    if (this.isButton()) {
+      return this.button.validationMessage;
+    }
+    return "";
+  }
+  firstUpdated() {
+    if (this.isButton()) {
+      this.formControlController.updateValidity();
+    }
+  }
+  handleBlur() {
+    this.hasFocus = false;
+    this.emit("sl-blur");
+  }
+  handleFocus() {
+    this.hasFocus = true;
+    this.emit("sl-focus");
+  }
+  handleClick() {
+    if (this.type === "submit") {
+      this.formControlController.submit(this);
+    }
+    if (this.type === "reset") {
+      this.formControlController.reset(this);
+    }
+  }
+  handleInvalid(event) {
+    this.formControlController.setValidity(false);
+    this.formControlController.emitInvalidEvent(event);
+  }
+  isButton() {
+    return this.href ? false : true;
+  }
+  isLink() {
+    return this.href ? true : false;
+  }
+  handleDisabledChange() {
+    if (this.isButton()) {
+      this.formControlController.setValidity(this.disabled);
+    }
+  }
+  /** Simulates a click on the button. */
+  click() {
+    this.button.click();
+  }
+  /** Sets focus on the button. */
+  focus(options) {
+    this.button.focus(options);
+  }
+  /** Removes focus from the button. */
+  blur() {
+    this.button.blur();
+  }
+  /** Checks for validity but does not show a validation message. Returns `true` when valid and `false` when invalid. */
+  checkValidity() {
+    if (this.isButton()) {
+      return this.button.checkValidity();
+    }
+    return true;
+  }
+  /** Gets the associated form, if one exists. */
+  getForm() {
+    return this.formControlController.getForm();
+  }
+  /** Checks for validity and shows the browser's validation message if the control is invalid. */
+  reportValidity() {
+    if (this.isButton()) {
+      return this.button.reportValidity();
+    }
+    return true;
+  }
+  /** Sets a custom validation message. Pass an empty string to restore validity. */
+  setCustomValidity(message) {
+    if (this.isButton()) {
+      this.button.setCustomValidity(message);
+      this.formControlController.updateValidity();
+    }
+  }
+  render() {
+    const isLink = this.isLink();
+    const tag = isLink ? i7`a` : i7`button`;
+    return u5`
+      <${tag}
+        part="base"
+        class=${e10({
+      button: true,
+      "button--default": this.variant === "default",
+      "button--primary": this.variant === "primary",
+      "button--success": this.variant === "success",
+      "button--neutral": this.variant === "neutral",
+      "button--warning": this.variant === "warning",
+      "button--danger": this.variant === "danger",
+      "button--text": this.variant === "text",
+      "button--small": this.size === "small",
+      "button--medium": this.size === "medium",
+      "button--large": this.size === "large",
+      "button--caret": this.caret,
+      "button--circle": this.circle,
+      "button--disabled": this.disabled,
+      "button--focused": this.hasFocus,
+      "button--loading": this.loading,
+      "button--standard": !this.outline,
+      "button--outline": this.outline,
+      "button--pill": this.pill,
+      "button--rtl": this.localize.dir() === "rtl",
+      "button--has-label": this.hasSlotController.test("[default]"),
+      "button--has-prefix": this.hasSlotController.test("prefix"),
+      "button--has-suffix": this.hasSlotController.test("suffix")
+    })}
+        ?disabled=${o9(isLink ? void 0 : this.disabled)}
+        type=${o9(isLink ? void 0 : this.type)}
+        title=${this.title}
+        name=${o9(isLink ? void 0 : this.name)}
+        value=${o9(isLink ? void 0 : this.value)}
+        href=${o9(isLink && !this.disabled ? this.href : void 0)}
+        target=${o9(isLink ? this.target : void 0)}
+        download=${o9(isLink ? this.download : void 0)}
+        rel=${o9(isLink ? this.rel : void 0)}
+        role=${o9(isLink ? void 0 : "button")}
+        aria-disabled=${this.disabled ? "true" : "false"}
+        tabindex=${this.disabled ? "-1" : "0"}
+        @blur=${this.handleBlur}
+        @focus=${this.handleFocus}
+        @invalid=${this.isButton() ? this.handleInvalid : null}
+        @click=${this.handleClick}
+      >
+        <slot name="prefix" part="prefix" class="button__prefix"></slot>
+        <slot part="label" class="button__label"></slot>
+        <slot name="suffix" part="suffix" class="button__suffix"></slot>
+        ${this.caret ? u5` <sl-icon part="caret" class="button__caret" library="system" name="caret"></sl-icon> ` : ""}
+        ${this.loading ? u5`<sl-spinner part="spinner"></sl-spinner>` : ""}
+      </${tag}>
+    `;
+  }
+};
+SlButton.styles = [component_styles_default, button_styles_default];
+SlButton.dependencies = {
+  "sl-icon": SlIcon,
+  "sl-spinner": SlSpinner
+};
+__decorateClass([
+  e6(".button")
+], SlButton.prototype, "button", 2);
+__decorateClass([
+  r7()
+], SlButton.prototype, "hasFocus", 2);
+__decorateClass([
+  r7()
+], SlButton.prototype, "invalid", 2);
+__decorateClass([
+  n7()
+], SlButton.prototype, "title", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlButton.prototype, "variant", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlButton.prototype, "size", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlButton.prototype, "caret", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlButton.prototype, "disabled", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlButton.prototype, "loading", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlButton.prototype, "outline", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlButton.prototype, "pill", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlButton.prototype, "circle", 2);
+__decorateClass([
+  n7()
+], SlButton.prototype, "type", 2);
+__decorateClass([
+  n7()
+], SlButton.prototype, "name", 2);
+__decorateClass([
+  n7()
+], SlButton.prototype, "value", 2);
+__decorateClass([
+  n7()
+], SlButton.prototype, "href", 2);
+__decorateClass([
+  n7()
+], SlButton.prototype, "target", 2);
+__decorateClass([
+  n7()
+], SlButton.prototype, "rel", 2);
+__decorateClass([
+  n7()
+], SlButton.prototype, "download", 2);
+__decorateClass([
+  n7()
+], SlButton.prototype, "form", 2);
+__decorateClass([
+  n7({ attribute: "formaction" })
+], SlButton.prototype, "formAction", 2);
+__decorateClass([
+  n7({ attribute: "formenctype" })
+], SlButton.prototype, "formEnctype", 2);
+__decorateClass([
+  n7({ attribute: "formmethod" })
+], SlButton.prototype, "formMethod", 2);
+__decorateClass([
+  n7({ attribute: "formnovalidate", type: Boolean })
+], SlButton.prototype, "formNoValidate", 2);
+__decorateClass([
+  n7({ attribute: "formtarget" })
+], SlButton.prototype, "formTarget", 2);
+__decorateClass([
+  watch("disabled", { waitUntilFirstUpdate: true })
+], SlButton.prototype, "handleDisabledChange", 1);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.J7PLVEQM.js
+var details_styles_default = i`
+  :host {
+    display: block;
+  }
+
+  .details {
+    border: solid 1px var(--sl-color-neutral-200);
+    border-radius: var(--sl-border-radius-medium);
+    background-color: var(--sl-color-neutral-0);
+    overflow-anchor: none;
+  }
+
+  .details--disabled {
+    opacity: 0.5;
+  }
+
+  .details__header {
+    display: flex;
+    align-items: center;
+    border-radius: inherit;
+    padding: var(--sl-spacing-medium);
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+  }
+
+  .details__header::-webkit-details-marker {
+    display: none;
+  }
+
+  .details__header:focus {
+    outline: none;
+  }
+
+  .details__header:focus-visible {
+    outline: var(--sl-focus-ring);
+    outline-offset: calc(1px + var(--sl-focus-ring-offset));
+  }
+
+  .details--disabled .details__header {
+    cursor: not-allowed;
+  }
+
+  .details--disabled .details__header:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .details__summary {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+  }
+
+  .details__summary-icon {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    transition: var(--sl-transition-medium) rotate ease;
+  }
+
+  .details--open .details__summary-icon {
+    rotate: 90deg;
+  }
+
+  .details--open.details--rtl .details__summary-icon {
+    rotate: -90deg;
+  }
+
+  .details--open slot[name='expand-icon'],
+  .details:not(.details--open) slot[name='collapse-icon'] {
+    display: none;
+  }
+
+  .details__body {
+    overflow: hidden;
+  }
+
+  .details__content {
+    display: block;
+    padding: var(--sl-spacing-medium);
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.K7JGTRV7.js
+var defaultAnimationRegistry = /* @__PURE__ */ new Map();
+var customAnimationRegistry = /* @__PURE__ */ new WeakMap();
+function ensureAnimation(animation) {
+  return animation != null ? animation : { keyframes: [], options: { duration: 0 } };
+}
+function getLogicalAnimation(animation, dir) {
+  if (dir.toLowerCase() === "rtl") {
+    return {
+      keyframes: animation.rtlKeyframes || animation.keyframes,
+      options: animation.options
+    };
+  }
+  return animation;
+}
+function setDefaultAnimation(animationName, animation) {
+  defaultAnimationRegistry.set(animationName, ensureAnimation(animation));
+}
+function getAnimation(el, animationName, options) {
+  const customAnimation = customAnimationRegistry.get(el);
+  if (customAnimation == null ? void 0 : customAnimation[animationName]) {
+    return getLogicalAnimation(customAnimation[animationName], options.dir);
+  }
+  const defaultAnimation = defaultAnimationRegistry.get(animationName);
+  if (defaultAnimation) {
+    return getLogicalAnimation(defaultAnimation, options.dir);
+  }
+  return {
+    keyframes: [],
+    options: { duration: 0 }
+  };
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.B4BZKR24.js
+function waitForEvent(el, eventName) {
+  return new Promise((resolve) => {
+    function done(event) {
+      if (event.target === el) {
+        el.removeEventListener(eventName, done);
+        resolve();
+      }
+    }
+    el.addEventListener(eventName, done);
+  });
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AJ3ENQ5C.js
+function animateTo(el, keyframes, options) {
+  return new Promise((resolve) => {
+    if ((options == null ? void 0 : options.duration) === Infinity) {
+      throw new Error("Promise-based animations must be finite.");
+    }
+    const animation = el.animate(keyframes, __spreadProps(__spreadValues({}, options), {
+      duration: prefersReducedMotion() ? 0 : options.duration
+    }));
+    animation.addEventListener("cancel", resolve, { once: true });
+    animation.addEventListener("finish", resolve, { once: true });
+  });
+}
+function prefersReducedMotion() {
+  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+  return query.matches;
+}
+function stopAnimations(el) {
+  return Promise.all(
+    el.getAnimations().map((animation) => {
+      return new Promise((resolve) => {
+        animation.cancel();
+        requestAnimationFrame(resolve);
+      });
+    })
+  );
+}
+function shimKeyframesHeightAuto(keyframes, calculatedHeight) {
+  return keyframes.map((keyframe) => __spreadProps(__spreadValues({}, keyframe), {
+    height: keyframe.height === "auto" ? `${calculatedHeight}px` : keyframe.height
+  }));
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.2SZ4G2LK.js
+var SlDetails = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.localize = new LocalizeController2(this);
+    this.open = false;
+    this.disabled = false;
+  }
+  firstUpdated() {
+    this.body.style.height = this.open ? "auto" : "0";
+    if (this.open) {
+      this.details.open = true;
+    }
+    this.detailsObserver = new MutationObserver((changes) => {
+      for (const change of changes) {
+        if (change.type === "attributes" && change.attributeName === "open") {
+          if (this.details.open) {
+            this.show();
+          } else {
+            this.hide();
+          }
+        }
+      }
+    });
+    this.detailsObserver.observe(this.details, { attributes: true });
+  }
+  disconnectedCallback() {
+    var _a3;
+    super.disconnectedCallback();
+    (_a3 = this.detailsObserver) == null ? void 0 : _a3.disconnect();
+  }
+  handleSummaryClick(event) {
+    event.preventDefault();
+    if (!this.disabled) {
+      if (this.open) {
+        this.hide();
+      } else {
+        this.show();
+      }
+      this.header.focus();
+    }
+  }
+  handleSummaryKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (this.open) {
+        this.hide();
+      } else {
+        this.show();
+      }
+    }
+    if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+      event.preventDefault();
+      this.hide();
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+      event.preventDefault();
+      this.show();
+    }
+  }
+  async handleOpenChange() {
+    if (this.open) {
+      this.details.open = true;
+      const slShow = this.emit("sl-show", { cancelable: true });
+      if (slShow.defaultPrevented) {
+        this.open = false;
+        this.details.open = false;
+        return;
+      }
+      await stopAnimations(this.body);
+      const { keyframes, options } = getAnimation(this, "details.show", { dir: this.localize.dir() });
+      await animateTo(this.body, shimKeyframesHeightAuto(keyframes, this.body.scrollHeight), options);
+      this.body.style.height = "auto";
+      this.emit("sl-after-show");
+    } else {
+      const slHide = this.emit("sl-hide", { cancelable: true });
+      if (slHide.defaultPrevented) {
+        this.details.open = true;
+        this.open = true;
+        return;
+      }
+      await stopAnimations(this.body);
+      const { keyframes, options } = getAnimation(this, "details.hide", { dir: this.localize.dir() });
+      await animateTo(this.body, shimKeyframesHeightAuto(keyframes, this.body.scrollHeight), options);
+      this.body.style.height = "auto";
+      this.details.open = false;
+      this.emit("sl-after-hide");
+    }
+  }
+  /** Shows the details. */
+  async show() {
+    if (this.open || this.disabled) {
+      return void 0;
+    }
+    this.open = true;
+    return waitForEvent(this, "sl-after-show");
+  }
+  /** Hides the details */
+  async hide() {
+    if (!this.open || this.disabled) {
+      return void 0;
+    }
+    this.open = false;
+    return waitForEvent(this, "sl-after-hide");
+  }
+  render() {
+    const isRtl = this.localize.dir() === "rtl";
+    return x2`
+      <details
+        part="base"
+        class=${e10({
+      details: true,
+      "details--open": this.open,
+      "details--disabled": this.disabled,
+      "details--rtl": isRtl
+    })}
+      >
+        <summary
+          part="header"
+          id="header"
+          class="details__header"
+          role="button"
+          aria-expanded=${this.open ? "true" : "false"}
+          aria-controls="content"
+          aria-disabled=${this.disabled ? "true" : "false"}
+          tabindex=${this.disabled ? "-1" : "0"}
+          @click=${this.handleSummaryClick}
+          @keydown=${this.handleSummaryKeyDown}
+        >
+          <slot name="summary" part="summary" class="details__summary">${this.summary}</slot>
+
+          <span part="summary-icon" class="details__summary-icon">
+            <slot name="expand-icon">
+              <sl-icon library="system" name=${isRtl ? "chevron-left" : "chevron-right"}></sl-icon>
+            </slot>
+            <slot name="collapse-icon">
+              <sl-icon library="system" name=${isRtl ? "chevron-left" : "chevron-right"}></sl-icon>
+            </slot>
+          </span>
+        </summary>
+
+        <div class="details__body" role="region" aria-labelledby="header">
+          <slot part="content" id="content" class="details__content"></slot>
+        </div>
+      </details>
+    `;
+  }
+};
+SlDetails.styles = [component_styles_default, details_styles_default];
+SlDetails.dependencies = {
+  "sl-icon": SlIcon
+};
+__decorateClass([
+  e6(".details")
+], SlDetails.prototype, "details", 2);
+__decorateClass([
+  e6(".details__header")
+], SlDetails.prototype, "header", 2);
+__decorateClass([
+  e6(".details__body")
+], SlDetails.prototype, "body", 2);
+__decorateClass([
+  e6(".details__expand-icon-slot")
+], SlDetails.prototype, "expandIconSlot", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlDetails.prototype, "open", 2);
+__decorateClass([
+  n7()
+], SlDetails.prototype, "summary", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlDetails.prototype, "disabled", 2);
+__decorateClass([
+  watch("open", { waitUntilFirstUpdate: true })
+], SlDetails.prototype, "handleOpenChange", 1);
+setDefaultAnimation("details.show", {
+  keyframes: [
+    { height: "0", opacity: "0" },
+    { height: "auto", opacity: "1" }
+  ],
+  options: { duration: 250, easing: "linear" }
+});
+setDefaultAnimation("details.hide", {
+  keyframes: [
+    { height: "auto", opacity: "1" },
+    { height: "0", opacity: "0" }
+  ],
+  options: { duration: 250, easing: "linear" }
+});
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.6I2T3DLI.js
+var icon_button_styles_default = i`
+  :host {
+    display: inline-block;
+    color: var(--sl-color-neutral-600);
+  }
+
+  .icon-button {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    border-radius: var(--sl-border-radius-medium);
+    font-size: inherit;
+    color: inherit;
+    padding: var(--sl-spacing-x-small);
+    cursor: pointer;
+    transition: var(--sl-transition-x-fast) color;
+    -webkit-appearance: none;
+  }
+
+  .icon-button:hover:not(.icon-button--disabled),
+  .icon-button:focus-visible:not(.icon-button--disabled) {
+    color: var(--sl-color-primary-600);
+  }
+
+  .icon-button:active:not(.icon-button--disabled) {
+    color: var(--sl-color-primary-700);
+  }
+
+  .icon-button:focus {
+    outline: none;
+  }
+
+  .icon-button--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .icon-button:focus-visible {
+    outline: var(--sl-focus-ring);
+    outline-offset: var(--sl-focus-ring-offset);
+  }
+
+  .icon-button__icon {
+    pointer-events: none;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.MMEGYRNV.js
+var SlIconButton = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.hasFocus = false;
+    this.label = "";
+    this.disabled = false;
+  }
+  handleBlur() {
+    this.hasFocus = false;
+    this.emit("sl-blur");
+  }
+  handleFocus() {
+    this.hasFocus = true;
+    this.emit("sl-focus");
+  }
+  handleClick(event) {
+    if (this.disabled) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+  /** Simulates a click on the icon button. */
+  click() {
+    this.button.click();
+  }
+  /** Sets focus on the icon button. */
+  focus(options) {
+    this.button.focus(options);
+  }
+  /** Removes focus from the icon button. */
+  blur() {
+    this.button.blur();
+  }
+  render() {
+    const isLink = this.href ? true : false;
+    const tag = isLink ? i7`a` : i7`button`;
+    return u5`
+      <${tag}
+        part="base"
+        class=${e10({
+      "icon-button": true,
+      "icon-button--disabled": !isLink && this.disabled,
+      "icon-button--focused": this.hasFocus
+    })}
+        ?disabled=${o9(isLink ? void 0 : this.disabled)}
+        type=${o9(isLink ? void 0 : "button")}
+        href=${o9(isLink ? this.href : void 0)}
+        target=${o9(isLink ? this.target : void 0)}
+        download=${o9(isLink ? this.download : void 0)}
+        rel=${o9(isLink && this.target ? "noreferrer noopener" : void 0)}
+        role=${o9(isLink ? void 0 : "button")}
+        aria-disabled=${this.disabled ? "true" : "false"}
+        aria-label="${this.label}"
+        tabindex=${this.disabled ? "-1" : "0"}
+        @blur=${this.handleBlur}
+        @focus=${this.handleFocus}
+        @click=${this.handleClick}
+      >
+        <sl-icon
+          class="icon-button__icon"
+          name=${o9(this.name)}
+          library=${o9(this.library)}
+          src=${o9(this.src)}
+          aria-hidden="true"
+        ></sl-icon>
+      </${tag}>
+    `;
+  }
+};
+SlIconButton.styles = [component_styles_default, icon_button_styles_default];
+SlIconButton.dependencies = { "sl-icon": SlIcon };
+__decorateClass([
+  e6(".icon-button")
+], SlIconButton.prototype, "button", 2);
+__decorateClass([
+  r7()
+], SlIconButton.prototype, "hasFocus", 2);
+__decorateClass([
+  n7()
+], SlIconButton.prototype, "name", 2);
+__decorateClass([
+  n7()
+], SlIconButton.prototype, "library", 2);
+__decorateClass([
+  n7()
+], SlIconButton.prototype, "src", 2);
+__decorateClass([
+  n7()
+], SlIconButton.prototype, "href", 2);
+__decorateClass([
+  n7()
+], SlIconButton.prototype, "target", 2);
+__decorateClass([
+  n7()
+], SlIconButton.prototype, "download", 2);
+__decorateClass([
+  n7()
+], SlIconButton.prototype, "label", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlIconButton.prototype, "disabled", 2);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.GGT72J62.js
+var input_styles_default = i`
+  :host {
+    display: block;
+  }
+
+  .input {
+    flex: 1 1 auto;
+    display: inline-flex;
+    align-items: stretch;
+    justify-content: start;
+    position: relative;
+    width: 100%;
+    font-family: var(--sl-input-font-family);
+    font-weight: var(--sl-input-font-weight);
+    letter-spacing: var(--sl-input-letter-spacing);
+    vertical-align: middle;
+    overflow: hidden;
+    cursor: text;
+    transition:
+      var(--sl-transition-fast) color,
+      var(--sl-transition-fast) border,
+      var(--sl-transition-fast) box-shadow,
+      var(--sl-transition-fast) background-color;
+  }
+
+  /* Standard inputs */
+  .input--standard {
+    background-color: var(--sl-input-background-color);
+    border: solid var(--sl-input-border-width) var(--sl-input-border-color);
+  }
+
+  .input--standard:hover:not(.input--disabled) {
+    background-color: var(--sl-input-background-color-hover);
+    border-color: var(--sl-input-border-color-hover);
+  }
+
+  .input--standard.input--focused:not(.input--disabled) {
+    background-color: var(--sl-input-background-color-focus);
+    border-color: var(--sl-input-border-color-focus);
+    box-shadow: 0 0 0 var(--sl-focus-ring-width) var(--sl-input-focus-ring-color);
+  }
+
+  .input--standard.input--focused:not(.input--disabled) .input__control {
+    color: var(--sl-input-color-focus);
+  }
+
+  .input--standard.input--disabled {
+    background-color: var(--sl-input-background-color-disabled);
+    border-color: var(--sl-input-border-color-disabled);
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .input--standard.input--disabled .input__control {
+    color: var(--sl-input-color-disabled);
+  }
+
+  .input--standard.input--disabled .input__control::placeholder {
+    color: var(--sl-input-placeholder-color-disabled);
+  }
+
+  /* Filled inputs */
+  .input--filled {
+    border: none;
+    background-color: var(--sl-input-filled-background-color);
+    color: var(--sl-input-color);
+  }
+
+  .input--filled:hover:not(.input--disabled) {
+    background-color: var(--sl-input-filled-background-color-hover);
+  }
+
+  .input--filled.input--focused:not(.input--disabled) {
+    background-color: var(--sl-input-filled-background-color-focus);
+    outline: var(--sl-focus-ring);
+    outline-offset: var(--sl-focus-ring-offset);
+  }
+
+  .input--filled.input--disabled {
+    background-color: var(--sl-input-filled-background-color-disabled);
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .input__control {
+    flex: 1 1 auto;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    min-width: 0;
+    height: 100%;
+    color: var(--sl-input-color);
+    border: none;
+    background: inherit;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    cursor: inherit;
+    -webkit-appearance: none;
+  }
+
+  .input__control::-webkit-search-decoration,
+  .input__control::-webkit-search-cancel-button,
+  .input__control::-webkit-search-results-button,
+  .input__control::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+  }
+
+  .input__control:-webkit-autofill,
+  .input__control:-webkit-autofill:hover,
+  .input__control:-webkit-autofill:focus,
+  .input__control:-webkit-autofill:active {
+    box-shadow: 0 0 0 var(--sl-input-height-large) var(--sl-input-background-color-hover) inset !important;
+    -webkit-text-fill-color: var(--sl-color-primary-500);
+    caret-color: var(--sl-input-color);
+  }
+
+  .input--filled .input__control:-webkit-autofill,
+  .input--filled .input__control:-webkit-autofill:hover,
+  .input--filled .input__control:-webkit-autofill:focus,
+  .input--filled .input__control:-webkit-autofill:active {
+    box-shadow: 0 0 0 var(--sl-input-height-large) var(--sl-input-filled-background-color) inset !important;
+  }
+
+  .input__control::placeholder {
+    color: var(--sl-input-placeholder-color);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .input:hover:not(.input--disabled) .input__control {
+    color: var(--sl-input-color-hover);
+  }
+
+  .input__control:focus {
+    outline: none;
+  }
+
+  .input__prefix,
+  .input__suffix {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    cursor: default;
+  }
+
+  .input__prefix ::slotted(sl-icon),
+  .input__suffix ::slotted(sl-icon) {
+    color: var(--sl-input-icon-color);
+  }
+
+  /*
+   * Size modifiers
+   */
+
+  .input--small {
+    border-radius: var(--sl-input-border-radius-small);
+    font-size: var(--sl-input-font-size-small);
+    height: var(--sl-input-height-small);
+  }
+
+  .input--small .input__control {
+    height: calc(var(--sl-input-height-small) - var(--sl-input-border-width) * 2);
+    padding: 0 var(--sl-input-spacing-small);
+  }
+
+  .input--small .input__clear,
+  .input--small .input__password-toggle {
+    width: calc(1em + var(--sl-input-spacing-small) * 2);
+  }
+
+  .input--small .input__prefix ::slotted(*) {
+    margin-inline-start: var(--sl-input-spacing-small);
+  }
+
+  .input--small .input__suffix ::slotted(*) {
+    margin-inline-end: var(--sl-input-spacing-small);
+  }
+
+  .input--medium {
+    border-radius: var(--sl-input-border-radius-medium);
+    font-size: var(--sl-input-font-size-medium);
+    height: var(--sl-input-height-medium);
+  }
+
+  .input--medium .input__control {
+    height: calc(var(--sl-input-height-medium) - var(--sl-input-border-width) * 2);
+    padding: 0 var(--sl-input-spacing-medium);
+  }
+
+  .input--medium .input__clear,
+  .input--medium .input__password-toggle {
+    width: calc(1em + var(--sl-input-spacing-medium) * 2);
+  }
+
+  .input--medium .input__prefix ::slotted(*) {
+    margin-inline-start: var(--sl-input-spacing-medium);
+  }
+
+  .input--medium .input__suffix ::slotted(*) {
+    margin-inline-end: var(--sl-input-spacing-medium);
+  }
+
+  .input--large {
+    border-radius: var(--sl-input-border-radius-large);
+    font-size: var(--sl-input-font-size-large);
+    height: var(--sl-input-height-large);
+  }
+
+  .input--large .input__control {
+    height: calc(var(--sl-input-height-large) - var(--sl-input-border-width) * 2);
+    padding: 0 var(--sl-input-spacing-large);
+  }
+
+  .input--large .input__clear,
+  .input--large .input__password-toggle {
+    width: calc(1em + var(--sl-input-spacing-large) * 2);
+  }
+
+  .input--large .input__prefix ::slotted(*) {
+    margin-inline-start: var(--sl-input-spacing-large);
+  }
+
+  .input--large .input__suffix ::slotted(*) {
+    margin-inline-end: var(--sl-input-spacing-large);
+  }
+
+  /*
+   * Pill modifier
+   */
+
+  .input--pill.input--small {
+    border-radius: var(--sl-input-height-small);
+  }
+
+  .input--pill.input--medium {
+    border-radius: var(--sl-input-height-medium);
+  }
+
+  .input--pill.input--large {
+    border-radius: var(--sl-input-height-large);
+  }
+
+  /*
+   * Clearable + Password Toggle
+   */
+
+  .input__clear,
+  .input__password-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: inherit;
+    color: var(--sl-input-icon-color);
+    border: none;
+    background: none;
+    padding: 0;
+    transition: var(--sl-transition-fast) color;
+    cursor: pointer;
+  }
+
+  .input__clear:hover,
+  .input__password-toggle:hover {
+    color: var(--sl-input-icon-color-hover);
+  }
+
+  .input__clear:focus,
+  .input__password-toggle:focus {
+    outline: none;
+  }
+
+  /* Don't show the browser's password toggle in Edge */
+  ::-ms-reveal {
+    display: none;
+  }
+
+  /* Hide the built-in number spinner */
+  .input--no-spin-buttons input[type='number']::-webkit-outer-spin-button,
+  .input--no-spin-buttons input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    display: none;
+  }
+
+  .input--no-spin-buttons input[type='number'] {
+    -moz-appearance: textfield;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.GI7VDIWX.js
+var defaultValue = (propertyName = "value") => (proto, key) => {
+  const ctor = proto.constructor;
+  const attributeChangedCallback = ctor.prototype.attributeChangedCallback;
+  ctor.prototype.attributeChangedCallback = function(name, old, value) {
+    var _a3;
+    const options = ctor.getPropertyOptions(propertyName);
+    const attributeName = typeof options.attribute === "string" ? options.attribute : propertyName;
+    if (name === attributeName) {
+      const converter = options.converter || u2;
+      const fromAttribute = typeof converter === "function" ? converter : (_a3 = converter == null ? void 0 : converter.fromAttribute) != null ? _a3 : u2.fromAttribute;
+      const newValue = fromAttribute(value, options.type);
+      if (this[propertyName] !== newValue) {
+        this[key] = newValue;
+      }
+    }
+    attributeChangedCallback.call(this, name, old, value);
+  };
+};
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.SI4ACBFK.js
+var form_control_styles_default = i`
+  .form-control .form-control__label {
+    display: none;
+  }
+
+  .form-control .form-control__help-text {
+    display: none;
+  }
+
+  /* Label */
+  .form-control--has-label .form-control__label {
+    display: inline-block;
+    color: var(--sl-input-label-color);
+    margin-bottom: var(--sl-spacing-3x-small);
+  }
+
+  .form-control--has-label.form-control--small .form-control__label {
+    font-size: var(--sl-input-label-font-size-small);
+  }
+
+  .form-control--has-label.form-control--medium .form-control__label {
+    font-size: var(--sl-input-label-font-size-medium);
+  }
+
+  .form-control--has-label.form-control--large .form-control__label {
+    font-size: var(--sl-input-label-font-size-large);
+  }
+
+  :host([required]) .form-control--has-label .form-control__label::after {
+    content: var(--sl-input-required-content);
+    margin-inline-start: var(--sl-input-required-content-offset);
+    color: var(--sl-input-required-content-color);
+  }
+
+  /* Help text */
+  .form-control--has-help-text .form-control__help-text {
+    display: block;
+    color: var(--sl-input-help-text-color);
+    margin-top: var(--sl-spacing-3x-small);
+  }
+
+  .form-control--has-help-text.form-control--small .form-control__help-text {
+    font-size: var(--sl-input-help-text-font-size-small);
+  }
+
+  .form-control--has-help-text.form-control--medium .form-control__help-text {
+    font-size: var(--sl-input-help-text-font-size-medium);
+  }
+
+  .form-control--has-help-text.form-control--large .form-control__help-text {
+    font-size: var(--sl-input-help-text-font-size-large);
+  }
+
+  .form-control--has-help-text.form-control--radio-group .form-control__help-text {
+    margin-top: var(--sl-spacing-2x-small);
+  }
+`;
+
+// node_modules/lit-html/directives/live.js
+var l5 = e9(class extends i6 {
+  constructor(r11) {
+    if (super(r11), r11.type !== t6.PROPERTY && r11.type !== t6.ATTRIBUTE && r11.type !== t6.BOOLEAN_ATTRIBUTE) throw Error("The `live` directive is not allowed on child or event bindings");
+    if (!f6(r11)) throw Error("`live` bindings can only contain a single expression");
+  }
+  render(r11) {
+    return r11;
+  }
+  update(i9, [t7]) {
+    if (t7 === T2 || t7 === E2) return t7;
+    const o11 = i9.element, l6 = i9.name;
+    if (i9.type === t6.PROPERTY) {
+      if (t7 === o11[l6]) return T2;
+    } else if (i9.type === t6.BOOLEAN_ATTRIBUTE) {
+      if (!!t7 === o11.hasAttribute(l6)) return T2;
+    } else if (i9.type === t6.ATTRIBUTE && o11.getAttribute(l6) === t7 + "") return T2;
+    return m3(i9), t7;
+  }
+});
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.22JN5JYK.js
+var SlInput = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.formControlController = new FormControlController(this, {
+      assumeInteractionOn: ["sl-blur", "sl-input"]
+    });
+    this.hasSlotController = new HasSlotController(this, "help-text", "label");
+    this.localize = new LocalizeController2(this);
+    this.hasFocus = false;
+    this.title = "";
+    this.__numberInput = Object.assign(document.createElement("input"), { type: "number" });
+    this.__dateInput = Object.assign(document.createElement("input"), { type: "date" });
+    this.type = "text";
+    this.name = "";
+    this.value = "";
+    this.defaultValue = "";
+    this.size = "medium";
+    this.filled = false;
+    this.pill = false;
+    this.label = "";
+    this.helpText = "";
+    this.clearable = false;
+    this.disabled = false;
+    this.placeholder = "";
+    this.readonly = false;
+    this.passwordToggle = false;
+    this.passwordVisible = false;
+    this.noSpinButtons = false;
+    this.form = "";
+    this.required = false;
+    this.spellcheck = true;
+  }
+  //
+  // NOTE: We use an in-memory input for these getters/setters instead of the one in the template because the properties
+  // can be set before the component is rendered.
+  //
+  /**
+   * Gets or sets the current value as a `Date` object. Returns `null` if the value can't be converted. This will use the native `<input type="{{type}}">` implementation and may result in an error.
+   */
+  get valueAsDate() {
+    var _a3;
+    this.__dateInput.type = this.type;
+    this.__dateInput.value = this.value;
+    return ((_a3 = this.input) == null ? void 0 : _a3.valueAsDate) || this.__dateInput.valueAsDate;
+  }
+  set valueAsDate(newValue) {
+    this.__dateInput.type = this.type;
+    this.__dateInput.valueAsDate = newValue;
+    this.value = this.__dateInput.value;
+  }
+  /** Gets or sets the current value as a number. Returns `NaN` if the value can't be converted. */
+  get valueAsNumber() {
+    var _a3;
+    this.__numberInput.value = this.value;
+    return ((_a3 = this.input) == null ? void 0 : _a3.valueAsNumber) || this.__numberInput.valueAsNumber;
+  }
+  set valueAsNumber(newValue) {
+    this.__numberInput.valueAsNumber = newValue;
+    this.value = this.__numberInput.value;
+  }
+  /** Gets the validity state object */
+  get validity() {
+    return this.input.validity;
+  }
+  /** Gets the validation message */
+  get validationMessage() {
+    return this.input.validationMessage;
+  }
+  firstUpdated() {
+    this.formControlController.updateValidity();
+  }
+  handleBlur() {
+    this.hasFocus = false;
+    this.emit("sl-blur");
+  }
+  handleChange() {
+    this.value = this.input.value;
+    this.emit("sl-change");
+  }
+  handleClearClick(event) {
+    event.preventDefault();
+    if (this.value !== "") {
+      this.value = "";
+      this.emit("sl-clear");
+      this.emit("sl-input");
+      this.emit("sl-change");
+    }
+    this.input.focus();
+  }
+  handleFocus() {
+    this.hasFocus = true;
+    this.emit("sl-focus");
+  }
+  handleInput() {
+    this.value = this.input.value;
+    this.formControlController.updateValidity();
+    this.emit("sl-input");
+  }
+  handleInvalid(event) {
+    this.formControlController.setValidity(false);
+    this.formControlController.emitInvalidEvent(event);
+  }
+  handleKeyDown(event) {
+    const hasModifier = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+    if (event.key === "Enter" && !hasModifier) {
+      setTimeout(() => {
+        if (!event.defaultPrevented && !event.isComposing) {
+          this.formControlController.submit();
+        }
+      });
+    }
+  }
+  handlePasswordToggle() {
+    this.passwordVisible = !this.passwordVisible;
+  }
+  handleDisabledChange() {
+    this.formControlController.setValidity(this.disabled);
+  }
+  handleStepChange() {
+    this.input.step = String(this.step);
+    this.formControlController.updateValidity();
+  }
+  async handleValueChange() {
+    await this.updateComplete;
+    this.formControlController.updateValidity();
+  }
+  /** Sets focus on the input. */
+  focus(options) {
+    this.input.focus(options);
+  }
+  /** Removes focus from the input. */
+  blur() {
+    this.input.blur();
+  }
+  /** Selects all the text in the input. */
+  select() {
+    this.input.select();
+  }
+  /** Sets the start and end positions of the text selection (0-based). */
+  setSelectionRange(selectionStart, selectionEnd, selectionDirection = "none") {
+    this.input.setSelectionRange(selectionStart, selectionEnd, selectionDirection);
+  }
+  /** Replaces a range of text with a new string. */
+  setRangeText(replacement, start, end, selectMode = "preserve") {
+    const selectionStart = start != null ? start : this.input.selectionStart;
+    const selectionEnd = end != null ? end : this.input.selectionEnd;
+    this.input.setRangeText(replacement, selectionStart, selectionEnd, selectMode);
+    if (this.value !== this.input.value) {
+      this.value = this.input.value;
+    }
+  }
+  /** Displays the browser picker for an input element (only works if the browser supports it for the input type). */
+  showPicker() {
+    if ("showPicker" in HTMLInputElement.prototype) {
+      this.input.showPicker();
+    }
+  }
+  /** Increments the value of a numeric input type by the value of the step attribute. */
+  stepUp() {
+    this.input.stepUp();
+    if (this.value !== this.input.value) {
+      this.value = this.input.value;
+    }
+  }
+  /** Decrements the value of a numeric input type by the value of the step attribute. */
+  stepDown() {
+    this.input.stepDown();
+    if (this.value !== this.input.value) {
+      this.value = this.input.value;
+    }
+  }
+  /** Checks for validity but does not show a validation message. Returns `true` when valid and `false` when invalid. */
+  checkValidity() {
+    return this.input.checkValidity();
+  }
+  /** Gets the associated form, if one exists. */
+  getForm() {
+    return this.formControlController.getForm();
+  }
+  /** Checks for validity and shows the browser's validation message if the control is invalid. */
+  reportValidity() {
+    return this.input.reportValidity();
+  }
+  /** Sets a custom validation message. Pass an empty string to restore validity. */
+  setCustomValidity(message) {
+    this.input.setCustomValidity(message);
+    this.formControlController.updateValidity();
+  }
+  render() {
+    const hasLabelSlot = this.hasSlotController.test("label");
+    const hasHelpTextSlot = this.hasSlotController.test("help-text");
+    const hasLabel = this.label ? true : !!hasLabelSlot;
+    const hasHelpText = this.helpText ? true : !!hasHelpTextSlot;
+    const hasClearIcon = this.clearable && !this.disabled && !this.readonly;
+    const isClearIconVisible = hasClearIcon && (typeof this.value === "number" || this.value.length > 0);
+    return x2`
+      <div
+        part="form-control"
+        class=${e10({
+      "form-control": true,
+      "form-control--small": this.size === "small",
+      "form-control--medium": this.size === "medium",
+      "form-control--large": this.size === "large",
+      "form-control--has-label": hasLabel,
+      "form-control--has-help-text": hasHelpText
+    })}
+      >
+        <label
+          part="form-control-label"
+          class="form-control__label"
+          for="input"
+          aria-hidden=${hasLabel ? "false" : "true"}
+        >
+          <slot name="label">${this.label}</slot>
+        </label>
+
+        <div part="form-control-input" class="form-control-input">
+          <div
+            part="base"
+            class=${e10({
+      input: true,
+      // Sizes
+      "input--small": this.size === "small",
+      "input--medium": this.size === "medium",
+      "input--large": this.size === "large",
+      // States
+      "input--pill": this.pill,
+      "input--standard": !this.filled,
+      "input--filled": this.filled,
+      "input--disabled": this.disabled,
+      "input--focused": this.hasFocus,
+      "input--empty": !this.value,
+      "input--no-spin-buttons": this.noSpinButtons
+    })}
+          >
+            <span part="prefix" class="input__prefix">
+              <slot name="prefix"></slot>
+            </span>
+
+            <input
+              part="input"
+              id="input"
+              class="input__control"
+              type=${this.type === "password" && this.passwordVisible ? "text" : this.type}
+              title=${this.title}
+              name=${o9(this.name)}
+              ?disabled=${this.disabled}
+              ?readonly=${this.readonly}
+              ?required=${this.required}
+              placeholder=${o9(this.placeholder)}
+              minlength=${o9(this.minlength)}
+              maxlength=${o9(this.maxlength)}
+              min=${o9(this.min)}
+              max=${o9(this.max)}
+              step=${o9(this.step)}
+              .value=${l5(this.value)}
+              autocapitalize=${o9(this.autocapitalize)}
+              autocomplete=${o9(this.autocomplete)}
+              autocorrect=${o9(this.autocorrect)}
+              ?autofocus=${this.autofocus}
+              spellcheck=${this.spellcheck}
+              pattern=${o9(this.pattern)}
+              enterkeyhint=${o9(this.enterkeyhint)}
+              inputmode=${o9(this.inputmode)}
+              aria-describedby="help-text"
+              @change=${this.handleChange}
+              @input=${this.handleInput}
+              @invalid=${this.handleInvalid}
+              @keydown=${this.handleKeyDown}
+              @focus=${this.handleFocus}
+              @blur=${this.handleBlur}
+            />
+
+            ${isClearIconVisible ? x2`
+                  <button
+                    part="clear-button"
+                    class="input__clear"
+                    type="button"
+                    aria-label=${this.localize.term("clearEntry")}
+                    @click=${this.handleClearClick}
+                    tabindex="-1"
+                  >
+                    <slot name="clear-icon">
+                      <sl-icon name="x-circle-fill" library="system"></sl-icon>
+                    </slot>
+                  </button>
+                ` : ""}
+            ${this.passwordToggle && !this.disabled ? x2`
+                  <button
+                    part="password-toggle-button"
+                    class="input__password-toggle"
+                    type="button"
+                    aria-label=${this.localize.term(this.passwordVisible ? "hidePassword" : "showPassword")}
+                    @click=${this.handlePasswordToggle}
+                    tabindex="-1"
+                  >
+                    ${this.passwordVisible ? x2`
+                          <slot name="show-password-icon">
+                            <sl-icon name="eye-slash" library="system"></sl-icon>
+                          </slot>
+                        ` : x2`
+                          <slot name="hide-password-icon">
+                            <sl-icon name="eye" library="system"></sl-icon>
+                          </slot>
+                        `}
+                  </button>
+                ` : ""}
+
+            <span part="suffix" class="input__suffix">
+              <slot name="suffix"></slot>
+            </span>
+          </div>
+        </div>
+
+        <div
+          part="form-control-help-text"
+          id="help-text"
+          class="form-control__help-text"
+          aria-hidden=${hasHelpText ? "false" : "true"}
+        >
+          <slot name="help-text">${this.helpText}</slot>
+        </div>
+      </div>
+    `;
+  }
+};
+SlInput.styles = [component_styles_default, form_control_styles_default, input_styles_default];
+SlInput.dependencies = { "sl-icon": SlIcon };
+__decorateClass([
+  e6(".input__control")
+], SlInput.prototype, "input", 2);
+__decorateClass([
+  r7()
+], SlInput.prototype, "hasFocus", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "title", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlInput.prototype, "type", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "name", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "value", 2);
+__decorateClass([
+  defaultValue()
+], SlInput.prototype, "defaultValue", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlInput.prototype, "size", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlInput.prototype, "filled", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlInput.prototype, "pill", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "label", 2);
+__decorateClass([
+  n7({ attribute: "help-text" })
+], SlInput.prototype, "helpText", 2);
+__decorateClass([
+  n7({ type: Boolean })
+], SlInput.prototype, "clearable", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlInput.prototype, "disabled", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "placeholder", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlInput.prototype, "readonly", 2);
+__decorateClass([
+  n7({ attribute: "password-toggle", type: Boolean })
+], SlInput.prototype, "passwordToggle", 2);
+__decorateClass([
+  n7({ attribute: "password-visible", type: Boolean })
+], SlInput.prototype, "passwordVisible", 2);
+__decorateClass([
+  n7({ attribute: "no-spin-buttons", type: Boolean })
+], SlInput.prototype, "noSpinButtons", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlInput.prototype, "form", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlInput.prototype, "required", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "pattern", 2);
+__decorateClass([
+  n7({ type: Number })
+], SlInput.prototype, "minlength", 2);
+__decorateClass([
+  n7({ type: Number })
+], SlInput.prototype, "maxlength", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "min", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "max", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "step", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "autocapitalize", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "autocorrect", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "autocomplete", 2);
+__decorateClass([
+  n7({ type: Boolean })
+], SlInput.prototype, "autofocus", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "enterkeyhint", 2);
+__decorateClass([
+  n7({
+    type: Boolean,
+    converter: {
+      // Allow "true|false" attribute values but keep the property boolean
+      fromAttribute: (value) => !value || value === "false" ? false : true,
+      toAttribute: (value) => value ? "true" : "false"
+    }
+  })
+], SlInput.prototype, "spellcheck", 2);
+__decorateClass([
+  n7()
+], SlInput.prototype, "inputmode", 2);
+__decorateClass([
+  watch("disabled", { waitUntilFirstUpdate: true })
+], SlInput.prototype, "handleDisabledChange", 1);
+__decorateClass([
+  watch("step", { waitUntilFirstUpdate: true })
+], SlInput.prototype, "handleStepChange", 1);
+__decorateClass([
+  watch("value", { waitUntilFirstUpdate: true })
+], SlInput.prototype, "handleValueChange", 1);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FXXKMG2P.js
+var option_styles_default = i`
+  :host {
+    display: block;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  :host(:focus) {
+    outline: none;
+  }
+
+  .option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    font-family: var(--sl-font-sans);
+    font-size: var(--sl-font-size-medium);
+    font-weight: var(--sl-font-weight-normal);
+    line-height: var(--sl-line-height-normal);
+    letter-spacing: var(--sl-letter-spacing-normal);
+    color: var(--sl-color-neutral-700);
+    padding: var(--sl-spacing-x-small) var(--sl-spacing-medium) var(--sl-spacing-x-small) var(--sl-spacing-x-small);
+    transition: var(--sl-transition-fast) fill;
+    cursor: pointer;
+  }
+
+  .option--hover:not(.option--current):not(.option--disabled) {
+    background-color: var(--sl-color-neutral-100);
+    color: var(--sl-color-neutral-1000);
+  }
+
+  .option--current,
+  .option--current.option--disabled {
+    background-color: var(--sl-color-primary-600);
+    color: var(--sl-color-neutral-0);
+    opacity: 1;
+  }
+
+  .option--disabled {
+    outline: none;
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .option__label {
+    flex: 1 1 auto;
+    display: inline-block;
+    line-height: var(--sl-line-height-dense);
+  }
+
+  .option .option__check {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    visibility: hidden;
+    padding-inline-end: var(--sl-spacing-2x-small);
+  }
+
+  .option--selected .option__check {
+    visibility: visible;
+  }
+
+  .option__prefix,
+  .option__suffix {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
+
+  .option__prefix::slotted(*) {
+    margin-inline-end: var(--sl-spacing-x-small);
+  }
+
+  .option__suffix::slotted(*) {
+    margin-inline-start: var(--sl-spacing-x-small);
+  }
+
+  @media (forced-colors: active) {
+    :host(:hover:not([aria-disabled='true'])) .option {
+      outline: dashed 1px SelectedItem;
+      outline-offset: -1px;
+    }
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.W4UKBSNN.js
+var SlOption = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.localize = new LocalizeController2(this);
+    this.current = false;
+    this.selected = false;
+    this.hasHover = false;
+    this.value = "";
+    this.disabled = false;
+  }
+  connectedCallback() {
+    super.connectedCallback();
+    this.setAttribute("role", "option");
+    this.setAttribute("aria-selected", "false");
+  }
+  handleDefaultSlotChange() {
+    customElements.whenDefined("sl-select").then(() => {
+      const controller = this.closest("sl-select");
+      if (controller) {
+        controller.handleDefaultSlotChange();
+      }
+    });
+  }
+  handleMouseEnter() {
+    this.hasHover = true;
+  }
+  handleMouseLeave() {
+    this.hasHover = false;
+  }
+  handleDisabledChange() {
+    this.setAttribute("aria-disabled", this.disabled ? "true" : "false");
+  }
+  handleSelectedChange() {
+    this.setAttribute("aria-selected", this.selected ? "true" : "false");
+  }
+  handleValueChange() {
+    if (typeof this.value !== "string") {
+      this.value = String(this.value);
+    }
+    if (this.value.includes(" ")) {
+      console.error(`Option values cannot include a space. All spaces have been replaced with underscores.`, this);
+      this.value = this.value.replace(/ /g, "_");
+    }
+  }
+  /** Returns a plain text label based on the option's content. */
+  getTextLabel() {
+    const nodes = this.childNodes;
+    let label = "";
+    [...nodes].forEach((node) => {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        if (!node.hasAttribute("slot")) {
+          label += node.textContent;
+        }
+      }
+      if (node.nodeType === Node.TEXT_NODE) {
+        label += node.textContent;
+      }
+    });
+    return label.trim();
+  }
+  render() {
+    return x2`
+      <div
+        part="base"
+        class=${e10({
+      option: true,
+      "option--current": this.current,
+      "option--disabled": this.disabled,
+      "option--selected": this.selected,
+      "option--hover": this.hasHover
+    })}
+        @mouseenter=${this.handleMouseEnter}
+        @mouseleave=${this.handleMouseLeave}
+      >
+        <sl-icon part="checked-icon" class="option__check" name="check" library="system" aria-hidden="true"></sl-icon>
+        <slot part="prefix" name="prefix" class="option__prefix"></slot>
+        <slot part="label" class="option__label" @slotchange=${this.handleDefaultSlotChange}></slot>
+        <slot part="suffix" name="suffix" class="option__suffix"></slot>
+      </div>
+    `;
+  }
+};
+SlOption.styles = [component_styles_default, option_styles_default];
+SlOption.dependencies = { "sl-icon": SlIcon };
+__decorateClass([
+  e6(".option__label")
+], SlOption.prototype, "defaultSlot", 2);
+__decorateClass([
+  r7()
+], SlOption.prototype, "current", 2);
+__decorateClass([
+  r7()
+], SlOption.prototype, "selected", 2);
+__decorateClass([
+  r7()
+], SlOption.prototype, "hasHover", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlOption.prototype, "value", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlOption.prototype, "disabled", 2);
+__decorateClass([
+  watch("disabled")
+], SlOption.prototype, "handleDisabledChange", 1);
+__decorateClass([
+  watch("selected")
+], SlOption.prototype, "handleSelectedChange", 1);
+__decorateClass([
+  watch("value")
+], SlOption.prototype, "handleValueChange", 1);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.3KSWVBQ5.js
+var popup_styles_default = i`
+  :host {
+    --arrow-color: var(--sl-color-neutral-1000);
+    --arrow-size: 6px;
+
+    /*
+     * These properties are computed to account for the arrow's dimensions after being rotated 45º. The constant
+     * 0.7071 is derived from sin(45), which is the diagonal size of the arrow's container after rotating.
+     */
+    --arrow-size-diagonal: calc(var(--arrow-size) * 0.7071);
+    --arrow-padding-offset: calc(var(--arrow-size-diagonal) - var(--arrow-size));
+
+    display: contents;
+  }
+
+  .popup {
+    position: absolute;
+    isolation: isolate;
+    max-width: var(--auto-size-available-width, none);
+    max-height: var(--auto-size-available-height, none);
+  }
+
+  .popup--fixed {
+    position: fixed;
+  }
+
+  .popup:not(.popup--active) {
+    display: none;
+  }
+
+  .popup__arrow {
+    position: absolute;
+    width: calc(var(--arrow-size-diagonal) * 2);
+    height: calc(var(--arrow-size-diagonal) * 2);
+    rotate: 45deg;
+    background: var(--arrow-color);
+    z-index: -1;
+  }
+
+  /* Hover bridge */
+  .popup-hover-bridge:not(.popup-hover-bridge--visible) {
+    display: none;
+  }
+
+  .popup-hover-bridge {
+    position: fixed;
+    z-index: calc(var(--sl-z-index-dropdown) - 1);
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    clip-path: polygon(
+      var(--hover-bridge-top-left-x, 0) var(--hover-bridge-top-left-y, 0),
+      var(--hover-bridge-top-right-x, 0) var(--hover-bridge-top-right-y, 0),
+      var(--hover-bridge-bottom-right-x, 0) var(--hover-bridge-bottom-right-y, 0),
+      var(--hover-bridge-bottom-left-x, 0) var(--hover-bridge-bottom-left-y, 0)
+    );
+  }
+`;
+
+// node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs
+var min = Math.min;
+var max = Math.max;
+var round = Math.round;
+var floor = Math.floor;
+var createCoords = (v3) => ({
+  x: v3,
+  y: v3
+});
+var oppositeSideMap = {
+  left: "right",
+  right: "left",
+  bottom: "top",
+  top: "bottom"
+};
+var oppositeAlignmentMap = {
+  start: "end",
+  end: "start"
+};
+function clamp(start, value, end) {
+  return max(start, min(value, end));
+}
+function evaluate(value, param) {
+  return typeof value === "function" ? value(param) : value;
+}
+function getSide(placement) {
+  return placement.split("-")[0];
+}
+function getAlignment(placement) {
+  return placement.split("-")[1];
+}
+function getOppositeAxis(axis) {
+  return axis === "x" ? "y" : "x";
+}
+function getAxisLength(axis) {
+  return axis === "y" ? "height" : "width";
+}
+function getSideAxis(placement) {
+  return ["top", "bottom"].includes(getSide(placement)) ? "y" : "x";
+}
+function getAlignmentAxis(placement) {
+  return getOppositeAxis(getSideAxis(placement));
+}
+function getAlignmentSides(placement, rects, rtl) {
+  if (rtl === void 0) {
+    rtl = false;
+  }
+  const alignment = getAlignment(placement);
+  const alignmentAxis = getAlignmentAxis(placement);
+  const length = getAxisLength(alignmentAxis);
+  let mainAlignmentSide = alignmentAxis === "x" ? alignment === (rtl ? "end" : "start") ? "right" : "left" : alignment === "start" ? "bottom" : "top";
+  if (rects.reference[length] > rects.floating[length]) {
+    mainAlignmentSide = getOppositePlacement(mainAlignmentSide);
+  }
+  return [mainAlignmentSide, getOppositePlacement(mainAlignmentSide)];
+}
+function getExpandedPlacements(placement) {
+  const oppositePlacement = getOppositePlacement(placement);
+  return [getOppositeAlignmentPlacement(placement), oppositePlacement, getOppositeAlignmentPlacement(oppositePlacement)];
+}
+function getOppositeAlignmentPlacement(placement) {
+  return placement.replace(/start|end/g, (alignment) => oppositeAlignmentMap[alignment]);
+}
+function getSideList(side, isStart, rtl) {
+  const lr = ["left", "right"];
+  const rl = ["right", "left"];
+  const tb = ["top", "bottom"];
+  const bt = ["bottom", "top"];
+  switch (side) {
+    case "top":
+    case "bottom":
+      if (rtl) return isStart ? rl : lr;
+      return isStart ? lr : rl;
+    case "left":
+    case "right":
+      return isStart ? tb : bt;
+    default:
+      return [];
+  }
+}
+function getOppositeAxisPlacements(placement, flipAlignment, direction, rtl) {
+  const alignment = getAlignment(placement);
+  let list = getSideList(getSide(placement), direction === "start", rtl);
+  if (alignment) {
+    list = list.map((side) => side + "-" + alignment);
+    if (flipAlignment) {
+      list = list.concat(list.map(getOppositeAlignmentPlacement));
+    }
+  }
+  return list;
+}
+function getOppositePlacement(placement) {
+  return placement.replace(/left|right|bottom|top/g, (side) => oppositeSideMap[side]);
+}
+function expandPaddingObject(padding) {
+  return {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    ...padding
+  };
+}
+function getPaddingObject(padding) {
+  return typeof padding !== "number" ? expandPaddingObject(padding) : {
+    top: padding,
+    right: padding,
+    bottom: padding,
+    left: padding
+  };
+}
+function rectToClientRect(rect) {
+  const {
+    x: x3,
+    y: y4,
+    width,
+    height
+  } = rect;
+  return {
+    width,
+    height,
+    top: y4,
+    left: x3,
+    right: x3 + width,
+    bottom: y4 + height,
+    x: x3,
+    y: y4
+  };
+}
+
+// node_modules/@floating-ui/core/dist/floating-ui.core.mjs
+function computeCoordsFromPlacement(_ref, placement, rtl) {
+  let {
+    reference,
+    floating
+  } = _ref;
+  const sideAxis = getSideAxis(placement);
+  const alignmentAxis = getAlignmentAxis(placement);
+  const alignLength = getAxisLength(alignmentAxis);
+  const side = getSide(placement);
+  const isVertical = sideAxis === "y";
+  const commonX = reference.x + reference.width / 2 - floating.width / 2;
+  const commonY = reference.y + reference.height / 2 - floating.height / 2;
+  const commonAlign = reference[alignLength] / 2 - floating[alignLength] / 2;
+  let coords;
+  switch (side) {
+    case "top":
+      coords = {
+        x: commonX,
+        y: reference.y - floating.height
+      };
+      break;
+    case "bottom":
+      coords = {
+        x: commonX,
+        y: reference.y + reference.height
+      };
+      break;
+    case "right":
+      coords = {
+        x: reference.x + reference.width,
+        y: commonY
+      };
+      break;
+    case "left":
+      coords = {
+        x: reference.x - floating.width,
+        y: commonY
+      };
+      break;
+    default:
+      coords = {
+        x: reference.x,
+        y: reference.y
+      };
+  }
+  switch (getAlignment(placement)) {
+    case "start":
+      coords[alignmentAxis] -= commonAlign * (rtl && isVertical ? -1 : 1);
+      break;
+    case "end":
+      coords[alignmentAxis] += commonAlign * (rtl && isVertical ? -1 : 1);
+      break;
+  }
+  return coords;
+}
+var computePosition = async (reference, floating, config) => {
+  const {
+    placement = "bottom",
+    strategy = "absolute",
+    middleware = [],
+    platform: platform2
+  } = config;
+  const validMiddleware = middleware.filter(Boolean);
+  const rtl = await (platform2.isRTL == null ? void 0 : platform2.isRTL(floating));
+  let rects = await platform2.getElementRects({
+    reference,
+    floating,
+    strategy
+  });
+  let {
+    x: x3,
+    y: y4
+  } = computeCoordsFromPlacement(rects, placement, rtl);
+  let statefulPlacement = placement;
+  let middlewareData = {};
+  let resetCount = 0;
+  for (let i9 = 0; i9 < validMiddleware.length; i9++) {
+    const {
+      name,
+      fn
+    } = validMiddleware[i9];
+    const {
+      x: nextX,
+      y: nextY,
+      data,
+      reset
+    } = await fn({
+      x: x3,
+      y: y4,
+      initialPlacement: placement,
+      placement: statefulPlacement,
+      strategy,
+      middlewareData,
+      rects,
+      platform: platform2,
+      elements: {
+        reference,
+        floating
+      }
+    });
+    x3 = nextX != null ? nextX : x3;
+    y4 = nextY != null ? nextY : y4;
+    middlewareData = {
+      ...middlewareData,
+      [name]: {
+        ...middlewareData[name],
+        ...data
+      }
+    };
+    if (reset && resetCount <= 50) {
+      resetCount++;
+      if (typeof reset === "object") {
+        if (reset.placement) {
+          statefulPlacement = reset.placement;
+        }
+        if (reset.rects) {
+          rects = reset.rects === true ? await platform2.getElementRects({
+            reference,
+            floating,
+            strategy
+          }) : reset.rects;
+        }
+        ({
+          x: x3,
+          y: y4
+        } = computeCoordsFromPlacement(rects, statefulPlacement, rtl));
+      }
+      i9 = -1;
+    }
+  }
+  return {
+    x: x3,
+    y: y4,
+    placement: statefulPlacement,
+    strategy,
+    middlewareData
+  };
+};
+async function detectOverflow(state, options) {
+  var _await$platform$isEle;
+  if (options === void 0) {
+    options = {};
+  }
+  const {
+    x: x3,
+    y: y4,
+    platform: platform2,
+    rects,
+    elements,
+    strategy
+  } = state;
+  const {
+    boundary = "clippingAncestors",
+    rootBoundary = "viewport",
+    elementContext = "floating",
+    altBoundary = false,
+    padding = 0
+  } = evaluate(options, state);
+  const paddingObject = getPaddingObject(padding);
+  const altContext = elementContext === "floating" ? "reference" : "floating";
+  const element = elements[altBoundary ? altContext : elementContext];
+  const clippingClientRect = rectToClientRect(await platform2.getClippingRect({
+    element: ((_await$platform$isEle = await (platform2.isElement == null ? void 0 : platform2.isElement(element))) != null ? _await$platform$isEle : true) ? element : element.contextElement || await (platform2.getDocumentElement == null ? void 0 : platform2.getDocumentElement(elements.floating)),
+    boundary,
+    rootBoundary,
+    strategy
+  }));
+  const rect = elementContext === "floating" ? {
+    x: x3,
+    y: y4,
+    width: rects.floating.width,
+    height: rects.floating.height
+  } : rects.reference;
+  const offsetParent = await (platform2.getOffsetParent == null ? void 0 : platform2.getOffsetParent(elements.floating));
+  const offsetScale = await (platform2.isElement == null ? void 0 : platform2.isElement(offsetParent)) ? await (platform2.getScale == null ? void 0 : platform2.getScale(offsetParent)) || {
+    x: 1,
+    y: 1
+  } : {
+    x: 1,
+    y: 1
+  };
+  const elementClientRect = rectToClientRect(platform2.convertOffsetParentRelativeRectToViewportRelativeRect ? await platform2.convertOffsetParentRelativeRectToViewportRelativeRect({
+    elements,
+    rect,
+    offsetParent,
+    strategy
+  }) : rect);
+  return {
+    top: (clippingClientRect.top - elementClientRect.top + paddingObject.top) / offsetScale.y,
+    bottom: (elementClientRect.bottom - clippingClientRect.bottom + paddingObject.bottom) / offsetScale.y,
+    left: (clippingClientRect.left - elementClientRect.left + paddingObject.left) / offsetScale.x,
+    right: (elementClientRect.right - clippingClientRect.right + paddingObject.right) / offsetScale.x
+  };
+}
+var arrow = (options) => ({
+  name: "arrow",
+  options,
+  async fn(state) {
+    const {
+      x: x3,
+      y: y4,
+      placement,
+      rects,
+      platform: platform2,
+      elements,
+      middlewareData
+    } = state;
+    const {
+      element,
+      padding = 0
+    } = evaluate(options, state) || {};
+    if (element == null) {
+      return {};
+    }
+    const paddingObject = getPaddingObject(padding);
+    const coords = {
+      x: x3,
+      y: y4
+    };
+    const axis = getAlignmentAxis(placement);
+    const length = getAxisLength(axis);
+    const arrowDimensions = await platform2.getDimensions(element);
+    const isYAxis = axis === "y";
+    const minProp = isYAxis ? "top" : "left";
+    const maxProp = isYAxis ? "bottom" : "right";
+    const clientProp = isYAxis ? "clientHeight" : "clientWidth";
+    const endDiff = rects.reference[length] + rects.reference[axis] - coords[axis] - rects.floating[length];
+    const startDiff = coords[axis] - rects.reference[axis];
+    const arrowOffsetParent = await (platform2.getOffsetParent == null ? void 0 : platform2.getOffsetParent(element));
+    let clientSize = arrowOffsetParent ? arrowOffsetParent[clientProp] : 0;
+    if (!clientSize || !await (platform2.isElement == null ? void 0 : platform2.isElement(arrowOffsetParent))) {
+      clientSize = elements.floating[clientProp] || rects.floating[length];
+    }
+    const centerToReference = endDiff / 2 - startDiff / 2;
+    const largestPossiblePadding = clientSize / 2 - arrowDimensions[length] / 2 - 1;
+    const minPadding = min(paddingObject[minProp], largestPossiblePadding);
+    const maxPadding = min(paddingObject[maxProp], largestPossiblePadding);
+    const min$1 = minPadding;
+    const max2 = clientSize - arrowDimensions[length] - maxPadding;
+    const center = clientSize / 2 - arrowDimensions[length] / 2 + centerToReference;
+    const offset3 = clamp(min$1, center, max2);
+    const shouldAddOffset = !middlewareData.arrow && getAlignment(placement) != null && center !== offset3 && rects.reference[length] / 2 - (center < min$1 ? minPadding : maxPadding) - arrowDimensions[length] / 2 < 0;
+    const alignmentOffset = shouldAddOffset ? center < min$1 ? center - min$1 : center - max2 : 0;
+    return {
+      [axis]: coords[axis] + alignmentOffset,
+      data: {
+        [axis]: offset3,
+        centerOffset: center - offset3 - alignmentOffset,
+        ...shouldAddOffset && {
+          alignmentOffset
+        }
+      },
+      reset: shouldAddOffset
+    };
+  }
+});
+var flip = function(options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: "flip",
+    options,
+    async fn(state) {
+      var _middlewareData$arrow, _middlewareData$flip;
+      const {
+        placement,
+        middlewareData,
+        rects,
+        initialPlacement,
+        platform: platform2,
+        elements
+      } = state;
+      const {
+        mainAxis: checkMainAxis = true,
+        crossAxis: checkCrossAxis = true,
+        fallbackPlacements: specifiedFallbackPlacements,
+        fallbackStrategy = "bestFit",
+        fallbackAxisSideDirection = "none",
+        flipAlignment = true,
+        ...detectOverflowOptions
+      } = evaluate(options, state);
+      if ((_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) {
+        return {};
+      }
+      const side = getSide(placement);
+      const initialSideAxis = getSideAxis(initialPlacement);
+      const isBasePlacement = getSide(initialPlacement) === initialPlacement;
+      const rtl = await (platform2.isRTL == null ? void 0 : platform2.isRTL(elements.floating));
+      const fallbackPlacements = specifiedFallbackPlacements || (isBasePlacement || !flipAlignment ? [getOppositePlacement(initialPlacement)] : getExpandedPlacements(initialPlacement));
+      const hasFallbackAxisSideDirection = fallbackAxisSideDirection !== "none";
+      if (!specifiedFallbackPlacements && hasFallbackAxisSideDirection) {
+        fallbackPlacements.push(...getOppositeAxisPlacements(initialPlacement, flipAlignment, fallbackAxisSideDirection, rtl));
+      }
+      const placements2 = [initialPlacement, ...fallbackPlacements];
+      const overflow = await detectOverflow(state, detectOverflowOptions);
+      const overflows = [];
+      let overflowsData = ((_middlewareData$flip = middlewareData.flip) == null ? void 0 : _middlewareData$flip.overflows) || [];
+      if (checkMainAxis) {
+        overflows.push(overflow[side]);
+      }
+      if (checkCrossAxis) {
+        const sides2 = getAlignmentSides(placement, rects, rtl);
+        overflows.push(overflow[sides2[0]], overflow[sides2[1]]);
+      }
+      overflowsData = [...overflowsData, {
+        placement,
+        overflows
+      }];
+      if (!overflows.every((side2) => side2 <= 0)) {
+        var _middlewareData$flip2, _overflowsData$filter;
+        const nextIndex = (((_middlewareData$flip2 = middlewareData.flip) == null ? void 0 : _middlewareData$flip2.index) || 0) + 1;
+        const nextPlacement = placements2[nextIndex];
+        if (nextPlacement) {
+          return {
+            data: {
+              index: nextIndex,
+              overflows: overflowsData
+            },
+            reset: {
+              placement: nextPlacement
+            }
+          };
+        }
+        let resetPlacement = (_overflowsData$filter = overflowsData.filter((d4) => d4.overflows[0] <= 0).sort((a5, b4) => a5.overflows[1] - b4.overflows[1])[0]) == null ? void 0 : _overflowsData$filter.placement;
+        if (!resetPlacement) {
+          switch (fallbackStrategy) {
+            case "bestFit": {
+              var _overflowsData$filter2;
+              const placement2 = (_overflowsData$filter2 = overflowsData.filter((d4) => {
+                if (hasFallbackAxisSideDirection) {
+                  const currentSideAxis = getSideAxis(d4.placement);
+                  return currentSideAxis === initialSideAxis || // Create a bias to the `y` side axis due to horizontal
+                  // reading directions favoring greater width.
+                  currentSideAxis === "y";
+                }
+                return true;
+              }).map((d4) => [d4.placement, d4.overflows.filter((overflow2) => overflow2 > 0).reduce((acc, overflow2) => acc + overflow2, 0)]).sort((a5, b4) => a5[1] - b4[1])[0]) == null ? void 0 : _overflowsData$filter2[0];
+              if (placement2) {
+                resetPlacement = placement2;
+              }
+              break;
+            }
+            case "initialPlacement":
+              resetPlacement = initialPlacement;
+              break;
+          }
+        }
+        if (placement !== resetPlacement) {
+          return {
+            reset: {
+              placement: resetPlacement
+            }
+          };
+        }
+      }
+      return {};
+    }
+  };
+};
+async function convertValueToCoords(state, options) {
+  const {
+    placement,
+    platform: platform2,
+    elements
+  } = state;
+  const rtl = await (platform2.isRTL == null ? void 0 : platform2.isRTL(elements.floating));
+  const side = getSide(placement);
+  const alignment = getAlignment(placement);
+  const isVertical = getSideAxis(placement) === "y";
+  const mainAxisMulti = ["left", "top"].includes(side) ? -1 : 1;
+  const crossAxisMulti = rtl && isVertical ? -1 : 1;
+  const rawValue = evaluate(options, state);
+  let {
+    mainAxis,
+    crossAxis,
+    alignmentAxis
+  } = typeof rawValue === "number" ? {
+    mainAxis: rawValue,
+    crossAxis: 0,
+    alignmentAxis: null
+  } : {
+    mainAxis: rawValue.mainAxis || 0,
+    crossAxis: rawValue.crossAxis || 0,
+    alignmentAxis: rawValue.alignmentAxis
+  };
+  if (alignment && typeof alignmentAxis === "number") {
+    crossAxis = alignment === "end" ? alignmentAxis * -1 : alignmentAxis;
+  }
+  return isVertical ? {
+    x: crossAxis * crossAxisMulti,
+    y: mainAxis * mainAxisMulti
+  } : {
+    x: mainAxis * mainAxisMulti,
+    y: crossAxis * crossAxisMulti
+  };
+}
+var offset = function(options) {
+  if (options === void 0) {
+    options = 0;
+  }
+  return {
+    name: "offset",
+    options,
+    async fn(state) {
+      var _middlewareData$offse, _middlewareData$arrow;
+      const {
+        x: x3,
+        y: y4,
+        placement,
+        middlewareData
+      } = state;
+      const diffCoords = await convertValueToCoords(state, options);
+      if (placement === ((_middlewareData$offse = middlewareData.offset) == null ? void 0 : _middlewareData$offse.placement) && (_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) {
+        return {};
+      }
+      return {
+        x: x3 + diffCoords.x,
+        y: y4 + diffCoords.y,
+        data: {
+          ...diffCoords,
+          placement
+        }
+      };
+    }
+  };
+};
+var shift = function(options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: "shift",
+    options,
+    async fn(state) {
+      const {
+        x: x3,
+        y: y4,
+        placement
+      } = state;
+      const {
+        mainAxis: checkMainAxis = true,
+        crossAxis: checkCrossAxis = false,
+        limiter = {
+          fn: (_ref) => {
+            let {
+              x: x4,
+              y: y5
+            } = _ref;
+            return {
+              x: x4,
+              y: y5
+            };
+          }
+        },
+        ...detectOverflowOptions
+      } = evaluate(options, state);
+      const coords = {
+        x: x3,
+        y: y4
+      };
+      const overflow = await detectOverflow(state, detectOverflowOptions);
+      const crossAxis = getSideAxis(getSide(placement));
+      const mainAxis = getOppositeAxis(crossAxis);
+      let mainAxisCoord = coords[mainAxis];
+      let crossAxisCoord = coords[crossAxis];
+      if (checkMainAxis) {
+        const minSide = mainAxis === "y" ? "top" : "left";
+        const maxSide = mainAxis === "y" ? "bottom" : "right";
+        const min2 = mainAxisCoord + overflow[minSide];
+        const max2 = mainAxisCoord - overflow[maxSide];
+        mainAxisCoord = clamp(min2, mainAxisCoord, max2);
+      }
+      if (checkCrossAxis) {
+        const minSide = crossAxis === "y" ? "top" : "left";
+        const maxSide = crossAxis === "y" ? "bottom" : "right";
+        const min2 = crossAxisCoord + overflow[minSide];
+        const max2 = crossAxisCoord - overflow[maxSide];
+        crossAxisCoord = clamp(min2, crossAxisCoord, max2);
+      }
+      const limitedCoords = limiter.fn({
+        ...state,
+        [mainAxis]: mainAxisCoord,
+        [crossAxis]: crossAxisCoord
+      });
+      return {
+        ...limitedCoords,
+        data: {
+          x: limitedCoords.x - x3,
+          y: limitedCoords.y - y4,
+          enabled: {
+            [mainAxis]: checkMainAxis,
+            [crossAxis]: checkCrossAxis
+          }
+        }
+      };
+    }
+  };
+};
+var size = function(options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: "size",
+    options,
+    async fn(state) {
+      var _state$middlewareData, _state$middlewareData2;
+      const {
+        placement,
+        rects,
+        platform: platform2,
+        elements
+      } = state;
+      const {
+        apply = () => {
+        },
+        ...detectOverflowOptions
+      } = evaluate(options, state);
+      const overflow = await detectOverflow(state, detectOverflowOptions);
+      const side = getSide(placement);
+      const alignment = getAlignment(placement);
+      const isYAxis = getSideAxis(placement) === "y";
+      const {
+        width,
+        height
+      } = rects.floating;
+      let heightSide;
+      let widthSide;
+      if (side === "top" || side === "bottom") {
+        heightSide = side;
+        widthSide = alignment === (await (platform2.isRTL == null ? void 0 : platform2.isRTL(elements.floating)) ? "start" : "end") ? "left" : "right";
+      } else {
+        widthSide = side;
+        heightSide = alignment === "end" ? "top" : "bottom";
+      }
+      const maximumClippingHeight = height - overflow.top - overflow.bottom;
+      const maximumClippingWidth = width - overflow.left - overflow.right;
+      const overflowAvailableHeight = min(height - overflow[heightSide], maximumClippingHeight);
+      const overflowAvailableWidth = min(width - overflow[widthSide], maximumClippingWidth);
+      const noShift = !state.middlewareData.shift;
+      let availableHeight = overflowAvailableHeight;
+      let availableWidth = overflowAvailableWidth;
+      if ((_state$middlewareData = state.middlewareData.shift) != null && _state$middlewareData.enabled.x) {
+        availableWidth = maximumClippingWidth;
+      }
+      if ((_state$middlewareData2 = state.middlewareData.shift) != null && _state$middlewareData2.enabled.y) {
+        availableHeight = maximumClippingHeight;
+      }
+      if (noShift && !alignment) {
+        const xMin = max(overflow.left, 0);
+        const xMax = max(overflow.right, 0);
+        const yMin = max(overflow.top, 0);
+        const yMax = max(overflow.bottom, 0);
+        if (isYAxis) {
+          availableWidth = width - 2 * (xMin !== 0 || xMax !== 0 ? xMin + xMax : max(overflow.left, overflow.right));
+        } else {
+          availableHeight = height - 2 * (yMin !== 0 || yMax !== 0 ? yMin + yMax : max(overflow.top, overflow.bottom));
+        }
+      }
+      await apply({
+        ...state,
+        availableWidth,
+        availableHeight
+      });
+      const nextDimensions = await platform2.getDimensions(elements.floating);
+      if (width !== nextDimensions.width || height !== nextDimensions.height) {
+        return {
+          reset: {
+            rects: true
+          }
+        };
+      }
+      return {};
+    }
+  };
+};
+
+// node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs
+function hasWindow() {
+  return typeof window !== "undefined";
+}
+function getNodeName(node) {
+  if (isNode(node)) {
+    return (node.nodeName || "").toLowerCase();
+  }
+  return "#document";
+}
+function getWindow(node) {
+  var _node$ownerDocument;
+  return (node == null || (_node$ownerDocument = node.ownerDocument) == null ? void 0 : _node$ownerDocument.defaultView) || window;
+}
+function getDocumentElement(node) {
+  var _ref;
+  return (_ref = (isNode(node) ? node.ownerDocument : node.document) || window.document) == null ? void 0 : _ref.documentElement;
+}
+function isNode(value) {
+  if (!hasWindow()) {
+    return false;
+  }
+  return value instanceof Node || value instanceof getWindow(value).Node;
+}
+function isElement(value) {
+  if (!hasWindow()) {
+    return false;
+  }
+  return value instanceof Element || value instanceof getWindow(value).Element;
+}
+function isHTMLElement(value) {
+  if (!hasWindow()) {
+    return false;
+  }
+  return value instanceof HTMLElement || value instanceof getWindow(value).HTMLElement;
+}
+function isShadowRoot(value) {
+  if (!hasWindow() || typeof ShadowRoot === "undefined") {
+    return false;
+  }
+  return value instanceof ShadowRoot || value instanceof getWindow(value).ShadowRoot;
+}
+function isOverflowElement(element) {
+  const {
+    overflow,
+    overflowX,
+    overflowY,
+    display
+  } = getComputedStyle2(element);
+  return /auto|scroll|overlay|hidden|clip/.test(overflow + overflowY + overflowX) && !["inline", "contents"].includes(display);
+}
+function isTableElement(element) {
+  return ["table", "td", "th"].includes(getNodeName(element));
+}
+function isTopLayer(element) {
+  return [":popover-open", ":modal"].some((selector) => {
+    try {
+      return element.matches(selector);
+    } catch (e13) {
+      return false;
+    }
+  });
+}
+function isContainingBlock(elementOrCss) {
+  const webkit = isWebKit();
+  const css = isElement(elementOrCss) ? getComputedStyle2(elementOrCss) : elementOrCss;
+  return ["transform", "translate", "scale", "rotate", "perspective"].some((value) => css[value] ? css[value] !== "none" : false) || (css.containerType ? css.containerType !== "normal" : false) || !webkit && (css.backdropFilter ? css.backdropFilter !== "none" : false) || !webkit && (css.filter ? css.filter !== "none" : false) || ["transform", "translate", "scale", "rotate", "perspective", "filter"].some((value) => (css.willChange || "").includes(value)) || ["paint", "layout", "strict", "content"].some((value) => (css.contain || "").includes(value));
+}
+function getContainingBlock(element) {
+  let currentNode = getParentNode(element);
+  while (isHTMLElement(currentNode) && !isLastTraversableNode(currentNode)) {
+    if (isContainingBlock(currentNode)) {
+      return currentNode;
+    } else if (isTopLayer(currentNode)) {
+      return null;
+    }
+    currentNode = getParentNode(currentNode);
+  }
+  return null;
+}
+function isWebKit() {
+  if (typeof CSS === "undefined" || !CSS.supports) return false;
+  return CSS.supports("-webkit-backdrop-filter", "none");
+}
+function isLastTraversableNode(node) {
+  return ["html", "body", "#document"].includes(getNodeName(node));
+}
+function getComputedStyle2(element) {
+  return getWindow(element).getComputedStyle(element);
+}
+function getNodeScroll(element) {
+  if (isElement(element)) {
+    return {
+      scrollLeft: element.scrollLeft,
+      scrollTop: element.scrollTop
+    };
+  }
+  return {
+    scrollLeft: element.scrollX,
+    scrollTop: element.scrollY
+  };
+}
+function getParentNode(node) {
+  if (getNodeName(node) === "html") {
+    return node;
+  }
+  const result = (
+    // Step into the shadow DOM of the parent of a slotted node.
+    node.assignedSlot || // DOM Element detected.
+    node.parentNode || // ShadowRoot detected.
+    isShadowRoot(node) && node.host || // Fallback.
+    getDocumentElement(node)
+  );
+  return isShadowRoot(result) ? result.host : result;
+}
+function getNearestOverflowAncestor(node) {
+  const parentNode = getParentNode(node);
+  if (isLastTraversableNode(parentNode)) {
+    return node.ownerDocument ? node.ownerDocument.body : node.body;
+  }
+  if (isHTMLElement(parentNode) && isOverflowElement(parentNode)) {
+    return parentNode;
+  }
+  return getNearestOverflowAncestor(parentNode);
+}
+function getOverflowAncestors(node, list, traverseIframes) {
+  var _node$ownerDocument2;
+  if (list === void 0) {
+    list = [];
+  }
+  if (traverseIframes === void 0) {
+    traverseIframes = true;
+  }
+  const scrollableAncestor = getNearestOverflowAncestor(node);
+  const isBody = scrollableAncestor === ((_node$ownerDocument2 = node.ownerDocument) == null ? void 0 : _node$ownerDocument2.body);
+  const win = getWindow(scrollableAncestor);
+  if (isBody) {
+    const frameElement = getFrameElement(win);
+    return list.concat(win, win.visualViewport || [], isOverflowElement(scrollableAncestor) ? scrollableAncestor : [], frameElement && traverseIframes ? getOverflowAncestors(frameElement) : []);
+  }
+  return list.concat(scrollableAncestor, getOverflowAncestors(scrollableAncestor, [], traverseIframes));
+}
+function getFrameElement(win) {
+  return win.parent && Object.getPrototypeOf(win.parent) ? win.frameElement : null;
+}
+
+// node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs
+function getCssDimensions(element) {
+  const css = getComputedStyle2(element);
+  let width = parseFloat(css.width) || 0;
+  let height = parseFloat(css.height) || 0;
+  const hasOffset = isHTMLElement(element);
+  const offsetWidth = hasOffset ? element.offsetWidth : width;
+  const offsetHeight = hasOffset ? element.offsetHeight : height;
+  const shouldFallback = round(width) !== offsetWidth || round(height) !== offsetHeight;
+  if (shouldFallback) {
+    width = offsetWidth;
+    height = offsetHeight;
+  }
+  return {
+    width,
+    height,
+    $: shouldFallback
+  };
+}
+function unwrapElement(element) {
+  return !isElement(element) ? element.contextElement : element;
+}
+function getScale(element) {
+  const domElement = unwrapElement(element);
+  if (!isHTMLElement(domElement)) {
+    return createCoords(1);
+  }
+  const rect = domElement.getBoundingClientRect();
+  const {
+    width,
+    height,
+    $: $4
+  } = getCssDimensions(domElement);
+  let x3 = ($4 ? round(rect.width) : rect.width) / width;
+  let y4 = ($4 ? round(rect.height) : rect.height) / height;
+  if (!x3 || !Number.isFinite(x3)) {
+    x3 = 1;
+  }
+  if (!y4 || !Number.isFinite(y4)) {
+    y4 = 1;
+  }
+  return {
+    x: x3,
+    y: y4
+  };
+}
+var noOffsets = /* @__PURE__ */ createCoords(0);
+function getVisualOffsets(element) {
+  const win = getWindow(element);
+  if (!isWebKit() || !win.visualViewport) {
+    return noOffsets;
+  }
+  return {
+    x: win.visualViewport.offsetLeft,
+    y: win.visualViewport.offsetTop
+  };
+}
+function shouldAddVisualOffsets(element, isFixed, floatingOffsetParent) {
+  if (isFixed === void 0) {
+    isFixed = false;
+  }
+  if (!floatingOffsetParent || isFixed && floatingOffsetParent !== getWindow(element)) {
+    return false;
+  }
+  return isFixed;
+}
+function getBoundingClientRect(element, includeScale, isFixedStrategy, offsetParent) {
+  if (includeScale === void 0) {
+    includeScale = false;
+  }
+  if (isFixedStrategy === void 0) {
+    isFixedStrategy = false;
+  }
+  const clientRect = element.getBoundingClientRect();
+  const domElement = unwrapElement(element);
+  let scale = createCoords(1);
+  if (includeScale) {
+    if (offsetParent) {
+      if (isElement(offsetParent)) {
+        scale = getScale(offsetParent);
+      }
+    } else {
+      scale = getScale(element);
+    }
+  }
+  const visualOffsets = shouldAddVisualOffsets(domElement, isFixedStrategy, offsetParent) ? getVisualOffsets(domElement) : createCoords(0);
+  let x3 = (clientRect.left + visualOffsets.x) / scale.x;
+  let y4 = (clientRect.top + visualOffsets.y) / scale.y;
+  let width = clientRect.width / scale.x;
+  let height = clientRect.height / scale.y;
+  if (domElement) {
+    const win = getWindow(domElement);
+    const offsetWin = offsetParent && isElement(offsetParent) ? getWindow(offsetParent) : offsetParent;
+    let currentWin = win;
+    let currentIFrame = getFrameElement(currentWin);
+    while (currentIFrame && offsetParent && offsetWin !== currentWin) {
+      const iframeScale = getScale(currentIFrame);
+      const iframeRect = currentIFrame.getBoundingClientRect();
+      const css = getComputedStyle2(currentIFrame);
+      const left = iframeRect.left + (currentIFrame.clientLeft + parseFloat(css.paddingLeft)) * iframeScale.x;
+      const top = iframeRect.top + (currentIFrame.clientTop + parseFloat(css.paddingTop)) * iframeScale.y;
+      x3 *= iframeScale.x;
+      y4 *= iframeScale.y;
+      width *= iframeScale.x;
+      height *= iframeScale.y;
+      x3 += left;
+      y4 += top;
+      currentWin = getWindow(currentIFrame);
+      currentIFrame = getFrameElement(currentWin);
+    }
+  }
+  return rectToClientRect({
+    width,
+    height,
+    x: x3,
+    y: y4
+  });
+}
+function getWindowScrollBarX(element, rect) {
+  const leftScroll = getNodeScroll(element).scrollLeft;
+  if (!rect) {
+    return getBoundingClientRect(getDocumentElement(element)).left + leftScroll;
+  }
+  return rect.left + leftScroll;
+}
+function getHTMLOffset(documentElement, scroll, ignoreScrollbarX) {
+  if (ignoreScrollbarX === void 0) {
+    ignoreScrollbarX = false;
+  }
+  const htmlRect = documentElement.getBoundingClientRect();
+  const x3 = htmlRect.left + scroll.scrollLeft - (ignoreScrollbarX ? 0 : (
+    // RTL <body> scrollbar.
+    getWindowScrollBarX(documentElement, htmlRect)
+  ));
+  const y4 = htmlRect.top + scroll.scrollTop;
+  return {
+    x: x3,
+    y: y4
+  };
+}
+function convertOffsetParentRelativeRectToViewportRelativeRect(_ref) {
+  let {
+    elements,
+    rect,
+    offsetParent,
+    strategy
+  } = _ref;
+  const isFixed = strategy === "fixed";
+  const documentElement = getDocumentElement(offsetParent);
+  const topLayer = elements ? isTopLayer(elements.floating) : false;
+  if (offsetParent === documentElement || topLayer && isFixed) {
+    return rect;
+  }
+  let scroll = {
+    scrollLeft: 0,
+    scrollTop: 0
+  };
+  let scale = createCoords(1);
+  const offsets = createCoords(0);
+  const isOffsetParentAnElement = isHTMLElement(offsetParent);
+  if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
+    if (getNodeName(offsetParent) !== "body" || isOverflowElement(documentElement)) {
+      scroll = getNodeScroll(offsetParent);
+    }
+    if (isHTMLElement(offsetParent)) {
+      const offsetRect = getBoundingClientRect(offsetParent);
+      scale = getScale(offsetParent);
+      offsets.x = offsetRect.x + offsetParent.clientLeft;
+      offsets.y = offsetRect.y + offsetParent.clientTop;
+    }
+  }
+  const htmlOffset = documentElement && !isOffsetParentAnElement && !isFixed ? getHTMLOffset(documentElement, scroll, true) : createCoords(0);
+  return {
+    width: rect.width * scale.x,
+    height: rect.height * scale.y,
+    x: rect.x * scale.x - scroll.scrollLeft * scale.x + offsets.x + htmlOffset.x,
+    y: rect.y * scale.y - scroll.scrollTop * scale.y + offsets.y + htmlOffset.y
+  };
+}
+function getClientRects(element) {
+  return Array.from(element.getClientRects());
+}
+function getDocumentRect(element) {
+  const html = getDocumentElement(element);
+  const scroll = getNodeScroll(element);
+  const body = element.ownerDocument.body;
+  const width = max(html.scrollWidth, html.clientWidth, body.scrollWidth, body.clientWidth);
+  const height = max(html.scrollHeight, html.clientHeight, body.scrollHeight, body.clientHeight);
+  let x3 = -scroll.scrollLeft + getWindowScrollBarX(element);
+  const y4 = -scroll.scrollTop;
+  if (getComputedStyle2(body).direction === "rtl") {
+    x3 += max(html.clientWidth, body.clientWidth) - width;
+  }
+  return {
+    width,
+    height,
+    x: x3,
+    y: y4
+  };
+}
+function getViewportRect(element, strategy) {
+  const win = getWindow(element);
+  const html = getDocumentElement(element);
+  const visualViewport = win.visualViewport;
+  let width = html.clientWidth;
+  let height = html.clientHeight;
+  let x3 = 0;
+  let y4 = 0;
+  if (visualViewport) {
+    width = visualViewport.width;
+    height = visualViewport.height;
+    const visualViewportBased = isWebKit();
+    if (!visualViewportBased || visualViewportBased && strategy === "fixed") {
+      x3 = visualViewport.offsetLeft;
+      y4 = visualViewport.offsetTop;
+    }
+  }
+  return {
+    width,
+    height,
+    x: x3,
+    y: y4
+  };
+}
+function getInnerBoundingClientRect(element, strategy) {
+  const clientRect = getBoundingClientRect(element, true, strategy === "fixed");
+  const top = clientRect.top + element.clientTop;
+  const left = clientRect.left + element.clientLeft;
+  const scale = isHTMLElement(element) ? getScale(element) : createCoords(1);
+  const width = element.clientWidth * scale.x;
+  const height = element.clientHeight * scale.y;
+  const x3 = left * scale.x;
+  const y4 = top * scale.y;
+  return {
+    width,
+    height,
+    x: x3,
+    y: y4
+  };
+}
+function getClientRectFromClippingAncestor(element, clippingAncestor, strategy) {
+  let rect;
+  if (clippingAncestor === "viewport") {
+    rect = getViewportRect(element, strategy);
+  } else if (clippingAncestor === "document") {
+    rect = getDocumentRect(getDocumentElement(element));
+  } else if (isElement(clippingAncestor)) {
+    rect = getInnerBoundingClientRect(clippingAncestor, strategy);
+  } else {
+    const visualOffsets = getVisualOffsets(element);
+    rect = {
+      x: clippingAncestor.x - visualOffsets.x,
+      y: clippingAncestor.y - visualOffsets.y,
+      width: clippingAncestor.width,
+      height: clippingAncestor.height
+    };
+  }
+  return rectToClientRect(rect);
+}
+function hasFixedPositionAncestor(element, stopNode) {
+  const parentNode = getParentNode(element);
+  if (parentNode === stopNode || !isElement(parentNode) || isLastTraversableNode(parentNode)) {
+    return false;
+  }
+  return getComputedStyle2(parentNode).position === "fixed" || hasFixedPositionAncestor(parentNode, stopNode);
+}
+function getClippingElementAncestors(element, cache) {
+  const cachedResult = cache.get(element);
+  if (cachedResult) {
+    return cachedResult;
+  }
+  let result = getOverflowAncestors(element, [], false).filter((el) => isElement(el) && getNodeName(el) !== "body");
+  let currentContainingBlockComputedStyle = null;
+  const elementIsFixed = getComputedStyle2(element).position === "fixed";
+  let currentNode = elementIsFixed ? getParentNode(element) : element;
+  while (isElement(currentNode) && !isLastTraversableNode(currentNode)) {
+    const computedStyle = getComputedStyle2(currentNode);
+    const currentNodeIsContaining = isContainingBlock(currentNode);
+    if (!currentNodeIsContaining && computedStyle.position === "fixed") {
+      currentContainingBlockComputedStyle = null;
+    }
+    const shouldDropCurrentNode = elementIsFixed ? !currentNodeIsContaining && !currentContainingBlockComputedStyle : !currentNodeIsContaining && computedStyle.position === "static" && !!currentContainingBlockComputedStyle && ["absolute", "fixed"].includes(currentContainingBlockComputedStyle.position) || isOverflowElement(currentNode) && !currentNodeIsContaining && hasFixedPositionAncestor(element, currentNode);
+    if (shouldDropCurrentNode) {
+      result = result.filter((ancestor) => ancestor !== currentNode);
+    } else {
+      currentContainingBlockComputedStyle = computedStyle;
+    }
+    currentNode = getParentNode(currentNode);
+  }
+  cache.set(element, result);
+  return result;
+}
+function getClippingRect(_ref) {
+  let {
+    element,
+    boundary,
+    rootBoundary,
+    strategy
+  } = _ref;
+  const elementClippingAncestors = boundary === "clippingAncestors" ? isTopLayer(element) ? [] : getClippingElementAncestors(element, this._c) : [].concat(boundary);
+  const clippingAncestors = [...elementClippingAncestors, rootBoundary];
+  const firstClippingAncestor = clippingAncestors[0];
+  const clippingRect = clippingAncestors.reduce((accRect, clippingAncestor) => {
+    const rect = getClientRectFromClippingAncestor(element, clippingAncestor, strategy);
+    accRect.top = max(rect.top, accRect.top);
+    accRect.right = min(rect.right, accRect.right);
+    accRect.bottom = min(rect.bottom, accRect.bottom);
+    accRect.left = max(rect.left, accRect.left);
+    return accRect;
+  }, getClientRectFromClippingAncestor(element, firstClippingAncestor, strategy));
+  return {
+    width: clippingRect.right - clippingRect.left,
+    height: clippingRect.bottom - clippingRect.top,
+    x: clippingRect.left,
+    y: clippingRect.top
+  };
+}
+function getDimensions(element) {
+  const {
+    width,
+    height
+  } = getCssDimensions(element);
+  return {
+    width,
+    height
+  };
+}
+function getRectRelativeToOffsetParent(element, offsetParent, strategy) {
+  const isOffsetParentAnElement = isHTMLElement(offsetParent);
+  const documentElement = getDocumentElement(offsetParent);
+  const isFixed = strategy === "fixed";
+  const rect = getBoundingClientRect(element, true, isFixed, offsetParent);
+  let scroll = {
+    scrollLeft: 0,
+    scrollTop: 0
+  };
+  const offsets = createCoords(0);
+  if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
+    if (getNodeName(offsetParent) !== "body" || isOverflowElement(documentElement)) {
+      scroll = getNodeScroll(offsetParent);
+    }
+    if (isOffsetParentAnElement) {
+      const offsetRect = getBoundingClientRect(offsetParent, true, isFixed, offsetParent);
+      offsets.x = offsetRect.x + offsetParent.clientLeft;
+      offsets.y = offsetRect.y + offsetParent.clientTop;
+    } else if (documentElement) {
+      offsets.x = getWindowScrollBarX(documentElement);
+    }
+  }
+  const htmlOffset = documentElement && !isOffsetParentAnElement && !isFixed ? getHTMLOffset(documentElement, scroll) : createCoords(0);
+  const x3 = rect.left + scroll.scrollLeft - offsets.x - htmlOffset.x;
+  const y4 = rect.top + scroll.scrollTop - offsets.y - htmlOffset.y;
+  return {
+    x: x3,
+    y: y4,
+    width: rect.width,
+    height: rect.height
+  };
+}
+function isStaticPositioned(element) {
+  return getComputedStyle2(element).position === "static";
+}
+function getTrueOffsetParent(element, polyfill) {
+  if (!isHTMLElement(element) || getComputedStyle2(element).position === "fixed") {
+    return null;
+  }
+  if (polyfill) {
+    return polyfill(element);
+  }
+  let rawOffsetParent = element.offsetParent;
+  if (getDocumentElement(element) === rawOffsetParent) {
+    rawOffsetParent = rawOffsetParent.ownerDocument.body;
+  }
+  return rawOffsetParent;
+}
+function getOffsetParent(element, polyfill) {
+  const win = getWindow(element);
+  if (isTopLayer(element)) {
+    return win;
+  }
+  if (!isHTMLElement(element)) {
+    let svgOffsetParent = getParentNode(element);
+    while (svgOffsetParent && !isLastTraversableNode(svgOffsetParent)) {
+      if (isElement(svgOffsetParent) && !isStaticPositioned(svgOffsetParent)) {
+        return svgOffsetParent;
+      }
+      svgOffsetParent = getParentNode(svgOffsetParent);
+    }
+    return win;
+  }
+  let offsetParent = getTrueOffsetParent(element, polyfill);
+  while (offsetParent && isTableElement(offsetParent) && isStaticPositioned(offsetParent)) {
+    offsetParent = getTrueOffsetParent(offsetParent, polyfill);
+  }
+  if (offsetParent && isLastTraversableNode(offsetParent) && isStaticPositioned(offsetParent) && !isContainingBlock(offsetParent)) {
+    return win;
+  }
+  return offsetParent || getContainingBlock(element) || win;
+}
+var getElementRects = async function(data) {
+  const getOffsetParentFn = this.getOffsetParent || getOffsetParent;
+  const getDimensionsFn = this.getDimensions;
+  const floatingDimensions = await getDimensionsFn(data.floating);
+  return {
+    reference: getRectRelativeToOffsetParent(data.reference, await getOffsetParentFn(data.floating), data.strategy),
+    floating: {
+      x: 0,
+      y: 0,
+      width: floatingDimensions.width,
+      height: floatingDimensions.height
+    }
+  };
+};
+function isRTL(element) {
+  return getComputedStyle2(element).direction === "rtl";
+}
+var platform = {
+  convertOffsetParentRelativeRectToViewportRelativeRect,
+  getDocumentElement,
+  getClippingRect,
+  getOffsetParent,
+  getElementRects,
+  getClientRects,
+  getDimensions,
+  getScale,
+  isElement,
+  isRTL
+};
+function rectsAreEqual(a5, b4) {
+  return a5.x === b4.x && a5.y === b4.y && a5.width === b4.width && a5.height === b4.height;
+}
+function observeMove(element, onMove) {
+  let io = null;
+  let timeoutId;
+  const root = getDocumentElement(element);
+  function cleanup() {
+    var _io;
+    clearTimeout(timeoutId);
+    (_io = io) == null || _io.disconnect();
+    io = null;
+  }
+  function refresh(skip, threshold) {
+    if (skip === void 0) {
+      skip = false;
+    }
+    if (threshold === void 0) {
+      threshold = 1;
+    }
+    cleanup();
+    const elementRectForRootMargin = element.getBoundingClientRect();
+    const {
+      left,
+      top,
+      width,
+      height
+    } = elementRectForRootMargin;
+    if (!skip) {
+      onMove();
+    }
+    if (!width || !height) {
+      return;
+    }
+    const insetTop = floor(top);
+    const insetRight = floor(root.clientWidth - (left + width));
+    const insetBottom = floor(root.clientHeight - (top + height));
+    const insetLeft = floor(left);
+    const rootMargin = -insetTop + "px " + -insetRight + "px " + -insetBottom + "px " + -insetLeft + "px";
+    const options = {
+      rootMargin,
+      threshold: max(0, min(1, threshold)) || 1
+    };
+    let isFirstUpdate = true;
+    function handleObserve(entries) {
+      const ratio = entries[0].intersectionRatio;
+      if (ratio !== threshold) {
+        if (!isFirstUpdate) {
+          return refresh();
+        }
+        if (!ratio) {
+          timeoutId = setTimeout(() => {
+            refresh(false, 1e-7);
+          }, 1e3);
+        } else {
+          refresh(false, ratio);
+        }
+      }
+      if (ratio === 1 && !rectsAreEqual(elementRectForRootMargin, element.getBoundingClientRect())) {
+        refresh();
+      }
+      isFirstUpdate = false;
+    }
+    try {
+      io = new IntersectionObserver(handleObserve, {
+        ...options,
+        // Handle <iframe>s
+        root: root.ownerDocument
+      });
+    } catch (e13) {
+      io = new IntersectionObserver(handleObserve, options);
+    }
+    io.observe(element);
+  }
+  refresh(true);
+  return cleanup;
+}
+function autoUpdate(reference, floating, update2, options) {
+  if (options === void 0) {
+    options = {};
+  }
+  const {
+    ancestorScroll = true,
+    ancestorResize = true,
+    elementResize = typeof ResizeObserver === "function",
+    layoutShift = typeof IntersectionObserver === "function",
+    animationFrame = false
+  } = options;
+  const referenceEl = unwrapElement(reference);
+  const ancestors = ancestorScroll || ancestorResize ? [...referenceEl ? getOverflowAncestors(referenceEl) : [], ...getOverflowAncestors(floating)] : [];
+  ancestors.forEach((ancestor) => {
+    ancestorScroll && ancestor.addEventListener("scroll", update2, {
+      passive: true
+    });
+    ancestorResize && ancestor.addEventListener("resize", update2);
+  });
+  const cleanupIo = referenceEl && layoutShift ? observeMove(referenceEl, update2) : null;
+  let reobserveFrame = -1;
+  let resizeObserver = null;
+  if (elementResize) {
+    resizeObserver = new ResizeObserver((_ref) => {
+      let [firstEntry] = _ref;
+      if (firstEntry && firstEntry.target === referenceEl && resizeObserver) {
+        resizeObserver.unobserve(floating);
+        cancelAnimationFrame(reobserveFrame);
+        reobserveFrame = requestAnimationFrame(() => {
+          var _resizeObserver2;
+          (_resizeObserver2 = resizeObserver) == null || _resizeObserver2.observe(floating);
+        });
+      }
+      update2();
+    });
+    if (referenceEl && !animationFrame) {
+      resizeObserver.observe(referenceEl);
+    }
+    resizeObserver.observe(floating);
+  }
+  let frameId;
+  let prevRefRect = animationFrame ? getBoundingClientRect(reference) : null;
+  if (animationFrame) {
+    frameLoop();
+  }
+  function frameLoop() {
+    const nextRefRect = getBoundingClientRect(reference);
+    if (prevRefRect && !rectsAreEqual(prevRefRect, nextRefRect)) {
+      update2();
+    }
+    prevRefRect = nextRefRect;
+    frameId = requestAnimationFrame(frameLoop);
+  }
+  update2();
+  return () => {
+    var _resizeObserver2;
+    ancestors.forEach((ancestor) => {
+      ancestorScroll && ancestor.removeEventListener("scroll", update2);
+      ancestorResize && ancestor.removeEventListener("resize", update2);
+    });
+    cleanupIo == null || cleanupIo();
+    (_resizeObserver2 = resizeObserver) == null || _resizeObserver2.disconnect();
+    resizeObserver = null;
+    if (animationFrame) {
+      cancelAnimationFrame(frameId);
+    }
+  };
+}
+var offset2 = offset;
+var shift2 = shift;
+var flip2 = flip;
+var size2 = size;
+var arrow2 = arrow;
+var computePosition2 = (reference, floating, options) => {
+  const cache = /* @__PURE__ */ new Map();
+  const mergedOptions = {
+    platform,
+    ...options
+  };
+  const platformWithCache = {
+    ...mergedOptions.platform,
+    _c: cache
+  };
+  return computePosition(reference, floating, {
+    ...mergedOptions,
+    platform: platformWithCache
+  });
+};
+
+// node_modules/composed-offset-position/dist/composed-offset-position.browser.min.mjs
+function e11(t7) {
+  return i8(t7);
+}
+function r10(t7) {
+  return t7.assignedSlot ? t7.assignedSlot : t7.parentNode instanceof ShadowRoot ? t7.parentNode.host : t7.parentNode;
+}
+function i8(e13) {
+  for (let t7 = e13; t7; t7 = r10(t7)) if (t7 instanceof Element && "none" === getComputedStyle(t7).display) return null;
+  for (let n10 = r10(e13); n10; n10 = r10(n10)) {
+    if (!(n10 instanceof Element)) continue;
+    const e14 = getComputedStyle(n10);
+    if ("contents" !== e14.display) {
+      if ("static" !== e14.position || isContainingBlock(e14)) return n10;
+      if ("BODY" === n10.tagName) return n10;
+    }
+  }
+  return null;
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AR3BL5H3.js
+function isVirtualElement(e13) {
+  return e13 !== null && typeof e13 === "object" && "getBoundingClientRect" in e13 && ("contextElement" in e13 ? e13 instanceof Element : true);
+}
+var SlPopup = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.localize = new LocalizeController2(this);
+    this.active = false;
+    this.placement = "top";
+    this.strategy = "absolute";
+    this.distance = 0;
+    this.skidding = 0;
+    this.arrow = false;
+    this.arrowPlacement = "anchor";
+    this.arrowPadding = 10;
+    this.flip = false;
+    this.flipFallbackPlacements = "";
+    this.flipFallbackStrategy = "best-fit";
+    this.flipPadding = 0;
+    this.shift = false;
+    this.shiftPadding = 0;
+    this.autoSizePadding = 0;
+    this.hoverBridge = false;
+    this.updateHoverBridge = () => {
+      if (this.hoverBridge && this.anchorEl) {
+        const anchorRect = this.anchorEl.getBoundingClientRect();
+        const popupRect = this.popup.getBoundingClientRect();
+        const isVertical = this.placement.includes("top") || this.placement.includes("bottom");
+        let topLeftX = 0;
+        let topLeftY = 0;
+        let topRightX = 0;
+        let topRightY = 0;
+        let bottomLeftX = 0;
+        let bottomLeftY = 0;
+        let bottomRightX = 0;
+        let bottomRightY = 0;
+        if (isVertical) {
+          if (anchorRect.top < popupRect.top) {
+            topLeftX = anchorRect.left;
+            topLeftY = anchorRect.bottom;
+            topRightX = anchorRect.right;
+            topRightY = anchorRect.bottom;
+            bottomLeftX = popupRect.left;
+            bottomLeftY = popupRect.top;
+            bottomRightX = popupRect.right;
+            bottomRightY = popupRect.top;
+          } else {
+            topLeftX = popupRect.left;
+            topLeftY = popupRect.bottom;
+            topRightX = popupRect.right;
+            topRightY = popupRect.bottom;
+            bottomLeftX = anchorRect.left;
+            bottomLeftY = anchorRect.top;
+            bottomRightX = anchorRect.right;
+            bottomRightY = anchorRect.top;
+          }
+        } else {
+          if (anchorRect.left < popupRect.left) {
+            topLeftX = anchorRect.right;
+            topLeftY = anchorRect.top;
+            topRightX = popupRect.left;
+            topRightY = popupRect.top;
+            bottomLeftX = anchorRect.right;
+            bottomLeftY = anchorRect.bottom;
+            bottomRightX = popupRect.left;
+            bottomRightY = popupRect.bottom;
+          } else {
+            topLeftX = popupRect.right;
+            topLeftY = popupRect.top;
+            topRightX = anchorRect.left;
+            topRightY = anchorRect.top;
+            bottomLeftX = popupRect.right;
+            bottomLeftY = popupRect.bottom;
+            bottomRightX = anchorRect.left;
+            bottomRightY = anchorRect.bottom;
+          }
+        }
+        this.style.setProperty("--hover-bridge-top-left-x", `${topLeftX}px`);
+        this.style.setProperty("--hover-bridge-top-left-y", `${topLeftY}px`);
+        this.style.setProperty("--hover-bridge-top-right-x", `${topRightX}px`);
+        this.style.setProperty("--hover-bridge-top-right-y", `${topRightY}px`);
+        this.style.setProperty("--hover-bridge-bottom-left-x", `${bottomLeftX}px`);
+        this.style.setProperty("--hover-bridge-bottom-left-y", `${bottomLeftY}px`);
+        this.style.setProperty("--hover-bridge-bottom-right-x", `${bottomRightX}px`);
+        this.style.setProperty("--hover-bridge-bottom-right-y", `${bottomRightY}px`);
+      }
+    };
+  }
+  async connectedCallback() {
+    super.connectedCallback();
+    await this.updateComplete;
+    this.start();
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.stop();
+  }
+  async updated(changedProps) {
+    super.updated(changedProps);
+    if (changedProps.has("active")) {
+      if (this.active) {
+        this.start();
+      } else {
+        this.stop();
+      }
+    }
+    if (changedProps.has("anchor")) {
+      this.handleAnchorChange();
+    }
+    if (this.active) {
+      await this.updateComplete;
+      this.reposition();
+    }
+  }
+  async handleAnchorChange() {
+    await this.stop();
+    if (this.anchor && typeof this.anchor === "string") {
+      const root = this.getRootNode();
+      this.anchorEl = root.getElementById(this.anchor);
+    } else if (this.anchor instanceof Element || isVirtualElement(this.anchor)) {
+      this.anchorEl = this.anchor;
+    } else {
+      this.anchorEl = this.querySelector('[slot="anchor"]');
+    }
+    if (this.anchorEl instanceof HTMLSlotElement) {
+      this.anchorEl = this.anchorEl.assignedElements({ flatten: true })[0];
+    }
+    if (this.anchorEl && this.active) {
+      this.start();
+    }
+  }
+  start() {
+    if (!this.anchorEl || !this.active) {
+      return;
+    }
+    this.cleanup = autoUpdate(this.anchorEl, this.popup, () => {
+      this.reposition();
+    });
+  }
+  async stop() {
+    return new Promise((resolve) => {
+      if (this.cleanup) {
+        this.cleanup();
+        this.cleanup = void 0;
+        this.removeAttribute("data-current-placement");
+        this.style.removeProperty("--auto-size-available-width");
+        this.style.removeProperty("--auto-size-available-height");
+        requestAnimationFrame(() => resolve());
+      } else {
+        resolve();
+      }
+    });
+  }
+  /** Forces the popup to recalculate and reposition itself. */
+  reposition() {
+    if (!this.active || !this.anchorEl) {
+      return;
+    }
+    const middleware = [
+      // The offset middleware goes first
+      offset2({ mainAxis: this.distance, crossAxis: this.skidding })
+    ];
+    if (this.sync) {
+      middleware.push(
+        size2({
+          apply: ({ rects }) => {
+            const syncWidth = this.sync === "width" || this.sync === "both";
+            const syncHeight = this.sync === "height" || this.sync === "both";
+            this.popup.style.width = syncWidth ? `${rects.reference.width}px` : "";
+            this.popup.style.height = syncHeight ? `${rects.reference.height}px` : "";
+          }
+        })
+      );
+    } else {
+      this.popup.style.width = "";
+      this.popup.style.height = "";
+    }
+    if (this.flip) {
+      middleware.push(
+        flip2({
+          boundary: this.flipBoundary,
+          // @ts-expect-error - We're converting a string attribute to an array here
+          fallbackPlacements: this.flipFallbackPlacements,
+          fallbackStrategy: this.flipFallbackStrategy === "best-fit" ? "bestFit" : "initialPlacement",
+          padding: this.flipPadding
+        })
+      );
+    }
+    if (this.shift) {
+      middleware.push(
+        shift2({
+          boundary: this.shiftBoundary,
+          padding: this.shiftPadding
+        })
+      );
+    }
+    if (this.autoSize) {
+      middleware.push(
+        size2({
+          boundary: this.autoSizeBoundary,
+          padding: this.autoSizePadding,
+          apply: ({ availableWidth, availableHeight }) => {
+            if (this.autoSize === "vertical" || this.autoSize === "both") {
+              this.style.setProperty("--auto-size-available-height", `${availableHeight}px`);
+            } else {
+              this.style.removeProperty("--auto-size-available-height");
+            }
+            if (this.autoSize === "horizontal" || this.autoSize === "both") {
+              this.style.setProperty("--auto-size-available-width", `${availableWidth}px`);
+            } else {
+              this.style.removeProperty("--auto-size-available-width");
+            }
+          }
+        })
+      );
+    } else {
+      this.style.removeProperty("--auto-size-available-width");
+      this.style.removeProperty("--auto-size-available-height");
+    }
+    if (this.arrow) {
+      middleware.push(
+        arrow2({
+          element: this.arrowEl,
+          padding: this.arrowPadding
+        })
+      );
+    }
+    const getOffsetParent2 = this.strategy === "absolute" ? (element) => platform.getOffsetParent(element, e11) : platform.getOffsetParent;
+    computePosition2(this.anchorEl, this.popup, {
+      placement: this.placement,
+      middleware,
+      strategy: this.strategy,
+      platform: __spreadProps(__spreadValues({}, platform), {
+        getOffsetParent: getOffsetParent2
+      })
+    }).then(({ x: x3, y: y4, middlewareData, placement }) => {
+      const isRtl = this.localize.dir() === "rtl";
+      const staticSide = { top: "bottom", right: "left", bottom: "top", left: "right" }[placement.split("-")[0]];
+      this.setAttribute("data-current-placement", placement);
+      Object.assign(this.popup.style, {
+        left: `${x3}px`,
+        top: `${y4}px`
+      });
+      if (this.arrow) {
+        const arrowX = middlewareData.arrow.x;
+        const arrowY = middlewareData.arrow.y;
+        let top = "";
+        let right = "";
+        let bottom = "";
+        let left = "";
+        if (this.arrowPlacement === "start") {
+          const value = typeof arrowX === "number" ? `calc(${this.arrowPadding}px - var(--arrow-padding-offset))` : "";
+          top = typeof arrowY === "number" ? `calc(${this.arrowPadding}px - var(--arrow-padding-offset))` : "";
+          right = isRtl ? value : "";
+          left = isRtl ? "" : value;
+        } else if (this.arrowPlacement === "end") {
+          const value = typeof arrowX === "number" ? `calc(${this.arrowPadding}px - var(--arrow-padding-offset))` : "";
+          right = isRtl ? "" : value;
+          left = isRtl ? value : "";
+          bottom = typeof arrowY === "number" ? `calc(${this.arrowPadding}px - var(--arrow-padding-offset))` : "";
+        } else if (this.arrowPlacement === "center") {
+          left = typeof arrowX === "number" ? `calc(50% - var(--arrow-size-diagonal))` : "";
+          top = typeof arrowY === "number" ? `calc(50% - var(--arrow-size-diagonal))` : "";
+        } else {
+          left = typeof arrowX === "number" ? `${arrowX}px` : "";
+          top = typeof arrowY === "number" ? `${arrowY}px` : "";
+        }
+        Object.assign(this.arrowEl.style, {
+          top,
+          right,
+          bottom,
+          left,
+          [staticSide]: "calc(var(--arrow-size-diagonal) * -1)"
+        });
+      }
+    });
+    requestAnimationFrame(() => this.updateHoverBridge());
+    this.emit("sl-reposition");
+  }
+  render() {
+    return x2`
+      <slot name="anchor" @slotchange=${this.handleAnchorChange}></slot>
+
+      <span
+        part="hover-bridge"
+        class=${e10({
+      "popup-hover-bridge": true,
+      "popup-hover-bridge--visible": this.hoverBridge && this.active
+    })}
+      ></span>
+
+      <div
+        part="popup"
+        class=${e10({
+      popup: true,
+      "popup--active": this.active,
+      "popup--fixed": this.strategy === "fixed",
+      "popup--has-arrow": this.arrow
+    })}
+      >
+        <slot></slot>
+        ${this.arrow ? x2`<div part="arrow" class="popup__arrow" role="presentation"></div>` : ""}
+      </div>
+    `;
+  }
+};
+SlPopup.styles = [component_styles_default, popup_styles_default];
+__decorateClass([
+  e6(".popup")
+], SlPopup.prototype, "popup", 2);
+__decorateClass([
+  e6(".popup__arrow")
+], SlPopup.prototype, "arrowEl", 2);
+__decorateClass([
+  n7()
+], SlPopup.prototype, "anchor", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlPopup.prototype, "active", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlPopup.prototype, "placement", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlPopup.prototype, "strategy", 2);
+__decorateClass([
+  n7({ type: Number })
+], SlPopup.prototype, "distance", 2);
+__decorateClass([
+  n7({ type: Number })
+], SlPopup.prototype, "skidding", 2);
+__decorateClass([
+  n7({ type: Boolean })
+], SlPopup.prototype, "arrow", 2);
+__decorateClass([
+  n7({ attribute: "arrow-placement" })
+], SlPopup.prototype, "arrowPlacement", 2);
+__decorateClass([
+  n7({ attribute: "arrow-padding", type: Number })
+], SlPopup.prototype, "arrowPadding", 2);
+__decorateClass([
+  n7({ type: Boolean })
+], SlPopup.prototype, "flip", 2);
+__decorateClass([
+  n7({
+    attribute: "flip-fallback-placements",
+    converter: {
+      fromAttribute: (value) => {
+        return value.split(" ").map((p4) => p4.trim()).filter((p4) => p4 !== "");
+      },
+      toAttribute: (value) => {
+        return value.join(" ");
+      }
+    }
+  })
+], SlPopup.prototype, "flipFallbackPlacements", 2);
+__decorateClass([
+  n7({ attribute: "flip-fallback-strategy" })
+], SlPopup.prototype, "flipFallbackStrategy", 2);
+__decorateClass([
+  n7({ type: Object })
+], SlPopup.prototype, "flipBoundary", 2);
+__decorateClass([
+  n7({ attribute: "flip-padding", type: Number })
+], SlPopup.prototype, "flipPadding", 2);
+__decorateClass([
+  n7({ type: Boolean })
+], SlPopup.prototype, "shift", 2);
+__decorateClass([
+  n7({ type: Object })
+], SlPopup.prototype, "shiftBoundary", 2);
+__decorateClass([
+  n7({ attribute: "shift-padding", type: Number })
+], SlPopup.prototype, "shiftPadding", 2);
+__decorateClass([
+  n7({ attribute: "auto-size" })
+], SlPopup.prototype, "autoSize", 2);
+__decorateClass([
+  n7()
+], SlPopup.prototype, "sync", 2);
+__decorateClass([
+  n7({ type: Object })
+], SlPopup.prototype, "autoSizeBoundary", 2);
+__decorateClass([
+  n7({ attribute: "auto-size-padding", type: Number })
+], SlPopup.prototype, "autoSizePadding", 2);
+__decorateClass([
+  n7({ attribute: "hover-bridge", type: Boolean })
+], SlPopup.prototype, "hoverBridge", 2);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.V2OL7VMD.js
+var tag_styles_default = i`
+  :host {
+    display: inline-block;
+  }
+
+  .tag {
+    display: flex;
+    align-items: center;
+    border: solid 1px;
+    line-height: 1;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .tag__remove::part(base) {
+    color: inherit;
+    padding: 0;
+  }
+
+  /*
+   * Variant modifiers
+   */
+
+  .tag--primary {
+    background-color: var(--sl-color-primary-50);
+    border-color: var(--sl-color-primary-200);
+    color: var(--sl-color-primary-800);
+  }
+
+  .tag--primary:active > sl-icon-button {
+    color: var(--sl-color-primary-600);
+  }
+
+  .tag--success {
+    background-color: var(--sl-color-success-50);
+    border-color: var(--sl-color-success-200);
+    color: var(--sl-color-success-800);
+  }
+
+  .tag--success:active > sl-icon-button {
+    color: var(--sl-color-success-600);
+  }
+
+  .tag--neutral {
+    background-color: var(--sl-color-neutral-50);
+    border-color: var(--sl-color-neutral-200);
+    color: var(--sl-color-neutral-800);
+  }
+
+  .tag--neutral:active > sl-icon-button {
+    color: var(--sl-color-neutral-600);
+  }
+
+  .tag--warning {
+    background-color: var(--sl-color-warning-50);
+    border-color: var(--sl-color-warning-200);
+    color: var(--sl-color-warning-800);
+  }
+
+  .tag--warning:active > sl-icon-button {
+    color: var(--sl-color-warning-600);
+  }
+
+  .tag--danger {
+    background-color: var(--sl-color-danger-50);
+    border-color: var(--sl-color-danger-200);
+    color: var(--sl-color-danger-800);
+  }
+
+  .tag--danger:active > sl-icon-button {
+    color: var(--sl-color-danger-600);
+  }
+
+  /*
+   * Size modifiers
+   */
+
+  .tag--small {
+    font-size: var(--sl-button-font-size-small);
+    height: calc(var(--sl-input-height-small) * 0.8);
+    line-height: calc(var(--sl-input-height-small) - var(--sl-input-border-width) * 2);
+    border-radius: var(--sl-input-border-radius-small);
+    padding: 0 var(--sl-spacing-x-small);
+  }
+
+  .tag--medium {
+    font-size: var(--sl-button-font-size-medium);
+    height: calc(var(--sl-input-height-medium) * 0.8);
+    line-height: calc(var(--sl-input-height-medium) - var(--sl-input-border-width) * 2);
+    border-radius: var(--sl-input-border-radius-medium);
+    padding: 0 var(--sl-spacing-small);
+  }
+
+  .tag--large {
+    font-size: var(--sl-button-font-size-large);
+    height: calc(var(--sl-input-height-large) * 0.8);
+    line-height: calc(var(--sl-input-height-large) - var(--sl-input-border-width) * 2);
+    border-radius: var(--sl-input-border-radius-large);
+    padding: 0 var(--sl-spacing-medium);
+  }
+
+  .tag__remove {
+    margin-inline-start: var(--sl-spacing-x-small);
+  }
+
+  /*
+   * Pill modifier
+   */
+
+  .tag--pill {
+    border-radius: var(--sl-border-radius-pill);
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.JGSVFUWB.js
+var SlTag = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.localize = new LocalizeController2(this);
+    this.variant = "neutral";
+    this.size = "medium";
+    this.pill = false;
+    this.removable = false;
+  }
+  handleRemoveClick() {
+    this.emit("sl-remove");
+  }
+  render() {
+    return x2`
+      <span
+        part="base"
+        class=${e10({
+      tag: true,
+      // Types
+      "tag--primary": this.variant === "primary",
+      "tag--success": this.variant === "success",
+      "tag--neutral": this.variant === "neutral",
+      "tag--warning": this.variant === "warning",
+      "tag--danger": this.variant === "danger",
+      "tag--text": this.variant === "text",
+      // Sizes
+      "tag--small": this.size === "small",
+      "tag--medium": this.size === "medium",
+      "tag--large": this.size === "large",
+      // Modifiers
+      "tag--pill": this.pill,
+      "tag--removable": this.removable
+    })}
+      >
+        <slot part="content" class="tag__content"></slot>
+
+        ${this.removable ? x2`
+              <sl-icon-button
+                part="remove-button"
+                exportparts="base:remove-button__base"
+                name="x-lg"
+                library="system"
+                label=${this.localize.term("remove")}
+                class="tag__remove"
+                @click=${this.handleRemoveClick}
+                tabindex="-1"
+              ></sl-icon-button>
+            ` : ""}
+      </span>
+    `;
+  }
+};
+SlTag.styles = [component_styles_default, tag_styles_default];
+SlTag.dependencies = { "sl-icon-button": SlIconButton };
+__decorateClass([
+  n7({ reflect: true })
+], SlTag.prototype, "variant", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlTag.prototype, "size", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlTag.prototype, "pill", 2);
+__decorateClass([
+  n7({ type: Boolean })
+], SlTag.prototype, "removable", 2);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.XNOUITPX.js
+var select_styles_default = i`
+  :host {
+    display: block;
+  }
+
+  /** The popup */
+  .select {
+    flex: 1 1 auto;
+    display: inline-flex;
+    width: 100%;
+    position: relative;
+    vertical-align: middle;
+  }
+
+  .select::part(popup) {
+    z-index: var(--sl-z-index-dropdown);
+  }
+
+  .select[data-current-placement^='top']::part(popup) {
+    transform-origin: bottom;
+  }
+
+  .select[data-current-placement^='bottom']::part(popup) {
+    transform-origin: top;
+  }
+
+  /* Combobox */
+  .select__combobox {
+    flex: 1;
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    position: relative;
+    align-items: center;
+    justify-content: start;
+    font-family: var(--sl-input-font-family);
+    font-weight: var(--sl-input-font-weight);
+    letter-spacing: var(--sl-input-letter-spacing);
+    vertical-align: middle;
+    overflow: hidden;
+    cursor: pointer;
+    transition:
+      var(--sl-transition-fast) color,
+      var(--sl-transition-fast) border,
+      var(--sl-transition-fast) box-shadow,
+      var(--sl-transition-fast) background-color;
+  }
+
+  .select__display-input {
+    position: relative;
+    width: 100%;
+    font: inherit;
+    border: none;
+    background: none;
+    color: var(--sl-input-color);
+    cursor: inherit;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+    -webkit-appearance: none;
+  }
+
+  .select__display-input::placeholder {
+    color: var(--sl-input-placeholder-color);
+  }
+
+  .select:not(.select--disabled):hover .select__display-input {
+    color: var(--sl-input-color-hover);
+  }
+
+  .select__display-input:focus {
+    outline: none;
+  }
+
+  /* Visually hide the display input when multiple is enabled */
+  .select--multiple:not(.select--placeholder-visible) .select__display-input {
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+  }
+
+  .select__value-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    opacity: 0;
+    z-index: -1;
+  }
+
+  .select__tags {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-inline-start: var(--sl-spacing-2x-small);
+  }
+
+  .select__tags::slotted(sl-tag) {
+    cursor: pointer !important;
+  }
+
+  .select--disabled .select__tags,
+  .select--disabled .select__tags::slotted(sl-tag) {
+    cursor: not-allowed !important;
+  }
+
+  /* Standard selects */
+  .select--standard .select__combobox {
+    background-color: var(--sl-input-background-color);
+    border: solid var(--sl-input-border-width) var(--sl-input-border-color);
+  }
+
+  .select--standard.select--disabled .select__combobox {
+    background-color: var(--sl-input-background-color-disabled);
+    border-color: var(--sl-input-border-color-disabled);
+    color: var(--sl-input-color-disabled);
+    opacity: 0.5;
+    cursor: not-allowed;
+    outline: none;
+  }
+
+  .select--standard:not(.select--disabled).select--open .select__combobox,
+  .select--standard:not(.select--disabled).select--focused .select__combobox {
+    background-color: var(--sl-input-background-color-focus);
+    border-color: var(--sl-input-border-color-focus);
+    box-shadow: 0 0 0 var(--sl-focus-ring-width) var(--sl-input-focus-ring-color);
+  }
+
+  /* Filled selects */
+  .select--filled .select__combobox {
+    border: none;
+    background-color: var(--sl-input-filled-background-color);
+    color: var(--sl-input-color);
+  }
+
+  .select--filled:hover:not(.select--disabled) .select__combobox {
+    background-color: var(--sl-input-filled-background-color-hover);
+  }
+
+  .select--filled.select--disabled .select__combobox {
+    background-color: var(--sl-input-filled-background-color-disabled);
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .select--filled:not(.select--disabled).select--open .select__combobox,
+  .select--filled:not(.select--disabled).select--focused .select__combobox {
+    background-color: var(--sl-input-filled-background-color-focus);
+    outline: var(--sl-focus-ring);
+  }
+
+  /* Sizes */
+  .select--small .select__combobox {
+    border-radius: var(--sl-input-border-radius-small);
+    font-size: var(--sl-input-font-size-small);
+    min-height: var(--sl-input-height-small);
+    padding-block: 0;
+    padding-inline: var(--sl-input-spacing-small);
+  }
+
+  .select--small .select__clear {
+    margin-inline-start: var(--sl-input-spacing-small);
+  }
+
+  .select--small .select__prefix::slotted(*) {
+    margin-inline-end: var(--sl-input-spacing-small);
+  }
+
+  .select--small.select--multiple:not(.select--placeholder-visible) .select__prefix::slotted(*) {
+    margin-inline-start: var(--sl-input-spacing-small);
+  }
+
+  .select--small.select--multiple:not(.select--placeholder-visible) .select__combobox {
+    padding-block: 2px;
+    padding-inline-start: 0;
+  }
+
+  .select--small .select__tags {
+    gap: 2px;
+  }
+
+  .select--medium .select__combobox {
+    border-radius: var(--sl-input-border-radius-medium);
+    font-size: var(--sl-input-font-size-medium);
+    min-height: var(--sl-input-height-medium);
+    padding-block: 0;
+    padding-inline: var(--sl-input-spacing-medium);
+  }
+
+  .select--medium .select__clear {
+    margin-inline-start: var(--sl-input-spacing-medium);
+  }
+
+  .select--medium .select__prefix::slotted(*) {
+    margin-inline-end: var(--sl-input-spacing-medium);
+  }
+
+  .select--medium.select--multiple:not(.select--placeholder-visible) .select__prefix::slotted(*) {
+    margin-inline-start: var(--sl-input-spacing-medium);
+  }
+
+  .select--medium.select--multiple:not(.select--placeholder-visible) .select__combobox {
+    padding-inline-start: 0;
+    padding-block: 3px;
+  }
+
+  .select--medium .select__tags {
+    gap: 3px;
+  }
+
+  .select--large .select__combobox {
+    border-radius: var(--sl-input-border-radius-large);
+    font-size: var(--sl-input-font-size-large);
+    min-height: var(--sl-input-height-large);
+    padding-block: 0;
+    padding-inline: var(--sl-input-spacing-large);
+  }
+
+  .select--large .select__clear {
+    margin-inline-start: var(--sl-input-spacing-large);
+  }
+
+  .select--large .select__prefix::slotted(*) {
+    margin-inline-end: var(--sl-input-spacing-large);
+  }
+
+  .select--large.select--multiple:not(.select--placeholder-visible) .select__prefix::slotted(*) {
+    margin-inline-start: var(--sl-input-spacing-large);
+  }
+
+  .select--large.select--multiple:not(.select--placeholder-visible) .select__combobox {
+    padding-inline-start: 0;
+    padding-block: 4px;
+  }
+
+  .select--large .select__tags {
+    gap: 4px;
+  }
+
+  /* Pills */
+  .select--pill.select--small .select__combobox {
+    border-radius: var(--sl-input-height-small);
+  }
+
+  .select--pill.select--medium .select__combobox {
+    border-radius: var(--sl-input-height-medium);
+  }
+
+  .select--pill.select--large .select__combobox {
+    border-radius: var(--sl-input-height-large);
+  }
+
+  /* Prefix and Suffix */
+  .select__prefix,
+  .select__suffix {
+    flex: 0;
+    display: inline-flex;
+    align-items: center;
+    color: var(--sl-input-placeholder-color);
+  }
+
+  .select__suffix::slotted(*) {
+    margin-inline-start: var(--sl-spacing-small);
+  }
+
+  /* Clear button */
+  .select__clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: inherit;
+    color: var(--sl-input-icon-color);
+    border: none;
+    background: none;
+    padding: 0;
+    transition: var(--sl-transition-fast) color;
+    cursor: pointer;
+  }
+
+  .select__clear:hover {
+    color: var(--sl-input-icon-color-hover);
+  }
+
+  .select__clear:focus {
+    outline: none;
+  }
+
+  /* Expand icon */
+  .select__expand-icon {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    transition: var(--sl-transition-medium) rotate ease;
+    rotate: 0;
+    margin-inline-start: var(--sl-spacing-small);
+  }
+
+  .select--open .select__expand-icon {
+    rotate: -180deg;
+  }
+
+  /* Listbox */
+  .select__listbox {
+    display: block;
+    position: relative;
+    font-family: var(--sl-font-sans);
+    font-size: var(--sl-font-size-medium);
+    font-weight: var(--sl-font-weight-normal);
+    box-shadow: var(--sl-shadow-large);
+    background: var(--sl-panel-background-color);
+    border: solid var(--sl-panel-border-width) var(--sl-panel-border-color);
+    border-radius: var(--sl-border-radius-medium);
+    padding-block: var(--sl-spacing-x-small);
+    padding-inline: 0;
+    overflow: auto;
+    overscroll-behavior: none;
+
+    /* Make sure it adheres to the popup's auto size */
+    max-width: var(--auto-size-available-width);
+    max-height: var(--auto-size-available-height);
+  }
+
+  .select__listbox ::slotted(sl-divider) {
+    --spacing: var(--sl-spacing-x-small);
+  }
+
+  .select__listbox ::slotted(small) {
+    display: block;
+    font-size: var(--sl-font-size-small);
+    font-weight: var(--sl-font-weight-semibold);
+    color: var(--sl-color-neutral-500);
+    padding-block: var(--sl-spacing-2x-small);
+    padding-inline: var(--sl-spacing-x-large);
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.RWUUFNUL.js
+function getOffset(element, parent) {
+  return {
+    top: Math.round(element.getBoundingClientRect().top - parent.getBoundingClientRect().top),
+    left: Math.round(element.getBoundingClientRect().left - parent.getBoundingClientRect().left)
+  };
+}
+function scrollIntoView(element, container, direction = "vertical", behavior = "smooth") {
+  const offset3 = getOffset(element, container);
+  const offsetTop = offset3.top + container.scrollTop;
+  const offsetLeft = offset3.left + container.scrollLeft;
+  const minX = container.scrollLeft;
+  const maxX = container.scrollLeft + container.offsetWidth;
+  const minY = container.scrollTop;
+  const maxY = container.scrollTop + container.offsetHeight;
+  if (direction === "horizontal" || direction === "both") {
+    if (offsetLeft < minX) {
+      container.scrollTo({ left: offsetLeft, behavior });
+    } else if (offsetLeft + element.clientWidth > maxX) {
+      container.scrollTo({ left: offsetLeft - container.offsetWidth + element.clientWidth, behavior });
+    }
+  }
+  if (direction === "vertical" || direction === "both") {
+    if (offsetTop < minY) {
+      container.scrollTo({ top: offsetTop, behavior });
+    } else if (offsetTop + element.clientHeight > maxY) {
+      container.scrollTo({ top: offsetTop - container.offsetHeight + element.clientHeight, behavior });
+    }
+  }
+}
+
+// node_modules/lit-html/directives/unsafe-html.js
+var e12 = class extends i6 {
+  constructor(i9) {
+    if (super(i9), this.it = E2, i9.type !== t6.CHILD) throw Error(this.constructor.directiveName + "() can only be used in child bindings");
+  }
+  render(r11) {
+    if (r11 === E2 || null == r11) return this._t = void 0, this.it = r11;
+    if (r11 === T2) return r11;
+    if ("string" != typeof r11) throw Error(this.constructor.directiveName + "() called with a non-string value");
+    if (r11 === this.it) return this._t;
+    this.it = r11;
+    const s4 = [r11];
+    return s4.raw = s4, this._t = { _$litType$: this.constructor.resultType, strings: s4, values: [] };
+  }
+};
+e12.directiveName = "unsafeHTML", e12.resultType = 1;
+var o10 = e9(e12);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.DL3WPSFB.js
+var SlSelect = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.formControlController = new FormControlController(this, {
+      assumeInteractionOn: ["sl-blur", "sl-input"]
+    });
+    this.hasSlotController = new HasSlotController(this, "help-text", "label");
+    this.localize = new LocalizeController2(this);
+    this.typeToSelectString = "";
+    this.hasFocus = false;
+    this.displayLabel = "";
+    this.selectedOptions = [];
+    this.valueHasChanged = false;
+    this.name = "";
+    this._value = "";
+    this.defaultValue = "";
+    this.size = "medium";
+    this.placeholder = "";
+    this.multiple = false;
+    this.maxOptionsVisible = 3;
+    this.disabled = false;
+    this.clearable = false;
+    this.open = false;
+    this.hoist = false;
+    this.filled = false;
+    this.pill = false;
+    this.label = "";
+    this.placement = "bottom";
+    this.helpText = "";
+    this.form = "";
+    this.required = false;
+    this.getTag = (option) => {
+      return x2`
+      <sl-tag
+        part="tag"
+        exportparts="
+              base:tag__base,
+              content:tag__content,
+              remove-button:tag__remove-button,
+              remove-button__base:tag__remove-button__base
+            "
+        ?pill=${this.pill}
+        size=${this.size}
+        removable
+        @sl-remove=${(event) => this.handleTagRemove(event, option)}
+      >
+        ${option.getTextLabel()}
+      </sl-tag>
+    `;
+    };
+    this.handleDocumentFocusIn = (event) => {
+      const path = event.composedPath();
+      if (this && !path.includes(this)) {
+        this.hide();
+      }
+    };
+    this.handleDocumentKeyDown = (event) => {
+      const target = event.target;
+      const isClearButton = target.closest(".select__clear") !== null;
+      const isIconButton = target.closest("sl-icon-button") !== null;
+      if (isClearButton || isIconButton) {
+        return;
+      }
+      if (event.key === "Escape" && this.open && !this.closeWatcher) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.hide();
+        this.displayInput.focus({ preventScroll: true });
+      }
+      if (event.key === "Enter" || event.key === " " && this.typeToSelectString === "") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (!this.open) {
+          this.show();
+          return;
+        }
+        if (this.currentOption && !this.currentOption.disabled) {
+          this.valueHasChanged = true;
+          if (this.multiple) {
+            this.toggleOptionSelection(this.currentOption);
+          } else {
+            this.setSelectedOptions(this.currentOption);
+          }
+          this.updateComplete.then(() => {
+            this.emit("sl-input");
+            this.emit("sl-change");
+          });
+          if (!this.multiple) {
+            this.hide();
+            this.displayInput.focus({ preventScroll: true });
+          }
+        }
+        return;
+      }
+      if (["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+        const allOptions = this.getAllOptions();
+        const currentIndex = allOptions.indexOf(this.currentOption);
+        let newIndex = Math.max(0, currentIndex);
+        event.preventDefault();
+        if (!this.open) {
+          this.show();
+          if (this.currentOption) {
+            return;
+          }
+        }
+        if (event.key === "ArrowDown") {
+          newIndex = currentIndex + 1;
+          if (newIndex > allOptions.length - 1) newIndex = 0;
+        } else if (event.key === "ArrowUp") {
+          newIndex = currentIndex - 1;
+          if (newIndex < 0) newIndex = allOptions.length - 1;
+        } else if (event.key === "Home") {
+          newIndex = 0;
+        } else if (event.key === "End") {
+          newIndex = allOptions.length - 1;
+        }
+        this.setCurrentOption(allOptions[newIndex]);
+      }
+      if (event.key && event.key.length === 1 || event.key === "Backspace") {
+        const allOptions = this.getAllOptions();
+        if (event.metaKey || event.ctrlKey || event.altKey) {
+          return;
+        }
+        if (!this.open) {
+          if (event.key === "Backspace") {
+            return;
+          }
+          this.show();
+        }
+        event.stopPropagation();
+        event.preventDefault();
+        clearTimeout(this.typeToSelectTimeout);
+        this.typeToSelectTimeout = window.setTimeout(() => this.typeToSelectString = "", 1e3);
+        if (event.key === "Backspace") {
+          this.typeToSelectString = this.typeToSelectString.slice(0, -1);
+        } else {
+          this.typeToSelectString += event.key.toLowerCase();
+        }
+        for (const option of allOptions) {
+          const label = option.getTextLabel().toLowerCase();
+          if (label.startsWith(this.typeToSelectString)) {
+            this.setCurrentOption(option);
+            break;
+          }
+        }
+      }
+    };
+    this.handleDocumentMouseDown = (event) => {
+      const path = event.composedPath();
+      if (this && !path.includes(this)) {
+        this.hide();
+      }
+    };
+  }
+  get value() {
+    return this._value;
+  }
+  set value(val) {
+    if (this.multiple) {
+      val = Array.isArray(val) ? val : val.split(" ");
+    } else {
+      val = Array.isArray(val) ? val.join(" ") : val;
+    }
+    if (this._value === val) {
+      return;
+    }
+    this.valueHasChanged = true;
+    this._value = val;
+  }
+  /** Gets the validity state object */
+  get validity() {
+    return this.valueInput.validity;
+  }
+  /** Gets the validation message */
+  get validationMessage() {
+    return this.valueInput.validationMessage;
+  }
+  connectedCallback() {
+    super.connectedCallback();
+    setTimeout(() => {
+      this.handleDefaultSlotChange();
+    });
+    this.open = false;
+  }
+  addOpenListeners() {
+    var _a3;
+    document.addEventListener("focusin", this.handleDocumentFocusIn);
+    document.addEventListener("keydown", this.handleDocumentKeyDown);
+    document.addEventListener("mousedown", this.handleDocumentMouseDown);
+    if (this.getRootNode() !== document) {
+      this.getRootNode().addEventListener("focusin", this.handleDocumentFocusIn);
+    }
+    if ("CloseWatcher" in window) {
+      (_a3 = this.closeWatcher) == null ? void 0 : _a3.destroy();
+      this.closeWatcher = new CloseWatcher();
+      this.closeWatcher.onclose = () => {
+        if (this.open) {
+          this.hide();
+          this.displayInput.focus({ preventScroll: true });
+        }
+      };
+    }
+  }
+  removeOpenListeners() {
+    var _a3;
+    document.removeEventListener("focusin", this.handleDocumentFocusIn);
+    document.removeEventListener("keydown", this.handleDocumentKeyDown);
+    document.removeEventListener("mousedown", this.handleDocumentMouseDown);
+    if (this.getRootNode() !== document) {
+      this.getRootNode().removeEventListener("focusin", this.handleDocumentFocusIn);
+    }
+    (_a3 = this.closeWatcher) == null ? void 0 : _a3.destroy();
+  }
+  handleFocus() {
+    this.hasFocus = true;
+    this.displayInput.setSelectionRange(0, 0);
+    this.emit("sl-focus");
+  }
+  handleBlur() {
+    this.hasFocus = false;
+    this.emit("sl-blur");
+  }
+  handleLabelClick() {
+    this.displayInput.focus();
+  }
+  handleComboboxMouseDown(event) {
+    const path = event.composedPath();
+    const isIconButton = path.some((el) => el instanceof Element && el.tagName.toLowerCase() === "sl-icon-button");
+    if (this.disabled || isIconButton) {
+      return;
+    }
+    event.preventDefault();
+    this.displayInput.focus({ preventScroll: true });
+    this.open = !this.open;
+  }
+  handleComboboxKeyDown(event) {
+    if (event.key === "Tab") {
+      return;
+    }
+    event.stopPropagation();
+    this.handleDocumentKeyDown(event);
+  }
+  handleClearClick(event) {
+    event.stopPropagation();
+    this.valueHasChanged = true;
+    if (this.value !== "") {
+      this.setSelectedOptions([]);
+      this.displayInput.focus({ preventScroll: true });
+      this.updateComplete.then(() => {
+        this.emit("sl-clear");
+        this.emit("sl-input");
+        this.emit("sl-change");
+      });
+    }
+  }
+  handleClearMouseDown(event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  handleOptionClick(event) {
+    const target = event.target;
+    const option = target.closest("sl-option");
+    const oldValue = this.value;
+    if (option && !option.disabled) {
+      this.valueHasChanged = true;
+      if (this.multiple) {
+        this.toggleOptionSelection(option);
+      } else {
+        this.setSelectedOptions(option);
+      }
+      this.updateComplete.then(() => this.displayInput.focus({ preventScroll: true }));
+      if (this.value !== oldValue) {
+        this.updateComplete.then(() => {
+          this.emit("sl-input");
+          this.emit("sl-change");
+        });
+      }
+      if (!this.multiple) {
+        this.hide();
+        this.displayInput.focus({ preventScroll: true });
+      }
+    }
+  }
+  /* @internal - used by options to update labels */
+  handleDefaultSlotChange() {
+    if (!customElements.get("sl-option")) {
+      customElements.whenDefined("sl-option").then(() => this.handleDefaultSlotChange());
+    }
+    const allOptions = this.getAllOptions();
+    const val = this.valueHasChanged ? this.value : this.defaultValue;
+    const value = Array.isArray(val) ? val : [val];
+    const values = [];
+    allOptions.forEach((option) => values.push(option.value));
+    this.setSelectedOptions(allOptions.filter((el) => value.includes(el.value)));
+  }
+  handleTagRemove(event, option) {
+    event.stopPropagation();
+    this.valueHasChanged = true;
+    if (!this.disabled) {
+      this.toggleOptionSelection(option, false);
+      this.updateComplete.then(() => {
+        this.emit("sl-input");
+        this.emit("sl-change");
+      });
+    }
+  }
+  // Gets an array of all <sl-option> elements
+  getAllOptions() {
+    return [...this.querySelectorAll("sl-option")];
+  }
+  // Gets the first <sl-option> element
+  getFirstOption() {
+    return this.querySelector("sl-option");
+  }
+  // Sets the current option, which is the option the user is currently interacting with (e.g. via keyboard). Only one
+  // option may be "current" at a time.
+  setCurrentOption(option) {
+    const allOptions = this.getAllOptions();
+    allOptions.forEach((el) => {
+      el.current = false;
+      el.tabIndex = -1;
+    });
+    if (option) {
+      this.currentOption = option;
+      option.current = true;
+      option.tabIndex = 0;
+      option.focus();
+    }
+  }
+  // Sets the selected option(s)
+  setSelectedOptions(option) {
+    const allOptions = this.getAllOptions();
+    const newSelectedOptions = Array.isArray(option) ? option : [option];
+    allOptions.forEach((el) => el.selected = false);
+    if (newSelectedOptions.length) {
+      newSelectedOptions.forEach((el) => el.selected = true);
+    }
+    this.selectionChanged();
+  }
+  // Toggles an option's selected state
+  toggleOptionSelection(option, force) {
+    if (force === true || force === false) {
+      option.selected = force;
+    } else {
+      option.selected = !option.selected;
+    }
+    this.selectionChanged();
+  }
+  // This method must be called whenever the selection changes. It will update the selected options cache, the current
+  // value, and the display value
+  selectionChanged() {
+    var _a3, _b, _c;
+    const options = this.getAllOptions();
+    this.selectedOptions = options.filter((el) => el.selected);
+    const cachedValueHasChanged = this.valueHasChanged;
+    if (this.multiple) {
+      this.value = this.selectedOptions.map((el) => el.value);
+      if (this.placeholder && this.value.length === 0) {
+        this.displayLabel = "";
+      } else {
+        this.displayLabel = this.localize.term("numOptionsSelected", this.selectedOptions.length);
+      }
+    } else {
+      const selectedOption = this.selectedOptions[0];
+      this.value = (_a3 = selectedOption == null ? void 0 : selectedOption.value) != null ? _a3 : "";
+      this.displayLabel = (_c = (_b = selectedOption == null ? void 0 : selectedOption.getTextLabel) == null ? void 0 : _b.call(selectedOption)) != null ? _c : "";
+    }
+    this.valueHasChanged = cachedValueHasChanged;
+    this.updateComplete.then(() => {
+      this.formControlController.updateValidity();
+    });
+  }
+  get tags() {
+    return this.selectedOptions.map((option, index) => {
+      if (index < this.maxOptionsVisible || this.maxOptionsVisible <= 0) {
+        const tag = this.getTag(option, index);
+        return x2`<div @sl-remove=${(e13) => this.handleTagRemove(e13, option)}>
+          ${typeof tag === "string" ? o10(tag) : tag}
+        </div>`;
+      } else if (index === this.maxOptionsVisible) {
+        return x2`<sl-tag size=${this.size}>+${this.selectedOptions.length - index}</sl-tag>`;
+      }
+      return x2``;
+    });
+  }
+  handleInvalid(event) {
+    this.formControlController.setValidity(false);
+    this.formControlController.emitInvalidEvent(event);
+  }
+  handleDisabledChange() {
+    if (this.disabled) {
+      this.open = false;
+      this.handleOpenChange();
+    }
+  }
+  attributeChangedCallback(name, oldVal, newVal) {
+    super.attributeChangedCallback(name, oldVal, newVal);
+    if (name === "value") {
+      const cachedValueHasChanged = this.valueHasChanged;
+      this.value = this.defaultValue;
+      this.valueHasChanged = cachedValueHasChanged;
+    }
+  }
+  handleValueChange() {
+    if (!this.valueHasChanged) {
+      const cachedValueHasChanged = this.valueHasChanged;
+      this.value = this.defaultValue;
+      this.valueHasChanged = cachedValueHasChanged;
+    }
+    const allOptions = this.getAllOptions();
+    const value = Array.isArray(this.value) ? this.value : [this.value];
+    this.setSelectedOptions(allOptions.filter((el) => value.includes(el.value)));
+  }
+  async handleOpenChange() {
+    if (this.open && !this.disabled) {
+      this.setCurrentOption(this.selectedOptions[0] || this.getFirstOption());
+      this.emit("sl-show");
+      this.addOpenListeners();
+      await stopAnimations(this);
+      this.listbox.hidden = false;
+      this.popup.active = true;
+      requestAnimationFrame(() => {
+        this.setCurrentOption(this.currentOption);
+      });
+      const { keyframes, options } = getAnimation(this, "select.show", { dir: this.localize.dir() });
+      await animateTo(this.popup.popup, keyframes, options);
+      if (this.currentOption) {
+        scrollIntoView(this.currentOption, this.listbox, "vertical", "auto");
+      }
+      this.emit("sl-after-show");
+    } else {
+      this.emit("sl-hide");
+      this.removeOpenListeners();
+      await stopAnimations(this);
+      const { keyframes, options } = getAnimation(this, "select.hide", { dir: this.localize.dir() });
+      await animateTo(this.popup.popup, keyframes, options);
+      this.listbox.hidden = true;
+      this.popup.active = false;
+      this.emit("sl-after-hide");
+    }
+  }
+  /** Shows the listbox. */
+  async show() {
+    if (this.open || this.disabled) {
+      this.open = false;
+      return void 0;
+    }
+    this.open = true;
+    return waitForEvent(this, "sl-after-show");
+  }
+  /** Hides the listbox. */
+  async hide() {
+    if (!this.open || this.disabled) {
+      this.open = false;
+      return void 0;
+    }
+    this.open = false;
+    return waitForEvent(this, "sl-after-hide");
+  }
+  /** Checks for validity but does not show a validation message. Returns `true` when valid and `false` when invalid. */
+  checkValidity() {
+    return this.valueInput.checkValidity();
+  }
+  /** Gets the associated form, if one exists. */
+  getForm() {
+    return this.formControlController.getForm();
+  }
+  /** Checks for validity and shows the browser's validation message if the control is invalid. */
+  reportValidity() {
+    return this.valueInput.reportValidity();
+  }
+  /** Sets a custom validation message. Pass an empty string to restore validity. */
+  setCustomValidity(message) {
+    this.valueInput.setCustomValidity(message);
+    this.formControlController.updateValidity();
+  }
+  /** Sets focus on the control. */
+  focus(options) {
+    this.displayInput.focus(options);
+  }
+  /** Removes focus from the control. */
+  blur() {
+    this.displayInput.blur();
+  }
+  render() {
+    const hasLabelSlot = this.hasSlotController.test("label");
+    const hasHelpTextSlot = this.hasSlotController.test("help-text");
+    const hasLabel = this.label ? true : !!hasLabelSlot;
+    const hasHelpText = this.helpText ? true : !!hasHelpTextSlot;
+    const hasClearIcon = this.clearable && !this.disabled && this.value.length > 0;
+    const isPlaceholderVisible = this.placeholder && this.value && this.value.length <= 0;
+    return x2`
+      <div
+        part="form-control"
+        class=${e10({
+      "form-control": true,
+      "form-control--small": this.size === "small",
+      "form-control--medium": this.size === "medium",
+      "form-control--large": this.size === "large",
+      "form-control--has-label": hasLabel,
+      "form-control--has-help-text": hasHelpText
+    })}
+      >
+        <label
+          id="label"
+          part="form-control-label"
+          class="form-control__label"
+          aria-hidden=${hasLabel ? "false" : "true"}
+          @click=${this.handleLabelClick}
+        >
+          <slot name="label">${this.label}</slot>
+        </label>
+
+        <div part="form-control-input" class="form-control-input">
+          <sl-popup
+            class=${e10({
+      select: true,
+      "select--standard": true,
+      "select--filled": this.filled,
+      "select--pill": this.pill,
+      "select--open": this.open,
+      "select--disabled": this.disabled,
+      "select--multiple": this.multiple,
+      "select--focused": this.hasFocus,
+      "select--placeholder-visible": isPlaceholderVisible,
+      "select--top": this.placement === "top",
+      "select--bottom": this.placement === "bottom",
+      "select--small": this.size === "small",
+      "select--medium": this.size === "medium",
+      "select--large": this.size === "large"
+    })}
+            placement=${this.placement}
+            strategy=${this.hoist ? "fixed" : "absolute"}
+            flip
+            shift
+            sync="width"
+            auto-size="vertical"
+            auto-size-padding="10"
+          >
+            <div
+              part="combobox"
+              class="select__combobox"
+              slot="anchor"
+              @keydown=${this.handleComboboxKeyDown}
+              @mousedown=${this.handleComboboxMouseDown}
+            >
+              <slot part="prefix" name="prefix" class="select__prefix"></slot>
+
+              <input
+                part="display-input"
+                class="select__display-input"
+                type="text"
+                placeholder=${this.placeholder}
+                .disabled=${this.disabled}
+                .value=${this.displayLabel}
+                autocomplete="off"
+                spellcheck="false"
+                autocapitalize="off"
+                readonly
+                aria-controls="listbox"
+                aria-expanded=${this.open ? "true" : "false"}
+                aria-haspopup="listbox"
+                aria-labelledby="label"
+                aria-disabled=${this.disabled ? "true" : "false"}
+                aria-describedby="help-text"
+                role="combobox"
+                tabindex="0"
+                @focus=${this.handleFocus}
+                @blur=${this.handleBlur}
+              />
+
+              ${this.multiple ? x2`<div part="tags" class="select__tags">${this.tags}</div>` : ""}
+
+              <input
+                class="select__value-input"
+                type="text"
+                ?disabled=${this.disabled}
+                ?required=${this.required}
+                .value=${Array.isArray(this.value) ? this.value.join(", ") : this.value}
+                tabindex="-1"
+                aria-hidden="true"
+                @focus=${() => this.focus()}
+                @invalid=${this.handleInvalid}
+              />
+
+              ${hasClearIcon ? x2`
+                    <button
+                      part="clear-button"
+                      class="select__clear"
+                      type="button"
+                      aria-label=${this.localize.term("clearEntry")}
+                      @mousedown=${this.handleClearMouseDown}
+                      @click=${this.handleClearClick}
+                      tabindex="-1"
+                    >
+                      <slot name="clear-icon">
+                        <sl-icon name="x-circle-fill" library="system"></sl-icon>
+                      </slot>
+                    </button>
+                  ` : ""}
+
+              <slot name="suffix" part="suffix" class="select__suffix"></slot>
+
+              <slot name="expand-icon" part="expand-icon" class="select__expand-icon">
+                <sl-icon library="system" name="chevron-down"></sl-icon>
+              </slot>
+            </div>
+
+            <div
+              id="listbox"
+              role="listbox"
+              aria-expanded=${this.open ? "true" : "false"}
+              aria-multiselectable=${this.multiple ? "true" : "false"}
+              aria-labelledby="label"
+              part="listbox"
+              class="select__listbox"
+              tabindex="-1"
+              @mouseup=${this.handleOptionClick}
+              @slotchange=${this.handleDefaultSlotChange}
+            >
+              <slot></slot>
+            </div>
+          </sl-popup>
+        </div>
+
+        <div
+          part="form-control-help-text"
+          id="help-text"
+          class="form-control__help-text"
+          aria-hidden=${hasHelpText ? "false" : "true"}
+        >
+          <slot name="help-text">${this.helpText}</slot>
+        </div>
+      </div>
+    `;
+  }
+};
+SlSelect.styles = [component_styles_default, form_control_styles_default, select_styles_default];
+SlSelect.dependencies = {
+  "sl-icon": SlIcon,
+  "sl-popup": SlPopup,
+  "sl-tag": SlTag
+};
+__decorateClass([
+  e6(".select")
+], SlSelect.prototype, "popup", 2);
+__decorateClass([
+  e6(".select__combobox")
+], SlSelect.prototype, "combobox", 2);
+__decorateClass([
+  e6(".select__display-input")
+], SlSelect.prototype, "displayInput", 2);
+__decorateClass([
+  e6(".select__value-input")
+], SlSelect.prototype, "valueInput", 2);
+__decorateClass([
+  e6(".select__listbox")
+], SlSelect.prototype, "listbox", 2);
+__decorateClass([
+  r7()
+], SlSelect.prototype, "hasFocus", 2);
+__decorateClass([
+  r7()
+], SlSelect.prototype, "displayLabel", 2);
+__decorateClass([
+  r7()
+], SlSelect.prototype, "currentOption", 2);
+__decorateClass([
+  r7()
+], SlSelect.prototype, "selectedOptions", 2);
+__decorateClass([
+  r7()
+], SlSelect.prototype, "valueHasChanged", 2);
+__decorateClass([
+  n7()
+], SlSelect.prototype, "name", 2);
+__decorateClass([
+  r7()
+], SlSelect.prototype, "value", 1);
+__decorateClass([
+  n7({ attribute: "value" })
+], SlSelect.prototype, "defaultValue", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlSelect.prototype, "size", 2);
+__decorateClass([
+  n7()
+], SlSelect.prototype, "placeholder", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlSelect.prototype, "multiple", 2);
+__decorateClass([
+  n7({ attribute: "max-options-visible", type: Number })
+], SlSelect.prototype, "maxOptionsVisible", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlSelect.prototype, "disabled", 2);
+__decorateClass([
+  n7({ type: Boolean })
+], SlSelect.prototype, "clearable", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlSelect.prototype, "open", 2);
+__decorateClass([
+  n7({ type: Boolean })
+], SlSelect.prototype, "hoist", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlSelect.prototype, "filled", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlSelect.prototype, "pill", 2);
+__decorateClass([
+  n7()
+], SlSelect.prototype, "label", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlSelect.prototype, "placement", 2);
+__decorateClass([
+  n7({ attribute: "help-text" })
+], SlSelect.prototype, "helpText", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlSelect.prototype, "form", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlSelect.prototype, "required", 2);
+__decorateClass([
+  n7()
+], SlSelect.prototype, "getTag", 2);
+__decorateClass([
+  watch("disabled", { waitUntilFirstUpdate: true })
+], SlSelect.prototype, "handleDisabledChange", 1);
+__decorateClass([
+  watch(["defaultValue", "value"], { waitUntilFirstUpdate: true })
+], SlSelect.prototype, "handleValueChange", 1);
+__decorateClass([
+  watch("open", { waitUntilFirstUpdate: true })
+], SlSelect.prototype, "handleOpenChange", 1);
+setDefaultAnimation("select.show", {
+  keyframes: [
+    { opacity: 0, scale: 0.9 },
+    { opacity: 1, scale: 1 }
+  ],
+  options: { duration: 100, easing: "ease" }
+});
+setDefaultAnimation("select.hide", {
+  keyframes: [
+    { opacity: 1, scale: 1 },
+    { opacity: 0, scale: 0.9 }
+  ],
+  options: { duration: 100, easing: "ease" }
+});
 
 // data/periodic-table/elements.generated.ts
 var PERIODIC_TABLE_CONDITIONS = {
@@ -1779,11 +8597,11 @@ function buildGrid(layout = LAYOUT) {
     });
   }
   const rows = [];
-  for (const row of [...new Set(cells.map((cell) => cell.row))].sort((a4, b4) => a4 - b4)) {
+  for (const row of [...new Set(cells.map((cell) => cell.row))].sort((a5, b4) => a5 - b4)) {
     rows.push({
       row,
       section: row <= layout.periodRows ? "main" : "series",
-      cells: cells.filter((cell) => cell.row === row).sort((a4, b4) => a4.column - b4.column)
+      cells: cells.filter((cell) => cell.row === row).sort((a5, b4) => a5.column - b4.column)
     });
   }
   const placeholders = layout.placeholders.map((placeholder) => ({
@@ -1965,7 +8783,7 @@ function searchElements(query, options = {}) {
     });
   }
   ranked.sort(
-    (a4, b4) => KIND_RANK[a4.result.kind] - KIND_RANK[b4.result.kind] || a4.languageRank - b4.languageRank || a4.result.atomicNumber - b4.result.atomicNumber
+    (a5, b4) => KIND_RANK[a5.result.kind] - KIND_RANK[b4.result.kind] || a5.languageRank - b4.languageRank || a5.result.atomicNumber - b4.result.atomicNumber
   );
   return ranked.map((entry) => entry.result);
 }
@@ -2241,17 +9059,17 @@ function weightText(element, language) {
   }
 }
 function groupText(element, language) {
-  const t5 = strings(language);
+  const t7 = strings(language);
   switch (element.group.status) {
     case "reported":
     case "predicted":
       return String(element.group.value);
     case "convention-dependent":
-      return t5.groupConventionDependent;
+      return t7.groupConventionDependent;
     case "unassigned":
-      return t5.groupUnassigned;
+      return t7.groupUnassigned;
     case "unavailable":
-      return t5.valueUnavailable;
+      return t7.valueUnavailable;
   }
 }
 function categoryText(element, language) {
@@ -2259,57 +9077,57 @@ function categoryText(element, language) {
   return category ? CATEGORIES[category]?.[language] ?? category : "";
 }
 function detailRows(element, language) {
-  const t5 = strings(language);
+  const t7 = strings(language);
   const rows = [
-    { key: "group", label: t5.fieldGroup, value: groupText(element, language) },
-    { key: "period", label: t5.fieldPeriod, value: String(element.period) },
-    { key: "family", label: t5.fieldFamily, value: categoryText(element, language) }
+    { key: "group", label: t7.fieldGroup, value: groupText(element, language) },
+    { key: "period", label: t7.fieldPeriod, value: String(element.period) },
+    { key: "family", label: t7.fieldFamily, value: categoryText(element, language) }
   ];
   if (element.block.status === "unavailable") {
-    rows.push({ key: "block", label: t5.fieldBlock, value: t5.valueUnavailable });
+    rows.push({ key: "block", label: t7.fieldBlock, value: t7.valueUnavailable });
   } else {
     rows.push({
       key: "block",
-      label: t5.fieldBlock,
+      label: t7.fieldBlock,
       value: element.block.value,
-      ...element.block.status === "predicted" ? { qualifier: t5.valuePredicted } : {}
+      ...element.block.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
     });
   }
-  rows.push({ key: "weight", label: t5.fieldWeight, value: weightText(element, language) });
+  rows.push({ key: "weight", label: t7.fieldWeight, value: weightText(element, language) });
   if (element.phase.status === "unavailable") {
-    rows.push({ key: "phase", label: t5.fieldPhase, value: t5.valueUnavailable });
+    rows.push({ key: "phase", label: t7.fieldPhase, value: t7.valueUnavailable });
   } else {
-    const phase = { solid: t5.phaseSolid, liquid: t5.phaseLiquid, gas: t5.phaseGas }[element.phase.value];
+    const phase = { solid: t7.phaseSolid, liquid: t7.phaseLiquid, gas: t7.phaseGas }[element.phase.value];
     rows.push({
       key: "phase",
-      label: t5.fieldPhase,
+      label: t7.fieldPhase,
       value: phase,
-      ...element.phase.status === "predicted" ? { qualifier: t5.valuePredicted } : {}
+      ...element.phase.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
     });
   }
   if (element.configuration.status === "unavailable") {
-    rows.push({ key: "configuration", label: t5.fieldConfiguration, value: t5.valueUnavailable });
+    rows.push({ key: "configuration", label: t7.fieldConfiguration, value: t7.valueUnavailable });
   } else {
     rows.push({
       key: "configuration",
-      label: t5.fieldConfiguration,
+      label: t7.fieldConfiguration,
       value: element.configuration.value,
-      ...element.configuration.status === "predicted" ? { qualifier: t5.valuePredicted } : {}
+      ...element.configuration.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
     });
   }
-  rows.push({ key: "shells", label: t5.fieldShells, value: element.shells.join(" \xB7 ") });
+  rows.push({ key: "shells", label: t7.fieldShells, value: element.shells.join(" \xB7 ") });
   return rows;
 }
 function sourceUsage(element, language) {
-  const t5 = strings(language);
+  const t7 = strings(language);
   const fields = [
-    [t5.fieldIdentity, element.identitySources.iupac],
-    [t5.fieldGermanName, element.identitySources.germanName],
-    [t5.fieldGroup, element.group.provenance],
-    [t5.fieldBlock, element.block.provenance],
-    [t5.fieldWeight, element.weight.kind === "unavailable" ? void 0 : element.weight.provenance],
-    [t5.fieldPhase, element.phase.provenance],
-    [t5.fieldConfiguration, element.configuration.provenance]
+    [t7.fieldIdentity, element.identitySources.iupac],
+    [t7.fieldGermanName, element.identitySources.germanName],
+    [t7.fieldGroup, element.group.provenance],
+    [t7.fieldBlock, element.block.provenance],
+    [t7.fieldWeight, element.weight.kind === "unavailable" ? void 0 : element.weight.provenance],
+    [t7.fieldPhase, element.phase.provenance],
+    [t7.fieldConfiguration, element.configuration.provenance]
   ];
   const usage = /* @__PURE__ */ new Map();
   for (const [label, provenance] of fields) {
@@ -3138,25 +9956,25 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
   }
   render() {
     const language = __privateGet(this, _ChemLabPeriodicTable_instances, language_get);
-    const t5 = strings(language);
+    const t7 = strings(language);
     const matches = __privateMethod(this, _ChemLabPeriodicTable_instances, matches_fn).call(this);
     const matching = new Set(matches.map((match) => match.atomicNumber));
     __privateSet(this, _matching, matching);
     const selected = __privateGet(this, _selection).value;
     const element = selected === null ? null : elementByAtomicNumber(selected) ?? null;
-    const details = __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetails_fn).call(this, t5, language, element);
+    const details = __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetails_fn).call(this, t7, language, element);
     const resolved = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get);
     return x2`
 			<div class="widget">
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderToolbar_fn).call(this, t5, language)}
-				<p class="result-count" aria-live="polite">${__privateMethod(this, _ChemLabPeriodicTable_instances, renderCount_fn).call(this, t5, matches.length)}</p>
-				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t5, language, matches, details) : x2`
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderToolbar_fn).call(this, t7, language)}
+				<p class="result-count" aria-live="polite">${__privateMethod(this, _ChemLabPeriodicTable_instances, renderCount_fn).call(this, t7, matches.length)}</p>
+				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t7, language, matches, details) : x2`
 						<div class="body">
-							${__privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t5, language, matching)}
+							${__privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t7, language, matching)}
 							<div class="details-pane">${details}</div>
 						</div>
 					`}
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t5, language, element)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t7, language, element)}
 			</div>
 		`;
   }
@@ -3350,10 +10168,10 @@ rovingTarget_fn = function(matching) {
  * @param count - Number of matching elements.
  * @returns The live region text.
  */
-renderCount_fn = function(t5, count) {
-  if (count === 0) return t5.noResults;
-  if (count === 1) return t5.resultCountOne;
-  return format(t5.resultCount, { count });
+renderCount_fn = function(t7, count) {
+  if (count === 0) return t7.noResults;
+  if (count === 1) return t7.resultCountOne;
+  return format(t7.resultCount, { count });
 };
 /**
  * Renders the toolbar with search, family filter, layout switch and reset.
@@ -3362,7 +10180,7 @@ renderCount_fn = function(t5, count) {
  * @param language - Interface language.
  * @returns The toolbar.
  */
-renderToolbar_fn = function(t5, language) {
+renderToolbar_fn = function(t7, language) {
   const resolved = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get);
   return x2`
 			<div class="toolbar">
@@ -3371,8 +10189,8 @@ renderToolbar_fn = function(t5, language) {
 					type="search"
 					size="small"
 					clearable
-					label=${t5.searchLabel}
-					placeholder=${t5.searchPlaceholder}
+					label=${t7.searchLabel}
+					placeholder=${t7.searchPlaceholder}
 					.value=${__privateGet(this, _query)}
 					@sl-input=${__privateGet(this, _onQueryInput)}
 					@keydown=${__privateGet(this, _onSearchKeydown)}
@@ -3381,8 +10199,8 @@ renderToolbar_fn = function(t5, language) {
 					class="filter"
 					size="small"
 					clearable
-					label=${t5.filterLabel}
-					placeholder=${t5.filterAll}
+					label=${t7.filterLabel}
+					placeholder=${t7.filterAll}
 					.value=${__privateGet(this, _category) ?? ""}
 					@sl-change=${__privateGet(this, _onCategoryChange)}
 				>
@@ -3390,19 +10208,19 @@ renderToolbar_fn = function(t5, language) {
 						<sl-option value=${key}>${category[language]}</sl-option>
 					`)}
 				</sl-select>
-				<div class="views" role="group" aria-label=${t5.viewLabel}>
+				<div class="views" role="group" aria-label=${t7.viewLabel}>
 					<sl-button
 						size="small"
 						variant=${resolved === "table" ? "primary" : "default"}
 						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "table")}
-					>${t5.viewTable}</sl-button>
+					>${t7.viewTable}</sl-button>
 					<sl-button
 						size="small"
 						variant=${resolved === "list" ? "primary" : "default"}
 						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "list")}
-					>${t5.viewList}</sl-button>
+					>${t7.viewList}</sl-button>
 				</div>
-				<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, reset_fn).call(this)}>${t5.reset}</sl-button>
+				<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, reset_fn).call(this)}>${t7.reset}</sl-button>
 			</div>
 		`;
 };
@@ -3416,13 +10234,13 @@ renderToolbar_fn = function(t5, language) {
  * @param roving - Atomic number of the tabbable cell.
  * @returns The grid cell.
  */
-renderCell_fn = function(cell, t5, language, matching, roving) {
+renderCell_fn = function(cell, t7, language, matching, roving) {
   const element = elementByAtomicNumber(cell.atomicNumber);
   if (!element) return null;
   const enabled = matching.has(cell.atomicNumber);
   const selected = __privateGet(this, _selection).value === cell.atomicNumber;
   const displayRow = cell.section === "main" ? cell.row + 1 : cell.row + 2;
-  const label = format(t5.cellLabel, {
+  const label = format(t7.cellLabel, {
     number: element.atomicNumber,
     name: element.names[language],
     symbol: element.symbol,
@@ -3455,7 +10273,7 @@ renderCell_fn = function(cell, t5, language, matching, roving) {
  * @param matching - Atomic numbers that pass the current filter.
  * @returns The grid with group labels, period gutter, placeholders and series rows.
  */
-renderGrid_fn = function(t5, language, matching) {
+renderGrid_fn = function(t7, language, matching) {
   const roving = __privateMethod(this, _ChemLabPeriodicTable_instances, rovingTarget_fn).call(this, matching);
   const groupLabels = Array.from({ length: GRID.columns }, (_3, index) => x2`
 			<div
@@ -3471,12 +10289,12 @@ renderGrid_fn = function(t5, language, matching) {
 						role="rowheader"
 						style="--pt-row:${row.row + 1};--pt-column:1"
 					>${row.row}</div>
-					${row.cells.map((cell) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t5, language, matching, roving))}
+					${row.cells.map((cell) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t7, language, matching, roving))}
 				</div>
 			`);
   const placeholders = GRID.placeholders.map((placeholder) => {
     const series = GRID.seriesRows.find((entry) => entry.row === placeholder.seriesRow);
-    const text = series ? format(t5.placeholderLabel, {
+    const text = series ? format(t7.placeholderLabel, {
       first: series.firstAtomicNumber,
       last: series.lastAtomicNumber
     }) : "";
@@ -3499,13 +10317,13 @@ renderGrid_fn = function(t5, language, matching) {
 							role="rowheader"
 							style="--pt-row:${row.row + 2};--pt-column:1 / span 3"
 						>${name}</div>
-						${row.cells.map((cell) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t5, language, matching, roving))}
+						${row.cells.map((cell) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t7, language, matching, roving))}
 					</div>
 				`;
   });
   return x2`
 			<div class="table-pane">
-				<div class="grid" role="grid" aria-label=${t5.gridLabel}>
+				<div class="grid" role="grid" aria-label=${t7.gridLabel}>
 					<div class="grid-row" role="row">
 						<div class="gutter" role="columnheader" style="--pt-row:1;--pt-column:1"></div>
 						${groupLabels}
@@ -3517,13 +10335,13 @@ renderGrid_fn = function(t5, language, matching) {
 				<div class="series-jumps">
 					${LAYOUT.seriesRows.map((series) => x2`
 						<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, jumpToSeries_fn).call(this, series.row)}>
-							${format(t5.jumpToSeries, {
+							${format(t7.jumpToSeries, {
     series: CATEGORIES[series.category]?.[language] ?? series.category
   })}
 						</sl-button>
 					`)}
 				</div>
-				<ul class="legend" aria-label=${t5.legendLabel}>
+				<ul class="legend" aria-label=${t7.legendLabel}>
 					${Object.entries(CATEGORIES).map(([key, category]) => x2`
 						<li>
 							<button
@@ -3549,7 +10367,7 @@ renderGrid_fn = function(t5, language, matching) {
  * @param details - Rendered detail card.
  * @returns The list.
  */
-renderList_fn = function(t5, language, matches, details) {
+renderList_fn = function(t7, language, matches, details) {
   const selected = __privateGet(this, _selection).value;
   const selectedVisible = matches.some((match) => match.atomicNumber === selected);
   const rows = matches.map((match) => {
@@ -3576,7 +10394,7 @@ renderList_fn = function(t5, language, matches, details) {
   });
   return x2`
 			<div class="table-pane">
-				<ul class="list" aria-label=${t5.gridLabel}>
+				<ul class="list" aria-label=${t7.gridLabel}>
 					${selectedVisible ? null : x2`<li class="list-details">${details}</li>`}
 					${rows}
 				</ul>
@@ -3596,7 +10414,7 @@ renderList_fn = function(t5, language, matches, details) {
  * @param element - Selected element, or `null` for the empty card.
  * @returns The print overview.
  */
-renderPrintOverview_fn = function(t5, language, element) {
+renderPrintOverview_fn = function(t7, language, element) {
   const groupLabels = Array.from({ length: GRID.columns }, (_3, index) => x2`
 			<div class="print-group" style="--pt-row:1;--pt-column:${index + 2}">${index + 1}</div>
 		`);
@@ -3632,7 +10450,7 @@ renderPrintOverview_fn = function(t5, language, element) {
   const rows = element ? detailRows(element, language) : [];
   return x2`
 			<div class="print-overview" aria-hidden="true">
-				<h2 class="print-title">${t5.widgetLabel}</h2>
+				<h2 class="print-title">${t7.widgetLabel}</h2>
 				<div class="print-grid">
 					<div class="print-gutter" style="--pt-row:1;--pt-column:1"></div>
 					${groupLabels}
@@ -3652,8 +10470,8 @@ renderPrintOverview_fn = function(t5, language, element) {
 									</div>
 								`)}
 							</dl>
-							<p class="print-hint">${t5.detailsHint} ${conditionsText(language)}</p>
-						` : x2`<p class="print-hint">${t5.detailsEmpty}</p>`}
+							<p class="print-hint">${t7.detailsHint} ${conditionsText(language)}</p>
+						` : x2`<p class="print-hint">${t7.detailsEmpty}</p>`}
 				</div>
 			</div>
 		`;
@@ -3666,9 +10484,9 @@ renderPrintOverview_fn = function(t5, language, element) {
  * @param element - Selected element, or `null` for the empty card.
  * @returns The detail card.
  */
-renderDetails_fn = function(t5, language, element) {
+renderDetails_fn = function(t7, language, element) {
   if (!element) {
-    return x2`<div class="details"><p class="details-empty">${t5.detailsEmpty}</p></div>`;
+    return x2`<div class="details"><p class="details-empty">${t7.detailsEmpty}</p></div>`;
   }
   const rows = detailRows(element, language);
   const usage = sourceUsage(element, language);
@@ -3693,9 +10511,9 @@ renderDetails_fn = function(t5, language, element) {
 						</div>
 					`)}
 				</dl>
-				<p class="details-hint">${t5.detailsHint} ${conditionsText(language)}</p>
-				<sl-details class="sources" summary=${t5.sourcesLabel}>
-					<p class="details-hint">${t5.sourcesHint}</p>
+				<p class="details-hint">${t7.detailsHint} ${conditionsText(language)}</p>
+				<sl-details class="sources" summary=${t7.sourcesLabel}>
+					<p class="details-hint">${t7.sourcesHint}</p>
 					${usage.map((entry) => {
     const source = sourceOf(entry.sourceId);
     if (!source) return null;
@@ -3704,11 +10522,11 @@ renderDetails_fn = function(t5, language, element) {
 								<p class="source-title">${source.publisher} — ${source.title}</p>
 								<p class="source-line">${entry.fields.join(", ")}</p>
 								<p class="source-line">
-									${format(t5.sourceRelease, { release: source.release })} ·
-									${format(t5.sourceRetrieved, { retrieved: source.retrieved })}
+									${format(t7.sourceRelease, { release: source.release })} ·
+									${format(t7.sourceRetrieved, { retrieved: source.retrieved })}
 								</p>
 								<p class="source-line">
-									${format(t5.sourceLicense, { license: source.license })}
+									${format(t7.sourceLicense, { license: source.license })}
 								</p>
 								<a
 									class="source-link"
@@ -3727,6 +10545,29 @@ __decorateElement(_init2, 4, "initialElement", _initialElement_dec, _ChemLabPeri
 __decorateElement(_init2, 4, "view", _view_dec, _ChemLabPeriodicTable, _view);
 __decorateElement(_init2, 1, "clearInitialElement", _clearInitialElement_dec, _ChemLabPeriodicTable);
 _ChemLabPeriodicTable = __decorateElement(_init2, 0, "ChemLabPeriodicTable", _ChemLabPeriodicTable_decorators, _ChemLabPeriodicTable);
+/**
+ * Shoelace components used inside the shadow root.
+ *
+ * `LitElementWw` renders through a scoped custom element registry, so a tag
+ * that is missing here stays an unknown element: the toolbar would show the
+ * bare text of its buttons and options instead of the controls. The entries
+ * also keep the component modules in the bundle, because the imports are
+ * otherwise unused and get tree-shaken away. The list includes the elements
+ * the components use in their own templates, because a scoped registry does
+ * not inherit them from the global one.
+ */
+__publicField(_ChemLabPeriodicTable, "scopedElements", {
+  "sl-button": SlButton,
+  "sl-details": SlDetails,
+  "sl-icon": SlIcon,
+  "sl-icon-button": SlIconButton,
+  "sl-input": SlInput,
+  "sl-option": SlOption,
+  "sl-popup": SlPopup,
+  "sl-select": SlSelect,
+  "sl-spinner": SlSpinner,
+  "sl-tag": SlTag
+});
 __publicField(_ChemLabPeriodicTable, "optionGroups", {
   content: { label: { _: "Content", "de-DE": "Inhalt" }, collapsible: true, advanced: false },
   appearance: { label: { _: "Appearance", "de-DE": "Darstellung" }, collapsible: true, advanced: false }
@@ -3894,6 +10735,8 @@ export {
 @lit/reactive-element/decorators/query-assigned-nodes.js:
 lit-html/lit-html.js:
 lit-element/lit-element.js:
+lit-html/directive.js:
+lit-html/directives/unsafe-html.js:
   (**
    * @license
    * Copyright 2017 Google LLC
@@ -3918,6 +10761,23 @@ lit-html/is-server.js:
   (**
    * @license
    * Copyright 2022 Google LLC
+   * SPDX-License-Identifier: BSD-3-Clause
+   *)
+
+lit-html/directive-helpers.js:
+lit-html/static.js:
+lit-html/directives/live.js:
+  (**
+   * @license
+   * Copyright 2020 Google LLC
+   * SPDX-License-Identifier: BSD-3-Clause
+   *)
+
+lit-html/directives/class-map.js:
+lit-html/directives/if-defined.js:
+  (**
+   * @license
+   * Copyright 2018 Google LLC
    * SPDX-License-Identifier: BSD-3-Clause
    *)
 */

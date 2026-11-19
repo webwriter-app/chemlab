@@ -15,9 +15,14 @@ import { html, type PropertyValues } from "lit";
 
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
 import SlDetails from "@shoelace-style/shoelace/dist/components/details/details.component.js";
+import SlIcon from "@shoelace-style/shoelace/dist/components/icon/icon.component.js";
+import SlIconButton from "@shoelace-style/shoelace/dist/components/icon-button/icon-button.component.js";
 import SlInput from "@shoelace-style/shoelace/dist/components/input/input.component.js";
 import SlOption from "@shoelace-style/shoelace/dist/components/option/option.component.js";
+import SlPopup from "@shoelace-style/shoelace/dist/components/popup/popup.component.js";
 import SlSelect from "@shoelace-style/shoelace/dist/components/select/select.component.js";
+import SlSpinner from "@shoelace-style/shoelace/dist/components/spinner/spinner.component.js";
+import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js";
 import { setBasePath } from "@shoelace-style/shoelace/dist/utilities/base-path.js";
 setBasePath("@shoelace-style/shoelace/dist");
 import "@shoelace-style/shoelace/dist/themes/light.css";
@@ -101,6 +106,30 @@ const viewConverter = {
  */
 @customElement("webwriter-chemlab-periodic-table")
 export class ChemLabPeriodicTable extends LitElementWw {
+	/**
+	 * Shoelace components used inside the shadow root.
+	 *
+	 * `LitElementWw` renders through a scoped custom element registry, so a tag
+	 * that is missing here stays an unknown element: the toolbar would show the
+	 * bare text of its buttons and options instead of the controls. The entries
+	 * also keep the component modules in the bundle, because the imports are
+	 * otherwise unused and get tree-shaken away. The list includes the elements
+	 * the components use in their own templates, because a scoped registry does
+	 * not inherit them from the global one.
+	 */
+	static scopedElements = {
+		"sl-button": SlButton,
+		"sl-details": SlDetails,
+		"sl-icon": SlIcon,
+		"sl-icon-button": SlIconButton,
+		"sl-input": SlInput,
+		"sl-option": SlOption,
+		"sl-popup": SlPopup,
+		"sl-select": SlSelect,
+		"sl-spinner": SlSpinner,
+		"sl-tag": SlTag,
+	};
+
 	static optionGroups = {
 		content: { label: { _: "Content", "de-DE": "Inhalt" }, collapsible: true, advanced: false },
 		appearance: { label: { _: "Appearance", "de-DE": "Darstellung" }, collapsible: true, advanced: false },
