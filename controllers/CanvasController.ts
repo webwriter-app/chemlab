@@ -506,20 +506,21 @@ export class CanvasController implements ReactiveController {
 		const rect = this.selectionRectangle();
 		const pressed = this.marquee?.pressed;
 		this.marquee = undefined;
+		const single = this.host.selectedObjectSprite;
+		const selected = single ? [single] : this.selection;
 		if (!rect) {
-			if (!pressed) this.host.clearObjectSelection();
-			else if (event.type === "pointerup" && event.target === pressed && pressed.parent === this.world) {
-				const single = this.host.selectedObjectSprite;
-				const selected = single ? [single] : this.selection;
+			if (pressed && event.type === "pointerup" && event.target === pressed && pressed.parent === this.world) {
 				this.setGroupSelection(selected.includes(pressed)
 					? selected.filter(sprite => sprite !== pressed) : [...selected, pressed]);
 			}
 			return;
 		}
-		this.setGroupSelection(this.world.children.filter((sprite) => {
+		const boxed = this.world.children.filter((sprite) => {
 			const bounds = sprite.getBounds();
 			return bounds.minX <= rect.right && bounds.maxX >= rect.left && bounds.minY <= rect.bottom && bounds.maxY >= rect.top;
-		}));
+		});
+		if (boxed.length) this.setGroupSelection([...new Set([...selected, ...boxed])]);
+		else this.drawSelection();
 	}
 
 	private setGroupSelection(selected: PIXI.Container[]): void {
