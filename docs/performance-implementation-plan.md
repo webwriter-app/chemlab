@@ -1,6 +1,6 @@
 # ChemLab performance review and implementation plan
 
-Reviewed at `c10aefc` on `perf/echem-startup`. This plan covers the lab runtime, chemistry, charts, asset loading and resource lifetime. It builds on the completed SMILES batching and loading indicator. The periodic table notes refer to the separate committed `main` snapshot `c96819a`.
+Reviewed at `c10aefc` on `perf/echem-startup`. This plan covers the lab runtime, chemistry, charts, asset loading and resource lifetime. It builds on the completed SMILES batching and loading indicator. The periodic table notes cover the separate committed `main` snapshot `1e26f1a`, including the condition and discovery modes.
 
 ## Findings and priorities
 
@@ -11,7 +11,7 @@ Reviewed at `c10aefc` on `perf/echem-startup`. This plan covers the lab runtime,
 | 1 | Charts and long sessions | A data change can rejoin and copy the history of every visible chart. Trimming an axis repeats that work even when its data is unchanged. |
 | 2 | Palette and vessel inspector | The components drawer is rendered even when closed. The chemical catalog is deferred until first opened but keeps building/filtering its cards once initialized, including while hidden. A live inspector updates separately from the recorder. |
 | 2 | Cold startup and rendering resources | The lab JS asset is 9.36 MB raw, 1.82 MB when gzipped locally. All component textures are awaited before Pixi can mount. Detached widgets stop the ticker but retain the renderer and its event bindings. |
-| Profile first | General persistence and periodic table | Author writes can be reparsed by the widget's own observer. The periodic table repeats identical search work on some unrelated updates. The latter has 118 fixed records, so it has a smaller expected payoff. |
+| Profile first | General persistence and periodic table | Author writes can be reparsed by the widget's own observer. The periodic table now repeats matching, cell rendering and print preparation during its condition and discovery slider updates. Trace that interaction separately from ChemLab canvas work. |
 
 ### What was measured
 
@@ -97,7 +97,14 @@ Use counts as regression gates wherever possible. Establish timing goals from th
 
 ## 6. Periodic table follow-up after integration
 
-The table already builds localized tokens once per module and has its own entry. The built table JS at `c96819a` is 471 KB raw. Its render path repeats matching and builds a print overview on selection or layout updates. Cache matches by normalized query, language and family. If a trace shows meaningful DOM cost, reuse stable print structure or build print-specific content when WebWriter requests it, with a verified browser-export print path. Verify that the width observer reconnects after the same widget DOM node is removed and reattached. Keep this work separate from the echem branch until integration. Inspect the reviewed source with `git show c96819a:webwriter-chemlab-periodic-table.ts`.
+The table already builds localized search tokens once per module and ships its own widget entry. Its checked-in JS grew from **471 KB to 586 KB raw** between `c96819a` and `1e26f1a`. The new sliders call `requestUpdate()` on each valid slider input. The render rebuilds the match set, computes each grid cell's mode and label, and runs both screen and print detail rendering. The phase model uses direct arithmetic over 118 elements. Measure preparation and DOM cost separately before optimizing the model. The code references below use `git show 1e26f1a:<path>`.
+
+1. Profile temperature, pressure and discovery scrubbing in one table and in a worksheet with multiple tables and a running lab. Trace input events, top-level renders, `cellMode` calls, detail-row formatting and paint. Compare default view, a filtered view, and resizing within and across the table/list breakpoint. See `webwriter-chemlab-periodic-table.ts:495–517,832–872,1226–1248`.
+2. Keep the latest slider state immediately available and coalesce visual updates to one animation frame if the trace shows redundant per-frame renders. Flush the final input on gesture completion and preserve keyboard adjustments. Cache matches and the matching set by normalized query, language and family. Derive mode presentation only when the relevant conditions or year change. If the per-cell math shows up in profiles, compute the common pressure adjustment once per state, using the same model and threshold comparisons. See `periodic-table/phase.ts:171–200,289–310`.
+3. Keep stable per-element labels and print-grid markup separate from dynamic values. Reuse formatted detail rows for the selected element, locale and conditions across screen and print where the content matches. Keep print and exported HTML in sync with the last slider state. Defer the hidden sources dialog body until opening only if profiling shows meaningful preparation cost. See `webwriter-chemlab-periodic-table.ts:1050–1083,1173–1222`.
+4. Fix the resize observer lifecycle as a small, separate follow-up. It is created in `firstUpdated` and disconnected on removal, while `connectedCallback` currently only restores the language observer. Reattach it on connection and use CSS for widths that stay in the same resolved layout if testing confirms the width has no other JavaScript consumer. See `webwriter-chemlab-periodic-table.ts:306–328,369–376`.
+
+**Acceptance.** Slider motion leaves search results, selection and focus stable. Verify final temperature, pressure and year after pointer and keyboard input. Compare all cell states and selected details to the current boundary tests, including unknown values. Preserve print details, screen-reader labels and offline use. Verify that a moved or reinserted widget switches layouts at the breakpoint. Keep the table work separate from the lab optimization commits.
 
 ## Commit sequence
 
