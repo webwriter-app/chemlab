@@ -42,6 +42,12 @@ export interface AcidBaseSystem {
 	protonatedCharge: number;
 }
 
+type PreparedAcidBaseSystem = {
+	system: AcidBaseSystem;
+	constants: number[];
+	weights: number[];
+};
+
 /**
  * Static solver for aqueous acid–base equilibria.
  *
@@ -116,7 +122,7 @@ export abstract class AcidBase {
 	 * @private
 	 * @static
 	 * @param {number} H - trial proton concentration [H+]
-	 * @param {AcidBaseSystem[]} systems - all conjugate acid/base systems
+	 * @param {PreparedAcidBaseSystem[]} systems - conjugate systems and per-solve scratch arrays
 	 * @param {number} spectatorCharge - net charge of spectator ions (mol/L)
 	 * @param {number} Kw - ion product of water
 	 * @param {(H: number) => number} [extraCharge] - additional net charge
@@ -127,14 +133,24 @@ export abstract class AcidBase {
 	 */
 	private static chargeResidual(
 		H: number,
-		systems: AcidBaseSystem[],
+		systems: PreparedAcidBaseSystem[],
 		spectatorCharge: number,
 		Kw: number,
 		extraCharge?: (H: number) => number
 	): number {
 		let net: number = H - Kw / H + spectatorCharge;
-		for (const system of systems) {
-			net += AcidBase.systemCharge(system, H);
+		for (const { system, constants, weights } of systems) {
+			let sum = weights[0];
+			for (let i = 0; i < constants.length; i++) {
+				const weight = weights[i] * constants[i] / H;
+				weights[i + 1] = weight;
+				sum += weight;
+			}
+			let charge = 0;
+			for (let i = 0; i < weights.length; i++) {
+				charge += weights[i] / sum * (system.protonatedCharge - i);
+			}
+			net += system.totalC * charge;
 		}
 		if (extraCharge) net += extraCharge(H);
 		return net;
@@ -163,6 +179,10 @@ export abstract class AcidBase {
 		Kw: number = AcidBase.Kw,
 		extraCharge?: (H: number) => number
 	): number {
+		const prepared = systems.map(system => ({
+			system, constants: system.pKa.map(pKa => Math.pow(10, -pKa)),
+			weights: [1, ...system.pKa.map(() => 0)],
+		}));
 		// bracket the root on the pH scale; residual is positive at high [H+]
 		// (low pH) and negative at low [H+] (high pH)
 		let pHlow: number = -2; // [H+] = 100 mol/L, strongly acidic bound
@@ -172,7 +192,7 @@ export abstract class AcidBase {
 			const pHmid: number = (pHlow + pHhigh) / 2;
 			const residual: number = AcidBase.chargeResidual(
 				Math.pow(10, -pHmid),
-				systems,
+				prepared,
 				spectatorCharge,
 				Kw,
 				extraCharge

@@ -150121,7 +150121,7 @@ var AcidBase = class _AcidBase {
    * @private
    * @static
    * @param {number} H - trial proton concentration [H+]
-   * @param {AcidBaseSystem[]} systems - all conjugate acid/base systems
+   * @param {PreparedAcidBaseSystem[]} systems - conjugate systems and per-solve scratch arrays
    * @param {number} spectatorCharge - net charge of spectator ions (mol/L)
    * @param {number} Kw - ion product of water
    * @param {(H: number) => number} [extraCharge] - additional net charge
@@ -150132,8 +150132,18 @@ var AcidBase = class _AcidBase {
    */
   static chargeResidual(H3, systems4, spectatorCharge, Kw, extraCharge) {
     let net = H3 - Kw / H3 + spectatorCharge;
-    for (const system of systems4) {
-      net += _AcidBase.systemCharge(system, H3);
+    for (const { system, constants, weights } of systems4) {
+      let sum = weights[0];
+      for (let i12 = 0; i12 < constants.length; i12++) {
+        const weight = weights[i12] * constants[i12] / H3;
+        weights[i12 + 1] = weight;
+        sum += weight;
+      }
+      let charge = 0;
+      for (let i12 = 0; i12 < weights.length; i12++) {
+        charge += weights[i12] / sum * (system.protonatedCharge - i12);
+      }
+      net += system.totalC * charge;
     }
     if (extraCharge) net += extraCharge(H3);
     return net;
@@ -150156,13 +150166,18 @@ var AcidBase = class _AcidBase {
    * @returns {number} the proton concentration [H+] in mol/L
    */
   static solveProton(systems4, spectatorCharge, Kw = _AcidBase.Kw, extraCharge) {
+    const prepared = systems4.map((system) => ({
+      system,
+      constants: system.pKa.map((pKa) => Math.pow(10, -pKa)),
+      weights: [1, ...system.pKa.map(() => 0)]
+    }));
     let pHlow = -2;
     let pHhigh = 16;
     for (let i12 = 0; i12 < 100 && pHhigh - pHlow > 1e-12; i12++) {
       const pHmid = (pHlow + pHhigh) / 2;
       const residual = _AcidBase.chargeResidual(
         Math.pow(10, -pHmid),
-        systems4,
+        prepared,
         spectatorCharge,
         Kw,
         extraCharge
@@ -150208,17 +150223,21 @@ function complexEquilibrium(systems4, pin) {
   if ((!ligand || !metals.length) && !pin) return void 0;
   return (H3) => {
     const neutralFraction = ligand ? AcidBase.speciesFractions(ligand, H3)[ligand.protonatedCharge] ?? 0 : 0;
-    const states = metals.map((entry) => ({ ...entry, fraction: AcidBase.speciesFractions(entry.family, H3)[0] }));
+    const maxFree = pin?.maxFree(H3);
+    const states = metals.map((entry) => ({
+      ...entry,
+      fraction: AcidBase.speciesFractions(entry.family, H3)[0],
+      total: pin?.family === entry.family ? pin.total : entry.family.totalC,
+      cap: pin?.family === entry.family ? maxFree : Infinity
+    }));
     const unbound = /* @__PURE__ */ new Map();
     const complexes = [];
     const trial = (freePool, collect) => {
       const freeLigand = freePool * neutralFraction;
       let used = freePool;
-      for (const { family, fraction, formation } of states) {
+      for (const { family, fraction, formation, total, cap } of states) {
         const ratio = formation.beta * freeLigand ** formation.count;
-        const capped = pin?.family === family;
-        const total = capped ? pin.total : family.totalC;
-        const freeMetal = Math.min(total / (1 / fraction + ratio), capped ? pin.maxFree(H3) : Infinity);
+        const freeMetal = Math.min(total / (1 / fraction + ratio), cap);
         const bound = freeMetal * ratio;
         used += formation.count * bound;
         if (collect) {
@@ -150243,7 +150262,7 @@ function complexEquilibrium(systems4, pin) {
     }
     if (pin && !unbound.has(pin.family)) {
       const fraction = AcidBase.speciesFractions(pin.family, H3)[0];
-      unbound.set(pin.family, Math.min(pin.total, pin.maxFree(H3) / fraction));
+      unbound.set(pin.family, Math.min(pin.total, maxFree / fraction));
     }
     let chargeCorrection = 0;
     for (const [family, amount] of unbound) {
