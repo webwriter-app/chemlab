@@ -23,5 +23,5 @@
     // "noUnusedParameters": true,
     // "noFallthroughCasesInSwitch": true
   },
-  "include": ["media/svg.d.ts", "webwriter-chemlab.ts"]
+  "include": ["media/svg.d.ts", "webwriter-chemlab.ts", "webwriter-chemlab-periodic-table.ts"]
 }

@@ -153,6 +153,10 @@
             "source": "./webwriter-chemlab.ts",
             "default": "./dist/widgets/webwriter-chemlab.*"
         },
+        "./widgets/webwriter-chemlab-periodic-table.*": {
+            "source": "./webwriter-chemlab-periodic-table.ts",
+            "default": "./dist/widgets/webwriter-chemlab-periodic-table.*"
+        },
         "./snippets/Beispiel-Titration.html": "./snippets/Beispiel-Titration.html",
         "./snippets/Beispiel-Titrationstypen.html": "./snippets/Beispiel-Titrationstypen.html",
         "./snippets/Beispiel-Batterie.html": "./snippets/Beispiel-Batterie.html",
@@ -504,6 +508,13 @@
                 "ckb-Arab": "تاقیگەی کیمیا",
                 "af-ZA": "Chemielaboratorium",
                 "af-NA": "Chemielaboratorium"
+            }
+        },
+        "./widgets/webwriter-chemlab-periodic-table": {
+            "label": {
+                "_": "Periodic Table",
+                "en": "Periodic Table",
+                "de": "Periodensystem"
             }
         },
         "./snippets/Beispiel-Titration": {
