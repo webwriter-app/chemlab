@@ -153620,7 +153620,7 @@ function connectionPairs(entries) {
   const seen = /* @__PURE__ */ new Set();
   const pairs = [];
   entries.forEach((entry, index2) => {
-    if (entry.type === "cable" /* Cable */) return;
+    if (entry.type?.toLowerCase() === "cable" /* Cable */) return;
     for (const partner of entry.connections ?? []) {
       if (!Number.isInteger(partner) || partner < 0 || partner >= entries.length) continue;
       if (partner === index2) continue;
@@ -153655,7 +153655,7 @@ function restoreCables(entries, lookup, plug) {
   let skipped = 0;
   let missing = 0;
   for (const entry of entries) {
-    if (entry.type !== "cable" /* Cable */ || entry.id === void 0) continue;
+    if (entry.type?.toLowerCase() !== "cable" /* Cable */ || entry.id === void 0) continue;
     const cable = lookup(entry.id);
     if (!cable) {
       missing += 1;

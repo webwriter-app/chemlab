@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ComponentManager, EComponentType as Type, Simulation, StructureManager, connectDevices, type ElectricComponent } from "../chemlib";
+import { ComponentManager, EComponentType as Type, Simulation, StructureManager, connectDevices, connectionPairs, plugCable,
+	restoreCables, type ElectricComponent } from "../chemlib";
 import { chemicalCatalog } from "../data/chemicals";
 import { prepareDose } from "../data/measuredDose";
 import { loadMoleculeDefinition } from "../data/moleculeDefinition";
@@ -28,6 +29,28 @@ function cell() {
 	return [electrode("copper", "Cu", dose("Kupfer(II)-sulfatlösung")),
 		electrode("zinc", "Zn", dose("Zinksulfatlösung"))] as const;
 }
+
+test("both explicit current-limit leads restore with saved component casing", () => {
+	const source = ComponentManager.newElectricComponent(Type.Source, { nSourceVoltage: 2, nSourceCurrent: 0.2 });
+	source._polarity = 1;
+	const meter = ComponentManager.newElectricComponent(Type.Multimeter);
+	meter._meterMode = "current";
+	const first = ComponentManager.newElectricComponent(Type.Cable);
+	const second = ComponentManager.newElectricComponent(Type.Cable);
+	const components = [source, meter, first, second];
+	const entries = [
+		{ type: "Source", id: source._id },
+		{ type: "Multimeter", id: meter._id },
+		{ type: "Cable", id: first._id, connections: [0, 1] },
+		{ type: "cable", id: second._id, connections: [0, 1] },
+	];
+	assert.deepEqual(restoreCables(entries, id => components.find(device => device._id === id), plugCable),
+		{ plugged: 4, skipped: 0, missing: 0 });
+	assert.deepEqual(connectionPairs(entries), []);
+	for (const device of [source, meter]) assert.deepEqual(device._connections, [[first], [second]]);
+	Simulation.sCircuit(ComponentManager.connectedDevices(source));
+	assert.ok(Math.abs(meter._visibleCurrent - 0.2) < 1e-8);
+});
 
 test("separated Daniell cell blocks DC, including when an electrode is dry", () => {
 	const [copper, zinc] = cell();

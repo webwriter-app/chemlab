@@ -177,7 +177,7 @@ export function connectionPairs(entries: readonly ConnectionEntry[]): Array<[num
 	const seen = new Set<string>();
 	const pairs: Array<[number, number]> = [];
 	entries.forEach((entry, index) => {
-		if (entry.type === EComponentType.Cable) return;
+		if (entry.type?.toLowerCase() === EComponentType.Cable) return;
 		for (const partner of entry.connections ?? []) {
 			if (!Number.isInteger(partner) || partner < 0 || partner >= entries.length) continue;
 			if (partner === index) continue;
@@ -249,7 +249,7 @@ export function restoreCables<T>(
 	let skipped = 0;
 	let missing = 0;
 	for (const entry of entries) {
-		if (entry.type !== EComponentType.Cable || entry.id === undefined) continue;
+		if (entry.type?.toLowerCase() !== EComponentType.Cable || entry.id === undefined) continue;
 		const cable = lookup(entry.id);
 		if (!cable) {
 			missing += 1;
