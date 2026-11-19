@@ -187680,7 +187680,7 @@ function validRCSettings(value) {
   const { capacitance, seriesResistance, cutoff } = value;
   return Number.isFinite(capacitance) && capacitance > 0 && Number.isFinite(seriesResistance) && seriesResistance >= 0 && (cutoff === void 0 || Number.isFinite(cutoff) && cutoff > 0);
 }
-var _newSmilesDrawer_dec, _smilesDrawer100_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramDismissedOpen_dec, _diagramPickerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _canvasLoading_dec, _app_dec, _pix_canvas_dec, _dragObject_dec, _avComponentsSprites_dec, _showTitrationMarkers_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _statusStrip_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _statusStrip, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _showTitrationMarkers, _avComponentsSprites, _dragObject, _pix_canvas, _app, _canvasLoading, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _diagramPickerOpen, _diagramDismissedOpen, _teacherDrawerOpen, _teacherTab, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _RndName, _invComponents, _enablexAPI, _xAPIKey, _smilesDrawer100, _newSmilesDrawer;
+var _newSmilesDrawer_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramDismissedOpen_dec, _diagramPickerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _canvasLoading_dec, _app_dec, _pix_canvas_dec, _dragObject_dec, _avComponentsSprites_dec, _showTitrationMarkers_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _statusStrip_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _statusStrip, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _showTitrationMarkers, _avComponentsSprites, _dragObject, _pix_canvas, _app, _canvasLoading, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _diagramPickerOpen, _diagramDismissedOpen, _teacherDrawerOpen, _teacherTab, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _RndName, _invComponents, _enablexAPI, _xAPIKey, _newSmilesDrawer;
 _ChemLab_decorators = [t6("webwriter-chemlab")];
 var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [e8("#upper")], _statusStrip_dec = [e8("#statusStrip")], _contextMolInfo_dec = [e8("#contextMolInfo")], _objectSummary_dec = [e8("#contextInfoBox")], _groupSummary_dec = [e8("#groupSelectionInfo")], _contextMixInfo_dec = [e8("#contextMixInfo")], _openBtn_dec = [e8("#openComp")], _activateEComp_dec = [e8("#activateEComp")], _contextEchemInfo_dec = [e8("#contextEchemInfo")], _xAPICheck_dec = [e8("#xAPICheck")], _xAPIKeyInput_dec = [e8("#xAPIKeyInput")], _canvasArea_dec = [e8("#canvasArea")], _canvasZoom_dec = [e8("#canvasZoom")], _zoomLevel_dec = [e8("#zoomLevel", true)], _gridScale_dec = [e8("#gridScale", true)], _gridScaleValue_dec = [e8("#gridScaleValue", true)], _pHColors_dec = [n5({ attribute: false })], _dictionary_dec = [n5({ attribute: false })], _availableMolecules_dec = [n5({
   type: Array,
@@ -187711,14 +187711,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       return "false";
     }
   }
-})], _xAPIKey_dec = [n5({ type: String, reflect: true })], _smilesDrawer100_dec = [n5({ attribute: false })], _newSmilesDrawer_dec = [n5({ attribute: false }), n5({ type: Number, reflect: true })], _a2) {
-  /**
-   * Creates an instance of ChemLab.
-   *
-   * @constructor
-   */
+})], _xAPIKey_dec = [n5({ type: String, reflect: true })], _newSmilesDrawer_dec = [n5({ type: Number, reflect: true })], _a2) {
   constructor() {
-    super();
+    super(...arguments);
     __publicField(this, "options", _ChemLab.options);
     __publicField(this, "optionGroups", _ChemLab.optionGroups);
     __publicField(this, "message", localize(this, () => {
@@ -187839,10 +187834,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __privateAdd(this, _invComponents, __runInitializers(_init2, 212, this, [])), __runInitializers(_init2, 215, this);
     __privateAdd(this, _enablexAPI, __runInitializers(_init2, 216, this, false)), __runInitializers(_init2, 219, this);
     __privateAdd(this, _xAPIKey, __runInitializers(_init2, 220, this, "")), __runInitializers(_init2, 223, this);
-    __privateAdd(this, _smilesDrawer100, __runInitializers(_init2, 224, this, null)), __runInitializers(_init2, 227, this);
-    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 228, this, 1)), __runInitializers(_init2, 231, this);
-    console.log(import_smiles_drawer.default);
-    this.smilesDrawer100 = new import_smiles_drawer.default.SvgDrawer({ width: 100, height: 100, explicitHydrogens: true, compactDrawing: false, terminalCarbons: true });
+    /** Allocated on first use by the selected vessel's structure thumbnails. */
+    __publicField(this, "smilesDrawer100");
+    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 224, this, 1)), __runInitializers(_init2, 227, this);
   }
   get lang() {
     return effectiveLanguage(this);
@@ -189190,6 +189184,13 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     badge();
     if (this.newSmilesDrawer === 1) {
       try {
+        this.smilesDrawer100 ??= new import_smiles_drawer.default.SvgDrawer({
+          width: 100,
+          height: 100,
+          explicitHydrogens: true,
+          compactDrawing: false,
+          terminalCarbons: true
+        });
         import_smiles_drawer.default.parse(molecule2.smilesString, (tree) => {
           const svg = document2.createElementNS("http://www.w3.org/2000/svg", "svg");
           this.smilesDrawer100.draw(tree, svg, "light");
@@ -191386,7 +191387,6 @@ _RndName = new WeakMap();
 _invComponents = new WeakMap();
 _enablexAPI = new WeakMap();
 _xAPIKey = new WeakMap();
-_smilesDrawer100 = new WeakMap();
 _newSmilesDrawer = new WeakMap();
 __decorateElement(_init2, 4, "containerDiv", _containerDiv_dec, _ChemLab, _containerDiv);
 __decorateElement(_init2, 4, "statusStrip", _statusStrip_dec, _ChemLab, _statusStrip);
@@ -191442,7 +191442,6 @@ __decorateElement(_init2, 4, "RndName", _RndName_dec, _ChemLab, _RndName);
 __decorateElement(_init2, 4, "invComponents", _invComponents_dec, _ChemLab, _invComponents);
 __decorateElement(_init2, 4, "enablexAPI", _enablexAPI_dec, _ChemLab, _enablexAPI);
 __decorateElement(_init2, 4, "xAPIKey", _xAPIKey_dec, _ChemLab, _xAPIKey);
-__decorateElement(_init2, 4, "smilesDrawer100", _smilesDrawer100_dec, _ChemLab, _smilesDrawer100);
 __decorateElement(_init2, 4, "newSmilesDrawer", _newSmilesDrawer_dec, _ChemLab, _newSmilesDrawer);
 _ChemLab = __decorateElement(_init2, 0, "ChemLab", _ChemLab_decorators, _ChemLab);
 __publicField(_ChemLab, "properties", { lang: { attribute: false, noAccessor: true } });

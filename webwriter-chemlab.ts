@@ -556,39 +556,11 @@ export class ChemLab extends LitElementWw {
 	@property({ type: String, reflect: true })
 	private accessor xAPIKey: string =
 		"";
-	/**
-	 * SmilesDrawer instance to draw molecules in a 100x100 canvas
-	 *
-	 * @private
-	 * @type {SmilesDrawer}
-	 */
-	@property({attribute: false})
-	private accessor smilesDrawer100: SmilesDrawer = null
-	/**
-	 * SmilesDrawer instance to draw molecules in a 150x150 canvas
-	 *
-	 * @private
-	 * @type {SmilesDrawer}
-	 */
-	@property({attribute: false})
-	/**
-	 * wether to use the SmilesDrawer package
-	 *
-	 * @private
-	 * @type {number}
-	 */
-	@property({type: Number, reflect: true})
-	private accessor newSmilesDrawer: number = 1
-	/**
-	 * Creates an instance of ChemLab.
-	 *
-	 * @constructor
-	 */
-	constructor() {
-		super();
-		console.log(SmilesDrawer)
-		this.smilesDrawer100 = new SmilesDrawer.SvgDrawer({ width: 100, height: 100, explicitHydrogens: true, compactDrawing: false, terminalCarbons: true});
-	}
+	/** Allocated on first use by the selected vessel's structure thumbnails. */
+	private smilesDrawer100?: InstanceType<typeof SmilesDrawer.SvgDrawer>;
+
+	@property({ type: Number, reflect: true })
+	private accessor newSmilesDrawer: number = 1;
 
 	/**
 	 * early fix for webwriter focus issues
@@ -2080,6 +2052,9 @@ export class ChemLab extends LitElementWw {
 		badge();
 		if (this.newSmilesDrawer === 1) {
 			try {
+				this.smilesDrawer100 ??= new SmilesDrawer.SvgDrawer({
+					width: 100, height: 100, explicitHydrogens: true, compactDrawing: false, terminalCarbons: true,
+				});
 				SmilesDrawer.parse(molecule.smilesString, (tree) => {
 					const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 					this.smilesDrawer100.draw(tree, svg, "light");
