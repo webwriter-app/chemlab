@@ -3695,6 +3695,371 @@ var SlCard = class extends ShoelaceElement {
 };
 SlCard.styles = [component_styles_default, card_styles_default];
 
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.J7PLVEQM.js
+var details_styles_default = i`
+  :host {
+    display: block;
+  }
+
+  .details {
+    border: solid 1px var(--sl-color-neutral-200);
+    border-radius: var(--sl-border-radius-medium);
+    background-color: var(--sl-color-neutral-0);
+    overflow-anchor: none;
+  }
+
+  .details--disabled {
+    opacity: 0.5;
+  }
+
+  .details__header {
+    display: flex;
+    align-items: center;
+    border-radius: inherit;
+    padding: var(--sl-spacing-medium);
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+  }
+
+  .details__header::-webkit-details-marker {
+    display: none;
+  }
+
+  .details__header:focus {
+    outline: none;
+  }
+
+  .details__header:focus-visible {
+    outline: var(--sl-focus-ring);
+    outline-offset: calc(1px + var(--sl-focus-ring-offset));
+  }
+
+  .details--disabled .details__header {
+    cursor: not-allowed;
+  }
+
+  .details--disabled .details__header:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .details__summary {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+  }
+
+  .details__summary-icon {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    transition: var(--sl-transition-medium) rotate ease;
+  }
+
+  .details--open .details__summary-icon {
+    rotate: 90deg;
+  }
+
+  .details--open.details--rtl .details__summary-icon {
+    rotate: -90deg;
+  }
+
+  .details--open slot[name='expand-icon'],
+  .details:not(.details--open) slot[name='collapse-icon'] {
+    display: none;
+  }
+
+  .details__body {
+    overflow: hidden;
+  }
+
+  .details__content {
+    display: block;
+    padding: var(--sl-spacing-medium);
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.K7JGTRV7.js
+var defaultAnimationRegistry = /* @__PURE__ */ new Map();
+var customAnimationRegistry = /* @__PURE__ */ new WeakMap();
+function ensureAnimation(animation) {
+  return animation != null ? animation : { keyframes: [], options: { duration: 0 } };
+}
+function getLogicalAnimation(animation, dir) {
+  if (dir.toLowerCase() === "rtl") {
+    return {
+      keyframes: animation.rtlKeyframes || animation.keyframes,
+      options: animation.options
+    };
+  }
+  return animation;
+}
+function setDefaultAnimation(animationName, animation) {
+  defaultAnimationRegistry.set(animationName, ensureAnimation(animation));
+}
+function getAnimation(el, animationName, options) {
+  const customAnimation = customAnimationRegistry.get(el);
+  if (customAnimation == null ? void 0 : customAnimation[animationName]) {
+    return getLogicalAnimation(customAnimation[animationName], options.dir);
+  }
+  const defaultAnimation = defaultAnimationRegistry.get(animationName);
+  if (defaultAnimation) {
+    return getLogicalAnimation(defaultAnimation, options.dir);
+  }
+  return {
+    keyframes: [],
+    options: { duration: 0 }
+  };
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.B4BZKR24.js
+function waitForEvent(el, eventName) {
+  return new Promise((resolve) => {
+    function done(event) {
+      if (event.target === el) {
+        el.removeEventListener(eventName, done);
+        resolve();
+      }
+    }
+    el.addEventListener(eventName, done);
+  });
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AJ3ENQ5C.js
+function animateTo(el, keyframes, options) {
+  return new Promise((resolve) => {
+    if ((options == null ? void 0 : options.duration) === Infinity) {
+      throw new Error("Promise-based animations must be finite.");
+    }
+    const animation = el.animate(keyframes, __spreadProps(__spreadValues({}, options), {
+      duration: prefersReducedMotion() ? 0 : options.duration
+    }));
+    animation.addEventListener("cancel", resolve, { once: true });
+    animation.addEventListener("finish", resolve, { once: true });
+  });
+}
+function parseDuration(delay) {
+  delay = delay.toString().toLowerCase();
+  if (delay.indexOf("ms") > -1) {
+    return parseFloat(delay);
+  }
+  if (delay.indexOf("s") > -1) {
+    return parseFloat(delay) * 1e3;
+  }
+  return parseFloat(delay);
+}
+function prefersReducedMotion() {
+  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+  return query.matches;
+}
+function stopAnimations(el) {
+  return Promise.all(
+    el.getAnimations().map((animation) => {
+      return new Promise((resolve) => {
+        animation.cancel();
+        requestAnimationFrame(resolve);
+      });
+    })
+  );
+}
+function shimKeyframesHeightAuto(keyframes, calculatedHeight) {
+  return keyframes.map((keyframe) => __spreadProps(__spreadValues({}, keyframe), {
+    height: keyframe.height === "auto" ? `${calculatedHeight}px` : keyframe.height
+  }));
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.2SZ4G2LK.js
+var SlDetails = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.localize = new LocalizeController2(this);
+    this.open = false;
+    this.disabled = false;
+  }
+  firstUpdated() {
+    this.body.style.height = this.open ? "auto" : "0";
+    if (this.open) {
+      this.details.open = true;
+    }
+    this.detailsObserver = new MutationObserver((changes) => {
+      for (const change of changes) {
+        if (change.type === "attributes" && change.attributeName === "open") {
+          if (this.details.open) {
+            this.show();
+          } else {
+            this.hide();
+          }
+        }
+      }
+    });
+    this.detailsObserver.observe(this.details, { attributes: true });
+  }
+  disconnectedCallback() {
+    var _a3;
+    super.disconnectedCallback();
+    (_a3 = this.detailsObserver) == null ? void 0 : _a3.disconnect();
+  }
+  handleSummaryClick(event) {
+    event.preventDefault();
+    if (!this.disabled) {
+      if (this.open) {
+        this.hide();
+      } else {
+        this.show();
+      }
+      this.header.focus();
+    }
+  }
+  handleSummaryKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (this.open) {
+        this.hide();
+      } else {
+        this.show();
+      }
+    }
+    if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+      event.preventDefault();
+      this.hide();
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+      event.preventDefault();
+      this.show();
+    }
+  }
+  async handleOpenChange() {
+    if (this.open) {
+      this.details.open = true;
+      const slShow = this.emit("sl-show", { cancelable: true });
+      if (slShow.defaultPrevented) {
+        this.open = false;
+        this.details.open = false;
+        return;
+      }
+      await stopAnimations(this.body);
+      const { keyframes, options } = getAnimation(this, "details.show", { dir: this.localize.dir() });
+      await animateTo(this.body, shimKeyframesHeightAuto(keyframes, this.body.scrollHeight), options);
+      this.body.style.height = "auto";
+      this.emit("sl-after-show");
+    } else {
+      const slHide = this.emit("sl-hide", { cancelable: true });
+      if (slHide.defaultPrevented) {
+        this.details.open = true;
+        this.open = true;
+        return;
+      }
+      await stopAnimations(this.body);
+      const { keyframes, options } = getAnimation(this, "details.hide", { dir: this.localize.dir() });
+      await animateTo(this.body, shimKeyframesHeightAuto(keyframes, this.body.scrollHeight), options);
+      this.body.style.height = "auto";
+      this.details.open = false;
+      this.emit("sl-after-hide");
+    }
+  }
+  /** Shows the details. */
+  async show() {
+    if (this.open || this.disabled) {
+      return void 0;
+    }
+    this.open = true;
+    return waitForEvent(this, "sl-after-show");
+  }
+  /** Hides the details */
+  async hide() {
+    if (!this.open || this.disabled) {
+      return void 0;
+    }
+    this.open = false;
+    return waitForEvent(this, "sl-after-hide");
+  }
+  render() {
+    const isRtl = this.localize.dir() === "rtl";
+    return x2`
+      <details
+        part="base"
+        class=${e9({
+      details: true,
+      "details--open": this.open,
+      "details--disabled": this.disabled,
+      "details--rtl": isRtl
+    })}
+      >
+        <summary
+          part="header"
+          id="header"
+          class="details__header"
+          role="button"
+          aria-expanded=${this.open ? "true" : "false"}
+          aria-controls="content"
+          aria-disabled=${this.disabled ? "true" : "false"}
+          tabindex=${this.disabled ? "-1" : "0"}
+          @click=${this.handleSummaryClick}
+          @keydown=${this.handleSummaryKeyDown}
+        >
+          <slot name="summary" part="summary" class="details__summary">${this.summary}</slot>
+
+          <span part="summary-icon" class="details__summary-icon">
+            <slot name="expand-icon">
+              <sl-icon library="system" name=${isRtl ? "chevron-left" : "chevron-right"}></sl-icon>
+            </slot>
+            <slot name="collapse-icon">
+              <sl-icon library="system" name=${isRtl ? "chevron-left" : "chevron-right"}></sl-icon>
+            </slot>
+          </span>
+        </summary>
+
+        <div class="details__body" role="region" aria-labelledby="header">
+          <slot part="content" id="content" class="details__content"></slot>
+        </div>
+      </details>
+    `;
+  }
+};
+SlDetails.styles = [component_styles_default, details_styles_default];
+SlDetails.dependencies = {
+  "sl-icon": SlIcon
+};
+__decorateClass([
+  e6(".details")
+], SlDetails.prototype, "details", 2);
+__decorateClass([
+  e6(".details__header")
+], SlDetails.prototype, "header", 2);
+__decorateClass([
+  e6(".details__body")
+], SlDetails.prototype, "body", 2);
+__decorateClass([
+  e6(".details__expand-icon-slot")
+], SlDetails.prototype, "expandIconSlot", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlDetails.prototype, "open", 2);
+__decorateClass([
+  n7()
+], SlDetails.prototype, "summary", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlDetails.prototype, "disabled", 2);
+__decorateClass([
+  watch("open", { waitUntilFirstUpdate: true })
+], SlDetails.prototype, "handleOpenChange", 1);
+setDefaultAnimation("details.show", {
+  keyframes: [
+    { height: "0", opacity: "0" },
+    { height: "auto", opacity: "1" }
+  ],
+  options: { duration: 250, easing: "linear" }
+});
+setDefaultAnimation("details.hide", {
+  keyframes: [
+    { height: "auto", opacity: "1" },
+    { height: "0", opacity: "0" }
+  ],
+  options: { duration: 250, easing: "linear" }
+});
+
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.LXDTFLWU.js
 var computedStyleMap = /* @__PURE__ */ new WeakMap();
 function getCachedComputedStyle(el) {
@@ -4273,90 +4638,6 @@ __decorateClass([
 __decorateClass([
   n7({ type: Boolean, reflect: true })
 ], SlIconButton.prototype, "disabled", 2);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.K7JGTRV7.js
-var defaultAnimationRegistry = /* @__PURE__ */ new Map();
-var customAnimationRegistry = /* @__PURE__ */ new WeakMap();
-function ensureAnimation(animation) {
-  return animation != null ? animation : { keyframes: [], options: { duration: 0 } };
-}
-function getLogicalAnimation(animation, dir) {
-  if (dir.toLowerCase() === "rtl") {
-    return {
-      keyframes: animation.rtlKeyframes || animation.keyframes,
-      options: animation.options
-    };
-  }
-  return animation;
-}
-function setDefaultAnimation(animationName, animation) {
-  defaultAnimationRegistry.set(animationName, ensureAnimation(animation));
-}
-function getAnimation(el, animationName, options) {
-  const customAnimation = customAnimationRegistry.get(el);
-  if (customAnimation == null ? void 0 : customAnimation[animationName]) {
-    return getLogicalAnimation(customAnimation[animationName], options.dir);
-  }
-  const defaultAnimation = defaultAnimationRegistry.get(animationName);
-  if (defaultAnimation) {
-    return getLogicalAnimation(defaultAnimation, options.dir);
-  }
-  return {
-    keyframes: [],
-    options: { duration: 0 }
-  };
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.B4BZKR24.js
-function waitForEvent(el, eventName) {
-  return new Promise((resolve) => {
-    function done(event) {
-      if (event.target === el) {
-        el.removeEventListener(eventName, done);
-        resolve();
-      }
-    }
-    el.addEventListener(eventName, done);
-  });
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AJ3ENQ5C.js
-function animateTo(el, keyframes, options) {
-  return new Promise((resolve) => {
-    if ((options == null ? void 0 : options.duration) === Infinity) {
-      throw new Error("Promise-based animations must be finite.");
-    }
-    const animation = el.animate(keyframes, __spreadProps(__spreadValues({}, options), {
-      duration: prefersReducedMotion() ? 0 : options.duration
-    }));
-    animation.addEventListener("cancel", resolve, { once: true });
-    animation.addEventListener("finish", resolve, { once: true });
-  });
-}
-function parseDuration(delay) {
-  delay = delay.toString().toLowerCase();
-  if (delay.indexOf("ms") > -1) {
-    return parseFloat(delay);
-  }
-  if (delay.indexOf("s") > -1) {
-    return parseFloat(delay) * 1e3;
-  }
-  return parseFloat(delay);
-}
-function prefersReducedMotion() {
-  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-  return query.matches;
-}
-function stopAnimations(el) {
-  return Promise.all(
-    el.getAnimations().map((animation) => {
-      return new Promise((resolve) => {
-        animation.cancel();
-        requestAnimationFrame(resolve);
-      });
-    })
-  );
-}
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.6SBTOKGT.js
 var SlDialog = class extends ShoelaceElement {
@@ -10516,6 +10797,7 @@ var EN = {
   sectionProperties: "Properties",
   sectionHistory: "History",
   sectionStructure: "Structure",
+  sectionTemperatures: "Temperatures",
   qualifierHint: "Predicted value, not measured",
   groupUnassigned: "Not assigned",
   groupConventionDependent: "Depends on the convention",
@@ -10596,6 +10878,7 @@ var DE = {
   sectionProperties: "Eigenschaften",
   sectionHistory: "Geschichte",
   sectionStructure: "Aufbau",
+  sectionTemperatures: "Temperaturen",
   qualifierHint: "Vorhergesagter Wert, nicht gemessen",
   groupUnassigned: "Nicht zugeordnet",
   groupConventionDependent: "H\xE4ngt von der Konvention ab",
@@ -10793,12 +11076,14 @@ function detailRows(element, language, temperatureK = CONDITIONS.temperatureK) {
     key: "melting",
     label: t8.fieldMelting,
     section: "properties",
+    secondary: true,
     ...temperatureRow(element.melting, language, t8)
   });
   rows.push({
     key: "boiling",
     label: t8.fieldBoiling,
     section: "properties",
+    secondary: true,
     ...temperatureRow(element.boiling, language, t8)
   });
   if (element.sublimation.status !== "unavailable") {
@@ -10806,6 +11091,7 @@ function detailRows(element, language, temperatureK = CONDITIONS.temperatureK) {
       key: "sublimation",
       label: t8.fieldSublimation,
       section: "properties",
+      secondary: true,
       ...temperatureRow(element.sublimation, language, t8)
     });
   }
@@ -10905,7 +11191,7 @@ var periodicTableStyles = i`
 		   them, so its height follows the cell height instead of its content. */
 		--pt-details-height: calc(3 * var(--pt-cell-height) + 4px);
 		--pt-details-border: 1px;
-		--pt-cell-bar: 0.4rem;
+		--pt-cell-bar: 0.22rem;
 		--pt-gutter: 1.5rem;
 		--pt-series-gap: 0.5rem;
 		--pt-radius: 4px;
@@ -10915,6 +11201,11 @@ var periodicTableStyles = i`
 		--pt-ink: var(--sl-color-neutral-900, #1c1c1e);
 		--pt-ink-soft: var(--sl-color-neutral-700, #3f3f46);
 		--pt-accent: var(--sl-color-primary-600, #0b6bcb);
+		/* Surface and shadow of the lab widget's canvas controls and object info
+		   panel, so the toolbar buttons and the detail card speak the same
+		   visual language as the rest of ChemLab. */
+		--pt-control-shadow: 0 1px 3px rgb(0 0 0 / 14%);
+		--pt-panel-shadow: 0 2px 8px rgb(0 0 0 / 9%);
 
 		--pt-alkali-metal: #f2a3a3;
 		--pt-alkaline-earth-metal: #f7c99a;
@@ -10979,17 +11270,18 @@ var periodicTableStyles = i`
 		--pt-cell-fill: var(--pt-unknown);
 	}
 
+	/* One lightly shaded bar carries search, family filter, result count and the
+	   icon buttons, so the controls read as a single unit instead of scattered
+	   rows. */
 	.toolbar {
 		display: flex;
 		flex-wrap: wrap;
-		align-items: end;
-		gap: 0.5rem;
-	}
-
-	/* The info button sits at the top of the toolbar, while the fields keep their
-	   labels above them and therefore align to the bottom. */
-	.toolbar .info-button {
-		align-self: start;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.4rem 0.45rem;
+		border: 1px solid var(--pt-border);
+		border-radius: 8px;
+		background: var(--pt-inset);
 	}
 
 	.toolbar .search {
@@ -11014,16 +11306,51 @@ var periodicTableStyles = i`
 		white-space: nowrap;
 	}
 
+	/* The result count rides in the toolbar as a pill badge; the full sentence
+	   stays available to screen readers through the hidden live region. */
+	.count-badge {
+		flex: 0 0 auto;
+	}
+
+	.count-badge::part(base) {
+		font-variant-numeric: tabular-nums;
+	}
+
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* Layout switch and reset are compact icon buttons with a tooltip and an
+	   accessible label, styled like the canvas controls of the lab widget: a
+	   light surface with a small shadow on the shaded bar. */
+	.toolbar-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		margin-inline-start: auto;
+	}
+
 	.views {
 		display: flex;
 		gap: 0.25rem;
 	}
 
-	.result-count {
-		min-height: 1rem;
-		margin: 0;
-		font-size: 0.8rem;
-		color: var(--pt-ink-soft);
+	.toolbar-actions sl-button::part(base) {
+		background: var(--pt-surface);
+		box-shadow: var(--pt-control-shadow);
+	}
+
+	.toolbar-actions sl-button::part(label) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.table-pane {
@@ -11086,11 +11413,13 @@ var periodicTableStyles = i`
 		text-align: right;
 	}
 
-	/* The cell copies the element cards of the lab widget: a white card with a
-	   thin border in the family colour, the symbol in the middle and a bar of the
-	   same colour along the bottom edge. */
+	/* The cell keeps the element cards of the lab widget, but quieter: a neutral
+	   border and one thin family-coloured edge along the bottom, so the family is
+	   named once instead of framing the tile twice. The cell is its own container,
+	   so the name appears exactly where it fits. */
 	.cell {
 		position: relative;
+		container-type: inline-size;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -11099,7 +11428,7 @@ var periodicTableStyles = i`
 		min-height: var(--pt-cell-height);
 		padding: 2px 1px calc(var(--pt-cell-bar) + 2px);
 		overflow: hidden;
-		border: 1.5px solid var(--pt-cell-fill, var(--pt-border));
+		border: 1px solid var(--pt-border);
 		border-radius: var(--pt-radius);
 		background: var(--pt-surface);
 		color: var(--pt-ink);
@@ -11118,7 +11447,7 @@ var periodicTableStyles = i`
 		background: var(--pt-cell-fill, var(--pt-border));
 	}
 
-	/* A mode fills the card with the state colour and keeps the family bar, so
+	/* A mode fills the card with the state colour and keeps the family edge, so
 	   both readings stay visible at once. */
 	.cell.state-solid {
 		background: var(--pt-state-solid);
@@ -11137,6 +11466,18 @@ var periodicTableStyles = i`
 		opacity: 0.35;
 	}
 
+	/* The atomic number sits in a consistent corner; the discovery year takes the
+	   opposite one. */
+	.cell-number {
+		position: absolute;
+		inset-block-start: 1px;
+		inset-inline-start: 3px;
+		font-size: 0.5rem;
+		color: var(--pt-ink-soft);
+		font-variant-numeric: tabular-nums;
+		pointer-events: none;
+	}
+
 	.cell-year {
 		position: absolute;
 		inset-block-start: 1px;
@@ -11148,7 +11489,7 @@ var periodicTableStyles = i`
 	}
 
 	.cell:hover {
-		filter: brightness(0.96);
+		border-color: color-mix(in srgb, var(--pt-ink) 35%, var(--pt-border));
 	}
 
 	.cell[aria-disabled="true"] {
@@ -11157,11 +11498,13 @@ var periodicTableStyles = i`
 	}
 
 	.cell[aria-disabled="true"]:hover {
-		filter: none;
+		border-color: var(--pt-border);
 	}
 
+	/* Selection stays ChemLab blue; keyboard focus gets its own dark outer ring,
+	   so the two states never look alike. */
 	.cell:focus-visible {
-		outline: 2px solid var(--pt-accent);
+		outline: 2px solid var(--pt-ink);
 		outline-offset: 1px;
 	}
 
@@ -11170,27 +11513,25 @@ var periodicTableStyles = i`
 		box-shadow: inset 0 0 0 2px var(--pt-accent);
 	}
 
-	.cell-number {
-		font-size: 0.55rem;
-		color: var(--pt-ink-soft);
-	}
-
 	.cell-symbol {
-		font-size: 0.85rem;
-		font-weight: 600;
+		font-size: 1rem;
+		font-weight: 700;
 	}
 
 	.cell-name {
 		display: none;
 		max-width: 100%;
 		overflow: hidden;
-		font-size: 0.5rem;
+		font-size: 0.55rem;
 		color: var(--pt-ink-soft);
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
-	@container (min-width: 1000px) {
+	/* The name shows where the cell itself is wide enough to hold it. The query
+	   measures the content box, so the threshold sits below the 47 px a cell
+	   reaches at a 1000 px host. */
+	@container (min-width: 2.75rem) {
 		.cell-name {
 			display: block;
 		}
@@ -11228,32 +11569,43 @@ var periodicTableStyles = i`
 		list-style: none;
 	}
 
-	.legend-item {
+	/* Family names and the temperature key share one treatment: narrow
+	   rectangular tags with a swatch, so neither legend reads as a competing
+	   control. The family tags stay clickable and mirror the dropdown; the active
+	   filter gets a clear selected state in ChemLab blue. */
+	.legend-item,
+	.state-legend li {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
-		padding: 0.15rem 0.45rem;
+		padding: 0.12rem 0.4rem;
 		border: 1px solid var(--pt-border);
-		border-radius: 999px;
+		border-radius: 3px;
 		background: var(--pt-surface);
 		color: var(--pt-ink-soft);
-		font: inherit;
 		font-size: 0.7rem;
+	}
+
+	.legend-item {
+		font: inherit;
 		cursor: pointer;
 	}
 
 	.legend-item[aria-pressed="true"] {
 		border-color: var(--pt-accent);
-		color: var(--pt-ink);
+		background: color-mix(in srgb, var(--pt-accent) 10%, var(--pt-surface));
 		box-shadow: inset 0 0 0 1px var(--pt-accent);
+		color: var(--pt-ink);
 	}
 
-	.legend-item:focus-visible {
-		outline: 2px solid var(--pt-accent);
+	.legend-item:focus-visible,
+	.list-row:focus-visible {
+		outline: 2px solid var(--pt-ink);
 		outline-offset: 1px;
 	}
 
-	.legend-swatch {
+	.legend-swatch,
+	.state-swatch {
 		width: 0.7rem;
 		height: 0.7rem;
 		border: 1px solid color-mix(in srgb, var(--pt-ink) 15%, transparent);
@@ -11299,37 +11651,22 @@ var periodicTableStyles = i`
 		white-space: nowrap;
 	}
 
+	/* The current slider value rides beside the slider as a small tag. */
 	.mode-value {
 		flex: 0 0 auto;
-		min-width: 5.5rem;
-		font-size: 0.75rem;
-		color: var(--pt-ink-soft);
+	}
+
+	.mode-value::part(base) {
 		font-variant-numeric: tabular-nums;
-		text-align: right;
 	}
 
 	.state-legend {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.25rem 0.6rem;
+		gap: 0.25rem 0.4rem;
 		margin: 0;
 		padding: 0;
 		list-style: none;
-		font-size: 0.7rem;
-		color: var(--pt-ink-soft);
-	}
-
-	.state-legend li {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.3rem;
-	}
-
-	.state-swatch {
-		width: 0.7rem;
-		height: 0.7rem;
-		border: 1px solid color-mix(in srgb, var(--pt-ink) 15%, transparent);
-		border-radius: 2px;
 	}
 
 	.state-swatch.state-solid {
@@ -11374,14 +11711,13 @@ var periodicTableStyles = i`
 		background: var(--pt-inset);
 	}
 
-	.list-row:focus-visible {
-		outline: 2px solid var(--pt-accent);
-		outline-offset: 1px;
-	}
-
 	.list-row[aria-pressed="true"] {
 		border-color: var(--pt-accent);
 		box-shadow: inset 0 0 0 1px var(--pt-accent);
+	}
+
+	.list-row.is-dimmed {
+		opacity: 0.45;
 	}
 
 	.list-number {
@@ -11414,28 +11750,45 @@ var periodicTableStyles = i`
 		color: var(--pt-ink-soft);
 	}
 
+	/* The mode rides along at the end of the row: the state as a coloured tag,
+	   the discovery year as a quiet one, so the narrow list keeps the mode's
+	   meaning. */
+	.list-state::part(base),
+	.list-year::part(base) {
+		height: auto;
+		padding: 0 0.3rem;
+		font-size: 0.6rem;
+		line-height: 1.35;
+	}
+
+	.list-year::part(base) {
+		font-variant-numeric: tabular-nums;
+	}
+
 	.list-details {
 		margin: 0.25rem 0 0.5rem;
 	}
 
-	/* The detail card is a Shoelace card, so it shares the surface, the border and
-	   the header rhythm of the rest of the widget. It fills the free block of the
-	   table, so its height is pinned to the three rows it spans: a card that grows
-	   with its content would stretch those rows and leave the periods with uneven
-	   cells. A long element scrolls inside the body instead. */
+	/* The detail card is a Shoelace card with the same white surface, subtle
+	   outline and soft shadow as the object info panel of the lab widget. It
+	   fills the free block of the table, so its height is pinned to the three rows
+	   it spans: a card that grows with its content would stretch those rows and
+	   leave the periods with uneven cells. A long element scrolls inside the body
+	   instead. */
 	.details-card {
 		height: var(--pt-details-height);
 		min-width: 0;
 		--padding: 0;
-		--border-color: var(--sl-color-neutral-300, #d4d4d8);
+		--border-color: var(--sl-color-neutral-200, #e4e4e7);
 		--border-width: var(--pt-details-border);
-		--border-radius: 6px;
+		--border-radius: 5px;
 		--sl-panel-background-color: var(--pt-surface);
 	}
 
 	.details-card::part(base) {
 		height: 100%;
 		overflow: hidden;
+		box-shadow: var(--pt-panel-shadow);
 	}
 
 	/* The header carries the identity of the element in one row: the coloured
@@ -11443,7 +11796,7 @@ var periodicTableStyles = i`
 	   state values refer to. It sits on the inset surface, so the card reads as a
 	   titled panel instead of a plain box. */
 	.details-card::part(header) {
-		padding: 3px 6px;
+		padding: 4px 8px;
 		border-bottom: 1px solid var(--pt-border);
 		background: color-mix(in srgb, var(--pt-cell-fill, var(--pt-inset)) 16%, var(--pt-surface));
 	}
@@ -11451,7 +11804,7 @@ var periodicTableStyles = i`
 	.details-head {
 		display: flex;
 		align-items: center;
-		gap: 0.35rem;
+		gap: 0.4rem;
 		min-width: 0;
 	}
 
@@ -11459,21 +11812,21 @@ var periodicTableStyles = i`
 		display: grid;
 		flex: 0 0 auto;
 		place-items: center;
-		width: 1.5rem;
-		height: 1.5rem;
+		width: 1.6rem;
+		height: 1.6rem;
 		border: 1px solid color-mix(in srgb, var(--pt-ink) 12%, transparent);
 		border-radius: var(--pt-radius);
 		background: var(--pt-cell-fill, var(--pt-surface));
-		font-size: 0.8rem;
-		font-weight: 600;
+		font-size: 0.85rem;
+		font-weight: 700;
 		line-height: 1;
 	}
 
 	.details-title {
 		margin: 0;
-		font-size: 0.9rem;
+		font-size: 1rem;
 		font-weight: 600;
-		line-height: 1.1;
+		line-height: 1.15;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -11515,14 +11868,14 @@ var periodicTableStyles = i`
 		display: flex;
 		flex: 1;
 		min-height: 0;
-		padding: 4px 6px;
+		padding: 6px 8px;
 		overflow: auto;
 	}
 
 	.details-sections {
 		display: flex;
 		align-items: stretch;
-		gap: 0.5rem;
+		gap: 0.6rem;
 		width: 100%;
 		min-width: 0;
 	}
@@ -11531,7 +11884,7 @@ var periodicTableStyles = i`
 		display: flex;
 		flex: 1 1 0;
 		flex-direction: column;
-		gap: 0.15rem;
+		gap: 0.2rem;
 		min-width: 0;
 	}
 
@@ -11552,11 +11905,11 @@ var periodicTableStyles = i`
 	}
 
 	.details-heading {
-		margin: 0 0 1px;
-		font-size: 0.55rem;
+		margin: 0 0 2px;
+		font-size: 0.62rem;
 		font-weight: 600;
-		line-height: 1.2;
-		letter-spacing: 0.06em;
+		line-height: 1.25;
+		letter-spacing: 0.05em;
 		text-transform: uppercase;
 		color: var(--pt-ink-soft);
 	}
@@ -11574,8 +11927,8 @@ var periodicTableStyles = i`
 		grid-template-columns: max-content minmax(0, 1fr);
 		gap: 0 0.3rem;
 		min-width: 0;
-		font-size: 0.7rem;
-		line-height: 1.2;
+		font-size: 0.75rem;
+		line-height: 1.35;
 	}
 
 	.details-row dt {
@@ -11597,8 +11950,9 @@ var periodicTableStyles = i`
 	}
 
 	/* The state is a tag in the colour of the state, so the value is readable at a
-	   glance instead of hanging on a dot of half a millimetre. */
-	.details-state::part(base) {
+	   glance instead of hanging on a dot of half a millimetre. The detail card and
+	   the list rows share the tag. */
+	.state-tag::part(base) {
 		height: auto;
 		padding: 0 0.3rem;
 		border-color: color-mix(in srgb, var(--pt-ink) 18%, transparent);
@@ -11607,20 +11961,53 @@ var periodicTableStyles = i`
 		line-height: 1.35;
 	}
 
-	.details-state.state-solid::part(base) {
+	.state-tag.state-solid::part(base) {
 		background: var(--pt-state-solid);
 	}
 
-	.details-state.state-liquid::part(base) {
+	.state-tag.state-liquid::part(base) {
 		background: var(--pt-state-liquid);
 	}
 
-	.details-state.state-gas::part(base) {
+	.state-tag.state-gas::part(base) {
 		background: var(--pt-state-gas);
 	}
 
-	.details-state.state-unknown::part(base) {
+	.state-tag.state-unknown::part(base) {
 		background: var(--pt-state-unknown);
+	}
+
+	/* Secondary rows of a section — the thermal points — sit in a collapsed
+	   sl-details, so the key values stay visible in the fixed card height. The
+	   summary reads like a section heading, not like a boxed control. */
+	.details-secondary::part(base) {
+		border: none;
+		border-radius: 0;
+		background: transparent;
+	}
+
+	.details-secondary::part(header) {
+		min-height: 0;
+		padding: 1px 0;
+		border-radius: 0;
+	}
+
+	.details-secondary::part(summary) {
+		font-size: 0.62rem;
+		font-weight: 600;
+		line-height: 1.25;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--pt-ink-soft);
+	}
+
+	.details-secondary::part(summary-icon) {
+		font-size: 0.6rem;
+		color: var(--pt-ink-soft);
+	}
+
+	.details-secondary::part(content) {
+		padding: 0 0 0 0.2rem;
 	}
 
 	.details-qualifier::part(base) {
@@ -11882,7 +12269,6 @@ var periodicTableStyles = i`
 		}
 
 		.toolbar,
-		.result-count,
 		.modes,
 		.state-legend,
 		.table-pane,
@@ -11903,7 +12289,6 @@ var periodicTableStyles = i`
 	}
 
 	:host(.ww-beforeprint) .toolbar,
-	:host(.ww-beforeprint) .result-count,
 	:host(.ww-beforeprint) .modes,
 	:host(.ww-beforeprint) .state-legend,
 	:host(.ww-beforeprint) .table-pane,
@@ -11920,21 +12305,27 @@ var periodicTableStyles = i`
 		.cell,
 		.list-row,
 		.legend-item,
+		.state-legend li,
 		.details-card,
 		.placeholder-text {
 			border: 1px solid CanvasText;
 			background: Canvas;
 		}
 
+		/* Focus is an outer ring, selection a thick border, so the two states
+		   stay distinct without colour. */
 		.cell:focus-visible,
 		.list-row:focus-visible,
 		.legend-item:focus-visible {
 			outline: 2px solid Highlight;
+			outline-offset: 2px;
 		}
 
 		.cell[aria-selected="true"],
-		.list-row[aria-pressed="true"] {
-			outline: 2px solid Highlight;
+		.list-row[aria-pressed="true"],
+		.legend-item[aria-pressed="true"] {
+			border: 2px solid Highlight;
+			box-shadow: none;
 		}
 	}
 `;
@@ -11950,6 +12341,24 @@ var INFO_ICON = `data:image/svg+xml,${encodeURIComponent(
 var POINTER_ICON = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 2v11l2.7-2.7 1.9 4 2-1-1.9-3.9H13z" fill="#3f3f46"/></svg>'
 )}`;
+var TABLE_ICON = x2`
+	<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+		<path d="M2 2.5h12v11H2z"/><path d="M6 2.5v11M10 2.5v11M2 6.2h12M2 9.9h12"/>
+	</svg>
+`;
+var LIST_ICON = x2`
+	<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+		<path d="M5.8 4h8.2M5.8 8h8.2M5.8 12h8.2"/>
+		<circle cx="2.8" cy="4" r="1" fill="currentColor" stroke="none"/>
+		<circle cx="2.8" cy="8" r="1" fill="currentColor" stroke="none"/>
+		<circle cx="2.8" cy="12" r="1" fill="currentColor" stroke="none"/>
+	</svg>
+`;
+var RESET_ICON = x2`
+	<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
+		<path d="M13.6 8a5.6 5.6 0 1 1-1.64-3.96"/><path d="M13.6 2.6v2.6h-2.6"/>
+	</svg>
+`;
 function modeText(mode, t8) {
   switch (mode) {
     case "off":
@@ -12155,9 +12564,8 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     const resolved = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get);
     return x2`
 			<div class="widget">
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderToolbar_fn).call(this, t8, language)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderToolbar_fn).call(this, t8, language, matches.length)}
 				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderModes_fn).call(this, t8, language)}
-				<p class="result-count" aria-live="polite">${__privateMethod(this, _ChemLabPeriodicTable_instances, renderCount_fn).call(this, t8, matches.length)}</p>
 				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderStateLegend_fn).call(this, t8)}
 				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t8, language, matches, details) : __privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t8, language, matching, details)}
 				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t8, language, element)}
@@ -12380,14 +12788,22 @@ renderCount_fn = function(t8, count) {
   return format(t8.resultCount, { count });
 };
 /**
- * Renders the toolbar with search, family filter, layout switch and reset.
+ * Renders the toolbar with search, family filter, result count, layout switch and reset.
+ *
+ * The whole row sits on one lightly shaded bar, so the controls read as one
+ * unit. The layout switch and the reset are compact icon buttons with a
+ * tooltip and an accessible label, like the canvas controls of the lab
+ * widget; the result count is a pill badge, and a hidden live region keeps
+ * the full sentence for screen readers.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
+ * @param count - Number of matching elements.
  * @returns The toolbar.
  */
-renderToolbar_fn = function(t8, language) {
+renderToolbar_fn = function(t8, language, count) {
   const resolved = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get);
+  const countText = __privateMethod(this, _ChemLabPeriodicTable_instances, renderCount_fn).call(this, t8, count);
   return x2`
 			<div class="toolbar">
 				<sl-icon-button
@@ -12420,19 +12836,36 @@ renderToolbar_fn = function(t8, language) {
 						<sl-option value=${key}>${category[language]}</sl-option>
 					`)}
 				</sl-select>
-				<div class="views" role="group" aria-label=${t8.viewLabel}>
+				<sl-badge class="count-badge" pill variant="neutral" title=${countText}>
+					${count}
+				</sl-badge>
+				<p class="visually-hidden" role="status" aria-live="polite">${countText}</p>
+				<div class="toolbar-actions">
+					<div class="views" role="group" aria-label=${t8.viewLabel}>
+						<sl-button
+							size="small"
+							variant=${resolved === "table" ? "primary" : "default"}
+							title=${t8.viewTable}
+							aria-label=${t8.viewTable}
+							aria-pressed=${resolved === "table"}
+							@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "table")}
+						>${TABLE_ICON}</sl-button>
+						<sl-button
+							size="small"
+							variant=${resolved === "list" ? "primary" : "default"}
+							title=${t8.viewList}
+							aria-label=${t8.viewList}
+							aria-pressed=${resolved === "list"}
+							@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "list")}
+						>${LIST_ICON}</sl-button>
+					</div>
 					<sl-button
 						size="small"
-						variant=${resolved === "table" ? "primary" : "default"}
-						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "table")}
-					>${t8.viewTable}</sl-button>
-					<sl-button
-						size="small"
-						variant=${resolved === "list" ? "primary" : "default"}
-						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "list")}
-					>${t8.viewList}</sl-button>
+						title=${t8.reset}
+						aria-label=${t8.reset}
+						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, reset_fn).call(this)}
+					>${RESET_ICON}</sl-button>
 				</div>
-				<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, reset_fn).call(this)}>${t8.reset}</sl-button>
 			</div>
 		`;
 };
@@ -12509,7 +12942,7 @@ renderModes_fn = function(t8, language) {
 								.tooltipFormatter=${slider.format}
 								@sl-input=${slider.onInput}
 							></sl-range>
-							<span class="mode-value">${slider.readout}</span>
+							<sl-tag class="mode-value" size="small" variant="neutral">${slider.readout}</sl-tag>
 						</div>
 					` : null}
 			</div>
@@ -12701,10 +13134,13 @@ renderList_fn = function(t8, language, matches, details) {
     const element = elementByAtomicNumber(match.atomicNumber);
     if (!element) return null;
     const isSelected = match.atomicNumber === selected;
+    const mode = cellMode(element, __privateGet(this, _mode));
+    const classes = ["list-row", `category-${categoryOf(element.atomicNumber) ?? "unknown"}`];
+    if (mode.dimmed) classes.push("is-dimmed");
     return x2`
 				<li>
 					<button
-						class="list-row category-${categoryOf(element.atomicNumber) ?? "unknown"}"
+						class=${classes.join(" ")}
 						type="button"
 						aria-pressed=${isSelected}
 						data-atomic-number=${element.atomicNumber}
@@ -12714,6 +13150,11 @@ renderList_fn = function(t8, language, matches, details) {
 						<span class="list-symbol">${element.symbol}</span>
 						<span class="list-name">${element.names[language]}</span>
 						<span class="list-category">${categoryText(element, language)}</span>
+						${mode.state === null ? mode.badge === null ? null : x2`<sl-tag class="list-year" size="small" variant="neutral">${mode.badge}</sl-tag>` : x2`
+							<sl-tag class="state-tag list-state state-${mode.state}" size="small" variant="neutral">
+								${stateText(mode.state, t8)}
+							</sl-tag>
+						`}
 					</button>
 					${isSelected ? x2`<div class="list-details">${details}</div>` : null}
 				</li>
@@ -12867,6 +13308,9 @@ renderDetails_fn = function(t8, language, element) {
  * A column holds one or two sections, and a divider separates them, so the
  * headings do not have to carry the whole structure on their own. A section
  * without a row is dropped, which keeps the card free of empty headings.
+ * Secondary rows of a section — the thermal points of the properties — sit
+ * in a collapsed `sl-details`, so the key values stay visible in the fixed
+ * three-row height and the rest is one click away.
  *
  * @param t - Interface strings.
  * @param entries - Sections of the column in display order.
@@ -12879,15 +13323,27 @@ renderDetailColumn_fn = function(t8, entries, rows) {
   return x2`
 			<div class="details-column">
 				${sections.map(
-    ({ entry, own }, index) => x2`
-						${index > 0 ? x2`<sl-divider class="details-rule"></sl-divider>` : null}
-						<section class="details-section">
-							<h6 class="details-heading">${entry.label}</h6>
-							<dl class="details-rows">
-								${own.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t8, row))}
-							</dl>
-						</section>
-					`
+    ({ entry, own }, index) => {
+      const primary = own.filter((row) => !row.secondary);
+      const secondary = own.filter((row) => row.secondary);
+      const summary = entry.section === "properties" ? t8.sectionTemperatures : entry.label;
+      return x2`
+							${index > 0 ? x2`<sl-divider class="details-rule"></sl-divider>` : null}
+							<section class="details-section">
+								<h6 class="details-heading">${entry.label}</h6>
+								<dl class="details-rows">
+									${primary.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t8, row))}
+								</dl>
+								${secondary.length === 0 ? null : x2`
+									<sl-details class="details-secondary" summary=${summary}>
+										<dl class="details-rows">
+											${secondary.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t8, row))}
+										</dl>
+									</sl-details>
+								`}
+							</section>
+						`;
+    }
   )}
 			</div>
 		`;
@@ -12911,7 +13367,7 @@ renderDetailRow_fn = function(t8, row) {
 				<dd>
 					${row.swatch ? x2`
 							<sl-tag
-								class="details-state state-${row.swatch}"
+								class="state-tag state-${row.swatch}"
 								size="small"
 								variant="neutral"
 							>
@@ -13014,6 +13470,7 @@ __publicField(_ChemLabPeriodicTable, "scopedElements", {
   "sl-badge": SlBadge,
   "sl-button": SlButton,
   "sl-card": SlCard,
+  "sl-details": SlDetails,
   "sl-dialog": SlDialog,
   "sl-divider": SlDivider,
   "sl-icon": SlIcon,

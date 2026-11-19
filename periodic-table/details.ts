@@ -38,6 +38,8 @@ export interface DetailRow {
 	readonly qualifier?: string;
 	/** State the row is about, so the card can draw its colour next to the value. */
 	readonly swatch?: MatterState;
+	/** Whether the row sits in the collapsed part of its section instead of directly under the heading. */
+	readonly secondary?: boolean;
 }
 
 /**
@@ -249,16 +251,21 @@ export function detailRows(
 			...(element.phase.status === "predicted" ? { qualifier: t.valuePredicted } : {}),
 		});
 	}
+	// The thermal rows are secondary: the card shows them inside a collapsed
+	// `sl-details`, because the weight and the state answer the common question
+	// and the fixed three-row height leaves no room for every point.
 	rows.push({
 		key: "melting",
 		label: t.fieldMelting,
 		section: "properties",
+		secondary: true,
 		...temperatureRow(element.melting, language, t),
 	});
 	rows.push({
 		key: "boiling",
 		label: t.fieldBoiling,
 		section: "properties",
+		secondary: true,
 		...temperatureRow(element.boiling, language, t),
 	});
 	if (element.sublimation.status !== "unavailable") {
@@ -266,6 +273,7 @@ export function detailRows(
 			key: "sublimation",
 			label: t.fieldSublimation,
 			section: "properties",
+			secondary: true,
 			...temperatureRow(element.sublimation, language, t),
 		});
 	}

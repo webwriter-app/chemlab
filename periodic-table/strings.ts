@@ -57,6 +57,7 @@ export type StringKey =
 	| "sectionProperties"
 	| "sectionHistory"
 	| "sectionStructure"
+	| "sectionTemperatures"
 	| "qualifierHint"
 	| "groupUnassigned"
 	| "groupConventionDependent"
@@ -140,6 +141,7 @@ const EN: Strings = {
 	sectionProperties: "Properties",
 	sectionHistory: "History",
 	sectionStructure: "Structure",
+	sectionTemperatures: "Temperatures",
 	qualifierHint: "Predicted value, not measured",
 	groupUnassigned: "Not assigned",
 	groupConventionDependent: "Depends on the convention",
@@ -224,6 +226,7 @@ const DE: Strings = {
 	sectionProperties: "Eigenschaften",
 	sectionHistory: "Geschichte",
 	sectionStructure: "Aufbau",
+	sectionTemperatures: "Temperaturen",
 	qualifierHint: "Vorhergesagter Wert, nicht gemessen",
 	groupUnassigned: "Nicht zugeordnet",
 	groupConventionDependent: "Hängt von der Konvention ab",

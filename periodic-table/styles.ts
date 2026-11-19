@@ -27,7 +27,7 @@ export const periodicTableStyles = css`
 		   them, so its height follows the cell height instead of its content. */
 		--pt-details-height: calc(3 * var(--pt-cell-height) + 4px);
 		--pt-details-border: 1px;
-		--pt-cell-bar: 0.4rem;
+		--pt-cell-bar: 0.22rem;
 		--pt-gutter: 1.5rem;
 		--pt-series-gap: 0.5rem;
 		--pt-radius: 4px;
@@ -37,6 +37,11 @@ export const periodicTableStyles = css`
 		--pt-ink: var(--sl-color-neutral-900, #1c1c1e);
 		--pt-ink-soft: var(--sl-color-neutral-700, #3f3f46);
 		--pt-accent: var(--sl-color-primary-600, #0b6bcb);
+		/* Surface and shadow of the lab widget's canvas controls and object info
+		   panel, so the toolbar buttons and the detail card speak the same
+		   visual language as the rest of ChemLab. */
+		--pt-control-shadow: 0 1px 3px rgb(0 0 0 / 14%);
+		--pt-panel-shadow: 0 2px 8px rgb(0 0 0 / 9%);
 
 		--pt-alkali-metal: #f2a3a3;
 		--pt-alkaline-earth-metal: #f7c99a;
@@ -101,17 +106,18 @@ export const periodicTableStyles = css`
 		--pt-cell-fill: var(--pt-unknown);
 	}
 
+	/* One lightly shaded bar carries search, family filter, result count and the
+	   icon buttons, so the controls read as a single unit instead of scattered
+	   rows. */
 	.toolbar {
 		display: flex;
 		flex-wrap: wrap;
-		align-items: end;
-		gap: 0.5rem;
-	}
-
-	/* The info button sits at the top of the toolbar, while the fields keep their
-	   labels above them and therefore align to the bottom. */
-	.toolbar .info-button {
-		align-self: start;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.4rem 0.45rem;
+		border: 1px solid var(--pt-border);
+		border-radius: 8px;
+		background: var(--pt-inset);
 	}
 
 	.toolbar .search {
@@ -136,16 +142,51 @@ export const periodicTableStyles = css`
 		white-space: nowrap;
 	}
 
+	/* The result count rides in the toolbar as a pill badge; the full sentence
+	   stays available to screen readers through the hidden live region. */
+	.count-badge {
+		flex: 0 0 auto;
+	}
+
+	.count-badge::part(base) {
+		font-variant-numeric: tabular-nums;
+	}
+
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* Layout switch and reset are compact icon buttons with a tooltip and an
+	   accessible label, styled like the canvas controls of the lab widget: a
+	   light surface with a small shadow on the shaded bar. */
+	.toolbar-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		margin-inline-start: auto;
+	}
+
 	.views {
 		display: flex;
 		gap: 0.25rem;
 	}
 
-	.result-count {
-		min-height: 1rem;
-		margin: 0;
-		font-size: 0.8rem;
-		color: var(--pt-ink-soft);
+	.toolbar-actions sl-button::part(base) {
+		background: var(--pt-surface);
+		box-shadow: var(--pt-control-shadow);
+	}
+
+	.toolbar-actions sl-button::part(label) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.table-pane {
@@ -208,11 +249,13 @@ export const periodicTableStyles = css`
 		text-align: right;
 	}
 
-	/* The cell copies the element cards of the lab widget: a white card with a
-	   thin border in the family colour, the symbol in the middle and a bar of the
-	   same colour along the bottom edge. */
+	/* The cell keeps the element cards of the lab widget, but quieter: a neutral
+	   border and one thin family-coloured edge along the bottom, so the family is
+	   named once instead of framing the tile twice. The cell is its own container,
+	   so the name appears exactly where it fits. */
 	.cell {
 		position: relative;
+		container-type: inline-size;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -221,7 +264,7 @@ export const periodicTableStyles = css`
 		min-height: var(--pt-cell-height);
 		padding: 2px 1px calc(var(--pt-cell-bar) + 2px);
 		overflow: hidden;
-		border: 1.5px solid var(--pt-cell-fill, var(--pt-border));
+		border: 1px solid var(--pt-border);
 		border-radius: var(--pt-radius);
 		background: var(--pt-surface);
 		color: var(--pt-ink);
@@ -240,7 +283,7 @@ export const periodicTableStyles = css`
 		background: var(--pt-cell-fill, var(--pt-border));
 	}
 
-	/* A mode fills the card with the state colour and keeps the family bar, so
+	/* A mode fills the card with the state colour and keeps the family edge, so
 	   both readings stay visible at once. */
 	.cell.state-solid {
 		background: var(--pt-state-solid);
@@ -259,6 +302,18 @@ export const periodicTableStyles = css`
 		opacity: 0.35;
 	}
 
+	/* The atomic number sits in a consistent corner; the discovery year takes the
+	   opposite one. */
+	.cell-number {
+		position: absolute;
+		inset-block-start: 1px;
+		inset-inline-start: 3px;
+		font-size: 0.5rem;
+		color: var(--pt-ink-soft);
+		font-variant-numeric: tabular-nums;
+		pointer-events: none;
+	}
+
 	.cell-year {
 		position: absolute;
 		inset-block-start: 1px;
@@ -270,7 +325,7 @@ export const periodicTableStyles = css`
 	}
 
 	.cell:hover {
-		filter: brightness(0.96);
+		border-color: color-mix(in srgb, var(--pt-ink) 35%, var(--pt-border));
 	}
 
 	.cell[aria-disabled="true"] {
@@ -279,11 +334,13 @@ export const periodicTableStyles = css`
 	}
 
 	.cell[aria-disabled="true"]:hover {
-		filter: none;
+		border-color: var(--pt-border);
 	}
 
+	/* Selection stays ChemLab blue; keyboard focus gets its own dark outer ring,
+	   so the two states never look alike. */
 	.cell:focus-visible {
-		outline: 2px solid var(--pt-accent);
+		outline: 2px solid var(--pt-ink);
 		outline-offset: 1px;
 	}
 
@@ -292,27 +349,25 @@ export const periodicTableStyles = css`
 		box-shadow: inset 0 0 0 2px var(--pt-accent);
 	}
 
-	.cell-number {
-		font-size: 0.55rem;
-		color: var(--pt-ink-soft);
-	}
-
 	.cell-symbol {
-		font-size: 0.85rem;
-		font-weight: 600;
+		font-size: 1rem;
+		font-weight: 700;
 	}
 
 	.cell-name {
 		display: none;
 		max-width: 100%;
 		overflow: hidden;
-		font-size: 0.5rem;
+		font-size: 0.55rem;
 		color: var(--pt-ink-soft);
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
-	@container (min-width: 1000px) {
+	/* The name shows where the cell itself is wide enough to hold it. The query
+	   measures the content box, so the threshold sits below the 47 px a cell
+	   reaches at a 1000 px host. */
+	@container (min-width: 2.75rem) {
 		.cell-name {
 			display: block;
 		}
@@ -350,32 +405,43 @@ export const periodicTableStyles = css`
 		list-style: none;
 	}
 
-	.legend-item {
+	/* Family names and the temperature key share one treatment: narrow
+	   rectangular tags with a swatch, so neither legend reads as a competing
+	   control. The family tags stay clickable and mirror the dropdown; the active
+	   filter gets a clear selected state in ChemLab blue. */
+	.legend-item,
+	.state-legend li {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
-		padding: 0.15rem 0.45rem;
+		padding: 0.12rem 0.4rem;
 		border: 1px solid var(--pt-border);
-		border-radius: 999px;
+		border-radius: 3px;
 		background: var(--pt-surface);
 		color: var(--pt-ink-soft);
-		font: inherit;
 		font-size: 0.7rem;
+	}
+
+	.legend-item {
+		font: inherit;
 		cursor: pointer;
 	}
 
 	.legend-item[aria-pressed="true"] {
 		border-color: var(--pt-accent);
-		color: var(--pt-ink);
+		background: color-mix(in srgb, var(--pt-accent) 10%, var(--pt-surface));
 		box-shadow: inset 0 0 0 1px var(--pt-accent);
+		color: var(--pt-ink);
 	}
 
-	.legend-item:focus-visible {
-		outline: 2px solid var(--pt-accent);
+	.legend-item:focus-visible,
+	.list-row:focus-visible {
+		outline: 2px solid var(--pt-ink);
 		outline-offset: 1px;
 	}
 
-	.legend-swatch {
+	.legend-swatch,
+	.state-swatch {
 		width: 0.7rem;
 		height: 0.7rem;
 		border: 1px solid color-mix(in srgb, var(--pt-ink) 15%, transparent);
@@ -421,37 +487,22 @@ export const periodicTableStyles = css`
 		white-space: nowrap;
 	}
 
+	/* The current slider value rides beside the slider as a small tag. */
 	.mode-value {
 		flex: 0 0 auto;
-		min-width: 5.5rem;
-		font-size: 0.75rem;
-		color: var(--pt-ink-soft);
+	}
+
+	.mode-value::part(base) {
 		font-variant-numeric: tabular-nums;
-		text-align: right;
 	}
 
 	.state-legend {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.25rem 0.6rem;
+		gap: 0.25rem 0.4rem;
 		margin: 0;
 		padding: 0;
 		list-style: none;
-		font-size: 0.7rem;
-		color: var(--pt-ink-soft);
-	}
-
-	.state-legend li {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.3rem;
-	}
-
-	.state-swatch {
-		width: 0.7rem;
-		height: 0.7rem;
-		border: 1px solid color-mix(in srgb, var(--pt-ink) 15%, transparent);
-		border-radius: 2px;
 	}
 
 	.state-swatch.state-solid {
@@ -496,14 +547,13 @@ export const periodicTableStyles = css`
 		background: var(--pt-inset);
 	}
 
-	.list-row:focus-visible {
-		outline: 2px solid var(--pt-accent);
-		outline-offset: 1px;
-	}
-
 	.list-row[aria-pressed="true"] {
 		border-color: var(--pt-accent);
 		box-shadow: inset 0 0 0 1px var(--pt-accent);
+	}
+
+	.list-row.is-dimmed {
+		opacity: 0.45;
 	}
 
 	.list-number {
@@ -536,28 +586,45 @@ export const periodicTableStyles = css`
 		color: var(--pt-ink-soft);
 	}
 
+	/* The mode rides along at the end of the row: the state as a coloured tag,
+	   the discovery year as a quiet one, so the narrow list keeps the mode's
+	   meaning. */
+	.list-state::part(base),
+	.list-year::part(base) {
+		height: auto;
+		padding: 0 0.3rem;
+		font-size: 0.6rem;
+		line-height: 1.35;
+	}
+
+	.list-year::part(base) {
+		font-variant-numeric: tabular-nums;
+	}
+
 	.list-details {
 		margin: 0.25rem 0 0.5rem;
 	}
 
-	/* The detail card is a Shoelace card, so it shares the surface, the border and
-	   the header rhythm of the rest of the widget. It fills the free block of the
-	   table, so its height is pinned to the three rows it spans: a card that grows
-	   with its content would stretch those rows and leave the periods with uneven
-	   cells. A long element scrolls inside the body instead. */
+	/* The detail card is a Shoelace card with the same white surface, subtle
+	   outline and soft shadow as the object info panel of the lab widget. It
+	   fills the free block of the table, so its height is pinned to the three rows
+	   it spans: a card that grows with its content would stretch those rows and
+	   leave the periods with uneven cells. A long element scrolls inside the body
+	   instead. */
 	.details-card {
 		height: var(--pt-details-height);
 		min-width: 0;
 		--padding: 0;
-		--border-color: var(--sl-color-neutral-300, #d4d4d8);
+		--border-color: var(--sl-color-neutral-200, #e4e4e7);
 		--border-width: var(--pt-details-border);
-		--border-radius: 6px;
+		--border-radius: 5px;
 		--sl-panel-background-color: var(--pt-surface);
 	}
 
 	.details-card::part(base) {
 		height: 100%;
 		overflow: hidden;
+		box-shadow: var(--pt-panel-shadow);
 	}
 
 	/* The header carries the identity of the element in one row: the coloured
@@ -565,7 +632,7 @@ export const periodicTableStyles = css`
 	   state values refer to. It sits on the inset surface, so the card reads as a
 	   titled panel instead of a plain box. */
 	.details-card::part(header) {
-		padding: 3px 6px;
+		padding: 4px 8px;
 		border-bottom: 1px solid var(--pt-border);
 		background: color-mix(in srgb, var(--pt-cell-fill, var(--pt-inset)) 16%, var(--pt-surface));
 	}
@@ -573,7 +640,7 @@ export const periodicTableStyles = css`
 	.details-head {
 		display: flex;
 		align-items: center;
-		gap: 0.35rem;
+		gap: 0.4rem;
 		min-width: 0;
 	}
 
@@ -581,21 +648,21 @@ export const periodicTableStyles = css`
 		display: grid;
 		flex: 0 0 auto;
 		place-items: center;
-		width: 1.5rem;
-		height: 1.5rem;
+		width: 1.6rem;
+		height: 1.6rem;
 		border: 1px solid color-mix(in srgb, var(--pt-ink) 12%, transparent);
 		border-radius: var(--pt-radius);
 		background: var(--pt-cell-fill, var(--pt-surface));
-		font-size: 0.8rem;
-		font-weight: 600;
+		font-size: 0.85rem;
+		font-weight: 700;
 		line-height: 1;
 	}
 
 	.details-title {
 		margin: 0;
-		font-size: 0.9rem;
+		font-size: 1rem;
 		font-weight: 600;
-		line-height: 1.1;
+		line-height: 1.15;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -637,14 +704,14 @@ export const periodicTableStyles = css`
 		display: flex;
 		flex: 1;
 		min-height: 0;
-		padding: 4px 6px;
+		padding: 6px 8px;
 		overflow: auto;
 	}
 
 	.details-sections {
 		display: flex;
 		align-items: stretch;
-		gap: 0.5rem;
+		gap: 0.6rem;
 		width: 100%;
 		min-width: 0;
 	}
@@ -653,7 +720,7 @@ export const periodicTableStyles = css`
 		display: flex;
 		flex: 1 1 0;
 		flex-direction: column;
-		gap: 0.15rem;
+		gap: 0.2rem;
 		min-width: 0;
 	}
 
@@ -674,11 +741,11 @@ export const periodicTableStyles = css`
 	}
 
 	.details-heading {
-		margin: 0 0 1px;
-		font-size: 0.55rem;
+		margin: 0 0 2px;
+		font-size: 0.62rem;
 		font-weight: 600;
-		line-height: 1.2;
-		letter-spacing: 0.06em;
+		line-height: 1.25;
+		letter-spacing: 0.05em;
 		text-transform: uppercase;
 		color: var(--pt-ink-soft);
 	}
@@ -696,8 +763,8 @@ export const periodicTableStyles = css`
 		grid-template-columns: max-content minmax(0, 1fr);
 		gap: 0 0.3rem;
 		min-width: 0;
-		font-size: 0.7rem;
-		line-height: 1.2;
+		font-size: 0.75rem;
+		line-height: 1.35;
 	}
 
 	.details-row dt {
@@ -719,8 +786,9 @@ export const periodicTableStyles = css`
 	}
 
 	/* The state is a tag in the colour of the state, so the value is readable at a
-	   glance instead of hanging on a dot of half a millimetre. */
-	.details-state::part(base) {
+	   glance instead of hanging on a dot of half a millimetre. The detail card and
+	   the list rows share the tag. */
+	.state-tag::part(base) {
 		height: auto;
 		padding: 0 0.3rem;
 		border-color: color-mix(in srgb, var(--pt-ink) 18%, transparent);
@@ -729,20 +797,53 @@ export const periodicTableStyles = css`
 		line-height: 1.35;
 	}
 
-	.details-state.state-solid::part(base) {
+	.state-tag.state-solid::part(base) {
 		background: var(--pt-state-solid);
 	}
 
-	.details-state.state-liquid::part(base) {
+	.state-tag.state-liquid::part(base) {
 		background: var(--pt-state-liquid);
 	}
 
-	.details-state.state-gas::part(base) {
+	.state-tag.state-gas::part(base) {
 		background: var(--pt-state-gas);
 	}
 
-	.details-state.state-unknown::part(base) {
+	.state-tag.state-unknown::part(base) {
 		background: var(--pt-state-unknown);
+	}
+
+	/* Secondary rows of a section — the thermal points — sit in a collapsed
+	   sl-details, so the key values stay visible in the fixed card height. The
+	   summary reads like a section heading, not like a boxed control. */
+	.details-secondary::part(base) {
+		border: none;
+		border-radius: 0;
+		background: transparent;
+	}
+
+	.details-secondary::part(header) {
+		min-height: 0;
+		padding: 1px 0;
+		border-radius: 0;
+	}
+
+	.details-secondary::part(summary) {
+		font-size: 0.62rem;
+		font-weight: 600;
+		line-height: 1.25;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--pt-ink-soft);
+	}
+
+	.details-secondary::part(summary-icon) {
+		font-size: 0.6rem;
+		color: var(--pt-ink-soft);
+	}
+
+	.details-secondary::part(content) {
+		padding: 0 0 0 0.2rem;
 	}
 
 	.details-qualifier::part(base) {
@@ -1004,7 +1105,6 @@ export const periodicTableStyles = css`
 		}
 
 		.toolbar,
-		.result-count,
 		.modes,
 		.state-legend,
 		.table-pane,
@@ -1025,7 +1125,6 @@ export const periodicTableStyles = css`
 	}
 
 	:host(.ww-beforeprint) .toolbar,
-	:host(.ww-beforeprint) .result-count,
 	:host(.ww-beforeprint) .modes,
 	:host(.ww-beforeprint) .state-legend,
 	:host(.ww-beforeprint) .table-pane,
@@ -1042,21 +1141,27 @@ export const periodicTableStyles = css`
 		.cell,
 		.list-row,
 		.legend-item,
+		.state-legend li,
 		.details-card,
 		.placeholder-text {
 			border: 1px solid CanvasText;
 			background: Canvas;
 		}
 
+		/* Focus is an outer ring, selection a thick border, so the two states
+		   stay distinct without colour. */
 		.cell:focus-visible,
 		.list-row:focus-visible,
 		.legend-item:focus-visible {
 			outline: 2px solid Highlight;
+			outline-offset: 2px;
 		}
 
 		.cell[aria-selected="true"],
-		.list-row[aria-pressed="true"] {
-			outline: 2px solid Highlight;
+		.list-row[aria-pressed="true"],
+		.legend-item[aria-pressed="true"] {
+			border: 2px solid Highlight;
+			box-shadow: none;
 		}
 	}
 `;

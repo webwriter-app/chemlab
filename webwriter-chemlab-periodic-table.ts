@@ -16,6 +16,7 @@ import { html, type PropertyValues } from "lit";
 import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
 import SlCard from "@shoelace-style/shoelace/dist/components/card/card.component.js";
+import SlDetails from "@shoelace-style/shoelace/dist/components/details/details.component.js";
 import SlDialog from "@shoelace-style/shoelace/dist/components/dialog/dialog.component.js";
 import SlDivider from "@shoelace-style/shoelace/dist/components/divider/divider.component.js";
 import SlIcon from "@shoelace-style/shoelace/dist/components/icon/icon.component.js";
@@ -136,6 +137,35 @@ const POINTER_ICON = `data:image/svg+xml,${encodeURIComponent(
 )}`;
 
 /**
+ * Grid icon of the table view button.
+ *
+ * Inline SVG like the canvas controls, because the widget ships no icon assets
+ * and the default Shoelace icon library would fetch them from a CDN.
+ */
+const TABLE_ICON = html`
+	<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+		<path d="M2 2.5h12v11H2z"/><path d="M6 2.5v11M10 2.5v11M2 6.2h12M2 9.9h12"/>
+	</svg>
+`;
+
+/** List icon of the list view button. */
+const LIST_ICON = html`
+	<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+		<path d="M5.8 4h8.2M5.8 8h8.2M5.8 12h8.2"/>
+		<circle cx="2.8" cy="4" r="1" fill="currentColor" stroke="none"/>
+		<circle cx="2.8" cy="8" r="1" fill="currentColor" stroke="none"/>
+		<circle cx="2.8" cy="12" r="1" fill="currentColor" stroke="none"/>
+	</svg>
+`;
+
+/** Reset icon of the reset button. */
+const RESET_ICON = html`
+	<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
+		<path d="M13.6 8a5.6 5.6 0 1 1-1.64-3.96"/><path d="M13.6 2.6v2.6h-2.6"/>
+	</svg>
+`;
+
+/**
  * Localizes one mode of the switch.
  *
  * @param mode - Mode of the switch.
@@ -198,6 +228,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		"sl-badge": SlBadge,
 		"sl-button": SlButton,
 		"sl-card": SlCard,
+		"sl-details": SlDetails,
 		"sl-dialog": SlDialog,
 		"sl-divider": SlDivider,
 		"sl-icon": SlIcon,
@@ -660,14 +691,22 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the toolbar with search, family filter, layout switch and reset.
+	 * Renders the toolbar with search, family filter, result count, layout switch and reset.
+	 *
+	 * The whole row sits on one lightly shaded bar, so the controls read as one
+	 * unit. The layout switch and the reset are compact icon buttons with a
+	 * tooltip and an accessible label, like the canvas controls of the lab
+	 * widget; the result count is a pill badge, and a hidden live region keeps
+	 * the full sentence for screen readers.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
+	 * @param count - Number of matching elements.
 	 * @returns The toolbar.
 	 */
-	#renderToolbar(t: Strings, language: Language) {
+	#renderToolbar(t: Strings, language: Language, count: number) {
 		const resolved = this.#resolvedView;
+		const countText = this.#renderCount(t, count);
 		return html`
 			<div class="toolbar">
 				<sl-icon-button
@@ -700,19 +739,36 @@ export class ChemLabPeriodicTable extends LitElementWw {
 						<sl-option value=${key}>${category[language]}</sl-option>
 					`)}
 				</sl-select>
-				<div class="views" role="group" aria-label=${t.viewLabel}>
+				<sl-badge class="count-badge" pill variant="neutral" title=${countText}>
+					${count}
+				</sl-badge>
+				<p class="visually-hidden" role="status" aria-live="polite">${countText}</p>
+				<div class="toolbar-actions">
+					<div class="views" role="group" aria-label=${t.viewLabel}>
+						<sl-button
+							size="small"
+							variant=${resolved === "table" ? "primary" : "default"}
+							title=${t.viewTable}
+							aria-label=${t.viewTable}
+							aria-pressed=${resolved === "table"}
+							@click=${() => this.#setView("table")}
+						>${TABLE_ICON}</sl-button>
+						<sl-button
+							size="small"
+							variant=${resolved === "list" ? "primary" : "default"}
+							title=${t.viewList}
+							aria-label=${t.viewList}
+							aria-pressed=${resolved === "list"}
+							@click=${() => this.#setView("list")}
+						>${LIST_ICON}</sl-button>
+					</div>
 					<sl-button
 						size="small"
-						variant=${resolved === "table" ? "primary" : "default"}
-						@click=${() => this.#setView("table")}
-					>${t.viewTable}</sl-button>
-					<sl-button
-						size="small"
-						variant=${resolved === "list" ? "primary" : "default"}
-						@click=${() => this.#setView("list")}
-					>${t.viewList}</sl-button>
+						title=${t.reset}
+						aria-label=${t.reset}
+						@click=${() => this.#reset()}
+					>${RESET_ICON}</sl-button>
 				</div>
-				<sl-button size="small" @click=${() => this.#reset()}>${t.reset}</sl-button>
 			</div>
 		`;
 	}
@@ -792,7 +848,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 								.tooltipFormatter=${slider.format}
 								@sl-input=${slider.onInput}
 							></sl-range>
-							<span class="mode-value">${slider.readout}</span>
+							<sl-tag class="mode-value" size="small" variant="neutral">${slider.readout}</sl-tag>
 						</div>
 					`
 					: null}
@@ -1006,10 +1062,15 @@ export class ChemLabPeriodicTable extends LitElementWw {
 			const element = elementByAtomicNumber(match.atomicNumber);
 			if (!element) return null;
 			const isSelected = match.atomicNumber === selected;
+			// The mode decoration keeps its meaning in the narrow list: the state
+			// or the discovery year rides along as a tag at the end of the row.
+			const mode = cellMode(element, this.#mode);
+			const classes = ["list-row", `category-${categoryOf(element.atomicNumber) ?? "unknown"}`];
+			if (mode.dimmed) classes.push("is-dimmed");
 			return html`
 				<li>
 					<button
-						class="list-row category-${categoryOf(element.atomicNumber) ?? "unknown"}"
+						class=${classes.join(" ")}
 						type="button"
 						aria-pressed=${isSelected}
 						data-atomic-number=${element.atomicNumber}
@@ -1019,6 +1080,15 @@ export class ChemLabPeriodicTable extends LitElementWw {
 						<span class="list-symbol">${element.symbol}</span>
 						<span class="list-name">${element.names[language]}</span>
 						<span class="list-category">${categoryText(element, language)}</span>
+						${mode.state === null
+							? mode.badge === null
+								? null
+								: html`<sl-tag class="list-year" size="small" variant="neutral">${mode.badge}</sl-tag>`
+							: html`
+							<sl-tag class="state-tag list-state state-${mode.state}" size="small" variant="neutral">
+								${stateText(mode.state, t)}
+							</sl-tag>
+						`}
 					</button>
 					${isSelected ? html`<div class="list-details">${details}</div>` : null}
 				</li>
@@ -1177,6 +1247,9 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * A column holds one or two sections, and a divider separates them, so the
 	 * headings do not have to carry the whole structure on their own. A section
 	 * without a row is dropped, which keeps the card free of empty headings.
+	 * Secondary rows of a section — the thermal points of the properties — sit
+	 * in a collapsed `sl-details`, so the key values stay visible in the fixed
+	 * three-row height and the rest is one click away.
 	 *
 	 * @param t - Interface strings.
 	 * @param entries - Sections of the column in display order.
@@ -1191,15 +1264,29 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		return html`
 			<div class="details-column">
 				${sections.map(
-					({ entry, own }, index) => html`
-						${index > 0 ? html`<sl-divider class="details-rule"></sl-divider>` : null}
-						<section class="details-section">
-							<h6 class="details-heading">${entry.label}</h6>
-							<dl class="details-rows">
-								${own.map(row => this.#renderDetailRow(t, row))}
-							</dl>
-						</section>
-					`,
+					({ entry, own }, index) => {
+						const primary = own.filter(row => !row.secondary);
+						const secondary = own.filter(row => row.secondary);
+						const summary = entry.section === "properties" ? t.sectionTemperatures : entry.label;
+						return html`
+							${index > 0 ? html`<sl-divider class="details-rule"></sl-divider>` : null}
+							<section class="details-section">
+								<h6 class="details-heading">${entry.label}</h6>
+								<dl class="details-rows">
+									${primary.map(row => this.#renderDetailRow(t, row))}
+								</dl>
+								${secondary.length === 0
+									? null
+									: html`
+									<sl-details class="details-secondary" summary=${summary}>
+										<dl class="details-rows">
+											${secondary.map(row => this.#renderDetailRow(t, row))}
+										</dl>
+									</sl-details>
+								`}
+							</section>
+						`;
+					},
 				)}
 			</div>
 		`;
@@ -1225,7 +1312,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					${row.swatch
 						? html`
 							<sl-tag
-								class="details-state state-${row.swatch}"
+								class="state-tag state-${row.swatch}"
 								size="small"
 								variant="neutral"
 							>
@@ -1324,9 +1411,8 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const resolved = this.#resolvedView;
 		return html`
 			<div class="widget">
-				${this.#renderToolbar(t, language)}
+				${this.#renderToolbar(t, language, matches.length)}
 				${this.#renderModes(t, language)}
-				<p class="result-count" aria-live="polite">${this.#renderCount(t, matches.length)}</p>
 				${this.#renderStateLegend(t)}
 				${resolved === "list"
 					? this.#renderList(t, language, matches, details)
