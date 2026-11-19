@@ -161,6 +161,7 @@
         "./snippets/Beispiel-Titrationstypen.html": "./snippets/Beispiel-Titrationstypen.html",
         "./snippets/Beispiel-Batterie.html": "./snippets/Beispiel-Batterie.html",
         "./snippets/Beispiel-Elektrochemie.html": "./snippets/Beispiel-Elektrochemie.html",
+        "./snippets/Beispiel-Periodensystem.html": "./snippets/Beispiel-Periodensystem.html",
         "./icon": "./icon.svg"
     },
     "editingConfig": {
@@ -979,6 +980,13 @@
                 "ckb-Arab": "نموونەی کیمیای کارەبایی",
                 "af-ZA": "Voorbeeld: Elektrochemie",
                 "af-NA": "Voorbeeld: Elektrochemie"
+            }
+        },
+        "./snippets/Beispiel-Periodensystem": {
+            "label": {
+                "_": "Periodic table",
+                "en": "Periodic table",
+                "de": "Periodensystem"
             }
         }
     }

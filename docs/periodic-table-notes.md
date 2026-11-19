@@ -54,6 +54,17 @@ Observations made while implementing the [handoff](periodic-table-implementation
 - **The language observer follows the same walk as the resolver.** `languageAncestors` returns the node chain `resolveLanguage` visits, and the widget observes each element of that chain for `lang` changes. A language switch on the worksheet or on an enclosing section re-renders the table while keeping the selection and the query.
 - **Printing uses one noninteractive overview.** The overview is always in the DOM, hidden on screen and hidden from assistive technology, and shows the complete grid plus the selected details. `@media print` covers exported HTML and `:host(.ww-beforeprint)` covers WebWriter's print preview; both hide the toolbar, the result count, the table pane, the detail pane, the series jumps and the legend, so a narrow instance that defaults to the list still prints the grid.
 
+## Work package 5: worksheet routing and the table-only snippet
+
+- **The router is a module, not widget code.** `periodic-table/routing.ts` binds a receiver to one table by host ID and delivers only validated selections of that table. The picker and the lab actions stay in their own work packages; this module is what both will use.
+- **The binding is resolved against an explicit worksheet root.** `resolveSource` lists the elements of the expected tag and compares the ID literally, so a duplicate ID resolves to nothing instead of to the first hit, and a wrong widget type never binds. An empty ID never binds.
+- **Every delivery is re-checked synchronously.** The listener compares `composedPath()[0]` with the resolved source, so an event that bubbles out of a child of the table is rejected even when it carries the right `sourceId`. It then re-resolves the binding and validates the payload, so a stale listener cannot deliver after a duplicate, a removal or a rebind in the same task.
+- **The payload check is the same one the widget uses.** `isSelectionPayload` accepts version 1 with `null` or an atomic number from 1 to 118 and an optional string `sourceId`; everything else is dropped without a delivery.
+- **One listener per binding.** Rebinding detaches the previous listener, and `dispose` detaches and disconnects the observer. A receiver therefore counts one delivery per change, also after a removal and a reconnection.
+- **The observer is injectable.** The default watches the worksheet for child, ID and binding changes with a `MutationObserver`; a host without one still binds, it just does not refresh by itself. The tests drive refreshes through a fake observer, because the Node environment has no DOM.
+- **The snippet is table-only.** `snippets/Beispiel-Periodensystem.html` holds one `webwriter-chemlab-periodic-table` with `initial-element="8"` and `view="auto"` and no `lang` attribute, so the table inherits the language of the surrounding content. It loads no simulation assets: the entry imports only `periodic-table/` and `data/periodic-table/`.
+- **The snippet needs both registrations.** The file is listed under `exports` and carries a `label` in `editingConfig`; without either it does not appear in WebWriter.
+
 ## Open checks awaiting a manual WebWriter import
 
 - WebWriter version and the observed save/reopen behaviour of `initial-element` and `view`.
