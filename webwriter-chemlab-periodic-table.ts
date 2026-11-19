@@ -21,10 +21,8 @@ import SlDivider from "@shoelace-style/shoelace/dist/components/divider/divider.
 import SlIcon from "@shoelace-style/shoelace/dist/components/icon/icon.component.js";
 import SlIconButton from "@shoelace-style/shoelace/dist/components/icon-button/icon-button.component.js";
 import SlInput from "@shoelace-style/shoelace/dist/components/input/input.component.js";
-import SlOption from "@shoelace-style/shoelace/dist/components/option/option.component.js";
 import SlPopup from "@shoelace-style/shoelace/dist/components/popup/popup.component.js";
 import SlRange from "@shoelace-style/shoelace/dist/components/range/range.component.js";
-import SlSelect from "@shoelace-style/shoelace/dist/components/select/select.component.js";
 import SlSpinner from "@shoelace-style/shoelace/dist/components/spinner/spinner.component.js";
 import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js";
 import SlTooltip from "@shoelace-style/shoelace/dist/components/tooltip/tooltip.component.js";
@@ -34,17 +32,11 @@ import "@shoelace-style/shoelace/dist/themes/light.css";
 
 import {
 	CATEGORIES,
-	LAYOUT,
 	categoryOf,
 	elementByAtomicNumber,
 	type ElementReference,
 } from "./periodic-table/element-reference";
-import {
-	DETAIL_SLOT,
-	GRID,
-	seriesJumpTarget,
-	type GridCell,
-} from "./periodic-table/layout";
+import { DETAIL_SLOT, GRID, type GridCell } from "./periodic-table/layout";
 import { focusTargetAfterLayout, gridKeyTarget } from "./periodic-table/keyboard";
 import { searchElements, type SearchResult } from "./periodic-table/search";
 import {
@@ -100,7 +92,15 @@ const VIEWS: readonly PeriodicTableView[] = ["auto", "table", "list"];
 const LIST_BREAKPOINT = 680;
 
 /** States the legend of a mode lists, in the order of the phase model. */
-const STATES: readonly MatterState[] = ["solid", "liquid", "gas", "unknown"];
+const STATES: readonly MatterState[] = ["solid", "liquid", "gas"];
+
+/** How the detail card is presented in the current layout. */
+interface DetailsOptions {
+	/** Whether the card shows the sections below its key rows. */
+	readonly expanded: boolean;
+	/** Whether the card offers the corner toggle; the list keeps its card open. */
+	readonly collapsible: boolean;
+}
 
 /** One labelled section of the expanded detail card. */
 interface DetailSectionEntry {
@@ -260,10 +260,8 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		"sl-icon": SlIcon,
 		"sl-icon-button": SlIconButton,
 		"sl-input": SlInput,
-		"sl-option": SlOption,
 		"sl-popup": SlPopup,
 		"sl-range": SlRange,
-		"sl-select": SlSelect,
 		"sl-spinner": SlSpinner,
 		"sl-tag": SlTag,
 		"sl-tooltip": SlTooltip,
@@ -411,8 +409,9 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * Restores result focus after a layout change.
 	 *
 	 * The element that owned focus is remembered by atomic number, so it survives
-	 * the switch between the grid and the list. When it is no longer part of the
-	 * results, the search field is the stable fallback.
+	 * the switch between the grid and the list. The list renders the selected row
+	 * as its card, so a remembered selection lands on the card; otherwise the
+	 * search field and then the layout switch are the stable fallbacks.
 	 */
 	protected updated() {
 		if (!this.#restoreFocusPending) return;
@@ -423,12 +422,19 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const element = target === null
 			? null
 			: this.renderRoot.querySelector<HTMLElement>(`[data-atomic-number="${target}"]`);
-		if (!element) {
-			this.renderRoot.querySelector<HTMLElement>("sl-input")?.focus();
+		if (element) {
+			element.focus();
+			this.#reveal(element);
 			return;
 		}
-		element.focus();
-		this.#reveal(element);
+		const card = this.#listDetailsCard();
+		if (card) {
+			card.focus();
+			return;
+		}
+		const fallback = this.renderRoot.querySelector<HTMLElement>("sl-input")
+			?? this.renderRoot.querySelector<HTMLElement>(".toolbar-actions sl-button");
+		fallback?.focus();
 	}
 
 	/** Watches every ancestor the language walk visits for a `lang` change. */
@@ -506,16 +512,25 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		return this.#mode.temperatureK;
 	}
 
-	/** Current search hits, best match first. */
+	/**
+	 * Current search hits, best match first.
+	 *
+	 * The query only applies to the list, which is the only layout with a search
+	 * field: a query typed there must not silently filter the grid after a switch
+	 * back, and it survives the round trip.
+	 */
 	#matches(): readonly SearchResult[] {
-		return searchElements(this.#query, { locale: this.#language, category: this.#category });
+		const query = this.#resolvedView === "list" ? this.#query : "";
+		return searchElements(query, { locale: this.#language, category: this.#category });
 	}
 
 	/**
 	 * Selects an element after a user action and reports the change.
 	 *
 	 * A new element starts with the collapsed card: the open card covers the
-	 * cells below it, so it would hide the table the learner is browsing.
+	 * cells below it, so it would hide the table the learner is browsing. The list
+	 * keeps its card open, but the row that was pressed is gone, so focus moves to
+	 * the card that replaced it.
 	 *
 	 * @param atomicNumber - Atomic number the user picked.
 	 */
@@ -524,6 +539,17 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		this.#detailsExpanded = false;
 		this.requestUpdate();
 		this.#dispatchSelection();
+		if (this.#resolvedView === "list") this.#focusDetails();
+	}
+
+	/** The card that replaced the selected list row, if the list shows one. */
+	#listDetailsCard(): HTMLElement | null {
+		return this.renderRoot.querySelector<HTMLElement>(".list-details .details-card");
+	}
+
+	/** Focuses the card that replaced the selected list row. */
+	#focusDetails() {
+		void this.updateComplete.then(() => this.#listDetailsCard()?.focus());
 	}
 
 	/** Clears the selection after a user action and reports the change. */
@@ -627,22 +653,6 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	};
 
 	/**
-	 * Moves focus to the first element of a detached series.
-	 *
-	 * The jump is a navigation aid, not a selection: it changes no selection and
-	 * dispatches no event. The tab order follows the jump so Tab returns there.
-	 *
-	 * @param seriesRow - Row of the detached series.
-	 */
-	#jumpToSeries(seriesRow: number) {
-		const target = seriesJumpTarget(seriesRow);
-		if (target === null) return;
-		this.#rovingOverride = target;
-		this.requestUpdate();
-		this.#focusElement(target);
-	}
-
-	/**
 	 * Focuses the cell or list row of an element once it is rendered.
 	 *
 	 * @param atomicNumber - Element to focus.
@@ -681,13 +691,6 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		event.preventDefault();
 		this.#selectFromUser(first.atomicNumber);
 		this.#focusElement(first.atomicNumber);
-	};
-
-	/** Reads the family filter. */
-	#onCategoryChange = (event: Event) => {
-		const value = (event.target as { value?: string }).value ?? "";
-		this.#category = value === "" ? null : value;
-		this.requestUpdate();
 	};
 
 	/**
@@ -744,13 +747,18 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the toolbar with search, family filter, result count, layout switch and reset.
+	 * Renders the ribbon with the info button, the family carousel, the reset and
+	 * the layout switch.
 	 *
 	 * The whole row sits on one lightly shaded bar, so the controls read as one
-	 * unit. The layout switch and the reset are compact icon buttons with a
-	 * tooltip and an accessible label, like the canvas controls of the lab
-	 * widget; the result count is a pill badge, and a hidden live region keeps
-	 * the full sentence for screen readers.
+	 * unit. The families are a narrow carousel of tags instead of a dropdown plus a
+	 * legend, because the ribbon has no room for both and the tags double as the
+	 * filter. The reset sits right after the carousel rather than inside it, so it
+	 * never scrolls out of reach. The layout switch is a pair of compact icon
+	 * buttons with a tooltip and an accessible label, like the canvas controls of
+	 * the lab widget; the result count is a pill badge, and a hidden live region
+	 * keeps the full sentence for screen readers. The search field only appears in
+	 * the list, where the rows have no grid to scan.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
@@ -768,30 +776,40 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					label=${t.infoLabel}
 					@click=${this.#openInfo}
 				></sl-icon-button>
-				<sl-input
-					class="search"
-					type="search"
-					size="small"
-					clearable
-					label=${t.searchLabel}
-					placeholder=${t.searchPlaceholder}
-					.value=${this.#query}
-					@sl-input=${this.#onQueryInput}
-					@keydown=${this.#onSearchKeydown}
-				></sl-input>
-				<sl-select
-					class="filter"
-					size="small"
-					clearable
-					label=${t.filterLabel}
-					placeholder=${t.filterAll}
-					.value=${this.#category ?? ""}
-					@sl-change=${this.#onCategoryChange}
-				>
+				${resolved === "list"
+					? html`
+						<sl-input
+							class="search"
+							type="search"
+							size="small"
+							clearable
+							label=${t.searchLabel}
+							placeholder=${t.searchPlaceholder}
+							.value=${this.#query}
+							@sl-input=${this.#onQueryInput}
+							@keydown=${this.#onSearchKeydown}
+						></sl-input>
+					`
+					: null}
+				<div class="family-strip" role="group" aria-label=${t.legendLabel}>
 					${Object.entries(CATEGORIES).map(([key, category]) => html`
-						<sl-option value=${key}>${category[language]}</sl-option>
+						<button
+							class="family-tag category-${key}"
+							type="button"
+							aria-pressed=${this.#category === key}
+							@click=${() => this.#toggleCategory(key)}
+						>
+							<span class="family-swatch"></span>${category[language]}
+						</button>
 					`)}
-				</sl-select>
+				</div>
+				<sl-button
+					class="reset"
+					size="small"
+					title=${t.reset}
+					aria-label=${t.reset}
+					@click=${() => this.#reset()}
+				>${RESET_ICON}</sl-button>
 				<sl-badge class="count-badge" pill variant="neutral" title=${countText}>
 					${count}
 				</sl-badge>
@@ -815,12 +833,6 @@ export class ChemLabPeriodicTable extends LitElementWw {
 							@click=${() => this.#setView("list")}
 						>${LIST_ICON}</sl-button>
 					</div>
-					<sl-button
-						size="small"
-						title=${t.reset}
-						aria-label=${t.reset}
-						@click=${() => this.#reset()}
-					>${RESET_ICON}</sl-button>
 				</div>
 			</div>
 		`;
@@ -868,11 +880,13 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * The switch decides what the cells are coloured by: nothing, the state at the
 	 * chosen temperature, or whether the element was already known in the chosen
 	 * year. The legend only appears for the temperature mode, because the
-	 * discovery mode dims cells instead of colouring them.
+	 * discovery mode hides cells instead of colouring them. It shares the row
+	 * with the switch and the slider: a row of its own would cost the table the
+	 * height of one period at the default widget size.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
-	 * @returns The mode row and, for a state mode, the legend.
+	 * @returns The mode row with the legend of the temperature mode.
 	 */
 	#renderModes(t: Strings, language: Language) {
 		const slider = this.#slider(t, language);
@@ -905,6 +919,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 						</div>
 					`
 					: null}
+				${this.#renderStateLegend(t)}
 			</div>
 		`;
 	}
@@ -931,30 +946,25 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/**
 	 * Renders one element cell of the grid.
 	 *
+	 * Only matching cells are rendered at all, so a cell needs no disabled state:
+	 * an element the mode cannot place leaves a hole in the grid instead of a
+	 * greyed tile.
+	 *
 	 * @param cell - Cell of the display grid.
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
-	 * @param matching - Atomic numbers that pass the current filter.
 	 * @param roving - Atomic number of the tabbable cell.
 	 * @returns The grid cell.
 	 */
-	#renderCell(
-		cell: GridCell,
-		t: Strings,
-		language: Language,
-		matching: ReadonlySet<number>,
-		roving: number | null,
-	) {
+	#renderCell(cell: GridCell, t: Strings, language: Language, roving: number | null) {
 		const element = elementByAtomicNumber(cell.atomicNumber);
 		if (!element) return null;
-		const enabled = matching.has(cell.atomicNumber);
 		const selected = this.#selection.value === cell.atomicNumber;
 		const displayRow = cell.section === "main" ? cell.row + 1 : cell.row + 2;
 		const mode = cellMode(element, this.#mode);
 		const state = mode.state === null ? null : stateText(mode.state, t);
 		const classes = ["cell", `category-${cell.category}`];
 		if (mode.state !== null) classes.push(`state-${mode.state}`);
-		if (mode.dimmed) classes.push("is-dimmed");
 		const label = format(t.cellLabel, {
 			number: element.atomicNumber,
 			name: element.names[language],
@@ -966,13 +976,12 @@ export class ChemLabPeriodicTable extends LitElementWw {
 				class=${classes.join(" ")}
 				role="gridcell"
 				aria-selected=${selected}
-				aria-disabled=${!enabled}
 				aria-label=${label}
 				tabindex=${cell.atomicNumber === roving ? 0 : -1}
 				data-atomic-number=${cell.atomicNumber}
 				style="--pt-row:${displayRow};--pt-column:${cell.column + 1}"
-				@click=${() => enabled && this.#selectFromUser(cell.atomicNumber)}
-				@keydown=${(event: KeyboardEvent) => enabled && this.#onCellKeydown(event, cell.atomicNumber)}
+				@click=${() => this.#selectFromUser(cell.atomicNumber)}
+				@keydown=${(event: KeyboardEvent) => this.#onCellKeydown(event, cell.atomicNumber)}
 			>
 				<span class="cell-number">${cell.atomicNumber}</span>
 				<span class="cell-symbol">${element.symbol}</span>
@@ -985,9 +994,11 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/**
 	 * Renders the table layout.
 	 *
-	 * The detail card is a grid item of the table itself: it fills the free block
+	 * The detail card is a grid item of the table itself: it sits in the free block
 	 * above the transition metals, so the selection is read inside the table
-	 * instead of in a second column beside it.
+	 * instead of in a second column beside it. The card takes only the height of
+	 * its content, so the block keeps its own size and the periods around it never
+	 * stretch.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
@@ -1004,6 +1015,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 				style="--pt-row:1;--pt-column:${index + 2}"
 			>${index + 1}</div>
 		`);
+		const cells = (row: { readonly cells: readonly GridCell[] }) =>
+			row.cells.map(cell =>
+				matching.has(cell.atomicNumber) ? this.#renderCell(cell, t, language, roving) : null,
+			);
 		const mainRows = GRID.rows
 			.filter(row => row.section === "main")
 			.map(row => html`
@@ -1013,7 +1028,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 						role="rowheader"
 						style="--pt-row:${row.row + 1};--pt-column:1"
 					>${row.row}</div>
-					${row.cells.map(cell => this.#renderCell(cell, t, language, matching, roving))}
+					${cells(row)}
 				</div>
 			`);
 		const placeholders = GRID.placeholders.map(placeholder => {
@@ -1045,7 +1060,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 							role="rowheader"
 							style="--pt-row:${row.row + 2};--pt-column:1 / span 3"
 						>${name}</div>
-						${row.cells.map(cell => this.#renderCell(cell, t, language, matching, roving))}
+						${cells(row)}
 					</div>
 				`;
 			});
@@ -1067,39 +1082,23 @@ export class ChemLabPeriodicTable extends LitElementWw {
 						>${details}</div>
 					</div>
 				</div>
-				<div class="series-jumps">
-					${LAYOUT.seriesRows.map(series => html`
-						<sl-button size="small" @click=${() => this.#jumpToSeries(series.row)}>
-							${format(t.jumpToSeries, {
-								series: CATEGORIES[series.category]?.[language] ?? series.category,
-							})}
-						</sl-button>
-					`)}
-				</div>
-				<ul class="legend" aria-label=${t.legendLabel}>
-					${Object.entries(CATEGORIES).map(([key, category]) => html`
-						<li>
-							<button
-								class="legend-item category-${key}"
-								type="button"
-								aria-pressed=${this.#category === key}
-								@click=${() => this.#toggleCategory(key)}
-							>
-								<span class="legend-swatch"></span>${category[language]}
-							</button>
-						</li>
-					`)}
-				</ul>
 			</div>
 		`;
 	}
 
 	/**
-	 * Renders the list layout with the detail card after the selected row.
+	 * Renders the list layout with the detail card in place of the selected row.
+	 *
+	 * The card is always open here: the list has room for it, and a collapsed card
+	 * would only repeat the row it replaces. Rendering it instead of the row keeps
+	 * the identity of the element in one place, so the row and the card never show
+	 * the same name twice in two different styles. A selection the mode hides has
+	 * no row left, so its card moves to the top of the list.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
 	 * @param matches - Search hits in display order.
+	 * @param element - Selected element, or `null` when nothing is selected.
 	 * @param details - Rendered detail card.
 	 * @returns The list.
 	 */
@@ -1107,32 +1106,30 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		t: Strings,
 		language: Language,
 		matches: readonly SearchResult[],
+		element: ElementReference | null,
 		details: unknown,
 	) {
 		const selected = this.#selection.value;
 		const selectedVisible = matches.some(match => match.atomicNumber === selected);
 		const rows = matches.map(match => {
-			const element = elementByAtomicNumber(match.atomicNumber);
-			if (!element) return null;
-			const isSelected = match.atomicNumber === selected;
+			const entry = elementByAtomicNumber(match.atomicNumber);
+			if (!entry) return null;
+			if (match.atomicNumber === selected) return html`<li class="list-details">${details}</li>`;
 			// The mode decoration keeps its meaning in the narrow list: the state
 			// or the discovery year rides along as a tag at the end of the row.
-			const mode = cellMode(element, this.#mode);
-			const classes = ["list-row", `category-${categoryOf(element.atomicNumber) ?? "unknown"}`];
-			if (mode.dimmed) classes.push("is-dimmed");
+			const mode = cellMode(entry, this.#mode);
 			return html`
 				<li>
 					<button
-						class=${classes.join(" ")}
+						class="list-row category-${categoryOf(entry.atomicNumber) ?? "unknown"}"
 						type="button"
-						aria-pressed=${isSelected}
-						data-atomic-number=${element.atomicNumber}
-						@click=${() => this.#selectFromUser(element.atomicNumber)}
+						data-atomic-number=${entry.atomicNumber}
+						@click=${() => this.#selectFromUser(entry.atomicNumber)}
 					>
-						<span class="list-number">${element.atomicNumber}</span>
-						<span class="list-symbol">${element.symbol}</span>
-						<span class="list-name">${element.names[language]}</span>
-						<span class="list-category">${categoryText(element, language)}</span>
+						<span class="list-number">${entry.atomicNumber}</span>
+						<span class="list-symbol">${entry.symbol}</span>
+						<span class="list-name">${entry.names[language]}</span>
+						<span class="list-category">${categoryText(entry, language)}</span>
 						${mode.state === null
 							? mode.badge === null
 								? null
@@ -1143,14 +1140,15 @@ export class ChemLabPeriodicTable extends LitElementWw {
 							</sl-tag>
 						`}
 					</button>
-					${isSelected ? html`<div class="list-details">${details}</div>` : null}
 				</li>
 			`;
 		});
 		return html`
 			<div class="table-pane">
 				<ul class="list" aria-label=${t.gridLabel}>
-					${selectedVisible ? null : html`<li class="list-details">${details}</li>`}
+					${element !== null && !selectedVisible
+						? html`<li class="list-details">${details}</li>`
+						: null}
 					${rows}
 				</ul>
 			</div>
@@ -1244,18 +1242,25 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * current mode — and stops there: the free block of the table is only three
 	 * rows tall, and a card that grew with its content would stretch the periods
 	 * around it. The toggle in the corner opens the rest as an overlay above the
-	 * cells.
+	 * cells. The list passes `collapsible: false`, because its card replaces the
+	 * selected row and has the room to stay open.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
 	 * @param element - Selected element, or `null` for the empty card.
+	 * @param options - Whether the card can collapse and whether it is open.
 	 * @returns The detail card with its shell.
 	 */
-	#renderDetails(t: Strings, language: Language, element: ElementReference | null) {
+	#renderDetails(
+		t: Strings,
+		language: Language,
+		element: ElementReference | null,
+		options: DetailsOptions,
+	) {
 		if (!element) {
 			return html`
 				<div class="details-shell">
-					<sl-card class="details-card details-card-empty">
+					<sl-card class="details-card details-card-empty" tabindex="-1">
 						<div class="details-empty">
 							<sl-icon class="details-empty-icon" src=${POINTER_ICON}></sl-icon>
 							<p>${t.detailsEmpty}</p>
@@ -1268,13 +1273,17 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const key = keyRows(rows, this.#mode.mode);
 		const rest = rows.filter(row => !key.includes(row));
 		const name = element.names[language];
-		const expanded = this.#detailsExpanded;
+		const expanded = options.expanded;
+		const open = options.collapsible && expanded;
 		return html`
 			<div
-				class="details-shell ${expanded ? "is-expanded" : ""}"
+				class="details-shell ${open ? "is-expanded" : ""}"
 				@keydown=${this.#onDetailsKeydown}
 			>
-				<sl-card class="details-card category-${categoryOf(element.atomicNumber) ?? "unknown"}">
+				<sl-card
+					class="details-card category-${categoryOf(element.atomicNumber) ?? "unknown"}"
+					tabindex="-1"
+				>
 					<div slot="header" class="details-head">
 						<span class="details-thumb">${element.symbol}</span>
 						<h5 class="details-title" title=${name}>${name}</h5>
@@ -1297,14 +1306,18 @@ export class ChemLabPeriodicTable extends LitElementWw {
 							: null}
 					</div>
 				</sl-card>
-				<sl-button
-					class="details-toggle"
-					size="small"
-					title=${expanded ? t.detailsCollapse : t.detailsExpand}
-					aria-label=${expanded ? t.detailsCollapse : t.detailsExpand}
-					aria-expanded=${expanded}
-					@click=${this.#toggleDetails}
-				>${CHEVRON_ICON}</sl-button>
+				${options.collapsible
+					? html`
+						<sl-button
+							class="details-toggle"
+							size="small"
+							title=${expanded ? t.detailsCollapse : t.detailsExpand}
+							aria-label=${expanded ? t.detailsCollapse : t.detailsExpand}
+							aria-expanded=${expanded}
+							@click=${this.#toggleDetails}
+						>${CHEVRON_ICON}</sl-button>
+					`
+					: null}
 			</div>
 		`;
 	}
@@ -1448,20 +1461,27 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	render() {
 		const language = this.#language;
 		const t = strings(language);
-		const matches = this.#matches();
+		const resolved = this.#resolvedView;
+		// A mode that cannot place an element hides it, so the count and the grid
+		// agree on what is on screen.
+		const matches = this.#matches().filter(match => {
+			const element = elementByAtomicNumber(match.atomicNumber);
+			return element !== undefined && !cellMode(element, this.#mode).hidden;
+		});
 		const matching = new Set(matches.map(match => match.atomicNumber));
 		this.#matching = matching;
 		const selected = this.#selection.value;
 		const element = selected === null ? null : elementByAtomicNumber(selected) ?? null;
-		const details = this.#renderDetails(t, language, element);
-		const resolved = this.#resolvedView;
+		const details = this.#renderDetails(t, language, element, {
+			expanded: resolved === "list" || this.#detailsExpanded,
+			collapsible: resolved === "table",
+		});
 		return html`
 			<div class="widget">
 				${this.#renderToolbar(t, language, matches.length)}
 				${this.#renderModes(t, language)}
-				${this.#renderStateLegend(t)}
 				${resolved === "list"
-					? this.#renderList(t, language, matches, details)
+					? this.#renderList(t, language, matches, element, details)
 					: this.#renderGrid(t, language, matching, details)}
 				${this.#renderPrintOverview(t, language, element)}
 				${this.#renderInfo(t, language)}

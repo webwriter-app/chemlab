@@ -115,7 +115,7 @@ export function discoveryYear(element: ElementReference): number | undefined {
  * Tells whether an element was known at a year.
  *
  * An element of antiquity counts as known at every year, and an element without
- * any record is never dimmed, because the table cannot place it on the timeline.
+ * any record is never hidden, because the table cannot place it on the timeline.
  *
  * @param element Element of the reference bundle.
  * @param year Year to evaluate at.
@@ -173,29 +173,36 @@ export interface CellMode {
 	readonly state: MatterState | null;
 	/** Text of the corner badge, or `null` when the cell carries none. */
 	readonly badge: string | null;
-	/** Whether the cell is dimmed because the element was not yet known. */
-	readonly dimmed: boolean;
+	/** Whether the mode hides the cell because the element does not match it. */
+	readonly hidden: boolean;
 }
 
 /**
  * Derives the mode decoration of one cell.
  *
+ * A mode hides the elements it cannot place instead of dimming them: an element
+ * without thermal data has no state at any temperature, and an element that was
+ * not yet known has no place on the timeline. A dimmed tile would still occupy
+ * its slot and read as a value, so the table drops it and leaves a hole.
+ *
  * @param element Element of the reference bundle.
  * @param state Current mode state.
- * @returns The state colour, the corner badge and the dimming of the cell.
+ * @returns The state colour, the corner badge and whether the cell is hidden.
  */
 export function cellMode(element: ElementReference, state: ModeState): CellMode {
 	switch (state.mode) {
 		case "off":
-			return { state: null, badge: null, dimmed: false };
-		case "temperature":
-			return { state: matterState(element, state.temperatureK), badge: null, dimmed: false };
+			return { state: null, badge: null, hidden: false };
+		case "temperature": {
+			const matter = matterState(element, state.temperatureK);
+			return { state: matter, badge: null, hidden: matter === "unknown" };
+		}
 		case "discovery": {
 			const year = discoveryYear(element);
 			return {
 				state: null,
 				badge: year === undefined ? null : String(year),
-				dimmed: !knownAt(element, state.year),
+				hidden: !knownAt(element, state.year),
 			};
 		}
 	}

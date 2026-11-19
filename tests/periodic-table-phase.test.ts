@@ -87,36 +87,51 @@ test("the default mode state shows the reference conditions", () => {
 	assert.deepEqual(TABLE_MODES, ["off", "temperature", "discovery"]);
 });
 
-test("a cell carries the state, the badge and the dimming of its mode", () => {
+test("a cell carries the state, the badge and the hiding of its mode", () => {
 	const oxygen = element(8);
 	const tennessine = element(117);
 	assert.deepEqual(cellMode(oxygen, DEFAULT_MODE_STATE), {
 		state: null,
 		badge: null,
-		dimmed: false,
+		hidden: false,
 	});
 	assert.deepEqual(cellMode(oxygen, { ...DEFAULT_MODE_STATE, mode: "temperature" }), {
 		state: "gas",
 		badge: null,
-		dimmed: false,
+		hidden: false,
 	});
 	assert.deepEqual(
 		cellMode(oxygen, { ...DEFAULT_MODE_STATE, mode: "temperature", temperatureK: 70 }),
-		{ state: "liquid", badge: null, dimmed: false },
+		{ state: "liquid", badge: null, hidden: false },
 	);
 	assert.deepEqual(cellMode(tennessine, { ...DEFAULT_MODE_STATE, mode: "discovery", year: 1900 }), {
 		state: null,
 		badge: "2010",
-		dimmed: true,
+		hidden: true,
 	});
 	assert.deepEqual(cellMode(tennessine, { ...DEFAULT_MODE_STATE, mode: "discovery" }), {
 		state: null,
 		badge: "2010",
-		dimmed: false,
+		hidden: false,
 	});
 	assert.deepEqual(cellMode(element(26), { ...DEFAULT_MODE_STATE, mode: "discovery", year: 1300 }), {
 		state: null,
 		badge: null,
-		dimmed: false,
+		hidden: false,
 	});
+});
+
+test("the temperature mode hides the elements it cannot place", () => {
+	// Astatine carries no thermal data, so it has no state at any temperature.
+	const astatine = element(85);
+	assert.equal(matterState(astatine, 298.15), "unknown");
+	assert.equal(cellMode(astatine, { ...DEFAULT_MODE_STATE, mode: "temperature" }).hidden, true);
+	assert.equal(cellMode(astatine, DEFAULT_MODE_STATE).hidden, false);
+	// Oxygen is placed at every temperature the slider reaches.
+	for (const temperatureK of [1, 70, 298.15, 6000]) {
+		assert.equal(
+			cellMode(element(8), { ...DEFAULT_MODE_STATE, mode: "temperature", temperatureK }).hidden,
+			false,
+		);
+	}
 });

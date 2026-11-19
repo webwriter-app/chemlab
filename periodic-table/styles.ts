@@ -14,15 +14,24 @@ import { css } from "lit";
 
 /** Shadow styles of the periodic table widget. */
 export const periodicTableStyles = css`
+	/* The widget takes the same box as the lab widget: a fixed default size that
+	   the author can shrink, and a corner grip outside fullscreen. The height is
+	   fixed instead of grown by the content, so the table and the list scroll
+	   inside the box and an embed never pushes the page around. */
 	:host {
 		display: block;
 		box-sizing: border-box;
+		inline-size: 800px;
+		max-inline-size: 100%;
+		block-size: 600px;
+		min-inline-size: min(260px, 100%);
+		min-block-size: 280px;
 		padding: 0.75rem;
 		font-family: var(--sl-font-sans, system-ui, sans-serif);
 		color: var(--sl-color-neutral-900, #1c1c1e);
 		background: var(--sl-color-neutral-0, #ffffff);
 
-		--pt-cell-height: 3rem;
+		--pt-cell-height: 2.85rem;
 		--pt-details-border: 1px;
 		--pt-cell-bar: 0.22rem;
 		--pt-gutter: 1.5rem;
@@ -61,6 +70,11 @@ export const periodicTableStyles = css`
 		--pt-state-unknown: #e6e6e9;
 	}
 
+	:host(:not(:fullscreen)) {
+		resize: both;
+		overflow: hidden;
+	}
+
 	* {
 		box-sizing: border-box;
 	}
@@ -70,6 +84,8 @@ export const periodicTableStyles = css`
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
+		block-size: 100%;
+		min-block-size: 0;
 	}
 
 	.category-alkali-metal {
@@ -121,17 +137,11 @@ export const periodicTableStyles = css`
 	}
 
 	.toolbar .search {
-		flex: 1 1 12rem;
-		min-width: 8rem;
+		flex: 0 1 14rem;
+		min-width: 7rem;
 	}
 
-	.toolbar .filter {
-		flex: 0 1 11rem;
-		min-width: 8rem;
-	}
-
-	.toolbar sl-input::part(form-control-label),
-	.toolbar sl-select::part(form-control-label) {
+	.toolbar sl-input::part(form-control-label) {
 		position: absolute;
 		width: 1px;
 		height: 1px;
@@ -178,20 +188,28 @@ export const periodicTableStyles = css`
 		gap: 0.25rem;
 	}
 
-	.toolbar-actions sl-button::part(base) {
+	/* The ribbon buttons sit on the surface of the panel. The active view button
+	   keeps the accent fill of its primary variant, because the surface override
+	   would leave its white icon on a white box. */
+	.toolbar sl-button:not([variant="primary"])::part(base) {
 		background: var(--pt-surface);
 		box-shadow: var(--pt-control-shadow);
 	}
 
-	.toolbar-actions sl-button::part(label) {
+	.toolbar sl-button::part(label) {
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
 
+	/* The pane is the only part that scrolls: the ribbon and the mode row stay
+	   put while the table or the list moves under them, and the widget itself
+	   never grows past the height it was given. */
 	.table-pane {
+		flex: 1 1 auto;
 		min-width: 0;
-		overflow-x: auto;
+		min-height: 0;
+		overflow: auto;
 		padding-bottom: 0.25rem;
 	}
 
@@ -218,11 +236,12 @@ export const periodicTableStyles = css`
 		grid-column: var(--pt-column);
 	}
 
-	/* The detail card is a grid item of the table, so it fills the free block
-	   above the transition metals and never covers a cell. The slot is only the
-	   box: the card inside it is positioned, so its content can never stretch the
-	   rows it spans. The slot is also the query container of the card, so the card
-	   can drop the conditions when the block gets narrow. */
+	/* The detail card is a grid item of the table, so it starts in the free block
+	   above the transition metals. The slot is only the box: the card inside it is
+	   positioned and only as tall as its key rows, so it never stretches the rows
+	   it spans and may reach over the cells below when it is expanded. The slot is
+	   also the query container of the card, so the card can drop the conditions
+	   when the block gets narrow. */
 	.details-slot {
 		position: relative;
 		grid-row: var(--pt-row) / span var(--pt-row-span, 1);
@@ -295,13 +314,6 @@ export const periodicTableStyles = css`
 	.cell.state-gas {
 		background: var(--pt-state-gas);
 	}
-	.cell.state-unknown {
-		background: var(--pt-state-unknown);
-	}
-
-	.cell.is-dimmed {
-		opacity: 0.35;
-	}
 
 	/* The atomic number sits in a consistent corner; the discovery year takes the
 	   opposite one. */
@@ -327,15 +339,6 @@ export const periodicTableStyles = css`
 
 	.cell:hover {
 		border-color: color-mix(in srgb, var(--pt-ink) 35%, var(--pt-border));
-	}
-
-	.cell[aria-disabled="true"] {
-		opacity: 0.3;
-		cursor: default;
-	}
-
-	.cell[aria-disabled="true"]:hover {
-		border-color: var(--pt-border);
 	}
 
 	/* Selection stays ChemLab blue; keyboard focus gets its own dark outer ring,
@@ -390,27 +393,27 @@ export const periodicTableStyles = css`
 		color: var(--pt-ink-soft);
 	}
 
-	.series-jumps {
+	/* The families are a narrow carousel in the ribbon: one row that scrolls
+	   sideways instead of wrapping into a second and third line, which is what
+	   keeps the ribbon a single band at every width. The reset sits outside the
+	   strip, so it never scrolls out of reach. The small flex basis matters: a
+	   basis of auto would be the full width of all tags, and the toolbar would
+	   break the strip onto a line of its own before it ever shrank. */
+	.family-strip {
 		display: flex;
-		flex-wrap: wrap;
+		flex: 1 1 6rem;
 		gap: 0.25rem;
-		margin-top: 0.4rem;
-	}
-
-	.legend {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.25rem 0.4rem;
-		margin: 0.5rem 0 0;
-		padding: 0;
-		list-style: none;
+		min-width: 7rem;
+		overflow-x: auto;
+		padding-bottom: 1px;
+		scrollbar-width: thin;
 	}
 
 	/* Family names and the temperature key share one treatment: narrow
-	   rectangular tags with a swatch, so neither legend reads as a competing
-	   control. The family tags stay clickable and mirror the dropdown; the active
-	   filter gets a clear selected state in ChemLab blue. */
-	.legend-item,
+	   rectangular tags with a swatch, so neither reads as a competing control.
+	   The family tags are the filter; the active one gets a clear selected state
+	   in ChemLab blue. */
+	.family-tag,
 	.state-legend li {
 		display: inline-flex;
 		align-items: center;
@@ -423,25 +426,28 @@ export const periodicTableStyles = css`
 		font-size: 0.7rem;
 	}
 
-	.legend-item {
+	.family-tag {
+		flex: 0 0 auto;
 		font: inherit;
+		font-size: 0.7rem;
+		white-space: nowrap;
 		cursor: pointer;
 	}
 
-	.legend-item[aria-pressed="true"] {
+	.family-tag[aria-pressed="true"] {
 		border-color: var(--pt-accent);
 		background: color-mix(in srgb, var(--pt-accent) 10%, var(--pt-surface));
 		box-shadow: inset 0 0 0 1px var(--pt-accent);
 		color: var(--pt-ink);
 	}
 
-	.legend-item:focus-visible,
+	.family-tag:focus-visible,
 	.list-row:focus-visible {
 		outline: 2px solid var(--pt-ink);
 		outline-offset: 1px;
 	}
 
-	.legend-swatch,
+	.family-swatch,
 	.state-swatch {
 		width: 0.7rem;
 		height: 0.7rem;
@@ -499,6 +505,7 @@ export const periodicTableStyles = css`
 
 	.state-legend {
 		display: flex;
+		flex: 0 0 auto;
 		flex-wrap: wrap;
 		gap: 0.25rem 0.4rem;
 		margin: 0;
@@ -514,9 +521,6 @@ export const periodicTableStyles = css`
 	}
 	.state-swatch.state-gas {
 		background: var(--pt-state-gas);
-	}
-	.state-swatch.state-unknown {
-		background: var(--pt-state-unknown);
 	}
 
 	.list {
@@ -546,15 +550,6 @@ export const periodicTableStyles = css`
 
 	.list-row:hover {
 		background: var(--pt-inset);
-	}
-
-	.list-row[aria-pressed="true"] {
-		border-color: var(--pt-accent);
-		box-shadow: inset 0 0 0 1px var(--pt-accent);
-	}
-
-	.list-row.is-dimmed {
-		opacity: 0.45;
 	}
 
 	.list-number {
@@ -602,27 +597,40 @@ export const periodicTableStyles = css`
 		font-variant-numeric: tabular-nums;
 	}
 
+	/* In the list the card stands in for the selected row, so it sits in the flow
+	   of the list and is always open: no overlay, no fixed height, no toggle. */
 	.list-details {
 		position: relative;
-		margin: 0.25rem 0 0.5rem;
+		margin: 0.25rem 0;
 	}
 
-	/* In the list the card is part of the row instead of a grid item, so it grows
-	   with its content and the open card stays in the flow. */
 	.list-details .details-shell {
 		position: static;
+		max-height: none;
+	}
+
+	.list-details .details-card::part(base) {
+		height: auto;
+	}
+
+	.list-details .details-card::part(body) {
+		flex: 0 0 auto;
+		padding-bottom: 6px;
+		overflow: visible;
 	}
 
 	/* The detail card is a Shoelace card with the same white surface, subtle
 	   outline and soft shadow as the object info panel of the lab widget. The
-	   shell is the positioned box inside the slot: collapsed it fills the block
-	   above the transition metals, so the card is exactly as tall as the three
-	   rows it spans and the periods around it keep their cells. */
+	   shell is the positioned box inside the slot: collapsed it takes only the
+	   height of its content, so the card is as slim as its key rows and the
+	   periods around it keep their cells. */
 	.details-shell {
 		position: absolute;
-		inset: 0;
+		inset: 0 0 auto 0;
 		display: flex;
+		max-height: 100%;
 		min-width: 0;
+		overflow: hidden;
 	}
 
 	/* The open card grows downwards from the top of the block and covers the
@@ -631,6 +639,8 @@ export const periodicTableStyles = css`
 	.details-shell.is-expanded {
 		inset: 0 0 auto 0;
 		height: auto;
+		max-height: none;
+		overflow: visible;
 		z-index: 6;
 	}
 
@@ -645,8 +655,10 @@ export const periodicTableStyles = css`
 		--sl-panel-background-color: var(--pt-surface);
 	}
 
+	/* The card takes the height of its key rows instead of the height of the
+	   block, so the panel stays slim and the periods around it keep their cells. */
 	.details-card::part(base) {
-		height: 100%;
+		height: auto;
 		overflow: hidden;
 		box-shadow: var(--pt-panel-shadow);
 	}
@@ -727,13 +739,13 @@ export const periodicTableStyles = css`
 	}
 
 	/* The body holds the key rows and, once the card is open, the sections below
-	   them. Collapsed it takes the rest of the fixed card height and scrolls, so a
-	   long value never pushes the card past the block it fills. */
+	   them. Collapsed it keeps room for the toggle in its bottom-right corner and
+	   scrolls if a value needs more lines than the block has. */
 	.details-card::part(body) {
 		display: flex;
 		flex: 1;
 		min-height: 0;
-		padding: 6px 8px;
+		padding: 6px 8px 1.5rem;
 		overflow: auto;
 	}
 
@@ -764,12 +776,15 @@ export const periodicTableStyles = css`
 
 	/* The open card adds the remaining sections below the key rows, in as many
 	   columns as the block allows: side by side while there is room, stacked when
-	   the card is narrow. */
+	   the card is narrow. A wrapping flex row instead of a grid, because the
+	   sections then share the width of their own line: a grid would open as many
+	   narrow columns as fit and leave the rest of the row empty, which reads as a
+	   hole in the wide card of the list view. */
 	.details-more {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+		display: flex;
+		flex-wrap: wrap;
 		gap: 0.45rem 0.9rem;
-		align-items: start;
+		align-items: flex-start;
 		margin-top: 0.4rem;
 		padding-top: 0.4rem;
 		border-top: 1px solid var(--pt-border);
@@ -777,6 +792,7 @@ export const periodicTableStyles = css`
 
 	.details-section {
 		display: flex;
+		flex: 1 1 8.5rem;
 		flex-direction: column;
 		gap: 0.15rem;
 		min-width: 0;
@@ -786,7 +802,7 @@ export const periodicTableStyles = css`
 	   badly in a third of the card, so the structure section takes the full width
 	   and starts a row of its own. */
 	.details-section-structure {
-		grid-column: 1 / -1;
+		flex-basis: 100%;
 	}
 
 	/* The section headings are tags, so they read as labels of the card instead of
@@ -1140,16 +1156,23 @@ export const periodicTableStyles = css`
 	}
 
 	@media print {
+		/* The printed sheet is as tall as its content, so the fixed box and the
+		   scrolling pane are undone here. */
 		:host {
+			block-size: auto;
+			min-block-size: 0;
+			overflow: visible;
 			padding: 0;
+		}
+
+		.widget {
+			block-size: auto;
 		}
 
 		.toolbar,
 		.modes,
 		.state-legend,
-		.table-pane,
-		.series-jumps,
-		.legend {
+		.table-pane {
 			display: none !important;
 		}
 
@@ -1167,9 +1190,7 @@ export const periodicTableStyles = css`
 	:host(.ww-beforeprint) .toolbar,
 	:host(.ww-beforeprint) .modes,
 	:host(.ww-beforeprint) .state-legend,
-	:host(.ww-beforeprint) .table-pane,
-	:host(.ww-beforeprint) .series-jumps,
-	:host(.ww-beforeprint) .legend {
+	:host(.ww-beforeprint) .table-pane {
 		display: none !important;
 	}
 
@@ -1180,7 +1201,7 @@ export const periodicTableStyles = css`
 	@media (forced-colors: active) {
 		.cell,
 		.list-row,
-		.legend-item,
+		.family-tag,
 		.state-legend li,
 		.details-card,
 		.placeholder-text {
@@ -1192,14 +1213,13 @@ export const periodicTableStyles = css`
 		   stay distinct without colour. */
 		.cell:focus-visible,
 		.list-row:focus-visible,
-		.legend-item:focus-visible {
+		.family-tag:focus-visible {
 			outline: 2px solid Highlight;
 			outline-offset: 2px;
 		}
 
 		.cell[aria-selected="true"],
-		.list-row[aria-pressed="true"],
-		.legend-item[aria-pressed="true"] {
+		.family-tag[aria-pressed="true"] {
 			border: 2px solid Highlight;
 			box-shadow: none;
 		}

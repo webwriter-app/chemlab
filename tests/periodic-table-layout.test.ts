@@ -10,7 +10,6 @@ import {
 	firstInRow,
 	lastInRow,
 	neighborAtomicNumber,
-	seriesJumpTarget,
 } from "../periodic-table/layout";
 
 test("the grid places every element exactly once", () => {
@@ -109,13 +108,6 @@ test("Home and End resolve to the first and last element of a row", () => {
 	assert.equal(lastInRow(9), 103);
 	assert.equal(firstInRow(42), null);
 	assert.equal(lastInRow(42), null);
-});
-
-test("the series jump targets the first element of each detached row", () => {
-	assert.equal(seriesJumpTarget(8), 57);
-	assert.equal(seriesJumpTarget(9), 89);
-	assert.equal(seriesJumpTarget(1), 1);
-	assert.equal(seriesJumpTarget(99), null);
 });
 
 test("a grid built from another layout keeps the same cells", () => {

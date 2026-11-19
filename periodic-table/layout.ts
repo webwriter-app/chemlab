@@ -235,14 +235,3 @@ export function lastInRow(row: number, grid: PeriodicGrid = GRID): number | null
 	const cells = grid.rows.find((entry) => entry.row === row)?.cells;
 	return cells?.[cells.length - 1]?.atomicNumber ?? null;
 }
-
-/**
- * Finds the first element of a detached series row.
- *
- * @param seriesRow - Row of the detached series, 8 or 9 in the shipped layout.
- * @param grid - Grid to search; defaults to the shipped grid.
- * @returns The first atomic number of the series, or `null` for an unknown row.
- */
-export function seriesJumpTarget(seriesRow: number, grid: PeriodicGrid = GRID): number | null {
-	return firstInRow(seriesRow, grid);
-}

@@ -21,8 +21,6 @@ export type StringKey =
 	| "widgetLabel"
 	| "searchLabel"
 	| "searchPlaceholder"
-	| "filterLabel"
-	| "filterAll"
 	| "viewLabel"
 	| "viewTable"
 	| "viewList"
@@ -37,7 +35,6 @@ export type StringKey =
 	| "seriesLabel"
 	| "cellLabel"
 	| "placeholderLabel"
-	| "jumpToSeries"
 	| "detailsLabel"
 	| "detailsEmpty"
 	| "detailsHint"
@@ -106,9 +103,7 @@ export type Strings = Readonly<Record<StringKey, string>>;
 const EN: Strings = {
 	widgetLabel: "Periodic table",
 	searchLabel: "Search elements",
-	searchPlaceholder: "Name, symbol or atomic number",
-	filterLabel: "Family",
-	filterAll: "All families",
+	searchPlaceholder: "Name, symbol, number",
 	viewLabel: "Layout",
 	viewTable: "Table",
 	viewList: "List",
@@ -123,7 +118,6 @@ const EN: Strings = {
 	seriesLabel: "Detached series",
 	cellLabel: "{number}, {name}, {symbol}, {category}",
 	placeholderLabel: "{first} to {last}",
-	jumpToSeries: "Jump to {series}",
 	detailsLabel: "Element details",
 	detailsEmpty: "Select an element to see its details.",
 	detailsHint: "Values refer to the neutral atom.",
@@ -193,9 +187,7 @@ const EN: Strings = {
 const DE: Strings = {
 	widgetLabel: "Periodensystem",
 	searchLabel: "Elemente suchen",
-	searchPlaceholder: "Name, Symbol oder Ordnungszahl",
-	filterLabel: "Stoffklasse",
-	filterAll: "Alle Stoffklassen",
+	searchPlaceholder: "Name, Symbol, Nummer",
 	viewLabel: "Darstellung",
 	viewTable: "Tabelle",
 	viewList: "Liste",
@@ -210,7 +202,6 @@ const DE: Strings = {
 	seriesLabel: "Abgesetzte Reihen",
 	cellLabel: "{number}, {name}, {symbol}, {category}",
 	placeholderLabel: "{first} bis {last}",
-	jumpToSeries: "Zu {series} springen",
 	detailsLabel: "Elementdaten",
 	detailsEmpty: "Wähle ein Element, um seine Daten zu sehen.",
 	detailsHint: "Die Werte gelten für das neutrale Atom.",

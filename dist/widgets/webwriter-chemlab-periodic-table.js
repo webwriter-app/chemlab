@@ -822,10 +822,10 @@ __publicField2(LitElementWw, "options", {});
 __publicField2(LitElementWw, "actions", {});
 
 // node_modules/@lit/reactive-element/decorators/custom-element.js
-var t2 = (t8) => (e13, o11) => {
-  void 0 !== o11 ? o11.addInitializer((() => {
-    customElements.define(t8, e13);
-  })) : customElements.define(t8, e13);
+var t2 = (t8) => (e12, o10) => {
+  void 0 !== o10 ? o10.addInitializer((() => {
+    customElements.define(t8, e12);
+  })) : customElements.define(t8, e12);
 };
 
 // node_modules/@lit/reactive-element/css-tag.js
@@ -834,16 +834,16 @@ var e3 = t3.ShadowRoot && (void 0 === t3.ShadyCSS || t3.ShadyCSS.nativeShadow) &
 var s2 = Symbol();
 var o4 = /* @__PURE__ */ new WeakMap();
 var n5 = class {
-  constructor(t8, e13, o11) {
-    if (this._$cssResult$ = true, o11 !== s2) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
-    this.cssText = t8, this.t = e13;
+  constructor(t8, e12, o10) {
+    if (this._$cssResult$ = true, o10 !== s2) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
+    this.cssText = t8, this.t = e12;
   }
   get styleSheet() {
     let t8 = this.o;
     const s4 = this.t;
     if (e3 && void 0 === t8) {
-      const e13 = void 0 !== s4 && 1 === s4.length;
-      e13 && (t8 = o4.get(s4)), void 0 === t8 && ((this.o = t8 = new CSSStyleSheet()).replaceSync(this.cssText), e13 && o4.set(s4, t8));
+      const e12 = void 0 !== s4 && 1 === s4.length;
+      e12 && (t8 = o4.get(s4)), void 0 === t8 && ((this.o = t8 = new CSSStyleSheet()).replaceSync(this.cssText), e12 && o4.set(s4, t8));
     }
     return t8;
   }
@@ -852,25 +852,25 @@ var n5 = class {
   }
 };
 var r4 = (t8) => new n5("string" == typeof t8 ? t8 : t8 + "", void 0, s2);
-var i = (t8, ...e13) => {
-  const o11 = 1 === t8.length ? t8[0] : e13.reduce(((e14, s4, o12) => e14 + ((t9) => {
+var i = (t8, ...e12) => {
+  const o10 = 1 === t8.length ? t8[0] : e12.reduce(((e13, s4, o11) => e13 + ((t9) => {
     if (true === t9._$cssResult$) return t9.cssText;
     if ("number" == typeof t9) return t9;
     throw Error("Value passed to 'css' function must be a 'css' function result: " + t9 + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
-  })(s4) + t8[o12 + 1]), t8[0]);
-  return new n5(o11, t8, s2);
+  })(s4) + t8[o11 + 1]), t8[0]);
+  return new n5(o10, t8, s2);
 };
-var S3 = (s4, o11) => {
-  if (e3) s4.adoptedStyleSheets = o11.map(((t8) => t8 instanceof CSSStyleSheet ? t8 : t8.styleSheet));
-  else for (const e13 of o11) {
-    const o12 = document.createElement("style"), n10 = t3.litNonce;
-    void 0 !== n10 && o12.setAttribute("nonce", n10), o12.textContent = e13.cssText, s4.appendChild(o12);
+var S3 = (s4, o10) => {
+  if (e3) s4.adoptedStyleSheets = o10.map(((t8) => t8 instanceof CSSStyleSheet ? t8 : t8.styleSheet));
+  else for (const e12 of o10) {
+    const o11 = document.createElement("style"), n10 = t3.litNonce;
+    void 0 !== n10 && o11.setAttribute("nonce", n10), o11.textContent = e12.cssText, s4.appendChild(o11);
   }
 };
 var c4 = e3 ? (t8) => t8 : (t8) => t8 instanceof CSSStyleSheet ? ((t9) => {
-  let e13 = "";
-  for (const s4 of t9.cssRules) e13 += s4.cssText;
-  return r4(e13);
+  let e12 = "";
+  for (const s4 of t9.cssRules) e12 += s4.cssText;
+  return r4(e12);
 })(t8) : t8;
 
 // node_modules/@lit/reactive-element/reactive-element.js
@@ -926,15 +926,15 @@ var b2 = class extends HTMLElement {
     }
   }
   static getPropertyDescriptor(t8, s4, i9) {
-    const { get: e13, set: h6 } = r5(this.prototype, t8) ?? { get() {
+    const { get: e12, set: h6 } = r5(this.prototype, t8) ?? { get() {
       return this[s4];
     }, set(t9) {
       this[s4] = t9;
     } };
     return { get() {
-      return e13?.call(this);
+      return e12?.call(this);
     }, set(s5) {
-      const r11 = e13?.call(this);
+      const r11 = e12?.call(this);
       h6.call(this, s5), this.requestUpdate(t8, r11, i9);
     }, configurable: true, enumerable: true };
   }
@@ -967,8 +967,8 @@ var b2 = class extends HTMLElement {
   static finalizeStyles(s4) {
     const i9 = [];
     if (Array.isArray(s4)) {
-      const e13 = new Set(s4.flat(1 / 0).reverse());
-      for (const s5 of e13) i9.unshift(c4(s5));
+      const e12 = new Set(s4.flat(1 / 0).reverse());
+      for (const s5 of e12) i9.unshift(c4(s5));
     } else void 0 !== s4 && i9.push(c4(s4));
     return i9;
   }
@@ -1009,17 +1009,17 @@ var b2 = class extends HTMLElement {
     this._$AK(t8, i9);
   }
   _$EC(t8, s4) {
-    const i9 = this.constructor.elementProperties.get(t8), e13 = this.constructor._$Eu(t8, i9);
-    if (void 0 !== e13 && true === i9.reflect) {
+    const i9 = this.constructor.elementProperties.get(t8), e12 = this.constructor._$Eu(t8, i9);
+    if (void 0 !== e12 && true === i9.reflect) {
       const r11 = (void 0 !== i9.converter?.toAttribute ? i9.converter : u2).toAttribute(s4, i9.type);
-      this._$Em = t8, null == r11 ? this.removeAttribute(e13) : this.setAttribute(e13, r11), this._$Em = null;
+      this._$Em = t8, null == r11 ? this.removeAttribute(e12) : this.setAttribute(e12, r11), this._$Em = null;
     }
   }
   _$AK(t8, s4) {
-    const i9 = this.constructor, e13 = i9._$Eh.get(t8);
-    if (void 0 !== e13 && this._$Em !== e13) {
-      const t9 = i9.getPropertyOptions(e13), r11 = "function" == typeof t9.converter ? { fromAttribute: t9.converter } : void 0 !== t9.converter?.fromAttribute ? t9.converter : u2;
-      this._$Em = e13, this[e13] = r11.fromAttribute(s4, t9.type), this._$Em = null;
+    const i9 = this.constructor, e12 = i9._$Eh.get(t8);
+    if (void 0 !== e12 && this._$Em !== e12) {
+      const t9 = i9.getPropertyOptions(e12), r11 = "function" == typeof t9.converter ? { fromAttribute: t9.converter } : void 0 !== t9.converter?.fromAttribute ? t9.converter : u2;
+      this._$Em = e12, this[e12] = r11.fromAttribute(s4, t9.type), this._$Em = null;
     }
   }
   requestUpdate(t8, s4, i9) {
@@ -1093,32 +1093,32 @@ b2.elementStyles = [], b2.shadowRootOptions = { mode: "open" }, b2[d2("elementPr
 
 // node_modules/@lit/reactive-element/decorators/property.js
 var o6 = { attribute: true, type: String, converter: u2, reflect: false, hasChanged: f4 };
-var r6 = (t8 = o6, e13, r11) => {
+var r6 = (t8 = o6, e12, r11) => {
   const { kind: n10, metadata: i9 } = r11;
   let s4 = globalThis.litPropertyMetadata.get(i9);
   if (void 0 === s4 && globalThis.litPropertyMetadata.set(i9, s4 = /* @__PURE__ */ new Map()), s4.set(r11.name, t8), "accessor" === n10) {
-    const { name: o11 } = r11;
+    const { name: o10 } = r11;
     return { set(r12) {
-      const n11 = e13.get.call(this);
-      e13.set.call(this, r12), this.requestUpdate(o11, n11, t8);
-    }, init(e14) {
-      return void 0 !== e14 && this.P(o11, void 0, t8), e14;
+      const n11 = e12.get.call(this);
+      e12.set.call(this, r12), this.requestUpdate(o10, n11, t8);
+    }, init(e13) {
+      return void 0 !== e13 && this.P(o10, void 0, t8), e13;
     } };
   }
   if ("setter" === n10) {
-    const { name: o11 } = r11;
+    const { name: o10 } = r11;
     return function(r12) {
-      const n11 = this[o11];
-      e13.call(this, r12), this.requestUpdate(o11, n11, t8);
+      const n11 = this[o10];
+      e12.call(this, r12), this.requestUpdate(o10, n11, t8);
     };
   }
   throw Error("Unsupported decorator location: " + n10);
 };
 function n7(t8) {
-  return (e13, o11) => "object" == typeof o11 ? r6(t8, e13, o11) : ((t9, e14, o12) => {
-    const r11 = e14.hasOwnProperty(o12);
-    return e14.constructor.createProperty(o12, r11 ? { ...t9, wrapped: true } : t9), r11 ? Object.getOwnPropertyDescriptor(e14, o12) : void 0;
-  })(t8, e13, o11);
+  return (e12, o10) => "object" == typeof o10 ? r6(t8, e12, o10) : ((t9, e13, o11) => {
+    const r11 = e13.hasOwnProperty(o11);
+    return e13.constructor.createProperty(o11, r11 ? { ...t9, wrapped: true } : t9), r11 ? Object.getOwnPropertyDescriptor(e13, o11) : void 0;
+  })(t8, e12, o10);
 }
 
 // node_modules/@lit/reactive-element/decorators/state.js
@@ -1128,35 +1128,35 @@ function r7(r11) {
 
 // node_modules/@lit/reactive-element/decorators/event-options.js
 function t4(t8) {
-  return (n10, o11) => {
-    const c8 = "function" == typeof n10 ? n10 : n10[o11];
+  return (n10, o10) => {
+    const c8 = "function" == typeof n10 ? n10 : n10[o10];
     Object.assign(c8, t8);
   };
 }
 
 // node_modules/@lit/reactive-element/decorators/base.js
-var e5 = (e13, t8, c8) => (c8.configurable = true, c8.enumerable = true, Reflect.decorate && "object" != typeof t8 && Object.defineProperty(e13, t8, c8), c8);
+var e5 = (e12, t8, c8) => (c8.configurable = true, c8.enumerable = true, Reflect.decorate && "object" != typeof t8 && Object.defineProperty(e12, t8, c8), c8);
 
 // node_modules/@lit/reactive-element/decorators/query.js
-function e6(e13, r11) {
+function e6(e12, r11) {
   return (n10, s4, i9) => {
-    const o11 = (t8) => t8.renderRoot?.querySelector(e13) ?? null;
+    const o10 = (t8) => t8.renderRoot?.querySelector(e12) ?? null;
     if (r11) {
-      const { get: e14, set: r12 } = "object" == typeof s4 ? n10 : i9 ?? (() => {
+      const { get: e13, set: r12 } = "object" == typeof s4 ? n10 : i9 ?? (() => {
         const t8 = Symbol();
         return { get() {
           return this[t8];
-        }, set(e15) {
-          this[t8] = e15;
+        }, set(e14) {
+          this[t8] = e14;
         } };
       })();
       return e5(n10, s4, { get() {
-        let t8 = e14.call(this);
-        return void 0 === t8 && (t8 = o11(this), (null !== t8 || this.hasUpdated) && r12.call(this, t8)), t8;
+        let t8 = e13.call(this);
+        return void 0 === t8 && (t8 = o10(this), (null !== t8 || this.hasUpdated) && r12.call(this, t8)), t8;
       } });
     }
     return e5(n10, s4, { get() {
-      return o11(this);
+      return o10(this);
     } });
   };
 }
@@ -1196,16 +1196,16 @@ function P2(t8, i9) {
   return void 0 !== s3 ? s3.createHTML(i9) : i9;
 }
 var V2 = (t8, i9) => {
-  const s4 = t8.length - 1, o11 = [];
+  const s4 = t8.length - 1, o10 = [];
   let r11, l6 = 2 === i9 ? "<svg>" : 3 === i9 ? "<math>" : "", c8 = f5;
   for (let i10 = 0; i10 < s4; i10++) {
     const s5 = t8[i10];
     let a5, u6, d4 = -1, y4 = 0;
     for (; y4 < s5.length && (c8.lastIndex = y4, u6 = c8.exec(s5), null !== u6); ) y4 = c8.lastIndex, c8 === f5 ? "!--" === u6[1] ? c8 = v2 : void 0 !== u6[1] ? c8 = _2 : void 0 !== u6[2] ? ($2.test(u6[2]) && (r11 = RegExp("</" + u6[2], "g")), c8 = m2) : void 0 !== u6[3] && (c8 = m2) : c8 === m2 ? ">" === u6[0] ? (c8 = r11 ?? f5, d4 = -1) : void 0 === u6[1] ? d4 = -2 : (d4 = c8.lastIndex - u6[2].length, a5 = u6[1], c8 = void 0 === u6[3] ? m2 : '"' === u6[3] ? g2 : p3) : c8 === g2 || c8 === p3 ? c8 = m2 : c8 === v2 || c8 === _2 ? c8 = f5 : (c8 = m2, r11 = void 0);
     const x3 = c8 === m2 && t8[i10 + 1].startsWith("/>") ? " " : "";
-    l6 += c8 === f5 ? s5 + n8 : d4 >= 0 ? (o11.push(a5), s5.slice(0, d4) + e7 + s5.slice(d4) + h5 + x3) : s5 + h5 + (-2 === d4 ? i10 : x3);
+    l6 += c8 === f5 ? s5 + n8 : d4 >= 0 ? (o10.push(a5), s5.slice(0, d4) + e7 + s5.slice(d4) + h5 + x3) : s5 + h5 + (-2 === d4 ? i10 : x3);
   }
-  return [P2(t8, l6 + (t8[s4] || "<?>") + (2 === i9 ? "</svg>" : 3 === i9 ? "</math>" : "")), o11];
+  return [P2(t8, l6 + (t8[s4] || "<?>") + (2 === i9 ? "</svg>" : 3 === i9 ? "</math>" : "")), o10];
 };
 var N2 = class _N {
   constructor({ strings: t8, _$litType$: s4 }, n10) {
@@ -1220,8 +1220,8 @@ var N2 = class _N {
     for (; null !== (r11 = C.nextNode()) && d4.length < u6; ) {
       if (1 === r11.nodeType) {
         if (r11.hasAttributes()) for (const t9 of r11.getAttributeNames()) if (t9.endsWith(e7)) {
-          const i9 = v3[a5++], s5 = r11.getAttribute(t9).split(h5), e13 = /([.?@])?(.*)/.exec(i9);
-          d4.push({ type: 1, index: c8, name: e13[2], strings: s5, ctor: "." === e13[1] ? H : "?" === e13[1] ? I2 : "@" === e13[1] ? L : k2 }), r11.removeAttribute(t9);
+          const i9 = v3[a5++], s5 = r11.getAttribute(t9).split(h5), e12 = /([.?@])?(.*)/.exec(i9);
+          d4.push({ type: 1, index: c8, name: e12[2], strings: s5, ctor: "." === e12[1] ? H : "?" === e12[1] ? I2 : "@" === e12[1] ? L : k2 }), r11.removeAttribute(t9);
         } else t9.startsWith(h5) && (d4.push({ type: 6, index: c8 }), r11.removeAttribute(t9));
         if ($2.test(r11.tagName)) {
           const t9 = r11.textContent.split(h5), s5 = t9.length - 1;
@@ -1244,11 +1244,11 @@ var N2 = class _N {
     return s4.innerHTML = t8, s4;
   }
 };
-function S4(t8, i9, s4 = t8, e13) {
+function S4(t8, i9, s4 = t8, e12) {
   if (i9 === T2) return i9;
-  let h6 = void 0 !== e13 ? s4._$Co?.[e13] : s4._$Cl;
-  const o11 = c6(i9) ? void 0 : i9._$litDirective$;
-  return h6?.constructor !== o11 && (h6?._$AO?.(false), void 0 === o11 ? h6 = void 0 : (h6 = new o11(t8), h6._$AT(t8, s4, e13)), void 0 !== e13 ? (s4._$Co ??= [])[e13] = h6 : s4._$Cl = h6), void 0 !== h6 && (i9 = S4(t8, h6._$AS(t8, i9.values), h6, e13)), i9;
+  let h6 = void 0 !== e12 ? s4._$Co?.[e12] : s4._$Cl;
+  const o10 = c6(i9) ? void 0 : i9._$litDirective$;
+  return h6?.constructor !== o10 && (h6?._$AO?.(false), void 0 === o10 ? h6 = void 0 : (h6 = new o10(t8), h6._$AT(t8, s4, e12)), void 0 !== e12 ? (s4._$Co ??= [])[e12] = h6 : s4._$Cl = h6), void 0 !== h6 && (i9 = S4(t8, h6._$AS(t8, i9.values), h6, e12)), i9;
 }
 var M2 = class {
   constructor(t8, i9) {
@@ -1261,17 +1261,17 @@ var M2 = class {
     return this._$AM._$AU;
   }
   u(t8) {
-    const { el: { content: i9 }, parts: s4 } = this._$AD, e13 = (t8?.creationScope ?? r8).importNode(i9, true);
-    C.currentNode = e13;
-    let h6 = C.nextNode(), o11 = 0, n10 = 0, l6 = s4[0];
+    const { el: { content: i9 }, parts: s4 } = this._$AD, e12 = (t8?.creationScope ?? r8).importNode(i9, true);
+    C.currentNode = e12;
+    let h6 = C.nextNode(), o10 = 0, n10 = 0, l6 = s4[0];
     for (; void 0 !== l6; ) {
-      if (o11 === l6.index) {
+      if (o10 === l6.index) {
         let i10;
         2 === l6.type ? i10 = new R2(h6, h6.nextSibling, this, t8) : 1 === l6.type ? i10 = new l6.ctor(h6, l6.name, l6.strings, this, t8) : 6 === l6.type && (i10 = new z2(h6, this, t8)), this._$AV.push(i10), l6 = s4[++n10];
       }
-      o11 !== l6?.index && (h6 = C.nextNode(), o11++);
+      o10 !== l6?.index && (h6 = C.nextNode(), o10++);
     }
-    return C.currentNode = r8, e13;
+    return C.currentNode = r8, e12;
   }
   p(t8) {
     let i9 = 0;
@@ -1282,8 +1282,8 @@ var R2 = class _R {
   get _$AU() {
     return this._$AM?._$AU ?? this._$Cv;
   }
-  constructor(t8, i9, s4, e13) {
-    this.type = 2, this._$AH = E2, this._$AN = void 0, this._$AA = t8, this._$AB = i9, this._$AM = s4, this.options = e13, this._$Cv = e13?.isConnected ?? true;
+  constructor(t8, i9, s4, e12) {
+    this.type = 2, this._$AH = E2, this._$AN = void 0, this._$AA = t8, this._$AB = i9, this._$AM = s4, this.options = e12, this._$Cv = e12?.isConnected ?? true;
   }
   get parentNode() {
     let t8 = this._$AA.parentNode;
@@ -1309,10 +1309,10 @@ var R2 = class _R {
     this._$AH !== E2 && c6(this._$AH) ? this._$AA.nextSibling.data = t8 : this.T(r8.createTextNode(t8)), this._$AH = t8;
   }
   $(t8) {
-    const { values: i9, _$litType$: s4 } = t8, e13 = "number" == typeof s4 ? this._$AC(t8) : (void 0 === s4.el && (s4.el = N2.createElement(P2(s4.h, s4.h[0]), this.options)), s4);
-    if (this._$AH?._$AD === e13) this._$AH.p(i9);
+    const { values: i9, _$litType$: s4 } = t8, e12 = "number" == typeof s4 ? this._$AC(t8) : (void 0 === s4.el && (s4.el = N2.createElement(P2(s4.h, s4.h[0]), this.options)), s4);
+    if (this._$AH?._$AD === e12) this._$AH.p(i9);
     else {
-      const t9 = new M2(e13, this), s5 = t9.u(this.options);
+      const t9 = new M2(e12, this), s5 = t9.u(this.options);
       t9.p(i9), this.T(s5), this._$AH = t9;
     }
   }
@@ -1323,9 +1323,9 @@ var R2 = class _R {
   k(t8) {
     a3(this._$AH) || (this._$AH = [], this._$AR());
     const i9 = this._$AH;
-    let s4, e13 = 0;
-    for (const h6 of t8) e13 === i9.length ? i9.push(s4 = new _R(this.O(l3()), this.O(l3()), this, this.options)) : s4 = i9[e13], s4._$AI(h6), e13++;
-    e13 < i9.length && (this._$AR(s4 && s4._$AB.nextSibling, e13), i9.length = e13);
+    let s4, e12 = 0;
+    for (const h6 of t8) e12 === i9.length ? i9.push(s4 = new _R(this.O(l3()), this.O(l3()), this, this.options)) : s4 = i9[e12], s4._$AI(h6), e12++;
+    e12 < i9.length && (this._$AR(s4 && s4._$AB.nextSibling, e12), i9.length = e12);
   }
   _$AR(t8 = this._$AA.nextSibling, i9) {
     for (this._$AP?.(false, true, i9); t8 && t8 !== this._$AB; ) {
@@ -1344,19 +1344,19 @@ var k2 = class {
   get _$AU() {
     return this._$AM._$AU;
   }
-  constructor(t8, i9, s4, e13, h6) {
-    this.type = 1, this._$AH = E2, this._$AN = void 0, this.element = t8, this.name = i9, this._$AM = e13, this.options = h6, s4.length > 2 || "" !== s4[0] || "" !== s4[1] ? (this._$AH = Array(s4.length - 1).fill(new String()), this.strings = s4) : this._$AH = E2;
+  constructor(t8, i9, s4, e12, h6) {
+    this.type = 1, this._$AH = E2, this._$AN = void 0, this.element = t8, this.name = i9, this._$AM = e12, this.options = h6, s4.length > 2 || "" !== s4[0] || "" !== s4[1] ? (this._$AH = Array(s4.length - 1).fill(new String()), this.strings = s4) : this._$AH = E2;
   }
-  _$AI(t8, i9 = this, s4, e13) {
+  _$AI(t8, i9 = this, s4, e12) {
     const h6 = this.strings;
-    let o11 = false;
-    if (void 0 === h6) t8 = S4(this, t8, i9, 0), o11 = !c6(t8) || t8 !== this._$AH && t8 !== T2, o11 && (this._$AH = t8);
+    let o10 = false;
+    if (void 0 === h6) t8 = S4(this, t8, i9, 0), o10 = !c6(t8) || t8 !== this._$AH && t8 !== T2, o10 && (this._$AH = t8);
     else {
-      const e14 = t8;
+      const e13 = t8;
       let n10, r11;
-      for (t8 = h6[0], n10 = 0; n10 < h6.length - 1; n10++) r11 = S4(this, e14[s4 + n10], i9, n10), r11 === T2 && (r11 = this._$AH[n10]), o11 ||= !c6(r11) || r11 !== this._$AH[n10], r11 === E2 ? t8 = E2 : t8 !== E2 && (t8 += (r11 ?? "") + h6[n10 + 1]), this._$AH[n10] = r11;
+      for (t8 = h6[0], n10 = 0; n10 < h6.length - 1; n10++) r11 = S4(this, e13[s4 + n10], i9, n10), r11 === T2 && (r11 = this._$AH[n10]), o10 ||= !c6(r11) || r11 !== this._$AH[n10], r11 === E2 ? t8 = E2 : t8 !== E2 && (t8 += (r11 ?? "") + h6[n10 + 1]), this._$AH[n10] = r11;
     }
-    o11 && !e13 && this.j(t8);
+    o10 && !e12 && this.j(t8);
   }
   j(t8) {
     t8 === E2 ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t8 ?? "");
@@ -1379,13 +1379,13 @@ var I2 = class extends k2 {
   }
 };
 var L = class extends k2 {
-  constructor(t8, i9, s4, e13, h6) {
-    super(t8, i9, s4, e13, h6), this.type = 5;
+  constructor(t8, i9, s4, e12, h6) {
+    super(t8, i9, s4, e12, h6), this.type = 5;
   }
   _$AI(t8, i9 = this) {
     if ((t8 = S4(this, t8, i9, 0) ?? E2) === T2) return;
-    const s4 = this._$AH, e13 = t8 === E2 && s4 !== E2 || t8.capture !== s4.capture || t8.once !== s4.once || t8.passive !== s4.passive, h6 = t8 !== E2 && (s4 === E2 || e13);
-    e13 && this.element.removeEventListener(this.name, this, s4), h6 && this.element.addEventListener(this.name, this, t8), this._$AH = t8;
+    const s4 = this._$AH, e12 = t8 === E2 && s4 !== E2 || t8.capture !== s4.capture || t8.once !== s4.once || t8.passive !== s4.passive, h6 = t8 !== E2 && (s4 === E2 || e12);
+    e12 && this.element.removeEventListener(this.name, this, s4), h6 && this.element.addEventListener(this.name, this, t8), this._$AH = t8;
   }
   handleEvent(t8) {
     "function" == typeof this._$AH ? this._$AH.call(this.options?.host ?? this.element, t8) : this._$AH.handleEvent(t8);
@@ -1406,11 +1406,11 @@ var Z2 = { M: e7, P: h5, A: o7, C: 1, L: V2, R: M2, D: u3, V: S4, I: R2, H: k2, 
 var j2 = t5.litHtmlPolyfillSupport;
 j2?.(N2, R2), (t5.litHtmlVersions ??= []).push("3.2.1");
 var B2 = (t8, i9, s4) => {
-  const e13 = s4?.renderBefore ?? i9;
-  let h6 = e13._$litPart$;
+  const e12 = s4?.renderBefore ?? i9;
+  let h6 = e12._$litPart$;
   if (void 0 === h6) {
     const t9 = s4?.renderBefore ?? null;
-    e13._$litPart$ = h6 = new R2(i9.insertBefore(l3(), t9), t9, void 0, s4 ?? {});
+    e12._$litPart$ = h6 = new R2(i9.insertBefore(l3(), t9), t9, void 0, s4 ?? {});
   }
   return h6._$AI(t8), h6;
 };
@@ -1704,21 +1704,21 @@ __decorateClass([
 
 // node_modules/lit-html/directive.js
 var t6 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
-var e8 = (t8) => (...e13) => ({ _$litDirective$: t8, values: e13 });
+var e8 = (t8) => (...e12) => ({ _$litDirective$: t8, values: e12 });
 var i6 = class {
   constructor(t8) {
   }
   get _$AU() {
     return this._$AM._$AU;
   }
-  _$AT(t8, e13, i9) {
-    this._$Ct = t8, this._$AM = e13, this._$Ci = i9;
+  _$AT(t8, e12, i9) {
+    this._$Ct = t8, this._$AM = e12, this._$Ci = i9;
   }
-  _$AS(t8, e13) {
-    return this.update(t8, e13);
+  _$AS(t8, e12) {
+    return this.update(t8, e12);
   }
-  update(t8, e13) {
-    return this.render(...e13);
+  update(t8, e12) {
+    return this.render(...e12);
   }
 };
 
@@ -3154,10 +3154,10 @@ function watch(propertyName, options) {
 
 // node_modules/lit-html/directive-helpers.js
 var { I: t7 } = Z2;
-var e10 = (o11, t8) => void 0 === t8 ? void 0 !== o11?._$litType$ : o11?._$litType$ === t8;
-var f6 = (o11) => void 0 === o11.strings;
+var e10 = (o10, t8) => void 0 === t8 ? void 0 !== o10?._$litType$ : o10?._$litType$ === t8;
+var f6 = (o10) => void 0 === o10.strings;
 var u4 = {};
-var m3 = (o11, t8 = u4) => o11._$AH = t8;
+var m3 = (o10, t8 = u4) => o10._$AH = t8;
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.5YPURQKE.js
 var CACHEABLE_ERROR = Symbol();
@@ -3185,7 +3185,7 @@ var SlIcon = class extends ShoelaceElement {
     try {
       fileData = await fetch(url, { mode: "cors" });
       if (!fileData.ok) return fileData.status === 410 ? CACHEABLE_ERROR : RETRYABLE_ERROR;
-    } catch (e13) {
+    } catch (e12) {
       return RETRYABLE_ERROR;
     }
     try {
@@ -3199,7 +3199,7 @@ var SlIcon = class extends ShoelaceElement {
       if (!svgEl) return CACHEABLE_ERROR;
       svgEl.part.add("svg");
       return document.adoptNode(svgEl);
-    } catch (e13) {
+    } catch (e12) {
       return CACHEABLE_ERROR;
     }
   }
@@ -3318,33 +3318,33 @@ var a4 = Symbol.for("");
 var o8 = (t8) => {
   if (t8?.r === a4) return t8?._$litStatic$;
 };
-var i7 = (t8, ...r11) => ({ _$litStatic$: r11.reduce(((r12, e13, a5) => r12 + ((t9) => {
+var i7 = (t8, ...r11) => ({ _$litStatic$: r11.reduce(((r12, e12, a5) => r12 + ((t9) => {
   if (void 0 !== t9._$litStatic$) return t9._$litStatic$;
   throw Error(`Value passed to 'literal' function must be a 'literal' result: ${t9}. Use 'unsafeStatic' to pass non-literal values, but
             take care to ensure page security.`);
-})(e13) + t8[a5 + 1]), t8[0]), r: a4 });
+})(e12) + t8[a5 + 1]), t8[0]), r: a4 });
 var l4 = /* @__PURE__ */ new Map();
-var n9 = (t8) => (r11, ...e13) => {
-  const a5 = e13.length;
+var n9 = (t8) => (r11, ...e12) => {
+  const a5 = e12.length;
   let s4, i9;
   const n10 = [], u6 = [];
   let c8, $4 = 0, f7 = false;
   for (; $4 < a5; ) {
-    for (c8 = r11[$4]; $4 < a5 && void 0 !== (i9 = e13[$4], s4 = o8(i9)); ) c8 += s4 + r11[++$4], f7 = true;
+    for (c8 = r11[$4]; $4 < a5 && void 0 !== (i9 = e12[$4], s4 = o8(i9)); ) c8 += s4 + r11[++$4], f7 = true;
     $4 !== a5 && u6.push(i9), n10.push(c8), $4++;
   }
   if ($4 === a5 && n10.push(r11[a5]), f7) {
     const t9 = n10.join("$$lit$$");
-    void 0 === (r11 = l4.get(t9)) && (n10.raw = n10, l4.set(t9, r11 = n10)), e13 = u6;
+    void 0 === (r11 = l4.get(t9)) && (n10.raw = n10, l4.set(t9, r11 = n10)), e12 = u6;
   }
-  return t8(r11, ...e13);
+  return t8(r11, ...e12);
 };
 var u5 = n9(x2);
 var c7 = n9(b3);
 var $3 = n9(w2);
 
 // node_modules/lit-html/directives/if-defined.js
-var o9 = (o11) => o11 ?? E2;
+var o9 = (o10) => o10 ?? E2;
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.HSRY62XN.js
 var SlButton = class extends ShoelaceElement {
@@ -3803,8 +3803,8 @@ function getTabbableElements(root) {
         walk(el.shadowRoot);
       }
     }
-    for (const e13 of el.children) {
-      walk(e13);
+    for (const e12 of el.children) {
+      walk(e12);
     }
   }
   walk(root);
@@ -3936,12 +3936,6 @@ var Modal = class {
 };
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.RWUUFNUL.js
-function getOffset(element, parent) {
-  return {
-    top: Math.round(element.getBoundingClientRect().top - parent.getBoundingClientRect().top),
-    left: Math.round(element.getBoundingClientRect().left - parent.getBoundingClientRect().left)
-  };
-}
 var locks = /* @__PURE__ */ new Set();
 function getScrollbarWidth() {
   const documentWidth = document.documentElement.clientWidth;
@@ -3975,29 +3969,6 @@ function unlockBodyScrolling(lockingEl) {
   if (locks.size === 0) {
     document.documentElement.classList.remove("sl-scroll-lock");
     document.documentElement.style.removeProperty("--sl-scroll-lock-size");
-  }
-}
-function scrollIntoView(element, container, direction = "vertical", behavior = "smooth") {
-  const offset3 = getOffset(element, container);
-  const offsetTop = offset3.top + container.scrollTop;
-  const offsetLeft = offset3.left + container.scrollLeft;
-  const minX = container.scrollLeft;
-  const maxX = container.scrollLeft + container.offsetWidth;
-  const minY = container.scrollTop;
-  const maxY = container.scrollTop + container.offsetHeight;
-  if (direction === "horizontal" || direction === "both") {
-    if (offsetLeft < minX) {
-      container.scrollTo({ left: offsetLeft, behavior });
-    } else if (offsetLeft + element.clientWidth > maxX) {
-      container.scrollTo({ left: offsetLeft - container.offsetWidth + element.clientWidth, behavior });
-    }
-  }
-  if (direction === "vertical" || direction === "both") {
-    if (offsetTop < minY) {
-      container.scrollTo({ top: offsetTop, behavior });
-    } else if (offsetTop + element.clientHeight > maxY) {
-      container.scrollTo({ top: offsetTop - container.offsetHeight + element.clientHeight, behavior });
-    }
   }
 }
 
@@ -5018,12 +4989,12 @@ var l5 = e8(class extends i6 {
   }
   update(i9, [t8]) {
     if (t8 === T2 || t8 === E2) return t8;
-    const o11 = i9.element, l6 = i9.name;
+    const o10 = i9.element, l6 = i9.name;
     if (i9.type === t6.PROPERTY) {
-      if (t8 === o11[l6]) return T2;
+      if (t8 === o10[l6]) return T2;
     } else if (i9.type === t6.BOOLEAN_ATTRIBUTE) {
-      if (!!t8 === o11.hasAttribute(l6)) return T2;
-    } else if (i9.type === t6.ATTRIBUTE && o11.getAttribute(l6) === t8 + "") return T2;
+      if (!!t8 === o10.hasAttribute(l6)) return T2;
+    } else if (i9.type === t6.ATTRIBUTE && o10.getAttribute(l6) === t8 + "") return T2;
     return m3(i9), t8;
   }
 });
@@ -5475,206 +5446,6 @@ __decorateClass([
 __decorateClass([
   watch("value", { waitUntilFirstUpdate: true })
 ], SlInput.prototype, "handleValueChange", 1);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FXXKMG2P.js
-var option_styles_default = i`
-  :host {
-    display: block;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-
-  :host(:focus) {
-    outline: none;
-  }
-
-  .option {
-    position: relative;
-    display: flex;
-    align-items: center;
-    font-family: var(--sl-font-sans);
-    font-size: var(--sl-font-size-medium);
-    font-weight: var(--sl-font-weight-normal);
-    line-height: var(--sl-line-height-normal);
-    letter-spacing: var(--sl-letter-spacing-normal);
-    color: var(--sl-color-neutral-700);
-    padding: var(--sl-spacing-x-small) var(--sl-spacing-medium) var(--sl-spacing-x-small) var(--sl-spacing-x-small);
-    transition: var(--sl-transition-fast) fill;
-    cursor: pointer;
-  }
-
-  .option--hover:not(.option--current):not(.option--disabled) {
-    background-color: var(--sl-color-neutral-100);
-    color: var(--sl-color-neutral-1000);
-  }
-
-  .option--current,
-  .option--current.option--disabled {
-    background-color: var(--sl-color-primary-600);
-    color: var(--sl-color-neutral-0);
-    opacity: 1;
-  }
-
-  .option--disabled {
-    outline: none;
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .option__label {
-    flex: 1 1 auto;
-    display: inline-block;
-    line-height: var(--sl-line-height-dense);
-  }
-
-  .option .option__check {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    visibility: hidden;
-    padding-inline-end: var(--sl-spacing-2x-small);
-  }
-
-  .option--selected .option__check {
-    visibility: visible;
-  }
-
-  .option__prefix,
-  .option__suffix {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-  }
-
-  .option__prefix::slotted(*) {
-    margin-inline-end: var(--sl-spacing-x-small);
-  }
-
-  .option__suffix::slotted(*) {
-    margin-inline-start: var(--sl-spacing-x-small);
-  }
-
-  @media (forced-colors: active) {
-    :host(:hover:not([aria-disabled='true'])) .option {
-      outline: dashed 1px SelectedItem;
-      outline-offset: -1px;
-    }
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.W4UKBSNN.js
-var SlOption = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.localize = new LocalizeController2(this);
-    this.current = false;
-    this.selected = false;
-    this.hasHover = false;
-    this.value = "";
-    this.disabled = false;
-  }
-  connectedCallback() {
-    super.connectedCallback();
-    this.setAttribute("role", "option");
-    this.setAttribute("aria-selected", "false");
-  }
-  handleDefaultSlotChange() {
-    customElements.whenDefined("sl-select").then(() => {
-      const controller = this.closest("sl-select");
-      if (controller) {
-        controller.handleDefaultSlotChange();
-      }
-    });
-  }
-  handleMouseEnter() {
-    this.hasHover = true;
-  }
-  handleMouseLeave() {
-    this.hasHover = false;
-  }
-  handleDisabledChange() {
-    this.setAttribute("aria-disabled", this.disabled ? "true" : "false");
-  }
-  handleSelectedChange() {
-    this.setAttribute("aria-selected", this.selected ? "true" : "false");
-  }
-  handleValueChange() {
-    if (typeof this.value !== "string") {
-      this.value = String(this.value);
-    }
-    if (this.value.includes(" ")) {
-      console.error(`Option values cannot include a space. All spaces have been replaced with underscores.`, this);
-      this.value = this.value.replace(/ /g, "_");
-    }
-  }
-  /** Returns a plain text label based on the option's content. */
-  getTextLabel() {
-    const nodes = this.childNodes;
-    let label = "";
-    [...nodes].forEach((node) => {
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        if (!node.hasAttribute("slot")) {
-          label += node.textContent;
-        }
-      }
-      if (node.nodeType === Node.TEXT_NODE) {
-        label += node.textContent;
-      }
-    });
-    return label.trim();
-  }
-  render() {
-    return x2`
-      <div
-        part="base"
-        class=${e9({
-      option: true,
-      "option--current": this.current,
-      "option--disabled": this.disabled,
-      "option--selected": this.selected,
-      "option--hover": this.hasHover
-    })}
-        @mouseenter=${this.handleMouseEnter}
-        @mouseleave=${this.handleMouseLeave}
-      >
-        <sl-icon part="checked-icon" class="option__check" name="check" library="system" aria-hidden="true"></sl-icon>
-        <slot part="prefix" name="prefix" class="option__prefix"></slot>
-        <slot part="label" class="option__label" @slotchange=${this.handleDefaultSlotChange}></slot>
-        <slot part="suffix" name="suffix" class="option__suffix"></slot>
-      </div>
-    `;
-  }
-};
-SlOption.styles = [component_styles_default, option_styles_default];
-SlOption.dependencies = { "sl-icon": SlIcon };
-__decorateClass([
-  e6(".option__label")
-], SlOption.prototype, "defaultSlot", 2);
-__decorateClass([
-  r7()
-], SlOption.prototype, "current", 2);
-__decorateClass([
-  r7()
-], SlOption.prototype, "selected", 2);
-__decorateClass([
-  r7()
-], SlOption.prototype, "hasHover", 2);
-__decorateClass([
-  n7({ reflect: true })
-], SlOption.prototype, "value", 2);
-__decorateClass([
-  n7({ type: Boolean, reflect: true })
-], SlOption.prototype, "disabled", 2);
-__decorateClass([
-  watch("disabled")
-], SlOption.prototype, "handleDisabledChange", 1);
-__decorateClass([
-  watch("selected")
-], SlOption.prototype, "handleSelectedChange", 1);
-__decorateClass([
-  watch("value")
-], SlOption.prototype, "handleValueChange", 1);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.3KSWVBQ5.js
 var popup_styles_default = i`
@@ -6504,7 +6275,7 @@ function isTopLayer(element) {
   return [":popover-open", ":modal"].some((selector) => {
     try {
       return element.matches(selector);
-    } catch (e13) {
+    } catch (e12) {
       return false;
     }
   });
@@ -7089,7 +6860,7 @@ function observeMove(element, onMove) {
         // Handle <iframe>s
         root: root.ownerDocument
       });
-    } catch (e13) {
+    } catch (e12) {
       io = new IntersectionObserver(handleObserve, options);
     }
     io.observe(element);
@@ -7193,13 +6964,13 @@ function e11(t8) {
 function r10(t8) {
   return t8.assignedSlot ? t8.assignedSlot : t8.parentNode instanceof ShadowRoot ? t8.parentNode.host : t8.parentNode;
 }
-function i8(e13) {
-  for (let t8 = e13; t8; t8 = r10(t8)) if (t8 instanceof Element && "none" === getComputedStyle(t8).display) return null;
-  for (let n10 = r10(e13); n10; n10 = r10(n10)) {
+function i8(e12) {
+  for (let t8 = e12; t8; t8 = r10(t8)) if (t8 instanceof Element && "none" === getComputedStyle(t8).display) return null;
+  for (let n10 = r10(e12); n10; n10 = r10(n10)) {
     if (!(n10 instanceof Element)) continue;
-    const e14 = getComputedStyle(n10);
-    if ("contents" !== e14.display) {
-      if ("static" !== e14.position || isContainingBlock(e14)) return n10;
+    const e13 = getComputedStyle(n10);
+    if ("contents" !== e13.display) {
+      if ("static" !== e13.position || isContainingBlock(e13)) return n10;
       if ("BODY" === n10.tagName) return n10;
     }
   }
@@ -7207,8 +6978,8 @@ function i8(e13) {
 }
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AR3BL5H3.js
-function isVirtualElement(e13) {
-  return e13 !== null && typeof e13 === "object" && "getBoundingClientRect" in e13 && ("contextElement" in e13 ? e13 instanceof Element : true);
+function isVirtualElement(e12) {
+  return e12 !== null && typeof e12 === "object" && "getBoundingClientRect" in e12 && ("contextElement" in e12 ? e12 instanceof Element : true);
 }
 var SlPopup = class extends ShoelaceElement {
   constructor() {
@@ -8308,1124 +8079,6 @@ __decorateClass([
   n7({ type: Boolean })
 ], SlTag.prototype, "removable", 2);
 
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.XNOUITPX.js
-var select_styles_default = i`
-  :host {
-    display: block;
-  }
-
-  /** The popup */
-  .select {
-    flex: 1 1 auto;
-    display: inline-flex;
-    width: 100%;
-    position: relative;
-    vertical-align: middle;
-  }
-
-  .select::part(popup) {
-    z-index: var(--sl-z-index-dropdown);
-  }
-
-  .select[data-current-placement^='top']::part(popup) {
-    transform-origin: bottom;
-  }
-
-  .select[data-current-placement^='bottom']::part(popup) {
-    transform-origin: top;
-  }
-
-  /* Combobox */
-  .select__combobox {
-    flex: 1;
-    display: flex;
-    width: 100%;
-    min-width: 0;
-    position: relative;
-    align-items: center;
-    justify-content: start;
-    font-family: var(--sl-input-font-family);
-    font-weight: var(--sl-input-font-weight);
-    letter-spacing: var(--sl-input-letter-spacing);
-    vertical-align: middle;
-    overflow: hidden;
-    cursor: pointer;
-    transition:
-      var(--sl-transition-fast) color,
-      var(--sl-transition-fast) border,
-      var(--sl-transition-fast) box-shadow,
-      var(--sl-transition-fast) background-color;
-  }
-
-  .select__display-input {
-    position: relative;
-    width: 100%;
-    font: inherit;
-    border: none;
-    background: none;
-    color: var(--sl-input-color);
-    cursor: inherit;
-    overflow: hidden;
-    padding: 0;
-    margin: 0;
-    -webkit-appearance: none;
-  }
-
-  .select__display-input::placeholder {
-    color: var(--sl-input-placeholder-color);
-  }
-
-  .select:not(.select--disabled):hover .select__display-input {
-    color: var(--sl-input-color-hover);
-  }
-
-  .select__display-input:focus {
-    outline: none;
-  }
-
-  /* Visually hide the display input when multiple is enabled */
-  .select--multiple:not(.select--placeholder-visible) .select__display-input {
-    position: absolute;
-    z-index: -1;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-  }
-
-  .select__value-input {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    padding: 0;
-    margin: 0;
-    opacity: 0;
-    z-index: -1;
-  }
-
-  .select__tags {
-    display: flex;
-    flex: 1;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-inline-start: var(--sl-spacing-2x-small);
-  }
-
-  .select__tags::slotted(sl-tag) {
-    cursor: pointer !important;
-  }
-
-  .select--disabled .select__tags,
-  .select--disabled .select__tags::slotted(sl-tag) {
-    cursor: not-allowed !important;
-  }
-
-  /* Standard selects */
-  .select--standard .select__combobox {
-    background-color: var(--sl-input-background-color);
-    border: solid var(--sl-input-border-width) var(--sl-input-border-color);
-  }
-
-  .select--standard.select--disabled .select__combobox {
-    background-color: var(--sl-input-background-color-disabled);
-    border-color: var(--sl-input-border-color-disabled);
-    color: var(--sl-input-color-disabled);
-    opacity: 0.5;
-    cursor: not-allowed;
-    outline: none;
-  }
-
-  .select--standard:not(.select--disabled).select--open .select__combobox,
-  .select--standard:not(.select--disabled).select--focused .select__combobox {
-    background-color: var(--sl-input-background-color-focus);
-    border-color: var(--sl-input-border-color-focus);
-    box-shadow: 0 0 0 var(--sl-focus-ring-width) var(--sl-input-focus-ring-color);
-  }
-
-  /* Filled selects */
-  .select--filled .select__combobox {
-    border: none;
-    background-color: var(--sl-input-filled-background-color);
-    color: var(--sl-input-color);
-  }
-
-  .select--filled:hover:not(.select--disabled) .select__combobox {
-    background-color: var(--sl-input-filled-background-color-hover);
-  }
-
-  .select--filled.select--disabled .select__combobox {
-    background-color: var(--sl-input-filled-background-color-disabled);
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .select--filled:not(.select--disabled).select--open .select__combobox,
-  .select--filled:not(.select--disabled).select--focused .select__combobox {
-    background-color: var(--sl-input-filled-background-color-focus);
-    outline: var(--sl-focus-ring);
-  }
-
-  /* Sizes */
-  .select--small .select__combobox {
-    border-radius: var(--sl-input-border-radius-small);
-    font-size: var(--sl-input-font-size-small);
-    min-height: var(--sl-input-height-small);
-    padding-block: 0;
-    padding-inline: var(--sl-input-spacing-small);
-  }
-
-  .select--small .select__clear {
-    margin-inline-start: var(--sl-input-spacing-small);
-  }
-
-  .select--small .select__prefix::slotted(*) {
-    margin-inline-end: var(--sl-input-spacing-small);
-  }
-
-  .select--small.select--multiple:not(.select--placeholder-visible) .select__prefix::slotted(*) {
-    margin-inline-start: var(--sl-input-spacing-small);
-  }
-
-  .select--small.select--multiple:not(.select--placeholder-visible) .select__combobox {
-    padding-block: 2px;
-    padding-inline-start: 0;
-  }
-
-  .select--small .select__tags {
-    gap: 2px;
-  }
-
-  .select--medium .select__combobox {
-    border-radius: var(--sl-input-border-radius-medium);
-    font-size: var(--sl-input-font-size-medium);
-    min-height: var(--sl-input-height-medium);
-    padding-block: 0;
-    padding-inline: var(--sl-input-spacing-medium);
-  }
-
-  .select--medium .select__clear {
-    margin-inline-start: var(--sl-input-spacing-medium);
-  }
-
-  .select--medium .select__prefix::slotted(*) {
-    margin-inline-end: var(--sl-input-spacing-medium);
-  }
-
-  .select--medium.select--multiple:not(.select--placeholder-visible) .select__prefix::slotted(*) {
-    margin-inline-start: var(--sl-input-spacing-medium);
-  }
-
-  .select--medium.select--multiple:not(.select--placeholder-visible) .select__combobox {
-    padding-inline-start: 0;
-    padding-block: 3px;
-  }
-
-  .select--medium .select__tags {
-    gap: 3px;
-  }
-
-  .select--large .select__combobox {
-    border-radius: var(--sl-input-border-radius-large);
-    font-size: var(--sl-input-font-size-large);
-    min-height: var(--sl-input-height-large);
-    padding-block: 0;
-    padding-inline: var(--sl-input-spacing-large);
-  }
-
-  .select--large .select__clear {
-    margin-inline-start: var(--sl-input-spacing-large);
-  }
-
-  .select--large .select__prefix::slotted(*) {
-    margin-inline-end: var(--sl-input-spacing-large);
-  }
-
-  .select--large.select--multiple:not(.select--placeholder-visible) .select__prefix::slotted(*) {
-    margin-inline-start: var(--sl-input-spacing-large);
-  }
-
-  .select--large.select--multiple:not(.select--placeholder-visible) .select__combobox {
-    padding-inline-start: 0;
-    padding-block: 4px;
-  }
-
-  .select--large .select__tags {
-    gap: 4px;
-  }
-
-  /* Pills */
-  .select--pill.select--small .select__combobox {
-    border-radius: var(--sl-input-height-small);
-  }
-
-  .select--pill.select--medium .select__combobox {
-    border-radius: var(--sl-input-height-medium);
-  }
-
-  .select--pill.select--large .select__combobox {
-    border-radius: var(--sl-input-height-large);
-  }
-
-  /* Prefix and Suffix */
-  .select__prefix,
-  .select__suffix {
-    flex: 0;
-    display: inline-flex;
-    align-items: center;
-    color: var(--sl-input-placeholder-color);
-  }
-
-  .select__suffix::slotted(*) {
-    margin-inline-start: var(--sl-spacing-small);
-  }
-
-  /* Clear button */
-  .select__clear {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: inherit;
-    color: var(--sl-input-icon-color);
-    border: none;
-    background: none;
-    padding: 0;
-    transition: var(--sl-transition-fast) color;
-    cursor: pointer;
-  }
-
-  .select__clear:hover {
-    color: var(--sl-input-icon-color-hover);
-  }
-
-  .select__clear:focus {
-    outline: none;
-  }
-
-  /* Expand icon */
-  .select__expand-icon {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    transition: var(--sl-transition-medium) rotate ease;
-    rotate: 0;
-    margin-inline-start: var(--sl-spacing-small);
-  }
-
-  .select--open .select__expand-icon {
-    rotate: -180deg;
-  }
-
-  /* Listbox */
-  .select__listbox {
-    display: block;
-    position: relative;
-    font-family: var(--sl-font-sans);
-    font-size: var(--sl-font-size-medium);
-    font-weight: var(--sl-font-weight-normal);
-    box-shadow: var(--sl-shadow-large);
-    background: var(--sl-panel-background-color);
-    border: solid var(--sl-panel-border-width) var(--sl-panel-border-color);
-    border-radius: var(--sl-border-radius-medium);
-    padding-block: var(--sl-spacing-x-small);
-    padding-inline: 0;
-    overflow: auto;
-    overscroll-behavior: none;
-
-    /* Make sure it adheres to the popup's auto size */
-    max-width: var(--auto-size-available-width);
-    max-height: var(--auto-size-available-height);
-  }
-
-  .select__listbox ::slotted(sl-divider) {
-    --spacing: var(--sl-spacing-x-small);
-  }
-
-  .select__listbox ::slotted(small) {
-    display: block;
-    font-size: var(--sl-font-size-small);
-    font-weight: var(--sl-font-weight-semibold);
-    color: var(--sl-color-neutral-500);
-    padding-block: var(--sl-spacing-2x-small);
-    padding-inline: var(--sl-spacing-x-large);
-  }
-`;
-
-// node_modules/lit-html/directives/unsafe-html.js
-var e12 = class extends i6 {
-  constructor(i9) {
-    if (super(i9), this.it = E2, i9.type !== t6.CHILD) throw Error(this.constructor.directiveName + "() can only be used in child bindings");
-  }
-  render(r11) {
-    if (r11 === E2 || null == r11) return this._t = void 0, this.it = r11;
-    if (r11 === T2) return r11;
-    if ("string" != typeof r11) throw Error(this.constructor.directiveName + "() called with a non-string value");
-    if (r11 === this.it) return this._t;
-    this.it = r11;
-    const s4 = [r11];
-    return s4.raw = s4, this._t = { _$litType$: this.constructor.resultType, strings: s4, values: [] };
-  }
-};
-e12.directiveName = "unsafeHTML", e12.resultType = 1;
-var o10 = e8(e12);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.DL3WPSFB.js
-var SlSelect = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.formControlController = new FormControlController(this, {
-      assumeInteractionOn: ["sl-blur", "sl-input"]
-    });
-    this.hasSlotController = new HasSlotController(this, "help-text", "label");
-    this.localize = new LocalizeController2(this);
-    this.typeToSelectString = "";
-    this.hasFocus = false;
-    this.displayLabel = "";
-    this.selectedOptions = [];
-    this.valueHasChanged = false;
-    this.name = "";
-    this._value = "";
-    this.defaultValue = "";
-    this.size = "medium";
-    this.placeholder = "";
-    this.multiple = false;
-    this.maxOptionsVisible = 3;
-    this.disabled = false;
-    this.clearable = false;
-    this.open = false;
-    this.hoist = false;
-    this.filled = false;
-    this.pill = false;
-    this.label = "";
-    this.placement = "bottom";
-    this.helpText = "";
-    this.form = "";
-    this.required = false;
-    this.getTag = (option) => {
-      return x2`
-      <sl-tag
-        part="tag"
-        exportparts="
-              base:tag__base,
-              content:tag__content,
-              remove-button:tag__remove-button,
-              remove-button__base:tag__remove-button__base
-            "
-        ?pill=${this.pill}
-        size=${this.size}
-        removable
-        @sl-remove=${(event) => this.handleTagRemove(event, option)}
-      >
-        ${option.getTextLabel()}
-      </sl-tag>
-    `;
-    };
-    this.handleDocumentFocusIn = (event) => {
-      const path = event.composedPath();
-      if (this && !path.includes(this)) {
-        this.hide();
-      }
-    };
-    this.handleDocumentKeyDown = (event) => {
-      const target = event.target;
-      const isClearButton = target.closest(".select__clear") !== null;
-      const isIconButton = target.closest("sl-icon-button") !== null;
-      if (isClearButton || isIconButton) {
-        return;
-      }
-      if (event.key === "Escape" && this.open && !this.closeWatcher) {
-        event.preventDefault();
-        event.stopPropagation();
-        this.hide();
-        this.displayInput.focus({ preventScroll: true });
-      }
-      if (event.key === "Enter" || event.key === " " && this.typeToSelectString === "") {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        if (!this.open) {
-          this.show();
-          return;
-        }
-        if (this.currentOption && !this.currentOption.disabled) {
-          this.valueHasChanged = true;
-          if (this.multiple) {
-            this.toggleOptionSelection(this.currentOption);
-          } else {
-            this.setSelectedOptions(this.currentOption);
-          }
-          this.updateComplete.then(() => {
-            this.emit("sl-input");
-            this.emit("sl-change");
-          });
-          if (!this.multiple) {
-            this.hide();
-            this.displayInput.focus({ preventScroll: true });
-          }
-        }
-        return;
-      }
-      if (["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
-        const allOptions = this.getAllOptions();
-        const currentIndex = allOptions.indexOf(this.currentOption);
-        let newIndex = Math.max(0, currentIndex);
-        event.preventDefault();
-        if (!this.open) {
-          this.show();
-          if (this.currentOption) {
-            return;
-          }
-        }
-        if (event.key === "ArrowDown") {
-          newIndex = currentIndex + 1;
-          if (newIndex > allOptions.length - 1) newIndex = 0;
-        } else if (event.key === "ArrowUp") {
-          newIndex = currentIndex - 1;
-          if (newIndex < 0) newIndex = allOptions.length - 1;
-        } else if (event.key === "Home") {
-          newIndex = 0;
-        } else if (event.key === "End") {
-          newIndex = allOptions.length - 1;
-        }
-        this.setCurrentOption(allOptions[newIndex]);
-      }
-      if (event.key && event.key.length === 1 || event.key === "Backspace") {
-        const allOptions = this.getAllOptions();
-        if (event.metaKey || event.ctrlKey || event.altKey) {
-          return;
-        }
-        if (!this.open) {
-          if (event.key === "Backspace") {
-            return;
-          }
-          this.show();
-        }
-        event.stopPropagation();
-        event.preventDefault();
-        clearTimeout(this.typeToSelectTimeout);
-        this.typeToSelectTimeout = window.setTimeout(() => this.typeToSelectString = "", 1e3);
-        if (event.key === "Backspace") {
-          this.typeToSelectString = this.typeToSelectString.slice(0, -1);
-        } else {
-          this.typeToSelectString += event.key.toLowerCase();
-        }
-        for (const option of allOptions) {
-          const label = option.getTextLabel().toLowerCase();
-          if (label.startsWith(this.typeToSelectString)) {
-            this.setCurrentOption(option);
-            break;
-          }
-        }
-      }
-    };
-    this.handleDocumentMouseDown = (event) => {
-      const path = event.composedPath();
-      if (this && !path.includes(this)) {
-        this.hide();
-      }
-    };
-  }
-  get value() {
-    return this._value;
-  }
-  set value(val) {
-    if (this.multiple) {
-      val = Array.isArray(val) ? val : val.split(" ");
-    } else {
-      val = Array.isArray(val) ? val.join(" ") : val;
-    }
-    if (this._value === val) {
-      return;
-    }
-    this.valueHasChanged = true;
-    this._value = val;
-  }
-  /** Gets the validity state object */
-  get validity() {
-    return this.valueInput.validity;
-  }
-  /** Gets the validation message */
-  get validationMessage() {
-    return this.valueInput.validationMessage;
-  }
-  connectedCallback() {
-    super.connectedCallback();
-    setTimeout(() => {
-      this.handleDefaultSlotChange();
-    });
-    this.open = false;
-  }
-  addOpenListeners() {
-    var _a3;
-    document.addEventListener("focusin", this.handleDocumentFocusIn);
-    document.addEventListener("keydown", this.handleDocumentKeyDown);
-    document.addEventListener("mousedown", this.handleDocumentMouseDown);
-    if (this.getRootNode() !== document) {
-      this.getRootNode().addEventListener("focusin", this.handleDocumentFocusIn);
-    }
-    if ("CloseWatcher" in window) {
-      (_a3 = this.closeWatcher) == null ? void 0 : _a3.destroy();
-      this.closeWatcher = new CloseWatcher();
-      this.closeWatcher.onclose = () => {
-        if (this.open) {
-          this.hide();
-          this.displayInput.focus({ preventScroll: true });
-        }
-      };
-    }
-  }
-  removeOpenListeners() {
-    var _a3;
-    document.removeEventListener("focusin", this.handleDocumentFocusIn);
-    document.removeEventListener("keydown", this.handleDocumentKeyDown);
-    document.removeEventListener("mousedown", this.handleDocumentMouseDown);
-    if (this.getRootNode() !== document) {
-      this.getRootNode().removeEventListener("focusin", this.handleDocumentFocusIn);
-    }
-    (_a3 = this.closeWatcher) == null ? void 0 : _a3.destroy();
-  }
-  handleFocus() {
-    this.hasFocus = true;
-    this.displayInput.setSelectionRange(0, 0);
-    this.emit("sl-focus");
-  }
-  handleBlur() {
-    this.hasFocus = false;
-    this.emit("sl-blur");
-  }
-  handleLabelClick() {
-    this.displayInput.focus();
-  }
-  handleComboboxMouseDown(event) {
-    const path = event.composedPath();
-    const isIconButton = path.some((el) => el instanceof Element && el.tagName.toLowerCase() === "sl-icon-button");
-    if (this.disabled || isIconButton) {
-      return;
-    }
-    event.preventDefault();
-    this.displayInput.focus({ preventScroll: true });
-    this.open = !this.open;
-  }
-  handleComboboxKeyDown(event) {
-    if (event.key === "Tab") {
-      return;
-    }
-    event.stopPropagation();
-    this.handleDocumentKeyDown(event);
-  }
-  handleClearClick(event) {
-    event.stopPropagation();
-    this.valueHasChanged = true;
-    if (this.value !== "") {
-      this.setSelectedOptions([]);
-      this.displayInput.focus({ preventScroll: true });
-      this.updateComplete.then(() => {
-        this.emit("sl-clear");
-        this.emit("sl-input");
-        this.emit("sl-change");
-      });
-    }
-  }
-  handleClearMouseDown(event) {
-    event.stopPropagation();
-    event.preventDefault();
-  }
-  handleOptionClick(event) {
-    const target = event.target;
-    const option = target.closest("sl-option");
-    const oldValue = this.value;
-    if (option && !option.disabled) {
-      this.valueHasChanged = true;
-      if (this.multiple) {
-        this.toggleOptionSelection(option);
-      } else {
-        this.setSelectedOptions(option);
-      }
-      this.updateComplete.then(() => this.displayInput.focus({ preventScroll: true }));
-      if (this.value !== oldValue) {
-        this.updateComplete.then(() => {
-          this.emit("sl-input");
-          this.emit("sl-change");
-        });
-      }
-      if (!this.multiple) {
-        this.hide();
-        this.displayInput.focus({ preventScroll: true });
-      }
-    }
-  }
-  /* @internal - used by options to update labels */
-  handleDefaultSlotChange() {
-    if (!customElements.get("sl-option")) {
-      customElements.whenDefined("sl-option").then(() => this.handleDefaultSlotChange());
-    }
-    const allOptions = this.getAllOptions();
-    const val = this.valueHasChanged ? this.value : this.defaultValue;
-    const value = Array.isArray(val) ? val : [val];
-    const values = [];
-    allOptions.forEach((option) => values.push(option.value));
-    this.setSelectedOptions(allOptions.filter((el) => value.includes(el.value)));
-  }
-  handleTagRemove(event, option) {
-    event.stopPropagation();
-    this.valueHasChanged = true;
-    if (!this.disabled) {
-      this.toggleOptionSelection(option, false);
-      this.updateComplete.then(() => {
-        this.emit("sl-input");
-        this.emit("sl-change");
-      });
-    }
-  }
-  // Gets an array of all <sl-option> elements
-  getAllOptions() {
-    return [...this.querySelectorAll("sl-option")];
-  }
-  // Gets the first <sl-option> element
-  getFirstOption() {
-    return this.querySelector("sl-option");
-  }
-  // Sets the current option, which is the option the user is currently interacting with (e.g. via keyboard). Only one
-  // option may be "current" at a time.
-  setCurrentOption(option) {
-    const allOptions = this.getAllOptions();
-    allOptions.forEach((el) => {
-      el.current = false;
-      el.tabIndex = -1;
-    });
-    if (option) {
-      this.currentOption = option;
-      option.current = true;
-      option.tabIndex = 0;
-      option.focus();
-    }
-  }
-  // Sets the selected option(s)
-  setSelectedOptions(option) {
-    const allOptions = this.getAllOptions();
-    const newSelectedOptions = Array.isArray(option) ? option : [option];
-    allOptions.forEach((el) => el.selected = false);
-    if (newSelectedOptions.length) {
-      newSelectedOptions.forEach((el) => el.selected = true);
-    }
-    this.selectionChanged();
-  }
-  // Toggles an option's selected state
-  toggleOptionSelection(option, force) {
-    if (force === true || force === false) {
-      option.selected = force;
-    } else {
-      option.selected = !option.selected;
-    }
-    this.selectionChanged();
-  }
-  // This method must be called whenever the selection changes. It will update the selected options cache, the current
-  // value, and the display value
-  selectionChanged() {
-    var _a3, _b, _c;
-    const options = this.getAllOptions();
-    this.selectedOptions = options.filter((el) => el.selected);
-    const cachedValueHasChanged = this.valueHasChanged;
-    if (this.multiple) {
-      this.value = this.selectedOptions.map((el) => el.value);
-      if (this.placeholder && this.value.length === 0) {
-        this.displayLabel = "";
-      } else {
-        this.displayLabel = this.localize.term("numOptionsSelected", this.selectedOptions.length);
-      }
-    } else {
-      const selectedOption = this.selectedOptions[0];
-      this.value = (_a3 = selectedOption == null ? void 0 : selectedOption.value) != null ? _a3 : "";
-      this.displayLabel = (_c = (_b = selectedOption == null ? void 0 : selectedOption.getTextLabel) == null ? void 0 : _b.call(selectedOption)) != null ? _c : "";
-    }
-    this.valueHasChanged = cachedValueHasChanged;
-    this.updateComplete.then(() => {
-      this.formControlController.updateValidity();
-    });
-  }
-  get tags() {
-    return this.selectedOptions.map((option, index) => {
-      if (index < this.maxOptionsVisible || this.maxOptionsVisible <= 0) {
-        const tag = this.getTag(option, index);
-        return x2`<div @sl-remove=${(e13) => this.handleTagRemove(e13, option)}>
-          ${typeof tag === "string" ? o10(tag) : tag}
-        </div>`;
-      } else if (index === this.maxOptionsVisible) {
-        return x2`<sl-tag size=${this.size}>+${this.selectedOptions.length - index}</sl-tag>`;
-      }
-      return x2``;
-    });
-  }
-  handleInvalid(event) {
-    this.formControlController.setValidity(false);
-    this.formControlController.emitInvalidEvent(event);
-  }
-  handleDisabledChange() {
-    if (this.disabled) {
-      this.open = false;
-      this.handleOpenChange();
-    }
-  }
-  attributeChangedCallback(name, oldVal, newVal) {
-    super.attributeChangedCallback(name, oldVal, newVal);
-    if (name === "value") {
-      const cachedValueHasChanged = this.valueHasChanged;
-      this.value = this.defaultValue;
-      this.valueHasChanged = cachedValueHasChanged;
-    }
-  }
-  handleValueChange() {
-    if (!this.valueHasChanged) {
-      const cachedValueHasChanged = this.valueHasChanged;
-      this.value = this.defaultValue;
-      this.valueHasChanged = cachedValueHasChanged;
-    }
-    const allOptions = this.getAllOptions();
-    const value = Array.isArray(this.value) ? this.value : [this.value];
-    this.setSelectedOptions(allOptions.filter((el) => value.includes(el.value)));
-  }
-  async handleOpenChange() {
-    if (this.open && !this.disabled) {
-      this.setCurrentOption(this.selectedOptions[0] || this.getFirstOption());
-      this.emit("sl-show");
-      this.addOpenListeners();
-      await stopAnimations(this);
-      this.listbox.hidden = false;
-      this.popup.active = true;
-      requestAnimationFrame(() => {
-        this.setCurrentOption(this.currentOption);
-      });
-      const { keyframes, options } = getAnimation(this, "select.show", { dir: this.localize.dir() });
-      await animateTo(this.popup.popup, keyframes, options);
-      if (this.currentOption) {
-        scrollIntoView(this.currentOption, this.listbox, "vertical", "auto");
-      }
-      this.emit("sl-after-show");
-    } else {
-      this.emit("sl-hide");
-      this.removeOpenListeners();
-      await stopAnimations(this);
-      const { keyframes, options } = getAnimation(this, "select.hide", { dir: this.localize.dir() });
-      await animateTo(this.popup.popup, keyframes, options);
-      this.listbox.hidden = true;
-      this.popup.active = false;
-      this.emit("sl-after-hide");
-    }
-  }
-  /** Shows the listbox. */
-  async show() {
-    if (this.open || this.disabled) {
-      this.open = false;
-      return void 0;
-    }
-    this.open = true;
-    return waitForEvent(this, "sl-after-show");
-  }
-  /** Hides the listbox. */
-  async hide() {
-    if (!this.open || this.disabled) {
-      this.open = false;
-      return void 0;
-    }
-    this.open = false;
-    return waitForEvent(this, "sl-after-hide");
-  }
-  /** Checks for validity but does not show a validation message. Returns `true` when valid and `false` when invalid. */
-  checkValidity() {
-    return this.valueInput.checkValidity();
-  }
-  /** Gets the associated form, if one exists. */
-  getForm() {
-    return this.formControlController.getForm();
-  }
-  /** Checks for validity and shows the browser's validation message if the control is invalid. */
-  reportValidity() {
-    return this.valueInput.reportValidity();
-  }
-  /** Sets a custom validation message. Pass an empty string to restore validity. */
-  setCustomValidity(message) {
-    this.valueInput.setCustomValidity(message);
-    this.formControlController.updateValidity();
-  }
-  /** Sets focus on the control. */
-  focus(options) {
-    this.displayInput.focus(options);
-  }
-  /** Removes focus from the control. */
-  blur() {
-    this.displayInput.blur();
-  }
-  render() {
-    const hasLabelSlot = this.hasSlotController.test("label");
-    const hasHelpTextSlot = this.hasSlotController.test("help-text");
-    const hasLabel = this.label ? true : !!hasLabelSlot;
-    const hasHelpText = this.helpText ? true : !!hasHelpTextSlot;
-    const hasClearIcon = this.clearable && !this.disabled && this.value.length > 0;
-    const isPlaceholderVisible = this.placeholder && this.value && this.value.length <= 0;
-    return x2`
-      <div
-        part="form-control"
-        class=${e9({
-      "form-control": true,
-      "form-control--small": this.size === "small",
-      "form-control--medium": this.size === "medium",
-      "form-control--large": this.size === "large",
-      "form-control--has-label": hasLabel,
-      "form-control--has-help-text": hasHelpText
-    })}
-      >
-        <label
-          id="label"
-          part="form-control-label"
-          class="form-control__label"
-          aria-hidden=${hasLabel ? "false" : "true"}
-          @click=${this.handleLabelClick}
-        >
-          <slot name="label">${this.label}</slot>
-        </label>
-
-        <div part="form-control-input" class="form-control-input">
-          <sl-popup
-            class=${e9({
-      select: true,
-      "select--standard": true,
-      "select--filled": this.filled,
-      "select--pill": this.pill,
-      "select--open": this.open,
-      "select--disabled": this.disabled,
-      "select--multiple": this.multiple,
-      "select--focused": this.hasFocus,
-      "select--placeholder-visible": isPlaceholderVisible,
-      "select--top": this.placement === "top",
-      "select--bottom": this.placement === "bottom",
-      "select--small": this.size === "small",
-      "select--medium": this.size === "medium",
-      "select--large": this.size === "large"
-    })}
-            placement=${this.placement}
-            strategy=${this.hoist ? "fixed" : "absolute"}
-            flip
-            shift
-            sync="width"
-            auto-size="vertical"
-            auto-size-padding="10"
-          >
-            <div
-              part="combobox"
-              class="select__combobox"
-              slot="anchor"
-              @keydown=${this.handleComboboxKeyDown}
-              @mousedown=${this.handleComboboxMouseDown}
-            >
-              <slot part="prefix" name="prefix" class="select__prefix"></slot>
-
-              <input
-                part="display-input"
-                class="select__display-input"
-                type="text"
-                placeholder=${this.placeholder}
-                .disabled=${this.disabled}
-                .value=${this.displayLabel}
-                autocomplete="off"
-                spellcheck="false"
-                autocapitalize="off"
-                readonly
-                aria-controls="listbox"
-                aria-expanded=${this.open ? "true" : "false"}
-                aria-haspopup="listbox"
-                aria-labelledby="label"
-                aria-disabled=${this.disabled ? "true" : "false"}
-                aria-describedby="help-text"
-                role="combobox"
-                tabindex="0"
-                @focus=${this.handleFocus}
-                @blur=${this.handleBlur}
-              />
-
-              ${this.multiple ? x2`<div part="tags" class="select__tags">${this.tags}</div>` : ""}
-
-              <input
-                class="select__value-input"
-                type="text"
-                ?disabled=${this.disabled}
-                ?required=${this.required}
-                .value=${Array.isArray(this.value) ? this.value.join(", ") : this.value}
-                tabindex="-1"
-                aria-hidden="true"
-                @focus=${() => this.focus()}
-                @invalid=${this.handleInvalid}
-              />
-
-              ${hasClearIcon ? x2`
-                    <button
-                      part="clear-button"
-                      class="select__clear"
-                      type="button"
-                      aria-label=${this.localize.term("clearEntry")}
-                      @mousedown=${this.handleClearMouseDown}
-                      @click=${this.handleClearClick}
-                      tabindex="-1"
-                    >
-                      <slot name="clear-icon">
-                        <sl-icon name="x-circle-fill" library="system"></sl-icon>
-                      </slot>
-                    </button>
-                  ` : ""}
-
-              <slot name="suffix" part="suffix" class="select__suffix"></slot>
-
-              <slot name="expand-icon" part="expand-icon" class="select__expand-icon">
-                <sl-icon library="system" name="chevron-down"></sl-icon>
-              </slot>
-            </div>
-
-            <div
-              id="listbox"
-              role="listbox"
-              aria-expanded=${this.open ? "true" : "false"}
-              aria-multiselectable=${this.multiple ? "true" : "false"}
-              aria-labelledby="label"
-              part="listbox"
-              class="select__listbox"
-              tabindex="-1"
-              @mouseup=${this.handleOptionClick}
-              @slotchange=${this.handleDefaultSlotChange}
-            >
-              <slot></slot>
-            </div>
-          </sl-popup>
-        </div>
-
-        <div
-          part="form-control-help-text"
-          id="help-text"
-          class="form-control__help-text"
-          aria-hidden=${hasHelpText ? "false" : "true"}
-        >
-          <slot name="help-text">${this.helpText}</slot>
-        </div>
-      </div>
-    `;
-  }
-};
-SlSelect.styles = [component_styles_default, form_control_styles_default, select_styles_default];
-SlSelect.dependencies = {
-  "sl-icon": SlIcon,
-  "sl-popup": SlPopup,
-  "sl-tag": SlTag
-};
-__decorateClass([
-  e6(".select")
-], SlSelect.prototype, "popup", 2);
-__decorateClass([
-  e6(".select__combobox")
-], SlSelect.prototype, "combobox", 2);
-__decorateClass([
-  e6(".select__display-input")
-], SlSelect.prototype, "displayInput", 2);
-__decorateClass([
-  e6(".select__value-input")
-], SlSelect.prototype, "valueInput", 2);
-__decorateClass([
-  e6(".select__listbox")
-], SlSelect.prototype, "listbox", 2);
-__decorateClass([
-  r7()
-], SlSelect.prototype, "hasFocus", 2);
-__decorateClass([
-  r7()
-], SlSelect.prototype, "displayLabel", 2);
-__decorateClass([
-  r7()
-], SlSelect.prototype, "currentOption", 2);
-__decorateClass([
-  r7()
-], SlSelect.prototype, "selectedOptions", 2);
-__decorateClass([
-  r7()
-], SlSelect.prototype, "valueHasChanged", 2);
-__decorateClass([
-  n7()
-], SlSelect.prototype, "name", 2);
-__decorateClass([
-  r7()
-], SlSelect.prototype, "value", 1);
-__decorateClass([
-  n7({ attribute: "value" })
-], SlSelect.prototype, "defaultValue", 2);
-__decorateClass([
-  n7({ reflect: true })
-], SlSelect.prototype, "size", 2);
-__decorateClass([
-  n7()
-], SlSelect.prototype, "placeholder", 2);
-__decorateClass([
-  n7({ type: Boolean, reflect: true })
-], SlSelect.prototype, "multiple", 2);
-__decorateClass([
-  n7({ attribute: "max-options-visible", type: Number })
-], SlSelect.prototype, "maxOptionsVisible", 2);
-__decorateClass([
-  n7({ type: Boolean, reflect: true })
-], SlSelect.prototype, "disabled", 2);
-__decorateClass([
-  n7({ type: Boolean })
-], SlSelect.prototype, "clearable", 2);
-__decorateClass([
-  n7({ type: Boolean, reflect: true })
-], SlSelect.prototype, "open", 2);
-__decorateClass([
-  n7({ type: Boolean })
-], SlSelect.prototype, "hoist", 2);
-__decorateClass([
-  n7({ type: Boolean, reflect: true })
-], SlSelect.prototype, "filled", 2);
-__decorateClass([
-  n7({ type: Boolean, reflect: true })
-], SlSelect.prototype, "pill", 2);
-__decorateClass([
-  n7()
-], SlSelect.prototype, "label", 2);
-__decorateClass([
-  n7({ reflect: true })
-], SlSelect.prototype, "placement", 2);
-__decorateClass([
-  n7({ attribute: "help-text" })
-], SlSelect.prototype, "helpText", 2);
-__decorateClass([
-  n7({ reflect: true })
-], SlSelect.prototype, "form", 2);
-__decorateClass([
-  n7({ type: Boolean, reflect: true })
-], SlSelect.prototype, "required", 2);
-__decorateClass([
-  n7()
-], SlSelect.prototype, "getTag", 2);
-__decorateClass([
-  watch("disabled", { waitUntilFirstUpdate: true })
-], SlSelect.prototype, "handleDisabledChange", 1);
-__decorateClass([
-  watch(["defaultValue", "value"], { waitUntilFirstUpdate: true })
-], SlSelect.prototype, "handleValueChange", 1);
-__decorateClass([
-  watch("open", { waitUntilFirstUpdate: true })
-], SlSelect.prototype, "handleOpenChange", 1);
-setDefaultAnimation("select.show", {
-  keyframes: [
-    { opacity: 0, scale: 0.9 },
-    { opacity: 1, scale: 1 }
-  ],
-  options: { duration: 100, easing: "ease" }
-});
-setDefaultAnimation("select.hide", {
-  keyframes: [
-    { opacity: 1, scale: 1 },
-    { opacity: 0, scale: 0.9 }
-  ],
-  options: { duration: 100, easing: "ease" }
-});
-
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FW7UWQXB.js
 var tooltip_styles_default = i`
   :host {
@@ -10146,12 +8799,6 @@ function neighborAtomicNumber(atomicNumber, direction, grid = GRID) {
   }
   return null;
 }
-function firstInRow(row, grid = GRID) {
-  return grid.rows.find((entry) => entry.row === row)?.cells[0]?.atomicNumber ?? null;
-}
-function seriesJumpTarget(seriesRow, grid = GRID) {
-  return firstInRow(seriesRow, grid);
-}
 
 // periodic-table/keyboard.ts
 var GRID_KEYS = [
@@ -10461,15 +9108,17 @@ var DEFAULT_MODE_STATE = {
 function cellMode(element, state) {
   switch (state.mode) {
     case "off":
-      return { state: null, badge: null, dimmed: false };
-    case "temperature":
-      return { state: matterState(element, state.temperatureK), badge: null, dimmed: false };
+      return { state: null, badge: null, hidden: false };
+    case "temperature": {
+      const matter = matterState(element, state.temperatureK);
+      return { state: matter, badge: null, hidden: matter === "unknown" };
+    }
     case "discovery": {
       const year = discoveryYear(element);
       return {
         state: null,
         badge: year === void 0 ? null : String(year),
-        dimmed: !knownAt(element, state.year)
+        hidden: !knownAt(element, state.year)
       };
     }
   }
@@ -10479,9 +9128,7 @@ function cellMode(element, state) {
 var EN = {
   widgetLabel: "Periodic table",
   searchLabel: "Search elements",
-  searchPlaceholder: "Name, symbol or atomic number",
-  filterLabel: "Family",
-  filterAll: "All families",
+  searchPlaceholder: "Name, symbol, number",
   viewLabel: "Layout",
   viewTable: "Table",
   viewList: "List",
@@ -10496,7 +9143,6 @@ var EN = {
   seriesLabel: "Detached series",
   cellLabel: "{number}, {name}, {symbol}, {category}",
   placeholderLabel: "{first} to {last}",
-  jumpToSeries: "Jump to {series}",
   detailsLabel: "Element details",
   detailsEmpty: "Select an element to see its details.",
   detailsHint: "Values refer to the neutral atom.",
@@ -10562,9 +9208,7 @@ var EN = {
 var DE = {
   widgetLabel: "Periodensystem",
   searchLabel: "Elemente suchen",
-  searchPlaceholder: "Name, Symbol oder Ordnungszahl",
-  filterLabel: "Stoffklasse",
-  filterAll: "Alle Stoffklassen",
+  searchPlaceholder: "Name, Symbol, Nummer",
   viewLabel: "Darstellung",
   viewTable: "Tabelle",
   viewList: "Liste",
@@ -10579,7 +9223,6 @@ var DE = {
   seriesLabel: "Abgesetzte Reihen",
   cellLabel: "{number}, {name}, {symbol}, {category}",
   placeholderLabel: "{first} bis {last}",
-  jumpToSeries: "Zu {series} springen",
   detailsLabel: "Elementdaten",
   detailsEmpty: "W\xE4hle ein Element, um seine Daten zu sehen.",
   detailsHint: "Die Werte gelten f\xFCr das neutrale Atom.",
@@ -10902,15 +9545,24 @@ function sourceFieldText(field, t8) {
 
 // periodic-table/styles.ts
 var periodicTableStyles = i`
+	/* The widget takes the same box as the lab widget: a fixed default size that
+	   the author can shrink, and a corner grip outside fullscreen. The height is
+	   fixed instead of grown by the content, so the table and the list scroll
+	   inside the box and an embed never pushes the page around. */
 	:host {
 		display: block;
 		box-sizing: border-box;
+		inline-size: 800px;
+		max-inline-size: 100%;
+		block-size: 600px;
+		min-inline-size: min(260px, 100%);
+		min-block-size: 280px;
 		padding: 0.75rem;
 		font-family: var(--sl-font-sans, system-ui, sans-serif);
 		color: var(--sl-color-neutral-900, #1c1c1e);
 		background: var(--sl-color-neutral-0, #ffffff);
 
-		--pt-cell-height: 3rem;
+		--pt-cell-height: 2.85rem;
 		--pt-details-border: 1px;
 		--pt-cell-bar: 0.22rem;
 		--pt-gutter: 1.5rem;
@@ -10949,6 +9601,11 @@ var periodicTableStyles = i`
 		--pt-state-unknown: #e6e6e9;
 	}
 
+	:host(:not(:fullscreen)) {
+		resize: both;
+		overflow: hidden;
+	}
+
 	* {
 		box-sizing: border-box;
 	}
@@ -10958,6 +9615,8 @@ var periodicTableStyles = i`
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
+		block-size: 100%;
+		min-block-size: 0;
 	}
 
 	.category-alkali-metal {
@@ -11009,17 +9668,11 @@ var periodicTableStyles = i`
 	}
 
 	.toolbar .search {
-		flex: 1 1 12rem;
-		min-width: 8rem;
+		flex: 0 1 14rem;
+		min-width: 7rem;
 	}
 
-	.toolbar .filter {
-		flex: 0 1 11rem;
-		min-width: 8rem;
-	}
-
-	.toolbar sl-input::part(form-control-label),
-	.toolbar sl-select::part(form-control-label) {
+	.toolbar sl-input::part(form-control-label) {
 		position: absolute;
 		width: 1px;
 		height: 1px;
@@ -11066,20 +9719,28 @@ var periodicTableStyles = i`
 		gap: 0.25rem;
 	}
 
-	.toolbar-actions sl-button::part(base) {
+	/* The ribbon buttons sit on the surface of the panel. The active view button
+	   keeps the accent fill of its primary variant, because the surface override
+	   would leave its white icon on a white box. */
+	.toolbar sl-button:not([variant="primary"])::part(base) {
 		background: var(--pt-surface);
 		box-shadow: var(--pt-control-shadow);
 	}
 
-	.toolbar-actions sl-button::part(label) {
+	.toolbar sl-button::part(label) {
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
 
+	/* The pane is the only part that scrolls: the ribbon and the mode row stay
+	   put while the table or the list moves under them, and the widget itself
+	   never grows past the height it was given. */
 	.table-pane {
+		flex: 1 1 auto;
 		min-width: 0;
-		overflow-x: auto;
+		min-height: 0;
+		overflow: auto;
 		padding-bottom: 0.25rem;
 	}
 
@@ -11106,11 +9767,12 @@ var periodicTableStyles = i`
 		grid-column: var(--pt-column);
 	}
 
-	/* The detail card is a grid item of the table, so it fills the free block
-	   above the transition metals and never covers a cell. The slot is only the
-	   box: the card inside it is positioned, so its content can never stretch the
-	   rows it spans. The slot is also the query container of the card, so the card
-	   can drop the conditions when the block gets narrow. */
+	/* The detail card is a grid item of the table, so it starts in the free block
+	   above the transition metals. The slot is only the box: the card inside it is
+	   positioned and only as tall as its key rows, so it never stretches the rows
+	   it spans and may reach over the cells below when it is expanded. The slot is
+	   also the query container of the card, so the card can drop the conditions
+	   when the block gets narrow. */
 	.details-slot {
 		position: relative;
 		grid-row: var(--pt-row) / span var(--pt-row-span, 1);
@@ -11183,13 +9845,6 @@ var periodicTableStyles = i`
 	.cell.state-gas {
 		background: var(--pt-state-gas);
 	}
-	.cell.state-unknown {
-		background: var(--pt-state-unknown);
-	}
-
-	.cell.is-dimmed {
-		opacity: 0.35;
-	}
 
 	/* The atomic number sits in a consistent corner; the discovery year takes the
 	   opposite one. */
@@ -11215,15 +9870,6 @@ var periodicTableStyles = i`
 
 	.cell:hover {
 		border-color: color-mix(in srgb, var(--pt-ink) 35%, var(--pt-border));
-	}
-
-	.cell[aria-disabled="true"] {
-		opacity: 0.3;
-		cursor: default;
-	}
-
-	.cell[aria-disabled="true"]:hover {
-		border-color: var(--pt-border);
 	}
 
 	/* Selection stays ChemLab blue; keyboard focus gets its own dark outer ring,
@@ -11278,27 +9924,27 @@ var periodicTableStyles = i`
 		color: var(--pt-ink-soft);
 	}
 
-	.series-jumps {
+	/* The families are a narrow carousel in the ribbon: one row that scrolls
+	   sideways instead of wrapping into a second and third line, which is what
+	   keeps the ribbon a single band at every width. The reset sits outside the
+	   strip, so it never scrolls out of reach. The small flex basis matters: a
+	   basis of auto would be the full width of all tags, and the toolbar would
+	   break the strip onto a line of its own before it ever shrank. */
+	.family-strip {
 		display: flex;
-		flex-wrap: wrap;
+		flex: 1 1 6rem;
 		gap: 0.25rem;
-		margin-top: 0.4rem;
-	}
-
-	.legend {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.25rem 0.4rem;
-		margin: 0.5rem 0 0;
-		padding: 0;
-		list-style: none;
+		min-width: 7rem;
+		overflow-x: auto;
+		padding-bottom: 1px;
+		scrollbar-width: thin;
 	}
 
 	/* Family names and the temperature key share one treatment: narrow
-	   rectangular tags with a swatch, so neither legend reads as a competing
-	   control. The family tags stay clickable and mirror the dropdown; the active
-	   filter gets a clear selected state in ChemLab blue. */
-	.legend-item,
+	   rectangular tags with a swatch, so neither reads as a competing control.
+	   The family tags are the filter; the active one gets a clear selected state
+	   in ChemLab blue. */
+	.family-tag,
 	.state-legend li {
 		display: inline-flex;
 		align-items: center;
@@ -11311,25 +9957,28 @@ var periodicTableStyles = i`
 		font-size: 0.7rem;
 	}
 
-	.legend-item {
+	.family-tag {
+		flex: 0 0 auto;
 		font: inherit;
+		font-size: 0.7rem;
+		white-space: nowrap;
 		cursor: pointer;
 	}
 
-	.legend-item[aria-pressed="true"] {
+	.family-tag[aria-pressed="true"] {
 		border-color: var(--pt-accent);
 		background: color-mix(in srgb, var(--pt-accent) 10%, var(--pt-surface));
 		box-shadow: inset 0 0 0 1px var(--pt-accent);
 		color: var(--pt-ink);
 	}
 
-	.legend-item:focus-visible,
+	.family-tag:focus-visible,
 	.list-row:focus-visible {
 		outline: 2px solid var(--pt-ink);
 		outline-offset: 1px;
 	}
 
-	.legend-swatch,
+	.family-swatch,
 	.state-swatch {
 		width: 0.7rem;
 		height: 0.7rem;
@@ -11387,6 +10036,7 @@ var periodicTableStyles = i`
 
 	.state-legend {
 		display: flex;
+		flex: 0 0 auto;
 		flex-wrap: wrap;
 		gap: 0.25rem 0.4rem;
 		margin: 0;
@@ -11402,9 +10052,6 @@ var periodicTableStyles = i`
 	}
 	.state-swatch.state-gas {
 		background: var(--pt-state-gas);
-	}
-	.state-swatch.state-unknown {
-		background: var(--pt-state-unknown);
 	}
 
 	.list {
@@ -11434,15 +10081,6 @@ var periodicTableStyles = i`
 
 	.list-row:hover {
 		background: var(--pt-inset);
-	}
-
-	.list-row[aria-pressed="true"] {
-		border-color: var(--pt-accent);
-		box-shadow: inset 0 0 0 1px var(--pt-accent);
-	}
-
-	.list-row.is-dimmed {
-		opacity: 0.45;
 	}
 
 	.list-number {
@@ -11490,27 +10128,40 @@ var periodicTableStyles = i`
 		font-variant-numeric: tabular-nums;
 	}
 
+	/* In the list the card stands in for the selected row, so it sits in the flow
+	   of the list and is always open: no overlay, no fixed height, no toggle. */
 	.list-details {
 		position: relative;
-		margin: 0.25rem 0 0.5rem;
+		margin: 0.25rem 0;
 	}
 
-	/* In the list the card is part of the row instead of a grid item, so it grows
-	   with its content and the open card stays in the flow. */
 	.list-details .details-shell {
 		position: static;
+		max-height: none;
+	}
+
+	.list-details .details-card::part(base) {
+		height: auto;
+	}
+
+	.list-details .details-card::part(body) {
+		flex: 0 0 auto;
+		padding-bottom: 6px;
+		overflow: visible;
 	}
 
 	/* The detail card is a Shoelace card with the same white surface, subtle
 	   outline and soft shadow as the object info panel of the lab widget. The
-	   shell is the positioned box inside the slot: collapsed it fills the block
-	   above the transition metals, so the card is exactly as tall as the three
-	   rows it spans and the periods around it keep their cells. */
+	   shell is the positioned box inside the slot: collapsed it takes only the
+	   height of its content, so the card is as slim as its key rows and the
+	   periods around it keep their cells. */
 	.details-shell {
 		position: absolute;
-		inset: 0;
+		inset: 0 0 auto 0;
 		display: flex;
+		max-height: 100%;
 		min-width: 0;
+		overflow: hidden;
 	}
 
 	/* The open card grows downwards from the top of the block and covers the
@@ -11519,6 +10170,8 @@ var periodicTableStyles = i`
 	.details-shell.is-expanded {
 		inset: 0 0 auto 0;
 		height: auto;
+		max-height: none;
+		overflow: visible;
 		z-index: 6;
 	}
 
@@ -11533,8 +10186,10 @@ var periodicTableStyles = i`
 		--sl-panel-background-color: var(--pt-surface);
 	}
 
+	/* The card takes the height of its key rows instead of the height of the
+	   block, so the panel stays slim and the periods around it keep their cells. */
 	.details-card::part(base) {
-		height: 100%;
+		height: auto;
 		overflow: hidden;
 		box-shadow: var(--pt-panel-shadow);
 	}
@@ -11615,13 +10270,13 @@ var periodicTableStyles = i`
 	}
 
 	/* The body holds the key rows and, once the card is open, the sections below
-	   them. Collapsed it takes the rest of the fixed card height and scrolls, so a
-	   long value never pushes the card past the block it fills. */
+	   them. Collapsed it keeps room for the toggle in its bottom-right corner and
+	   scrolls if a value needs more lines than the block has. */
 	.details-card::part(body) {
 		display: flex;
 		flex: 1;
 		min-height: 0;
-		padding: 6px 8px;
+		padding: 6px 8px 1.5rem;
 		overflow: auto;
 	}
 
@@ -11652,12 +10307,15 @@ var periodicTableStyles = i`
 
 	/* The open card adds the remaining sections below the key rows, in as many
 	   columns as the block allows: side by side while there is room, stacked when
-	   the card is narrow. */
+	   the card is narrow. A wrapping flex row instead of a grid, because the
+	   sections then share the width of their own line: a grid would open as many
+	   narrow columns as fit and leave the rest of the row empty, which reads as a
+	   hole in the wide card of the list view. */
 	.details-more {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+		display: flex;
+		flex-wrap: wrap;
 		gap: 0.45rem 0.9rem;
-		align-items: start;
+		align-items: flex-start;
 		margin-top: 0.4rem;
 		padding-top: 0.4rem;
 		border-top: 1px solid var(--pt-border);
@@ -11665,6 +10323,7 @@ var periodicTableStyles = i`
 
 	.details-section {
 		display: flex;
+		flex: 1 1 8.5rem;
 		flex-direction: column;
 		gap: 0.15rem;
 		min-width: 0;
@@ -11674,7 +10333,7 @@ var periodicTableStyles = i`
 	   badly in a third of the card, so the structure section takes the full width
 	   and starts a row of its own. */
 	.details-section-structure {
-		grid-column: 1 / -1;
+		flex-basis: 100%;
 	}
 
 	/* The section headings are tags, so they read as labels of the card instead of
@@ -12028,16 +10687,23 @@ var periodicTableStyles = i`
 	}
 
 	@media print {
+		/* The printed sheet is as tall as its content, so the fixed box and the
+		   scrolling pane are undone here. */
 		:host {
+			block-size: auto;
+			min-block-size: 0;
+			overflow: visible;
 			padding: 0;
+		}
+
+		.widget {
+			block-size: auto;
 		}
 
 		.toolbar,
 		.modes,
 		.state-legend,
-		.table-pane,
-		.series-jumps,
-		.legend {
+		.table-pane {
 			display: none !important;
 		}
 
@@ -12055,9 +10721,7 @@ var periodicTableStyles = i`
 	:host(.ww-beforeprint) .toolbar,
 	:host(.ww-beforeprint) .modes,
 	:host(.ww-beforeprint) .state-legend,
-	:host(.ww-beforeprint) .table-pane,
-	:host(.ww-beforeprint) .series-jumps,
-	:host(.ww-beforeprint) .legend {
+	:host(.ww-beforeprint) .table-pane {
 		display: none !important;
 	}
 
@@ -12068,7 +10732,7 @@ var periodicTableStyles = i`
 	@media (forced-colors: active) {
 		.cell,
 		.list-row,
-		.legend-item,
+		.family-tag,
 		.state-legend li,
 		.details-card,
 		.placeholder-text {
@@ -12080,14 +10744,13 @@ var periodicTableStyles = i`
 		   stay distinct without colour. */
 		.cell:focus-visible,
 		.list-row:focus-visible,
-		.legend-item:focus-visible {
+		.family-tag:focus-visible {
 			outline: 2px solid Highlight;
 			outline-offset: 2px;
 		}
 
 		.cell[aria-selected="true"],
-		.list-row[aria-pressed="true"],
-		.legend-item[aria-pressed="true"] {
+		.family-tag[aria-pressed="true"] {
 			border: 2px solid Highlight;
 			box-shadow: none;
 		}
@@ -12098,7 +10761,7 @@ var periodicTableStyles = i`
 setBasePath("@shoelace-style/shoelace/dist");
 var VIEWS = ["auto", "table", "list"];
 var LIST_BREAKPOINT = 680;
-var STATES = ["solid", "liquid", "gas", "unknown"];
+var STATES = ["solid", "liquid", "gas"];
 var DETAIL_SECTIONS = [
   { section: "properties", label: "sectionProperties" },
   { section: "temperatures", label: "sectionTemperatures" },
@@ -12157,7 +10820,7 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, matches_fn, selectFromUser_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _openInfo, _onInfoHide, jumpToSeries_fn, focusElement_fn, reset_fn, _onQueryInput, _onSearchKeydown, _onCategoryChange, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderToolbar_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
+var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _openInfo, _onInfoHide, focusElement_fn, reset_fn, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderToolbar_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
 _ChemLabPeriodicTable_decorators = [t2("webwriter-chemlab-periodic-table")];
 var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a2) {
   constructor() {
@@ -12243,12 +10906,6 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
       __privateMethod(this, _ChemLabPeriodicTable_instances, selectFromUser_fn).call(this, first.atomicNumber);
       __privateMethod(this, _ChemLabPeriodicTable_instances, focusElement_fn).call(this, first.atomicNumber);
     });
-    /** Reads the family filter. */
-    __privateAdd(this, _onCategoryChange, (event) => {
-      const value = event.target.value ?? "";
-      __privateSet(this, _category, value === "" ? null : value);
-      this.requestUpdate();
-    });
     /**
      * Handles the grid keys of a cell.
      *
@@ -12331,8 +10988,9 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
    * Restores result focus after a layout change.
    *
    * The element that owned focus is remembered by atomic number, so it survives
-   * the switch between the grid and the list. When it is no longer part of the
-   * results, the search field is the stable fallback.
+   * the switch between the grid and the list. The list renders the selected row
+   * as its card, so a remembered selection lands on the card; otherwise the
+   * search field and then the layout switch are the stable fallbacks.
    */
   updated() {
     if (!__privateGet(this, _restoreFocusPending)) return;
@@ -12341,29 +10999,40 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     __privateSet(this, _focusBeforeLayout, null);
     const target = focusTargetAfterLayout(previous, (atomicNumber) => __privateGet(this, _matching).has(atomicNumber));
     const element = target === null ? null : this.renderRoot.querySelector(`[data-atomic-number="${target}"]`);
-    if (!element) {
-      this.renderRoot.querySelector("sl-input")?.focus();
+    if (element) {
+      element.focus();
+      __privateMethod(this, _ChemLabPeriodicTable_instances, reveal_fn).call(this, element);
       return;
     }
-    element.focus();
-    __privateMethod(this, _ChemLabPeriodicTable_instances, reveal_fn).call(this, element);
+    const card = __privateMethod(this, _ChemLabPeriodicTable_instances, listDetailsCard_fn).call(this);
+    if (card) {
+      card.focus();
+      return;
+    }
+    const fallback2 = this.renderRoot.querySelector("sl-input") ?? this.renderRoot.querySelector(".toolbar-actions sl-button");
+    fallback2?.focus();
   }
   render() {
     const language = __privateGet(this, _ChemLabPeriodicTable_instances, language_get);
     const t8 = strings(language);
-    const matches = __privateMethod(this, _ChemLabPeriodicTable_instances, matches_fn).call(this);
+    const resolved = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get);
+    const matches = __privateMethod(this, _ChemLabPeriodicTable_instances, matches_fn).call(this).filter((match) => {
+      const element2 = elementByAtomicNumber(match.atomicNumber);
+      return element2 !== void 0 && !cellMode(element2, __privateGet(this, _mode)).hidden;
+    });
     const matching = new Set(matches.map((match) => match.atomicNumber));
     __privateSet(this, _matching, matching);
     const selected = __privateGet(this, _selection).value;
     const element = selected === null ? null : elementByAtomicNumber(selected) ?? null;
-    const details = __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetails_fn).call(this, t8, language, element);
-    const resolved = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get);
+    const details = __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetails_fn).call(this, t8, language, element, {
+      expanded: resolved === "list" || __privateGet(this, _detailsExpanded),
+      collapsible: resolved === "table"
+    });
     return x2`
 			<div class="widget">
 				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderToolbar_fn).call(this, t8, language, matches.length)}
 				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderModes_fn).call(this, t8, language)}
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderStateLegend_fn).call(this, t8)}
-				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t8, language, matches, details) : __privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t8, language, matching, details)}
+				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t8, language, matches, element, details) : __privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t8, language, matching, details)}
 				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t8, language, element)}
 				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderInfo_fn).call(this, t8, language)}
 			</div>
@@ -12454,15 +11123,24 @@ resolvedView_get = function() {
 temperature_get = function() {
   return __privateGet(this, _mode).temperatureK;
 };
-/** Current search hits, best match first. */
+/**
+ * Current search hits, best match first.
+ *
+ * The query only applies to the list, which is the only layout with a search
+ * field: a query typed there must not silently filter the grid after a switch
+ * back, and it survives the round trip.
+ */
 matches_fn = function() {
-  return searchElements(__privateGet(this, _query), { locale: __privateGet(this, _ChemLabPeriodicTable_instances, language_get), category: __privateGet(this, _category) });
+  const query = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get) === "list" ? __privateGet(this, _query) : "";
+  return searchElements(query, { locale: __privateGet(this, _ChemLabPeriodicTable_instances, language_get), category: __privateGet(this, _category) });
 };
 /**
  * Selects an element after a user action and reports the change.
  *
  * A new element starts with the collapsed card: the open card covers the
- * cells below it, so it would hide the table the learner is browsing.
+ * cells below it, so it would hide the table the learner is browsing. The list
+ * keeps its card open, but the row that was pressed is gone, so focus moves to
+ * the card that replaced it.
  *
  * @param atomicNumber - Atomic number the user picked.
  */
@@ -12471,6 +11149,15 @@ selectFromUser_fn = function(atomicNumber) {
   __privateSet(this, _detailsExpanded, false);
   this.requestUpdate();
   __privateMethod(this, _ChemLabPeriodicTable_instances, dispatchSelection_fn).call(this);
+  if (__privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get) === "list") __privateMethod(this, _ChemLabPeriodicTable_instances, focusDetails_fn).call(this);
+};
+/** The card that replaced the selected list row, if the list shows one. */
+listDetailsCard_fn = function() {
+  return this.renderRoot.querySelector(".list-details .details-card");
+};
+/** Focuses the card that replaced the selected list row. */
+focusDetails_fn = function() {
+  void this.updateComplete.then(() => __privateMethod(this, _ChemLabPeriodicTable_instances, listDetailsCard_fn).call(this)?.focus());
 };
 /** Clears the selection after a user action and reports the change. */
 clearFromUser_fn = function() {
@@ -12524,21 +11211,6 @@ _onYearInput = new WeakMap();
 _openInfo = new WeakMap();
 _onInfoHide = new WeakMap();
 /**
- * Moves focus to the first element of a detached series.
- *
- * The jump is a navigation aid, not a selection: it changes no selection and
- * dispatches no event. The tab order follows the jump so Tab returns there.
- *
- * @param seriesRow - Row of the detached series.
- */
-jumpToSeries_fn = function(seriesRow) {
-  const target = seriesJumpTarget(seriesRow);
-  if (target === null) return;
-  __privateSet(this, _rovingOverride, target);
-  this.requestUpdate();
-  __privateMethod(this, _ChemLabPeriodicTable_instances, focusElement_fn).call(this, target);
-};
-/**
  * Focuses the cell or list row of an element once it is rendered.
  *
  * @param atomicNumber - Element to focus.
@@ -12561,7 +11233,6 @@ reset_fn = function() {
 };
 _onQueryInput = new WeakMap();
 _onSearchKeydown = new WeakMap();
-_onCategoryChange = new WeakMap();
 _onCellKeydown = new WeakMap();
 /**
  * Picks the single cell that takes part in the tab order.
@@ -12592,13 +11263,18 @@ renderCount_fn = function(t8, count) {
   return format(t8.resultCount, { count });
 };
 /**
- * Renders the toolbar with search, family filter, result count, layout switch and reset.
+ * Renders the ribbon with the info button, the family carousel, the reset and
+ * the layout switch.
  *
  * The whole row sits on one lightly shaded bar, so the controls read as one
- * unit. The layout switch and the reset are compact icon buttons with a
- * tooltip and an accessible label, like the canvas controls of the lab
- * widget; the result count is a pill badge, and a hidden live region keeps
- * the full sentence for screen readers.
+ * unit. The families are a narrow carousel of tags instead of a dropdown plus a
+ * legend, because the ribbon has no room for both and the tags double as the
+ * filter. The reset sits right after the carousel rather than inside it, so it
+ * never scrolls out of reach. The layout switch is a pair of compact icon
+ * buttons with a tooltip and an accessible label, like the canvas controls of
+ * the lab widget; the result count is a pill badge, and a hidden live region
+ * keeps the full sentence for screen readers. The search field only appears in
+ * the list, where the rows have no grid to scan.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
@@ -12616,30 +11292,38 @@ renderToolbar_fn = function(t8, language, count) {
 					label=${t8.infoLabel}
 					@click=${__privateGet(this, _openInfo)}
 				></sl-icon-button>
-				<sl-input
-					class="search"
-					type="search"
-					size="small"
-					clearable
-					label=${t8.searchLabel}
-					placeholder=${t8.searchPlaceholder}
-					.value=${__privateGet(this, _query)}
-					@sl-input=${__privateGet(this, _onQueryInput)}
-					@keydown=${__privateGet(this, _onSearchKeydown)}
-				></sl-input>
-				<sl-select
-					class="filter"
-					size="small"
-					clearable
-					label=${t8.filterLabel}
-					placeholder=${t8.filterAll}
-					.value=${__privateGet(this, _category) ?? ""}
-					@sl-change=${__privateGet(this, _onCategoryChange)}
-				>
+				${resolved === "list" ? x2`
+						<sl-input
+							class="search"
+							type="search"
+							size="small"
+							clearable
+							label=${t8.searchLabel}
+							placeholder=${t8.searchPlaceholder}
+							.value=${__privateGet(this, _query)}
+							@sl-input=${__privateGet(this, _onQueryInput)}
+							@keydown=${__privateGet(this, _onSearchKeydown)}
+						></sl-input>
+					` : null}
+				<div class="family-strip" role="group" aria-label=${t8.legendLabel}>
 					${Object.entries(CATEGORIES).map(([key, category]) => x2`
-						<sl-option value=${key}>${category[language]}</sl-option>
+						<button
+							class="family-tag category-${key}"
+							type="button"
+							aria-pressed=${__privateGet(this, _category) === key}
+							@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, toggleCategory_fn).call(this, key)}
+						>
+							<span class="family-swatch"></span>${category[language]}
+						</button>
 					`)}
-				</sl-select>
+				</div>
+				<sl-button
+					class="reset"
+					size="small"
+					title=${t8.reset}
+					aria-label=${t8.reset}
+					@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, reset_fn).call(this)}
+				>${RESET_ICON}</sl-button>
 				<sl-badge class="count-badge" pill variant="neutral" title=${countText}>
 					${count}
 				</sl-badge>
@@ -12663,12 +11347,6 @@ renderToolbar_fn = function(t8, language, count) {
 							@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "list")}
 						>${LIST_ICON}</sl-button>
 					</div>
-					<sl-button
-						size="small"
-						title=${t8.reset}
-						aria-label=${t8.reset}
-						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, reset_fn).call(this)}
-					>${RESET_ICON}</sl-button>
 				</div>
 			</div>
 		`;
@@ -12714,11 +11392,13 @@ slider_fn = function(t8, language) {
  * The switch decides what the cells are coloured by: nothing, the state at the
  * chosen temperature, or whether the element was already known in the chosen
  * year. The legend only appears for the temperature mode, because the
- * discovery mode dims cells instead of colouring them.
+ * discovery mode hides cells instead of colouring them. It shares the row
+ * with the switch and the slider: a row of its own would cost the table the
+ * height of one period at the default widget size.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
- * @returns The mode row and, for a state mode, the legend.
+ * @returns The mode row with the legend of the temperature mode.
  */
 renderModes_fn = function(t8, language) {
   const slider = __privateMethod(this, _ChemLabPeriodicTable_instances, slider_fn).call(this, t8, language);
@@ -12749,6 +11429,7 @@ renderModes_fn = function(t8, language) {
 							<sl-tag class="mode-value" size="small" variant="neutral">${slider.readout}</sl-tag>
 						</div>
 					` : null}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderStateLegend_fn).call(this, t8)}
 			</div>
 		`;
 };
@@ -12773,24 +11454,25 @@ renderStateLegend_fn = function(t8) {
 /**
  * Renders one element cell of the grid.
  *
+ * Only matching cells are rendered at all, so a cell needs no disabled state:
+ * an element the mode cannot place leaves a hole in the grid instead of a
+ * greyed tile.
+ *
  * @param cell - Cell of the display grid.
  * @param t - Interface strings.
  * @param language - Interface language.
- * @param matching - Atomic numbers that pass the current filter.
  * @param roving - Atomic number of the tabbable cell.
  * @returns The grid cell.
  */
-renderCell_fn = function(cell, t8, language, matching, roving) {
+renderCell_fn = function(cell, t8, language, roving) {
   const element = elementByAtomicNumber(cell.atomicNumber);
   if (!element) return null;
-  const enabled = matching.has(cell.atomicNumber);
   const selected = __privateGet(this, _selection).value === cell.atomicNumber;
   const displayRow = cell.section === "main" ? cell.row + 1 : cell.row + 2;
   const mode = cellMode(element, __privateGet(this, _mode));
   const state = mode.state === null ? null : stateText(mode.state, t8);
   const classes = ["cell", `category-${cell.category}`];
   if (mode.state !== null) classes.push(`state-${mode.state}`);
-  if (mode.dimmed) classes.push("is-dimmed");
   const label = format(t8.cellLabel, {
     number: element.atomicNumber,
     name: element.names[language],
@@ -12802,13 +11484,12 @@ renderCell_fn = function(cell, t8, language, matching, roving) {
 				class=${classes.join(" ")}
 				role="gridcell"
 				aria-selected=${selected}
-				aria-disabled=${!enabled}
 				aria-label=${label}
 				tabindex=${cell.atomicNumber === roving ? 0 : -1}
 				data-atomic-number=${cell.atomicNumber}
 				style="--pt-row:${displayRow};--pt-column:${cell.column + 1}"
-				@click=${() => enabled && __privateMethod(this, _ChemLabPeriodicTable_instances, selectFromUser_fn).call(this, cell.atomicNumber)}
-				@keydown=${(event) => enabled && __privateGet(this, _onCellKeydown).call(this, event, cell.atomicNumber)}
+				@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, selectFromUser_fn).call(this, cell.atomicNumber)}
+				@keydown=${(event) => __privateGet(this, _onCellKeydown).call(this, event, cell.atomicNumber)}
 			>
 				<span class="cell-number">${cell.atomicNumber}</span>
 				<span class="cell-symbol">${element.symbol}</span>
@@ -12820,9 +11501,11 @@ renderCell_fn = function(cell, t8, language, matching, roving) {
 /**
  * Renders the table layout.
  *
- * The detail card is a grid item of the table itself: it fills the free block
+ * The detail card is a grid item of the table itself: it sits in the free block
  * above the transition metals, so the selection is read inside the table
- * instead of in a second column beside it.
+ * instead of in a second column beside it. The card takes only the height of
+ * its content, so the block keeps its own size and the periods around it never
+ * stretch.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
@@ -12839,6 +11522,9 @@ renderGrid_fn = function(t8, language, matching, details) {
 				style="--pt-row:1;--pt-column:${index + 2}"
 			>${index + 1}</div>
 		`);
+  const cells = (row) => row.cells.map(
+    (cell) => matching.has(cell.atomicNumber) ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t8, language, roving) : null
+  );
   const mainRows = GRID.rows.filter((row) => row.section === "main").map((row) => x2`
 				<div class="grid-row" role="row">
 					<div
@@ -12846,7 +11532,7 @@ renderGrid_fn = function(t8, language, matching, details) {
 						role="rowheader"
 						style="--pt-row:${row.row + 1};--pt-column:1"
 					>${row.row}</div>
-					${row.cells.map((cell) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t8, language, matching, roving))}
+					${cells(row)}
 				</div>
 			`);
   const placeholders = GRID.placeholders.map((placeholder) => {
@@ -12874,7 +11560,7 @@ renderGrid_fn = function(t8, language, matching, details) {
 							role="rowheader"
 							style="--pt-row:${row.row + 2};--pt-column:1 / span 3"
 						>${name}</div>
-						${row.cells.map((cell) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t8, language, matching, roving))}
+						${cells(row)}
 					</div>
 				`;
   });
@@ -12896,78 +11582,58 @@ renderGrid_fn = function(t8, language, matching, details) {
 						>${details}</div>
 					</div>
 				</div>
-				<div class="series-jumps">
-					${LAYOUT.seriesRows.map((series) => x2`
-						<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, jumpToSeries_fn).call(this, series.row)}>
-							${format(t8.jumpToSeries, {
-    series: CATEGORIES[series.category]?.[language] ?? series.category
-  })}
-						</sl-button>
-					`)}
-				</div>
-				<ul class="legend" aria-label=${t8.legendLabel}>
-					${Object.entries(CATEGORIES).map(([key, category]) => x2`
-						<li>
-							<button
-								class="legend-item category-${key}"
-								type="button"
-								aria-pressed=${__privateGet(this, _category) === key}
-								@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, toggleCategory_fn).call(this, key)}
-							>
-								<span class="legend-swatch"></span>${category[language]}
-							</button>
-						</li>
-					`)}
-				</ul>
 			</div>
 		`;
 };
 /**
- * Renders the list layout with the detail card after the selected row.
+ * Renders the list layout with the detail card in place of the selected row.
+ *
+ * The card is always open here: the list has room for it, and a collapsed card
+ * would only repeat the row it replaces. Rendering it instead of the row keeps
+ * the identity of the element in one place, so the row and the card never show
+ * the same name twice in two different styles. A selection the mode hides has
+ * no row left, so its card moves to the top of the list.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
  * @param matches - Search hits in display order.
+ * @param element - Selected element, or `null` when nothing is selected.
  * @param details - Rendered detail card.
  * @returns The list.
  */
-renderList_fn = function(t8, language, matches, details) {
+renderList_fn = function(t8, language, matches, element, details) {
   const selected = __privateGet(this, _selection).value;
   const selectedVisible = matches.some((match) => match.atomicNumber === selected);
   const rows = matches.map((match) => {
-    const element = elementByAtomicNumber(match.atomicNumber);
-    if (!element) return null;
-    const isSelected = match.atomicNumber === selected;
-    const mode = cellMode(element, __privateGet(this, _mode));
-    const classes = ["list-row", `category-${categoryOf(element.atomicNumber) ?? "unknown"}`];
-    if (mode.dimmed) classes.push("is-dimmed");
+    const entry = elementByAtomicNumber(match.atomicNumber);
+    if (!entry) return null;
+    if (match.atomicNumber === selected) return x2`<li class="list-details">${details}</li>`;
+    const mode = cellMode(entry, __privateGet(this, _mode));
     return x2`
 				<li>
 					<button
-						class=${classes.join(" ")}
+						class="list-row category-${categoryOf(entry.atomicNumber) ?? "unknown"}"
 						type="button"
-						aria-pressed=${isSelected}
-						data-atomic-number=${element.atomicNumber}
-						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, selectFromUser_fn).call(this, element.atomicNumber)}
+						data-atomic-number=${entry.atomicNumber}
+						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, selectFromUser_fn).call(this, entry.atomicNumber)}
 					>
-						<span class="list-number">${element.atomicNumber}</span>
-						<span class="list-symbol">${element.symbol}</span>
-						<span class="list-name">${element.names[language]}</span>
-						<span class="list-category">${categoryText(element, language)}</span>
+						<span class="list-number">${entry.atomicNumber}</span>
+						<span class="list-symbol">${entry.symbol}</span>
+						<span class="list-name">${entry.names[language]}</span>
+						<span class="list-category">${categoryText(entry, language)}</span>
 						${mode.state === null ? mode.badge === null ? null : x2`<sl-tag class="list-year" size="small" variant="neutral">${mode.badge}</sl-tag>` : x2`
 							<sl-tag class="state-tag list-state state-${mode.state}" size="small" variant="neutral">
 								${stateText(mode.state, t8)}
 							</sl-tag>
 						`}
 					</button>
-					${isSelected ? x2`<div class="list-details">${details}</div>` : null}
 				</li>
 			`;
   });
   return x2`
 			<div class="table-pane">
 				<ul class="list" aria-label=${t8.gridLabel}>
-					${selectedVisible ? null : x2`<li class="list-details">${details}</li>`}
+					${element !== null && !selectedVisible ? x2`<li class="list-details">${details}</li>` : null}
 					${rows}
 				</ul>
 			</div>
@@ -13057,18 +11723,20 @@ renderPrintOverview_fn = function(t8, language, element) {
  * current mode — and stops there: the free block of the table is only three
  * rows tall, and a card that grew with its content would stretch the periods
  * around it. The toggle in the corner opens the rest as an overlay above the
- * cells.
+ * cells. The list passes `collapsible: false`, because its card replaces the
+ * selected row and has the room to stay open.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
  * @param element - Selected element, or `null` for the empty card.
+ * @param options - Whether the card can collapse and whether it is open.
  * @returns The detail card with its shell.
  */
-renderDetails_fn = function(t8, language, element) {
+renderDetails_fn = function(t8, language, element, options) {
   if (!element) {
     return x2`
 				<div class="details-shell">
-					<sl-card class="details-card details-card-empty">
+					<sl-card class="details-card details-card-empty" tabindex="-1">
 						<div class="details-empty">
 							<sl-icon class="details-empty-icon" src=${POINTER_ICON}></sl-icon>
 							<p>${t8.detailsEmpty}</p>
@@ -13081,13 +11749,17 @@ renderDetails_fn = function(t8, language, element) {
   const key = keyRows(rows, __privateGet(this, _mode).mode);
   const rest = rows.filter((row) => !key.includes(row));
   const name = element.names[language];
-  const expanded = __privateGet(this, _detailsExpanded);
+  const expanded = options.expanded;
+  const open = options.collapsible && expanded;
   return x2`
 			<div
-				class="details-shell ${expanded ? "is-expanded" : ""}"
+				class="details-shell ${open ? "is-expanded" : ""}"
 				@keydown=${__privateGet(this, _onDetailsKeydown)}
 			>
-				<sl-card class="details-card category-${categoryOf(element.atomicNumber) ?? "unknown"}">
+				<sl-card
+					class="details-card category-${categoryOf(element.atomicNumber) ?? "unknown"}"
+					tabindex="-1"
+				>
 					<div slot="header" class="details-head">
 						<span class="details-thumb">${element.symbol}</span>
 						<h5 class="details-title" title=${name}>${name}</h5>
@@ -13108,14 +11780,16 @@ renderDetails_fn = function(t8, language, element) {
 						${expanded ? x2`<div class="details-more">${__privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailSections_fn).call(this, t8, rest)}</div>` : null}
 					</div>
 				</sl-card>
-				<sl-button
-					class="details-toggle"
-					size="small"
-					title=${expanded ? t8.detailsCollapse : t8.detailsExpand}
-					aria-label=${expanded ? t8.detailsCollapse : t8.detailsExpand}
-					aria-expanded=${expanded}
-					@click=${__privateGet(this, _toggleDetails)}
-				>${CHEVRON_ICON}</sl-button>
+				${options.collapsible ? x2`
+						<sl-button
+							class="details-toggle"
+							size="small"
+							title=${expanded ? t8.detailsCollapse : t8.detailsExpand}
+							aria-label=${expanded ? t8.detailsCollapse : t8.detailsExpand}
+							aria-expanded=${expanded}
+							@click=${__privateGet(this, _toggleDetails)}
+						>${CHEVRON_ICON}</sl-button>
+					` : null}
 			</div>
 		`;
 };
@@ -13274,10 +11948,8 @@ __publicField(_ChemLabPeriodicTable, "scopedElements", {
   "sl-icon": SlIcon,
   "sl-icon-button": SlIconButton,
   "sl-input": SlInput,
-  "sl-option": SlOption,
   "sl-popup": SlPopup,
   "sl-range": SlRange,
-  "sl-select": SlSelect,
   "sl-spinner": SlSpinner,
   "sl-tag": SlTag,
   "sl-tooltip": SlTooltip
@@ -13450,7 +12122,6 @@ export {
 lit-html/lit-html.js:
 lit-element/lit-element.js:
 lit-html/directive.js:
-lit-html/directives/unsafe-html.js:
   (**
    * @license
    * Copyright 2017 Google LLC
