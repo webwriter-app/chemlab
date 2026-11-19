@@ -186110,6 +186110,9 @@ var CanvasController = class _CanvasController {
   changedVessels = /* @__PURE__ */ new Map();
   cables = /* @__PURE__ */ new Map();
   cablesDirty = false;
+  cableOrderDirty = false;
+  dippedOrderDirty = false;
+  awakeCables = /* @__PURE__ */ new Set();
   /** electrode sprites moved along with a vessel since the last save */
   attachedElectrodesMoved = /* @__PURE__ */ new Set();
   /** the drawn artboard of each sprite, in world units, for the collision test */
@@ -186128,7 +186131,7 @@ var CanvasController = class _CanvasController {
     this._dragMove(event);
     if (sprite instanceof VesselView) {
       if (sprite.rotation !== angle) sprite.updateAngle();
-    } else if (this.cables.size) this.cablesDirty = true;
+    }
     this.drawSelection();
   };
   /** offset from the sprite's origin to the point where it was grabbed, so a
@@ -186724,7 +186727,10 @@ var CanvasController = class _CanvasController {
       sprite2.position.set(x4, y5);
       if (sprite2 instanceof VesselView && (dx || dy)) {
         for (const electrode of this.attachedElectrodesOf(sprite2)) {
-          if (!selected.has(electrode)) electrode.position.set(electrode.x - dx, electrode.y - dy);
+          if (!selected.has(electrode)) {
+            electrode.position.set(electrode.x - dx, electrode.y - dy);
+            this.cablesDirty ||= this.cables.size > 0;
+          }
         }
       }
       if (this.cables.size && !(sprite2 instanceof VesselView)) this.cablesDirty = true;
@@ -186749,7 +186755,10 @@ var CanvasController = class _CanvasController {
       this.vessels.delete(sprite.component);
       this.changedVessels.delete(sprite);
     }
-    if (sprite instanceof CableView) this.cables.delete(sprite);
+    if (sprite instanceof CableView) {
+      this.cables.delete(sprite);
+      this.awakeCables.delete(sprite);
+    }
     this.attachedElectrodesMoved.delete(sprite);
     this.highlightDiagramSource(sprite.label, false);
     sprite.destroy({ children: true });
@@ -186842,6 +186851,8 @@ var CanvasController = class _CanvasController {
     });
     sprite.label = info;
     this.world.addChild(sprite);
+    this.cableOrderDirty = this.cables.size > 0 || sprite instanceof CableView;
+    this.dippedOrderDirty = true;
     this.spritesByLabel.set(info, sprite);
     if (sprite instanceof VesselView) {
       this.vessels.set(sprite.component, sprite);
@@ -186849,8 +186860,6 @@ var CanvasController = class _CanvasController {
     }
     if (sprite instanceof CableView) {
       this.cables.set(sprite, sprite.component);
-      this.cablesDirty = true;
-    } else if (this.cables.size && !(sprite instanceof VesselView)) {
       this.cablesDirty = true;
     }
     if (select) this.host._getObject(sprite);
@@ -186960,6 +186969,7 @@ var CanvasController = class _CanvasController {
     if (!drag) return;
     const local = drag.view.toLocal(event.global);
     drag.view.component._endOffsets[drag.end] = { x: local.x, y: local.y };
+    this.cablesDirty = true;
     this.highlightEndTarget(event.global);
     this.host.requestCanvasRender();
   }
@@ -187021,6 +187031,7 @@ var CanvasController = class _CanvasController {
       }
     }
     drag.view.resetLength(this.cableEndLocal(drag.view, 0), this.cableEndLocal(drag.view, 1));
+    this.cablesDirty = true;
     this.host.requestCanvasRender();
   }
   /**
@@ -187036,6 +187047,7 @@ var CanvasController = class _CanvasController {
         if (!partners.includes(device)) return;
         const local = this.cableEndLocal(view, end);
         cable._endOffsets[end] = { x: local.x, y: local.y };
+        this.cablesDirty = true;
       });
     }
   }
@@ -187293,9 +187305,11 @@ var CanvasController = class _CanvasController {
       }
       this.attachDevices(changed);
     }
-    this.updateDippedStacking();
-    if (this.cablesDirty || this.cables.size) {
-      this.cablesDirty = false;
+    if (this.dippedOrderDirty) {
+      this.dippedOrderDirty = false;
+      this.updateDippedStacking();
+    }
+    if (this.cablesDirty || this.cableOrderDirty || this.awakeCables.size || this.host.simulation.hasTask(CABLE_TASK)) {
       this.updateCablePositions();
     }
     const dtMs = this.host.app?.ticker.deltaMS ?? 16.67;
@@ -187368,6 +187382,7 @@ var CanvasController = class _CanvasController {
         const vessel = this.vesselAt(sprite.x, sprite.y) ?? this.vesselAt(sprite.x, bottom);
         const previousMix = eComp._connectedMix;
         eComp._connectedMix = vessel?.component._content;
+        this.dippedOrderDirty ||= previousMix !== eComp._connectedMix;
         const top = sprite.y - height * 0.4667;
         const wet = vessel?.immersedSpan(top, bottom);
         const span = wet && { top: wet.top - sprite.y, bottom: wet.bottom - sprite.y };
@@ -187380,6 +187395,7 @@ var CanvasController = class _CanvasController {
       case "gascollector" /* GasCollector */: {
         const mix = this.vesselAt(sprite.x, bottom)?.component._content;
         if (mix !== eComp._connectedMix) {
+          this.dippedOrderDirty = true;
           eComp._tubeBaseline = mix?.evolvedGasMol ?? 0;
           eComp._connectedMix = mix;
           this.host.measurements.record([], [eComp]);
@@ -187391,7 +187407,12 @@ var CanvasController = class _CanvasController {
         const first = this.vesselAt(sprite.x - leg, bottom);
         const second = this.vesselAt(sprite.x + leg, bottom);
         const wet = (vessel) => (vessel?.immersedLength(bottom - 0.5, bottom) ?? 0) > 0;
-        eComp._bridgeMixes = first && second && first !== second && wet(first) && wet(second) ? [first.component._content, second.component._content] : [];
+        const mixtures = first && second && first !== second && wet(first) && wet(second) ? [first.component._content, second.component._content] : [];
+        const previous = eComp._bridgeMixes;
+        if (mixtures.length !== previous.length || mixtures.some((mix, index2) => mix !== previous[index2])) {
+          this.dippedOrderDirty = true;
+          eComp._bridgeMixes = mixtures;
+        }
         eComp._bridgeLegs = [sprite.x - leg, sprite.x + leg];
         return;
       }
@@ -187459,25 +187480,26 @@ var CanvasController = class _CanvasController {
     return { x: sprite.x, y: sprite.y };
   }
   updateCablePositions() {
-    const stage = this.world;
+    if (this.cablesDirty) {
+      this.cablesDirty = false;
+      for (const view of this.cables.keys()) {
+        view.setEnds(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
+        if (view.moving) this.awakeCables.add(view);
+      }
+    }
+    if (this.cableOrderDirty) {
+      this.cableOrderDirty = false;
+      const top = this.world.children.length - 1;
+      for (const view of this.cables.keys()) this.world.setChildIndex(view, top);
+    }
     const dt = Math.min(this.host.app?.ticker.deltaMS ?? 16.67, 40) / 1e3;
-    let anyAwake = false;
-    for (const [view, cable] of this.cables) {
-      if (!this.host.allEComponents.includes(cable)) {
-        this.host.removeObjects([view]);
-        continue;
-      }
-      view.setEnds(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
-      if (view.moving) {
-        view.step(dt);
-        anyAwake = true;
-      }
+    for (const view of this.awakeCables) {
+      view.step(dt);
       view.draw();
-      const top = stage.children.length - 1;
-      if (stage.getChildIndex(view) !== top) stage.setChildIndex(view, top);
+      if (!view.moving) this.awakeCables.delete(view);
     }
     const simulation = this.host.simulation;
-    if (anyAwake) {
+    if (this.awakeCables.size) {
       if (!simulation.hasTask(CABLE_TASK)) {
         simulation.startTask(CABLE_TASK, () => this.host.requestCanvasRender());
       }
@@ -187495,6 +187517,7 @@ var CanvasController = class _CanvasController {
    */
   relengthCablesAttachedTo(movedSprites) {
     if (!this.cables.size) return;
+    this.cablesDirty = true;
     for (const [view, cable] of this.cables) {
       if (movedSprites.includes(view)) {
         view.resetLength(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));

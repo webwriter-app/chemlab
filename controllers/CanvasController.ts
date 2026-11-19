@@ -81,6 +81,9 @@ export class CanvasController implements ReactiveController {
 	private changedVessels = new Map<VesselView, VesselHint | undefined>();
 	private cables = new Map<CableView, chemlib.ElectricComponent>();
 	private cablesDirty = false;
+	private cableOrderDirty = false;
+	private dippedOrderDirty = false;
+	private awakeCables = new Set<CableView>();
 	/** electrode sprites moved along with a vessel since the last save */
 	private attachedElectrodesMoved = new Set<PIXI.Container>();
 	/** the drawn artboard of each sprite, in world units, for the collision test */
@@ -100,7 +103,7 @@ export class CanvasController implements ReactiveController {
 		this._dragMove(event);
 		if (sprite instanceof VesselView) {
 			if (sprite.rotation !== angle) sprite.updateAngle();
-		} else if (this.cables.size) this.cablesDirty = true;
+		}
 		this.drawSelection();
 	};
 	/** offset from the sprite's origin to the point where it was grabbed, so a
@@ -761,7 +764,10 @@ export class CanvasController implements ReactiveController {
 			// The electrodes a vessel carried along have to go back with it.
 			if (sprite instanceof VesselView && (dx || dy)) {
 				for (const electrode of this.attachedElectrodesOf(sprite)) {
-					if (!selected.has(electrode)) electrode.position.set(electrode.x - dx, electrode.y - dy);
+					if (!selected.has(electrode)) {
+						electrode.position.set(electrode.x - dx, electrode.y - dy);
+						this.cablesDirty ||= this.cables.size > 0;
+					}
 				}
 			}
 			if (this.cables.size && !(sprite instanceof VesselView)) this.cablesDirty = true;
@@ -787,7 +793,10 @@ export class CanvasController implements ReactiveController {
 			this.vessels.delete(sprite.component);
 			this.changedVessels.delete(sprite);
 		}
-		if (sprite instanceof CableView) this.cables.delete(sprite);
+		if (sprite instanceof CableView) {
+			this.cables.delete(sprite);
+			this.awakeCables.delete(sprite);
+		}
 		this.attachedElectrodesMoved.delete(sprite);
 		this.highlightDiagramSource(sprite.label, false);
 		sprite.destroy({ children: true });
@@ -894,6 +903,8 @@ export class CanvasController implements ReactiveController {
 
 		sprite.label = info;
 		this.world.addChild(sprite);
+		this.cableOrderDirty = this.cables.size > 0 || sprite instanceof CableView;
+		this.dippedOrderDirty = true;
 		this.spritesByLabel.set(info, sprite);
 		if (sprite instanceof VesselView) {
 			this.vessels.set(sprite.component, sprite);
@@ -901,10 +912,6 @@ export class CanvasController implements ReactiveController {
 		}
 		if (sprite instanceof CableView) {
 			this.cables.set(sprite, sprite.component);
-			this.cablesDirty = true;
-		} else if (this.cables.size && !(sprite instanceof VesselView)) {
-			// A new device lands on top of the world, so the cables have to be
-			// raised above it again.
 			this.cablesDirty = true;
 		}
 		if (select) this.host._getObject(sprite);
@@ -1022,6 +1029,7 @@ export class CanvasController implements ReactiveController {
 		if (!drag) return;
 		const local = drag.view.toLocal(event.global);
 		drag.view.component._endOffsets[drag.end] = { x: local.x, y: local.y };
+		this.cablesDirty = true;
 		this.highlightEndTarget(event.global);
 		this.host.requestCanvasRender();
 	}
@@ -1083,6 +1091,7 @@ export class CanvasController implements ReactiveController {
 		}
 		// The lead settles with a fresh sag over the span it now covers.
 		drag.view.resetLength(this.cableEndLocal(drag.view, 0), this.cableEndLocal(drag.view, 1));
+		this.cablesDirty = true;
 		this.host.requestCanvasRender();
 	}
 
@@ -1099,6 +1108,7 @@ export class CanvasController implements ReactiveController {
 				if (!partners.includes(device)) return;
 				const local = this.cableEndLocal(view, end);
 				cable._endOffsets[end] = { x: local.x, y: local.y };
+				this.cablesDirty = true;
 			});
 		}
 	}
@@ -1391,11 +1401,11 @@ export class CanvasController implements ReactiveController {
 			// strip in the vessel changes with it.
 			this.attachDevices(changed);
 		}
-		this.updateDippedStacking();
-		if (this.cablesDirty || this.cables.size) {
-			this.cablesDirty = false;
-			// requests a render again while any rope is awake, which keeps
-			// the sim loop ticking until all cables have settled
+		if (this.dippedOrderDirty) {
+			this.dippedOrderDirty = false;
+			this.updateDippedStacking();
+		}
+		if (this.cablesDirty || this.cableOrderDirty || this.awakeCables.size || this.host.simulation.hasTask(CABLE_TASK)) {
 			this.updateCablePositions();
 		}
 		// Vessel particle / pour animations advance per frame here; the keep
@@ -1480,6 +1490,7 @@ export class CanvasController implements ReactiveController {
 				const vessel = this.vesselAt(sprite.x, sprite.y) ?? this.vesselAt(sprite.x, bottom);
 				const previousMix = eComp._connectedMix;
 				eComp._connectedMix = vessel?.component._content;
+				this.dippedOrderDirty ||= previousMix !== eComp._connectedMix;
 				// Only the part below the liquid surface carries current, so
 				// the strip records how much of it the liquid covers. A strip
 				// that hangs above the surface ends up with no area at all and
@@ -1499,6 +1510,7 @@ export class CanvasController implements ReactiveController {
 				// already lost gas before the tube was put in place starts
 				// the scale at that tally instead of at zero.
 				if (mix !== eComp._connectedMix) {
+					this.dippedOrderDirty = true;
 					eComp._tubeBaseline = mix?.evolvedGasMol ?? 0;
 					eComp._connectedMix = mix;
 					this.host.measurements.record([], [eComp]);
@@ -1511,8 +1523,13 @@ export class CanvasController implements ReactiveController {
 				const first = this.vesselAt(sprite.x - leg, bottom);
 				const second = this.vesselAt(sprite.x + leg, bottom);
 				const wet = (vessel?: VesselView) => (vessel?.immersedLength(bottom - 0.5, bottom) ?? 0) > 0;
-				eComp._bridgeMixes = first && second && first !== second && wet(first) && wet(second)
+				const mixtures = first && second && first !== second && wet(first) && wet(second)
 					? [first.component._content, second.component._content] : [];
+				const previous = eComp._bridgeMixes;
+				if (mixtures.length !== previous.length || mixtures.some((mix, index) => mix !== previous[index])) {
+					this.dippedOrderDirty = true;
+					eComp._bridgeMixes = mixtures;
+				}
 				// The span between the legs is the length of the tube the
 				// current has to cross, so the bridge records where they sit.
 				eComp._bridgeLegs = [sprite.x - leg, sprite.x + leg];
@@ -1588,36 +1605,29 @@ export class CanvasController implements ReactiveController {
 	}
 
 	private updateCablePositions(): void {
-		const stage = this.world;
+		if (this.cablesDirty) {
+			this.cablesDirty = false;
+			for (const view of this.cables.keys()) {
+				view.setEnds(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
+				if (view.moving) this.awakeCables.add(view);
+			}
+		}
+		if (this.cableOrderDirty) {
+			this.cableOrderDirty = false;
+			const top = this.world.children.length - 1;
+			for (const view of this.cables.keys()) this.world.setChildIndex(view, top);
+		}
 		const dt = Math.min(this.host.app?.ticker.deltaMS ?? 16.67, 40) / 1000;
-		let anyAwake = false;
-		for (const [view, cable] of this.cables) {
-			// A cable is only dropped when its component is really gone. A
-			// missing view alone is not enough: during a restore the views are
-			// added one by one, so a cable can be laid before its partner has
-			// a view, and deleting it then would silently unwire the cell.
-			if (!this.host.allEComponents.includes(cable)) {
-				this.host.removeObjects([view]);
-				continue;
-			}
-			// The ends follow the terminals they are plugged into, so a cable
-			// stays attached while its devices are dragged around.
-			view.setEnds(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
-			if (view.moving) {
-				view.step(dt);
-				anyAwake = true;
-			}
+		for (const view of this.awakeCables) {
+			view.step(dt);
 			view.draw();
-			// Cables lie on top of the devices, so a cable visibly ends at the
-			// plug it is clamped to instead of vanishing under the device body.
-			const top = stage.children.length - 1;
-			if (stage.getChildIndex(view) !== top) stage.setChildIndex(view, top);
+			if (!view.moving) this.awakeCables.delete(view);
 		}
 		// Keep the ticker running while any cable moves: the task requests a
 		// render every frame, and the flush below steps the ropes. Only when
 		// all cables have settled does the canvas go back to sleep.
 		const simulation = this.host.simulation;
-		if (anyAwake) {
+		if (this.awakeCables.size) {
 			if (!simulation.hasTask(CABLE_TASK)) {
 				simulation.startTask(CABLE_TASK, () => this.host.requestCanvasRender());
 			}
@@ -1636,6 +1646,7 @@ export class CanvasController implements ReactiveController {
 	 */
 	private relengthCablesAttachedTo(movedSprites: readonly PIXI.Container[]): void {
 		if (!this.cables.size) return;
+		this.cablesDirty = true;
 		for (const [view, cable] of this.cables) {
 			if (movedSprites.includes(view)) {
 				view.resetLength(this.cableEndLocal(view, 0), this.cableEndLocal(view, 1));
