@@ -34,6 +34,7 @@ import {
 	seriesJumpTarget,
 	type GridCell,
 } from "./periodic-table/layout";
+import { focusTargetAfterLayout, gridKeyTarget } from "./periodic-table/keyboard";
 import { searchElements, type SearchResult } from "./periodic-table/search";
 import {
 	ELEMENT_SELECTION_EVENT,
@@ -52,6 +53,7 @@ import {
 import { periodicTableStyles } from "./periodic-table/styles";
 import {
 	format,
+	languageAncestors,
 	resolveLanguage,
 	strings,
 	type Language,
@@ -158,6 +160,11 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#category: string | null = null;
 	#width: number | null = null;
 	#resizeObserver: ResizeObserver | null = null;
+	#languageObserver: MutationObserver | null = null;
+	#matching: ReadonlySet<number> = new Set();
+	#rovingOverride: number | null = null;
+	#focusBeforeLayout: number | null = null;
+	#restoreFocusPending = false;
 
 	/**
 	 * Currently selected atomic number, `null` when nothing is selected.
@@ -207,25 +214,108 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/** Measures the host once and then follows every resize. */
 	protected firstUpdated() {
 		this.#measure();
+		this.#observeLanguage();
 		if (typeof ResizeObserver === "function") {
 			this.#resizeObserver = new ResizeObserver(() => this.#measure());
 			this.#resizeObserver.observe(this);
 		}
 	}
 
-	/** Stops observing the host. */
+	/** Follows the language of the enclosing content. */
+	connectedCallback() {
+		super.connectedCallback();
+		this.#observeLanguage();
+	}
+
+	/** Stops observing the host and the enclosing content. */
 	disconnectedCallback() {
 		this.#resizeObserver?.disconnect();
 		this.#resizeObserver = null;
+		this.#languageObserver?.disconnect();
+		this.#languageObserver = null;
 		super.disconnectedCallback();
+	}
+
+	/**
+	 * Restores result focus after a layout change.
+	 *
+	 * The element that owned focus is remembered by atomic number, so it survives
+	 * the switch between the grid and the list. When it is no longer part of the
+	 * results, the search field is the stable fallback.
+	 */
+	protected updated() {
+		if (!this.#restoreFocusPending) return;
+		this.#restoreFocusPending = false;
+		const previous = this.#focusBeforeLayout;
+		this.#focusBeforeLayout = null;
+		const target = focusTargetAfterLayout(previous, atomicNumber => this.#matching.has(atomicNumber));
+		const element = target === null
+			? null
+			: this.renderRoot.querySelector<HTMLElement>(`[data-atomic-number="${target}"]`);
+		if (!element) {
+			this.renderRoot.querySelector<HTMLElement>("sl-input")?.focus();
+			return;
+		}
+		element.focus();
+		this.#reveal(element);
+	}
+
+	/** Watches every ancestor the language walk visits for a `lang` change. */
+	#observeLanguage() {
+		this.#languageObserver?.disconnect();
+		this.#languageObserver = null;
+		if (typeof MutationObserver !== "function") return;
+		const observer = new MutationObserver(() => this.requestUpdate());
+		for (const node of languageAncestors(this)) {
+			const candidate = node as unknown as Node;
+			if (candidate?.nodeType !== 1) continue;
+			observer.observe(candidate, { attributes: true, attributeFilter: ["lang"] });
+		}
+		this.#languageObserver = observer;
 	}
 
 	/** Records the host width, which decides the automatic layout. */
 	#measure() {
 		const width = this.getBoundingClientRect().width;
 		if (width <= 0 || width === this.#width) return;
+		const before = this.#resolvedView;
 		this.#width = width;
+		if (this.#resolvedView !== before) this.#captureResultFocus();
 		this.requestUpdate();
+	}
+
+	/**
+	 * Remembers which result owns focus before the layout changes.
+	 *
+	 * Only a focused result is restored; a click on a toolbar control leaves focus
+	 * where the user put it.
+	 */
+	#captureResultFocus() {
+		const root = this.renderRoot as ShadowRoot;
+		const active = (root.activeElement ?? null) as HTMLElement | null;
+		if (!active) {
+			this.#restoreFocusPending = false;
+			return;
+		}
+		const raw = active.dataset?.atomicNumber;
+		this.#restoreFocusPending = true;
+		this.#focusBeforeLayout = raw ? Number(raw) : null;
+	}
+
+	/**
+	 * Scrolls a focused result into the widget's own scroll area.
+	 *
+	 * @param target - Focused cell or list row.
+	 */
+	#reveal(target: HTMLElement) {
+		const pane = target.closest(".table-pane") as HTMLElement | null;
+		if (!pane) return;
+		const paneRect = pane.getBoundingClientRect();
+		const rect = target.getBoundingClientRect();
+		if (rect.left < paneRect.left) pane.scrollLeft += rect.left - paneRect.left;
+		else if (rect.right > paneRect.right) pane.scrollLeft += rect.right - paneRect.right;
+		if (rect.top < paneRect.top) pane.scrollTop += rect.top - paneRect.top;
+		else if (rect.bottom > paneRect.bottom) pane.scrollTop += rect.bottom - paneRect.bottom;
 	}
 
 	/** Interface language of the surrounding content. */
@@ -279,6 +369,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 */
 	#setView(view: ResolvedView) {
 		if (this.#resolvedView === view) return;
+		this.#captureResultFocus();
 		this.#viewOverride = view;
 		this.requestUpdate();
 	}
@@ -294,14 +385,18 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Moves the selection to the first element of a detached series.
+	 * Moves focus to the first element of a detached series.
+	 *
+	 * The jump is a navigation aid, not a selection: it changes no selection and
+	 * dispatches no event. The tab order follows the jump so Tab returns there.
 	 *
 	 * @param seriesRow - Row of the detached series.
 	 */
 	#jumpToSeries(seriesRow: number) {
 		const target = seriesJumpTarget(seriesRow);
 		if (target === null) return;
-		this.#selectFromUser(target);
+		this.#rovingOverride = target;
+		this.requestUpdate();
 		this.#focusElement(target);
 	}
 
@@ -354,15 +449,26 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	};
 
 	/**
-	 * Activates a grid cell from the keyboard.
+	 * Handles the grid keys of a cell.
+	 *
+	 * Enter and Space activate the cell through the native click of the button
+	 * wrapper, so only the navigation keys are handled here. A handled key is
+	 * consumed, which keeps WebWriter's own shortcuts out of the grid; every other
+	 * key keeps its default and still reaches the editor.
 	 *
 	 * @param event - Key event of the cell.
 	 * @param atomicNumber - Element of the cell.
 	 */
 	#onCellKeydown = (event: KeyboardEvent, atomicNumber: number) => {
-		if (event.key !== "Enter" && event.key !== " ") return;
+		if (event.altKey || event.ctrlKey || event.metaKey) return;
+		const target = gridKeyTarget(atomicNumber, event.key, value => this.#matching.has(value));
+		if (!target.handled) return;
 		event.preventDefault();
-		this.#selectFromUser(atomicNumber);
+		event.stopPropagation();
+		if (target.atomicNumber === null) return;
+		this.#rovingOverride = target.atomicNumber;
+		this.requestUpdate();
+		this.#focusElement(target.atomicNumber);
 	};
 
 	/**
@@ -374,6 +480,8 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#rovingTarget(matching: ReadonlySet<number>): number | null {
 		const selected = this.#selection.value;
 		if (selected !== null && matching.has(selected)) return selected;
+		const override = this.#rovingOverride;
+		if (override !== null && matching.has(override)) return override;
 		for (const cell of GRID.cells) {
 			if (matching.has(cell.atomicNumber)) return cell.atomicNumber;
 		}
@@ -643,6 +751,84 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
+	 * Renders the print-only overview.
+	 *
+	 * The overview is always in the DOM and hidden on screen, so both author
+	 * layouts print the same complete grid and the selected details. It carries no
+	 * interactive element and is hidden from assistive technology, because the
+	 * screen layout already exposes the same content.
+	 *
+	 * @param t - Interface strings.
+	 * @param language - Interface language.
+	 * @param element - Selected element, or `null` for the empty card.
+	 * @returns The print overview.
+	 */
+	#renderPrintOverview(t: Strings, language: Language, element: ElementReference | null) {
+		const groupLabels = Array.from({ length: GRID.columns }, (_, index) => html`
+			<div class="print-group" style="--pt-row:1;--pt-column:${index + 2}">${index + 1}</div>
+		`);
+		const periodLabels = Array.from({ length: GRID.periodRows }, (_, index) => html`
+			<div class="print-gutter" style="--pt-row:${index + 2};--pt-column:1">${index + 1}</div>
+		`);
+		const cells = GRID.cells.map(cell => {
+			const entry = elementByAtomicNumber(cell.atomicNumber);
+			if (!entry) return null;
+			const displayRow = cell.section === "main" ? cell.row + 1 : cell.row + 2;
+			return html`
+				<div
+					class="print-cell category-${cell.category}"
+					style="--pt-row:${displayRow};--pt-column:${cell.column + 1}"
+				>
+					<span class="print-number">${cell.atomicNumber}</span>
+					<span class="print-symbol">${entry.symbol}</span>
+				</div>
+			`;
+		});
+		const placeholders = GRID.placeholders.map(placeholder => html`
+			<div
+				class="print-placeholder category-${placeholder.category}"
+				style="--pt-row:${placeholder.row + 1};--pt-column:${placeholder.column + 1}"
+			></div>
+		`);
+		const seriesLabels = GRID.seriesRows.map(series => html`
+			<div
+				class="print-series"
+				style="--pt-row:${series.row + 2};--pt-column:1 / span 3"
+			>${CATEGORIES[series.category]?.[language] ?? series.category}</div>
+		`);
+		const rows = element ? detailRows(element, language) : [];
+		return html`
+			<div class="print-overview" aria-hidden="true">
+				<h2 class="print-title">${t.widgetLabel}</h2>
+				<div class="print-grid">
+					<div class="print-gutter" style="--pt-row:1;--pt-column:1"></div>
+					${groupLabels}
+					${periodLabels}
+					${cells}
+					${placeholders}
+					${seriesLabels}
+				</div>
+				<div class="print-details">
+					${element
+						? html`
+							<h3>${element.symbol} · ${element.names[language]}</h3>
+							<dl class="print-fields">
+								${rows.map(row => html`
+									<div>
+										<dt>${row.label}</dt>
+										<dd>${row.value}${row.qualifier ? ` (${row.qualifier})` : ""}</dd>
+									</div>
+								`)}
+							</dl>
+							<p class="print-hint">${t.detailsHint} ${conditionsText(language)}</p>
+						`
+						: html`<p class="print-hint">${t.detailsEmpty}</p>`}
+				</div>
+			</div>
+		`;
+	}
+
+	/**
 	 * Renders the detail card of one element.
 	 *
 	 * @param t - Interface strings.
@@ -715,6 +901,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const t = strings(language);
 		const matches = this.#matches();
 		const matching = new Set(matches.map(match => match.atomicNumber));
+		this.#matching = matching;
 		const selected = this.#selection.value;
 		const element = selected === null ? null : elementByAtomicNumber(selected) ?? null;
 		const details = this.#renderDetails(t, language, element);
@@ -731,6 +918,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 							<div class="details-pane">${details}</div>
 						</div>
 					`}
+				${this.#renderPrintOverview(t, language, element)}
 			</div>
 		`;
 	}

@@ -215,7 +215,7 @@ export function format(template: string, values: Record<string, string | number>
 }
 
 /** Minimal shape of a node the language walk needs. */
-interface LanguageNode {
+export interface LanguageNode {
 	readonly nodeType?: number;
 	getAttribute?(name: string): string | null;
 	readonly parentElement?: LanguageNode | null;
@@ -262,4 +262,19 @@ export function resolveLanguage(node: LanguageNode | null | undefined): Language
 		if (tag !== null && tag.trim() !== "") return languageFromTag(tag);
 	}
 	return "en";
+}
+
+/**
+ * Lists the nodes the language walk visits, nearest first.
+ *
+ * The widget observes these nodes for `lang` changes, so a language switch on
+ * the worksheet or on an enclosing section reaches the table without a reload.
+ *
+ * @param node - Node to start from, usually the widget host.
+ * @returns The node itself and every ancestor up to the document root.
+ */
+export function languageAncestors(node: LanguageNode | null | undefined): LanguageNode[] {
+	const chain: LanguageNode[] = [];
+	for (let current = node ?? null; current; current = parentOf(current)) chain.push(current);
+	return chain;
 }

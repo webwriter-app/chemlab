@@ -498,6 +498,149 @@ export const periodicTableStyles = css`
 		overflow-wrap: anywhere;
 	}
 
+	.print-overview {
+		display: none;
+	}
+
+	.print-title {
+		margin: 0 0 0.4rem;
+		font-size: 1rem;
+	}
+
+	.print-grid {
+		display: grid;
+		grid-template-columns: var(--pt-gutter) repeat(18, minmax(0, 1fr));
+		grid-template-rows:
+			auto repeat(7, minmax(1.5rem, auto))
+			var(--pt-series-gap) repeat(2, minmax(1.5rem, auto));
+		gap: 1px;
+	}
+
+	.print-cell,
+	.print-gutter,
+	.print-group,
+	.print-placeholder,
+	.print-series {
+		grid-row: var(--pt-row);
+		grid-column: var(--pt-column);
+	}
+
+	.print-cell {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid color-mix(in srgb, var(--pt-ink) 30%, transparent);
+		border-radius: 2px;
+		background: var(--pt-cell-fill, var(--pt-inset));
+		line-height: 1.05;
+	}
+
+	.print-number {
+		font-size: 0.45rem;
+		color: var(--pt-ink-soft);
+	}
+
+	.print-symbol {
+		font-size: 0.7rem;
+		font-weight: 600;
+	}
+
+	.print-gutter,
+	.print-group {
+		display: grid;
+		place-items: center;
+		font-size: 0.5rem;
+		color: var(--pt-ink-soft);
+	}
+
+	.print-series {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		padding-right: 0.2rem;
+		font-size: 0.55rem;
+		color: var(--pt-ink-soft);
+	}
+
+	.print-placeholder {
+		border: 1px dashed color-mix(in srgb, var(--pt-ink) 30%, transparent);
+		border-radius: 2px;
+		background: var(--pt-cell-fill, var(--pt-inset));
+	}
+
+	.print-details {
+		margin-top: 0.6rem;
+		font-size: 0.7rem;
+	}
+
+	.print-details h3 {
+		margin: 0 0 0.2rem;
+		font-size: 0.85rem;
+	}
+
+	.print-fields {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 0.1rem 0.5rem;
+		margin: 0;
+	}
+
+	.print-fields div {
+		display: contents;
+	}
+
+	.print-fields dt {
+		color: var(--pt-ink-soft);
+	}
+
+	.print-fields dd {
+		margin: 0;
+	}
+
+	.print-hint {
+		margin: 0.3rem 0 0;
+		color: var(--pt-ink-soft);
+	}
+
+	@media print {
+		:host {
+			padding: 0;
+		}
+
+		.toolbar,
+		.result-count,
+		.table-pane,
+		.details-pane,
+		.series-jumps,
+		.legend {
+			display: none !important;
+		}
+
+		.print-overview {
+			display: block;
+		}
+
+		.print-cell,
+		.print-placeholder {
+			-webkit-print-color-adjust: exact;
+			print-color-adjust: exact;
+		}
+	}
+
+	:host(.ww-beforeprint) .toolbar,
+	:host(.ww-beforeprint) .result-count,
+	:host(.ww-beforeprint) .table-pane,
+	:host(.ww-beforeprint) .details-pane,
+	:host(.ww-beforeprint) .series-jumps,
+	:host(.ww-beforeprint) .legend {
+		display: none !important;
+	}
+
+	:host(.ww-beforeprint) .print-overview {
+		display: block;
+	}
+
 	@media (forced-colors: active) {
 		.cell,
 		.list-row,
