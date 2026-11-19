@@ -2984,7 +2984,7 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderCanvasLoading({ value, task, restored, total }: NonNullable<ChemLab["canvasLoading"]>) {
-		const label = this.message("Chemielabor wird geladen");
+		const label = this.message("ChemLab wird geladen");
 		return html`
 			<div id="canvasLoading">
 				<div class="loading-heading">

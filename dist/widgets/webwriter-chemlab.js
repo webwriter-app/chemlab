@@ -69812,7 +69812,7 @@ var init_BitmapFont = __esm({
 // localization/messages.json
 var messages_default = {
   en: {
-    "Chemielabor wird geladen": "Loading chemistry lab",
+    "ChemLab wird geladen": "Loading ChemLab",
     "Grafik vorbereiten": "Preparing graphics",
     "Ger\xE4tegrafiken laden": "Loading equipment graphics",
     "Gespeicherte Ger\xE4te vorbereiten": "Preparing saved equipment",
@@ -190065,7 +190065,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 		`;
   }
   renderCanvasLoading({ value, task, restored, total }) {
-    const label = this.message("Chemielabor wird geladen");
+    const label = this.message("ChemLab wird geladen");
     return x`
 			<div id="canvasLoading">
 				<div class="loading-heading">
