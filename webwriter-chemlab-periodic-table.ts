@@ -35,6 +35,7 @@ import {
 	type ElementReference,
 } from "./periodic-table/element-reference";
 import {
+	DETAIL_SLOT,
 	GRID,
 	seriesJumpTarget,
 	type GridCell,
@@ -633,12 +634,17 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/**
 	 * Renders the table layout.
 	 *
+	 * The detail card is a grid item of the table itself: it fills the free block
+	 * above the transition metals, so the selection is read inside the table
+	 * instead of in a second column beside it.
+	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
 	 * @param matching - Atomic numbers that pass the current filter.
+	 * @param details - Rendered detail card.
 	 * @returns The grid with group labels, period gutter, placeholders and series rows.
 	 */
-	#renderGrid(t: Strings, language: Language, matching: ReadonlySet<number>) {
+	#renderGrid(t: Strings, language: Language, matching: ReadonlySet<number>, details: unknown) {
 		const roving = this.#rovingTarget(matching);
 		const groupLabels = Array.from({ length: GRID.columns }, (_, index) => html`
 			<div
@@ -702,6 +708,13 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					${mainRows}
 					${placeholders}
 					${seriesRows}
+					<div class="grid-row" role="row">
+						<div
+							class="details-slot"
+							role="gridcell"
+							style="--pt-row:${DETAIL_SLOT.row + 1};--pt-row-span:${DETAIL_SLOT.rowSpan};--pt-column:${DETAIL_SLOT.column + 1};--pt-column-span:${DETAIL_SLOT.columnSpan}"
+						>${details}</div>
+					</div>
 				</div>
 				<div class="series-jumps">
 					${LAYOUT.seriesRows.map(series => html`
@@ -860,6 +873,11 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/**
 	 * Renders the detail card of one element.
 	 *
+	 * The card follows the object cards of the lab widget: a square thumbnail with
+	 * a small corner badge, a title, and short tabular lines underneath. It has to
+	 * stay compact, because it sits in the free block of the table and must not
+	 * push the periods apart.
+	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
 	 * @param element - Selected element, or `null` for the empty card.
@@ -871,56 +889,56 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		}
 		const rows = detailRows(element, language);
 		const usage = sourceUsage(element, language);
+		const name = element.names[language];
 		return html`
 			<div class="details category-${categoryOf(element.atomicNumber) ?? "unknown"}">
-				<div class="details-head">
-					<div class="details-symbol">${element.symbol}</div>
-					<div>
-						<h3 class="details-name">${element.names[language]}</h3>
-						<p class="details-sub">
-							${element.atomicNumber} · ${element.symbol} · ${categoryText(element, language)}
-						</p>
-					</div>
+				<div class="details-thumb">
+					<span class="details-badge">${element.atomicNumber}</span>
+					<span class="details-symbol">${element.symbol}</span>
 				</div>
-				<dl class="details-fields">
-					${rows.map(row => html`
-						<div class="details-row">
-							<dt>${row.label}</dt>
-							<dd>
-								${row.value}${row.qualifier
-									? html`<span class="qualifier">${row.qualifier}</span>`
-									: null}
-							</dd>
-						</div>
-					`)}
-				</dl>
-				<p class="details-hint">${t.detailsHint} ${conditionsText(language)}</p>
-				<sl-details class="sources" summary=${t.sourcesLabel}>
-					<p class="details-hint">${t.sourcesHint}</p>
-					${usage.map(entry => {
-						const source = sourceOf(entry.sourceId);
-						if (!source) return null;
-						return html`
-							<div class="source">
-								<p class="source-title">${source.publisher} — ${source.title}</p>
-								<p class="source-line">${entry.fields.join(", ")}</p>
-								<p class="source-line">
-									${format(t.sourceRelease, { release: source.release })} ·
-									${format(t.sourceRetrieved, { retrieved: source.retrieved })}
-								</p>
-								<p class="source-line">
-									${format(t.sourceLicense, { license: source.license })}
-								</p>
-								<a
-									class="source-link"
-									href=${source.url}
-									target="_blank"
-									rel="noreferrer noopener"
-								>${source.url}</a>
+				<div class="details-body">
+					<h5 class="details-name" title=${name}>${name}</h5>
+					<p class="details-sub">${categoryText(element, language)}</p>
+					<dl class="details-fields">
+						${rows.map(row => html`
+							<div class="details-row">
+								<dt>${row.label}</dt>
+								<dd>
+									${row.value}${row.qualifier
+										? html`<span class="qualifier">${row.qualifier}</span>`
+										: null}
+								</dd>
 							</div>
-						`;
-					})}
-				</sl-details>
+						`)}
+					</dl>
+					<p class="details-hint">${t.detailsHint} ${conditionsText(language)}</p>
+					<sl-details class="sources" summary=${t.sourcesLabel}>
+						<p class="details-hint">${t.sourcesHint}</p>
+						${usage.map(entry => {
+							const source = sourceOf(entry.sourceId);
+							if (!source) return null;
+							return html`
+								<div class="source">
+									<p class="source-title">${source.publisher} — ${source.title}</p>
+									<p class="source-line">${entry.fields.join(", ")}</p>
+									<p class="source-line">
+										${format(t.sourceRelease, { release: source.release })} ·
+										${format(t.sourceRetrieved, { retrieved: source.retrieved })}
+									</p>
+									<p class="source-line">
+										${format(t.sourceLicense, { license: source.license })}
+									</p>
+									<a
+										class="source-link"
+										href=${source.url}
+										target="_blank"
+										rel="noreferrer noopener"
+									>${source.url}</a>
+								</div>
+							`;
+						})}
+					</sl-details>
+				</div>
 			</div>
 		`;
 	}
@@ -941,12 +959,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 				<p class="result-count" aria-live="polite">${this.#renderCount(t, matches.length)}</p>
 				${resolved === "list"
 					? this.#renderList(t, language, matches, details)
-					: html`
-						<div class="body">
-							${this.#renderGrid(t, language, matching)}
-							<div class="details-pane">${details}</div>
-						</div>
-					`}
+					: this.#renderGrid(t, language, matching, details)}
 				${this.#renderPrintOverview(t, language, element)}
 			</div>
 		`;

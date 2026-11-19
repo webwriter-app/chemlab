@@ -8620,6 +8620,7 @@ function buildGrid(layout = LAYOUT) {
   };
 }
 var GRID = buildGrid();
+var DETAIL_SLOT = { row: 1, column: 3, rowSpan: 3, columnSpan: 10 };
 var CELLS_BY_NUMBER = new Map(
   GRID.cells.map((cell) => [cell.atomicNumber, cell])
 );
@@ -8922,7 +8923,7 @@ var EN = {
   jumpToSeries: "Jump to {series}",
   detailsLabel: "Element details",
   detailsEmpty: "Select an element to see its details.",
-  detailsHint: "Values refer to the neutral atom at 25 \xB0C and 1 bar.",
+  detailsHint: "Values refer to the neutral atom.",
   fieldGroup: "Group",
   fieldPeriod: "Period",
   fieldFamily: "Family",
@@ -8973,7 +8974,7 @@ var DE = {
   jumpToSeries: "Zu {series} springen",
   detailsLabel: "Elementdaten",
   detailsEmpty: "W\xE4hle ein Element, um seine Daten zu sehen.",
-  detailsHint: "Die Werte gelten f\xFCr das neutrale Atom bei 25 \xB0C und 1 bar.",
+  detailsHint: "Die Werte gelten f\xFCr das neutrale Atom.",
   fieldGroup: "Gruppe",
   fieldPeriod: "Periode",
   fieldFamily: "Stoffklasse",
@@ -9262,19 +9263,6 @@ var periodicTableStyles = i`
 		color: var(--pt-ink-soft);
 	}
 
-	.body {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		gap: 0.75rem;
-		align-items: start;
-	}
-
-	@container (min-width: 1000px) {
-		.body {
-			grid-template-columns: minmax(0, 1fr) 18rem;
-		}
-	}
-
 	.table-pane {
 		min-width: 0;
 		overflow-x: auto;
@@ -9302,6 +9290,16 @@ var periodicTableStyles = i`
 	.series-header {
 		grid-row: var(--pt-row);
 		grid-column: var(--pt-column);
+	}
+
+	/* The detail card is a grid item of the table, so it fills the free block
+	   above the transition metals and never covers a cell. */
+	.details-slot {
+		display: grid;
+		grid-row: var(--pt-row) / span var(--pt-row-span, 1);
+		grid-column: var(--pt-column) / span var(--pt-column-span, 1);
+		min-width: 0;
+		min-height: 0;
 	}
 
 	.group-label,
@@ -9527,95 +9525,167 @@ var periodicTableStyles = i`
 		margin: 0.25rem 0 0.5rem;
 	}
 
+	/* The card copies the object cards of the lab widget: a square thumbnail
+	   with a corner badge, a title, and short tabular lines underneath. It fills
+	   the free block of the table, so it stays compact and scrolls inside itself
+	   instead of pushing the periods apart. */
 	.details {
+		display: grid;
+		grid-template-columns: minmax(0, 3.5rem) minmax(0, 1fr);
+		align-items: stretch;
+		gap: 4px;
+		height: 100%;
 		min-width: 0;
-		padding: 0.6rem 0.7rem;
-		border: 1px solid var(--pt-border);
-		border-radius: 6px;
-		background: var(--pt-surface);
+		min-height: 0;
+		padding: 2px 3px;
+		overflow: hidden;
+		border: 2px solid var(--pt-border);
+		border-radius: 5px;
+		background: var(--pt-inset);
+		color: var(--pt-ink);
 	}
 
-	.details-head {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
+	.details-thumb {
+		position: relative;
+		display: grid;
+		place-items: center;
+		align-self: start;
+		aspect-ratio: 1;
+		border: 1px solid color-mix(in srgb, var(--pt-ink) 12%, transparent);
+		border-radius: var(--pt-radius);
+		background: var(--pt-cell-fill, var(--pt-surface));
+		line-height: 1;
+	}
+
+	.details-badge {
+		position: absolute;
+		inset-block-start: 2px;
+		inset-inline-start: 2px;
+		padding: 0 2px;
+		border-radius: 3px;
+		background: var(--sl-color-primary-600, #0b6bcb);
+		color: var(--sl-color-neutral-0, #ffffff);
+		font-size: 8px;
+		font-weight: 400;
+		line-height: 1.4;
+		pointer-events: none;
 	}
 
 	.details-symbol {
-		display: grid;
-		place-items: center;
-		width: 2.6rem;
-		height: 2.6rem;
-		border-radius: var(--pt-radius);
-		background: var(--pt-cell-fill, var(--pt-inset));
-		font-size: 1.1rem;
+		font-size: 1.15rem;
 		font-weight: 600;
+	}
+
+	.details-body {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+		min-height: 0;
+		overflow-y: auto;
+		line-height: 1.25;
 	}
 
 	.details-name {
 		margin: 0;
-		font-size: 1rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+		overflow-wrap: anywhere;
 	}
 
 	.details-sub {
 		margin: 0;
-		font-size: 0.75rem;
+		font-size: 0.68rem;
 		color: var(--pt-ink-soft);
 	}
 
 	.details-fields {
 		display: grid;
-		grid-template-columns: auto minmax(0, 1fr);
-		gap: 0.2rem 0.6rem;
-		margin: 0.6rem 0 0;
-		font-size: 0.78rem;
+		grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+		gap: 0 0.75rem;
+		margin: 0;
+		font-size: 0.62rem;
 	}
 
+	/* Label and value share a row, the value keeps its own column so a long
+	   configuration wraps under itself instead of under the label. */
 	.details-row {
-		display: contents;
+		display: grid;
+		grid-template-columns: max-content minmax(0, 1fr);
+		gap: 0 0.3rem;
+		min-width: 0;
 	}
 
 	.details-row dt {
 		color: var(--pt-ink-soft);
+		white-space: nowrap;
+	}
+
+	.details-row dt::after {
+		content: ":";
 	}
 
 	.details-row dd {
 		margin: 0;
 		overflow-wrap: anywhere;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.qualifier {
-		margin-left: 0.3rem;
-		font-size: 0.65rem;
+		margin-left: 0.25rem;
+		font-size: 0.55rem;
 		letter-spacing: 0.03em;
 		text-transform: uppercase;
 		color: var(--pt-ink-soft);
 	}
 
 	.details-hint {
-		margin: 0.5rem 0 0;
-		font-size: 0.7rem;
+		margin: 0;
+		font-size: 0.58rem;
 		color: var(--pt-ink-soft);
 	}
 
 	.details-empty {
+		grid-column: 1 / -1;
+		align-self: center;
 		margin: 0;
-		font-size: 0.8rem;
+		font-size: 0.75rem;
 		color: var(--pt-ink-soft);
+		text-align: center;
 	}
 
+	/* The sources sit at the foot of the card, so the free space of the block
+	   collects between the fields and the disclosure instead of below it. */
 	.sources {
-		margin-top: 0.6rem;
-		font-size: 0.75rem;
+		margin-top: auto;
+		padding-top: 2px;
+		font-size: 0.62rem;
+	}
+
+	.sources::part(base) {
+		border: none;
+		background: none;
+	}
+
+	.sources::part(header) {
+		padding: 0;
+	}
+
+	.sources::part(content) {
+		padding: 0;
+	}
+
+	.sources::part(summary) {
+		font-size: 0.62rem;
 	}
 
 	.source {
-		margin-top: 0.4rem;
+		margin-top: 0.3rem;
 	}
 
 	.source-title {
 		margin: 0;
-		font-size: 0.78rem;
+		font-size: 0.62rem;
 	}
 
 	.source-line {
@@ -9627,6 +9697,7 @@ var periodicTableStyles = i`
 		color: var(--pt-accent);
 		overflow-wrap: anywhere;
 	}
+
 
 	.print-overview {
 		display: none;
@@ -9741,7 +9812,6 @@ var periodicTableStyles = i`
 		.toolbar,
 		.result-count,
 		.table-pane,
-		.details-pane,
 		.series-jumps,
 		.legend {
 			display: none !important;
@@ -9761,7 +9831,6 @@ var periodicTableStyles = i`
 	:host(.ww-beforeprint) .toolbar,
 	:host(.ww-beforeprint) .result-count,
 	:host(.ww-beforeprint) .table-pane,
-	:host(.ww-beforeprint) .details-pane,
 	:host(.ww-beforeprint) .series-jumps,
 	:host(.ww-beforeprint) .legend {
 		display: none !important;
@@ -9968,12 +10037,7 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
 			<div class="widget">
 				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderToolbar_fn).call(this, t7, language)}
 				<p class="result-count" aria-live="polite">${__privateMethod(this, _ChemLabPeriodicTable_instances, renderCount_fn).call(this, t7, matches.length)}</p>
-				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t7, language, matches, details) : x2`
-						<div class="body">
-							${__privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t7, language, matching)}
-							<div class="details-pane">${details}</div>
-						</div>
-					`}
+				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t7, language, matches, details) : __privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t7, language, matching, details)}
 				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t7, language, element)}
 			</div>
 		`;
@@ -10268,12 +10332,17 @@ renderCell_fn = function(cell, t7, language, matching, roving) {
 /**
  * Renders the table layout.
  *
+ * The detail card is a grid item of the table itself: it fills the free block
+ * above the transition metals, so the selection is read inside the table
+ * instead of in a second column beside it.
+ *
  * @param t - Interface strings.
  * @param language - Interface language.
  * @param matching - Atomic numbers that pass the current filter.
+ * @param details - Rendered detail card.
  * @returns The grid with group labels, period gutter, placeholders and series rows.
  */
-renderGrid_fn = function(t7, language, matching) {
+renderGrid_fn = function(t7, language, matching, details) {
   const roving = __privateMethod(this, _ChemLabPeriodicTable_instances, rovingTarget_fn).call(this, matching);
   const groupLabels = Array.from({ length: GRID.columns }, (_3, index) => x2`
 			<div
@@ -10331,6 +10400,13 @@ renderGrid_fn = function(t7, language, matching) {
 					${mainRows}
 					${placeholders}
 					${seriesRows}
+					<div class="grid-row" role="row">
+						<div
+							class="details-slot"
+							role="gridcell"
+							style="--pt-row:${DETAIL_SLOT.row + 1};--pt-row-span:${DETAIL_SLOT.rowSpan};--pt-column:${DETAIL_SLOT.column + 1};--pt-column-span:${DETAIL_SLOT.columnSpan}"
+						>${details}</div>
+					</div>
 				</div>
 				<div class="series-jumps">
 					${LAYOUT.seriesRows.map((series) => x2`
@@ -10479,6 +10555,11 @@ renderPrintOverview_fn = function(t7, language, element) {
 /**
  * Renders the detail card of one element.
  *
+ * The card follows the object cards of the lab widget: a square thumbnail with
+ * a small corner badge, a title, and short tabular lines underneath. It has to
+ * stay compact, because it sits in the free block of the table and must not
+ * push the periods apart.
+ *
  * @param t - Interface strings.
  * @param language - Interface language.
  * @param element - Selected element, or `null` for the empty card.
@@ -10490,54 +10571,54 @@ renderDetails_fn = function(t7, language, element) {
   }
   const rows = detailRows(element, language);
   const usage = sourceUsage(element, language);
+  const name = element.names[language];
   return x2`
 			<div class="details category-${categoryOf(element.atomicNumber) ?? "unknown"}">
-				<div class="details-head">
-					<div class="details-symbol">${element.symbol}</div>
-					<div>
-						<h3 class="details-name">${element.names[language]}</h3>
-						<p class="details-sub">
-							${element.atomicNumber} · ${element.symbol} · ${categoryText(element, language)}
-						</p>
-					</div>
+				<div class="details-thumb">
+					<span class="details-badge">${element.atomicNumber}</span>
+					<span class="details-symbol">${element.symbol}</span>
 				</div>
-				<dl class="details-fields">
-					${rows.map((row) => x2`
-						<div class="details-row">
-							<dt>${row.label}</dt>
-							<dd>
-								${row.value}${row.qualifier ? x2`<span class="qualifier">${row.qualifier}</span>` : null}
-							</dd>
-						</div>
-					`)}
-				</dl>
-				<p class="details-hint">${t7.detailsHint} ${conditionsText(language)}</p>
-				<sl-details class="sources" summary=${t7.sourcesLabel}>
-					<p class="details-hint">${t7.sourcesHint}</p>
-					${usage.map((entry) => {
+				<div class="details-body">
+					<h5 class="details-name" title=${name}>${name}</h5>
+					<p class="details-sub">${categoryText(element, language)}</p>
+					<dl class="details-fields">
+						${rows.map((row) => x2`
+							<div class="details-row">
+								<dt>${row.label}</dt>
+								<dd>
+									${row.value}${row.qualifier ? x2`<span class="qualifier">${row.qualifier}</span>` : null}
+								</dd>
+							</div>
+						`)}
+					</dl>
+					<p class="details-hint">${t7.detailsHint} ${conditionsText(language)}</p>
+					<sl-details class="sources" summary=${t7.sourcesLabel}>
+						<p class="details-hint">${t7.sourcesHint}</p>
+						${usage.map((entry) => {
     const source = sourceOf(entry.sourceId);
     if (!source) return null;
     return x2`
-							<div class="source">
-								<p class="source-title">${source.publisher} — ${source.title}</p>
-								<p class="source-line">${entry.fields.join(", ")}</p>
-								<p class="source-line">
-									${format(t7.sourceRelease, { release: source.release })} ·
-									${format(t7.sourceRetrieved, { retrieved: source.retrieved })}
-								</p>
-								<p class="source-line">
-									${format(t7.sourceLicense, { license: source.license })}
-								</p>
-								<a
-									class="source-link"
-									href=${source.url}
-									target="_blank"
-									rel="noreferrer noopener"
-								>${source.url}</a>
-							</div>
-						`;
+								<div class="source">
+									<p class="source-title">${source.publisher} — ${source.title}</p>
+									<p class="source-line">${entry.fields.join(", ")}</p>
+									<p class="source-line">
+										${format(t7.sourceRelease, { release: source.release })} ·
+										${format(t7.sourceRetrieved, { retrieved: source.retrieved })}
+									</p>
+									<p class="source-line">
+										${format(t7.sourceLicense, { license: source.license })}
+									</p>
+									<a
+										class="source-link"
+										href=${source.url}
+										target="_blank"
+										rel="noreferrer noopener"
+									>${source.url}</a>
+								</div>
+							`;
   })}
-				</sl-details>
+					</sl-details>
+				</div>
 			</div>
 		`;
 };

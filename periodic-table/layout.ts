@@ -72,6 +72,18 @@ export interface PeriodicGrid {
 	readonly seriesRows: PeriodicTableLayout["seriesRows"];
 }
 
+/** A rectangular block of grid positions. */
+export interface GridBlock {
+	/** First grid row of the block, 1-based. */
+	readonly row: number;
+	/** First grid column of the block, 1-based. */
+	readonly column: number;
+	/** Number of rows the block covers. */
+	readonly rowSpan: number;
+	/** Number of columns the block covers. */
+	readonly columnSpan: number;
+}
+
 /** Direction of a keyboard step inside the grid. */
 export type GridDirection = "left" | "right" | "up" | "down";
 
@@ -121,6 +133,16 @@ export function buildGrid(layout: PeriodicTableLayout = LAYOUT): PeriodicGrid {
 
 /** The shipped display grid. */
 export const GRID: PeriodicGrid = buildGrid();
+
+/**
+ * The block above the transition metals, where the detail card sits.
+ *
+ * Periods 1–3 carry only the s- and p-block edges, so groups 3–12 stay empty
+ * there. The block is written down rather than searched for, because the card
+ * must not move when the placement table changes; `tests/periodic-table-layout.test.ts`
+ * checks that no cell and no placeholder falls into it.
+ */
+export const DETAIL_SLOT: GridBlock = { row: 1, column: 3, rowSpan: 3, columnSpan: 10 };
 
 const CELLS_BY_NUMBER: ReadonlyMap<number, GridCell> = new Map(
 	GRID.cells.map((cell) => [cell.atomicNumber, cell]),

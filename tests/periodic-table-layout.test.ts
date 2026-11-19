@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ELEMENTS, LAYOUT, placementOf } from "../periodic-table/element-reference";
 import {
+	DETAIL_SLOT,
 	GRID,
 	buildGrid,
 	cellAt,
@@ -126,4 +127,26 @@ test("a grid built from another layout keeps the same cells", () => {
 	assert.equal(cellAt(4, 8, grid)?.atomicNumber, 26);
 	assert.equal(neighborAtomicNumber(26, "right", grid), 27);
 	assert.equal(neighborAtomicNumber(26, "down", grid), 44);
+});
+
+test("the detail card sits in the free block above the transition metals", () => {
+	assert.deepEqual({ ...DETAIL_SLOT }, { row: 1, column: 3, rowSpan: 3, columnSpan: 10 });
+	for (let row = DETAIL_SLOT.row; row < DETAIL_SLOT.row + DETAIL_SLOT.rowSpan; row++) {
+		for (let column = DETAIL_SLOT.column; column < DETAIL_SLOT.column + DETAIL_SLOT.columnSpan; column++) {
+			assert.equal(cellAt(row, column), undefined, `cell at ${row}:${column}`);
+			assert.equal(
+				GRID.placeholders.some((entry) => entry.row === row && entry.column === column),
+				false,
+				`placeholder at ${row}:${column}`,
+			);
+		}
+	}
+	// The block is bounded by the s- and p-block edges of periods 1 to 3.
+	assert.equal(cellAt(1, 1)?.atomicNumber, 1);
+	assert.equal(cellAt(1, 18)?.atomicNumber, 2);
+	assert.equal(cellAt(2, 2)?.atomicNumber, 4);
+	assert.equal(cellAt(2, 13)?.atomicNumber, 5);
+	assert.equal(cellAt(3, 2)?.atomicNumber, 12);
+	assert.equal(cellAt(3, 13)?.atomicNumber, 13);
+	assert.equal(cellAt(4, 3)?.atomicNumber, 21);
 });

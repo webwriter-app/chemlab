@@ -132,19 +132,6 @@ export const periodicTableStyles = css`
 		color: var(--pt-ink-soft);
 	}
 
-	.body {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		gap: 0.75rem;
-		align-items: start;
-	}
-
-	@container (min-width: 1000px) {
-		.body {
-			grid-template-columns: minmax(0, 1fr) 18rem;
-		}
-	}
-
 	.table-pane {
 		min-width: 0;
 		overflow-x: auto;
@@ -172,6 +159,16 @@ export const periodicTableStyles = css`
 	.series-header {
 		grid-row: var(--pt-row);
 		grid-column: var(--pt-column);
+	}
+
+	/* The detail card is a grid item of the table, so it fills the free block
+	   above the transition metals and never covers a cell. */
+	.details-slot {
+		display: grid;
+		grid-row: var(--pt-row) / span var(--pt-row-span, 1);
+		grid-column: var(--pt-column) / span var(--pt-column-span, 1);
+		min-width: 0;
+		min-height: 0;
 	}
 
 	.group-label,
@@ -397,95 +394,167 @@ export const periodicTableStyles = css`
 		margin: 0.25rem 0 0.5rem;
 	}
 
+	/* The card copies the object cards of the lab widget: a square thumbnail
+	   with a corner badge, a title, and short tabular lines underneath. It fills
+	   the free block of the table, so it stays compact and scrolls inside itself
+	   instead of pushing the periods apart. */
 	.details {
+		display: grid;
+		grid-template-columns: minmax(0, 3.5rem) minmax(0, 1fr);
+		align-items: stretch;
+		gap: 4px;
+		height: 100%;
 		min-width: 0;
-		padding: 0.6rem 0.7rem;
-		border: 1px solid var(--pt-border);
-		border-radius: 6px;
-		background: var(--pt-surface);
+		min-height: 0;
+		padding: 2px 3px;
+		overflow: hidden;
+		border: 2px solid var(--pt-border);
+		border-radius: 5px;
+		background: var(--pt-inset);
+		color: var(--pt-ink);
 	}
 
-	.details-head {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
+	.details-thumb {
+		position: relative;
+		display: grid;
+		place-items: center;
+		align-self: start;
+		aspect-ratio: 1;
+		border: 1px solid color-mix(in srgb, var(--pt-ink) 12%, transparent);
+		border-radius: var(--pt-radius);
+		background: var(--pt-cell-fill, var(--pt-surface));
+		line-height: 1;
+	}
+
+	.details-badge {
+		position: absolute;
+		inset-block-start: 2px;
+		inset-inline-start: 2px;
+		padding: 0 2px;
+		border-radius: 3px;
+		background: var(--sl-color-primary-600, #0b6bcb);
+		color: var(--sl-color-neutral-0, #ffffff);
+		font-size: 8px;
+		font-weight: 400;
+		line-height: 1.4;
+		pointer-events: none;
 	}
 
 	.details-symbol {
-		display: grid;
-		place-items: center;
-		width: 2.6rem;
-		height: 2.6rem;
-		border-radius: var(--pt-radius);
-		background: var(--pt-cell-fill, var(--pt-inset));
-		font-size: 1.1rem;
+		font-size: 1.15rem;
 		font-weight: 600;
+	}
+
+	.details-body {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+		min-height: 0;
+		overflow-y: auto;
+		line-height: 1.25;
 	}
 
 	.details-name {
 		margin: 0;
-		font-size: 1rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+		overflow-wrap: anywhere;
 	}
 
 	.details-sub {
 		margin: 0;
-		font-size: 0.75rem;
+		font-size: 0.68rem;
 		color: var(--pt-ink-soft);
 	}
 
 	.details-fields {
 		display: grid;
-		grid-template-columns: auto minmax(0, 1fr);
-		gap: 0.2rem 0.6rem;
-		margin: 0.6rem 0 0;
-		font-size: 0.78rem;
+		grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+		gap: 0 0.75rem;
+		margin: 0;
+		font-size: 0.62rem;
 	}
 
+	/* Label and value share a row, the value keeps its own column so a long
+	   configuration wraps under itself instead of under the label. */
 	.details-row {
-		display: contents;
+		display: grid;
+		grid-template-columns: max-content minmax(0, 1fr);
+		gap: 0 0.3rem;
+		min-width: 0;
 	}
 
 	.details-row dt {
 		color: var(--pt-ink-soft);
+		white-space: nowrap;
+	}
+
+	.details-row dt::after {
+		content: ":";
 	}
 
 	.details-row dd {
 		margin: 0;
 		overflow-wrap: anywhere;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.qualifier {
-		margin-left: 0.3rem;
-		font-size: 0.65rem;
+		margin-left: 0.25rem;
+		font-size: 0.55rem;
 		letter-spacing: 0.03em;
 		text-transform: uppercase;
 		color: var(--pt-ink-soft);
 	}
 
 	.details-hint {
-		margin: 0.5rem 0 0;
-		font-size: 0.7rem;
+		margin: 0;
+		font-size: 0.58rem;
 		color: var(--pt-ink-soft);
 	}
 
 	.details-empty {
+		grid-column: 1 / -1;
+		align-self: center;
 		margin: 0;
-		font-size: 0.8rem;
+		font-size: 0.75rem;
 		color: var(--pt-ink-soft);
+		text-align: center;
 	}
 
+	/* The sources sit at the foot of the card, so the free space of the block
+	   collects between the fields and the disclosure instead of below it. */
 	.sources {
-		margin-top: 0.6rem;
-		font-size: 0.75rem;
+		margin-top: auto;
+		padding-top: 2px;
+		font-size: 0.62rem;
+	}
+
+	.sources::part(base) {
+		border: none;
+		background: none;
+	}
+
+	.sources::part(header) {
+		padding: 0;
+	}
+
+	.sources::part(content) {
+		padding: 0;
+	}
+
+	.sources::part(summary) {
+		font-size: 0.62rem;
 	}
 
 	.source {
-		margin-top: 0.4rem;
+		margin-top: 0.3rem;
 	}
 
 	.source-title {
 		margin: 0;
-		font-size: 0.78rem;
+		font-size: 0.62rem;
 	}
 
 	.source-line {
@@ -497,6 +566,7 @@ export const periodicTableStyles = css`
 		color: var(--pt-accent);
 		overflow-wrap: anywhere;
 	}
+
 
 	.print-overview {
 		display: none;
@@ -611,7 +681,6 @@ export const periodicTableStyles = css`
 		.toolbar,
 		.result-count,
 		.table-pane,
-		.details-pane,
 		.series-jumps,
 		.legend {
 			display: none !important;
@@ -631,7 +700,6 @@ export const periodicTableStyles = css`
 	:host(.ww-beforeprint) .toolbar,
 	:host(.ww-beforeprint) .result-count,
 	:host(.ww-beforeprint) .table-pane,
-	:host(.ww-beforeprint) .details-pane,
 	:host(.ww-beforeprint) .series-jumps,
 	:host(.ww-beforeprint) .legend {
 		display: none !important;
