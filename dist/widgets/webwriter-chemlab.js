@@ -111957,12 +111957,23 @@ var ElectricComponent = class {
     if (this._type !== "electrode" /* Electrode */ || !(amountMol > 0)) return;
     const key = molecule2.smilesString;
     const entry = this._plating.get(key);
+    const wet = this._immersion?.span;
     if (entry) {
       entry.mol += amountMol;
       entry.litres = entry.mol * entry.litresPerMol;
+      if (entry.span && wet) {
+        entry.span.top = Math.min(entry.span.top, wet.top);
+        entry.span.bottom = Math.max(entry.span.bottom, wet.bottom);
+      }
       return;
     }
-    this._plating.set(key, { molecule: molecule2, mol: amountMol, litres: amountMol * litresPerMol, litresPerMol });
+    this._plating.set(key, {
+      molecule: molecule2,
+      mol: amountMol,
+      litres: amountMol * litresPerMol,
+      litresPerMol,
+      span: wet && { ...wet }
+    });
   }
   /**
    * for electrodes: takes metal off the deposit again, as the anode of a
@@ -150574,6 +150585,7 @@ var saltEquilibria = Object.entries(saltSolubility).map(([formula, data2]) => {
   return { formula, cation, anion, cations, anions, product };
 }).sort((a7, b5) => a7.product - b5.product);
 var PLATEAU_CURRENT = 1e-12;
+var DISPLACEMENT_FILM_LITRES_PER_CM2 = 4e-7;
 var TRACE_ACTIVITY = 1e-9;
 var REFERENCE_STIFFNESS = 1e3;
 var REFERENCE_CURRENT_DENSITY2 = 1e-6;
@@ -151462,21 +151474,35 @@ var Simulation = class {
    * @param {VesselView} view - the vessel it dips into
    * @returns {HalfCandidate[]}
    */
-  static electrodeCandidates(electrode, view) {
-    const candidates = [];
+  static electrodeCandidates(electrode, view, displacement = false) {
     const material = electrode._material;
-    const volume = view.mix._solutionVolume;
     const top = electrode.plating;
-    const surface = top?.molecule ?? material;
+    const candidatesFor = (surface, amount, fraction = 1) => this.surfaceCandidates(electrode, view, surface, amount, fraction, displacement);
+    if (!top || top.molecule.smilesString === material?.smilesString) {
+      return candidatesFor(material, this.bodyAmount(electrode) + (top?.mol ?? 0));
+    }
+    if (!displacement) return candidatesFor(top.molecule, top.mol);
+    const wet = electrode._immersion?.span;
+    const coated = top.span;
+    let coatedArea = electrode.activeArea;
+    let overlap = 1;
+    if (wet && coated) {
+      const wetLength = wet.bottom - wet.top;
+      coatedArea *= (coated.bottom - coated.top) / wetLength;
+      overlap = Math.max(0, Math.min(wet.bottom, coated.bottom) - Math.max(wet.top, coated.top)) / wetLength;
+    }
+    const coverage = overlap * Math.min(1, top.litres / (coatedArea * DISPLACEMENT_FILM_LITRES_PER_CM2));
+    return [
+      ...candidatesFor(material, this.bodyAmount(electrode), 1 - coverage),
+      ...candidatesFor(top.molecule, top.mol, coverage)
+    ];
+  }
+  static surfaceCandidates(electrode, view, surface, solidAmount, surfaceFraction, displacement) {
+    if (!(surfaceFraction > 0)) return [];
+    const candidates = [];
+    const volume = view.mix._solutionVolume;
     const surfaceName = materialName(surface);
     const surfaceSmiles = surface?.smilesString;
-    const solidAmount = (smiles) => {
-      if (material !== void 0 && material.smilesString === smiles) {
-        if (top && top.molecule.smilesString !== smiles) return 0;
-        return this.bodyAmount(electrode) + (top ? top.mol : 0);
-      }
-      return top && top.molecule.smilesString === smiles ? top.mol : 0;
-    };
     const gasAmount = (reaction) => {
       if (!reaction.gas) return 0;
       const dissolved = view.mix.dissolvedGas.get(reaction.gas) ?? 0;
@@ -151485,7 +151511,7 @@ var Simulation = class {
     };
     const amountOf = (term, reaction) => {
       if (gasForSmiles(term.smiles)) return gasAmount(reaction);
-      if (term.phase === "solid") return solidAmount(term.smiles);
+      if (term.phase === "solid") return term.smiles === surfaceSmiles ? solidAmount : 0;
       if (term.smiles === "O") return Infinity;
       if (term.smiles === "[H+]") return Infinity;
       const ion2 = view.ions.get(term.smiles);
@@ -151510,11 +151536,13 @@ var Simulation = class {
       return Number.isFinite(concentration) ? reaction.el * this._faradayConst * MASS_TRANSFER_COEFFICIENT * concentration / coefficient : Infinity;
     };
     for (const reaction of halfReactionsOn(surfaceName)) {
+      const metal = displacement && !reaction.gas ? reaction.terms.find((term) => term.phase === "solid" && atomSymbol(term.smiles)) : void 0;
+      if (displacement && !metal) continue;
       if (isPassive(surfaceName, -Math.log10(view.protons)) && reaction.terms.some((term) => term.phase === "solid" && term.coefficient < 0 && term.smiles === surfaceSmiles)) continue;
       const equilibrium = this.halfReactionPotential(reaction, view);
       if (!Number.isFinite(equilibrium)) continue;
       let canOxidise = true;
-      let canReduce = true;
+      let canReduce = !metal || !reactsWithWater(atomSymbol(metal.smiles));
       let anodicLimit = Infinity;
       let cathodicLimit = Infinity;
       let anodicDensity = Infinity;
@@ -151545,6 +151573,7 @@ var Simulation = class {
         cathodicLimit,
         anodicDensity,
         cathodicDensity,
+        surfaceFraction,
         apply: (electronMol) => this.applyHalfReaction(reaction, electronMol, electrode, view)
       });
     }
@@ -151735,7 +151764,7 @@ var Simulation = class {
     const bounded = Math.max(
       -candidate.cathodicDensity,
       Math.min(candidate.anodicDensity, density2)
-    );
+    ) * (candidate.surfaceFraction ?? 1);
     if (!candidate.canOxidise) return Math.min(0, bounded);
     if (!candidate.canReduce) return Math.max(0, bounded);
     return bounded;
@@ -151751,7 +151780,7 @@ var Simulation = class {
     if (!candidate.canOxidise && density2 > 0) return 0;
     if (!candidate.canReduce && density2 < 0) return 0;
     if (density2 > candidate.anodicDensity || density2 < -candidate.cathodicDensity) return 0;
-    return currentDensitySlope(candidate.reaction, potential - candidate.equilibrium);
+    return currentDensitySlope(candidate.reaction, potential - candidate.equilibrium) * (candidate.surfaceFraction ?? 1);
   }
   /**
    * Potential at which one electrode carries no net current: its mixed
@@ -152499,6 +152528,34 @@ var Simulation = class {
     ions.push({ smiles: "[H+]", concentration: view.protons, charge: 1 });
     ions.push({ smiles: "[OH-]", concentration: view.protons > 0 ? kw / view.protons : 0, charge: 1 });
     return solutionConductivity(ions, mix._temperature - 273.15);
+  }
+  /** An unwired metal surface can react while it is in contact with an electrolyte. */
+  static canDisplaceOn(electrode) {
+    const mix = electrode._connectedMix;
+    return electrode._type === "electrode" /* Electrode */ && electrode._reference === void 0 && !electrode._connections.some((terminal) => terminal.length > 0) && this.isWetted(electrode) && Number.isFinite(electrode.activeArea) && electrode.activeArea > 0 && !!mix?._isSolution && mix._solutionVolume > 0;
+  }
+  /** Advances spontaneous metal deposition on a single strip at zero external current. */
+  static sSurfaceDisplacement(electrode) {
+    const dt = this._simTimeStep;
+    if (!(Number.isFinite(dt) && dt > 0) || !this.canDisplaceOn(electrode)) return false;
+    const mix = electrode._connectedMix;
+    const view = this.vesselView(mix);
+    const candidates = this.electrodeCandidates(electrode, view, true);
+    const { potential, currents } = this.mixedPotential(candidates);
+    if (!Number.isFinite(potential)) return false;
+    const booking = { candidates, currents, dt, area: electrode.activeArea, view };
+    const extents = this.bookingExtents(booking);
+    const oxidised = extents.reduce((sum, extent) => sum + Math.max(0, extent), 0);
+    const reduced = extents.reduce((sum, extent) => sum + Math.max(0, -extent), 0);
+    const exchanged = Math.min(oxidised, reduced);
+    if (!(exchanged > 1e-12)) return false;
+    const balanced = extents.map((extent) => extent * exchanged / (extent > 0 ? oxidised : reduced));
+    const scales2 = this.inventoryScale([booking], [balanced]);
+    if (!(exchanged * (scales2.get(mix) ?? 1) > 1e-12)) return false;
+    this.applyExtents([booking], [balanced], scales2);
+    this.balanceCharge(mix);
+    this.settleSaltsAndHydroxides(mix);
+    return true;
   }
   /** Prepares a passive galvanic RC experiment and projects its current onto the meters. */
   static prepareNoIonicPathTransient(first, second, devices, ionicResistance, { capacitance, seriesResistance = 0, initialCharge = 0 }) {
@@ -178984,6 +179041,12 @@ var SimulationController = class {
     this.wake();
   }
   startExperiment(name2, step, live) {
+    this.startFixedStepTask(name2, step, live);
+    live?.(0);
+    this.host.collectDiagramSuggestions();
+    this.host.requestUpdate();
+  }
+  startFixedStepTask(name2, step, live) {
     let remainingMs = 0;
     this.startTask(name2, (elapsedMs) => {
       if (live?.(elapsedMs)) {
@@ -178998,9 +179061,6 @@ var SimulationController = class {
         step();
       }
     });
-    live?.(0);
-    this.host.collectDiagramSuggestions();
-    this.host.requestUpdate();
   }
   get hasRunningExperiments() {
     for (const name2 of this.tasks.keys()) {
@@ -184873,10 +184933,16 @@ var VesselView = class _VesselView extends Container {
   }
   /** Length of a vertical electrode strip in the vessel's electrolyte. */
   immersedLength(top, bottom) {
+    const wet = this.immersedSpan(top, bottom);
+    return wet ? wet.bottom - wet.top : 0;
+  }
+  /** World-space interval of a vertical strip in the electrolyte. */
+  immersedSpan(top, bottom) {
     const mix = this.component._content;
-    if (!mix._isSolution || !(mix._solutionVolume > 0)) return 0;
+    if (!mix._isSolution || !(mix._solutionVolume > 0)) return void 0;
     const floor6 = this.y - this.height / 2 + this.profile[this.profile.length - 1][0] * this.height / this.svgHeight;
-    return Math.max(0, Math.min(bottom, floor6) - Math.max(top, this.liquidSurfaceY()));
+    const wet = { top: Math.max(top, this.liquidSurfaceY()), bottom: Math.min(bottom, floor6) };
+    return wet.top < wet.bottom ? wet : void 0;
   }
   radiusAt(y5) {
     for (let index2 = 1; index2 < this.profile.length; index2++) {
@@ -185606,10 +185672,12 @@ var ElectricDeviceView = class extends Container {
     const strip = this.strip;
     if (!coating || !strip) return false;
     const plating = this.component.plating;
-    const area2 = this.component.activeArea || ELECTRODE_AREA;
+    const top = Math.max(strip.top, plating?.span?.top ?? strip.top);
+    const bottom = Math.min(strip.bottom, plating?.span?.bottom ?? strip.bottom);
+    const area2 = plating?.span ? (strip.right - strip.left) * (bottom - top) / 100 : this.component.activeArea || ELECTRODE_AREA;
     const reference2 = PLATING_REFERENCE_LITRES * area2 / ELECTRODE_AREA;
-    const coverage = plating ? Math.min(1, plating.litres / reference2) : 0;
-    const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}` : "";
+    const coverage = plating && reference2 > 0 ? Math.min(1, plating.litres / reference2) : 0;
+    const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}:${top.toFixed(2)}:${bottom.toFixed(2)}` : "";
     if (key === this.coatingKey) return false;
     this.coatingKey = key;
     if (!plating || !key) {
@@ -185621,9 +185689,9 @@ var ElectricDeviceView = class extends Container {
     coating.texture = platingTexture(Number.isFinite(parsed) ? parsed : 8688795);
     const grown = Math.max(0, (coverage - PLATING_OPAQUE_AT) / (1 - PLATING_OPAQUE_AT));
     coating.alpha = Math.min(1, coverage / PLATING_OPAQUE_AT);
-    coating.position.set((strip.left + strip.right) / 2, (strip.top + strip.bottom) / 2);
+    coating.position.set((strip.left + strip.right) / 2, (top + bottom) / 2);
     coating.width = (strip.right - strip.left) * (1 + (PLATING_MAX_BULGE - 1) * grown);
-    coating.height = strip.bottom - strip.top;
+    coating.height = bottom - top;
     coating.visible = true;
     return true;
   }
@@ -186404,6 +186472,7 @@ var CanvasController = class _CanvasController {
       if (!selected.has(sprite)) this.attachedElectrodesMoved.add(sprite);
       if (this.cables.size && !(sprite instanceof VesselView)) this.cablesDirty = true;
     }
+    for (const sprite of moving) this.updateUnwiredElectrode(sprite);
     this.drawSelection();
   }
   /**
@@ -186873,6 +186942,7 @@ var CanvasController = class _CanvasController {
       const local = target.sprite.toLocal(event.global);
       const terminal = target.sprite.portAt(local.x, local.y);
       if (plugCable(cable, drag.end, target.device, terminal >= 0 ? terminal : void 0)) {
+        this.host.queueSurfaceDisplacement(target.device);
         this.refreshDeviceDisplay(target.device);
         this.host.syncAuthoredConnections(target.device);
         this.host.syncAuthoredConnections(cable);
@@ -186950,6 +187020,7 @@ var CanvasController = class _CanvasController {
           sprite.position.set(sprite.x + offset3.x, sprite.y + offset3.y);
           if (sprite !== this.host.dragObject) this.attachedElectrodesMoved.add(sprite);
         }
+        for (const sprite of moving) this.updateUnwiredElectrode(sprite);
         if (this.cables.size) this.cablesDirty = true;
       }
       const transferTarget = this.trackVesselTransfer(event);
@@ -187144,14 +187215,14 @@ var CanvasController = class _CanvasController {
     this.host.requestCanvasRender();
   }
   flushChanges() {
-    const changed = [...this.changedVessels.keys()].map((view) => view.component._content);
+    const changed = new Set([...this.changedVessels.keys()].map((view) => view.component._content));
     for (const [view, hint] of this.changedVessels) view.updateContents(hint);
     this.changedVessels.clear();
-    if (changed.length) {
+    if (changed.size) {
       for (const device of this.host.allEComponents) {
-        if (device._type === "gascollector" /* GasCollector */ && changed.includes(device._connectedMix)) this.refreshDeviceDisplay(device);
+        if (device._type === "gascollector" /* GasCollector */ && changed.has(device._connectedMix)) this.refreshDeviceDisplay(device);
       }
-      this.attachDevices();
+      this.attachDevices(changed);
     }
     this.updateDippedStacking();
     if (this.cablesDirty || this.cables.size) {
@@ -187198,10 +187269,17 @@ var CanvasController = class _CanvasController {
    * after a vessel was moved, because that changes what the devices around
    * it sit in.
    */
-  attachDevices() {
+  attachDevices(changed) {
     for (const eComp of this.host.allEComponents) {
       const sprite = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
-      if (sprite) this.attachDevice(eComp, sprite);
+      if (sprite) this.attachDevice(eComp, sprite, changed);
+    }
+  }
+  updateUnwiredElectrode(sprite) {
+    if (!(sprite instanceof ElectricDeviceView)) return;
+    const device = sprite.component;
+    if (device._type === "electrode" /* Electrode */ && !device._connections[0].length) {
+      this.attachDevice(device, sprite);
     }
   }
   /**
@@ -187213,15 +187291,21 @@ var CanvasController = class _CanvasController {
    * @param {chemlib.ElectricComponent} eComp - the device to attach
    * @param {PIXI.Container} sprite - its view, which carries the position
    */
-  attachDevice(eComp, sprite) {
-    const bottom = sprite.y + sprite.height * 0.4667;
+  attachDevice(eComp, sprite, changed) {
+    const { width, height } = this.footprintSize(sprite);
+    const bottom = sprite.y + height * 0.4667;
     switch (eComp._type) {
       case "electrode" /* Electrode */: {
         const vessel = this.vesselAt(sprite.x, sprite.y) ?? this.vesselAt(sprite.x, bottom);
+        const previousMix = eComp._connectedMix;
         eComp._connectedMix = vessel?.component._content;
-        const top = sprite.y - sprite.height * 0.4667;
-        const immersed = vessel?.immersedLength(top, bottom) ?? 0;
-        eComp._immersion = { x: sprite.x, area: sprite.width * immersed / 100 };
+        const top = sprite.y - height * 0.4667;
+        const wet = vessel?.immersedSpan(top, bottom);
+        const span = wet && { top: wet.top - sprite.y, bottom: wet.bottom - sprite.y };
+        eComp._immersion = { x: sprite.x, area: wet ? width * (wet.bottom - wet.top) / 100 : 0, span };
+        if (!changed || previousMix !== eComp._connectedMix || changed.has(eComp._connectedMix)) {
+          this.host.queueSurfaceDisplacement(eComp);
+        }
         return;
       }
       case "gascollector" /* GasCollector */: {
@@ -187234,7 +187318,7 @@ var CanvasController = class _CanvasController {
         return;
       }
       case "bridge" /* Bridge */: {
-        const leg = sprite.width * 0.375;
+        const leg = width * 0.375;
         const first = this.vesselAt(sprite.x - leg, bottom);
         const second = this.vesselAt(sprite.x + leg, bottom);
         const wet = (vessel) => (vessel?.immersedLength(bottom - 0.5, bottom) ?? 0) > 0;
@@ -187371,6 +187455,7 @@ function concentrationPresets({ max: max6 }) {
 var TRANSFER_HOLD_MS = 1500;
 var TRANSFER_HOLD_RADIUS = 6;
 var DRAG_TRANSFER_TASK = "drag-transfer";
+var SURFACE_DISPLACEMENT_TASK = "surface-displacement";
 var MIN_TWO_PANELS_WIDTH = 480;
 var RC_UPDATE_MS = 50;
 var DIAGRAM_PICKER_CLOSE_MS = 2e3;
@@ -187479,6 +187564,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
      * @type {SimulationController}
      */
     __publicField(this, "simulation", new SimulationController(this));
+    __publicField(this, "surfaceElectrodes", /* @__PURE__ */ new Set());
     __publicField(this, "capacitorCharges", /* @__PURE__ */ new Map());
     __publicField(this, "rcReadouts", /* @__PURE__ */ new Map());
     /**
@@ -187871,6 +187957,37 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     } else this.clearEChemReadings(source3);
     this.canvas.refreshDeviceDisplay(source3);
   }
+  queueSurfaceDisplacement(electrode) {
+    if (!Simulation.canDisplaceOn(electrode)) {
+      if (this.surfaceElectrodes.delete(electrode) && !this.surfaceElectrodes.size) {
+        this.simulation.stopTask(SURFACE_DISPLACEMENT_TASK);
+      }
+      return;
+    }
+    this.surfaceElectrodes.add(electrode);
+    if (!this.simulation.hasTask(SURFACE_DISPLACEMENT_TASK)) {
+      this.simulation.startFixedStepTask(SURFACE_DISPLACEMENT_TASK, () => this.stepSurfaceDisplacement());
+    }
+  }
+  stepSurfaceDisplacement() {
+    const mixtures = /* @__PURE__ */ new Set();
+    let updateSelection = false;
+    for (const electrode of this.surfaceElectrodes) {
+      if (!this.allEComponents.includes(electrode) || !Simulation.sSurfaceDisplacement(electrode)) {
+        this.surfaceElectrodes.delete(electrode);
+        continue;
+      }
+      mixtures.add(electrode._connectedMix);
+      updateSelection ||= this.curr_obj === electrode;
+      this.canvas.refreshDeviceDisplay(electrode);
+    }
+    if (!this.surfaceElectrodes.size) this.simulation.stopTask(SURFACE_DISPLACEMENT_TASK);
+    if (!mixtures.size) return;
+    const vessels = this.allChemComponents.filter((vessel) => mixtures.has(vessel._content));
+    this.measurements.record(vessels);
+    for (const vessel of vessels) this.canvas.markVesselChanged(vessel);
+    if (updateSelection || mixtures.has(this.curr_obj?._content)) this._updatePopup();
+  }
   ionicResistance(first, second) {
     return Simulation.ionicResistance(
       first,
@@ -188032,6 +188149,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   invalidateElectricalReadings(devices) {
     for (const device of devices) {
+      this.queueSurfaceDisplacement(device);
       this.rcReadouts.delete(device);
       device._cellCurrent = null;
       if (device._visibleVoltage === null && device._visibleCurrent === null) continue;
@@ -189380,6 +189498,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   connectElectrical(from2, to2, terminalFrom, terminalTo, authored = true) {
     const cable = connectDevices(from2, to2, terminalFrom, terminalTo);
     if (!cable) return false;
+    this.queueSurfaceDisplacement(from2);
+    this.queueSurfaceDisplacement(to2);
     this.allEComponents.push(cable);
     const sprite = this.canvas.addComponentView(cable, false);
     this.canvas.refreshDeviceDisplay(from2);
@@ -190677,6 +190797,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       device._area = Number.isFinite(area2) && area2 > 0 ? area2 : 0;
       device._reference = Number.isFinite(reference2) ? reference2 : void 0;
       this.saveSelectedComponent({ area: device._area, reference: device._reference });
+      this.queueSurfaceDisplacement(device);
       this.canvas.refreshDeviceDisplay(device);
       this._updatePopup();
     }}>${this.message("best\xE4tigen")}</sl-button>` : E}
@@ -190699,8 +190820,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       const selected = componentVariant(event.currentTarget.value);
       if (!selected?.material) return;
       device._material = this.newElectrodeMaterial(selected.material);
+      device._bodyMol = null;
+      device._plating.clear();
       const formula = device._material._kekule_obj.calcFormula().getDisplayText();
       this.saveSelectedComponent({ material: formula, variantId: selected.id });
+      this.queueSurfaceDisplacement(device);
       this.canvas.refreshDeviceDisplay(device);
       this._updatePopup();
       this._sendxAPiStatement("submitted", `ElectrodeMaterlial ${formula}:${device._id}`);

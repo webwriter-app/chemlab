@@ -30,6 +30,63 @@ function cell() {
 		electrode("zinc", "Zn", dose("Zinksulfatlösung"))] as const;
 }
 
+function moles(mix: ReturnType<typeof dose>, smiles: string): number {
+	return mix._activeMolecules.reduce((sum, molecule) => sum + (molecule.smilesString === smiles
+		? mix._molProperties[molecule._id + "n"] : 0), 0);
+}
+
+function metalMoles(mix: ReturnType<typeof dose>, symbol: string): number {
+	return mix._activeMolecules.reduce((sum, molecule) => sum + mix._molProperties[molecule._id + "n"] *
+		molecule._atoms.filter(atom => atom.getSymbol() === symbol).length, 0);
+}
+
+test("unwired iron and zinc acquire a copper coating while their own metal dissolves", () => {
+	for (const [element, symbol] of [["iron", "Fe"], ["zinc", "Zn"]]) {
+		const mix = dose("Kupfer(II)-sulfatlösung");
+		const strip = electrode(element, symbol, mix);
+		strip._immersion = { x: 0, area: 0 };
+		const before = metalMoles(mix, "Cu");
+		assert.equal(Simulation.sSurfaceDisplacement(strip), false);
+		const span = { top: 12, bottom: 35 };
+		strip._immersion = { x: 0, area: 3.45, span };
+		assert.equal(Simulation.sSurfaceDisplacement(strip), true);
+		const deposit = strip.plating.mol;
+		assert.equal(Simulation.sSurfaceDisplacement(strip), true);
+		assert.ok(strip.plating.mol > deposit);
+		assert.equal(strip.plating.molecule.smilesString, "[Cu]");
+		assert.deepEqual(strip.plating.span, span);
+		const consumed = before - metalMoles(mix, "Cu");
+		assert.ok(Math.abs(consumed - strip.plating.mol) < 1e-12,
+			`${symbol}: ${consumed} mol Cu consumed, ${strip.plating.mol} mol Cu deposited`);
+		assert.ok(Math.abs(metalMoles(mix, symbol) - strip.plating.mol) < 1e-12);
+		assert.equal(moles(mix, "[Cu]"), 0);
+		strip._immersion = { x: 0, area: 0 };
+		const wetDeposit = strip.plating.mol;
+		assert.equal(Simulation.sSurfaceDisplacement(strip), false);
+		assert.equal(strip.plating.mol, wetDeposit);
+		assert.deepEqual(strip.plating.span, span);
+	}
+});
+
+test("surface displacement respects stoichiometry, depletion and circuit ownership", () => {
+	const solution = dose("Silbernitratlösung");
+	const copper = electrode("copper", "Cu", solution);
+	copper._bodyMol = 1e-9;
+	const before = moles(solution, "[Ag+]");
+	const lead = connectDevices(copper, ComponentManager.newElectricComponent(Type.Voltmeter));
+	assert.equal(Simulation.sSurfaceDisplacement(copper), false);
+	copper.disconnect(lead);
+	assert.equal(Simulation.sSurfaceDisplacement(copper), true);
+	assert.equal(Simulation.sSurfaceDisplacement(copper), false);
+	assert.equal(copper.plating.molecule.smilesString, "[Ag]");
+	assert.ok(Math.abs(moles(solution, "[Cu2+]") - 1e-9) < 1e-12);
+	assert.ok(Math.abs(copper.plating.mol - 2e-9) < 1e-12);
+	assert.ok(Math.abs(before - moles(solution, "[Ag+]") - copper.plating.mol) < 1e-12);
+	const control = electrode("copper", "Cu", dose("Zinksulfatlösung"));
+	assert.equal(Simulation.sSurfaceDisplacement(control), false);
+	assert.equal(control.plating, undefined);
+});
+
 test("both explicit current-limit leads restore with saved component casing", () => {
 	const source = ComponentManager.newElectricComponent(Type.Source, { nSourceVoltage: 2, nSourceCurrent: 0.2 });
 	source._polarity = 1;

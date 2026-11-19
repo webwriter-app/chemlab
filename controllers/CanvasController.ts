@@ -541,6 +541,7 @@ export class CanvasController implements ReactiveController {
 			if (!selected.has(sprite)) this.attachedElectrodesMoved.add(sprite);
 			if (this.cables.size && !(sprite instanceof VesselView)) this.cablesDirty = true;
 		}
+		for (const sprite of moving) this.updateUnwiredElectrode(sprite);
 		this.drawSelection();
 	}
 
@@ -1056,6 +1057,7 @@ export class CanvasController implements ReactiveController {
 			const local = target.sprite.toLocal(event.global);
 			const terminal = target.sprite.portAt(local.x, local.y);
 			if (chemlib.plugCable(cable, drag.end, target.device, terminal >= 0 ? terminal : undefined)) {
+				this.host.queueSurfaceDisplacement(target.device);
 				this.refreshDeviceDisplay(target.device);
 				this.host.syncAuthoredConnections(target.device);
 				this.host.syncAuthoredConnections(cable);
@@ -1141,6 +1143,7 @@ export class CanvasController implements ReactiveController {
 					// Electrodes carried along by their vessel still have to be saved.
 					if (sprite !== this.host.dragObject) this.attachedElectrodesMoved.add(sprite);
 				}
+				for (const sprite of moving) this.updateUnwiredElectrode(sprite);
 				if (this.cables.size) this.cablesDirty = true;
 			}
 
@@ -1358,20 +1361,20 @@ export class CanvasController implements ReactiveController {
 	}
 
 	flushChanges(): void {
-		const changed = [...this.changedVessels.keys()].map((view) => view.component._content);
+		const changed = new Set([...this.changedVessels.keys()].map((view) => view.component._content));
 		for (const [view, hint] of this.changedVessels) view.updateContents(hint);
 		this.changedVessels.clear();
 		// A gas collection tube shows what bubbled out of its vessel, so it
 		// follows every change of that vessel, not only the electrochemical
 		// ones.
-		if (changed.length) {
+		if (changed.size) {
 			for (const device of this.host.allEComponents) {
 				if (device._type === chemlib.EComponentType.GasCollector &&
-					changed.includes(device._connectedMix)) this.refreshDeviceDisplay(device);
+					changed.has(device._connectedMix)) this.refreshDeviceDisplay(device);
 			}
 			// A dose raises the liquid surface, so the wetted area of every
 			// strip in the vessel changes with it.
-			this.attachDevices();
+			this.attachDevices(changed);
 		}
 		this.updateDippedStacking();
 		if (this.cablesDirty || this.cables.size) {
@@ -1424,10 +1427,18 @@ export class CanvasController implements ReactiveController {
 	 * after a vessel was moved, because that changes what the devices around
 	 * it sit in.
 	 */
-	attachDevices(): void {
+	attachDevices(changed?: ReadonlySet<chemlib.Mixture>): void {
 		for (const eComp of this.host.allEComponents) {
 			const sprite = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
-			if (sprite) this.attachDevice(eComp, sprite);
+			if (sprite) this.attachDevice(eComp, sprite, changed);
+		}
+	}
+
+	private updateUnwiredElectrode(sprite: PIXI.Container): void {
+		if (!(sprite instanceof ElectricDeviceView)) return;
+		const device = sprite.component;
+		if (device._type === chemlib.EComponentType.Electrode && !device._connections[0].length) {
+			this.attachDevice(device, sprite);
 		}
 	}
 
@@ -1440,10 +1451,11 @@ export class CanvasController implements ReactiveController {
 	 * @param {chemlib.ElectricComponent} eComp - the device to attach
 	 * @param {PIXI.Container} sprite - its view, which carries the position
 	 */
-	attachDevice(eComp: chemlib.ElectricComponent, sprite: PIXI.Container): void {
+	attachDevice(eComp: chemlib.ElectricComponent, sprite: PIXI.Container, changed?: ReadonlySet<chemlib.Mixture>): void {
 		// The lower end of a tube or a bridge leg sits at 0.4667 of the
 		// artboard height below the centre.
-		const bottom = sprite.y + sprite.height * 0.4667;
+		const { width, height } = this.footprintSize(sprite);
+		const bottom = sprite.y + height * 0.4667;
 		switch (eComp._type) {
 			case chemlib.EComponentType.Electrode: {
 				// An electrode is long and thin, so it counts as dipped in when
@@ -1451,14 +1463,19 @@ export class CanvasController implements ReactiveController {
 				// is what a drop looks like: the strip hangs into the beaker
 				// while its centre is still above the rim.
 				const vessel = this.vesselAt(sprite.x, sprite.y) ?? this.vesselAt(sprite.x, bottom);
+				const previousMix = eComp._connectedMix;
 				eComp._connectedMix = vessel?.component._content;
 				// Only the part below the liquid surface carries current, so
 				// the strip records how much of it the liquid covers. A strip
 				// that hangs above the surface ends up with no area at all and
 				// takes no part in the cell.
-				const top = sprite.y - sprite.height * 0.4667;
-				const immersed = vessel?.immersedLength(top, bottom) ?? 0;
-				eComp._immersion = { x: sprite.x, area: sprite.width * immersed / 100 };
+				const top = sprite.y - height * 0.4667;
+				const wet = vessel?.immersedSpan(top, bottom);
+				const span = wet && { top: wet.top - sprite.y, bottom: wet.bottom - sprite.y };
+				eComp._immersion = { x: sprite.x, area: wet ? width * (wet.bottom - wet.top) / 100 : 0, span };
+				if (!changed || previousMix !== eComp._connectedMix || changed.has(eComp._connectedMix)) {
+					this.host.queueSurfaceDisplacement(eComp);
+				}
 				return;
 			}
 			case chemlib.EComponentType.GasCollector: {
@@ -1475,7 +1492,7 @@ export class CanvasController implements ReactiveController {
 			}
 			case chemlib.EComponentType.Bridge: {
 				// The legs of the bridge graphic sit at 1/8 and 7/8 of its width.
-				const leg = sprite.width * 0.375;
+				const leg = width * 0.375;
 				const first = this.vesselAt(sprite.x - leg, bottom);
 				const second = this.vesselAt(sprite.x + leg, bottom);
 				const wet = (vessel?: VesselView) => (vessel?.immersedLength(bottom - 0.5, bottom) ?? 0) > 0;

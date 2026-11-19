@@ -51,6 +51,9 @@ const saltEquilibria = Object.entries(saltSolubility).map(([formula, data]) => {
  */
 const PLATEAU_CURRENT = 1e-12;
 
+/** Effective volume per cm² of a fully covering, 4 µm immersion deposit. */
+const DISPLACEMENT_FILM_LITRES_PER_CM2 = 4e-7;
+
 /**
  * Activity a species is assumed to have when it is not in the vessel yet, in
  * mol/L. A reaction that produces a species cannot be blocked by its own
@@ -193,6 +196,8 @@ interface HalfCandidate {
 	anodicDensity: number;
 	/** Largest cathodic current density the extent allows in one step, A/cm². */
 	cathodicDensity: number;
+	/** Fraction of the whole wet electrode represented by this surface patch. */
+	surfaceFraction?: number;
 	/**
 	 * Slope of the current against the overpotential in A/cm²/V, for an
 	 * electrode that holds its potential instead of following Butler–Volmer.
@@ -1264,28 +1269,42 @@ export abstract class Simulation {
 	 */
 	private static electrodeCandidates(
 		electrode: ElectricComponent,
-		view: VesselView
+		view: VesselView,
+		displacement = false
 	): HalfCandidate[] {
-		const candidates: HalfCandidate[] = [];
 		const material = electrode._material;
-		const volume = view.mix._solutionVolume;
-		// A deposit covers the strip, so it is the surface that reacts: the
-		// plated metal goes back into solution as its cation, and the electrode
-		// body is only attacked once the layer is gone. That is what makes a
-		// plating reversible, as in a rechargeable cell, and what makes a
-		// coating protect the metal underneath it.
 		const top = electrode.plating;
-		const surface = top?.molecule ?? material;
+		const candidatesFor = (surface: Molecule | undefined, amount: number, fraction = 1) =>
+			this.surfaceCandidates(electrode, view, surface, amount, fraction, displacement);
+		if (!top || top.molecule.smilesString === material?.smilesString) {
+			return candidatesFor(material, this.bodyAmount(electrode) + (top?.mol ?? 0));
+		}
+		// The wired solver treats the top layer as the working surface. During
+		// displacement, a growing deposit and exposed base metal share one potential.
+		if (!displacement) return candidatesFor(top.molecule, top.mol);
+		const wet = electrode._immersion?.span;
+		const coated = top.span;
+		let coatedArea = electrode.activeArea;
+		let overlap = 1;
+		if (wet && coated) {
+			const wetLength = wet.bottom - wet.top;
+			coatedArea *= (coated.bottom - coated.top) / wetLength;
+			overlap = Math.max(0, Math.min(wet.bottom, coated.bottom) - Math.max(wet.top, coated.top)) / wetLength;
+		}
+		const coverage = overlap * Math.min(1, top.litres / (coatedArea * DISPLACEMENT_FILM_LITRES_PER_CM2));
+		return [
+			...candidatesFor(material, this.bodyAmount(electrode), 1 - coverage),
+			...candidatesFor(top.molecule, top.mol, coverage),
+		];
+	}
+
+	private static surfaceCandidates(electrode: ElectricComponent, view: VesselView, surface: Molecule | undefined,
+		solidAmount: number, surfaceFraction: number, displacement: boolean): HalfCandidate[] {
+		if (!(surfaceFraction > 0)) return [];
+		const candidates: HalfCandidate[] = [];
+		const volume = view.mix._solutionVolume;
 		const surfaceName = materialName(surface);
 		const surfaceSmiles = surface?.smilesString;
-		const solidAmount = (smiles: string): number => {
-			if (material !== undefined && material.smilesString === smiles) {
-				// The body is only within reach while nothing else covers it.
-				if (top && top.molecule.smilesString !== smiles) return 0;
-				return this.bodyAmount(electrode) + (top ? top.mol : 0);
-			}
-			return top && top.molecule.smilesString === smiles ? top.mol : 0;
-		};
 		/**
 		 * Amount of a gas species the vessel can give up. Only the dissolved
 		 * part is within reach of an electrode; a halogen that separated as a
@@ -1302,7 +1321,7 @@ export abstract class Simulation {
 		};
 		const amountOf = (term: HalfReactionTerm, reaction: HalfReaction): number => {
 			if (gasForSmiles(term.smiles)) return gasAmount(reaction);
-			if (term.phase === "solid") return solidAmount(term.smiles);
+			if (term.phase === "solid") return term.smiles === surfaceSmiles ? solidAmount : 0;
 			if (term.smiles === "O") return Infinity;
 			// Protons are not a stored species: an acid family releases more as
 			// they are taken and water supplies them otherwise, so only the
@@ -1344,6 +1363,9 @@ export abstract class Simulation {
 				: Infinity;
 		};
 		for (const reaction of halfReactionsOn(surfaceName)) {
+			const metal = displacement && !reaction.gas
+				? reaction.terms.find(term => term.phase === "solid" && atomSymbol(term.smiles)) : undefined;
+			if (displacement && !metal) continue;
 			// A passive film blocks the couple of the metal it covers, so the
 			// strip behaves as an inert conductor and only the couples of the
 			// solution run on it. The film is read from the pH the vessel
@@ -1355,7 +1377,7 @@ export abstract class Simulation {
 			const equilibrium = this.halfReactionPotential(reaction, view);
 			if (!Number.isFinite(equilibrium)) continue;
 			let canOxidise = true;
-			let canReduce = true;
+			let canReduce = !metal || !reactsWithWater(atomSymbol(metal.smiles));
 			let anodicLimit = Infinity;
 			let cathodicLimit = Infinity;
 			let anodicDensity = Infinity;
@@ -1386,6 +1408,7 @@ export abstract class Simulation {
 				cathodicLimit,
 				anodicDensity,
 				cathodicDensity,
+				surfaceFraction,
 				apply: (electronMol) => this.applyHalfReaction(reaction, electronMol, electrode, view),
 			});
 		}
@@ -1637,7 +1660,7 @@ export abstract class Simulation {
 			? candidate.stiffness * (potential - candidate.equilibrium)
 			: currentDensity(candidate.reaction, potential - candidate.equilibrium);
 		const bounded = Math.max(-candidate.cathodicDensity,
-			Math.min(candidate.anodicDensity, density));
+			Math.min(candidate.anodicDensity, density)) * (candidate.surfaceFraction ?? 1);
 		if (!candidate.canOxidise) return Math.min(0, bounded);
 		if (!candidate.canReduce) return Math.max(0, bounded);
 		return bounded;
@@ -1656,7 +1679,7 @@ export abstract class Simulation {
 		if (!candidate.canOxidise && density > 0) return 0;
 		if (!candidate.canReduce && density < 0) return 0;
 		if (density > candidate.anodicDensity || density < -candidate.cathodicDensity) return 0;
-		return currentDensitySlope(candidate.reaction, potential - candidate.equilibrium);
+		return currentDensitySlope(candidate.reaction, potential - candidate.equilibrium) * (candidate.surfaceFraction ?? 1);
 	}
 
 	/**
@@ -2537,6 +2560,43 @@ export abstract class Simulation {
 		// The vessel keeps its temperature in kelvin, the conductivity table in
 		// degrees Celsius.
 		return solutionConductivity(ions, mix._temperature - 273.15);
+	}
+
+	/** An unwired metal surface can react while it is in contact with an electrolyte. */
+	public static canDisplaceOn(electrode: ElectricComponent): boolean {
+		const mix = electrode._connectedMix;
+		return electrode._type === EComponentType.Electrode && electrode._reference === undefined &&
+			!electrode._connections.some(terminal => terminal.length > 0) && this.isWetted(electrode) &&
+			Number.isFinite(electrode.activeArea) && electrode.activeArea > 0 &&
+			!!mix?._isSolution && mix._solutionVolume > 0;
+	}
+
+	/** Advances spontaneous metal deposition on a single strip at zero external current. */
+	public static sSurfaceDisplacement(electrode: ElectricComponent): boolean {
+		const dt = this._simTimeStep;
+		if (!(Number.isFinite(dt) && dt > 0) || !this.canDisplaceOn(electrode)) return false;
+		const mix = electrode._connectedMix;
+		const view = this.vesselView(mix);
+		const candidates = this.electrodeCandidates(electrode, view, true);
+		const { potential, currents } = this.mixedPotential(candidates);
+		if (!Number.isFinite(potential)) return false;
+
+		const booking = { candidates, currents, dt, area: electrode.activeArea, view };
+		const extents = this.bookingExtents(booking);
+		const oxidised = extents.reduce((sum, extent) => sum + Math.max(0, extent), 0);
+		const reduced = extents.reduce((sum, extent) => sum + Math.max(0, -extent), 0);
+		const exchanged = Math.min(oxidised, reduced);
+		if (!(exchanged > 1e-12)) return false;
+
+		// Independent inventory caps can unbalance an otherwise open-circuit
+		// solve. Lower the larger side before spending the shared solution inventory.
+		const balanced = extents.map(extent => extent * exchanged / (extent > 0 ? oxidised : reduced));
+		const scales = this.inventoryScale([booking], [balanced]);
+		if (!(exchanged * (scales.get(mix) ?? 1) > 1e-12)) return false;
+		this.applyExtents([booking], [balanced], scales);
+		this.balanceCharge(mix);
+		this.settleSaltsAndHydroxides(mix);
+		return true;
 	}
 
 	/** Prepares a passive galvanic RC experiment and projects its current onto the meters. */

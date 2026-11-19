@@ -70,6 +70,13 @@ export class SimulationController implements ReactiveController {
 		step: () => void,
 		live?: (elapsedMs: number) => boolean
 	): void {
+		this.startFixedStepTask(name, step, live);
+		live?.(0);
+		this.host.collectDiagramSuggestions();
+		this.host.requestUpdate();
+	}
+
+	startFixedStepTask(name: string, step: () => void, live?: (elapsedMs: number) => boolean): void {
 		let remainingMs = 0;
 		this.startTask(name, (elapsedMs) => {
 			if (live?.(elapsedMs)) {
@@ -84,9 +91,6 @@ export class SimulationController implements ReactiveController {
 				step();
 			}
 		});
-		live?.(0);
-		this.host.collectDiagramSuggestions();
-		this.host.requestUpdate();
 	}
 
 	get hasRunningExperiments(): boolean {

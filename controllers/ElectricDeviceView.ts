@@ -521,13 +521,17 @@ export class ElectricDeviceView extends Container {
 		const strip = this.strip;
 		if (!coating || !strip) return false;
 		const plating = this.component.plating;
+		const top = Math.max(strip.top, plating?.span?.top ?? strip.top);
+		const bottom = Math.min(strip.bottom, plating?.span?.bottom ?? strip.bottom);
 		// A wider electrode carries more current at the same density, so the
 		// same deposit is a thinner layer on it. Scaling the reference volume
 		// with the area keeps the drawn thickness the real one.
-		const area = this.component.activeArea || ELECTRODE_AREA;
+		const area = plating?.span ? (strip.right - strip.left) * (bottom - top) / 100
+			: this.component.activeArea || ELECTRODE_AREA;
 		const reference = PLATING_REFERENCE_LITRES * area / ELECTRODE_AREA;
-		const coverage = plating ? Math.min(1, plating.litres / reference) : 0;
-		const key = plating && coverage > 0 ? `${plating.molecule.smilesString}:${coverage.toFixed(3)}` : "";
+		const coverage = plating && reference > 0 ? Math.min(1, plating.litres / reference) : 0;
+		const key = plating && coverage > 0
+			? `${plating.molecule.smilesString}:${coverage.toFixed(3)}:${top.toFixed(2)}:${bottom.toFixed(2)}` : "";
 		if (key === this.coatingKey) return false;
 		this.coatingKey = key;
 		if (!plating || !key) {
@@ -539,9 +543,9 @@ export class ElectricDeviceView extends Container {
 		coating.texture = platingTexture(Number.isFinite(parsed) ? parsed : 0x84949b);
 		const grown = Math.max(0, (coverage - PLATING_OPAQUE_AT) / (1 - PLATING_OPAQUE_AT));
 		coating.alpha = Math.min(1, coverage / PLATING_OPAQUE_AT);
-		coating.position.set((strip.left + strip.right) / 2, (strip.top + strip.bottom) / 2);
+		coating.position.set((strip.left + strip.right) / 2, (top + bottom) / 2);
 		coating.width = (strip.right - strip.left) * (1 + (PLATING_MAX_BULGE - 1) * grown);
-		coating.height = strip.bottom - strip.top;
+		coating.height = bottom - top;
 		coating.visible = true;
 		return true;
 	}

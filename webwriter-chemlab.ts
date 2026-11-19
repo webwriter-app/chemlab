@@ -88,6 +88,7 @@ type AmountSource = { name: string; recipe: ChemicalRecipe; dose: (volumeMl: num
 const TRANSFER_HOLD_MS = 1500;
 const TRANSFER_HOLD_RADIUS = 6;
 const DRAG_TRANSFER_TASK = "drag-transfer";
+const SURFACE_DISPLACEMENT_TASK = "surface-displacement";
 const MIN_TWO_PANELS_WIDTH = 480;
 const RC_UPDATE_MS = 50;
 const DIAGRAM_PICKER_CLOSE_MS = 2000;
@@ -365,6 +366,7 @@ export class ChemLab extends LitElementWw {
 	 * @type {SimulationController}
 	 */
 	simulation = new SimulationController(this);
+	private readonly surfaceElectrodes = new Set<chemlib.ElectricComponent>();
 	private readonly capacitorCharges = new Map<string, number>();
 	private readonly rcReadouts = new Map<chemlib.ElectricComponent, RCReadout>();
 	/**
@@ -966,6 +968,39 @@ export class ChemLab extends LitElementWw {
 		this.canvas.refreshDeviceDisplay(source);
 	}
 
+	queueSurfaceDisplacement(electrode: chemlib.ElectricComponent): void {
+		if (!chemlib.Simulation.canDisplaceOn(electrode)) {
+			if (this.surfaceElectrodes.delete(electrode) && !this.surfaceElectrodes.size) {
+				this.simulation.stopTask(SURFACE_DISPLACEMENT_TASK);
+			}
+			return;
+		}
+		this.surfaceElectrodes.add(electrode);
+		if (!this.simulation.hasTask(SURFACE_DISPLACEMENT_TASK)) {
+			this.simulation.startFixedStepTask(SURFACE_DISPLACEMENT_TASK, () => this.stepSurfaceDisplacement());
+		}
+	}
+
+	private stepSurfaceDisplacement(): void {
+		const mixtures = new Set<chemlib.Mixture>();
+		let updateSelection = false;
+		for (const electrode of this.surfaceElectrodes) {
+			if (!this.allEComponents.includes(electrode) || !chemlib.Simulation.sSurfaceDisplacement(electrode)) {
+				this.surfaceElectrodes.delete(electrode);
+				continue;
+			}
+			mixtures.add(electrode._connectedMix);
+			updateSelection ||= this.curr_obj === electrode;
+			this.canvas.refreshDeviceDisplay(electrode);
+		}
+		if (!this.surfaceElectrodes.size) this.simulation.stopTask(SURFACE_DISPLACEMENT_TASK);
+		if (!mixtures.size) return;
+		const vessels = this.allChemComponents.filter(vessel => mixtures.has(vessel._content));
+		this.measurements.record(vessels);
+		for (const vessel of vessels) this.canvas.markVesselChanged(vessel);
+		if (updateSelection || mixtures.has(this.curr_obj?._content)) this._updatePopup();
+	}
+
 	private ionicResistance(first: chemlib.ElectricComponent, second: chemlib.ElectricComponent): number {
 		return chemlib.Simulation.ionicResistance(first, second,
 			this.bridgeBetween(first._connectedMix, second._connectedMix));
@@ -1152,6 +1187,7 @@ export class ChemLab extends LitElementWw {
 
 	invalidateElectricalReadings(devices: readonly chemlib.ElectricComponent[]): void {
 		for (const device of devices) {
+			this.queueSurfaceDisplacement(device);
 			this.rcReadouts.delete(device);
 			device._cellCurrent = null;
 			if (device._visibleVoltage === null && device._visibleCurrent === null) continue;
@@ -2670,6 +2706,8 @@ export class ChemLab extends LitElementWw {
 	): boolean {
 		const cable = chemlib.connectDevices(from, to, terminalFrom, terminalTo);
 		if (!cable) return false;
+		this.queueSurfaceDisplacement(from);
+		this.queueSurfaceDisplacement(to);
 		this.allEComponents.push(cable);
 		const sprite = this.canvas.addComponentView(cable, false);
 		// The plugs of both devices change from free to occupied.
@@ -4043,6 +4081,7 @@ export class ChemLab extends LitElementWw {
 						device._area = Number.isFinite(area) && area > 0 ? area : 0;
 						device._reference = Number.isFinite(reference) ? reference : undefined;
 						this.saveSelectedComponent({ area: device._area, reference: device._reference });
+						this.queueSurfaceDisplacement(device);
 						this.canvas.refreshDeviceDisplay(device);
 						this._updatePopup();
 					}}>${this.message("bestätigen")}</sl-button>` : nothing}
@@ -4065,8 +4104,11 @@ export class ChemLab extends LitElementWw {
 							const selected = componentVariant((event.currentTarget as HTMLSelectElement).value);
 							if (!selected?.material) return;
 							device._material = this.newElectrodeMaterial(selected.material);
+							device._bodyMol = null;
+							device._plating.clear();
 							const formula = device._material._kekule_obj.calcFormula().getDisplayText();
 							this.saveSelectedComponent({ material: formula, variantId: selected.id });
+							this.queueSurfaceDisplacement(device);
 							this.canvas.refreshDeviceDisplay(device);
 							this._updatePopup();
 							this._sendxAPiStatement("submitted", `ElectrodeMaterlial ${formula}:${device._id}`);

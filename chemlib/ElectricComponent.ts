@@ -81,6 +81,8 @@ export interface ElectrodePlating {
 	litres: number;
 	/** Bulk volume of one mole of the metal in litres. */
 	litresPerMol: number;
+	/** Vertical interval of the deposit, in mm relative to the strip centre. */
+	span?: { top: number; bottom: number };
 }
 
 /**
@@ -191,7 +193,7 @@ class ElectricComponent {
 	 *
 	 * @type {({ x: number; area: number } | undefined)}
 	 */
-	_immersion?: { x: number; area: number };
+	_immersion?: { x: number; area: number; span?: { top: number; bottom: number } };
 	/**
 	 * for a salt bridge: the horizontal positions of its two legs in mm of the
 	 * canvas, in the order of {@link _bridgeMixes}. The bridge is a narrow tube
@@ -633,12 +635,18 @@ class ElectricComponent {
 		if (this._type !== EComponentType.Electrode || !(amountMol > 0)) return;
 		const key: string = molecule.smilesString;
 		const entry: ElectrodePlating = this._plating.get(key);
+		const wet = this._immersion?.span;
 		if (entry) {
 			entry.mol += amountMol;
 			entry.litres = entry.mol * entry.litresPerMol;
+			if (entry.span && wet) {
+				entry.span.top = Math.min(entry.span.top, wet.top);
+				entry.span.bottom = Math.max(entry.span.bottom, wet.bottom);
+			}
 			return;
 		}
-		this._plating.set(key, { molecule, mol: amountMol, litres: amountMol * litresPerMol, litresPerMol });
+		this._plating.set(key, { molecule, mol: amountMol, litres: amountMol * litresPerMol,
+			litresPerMol, span: wet && { ...wet } });
 	}
 
 	/**
