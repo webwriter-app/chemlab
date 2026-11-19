@@ -47,6 +47,10 @@ export type StringKey =
 	| "fieldBlock"
 	| "fieldWeight"
 	| "fieldPhase"
+	| "fieldMelting"
+	| "fieldBoiling"
+	| "fieldSublimation"
+	| "fieldDiscovery"
 	| "fieldConfiguration"
 	| "fieldShells"
 	| "groupUnassigned"
@@ -59,13 +63,35 @@ export type StringKey =
 	| "phaseLiquid"
 	| "phaseGas"
 	| "conditions"
-	| "sourcesLabel"
-	| "sourcesHint"
+	| "discoveryAntiquity"
+	| "modeLabel"
+	| "modeOff"
+	| "modeTemperature"
+	| "modePressure"
+	| "modeDiscovery"
+	| "temperatureSlider"
+	| "pressureSlider"
+	| "yearSlider"
+	| "stateLegend"
+	| "stateUnknown"
+	| "infoLabel"
+	| "infoIntro"
+	| "infoConditions"
+	| "infoPhaseModel"
+	| "infoDiscovery"
+	| "infoFields"
+	| "infoClose"
 	| "sourceRelease"
 	| "sourceRetrieved"
 	| "sourceLicense"
 	| "fieldIdentity"
 	| "fieldGermanName"
+	| "fieldSymbol"
+	| "fieldName"
+	| "fieldUncertainty"
+	| "fieldNoteCodes"
+	| "infoSources"
+	| "infoNotes"
 	| "printTitle";
 
 /** One language's strings. */
@@ -101,6 +127,10 @@ const EN: Strings = {
 	fieldBlock: "Block",
 	fieldWeight: "Standard atomic weight",
 	fieldPhase: "State",
+	fieldMelting: "Melting point",
+	fieldBoiling: "Boiling point",
+	fieldSublimation: "Sublimation point",
+	fieldDiscovery: "Discovered",
 	fieldConfiguration: "Electron configuration",
 	fieldShells: "Electrons per shell",
 	groupUnassigned: "Not assigned",
@@ -113,13 +143,38 @@ const EN: Strings = {
 	phaseLiquid: "Liquid",
 	phaseGas: "Gas",
 	conditions: "{temperature} °C · {pressure} bar",
-	sourcesLabel: "Sources",
-	sourcesHint: "Each field names the source it was taken from.",
+	discoveryAntiquity: "Antiquity",
+	modeLabel: "Show",
+	modeOff: "Off",
+	modeTemperature: "Temperature",
+	modePressure: "Pressure",
+	modeDiscovery: "Discovery",
+	temperatureSlider: "Temperature",
+	pressureSlider: "Pressure",
+	yearSlider: "Year",
+	stateLegend: "State at these conditions",
+	stateUnknown: "Unknown",
+	infoLabel: "Sources and notes",
+	infoIntro:
+		"The table is built from the sources below. Every value keeps the state its source reports: reported, predicted or unavailable.",
+	infoConditions: "States and temperatures refer to {conditions}.",
+	infoPhaseModel:
+		"At other conditions the state follows the melting and boiling points. The melting point keeps its 1-bar value, the boiling point follows Clausius–Clapeyron with Trouton's rule. Carbon and arsenic sublime, so they have no liquid range at standard pressure.",
+	infoDiscovery:
+		"Years of discovery and first synthesis follow the source. Eleven elements have been in use since antiquity and carry no year.",
+	infoFields: "Fields",
+	infoSources: "Sources",
+	infoNotes: "Notes",
+	infoClose: "Close",
 	sourceRelease: "Release {release}",
 	sourceRetrieved: "Retrieved {retrieved}",
 	sourceLicense: "License: {license}",
 	fieldIdentity: "Identity",
 	fieldGermanName: "German name",
+	fieldSymbol: "Symbol",
+	fieldName: "Name",
+	fieldUncertainty: "Uncertainty digits",
+	fieldNoteCodes: "Note codes",
 	printTitle: "Periodic table",
 };
 
@@ -153,6 +208,10 @@ const DE: Strings = {
 	fieldBlock: "Block",
 	fieldWeight: "Standardatommasse",
 	fieldPhase: "Aggregatzustand",
+	fieldMelting: "Schmelzpunkt",
+	fieldBoiling: "Siedepunkt",
+	fieldSublimation: "Sublimationspunkt",
+	fieldDiscovery: "Entdeckt",
 	fieldConfiguration: "Elektronenkonfiguration",
 	fieldShells: "Elektronen je Schale",
 	groupUnassigned: "Nicht zugeordnet",
@@ -165,13 +224,38 @@ const DE: Strings = {
 	phaseLiquid: "Flüssig",
 	phaseGas: "Gasförmig",
 	conditions: "{temperature} °C · {pressure} bar",
-	sourcesLabel: "Quellen",
-	sourcesHint: "Jedes Feld nennt die Quelle, aus der es stammt.",
+	discoveryAntiquity: "Antike",
+	modeLabel: "Anzeigen",
+	modeOff: "Aus",
+	modeTemperature: "Temperatur",
+	modePressure: "Druck",
+	modeDiscovery: "Entdeckung",
+	temperatureSlider: "Temperatur",
+	pressureSlider: "Druck",
+	yearSlider: "Jahr",
+	stateLegend: "Aggregatzustand bei diesen Bedingungen",
+	stateUnknown: "Unbekannt",
+	infoLabel: "Quellen und Hinweise",
+	infoIntro:
+		"Die Tabelle beruht auf den unten genannten Quellen. Jeder Wert behält den Stand seiner Quelle: berichtet, vorhergesagt oder nicht verfügbar.",
+	infoConditions: "Aggregatzustände und Temperaturen gelten für {conditions}.",
+	infoPhaseModel:
+		"Bei anderen Bedingungen folgt der Aggregatzustand dem Schmelz- und dem Siedepunkt. Der Schmelzpunkt behält seinen Wert bei 1 bar, der Siedepunkt folgt der Clausius-Clapeyron-Gleichung mit der Trouton-Regel. Kohlenstoff und Arsen sublimieren und haben bei Normaldruck keinen flüssigen Bereich.",
+	infoDiscovery:
+		"Jahreszahlen der Entdeckung und der ersten Darstellung folgen der Quelle. Elf Elemente sind seit der Antike in Gebrauch und tragen keine Jahreszahl.",
+	infoFields: "Felder",
+	infoSources: "Quellen",
+	infoNotes: "Hinweise",
+	infoClose: "Schließen",
 	sourceRelease: "Ausgabe {release}",
 	sourceRetrieved: "Abgerufen am {retrieved}",
 	sourceLicense: "Lizenz: {license}",
 	fieldIdentity: "Identität",
 	fieldGermanName: "Deutscher Name",
+	fieldSymbol: "Symbol",
+	fieldName: "Name",
+	fieldUncertainty: "Unsicherheitsstellen",
+	fieldNoteCodes: "Fußnoten",
 	printTitle: "Periodensystem",
 };
 

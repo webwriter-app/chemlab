@@ -13,13 +13,15 @@ import { LitElementWw, action } from "@webwriter/lit";
 import { customElement, property } from "lit/decorators.js";
 import { html, type PropertyValues } from "lit";
 
+import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
-import SlDetails from "@shoelace-style/shoelace/dist/components/details/details.component.js";
+import SlDialog from "@shoelace-style/shoelace/dist/components/dialog/dialog.component.js";
 import SlIcon from "@shoelace-style/shoelace/dist/components/icon/icon.component.js";
 import SlIconButton from "@shoelace-style/shoelace/dist/components/icon-button/icon-button.component.js";
 import SlInput from "@shoelace-style/shoelace/dist/components/input/input.component.js";
 import SlOption from "@shoelace-style/shoelace/dist/components/option/option.component.js";
 import SlPopup from "@shoelace-style/shoelace/dist/components/popup/popup.component.js";
+import SlRange from "@shoelace-style/shoelace/dist/components/range/range.component.js";
 import SlSelect from "@shoelace-style/shoelace/dist/components/select/select.component.js";
 import SlSpinner from "@shoelace-style/shoelace/dist/components/spinner/spinner.component.js";
 import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js";
@@ -53,9 +55,28 @@ import {
 	categoryText,
 	conditionsText,
 	detailRows,
-	sourceOf,
-	sourceUsage,
+	sourceFieldText,
+	sourceList,
+	stateText,
 } from "./periodic-table/details";
+import {
+	DEFAULT_MODE_STATE,
+	DISCOVERY_RANGE,
+	PRESSURE_SLIDER,
+	TABLE_MODES,
+	TEMPERATURE_SLIDER,
+	cellMode,
+	celsiusFromKelvin,
+	celsiusText,
+	kelvinFromCelsius,
+	log10FromPressure,
+	pressureFromLog10,
+	pressureText,
+	type MatterState,
+	type ModeState,
+	type PhaseConditions,
+	type TableMode,
+} from "./periodic-table/phase";
 import { periodicTableStyles } from "./periodic-table/styles";
 import {
 	format,
@@ -76,6 +97,43 @@ const VIEWS: readonly PeriodicTableView[] = ["auto", "table", "list"];
 
 /** Container width below which `auto` switches to the list. */
 const LIST_BREAKPOINT = 680;
+
+/** States the legend of a mode lists, in the order of the phase model. */
+const STATES: readonly MatterState[] = ["solid", "liquid", "gas", "unknown"];
+
+/**
+ * Info icon of the toolbar button.
+ *
+ * The icon is a data URI instead of a Shoelace icon name, because the widget
+ * ships no icon assets and the default icon library would fetch them from a CDN.
+ */
+const INFO_ICON = `data:image/svg+xml,${encodeURIComponent(
+	'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">' +
+		'<circle cx="8" cy="8" r="6.5" fill="none" stroke="#3f3f46" stroke-width="1.3"/>' +
+		'<circle cx="8" cy="4.9" r=".95" fill="#3f3f46"/>' +
+		'<rect x="7.15" y="6.6" width="1.7" height="5.1" rx=".85" fill="#3f3f46"/>' +
+		"</svg>",
+)}`;
+
+/**
+ * Localizes one mode of the switch.
+ *
+ * @param mode - Mode of the switch.
+ * @param t - Interface strings.
+ * @returns The label of the mode.
+ */
+function modeText(mode: TableMode, t: Strings): string {
+	switch (mode) {
+		case "off":
+			return t.modeOff;
+		case "temperature":
+			return t.modeTemperature;
+		case "pressure":
+			return t.modePressure;
+		case "discovery":
+			return t.modeDiscovery;
+	}
+}
 
 /**
  * Parses the `view` attribute, treating unknown markup as `auto`.
@@ -119,13 +177,15 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * not inherit them from the global one.
 	 */
 	static scopedElements = {
+		"sl-badge": SlBadge,
 		"sl-button": SlButton,
-		"sl-details": SlDetails,
+		"sl-dialog": SlDialog,
 		"sl-icon": SlIcon,
 		"sl-icon-button": SlIconButton,
 		"sl-input": SlInput,
 		"sl-option": SlOption,
 		"sl-popup": SlPopup,
+		"sl-range": SlRange,
 		"sl-select": SlSelect,
 		"sl-spinner": SlSpinner,
 		"sl-tag": SlTag,
@@ -195,6 +255,8 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#rovingOverride: number | null = null;
 	#focusBeforeLayout: number | null = null;
 	#restoreFocusPending = false;
+	#mode: ModeState = DEFAULT_MODE_STATE;
+	#infoOpen = false;
 
 	/**
 	 * Currently selected atomic number, `null` when nothing is selected.
@@ -360,6 +422,11 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		return this.#width !== null && this.#width < LIST_BREAKPOINT ? "list" : "table";
 	}
 
+	/** Conditions the state rows and the cell colours refer to. */
+	get #conditions(): PhaseConditions {
+		return { temperatureK: this.#mode.temperatureK, pressureBar: this.#mode.pressureBar };
+	}
+
 	/** Current search hits, best match first. */
 	#matches(): readonly SearchResult[] {
 		return searchElements(this.#query, { locale: this.#language, category: this.#category });
@@ -413,6 +480,54 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		this.#category = this.#category === category ? null : category;
 		this.requestUpdate();
 	}
+
+	/**
+	 * Switches the property the cells are coloured by.
+	 *
+	 * @param mode - Mode the learner pressed.
+	 */
+	#setMode(mode: TableMode) {
+		if (this.#mode.mode === mode) return;
+		this.#mode = { ...this.#mode, mode };
+		this.requestUpdate();
+	}
+
+	/** Reads the temperature slider, which works in degrees Celsius. */
+	#onTemperatureInput = (event: Event) => {
+		const value = Number((event.target as { value?: string }).value ?? "");
+		if (!Number.isFinite(value)) return;
+		this.#mode = { ...this.#mode, temperatureK: kelvinFromCelsius(value) };
+		this.requestUpdate();
+	};
+
+	/** Reads the pressure slider, which works on the decadic logarithm. */
+	#onPressureInput = (event: Event) => {
+		const value = Number((event.target as { value?: string }).value ?? "");
+		if (!Number.isFinite(value)) return;
+		this.#mode = { ...this.#mode, pressureBar: pressureFromLog10(value) };
+		this.requestUpdate();
+	};
+
+	/** Reads the year slider. */
+	#onYearInput = (event: Event) => {
+		const value = Number((event.target as { value?: string }).value ?? "");
+		if (!Number.isFinite(value)) return;
+		this.#mode = { ...this.#mode, year: value };
+		this.requestUpdate();
+	};
+
+	/** Opens the info dialog. */
+	#openInfo = () => {
+		this.#infoOpen = true;
+		this.requestUpdate();
+	};
+
+	/** Keeps the open flag in step when the dialog closes itself. */
+	#onInfoHide = () => {
+		if (!this.#infoOpen) return;
+		this.#infoOpen = false;
+		this.requestUpdate();
+	};
 
 	/**
 	 * Moves focus to the first element of a detached series.
@@ -542,6 +657,12 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const resolved = this.#resolvedView;
 		return html`
 			<div class="toolbar">
+				<sl-icon-button
+					class="info-button"
+					src=${INFO_ICON}
+					label=${t.infoLabel}
+					@click=${this.#openInfo}
+				></sl-icon-button>
 				<sl-input
 					class="search"
 					type="search"
@@ -584,6 +705,121 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
+	 * Describes the slider of the active mode.
+	 *
+	 * @param t - Interface strings.
+	 * @param language - Interface language.
+	 * @returns Bounds, value, readout and handler of the slider, or `null` when no mode is active.
+	 */
+	#slider(t: Strings, language: Language) {
+		switch (this.#mode.mode) {
+			case "off":
+				return null;
+			case "temperature":
+				return {
+					label: t.temperatureSlider,
+					min: TEMPERATURE_SLIDER.minCelsius,
+					max: TEMPERATURE_SLIDER.maxCelsius,
+					step: TEMPERATURE_SLIDER.stepCelsius,
+					value: celsiusFromKelvin(this.#mode.temperatureK),
+					readout: celsiusText(this.#mode.temperatureK, language),
+					format: (value: number) => celsiusText(kelvinFromCelsius(value), language),
+					onInput: this.#onTemperatureInput,
+				};
+			case "pressure":
+				return {
+					label: t.pressureSlider,
+					min: PRESSURE_SLIDER.minLog10Bar,
+					max: PRESSURE_SLIDER.maxLog10Bar,
+					step: PRESSURE_SLIDER.stepLog10,
+					value: log10FromPressure(this.#mode.pressureBar),
+					readout: pressureText(this.#mode.pressureBar, language),
+					format: (value: number) => pressureText(pressureFromLog10(value), language),
+					onInput: this.#onPressureInput,
+				};
+			case "discovery":
+				return {
+					label: t.yearSlider,
+					min: DISCOVERY_RANGE.min,
+					max: DISCOVERY_RANGE.max,
+					step: 1,
+					value: this.#mode.year,
+					readout: String(this.#mode.year),
+					format: (value: number) => String(Math.round(value)),
+					onInput: this.#onYearInput,
+				};
+		}
+	}
+
+	/**
+	 * Renders the mode switch with its slider and the state legend.
+	 *
+	 * The switch decides what the cells are coloured by: nothing, the state at the
+	 * chosen temperature or pressure, or whether the element was already known in
+	 * the chosen year. The legend only appears for the two state modes, because
+	 * the discovery mode dims cells instead of colouring them.
+	 *
+	 * @param t - Interface strings.
+	 * @param language - Interface language.
+	 * @returns The mode row and, for a state mode, the legend.
+	 */
+	#renderModes(t: Strings, language: Language) {
+		const slider = this.#slider(t, language);
+		return html`
+			<div class="modes">
+				<div class="mode-group" role="group" aria-label=${t.modeLabel}>
+					${TABLE_MODES.map(mode => html`
+						<sl-button
+							size="small"
+							variant=${this.#mode.mode === mode ? "primary" : "default"}
+							aria-pressed=${this.#mode.mode === mode}
+							@click=${() => this.#setMode(mode)}
+						>${modeText(mode, t)}</sl-button>
+					`)}
+				</div>
+				${slider
+					? html`
+						<div class="mode-slider">
+							<sl-range
+								size="small"
+								label=${slider.label}
+								min=${slider.min}
+								max=${slider.max}
+								step=${slider.step}
+								.value=${String(slider.value)}
+								.tooltipFormatter=${slider.format}
+								@sl-input=${slider.onInput}
+							></sl-range>
+							<span class="mode-value">${slider.readout}</span>
+						</div>
+					`
+					: null}
+			</div>
+		`;
+	}
+
+	/**
+	 * Renders the colour key of the state modes.
+	 *
+	 * @param t - Interface strings.
+	 * @returns The legend, or nothing while no state mode is active.
+	 */
+	#renderStateLegend(t: Strings) {
+		if (this.#mode.mode !== "temperature" && this.#mode.mode !== "pressure") {
+			return null;
+		}
+		return html`
+			<ul class="state-legend" aria-label=${t.stateLegend}>
+				${STATES.map(state => html`
+					<li>
+						<span class="state-swatch state-${state}"></span>${stateText(state, t)}
+					</li>
+				`)}
+			</ul>
+		`;
+	}
+
+	/**
 	 * Renders one element cell of the grid.
 	 *
 	 * @param cell - Cell of the display grid.
@@ -605,15 +841,20 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const enabled = matching.has(cell.atomicNumber);
 		const selected = this.#selection.value === cell.atomicNumber;
 		const displayRow = cell.section === "main" ? cell.row + 1 : cell.row + 2;
+		const mode = cellMode(element, this.#mode);
+		const state = mode.state === null ? null : stateText(mode.state, t);
+		const classes = ["cell", `category-${cell.category}`];
+		if (mode.state !== null) classes.push(`state-${mode.state}`);
+		if (mode.dimmed) classes.push("is-dimmed");
 		const label = format(t.cellLabel, {
 			number: element.atomicNumber,
 			name: element.names[language],
 			symbol: element.symbol,
 			category: categoryText(element, language),
-		});
+		}) + (state === null ? "" : ` · ${state}`);
 		return html`
 			<div
-				class="cell category-${cell.category}"
+				class=${classes.join(" ")}
 				role="gridcell"
 				aria-selected=${selected}
 				aria-disabled=${!enabled}
@@ -627,6 +868,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 				<span class="cell-number">${cell.atomicNumber}</span>
 				<span class="cell-symbol">${element.symbol}</span>
 				<span class="cell-name">${element.names[language]}</span>
+				${mode.badge === null ? null : html`<span class="cell-year">${mode.badge}</span>`}
 			</div>
 		`;
 	}
@@ -838,7 +1080,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 				style="--pt-row:${series.row + 2};--pt-column:1 / span 3"
 			>${CATEGORIES[series.category]?.[language] ?? series.category}</div>
 		`);
-		const rows = element ? detailRows(element, language) : [];
+		const rows = element ? detailRows(element, language, this.#conditions) : [];
 		return html`
 			<div class="print-overview" aria-hidden="true">
 				<h2 class="print-title">${t.widgetLabel}</h2>
@@ -862,7 +1104,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 									</div>
 								`)}
 							</dl>
-							<p class="print-hint">${t.detailsHint} ${conditionsText(language)}</p>
+							<p class="print-hint">${t.detailsHint} ${conditionsText(language, this.#conditions)}</p>
 						`
 						: html`<p class="print-hint">${t.detailsEmpty}</p>`}
 				</div>
@@ -887,8 +1129,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (!element) {
 			return html`<div class="details"><p class="details-empty">${t.detailsEmpty}</p></div>`;
 		}
-		const rows = detailRows(element, language);
-		const usage = sourceUsage(element, language);
+		const rows = detailRows(element, language, this.#conditions);
 		const name = element.names[language];
 		return html`
 			<div class="details category-${categoryOf(element.atomicNumber) ?? "unknown"}">
@@ -911,35 +1152,74 @@ export class ChemLabPeriodicTable extends LitElementWw {
 							</div>
 						`)}
 					</dl>
-					<p class="details-hint">${t.detailsHint} ${conditionsText(language)}</p>
-					<sl-details class="sources" summary=${t.sourcesLabel}>
-						<p class="details-hint">${t.sourcesHint}</p>
-						${usage.map(entry => {
-							const source = sourceOf(entry.sourceId);
-							if (!source) return null;
-							return html`
-								<div class="source">
-									<p class="source-title">${source.publisher} — ${source.title}</p>
-									<p class="source-line">${entry.fields.join(", ")}</p>
-									<p class="source-line">
-										${format(t.sourceRelease, { release: source.release })} ·
-										${format(t.sourceRetrieved, { retrieved: source.retrieved })}
-									</p>
-									<p class="source-line">
-										${format(t.sourceLicense, { license: source.license })}
-									</p>
-									<a
-										class="source-link"
-										href=${source.url}
-										target="_blank"
-										rel="noreferrer noopener"
-									>${source.url}</a>
-								</div>
-							`;
-						})}
-					</sl-details>
+					<p class="details-hint">${t.detailsHint} ${conditionsText(language, this.#conditions)}</p>
 				</div>
 			</div>
+		`;
+	}
+
+	/**
+	 * Renders the info dialog with the sources and the model notes.
+	 *
+	 * The sources are global, not per element, so they sit behind one button in
+	 * the toolbar instead of in the detail card. Each source carries its release
+	 * as a badge and its licence and retrieval date as tags, which keeps the
+	 * block scannable while the attribution and the URL stay in running text.
+	 *
+	 * @param t - Interface strings.
+	 * @param language - Interface language.
+	 * @returns The dialog, closed unless the info button was pressed.
+	 */
+	#renderInfo(t: Strings, language: Language) {
+		return html`
+			<sl-dialog
+				class="info"
+				label=${t.infoLabel}
+				?open=${this.#infoOpen}
+				@sl-after-hide=${this.#onInfoHide}
+			>
+				<p class="info-intro">${t.infoIntro}</p>
+				<section class="info-section">
+					<h3>${t.infoSources}</h3>
+					${sourceList().map(source => html`
+						<article class="info-source">
+							<p class="info-source-title">${source.publisher} — ${source.title}</p>
+							<div class="info-source-meta">
+								<sl-badge variant="neutral" pill>
+									${format(t.sourceRelease, { release: source.release })}
+								</sl-badge>
+								<sl-tag size="small" variant="neutral">
+									${format(t.sourceLicense, { license: source.license })}
+								</sl-tag>
+								<sl-tag size="small" variant="neutral">
+									${format(t.sourceRetrieved, { retrieved: source.retrieved })}
+								</sl-tag>
+							</div>
+							<p class="info-source-text">
+								${t.infoFields}: ${source.fields.map(field => sourceFieldText(field, t)).join(", ")}
+							</p>
+							<p class="info-source-text">${source.attribution}</p>
+							<a
+								class="info-source-link"
+								href=${source.url}
+								target="_blank"
+								rel="noreferrer noopener"
+							>${source.url}</a>
+						</article>
+					`)}
+				</section>
+				<section class="info-section">
+					<h3>${t.infoNotes}</h3>
+					<p class="info-note">
+						${format(t.infoConditions, { conditions: conditionsText(language) })}
+					</p>
+					<p class="info-note">${t.infoPhaseModel}</p>
+					<p class="info-note">${t.infoDiscovery}</p>
+				</section>
+				<sl-button slot="footer" variant="primary" @click=${() => { this.#infoOpen = false; }}>
+					${t.infoClose}
+				</sl-button>
+			</sl-dialog>
 		`;
 	}
 
@@ -956,11 +1236,14 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		return html`
 			<div class="widget">
 				${this.#renderToolbar(t, language)}
+				${this.#renderModes(t, language)}
 				<p class="result-count" aria-live="polite">${this.#renderCount(t, matches.length)}</p>
+				${this.#renderStateLegend(t)}
 				${resolved === "list"
 					? this.#renderList(t, language, matches, details)
 					: this.#renderGrid(t, language, matching, details)}
 				${this.#renderPrintOverview(t, language, element)}
+				${this.#renderInfo(t, language)}
 			</div>
 		`;
 	}

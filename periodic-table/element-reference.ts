@@ -92,6 +92,26 @@ export type ElementBlock = "s" | "p" | "d" | "f";
 /** Aggregate state of the elemental substance at the bundle conditions. */
 export type ElementPhase = "solid" | "liquid" | "gas";
 
+/**
+ * When an element became known.
+ *
+ * `year` carries the year the source names together with the person it credits,
+ * `antiquity` marks the eleven metals and nonmetals that have been in use since
+ * before any recorded discovery, and `unavailable` means the source says
+ * nothing. The distinction matters for the discovery mode: an element of
+ * antiquity is known at every year, while an element without any record cannot
+ * be placed on the timeline at all.
+ */
+export type ElementDiscovery =
+	| {
+			readonly kind: "year";
+			readonly year: number;
+			readonly by?: string;
+			readonly provenance: Provenance;
+	  }
+	| { readonly kind: "antiquity"; readonly provenance: Provenance }
+	| { readonly kind: "unavailable"; readonly provenance?: Provenance };
+
 /** One element of the reference bundle. */
 export interface ElementReference {
 	/** Atomic number, 1–118. */
@@ -118,6 +138,20 @@ export interface ElementReference {
 	readonly shells: readonly number[];
 	/** Aggregate state at the bundle conditions. */
 	readonly phase: DataValue<ElementPhase>;
+	/** Melting point in kelvin at 1 bar. */
+	readonly melting: DataValue<number>;
+	/** Boiling point in kelvin at 1 bar. */
+	readonly boiling: DataValue<number>;
+	/**
+	 * Sublimation point in kelvin at 1 bar.
+	 *
+	 * Only carbon and arsenic carry one: they pass from solid to gas without a
+	 * liquid phase at standard pressure, so they have neither a melting nor a
+	 * boiling point.
+	 */
+	readonly sublimation: DataValue<number>;
+	/** When the element became known, see {@link ElementDiscovery}. */
+	readonly discovery: ElementDiscovery;
 }
 
 /** Localised label of a teaching category. */
@@ -148,6 +182,8 @@ export interface PeriodicTableSource {
 	readonly attribution: string;
 	readonly input: string;
 	readonly sha256: string;
+	/** Fields the bundle takes from this source, as declared in `sources.json`. */
+	readonly fields: readonly string[];
 }
 
 /** Conditions the phase values refer to. */

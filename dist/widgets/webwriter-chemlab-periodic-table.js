@@ -822,10 +822,10 @@ __publicField2(LitElementWw, "options", {});
 __publicField2(LitElementWw, "actions", {});
 
 // node_modules/@lit/reactive-element/decorators/custom-element.js
-var t2 = (t7) => (e13, o11) => {
+var t2 = (t8) => (e13, o11) => {
   void 0 !== o11 ? o11.addInitializer((() => {
-    customElements.define(t7, e13);
-  })) : customElements.define(t7, e13);
+    customElements.define(t8, e13);
+  })) : customElements.define(t8, e13);
 };
 
 // node_modules/@lit/reactive-element/css-tag.js
@@ -834,44 +834,44 @@ var e3 = t3.ShadowRoot && (void 0 === t3.ShadyCSS || t3.ShadyCSS.nativeShadow) &
 var s2 = Symbol();
 var o4 = /* @__PURE__ */ new WeakMap();
 var n5 = class {
-  constructor(t7, e13, o11) {
+  constructor(t8, e13, o11) {
     if (this._$cssResult$ = true, o11 !== s2) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
-    this.cssText = t7, this.t = e13;
+    this.cssText = t8, this.t = e13;
   }
   get styleSheet() {
-    let t7 = this.o;
+    let t8 = this.o;
     const s4 = this.t;
-    if (e3 && void 0 === t7) {
+    if (e3 && void 0 === t8) {
       const e13 = void 0 !== s4 && 1 === s4.length;
-      e13 && (t7 = o4.get(s4)), void 0 === t7 && ((this.o = t7 = new CSSStyleSheet()).replaceSync(this.cssText), e13 && o4.set(s4, t7));
+      e13 && (t8 = o4.get(s4)), void 0 === t8 && ((this.o = t8 = new CSSStyleSheet()).replaceSync(this.cssText), e13 && o4.set(s4, t8));
     }
-    return t7;
+    return t8;
   }
   toString() {
     return this.cssText;
   }
 };
-var r4 = (t7) => new n5("string" == typeof t7 ? t7 : t7 + "", void 0, s2);
-var i = (t7, ...e13) => {
-  const o11 = 1 === t7.length ? t7[0] : e13.reduce(((e14, s4, o12) => e14 + ((t8) => {
-    if (true === t8._$cssResult$) return t8.cssText;
-    if ("number" == typeof t8) return t8;
-    throw Error("Value passed to 'css' function must be a 'css' function result: " + t8 + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
-  })(s4) + t7[o12 + 1]), t7[0]);
-  return new n5(o11, t7, s2);
+var r4 = (t8) => new n5("string" == typeof t8 ? t8 : t8 + "", void 0, s2);
+var i = (t8, ...e13) => {
+  const o11 = 1 === t8.length ? t8[0] : e13.reduce(((e14, s4, o12) => e14 + ((t9) => {
+    if (true === t9._$cssResult$) return t9.cssText;
+    if ("number" == typeof t9) return t9;
+    throw Error("Value passed to 'css' function must be a 'css' function result: " + t9 + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
+  })(s4) + t8[o12 + 1]), t8[0]);
+  return new n5(o11, t8, s2);
 };
 var S3 = (s4, o11) => {
-  if (e3) s4.adoptedStyleSheets = o11.map(((t7) => t7 instanceof CSSStyleSheet ? t7 : t7.styleSheet));
+  if (e3) s4.adoptedStyleSheets = o11.map(((t8) => t8 instanceof CSSStyleSheet ? t8 : t8.styleSheet));
   else for (const e13 of o11) {
     const o12 = document.createElement("style"), n10 = t3.litNonce;
     void 0 !== n10 && o12.setAttribute("nonce", n10), o12.textContent = e13.cssText, s4.appendChild(o12);
   }
 };
-var c4 = e3 ? (t7) => t7 : (t7) => t7 instanceof CSSStyleSheet ? ((t8) => {
+var c4 = e3 ? (t8) => t8 : (t8) => t8 instanceof CSSStyleSheet ? ((t9) => {
   let e13 = "";
-  for (const s4 of t8.cssRules) e13 += s4.cssText;
+  for (const s4 of t9.cssRules) e13 += s4.cssText;
   return r4(e13);
-})(t7) : t7;
+})(t8) : t8;
 
 // node_modules/@lit/reactive-element/reactive-element.js
 var { is: i3, defineProperty: e4, getOwnPropertyDescriptor: r5, getOwnPropertyNames: h4, getOwnPropertySymbols: o5, getPrototypeOf: n6 } = Object;
@@ -879,88 +879,88 @@ var a2 = globalThis;
 var c5 = a2.trustedTypes;
 var l2 = c5 ? c5.emptyScript : "";
 var p2 = a2.reactiveElementPolyfillSupport;
-var d2 = (t7, s4) => t7;
-var u2 = { toAttribute(t7, s4) {
+var d2 = (t8, s4) => t8;
+var u2 = { toAttribute(t8, s4) {
   switch (s4) {
     case Boolean:
-      t7 = t7 ? l2 : null;
+      t8 = t8 ? l2 : null;
       break;
     case Object:
     case Array:
-      t7 = null == t7 ? t7 : JSON.stringify(t7);
+      t8 = null == t8 ? t8 : JSON.stringify(t8);
   }
-  return t7;
-}, fromAttribute(t7, s4) {
-  let i9 = t7;
+  return t8;
+}, fromAttribute(t8, s4) {
+  let i9 = t8;
   switch (s4) {
     case Boolean:
-      i9 = null !== t7;
+      i9 = null !== t8;
       break;
     case Number:
-      i9 = null === t7 ? null : Number(t7);
+      i9 = null === t8 ? null : Number(t8);
       break;
     case Object:
     case Array:
       try {
-        i9 = JSON.parse(t7);
-      } catch (t8) {
+        i9 = JSON.parse(t8);
+      } catch (t9) {
         i9 = null;
       }
   }
   return i9;
 } };
-var f4 = (t7, s4) => !i3(t7, s4);
+var f4 = (t8, s4) => !i3(t8, s4);
 var y2 = { attribute: true, type: String, converter: u2, reflect: false, hasChanged: f4 };
 Symbol.metadata ??= Symbol("metadata"), a2.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
 var b2 = class extends HTMLElement {
-  static addInitializer(t7) {
-    this._$Ei(), (this.l ??= []).push(t7);
+  static addInitializer(t8) {
+    this._$Ei(), (this.l ??= []).push(t8);
   }
   static get observedAttributes() {
     return this.finalize(), this._$Eh && [...this._$Eh.keys()];
   }
-  static createProperty(t7, s4 = y2) {
-    if (s4.state && (s4.attribute = false), this._$Ei(), this.elementProperties.set(t7, s4), !s4.noAccessor) {
-      const i9 = Symbol(), r11 = this.getPropertyDescriptor(t7, i9, s4);
-      void 0 !== r11 && e4(this.prototype, t7, r11);
+  static createProperty(t8, s4 = y2) {
+    if (s4.state && (s4.attribute = false), this._$Ei(), this.elementProperties.set(t8, s4), !s4.noAccessor) {
+      const i9 = Symbol(), r11 = this.getPropertyDescriptor(t8, i9, s4);
+      void 0 !== r11 && e4(this.prototype, t8, r11);
     }
   }
-  static getPropertyDescriptor(t7, s4, i9) {
-    const { get: e13, set: h6 } = r5(this.prototype, t7) ?? { get() {
+  static getPropertyDescriptor(t8, s4, i9) {
+    const { get: e13, set: h6 } = r5(this.prototype, t8) ?? { get() {
       return this[s4];
-    }, set(t8) {
-      this[s4] = t8;
+    }, set(t9) {
+      this[s4] = t9;
     } };
     return { get() {
       return e13?.call(this);
     }, set(s5) {
       const r11 = e13?.call(this);
-      h6.call(this, s5), this.requestUpdate(t7, r11, i9);
+      h6.call(this, s5), this.requestUpdate(t8, r11, i9);
     }, configurable: true, enumerable: true };
   }
-  static getPropertyOptions(t7) {
-    return this.elementProperties.get(t7) ?? y2;
+  static getPropertyOptions(t8) {
+    return this.elementProperties.get(t8) ?? y2;
   }
   static _$Ei() {
     if (this.hasOwnProperty(d2("elementProperties"))) return;
-    const t7 = n6(this);
-    t7.finalize(), void 0 !== t7.l && (this.l = [...t7.l]), this.elementProperties = new Map(t7.elementProperties);
+    const t8 = n6(this);
+    t8.finalize(), void 0 !== t8.l && (this.l = [...t8.l]), this.elementProperties = new Map(t8.elementProperties);
   }
   static finalize() {
     if (this.hasOwnProperty(d2("finalized"))) return;
     if (this.finalized = true, this._$Ei(), this.hasOwnProperty(d2("properties"))) {
-      const t8 = this.properties, s4 = [...h4(t8), ...o5(t8)];
-      for (const i9 of s4) this.createProperty(i9, t8[i9]);
+      const t9 = this.properties, s4 = [...h4(t9), ...o5(t9)];
+      for (const i9 of s4) this.createProperty(i9, t9[i9]);
     }
-    const t7 = this[Symbol.metadata];
-    if (null !== t7) {
-      const s4 = litPropertyMetadata.get(t7);
-      if (void 0 !== s4) for (const [t8, i9] of s4) this.elementProperties.set(t8, i9);
+    const t8 = this[Symbol.metadata];
+    if (null !== t8) {
+      const s4 = litPropertyMetadata.get(t8);
+      if (void 0 !== s4) for (const [t9, i9] of s4) this.elementProperties.set(t9, i9);
     }
     this._$Eh = /* @__PURE__ */ new Map();
-    for (const [t8, s4] of this.elementProperties) {
-      const i9 = this._$Eu(t8, s4);
-      void 0 !== i9 && this._$Eh.set(i9, t8);
+    for (const [t9, s4] of this.elementProperties) {
+      const i9 = this._$Eu(t9, s4);
+      void 0 !== i9 && this._$Eh.set(i9, t9);
     }
     this.elementStyles = this.finalizeStyles(this.styles);
   }
@@ -972,75 +972,75 @@ var b2 = class extends HTMLElement {
     } else void 0 !== s4 && i9.push(c4(s4));
     return i9;
   }
-  static _$Eu(t7, s4) {
+  static _$Eu(t8, s4) {
     const i9 = s4.attribute;
-    return false === i9 ? void 0 : "string" == typeof i9 ? i9 : "string" == typeof t7 ? t7.toLowerCase() : void 0;
+    return false === i9 ? void 0 : "string" == typeof i9 ? i9 : "string" == typeof t8 ? t8.toLowerCase() : void 0;
   }
   constructor() {
     super(), this._$Ep = void 0, this.isUpdatePending = false, this.hasUpdated = false, this._$Em = null, this._$Ev();
   }
   _$Ev() {
-    this._$ES = new Promise(((t7) => this.enableUpdating = t7)), this._$AL = /* @__PURE__ */ new Map(), this._$E_(), this.requestUpdate(), this.constructor.l?.forEach(((t7) => t7(this)));
+    this._$ES = new Promise(((t8) => this.enableUpdating = t8)), this._$AL = /* @__PURE__ */ new Map(), this._$E_(), this.requestUpdate(), this.constructor.l?.forEach(((t8) => t8(this)));
   }
-  addController(t7) {
-    (this._$EO ??= /* @__PURE__ */ new Set()).add(t7), void 0 !== this.renderRoot && this.isConnected && t7.hostConnected?.();
+  addController(t8) {
+    (this._$EO ??= /* @__PURE__ */ new Set()).add(t8), void 0 !== this.renderRoot && this.isConnected && t8.hostConnected?.();
   }
-  removeController(t7) {
-    this._$EO?.delete(t7);
+  removeController(t8) {
+    this._$EO?.delete(t8);
   }
   _$E_() {
-    const t7 = /* @__PURE__ */ new Map(), s4 = this.constructor.elementProperties;
-    for (const i9 of s4.keys()) this.hasOwnProperty(i9) && (t7.set(i9, this[i9]), delete this[i9]);
-    t7.size > 0 && (this._$Ep = t7);
+    const t8 = /* @__PURE__ */ new Map(), s4 = this.constructor.elementProperties;
+    for (const i9 of s4.keys()) this.hasOwnProperty(i9) && (t8.set(i9, this[i9]), delete this[i9]);
+    t8.size > 0 && (this._$Ep = t8);
   }
   createRenderRoot() {
-    const t7 = this.shadowRoot ?? this.attachShadow(this.constructor.shadowRootOptions);
-    return S3(t7, this.constructor.elementStyles), t7;
+    const t8 = this.shadowRoot ?? this.attachShadow(this.constructor.shadowRootOptions);
+    return S3(t8, this.constructor.elementStyles), t8;
   }
   connectedCallback() {
-    this.renderRoot ??= this.createRenderRoot(), this.enableUpdating(true), this._$EO?.forEach(((t7) => t7.hostConnected?.()));
+    this.renderRoot ??= this.createRenderRoot(), this.enableUpdating(true), this._$EO?.forEach(((t8) => t8.hostConnected?.()));
   }
-  enableUpdating(t7) {
+  enableUpdating(t8) {
   }
   disconnectedCallback() {
-    this._$EO?.forEach(((t7) => t7.hostDisconnected?.()));
+    this._$EO?.forEach(((t8) => t8.hostDisconnected?.()));
   }
-  attributeChangedCallback(t7, s4, i9) {
-    this._$AK(t7, i9);
+  attributeChangedCallback(t8, s4, i9) {
+    this._$AK(t8, i9);
   }
-  _$EC(t7, s4) {
-    const i9 = this.constructor.elementProperties.get(t7), e13 = this.constructor._$Eu(t7, i9);
+  _$EC(t8, s4) {
+    const i9 = this.constructor.elementProperties.get(t8), e13 = this.constructor._$Eu(t8, i9);
     if (void 0 !== e13 && true === i9.reflect) {
       const r11 = (void 0 !== i9.converter?.toAttribute ? i9.converter : u2).toAttribute(s4, i9.type);
-      this._$Em = t7, null == r11 ? this.removeAttribute(e13) : this.setAttribute(e13, r11), this._$Em = null;
+      this._$Em = t8, null == r11 ? this.removeAttribute(e13) : this.setAttribute(e13, r11), this._$Em = null;
     }
   }
-  _$AK(t7, s4) {
-    const i9 = this.constructor, e13 = i9._$Eh.get(t7);
+  _$AK(t8, s4) {
+    const i9 = this.constructor, e13 = i9._$Eh.get(t8);
     if (void 0 !== e13 && this._$Em !== e13) {
-      const t8 = i9.getPropertyOptions(e13), r11 = "function" == typeof t8.converter ? { fromAttribute: t8.converter } : void 0 !== t8.converter?.fromAttribute ? t8.converter : u2;
-      this._$Em = e13, this[e13] = r11.fromAttribute(s4, t8.type), this._$Em = null;
+      const t9 = i9.getPropertyOptions(e13), r11 = "function" == typeof t9.converter ? { fromAttribute: t9.converter } : void 0 !== t9.converter?.fromAttribute ? t9.converter : u2;
+      this._$Em = e13, this[e13] = r11.fromAttribute(s4, t9.type), this._$Em = null;
     }
   }
-  requestUpdate(t7, s4, i9) {
-    if (void 0 !== t7) {
-      if (i9 ??= this.constructor.getPropertyOptions(t7), !(i9.hasChanged ?? f4)(this[t7], s4)) return;
-      this.P(t7, s4, i9);
+  requestUpdate(t8, s4, i9) {
+    if (void 0 !== t8) {
+      if (i9 ??= this.constructor.getPropertyOptions(t8), !(i9.hasChanged ?? f4)(this[t8], s4)) return;
+      this.P(t8, s4, i9);
     }
     false === this.isUpdatePending && (this._$ES = this._$ET());
   }
-  P(t7, s4, i9) {
-    this._$AL.has(t7) || this._$AL.set(t7, s4), true === i9.reflect && this._$Em !== t7 && (this._$Ej ??= /* @__PURE__ */ new Set()).add(t7);
+  P(t8, s4, i9) {
+    this._$AL.has(t8) || this._$AL.set(t8, s4), true === i9.reflect && this._$Em !== t8 && (this._$Ej ??= /* @__PURE__ */ new Set()).add(t8);
   }
   async _$ET() {
     this.isUpdatePending = true;
     try {
       await this._$ES;
-    } catch (t8) {
-      Promise.reject(t8);
+    } catch (t9) {
+      Promise.reject(t9);
     }
-    const t7 = this.scheduleUpdate();
-    return null != t7 && await t7, !this.isUpdatePending;
+    const t8 = this.scheduleUpdate();
+    return null != t8 && await t8, !this.isUpdatePending;
   }
   scheduleUpdate() {
     return this.performUpdate();
@@ -1049,25 +1049,25 @@ var b2 = class extends HTMLElement {
     if (!this.isUpdatePending) return;
     if (!this.hasUpdated) {
       if (this.renderRoot ??= this.createRenderRoot(), this._$Ep) {
-        for (const [t9, s5] of this._$Ep) this[t9] = s5;
+        for (const [t10, s5] of this._$Ep) this[t10] = s5;
         this._$Ep = void 0;
       }
-      const t8 = this.constructor.elementProperties;
-      if (t8.size > 0) for (const [s5, i9] of t8) true !== i9.wrapped || this._$AL.has(s5) || void 0 === this[s5] || this.P(s5, this[s5], i9);
+      const t9 = this.constructor.elementProperties;
+      if (t9.size > 0) for (const [s5, i9] of t9) true !== i9.wrapped || this._$AL.has(s5) || void 0 === this[s5] || this.P(s5, this[s5], i9);
     }
-    let t7 = false;
+    let t8 = false;
     const s4 = this._$AL;
     try {
-      t7 = this.shouldUpdate(s4), t7 ? (this.willUpdate(s4), this._$EO?.forEach(((t8) => t8.hostUpdate?.())), this.update(s4)) : this._$EU();
+      t8 = this.shouldUpdate(s4), t8 ? (this.willUpdate(s4), this._$EO?.forEach(((t9) => t9.hostUpdate?.())), this.update(s4)) : this._$EU();
     } catch (s5) {
-      throw t7 = false, this._$EU(), s5;
+      throw t8 = false, this._$EU(), s5;
     }
-    t7 && this._$AE(s4);
+    t8 && this._$AE(s4);
   }
-  willUpdate(t7) {
+  willUpdate(t8) {
   }
-  _$AE(t7) {
-    this._$EO?.forEach(((t8) => t8.hostUpdated?.())), this.hasUpdated || (this.hasUpdated = true, this.firstUpdated(t7)), this.updated(t7);
+  _$AE(t8) {
+    this._$EO?.forEach(((t9) => t9.hostUpdated?.())), this.hasUpdated || (this.hasUpdated = true, this.firstUpdated(t8)), this.updated(t8);
   }
   _$EU() {
     this._$AL = /* @__PURE__ */ new Map(), this.isUpdatePending = false;
@@ -1078,47 +1078,47 @@ var b2 = class extends HTMLElement {
   getUpdateComplete() {
     return this._$ES;
   }
-  shouldUpdate(t7) {
+  shouldUpdate(t8) {
     return true;
   }
-  update(t7) {
-    this._$Ej &&= this._$Ej.forEach(((t8) => this._$EC(t8, this[t8]))), this._$EU();
+  update(t8) {
+    this._$Ej &&= this._$Ej.forEach(((t9) => this._$EC(t9, this[t9]))), this._$EU();
   }
-  updated(t7) {
+  updated(t8) {
   }
-  firstUpdated(t7) {
+  firstUpdated(t8) {
   }
 };
 b2.elementStyles = [], b2.shadowRootOptions = { mode: "open" }, b2[d2("elementProperties")] = /* @__PURE__ */ new Map(), b2[d2("finalized")] = /* @__PURE__ */ new Map(), p2?.({ ReactiveElement: b2 }), (a2.reactiveElementVersions ??= []).push("2.0.4");
 
 // node_modules/@lit/reactive-element/decorators/property.js
 var o6 = { attribute: true, type: String, converter: u2, reflect: false, hasChanged: f4 };
-var r6 = (t7 = o6, e13, r11) => {
+var r6 = (t8 = o6, e13, r11) => {
   const { kind: n10, metadata: i9 } = r11;
   let s4 = globalThis.litPropertyMetadata.get(i9);
-  if (void 0 === s4 && globalThis.litPropertyMetadata.set(i9, s4 = /* @__PURE__ */ new Map()), s4.set(r11.name, t7), "accessor" === n10) {
+  if (void 0 === s4 && globalThis.litPropertyMetadata.set(i9, s4 = /* @__PURE__ */ new Map()), s4.set(r11.name, t8), "accessor" === n10) {
     const { name: o11 } = r11;
     return { set(r12) {
       const n11 = e13.get.call(this);
-      e13.set.call(this, r12), this.requestUpdate(o11, n11, t7);
+      e13.set.call(this, r12), this.requestUpdate(o11, n11, t8);
     }, init(e14) {
-      return void 0 !== e14 && this.P(o11, void 0, t7), e14;
+      return void 0 !== e14 && this.P(o11, void 0, t8), e14;
     } };
   }
   if ("setter" === n10) {
     const { name: o11 } = r11;
     return function(r12) {
       const n11 = this[o11];
-      e13.call(this, r12), this.requestUpdate(o11, n11, t7);
+      e13.call(this, r12), this.requestUpdate(o11, n11, t8);
     };
   }
   throw Error("Unsupported decorator location: " + n10);
 };
-function n7(t7) {
-  return (e13, o11) => "object" == typeof o11 ? r6(t7, e13, o11) : ((t8, e14, o12) => {
+function n7(t8) {
+  return (e13, o11) => "object" == typeof o11 ? r6(t8, e13, o11) : ((t9, e14, o12) => {
     const r11 = e14.hasOwnProperty(o12);
-    return e14.constructor.createProperty(o12, r11 ? { ...t8, wrapped: true } : t8), r11 ? Object.getOwnPropertyDescriptor(e14, o12) : void 0;
-  })(t7, e13, o11);
+    return e14.constructor.createProperty(o12, r11 ? { ...t9, wrapped: true } : t9), r11 ? Object.getOwnPropertyDescriptor(e14, o12) : void 0;
+  })(t8, e13, o11);
 }
 
 // node_modules/@lit/reactive-element/decorators/state.js
@@ -1126,25 +1126,33 @@ function r7(r11) {
   return n7({ ...r11, state: true, attribute: false });
 }
 
+// node_modules/@lit/reactive-element/decorators/event-options.js
+function t4(t8) {
+  return (n10, o11) => {
+    const c8 = "function" == typeof n10 ? n10 : n10[o11];
+    Object.assign(c8, t8);
+  };
+}
+
 // node_modules/@lit/reactive-element/decorators/base.js
-var e5 = (e13, t7, c8) => (c8.configurable = true, c8.enumerable = true, Reflect.decorate && "object" != typeof t7 && Object.defineProperty(e13, t7, c8), c8);
+var e5 = (e13, t8, c8) => (c8.configurable = true, c8.enumerable = true, Reflect.decorate && "object" != typeof t8 && Object.defineProperty(e13, t8, c8), c8);
 
 // node_modules/@lit/reactive-element/decorators/query.js
 function e6(e13, r11) {
   return (n10, s4, i9) => {
-    const o11 = (t7) => t7.renderRoot?.querySelector(e13) ?? null;
+    const o11 = (t8) => t8.renderRoot?.querySelector(e13) ?? null;
     if (r11) {
       const { get: e14, set: r12 } = "object" == typeof s4 ? n10 : i9 ?? (() => {
-        const t7 = Symbol();
+        const t8 = Symbol();
         return { get() {
-          return this[t7];
+          return this[t8];
         }, set(e15) {
-          this[t7] = e15;
+          this[t8] = e15;
         } };
       })();
       return e5(n10, s4, { get() {
-        let t7 = e14.call(this);
-        return void 0 === t7 && (t7 = o11(this), (null !== t7 || this.hasUpdated) && r12.call(this, t7)), t7;
+        let t8 = e14.call(this);
+        return void 0 === t8 && (t8 = o11(this), (null !== t8 || this.hasUpdated) && r12.call(this, t8)), t8;
       } });
     }
     return e5(n10, s4, { get() {
@@ -1154,18 +1162,18 @@ function e6(e13, r11) {
 }
 
 // node_modules/lit-html/lit-html.js
-var t4 = globalThis;
-var i4 = t4.trustedTypes;
-var s3 = i4 ? i4.createPolicy("lit-html", { createHTML: (t7) => t7 }) : void 0;
+var t5 = globalThis;
+var i4 = t5.trustedTypes;
+var s3 = i4 ? i4.createPolicy("lit-html", { createHTML: (t8) => t8 }) : void 0;
 var e7 = "$lit$";
 var h5 = `lit$${Math.random().toFixed(9).slice(2)}$`;
 var o7 = "?" + h5;
 var n8 = `<${o7}>`;
 var r8 = document;
 var l3 = () => r8.createComment("");
-var c6 = (t7) => null === t7 || "object" != typeof t7 && "function" != typeof t7;
+var c6 = (t8) => null === t8 || "object" != typeof t8 && "function" != typeof t8;
 var a3 = Array.isArray;
-var u3 = (t7) => a3(t7) || "function" == typeof t7?.[Symbol.iterator];
+var u3 = (t8) => a3(t8) || "function" == typeof t8?.[Symbol.iterator];
 var d3 = "[ 	\n\f\r]";
 var f5 = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g;
 var v2 = /-->/g;
@@ -1175,7 +1183,7 @@ var m2 = RegExp(`>|${d3}(?:([^\\s"'>=/]+)(${d3}*=${d3}*(?:[^
 var p3 = /'/g;
 var g2 = /"/g;
 var $2 = /^(?:script|style|textarea|title)$/i;
-var y3 = (t7) => (i9, ...s4) => ({ _$litType$: t7, strings: i9, values: s4 });
+var y3 = (t8) => (i9, ...s4) => ({ _$litType$: t8, strings: i9, values: s4 });
 var x2 = y3(1);
 var b3 = y3(2);
 var w2 = y3(3);
@@ -1183,68 +1191,68 @@ var T2 = Symbol.for("lit-noChange");
 var E2 = Symbol.for("lit-nothing");
 var A = /* @__PURE__ */ new WeakMap();
 var C = r8.createTreeWalker(r8, 129);
-function P2(t7, i9) {
-  if (!a3(t7) || !t7.hasOwnProperty("raw")) throw Error("invalid template strings array");
+function P2(t8, i9) {
+  if (!a3(t8) || !t8.hasOwnProperty("raw")) throw Error("invalid template strings array");
   return void 0 !== s3 ? s3.createHTML(i9) : i9;
 }
-var V2 = (t7, i9) => {
-  const s4 = t7.length - 1, o11 = [];
+var V2 = (t8, i9) => {
+  const s4 = t8.length - 1, o11 = [];
   let r11, l6 = 2 === i9 ? "<svg>" : 3 === i9 ? "<math>" : "", c8 = f5;
   for (let i10 = 0; i10 < s4; i10++) {
-    const s5 = t7[i10];
+    const s5 = t8[i10];
     let a5, u6, d4 = -1, y4 = 0;
     for (; y4 < s5.length && (c8.lastIndex = y4, u6 = c8.exec(s5), null !== u6); ) y4 = c8.lastIndex, c8 === f5 ? "!--" === u6[1] ? c8 = v2 : void 0 !== u6[1] ? c8 = _2 : void 0 !== u6[2] ? ($2.test(u6[2]) && (r11 = RegExp("</" + u6[2], "g")), c8 = m2) : void 0 !== u6[3] && (c8 = m2) : c8 === m2 ? ">" === u6[0] ? (c8 = r11 ?? f5, d4 = -1) : void 0 === u6[1] ? d4 = -2 : (d4 = c8.lastIndex - u6[2].length, a5 = u6[1], c8 = void 0 === u6[3] ? m2 : '"' === u6[3] ? g2 : p3) : c8 === g2 || c8 === p3 ? c8 = m2 : c8 === v2 || c8 === _2 ? c8 = f5 : (c8 = m2, r11 = void 0);
-    const x3 = c8 === m2 && t7[i10 + 1].startsWith("/>") ? " " : "";
+    const x3 = c8 === m2 && t8[i10 + 1].startsWith("/>") ? " " : "";
     l6 += c8 === f5 ? s5 + n8 : d4 >= 0 ? (o11.push(a5), s5.slice(0, d4) + e7 + s5.slice(d4) + h5 + x3) : s5 + h5 + (-2 === d4 ? i10 : x3);
   }
-  return [P2(t7, l6 + (t7[s4] || "<?>") + (2 === i9 ? "</svg>" : 3 === i9 ? "</math>" : "")), o11];
+  return [P2(t8, l6 + (t8[s4] || "<?>") + (2 === i9 ? "</svg>" : 3 === i9 ? "</math>" : "")), o11];
 };
 var N2 = class _N {
-  constructor({ strings: t7, _$litType$: s4 }, n10) {
+  constructor({ strings: t8, _$litType$: s4 }, n10) {
     let r11;
     this.parts = [];
     let c8 = 0, a5 = 0;
-    const u6 = t7.length - 1, d4 = this.parts, [f7, v3] = V2(t7, s4);
+    const u6 = t8.length - 1, d4 = this.parts, [f7, v3] = V2(t8, s4);
     if (this.el = _N.createElement(f7, n10), C.currentNode = this.el.content, 2 === s4 || 3 === s4) {
-      const t8 = this.el.content.firstChild;
-      t8.replaceWith(...t8.childNodes);
+      const t9 = this.el.content.firstChild;
+      t9.replaceWith(...t9.childNodes);
     }
     for (; null !== (r11 = C.nextNode()) && d4.length < u6; ) {
       if (1 === r11.nodeType) {
-        if (r11.hasAttributes()) for (const t8 of r11.getAttributeNames()) if (t8.endsWith(e7)) {
-          const i9 = v3[a5++], s5 = r11.getAttribute(t8).split(h5), e13 = /([.?@])?(.*)/.exec(i9);
-          d4.push({ type: 1, index: c8, name: e13[2], strings: s5, ctor: "." === e13[1] ? H : "?" === e13[1] ? I2 : "@" === e13[1] ? L : k2 }), r11.removeAttribute(t8);
-        } else t8.startsWith(h5) && (d4.push({ type: 6, index: c8 }), r11.removeAttribute(t8));
+        if (r11.hasAttributes()) for (const t9 of r11.getAttributeNames()) if (t9.endsWith(e7)) {
+          const i9 = v3[a5++], s5 = r11.getAttribute(t9).split(h5), e13 = /([.?@])?(.*)/.exec(i9);
+          d4.push({ type: 1, index: c8, name: e13[2], strings: s5, ctor: "." === e13[1] ? H : "?" === e13[1] ? I2 : "@" === e13[1] ? L : k2 }), r11.removeAttribute(t9);
+        } else t9.startsWith(h5) && (d4.push({ type: 6, index: c8 }), r11.removeAttribute(t9));
         if ($2.test(r11.tagName)) {
-          const t8 = r11.textContent.split(h5), s5 = t8.length - 1;
+          const t9 = r11.textContent.split(h5), s5 = t9.length - 1;
           if (s5 > 0) {
             r11.textContent = i4 ? i4.emptyScript : "";
-            for (let i9 = 0; i9 < s5; i9++) r11.append(t8[i9], l3()), C.nextNode(), d4.push({ type: 2, index: ++c8 });
-            r11.append(t8[s5], l3());
+            for (let i9 = 0; i9 < s5; i9++) r11.append(t9[i9], l3()), C.nextNode(), d4.push({ type: 2, index: ++c8 });
+            r11.append(t9[s5], l3());
           }
         }
       } else if (8 === r11.nodeType) if (r11.data === o7) d4.push({ type: 2, index: c8 });
       else {
-        let t8 = -1;
-        for (; -1 !== (t8 = r11.data.indexOf(h5, t8 + 1)); ) d4.push({ type: 7, index: c8 }), t8 += h5.length - 1;
+        let t9 = -1;
+        for (; -1 !== (t9 = r11.data.indexOf(h5, t9 + 1)); ) d4.push({ type: 7, index: c8 }), t9 += h5.length - 1;
       }
       c8++;
     }
   }
-  static createElement(t7, i9) {
+  static createElement(t8, i9) {
     const s4 = r8.createElement("template");
-    return s4.innerHTML = t7, s4;
+    return s4.innerHTML = t8, s4;
   }
 };
-function S4(t7, i9, s4 = t7, e13) {
+function S4(t8, i9, s4 = t8, e13) {
   if (i9 === T2) return i9;
   let h6 = void 0 !== e13 ? s4._$Co?.[e13] : s4._$Cl;
   const o11 = c6(i9) ? void 0 : i9._$litDirective$;
-  return h6?.constructor !== o11 && (h6?._$AO?.(false), void 0 === o11 ? h6 = void 0 : (h6 = new o11(t7), h6._$AT(t7, s4, e13)), void 0 !== e13 ? (s4._$Co ??= [])[e13] = h6 : s4._$Cl = h6), void 0 !== h6 && (i9 = S4(t7, h6._$AS(t7, i9.values), h6, e13)), i9;
+  return h6?.constructor !== o11 && (h6?._$AO?.(false), void 0 === o11 ? h6 = void 0 : (h6 = new o11(t8), h6._$AT(t8, s4, e13)), void 0 !== e13 ? (s4._$Co ??= [])[e13] = h6 : s4._$Cl = h6), void 0 !== h6 && (i9 = S4(t8, h6._$AS(t8, i9.values), h6, e13)), i9;
 }
 var M2 = class {
-  constructor(t7, i9) {
-    this._$AV = [], this._$AN = void 0, this._$AD = t7, this._$AM = i9;
+  constructor(t8, i9) {
+    this._$AV = [], this._$AN = void 0, this._$AD = t8, this._$AM = i9;
   }
   get parentNode() {
     return this._$AM.parentNode;
@@ -1252,35 +1260,35 @@ var M2 = class {
   get _$AU() {
     return this._$AM._$AU;
   }
-  u(t7) {
-    const { el: { content: i9 }, parts: s4 } = this._$AD, e13 = (t7?.creationScope ?? r8).importNode(i9, true);
+  u(t8) {
+    const { el: { content: i9 }, parts: s4 } = this._$AD, e13 = (t8?.creationScope ?? r8).importNode(i9, true);
     C.currentNode = e13;
     let h6 = C.nextNode(), o11 = 0, n10 = 0, l6 = s4[0];
     for (; void 0 !== l6; ) {
       if (o11 === l6.index) {
         let i10;
-        2 === l6.type ? i10 = new R2(h6, h6.nextSibling, this, t7) : 1 === l6.type ? i10 = new l6.ctor(h6, l6.name, l6.strings, this, t7) : 6 === l6.type && (i10 = new z2(h6, this, t7)), this._$AV.push(i10), l6 = s4[++n10];
+        2 === l6.type ? i10 = new R2(h6, h6.nextSibling, this, t8) : 1 === l6.type ? i10 = new l6.ctor(h6, l6.name, l6.strings, this, t8) : 6 === l6.type && (i10 = new z2(h6, this, t8)), this._$AV.push(i10), l6 = s4[++n10];
       }
       o11 !== l6?.index && (h6 = C.nextNode(), o11++);
     }
     return C.currentNode = r8, e13;
   }
-  p(t7) {
+  p(t8) {
     let i9 = 0;
-    for (const s4 of this._$AV) void 0 !== s4 && (void 0 !== s4.strings ? (s4._$AI(t7, s4, i9), i9 += s4.strings.length - 2) : s4._$AI(t7[i9])), i9++;
+    for (const s4 of this._$AV) void 0 !== s4 && (void 0 !== s4.strings ? (s4._$AI(t8, s4, i9), i9 += s4.strings.length - 2) : s4._$AI(t8[i9])), i9++;
   }
 };
 var R2 = class _R {
   get _$AU() {
     return this._$AM?._$AU ?? this._$Cv;
   }
-  constructor(t7, i9, s4, e13) {
-    this.type = 2, this._$AH = E2, this._$AN = void 0, this._$AA = t7, this._$AB = i9, this._$AM = s4, this.options = e13, this._$Cv = e13?.isConnected ?? true;
+  constructor(t8, i9, s4, e13) {
+    this.type = 2, this._$AH = E2, this._$AN = void 0, this._$AA = t8, this._$AB = i9, this._$AM = s4, this.options = e13, this._$Cv = e13?.isConnected ?? true;
   }
   get parentNode() {
-    let t7 = this._$AA.parentNode;
+    let t8 = this._$AA.parentNode;
     const i9 = this._$AM;
-    return void 0 !== i9 && 11 === t7?.nodeType && (t7 = i9.parentNode), t7;
+    return void 0 !== i9 && 11 === t8?.nodeType && (t8 = i9.parentNode), t8;
   }
   get startNode() {
     return this._$AA;
@@ -1288,45 +1296,45 @@ var R2 = class _R {
   get endNode() {
     return this._$AB;
   }
-  _$AI(t7, i9 = this) {
-    t7 = S4(this, t7, i9), c6(t7) ? t7 === E2 || null == t7 || "" === t7 ? (this._$AH !== E2 && this._$AR(), this._$AH = E2) : t7 !== this._$AH && t7 !== T2 && this._(t7) : void 0 !== t7._$litType$ ? this.$(t7) : void 0 !== t7.nodeType ? this.T(t7) : u3(t7) ? this.k(t7) : this._(t7);
+  _$AI(t8, i9 = this) {
+    t8 = S4(this, t8, i9), c6(t8) ? t8 === E2 || null == t8 || "" === t8 ? (this._$AH !== E2 && this._$AR(), this._$AH = E2) : t8 !== this._$AH && t8 !== T2 && this._(t8) : void 0 !== t8._$litType$ ? this.$(t8) : void 0 !== t8.nodeType ? this.T(t8) : u3(t8) ? this.k(t8) : this._(t8);
   }
-  O(t7) {
-    return this._$AA.parentNode.insertBefore(t7, this._$AB);
+  O(t8) {
+    return this._$AA.parentNode.insertBefore(t8, this._$AB);
   }
-  T(t7) {
-    this._$AH !== t7 && (this._$AR(), this._$AH = this.O(t7));
+  T(t8) {
+    this._$AH !== t8 && (this._$AR(), this._$AH = this.O(t8));
   }
-  _(t7) {
-    this._$AH !== E2 && c6(this._$AH) ? this._$AA.nextSibling.data = t7 : this.T(r8.createTextNode(t7)), this._$AH = t7;
+  _(t8) {
+    this._$AH !== E2 && c6(this._$AH) ? this._$AA.nextSibling.data = t8 : this.T(r8.createTextNode(t8)), this._$AH = t8;
   }
-  $(t7) {
-    const { values: i9, _$litType$: s4 } = t7, e13 = "number" == typeof s4 ? this._$AC(t7) : (void 0 === s4.el && (s4.el = N2.createElement(P2(s4.h, s4.h[0]), this.options)), s4);
+  $(t8) {
+    const { values: i9, _$litType$: s4 } = t8, e13 = "number" == typeof s4 ? this._$AC(t8) : (void 0 === s4.el && (s4.el = N2.createElement(P2(s4.h, s4.h[0]), this.options)), s4);
     if (this._$AH?._$AD === e13) this._$AH.p(i9);
     else {
-      const t8 = new M2(e13, this), s5 = t8.u(this.options);
-      t8.p(i9), this.T(s5), this._$AH = t8;
+      const t9 = new M2(e13, this), s5 = t9.u(this.options);
+      t9.p(i9), this.T(s5), this._$AH = t9;
     }
   }
-  _$AC(t7) {
-    let i9 = A.get(t7.strings);
-    return void 0 === i9 && A.set(t7.strings, i9 = new N2(t7)), i9;
+  _$AC(t8) {
+    let i9 = A.get(t8.strings);
+    return void 0 === i9 && A.set(t8.strings, i9 = new N2(t8)), i9;
   }
-  k(t7) {
+  k(t8) {
     a3(this._$AH) || (this._$AH = [], this._$AR());
     const i9 = this._$AH;
     let s4, e13 = 0;
-    for (const h6 of t7) e13 === i9.length ? i9.push(s4 = new _R(this.O(l3()), this.O(l3()), this, this.options)) : s4 = i9[e13], s4._$AI(h6), e13++;
+    for (const h6 of t8) e13 === i9.length ? i9.push(s4 = new _R(this.O(l3()), this.O(l3()), this, this.options)) : s4 = i9[e13], s4._$AI(h6), e13++;
     e13 < i9.length && (this._$AR(s4 && s4._$AB.nextSibling, e13), i9.length = e13);
   }
-  _$AR(t7 = this._$AA.nextSibling, i9) {
-    for (this._$AP?.(false, true, i9); t7 && t7 !== this._$AB; ) {
-      const i10 = t7.nextSibling;
-      t7.remove(), t7 = i10;
+  _$AR(t8 = this._$AA.nextSibling, i9) {
+    for (this._$AP?.(false, true, i9); t8 && t8 !== this._$AB; ) {
+      const i10 = t8.nextSibling;
+      t8.remove(), t8 = i10;
     }
   }
-  setConnected(t7) {
-    void 0 === this._$AM && (this._$Cv = t7, this._$AP?.(t7));
+  setConnected(t8) {
+    void 0 === this._$AM && (this._$Cv = t8, this._$AP?.(t8));
   }
 };
 var k2 = class {
@@ -1336,75 +1344,75 @@ var k2 = class {
   get _$AU() {
     return this._$AM._$AU;
   }
-  constructor(t7, i9, s4, e13, h6) {
-    this.type = 1, this._$AH = E2, this._$AN = void 0, this.element = t7, this.name = i9, this._$AM = e13, this.options = h6, s4.length > 2 || "" !== s4[0] || "" !== s4[1] ? (this._$AH = Array(s4.length - 1).fill(new String()), this.strings = s4) : this._$AH = E2;
+  constructor(t8, i9, s4, e13, h6) {
+    this.type = 1, this._$AH = E2, this._$AN = void 0, this.element = t8, this.name = i9, this._$AM = e13, this.options = h6, s4.length > 2 || "" !== s4[0] || "" !== s4[1] ? (this._$AH = Array(s4.length - 1).fill(new String()), this.strings = s4) : this._$AH = E2;
   }
-  _$AI(t7, i9 = this, s4, e13) {
+  _$AI(t8, i9 = this, s4, e13) {
     const h6 = this.strings;
     let o11 = false;
-    if (void 0 === h6) t7 = S4(this, t7, i9, 0), o11 = !c6(t7) || t7 !== this._$AH && t7 !== T2, o11 && (this._$AH = t7);
+    if (void 0 === h6) t8 = S4(this, t8, i9, 0), o11 = !c6(t8) || t8 !== this._$AH && t8 !== T2, o11 && (this._$AH = t8);
     else {
-      const e14 = t7;
+      const e14 = t8;
       let n10, r11;
-      for (t7 = h6[0], n10 = 0; n10 < h6.length - 1; n10++) r11 = S4(this, e14[s4 + n10], i9, n10), r11 === T2 && (r11 = this._$AH[n10]), o11 ||= !c6(r11) || r11 !== this._$AH[n10], r11 === E2 ? t7 = E2 : t7 !== E2 && (t7 += (r11 ?? "") + h6[n10 + 1]), this._$AH[n10] = r11;
+      for (t8 = h6[0], n10 = 0; n10 < h6.length - 1; n10++) r11 = S4(this, e14[s4 + n10], i9, n10), r11 === T2 && (r11 = this._$AH[n10]), o11 ||= !c6(r11) || r11 !== this._$AH[n10], r11 === E2 ? t8 = E2 : t8 !== E2 && (t8 += (r11 ?? "") + h6[n10 + 1]), this._$AH[n10] = r11;
     }
-    o11 && !e13 && this.j(t7);
+    o11 && !e13 && this.j(t8);
   }
-  j(t7) {
-    t7 === E2 ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t7 ?? "");
+  j(t8) {
+    t8 === E2 ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t8 ?? "");
   }
 };
 var H = class extends k2 {
   constructor() {
     super(...arguments), this.type = 3;
   }
-  j(t7) {
-    this.element[this.name] = t7 === E2 ? void 0 : t7;
+  j(t8) {
+    this.element[this.name] = t8 === E2 ? void 0 : t8;
   }
 };
 var I2 = class extends k2 {
   constructor() {
     super(...arguments), this.type = 4;
   }
-  j(t7) {
-    this.element.toggleAttribute(this.name, !!t7 && t7 !== E2);
+  j(t8) {
+    this.element.toggleAttribute(this.name, !!t8 && t8 !== E2);
   }
 };
 var L = class extends k2 {
-  constructor(t7, i9, s4, e13, h6) {
-    super(t7, i9, s4, e13, h6), this.type = 5;
+  constructor(t8, i9, s4, e13, h6) {
+    super(t8, i9, s4, e13, h6), this.type = 5;
   }
-  _$AI(t7, i9 = this) {
-    if ((t7 = S4(this, t7, i9, 0) ?? E2) === T2) return;
-    const s4 = this._$AH, e13 = t7 === E2 && s4 !== E2 || t7.capture !== s4.capture || t7.once !== s4.once || t7.passive !== s4.passive, h6 = t7 !== E2 && (s4 === E2 || e13);
-    e13 && this.element.removeEventListener(this.name, this, s4), h6 && this.element.addEventListener(this.name, this, t7), this._$AH = t7;
+  _$AI(t8, i9 = this) {
+    if ((t8 = S4(this, t8, i9, 0) ?? E2) === T2) return;
+    const s4 = this._$AH, e13 = t8 === E2 && s4 !== E2 || t8.capture !== s4.capture || t8.once !== s4.once || t8.passive !== s4.passive, h6 = t8 !== E2 && (s4 === E2 || e13);
+    e13 && this.element.removeEventListener(this.name, this, s4), h6 && this.element.addEventListener(this.name, this, t8), this._$AH = t8;
   }
-  handleEvent(t7) {
-    "function" == typeof this._$AH ? this._$AH.call(this.options?.host ?? this.element, t7) : this._$AH.handleEvent(t7);
+  handleEvent(t8) {
+    "function" == typeof this._$AH ? this._$AH.call(this.options?.host ?? this.element, t8) : this._$AH.handleEvent(t8);
   }
 };
 var z2 = class {
-  constructor(t7, i9, s4) {
-    this.element = t7, this.type = 6, this._$AN = void 0, this._$AM = i9, this.options = s4;
+  constructor(t8, i9, s4) {
+    this.element = t8, this.type = 6, this._$AN = void 0, this._$AM = i9, this.options = s4;
   }
   get _$AU() {
     return this._$AM._$AU;
   }
-  _$AI(t7) {
-    S4(this, t7);
+  _$AI(t8) {
+    S4(this, t8);
   }
 };
 var Z2 = { M: e7, P: h5, A: o7, C: 1, L: V2, R: M2, D: u3, V: S4, I: R2, H: k2, N: I2, U: L, B: H, F: z2 };
-var j2 = t4.litHtmlPolyfillSupport;
-j2?.(N2, R2), (t4.litHtmlVersions ??= []).push("3.2.1");
-var B2 = (t7, i9, s4) => {
+var j2 = t5.litHtmlPolyfillSupport;
+j2?.(N2, R2), (t5.litHtmlVersions ??= []).push("3.2.1");
+var B2 = (t8, i9, s4) => {
   const e13 = s4?.renderBefore ?? i9;
   let h6 = e13._$litPart$;
   if (void 0 === h6) {
-    const t8 = s4?.renderBefore ?? null;
-    e13._$litPart$ = h6 = new R2(i9.insertBefore(l3(), t8), t8, void 0, s4 ?? {});
+    const t9 = s4?.renderBefore ?? null;
+    e13._$litPart$ = h6 = new R2(i9.insertBefore(l3(), t9), t9, void 0, s4 ?? {});
   }
-  return h6._$AI(t7), h6;
+  return h6._$AI(t8), h6;
 };
 
 // node_modules/lit-element/lit-element.js
@@ -1413,12 +1421,12 @@ var r9 = class extends b2 {
     super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
   }
   createRenderRoot() {
-    const t7 = super.createRenderRoot();
-    return this.renderOptions.renderBefore ??= t7.firstChild, t7;
+    const t8 = super.createRenderRoot();
+    return this.renderOptions.renderBefore ??= t8.firstChild, t8;
   }
-  update(t7) {
+  update(t8) {
     const s4 = this.render();
-    this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(t7), this._$Do = B2(s4, this.renderRoot, this.renderOptions);
+    this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(t8), this._$Do = B2(s4, this.renderRoot, this.renderOptions);
   }
   connectedCallback() {
     super.connectedCallback(), this._$Do?.setConnected(true);
@@ -1434,6 +1442,349 @@ r9._$litElement$ = true, r9["finalized"] = true, globalThis.litElementHydrateSup
 var i5 = globalThis.litElementPolyfillSupport;
 i5?.({ LitElement: r9 });
 (globalThis.litElementVersions ??= []).push("4.1.1");
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.WQC6OWUE.js
+var badge_styles_default = i`
+  :host {
+    display: inline-flex;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: max(12px, 0.75em);
+    font-weight: var(--sl-font-weight-semibold);
+    letter-spacing: var(--sl-letter-spacing-normal);
+    line-height: 1;
+    border-radius: var(--sl-border-radius-small);
+    border: solid 1px var(--sl-color-neutral-0);
+    white-space: nowrap;
+    padding: 0.35em 0.6em;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: inherit;
+  }
+
+  /* Variant modifiers */
+  .badge--primary {
+    background-color: var(--sl-color-primary-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .badge--success {
+    background-color: var(--sl-color-success-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .badge--neutral {
+    background-color: var(--sl-color-neutral-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .badge--warning {
+    background-color: var(--sl-color-warning-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .badge--danger {
+    background-color: var(--sl-color-danger-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  /* Pill modifier */
+  .badge--pill {
+    border-radius: var(--sl-border-radius-pill);
+  }
+
+  /* Pulse modifier */
+  .badge--pulse {
+    animation: pulse 1.5s infinite;
+  }
+
+  .badge--pulse.badge--primary {
+    --pulse-color: var(--sl-color-primary-600);
+  }
+
+  .badge--pulse.badge--success {
+    --pulse-color: var(--sl-color-success-600);
+  }
+
+  .badge--pulse.badge--neutral {
+    --pulse-color: var(--sl-color-neutral-600);
+  }
+
+  .badge--pulse.badge--warning {
+    --pulse-color: var(--sl-color-warning-600);
+  }
+
+  .badge--pulse.badge--danger {
+    --pulse-color: var(--sl-color-danger-600);
+  }
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 var(--pulse-color);
+    }
+    70% {
+      box-shadow: 0 0 0 0.5rem transparent;
+    }
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.TUVJKY7S.js
+var component_styles_default = i`
+  :host {
+    box-sizing: border-box;
+  }
+
+  :host *,
+  :host *::before,
+  :host *::after {
+    box-sizing: inherit;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.KAW7D32O.js
+var __defProp3 = Object.defineProperty;
+var __defProps = Object.defineProperties;
+var __getOwnPropDesc3 = Object.getOwnPropertyDescriptor;
+var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
+var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __propIsEnum = Object.prototype.propertyIsEnumerable;
+var __knownSymbol3 = (name, symbol) => (symbol = Symbol[name]) ? symbol : Symbol.for("Symbol." + name);
+var __typeError3 = (msg) => {
+  throw TypeError(msg);
+};
+var __defNormalProp3 = (obj, key, value) => key in obj ? __defProp3(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues = (a5, b4) => {
+  for (var prop in b4 || (b4 = {}))
+    if (__hasOwnProp.call(b4, prop))
+      __defNormalProp3(a5, prop, b4[prop]);
+  if (__getOwnPropSymbols)
+    for (var prop of __getOwnPropSymbols(b4)) {
+      if (__propIsEnum.call(b4, prop))
+        __defNormalProp3(a5, prop, b4[prop]);
+    }
+  return a5;
+};
+var __spreadProps = (a5, b4) => __defProps(a5, __getOwnPropDescs(b4));
+var __decorateClass = (decorators, target, key, kind) => {
+  var result = kind > 1 ? void 0 : kind ? __getOwnPropDesc3(target, key) : target;
+  for (var i9 = decorators.length - 1, decorator; i9 >= 0; i9--)
+    if (decorator = decorators[i9])
+      result = (kind ? decorator(target, key, result) : decorator(result)) || result;
+  if (kind && result) __defProp3(target, key, result);
+  return result;
+};
+var __accessCheck3 = (obj, member, msg) => member.has(obj) || __typeError3("Cannot " + msg);
+var __privateGet3 = (obj, member, getter) => (__accessCheck3(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
+var __privateAdd3 = (obj, member, value) => member.has(obj) ? __typeError3("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+var __privateSet3 = (obj, member, value, setter) => (__accessCheck3(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
+var __await = function(promise, isYieldStar) {
+  this[0] = promise;
+  this[1] = isYieldStar;
+};
+var __yieldStar = (value) => {
+  var obj = value[__knownSymbol3("asyncIterator")], isAwait = false, method, it = {};
+  if (obj == null) {
+    obj = value[__knownSymbol3("iterator")]();
+    method = (k3) => it[k3] = (x3) => obj[k3](x3);
+  } else {
+    obj = obj.call(value);
+    method = (k3) => it[k3] = (v3) => {
+      if (isAwait) {
+        isAwait = false;
+        if (k3 === "throw") throw v3;
+        return v3;
+      }
+      isAwait = true;
+      return {
+        done: false,
+        value: new __await(new Promise((resolve) => {
+          var x3 = obj[k3](v3);
+          if (!(x3 instanceof Object)) __typeError3("Object expected");
+          resolve(x3);
+        }), 1)
+      };
+    };
+  }
+  return it[__knownSymbol3("iterator")] = () => it, method("next"), "throw" in obj ? method("throw") : it.throw = (x3) => {
+    throw x3;
+  }, "return" in obj && method("return"), it;
+};
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.EMG3ZSPT.js
+var _hasRecordedInitialProperties;
+var ShoelaceElement = class extends r9 {
+  constructor() {
+    super();
+    __privateAdd3(this, _hasRecordedInitialProperties, false);
+    this.initialReflectedProperties = /* @__PURE__ */ new Map();
+    Object.entries(this.constructor.dependencies).forEach(([name, component]) => {
+      this.constructor.define(name, component);
+    });
+  }
+  emit(name, options) {
+    const event = new CustomEvent(name, __spreadValues({
+      bubbles: true,
+      cancelable: false,
+      composed: true,
+      detail: {}
+    }, options));
+    this.dispatchEvent(event);
+    return event;
+  }
+  /* eslint-enable */
+  static define(name, elementConstructor = this, options = {}) {
+    const currentlyRegisteredConstructor = customElements.get(name);
+    if (!currentlyRegisteredConstructor) {
+      try {
+        customElements.define(name, elementConstructor, options);
+      } catch (_err) {
+        customElements.define(name, class extends elementConstructor {
+        }, options);
+      }
+      return;
+    }
+    let newVersion = " (unknown version)";
+    let existingVersion = newVersion;
+    if ("version" in elementConstructor && elementConstructor.version) {
+      newVersion = " v" + elementConstructor.version;
+    }
+    if ("version" in currentlyRegisteredConstructor && currentlyRegisteredConstructor.version) {
+      existingVersion = " v" + currentlyRegisteredConstructor.version;
+    }
+    if (newVersion && existingVersion && newVersion === existingVersion) {
+      return;
+    }
+    console.warn(
+      `Attempted to register <${name}>${newVersion}, but <${name}>${existingVersion} has already been registered.`
+    );
+  }
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (!__privateGet3(this, _hasRecordedInitialProperties)) {
+      this.constructor.elementProperties.forEach(
+        (obj, prop) => {
+          if (obj.reflect && this[prop] != null) {
+            this.initialReflectedProperties.set(prop, this[prop]);
+          }
+        }
+      );
+      __privateSet3(this, _hasRecordedInitialProperties, true);
+    }
+    super.attributeChangedCallback(name, oldValue, newValue);
+  }
+  willUpdate(changedProperties) {
+    super.willUpdate(changedProperties);
+    this.initialReflectedProperties.forEach((value, prop) => {
+      if (changedProperties.has(prop) && this[prop] == null) {
+        this[prop] = value;
+      }
+    });
+  }
+};
+_hasRecordedInitialProperties = /* @__PURE__ */ new WeakMap();
+ShoelaceElement.version = "2.19.1";
+ShoelaceElement.dependencies = {};
+__decorateClass([
+  n7()
+], ShoelaceElement.prototype, "dir", 2);
+__decorateClass([
+  n7()
+], ShoelaceElement.prototype, "lang", 2);
+
+// node_modules/lit-html/directive.js
+var t6 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
+var e8 = (t8) => (...e13) => ({ _$litDirective$: t8, values: e13 });
+var i6 = class {
+  constructor(t8) {
+  }
+  get _$AU() {
+    return this._$AM._$AU;
+  }
+  _$AT(t8, e13, i9) {
+    this._$Ct = t8, this._$AM = e13, this._$Ci = i9;
+  }
+  _$AS(t8, e13) {
+    return this.update(t8, e13);
+  }
+  update(t8, e13) {
+    return this.render(...e13);
+  }
+};
+
+// node_modules/lit-html/directives/class-map.js
+var e9 = e8(class extends i6 {
+  constructor(t8) {
+    if (super(t8), t8.type !== t6.ATTRIBUTE || "class" !== t8.name || t8.strings?.length > 2) throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.");
+  }
+  render(t8) {
+    return " " + Object.keys(t8).filter(((s4) => t8[s4])).join(" ") + " ";
+  }
+  update(s4, [i9]) {
+    if (void 0 === this.st) {
+      this.st = /* @__PURE__ */ new Set(), void 0 !== s4.strings && (this.nt = new Set(s4.strings.join(" ").split(/\s/).filter(((t8) => "" !== t8))));
+      for (const t8 in i9) i9[t8] && !this.nt?.has(t8) && this.st.add(t8);
+      return this.render(i9);
+    }
+    const r11 = s4.element.classList;
+    for (const t8 of this.st) t8 in i9 || (r11.remove(t8), this.st.delete(t8));
+    for (const t8 in i9) {
+      const s5 = !!i9[t8];
+      s5 === this.st.has(t8) || this.nt?.has(t8) || (s5 ? (r11.add(t8), this.st.add(t8)) : (r11.remove(t8), this.st.delete(t8)));
+    }
+    return T2;
+  }
+});
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.XUX6RZ47.js
+var SlBadge = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.variant = "primary";
+    this.pill = false;
+    this.pulse = false;
+  }
+  render() {
+    return x2`
+      <span
+        part="base"
+        class=${e9({
+      badge: true,
+      "badge--primary": this.variant === "primary",
+      "badge--success": this.variant === "success",
+      "badge--neutral": this.variant === "neutral",
+      "badge--warning": this.variant === "warning",
+      "badge--danger": this.variant === "danger",
+      "badge--pill": this.pill,
+      "badge--pulse": this.pulse
+    })}
+        role="status"
+      >
+        <slot></slot>
+      </span>
+    `;
+  }
+};
+SlBadge.styles = [component_styles_default, badge_styles_default];
+__decorateClass([
+  n7({ reflect: true })
+], SlBadge.prototype, "variant", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlBadge.prototype, "pill", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlBadge.prototype, "pulse", 2);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.7DUCI5S4.js
 var spinner_styles_default = i`
@@ -1512,15 +1863,15 @@ if (isClient) {
   });
 }
 function registerTranslation(...translation2) {
-  translation2.map((t7) => {
-    const code = t7.$code.toLowerCase();
+  translation2.map((t8) => {
+    const code = t8.$code.toLowerCase();
     if (translations.has(code)) {
-      translations.set(code, Object.assign(Object.assign({}, translations.get(code)), t7));
+      translations.set(code, Object.assign(Object.assign({}, translations.get(code)), t8));
     } else {
-      translations.set(code, t7);
+      translations.set(code, t8);
     }
     if (!fallback) {
-      fallback = t7;
+      fallback = t8;
     }
   });
   update();
@@ -1641,140 +1992,6 @@ var en_default = translation;
 var LocalizeController2 = class extends LocalizeController {
 };
 registerTranslation(en_default);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.TUVJKY7S.js
-var component_styles_default = i`
-  :host {
-    box-sizing: border-box;
-  }
-
-  :host *,
-  :host *::before,
-  :host *::after {
-    box-sizing: inherit;
-  }
-
-  [hidden] {
-    display: none !important;
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.KAW7D32O.js
-var __defProp3 = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDesc3 = Object.getOwnPropertyDescriptor;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __typeError3 = (msg) => {
-  throw TypeError(msg);
-};
-var __defNormalProp3 = (obj, key, value) => key in obj ? __defProp3(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a5, b4) => {
-  for (var prop in b4 || (b4 = {}))
-    if (__hasOwnProp.call(b4, prop))
-      __defNormalProp3(a5, prop, b4[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b4)) {
-      if (__propIsEnum.call(b4, prop))
-        __defNormalProp3(a5, prop, b4[prop]);
-    }
-  return a5;
-};
-var __spreadProps = (a5, b4) => __defProps(a5, __getOwnPropDescs(b4));
-var __decorateClass = (decorators, target, key, kind) => {
-  var result = kind > 1 ? void 0 : kind ? __getOwnPropDesc3(target, key) : target;
-  for (var i9 = decorators.length - 1, decorator; i9 >= 0; i9--)
-    if (decorator = decorators[i9])
-      result = (kind ? decorator(target, key, result) : decorator(result)) || result;
-  if (kind && result) __defProp3(target, key, result);
-  return result;
-};
-var __accessCheck3 = (obj, member, msg) => member.has(obj) || __typeError3("Cannot " + msg);
-var __privateGet3 = (obj, member, getter) => (__accessCheck3(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
-var __privateAdd3 = (obj, member, value) => member.has(obj) ? __typeError3("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-var __privateSet3 = (obj, member, value, setter) => (__accessCheck3(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.EMG3ZSPT.js
-var _hasRecordedInitialProperties;
-var ShoelaceElement = class extends r9 {
-  constructor() {
-    super();
-    __privateAdd3(this, _hasRecordedInitialProperties, false);
-    this.initialReflectedProperties = /* @__PURE__ */ new Map();
-    Object.entries(this.constructor.dependencies).forEach(([name, component]) => {
-      this.constructor.define(name, component);
-    });
-  }
-  emit(name, options) {
-    const event = new CustomEvent(name, __spreadValues({
-      bubbles: true,
-      cancelable: false,
-      composed: true,
-      detail: {}
-    }, options));
-    this.dispatchEvent(event);
-    return event;
-  }
-  /* eslint-enable */
-  static define(name, elementConstructor = this, options = {}) {
-    const currentlyRegisteredConstructor = customElements.get(name);
-    if (!currentlyRegisteredConstructor) {
-      try {
-        customElements.define(name, elementConstructor, options);
-      } catch (_err) {
-        customElements.define(name, class extends elementConstructor {
-        }, options);
-      }
-      return;
-    }
-    let newVersion = " (unknown version)";
-    let existingVersion = newVersion;
-    if ("version" in elementConstructor && elementConstructor.version) {
-      newVersion = " v" + elementConstructor.version;
-    }
-    if ("version" in currentlyRegisteredConstructor && currentlyRegisteredConstructor.version) {
-      existingVersion = " v" + currentlyRegisteredConstructor.version;
-    }
-    if (newVersion && existingVersion && newVersion === existingVersion) {
-      return;
-    }
-    console.warn(
-      `Attempted to register <${name}>${newVersion}, but <${name}>${existingVersion} has already been registered.`
-    );
-  }
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (!__privateGet3(this, _hasRecordedInitialProperties)) {
-      this.constructor.elementProperties.forEach(
-        (obj, prop) => {
-          if (obj.reflect && this[prop] != null) {
-            this.initialReflectedProperties.set(prop, this[prop]);
-          }
-        }
-      );
-      __privateSet3(this, _hasRecordedInitialProperties, true);
-    }
-    super.attributeChangedCallback(name, oldValue, newValue);
-  }
-  willUpdate(changedProperties) {
-    super.willUpdate(changedProperties);
-    this.initialReflectedProperties.forEach((value, prop) => {
-      if (changedProperties.has(prop) && this[prop] == null) {
-        this[prop] = value;
-      }
-    });
-  }
-};
-_hasRecordedInitialProperties = /* @__PURE__ */ new WeakMap();
-ShoelaceElement.version = "2.19.1";
-ShoelaceElement.dependencies = {};
-__decorateClass([
-  n7()
-], ShoelaceElement.prototype, "dir", 2);
-__decorateClass([
-  n7()
-], ShoelaceElement.prototype, "lang", 2);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.YB3JVLEN.js
 var SlSpinner = class extends ShoelaceElement {
@@ -2936,11 +3153,11 @@ function watch(propertyName, options) {
 }
 
 // node_modules/lit-html/directive-helpers.js
-var { I: t5 } = Z2;
-var e8 = (o11, t7) => void 0 === t7 ? void 0 !== o11?._$litType$ : o11?._$litType$ === t7;
+var { I: t7 } = Z2;
+var e10 = (o11, t8) => void 0 === t8 ? void 0 !== o11?._$litType$ : o11?._$litType$ === t8;
 var f6 = (o11) => void 0 === o11.strings;
 var u4 = {};
-var m3 = (o11, t7 = u4) => o11._$AH = t7;
+var m3 = (o11, t8 = u4) => o11._$AH = t8;
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.5YPURQKE.js
 var CACHEABLE_ERROR = Symbol();
@@ -3046,7 +3263,7 @@ var SlIcon = class extends ShoelaceElement {
     if (url !== this.getIconSource().url) {
       return;
     }
-    if (e8(svg)) {
+    if (e10(svg)) {
       this.svg = svg;
       if (library2) {
         await this.updateComplete;
@@ -3096,62 +3313,18 @@ __decorateClass([
   watch(["name", "src", "library"])
 ], SlIcon.prototype, "setIcon", 1);
 
-// node_modules/lit-html/directive.js
-var t6 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
-var e9 = (t7) => (...e13) => ({ _$litDirective$: t7, values: e13 });
-var i6 = class {
-  constructor(t7) {
-  }
-  get _$AU() {
-    return this._$AM._$AU;
-  }
-  _$AT(t7, e13, i9) {
-    this._$Ct = t7, this._$AM = e13, this._$Ci = i9;
-  }
-  _$AS(t7, e13) {
-    return this.update(t7, e13);
-  }
-  update(t7, e13) {
-    return this.render(...e13);
-  }
-};
-
-// node_modules/lit-html/directives/class-map.js
-var e10 = e9(class extends i6 {
-  constructor(t7) {
-    if (super(t7), t7.type !== t6.ATTRIBUTE || "class" !== t7.name || t7.strings?.length > 2) throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.");
-  }
-  render(t7) {
-    return " " + Object.keys(t7).filter(((s4) => t7[s4])).join(" ") + " ";
-  }
-  update(s4, [i9]) {
-    if (void 0 === this.st) {
-      this.st = /* @__PURE__ */ new Set(), void 0 !== s4.strings && (this.nt = new Set(s4.strings.join(" ").split(/\s/).filter(((t7) => "" !== t7))));
-      for (const t7 in i9) i9[t7] && !this.nt?.has(t7) && this.st.add(t7);
-      return this.render(i9);
-    }
-    const r11 = s4.element.classList;
-    for (const t7 of this.st) t7 in i9 || (r11.remove(t7), this.st.delete(t7));
-    for (const t7 in i9) {
-      const s5 = !!i9[t7];
-      s5 === this.st.has(t7) || this.nt?.has(t7) || (s5 ? (r11.add(t7), this.st.add(t7)) : (r11.remove(t7), this.st.delete(t7)));
-    }
-    return T2;
-  }
-});
-
 // node_modules/lit-html/static.js
 var a4 = Symbol.for("");
-var o8 = (t7) => {
-  if (t7?.r === a4) return t7?._$litStatic$;
+var o8 = (t8) => {
+  if (t8?.r === a4) return t8?._$litStatic$;
 };
-var i7 = (t7, ...r11) => ({ _$litStatic$: r11.reduce(((r12, e13, a5) => r12 + ((t8) => {
-  if (void 0 !== t8._$litStatic$) return t8._$litStatic$;
-  throw Error(`Value passed to 'literal' function must be a 'literal' result: ${t8}. Use 'unsafeStatic' to pass non-literal values, but
+var i7 = (t8, ...r11) => ({ _$litStatic$: r11.reduce(((r12, e13, a5) => r12 + ((t9) => {
+  if (void 0 !== t9._$litStatic$) return t9._$litStatic$;
+  throw Error(`Value passed to 'literal' function must be a 'literal' result: ${t9}. Use 'unsafeStatic' to pass non-literal values, but
             take care to ensure page security.`);
-})(e13) + t7[a5 + 1]), t7[0]), r: a4 });
+})(e13) + t8[a5 + 1]), t8[0]), r: a4 });
 var l4 = /* @__PURE__ */ new Map();
-var n9 = (t7) => (r11, ...e13) => {
+var n9 = (t8) => (r11, ...e13) => {
   const a5 = e13.length;
   let s4, i9;
   const n10 = [], u6 = [];
@@ -3161,10 +3334,10 @@ var n9 = (t7) => (r11, ...e13) => {
     $4 !== a5 && u6.push(i9), n10.push(c8), $4++;
   }
   if ($4 === a5 && n10.push(r11[a5]), f7) {
-    const t8 = n10.join("$$lit$$");
-    void 0 === (r11 = l4.get(t8)) && (n10.raw = n10, l4.set(t8, r11 = n10)), e13 = u6;
+    const t9 = n10.join("$$lit$$");
+    void 0 === (r11 = l4.get(t9)) && (n10.raw = n10, l4.set(t9, r11 = n10)), e13 = u6;
   }
-  return t7(r11, ...e13);
+  return t8(r11, ...e13);
 };
 var u5 = n9(x2);
 var c7 = n9(b3);
@@ -3292,7 +3465,7 @@ var SlButton = class extends ShoelaceElement {
     return u5`
       <${tag}
         part="base"
-        class=${e10({
+        class=${e9({
       button: true,
       "button--default": this.variant === "default",
       "button--primary": this.variant === "primary",
@@ -3427,360 +3600,431 @@ __decorateClass([
   watch("disabled", { waitUntilFirstUpdate: true })
 ], SlButton.prototype, "handleDisabledChange", 1);
 
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.J7PLVEQM.js
-var details_styles_default = i`
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.LXDTFLWU.js
+var computedStyleMap = /* @__PURE__ */ new WeakMap();
+function getCachedComputedStyle(el) {
+  let computedStyle = computedStyleMap.get(el);
+  if (!computedStyle) {
+    computedStyle = window.getComputedStyle(el, null);
+    computedStyleMap.set(el, computedStyle);
+  }
+  return computedStyle;
+}
+function isVisible(el) {
+  if (typeof el.checkVisibility === "function") {
+    return el.checkVisibility({ checkOpacity: false, checkVisibilityCSS: true });
+  }
+  const computedStyle = getCachedComputedStyle(el);
+  return computedStyle.visibility !== "hidden" && computedStyle.display !== "none";
+}
+function isOverflowingAndTabbable(el) {
+  const computedStyle = getCachedComputedStyle(el);
+  const { overflowY, overflowX } = computedStyle;
+  if (overflowY === "scroll" || overflowX === "scroll") {
+    return true;
+  }
+  if (overflowY !== "auto" || overflowX !== "auto") {
+    return false;
+  }
+  const isOverflowingY = el.scrollHeight > el.clientHeight;
+  if (isOverflowingY && overflowY === "auto") {
+    return true;
+  }
+  const isOverflowingX = el.scrollWidth > el.clientWidth;
+  if (isOverflowingX && overflowX === "auto") {
+    return true;
+  }
+  return false;
+}
+function isTabbable(el) {
+  const tag = el.tagName.toLowerCase();
+  const tabindex = Number(el.getAttribute("tabindex"));
+  const hasTabindex = el.hasAttribute("tabindex");
+  if (hasTabindex && (isNaN(tabindex) || tabindex <= -1)) {
+    return false;
+  }
+  if (el.hasAttribute("disabled")) {
+    return false;
+  }
+  if (el.closest("[inert]")) {
+    return false;
+  }
+  if (tag === "input" && el.getAttribute("type") === "radio" && !el.hasAttribute("checked")) {
+    return false;
+  }
+  if (!isVisible(el)) {
+    return false;
+  }
+  if ((tag === "audio" || tag === "video") && el.hasAttribute("controls")) {
+    return true;
+  }
+  if (el.hasAttribute("tabindex")) {
+    return true;
+  }
+  if (el.hasAttribute("contenteditable") && el.getAttribute("contenteditable") !== "false") {
+    return true;
+  }
+  const isNativelyTabbable = [
+    "button",
+    "input",
+    "select",
+    "textarea",
+    "a",
+    "audio",
+    "video",
+    "summary",
+    "iframe"
+  ].includes(tag);
+  if (isNativelyTabbable) {
+    return true;
+  }
+  return isOverflowingAndTabbable(el);
+}
+function getSlottedChildrenOutsideRootElement(slotElement, root) {
+  var _a3;
+  return ((_a3 = slotElement.getRootNode({ composed: true })) == null ? void 0 : _a3.host) !== root;
+}
+function getTabbableElements(root) {
+  const walkedEls = /* @__PURE__ */ new WeakMap();
+  const tabbableElements = [];
+  function walk(el) {
+    if (el instanceof Element) {
+      if (el.hasAttribute("inert") || el.closest("[inert]")) {
+        return;
+      }
+      if (walkedEls.has(el)) {
+        return;
+      }
+      walkedEls.set(el, true);
+      if (!tabbableElements.includes(el) && isTabbable(el)) {
+        tabbableElements.push(el);
+      }
+      if (el instanceof HTMLSlotElement && getSlottedChildrenOutsideRootElement(el, root)) {
+        el.assignedElements({ flatten: true }).forEach((assignedEl) => {
+          walk(assignedEl);
+        });
+      }
+      if (el.shadowRoot !== null && el.shadowRoot.mode === "open") {
+        walk(el.shadowRoot);
+      }
+    }
+    for (const e13 of el.children) {
+      walk(e13);
+    }
+  }
+  walk(root);
+  return tabbableElements.sort((a5, b4) => {
+    const aTabindex = Number(a5.getAttribute("tabindex")) || 0;
+    const bTabindex = Number(b4.getAttribute("tabindex")) || 0;
+    return bTabindex - aTabindex;
+  });
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FRD7DRZ6.js
+function* activeElements(activeElement = document.activeElement) {
+  if (activeElement === null || activeElement === void 0) return;
+  yield activeElement;
+  if ("shadowRoot" in activeElement && activeElement.shadowRoot && activeElement.shadowRoot.mode !== "closed") {
+    yield* __yieldStar(activeElements(activeElement.shadowRoot.activeElement));
+  }
+}
+function getDeepestActiveElement() {
+  return [...activeElements()].pop();
+}
+var activeModals = [];
+var Modal = class {
+  constructor(element) {
+    this.tabDirection = "forward";
+    this.handleFocusIn = () => {
+      if (!this.isActive()) return;
+      this.checkFocus();
+    };
+    this.handleKeyDown = (event) => {
+      var _a3;
+      if (event.key !== "Tab" || this.isExternalActivated) return;
+      if (!this.isActive()) return;
+      const currentActiveElement = getDeepestActiveElement();
+      this.previousFocus = currentActiveElement;
+      if (this.previousFocus && this.possiblyHasTabbableChildren(this.previousFocus)) {
+        return;
+      }
+      if (event.shiftKey) {
+        this.tabDirection = "backward";
+      } else {
+        this.tabDirection = "forward";
+      }
+      const tabbableElements = getTabbableElements(this.element);
+      let currentFocusIndex = tabbableElements.findIndex((el) => el === currentActiveElement);
+      this.previousFocus = this.currentFocus;
+      const addition = this.tabDirection === "forward" ? 1 : -1;
+      while (true) {
+        if (currentFocusIndex + addition >= tabbableElements.length) {
+          currentFocusIndex = 0;
+        } else if (currentFocusIndex + addition < 0) {
+          currentFocusIndex = tabbableElements.length - 1;
+        } else {
+          currentFocusIndex += addition;
+        }
+        this.previousFocus = this.currentFocus;
+        const nextFocus = (
+          /** @type {HTMLElement} */
+          tabbableElements[currentFocusIndex]
+        );
+        if (this.tabDirection === "backward") {
+          if (this.previousFocus && this.possiblyHasTabbableChildren(this.previousFocus)) {
+            return;
+          }
+        }
+        if (nextFocus && this.possiblyHasTabbableChildren(nextFocus)) {
+          return;
+        }
+        event.preventDefault();
+        this.currentFocus = nextFocus;
+        (_a3 = this.currentFocus) == null ? void 0 : _a3.focus({ preventScroll: false });
+        const allActiveElements = [...activeElements()];
+        if (allActiveElements.includes(this.currentFocus) || !allActiveElements.includes(this.previousFocus)) {
+          break;
+        }
+      }
+      setTimeout(() => this.checkFocus());
+    };
+    this.handleKeyUp = () => {
+      this.tabDirection = "forward";
+    };
+    this.element = element;
+    this.elementsWithTabbableControls = ["iframe"];
+  }
+  /** Activates focus trapping. */
+  activate() {
+    activeModals.push(this.element);
+    document.addEventListener("focusin", this.handleFocusIn);
+    document.addEventListener("keydown", this.handleKeyDown);
+    document.addEventListener("keyup", this.handleKeyUp);
+  }
+  /** Deactivates focus trapping. */
+  deactivate() {
+    activeModals = activeModals.filter((modal) => modal !== this.element);
+    this.currentFocus = null;
+    document.removeEventListener("focusin", this.handleFocusIn);
+    document.removeEventListener("keydown", this.handleKeyDown);
+    document.removeEventListener("keyup", this.handleKeyUp);
+  }
+  /** Determines if this modal element is currently active or not. */
+  isActive() {
+    return activeModals[activeModals.length - 1] === this.element;
+  }
+  /** Activates external modal behavior and temporarily disables focus trapping. */
+  activateExternal() {
+    this.isExternalActivated = true;
+  }
+  /** Deactivates external modal behavior and re-enables focus trapping. */
+  deactivateExternal() {
+    this.isExternalActivated = false;
+  }
+  checkFocus() {
+    if (this.isActive() && !this.isExternalActivated) {
+      const tabbableElements = getTabbableElements(this.element);
+      if (!this.element.matches(":focus-within")) {
+        const start = tabbableElements[0];
+        const end = tabbableElements[tabbableElements.length - 1];
+        const target = this.tabDirection === "forward" ? start : end;
+        if (typeof (target == null ? void 0 : target.focus) === "function") {
+          this.currentFocus = target;
+          target.focus({ preventScroll: false });
+        }
+      }
+    }
+  }
+  possiblyHasTabbableChildren(element) {
+    return this.elementsWithTabbableControls.includes(element.tagName.toLowerCase()) || element.hasAttribute("controls");
+  }
+};
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.RWUUFNUL.js
+function getOffset(element, parent) {
+  return {
+    top: Math.round(element.getBoundingClientRect().top - parent.getBoundingClientRect().top),
+    left: Math.round(element.getBoundingClientRect().left - parent.getBoundingClientRect().left)
+  };
+}
+var locks = /* @__PURE__ */ new Set();
+function getScrollbarWidth() {
+  const documentWidth = document.documentElement.clientWidth;
+  return Math.abs(window.innerWidth - documentWidth);
+}
+function getExistingBodyPadding() {
+  const padding = Number(getComputedStyle(document.body).paddingRight.replace(/px/, ""));
+  if (isNaN(padding) || !padding) {
+    return 0;
+  }
+  return padding;
+}
+function lockBodyScrolling(lockingEl) {
+  locks.add(lockingEl);
+  if (!document.documentElement.classList.contains("sl-scroll-lock")) {
+    const scrollbarWidth = getScrollbarWidth() + getExistingBodyPadding();
+    let scrollbarGutterProperty = getComputedStyle(document.documentElement).scrollbarGutter;
+    if (!scrollbarGutterProperty || scrollbarGutterProperty === "auto") {
+      scrollbarGutterProperty = "stable";
+    }
+    if (scrollbarWidth < 2) {
+      scrollbarGutterProperty = "";
+    }
+    document.documentElement.style.setProperty("--sl-scroll-lock-gutter", scrollbarGutterProperty);
+    document.documentElement.classList.add("sl-scroll-lock");
+    document.documentElement.style.setProperty("--sl-scroll-lock-size", `${scrollbarWidth}px`);
+  }
+}
+function unlockBodyScrolling(lockingEl) {
+  locks.delete(lockingEl);
+  if (locks.size === 0) {
+    document.documentElement.classList.remove("sl-scroll-lock");
+    document.documentElement.style.removeProperty("--sl-scroll-lock-size");
+  }
+}
+function scrollIntoView(element, container, direction = "vertical", behavior = "smooth") {
+  const offset3 = getOffset(element, container);
+  const offsetTop = offset3.top + container.scrollTop;
+  const offsetLeft = offset3.left + container.scrollLeft;
+  const minX = container.scrollLeft;
+  const maxX = container.scrollLeft + container.offsetWidth;
+  const minY = container.scrollTop;
+  const maxY = container.scrollTop + container.offsetHeight;
+  if (direction === "horizontal" || direction === "both") {
+    if (offsetLeft < minX) {
+      container.scrollTo({ left: offsetLeft, behavior });
+    } else if (offsetLeft + element.clientWidth > maxX) {
+      container.scrollTo({ left: offsetLeft - container.offsetWidth + element.clientWidth, behavior });
+    }
+  }
+  if (direction === "vertical" || direction === "both") {
+    if (offsetTop < minY) {
+      container.scrollTo({ top: offsetTop, behavior });
+    } else if (offsetTop + element.clientHeight > maxY) {
+      container.scrollTo({ top: offsetTop - container.offsetHeight + element.clientHeight, behavior });
+    }
+  }
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.G5RKA5HF.js
+var dialog_styles_default = i`
   :host {
-    display: block;
+    --width: 31rem;
+    --header-spacing: var(--sl-spacing-large);
+    --body-spacing: var(--sl-spacing-large);
+    --footer-spacing: var(--sl-spacing-large);
+
+    display: contents;
   }
 
-  .details {
-    border: solid 1px var(--sl-color-neutral-200);
+  .dialog {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: var(--sl-z-index-dialog);
+  }
+
+  .dialog__panel {
+    display: flex;
+    flex-direction: column;
+    z-index: 2;
+    width: var(--width);
+    max-width: calc(100% - var(--sl-spacing-2x-large));
+    max-height: calc(100% - var(--sl-spacing-2x-large));
+    background-color: var(--sl-panel-background-color);
     border-radius: var(--sl-border-radius-medium);
-    background-color: var(--sl-color-neutral-0);
-    overflow-anchor: none;
+    box-shadow: var(--sl-shadow-x-large);
   }
 
-  .details--disabled {
-    opacity: 0.5;
+  .dialog__panel:focus {
+    outline: none;
   }
 
-  .details__header {
+  /* Ensure there's enough vertical padding for phones that don't update vh when chrome appears (e.g. iPhone) */
+  @media screen and (max-width: 420px) {
+    .dialog__panel {
+      max-height: 80vh;
+    }
+  }
+
+  .dialog--open .dialog__panel {
     display: flex;
-    align-items: center;
-    border-radius: inherit;
-    padding: var(--sl-spacing-medium);
-    user-select: none;
-    -webkit-user-select: none;
-    cursor: pointer;
+    opacity: 1;
   }
 
-  .details__header::-webkit-details-marker {
-    display: none;
+  .dialog__header {
+    flex: 0 0 auto;
+    display: flex;
   }
 
-  .details__header:focus {
-    outline: none;
-  }
-
-  .details__header:focus-visible {
-    outline: var(--sl-focus-ring);
-    outline-offset: calc(1px + var(--sl-focus-ring-offset));
-  }
-
-  .details--disabled .details__header {
-    cursor: not-allowed;
-  }
-
-  .details--disabled .details__header:focus-visible {
-    outline: none;
-    box-shadow: none;
-  }
-
-  .details__summary {
+  .dialog__title {
     flex: 1 1 auto;
-    display: flex;
-    align-items: center;
+    font: inherit;
+    font-size: var(--sl-font-size-large);
+    line-height: var(--sl-line-height-dense);
+    padding: var(--header-spacing);
+    margin: 0;
   }
 
-  .details__summary-icon {
+  .dialog__header-actions {
+    flex-shrink: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: end;
+    gap: var(--sl-spacing-2x-small);
+    padding: 0 var(--header-spacing);
+  }
+
+  .dialog__header-actions sl-icon-button,
+  .dialog__header-actions ::slotted(sl-icon-button) {
     flex: 0 0 auto;
     display: flex;
     align-items: center;
-    transition: var(--sl-transition-medium) rotate ease;
+    font-size: var(--sl-font-size-medium);
   }
 
-  .details--open .details__summary-icon {
-    rotate: 90deg;
+  .dialog__body {
+    flex: 1 1 auto;
+    display: block;
+    padding: var(--body-spacing);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .details--open.details--rtl .details__summary-icon {
-    rotate: -90deg;
+  .dialog__footer {
+    flex: 0 0 auto;
+    text-align: right;
+    padding: var(--footer-spacing);
   }
 
-  .details--open slot[name='expand-icon'],
-  .details:not(.details--open) slot[name='collapse-icon'] {
+  .dialog__footer ::slotted(sl-button:not(:first-of-type)) {
+    margin-inline-start: var(--sl-spacing-x-small);
+  }
+
+  .dialog:not(.dialog--has-footer) .dialog__footer {
     display: none;
   }
 
-  .details__body {
-    overflow: hidden;
+  .dialog__overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: var(--sl-overlay-background-color);
   }
 
-  .details__content {
-    display: block;
-    padding: var(--sl-spacing-medium);
+  @media (forced-colors: active) {
+    .dialog__panel {
+      border: solid 1px var(--sl-color-neutral-0);
+    }
   }
 `;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.K7JGTRV7.js
-var defaultAnimationRegistry = /* @__PURE__ */ new Map();
-var customAnimationRegistry = /* @__PURE__ */ new WeakMap();
-function ensureAnimation(animation) {
-  return animation != null ? animation : { keyframes: [], options: { duration: 0 } };
-}
-function getLogicalAnimation(animation, dir) {
-  if (dir.toLowerCase() === "rtl") {
-    return {
-      keyframes: animation.rtlKeyframes || animation.keyframes,
-      options: animation.options
-    };
-  }
-  return animation;
-}
-function setDefaultAnimation(animationName, animation) {
-  defaultAnimationRegistry.set(animationName, ensureAnimation(animation));
-}
-function getAnimation(el, animationName, options) {
-  const customAnimation = customAnimationRegistry.get(el);
-  if (customAnimation == null ? void 0 : customAnimation[animationName]) {
-    return getLogicalAnimation(customAnimation[animationName], options.dir);
-  }
-  const defaultAnimation = defaultAnimationRegistry.get(animationName);
-  if (defaultAnimation) {
-    return getLogicalAnimation(defaultAnimation, options.dir);
-  }
-  return {
-    keyframes: [],
-    options: { duration: 0 }
-  };
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.B4BZKR24.js
-function waitForEvent(el, eventName) {
-  return new Promise((resolve) => {
-    function done(event) {
-      if (event.target === el) {
-        el.removeEventListener(eventName, done);
-        resolve();
-      }
-    }
-    el.addEventListener(eventName, done);
-  });
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AJ3ENQ5C.js
-function animateTo(el, keyframes, options) {
-  return new Promise((resolve) => {
-    if ((options == null ? void 0 : options.duration) === Infinity) {
-      throw new Error("Promise-based animations must be finite.");
-    }
-    const animation = el.animate(keyframes, __spreadProps(__spreadValues({}, options), {
-      duration: prefersReducedMotion() ? 0 : options.duration
-    }));
-    animation.addEventListener("cancel", resolve, { once: true });
-    animation.addEventListener("finish", resolve, { once: true });
-  });
-}
-function prefersReducedMotion() {
-  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-  return query.matches;
-}
-function stopAnimations(el) {
-  return Promise.all(
-    el.getAnimations().map((animation) => {
-      return new Promise((resolve) => {
-        animation.cancel();
-        requestAnimationFrame(resolve);
-      });
-    })
-  );
-}
-function shimKeyframesHeightAuto(keyframes, calculatedHeight) {
-  return keyframes.map((keyframe) => __spreadProps(__spreadValues({}, keyframe), {
-    height: keyframe.height === "auto" ? `${calculatedHeight}px` : keyframe.height
-  }));
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.2SZ4G2LK.js
-var SlDetails = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.localize = new LocalizeController2(this);
-    this.open = false;
-    this.disabled = false;
-  }
-  firstUpdated() {
-    this.body.style.height = this.open ? "auto" : "0";
-    if (this.open) {
-      this.details.open = true;
-    }
-    this.detailsObserver = new MutationObserver((changes) => {
-      for (const change of changes) {
-        if (change.type === "attributes" && change.attributeName === "open") {
-          if (this.details.open) {
-            this.show();
-          } else {
-            this.hide();
-          }
-        }
-      }
-    });
-    this.detailsObserver.observe(this.details, { attributes: true });
-  }
-  disconnectedCallback() {
-    var _a3;
-    super.disconnectedCallback();
-    (_a3 = this.detailsObserver) == null ? void 0 : _a3.disconnect();
-  }
-  handleSummaryClick(event) {
-    event.preventDefault();
-    if (!this.disabled) {
-      if (this.open) {
-        this.hide();
-      } else {
-        this.show();
-      }
-      this.header.focus();
-    }
-  }
-  handleSummaryKeyDown(event) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      if (this.open) {
-        this.hide();
-      } else {
-        this.show();
-      }
-    }
-    if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
-      event.preventDefault();
-      this.hide();
-    }
-    if (event.key === "ArrowDown" || event.key === "ArrowRight") {
-      event.preventDefault();
-      this.show();
-    }
-  }
-  async handleOpenChange() {
-    if (this.open) {
-      this.details.open = true;
-      const slShow = this.emit("sl-show", { cancelable: true });
-      if (slShow.defaultPrevented) {
-        this.open = false;
-        this.details.open = false;
-        return;
-      }
-      await stopAnimations(this.body);
-      const { keyframes, options } = getAnimation(this, "details.show", { dir: this.localize.dir() });
-      await animateTo(this.body, shimKeyframesHeightAuto(keyframes, this.body.scrollHeight), options);
-      this.body.style.height = "auto";
-      this.emit("sl-after-show");
-    } else {
-      const slHide = this.emit("sl-hide", { cancelable: true });
-      if (slHide.defaultPrevented) {
-        this.details.open = true;
-        this.open = true;
-        return;
-      }
-      await stopAnimations(this.body);
-      const { keyframes, options } = getAnimation(this, "details.hide", { dir: this.localize.dir() });
-      await animateTo(this.body, shimKeyframesHeightAuto(keyframes, this.body.scrollHeight), options);
-      this.body.style.height = "auto";
-      this.details.open = false;
-      this.emit("sl-after-hide");
-    }
-  }
-  /** Shows the details. */
-  async show() {
-    if (this.open || this.disabled) {
-      return void 0;
-    }
-    this.open = true;
-    return waitForEvent(this, "sl-after-show");
-  }
-  /** Hides the details */
-  async hide() {
-    if (!this.open || this.disabled) {
-      return void 0;
-    }
-    this.open = false;
-    return waitForEvent(this, "sl-after-hide");
-  }
-  render() {
-    const isRtl = this.localize.dir() === "rtl";
-    return x2`
-      <details
-        part="base"
-        class=${e10({
-      details: true,
-      "details--open": this.open,
-      "details--disabled": this.disabled,
-      "details--rtl": isRtl
-    })}
-      >
-        <summary
-          part="header"
-          id="header"
-          class="details__header"
-          role="button"
-          aria-expanded=${this.open ? "true" : "false"}
-          aria-controls="content"
-          aria-disabled=${this.disabled ? "true" : "false"}
-          tabindex=${this.disabled ? "-1" : "0"}
-          @click=${this.handleSummaryClick}
-          @keydown=${this.handleSummaryKeyDown}
-        >
-          <slot name="summary" part="summary" class="details__summary">${this.summary}</slot>
-
-          <span part="summary-icon" class="details__summary-icon">
-            <slot name="expand-icon">
-              <sl-icon library="system" name=${isRtl ? "chevron-left" : "chevron-right"}></sl-icon>
-            </slot>
-            <slot name="collapse-icon">
-              <sl-icon library="system" name=${isRtl ? "chevron-left" : "chevron-right"}></sl-icon>
-            </slot>
-          </span>
-        </summary>
-
-        <div class="details__body" role="region" aria-labelledby="header">
-          <slot part="content" id="content" class="details__content"></slot>
-        </div>
-      </details>
-    `;
-  }
-};
-SlDetails.styles = [component_styles_default, details_styles_default];
-SlDetails.dependencies = {
-  "sl-icon": SlIcon
-};
-__decorateClass([
-  e6(".details")
-], SlDetails.prototype, "details", 2);
-__decorateClass([
-  e6(".details__header")
-], SlDetails.prototype, "header", 2);
-__decorateClass([
-  e6(".details__body")
-], SlDetails.prototype, "body", 2);
-__decorateClass([
-  e6(".details__expand-icon-slot")
-], SlDetails.prototype, "expandIconSlot", 2);
-__decorateClass([
-  n7({ type: Boolean, reflect: true })
-], SlDetails.prototype, "open", 2);
-__decorateClass([
-  n7()
-], SlDetails.prototype, "summary", 2);
-__decorateClass([
-  n7({ type: Boolean, reflect: true })
-], SlDetails.prototype, "disabled", 2);
-__decorateClass([
-  watch("open", { waitUntilFirstUpdate: true })
-], SlDetails.prototype, "handleOpenChange", 1);
-setDefaultAnimation("details.show", {
-  keyframes: [
-    { height: "0", opacity: "0" },
-    { height: "auto", opacity: "1" }
-  ],
-  options: { duration: 250, easing: "linear" }
-});
-setDefaultAnimation("details.hide", {
-  keyframes: [
-    { height: "auto", opacity: "1" },
-    { height: "0", opacity: "0" }
-  ],
-  options: { duration: 250, easing: "linear" }
-});
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.6I2T3DLI.js
 var icon_button_styles_default = i`
@@ -3872,7 +4116,7 @@ var SlIconButton = class extends ShoelaceElement {
     return u5`
       <${tag}
         part="base"
-        class=${e10({
+        class=${e9({
       "icon-button": true,
       "icon-button--disabled": !isLink && this.disabled,
       "icon-button--focused": this.hasFocus
@@ -3934,6 +4178,317 @@ __decorateClass([
 __decorateClass([
   n7({ type: Boolean, reflect: true })
 ], SlIconButton.prototype, "disabled", 2);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.K7JGTRV7.js
+var defaultAnimationRegistry = /* @__PURE__ */ new Map();
+var customAnimationRegistry = /* @__PURE__ */ new WeakMap();
+function ensureAnimation(animation) {
+  return animation != null ? animation : { keyframes: [], options: { duration: 0 } };
+}
+function getLogicalAnimation(animation, dir) {
+  if (dir.toLowerCase() === "rtl") {
+    return {
+      keyframes: animation.rtlKeyframes || animation.keyframes,
+      options: animation.options
+    };
+  }
+  return animation;
+}
+function setDefaultAnimation(animationName, animation) {
+  defaultAnimationRegistry.set(animationName, ensureAnimation(animation));
+}
+function getAnimation(el, animationName, options) {
+  const customAnimation = customAnimationRegistry.get(el);
+  if (customAnimation == null ? void 0 : customAnimation[animationName]) {
+    return getLogicalAnimation(customAnimation[animationName], options.dir);
+  }
+  const defaultAnimation = defaultAnimationRegistry.get(animationName);
+  if (defaultAnimation) {
+    return getLogicalAnimation(defaultAnimation, options.dir);
+  }
+  return {
+    keyframes: [],
+    options: { duration: 0 }
+  };
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.B4BZKR24.js
+function waitForEvent(el, eventName) {
+  return new Promise((resolve) => {
+    function done(event) {
+      if (event.target === el) {
+        el.removeEventListener(eventName, done);
+        resolve();
+      }
+    }
+    el.addEventListener(eventName, done);
+  });
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AJ3ENQ5C.js
+function animateTo(el, keyframes, options) {
+  return new Promise((resolve) => {
+    if ((options == null ? void 0 : options.duration) === Infinity) {
+      throw new Error("Promise-based animations must be finite.");
+    }
+    const animation = el.animate(keyframes, __spreadProps(__spreadValues({}, options), {
+      duration: prefersReducedMotion() ? 0 : options.duration
+    }));
+    animation.addEventListener("cancel", resolve, { once: true });
+    animation.addEventListener("finish", resolve, { once: true });
+  });
+}
+function prefersReducedMotion() {
+  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+  return query.matches;
+}
+function stopAnimations(el) {
+  return Promise.all(
+    el.getAnimations().map((animation) => {
+      return new Promise((resolve) => {
+        animation.cancel();
+        requestAnimationFrame(resolve);
+      });
+    })
+  );
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.6SBTOKGT.js
+var SlDialog = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.hasSlotController = new HasSlotController(this, "footer");
+    this.localize = new LocalizeController2(this);
+    this.modal = new Modal(this);
+    this.open = false;
+    this.label = "";
+    this.noHeader = false;
+    this.handleDocumentKeyDown = (event) => {
+      if (event.key === "Escape" && this.modal.isActive() && this.open) {
+        event.stopPropagation();
+        this.requestClose("keyboard");
+      }
+    };
+  }
+  firstUpdated() {
+    this.dialog.hidden = !this.open;
+    if (this.open) {
+      this.addOpenListeners();
+      this.modal.activate();
+      lockBodyScrolling(this);
+    }
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.modal.deactivate();
+    unlockBodyScrolling(this);
+    this.removeOpenListeners();
+  }
+  requestClose(source) {
+    const slRequestClose = this.emit("sl-request-close", {
+      cancelable: true,
+      detail: { source }
+    });
+    if (slRequestClose.defaultPrevented) {
+      const animation = getAnimation(this, "dialog.denyClose", { dir: this.localize.dir() });
+      animateTo(this.panel, animation.keyframes, animation.options);
+      return;
+    }
+    this.hide();
+  }
+  addOpenListeners() {
+    var _a3;
+    if ("CloseWatcher" in window) {
+      (_a3 = this.closeWatcher) == null ? void 0 : _a3.destroy();
+      this.closeWatcher = new CloseWatcher();
+      this.closeWatcher.onclose = () => this.requestClose("keyboard");
+    } else {
+      document.addEventListener("keydown", this.handleDocumentKeyDown);
+    }
+  }
+  removeOpenListeners() {
+    var _a3;
+    (_a3 = this.closeWatcher) == null ? void 0 : _a3.destroy();
+    document.removeEventListener("keydown", this.handleDocumentKeyDown);
+  }
+  async handleOpenChange() {
+    if (this.open) {
+      this.emit("sl-show");
+      this.addOpenListeners();
+      this.originalTrigger = document.activeElement;
+      this.modal.activate();
+      lockBodyScrolling(this);
+      const autoFocusTarget = this.querySelector("[autofocus]");
+      if (autoFocusTarget) {
+        autoFocusTarget.removeAttribute("autofocus");
+      }
+      await Promise.all([stopAnimations(this.dialog), stopAnimations(this.overlay)]);
+      this.dialog.hidden = false;
+      requestAnimationFrame(() => {
+        const slInitialFocus = this.emit("sl-initial-focus", { cancelable: true });
+        if (!slInitialFocus.defaultPrevented) {
+          if (autoFocusTarget) {
+            autoFocusTarget.focus({ preventScroll: true });
+          } else {
+            this.panel.focus({ preventScroll: true });
+          }
+        }
+        if (autoFocusTarget) {
+          autoFocusTarget.setAttribute("autofocus", "");
+        }
+      });
+      const panelAnimation = getAnimation(this, "dialog.show", { dir: this.localize.dir() });
+      const overlayAnimation = getAnimation(this, "dialog.overlay.show", { dir: this.localize.dir() });
+      await Promise.all([
+        animateTo(this.panel, panelAnimation.keyframes, panelAnimation.options),
+        animateTo(this.overlay, overlayAnimation.keyframes, overlayAnimation.options)
+      ]);
+      this.emit("sl-after-show");
+    } else {
+      this.emit("sl-hide");
+      this.removeOpenListeners();
+      this.modal.deactivate();
+      await Promise.all([stopAnimations(this.dialog), stopAnimations(this.overlay)]);
+      const panelAnimation = getAnimation(this, "dialog.hide", { dir: this.localize.dir() });
+      const overlayAnimation = getAnimation(this, "dialog.overlay.hide", { dir: this.localize.dir() });
+      await Promise.all([
+        animateTo(this.overlay, overlayAnimation.keyframes, overlayAnimation.options).then(() => {
+          this.overlay.hidden = true;
+        }),
+        animateTo(this.panel, panelAnimation.keyframes, panelAnimation.options).then(() => {
+          this.panel.hidden = true;
+        })
+      ]);
+      this.dialog.hidden = true;
+      this.overlay.hidden = false;
+      this.panel.hidden = false;
+      unlockBodyScrolling(this);
+      const trigger = this.originalTrigger;
+      if (typeof (trigger == null ? void 0 : trigger.focus) === "function") {
+        setTimeout(() => trigger.focus());
+      }
+      this.emit("sl-after-hide");
+    }
+  }
+  /** Shows the dialog. */
+  async show() {
+    if (this.open) {
+      return void 0;
+    }
+    this.open = true;
+    return waitForEvent(this, "sl-after-show");
+  }
+  /** Hides the dialog */
+  async hide() {
+    if (!this.open) {
+      return void 0;
+    }
+    this.open = false;
+    return waitForEvent(this, "sl-after-hide");
+  }
+  render() {
+    return x2`
+      <div
+        part="base"
+        class=${e9({
+      dialog: true,
+      "dialog--open": this.open,
+      "dialog--has-footer": this.hasSlotController.test("footer")
+    })}
+      >
+        <div part="overlay" class="dialog__overlay" @click=${() => this.requestClose("overlay")} tabindex="-1"></div>
+
+        <div
+          part="panel"
+          class="dialog__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-hidden=${this.open ? "false" : "true"}
+          aria-label=${o9(this.noHeader ? this.label : void 0)}
+          aria-labelledby=${o9(!this.noHeader ? "title" : void 0)}
+          tabindex="-1"
+        >
+          ${!this.noHeader ? x2`
+                <header part="header" class="dialog__header">
+                  <h2 part="title" class="dialog__title" id="title">
+                    <slot name="label"> ${this.label.length > 0 ? this.label : String.fromCharCode(65279)} </slot>
+                  </h2>
+                  <div part="header-actions" class="dialog__header-actions">
+                    <slot name="header-actions"></slot>
+                    <sl-icon-button
+                      part="close-button"
+                      exportparts="base:close-button__base"
+                      class="dialog__close"
+                      name="x-lg"
+                      label=${this.localize.term("close")}
+                      library="system"
+                      @click="${() => this.requestClose("close-button")}"
+                    ></sl-icon-button>
+                  </div>
+                </header>
+              ` : ""}
+          ${""}
+          <div part="body" class="dialog__body" tabindex="-1"><slot></slot></div>
+
+          <footer part="footer" class="dialog__footer">
+            <slot name="footer"></slot>
+          </footer>
+        </div>
+      </div>
+    `;
+  }
+};
+SlDialog.styles = [component_styles_default, dialog_styles_default];
+SlDialog.dependencies = {
+  "sl-icon-button": SlIconButton
+};
+__decorateClass([
+  e6(".dialog")
+], SlDialog.prototype, "dialog", 2);
+__decorateClass([
+  e6(".dialog__panel")
+], SlDialog.prototype, "panel", 2);
+__decorateClass([
+  e6(".dialog__overlay")
+], SlDialog.prototype, "overlay", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlDialog.prototype, "open", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlDialog.prototype, "label", 2);
+__decorateClass([
+  n7({ attribute: "no-header", type: Boolean, reflect: true })
+], SlDialog.prototype, "noHeader", 2);
+__decorateClass([
+  watch("open", { waitUntilFirstUpdate: true })
+], SlDialog.prototype, "handleOpenChange", 1);
+setDefaultAnimation("dialog.show", {
+  keyframes: [
+    { opacity: 0, scale: 0.8 },
+    { opacity: 1, scale: 1 }
+  ],
+  options: { duration: 250, easing: "ease" }
+});
+setDefaultAnimation("dialog.hide", {
+  keyframes: [
+    { opacity: 1, scale: 1 },
+    { opacity: 0, scale: 0.8 }
+  ],
+  options: { duration: 250, easing: "ease" }
+});
+setDefaultAnimation("dialog.denyClose", {
+  keyframes: [{ scale: 1 }, { scale: 1.02 }, { scale: 1 }],
+  options: { duration: 250 }
+});
+setDefaultAnimation("dialog.overlay.show", {
+  keyframes: [{ opacity: 0 }, { opacity: 1 }],
+  options: { duration: 250 }
+});
+setDefaultAnimation("dialog.overlay.hide", {
+  keyframes: [{ opacity: 1 }, { opacity: 0 }],
+  options: { duration: 250 }
+});
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.GGT72J62.js
 var input_styles_default = i`
@@ -4304,7 +4859,7 @@ var form_control_styles_default = i`
 `;
 
 // node_modules/lit-html/directives/live.js
-var l5 = e9(class extends i6 {
+var l5 = e8(class extends i6 {
   constructor(r11) {
     if (super(r11), r11.type !== t6.PROPERTY && r11.type !== t6.ATTRIBUTE && r11.type !== t6.BOOLEAN_ATTRIBUTE) throw Error("The `live` directive is not allowed on child or event bindings");
     if (!f6(r11)) throw Error("`live` bindings can only contain a single expression");
@@ -4312,15 +4867,15 @@ var l5 = e9(class extends i6 {
   render(r11) {
     return r11;
   }
-  update(i9, [t7]) {
-    if (t7 === T2 || t7 === E2) return t7;
+  update(i9, [t8]) {
+    if (t8 === T2 || t8 === E2) return t8;
     const o11 = i9.element, l6 = i9.name;
     if (i9.type === t6.PROPERTY) {
-      if (t7 === o11[l6]) return T2;
+      if (t8 === o11[l6]) return T2;
     } else if (i9.type === t6.BOOLEAN_ATTRIBUTE) {
-      if (!!t7 === o11.hasAttribute(l6)) return T2;
-    } else if (i9.type === t6.ATTRIBUTE && o11.getAttribute(l6) === t7 + "") return T2;
-    return m3(i9), t7;
+      if (!!t8 === o11.hasAttribute(l6)) return T2;
+    } else if (i9.type === t6.ATTRIBUTE && o11.getAttribute(l6) === t8 + "") return T2;
+    return m3(i9), t8;
   }
 });
 
@@ -4523,7 +5078,7 @@ var SlInput = class extends ShoelaceElement {
     return x2`
       <div
         part="form-control"
-        class=${e10({
+        class=${e9({
       "form-control": true,
       "form-control--small": this.size === "small",
       "form-control--medium": this.size === "medium",
@@ -4544,7 +5099,7 @@ var SlInput = class extends ShoelaceElement {
         <div part="form-control-input" class="form-control-input">
           <div
             part="base"
-            class=${e10({
+            class=${e9({
       input: true,
       // Sizes
       "input--small": this.size === "small",
@@ -4924,7 +5479,7 @@ var SlOption = class extends ShoelaceElement {
     return x2`
       <div
         part="base"
-        class=${e10({
+        class=${e9({
       option: true,
       "option--current": this.current,
       "option--disabled": this.disabled,
@@ -6483,14 +7038,14 @@ var computePosition2 = (reference, floating, options) => {
 };
 
 // node_modules/composed-offset-position/dist/composed-offset-position.browser.min.mjs
-function e11(t7) {
-  return i8(t7);
+function e11(t8) {
+  return i8(t8);
 }
-function r10(t7) {
-  return t7.assignedSlot ? t7.assignedSlot : t7.parentNode instanceof ShadowRoot ? t7.parentNode.host : t7.parentNode;
+function r10(t8) {
+  return t8.assignedSlot ? t8.assignedSlot : t8.parentNode instanceof ShadowRoot ? t8.parentNode.host : t8.parentNode;
 }
 function i8(e13) {
-  for (let t7 = e13; t7; t7 = r10(t7)) if (t7 instanceof Element && "none" === getComputedStyle(t7).display) return null;
+  for (let t8 = e13; t8; t8 = r10(t8)) if (t8 instanceof Element && "none" === getComputedStyle(t8).display) return null;
   for (let n10 = r10(e13); n10; n10 = r10(n10)) {
     if (!(n10 instanceof Element)) continue;
     const e14 = getComputedStyle(n10);
@@ -6788,7 +7343,7 @@ var SlPopup = class extends ShoelaceElement {
 
       <span
         part="hover-bridge"
-        class=${e10({
+        class=${e9({
       "popup-hover-bridge": true,
       "popup-hover-bridge--visible": this.hoverBridge && this.active
     })}
@@ -6796,7 +7351,7 @@ var SlPopup = class extends ShoelaceElement {
 
       <div
         part="popup"
-        class=${e10({
+        class=${e9({
       popup: true,
       "popup--active": this.active,
       "popup--fixed": this.strategy === "fixed",
@@ -6892,6 +7447,533 @@ __decorateClass([
 __decorateClass([
   n7({ attribute: "hover-bridge", type: Boolean })
 ], SlPopup.prototype, "hoverBridge", 2);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.5D6IT2SR.js
+var range_styles_default = i`
+  :host {
+    --thumb-size: 20px;
+    --tooltip-offset: 10px;
+    --track-color-active: var(--sl-color-neutral-200);
+    --track-color-inactive: var(--sl-color-neutral-200);
+    --track-active-offset: 0%;
+    --track-height: 6px;
+
+    display: block;
+  }
+
+  .range {
+    position: relative;
+  }
+
+  .range__control {
+    --percent: 0%;
+    -webkit-appearance: none;
+    border-radius: 3px;
+    width: 100%;
+    height: var(--track-height);
+    background: transparent;
+    line-height: var(--sl-input-height-medium);
+    vertical-align: middle;
+    margin: 0;
+
+    background-image: linear-gradient(
+      to right,
+      var(--track-color-inactive) 0%,
+      var(--track-color-inactive) min(var(--percent), var(--track-active-offset)),
+      var(--track-color-active) min(var(--percent), var(--track-active-offset)),
+      var(--track-color-active) max(var(--percent), var(--track-active-offset)),
+      var(--track-color-inactive) max(var(--percent), var(--track-active-offset)),
+      var(--track-color-inactive) 100%
+    );
+  }
+
+  .range--rtl .range__control {
+    background-image: linear-gradient(
+      to left,
+      var(--track-color-inactive) 0%,
+      var(--track-color-inactive) min(var(--percent), var(--track-active-offset)),
+      var(--track-color-active) min(var(--percent), var(--track-active-offset)),
+      var(--track-color-active) max(var(--percent), var(--track-active-offset)),
+      var(--track-color-inactive) max(var(--percent), var(--track-active-offset)),
+      var(--track-color-inactive) 100%
+    );
+  }
+
+  /* Webkit */
+  .range__control::-webkit-slider-runnable-track {
+    width: 100%;
+    height: var(--track-height);
+    border-radius: 3px;
+    border: none;
+  }
+
+  .range__control::-webkit-slider-thumb {
+    border: none;
+    width: var(--thumb-size);
+    height: var(--thumb-size);
+    border-radius: 50%;
+    background-color: var(--sl-color-primary-600);
+    border: solid var(--sl-input-border-width) var(--sl-color-primary-600);
+    -webkit-appearance: none;
+    margin-top: calc(var(--thumb-size) / -2 + var(--track-height) / 2);
+    cursor: pointer;
+  }
+
+  .range__control:enabled::-webkit-slider-thumb:hover {
+    background-color: var(--sl-color-primary-500);
+    border-color: var(--sl-color-primary-500);
+  }
+
+  .range__control:enabled:focus-visible::-webkit-slider-thumb {
+    outline: var(--sl-focus-ring);
+    outline-offset: var(--sl-focus-ring-offset);
+  }
+
+  .range__control:enabled::-webkit-slider-thumb:active {
+    background-color: var(--sl-color-primary-500);
+    border-color: var(--sl-color-primary-500);
+    cursor: grabbing;
+  }
+
+  /* Firefox */
+  .range__control::-moz-focus-outer {
+    border: 0;
+  }
+
+  .range__control::-moz-range-progress {
+    background-color: var(--track-color-active);
+    border-radius: 3px;
+    height: var(--track-height);
+  }
+
+  .range__control::-moz-range-track {
+    width: 100%;
+    height: var(--track-height);
+    background-color: var(--track-color-inactive);
+    border-radius: 3px;
+    border: none;
+  }
+
+  .range__control::-moz-range-thumb {
+    border: none;
+    height: var(--thumb-size);
+    width: var(--thumb-size);
+    border-radius: 50%;
+    background-color: var(--sl-color-primary-600);
+    border-color: var(--sl-color-primary-600);
+    transition:
+      var(--sl-transition-fast) border-color,
+      var(--sl-transition-fast) background-color,
+      var(--sl-transition-fast) color,
+      var(--sl-transition-fast) box-shadow;
+    cursor: pointer;
+  }
+
+  .range__control:enabled::-moz-range-thumb:hover {
+    background-color: var(--sl-color-primary-500);
+    border-color: var(--sl-color-primary-500);
+  }
+
+  .range__control:enabled:focus-visible::-moz-range-thumb {
+    outline: var(--sl-focus-ring);
+    outline-offset: var(--sl-focus-ring-offset);
+  }
+
+  .range__control:enabled::-moz-range-thumb:active {
+    background-color: var(--sl-color-primary-500);
+    border-color: var(--sl-color-primary-500);
+    cursor: grabbing;
+  }
+
+  /* States */
+  .range__control:focus-visible {
+    outline: none;
+  }
+
+  .range__control:disabled {
+    opacity: 0.5;
+  }
+
+  .range__control:disabled::-webkit-slider-thumb {
+    cursor: not-allowed;
+  }
+
+  .range__control:disabled::-moz-range-thumb {
+    cursor: not-allowed;
+  }
+
+  /* Tooltip output */
+  .range__tooltip {
+    position: absolute;
+    z-index: var(--sl-z-index-tooltip);
+    left: 0;
+    border-radius: var(--sl-tooltip-border-radius);
+    background-color: var(--sl-tooltip-background-color);
+    font-family: var(--sl-tooltip-font-family);
+    font-size: var(--sl-tooltip-font-size);
+    font-weight: var(--sl-tooltip-font-weight);
+    line-height: var(--sl-tooltip-line-height);
+    color: var(--sl-tooltip-color);
+    opacity: 0;
+    padding: var(--sl-tooltip-padding);
+    transition: var(--sl-transition-fast) opacity;
+    pointer-events: none;
+  }
+
+  .range__tooltip:after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    left: 50%;
+    translate: calc(-1 * var(--sl-tooltip-arrow-size));
+  }
+
+  .range--tooltip-visible .range__tooltip {
+    opacity: 1;
+  }
+
+  /* Tooltip on top */
+  .range--tooltip-top .range__tooltip {
+    top: calc(-1 * var(--thumb-size) - var(--tooltip-offset));
+  }
+
+  .range--tooltip-top .range__tooltip:after {
+    border-top: var(--sl-tooltip-arrow-size) solid var(--sl-tooltip-background-color);
+    border-left: var(--sl-tooltip-arrow-size) solid transparent;
+    border-right: var(--sl-tooltip-arrow-size) solid transparent;
+    top: 100%;
+  }
+
+  /* Tooltip on bottom */
+  .range--tooltip-bottom .range__tooltip {
+    bottom: calc(-1 * var(--thumb-size) - var(--tooltip-offset));
+  }
+
+  .range--tooltip-bottom .range__tooltip:after {
+    border-bottom: var(--sl-tooltip-arrow-size) solid var(--sl-tooltip-background-color);
+    border-left: var(--sl-tooltip-arrow-size) solid transparent;
+    border-right: var(--sl-tooltip-arrow-size) solid transparent;
+    bottom: 100%;
+  }
+
+  @media (forced-colors: active) {
+    .range__control,
+    .range__tooltip {
+      border: solid 1px transparent;
+    }
+
+    .range__control::-webkit-slider-thumb {
+      border: solid 1px transparent;
+    }
+
+    .range__control::-moz-range-thumb {
+      border: solid 1px transparent;
+    }
+
+    .range__tooltip:after {
+      display: none;
+    }
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.QACYBNWK.js
+var SlRange = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.formControlController = new FormControlController(this);
+    this.hasSlotController = new HasSlotController(this, "help-text", "label");
+    this.localize = new LocalizeController2(this);
+    this.hasFocus = false;
+    this.hasTooltip = false;
+    this.title = "";
+    this.name = "";
+    this.value = 0;
+    this.label = "";
+    this.helpText = "";
+    this.disabled = false;
+    this.min = 0;
+    this.max = 100;
+    this.step = 1;
+    this.tooltip = "top";
+    this.tooltipFormatter = (value) => value.toString();
+    this.form = "";
+    this.defaultValue = 0;
+  }
+  /** Gets the validity state object */
+  get validity() {
+    return this.input.validity;
+  }
+  /** Gets the validation message */
+  get validationMessage() {
+    return this.input.validationMessage;
+  }
+  connectedCallback() {
+    super.connectedCallback();
+    this.resizeObserver = new ResizeObserver(() => this.syncRange());
+    if (this.value < this.min) {
+      this.value = this.min;
+    }
+    if (this.value > this.max) {
+      this.value = this.max;
+    }
+    this.updateComplete.then(() => {
+      this.syncRange();
+      this.resizeObserver.observe(this.input);
+    });
+  }
+  disconnectedCallback() {
+    var _a3;
+    super.disconnectedCallback();
+    (_a3 = this.resizeObserver) == null ? void 0 : _a3.unobserve(this.input);
+  }
+  handleChange() {
+    this.emit("sl-change");
+  }
+  handleInput() {
+    this.value = parseFloat(this.input.value);
+    this.emit("sl-input");
+    this.syncRange();
+  }
+  handleBlur() {
+    this.hasFocus = false;
+    this.hasTooltip = false;
+    this.emit("sl-blur");
+  }
+  handleFocus() {
+    this.hasFocus = true;
+    this.hasTooltip = true;
+    this.emit("sl-focus");
+  }
+  handleThumbDragStart() {
+    this.hasTooltip = true;
+  }
+  handleThumbDragEnd() {
+    this.hasTooltip = false;
+  }
+  syncProgress(percent) {
+    this.input.style.setProperty("--percent", `${percent * 100}%`);
+  }
+  syncTooltip(percent) {
+    if (this.output !== null) {
+      const inputWidth = this.input.offsetWidth;
+      const tooltipWidth = this.output.offsetWidth;
+      const thumbSize = getComputedStyle(this.input).getPropertyValue("--thumb-size");
+      const isRtl = this.localize.dir() === "rtl";
+      const percentAsWidth = inputWidth * percent;
+      if (isRtl) {
+        const x3 = `${inputWidth - percentAsWidth}px + ${percent} * ${thumbSize}`;
+        this.output.style.translate = `calc((${x3} - ${tooltipWidth / 2}px - ${thumbSize} / 2))`;
+      } else {
+        const x3 = `${percentAsWidth}px - ${percent} * ${thumbSize}`;
+        this.output.style.translate = `calc(${x3} - ${tooltipWidth / 2}px + ${thumbSize} / 2)`;
+      }
+    }
+  }
+  handleValueChange() {
+    this.formControlController.updateValidity();
+    this.input.value = this.value.toString();
+    this.value = parseFloat(this.input.value);
+    this.syncRange();
+  }
+  handleDisabledChange() {
+    this.formControlController.setValidity(this.disabled);
+  }
+  syncRange() {
+    const percent = Math.max(0, (this.value - this.min) / (this.max - this.min));
+    this.syncProgress(percent);
+    if (this.tooltip !== "none" && this.hasTooltip) {
+      this.updateComplete.then(() => this.syncTooltip(percent));
+    }
+  }
+  handleInvalid(event) {
+    this.formControlController.setValidity(false);
+    this.formControlController.emitInvalidEvent(event);
+  }
+  /** Sets focus on the range. */
+  focus(options) {
+    this.input.focus(options);
+  }
+  /** Removes focus from the range. */
+  blur() {
+    this.input.blur();
+  }
+  /** Increments the value of the range by the value of the step attribute. */
+  stepUp() {
+    this.input.stepUp();
+    if (this.value !== Number(this.input.value)) {
+      this.value = Number(this.input.value);
+    }
+  }
+  /** Decrements the value of the range by the value of the step attribute. */
+  stepDown() {
+    this.input.stepDown();
+    if (this.value !== Number(this.input.value)) {
+      this.value = Number(this.input.value);
+    }
+  }
+  /** Checks for validity but does not show a validation message. Returns `true` when valid and `false` when invalid. */
+  checkValidity() {
+    return this.input.checkValidity();
+  }
+  /** Gets the associated form, if one exists. */
+  getForm() {
+    return this.formControlController.getForm();
+  }
+  /** Checks for validity and shows the browser's validation message if the control is invalid. */
+  reportValidity() {
+    return this.input.reportValidity();
+  }
+  /** Sets a custom validation message. Pass an empty string to restore validity. */
+  setCustomValidity(message) {
+    this.input.setCustomValidity(message);
+    this.formControlController.updateValidity();
+  }
+  render() {
+    const hasLabelSlot = this.hasSlotController.test("label");
+    const hasHelpTextSlot = this.hasSlotController.test("help-text");
+    const hasLabel = this.label ? true : !!hasLabelSlot;
+    const hasHelpText = this.helpText ? true : !!hasHelpTextSlot;
+    return x2`
+      <div
+        part="form-control"
+        class=${e9({
+      "form-control": true,
+      "form-control--medium": true,
+      // range only has one size
+      "form-control--has-label": hasLabel,
+      "form-control--has-help-text": hasHelpText
+    })}
+      >
+        <label
+          part="form-control-label"
+          class="form-control__label"
+          for="input"
+          aria-hidden=${hasLabel ? "false" : "true"}
+        >
+          <slot name="label">${this.label}</slot>
+        </label>
+
+        <div part="form-control-input" class="form-control-input">
+          <div
+            part="base"
+            class=${e9({
+      range: true,
+      "range--disabled": this.disabled,
+      "range--focused": this.hasFocus,
+      "range--rtl": this.localize.dir() === "rtl",
+      "range--tooltip-visible": this.hasTooltip,
+      "range--tooltip-top": this.tooltip === "top",
+      "range--tooltip-bottom": this.tooltip === "bottom"
+    })}
+            @mousedown=${this.handleThumbDragStart}
+            @mouseup=${this.handleThumbDragEnd}
+            @touchstart=${this.handleThumbDragStart}
+            @touchend=${this.handleThumbDragEnd}
+          >
+            <input
+              part="input"
+              id="input"
+              class="range__control"
+              title=${this.title}
+              type="range"
+              name=${o9(this.name)}
+              ?disabled=${this.disabled}
+              min=${o9(this.min)}
+              max=${o9(this.max)}
+              step=${o9(this.step)}
+              .value=${l5(this.value.toString())}
+              aria-describedby="help-text"
+              @change=${this.handleChange}
+              @focus=${this.handleFocus}
+              @input=${this.handleInput}
+              @invalid=${this.handleInvalid}
+              @blur=${this.handleBlur}
+            />
+            ${this.tooltip !== "none" && !this.disabled ? x2`
+                  <output part="tooltip" class="range__tooltip">
+                    ${typeof this.tooltipFormatter === "function" ? this.tooltipFormatter(this.value) : this.value}
+                  </output>
+                ` : ""}
+          </div>
+        </div>
+
+        <div
+          part="form-control-help-text"
+          id="help-text"
+          class="form-control__help-text"
+          aria-hidden=${hasHelpText ? "false" : "true"}
+        >
+          <slot name="help-text">${this.helpText}</slot>
+        </div>
+      </div>
+    `;
+  }
+};
+SlRange.styles = [component_styles_default, form_control_styles_default, range_styles_default];
+__decorateClass([
+  e6(".range__control")
+], SlRange.prototype, "input", 2);
+__decorateClass([
+  e6(".range__tooltip")
+], SlRange.prototype, "output", 2);
+__decorateClass([
+  r7()
+], SlRange.prototype, "hasFocus", 2);
+__decorateClass([
+  r7()
+], SlRange.prototype, "hasTooltip", 2);
+__decorateClass([
+  n7()
+], SlRange.prototype, "title", 2);
+__decorateClass([
+  n7()
+], SlRange.prototype, "name", 2);
+__decorateClass([
+  n7({ type: Number })
+], SlRange.prototype, "value", 2);
+__decorateClass([
+  n7()
+], SlRange.prototype, "label", 2);
+__decorateClass([
+  n7({ attribute: "help-text" })
+], SlRange.prototype, "helpText", 2);
+__decorateClass([
+  n7({ type: Boolean, reflect: true })
+], SlRange.prototype, "disabled", 2);
+__decorateClass([
+  n7({ type: Number })
+], SlRange.prototype, "min", 2);
+__decorateClass([
+  n7({ type: Number })
+], SlRange.prototype, "max", 2);
+__decorateClass([
+  n7({ type: Number })
+], SlRange.prototype, "step", 2);
+__decorateClass([
+  n7()
+], SlRange.prototype, "tooltip", 2);
+__decorateClass([
+  n7({ attribute: false })
+], SlRange.prototype, "tooltipFormatter", 2);
+__decorateClass([
+  n7({ reflect: true })
+], SlRange.prototype, "form", 2);
+__decorateClass([
+  defaultValue()
+], SlRange.prototype, "defaultValue", 2);
+__decorateClass([
+  t4({ passive: true })
+], SlRange.prototype, "handleThumbDragStart", 1);
+__decorateClass([
+  watch("value", { waitUntilFirstUpdate: true })
+], SlRange.prototype, "handleValueChange", 1);
+__decorateClass([
+  watch("disabled", { waitUntilFirstUpdate: true })
+], SlRange.prototype, "handleDisabledChange", 1);
+__decorateClass([
+  watch("hasTooltip", { waitUntilFirstUpdate: true })
+], SlRange.prototype, "syncRange", 1);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.V2OL7VMD.js
 var tag_styles_default = i`
@@ -7026,7 +8108,7 @@ var SlTag = class extends ShoelaceElement {
     return x2`
       <span
         part="base"
-        class=${e10({
+        class=${e9({
       tag: true,
       // Types
       "tag--primary": this.variant === "primary",
@@ -7422,37 +8504,6 @@ var select_styles_default = i`
   }
 `;
 
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.RWUUFNUL.js
-function getOffset(element, parent) {
-  return {
-    top: Math.round(element.getBoundingClientRect().top - parent.getBoundingClientRect().top),
-    left: Math.round(element.getBoundingClientRect().left - parent.getBoundingClientRect().left)
-  };
-}
-function scrollIntoView(element, container, direction = "vertical", behavior = "smooth") {
-  const offset3 = getOffset(element, container);
-  const offsetTop = offset3.top + container.scrollTop;
-  const offsetLeft = offset3.left + container.scrollLeft;
-  const minX = container.scrollLeft;
-  const maxX = container.scrollLeft + container.offsetWidth;
-  const minY = container.scrollTop;
-  const maxY = container.scrollTop + container.offsetHeight;
-  if (direction === "horizontal" || direction === "both") {
-    if (offsetLeft < minX) {
-      container.scrollTo({ left: offsetLeft, behavior });
-    } else if (offsetLeft + element.clientWidth > maxX) {
-      container.scrollTo({ left: offsetLeft - container.offsetWidth + element.clientWidth, behavior });
-    }
-  }
-  if (direction === "vertical" || direction === "both") {
-    if (offsetTop < minY) {
-      container.scrollTo({ top: offsetTop, behavior });
-    } else if (offsetTop + element.clientHeight > maxY) {
-      container.scrollTo({ top: offsetTop - container.offsetHeight + element.clientHeight, behavior });
-    }
-  }
-}
-
 // node_modules/lit-html/directives/unsafe-html.js
 var e12 = class extends i6 {
   constructor(i9) {
@@ -7469,7 +8520,7 @@ var e12 = class extends i6 {
   }
 };
 e12.directiveName = "unsafeHTML", e12.resultType = 1;
-var o10 = e9(e12);
+var o10 = e8(e12);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.DL3WPSFB.js
 var SlSelect = class extends ShoelaceElement {
@@ -7966,7 +9017,7 @@ var SlSelect = class extends ShoelaceElement {
     return x2`
       <div
         part="form-control"
-        class=${e10({
+        class=${e9({
       "form-control": true,
       "form-control--small": this.size === "small",
       "form-control--medium": this.size === "medium",
@@ -7987,7 +9038,7 @@ var SlSelect = class extends ShoelaceElement {
 
         <div part="form-control-input" class="form-control-input">
           <sl-popup
-            class=${e10({
+            class=${e9({
       select: true,
       "select--standard": true,
       "select--filled": this.filled,
@@ -8242,7 +9293,8 @@ var PERIODIC_TABLE_SOURCES = {
     redistribution: "Vendored unchanged. The MIT licence requires the copyright notice and permission notice to travel with the data; both are reproduced in the attribution below.",
     attribution: "Element data from PSE-info, \xA9 2023\u20132026 Paul K\xF6hler, released under the MIT licence (https://pse-info.de/en/data).",
     input: "sources/pse-info-elements.json",
-    sha256: "4891e8d0d7cb9ba22af0b4ea3be2199622a5d2e06a78a16ad99232de7347560b"
+    sha256: "4891e8d0d7cb9ba22af0b4ea3be2199622a5d2e06a78a16ad99232de7347560b",
+    fields: ["names.de", "period", "group", "block", "phase", "electron_config", "set", "temperature.melting", "temperature.boiling", "temperature.sublimation", "discovery"]
   },
   "ciaaw": {
     publisher: "IUPAC Commission on Isotopic Abundances and Atomic Weights (CIAAW)",
@@ -8254,7 +9306,8 @@ var PERIODIC_TABLE_SOURCES = {
     redistribution: "The table is reproduced as factual data with source attribution. Only the numeric weights, their uncertainty digits and the published note codes are shipped; the surrounding prose is not.",
     attribution: "Standard atomic weights from CIAAW, IUPAC (https://www.ciaaw.org/atomic-weights.htm), 2024 edition.",
     input: "sources/ciaaw-atomic-weights.json",
-    sha256: "d6f9118592aa4379ab2bba484ef814ab90a67edd511c4cc58926f1a9512a0786"
+    sha256: "d6f9118592aa4379ab2bba484ef814ab90a67edd511c4cc58926f1a9512a0786",
+    fields: ["symbol", "name", "standard atomic weight", "uncertainty digits", "note codes"]
   },
   "nist": {
     publisher: "National Institute of Standards and Technology (NIST)",
@@ -8266,7 +9319,8 @@ var PERIODIC_TABLE_SOURCES = {
     redistribution: "Vendored as a verification input. Only the subshell occupation of the neutral ground state is shipped, and only after it agrees with the PSE-info configuration.",
     attribution: "Ground-state configurations cross-checked against the NIST Handbook of Basic Atomic Spectroscopic Data.",
     input: "sources/nist-configurations.json",
-    sha256: "0e1d991355f806077d4666af2d241d5d6f40bc0033c9ae79747717755405041d"
+    sha256: "0e1d991355f806077d4666af2d241d5d6f40bc0033c9ae79747717755405041d",
+    fields: ["neutral ground-state subshell occupation"]
   }
 };
 var PERIODIC_TABLE_CATEGORIES = {
@@ -8295,124 +9349,124 @@ var PERIODIC_TABLE_LAYOUT = {
   ]
 };
 var PERIODIC_TABLE_ELEMENTS = [
-  { "atomicNumber": 1, "symbol": "H", "names": { "en": "Hydrogen", "de": "Wasserstoff" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#H" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#h" } }, "period": 1, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#h" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#h" } }, "weight": { "kind": "interval", "lower": "1.00784", "upper": "1.00811", "noteCodes": ["m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#H" } }, "configuration": { "status": "reported", "value": "1s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#h" } }, "shells": [1], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#h" } } },
-  { "atomicNumber": 2, "symbol": "He", "names": { "en": "Helium", "de": "Helium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#He" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#he" } }, "period": 1, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#he" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#he" } }, "weight": { "kind": "value", "decimal": "4.002602", "uncertaintyDigits": "2", "noteCodes": ["g", "r"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#He" } }, "configuration": { "status": "reported", "value": "1s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#he" } }, "shells": [2], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#he" } } },
-  { "atomicNumber": 3, "symbol": "Li", "names": { "en": "Lithium", "de": "Lithium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Li" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#li" } }, "period": 2, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#li" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#li" } }, "weight": { "kind": "interval", "lower": "6.938", "upper": "6.997", "noteCodes": ["m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Li" } }, "configuration": { "status": "reported", "value": "[He] 2s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#li" } }, "shells": [2, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#li" } } },
-  { "atomicNumber": 4, "symbol": "Be", "names": { "en": "Beryllium", "de": "Beryllium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Be" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#be" } }, "period": 2, "group": { "status": "reported", "value": 2, "provenance": { "sourceId": "pse-info", "locator": "elements.json#be" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#be" } }, "weight": { "kind": "value", "decimal": "9.0121831", "uncertaintyDigits": "5", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Be" } }, "configuration": { "status": "reported", "value": "[He] 2s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#be" } }, "shells": [2, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#be" } } },
-  { "atomicNumber": 5, "symbol": "B", "names": { "en": "Boron", "de": "Bor" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#B" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#b" } }, "period": 2, "group": { "status": "reported", "value": 13, "provenance": { "sourceId": "pse-info", "locator": "elements.json#b" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#b" } }, "weight": { "kind": "interval", "lower": "10.806", "upper": "10.821", "noteCodes": ["m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#B" } }, "configuration": { "status": "reported", "value": "[He] 2s2 2p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#b" } }, "shells": [2, 3], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#b" } } },
-  { "atomicNumber": 6, "symbol": "C", "names": { "en": "Carbon", "de": "Kohlenstoff" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#C" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#c" } }, "period": 2, "group": { "status": "reported", "value": 14, "provenance": { "sourceId": "pse-info", "locator": "elements.json#c" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#c" } }, "weight": { "kind": "interval", "lower": "12.0096", "upper": "12.0116", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#C" } }, "configuration": { "status": "reported", "value": "[He] 2s2 2p2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#c" } }, "shells": [2, 4], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#c" } } },
-  { "atomicNumber": 7, "symbol": "N", "names": { "en": "Nitrogen", "de": "Stickstoff" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#N" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#n" } }, "period": 2, "group": { "status": "reported", "value": 15, "provenance": { "sourceId": "pse-info", "locator": "elements.json#n" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#n" } }, "weight": { "kind": "interval", "lower": "14.00643", "upper": "14.00728", "noteCodes": ["m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#N" } }, "configuration": { "status": "reported", "value": "[He] 2s2 2p3", "provenance": { "sourceId": "pse-info", "locator": "elements.json#n" } }, "shells": [2, 5], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#n" } } },
-  { "atomicNumber": 8, "symbol": "O", "names": { "en": "Oxygen", "de": "Sauerstoff" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#O" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#o" } }, "period": 2, "group": { "status": "reported", "value": 16, "provenance": { "sourceId": "pse-info", "locator": "elements.json#o" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#o" } }, "weight": { "kind": "interval", "lower": "15.99903", "upper": "15.99977", "noteCodes": ["m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#O" } }, "configuration": { "status": "reported", "value": "[He] 2s2 2p4", "provenance": { "sourceId": "pse-info", "locator": "elements.json#o" } }, "shells": [2, 6], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#o" } } },
-  { "atomicNumber": 9, "symbol": "F", "names": { "en": "Fluorine", "de": "Fluor" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#F" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#f" } }, "period": 2, "group": { "status": "reported", "value": 17, "provenance": { "sourceId": "pse-info", "locator": "elements.json#f" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#f" } }, "weight": { "kind": "value", "decimal": "18.998403162", "uncertaintyDigits": "5", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#F" } }, "configuration": { "status": "reported", "value": "[He] 2s2 2p5", "provenance": { "sourceId": "pse-info", "locator": "elements.json#f" } }, "shells": [2, 7], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#f" } } },
-  { "atomicNumber": 10, "symbol": "Ne", "names": { "en": "Neon", "de": "Neon" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ne" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ne" } }, "period": 2, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ne" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ne" } }, "weight": { "kind": "value", "decimal": "20.1797", "uncertaintyDigits": "6", "noteCodes": ["g", "m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ne" } }, "configuration": { "status": "reported", "value": "[He] 2s2 2p6", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ne" } }, "shells": [2, 8], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ne" } } },
-  { "atomicNumber": 11, "symbol": "Na", "names": { "en": "Sodium", "de": "Natrium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Na" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#na" } }, "period": 3, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#na" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#na" } }, "weight": { "kind": "value", "decimal": "22.98976928", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Na" } }, "configuration": { "status": "reported", "value": "[Ne] 3s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#na" } }, "shells": [2, 8, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#na" } } },
-  { "atomicNumber": 12, "symbol": "Mg", "names": { "en": "Magnesium", "de": "Magnesium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mg" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#mg" } }, "period": 3, "group": { "status": "reported", "value": 2, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mg" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mg" } }, "weight": { "kind": "interval", "lower": "24.304", "upper": "24.307", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mg" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mg" } }, "shells": [2, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mg" } } },
-  { "atomicNumber": 13, "symbol": "Al", "names": { "en": "Aluminium", "de": "Aluminium" }, "aliases": { "en": ["Aluminum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Al" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#al" } }, "period": 3, "group": { "status": "reported", "value": 13, "provenance": { "sourceId": "pse-info", "locator": "elements.json#al" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#al" } }, "weight": { "kind": "value", "decimal": "26.9815384", "uncertaintyDigits": "3", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Al" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2 3p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#al" } }, "shells": [2, 8, 3], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#al" } } },
-  { "atomicNumber": 14, "symbol": "Si", "names": { "en": "Silicon", "de": "Silicium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Si" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#si" } }, "period": 3, "group": { "status": "reported", "value": 14, "provenance": { "sourceId": "pse-info", "locator": "elements.json#si" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#si" } }, "weight": { "kind": "interval", "lower": "28.084", "upper": "28.086", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Si" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2 3p2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#si" } }, "shells": [2, 8, 4], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#si" } } },
-  { "atomicNumber": 15, "symbol": "P", "names": { "en": "Phosphorus", "de": "Phosphor" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#P" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#p" } }, "period": 3, "group": { "status": "reported", "value": 15, "provenance": { "sourceId": "pse-info", "locator": "elements.json#p" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#p" } }, "weight": { "kind": "value", "decimal": "30.973761998", "uncertaintyDigits": "5", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#P" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2 3p3", "provenance": { "sourceId": "pse-info", "locator": "elements.json#p" } }, "shells": [2, 8, 5], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#p" } } },
-  { "atomicNumber": 16, "symbol": "S", "names": { "en": "Sulfur", "de": "Schwefel" }, "aliases": { "en": ["Sulphur"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#S" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#s" } }, "period": 3, "group": { "status": "reported", "value": 16, "provenance": { "sourceId": "pse-info", "locator": "elements.json#s" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#s" } }, "weight": { "kind": "interval", "lower": "32.059", "upper": "32.076", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#S" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2 3p4", "provenance": { "sourceId": "pse-info", "locator": "elements.json#s" } }, "shells": [2, 8, 6], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#s" } } },
-  { "atomicNumber": 17, "symbol": "Cl", "names": { "en": "Chlorine", "de": "Chlor" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cl" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cl" } }, "period": 3, "group": { "status": "reported", "value": 17, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cl" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cl" } }, "weight": { "kind": "interval", "lower": "35.446", "upper": "35.457", "noteCodes": ["m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cl" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2 3p5", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cl" } }, "shells": [2, 8, 7], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cl" } } },
-  { "atomicNumber": 18, "symbol": "Ar", "names": { "en": "Argon", "de": "Argon" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ar" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ar" } }, "period": 3, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ar" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ar" } }, "weight": { "kind": "interval", "lower": "39.792", "upper": "39.963", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ar" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2 3p6", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ar" } }, "shells": [2, 8, 8], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ar" } } },
-  { "atomicNumber": 19, "symbol": "K", "names": { "en": "Potassium", "de": "Kalium" }, "aliases": { "en": ["Kalium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#K" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#k" } }, "period": 4, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#k" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#k" } }, "weight": { "kind": "value", "decimal": "39.0983", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#K" } }, "configuration": { "status": "reported", "value": "[Ar] 4s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#k" } }, "shells": [2, 8, 8, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#k" } } },
-  { "atomicNumber": 20, "symbol": "Ca", "names": { "en": "Calcium", "de": "Calcium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ca" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ca" } }, "period": 4, "group": { "status": "reported", "value": 2, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ca" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ca" } }, "weight": { "kind": "value", "decimal": "40.078", "uncertaintyDigits": "4", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ca" } }, "configuration": { "status": "reported", "value": "[Ar] 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ca" } }, "shells": [2, 8, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ca" } } },
-  { "atomicNumber": 21, "symbol": "Sc", "names": { "en": "Scandium", "de": "Scandium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sc" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#sc" } }, "period": 4, "group": { "status": "reported", "value": 3, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sc" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sc" } }, "weight": { "kind": "value", "decimal": "44.955907", "uncertaintyDigits": "4", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sc" } }, "configuration": { "status": "reported", "value": "[Ar] 3d1 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sc" } }, "shells": [2, 8, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sc" } } },
-  { "atomicNumber": 22, "symbol": "Ti", "names": { "en": "Titanium", "de": "Titan" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ti" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ti" } }, "period": 4, "group": { "status": "reported", "value": 4, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ti" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ti" } }, "weight": { "kind": "value", "decimal": "47.867", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ti" } }, "configuration": { "status": "reported", "value": "[Ar] 3d2 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ti" } }, "shells": [2, 8, 10, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ti" } } },
-  { "atomicNumber": 23, "symbol": "V", "names": { "en": "Vanadium", "de": "Vanadium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#V" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#v" } }, "period": 4, "group": { "status": "reported", "value": 5, "provenance": { "sourceId": "pse-info", "locator": "elements.json#v" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#v" } }, "weight": { "kind": "value", "decimal": "50.9415", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#V" } }, "configuration": { "status": "reported", "value": "[Ar] 3d3 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#v" } }, "shells": [2, 8, 11, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#v" } } },
-  { "atomicNumber": 24, "symbol": "Cr", "names": { "en": "Chromium", "de": "Chrom" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cr" } }, "period": 4, "group": { "status": "reported", "value": 6, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cr" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cr" } }, "weight": { "kind": "value", "decimal": "51.9961", "uncertaintyDigits": "6", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cr" } }, "configuration": { "status": "reported", "value": "[Ar] 3d5 4s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cr" } }, "shells": [2, 8, 13, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cr" } } },
-  { "atomicNumber": 25, "symbol": "Mn", "names": { "en": "Manganese", "de": "Mangan" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mn" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#mn" } }, "period": 4, "group": { "status": "reported", "value": 7, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mn" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mn" } }, "weight": { "kind": "value", "decimal": "54.938043", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mn" } }, "configuration": { "status": "reported", "value": "[Ar] 3d5 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mn" } }, "shells": [2, 8, 13, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mn" } } },
-  { "atomicNumber": 26, "symbol": "Fe", "names": { "en": "Iron", "de": "Eisen" }, "aliases": { "en": ["Ferrum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fe" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#fe" } }, "period": 4, "group": { "status": "reported", "value": 8, "provenance": { "sourceId": "pse-info", "locator": "elements.json#fe" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fe" } }, "weight": { "kind": "value", "decimal": "55.845", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fe" } }, "configuration": { "status": "reported", "value": "[Ar] 3d6 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fe" } }, "shells": [2, 8, 14, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fe" } } },
-  { "atomicNumber": 27, "symbol": "Co", "names": { "en": "Cobalt", "de": "Cobalt" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Co" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#co" } }, "period": 4, "group": { "status": "reported", "value": 9, "provenance": { "sourceId": "pse-info", "locator": "elements.json#co" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#co" } }, "weight": { "kind": "value", "decimal": "58.933194", "uncertaintyDigits": "3", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Co" } }, "configuration": { "status": "reported", "value": "[Ar] 3d7 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#co" } }, "shells": [2, 8, 15, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#co" } } },
-  { "atomicNumber": 28, "symbol": "Ni", "names": { "en": "Nickel", "de": "Nickel" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ni" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ni" } }, "period": 4, "group": { "status": "reported", "value": 10, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ni" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ni" } }, "weight": { "kind": "value", "decimal": "58.6934", "uncertaintyDigits": "4", "noteCodes": ["r"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ni" } }, "configuration": { "status": "reported", "value": "[Ar] 3d8 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ni" } }, "shells": [2, 8, 16, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ni" } } },
-  { "atomicNumber": 29, "symbol": "Cu", "names": { "en": "Copper", "de": "Kupfer" }, "aliases": { "en": ["Cuprum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cu" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cu" } }, "period": 4, "group": { "status": "reported", "value": 11, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cu" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cu" } }, "weight": { "kind": "value", "decimal": "63.546", "uncertaintyDigits": "3", "noteCodes": ["r"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cu" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cu" } }, "shells": [2, 8, 18, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cu" } } },
-  { "atomicNumber": 30, "symbol": "Zn", "names": { "en": "Zinc", "de": "Zink" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Zn" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#zn" } }, "period": 4, "group": { "status": "reported", "value": 12, "provenance": { "sourceId": "pse-info", "locator": "elements.json#zn" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zn" } }, "weight": { "kind": "value", "decimal": "65.38", "uncertaintyDigits": "2", "noteCodes": ["r"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Zn" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zn" } }, "shells": [2, 8, 18, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zn" } } },
-  { "atomicNumber": 31, "symbol": "Ga", "names": { "en": "Gallium", "de": "Gallium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ga" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ga" } }, "period": 4, "group": { "status": "reported", "value": 13, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ga" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ga" } }, "weight": { "kind": "value", "decimal": "69.723", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ga" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2 4p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ga" } }, "shells": [2, 8, 18, 3], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ga" } } },
-  { "atomicNumber": 32, "symbol": "Ge", "names": { "en": "Germanium", "de": "Germanium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ge" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ge" } }, "period": 4, "group": { "status": "reported", "value": 14, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ge" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ge" } }, "weight": { "kind": "value", "decimal": "72.630", "uncertaintyDigits": "8", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ge" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2 4p2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ge" } }, "shells": [2, 8, 18, 4], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ge" } } },
-  { "atomicNumber": 33, "symbol": "As", "names": { "en": "Arsenic", "de": "Arsen" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#As" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#as" } }, "period": 4, "group": { "status": "reported", "value": 15, "provenance": { "sourceId": "pse-info", "locator": "elements.json#as" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#as" } }, "weight": { "kind": "value", "decimal": "74.921595", "uncertaintyDigits": "6", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#As" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2 4p3", "provenance": { "sourceId": "pse-info", "locator": "elements.json#as" } }, "shells": [2, 8, 18, 5], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#as" } } },
-  { "atomicNumber": 34, "symbol": "Se", "names": { "en": "Selenium", "de": "Selen" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Se" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#se" } }, "period": 4, "group": { "status": "reported", "value": 16, "provenance": { "sourceId": "pse-info", "locator": "elements.json#se" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#se" } }, "weight": { "kind": "value", "decimal": "78.971", "uncertaintyDigits": "8", "noteCodes": ["r"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Se" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2 4p4", "provenance": { "sourceId": "pse-info", "locator": "elements.json#se" } }, "shells": [2, 8, 18, 6], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#se" } } },
-  { "atomicNumber": 35, "symbol": "Br", "names": { "en": "Bromine", "de": "Brom" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Br" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#br" } }, "period": 4, "group": { "status": "reported", "value": 17, "provenance": { "sourceId": "pse-info", "locator": "elements.json#br" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#br" } }, "weight": { "kind": "interval", "lower": "79.901", "upper": "79.907", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Br" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2 4p5", "provenance": { "sourceId": "pse-info", "locator": "elements.json#br" } }, "shells": [2, 8, 18, 7], "phase": { "status": "reported", "value": "liquid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#br" } } },
-  { "atomicNumber": 36, "symbol": "Kr", "names": { "en": "Krypton", "de": "Krypton" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Kr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#kr" } }, "period": 4, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#kr" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#kr" } }, "weight": { "kind": "value", "decimal": "83.798", "uncertaintyDigits": "2", "noteCodes": ["g", "m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Kr" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2 4p6", "provenance": { "sourceId": "pse-info", "locator": "elements.json#kr" } }, "shells": [2, 8, 18, 8], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#kr" } } },
-  { "atomicNumber": 37, "symbol": "Rb", "names": { "en": "Rubidium", "de": "Rubidium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rb" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#rb" } }, "period": 5, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rb" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rb" } }, "weight": { "kind": "value", "decimal": "85.4678", "uncertaintyDigits": "3", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rb" } }, "configuration": { "status": "reported", "value": "[Kr] 5s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rb" } }, "shells": [2, 8, 18, 8, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rb" } } },
-  { "atomicNumber": 38, "symbol": "Sr", "names": { "en": "Strontium", "de": "Strontium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#sr" } }, "period": 5, "group": { "status": "reported", "value": 2, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sr" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sr" } }, "weight": { "kind": "value", "decimal": "87.62", "uncertaintyDigits": "1", "noteCodes": ["g", "r"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sr" } }, "configuration": { "status": "reported", "value": "[Kr] 5s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sr" } }, "shells": [2, 8, 18, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sr" } } },
-  { "atomicNumber": 39, "symbol": "Y", "names": { "en": "Yttrium", "de": "Yttrium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Y" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#y" } }, "period": 5, "group": { "status": "reported", "value": 3, "provenance": { "sourceId": "pse-info", "locator": "elements.json#y" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#y" } }, "weight": { "kind": "value", "decimal": "88.905838", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Y" } }, "configuration": { "status": "reported", "value": "[Kr] 4d1 5s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#y" } }, "shells": [2, 8, 18, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#y" } } },
-  { "atomicNumber": 40, "symbol": "Zr", "names": { "en": "Zirconium", "de": "Zirconium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Zr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#zr" } }, "period": 5, "group": { "status": "reported", "value": 4, "provenance": { "sourceId": "pse-info", "locator": "elements.json#zr" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zr" } }, "weight": { "kind": "value", "decimal": "91.222", "uncertaintyDigits": "3", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Zr" } }, "configuration": { "status": "reported", "value": "[Kr] 4d2 5s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zr" } }, "shells": [2, 8, 18, 10, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zr" } } },
-  { "atomicNumber": 41, "symbol": "Nb", "names": { "en": "Niobium", "de": "Niob" }, "aliases": { "en": ["Columbium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Nb" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#nb" } }, "period": 5, "group": { "status": "reported", "value": 5, "provenance": { "sourceId": "pse-info", "locator": "elements.json#nb" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nb" } }, "weight": { "kind": "value", "decimal": "92.90637", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Nb" } }, "configuration": { "status": "reported", "value": "[Kr] 4d4 5s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nb" } }, "shells": [2, 8, 18, 12, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nb" } } },
-  { "atomicNumber": 42, "symbol": "Mo", "names": { "en": "Molybdenum", "de": "Molybd\xE4n" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mo" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#mo" } }, "period": 5, "group": { "status": "reported", "value": 6, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mo" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mo" } }, "weight": { "kind": "value", "decimal": "95.95", "uncertaintyDigits": "1", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mo" } }, "configuration": { "status": "reported", "value": "[Kr] 4d5 5s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mo" } }, "shells": [2, 8, 18, 13, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mo" } } },
-  { "atomicNumber": 43, "symbol": "Tc", "names": { "en": "Technetium", "de": "Technetium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tc" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#tc" } }, "period": 5, "group": { "status": "reported", "value": 7, "provenance": { "sourceId": "pse-info", "locator": "elements.json#tc" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tc" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tc" } }, "configuration": { "status": "reported", "value": "[Kr] 4d5 5s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tc" } }, "shells": [2, 8, 18, 13, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tc" } } },
-  { "atomicNumber": 44, "symbol": "Ru", "names": { "en": "Ruthenium", "de": "Ruthenium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ru" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ru" } }, "period": 5, "group": { "status": "reported", "value": 8, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ru" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ru" } }, "weight": { "kind": "value", "decimal": "101.07", "uncertaintyDigits": "2", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ru" } }, "configuration": { "status": "reported", "value": "[Kr] 4d7 5s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ru" } }, "shells": [2, 8, 18, 15, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ru" } } },
-  { "atomicNumber": 45, "symbol": "Rh", "names": { "en": "Rhodium", "de": "Rhodium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rh" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#rh" } }, "period": 5, "group": { "status": "reported", "value": 9, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rh" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rh" } }, "weight": { "kind": "value", "decimal": "102.90549", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rh" } }, "configuration": { "status": "reported", "value": "[Kr] 4d8 5s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rh" } }, "shells": [2, 8, 18, 16, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rh" } } },
-  { "atomicNumber": 46, "symbol": "Pd", "names": { "en": "Palladium", "de": "Palladium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pd" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pd" } }, "period": 5, "group": { "status": "reported", "value": 10, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pd" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pd" } }, "weight": { "kind": "value", "decimal": "106.42", "uncertaintyDigits": "1", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pd" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pd" } }, "shells": [2, 8, 18, 18], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pd" } } },
-  { "atomicNumber": 47, "symbol": "Ag", "names": { "en": "Silver", "de": "Silber" }, "aliases": { "en": ["Argentum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ag" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ag" } }, "period": 5, "group": { "status": "reported", "value": 11, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ag" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ag" } }, "weight": { "kind": "value", "decimal": "107.8682", "uncertaintyDigits": "2", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ag" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ag" } }, "shells": [2, 8, 18, 18, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ag" } } },
-  { "atomicNumber": 48, "symbol": "Cd", "names": { "en": "Cadmium", "de": "Cadmium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cd" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cd" } }, "period": 5, "group": { "status": "reported", "value": 12, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cd" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cd" } }, "weight": { "kind": "value", "decimal": "112.414", "uncertaintyDigits": "4", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cd" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cd" } }, "shells": [2, 8, 18, 18, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cd" } } },
-  { "atomicNumber": 49, "symbol": "In", "names": { "en": "Indium", "de": "Indium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#In" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#in" } }, "period": 5, "group": { "status": "reported", "value": 13, "provenance": { "sourceId": "pse-info", "locator": "elements.json#in" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#in" } }, "weight": { "kind": "value", "decimal": "114.818", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#In" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2 5p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#in" } }, "shells": [2, 8, 18, 18, 3], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#in" } } },
-  { "atomicNumber": 50, "symbol": "Sn", "names": { "en": "Tin", "de": "Zinn" }, "aliases": { "en": ["Stannum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sn" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#sn" } }, "period": 5, "group": { "status": "reported", "value": 14, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sn" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sn" } }, "weight": { "kind": "value", "decimal": "118.710", "uncertaintyDigits": "7", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sn" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2 5p2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sn" } }, "shells": [2, 8, 18, 18, 4], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sn" } } },
-  { "atomicNumber": 51, "symbol": "Sb", "names": { "en": "Antimony", "de": "Antimon" }, "aliases": { "en": ["Stibium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sb" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#sb" } }, "period": 5, "group": { "status": "reported", "value": 15, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sb" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sb" } }, "weight": { "kind": "value", "decimal": "121.760", "uncertaintyDigits": "1", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sb" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2 5p3", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sb" } }, "shells": [2, 8, 18, 18, 5], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sb" } } },
-  { "atomicNumber": 52, "symbol": "Te", "names": { "en": "Tellurium", "de": "Tellur" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Te" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#te" } }, "period": 5, "group": { "status": "reported", "value": 16, "provenance": { "sourceId": "pse-info", "locator": "elements.json#te" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#te" } }, "weight": { "kind": "value", "decimal": "127.60", "uncertaintyDigits": "3", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Te" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2 5p4", "provenance": { "sourceId": "pse-info", "locator": "elements.json#te" } }, "shells": [2, 8, 18, 18, 6], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#te" } } },
-  { "atomicNumber": 53, "symbol": "I", "names": { "en": "Iodine", "de": "Iod" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#I" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#i" } }, "period": 5, "group": { "status": "reported", "value": 17, "provenance": { "sourceId": "pse-info", "locator": "elements.json#i" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#i" } }, "weight": { "kind": "value", "decimal": "126.90447", "uncertaintyDigits": "3", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#I" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2 5p5", "provenance": { "sourceId": "pse-info", "locator": "elements.json#i" } }, "shells": [2, 8, 18, 18, 7], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#i" } } },
-  { "atomicNumber": 54, "symbol": "Xe", "names": { "en": "Xenon", "de": "Xenon" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Xe" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#xe" } }, "period": 5, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#xe" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#xe" } }, "weight": { "kind": "value", "decimal": "131.293", "uncertaintyDigits": "6", "noteCodes": ["g", "m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Xe" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2 5p6", "provenance": { "sourceId": "pse-info", "locator": "elements.json#xe" } }, "shells": [2, 8, 18, 18, 8], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#xe" } } },
-  { "atomicNumber": 55, "symbol": "Cs", "names": { "en": "Caesium", "de": "Caesium" }, "aliases": { "en": ["Cesium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cs" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cs" } }, "period": 6, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cs" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cs" } }, "weight": { "kind": "value", "decimal": "132.90545196", "uncertaintyDigits": "6", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cs" } }, "configuration": { "status": "reported", "value": "[Xe] 6s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cs" } }, "shells": [2, 8, 18, 18, 8, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cs" } } },
-  { "atomicNumber": 56, "symbol": "Ba", "names": { "en": "Barium", "de": "Barium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ba" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ba" } }, "period": 6, "group": { "status": "reported", "value": 2, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ba" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ba" } }, "weight": { "kind": "value", "decimal": "137.327", "uncertaintyDigits": "7", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ba" } }, "configuration": { "status": "reported", "value": "[Xe] 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ba" } }, "shells": [2, 8, 18, 18, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ba" } } },
-  { "atomicNumber": 57, "symbol": "La", "names": { "en": "Lanthanum", "de": "Lanthan" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#La" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#la" } }, "period": 6, "group": { "status": "convention-dependent", "provenance": { "sourceId": "pse-info", "locator": "elements.json#la" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#la" } }, "weight": { "kind": "value", "decimal": "138.90547", "uncertaintyDigits": "7", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#La" } }, "configuration": { "status": "reported", "value": "[Xe] 5d1 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#la" } }, "shells": [2, 8, 18, 18, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#la" } } },
-  { "atomicNumber": 58, "symbol": "Ce", "names": { "en": "Cerium", "de": "Cer" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ce" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ce" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ce" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ce" } }, "weight": { "kind": "value", "decimal": "140.116", "uncertaintyDigits": "1", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ce" } }, "configuration": { "status": "reported", "value": "[Xe] 4f1 5d1 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ce" } }, "shells": [2, 8, 18, 19, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ce" } } },
-  { "atomicNumber": 59, "symbol": "Pr", "names": { "en": "Praseodymium", "de": "Praseodym" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pr" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pr" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pr" } }, "weight": { "kind": "value", "decimal": "140.90766", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pr" } }, "configuration": { "status": "reported", "value": "[Xe] 4f3 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pr" } }, "shells": [2, 8, 18, 21, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pr" } } },
-  { "atomicNumber": 60, "symbol": "Nd", "names": { "en": "Neodymium", "de": "Neodym" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Nd" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#nd" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nd" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nd" } }, "weight": { "kind": "value", "decimal": "144.242", "uncertaintyDigits": "3", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Nd" } }, "configuration": { "status": "reported", "value": "[Xe] 4f4 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nd" } }, "shells": [2, 8, 18, 22, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nd" } } },
-  { "atomicNumber": 61, "symbol": "Pm", "names": { "en": "Promethium", "de": "Promethium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pm" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pm" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pm" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pm" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pm" } }, "configuration": { "status": "reported", "value": "[Xe] 4f5 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pm" } }, "shells": [2, 8, 18, 23, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pm" } } },
-  { "atomicNumber": 62, "symbol": "Sm", "names": { "en": "Samarium", "de": "Samarium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sm" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#sm" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sm" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sm" } }, "weight": { "kind": "value", "decimal": "150.36", "uncertaintyDigits": "2", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sm" } }, "configuration": { "status": "reported", "value": "[Xe] 4f6 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sm" } }, "shells": [2, 8, 18, 24, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sm" } } },
-  { "atomicNumber": 63, "symbol": "Eu", "names": { "en": "Europium", "de": "Europium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Eu" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#eu" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#eu" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#eu" } }, "weight": { "kind": "value", "decimal": "151.964", "uncertaintyDigits": "1", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Eu" } }, "configuration": { "status": "reported", "value": "[Xe] 4f7 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#eu" } }, "shells": [2, 8, 18, 25, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#eu" } } },
-  { "atomicNumber": 64, "symbol": "Gd", "names": { "en": "Gadolinium", "de": "Gadolinium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Gd" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#gd" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#gd" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#gd" } }, "weight": { "kind": "value", "decimal": "157.249", "uncertaintyDigits": "2", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Gd" } }, "configuration": { "status": "reported", "value": "[Xe] 4f7 5d1 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#gd" } }, "shells": [2, 8, 18, 25, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#gd" } } },
-  { "atomicNumber": 65, "symbol": "Tb", "names": { "en": "Terbium", "de": "Terbium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tb" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#tb" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tb" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tb" } }, "weight": { "kind": "value", "decimal": "158.925354", "uncertaintyDigits": "7", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tb" } }, "configuration": { "status": "reported", "value": "[Xe] 4f9 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tb" } }, "shells": [2, 8, 18, 27, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tb" } } },
-  { "atomicNumber": 66, "symbol": "Dy", "names": { "en": "Dysprosium", "de": "Dysprosium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Dy" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#dy" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#dy" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#dy" } }, "weight": { "kind": "value", "decimal": "162.500", "uncertaintyDigits": "1", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Dy" } }, "configuration": { "status": "reported", "value": "[Xe] 4f10 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#dy" } }, "shells": [2, 8, 18, 28, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#dy" } } },
-  { "atomicNumber": 67, "symbol": "Ho", "names": { "en": "Holmium", "de": "Holmium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ho" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ho" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ho" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ho" } }, "weight": { "kind": "value", "decimal": "164.930329", "uncertaintyDigits": "5", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ho" } }, "configuration": { "status": "reported", "value": "[Xe] 4f11 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ho" } }, "shells": [2, 8, 18, 29, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ho" } } },
-  { "atomicNumber": 68, "symbol": "Er", "names": { "en": "Erbium", "de": "Erbium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Er" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#er" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#er" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#er" } }, "weight": { "kind": "value", "decimal": "167.259", "uncertaintyDigits": "3", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Er" } }, "configuration": { "status": "reported", "value": "[Xe] 4f12 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#er" } }, "shells": [2, 8, 18, 30, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#er" } } },
-  { "atomicNumber": 69, "symbol": "Tm", "names": { "en": "Thulium", "de": "Thulium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tm" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#tm" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tm" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tm" } }, "weight": { "kind": "value", "decimal": "168.934219", "uncertaintyDigits": "5", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tm" } }, "configuration": { "status": "reported", "value": "[Xe] 4f13 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tm" } }, "shells": [2, 8, 18, 31, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tm" } } },
-  { "atomicNumber": 70, "symbol": "Yb", "names": { "en": "Ytterbium", "de": "Ytterbium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Yb" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#yb" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#yb" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#yb" } }, "weight": { "kind": "value", "decimal": "173.045", "uncertaintyDigits": "10", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Yb" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#yb" } }, "shells": [2, 8, 18, 32, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#yb" } } },
-  { "atomicNumber": 71, "symbol": "Lu", "names": { "en": "Lutetium", "de": "Lutetium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Lu" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#lu" } }, "period": 6, "group": { "status": "convention-dependent", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lu" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lu" } }, "weight": { "kind": "value", "decimal": "174.96669", "uncertaintyDigits": "5", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Lu" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d1 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lu" } }, "shells": [2, 8, 18, 32, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lu" } } },
-  { "atomicNumber": 72, "symbol": "Hf", "names": { "en": "Hafnium", "de": "Hafnium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Hf" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#hf" } }, "period": 6, "group": { "status": "reported", "value": 4, "provenance": { "sourceId": "pse-info", "locator": "elements.json#hf" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hf" } }, "weight": { "kind": "value", "decimal": "178.486", "uncertaintyDigits": "6", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Hf" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d2 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hf" } }, "shells": [2, 8, 18, 32, 10, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hf" } } },
-  { "atomicNumber": 73, "symbol": "Ta", "names": { "en": "Tantalum", "de": "Tantal" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ta" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ta" } }, "period": 6, "group": { "status": "reported", "value": 5, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ta" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ta" } }, "weight": { "kind": "value", "decimal": "180.94788", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ta" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d3 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ta" } }, "shells": [2, 8, 18, 32, 11, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ta" } } },
-  { "atomicNumber": 74, "symbol": "W", "names": { "en": "Tungsten", "de": "Wolfram" }, "aliases": { "en": ["Wolfram"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#W" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#w" } }, "period": 6, "group": { "status": "reported", "value": 6, "provenance": { "sourceId": "pse-info", "locator": "elements.json#w" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#w" } }, "weight": { "kind": "value", "decimal": "183.84", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#W" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d4 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#w" } }, "shells": [2, 8, 18, 32, 12, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#w" } } },
-  { "atomicNumber": 75, "symbol": "Re", "names": { "en": "Rhenium", "de": "Rhenium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Re" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#re" } }, "period": 6, "group": { "status": "reported", "value": 7, "provenance": { "sourceId": "pse-info", "locator": "elements.json#re" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#re" } }, "weight": { "kind": "value", "decimal": "186.207", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Re" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d5 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#re" } }, "shells": [2, 8, 18, 32, 13, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#re" } } },
-  { "atomicNumber": 76, "symbol": "Os", "names": { "en": "Osmium", "de": "Osmium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Os" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#os" } }, "period": 6, "group": { "status": "reported", "value": 8, "provenance": { "sourceId": "pse-info", "locator": "elements.json#os" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#os" } }, "weight": { "kind": "value", "decimal": "190.23", "uncertaintyDigits": "3", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Os" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d6 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#os" } }, "shells": [2, 8, 18, 32, 14, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#os" } } },
-  { "atomicNumber": 77, "symbol": "Ir", "names": { "en": "Iridium", "de": "Iridium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ir" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ir" } }, "period": 6, "group": { "status": "reported", "value": 9, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ir" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ir" } }, "weight": { "kind": "value", "decimal": "192.217", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ir" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d7 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ir" } }, "shells": [2, 8, 18, 32, 15, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ir" } } },
-  { "atomicNumber": 78, "symbol": "Pt", "names": { "en": "Platinum", "de": "Platin" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pt" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pt" } }, "period": 6, "group": { "status": "reported", "value": 10, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pt" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pt" } }, "weight": { "kind": "value", "decimal": "195.084", "uncertaintyDigits": "9", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pt" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d9 6s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pt" } }, "shells": [2, 8, 18, 32, 17, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pt" } } },
-  { "atomicNumber": 79, "symbol": "Au", "names": { "en": "Gold", "de": "Gold" }, "aliases": { "en": ["Aurum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Au" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#au" } }, "period": 6, "group": { "status": "reported", "value": 11, "provenance": { "sourceId": "pse-info", "locator": "elements.json#au" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#au" } }, "weight": { "kind": "value", "decimal": "196.966570", "uncertaintyDigits": "4", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Au" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#au" } }, "shells": [2, 8, 18, 32, 18, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#au" } } },
-  { "atomicNumber": 80, "symbol": "Hg", "names": { "en": "Mercury", "de": "Quecksilber" }, "aliases": { "en": ["Hydrargyrum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Hg" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#hg" } }, "period": 6, "group": { "status": "reported", "value": 12, "provenance": { "sourceId": "pse-info", "locator": "elements.json#hg" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hg" } }, "weight": { "kind": "value", "decimal": "200.592", "uncertaintyDigits": "3", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Hg" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hg" } }, "shells": [2, 8, 18, 32, 18, 2], "phase": { "status": "reported", "value": "liquid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hg" } } },
-  { "atomicNumber": 81, "symbol": "Tl", "names": { "en": "Thallium", "de": "Thallium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tl" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#tl" } }, "period": 6, "group": { "status": "reported", "value": 13, "provenance": { "sourceId": "pse-info", "locator": "elements.json#tl" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tl" } }, "weight": { "kind": "interval", "lower": "204.382", "upper": "204.385", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tl" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2 6p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tl" } }, "shells": [2, 8, 18, 32, 18, 3], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tl" } } },
-  { "atomicNumber": 82, "symbol": "Pb", "names": { "en": "Lead", "de": "Blei" }, "aliases": { "en": ["Plumbum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pb" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pb" } }, "period": 6, "group": { "status": "reported", "value": 14, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pb" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pb" } }, "weight": { "kind": "interval", "lower": "206.14", "upper": "207.94", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pb" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2 6p2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pb" } }, "shells": [2, 8, 18, 32, 18, 4], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pb" } } },
-  { "atomicNumber": 83, "symbol": "Bi", "names": { "en": "Bismuth", "de": "Bismut" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Bi" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#bi" } }, "period": 6, "group": { "status": "reported", "value": 15, "provenance": { "sourceId": "pse-info", "locator": "elements.json#bi" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bi" } }, "weight": { "kind": "value", "decimal": "208.98040", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Bi" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2 6p3", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bi" } }, "shells": [2, 8, 18, 32, 18, 5], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bi" } } },
-  { "atomicNumber": 84, "symbol": "Po", "names": { "en": "Polonium", "de": "Polonium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Po" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#po" } }, "period": 6, "group": { "status": "reported", "value": 16, "provenance": { "sourceId": "pse-info", "locator": "elements.json#po" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#po" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Po" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2 6p4", "provenance": { "sourceId": "pse-info", "locator": "elements.json#po" } }, "shells": [2, 8, 18, 32, 18, 6], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#po" } } },
-  { "atomicNumber": 85, "symbol": "At", "names": { "en": "Astatine", "de": "Astat" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#At" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#at" } }, "period": 6, "group": { "status": "reported", "value": 17, "provenance": { "sourceId": "pse-info", "locator": "elements.json#at" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#at" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#At" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2 6p5", "provenance": { "sourceId": "pse-info", "locator": "elements.json#at" } }, "shells": [2, 8, 18, 32, 18, 7], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#at" } } },
-  { "atomicNumber": 86, "symbol": "Rn", "names": { "en": "Radon", "de": "Radon" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rn" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#rn" } }, "period": 6, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rn" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rn" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rn" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2 6p6", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rn" } }, "shells": [2, 8, 18, 32, 18, 8], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rn" } } },
-  { "atomicNumber": 87, "symbol": "Fr", "names": { "en": "Francium", "de": "Francium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#fr" } }, "period": 7, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#fr" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fr" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fr" } }, "configuration": { "status": "reported", "value": "[Rn] 7s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fr" } }, "shells": [2, 8, 18, 32, 18, 8, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fr" } } },
-  { "atomicNumber": 88, "symbol": "Ra", "names": { "en": "Radium", "de": "Radium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ra" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ra" } }, "period": 7, "group": { "status": "reported", "value": 2, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ra" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ra" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ra" } }, "configuration": { "status": "reported", "value": "[Rn] 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ra" } }, "shells": [2, 8, 18, 32, 18, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ra" } } },
-  { "atomicNumber": 89, "symbol": "Ac", "names": { "en": "Actinium", "de": "Actinium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ac" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ac" } }, "period": 7, "group": { "status": "convention-dependent", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ac" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ac" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ac" } }, "configuration": { "status": "reported", "value": "[Rn] 6d1 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ac" } }, "shells": [2, 8, 18, 32, 18, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ac" } } },
-  { "atomicNumber": 90, "symbol": "Th", "names": { "en": "Thorium", "de": "Thorium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Th" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#th" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#th" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#th" } }, "weight": { "kind": "value", "decimal": "232.0377", "uncertaintyDigits": "4", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Th" } }, "configuration": { "status": "reported", "value": "[Rn] 6d2 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#th" } }, "shells": [2, 8, 18, 32, 18, 10, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#th" } } },
-  { "atomicNumber": 91, "symbol": "Pa", "names": { "en": "Protactinium", "de": "Protactinium" }, "aliases": { "en": ["Protoactinium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pa" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pa" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pa" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pa" } }, "weight": { "kind": "value", "decimal": "231.03588", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pa" } }, "configuration": { "status": "reported", "value": "[Rn] 5f2 6d1 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pa" } }, "shells": [2, 8, 18, 32, 20, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pa" } } },
-  { "atomicNumber": 92, "symbol": "U", "names": { "en": "Uranium", "de": "Uran" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#U" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#u" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#u" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#u" } }, "weight": { "kind": "value", "decimal": "238.02891", "uncertaintyDigits": "3", "noteCodes": ["g", "m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#U" } }, "configuration": { "status": "reported", "value": "[Rn] 5f3 6d1 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#u" } }, "shells": [2, 8, 18, 32, 21, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#u" } } },
-  { "atomicNumber": 93, "symbol": "Np", "names": { "en": "Neptunium", "de": "Neptunium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Np" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#np" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#np" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#np" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Np" } }, "configuration": { "status": "reported", "value": "[Rn] 5f4 6d1 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#np" } }, "shells": [2, 8, 18, 32, 22, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#np" } } },
-  { "atomicNumber": 94, "symbol": "Pu", "names": { "en": "Plutonium", "de": "Plutonium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pu" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pu" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pu" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pu" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pu" } }, "configuration": { "status": "reported", "value": "[Rn] 5f6 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pu" } }, "shells": [2, 8, 18, 32, 24, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pu" } } },
-  { "atomicNumber": 95, "symbol": "Am", "names": { "en": "Americium", "de": "Americium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Am" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#am" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#am" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#am" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Am" } }, "configuration": { "status": "reported", "value": "[Rn] 5f7 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#am" } }, "shells": [2, 8, 18, 32, 25, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#am" } } },
-  { "atomicNumber": 96, "symbol": "Cm", "names": { "en": "Curium", "de": "Curium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cm" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cm" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cm" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cm" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cm" } }, "configuration": { "status": "reported", "value": "[Rn] 5f7 6d1 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cm" } }, "shells": [2, 8, 18, 32, 25, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cm" } } },
-  { "atomicNumber": 97, "symbol": "Bk", "names": { "en": "Berkelium", "de": "Berkelium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Bk" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#bk" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bk" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bk" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Bk" } }, "configuration": { "status": "reported", "value": "[Rn] 5f9 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bk" } }, "shells": [2, 8, 18, 32, 27, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bk" } } },
-  { "atomicNumber": 98, "symbol": "Cf", "names": { "en": "Californium", "de": "Californium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cf" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cf" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cf" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cf" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cf" } }, "configuration": { "status": "reported", "value": "[Rn] 5f10 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cf" } }, "shells": [2, 8, 18, 32, 28, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cf" } } },
-  { "atomicNumber": 99, "symbol": "Es", "names": { "en": "Einsteinium", "de": "Einsteinium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Es" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#es" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#es" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#es" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Es" } }, "configuration": { "status": "reported", "value": "[Rn] 5f11 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#es" } }, "shells": [2, 8, 18, 32, 29, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#es" } } },
-  { "atomicNumber": 100, "symbol": "Fm", "names": { "en": "Fermium", "de": "Fermium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fm" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#fm" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fm" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fm" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fm" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f12 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fm" } }, "shells": [2, 8, 18, 32, 30, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fm" } } },
-  { "atomicNumber": 101, "symbol": "Md", "names": { "en": "Mendelevium", "de": "Mendelevium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Md" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#md" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#md" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#md" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Md" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f13 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#md" } }, "shells": [2, 8, 18, 32, 31, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#md" } } },
-  { "atomicNumber": 102, "symbol": "No", "names": { "en": "Nobelium", "de": "Nobelium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#No" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#no" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#no" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#no" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#No" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#no" } }, "shells": [2, 8, 18, 32, 32, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#no" } } },
-  { "atomicNumber": 103, "symbol": "Lr", "names": { "en": "Lawrencium", "de": "Lawrencium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Lr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#lr" } }, "period": 7, "group": { "status": "convention-dependent", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lr" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lr" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Lr" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 7s2 7p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lr" } }, "shells": [2, 8, 18, 32, 32, 8, 3], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lr" } } },
-  { "atomicNumber": 104, "symbol": "Rf", "names": { "en": "Rutherfordium", "de": "Rutherfordium" }, "aliases": { "en": ["Unnilquadium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rf" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#rf" } }, "period": 7, "group": { "status": "reported", "value": 4, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rf" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rf" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rf" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d2 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rf" } }, "shells": [2, 8, 18, 32, 32, 10, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rf" } } },
-  { "atomicNumber": 105, "symbol": "Db", "names": { "en": "Dubnium", "de": "Dubnium" }, "aliases": { "en": ["Hahnium", "Unnilpentium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Db" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#db" } }, "period": 7, "group": { "status": "reported", "value": 5, "provenance": { "sourceId": "pse-info", "locator": "elements.json#db" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#db" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Db" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d3 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#db" } }, "shells": [2, 8, 18, 32, 32, 11, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#db" } } },
-  { "atomicNumber": 106, "symbol": "Sg", "names": { "en": "Seaborgium", "de": "Seaborgium" }, "aliases": { "en": ["Unnilhexium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sg" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#sg" } }, "period": 7, "group": { "status": "reported", "value": 6, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sg" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sg" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sg" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d4 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sg" } }, "shells": [2, 8, 18, 32, 32, 12, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sg" } } },
-  { "atomicNumber": 107, "symbol": "Bh", "names": { "en": "Bohrium", "de": "Bohrium" }, "aliases": { "en": ["Unnilseptium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Bh" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#bh" } }, "period": 7, "group": { "status": "reported", "value": 7, "provenance": { "sourceId": "pse-info", "locator": "elements.json#bh" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bh" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Bh" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d5 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bh" } }, "shells": [2, 8, 18, 32, 32, 13, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bh" } } },
-  { "atomicNumber": 108, "symbol": "Hs", "names": { "en": "Hassium", "de": "Hassium" }, "aliases": { "en": ["Unniloctium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Hs" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#hs" } }, "period": 7, "group": { "status": "reported", "value": 8, "provenance": { "sourceId": "pse-info", "locator": "elements.json#hs" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hs" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Hs" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d6 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hs" } }, "shells": [2, 8, 18, 32, 32, 14, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hs" } } },
-  { "atomicNumber": 109, "symbol": "Mt", "names": { "en": "Meitnerium", "de": "Meitnerium" }, "aliases": { "en": ["Unnilennium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mt" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#mt" } }, "period": 7, "group": { "status": "reported", "value": 9, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mt" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mt" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mt" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d7 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mt" } }, "shells": [2, 8, 18, 32, 32, 15, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mt" } } },
-  { "atomicNumber": 110, "symbol": "Ds", "names": { "en": "Darmstadtium", "de": "Darmstadtium" }, "aliases": { "en": ["Ununnilium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ds" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ds" } }, "period": 7, "group": { "status": "reported", "value": 10, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ds" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ds" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ds" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d8 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ds" } }, "shells": [2, 8, 18, 32, 32, 16, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ds" } } },
-  { "atomicNumber": 111, "symbol": "Rg", "names": { "en": "Roentgenium", "de": "Roentgenium" }, "aliases": { "en": ["Unununium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rg" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#rg" } }, "period": 7, "group": { "status": "reported", "value": 11, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rg" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rg" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rg" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d9 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rg" } }, "shells": [2, 8, 18, 32, 32, 17, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rg" } } },
-  { "atomicNumber": 112, "symbol": "Cn", "names": { "en": "Copernicium", "de": "Copernicium" }, "aliases": { "en": ["Ununbium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cn" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cn" } }, "period": 7, "group": { "status": "reported", "value": 12, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cn" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cn" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cn" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cn" } }, "shells": [2, 8, 18, 32, 32, 18, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cn" } } },
-  { "atomicNumber": 113, "symbol": "Nh", "names": { "en": "Nihonium", "de": "Nihonium" }, "aliases": { "en": ["Ununtrium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Nh" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#nh" } }, "period": 7, "group": { "status": "reported", "value": 13, "provenance": { "sourceId": "pse-info", "locator": "elements.json#nh" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nh" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Nh" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2 7p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nh" } }, "shells": [2, 8, 18, 32, 32, 18, 3], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nh" } } },
-  { "atomicNumber": 114, "symbol": "Fl", "names": { "en": "Flerovium", "de": "Flerovium" }, "aliases": { "en": ["Ununquadium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fl" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#fl" } }, "period": 7, "group": { "status": "reported", "value": 14, "provenance": { "sourceId": "pse-info", "locator": "elements.json#fl" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fl" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fl" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2 7p2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fl" } }, "shells": [2, 8, 18, 32, 32, 18, 4], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fl" } } },
-  { "atomicNumber": 115, "symbol": "Mc", "names": { "en": "Moscovium", "de": "Moscovium" }, "aliases": { "en": ["Ununpentium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mc" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#mc" } }, "period": 7, "group": { "status": "reported", "value": 15, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mc" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mc" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mc" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2 7p3", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mc" } }, "shells": [2, 8, 18, 32, 32, 18, 5], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mc" } } },
-  { "atomicNumber": 116, "symbol": "Lv", "names": { "en": "Livermorium", "de": "Livermorium" }, "aliases": { "en": ["Ununhexium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Lv" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#lv" } }, "period": 7, "group": { "status": "reported", "value": 16, "provenance": { "sourceId": "pse-info", "locator": "elements.json#lv" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lv" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Lv" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2 7p4", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lv" } }, "shells": [2, 8, 18, 32, 32, 18, 6], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lv" } } },
-  { "atomicNumber": 117, "symbol": "Ts", "names": { "en": "Tennessine", "de": "Tenness" }, "aliases": { "en": ["Ununseptium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ts" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ts" } }, "period": 7, "group": { "status": "reported", "value": 17, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ts" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ts" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ts" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2 7p5", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ts" } }, "shells": [2, 8, 18, 32, 32, 18, 7], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ts" } } },
-  { "atomicNumber": 118, "symbol": "Og", "names": { "en": "Oganesson", "de": "Oganesson" }, "aliases": { "en": ["Ununoctium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Og" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#og" } }, "period": 7, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#og" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#og" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Og" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2 7p6", "provenance": { "sourceId": "pse-info", "locator": "elements.json#og" } }, "shells": [2, 8, 18, 32, 32, 18, 8], "phase": { "status": "predicted", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#og" } } }
+  { "atomicNumber": 1, "symbol": "H", "names": { "en": "Hydrogen", "de": "Wasserstoff" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#H" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#h" } }, "period": 1, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#h" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#h" } }, "weight": { "kind": "interval", "lower": "1.00784", "upper": "1.00811", "noteCodes": ["m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#H" } }, "configuration": { "status": "reported", "value": "1s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#h" } }, "shells": [1], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#h" } }, "melting": { "status": "reported", "value": 13.99, "provenance": { "sourceId": "pse-info", "locator": "elements.json#h" } }, "boiling": { "status": "reported", "value": 20.271, "provenance": { "sourceId": "pse-info", "locator": "elements.json#h" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#h" } }, "discovery": { "kind": "year", "year": 1766, "by": "Cavendish", "provenance": { "sourceId": "pse-info", "locator": "elements.json#h" } } },
+  { "atomicNumber": 2, "symbol": "He", "names": { "en": "Helium", "de": "Helium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#He" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#he" } }, "period": 1, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#he" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#he" } }, "weight": { "kind": "value", "decimal": "4.002602", "uncertaintyDigits": "2", "noteCodes": ["g", "r"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#He" } }, "configuration": { "status": "reported", "value": "1s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#he" } }, "shells": [2], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#he" } }, "melting": { "status": "reported", "value": 0.95, "provenance": { "sourceId": "pse-info", "locator": "elements.json#he" } }, "boiling": { "status": "reported", "value": 4.222, "provenance": { "sourceId": "pse-info", "locator": "elements.json#he" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#he" } }, "discovery": { "kind": "year", "year": 1895, "by": "Ramsay, Crookes", "provenance": { "sourceId": "pse-info", "locator": "elements.json#he" } } },
+  { "atomicNumber": 3, "symbol": "Li", "names": { "en": "Lithium", "de": "Lithium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Li" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#li" } }, "period": 2, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#li" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#li" } }, "weight": { "kind": "interval", "lower": "6.938", "upper": "6.997", "noteCodes": ["m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Li" } }, "configuration": { "status": "reported", "value": "[He] 2s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#li" } }, "shells": [2, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#li" } }, "melting": { "status": "reported", "value": 453.65, "provenance": { "sourceId": "pse-info", "locator": "elements.json#li" } }, "boiling": { "status": "reported", "value": 1603, "provenance": { "sourceId": "pse-info", "locator": "elements.json#li" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#li" } }, "discovery": { "kind": "year", "year": 1817, "by": "Arfwedson", "provenance": { "sourceId": "pse-info", "locator": "elements.json#li" } } },
+  { "atomicNumber": 4, "symbol": "Be", "names": { "en": "Beryllium", "de": "Beryllium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Be" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#be" } }, "period": 2, "group": { "status": "reported", "value": 2, "provenance": { "sourceId": "pse-info", "locator": "elements.json#be" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#be" } }, "weight": { "kind": "value", "decimal": "9.0121831", "uncertaintyDigits": "5", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Be" } }, "configuration": { "status": "reported", "value": "[He] 2s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#be" } }, "shells": [2, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#be" } }, "melting": { "status": "reported", "value": 1560, "provenance": { "sourceId": "pse-info", "locator": "elements.json#be" } }, "boiling": { "status": "reported", "value": 2742, "provenance": { "sourceId": "pse-info", "locator": "elements.json#be" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#be" } }, "discovery": { "kind": "year", "year": 1797, "by": "Vauquelin", "provenance": { "sourceId": "pse-info", "locator": "elements.json#be" } } },
+  { "atomicNumber": 5, "symbol": "B", "names": { "en": "Boron", "de": "Bor" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#B" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#b" } }, "period": 2, "group": { "status": "reported", "value": 13, "provenance": { "sourceId": "pse-info", "locator": "elements.json#b" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#b" } }, "weight": { "kind": "interval", "lower": "10.806", "upper": "10.821", "noteCodes": ["m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#B" } }, "configuration": { "status": "reported", "value": "[He] 2s2 2p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#b" } }, "shells": [2, 3], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#b" } }, "melting": { "status": "reported", "value": 2349, "provenance": { "sourceId": "pse-info", "locator": "elements.json#b" } }, "boiling": { "status": "reported", "value": 4200, "provenance": { "sourceId": "pse-info", "locator": "elements.json#b" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#b" } }, "discovery": { "kind": "year", "year": 1808, "by": "Davy, Gay-Lussac", "provenance": { "sourceId": "pse-info", "locator": "elements.json#b" } } },
+  { "atomicNumber": 6, "symbol": "C", "names": { "en": "Carbon", "de": "Kohlenstoff" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#C" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#c" } }, "period": 2, "group": { "status": "reported", "value": 14, "provenance": { "sourceId": "pse-info", "locator": "elements.json#c" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#c" } }, "weight": { "kind": "interval", "lower": "12.0096", "upper": "12.0116", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#C" } }, "configuration": { "status": "reported", "value": "[He] 2s2 2p2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#c" } }, "shells": [2, 4], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#c" } }, "melting": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#c" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#c" } }, "sublimation": { "status": "reported", "value": 3915, "provenance": { "sourceId": "pse-info", "locator": "elements.json#c" } }, "discovery": { "kind": "antiquity", "provenance": { "sourceId": "pse-info", "locator": "elements.json#c" } } },
+  { "atomicNumber": 7, "symbol": "N", "names": { "en": "Nitrogen", "de": "Stickstoff" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#N" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#n" } }, "period": 2, "group": { "status": "reported", "value": 15, "provenance": { "sourceId": "pse-info", "locator": "elements.json#n" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#n" } }, "weight": { "kind": "interval", "lower": "14.00643", "upper": "14.00728", "noteCodes": ["m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#N" } }, "configuration": { "status": "reported", "value": "[He] 2s2 2p3", "provenance": { "sourceId": "pse-info", "locator": "elements.json#n" } }, "shells": [2, 5], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#n" } }, "melting": { "status": "reported", "value": 63.23, "provenance": { "sourceId": "pse-info", "locator": "elements.json#n" } }, "boiling": { "status": "reported", "value": 77.355, "provenance": { "sourceId": "pse-info", "locator": "elements.json#n" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#n" } }, "discovery": { "kind": "year", "year": 1771, "by": "Scheele", "provenance": { "sourceId": "pse-info", "locator": "elements.json#n" } } },
+  { "atomicNumber": 8, "symbol": "O", "names": { "en": "Oxygen", "de": "Sauerstoff" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#O" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#o" } }, "period": 2, "group": { "status": "reported", "value": 16, "provenance": { "sourceId": "pse-info", "locator": "elements.json#o" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#o" } }, "weight": { "kind": "interval", "lower": "15.99903", "upper": "15.99977", "noteCodes": ["m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#O" } }, "configuration": { "status": "reported", "value": "[He] 2s2 2p4", "provenance": { "sourceId": "pse-info", "locator": "elements.json#o" } }, "shells": [2, 6], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#o" } }, "melting": { "status": "reported", "value": 54.36, "provenance": { "sourceId": "pse-info", "locator": "elements.json#o" } }, "boiling": { "status": "reported", "value": 90.188, "provenance": { "sourceId": "pse-info", "locator": "elements.json#o" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#o" } }, "discovery": { "kind": "year", "year": 1774, "by": "Priestley, Scheele", "provenance": { "sourceId": "pse-info", "locator": "elements.json#o" } } },
+  { "atomicNumber": 9, "symbol": "F", "names": { "en": "Fluorine", "de": "Fluor" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#F" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#f" } }, "period": 2, "group": { "status": "reported", "value": 17, "provenance": { "sourceId": "pse-info", "locator": "elements.json#f" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#f" } }, "weight": { "kind": "value", "decimal": "18.998403162", "uncertaintyDigits": "5", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#F" } }, "configuration": { "status": "reported", "value": "[He] 2s2 2p5", "provenance": { "sourceId": "pse-info", "locator": "elements.json#f" } }, "shells": [2, 7], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#f" } }, "melting": { "status": "reported", "value": 53.48, "provenance": { "sourceId": "pse-info", "locator": "elements.json#f" } }, "boiling": { "status": "reported", "value": 85.03, "provenance": { "sourceId": "pse-info", "locator": "elements.json#f" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#f" } }, "discovery": { "kind": "year", "year": 1886, "by": "Moissan", "provenance": { "sourceId": "pse-info", "locator": "elements.json#f" } } },
+  { "atomicNumber": 10, "symbol": "Ne", "names": { "en": "Neon", "de": "Neon" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ne" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ne" } }, "period": 2, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ne" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ne" } }, "weight": { "kind": "value", "decimal": "20.1797", "uncertaintyDigits": "6", "noteCodes": ["g", "m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ne" } }, "configuration": { "status": "reported", "value": "[He] 2s2 2p6", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ne" } }, "shells": [2, 8], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ne" } }, "melting": { "status": "reported", "value": 24.56, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ne" } }, "boiling": { "status": "reported", "value": 27.104, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ne" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ne" } }, "discovery": { "kind": "year", "year": 1898, "by": "Ramsay, Travers", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ne" } } },
+  { "atomicNumber": 11, "symbol": "Na", "names": { "en": "Sodium", "de": "Natrium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Na" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#na" } }, "period": 3, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#na" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#na" } }, "weight": { "kind": "value", "decimal": "22.98976928", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Na" } }, "configuration": { "status": "reported", "value": "[Ne] 3s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#na" } }, "shells": [2, 8, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#na" } }, "melting": { "status": "reported", "value": 370.944, "provenance": { "sourceId": "pse-info", "locator": "elements.json#na" } }, "boiling": { "status": "reported", "value": 1156.09, "provenance": { "sourceId": "pse-info", "locator": "elements.json#na" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#na" } }, "discovery": { "kind": "year", "year": 1807, "by": "Davy", "provenance": { "sourceId": "pse-info", "locator": "elements.json#na" } } },
+  { "atomicNumber": 12, "symbol": "Mg", "names": { "en": "Magnesium", "de": "Magnesium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mg" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#mg" } }, "period": 3, "group": { "status": "reported", "value": 2, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mg" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mg" } }, "weight": { "kind": "interval", "lower": "24.304", "upper": "24.307", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mg" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mg" } }, "shells": [2, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mg" } }, "melting": { "status": "reported", "value": 923, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mg" } }, "boiling": { "status": "reported", "value": 1363, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mg" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mg" } }, "discovery": { "kind": "year", "year": 1828, "by": "Bussy", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mg" } } },
+  { "atomicNumber": 13, "symbol": "Al", "names": { "en": "Aluminium", "de": "Aluminium" }, "aliases": { "en": ["Aluminum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Al" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#al" } }, "period": 3, "group": { "status": "reported", "value": 13, "provenance": { "sourceId": "pse-info", "locator": "elements.json#al" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#al" } }, "weight": { "kind": "value", "decimal": "26.9815384", "uncertaintyDigits": "3", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Al" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2 3p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#al" } }, "shells": [2, 8, 3], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#al" } }, "melting": { "status": "reported", "value": 933.47, "provenance": { "sourceId": "pse-info", "locator": "elements.json#al" } }, "boiling": { "status": "reported", "value": 2743, "provenance": { "sourceId": "pse-info", "locator": "elements.json#al" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#al" } }, "discovery": { "kind": "year", "year": 1825, "by": "\xD8rsted", "provenance": { "sourceId": "pse-info", "locator": "elements.json#al" } } },
+  { "atomicNumber": 14, "symbol": "Si", "names": { "en": "Silicon", "de": "Silicium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Si" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#si" } }, "period": 3, "group": { "status": "reported", "value": 14, "provenance": { "sourceId": "pse-info", "locator": "elements.json#si" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#si" } }, "weight": { "kind": "interval", "lower": "28.084", "upper": "28.086", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Si" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2 3p2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#si" } }, "shells": [2, 8, 4], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#si" } }, "melting": { "status": "reported", "value": 1687, "provenance": { "sourceId": "pse-info", "locator": "elements.json#si" } }, "boiling": { "status": "reported", "value": 3538, "provenance": { "sourceId": "pse-info", "locator": "elements.json#si" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#si" } }, "discovery": { "kind": "year", "year": 1824, "by": "Berzelius", "provenance": { "sourceId": "pse-info", "locator": "elements.json#si" } } },
+  { "atomicNumber": 15, "symbol": "P", "names": { "en": "Phosphorus", "de": "Phosphor" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#P" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#p" } }, "period": 3, "group": { "status": "reported", "value": 15, "provenance": { "sourceId": "pse-info", "locator": "elements.json#p" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#p" } }, "weight": { "kind": "value", "decimal": "30.973761998", "uncertaintyDigits": "5", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#P" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2 3p3", "provenance": { "sourceId": "pse-info", "locator": "elements.json#p" } }, "shells": [2, 8, 5], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#p" } }, "melting": { "status": "reported", "value": 317.3, "provenance": { "sourceId": "pse-info", "locator": "elements.json#p" } }, "boiling": { "status": "reported", "value": 553.7, "provenance": { "sourceId": "pse-info", "locator": "elements.json#p" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#p" } }, "discovery": { "kind": "year", "year": 1669, "by": "Brand", "provenance": { "sourceId": "pse-info", "locator": "elements.json#p" } } },
+  { "atomicNumber": 16, "symbol": "S", "names": { "en": "Sulfur", "de": "Schwefel" }, "aliases": { "en": ["Sulphur"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#S" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#s" } }, "period": 3, "group": { "status": "reported", "value": 16, "provenance": { "sourceId": "pse-info", "locator": "elements.json#s" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#s" } }, "weight": { "kind": "interval", "lower": "32.059", "upper": "32.076", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#S" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2 3p4", "provenance": { "sourceId": "pse-info", "locator": "elements.json#s" } }, "shells": [2, 8, 6], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#s" } }, "melting": { "status": "reported", "value": 388.36, "provenance": { "sourceId": "pse-info", "locator": "elements.json#s" } }, "boiling": { "status": "reported", "value": 717.8, "provenance": { "sourceId": "pse-info", "locator": "elements.json#s" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#s" } }, "discovery": { "kind": "antiquity", "provenance": { "sourceId": "pse-info", "locator": "elements.json#s" } } },
+  { "atomicNumber": 17, "symbol": "Cl", "names": { "en": "Chlorine", "de": "Chlor" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cl" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cl" } }, "period": 3, "group": { "status": "reported", "value": 17, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cl" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cl" } }, "weight": { "kind": "interval", "lower": "35.446", "upper": "35.457", "noteCodes": ["m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cl" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2 3p5", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cl" } }, "shells": [2, 8, 7], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cl" } }, "melting": { "status": "reported", "value": 171.6, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cl" } }, "boiling": { "status": "reported", "value": 239.11, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cl" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cl" } }, "discovery": { "kind": "year", "year": 1774, "by": "Scheele", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cl" } } },
+  { "atomicNumber": 18, "symbol": "Ar", "names": { "en": "Argon", "de": "Argon" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ar" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ar" } }, "period": 3, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ar" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ar" } }, "weight": { "kind": "interval", "lower": "39.792", "upper": "39.963", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ar" } }, "configuration": { "status": "reported", "value": "[Ne] 3s2 3p6", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ar" } }, "shells": [2, 8, 8], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ar" } }, "melting": { "status": "reported", "value": 83.81, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ar" } }, "boiling": { "status": "reported", "value": 87.302, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ar" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ar" } }, "discovery": { "kind": "year", "year": 1894, "by": "Ramsay, Strutt", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ar" } } },
+  { "atomicNumber": 19, "symbol": "K", "names": { "en": "Potassium", "de": "Kalium" }, "aliases": { "en": ["Kalium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#K" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#k" } }, "period": 4, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#k" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#k" } }, "weight": { "kind": "value", "decimal": "39.0983", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#K" } }, "configuration": { "status": "reported", "value": "[Ar] 4s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#k" } }, "shells": [2, 8, 8, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#k" } }, "melting": { "status": "reported", "value": 336.7, "provenance": { "sourceId": "pse-info", "locator": "elements.json#k" } }, "boiling": { "status": "reported", "value": 1030.793, "provenance": { "sourceId": "pse-info", "locator": "elements.json#k" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#k" } }, "discovery": { "kind": "year", "year": 1807, "by": "Davy", "provenance": { "sourceId": "pse-info", "locator": "elements.json#k" } } },
+  { "atomicNumber": 20, "symbol": "Ca", "names": { "en": "Calcium", "de": "Calcium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ca" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ca" } }, "period": 4, "group": { "status": "reported", "value": 2, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ca" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ca" } }, "weight": { "kind": "value", "decimal": "40.078", "uncertaintyDigits": "4", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ca" } }, "configuration": { "status": "reported", "value": "[Ar] 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ca" } }, "shells": [2, 8, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ca" } }, "melting": { "status": "reported", "value": 1115, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ca" } }, "boiling": { "status": "reported", "value": 1757, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ca" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ca" } }, "discovery": { "kind": "year", "year": 1808, "by": "Davy", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ca" } } },
+  { "atomicNumber": 21, "symbol": "Sc", "names": { "en": "Scandium", "de": "Scandium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sc" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#sc" } }, "period": 4, "group": { "status": "reported", "value": 3, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sc" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sc" } }, "weight": { "kind": "value", "decimal": "44.955907", "uncertaintyDigits": "4", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sc" } }, "configuration": { "status": "reported", "value": "[Ar] 3d1 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sc" } }, "shells": [2, 8, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sc" } }, "melting": { "status": "reported", "value": 1814, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sc" } }, "boiling": { "status": "reported", "value": 3109, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sc" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sc" } }, "discovery": { "kind": "year", "year": 1879, "by": "Nilson", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sc" } } },
+  { "atomicNumber": 22, "symbol": "Ti", "names": { "en": "Titanium", "de": "Titan" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ti" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ti" } }, "period": 4, "group": { "status": "reported", "value": 4, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ti" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ti" } }, "weight": { "kind": "value", "decimal": "47.867", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ti" } }, "configuration": { "status": "reported", "value": "[Ar] 3d2 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ti" } }, "shells": [2, 8, 10, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ti" } }, "melting": { "status": "reported", "value": 1941, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ti" } }, "boiling": { "status": "reported", "value": 3560, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ti" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ti" } }, "discovery": { "kind": "year", "year": 1791, "by": "Gregor, Klaproth", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ti" } } },
+  { "atomicNumber": 23, "symbol": "V", "names": { "en": "Vanadium", "de": "Vanadium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#V" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#v" } }, "period": 4, "group": { "status": "reported", "value": 5, "provenance": { "sourceId": "pse-info", "locator": "elements.json#v" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#v" } }, "weight": { "kind": "value", "decimal": "50.9415", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#V" } }, "configuration": { "status": "reported", "value": "[Ar] 3d3 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#v" } }, "shells": [2, 8, 11, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#v" } }, "melting": { "status": "reported", "value": 2183, "provenance": { "sourceId": "pse-info", "locator": "elements.json#v" } }, "boiling": { "status": "reported", "value": 3680, "provenance": { "sourceId": "pse-info", "locator": "elements.json#v" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#v" } }, "discovery": { "kind": "year", "year": 1801, "by": "del R\xEDo", "provenance": { "sourceId": "pse-info", "locator": "elements.json#v" } } },
+  { "atomicNumber": 24, "symbol": "Cr", "names": { "en": "Chromium", "de": "Chrom" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cr" } }, "period": 4, "group": { "status": "reported", "value": 6, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cr" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cr" } }, "weight": { "kind": "value", "decimal": "51.9961", "uncertaintyDigits": "6", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cr" } }, "configuration": { "status": "reported", "value": "[Ar] 3d5 4s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cr" } }, "shells": [2, 8, 13, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cr" } }, "melting": { "status": "reported", "value": 2180, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cr" } }, "boiling": { "status": "reported", "value": 2944, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cr" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cr" } }, "discovery": { "kind": "year", "year": 1797, "by": "Vauquelin", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cr" } } },
+  { "atomicNumber": 25, "symbol": "Mn", "names": { "en": "Manganese", "de": "Mangan" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mn" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#mn" } }, "period": 4, "group": { "status": "reported", "value": 7, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mn" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mn" } }, "weight": { "kind": "value", "decimal": "54.938043", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mn" } }, "configuration": { "status": "reported", "value": "[Ar] 3d5 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mn" } }, "shells": [2, 8, 13, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mn" } }, "melting": { "status": "reported", "value": 1519, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mn" } }, "boiling": { "status": "reported", "value": 2334, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mn" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mn" } }, "discovery": { "kind": "year", "year": 1774, "by": "Gahn", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mn" } } },
+  { "atomicNumber": 26, "symbol": "Fe", "names": { "en": "Iron", "de": "Eisen" }, "aliases": { "en": ["Ferrum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fe" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#fe" } }, "period": 4, "group": { "status": "reported", "value": 8, "provenance": { "sourceId": "pse-info", "locator": "elements.json#fe" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fe" } }, "weight": { "kind": "value", "decimal": "55.845", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fe" } }, "configuration": { "status": "reported", "value": "[Ar] 3d6 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fe" } }, "shells": [2, 8, 14, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fe" } }, "melting": { "status": "reported", "value": 1811, "provenance": { "sourceId": "pse-info", "locator": "elements.json#fe" } }, "boiling": { "status": "reported", "value": 3134, "provenance": { "sourceId": "pse-info", "locator": "elements.json#fe" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fe" } }, "discovery": { "kind": "antiquity", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fe" } } },
+  { "atomicNumber": 27, "symbol": "Co", "names": { "en": "Cobalt", "de": "Cobalt" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Co" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#co" } }, "period": 4, "group": { "status": "reported", "value": 9, "provenance": { "sourceId": "pse-info", "locator": "elements.json#co" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#co" } }, "weight": { "kind": "value", "decimal": "58.933194", "uncertaintyDigits": "3", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Co" } }, "configuration": { "status": "reported", "value": "[Ar] 3d7 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#co" } }, "shells": [2, 8, 15, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#co" } }, "melting": { "status": "reported", "value": 1768, "provenance": { "sourceId": "pse-info", "locator": "elements.json#co" } }, "boiling": { "status": "reported", "value": 3200, "provenance": { "sourceId": "pse-info", "locator": "elements.json#co" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#co" } }, "discovery": { "kind": "year", "year": 1735, "by": "Brandt", "provenance": { "sourceId": "pse-info", "locator": "elements.json#co" } } },
+  { "atomicNumber": 28, "symbol": "Ni", "names": { "en": "Nickel", "de": "Nickel" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ni" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ni" } }, "period": 4, "group": { "status": "reported", "value": 10, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ni" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ni" } }, "weight": { "kind": "value", "decimal": "58.6934", "uncertaintyDigits": "4", "noteCodes": ["r"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ni" } }, "configuration": { "status": "reported", "value": "[Ar] 3d8 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ni" } }, "shells": [2, 8, 16, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ni" } }, "melting": { "status": "reported", "value": 1728, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ni" } }, "boiling": { "status": "reported", "value": 3003, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ni" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ni" } }, "discovery": { "kind": "year", "year": 1751, "by": "Cronstedt", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ni" } } },
+  { "atomicNumber": 29, "symbol": "Cu", "names": { "en": "Copper", "de": "Kupfer" }, "aliases": { "en": ["Cuprum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cu" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cu" } }, "period": 4, "group": { "status": "reported", "value": 11, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cu" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cu" } }, "weight": { "kind": "value", "decimal": "63.546", "uncertaintyDigits": "3", "noteCodes": ["r"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cu" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cu" } }, "shells": [2, 8, 18, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cu" } }, "melting": { "status": "reported", "value": 1357.77, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cu" } }, "boiling": { "status": "reported", "value": 2835, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cu" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cu" } }, "discovery": { "kind": "antiquity", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cu" } } },
+  { "atomicNumber": 30, "symbol": "Zn", "names": { "en": "Zinc", "de": "Zink" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Zn" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#zn" } }, "period": 4, "group": { "status": "reported", "value": 12, "provenance": { "sourceId": "pse-info", "locator": "elements.json#zn" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zn" } }, "weight": { "kind": "value", "decimal": "65.38", "uncertaintyDigits": "2", "noteCodes": ["r"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Zn" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zn" } }, "shells": [2, 8, 18, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zn" } }, "melting": { "status": "reported", "value": 692.68, "provenance": { "sourceId": "pse-info", "locator": "elements.json#zn" } }, "boiling": { "status": "reported", "value": 1180, "provenance": { "sourceId": "pse-info", "locator": "elements.json#zn" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zn" } }, "discovery": { "kind": "antiquity", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zn" } } },
+  { "atomicNumber": 31, "symbol": "Ga", "names": { "en": "Gallium", "de": "Gallium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ga" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ga" } }, "period": 4, "group": { "status": "reported", "value": 13, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ga" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ga" } }, "weight": { "kind": "value", "decimal": "69.723", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ga" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2 4p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ga" } }, "shells": [2, 8, 18, 3], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ga" } }, "melting": { "status": "reported", "value": 302.9146, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ga" } }, "boiling": { "status": "reported", "value": 2673, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ga" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ga" } }, "discovery": { "kind": "year", "year": 1875, "by": "Lecoq de Boisbaudran", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ga" } } },
+  { "atomicNumber": 32, "symbol": "Ge", "names": { "en": "Germanium", "de": "Germanium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ge" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ge" } }, "period": 4, "group": { "status": "reported", "value": 14, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ge" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ge" } }, "weight": { "kind": "value", "decimal": "72.630", "uncertaintyDigits": "8", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ge" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2 4p2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ge" } }, "shells": [2, 8, 18, 4], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ge" } }, "melting": { "status": "reported", "value": 1211.4, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ge" } }, "boiling": { "status": "reported", "value": 3106, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ge" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ge" } }, "discovery": { "kind": "year", "year": 1886, "by": "Winkler", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ge" } } },
+  { "atomicNumber": 33, "symbol": "As", "names": { "en": "Arsenic", "de": "Arsen" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#As" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#as" } }, "period": 4, "group": { "status": "reported", "value": 15, "provenance": { "sourceId": "pse-info", "locator": "elements.json#as" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#as" } }, "weight": { "kind": "value", "decimal": "74.921595", "uncertaintyDigits": "6", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#As" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2 4p3", "provenance": { "sourceId": "pse-info", "locator": "elements.json#as" } }, "shells": [2, 8, 18, 5], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#as" } }, "melting": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#as" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#as" } }, "sublimation": { "status": "reported", "value": 887, "provenance": { "sourceId": "pse-info", "locator": "elements.json#as" } }, "discovery": { "kind": "year", "year": 1300, "by": "Albertus Magnus", "provenance": { "sourceId": "pse-info", "locator": "elements.json#as" } } },
+  { "atomicNumber": 34, "symbol": "Se", "names": { "en": "Selenium", "de": "Selen" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Se" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#se" } }, "period": 4, "group": { "status": "reported", "value": 16, "provenance": { "sourceId": "pse-info", "locator": "elements.json#se" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#se" } }, "weight": { "kind": "value", "decimal": "78.971", "uncertaintyDigits": "8", "noteCodes": ["r"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Se" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2 4p4", "provenance": { "sourceId": "pse-info", "locator": "elements.json#se" } }, "shells": [2, 8, 18, 6], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#se" } }, "melting": { "status": "reported", "value": 494, "provenance": { "sourceId": "pse-info", "locator": "elements.json#se" } }, "boiling": { "status": "reported", "value": 958, "provenance": { "sourceId": "pse-info", "locator": "elements.json#se" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#se" } }, "discovery": { "kind": "year", "year": 1817, "by": "Berzelius", "provenance": { "sourceId": "pse-info", "locator": "elements.json#se" } } },
+  { "atomicNumber": 35, "symbol": "Br", "names": { "en": "Bromine", "de": "Brom" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Br" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#br" } }, "period": 4, "group": { "status": "reported", "value": 17, "provenance": { "sourceId": "pse-info", "locator": "elements.json#br" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#br" } }, "weight": { "kind": "interval", "lower": "79.901", "upper": "79.907", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Br" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2 4p5", "provenance": { "sourceId": "pse-info", "locator": "elements.json#br" } }, "shells": [2, 8, 18, 7], "phase": { "status": "reported", "value": "liquid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#br" } }, "melting": { "status": "reported", "value": 265.8, "provenance": { "sourceId": "pse-info", "locator": "elements.json#br" } }, "boiling": { "status": "reported", "value": 332, "provenance": { "sourceId": "pse-info", "locator": "elements.json#br" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#br" } }, "discovery": { "kind": "year", "year": 1826, "by": "Balard", "provenance": { "sourceId": "pse-info", "locator": "elements.json#br" } } },
+  { "atomicNumber": 36, "symbol": "Kr", "names": { "en": "Krypton", "de": "Krypton" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Kr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#kr" } }, "period": 4, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#kr" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#kr" } }, "weight": { "kind": "value", "decimal": "83.798", "uncertaintyDigits": "2", "noteCodes": ["g", "m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Kr" } }, "configuration": { "status": "reported", "value": "[Ar] 3d10 4s2 4p6", "provenance": { "sourceId": "pse-info", "locator": "elements.json#kr" } }, "shells": [2, 8, 18, 8], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#kr" } }, "melting": { "status": "reported", "value": 115.78, "provenance": { "sourceId": "pse-info", "locator": "elements.json#kr" } }, "boiling": { "status": "reported", "value": 119.93, "provenance": { "sourceId": "pse-info", "locator": "elements.json#kr" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#kr" } }, "discovery": { "kind": "year", "year": 1898, "by": "Ramsay, Travers", "provenance": { "sourceId": "pse-info", "locator": "elements.json#kr" } } },
+  { "atomicNumber": 37, "symbol": "Rb", "names": { "en": "Rubidium", "de": "Rubidium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rb" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#rb" } }, "period": 5, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rb" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rb" } }, "weight": { "kind": "value", "decimal": "85.4678", "uncertaintyDigits": "3", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rb" } }, "configuration": { "status": "reported", "value": "[Kr] 5s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rb" } }, "shells": [2, 8, 18, 8, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rb" } }, "melting": { "status": "reported", "value": 312.45, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rb" } }, "boiling": { "status": "reported", "value": 961, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rb" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rb" } }, "discovery": { "kind": "year", "year": 1861, "by": "Bunsen, Kirchhoff", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rb" } } },
+  { "atomicNumber": 38, "symbol": "Sr", "names": { "en": "Strontium", "de": "Strontium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#sr" } }, "period": 5, "group": { "status": "reported", "value": 2, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sr" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sr" } }, "weight": { "kind": "value", "decimal": "87.62", "uncertaintyDigits": "1", "noteCodes": ["g", "r"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sr" } }, "configuration": { "status": "reported", "value": "[Kr] 5s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sr" } }, "shells": [2, 8, 18, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sr" } }, "melting": { "status": "reported", "value": 1050, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sr" } }, "boiling": { "status": "reported", "value": 1650, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sr" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sr" } }, "discovery": { "kind": "year", "year": 1798, "by": "Klaproth", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sr" } } },
+  { "atomicNumber": 39, "symbol": "Y", "names": { "en": "Yttrium", "de": "Yttrium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Y" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#y" } }, "period": 5, "group": { "status": "reported", "value": 3, "provenance": { "sourceId": "pse-info", "locator": "elements.json#y" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#y" } }, "weight": { "kind": "value", "decimal": "88.905838", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Y" } }, "configuration": { "status": "reported", "value": "[Kr] 4d1 5s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#y" } }, "shells": [2, 8, 18, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#y" } }, "melting": { "status": "reported", "value": 1799, "provenance": { "sourceId": "pse-info", "locator": "elements.json#y" } }, "boiling": { "status": "reported", "value": 3203, "provenance": { "sourceId": "pse-info", "locator": "elements.json#y" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#y" } }, "discovery": { "kind": "year", "year": 1794, "by": "Gadolin", "provenance": { "sourceId": "pse-info", "locator": "elements.json#y" } } },
+  { "atomicNumber": 40, "symbol": "Zr", "names": { "en": "Zirconium", "de": "Zirconium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Zr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#zr" } }, "period": 5, "group": { "status": "reported", "value": 4, "provenance": { "sourceId": "pse-info", "locator": "elements.json#zr" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zr" } }, "weight": { "kind": "value", "decimal": "91.222", "uncertaintyDigits": "3", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Zr" } }, "configuration": { "status": "reported", "value": "[Kr] 4d2 5s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zr" } }, "shells": [2, 8, 18, 10, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zr" } }, "melting": { "status": "reported", "value": 2125, "provenance": { "sourceId": "pse-info", "locator": "elements.json#zr" } }, "boiling": { "status": "reported", "value": 4650, "provenance": { "sourceId": "pse-info", "locator": "elements.json#zr" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zr" } }, "discovery": { "kind": "year", "year": 1789, "by": "Klaproth", "provenance": { "sourceId": "pse-info", "locator": "elements.json#zr" } } },
+  { "atomicNumber": 41, "symbol": "Nb", "names": { "en": "Niobium", "de": "Niob" }, "aliases": { "en": ["Columbium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Nb" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#nb" } }, "period": 5, "group": { "status": "reported", "value": 5, "provenance": { "sourceId": "pse-info", "locator": "elements.json#nb" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nb" } }, "weight": { "kind": "value", "decimal": "92.90637", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Nb" } }, "configuration": { "status": "reported", "value": "[Kr] 4d4 5s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nb" } }, "shells": [2, 8, 18, 12, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nb" } }, "melting": { "status": "reported", "value": 2750, "provenance": { "sourceId": "pse-info", "locator": "elements.json#nb" } }, "boiling": { "status": "reported", "value": 5017, "provenance": { "sourceId": "pse-info", "locator": "elements.json#nb" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nb" } }, "discovery": { "kind": "year", "year": 1801, "by": "Hatchet", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nb" } } },
+  { "atomicNumber": 42, "symbol": "Mo", "names": { "en": "Molybdenum", "de": "Molybd\xE4n" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mo" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#mo" } }, "period": 5, "group": { "status": "reported", "value": 6, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mo" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mo" } }, "weight": { "kind": "value", "decimal": "95.95", "uncertaintyDigits": "1", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mo" } }, "configuration": { "status": "reported", "value": "[Kr] 4d5 5s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mo" } }, "shells": [2, 8, 18, 13, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mo" } }, "melting": { "status": "reported", "value": 2896, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mo" } }, "boiling": { "status": "reported", "value": 4912, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mo" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mo" } }, "discovery": { "kind": "year", "year": 1778, "by": "Scheele", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mo" } } },
+  { "atomicNumber": 43, "symbol": "Tc", "names": { "en": "Technetium", "de": "Technetium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tc" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#tc" } }, "period": 5, "group": { "status": "reported", "value": 7, "provenance": { "sourceId": "pse-info", "locator": "elements.json#tc" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tc" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tc" } }, "configuration": { "status": "reported", "value": "[Kr] 4d5 5s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tc" } }, "shells": [2, 8, 18, 13, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tc" } }, "melting": { "status": "reported", "value": 2430, "provenance": { "sourceId": "pse-info", "locator": "elements.json#tc" } }, "boiling": { "status": "reported", "value": 4538, "provenance": { "sourceId": "pse-info", "locator": "elements.json#tc" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tc" } }, "discovery": { "kind": "year", "year": 1937, "by": "Segr\xE8", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tc" } } },
+  { "atomicNumber": 44, "symbol": "Ru", "names": { "en": "Ruthenium", "de": "Ruthenium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ru" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ru" } }, "period": 5, "group": { "status": "reported", "value": 8, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ru" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ru" } }, "weight": { "kind": "value", "decimal": "101.07", "uncertaintyDigits": "2", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ru" } }, "configuration": { "status": "reported", "value": "[Kr] 4d7 5s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ru" } }, "shells": [2, 8, 18, 15, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ru" } }, "melting": { "status": "reported", "value": 2607, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ru" } }, "boiling": { "status": "reported", "value": 4423, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ru" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ru" } }, "discovery": { "kind": "year", "year": 1844, "by": "Claus", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ru" } } },
+  { "atomicNumber": 45, "symbol": "Rh", "names": { "en": "Rhodium", "de": "Rhodium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rh" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#rh" } }, "period": 5, "group": { "status": "reported", "value": 9, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rh" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rh" } }, "weight": { "kind": "value", "decimal": "102.90549", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rh" } }, "configuration": { "status": "reported", "value": "[Kr] 4d8 5s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rh" } }, "shells": [2, 8, 18, 16, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rh" } }, "melting": { "status": "reported", "value": 2237, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rh" } }, "boiling": { "status": "reported", "value": 3968, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rh" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rh" } }, "discovery": { "kind": "year", "year": 1803, "by": "Wollaston", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rh" } } },
+  { "atomicNumber": 46, "symbol": "Pd", "names": { "en": "Palladium", "de": "Palladium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pd" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pd" } }, "period": 5, "group": { "status": "reported", "value": 10, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pd" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pd" } }, "weight": { "kind": "value", "decimal": "106.42", "uncertaintyDigits": "1", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pd" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pd" } }, "shells": [2, 8, 18, 18], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pd" } }, "melting": { "status": "reported", "value": 1828.05, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pd" } }, "boiling": { "status": "reported", "value": 3236, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pd" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pd" } }, "discovery": { "kind": "year", "year": 1803, "by": "Wollaston", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pd" } } },
+  { "atomicNumber": 47, "symbol": "Ag", "names": { "en": "Silver", "de": "Silber" }, "aliases": { "en": ["Argentum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ag" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ag" } }, "period": 5, "group": { "status": "reported", "value": 11, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ag" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ag" } }, "weight": { "kind": "value", "decimal": "107.8682", "uncertaintyDigits": "2", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ag" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ag" } }, "shells": [2, 8, 18, 18, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ag" } }, "melting": { "status": "reported", "value": 1234.93, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ag" } }, "boiling": { "status": "reported", "value": 2435, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ag" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ag" } }, "discovery": { "kind": "antiquity", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ag" } } },
+  { "atomicNumber": 48, "symbol": "Cd", "names": { "en": "Cadmium", "de": "Cadmium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cd" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cd" } }, "period": 5, "group": { "status": "reported", "value": 12, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cd" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cd" } }, "weight": { "kind": "value", "decimal": "112.414", "uncertaintyDigits": "4", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cd" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cd" } }, "shells": [2, 8, 18, 18, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cd" } }, "melting": { "status": "reported", "value": 594.22, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cd" } }, "boiling": { "status": "reported", "value": 1040, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cd" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cd" } }, "discovery": { "kind": "year", "year": 1817, "by": "Stromeyer, Hermann", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cd" } } },
+  { "atomicNumber": 49, "symbol": "In", "names": { "en": "Indium", "de": "Indium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#In" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#in" } }, "period": 5, "group": { "status": "reported", "value": 13, "provenance": { "sourceId": "pse-info", "locator": "elements.json#in" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#in" } }, "weight": { "kind": "value", "decimal": "114.818", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#In" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2 5p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#in" } }, "shells": [2, 8, 18, 18, 3], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#in" } }, "melting": { "status": "reported", "value": 429.7485, "provenance": { "sourceId": "pse-info", "locator": "elements.json#in" } }, "boiling": { "status": "reported", "value": 2345, "provenance": { "sourceId": "pse-info", "locator": "elements.json#in" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#in" } }, "discovery": { "kind": "year", "year": 1863, "by": "Reich, Richter", "provenance": { "sourceId": "pse-info", "locator": "elements.json#in" } } },
+  { "atomicNumber": 50, "symbol": "Sn", "names": { "en": "Tin", "de": "Zinn" }, "aliases": { "en": ["Stannum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sn" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#sn" } }, "period": 5, "group": { "status": "reported", "value": 14, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sn" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sn" } }, "weight": { "kind": "value", "decimal": "118.710", "uncertaintyDigits": "7", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sn" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2 5p2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sn" } }, "shells": [2, 8, 18, 18, 4], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sn" } }, "melting": { "status": "reported", "value": 505.08, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sn" } }, "boiling": { "status": "reported", "value": 2875, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sn" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sn" } }, "discovery": { "kind": "antiquity", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sn" } } },
+  { "atomicNumber": 51, "symbol": "Sb", "names": { "en": "Antimony", "de": "Antimon" }, "aliases": { "en": ["Stibium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sb" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#sb" } }, "period": 5, "group": { "status": "reported", "value": 15, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sb" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sb" } }, "weight": { "kind": "value", "decimal": "121.760", "uncertaintyDigits": "1", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sb" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2 5p3", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sb" } }, "shells": [2, 8, 18, 18, 5], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sb" } }, "melting": { "status": "reported", "value": 903.78, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sb" } }, "boiling": { "status": "reported", "value": 1908, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sb" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sb" } }, "discovery": { "kind": "antiquity", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sb" } } },
+  { "atomicNumber": 52, "symbol": "Te", "names": { "en": "Tellurium", "de": "Tellur" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Te" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#te" } }, "period": 5, "group": { "status": "reported", "value": 16, "provenance": { "sourceId": "pse-info", "locator": "elements.json#te" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#te" } }, "weight": { "kind": "value", "decimal": "127.60", "uncertaintyDigits": "3", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Te" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2 5p4", "provenance": { "sourceId": "pse-info", "locator": "elements.json#te" } }, "shells": [2, 8, 18, 18, 6], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#te" } }, "melting": { "status": "reported", "value": 722.66, "provenance": { "sourceId": "pse-info", "locator": "elements.json#te" } }, "boiling": { "status": "reported", "value": 1261, "provenance": { "sourceId": "pse-info", "locator": "elements.json#te" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#te" } }, "discovery": { "kind": "year", "year": 1782, "by": "von Reichenstein", "provenance": { "sourceId": "pse-info", "locator": "elements.json#te" } } },
+  { "atomicNumber": 53, "symbol": "I", "names": { "en": "Iodine", "de": "Iod" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#I" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#i" } }, "period": 5, "group": { "status": "reported", "value": 17, "provenance": { "sourceId": "pse-info", "locator": "elements.json#i" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#i" } }, "weight": { "kind": "value", "decimal": "126.90447", "uncertaintyDigits": "3", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#I" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2 5p5", "provenance": { "sourceId": "pse-info", "locator": "elements.json#i" } }, "shells": [2, 8, 18, 18, 7], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#i" } }, "melting": { "status": "reported", "value": 386.85, "provenance": { "sourceId": "pse-info", "locator": "elements.json#i" } }, "boiling": { "status": "reported", "value": 457.4, "provenance": { "sourceId": "pse-info", "locator": "elements.json#i" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#i" } }, "discovery": { "kind": "year", "year": 1811, "by": "Courtois", "provenance": { "sourceId": "pse-info", "locator": "elements.json#i" } } },
+  { "atomicNumber": 54, "symbol": "Xe", "names": { "en": "Xenon", "de": "Xenon" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Xe" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#xe" } }, "period": 5, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#xe" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#xe" } }, "weight": { "kind": "value", "decimal": "131.293", "uncertaintyDigits": "6", "noteCodes": ["g", "m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Xe" } }, "configuration": { "status": "reported", "value": "[Kr] 4d10 5s2 5p6", "provenance": { "sourceId": "pse-info", "locator": "elements.json#xe" } }, "shells": [2, 8, 18, 18, 8], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#xe" } }, "melting": { "status": "reported", "value": 161.4, "provenance": { "sourceId": "pse-info", "locator": "elements.json#xe" } }, "boiling": { "status": "reported", "value": 165.051, "provenance": { "sourceId": "pse-info", "locator": "elements.json#xe" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#xe" } }, "discovery": { "kind": "year", "year": 1898, "by": "Ramsay, Travers", "provenance": { "sourceId": "pse-info", "locator": "elements.json#xe" } } },
+  { "atomicNumber": 55, "symbol": "Cs", "names": { "en": "Caesium", "de": "Caesium" }, "aliases": { "en": ["Cesium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cs" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cs" } }, "period": 6, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cs" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cs" } }, "weight": { "kind": "value", "decimal": "132.90545196", "uncertaintyDigits": "6", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cs" } }, "configuration": { "status": "reported", "value": "[Xe] 6s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cs" } }, "shells": [2, 8, 18, 18, 8, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cs" } }, "melting": { "status": "reported", "value": 301.7, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cs" } }, "boiling": { "status": "reported", "value": 944, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cs" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cs" } }, "discovery": { "kind": "year", "year": 1860, "by": "Kirchhoff, Bunsen", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cs" } } },
+  { "atomicNumber": 56, "symbol": "Ba", "names": { "en": "Barium", "de": "Barium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ba" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ba" } }, "period": 6, "group": { "status": "reported", "value": 2, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ba" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ba" } }, "weight": { "kind": "value", "decimal": "137.327", "uncertaintyDigits": "7", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ba" } }, "configuration": { "status": "reported", "value": "[Xe] 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ba" } }, "shells": [2, 8, 18, 18, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ba" } }, "melting": { "status": "reported", "value": 1e3, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ba" } }, "boiling": { "status": "reported", "value": 2118, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ba" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ba" } }, "discovery": { "kind": "year", "year": 1808, "by": "Davy", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ba" } } },
+  { "atomicNumber": 57, "symbol": "La", "names": { "en": "Lanthanum", "de": "Lanthan" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#La" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#la" } }, "period": 6, "group": { "status": "convention-dependent", "provenance": { "sourceId": "pse-info", "locator": "elements.json#la" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#la" } }, "weight": { "kind": "value", "decimal": "138.90547", "uncertaintyDigits": "7", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#La" } }, "configuration": { "status": "reported", "value": "[Xe] 5d1 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#la" } }, "shells": [2, 8, 18, 18, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#la" } }, "melting": { "status": "reported", "value": 1193, "provenance": { "sourceId": "pse-info", "locator": "elements.json#la" } }, "boiling": { "status": "reported", "value": 3737, "provenance": { "sourceId": "pse-info", "locator": "elements.json#la" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#la" } }, "discovery": { "kind": "year", "year": 1839, "by": "Mosander", "provenance": { "sourceId": "pse-info", "locator": "elements.json#la" } } },
+  { "atomicNumber": 58, "symbol": "Ce", "names": { "en": "Cerium", "de": "Cer" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ce" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ce" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ce" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ce" } }, "weight": { "kind": "value", "decimal": "140.116", "uncertaintyDigits": "1", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ce" } }, "configuration": { "status": "reported", "value": "[Xe] 4f1 5d1 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ce" } }, "shells": [2, 8, 18, 19, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ce" } }, "melting": { "status": "reported", "value": 1068, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ce" } }, "boiling": { "status": "reported", "value": 3716, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ce" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ce" } }, "discovery": { "kind": "year", "year": 1803, "by": "von Hisinger, Berzelius, Klaproth", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ce" } } },
+  { "atomicNumber": 59, "symbol": "Pr", "names": { "en": "Praseodymium", "de": "Praseodym" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pr" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pr" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pr" } }, "weight": { "kind": "value", "decimal": "140.90766", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pr" } }, "configuration": { "status": "reported", "value": "[Xe] 4f3 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pr" } }, "shells": [2, 8, 18, 21, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pr" } }, "melting": { "status": "reported", "value": 1208, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pr" } }, "boiling": { "status": "reported", "value": 3403, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pr" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pr" } }, "discovery": { "kind": "year", "year": 1895, "by": "von Welsbach", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pr" } } },
+  { "atomicNumber": 60, "symbol": "Nd", "names": { "en": "Neodymium", "de": "Neodym" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Nd" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#nd" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nd" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nd" } }, "weight": { "kind": "value", "decimal": "144.242", "uncertaintyDigits": "3", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Nd" } }, "configuration": { "status": "reported", "value": "[Xe] 4f4 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nd" } }, "shells": [2, 8, 18, 22, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nd" } }, "melting": { "status": "reported", "value": 1297, "provenance": { "sourceId": "pse-info", "locator": "elements.json#nd" } }, "boiling": { "status": "reported", "value": 3347, "provenance": { "sourceId": "pse-info", "locator": "elements.json#nd" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nd" } }, "discovery": { "kind": "year", "year": 1895, "by": "von Welsbach", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nd" } } },
+  { "atomicNumber": 61, "symbol": "Pm", "names": { "en": "Promethium", "de": "Promethium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pm" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pm" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pm" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pm" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pm" } }, "configuration": { "status": "reported", "value": "[Xe] 4f5 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pm" } }, "shells": [2, 8, 18, 23, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pm" } }, "melting": { "status": "reported", "value": 1315, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pm" } }, "boiling": { "status": "reported", "value": 3273, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pm" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pm" } }, "discovery": { "kind": "year", "year": 1945, "by": "Marinsky", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pm" } } },
+  { "atomicNumber": 62, "symbol": "Sm", "names": { "en": "Samarium", "de": "Samarium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sm" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#sm" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sm" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sm" } }, "weight": { "kind": "value", "decimal": "150.36", "uncertaintyDigits": "2", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sm" } }, "configuration": { "status": "reported", "value": "[Xe] 4f6 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sm" } }, "shells": [2, 8, 18, 24, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sm" } }, "melting": { "status": "reported", "value": 1345, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sm" } }, "boiling": { "status": "reported", "value": 2173, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sm" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sm" } }, "discovery": { "kind": "year", "year": 1879, "by": "Lecoq de Boisbaudran", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sm" } } },
+  { "atomicNumber": 63, "symbol": "Eu", "names": { "en": "Europium", "de": "Europium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Eu" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#eu" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#eu" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#eu" } }, "weight": { "kind": "value", "decimal": "151.964", "uncertaintyDigits": "1", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Eu" } }, "configuration": { "status": "reported", "value": "[Xe] 4f7 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#eu" } }, "shells": [2, 8, 18, 25, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#eu" } }, "melting": { "status": "reported", "value": 1099, "provenance": { "sourceId": "pse-info", "locator": "elements.json#eu" } }, "boiling": { "status": "reported", "value": 1802, "provenance": { "sourceId": "pse-info", "locator": "elements.json#eu" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#eu" } }, "discovery": { "kind": "year", "year": 1901, "by": "Demar\xE7ay", "provenance": { "sourceId": "pse-info", "locator": "elements.json#eu" } } },
+  { "atomicNumber": 64, "symbol": "Gd", "names": { "en": "Gadolinium", "de": "Gadolinium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Gd" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#gd" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#gd" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#gd" } }, "weight": { "kind": "value", "decimal": "157.249", "uncertaintyDigits": "2", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Gd" } }, "configuration": { "status": "reported", "value": "[Xe] 4f7 5d1 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#gd" } }, "shells": [2, 8, 18, 25, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#gd" } }, "melting": { "status": "reported", "value": 1585, "provenance": { "sourceId": "pse-info", "locator": "elements.json#gd" } }, "boiling": { "status": "reported", "value": 3273, "provenance": { "sourceId": "pse-info", "locator": "elements.json#gd" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#gd" } }, "discovery": { "kind": "year", "year": 1880, "by": "de Marignac", "provenance": { "sourceId": "pse-info", "locator": "elements.json#gd" } } },
+  { "atomicNumber": 65, "symbol": "Tb", "names": { "en": "Terbium", "de": "Terbium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tb" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#tb" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tb" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tb" } }, "weight": { "kind": "value", "decimal": "158.925354", "uncertaintyDigits": "7", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tb" } }, "configuration": { "status": "reported", "value": "[Xe] 4f9 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tb" } }, "shells": [2, 8, 18, 27, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tb" } }, "melting": { "status": "reported", "value": 1629, "provenance": { "sourceId": "pse-info", "locator": "elements.json#tb" } }, "boiling": { "status": "reported", "value": 3396, "provenance": { "sourceId": "pse-info", "locator": "elements.json#tb" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tb" } }, "discovery": { "kind": "year", "year": 1843, "by": "Mosander", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tb" } } },
+  { "atomicNumber": 66, "symbol": "Dy", "names": { "en": "Dysprosium", "de": "Dysprosium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Dy" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#dy" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#dy" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#dy" } }, "weight": { "kind": "value", "decimal": "162.500", "uncertaintyDigits": "1", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Dy" } }, "configuration": { "status": "reported", "value": "[Xe] 4f10 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#dy" } }, "shells": [2, 8, 18, 28, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#dy" } }, "melting": { "status": "reported", "value": 1680, "provenance": { "sourceId": "pse-info", "locator": "elements.json#dy" } }, "boiling": { "status": "reported", "value": 2840, "provenance": { "sourceId": "pse-info", "locator": "elements.json#dy" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#dy" } }, "discovery": { "kind": "year", "year": 1886, "by": "Lecoq de Boisbaudran", "provenance": { "sourceId": "pse-info", "locator": "elements.json#dy" } } },
+  { "atomicNumber": 67, "symbol": "Ho", "names": { "en": "Holmium", "de": "Holmium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ho" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ho" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ho" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ho" } }, "weight": { "kind": "value", "decimal": "164.930329", "uncertaintyDigits": "5", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ho" } }, "configuration": { "status": "reported", "value": "[Xe] 4f11 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ho" } }, "shells": [2, 8, 18, 29, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ho" } }, "melting": { "status": "reported", "value": 1734, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ho" } }, "boiling": { "status": "reported", "value": 2873, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ho" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ho" } }, "discovery": { "kind": "year", "year": 1878, "by": "Soret", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ho" } } },
+  { "atomicNumber": 68, "symbol": "Er", "names": { "en": "Erbium", "de": "Erbium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Er" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#er" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#er" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#er" } }, "weight": { "kind": "value", "decimal": "167.259", "uncertaintyDigits": "3", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Er" } }, "configuration": { "status": "reported", "value": "[Xe] 4f12 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#er" } }, "shells": [2, 8, 18, 30, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#er" } }, "melting": { "status": "reported", "value": 1802, "provenance": { "sourceId": "pse-info", "locator": "elements.json#er" } }, "boiling": { "status": "reported", "value": 3141, "provenance": { "sourceId": "pse-info", "locator": "elements.json#er" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#er" } }, "discovery": { "kind": "year", "year": 1842, "by": "Mosander", "provenance": { "sourceId": "pse-info", "locator": "elements.json#er" } } },
+  { "atomicNumber": 69, "symbol": "Tm", "names": { "en": "Thulium", "de": "Thulium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tm" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#tm" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tm" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tm" } }, "weight": { "kind": "value", "decimal": "168.934219", "uncertaintyDigits": "5", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tm" } }, "configuration": { "status": "reported", "value": "[Xe] 4f13 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tm" } }, "shells": [2, 8, 18, 31, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tm" } }, "melting": { "status": "reported", "value": 1818, "provenance": { "sourceId": "pse-info", "locator": "elements.json#tm" } }, "boiling": { "status": "reported", "value": 2223, "provenance": { "sourceId": "pse-info", "locator": "elements.json#tm" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tm" } }, "discovery": { "kind": "year", "year": 1879, "by": "Cleve", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tm" } } },
+  { "atomicNumber": 70, "symbol": "Yb", "names": { "en": "Ytterbium", "de": "Ytterbium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Yb" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#yb" } }, "period": 6, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#yb" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#yb" } }, "weight": { "kind": "value", "decimal": "173.045", "uncertaintyDigits": "10", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Yb" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#yb" } }, "shells": [2, 8, 18, 32, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#yb" } }, "melting": { "status": "reported", "value": 1097, "provenance": { "sourceId": "pse-info", "locator": "elements.json#yb" } }, "boiling": { "status": "reported", "value": 1469, "provenance": { "sourceId": "pse-info", "locator": "elements.json#yb" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#yb" } }, "discovery": { "kind": "year", "year": 1878, "by": "de Marignac", "provenance": { "sourceId": "pse-info", "locator": "elements.json#yb" } } },
+  { "atomicNumber": 71, "symbol": "Lu", "names": { "en": "Lutetium", "de": "Lutetium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Lu" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#lu" } }, "period": 6, "group": { "status": "convention-dependent", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lu" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lu" } }, "weight": { "kind": "value", "decimal": "174.96669", "uncertaintyDigits": "5", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Lu" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d1 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lu" } }, "shells": [2, 8, 18, 32, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lu" } }, "melting": { "status": "reported", "value": 1925, "provenance": { "sourceId": "pse-info", "locator": "elements.json#lu" } }, "boiling": { "status": "reported", "value": 3675, "provenance": { "sourceId": "pse-info", "locator": "elements.json#lu" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lu" } }, "discovery": { "kind": "year", "year": 1907, "by": "von Welsbach, Urbain", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lu" } } },
+  { "atomicNumber": 72, "symbol": "Hf", "names": { "en": "Hafnium", "de": "Hafnium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Hf" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#hf" } }, "period": 6, "group": { "status": "reported", "value": 4, "provenance": { "sourceId": "pse-info", "locator": "elements.json#hf" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hf" } }, "weight": { "kind": "value", "decimal": "178.486", "uncertaintyDigits": "6", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Hf" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d2 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hf" } }, "shells": [2, 8, 18, 32, 10, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hf" } }, "melting": { "status": "reported", "value": 2506, "provenance": { "sourceId": "pse-info", "locator": "elements.json#hf" } }, "boiling": { "status": "reported", "value": 4876, "provenance": { "sourceId": "pse-info", "locator": "elements.json#hf" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hf" } }, "discovery": { "kind": "year", "year": 1923, "by": "Coster, de Hevesy", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hf" } } },
+  { "atomicNumber": 73, "symbol": "Ta", "names": { "en": "Tantalum", "de": "Tantal" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ta" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ta" } }, "period": 6, "group": { "status": "reported", "value": 5, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ta" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ta" } }, "weight": { "kind": "value", "decimal": "180.94788", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ta" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d3 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ta" } }, "shells": [2, 8, 18, 32, 11, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ta" } }, "melting": { "status": "reported", "value": 3290, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ta" } }, "boiling": { "status": "reported", "value": 5731, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ta" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ta" } }, "discovery": { "kind": "year", "year": 1802, "by": "Ekeberg", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ta" } } },
+  { "atomicNumber": 74, "symbol": "W", "names": { "en": "Tungsten", "de": "Wolfram" }, "aliases": { "en": ["Wolfram"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#W" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#w" } }, "period": 6, "group": { "status": "reported", "value": 6, "provenance": { "sourceId": "pse-info", "locator": "elements.json#w" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#w" } }, "weight": { "kind": "value", "decimal": "183.84", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#W" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d4 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#w" } }, "shells": [2, 8, 18, 32, 12, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#w" } }, "melting": { "status": "reported", "value": 3695, "provenance": { "sourceId": "pse-info", "locator": "elements.json#w" } }, "boiling": { "status": "reported", "value": 6203, "provenance": { "sourceId": "pse-info", "locator": "elements.json#w" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#w" } }, "discovery": { "kind": "year", "year": 1783, "by": "Fausto und Juan de Elhuyar", "provenance": { "sourceId": "pse-info", "locator": "elements.json#w" } } },
+  { "atomicNumber": 75, "symbol": "Re", "names": { "en": "Rhenium", "de": "Rhenium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Re" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#re" } }, "period": 6, "group": { "status": "reported", "value": 7, "provenance": { "sourceId": "pse-info", "locator": "elements.json#re" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#re" } }, "weight": { "kind": "value", "decimal": "186.207", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Re" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d5 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#re" } }, "shells": [2, 8, 18, 32, 13, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#re" } }, "melting": { "status": "reported", "value": 3459, "provenance": { "sourceId": "pse-info", "locator": "elements.json#re" } }, "boiling": { "status": "reported", "value": 5903, "provenance": { "sourceId": "pse-info", "locator": "elements.json#re" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#re" } }, "discovery": { "kind": "year", "year": 1925, "by": "Noddack, Tacke, Berg", "provenance": { "sourceId": "pse-info", "locator": "elements.json#re" } } },
+  { "atomicNumber": 76, "symbol": "Os", "names": { "en": "Osmium", "de": "Osmium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Os" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#os" } }, "period": 6, "group": { "status": "reported", "value": 8, "provenance": { "sourceId": "pse-info", "locator": "elements.json#os" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#os" } }, "weight": { "kind": "value", "decimal": "190.23", "uncertaintyDigits": "3", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Os" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d6 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#os" } }, "shells": [2, 8, 18, 32, 14, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#os" } }, "melting": { "status": "reported", "value": 3306, "provenance": { "sourceId": "pse-info", "locator": "elements.json#os" } }, "boiling": { "status": "reported", "value": 5285, "provenance": { "sourceId": "pse-info", "locator": "elements.json#os" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#os" } }, "discovery": { "kind": "year", "year": 1803, "by": "Tennant", "provenance": { "sourceId": "pse-info", "locator": "elements.json#os" } } },
+  { "atomicNumber": 77, "symbol": "Ir", "names": { "en": "Iridium", "de": "Iridium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ir" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ir" } }, "period": 6, "group": { "status": "reported", "value": 9, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ir" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ir" } }, "weight": { "kind": "value", "decimal": "192.217", "uncertaintyDigits": "2", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ir" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d7 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ir" } }, "shells": [2, 8, 18, 32, 15, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ir" } }, "melting": { "status": "reported", "value": 2719, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ir" } }, "boiling": { "status": "reported", "value": 4403, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ir" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ir" } }, "discovery": { "kind": "year", "year": 1803, "by": "Tennant", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ir" } } },
+  { "atomicNumber": 78, "symbol": "Pt", "names": { "en": "Platinum", "de": "Platin" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pt" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pt" } }, "period": 6, "group": { "status": "reported", "value": 10, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pt" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pt" } }, "weight": { "kind": "value", "decimal": "195.084", "uncertaintyDigits": "9", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pt" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d9 6s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pt" } }, "shells": [2, 8, 18, 32, 17, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pt" } }, "melting": { "status": "reported", "value": 2041.4, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pt" } }, "boiling": { "status": "reported", "value": 4098, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pt" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pt" } }, "discovery": { "kind": "year", "year": 1557, "by": "Scaliger", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pt" } } },
+  { "atomicNumber": 79, "symbol": "Au", "names": { "en": "Gold", "de": "Gold" }, "aliases": { "en": ["Aurum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Au" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#au" } }, "period": 6, "group": { "status": "reported", "value": 11, "provenance": { "sourceId": "pse-info", "locator": "elements.json#au" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#au" } }, "weight": { "kind": "value", "decimal": "196.966570", "uncertaintyDigits": "4", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Au" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#au" } }, "shells": [2, 8, 18, 32, 18, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#au" } }, "melting": { "status": "reported", "value": 1337.33, "provenance": { "sourceId": "pse-info", "locator": "elements.json#au" } }, "boiling": { "status": "reported", "value": 3243, "provenance": { "sourceId": "pse-info", "locator": "elements.json#au" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#au" } }, "discovery": { "kind": "antiquity", "provenance": { "sourceId": "pse-info", "locator": "elements.json#au" } } },
+  { "atomicNumber": 80, "symbol": "Hg", "names": { "en": "Mercury", "de": "Quecksilber" }, "aliases": { "en": ["Hydrargyrum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Hg" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#hg" } }, "period": 6, "group": { "status": "reported", "value": 12, "provenance": { "sourceId": "pse-info", "locator": "elements.json#hg" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hg" } }, "weight": { "kind": "value", "decimal": "200.592", "uncertaintyDigits": "3", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Hg" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hg" } }, "shells": [2, 8, 18, 32, 18, 2], "phase": { "status": "reported", "value": "liquid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hg" } }, "melting": { "status": "reported", "value": 234.321, "provenance": { "sourceId": "pse-info", "locator": "elements.json#hg" } }, "boiling": { "status": "reported", "value": 629.88, "provenance": { "sourceId": "pse-info", "locator": "elements.json#hg" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hg" } }, "discovery": { "kind": "antiquity", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hg" } } },
+  { "atomicNumber": 81, "symbol": "Tl", "names": { "en": "Thallium", "de": "Thallium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tl" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#tl" } }, "period": 6, "group": { "status": "reported", "value": 13, "provenance": { "sourceId": "pse-info", "locator": "elements.json#tl" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tl" } }, "weight": { "kind": "interval", "lower": "204.382", "upper": "204.385", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Tl" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2 6p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tl" } }, "shells": [2, 8, 18, 32, 18, 3], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tl" } }, "melting": { "status": "reported", "value": 577, "provenance": { "sourceId": "pse-info", "locator": "elements.json#tl" } }, "boiling": { "status": "reported", "value": 1746, "provenance": { "sourceId": "pse-info", "locator": "elements.json#tl" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tl" } }, "discovery": { "kind": "year", "year": 1861, "by": "Crookes", "provenance": { "sourceId": "pse-info", "locator": "elements.json#tl" } } },
+  { "atomicNumber": 82, "symbol": "Pb", "names": { "en": "Lead", "de": "Blei" }, "aliases": { "en": ["Plumbum"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pb" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pb" } }, "period": 6, "group": { "status": "reported", "value": 14, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pb" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pb" } }, "weight": { "kind": "interval", "lower": "206.14", "upper": "207.94", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pb" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2 6p2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pb" } }, "shells": [2, 8, 18, 32, 18, 4], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pb" } }, "melting": { "status": "reported", "value": 600.61, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pb" } }, "boiling": { "status": "reported", "value": 2022, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pb" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pb" } }, "discovery": { "kind": "antiquity", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pb" } } },
+  { "atomicNumber": 83, "symbol": "Bi", "names": { "en": "Bismuth", "de": "Bismut" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Bi" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#bi" } }, "period": 6, "group": { "status": "reported", "value": 15, "provenance": { "sourceId": "pse-info", "locator": "elements.json#bi" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bi" } }, "weight": { "kind": "value", "decimal": "208.98040", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Bi" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2 6p3", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bi" } }, "shells": [2, 8, 18, 32, 18, 5], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bi" } }, "melting": { "status": "reported", "value": 544.7, "provenance": { "sourceId": "pse-info", "locator": "elements.json#bi" } }, "boiling": { "status": "reported", "value": 1837, "provenance": { "sourceId": "pse-info", "locator": "elements.json#bi" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bi" } }, "discovery": { "kind": "year", "year": 1540, "by": "Agricola", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bi" } } },
+  { "atomicNumber": 84, "symbol": "Po", "names": { "en": "Polonium", "de": "Polonium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Po" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#po" } }, "period": 6, "group": { "status": "reported", "value": 16, "provenance": { "sourceId": "pse-info", "locator": "elements.json#po" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#po" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Po" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2 6p4", "provenance": { "sourceId": "pse-info", "locator": "elements.json#po" } }, "shells": [2, 8, 18, 32, 18, 6], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#po" } }, "melting": { "status": "reported", "value": 527, "provenance": { "sourceId": "pse-info", "locator": "elements.json#po" } }, "boiling": { "status": "reported", "value": 1235, "provenance": { "sourceId": "pse-info", "locator": "elements.json#po" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#po" } }, "discovery": { "kind": "year", "year": 1898, "by": "Marie und Pierre Curie", "provenance": { "sourceId": "pse-info", "locator": "elements.json#po" } } },
+  { "atomicNumber": 85, "symbol": "At", "names": { "en": "Astatine", "de": "Astat" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#At" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#at" } }, "period": 6, "group": { "status": "reported", "value": 17, "provenance": { "sourceId": "pse-info", "locator": "elements.json#at" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#at" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#At" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2 6p5", "provenance": { "sourceId": "pse-info", "locator": "elements.json#at" } }, "shells": [2, 8, 18, 32, 18, 7], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#at" } }, "melting": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#at" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#at" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#at" } }, "discovery": { "kind": "year", "year": 1940, "by": "Segr\xE8", "provenance": { "sourceId": "pse-info", "locator": "elements.json#at" } } },
+  { "atomicNumber": 86, "symbol": "Rn", "names": { "en": "Radon", "de": "Radon" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rn" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#rn" } }, "period": 6, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rn" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rn" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rn" } }, "configuration": { "status": "reported", "value": "[Xe] 4f14 5d10 6s2 6p6", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rn" } }, "shells": [2, 8, 18, 32, 18, 8], "phase": { "status": "reported", "value": "gas", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rn" } }, "melting": { "status": "reported", "value": 202, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rn" } }, "boiling": { "status": "reported", "value": 211.5, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rn" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rn" } }, "discovery": { "kind": "year", "year": 1900, "by": "Dorn", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rn" } } },
+  { "atomicNumber": 87, "symbol": "Fr", "names": { "en": "Francium", "de": "Francium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#fr" } }, "period": 7, "group": { "status": "reported", "value": 1, "provenance": { "sourceId": "pse-info", "locator": "elements.json#fr" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fr" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fr" } }, "configuration": { "status": "reported", "value": "[Rn] 7s1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fr" } }, "shells": [2, 8, 18, 32, 18, 8, 1], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fr" } }, "melting": { "status": "reported", "value": 300, "provenance": { "sourceId": "pse-info", "locator": "elements.json#fr" } }, "boiling": { "status": "reported", "value": 950, "provenance": { "sourceId": "pse-info", "locator": "elements.json#fr" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fr" } }, "discovery": { "kind": "year", "year": 1939, "by": "Perey", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fr" } } },
+  { "atomicNumber": 88, "symbol": "Ra", "names": { "en": "Radium", "de": "Radium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ra" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ra" } }, "period": 7, "group": { "status": "reported", "value": 2, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ra" } }, "block": { "status": "reported", "value": "s", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ra" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ra" } }, "configuration": { "status": "reported", "value": "[Rn] 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ra" } }, "shells": [2, 8, 18, 32, 18, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ra" } }, "melting": { "status": "reported", "value": 973, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ra" } }, "boiling": { "status": "reported", "value": 2010, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ra" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ra" } }, "discovery": { "kind": "year", "year": 1898, "by": "Marie und Pierre Curie", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ra" } } },
+  { "atomicNumber": 89, "symbol": "Ac", "names": { "en": "Actinium", "de": "Actinium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ac" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ac" } }, "period": 7, "group": { "status": "convention-dependent", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ac" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ac" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ac" } }, "configuration": { "status": "reported", "value": "[Rn] 6d1 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ac" } }, "shells": [2, 8, 18, 32, 18, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ac" } }, "melting": { "status": "reported", "value": 1500, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ac" } }, "boiling": { "status": "reported", "value": 3500, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ac" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ac" } }, "discovery": { "kind": "year", "year": 1899, "by": "Debierne", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ac" } } },
+  { "atomicNumber": 90, "symbol": "Th", "names": { "en": "Thorium", "de": "Thorium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Th" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#th" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#th" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#th" } }, "weight": { "kind": "value", "decimal": "232.0377", "uncertaintyDigits": "4", "noteCodes": ["g"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Th" } }, "configuration": { "status": "reported", "value": "[Rn] 6d2 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#th" } }, "shells": [2, 8, 18, 32, 18, 10, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#th" } }, "melting": { "status": "reported", "value": 2023, "provenance": { "sourceId": "pse-info", "locator": "elements.json#th" } }, "boiling": { "status": "reported", "value": 5061, "provenance": { "sourceId": "pse-info", "locator": "elements.json#th" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#th" } }, "discovery": { "kind": "year", "year": 1829, "by": "Berzelius", "provenance": { "sourceId": "pse-info", "locator": "elements.json#th" } } },
+  { "atomicNumber": 91, "symbol": "Pa", "names": { "en": "Protactinium", "de": "Protactinium" }, "aliases": { "en": ["Protoactinium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pa" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pa" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pa" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pa" } }, "weight": { "kind": "value", "decimal": "231.03588", "uncertaintyDigits": "1", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pa" } }, "configuration": { "status": "reported", "value": "[Rn] 5f2 6d1 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pa" } }, "shells": [2, 8, 18, 32, 20, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pa" } }, "melting": { "status": "reported", "value": 1841, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pa" } }, "boiling": { "status": "reported", "value": 4300, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pa" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pa" } }, "discovery": { "kind": "year", "year": 1917, "by": "Fajans, Hahn, Meitner", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pa" } } },
+  { "atomicNumber": 92, "symbol": "U", "names": { "en": "Uranium", "de": "Uran" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#U" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#u" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#u" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#u" } }, "weight": { "kind": "value", "decimal": "238.02891", "uncertaintyDigits": "3", "noteCodes": ["g", "m"], "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#U" } }, "configuration": { "status": "reported", "value": "[Rn] 5f3 6d1 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#u" } }, "shells": [2, 8, 18, 32, 21, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#u" } }, "melting": { "status": "reported", "value": 1405.3, "provenance": { "sourceId": "pse-info", "locator": "elements.json#u" } }, "boiling": { "status": "reported", "value": 4404, "provenance": { "sourceId": "pse-info", "locator": "elements.json#u" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#u" } }, "discovery": { "kind": "year", "year": 1789, "by": "Klaproth", "provenance": { "sourceId": "pse-info", "locator": "elements.json#u" } } },
+  { "atomicNumber": 93, "symbol": "Np", "names": { "en": "Neptunium", "de": "Neptunium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Np" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#np" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#np" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#np" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Np" } }, "configuration": { "status": "reported", "value": "[Rn] 5f4 6d1 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#np" } }, "shells": [2, 8, 18, 32, 22, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#np" } }, "melting": { "status": "reported", "value": 912, "provenance": { "sourceId": "pse-info", "locator": "elements.json#np" } }, "boiling": { "status": "predicted", "value": 4447, "provenance": { "sourceId": "pse-info", "locator": "elements.json#np" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#np" } }, "discovery": { "kind": "year", "year": 1940, "by": "McMillan, Abelson", "provenance": { "sourceId": "pse-info", "locator": "elements.json#np" } } },
+  { "atomicNumber": 94, "symbol": "Pu", "names": { "en": "Plutonium", "de": "Plutonium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pu" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#pu" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pu" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pu" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Pu" } }, "configuration": { "status": "reported", "value": "[Rn] 5f6 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pu" } }, "shells": [2, 8, 18, 32, 24, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pu" } }, "melting": { "status": "reported", "value": 912.5, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pu" } }, "boiling": { "status": "reported", "value": 3505, "provenance": { "sourceId": "pse-info", "locator": "elements.json#pu" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pu" } }, "discovery": { "kind": "year", "year": 1940, "by": "Seaborg", "provenance": { "sourceId": "pse-info", "locator": "elements.json#pu" } } },
+  { "atomicNumber": 95, "symbol": "Am", "names": { "en": "Americium", "de": "Americium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Am" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#am" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#am" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#am" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Am" } }, "configuration": { "status": "reported", "value": "[Rn] 5f7 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#am" } }, "shells": [2, 8, 18, 32, 25, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#am" } }, "melting": { "status": "reported", "value": 1449, "provenance": { "sourceId": "pse-info", "locator": "elements.json#am" } }, "boiling": { "status": "reported", "value": 2880, "provenance": { "sourceId": "pse-info", "locator": "elements.json#am" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#am" } }, "discovery": { "kind": "year", "year": 1944, "by": "Seaborg", "provenance": { "sourceId": "pse-info", "locator": "elements.json#am" } } },
+  { "atomicNumber": 96, "symbol": "Cm", "names": { "en": "Curium", "de": "Curium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cm" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cm" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cm" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cm" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cm" } }, "configuration": { "status": "reported", "value": "[Rn] 5f7 6d1 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cm" } }, "shells": [2, 8, 18, 32, 25, 9, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cm" } }, "melting": { "status": "reported", "value": 1613, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cm" } }, "boiling": { "status": "reported", "value": 3383, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cm" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cm" } }, "discovery": { "kind": "year", "year": 1944, "by": "Seaborg", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cm" } } },
+  { "atomicNumber": 97, "symbol": "Bk", "names": { "en": "Berkelium", "de": "Berkelium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Bk" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#bk" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bk" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bk" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Bk" } }, "configuration": { "status": "reported", "value": "[Rn] 5f9 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bk" } }, "shells": [2, 8, 18, 32, 27, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bk" } }, "melting": { "status": "reported", "value": 1259, "provenance": { "sourceId": "pse-info", "locator": "elements.json#bk" } }, "boiling": { "status": "reported", "value": 2900, "provenance": { "sourceId": "pse-info", "locator": "elements.json#bk" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bk" } }, "discovery": { "kind": "year", "year": 1949, "by": "Seaborg", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bk" } } },
+  { "atomicNumber": 98, "symbol": "Cf", "names": { "en": "Californium", "de": "Californium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cf" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cf" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cf" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cf" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cf" } }, "configuration": { "status": "reported", "value": "[Rn] 5f10 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cf" } }, "shells": [2, 8, 18, 32, 28, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cf" } }, "melting": { "status": "reported", "value": 1173, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cf" } }, "boiling": { "status": "predicted", "value": 1743, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cf" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cf" } }, "discovery": { "kind": "year", "year": 1950, "by": "Seaborg", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cf" } } },
+  { "atomicNumber": 99, "symbol": "Es", "names": { "en": "Einsteinium", "de": "Einsteinium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Es" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#es" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#es" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#es" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Es" } }, "configuration": { "status": "reported", "value": "[Rn] 5f11 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#es" } }, "shells": [2, 8, 18, 32, 29, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#es" } }, "melting": { "status": "reported", "value": 1133, "provenance": { "sourceId": "pse-info", "locator": "elements.json#es" } }, "boiling": { "status": "predicted", "value": 1269, "provenance": { "sourceId": "pse-info", "locator": "elements.json#es" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#es" } }, "discovery": { "kind": "year", "year": 1952, "by": "Seaborg", "provenance": { "sourceId": "pse-info", "locator": "elements.json#es" } } },
+  { "atomicNumber": 100, "symbol": "Fm", "names": { "en": "Fermium", "de": "Fermium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fm" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#fm" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fm" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fm" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fm" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f12 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fm" } }, "shells": [2, 8, 18, 32, 30, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fm" } }, "melting": { "status": "predicted", "value": 1800, "provenance": { "sourceId": "pse-info", "locator": "elements.json#fm" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fm" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fm" } }, "discovery": { "kind": "year", "year": 1952, "by": "Seaborg", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fm" } } },
+  { "atomicNumber": 101, "symbol": "Md", "names": { "en": "Mendelevium", "de": "Mendelevium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Md" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#md" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#md" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#md" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Md" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f13 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#md" } }, "shells": [2, 8, 18, 32, 31, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#md" } }, "melting": { "status": "predicted", "value": 1100, "provenance": { "sourceId": "pse-info", "locator": "elements.json#md" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#md" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#md" } }, "discovery": { "kind": "year", "year": 1955, "by": "Seaborg", "provenance": { "sourceId": "pse-info", "locator": "elements.json#md" } } },
+  { "atomicNumber": 102, "symbol": "No", "names": { "en": "Nobelium", "de": "Nobelium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#No" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#no" } }, "period": 7, "group": { "status": "unassigned", "provenance": { "sourceId": "pse-info", "locator": "elements.json#no" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#no" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#No" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#no" } }, "shells": [2, 8, 18, 32, 32, 8, 2], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#no" } }, "melting": { "status": "predicted", "value": 1100, "provenance": { "sourceId": "pse-info", "locator": "elements.json#no" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#no" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#no" } }, "discovery": { "kind": "year", "year": 1958, "by": "Seaborg", "provenance": { "sourceId": "pse-info", "locator": "elements.json#no" } } },
+  { "atomicNumber": 103, "symbol": "Lr", "names": { "en": "Lawrencium", "de": "Lawrencium" }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Lr" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#lr" } }, "period": 7, "group": { "status": "convention-dependent", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lr" } }, "block": { "status": "reported", "value": "f", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lr" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Lr" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 7s2 7p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lr" } }, "shells": [2, 8, 18, 32, 32, 8, 3], "phase": { "status": "reported", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lr" } }, "melting": { "status": "predicted", "value": 1900, "provenance": { "sourceId": "pse-info", "locator": "elements.json#lr" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lr" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lr" } }, "discovery": { "kind": "year", "year": 1961, "by": "Ghiorso", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lr" } } },
+  { "atomicNumber": 104, "symbol": "Rf", "names": { "en": "Rutherfordium", "de": "Rutherfordium" }, "aliases": { "en": ["Unnilquadium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rf" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#rf" } }, "period": 7, "group": { "status": "reported", "value": 4, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rf" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rf" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rf" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d2 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rf" } }, "shells": [2, 8, 18, 32, 32, 10, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rf" } }, "melting": { "status": "predicted", "value": 2400, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rf" } }, "boiling": { "status": "predicted", "value": 5800, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rf" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rf" } }, "discovery": { "kind": "year", "year": 1964, "by": "Ghiorso", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rf" } } },
+  { "atomicNumber": 105, "symbol": "Db", "names": { "en": "Dubnium", "de": "Dubnium" }, "aliases": { "en": ["Hahnium", "Unnilpentium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Db" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#db" } }, "period": 7, "group": { "status": "reported", "value": 5, "provenance": { "sourceId": "pse-info", "locator": "elements.json#db" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#db" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Db" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d3 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#db" } }, "shells": [2, 8, 18, 32, 32, 11, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#db" } }, "melting": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#db" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#db" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#db" } }, "discovery": { "kind": "year", "year": 1967, "by": "Ghiorso", "provenance": { "sourceId": "pse-info", "locator": "elements.json#db" } } },
+  { "atomicNumber": 106, "symbol": "Sg", "names": { "en": "Seaborgium", "de": "Seaborgium" }, "aliases": { "en": ["Unnilhexium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sg" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#sg" } }, "period": 7, "group": { "status": "reported", "value": 6, "provenance": { "sourceId": "pse-info", "locator": "elements.json#sg" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sg" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Sg" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d4 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sg" } }, "shells": [2, 8, 18, 32, 32, 12, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sg" } }, "melting": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sg" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sg" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sg" } }, "discovery": { "kind": "year", "year": 1974, "by": "Oganessian", "provenance": { "sourceId": "pse-info", "locator": "elements.json#sg" } } },
+  { "atomicNumber": 107, "symbol": "Bh", "names": { "en": "Bohrium", "de": "Bohrium" }, "aliases": { "en": ["Unnilseptium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Bh" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#bh" } }, "period": 7, "group": { "status": "reported", "value": 7, "provenance": { "sourceId": "pse-info", "locator": "elements.json#bh" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bh" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Bh" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d5 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bh" } }, "shells": [2, 8, 18, 32, 32, 13, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bh" } }, "melting": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bh" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bh" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bh" } }, "discovery": { "kind": "year", "year": 1976, "by": "Oganessian", "provenance": { "sourceId": "pse-info", "locator": "elements.json#bh" } } },
+  { "atomicNumber": 108, "symbol": "Hs", "names": { "en": "Hassium", "de": "Hassium" }, "aliases": { "en": ["Unniloctium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Hs" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#hs" } }, "period": 7, "group": { "status": "reported", "value": 8, "provenance": { "sourceId": "pse-info", "locator": "elements.json#hs" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hs" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Hs" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d6 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hs" } }, "shells": [2, 8, 18, 32, 32, 14, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hs" } }, "melting": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hs" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hs" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hs" } }, "discovery": { "kind": "year", "year": 1984, "by": "GSI", "provenance": { "sourceId": "pse-info", "locator": "elements.json#hs" } } },
+  { "atomicNumber": 109, "symbol": "Mt", "names": { "en": "Meitnerium", "de": "Meitnerium" }, "aliases": { "en": ["Unnilennium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mt" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#mt" } }, "period": 7, "group": { "status": "reported", "value": 9, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mt" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mt" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mt" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d7 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mt" } }, "shells": [2, 8, 18, 32, 32, 15, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mt" } }, "melting": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mt" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mt" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mt" } }, "discovery": { "kind": "year", "year": 1982, "by": "GSI", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mt" } } },
+  { "atomicNumber": 110, "symbol": "Ds", "names": { "en": "Darmstadtium", "de": "Darmstadtium" }, "aliases": { "en": ["Ununnilium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ds" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ds" } }, "period": 7, "group": { "status": "reported", "value": 10, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ds" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ds" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ds" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d8 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ds" } }, "shells": [2, 8, 18, 32, 32, 16, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ds" } }, "melting": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ds" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ds" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ds" } }, "discovery": { "kind": "year", "year": 1994, "by": "GSI", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ds" } } },
+  { "atomicNumber": 111, "symbol": "Rg", "names": { "en": "Roentgenium", "de": "Roentgenium" }, "aliases": { "en": ["Unununium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rg" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#rg" } }, "period": 7, "group": { "status": "reported", "value": 11, "provenance": { "sourceId": "pse-info", "locator": "elements.json#rg" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rg" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Rg" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d9 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rg" } }, "shells": [2, 8, 18, 32, 32, 17, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rg" } }, "melting": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rg" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rg" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rg" } }, "discovery": { "kind": "year", "year": 1994, "by": "GSI", "provenance": { "sourceId": "pse-info", "locator": "elements.json#rg" } } },
+  { "atomicNumber": 112, "symbol": "Cn", "names": { "en": "Copernicium", "de": "Copernicium" }, "aliases": { "en": ["Ununbium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cn" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#cn" } }, "period": 7, "group": { "status": "reported", "value": 12, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cn" } }, "block": { "status": "reported", "value": "d", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cn" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Cn" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cn" } }, "shells": [2, 8, 18, 32, 32, 18, 2], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cn" } }, "melting": { "status": "predicted", "value": 283, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cn" } }, "boiling": { "status": "predicted", "value": 340, "provenance": { "sourceId": "pse-info", "locator": "elements.json#cn" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cn" } }, "discovery": { "kind": "year", "year": 1996, "by": "GSI", "provenance": { "sourceId": "pse-info", "locator": "elements.json#cn" } } },
+  { "atomicNumber": 113, "symbol": "Nh", "names": { "en": "Nihonium", "de": "Nihonium" }, "aliases": { "en": ["Ununtrium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Nh" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#nh" } }, "period": 7, "group": { "status": "reported", "value": 13, "provenance": { "sourceId": "pse-info", "locator": "elements.json#nh" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nh" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Nh" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2 7p1", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nh" } }, "shells": [2, 8, 18, 32, 32, 18, 3], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nh" } }, "melting": { "status": "predicted", "value": 700, "provenance": { "sourceId": "pse-info", "locator": "elements.json#nh" } }, "boiling": { "status": "predicted", "value": 1430, "provenance": { "sourceId": "pse-info", "locator": "elements.json#nh" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nh" } }, "discovery": { "kind": "year", "year": 2006, "by": "JINR", "provenance": { "sourceId": "pse-info", "locator": "elements.json#nh" } } },
+  { "atomicNumber": 114, "symbol": "Fl", "names": { "en": "Flerovium", "de": "Flerovium" }, "aliases": { "en": ["Ununquadium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fl" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#fl" } }, "period": 7, "group": { "status": "reported", "value": 14, "provenance": { "sourceId": "pse-info", "locator": "elements.json#fl" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fl" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Fl" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2 7p2", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fl" } }, "shells": [2, 8, 18, 32, 32, 18, 4], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fl" } }, "melting": { "status": "predicted", "value": 284, "provenance": { "sourceId": "pse-info", "locator": "elements.json#fl" } }, "boiling": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fl" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fl" } }, "discovery": { "kind": "year", "year": 1999, "by": "JINR", "provenance": { "sourceId": "pse-info", "locator": "elements.json#fl" } } },
+  { "atomicNumber": 115, "symbol": "Mc", "names": { "en": "Moscovium", "de": "Moscovium" }, "aliases": { "en": ["Ununpentium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mc" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#mc" } }, "period": 7, "group": { "status": "reported", "value": 15, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mc" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mc" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Mc" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2 7p3", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mc" } }, "shells": [2, 8, 18, 32, 32, 18, 5], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mc" } }, "melting": { "status": "predicted", "value": 670, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mc" } }, "boiling": { "status": "predicted", "value": 1400, "provenance": { "sourceId": "pse-info", "locator": "elements.json#mc" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mc" } }, "discovery": { "kind": "year", "year": 2006, "by": "JINR", "provenance": { "sourceId": "pse-info", "locator": "elements.json#mc" } } },
+  { "atomicNumber": 116, "symbol": "Lv", "names": { "en": "Livermorium", "de": "Livermorium" }, "aliases": { "en": ["Ununhexium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Lv" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#lv" } }, "period": 7, "group": { "status": "reported", "value": 16, "provenance": { "sourceId": "pse-info", "locator": "elements.json#lv" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lv" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Lv" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2 7p4", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lv" } }, "shells": [2, 8, 18, 32, 32, 18, 6], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lv" } }, "melting": { "status": "predicted", "value": 708.5, "provenance": { "sourceId": "pse-info", "locator": "elements.json#lv" } }, "boiling": { "status": "predicted", "value": 1085, "provenance": { "sourceId": "pse-info", "locator": "elements.json#lv" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lv" } }, "discovery": { "kind": "year", "year": 2e3, "by": "JINR", "provenance": { "sourceId": "pse-info", "locator": "elements.json#lv" } } },
+  { "atomicNumber": 117, "symbol": "Ts", "names": { "en": "Tennessine", "de": "Tenness" }, "aliases": { "en": ["Ununseptium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ts" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#ts" } }, "period": 7, "group": { "status": "reported", "value": 17, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ts" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ts" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Ts" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2 7p5", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ts" } }, "shells": [2, 8, 18, 32, 32, 18, 7], "phase": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ts" } }, "melting": { "status": "predicted", "value": 723, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ts" } }, "boiling": { "status": "predicted", "value": 883, "provenance": { "sourceId": "pse-info", "locator": "elements.json#ts" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ts" } }, "discovery": { "kind": "year", "year": 2010, "by": "JINR", "provenance": { "sourceId": "pse-info", "locator": "elements.json#ts" } } },
+  { "atomicNumber": 118, "symbol": "Og", "names": { "en": "Oganesson", "de": "Oganesson" }, "aliases": { "en": ["Ununoctium"] }, "identitySources": { "iupac": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Og" }, "germanName": { "sourceId": "pse-info", "locator": "elements.json#og" } }, "period": 7, "group": { "status": "reported", "value": 18, "provenance": { "sourceId": "pse-info", "locator": "elements.json#og" } }, "block": { "status": "reported", "value": "p", "provenance": { "sourceId": "pse-info", "locator": "elements.json#og" } }, "weight": { "kind": "none", "provenance": { "sourceId": "ciaaw", "locator": "atomic-weights.htm#Og" } }, "configuration": { "status": "predicted", "value": "[Rn] 5f14 6d10 7s2 7p6", "provenance": { "sourceId": "pse-info", "locator": "elements.json#og" } }, "shells": [2, 8, 18, 32, 32, 18, 8], "phase": { "status": "predicted", "value": "solid", "provenance": { "sourceId": "pse-info", "locator": "elements.json#og" } }, "melting": { "status": "predicted", "value": 325, "provenance": { "sourceId": "pse-info", "locator": "elements.json#og" } }, "boiling": { "status": "predicted", "value": 450, "provenance": { "sourceId": "pse-info", "locator": "elements.json#og" } }, "sublimation": { "status": "unavailable", "provenance": { "sourceId": "pse-info", "locator": "elements.json#og" } }, "discovery": { "kind": "year", "year": 2006, "by": "JINR", "provenance": { "sourceId": "pse-info", "locator": "elements.json#og" } } }
 ];
 var PERIODIC_TABLE_PLACEMENT = {
   1: { row: 1, column: 1, category: "nonmetal" },
@@ -8899,6 +9953,130 @@ var SelectionModel = class {
   }
 };
 
+// periodic-table/phase.ts
+var GAS_CONSTANT = 8.314462618;
+var TROUTON_ENTROPY = 88;
+var REFERENCE_PRESSURE_BAR = 1;
+var TEMPERATURE_SLIDER = {
+  /** Lowest slider value in degrees Celsius, close to absolute zero. */
+  minCelsius: -273,
+  /** Highest slider value in degrees Celsius, above the boiling point of tungsten. */
+  maxCelsius: 6e3,
+  /** Slider step in kelvin. */
+  stepCelsius: 1,
+  /** Value the table starts with, the reference temperature of the bundle. */
+  defaultCelsius: 25
+};
+var PRESSURE_SLIDER = {
+  /** Lowest slider value, `log10(0.001 bar)`. */
+  minLog10Bar: -3,
+  /** Highest slider value, `log10(10 bar)`. */
+  maxLog10Bar: 1,
+  /** Slider step in decades. */
+  stepLog10: 0.01,
+  /** Value the table starts with, the reference pressure of the bundle. */
+  defaultLog10Bar: 0
+};
+function kelvinFromCelsius(celsius) {
+  return celsius + 273.15;
+}
+function celsiusFromKelvin(kelvin) {
+  return kelvin - 273.15;
+}
+function pressureFromLog10(log10Bar) {
+  return 10 ** log10Bar;
+}
+function log10FromPressure(bar) {
+  return Math.log10(bar);
+}
+function celsiusText(kelvin, language) {
+  const celsius = Math.round(celsiusFromKelvin(kelvin));
+  return `${localizeNumber(celsius, language)} \xB0C`;
+}
+function pressureText(bar, language) {
+  const rounded = Number(bar.toPrecision(3));
+  return `${localizeNumber(rounded, language)} bar`;
+}
+function localizeNumber(value, language) {
+  const text = String(value);
+  return language === "de" ? text.replace(".", ",") : text;
+}
+function boilingPointAt(element, pressureBar) {
+  if (element.boiling.status === "unavailable") return void 0;
+  const boiling = element.boiling.value;
+  if (!(pressureBar > 0) || pressureBar === REFERENCE_PRESSURE_BAR) return boiling;
+  const shift3 = GAS_CONSTANT * Math.log(pressureBar / REFERENCE_PRESSURE_BAR) / TROUTON_ENTROPY;
+  return boiling / (1 - shift3);
+}
+function matterState(element, conditions) {
+  const temperature = conditions.temperatureK;
+  if (!(temperature > 0)) return "unknown";
+  const melting = element.melting.status === "unavailable" ? void 0 : element.melting.value;
+  if (melting !== void 0) {
+    const boiling = boilingPointAt(element, conditions.pressureBar);
+    if (boiling === void 0) return temperature < melting ? "solid" : "unknown";
+    if (boiling <= melting) return temperature < boiling ? "solid" : "gas";
+    if (temperature < melting) return "solid";
+    return temperature < boiling ? "liquid" : "gas";
+  }
+  if (element.sublimation.status === "unavailable") return "unknown";
+  return temperature < element.sublimation.value ? "solid" : "gas";
+}
+function discoveryYear(element) {
+  return element.discovery.kind === "year" ? element.discovery.year : void 0;
+}
+function knownAt(element, year) {
+  switch (element.discovery.kind) {
+    case "antiquity":
+    case "unavailable":
+      return true;
+    case "year":
+      return element.discovery.year <= year;
+  }
+}
+var DISCOVERY_RANGE = (() => {
+  let min2 = Number.POSITIVE_INFINITY;
+  let max2 = Number.NEGATIVE_INFINITY;
+  for (const element of ELEMENTS) {
+    const year = discoveryYear(element);
+    if (year === void 0) continue;
+    if (year < min2) min2 = year;
+    if (year > max2) max2 = year;
+  }
+  return Number.isFinite(min2) ? { min: min2, max: max2 } : { min: 0, max: 0 };
+})();
+var TABLE_MODES = ["off", "temperature", "pressure", "discovery"];
+var DEFAULT_MODE_STATE = {
+  mode: "off",
+  temperatureK: kelvinFromCelsius(TEMPERATURE_SLIDER.defaultCelsius),
+  pressureBar: pressureFromLog10(PRESSURE_SLIDER.defaultLog10Bar),
+  year: DISCOVERY_RANGE.max
+};
+function cellMode(element, state) {
+  switch (state.mode) {
+    case "off":
+      return { state: null, badge: null, dimmed: false };
+    case "temperature":
+    case "pressure":
+      return {
+        state: matterState(element, {
+          temperatureK: state.temperatureK,
+          pressureBar: state.pressureBar
+        }),
+        badge: null,
+        dimmed: false
+      };
+    case "discovery": {
+      const year = discoveryYear(element);
+      return {
+        state: null,
+        badge: year === void 0 ? null : String(year),
+        dimmed: !knownAt(element, state.year)
+      };
+    }
+  }
+}
+
 // periodic-table/strings.ts
 var EN = {
   widgetLabel: "Periodic table",
@@ -8930,6 +10108,10 @@ var EN = {
   fieldBlock: "Block",
   fieldWeight: "Standard atomic weight",
   fieldPhase: "State",
+  fieldMelting: "Melting point",
+  fieldBoiling: "Boiling point",
+  fieldSublimation: "Sublimation point",
+  fieldDiscovery: "Discovered",
   fieldConfiguration: "Electron configuration",
   fieldShells: "Electrons per shell",
   groupUnassigned: "Not assigned",
@@ -8942,13 +10124,35 @@ var EN = {
   phaseLiquid: "Liquid",
   phaseGas: "Gas",
   conditions: "{temperature} \xB0C \xB7 {pressure} bar",
-  sourcesLabel: "Sources",
-  sourcesHint: "Each field names the source it was taken from.",
+  discoveryAntiquity: "Antiquity",
+  modeLabel: "Show",
+  modeOff: "Off",
+  modeTemperature: "Temperature",
+  modePressure: "Pressure",
+  modeDiscovery: "Discovery",
+  temperatureSlider: "Temperature",
+  pressureSlider: "Pressure",
+  yearSlider: "Year",
+  stateLegend: "State at these conditions",
+  stateUnknown: "Unknown",
+  infoLabel: "Sources and notes",
+  infoIntro: "The table is built from the sources below. Every value keeps the state its source reports: reported, predicted or unavailable.",
+  infoConditions: "States and temperatures refer to {conditions}.",
+  infoPhaseModel: "At other conditions the state follows the melting and boiling points. The melting point keeps its 1-bar value, the boiling point follows Clausius\u2013Clapeyron with Trouton's rule. Carbon and arsenic sublime, so they have no liquid range at standard pressure.",
+  infoDiscovery: "Years of discovery and first synthesis follow the source. Eleven elements have been in use since antiquity and carry no year.",
+  infoFields: "Fields",
+  infoSources: "Sources",
+  infoNotes: "Notes",
+  infoClose: "Close",
   sourceRelease: "Release {release}",
   sourceRetrieved: "Retrieved {retrieved}",
   sourceLicense: "License: {license}",
   fieldIdentity: "Identity",
   fieldGermanName: "German name",
+  fieldSymbol: "Symbol",
+  fieldName: "Name",
+  fieldUncertainty: "Uncertainty digits",
+  fieldNoteCodes: "Note codes",
   printTitle: "Periodic table"
 };
 var DE = {
@@ -8981,6 +10185,10 @@ var DE = {
   fieldBlock: "Block",
   fieldWeight: "Standardatommasse",
   fieldPhase: "Aggregatzustand",
+  fieldMelting: "Schmelzpunkt",
+  fieldBoiling: "Siedepunkt",
+  fieldSublimation: "Sublimationspunkt",
+  fieldDiscovery: "Entdeckt",
   fieldConfiguration: "Elektronenkonfiguration",
   fieldShells: "Elektronen je Schale",
   groupUnassigned: "Nicht zugeordnet",
@@ -8993,13 +10201,35 @@ var DE = {
   phaseLiquid: "Fl\xFCssig",
   phaseGas: "Gasf\xF6rmig",
   conditions: "{temperature} \xB0C \xB7 {pressure} bar",
-  sourcesLabel: "Quellen",
-  sourcesHint: "Jedes Feld nennt die Quelle, aus der es stammt.",
+  discoveryAntiquity: "Antike",
+  modeLabel: "Anzeigen",
+  modeOff: "Aus",
+  modeTemperature: "Temperatur",
+  modePressure: "Druck",
+  modeDiscovery: "Entdeckung",
+  temperatureSlider: "Temperatur",
+  pressureSlider: "Druck",
+  yearSlider: "Jahr",
+  stateLegend: "Aggregatzustand bei diesen Bedingungen",
+  stateUnknown: "Unbekannt",
+  infoLabel: "Quellen und Hinweise",
+  infoIntro: "Die Tabelle beruht auf den unten genannten Quellen. Jeder Wert beh\xE4lt den Stand seiner Quelle: berichtet, vorhergesagt oder nicht verf\xFCgbar.",
+  infoConditions: "Aggregatzust\xE4nde und Temperaturen gelten f\xFCr {conditions}.",
+  infoPhaseModel: "Bei anderen Bedingungen folgt der Aggregatzustand dem Schmelz- und dem Siedepunkt. Der Schmelzpunkt beh\xE4lt seinen Wert bei 1 bar, der Siedepunkt folgt der Clausius-Clapeyron-Gleichung mit der Trouton-Regel. Kohlenstoff und Arsen sublimieren und haben bei Normaldruck keinen fl\xFCssigen Bereich.",
+  infoDiscovery: "Jahreszahlen der Entdeckung und der ersten Darstellung folgen der Quelle. Elf Elemente sind seit der Antike in Gebrauch und tragen keine Jahreszahl.",
+  infoFields: "Felder",
+  infoSources: "Quellen",
+  infoNotes: "Hinweise",
+  infoClose: "Schlie\xDFen",
   sourceRelease: "Ausgabe {release}",
   sourceRetrieved: "Abgerufen am {retrieved}",
   sourceLicense: "Lizenz: {license}",
   fieldIdentity: "Identit\xE4t",
   fieldGermanName: "Deutscher Name",
+  fieldSymbol: "Symbol",
+  fieldName: "Name",
+  fieldUncertainty: "Unsicherheitsstellen",
+  fieldNoteCodes: "Fu\xDFnoten",
   printTitle: "Periodensystem"
 };
 var STRINGS = { en: EN, de: DE };
@@ -9040,11 +10270,42 @@ function languageAncestors(node) {
 }
 
 // periodic-table/details.ts
-function conditionsText(language) {
+function conditionsText(language, conditions = CONDITIONS) {
   return format(strings(language).conditions, {
-    temperature: CONDITIONS.temperatureK - 273.15,
-    pressure: CONDITIONS.pressureBar
+    temperature: numberText(celsiusFromKelvin(conditions.temperatureK), language),
+    pressure: numberText(conditions.pressureBar, language)
   });
+}
+function numberText(value, language) {
+  const text = String(Number(value.toFixed(2)));
+  return language === "de" ? text.replace(".", ",") : text;
+}
+function temperatureText(kelvin, language) {
+  const celsius = celsiusFromKelvin(kelvin);
+  return `${numberText(kelvin, language)} K (${numberText(celsius, language)} \xB0C)`;
+}
+function stateText(state, t8) {
+  switch (state) {
+    case "solid":
+      return t8.phaseSolid;
+    case "liquid":
+      return t8.phaseLiquid;
+    case "gas":
+      return t8.phaseGas;
+    case "unknown":
+      return t8.stateUnknown;
+  }
+}
+function discoveryText(element, language) {
+  const t8 = strings(language);
+  switch (element.discovery.kind) {
+    case "antiquity":
+      return t8.discoveryAntiquity;
+    case "unavailable":
+      return t8.valueUnavailable;
+    case "year":
+      return element.discovery.by ? `${element.discovery.year} \xB7 ${element.discovery.by}` : String(element.discovery.year);
+  }
 }
 function weightText(element, language) {
   const text = atomicWeightText(element.weight, language);
@@ -9060,87 +10321,139 @@ function weightText(element, language) {
   }
 }
 function groupText(element, language) {
-  const t7 = strings(language);
+  const t8 = strings(language);
   switch (element.group.status) {
     case "reported":
     case "predicted":
       return String(element.group.value);
     case "convention-dependent":
-      return t7.groupConventionDependent;
+      return t8.groupConventionDependent;
     case "unassigned":
-      return t7.groupUnassigned;
+      return t8.groupUnassigned;
     case "unavailable":
-      return t7.valueUnavailable;
+      return t8.valueUnavailable;
   }
 }
 function categoryText(element, language) {
   const category = categoryOf(element.atomicNumber);
   return category ? CATEGORIES[category]?.[language] ?? category : "";
 }
-function detailRows(element, language) {
-  const t7 = strings(language);
+function detailRows(element, language, conditions = CONDITIONS) {
+  const t8 = strings(language);
   const rows = [
-    { key: "group", label: t7.fieldGroup, value: groupText(element, language) },
-    { key: "period", label: t7.fieldPeriod, value: String(element.period) },
-    { key: "family", label: t7.fieldFamily, value: categoryText(element, language) }
+    { key: "group", label: t8.fieldGroup, value: groupText(element, language) },
+    { key: "period", label: t8.fieldPeriod, value: String(element.period) },
+    { key: "family", label: t8.fieldFamily, value: categoryText(element, language) }
   ];
   if (element.block.status === "unavailable") {
-    rows.push({ key: "block", label: t7.fieldBlock, value: t7.valueUnavailable });
+    rows.push({ key: "block", label: t8.fieldBlock, value: t8.valueUnavailable });
   } else {
     rows.push({
       key: "block",
-      label: t7.fieldBlock,
+      label: t8.fieldBlock,
       value: element.block.value,
-      ...element.block.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
+      ...element.block.status === "predicted" ? { qualifier: t8.valuePredicted } : {}
     });
   }
-  rows.push({ key: "weight", label: t7.fieldWeight, value: weightText(element, language) });
-  if (element.phase.status === "unavailable") {
-    rows.push({ key: "phase", label: t7.fieldPhase, value: t7.valueUnavailable });
-  } else {
-    const phase = { solid: t7.phaseSolid, liquid: t7.phaseLiquid, gas: t7.phaseGas }[element.phase.value];
+  rows.push({ key: "weight", label: t8.fieldWeight, value: weightText(element, language) });
+  const atBundle = conditions.temperatureK === CONDITIONS.temperatureK && conditions.pressureBar === CONDITIONS.pressureBar;
+  if (!atBundle) {
     rows.push({
       key: "phase",
-      label: t7.fieldPhase,
+      label: t8.fieldPhase,
+      value: stateText(matterState(element, conditions), t8)
+    });
+  } else if (element.phase.status === "unavailable") {
+    rows.push({ key: "phase", label: t8.fieldPhase, value: t8.valueUnavailable });
+  } else {
+    const phase = { solid: t8.phaseSolid, liquid: t8.phaseLiquid, gas: t8.phaseGas }[element.phase.value];
+    rows.push({
+      key: "phase",
+      label: t8.fieldPhase,
       value: phase,
-      ...element.phase.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
+      ...element.phase.status === "predicted" ? { qualifier: t8.valuePredicted } : {}
     });
   }
+  rows.push({
+    key: "melting",
+    label: t8.fieldMelting,
+    ...temperatureRow(element.melting, language, t8)
+  });
+  rows.push({
+    key: "boiling",
+    label: t8.fieldBoiling,
+    ...temperatureRow(element.boiling, language, t8)
+  });
+  if (element.sublimation.status !== "unavailable") {
+    rows.push({
+      key: "sublimation",
+      label: t8.fieldSublimation,
+      ...temperatureRow(element.sublimation, language, t8)
+    });
+  }
+  rows.push({ key: "discovery", label: t8.fieldDiscovery, value: discoveryText(element, language) });
   if (element.configuration.status === "unavailable") {
-    rows.push({ key: "configuration", label: t7.fieldConfiguration, value: t7.valueUnavailable });
+    rows.push({ key: "configuration", label: t8.fieldConfiguration, value: t8.valueUnavailable });
   } else {
     rows.push({
       key: "configuration",
-      label: t7.fieldConfiguration,
+      label: t8.fieldConfiguration,
       value: element.configuration.value,
-      ...element.configuration.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
+      ...element.configuration.status === "predicted" ? { qualifier: t8.valuePredicted } : {}
     });
   }
-  rows.push({ key: "shells", label: t7.fieldShells, value: element.shells.join(" \xB7 ") });
+  rows.push({ key: "shells", label: t8.fieldShells, value: element.shells.join(" \xB7 ") });
   return rows;
 }
-function sourceUsage(element, language) {
-  const t7 = strings(language);
-  const fields = [
-    [t7.fieldIdentity, element.identitySources.iupac],
-    [t7.fieldGermanName, element.identitySources.germanName],
-    [t7.fieldGroup, element.group.provenance],
-    [t7.fieldBlock, element.block.provenance],
-    [t7.fieldWeight, element.weight.kind === "unavailable" ? void 0 : element.weight.provenance],
-    [t7.fieldPhase, element.phase.provenance],
-    [t7.fieldConfiguration, element.configuration.provenance]
-  ];
-  const usage = /* @__PURE__ */ new Map();
-  for (const [label, provenance] of fields) {
-    if (!provenance) continue;
-    const entry = usage.get(provenance.sourceId);
-    if (entry) entry.push(label);
-    else usage.set(provenance.sourceId, [label]);
-  }
-  return [...usage].map(([sourceId, labels]) => ({ sourceId, fields: labels }));
+function temperatureRow(value, language, t8) {
+  if (value.status === "unavailable") return { value: t8.valueUnavailable };
+  return {
+    value: temperatureText(value.value, language),
+    ...value.status === "predicted" ? { qualifier: t8.valuePredicted } : {}
+  };
 }
-function sourceOf(sourceId) {
-  return SOURCES[sourceId];
+function sourceList() {
+  return Object.values(SOURCES);
+}
+function sourceFieldText(field, t8) {
+  switch (field) {
+    case "names.de":
+      return t8.fieldGermanName;
+    case "period":
+      return t8.fieldPeriod;
+    case "group":
+      return t8.fieldGroup;
+    case "block":
+      return t8.fieldBlock;
+    case "phase":
+      return t8.fieldPhase;
+    case "electron_config":
+      return t8.fieldConfiguration;
+    case "set":
+      return t8.fieldFamily;
+    case "temperature.melting":
+      return t8.fieldMelting;
+    case "temperature.boiling":
+      return t8.fieldBoiling;
+    case "temperature.sublimation":
+      return t8.fieldSublimation;
+    case "discovery":
+      return t8.fieldDiscovery;
+    case "symbol":
+      return t8.fieldSymbol;
+    case "name":
+      return t8.fieldName;
+    case "standard atomic weight":
+      return t8.fieldWeight;
+    case "uncertainty digits":
+      return t8.fieldUncertainty;
+    case "note codes":
+      return t8.fieldNoteCodes;
+    case "neutral ground-state subshell occupation":
+      return t8.fieldShells;
+    default:
+      return field;
+  }
 }
 
 // periodic-table/styles.ts
@@ -9153,7 +10466,8 @@ var periodicTableStyles = i`
 		color: var(--sl-color-neutral-900, #1c1c1e);
 		background: var(--sl-color-neutral-0, #ffffff);
 
-		--pt-cell-height: 2.6rem;
+		--pt-cell-height: 3rem;
+		--pt-cell-bar: 0.4rem;
 		--pt-gutter: 1.5rem;
 		--pt-series-gap: 0.5rem;
 		--pt-radius: 4px;
@@ -9175,6 +10489,11 @@ var periodicTableStyles = i`
 		--pt-lanthanide: #d8a8d8;
 		--pt-actinide: #e8a8c0;
 		--pt-unknown: #d8d8d8;
+
+		--pt-state-solid: #d7e3f4;
+		--pt-state-liquid: #cfe9d8;
+		--pt-state-gas: #f6e3c0;
+		--pt-state-unknown: #e6e6e9;
 	}
 
 	* {
@@ -9227,6 +10546,12 @@ var periodicTableStyles = i`
 		flex-wrap: wrap;
 		align-items: end;
 		gap: 0.5rem;
+	}
+
+	/* The info button sits at the top of the toolbar, while the fields keep their
+	   labels above them and therefore align to the bottom. */
+	.toolbar .info-button {
+		align-self: start;
 	}
 
 	.toolbar .search {
@@ -9320,22 +10645,65 @@ var periodicTableStyles = i`
 		text-align: right;
 	}
 
+	/* The cell copies the element cards of the lab widget: a white card with a
+	   thin border in the family colour, the symbol in the middle and a bar of the
+	   same colour along the bottom edge. */
 	.cell {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		min-width: 0;
 		min-height: var(--pt-cell-height);
-		padding: 2px 1px;
-		border: 1px solid color-mix(in srgb, var(--pt-ink) 12%, transparent);
+		padding: 2px 1px calc(var(--pt-cell-bar) + 2px);
+		overflow: hidden;
+		border: 1.5px solid var(--pt-cell-fill, var(--pt-border));
 		border-radius: var(--pt-radius);
-		background: var(--pt-cell-fill, var(--pt-inset));
+		background: var(--pt-surface);
 		color: var(--pt-ink);
 		font: inherit;
 		line-height: 1.05;
 		text-align: center;
 		cursor: pointer;
+	}
+
+	.cell::after {
+		content: "";
+		position: absolute;
+		inset-inline: 0;
+		bottom: 0;
+		height: var(--pt-cell-bar);
+		background: var(--pt-cell-fill, var(--pt-border));
+	}
+
+	/* A mode fills the card with the state colour and keeps the family bar, so
+	   both readings stay visible at once. */
+	.cell.state-solid {
+		background: var(--pt-state-solid);
+	}
+	.cell.state-liquid {
+		background: var(--pt-state-liquid);
+	}
+	.cell.state-gas {
+		background: var(--pt-state-gas);
+	}
+	.cell.state-unknown {
+		background: var(--pt-state-unknown);
+	}
+
+	.cell.is-dimmed {
+		opacity: 0.35;
+	}
+
+	.cell-year {
+		position: absolute;
+		inset-block-start: 1px;
+		inset-inline-end: 2px;
+		font-size: 0.5rem;
+		color: var(--pt-ink-soft);
+		font-variant-numeric: tabular-nums;
+		pointer-events: none;
 	}
 
 	.cell:hover {
@@ -9450,6 +10818,90 @@ var periodicTableStyles = i`
 		border: 1px solid color-mix(in srgb, var(--pt-ink) 15%, transparent);
 		border-radius: 2px;
 		background: var(--pt-cell-fill);
+	}
+
+	.modes {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.mode-group {
+		display: flex;
+		gap: 0.25rem;
+	}
+
+	.mode-slider {
+		display: flex;
+		flex: 1 1 16rem;
+		align-items: center;
+		gap: 0.5rem;
+		min-width: 12rem;
+	}
+
+	.mode-slider sl-range {
+		flex: 1 1 auto;
+		min-width: 6rem;
+	}
+
+	/* The active mode button already names the quantity, so the range label is
+	   only kept for assistive technology. */
+	.mode-slider sl-range::part(form-control-label) {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.mode-value {
+		flex: 0 0 auto;
+		min-width: 5.5rem;
+		font-size: 0.75rem;
+		color: var(--pt-ink-soft);
+		font-variant-numeric: tabular-nums;
+		text-align: right;
+	}
+
+	.state-legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem 0.6rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: 0.7rem;
+		color: var(--pt-ink-soft);
+	}
+
+	.state-legend li {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
+
+	.state-swatch {
+		width: 0.7rem;
+		height: 0.7rem;
+		border: 1px solid color-mix(in srgb, var(--pt-ink) 15%, transparent);
+		border-radius: 2px;
+	}
+
+	.state-swatch.state-solid {
+		background: var(--pt-state-solid);
+	}
+	.state-swatch.state-liquid {
+		background: var(--pt-state-liquid);
+	}
+	.state-swatch.state-gas {
+		background: var(--pt-state-gas);
+	}
+	.state-swatch.state-unknown {
+		background: var(--pt-state-unknown);
 	}
 
 	.list {
@@ -9654,46 +11106,89 @@ var periodicTableStyles = i`
 		text-align: center;
 	}
 
-	/* The sources sit at the foot of the card, so the free space of the block
-	   collects between the fields and the disclosure instead of below it. */
-	.sources {
-		margin-top: auto;
-		padding-top: 2px;
-		font-size: 0.62rem;
+	/* The sources and the model notes live in a dialog behind the info button, so
+	   the card stays a card. The dialog gets wider margins than the Shoelace
+	   default, because it carries running text and a list of sources. */
+	.info::part(panel) {
+		max-width: min(44rem, 92vw);
 	}
 
-	.sources::part(base) {
-		border: none;
-		background: none;
+	.info::part(header) {
+		padding: 1.25rem 2rem 0;
 	}
 
-	.sources::part(header) {
-		padding: 0;
+	.info::part(title) {
+		font-size: 1.05rem;
 	}
 
-	.sources::part(content) {
-		padding: 0;
+	.info::part(body) {
+		padding: 1rem 2rem 1.5rem;
 	}
 
-	.sources::part(summary) {
-		font-size: 0.62rem;
+	.info::part(footer) {
+		padding: 0 2rem 1.5rem;
 	}
 
-	.source {
-		margin-top: 0.3rem;
+	/* The widget ships no icon assets, so the built-in close button would ask a
+	   CDN for its glyph. The footer button and Escape close the dialog instead. */
+	.info::part(close-button) {
+		display: none;
 	}
 
-	.source-title {
+	.info-intro {
 		margin: 0;
-		font-size: 0.62rem;
+		font-size: 0.9rem;
+		line-height: 1.55;
 	}
 
-	.source-line {
-		margin: 0.1rem 0 0;
+	.info-section {
+		margin-top: 1.75rem;
+	}
+
+	.info-section h3 {
+		margin: 0 0 0.6rem;
+		font-size: 0.95rem;
+	}
+
+	.info-note {
+		margin: 0.6rem 0 0;
+		font-size: 0.85rem;
+		line-height: 1.55;
 		color: var(--pt-ink-soft);
 	}
 
-	.source-link {
+	.info-source {
+		padding: 0.9rem 0;
+		border-top: 1px solid var(--pt-border);
+	}
+
+	.info-source:first-of-type {
+		padding-top: 0;
+		border-top: none;
+	}
+
+	.info-source-title {
+		margin: 0;
+		font-size: 0.9rem;
+		font-weight: 600;
+	}
+
+	.info-source-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+		margin: 0.4rem 0 0;
+	}
+
+	.info-source-text {
+		margin: 0.4rem 0 0;
+		font-size: 0.82rem;
+		line-height: 1.5;
+		color: var(--pt-ink-soft);
+	}
+
+	.info-source-link {
+		font-size: 0.82rem;
 		color: var(--pt-accent);
 		overflow-wrap: anywhere;
 	}
@@ -9811,6 +11306,8 @@ var periodicTableStyles = i`
 
 		.toolbar,
 		.result-count,
+		.modes,
+		.state-legend,
 		.table-pane,
 		.series-jumps,
 		.legend {
@@ -9830,6 +11327,8 @@ var periodicTableStyles = i`
 
 	:host(.ww-beforeprint) .toolbar,
 	:host(.ww-beforeprint) .result-count,
+	:host(.ww-beforeprint) .modes,
+	:host(.ww-beforeprint) .state-legend,
 	:host(.ww-beforeprint) .table-pane,
 	:host(.ww-beforeprint) .series-jumps,
 	:host(.ww-beforeprint) .legend {
@@ -9867,6 +11366,22 @@ var periodicTableStyles = i`
 setBasePath("@shoelace-style/shoelace/dist");
 var VIEWS = ["auto", "table", "list"];
 var LIST_BREAKPOINT = 680;
+var STATES = ["solid", "liquid", "gas", "unknown"];
+var INFO_ICON = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#3f3f46" stroke-width="1.3"/><circle cx="8" cy="4.9" r=".95" fill="#3f3f46"/><rect x="7.15" y="6.6" width="1.7" height="5.1" rx=".85" fill="#3f3f46"/></svg>'
+)}`;
+function modeText(mode, t8) {
+  switch (mode) {
+    case "off":
+      return t8.modeOff;
+    case "temperature":
+      return t8.modeTemperature;
+    case "pressure":
+      return t8.modePressure;
+    case "discovery":
+      return t8.modeDiscovery;
+  }
+}
 function parseView(raw) {
   const value = (raw ?? "").trim().toLowerCase();
   return VIEWS.find((view) => view === value) ?? "auto";
@@ -9879,7 +11394,7 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, matches_fn, selectFromUser_fn, clearFromUser_fn, dispatchSelection_fn, setView_fn, toggleCategory_fn, jumpToSeries_fn, focusElement_fn, reset_fn, _onQueryInput, _onSearchKeydown, _onCategoryChange, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderToolbar_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn;
+var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, conditions_get, matches_fn, selectFromUser_fn, clearFromUser_fn, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onPressureInput, _onYearInput, _openInfo, _onInfoHide, jumpToSeries_fn, focusElement_fn, reset_fn, _onQueryInput, _onSearchKeydown, _onCategoryChange, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderToolbar_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderInfo_fn;
 _ChemLabPeriodicTable_decorators = [t2("webwriter-chemlab-periodic-table")];
 var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a2) {
   constructor() {
@@ -9902,6 +11417,40 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     __privateAdd(this, _rovingOverride, null);
     __privateAdd(this, _focusBeforeLayout, null);
     __privateAdd(this, _restoreFocusPending, false);
+    __privateAdd(this, _mode, DEFAULT_MODE_STATE);
+    __privateAdd(this, _infoOpen, false);
+    /** Reads the temperature slider, which works in degrees Celsius. */
+    __privateAdd(this, _onTemperatureInput, (event) => {
+      const value = Number(event.target.value ?? "");
+      if (!Number.isFinite(value)) return;
+      __privateSet(this, _mode, { ...__privateGet(this, _mode), temperatureK: kelvinFromCelsius(value) });
+      this.requestUpdate();
+    });
+    /** Reads the pressure slider, which works on the decadic logarithm. */
+    __privateAdd(this, _onPressureInput, (event) => {
+      const value = Number(event.target.value ?? "");
+      if (!Number.isFinite(value)) return;
+      __privateSet(this, _mode, { ...__privateGet(this, _mode), pressureBar: pressureFromLog10(value) });
+      this.requestUpdate();
+    });
+    /** Reads the year slider. */
+    __privateAdd(this, _onYearInput, (event) => {
+      const value = Number(event.target.value ?? "");
+      if (!Number.isFinite(value)) return;
+      __privateSet(this, _mode, { ...__privateGet(this, _mode), year: value });
+      this.requestUpdate();
+    });
+    /** Opens the info dialog. */
+    __privateAdd(this, _openInfo, () => {
+      __privateSet(this, _infoOpen, true);
+      this.requestUpdate();
+    });
+    /** Keeps the open flag in step when the dialog closes itself. */
+    __privateAdd(this, _onInfoHide, () => {
+      if (!__privateGet(this, _infoOpen)) return;
+      __privateSet(this, _infoOpen, false);
+      this.requestUpdate();
+    });
     /** Reads the search field. */
     __privateAdd(this, _onQueryInput, (event) => {
       const value = event.target.value ?? "";
@@ -10025,20 +11574,23 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
   }
   render() {
     const language = __privateGet(this, _ChemLabPeriodicTable_instances, language_get);
-    const t7 = strings(language);
+    const t8 = strings(language);
     const matches = __privateMethod(this, _ChemLabPeriodicTable_instances, matches_fn).call(this);
     const matching = new Set(matches.map((match) => match.atomicNumber));
     __privateSet(this, _matching, matching);
     const selected = __privateGet(this, _selection).value;
     const element = selected === null ? null : elementByAtomicNumber(selected) ?? null;
-    const details = __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetails_fn).call(this, t7, language, element);
+    const details = __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetails_fn).call(this, t8, language, element);
     const resolved = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get);
     return x2`
 			<div class="widget">
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderToolbar_fn).call(this, t7, language)}
-				<p class="result-count" aria-live="polite">${__privateMethod(this, _ChemLabPeriodicTable_instances, renderCount_fn).call(this, t7, matches.length)}</p>
-				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t7, language, matches, details) : __privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t7, language, matching, details)}
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t7, language, element)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderToolbar_fn).call(this, t8, language)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderModes_fn).call(this, t8, language)}
+				<p class="result-count" aria-live="polite">${__privateMethod(this, _ChemLabPeriodicTable_instances, renderCount_fn).call(this, t8, matches.length)}</p>
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderStateLegend_fn).call(this, t8)}
+				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t8, language, matches, details) : __privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t8, language, matching, details)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t8, language, element)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderInfo_fn).call(this, t8, language)}
 			</div>
 		`;
   }
@@ -10058,6 +11610,8 @@ _matching = new WeakMap();
 _rovingOverride = new WeakMap();
 _focusBeforeLayout = new WeakMap();
 _restoreFocusPending = new WeakMap();
+_mode = new WeakMap();
+_infoOpen = new WeakMap();
 _ChemLabPeriodicTable_instances = new WeakSet();
 /** Watches every ancestor the language walk visits for a `lang` change. */
 observeLanguage_fn = function() {
@@ -10121,6 +11675,9 @@ resolvedView_get = function() {
   if (view !== "auto") return view;
   return __privateGet(this, _width) !== null && __privateGet(this, _width) < LIST_BREAKPOINT ? "list" : "table";
 };
+conditions_get = function() {
+  return { temperatureK: __privateGet(this, _mode).temperatureK, pressureBar: __privateGet(this, _mode).pressureBar };
+};
 /** Current search hits, best match first. */
 matches_fn = function() {
   return searchElements(__privateGet(this, _query), { locale: __privateGet(this, _ChemLabPeriodicTable_instances, language_get), category: __privateGet(this, _category) });
@@ -10169,6 +11726,21 @@ toggleCategory_fn = function(category) {
   __privateSet(this, _category, __privateGet(this, _category) === category ? null : category);
   this.requestUpdate();
 };
+/**
+ * Switches the property the cells are coloured by.
+ *
+ * @param mode - Mode the learner pressed.
+ */
+setMode_fn = function(mode) {
+  if (__privateGet(this, _mode).mode === mode) return;
+  __privateSet(this, _mode, { ...__privateGet(this, _mode), mode });
+  this.requestUpdate();
+};
+_onTemperatureInput = new WeakMap();
+_onPressureInput = new WeakMap();
+_onYearInput = new WeakMap();
+_openInfo = new WeakMap();
+_onInfoHide = new WeakMap();
 /**
  * Moves focus to the first element of a detached series.
  *
@@ -10232,10 +11804,10 @@ rovingTarget_fn = function(matching) {
  * @param count - Number of matching elements.
  * @returns The live region text.
  */
-renderCount_fn = function(t7, count) {
-  if (count === 0) return t7.noResults;
-  if (count === 1) return t7.resultCountOne;
-  return format(t7.resultCount, { count });
+renderCount_fn = function(t8, count) {
+  if (count === 0) return t8.noResults;
+  if (count === 1) return t8.resultCountOne;
+  return format(t8.resultCount, { count });
 };
 /**
  * Renders the toolbar with search, family filter, layout switch and reset.
@@ -10244,17 +11816,23 @@ renderCount_fn = function(t7, count) {
  * @param language - Interface language.
  * @returns The toolbar.
  */
-renderToolbar_fn = function(t7, language) {
+renderToolbar_fn = function(t8, language) {
   const resolved = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get);
   return x2`
 			<div class="toolbar">
+				<sl-icon-button
+					class="info-button"
+					src=${INFO_ICON}
+					label=${t8.infoLabel}
+					@click=${__privateGet(this, _openInfo)}
+				></sl-icon-button>
 				<sl-input
 					class="search"
 					type="search"
 					size="small"
 					clearable
-					label=${t7.searchLabel}
-					placeholder=${t7.searchPlaceholder}
+					label=${t8.searchLabel}
+					placeholder=${t8.searchPlaceholder}
 					.value=${__privateGet(this, _query)}
 					@sl-input=${__privateGet(this, _onQueryInput)}
 					@keydown=${__privateGet(this, _onSearchKeydown)}
@@ -10263,8 +11841,8 @@ renderToolbar_fn = function(t7, language) {
 					class="filter"
 					size="small"
 					clearable
-					label=${t7.filterLabel}
-					placeholder=${t7.filterAll}
+					label=${t8.filterLabel}
+					placeholder=${t8.filterAll}
 					.value=${__privateGet(this, _category) ?? ""}
 					@sl-change=${__privateGet(this, _onCategoryChange)}
 				>
@@ -10272,20 +11850,130 @@ renderToolbar_fn = function(t7, language) {
 						<sl-option value=${key}>${category[language]}</sl-option>
 					`)}
 				</sl-select>
-				<div class="views" role="group" aria-label=${t7.viewLabel}>
+				<div class="views" role="group" aria-label=${t8.viewLabel}>
 					<sl-button
 						size="small"
 						variant=${resolved === "table" ? "primary" : "default"}
 						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "table")}
-					>${t7.viewTable}</sl-button>
+					>${t8.viewTable}</sl-button>
 					<sl-button
 						size="small"
 						variant=${resolved === "list" ? "primary" : "default"}
 						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "list")}
-					>${t7.viewList}</sl-button>
+					>${t8.viewList}</sl-button>
 				</div>
-				<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, reset_fn).call(this)}>${t7.reset}</sl-button>
+				<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, reset_fn).call(this)}>${t8.reset}</sl-button>
 			</div>
+		`;
+};
+/**
+ * Describes the slider of the active mode.
+ *
+ * @param t - Interface strings.
+ * @param language - Interface language.
+ * @returns Bounds, value, readout and handler of the slider, or `null` when no mode is active.
+ */
+slider_fn = function(t8, language) {
+  switch (__privateGet(this, _mode).mode) {
+    case "off":
+      return null;
+    case "temperature":
+      return {
+        label: t8.temperatureSlider,
+        min: TEMPERATURE_SLIDER.minCelsius,
+        max: TEMPERATURE_SLIDER.maxCelsius,
+        step: TEMPERATURE_SLIDER.stepCelsius,
+        value: celsiusFromKelvin(__privateGet(this, _mode).temperatureK),
+        readout: celsiusText(__privateGet(this, _mode).temperatureK, language),
+        format: (value) => celsiusText(kelvinFromCelsius(value), language),
+        onInput: __privateGet(this, _onTemperatureInput)
+      };
+    case "pressure":
+      return {
+        label: t8.pressureSlider,
+        min: PRESSURE_SLIDER.minLog10Bar,
+        max: PRESSURE_SLIDER.maxLog10Bar,
+        step: PRESSURE_SLIDER.stepLog10,
+        value: log10FromPressure(__privateGet(this, _mode).pressureBar),
+        readout: pressureText(__privateGet(this, _mode).pressureBar, language),
+        format: (value) => pressureText(pressureFromLog10(value), language),
+        onInput: __privateGet(this, _onPressureInput)
+      };
+    case "discovery":
+      return {
+        label: t8.yearSlider,
+        min: DISCOVERY_RANGE.min,
+        max: DISCOVERY_RANGE.max,
+        step: 1,
+        value: __privateGet(this, _mode).year,
+        readout: String(__privateGet(this, _mode).year),
+        format: (value) => String(Math.round(value)),
+        onInput: __privateGet(this, _onYearInput)
+      };
+  }
+};
+/**
+ * Renders the mode switch with its slider and the state legend.
+ *
+ * The switch decides what the cells are coloured by: nothing, the state at the
+ * chosen temperature or pressure, or whether the element was already known in
+ * the chosen year. The legend only appears for the two state modes, because
+ * the discovery mode dims cells instead of colouring them.
+ *
+ * @param t - Interface strings.
+ * @param language - Interface language.
+ * @returns The mode row and, for a state mode, the legend.
+ */
+renderModes_fn = function(t8, language) {
+  const slider = __privateMethod(this, _ChemLabPeriodicTable_instances, slider_fn).call(this, t8, language);
+  return x2`
+			<div class="modes">
+				<div class="mode-group" role="group" aria-label=${t8.modeLabel}>
+					${TABLE_MODES.map((mode) => x2`
+						<sl-button
+							size="small"
+							variant=${__privateGet(this, _mode).mode === mode ? "primary" : "default"}
+							aria-pressed=${__privateGet(this, _mode).mode === mode}
+							@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setMode_fn).call(this, mode)}
+						>${modeText(mode, t8)}</sl-button>
+					`)}
+				</div>
+				${slider ? x2`
+						<div class="mode-slider">
+							<sl-range
+								size="small"
+								label=${slider.label}
+								min=${slider.min}
+								max=${slider.max}
+								step=${slider.step}
+								.value=${String(slider.value)}
+								.tooltipFormatter=${slider.format}
+								@sl-input=${slider.onInput}
+							></sl-range>
+							<span class="mode-value">${slider.readout}</span>
+						</div>
+					` : null}
+			</div>
+		`;
+};
+/**
+ * Renders the colour key of the state modes.
+ *
+ * @param t - Interface strings.
+ * @returns The legend, or nothing while no state mode is active.
+ */
+renderStateLegend_fn = function(t8) {
+  if (__privateGet(this, _mode).mode !== "temperature" && __privateGet(this, _mode).mode !== "pressure") {
+    return null;
+  }
+  return x2`
+			<ul class="state-legend" aria-label=${t8.stateLegend}>
+				${STATES.map((state) => x2`
+					<li>
+						<span class="state-swatch state-${state}"></span>${stateText(state, t8)}
+					</li>
+				`)}
+			</ul>
 		`;
 };
 /**
@@ -10298,21 +11986,26 @@ renderToolbar_fn = function(t7, language) {
  * @param roving - Atomic number of the tabbable cell.
  * @returns The grid cell.
  */
-renderCell_fn = function(cell, t7, language, matching, roving) {
+renderCell_fn = function(cell, t8, language, matching, roving) {
   const element = elementByAtomicNumber(cell.atomicNumber);
   if (!element) return null;
   const enabled = matching.has(cell.atomicNumber);
   const selected = __privateGet(this, _selection).value === cell.atomicNumber;
   const displayRow = cell.section === "main" ? cell.row + 1 : cell.row + 2;
-  const label = format(t7.cellLabel, {
+  const mode = cellMode(element, __privateGet(this, _mode));
+  const state = mode.state === null ? null : stateText(mode.state, t8);
+  const classes = ["cell", `category-${cell.category}`];
+  if (mode.state !== null) classes.push(`state-${mode.state}`);
+  if (mode.dimmed) classes.push("is-dimmed");
+  const label = format(t8.cellLabel, {
     number: element.atomicNumber,
     name: element.names[language],
     symbol: element.symbol,
     category: categoryText(element, language)
-  });
+  }) + (state === null ? "" : ` \xB7 ${state}`);
   return x2`
 			<div
-				class="cell category-${cell.category}"
+				class=${classes.join(" ")}
 				role="gridcell"
 				aria-selected=${selected}
 				aria-disabled=${!enabled}
@@ -10326,6 +12019,7 @@ renderCell_fn = function(cell, t7, language, matching, roving) {
 				<span class="cell-number">${cell.atomicNumber}</span>
 				<span class="cell-symbol">${element.symbol}</span>
 				<span class="cell-name">${element.names[language]}</span>
+				${mode.badge === null ? null : x2`<span class="cell-year">${mode.badge}</span>`}
 			</div>
 		`;
 };
@@ -10342,7 +12036,7 @@ renderCell_fn = function(cell, t7, language, matching, roving) {
  * @param details - Rendered detail card.
  * @returns The grid with group labels, period gutter, placeholders and series rows.
  */
-renderGrid_fn = function(t7, language, matching, details) {
+renderGrid_fn = function(t8, language, matching, details) {
   const roving = __privateMethod(this, _ChemLabPeriodicTable_instances, rovingTarget_fn).call(this, matching);
   const groupLabels = Array.from({ length: GRID.columns }, (_3, index) => x2`
 			<div
@@ -10358,12 +12052,12 @@ renderGrid_fn = function(t7, language, matching, details) {
 						role="rowheader"
 						style="--pt-row:${row.row + 1};--pt-column:1"
 					>${row.row}</div>
-					${row.cells.map((cell) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t7, language, matching, roving))}
+					${row.cells.map((cell) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t8, language, matching, roving))}
 				</div>
 			`);
   const placeholders = GRID.placeholders.map((placeholder) => {
     const series = GRID.seriesRows.find((entry) => entry.row === placeholder.seriesRow);
-    const text = series ? format(t7.placeholderLabel, {
+    const text = series ? format(t8.placeholderLabel, {
       first: series.firstAtomicNumber,
       last: series.lastAtomicNumber
     }) : "";
@@ -10386,13 +12080,13 @@ renderGrid_fn = function(t7, language, matching, details) {
 							role="rowheader"
 							style="--pt-row:${row.row + 2};--pt-column:1 / span 3"
 						>${name}</div>
-						${row.cells.map((cell) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t7, language, matching, roving))}
+						${row.cells.map((cell) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t8, language, matching, roving))}
 					</div>
 				`;
   });
   return x2`
 			<div class="table-pane">
-				<div class="grid" role="grid" aria-label=${t7.gridLabel}>
+				<div class="grid" role="grid" aria-label=${t8.gridLabel}>
 					<div class="grid-row" role="row">
 						<div class="gutter" role="columnheader" style="--pt-row:1;--pt-column:1"></div>
 						${groupLabels}
@@ -10411,13 +12105,13 @@ renderGrid_fn = function(t7, language, matching, details) {
 				<div class="series-jumps">
 					${LAYOUT.seriesRows.map((series) => x2`
 						<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, jumpToSeries_fn).call(this, series.row)}>
-							${format(t7.jumpToSeries, {
+							${format(t8.jumpToSeries, {
     series: CATEGORIES[series.category]?.[language] ?? series.category
   })}
 						</sl-button>
 					`)}
 				</div>
-				<ul class="legend" aria-label=${t7.legendLabel}>
+				<ul class="legend" aria-label=${t8.legendLabel}>
 					${Object.entries(CATEGORIES).map(([key, category]) => x2`
 						<li>
 							<button
@@ -10443,7 +12137,7 @@ renderGrid_fn = function(t7, language, matching, details) {
  * @param details - Rendered detail card.
  * @returns The list.
  */
-renderList_fn = function(t7, language, matches, details) {
+renderList_fn = function(t8, language, matches, details) {
   const selected = __privateGet(this, _selection).value;
   const selectedVisible = matches.some((match) => match.atomicNumber === selected);
   const rows = matches.map((match) => {
@@ -10470,7 +12164,7 @@ renderList_fn = function(t7, language, matches, details) {
   });
   return x2`
 			<div class="table-pane">
-				<ul class="list" aria-label=${t7.gridLabel}>
+				<ul class="list" aria-label=${t8.gridLabel}>
 					${selectedVisible ? null : x2`<li class="list-details">${details}</li>`}
 					${rows}
 				</ul>
@@ -10490,7 +12184,7 @@ renderList_fn = function(t7, language, matches, details) {
  * @param element - Selected element, or `null` for the empty card.
  * @returns The print overview.
  */
-renderPrintOverview_fn = function(t7, language, element) {
+renderPrintOverview_fn = function(t8, language, element) {
   const groupLabels = Array.from({ length: GRID.columns }, (_3, index) => x2`
 			<div class="print-group" style="--pt-row:1;--pt-column:${index + 2}">${index + 1}</div>
 		`);
@@ -10523,10 +12217,10 @@ renderPrintOverview_fn = function(t7, language, element) {
 				style="--pt-row:${series.row + 2};--pt-column:1 / span 3"
 			>${CATEGORIES[series.category]?.[language] ?? series.category}</div>
 		`);
-  const rows = element ? detailRows(element, language) : [];
+  const rows = element ? detailRows(element, language, __privateGet(this, _ChemLabPeriodicTable_instances, conditions_get)) : [];
   return x2`
 			<div class="print-overview" aria-hidden="true">
-				<h2 class="print-title">${t7.widgetLabel}</h2>
+				<h2 class="print-title">${t8.widgetLabel}</h2>
 				<div class="print-grid">
 					<div class="print-gutter" style="--pt-row:1;--pt-column:1"></div>
 					${groupLabels}
@@ -10546,8 +12240,8 @@ renderPrintOverview_fn = function(t7, language, element) {
 									</div>
 								`)}
 							</dl>
-							<p class="print-hint">${t7.detailsHint} ${conditionsText(language)}</p>
-						` : x2`<p class="print-hint">${t7.detailsEmpty}</p>`}
+							<p class="print-hint">${t8.detailsHint} ${conditionsText(language, __privateGet(this, _ChemLabPeriodicTable_instances, conditions_get))}</p>
+						` : x2`<p class="print-hint">${t8.detailsEmpty}</p>`}
 				</div>
 			</div>
 		`;
@@ -10565,12 +12259,11 @@ renderPrintOverview_fn = function(t7, language, element) {
  * @param element - Selected element, or `null` for the empty card.
  * @returns The detail card.
  */
-renderDetails_fn = function(t7, language, element) {
+renderDetails_fn = function(t8, language, element) {
   if (!element) {
-    return x2`<div class="details"><p class="details-empty">${t7.detailsEmpty}</p></div>`;
+    return x2`<div class="details"><p class="details-empty">${t8.detailsEmpty}</p></div>`;
   }
-  const rows = detailRows(element, language);
-  const usage = sourceUsage(element, language);
+  const rows = detailRows(element, language, __privateGet(this, _ChemLabPeriodicTable_instances, conditions_get));
   const name = element.names[language];
   return x2`
 			<div class="details category-${categoryOf(element.atomicNumber) ?? "unknown"}">
@@ -10591,35 +12284,75 @@ renderDetails_fn = function(t7, language, element) {
 							</div>
 						`)}
 					</dl>
-					<p class="details-hint">${t7.detailsHint} ${conditionsText(language)}</p>
-					<sl-details class="sources" summary=${t7.sourcesLabel}>
-						<p class="details-hint">${t7.sourcesHint}</p>
-						${usage.map((entry) => {
-    const source = sourceOf(entry.sourceId);
-    if (!source) return null;
-    return x2`
-								<div class="source">
-									<p class="source-title">${source.publisher} — ${source.title}</p>
-									<p class="source-line">${entry.fields.join(", ")}</p>
-									<p class="source-line">
-										${format(t7.sourceRelease, { release: source.release })} ·
-										${format(t7.sourceRetrieved, { retrieved: source.retrieved })}
-									</p>
-									<p class="source-line">
-										${format(t7.sourceLicense, { license: source.license })}
-									</p>
-									<a
-										class="source-link"
-										href=${source.url}
-										target="_blank"
-										rel="noreferrer noopener"
-									>${source.url}</a>
-								</div>
-							`;
-  })}
-					</sl-details>
+					<p class="details-hint">${t8.detailsHint} ${conditionsText(language, __privateGet(this, _ChemLabPeriodicTable_instances, conditions_get))}</p>
 				</div>
 			</div>
+		`;
+};
+/**
+ * Renders the info dialog with the sources and the model notes.
+ *
+ * The sources are global, not per element, so they sit behind one button in
+ * the toolbar instead of in the detail card. Each source carries its release
+ * as a badge and its licence and retrieval date as tags, which keeps the
+ * block scannable while the attribution and the URL stay in running text.
+ *
+ * @param t - Interface strings.
+ * @param language - Interface language.
+ * @returns The dialog, closed unless the info button was pressed.
+ */
+renderInfo_fn = function(t8, language) {
+  return x2`
+			<sl-dialog
+				class="info"
+				label=${t8.infoLabel}
+				?open=${__privateGet(this, _infoOpen)}
+				@sl-after-hide=${__privateGet(this, _onInfoHide)}
+			>
+				<p class="info-intro">${t8.infoIntro}</p>
+				<section class="info-section">
+					<h3>${t8.infoSources}</h3>
+					${sourceList().map((source) => x2`
+						<article class="info-source">
+							<p class="info-source-title">${source.publisher} — ${source.title}</p>
+							<div class="info-source-meta">
+								<sl-badge variant="neutral" pill>
+									${format(t8.sourceRelease, { release: source.release })}
+								</sl-badge>
+								<sl-tag size="small" variant="neutral">
+									${format(t8.sourceLicense, { license: source.license })}
+								</sl-tag>
+								<sl-tag size="small" variant="neutral">
+									${format(t8.sourceRetrieved, { retrieved: source.retrieved })}
+								</sl-tag>
+							</div>
+							<p class="info-source-text">
+								${t8.infoFields}: ${source.fields.map((field) => sourceFieldText(field, t8)).join(", ")}
+							</p>
+							<p class="info-source-text">${source.attribution}</p>
+							<a
+								class="info-source-link"
+								href=${source.url}
+								target="_blank"
+								rel="noreferrer noopener"
+							>${source.url}</a>
+						</article>
+					`)}
+				</section>
+				<section class="info-section">
+					<h3>${t8.infoNotes}</h3>
+					<p class="info-note">
+						${format(t8.infoConditions, { conditions: conditionsText(language) })}
+					</p>
+					<p class="info-note">${t8.infoPhaseModel}</p>
+					<p class="info-note">${t8.infoDiscovery}</p>
+				</section>
+				<sl-button slot="footer" variant="primary" @click=${() => {
+    __privateSet(this, _infoOpen, false);
+  }}>
+					${t8.infoClose}
+				</sl-button>
+			</sl-dialog>
 		`;
 };
 __decorateElement(_init2, 4, "initialElement", _initialElement_dec, _ChemLabPeriodicTable, _initialElement);
@@ -10638,13 +12371,15 @@ _ChemLabPeriodicTable = __decorateElement(_init2, 0, "ChemLabPeriodicTable", _Ch
  * not inherit them from the global one.
  */
 __publicField(_ChemLabPeriodicTable, "scopedElements", {
+  "sl-badge": SlBadge,
   "sl-button": SlButton,
-  "sl-details": SlDetails,
+  "sl-dialog": SlDialog,
   "sl-icon": SlIcon,
   "sl-icon-button": SlIconButton,
   "sl-input": SlInput,
   "sl-option": SlOption,
   "sl-popup": SlPopup,
+  "sl-range": SlRange,
   "sl-select": SlSelect,
   "sl-spinner": SlSpinner,
   "sl-tag": SlTag
@@ -10845,20 +12580,20 @@ lit-html/is-server.js:
    * SPDX-License-Identifier: BSD-3-Clause
    *)
 
+lit-html/directives/class-map.js:
+lit-html/directives/if-defined.js:
+  (**
+   * @license
+   * Copyright 2018 Google LLC
+   * SPDX-License-Identifier: BSD-3-Clause
+   *)
+
 lit-html/directive-helpers.js:
 lit-html/static.js:
 lit-html/directives/live.js:
   (**
    * @license
    * Copyright 2020 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-lit-html/directives/class-map.js:
-lit-html/directives/if-defined.js:
-  (**
-   * @license
-   * Copyright 2018 Google LLC
    * SPDX-License-Identifier: BSD-3-Clause
    *)
 */

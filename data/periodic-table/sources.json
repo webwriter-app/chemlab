@@ -23,7 +23,11 @@
 				"block",
 				"phase",
 				"electron_config",
-				"set"
+				"set",
+				"temperature.melting",
+				"temperature.boiling",
+				"temperature.sublimation",
+				"discovery"
 			]
 		},
 		"ciaaw": {

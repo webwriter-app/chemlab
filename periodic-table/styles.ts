@@ -22,7 +22,8 @@ export const periodicTableStyles = css`
 		color: var(--sl-color-neutral-900, #1c1c1e);
 		background: var(--sl-color-neutral-0, #ffffff);
 
-		--pt-cell-height: 2.6rem;
+		--pt-cell-height: 3rem;
+		--pt-cell-bar: 0.4rem;
 		--pt-gutter: 1.5rem;
 		--pt-series-gap: 0.5rem;
 		--pt-radius: 4px;
@@ -44,6 +45,11 @@ export const periodicTableStyles = css`
 		--pt-lanthanide: #d8a8d8;
 		--pt-actinide: #e8a8c0;
 		--pt-unknown: #d8d8d8;
+
+		--pt-state-solid: #d7e3f4;
+		--pt-state-liquid: #cfe9d8;
+		--pt-state-gas: #f6e3c0;
+		--pt-state-unknown: #e6e6e9;
 	}
 
 	* {
@@ -96,6 +102,12 @@ export const periodicTableStyles = css`
 		flex-wrap: wrap;
 		align-items: end;
 		gap: 0.5rem;
+	}
+
+	/* The info button sits at the top of the toolbar, while the fields keep their
+	   labels above them and therefore align to the bottom. */
+	.toolbar .info-button {
+		align-self: start;
 	}
 
 	.toolbar .search {
@@ -189,22 +201,65 @@ export const periodicTableStyles = css`
 		text-align: right;
 	}
 
+	/* The cell copies the element cards of the lab widget: a white card with a
+	   thin border in the family colour, the symbol in the middle and a bar of the
+	   same colour along the bottom edge. */
 	.cell {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		min-width: 0;
 		min-height: var(--pt-cell-height);
-		padding: 2px 1px;
-		border: 1px solid color-mix(in srgb, var(--pt-ink) 12%, transparent);
+		padding: 2px 1px calc(var(--pt-cell-bar) + 2px);
+		overflow: hidden;
+		border: 1.5px solid var(--pt-cell-fill, var(--pt-border));
 		border-radius: var(--pt-radius);
-		background: var(--pt-cell-fill, var(--pt-inset));
+		background: var(--pt-surface);
 		color: var(--pt-ink);
 		font: inherit;
 		line-height: 1.05;
 		text-align: center;
 		cursor: pointer;
+	}
+
+	.cell::after {
+		content: "";
+		position: absolute;
+		inset-inline: 0;
+		bottom: 0;
+		height: var(--pt-cell-bar);
+		background: var(--pt-cell-fill, var(--pt-border));
+	}
+
+	/* A mode fills the card with the state colour and keeps the family bar, so
+	   both readings stay visible at once. */
+	.cell.state-solid {
+		background: var(--pt-state-solid);
+	}
+	.cell.state-liquid {
+		background: var(--pt-state-liquid);
+	}
+	.cell.state-gas {
+		background: var(--pt-state-gas);
+	}
+	.cell.state-unknown {
+		background: var(--pt-state-unknown);
+	}
+
+	.cell.is-dimmed {
+		opacity: 0.35;
+	}
+
+	.cell-year {
+		position: absolute;
+		inset-block-start: 1px;
+		inset-inline-end: 2px;
+		font-size: 0.5rem;
+		color: var(--pt-ink-soft);
+		font-variant-numeric: tabular-nums;
+		pointer-events: none;
 	}
 
 	.cell:hover {
@@ -319,6 +374,90 @@ export const periodicTableStyles = css`
 		border: 1px solid color-mix(in srgb, var(--pt-ink) 15%, transparent);
 		border-radius: 2px;
 		background: var(--pt-cell-fill);
+	}
+
+	.modes {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.mode-group {
+		display: flex;
+		gap: 0.25rem;
+	}
+
+	.mode-slider {
+		display: flex;
+		flex: 1 1 16rem;
+		align-items: center;
+		gap: 0.5rem;
+		min-width: 12rem;
+	}
+
+	.mode-slider sl-range {
+		flex: 1 1 auto;
+		min-width: 6rem;
+	}
+
+	/* The active mode button already names the quantity, so the range label is
+	   only kept for assistive technology. */
+	.mode-slider sl-range::part(form-control-label) {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.mode-value {
+		flex: 0 0 auto;
+		min-width: 5.5rem;
+		font-size: 0.75rem;
+		color: var(--pt-ink-soft);
+		font-variant-numeric: tabular-nums;
+		text-align: right;
+	}
+
+	.state-legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem 0.6rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: 0.7rem;
+		color: var(--pt-ink-soft);
+	}
+
+	.state-legend li {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
+
+	.state-swatch {
+		width: 0.7rem;
+		height: 0.7rem;
+		border: 1px solid color-mix(in srgb, var(--pt-ink) 15%, transparent);
+		border-radius: 2px;
+	}
+
+	.state-swatch.state-solid {
+		background: var(--pt-state-solid);
+	}
+	.state-swatch.state-liquid {
+		background: var(--pt-state-liquid);
+	}
+	.state-swatch.state-gas {
+		background: var(--pt-state-gas);
+	}
+	.state-swatch.state-unknown {
+		background: var(--pt-state-unknown);
 	}
 
 	.list {
@@ -523,46 +662,89 @@ export const periodicTableStyles = css`
 		text-align: center;
 	}
 
-	/* The sources sit at the foot of the card, so the free space of the block
-	   collects between the fields and the disclosure instead of below it. */
-	.sources {
-		margin-top: auto;
-		padding-top: 2px;
-		font-size: 0.62rem;
+	/* The sources and the model notes live in a dialog behind the info button, so
+	   the card stays a card. The dialog gets wider margins than the Shoelace
+	   default, because it carries running text and a list of sources. */
+	.info::part(panel) {
+		max-width: min(44rem, 92vw);
 	}
 
-	.sources::part(base) {
-		border: none;
-		background: none;
+	.info::part(header) {
+		padding: 1.25rem 2rem 0;
 	}
 
-	.sources::part(header) {
-		padding: 0;
+	.info::part(title) {
+		font-size: 1.05rem;
 	}
 
-	.sources::part(content) {
-		padding: 0;
+	.info::part(body) {
+		padding: 1rem 2rem 1.5rem;
 	}
 
-	.sources::part(summary) {
-		font-size: 0.62rem;
+	.info::part(footer) {
+		padding: 0 2rem 1.5rem;
 	}
 
-	.source {
-		margin-top: 0.3rem;
+	/* The widget ships no icon assets, so the built-in close button would ask a
+	   CDN for its glyph. The footer button and Escape close the dialog instead. */
+	.info::part(close-button) {
+		display: none;
 	}
 
-	.source-title {
+	.info-intro {
 		margin: 0;
-		font-size: 0.62rem;
+		font-size: 0.9rem;
+		line-height: 1.55;
 	}
 
-	.source-line {
-		margin: 0.1rem 0 0;
+	.info-section {
+		margin-top: 1.75rem;
+	}
+
+	.info-section h3 {
+		margin: 0 0 0.6rem;
+		font-size: 0.95rem;
+	}
+
+	.info-note {
+		margin: 0.6rem 0 0;
+		font-size: 0.85rem;
+		line-height: 1.55;
 		color: var(--pt-ink-soft);
 	}
 
-	.source-link {
+	.info-source {
+		padding: 0.9rem 0;
+		border-top: 1px solid var(--pt-border);
+	}
+
+	.info-source:first-of-type {
+		padding-top: 0;
+		border-top: none;
+	}
+
+	.info-source-title {
+		margin: 0;
+		font-size: 0.9rem;
+		font-weight: 600;
+	}
+
+	.info-source-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+		margin: 0.4rem 0 0;
+	}
+
+	.info-source-text {
+		margin: 0.4rem 0 0;
+		font-size: 0.82rem;
+		line-height: 1.5;
+		color: var(--pt-ink-soft);
+	}
+
+	.info-source-link {
+		font-size: 0.82rem;
 		color: var(--pt-accent);
 		overflow-wrap: anywhere;
 	}
@@ -680,6 +862,8 @@ export const periodicTableStyles = css`
 
 		.toolbar,
 		.result-count,
+		.modes,
+		.state-legend,
 		.table-pane,
 		.series-jumps,
 		.legend {
@@ -699,6 +883,8 @@ export const periodicTableStyles = css`
 
 	:host(.ww-beforeprint) .toolbar,
 	:host(.ww-beforeprint) .result-count,
+	:host(.ww-beforeprint) .modes,
+	:host(.ww-beforeprint) .state-legend,
 	:host(.ww-beforeprint) .table-pane,
 	:host(.ww-beforeprint) .series-jumps,
 	:host(.ww-beforeprint) .legend {

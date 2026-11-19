@@ -5,11 +5,15 @@ import {
 	categoryText,
 	conditionsText,
 	detailRows,
+	discoveryText,
 	groupText,
-	sourceOf,
-	sourceUsage,
+	sourceFieldText,
+	sourceList,
+	stateText,
+	temperatureText,
 	weightText,
 } from "../periodic-table/details";
+import { strings } from "../periodic-table/strings";
 
 const element = (atomicNumber: number) => {
 	const found = elementByAtomicNumber(atomicNumber);
@@ -17,16 +21,35 @@ const element = (atomicNumber: number) => {
 	return found;
 };
 
-test("the detail card lists the eight reference fields in a fixed order", () => {
+test("the detail card lists the eleven reference fields in a fixed order", () => {
 	const rows = detailRows(element(26), "en");
 	assert.deepEqual(
 		rows.map((row) => row.key),
-		["group", "period", "family", "block", "weight", "phase", "configuration", "shells"],
+		[
+			"group",
+			"period",
+			"family",
+			"block",
+			"weight",
+			"phase",
+			"melting",
+			"boiling",
+			"discovery",
+			"configuration",
+			"shells",
+		],
 	);
 	for (const row of rows) {
 		assert.ok(row.label.length > 0, row.key);
 		assert.ok(row.value.length > 0, row.key);
 	}
+});
+
+test("an element that sublimes gains a twelfth row", () => {
+	const carbon = detailRows(element(6), "en").map((row) => row.key);
+	assert.ok(carbon.includes("sublimation"));
+	assert.equal(carbon.length, 12);
+	assert.ok(!detailRows(element(26), "en").some((row) => row.key === "sublimation"));
 });
 
 test("the detail card is fully localized", () => {
@@ -84,29 +107,84 @@ test("the family label follows the placement table", () => {
 test("the conditions line names temperature and pressure", () => {
 	assert.equal(conditionsText("en"), "25 °C · 1 bar");
 	assert.equal(conditionsText("de"), "25 °C · 1 bar");
+	assert.equal(conditionsText("en", { temperatureK: 373.15, pressureBar: 0.1 }), "100 °C · 0.1 bar");
+	assert.equal(conditionsText("de", { temperatureK: 373.15, pressureBar: 0.1 }), "100 °C · 0,1 bar");
 });
 
-test("every source usage names a known source and at least one field", () => {
+test("a temperature is rendered in kelvin with its Celsius equivalent", () => {
+	assert.equal(temperatureText(332, "en"), "332 K (58.85 °C)");
+	assert.equal(temperatureText(332, "de"), "332 K (58,85 °C)");
+	assert.equal(temperatureText(0, "en"), "0 K (-273.15 °C)");
+});
+
+test("the state row follows the conditions the card names", () => {
+	const oxygen = element(8);
+	const atBundle = detailRows(oxygen, "en").find((row) => row.key === "phase");
+	assert.ok(atBundle);
+	assert.equal(atBundle.value, "Gas");
+	assert.equal(atBundle.qualifier, undefined);
+	const cold = detailRows(oxygen, "en", { temperatureK: 70, pressureBar: 1 });
+	assert.equal(cold.find((row) => row.key === "phase")?.value, "Liquid");
+	const astatine = detailRows(element(85), "en").find((row) => row.key === "phase");
+	assert.equal(astatine?.value, "Solid", "the reported phase wins at bundle conditions");
+	assert.equal(astatine?.qualifier, undefined);
+	const computed = detailRows(element(85), "en", { temperatureK: 400, pressureBar: 1 });
+	assert.equal(computed.find((row) => row.key === "phase")?.value, "Unknown");
+	const labels = { solid: "Solid", liquid: "Liquid", gas: "Gas" } as const;
 	for (const entry of ELEMENTS) {
-		const usage = sourceUsage(entry, "en");
-		assert.ok(usage.length > 0, entry.symbol);
-		for (const record of usage) {
-			assert.ok(SOURCES[record.sourceId], `${entry.symbol}: ${record.sourceId}`);
-			assert.ok(record.fields.length > 0, `${entry.symbol}: ${record.sourceId}`);
-			assert.ok(sourceOf(record.sourceId));
-		}
+		if (entry.phase.status === "unavailable") continue;
+		const row = detailRows(entry, "en").find((candidate) => candidate.key === "phase");
+		assert.equal(row?.value, labels[entry.phase.value], entry.symbol);
 	}
 });
 
-test("the source usage of one element covers identity, weight and configuration", () => {
-	const usage = sourceUsage(element(26), "en");
-	const fields = usage.flatMap((entry) => entry.fields);
-	assert.ok(fields.includes("Identity"));
-	assert.ok(fields.includes("Standard atomic weight"));
-	assert.ok(fields.includes("Electron configuration"));
-	assert.equal(new Set(usage.map((entry) => entry.sourceId)).size, usage.length);
+test("the state labels are localized", () => {
+	const english = strings("en");
+	const german = strings("de");
+	assert.equal(stateText("solid", english), "Solid");
+	assert.equal(stateText("liquid", german), "Flüssig");
+	assert.equal(stateText("gas", english), "Gas");
+	assert.equal(stateText("unknown", german), "Unbekannt");
 });
 
-test("an unknown source identifier resolves to nothing", () => {
-	assert.equal(sourceOf("does-not-exist"), undefined);
+test("the discovery row separates a year, a discoverer and antiquity", () => {
+	assert.equal(discoveryText(element(26), "en"), "Antiquity");
+	assert.equal(discoveryText(element(26), "de"), "Antike");
+	const withDiscoverer = ELEMENTS.find(
+		(entry) => entry.discovery.kind === "year" && entry.discovery.by !== undefined,
+	);
+	assert.ok(withDiscoverer);
+	const text = discoveryText(withDiscoverer, "en");
+	assert.ok(text.startsWith(String((withDiscoverer.discovery as { year: number }).year)), text);
+	assert.ok(text.includes("·"), text);
+	assert.equal(discoveryText(element(117), "en"), "2010 · JINR");
+});
+
+test("every source of the bundle is listed with its metadata", () => {
+	const sources = sourceList();
+	assert.equal(sources.length, Object.keys(SOURCES).length);
+	for (const source of sources) {
+		assert.ok(source.publisher.length > 0, source.id);
+		assert.ok(source.title.length > 0, source.id);
+		assert.ok(source.attribution.length > 0, source.id);
+		assert.ok(source.fields.length > 0, source.id);
+		assert.ok(source.url.startsWith("http"), source.id);
+	}
+});
+
+test("a source field path is localized and an unknown one stays visible", () => {
+	const english = strings("en");
+	const german = strings("de");
+	assert.equal(sourceFieldText("temperature.melting", english), "Melting point");
+	assert.equal(sourceFieldText("temperature.boiling", german), "Siedepunkt");
+	assert.equal(sourceFieldText("discovery", english), "Discovered");
+	assert.equal(sourceFieldText("electron_config", german), "Elektronenkonfiguration");
+	assert.equal(sourceFieldText("not.a.field", english), "not.a.field");
+	for (const source of sourceList()) {
+		for (const field of source.fields) {
+			const text = sourceFieldText(field, english);
+			assert.ok(text.length > 0, field);
+			assert.ok(!text.includes("."), `${field} is not localized`);
+		}
+	}
 });

@@ -744,6 +744,14 @@
 		"phase": {
 			"fromAtomicNumber": 104,
 			"note": "Phase values from rutherfordium on are extrapolations from periodic trends, so they are marked predicted. Where the source has no phase at all the value stays unavailable."
+		},
+		"temperature": {
+			"fromAtomicNumber": 104,
+			"note": "A melting, boiling or sublimation point counts as predicted when the source flags it as an estimate (its \"*\" marker) or when the element is rutherfordium or heavier, because both mean the value is extrapolated rather than measured. Where the source has no value the field stays unavailable."
+		},
+		"discovery": {
+			"antiquityEra": "antiquity",
+			"note": "The source records no year for the eleven elements whose era is \"antiquity\"; they count as known at every year instead of being marked unavailable. Every other element without a year stays unavailable."
 		}
 	},
 	"aliases": {

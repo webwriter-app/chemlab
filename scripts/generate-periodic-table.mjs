@@ -208,6 +208,62 @@ function buildGroup(atomicNumber, curation, source) {
 }
 
 /**
+ * Builds one temperature record of an element.
+ *
+ * The source marks extrapolated values with a `*` flag; those count as predicted
+ * together with every value of an element at or above the policy threshold.
+ *
+ * @param {number} atomicNumber Atomic number.
+ * @param {object} source PSE-info record.
+ * @param {object} curation Curation table.
+ * @param {object} provenance Provenance of the value.
+ * @param {"melting" | "boiling" | "sublimation"} field Temperature field.
+ * @returns {object} Temperature record in kelvin.
+ */
+function buildTemperature(atomicNumber, source, curation, provenance, field) {
+	const entry = source.temperature?.[field];
+	const value = entry?.value;
+	if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+		return { status: "unavailable", provenance };
+	}
+	assert(entry.unit === "K", `unit of ${source.symbol}.${field} is ${entry.unit}, expected K`);
+	const predicted =
+		entry["*"] === true || atomicNumber >= curation.predictionPolicy.temperature.fromAtomicNumber;
+	return { status: predicted ? "predicted" : "reported", value, provenance };
+}
+
+/**
+ * Builds the discovery record of an element.
+ *
+ * The source names no year for the elements that have been in use since
+ * antiquity; the curation table names the era that stands for them.
+ *
+ * @param {object} source PSE-info record.
+ * @param {object} curation Curation table.
+ * @param {object} provenance Provenance of the value.
+ * @returns {object} Discovery record.
+ */
+function buildDiscovery(source, curation, provenance) {
+	const record = source.discovery;
+	if (record?.value === undefined) {
+		if (source.era === curation.predictionPolicy.discovery.antiquityEra) {
+			return { kind: "antiquity", provenance };
+		}
+		return { kind: "unavailable", provenance };
+	}
+	assert(
+		Number.isInteger(record.value) && record.value >= 1000 && record.value <= 2100,
+		`discovery year of ${source.symbol} is ${record.value}, expected 1000–2100`,
+	);
+	return {
+		kind: "year",
+		year: record.value,
+		...(record.by ? { by: record.by } : {}),
+		provenance,
+	};
+}
+
+/**
  * Builds one element record.
  *
  * @param {number} atomicNumber Atomic number.
@@ -259,6 +315,17 @@ function buildElement(atomicNumber, context) {
 					provenance: pseProvenance,
 				};
 
+	const melting = buildTemperature(atomicNumber, source, curation, pseProvenance, "melting");
+	const boiling = buildTemperature(atomicNumber, source, curation, pseProvenance, "boiling");
+	// The sublimation point is only the fallback boundary of an element that has
+	// no liquid phase at standard pressure. Phosphorus carries one next to a
+	// melting and a boiling point, and its value sits above the boiling point, so
+	// it is dropped instead of competing with the two.
+	const sublimation =
+		melting.status === "unavailable" && boiling.status === "unavailable"
+			? buildTemperature(atomicNumber, source, curation, pseProvenance, "sublimation")
+			: { status: "unavailable", provenance: pseProvenance };
+
 	return {
 		atomicNumber,
 		symbol: source.symbol,
@@ -282,6 +349,10 @@ function buildElement(atomicNumber, context) {
 		},
 		shells: shellsOf(configuration.terms),
 		phase: phaseRecord,
+		melting,
+		boiling,
+		sublimation,
+		discovery: buildDiscovery(source, curation, pseProvenance),
 	};
 }
 
@@ -320,8 +391,39 @@ function validate(elements, context) {
 				`interval of ${element.symbol} is not ordered`,
 			);
 		}
+		const melting = element.melting.value;
+		const boiling = element.boiling.value;
+		const sublimation = element.sublimation.value;
+		if (melting !== undefined && boiling !== undefined) {
+			assert(melting < boiling, `melting point of ${element.symbol} is not below its boiling point`);
+		}
+		if (sublimation !== undefined) {
+			assert(
+				melting === undefined && boiling === undefined,
+				`${element.symbol} carries a sublimation point next to a melting or boiling point`,
+			);
+		}
+		if (element.discovery.kind === "year") {
+			assert(
+				element.discovery.year >= 1000 && element.discovery.year <= 2100,
+				`discovery year of ${element.symbol} is out of range`,
+			);
+		}
 	}
 	for (let z = 1; z <= 118; z++) assert(numbers.has(z), `missing element Z = ${z}`);
+
+	// Astatine and the transactinides are the only elements the source leaves
+	// without any thermal data; the phase model reports them as unknown.
+	const withoutTemperature = elements.filter(
+		(element) =>
+			element.melting.value === undefined &&
+			element.boiling.value === undefined &&
+			element.sublimation.value === undefined,
+	);
+	assert(
+		withoutTemperature.length <= 10,
+		`too many elements without a temperature value: ${withoutTemperature.map((element) => element.symbol).join(", ")}`,
+	);
 
 	const placements = new Map();
 	for (const [key, placement] of Object.entries(curation.placement)) {
@@ -419,6 +521,30 @@ function validateRepresentativeCases(byNumber) {
 	assert(cerium.group.status === "unassigned", "cerium group must be unassigned");
 	const scandium = byNumber.get(21);
 	assert(scandium.group.status === "reported" && scandium.group.value === 3, "scandium group must be 3");
+
+	const oxygen = byNumber.get(8);
+	assert(oxygen.melting.value === 54.36, `oxygen melting point is ${oxygen.melting.value}`);
+	assert(oxygen.boiling.value === 90.188, `oxygen boiling point is ${oxygen.boiling.value}`);
+
+	const tungsten = byNumber.get(74);
+	assert(tungsten.boiling.value === 6203, `tungsten boiling point is ${tungsten.boiling.value}`);
+
+	const carbon = byNumber.get(6);
+	assert(carbon.melting.status === "unavailable", "carbon must have no melting point");
+	assert(carbon.sublimation.value === 3915, `carbon sublimation point is ${carbon.sublimation.value}`);
+
+	const arsenic = byNumber.get(33);
+	assert(arsenic.sublimation.value === 887, `arsenic sublimation point is ${arsenic.sublimation.value}`);
+
+	const iron = byNumber.get(26);
+	assert(iron.discovery.kind === "antiquity", "iron must count as known since antiquity");
+
+	assert(
+		tennessine.discovery.kind === "year" && tennessine.discovery.year === 2010,
+		"tennessine must carry the year 2010",
+	);
+	assert(tennessine.melting.status === "predicted", "tennessine melting point must be predicted");
+	assert(oganesson.melting.status === "predicted", "oganesson melting point must be predicted");
 }
 
 /**
@@ -496,6 +622,7 @@ function render(bundle) {
 		]) {
 			lines.push(`\t\t${field}: ${JSON.stringify(source[field])},`);
 		}
+		lines.push(`\t\tfields: [${source.fields.map((field) => JSON.stringify(field)).join(", ")}],`);
 		lines.push("\t},");
 	}
 	lines.push("};");
