@@ -1,22 +1,40 @@
 /**
  * Standalone periodic table widget for WebWriter.
  *
- * The entry owns the WebWriter options, the live selection property and the
- * selection event. Reference data, layout, search and the full browsing UI live
- * in `periodic-table/` so they stay testable without a DOM.
+ * The entry owns the WebWriter options, the live selection property, the
+ * selection event and the browsing session (query, family filter, layout
+ * override). Reference data, layout, search, strings and the detail card live in
+ * `periodic-table/` so they stay testable without a DOM.
  *
  * @packageDocumentation
  */
 
 import { LitElementWw, action } from "@webwriter/lit";
 import { customElement, property } from "lit/decorators.js";
-import { css, html, type PropertyValues } from "lit";
+import { html, type PropertyValues } from "lit";
 
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
+import SlDetails from "@shoelace-style/shoelace/dist/components/details/details.component.js";
+import SlInput from "@shoelace-style/shoelace/dist/components/input/input.component.js";
+import SlOption from "@shoelace-style/shoelace/dist/components/option/option.component.js";
+import SlSelect from "@shoelace-style/shoelace/dist/components/select/select.component.js";
 import { setBasePath } from "@shoelace-style/shoelace/dist/utilities/base-path.js";
 setBasePath("@shoelace-style/shoelace/dist");
 import "@shoelace-style/shoelace/dist/themes/light.css";
 
+import {
+	CATEGORIES,
+	LAYOUT,
+	categoryOf,
+	elementByAtomicNumber,
+	type ElementReference,
+} from "./periodic-table/element-reference";
+import {
+	GRID,
+	seriesJumpTarget,
+	type GridCell,
+} from "./periodic-table/layout";
+import { searchElements, type SearchResult } from "./periodic-table/search";
 import {
 	ELEMENT_SELECTION_EVENT,
 	elementSelection,
@@ -24,11 +42,32 @@ import {
 	SelectionModel,
 	type ElementSelectionV1,
 } from "./periodic-table/selection";
+import {
+	categoryText,
+	conditionsText,
+	detailRows,
+	sourceOf,
+	sourceUsage,
+} from "./periodic-table/details";
+import { periodicTableStyles } from "./periodic-table/styles";
+import {
+	format,
+	resolveLanguage,
+	strings,
+	type Language,
+	type Strings,
+} from "./periodic-table/strings";
 
 /** Author layout choice. `auto` follows the container width. */
 export type PeriodicTableView = "auto" | "table" | "list";
 
+/** Layout actually rendered; `auto` is resolved before rendering. */
+type ResolvedView = "table" | "list";
+
 const VIEWS: readonly PeriodicTableView[] = ["auto", "table", "list"];
+
+/** Container width below which `auto` switches to the list. */
+const LIST_BREAKPOINT = 680;
 
 /**
  * Parses the `view` attribute, treating unknown markup as `auto`.
@@ -51,32 +90,6 @@ const atomicNumberConverter = {
 const viewConverter = {
 	fromAttribute: (value: string | null) => parseView(value),
 	toAttribute: (value: PeriodicTableView) => value,
-};
-
-/**
- * Temporary element fixture for the first spike.
- *
- * Replaced by the generated reference bundle in the next work package.
- */
-const SPIKE_ELEMENTS = [
-	{ atomicNumber: 1, symbol: "H", name: "Hydrogen" },
-	{ atomicNumber: 2, symbol: "He", name: "Helium" },
-	{ atomicNumber: 3, symbol: "Li", name: "Lithium" },
-	{ atomicNumber: 6, symbol: "C", name: "Carbon" },
-	{ atomicNumber: 7, symbol: "N", name: "Nitrogen" },
-	{ atomicNumber: 8, symbol: "O", name: "Oxygen" },
-	{ atomicNumber: 11, symbol: "Na", name: "Sodium" },
-	{ atomicNumber: 12, symbol: "Mg", name: "Magnesium" },
-	{ atomicNumber: 13, symbol: "Al", name: "Aluminium" },
-	{ atomicNumber: 14, symbol: "Si", name: "Silicon" },
-	{ atomicNumber: 26, symbol: "Fe", name: "Iron" },
-	{ atomicNumber: 29, symbol: "Cu", name: "Copper" },
-];
-
-/** Interface strings of the spike, replaced by `periodic-table/strings.ts`. */
-const SPIKE_STRINGS = {
-	en: { selected: "Selected", none: "No element selected", clear: "Clear" },
-	de: { selected: "Ausgewählt", none: "Kein Element ausgewählt", clear: "Zurücksetzen" },
 };
 
 /**
@@ -141,6 +154,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#selection = new SelectionModel();
 	#initialized = false;
 	#viewOverride: PeriodicTableView | null = null;
+	#query = "";
+	#category: string | null = null;
+	#width: number | null = null;
+	#resizeObserver: ResizeObserver | null = null;
 
 	/**
 	 * Currently selected atomic number, `null` when nothing is selected.
@@ -187,6 +204,47 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (changed.has("view")) this.#viewOverride = null;
 	}
 
+	/** Measures the host once and then follows every resize. */
+	protected firstUpdated() {
+		this.#measure();
+		if (typeof ResizeObserver === "function") {
+			this.#resizeObserver = new ResizeObserver(() => this.#measure());
+			this.#resizeObserver.observe(this);
+		}
+	}
+
+	/** Stops observing the host. */
+	disconnectedCallback() {
+		this.#resizeObserver?.disconnect();
+		this.#resizeObserver = null;
+		super.disconnectedCallback();
+	}
+
+	/** Records the host width, which decides the automatic layout. */
+	#measure() {
+		const width = this.getBoundingClientRect().width;
+		if (width <= 0 || width === this.#width) return;
+		this.#width = width;
+		this.requestUpdate();
+	}
+
+	/** Interface language of the surrounding content. */
+	get #language(): Language {
+		return resolveLanguage(this);
+	}
+
+	/** Layout to render, with `auto` resolved against the measured width. */
+	get #resolvedView(): ResolvedView {
+		const view = this.effectiveView;
+		if (view !== "auto") return view;
+		return this.#width !== null && this.#width < LIST_BREAKPOINT ? "list" : "table";
+	}
+
+	/** Current search hits, best match first. */
+	#matches(): readonly SearchResult[] {
+		return searchElements(this.#query, { locale: this.#language, category: this.#category });
+	}
+
 	/**
 	 * Selects an element after a user action and reports the change.
 	 *
@@ -214,52 +272,470 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		}));
 	}
 
-	render() {
-		const strings = this.lang.toLowerCase().startsWith("de") ? SPIKE_STRINGS.de : SPIKE_STRINGS.en;
+	/**
+	 * Switches the layout for this session only.
+	 *
+	 * @param view - Layout the learner asked for.
+	 */
+	#setView(view: ResolvedView) {
+		if (this.#resolvedView === view) return;
+		this.#viewOverride = view;
+		this.requestUpdate();
+	}
+
+	/**
+	 * Toggles the family filter.
+	 *
+	 * @param category - Category key the learner pressed.
+	 */
+	#toggleCategory(category: string) {
+		this.#category = this.#category === category ? null : category;
+		this.requestUpdate();
+	}
+
+	/**
+	 * Moves the selection to the first element of a detached series.
+	 *
+	 * @param seriesRow - Row of the detached series.
+	 */
+	#jumpToSeries(seriesRow: number) {
+		const target = seriesJumpTarget(seriesRow);
+		if (target === null) return;
+		this.#selectFromUser(target);
+		this.#focusElement(target);
+	}
+
+	/**
+	 * Focuses the cell or list row of an element once it is rendered.
+	 *
+	 * @param atomicNumber - Element to focus.
+	 */
+	#focusElement(atomicNumber: number) {
+		void this.updateComplete.then(() => {
+			const target = this.renderRoot.querySelector<HTMLElement>(
+				`[data-atomic-number="${atomicNumber}"]`,
+			);
+			target?.focus();
+		});
+	}
+
+	/** Clears query, filter, layout override and selection. */
+	#reset() {
+		this.#query = "";
+		this.#category = null;
+		this.#viewOverride = null;
+		this.#clearFromUser();
+		this.requestUpdate();
+	}
+
+	/** Reads the search field. */
+	#onQueryInput = (event: Event) => {
+		const value = (event.target as { value?: string }).value ?? "";
+		if (value === this.#query) return;
+		this.#query = value;
+		this.requestUpdate();
+	};
+
+	/** Selects the best match on Enter, so the field works without a mouse. */
+	#onSearchKeydown = (event: KeyboardEvent) => {
+		if (event.key !== "Enter" || event.isComposing) return;
+		const [first] = this.#matches();
+		if (!first) return;
+		event.preventDefault();
+		this.#selectFromUser(first.atomicNumber);
+		this.#focusElement(first.atomicNumber);
+	};
+
+	/** Reads the family filter. */
+	#onCategoryChange = (event: Event) => {
+		const value = (event.target as { value?: string }).value ?? "";
+		this.#category = value === "" ? null : value;
+		this.requestUpdate();
+	};
+
+	/**
+	 * Activates a grid cell from the keyboard.
+	 *
+	 * @param event - Key event of the cell.
+	 * @param atomicNumber - Element of the cell.
+	 */
+	#onCellKeydown = (event: KeyboardEvent, atomicNumber: number) => {
+		if (event.key !== "Enter" && event.key !== " ") return;
+		event.preventDefault();
+		this.#selectFromUser(atomicNumber);
+	};
+
+	/**
+	 * Picks the single cell that takes part in the tab order.
+	 *
+	 * @param matching - Atomic numbers that pass the current filter.
+	 * @returns The atomic number of the tabbable cell, or `null` when nothing matches.
+	 */
+	#rovingTarget(matching: ReadonlySet<number>): number | null {
 		const selected = this.#selection.value;
-		const current = SPIKE_ELEMENTS.find(element => element.atomicNumber === selected);
+		if (selected !== null && matching.has(selected)) return selected;
+		for (const cell of GRID.cells) {
+			if (matching.has(cell.atomicNumber)) return cell.atomicNumber;
+		}
+		return null;
+	}
+
+	/**
+	 * Renders the result count line.
+	 *
+	 * @param t - Interface strings.
+	 * @param count - Number of matching elements.
+	 * @returns The live region text.
+	 */
+	#renderCount(t: Strings, count: number) {
+		if (count === 0) return t.noResults;
+		if (count === 1) return t.resultCountOne;
+		return format(t.resultCount, { count });
+	}
+
+	/**
+	 * Renders the toolbar with search, family filter, layout switch and reset.
+	 *
+	 * @param t - Interface strings.
+	 * @param language - Interface language.
+	 * @returns The toolbar.
+	 */
+	#renderToolbar(t: Strings, language: Language) {
+		const resolved = this.#resolvedView;
 		return html`
-			<div class="spike">
-				<p class="spike-status">
-					${current
-						? `${strings.selected}: ${current.symbol} · ${current.name} (${current.atomicNumber})`
-						: strings.none}
-				</p>
-				<div class="spike-grid">
-					${SPIKE_ELEMENTS.map(element => html`
-						<sl-button
-							size="small"
-							variant=${element.atomicNumber === selected ? "primary" : "default"}
-							@click=${() => this.#selectFromUser(element.atomicNumber)}
-						>${element.symbol}</sl-button>
+			<div class="toolbar">
+				<sl-input
+					class="search"
+					type="search"
+					size="small"
+					clearable
+					label=${t.searchLabel}
+					placeholder=${t.searchPlaceholder}
+					.value=${this.#query}
+					@sl-input=${this.#onQueryInput}
+					@keydown=${this.#onSearchKeydown}
+				></sl-input>
+				<sl-select
+					class="filter"
+					size="small"
+					clearable
+					label=${t.filterLabel}
+					placeholder=${t.filterAll}
+					.value=${this.#category ?? ""}
+					@sl-change=${this.#onCategoryChange}
+				>
+					${Object.entries(CATEGORIES).map(([key, category]) => html`
+						<sl-option value=${key}>${category[language]}</sl-option>
 					`)}
+				</sl-select>
+				<div class="views" role="group" aria-label=${t.viewLabel}>
+					<sl-button
+						size="small"
+						variant=${resolved === "table" ? "primary" : "default"}
+						@click=${() => this.#setView("table")}
+					>${t.viewTable}</sl-button>
+					<sl-button
+						size="small"
+						variant=${resolved === "list" ? "primary" : "default"}
+						@click=${() => this.#setView("list")}
+					>${t.viewList}</sl-button>
 				</div>
-				<sl-button size="small" @click=${() => this.#clearFromUser()}>${strings.clear}</sl-button>
+				<sl-button size="small" @click=${() => this.#reset()}>${t.reset}</sl-button>
 			</div>
 		`;
 	}
 
-	static styles = css`
-		:host {
-			display: block;
-			font-family: var(--sl-font-sans, system-ui, sans-serif);
-			color: var(--sl-color-neutral-900, #1c1c1e);
-			background: var(--sl-color-neutral-0, #ffffff);
-			padding: 0.75rem;
-			box-sizing: border-box;
+	/**
+	 * Renders one element cell of the grid.
+	 *
+	 * @param cell - Cell of the display grid.
+	 * @param t - Interface strings.
+	 * @param language - Interface language.
+	 * @param matching - Atomic numbers that pass the current filter.
+	 * @param roving - Atomic number of the tabbable cell.
+	 * @returns The grid cell.
+	 */
+	#renderCell(
+		cell: GridCell,
+		t: Strings,
+		language: Language,
+		matching: ReadonlySet<number>,
+		roving: number | null,
+	) {
+		const element = elementByAtomicNumber(cell.atomicNumber);
+		if (!element) return null;
+		const enabled = matching.has(cell.atomicNumber);
+		const selected = this.#selection.value === cell.atomicNumber;
+		const displayRow = cell.section === "main" ? cell.row + 1 : cell.row + 2;
+		const label = format(t.cellLabel, {
+			number: element.atomicNumber,
+			name: element.names[language],
+			symbol: element.symbol,
+			category: categoryText(element, language),
+		});
+		return html`
+			<div
+				class="cell category-${cell.category}"
+				role="gridcell"
+				aria-selected=${selected}
+				aria-disabled=${!enabled}
+				aria-label=${label}
+				tabindex=${cell.atomicNumber === roving ? 0 : -1}
+				data-atomic-number=${cell.atomicNumber}
+				style="--pt-row:${displayRow};--pt-column:${cell.column + 1}"
+				@click=${() => enabled && this.#selectFromUser(cell.atomicNumber)}
+				@keydown=${(event: KeyboardEvent) => enabled && this.#onCellKeydown(event, cell.atomicNumber)}
+			>
+				<span class="cell-number">${cell.atomicNumber}</span>
+				<span class="cell-symbol">${element.symbol}</span>
+				<span class="cell-name">${element.names[language]}</span>
+			</div>
+		`;
+	}
+
+	/**
+	 * Renders the table layout.
+	 *
+	 * @param t - Interface strings.
+	 * @param language - Interface language.
+	 * @param matching - Atomic numbers that pass the current filter.
+	 * @returns The grid with group labels, period gutter, placeholders and series rows.
+	 */
+	#renderGrid(t: Strings, language: Language, matching: ReadonlySet<number>) {
+		const roving = this.#rovingTarget(matching);
+		const groupLabels = Array.from({ length: GRID.columns }, (_, index) => html`
+			<div
+				class="group-label"
+				role="columnheader"
+				style="--pt-row:1;--pt-column:${index + 2}"
+			>${index + 1}</div>
+		`);
+		const mainRows = GRID.rows
+			.filter(row => row.section === "main")
+			.map(row => html`
+				<div class="grid-row" role="row">
+					<div
+						class="gutter"
+						role="rowheader"
+						style="--pt-row:${row.row + 1};--pt-column:1"
+					>${row.row}</div>
+					${row.cells.map(cell => this.#renderCell(cell, t, language, matching, roving))}
+				</div>
+			`);
+		const placeholders = GRID.placeholders.map(placeholder => {
+			const series = GRID.seriesRows.find(entry => entry.row === placeholder.seriesRow);
+			const text = series
+				? format(t.placeholderLabel, {
+					first: series.firstAtomicNumber,
+					last: series.lastAtomicNumber,
+				})
+				: "";
+			return html`
+				<div
+					class="placeholder category-${placeholder.category}"
+					style="--pt-row:${placeholder.row + 1};--pt-column:${placeholder.column + 1}"
+				>
+					<span class="placeholder-text">${text}</span>
+				</div>
+			`;
+		});
+		const seriesRows = GRID.rows
+			.filter(row => row.section === "series")
+			.map(row => {
+				const series = GRID.seriesRows.find(entry => entry.row === row.row);
+				const name = series ? CATEGORIES[series.category]?.[language] ?? series.category : "";
+				return html`
+					<div class="grid-row" role="row">
+						<div
+							class="series-header"
+							role="rowheader"
+							style="--pt-row:${row.row + 2};--pt-column:1 / span 3"
+						>${name}</div>
+						${row.cells.map(cell => this.#renderCell(cell, t, language, matching, roving))}
+					</div>
+				`;
+			});
+		return html`
+			<div class="table-pane">
+				<div class="grid" role="grid" aria-label=${t.gridLabel}>
+					<div class="grid-row" role="row">
+						<div class="gutter" role="columnheader" style="--pt-row:1;--pt-column:1"></div>
+						${groupLabels}
+					</div>
+					${mainRows}
+					${placeholders}
+					${seriesRows}
+				</div>
+				<div class="series-jumps">
+					${LAYOUT.seriesRows.map(series => html`
+						<sl-button size="small" @click=${() => this.#jumpToSeries(series.row)}>
+							${format(t.jumpToSeries, {
+								series: CATEGORIES[series.category]?.[language] ?? series.category,
+							})}
+						</sl-button>
+					`)}
+				</div>
+				<ul class="legend" aria-label=${t.legendLabel}>
+					${Object.entries(CATEGORIES).map(([key, category]) => html`
+						<li>
+							<button
+								class="legend-item category-${key}"
+								type="button"
+								aria-pressed=${this.#category === key}
+								@click=${() => this.#toggleCategory(key)}
+							>
+								<span class="legend-swatch"></span>${category[language]}
+							</button>
+						</li>
+					`)}
+				</ul>
+			</div>
+		`;
+	}
+
+	/**
+	 * Renders the list layout with the detail card after the selected row.
+	 *
+	 * @param t - Interface strings.
+	 * @param language - Interface language.
+	 * @param matches - Search hits in display order.
+	 * @param details - Rendered detail card.
+	 * @returns The list.
+	 */
+	#renderList(
+		t: Strings,
+		language: Language,
+		matches: readonly SearchResult[],
+		details: unknown,
+	) {
+		const selected = this.#selection.value;
+		const selectedVisible = matches.some(match => match.atomicNumber === selected);
+		const rows = matches.map(match => {
+			const element = elementByAtomicNumber(match.atomicNumber);
+			if (!element) return null;
+			const isSelected = match.atomicNumber === selected;
+			return html`
+				<li>
+					<button
+						class="list-row category-${categoryOf(element.atomicNumber) ?? "unknown"}"
+						type="button"
+						aria-pressed=${isSelected}
+						data-atomic-number=${element.atomicNumber}
+						@click=${() => this.#selectFromUser(element.atomicNumber)}
+					>
+						<span class="list-number">${element.atomicNumber}</span>
+						<span class="list-symbol">${element.symbol}</span>
+						<span class="list-name">${element.names[language]}</span>
+						<span class="list-category">${categoryText(element, language)}</span>
+					</button>
+					${isSelected ? html`<div class="list-details">${details}</div>` : null}
+				</li>
+			`;
+		});
+		return html`
+			<div class="table-pane">
+				<ul class="list" aria-label=${t.gridLabel}>
+					${selectedVisible ? null : html`<li class="list-details">${details}</li>`}
+					${rows}
+				</ul>
+			</div>
+		`;
+	}
+
+	/**
+	 * Renders the detail card of one element.
+	 *
+	 * @param t - Interface strings.
+	 * @param language - Interface language.
+	 * @param element - Selected element, or `null` for the empty card.
+	 * @returns The detail card.
+	 */
+	#renderDetails(t: Strings, language: Language, element: ElementReference | null) {
+		if (!element) {
+			return html`<div class="details"><p class="details-empty">${t.detailsEmpty}</p></div>`;
 		}
-		.spike-status {
-			margin: 0 0 0.5rem;
-			font-size: 0.9rem;
-			color: var(--sl-color-neutral-700, #3f3f46);
-		}
-		.spike-grid {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 0.25rem;
-			margin-bottom: 0.5rem;
-		}
-	`;
+		const rows = detailRows(element, language);
+		const usage = sourceUsage(element, language);
+		return html`
+			<div class="details category-${categoryOf(element.atomicNumber) ?? "unknown"}">
+				<div class="details-head">
+					<div class="details-symbol">${element.symbol}</div>
+					<div>
+						<h3 class="details-name">${element.names[language]}</h3>
+						<p class="details-sub">
+							${element.atomicNumber} · ${element.symbol} · ${categoryText(element, language)}
+						</p>
+					</div>
+				</div>
+				<dl class="details-fields">
+					${rows.map(row => html`
+						<div class="details-row">
+							<dt>${row.label}</dt>
+							<dd>
+								${row.value}${row.qualifier
+									? html`<span class="qualifier">${row.qualifier}</span>`
+									: null}
+							</dd>
+						</div>
+					`)}
+				</dl>
+				<p class="details-hint">${t.detailsHint} ${conditionsText(language)}</p>
+				<sl-details class="sources" summary=${t.sourcesLabel}>
+					<p class="details-hint">${t.sourcesHint}</p>
+					${usage.map(entry => {
+						const source = sourceOf(entry.sourceId);
+						if (!source) return null;
+						return html`
+							<div class="source">
+								<p class="source-title">${source.publisher} — ${source.title}</p>
+								<p class="source-line">${entry.fields.join(", ")}</p>
+								<p class="source-line">
+									${format(t.sourceRelease, { release: source.release })} ·
+									${format(t.sourceRetrieved, { retrieved: source.retrieved })}
+								</p>
+								<p class="source-line">
+									${format(t.sourceLicense, { license: source.license })}
+								</p>
+								<a
+									class="source-link"
+									href=${source.url}
+									target="_blank"
+									rel="noreferrer noopener"
+								>${source.url}</a>
+							</div>
+						`;
+					})}
+				</sl-details>
+			</div>
+		`;
+	}
+
+	render() {
+		const language = this.#language;
+		const t = strings(language);
+		const matches = this.#matches();
+		const matching = new Set(matches.map(match => match.atomicNumber));
+		const selected = this.#selection.value;
+		const element = selected === null ? null : elementByAtomicNumber(selected) ?? null;
+		const details = this.#renderDetails(t, language, element);
+		const resolved = this.#resolvedView;
+		return html`
+			<div class="widget">
+				${this.#renderToolbar(t, language)}
+				<p class="result-count" aria-live="polite">${this.#renderCount(t, matches.length)}</p>
+				${resolved === "list"
+					? this.#renderList(t, language, matches, details)
+					: html`
+						<div class="body">
+							${this.#renderGrid(t, language, matching)}
+							<div class="details-pane">${details}</div>
+						</div>
+					`}
+			</div>
+		`;
+	}
+
+	static styles = periodicTableStyles;
 }
 
 declare global {
