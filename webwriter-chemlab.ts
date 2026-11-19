@@ -989,11 +989,14 @@ export class ChemLab extends LitElementWw {
 			const [first, second, ...devices] = circuitComps;
 			const firstMix = first._connectedMix;
 			const secondMix = second._connectedMix;
-			const ionicResistance = this.ionicResistance(first, second);
-			if (Number.isFinite(ionicResistance)) this.capacitorCharges.delete(this.rcCellKey(first, second));
-			chemlib.Simulation.sEChem(
-				first, second, devices, { ionicResistance }
-			);
+			const bridge = this.bridgeBetween(firstMix, secondMix);
+			const cell = this.rcCellKey(first, second);
+			// Only a cell with stored RC charge needs the resistance before the
+			// step. Normal runs derive it from the same bath views as the solve.
+			const ionicResistance = this.capacitorCharges.has(cell)
+				? chemlib.Simulation.ionicResistance(first, second, bridge) : undefined;
+			if (Number.isFinite(ionicResistance)) this.capacitorCharges.delete(cell);
+			chemlib.Simulation.sEChem(first, second, devices, { bridge, ionicResistance });
 
 			const vessels = this.allChemComponents.filter(vessel => vessel._content === firstMix || vessel._content === secondMix);
 			this.measurements.record(vessels, circuitComps);

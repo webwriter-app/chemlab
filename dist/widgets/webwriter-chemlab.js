@@ -150996,18 +150996,10 @@ var Simulation = class {
    * speciation, so they are exposed here as well; a change to one of them is
    * booked against its analytical parent, which keeps the acid whole.
    */
-  static saltIons(mix) {
+  static saltIons(mix, { systems: systems4, H: H3, speciation } = this.solveAqueousEquilibrium(mix)) {
     const volume = mix._solutionVolume;
     const ions = /* @__PURE__ */ new Map();
-    const { systems: systems4, spectatorCharge } = this.acidBaseComposition(mix);
-    const complexes = complexEquilibrium(systems4);
-    const H3 = AcidBase.solveProton(
-      systems4,
-      spectatorCharge,
-      AcidBase.kwAt(mix._temperature),
-      complexes ? (H4) => complexes(H4).chargeCorrection : void 0
-    );
-    const bound = complexes?.(H3).unbound;
+    const bound = speciation?.unbound;
     const stored = (molecule2) => {
       const current = () => (mix._molProperties[molecule2._id + "n"] ?? 0) / volume;
       const family = systems4.find((item) => item.members.includes(molecule2));
@@ -151344,15 +151336,8 @@ var Simulation = class {
    * @returns {VesselView}
    */
   static vesselView(mix) {
-    const ions = this.saltIons(mix);
-    const { systems: systems4, spectatorCharge } = this.acidBaseComposition(mix);
-    const protons = AcidBase.solveProton(
-      systems4,
-      spectatorCharge,
-      AcidBase.kwAt(mix._temperature),
-      this.complexChargeHook(systems4)
-    );
-    return { mix, ions, protons };
+    const equilibrium = this.solveAqueousEquilibrium(mix);
+    return { mix, ions: this.saltIons(mix, equilibrium), protons: equilibrium.H };
   }
   /**
    * Activity of a gas in a vessel. A solution that holds the gas dissolved
@@ -152471,15 +152456,18 @@ var Simulation = class {
    * the path and therefore the one that limits the current.
    */
   static ionicResistance(first, second, bridge = false) {
+    return this.electrolyteResistance(first, second, bridge, (mix) => this.conductivity(this.vesselView(mix)));
+  }
+  static electrolyteResistance(first, second, bridge, conductivityOf) {
     const firstMix = first._connectedMix;
     const secondMix = second._connectedMix;
     if (!firstMix?._isSolution || !secondMix?._isSolution) return Infinity;
     if (!this.isWetted(first) || !this.isWetted(second)) return Infinity;
     if (firstMix !== secondMix) {
       if (!bridge) return Infinity;
-      return this.bridgedResistance(first, second, typeof bridge === "object" ? bridge : void 0);
+      return this.bridgedResistance(first, second, conductivityOf, typeof bridge === "object" ? bridge : void 0);
     }
-    return this.sharedResistance(first, second);
+    return this.sharedResistance(first, second, conductivityOf);
   }
   /**
    * Whether an electrode touches the liquid of its vessel. An electrode the
@@ -152503,12 +152491,12 @@ var Simulation = class {
    * @param {ElectricComponent} second - the other strip
    * @returns {number} the resistance in Ω
    */
-  static sharedResistance(first, second) {
+  static sharedResistance(first, second, conductivityOf) {
     const mix = first._connectedMix;
     if (!mix) return Infinity;
     const spacing = this.electrodeSpacing(first, second);
     const area2 = Math.min(first.activeArea, second.activeArea);
-    return pathResistance(this.conductivity(mix), spacing, area2);
+    return pathResistance(conductivityOf(mix), spacing, area2);
   }
   /**
    * Resistance of a cell whose two half-cells a salt bridge joins, in Ω.
@@ -152524,7 +152512,7 @@ var Simulation = class {
    * @param {ElectricComponent} [bridge] - the bridge that joins the vessels
    * @returns {number} the resistance in Ω
    */
-  static bridgedResistance(first, second, bridge) {
+  static bridgedResistance(first, second, conductivityOf, bridge) {
     const legs = bridge?._bridgeLegs;
     const leftFirst = bridge?._bridgeMixes[1] !== first._connectedMix;
     const firstLeg = legs?.[leftFirst ? 0 : 1];
@@ -152537,7 +152525,7 @@ var Simulation = class {
     const firstMix = first._connectedMix;
     const secondMix = second._connectedMix;
     if (!firstMix || !secondMix) return Infinity;
-    return pathResistance(this.conductivity(firstMix), firstLength, first.activeArea) + bridgeResistance(span) + pathResistance(this.conductivity(secondMix), secondLength, second.activeArea);
+    return pathResistance(conductivityOf(firstMix), firstLength, first.activeArea) + bridgeResistance(span) + pathResistance(conductivityOf(secondMix), secondLength, second.activeArea);
   }
   /**
    * Horizontal distance between two strips, in cm. The canvas measures it in
@@ -152569,8 +152557,8 @@ var Simulation = class {
    * @param {Mixture} mix - the vessel
    * @returns {number} the conductivity in S/cm
    */
-  static conductivity(mix) {
-    const view = this.vesselView(mix);
+  static conductivity(view) {
+    const { mix } = view;
     const ions = [];
     for (const [smiles, ion2] of view.ions) {
       ions.push({ smiles, concentration: ion2.concentration, charge: ion2.molecule._totalCharge });
@@ -152692,7 +152680,20 @@ var Simulation = class {
     if (referenceInPair && (source3 || sDevices.some((device) => device._type === "ammeter" /* Ammeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "current"))) {
       return this.sCircuit(sDevices);
     }
-    const electrolyte = options2.ionicResistance ?? this.ionicResistance(sElectrode1, sElectrode2, options2.bridge);
+    const views = /* @__PURE__ */ new Map();
+    const viewOf = (mix) => {
+      const cached = views.get(mix);
+      if (cached) return cached;
+      const view = this.vesselView(mix);
+      views.set(mix, view);
+      return view;
+    };
+    const electrolyte = options2.ionicResistance ?? this.electrolyteResistance(
+      sElectrode1,
+      sElectrode2,
+      options2.bridge ?? false,
+      (mix) => this.conductivity(viewOf(mix))
+    );
     const separateBaths = !!mix1 && !!mix2 && mix1 !== mix2;
     if (electrolyte === Infinity) {
       this.sCircuit(sDevices);
@@ -152703,8 +152704,8 @@ var Simulation = class {
     }
     if (!Number.isFinite(electrolyte) || electrolyte < 0) return unsolved();
     const dt = this._simTimeStep;
-    const view1 = mix1?._isSolution ? this.vesselView(mix1) : void 0;
-    const view2 = mix2?._isSolution ? this.vesselView(mix2) : void 0;
+    const view1 = mix1?._isSolution ? viewOf(mix1) : void 0;
+    const view2 = mix2?._isSolution ? viewOf(mix2) : void 0;
     const candidatesOf = (electrode, view) => electrode._reference !== void 0 ? this.referenceCandidates(electrode._reference) : view ? this.electrodeCandidates(electrode, view) : [];
     const first = candidatesOf(sElectrode1, view1);
     const second = candidatesOf(sElectrode2, view2);
@@ -153159,10 +153160,9 @@ var Simulation = class {
       this.complexChargeHook(systems4)
     ) * 1e3) / 1e3;
   }
-  /** Read-only equilibrium view of modeled polyprotic families; stored amounts remain analytical totals. */
-  static getPolyproticEquilibrium(sMix) {
-    const { systems: systems4, spectatorCharge } = this.acidBaseComposition(sMix);
-    const Kw = AcidBase.kwAt(sMix._temperature);
+  static solveAqueousEquilibrium(mix) {
+    const { systems: systems4, spectatorCharge } = this.acidBaseComposition(mix);
+    const Kw = AcidBase.kwAt(mix._temperature);
     const complexes = complexEquilibrium(systems4);
     const H3 = AcidBase.solveProton(
       systems4,
@@ -153170,7 +153170,11 @@ var Simulation = class {
       Kw,
       complexes ? (H4) => complexes(H4).chargeCorrection : void 0
     );
-    const speciation = complexes?.(H3);
+    return { systems: systems4, H: H3, Kw, speciation: complexes?.(H3) };
+  }
+  /** Read-only equilibrium view of modeled polyprotic families; stored amounts remain analytical totals. */
+  static getPolyproticEquilibrium(sMix) {
+    const { systems: systems4, Kw, H: H3, speciation } = this.solveAqueousEquilibrium(sMix);
     const volume = sMix._solutionVolume;
     const species = [];
     const analyticalMolecules = /* @__PURE__ */ new Set();
@@ -188079,14 +188083,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       const [first, second, ...devices] = circuitComps;
       const firstMix = first._connectedMix;
       const secondMix = second._connectedMix;
-      const ionicResistance = this.ionicResistance(first, second);
-      if (Number.isFinite(ionicResistance)) this.capacitorCharges.delete(this.rcCellKey(first, second));
-      Simulation.sEChem(
-        first,
-        second,
-        devices,
-        { ionicResistance }
-      );
+      const bridge = this.bridgeBetween(firstMix, secondMix);
+      const cell = this.rcCellKey(first, second);
+      const ionicResistance = this.capacitorCharges.has(cell) ? Simulation.ionicResistance(first, second, bridge) : void 0;
+      if (Number.isFinite(ionicResistance)) this.capacitorCharges.delete(cell);
+      Simulation.sEChem(first, second, devices, { bridge, ionicResistance });
       const vessels = this.allChemComponents.filter((vessel) => vessel._content === firstMix || vessel._content === secondMix);
       this.measurements.record(vessels, circuitComps);
       for (const vessel of vessels) this.canvas.markVesselChanged(vessel);
