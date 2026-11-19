@@ -1,5 +1,7 @@
 # Interactive periodic table MVP
 
+The [implementation handoff](periodic-table-implementation.md) specifies the file layout, data schema, selection contract and acceptance checks for this plan.
+
 ## Product and scope
 
 Add an independently insertable `<webwriter-periodic-table>` widget alongside ChemLab. It takes over element discovery, reference information and element picking from the former molecule builder. The future molecule builder owns atoms, bonds and structural editing. ChemLab owns substances, mixtures, quantities and experiments. All three should be useful on their own, and selecting an element should leave each widget's scientific state intact until the learner takes an explicit action.
