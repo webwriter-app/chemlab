@@ -384,14 +384,6 @@ export class ChemLab extends LitElementWw {
 	@property({ attribute: false })
 	accessor dragObject = undefined;
 	/**
-	 * current mouse position
-	 *
-	 * @private
-	 * @type {number[]}
-	 */
-	@property({ attribute: false })
-	accessor mousePos: number[] = [0, 0];
-	/**
 	 * seperate container element for the PixiJS Application
 	 *
 	 * @private

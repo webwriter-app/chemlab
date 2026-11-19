@@ -186095,6 +186095,7 @@ var CanvasController = class _CanvasController {
   endDrag;
   /** the device under the pointer whose free terminals are shown */
   hoveredPorts;
+  pointerWorld = { x: 0, y: 0 };
   /** the device whose terminal a dragged cable end would land on */
   endTarget;
   selection = [];
@@ -186138,8 +186139,7 @@ var CanvasController = class _CanvasController {
     host.addController(this);
   }
   updateMousePosition(event) {
-    const world = this.camera.toWorld(event.global.x, event.global.y);
-    this.host.mousePos = [world.x, world.y];
+    this.pointerWorld = this.camera.toWorld(event.global.x, event.global.y);
   }
   screenToViewport(x4, y5) {
     const bounds = this.host.app.canvas.getBoundingClientRect();
@@ -186686,6 +186686,7 @@ var CanvasController = class _CanvasController {
     this.observeTouches();
   }
   hostDisconnected() {
+    this.setHoveredPorts();
     this.cancelPointerInteraction();
     this.touchListeners?.abort();
     this.touchListeners = void 0;
@@ -186734,6 +186735,7 @@ var CanvasController = class _CanvasController {
     if (redrawSelection) this.drawSelection();
   }
   removeSprite(sprite) {
+    if (sprite === this.hoveredPorts) this.setHoveredPorts();
     if (this._dragActive && this.host.dragObject === sprite) this.cancelPointerInteraction();
     if (this.selection.includes(sprite)) {
       if (this.groupDrag) this.cancelPointerInteraction();
@@ -186793,8 +186795,8 @@ var CanvasController = class _CanvasController {
     const type = component._type;
     const info = `${type}:${component._id}`;
     const sprite = this.createComponentView(component);
-    sprite.x = this.host.mousePos[0];
-    sprite.y = this.host.mousePos[1];
+    sprite.x = this.pointerWorld.x;
+    sprite.y = this.pointerWorld.y;
     sprite.eventMode = "static";
     sprite.cursor = "pointer";
     sprite.on("pointerdown", (event) => {
@@ -186870,8 +186872,7 @@ var CanvasController = class _CanvasController {
       const sprite = this.world.children[index2];
       if (!(sprite instanceof ElectricDeviceView) || !sprite.visible) continue;
       if (Math.abs(x4 - sprite.x) > sprite.width / 2 || Math.abs(y5 - sprite.y) > sprite.height / 2) continue;
-      const device = this.host.allEComponents.find((component) => `${component._type}:${component._id}` === sprite.label);
-      if (device) return { device, sprite };
+      return { device: sprite.component, sprite };
     }
     return void 0;
   }
@@ -187039,19 +187040,15 @@ var CanvasController = class _CanvasController {
     }
   }
   /**
-   * Brightens the free plugs of the device under the pointer, which hints
-   * that a cable can be plugged into it.
-   *
-   * @private
-   * @param {PIXI.PointData} global - the pointer in stage coordinates
+   * Brightens the free plugs of the hovered device and requests a frame
+   * only when the hover target changes.
    */
-  updatePortHover(global2) {
-    const world = this.camera.toWorld(global2.x, global2.y);
-    const sprite = this.deviceAtWorld(world.x, world.y)?.sprite;
+  setHoveredPorts(sprite) {
     if (sprite === this.hoveredPorts) return;
     this.hoveredPorts?.setPortHover(false);
     this.hoveredPorts = sprite;
     sprite?.setPortHover(true);
+    this.host.requestCanvasRender();
   }
   /**
    * modifies sprite events when an object gets dragged
@@ -187164,7 +187161,7 @@ var CanvasController = class _CanvasController {
     let objHeight = this.world.children[index2].height;
     let objX = this.world.children[index2].x - 0.5 * objWidth;
     let objY = this.world.children[index2].y - 0.5 * objHeight;
-    return this.host.mousePos[0] > objX - offset3 && this.host.mousePos[0] < objWidth + objX + offset3 && this.host.mousePos[1] > objY - offset3 && this.host.mousePos[1] < objHeight + objY + offset3;
+    return this.pointerWorld.x > objX - offset3 && this.pointerWorld.x < objWidth + objX + offset3 && this.pointerWorld.y > objY - offset3 && this.pointerWorld.y < objHeight + objY + offset3;
   }
   /**
    * initializes the canvas and its events
@@ -187195,6 +187192,7 @@ var CanvasController = class _CanvasController {
     this.host.app = app;
     this.host.pix_canvas.appendChild(app.canvas);
     app.canvas.tabIndex = 0;
+    app.canvas.addEventListener("pointerleave", () => this.setHoveredPorts());
     app.canvas.addEventListener("pointerdown", (event) => {
       if (event.button === 0) app.canvas.focus({ preventScroll: true });
     });
@@ -187220,7 +187218,7 @@ var CanvasController = class _CanvasController {
   bindPointerEvents(stage) {
     stage.on("pointermove", (event) => {
       this.updateMousePosition(event);
-      this.updatePortHover(event.global);
+      this.setHoveredPorts(this.deviceAtWorld(this.pointerWorld.x, this.pointerWorld.y)?.sprite);
     });
     stage.on("globalpointermove", (event) => {
       this.movePan(event);
@@ -187238,7 +187236,7 @@ var CanvasController = class _CanvasController {
           this.marquee = { id: event.pointerId, start: { x: x4, y: y5 } };
           return;
         }
-        if (event.pointerType !== "touch" && this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+        if (event.pointerType !== "touch" && this.host.placeSelectedComponent(this.pointerWorld.x, this.pointerWorld.y)) return;
         this.beginPan(event, true);
       }
     });
@@ -187267,7 +187265,7 @@ var CanvasController = class _CanvasController {
         if (deselectOnTap && !moved) {
           if (event.pointerType === "touch" && event.type === "pointerup" && event.target === stage) {
             this.updateMousePosition(event);
-            if (this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+            if (this.host.placeSelectedComponent(this.pointerWorld.x, this.pointerWorld.y)) return;
           }
           this.host.clearChemicalSelection();
           this.host.clearObjectSelection();
@@ -187539,7 +187537,7 @@ function validRCSettings(value) {
   const { capacitance, seriesResistance, cutoff } = value;
   return Number.isFinite(capacitance) && capacitance > 0 && Number.isFinite(seriesResistance) && seriesResistance >= 0 && (cutoff === void 0 || Number.isFinite(cutoff) && cutoff > 0);
 }
-var _newSmilesDrawer_dec, _smilesDrawer100_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _chemicalCatalogOpened_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramDismissedOpen_dec, _diagramPickerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _canvasLoading_dec, _app_dec, _pix_canvas_dec, _mousePos_dec, _dragObject_dec, _avComponentsSprites_dec, _showTitrationMarkers_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _statusStrip_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _statusStrip, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _showTitrationMarkers, _avComponentsSprites, _dragObject, _mousePos, _pix_canvas, _app, _canvasLoading, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _diagramPickerOpen, _diagramDismissedOpen, _teacherDrawerOpen, _teacherTab, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalCatalogOpened, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _RndName, _invComponents, _enablexAPI, _xAPIKey, _smilesDrawer100, _newSmilesDrawer;
+var _newSmilesDrawer_dec, _smilesDrawer100_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _chemicalCatalogOpened_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramDismissedOpen_dec, _diagramPickerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _canvasLoading_dec, _app_dec, _pix_canvas_dec, _dragObject_dec, _avComponentsSprites_dec, _showTitrationMarkers_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _statusStrip_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _statusStrip, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _showTitrationMarkers, _avComponentsSprites, _dragObject, _pix_canvas, _app, _canvasLoading, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _diagramPickerOpen, _diagramDismissedOpen, _teacherDrawerOpen, _teacherTab, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalCatalogOpened, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _RndName, _invComponents, _enablexAPI, _xAPIKey, _smilesDrawer100, _newSmilesDrawer;
 _ChemLab_decorators = [t6("webwriter-chemlab")];
 var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [e8("#upper")], _statusStrip_dec = [e8("#statusStrip")], _contextMolInfo_dec = [e8("#contextMolInfo")], _objectSummary_dec = [e8("#contextInfoBox")], _groupSummary_dec = [e8("#groupSelectionInfo")], _contextMixInfo_dec = [e8("#contextMixInfo")], _openBtn_dec = [e8("#openComp")], _activateEComp_dec = [e8("#activateEComp")], _contextEchemInfo_dec = [e8("#contextEchemInfo")], _xAPICheck_dec = [e8("#xAPICheck")], _xAPIKeyInput_dec = [e8("#xAPIKeyInput")], _canvasArea_dec = [e8("#canvasArea")], _canvasZoom_dec = [e8("#canvasZoom")], _zoomLevel_dec = [e8("#zoomLevel", true)], _gridScale_dec = [e8("#gridScale", true)], _gridScaleValue_dec = [e8("#gridScaleValue", true)], _pHColors_dec = [n5({ attribute: false })], _dictionary_dec = [n5({ attribute: false })], _availableMolecules_dec = [n5({
   type: Array,
@@ -187550,7 +187548,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 })], _availableComponents_dec = [n5({
   type: Array,
   attribute: false
-})], _thumbnailBadges_dec = [n5({ type: Boolean, reflect: true })], _showTitrationMarkers_dec = [n5({ type: Boolean, reflect: true, attribute: "show-titration-markers" })], _avComponentsSprites_dec = [n5({ attribute: false })], _dragObject_dec = [n5({ attribute: false })], _mousePos_dec = [n5({ attribute: false })], _pix_canvas_dec = [n5({ attribute: false })], _app_dec = [n5({ attribute: false })], _canvasLoading_dec = [r8()], _allChemComponents_dec = [n5({ attribute: false })], _allEComponents_dec = [n5({ attribute: false })], _curr_obj_dec = [n5({ attribute: false })], _fullWidthMode_dec = [r8()], _diagramPanelOpen_dec = [r8()], _diagramPickerOpen_dec = [r8()], _diagramDismissedOpen_dec = [r8()], _teacherDrawerOpen_dec = [r8()], _teacherTab_dec = [r8()], _permissionTooltip_dec = [r8()], _visibleVariants_dec = [r8()], _componentToPlace_dec = [r8()], _selectedChemical_dec = [r8()], _chemicalPermissions_dec = [r8()], _amountMenu_dec = [r8()], _fillMeter_dec = [r8()], _chemicalCatalogOpened_dec = [r8()], _chemicalQuery_dec = [r8()], _activeChemicalConcentrations_dec = [r8()], _openConcentrationMenu_dec = [r8()], _chemicalGroup_dec = [r8()], _curr_name_dec = [n5({ attribute: false })], _curr_stage_index_dec = [n5({ attribute: false })], _RndName_dec = [n5({ attribute: false })], _invComponents_dec = [n5({
+})], _thumbnailBadges_dec = [n5({ type: Boolean, reflect: true })], _showTitrationMarkers_dec = [n5({ type: Boolean, reflect: true, attribute: "show-titration-markers" })], _avComponentsSprites_dec = [n5({ attribute: false })], _dragObject_dec = [n5({ attribute: false })], _pix_canvas_dec = [n5({ attribute: false })], _app_dec = [n5({ attribute: false })], _canvasLoading_dec = [r8()], _allChemComponents_dec = [n5({ attribute: false })], _allEComponents_dec = [n5({ attribute: false })], _curr_obj_dec = [n5({ attribute: false })], _fullWidthMode_dec = [r8()], _diagramPanelOpen_dec = [r8()], _diagramPickerOpen_dec = [r8()], _diagramDismissedOpen_dec = [r8()], _teacherDrawerOpen_dec = [r8()], _teacherTab_dec = [r8()], _permissionTooltip_dec = [r8()], _visibleVariants_dec = [r8()], _componentToPlace_dec = [r8()], _selectedChemical_dec = [r8()], _chemicalPermissions_dec = [r8()], _amountMenu_dec = [r8()], _fillMeter_dec = [r8()], _chemicalCatalogOpened_dec = [r8()], _chemicalQuery_dec = [r8()], _activeChemicalConcentrations_dec = [r8()], _openConcentrationMenu_dec = [r8()], _chemicalGroup_dec = [r8()], _curr_name_dec = [n5({ attribute: false })], _curr_stage_index_dec = [n5({ attribute: false })], _RndName_dec = [n5({ attribute: false })], _invComponents_dec = [n5({
   type: Array,
   attribute: false
 })], _enablexAPI_dec = [n5({
@@ -187645,21 +187643,20 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
      */
     __publicField(this, "canvas", new CanvasController(this));
     __privateAdd(this, _dragObject, __runInitializers(_init2, 104, this)), __runInitializers(_init2, 107, this);
-    __privateAdd(this, _mousePos, __runInitializers(_init2, 108, this, [0, 0])), __runInitializers(_init2, 111, this);
-    __privateAdd(this, _pix_canvas, __runInitializers(_init2, 112, this, document.createElement("p_c"))), __runInitializers(_init2, 115, this);
-    __privateAdd(this, _app, __runInitializers(_init2, 116, this, null)), __runInitializers(_init2, 119, this);
+    __privateAdd(this, _pix_canvas, __runInitializers(_init2, 108, this, document.createElement("p_c"))), __runInitializers(_init2, 111, this);
+    __privateAdd(this, _app, __runInitializers(_init2, 112, this, null)), __runInitializers(_init2, 115, this);
     __publicField(this, "canvasReady");
-    __privateAdd(this, _canvasLoading, __runInitializers(_init2, 120, this, {
+    __privateAdd(this, _canvasLoading, __runInitializers(_init2, 116, this, {
       value: 0,
       task: "Grafik vorbereiten"
-    })), __runInitializers(_init2, 123, this);
-    __privateAdd(this, _allChemComponents, __runInitializers(_init2, 124, this, [])), __runInitializers(_init2, 127, this);
-    __privateAdd(this, _allEComponents, __runInitializers(_init2, 128, this, [])), __runInitializers(_init2, 131, this);
-    __privateAdd(this, _curr_obj, __runInitializers(_init2, 132, this, null)), __runInitializers(_init2, 135, this);
-    __privateAdd(this, _fullWidthMode, __runInitializers(_init2, 136, this, false)), __runInitializers(_init2, 139, this);
-    __privateAdd(this, _diagramPanelOpen, __runInitializers(_init2, 140, this, false)), __runInitializers(_init2, 143, this);
-    __privateAdd(this, _diagramPickerOpen, __runInitializers(_init2, 144, this, false)), __runInitializers(_init2, 147, this);
-    __privateAdd(this, _diagramDismissedOpen, __runInitializers(_init2, 148, this, false)), __runInitializers(_init2, 151, this);
+    })), __runInitializers(_init2, 119, this);
+    __privateAdd(this, _allChemComponents, __runInitializers(_init2, 120, this, [])), __runInitializers(_init2, 123, this);
+    __privateAdd(this, _allEComponents, __runInitializers(_init2, 124, this, [])), __runInitializers(_init2, 127, this);
+    __privateAdd(this, _curr_obj, __runInitializers(_init2, 128, this, null)), __runInitializers(_init2, 131, this);
+    __privateAdd(this, _fullWidthMode, __runInitializers(_init2, 132, this, false)), __runInitializers(_init2, 135, this);
+    __privateAdd(this, _diagramPanelOpen, __runInitializers(_init2, 136, this, false)), __runInitializers(_init2, 139, this);
+    __privateAdd(this, _diagramPickerOpen, __runInitializers(_init2, 140, this, false)), __runInitializers(_init2, 143, this);
+    __privateAdd(this, _diagramDismissedOpen, __runInitializers(_init2, 144, this, false)), __runInitializers(_init2, 147, this);
     __publicField(this, "diagramPickerListeners");
     __publicField(this, "diagramPickerCloseTimer");
     __publicField(this, "diagramMenus", /* @__PURE__ */ new Set());
@@ -187667,39 +187664,39 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __publicField(this, "suggestionQueue", new DiagramSuggestionQueue());
     __publicField(this, "diagramX", "");
     __publicField(this, "diagramY", "");
-    __privateAdd(this, _teacherDrawerOpen, __runInitializers(_init2, 152, this, false)), __runInitializers(_init2, 155, this);
+    __privateAdd(this, _teacherDrawerOpen, __runInitializers(_init2, 148, this, false)), __runInitializers(_init2, 151, this);
     __publicField(this, "teacherDrawerChoice");
     __publicField(this, "workspaceResizeObserver");
     __publicField(this, "workspaceClassObserver");
-    __privateAdd(this, _teacherTab, __runInitializers(_init2, 156, this, "components")), __runInitializers(_init2, 159, this);
-    __privateAdd(this, _permissionTooltip, __runInitializers(_init2, 160, this)), __runInitializers(_init2, 163, this);
-    __privateAdd(this, _visibleVariants, __runInitializers(_init2, 164, this, {})), __runInitializers(_init2, 167, this);
-    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 168, this)), __runInitializers(_init2, 171, this);
-    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 172, this)), __runInitializers(_init2, 175, this);
-    __privateAdd(this, _chemicalPermissions, __runInitializers(_init2, 176, this, {})), __runInitializers(_init2, 179, this);
-    __privateAdd(this, _amountMenu, __runInitializers(_init2, 180, this)), __runInitializers(_init2, 183, this);
-    __privateAdd(this, _fillMeter, __runInitializers(_init2, 184, this)), __runInitializers(_init2, 187, this);
-    __privateAdd(this, _chemicalCatalogOpened, __runInitializers(_init2, 188, this, false)), __runInitializers(_init2, 191, this);
-    __privateAdd(this, _chemicalQuery, __runInitializers(_init2, 192, this, "")), __runInitializers(_init2, 195, this);
-    __privateAdd(this, _activeChemicalConcentrations, __runInitializers(_init2, 196, this, {})), __runInitializers(_init2, 199, this);
-    __privateAdd(this, _openConcentrationMenu, __runInitializers(_init2, 200, this)), __runInitializers(_init2, 203, this);
-    __privateAdd(this, _chemicalGroup, __runInitializers(_init2, 204, this, "Salze")), __runInitializers(_init2, 207, this);
+    __privateAdd(this, _teacherTab, __runInitializers(_init2, 152, this, "components")), __runInitializers(_init2, 155, this);
+    __privateAdd(this, _permissionTooltip, __runInitializers(_init2, 156, this)), __runInitializers(_init2, 159, this);
+    __privateAdd(this, _visibleVariants, __runInitializers(_init2, 160, this, {})), __runInitializers(_init2, 163, this);
+    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 164, this)), __runInitializers(_init2, 167, this);
+    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 168, this)), __runInitializers(_init2, 171, this);
+    __privateAdd(this, _chemicalPermissions, __runInitializers(_init2, 172, this, {})), __runInitializers(_init2, 175, this);
+    __privateAdd(this, _amountMenu, __runInitializers(_init2, 176, this)), __runInitializers(_init2, 179, this);
+    __privateAdd(this, _fillMeter, __runInitializers(_init2, 180, this)), __runInitializers(_init2, 183, this);
+    __privateAdd(this, _chemicalCatalogOpened, __runInitializers(_init2, 184, this, false)), __runInitializers(_init2, 187, this);
+    __privateAdd(this, _chemicalQuery, __runInitializers(_init2, 188, this, "")), __runInitializers(_init2, 191, this);
+    __privateAdd(this, _activeChemicalConcentrations, __runInitializers(_init2, 192, this, {})), __runInitializers(_init2, 195, this);
+    __privateAdd(this, _openConcentrationMenu, __runInitializers(_init2, 196, this)), __runInitializers(_init2, 199, this);
+    __privateAdd(this, _chemicalGroup, __runInitializers(_init2, 200, this, "Salze")), __runInitializers(_init2, 203, this);
     __publicField(this, "stopDose");
     __publicField(this, "paletteDrag");
     __publicField(this, "suppressPaletteClick", false);
     __publicField(this, "dragTransfer");
     __publicField(this, "meterTimeout");
     __publicField(this, "statusTimeout");
-    __privateAdd(this, _curr_name, __runInitializers(_init2, 208, this, "")), __runInitializers(_init2, 211, this);
-    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 212, this, -1)), __runInitializers(_init2, 215, this);
-    __privateAdd(this, _RndName, __runInitializers(_init2, 216, this, n7({
+    __privateAdd(this, _curr_name, __runInitializers(_init2, 204, this, "")), __runInitializers(_init2, 207, this);
+    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 208, this, -1)), __runInitializers(_init2, 211, this);
+    __privateAdd(this, _RndName, __runInitializers(_init2, 212, this, n7({
       dictionaries: [l6, t8, r10]
-    }))), __runInitializers(_init2, 219, this);
-    __privateAdd(this, _invComponents, __runInitializers(_init2, 220, this, [])), __runInitializers(_init2, 223, this);
-    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 224, this, false)), __runInitializers(_init2, 227, this);
-    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 228, this, "")), __runInitializers(_init2, 231, this);
-    __privateAdd(this, _smilesDrawer100, __runInitializers(_init2, 232, this, null)), __runInitializers(_init2, 235, this);
-    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 236, this, 1)), __runInitializers(_init2, 239, this);
+    }))), __runInitializers(_init2, 215, this);
+    __privateAdd(this, _invComponents, __runInitializers(_init2, 216, this, [])), __runInitializers(_init2, 219, this);
+    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 220, this, false)), __runInitializers(_init2, 223, this);
+    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 224, this, "")), __runInitializers(_init2, 227, this);
+    __privateAdd(this, _smilesDrawer100, __runInitializers(_init2, 228, this, null)), __runInitializers(_init2, 231, this);
+    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 232, this, 1)), __runInitializers(_init2, 235, this);
     console.log(import_smiles_drawer.default);
     this.smilesDrawer100 = new import_smiles_drawer.default.SvgDrawer({ width: 100, height: 100, explicitHydrogens: true, compactDrawing: false, terminalCarbons: true });
   }
@@ -191190,7 +191187,6 @@ _thumbnailBadges = new WeakMap();
 _showTitrationMarkers = new WeakMap();
 _avComponentsSprites = new WeakMap();
 _dragObject = new WeakMap();
-_mousePos = new WeakMap();
 _pix_canvas = new WeakMap();
 _app = new WeakMap();
 _canvasLoading = new WeakMap();
@@ -191248,7 +191244,6 @@ __decorateElement(_init2, 4, "thumbnailBadges", _thumbnailBadges_dec, _ChemLab, 
 __decorateElement(_init2, 4, "showTitrationMarkers", _showTitrationMarkers_dec, _ChemLab, _showTitrationMarkers);
 __decorateElement(_init2, 4, "avComponentsSprites", _avComponentsSprites_dec, _ChemLab, _avComponentsSprites);
 __decorateElement(_init2, 4, "dragObject", _dragObject_dec, _ChemLab, _dragObject);
-__decorateElement(_init2, 4, "mousePos", _mousePos_dec, _ChemLab, _mousePos);
 __decorateElement(_init2, 4, "pix_canvas", _pix_canvas_dec, _ChemLab, _pix_canvas);
 __decorateElement(_init2, 4, "app", _app_dec, _ChemLab, _app);
 __decorateElement(_init2, 4, "canvasLoading", _canvasLoading_dec, _ChemLab, _canvasLoading);

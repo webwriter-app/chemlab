@@ -65,6 +65,7 @@ export class CanvasController implements ReactiveController {
 	private endDrag?: { id: number; view: CableView; end: number; x: number; y: number };
 	/** the device under the pointer whose free terminals are shown */
 	private hoveredPorts?: ElectricDeviceView;
+	private pointerWorld: PIXI.PointData = { x: 0, y: 0 };
 	/** the device whose terminal a dragged cable end would land on */
 	private endTarget?: ElectricDeviceView;
 	private selection: PIXI.Container[] = [];
@@ -112,8 +113,7 @@ export class CanvasController implements ReactiveController {
 	}
 
 	private updateMousePosition(event: PIXI.FederatedPointerEvent): void {
-		const world = this.camera.toWorld(event.global.x, event.global.y);
-		this.host.mousePos = [world.x, world.y];
+		this.pointerWorld = this.camera.toWorld(event.global.x, event.global.y);
 	}
 
 	private screenToViewport(x: number, y: number): PIXI.Point {
@@ -720,6 +720,7 @@ export class CanvasController implements ReactiveController {
 	}
 
 	hostDisconnected(): void {
+		this.setHoveredPorts();
 		this.cancelPointerInteraction();
 		this.touchListeners?.abort();
 		this.touchListeners = undefined;
@@ -772,6 +773,7 @@ export class CanvasController implements ReactiveController {
 	}
 
 	removeSprite(sprite: PIXI.Container): void {
+		if (sprite === this.hoveredPorts) this.setHoveredPorts();
 		if (this._dragActive && this.host.dragObject === sprite) this.cancelPointerInteraction();
 		if (this.selection.includes(sprite)) {
 			if (this.groupDrag) this.cancelPointerInteraction();
@@ -846,8 +848,8 @@ export class CanvasController implements ReactiveController {
 		const info = `${type}:${component._id}`;
 		const sprite = this.createComponentView(component);
 
-		sprite.x = this.host.mousePos[0];
-		sprite.y = this.host.mousePos[1];
+		sprite.x = this.pointerWorld.x;
+		sprite.y = this.pointerWorld.y;
 		sprite.eventMode = "static";
 		sprite.cursor = "pointer";
 		sprite.on("pointerdown", (event) => {
@@ -925,8 +927,7 @@ export class CanvasController implements ReactiveController {
 			const sprite = this.world.children[index];
 			if (!(sprite instanceof ElectricDeviceView) || !sprite.visible) continue;
 			if (Math.abs(x - sprite.x) > sprite.width / 2 || Math.abs(y - sprite.y) > sprite.height / 2) continue;
-			const device = this.host.allEComponents.find((component) => `${component._type}:${component._id}` === sprite.label);
-			if (device) return { device, sprite };
+			return { device: sprite.component, sprite };
 		}
 		return undefined;
 	}
@@ -1103,19 +1104,15 @@ export class CanvasController implements ReactiveController {
 	}
 
 	/**
-	 * Brightens the free plugs of the device under the pointer, which hints
-	 * that a cable can be plugged into it.
-	 *
-	 * @private
-	 * @param {PIXI.PointData} global - the pointer in stage coordinates
+	 * Brightens the free plugs of the hovered device and requests a frame
+	 * only when the hover target changes.
 	 */
-	private updatePortHover(global: PIXI.PointData): void {
-		const world = this.camera.toWorld(global.x, global.y);
-		const sprite = this.deviceAtWorld(world.x, world.y)?.sprite;
+	private setHoveredPorts(sprite?: ElectricDeviceView): void {
 		if (sprite === this.hoveredPorts) return;
 		this.hoveredPorts?.setPortHover(false);
 		this.hoveredPorts = sprite;
 		sprite?.setPortHover(true);
+		this.host.requestCanvasRender();
 	}
 
 	/**
@@ -1245,10 +1242,10 @@ export class CanvasController implements ReactiveController {
 		let objY: number = this.world.children[index].y - 0.5 * objHeight;
 
 		return (
-			this.host.mousePos[0] > objX - offset &&
-			this.host.mousePos[0] < objWidth + objX + offset &&
-			this.host.mousePos[1] > objY - offset &&
-			this.host.mousePos[1] < objHeight + objY + offset
+			this.pointerWorld.x > objX - offset &&
+			this.pointerWorld.x < objWidth + objX + offset &&
+			this.pointerWorld.y > objY - offset &&
+			this.pointerWorld.y < objHeight + objY + offset
 		);
 	}
 
@@ -1281,6 +1278,7 @@ export class CanvasController implements ReactiveController {
 		this.host.app = app;
 		this.host.pix_canvas.appendChild(app.canvas);
 		app.canvas.tabIndex = 0;
+		app.canvas.addEventListener("pointerleave", () => this.setHoveredPorts());
 		app.canvas.addEventListener("pointerdown", (event) => {
 			if (event.button === 0) app.canvas.focus({ preventScroll: true });
 		});
@@ -1305,12 +1303,12 @@ export class CanvasController implements ReactiveController {
 	}
 
 	private bindPointerEvents(stage: PIXI.Container): void {
-		// pointermove (not mousemove) so mousePos stays current for touch too.
+		// pointermove (not mousemove) so pointerWorld stays current for touch too.
 		// A drag is ended only on pointerup/pointerupoutside — not when the
 		// pointer briefly leaves the sprite bounds during a fast drag.
 		stage.on("pointermove", (event) => {
 			this.updateMousePosition(event);
-			this.updatePortHover(event.global);
+			this.setHoveredPorts(this.deviceAtWorld(this.pointerWorld.x, this.pointerWorld.y)?.sprite);
 		});
 		stage.on("globalpointermove", (event) => {
 			this.movePan(event);
@@ -1328,7 +1326,7 @@ export class CanvasController implements ReactiveController {
 					this.marquee = { id: event.pointerId, start: { x, y } };
 					return;
 				}
-				if (event.pointerType !== "touch" && this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+				if (event.pointerType !== "touch" && this.host.placeSelectedComponent(this.pointerWorld.x, this.pointerWorld.y)) return;
 				this.beginPan(event, true);
 			}
 		});
@@ -1357,7 +1355,7 @@ export class CanvasController implements ReactiveController {
 				if (deselectOnTap && !moved) {
 					if (event.pointerType === "touch" && event.type === "pointerup" && event.target === stage) {
 						this.updateMousePosition(event);
-						if (this.host.placeSelectedComponent(this.host.mousePos[0], this.host.mousePos[1])) return;
+						if (this.host.placeSelectedComponent(this.pointerWorld.x, this.pointerWorld.y)) return;
 					}
 					this.host.clearChemicalSelection();
 					this.host.clearObjectSelection();
