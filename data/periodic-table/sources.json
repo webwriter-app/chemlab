@@ -1,0 +1,64 @@
+{
+	"schemaVersion": 1,
+	"retrieved": "2026-11-19",
+	"note": "Vendored generator inputs for the periodic table bundle. Every file under sources/ is byte-identical to the artifact named here; the generator verifies the digests before it reads a record. The parsed CIAAW and NIST files keep the upstream values verbatim and only restructure them, so the digests cover the restructured form.",
+	"sources": {
+		"pse-info": {
+			"publisher": "pse-info.de (Paul Köhler)",
+			"title": "PSE-info element database",
+			"url": "https://github.com/komed3/periodic-table/blob/master/_db/elements.json",
+			"landingUrl": "https://pse-info.de/en/data",
+			"release": "2025-09-25",
+			"releaseField": "@modified",
+			"retrieved": "2026-11-19",
+			"license": "MIT",
+			"redistribution": "Vendored unchanged. The MIT licence requires the copyright notice and permission notice to travel with the data; both are reproduced in the attribution below.",
+			"attribution": "Element data from PSE-info, © 2023–2026 Paul Köhler, released under the MIT licence (https://pse-info.de/en/data).",
+			"input": "sources/pse-info-elements.json",
+			"sha256": "4891e8d0d7cb9ba22af0b4ea3be2199622a5d2e06a78a16ad99232de7347560b",
+			"fields": [
+				"names.de",
+				"period",
+				"group",
+				"block",
+				"phase",
+				"electron_config",
+				"set"
+			]
+		},
+		"ciaaw": {
+			"publisher": "IUPAC Commission on Isotopic Abundances and Atomic Weights (CIAAW)",
+			"title": "Standard Atomic Weights 2024",
+			"url": "https://www.ciaaw.org/atomic-weights.htm",
+			"release": "2024",
+			"retrieved": "2026-11-19",
+			"license": "Factual data, no separate licence",
+			"redistribution": "The table is reproduced as factual data with source attribution. Only the numeric weights, their uncertainty digits and the published note codes are shipped; the surrounding prose is not.",
+			"attribution": "Standard atomic weights from CIAAW, IUPAC (https://www.ciaaw.org/atomic-weights.htm), 2024 edition.",
+			"input": "sources/ciaaw-atomic-weights.json",
+			"sha256": "d6f9118592aa4379ab2bba484ef814ab90a67edd511c4cc58926f1a9512a0786",
+			"fields": [
+				"symbol",
+				"name",
+				"standard atomic weight",
+				"uncertainty digits",
+				"note codes"
+			]
+		},
+		"nist": {
+			"publisher": "National Institute of Standards and Technology (NIST)",
+			"title": "NIST Handbook of Basic Atomic Spectroscopic Data, ground-state configurations",
+			"url": "https://physics.nist.gov/PhysRefData/Handbook/periodictable.htm",
+			"release": "current at retrieval",
+			"retrieved": "2026-11-19",
+			"license": "Public domain (US government work)",
+			"redistribution": "Vendored as a verification input. Only the subshell occupation of the neutral ground state is shipped, and only after it agrees with the PSE-info configuration.",
+			"attribution": "Ground-state configurations cross-checked against the NIST Handbook of Basic Atomic Spectroscopic Data.",
+			"input": "sources/nist-configurations.json",
+			"sha256": "0e1d991355f806077d4666af2d241d5d6f40bc0033c9ae79747717755405041d",
+			"fields": [
+				"neutral ground-state subshell occupation"
+			]
+		}
+	}
+}

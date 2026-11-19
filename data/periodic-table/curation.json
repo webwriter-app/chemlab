@@ -1,0 +1,903 @@
+{
+	"schemaVersion": 1,
+	"dataVersion": "2024.1",
+	"conditions": {
+		"temperatureK": 298.15,
+		"pressureBar": 1,
+		"note": "Phase describes the elemental substance at 25 °C and 1 bar. The PSE-info phase field carries no conditions of its own; the standard ambient conditions of the table are adopted here and stated next to every phase value in the interface."
+	},
+	"categories": {
+		"alkali-metal": {
+			"en": "Alkali metal",
+			"de": "Alkalimetall"
+		},
+		"alkaline-earth-metal": {
+			"en": "Alkaline earth metal",
+			"de": "Erdalkalimetall"
+		},
+		"transition-metal": {
+			"en": "Transition metal",
+			"de": "Übergangsmetall"
+		},
+		"post-transition-metal": {
+			"en": "Post-transition metal",
+			"de": "Hauptgruppenmetall"
+		},
+		"metalloid": {
+			"en": "Metalloid",
+			"de": "Halbmetall"
+		},
+		"nonmetal": {
+			"en": "Nonmetal",
+			"de": "Nichtmetall"
+		},
+		"halogen": {
+			"en": "Halogen",
+			"de": "Halogen"
+		},
+		"noble-gas": {
+			"en": "Noble gas",
+			"de": "Edelgas"
+		},
+		"lanthanide": {
+			"en": "Lanthanide",
+			"de": "Lanthanoid"
+		},
+		"actinide": {
+			"en": "Actinide",
+			"de": "Actinoid"
+		},
+		"unknown": {
+			"en": "Unknown",
+			"de": "Unbekannt"
+		}
+	},
+	"sourceCategories": {
+		"alkalimetal": "alkali-metal",
+		"alkalineearthmetal": "alkaline-earth-metal",
+		"transitionmetal": "transition-metal",
+		"metal": "post-transition-metal",
+		"metalloid": "metalloid",
+		"nonmetal": "nonmetal",
+		"halogen": "halogen",
+		"noblegas": "noble-gas",
+		"lanthanoide": "lanthanide",
+		"actinoide": "actinide",
+		"unknown": "unknown"
+	},
+	"layout": {
+		"columns": 18,
+		"periodRows": 7,
+		"seriesRows": [
+			{
+				"row": 8,
+				"category": "lanthanide",
+				"firstAtomicNumber": 57,
+				"lastAtomicNumber": 71,
+				"firstColumn": 3
+			},
+			{
+				"row": 9,
+				"category": "actinide",
+				"firstAtomicNumber": 89,
+				"lastAtomicNumber": 103,
+				"firstColumn": 3
+			}
+		],
+		"placeholders": [
+			{
+				"row": 6,
+				"column": 3,
+				"category": "lanthanide"
+			},
+			{
+				"row": 7,
+				"column": 3,
+				"category": "actinide"
+			}
+		]
+	},
+	"placement": {
+		"1": {
+			"row": 1,
+			"column": 1,
+			"category": "nonmetal"
+		},
+		"2": {
+			"row": 1,
+			"column": 18,
+			"category": "noble-gas"
+		},
+		"3": {
+			"row": 2,
+			"column": 1,
+			"category": "alkali-metal"
+		},
+		"4": {
+			"row": 2,
+			"column": 2,
+			"category": "alkaline-earth-metal"
+		},
+		"5": {
+			"row": 2,
+			"column": 13,
+			"category": "metalloid"
+		},
+		"6": {
+			"row": 2,
+			"column": 14,
+			"category": "nonmetal"
+		},
+		"7": {
+			"row": 2,
+			"column": 15,
+			"category": "nonmetal"
+		},
+		"8": {
+			"row": 2,
+			"column": 16,
+			"category": "nonmetal"
+		},
+		"9": {
+			"row": 2,
+			"column": 17,
+			"category": "halogen"
+		},
+		"10": {
+			"row": 2,
+			"column": 18,
+			"category": "noble-gas"
+		},
+		"11": {
+			"row": 3,
+			"column": 1,
+			"category": "alkali-metal"
+		},
+		"12": {
+			"row": 3,
+			"column": 2,
+			"category": "alkaline-earth-metal"
+		},
+		"13": {
+			"row": 3,
+			"column": 13,
+			"category": "post-transition-metal"
+		},
+		"14": {
+			"row": 3,
+			"column": 14,
+			"category": "metalloid"
+		},
+		"15": {
+			"row": 3,
+			"column": 15,
+			"category": "nonmetal"
+		},
+		"16": {
+			"row": 3,
+			"column": 16,
+			"category": "nonmetal"
+		},
+		"17": {
+			"row": 3,
+			"column": 17,
+			"category": "halogen"
+		},
+		"18": {
+			"row": 3,
+			"column": 18,
+			"category": "noble-gas"
+		},
+		"19": {
+			"row": 4,
+			"column": 1,
+			"category": "alkali-metal"
+		},
+		"20": {
+			"row": 4,
+			"column": 2,
+			"category": "alkaline-earth-metal"
+		},
+		"21": {
+			"row": 4,
+			"column": 3,
+			"category": "transition-metal"
+		},
+		"22": {
+			"row": 4,
+			"column": 4,
+			"category": "transition-metal"
+		},
+		"23": {
+			"row": 4,
+			"column": 5,
+			"category": "transition-metal"
+		},
+		"24": {
+			"row": 4,
+			"column": 6,
+			"category": "transition-metal"
+		},
+		"25": {
+			"row": 4,
+			"column": 7,
+			"category": "transition-metal"
+		},
+		"26": {
+			"row": 4,
+			"column": 8,
+			"category": "transition-metal"
+		},
+		"27": {
+			"row": 4,
+			"column": 9,
+			"category": "transition-metal"
+		},
+		"28": {
+			"row": 4,
+			"column": 10,
+			"category": "transition-metal"
+		},
+		"29": {
+			"row": 4,
+			"column": 11,
+			"category": "transition-metal"
+		},
+		"30": {
+			"row": 4,
+			"column": 12,
+			"category": "transition-metal"
+		},
+		"31": {
+			"row": 4,
+			"column": 13,
+			"category": "post-transition-metal"
+		},
+		"32": {
+			"row": 4,
+			"column": 14,
+			"category": "metalloid"
+		},
+		"33": {
+			"row": 4,
+			"column": 15,
+			"category": "metalloid"
+		},
+		"34": {
+			"row": 4,
+			"column": 16,
+			"category": "metalloid"
+		},
+		"35": {
+			"row": 4,
+			"column": 17,
+			"category": "halogen"
+		},
+		"36": {
+			"row": 4,
+			"column": 18,
+			"category": "noble-gas"
+		},
+		"37": {
+			"row": 5,
+			"column": 1,
+			"category": "alkali-metal"
+		},
+		"38": {
+			"row": 5,
+			"column": 2,
+			"category": "alkaline-earth-metal"
+		},
+		"39": {
+			"row": 5,
+			"column": 3,
+			"category": "transition-metal"
+		},
+		"40": {
+			"row": 5,
+			"column": 4,
+			"category": "transition-metal"
+		},
+		"41": {
+			"row": 5,
+			"column": 5,
+			"category": "transition-metal"
+		},
+		"42": {
+			"row": 5,
+			"column": 6,
+			"category": "transition-metal"
+		},
+		"43": {
+			"row": 5,
+			"column": 7,
+			"category": "transition-metal"
+		},
+		"44": {
+			"row": 5,
+			"column": 8,
+			"category": "transition-metal"
+		},
+		"45": {
+			"row": 5,
+			"column": 9,
+			"category": "transition-metal"
+		},
+		"46": {
+			"row": 5,
+			"column": 10,
+			"category": "transition-metal"
+		},
+		"47": {
+			"row": 5,
+			"column": 11,
+			"category": "transition-metal"
+		},
+		"48": {
+			"row": 5,
+			"column": 12,
+			"category": "transition-metal"
+		},
+		"49": {
+			"row": 5,
+			"column": 13,
+			"category": "post-transition-metal"
+		},
+		"50": {
+			"row": 5,
+			"column": 14,
+			"category": "post-transition-metal"
+		},
+		"51": {
+			"row": 5,
+			"column": 15,
+			"category": "metalloid"
+		},
+		"52": {
+			"row": 5,
+			"column": 16,
+			"category": "metalloid"
+		},
+		"53": {
+			"row": 5,
+			"column": 17,
+			"category": "halogen"
+		},
+		"54": {
+			"row": 5,
+			"column": 18,
+			"category": "noble-gas"
+		},
+		"55": {
+			"row": 6,
+			"column": 1,
+			"category": "alkali-metal"
+		},
+		"56": {
+			"row": 6,
+			"column": 2,
+			"category": "alkaline-earth-metal"
+		},
+		"57": {
+			"row": 8,
+			"column": 3,
+			"category": "lanthanide"
+		},
+		"58": {
+			"row": 8,
+			"column": 4,
+			"category": "lanthanide"
+		},
+		"59": {
+			"row": 8,
+			"column": 5,
+			"category": "lanthanide"
+		},
+		"60": {
+			"row": 8,
+			"column": 6,
+			"category": "lanthanide"
+		},
+		"61": {
+			"row": 8,
+			"column": 7,
+			"category": "lanthanide"
+		},
+		"62": {
+			"row": 8,
+			"column": 8,
+			"category": "lanthanide"
+		},
+		"63": {
+			"row": 8,
+			"column": 9,
+			"category": "lanthanide"
+		},
+		"64": {
+			"row": 8,
+			"column": 10,
+			"category": "lanthanide"
+		},
+		"65": {
+			"row": 8,
+			"column": 11,
+			"category": "lanthanide"
+		},
+		"66": {
+			"row": 8,
+			"column": 12,
+			"category": "lanthanide"
+		},
+		"67": {
+			"row": 8,
+			"column": 13,
+			"category": "lanthanide"
+		},
+		"68": {
+			"row": 8,
+			"column": 14,
+			"category": "lanthanide"
+		},
+		"69": {
+			"row": 8,
+			"column": 15,
+			"category": "lanthanide"
+		},
+		"70": {
+			"row": 8,
+			"column": 16,
+			"category": "lanthanide"
+		},
+		"71": {
+			"row": 8,
+			"column": 17,
+			"category": "lanthanide"
+		},
+		"72": {
+			"row": 6,
+			"column": 4,
+			"category": "transition-metal"
+		},
+		"73": {
+			"row": 6,
+			"column": 5,
+			"category": "transition-metal"
+		},
+		"74": {
+			"row": 6,
+			"column": 6,
+			"category": "transition-metal"
+		},
+		"75": {
+			"row": 6,
+			"column": 7,
+			"category": "transition-metal"
+		},
+		"76": {
+			"row": 6,
+			"column": 8,
+			"category": "transition-metal"
+		},
+		"77": {
+			"row": 6,
+			"column": 9,
+			"category": "transition-metal"
+		},
+		"78": {
+			"row": 6,
+			"column": 10,
+			"category": "transition-metal"
+		},
+		"79": {
+			"row": 6,
+			"column": 11,
+			"category": "transition-metal"
+		},
+		"80": {
+			"row": 6,
+			"column": 12,
+			"category": "transition-metal"
+		},
+		"81": {
+			"row": 6,
+			"column": 13,
+			"category": "post-transition-metal"
+		},
+		"82": {
+			"row": 6,
+			"column": 14,
+			"category": "post-transition-metal"
+		},
+		"83": {
+			"row": 6,
+			"column": 15,
+			"category": "post-transition-metal"
+		},
+		"84": {
+			"row": 6,
+			"column": 16,
+			"category": "post-transition-metal"
+		},
+		"85": {
+			"row": 6,
+			"column": 17,
+			"category": "halogen"
+		},
+		"86": {
+			"row": 6,
+			"column": 18,
+			"category": "noble-gas"
+		},
+		"87": {
+			"row": 7,
+			"column": 1,
+			"category": "alkali-metal"
+		},
+		"88": {
+			"row": 7,
+			"column": 2,
+			"category": "alkaline-earth-metal"
+		},
+		"89": {
+			"row": 9,
+			"column": 3,
+			"category": "actinide"
+		},
+		"90": {
+			"row": 9,
+			"column": 4,
+			"category": "actinide"
+		},
+		"91": {
+			"row": 9,
+			"column": 5,
+			"category": "actinide"
+		},
+		"92": {
+			"row": 9,
+			"column": 6,
+			"category": "actinide"
+		},
+		"93": {
+			"row": 9,
+			"column": 7,
+			"category": "actinide"
+		},
+		"94": {
+			"row": 9,
+			"column": 8,
+			"category": "actinide"
+		},
+		"95": {
+			"row": 9,
+			"column": 9,
+			"category": "actinide"
+		},
+		"96": {
+			"row": 9,
+			"column": 10,
+			"category": "actinide"
+		},
+		"97": {
+			"row": 9,
+			"column": 11,
+			"category": "actinide"
+		},
+		"98": {
+			"row": 9,
+			"column": 12,
+			"category": "actinide"
+		},
+		"99": {
+			"row": 9,
+			"column": 13,
+			"category": "actinide"
+		},
+		"100": {
+			"row": 9,
+			"column": 14,
+			"category": "actinide"
+		},
+		"101": {
+			"row": 9,
+			"column": 15,
+			"category": "actinide"
+		},
+		"102": {
+			"row": 9,
+			"column": 16,
+			"category": "actinide"
+		},
+		"103": {
+			"row": 9,
+			"column": 17,
+			"category": "actinide"
+		},
+		"104": {
+			"row": 7,
+			"column": 4,
+			"category": "transition-metal"
+		},
+		"105": {
+			"row": 7,
+			"column": 5,
+			"category": "transition-metal"
+		},
+		"106": {
+			"row": 7,
+			"column": 6,
+			"category": "transition-metal"
+		},
+		"107": {
+			"row": 7,
+			"column": 7,
+			"category": "transition-metal"
+		},
+		"108": {
+			"row": 7,
+			"column": 8,
+			"category": "transition-metal"
+		},
+		"109": {
+			"row": 7,
+			"column": 9,
+			"category": "unknown"
+		},
+		"110": {
+			"row": 7,
+			"column": 10,
+			"category": "unknown"
+		},
+		"111": {
+			"row": 7,
+			"column": 11,
+			"category": "unknown"
+		},
+		"112": {
+			"row": 7,
+			"column": 12,
+			"category": "unknown"
+		},
+		"113": {
+			"row": 7,
+			"column": 13,
+			"category": "unknown"
+		},
+		"114": {
+			"row": 7,
+			"column": 14,
+			"category": "unknown"
+		},
+		"115": {
+			"row": 7,
+			"column": 15,
+			"category": "unknown"
+		},
+		"116": {
+			"row": 7,
+			"column": 16,
+			"category": "unknown"
+		},
+		"117": {
+			"row": 7,
+			"column": 17,
+			"category": "unknown"
+		},
+		"118": {
+			"row": 7,
+			"column": 18,
+			"category": "unknown"
+		}
+	},
+	"groupConvention": {
+		"note": "Groups 1, 2 and 4–18 follow the source. Group 3 is left convention-dependent for La, Ac, Lu and Lr: the source's 32-column layout places La and Ac in group 3, while the 2021 IUPAC project report on the group-3 question recommends Lu and Lr. The display therefore keeps a placeholder at (6, 3) and (7, 3) and detaches the f-block instead of asserting either reading. The remaining f-block members have no group number in any convention.",
+		"reported": {
+			"21": 3,
+			"39": 3
+		},
+		"conventionDependent": [
+			57,
+			89,
+			71,
+			103
+		],
+		"unassigned": [
+			58,
+			59,
+			60,
+			61,
+			62,
+			63,
+			64,
+			65,
+			66,
+			67,
+			68,
+			69,
+			70,
+			90,
+			91,
+			92,
+			93,
+			94,
+			95,
+			96,
+			97,
+			98,
+			99,
+			100,
+			101,
+			102
+		]
+	},
+	"overrides": {
+		"2": {
+			"configuration": "1s[2]",
+			"note": "The source lists helium as 1s[1]. The neutral ground state is 1s², which the NIST cross-check confirms; the override is applied before the comparison."
+		}
+	},
+	"predictionPolicy": {
+		"configuration": {
+			"fromAtomicNumber": 100,
+			"note": "Configurations up to Z = 99 are covered by the NIST cross-check and count as reported. From fermium on the source value is an extrapolation, so it is marked predicted."
+		},
+		"phase": {
+			"fromAtomicNumber": 104,
+			"note": "Phase values from rutherfordium on are extrapolations from periodic trends, so they are marked predicted. Where the source has no phase at all the value stays unavailable."
+		}
+	},
+	"aliases": {
+		"13": {
+			"en": [
+				"Aluminum"
+			]
+		},
+		"16": {
+			"en": [
+				"Sulphur"
+			]
+		},
+		"19": {
+			"en": [
+				"Kalium"
+			]
+		},
+		"26": {
+			"en": [
+				"Ferrum"
+			]
+		},
+		"29": {
+			"en": [
+				"Cuprum"
+			]
+		},
+		"41": {
+			"en": [
+				"Columbium"
+			]
+		},
+		"47": {
+			"en": [
+				"Argentum"
+			]
+		},
+		"50": {
+			"en": [
+				"Stannum"
+			]
+		},
+		"51": {
+			"en": [
+				"Stibium"
+			]
+		},
+		"55": {
+			"en": [
+				"Caesium",
+				"Cesium"
+			]
+		},
+		"74": {
+			"en": [
+				"Wolfram"
+			]
+		},
+		"79": {
+			"en": [
+				"Aurum"
+			]
+		},
+		"80": {
+			"en": [
+				"Hydrargyrum"
+			]
+		},
+		"82": {
+			"en": [
+				"Plumbum"
+			]
+		},
+		"91": {
+			"en": [
+				"Protoactinium"
+			]
+		},
+		"104": {
+			"en": [
+				"Unnilquadium"
+			]
+		},
+		"105": {
+			"en": [
+				"Hahnium",
+				"Unnilpentium"
+			]
+		},
+		"106": {
+			"en": [
+				"Unnilhexium"
+			]
+		},
+		"107": {
+			"en": [
+				"Unnilseptium"
+			]
+		},
+		"108": {
+			"en": [
+				"Unniloctium"
+			]
+		},
+		"109": {
+			"en": [
+				"Unnilennium"
+			]
+		},
+		"110": {
+			"en": [
+				"Ununnilium"
+			]
+		},
+		"111": {
+			"en": [
+				"Unununium"
+			]
+		},
+		"112": {
+			"en": [
+				"Ununbium"
+			]
+		},
+		"113": {
+			"en": [
+				"Ununtrium"
+			]
+		},
+		"114": {
+			"en": [
+				"Ununquadium"
+			]
+		},
+		"115": {
+			"en": [
+				"Ununpentium"
+			]
+		},
+		"116": {
+			"en": [
+				"Ununhexium"
+			]
+		},
+		"117": {
+			"en": [
+				"Ununseptium"
+			]
+		},
+		"118": {
+			"en": [
+				"Ununoctium"
+			]
+		}
+	}
+}

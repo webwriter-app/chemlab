@@ -1,0 +1,1316 @@
+[
+ {
+  "z": 1,
+  "symbol": "H",
+  "name": "hydrogen",
+  "raw": "[1.007\u00a084,\u00a01.008\u00a011] m",
+  "parsed": {
+   "kind": "interval",
+   "lower": "1.00784",
+   "upper": "1.00811",
+   "notes": "m"
+  }
+ },
+ {
+  "z": 2,
+  "symbol": "He",
+  "name": "helium",
+  "raw": "4.002\u00a0602(2) g r",
+  "parsed": {
+   "kind": "value",
+   "decimal": "4.002602",
+   "unc": "2",
+   "notes": "g r"
+  }
+ },
+ {
+  "z": 3,
+  "symbol": "Li",
+  "name": "lithium",
+  "raw": "[6.938,\u00a06.997] m",
+  "parsed": {
+   "kind": "interval",
+   "lower": "6.938",
+   "upper": "6.997",
+   "notes": "m"
+  }
+ },
+ {
+  "z": 4,
+  "symbol": "Be",
+  "name": "beryllium",
+  "raw": "9.012\u00a01831(5)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "9.0121831",
+   "unc": "5",
+   "notes": ""
+  }
+ },
+ {
+  "z": 5,
+  "symbol": "B",
+  "name": "boron",
+  "raw": "[10.806,\u00a010.821] m",
+  "parsed": {
+   "kind": "interval",
+   "lower": "10.806",
+   "upper": "10.821",
+   "notes": "m"
+  }
+ },
+ {
+  "z": 6,
+  "symbol": "C",
+  "name": "carbon",
+  "raw": "[12.0096,\u00a012.0116]",
+  "parsed": {
+   "kind": "interval",
+   "lower": "12.0096",
+   "upper": "12.0116",
+   "notes": ""
+  }
+ },
+ {
+  "z": 7,
+  "symbol": "N",
+  "name": "nitrogen",
+  "raw": "[14.006\u00a043,\u00a014.007\u00a028] m",
+  "parsed": {
+   "kind": "interval",
+   "lower": "14.00643",
+   "upper": "14.00728",
+   "notes": "m"
+  }
+ },
+ {
+  "z": 8,
+  "symbol": "O",
+  "name": "oxygen",
+  "raw": "[15.999\u00a003,\u00a015.999\u00a077] m",
+  "parsed": {
+   "kind": "interval",
+   "lower": "15.99903",
+   "upper": "15.99977",
+   "notes": "m"
+  }
+ },
+ {
+  "z": 9,
+  "symbol": "F",
+  "name": "fluorine",
+  "raw": "18.998\u00a0403\u00a0162(5)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "18.998403162",
+   "unc": "5",
+   "notes": ""
+  }
+ },
+ {
+  "z": 10,
+  "symbol": "Ne",
+  "name": "neon",
+  "raw": "20.1797(6) g m",
+  "parsed": {
+   "kind": "value",
+   "decimal": "20.1797",
+   "unc": "6",
+   "notes": "g m"
+  }
+ },
+ {
+  "z": 11,
+  "symbol": "Na",
+  "name": "sodium",
+  "raw": "22.989\u00a0769\u00a028(2)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "22.98976928",
+   "unc": "2",
+   "notes": ""
+  }
+ },
+ {
+  "z": 12,
+  "symbol": "Mg",
+  "name": "magnesium",
+  "raw": "[24.304,\u00a024.307]",
+  "parsed": {
+   "kind": "interval",
+   "lower": "24.304",
+   "upper": "24.307",
+   "notes": ""
+  }
+ },
+ {
+  "z": 13,
+  "symbol": "Al",
+  "name": "aluminium",
+  "raw": "26.981\u00a05384(3)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "26.9815384",
+   "unc": "3",
+   "notes": ""
+  }
+ },
+ {
+  "z": 14,
+  "symbol": "Si",
+  "name": "silicon",
+  "raw": "[28.084,\u00a028.086]",
+  "parsed": {
+   "kind": "interval",
+   "lower": "28.084",
+   "upper": "28.086",
+   "notes": ""
+  }
+ },
+ {
+  "z": 15,
+  "symbol": "P",
+  "name": "phosphorus",
+  "raw": "30.973\u00a0761\u00a0998(5)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "30.973761998",
+   "unc": "5",
+   "notes": ""
+  }
+ },
+ {
+  "z": 16,
+  "symbol": "S",
+  "name": "sulfur",
+  "raw": "[32.059,\u00a032.076]",
+  "parsed": {
+   "kind": "interval",
+   "lower": "32.059",
+   "upper": "32.076",
+   "notes": ""
+  }
+ },
+ {
+  "z": 17,
+  "symbol": "Cl",
+  "name": "chlorine",
+  "raw": "[35.446,\u00a035.457] m",
+  "parsed": {
+   "kind": "interval",
+   "lower": "35.446",
+   "upper": "35.457",
+   "notes": "m"
+  }
+ },
+ {
+  "z": 18,
+  "symbol": "Ar",
+  "name": "argon",
+  "raw": "[39.792,\u00a039.963]",
+  "parsed": {
+   "kind": "interval",
+   "lower": "39.792",
+   "upper": "39.963",
+   "notes": ""
+  }
+ },
+ {
+  "z": 19,
+  "symbol": "K",
+  "name": "potassium",
+  "raw": "39.0983(1)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "39.0983",
+   "unc": "1",
+   "notes": ""
+  }
+ },
+ {
+  "z": 20,
+  "symbol": "Ca",
+  "name": "calcium",
+  "raw": "40.078(4) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "40.078",
+   "unc": "4",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 21,
+  "symbol": "Sc",
+  "name": "scandium",
+  "raw": "44.955\u00a0907(4)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "44.955907",
+   "unc": "4",
+   "notes": ""
+  }
+ },
+ {
+  "z": 22,
+  "symbol": "Ti",
+  "name": "titanium",
+  "raw": "47.867(1)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "47.867",
+   "unc": "1",
+   "notes": ""
+  }
+ },
+ {
+  "z": 23,
+  "symbol": "V",
+  "name": "vanadium",
+  "raw": "50.9415(1)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "50.9415",
+   "unc": "1",
+   "notes": ""
+  }
+ },
+ {
+  "z": 24,
+  "symbol": "Cr",
+  "name": "chromium",
+  "raw": "51.9961(6)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "51.9961",
+   "unc": "6",
+   "notes": ""
+  }
+ },
+ {
+  "z": 25,
+  "symbol": "Mn",
+  "name": "manganese",
+  "raw": "54.938\u00a0043(2)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "54.938043",
+   "unc": "2",
+   "notes": ""
+  }
+ },
+ {
+  "z": 26,
+  "symbol": "Fe",
+  "name": "iron",
+  "raw": "55.845(2)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "55.845",
+   "unc": "2",
+   "notes": ""
+  }
+ },
+ {
+  "z": 27,
+  "symbol": "Co",
+  "name": "cobalt",
+  "raw": "58.933 194(3)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "58.933194",
+   "unc": "3",
+   "notes": ""
+  }
+ },
+ {
+  "z": 28,
+  "symbol": "Ni",
+  "name": "nickel",
+  "raw": "58.6934(4) r",
+  "parsed": {
+   "kind": "value",
+   "decimal": "58.6934",
+   "unc": "4",
+   "notes": "r"
+  }
+ },
+ {
+  "z": 29,
+  "symbol": "Cu",
+  "name": "copper",
+  "raw": "63.546(3) r",
+  "parsed": {
+   "kind": "value",
+   "decimal": "63.546",
+   "unc": "3",
+   "notes": "r"
+  }
+ },
+ {
+  "z": 30,
+  "symbol": "Zn",
+  "name": "zinc",
+  "raw": "65.38(2) r",
+  "parsed": {
+   "kind": "value",
+   "decimal": "65.38",
+   "unc": "2",
+   "notes": "r"
+  }
+ },
+ {
+  "z": 31,
+  "symbol": "Ga",
+  "name": "gallium",
+  "raw": "69.723(1)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "69.723",
+   "unc": "1",
+   "notes": ""
+  }
+ },
+ {
+  "z": 32,
+  "symbol": "Ge",
+  "name": "germanium",
+  "raw": "72.630(8)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "72.630",
+   "unc": "8",
+   "notes": ""
+  }
+ },
+ {
+  "z": 33,
+  "symbol": "As",
+  "name": "arsenic",
+  "raw": "74.921\u00a0595(6)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "74.921595",
+   "unc": "6",
+   "notes": ""
+  }
+ },
+ {
+  "z": 34,
+  "symbol": "Se",
+  "name": "selenium",
+  "raw": "78.971(8) r",
+  "parsed": {
+   "kind": "value",
+   "decimal": "78.971",
+   "unc": "8",
+   "notes": "r"
+  }
+ },
+ {
+  "z": 35,
+  "symbol": "Br",
+  "name": "bromine",
+  "raw": "[79.901,\u00a079.907]",
+  "parsed": {
+   "kind": "interval",
+   "lower": "79.901",
+   "upper": "79.907",
+   "notes": ""
+  }
+ },
+ {
+  "z": 36,
+  "symbol": "Kr",
+  "name": "krypton",
+  "raw": "83.798(2) g m",
+  "parsed": {
+   "kind": "value",
+   "decimal": "83.798",
+   "unc": "2",
+   "notes": "g m"
+  }
+ },
+ {
+  "z": 37,
+  "symbol": "Rb",
+  "name": "rubidium",
+  "raw": "85.4678(3) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "85.4678",
+   "unc": "3",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 38,
+  "symbol": "Sr",
+  "name": "strontium",
+  "raw": "87.62(1) g r",
+  "parsed": {
+   "kind": "value",
+   "decimal": "87.62",
+   "unc": "1",
+   "notes": "g r"
+  }
+ },
+ {
+  "z": 39,
+  "symbol": "Y",
+  "name": "yttrium",
+  "raw": "88.905\u00a0838(2)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "88.905838",
+   "unc": "2",
+   "notes": ""
+  }
+ },
+ {
+  "z": 40,
+  "symbol": "Zr",
+  "name": "zirconium",
+  "raw": "91.222(3) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "91.222",
+   "unc": "3",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 41,
+  "symbol": "Nb",
+  "name": "niobium",
+  "raw": "92.906\u00a037(1)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "92.90637",
+   "unc": "1",
+   "notes": ""
+  }
+ },
+ {
+  "z": 42,
+  "symbol": "Mo",
+  "name": "molybdenum",
+  "raw": "95.95(1) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "95.95",
+   "unc": "1",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 43,
+  "symbol": "Tc",
+  "name": "technetium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 44,
+  "symbol": "Ru",
+  "name": "ruthenium",
+  "raw": "101.07(2) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "101.07",
+   "unc": "2",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 45,
+  "symbol": "Rh",
+  "name": "rhodium",
+  "raw": "102.905\u00a049(2)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "102.90549",
+   "unc": "2",
+   "notes": ""
+  }
+ },
+ {
+  "z": 46,
+  "symbol": "Pd",
+  "name": "palladium",
+  "raw": "106.42(1) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "106.42",
+   "unc": "1",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 47,
+  "symbol": "Ag",
+  "name": "silver",
+  "raw": "107.8682(2) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "107.8682",
+   "unc": "2",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 48,
+  "symbol": "Cd",
+  "name": "cadmium",
+  "raw": "112.414(4) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "112.414",
+   "unc": "4",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 49,
+  "symbol": "In",
+  "name": "indium",
+  "raw": "114.818(1)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "114.818",
+   "unc": "1",
+   "notes": ""
+  }
+ },
+ {
+  "z": 50,
+  "symbol": "Sn",
+  "name": "tin",
+  "raw": "118.710(7) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "118.710",
+   "unc": "7",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 51,
+  "symbol": "Sb",
+  "name": "antimony",
+  "raw": "121.760(1) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "121.760",
+   "unc": "1",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 52,
+  "symbol": "Te",
+  "name": "tellurium",
+  "raw": "127.60(3) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "127.60",
+   "unc": "3",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 53,
+  "symbol": "I",
+  "name": "iodine",
+  "raw": "126.904\u00a047(3)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "126.90447",
+   "unc": "3",
+   "notes": ""
+  }
+ },
+ {
+  "z": 54,
+  "symbol": "Xe",
+  "name": "xenon",
+  "raw": "131.293(6) g m",
+  "parsed": {
+   "kind": "value",
+   "decimal": "131.293",
+   "unc": "6",
+   "notes": "g m"
+  }
+ },
+ {
+  "z": 55,
+  "symbol": "Cs",
+  "name": "caesium",
+  "raw": "132.905\u00a0451\u00a096(6)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "132.90545196",
+   "unc": "6",
+   "notes": ""
+  }
+ },
+ {
+  "z": 56,
+  "symbol": "Ba",
+  "name": "barium",
+  "raw": "137.327(7)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "137.327",
+   "unc": "7",
+   "notes": ""
+  }
+ },
+ {
+  "z": 57,
+  "symbol": "La",
+  "name": "lanthanum",
+  "raw": "138.905\u00a047(7) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "138.90547",
+   "unc": "7",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 58,
+  "symbol": "Ce",
+  "name": "cerium",
+  "raw": "140.116(1) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "140.116",
+   "unc": "1",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 59,
+  "symbol": "Pr",
+  "name": "praseodymium",
+  "raw": "140.907\u00a066(1)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "140.90766",
+   "unc": "1",
+   "notes": ""
+  }
+ },
+ {
+  "z": 60,
+  "symbol": "Nd",
+  "name": "neodymium",
+  "raw": "144.242(3) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "144.242",
+   "unc": "3",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 61,
+  "symbol": "Pm",
+  "name": "promethium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 62,
+  "symbol": "Sm",
+  "name": "samarium",
+  "raw": "150.36(2) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "150.36",
+   "unc": "2",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 63,
+  "symbol": "Eu",
+  "name": "europium",
+  "raw": "151.964(1) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "151.964",
+   "unc": "1",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 64,
+  "symbol": "Gd",
+  "name": "gadolinium",
+  "raw": "157.249(2) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "157.249",
+   "unc": "2",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 65,
+  "symbol": "Tb",
+  "name": "terbium",
+  "raw": "158.925\u00a0354(7)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "158.925354",
+   "unc": "7",
+   "notes": ""
+  }
+ },
+ {
+  "z": 66,
+  "symbol": "Dy",
+  "name": "dysprosium",
+  "raw": "162.500(1) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "162.500",
+   "unc": "1",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 67,
+  "symbol": "Ho",
+  "name": "holmium",
+  "raw": "164.930\u00a0329(5)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "164.930329",
+   "unc": "5",
+   "notes": ""
+  }
+ },
+ {
+  "z": 68,
+  "symbol": "Er",
+  "name": "erbium",
+  "raw": "167.259(3) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "167.259",
+   "unc": "3",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 69,
+  "symbol": "Tm",
+  "name": "thulium",
+  "raw": "168.934\u00a0219(5)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "168.934219",
+   "unc": "5",
+   "notes": ""
+  }
+ },
+ {
+  "z": 70,
+  "symbol": "Yb",
+  "name": "ytterbium",
+  "raw": "173.045(10) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "173.045",
+   "unc": "10",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 71,
+  "symbol": "Lu",
+  "name": "lutetium",
+  "raw": "174.966\u00a069(5) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "174.96669",
+   "unc": "5",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 72,
+  "symbol": "Hf",
+  "name": "hafnium",
+  "raw": "178.486(6) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "178.486",
+   "unc": "6",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 73,
+  "symbol": "Ta",
+  "name": "tantalum",
+  "raw": "180.947\u00a088(2)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "180.94788",
+   "unc": "2",
+   "notes": ""
+  }
+ },
+ {
+  "z": 74,
+  "symbol": "W",
+  "name": "tungsten",
+  "raw": "183.84(1)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "183.84",
+   "unc": "1",
+   "notes": ""
+  }
+ },
+ {
+  "z": 75,
+  "symbol": "Re",
+  "name": "rhenium",
+  "raw": "186.207(1)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "186.207",
+   "unc": "1",
+   "notes": ""
+  }
+ },
+ {
+  "z": 76,
+  "symbol": "Os",
+  "name": "osmium",
+  "raw": "190.23(3) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "190.23",
+   "unc": "3",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 77,
+  "symbol": "Ir",
+  "name": "iridium",
+  "raw": "192.217(2)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "192.217",
+   "unc": "2",
+   "notes": ""
+  }
+ },
+ {
+  "z": 78,
+  "symbol": "Pt",
+  "name": "platinum",
+  "raw": "195.084(9)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "195.084",
+   "unc": "9",
+   "notes": ""
+  }
+ },
+ {
+  "z": 79,
+  "symbol": "Au",
+  "name": "gold",
+  "raw": "196.966\u00a0570(4)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "196.966570",
+   "unc": "4",
+   "notes": ""
+  }
+ },
+ {
+  "z": 80,
+  "symbol": "Hg",
+  "name": "mercury",
+  "raw": "200.592(3)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "200.592",
+   "unc": "3",
+   "notes": ""
+  }
+ },
+ {
+  "z": 81,
+  "symbol": "Tl",
+  "name": "thallium",
+  "raw": "[204.382,\u00a0204.385]",
+  "parsed": {
+   "kind": "interval",
+   "lower": "204.382",
+   "upper": "204.385",
+   "notes": ""
+  }
+ },
+ {
+  "z": 82,
+  "symbol": "Pb",
+  "name": "lead",
+  "raw": "[206.14,\u00a0207.94]",
+  "parsed": {
+   "kind": "interval",
+   "lower": "206.14",
+   "upper": "207.94",
+   "notes": ""
+  }
+ },
+ {
+  "z": 83,
+  "symbol": "Bi",
+  "name": "bismuth",
+  "raw": "208.980\u00a040(1)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "208.98040",
+   "unc": "1",
+   "notes": ""
+  }
+ },
+ {
+  "z": 84,
+  "symbol": "Po",
+  "name": "polonium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 85,
+  "symbol": "At",
+  "name": "astatine",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 86,
+  "symbol": "Rn",
+  "name": "radon",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 87,
+  "symbol": "Fr",
+  "name": "francium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 88,
+  "symbol": "Ra",
+  "name": "radium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 89,
+  "symbol": "Ac",
+  "name": "actinium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 90,
+  "symbol": "Th",
+  "name": "thorium",
+  "raw": "232.0377(4) g",
+  "parsed": {
+   "kind": "value",
+   "decimal": "232.0377",
+   "unc": "4",
+   "notes": "g"
+  }
+ },
+ {
+  "z": 91,
+  "symbol": "Pa",
+  "name": "protactinium",
+  "raw": "231.035\u00a088(1)",
+  "parsed": {
+   "kind": "value",
+   "decimal": "231.03588",
+   "unc": "1",
+   "notes": ""
+  }
+ },
+ {
+  "z": 92,
+  "symbol": "U",
+  "name": "uranium",
+  "raw": "238.028\u00a091(3) g m",
+  "parsed": {
+   "kind": "value",
+   "decimal": "238.02891",
+   "unc": "3",
+   "notes": "g m"
+  }
+ },
+ {
+  "z": 93,
+  "symbol": "Np",
+  "name": "neptunium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 94,
+  "symbol": "Pu",
+  "name": "plutonium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 95,
+  "symbol": "Am",
+  "name": "americium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 96,
+  "symbol": "Cm",
+  "name": "curium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 97,
+  "symbol": "Bk",
+  "name": "berkelium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 98,
+  "symbol": "Cf",
+  "name": "californium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 99,
+  "symbol": "Es",
+  "name": "einsteinium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 100,
+  "symbol": "Fm",
+  "name": "fermium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 101,
+  "symbol": "Md",
+  "name": "mendelevium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 102,
+  "symbol": "No",
+  "name": "nobelium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 103,
+  "symbol": "Lr",
+  "name": "lawrencium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 104,
+  "symbol": "Rf",
+  "name": "rutherfordium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 105,
+  "symbol": "Db",
+  "name": "dubnium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 106,
+  "symbol": "Sg",
+  "name": "seaborgium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 107,
+  "symbol": "Bh",
+  "name": "bohrium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 108,
+  "symbol": "Hs",
+  "name": "hassium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 109,
+  "symbol": "Mt",
+  "name": "meitnerium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 110,
+  "symbol": "Ds",
+  "name": "darmstadtium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 111,
+  "symbol": "Rg",
+  "name": "roentgenium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 112,
+  "symbol": "Cn",
+  "name": "copernicium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 113,
+  "symbol": "Nh",
+  "name": "nihonium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 114,
+  "symbol": "Fl",
+  "name": "flerovium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 115,
+  "symbol": "Mc",
+  "name": "moscovium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 116,
+  "symbol": "Lv",
+  "name": "livermorium",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 117,
+  "symbol": "Ts",
+  "name": "tennessine",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ },
+ {
+  "z": 118,
+  "symbol": "Og",
+  "name": "oganesson",
+  "raw": "\u2014",
+  "parsed": {
+   "kind": "none"
+  }
+ }
+]
