@@ -117,3 +117,16 @@ The table already builds localized search tokens once per module and ships its o
 7. Use fresh traces to decide whether to pursue collision indexing, deeper numerical optimizations, archive storage changes or periodic-table tuning.
 
 Run the type checker, the repository regression suite and the WebWriter build for each relevant implementation commit. Keep performance counters separate from the reference data or scientific behavior. Update the baseline table after each batch with the measured effect and note the browser scenarios still awaiting local import.
+
+## Implementation progress on `perf/echem-startup`
+
+| Area | Landed work | Verification |
+| --- | --- | --- |
+| Canvas | Raw pointer coordinates outside Lit, explicit port-hover repaint, dirty depth ordering, active cables and vessels, upright surface reuse, one fitted resize paint | TypeScript and WebWriter build passed. Workspace camera tests passed. Confirm selection, cable ends, animations and drawer resizing in the editor. |
+| Chemistry | Shared pre-step bath views and post-step recorder/inspector speciation. Reuse dissociation constants, scratch weights and per-trial ligand caps. | The bridged-cell regression observes two fewer proton solves for the shared path versus separate conductivity and electrode calls, with identical meter readings. The non-browser solver benchmark below isolates residual evaluation. |
+| Charts | Pair revisions for sample updates, archived data and RC, cached joined projections and titration markers, single-chart range invalidation | History checks cover unrelated updates, same-time replacement, axis reversal, pruning and RC. Measure chart frames and allocations in WebWriter before adding append-only joins or visible-resolution projection. |
+| Palette and startup | Skip hidden or unchanged card generation, reuse amount formatters, build concentration recipes on input, lazily initialize the structure drawer and deduplicate optional metadata | TypeScript, unit tests including mocked concurrent lookups, and the bundled build passed. Check hidden-tab focus, scroll and drag behavior in WebWriter. |
+
+The residual benchmark ran four fixed conjugate families with 100 varying spectator charges in Node. Across seven alternating runs of 4,000 solves, median time fell from **308.2 ms to 43.2 ms**. All 100 returned proton concentrations matched exactly. This measures the solver kernel, without complex callbacks, recording or browser rendering.
+
+**Remaining checkpoints.** Use a local WebWriter import for the baseline and interactive smoke tests before combining changes with `main`. Endpoint-specific cable and wetting indexes, settled rope initialization and gesture coalescing still need canvas traces. Selective texture readiness needs tests for first palette use and remote layout restore. Chunk splitting and renderer teardown need package and multi-widget lifecycle verification. Pixi 8.22's installed event system uses a shared event ticker. A detach/rebind experiment needs to verify that removing one widget leaves the others responsive. Use the new chart trace to decide on projection and incremental storage, and keep the periodic-table pass separate.
