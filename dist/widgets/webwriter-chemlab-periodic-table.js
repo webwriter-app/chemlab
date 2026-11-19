@@ -3695,371 +3695,6 @@ var SlCard = class extends ShoelaceElement {
 };
 SlCard.styles = [component_styles_default, card_styles_default];
 
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.J7PLVEQM.js
-var details_styles_default = i`
-  :host {
-    display: block;
-  }
-
-  .details {
-    border: solid 1px var(--sl-color-neutral-200);
-    border-radius: var(--sl-border-radius-medium);
-    background-color: var(--sl-color-neutral-0);
-    overflow-anchor: none;
-  }
-
-  .details--disabled {
-    opacity: 0.5;
-  }
-
-  .details__header {
-    display: flex;
-    align-items: center;
-    border-radius: inherit;
-    padding: var(--sl-spacing-medium);
-    user-select: none;
-    -webkit-user-select: none;
-    cursor: pointer;
-  }
-
-  .details__header::-webkit-details-marker {
-    display: none;
-  }
-
-  .details__header:focus {
-    outline: none;
-  }
-
-  .details__header:focus-visible {
-    outline: var(--sl-focus-ring);
-    outline-offset: calc(1px + var(--sl-focus-ring-offset));
-  }
-
-  .details--disabled .details__header {
-    cursor: not-allowed;
-  }
-
-  .details--disabled .details__header:focus-visible {
-    outline: none;
-    box-shadow: none;
-  }
-
-  .details__summary {
-    flex: 1 1 auto;
-    display: flex;
-    align-items: center;
-  }
-
-  .details__summary-icon {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    transition: var(--sl-transition-medium) rotate ease;
-  }
-
-  .details--open .details__summary-icon {
-    rotate: 90deg;
-  }
-
-  .details--open.details--rtl .details__summary-icon {
-    rotate: -90deg;
-  }
-
-  .details--open slot[name='expand-icon'],
-  .details:not(.details--open) slot[name='collapse-icon'] {
-    display: none;
-  }
-
-  .details__body {
-    overflow: hidden;
-  }
-
-  .details__content {
-    display: block;
-    padding: var(--sl-spacing-medium);
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.K7JGTRV7.js
-var defaultAnimationRegistry = /* @__PURE__ */ new Map();
-var customAnimationRegistry = /* @__PURE__ */ new WeakMap();
-function ensureAnimation(animation) {
-  return animation != null ? animation : { keyframes: [], options: { duration: 0 } };
-}
-function getLogicalAnimation(animation, dir) {
-  if (dir.toLowerCase() === "rtl") {
-    return {
-      keyframes: animation.rtlKeyframes || animation.keyframes,
-      options: animation.options
-    };
-  }
-  return animation;
-}
-function setDefaultAnimation(animationName, animation) {
-  defaultAnimationRegistry.set(animationName, ensureAnimation(animation));
-}
-function getAnimation(el, animationName, options) {
-  const customAnimation = customAnimationRegistry.get(el);
-  if (customAnimation == null ? void 0 : customAnimation[animationName]) {
-    return getLogicalAnimation(customAnimation[animationName], options.dir);
-  }
-  const defaultAnimation = defaultAnimationRegistry.get(animationName);
-  if (defaultAnimation) {
-    return getLogicalAnimation(defaultAnimation, options.dir);
-  }
-  return {
-    keyframes: [],
-    options: { duration: 0 }
-  };
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.B4BZKR24.js
-function waitForEvent(el, eventName) {
-  return new Promise((resolve) => {
-    function done(event) {
-      if (event.target === el) {
-        el.removeEventListener(eventName, done);
-        resolve();
-      }
-    }
-    el.addEventListener(eventName, done);
-  });
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AJ3ENQ5C.js
-function animateTo(el, keyframes, options) {
-  return new Promise((resolve) => {
-    if ((options == null ? void 0 : options.duration) === Infinity) {
-      throw new Error("Promise-based animations must be finite.");
-    }
-    const animation = el.animate(keyframes, __spreadProps(__spreadValues({}, options), {
-      duration: prefersReducedMotion() ? 0 : options.duration
-    }));
-    animation.addEventListener("cancel", resolve, { once: true });
-    animation.addEventListener("finish", resolve, { once: true });
-  });
-}
-function parseDuration(delay) {
-  delay = delay.toString().toLowerCase();
-  if (delay.indexOf("ms") > -1) {
-    return parseFloat(delay);
-  }
-  if (delay.indexOf("s") > -1) {
-    return parseFloat(delay) * 1e3;
-  }
-  return parseFloat(delay);
-}
-function prefersReducedMotion() {
-  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-  return query.matches;
-}
-function stopAnimations(el) {
-  return Promise.all(
-    el.getAnimations().map((animation) => {
-      return new Promise((resolve) => {
-        animation.cancel();
-        requestAnimationFrame(resolve);
-      });
-    })
-  );
-}
-function shimKeyframesHeightAuto(keyframes, calculatedHeight) {
-  return keyframes.map((keyframe) => __spreadProps(__spreadValues({}, keyframe), {
-    height: keyframe.height === "auto" ? `${calculatedHeight}px` : keyframe.height
-  }));
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.2SZ4G2LK.js
-var SlDetails = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.localize = new LocalizeController2(this);
-    this.open = false;
-    this.disabled = false;
-  }
-  firstUpdated() {
-    this.body.style.height = this.open ? "auto" : "0";
-    if (this.open) {
-      this.details.open = true;
-    }
-    this.detailsObserver = new MutationObserver((changes) => {
-      for (const change of changes) {
-        if (change.type === "attributes" && change.attributeName === "open") {
-          if (this.details.open) {
-            this.show();
-          } else {
-            this.hide();
-          }
-        }
-      }
-    });
-    this.detailsObserver.observe(this.details, { attributes: true });
-  }
-  disconnectedCallback() {
-    var _a3;
-    super.disconnectedCallback();
-    (_a3 = this.detailsObserver) == null ? void 0 : _a3.disconnect();
-  }
-  handleSummaryClick(event) {
-    event.preventDefault();
-    if (!this.disabled) {
-      if (this.open) {
-        this.hide();
-      } else {
-        this.show();
-      }
-      this.header.focus();
-    }
-  }
-  handleSummaryKeyDown(event) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      if (this.open) {
-        this.hide();
-      } else {
-        this.show();
-      }
-    }
-    if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
-      event.preventDefault();
-      this.hide();
-    }
-    if (event.key === "ArrowDown" || event.key === "ArrowRight") {
-      event.preventDefault();
-      this.show();
-    }
-  }
-  async handleOpenChange() {
-    if (this.open) {
-      this.details.open = true;
-      const slShow = this.emit("sl-show", { cancelable: true });
-      if (slShow.defaultPrevented) {
-        this.open = false;
-        this.details.open = false;
-        return;
-      }
-      await stopAnimations(this.body);
-      const { keyframes, options } = getAnimation(this, "details.show", { dir: this.localize.dir() });
-      await animateTo(this.body, shimKeyframesHeightAuto(keyframes, this.body.scrollHeight), options);
-      this.body.style.height = "auto";
-      this.emit("sl-after-show");
-    } else {
-      const slHide = this.emit("sl-hide", { cancelable: true });
-      if (slHide.defaultPrevented) {
-        this.details.open = true;
-        this.open = true;
-        return;
-      }
-      await stopAnimations(this.body);
-      const { keyframes, options } = getAnimation(this, "details.hide", { dir: this.localize.dir() });
-      await animateTo(this.body, shimKeyframesHeightAuto(keyframes, this.body.scrollHeight), options);
-      this.body.style.height = "auto";
-      this.details.open = false;
-      this.emit("sl-after-hide");
-    }
-  }
-  /** Shows the details. */
-  async show() {
-    if (this.open || this.disabled) {
-      return void 0;
-    }
-    this.open = true;
-    return waitForEvent(this, "sl-after-show");
-  }
-  /** Hides the details */
-  async hide() {
-    if (!this.open || this.disabled) {
-      return void 0;
-    }
-    this.open = false;
-    return waitForEvent(this, "sl-after-hide");
-  }
-  render() {
-    const isRtl = this.localize.dir() === "rtl";
-    return x2`
-      <details
-        part="base"
-        class=${e9({
-      details: true,
-      "details--open": this.open,
-      "details--disabled": this.disabled,
-      "details--rtl": isRtl
-    })}
-      >
-        <summary
-          part="header"
-          id="header"
-          class="details__header"
-          role="button"
-          aria-expanded=${this.open ? "true" : "false"}
-          aria-controls="content"
-          aria-disabled=${this.disabled ? "true" : "false"}
-          tabindex=${this.disabled ? "-1" : "0"}
-          @click=${this.handleSummaryClick}
-          @keydown=${this.handleSummaryKeyDown}
-        >
-          <slot name="summary" part="summary" class="details__summary">${this.summary}</slot>
-
-          <span part="summary-icon" class="details__summary-icon">
-            <slot name="expand-icon">
-              <sl-icon library="system" name=${isRtl ? "chevron-left" : "chevron-right"}></sl-icon>
-            </slot>
-            <slot name="collapse-icon">
-              <sl-icon library="system" name=${isRtl ? "chevron-left" : "chevron-right"}></sl-icon>
-            </slot>
-          </span>
-        </summary>
-
-        <div class="details__body" role="region" aria-labelledby="header">
-          <slot part="content" id="content" class="details__content"></slot>
-        </div>
-      </details>
-    `;
-  }
-};
-SlDetails.styles = [component_styles_default, details_styles_default];
-SlDetails.dependencies = {
-  "sl-icon": SlIcon
-};
-__decorateClass([
-  e6(".details")
-], SlDetails.prototype, "details", 2);
-__decorateClass([
-  e6(".details__header")
-], SlDetails.prototype, "header", 2);
-__decorateClass([
-  e6(".details__body")
-], SlDetails.prototype, "body", 2);
-__decorateClass([
-  e6(".details__expand-icon-slot")
-], SlDetails.prototype, "expandIconSlot", 2);
-__decorateClass([
-  n7({ type: Boolean, reflect: true })
-], SlDetails.prototype, "open", 2);
-__decorateClass([
-  n7()
-], SlDetails.prototype, "summary", 2);
-__decorateClass([
-  n7({ type: Boolean, reflect: true })
-], SlDetails.prototype, "disabled", 2);
-__decorateClass([
-  watch("open", { waitUntilFirstUpdate: true })
-], SlDetails.prototype, "handleOpenChange", 1);
-setDefaultAnimation("details.show", {
-  keyframes: [
-    { height: "0", opacity: "0" },
-    { height: "auto", opacity: "1" }
-  ],
-  options: { duration: 250, easing: "linear" }
-});
-setDefaultAnimation("details.hide", {
-  keyframes: [
-    { height: "auto", opacity: "1" },
-    { height: "0", opacity: "0" }
-  ],
-  options: { duration: 250, easing: "linear" }
-});
-
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.LXDTFLWU.js
 var computedStyleMap = /* @__PURE__ */ new WeakMap();
 function getCachedComputedStyle(el) {
@@ -4638,6 +4273,90 @@ __decorateClass([
 __decorateClass([
   n7({ type: Boolean, reflect: true })
 ], SlIconButton.prototype, "disabled", 2);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.K7JGTRV7.js
+var defaultAnimationRegistry = /* @__PURE__ */ new Map();
+var customAnimationRegistry = /* @__PURE__ */ new WeakMap();
+function ensureAnimation(animation) {
+  return animation != null ? animation : { keyframes: [], options: { duration: 0 } };
+}
+function getLogicalAnimation(animation, dir) {
+  if (dir.toLowerCase() === "rtl") {
+    return {
+      keyframes: animation.rtlKeyframes || animation.keyframes,
+      options: animation.options
+    };
+  }
+  return animation;
+}
+function setDefaultAnimation(animationName, animation) {
+  defaultAnimationRegistry.set(animationName, ensureAnimation(animation));
+}
+function getAnimation(el, animationName, options) {
+  const customAnimation = customAnimationRegistry.get(el);
+  if (customAnimation == null ? void 0 : customAnimation[animationName]) {
+    return getLogicalAnimation(customAnimation[animationName], options.dir);
+  }
+  const defaultAnimation = defaultAnimationRegistry.get(animationName);
+  if (defaultAnimation) {
+    return getLogicalAnimation(defaultAnimation, options.dir);
+  }
+  return {
+    keyframes: [],
+    options: { duration: 0 }
+  };
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.B4BZKR24.js
+function waitForEvent(el, eventName) {
+  return new Promise((resolve) => {
+    function done(event) {
+      if (event.target === el) {
+        el.removeEventListener(eventName, done);
+        resolve();
+      }
+    }
+    el.addEventListener(eventName, done);
+  });
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AJ3ENQ5C.js
+function animateTo(el, keyframes, options) {
+  return new Promise((resolve) => {
+    if ((options == null ? void 0 : options.duration) === Infinity) {
+      throw new Error("Promise-based animations must be finite.");
+    }
+    const animation = el.animate(keyframes, __spreadProps(__spreadValues({}, options), {
+      duration: prefersReducedMotion() ? 0 : options.duration
+    }));
+    animation.addEventListener("cancel", resolve, { once: true });
+    animation.addEventListener("finish", resolve, { once: true });
+  });
+}
+function parseDuration(delay) {
+  delay = delay.toString().toLowerCase();
+  if (delay.indexOf("ms") > -1) {
+    return parseFloat(delay);
+  }
+  if (delay.indexOf("s") > -1) {
+    return parseFloat(delay) * 1e3;
+  }
+  return parseFloat(delay);
+}
+function prefersReducedMotion() {
+  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+  return query.matches;
+}
+function stopAnimations(el) {
+  return Promise.all(
+    el.getAnimations().map((animation) => {
+      return new Promise((resolve) => {
+        animation.cancel();
+        requestAnimationFrame(resolve);
+      });
+    })
+  );
+}
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.6SBTOKGT.js
 var SlDialog = class extends ShoelaceElement {
@@ -10781,6 +10500,8 @@ var EN = {
   detailsLabel: "Element details",
   detailsEmpty: "Select an element to see its details.",
   detailsHint: "Values refer to the neutral atom.",
+  detailsExpand: "Show all details",
+  detailsCollapse: "Show less",
   fieldGroup: "Group",
   fieldPeriod: "Period",
   fieldFamily: "Family",
@@ -10862,6 +10583,8 @@ var DE = {
   detailsLabel: "Elementdaten",
   detailsEmpty: "W\xE4hle ein Element, um seine Daten zu sehen.",
   detailsHint: "Die Werte gelten f\xFCr das neutrale Atom.",
+  detailsExpand: "Alle Daten anzeigen",
+  detailsCollapse: "Weniger anzeigen",
   fieldGroup: "Gruppe",
   fieldPeriod: "Periode",
   fieldFamily: "Stoffklasse",
@@ -10969,7 +10692,7 @@ function numberText(value, language) {
 }
 function temperatureText(kelvin, language) {
   const celsius = celsiusFromKelvin(kelvin);
-  return `${numberText(kelvin, language)} K (${numberText(celsius, language)} \xB0C)`;
+  return `${numberText(kelvin, language)}\xA0K (${numberText(celsius, language)}\xA0\xB0C)`;
 }
 function stateText(state, t8) {
   switch (state) {
@@ -11075,23 +10798,20 @@ function detailRows(element, language, temperatureK = CONDITIONS.temperatureK) {
   rows.push({
     key: "melting",
     label: t8.fieldMelting,
-    section: "properties",
-    secondary: true,
+    section: "temperatures",
     ...temperatureRow(element.melting, language, t8)
   });
   rows.push({
     key: "boiling",
     label: t8.fieldBoiling,
-    section: "properties",
-    secondary: true,
+    section: "temperatures",
     ...temperatureRow(element.boiling, language, t8)
   });
   if (element.sublimation.status !== "unavailable") {
     rows.push({
       key: "sublimation",
       label: t8.fieldSublimation,
-      section: "properties",
-      secondary: true,
+      section: "temperatures",
       ...temperatureRow(element.sublimation, language, t8)
     });
   }
@@ -11124,6 +10844,10 @@ function detailRows(element, language, temperatureK = CONDITIONS.temperatureK) {
     section: "structure"
   });
   return rows;
+}
+function keyRows(rows, mode) {
+  const answer = mode === "discovery" ? "discovery" : "phase";
+  return rows.filter((row) => row.key === "weight" || row.key === answer);
 }
 function temperatureRow(value, language, t8) {
   if (value.status === "unavailable") return { value: t8.valueUnavailable };
@@ -11187,9 +10911,6 @@ var periodicTableStyles = i`
 		background: var(--sl-color-neutral-0, #ffffff);
 
 		--pt-cell-height: 3rem;
-		/* The detail card spans three rows of the table and the two gaps between
-		   them, so its height follows the cell height instead of its content. */
-		--pt-details-height: calc(3 * var(--pt-cell-height) + 4px);
 		--pt-details-border: 1px;
 		--pt-cell-bar: 0.22rem;
 		--pt-gutter: 1.5rem;
@@ -11206,6 +10927,9 @@ var periodicTableStyles = i`
 		   visual language as the rest of ChemLab. */
 		--pt-control-shadow: 0 1px 3px rgb(0 0 0 / 14%);
 		--pt-panel-shadow: 0 2px 8px rgb(0 0 0 / 9%);
+		/* The open detail card covers the cells below it, so it needs a shadow
+		   that lifts it off the table instead of one that only softens an edge. */
+		--pt-overlay-shadow: 0 10px 26px rgb(0 0 0 / 20%), 0 2px 6px rgb(0 0 0 / 10%);
 
 		--pt-alkali-metal: #f2a3a3;
 		--pt-alkaline-earth-metal: #f7c99a;
@@ -11383,11 +11107,12 @@ var periodicTableStyles = i`
 	}
 
 	/* The detail card is a grid item of the table, so it fills the free block
-	   above the transition metals and never covers a cell. It is also the query
-	   container of the card, so the card can stack its columns when the block
-	   gets narrow. */
+	   above the transition metals and never covers a cell. The slot is only the
+	   box: the card inside it is positioned, so its content can never stretch the
+	   rows it spans. The slot is also the query container of the card, so the card
+	   can drop the conditions when the block gets narrow. */
 	.details-slot {
-		display: grid;
+		position: relative;
 		grid-row: var(--pt-row) / span var(--pt-row-span, 1);
 		grid-column: var(--pt-column) / span var(--pt-column-span, 1);
 		container-type: inline-size;
@@ -11766,18 +11491,41 @@ var periodicTableStyles = i`
 	}
 
 	.list-details {
+		position: relative;
 		margin: 0.25rem 0 0.5rem;
 	}
 
+	/* In the list the card is part of the row instead of a grid item, so it grows
+	   with its content and the open card stays in the flow. */
+	.list-details .details-shell {
+		position: static;
+	}
+
 	/* The detail card is a Shoelace card with the same white surface, subtle
-	   outline and soft shadow as the object info panel of the lab widget. It
-	   fills the free block of the table, so its height is pinned to the three rows
-	   it spans: a card that grows with its content would stretch those rows and
-	   leave the periods with uneven cells. A long element scrolls inside the body
-	   instead. */
-	.details-card {
-		height: var(--pt-details-height);
+	   outline and soft shadow as the object info panel of the lab widget. The
+	   shell is the positioned box inside the slot: collapsed it fills the block
+	   above the transition metals, so the card is exactly as tall as the three
+	   rows it spans and the periods around it keep their cells. */
+	.details-shell {
+		position: absolute;
+		inset: 0;
+		display: flex;
 		min-width: 0;
+	}
+
+	/* The open card grows downwards from the top of the block and covers the
+	   cells below it. The stronger shadow lifts it off the table, so the overlay
+	   reads as a layer and not as a taller cell. */
+	.details-shell.is-expanded {
+		inset: 0 0 auto 0;
+		height: auto;
+		z-index: 6;
+	}
+
+	.details-card {
+		flex: 1;
+		min-width: 0;
+		min-height: 0;
 		--padding: 0;
 		--border-color: var(--sl-color-neutral-200, #e4e4e7);
 		--border-width: var(--pt-details-border);
@@ -11789,6 +11537,11 @@ var periodicTableStyles = i`
 		height: 100%;
 		overflow: hidden;
 		box-shadow: var(--pt-panel-shadow);
+	}
+
+	.details-shell.is-expanded .details-card::part(base) {
+		height: auto;
+		box-shadow: var(--pt-overlay-shadow);
 	}
 
 	/* The header carries the identity of the element in one row: the coloured
@@ -11861,9 +11614,9 @@ var periodicTableStyles = i`
 		color: var(--pt-ink-soft);
 	}
 
-	/* The body is the slot itself, so the two columns are its flex items. It takes
-	   the rest of the fixed card height and scrolls, which keeps the card at the
-	   height of the block it fills. */
+	/* The body holds the key rows and, once the card is open, the sections below
+	   them. Collapsed it takes the rest of the fixed card height and scrolls, so a
+	   long value never pushes the card past the block it fills. */
 	.details-card::part(body) {
 		display: flex;
 		flex: 1;
@@ -11872,46 +11625,76 @@ var periodicTableStyles = i`
 		overflow: auto;
 	}
 
-	.details-sections {
-		display: flex;
-		align-items: stretch;
-		gap: 0.6rem;
-		width: 100%;
-		min-width: 0;
+	/* The open card grows with its content instead of scrolling, and keeps room
+	   for the toggle in its bottom-right corner. */
+	.details-shell.is-expanded .details-card::part(body) {
+		flex: 0 0 auto;
+		overflow: visible;
+		padding-bottom: 1.9rem;
 	}
 
-	.details-column {
+	/* The body is the single flex item of the card body, so it has to take the full
+	   width itself: the key rows and the sections below them stack inside it. */
+	.details-body {
 		display: flex;
-		flex: 1 1 0;
+		flex: 1;
 		flex-direction: column;
-		gap: 0.2rem;
 		min-width: 0;
 	}
 
-	.details-divider {
-		--spacing: 0;
-		--color: var(--pt-border);
+	/* The key rows answer the two questions the table asks: how heavy the element
+	   is, and what the current mode says about it. They are the only rows the
+	   collapsed card shows, so they get the readable size. */
+	.details-key .details-row {
+		font-size: 0.8rem;
+		line-height: 1.4;
 	}
 
-	/* A rule separates the two sections of a column, so the headings do not have
-	   to carry the whole structure on their own. */
-	.details-rule {
-		--spacing: 0.1rem;
-		--color: var(--pt-border);
+	/* The open card adds the remaining sections below the key rows, in as many
+	   columns as the block allows: side by side while there is room, stacked when
+	   the card is narrow. */
+	.details-more {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+		gap: 0.45rem 0.9rem;
+		align-items: start;
+		margin-top: 0.4rem;
+		padding-top: 0.4rem;
+		border-top: 1px solid var(--pt-border);
 	}
 
 	.details-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
 		min-width: 0;
 	}
 
+	/* The electron configuration and the shell counts are long values that wrap
+	   badly in a third of the card, so the structure section takes the full width
+	   and starts a row of its own. */
+	.details-section-structure {
+		grid-column: 1 / -1;
+	}
+
+	/* The section headings are tags, so they read as labels of the card instead of
+	   as another line of running text. The tag keeps the width of its text; a
+	   stretched tag would read as a divider bar. */
 	.details-heading {
-		margin: 0 0 2px;
-		font-size: 0.62rem;
+		align-self: flex-start;
+	}
+
+	.details-heading::part(base) {
+		height: auto;
+		padding: 0 0.3rem;
+		border-color: var(--pt-border);
+		background: var(--pt-inset);
+		color: var(--pt-ink-soft);
+		font-size: 0.58rem;
 		font-weight: 600;
-		line-height: 1.25;
+		line-height: 1.45;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		color: var(--pt-ink-soft);
 	}
 
 	.details-rows {
@@ -11977,37 +11760,39 @@ var periodicTableStyles = i`
 		background: var(--pt-state-unknown);
 	}
 
-	/* Secondary rows of a section — the thermal points — sit in a collapsed
-	   sl-details, so the key values stay visible in the fixed card height. The
-	   summary reads like a section heading, not like a boxed control. */
-	.details-secondary::part(base) {
-		border: none;
-		border-radius: 0;
-		background: transparent;
+	/* The toggle sits in the bottom-right corner of the card, where the eye ends
+	   after the key rows. It is a compact icon button like the canvas controls, and
+	   its arrow turns over while the card is open. */
+	.details-toggle {
+		position: absolute;
+		right: 4px;
+		bottom: 4px;
 	}
 
-	.details-secondary::part(header) {
+	.details-toggle::part(base) {
+		width: 1.35rem;
+		height: 1.35rem;
 		min-height: 0;
-		padding: 1px 0;
-		border-radius: 0;
-	}
-
-	.details-secondary::part(summary) {
-		font-size: 0.62rem;
-		font-weight: 600;
-		line-height: 1.25;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
+		padding: 0;
+		border-color: var(--pt-border);
+		background: var(--pt-surface);
+		box-shadow: var(--pt-control-shadow);
 		color: var(--pt-ink-soft);
 	}
 
-	.details-secondary::part(summary-icon) {
-		font-size: 0.6rem;
-		color: var(--pt-ink-soft);
+	.details-toggle::part(label) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
 	}
 
-	.details-secondary::part(content) {
-		padding: 0 0 0 0.2rem;
+	.details-toggle svg {
+		transition: transform 120ms ease;
+	}
+
+	.details-shell.is-expanded .details-toggle svg {
+		transform: rotate(180deg);
 	}
 
 	.details-qualifier::part(base) {
@@ -12040,32 +11825,11 @@ var periodicTableStyles = i`
 		color: var(--pt-ink-soft);
 	}
 
-	/* A narrow card stacks the two columns, because two half-width columns would
-	   break every value onto a second line. The threshold is the width of the card
-	   itself, not of the widget: the card spans ten of the eighteen columns, so it
-	   is already too narrow for two columns while the table still has room. The
-	   card then grows with its content, which keeps the cells of the periods even
-	   instead of squeezing the stacked rows into the height of three rows. */
-	@container (max-width: 28rem) {
-		.details-card {
-			height: auto;
-		}
-
-		.details-card::part(base) {
-			height: auto;
-			overflow: visible;
-		}
-
-		.details-card::part(body) {
-			flex: 0 0 auto;
-			overflow: visible;
-		}
-
-		.details-sections {
-			flex-direction: column;
-		}
-
-		.details-divider {
+	/* A narrow card drops the conditions from the header: the temperature is set
+	   by the slider above the table, so the line is the first thing that can go
+	   without losing a value. */
+	@container (max-width: 22rem) {
+		.details-conditions {
 			display: none;
 		}
 	}
@@ -12335,6 +12099,13 @@ setBasePath("@shoelace-style/shoelace/dist");
 var VIEWS = ["auto", "table", "list"];
 var LIST_BREAKPOINT = 680;
 var STATES = ["solid", "liquid", "gas", "unknown"];
+var DETAIL_SECTIONS = [
+  { section: "properties", label: "sectionProperties" },
+  { section: "temperatures", label: "sectionTemperatures" },
+  { section: "position", label: "sectionPosition" },
+  { section: "history", label: "sectionHistory" },
+  { section: "structure", label: "sectionStructure" }
+];
 var INFO_ICON = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#3f3f46" stroke-width="1.3"/><circle cx="8" cy="4.9" r=".95" fill="#3f3f46"/><rect x="7.15" y="6.6" width="1.7" height="5.1" rx=".85" fill="#3f3f46"/></svg>'
 )}`;
@@ -12359,6 +12130,11 @@ var RESET_ICON = x2`
 		<path d="M13.6 8a5.6 5.6 0 1 1-1.64-3.96"/><path d="M13.6 2.6v2.6h-2.6"/>
 	</svg>
 `;
+var CHEVRON_ICON = x2`
+	<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M4 6.2 8 10.2l4-4"/>
+	</svg>
+`;
 function modeText(mode, t8) {
   switch (mode) {
     case "off":
@@ -12381,7 +12157,7 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, matches_fn, selectFromUser_fn, clearFromUser_fn, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _openInfo, _onInfoHide, jumpToSeries_fn, focusElement_fn, reset_fn, _onQueryInput, _onSearchKeydown, _onCategoryChange, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderToolbar_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailColumn_fn, renderDetailRow_fn, renderInfo_fn;
+var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, matches_fn, selectFromUser_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _openInfo, _onInfoHide, jumpToSeries_fn, focusElement_fn, reset_fn, _onQueryInput, _onSearchKeydown, _onCategoryChange, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderToolbar_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
 _ChemLabPeriodicTable_decorators = [t2("webwriter-chemlab-periodic-table")];
 var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a2) {
   constructor() {
@@ -12406,6 +12182,26 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     __privateAdd(this, _restoreFocusPending, false);
     __privateAdd(this, _mode, DEFAULT_MODE_STATE);
     __privateAdd(this, _infoOpen, false);
+    __privateAdd(this, _detailsExpanded, false);
+    /** Opens or closes the full detail card. */
+    __privateAdd(this, _toggleDetails, () => {
+      __privateSet(this, _detailsExpanded, !__privateGet(this, _detailsExpanded));
+      this.requestUpdate();
+    });
+    /**
+     * Closes the open detail card on Escape.
+     *
+     * The card covers the cells below it, so the key that closes an overlay has to
+     * work here as well. Focus stays on the toggle, which is still in the card.
+     *
+     * @param event - Key event of the card.
+     */
+    __privateAdd(this, _onDetailsKeydown, (event) => {
+      if (event.key !== "Escape" || !__privateGet(this, _detailsExpanded)) return;
+      event.stopPropagation();
+      __privateSet(this, _detailsExpanded, false);
+      this.requestUpdate();
+    });
     /** Reads the temperature slider, which works in degrees Celsius. */
     __privateAdd(this, _onTemperatureInput, (event) => {
       const value = Number(event.target.value ?? "");
@@ -12591,6 +12387,7 @@ _focusBeforeLayout = new WeakMap();
 _restoreFocusPending = new WeakMap();
 _mode = new WeakMap();
 _infoOpen = new WeakMap();
+_detailsExpanded = new WeakMap();
 _ChemLabPeriodicTable_instances = new WeakSet();
 /** Watches every ancestor the language walk visits for a `lang` change. */
 observeLanguage_fn = function() {
@@ -12664,19 +12461,26 @@ matches_fn = function() {
 /**
  * Selects an element after a user action and reports the change.
  *
+ * A new element starts with the collapsed card: the open card covers the
+ * cells below it, so it would hide the table the learner is browsing.
+ *
  * @param atomicNumber - Atomic number the user picked.
  */
 selectFromUser_fn = function(atomicNumber) {
   if (!__privateGet(this, _selection).select(atomicNumber)) return;
+  __privateSet(this, _detailsExpanded, false);
   this.requestUpdate();
   __privateMethod(this, _ChemLabPeriodicTable_instances, dispatchSelection_fn).call(this);
 };
 /** Clears the selection after a user action and reports the change. */
 clearFromUser_fn = function() {
   if (!__privateGet(this, _selection).clear()) return;
+  __privateSet(this, _detailsExpanded, false);
   this.requestUpdate();
   __privateMethod(this, _ChemLabPeriodicTable_instances, dispatchSelection_fn).call(this);
 };
+_toggleDetails = new WeakMap();
+_onDetailsKeydown = new WeakMap();
 /** Dispatches the current selection once, composed and bubbling. */
 dispatchSelection_fn = function() {
   this.dispatchEvent(new CustomEvent(ELEMENT_SELECTION_EVENT, {
@@ -13249,104 +13053,99 @@ renderPrintOverview_fn = function(t8, language, element) {
  *
  * The card is a Shoelace card, so it shares the surface and the border of the
  * rest of the widget. Its header carries the identity of the element in one
- * row, and its body splits the rows into two columns of labelled sections,
- * separated by Shoelace dividers. It has to stay compact, because it sits in
- * the free block of the table and must not push the periods apart.
+ * row. Below it the card shows the key rows — the weight and the answer of the
+ * current mode — and stops there: the free block of the table is only three
+ * rows tall, and a card that grew with its content would stretch the periods
+ * around it. The toggle in the corner opens the rest as an overlay above the
+ * cells.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
  * @param element - Selected element, or `null` for the empty card.
- * @returns The detail card.
+ * @returns The detail card with its shell.
  */
 renderDetails_fn = function(t8, language, element) {
   if (!element) {
     return x2`
-				<sl-card class="details-card details-card-empty">
-					<div class="details-empty">
-						<sl-icon class="details-empty-icon" src=${POINTER_ICON}></sl-icon>
-						<p>${t8.detailsEmpty}</p>
-					</div>
-				</sl-card>
+				<div class="details-shell">
+					<sl-card class="details-card details-card-empty">
+						<div class="details-empty">
+							<sl-icon class="details-empty-icon" src=${POINTER_ICON}></sl-icon>
+							<p>${t8.detailsEmpty}</p>
+						</div>
+					</sl-card>
+				</div>
 			`;
   }
   const rows = detailRows(element, language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get));
+  const key = keyRows(rows, __privateGet(this, _mode).mode);
+  const rest = rows.filter((row) => !key.includes(row));
   const name = element.names[language];
-  const left = [
-    { label: t8.sectionProperties, section: "properties" },
-    { label: t8.sectionHistory, section: "history" }
-  ];
-  const right = [
-    { label: t8.sectionPosition, section: "position" },
-    { label: t8.sectionStructure, section: "structure" }
-  ];
+  const expanded = __privateGet(this, _detailsExpanded);
   return x2`
-			<sl-card class="details-card category-${categoryOf(element.atomicNumber) ?? "unknown"}">
-				<div slot="header" class="details-head">
-					<span class="details-thumb">${element.symbol}</span>
-					<h5 class="details-title" title=${name}>${name}</h5>
-					<sl-badge class="details-number" variant="neutral" pill>
-						${element.atomicNumber}
-					</sl-badge>
-					<sl-tag class="details-family" size="small" variant="neutral">
-						${categoryText(element, language)}
-					</sl-tag>
-					<sl-tooltip content=${t8.detailsHint} hoist>
-						<span class="details-conditions">${conditionsText(language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get))}</span>
-					</sl-tooltip>
-				</div>
-				<div class="details-sections">
-					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailColumn_fn).call(this, t8, left, rows)}
-					<sl-divider class="details-divider" vertical></sl-divider>
-					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailColumn_fn).call(this, t8, right, rows)}
-				</div>
-			</sl-card>
+			<div
+				class="details-shell ${expanded ? "is-expanded" : ""}"
+				@keydown=${__privateGet(this, _onDetailsKeydown)}
+			>
+				<sl-card class="details-card category-${categoryOf(element.atomicNumber) ?? "unknown"}">
+					<div slot="header" class="details-head">
+						<span class="details-thumb">${element.symbol}</span>
+						<h5 class="details-title" title=${name}>${name}</h5>
+						<sl-badge class="details-number" variant="neutral" pill>
+							${element.atomicNumber}
+						</sl-badge>
+						<sl-tag class="details-family" size="small" variant="neutral">
+							${categoryText(element, language)}
+						</sl-tag>
+						<sl-tooltip content=${t8.detailsHint} hoist>
+							<span class="details-conditions">${conditionsText(language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get))}</span>
+						</sl-tooltip>
+					</div>
+					<div class="details-body">
+						<dl class="details-rows details-key">
+							${key.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t8, row))}
+						</dl>
+						${expanded ? x2`<div class="details-more">${__privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailSections_fn).call(this, t8, rest)}</div>` : null}
+					</div>
+				</sl-card>
+				<sl-button
+					class="details-toggle"
+					size="small"
+					title=${expanded ? t8.detailsCollapse : t8.detailsExpand}
+					aria-label=${expanded ? t8.detailsCollapse : t8.detailsExpand}
+					aria-expanded=${expanded}
+					@click=${__privateGet(this, _toggleDetails)}
+				>${CHEVRON_ICON}</sl-button>
+			</div>
 		`;
 };
 /**
- * Renders one column of the detail card.
+ * Renders the sections the expanded card adds.
  *
- * A column holds one or two sections, and a divider separates them, so the
- * headings do not have to carry the whole structure on their own. A section
- * without a row is dropped, which keeps the card free of empty headings.
- * Secondary rows of a section — the thermal points of the properties — sit
- * in a collapsed `sl-details`, so the key values stay visible in the fixed
- * three-row height and the rest is one click away.
+ * A section without a row is dropped, which keeps the card free of empty
+ * headings: the state row moves into the key rows in the temperature mode and
+ * the discovery row in the discovery mode, so the section it came from can
+ * become empty.
  *
  * @param t - Interface strings.
- * @param entries - Sections of the column in display order.
- * @param rows - All rows of the card.
- * @returns The column, or nothing when none of its sections has a row.
+ * @param rows - Rows the key rows do not already show.
+ * @returns The sections in display order.
  */
-renderDetailColumn_fn = function(t8, entries, rows) {
-  const sections = entries.map((entry) => ({ entry, own: rows.filter((row) => row.section === entry.section) })).filter(({ own }) => own.length > 0);
-  if (sections.length === 0) return null;
-  return x2`
-			<div class="details-column">
-				${sections.map(
-    ({ entry, own }, index) => {
-      const primary = own.filter((row) => !row.secondary);
-      const secondary = own.filter((row) => row.secondary);
-      const summary = entry.section === "properties" ? t8.sectionTemperatures : entry.label;
-      return x2`
-							${index > 0 ? x2`<sl-divider class="details-rule"></sl-divider>` : null}
-							<section class="details-section">
-								<h6 class="details-heading">${entry.label}</h6>
-								<dl class="details-rows">
-									${primary.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t8, row))}
-								</dl>
-								${secondary.length === 0 ? null : x2`
-									<sl-details class="details-secondary" summary=${summary}>
-										<dl class="details-rows">
-											${secondary.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t8, row))}
-										</dl>
-									</sl-details>
-								`}
-							</section>
-						`;
-    }
-  )}
-			</div>
-		`;
+renderDetailSections_fn = function(t8, rows) {
+  return DETAIL_SECTIONS.map((entry) => {
+    const own = rows.filter((row) => row.section === entry.section);
+    if (own.length === 0) return null;
+    return x2`
+				<section class="details-section details-section-${entry.section}">
+					<sl-tag class="details-heading" size="small" variant="neutral">
+						${t8[entry.label]}
+					</sl-tag>
+					<dl class="details-rows">
+						${own.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t8, row))}
+					</dl>
+				</section>
+			`;
+  });
 };
 /**
  * Renders one row of the detail card.
@@ -13470,7 +13269,6 @@ __publicField(_ChemLabPeriodicTable, "scopedElements", {
   "sl-badge": SlBadge,
   "sl-button": SlButton,
   "sl-card": SlCard,
-  "sl-details": SlDetails,
   "sl-dialog": SlDialog,
   "sl-divider": SlDivider,
   "sl-icon": SlIcon,

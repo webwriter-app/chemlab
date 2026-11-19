@@ -6,6 +6,7 @@ import {
 	conditionsText,
 	detailRows,
 	discoveryText,
+	keyRows,
 	groupText,
 	sourceFieldText,
 	sourceList,
@@ -54,17 +55,35 @@ test("every row belongs to one section of the card", () => {
 	assert.equal(sections.get("block"), "position");
 	assert.equal(sections.get("weight"), "properties");
 	assert.equal(sections.get("phase"), "properties");
-	assert.equal(sections.get("melting"), "properties");
-	assert.equal(sections.get("boiling"), "properties");
+	assert.equal(sections.get("melting"), "temperatures");
+	assert.equal(sections.get("boiling"), "temperatures");
 	assert.equal(sections.get("discovery"), "history");
 	assert.equal(sections.get("configuration"), "structure");
 	assert.equal(sections.get("shells"), "structure");
 	for (const entry of ELEMENTS) {
 		for (const row of detailRows(entry, "en")) {
 			assert.ok(
-				["header", "position", "properties", "history", "structure"].includes(row.section),
+				["header", "position", "properties", "temperatures", "history", "structure"].includes(
+					row.section,
+				),
 				`${entry.symbol} ${row.key}`,
 			);
+		}
+	}
+});
+
+test("the collapsed card shows the weight and the answer of the mode", () => {
+	const keys = (atomicNumber: number, mode: "off" | "temperature" | "discovery") =>
+		keyRows(detailRows(element(atomicNumber), "en"), mode).map((row) => row.key);
+	assert.deepEqual(keys(26, "off"), ["weight", "phase"]);
+	assert.deepEqual(keys(26, "temperature"), ["weight", "phase"]);
+	assert.deepEqual(keys(26, "discovery"), ["weight", "discovery"]);
+	for (const entry of ELEMENTS) {
+		for (const mode of ["off", "temperature", "discovery"] as const) {
+			const rows = detailRows(entry, "en");
+			const key = keyRows(rows, mode);
+			assert.equal(key.length, 2, `${entry.symbol} ${mode}`);
+			for (const row of key) assert.ok(rows.includes(row), `${entry.symbol} ${row.key}`);
 		}
 	}
 });
@@ -149,9 +168,9 @@ test("the conditions line names the temperature and the fixed pressure", () => {
 });
 
 test("a temperature is rendered in kelvin with its Celsius equivalent", () => {
-	assert.equal(temperatureText(332, "en"), "332 K (58.85 °C)");
-	assert.equal(temperatureText(332, "de"), "332 K (58,85 °C)");
-	assert.equal(temperatureText(0, "en"), "0 K (-273.15 °C)");
+	assert.equal(temperatureText(332, "en"), "332\u00A0K (58.85\u00A0°C)");
+	assert.equal(temperatureText(332, "de"), "332\u00A0K (58,85\u00A0°C)");
+	assert.equal(temperatureText(0, "en"), "0\u00A0K (-273.15\u00A0°C)");
 });
 
 test("the state row follows the conditions the card names", () => {

@@ -18,11 +18,23 @@ import {
 	type ElementReference,
 	type PeriodicTableSource,
 } from "./element-reference";
-import { celsiusFromKelvin, matterState, type MatterState } from "./phase";
+import { celsiusFromKelvin, matterState, type MatterState, type TableMode } from "./phase";
 import { format, strings, type Language, type Strings } from "./strings";
 
-/** Section of the detail card a row belongs to. */
-export type DetailSection = "header" | "position" | "properties" | "history" | "structure";
+/**
+ * Section of the detail card a row belongs to.
+ *
+ * The order of the members is the order the card shows them in: the key rows
+ * come first, and `temperatures` opens the part that only the expanded card
+ * reveals.
+ */
+export type DetailSection =
+	| "header"
+	| "properties"
+	| "temperatures"
+	| "position"
+	| "history"
+	| "structure";
 
 /** One row of the detail card. */
 export interface DetailRow {
@@ -38,8 +50,6 @@ export interface DetailRow {
 	readonly qualifier?: string;
 	/** State the row is about, so the card can draw its colour next to the value. */
 	readonly swatch?: MatterState;
-	/** Whether the row sits in the collapsed part of its section instead of directly under the heading. */
-	readonly secondary?: boolean;
 }
 
 /**
@@ -77,13 +87,17 @@ function numberText(value: number, language: Language): string {
 /**
  * Renders a temperature in kelvin with its Celsius equivalent.
  *
+ * The number and its unit are joined by a non-breaking space, so a narrow card
+ * wraps the Celsius value as a whole instead of leaving the degree sign alone on
+ * the next line.
+ *
  * @param kelvin - Temperature in kelvin.
  * @param language - Interface language.
  * @returns The temperature, for example `54,36 K (−218,79 °C)`.
  */
 export function temperatureText(kelvin: number, language: Language): string {
 	const celsius = celsiusFromKelvin(kelvin);
-	return `${numberText(kelvin, language)} K (${numberText(celsius, language)} °C)`;
+	return `${numberText(kelvin, language)}\u00A0K (${numberText(celsius, language)}\u00A0°C)`;
 }
 
 /**
@@ -251,29 +265,26 @@ export function detailRows(
 			...(element.phase.status === "predicted" ? { qualifier: t.valuePredicted } : {}),
 		});
 	}
-	// The thermal rows are secondary: the card shows them inside a collapsed
-	// `sl-details`, because the weight and the state answer the common question
-	// and the fixed three-row height leaves no room for every point.
+	// The thermal rows form their own section: the collapsed card ends before
+	// them, because the weight and the state answer the common question and the
+	// free block of the table only holds a few lines.
 	rows.push({
 		key: "melting",
 		label: t.fieldMelting,
-		section: "properties",
-		secondary: true,
+		section: "temperatures",
 		...temperatureRow(element.melting, language, t),
 	});
 	rows.push({
 		key: "boiling",
 		label: t.fieldBoiling,
-		section: "properties",
-		secondary: true,
+		section: "temperatures",
 		...temperatureRow(element.boiling, language, t),
 	});
 	if (element.sublimation.status !== "unavailable") {
 		rows.push({
 			key: "sublimation",
 			label: t.fieldSublimation,
-			section: "properties",
-			secondary: true,
+			section: "temperatures",
 			...temperatureRow(element.sublimation, language, t),
 		});
 	}
@@ -306,6 +317,23 @@ export function detailRows(
 		section: "structure",
 	});
 	return rows;
+}
+
+/**
+ * Picks the rows the collapsed card shows.
+ *
+ * The first row is always the standard atomic weight. The second one answers the
+ * mode the table is in: the state at the chosen temperature, or the year the
+ * element became known. The expanded card leaves these rows out of its sections,
+ * so no value appears twice in one card.
+ *
+ * @param rows - Rows of the card.
+ * @param mode - Mode of the table.
+ * @returns The key rows in display order.
+ */
+export function keyRows(rows: readonly DetailRow[], mode: TableMode): readonly DetailRow[] {
+	const answer = mode === "discovery" ? "discovery" : "phase";
+	return rows.filter((row) => row.key === "weight" || row.key === answer);
 }
 
 /**

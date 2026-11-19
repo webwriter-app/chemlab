@@ -23,9 +23,6 @@ export const periodicTableStyles = css`
 		background: var(--sl-color-neutral-0, #ffffff);
 
 		--pt-cell-height: 3rem;
-		/* The detail card spans three rows of the table and the two gaps between
-		   them, so its height follows the cell height instead of its content. */
-		--pt-details-height: calc(3 * var(--pt-cell-height) + 4px);
 		--pt-details-border: 1px;
 		--pt-cell-bar: 0.22rem;
 		--pt-gutter: 1.5rem;
@@ -42,6 +39,9 @@ export const periodicTableStyles = css`
 		   visual language as the rest of ChemLab. */
 		--pt-control-shadow: 0 1px 3px rgb(0 0 0 / 14%);
 		--pt-panel-shadow: 0 2px 8px rgb(0 0 0 / 9%);
+		/* The open detail card covers the cells below it, so it needs a shadow
+		   that lifts it off the table instead of one that only softens an edge. */
+		--pt-overlay-shadow: 0 10px 26px rgb(0 0 0 / 20%), 0 2px 6px rgb(0 0 0 / 10%);
 
 		--pt-alkali-metal: #f2a3a3;
 		--pt-alkaline-earth-metal: #f7c99a;
@@ -219,11 +219,12 @@ export const periodicTableStyles = css`
 	}
 
 	/* The detail card is a grid item of the table, so it fills the free block
-	   above the transition metals and never covers a cell. It is also the query
-	   container of the card, so the card can stack its columns when the block
-	   gets narrow. */
+	   above the transition metals and never covers a cell. The slot is only the
+	   box: the card inside it is positioned, so its content can never stretch the
+	   rows it spans. The slot is also the query container of the card, so the card
+	   can drop the conditions when the block gets narrow. */
 	.details-slot {
-		display: grid;
+		position: relative;
 		grid-row: var(--pt-row) / span var(--pt-row-span, 1);
 		grid-column: var(--pt-column) / span var(--pt-column-span, 1);
 		container-type: inline-size;
@@ -602,18 +603,41 @@ export const periodicTableStyles = css`
 	}
 
 	.list-details {
+		position: relative;
 		margin: 0.25rem 0 0.5rem;
 	}
 
+	/* In the list the card is part of the row instead of a grid item, so it grows
+	   with its content and the open card stays in the flow. */
+	.list-details .details-shell {
+		position: static;
+	}
+
 	/* The detail card is a Shoelace card with the same white surface, subtle
-	   outline and soft shadow as the object info panel of the lab widget. It
-	   fills the free block of the table, so its height is pinned to the three rows
-	   it spans: a card that grows with its content would stretch those rows and
-	   leave the periods with uneven cells. A long element scrolls inside the body
-	   instead. */
-	.details-card {
-		height: var(--pt-details-height);
+	   outline and soft shadow as the object info panel of the lab widget. The
+	   shell is the positioned box inside the slot: collapsed it fills the block
+	   above the transition metals, so the card is exactly as tall as the three
+	   rows it spans and the periods around it keep their cells. */
+	.details-shell {
+		position: absolute;
+		inset: 0;
+		display: flex;
 		min-width: 0;
+	}
+
+	/* The open card grows downwards from the top of the block and covers the
+	   cells below it. The stronger shadow lifts it off the table, so the overlay
+	   reads as a layer and not as a taller cell. */
+	.details-shell.is-expanded {
+		inset: 0 0 auto 0;
+		height: auto;
+		z-index: 6;
+	}
+
+	.details-card {
+		flex: 1;
+		min-width: 0;
+		min-height: 0;
 		--padding: 0;
 		--border-color: var(--sl-color-neutral-200, #e4e4e7);
 		--border-width: var(--pt-details-border);
@@ -625,6 +649,11 @@ export const periodicTableStyles = css`
 		height: 100%;
 		overflow: hidden;
 		box-shadow: var(--pt-panel-shadow);
+	}
+
+	.details-shell.is-expanded .details-card::part(base) {
+		height: auto;
+		box-shadow: var(--pt-overlay-shadow);
 	}
 
 	/* The header carries the identity of the element in one row: the coloured
@@ -697,9 +726,9 @@ export const periodicTableStyles = css`
 		color: var(--pt-ink-soft);
 	}
 
-	/* The body is the slot itself, so the two columns are its flex items. It takes
-	   the rest of the fixed card height and scrolls, which keeps the card at the
-	   height of the block it fills. */
+	/* The body holds the key rows and, once the card is open, the sections below
+	   them. Collapsed it takes the rest of the fixed card height and scrolls, so a
+	   long value never pushes the card past the block it fills. */
 	.details-card::part(body) {
 		display: flex;
 		flex: 1;
@@ -708,46 +737,76 @@ export const periodicTableStyles = css`
 		overflow: auto;
 	}
 
-	.details-sections {
-		display: flex;
-		align-items: stretch;
-		gap: 0.6rem;
-		width: 100%;
-		min-width: 0;
+	/* The open card grows with its content instead of scrolling, and keeps room
+	   for the toggle in its bottom-right corner. */
+	.details-shell.is-expanded .details-card::part(body) {
+		flex: 0 0 auto;
+		overflow: visible;
+		padding-bottom: 1.9rem;
 	}
 
-	.details-column {
+	/* The body is the single flex item of the card body, so it has to take the full
+	   width itself: the key rows and the sections below them stack inside it. */
+	.details-body {
 		display: flex;
-		flex: 1 1 0;
+		flex: 1;
 		flex-direction: column;
-		gap: 0.2rem;
 		min-width: 0;
 	}
 
-	.details-divider {
-		--spacing: 0;
-		--color: var(--pt-border);
+	/* The key rows answer the two questions the table asks: how heavy the element
+	   is, and what the current mode says about it. They are the only rows the
+	   collapsed card shows, so they get the readable size. */
+	.details-key .details-row {
+		font-size: 0.8rem;
+		line-height: 1.4;
 	}
 
-	/* A rule separates the two sections of a column, so the headings do not have
-	   to carry the whole structure on their own. */
-	.details-rule {
-		--spacing: 0.1rem;
-		--color: var(--pt-border);
+	/* The open card adds the remaining sections below the key rows, in as many
+	   columns as the block allows: side by side while there is room, stacked when
+	   the card is narrow. */
+	.details-more {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+		gap: 0.45rem 0.9rem;
+		align-items: start;
+		margin-top: 0.4rem;
+		padding-top: 0.4rem;
+		border-top: 1px solid var(--pt-border);
 	}
 
 	.details-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
 		min-width: 0;
 	}
 
+	/* The electron configuration and the shell counts are long values that wrap
+	   badly in a third of the card, so the structure section takes the full width
+	   and starts a row of its own. */
+	.details-section-structure {
+		grid-column: 1 / -1;
+	}
+
+	/* The section headings are tags, so they read as labels of the card instead of
+	   as another line of running text. The tag keeps the width of its text; a
+	   stretched tag would read as a divider bar. */
 	.details-heading {
-		margin: 0 0 2px;
-		font-size: 0.62rem;
+		align-self: flex-start;
+	}
+
+	.details-heading::part(base) {
+		height: auto;
+		padding: 0 0.3rem;
+		border-color: var(--pt-border);
+		background: var(--pt-inset);
+		color: var(--pt-ink-soft);
+		font-size: 0.58rem;
 		font-weight: 600;
-		line-height: 1.25;
+		line-height: 1.45;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		color: var(--pt-ink-soft);
 	}
 
 	.details-rows {
@@ -813,37 +872,39 @@ export const periodicTableStyles = css`
 		background: var(--pt-state-unknown);
 	}
 
-	/* Secondary rows of a section — the thermal points — sit in a collapsed
-	   sl-details, so the key values stay visible in the fixed card height. The
-	   summary reads like a section heading, not like a boxed control. */
-	.details-secondary::part(base) {
-		border: none;
-		border-radius: 0;
-		background: transparent;
+	/* The toggle sits in the bottom-right corner of the card, where the eye ends
+	   after the key rows. It is a compact icon button like the canvas controls, and
+	   its arrow turns over while the card is open. */
+	.details-toggle {
+		position: absolute;
+		right: 4px;
+		bottom: 4px;
 	}
 
-	.details-secondary::part(header) {
+	.details-toggle::part(base) {
+		width: 1.35rem;
+		height: 1.35rem;
 		min-height: 0;
-		padding: 1px 0;
-		border-radius: 0;
-	}
-
-	.details-secondary::part(summary) {
-		font-size: 0.62rem;
-		font-weight: 600;
-		line-height: 1.25;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
+		padding: 0;
+		border-color: var(--pt-border);
+		background: var(--pt-surface);
+		box-shadow: var(--pt-control-shadow);
 		color: var(--pt-ink-soft);
 	}
 
-	.details-secondary::part(summary-icon) {
-		font-size: 0.6rem;
-		color: var(--pt-ink-soft);
+	.details-toggle::part(label) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
 	}
 
-	.details-secondary::part(content) {
-		padding: 0 0 0 0.2rem;
+	.details-toggle svg {
+		transition: transform 120ms ease;
+	}
+
+	.details-shell.is-expanded .details-toggle svg {
+		transform: rotate(180deg);
 	}
 
 	.details-qualifier::part(base) {
@@ -876,32 +937,11 @@ export const periodicTableStyles = css`
 		color: var(--pt-ink-soft);
 	}
 
-	/* A narrow card stacks the two columns, because two half-width columns would
-	   break every value onto a second line. The threshold is the width of the card
-	   itself, not of the widget: the card spans ten of the eighteen columns, so it
-	   is already too narrow for two columns while the table still has room. The
-	   card then grows with its content, which keeps the cells of the periods even
-	   instead of squeezing the stacked rows into the height of three rows. */
-	@container (max-width: 28rem) {
-		.details-card {
-			height: auto;
-		}
-
-		.details-card::part(base) {
-			height: auto;
-			overflow: visible;
-		}
-
-		.details-card::part(body) {
-			flex: 0 0 auto;
-			overflow: visible;
-		}
-
-		.details-sections {
-			flex-direction: column;
-		}
-
-		.details-divider {
+	/* A narrow card drops the conditions from the header: the temperature is set
+	   by the slider above the table, so the line is the first thing that can go
+	   without losing a value. */
+	@container (max-width: 22rem) {
+		.details-conditions {
 			display: none;
 		}
 	}

@@ -41,6 +41,8 @@ export type StringKey =
 	| "detailsLabel"
 	| "detailsEmpty"
 	| "detailsHint"
+	| "detailsExpand"
+	| "detailsCollapse"
 	| "fieldGroup"
 	| "fieldPeriod"
 	| "fieldFamily"
@@ -125,6 +127,8 @@ const EN: Strings = {
 	detailsLabel: "Element details",
 	detailsEmpty: "Select an element to see its details.",
 	detailsHint: "Values refer to the neutral atom.",
+	detailsExpand: "Show all details",
+	detailsCollapse: "Show less",
 	fieldGroup: "Group",
 	fieldPeriod: "Period",
 	fieldFamily: "Family",
@@ -210,6 +214,8 @@ const DE: Strings = {
 	detailsLabel: "Elementdaten",
 	detailsEmpty: "Wähle ein Element, um seine Daten zu sehen.",
 	detailsHint: "Die Werte gelten für das neutrale Atom.",
+	detailsExpand: "Alle Daten anzeigen",
+	detailsCollapse: "Weniger anzeigen",
 	fieldGroup: "Gruppe",
 	fieldPeriod: "Periode",
 	fieldFamily: "Stoffklasse",

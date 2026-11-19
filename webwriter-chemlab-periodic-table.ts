@@ -16,7 +16,6 @@ import { html, type PropertyValues } from "lit";
 import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
 import SlCard from "@shoelace-style/shoelace/dist/components/card/card.component.js";
-import SlDetails from "@shoelace-style/shoelace/dist/components/details/details.component.js";
 import SlDialog from "@shoelace-style/shoelace/dist/components/dialog/dialog.component.js";
 import SlDivider from "@shoelace-style/shoelace/dist/components/divider/divider.component.js";
 import SlIcon from "@shoelace-style/shoelace/dist/components/icon/icon.component.js";
@@ -59,6 +58,7 @@ import {
 	categoryText,
 	conditionsText,
 	detailRows,
+	keyRows,
 	sourceFieldText,
 	sourceList,
 	stateText,
@@ -102,13 +102,28 @@ const LIST_BREAKPOINT = 680;
 /** States the legend of a mode lists, in the order of the phase model. */
 const STATES: readonly MatterState[] = ["solid", "liquid", "gas", "unknown"];
 
-/** One labelled section of a column of the detail card. */
-interface DetailColumnEntry {
-	/** Heading of the section. */
-	readonly label: string;
+/** One labelled section of the expanded detail card. */
+interface DetailSectionEntry {
 	/** Section to pick from the rows of the card. */
 	readonly section: DetailSection;
+	/** String key of the heading. */
+	readonly label: keyof Strings;
 }
+
+/**
+ * Sections the expanded card adds below the key rows, in display order.
+ *
+ * The key rows already carry the weight and the answer of the current mode, so
+ * the sections start with the temperatures: that is the first part the collapsed
+ * card leaves out.
+ */
+const DETAIL_SECTIONS: readonly DetailSectionEntry[] = [
+	{ section: "properties", label: "sectionProperties" },
+	{ section: "temperatures", label: "sectionTemperatures" },
+	{ section: "position", label: "sectionPosition" },
+	{ section: "history", label: "sectionHistory" },
+	{ section: "structure", label: "sectionStructure" },
+];
 
 /**
  * Info icon of the toolbar button.
@@ -162,6 +177,18 @@ const LIST_ICON = html`
 const RESET_ICON = html`
 	<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
 		<path d="M13.6 8a5.6 5.6 0 1 1-1.64-3.96"/><path d="M13.6 2.6v2.6h-2.6"/>
+	</svg>
+`;
+
+/**
+ * Chevron of the detail card toggle.
+ *
+ * The arrow points down while the card is collapsed and is turned over by the
+ * stylesheet when the card is open, so one icon serves both states.
+ */
+const CHEVRON_ICON = html`
+	<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M4 6.2 8 10.2l4-4"/>
 	</svg>
 `;
 
@@ -228,7 +255,6 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		"sl-badge": SlBadge,
 		"sl-button": SlButton,
 		"sl-card": SlCard,
-		"sl-details": SlDetails,
 		"sl-dialog": SlDialog,
 		"sl-divider": SlDivider,
 		"sl-icon": SlIcon,
@@ -309,6 +335,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#restoreFocusPending = false;
 	#mode: ModeState = DEFAULT_MODE_STATE;
 	#infoOpen = false;
+	#detailsExpanded = false;
 
 	/**
 	 * Currently selected atomic number, `null` when nothing is selected.
@@ -487,10 +514,14 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/**
 	 * Selects an element after a user action and reports the change.
 	 *
+	 * A new element starts with the collapsed card: the open card covers the
+	 * cells below it, so it would hide the table the learner is browsing.
+	 *
 	 * @param atomicNumber - Atomic number the user picked.
 	 */
 	#selectFromUser(atomicNumber: number) {
 		if (!this.#selection.select(atomicNumber)) return;
+		this.#detailsExpanded = false;
 		this.requestUpdate();
 		this.#dispatchSelection();
 	}
@@ -498,9 +529,31 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/** Clears the selection after a user action and reports the change. */
 	#clearFromUser() {
 		if (!this.#selection.clear()) return;
+		this.#detailsExpanded = false;
 		this.requestUpdate();
 		this.#dispatchSelection();
 	}
+
+	/** Opens or closes the full detail card. */
+	#toggleDetails = () => {
+		this.#detailsExpanded = !this.#detailsExpanded;
+		this.requestUpdate();
+	};
+
+	/**
+	 * Closes the open detail card on Escape.
+	 *
+	 * The card covers the cells below it, so the key that closes an overlay has to
+	 * work here as well. Focus stays on the toggle, which is still in the card.
+	 *
+	 * @param event - Key event of the card.
+	 */
+	#onDetailsKeydown = (event: KeyboardEvent) => {
+		if (event.key !== "Escape" || !this.#detailsExpanded) return;
+		event.stopPropagation();
+		this.#detailsExpanded = false;
+		this.requestUpdate();
+	};
 
 	/** Dispatches the current selection once, composed and bubbling. */
 	#dispatchSelection() {
@@ -1187,109 +1240,102 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 *
 	 * The card is a Shoelace card, so it shares the surface and the border of the
 	 * rest of the widget. Its header carries the identity of the element in one
-	 * row, and its body splits the rows into two columns of labelled sections,
-	 * separated by Shoelace dividers. It has to stay compact, because it sits in
-	 * the free block of the table and must not push the periods apart.
+	 * row. Below it the card shows the key rows — the weight and the answer of the
+	 * current mode — and stops there: the free block of the table is only three
+	 * rows tall, and a card that grew with its content would stretch the periods
+	 * around it. The toggle in the corner opens the rest as an overlay above the
+	 * cells.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
 	 * @param element - Selected element, or `null` for the empty card.
-	 * @returns The detail card.
+	 * @returns The detail card with its shell.
 	 */
 	#renderDetails(t: Strings, language: Language, element: ElementReference | null) {
 		if (!element) {
 			return html`
-				<sl-card class="details-card details-card-empty">
-					<div class="details-empty">
-						<sl-icon class="details-empty-icon" src=${POINTER_ICON}></sl-icon>
-						<p>${t.detailsEmpty}</p>
-					</div>
-				</sl-card>
+				<div class="details-shell">
+					<sl-card class="details-card details-card-empty">
+						<div class="details-empty">
+							<sl-icon class="details-empty-icon" src=${POINTER_ICON}></sl-icon>
+							<p>${t.detailsEmpty}</p>
+						</div>
+					</sl-card>
+				</div>
 			`;
 		}
 		const rows = detailRows(element, language, this.#temperature);
+		const key = keyRows(rows, this.#mode.mode);
+		const rest = rows.filter(row => !key.includes(row));
 		const name = element.names[language];
-		const left: readonly DetailColumnEntry[] = [
-			{ label: t.sectionProperties, section: "properties" },
-			{ label: t.sectionHistory, section: "history" },
-		];
-		const right: readonly DetailColumnEntry[] = [
-			{ label: t.sectionPosition, section: "position" },
-			{ label: t.sectionStructure, section: "structure" },
-		];
+		const expanded = this.#detailsExpanded;
 		return html`
-			<sl-card class="details-card category-${categoryOf(element.atomicNumber) ?? "unknown"}">
-				<div slot="header" class="details-head">
-					<span class="details-thumb">${element.symbol}</span>
-					<h5 class="details-title" title=${name}>${name}</h5>
-					<sl-badge class="details-number" variant="neutral" pill>
-						${element.atomicNumber}
-					</sl-badge>
-					<sl-tag class="details-family" size="small" variant="neutral">
-						${categoryText(element, language)}
-					</sl-tag>
-					<sl-tooltip content=${t.detailsHint} hoist>
-						<span class="details-conditions">${conditionsText(language, this.#temperature)}</span>
-					</sl-tooltip>
-				</div>
-				<div class="details-sections">
-					${this.#renderDetailColumn(t, left, rows)}
-					<sl-divider class="details-divider" vertical></sl-divider>
-					${this.#renderDetailColumn(t, right, rows)}
-				</div>
-			</sl-card>
+			<div
+				class="details-shell ${expanded ? "is-expanded" : ""}"
+				@keydown=${this.#onDetailsKeydown}
+			>
+				<sl-card class="details-card category-${categoryOf(element.atomicNumber) ?? "unknown"}">
+					<div slot="header" class="details-head">
+						<span class="details-thumb">${element.symbol}</span>
+						<h5 class="details-title" title=${name}>${name}</h5>
+						<sl-badge class="details-number" variant="neutral" pill>
+							${element.atomicNumber}
+						</sl-badge>
+						<sl-tag class="details-family" size="small" variant="neutral">
+							${categoryText(element, language)}
+						</sl-tag>
+						<sl-tooltip content=${t.detailsHint} hoist>
+							<span class="details-conditions">${conditionsText(language, this.#temperature)}</span>
+						</sl-tooltip>
+					</div>
+					<div class="details-body">
+						<dl class="details-rows details-key">
+							${key.map(row => this.#renderDetailRow(t, row))}
+						</dl>
+						${expanded
+							? html`<div class="details-more">${this.#renderDetailSections(t, rest)}</div>`
+							: null}
+					</div>
+				</sl-card>
+				<sl-button
+					class="details-toggle"
+					size="small"
+					title=${expanded ? t.detailsCollapse : t.detailsExpand}
+					aria-label=${expanded ? t.detailsCollapse : t.detailsExpand}
+					aria-expanded=${expanded}
+					@click=${this.#toggleDetails}
+				>${CHEVRON_ICON}</sl-button>
+			</div>
 		`;
 	}
 
 	/**
-	 * Renders one column of the detail card.
+	 * Renders the sections the expanded card adds.
 	 *
-	 * A column holds one or two sections, and a divider separates them, so the
-	 * headings do not have to carry the whole structure on their own. A section
-	 * without a row is dropped, which keeps the card free of empty headings.
-	 * Secondary rows of a section — the thermal points of the properties — sit
-	 * in a collapsed `sl-details`, so the key values stay visible in the fixed
-	 * three-row height and the rest is one click away.
+	 * A section without a row is dropped, which keeps the card free of empty
+	 * headings: the state row moves into the key rows in the temperature mode and
+	 * the discovery row in the discovery mode, so the section it came from can
+	 * become empty.
 	 *
 	 * @param t - Interface strings.
-	 * @param entries - Sections of the column in display order.
-	 * @param rows - All rows of the card.
-	 * @returns The column, or nothing when none of its sections has a row.
+	 * @param rows - Rows the key rows do not already show.
+	 * @returns The sections in display order.
 	 */
-	#renderDetailColumn(t: Strings, entries: readonly DetailColumnEntry[], rows: readonly DetailRow[]) {
-		const sections = entries
-			.map(entry => ({ entry, own: rows.filter(row => row.section === entry.section) }))
-			.filter(({ own }) => own.length > 0);
-		if (sections.length === 0) return null;
-		return html`
-			<div class="details-column">
-				${sections.map(
-					({ entry, own }, index) => {
-						const primary = own.filter(row => !row.secondary);
-						const secondary = own.filter(row => row.secondary);
-						const summary = entry.section === "properties" ? t.sectionTemperatures : entry.label;
-						return html`
-							${index > 0 ? html`<sl-divider class="details-rule"></sl-divider>` : null}
-							<section class="details-section">
-								<h6 class="details-heading">${entry.label}</h6>
-								<dl class="details-rows">
-									${primary.map(row => this.#renderDetailRow(t, row))}
-								</dl>
-								${secondary.length === 0
-									? null
-									: html`
-									<sl-details class="details-secondary" summary=${summary}>
-										<dl class="details-rows">
-											${secondary.map(row => this.#renderDetailRow(t, row))}
-										</dl>
-									</sl-details>
-								`}
-							</section>
-						`;
-					},
-				)}
-			</div>
-		`;
+	#renderDetailSections(t: Strings, rows: readonly DetailRow[]) {
+		return DETAIL_SECTIONS.map(entry => {
+			const own = rows.filter(row => row.section === entry.section);
+			if (own.length === 0) return null;
+			return html`
+				<section class="details-section details-section-${entry.section}">
+					<sl-tag class="details-heading" size="small" variant="neutral">
+						${t[entry.label]}
+					</sl-tag>
+					<dl class="details-rows">
+						${own.map(row => this.#renderDetailRow(t, row))}
+					</dl>
+				</section>
+			`;
+		});
 	}
 
 	/**
