@@ -1,5 +1,5 @@
 import { drawerLabels, effectiveLanguage, localize } from "./localization/localization";
-import { html, LitElement, nothing, PropertyValueMap, render } from "lit";
+import { html, LitElement, noChange, nothing, PropertyValueMap, render } from "lit";
 import { keyed } from "lit/directives/keyed.js";
 import { repeat } from "lit/directives/repeat.js";
 import { live } from "lit/directives/live.js";
@@ -68,6 +68,7 @@ import { vesselCarouselEntries, type VesselPlating } from "./data/vesselCarousel
 import { STANDARD_CANVAS_WIDTH } from "./controllers/WorkspaceCamera";
 import { CanvasController } from "./controllers/CanvasController";
 import type { VesselHint } from "./controllers/VesselView";
+import { guard } from "lit/directives/guard.js";
 
 type SelectedChemical = { key: string; name: string; recipe: ChemicalRecipe };
 type ChemicalConcentration = { initial: number; max: number };
@@ -461,7 +462,8 @@ export class ChemLab extends LitElementWw {
 		editing?: boolean;
 	} | undefined;
 	@state() private accessor fillMeter: { x: number; y: number; volume: number; capacity: number } | undefined;
-	@state() private accessor chemicalCatalogOpened = false;
+	private amountFormatLanguage?: string;
+	private amountFormatters = new Map<number, Intl.NumberFormat>();
 	@state() private accessor chemicalQuery = "";
 	@state() private accessor activeChemicalConcentrations: Record<string, number> = {};
 	@state() private accessor openConcentrationMenu: string | undefined;
@@ -1901,12 +1903,22 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private formatAmount(amount: number, maximumSignificantDigits: number): string {
-		const options = { maximumSignificantDigits };
-		try {
-			return new Intl.NumberFormat(this.lang || undefined, options).format(amount);
-		} catch {
-			return new Intl.NumberFormat(undefined, options).format(amount);
+		const language = this.lang || undefined;
+		if (language !== this.amountFormatLanguage) {
+			this.amountFormatLanguage = language;
+			this.amountFormatters.clear();
 		}
+		let formatter = this.amountFormatters.get(maximumSignificantDigits);
+		if (!formatter) {
+			const options = { maximumSignificantDigits };
+			try {
+				formatter = new Intl.NumberFormat(language, options);
+			} catch {
+				formatter = new Intl.NumberFormat(undefined, options);
+			}
+			this.amountFormatters.set(maximumSignificantDigits, formatter);
+		}
+		return formatter.format(amount);
 	}
 
 	private confirmAmount(): void {
@@ -3469,6 +3481,8 @@ export class ChemLab extends LitElementWw {
 
 	private renderTeacherDrawer() {
 		const label = this.message(this.canAuthor ? "Lehrkraft Steuerung" : "Komponenten");
+		const showComponents = this.teacherDrawerOpen && this.teacherTab === "components";
+		const showChemicals = this.teacherDrawerOpen && this.teacherTab === "chemicals";
 		const selected = this.selectedChemical ? html`
 			<sl-button class="selected-chemical" size="small" @click=${this.clearChemicalSelection}>
 				${this.selectedChemical.name} ×
@@ -3490,19 +3504,25 @@ export class ChemLab extends LitElementWw {
 							@sl-tab-show=${(event: CustomEvent<{ name: "components" | "chemicals" }>) => {
 								if (event.target === event.currentTarget) {
 									this.teacherTab = event.detail.name;
-									if (this.teacherTab === "chemicals") this.chemicalCatalogOpened = true;
 									this.permissionTooltip = undefined;
 								}
 							}}>
 							<sl-tab slot="nav" panel="components" active>${this.message("Komponenten")}</sl-tab>
 							<sl-tab slot="nav" panel="chemicals">${this.message("Chemikalien")}</sl-tab>
 							<sl-tab-panel name="components" active>
-								<div class="palette-content">${selected}${this.renderComponentPalette()}</div>
+								<div class="palette-content">${selected}${guard(showComponents
+									? [true, this.lang, this.canAuthor, this.invComponents, this.visibleVariants,
+										this.componentToPlace, this.permissionTooltip]
+									: [false], () => showComponents ? this.renderComponentPalette() : noChange)}</div>
 							</sl-tab-panel>
 							<sl-tab-panel name="chemicals">
 								<div class="palette-content">
 									${selected}
-									${this.chemicalCatalogOpened ? this.renderChemicalCatalog() : nothing}
+									${guard(showChemicals
+										? [true, this.lang, this.canAuthor, this.chemicalPermissions, this.chemicalQuery,
+											this.chemicalGroup, this.activeChemicalConcentrations, this.selectedChemical?.key,
+											this.openConcentrationMenu]
+										: [false], () => showChemicals ? this.renderChemicalCatalog() : noChange)}
 								</div>
 							</sl-tab-panel>
 						</sl-tab-group>
@@ -3709,11 +3729,14 @@ export class ChemLab extends LitElementWw {
 	private renderChemicalTile(key: string, name: string, formula: string, recipe: ChemicalRecipe, src?: string,
 		concentrationMolPerL?: number) {
 		const label = this.chemicalTileLabel(name, concentrationMolPerL);
-		const chemical = { key, name: label, recipe };
+		const selection = (): SelectedChemical => ({
+			key, name: label,
+			recipe: concentrationMolPerL === undefined ? recipe : withConcentration(recipe, concentrationMolPerL),
+		});
 		return html`
 			<button type="button" class="chemical-tile" contenteditable="false"
-				aria-label=${chemical.name} aria-pressed=${this.selectedChemical?.key === key}
-				@pointerdown=${(event: PointerEvent) => this.startChemicalDrag(event, chemical, src)}
+				aria-label=${label} aria-pressed=${this.selectedChemical?.key === key}
+				@pointerdown=${(event: PointerEvent) => this.startChemicalDrag(event, selection(), src)}
 				@dragstart=${this.preventNativePaletteDrag}
 				@click=${(event: MouseEvent) => {
 					if (this.consumePaletteClick(event)) return;
@@ -3722,7 +3745,7 @@ export class ChemLab extends LitElementWw {
 					this.componentToPlace = undefined;
 					if (wasSelected) return;
 					this.clearObjectSelection();
-					this.selectedChemical = chemical;
+					this.selectedChemical = selection();
 				}}>
 				<span class="chemical-preview">${src ? html`<img src=${src} alt="" draggable="false" decoding="async" loading="lazy"/>`
 					: html`<span>${formula}</span>`}</span>
@@ -3802,8 +3825,7 @@ export class ChemLab extends LitElementWw {
 		const active = values.includes(saved) ? saved
 			: concentration && values.includes(concentration.initial) ? concentration.initial : values[0];
 		const activeKey = active === undefined ? item.name : `${item.name}@${active}`;
-		const preview = this.renderChemicalTile(activeKey, name, item.formula,
-			active === undefined ? item.recipe : withConcentration(item.recipe, active), src, active);
+		const preview = this.renderChemicalTile(activeKey, name, item.formula, item.recipe, src, active);
 		const allowedCount = concentration ? allowed.length : Number(this.isChemicalAllowed(item.name));
 		const variant = this.palettePermissionVariant(allowedCount, concentration ? values.length : 1);
 		const badge = this.canAuthor ? this.renderChemicalPermissionBadge(name, [item]) : nothing;
