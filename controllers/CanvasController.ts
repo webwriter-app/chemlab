@@ -1257,7 +1257,7 @@ export class CanvasController implements ReactiveController {
 	 *
 	 * @private
 	 */
-	async init(): Promise<void> {
+	async init(onTextureProgress?: (fraction: number) => void): Promise<void> {
 		const app = new PIXI.Application<PIXI.WebGLRenderer<HTMLCanvasElement>>();
 		await app.init({
 			preference: ["webgl"],
@@ -1267,12 +1267,13 @@ export class CanvasController implements ReactiveController {
 			height: STANDARD_CANVAS_HEIGHT,
 		});
 		try {
+			onTextureProgress?.(0);
 			await PIXI.Assets.load(componentTextureUrls.map((src) => ({
 				src,
 				// Filter the SVG textures when zooming out, including narrow sprites
 				// whose horizontal and vertical scales differ substantially.
 				data: { resolution: 2, scaleMode: "linear", autoGenerateMipmaps: true, maxAnisotropy: 4 },
-			})));
+			})), onTextureProgress);
 		} catch (error) {
 			app.destroy(true, { children: true });
 			throw error;

@@ -1,5 +1,11 @@
 {
   "en": {
+    "Chemielabor wird geladen": "Loading chemistry lab",
+    "Grafik vorbereiten": "Preparing graphics",
+    "Gerätegrafiken laden": "Loading equipment graphics",
+    "Gespeicherte Geräte vorbereiten": "Preparing saved equipment",
+    "Versuchsaufbau und Verbindungen einsetzen": "Assembling the experiment and connections",
+    "Arbeitsfläche zeichnen": "Drawing the canvas",
     "Äquivalenzpunkt (geschätzt)": "Estimated equivalence point",
     "Neutralpunkt (25 °C)": "Neutral point (25 °C)",
     "Halbäquivalenzpunkt (geschätzt)": "Estimated half-equivalence point",

@@ -408,6 +408,10 @@ export class ChemLab extends LitElementWw {
 	@property({ attribute: false })
 	accessor app: PIXI.Application<PIXI.WebGLRenderer<HTMLCanvasElement>> | null = null;
 	private canvasReady: Promise<void>;
+	@state()
+	private accessor canvasLoading: { value: number; task: string; restored?: number; total?: number } | undefined = {
+		value: 0, task: "Grafik vorbereiten",
+	};
 	/**
 	 * list of all current component objects
 	 *
@@ -694,7 +698,7 @@ export class ChemLab extends LitElementWw {
 		if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions"].some((name) => changed.has(name))) {
 			this.persistAuthoredData();
 		}
-		if (this.app && this.refreshFromRemoteData) {
+		if (this.app && !this.canvasLoading && this.refreshFromRemoteData) {
 			this.refreshFromRemoteData = false;
 			if (changed.has("availableComponents")) {
 				this.stopDose?.();
@@ -871,22 +875,74 @@ export class ChemLab extends LitElementWw {
 
 	private async initializeCanvas(): Promise<void> {
 		try {
-			await this.canvas.init();
+			await this.paintLoadingProgress();
+			await this.canvas.init((fraction) => {
+				this.canvasLoading = { value: 10 + 15 * fraction, task: "Gerätegrafiken laden" };
+			});
+			await this.restoreInitialLayout();
+			this.canvas.fitObjects();
+			this.canvas.flushChanges();
+			this.app.render();
+			this.simulation.startLoop(() => this.canvas.flushChanges());
+			this._sendxAPiStatement("registered", "chemlab");
 		} catch (error) {
 			console.error("Unable to initialize the Chemlab canvas", error);
 			this._notify(this.message("Die Arbeitsfläche konnte nicht geladen werden."));
+		} finally {
+			this.canvasLoading = undefined;
+		}
+	}
+
+	private paintLoadingProgress(): Promise<void> {
+		const view = this.ownerDocument.defaultView;
+		// Yield past a paint when visible, with a timer fallback for hidden embeds.
+		return new Promise(resolve => {
+			if (this.ownerDocument.hidden) {
+				view.setTimeout(resolve, 0);
+				return;
+			}
+			const afterPaint = view.setTimeout(() => {
+				view.cancelAnimationFrame(frame);
+				resolve();
+			}, 40);
+			const frame = view.requestAnimationFrame(() => {
+				view.clearTimeout(afterPaint);
+				view.setTimeout(resolve, 0);
+			});
+		});
+	}
+
+	private async restoreInitialLayout(): Promise<void> {
+		// Prepare the models off the stage so the authored layout can be replaced
+		// during loading without leaving partially restored devices on screen.
+		for (;;) {
+			this.refreshFromRemoteData = false;
+			const entries = this.availableComponents;
+			const models = new Map<object, chemlib.ChemComponent | chemlib.ElectricComponent>();
+			const total = entries.length;
+			if (total) {
+				const reportRestored = (restored: number) => {
+					this.canvasLoading = { value: 25 + 60 * restored / total, task: "Gespeicherte Geräte vorbereiten", restored, total };
+					return this.paintLoadingProgress();
+				};
+				await reportRestored(0);
+				let sliceStarted = performance.now();
+				for (const entry of entries) {
+					if (this.refreshFromRemoteData) break;
+					models.set(entry, this.createSavedComponent(entry));
+					if (models.size < total && performance.now() - sliceStarted >= 24) {
+						await reportRestored(models.size);
+						sliceStarted = performance.now();
+					}
+				}
+				if (this.refreshFromRemoteData) continue;
+			}
+			this.canvasLoading = { value: 90, task: total ? "Versuchsaufbau und Verbindungen einsetzen" : "Arbeitsfläche zeichnen" };
+			await this.paintLoadingProgress();
+			if (this.refreshFromRemoteData) continue;
+			this._loadComponents(undefined, models);
 			return;
 		}
-		// The first load uses the latest authored data, including updates during asset loading.
-		this.refreshFromRemoteData = false;
-		this.focus();
-		this.simulation.startLoop(() => this.canvas.flushChanges());
-		this._loadComponents();
-		// The authored layout is placed in world units, which need not match
-		// the visible area of the embedding page. Fit once so a restored setup
-		// is never partly out of frame.
-		this.canvas.fitObjects();
-		this._sendxAPiStatement("registered", "chemlab");
 	}
 
 	requestCanvasRender(): void {
@@ -2511,117 +2567,113 @@ export class ChemLab extends LitElementWw {
 		return newMix;
 	}
 
-	/**
-	 * loads prebuild mixtures from database
-	 *
-	 * @private
-	 * @async
-	 * @param {?object} [entry] - a specific entry to load from
-	 * @returns {Promise<void>}
-	 */
-	private async _loadComponents(entry?: object): Promise<void> {
-		// console.log(this.availableComponents, entry);
-		for (let component of this.availableComponents) {
-			if (entry && component !== entry) continue;
-			const type = component["type"].toLowerCase();
-			const savedVariant = componentVariant(component["variantId"]);
-			const variant = savedVariant?.type === type ? savedVariant : undefined;
+	private createSavedComponent(component: object): chemlib.ChemComponent | chemlib.ElectricComponent {
+		const type = component["type"].toLowerCase();
+		const savedVariant = componentVariant(component["variantId"]);
+		const variant = savedVariant?.type === type ? savedVariant : undefined;
 
-			let newComp: chemlib.ChemComponent | chemlib.ElectricComponent;
+		let newComp: chemlib.ChemComponent | chemlib.ElectricComponent;
 
-			if (
-				Object.values(chemlib.ComponentType).includes(
-				type as chemlib.ComponentType
-				)
-			) {
-				newComp = chemlib.ComponentManager.newChemComponent(
-					type
-				);
-				this.allChemComponents.push(newComp);
-				let newMix: chemlib.Mixture = this._loadMixture(
-					component["content"],
-					component["vol"]
-				);
-				newComp.addContents({ nMix: newMix });
-				const capacity = Number(component["capacityMl"] ?? variant?.capacityMl);
-				if (Number.isFinite(capacity) && capacity > 0) newComp._volume = capacity;
-				if (typeof component["stepVolumeMl"] === "number") newComp.setBuretteStepMl(component["stepVolumeMl"]);
-				for (const saved of (component["doses"] ?? []) as SavedDose[]) {
-					const dose = this.buildDose(saved.recipe);
-					if (dose && Number.isFinite(saved.volumeMl) && saved.volumeMl > 0) {
-						newComp.addContents({ nMix: dose(saved.volumeMl) });
-					}
+		if (
+			Object.values(chemlib.ComponentType).includes(
+			type as chemlib.ComponentType
+			)
+		) {
+			newComp = chemlib.ComponentManager.newChemComponent(
+				type
+			);
+			let newMix: chemlib.Mixture = this._loadMixture(
+				component["content"],
+				component["vol"]
+			);
+			newComp.addContents({ nMix: newMix });
+			const capacity = Number(component["capacityMl"] ?? variant?.capacityMl);
+			if (Number.isFinite(capacity) && capacity > 0) newComp._volume = capacity;
+			if (typeof component["stepVolumeMl"] === "number") newComp.setBuretteStepMl(component["stepVolumeMl"]);
+			for (const saved of (component["doses"] ?? []) as SavedDose[]) {
+				const dose = this.buildDose(saved.recipe);
+				if (dose && Number.isFinite(saved.volumeMl) && saved.volumeMl > 0) {
+					newComp.addContents({ nMix: dose(saved.volumeMl) });
 				}
-			} else {
-				newComp = chemlib.ComponentManager.newElectricComponent(
-					type
-				);
-				// The variant decides the artboard, so a compact source keeps
-				// its size when the layout is restored.
-				newComp._variantId = variant?.id;
-				switch (newComp._type) {
-					case chemlib.EComponentType.Electrode:
-						if (variant?.material) newComp._material = this.newElectrodeMaterial(variant.material);
-						else if (component["material"]) {
-							newComp._material = this._loadMolecule(component["material"]);
-							newComp._material.name = component["material"];
-						}
-						if (!newComp._material) break;
-						if (newComp._material._atoms.length === 0) {
-							newComp._material = undefined;
-							break;
-						}
-						break;
-					case chemlib.EComponentType.Source:
-						newComp._sourceVoltage = Number.parseFloat(component["voltage"]) || 0;
-						newComp._sourceCurrent = Number.parseFloat(component["current"]) || 0;
-						newComp._polarity = Number.parseInt(component["polarity"]) === 1 ? 1
-							: Number.parseInt(component["polarity"]) === -1 ? -1 : 0;
-						newComp._sourceMode = component["sourceMode"] === "current" ? "current" : "voltage";
-						newComp._complianceVoltage = Number.parseFloat(component["complianceVoltage"]) || 30;
-						break;
-					case chemlib.EComponentType.Multimeter:
-						newComp._meterMode = component["meterMode"] === "current" ? "current" : "voltage";
-						break;
-					case chemlib.EComponentType.Label:
-						newComp._labelText = String(component["labelText"] ?? "");
-						break;
-					case chemlib.EComponentType.Cable: {
-						const ends = component["ends"];
-						if (Array.isArray(ends) && ends.length === 2) {
-							newComp._cableEnds = [
-								ends[0] === "crocodile" ? "crocodile" : "banana",
-								ends[1] === "crocodile" ? "crocodile" : "banana",
-							];
-						} else if (variant?.ends) {
-							newComp._cableEnds = [...variant.ends];
-						}
-						const offsets = component["offsets"];
-						if (Array.isArray(offsets) && offsets.length === 2) {
-							newComp._endOffsets = offsets.map((offset: number[]) => ({
-								x: Number(offset?.[0]) || 0,
-								y: Number(offset?.[1]) || 0,
-							})) as [{ x: number; y: number }, { x: number; y: number }];
-						}
-						break;
-					}
-					default:
-						break;
-				}
-				// An electrode's wetted area and a reference electrode's fixed
-				// potential are properties of the electrode, not of its type.
-				if (newComp._type === chemlib.EComponentType.Electrode) {
-					const area = Number.parseFloat(component["area"]);
-					if (Number.isFinite(area) && area > 0) newComp._area = area;
-					const reference = Number.parseFloat(component["reference"]);
-					if (Number.isFinite(reference)) newComp._reference = reference;
-				}
-				const config = component["rcSettings"];
-				if (isPassiveMeter(newComp) && (config === null || validRCSettings(config))) {
-					newComp._rcSettings = config;
-				}
-				this.allEComponents.push(newComp);
 			}
+		} else {
+			newComp = chemlib.ComponentManager.newElectricComponent(
+				type
+			);
+			// The variant decides the artboard, so a compact source keeps
+			// its size when the layout is restored.
+			newComp._variantId = variant?.id;
+			switch (newComp._type) {
+				case chemlib.EComponentType.Electrode:
+					if (variant?.material) newComp._material = this.newElectrodeMaterial(variant.material);
+					else if (component["material"]) {
+						newComp._material = this._loadMolecule(component["material"]);
+						newComp._material.name = component["material"];
+					}
+					if (!newComp._material) break;
+					if (newComp._material._atoms.length === 0) {
+						newComp._material = undefined;
+						break;
+					}
+					break;
+				case chemlib.EComponentType.Source:
+					newComp._sourceVoltage = Number.parseFloat(component["voltage"]) || 0;
+					newComp._sourceCurrent = Number.parseFloat(component["current"]) || 0;
+					newComp._polarity = Number.parseInt(component["polarity"]) === 1 ? 1
+						: Number.parseInt(component["polarity"]) === -1 ? -1 : 0;
+					newComp._sourceMode = component["sourceMode"] === "current" ? "current" : "voltage";
+					newComp._complianceVoltage = Number.parseFloat(component["complianceVoltage"]) || 30;
+					break;
+				case chemlib.EComponentType.Multimeter:
+					newComp._meterMode = component["meterMode"] === "current" ? "current" : "voltage";
+					break;
+				case chemlib.EComponentType.Label:
+					newComp._labelText = String(component["labelText"] ?? "");
+					break;
+				case chemlib.EComponentType.Cable: {
+					const ends = component["ends"];
+					if (Array.isArray(ends) && ends.length === 2) {
+						newComp._cableEnds = [
+							ends[0] === "crocodile" ? "crocodile" : "banana",
+							ends[1] === "crocodile" ? "crocodile" : "banana",
+						];
+					} else if (variant?.ends) {
+						newComp._cableEnds = [...variant.ends];
+					}
+					const offsets = component["offsets"];
+					if (Array.isArray(offsets) && offsets.length === 2) {
+						newComp._endOffsets = offsets.map((offset: number[]) => ({
+							x: Number(offset?.[0]) || 0,
+							y: Number(offset?.[1]) || 0,
+						})) as [{ x: number; y: number }, { x: number; y: number }];
+					}
+					break;
+				}
+				default:
+					break;
+			}
+			// An electrode's wetted area and a reference electrode's fixed
+			// potential are properties of the electrode, not of its type.
+			if (newComp._type === chemlib.EComponentType.Electrode) {
+				const area = Number.parseFloat(component["area"]);
+				if (Number.isFinite(area) && area > 0) newComp._area = area;
+				const reference = Number.parseFloat(component["reference"]);
+				if (Number.isFinite(reference)) newComp._reference = reference;
+			}
+			const config = component["rcSettings"];
+			if (isPassiveMeter(newComp) && (config === null || validRCSettings(config))) {
+				newComp._rcSettings = config;
+			}
+		}
+		return newComp;
+	}
+
+	private _loadComponents(entry?: object, models?: ReadonlyMap<object, chemlib.ChemComponent | chemlib.ElectricComponent>): void {
+		for (const component of this.availableComponents) {
+			if (entry && component !== entry) continue;
+			const newComp = models?.get(component) ?? this.createSavedComponent(component);
+			if (newComp instanceof chemlib.ChemComponent) this.allChemComponents.push(newComp);
+			else this.allEComponents.push(newComp);
 
 			// The id is recorded before the view is built, so a component whose
 			// view fails still takes part in the wiring below.
@@ -2921,10 +2973,11 @@ export class ChemLab extends LitElementWw {
 		return html`
 			<div
 				id="upper"
+				?data-loading=${!!this.canvasLoading}
 				@keydown=${this.deleteSelection}
 				class=${`${diagramOpen ? "show-diagram-panel" : ""} ${this.teacherDrawerOpen ? "show-palette" : ""}`}
 			>
-				<div id="canvasArea">
+				<div id="canvasArea" aria-busy=${!!this.canvasLoading}>
 					${this.pix_canvas}
 					${this.renderObjectSummary()}
 					${this.renderGroupSummary()}
@@ -2938,6 +2991,21 @@ export class ChemLab extends LitElementWw {
 					.anchor=${this.permissionTooltip?.anchor} .active=${!!this.permissionTooltip}>
 					<div id="permissionTooltip" role="tooltip">${this.permissionTooltip?.text}</div>
 				</sl-popup>
+				${this.canvasLoading ? this.renderCanvasLoading(this.canvasLoading) : nothing}
+			</div>
+		`;
+	}
+
+	private renderCanvasLoading({ value, task, restored, total }: NonNullable<ChemLab["canvasLoading"]>) {
+		const label = this.message("Chemielabor wird geladen");
+		return html`
+			<div id="canvasLoading">
+				<strong>${label}</strong>
+				<progress .value=${Math.round(value)} max="100" aria-label=${label}></progress>
+				<div class="loading-task">
+					<span role="status">${this.message(task)}</span>
+					${total ? html`<span aria-hidden="true"> (${restored}/${total})</span>` : nothing}
+				</div>
 			</div>
 		`;
 	}

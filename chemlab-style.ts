@@ -1093,6 +1093,33 @@ export const style = css`
 	#upper.show-palette {
 		--palette-width: var(--palette-panel-width);
 	}
+	#upper[data-loading] > :not(#canvasLoading) {
+		/* Keep the grid dimensions used to initialize the renderer. */
+		visibility: hidden;
+	}
+	#canvasLoading {
+		grid-area: 1 / 1 / 2 / 4;
+		justify-self: center;
+		align-self: center;
+		box-sizing: border-box;
+		inline-size: min(22rem, calc(100% - 2rem));
+		display: grid;
+		gap: 0.65rem;
+		padding: 1rem;
+		border: 1px solid var(--lab-card-border);
+		border-radius: var(--sl-border-radius-medium);
+		background: var(--lab-card-surface);
+		color: var(--lab-card-text);
+		box-shadow: var(--lab-panel-shadow);
+	}
+	#canvasLoading progress {
+		inline-size: 100%;
+		accent-color: var(--sl-color-primary-600);
+	}
+	#canvasLoading .loading-task {
+		color: var(--lab-card-secondary-text);
+		font-size: var(--sl-font-size-small);
+	}
 	:host(:fullscreen),
 	:host(:fullscreen) #upper {
 		width: 100%;
