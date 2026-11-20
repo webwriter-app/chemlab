@@ -9424,6 +9424,7 @@ var TABLE_MODES = [
   "ionization",
   "halfLife"
 ];
+var MODE_CHOICES = TABLE_MODES.filter((mode) => mode !== "off");
 function propertyRange(values, step) {
   let min2 = Number.POSITIVE_INFINITY;
   let max2 = Number.NEGATIVE_INFINITY;
@@ -9584,6 +9585,7 @@ var EN = {
   viewTable: "Table",
   viewList: "List",
   reset: "Reset",
+  resetMode: "Reset mode",
   resultCount: "{count} elements",
   resultCountOne: "1 element",
   noResults: "No element matches the search",
@@ -9680,6 +9682,7 @@ var DE = {
   viewTable: "Tabelle",
   viewList: "Liste",
   reset: "Zur\xFCcksetzen",
+  resetMode: "Modus zur\xFCcksetzen",
   resultCount: "{count} Elemente",
   resultCountOne: "1 Element",
   noResults: "Kein Element passt zur Suche",
@@ -10676,11 +10679,16 @@ var periodicTableStyles = i`
 		background: var(--pt-cell-fill);
 	}
 
-	/* The property panel repeats the filter panel: a carousel of mode chips on
-	   top, the slider of the active mode underneath. The chips are plain buttons
-	   in the family tag treatment, so the two panels read as one system. */
+	/* The property panel repeats the filter panel: a carousel of mode chips with
+	   the reset at its end on top, the slider of the active mode underneath. The
+	   chips are plain buttons in the family tag treatment, so the two panels read
+	   as one system. */
 	.mode-strip {
-		flex: 0 0 auto;
+		/* The strip shares its row with the reset button, so it takes the free
+		   width and leaves the button its own size, like the family strip beside
+		   the count badge. */
+		flex: 1 1 6rem;
+		min-width: 7rem;
 		--slide-gap: 0.25rem;
 		/* The carousel sizes its slides from an aspect ratio, which would give a
 		   one-row strip the height of a picture. Auto lets the chips decide the
@@ -11597,7 +11605,7 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _filtersOpen, _modesOpen, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _onInfoHide, focusElement_fn, reset_fn, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
+var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _filtersOpen, _modesOpen, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
 _ChemLabPeriodicTable_decorators = [t2("webwriter-chemlab-periodic-table")];
 var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a2) {
   constructor() {
@@ -11714,6 +11722,17 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     __privateAdd(this, _onInfoHide, () => {
       if (!__privateGet(this, _infoOpen)) return;
       __privateSet(this, _infoOpen, false);
+      this.requestUpdate();
+    });
+    /**
+     * Clears the property mode and restores the default thresholds.
+     *
+     * The mode panel carries no `off` chip, so this is the way back to the plain
+     * table. It also puts every slider back to the end that hides nothing, so the
+     * next mode starts from the reference state instead of the last threshold.
+     */
+    __privateAdd(this, _resetMode, () => {
+      __privateSet(this, _mode, DEFAULT_MODE_STATE);
       this.requestUpdate();
     });
     /** Reads the search field. */
@@ -12093,6 +12112,7 @@ reset_fn = function() {
   __privateMethod(this, _ChemLabPeriodicTable_instances, clearFromUser_fn).call(this);
   this.requestUpdate();
 };
+_resetMode = new WeakMap();
 _onQueryInput = new WeakMap();
 _onSearchKeydown = new WeakMap();
 _onCellKeydown = new WeakMap();
@@ -12342,15 +12362,21 @@ slider_fn = function(t8, language) {
 /**
  * Renders the property panel behind the second ribbon toggle.
  *
- * The panel decides what the cells are coloured by: nothing, the state at the
- * chosen temperature, or whether the element was already known in the chosen
- * year. The modes sit in a carousel of chips, so the row stays one band while
- * the list of modes grows, and the slider of the active mode sits underneath
- * it with its value as a tag. The slider is a native range input: it needs no
- * component registration, keeps the keyboard and touch behaviour of the
- * platform, and cannot fall back to plain text when a Shoelace build is
- * missing. The legend of the temperature mode shares the last row, because a
- * row of its own would cost the table the height of one period.
+ * The panel decides what the cells are coloured by: the state at the chosen
+ * temperature, whether the element was already known in the chosen year, or
+ * one of the four numeric properties. The modes sit in a carousel of chips, so
+ * the row stays one band while the list of modes grows, and the slider of the
+ * active mode sits underneath it with its value as a tag. The slider is a
+ * native range input: it needs no component registration, keeps the keyboard
+ * and touch behaviour of the platform, and cannot fall back to plain text when
+ * a Shoelace build is missing. The legend of the temperature mode shares the
+ * last row, because a row of its own would cost the table the height of one
+ * period.
+ *
+ * The strip carries no `off` chip. The reset beside it is the way back to the
+ * plain table, in the same place and the same treatment as the reset beside
+ * the search, so both panels clear their own state with one button at the end
+ * of their row instead of a chip that scrolls away with the modes.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
@@ -12361,28 +12387,37 @@ renderModes_fn = function(t8, language) {
   const slider = __privateMethod(this, _ChemLabPeriodicTable_instances, slider_fn).call(this, t8, language);
   return x2`
 			<div class="panel modes">
-				<span class="visually-hidden" id="mode-strip-label">${t8.modeLabel}</span>
-				<sl-carousel
-					class="mode-strip"
-					navigation
-					mouse-dragging
-					slides-per-page="4"
-					slides-per-move="1"
-					aria-labelledby="mode-strip-label"
-				>
-					${TABLE_MODES.map((mode) => x2`
-						<sl-carousel-item>
-							<button
-								class="mode-tag ${__privateGet(this, _mode).mode === mode ? "is-active" : ""}"
-								type="button"
-								aria-pressed=${__privateGet(this, _mode).mode === mode}
-								@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setMode_fn).call(this, mode)}
-							>${modeText(mode, t8)}</button>
-						</sl-carousel-item>
-					`)}
-					<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
-					<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
-				</sl-carousel>
+				<div class="panel-row">
+					<span class="visually-hidden" id="mode-strip-label">${t8.modeLabel}</span>
+					<sl-carousel
+						class="mode-strip"
+						navigation
+						mouse-dragging
+						slides-per-page="4"
+						slides-per-move="1"
+						aria-labelledby="mode-strip-label"
+					>
+						${MODE_CHOICES.map((mode) => x2`
+							<sl-carousel-item>
+								<button
+									class="mode-tag ${__privateGet(this, _mode).mode === mode ? "is-active" : ""}"
+									type="button"
+									aria-pressed=${__privateGet(this, _mode).mode === mode}
+									@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setMode_fn).call(this, mode)}
+								>${modeText(mode, t8)}</button>
+							</sl-carousel-item>
+						`)}
+						<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
+						<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
+					</sl-carousel>
+					<sl-button
+						class="reset"
+						size="small"
+						title=${t8.resetMode}
+						aria-label=${t8.resetMode}
+						@click=${__privateGet(this, _resetMode)}
+					>${RESET_ICON}</sl-button>
+				</div>
 				${slider ? x2`
 						<div class="mode-slider">
 							<input

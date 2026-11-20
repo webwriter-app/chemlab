@@ -65,8 +65,8 @@ import {
 	ELECTRONEGATIVITY_RANGE,
 	HALF_LIFE_RANGE,
 	IONIZATION_RANGE,
+	MODE_CHOICES,
 	RADIUS_RANGE,
-	TABLE_MODES,
 	TEMPERATURE_SLIDER,
 	cellMode,
 	celsiusFromKelvin,
@@ -808,6 +808,18 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		this.requestUpdate();
 	}
 
+	/**
+	 * Clears the property mode and restores the default thresholds.
+	 *
+	 * The mode panel carries no `off` chip, so this is the way back to the plain
+	 * table. It also puts every slider back to the end that hides nothing, so the
+	 * next mode starts from the reference state instead of the last threshold.
+	 */
+	#resetMode = () => {
+		this.#mode = DEFAULT_MODE_STATE;
+		this.requestUpdate();
+	};
+
 	/** Reads the search field. */
 	#onQueryInput = (event: Event) => {
 		const value = (event.target as { value?: string }).value ?? "";
@@ -1100,15 +1112,21 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/**
 	 * Renders the property panel behind the second ribbon toggle.
 	 *
-	 * The panel decides what the cells are coloured by: nothing, the state at the
-	 * chosen temperature, or whether the element was already known in the chosen
-	 * year. The modes sit in a carousel of chips, so the row stays one band while
-	 * the list of modes grows, and the slider of the active mode sits underneath
-	 * it with its value as a tag. The slider is a native range input: it needs no
-	 * component registration, keeps the keyboard and touch behaviour of the
-	 * platform, and cannot fall back to plain text when a Shoelace build is
-	 * missing. The legend of the temperature mode shares the last row, because a
-	 * row of its own would cost the table the height of one period.
+	 * The panel decides what the cells are coloured by: the state at the chosen
+	 * temperature, whether the element was already known in the chosen year, or
+	 * one of the four numeric properties. The modes sit in a carousel of chips, so
+	 * the row stays one band while the list of modes grows, and the slider of the
+	 * active mode sits underneath it with its value as a tag. The slider is a
+	 * native range input: it needs no component registration, keeps the keyboard
+	 * and touch behaviour of the platform, and cannot fall back to plain text when
+	 * a Shoelace build is missing. The legend of the temperature mode shares the
+	 * last row, because a row of its own would cost the table the height of one
+	 * period.
+	 *
+	 * The strip carries no `off` chip. The reset beside it is the way back to the
+	 * plain table, in the same place and the same treatment as the reset beside
+	 * the search, so both panels clear their own state with one button at the end
+	 * of their row instead of a chip that scrolls away with the modes.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
@@ -1119,28 +1137,37 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const slider = this.#slider(t, language);
 		return html`
 			<div class="panel modes">
-				<span class="visually-hidden" id="mode-strip-label">${t.modeLabel}</span>
-				<sl-carousel
-					class="mode-strip"
-					navigation
-					mouse-dragging
-					slides-per-page="4"
-					slides-per-move="1"
-					aria-labelledby="mode-strip-label"
-				>
-					${TABLE_MODES.map(mode => html`
-						<sl-carousel-item>
-							<button
-								class="mode-tag ${this.#mode.mode === mode ? "is-active" : ""}"
-								type="button"
-								aria-pressed=${this.#mode.mode === mode}
-								@click=${() => this.#setMode(mode)}
-							>${modeText(mode, t)}</button>
-						</sl-carousel-item>
-					`)}
-					<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
-					<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
-				</sl-carousel>
+				<div class="panel-row">
+					<span class="visually-hidden" id="mode-strip-label">${t.modeLabel}</span>
+					<sl-carousel
+						class="mode-strip"
+						navigation
+						mouse-dragging
+						slides-per-page="4"
+						slides-per-move="1"
+						aria-labelledby="mode-strip-label"
+					>
+						${MODE_CHOICES.map(mode => html`
+							<sl-carousel-item>
+								<button
+									class="mode-tag ${this.#mode.mode === mode ? "is-active" : ""}"
+									type="button"
+									aria-pressed=${this.#mode.mode === mode}
+									@click=${() => this.#setMode(mode)}
+								>${modeText(mode, t)}</button>
+							</sl-carousel-item>
+						`)}
+						<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
+						<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
+					</sl-carousel>
+					<sl-button
+						class="reset"
+						size="small"
+						title=${t.resetMode}
+						aria-label=${t.resetMode}
+						@click=${this.#resetMode}
+					>${RESET_ICON}</sl-button>
+				</div>
 				${slider
 					? html`
 						<div class="mode-slider">

@@ -165,6 +165,17 @@ export const TABLE_MODES: readonly TableMode[] = [
 	"halfLife",
 ];
 
+/**
+ * The modes the property carousel offers as chips.
+ *
+ * `off` is the resting state and not a chip: the reset button beside the
+ * carousel clears the mode, the same way the reset beside the search clears the
+ * query and the family filter. Keeping `off` out of the strip leaves the six
+ * modes that colour or badge a cell, and the way back is one button in the same
+ * row instead of a chip that scrolls with the others.
+ */
+export const MODE_CHOICES: readonly TableMode[] = TABLE_MODES.filter((mode) => mode !== "off");
+
 /** Bounds of a numeric mode, taken from the bundle. */
 export interface ModeRange {
 	/** Lowest slider value. */

@@ -26,6 +26,7 @@ export type StringKey =
 	| "viewTable"
 	| "viewList"
 	| "reset"
+	| "resetMode"
 	| "resultCount"
 	| "resultCountOne"
 	| "noResults"
@@ -125,6 +126,7 @@ const EN: Strings = {
 	viewTable: "Table",
 	viewList: "List",
 	reset: "Reset",
+	resetMode: "Reset mode",
 	resultCount: "{count} elements",
 	resultCountOne: "1 element",
 	noResults: "No element matches the search",
@@ -225,6 +227,7 @@ const DE: Strings = {
 	viewTable: "Tabelle",
 	viewList: "Liste",
 	reset: "Zurücksetzen",
+	resetMode: "Modus zurücksetzen",
 	resultCount: "{count} Elemente",
 	resultCountOne: "1 Element",
 	noResults: "Kein Element passt zur Suche",

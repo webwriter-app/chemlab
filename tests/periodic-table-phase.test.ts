@@ -11,6 +11,7 @@ import {
 	ELECTRONEGATIVITY_RANGE,
 	HALF_LIFE_RANGE,
 	IONIZATION_RANGE,
+	MODE_CHOICES,
 	RADIUS_RANGE,
 	TEMPERATURE_SLIDER,
 	TABLE_MODES,
@@ -105,6 +106,24 @@ test("the default mode state shows the reference conditions", () => {
 		"ionization",
 		"halfLife",
 	]);
+});
+
+test("the mode carousel offers every mode but the resting state", () => {
+	// `off` is not a chip: the reset beside the carousel clears the mode, so the
+	// strip keeps the six modes that change a cell and the way back stays in the
+	// same row instead of scrolling away with them.
+	assert.deepEqual(MODE_CHOICES, [
+		"temperature",
+		"discovery",
+		"radius",
+		"electronegativity",
+		"ionization",
+		"halfLife",
+	]);
+	assert.deepEqual(
+		MODE_CHOICES,
+		TABLE_MODES.filter((mode) => mode !== "off"),
+	);
 });
 
 test("every threshold starts at the end that hides nothing", () => {

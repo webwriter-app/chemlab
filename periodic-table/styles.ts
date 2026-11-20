@@ -598,11 +598,16 @@ export const periodicTableStyles = css`
 		background: var(--pt-cell-fill);
 	}
 
-	/* The property panel repeats the filter panel: a carousel of mode chips on
-	   top, the slider of the active mode underneath. The chips are plain buttons
-	   in the family tag treatment, so the two panels read as one system. */
+	/* The property panel repeats the filter panel: a carousel of mode chips with
+	   the reset at its end on top, the slider of the active mode underneath. The
+	   chips are plain buttons in the family tag treatment, so the two panels read
+	   as one system. */
 	.mode-strip {
-		flex: 0 0 auto;
+		/* The strip shares its row with the reset button, so it takes the free
+		   width and leaves the button its own size, like the family strip beside
+		   the count badge. */
+		flex: 1 1 6rem;
+		min-width: 7rem;
 		--slide-gap: 0.25rem;
 		/* The carousel sizes its slides from an aspect ratio, which would give a
 		   one-row strip the height of a picture. Auto lets the chips decide the
