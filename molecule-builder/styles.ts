@@ -32,7 +32,7 @@ export const builderStyles = css`
 		   header, the tool row and the canvas controls share one rhythm. */
 		--sl-input-height-small: var(--chip-height);
 	}
-	.document, .tools, .view-tools, .fields, .palette-tools, .tool-group, .palette-heading,
+	.document, .tools, .view-buttons, .fields, .palette-tools, .tool-group, .palette-heading,
 	.document-title, .document-actions, .card-head, .card-facts, .display-controls, .bond-orders {
 		display: flex;
 		flex-wrap: wrap;
@@ -136,23 +136,6 @@ export const builderStyles = css`
 	}
 	.catalog-entry-name { font-weight: 500; }
 	.catalog-entry-formula { color: var(--sl-color-neutral-600, #52525b); font-size: .75rem; }
-	.catalog-variants { display: flex; flex-wrap: wrap; gap: 3px; padding: 0 6px 3px; }
-	.catalog-variant {
-		padding: 1px 6px;
-		border: 1px solid var(--outline);
-		border-radius: 3px;
-		background: white;
-		color: inherit;
-		font: inherit;
-		font-size: .75rem;
-		cursor: pointer;
-	}
-	.catalog-variant:hover { background: var(--sl-color-neutral-100, #f4f4f5); }
-	.catalog-variant:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
-	.catalog-variant.is-selected {
-		border-color: var(--blue);
-		background: color-mix(in srgb, var(--blue) 10%, white);
-	}
 	.catalog-note {
 		margin: 0;
 		padding: 0 6px 3px;
@@ -182,13 +165,21 @@ export const builderStyles = css`
 	   and the workspace grows into the rest, so the canvas fills the screen
 	   instead of keeping the height it has in an embed. */
 	:host(:fullscreen) { block-size: 100%; }
-	:host(:fullscreen) .builder {
+	:host(:fullscreen) .builder, .builder:popover-open {
 		display: flex;
 		flex-direction: column;
 		box-sizing: border-box;
 		block-size: 100%;
 	}
-	:host(:fullscreen) .workspace {
+	.builder:popover-open {
+		position: fixed;
+		inset: 0;
+		inline-size: 100%;
+		max-inline-size: none;
+		max-block-size: none;
+		margin: 0;
+	}
+	:host(:fullscreen) .workspace, .builder:popover-open .workspace {
 		flex: 1 1 auto;
 		block-size: auto;
 		min-block-size: 0;
@@ -248,13 +239,19 @@ export const builderStyles = css`
 		min-width: 0;
 		background: #fbfbfa;
 	}
-	.board { position: relative; min-block-size: 0; }
+	.board { position: relative; min-block-size: 0; background-color: #fbfbfa; }
+	.board[data-unit-grid] {
+		background-image: linear-gradient(to right, rgb(47 58 73 / 10%) 1px, transparent 1px),
+			linear-gradient(to bottom, rgb(47 58 73 / 10%) 1px, transparent 1px);
+		background-size: var(--grid-cell) var(--grid-cell);
+		background-position: center;
+	}
 	.board:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
 	.scene, .drawing { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 	.scene { overflow: hidden; }
 	.drawing { display: block; background: radial-gradient(#d4d8db 1px, transparent 1px) 1px 1px / 18px 18px; }
 	.drawing [data-atom] { cursor: pointer; }
-	.board:has(.lewis-view) { background: #fafbfc; }
+	.board:has(.lewis-view) { background-color: #fafbfc; }
 	.drawing.lewis-view {
 		--diagram-top: min(5.8rem, 21%);
 		--diagram-bottom: min(5rem, 18%);
@@ -267,7 +264,7 @@ export const builderStyles = css`
 	.lewis-bond { fill: none; stroke: #39475a; stroke-width: .036; stroke-linecap: round; stroke-linejoin: round; }
 	.lewis-bond[data-active] { stroke: var(--blue); stroke-width: .06; }
 	.lewis-hit { fill: transparent; stroke: transparent; stroke-width: .023; }
-	.lewis-atom[data-active] .lewis-hit { fill: #e2f3ff; stroke: #8ccff0; }
+	.lewis-atom[data-active] .lewis-hit { fill: #f2f5f8; stroke: black; }
 	.lewis-symbol { font-size: .31px; font-weight: 650; fill: currentColor; }
 	.lewis-electron { fill: #37465a; }
 	.hydration-water text { fill: #334155; font-weight: 650; font-size: .24px; }
@@ -334,10 +331,22 @@ export const builderStyles = css`
 		inset-block-end: 4px;
 		inset-inline-end: 4px;
 		z-index: 2;
+		display: grid;
+		justify-items: end;
 		max-inline-size: calc(100% - 8px);
-		justify-content: flex-end;
-		gap: 3px;
+		gap: 5px;
 		--sl-input-height-small: 24px;
+	}
+	.view-buttons { justify-content: flex-end; gap: 3px; }
+	.grid-scale::part(base) { background: var(--control); box-shadow: var(--shadow); }
+	.grid-scale::part(content) { display: flex; align-items: center; gap: .35rem; font-variant-numeric: tabular-nums; }
+	.grid-scale-line {
+		display: inline-block;
+		inline-size: var(--grid-cell);
+		block-size: 4px;
+		box-sizing: border-box;
+		border: 1px solid currentColor;
+		border-block-start: 0;
 	}
 	.view-tools sl-button::part(base) { box-shadow: var(--shadow); }
 	.view-tools sl-button:not([aria-pressed="true"])::part(base):not(:hover):not(:active) { background: var(--control); }
@@ -361,6 +370,15 @@ export const builderStyles = css`
 		box-shadow: var(--panel-shadow);
 		font-size: .78rem;
 	}
+	.summary-formula { font-size: .88rem; font-weight: 650; overflow-wrap: anywhere; }
+	.summary-caption, .summary-variant > span { color: var(--sl-color-neutral-600, #52525b); }
+	.summary-variant {
+		display: grid;
+		align-items: center;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: .35rem;
+	}
+	.summary-variant select { min-inline-size: 0; max-inline-size: 100%; }
 	.model-summary output { color: #52525b; }
 	.selection-card .fields a {
 		display: inline-flex;
@@ -498,10 +516,10 @@ export const builderStyles = css`
 		/* The canvas is narrow here, so the view controls stand in a column at the
 		   right edge and the cards keep clear of it. */
 		.view-tools {
-			flex-direction: column;
 			inset-block: 50% auto;
 			transform: translateY(-50%);
 		}
+		.view-buttons { flex-direction: column; align-items: end; }
 		/* The handle hangs below the palette here, so the summary starts under it
 		   and both cards keep clear of the view controls on the right. */
 		.model-summary {

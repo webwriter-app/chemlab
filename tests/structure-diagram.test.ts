@@ -1,10 +1,18 @@
 import { strict as assert } from "node:assert";
+import { gridCell } from "../molecule-builder/canvas-grid";
 import { catalogStructures } from "../molecule-builder/catalog";
 import { canBond, formula } from "../molecule-builder/geometry";
 import {
 	chemicalFormula, crystalSpecies, editableRepeatUnit, electronDots, empiricalCrystalFormula, freeCrystalSite, lewisDiagram, monatomicCharge,
 } from "../molecule-builder/structure-diagram";
 import { newCrystal, readStructure, type Crystal, type Molecule } from "../molecule-builder/structure";
+
+assert.deepEqual(gridCell(22), { length: 1, pixels: 22 });
+assert.deepEqual(gridCell(11), { length: 2, pixels: 22 });
+assert.deepEqual(gridCell(4.5), { length: 5, pixels: 22.5 });
+assert.deepEqual(gridCell(123), { length: .2, pixels: 24.6 });
+assert.equal(gridCell(0), undefined);
+assert.equal(gridCell(Infinity), undefined);
 
 const molecule = (name: string) => catalogStructures(name)[0] as Molecule;
 const crystal = (name: string) => catalogStructures(name)[0] as Crystal;

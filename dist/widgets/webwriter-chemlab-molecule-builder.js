@@ -91328,7 +91328,6 @@ var init_dist2 = __esm({
     init_Vector3();
     init_Container3D();
     init_Sphere();
-    init_BaseMaterial3D();
     init_Mesh3D();
     init_Material3D();
     init_Plane();
@@ -91368,7 +91367,7 @@ function radialTexture(stops, size3 = 256) {
   context2.fillRect(0, 0, size3, size3);
   return new Texture({ source: new CanvasSource({ resource: canvas }) });
 }
-var vector4, cellCorners, CAMERA_FOV, FIT_FILL, AXIS_ORIGIN, AXIS_LENGTH, AXIS_COLORS, RIM_STRENGTH, RIM_POWER, rimBit, SELECTION_COLOR, SELECTION_LINEAR, MARK_WIDTH, SELECTION_MARK, HOVER_MARK, VIGNETTE_ALPHA, VIGNETTE_CLEAR, VIGNETTE_REACH, VIGNETTE_COLOR, MoleculeScene;
+var vector4, cellCorners, CAMERA_FOV, FIT_FILL, AXIS_ORIGIN, AXIS_LENGTH, AXIS_COLORS, RIM_STRENGTH, RIM_POWER, rimBit, BOND_PREVIEW_COLOR, MARK_COLOR, MARK_WIDTH, SELECTION_MARK, HOVER_MARK, VIGNETTE_ALPHA, VIGNETTE_CLEAR, VIGNETTE_REACH, VIGNETTE_COLOR, MoleculeScene;
 var init_scene = __esm({
   "molecule-builder/scene.ts"() {
     init_lib();
@@ -91410,8 +91409,8 @@ var init_scene = __esm({
         }
       }
     };
-    SELECTION_COLOR = 34501;
-    SELECTION_LINEAR = [0, 134, 197].map((channel) => srgbToLinear(channel / 255));
+    BOND_PREVIEW_COLOR = 34501;
+    MARK_COLOR = [0, 0, 0, 1];
     MARK_WIDTH = 0.62;
     SELECTION_MARK = 1;
     HOVER_MARK = 0.55;
@@ -91420,12 +91419,46 @@ var init_scene = __esm({
     VIGNETTE_REACH = 0.85;
     VIGNETTE_COLOR = "15, 23, 42";
     MoleculeScene = class _MoleculeScene {
-      static async create(host) {
+      constructor(app, host, updateScale) {
+        this.updateScale = updateScale;
+        this.#app = app;
+        this.#view = new View3D({
+          autoResize: false,
+          environment: { skyColor: 16777215, groundColor: 10925251, intensity: 0.94 }
+        });
+        this.#vignette = new Sprite({ texture: this.#track(radialTexture(vignetteStops())), eventMode: "none" });
+        app.stage.addChild(this.#view, this.#vignette, this.#lattice, this.#axes, ...this.#axisLabels);
+        this.#sizeVignette();
+        for (const label of this.#axisLabels) label.visible = false;
+        this.#view.setSize(app.screen.width, app.screen.height);
+        const sun = new DirectionalLight({ color: 16777215, intensity: 2.15 });
+        sun.position.set(3, 6, 7);
+        sun.lookAt({ x: 0, y: 0, z: 0 });
+        this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons, this.#hydration);
+        this.#preview = this.#rod();
+        this.#preview.material = this.#material(BOND_PREVIEW_COLOR);
+        this.#preview.visible = false;
+        this.#view.root.addChild(this.#preview);
+        app.canvas.style.display = "block";
+        app.canvas.setAttribute("aria-hidden", "true");
+        host.append(app.canvas);
+        this.#observer = new ResizeObserver(() => {
+          if (host.clientWidth && host.clientHeight) {
+            app.renderer.resize(host.clientWidth, host.clientHeight);
+            this.#view.setSize(host.clientWidth, host.clientHeight);
+            this.#sizeVignette();
+            this.#draw();
+          }
+        });
+        this.#observer.observe(host);
+        this.#camera();
+      }
+      static async create(host, updateScale) {
         const app = new Application();
         try {
           await app.init({
             preference: "webgl",
-            background: 16514042,
+            backgroundAlpha: 0,
             antialias: true,
             resolution: Math.min(window.devicePixelRatio || 1, 2),
             autoDensity: true,
@@ -91435,7 +91468,7 @@ var init_scene = __esm({
           if (typeof WebGL2RenderingContext === "undefined" || !("gl" in app.renderer) || !(app.renderer.gl instanceof WebGL2RenderingContext)) {
             throw new Error("Molecular rendering requires WebGL 2");
           }
-          return new _MoleculeScene(app, host);
+          return new _MoleculeScene(app, host, updateScale);
         } catch (error) {
           if (app.renderer) app.destroy(true, { children: true });
           throw error;
@@ -91480,39 +91513,7 @@ var init_scene = __esm({
       #pitch = 0.24;
       #bounds = [];
       #atomRadius = 0;
-      constructor(app, host) {
-        this.#app = app;
-        this.#view = new View3D({
-          autoResize: false,
-          environment: { skyColor: 16777215, groundColor: 10925251, intensity: 0.94 }
-        });
-        this.#vignette = new Sprite({ texture: this.#track(radialTexture(vignetteStops())), eventMode: "none" });
-        app.stage.addChild(this.#view, this.#vignette, this.#lattice, this.#axes, ...this.#axisLabels);
-        this.#sizeVignette();
-        for (const label of this.#axisLabels) label.visible = false;
-        this.#view.setSize(app.screen.width, app.screen.height);
-        const sun = new DirectionalLight({ color: 16777215, intensity: 2.15 });
-        sun.position.set(3, 6, 7);
-        sun.lookAt({ x: 0, y: 0, z: 0 });
-        this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons, this.#hydration);
-        this.#preview = this.#rod();
-        this.#preview.material = this.#material(SELECTION_COLOR);
-        this.#preview.visible = false;
-        this.#view.root.addChild(this.#preview);
-        app.canvas.style.display = "block";
-        app.canvas.setAttribute("aria-hidden", "true");
-        host.append(app.canvas);
-        this.#observer = new ResizeObserver(() => {
-          if (host.clientWidth && host.clientHeight) {
-            app.renderer.resize(host.clientWidth, host.clientHeight);
-            this.#view.setSize(host.clientWidth, host.clientHeight);
-            this.#sizeVignette();
-            this.#draw();
-          }
-        });
-        this.#observer.observe(host);
-        this.#camera();
-      }
+      #lastPixelsPerAngstrom = 0;
       /**
        * Remember a generated texture so {@link destroy} can free it.
        *
@@ -91557,7 +91558,7 @@ var init_scene = __esm({
           material.data.rimStrength = RIM_STRENGTH;
           material.data.rimPower = RIM_POWER;
           material.data.markWidth = MARK_WIDTH;
-          material.data.markColor = [...SELECTION_LINEAR, 1];
+          material.data.markColor = MARK_COLOR;
           material.data.markStrength = mark;
           this.#materials.set(key, material);
         }
@@ -91816,6 +91817,12 @@ var init_scene = __esm({
         if (this.#frame) return;
         this.#frame = requestAnimationFrame(() => {
           this.#frame = 0;
+          const camera = this.#view.camera;
+          const pixelsPerAngstrom = this.#app.screen.height * camera.zoom / (2 * this.#distance * Math.tan(camera.fov * Math.PI / 360));
+          if (pixelsPerAngstrom !== this.#lastPixelsPerAngstrom) {
+            this.#lastPixelsPerAngstrom = pixelsPerAngstrom;
+            this.updateScale(pixelsPerAngstrom);
+          }
           if (this.#showLattice) {
             this.#lattice.clear();
             for (const [index, point] of this.#latticePoints.entries()) {
@@ -106145,6 +106152,18 @@ function renderLewis(diagram, box, options) {
 	</svg>`;
 }
 
+// molecule-builder/canvas-grid.ts
+var MIN_CELL_PIXELS = 22;
+function gridCell(pixelsPerUnit) {
+  if (!(Number.isFinite(pixelsPerUnit) && pixelsPerUnit > 0)) return;
+  const units = MIN_CELL_PIXELS / pixelsPerUnit;
+  if (!Number.isFinite(units)) return;
+  const exponent = Math.floor(Math.log10(units));
+  const power = 10 ** exponent;
+  const length2 = Number(([1, 2, 5, 10].find((step) => step * power >= units - power * 1e-12) * power).toPrecision(12));
+  return { length: length2, pixels: length2 * pixelsPerUnit };
+}
+
 // molecule-builder/styles.ts
 var builderStyles = i`
 	:host {
@@ -106178,7 +106197,7 @@ var builderStyles = i`
 		   header, the tool row and the canvas controls share one rhythm. */
 		--sl-input-height-small: var(--chip-height);
 	}
-	.document, .tools, .view-tools, .fields, .palette-tools, .tool-group, .palette-heading,
+	.document, .tools, .view-buttons, .fields, .palette-tools, .tool-group, .palette-heading,
 	.document-title, .document-actions, .card-head, .card-facts, .display-controls, .bond-orders {
 		display: flex;
 		flex-wrap: wrap;
@@ -106282,23 +106301,6 @@ var builderStyles = i`
 	}
 	.catalog-entry-name { font-weight: 500; }
 	.catalog-entry-formula { color: var(--sl-color-neutral-600, #52525b); font-size: .75rem; }
-	.catalog-variants { display: flex; flex-wrap: wrap; gap: 3px; padding: 0 6px 3px; }
-	.catalog-variant {
-		padding: 1px 6px;
-		border: 1px solid var(--outline);
-		border-radius: 3px;
-		background: white;
-		color: inherit;
-		font: inherit;
-		font-size: .75rem;
-		cursor: pointer;
-	}
-	.catalog-variant:hover { background: var(--sl-color-neutral-100, #f4f4f5); }
-	.catalog-variant:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
-	.catalog-variant.is-selected {
-		border-color: var(--blue);
-		background: color-mix(in srgb, var(--blue) 10%, white);
-	}
 	.catalog-note {
 		margin: 0;
 		padding: 0 6px 3px;
@@ -106328,13 +106330,21 @@ var builderStyles = i`
 	   and the workspace grows into the rest, so the canvas fills the screen
 	   instead of keeping the height it has in an embed. */
 	:host(:fullscreen) { block-size: 100%; }
-	:host(:fullscreen) .builder {
+	:host(:fullscreen) .builder, .builder:popover-open {
 		display: flex;
 		flex-direction: column;
 		box-sizing: border-box;
 		block-size: 100%;
 	}
-	:host(:fullscreen) .workspace {
+	.builder:popover-open {
+		position: fixed;
+		inset: 0;
+		inline-size: 100%;
+		max-inline-size: none;
+		max-block-size: none;
+		margin: 0;
+	}
+	:host(:fullscreen) .workspace, .builder:popover-open .workspace {
 		flex: 1 1 auto;
 		block-size: auto;
 		min-block-size: 0;
@@ -106394,13 +106404,19 @@ var builderStyles = i`
 		min-width: 0;
 		background: #fbfbfa;
 	}
-	.board { position: relative; min-block-size: 0; }
+	.board { position: relative; min-block-size: 0; background-color: #fbfbfa; }
+	.board[data-unit-grid] {
+		background-image: linear-gradient(to right, rgb(47 58 73 / 10%) 1px, transparent 1px),
+			linear-gradient(to bottom, rgb(47 58 73 / 10%) 1px, transparent 1px);
+		background-size: var(--grid-cell) var(--grid-cell);
+		background-position: center;
+	}
 	.board:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
 	.scene, .drawing { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 	.scene { overflow: hidden; }
 	.drawing { display: block; background: radial-gradient(#d4d8db 1px, transparent 1px) 1px 1px / 18px 18px; }
 	.drawing [data-atom] { cursor: pointer; }
-	.board:has(.lewis-view) { background: #fafbfc; }
+	.board:has(.lewis-view) { background-color: #fafbfc; }
 	.drawing.lewis-view {
 		--diagram-top: min(5.8rem, 21%);
 		--diagram-bottom: min(5rem, 18%);
@@ -106413,7 +106429,7 @@ var builderStyles = i`
 	.lewis-bond { fill: none; stroke: #39475a; stroke-width: .036; stroke-linecap: round; stroke-linejoin: round; }
 	.lewis-bond[data-active] { stroke: var(--blue); stroke-width: .06; }
 	.lewis-hit { fill: transparent; stroke: transparent; stroke-width: .023; }
-	.lewis-atom[data-active] .lewis-hit { fill: #e2f3ff; stroke: #8ccff0; }
+	.lewis-atom[data-active] .lewis-hit { fill: #f2f5f8; stroke: black; }
 	.lewis-symbol { font-size: .31px; font-weight: 650; fill: currentColor; }
 	.lewis-electron { fill: #37465a; }
 	.hydration-water text { fill: #334155; font-weight: 650; font-size: .24px; }
@@ -106480,10 +106496,22 @@ var builderStyles = i`
 		inset-block-end: 4px;
 		inset-inline-end: 4px;
 		z-index: 2;
+		display: grid;
+		justify-items: end;
 		max-inline-size: calc(100% - 8px);
-		justify-content: flex-end;
-		gap: 3px;
+		gap: 5px;
 		--sl-input-height-small: 24px;
+	}
+	.view-buttons { justify-content: flex-end; gap: 3px; }
+	.grid-scale::part(base) { background: var(--control); box-shadow: var(--shadow); }
+	.grid-scale::part(content) { display: flex; align-items: center; gap: .35rem; font-variant-numeric: tabular-nums; }
+	.grid-scale-line {
+		display: inline-block;
+		inline-size: var(--grid-cell);
+		block-size: 4px;
+		box-sizing: border-box;
+		border: 1px solid currentColor;
+		border-block-start: 0;
 	}
 	.view-tools sl-button::part(base) { box-shadow: var(--shadow); }
 	.view-tools sl-button:not([aria-pressed="true"])::part(base):not(:hover):not(:active) { background: var(--control); }
@@ -106507,6 +106535,15 @@ var builderStyles = i`
 		box-shadow: var(--panel-shadow);
 		font-size: .78rem;
 	}
+	.summary-formula { font-size: .88rem; font-weight: 650; overflow-wrap: anywhere; }
+	.summary-caption, .summary-variant > span { color: var(--sl-color-neutral-600, #52525b); }
+	.summary-variant {
+		display: grid;
+		align-items: center;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: .35rem;
+	}
+	.summary-variant select { min-inline-size: 0; max-inline-size: 100%; }
 	.model-summary output { color: #52525b; }
 	.selection-card .fields a {
 		display: inline-flex;
@@ -106644,10 +106681,10 @@ var builderStyles = i`
 		/* The canvas is narrow here, so the view controls stand in a column at the
 		   right edge and the cards keep clear of it. */
 		.view-tools {
-			flex-direction: column;
 			inset-block: 50% auto;
 			transform: translateY(-50%);
 		}
+		.view-buttons { flex-direction: column; align-items: end; }
 		/* The handle hangs below the palette here, so the summary starts under it
 		   and both cards keep clear of the view controls on the right. */
 		.model-summary {
@@ -106676,6 +106713,15 @@ var PLANE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden=
 	<path d="M8 1.9 13.8 5v6L8 14.1 2.2 11V5z" /><circle cx="8" cy="8" r="1.7" /></svg>`;
 var FIT_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
 	<path d="M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4" /><rect x="5" y="5" width="6" height="6" rx="0.5" /></svg>`;
+var FULLSCREEN_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+	<path d="M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4" /></svg>`;
+var EXIT_FULLSCREEN_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+	<path d="M2 6h4V2m4 0v4h4m0 4h-4v4m-4 0v-4H2" /></svg>`;
+var NEW_MOLECULE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+	<path d="m6 6 3-2M6 8l3 2m4 .7v4.2m-2.1-2.1h4.2" /><circle cx="4.5" cy="7" r="1.7" />
+	<circle cx="10.4" cy="3.3" r="1.6" /><circle cx="10.4" cy="10.7" r="1.4" /></svg>`;
+var NEW_CRYSTAL_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+	<path d="m7.3 1.8 4.9 3v4.1l-4.9 4.2-5-3.7V4.8zm-5 3 5 3 4.9-3M7.3 7.8v5.1m6-2.5v4.5m-2.2-2.2h4.5" /></svg>`;
 var ZOOM_IN_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true">
 	<path d="M3 8h10M8 3v10" /></svg>`;
 var ZOOM_OUT_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true">
@@ -106723,9 +106769,9 @@ var AXES_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="
 	<path d="M3.4 12.6V3.4M3.4 12.6h9.2M3.4 12.6 8.6 7.4" /><path d="M3.4 2.2v1.2M2.2 12.6h1.2M9.6 6.4 8.6 7.4 9.6 8.4" /></svg>`;
 var ELECTRONS_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
 	<circle cx="4.4" cy="8" r="1.7" /><circle cx="11.6" cy="8" r="1.7" /></svg>`;
-var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _ionCharge_dec, _diagramBox_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showHydration_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _showHydration, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramBox, _ionCharge, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _aqueousCache, _lewisCache, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, stageTarget_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, moveDiagram_fn, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, lewis_fn, aqueous_fn, renderDrawing_fn, renderModelSummary_fn, renderSelectionCard_fn;
+var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _ionCharge_dec, _fullscreen_dec, _diagramBox_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showHydration_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _showHydration, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramBox, _fullscreen, _ionCharge, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _boardObserver, _scenePixelsPerAngstrom, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _aqueousCache, _lewisCache, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, _onFullscreenChange, _onViewportToggle, _toggleFullscreen, syncGrid_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, stageTarget_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, moveDiagram_fn, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, lewis_fn, aqueous_fn, renderDrawing_fn, renderModelSummary_fn, renderSelectionCard_fn;
 _ChemLabMoleculeBuilder_decorators = [t4(BUILDER_TAG)];
-var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showHydration_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramBox_dec = [r9()], _ionCharge_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
+var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showHydration_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramBox_dec = [r9()], _fullscreen_dec = [r9()], _ionCharge_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
   constructor() {
     super(...arguments);
     __privateAdd(this, _ChemLabMoleculeBuilder_instances);
@@ -106760,10 +106806,11 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _notice, __runInitializers(_init3, 116, this, "")), __runInitializers(_init3, 119, this);
     __privateAdd(this, _gpu, __runInitializers(_init3, 120, this, "idle")), __runInitializers(_init3, 123, this);
     __privateAdd(this, _diagramBox, __runInitializers(_init3, 124, this)), __runInitializers(_init3, 127, this);
-    __privateAdd(this, _ionCharge, __runInitializers(_init3, 128, this, 0)), __runInitializers(_init3, 131, this);
-    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 132, this)), __runInitializers(_init3, 135, this);
-    __privateAdd(this, _bondPreview, __runInitializers(_init3, 136, this)), __runInitializers(_init3, 139, this);
-    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 140, this)), __runInitializers(_init3, 143, this);
+    __privateAdd(this, _fullscreen, __runInitializers(_init3, 128, this)), __runInitializers(_init3, 131, this);
+    __privateAdd(this, _ionCharge, __runInitializers(_init3, 132, this, 0)), __runInitializers(_init3, 135, this);
+    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 136, this)), __runInitializers(_init3, 139, this);
+    __privateAdd(this, _bondPreview, __runInitializers(_init3, 140, this)), __runInitializers(_init3, 143, this);
+    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 144, this)), __runInitializers(_init3, 147, this);
     __privateAdd(this, _scene);
     __privateAdd(this, _sceneLoad, 0);
     __privateAdd(this, _fitNext, true);
@@ -106775,12 +106822,47 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _pointers, /* @__PURE__ */ new Map());
     __privateAdd(this, _router);
     __privateAdd(this, _paletteObserver);
+    __privateAdd(this, _boardObserver);
+    __privateAdd(this, _scenePixelsPerAngstrom, 0);
     __privateAdd(this, _dataObserver);
     __privateAdd(this, _worksheetObserver);
     __privateAdd(this, _waitingForLab, false);
     __privateAdd(this, _lastSaved, "");
     __privateAdd(this, _aqueousCache);
     __privateAdd(this, _lewisCache);
+    __privateAdd(this, _onFullscreenChange, () => {
+      const native = this.getRootNode().fullscreenElement === this;
+      if (native || this.fullscreen === "native") this.fullscreen = native ? "native" : void 0;
+    });
+    __privateAdd(this, _onViewportToggle, (event) => {
+      const builder = event.currentTarget;
+      if (event.target !== builder || builder.matches(":popover-open")) return;
+      builder.removeAttribute("popover");
+      if (this.fullscreen === "viewport") this.fullscreen = void 0;
+    });
+    __privateAdd(this, _toggleFullscreen, async () => {
+      const builder = this.renderRoot.querySelector(".builder");
+      if (this.fullscreen === "viewport") {
+        builder?.hidePopover();
+        return;
+      }
+      try {
+        if (this.fullscreen === "native") await this.ownerDocument.exitFullscreen();
+        else await this.requestFullscreen();
+      } catch {
+        if (this.fullscreen !== "native" && typeof builder?.showPopover === "function") {
+          try {
+            builder.setAttribute("popover", "auto");
+            builder.showPopover();
+            this.fullscreen = "viewport";
+            return;
+          } catch {
+            builder.removeAttribute("popover");
+          }
+        }
+        this.notice = __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fullscreen is unavailable in this worksheet.", "Vollbild ist in diesem Arbeitsblatt nicht verf\xFCgbar.");
+      }
+    });
     __privateAdd(this, _onContextLost, () => __privateMethod(this, _ChemLabMoleculeBuilder_instances, fallback_fn).call(this));
     __privateAdd(this, _selectPalette, (event) => {
       if (event.detail.atomicNumber !== null) __privateMethod(this, _ChemLabMoleculeBuilder_instances, chooseElement_fn).call(this, event.detail.atomicNumber);
@@ -106943,6 +107025,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
   }
   connectedCallback() {
     super.connectedCallback();
+    this.ownerDocument.addEventListener("fullscreenchange", __privateGet(this, _onFullscreenChange));
     __privateMethod(this, _ChemLabMoleculeBuilder_instances, restore_fn).call(this);
     __privateSet(this, _dataObserver, new MutationObserver(() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, restore_fn).call(this)));
     __privateGet(this, _dataObserver).observe(this, { childList: true, subtree: true, characterData: true });
@@ -106956,6 +107039,12 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateMethod(this, _ChemLabMoleculeBuilder_instances, bindTable_fn).call(this);
   }
   disconnectedCallback() {
+    this.ownerDocument.removeEventListener("fullscreenchange", __privateGet(this, _onFullscreenChange));
+    this.renderRoot.querySelector(".builder")?.removeAttribute("popover");
+    this.fullscreen = void 0;
+    __privateGet(this, _boardObserver)?.disconnect();
+    __privateSet(this, _boardObserver, void 0);
+    __privateSet(this, _scenePixelsPerAngstrom, 0);
     __privateWrapper(this, _fileOpen)._++;
     __privateWrapper(this, _sceneLoad)._++;
     __privateGet(this, _elementDrag)?.abort();
@@ -106973,6 +107062,13 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     super.disconnectedCallback();
   }
   updated(changed) {
+    if (!__privateGet(this, _boardObserver)) {
+      const board = this.renderRoot.querySelector(".board");
+      if (board) {
+        __privateSet(this, _boardObserver, new ResizeObserver(() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, syncGrid_fn).call(this)));
+        __privateGet(this, _boardObserver).observe(board);
+      }
+    }
     if (changed.has("elementSourceId")) __privateMethod(this, _ChemLabMoleculeBuilder_instances, bindTable_fn).call(this);
     __privateMethod(this, _ChemLabMoleculeBuilder_instances, observePalette_fn).call(this);
     if (this.view === "3d" && this.gpu === "idle") void __privateMethod(this, _ChemLabMoleculeBuilder_instances, startScene_fn).call(this);
@@ -106994,6 +107090,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         __privateGet(this, _scene).fit();
       }
     }
+    __privateMethod(this, _ChemLabMoleculeBuilder_instances, syncGrid_fn).call(this);
   }
   viewCatalogStructure(key) {
     if (!catalogEntry(key)) return false;
@@ -107002,9 +107099,13 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     this.catalogKey = key;
     this.catalogVariants = variants;
     this.catalogIndex = 0;
-    this.openPanel = "catalog";
+    this.openPanel = void 0;
     if (variants.length) __privateMethod(this, _ChemLabMoleculeBuilder_instances, openPreview_fn).call(this, variants[0]);
-    else this.preview = void 0;
+    else {
+      this.preview = void 0;
+      __privateMethod(this, _ChemLabMoleculeBuilder_instances, resetSelection_fn).call(this);
+      this.notice = catalogIsMixture(key) ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "This mixture has no unique structure.", "Dieses Gemisch hat keine eindeutige Struktur.") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "No verified structure is available.", "Es ist keine verifizierte Struktur verf\xFCgbar.");
+    }
     return true;
   }
   viewStructure(snapshot) {
@@ -107022,20 +107123,24 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     const fullWidth = this.classList.contains("ww-full-width");
     const pickerView = fullWidth && !this.paletteNarrow ? this.pickerView : "list";
     const ionColors = current.kind === "crystal" ? crystalIonColors(current) : /* @__PURE__ */ new Map();
-    const representation = current.kind === "molecule" && (this.view === "2d" && current.repeatUnit ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Constitutional repeating unit", "Konstitutionelle Wiederholungseinheit") : current.repeatUnit && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Editable repeating unit", "Bearbeitbare Wiederholungseinheit") : current.representation && {
-      conformer: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "PubChem conformer", "PubChem-Konformer"),
-      experimental: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Experimental geometry", "Experimentelle Geometrie"),
-      constituent: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Mixture constituent", "Gemischbestandteil"),
-      "repeat-unit": __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Capped repeat-unit example", "Beispiel mit abges\xE4ttigten Wiederholungseinheiten"),
-      "ionic-components": __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ionic components", "Ionenbestandteile"),
-      "aqueous-ions": __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Aqueous species \xB7 schematic", "Gel\xF6ste Spezies \xB7 schematisch")
-    }[current.representation]);
     const tool = (value, label, icon) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
       label,
       icon,
       pressed: value === this.tool,
       onClick: () => __privateMethod(this, _ChemLabMoleculeBuilder_instances, setTool_fn).call(this, value)
     });
+    const newTools = x2`<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "New structure", "Neue Struktur")}>
+			${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "New molecule", "Neues Molek\xFCl"),
+      icon: NEW_MOLECULE_ICON,
+      onClick: () => __privateMethod(this, _ChemLabMoleculeBuilder_instances, new_fn).call(this, "molecule")
+    })}
+			${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "New lattice", "Neues Gitter"),
+      icon: NEW_CRYSTAL_ICON,
+      onClick: () => __privateMethod(this, _ChemLabMoleculeBuilder_instances, new_fn).call(this, "crystal")
+    })}
+		</div>`;
     const fit = () => {
       __privateGet(this, _scene)?.fit();
       this.diagramBox = void 0;
@@ -107045,7 +107150,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     const toggle = (panel) => () => {
       this.openPanel = this.openPanel === panel ? void 0 : panel;
     };
-    return x2`<div class="builder" contenteditable="false" @keydown=${__privateGet(this, _keys)}
+    return x2`<div class="builder" contenteditable="false" @keydown=${__privateGet(this, _keys)} @toggle=${__privateGet(this, _onViewportToggle)}
 			@dragover=${(event) => {
       if (event.dataTransfer?.types.includes("Files")) event.preventDefault();
     }}
@@ -107063,6 +107168,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
 					</sl-tag>
 				</div>
 				<div class="document-actions">
+					${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? newTools : E2}
 					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "catalog"}>
 						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
       slot: "anchor",
@@ -107103,6 +107209,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
 				</div>
 			</header>
 			${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? E2 : x2`<div class="tools" role="toolbar" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Editing tools", "Bearbeitungswerkzeuge")}>
+				${newTools}
 				<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Tools", "Werkzeuge")}>
 					${tool(
       "orbit",
@@ -107167,7 +107274,11 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
 							${this.view === "2d" && current.kind === "crystal" ? this.tool === "atom" ? E2 : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose an element to add a crystal site.", "W\xE4hle ein Element f\xFCr einen Gitterplatz.") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Drag an element here, or choose Place atom and click the canvas.", "Ziehe ein Element hierher oder w\xE4hle Atom platzieren und klicke auf die Fl\xE4che.")}
 							</p>` : E2}
 						<div class="view-tools" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Canvas view", "Ansicht der Zeichenfl\xE4che")}>
-							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+							<sl-tag size="small" class="grid-scale" hidden>
+								<span class="grid-scale-line" aria-hidden="true"></span><span class="grid-length"></span>
+							</sl-tag>
+							<div class="view-buttons">
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
       label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "3D view", "3D-Ansicht"),
       icon: CUBE_ICON,
       pressed: this.view === "3d",
@@ -107176,7 +107287,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         this.view = "3d";
       }
     })}
-							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
       label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure view", "Strukturansicht"),
       icon: PLANE_ICON,
       pressed: this.view === "2d",
@@ -107184,13 +107295,20 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         this.view = "2d";
       }
     })}
-							${this.view === "3d" && this.gpu === "ready" || this.view === "2d" && current.kind === "molecule" ? x2`
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom in", "Vergr\xF6\xDFern"), icon: ZOOM_IN_ICON, onClick: () => this.view === "3d" ? __privateGet(this, _scene)?.zoom(0.83) : __privateMethod(this, _ChemLabMoleculeBuilder_instances, moveDiagram_fn).call(this, 0.83) })}
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => this.view === "3d" ? __privateGet(this, _scene)?.zoom(1.2) : __privateMethod(this, _ChemLabMoleculeBuilder_instances, moveDiagram_fn).call(this, 1.2) })}
-							` : E2}
-							${this.view === "3d" || current.kind === "molecule" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit }) : E2}
+								${this.view === "3d" && this.gpu === "ready" || this.view === "2d" && current.kind === "molecule" ? x2`
+									${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom in", "Vergr\xF6\xDFern"), icon: ZOOM_IN_ICON, onClick: () => this.view === "3d" ? __privateGet(this, _scene)?.zoom(0.83) : __privateMethod(this, _ChemLabMoleculeBuilder_instances, moveDiagram_fn).call(this, 0.83) })}
+									${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => this.view === "3d" ? __privateGet(this, _scene)?.zoom(1.2) : __privateMethod(this, _ChemLabMoleculeBuilder_instances, moveDiagram_fn).call(this, 1.2) })}
+								` : E2}
+								${this.view === "3d" || current.kind === "molecule" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit }) : E2}
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      label: this.fullscreen ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Exit fullscreen", "Vollbild verlassen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fullscreen", "Vollbild"),
+      icon: this.fullscreen ? EXIT_FULLSCREEN_ICON : FULLSCREEN_ICON,
+      pressed: !!this.fullscreen,
+      onClick: __privateGet(this, _toggleFullscreen)
+    })}
+							</div>
 						</div>
-						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderModelSummary_fn).call(this, current, representation, ionColors)}
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderModelSummary_fn).call(this, current, ionColors)}
 						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderSelectionCard_fn).call(this)}
 					</div>
 				</main>
@@ -107232,6 +107350,7 @@ _repeats = new WeakMap();
 _notice = new WeakMap();
 _gpu = new WeakMap();
 _diagramBox = new WeakMap();
+_fullscreen = new WeakMap();
 _ionCharge = new WeakMap();
 _diagramDrag = new WeakMap();
 _bondPreview = new WeakMap();
@@ -107247,6 +107366,8 @@ _gesture = new WeakMap();
 _pointers = new WeakMap();
 _router = new WeakMap();
 _paletteObserver = new WeakMap();
+_boardObserver = new WeakMap();
+_scenePixelsPerAngstrom = new WeakMap();
 _dataObserver = new WeakMap();
 _worksheetObserver = new WeakMap();
 _waitingForLab = new WeakMap();
@@ -107266,6 +107387,27 @@ readonly_get = function() {
 };
 t_fn = function(en, de) {
   return this.lang?.toLowerCase().startsWith("de") ? de : en;
+};
+_onFullscreenChange = new WeakMap();
+_onViewportToggle = new WeakMap();
+_toggleFullscreen = new WeakMap();
+syncGrid_fn = function() {
+  const board = this.renderRoot.querySelector(".board");
+  const scale2 = this.renderRoot.querySelector(".grid-length");
+  if (!board || !scale2) return;
+  const drawing = this.renderRoot.querySelector(".lewis-view");
+  const box = drawing?.viewBox.baseVal;
+  const pixelsPerUnit = this.view === "3d" ? __privateGet(this, _scenePixelsPerAngstrom) : box && Math.min(drawing.clientWidth / box.width, drawing.clientHeight / box.height);
+  const cell = gridCell(pixelsPerUnit);
+  board.toggleAttribute("data-unit-grid", !!cell);
+  scale2.parentElement.hidden = !cell;
+  if (!cell) return;
+  const size3 = `${cell.pixels.toFixed(3)}px`;
+  if (board.style.getPropertyValue("--grid-cell") !== size3) board.style.setProperty("--grid-cell", size3);
+  const length2 = cell.length.toLocaleString(this.lang?.startsWith("de") ? "de" : "en", { maximumSignificantDigits: 4 });
+  const label = this.view === "3d" ? `${length2} \xC5` : `${length2} ${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "du", "ZE")}`;
+  if (scale2.textContent !== label) scale2.textContent = label;
+  scale2.parentElement.title = this.view === "3d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Width of one grid cell at the centre of rotation.", "Breite eines Rasterk\xE4stchens am Drehzentrum.") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Width of one grid cell in diagram units.", "Breite eines Rasterk\xE4stchens in Zeichnungseinheiten.");
 };
 bindTable_fn = function() {
   __privateGet(this, _router)?.dispose();
@@ -107309,7 +107451,11 @@ startScene_fn = async function() {
   try {
     const { MoleculeScene: MoleculeScene2 } = await Promise.resolve().then(() => (init_scene(), scene_exports));
     if (request !== __privateGet(this, _sceneLoad) || !host.isConnected || this.gpu !== "loading") return;
-    const scene = await MoleculeScene2.create(host);
+    const scene = await MoleculeScene2.create(host, (pixelsPerAngstrom) => {
+      if (request !== __privateGet(this, _sceneLoad)) return;
+      __privateSet(this, _scenePixelsPerAngstrom, pixelsPerAngstrom);
+      if (this.view === "3d") __privateMethod(this, _ChemLabMoleculeBuilder_instances, syncGrid_fn).call(this);
+    });
     if (request !== __privateGet(this, _sceneLoad) || !host.isConnected || this.gpu !== "loading" || __privateGet(this, _scene)) {
       scene.destroy();
       return;
@@ -107383,8 +107529,12 @@ resetSelection_fn = function() {
   this.tool = "orbit";
 };
 new_fn = function(kind) {
+  __privateWrapper(this, _fileOpen)._++;
   this.preview = void 0;
   this.openPanel = void 0;
+  this.catalogKey = "";
+  this.catalogVariants = [];
+  this.catalogIndex = 0;
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, kind === "crystal" ? newCrystal() : newMolecule(), true);
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, resetSelection_fn).call(this);
 };
@@ -107680,15 +107830,6 @@ closePreview_fn = function(edit) {
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, resetSelection_fn).call(this);
 };
 _openFile = new WeakMap();
-download_fn = function() {
-  const file = new Blob([JSON.stringify(__privateGet(this, _ChemLabMoleculeBuilder_instances, current_get), null, 2)], { type: "application/json" });
-  const url2 = URL.createObjectURL(file);
-  const anchor = this.ownerDocument.createElement("a");
-  anchor.download = (__privateGet(this, _ChemLabMoleculeBuilder_instances, current_get).name || formula(__privateGet(this, _ChemLabMoleculeBuilder_instances, current_get)) || "structure").replace(/[^\p{L}\p{N}_-]+/gu, "-") + ".chemlab-structure.json";
-  anchor.href = url2;
-  anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url2), 1e3);
-};
 refreshLabs_fn = function() {
   const peers = worksheetPeers(this, LAB_TAG);
   const labs = peers.filter((peer) => typeof peer.reviewBuilderStructure === "function");
@@ -107723,7 +107864,7 @@ send_fn = function(target) {
 /**
  * The catalog opens as a flat list grouped by chemical class. A native select
  * would open a second dropdown on top of the popup, so every substance is a
- * row of its own and the variants of the chosen one appear right below it.
+ * row of its own. Its variants live in the model summary after selection.
  */
 renderCatalog_fn = function() {
   if (this.openPanel !== "catalog") return E2;
@@ -107734,7 +107875,6 @@ renderCatalog_fn = function() {
     entries: structureCatalog.filter((entry) => entry.category === category && matches(entry))
   })).filter((section) => section.entries.length);
   const selected = this.catalogKey;
-  const note = selected && !this.catalogVariants.length ? catalogIsMixture(selected) ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Mixture with no unique structure", "Gemisch ohne eindeutige Struktur") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "No verified structure available", "Keine verifizierte Struktur verf\xFCgbar") : "";
   return x2`<div class="surface catalog-surface" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog")}>
 			<sl-input class="catalog-search" size="small" type="search" clearable
 				label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Search the catalog", "Katalog durchsuchen")}
@@ -107751,19 +107891,15 @@ renderCatalog_fn = function() {
 					<div class="catalog-entries">
 						${section.entries.map((entry) => x2`
 							<button type="button" class="catalog-entry${entry.name === selected ? " is-selected" : ""}"
-								aria-pressed=${String(entry.name === selected)} @click=${() => this.viewCatalogStructure(entry.name)}>
+								aria-pressed=${String(entry.name === selected)} @click=${(event) => {
+    this.viewCatalogStructure(entry.name);
+    if (event.detail === 0) void this.updateComplete.then(() => {
+      (this.renderRoot.querySelector(".summary-variant select") ?? this.renderRoot.querySelector(".board"))?.focus();
+    });
+  }}>
 								<span class="catalog-entry-name">${entry.name}</span>
 								<span class="catalog-entry-formula">${entry.formula}</span>
 							</button>
-							${entry.name !== selected ? E2 : this.catalogVariants.length > 1 ? x2`
-								<div class="catalog-variants" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure", "Struktur")}>
-									${this.catalogVariants.map((variant, index) => x2`<button type="button"
-										class="catalog-variant${index === this.catalogIndex ? " is-selected" : ""}"
-										aria-pressed=${String(index === this.catalogIndex)} @click=${() => {
-    this.catalogIndex = index;
-    __privateMethod(this, _ChemLabMoleculeBuilder_instances, openPreview_fn).call(this, this.catalogVariants[index]);
-  }}>${variant.name}</button>`)}
-								</div>` : note ? x2`<p class="catalog-note">${note}</p>` : E2}
 						`)}
 					</div>
 				</section>`) : x2`<p class="catalog-note" role="status">
@@ -107785,9 +107921,10 @@ renderTargetPicker_fn = function() {
 };
 renderFileActions_fn = function() {
   if (this.openPanel !== "file") return E2;
+  const canDownload = __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length > 0;
+  const filename = (__privateGet(this, _ChemLabMoleculeBuilder_instances, current_get).name || formula(__privateGet(this, _ChemLabMoleculeBuilder_instances, current_get))).replace(/[^\p{L}\p{N}_-]+/gu, "-").replace(/^-+|-+$/g, "");
+  const downloadUrl = canDownload ? "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(__privateGet(this, _ChemLabMoleculeBuilder_instances, current_get), null, 2)) : void 0;
   return x2`<div id="file-actions" class="surface" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "File", "Datei")}>
-			<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, new_fn).call(this, "molecule")}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "New molecule", "Neues Molek\xFCl")}</sl-button>
-			<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, new_fn).call(this, "crystal")}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "New crystal", "Neuer Kristall")}</sl-button>
 			<input type="file" hidden accept=".json,application/json" @change=${(event) => {
     const input = event.currentTarget;
     void __privateGet(this, _openFile).call(this, input.files?.[0]);
@@ -107796,7 +107933,8 @@ renderFileActions_fn = function() {
 			<sl-button size="small" @click=${() => this.renderRoot.querySelector('input[type="file"]')?.click()}>
 				${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Open file", "Datei \xF6ffnen")}
 			</sl-button>
-			<sl-button size="small" ?disabled=${!__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length} @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, download_fn)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Download", "Herunterladen")}</sl-button>
+			<sl-button size="small" href=${downloadUrl ?? E2} download=${(filename || "structure") + ".chemlab-structure.json"}
+				?disabled=${!canDownload}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Download", "Herunterladen")}</sl-button>
 		</div>`;
 };
 /**
@@ -107898,25 +108036,42 @@ renderDrawing_fn = function(colors2) {
 			</div>` : E2}
 		</div>`;
 };
-renderModelSummary_fn = function(current, representation, ionColors) {
+renderModelSummary_fn = function(current, ionColors) {
   const crystal = current.kind === "crystal";
   const aqueous2 = !crystal && current.representation === "aqueous-ions" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, aqueous_fn).call(this, current) : void 0;
-  const geometry = this.view === "3d" && current.kind === "molecule" && __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? current.geometry === "idealized" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Idealized geometry", "Idealisierte Geometrie") : current.geometry === "estimated" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Estimated geometry", "Gesch\xE4tzte Geometrie") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Sketch", "Skizze") : void 0;
+  const selectedEntry = catalogEntry(this.catalogKey);
+  const missing = selectedEntry && !this.catalogVariants.length;
+  const showOxidation = !crystal && this.view === "2d" && current.atoms.length > (aqueous2?.monatomicIons.size ?? 0);
+  const showDisplay = this.view === "3d" && (crystal || __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length > 0 && this.gpu === "ready");
+  const options = this.catalogVariants.length > 1;
+  const composition = __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length && (!crystal || this.view === "3d") ? chemicalFormula(aqueous2 ? current.name : !crystal && current.repeatUnit && this.view === "2d" ? formula({ ...current, atoms: __privateMethod(this, _ChemLabMoleculeBuilder_instances, lewis_fn).call(this, current).atoms }) : formula(current)) : "";
+  const status = this.notice || (this.bondStart ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose the other atom.", "W\xE4hle das zweite Atom.") : "");
   const toggle = (label, icon, value, onClick) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
     label,
     icon,
     pressed: value,
     onClick
   });
-  return x2`<div class="model-summary">
-			<div class="fields">
-				<sl-tag size="small">${crystal ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Crystal", "Kristall") : aqueous2 ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Solution", "L\xF6sung") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Molecule", "Molek\xFCl")}</sl-tag>
-				${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length && (!crystal || this.view === "3d") ? x2`<sl-tag size="small">${chemicalFormula(
-    aqueous2 ? current.name : current.kind === "molecule" && current.repeatUnit && this.view === "2d" ? formula({ ...current, atoms: __privateMethod(this, _ChemLabMoleculeBuilder_instances, lewis_fn).call(this, current).atoms }) : formula(current)
-  )}</sl-tag>` : E2}
-				${representation ? x2`<sl-tag size="small">${representation}</sl-tag>` : E2}
-				${geometry ? x2`<sl-tag size="small">${geometry}</sl-tag>` : E2}
-			</div>
+  return x2`<div class="model-summary" ?hidden=${!(missing || composition || options || showDisplay || showOxidation || status)}>
+			${missing ? x2`<strong class="summary-formula">${selectedEntry.name}</strong>` : E2}
+			${composition && !missing && !options ? x2`<div class="fields">
+				<strong class="summary-formula">${composition}</strong>
+				${!crystal && current.repeatUnit ? x2`<span class="summary-caption">${this.view === "2d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Repeating unit", "Wiederholungseinheit") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Polymer", "Polymer")}</span>` : E2}
+			</div>` : E2}
+			${options ? x2`<label class="summary-variant">
+				<span>${catalogIsMixture(this.catalogKey) ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Constituent", "Bestandteil") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Variant", "Variante")}</span>
+				<select .value=${String(this.catalogIndex)} @change=${(event) => {
+    const index = Number(event.currentTarget.value);
+    const variant = this.catalogVariants[index];
+    if (!variant) return;
+    this.catalogIndex = index;
+    __privateMethod(this, _ChemLabMoleculeBuilder_instances, openPreview_fn).call(this, variant);
+  }}>
+					${this.catalogVariants.map((variant, index) => x2`<option value=${index} ?selected=${index === this.catalogIndex}>
+						${variant.name || formula(variant)}
+					</option>`)}
+				</select>
+			</label>` : E2}
 			${aqueous2 && aqueous2.components.length ? x2`
 				<div class="fields" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Representative dissolved species", "Repr\xE4sentative gel\xF6ste Spezies")}>
 					${aqueous2.components.map((component) => x2`<sl-tag size="small" variant=${component.charge ? "primary" : "neutral"}>
@@ -107946,12 +108101,12 @@ renderModelSummary_fn = function(current, representation, ionColors) {
 					<span data-region="bond">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bonding", "Bindend")}</span>
 					<span data-region="lone">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Nonbonding", "Nichtbindend")}</span>
 				</span>` : E2}
-			${current.kind === "molecule" && this.view === "2d" && current.atoms.length > (aqueous2?.monatomicIons.size ?? 0) ? x2`
+			${showOxidation ? x2`
 				<div class="lewis-legend" title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ionic approximation of the drawn bonds using Allen electronegativity. ? marks an undetermined value.", "Ionische N\xE4herung der gezeichneten Bindungen nach Allen-Elektronegativit\xE4t. ? kennzeichnet einen unbestimmten Wert.")}>
 					${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Oxidation state", "Oxidationszahl")}
 					<span data-oxidation="negative">−</span><span data-oxidation="neutral">0</span><span data-oxidation="positive">+</span>
 				</div>` : E2}
-			${this.view === "3d" ? x2`<div class="display-controls" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Display", "Darstellung")}>
+			${showDisplay ? x2`<div class="display-controls" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Display", "Darstellung")}>
 				${crystal ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cells", "Zellen")}
 					<select .value=${String(this.repeats)} @change=${(event) => {
     this.repeats = Number(event.currentTarget.value);
@@ -107973,7 +108128,7 @@ renderModelSummary_fn = function(current, representation, ionColors) {
     this.showElectrons = !this.showElectrons;
   }) : E2}
 			</div>` : E2}
-			<output aria-live="polite">${this.notice || (this.bondStart ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose the other atom.", "W\xE4hle das zweite Atom.") : "")}</output>
+			<output aria-live="polite" ?hidden=${!status}>${status}</output>
 		</div>`;
 };
 /** The selection card follows the lab's object info card and stays at the canvas edge. */
@@ -108105,6 +108260,7 @@ __decorateElement(_init3, 4, "repeats", _repeats_dec, _ChemLabMoleculeBuilder, _
 __decorateElement(_init3, 4, "notice", _notice_dec, _ChemLabMoleculeBuilder, _notice);
 __decorateElement(_init3, 4, "gpu", _gpu_dec, _ChemLabMoleculeBuilder, _gpu);
 __decorateElement(_init3, 4, "diagramBox", _diagramBox_dec, _ChemLabMoleculeBuilder, _diagramBox);
+__decorateElement(_init3, 4, "fullscreen", _fullscreen_dec, _ChemLabMoleculeBuilder, _fullscreen);
 __decorateElement(_init3, 4, "ionCharge", _ionCharge_dec, _ChemLabMoleculeBuilder, _ionCharge);
 __decorateElement(_init3, 4, "diagramDrag", _diagramDrag_dec, _ChemLabMoleculeBuilder, _diagramDrag);
 __decorateElement(_init3, 4, "bondPreview", _bondPreview_dec, _ChemLabMoleculeBuilder, _bondPreview);

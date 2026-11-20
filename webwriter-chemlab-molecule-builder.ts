@@ -26,6 +26,7 @@ import { chemicalFormula, crystalSpecies, editableRepeatUnit, empiricalCrystalFo
 import { aqueousComponents, hydrationWaters } from "./molecule-builder/aqueous-preview";
 import { diagramIsCrowded, improveDiagram, repairSavedDiagram } from "./molecule-builder/diagram-layout";
 import { lewisViewBox, renderLewis, type DiagramBox } from "./molecule-builder/lewis-view";
+import { gridCell } from "./molecule-builder/canvas-grid";
 import { builderStyles } from "./molecule-builder/styles";
 import type { MoleculeScene } from "./molecule-builder/scene";
 
@@ -59,6 +60,15 @@ const PLANE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidd
 /** Fit control of the canvas, drawn exactly like the lab's fit button. */
 const FIT_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
 	<path d="M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4" /><rect x="5" y="5" width="6" height="6" rx="0.5" /></svg>`;
+const FULLSCREEN_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+	<path d="M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4" /></svg>`;
+const EXIT_FULLSCREEN_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+	<path d="M2 6h4V2m4 0v4h4m0 4h-4v4m-4 0v-4H2" /></svg>`;
+const NEW_MOLECULE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+	<path d="m6 6 3-2M6 8l3 2m4 .7v4.2m-2.1-2.1h4.2" /><circle cx="4.5" cy="7" r="1.7" />
+	<circle cx="10.4" cy="3.3" r="1.6" /><circle cx="10.4" cy="10.7" r="1.4" /></svg>`;
+const NEW_CRYSTAL_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+	<path d="m7.3 1.8 4.9 3v4.1l-4.9 4.2-5-3.7V4.8zm-5 3 5 3 4.9-3M7.3 7.8v5.1m6-2.5v4.5m-2.2-2.2h4.5" /></svg>`;
 /** Zoom controls of the canvas, drawn exactly like the lab's zoom buttons. */
 const ZOOM_IN_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true">
 	<path d="M3 8h10M8 3v10" /></svg>`;
@@ -160,6 +170,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor notice = "";
 	@state() private accessor gpu: "idle" | "loading" | "ready" | "unavailable" = "idle";
 	@state() private accessor diagramBox: DiagramBox | undefined;
+	@state() private accessor fullscreen: "native" | "viewport" | undefined;
 	@state() private accessor ionCharge = 0;
 	@state() private accessor diagramDrag: { id: number; position: Point2 } | undefined;
 	@state() private accessor bondPreview: Point2 | undefined;
@@ -175,6 +186,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	#pointers = new Map<number, Pointer>();
 	#router?: SelectionRouter;
 	#paletteObserver?: ResizeObserver;
+	#boardObserver?: ResizeObserver;
+	#scenePixelsPerAngstrom = 0;
 	#dataObserver?: MutationObserver;
 	#worksheetObserver?: MutationObserver;
 	#waitingForLab = false;
@@ -195,6 +208,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	override connectedCallback() {
 		super.connectedCallback();
+		this.ownerDocument.addEventListener("fullscreenchange", this.#onFullscreenChange);
 		this.#restore();
 		this.#dataObserver = new MutationObserver(() => this.#restore());
 		this.#dataObserver.observe(this, { childList: true, subtree: true, characterData: true });
@@ -210,6 +224,12 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	override disconnectedCallback() {
+		this.ownerDocument.removeEventListener("fullscreenchange", this.#onFullscreenChange);
+		this.renderRoot.querySelector(".builder")?.removeAttribute("popover");
+		this.fullscreen = undefined;
+		this.#boardObserver?.disconnect();
+		this.#boardObserver = undefined;
+		this.#scenePixelsPerAngstrom = 0;
 		this.#fileOpen++;
 		this.#sceneLoad++;
 		this.#elementDrag?.abort();
@@ -228,6 +248,13 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	override updated(changed: Map<PropertyKey, unknown>) {
+		if (!this.#boardObserver) {
+			const board = this.renderRoot.querySelector(".board");
+			if (board) {
+				this.#boardObserver = new ResizeObserver(() => this.#syncGrid());
+				this.#boardObserver.observe(board);
+			}
+		}
 		if (changed.has("elementSourceId")) this.#bindTable();
 		this.#observePalette();
 		if (this.view === "3d" && this.gpu === "idle") void this.#startScene();
@@ -240,6 +267,66 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				this.#scene.fit();
 			}
 		}
+		this.#syncGrid();
+	}
+
+	#onFullscreenChange = () => {
+		const native = (this.getRootNode() as Document | ShadowRoot).fullscreenElement === this;
+		if (native || this.fullscreen === "native") this.fullscreen = native ? "native" : undefined;
+	};
+
+	#onViewportToggle = (event: Event) => {
+		const builder = event.currentTarget as HTMLElement;
+		if (event.target !== builder || builder.matches(":popover-open")) return;
+		builder.removeAttribute("popover");
+		if (this.fullscreen === "viewport") this.fullscreen = undefined;
+	};
+
+	#toggleFullscreen = async () => {
+		const builder = this.renderRoot.querySelector<HTMLElement>(".builder");
+		if (this.fullscreen === "viewport") {
+			builder?.hidePopover();
+			return;
+		}
+		try {
+			if (this.fullscreen === "native") await this.ownerDocument.exitFullscreen();
+			else await this.requestFullscreen();
+		} catch {
+			if (this.fullscreen !== "native" && typeof builder?.showPopover === "function") {
+				try {
+					// The top layer fills this document's viewport, including inside a worksheet frame.
+					builder.setAttribute("popover", "auto");
+					builder.showPopover();
+					this.fullscreen = "viewport";
+					return;
+				} catch {
+					builder.removeAttribute("popover");
+				}
+			}
+			this.notice = this.#t("Fullscreen is unavailable in this worksheet.", "Vollbild ist in diesem Arbeitsblatt nicht verfügbar.");
+		}
+	};
+
+	#syncGrid() {
+		const board = this.renderRoot.querySelector<HTMLElement>(".board");
+		const scale = this.renderRoot.querySelector<HTMLElement>(".grid-length");
+		if (!board || !scale) return;
+		const drawing = this.renderRoot.querySelector<SVGSVGElement>(".lewis-view");
+		const box = drawing?.viewBox.baseVal;
+		const pixelsPerUnit = this.view === "3d" ? this.#scenePixelsPerAngstrom
+			: box && Math.min(drawing.clientWidth / box.width, drawing.clientHeight / box.height);
+		const cell = gridCell(pixelsPerUnit);
+		board.toggleAttribute("data-unit-grid", !!cell);
+		scale.parentElement.hidden = !cell;
+		if (!cell) return;
+		const size = `${cell.pixels.toFixed(3)}px`;
+		if (board.style.getPropertyValue("--grid-cell") !== size) board.style.setProperty("--grid-cell", size);
+		const length = cell.length.toLocaleString(this.lang?.startsWith("de") ? "de" : "en", { maximumSignificantDigits: 4 });
+		const label = this.view === "3d" ? `${length} Å` : `${length} ${this.#t("du", "ZE")}`;
+		if (scale.textContent !== label) scale.textContent = label;
+		scale.parentElement.title = this.view === "3d"
+			? this.#t("Width of one grid cell at the centre of rotation.", "Breite eines Rasterkästchens am Drehzentrum.")
+			: this.#t("Width of one grid cell in diagram units.", "Breite eines Rasterkästchens in Zeichnungseinheiten.");
 	}
 
 	#bindTable() {
@@ -286,7 +373,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		try {
 			const { MoleculeScene } = await import("./molecule-builder/scene");
 			if (request !== this.#sceneLoad || !host.isConnected || this.gpu !== "loading") return;
-			const scene = await MoleculeScene.create(host);
+			const scene = await MoleculeScene.create(host, pixelsPerAngstrom => {
+				if (request !== this.#sceneLoad) return;
+				this.#scenePixelsPerAngstrom = pixelsPerAngstrom;
+				if (this.view === "3d") this.#syncGrid();
+			});
 			if (request !== this.#sceneLoad || !host.isConnected || this.gpu !== "loading" || this.#scene) {
 				scene.destroy();
 				return;
@@ -366,8 +457,12 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	#new(kind: Structure["kind"]) {
+		this.#fileOpen++;
 		this.preview = undefined;
 		this.openPanel = undefined;
+		this.catalogKey = "";
+		this.catalogVariants = [];
+		this.catalogIndex = 0;
 		this.#record(kind === "crystal" ? newCrystal() : newMolecule(), true);
 		this.#resetSelection();
 	}
@@ -757,9 +852,15 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		this.catalogKey = key;
 		this.catalogVariants = variants;
 		this.catalogIndex = 0;
-		this.openPanel = "catalog";
+		this.openPanel = undefined;
 		if (variants.length) this.#openPreview(variants[0]);
-		else this.preview = undefined;
+		else {
+			this.preview = undefined;
+			this.#resetSelection();
+			this.notice = catalogIsMixture(key)
+				? this.#t("This mixture has no unique structure.", "Dieses Gemisch hat keine eindeutige Struktur.")
+				: this.#t("No verified structure is available.", "Es ist keine verifizierte Struktur verfügbar.");
+		}
 		return true;
 	}
 
@@ -807,16 +908,6 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		}
 	};
 
-	#download() {
-		const file = new Blob([JSON.stringify(this.#current, null, 2)], { type: "application/json" });
-		const url = URL.createObjectURL(file);
-		const anchor = this.ownerDocument.createElement("a");
-		anchor.download = (this.#current.name || formula(this.#current) || "structure").replace(/[^\p{L}\p{N}_-]+/gu, "-") + ".chemlab-structure.json";
-		anchor.href = url;
-		anchor.click();
-		window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-	}
-
 	#refreshLabs() {
 		const peers = worksheetPeers(this, LAB_TAG);
 		const labs = peers.filter(peer => typeof (peer as LabReceiver).reviewBuilderStructure === "function");
@@ -854,7 +945,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	/**
 	 * The catalog opens as a flat list grouped by chemical class. A native select
 	 * would open a second dropdown on top of the popup, so every substance is a
-	 * row of its own and the variants of the chosen one appear right below it.
+	 * row of its own. Its variants live in the model summary after selection.
 	 */
 	#renderCatalog() {
 		if (this.openPanel !== "catalog") return nothing;
@@ -865,11 +956,6 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			category, entries: structureCatalog.filter(entry => entry.category === category && matches(entry)),
 		})).filter(section => section.entries.length);
 		const selected = this.catalogKey;
-		const note = selected && !this.catalogVariants.length
-			? catalogIsMixture(selected)
-				? this.#t("Mixture with no unique structure", "Gemisch ohne eindeutige Struktur")
-				: this.#t("No verified structure available", "Keine verifizierte Struktur verfügbar")
-			: "";
 		return html`<div class="surface catalog-surface" role="group" aria-label=${this.#t("ChemLab catalog", "ChemLab-Katalog")}>
 			<sl-input class="catalog-search" size="small" type="search" clearable
 				label=${this.#t("Search the catalog", "Katalog durchsuchen")}
@@ -884,19 +970,16 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					<div class="catalog-entries">
 						${section.entries.map(entry => html`
 							<button type="button" class="catalog-entry${entry.name === selected ? " is-selected" : ""}"
-								aria-pressed=${String(entry.name === selected)} @click=${() => this.viewCatalogStructure(entry.name)}>
+								aria-pressed=${String(entry.name === selected)} @click=${(event: MouseEvent) => {
+									this.viewCatalogStructure(entry.name);
+									if (event.detail === 0) void this.updateComplete.then(() => {
+										(this.renderRoot.querySelector<HTMLElement>(".summary-variant select")
+											?? this.renderRoot.querySelector<HTMLElement>(".board"))?.focus();
+									});
+								}}>
 								<span class="catalog-entry-name">${entry.name}</span>
 								<span class="catalog-entry-formula">${entry.formula}</span>
 							</button>
-							${entry.name !== selected ? nothing : this.catalogVariants.length > 1 ? html`
-								<div class="catalog-variants" role="group" aria-label=${this.#t("Structure", "Struktur")}>
-									${this.catalogVariants.map((variant, index) => html`<button type="button"
-										class="catalog-variant${index === this.catalogIndex ? " is-selected" : ""}"
-										aria-pressed=${String(index === this.catalogIndex)} @click=${() => {
-											this.catalogIndex = index;
-											this.#openPreview(this.catalogVariants[index]);
-										}}>${variant.name}</button>`)}
-								</div>` : note ? html`<p class="catalog-note">${note}</p>` : nothing}
 						`)}
 					</div>
 				</section>`) : html`<p class="catalog-note" role="status">
@@ -918,9 +1001,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	#renderFileActions() {
 		if (this.openPanel !== "file") return nothing;
+		const canDownload = this.#atoms.length > 0;
+		const filename = (this.#current.name || formula(this.#current)).replace(/[^\p{L}\p{N}_-]+/gu, "-").replace(/^-+|-+$/g, "");
+		const downloadUrl = canDownload ? "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.#current, null, 2)) : undefined;
 		return html`<div id="file-actions" class="surface" role="group" aria-label=${this.#t("File", "Datei")}>
-			<sl-button size="small" @click=${() => this.#new("molecule")}>${this.#t("New molecule", "Neues Molekül")}</sl-button>
-			<sl-button size="small" @click=${() => this.#new("crystal")}>${this.#t("New crystal", "Neuer Kristall")}</sl-button>
 			<input type="file" hidden accept=".json,application/json" @change=${(event: Event) => {
 				const input = event.currentTarget as HTMLInputElement;
 				void this.#openFile(input.files?.[0]); input.value = "";
@@ -928,7 +1012,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			<sl-button size="small" @click=${() => this.renderRoot.querySelector<HTMLInputElement>('input[type="file"]')?.click()}>
 				${this.#t("Open file", "Datei öffnen")}
 			</sl-button>
-			<sl-button size="small" ?disabled=${!this.#atoms.length} @click=${this.#download}>${this.#t("Download", "Herunterladen")}</sl-button>
+			<sl-button size="small" href=${downloadUrl ?? nothing} download=${(filename || "structure") + ".chemlab-structure.json"}
+				?disabled=${!canDownload}>${this.#t("Download", "Herunterladen")}</sl-button>
 		</div>`;
 	}
 
@@ -1035,28 +1120,44 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		</div>`;
 	}
 
-	#renderModelSummary(current: Structure, representation: string | undefined, ionColors: ReadonlyMap<string, number>) {
+	#renderModelSummary(current: Structure, ionColors: ReadonlyMap<string, number>) {
 		const crystal = current.kind === "crystal";
 		const aqueous = !crystal && current.representation === "aqueous-ions" ? this.#aqueous(current) : undefined;
-		const geometry = this.view === "3d" && current.kind === "molecule" && this.#atoms.length
-			? current.geometry === "idealized" ? this.#t("Idealized geometry", "Idealisierte Geometrie")
-				: current.geometry === "estimated" ? this.#t("Estimated geometry", "Geschätzte Geometrie")
-					: this.#t("Sketch", "Skizze")
-			: undefined;
+		const selectedEntry = catalogEntry(this.catalogKey);
+		const missing = selectedEntry && !this.catalogVariants.length;
+		const showOxidation = !crystal && this.view === "2d" && current.atoms.length > (aqueous?.monatomicIons.size ?? 0);
+		const showDisplay = this.view === "3d" && (crystal || (this.#atoms.length > 0 && this.gpu === "ready"));
+		const options = this.catalogVariants.length > 1;
+		const composition = this.#atoms.length && (!crystal || this.view === "3d")
+			? chemicalFormula(aqueous ? current.name : !crystal && current.repeatUnit && this.view === "2d"
+				? formula({ ...current, atoms: this.#lewis(current).atoms }) : formula(current))
+			: "";
+		const status = this.notice || (this.bondStart ? this.#t("Choose the other atom.", "Wähle das zweite Atom.") : "");
 		const toggle = (label: string, icon: unknown, value: boolean, onClick: () => void) => this.#iconButton({
 			label, icon, pressed: value, onClick,
 		});
-		return html`<div class="model-summary">
-			<div class="fields">
-				<sl-tag size="small">${crystal ? this.#t("Crystal", "Kristall")
-					: aqueous ? this.#t("Solution", "Lösung") : this.#t("Molecule", "Molekül")}</sl-tag>
-				${this.#atoms.length && (!crystal || this.view === "3d") ? html`<sl-tag size="small">${chemicalFormula(
-					aqueous ? current.name : current.kind === "molecule" && current.repeatUnit && this.view === "2d"
-						? formula({ ...current, atoms: this.#lewis(current).atoms }) : formula(current),
-				)}</sl-tag>` : nothing}
-				${representation ? html`<sl-tag size="small">${representation}</sl-tag>` : nothing}
-				${geometry ? html`<sl-tag size="small">${geometry}</sl-tag>` : nothing}
-			</div>
+		return html`<div class="model-summary" ?hidden=${!(missing || composition || options || showDisplay || showOxidation || status)}>
+			${missing ? html`<strong class="summary-formula">${selectedEntry.name}</strong>` : nothing}
+			${composition && !missing && !options ? html`<div class="fields">
+				<strong class="summary-formula">${composition}</strong>
+				${!crystal && current.repeatUnit ? html`<span class="summary-caption">${this.view === "2d"
+					? this.#t("Repeating unit", "Wiederholungseinheit")
+					: this.#t("Polymer", "Polymer")}</span>` : nothing}
+			</div>` : nothing}
+			${options ? html`<label class="summary-variant">
+				<span>${catalogIsMixture(this.catalogKey) ? this.#t("Constituent", "Bestandteil") : this.#t("Variant", "Variante")}</span>
+				<select .value=${String(this.catalogIndex)} @change=${(event: Event) => {
+					const index = Number((event.currentTarget as HTMLSelectElement).value);
+					const variant = this.catalogVariants[index];
+					if (!variant) return;
+					this.catalogIndex = index;
+					this.#openPreview(variant);
+				}}>
+					${this.catalogVariants.map((variant, index) => html`<option value=${index} ?selected=${index === this.catalogIndex}>
+						${variant.name || formula(variant)}
+					</option>`)}
+				</select>
+			</label>` : nothing}
 			${aqueous && aqueous.components.length ? html`
 				<div class="fields" aria-label=${this.#t("Representative dissolved species", "Repräsentative gelöste Spezies")}>
 					${aqueous.components.map(component => html`<sl-tag size="small" variant=${component.charge ? "primary" : "neutral"}>
@@ -1090,13 +1191,13 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					<span data-region="bond">${this.#t("Bonding", "Bindend")}</span>
 					<span data-region="lone">${this.#t("Nonbonding", "Nichtbindend")}</span>
 				</span>` : nothing}
-			${current.kind === "molecule" && this.view === "2d" && current.atoms.length > (aqueous?.monatomicIons.size ?? 0) ? html`
+			${showOxidation ? html`
 				<div class="lewis-legend" title=${this.#t("Ionic approximation of the drawn bonds using Allen electronegativity. ? marks an undetermined value.",
 					"Ionische Näherung der gezeichneten Bindungen nach Allen-Elektronegativität. ? kennzeichnet einen unbestimmten Wert.")}>
 					${this.#t("Oxidation state", "Oxidationszahl")}
 					<span data-oxidation="negative">−</span><span data-oxidation="neutral">0</span><span data-oxidation="positive">+</span>
 				</div>` : nothing}
-			${this.view === "3d" ? html`<div class="display-controls" role="group" aria-label=${this.#t("Display", "Darstellung")}>
+			${showDisplay ? html`<div class="display-controls" role="group" aria-label=${this.#t("Display", "Darstellung")}>
 				${crystal ? html`<label>${this.#t("Cells", "Zellen")}
 					<select .value=${String(this.repeats)} @change=${(event: Event) => {
 						this.repeats = Number((event.currentTarget as HTMLSelectElement).value);
@@ -1113,7 +1214,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					? toggle(this.#t("Valence electrons", "Valenzelektronen"), ELECTRONS_ICON, this.showElectrons, () => { this.showElectrons = !this.showElectrons; })
 					: nothing}
 			</div>` : nothing}
-			<output aria-live="polite">${this.notice || (this.bondStart ? this.#t("Choose the other atom.", "Wähle das zweite Atom.") : "")}</output>
+			<output aria-live="polite" ?hidden=${!status}>${status}</output>
 		</div>`;
 	}
 
@@ -1213,24 +1314,19 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const fullWidth = this.classList.contains("ww-full-width");
 		const pickerView = fullWidth && !this.paletteNarrow ? this.pickerView : "list";
 		const ionColors = current.kind === "crystal" ? crystalIonColors(current) : new Map<string, number>();
-		const representation = current.kind === "molecule" && (this.view === "2d" && current.repeatUnit
-			? this.#t("Constitutional repeating unit", "Konstitutionelle Wiederholungseinheit")
-			: current.repeatUnit && !this.#readonly ? this.#t("Editable repeating unit", "Bearbeitbare Wiederholungseinheit")
-			: current.representation && {
-			conformer: this.#t("PubChem conformer", "PubChem-Konformer"),
-			experimental: this.#t("Experimental geometry", "Experimentelle Geometrie"),
-			constituent: this.#t("Mixture constituent", "Gemischbestandteil"),
-			"repeat-unit": this.#t("Capped repeat-unit example", "Beispiel mit abgesättigten Wiederholungseinheiten"),
-			"ionic-components": this.#t("Ionic components", "Ionenbestandteile"),
-			"aqueous-ions": this.#t("Aqueous species · schematic", "Gelöste Spezies · schematisch"),
-		}[current.representation]);
 		const tool = (value: Tool, label: string, icon: unknown) => this.#iconButton({
 			label, icon, pressed: value === this.tool, onClick: () => this.#setTool(value),
 		});
+		const newTools = html`<div class="tool-group" role="group" aria-label=${this.#t("New structure", "Neue Struktur")}>
+			${this.#iconButton({ label: this.#t("New molecule", "Neues Molekül"), icon: NEW_MOLECULE_ICON,
+				onClick: () => this.#new("molecule") })}
+			${this.#iconButton({ label: this.#t("New lattice", "Neues Gitter"), icon: NEW_CRYSTAL_ICON,
+				onClick: () => this.#new("crystal") })}
+		</div>`;
 		const fit = () => { this.#scene?.fit(); this.diagramBox = undefined; this.requestUpdate(); };
 		const title = current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : current.name || formula(current);
 		const toggle = (panel: "catalog" | "file") => () => { this.openPanel = this.openPanel === panel ? undefined : panel; };
-		return html`<div class="builder" contenteditable="false" @keydown=${this.#keys}
+		return html`<div class="builder" contenteditable="false" @keydown=${this.#keys} @toggle=${this.#onViewportToggle}
 			@dragover=${(event: DragEvent) => { if (event.dataTransfer?.types.includes("Files")) event.preventDefault(); }}
 			@drop=${(event: DragEvent) => { if (event.dataTransfer?.files.length) { event.preventDefault(); void this.#openFile(event.dataTransfer.files[0]); } }}>
 			<header class="document">
@@ -1241,6 +1337,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					</sl-tag>
 				</div>
 				<div class="document-actions">
+					${this.#readonly ? newTools : nothing}
 					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "catalog"}>
 						${this.#iconButton({ slot: "anchor", label: this.#t("ChemLab catalog", "ChemLab-Katalog"), icon: CATALOG_ICON,
 							pressed: this.openPanel === "catalog", expanded: this.openPanel === "catalog", onClick: toggle("catalog") })}
@@ -1263,6 +1360,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				</div>
 			</header>
 			${this.#readonly ? nothing : html`<div class="tools" role="toolbar" aria-label=${this.#t("Editing tools", "Bearbeitungswerkzeuge")}>
+				${newTools}
 				<div class="tool-group" role="group" aria-label=${this.#t("Tools", "Werkzeuge")}>
 					${tool("orbit", this.view === "3d" ? this.#t("Orbit", "Drehen") : this.#t("Select", "Auswählen"),
 						this.view === "3d" ? ORBIT_ICON : CURSOR_ICON)}
@@ -1324,18 +1422,26 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 									"Ziehe ein Element hierher oder wähle Atom platzieren und klicke auf die Fläche.")}
 							</p>` : nothing}
 						<div class="view-tools" role="group" aria-label=${this.#t("Canvas view", "Ansicht der Zeichenfläche")}>
-							${this.#iconButton({ label: this.#t("3D view", "3D-Ansicht"), icon: CUBE_ICON, pressed: this.view === "3d",
-								disabled: this.gpu === "unavailable", onClick: () => { this.view = "3d"; } })}
-							${this.#iconButton({ label: this.#t("Structure view", "Strukturansicht"), icon: PLANE_ICON, pressed: this.view === "2d",
-								onClick: () => { this.view = "2d"; } })}
-							${(this.view === "3d" && this.gpu === "ready") || (this.view === "2d" && current.kind === "molecule") ? html`
-								${this.#iconButton({ label: this.#t("Zoom in", "Vergrößern"), icon: ZOOM_IN_ICON, onClick: () => this.view === "3d" ? this.#scene?.zoom(.83) : this.#moveDiagram(.83) })}
-								${this.#iconButton({ label: this.#t("Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => this.view === "3d" ? this.#scene?.zoom(1.2) : this.#moveDiagram(1.2) })}
-							` : nothing}
-							${this.view === "3d" || current.kind === "molecule"
-								? this.#iconButton({ label: this.#t("Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit }) : nothing}
+							<sl-tag size="small" class="grid-scale" hidden>
+								<span class="grid-scale-line" aria-hidden="true"></span><span class="grid-length"></span>
+							</sl-tag>
+							<div class="view-buttons">
+								${this.#iconButton({ label: this.#t("3D view", "3D-Ansicht"), icon: CUBE_ICON, pressed: this.view === "3d",
+									disabled: this.gpu === "unavailable", onClick: () => { this.view = "3d"; } })}
+								${this.#iconButton({ label: this.#t("Structure view", "Strukturansicht"), icon: PLANE_ICON, pressed: this.view === "2d",
+									onClick: () => { this.view = "2d"; } })}
+								${(this.view === "3d" && this.gpu === "ready") || (this.view === "2d" && current.kind === "molecule") ? html`
+									${this.#iconButton({ label: this.#t("Zoom in", "Vergrößern"), icon: ZOOM_IN_ICON, onClick: () => this.view === "3d" ? this.#scene?.zoom(.83) : this.#moveDiagram(.83) })}
+									${this.#iconButton({ label: this.#t("Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => this.view === "3d" ? this.#scene?.zoom(1.2) : this.#moveDiagram(1.2) })}
+								` : nothing}
+								${this.view === "3d" || current.kind === "molecule"
+									? this.#iconButton({ label: this.#t("Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit }) : nothing}
+								${this.#iconButton({ label: this.fullscreen ? this.#t("Exit fullscreen", "Vollbild verlassen")
+									: this.#t("Fullscreen", "Vollbild"), icon: this.fullscreen ? EXIT_FULLSCREEN_ICON : FULLSCREEN_ICON,
+									pressed: !!this.fullscreen, onClick: this.#toggleFullscreen })}
+							</div>
 						</div>
-						${this.#renderModelSummary(current, representation, ionColors)}
+						${this.#renderModelSummary(current, ionColors)}
 						${this.#renderSelectionCard()}
 					</div>
 				</main>

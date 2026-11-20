@@ -1,7 +1,7 @@
 import { Application, CanvasSource, Graphics, Point, Sprite, Text, Texture } from "pixi.js";
 import {
 	Container3D, CylinderGeometry, DirectionalLight, Material3D, Mesh3D, Plane,
-	Sphere, SphereGeometry, srgbToLinear, Vector3, View3D,
+	Sphere, SphereGeometry, Vector3, View3D,
 } from "@pixi/3d";
 import type { ShaderBit } from "@pixi/3d";
 import { atomColor, atomRadius, add, electronRegions, perpendicular, scale, subtract, unit } from "./geometry";
@@ -85,18 +85,10 @@ const rimBit: ShaderBit = {
 	},
 };
 
-/**
- * The accent a marked atom is outlined with, the ChemLab blue of the canvas
- * controls.
- *
- * The mark is an outline on the atom, never a colour over it: a recoloured
- * sphere would read as a different element, which is exactly the mistake a
- * selection must not invite. Only the outermost band of the surface takes the
- * accent, so the body keeps the CPK colour that identifies it.
- */
-const SELECTION_COLOR = 0x0086c5;
-/** The same accent in the linear light the material shades in. */
-const SELECTION_LINEAR = [0x00, 0x86, 0xc5].map(channel => srgbToLinear(channel / 255));
+/** ChemLab blue for the unfinished bond while the user drags its endpoint. */
+const BOND_PREVIEW_COLOR = 0x0086c5;
+/** The black silhouette leaves the central CPK colour visible. */
+const MARK_COLOR = [0, 0, 0, 1];
 /**
  * How wide the mark's band is, as the facing term where it fades out.
  *
@@ -185,16 +177,16 @@ function radialTexture(stops: [number, string][], size = 256) {
 export type SceneDisplay = { electrons: boolean; lattice: boolean; edges: boolean; axes: boolean; hydration: boolean };
 
 export class MoleculeScene {
-	static async create(host: HTMLElement) {
+	static async create(host: HTMLElement, updateScale: (pixelsPerAngstrom: number) => void) {
 		const app = new Application();
 		try {
-			await app.init({ preference: "webgl", background: 0xfbfbfa, antialias: true,
+			await app.init({ preference: "webgl", backgroundAlpha: 0, antialias: true,
 				resolution: Math.min(window.devicePixelRatio || 1, 2), autoDensity: true, autoStart: false, sharedTicker: false });
 			if (typeof WebGL2RenderingContext === "undefined" || !("gl" in app.renderer)
 				|| !(app.renderer.gl instanceof WebGL2RenderingContext)) {
 				throw new Error("Molecular rendering requires WebGL 2");
 			}
-			return new MoleculeScene(app, host);
+			return new MoleculeScene(app, host, updateScale);
 		} catch (error) {
 			if (app.renderer) app.destroy(true, { children: true });
 			throw error;
@@ -240,8 +232,9 @@ export class MoleculeScene {
 	#pitch = 0.24;
 	#bounds: Point3[] = [];
 	#atomRadius = 0;
+	#lastPixelsPerAngstrom = 0;
 
-	private constructor(app: Application, host: HTMLElement) {
+	private constructor(app: Application, host: HTMLElement, private readonly updateScale: (pixelsPerAngstrom: number) => void) {
 		this.#app = app;
 		this.#view = new View3D({
 			autoResize: false, environment: { skyColor: 0xffffff, groundColor: 0xa6b4c3, intensity: 0.94 },
@@ -256,7 +249,7 @@ export class MoleculeScene {
 		sun.lookAt({ x: 0, y: 0, z: 0 });
 		this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons, this.#hydration);
 		this.#preview = this.#rod();
-		this.#preview.material = this.#material(SELECTION_COLOR);
+		this.#preview.material = this.#material(BOND_PREVIEW_COLOR);
 		this.#preview.visible = false;
 		this.#view.root.addChild(this.#preview);
 		app.canvas.style.display = "block";
@@ -316,7 +309,7 @@ export class MoleculeScene {
 			material.data.rimStrength = RIM_STRENGTH;
 			material.data.rimPower = RIM_POWER;
 			material.data.markWidth = MARK_WIDTH;
-			material.data.markColor = [...SELECTION_LINEAR, 1];
+			material.data.markColor = MARK_COLOR;
 			material.data.markStrength = mark;
 			this.#materials.set(key, material);
 		}
@@ -590,6 +583,14 @@ export class MoleculeScene {
 		if (this.#frame) return;
 		this.#frame = requestAnimationFrame(() => {
 			this.#frame = 0;
+			const camera = this.#view.camera;
+			// Use the screen-facing plane through the orbit target as the scale reference.
+			const pixelsPerAngstrom = this.#app.screen.height * camera.zoom
+				/ (2 * this.#distance * Math.tan(camera.fov * Math.PI / 360));
+			if (pixelsPerAngstrom !== this.#lastPixelsPerAngstrom) {
+				this.#lastPixelsPerAngstrom = pixelsPerAngstrom;
+				this.updateScale(pixelsPerAngstrom);
+			}
 			if (this.#showLattice) {
 				this.#lattice.clear();
 				for (const [index, point] of this.#latticePoints.entries()) {
