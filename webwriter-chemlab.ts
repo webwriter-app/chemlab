@@ -62,6 +62,8 @@ import { componentGraphic, componentVariant, componentVariants, type ComponentVa
 import { renderComponentPaletteIcon } from "./data/componentPaletteIcons";
 import { chemicalCatalog, chemicalCatalogGroups, solutionDisplayNames, withConcentration, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
 import { loadMoleculeDefinition } from "./data/moleculeDefinition";
+import { BUILDER_TAG, worksheetPeers, worksheetPeer, worksheetScope, type BuilderReceiver } from "./molecule-builder/exchange";
+import { readStructure, type Structure } from "./molecule-builder/structure";
 import { catalogPreviews } from "./data/chemicalPreviews.generated";
 import { prepareDose, type SavedDose } from "./data/measuredDose";
 import { vesselCarouselEntries, type VesselPlating } from "./data/vesselCarousel";
@@ -129,6 +131,10 @@ export class ChemLab extends LitElementWw {
 		analytics: { label: { _: "xAPI", "de-DE": "xAPI" }, collapsible: true, advanced: true },
 	};
 	static options = {
+		moleculeBuilderId: {
+			type: "string" as const, group: "appearance", attribute: "molecule-builder-id",
+			label: { _: "Linked Molecule Builder ID", "de-DE": "ID des verknüpften Molekülbaukastens" },
+		},
 		newSmilesDrawer: {
 			type: "select" as const,
 			group: "appearance",
@@ -447,6 +453,14 @@ export class ChemLab extends LitElementWw {
 	private workspaceResizeObserver?: ResizeObserver;
 	private workspaceClassObserver?: MutationObserver;
 	@state() private accessor teacherTab: "components" | "chemicals" = "components";
+	@property({ type: String, attribute: "molecule-builder-id", reflect: true }) accessor moleculeBuilderId = "";
+	@state() private accessor builderAvailable = false;
+	private observeBuilder?: MutationObserver;
+	@state() private accessor builderReview: { structure: Structure; reagent?: string; loading: boolean } | undefined;
+	@state() private accessor builderTarget: { key?: string; structure?: Structure } | undefined;
+	@state() private accessor builderReferences: Structure[] = [];
+	@state() private accessor sessionBuilderReferences: Structure[] = [];
+
 	@state() private accessor permissionTooltip: { anchor: HTMLElement; type: string; text: string } | undefined;
 	@state() private accessor visibleVariants: Partial<Record<PaletteComponent, string>> = {};
 	@state() private accessor componentToPlace: string | undefined;
@@ -608,6 +622,19 @@ export class ChemLab extends LitElementWw {
 		} : null;
 		if (legacyData) this.applyAuthoredData(legacyData);
 		super.connectedCallback();
+		const updateBuilder = () => {
+			const available = worksheetPeers(this, BUILDER_TAG).length > 0;
+			if (available === this.builderAvailable) return;
+			this.builderAvailable = available;
+			if (this.curr_obj) void this.updateComplete.then(() => this._updatePopup());
+		};
+		updateBuilder();
+		this.observeBuilder = new MutationObserver(records => {
+			const containsBuilder = (node: Node) => node instanceof Element
+				&& (node.localName === BUILDER_TAG || node.querySelector(BUILDER_TAG));
+			if (records.some(record => [...record.addedNodes, ...record.removedNodes].some(containsBuilder))) updateBuilder();
+		});
+		this.observeBuilder.observe(worksheetScope(this), { childList: true, subtree: true });
 		this.dataObserver = new MutationObserver(() => this.readAuthoredData());
 		this.dataObserver.observe(this, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ["slot", "type"] });
 		if (this.dataBlock()) this.readAuthoredData();
@@ -615,6 +642,8 @@ export class ChemLab extends LitElementWw {
 	}
 
 	disconnectedCallback(): void {
+		this.observeBuilder?.disconnect();
+		this.observeBuilder = undefined;
 		this.closeDiagramPicker();
 		this.stopDose?.();
 		this.cancelDoseForNavigation();
@@ -719,6 +748,9 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private applyAuthoredData(value: Record<string, unknown>) {
+		this.builderReferences = Array.isArray(value.builderReferences)
+			? value.builderReferences.slice(0, 30).map(readStructure).filter(Boolean) : [];
+
 		if (Array.isArray(value.availableMolecules)) this.availableMolecules = value.availableMolecules;
 		if (Array.isArray(value.availableMixtures)) this.availableMixtures = value.availableMixtures;
 		if (Array.isArray(value.availableComponents)) {
@@ -768,6 +800,7 @@ export class ChemLab extends LitElementWw {
 				availableComponents: value.availableComponents ?? this.availableComponents,
 				invComponents: value.invComponents ?? this.invComponents,
 				chemicalPermissions: value.chemicalPermissions ?? this.chemicalPermissions,
+				...(Array.isArray(value.builderReferences) && value.builderReferences.length ? { builderReferences: value.builderReferences } : {}),
 			});
 			if (incoming === this.savedDataSnapshot) return;
 			this.refreshFromRemoteData = this.hasUpdated;
@@ -790,6 +823,7 @@ export class ChemLab extends LitElementWw {
 			availableComponents: this.availableComponents,
 			invComponents: this.invComponents,
 			chemicalPermissions: this.chemicalPermissions,
+			...(this.builderReferences.length ? { builderReferences: this.builderReferences } : {}),
 		});
 	}
 
@@ -2094,13 +2128,17 @@ export class ChemLab extends LitElementWw {
 		const entries = vesselCarouselEntries(mixture, equilibrium, this.vesselPlatings(mixture));
 		const concentrationLine = (concentration: number) => Number.isFinite(concentration)
 			? html`<p>c: ${concentration.toExponential(2)} mol/L</p>` : nothing;
-		const slide = (thumbnail: unknown, title: string, details: unknown, cardClass = "") => html`
+		const slide = (thumbnail: unknown, title: string, details: unknown, cardClass = "", model?: chemlib.Molecule) => html`
 			<sl-carousel-item>
 				<div class="vessel-carousel-card ${cardClass}">
 					${thumbnail}
 					<div class="vessel-carousel-quantities">
 						<h5 title=${title}>${title}</h5>
 						${details}
+						${model && this.builderAvailable ? html`
+							<button class="vessel-structure-link" type="button" @click=${() => this.openSpeciesInBuilder(model, title)}>
+								${this.builderText("View structure", "Struktur ansehen")}
+							</button>` : nothing}
 					</div>
 				</div>
 			</sl-carousel-item>`;
@@ -2126,7 +2164,7 @@ export class ChemLab extends LitElementWw {
 					const formula = metal._kekule_obj.calcFormula().getDisplayText();
 					return slide(this.vesselThumbnail(metal, formula), formula, html`
 						<p class="vessel-carousel-location">${this.message("auf der Elektrode")}</p>
-						<p>m: ${this.formatAmount(plating.mol * metal.getTotMolMass(), 3)} g</p>`, "plated");
+						<p>m: ${this.formatAmount(plating.mol * metal.getTotMolMass(), 3)} g</p>`, "plated", metal);
 				}
 				if (species) {
 					const { formula, concentration, structure, name } = species;
@@ -2138,7 +2176,7 @@ export class ChemLab extends LitElementWw {
 						}).catch(() => { /* Keep the formula as the fallback title. */ });
 					}
 					return slide(thumbnail ? this.vesselThumbnail(thumbnail, formula) : html`<span class="vessel-carousel-thumbnail">${formula}</span>`,
-						name || formula, concentrationLine(concentration));
+						name || formula, concentrationLine(concentration), "", thumbnail);
 				}
 				const formula = molecule._kekule_obj.calcFormula().getDisplayText();
 				if (!molecule.name && !molecule.solidSaltFormula && !this.vesselNameRequests.has(molecule)) {
@@ -2156,7 +2194,7 @@ export class ChemLab extends LitElementWw {
 				const mass = properties[id + "m"];
 				return slide(this.vesselThumbnail(molecule, formula), molecule.name || formula, html`
 					${showMass && Number.isFinite(mass) ? html`<p>m: ${this.formatAmount(mass, 3)} g</p>` : nothing}
-					${concentration}`);
+					${concentration}`, "", molecule);
 			})}
 		`, carousel);
 		if (reset) void carousel.updateComplete.then(() => {
@@ -2971,6 +3009,7 @@ export class ChemLab extends LitElementWw {
 					${this.renderFillMeter()}
 					${this.renderAmountMenu()}
 					${this.renderControlButtons()}
+					${this.renderBuilderExchange()}
 				</div>
 				${this.renderDiagramDetails(diagramAvailable, diagramOpen)}
 				${this.renderTeacherDrawer()}
@@ -3507,7 +3546,7 @@ export class ChemLab extends LitElementWw {
 									${guard(showChemicals
 										? [true, this.lang, this.canAuthor, this.chemicalPermissions, this.chemicalQuery,
 											this.chemicalGroup, this.activeChemicalConcentrations, this.selectedChemical?.key,
-											this.openConcentrationMenu]
+											this.openConcentrationMenu, this.builderAvailable]
 										: [false], () => showChemicals ? this.renderChemicalCatalog() : noChange)}
 								</div>
 							</sl-tab-panel>
@@ -3859,7 +3898,143 @@ export class ChemLab extends LitElementWw {
 				${preview}
 				${this.canAuthor ? this.renderChemicalPermission(item.name, name) : nothing}
 			</div>`;
-		return this.renderPaletteCard(name, variant, badge, body, true, permissions);
+		const view = this.builderAvailable ? html`<sl-button class="structure-link" size="small" @click=${() => this.openInBuilder({ key: item.name })}>
+			${this.builderText("View structure", "Struktur ansehen")}
+		</sl-button>` : nothing;
+		return this.renderPaletteCard(name, variant, badge, html`${body}${view}`, true, permissions);
+	}
+
+	private builderText(en: string, de: string) {
+		return this.lang?.toLowerCase().startsWith("de") ? de : en;
+	}
+
+	reviewBuilderStructure(snapshot: Structure): boolean {
+		const structure = readStructure(snapshot);
+		if (!structure || !(structure.kind === "crystal" ? structure.sites.length : structure.atoms.length)) return false;
+		this.builderTarget = undefined;
+		const review = { structure, loading: true };
+		this.builderReview = review;
+		void Promise.all([import("./molecule-builder/catalog"), import("./molecule-builder/geometry")]).then(([catalog, geometry]) => {
+			if (!this.isConnected || this.builderReview !== review) return;
+			const name = geometry.formula(structure) || structure.name;
+			const match = catalog.matchingRecipe(structure);
+			this.builderReview = { structure: { ...structure, name }, reagent: match?.name, loading: false };
+		}).catch(() => {
+			if (this.builderReview === review) this.builderReview = { structure, loading: false };
+		});
+		return true;
+	}
+
+	private useBuilderReagent(key: string): boolean {
+		const item = chemicalCatalog.find(entry => entry.name === key);
+		if (!item?.recipe || (!this.canAuthor && !this.isChemicalAllowed(key))) return false;
+		const concentration = chemicalConcentration(item);
+		const allowed = concentration ? this.allowedConcentrationsFor(key, concentration.initial) : [];
+		const active = concentration ? allowed.includes(this.activeChemicalConcentrations[key])
+			? this.activeChemicalConcentrations[key] : allowed[0] ?? (this.canAuthor ? concentration.initial : undefined) : undefined;
+		if (concentration && active === undefined) return false;
+		this.clearChemicalSelection();
+		this.clearObjectSelection();
+		this.componentToPlace = undefined;
+		this.selectedChemical = {
+			key: active === undefined ? key : `${key}@${active}`,
+			name: this.chemicalTileLabel(this.chemicalDisplayLabel(item), active),
+			recipe: active === undefined ? item.recipe : withConcentration(item.recipe, active),
+		};
+		this.builderReview = undefined;
+		return true;
+	}
+
+	private saveBuilderReference(structure: Structure) {
+		const references = this.canAuthor ? this.builderReferences : this.sessionBuilderReferences;
+		if (references.length >= 30) return;
+		if (this.canAuthor) {
+			this.builderReferences = [...references, structure];
+			this.persistAuthoredData();
+		} else this.sessionBuilderReferences = [...references, structure];
+		this.teacherTab = "chemicals";
+		this.teacherDrawerChoice = this.teacherDrawerOpen = true;
+		void this.updateComplete.then(() => this.renderRoot.querySelector<SlTabGroup>("#teacherTabs")?.show("chemicals"));
+		this.builderReview = undefined;
+	}
+
+	private openSpeciesInBuilder(molecule: chemlib.Molecule, name: string) {
+		void import("./molecule-builder/catalog").then(({ fromLabMolecule }) => {
+			const structure = fromLabMolecule(molecule, name);
+			if (structure && this.isConnected) this.openInBuilder({ structure });
+		}).catch(error => console.warn("Unable to open a ChemLab species in the builder", error));
+	}
+
+	private openInBuilder(target: { key?: string; structure?: Structure }) {
+		this.builderReview = undefined;
+		this.builderTarget = target;
+		const widget = worksheetPeer(this, BUILDER_TAG, this.moleculeBuilderId);
+		if (widget) this.sendBuilderPreview(widget);
+	}
+
+	private sendBuilderPreview(widget: HTMLElement) {
+		const target = this.builderTarget;
+		if (!target || !worksheetPeers(this, BUILDER_TAG).includes(widget)) return;
+		const receiver = widget as BuilderReceiver;
+		const opened = target.structure ? receiver.viewStructure?.(target.structure) : receiver.viewCatalogStructure?.(target.key);
+		if (opened) {
+			this.builderTarget = undefined;
+			widget.scrollIntoView({ block: "nearest" });
+		}
+	}
+
+	private renderBuilderReferences() {
+		if (!this.builderReferences.length && !this.sessionBuilderReferences.length) return nothing;
+		return this.renderPaletteSection(this.builderText("Reference structures", "Referenzstrukturen"),
+			html`<div class="builder-reference-list">${[...this.builderReferences, ...this.sessionBuilderReferences].map(structure => html`
+				<div>
+					<sl-tag size="small">${structure.name || this.builderText("Structure", "Struktur")}</sl-tag>
+					<sl-button size="small" @click=${() => this.openInBuilder({ structure })}>${this.builderText("Open", "Öffnen")}</sl-button>
+					${this.canAuthor || this.sessionBuilderReferences.includes(structure) ? html`
+						<sl-button size="small" @click=${() => {
+							if (this.builderReferences.includes(structure)) {
+								this.builderReferences = this.builderReferences.filter(item => item !== structure);
+								this.persistAuthoredData();
+							} else this.sessionBuilderReferences = this.sessionBuilderReferences.filter(item => item !== structure);
+						}}>${this.builderText("Remove", "Entfernen")}</sl-button>
+					` : nothing}
+				</div>`)}</div>`);
+	}
+
+	private renderBuilderExchange() {
+		const review = this.builderReview;
+		const target = this.builderTarget;
+		if (!review && !target) return nothing;
+		const item = review?.reagent && chemicalCatalog.find(entry => entry.name === review.reagent);
+		const permitted = item && (this.canAuthor || this.isChemicalAllowed(item.name));
+		const builders = target ? worksheetPeers(this, BUILDER_TAG) : [];
+		const fallback = !builders.length
+			? this.builderText("Place a Molecule Builder in this worksheet to view the structure.", "Platziere einen Molekülbaukasten in diesem Arbeitsblatt, um die Struktur anzusehen.")
+			: this.builderText("Choose a Molecule Builder to view the structure.", "Wähle einen Molekülbaukasten für die Strukturansicht.");
+		return html`<section class="builder-exchange" aria-live="polite">
+			<div class="builder-reference-list">
+				<sl-tag size="small" variant="primary">${review?.structure.name || target?.key || this.builderText("Structure", "Struktur")}</sl-tag>
+				${review?.loading ? html`<p>${this.builderText("Checking the catalog", "Katalog wird geprüft")}</p>`
+				: review ? html`
+					<p>${permitted ? this.chemicalDisplayLabel(item)
+						: this.builderText("Reference only. No permitted matching dosing recipe.", "Nur Referenz. Keine passende freigegebene Dosiervorschrift.")}</p>
+					<div>
+						${permitted ? html`<sl-button size="small" variant="primary" @click=${() => this.useBuilderReagent(item.name)}>
+							${this.builderText("Select catalog reagent", "Katalogreagenz auswählen")}</sl-button>` : nothing}
+						<sl-button size="small" ?disabled=${(this.canAuthor ? this.builderReferences : this.sessionBuilderReferences).length >= 30}
+							@click=${() => this.saveBuilderReference(review.structure)}>${this.builderText("Keep as reference", "Als Referenz behalten")}</sl-button>
+					</div>
+				` : html`
+					<p>${fallback}</p>
+					<div>${builders.map((widget, index) => html`<sl-button size="small" @click=${() => this.sendBuilderPreview(widget)}>
+						${widget.id || `Molecule Builder ${index + 1}`}
+					</sl-button>`)}</div>
+				`}
+				<sl-button size="small" @click=${() => { this.builderReview = this.builderTarget = undefined; }}>
+					${this.builderText("Close", "Schließen")}
+				</sl-button>
+			</div>
+		</section>`;
 	}
 
 	private renderChemicalPermission(name: string, label: string) {

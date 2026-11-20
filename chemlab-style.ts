@@ -1802,6 +1802,45 @@ export const style = css`
 		clip-path: inset(50%);
 		white-space: nowrap;
 	}
+	.builder-exchange {
+		position: absolute;
+		inset: .5rem auto auto .5rem;
+		z-index: 8;
+		max-width: calc(100% - 1rem);
+		padding: .5rem;
+		border: 1px solid var(--lab-card-border);
+		border-radius: 5px;
+		background: var(--lab-card-surface);
+		box-shadow: var(--lab-panel-shadow);
+	}
+
+	.builder-reference-list, .builder-reference-list > div {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: .35rem;
+	}
+
+	.builder-exchange p {
+		margin: 0;
+		font-size: .8rem;
+	}
+
+	.structure-link {
+		align-self: start;
+		justify-self: start;
+	}
+
+	.vessel-structure-link {
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--sl-color-primary-700);
+		font: inherit;
+		text-decoration: underline;
+		cursor: pointer;
+	}
+
 	#canvasArea {
 		grid-column: 2;
 		grid-row: 1;
