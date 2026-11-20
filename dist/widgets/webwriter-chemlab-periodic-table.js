@@ -10216,19 +10216,33 @@ var periodicTableStyles = i`
 		--pt-cell-fill: var(--pt-unknown);
 	}
 
-	/* The ribbon is the only band that is always visible: two panel toggles on the
-	   left, the layout switch on the right. Everything that needs more room than
-	   one chip lives in a panel below it, so the ribbon stays one row at every
-	   width and the table keeps the height it was given. */
+	/* The ribbon is the only band that is always visible: the filter toggle with
+	   its panel, the mode toggle with its panel, and the layout switch, separated
+	   by thin dividers. A panel opens inside the band, right beside the button
+	   that opened it, so the controls stay where the toggle is. The band is
+	   top-aligned: the buttons keep to the first row while an open panel grows
+	   the band downwards, so the extra height sits under the panel alone and the
+	   table below keeps the box it was given. */
 	.ribbon {
 		display: flex;
 		flex: 0 0 auto;
-		align-items: center;
+		align-items: flex-start;
 		gap: 0.3rem;
 		padding: 0.3rem 0.35rem;
 		border: 1px solid var(--pt-border);
 		border-radius: 8px;
 		background: var(--pt-inset);
+	}
+
+	/* The dividers mark the three groups of the band: filter, modes, layout. They
+	   stretch with the band, so an open panel keeps them full height instead of
+	   leaving a stub beside the buttons. */
+	.ribbon-divider {
+		flex: 0 0 auto;
+		align-self: stretch;
+		width: 1px;
+		min-height: var(--pt-chip-height);
+		background: var(--pt-border);
 	}
 
 	/* The toggles and the layout switch are compact icon buttons with a tooltip
@@ -10289,18 +10303,21 @@ var periodicTableStyles = i`
 		background: var(--pt-accent);
 	}
 
-	/* A panel is the collapsible half of the ribbon: the same shaded surface, one
-	   row per group of controls, and no border of its own so it reads as the
-	   opened underside of the bar above it. */
-	.panel {
+	/* A panel is the opened layer of the ribbon: it sits beside its toggle and
+	   takes the free width, so two open panels split it and one open panel fills
+	   the band. It keeps a white surface and a light frame of its own, because
+	   the band around it is shaded and the opened area has to read as one block
+	   rather than as loose controls. */
+	.ribbon-panel {
 		display: flex;
-		flex: 0 0 auto;
+		flex: 1 1 0;
 		flex-direction: column;
 		gap: 0.3rem;
-		padding: 0.35rem;
+		min-width: 0;
+		padding: 0.3rem;
 		border: 1px solid var(--pt-border);
-		border-radius: 8px;
-		background: var(--pt-inset);
+		border-radius: 5px;
+		background: var(--pt-surface);
 	}
 
 	.panel-row {
@@ -10312,7 +10329,7 @@ var periodicTableStyles = i`
 
 	/* Search and the family carousel share one height, so the two rows of the
 	   filter panel line up with the ribbon chips above them. */
-	.panel .search {
+	.ribbon-panel .search {
 		flex: 1 1 auto;
 		min-width: 5rem;
 		--sl-input-height-small: var(--pt-chip-height);
@@ -10321,7 +10338,7 @@ var periodicTableStyles = i`
 
 	/* The field names itself through its placeholder and its accessible label, so
 	   the visible label is only kept for assistive technology. */
-	.panel .search::part(form-control-label) {
+	.ribbon-panel .search::part(form-control-label) {
 		position: absolute;
 		width: 1px;
 		height: 1px;
@@ -10332,17 +10349,17 @@ var periodicTableStyles = i`
 		white-space: nowrap;
 	}
 
-	.panel .reset {
+	.ribbon-panel .reset {
 		flex: 0 0 auto;
 		--sl-input-height-small: var(--pt-chip-height);
 	}
 
-	.panel .reset::part(base) {
+	.ribbon-panel .reset::part(base) {
 		background: var(--pt-surface);
 		box-shadow: var(--pt-control-shadow);
 	}
 
-	.panel .reset::part(label) {
+	.ribbon-panel .reset::part(label) {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -11476,7 +11493,7 @@ var periodicTableStyles = i`
 		}
 
 		.ribbon,
-		.panel,
+		.ribbon-panel,
 		.info-button,
 		.table-pane {
 			display: none !important;
@@ -11494,7 +11511,7 @@ var periodicTableStyles = i`
 	}
 
 	:host(.ww-beforeprint) .ribbon,
-	:host(.ww-beforeprint) .panel,
+	:host(.ww-beforeprint) .ribbon-panel,
 	:host(.ww-beforeprint) .info-button,
 	:host(.ww-beforeprint) .table-pane {
 		display: none !important;
@@ -11908,9 +11925,7 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     });
     return x2`
 			<div class="widget">
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderRibbon_fn).call(this, t8, resolved)}
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderFilters_fn).call(this, t8, language, matches.length)}
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderModes_fn).call(this, t8, language)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderRibbon_fn).call(this, t8, language, resolved, matches.length)}
 				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t8, language, matches, element, details) : __privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t8, language, matching, details)}
 				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t8, language, element)}
 				<sl-icon-button
@@ -12179,24 +12194,30 @@ renderCount_fn = function(t8, count) {
   return format(t8.resultCount, { count });
 };
 /**
- * Renders the ribbon: the two panel toggles and the layout switch.
+ * Renders the ribbon: the two layer toggles with their panels and the layout
+ * switch.
  *
- * The ribbon is the only permanently visible band. It carries the toggle that
- * opens the filter panel in the slot the info button used to take, the toggle
- * that opens the property panel beside it, and the layout switch on the far
- * right. Everything that needs more room than one chip lives in one of the two
- * panels below, so the ribbon stays one row at every width and the table keeps
- * the height it was given.
+ * The ribbon is the only permanently visible band. It carries the filter
+ * toggle with the filter panel beside it, the mode toggle with the property
+ * panel beside it, and the layout switch on the far right, with a thin divider
+ * between the three groups. A panel opens inside the band instead of below it,
+ * so the controls stay where the button that opened them is. The band is
+ * top-aligned: the buttons keep to the first row while an open panel grows the
+ * band downwards, so the extra height sits under the panel alone. The table
+ * below keeps its box, because the pane shrinks instead of the widget
+ * overflowing.
  *
  * A toggle shows a filled state while its panel is open and a small dot while
  * the panel is closed but still narrows the table, so a hidden filter never
  * looks like no filter at all.
  *
  * @param t - Interface strings.
+ * @param language - Interface language.
  * @param resolved - Layout actually rendered.
+ * @param count - Number of matching elements.
  * @returns The ribbon.
  */
-renderRibbon_fn = function(t8, resolved) {
+renderRibbon_fn = function(t8, language, resolved, count) {
   const filtersActive = __privateGet(this, _query) !== "" || __privateGet(this, _category) !== null;
   const modesActive = __privateGet(this, _mode).mode !== "off";
   return x2`
@@ -12209,6 +12230,8 @@ renderRibbon_fn = function(t8, resolved) {
 					aria-expanded=${__privateGet(this, _filtersOpen)}
 					@click=${__privateGet(this, _toggleFilters)}
 				>${FILTER_ICON}</sl-button>
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderFilters_fn).call(this, t8, language, count)}
+				<span class="ribbon-divider" role="presentation"></span>
 				<sl-button
 					class="ribbon-toggle ${__privateGet(this, _modesOpen) ? "is-open" : ""} ${modesActive ? "is-active" : ""}"
 					size="small"
@@ -12217,6 +12240,8 @@ renderRibbon_fn = function(t8, resolved) {
 					aria-expanded=${__privateGet(this, _modesOpen)}
 					@click=${__privateGet(this, _toggleModes)}
 				>${MODE_ICON}</sl-button>
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderModes_fn).call(this, t8, language)}
+				<span class="ribbon-divider" role="presentation"></span>
 				<div class="views" role="group" aria-label=${t8.viewLabel}>
 					<sl-button
 						size="small"
@@ -12239,7 +12264,7 @@ renderRibbon_fn = function(t8, resolved) {
 		`;
 };
 /**
- * Renders the filter panel behind the first ribbon toggle.
+ * Renders the filter panel beside the first ribbon toggle.
  *
  * The panel holds the two controls that narrow the table, in the order they
  * are read: the search field with the reset beside it, then the family
@@ -12262,7 +12287,7 @@ renderFilters_fn = function(t8, language, count) {
   if (!__privateGet(this, _filtersOpen)) return null;
   const countText = __privateMethod(this, _ChemLabPeriodicTable_instances, renderCount_fn).call(this, t8, count);
   return x2`
-			<div class="panel filters">
+			<div class="ribbon-panel filters">
 				<div class="panel-row">
 					<sl-input
 						class="search"
@@ -12394,7 +12419,7 @@ slider_fn = function(t8, language) {
   }
 };
 /**
- * Renders the property panel behind the second ribbon toggle.
+ * Renders the property panel beside the second ribbon toggle.
  *
  * The panel decides what the cells are coloured by: the state at the chosen
  * temperature, whether the element was already known in the chosen year, or
@@ -12420,7 +12445,7 @@ renderModes_fn = function(t8, language) {
   if (!__privateGet(this, _modesOpen)) return null;
   const slider = __privateMethod(this, _ChemLabPeriodicTable_instances, slider_fn).call(this, t8, language);
   return x2`
-			<div class="panel modes">
+			<div class="ribbon-panel modes">
 				<div class="panel-row">
 					<span class="visually-hidden" id="mode-strip-label">${t8.modeLabel}</span>
 					<sl-carousel

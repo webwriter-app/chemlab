@@ -903,24 +903,30 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the ribbon: the two panel toggles and the layout switch.
+	 * Renders the ribbon: the two layer toggles with their panels and the layout
+	 * switch.
 	 *
-	 * The ribbon is the only permanently visible band. It carries the toggle that
-	 * opens the filter panel in the slot the info button used to take, the toggle
-	 * that opens the property panel beside it, and the layout switch on the far
-	 * right. Everything that needs more room than one chip lives in one of the two
-	 * panels below, so the ribbon stays one row at every width and the table keeps
-	 * the height it was given.
+	 * The ribbon is the only permanently visible band. It carries the filter
+	 * toggle with the filter panel beside it, the mode toggle with the property
+	 * panel beside it, and the layout switch on the far right, with a thin divider
+	 * between the three groups. A panel opens inside the band instead of below it,
+	 * so the controls stay where the button that opened them is. The band is
+	 * top-aligned: the buttons keep to the first row while an open panel grows the
+	 * band downwards, so the extra height sits under the panel alone. The table
+	 * below keeps its box, because the pane shrinks instead of the widget
+	 * overflowing.
 	 *
 	 * A toggle shows a filled state while its panel is open and a small dot while
 	 * the panel is closed but still narrows the table, so a hidden filter never
 	 * looks like no filter at all.
 	 *
 	 * @param t - Interface strings.
+	 * @param language - Interface language.
 	 * @param resolved - Layout actually rendered.
+	 * @param count - Number of matching elements.
 	 * @returns The ribbon.
 	 */
-	#renderRibbon(t: Strings, resolved: ResolvedView) {
+	#renderRibbon(t: Strings, language: Language, resolved: ResolvedView, count: number) {
 		const filtersActive = this.#query !== "" || this.#category !== null;
 		const modesActive = this.#mode.mode !== "off";
 		return html`
@@ -933,6 +939,8 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					aria-expanded=${this.#filtersOpen}
 					@click=${this.#toggleFilters}
 				>${FILTER_ICON}</sl-button>
+				${this.#renderFilters(t, language, count)}
+				<span class="ribbon-divider" role="presentation"></span>
 				<sl-button
 					class="ribbon-toggle ${this.#modesOpen ? "is-open" : ""} ${modesActive ? "is-active" : ""}"
 					size="small"
@@ -941,6 +949,8 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					aria-expanded=${this.#modesOpen}
 					@click=${this.#toggleModes}
 				>${MODE_ICON}</sl-button>
+				${this.#renderModes(t, language)}
+				<span class="ribbon-divider" role="presentation"></span>
 				<div class="views" role="group" aria-label=${t.viewLabel}>
 					<sl-button
 						size="small"
@@ -964,7 +974,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the filter panel behind the first ribbon toggle.
+	 * Renders the filter panel beside the first ribbon toggle.
 	 *
 	 * The panel holds the two controls that narrow the table, in the order they
 	 * are read: the search field with the reset beside it, then the family
@@ -987,7 +997,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (!this.#filtersOpen) return null;
 		const countText = this.#renderCount(t, count);
 		return html`
-			<div class="panel filters">
+			<div class="ribbon-panel filters">
 				<div class="panel-row">
 					<sl-input
 						class="search"
@@ -1121,7 +1131,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the property panel behind the second ribbon toggle.
+	 * Renders the property panel beside the second ribbon toggle.
 	 *
 	 * The panel decides what the cells are coloured by: the state at the chosen
 	 * temperature, whether the element was already known in the chosen year, or
@@ -1147,7 +1157,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (!this.#modesOpen) return null;
 		const slider = this.#slider(t, language);
 		return html`
-			<div class="panel modes">
+			<div class="ribbon-panel modes">
 				<div class="panel-row">
 					<span class="visually-hidden" id="mode-strip-label">${t.modeLabel}</span>
 					<sl-carousel
@@ -1774,9 +1784,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		});
 		return html`
 			<div class="widget">
-				${this.#renderRibbon(t, resolved)}
-				${this.#renderFilters(t, language, matches.length)}
-				${this.#renderModes(t, language)}
+				${this.#renderRibbon(t, language, resolved, matches.length)}
 				${resolved === "list"
 					? this.#renderList(t, language, matches, element, details)
 					: this.#renderGrid(t, language, matching, details)}

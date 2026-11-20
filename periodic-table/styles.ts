@@ -135,19 +135,33 @@ export const periodicTableStyles = css`
 		--pt-cell-fill: var(--pt-unknown);
 	}
 
-	/* The ribbon is the only band that is always visible: two panel toggles on the
-	   left, the layout switch on the right. Everything that needs more room than
-	   one chip lives in a panel below it, so the ribbon stays one row at every
-	   width and the table keeps the height it was given. */
+	/* The ribbon is the only band that is always visible: the filter toggle with
+	   its panel, the mode toggle with its panel, and the layout switch, separated
+	   by thin dividers. A panel opens inside the band, right beside the button
+	   that opened it, so the controls stay where the toggle is. The band is
+	   top-aligned: the buttons keep to the first row while an open panel grows
+	   the band downwards, so the extra height sits under the panel alone and the
+	   table below keeps the box it was given. */
 	.ribbon {
 		display: flex;
 		flex: 0 0 auto;
-		align-items: center;
+		align-items: flex-start;
 		gap: 0.3rem;
 		padding: 0.3rem 0.35rem;
 		border: 1px solid var(--pt-border);
 		border-radius: 8px;
 		background: var(--pt-inset);
+	}
+
+	/* The dividers mark the three groups of the band: filter, modes, layout. They
+	   stretch with the band, so an open panel keeps them full height instead of
+	   leaving a stub beside the buttons. */
+	.ribbon-divider {
+		flex: 0 0 auto;
+		align-self: stretch;
+		width: 1px;
+		min-height: var(--pt-chip-height);
+		background: var(--pt-border);
 	}
 
 	/* The toggles and the layout switch are compact icon buttons with a tooltip
@@ -208,18 +222,21 @@ export const periodicTableStyles = css`
 		background: var(--pt-accent);
 	}
 
-	/* A panel is the collapsible half of the ribbon: the same shaded surface, one
-	   row per group of controls, and no border of its own so it reads as the
-	   opened underside of the bar above it. */
-	.panel {
+	/* A panel is the opened layer of the ribbon: it sits beside its toggle and
+	   takes the free width, so two open panels split it and one open panel fills
+	   the band. It keeps a white surface and a light frame of its own, because
+	   the band around it is shaded and the opened area has to read as one block
+	   rather than as loose controls. */
+	.ribbon-panel {
 		display: flex;
-		flex: 0 0 auto;
+		flex: 1 1 0;
 		flex-direction: column;
 		gap: 0.3rem;
-		padding: 0.35rem;
+		min-width: 0;
+		padding: 0.3rem;
 		border: 1px solid var(--pt-border);
-		border-radius: 8px;
-		background: var(--pt-inset);
+		border-radius: 5px;
+		background: var(--pt-surface);
 	}
 
 	.panel-row {
@@ -231,7 +248,7 @@ export const periodicTableStyles = css`
 
 	/* Search and the family carousel share one height, so the two rows of the
 	   filter panel line up with the ribbon chips above them. */
-	.panel .search {
+	.ribbon-panel .search {
 		flex: 1 1 auto;
 		min-width: 5rem;
 		--sl-input-height-small: var(--pt-chip-height);
@@ -240,7 +257,7 @@ export const periodicTableStyles = css`
 
 	/* The field names itself through its placeholder and its accessible label, so
 	   the visible label is only kept for assistive technology. */
-	.panel .search::part(form-control-label) {
+	.ribbon-panel .search::part(form-control-label) {
 		position: absolute;
 		width: 1px;
 		height: 1px;
@@ -251,17 +268,17 @@ export const periodicTableStyles = css`
 		white-space: nowrap;
 	}
 
-	.panel .reset {
+	.ribbon-panel .reset {
 		flex: 0 0 auto;
 		--sl-input-height-small: var(--pt-chip-height);
 	}
 
-	.panel .reset::part(base) {
+	.ribbon-panel .reset::part(base) {
 		background: var(--pt-surface);
 		box-shadow: var(--pt-control-shadow);
 	}
 
-	.panel .reset::part(label) {
+	.ribbon-panel .reset::part(label) {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -1395,7 +1412,7 @@ export const periodicTableStyles = css`
 		}
 
 		.ribbon,
-		.panel,
+		.ribbon-panel,
 		.info-button,
 		.table-pane {
 			display: none !important;
@@ -1413,7 +1430,7 @@ export const periodicTableStyles = css`
 	}
 
 	:host(.ww-beforeprint) .ribbon,
-	:host(.ww-beforeprint) .panel,
+	:host(.ww-beforeprint) .ribbon-panel,
 	:host(.ww-beforeprint) .info-button,
 	:host(.ww-beforeprint) .table-pane {
 		display: none !important;
