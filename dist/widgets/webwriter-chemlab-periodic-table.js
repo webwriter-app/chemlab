@@ -10098,7 +10098,9 @@ var periodicTableStyles = i`
 	/* The widget takes the same box as the lab widget: a fixed default size that
 	   the author can shrink, and a corner grip outside fullscreen. The height is
 	   fixed instead of grown by the content, so the table and the list scroll
-	   inside the box and an embed never pushes the page around. */
+	   inside the box and an embed never pushes the page around. The frame is the
+	   lab widget's workspace outline: one pixel of neutral-300 with the same
+	   5-pixel radius, so both widgets read as the same object on the page. */
 	:host {
 		display: block;
 		box-sizing: border-box;
@@ -10108,6 +10110,8 @@ var periodicTableStyles = i`
 		min-inline-size: min(260px, 100%);
 		min-block-size: 280px;
 		padding: 0.75rem;
+		border: 1px solid var(--pt-outline);
+		border-radius: 5px;
 		font-family: var(--sl-font-sans, system-ui, sans-serif);
 		color: var(--sl-color-neutral-900, #1c1c1e);
 		background: var(--sl-color-neutral-0, #ffffff);
@@ -10122,6 +10126,9 @@ var periodicTableStyles = i`
 		--pt-series-gap: 0.5rem;
 		--pt-radius: 4px;
 		--pt-border: var(--sl-color-neutral-200, #e2e2e6);
+		/* The lab widget's workspace outline, one step darker than the cell
+		   border so the frame of the widget reads as a frame and not as a cell. */
+		--pt-outline: var(--sl-color-neutral-300, #c7c7cc);
 		--pt-surface: var(--sl-color-neutral-0, #ffffff);
 		--pt-inset: var(--sl-color-neutral-50, #f7f7f8);
 		--pt-ink: var(--sl-color-neutral-900, #1c1c1e);
@@ -11247,9 +11254,25 @@ var periodicTableStyles = i`
 
 	/* The sources and the model notes live in a dialog behind the info button, so
 	   the card stays a card. The dialog gets wider margins than the Shoelace
-	   default, because it carries running text and a list of sources. */
+	   default, because it carries running text and a list of sources.
+
+	   Shoelace pins the dialog to the viewport, which would dim the page around
+	   the widget and hide its frame. The base and the overlay are absolute
+	   instead, so the dialog covers the widget's own box: the frame stays
+	   visible, the panel centres in the widget, and its height follows the
+	   widget instead of the window. */
+	.info::part(base) {
+		position: absolute;
+		inset: 0;
+	}
+
+	.info::part(overlay) {
+		position: absolute;
+		inset: 0;
+	}
+
 	.info::part(panel) {
-		max-width: min(44rem, 92vw);
+		max-width: min(44rem, 92%);
 	}
 
 	.info::part(header) {
@@ -11605,7 +11628,7 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _filtersOpen, _modesOpen, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
+var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _filtersOpen, _modesOpen, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
 _ChemLabPeriodicTable_decorators = [t2("webwriter-chemlab-periodic-table")];
 var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a2) {
   constructor() {
@@ -11716,6 +11739,16 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     /** Opens the info dialog. */
     __privateAdd(this, _openInfo, () => {
       __privateSet(this, _infoOpen, true);
+      this.requestUpdate();
+    });
+    /**
+     * Closes the info dialog from its footer button.
+     *
+     * The flag is the only source of truth for the dialog's `open` attribute, so
+     * the click has to ask for a render; without it the button would look dead.
+     */
+    __privateAdd(this, _closeInfo, () => {
+      __privateSet(this, _infoOpen, false);
       this.requestUpdate();
     });
     /** Keeps the open flag in step when the dialog closes itself. */
@@ -12090,6 +12123,7 @@ _onHalfLifeInput = new WeakMap();
 _toggleFilters = new WeakMap();
 _toggleModes = new WeakMap();
 _openInfo = new WeakMap();
+_closeInfo = new WeakMap();
 _onInfoHide = new WeakMap();
 /**
  * Focuses the cell or list row of an element once it is rendered.
@@ -12932,9 +12966,7 @@ renderInfo_fn = function(t8, language) {
 					<p class="info-note">${t8.infoPhaseModel}</p>
 					<p class="info-note">${t8.infoDiscovery}</p>
 				</section>
-				<sl-button slot="footer" variant="primary" @click=${() => {
-    __privateSet(this, _infoOpen, false);
-  }}>
+				<sl-button slot="footer" variant="primary" @click=${__privateGet(this, _closeInfo)}>
 					${t8.infoClose}
 				</sl-button>
 			</sl-dialog>

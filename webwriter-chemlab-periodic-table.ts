@@ -778,6 +778,17 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		this.requestUpdate();
 	};
 
+	/**
+	 * Closes the info dialog from its footer button.
+	 *
+	 * The flag is the only source of truth for the dialog's `open` attribute, so
+	 * the click has to ask for a render; without it the button would look dead.
+	 */
+	#closeInfo = () => {
+		this.#infoOpen = false;
+		this.requestUpdate();
+	};
+
 	/** Keeps the open flag in step when the dialog closes itself. */
 	#onInfoHide = () => {
 		if (!this.#infoOpen) return;
@@ -1733,7 +1744,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					<p class="info-note">${t.infoPhaseModel}</p>
 					<p class="info-note">${t.infoDiscovery}</p>
 				</section>
-				<sl-button slot="footer" variant="primary" @click=${() => { this.#infoOpen = false; }}>
+				<sl-button slot="footer" variant="primary" @click=${this.#closeInfo}>
 					${t.infoClose}
 				</sl-button>
 			</sl-dialog>

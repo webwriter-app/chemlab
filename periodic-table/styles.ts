@@ -17,7 +17,9 @@ export const periodicTableStyles = css`
 	/* The widget takes the same box as the lab widget: a fixed default size that
 	   the author can shrink, and a corner grip outside fullscreen. The height is
 	   fixed instead of grown by the content, so the table and the list scroll
-	   inside the box and an embed never pushes the page around. */
+	   inside the box and an embed never pushes the page around. The frame is the
+	   lab widget's workspace outline: one pixel of neutral-300 with the same
+	   5-pixel radius, so both widgets read as the same object on the page. */
 	:host {
 		display: block;
 		box-sizing: border-box;
@@ -27,6 +29,8 @@ export const periodicTableStyles = css`
 		min-inline-size: min(260px, 100%);
 		min-block-size: 280px;
 		padding: 0.75rem;
+		border: 1px solid var(--pt-outline);
+		border-radius: 5px;
 		font-family: var(--sl-font-sans, system-ui, sans-serif);
 		color: var(--sl-color-neutral-900, #1c1c1e);
 		background: var(--sl-color-neutral-0, #ffffff);
@@ -41,6 +45,9 @@ export const periodicTableStyles = css`
 		--pt-series-gap: 0.5rem;
 		--pt-radius: 4px;
 		--pt-border: var(--sl-color-neutral-200, #e2e2e6);
+		/* The lab widget's workspace outline, one step darker than the cell
+		   border so the frame of the widget reads as a frame and not as a cell. */
+		--pt-outline: var(--sl-color-neutral-300, #c7c7cc);
 		--pt-surface: var(--sl-color-neutral-0, #ffffff);
 		--pt-inset: var(--sl-color-neutral-50, #f7f7f8);
 		--pt-ink: var(--sl-color-neutral-900, #1c1c1e);
@@ -1166,9 +1173,25 @@ export const periodicTableStyles = css`
 
 	/* The sources and the model notes live in a dialog behind the info button, so
 	   the card stays a card. The dialog gets wider margins than the Shoelace
-	   default, because it carries running text and a list of sources. */
+	   default, because it carries running text and a list of sources.
+
+	   Shoelace pins the dialog to the viewport, which would dim the page around
+	   the widget and hide its frame. The base and the overlay are absolute
+	   instead, so the dialog covers the widget's own box: the frame stays
+	   visible, the panel centres in the widget, and its height follows the
+	   widget instead of the window. */
+	.info::part(base) {
+		position: absolute;
+		inset: 0;
+	}
+
+	.info::part(overlay) {
+		position: absolute;
+		inset: 0;
+	}
+
 	.info::part(panel) {
-		max-width: min(44rem, 92vw);
+		max-width: min(44rem, 92%);
 	}
 
 	.info::part(header) {
