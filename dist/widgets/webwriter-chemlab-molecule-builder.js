@@ -7292,6 +7292,9 @@ var init_orbitals = __esm({
 });
 
 // molecule-builder/atomic-orbitals.ts
+function atomicOrbitalKey({ subshell, orientation, region }) {
+  return [subshell?.label, orientation, region].join(":");
+}
 function laguerre(order, alpha, x4) {
   let previous = 1, value = 1 + alpha - x4;
   for (let k3 = 2; k3 <= order; k3++) {
@@ -7354,7 +7357,10 @@ function radialRanges(n10, l6) {
   edges.push(end);
   return edges;
 }
-function atomicOrbitalField(n10, l6, orientation, region) {
+function radialProfile(n10, l6, region) {
+  const key = `${n10}:${l6}:${region}`;
+  const cached = radialProfiles.get(key);
+  if (cached) return cached;
   const ranges = radialRanges(n10, l6);
   const start = ranges[region], end = ranges[region + 1];
   let peak = 0;
@@ -7369,6 +7375,32 @@ function atomicOrbitalField(n10, l6, orientation, region) {
       break;
     }
   }
+  const result = { start, end, peak, extent };
+  radialProfiles.set(key, result);
+  return result;
+}
+function atomicOverlayParts(subshells) {
+  const cached = overlayCache.get(subshells);
+  if (cached) return cached;
+  const outermost = subshells.map(({ n: n10, l: l6 }) => radialProfile(n10, l6, n10 - l6 - 1).extent);
+  const reach = Math.max(...subshells.map(({ n: n10 }, i9) => n10 * outermost[i9]));
+  const parts = subshells.flatMap((subshell, i9) => {
+    const { n: n10, l: l6 } = subshell;
+    const outerScale = Math.sqrt(n10 * outermost[i9] / reach);
+    return Array.from({ length: 2 * l6 + 1 }, (_3, orientation) => Array.from({ length: n10 - l6 }, (_4, region) => {
+      const part = { subshell, orientation, region };
+      return {
+        ...part,
+        key: atomicOrbitalKey(part),
+        scale: outerScale * radialProfile(n10, l6, region).extent / outermost[i9]
+      };
+    })).flat();
+  });
+  overlayCache.set(subshells, parts);
+  return parts;
+}
+function atomicOrbitalField(n10, l6, orientation, region) {
+  const { start, end, peak, extent } = radialProfile(n10, l6, region);
   const inversePeak = 1 / (peak * angularPeak(l6, orientation));
   return {
     extent,
@@ -7436,13 +7468,13 @@ function contourMesh(points, values, grid, positive) {
   const positions = Float32Array.from(vertices), indices = Uint32Array.from(triangles);
   return { positions, indices, normals: meshNormals(positions, indices) };
 }
-function atomicOrbitalMesh({ atomicNumber, electrons, subshell, orientation, region }) {
+function atomicOrbitalMesh({ atomicNumber, electrons, subshell, orientation, region }, grid = 43) {
   if (!subshell) return { phases: [], extent: 1, physical: false };
   const { n: n10, l: l6 } = subshell;
   const field = atomicOrbitalField(n10, l6, orientation, region);
   const physical = electrons === 1;
   const extent = physical ? field.extent * n10 * bohrAngstrom / (2 * atomicNumber) : 1;
-  const grid = 43, size3 = grid ** 3;
+  const size3 = grid ** 3;
   const points = new Float32Array(size3 * 3), values = new Float32Array(size3);
   for (let z3 = 0, i9 = 0; z3 < grid; z3++) for (let y5 = 0; y5 < grid; y5++) for (let x4 = 0; x4 < grid; x4++, i9++) {
     const pos = [2 * x4 / (grid - 1) - 1, 2 * y5 / (grid - 1) - 1, 2 * z3 / (grid - 1) - 1];
@@ -7451,48 +7483,64 @@ function atomicOrbitalMesh({ atomicNumber, electrons, subshell, orientation, reg
   }
   return { phases: [contourMesh(points, values, grid, true), contourMesh(points, values, grid, false)], extent, physical };
 }
-function atomicOrbitalSlice(display) {
+function slicePaths(side, sample) {
+  const paths = ["", ""];
+  let count2 = 0;
+  for (let y5 = 0; y5 < side; y5++) {
+    for (let x4 = 0, start = 0, phase = -1; x4 <= side; x4++) {
+      const next = x4 === side ? -1 : sample((2 * x4 + 1) / side - 1, 1 - (2 * y5 + 1) / side);
+      if (next === phase) continue;
+      if (phase >= 0) {
+        const width = x4 - start;
+        count2 += width;
+        paths[phase] += `M${start} ${y5}h${width}v1h-${width}z`;
+      }
+      start = x4;
+      phase = next;
+    }
+  }
+  return { count: count2, paths };
+}
+function atomicOrbitalSlice(display, overlay) {
   if (!display.subshell) return void 0;
   const { n: n10, l: l6 } = display.subshell;
   const field = atomicOrbitalField(n10, l6, display.orientation, display.region);
-  const planes = [
-    (x4, y5) => [x4, y5, 0],
-    (x4, y5) => [x4, 0, y5],
-    (x4, y5) => [0, x4, y5],
-    (x4, y5) => [x4, y5 * Math.SQRT1_2, y5 * Math.SQRT1_2],
-    (x4, y5) => [y5 * Math.SQRT1_2, x4, y5 * Math.SQRT1_2]
-  ];
+  const key = atomicOrbitalKey(display);
+  const scale2 = overlay?.find((part) => part.key === key)?.scale ?? 1;
+  const phase = (value) => value > contour ? 0 : value < -contour ? 1 : -1;
+  const section = (side2, plane2) => slicePaths(side2, (x4, y5) => phase(field.value(...plane2(x4 / scale2, y5 / scale2))));
+  const plane = slicePlanes.map((plane2) => ({ plane: plane2, count: section(32, plane2).count })).reduce((best, candidate) => candidate.count > best.count ? candidate : best).plane;
   const side = 128;
-  let best = { count: -1, paths: ["", ""] };
-  for (const plane of planes) {
-    let count2 = 0;
-    const paths = ["", ""];
-    for (let y5 = 0; y5 < side; y5++) {
-      for (let x4 = 0, start = 0, phase = -1; x4 <= side; x4++) {
-        const value = x4 === side ? 0 : field.value(...plane((2 * x4 + 1) / side - 1, 1 - (2 * y5 + 1) / side));
-        const next = value > contour ? 0 : value < -contour ? 1 : -1;
-        if (next === phase) continue;
-        if (phase >= 0) {
-          const width = x4 - start;
-          count2 += width;
-          paths[phase] += `M${start} ${y5}h${width}v1h-${width}z`;
-        }
-        start = x4;
-        phase = next;
-      }
-    }
-    if (count2 > best.count) best = { count: count2, paths };
-  }
-  return { side, paths: best.paths };
+  const { paths } = section(side, plane);
+  const backgroundSide = 64;
+  const fields = overlay?.filter((part) => part.key !== key).map((part) => {
+    const { n: n11, l: l7 } = part.subshell;
+    return { scale: part.scale, field: atomicOrbitalField(n11, l7, part.orientation, part.region) };
+  });
+  const background = fields && [1, -1].map((sign) => slicePaths(backgroundSide, (x4, y5) => {
+    const distance2 = Math.hypot(x4, y5);
+    const visible = fields.some((part) => distance2 <= part.scale && sign * part.field.value(...plane(x4 / part.scale, y5 / part.scale)) > contour);
+    return visible ? 0 : -1;
+  }).paths[0]);
+  return { side, paths, background, backgroundScale: side / backgroundSide };
 }
-var contour, bohrAngstrom, corners, tetrahedra;
+var contour, bohrAngstrom, radialProfiles, overlayCache, corners, tetrahedra, slicePlanes;
 var init_atomic_orbitals = __esm({
   "molecule-builder/atomic-orbitals.ts"() {
     init_orbital_mesh();
     contour = 0.2;
     bohrAngstrom = 0.5291772109;
+    radialProfiles = /* @__PURE__ */ new Map();
+    overlayCache = /* @__PURE__ */ new WeakMap();
     corners = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]];
     tetrahedra = [[0, 5, 1, 6], [0, 1, 2, 6], [0, 2, 3, 6], [0, 3, 7, 6], [0, 7, 4, 6], [0, 4, 5, 6]];
+    slicePlanes = [
+      (x4, y5) => [x4, y5, 0],
+      (x4, y5) => [x4, 0, y5],
+      (x4, y5) => [0, x4, y5],
+      (x4, y5) => [x4, y5 * Math.SQRT1_2, y5 * Math.SQRT1_2],
+      (x4, y5) => [y5 * Math.SQRT1_2, x4, y5 * Math.SQRT1_2]
+    ];
   }
 });
 
@@ -92186,7 +92234,7 @@ var init_scene = __esm({
           hitVolume: new Sphere(new Vector3(), 1),
           parent: this.#atomic
         });
-        this.#atomic.addChild(this.#atomicSurfaces);
+        this.#atomic.addChild(this.#atomicBackdrop, this.#atomicSurfaces);
         this.#atomic.visible = false;
         this.#view.root.addChild(this.#atomic);
         this.#preview = this.#rod();
@@ -92237,6 +92285,9 @@ var init_scene = __esm({
       #orbitalGeometries = [];
       #atomic = new Container3D();
       #atomicSurfaces = new Container3D({ eventMode: "none" });
+      #atomicBackdrop = new Container3D({ eventMode: "none" });
+      #atomicBackdropGeometries = [];
+      #atomicOverlay;
       #atomicGeometries = [];
       #nucleus;
       #atomicView;
@@ -92245,6 +92296,12 @@ var init_scene = __esm({
         roughness: 0.68,
         alphaMode: "blend",
         alpha: 0.76
+      }));
+      #atomicBackdropMaterials = ORBITAL_PHASE_COLORS.map((baseColor) => new Material3D({
+        baseColor,
+        roughness: 0.68,
+        alphaMode: "blend",
+        alpha: 0.16
       }));
       #hydration = new Container3D({ eventMode: "none" });
       #lattice = new Graphics({ eventMode: "none" });
@@ -92458,41 +92515,75 @@ var init_scene = __esm({
           }
         }
       }
-      setAtomicView(display) {
-        const key = [
-          display.atomId,
-          display.atomicNumber,
-          display.electrons,
-          display.subshell?.label,
-          display.orientation,
-          display.region
-        ].join(":");
-        if (this.#atomicView?.key === key) return;
-        const camera = this.#atomicView?.camera ?? {
+      setAtomicView(display, overlay) {
+        const selected = atomicOrbitalKey(display);
+        const species = [display.atomId, display.atomicNumber, display.electrons].join(":");
+        const key = [species, selected, !!overlay].join(":");
+        const previous = this.#atomicView;
+        if (previous?.key === key) return;
+        const camera = previous?.camera ?? {
           target: this.#target,
           distance: this.#distance,
           yaw: this.#yaw,
           pitch: this.#pitch
         };
         const { phases, extent } = atomicOrbitalMesh(display);
-        if (!this.#atomicView) {
+        if (!previous) {
           this.#yaw = 0.83;
           this.#pitch = 0.37;
         }
-        this.#atomicView = { key, atomId: display.atomId, extent, camera };
+        this.#atomicView = { key, atomId: display.atomId, extent: overlay ? 1 : extent, camera };
         this.#content.visible = this.#edges.visible = this.#electrons.visible = this.#orbital.visible = this.#hydration.visible = this.#lattice.visible = this.#preview.visible = false;
         this.#atomic.visible = true;
+        const previousOverlay = this.#atomicOverlay;
+        if (previousOverlay?.species !== species || !overlay) this.#clearAtomicOverlay();
+        if (overlay && !this.#atomicOverlay) {
+          this.#atomicOverlay = { species, display, selected, parts: overlay, next: 0, groups: /* @__PURE__ */ new Map() };
+          const alpha = 0.22 / Math.max(1, Math.sqrt((overlay.length - 1) / 4));
+          for (const material of this.#atomicBackdropMaterials) material.alpha = alpha;
+        }
+        if (this.#atomicOverlay) {
+          this.#atomicOverlay.selected = selected;
+          for (const [key2, group] of this.#atomicOverlay.groups) group.visible = key2 !== selected;
+        }
         this.#clearAtomicSurfaces();
         this.#nucleus.material = this.#material(atomColor(display.atomicNumber));
-        this.#nucleus.scale.set(extent * (display.subshell ? 0.048 : 0.32));
+        this.#nucleus.scale.set(this.#atomicView.extent * (display.subshell ? 0.048 : 0.32));
+        const scale2 = overlay?.find((part) => part.key === selected)?.scale ?? extent;
+        this.#addAtomicSurfaces(phases, scale2, this.#atomicSurfaces, this.#atomicGeometries, this.#orbitalMaterials);
+        if (previous && previousOverlay?.species === species && this.#atomicOverlay === previousOverlay) this.#draw();
+        else this.fit();
+      }
+      #addAtomicSurfaces(phases, extent, parent, geometries, materials) {
         for (const [phase, mesh] of phases.entries()) {
           if (!mesh) continue;
           const geometry = new Geometry3D(mesh);
-          this.#atomicGeometries.push(geometry);
-          const surface = new Mesh3D({ geometry, material: this.#orbitalMaterials[phase], eventMode: "none", parent: this.#atomicSurfaces });
+          geometries.push(geometry);
+          const surface = new Mesh3D({ geometry, material: materials[phase], eventMode: "none", parent });
           surface.scale.set(extent);
         }
-        this.fit();
+      }
+      // Give the main view its first frame before building the faint meshes, and
+      // limit work per frame on atoms with many occupied subshells.
+      #buildAtomicOverlay() {
+        const overlay = this.#atomicOverlay;
+        if (!overlay || overlay.next >= overlay.parts.length) return;
+        const start = performance.now();
+        do {
+          const part = overlay.parts[overlay.next++];
+          const { phases } = atomicOrbitalMesh({ ...overlay.display, ...part }, 19);
+          const group = new Container3D({ eventMode: "none", parent: this.#atomicBackdrop });
+          group.visible = part.key !== overlay.selected;
+          this.#addAtomicSurfaces(phases, part.scale, group, this.#atomicBackdropGeometries, this.#atomicBackdropMaterials);
+          overlay.groups.set(part.key, group);
+        } while (overlay.next < overlay.parts.length && performance.now() - start < 5);
+        this.#draw();
+      }
+      #clearAtomicOverlay() {
+        if (!this.#atomicOverlay) return;
+        this.#atomicOverlay = void 0;
+        for (const group of this.#atomicBackdrop.removeChildren()) group.destroy({ children: true });
+        for (const geometry of this.#atomicBackdropGeometries.splice(0)) geometry.destroy();
       }
       #clearAtomicSurfaces() {
         for (const child of this.#atomicSurfaces.removeChildren()) child.destroy();
@@ -92504,6 +92595,7 @@ var init_scene = __esm({
         this.#atomicView = void 0;
         this.#atomic.visible = false;
         this.#clearAtomicSurfaces();
+        this.#clearAtomicOverlay();
         this.#content.visible = this.#electrons.visible = this.#orbital.visible = this.#hydration.visible = true;
         this.#lattice.visible = this.#showLattice;
         this.#edges.visible = this.#showEdges;
@@ -92728,6 +92820,7 @@ var init_scene = __esm({
           }
           this.#drawAxes();
           this.#app.render();
+          this.#buildAtomicOverlay();
         });
       }
       /**
@@ -92762,6 +92855,7 @@ var init_scene = __esm({
       destroy() {
         cancelAnimationFrame(this.#frame);
         this.#observer.disconnect();
+        this.#clearAtomicOverlay();
         this.#app.destroy(true, { children: true });
         this.#sphere.destroy();
         this.#spaceSphere.destroy();
@@ -92769,7 +92863,7 @@ var init_scene = __esm({
         this.#bondRegion.destroy();
         this.#loneRegion.destroy();
         for (const geometry of [...this.#orbitalGeometries, ...this.#atomicGeometries]) geometry.destroy();
-        for (const material of this.#orbitalMaterials) material.destroy();
+        for (const material of [...this.#orbitalMaterials, ...this.#atomicBackdropMaterials]) material.destroy();
         this.#axes.destroy();
         for (const label of this.#axisLabels) label.destroy();
         for (const material of this.#materials.values()) material.destroy();
@@ -107483,7 +107577,6 @@ var builderStyles = i`
 		height: min(68%, 26rem);
 		margin: auto;
 	}
-	.atomic-slice path { opacity: .82; }
 	.selection-card .fields a {
 		display: inline-flex;
 		align-items: center;
@@ -107715,9 +107808,9 @@ var AXES_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="
 	<path d="M3.4 12.6V3.4M3.4 12.6h9.2M3.4 12.6 8.6 7.4" /><path d="M3.4 2.2v1.2M2.2 12.6h1.2M9.6 6.4 8.6 7.4 9.6 8.4" /></svg>`;
 var ELECTRONS_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
 	<circle cx="4.4" cy="8" r="1.7" /><circle cx="11.6" cy="8" r="1.7" /></svg>`;
-var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _ionCharge_dec, _fullscreen_dec, _diagramBox_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showHydration_dec, _atomicRegion_dec, _atomicOrientation_dec, _atomicSubshell_dec, _dismissedLone_dec, _inspectedAtom_dec, _orbitalId_dec, _molecularDisplay_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _molecularDisplay, _orbitalId, _inspectedAtom, _dismissedLone, _atomicSubshell, _atomicOrientation, _atomicRegion, _showHydration, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramBox, _fullscreen, _ionCharge, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _boardObserver, _scenePixelsPerAngstrom, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _aqueousCache, _lewisCache, _atomicSlice, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, atomicTarget_get, atomInspection_get, resetAtomicChoices_fn, inspectAtom_fn, leaveAtom_fn, t_fn, _onFullscreenChange, _onViewportToggle, _toggleFullscreen, syncGrid_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, stageTarget_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, moveDiagram_fn, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, lewis_fn, aqueous_fn, renderDrawing_fn, renderAtomicSummary_fn, renderAtomicSlice_fn, renderOrbitals_fn, renderModelSummary_fn, renderSelectionCard_fn;
+var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _ionCharge_dec, _fullscreen_dec, _diagramBox_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showHydration_dec, _atomicRegion_dec, _atomicOrientation_dec, _showAtomicOverlay_dec, _atomicSubshell_dec, _dismissedLone_dec, _inspectedAtom_dec, _orbitalId_dec, _molecularDisplay_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _molecularDisplay, _orbitalId, _inspectedAtom, _dismissedLone, _atomicSubshell, _showAtomicOverlay, _atomicOrientation, _atomicRegion, _showHydration, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramBox, _fullscreen, _ionCharge, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _boardObserver, _scenePixelsPerAngstrom, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _aqueousCache, _lewisCache, _atomicSlice, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, atomicTarget_get, atomInspection_get, resetAtomicChoices_fn, inspectAtom_fn, leaveAtom_fn, t_fn, _onFullscreenChange, _onViewportToggle, _toggleFullscreen, syncGrid_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, stageTarget_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, moveDiagram_fn, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, lewis_fn, aqueous_fn, renderDrawing_fn, renderAtomicSummary_fn, renderAtomicSlice_fn, renderOrbitals_fn, renderModelSummary_fn, renderSelectionCard_fn;
 _ChemLabMoleculeBuilder_decorators = [t4(BUILDER_TAG)];
-var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _molecularDisplay_dec = [r9()], _orbitalId_dec = [r9()], _inspectedAtom_dec = [r9()], _dismissedLone_dec = [r9()], _atomicSubshell_dec = [r9()], _atomicOrientation_dec = [r9()], _atomicRegion_dec = [r9()], _showHydration_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramBox_dec = [r9()], _fullscreen_dec = [r9()], _ionCharge_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
+var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _molecularDisplay_dec = [r9()], _orbitalId_dec = [r9()], _inspectedAtom_dec = [r9()], _dismissedLone_dec = [r9()], _atomicSubshell_dec = [r9()], _showAtomicOverlay_dec = [r9()], _atomicOrientation_dec = [r9()], _atomicRegion_dec = [r9()], _showHydration_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramBox_dec = [r9()], _fullscreen_dec = [r9()], _ionCharge_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
   constructor() {
     super(...arguments);
     __privateAdd(this, _ChemLabMoleculeBuilder_instances);
@@ -107742,28 +107835,29 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _inspectedAtom, __runInitializers(_init3, 76, this)), __runInitializers(_init3, 79, this);
     __privateAdd(this, _dismissedLone, __runInitializers(_init3, 80, this)), __runInitializers(_init3, 83, this);
     __privateAdd(this, _atomicSubshell, __runInitializers(_init3, 84, this, "")), __runInitializers(_init3, 87, this);
-    __privateAdd(this, _atomicOrientation, __runInitializers(_init3, 88, this, 0)), __runInitializers(_init3, 91, this);
-    __privateAdd(this, _atomicRegion, __runInitializers(_init3, 92, this)), __runInitializers(_init3, 95, this);
-    __privateAdd(this, _showHydration, __runInitializers(_init3, 96, this, false)), __runInitializers(_init3, 99, this);
-    __privateAdd(this, _showLattice, __runInitializers(_init3, 100, this, false)), __runInitializers(_init3, 103, this);
-    __privateAdd(this, _showEdges, __runInitializers(_init3, 104, this, true)), __runInitializers(_init3, 107, this);
-    __privateAdd(this, _showAxes, __runInitializers(_init3, 108, this, false)), __runInitializers(_init3, 111, this);
-    __privateAdd(this, _view2, __runInitializers(_init3, 112, this, "3d")), __runInitializers(_init3, 115, this);
-    __privateAdd(this, _tool, __runInitializers(_init3, 116, this, "orbit")), __runInitializers(_init3, 119, this);
-    __privateAdd(this, _element, __runInitializers(_init3, 120, this, 6)), __runInitializers(_init3, 123, this);
-    __privateAdd(this, _picked, __runInitializers(_init3, 124, this)), __runInitializers(_init3, 127, this);
-    __privateAdd(this, _hoveredAtom, __runInitializers(_init3, 128, this)), __runInitializers(_init3, 131, this);
-    __privateAdd(this, _bondStart, __runInitializers(_init3, 132, this)), __runInitializers(_init3, 135, this);
-    __privateAdd(this, _bondOrder, __runInitializers(_init3, 136, this, 1)), __runInitializers(_init3, 139, this);
-    __privateAdd(this, _repeats, __runInitializers(_init3, 140, this, 1)), __runInitializers(_init3, 143, this);
-    __privateAdd(this, _notice, __runInitializers(_init3, 144, this, "")), __runInitializers(_init3, 147, this);
-    __privateAdd(this, _gpu, __runInitializers(_init3, 148, this, "idle")), __runInitializers(_init3, 151, this);
-    __privateAdd(this, _diagramBox, __runInitializers(_init3, 152, this)), __runInitializers(_init3, 155, this);
-    __privateAdd(this, _fullscreen, __runInitializers(_init3, 156, this)), __runInitializers(_init3, 159, this);
-    __privateAdd(this, _ionCharge, __runInitializers(_init3, 160, this, 0)), __runInitializers(_init3, 163, this);
-    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 164, this)), __runInitializers(_init3, 167, this);
-    __privateAdd(this, _bondPreview, __runInitializers(_init3, 168, this)), __runInitializers(_init3, 171, this);
-    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 172, this)), __runInitializers(_init3, 175, this);
+    __privateAdd(this, _showAtomicOverlay, __runInitializers(_init3, 88, this, false)), __runInitializers(_init3, 91, this);
+    __privateAdd(this, _atomicOrientation, __runInitializers(_init3, 92, this, 0)), __runInitializers(_init3, 95, this);
+    __privateAdd(this, _atomicRegion, __runInitializers(_init3, 96, this)), __runInitializers(_init3, 99, this);
+    __privateAdd(this, _showHydration, __runInitializers(_init3, 100, this, false)), __runInitializers(_init3, 103, this);
+    __privateAdd(this, _showLattice, __runInitializers(_init3, 104, this, false)), __runInitializers(_init3, 107, this);
+    __privateAdd(this, _showEdges, __runInitializers(_init3, 108, this, true)), __runInitializers(_init3, 111, this);
+    __privateAdd(this, _showAxes, __runInitializers(_init3, 112, this, false)), __runInitializers(_init3, 115, this);
+    __privateAdd(this, _view2, __runInitializers(_init3, 116, this, "3d")), __runInitializers(_init3, 119, this);
+    __privateAdd(this, _tool, __runInitializers(_init3, 120, this, "orbit")), __runInitializers(_init3, 123, this);
+    __privateAdd(this, _element, __runInitializers(_init3, 124, this, 6)), __runInitializers(_init3, 127, this);
+    __privateAdd(this, _picked, __runInitializers(_init3, 128, this)), __runInitializers(_init3, 131, this);
+    __privateAdd(this, _hoveredAtom, __runInitializers(_init3, 132, this)), __runInitializers(_init3, 135, this);
+    __privateAdd(this, _bondStart, __runInitializers(_init3, 136, this)), __runInitializers(_init3, 139, this);
+    __privateAdd(this, _bondOrder, __runInitializers(_init3, 140, this, 1)), __runInitializers(_init3, 143, this);
+    __privateAdd(this, _repeats, __runInitializers(_init3, 144, this, 1)), __runInitializers(_init3, 147, this);
+    __privateAdd(this, _notice, __runInitializers(_init3, 148, this, "")), __runInitializers(_init3, 151, this);
+    __privateAdd(this, _gpu, __runInitializers(_init3, 152, this, "idle")), __runInitializers(_init3, 155, this);
+    __privateAdd(this, _diagramBox, __runInitializers(_init3, 156, this)), __runInitializers(_init3, 159, this);
+    __privateAdd(this, _fullscreen, __runInitializers(_init3, 160, this)), __runInitializers(_init3, 163, this);
+    __privateAdd(this, _ionCharge, __runInitializers(_init3, 164, this, 0)), __runInitializers(_init3, 167, this);
+    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 168, this)), __runInitializers(_init3, 171, this);
+    __privateAdd(this, _bondPreview, __runInitializers(_init3, 172, this)), __runInitializers(_init3, 175, this);
+    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 176, this)), __runInitializers(_init3, 179, this);
     __privateAdd(this, _scene);
     __privateAdd(this, _sceneLoad, 0);
     __privateAdd(this, _fitNext, true);
@@ -108035,7 +108129,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     if (this.view === "3d" && this.gpu === "idle") void __privateMethod(this, _ChemLabMoleculeBuilder_instances, startScene_fn).call(this);
     const atomic = __privateGet(this, _ChemLabMoleculeBuilder_instances, atomInspection_get);
     if (__privateGet(this, _scene) && this.view === "3d" && atomic) {
-      __privateGet(this, _scene).setAtomicView(atomic.display);
+      __privateGet(this, _scene).setAtomicView(atomic.display, atomic.overlay);
     } else if (__privateGet(this, _scene) && this.view === "3d") {
       __privateGet(this, _scene).setScene(
         __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get),
@@ -108236,7 +108330,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
 					<div class="board" tabindex="0" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure workspace", "Struktur-Arbeitsfl\xE4che")}
 						@pointerdown=${__privateGet(this, _pointerDown)} @pointermove=${__privateGet(this, _pointerMove)} @pointerup=${__privateGet(this, _pointerUp)} @pointercancel=${__privateGet(this, _pointerUp)} @wheel=${__privateGet(this, _wheel)}>
 						<div class="scene" ?hidden=${this.view !== "3d"}></div>
-						${this.view === "2d" ? atomic ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, renderAtomicSlice_fn).call(this, atomic.display) : __privateMethod(this, _ChemLabMoleculeBuilder_instances, renderDrawing_fn).call(this, ionColors) : E2}
+						${this.view === "2d" ? atomic ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, renderAtomicSlice_fn).call(this, atomic) : __privateMethod(this, _ChemLabMoleculeBuilder_instances, renderDrawing_fn).call(this, ionColors) : E2}
 						${this.gpu === "loading" && this.view === "3d" ? x2`<p class="empty" role="status"><sl-spinner></sl-spinner>
 							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Loading 3D view", "3D-Ansicht wird geladen")}</p>` : !__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<p class="empty">
 							${this.view === "2d" && current.kind === "crystal" ? this.tool === "atom" ? E2 : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose an element to add a crystal site.", "W\xE4hle ein Element f\xFCr einen Gitterplatz.") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Drag an element here, or choose Place atom and click the canvas.", "Ziehe ein Element hierher oder w\xE4hle Atom platzieren und klicke auf die Fl\xE4che.")}
@@ -108311,6 +108405,7 @@ _orbitalId = new WeakMap();
 _inspectedAtom = new WeakMap();
 _dismissedLone = new WeakMap();
 _atomicSubshell = new WeakMap();
+_showAtomicOverlay = new WeakMap();
 _atomicOrientation = new WeakMap();
 _atomicRegion = new WeakMap();
 _showHydration = new WeakMap();
@@ -108380,7 +108475,8 @@ atomInspection_get = function() {
   const subshell = subshells.find((candidate) => candidate.label === this.atomicSubshell) ?? subshells[subshells.length - 1];
   const orientation = subshell && this.atomicOrientation <= 2 * subshell.l ? this.atomicOrientation : 0;
   const nodes = subshell ? subshell.n - subshell.l - 1 : 0;
-  return { atom, species, configuration, display: {
+  const overlay = this.showAtomicOverlay && subshells.length > 1 ? atomicOverlayParts(subshells) : void 0;
+  return { atom, species, configuration, overlay, display: {
     atomId: atom.id,
     atomicNumber: species.atomicNumber,
     electrons: configuration.electrons,
@@ -108583,7 +108679,6 @@ chooseElement_fn = function(atomicNumber) {
     this.ionCharge = charges.size === 1 ? charges.values().next().value : 0;
   }
   this.element = atomicNumber;
-  __privateMethod(this, _ChemLabMoleculeBuilder_instances, setTool_fn).call(this, "atom");
 };
 _selectPalette = new WeakMap();
 _dragPalette = new WeakMap();
@@ -108635,6 +108730,8 @@ addAtom_fn = function(position, atomicNumber = this.element) {
     return;
   }
   if (this.inspectedAtom) __privateMethod(this, _ChemLabMoleculeBuilder_instances, leaveAtom_fn).call(this);
+  this.bondStart = void 0;
+  this.bondPreview = void 0;
   this.dismissedLone = void 0;
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, resetAtomicChoices_fn).call(this);
   const identity = { id, atomicNumber, charge: 0 };
@@ -109078,7 +109175,7 @@ renderDrawing_fn = function(colors2) {
 			</div>` : E2}
 		</div>`;
 };
-renderAtomicSummary_fn = function({ species, configuration, display }) {
+renderAtomicSummary_fn = function({ species, configuration, display, overlay }) {
   const name = elementByAtomicNumber(species.atomicNumber).names[__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "en", "de")];
   const label = symbol(species.atomicNumber) + superscript2(chargeText(species.charge));
   const { subshell, orientation, region } = display;
@@ -109127,23 +109224,34 @@ renderAtomicSummary_fn = function({ species, configuration, display }) {
 						</option>`)}
 					</select>
 				</label>` : E2}
-				<span class="summary-caption" title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "One real orbital. The subshell occupancy counts all its orbitals.", "Ein reelles Orbital. Die Elektronenzahl gilt f\xFCr die gesamte Unterschale.")}>
+				${configuration.subshells.length > 1 ? x2`<div class="fields">
+					<sl-button size="small" variant=${overlay ? "primary" : "default"} aria-pressed=${String(!!overlay)}
+						title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Overlay orbitals from all occupied subshells and emphasize the selected region.", "Orbitale aller besetzten Unterschalen \xFCberlagern und den gew\xE4hlten Bereich hervorheben.")}
+						@click=${() => {
+    this.showAtomicOverlay = !this.showAtomicOverlay;
+  }}>
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Overlay all orbitals", "Alle Orbitale \xFCberlagern")}
+					</sl-button>
+				</div>` : E2}
+				<span class="summary-caption" title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "The subshell occupancy counts all its orbitals.", "Die Elektronenzahl gilt f\xFCr die gesamte Unterschale.")}>
 					${configuration.electrons === 1 ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Hydrogen-like orbital", "Wasserstoffartiges Orbital") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Hydrogen-like shapes \xB7 relative scale", "Wasserstoffartige Formen \xB7 relative Skala")}
 				</span>
 				<span class="structure-legend" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Wavefunction phase", "Phase der Wellenfunktion")}>
-					${ORBITAL_PHASE_COLORS.map((color, index) => subshell.l || index === region % 2 ? x2`<span style="--swatch: ${colorHex(color)}">${index ? "\u2212\u03C8" : "+\u03C8"}</span>` : E2)}
+					${ORBITAL_PHASE_COLORS.map((color, index) => overlay || subshell.l || index === region % 2 ? x2`<span style="--swatch: ${colorHex(color)}">${index ? "\u2212\u03C8" : "+\u03C8"}</span>` : E2)}
 				</span>
 			` : E2}
 		</section>`;
 };
-renderAtomicSlice_fn = function(display) {
-  const key = [display.subshell?.label, display.orientation, display.region].join(":");
-  if (__privateGet(this, _atomicSlice)?.key !== key) __privateSet(this, _atomicSlice, { key, slice: atomicOrbitalSlice(display) });
+renderAtomicSlice_fn = function({ display, overlay }) {
+  const key = [display.atomicNumber, display.electrons, atomicOrbitalKey(display), !!overlay].join(":");
+  if (__privateGet(this, _atomicSlice)?.key !== key) __privateSet(this, _atomicSlice, { key, slice: atomicOrbitalSlice(display, overlay) });
   const slice = __privateGet(this, _atomicSlice).slice;
   if (!slice) return E2;
   return x2`<svg class="atomic-slice" viewBox="0 0 ${slice.side} ${slice.side}" role="img"
 			aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atomic orbital cross-section", "Schnitt durch das Atomorbital")}>
-			${slice.paths.map((path2, phase) => b3`<path fill=${colorHex(ORBITAL_PHASE_COLORS[phase])} d=${path2} />`)}
+			${slice.background?.map((path2, phase) => b3`<path fill=${colorHex(ORBITAL_PHASE_COLORS[phase])} opacity=".22"
+				transform="scale(${slice.backgroundScale})" d=${path2} />`)}
+			${slice.paths.map((path2, phase) => b3`<path fill=${colorHex(ORBITAL_PHASE_COLORS[phase])} opacity=".82" d=${path2} />`)}
 			<circle fill="#334155" cx=${slice.side / 2} cy=${slice.side / 2} r=".6" />
 		</svg>`;
 };
@@ -109415,6 +109523,7 @@ __decorateElement(_init3, 4, "orbitalId", _orbitalId_dec, _ChemLabMoleculeBuilde
 __decorateElement(_init3, 4, "inspectedAtom", _inspectedAtom_dec, _ChemLabMoleculeBuilder, _inspectedAtom);
 __decorateElement(_init3, 4, "dismissedLone", _dismissedLone_dec, _ChemLabMoleculeBuilder, _dismissedLone);
 __decorateElement(_init3, 4, "atomicSubshell", _atomicSubshell_dec, _ChemLabMoleculeBuilder, _atomicSubshell);
+__decorateElement(_init3, 4, "showAtomicOverlay", _showAtomicOverlay_dec, _ChemLabMoleculeBuilder, _showAtomicOverlay);
 __decorateElement(_init3, 4, "atomicOrientation", _atomicOrientation_dec, _ChemLabMoleculeBuilder, _atomicOrientation);
 __decorateElement(_init3, 4, "atomicRegion", _atomicRegion_dec, _ChemLabMoleculeBuilder, _atomicRegion);
 __decorateElement(_init3, 4, "showHydration", _showHydration_dec, _ChemLabMoleculeBuilder, _showHydration);

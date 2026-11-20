@@ -390,7 +390,6 @@ export const builderStyles = css`
 		height: min(68%, 26rem);
 		margin: auto;
 	}
-	.atomic-slice path { opacity: .82; }
 	.selection-card .fields a {
 		display: inline-flex;
 		align-items: center;

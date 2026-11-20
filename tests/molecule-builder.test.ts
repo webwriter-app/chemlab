@@ -5,7 +5,7 @@ import { canBond, dot, electronRegions, fitGeometry, shapeName, subtract } from 
 import { atomRadius, estimatedBondLength, spaceFillingRadius } from "../molecule-builder/radii";
 import { hasMolecularDisplays, moleculeOrbitals, unpackOrbitalSurface } from "../molecule-builder/orbitals";
 import { atomicSpecies, electronConfiguration, orbitalOrientations } from "../molecule-builder/atomic-configuration";
-import { angularOrbital, atomicOrbitalField, atomicOrbitalMesh, atomicOrbitalSlice } from "../molecule-builder/atomic-orbitals";
+import { angularOrbital, atomicOrbitalField, atomicOrbitalMesh, atomicOrbitalSlice, atomicOverlayParts } from "../molecule-builder/atomic-orbitals";
 import { ELEMENTS, categoryOf } from "../periodic-table/element-reference";
 import { metalCrystal } from "../periodic-table/metal-reference";
 import { cartesian, cellVectors, fractional, newMolecule, readStructure, replicatedSites, type Crystal, type Molecule } from "../molecule-builder/structure";
@@ -200,3 +200,17 @@ assert.ok(Math.abs(contourRadius + .5291772109 * Math.log(.2)) < .005);
 const f = { atomicNumber: 92, atomId: 1, electrons: 92, subshell: electronConfiguration(92, 0).subshells.find(s => s.label === "5f"),
 	orientation: 4, region: 1 };
 assert.ok(atomicOrbitalSlice(f).paths.every(path => path.length > 0));
+
+const oxygenSubshells = electronConfiguration(8, 0).subshells;
+const oxygenOverlay = atomicOverlayParts(oxygenSubshells);
+assert.deepEqual(oxygenOverlay.map(part => part.key), ["1s:0:0", "2s:0:0", "2s:0:1", "2p:0:0", "2p:1:0", "2p:2:0"]);
+assert.ok(oxygenOverlay[1].scale < oxygenOverlay[2].scale);
+assert.equal(oxygenOverlay[3].scale, oxygenOverlay[4].scale);
+assert.equal(atomicOverlayParts(oxygenSubshells), oxygenOverlay);
+const orbital = { atomicNumber: 8, atomId: 1, electrons: 8,
+	subshell: oxygenSubshells.find(shell => shell.label === "2p"), orientation: 1, region: 0 };
+const sliceOverlay = atomicOrbitalSlice(orbital, oxygenOverlay);
+assert.ok(sliceOverlay.paths.every(path => path.length > 0));
+assert.ok(sliceOverlay.background.every(path => path.length > 0));
+const heavyParts = atomicOverlayParts(electronConfiguration(118, 0).subshells);
+assert.ok(heavyParts.length > 80 && heavyParts.every(part => part.scale > 0 && part.scale <= 1));

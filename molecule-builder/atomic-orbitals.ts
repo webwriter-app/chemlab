@@ -11,6 +11,12 @@ export type AtomicOrbitalDisplay = {
 	region: number;
 };
 
+export type AtomicOrbitalPart = { subshell: Subshell; orientation: number; region: number; key: string; scale: number };
+
+export function atomicOrbitalKey({ subshell, orientation, region }: Pick<AtomicOrbitalDisplay, "subshell" | "orientation" | "region">) {
+	return [subshell?.label, orientation, region].join(":");
+}
+
 const contour = .2;
 const bohrAngstrom = .5291772109;
 
@@ -73,10 +79,12 @@ function radialRanges(n: number, l: number) {
 	return edges;
 }
 
-/** Select one radial region so inner shells can be inspected through their
- * nodes. The volume uses normalized coordinates for multielectron atoms.
- */
-export function atomicOrbitalField(n: number, l: number, orientation: number, region: number) {
+const radialProfiles = new Map<string, { start: number; end: number; peak: number; extent: number }>();
+
+function radialProfile(n: number, l: number, region: number) {
+	const key = `${n}:${l}:${region}`;
+	const cached = radialProfiles.get(key);
+	if (cached) return cached;
 	const ranges = radialRanges(n, l);
 	const start = ranges[region], end = ranges[region + 1];
 	let peak = 0;
@@ -91,6 +99,38 @@ export function atomicOrbitalField(n: number, l: number, orientation: number, re
 			break;
 		}
 	}
+	const result = { start, end, peak, extent };
+	radialProfiles.set(key, result);
+	return result;
+}
+
+const overlayCache = new WeakMap<readonly Subshell[], AtomicOrbitalPart[]>();
+
+/** Compress the relative radii between subshells so inner orbitals remain
+ * legible. Within one subshell, all orientations and regions share a scale. */
+export function atomicOverlayParts(subshells: readonly Subshell[]): AtomicOrbitalPart[] {
+	const cached = overlayCache.get(subshells);
+	if (cached) return cached;
+	const outermost = subshells.map(({ n, l }) => radialProfile(n, l, n - l - 1).extent);
+	const reach = Math.max(...subshells.map(({ n }, i) => n * outermost[i]));
+	const parts = subshells.flatMap((subshell, i) => {
+		const { n, l } = subshell;
+		const outerScale = Math.sqrt(n * outermost[i] / reach);
+		return Array.from({ length: 2 * l + 1 }, (_, orientation) =>
+			Array.from({ length: n - l }, (_, region) => {
+				const part = { subshell, orientation, region };
+				return { ...part, key: atomicOrbitalKey(part),
+					scale: outerScale * radialProfile(n, l, region).extent / outermost[i] };
+			})).flat();
+	});
+	overlayCache.set(subshells, parts);
+	return parts;
+}
+
+/** Select one radial region so inner shells can be inspected through their
+ * nodes. The volume uses normalized coordinates for multielectron atoms. */
+export function atomicOrbitalField(n: number, l: number, orientation: number, region: number) {
+	const { start, end, peak, extent } = radialProfile(n, l, region);
 	const inversePeak = 1 / (peak * angularPeak(l, orientation));
 	return {
 		extent,
@@ -165,13 +205,13 @@ function contourMesh(points: Float32Array, values: Float32Array, grid: number, p
 	return { positions, indices, normals: meshNormals(positions, indices) };
 }
 
-export function atomicOrbitalMesh({ atomicNumber, electrons, subshell, orientation, region }: AtomicOrbitalDisplay) {
+export function atomicOrbitalMesh({ atomicNumber, electrons, subshell, orientation, region }: AtomicOrbitalDisplay, grid = 43) {
 	if (!subshell) return { phases: [], extent: 1, physical: false };
 	const { n, l } = subshell;
 	const field = atomicOrbitalField(n, l, orientation, region);
 	const physical = electrons === 1;
 	const extent = physical ? field.extent * n * bohrAngstrom / (2 * atomicNumber) : 1;
-	const grid = 43, size = grid ** 3;
+	const size = grid ** 3;
 	const points = new Float32Array(size * 3), values = new Float32Array(size);
 	for (let z = 0, i = 0; z < grid; z++) for (let y = 0; y < grid; y++) for (let x = 0; x < grid; x++, i++) {
 		const pos: Point3 = [2 * x / (grid - 1) - 1, 2 * y / (grid - 1) - 1, 2 * z / (grid - 1) - 1];
@@ -181,38 +221,58 @@ export function atomicOrbitalMesh({ atomicNumber, electrons, subshell, orientati
 	return { phases: [contourMesh(points, values, grid, true), contourMesh(points, values, grid, false)], extent, physical };
 }
 
-/** Planar fallback for devices without WebGL. Select a central plane that
- * intersects the chosen real orbital's lobes instead of a nodal plane.
- */
-export function atomicOrbitalSlice(display: AtomicOrbitalDisplay) {
+// A common plane for every shape in the fallback. Test a few views first to
+// avoid looking directly into a node of the selected real orbital.
+const slicePlanes: ((x: number, y: number) => Point3)[] = [
+	(x, y) => [x, y, 0], (x, y) => [x, 0, y], (x, y) => [0, x, y],
+	(x, y) => [x, y * Math.SQRT1_2, y * Math.SQRT1_2],
+	(x, y) => [y * Math.SQRT1_2, x, y * Math.SQRT1_2],
+];
+
+function slicePaths(side: number, sample: (x: number, y: number) => number) {
+	const paths = ["", ""];
+	let count = 0;
+	for (let y = 0; y < side; y++) {
+		for (let x = 0, start = 0, phase = -1; x <= side; x++) {
+			const next = x === side ? -1 : sample((2 * x + 1) / side - 1, 1 - (2 * y + 1) / side);
+			if (next === phase) continue;
+			if (phase >= 0) {
+				const width = x - start;
+				count += width;
+				paths[phase] += `M${start} ${y}h${width}v1h-${width}z`;
+			}
+			start = x;
+			phase = next;
+		}
+	}
+	return { count, paths };
+}
+
+export function atomicOrbitalSlice(display: AtomicOrbitalDisplay, overlay?: readonly AtomicOrbitalPart[]) {
 	if (!display.subshell) return undefined;
 	const { n, l } = display.subshell;
 	const field = atomicOrbitalField(n, l, display.orientation, display.region);
-	const planes: ((x: number, y: number) => Point3)[] = [
-		(x, y) => [x, y, 0], (x, y) => [x, 0, y], (x, y) => [0, x, y],
-		(x, y) => [x, y * Math.SQRT1_2, y * Math.SQRT1_2],
-		(x, y) => [y * Math.SQRT1_2, x, y * Math.SQRT1_2],
-	];
+	const key = atomicOrbitalKey(display);
+	const scale = overlay?.find(part => part.key === key)?.scale ?? 1;
+	const phase = (value: number) => value > contour ? 0 : value < -contour ? 1 : -1;
+	const section = (side: number, plane: typeof slicePlanes[number]) =>
+		slicePaths(side, (x, y) => phase(field.value(...plane(x / scale, y / scale))));
+	const plane = slicePlanes.map(plane => ({ plane, count: section(32, plane).count }))
+		.reduce((best, candidate) => candidate.count > best.count ? candidate : best).plane;
 	const side = 128;
-	let best = { count: -1, paths: ["", ""] };
-	for (const plane of planes) {
-		let count = 0;
-		const paths = ["", ""];
-		for (let y = 0; y < side; y++) {
-			for (let x = 0, start = 0, phase = -1; x <= side; x++) {
-				const value = x === side ? 0 : field.value(...plane((2 * x + 1) / side - 1, 1 - (2 * y + 1) / side));
-				const next = value > contour ? 0 : value < -contour ? 1 : -1;
-				if (next === phase) continue;
-				if (phase >= 0) {
-					const width = x - start;
-					count += width;
-					paths[phase] += `M${start} ${y}h${width}v1h-${width}z`;
-				}
-				start = x;
-				phase = next;
-			}
-		}
-		if (count > best.count) best = { count, paths };
-	}
-	return { side, paths: best.paths };
+	const { paths } = section(side, plane);
+	const backgroundSide = 64;
+	const fields = overlay?.filter(part => part.key !== key).map(part => {
+		const { n, l } = part.subshell;
+		return { scale: part.scale, field: atomicOrbitalField(n, l, part.orientation, part.region) };
+	});
+	// Within each faint phase, use the union of the cross-sections so overlapping
+	// inner contours do not accumulate enough opacity to hide the selection.
+	const background = fields && [1, -1].map(sign => slicePaths(backgroundSide, (x, y) => {
+		const distance = Math.hypot(x, y);
+		const visible = fields.some(part => distance <= part.scale
+			&& sign * part.field.value(...plane(x / part.scale, y / part.scale)) > contour);
+		return visible ? 0 : -1;
+	}).paths[0]);
+	return { side, paths, background, backgroundScale: side / backgroundSide };
 }
