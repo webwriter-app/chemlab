@@ -105858,6 +105858,33 @@ var builderStyles = i`
 	}
 	.selection-card .fields { flex-direction: column; align-items: stretch; gap: .3rem; }
 	.selection-card .fields label { display: grid; gap: .1rem; }
+	/* The site picker lists every atom as a chip instead of hiding the list in a
+	   select, so a hover can outline the matching atom in the lattice. */
+	.site-picker {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 2px;
+		max-block-size: 6.5rem;
+		overflow: auto;
+		overscroll-behavior: contain;
+	}
+	.site-chip {
+		padding: 1px 5px;
+		border: 1px solid var(--outline);
+		border-radius: 3px;
+		background: white;
+		color: inherit;
+		font: inherit;
+		font-size: .74rem;
+		line-height: 1.3;
+		cursor: pointer;
+	}
+	.site-chip:hover { border-color: var(--sl-color-primary-400, #38bdf8); }
+	.site-chip:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+	.site-chip[aria-pressed="true"] {
+		border-color: var(--blue);
+		background: color-mix(in srgb, var(--blue) 10%, white);
+	}
 	.structure-legend { display: flex; flex-wrap: wrap; gap: .55rem; color: #52525b; }
 	.structure-legend span::before {
 		content: "";
@@ -105955,9 +105982,9 @@ var PLANE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden=
 var FIT_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
 	<path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" /></svg>`;
-var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _lastDrawn, _lastDrawnRepeats, _diagramBounds, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, _pointerDown, _pointerMove, _pointerUp, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, renderDrawing_fn, renderModelSummary_fn, renderSelectionCard_fn;
+var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _lastDrawn, _lastDrawnRepeats, _diagramBounds, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, renderDrawing_fn, renderModelSummary_fn, renderSelectionCard_fn;
 _ChemLabMoleculeBuilder_decorators = [t4(BUILDER_TAG)];
-var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
+var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
   constructor() {
     super(...arguments);
     __privateAdd(this, _ChemLabMoleculeBuilder_instances);
@@ -105984,14 +106011,15 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _tool, __runInitializers(_init3, 84, this, "orbit")), __runInitializers(_init3, 87, this);
     __privateAdd(this, _element, __runInitializers(_init3, 88, this, 6)), __runInitializers(_init3, 91, this);
     __privateAdd(this, _picked, __runInitializers(_init3, 92, this)), __runInitializers(_init3, 95, this);
-    __privateAdd(this, _bondStart, __runInitializers(_init3, 96, this)), __runInitializers(_init3, 99, this);
-    __privateAdd(this, _bondOrder, __runInitializers(_init3, 100, this, 1)), __runInitializers(_init3, 103, this);
-    __privateAdd(this, _repeats, __runInitializers(_init3, 104, this, 1)), __runInitializers(_init3, 107, this);
-    __privateAdd(this, _notice, __runInitializers(_init3, 108, this, "")), __runInitializers(_init3, 111, this);
-    __privateAdd(this, _gpu, __runInitializers(_init3, 112, this, "idle")), __runInitializers(_init3, 115, this);
-    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 116, this)), __runInitializers(_init3, 119, this);
-    __privateAdd(this, _bondPreview, __runInitializers(_init3, 120, this)), __runInitializers(_init3, 123, this);
-    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 124, this)), __runInitializers(_init3, 127, this);
+    __privateAdd(this, _hoveredAtom, __runInitializers(_init3, 96, this)), __runInitializers(_init3, 99, this);
+    __privateAdd(this, _bondStart, __runInitializers(_init3, 100, this)), __runInitializers(_init3, 103, this);
+    __privateAdd(this, _bondOrder, __runInitializers(_init3, 104, this, 1)), __runInitializers(_init3, 107, this);
+    __privateAdd(this, _repeats, __runInitializers(_init3, 108, this, 1)), __runInitializers(_init3, 111, this);
+    __privateAdd(this, _notice, __runInitializers(_init3, 112, this, "")), __runInitializers(_init3, 115, this);
+    __privateAdd(this, _gpu, __runInitializers(_init3, 116, this, "idle")), __runInitializers(_init3, 119, this);
+    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 120, this)), __runInitializers(_init3, 123, this);
+    __privateAdd(this, _bondPreview, __runInitializers(_init3, 124, this)), __runInitializers(_init3, 127, this);
+    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 128, this)), __runInitializers(_init3, 131, this);
     __privateAdd(this, _scene);
     __privateAdd(this, _sceneLoad, 0);
     __privateAdd(this, _fitNext, true);
@@ -106042,7 +106070,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       window.addEventListener("blur", clear, options);
     });
     __privateAdd(this, _pointerDown, (event) => {
-      if (event.button !== 0 || event.composedPath().some((target) => target instanceof Element && (target.classList.contains("view-tools") || target.classList.contains("model-summary") || target.classList.contains("selection-card")))) return;
+      if (event.button !== 0 || __privateMethod(this, _ChemLabMoleculeBuilder_instances, overPanel_fn).call(this, event)) return;
       const point = pointer(event);
       __privateGet(this, _pointers).set(event.pointerId, point);
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -106118,7 +106146,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       }
     });
     __privateAdd(this, _wheel, (event) => {
-      if (this.view !== "3d" || !__privateGet(this, _scene)) return;
+      if (this.view !== "3d" || !__privateGet(this, _scene) || __privateMethod(this, _ChemLabMoleculeBuilder_instances, overPanel_fn).call(this, event)) return;
       event.preventDefault();
       __privateGet(this, _scene).zoom(Math.exp(Math.max(-100, Math.min(100, event.deltaY)) * 4e-3));
     });
@@ -106405,6 +106433,7 @@ _view2 = new WeakMap();
 _tool = new WeakMap();
 _element = new WeakMap();
 _picked = new WeakMap();
+_hoveredAtom = new WeakMap();
 _bondStart = new WeakMap();
 _bondOrder = new WeakMap();
 _repeats = new WeakMap();
@@ -106645,6 +106674,16 @@ setTool_fn = function(tool) {
   this.bondPreview = void 0;
   __privateGet(this, _scene)?.preview();
 };
+/**
+ * Outline the atom a site chip belongs to, or clear the outline with
+ * `undefined`. The 3D scene draws the ring itself, the 2D diagram reads the
+ * same state, so both views answer a hover the same way.
+ */
+hoverAtom_fn = function(id) {
+  if (this.hoveredAtom === id) return;
+  this.hoveredAtom = id;
+  __privateGet(this, _scene)?.highlight(id);
+};
 selectAtom_fn = function(id) {
   this.picked = id;
   if (id === void 0 || this.tool !== "bond" || __privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)) return;
@@ -106736,6 +106775,14 @@ hit_fn = function(event) {
   if (this.view === "3d" && __privateGet(this, _scene)) return __privateGet(this, _scene).pick(event.clientX, event.clientY);
   const inside = this.shadowRoot?.elementFromPoint(event.clientX, event.clientY)?.closest("[data-atom]");
   return inside ? Number(inside.getAttribute("data-atom")) : void 0;
+};
+/**
+ * True when the event started inside a card that sits on the canvas and
+ * scrolls on its own. Those cards keep their wheel and drag gestures, so a
+ * scroll inside the selection card never turns into a zoom of the scene.
+ */
+overPanel_fn = function(event) {
+  return event.composedPath().some((target) => target instanceof Element && (target.classList.contains("view-tools") || target.classList.contains("model-summary") || target.classList.contains("selection-card")));
 };
 _pointerDown = new WeakMap();
 _pointerMove = new WeakMap();
@@ -106987,8 +107034,10 @@ renderDrawing_fn = function(colors2) {
     const species = current.kind === "crystal" ? siteIon(atom) : void 0;
     const color = colors2.get(species) ?? atomColor(atomicNumber);
     const selected = id === this.picked || id === this.bondStart;
+    const hovered = id === this.hoveredAtom && !selected;
     return b3`<g data-atom=${id} aria-label=${species ? `${symbol(atomicNumber)} \xB7 ${species}` : symbol(atomicNumber)} transform="translate(${x4} ${-y5})"
 					opacity=${selected ? 1 : Math.max(0.18, occupancy ?? 1)}>
+					${hovered ? b3`<circle r=".3" fill="none" stroke="#0284c7" stroke-width=".03" />` : E2}
 					<circle r=".254" fill=${selected ? "#dff3ff" : "white"} stroke=${selected ? "#0284c7" : species ? colorHex(color) : "#a1a1aa"} stroke-width=${selected ? 0.045 : 0.028} />
 					<circle cx="-.17" cy="-.17" r=".075" fill=${colorHex(color)} stroke="#707780" stroke-width=".01"/>
 					<text text-anchor="middle" dominant-baseline="central" font-weight="600" font-size=".23" fill="#27272a">${symbol(atomicNumber)}</text>
@@ -107093,14 +107142,13 @@ renderSelectionCard_fn = function() {
 			</div>` : E2}
 			<sl-details summary=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site properties", "Gitterplatz-Eigenschaften") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom properties", "Atom-Eigenschaften")} ?open=${!atom}>
 				<div class="fields">
-					<label>${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site", "Gitterplatz") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom", "Atom")}
-						<select .value=${String(this.picked ?? "")} @change=${(event) => {
-    const value = Number(event.currentTarget.value);
-    __privateMethod(this, _ChemLabMoleculeBuilder_instances, selectAtom_fn).call(this, value || void 0);
-  }}>
-							<option value="">—</option>
-							${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).map((entry) => x2`<option value=${entry.id} ?selected=${entry.id === this.picked}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</option>`)}
-						</select></label>
+					<div class="site-picker" role="group" aria-label=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site", "Gitterplatz") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom", "Atom")}>
+						${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).map((entry) => x2`<button type="button" class="site-chip"
+							aria-pressed=${String(entry.id === this.picked)}
+							@pointerenter=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, hoverAtom_fn).call(this, entry.id)} @pointerleave=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, hoverAtom_fn).call(this, void 0)}
+							@focus=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, hoverAtom_fn).call(this, entry.id)} @blur=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, hoverAtom_fn).call(this, void 0)}
+							@click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, selectAtom_fn).call(this, entry.id)}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</button>`)}
+					</div>
 					${atom && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Formal charge", "Formalladung")}
 						<input type="number" min="-8" max="8" step="1" .value=${String(atom.charge)} @change=${(event) => {
     const input = event.currentTarget;
@@ -107144,13 +107192,6 @@ renderSelectionCard_fn = function() {
   }))}
 				</div>
 			</sl-details>` : E2}
-			${current.source?.startsWith("https://") || current.catalogKey ? x2`<sl-details summary=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Provenance", "Herkunft")}>
-				<div class="fields">
-					${current.catalogKey ? x2`<sl-tag size="small">${current.catalogKey}</sl-tag>` : E2}
-					${current.source?.startsWith("https://") ? x2`<a href=${current.source} target="_blank" rel="noopener noreferrer">
-						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Source", "Quelle")}</a>` : E2}
-				</div>
-			</sl-details>` : E2}
 		</aside>`;
 };
 __decorateElement(_init3, 4, "elementSourceId", _elementSourceId_dec, _ChemLabMoleculeBuilder, _elementSourceId);
@@ -107175,6 +107216,7 @@ __decorateElement(_init3, 4, "view", _view_dec2, _ChemLabMoleculeBuilder, _view2
 __decorateElement(_init3, 4, "tool", _tool_dec, _ChemLabMoleculeBuilder, _tool);
 __decorateElement(_init3, 4, "element", _element_dec, _ChemLabMoleculeBuilder, _element);
 __decorateElement(_init3, 4, "picked", _picked_dec, _ChemLabMoleculeBuilder, _picked);
+__decorateElement(_init3, 4, "hoveredAtom", _hoveredAtom_dec, _ChemLabMoleculeBuilder, _hoveredAtom);
 __decorateElement(_init3, 4, "bondStart", _bondStart_dec, _ChemLabMoleculeBuilder, _bondStart);
 __decorateElement(_init3, 4, "bondOrder", _bondOrder_dec, _ChemLabMoleculeBuilder, _bondOrder);
 __decorateElement(_init3, 4, "repeats", _repeats_dec, _ChemLabMoleculeBuilder, _repeats);

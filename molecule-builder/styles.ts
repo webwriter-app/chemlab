@@ -313,6 +313,33 @@ export const builderStyles = css`
 	}
 	.selection-card .fields { flex-direction: column; align-items: stretch; gap: .3rem; }
 	.selection-card .fields label { display: grid; gap: .1rem; }
+	/* The site picker lists every atom as a chip instead of hiding the list in a
+	   select, so a hover can outline the matching atom in the lattice. */
+	.site-picker {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 2px;
+		max-block-size: 6.5rem;
+		overflow: auto;
+		overscroll-behavior: contain;
+	}
+	.site-chip {
+		padding: 1px 5px;
+		border: 1px solid var(--outline);
+		border-radius: 3px;
+		background: white;
+		color: inherit;
+		font: inherit;
+		font-size: .74rem;
+		line-height: 1.3;
+		cursor: pointer;
+	}
+	.site-chip:hover { border-color: var(--sl-color-primary-400, #38bdf8); }
+	.site-chip:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+	.site-chip[aria-pressed="true"] {
+		border-color: var(--blue);
+		background: color-mix(in srgb, var(--blue) 10%, white);
+	}
 	.structure-legend { display: flex; flex-wrap: wrap; gap: .55rem; color: #52525b; }
 	.structure-legend span::before {
 		content: "";

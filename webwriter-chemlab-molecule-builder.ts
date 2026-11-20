@@ -98,6 +98,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor tool: Tool = "orbit";
 	@state() private accessor element = 6;
 	@state() private accessor picked: number | undefined;
+	@state() private accessor hoveredAtom: number | undefined;
 	@state() private accessor bondStart: number | undefined;
 	@state() private accessor bondOrder: BondOrder = 1;
 	@state() private accessor repeats = 1;
@@ -406,6 +407,17 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		this.#scene?.preview();
 	}
 
+	/**
+	 * Outline the atom a site chip belongs to, or clear the outline with
+	 * `undefined`. The 3D scene draws the ring itself, the 2D diagram reads the
+	 * same state, so both views answer a hover the same way.
+	 */
+	#hoverAtom(id: number | undefined) {
+		if (this.hoveredAtom === id) return;
+		this.hoveredAtom = id;
+		this.#scene?.highlight(id);
+	}
+
 	#selectAtom(id: number | undefined) {
 		this.picked = id;
 		if (id === undefined || this.tool !== "bond" || this.#readonly) return;
@@ -469,10 +481,19 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		return inside ? Number(inside.getAttribute("data-atom")) : undefined;
 	}
 
-	#pointerDown = (event: PointerEvent) => {
-		if (event.button !== 0 || event.composedPath().some(target => target instanceof Element
+	/**
+	 * True when the event started inside a card that sits on the canvas and
+	 * scrolls on its own. Those cards keep their wheel and drag gestures, so a
+	 * scroll inside the selection card never turns into a zoom of the scene.
+	 */
+	#overPanel(event: Event) {
+		return event.composedPath().some(target => target instanceof Element
 			&& (target.classList.contains("view-tools") || target.classList.contains("model-summary")
-				|| target.classList.contains("selection-card")))) return;
+				|| target.classList.contains("selection-card")));
+	}
+
+	#pointerDown = (event: PointerEvent) => {
+		if (event.button !== 0 || this.#overPanel(event)) return;
 		const point = pointer(event);
 		this.#pointers.set(event.pointerId, point);
 		(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
@@ -548,7 +569,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	};
 
 	#wheel = (event: WheelEvent) => {
-		if (this.view !== "3d" || !this.#scene) return;
+		if (this.view !== "3d" || !this.#scene || this.#overPanel(event)) return;
 		event.preventDefault();
 		this.#scene.zoom(Math.exp(Math.max(-100, Math.min(100, event.deltaY)) * 0.004));
 	};
@@ -867,8 +888,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				const species = current.kind === "crystal" ? siteIon(atom) : undefined;
 				const color = colors.get(species) ?? atomColor(atomicNumber);
 				const selected = id === this.picked || id === this.bondStart;
+				const hovered = id === this.hoveredAtom && !selected;
 				return svg`<g data-atom=${id} aria-label=${species ? `${symbol(atomicNumber)} · ${species}` : symbol(atomicNumber)} transform="translate(${x} ${-y})"
 					opacity=${selected ? 1 : Math.max(.18, occupancy ?? 1)}>
+					${hovered ? svg`<circle r=".3" fill="none" stroke="#0284c7" stroke-width=".03" />` : nothing}
 					<circle r=".254" fill=${selected ? "#dff3ff" : "white"} stroke=${selected ? "#0284c7" : species ? colorHex(color) : "#a1a1aa"} stroke-width=${selected ? .045 : .028} />
 					<circle cx="-.17" cy="-.17" r=".075" fill=${colorHex(color)} stroke="#707780" stroke-width=".01"/>
 					<text text-anchor="middle" dominant-baseline="central" font-weight="600" font-size=".23" fill="#27272a">${symbol(atomicNumber)}</text>
@@ -973,14 +996,14 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			<sl-details summary=${current.kind === "crystal" ? this.#t("Site properties", "Gitterplatz-Eigenschaften")
 				: this.#t("Atom properties", "Atom-Eigenschaften")} ?open=${!atom}>
 				<div class="fields">
-					<label>${current.kind === "crystal" ? this.#t("Site", "Gitterplatz") : this.#t("Atom", "Atom")}
-						<select .value=${String(this.picked ?? "")} @change=${(event: Event) => {
-							const value = Number((event.currentTarget as HTMLSelectElement).value);
-							this.#selectAtom(value || undefined);
-						}}>
-							<option value="">—</option>
-							${this.#atoms.map(entry => html`<option value=${entry.id} ?selected=${entry.id === this.picked}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</option>`)}
-						</select></label>
+					<div class="site-picker" role="group" aria-label=${current.kind === "crystal"
+						? this.#t("Site", "Gitterplatz") : this.#t("Atom", "Atom")}>
+						${this.#atoms.map(entry => html`<button type="button" class="site-chip"
+							aria-pressed=${String(entry.id === this.picked)}
+							@pointerenter=${() => this.#hoverAtom(entry.id)} @pointerleave=${() => this.#hoverAtom(undefined)}
+							@focus=${() => this.#hoverAtom(entry.id)} @blur=${() => this.#hoverAtom(undefined)}
+							@click=${() => this.#selectAtom(entry.id)}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</button>`)}
+					</div>
 					${atom && !this.#readonly ? html`<label>${this.#t("Formal charge", "Formalladung")}
 						<input type="number" min="-8" max="8" step="1" .value=${String(atom.charge)} @change=${(event: Event) => {
 							const input = event.currentTarget as HTMLInputElement;
@@ -1016,13 +1039,6 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 							.value=${String(Number(value.toFixed(4)))} ?readonly=${this.#readonly}
 							@change=${(event: Event) => this.#updateCell(key, index, event.currentTarget as HTMLInputElement)} /></label>`;
 					}))}
-				</div>
-			</sl-details>` : nothing}
-			${current.source?.startsWith("https://") || current.catalogKey ? html`<sl-details summary=${this.#t("Provenance", "Herkunft")}>
-				<div class="fields">
-					${current.catalogKey ? html`<sl-tag size="small">${current.catalogKey}</sl-tag>` : nothing}
-					${current.source?.startsWith("https://") ? html`<a href=${current.source} target="_blank" rel="noopener noreferrer">
-						${this.#t("Source", "Quelle")}</a>` : nothing}
 				</div>
 			</sl-details>` : nothing}
 		</aside>`;
