@@ -23,7 +23,7 @@ const element = (atomicNumber: number) => {
 	return found;
 };
 
-test("the detail card lists the fifteen reference fields in a fixed order", () => {
+test("the detail card lists reference fields, including the metal lattice, in a fixed order", () => {
 	const rows = detailRows(element(26), "en");
 	assert.deepEqual(
 		rows.map((row) => row.key),
@@ -43,12 +43,21 @@ test("the detail card lists the fifteen reference fields in a fixed order", () =
 			"discovery",
 			"configuration",
 			"shells",
+			"referenceLattice",
 		],
 	);
 	for (const row of rows) {
 		assert.ok(row.label.length > 0, row.key);
 		assert.ok(row.value.length > 0, row.key);
 	}
+});
+
+test("the reference lattice distinguishes measured, unavailable and nonmetal cases", () => {
+	const lattice = (atomicNumber: number) => detailRows(element(atomicNumber), "en").find(row => row.key === "referenceLattice");
+	assert.match(lattice(26).value, /^cI · Im-3m/);
+	assert.match(lattice(80).value, /solid below 234.3 K/);
+	assert.equal(lattice(87).value, strings("en").valueUnavailable);
+	assert.equal(lattice(8), undefined);
 });
 
 test("every row belongs to one section of the card", () => {
@@ -69,6 +78,7 @@ test("every row belongs to one section of the card", () => {
 	assert.equal(sections.get("discovery"), "history");
 	assert.equal(sections.get("configuration"), "structure");
 	assert.equal(sections.get("shells"), "structure");
+	assert.equal(sections.get("referenceLattice"), "structure");
 	for (const entry of ELEMENTS) {
 		for (const row of detailRows(entry, "en")) {
 			assert.ok(

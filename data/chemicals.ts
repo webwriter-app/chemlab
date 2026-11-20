@@ -336,7 +336,7 @@ export const chemicalCatalog: CatalogChemical[] = [
 	reference("Benedict-Reagenz", "Indikatoren und Nachweisreagenzien", ""),
 	reference("Schiff-Reagenz", "Indikatoren und Nachweisreagenzien", ""),
 	reference("Tollens-Reagenz", "Indikatoren und Nachweisreagenzien", ""),
-	reference("Phenolphthalein", "Indikatoren und Nachweisreagenzien", "C₂₀H₁₂O₄"),
+	reference("Phenolphthalein", "Indikatoren und Nachweisreagenzien", "C₂₀H₁₄O₄"),
 	reference("Bromthymolblau", "Indikatoren und Nachweisreagenzien", "C₂₇H₂₈Br₂O₅S"),
 	reference("Methylorange", "Indikatoren und Nachweisreagenzien", "C₁₄H₁₄N₃NaO₃S"),
 	reference("Lackmus", "Indikatoren und Nachweisreagenzien", ""),

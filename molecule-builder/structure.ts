@@ -14,13 +14,15 @@ export type Atom = {
 
 export type Bond = { from: number; to: number; order: BondOrder };
 export type Cell = { lengths: Point3; angles: Point3 };
-export type Site = Omit<Atom, "diagram" | "position"> & { fractional: Point3 };
+export type Site = Omit<Atom, "diagram" | "position"> & { fractional: Point3; occupancy?: number };
 type Base = { version: 1; name: string; catalogKey?: string; source?: string };
+export type Representation = "constituent" | "repeat-unit" | "ionic-components" | "conformer" | "experimental";
 export type Molecule = Base & {
 	kind: "molecule";
 	atoms: Atom[];
 	bonds: Bond[];
-	geometry?: "idealized" | "supplied";
+	geometry?: "idealized" | "supplied" | "estimated";
+	representation?: Representation;
 };
 export type Crystal = Base & {
 	kind: "crystal";
@@ -28,11 +30,13 @@ export type Crystal = Base & {
 	sites: Site[];
 	bravais?: string;
 	spaceGroup?: string;
+	conditions?: string;
+	temperatureK?: number;
 };
 export type Structure = Molecule | Crystal;
 
 export const MAX_ATOMS = 128;
-export const MAX_SITES = 32;
+export const MAX_SITES = 128;
 export const MAX_FILE_BYTES = 512 * 1024;
 export const EMPTY_CELL: Cell = { lengths: [5, 5, 5], angles: [90, 90, 90] };
 export const newMolecule = (): Molecule => ({ version: 1, kind: "molecule", name: "", atoms: [], bonds: [] });
@@ -131,8 +135,12 @@ export function readStructure(value: unknown): Structure | null {
 			pairs.add(pair);
 			bonds.push({ from: bond.from, to: bond.to, order: bond.order });
 		}
-		const geometry = value.geometry === "idealized" || value.geometry === "supplied" ? value.geometry : undefined;
-		return { ...base, kind: "molecule", atoms, bonds, geometry };
+		const geometry = value.geometry === "idealized" || value.geometry === "supplied" || value.geometry === "estimated"
+			? value.geometry : undefined;
+		const representation = value.representation === "constituent" || value.representation === "repeat-unit"
+			|| value.representation === "ionic-components" || value.representation === "conformer" || value.representation === "experimental"
+			? value.representation : undefined;
+		return { ...base, kind: "molecule", atoms, bonds, geometry, representation };
 	}
 	if (value.kind !== "crystal" || !record(value.cell)
 		|| !numbers(value.cell.lengths, 3) || !numbers(value.cell.angles, 3)
@@ -144,14 +152,20 @@ export function readStructure(value: unknown): Structure | null {
 	for (const site of value.sites) {
 		if (!atomIdentity(site) || !numbers(site.fractional, 3)
 			|| site.fractional.some(coordinate => coordinate < 0 || coordinate >= 1)) return null;
+		const occupancy = site.occupancy;
+		if (occupancy !== undefined && (typeof occupancy !== "number" || !(occupancy > 0 && occupancy <= 1))) return null;
 		const position = site.fractional.join(",");
 		if (positions.has(position)) return null;
 		positions.add(position);
 		const { id, atomicNumber, charge, isotope } = site;
-		sites.push({ id, atomicNumber, charge, isotope, fractional: [...site.fractional] as [number, number, number] });
+		sites.push({ id, atomicNumber, charge, isotope, occupancy: occupancy as number | undefined,
+			fractional: [...site.fractional] as [number, number, number] });
 	}
 	if (!uniqueIds(sites)) return null;
 	const bravais = typeof value.bravais === "string" ? value.bravais.slice(0, 60) : undefined;
 	const spaceGroup = typeof value.spaceGroup === "string" ? value.spaceGroup.slice(0, 60) : undefined;
-	return { ...base, kind: "crystal", cell, sites, bravais, spaceGroup };
+	const conditions = typeof value.conditions === "string" ? value.conditions.slice(0, 96) : undefined;
+	const temperatureK = typeof value.temperatureK === "number" && Number.isFinite(value.temperatureK) && value.temperatureK >= 0
+		? value.temperatureK : undefined;
+	return { ...base, kind: "crystal", cell, sites, bravais, spaceGroup, conditions, temperatureK };
 }

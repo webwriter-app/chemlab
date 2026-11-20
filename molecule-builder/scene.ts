@@ -3,7 +3,7 @@ import {
 	Container3D, CylinderGeometry, DirectionalLight, Material3D, Mesh3D, Plane,
 	Sphere, SphereGeometry, Vector3, View3D,
 } from "@pixi/3d";
-import { atomColor, atomRadius, add, perpendicular, scale, subtract, unit } from "./geometry";
+import { atomColor, atomRadius, add, electronRegions, perpendicular, scale, subtract, unit } from "./geometry";
 import { cartesian, cellVectors, replicatedSites, type Point3, type Structure } from "./structure";
 
 const vector = ([x, y, z]: Point3) => ({ x, y, z });
@@ -29,14 +29,18 @@ export class MoleculeScene {
 	readonly #app: Application;
 	readonly #view: View3D;
 	readonly #content = new Container3D();
+	readonly #electrons = new Container3D();
 	readonly #sphere = new SphereGeometry({ radius: 1, widthSegments: 20, heightSegments: 14 });
 	readonly #cylinder = new CylinderGeometry({ height: 1, radiusTop: 1, radiusBottom: 1, radialSegments: 10 });
-	readonly #materials = new Map<number, Material3D>();
-	readonly #picks = new Map<Container3D, { id: number; color: number; position: Point3 }>();
+	readonly #materials = new Map<string, Material3D>();
+	readonly #bondRegion = new Material3D({ baseColor: 0x0284c7, roughness: .85, alphaMode: "blend", alpha: .28 });
+	readonly #loneRegion = new Material3D({ baseColor: 0xc084fc, roughness: .85, alphaMode: "blend", alpha: .39 });
+	readonly #picks = new Map<Container3D, { id: number; color: number; opacity: number; position: Point3 }>();
 	readonly #observer: ResizeObserver;
 	readonly #preview: Mesh3D;
 	#selected: Set<number> = new Set();
 	#structure?: Structure;
+	#showElectrons = false;
 	#repeats = 0;
 	#frame = 0;
 	#target: Point3 = [0, 0, 0];
@@ -54,7 +58,7 @@ export class MoleculeScene {
 		const sun = new DirectionalLight({ color: 0xffffff, intensity: 2.15 });
 		sun.position.set(3, 6, 7);
 		sun.lookAt({ x: 0, y: 0, z: 0 });
-		this.#view.root.addChild(sun, this.#content);
+		this.#view.root.addChild(sun, this.#content, this.#electrons);
 		this.#preview = this.#rod();
 		this.#preview.material = this.#material(0x0086c5);
 		this.#preview.visible = false;
@@ -72,11 +76,13 @@ export class MoleculeScene {
 		this.#camera();
 	}
 
-	#material(color: number) {
-		let material = this.#materials.get(color);
+	#material(color: number, opacity = 1) {
+		const key = `${color}:${opacity}`;
+		let material = this.#materials.get(key);
 		if (!material) {
-			material = new Material3D({ baseColor: color, roughness: 0.61 });
-			this.#materials.set(color, material);
+			material = new Material3D({ baseColor: color, roughness: 0.61, alpha: opacity,
+				alphaMode: opacity < 1 ? "blend" : "opaque" });
+			this.#materials.set(key, material);
 		}
 		return material;
 	}
@@ -92,20 +98,51 @@ export class MoleculeScene {
 		mesh.quaternion.setFromUnitVectors({ x: 0, y: 1, z: 0 }, vector(unit(direction)));
 	}
 
-	#atom(id: number, atomicNumber: number, position: Point3, crystal: boolean, sixCoordinateCharge?: number) {
+	#atom(id: number, atomicNumber: number, position: Point3, crystal: boolean, sixCoordinateCharge?: number, occupancy = 1) {
 		const color = atomColor(atomicNumber);
+		const opacity = Math.max(.18, Math.round(occupancy * 20) / 20);
 		const radius = atomRadius(atomicNumber, sixCoordinateCharge).pm * (crystal ? .0065 : .0052);
 		const mesh = new Mesh3D({
-			geometry: this.#sphere, material: this.#material(color), eventMode: "static",
+			geometry: this.#sphere, material: this.#material(color, opacity), eventMode: "static",
 			hitVolume: new Sphere(new Vector3(), 1), position: vector(position),
 		});
 		mesh.scale.set(radius);
 		this.#content.addChild(mesh);
 		this.#bounds.push(position);
-		this.#picks.set(mesh, { id, color, position });
+		this.#picks.set(mesh, { id, color, opacity, position });
 	}
 
-	setScene(structure: Structure, repeats: number, selection: number[]) {
+	#renderElectrons(structure: Structure, show: boolean) {
+		for (const child of this.#electrons.removeChildren()) child.destroy({ children: true });
+		if (structure.kind !== "molecule" || !show) return;
+		for (const region of electronRegions(structure)) {
+			const direction = subtract(region.to, region.from);
+			const span = Math.hypot(...direction);
+			const axis = unit(direction);
+			const center = scale(add(region.from, region.to), .5);
+			const bond = region.kind === "bond";
+			const width = bond ? .18 + .035 * (region.electrons / 2 - 1) : Math.max(.14, span * .47);
+			const cloud = new Mesh3D({
+				geometry: this.#sphere, material: bond ? this.#bondRegion : this.#loneRegion,
+				position: vector(center), eventMode: "none",
+			});
+			cloud.scale.set(width, span / 2, width);
+			cloud.quaternion.setFromUnitVectors({ x: 0, y: 1, z: 0 }, vector(axis));
+			this.#electrons.addChild(cloud);
+			const across = perpendicular(axis);
+			const dotMaterial = this.#material(bond ? 0x075985 : 0x6b21a8);
+			for (let index = 0; index < region.electrons; index++) {
+				const row = Math.floor(index / 2) - (Math.ceil(region.electrons / 2) - 1) / 2;
+				const side = region.electrons === 1 ? 0 : index % 2 === 0 ? -.058 : .058;
+				const position = vector(add(add(center, scale(across, side)), scale(axis, row * Math.min(.14, span / 4))));
+				const dot = new Mesh3D({ geometry: this.#sphere, material: dotMaterial, position, eventMode: "none" });
+				dot.scale.set(.047);
+				this.#electrons.addChild(dot);
+			}
+		}
+	}
+
+	setScene(structure: Structure, repeats: number, selection: number[], showElectrons = false) {
 		const rebuild = structure !== this.#structure || repeats !== this.#repeats;
 		if (rebuild) {
 			this.#structure = structure;
@@ -133,7 +170,7 @@ export class MoleculeScene {
 				}
 				for (const { site, position } of replicatedSites(structure, repeats)) {
 					const charge = structure.catalogKey && structure.spaceGroup === "Fm-3m" && site.charge ? site.charge : undefined;
-					this.#atom(site.id, site.atomicNumber, position, true, charge);
+					this.#atom(site.id, site.atomicNumber, position, true, charge, site.occupancy);
 				}
 			} else {
 				const positions = new Map(structure.atoms.map(atom => [atom.id, atom.position]));
@@ -150,11 +187,16 @@ export class MoleculeScene {
 				for (const atom of structure.atoms) this.#atom(atom.id, atom.atomicNumber, atom.position, false);
 			}
 		}
+		if (rebuild || showElectrons !== this.#showElectrons) {
+			this.#showElectrons = showElectrons;
+			this.#renderElectrons(structure, showElectrons);
+			this.#draw();
+		}
 		const selected = new Set(selection);
 		if (rebuild || selected.size !== this.#selected.size || selection.some(id => !this.#selected.has(id))) {
 			this.#selected = selected;
 			for (const [mesh, atom] of this.#picks) {
-				(mesh as Mesh3D).material = this.#material(selected.has(atom.id) ? 0x0086c5 : atom.color);
+				(mesh as Mesh3D).material = selected.has(atom.id) ? this.#material(0x0086c5) : this.#material(atom.color, atom.opacity);
 			}
 			this.#draw();
 		}
@@ -231,6 +273,8 @@ export class MoleculeScene {
 		this.#app.destroy(true, { children: true });
 		this.#sphere.destroy();
 		this.#cylinder.destroy();
+		this.#bondRegion.destroy();
+		this.#loneRegion.destroy();
 		for (const material of this.#materials.values()) material.destroy();
 	}
 }

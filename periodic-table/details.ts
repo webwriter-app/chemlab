@@ -28,6 +28,7 @@ import {
 	type TableMode,
 } from "./phase";
 import { format, strings, type Language, type Strings } from "./strings";
+import { metalCrystal } from "./metal-reference";
 
 /**
  * Section of the detail card a row belongs to.
@@ -348,6 +349,18 @@ export function detailRows(
 		value: element.shells.join(" · "),
 		section: "structure",
 	});
+	const lattice = metalCrystal(element.atomicNumber);
+	if (lattice !== undefined) {
+		const lengths = lattice?.cell.lengths.map(length => numberText(length, language)).join(" × ");
+		const conditions = lattice?.temperatureK ? ` · ${numberText(lattice.temperatureK, language)} K`
+			: lattice?.conditions?.startsWith("α-Hg") ? ` · ${t.valueSolidMercury}` : "";
+		rows.push({
+			key: "referenceLattice",
+			label: t.fieldReferenceLattice,
+			value: lattice ? `${lattice.bravais} · ${lattice.spaceGroup} · ${lengths} Å${conditions}` : t.valueUnavailable,
+			section: "structure",
+		});
+	}
 	return rows;
 }
 

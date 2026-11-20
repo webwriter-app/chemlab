@@ -8,9 +8,10 @@ import SlSpinner from "@shoelace-style/shoelace/dist/components/spinner/spinner.
 import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js";
 import { ChemLabPeriodicTable, LIST_ICON, TABLE_ICON } from "./webwriter-chemlab-periodic-table";
 import { elementByAtomicNumber } from "./periodic-table/element-reference";
+import { metalCrystal } from "./periodic-table/metal-reference";
 import { ELEMENT_SELECTION_EVENT, isAtomicNumber, type ElementSelectionV1 } from "./periodic-table/selection";
 import { SelectionRouter } from "./periodic-table/routing";
-import { catalogEntry, catalogStructures, structureCatalog } from "./molecule-builder/catalog";
+import { catalogEntry, catalogIsMixture, catalogStructures, structureCatalog } from "./molecule-builder/catalog";
 import { BUILDER_TAG, LAB_TAG, TABLE_TAG, worksheetPeer, worksheetPeers, worksheetScope, type LabReceiver } from "./molecule-builder/exchange";
 import { atomColor, atomRadius, fitGeometry, canBond, shapeName, formula } from "./molecule-builder/geometry";
 import {
@@ -60,6 +61,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor showLabs = false;
 	@state() private accessor paletteOpen = true;
 	@state() private accessor pickerView: "list" | "table" = "list";
+	@state() private accessor showElectrons = false;
 	@state() private accessor view: "3d" | "2d" = "3d";
 	@state() private accessor tool: Tool = "orbit";
 	@state() private accessor element = 6;
@@ -120,7 +122,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (changed.has("elementSourceId")) this.#bindTable();
 		if (this.view === "3d" && this.gpu === "idle") void this.#startScene();
 		if (this.#scene && this.view === "3d") {
-			this.#scene.setScene(this.#current, this.repeats, [this.picked, this.bondStart].filter(id => id !== undefined));
+			this.#scene.setScene(this.#current, this.repeats, [this.picked, this.bondStart].filter(id => id !== undefined), this.showElectrons);
 			if (this.#fitNext) {
 				this.#fitNext = false;
 				this.#scene.fit();
@@ -311,7 +313,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				source: undefined, sites: [...current.sites, { ...identity, fractional: coords }] });
 		} else {
 			const atom = { ...identity, diagram: [x, y] as Point2, position: [x, y, z] as Point3 };
-			this.#record({ ...current, name: "", catalogKey: undefined, geometry: undefined, atoms: [...current.atoms, atom] });
+			this.#record({ ...current, name: "", catalogKey: undefined, source: undefined, representation: undefined,
+				geometry: undefined, atoms: [...current.atoms, atom] });
 		}
 		this.picked = id;
 	}
@@ -339,7 +342,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			return;
 		}
 		const bonds = draft.bonds.filter(bond => !(bond.from === from && bond.to === to || bond.from === to && bond.to === from));
-		this.#record({ ...draft, name: "", catalogKey: undefined, geometry: undefined, bonds: [...bonds, { from, to, order: this.bondOrder }] });
+		this.#record({ ...draft, name: "", catalogKey: undefined, source: undefined, representation: undefined,
+			geometry: undefined, bonds: [...bonds, { from, to, order: this.bondOrder }] });
 		this.picked = to;
 	}
 
@@ -347,7 +351,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (this.#readonly || this.picked === undefined) return;
 		const id = this.picked;
 		const draft = this.draft;
-		if (draft.kind === "molecule") this.#record({ ...draft, name: "", catalogKey: undefined, geometry: undefined,
+		if (draft.kind === "molecule") this.#record({ ...draft, name: "", catalogKey: undefined, source: undefined, representation: undefined, geometry: undefined,
 			atoms: draft.atoms.filter(atom => atom.id !== id), bonds: draft.bonds.filter(bond => bond.from !== id && bond.to !== id) });
 		else this.#record({ ...draft, name: "", catalogKey: undefined, bravais: undefined, spaceGroup: undefined, source: undefined,
 			sites: draft.sites.filter(site => site.id !== id) });
@@ -358,7 +362,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (this.#readonly || this.picked === undefined || !Number.isInteger(value) || Math.abs(value) > 8) return;
 		const id = this.picked;
 		const draft = this.draft;
-		if (draft.kind === "molecule") this.#record({ ...draft, name: "", catalogKey: undefined, geometry: undefined,
+		if (draft.kind === "molecule") this.#record({ ...draft, name: "", catalogKey: undefined, source: undefined, representation: undefined, geometry: undefined,
 			atoms: draft.atoms.map(atom => atom.id === id ? { ...atom, charge: value } : atom) });
 		else this.#record({ ...draft, name: "", catalogKey: undefined, bravais: undefined, spaceGroup: undefined, source: undefined,
 			sites: draft.sites.map(site => site.id === id ? { ...site, charge: value } : site) });
@@ -367,10 +371,6 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	#geometry() {
 		if (this.#readonly || this.draft.kind !== "molecule") return;
 		const next = fitGeometry(this.draft);
-		if (!next) {
-			this.notice = this.#t("Idealized geometry is unavailable for this bonding pattern.", "Für dieses Bindungsmuster ist keine idealisierte Geometrie verfügbar.");
-			return;
-		}
 		this.#record(next, true);
 		this.view = this.gpu === "unavailable" ? "2d" : "3d";
 	}
@@ -521,13 +521,14 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	viewCatalogStructure(key: string): boolean {
+		if (!catalogEntry(key)) return false;
 		const variants = catalogStructures(key);
-		if (!variants.length) return false;
 		this.catalogKey = key;
 		this.catalogVariants = variants;
 		this.catalogIndex = 0;
 		this.openPanel = "catalog";
-		this.#openPreview(variants[0]);
+		if (variants.length) this.#openPreview(variants[0]);
+		else this.preview = undefined;
 		return true;
 	}
 
@@ -618,13 +619,19 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					</optgroup>`)}
 				</select>
 			</label>
-			${this.catalogVariants.length > 1 ? html`<label>${this.#t("Species", "Spezies")}
+			${this.catalogVariants.length > 1 ? html`<label>${this.#t("Structure", "Struktur")}
 				<select .value=${String(this.catalogIndex)} @change=${(event: Event) => {
 					this.catalogIndex = Number((event.currentTarget as HTMLSelectElement).value);
 					this.#openPreview(this.catalogVariants[this.catalogIndex]);
 				}}>
 					${this.catalogVariants.map((variant, index) => html`<option value=${index} ?selected=${index === this.catalogIndex}>${variant.name}</option>`)}
 				</select></label>` : nothing}
+			${this.catalogKey && catalogIsMixture(this.catalogKey) ? html`<sl-tag size="small">${this.catalogVariants.length
+				? this.#t("Selected constituents of a mixture", "Ausgewählte Bestandteile eines Gemischs")
+				: this.#t("Mixture with no unique structure", "Gemisch ohne eindeutige Struktur")}</sl-tag>` : nothing}
+			${this.catalogKey && !this.catalogVariants.length && !catalogIsMixture(this.catalogKey)
+				? html`<sl-tag size="small">${this.#t("No verified structure available", "Keine verifizierte Struktur verfügbar")}</sl-tag>`
+				: nothing}
 		</div>`;
 	}
 
@@ -675,7 +682,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	#renderDrawing() {
 		const current = this.#current;
-		const positions: Pick<Atom, "id" | "atomicNumber" | "charge" | "isotope" | "diagram">[] = current.kind === "molecule"
+		const positions: (Pick<Atom, "id" | "atomicNumber" | "charge" | "isotope" | "diagram"> & { occupancy?: number })[] = current.kind === "molecule"
 			? current.atoms.map(atom => ({ ...atom, diagram: this.diagramDrag?.id === atom.id ? this.diagramDrag.position : atom.diagram }))
 			: replicatedSites(current, this.repeats).map(({ site, position: [x, y, z] }) => ({
 				...site, diagram: [x + .43 * z, y + .27 * z] as Point2,
@@ -714,9 +721,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				? current.bonds.map(bond => line(byId.get(bond.from), byId.get(bond.to), bond.order, "#52525b"))
 				: svg`<polygon points=${outline.map(([x, y]) => `${x},${-y}`).join(" ")} fill="none" stroke="#a1a1aa" stroke-width=".04" />`}
 			${from && this.bondPreview ? line(from, this.bondPreview, this.bondOrder, "#0284c7") : nothing}
-			${positions.map(({ id, atomicNumber, diagram: [x, y], charge, isotope }) => {
+			${positions.map(({ id, atomicNumber, diagram: [x, y], charge, isotope, occupancy }) => {
 				const selected = id === this.picked || id === this.bondStart;
-				return svg`<g data-atom=${id} aria-label=${symbol(atomicNumber)} transform="translate(${x} ${-y})">
+				return svg`<g data-atom=${id} aria-label=${symbol(atomicNumber)} transform="translate(${x} ${-y})"
+					opacity=${selected ? 1 : Math.max(.18, occupancy ?? 1)}>
 					<circle r=".254" fill=${selected ? "#dff3ff" : "white"} stroke=${selected ? "#0284c7" : "#a1a1aa"} stroke-width=${selected ? .045 : .028} />
 					<circle cx="-.17" cy="-.17" r=".075" fill=${`#${atomColor(atomicNumber).toString(16).padStart(6, "0")}`} stroke="#707780" stroke-width=".01"/>
 					<text text-anchor="middle" dominant-baseline="central" font-weight="600" font-size=".23" fill="#27272a">${symbol(atomicNumber)}</text>
@@ -751,6 +759,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					<sl-tag size="small" variant="primary">${title}</sl-tag>
 					${radius ? html`<sl-tag size="small">${radius.pm} pm · ${radiusLabel[radius.model]}</sl-tag>` : nothing}
 					${shape ? html`<sl-tag size="small">${shapeLabel[shape]}</sl-tag>` : nothing}
+					${atom && "occupancy" in atom && atom.occupancy !== undefined ? html`<sl-tag size="small">
+						${this.#t("Site occupancy", "Platzbesetzung")} · ${Number((100 * atom.occupancy).toFixed(1))} %
+					</sl-tag>` : nothing}
 				</div>
 				${atom && !this.#readonly ? html`<sl-button size="small" variant="danger" outline @click=${this.#removeAtom}>
 					${this.#t("Delete", "Löschen")}
@@ -771,7 +782,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 						this.#fitNext = true;
 						this.#lastDrawn = undefined;
 					}}>
-						${[1, 2, 3].map(value => html`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
+						${[1, 2, 3].filter(value => value ** 3 * current.sites.length <= 1800)
+							.map(value => html`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
 					</select></label>` : nothing}
 			</div>
 			${atom && (!this.#readonly || "fractional" in atom) ? html`
@@ -787,7 +799,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 							bond.from === atom.id || bond.to === atom.id).map(bond => {
 								const to = this.#atoms.find(entry => entry.id === (bond.from === atom.id ? bond.to : bond.from));
 								return html`<sl-button size="small" @click=${() => this.#record({
-									...current, name: "", catalogKey: undefined, geometry: undefined, bonds: current.bonds.filter(entry => entry !== bond),
+									...current, name: "", catalogKey: undefined, source: undefined, representation: undefined,
+									geometry: undefined, bonds: current.bonds.filter(entry => entry !== bond),
 								})}>${this.#t("Remove bond to", "Bindung lösen zu")} ${symbol(to.atomicNumber)} · ${to.id}</sl-button>`;
 							}) : nothing}
 						${"fractional" in atom ? atom.fractional.map((value, index) => html`<label>${["x/a", "y/b", "z/c"][index]}
@@ -800,6 +813,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				<div class="fields">
 					${current.bravais ? html`<sl-tag size="small">${current.bravais} · ${current.spaceGroup}</sl-tag>` : nothing}
 					${current.source === "catalog-density" ? html`<sl-tag size="small">${this.#t("Cell size estimated from catalog density", "Zellgröße aus Katalogdichte geschätzt")}</sl-tag>` : nothing}
+					${current.temperatureK ? html`<sl-tag size="small">${current.temperatureK} K</sl-tag>` : nothing}
+					${current.conditions ? html`<sl-tag size="small">${current.conditions === "hydrogen-positions-unreported"
+						? this.#t("Hydrogen positions unreported", "Wasserstoffpositionen nicht angegeben") : current.conditions}</sl-tag>` : nothing}
+					${current.sites.some(site => site.occupancy !== undefined) ? html`
+						<sl-tag size="small">${this.#t("Partially occupied sites", "Teilbesetzte Gitterplätze")}</sl-tag>` : nothing}
 					${(["lengths", "angles"] as const).map(key => current.cell[key].map((value, index) => {
 						const label = (key === "lengths" ? ["a (Å)", "b (Å)", "c (Å)"] : ["α (°)", "β (°)", "γ (°)"])[index];
 						return html`<label>${label}<input type="number" step="any" aria-label=${label}
@@ -813,7 +831,15 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	render() {
 		const current = this.#current;
+		const lattice = metalCrystal(this.element);
 		const paletteVisible = this.paletteOpen && !this.#readonly;
+		const representation = current.kind === "molecule" && current.representation && {
+			conformer: this.#t("PubChem conformer", "PubChem-Konformer"),
+			experimental: this.#t("Experimental geometry", "Experimentelle Geometrie"),
+			constituent: this.#t("Mixture constituent", "Gemischbestandteil"),
+			"repeat-unit": this.#t("Capped repeat-unit example", "Beispiel mit abgesättigten Wiederholungseinheiten"),
+			"ionic-components": this.#t("Ionic components", "Ionenbestandteile"),
+		}[current.representation];
 		const tool = (value: Tool, label: string) => html`<sl-button size="small" variant=${value === this.tool ? "primary" : "default"}
 			aria-pressed=${value === this.tool} @click=${() => this.#setTool(value)}>${label}</sl-button>`;
 		const chooseView = (value: "3d" | "2d", label: string) => html`<sl-button size="small"
@@ -880,7 +906,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 						<div class="palette-tools">
 							<sl-tag size="small" variant="primary">${symbol(this.element)} · ${elementByAtomicNumber(this.element).names[this.#t("en", "de") as "en" | "de"]}</sl-tag>
 							<sl-button size="small" @click=${() => this.#addAtom()}>${this.#t("Add atom", "Atom hinzufügen")}</sl-button>
+							${lattice ? html`<sl-button size="small" @click=${() => this.viewStructure(lattice)}>
+								${this.#t("View crystal", "Kristall ansehen")}</sl-button>` : nothing}
 						</div>
+						${lattice === null ? html`<sl-tag size="small">${this.#t("Bulk lattice unavailable", "Keine experimentelle Gitterstruktur")}</sl-tag>` : nothing}
 						<div class="palette-tools" role="group" aria-label=${this.#t("Element palette layout", "Darstellung der Elementpalette")}>
 							${this.#renderPickerLayout("list")}${this.#renderPickerLayout("table")}
 						</div>
@@ -901,6 +930,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 							</p>` : nothing}
 						<div class="view-tools">
 							${this.view === "3d" && this.gpu === "ready" ? html`
+								${current.kind === "molecule" && current.atoms.length ? html`
+									<sl-button size="small" variant=${this.showElectrons ? "primary" : "default"} aria-pressed=${this.showElectrons}
+										@click=${() => { this.showElectrons = !this.showElectrons; }}>
+										${this.#t("Valence electrons", "Valenzelektronen")}
+									</sl-button>` : nothing}
 								<sl-button size="small" aria-label=${this.#t("Zoom in", "Vergrößern")} @click=${() => this.#scene?.zoom(.83)}>+</sl-button>
 								<sl-button size="small" aria-label=${this.#t("Zoom out", "Verkleinern")} @click=${() => this.#scene?.zoom(1.2)}>−</sl-button>
 							` : nothing}
@@ -910,15 +944,29 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					<div class="status">
 						<div class="fields">
 							<sl-tag size="small">${current.kind === "molecule" ? this.#t("Molecule", "Molekül") : this.#t("Crystal", "Kristall")}</sl-tag>
-							${this.#atoms.length ? html`<sl-tag size="small">${current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : formula(current)}
+							${this.#atoms.length ? html`<sl-tag size="small">${current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : current.name || formula(current)}
 								${current.catalogKey && current.name ? ` · ${current.name}` : ""}</sl-tag>` : nothing}
+							${representation ? html`<sl-tag size="small">${representation}</sl-tag>` : nothing}
+							${current.source?.startsWith("https://") ? html`<a href=${current.source} target="_blank" rel="noopener noreferrer">
+								${this.#t("Structure source", "Strukturquelle")}</a>` : nothing}
 							${current.kind === "molecule" && current.geometry === "idealized" ? html`<sl-tag size="small">
 								${this.#t("Idealized geometry", "Idealisierte Geometrie")}
+							</sl-tag>` : nothing}
+							${current.kind === "molecule" && current.geometry === "estimated" ? html`<sl-tag size="small">
+								${this.#t("Estimated geometry", "Geschätzte Geometrie")}
 							</sl-tag>` : nothing}
 							${current.kind === "molecule" && !current.geometry && this.#atoms.length ? html`<sl-tag size="small">
 								${this.#t("Sketch", "Skizze")}
 							</sl-tag>` : nothing}
 						</div>
+						${current.kind === "molecule" && this.showElectrons && this.view === "3d" ? html`
+							<span class="electron-legend" title=${this.#t(
+								"Approximate Lewis and VSEPR regions. Dots represent electron counts in the displayed bonding model.",
+								"Angenäherte Lewis- und VSEPR-Bereiche. Punkte stehen für die Elektronenzahl im dargestellten Bindungsmodell.",
+							)}>
+								<span data-region="bond">${this.#t("Bonding", "Bindend")}</span>
+								<span data-region="lone">${this.#t("Nonbonding", "Nichtbindend")}</span>
+							</span>` : nothing}
 						<output aria-live="polite">${this.notice || (this.bondStart ? this.#t("Choose the other atom.", "Wähle das zweite Atom.") : "")}</output>
 					</div>
 				</main>

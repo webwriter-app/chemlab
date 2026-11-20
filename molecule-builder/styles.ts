@@ -89,6 +89,17 @@ export const builderStyles = css`
 	}
 	.status :is(div, span) { min-width: 0; }
 	.status output { color: #52525b; }
+	.electron-legend { display: flex; flex-wrap: wrap; gap: .55rem; color: #52525b; }
+	.electron-legend span::before {
+		content: "";
+		display: inline-block;
+		inline-size: .6em;
+		block-size: .6em;
+		margin-inline-end: .3em;
+		border-radius: 50%;
+		background: #0284c7;
+	}
+	.electron-legend [data-region="lone"]::before { background: #a855f7; }
 	.controls-panel {
 		padding: .5rem;
 		background: var(--control);

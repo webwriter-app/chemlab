@@ -54,6 +54,8 @@ export type StringKey =
 	| "fieldDiscovery"
 	| "fieldConfiguration"
 	| "fieldShells"
+	| "fieldReferenceLattice"
+	| "valueSolidMercury"
 	| "fieldRadius"
 	| "fieldElectronegativity"
 	| "fieldIonization"
@@ -143,6 +145,8 @@ const EN: Strings = {
 	detailsExpand: "Show all details",
 	detailsCollapse: "Show less",
 	fieldGroup: "Group",
+	fieldReferenceLattice: "Reference lattice",
+	valueSolidMercury: "solid below 234.3 K",
 	fieldPeriod: "Period",
 	fieldFamily: "Family",
 	fieldBlock: "Block",
@@ -244,6 +248,8 @@ const DE: Strings = {
 	detailsExpand: "Alle Daten anzeigen",
 	detailsCollapse: "Weniger anzeigen",
 	fieldGroup: "Gruppe",
+	fieldReferenceLattice: "Referenzgitter",
+	valueSolidMercury: "fest unterhalb von 234,3 K",
 	fieldPeriod: "Periode",
 	fieldFamily: "Stoffklasse",
 	fieldBlock: "Block",

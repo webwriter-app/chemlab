@@ -1,11 +1,20 @@
 import { chemicalCatalog, isWaterDefinition, type CatalogChemical, type MoleculeDefinition } from "../data/chemicals";
 import { legacyElementKeyToAtomicNumber } from "../periodic-table/legacy-names";
+import { metalCrystal } from "../periodic-table/metal-reference";
 import type { Molecule as LabMolecule } from "../chemlib";
 import { fitGeometry } from "./geometry";
 import { type Atom, type Bond, type Crystal, type Molecule, type Point3, type Structure } from "./structure";
+import catalogReferences from "../data/structures/catalog.generated.json";
+import { mixtures } from "../data/structures/sources.json";
 
 const entries = new Map(chemicalCatalog.map(entry => [entry.name, entry]));
 export const catalogEntry = (key: string) => entries.get(key);
+const references = catalogReferences as unknown as Readonly<Record<string, Structure>>;
+const mixtureComponents: Readonly<Partial<Record<string, string[]>>> = mixtures;
+
+export function catalogIsMixture(key: string): boolean {
+	return Object.prototype.hasOwnProperty.call(mixtureComponents, key);
+}
 
 // Conventional rock-salt cells. The phase is the normal-pressure B1 structure;
 // the length below is estimated from the density already used by the catalog.
@@ -20,7 +29,7 @@ const sitesPerCell = new Map([
 ]);
 const AVOGADRO_PER_ANGSTROM_CUBE = 0.602214076;
 
-function catalogCrystal(entry: CatalogChemical): Crystal | undefined {
+function legacyCatalogCrystal(entry: CatalogChemical): Crystal | undefined {
 	const { recipe, preview } = entry;
 	if (recipe?.phase !== "solid" || !preview) return undefined;
 	const metal = sitesPerCell.get(entry.name);
@@ -111,6 +120,13 @@ function catalogDefinitions(entry: CatalogChemical) {
 				{ formula: "Cl⁻", atoms: ["chlorine"], charges: [-1], bonds: [] },
 			];
 		}
+		if (entry.formula === "NaOH" || entry.formula === "KOH") {
+			const metal = entry.formula === "NaOH" ? "sodium" : "potassium";
+			return [
+				{ formula: entry.formula === "NaOH" ? "Na⁺" : "K⁺", atoms: [metal], charges: [1], bonds: [] },
+				{ formula: "OH⁻", atoms: ["oxygen", "hydrogen"], charges: [-1, 0], bonds: ["0-1:covalent:1"] },
+			];
+		}
 		return parts.map(part => part.molecule).filter(definition => !isWaterDefinition(definition));
 	}
 	return entry.preview ? [entry.preview] : parts.map(part => part.molecule);
@@ -127,30 +143,61 @@ export function fromLabMolecule(molecule: LabMolecule, name: string): Molecule |
 	});
 	if (!graph) return undefined;
 	const placed = { ...graph, atoms: diagramPositions(graph.atoms, graph.bonds) };
-	return fitGeometry(placed) ?? placed;
+	return fitGeometry(placed);
 }
 
 const models = new Map<string, Structure[]>();
 for (const entry of chemicalCatalog) {
-	const crystal = catalogCrystal(entry);
 	const molecules = catalogDefinitions(entry).flatMap(definition => catalogMolecule(entry.name, definition) ?? []);
-	const items = crystal ? [crystal] : molecules;
-	if (items.length) models.set(entry.name, items);
+	if (molecules.length) models.set(entry.name, molecules);
 }
 
-export function hasCatalogStructure(key: string) {
-	return models.has(key);
+function withGeometry(model: Molecule): Molecule {
+	if (model.geometry) return model;
+	const fitted = fitGeometry(model);
+	return { ...fitted, source: model.source, representation: model.representation };
+}
+
+function referenceStructures(entry: CatalogChemical): Structure[] {
+	const key = entry.name;
+	const stored = references[key];
+	if (stored?.kind === "crystal") return [{ ...stored, name: stored.name || entry.formula, catalogKey: key }];
+	if (entry.category === "Metalle") {
+		const lattice = metalCrystal(legacyElementKeyToAtomicNumber(entry.formula));
+		if (lattice) return [{ ...lattice, catalogKey: key }];
+	}
+	if (stored?.kind === "molecule") {
+		// The structural record represents a pure molecule here, or the
+		// named analytical solute. A solution with several modeled species
+		// keeps its own charged graphs from the recipe instead.
+		if (!entry.recipe?.aqueousMolar || (models.get(key)?.length === 1 && entry.category !== "Salze")) {
+			return [{ ...stored, catalogKey: key }];
+		}
+	}
+	const legacy = legacyCatalogCrystal(entry);
+	if (legacy) return [legacy];
+	return models.get(key) ?? [];
 }
 
 export function catalogStructures(key: string): Structure[] {
-	return (models.get(key) ?? []).map(structure => {
-		if (structure.kind === "crystal") return structure;
-		const placed = { ...structure, atoms: diagramPositions(structure.atoms, structure.bonds) };
-		return fitGeometry(placed) ?? placed;
+	const entry = entries.get(key);
+	if (!entry) return [];
+	const componentKeys = mixtureComponents[key];
+	if (componentKeys) return componentKeys.flatMap(component => {
+		const stored = references[component];
+		const componentEntry = entries.get(component);
+		const models = componentEntry ? catalogStructures(component) : stored ? [stored] : [];
+		return models.map(model => model.kind === "molecule"
+			? { ...withGeometry(model), catalogKey: key, representation: "constituent" as const }
+			: { ...model, catalogKey: key });
+	});
+	return referenceStructures(entry).map(model => {
+		if (model.kind === "crystal" || model.geometry || model.source) return model.kind === "molecule" ? withGeometry(model) : model;
+		return fitGeometry({ ...model, atoms: diagramPositions(model.atoms, model.bonds) });
 	});
 }
 
-export const structureCatalog = chemicalCatalog.filter(({ name }) => models.has(name));
+export const structureCatalog = chemicalCatalog;
 
 /** Compare composition, charge and connectivity independently of atom IDs and the camera. */
 function sameGraph(a: Molecule, b: Molecule) {
@@ -191,18 +238,26 @@ function exactCrystal(a: Crystal, b: Crystal) {
 		&& a.cell.angles.every((value, index) => value === b.cell.angles[index])
 		&& a.sites.length === b.sites.length
 		&& a.sites.every(site => b.sites.some(other => site.atomicNumber === other.atomicNumber && site.charge === other.charge
-			&& site.isotope === other.isotope && site.fractional.every((value, index) => value === other.fractional[index])));
+			&& site.isotope === other.isotope && (site.occupancy ?? 1) === (other.occupancy ?? 1)
+			&& site.fractional.every((value, index) => value === other.fractional[index])));
 }
 
 export function matchingRecipe(structure: Structure): CatalogChemical | undefined {
 	const matches = (entry: CatalogChemical) => {
 		if (!entry.recipe) return false;
-		const [model, multiple] = models.get(entry.name) ?? [];
-		// A single displayed solute can identify one stock only when its recipe
-		// has no other solutes. A selected ion never represents a multi-ion stock.
-		if (!model || multiple || model.kind !== structure.kind) return false;
-		if (model.kind === "crystal" && structure.kind === "crystal") return exactCrystal(model, structure);
-		return model.kind === "molecule" && structure.kind === "molecule" && sameGraph(model, structure);
+		if (structure.kind === "crystal") {
+			const [model, multiple] = referenceStructures(entry);
+			const legacy = legacyCatalogCrystal(entry);
+			return (!multiple && model?.kind === "crystal" && exactCrystal(model, structure))
+				|| (legacy && exactCrystal(legacy, structure));
+		}
+		if (structure.representation === "constituent" || structure.representation === "repeat-unit") return false;
+		const raw = models.get(entry.name) ?? [];
+		const reference = referenceStructures(entry);
+		// A single displayed solute can identify a stock only when its recipe
+		// has one analytical solute. A selected ion cannot represent a mixture.
+		return raw.length <= 1 && [raw, reference].some(list =>
+			list.length === 1 && list[0].kind === "molecule" && sameGraph(list[0], structure));
 	};
 	const preferred = structure.catalogKey ? entries.get(structure.catalogKey) : undefined;
 	if (preferred && matches(preferred)) return preferred;
