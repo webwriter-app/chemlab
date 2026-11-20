@@ -105505,6 +105505,21 @@ var builderStyles = i`
 	   the canvas usable; below it the grid button stays disabled. */
 	.workspace[data-palette="table"] { grid-template-columns: minmax(0, min(27rem, 55%)) minmax(0, 1fr); }
 	.workspace[data-collapsed] { grid-template-columns: 0 minmax(0, 1fr); }
+	/* Fullscreen hands the widget the whole screen. The builder takes that box
+	   and the workspace grows into the rest, so the canvas fills the screen
+	   instead of keeping the height it has in an embed. */
+	:host(:fullscreen) { block-size: 100%; }
+	:host(:fullscreen) .builder {
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+		block-size: 100%;
+	}
+	:host(:fullscreen) .workspace {
+		flex: 1 1 auto;
+		block-size: auto;
+		min-block-size: 0;
+	}
 	.palette {
 		position: relative;
 		display: flex;
