@@ -3,7 +3,7 @@ import {
 	Container3D, CylinderGeometry, DirectionalLight, Material3D, Mesh3D, Plane,
 	Sphere, SphereGeometry, Vector3, View3D,
 } from "@pixi/3d";
-import { OutlinePass } from "@pixi/3d/extras";
+import type { ShaderBit } from "@pixi/3d";
 import { atomColor, atomRadius, add, electronRegions, perpendicular, scale, subtract, unit } from "./geometry";
 import { crystalIonColors, latticePositions, siteIon } from "./crystal-display";
 import { cartesian, cellVectors, replicatedSites, type Point3, type Structure } from "./structure";
@@ -20,18 +20,56 @@ const AXIS_ORIGIN = 34;
 const AXIS_LENGTH = 20;
 const AXIS_COLORS = [0xb45309, 0x0f766e, 0x6d28d9];
 /**
- * Ink outline around every opaque mesh, in the mesh's local units.
+ * How far the silhouette of an atom darkens, as a share of its lit colour.
  *
- * The pass pushes each vertex out along its normal, so the rim scales with the
- * mesh and a hydrogen sphere keeps a thinner rim than a caesium one. Without it
- * the pale CPK colours dissolve into the light canvas: white hydrogen, the
- * near-white helium and neon, and the pale yellow sulphur have no edge of their
- * own against a background of the same brightness, because a sphere lit from the
- * front shades towards its rim instead of away from it.
+ * The CPK palette runs from white hydrogen to near-black iodine, so no canvas
+ * colour can separate every atom from the background: the best any single
+ * backdrop manages is 2.7:1, and only pure black reaches even that. The edge
+ * therefore has to come from the atom itself. A sphere lit from the front
+ * shades towards its rim only weakly, because the hemisphere fill is
+ * normal-aware and still reaches a surface turned away from the camera, so the
+ * rim is darkened here on top of the lighting.
  */
-const OUTLINE_WIDTH = 0.09;
-/** Colour of the ink outline, a dark slate that reads as a drawn edge rather than as black. */
-const OUTLINE_COLOR = 0x334155;
+const RIM_STRENGTH = 0.8;
+/**
+ * How tightly the darkening hugs the silhouette.
+ *
+ * A low power spreads the darkening across the whole sphere and reads as a
+ * dirty surface; a high power confines it to a narrow band that reads as the
+ * edge of a round body. The value is a falloff exponent on the facing term, so
+ * it is independent of the atom's size and of the camera distance.
+ */
+const RIM_POWER = 2.2;
+/**
+ * Darkens a surface as its normal turns away from the camera.
+ *
+ * This is the shading counterpart of an ink outline: the same silhouette
+ * contrast, but following the surface instead of a shell pushed out along the
+ * normal. It therefore scales with curvature rather than with world units, so a
+ * hydrogen and a caesium get the same proportional rim, and it leaves no ring
+ * behind a translucent surface. Runs after the light loop, where `finalColor`
+ * is lit linear light, so the multiply darkens the shaded result.
+ */
+const rimBit: ShaderBit = {
+	name: "atomRim",
+	bindings: { material: { rimStrength: "f32", rimPower: "f32" } },
+	gpu: {
+		fragment: {
+			lobePostLighting: `{
+				let rimFacing = max(dot(normal, viewDir), 0.0);
+				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
+			}`,
+		},
+	},
+	gl: {
+		fragment: {
+			lobePostLighting: `{
+				float rimFacing = max(dot(normal, viewDir), 0.0);
+				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
+			}`,
+		},
+	},
+};
 
 /** What the scene shows besides the structure itself. */
 export type SceneDisplay = { electrons: boolean; lattice: boolean; edges: boolean; axes: boolean };
@@ -91,7 +129,6 @@ export class MoleculeScene {
 		this.#app = app;
 		this.#view = new View3D({
 			autoResize: false, environment: { skyColor: 0xffffff, groundColor: 0xa6b4c3, intensity: 0.94 },
-			passes: [new OutlinePass({ width: OUTLINE_WIDTH, color: OUTLINE_COLOR })],
 		});
 		app.stage.addChild(this.#view, this.#lattice, this.#axes, ...this.#axisLabels);
 		for (const label of this.#axisLabels) label.visible = false;
@@ -121,26 +158,29 @@ export class MoleculeScene {
 	/**
 	 * A cached material for one colour, opacity and selection state.
 	 *
-	 * Only opaque meshes take the outline: a translucent atom or electron cloud
-	 * would show the ink shell behind its own surface as a solid ring, and the
-	 * pass draws before the transparent stage, so the ring would sit under a
-	 * veil instead of around the shape.
+	 * Every atom and bond takes the rim, translucent ones included: the term
+	 * darkens the surface itself rather than drawing a shell behind it, so a
+	 * partly occupied site keeps a readable edge without gaining a solid ring.
+	 * The electron clouds use their own materials and stay unrimmed, because
+	 * they are a haze around the atoms rather than bodies of their own.
 	 */
-	#material(color: number, opacity = 1, selected = false, outline = opacity >= 1) {
-		const key = `${color}:${opacity}:${selected}:${outline}`;
+	#material(color: number, opacity = 1, selected = false) {
+		const key = `${color}:${opacity}:${selected}`;
 		let material = this.#materials.get(key);
 		if (!material) {
 			material = new Material3D({ baseColor: color, roughness: 0.61, alpha: opacity,
 				alphaMode: opacity < 1 ? "blend" : "opaque",
 				emissive: selected ? { color, strength: .48 } : undefined,
-				passes: outline ? { outline: true } : undefined });
+				extraBits: [rimBit] });
+			material.data.rimStrength = RIM_STRENGTH;
+			material.data.rimPower = RIM_POWER;
 			this.#materials.set(key, material);
 		}
 		return material;
 	}
 
-	#rod(outline = true) {
-		return new Mesh3D({ geometry: this.#cylinder, material: this.#material(0x858f9b, 1, false, outline), eventMode: "none" });
+	#rod() {
+		return new Mesh3D({ geometry: this.#cylinder, material: this.#material(0x858f9b), eventMode: "none" });
 	}
 
 	#line(mesh: Mesh3D, from: Point3, to: Point3, width: number) {
@@ -230,10 +270,7 @@ export class MoleculeScene {
 							start[(axis + 2) % 3] = v;
 							const end = [...start] as [number, number, number];
 							end[axis] = repeats;
-							// A cell edge keeps its plain material: the outline shell of a
-							// long thin rod grows by the width times its length, which would
-							// leave a spike past every corner of the cell.
-							const edge = this.#rod(false);
+							const edge = this.#rod();
 							this.#line(edge, cartesian(vectors, start), cartesian(vectors, end), 0.024);
 							this.#edges.addChild(edge);
 						}
