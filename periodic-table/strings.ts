@@ -53,6 +53,12 @@ export type StringKey =
 	| "fieldDiscovery"
 	| "fieldConfiguration"
 	| "fieldShells"
+	| "fieldRadius"
+	| "fieldElectronegativity"
+	| "fieldIonization"
+	| "fieldHalfLife"
+	| "fieldStableNuclide"
+	| "fieldMassNumber"
 	| "sectionPosition"
 	| "sectionProperties"
 	| "sectionHistory"
@@ -74,8 +80,17 @@ export type StringKey =
 	| "modeOff"
 	| "modeTemperature"
 	| "modeDiscovery"
+	| "modeRadius"
+	| "modeElectronegativity"
+	| "modeIonization"
+	| "modeHalfLife"
 	| "temperatureSlider"
 	| "yearSlider"
+	| "radiusSlider"
+	| "electronegativitySlider"
+	| "ionizationSlider"
+	| "halfLifeSlider"
+	| "halfLifeStable"
 	| "stateLegend"
 	| "stateUnknown"
 	| "infoLabel"
@@ -137,6 +152,12 @@ const EN: Strings = {
 	fieldDiscovery: "Discovered",
 	fieldConfiguration: "Electron configuration",
 	fieldShells: "Electrons per shell",
+	fieldRadius: "Atomic radius",
+	fieldElectronegativity: "Electronegativity",
+	fieldIonization: "Ionization energy",
+	fieldHalfLife: "Half-life",
+	fieldStableNuclide: "Stable nuclide",
+	fieldMassNumber: "Mass number",
 	sectionPosition: "Position",
 	sectionProperties: "Properties",
 	sectionHistory: "History",
@@ -158,8 +179,17 @@ const EN: Strings = {
 	modeOff: "Off",
 	modeTemperature: "Temperature",
 	modeDiscovery: "Discovery",
+	modeRadius: "Radius",
+	modeElectronegativity: "Electronegativity",
+	modeIonization: "Ionization",
+	modeHalfLife: "Half-life",
 	temperatureSlider: "Temperature",
 	yearSlider: "Year",
+	radiusSlider: "Largest atomic radius",
+	electronegativitySlider: "Smallest electronegativity",
+	ionizationSlider: "Smallest ionization energy",
+	halfLifeSlider: "Shortest half-life",
+	halfLifeStable: "stable",
 	stateLegend: "State at these conditions",
 	stateUnknown: "Unknown",
 	infoLabel: "Sources and notes",
@@ -222,6 +252,12 @@ const DE: Strings = {
 	fieldDiscovery: "Entdeckt",
 	fieldConfiguration: "Elektronenkonfiguration",
 	fieldShells: "Elektronen je Schale",
+	fieldRadius: "Atomradius",
+	fieldElectronegativity: "Elektronegativität",
+	fieldIonization: "Ionisierungsenergie",
+	fieldHalfLife: "Halbwertszeit",
+	fieldStableNuclide: "Stabiles Nuklid",
+	fieldMassNumber: "Massenzahl",
 	sectionPosition: "Position",
 	sectionProperties: "Eigenschaften",
 	sectionHistory: "Geschichte",
@@ -243,8 +279,17 @@ const DE: Strings = {
 	modeOff: "Aus",
 	modeTemperature: "Temperatur",
 	modeDiscovery: "Entdeckung",
+	modeRadius: "Radius",
+	modeElectronegativity: "Elektronegativität",
+	modeIonization: "Ionisierung",
+	modeHalfLife: "Halbwertszeit",
 	temperatureSlider: "Temperatur",
 	yearSlider: "Jahr",
+	radiusSlider: "Größter Atomradius",
+	electronegativitySlider: "Kleinste Elektronegativität",
+	ionizationSlider: "Kleinste Ionisierungsenergie",
+	halfLifeSlider: "Kürzeste Halbwertszeit",
+	halfLifeStable: "stabil",
 	stateLegend: "Aggregatzustand bei diesen Bedingungen",
 	stateUnknown: "Unbekannt",
 	infoLabel: "Quellen und Hinweise",

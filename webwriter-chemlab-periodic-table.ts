@@ -52,6 +52,7 @@ import {
 	conditionsText,
 	detailRows,
 	keyRows,
+	numberText,
 	sourceFieldText,
 	sourceList,
 	stateText,
@@ -61,11 +62,16 @@ import {
 import {
 	DEFAULT_MODE_STATE,
 	DISCOVERY_RANGE,
+	ELECTRONEGATIVITY_RANGE,
+	HALF_LIFE_RANGE,
+	IONIZATION_RANGE,
+	RADIUS_RANGE,
 	TABLE_MODES,
 	TEMPERATURE_SLIDER,
 	cellMode,
 	celsiusFromKelvin,
 	celsiusText,
+	halfLifeText,
 	kelvinFromCelsius,
 	type MatterState,
 	type ModeState,
@@ -249,6 +255,14 @@ function modeText(mode: TableMode, t: Strings): string {
 			return t.modeTemperature;
 		case "discovery":
 			return t.modeDiscovery;
+		case "radius":
+			return t.modeRadius;
+		case "electronegativity":
+			return t.modeElectronegativity;
+		case "ionization":
+			return t.modeIonization;
+		case "halfLife":
+			return t.modeHalfLife;
 	}
 }
 
@@ -714,6 +728,38 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		this.requestUpdate();
 	};
 
+	/** Reads the atomic radius slider, which hides everything above the threshold. */
+	#onRadiusInput = (event: Event) => {
+		const value = Number((event.target as { value?: string }).value ?? "");
+		if (!Number.isFinite(value)) return;
+		this.#mode = { ...this.#mode, radiusPm: value };
+		this.requestUpdate();
+	};
+
+	/** Reads the electronegativity slider, which hides everything below the threshold. */
+	#onElectronegativityInput = (event: Event) => {
+		const value = Number((event.target as { value?: string }).value ?? "");
+		if (!Number.isFinite(value)) return;
+		this.#mode = { ...this.#mode, electronegativity: value };
+		this.requestUpdate();
+	};
+
+	/** Reads the ionization energy slider, which hides everything below the threshold. */
+	#onIonizationInput = (event: Event) => {
+		const value = Number((event.target as { value?: string }).value ?? "");
+		if (!Number.isFinite(value)) return;
+		this.#mode = { ...this.#mode, ionizationEv: value };
+		this.requestUpdate();
+	};
+
+	/** Reads the half-life slider, which works in decades of seconds. */
+	#onHalfLifeInput = (event: Event) => {
+		const value = Number((event.target as { value?: string }).value ?? "");
+		if (!Number.isFinite(value)) return;
+		this.#mode = { ...this.#mode, halfLifeLogSeconds: value };
+		this.requestUpdate();
+	};
+
 	/** Opens or closes the panel with the search field and the family filter. */
 	#toggleFilters = () => {
 		this.#filtersOpen = !this.#filtersOpen;
@@ -976,6 +1022,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/**
 	 * Describes the slider of the active mode.
 	 *
+	 * Every mode reads its slider as a threshold and states the direction in the
+	 * readout, so the number alone cannot be misread: the radius keeps the elements
+	 * up to the value, the other three keep the ones from it upwards.
+	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
 	 * @returns Bounds, value, readout and handler of the slider, or `null` when no mode is active.
@@ -992,7 +1042,6 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					step: TEMPERATURE_SLIDER.stepCelsius,
 					value: celsiusFromKelvin(this.#mode.temperatureK),
 					readout: celsiusText(this.#mode.temperatureK, language),
-					format: (value: number) => celsiusText(kelvinFromCelsius(value), language),
 					onInput: this.#onTemperatureInput,
 				};
 			case "discovery":
@@ -1003,8 +1052,47 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					step: 1,
 					value: this.#mode.year,
 					readout: String(this.#mode.year),
-					format: (value: number) => String(Math.round(value)),
 					onInput: this.#onYearInput,
+				};
+			case "radius":
+				return {
+					label: t.radiusSlider,
+					min: RADIUS_RANGE.min,
+					max: RADIUS_RANGE.max,
+					step: 1,
+					value: this.#mode.radiusPm,
+					readout: `≤ ${numberText(this.#mode.radiusPm, language)}\u00A0pm`,
+					onInput: this.#onRadiusInput,
+				};
+			case "electronegativity":
+				return {
+					label: t.electronegativitySlider,
+					min: ELECTRONEGATIVITY_RANGE.min,
+					max: ELECTRONEGATIVITY_RANGE.max,
+					step: 0.01,
+					value: this.#mode.electronegativity,
+					readout: `≥ ${numberText(this.#mode.electronegativity, language)}`,
+					onInput: this.#onElectronegativityInput,
+				};
+			case "ionization":
+				return {
+					label: t.ionizationSlider,
+					min: IONIZATION_RANGE.min,
+					max: IONIZATION_RANGE.max,
+					step: 0.01,
+					value: this.#mode.ionizationEv,
+					readout: `≥ ${numberText(this.#mode.ionizationEv, language)}\u00A0eV`,
+					onInput: this.#onIonizationInput,
+				};
+			case "halfLife":
+				return {
+					label: t.halfLifeSlider,
+					min: HALF_LIFE_RANGE.min,
+					max: HALF_LIFE_RANGE.max,
+					step: 0.1,
+					value: this.#mode.halfLifeLogSeconds,
+					readout: `≥ ${halfLifeText(10 ** this.#mode.halfLifeLogSeconds, language, 2)}`,
+					onInput: this.#onHalfLifeInput,
 				};
 		}
 	}
@@ -1114,8 +1202,12 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (!element) return null;
 		const selected = this.#selection.value === cell.atomicNumber;
 		const displayRow = cell.section === "main" ? cell.row + 1 : cell.row + 2;
-		const mode = cellMode(element, this.#mode);
+		const mode = cellMode(element, this.#mode, language);
 		const state = mode.state === null ? null : stateText(mode.state, t);
+		// The corner badge carries a bare number, so the label names the property it
+		// belongs to; the state needs no such help.
+		const note =
+			state ?? (mode.badge === null ? null : `${modeText(this.#mode.mode, t)} ${mode.badge}`);
 		const classes = ["cell", `category-${cell.category}`];
 		if (mode.state !== null) classes.push(`state-${mode.state}`);
 		if (faded) classes.push("is-faded");
@@ -1124,7 +1216,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 			name: element.names[language],
 			symbol: element.symbol,
 			category: categoryText(element, language),
-		}) + (state === null ? "" : ` · ${state}`);
+		}) + (note === null ? "" : ` · ${note}`);
 		return html`
 			<div
 				class=${classes.join(" ")}
@@ -1280,7 +1372,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 			if (match.atomicNumber === selected) return html`<li class="list-details">${details}</li>`;
 			// The mode decoration keeps its meaning in the narrow list: the state
 			// or the discovery year rides along as a tag at the end of the row.
-			const mode = cellMode(entry, this.#mode);
+			const mode = cellMode(entry, this.#mode, this.#language);
 			return html`
 				<li>
 					<button

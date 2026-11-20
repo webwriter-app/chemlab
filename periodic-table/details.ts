@@ -15,10 +15,18 @@ import {
 	SOURCES,
 	atomicWeightText,
 	categoryOf,
+	type DataValue,
 	type ElementReference,
 	type PeriodicTableSource,
 } from "./element-reference";
-import { celsiusFromKelvin, matterState, type MatterState, type TableMode } from "./phase";
+import {
+	celsiusFromKelvin,
+	halfLifeText,
+	isotopeText,
+	matterState,
+	type MatterState,
+	type TableMode,
+} from "./phase";
 import { format, strings, type Language, type Strings } from "./strings";
 
 /**
@@ -79,7 +87,7 @@ export function conditionsText(
  * @param language - Interface language.
  * @returns The number as text, for example `54,36`.
  */
-function numberText(value: number, language: Language): string {
+export function numberText(value: number, language: Language): string {
 	const text = String(Number(value.toFixed(2)));
 	return language === "de" ? text.replace(".", ",") : text;
 }
@@ -265,6 +273,30 @@ export function detailRows(
 			...(element.phase.status === "predicted" ? { qualifier: t.valuePredicted } : {}),
 		});
 	}
+	rows.push({
+		key: "radius",
+		label: t.fieldRadius,
+		section: "properties",
+		...numericRow(element.radius, (value) => `${numberText(value, language)}\u00A0pm`, t),
+	});
+	rows.push({
+		key: "electronegativity",
+		label: t.fieldElectronegativity,
+		section: "properties",
+		...numericRow(element.electronegativity, (value) => numberText(value, language), t),
+	});
+	rows.push({
+		key: "ionization",
+		label: t.fieldIonization,
+		section: "properties",
+		...numericRow(element.ionization, (value) => `${numberText(value, language)}\u00A0eV`, t),
+	});
+	rows.push({
+		key: "halfLife",
+		label: t.fieldHalfLife,
+		section: "properties",
+		...halfLifeRow(element, language, t),
+	});
 	// The thermal rows form their own section: the collapsed card ends before
 	// them, because the weight and the state answer the common question and the
 	// free block of the table only holds a few lines.
@@ -323,18 +355,34 @@ export function detailRows(
  * Picks the rows the collapsed card shows.
  *
  * The first row is always the standard atomic weight. The second one answers the
- * mode the table is in: the state at the chosen temperature, or the year the
- * element became known. The expanded card leaves these rows out of its sections,
- * so no value appears twice in one card.
+ * mode the table is in: the state at the chosen temperature, or the value the
+ * mode filters by. The expanded card leaves these rows out of its sections, so no
+ * value appears twice in one card.
  *
  * @param rows - Rows of the card.
  * @param mode - Mode of the table.
  * @returns The key rows in display order.
  */
 export function keyRows(rows: readonly DetailRow[], mode: TableMode): readonly DetailRow[] {
-	const answer = mode === "discovery" ? "discovery" : "phase";
+	const answer = MODE_ROW[mode];
 	return rows.filter((row) => row.key === "weight" || row.key === answer);
 }
+
+/**
+ * Row that answers each mode in the collapsed card.
+ *
+ * The temperature mode shares the state row with the off mode, because the card
+ * already renders that row at the chosen temperature.
+ */
+const MODE_ROW: Readonly<Record<TableMode, string>> = {
+	off: "phase",
+	temperature: "phase",
+	discovery: "discovery",
+	radius: "radius",
+	electronegativity: "electronegativity",
+	ionization: "ionization",
+	halfLife: "halfLife",
+};
 
 /**
  * Builds the value and qualifier of a temperature row.
@@ -354,6 +402,56 @@ function temperatureRow(
 		value: temperatureText(value.value, language),
 		...(value.status === "predicted" ? { qualifier: t.valuePredicted } : {}),
 	};
+}
+
+/**
+ * Builds the value and qualifier of a numeric row.
+ *
+ * @param value - Numeric value of the reference bundle.
+ * @param render - Renders the number with its unit.
+ * @param t - Interface strings.
+ * @returns The rendered value, or the reason why there is none.
+ */
+function numericRow(
+	value: DataValue<number>,
+	render: (value: number) => string,
+	t: Strings,
+): { readonly value: string; readonly qualifier?: string } {
+	if (value.status === "unavailable") return { value: t.valueUnavailable };
+	return {
+		value: render(value.value),
+		...(value.status === "predicted" ? { qualifier: t.valuePredicted } : {}),
+	};
+}
+
+/**
+ * Builds the value of the half-life row.
+ *
+ * A stable nuclide has no half-life, so the row says so instead of showing a
+ * number. A radioactive one names its isotope next to the duration, because the
+ * bundle stores the half-life of the most stable nuclide and not of the element.
+ *
+ * @param element - Element of the reference bundle.
+ * @param language - Interface language.
+ * @param t - Interface strings.
+ * @returns The rendered half-life.
+ */
+function halfLifeRow(
+	element: ElementReference,
+	language: Language,
+	t: Strings,
+): { readonly value: string } {
+	const record = element.halfLife;
+	switch (record.kind) {
+		case "stable":
+			return { value: t.halfLifeStable };
+		case "unavailable":
+			return { value: t.valueUnavailable };
+		case "value":
+			return {
+				value: `${halfLifeText(record.seconds, language)} (${isotopeText(record.massNumber, element.symbol)})`,
+			};
+	}
 }
 
 /**
@@ -412,6 +510,18 @@ export function sourceFieldText(field: string, t: Strings): string {
 			return t.fieldNoteCodes;
 		case "neutral ground-state subshell occupation":
 			return t.fieldShells;
+		case "radius.empirical":
+			return t.fieldRadius;
+		case "negativity.pauling":
+			return t.fieldElectronegativity;
+		case "ionization.values":
+			return t.fieldIonization;
+		case "nuclides.half_life_sec":
+			return t.fieldHalfLife;
+		case "nuclides.stable":
+			return t.fieldStableNuclide;
+		case "nuclides.m":
+			return t.fieldMassNumber;
 		default:
 			return field;
 	}

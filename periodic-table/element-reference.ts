@@ -112,6 +112,25 @@ export type ElementDiscovery =
 	| { readonly kind: "antiquity"; readonly provenance: Provenance }
 	| { readonly kind: "unavailable"; readonly provenance?: Provenance };
 
+/**
+ * Half-life of the longest-lived nuclide of an element.
+ *
+ * `stable` means the element has at least one nuclide the source marks stable,
+ * `value` names the longest-lived radioactive nuclide with its mass number and
+ * its half-life in seconds, and `unavailable` means the source has no record.
+ * A stable element carries no half-life: the number would describe a single
+ * nuclide the extract does not name.
+ */
+export type ElementHalfLife =
+	| { readonly kind: "stable"; readonly provenance: Provenance }
+	| {
+			readonly kind: "value";
+			readonly seconds: number;
+			readonly massNumber: number;
+			readonly provenance: Provenance;
+	  }
+	| { readonly kind: "unavailable"; readonly provenance?: Provenance };
+
 /** One element of the reference bundle. */
 export interface ElementReference {
 	/** Atomic number, 1–118. */
@@ -152,6 +171,14 @@ export interface ElementReference {
 	readonly sublimation: DataValue<number>;
 	/** When the element became known, see {@link ElementDiscovery}. */
 	readonly discovery: ElementDiscovery;
+	/** Empirical atomic radius in picometres. */
+	readonly radius: DataValue<number>;
+	/** Pauling electronegativity, without a unit. */
+	readonly electronegativity: DataValue<number>;
+	/** First ionization energy in electronvolts. */
+	readonly ionization: DataValue<number>;
+	/** Half-life of the longest-lived nuclide, see {@link ElementHalfLife}. */
+	readonly halfLife: ElementHalfLife;
 }
 
 /** Localised label of a teaching category. */
@@ -247,6 +274,16 @@ const ELEMENTS_BY_NUMBER: ReadonlyMap<number, ElementReference> = new Map(
 const PLACEMENT_BY_NUMBER: ReadonlyMap<number, PeriodicTablePlacement> = new Map(
 	Object.entries(PERIODIC_TABLE_PLACEMENT).map(([key, placement]) => [Number(key), placement]),
 );
+
+/**
+ * Reads the value of a data value.
+ *
+ * @param value Data value of the bundle.
+ * @returns The value, or `undefined` when the bundle has none.
+ */
+export function dataValue<T>(value: DataValue<T>): T | undefined {
+	return value.status === "unavailable" ? undefined : value.value;
+}
 
 /**
  * Looks up an element by atomic number.

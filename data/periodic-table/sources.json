@@ -1,7 +1,7 @@
 {
 	"schemaVersion": 1,
 	"retrieved": "2026-11-19",
-	"note": "Vendored generator inputs for the periodic table bundle. Every file under sources/ is byte-identical to the artifact named here; the generator verifies the digests before it reads a record. The parsed CIAAW and NIST files keep the upstream values verbatim and only restructure them, so the digests cover the restructured form.",
+	"note": "Vendored generator inputs for the periodic table bundle. Every file under sources/ is byte-identical to the artifact named here; the generator verifies the digests before it reads a record. The parsed CIAAW and NIST files keep the upstream values verbatim and only restructure them, so the digests cover the restructured form. A derived extract names the upstream artifact and its digest in its own header, because the upstream file is too large to vendor; the digest in this table covers the extract.",
 	"sources": {
 		"pse-info": {
 			"publisher": "pse-info.de (Paul Köhler)",
@@ -27,7 +27,28 @@
 				"temperature.melting",
 				"temperature.boiling",
 				"temperature.sublimation",
-				"discovery"
+				"discovery",
+				"radius.empirical",
+				"negativity.pauling",
+				"ionization.values"
+			]
+		},
+		"pse-info-nuclides": {
+			"publisher": "pse-info.de (Paul Köhler)",
+			"title": "PSE-info nuclide table, reduced to one nuclide per element",
+			"url": "https://github.com/komed3/periodic-table/blob/master/_db/nuclides.json",
+			"landingUrl": "https://pse-info.de/en/data",
+			"release": "2025-09-25",
+			"retrieved": "2026-11-20",
+			"license": "MIT",
+			"redistribution": "Derived extract, not the upstream file: the upstream table is 5.6 MB and lists every nuclide, so only one record per element is shipped. An element counts as stable when the upstream table marks any of its nuclides stable; otherwise the record keeps the nuclide with the longest half-life together with its mass number and that half-life in seconds. The extract names the upstream artifact, its digest and its size in its own header. The MIT licence requires the copyright notice and permission notice to travel with the data; both are reproduced in the attribution below.",
+			"attribution": "Nuclide data from PSE-info, © 2023–2026 Paul Köhler, released under the MIT licence (https://pse-info.de/en/data).",
+			"input": "sources/pse-info-nuclides.json",
+			"sha256": "c4ae4e63ec38fcca3c4c10364821f5c8d713f5dc0c9e8da5802688d9166b59da",
+			"fields": [
+				"nuclides.half_life_sec",
+				"nuclides.stable",
+				"nuclides.m"
 			]
 		},
 		"ciaaw": {

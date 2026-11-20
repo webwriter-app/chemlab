@@ -16,7 +16,7 @@
  * @module periodic-table/phase
  */
 
-import { ELEMENTS, type ElementReference } from "./element-reference";
+import { ELEMENTS, dataValue, type ElementReference } from "./element-reference";
 import type { Language } from "./strings";
 
 /** Aggregate state of an element at a given temperature. */
@@ -145,10 +145,101 @@ export const DISCOVERY_RANGE: { readonly min: number; readonly max: number } = (
 })();
 
 /** Which property the table colours its cells by. */
-export type TableMode = "off" | "temperature" | "discovery";
+export type TableMode =
+	| "off"
+	| "temperature"
+	| "discovery"
+	| "radius"
+	| "electronegativity"
+	| "ionization"
+	| "halfLife";
 
 /** Every mode the table offers, in the order of the switch. */
-export const TABLE_MODES: readonly TableMode[] = ["off", "temperature", "discovery"];
+export const TABLE_MODES: readonly TableMode[] = [
+	"off",
+	"temperature",
+	"discovery",
+	"radius",
+	"electronegativity",
+	"ionization",
+	"halfLife",
+];
+
+/** Bounds of a numeric mode, taken from the bundle. */
+export interface ModeRange {
+	/** Lowest slider value. */
+	readonly min: number;
+	/** Highest slider value. */
+	readonly max: number;
+}
+
+/**
+ * Collects the bounds of a numeric property over the bundle.
+ *
+ * The bounds are rounded outward to the slider step, so the first and the last
+ * position of the slider still show every element that carries a value.
+ *
+ * @param values Values of the property, without the elements that have none.
+ * @param step Slider step.
+ * @returns The bounds, or `0`–`0` when the bundle carries no value at all.
+ */
+function propertyRange(values: readonly number[], step: number): ModeRange {
+	let min = Number.POSITIVE_INFINITY;
+	let max = Number.NEGATIVE_INFINITY;
+	for (const value of values) {
+		if (value < min) min = value;
+		if (value > max) max = value;
+	}
+	if (!Number.isFinite(min)) return { min: 0, max: 0 };
+	const round = (value: number) => Number((value * 1e4).toFixed(0)) / 1e4;
+	return {
+		min: round(Math.floor(min / step) * step),
+		max: round(Math.ceil(max / step) * step),
+	};
+}
+
+/** Values of one numeric property, without the elements that have none. */
+function propertyValues(read: (element: ElementReference) => number | undefined): readonly number[] {
+	const values: number[] = [];
+	for (const element of ELEMENTS) {
+		const value = read(element);
+		if (value !== undefined) values.push(value);
+	}
+	return values;
+}
+
+/** Empirical atomic radii the radius mode spans, in picometres. */
+export const RADIUS_RANGE: ModeRange = propertyRange(
+	propertyValues((element) => dataValue(element.radius)),
+	1,
+);
+
+/** Pauling electronegativities the electronegativity mode spans. */
+export const ELECTRONEGATIVITY_RANGE: ModeRange = propertyRange(
+	propertyValues((element) => dataValue(element.electronegativity)),
+	0.01,
+);
+
+/** First ionization energies the ionization mode spans, in electronvolts. */
+export const IONIZATION_RANGE: ModeRange = propertyRange(
+	propertyValues((element) => dataValue(element.ionization)),
+	0.01,
+);
+
+/**
+ * Half-lives the half-life mode spans, as decadic logarithms of seconds.
+ *
+ * The range is logarithmic because the values cover more than thirty orders of
+ * magnitude: a linear slider would put every element but bismuth at its left
+ * end.
+ */
+export const HALF_LIFE_RANGE: ModeRange = (() => {
+	const logs = propertyValues((element) =>
+		element.halfLife.kind === "value" ? Math.log10(element.halfLife.seconds) : undefined,
+	);
+	const range = propertyRange(logs, 1);
+	return { min: range.min, max: range.max };
+})();
 
 /** The condition a mode evaluates at. */
 export interface ModeState {
@@ -158,13 +249,30 @@ export interface ModeState {
 	readonly temperatureK: number;
 	/** Year, used by the discovery mode. */
 	readonly year: number;
+	/** Largest empirical radius the radius mode shows, in picometres. */
+	readonly radiusPm: number;
+	/** Smallest Pauling electronegativity the electronegativity mode shows. */
+	readonly electronegativity: number;
+	/** Smallest first ionization energy the ionization mode shows, in electronvolts. */
+	readonly ionizationEv: number;
+	/** Smallest half-life the half-life mode shows, as the decadic logarithm of seconds. */
+	readonly halfLifeLogSeconds: number;
 }
 
-/** Mode state of a freshly loaded table: no mode, reference conditions. */
+/**
+ * Mode state of a freshly loaded table: no mode, reference conditions.
+ *
+ * Every numeric threshold starts at the end that hides nothing, so switching a
+ * mode on shows the whole table before the learner narrows it.
+ */
 export const DEFAULT_MODE_STATE: ModeState = {
 	mode: "off",
 	temperatureK: kelvinFromCelsius(TEMPERATURE_SLIDER.defaultCelsius),
 	year: DISCOVERY_RANGE.max,
+	radiusPm: RADIUS_RANGE.max,
+	electronegativity: ELECTRONEGATIVITY_RANGE.min,
+	ionizationEv: IONIZATION_RANGE.min,
+	halfLifeLogSeconds: HALF_LIFE_RANGE.min,
 };
 
 /** What a mode adds to one cell. */
@@ -177,19 +285,141 @@ export interface CellMode {
 	readonly hidden: boolean;
 }
 
+/** Seconds in a Julian year, the unit the half-life readout uses for long values. */
+const SECONDS_PER_YEAR = 31_557_600;
+
+/** Units the half-life readout picks from, largest first. */
+const HALF_LIFE_UNITS: readonly { readonly seconds: number; readonly symbol: string }[] = [
+	{ seconds: SECONDS_PER_YEAR, symbol: "a" },
+	{ seconds: 86_400, symbol: "d" },
+	{ seconds: 3_600, symbol: "h" },
+	{ seconds: 60, symbol: "min" },
+	{ seconds: 1, symbol: "s" },
+	{ seconds: 1e-3, symbol: "ms" },
+	{ seconds: 1e-6, symbol: "µs" },
+];
+
+/** Superscript digits, so an exponent reads as a power instead of a caret. */
+const SUPERSCRIPT_DIGITS = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"];
+
+/**
+ * Renders an exponent as superscript digits.
+ *
+ * @param exponent Exponent to render.
+ * @returns The exponent, for example `⁹` or `⁻¹¹`.
+ */
+function superscript(exponent: number): string {
+	return String(exponent)
+		.split("")
+		.map((character) => (character === "-" ? "⁻" : SUPERSCRIPT_DIGITS[Number(character)] ?? character))
+		.join("");
+}
+
+/**
+ * Renders a number with a fixed number of significant digits.
+ *
+ * Values of four digits and more switch to a power of ten, so a half-life of
+ * 4.47 billion years stays readable in a cell corner.
+ *
+ * @param value Number to render.
+ * @param digits Significant digits to keep.
+ * @param language Interface language, which decides the decimal separator.
+ * @returns The number as text, for example `1,83` or `4,47·10⁹`.
+ */
+function significantText(value: number, digits: number, language: Language): string {
+	const exponent = Math.floor(Math.log10(value));
+	if (exponent >= 4) {
+		const mantissa = value / 10 ** exponent;
+		return `${localizeNumber(Number(mantissa.toFixed(digits - 1)), language)}·10${superscript(exponent)}`;
+	}
+	const decimals = Math.max(0, digits - 1 - exponent);
+	return localizeNumber(Number(value.toFixed(decimals)), language);
+}
+
+/**
+ * Picks the unit a half-life reads best in.
+ *
+ * The unit is the largest one that still leaves at least one of it, so the
+ * mantissa stays between 1 and 1000: 8.1 hours instead of 0.338 days, and 22
+ * minutes instead of 0.015 days. A value below the smallest unit keeps that one.
+ *
+ * @param seconds Half-life in seconds.
+ * @returns The unit and its length in seconds.
+ */
+function halfLifeUnit(seconds: number): { readonly seconds: number; readonly symbol: string } {
+	return (
+		HALF_LIFE_UNITS.find((unit) => seconds / unit.seconds >= 1) ??
+		HALF_LIFE_UNITS[HALF_LIFE_UNITS.length - 1]
+	);
+}
+
+/**
+ * Renders a half-life for the detail card.
+ *
+ * @param seconds Half-life in seconds.
+ * @param language Interface language.
+ * @param digits Significant digits to keep.
+ * @returns The half-life with its unit, for example `4,47·10⁹ a`.
+ */
+export function halfLifeText(seconds: number, language: Language, digits = 3): string {
+	const unit = halfLifeUnit(seconds);
+	return `${significantText(seconds / unit.seconds, digits, language)} ${unit.symbol}`;
+}
+
+/**
+ * Renders a half-life for the corner badge of a cell.
+ *
+ * The badge has the width of the atomic number beside it, so it keeps two
+ * significant digits and drops the mantissa once the value reaches ten
+ * thousand: `0,58 ms`, `8,1 h`, `10⁹ a`.
+ *
+ * @param seconds Half-life in seconds.
+ * @param language Interface language.
+ * @returns The compact half-life.
+ */
+export function halfLifeBadge(seconds: number, language: Language): string {
+	const unit = halfLifeUnit(seconds);
+	const amount = seconds / unit.seconds;
+	const exponent = Math.floor(Math.log10(amount));
+	const text = exponent >= 4 ? `10${superscript(exponent)}` : significantText(amount, 2, language);
+	return `${text} ${unit.symbol}`;
+}
+
+/**
+ * Renders the isotope a half-life belongs to.
+ *
+ * @param massNumber Mass number of the nuclide.
+ * @param symbol Element symbol.
+ * @returns The nuclide, for example `²³⁸U`.
+ */
+export function isotopeText(massNumber: number, symbol: string): string {
+	return `${superscript(massNumber)}${symbol}`;
+}
+
 /**
  * Derives the mode decoration of one cell.
  *
  * A mode hides the elements it cannot place instead of dimming them: an element
- * without thermal data has no state at any temperature, and an element that was
- * not yet known has no place on the timeline. A dimmed tile would still occupy
- * its slot and read as a value, so the table drops it and leaves a hole.
+ * without thermal data has no state at any temperature, an element that was not
+ * yet known has no place on the timeline, and an element without a value has
+ * nothing to compare with a threshold. A dimmed tile would still occupy its slot
+ * and read as a value, so the table drops it and leaves a hole.
+ *
+ * The numeric modes read their slider as a threshold and keep the value in the
+ * corner badge. The radius hides the elements above the threshold, the other
+ * three hide the ones below it, so every mode starts at the end that hides
+ * nothing.
  *
  * @param element Element of the reference bundle.
  * @param state Current mode state.
+ * @param language Interface language, which decides the decimal separator.
  * @returns The state colour, the corner badge and whether the cell is hidden.
  */
-export function cellMode(element: ElementReference, state: ModeState): CellMode {
+export function cellMode(
+	element: ElementReference,
+	state: ModeState,
+	language: Language = "en",
+): CellMode {
 	switch (state.mode) {
 		case "off":
 			return { state: null, badge: null, hidden: false };
@@ -203,6 +433,47 @@ export function cellMode(element: ElementReference, state: ModeState): CellMode 
 				state: null,
 				badge: year === undefined ? null : String(year),
 				hidden: !knownAt(element, state.year),
+			};
+		}
+		case "radius": {
+			const radius = dataValue(element.radius);
+			if (radius === undefined) return { state: null, badge: null, hidden: true };
+			return {
+				state: null,
+				badge: String(radius),
+				hidden: radius > state.radiusPm,
+			};
+		}
+		case "electronegativity": {
+			const value = dataValue(element.electronegativity);
+			if (value === undefined) return { state: null, badge: null, hidden: true };
+			return {
+				state: null,
+				badge: significantText(value, 3, language),
+				hidden: value < state.electronegativity,
+			};
+		}
+		case "ionization": {
+			const value = dataValue(element.ionization);
+			if (value === undefined) return { state: null, badge: null, hidden: true };
+			return {
+				state: null,
+				badge: significantText(value, 3, language),
+				hidden: value < state.ionizationEv,
+			};
+		}
+		case "halfLife": {
+			if (element.halfLife.kind === "stable") {
+				return { state: null, badge: "∞", hidden: false };
+			}
+			if (element.halfLife.kind === "unavailable") {
+				return { state: null, badge: null, hidden: true };
+			}
+			const seconds = element.halfLife.seconds;
+			return {
+				state: null,
+				badge: halfLifeBadge(seconds, language),
+				hidden: Math.log10(seconds) < state.halfLifeLogSeconds,
 			};
 		}
 	}

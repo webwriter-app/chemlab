@@ -1,18 +1,30 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ELEMENTS, elementByAtomicNumber } from "../periodic-table/element-reference";
+import {
+	ELEMENTS,
+	elementByAtomicNumber,
+	type ElementReference,
+} from "../periodic-table/element-reference";
 import {
 	DISCOVERY_RANGE,
 	DEFAULT_MODE_STATE,
+	ELECTRONEGATIVITY_RANGE,
+	HALF_LIFE_RANGE,
+	IONIZATION_RANGE,
+	RADIUS_RANGE,
 	TEMPERATURE_SLIDER,
 	TABLE_MODES,
 	cellMode,
 	celsiusFromKelvin,
 	celsiusText,
 	discoveryYear,
+	halfLifeBadge,
+	halfLifeText,
+	isotopeText,
 	kelvinFromCelsius,
 	knownAt,
 	matterState,
+	type TableMode,
 } from "../periodic-table/phase";
 
 const element = (atomicNumber: number) => {
@@ -84,7 +96,47 @@ test("the default mode state shows the reference conditions", () => {
 	assert.equal(DEFAULT_MODE_STATE.mode, "off");
 	assert.equal(DEFAULT_MODE_STATE.temperatureK, 298.15);
 	assert.equal(DEFAULT_MODE_STATE.year, DISCOVERY_RANGE.max);
-	assert.deepEqual(TABLE_MODES, ["off", "temperature", "discovery"]);
+	assert.deepEqual(TABLE_MODES, [
+		"off",
+		"temperature",
+		"discovery",
+		"radius",
+		"electronegativity",
+		"ionization",
+		"halfLife",
+	]);
+});
+
+test("every threshold starts at the end that hides nothing", () => {
+	// The radius hides the elements above the threshold, the other three hide the
+	// ones below it, so the permissive end differs between them.
+	assert.equal(DEFAULT_MODE_STATE.radiusPm, RADIUS_RANGE.max);
+	assert.equal(DEFAULT_MODE_STATE.electronegativity, ELECTRONEGATIVITY_RANGE.min);
+	assert.equal(DEFAULT_MODE_STATE.ionizationEv, IONIZATION_RANGE.min);
+	assert.equal(DEFAULT_MODE_STATE.halfLifeLogSeconds, HALF_LIFE_RANGE.min);
+	// At the default threshold only the elements without a value are hidden, so
+	// switching a mode on never drops an element the source could place.
+	const hidden = (mode: TableMode) =>
+		ELEMENTS.filter((entry) => cellMode(entry, { ...DEFAULT_MODE_STATE, mode }).hidden).map(
+			(entry) => entry.symbol,
+		);
+	const withoutValue = (pick: (entry: ElementReference) => { readonly status: string }) =>
+		ELEMENTS.filter((entry) => pick(entry).status === "unavailable").map((entry) => entry.symbol);
+	assert.deepEqual(hidden("radius"), withoutValue((entry) => entry.radius));
+	assert.deepEqual(hidden("electronegativity"), withoutValue((entry) => entry.electronegativity));
+	assert.deepEqual(hidden("ionization"), []);
+	assert.deepEqual(hidden("halfLife"), []);
+	assert.deepEqual(hidden("discovery"), []);
+	assert.deepEqual(hidden("off"), []);
+});
+
+test("the property ranges cover the bundle", () => {
+	assert.deepEqual(RADIUS_RANGE, { min: 25, max: 265 });
+	assert.deepEqual(ELECTRONEGATIVITY_RANGE, { min: 0.7, max: 3.98 });
+	assert.deepEqual(IONIZATION_RANGE, { min: 3.89, max: 24.59 });
+	// The half-life spans more than thirty orders of magnitude, so the slider
+	// works in decades of seconds.
+	assert.deepEqual(HALF_LIFE_RANGE, { min: -4, max: 27 });
 });
 
 test("a cell carries the state, the badge and the hiding of its mode", () => {
@@ -134,4 +186,67 @@ test("the temperature mode hides the elements it cannot place", () => {
 			false,
 		);
 	}
+});
+
+test("the numeric modes read their slider as a threshold", () => {
+	const iron = element(26);
+	const radius = (radiusPm: number) =>
+		cellMode(iron, { ...DEFAULT_MODE_STATE, mode: "radius", radiusPm });
+	assert.deepEqual(radius(265), { state: null, badge: "126", hidden: false });
+	assert.deepEqual(radius(126), { state: null, badge: "126", hidden: false }, "the bound counts as shown");
+	assert.deepEqual(radius(125), { state: null, badge: "126", hidden: true });
+
+	const electronegativity = (value: number) =>
+		cellMode(iron, { ...DEFAULT_MODE_STATE, mode: "electronegativity", electronegativity: value });
+	assert.deepEqual(electronegativity(0.7), { state: null, badge: "1.83", hidden: false });
+	assert.deepEqual(electronegativity(1.83), { state: null, badge: "1.83", hidden: false });
+	assert.deepEqual(electronegativity(1.84), { state: null, badge: "1.83", hidden: true });
+
+	const ionization = (value: number) =>
+		cellMode(iron, { ...DEFAULT_MODE_STATE, mode: "ionization", ionizationEv: value });
+	assert.deepEqual(ionization(3.89), { state: null, badge: "7.9", hidden: false });
+	assert.deepEqual(ionization(7.91), { state: null, badge: "7.9", hidden: true });
+
+	const halfLife = (logSeconds: number) =>
+		cellMode(iron, { ...DEFAULT_MODE_STATE, mode: "halfLife", halfLifeLogSeconds: logSeconds });
+	assert.deepEqual(halfLife(-4), { state: null, badge: "∞", hidden: false }, "a stable nuclide never hides");
+	assert.deepEqual(halfLife(27), { state: null, badge: "∞", hidden: false });
+});
+
+test("a numeric mode hides the elements without a value", () => {
+	// Helium carries neither an empirical radius nor a Pauling electronegativity.
+	const helium = element(2);
+	assert.equal(cellMode(helium, { ...DEFAULT_MODE_STATE, mode: "radius" }).hidden, true);
+	assert.equal(cellMode(helium, { ...DEFAULT_MODE_STATE, mode: "electronegativity" }).hidden, true);
+	assert.equal(cellMode(helium, { ...DEFAULT_MODE_STATE, mode: "ionization" }).hidden, false);
+	assert.equal(cellMode(helium, { ...DEFAULT_MODE_STATE, mode: "radius" }).badge, null);
+});
+
+test("the half-life mode keeps the radioactive elements above the threshold", () => {
+	const technetium = element(43);
+	const bismuth = element(83);
+	const threshold = (logSeconds: number) =>
+		cellMode(technetium, { ...DEFAULT_MODE_STATE, mode: "halfLife", halfLifeLogSeconds: logSeconds });
+	assert.equal(threshold(14).hidden, false, "4.2 million years is longer than 10^14 s");
+	assert.equal(threshold(15).hidden, true);
+	assert.equal(threshold(14).badge, "10⁶ a");
+	assert.equal(
+		cellMode(bismuth, { ...DEFAULT_MODE_STATE, mode: "halfLife" }).badge,
+		"10¹⁹ a",
+	);
+});
+
+test("a half-life is rendered in the unit that keeps it short", () => {
+	assert.equal(halfLifeText(0.00058, "en"), "580 µs");
+	assert.equal(halfLifeText(0.051, "en"), "51 ms");
+	assert.equal(halfLifeText(29160, "en"), "8.1 h");
+	assert.equal(halfLifeText(1320, "en"), "22 min");
+	assert.equal(halfLifeText(330350.4, "en"), "3.82 d");
+	assert.equal(halfLifeText(140996345254477060, "de"), "4,47·10⁹ a");
+	assert.equal(halfLifeText(140996345254477060, "en", 2), "4.5·10⁹ a");
+	assert.equal(halfLifeBadge(0.00058, "de"), "580 µs");
+	assert.equal(halfLifeBadge(29160, "en"), "8.1 h");
+	assert.equal(halfLifeBadge(140996345254477060, "en"), "10⁹ a");
+	assert.equal(isotopeText(238, "U"), "²³⁸U");
+	assert.equal(isotopeText(294, "Og"), "²⁹⁴Og");
 });

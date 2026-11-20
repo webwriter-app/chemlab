@@ -14,6 +14,7 @@ import {
 	temperatureText,
 	weightText,
 } from "../periodic-table/details";
+import { TABLE_MODES, type TableMode } from "../periodic-table/phase";
 import { strings } from "../periodic-table/strings";
 
 const element = (atomicNumber: number) => {
@@ -22,7 +23,7 @@ const element = (atomicNumber: number) => {
 	return found;
 };
 
-test("the detail card lists the eleven reference fields in a fixed order", () => {
+test("the detail card lists the fifteen reference fields in a fixed order", () => {
 	const rows = detailRows(element(26), "en");
 	assert.deepEqual(
 		rows.map((row) => row.key),
@@ -33,6 +34,10 @@ test("the detail card lists the eleven reference fields in a fixed order", () =>
 			"block",
 			"weight",
 			"phase",
+			"radius",
+			"electronegativity",
+			"ionization",
+			"halfLife",
 			"melting",
 			"boiling",
 			"discovery",
@@ -55,6 +60,10 @@ test("every row belongs to one section of the card", () => {
 	assert.equal(sections.get("block"), "position");
 	assert.equal(sections.get("weight"), "properties");
 	assert.equal(sections.get("phase"), "properties");
+	assert.equal(sections.get("radius"), "properties");
+	assert.equal(sections.get("electronegativity"), "properties");
+	assert.equal(sections.get("ionization"), "properties");
+	assert.equal(sections.get("halfLife"), "properties");
 	assert.equal(sections.get("melting"), "temperatures");
 	assert.equal(sections.get("boiling"), "temperatures");
 	assert.equal(sections.get("discovery"), "history");
@@ -73,13 +82,17 @@ test("every row belongs to one section of the card", () => {
 });
 
 test("the collapsed card shows the weight and the answer of the mode", () => {
-	const keys = (atomicNumber: number, mode: "off" | "temperature" | "discovery") =>
+	const keys = (atomicNumber: number, mode: TableMode) =>
 		keyRows(detailRows(element(atomicNumber), "en"), mode).map((row) => row.key);
 	assert.deepEqual(keys(26, "off"), ["weight", "phase"]);
 	assert.deepEqual(keys(26, "temperature"), ["weight", "phase"]);
 	assert.deepEqual(keys(26, "discovery"), ["weight", "discovery"]);
+	assert.deepEqual(keys(26, "radius"), ["weight", "radius"]);
+	assert.deepEqual(keys(26, "electronegativity"), ["weight", "electronegativity"]);
+	assert.deepEqual(keys(26, "ionization"), ["weight", "ionization"]);
+	assert.deepEqual(keys(26, "halfLife"), ["weight", "halfLife"]);
 	for (const entry of ELEMENTS) {
-		for (const mode of ["off", "temperature", "discovery"] as const) {
+		for (const mode of TABLE_MODES) {
 			const rows = detailRows(entry, "en");
 			const key = keyRows(rows, mode);
 			assert.equal(key.length, 2, `${entry.symbol} ${mode}`);
@@ -101,10 +114,10 @@ test("the state row carries the colour the card draws next to it", () => {
 	}
 });
 
-test("an element that sublimes gains a twelfth row", () => {
+test("an element that sublimes gains a sixteenth row", () => {
 	const carbon = detailRows(element(6), "en").map((row) => row.key);
 	assert.ok(carbon.includes("sublimation"));
-	assert.equal(carbon.length, 12);
+	assert.equal(carbon.length, 16);
 	assert.ok(!detailRows(element(26), "en").some((row) => row.key === "sublimation"));
 });
 
@@ -243,4 +256,42 @@ test("a source field path is localized and an unknown one stays visible", () => 
 			assert.ok(!text.includes("."), `${field} is not localized`);
 		}
 	}
+});
+
+test("the property rows render their value with its unit", () => {
+	const row = (atomicNumber: number, key: string, language: "en" | "de" = "en") =>
+		detailRows(element(atomicNumber), language).find((entry) => entry.key === key);
+	assert.equal(row(26, "radius")?.value, "126\u00A0pm");
+	assert.equal(row(26, "electronegativity")?.value, "1.83");
+	assert.equal(row(26, "electronegativity", "de")?.value, "1,83");
+	assert.equal(row(26, "ionization")?.value, "7.9\u00A0eV");
+	assert.equal(row(26, "halfLife")?.value, "stable");
+	assert.equal(row(26, "halfLife", "de")?.value, "stabil");
+	assert.equal(row(26, "radius")?.qualifier, undefined);
+});
+
+test("a missing property says so and a predicted one is marked", () => {
+	// Helium carries neither an empirical radius nor a Pauling electronegativity.
+	assert.equal(
+		detailRows(element(2), "en").find((row) => row.key === "radius")?.value,
+		"Unavailable",
+	);
+	assert.equal(
+		detailRows(element(2), "en").find((row) => row.key === "electronegativity")?.value,
+		"Unavailable",
+	);
+	// Oganesson is the last element whose radius and ionization energy are extrapolated.
+	const oganesson = detailRows(element(118), "en");
+	assert.equal(oganesson.find((row) => row.key === "radius")?.qualifier, "predicted");
+	assert.equal(oganesson.find((row) => row.key === "ionization")?.qualifier, "predicted");
+	assert.equal(oganesson.find((row) => row.key === "electronegativity")?.value, "Unavailable");
+});
+
+test("a radioactive element names the isotope its half-life belongs to", () => {
+	const uranium = detailRows(element(92), "en").find((row) => row.key === "halfLife");
+	assert.equal(uranium?.value, "4.47·10⁹ a (²³⁸U)");
+	const german = detailRows(element(92), "de").find((row) => row.key === "halfLife");
+	assert.equal(german?.value, "4,47·10⁹ a (²³⁸U)");
+	const technetium = detailRows(element(43), "en").find((row) => row.key === "halfLife");
+	assert.equal(technetium?.value, "4.21·10⁶ a (⁹⁷Tc)");
 });

@@ -264,6 +264,96 @@ function buildDiscovery(source, curation, provenance) {
 }
 
 /**
+ * Builds the empirical atomic radius of an element.
+ *
+ * The source marks extrapolated values with a `*` flag, so no separate policy is
+ * needed: every transactinide radius the table carries is flagged.
+ *
+ * @param {object} source PSE-info record.
+ * @param {object} provenance Provenance of the value.
+ * @returns {object} Radius record in picometres.
+ */
+function buildRadius(source, provenance) {
+	const entry = source.radius?.empirical;
+	const value = entry?.value;
+	if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+		return { status: "unavailable", provenance };
+	}
+	assert(entry.unit === "pm", `unit of ${source.symbol}.radius is ${entry.unit}, expected pm`);
+	return { status: entry["*"] === true ? "predicted" : "reported", value, provenance };
+}
+
+/**
+ * Builds the Pauling electronegativity of an element.
+ *
+ * The source keeps the Pauling scale as a plain number without a prediction
+ * flag, and it carries no value for any element from rutherfordium on, so every
+ * value it does state counts as reported.
+ *
+ * @param {object} source PSE-info record.
+ * @param {object} provenance Provenance of the value.
+ * @returns {object} Electronegativity record.
+ */
+function buildElectronegativity(source, provenance) {
+	const value = source.negativity?.pauling;
+	if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+		return { status: "unavailable", provenance };
+	}
+	return { status: "reported", value, provenance };
+}
+
+/**
+ * Builds the first ionization energy of an element.
+ *
+ * The source lists the ionization energies in order, so the first entry is the
+ * energy that removes the outermost electron.
+ *
+ * @param {object} source PSE-info record.
+ * @param {object} provenance Provenance of the value.
+ * @returns {object} Ionization record in electronvolts.
+ */
+function buildIonization(source, provenance) {
+	const record = source.ionization;
+	const value = record?.values?.[0];
+	if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+		return { status: "unavailable", provenance };
+	}
+	assert(record.unit === "eV", `unit of ${source.symbol}.ionization is ${record.unit}, expected eV`);
+	return { status: record["*"] === true ? "predicted" : "reported", value, provenance };
+}
+
+/**
+ * Builds the half-life record of an element.
+ *
+ * The nuclide extract keeps one record per element: either the element has a
+ * stable nuclide, or the record names the longest-lived one with its mass number
+ * and its half-life in seconds. A stable element therefore carries no half-life,
+ * because the value would describe a single nuclide the extract does not name.
+ *
+ * @param {object} source PSE-info record.
+ * @param {object} nuclides Nuclide extract.
+ * @param {object} provenance Provenance of the value.
+ * @returns {object} Half-life record.
+ */
+function buildHalfLife(source, nuclides, provenance) {
+	const key = source.symbol.toLowerCase();
+	const record = nuclides.elements[key];
+	if (!record) return { kind: "unavailable", provenance };
+	assert(record.symbol === source.symbol, `nuclide record of ${source.symbol} names ${record.symbol}`);
+	if (record.stable === true) return { kind: "stable", provenance };
+	const seconds = record.halfLifeSeconds;
+	assert(
+		typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0,
+		`half-life of ${source.symbol} is ${seconds}`,
+	);
+	assert(
+		Number.isInteger(record.massNumber) && record.massNumber > 0,
+		`mass number of ${source.symbol} is ${record.massNumber}`,
+	);
+	return { kind: "value", seconds, massNumber: record.massNumber, provenance };
+}
+
+/**
  * Builds one element record.
  *
  * @param {number} atomicNumber Atomic number.
@@ -271,7 +361,7 @@ function buildDiscovery(source, curation, provenance) {
  * @returns {object} Element record.
  */
 function buildElement(atomicNumber, context) {
-	const { pseByNumber, ciaawByNumber, nistByNumber, curation } = context;
+	const { pseByNumber, ciaawByNumber, nistByNumber, nuclides, curation } = context;
 	const source = pseByNumber.get(atomicNumber);
 	const weightEntry = ciaawByNumber.get(atomicNumber);
 	assert(source, `PSE-info has no record for Z = ${atomicNumber}`);
@@ -353,6 +443,13 @@ function buildElement(atomicNumber, context) {
 		boiling,
 		sublimation,
 		discovery: buildDiscovery(source, curation, pseProvenance),
+		radius: buildRadius(source, pseProvenance),
+		electronegativity: buildElectronegativity(source, pseProvenance),
+		ionization: buildIonization(source, pseProvenance),
+		halfLife: buildHalfLife(source, nuclides, {
+			sourceId: "pse-info-nuclides",
+			locator: `nuclides.json#${key}`,
+		}),
 	};
 }
 
@@ -409,6 +506,31 @@ function validate(elements, context) {
 				`discovery year of ${element.symbol} is out of range`,
 			);
 		}
+		const radius = element.radius.value;
+		if (radius !== undefined) {
+			assert(radius >= 20 && radius <= 300, `radius of ${element.symbol} is ${radius} pm`);
+		}
+		const electronegativity = element.electronegativity.value;
+		if (electronegativity !== undefined) {
+			assert(
+				electronegativity >= 0.5 && electronegativity <= 4.5,
+				`electronegativity of ${element.symbol} is ${electronegativity}`,
+			);
+		}
+		const ionization = element.ionization.value;
+		if (ionization !== undefined) {
+			assert(ionization >= 3 && ionization <= 25, `ionization energy of ${element.symbol} is ${ionization} eV`);
+		}
+		if (element.halfLife.kind === "value") {
+			assert(
+				element.halfLife.seconds > 0 && Number.isFinite(element.halfLife.seconds),
+				`half-life of ${element.symbol} is ${element.halfLife.seconds} s`,
+			);
+			assert(
+				element.halfLife.massNumber >= element.atomicNumber,
+				`mass number of ${element.symbol} is below its atomic number`,
+			);
+		}
 	}
 	for (let z = 1; z <= 118; z++) assert(numbers.has(z), `missing element Z = ${z}`);
 
@@ -423,6 +545,27 @@ function validate(elements, context) {
 	assert(
 		withoutTemperature.length <= 10,
 		`too many elements without a temperature value: ${withoutTemperature.map((element) => element.symbol).join(", ")}`,
+	);
+
+	// The three numeric properties are incomplete in the source by nature: the
+	// empirical radius is missing for the noble gases, the Pauling scale stops at
+	// rutherfordium, and only the ionization energy covers every element. The
+	// counts keep a silent source change from emptying a mode.
+	const count = (predicate) => elements.filter(predicate).length;
+	assert(count((element) => element.radius.value !== undefined) >= 100, "too few empirical radii");
+	assert(
+		count((element) => element.electronegativity.value !== undefined) >= 90,
+		"too few Pauling electronegativities",
+	);
+	assert(
+		count((element) => element.ionization.value !== undefined) === 118,
+		"the first ionization energy must cover every element",
+	);
+	const stableNuclides = count((element) => element.halfLife.kind === "stable");
+	assert(stableNuclides === 80, `expected 80 elements with a stable nuclide, got ${stableNuclides}`);
+	assert(
+		count((element) => element.halfLife.kind === "unavailable") === 0,
+		"every element must carry a half-life record",
 	);
 
 	const placements = new Map();
@@ -545,6 +688,47 @@ function validateRepresentativeCases(byNumber) {
 	);
 	assert(tennessine.melting.status === "predicted", "tennessine melting point must be predicted");
 	assert(oganesson.melting.status === "predicted", "oganesson melting point must be predicted");
+
+	assert(iron.radius.value === 126, `iron radius is ${iron.radius.value}`);
+	assert(iron.electronegativity.value === 1.83, `iron electronegativity is ${iron.electronegativity.value}`);
+	assert(iron.ionization.value === 7.9024681, `iron ionization energy is ${iron.ionization.value}`);
+	assert(iron.halfLife.kind === "stable", "iron must have a stable nuclide");
+
+	assert(helium.radius.status === "unavailable", "helium must have no empirical radius");
+	assert(helium.electronegativity.status === "unavailable", "helium must have no Pauling electronegativity");
+
+	assert(oganesson.radius.status === "predicted", "oganesson radius must be predicted");
+	assert(oganesson.ionization.status === "predicted", "oganesson ionization energy must be predicted");
+
+	const technetiumHalfLife = technetium.halfLife;
+	assert(
+		technetiumHalfLife.kind === "value" && technetiumHalfLife.massNumber === 97,
+		"technetium must carry the half-life of Tc-97",
+	);
+	assert(
+		Math.abs(technetiumHalfLife.seconds - 132854658353032.31) < 1,
+		`technetium half-life is ${technetiumHalfLife.seconds} s`,
+	);
+
+	const bismuth = byNumber.get(83);
+	assert(
+		bismuth.halfLife.kind === "value" && bismuth.halfLife.massNumber === 209,
+		"bismuth must carry the half-life of Bi-209",
+	);
+	assert(
+		Math.abs(bismuth.halfLife.seconds - 6.342942120892992e26) < 1e20,
+		`bismuth half-life is ${bismuth.halfLife.seconds} s`,
+	);
+
+	const oganessonHalfLife = oganesson.halfLife;
+	assert(
+		oganessonHalfLife.kind === "value" && oganessonHalfLife.massNumber === 294,
+		"oganesson must carry the half-life of Og-294",
+	);
+	assert(
+		Math.abs(oganessonHalfLife.seconds - 0.00058) < 1e-9,
+		`oganesson half-life is ${oganessonHalfLife.seconds} s`,
+	);
 }
 
 /**
@@ -685,10 +869,12 @@ async function main() {
 	const pse = await readJson(join(DATA_DIR, "sources", "pse-info-elements.json"));
 	const ciaaw = await readJson(join(DATA_DIR, "sources", "ciaaw-atomic-weights.json"));
 	const nist = await readJson(join(DATA_DIR, "sources", "nist-configurations.json"));
+	const nuclides = await readJson(join(DATA_DIR, "sources", "pse-info-nuclides.json"));
 
 	const context = {
 		sources,
 		curation,
+		nuclides,
 		pseByNumber: new Map(Object.values(pse).map((entry) => [entry.number, entry])),
 		ciaawByNumber: new Map(ciaaw.map((entry) => [entry.z, entry])),
 		nistByNumber: new Map(nist.map((entry) => [entry.z, entry])),
