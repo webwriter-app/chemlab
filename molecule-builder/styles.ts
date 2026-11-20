@@ -74,6 +74,10 @@ export const builderStyles = css`
 	.surface .fields { flex-direction: column; align-items: stretch; gap: .4rem; }
 	.surface .fields label { display: grid; gap: .15rem; }
 	.surface select { inline-size: 100%; }
+	/* The popup box is absolutely positioned but carries no z-index of its own,
+	   so the canvas, which is positioned later in tree order, painted over it.
+	   The header keeps its popups above the workspace and the palette handle. */
+	.document sl-popup::part(popup) { z-index: 4; }
 	.workspace {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
