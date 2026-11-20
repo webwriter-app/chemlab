@@ -1,5 +1,7 @@
-import { elementByAtomicNumber } from "../periodic-table/element-reference";
+import { categoryOf, elementByAtomicNumber } from "../periodic-table/element-reference";
 import { cartesian, cellVectors, type Crystal, type Point3, type Site } from "./structure";
+
+import { atomRadius, ionicRadius, type Radius } from "./radii";
 
 export function siteIon(site: Pick<Site, "atomicNumber" | "charge" | "ion">): string | undefined {
 	if (site.ion) return site.ion;
@@ -53,4 +55,57 @@ export function latticePositions(crystal: Crystal, repeats: number): Point3[] {
 		}
 	}
 	return positions;
+}
+
+// Coordination of the indicated crystal phases, including rock salt, corundum,
+// tenorite and rutile. A formula alone cannot establish a coordination number.
+const sixCoordinateSalts = new Set([
+	"Natriumchlorid", "Natriumbromid", "Natriumiodid", "Kaliumchlorid", "Kaliumbromid", "Kaliumiodid",
+	"Silberchlorid", "Magnesiumoxid", "Calciumoxid",
+]);
+const oxideCoordination: Readonly<Partial<Record<string, Record<number, number>>>> = {
+	"Eisen(III)-oxid": { 8: 4, 26: 6 }, "Kupfer(II)-oxid": { 8: 4, 29: 4 },
+	"Mangan(IV)-oxid": { 8: 3, 25: 6 }, "Bariumsulfat": { 56: 12 },
+};
+
+export function monatomicCharge(site: Site): number {
+	const ion = siteIon(site);
+	const symbol = elementByAtomicNumber(site.atomicNumber).symbol;
+	const suffix = ion?.startsWith(symbol) ? ion.slice(symbol.length) : "";
+	if (!/^[¹²³⁴⁵⁶⁷⁸]?[⁺⁻]$/.test(suffix)) return site.charge;
+	const magnitude = suffix.length === 1 ? 1 : "⁰¹²³⁴⁵⁶⁷⁸".indexOf(suffix[0]);
+	return suffix.endsWith("⁺") ? magnitude : -magnitude;
+}
+
+/** Use half the nearest-neighbour spacing for a bulk elemental metal phase. */
+function metallicRadius(crystal: Crystal, site: Site, vectors: ReturnType<typeof cellVectors>): Radius | undefined {
+	const category = categoryOf(site.atomicNumber);
+	if (!crystal.source || !(category?.endsWith("-metal") || category === "lanthanide" || category === "actinide")
+		|| !crystal.sites.every(other => other.atomicNumber === site.atomicNumber && !siteIon(other))) return undefined;
+	let min = Infinity;
+	for (const other of crystal.sites) {
+		const delta = other.fractional.map((n, i) => n - site.fractional[i]);
+		for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) for (let z = -1; z <= 1; z++) {
+			const length = Math.hypot(...cartesian(vectors, [delta[0] + x, delta[1] + y, delta[2] + z]));
+			if (length > 1e-6) min = Math.min(min, length);
+		}
+	}
+	return Number.isFinite(min) ? { pm: Math.round(min * 500) / 10, model: "metallic" } : undefined;
+}
+
+const radiiByCrystal = new WeakMap<Crystal, ReadonlyMap<number, Radius>>();
+
+export function crystalRadii(crystal: Crystal): ReadonlyMap<number, Radius> {
+	const cached = radiiByCrystal.get(crystal);
+	if (cached) return cached;
+	const vectors = cellVectors(crystal.cell);
+	const radii = new Map<number, Radius>(crystal.sites.map(site => {
+		const charge = monatomicCharge(site);
+		if (!charge) return [site.id, metallicRadius(crystal, site, vectors) ?? atomRadius(site.atomicNumber)];
+		const coordination = crystal.source && crystal.catalogKey && (sixCoordinateSalts.has(crystal.catalogKey)
+			? 6 : oxideCoordination[crystal.catalogKey]?.[site.atomicNumber]);
+		return [site.id, coordination && ionicRadius(site.atomicNumber, charge, coordination) || { pm: 80, model: "schematic" }];
+	}));
+	radiiByCrystal.set(crystal, radii);
+	return radii;
 }

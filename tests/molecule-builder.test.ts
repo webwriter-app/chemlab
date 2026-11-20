@@ -1,14 +1,16 @@
 import { strict as assert } from "node:assert";
-import { catalogIsMixture, catalogStructures, matchingRecipe, structureCatalog } from "../molecule-builder/catalog";
-import { crystalIonColors, latticePositions, siteIon } from "../molecule-builder/crystal-display";
-import { atomRadius, canBond, electronRegions, fitGeometry, shapeName } from "../molecule-builder/geometry";
+import { catalogAqueousStructure, catalogIsMixture, catalogStructures, matchingRecipe, structureCatalog } from "../molecule-builder/catalog";
+import { crystalIonColors, crystalRadii, latticePositions, siteIon } from "../molecule-builder/crystal-display";
+import { canBond, dot, electronRegions, fitGeometry, shapeName, subtract } from "../molecule-builder/geometry";
+import { atomRadius, estimatedBondLength, spaceFillingRadius } from "../molecule-builder/radii";
+import { hasMolecularDisplays, moleculeOrbitals, unpackOrbitalSurface } from "../molecule-builder/orbitals";
 import { ELEMENTS, categoryOf } from "../periodic-table/element-reference";
 import { metalCrystal } from "../periodic-table/metal-reference";
 import { cartesian, cellVectors, fractional, newMolecule, readStructure, replicatedSites, type Crystal, type Molecule } from "../molecule-builder/structure";
 
 const waterReference = catalogStructures("Wasser")[0] as Molecule;
 assert.equal(waterReference.geometry, "supplied");
-assert.equal(waterReference.representation, "conformer");
+assert.equal(waterReference.representation, "experimental");
 const water = fitGeometry(waterReference);
 assert.equal(water.geometry, "idealized");
 const oxygen = water.atoms.find(atom => atom.atomicNumber === 8);
@@ -62,7 +64,18 @@ const centralIon = cartesian(cellVectors(salt.cell), salt.sites.find(site => sit
 const neighbors = replicatedSites(salt, 3).filter(({ site, position }) => site.charge === -1
 	&& Math.abs(Math.hypot(...position.map((value, index) => value - centralIon[index])) - salt.cell.lengths[0] / 2) < .0001);
 assert.equal(neighbors.length, 6);
-assert.ok(atomRadius(17, -1).pm > atomRadius(11, 1).pm);
+const sodium = salt.sites.find(site => site.charge === 1);
+const chloride = salt.sites.find(site => site.charge === -1);
+assert.deepEqual(crystalRadii(salt).get(sodium.id), { pm: 102, model: "ionic", coordination: 6 });
+assert.deepEqual(crystalRadii(salt).get(chloride.id), { pm: 181, model: "ionic", coordination: 6 });
+assert.equal(crystalRadii({ ...salt, catalogKey: undefined }).get(chloride.id)?.model, "schematic");
+const oxide = catalogStructures("Magnesiumoxid")[0] as Crystal;
+assert.equal(crystalRadii(oxide).get(oxide.sites.find(site => site.atomicNumber === 8).id)?.pm, 140);
+const copper = metalCrystal(29);
+assert.ok(Math.abs(crystalRadii(copper).get(copper.sites[0].id).pm - 128) < 2);
+assert.equal(atomRadius(6).pm, 76);
+assert.deepEqual(spaceFillingRadius(6), { pm: 170, model: "vdw" });
+assert.deepEqual(spaceFillingRadius(8), { pm: 152, model: "vdw" });
 assert.ok(Math.abs(salt.cell.lengths[0] - 5.64) < .03);
 assert.equal(readStructure({ ...salt, cell: { ...salt.cell, angles: [150, 30, 30] } }), null);
 const cell = cellVectors({ lengths: [3, 4, 5], angles: [85, 72, 115] });
@@ -101,3 +114,50 @@ assert.ok(Math.abs(acetateOxygen - 8) < 1e-6);
 assert.equal(matchingRecipe(catalogStructures("Haushaltsessig")[0]), undefined);
 assert.equal(matchingRecipe({ ...water, atoms: [...water.atoms].reverse(), catalogKey: undefined })?.name, "Wasser");
 assert.equal(matchingRecipe({ ...water, atoms: water.atoms.map(atom => atom.atomicNumber === 8 ? { ...atom, isotope: 18 } : atom) }), undefined);
+
+const bondDistance = (molecule: Molecule, index = 0) => {
+	const bond = molecule.bonds[index];
+	return Math.hypot(...subtract(molecule.atoms.find(atom => atom.id === bond.from).position,
+		molecule.atoms.find(atom => atom.id === bond.to).position));
+};
+for (const [key, expected] of [["Wasser", .958], ["Methan", 1.087], ["Kohlenstoffdioxid", 1.1621],
+	["Ethen", 1.339], ["Ethin", 1.2026], ["Wasserstoff", .7414], ["Stickstoff", 1.098], ["Sauerstoff", 1.208]] as const) {
+	const molecule = catalogStructures(key)[0] as Molecule;
+	assert.equal(molecule.representation, "experimental");
+	assert.ok(Math.abs(bondDistance(molecule) - expected) < .0003, key);
+}
+for (const [key, expected] of [["Wasserstoff", .7414], ["Stickstoff", 1.098], ["Sauerstoff", 1.208]] as const) {
+	assert.ok(Math.abs(bondDistance(fitGeometry(catalogStructures(key)[0] as Molecule)) - expected) < 1e-9);
+}
+assert.equal(estimatedBondLength(6, 6, 1), 1.50);
+assert.equal(estimatedBondLength(6, 6, 2), 1.34);
+assert.equal(estimatedBondLength(6, 6, 3), 1.20);
+
+assert.equal(hasMolecularDisplays(salt), false);
+assert.equal(hasMolecularDisplays(catalogAqueousStructure("Natriumchloridlösung (1 mol/L)")), false);
+assert.equal(hasMolecularDisplays({ ...water, bonds: water.bonds.slice(0, 1) }), false);
+assert.ok(hasMolecularDisplays(waterReference));
+const waterOrbitals = moleculeOrbitals(waterReference);
+assert.equal(waterOrbitals[0].kind, "reference");
+assert.equal(moleculeOrbitals(water)[0].kind, "sigma");
+// Imported geometries with a different conformer must never get an archived surface.
+assert.equal(moleculeOrbitals({ ...waterReference, atoms: water.atoms })[0].kind, "sigma");
+const triple = moleculeOrbitals(fitGeometry(catalogStructures("Ethin")[0] as Molecule));
+const perpendicularPi = triple.filter(item => item.kind === "pi");
+assert.equal(perpendicularPi.length, 2);
+const directions = perpendicularPi.map(orbital => subtract(orbital.lobes[0].center, orbital.lobes[1].center));
+assert.ok(Math.abs(dot(directions[0], directions[1])) < 1e-9);
+const oxygenReference = catalogStructures("Sauerstoff")[0] as Molecule;
+const oxygenOrbitals = moleculeOrbitals(oxygenReference);
+assert.deepEqual(moleculeOrbitals(fitGeometry(oxygenReference)), []);
+assert.deepEqual(oxygenOrbitals.map(orbital => orbital.kind === "reference" && orbital.label), ["somo", "somo-1"]);
+for (const orbital of [...waterOrbitals, ...oxygenOrbitals]) {
+	assert.ok(orbital.kind === "reference");
+	for (const phase of orbital.phases) {
+		if (!phase) continue;
+		const { positions, indices, normals } = unpackOrbitalSurface(phase);
+		assert.ok(positions.length > 20 && positions.every(Number.isFinite));
+		assert.ok(indices.every(index => index < positions.length / 3));
+		assert.equal(normals.length, positions.length);
+	}
+}

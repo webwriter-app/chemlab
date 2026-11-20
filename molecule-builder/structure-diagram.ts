@@ -106,14 +106,7 @@ export function crystalSpecies(crystal: Crystal) {
 
 const speciesOrder = (ion?: string) => ion?.endsWith("⁺") ? 0 : ion?.endsWith("⁻") ? 1 : 2;
 
-export function monatomicCharge(site: Site) {
-	const ion = siteIon(site);
-	const symbol = atomSymbol(site.atomicNumber);
-	const suffix = ion?.startsWith(symbol) ? ion.slice(symbol.length) : "";
-	if (!/^[¹²³⁴⁵⁶⁷⁸]?[⁺⁻]$/.test(suffix)) return site.charge;
-	const magnitude = suffix.length === 1 ? 1 : "⁰¹²³⁴⁵⁶⁷⁸".indexOf(suffix[0]);
-	return suffix.endsWith("⁺") ? magnitude : -magnitude;
-}
+export { monatomicCharge } from "./crystal-display";
 
 /** Get the smallest supported stoichiometric ratio from unit-cell occupancies. */
 export function empiricalCrystalFormula(crystal: Crystal): string {

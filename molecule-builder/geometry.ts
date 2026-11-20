@@ -1,23 +1,17 @@
 import { ElementData } from "../chemlib/ElementData";
-import { dataValue, elementByAtomicNumber } from "../periodic-table/element-reference";
+import { elementByAtomicNumber } from "../periodic-table/element-reference";
+import { diatomics } from "../data/structures/sources.json";
+import { atomRadius, estimatedBondLength } from "./radii";
 import type { Atom, Bond, Molecule, Point3, Structure } from "./structure";
 
-// Cordero et al., Dalton Trans. 2008, doi:10.1039/B801115J. Values are in pm.
-const covalent = new Map([
-	[1, 31], [5, 84], [6, 76], [7, 71], [8, 66], [9, 57], [11, 166], [12, 141],
-	[13, 121], [14, 111], [15, 107], [16, 105], [17, 102], [19, 203], [20, 176],
-	[26, 132], [28, 124], [29, 132], [30, 122], [35, 120], [47, 145], [50, 139], [53, 139], [78, 136],
-]);
-// Shannon, Acta Cryst. A32 (1976), six-coordinate effective ionic radii in pm.
-const ionic = new Map([["11:1", 102], ["19:1", 138], ["17:-1", 181], ["35:-1", 196], ["53:-1", 220]]);
+const experimentalDiatomics = new Map(Object.values(diatomics).map(([number, order, length]) => [`${number}:${order}`, length]));
 
-export function atomRadius(atomicNumber: number, sixCoordinateCharge?: number) {
-	const ion = ionic.get(`${atomicNumber}:${sixCoordinateCharge}`);
-	if (ion !== undefined) return { pm: ion, model: "ionic" } as const;
-	const covalentRadius = covalent.get(atomicNumber);
-	if (covalentRadius !== undefined && sixCoordinateCharge === undefined) return { pm: covalentRadius, model: "covalent" } as const;
-	const pm = dataValue(elementByAtomicNumber(atomicNumber).radius);
-	return pm === undefined ? { pm: 90, model: "schematic" } as const : { pm, model: "empirical" } as const;
+function bondLength(molecule: Molecule, left: Atom, right: Atom, order: Bond["order"]): number {
+	if (molecule.atoms.length === 2 && !left.charge && !right.charge && left.atomicNumber === right.atomicNumber) {
+		const reference = experimentalDiatomics.get(`${left.atomicNumber}:${order}`);
+		if (reference !== undefined) return reference;
+	}
+	return estimatedBondLength(left.atomicNumber, right.atomicNumber, order);
 }
 
 const colors = ElementData.getElementList().map(key => {
@@ -32,7 +26,7 @@ export function atomColor(atomicNumber: number): number {
 export const add = (a: Point3, b: Point3): Point3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 export const subtract = (a: Point3, b: Point3): Point3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 export const scale = ([x, y, z]: Point3, factor: number): Point3 => [x * factor, y * factor, z * factor];
-const dot = (a: Point3, b: Point3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+export const dot = (a: Point3, b: Point3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 export const cross = (a: Point3, b: Point3): Point3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 export const unit = (a: Point3): Point3 => scale(a, 1 / (Math.hypot(...a) || 1));
 export const perpendicular = (axis: Point3): Point3 => unit(cross(axis, Math.abs(axis[2]) < 0.85 ? [0, 0, 1] : [0, 1, 0]));
@@ -52,11 +46,6 @@ export function remainingElectrons(atom: Atom, bonds: readonly Bond[], continuat
 		if (bond.from !== atom.id && bond.to !== atom.id) return sum;
 		return sum + (bond.dative ? (bond.from === atom.id ? 2 : 0) : bond.order);
 	}, 0);
-}
-
-function bondLength(left: number, right: number, order: number) {
-	const radius = atomRadius(left).pm + atomRadius(right).pm;
-	return radius / 100 * (order === 3 ? 0.87 : order === 2 ? 0.92 : 1);
 }
 
 export function canBond(molecule: Molecule, from: number, to: number, order: number): boolean {
@@ -97,7 +86,7 @@ export function shapeName(molecule: Molecule, id: number) {
 /** Deterministic local VSEPR for acyclic species. Ring conformation and stereo
  * assignment require additional constraints and are kept outside this fitter. */
 function idealizedGeometry(molecule: Molecule): Molecule | null {
-	const neighbors = new Map(molecule.atoms.map(atom => [atom.id, [] as { id: number; order: number }[]]));
+	const neighbors = new Map(molecule.atoms.map(atom => [atom.id, [] as { id: number; order: Bond["order"] }[]]));
 	for (const bond of molecule.bonds) {
 		neighbors.get(bond.from).push({ id: bond.to, order: bond.order });
 		neighbors.get(bond.to).push({ id: bond.from, order: bond.order });
@@ -128,7 +117,7 @@ function idealizedGeometry(molecule: Molecule): Molecule | null {
 				const azimuth = (index - indexOffset) * step;
 				const direction = !parent && index === 0 ? axis : add(scale(axis, Math.cos(angle)),
 					scale(add(scale(tangent, Math.cos(azimuth)), scale(normal, Math.sin(azimuth))), Math.sin(angle)));
-				const distance = bondLength(atoms.get(id).atomicNumber, atoms.get(child.id).atomicNumber, child.order);
+				const distance = bondLength(molecule, atoms.get(id), atoms.get(child.id), child.order);
 				const position = add(current, scale(direction, distance));
 				placements.set(child.id, position);
 				rightEdge = Math.max(rightEdge, position[0]);
@@ -148,7 +137,7 @@ function estimatedGeometry(molecule: Molecule): Molecule {
 	const neighbors: { index: number; length: number }[][] = atoms.map(() => []);
 	const lengths = molecule.bonds.map(bond => {
 		const a = indexes.get(bond.from), b = indexes.get(bond.to);
-		const distance = bondLength(atoms[a].atomicNumber, atoms[b].atomicNumber, bond.order);
+		const distance = bondLength(molecule, atoms[a], atoms[b], bond.order);
 		neighbors[a].push({ index: b, length: distance });
 		neighbors[b].push({ index: a, length: distance });
 		return { a, b, distance };
@@ -210,7 +199,7 @@ export function fitGeometry(molecule: Molecule): Molecule {
 	return { ...(idealizedGeometry(molecule) ?? estimatedGeometry(molecule)), source: undefined, representation: undefined };
 }
 
-export type ElectronRegion = { kind: "bond" | "lone"; from: Point3; to: Point3; electrons: number };
+export type ElectronRegion = { kind: "bond" | "lone"; from: Point3; to: Point3; electrons: number; atomId?: number };
 
 /** Approximate Lewis/VSEPR regions for the displayed graph, with one region
  * per bonded pair of atoms. Transition-metal atomic populations are omitted. */
@@ -222,7 +211,7 @@ export function electronRegions(molecule: Molecule): ElectronRegion[] {
 	});
 	for (const atom of molecule.atoms) {
 		const bonds = molecule.bonds.filter(bond => bond.from === atom.id || bond.to === atom.id);
-		const remaining = remainingElectrons(atom, bonds);
+		const remaining = remainingElectrons(atom, bonds, Number(!!molecule.repeatUnit?.ends.includes(atom.id)));
 		if (!(remaining > 0 && remaining <= 8)) continue;
 		const fixed = bonds.map(bond => unit(subtract(atoms.get(bond.from === atom.id ? bond.to : bond.from).position, atom.position)));
 		const pairs: Point3[] = [];
@@ -250,7 +239,7 @@ export function electronRegions(molecule: Molecule): ElectronRegion[] {
 		}
 		const radius = atomRadius(atom.atomicNumber).pm / 100;
 		for (const [index, direction] of pairs.entries()) {
-			regions.push({ kind: "lone", from: add(atom.position, scale(direction, radius * .43)),
+			regions.push({ kind: "lone", atomId: atom.id, from: add(atom.position, scale(direction, radius * .43)),
 				to: add(atom.position, scale(direction, radius * 1.6)), electrons: Math.min(2, remaining - index * 2) });
 		}
 	}

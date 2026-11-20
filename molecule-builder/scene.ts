@@ -1,11 +1,13 @@
 import { Application, CanvasSource, Graphics, Point, Sprite, Text, Texture } from "pixi.js";
 import {
-	Container3D, CylinderGeometry, DirectionalLight, Material3D, Mesh3D, Plane,
+	Container3D, CylinderGeometry, DirectionalLight, Geometry3D, Material3D, Mesh3D, Plane,
 	Sphere, SphereGeometry, Vector3, View3D,
 } from "@pixi/3d";
 import type { ShaderBit } from "@pixi/3d";
-import { atomColor, atomRadius, add, electronRegions, perpendicular, scale, subtract, unit } from "./geometry";
-import { crystalIonColors, latticePositions, siteIon } from "./crystal-display";
+import { atomColor, add, cross, electronRegions, perpendicular, scale, subtract, unit } from "./geometry";
+import { crystalIonColors, crystalRadii, latticePositions, siteIon } from "./crystal-display";
+import { atomRadius, spaceFillingRadius } from "./radii";
+import { hasMolecularDisplays, moleculeOrbitals, ORBITAL_PHASE_COLORS, unpackOrbitalSurface, type MolecularDisplay } from "./orbitals";
 import { aqueousComponents, hydrationWaters } from "./aqueous-preview";
 import { cartesian, cellVectors, replicatedSites, type Point3, type Structure } from "./structure";
 
@@ -174,7 +176,7 @@ function radialTexture(stops: [number, string][], size = 256) {
 }
 
 /** What the scene shows besides the structure itself. */
-export type SceneDisplay = { electrons: boolean; lattice: boolean; edges: boolean; axes: boolean; hydration: boolean };
+export type SceneDisplay = { electrons: boolean; lattice: boolean; edges: boolean; axes: boolean; hydration: boolean; molecular: MolecularDisplay; orbitalId?: string };
 
 export class MoleculeScene {
 	static async create(host: HTMLElement, updateScale: (pixelsPerAngstrom: number) => void) {
@@ -198,6 +200,11 @@ export class MoleculeScene {
 	readonly #content = new Container3D();
 	readonly #edges = new Container3D();
 	readonly #electrons = new Container3D();
+	readonly #orbital = new Container3D({ eventMode: "none" });
+	readonly #orbitalGeometries: Geometry3D[] = [];
+	readonly #orbitalMaterials = ORBITAL_PHASE_COLORS.map(baseColor => new Material3D({
+		baseColor, roughness: .68, alphaMode: "blend", alpha: .76,
+	}));
 	readonly #hydration = new Container3D({ eventMode: "none" });
 	readonly #lattice = new Graphics({ eventMode: "none" });
 	readonly #axes = new Graphics({ eventMode: "none" });
@@ -205,6 +212,7 @@ export class MoleculeScene {
 	readonly #projected = new Point();
 	readonly #axisTip = new Point();
 	readonly #sphere = new SphereGeometry({ radius: 1, widthSegments: 20, heightSegments: 14 });
+	readonly #spaceSphere = new SphereGeometry({ radius: 1, widthSegments: 40, heightSegments: 28 });
 	readonly #cylinder = new CylinderGeometry({ height: 1, radiusTop: 1, radiusBottom: 1, radialSegments: 10 });
 	readonly #materials = new Map<string, Material3D>();
 	readonly #bondRegion = new Material3D({ baseColor: 0x0284c7, roughness: .85, alphaMode: "blend", alpha: .28 });
@@ -218,6 +226,9 @@ export class MoleculeScene {
 	#hovered?: number;
 	#structure?: Structure;
 	#showElectrons = false;
+	#molecular: MolecularDisplay = "sticks";
+	#orbitalId?: string;
+	#orbitalBounds: Point3[] = [];
 	#showHydration = false;
 	#hydrationBounds: Point3[] = [];
 	#showLattice = false;
@@ -247,7 +258,7 @@ export class MoleculeScene {
 		const sun = new DirectionalLight({ color: 0xffffff, intensity: 2.15 });
 		sun.position.set(3, 6, 7);
 		sun.lookAt({ x: 0, y: 0, z: 0 });
-		this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons, this.#hydration);
+		this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons, this.#orbital, this.#hydration);
 		this.#preview = this.#rod();
 		this.#preview.material = this.#material(BOND_PREVIEW_COLOR);
 		this.#preview.visible = false;
@@ -327,12 +338,12 @@ export class MoleculeScene {
 		mesh.quaternion.setFromUnitVectors({ x: 0, y: 1, z: 0 }, vector(unit(direction)));
 	}
 
-	#atom(id: number, atomicNumber: number, position: Point3, crystal: boolean, sixCoordinateCharge?: number, occupancy = 1, ionColor?: number) {
+	#atom(id: number, atomicNumber: number, position: Point3, radius: number, occupancy = 1, ionColor?: number) {
 		const color = ionColor ?? atomColor(atomicNumber);
 		const opacity = Math.max(.18, Math.round(occupancy * 20) / 20);
-		const radius = atomRadius(atomicNumber, sixCoordinateCharge).pm * (crystal ? .0065 : .0052);
+		const geometry = this.#molecular === "space-filling" ? this.#spaceSphere : this.#sphere;
 		const mesh = new Mesh3D({
-			geometry: this.#sphere, material: this.#material(color, opacity), eventMode: "static",
+			geometry, material: this.#material(color, opacity), eventMode: "static",
 			hitVolume: new Sphere(new Vector3(), 1), position: vector(position),
 		});
 		mesh.scale.set(radius);
@@ -372,6 +383,39 @@ export class MoleculeScene {
 		}
 	}
 
+	#renderOrbital(structure: Structure, orbitalId: string | undefined) {
+		for (const child of this.#orbital.removeChildren()) child.destroy();
+		for (const geometry of this.#orbitalGeometries.splice(0)) geometry.destroy();
+		this.#orbitalBounds = [];
+		if (this.#molecular !== "orbitals" || !hasMolecularDisplays(structure)) return;
+		const orbitals = moleculeOrbitals(structure);
+		const orbital = orbitals.find(item => item.id === orbitalId) ?? orbitals[0];
+		if (!orbital) return;
+		if (orbital.kind === "reference") {
+			for (const [phase, packed] of orbital.phases.entries()) {
+				if (!packed) continue;
+				const meshData = unpackOrbitalSurface(packed);
+				const geometry = new Geometry3D(meshData);
+				this.#orbitalGeometries.push(geometry);
+				this.#orbital.addChild(new Mesh3D({ geometry, material: this.#orbitalMaterials[phase], eventMode: "none" }));
+				const { positions } = meshData;
+				for (let i = 0; i < positions.length; i += 3) this.#orbitalBounds.push([positions[i], positions[i + 1], positions[i + 2]]);
+			}
+			return;
+		}
+		for (const lobe of orbital.lobes) {
+			const mesh = new Mesh3D({ geometry: this.#sphere, material: this.#orbitalMaterials[lobe.phase],
+				position: vector(lobe.center), eventMode: "none" });
+			mesh.scale.set(lobe.width, lobe.length, lobe.width);
+			mesh.quaternion.setFromUnitVectors({ x: 0, y: 1, z: 0 }, vector(lobe.axis));
+			this.#orbital.addChild(mesh);
+			const across = perpendicular(lobe.axis);
+			const normal = unit(cross(lobe.axis, across));
+			this.#orbitalBounds.push(...[scale(lobe.axis, lobe.length), scale(across, lobe.width), scale(normal, lobe.width)]
+				.flatMap(extent => [add(lobe.center, extent), subtract(lobe.center, extent)]));
+		}
+	}
+
 	#renderHydration(structure: Structure, show: boolean) {
 		for (const child of this.#hydration.removeChildren()) child.destroy();
 		this.#hydrationBounds = [];
@@ -405,7 +449,9 @@ export class MoleculeScene {
 	}
 
 	setScene(structure: Structure, repeats: number, selection: number[], display: SceneDisplay) {
-		const rebuild = structure !== this.#structure || repeats !== this.#repeats;
+		const molecular = hasMolecularDisplays(structure) ? display.molecular : "sticks";
+		const rebuild = structure !== this.#structure || repeats !== this.#repeats || molecular !== this.#molecular;
+		this.#molecular = molecular;
 		const crystal = structure.kind === "crystal";
 		const latticeVisible = crystal && display.lattice;
 		const edgesVisible = crystal && display.edges;
@@ -446,28 +492,45 @@ export class MoleculeScene {
 					}
 				}
 				const colors = crystalIonColors(structure);
+				const radii = crystalRadii(structure);
 				for (const { site, position } of replicatedSites(structure, repeats)) {
-					const charge = structure.catalogKey && structure.spaceGroup === "Fm-3m" && site.charge ? site.charge : undefined;
-					this.#atom(site.id, site.atomicNumber, position, true, charge, site.occupancy, colors.get(siteIon(site)));
+					const radius = radii.get(site.id);
+					const physical = radius.model === "ionic" || radius.model === "metallic";
+					this.#atom(site.id, site.atomicNumber, position, radius.pm * (physical ? .01 : .0065),
+						site.occupancy, colors.get(siteIon(site)));
 				}
 			} else {
 				const positions = new Map(structure.atoms.map(atom => [atom.id, atom.position]));
-				for (const bond of structure.bonds) {
+				for (const bond of molecular === "space-filling" ? [] : structure.bonds) {
 					const from = positions.get(bond.from), to = positions.get(bond.to);
 					const axis = unit(subtract(to, from));
-					for (let index = 0; index < bond.order; index++) {
-						const offset = scale(perpendicular(axis), (index - (bond.order - 1) / 2) * 0.13);
+					const rods = molecular === "orbitals" ? 1 : bond.order;
+					for (let index = 0; index < rods; index++) {
+						const offset = scale(perpendicular(axis), (index - (rods - 1) / 2) * 0.13);
 						const rod = this.#rod();
-						this.#line(rod, add(from, offset), add(to, offset), 0.046);
+						this.#line(rod, add(from, offset), add(to, offset), molecular === "orbitals" ? .025 : .046);
 						this.#content.addChild(rod);
 					}
 				}
-				for (const atom of structure.atoms) this.#atom(atom.id, atom.atomicNumber, atom.position, false);
+				const bonded = new Set(structure.bonds.flatMap(bond => [bond.from, bond.to]));
+				for (const atom of structure.atoms) {
+					const radius = molecular === "space-filling" ? spaceFillingRadius(atom.atomicNumber).pm / 100
+						: molecular === "orbitals" ? Math.min(.18, atomRadius(atom.atomicNumber).pm * .004)
+						: atom.charge && !bonded.has(atom.id) ? .32 : atomRadius(atom.atomicNumber).pm * .0052;
+					this.#atom(atom.id, atom.atomicNumber, atom.position, radius);
+				}
 			}
 		}
-		if (rebuild || display.electrons !== this.#showElectrons) {
-			this.#showElectrons = display.electrons;
-			this.#renderElectrons(structure, display.electrons);
+		const electrons = molecular === "sticks" && display.electrons;
+		if (rebuild || electrons !== this.#showElectrons) {
+			this.#showElectrons = electrons;
+			this.#renderElectrons(structure, electrons);
+			this.#draw();
+		}
+		const orbitalId = molecular === "orbitals" ? display.orbitalId : undefined;
+		if (rebuild || orbitalId !== this.#orbitalId) {
+			this.#orbitalId = orbitalId;
+			this.#renderOrbital(structure, orbitalId);
 			this.#draw();
 		}
 		if (rebuild || display.hydration !== this.#showHydration) {
@@ -553,7 +616,7 @@ export class MoleculeScene {
 	}
 
 	fit() {
-		const bounds = [...this.#bounds, ...this.#hydrationBounds];
+		const bounds = [...this.#bounds, ...this.#hydrationBounds, ...this.#orbitalBounds];
 		const min = [0, 1, 2].map(axis => Math.min(...bounds.map(point => point[axis])));
 		const max = [0, 1, 2].map(axis => Math.max(...bounds.map(point => point[axis])));
 		this.#target = bounds.length ? min.map((value, axis) => (value + max[axis]) / 2) as [number, number, number] : [0, 0, 0];
@@ -639,9 +702,12 @@ export class MoleculeScene {
 		this.#observer.disconnect();
 		this.#app.destroy(true, { children: true });
 		this.#sphere.destroy();
+		this.#spaceSphere.destroy();
 		this.#cylinder.destroy();
 		this.#bondRegion.destroy();
 		this.#loneRegion.destroy();
+		for (const geometry of this.#orbitalGeometries) geometry.destroy();
+		for (const material of this.#orbitalMaterials) material.destroy();
 		this.#axes.destroy();
 		for (const label of this.#axisLabels) label.destroy();
 		for (const material of this.#materials.values()) material.destroy();

@@ -464,6 +464,7 @@ export const builderStyles = css`
 	}
 	.structure-legend [data-region="lone"] { --swatch: #a855f7; }
 	.structure-legend [data-marker="lattice"]::before { border-radius: 1px; --swatch: #283648; }
+	.bond-lengths { display: grid; gap: .2rem; }
 	.display-controls { gap: .25rem; }
 	.display-controls select { max-inline-size: 6rem; }
 	input, select { color: inherit; font: inherit; accent-color: var(--blue); }

@@ -16,8 +16,8 @@ import { ELEMENT_SELECTION_EVENT, isAtomicNumber, type ElementSelectionV1 } from
 import { SelectionRouter } from "./periodic-table/routing";
 import { catalogAqueousStructure, catalogEntry, catalogIsMixture, catalogStructures, structureCatalog } from "./molecule-builder/catalog";
 import { BUILDER_TAG, LAB_TAG, TABLE_TAG, worksheetPeers, worksheetScope, type LabReceiver } from "./molecule-builder/exchange";
-import { colorHex, crystalIonColors, siteIon } from "./molecule-builder/crystal-display";
-import { atomRadius, fitGeometry, canBond, shapeName, formula } from "./molecule-builder/geometry";
+import { colorHex, crystalIonColors, crystalRadii, siteIon } from "./molecule-builder/crystal-display";
+import { fitGeometry, canBond, shapeName, formula, subtract } from "./molecule-builder/geometry";
 import {
 	MAX_ATOMS, MAX_SITES, MAX_FILE_BYTES, cellVectors, fractional, isCell,
 	newCrystal, newMolecule, readStructure, type BondOrder, type Cell, type Point2, type Point3, type Structure,
@@ -26,6 +26,8 @@ import { chemicalFormula, crystalSpecies, editableRepeatUnit, empiricalCrystalFo
 import { aqueousComponents, hydrationWaters } from "./molecule-builder/aqueous-preview";
 import { diagramIsCrowded, improveDiagram, repairSavedDiagram } from "./molecule-builder/diagram-layout";
 import { lewisViewBox, renderLewis, type DiagramBox } from "./molecule-builder/lewis-view";
+import { atomRadius, spaceFillingRadius } from "./molecule-builder/radii";
+import { hasMolecularDisplays, moleculeOrbitals, ORBITAL_PHASE_COLORS, type MolecularDisplay } from "./molecule-builder/orbitals";
 import { gridCell } from "./molecule-builder/canvas-grid";
 import { builderStyles } from "./molecule-builder/styles";
 import type { MoleculeScene } from "./molecule-builder/scene";
@@ -155,6 +157,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor paletteNarrow = false;
 	@state() private accessor pickerView: "list" | "table" = "list";
 	@state() private accessor showElectrons = false;
+	@state() private accessor molecularDisplay: MolecularDisplay = "sticks";
+	@state() private accessor orbitalId = "";
 	@state() private accessor showHydration = false;
 	@state() private accessor showLattice = false;
 	@state() private accessor showEdges = true;
@@ -261,6 +265,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (this.#scene && this.view === "3d") {
 			this.#scene.setScene(this.#current, this.repeats, [this.picked, this.bondStart].filter(id => id !== undefined),
 				{ electrons: this.showElectrons, lattice: this.showLattice, edges: this.showEdges, axes: this.showAxes,
+					molecular: this.molecularDisplay, orbitalId: this.orbitalId,
 					hydration: this.showHydration && this.#current.kind === "molecule" && this.#current.representation === "aqueous-ions" });
 			if (this.#fitNext) {
 				this.#fitNext = false;
@@ -1120,6 +1125,40 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		</div>`;
 	}
 
+	#renderOrbitals(current: Extract<Structure, { kind: "molecule" }>) {
+		const orbitals = moleculeOrbitals(current);
+		const orbital = orbitals.find(item => item.id === this.orbitalId) ?? orbitals[0];
+		const atomLabel = (atom: { atomicNumber: number; id: number }) => `${symbol(atom.atomicNumber)}${atom.id}`;
+		const reference = orbital?.kind === "reference";
+		if (!orbital) return html`<span class="summary-caption">${this.#t("No orbital model for this structure.",
+			"Für diese Struktur ist kein Orbitalmodell verfügbar.")}</span>`;
+		return html`
+			<label class="summary-variant">
+				<span>${this.#t("Orbital", "Orbital")}</span>
+				<select @change=${(event: Event) => {
+					this.orbitalId = (event.currentTarget as HTMLSelectElement).value;
+					this.#fitNext = true;
+				}}>
+					${orbitals.map(item => html`<option value=${item.id} ?selected=${item === orbital}>${item.kind === "reference"
+						? item.label.toUpperCase().replace("-", "−").replace("SOMO", "SOMO α")
+						: item.kind === "lone" ? `${this.#t("Lone pair", "Freies Elektronenpaar")} · ${atomLabel(item.atoms[0])} (${item.number})`
+							: `${item.kind === "pi" ? "π" : "σ"}${item.number ? " " + item.number : ""} · ${item.atoms.map(atomLabel).join("–")}`}</option>`)}
+				</select>
+			</label>
+			<span class="summary-caption" title=${reference
+				? this.#t("Signed wavefunction isosurface at |ψ| = 0.045 bohr⁻³ᐟ². Spin-up (α) for open-shell oxygen.",
+					"Vorzeichenflächen bei |ψ| = 0,045 bohr⁻³ᐟ². Für offenschaligen Sauerstoff gilt Spin α.")
+				: this.#t("Local valence-bond picture following the structure geometry. Delocalization and orbital energies are outside this model.",
+					"Lokales Valenzbindungsmodell anhand der Strukturgeometrie. Delokalisierung und Orbitalenergien werden nicht berechnet.")}>
+				${reference ? "PBE0/def2-SVP" : this.#t("Schematic valence bond", "Schematisches Valenzbindungsmodell")}
+			</span>
+			<span class="structure-legend" role="group" aria-label=${this.#t("Wavefunction phase", "Phase der Wellenfunktion")}>
+				${ORBITAL_PHASE_COLORS.map((color, index) => (orbital.kind !== "reference" || orbital.phases[index]) ?
+					html`<span style="--swatch: ${colorHex(color)}">${index ? "−ψ" : "+ψ"}</span>` : nothing)}
+			</span>
+		`;
+	}
+
 	#renderModelSummary(current: Structure, ionColors: ReadonlyMap<string, number>) {
 		const crystal = current.kind === "crystal";
 		const aqueous = !crystal && current.representation === "aqueous-ions" ? this.#aqueous(current) : undefined;
@@ -1128,6 +1167,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const showOxidation = !crystal && this.view === "2d" && current.atoms.length > (aqueous?.monatomicIons.size ?? 0);
 		const showDisplay = this.view === "3d" && (crystal || (this.#atoms.length > 0 && this.gpu === "ready"));
 		const options = this.catalogVariants.length > 1;
+		const displays = showDisplay && hasMolecularDisplays(current);
+		const molecular = displays ? this.molecularDisplay : "sticks";
 		const composition = this.#atoms.length && (!crystal || this.view === "3d")
 			? chemicalFormula(aqueous ? current.name : !crystal && current.repeatUnit && this.view === "2d"
 				? formula({ ...current, atoms: this.#lewis(current).atoms }) : formula(current))
@@ -1183,7 +1224,22 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				${[...ionColors].map(([ion, color]) => html`<span style="--swatch: ${colorHex(color)}">${ion}</span>`)}
 				${crystal && this.showLattice ? html`<span data-marker="lattice">${this.#t("Lattice points", "Gitterpunkte")}</span>` : nothing}
 			</span>` : nothing}
-			${current.kind === "molecule" && this.showElectrons && this.view === "3d" ? html`
+			${displays ? html`<label class="summary-variant">
+				<span>${this.#t("Model", "Modell")}</span>
+				<select @change=${(event: Event) => {
+					this.molecularDisplay = (event.currentTarget as HTMLSelectElement).value as MolecularDisplay;
+					this.#fitNext = true;
+				}}>
+					<option value="sticks" ?selected=${molecular === "sticks"}>${this.#t("Ball and stick", "Kugel-Stab")}</option>
+					<option value="space-filling" ?selected=${molecular === "space-filling"}>${this.#t("Space-filling", "Kalottenmodell")}</option>
+					<option value="orbitals" ?selected=${molecular === "orbitals"}>${this.#t("Orbitals", "Orbitale")}</option>
+				</select>
+			</label>` : nothing}
+			${molecular === "orbitals" && current.kind === "molecule" ? this.#renderOrbitals(current) : nothing}
+			${molecular === "space-filling" ? html`<span class="summary-caption" title=${this.#t(
+				"Van der Waals radii draw the overlapping molecular envelope.", "Van-der-Waals-Radien bilden die überlappende Molekülhülle.")}>
+				${this.#t("Van der Waals radii", "Van-der-Waals-Radien")}</span>` : nothing}
+			${current.kind === "molecule" && molecular === "sticks" && this.showElectrons && this.view === "3d" ? html`
 				<span class="structure-legend" title=${this.#t(
 					"Approximate Lewis and VSEPR regions. Dots represent electron counts in the displayed bonding model.",
 					"Angenäherte Lewis- und VSEPR-Bereiche. Punkte stehen für die Elektronenzahl im dargestellten Bindungsmodell.",
@@ -1197,7 +1253,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					${this.#t("Oxidation state", "Oxidationszahl")}
 					<span data-oxidation="negative">−</span><span data-oxidation="neutral">0</span><span data-oxidation="positive">+</span>
 				</div>` : nothing}
-			${showDisplay ? html`<div class="display-controls" role="group" aria-label=${this.#t("Display", "Darstellung")}>
+			${showDisplay && (crystal || molecular === "sticks") ? html`<div class="display-controls" role="group" aria-label=${this.#t("Display", "Darstellung")}>
 				${crystal ? html`<label>${this.#t("Cells", "Zellen")}
 					<select .value=${String(this.repeats)} @change=${(event: Event) => {
 						this.repeats = Number((event.currentTarget as HTMLSelectElement).value);
@@ -1210,7 +1266,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				${crystal ? toggle(this.#t("Cell edges", "Zellkanten"), EDGES_ICON, this.showEdges, () => { this.showEdges = !this.showEdges; }) : nothing}
 				${crystal ? toggle(this.#t("Lattice points", "Gitterpunkte"), LATTICE_ICON, this.showLattice, () => { this.showLattice = !this.showLattice; }) : nothing}
 				${crystal ? toggle(this.#t("Axes", "Achsen"), AXES_ICON, this.showAxes, () => { this.showAxes = !this.showAxes; }) : nothing}
-				${current.kind === "molecule" && current.atoms.length && this.view === "3d" && this.gpu === "ready"
+				${current.kind === "molecule" && current.atoms.length && molecular === "sticks" && this.view === "3d" && this.gpu === "ready"
 					? toggle(this.#t("Valence electrons", "Valenzelektronen"), ELECTRONS_ICON, this.showElectrons, () => { this.showElectrons = !this.showElectrons; })
 					: nothing}
 			</div>` : nothing}
@@ -1232,12 +1288,22 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			trigonal: this.#t("Trigonal planar", "Trigonal-planar"), pyramidal: this.#t("Trigonal pyramidal", "Trigonal-pyramidal"),
 			tetrahedral: this.#t("Tetrahedral", "Tetraedrisch"),
 		};
-		const radius = atom && atomRadius(atom.atomicNumber,
-			current.kind === "crystal" && current.catalogKey && current.spaceGroup === "Fm-3m" && atom.charge ? atom.charge : undefined);
-		const radiusLabel = {
+		const radius = atom && (current.kind === "crystal" ? crystalRadii(current).get(atom.id)
+			: this.view === "3d" && hasMolecularDisplays(current) && this.molecularDisplay === "space-filling"
+				? spaceFillingRadius(atom.atomicNumber) : atom.charge && !current.bonds.some(bond => bond.from === atom.id || bond.to === atom.id)
+					? undefined : atomRadius(atom.atomicNumber));
+		const radiusLabel = radius && {
 			covalent: this.#t("covalent", "kovalent"), empirical: this.#t("empirical", "empirisch"),
-			ionic: this.#t("ionic, CN 6", "ionisch, KZ 6"), schematic: this.#t("schematic", "schematisch"),
-		};
+			ionic: this.#t(`ionic, CN ${radius.coordination}`, `ionisch, KZ ${radius.coordination}`),
+			metallic: this.#t("metallic", "metallisch"), vdw: "van der Waals", schematic: "",
+		}[radius.model];
+		const here = atom && current.kind === "molecule" && current.atoms.find(entry => entry.id === atom.id);
+		const lengths = here && current.kind === "molecule" && current.geometry
+			? current.bonds.flatMap(bond => {
+				const id = bond.from === atom.id ? bond.to : bond.to === atom.id ? bond.from : undefined;
+				const neighbor = current.atoms.find(entry => entry.id === id);
+				return neighbor ? [{ neighbor, length: Math.hypot(...subtract(here.position, neighbor.position)) }] : [];
+			}) : [];
 		const occupancy = atom && "occupancy" in atom ? atom.occupancy : undefined;
 		return html`<aside class="selection-card" aria-label=${this.#t("Selection", "Auswahl")}>
 			<div class="card-head">
@@ -1252,13 +1318,22 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			</div>
 			${atom ? html`<div class="card-facts">
 				${species ? html`<sl-tag size="small">${species}</sl-tag>` : nothing}
-				${radius ? html`<sl-tag size="small">${radius.pm} pm · ${radiusLabel[radius.model]}</sl-tag>` : nothing}
+				${radius && radiusLabel ? html`<sl-tag size="small" title=${radius.model === "covalent" || radius.model === "empirical"
+					? this.#t("Reference radius. Atom markers are reduced in ball-and-stick and orbital views.",
+						"Referenzradius. Die Atommarker sind im Kugel-Stab- und Orbitalmodell verkleinert.") : ""}>${radius.pm} pm · ${radiusLabel}</sl-tag>` : this.view === "3d"
+					? html`<sl-tag size="small">${this.#t("Schematic size", "Schematische Größe")}</sl-tag>` : nothing}
 				${shape ? html`<sl-tag size="small">${shapeLabel[shape]}</sl-tag>` : nothing}
 				${occupancy !== undefined ? html`<sl-tag size="small">${Number((100 * occupancy).toFixed(1))} %</sl-tag>` : nothing}
 			</div>` : nothing}
 			<sl-details summary=${current.kind === "crystal" ? this.#t("Site properties", "Gitterplatz-Eigenschaften")
 					: this.#t("Atom properties", "Atom-Eigenschaften")} ?open=${!atom && this.view === "3d"}>
 				<div class="fields">
+					${lengths.length ? html`<div class="bond-lengths">
+						<span class="summary-caption">${current.kind === "molecule" && current.geometry === "supplied"
+							? this.#t("3D bond lengths", "3D-Bindungslängen") : this.#t("Estimated 3D bond lengths", "Geschätzte 3D-Bindungslängen")}</span>
+						<div class="card-facts">${lengths.map(({ neighbor, length }) => html`<sl-tag size="small">${symbol(neighbor.atomicNumber)} ·
+							${neighbor.id} · ${length.toLocaleString(this.#t("en", "de"), { maximumFractionDigits: 3 })} Å</sl-tag>`)}</div>
+					</div>` : nothing}
 					<div class="site-picker" role="group" aria-label=${current.kind === "crystal"
 						? this.#t("Site", "Gitterplatz") : this.#t("Atom", "Atom")}>
 						${this.#atoms.map(entry => html`<button type="button" class="site-chip"

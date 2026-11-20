@@ -260,6 +260,14 @@ def generate(cache):
                 if re.fullmatch(r"\d+\.cif", filename):
                     (extract / filename).write_bytes(data.read(record))
     records = {key: pubchem(key, record, cache) for key, record in MANIFEST["molecules"].items()}
+    for key, (cas, coordinates) in MANIFEST["experimentalMolecules"].items():
+        record = records[key]
+        if [atom["atomicNumber"] for atom in record["atoms"]] != [number for number, *_ in coordinates]:
+            raise ValueError(f"Unexpected atom order in experimental geometry {key}")
+        for atom, (_, *position) in zip(record["atoms"], coordinates):
+            atom["position"] = position
+        record.update(source=f"https://cccbdb.nist.gov/expgeom2x.asp?casno={cas}&charge=0",
+                      representation="experimental", geometry="supplied")
     for key, (number, order, length) in MANIFEST["diatomics"].items():
         symbol = chemical_symbols[number]
         records[key] = dict(version=1, kind="molecule", name=symbol + "2", source=NIST,
