@@ -3,6 +3,7 @@ import { legacyElementKeyToAtomicNumber } from "../periodic-table/legacy-names";
 import { metalCrystal } from "../periodic-table/metal-reference";
 import type { Molecule as LabMolecule } from "../chemlib";
 import { fitGeometry } from "./geometry";
+import { aqueousAcidBaseSpecies } from "./aqueous-preview";
 import { type Atom, type Bond, type Crystal, type Molecule, type Point3, type Structure } from "./structure";
 import catalogReferences from "../data/structures/catalog.generated.json";
 import { mixtures } from "../data/structures/sources.json";
@@ -199,6 +200,44 @@ export function catalogStructures(key: string): Structure[] {
 
 export const structureCatalog = chemicalCatalog;
 
+const aqueousPreviews = new Map<string, Molecule>();
+
+/** An overview of the distinct dissolved species, grouped in one scene. */
+export function catalogAqueousStructure(key: string): Molecule | undefined {
+	const cached = aqueousPreviews.get(key);
+	if (cached) return cached;
+	const entry = entries.get(key);
+	const limewater = key === "Kalkwasser";
+	const carboxylicAcid = entry?.category === "Carbonsäuren" && !!entry.concentrationLimit;
+	if (!entry || (!entry.recipe?.aqueousMolar && !carboxylicAcid && !limewater)) return undefined;
+	const definitions = catalogDefinitions(entry);
+	const species = definitions.length === 1 ? aqueousAcidBaseSpecies(definitions[0], carboxylicAcid) ?? definitions : definitions;
+	const graphs = limewater ? [references["@calcium"], references["@hydroxide"]] as Molecule[]
+		: species.flatMap(definition => catalogMolecule(undefined, definition) ?? []);
+	const charges = graphs.map(graph => graph.atoms.reduce((sum, atom) => sum + atom.charge, 0));
+	if (!charges.some(charge => charge > 0) || !charges.some(charge => charge < 0)) return undefined;
+	const result: Molecule = { version: 1, kind: "molecule", catalogKey: key, name: entry.formula,
+		representation: "aqueous-ions", geometry: "estimated", atoms: [], bonds: [] };
+	for (const [index, graph] of graphs.entries()) {
+		const positioned = graph.geometry ? graph : fitGeometry({ ...graph, atoms: diagramPositions(graph.atoms, graph.bonds) });
+		if (!positioned.atoms.length) return undefined;
+		const focus = positioned.atoms.filter(atom => atom.atomicNumber !== 1);
+		const center = focus.length ? focus : positioned.atoms;
+		const mean = (value: (atom: Atom) => number) => center.reduce((sum, atom) => sum + value(atom), 0) / center.length;
+		const x = index % 2 * 10, y = -Math.floor(index / 2) * 9;
+		const dx = x - mean(atom => atom.diagram[0]), dy = y - mean(atom => atom.diagram[1]);
+		const px = x - mean(atom => atom.position[0]), py = y - mean(atom => atom.position[1]), pz = mean(atom => atom.position[2]);
+		const ids = new Map(positioned.atoms.map((atom, i) => [atom.id, result.atoms.length + i + 1]));
+		result.atoms.push(...positioned.atoms.map(atom => ({ ...atom, id: ids.get(atom.id),
+			diagram: [atom.diagram[0] + dx, atom.diagram[1] + dy] as const,
+			position: [atom.position[0] + px, atom.position[1] + py, atom.position[2] - pz] as const,
+		})));
+		result.bonds.push(...positioned.bonds.map(bond => ({ ...bond, from: ids.get(bond.from), to: ids.get(bond.to) })));
+	}
+	aqueousPreviews.set(key, result);
+	return result;
+}
+
 /** Compare composition, charge and connectivity independently of atom IDs and the camera. */
 function sameGraph(a: Molecule, b: Molecule) {
 	if (a.atoms.length !== b.atoms.length || a.bonds.length !== b.bonds.length) return false;
@@ -250,6 +289,11 @@ export function matchingRecipe(structure: Structure): CatalogChemical | undefine
 			const legacy = legacyCatalogCrystal(entry);
 			return (!multiple && model?.kind === "crystal" && exactCrystal(model, structure))
 				|| (legacy && exactCrystal(legacy, structure));
+		}
+		if (structure.representation === "aqueous-ions") {
+			if (structure.catalogKey !== entry.name) return false;
+			const overview = catalogAqueousStructure(entry.name);
+			return !!overview && sameGraph(overview, structure);
 		}
 		if (structure.repeatUnit || structure.representation === "constituent" || structure.representation === "repeat-unit") return false;
 		const raw = models.get(entry.name) ?? [];

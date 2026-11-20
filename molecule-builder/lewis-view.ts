@@ -1,6 +1,7 @@
 import { html, nothing, svg } from "lit";
 import { atomSymbol, electronDots, formalCharge, signedNumber, type lewisDiagram } from "./structure-diagram";
-import type { Point2 } from "./structure";
+import { point2, type HydrationWater } from "./aqueous-preview";
+import type { Point2, Point3 } from "./structure";
 
 type Diagram = ReturnType<typeof lewisDiagram>;
 export type DiagramBox = readonly [number, number, number, number];
@@ -11,9 +12,10 @@ function bounds(points: Point2[]) {
 	return { left: Math.min(...x), right: Math.max(...x), top: Math.max(...y), bottom: Math.min(...y) };
 }
 
-export function lewisViewBox(diagram: Diagram): DiagramBox {
+export function lewisViewBox(diagram: Diagram, waters: readonly HydrationWater<Point3>[] = []): DiagramBox {
 	if (!diagram.atoms.length) return [-3, -2, 6, 4];
-	const { left, right, top, bottom } = bounds(diagram.atoms.map(atom => atom.diagram));
+	const points = [...diagram.atoms.map(atom => atom.diagram), ...waters.flatMap(water => [water.oxygen, ...water.hydrogens].map(point2))];
+	const { left, right, top, bottom } = bounds(points);
 	const paddingX = diagram.ends ? 1.75 : .9;
 	const paddingY = .95;
 	return [left - paddingX, -top - paddingY, right - left + 2 * paddingX, top - bottom + 2 * paddingY];
@@ -41,6 +43,8 @@ function bondLines(from: Point2, to: Point2, order: number, options: { active?: 
 export function renderLewis(diagram: Diagram, box: DiagramBox, options: {
 	picked?: number; hovered?: number; bondStart?: number; from?: number; preview?: Point2;
 	order: number; drag?: { id: number; position: Point2 }; label: string; oxidationLabel: string; unknownLabel: string;
+	waters?: readonly HydrationWater<Point3>[];
+	monatomicIons?: ReadonlySet<number>;
 }) {
 	const atoms = diagram.atoms.map(atom => ({ ...atom, diagram: options.drag?.id === atom.id ? options.drag.position : atom.diagram }));
 	const positions = new Map(atoms.map(atom => [atom.id, atom.diagram]));
@@ -60,6 +64,19 @@ export function renderLewis(diagram: Diagram, box: DiagramBox, options: {
 		</g>`;
 	}
 	return html`<svg class="drawing lewis-view" viewBox=${box.join(" ")} role="img" aria-label=${options.label}>
+		${options.waters?.map(({ oxygen, hydrogens, contact }) => {
+			const length = Math.hypot(contact.to[0] - contact.from[0], contact.to[1] - contact.from[1]);
+			const inset = Math.min(.4 / length, .24);
+			const axis = [contact.to[0] - contact.from[0], contact.to[1] - contact.from[1]];
+			return svg`<g class="hydration-water" aria-hidden="true" pointer-events="none">
+				<line class="hydration-contact" data-contact=${contact.kind}
+					x1=${contact.from[0] + axis[0] * inset} y1=${-contact.from[1] - axis[1] * inset}
+					x2=${contact.to[0] - axis[0] * inset} y2=${-contact.to[1] + axis[1] * inset} />
+				${hydrogens.map(hydrogen => bondLines(point2(oxygen), point2(hydrogen), 1))}
+				${[oxygen, ...hydrogens].map(([x, y], index) => svg`<text x=${x} y=${-y} data-water-atom=${index ? "H" : "O"}
+					text-anchor="middle" dominant-baseline="central">${index ? "H" : "O"}</text>`)}
+			</g>`;
+		})}
 		${repeat}
 		${diagram.bonds.map(bond => svg`<g data-bond="${bond.from}-${bond.to}">
 			${bondLines(positions.get(bond.from), positions.get(bond.to), bond.order,
@@ -70,19 +87,23 @@ export function renderLewis(diagram: Diagram, box: DiagramBox, options: {
 			const [x, y] = atom.diagram;
 			const symbol = atomSymbol(atom.atomicNumber);
 			const oxidation = atom.oxidation === undefined ? "?" : signedNumber(atom.oxidation);
+			const showOxidation = !options.monatomicIons?.has(atom.id);
 			const sign = atom.oxidation === undefined || atom.oxidation === 0 ? "neutral" : atom.oxidation > 0 ? "positive" : "negative";
 			const charge = formalCharge(atom.charge);
 			const active = isActive(atom.id);
 			const partners = atom.bonds.map(bond => positions.get(bond.from === atom.id ? bond.to : bond.from));
-			const occupied = [Math.PI / 2];
+			const occupied = showOxidation ? [Math.PI / 2] : [];
 			if (charge) occupied.push(Math.PI / 4);
 			if (atom.isotope) occupied.push(3 * Math.PI / 4);
 			if (diagram.ends?.includes(atom.id)) occupied.push(atom.id === diagram.ends[0] ? Math.PI : 0);
 			return svg`<g data-atom=${atom.id} ?data-active=${active} class="lewis-atom">
-				<title>${symbol} · ${atom.id} · ${options.oxidationLabel} ${atom.oxidation === undefined ? options.unknownLabel : oxidation}</title>
+				<title>${showOxidation
+					? `${symbol} · ${atom.id} · ${options.oxidationLabel} ${atom.oxidation === undefined ? options.unknownLabel : oxidation}`
+					: symbol + charge}</title>
 				<circle class="lewis-hit" cx=${x} cy=${-y} r=".27" />
 				<text class="lewis-symbol" x=${x} y=${-y} text-anchor="middle" dominant-baseline="central">${symbol}</text>
-				<text class="oxidation-number" data-oxidation=${sign} x=${x} y=${-y - .25} text-anchor="middle">${oxidation}</text>
+				${showOxidation ? svg`<text class="oxidation-number" data-oxidation=${sign} x=${x} y=${-y - .25}
+					text-anchor="middle">${oxidation}</text>` : nothing}
 				${charge ? svg`<text class="formal-charge" x=${x + (symbol.length === 1 ? .15 : .23)} y=${-y - .12}>${charge}</text>` : nothing}
 				${atom.isotope ? svg`<text class="formal-charge" x=${x - (symbol.length === 1 ? .15 : .23)} y=${-y - .12}
 					text-anchor="end">${atom.isotope}</text>` : nothing}

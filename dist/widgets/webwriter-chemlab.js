@@ -30643,6 +30643,116 @@ var init_chemicals = __esm({
   }
 });
 
+// periodic-table/selection.ts
+function isAtomicNumber(value) {
+  return typeof value === "number" && Number.isInteger(value) && value >= MIN_ATOMIC_NUMBER && value <= MAX_ATOMIC_NUMBER;
+}
+var MIN_ATOMIC_NUMBER, MAX_ATOMIC_NUMBER, UNSET;
+var init_selection = __esm({
+  "periodic-table/selection.ts"() {
+    MIN_ATOMIC_NUMBER = 1;
+    MAX_ATOMIC_NUMBER = 118;
+    UNSET = Symbol("unset");
+  }
+});
+
+// molecule-builder/structure.ts
+function cellVectors({ lengths: [a6, b4, c9], angles }) {
+  const [alpha2, beta, gamma] = angles.map((angle) => angle * Math.PI / 180);
+  const y5 = (Math.cos(alpha2) - Math.cos(beta) * Math.cos(gamma)) / Math.sin(gamma);
+  return [
+    [a6, 0, 0],
+    [b4 * Math.cos(gamma), b4 * Math.sin(gamma), 0],
+    [c9 * Math.cos(beta), c9 * y5, c9 * Math.sqrt(1 - Math.cos(beta) ** 2 - y5 ** 2)]
+  ];
+}
+function isCell(cell) {
+  return cell.lengths.every((value) => Number.isFinite(value) && value >= 0.1 && value <= 200) && cell.angles.every((value) => Number.isFinite(value) && value >= 1 && value <= 179) && cellVectors(cell)[2][2] > 1e-3;
+}
+function record(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function numbers2(value, length2) {
+  return Array.isArray(value) && value.length === length2 && value.every((item) => typeof item === "number" && Number.isFinite(item) && Math.abs(item) <= 1e4);
+}
+function atomIdentity(value) {
+  return record(value) && Number.isSafeInteger(value.id) && Number(value.id) > 0 && isAtomicNumber(value.atomicNumber) && Number.isInteger(value.charge) && Math.abs(Number(value.charge)) <= 8 && (value.isotope === void 0 || Number.isInteger(value.isotope) && Number(value.isotope) >= value.atomicNumber && Number(value.isotope) <= 400);
+}
+function uniqueIds(values) {
+  return new Set(values.map((value) => value.id)).size === values.length;
+}
+function readStructure(value) {
+  if (!record(value) || value.version !== 1 || typeof value.name !== "string" || value.name.length > 160) return null;
+  const base = { version: 1, name: value.name };
+  if (typeof value.catalogKey === "string" && value.catalogKey.length <= 160) base.catalogKey = value.catalogKey;
+  if (typeof value.source === "string" && value.source.length <= 240) base.source = value.source;
+  if (value.kind === "molecule") {
+    if (!Array.isArray(value.atoms) || value.atoms.length > MAX_ATOMS || !Array.isArray(value.bonds) || value.bonds.length > MAX_ATOMS * 4) return null;
+    const atoms = [];
+    for (const atom of value.atoms) {
+      if (!atomIdentity(atom) || !numbers2(atom.diagram, 2) || !numbers2(atom.position, 3)) return null;
+      const { id: id3, atomicNumber, charge, isotope, diagram, position } = atom;
+      atoms.push({ id: id3, atomicNumber, charge, isotope, diagram: [...diagram], position: [...position] });
+    }
+    if (!uniqueIds(atoms)) return null;
+    const atomIds = new Set(atoms.map((atom) => atom.id));
+    const pairs = /* @__PURE__ */ new Set();
+    const bonds = [];
+    for (const bond of value.bonds) {
+      if (!record(bond) || typeof bond.from !== "number" || typeof bond.to !== "number" || !atomIds.has(bond.from) || !atomIds.has(bond.to) || bond.from === bond.to || bond.order !== 1 && bond.order !== 2 && bond.order !== 3) return null;
+      const pair = [bond.from, bond.to].sort((a6, b4) => a6 - b4).join("-");
+      if (pairs.has(pair)) return null;
+      pairs.add(pair);
+      bonds.push({ from: bond.from, to: bond.to, order: bond.order, ...bond.dative === true ? { dative: true } : {} });
+    }
+    const geometry = value.geometry === "idealized" || value.geometry === "supplied" || value.geometry === "estimated" ? value.geometry : void 0;
+    const representation = value.representation === "constituent" || value.representation === "repeat-unit" || value.representation === "ionic-components" || value.representation === "aqueous-ions" || value.representation === "conformer" || value.representation === "experimental" ? value.representation : void 0;
+    const repeat = value.repeatUnit;
+    const repeatAtoms = record(repeat) && Array.isArray(repeat.atoms) ? repeat.atoms : [];
+    const repeatUnit = repeatAtoms.length >= 2 && repeatAtoms.length <= atomIds.size && new Set(repeatAtoms).size === repeatAtoms.length && repeatAtoms.every((id3) => atomIds.has(id3)) && record(repeat) && Array.isArray(repeat.ends) && repeat.ends.length === 2 && repeat.ends[0] !== repeat.ends[1] && repeat.ends.every((id3) => repeatAtoms.includes(id3)) ? { atoms: [...repeatAtoms], ends: [repeat.ends[0], repeat.ends[1]] } : void 0;
+    return { ...base, kind: "molecule", atoms, bonds, geometry, representation, repeatUnit };
+  }
+  if (value.kind !== "crystal" || !record(value.cell) || !numbers2(value.cell.lengths, 3) || !numbers2(value.cell.angles, 3) || !Array.isArray(value.sites) || value.sites.length > MAX_SITES) return null;
+  const cell = { lengths: [...value.cell.lengths], angles: [...value.cell.angles] };
+  if (!isCell(cell)) return null;
+  const sites = [];
+  const positions2 = /* @__PURE__ */ new Set();
+  for (const site of value.sites) {
+    if (!atomIdentity(site) || !numbers2(site.fractional, 3) || site.fractional.some((coordinate) => coordinate < 0 || coordinate >= 1)) return null;
+    const occupancy = site.occupancy;
+    if (occupancy !== void 0 && (typeof occupancy !== "number" || !(occupancy > 0 && occupancy <= 1))) return null;
+    const position = site.fractional.join(",");
+    if (positions2.has(position)) return null;
+    positions2.add(position);
+    const { id: id3, atomicNumber, charge, isotope } = site;
+    const ion2 = typeof site.ion === "string" ? site.ion.trim().slice(0, 60) || void 0 : void 0;
+    sites.push({
+      id: id3,
+      atomicNumber,
+      charge,
+      isotope,
+      ion: ion2,
+      occupancy,
+      fractional: [...site.fractional]
+    });
+  }
+  if (!uniqueIds(sites)) return null;
+  const bravais = typeof value.bravais === "string" ? value.bravais.slice(0, 60) : void 0;
+  const spaceGroup = typeof value.spaceGroup === "string" ? value.spaceGroup.slice(0, 60) : void 0;
+  const conditions = typeof value.conditions === "string" ? value.conditions.slice(0, 96) : void 0;
+  const temperatureK = typeof value.temperatureK === "number" && Number.isFinite(value.temperatureK) && value.temperatureK >= 0 ? value.temperatureK : void 0;
+  return { ...base, kind: "crystal", cell, sites, bravais, spaceGroup, conditions, temperatureK };
+}
+var MAX_ATOMS, MAX_SITES, MAX_FILE_BYTES;
+var init_structure = __esm({
+  "molecule-builder/structure.ts"() {
+    init_selection();
+    MAX_ATOMS = 128;
+    MAX_SITES = 128;
+    MAX_FILE_BYTES = 512 * 1024;
+  }
+});
+
 // node_modules/pixi.js/lib/extensions/Extensions.mjs
 var ExtensionType, normalizeExtension, normalizeExtensionPriority, extensions;
 var init_Extensions = __esm({
@@ -77371,6 +77481,95 @@ var init_geometry = __esm({
   }
 });
 
+// molecule-builder/crystal-display.ts
+var centeringOffsets;
+var init_crystal_display = __esm({
+  "molecule-builder/crystal-display.ts"() {
+    init_element_reference();
+    init_structure();
+    centeringOffsets = {
+      A: [[0, 0.5, 0.5]],
+      B: [[0.5, 0, 0.5]],
+      C: [[0.5, 0.5, 0]],
+      I: [[0.5, 0.5, 0.5]],
+      F: [[0, 0.5, 0.5], [0.5, 0, 0.5], [0.5, 0.5, 0]],
+      R: [[2 / 3, 1 / 3, 1 / 3], [1 / 3, 2 / 3, 2 / 3]],
+      H: [[2 / 3, 1 / 3, 0], [1 / 3, 2 / 3, 0]]
+    };
+  }
+});
+
+// molecule-builder/structure-diagram.ts
+function chemicalFormula(value) {
+  return value.split("\xB7").map((part) => part.replace(/^(\s*\d+)?(.*)$/, (_3, coefficient, compound) => (coefficient ?? "") + subscript2(compound))).join("\xB7");
+}
+var subscript2;
+var init_structure_diagram = __esm({
+  "molecule-builder/structure-diagram.ts"() {
+    init_element_reference();
+    init_crystal_display();
+    init_geometry();
+    subscript2 = (value) => value.replace(/\d/g, (digit) => "\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089"[Number(digit)]);
+  }
+});
+
+// molecule-builder/aqueous-preview.ts
+function aqueousAcidBaseSpecies(solute, carboxylicAcid) {
+  const hydronium = waterIon(true, 3, 1);
+  const formula2 = chemicalFormula(solute.formula);
+  if (formula2 === "HCl") return [hydronium, { formula: "Cl\u207B", atoms: ["chlorine"], bonds: [], charges: [-1] }];
+  if (formula2 === "NH\u2083") return [waterIon(false, 4, 1), waterIon(true, 1, -1), solute];
+  const edges = solute.bonds.map((bond) => {
+    const [pair, type, order] = bond.split(":");
+    const [from2, to2] = pair.split("-").map(Number);
+    return { from: from2, to: to2, type, order };
+  });
+  const conjugate = (protons) => {
+    const ids = /* @__PURE__ */ new Map();
+    const atoms = solute.atoms.filter((_3, id3) => {
+      if (protons.includes(id3)) return false;
+      ids.set(id3, ids.size);
+      return true;
+    });
+    const charges = atoms.map(() => 0);
+    const bonds = edges.flatMap(({ from: from2, to: to2, type, order }) => {
+      const a6 = ids.get(from2), b4 = ids.get(to2);
+      if (a6 === void 0 || b4 === void 0) {
+        charges[a6 ?? b4]--;
+        return [];
+      }
+      return [`${a6}-${b4}:${type}:${order}`];
+    });
+    return { formula: "", atoms, bonds, charges };
+  };
+  if (carboxylicAcid) {
+    const carbonyls = new Set(edges.filter(({ from: from2, to: to2, order }) => order === "2" && solute.atoms[from2] === "carbon" && solute.atoms[to2] === "oxygen").map(({ from: from2 }) => from2));
+    const acidicOxygens = new Set(edges.filter(({ from: from2, to: to2, order }) => order === "1" && carbonyls.has(from2) && solute.atoms[to2] === "oxygen").map(({ to: to2 }) => to2));
+    const proton = edges.find(({ from: from2, to: to2 }) => acidicOxygens.has(from2) && solute.atoms[to2] === "hydrogen");
+    return proton ? [hydronium, conjugate([proton.to]), solute] : void 0;
+  }
+  const last = solute.atoms.length - 1;
+  if (formula2 === "H\u2082SO\u2084") return [hydronium, conjugate([last]), conjugate([last - 1, last])];
+  if (formula2 === "H\u2083PO\u2084") return [hydronium, conjugate([last]), solute];
+  return void 0;
+}
+var waterIon;
+var init_aqueous_preview = __esm({
+  "molecule-builder/aqueous-preview.ts"() {
+    init_geometry();
+    init_structure_diagram();
+    waterIon = (oxygen, hydrogenCount, charge) => {
+      const center = oxygen ? "oxygen" : "nitrogen";
+      return {
+        formula: oxygen ? charge > 0 ? "H\u2083O\u207A" : "OH\u207B" : "NH\u2084\u207A",
+        atoms: [center, ...Array(hydrogenCount).fill("hydrogen")],
+        bonds: Array.from({ length: hydrogenCount }, (_3, index2) => `0-${index2 + 1}:covalent:1`),
+        charges: [charge]
+      };
+    };
+  }
+});
+
 // data/structures/catalog.generated.json
 var catalog_generated_default;
 var init_catalog_generated = __esm({
@@ -77572,6 +77771,7 @@ var init_sources = __esm({
 // molecule-builder/catalog.ts
 var catalog_exports = {};
 __export(catalog_exports, {
+  catalogAqueousStructure: () => catalogAqueousStructure,
   catalogEntry: () => catalogEntry,
   catalogIsMixture: () => catalogIsMixture,
   catalogStructures: () => catalogStructures,
@@ -77743,6 +77943,49 @@ function catalogStructures(key) {
     return fitGeometry({ ...model, atoms: diagramPositions(model.atoms, model.bonds) });
   });
 }
+function catalogAqueousStructure(key) {
+  const cached = aqueousPreviews.get(key);
+  if (cached) return cached;
+  const entry = entries.get(key);
+  const limewater = key === "Kalkwasser";
+  const carboxylicAcid = entry?.category === "Carbons\xE4uren" && !!entry.concentrationLimit;
+  if (!entry || !entry.recipe?.aqueousMolar && !carboxylicAcid && !limewater) return void 0;
+  const definitions = catalogDefinitions(entry);
+  const species = definitions.length === 1 ? aqueousAcidBaseSpecies(definitions[0], carboxylicAcid) ?? definitions : definitions;
+  const graphs = limewater ? [references["@calcium"], references["@hydroxide"]] : species.flatMap((definition) => catalogMolecule(void 0, definition) ?? []);
+  const charges = graphs.map((graph) => graph.atoms.reduce((sum, atom) => sum + atom.charge, 0));
+  if (!charges.some((charge) => charge > 0) || !charges.some((charge) => charge < 0)) return void 0;
+  const result = {
+    version: 1,
+    kind: "molecule",
+    catalogKey: key,
+    name: entry.formula,
+    representation: "aqueous-ions",
+    geometry: "estimated",
+    atoms: [],
+    bonds: []
+  };
+  for (const [index2, graph] of graphs.entries()) {
+    const positioned = graph.geometry ? graph : fitGeometry({ ...graph, atoms: diagramPositions(graph.atoms, graph.bonds) });
+    if (!positioned.atoms.length) return void 0;
+    const focus = positioned.atoms.filter((atom) => atom.atomicNumber !== 1);
+    const center = focus.length ? focus : positioned.atoms;
+    const mean = (value) => center.reduce((sum, atom) => sum + value(atom), 0) / center.length;
+    const x4 = index2 % 2 * 10, y5 = -Math.floor(index2 / 2) * 9;
+    const dx = x4 - mean((atom) => atom.diagram[0]), dy = y5 - mean((atom) => atom.diagram[1]);
+    const px = x4 - mean((atom) => atom.position[0]), py = y5 - mean((atom) => atom.position[1]), pz = mean((atom) => atom.position[2]);
+    const ids = new Map(positioned.atoms.map((atom, i11) => [atom.id, result.atoms.length + i11 + 1]));
+    result.atoms.push(...positioned.atoms.map((atom) => ({
+      ...atom,
+      id: ids.get(atom.id),
+      diagram: [atom.diagram[0] + dx, atom.diagram[1] + dy],
+      position: [atom.position[0] + px, atom.position[1] + py, atom.position[2] - pz]
+    })));
+    result.bonds.push(...positioned.bonds.map((bond) => ({ ...bond, from: ids.get(bond.from), to: ids.get(bond.to) })));
+  }
+  aqueousPreviews.set(key, result);
+  return result;
+}
 function sameGraph(a6, b4) {
   if (a6.atoms.length !== b4.atoms.length || a6.bonds.length !== b4.bonds.length) return false;
   const neighbors = (molecule2, id3) => new Map(molecule2.bonds.flatMap(({ from: from2, to: to2, order }) => from2 === id3 ? [[to2, order]] : to2 === id3 ? [[from2, order]] : []));
@@ -77785,6 +78028,11 @@ function matchingRecipe(structure) {
       const legacy = legacyCatalogCrystal(entry);
       return !multiple && model?.kind === "crystal" && exactCrystal(model, structure) || legacy && exactCrystal(legacy, structure);
     }
+    if (structure.representation === "aqueous-ions") {
+      if (structure.catalogKey !== entry.name) return false;
+      const overview = catalogAqueousStructure(entry.name);
+      return !!overview && sameGraph(overview, structure);
+    }
     if (structure.repeatUnit || structure.representation === "constituent" || structure.representation === "repeat-unit") return false;
     const raw = models.get(entry.name) ?? [];
     const reference2 = referenceStructures(entry);
@@ -77795,13 +78043,14 @@ function matchingRecipe(structure) {
   const found = chemicalCatalog.filter(matches);
   return found.length === 1 ? found[0] : void 0;
 }
-var entries, catalogEntry, references, mixtureComponents, rockSaltMass, faceCentered, sitesPerCell, AVOGADRO_PER_ANGSTROM_CUBE, models, structureCatalog;
+var entries, catalogEntry, references, mixtureComponents, rockSaltMass, faceCentered, sitesPerCell, AVOGADRO_PER_ANGSTROM_CUBE, models, structureCatalog, aqueousPreviews;
 var init_catalog = __esm({
   "molecule-builder/catalog.ts"() {
     init_chemicals();
     init_legacy_names();
     init_metal_reference();
     init_geometry();
+    init_aqueous_preview();
     init_catalog_generated();
     init_sources();
     entries = new Map(chemicalCatalog.map((entry) => [entry.name, entry]));
@@ -77828,6 +78077,7 @@ var init_catalog = __esm({
       if (molecules.length) models.set(entry.name, molecules);
     }
     structureCatalog = chemicalCatalog;
+    aqueousPreviews = /* @__PURE__ */ new Map();
   }
 });
 
@@ -182342,104 +182592,8 @@ function worksheetPeer(widget, tag, id3) {
   return matching.length === 1 ? matching[0] : void 0;
 }
 
-// periodic-table/selection.ts
-var MIN_ATOMIC_NUMBER = 1;
-var MAX_ATOMIC_NUMBER = 118;
-var UNSET = Symbol("unset");
-function isAtomicNumber(value) {
-  return typeof value === "number" && Number.isInteger(value) && value >= MIN_ATOMIC_NUMBER && value <= MAX_ATOMIC_NUMBER;
-}
-
-// molecule-builder/structure.ts
-var MAX_ATOMS = 128;
-var MAX_SITES = 128;
-var MAX_FILE_BYTES = 512 * 1024;
-function cellVectors({ lengths: [a6, b4, c9], angles }) {
-  const [alpha2, beta, gamma] = angles.map((angle) => angle * Math.PI / 180);
-  const y5 = (Math.cos(alpha2) - Math.cos(beta) * Math.cos(gamma)) / Math.sin(gamma);
-  return [
-    [a6, 0, 0],
-    [b4 * Math.cos(gamma), b4 * Math.sin(gamma), 0],
-    [c9 * Math.cos(beta), c9 * y5, c9 * Math.sqrt(1 - Math.cos(beta) ** 2 - y5 ** 2)]
-  ];
-}
-function isCell(cell) {
-  return cell.lengths.every((value) => Number.isFinite(value) && value >= 0.1 && value <= 200) && cell.angles.every((value) => Number.isFinite(value) && value >= 1 && value <= 179) && cellVectors(cell)[2][2] > 1e-3;
-}
-function record(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-function numbers2(value, length2) {
-  return Array.isArray(value) && value.length === length2 && value.every((item) => typeof item === "number" && Number.isFinite(item) && Math.abs(item) <= 1e4);
-}
-function atomIdentity(value) {
-  return record(value) && Number.isSafeInteger(value.id) && Number(value.id) > 0 && isAtomicNumber(value.atomicNumber) && Number.isInteger(value.charge) && Math.abs(Number(value.charge)) <= 8 && (value.isotope === void 0 || Number.isInteger(value.isotope) && Number(value.isotope) >= value.atomicNumber && Number(value.isotope) <= 400);
-}
-function uniqueIds(values) {
-  return new Set(values.map((value) => value.id)).size === values.length;
-}
-function readStructure(value) {
-  if (!record(value) || value.version !== 1 || typeof value.name !== "string" || value.name.length > 160) return null;
-  const base = { version: 1, name: value.name };
-  if (typeof value.catalogKey === "string" && value.catalogKey.length <= 160) base.catalogKey = value.catalogKey;
-  if (typeof value.source === "string" && value.source.length <= 240) base.source = value.source;
-  if (value.kind === "molecule") {
-    if (!Array.isArray(value.atoms) || value.atoms.length > MAX_ATOMS || !Array.isArray(value.bonds) || value.bonds.length > MAX_ATOMS * 4) return null;
-    const atoms = [];
-    for (const atom of value.atoms) {
-      if (!atomIdentity(atom) || !numbers2(atom.diagram, 2) || !numbers2(atom.position, 3)) return null;
-      const { id: id3, atomicNumber, charge, isotope, diagram, position } = atom;
-      atoms.push({ id: id3, atomicNumber, charge, isotope, diagram: [...diagram], position: [...position] });
-    }
-    if (!uniqueIds(atoms)) return null;
-    const atomIds = new Set(atoms.map((atom) => atom.id));
-    const pairs = /* @__PURE__ */ new Set();
-    const bonds = [];
-    for (const bond of value.bonds) {
-      if (!record(bond) || typeof bond.from !== "number" || typeof bond.to !== "number" || !atomIds.has(bond.from) || !atomIds.has(bond.to) || bond.from === bond.to || bond.order !== 1 && bond.order !== 2 && bond.order !== 3) return null;
-      const pair = [bond.from, bond.to].sort((a6, b4) => a6 - b4).join("-");
-      if (pairs.has(pair)) return null;
-      pairs.add(pair);
-      bonds.push({ from: bond.from, to: bond.to, order: bond.order, ...bond.dative === true ? { dative: true } : {} });
-    }
-    const geometry = value.geometry === "idealized" || value.geometry === "supplied" || value.geometry === "estimated" ? value.geometry : void 0;
-    const representation = value.representation === "constituent" || value.representation === "repeat-unit" || value.representation === "ionic-components" || value.representation === "conformer" || value.representation === "experimental" ? value.representation : void 0;
-    const repeat = value.repeatUnit;
-    const repeatAtoms = record(repeat) && Array.isArray(repeat.atoms) ? repeat.atoms : [];
-    const repeatUnit = repeatAtoms.length >= 2 && repeatAtoms.length <= atomIds.size && new Set(repeatAtoms).size === repeatAtoms.length && repeatAtoms.every((id3) => atomIds.has(id3)) && record(repeat) && Array.isArray(repeat.ends) && repeat.ends.length === 2 && repeat.ends[0] !== repeat.ends[1] && repeat.ends.every((id3) => repeatAtoms.includes(id3)) ? { atoms: [...repeatAtoms], ends: [repeat.ends[0], repeat.ends[1]] } : void 0;
-    return { ...base, kind: "molecule", atoms, bonds, geometry, representation, repeatUnit };
-  }
-  if (value.kind !== "crystal" || !record(value.cell) || !numbers2(value.cell.lengths, 3) || !numbers2(value.cell.angles, 3) || !Array.isArray(value.sites) || value.sites.length > MAX_SITES) return null;
-  const cell = { lengths: [...value.cell.lengths], angles: [...value.cell.angles] };
-  if (!isCell(cell)) return null;
-  const sites = [];
-  const positions2 = /* @__PURE__ */ new Set();
-  for (const site of value.sites) {
-    if (!atomIdentity(site) || !numbers2(site.fractional, 3) || site.fractional.some((coordinate) => coordinate < 0 || coordinate >= 1)) return null;
-    const occupancy = site.occupancy;
-    if (occupancy !== void 0 && (typeof occupancy !== "number" || !(occupancy > 0 && occupancy <= 1))) return null;
-    const position = site.fractional.join(",");
-    if (positions2.has(position)) return null;
-    positions2.add(position);
-    const { id: id3, atomicNumber, charge, isotope } = site;
-    const ion2 = typeof site.ion === "string" ? site.ion.trim().slice(0, 60) || void 0 : void 0;
-    sites.push({
-      id: id3,
-      atomicNumber,
-      charge,
-      isotope,
-      ion: ion2,
-      occupancy,
-      fractional: [...site.fractional]
-    });
-  }
-  if (!uniqueIds(sites)) return null;
-  const bravais = typeof value.bravais === "string" ? value.bravais.slice(0, 60) : void 0;
-  const spaceGroup = typeof value.spaceGroup === "string" ? value.spaceGroup.slice(0, 60) : void 0;
-  const conditions = typeof value.conditions === "string" ? value.conditions.slice(0, 96) : void 0;
-  const temperatureK = typeof value.temperatureK === "number" && Number.isFinite(value.temperatureK) && value.temperatureK >= 0 ? value.temperatureK : void 0;
-  return { ...base, kind: "crystal", cell, sites, bravais, spaceGroup, conditions, temperatureK };
-}
+// webwriter-chemlab.ts
+init_structure();
 
 // data/chemicalPreviews.generated.ts
 var structures = [

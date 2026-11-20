@@ -6,6 +6,7 @@ import {
 import type { ShaderBit } from "@pixi/3d";
 import { atomColor, atomRadius, add, electronRegions, perpendicular, scale, subtract, unit } from "./geometry";
 import { crystalIonColors, latticePositions, siteIon } from "./crystal-display";
+import { aqueousComponents, hydrationWaters } from "./aqueous-preview";
 import { cartesian, cellVectors, replicatedSites, type Point3, type Structure } from "./structure";
 
 const vector = ([x, y, z]: Point3) => ({ x, y, z });
@@ -181,7 +182,7 @@ function radialTexture(stops: [number, string][], size = 256) {
 }
 
 /** What the scene shows besides the structure itself. */
-export type SceneDisplay = { electrons: boolean; lattice: boolean; edges: boolean; axes: boolean };
+export type SceneDisplay = { electrons: boolean; lattice: boolean; edges: boolean; axes: boolean; hydration: boolean };
 
 export class MoleculeScene {
 	static async create(host: HTMLElement) {
@@ -205,6 +206,7 @@ export class MoleculeScene {
 	readonly #content = new Container3D();
 	readonly #edges = new Container3D();
 	readonly #electrons = new Container3D();
+	readonly #hydration = new Container3D({ eventMode: "none" });
 	readonly #lattice = new Graphics({ eventMode: "none" });
 	readonly #axes = new Graphics({ eventMode: "none" });
 	readonly #axisLabels = ["a", "b", "c"].map(() => new Text({ text: "", style: { fontSize: 10, fill: 0x52525b } }));
@@ -224,6 +226,8 @@ export class MoleculeScene {
 	#hovered?: number;
 	#structure?: Structure;
 	#showElectrons = false;
+	#showHydration = false;
+	#hydrationBounds: Point3[] = [];
 	#showLattice = false;
 	#showEdges = true;
 	#showAxes = false;
@@ -250,7 +254,7 @@ export class MoleculeScene {
 		const sun = new DirectionalLight({ color: 0xffffff, intensity: 2.15 });
 		sun.position.set(3, 6, 7);
 		sun.lookAt({ x: 0, y: 0, z: 0 });
-		this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons);
+		this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons, this.#hydration);
 		this.#preview = this.#rod();
 		this.#preview.material = this.#material(SELECTION_COLOR);
 		this.#preview.visible = false;
@@ -375,6 +379,38 @@ export class MoleculeScene {
 		}
 	}
 
+	#renderHydration(structure: Structure, show: boolean) {
+		for (const child of this.#hydration.removeChildren()) child.destroy();
+		this.#hydrationBounds = [];
+		if (!show || structure.kind !== "molecule") return;
+		const atom = (position: Point3, number: number, radius: number) => {
+			const mesh = new Mesh3D({ geometry: this.#sphere, material: this.#material(atomColor(number)), position: vector(position) });
+			mesh.scale.set(radius);
+			this.#hydration.addChild(mesh);
+			this.#hydrationBounds.push(position);
+		};
+		const rod = (from: Point3, to: Point3, color: number, width: number) => {
+			const mesh = new Mesh3D({ geometry: this.#cylinder, material: this.#material(color) });
+			this.#line(mesh, from, to, width);
+			this.#hydration.addChild(mesh);
+		};
+		for (const ion of aqueousComponents(structure)) {
+			for (const { oxygen, hydrogens, contact } of hydrationWaters(ion, 3)) {
+				atom(oxygen, 8, .22);
+				for (const hydrogen of hydrogens) {
+					atom(hydrogen, 1, .13);
+					rod(oxygen, hydrogen, 0x64748b, .028);
+				}
+				const axis = subtract(contact.to, contact.from);
+				const color = contact.kind === "hydrogen" ? 0x6940a2 : 0x167384;
+				const dash = contact.kind === "hydrogen" ? .09 : .04;
+				for (let offset = .22; offset < .82; offset += .15) {
+					rod(add(contact.from, scale(axis, offset)), add(contact.from, scale(axis, offset + dash)), color, .026);
+				}
+			}
+		}
+	}
+
 	setScene(structure: Structure, repeats: number, selection: number[], display: SceneDisplay) {
 		const rebuild = structure !== this.#structure || repeats !== this.#repeats;
 		const crystal = structure.kind === "crystal";
@@ -439,6 +475,11 @@ export class MoleculeScene {
 		if (rebuild || display.electrons !== this.#showElectrons) {
 			this.#showElectrons = display.electrons;
 			this.#renderElectrons(structure, display.electrons);
+			this.#draw();
+		}
+		if (rebuild || display.hydration !== this.#showHydration) {
+			this.#showHydration = display.hydration;
+			this.#renderHydration(structure, display.hydration);
 			this.#draw();
 		}
 		const selected = new Set(selection);
@@ -519,10 +560,11 @@ export class MoleculeScene {
 	}
 
 	fit() {
-		const min = [0, 1, 2].map(axis => Math.min(...this.#bounds.map(point => point[axis])));
-		const max = [0, 1, 2].map(axis => Math.max(...this.#bounds.map(point => point[axis])));
-		this.#target = this.#bounds.length ? min.map((value, axis) => (value + max[axis]) / 2) as [number, number, number] : [0, 0, 0];
-		const radius = this.#bounds.length ? Math.max(...this.#bounds.map(point => Math.hypot(...subtract(point, this.#target)))) : 1;
+		const bounds = [...this.#bounds, ...this.#hydrationBounds];
+		const min = [0, 1, 2].map(axis => Math.min(...bounds.map(point => point[axis])));
+		const max = [0, 1, 2].map(axis => Math.max(...bounds.map(point => point[axis])));
+		this.#target = bounds.length ? min.map((value, axis) => (value + max[axis]) / 2) as [number, number, number] : [0, 0, 0];
+		const radius = bounds.length ? Math.max(...bounds.map(point => Math.hypot(...subtract(point, this.#target)))) : 1;
 		// Fit the short edge, so a wide embed does not shrink the structure to a
 		// sliver. The padding keeps the canvas controls clear of the atoms and
 		// scales with the structure, so a single molecule does not end up as a

@@ -17,7 +17,7 @@ export type RepeatUnit = { atoms: number[]; ends: [number, number] };
 export type Cell = { lengths: Point3; angles: Point3 };
 export type Site = Omit<Atom, "diagram" | "position"> & { fractional: Point3; occupancy?: number; ion?: string };
 type Base = { version: 1; name: string; catalogKey?: string; source?: string };
-export type Representation = "constituent" | "repeat-unit" | "ionic-components" | "conformer" | "experimental";
+export type Representation = "constituent" | "repeat-unit" | "ionic-components" | "aqueous-ions" | "conformer" | "experimental";
 export type Molecule = Base & {
 	kind: "molecule";
 	atoms: Atom[];
@@ -140,7 +140,8 @@ export function readStructure(value: unknown): Structure | null {
 		const geometry = value.geometry === "idealized" || value.geometry === "supplied" || value.geometry === "estimated"
 			? value.geometry : undefined;
 		const representation = value.representation === "constituent" || value.representation === "repeat-unit"
-			|| value.representation === "ionic-components" || value.representation === "conformer" || value.representation === "experimental"
+			|| value.representation === "ionic-components" || value.representation === "aqueous-ions"
+			|| value.representation === "conformer" || value.representation === "experimental"
 			? value.representation : undefined;
 		const repeat = value.repeatUnit;
 		const repeatAtoms = record(repeat) && Array.isArray(repeat.atoms) ? repeat.atoms : [];

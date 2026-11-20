@@ -6068,8 +6068,8 @@ function estimatedGeometry(molecule2) {
     neighbors[b4].push({ index: a5, length: distance2 });
     return { a: a5, b: b4, distance: distance2 };
   });
-  const angles = neighbors.flatMap((edges, center) => edges.flatMap((left, index) => edges.slice(index + 1).map((right) => {
-    const ideal = shapeFor(molecule2, atoms[center].id)?.angle;
+  const angles = neighbors.flatMap((edges, center2) => edges.flatMap((left, index) => edges.slice(index + 1).map((right) => {
+    const ideal = shapeFor(molecule2, atoms[center2].id)?.angle;
     const angle = (ideal ?? (edges.length <= 3 ? 120 : edges.length === 4 ? 109.47 : 90)) * Math.PI / 180;
     const distance2 = Math.sqrt(left.length ** 2 + right.length ** 2 - 2 * left.length * right.length * Math.cos(angle));
     return { a: left.index, b: right.index, distance: distance2 };
@@ -6318,7 +6318,7 @@ function readStructure(value) {
       bonds.push({ from: bond.from, to: bond.to, order: bond.order, ...bond.dative === true ? { dative: true } : {} });
     }
     const geometry = value.geometry === "idealized" || value.geometry === "supplied" || value.geometry === "estimated" ? value.geometry : void 0;
-    const representation = value.representation === "constituent" || value.representation === "repeat-unit" || value.representation === "ionic-components" || value.representation === "conformer" || value.representation === "experimental" ? value.representation : void 0;
+    const representation = value.representation === "constituent" || value.representation === "repeat-unit" || value.representation === "ionic-components" || value.representation === "aqueous-ions" || value.representation === "conformer" || value.representation === "experimental" ? value.representation : void 0;
     const repeat = value.repeatUnit;
     const repeatAtoms = record(repeat) && Array.isArray(repeat.atoms) ? repeat.atoms : [];
     const repeatUnit = repeatAtoms.length >= 2 && repeatAtoms.length <= atomIds.size && new Set(repeatAtoms).size === repeatAtoms.length && repeatAtoms.every((id) => atomIds.has(id)) && record(repeat) && Array.isArray(repeat.ends) && repeat.ends.length === 2 && repeat.ends[0] !== repeat.ends[1] && repeat.ends.every((id) => repeatAtoms.includes(id)) ? { atoms: [...repeatAtoms], ends: [repeat.ends[0], repeat.ends[1]] } : void 0;
@@ -6420,6 +6420,339 @@ var init_crystal_display = __esm({
       R: [[2 / 3, 1 / 3, 1 / 3], [1 / 3, 2 / 3, 2 / 3]],
       H: [[2 / 3, 1 / 3, 0], [1 / 3, 2 / 3, 0]]
     };
+  }
+});
+
+// molecule-builder/structure-diagram.ts
+function chemicalFormula(value) {
+  return value.split("\xB7").map((part) => part.replace(/^(\s*\d+)?(.*)$/, (_3, coefficient, compound) => (coefficient ?? "") + subscript(compound))).join("\xB7");
+}
+function lewisDiagram(molecule2) {
+  const repeat = molecule2.repeatUnit;
+  const members = repeat ? new Set(repeat.atoms) : void 0;
+  const visible = members ? molecule2.atoms.filter((atom) => members.has(atom.id)) : molecule2.atoms;
+  const atoms = new Map(visible.map((atom) => [atom.id, atom]));
+  const bonds = molecule2.bonds.filter((bond) => atoms.has(bond.from) && atoms.has(bond.to));
+  const oxidation = new Map(visible.map((atom) => [atom.id, atom.charge]));
+  const incident = new Map(visible.map((atom) => [atom.id, []]));
+  const assign = (from, to, order) => {
+    const a5 = atoms.get(from).atomicNumber, b4 = atoms.get(to).atomicNumber;
+    if (a5 === b4) return;
+    if (allen[a5] === void 0 || allen[b4] === void 0 || allen[a5] === allen[b4]) {
+      oxidation.set(from, void 0);
+      oxidation.set(to, void 0);
+      return;
+    }
+    const step = Math.sign(allen[b4] - allen[a5]) * order;
+    if (oxidation.get(from) !== void 0) oxidation.set(from, oxidation.get(from) + step);
+    if (oxidation.get(to) !== void 0) oxidation.set(to, oxidation.get(to) - step);
+  };
+  for (const bond of bonds) {
+    incident.get(bond.from).push(bond);
+    incident.get(bond.to).push(bond);
+    if (!bond.dative) assign(bond.from, bond.to, bond.order);
+  }
+  if (repeat) assign(...repeat.ends, 1);
+  return {
+    bonds,
+    ends: repeat?.ends,
+    atoms: visible.map((atom) => ({
+      ...atom,
+      oxidation: oxidation.get(atom.id),
+      bonds: incident.get(atom.id),
+      electrons: remainingElectrons(atom, incident.get(atom.id), Number(repeat?.ends.includes(atom.id) ?? false))
+    }))
+  };
+}
+function editableRepeatUnit(molecule2) {
+  if (!molecule2.repeatUnit || molecule2.repeatUnit.atoms.length === molecule2.atoms.length) return molecule2;
+  const unit2 = lewisDiagram(molecule2);
+  return { ...molecule2, atoms: molecule2.atoms.filter((atom) => molecule2.repeatUnit.atoms.includes(atom.id)), bonds: unit2.bonds };
+}
+function electronDots(center2, neighbors, count2, used = []) {
+  if (!(count2 > 0 && count2 <= 8)) return [];
+  const [x4, y5] = center2;
+  const directions = [...used, ...neighbors.map(([a5, b4]) => Math.atan2(b4 - y5, a5 - x4))];
+  const dots = [];
+  for (let pair = 0; pair < count2; pair += 2) {
+    let angle = Math.PI / 2;
+    let best = -Infinity;
+    for (let sample = 0; sample < 24; sample++) {
+      const candidate = Math.PI / 2 + sample * Math.PI / 12;
+      const gap = Math.min(Math.PI, ...directions.map((direction) => Math.acos(Math.max(-1, Math.min(1, Math.cos(direction - candidate))))));
+      if (gap > best + 1e-6) {
+        angle = candidate;
+        best = gap;
+      }
+    }
+    directions.push(angle);
+    const dx = Math.cos(angle), dy = Math.sin(angle);
+    for (const offset3 of pair + 1 < count2 ? [-0.055, 0.055] : [0]) {
+      dots.push([x4 + 0.32 * dx - offset3 * dy, y5 + 0.32 * dy + offset3 * dx]);
+    }
+  }
+  return dots;
+}
+function crystalSpecies(crystal) {
+  const groups2 = /* @__PURE__ */ new Map();
+  for (const site of crystal.sites) {
+    const ion2 = siteIon(site);
+    const label = ion2 || atomSymbol(site.atomicNumber);
+    if (!groups2.has(label)) groups2.set(label, { label, ion: ion2, sites: [] });
+    groups2.get(label).sites.push(site);
+  }
+  return [...groups2.values()].sort((a5, b4) => speciesOrder(a5.ion) - speciesOrder(b4.ion) || a5.label.localeCompare(b4.label, "en"));
+}
+function monatomicCharge(site) {
+  const ion2 = siteIon(site);
+  const symbol2 = atomSymbol(site.atomicNumber);
+  const suffix = ion2?.startsWith(symbol2) ? ion2.slice(symbol2.length) : "";
+  if (!/^[¹²³⁴⁵⁶⁷⁸]?[⁺⁻]$/.test(suffix)) return site.charge;
+  const magnitude = suffix.length === 1 ? 1 : "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078".indexOf(suffix[0]);
+  return suffix.endsWith("\u207A") ? magnitude : -magnitude;
+}
+function empiricalCrystalFormula(crystal) {
+  const counts2 = /* @__PURE__ */ new Map();
+  for (const site of crystal.sites) {
+    const item = counts2.get(site.atomicNumber) ?? { amount: 0, order: 2 };
+    item.amount += site.occupancy ?? 1;
+    item.order = Math.min(item.order, speciesOrder(siteIon(site)));
+    counts2.set(site.atomicNumber, item);
+  }
+  if (!counts2.size) return "";
+  const min2 = Math.min(...[...counts2.values()].map((item) => item.amount));
+  let multiplier = 1;
+  const ratios = [...counts2.values()].map((item) => item.amount / min2);
+  while (multiplier <= 24 && ratios.some((ratio) => Math.abs(ratio * multiplier - Math.round(ratio * multiplier)) > 2e-3)) multiplier++;
+  const integral = multiplier <= 24;
+  return [...counts2].sort(([a5, left], [b4, right]) => left.order - right.order || (allen[a5] ?? Infinity) - (allen[b4] ?? Infinity) || a5 - b4).map(([number2, { amount }]) => {
+    const ratio = integral ? Math.round(amount / min2 * multiplier) : Number((amount / min2).toFixed(3));
+    return atomSymbol(number2) + (ratio === 1 ? "" : subscript(String(ratio)));
+  }).join("");
+}
+function freeCrystalSite(sites) {
+  const fractions = [0.5, 0, 0.25, 0.75, 0.125, 0.375, 0.625, 0.875];
+  for (const z3 of fractions) {
+    for (const y5 of fractions) {
+      for (const x4 of fractions) {
+        if (!sites.some(({ fractional: [a5, b4, c9] }) => Math.max(Math.abs(a5 - x4), Math.abs(b4 - y5), Math.abs(c9 - z3)) < 1e-6)) {
+          return [x4, y5, z3];
+        }
+      }
+    }
+  }
+  throw new Error("No free fractional site");
+}
+var allen, atomSymbol, subscript, signedNumber, formalCharge, speciesOrder;
+var init_structure_diagram = __esm({
+  "molecule-builder/structure-diagram.ts"() {
+    init_element_reference();
+    init_crystal_display();
+    init_geometry();
+    allen = {
+      1: 2.3,
+      2: 4.16,
+      3: 0.912,
+      4: 1.576,
+      5: 2.051,
+      6: 2.544,
+      7: 3.066,
+      8: 3.61,
+      9: 4.193,
+      10: 4.787,
+      11: 0.912,
+      12: 1.293,
+      13: 1.613,
+      14: 1.916,
+      15: 2.253,
+      16: 2.589,
+      17: 2.869,
+      18: 3.242,
+      19: 0.734,
+      20: 1.034,
+      21: 1.19,
+      22: 1.38,
+      23: 1.53,
+      24: 1.65,
+      25: 1.75,
+      26: 1.8,
+      27: 1.84,
+      28: 1.88,
+      29: 1.85,
+      30: 1.597,
+      31: 1.756,
+      32: 1.994,
+      33: 2.211,
+      34: 2.424,
+      35: 2.685,
+      36: 2.966,
+      37: 0.706,
+      38: 0.963,
+      39: 1.12,
+      40: 1.32,
+      41: 1.41,
+      42: 1.47,
+      43: 1.51,
+      44: 1.54,
+      45: 1.56,
+      46: 1.58,
+      47: 1.87,
+      48: 1.52,
+      49: 1.656,
+      50: 1.834,
+      51: 1.984,
+      52: 2.158,
+      53: 2.359,
+      54: 2.582,
+      55: 0.659,
+      56: 0.881,
+      71: 1.09,
+      72: 1.16,
+      73: 1.34,
+      74: 1.47,
+      75: 1.6,
+      76: 1.65,
+      77: 1.68,
+      78: 1.72,
+      79: 1.92,
+      80: 1.76,
+      81: 1.789,
+      82: 1.854,
+      83: 2.01,
+      84: 2.19,
+      85: 2.39,
+      86: 2.6
+    };
+    atomSymbol = (number2) => elementByAtomicNumber(number2).symbol;
+    subscript = (value) => value.replace(/\d/g, (digit) => "\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089"[Number(digit)]);
+    signedNumber = (value) => value > 0 ? `+${value}` : value < 0 ? `\u2212${-value}` : String(value);
+    formalCharge = (value) => value === 0 ? "" : `${Math.abs(value) === 1 ? "" : Math.abs(value)}${value > 0 ? "+" : "\u2212"}`;
+    speciesOrder = (ion2) => ion2?.endsWith("\u207A") ? 0 : ion2?.endsWith("\u207B") ? 1 : 2;
+  }
+});
+
+// molecule-builder/aqueous-preview.ts
+function aqueousAcidBaseSpecies(solute, carboxylicAcid) {
+  const hydronium = waterIon(true, 3, 1);
+  const formula2 = chemicalFormula(solute.formula);
+  if (formula2 === "HCl") return [hydronium, { formula: "Cl\u207B", atoms: ["chlorine"], bonds: [], charges: [-1] }];
+  if (formula2 === "NH\u2083") return [waterIon(false, 4, 1), waterIon(true, 1, -1), solute];
+  const edges = solute.bonds.map((bond) => {
+    const [pair, type, order] = bond.split(":");
+    const [from, to] = pair.split("-").map(Number);
+    return { from, to, type, order };
+  });
+  const conjugate = (protons) => {
+    const ids = /* @__PURE__ */ new Map();
+    const atoms = solute.atoms.filter((_3, id) => {
+      if (protons.includes(id)) return false;
+      ids.set(id, ids.size);
+      return true;
+    });
+    const charges = atoms.map(() => 0);
+    const bonds = edges.flatMap(({ from, to, type, order }) => {
+      const a5 = ids.get(from), b4 = ids.get(to);
+      if (a5 === void 0 || b4 === void 0) {
+        charges[a5 ?? b4]--;
+        return [];
+      }
+      return [`${a5}-${b4}:${type}:${order}`];
+    });
+    return { formula: "", atoms, bonds, charges };
+  };
+  if (carboxylicAcid) {
+    const carbonyls = new Set(edges.filter(({ from, to, order }) => order === "2" && solute.atoms[from] === "carbon" && solute.atoms[to] === "oxygen").map(({ from }) => from));
+    const acidicOxygens = new Set(edges.filter(({ from, to, order }) => order === "1" && carbonyls.has(from) && solute.atoms[to] === "oxygen").map(({ to }) => to));
+    const proton = edges.find(({ from, to }) => acidicOxygens.has(from) && solute.atoms[to] === "hydrogen");
+    return proton ? [hydronium, conjugate([proton.to]), solute] : void 0;
+  }
+  const last = solute.atoms.length - 1;
+  if (formula2 === "H\u2082SO\u2084") return [hydronium, conjugate([last]), conjugate([last - 1, last])];
+  if (formula2 === "H\u2083PO\u2084") return [hydronium, conjugate([last]), solute];
+  return void 0;
+}
+function aqueousComponents(molecule2) {
+  const nodes = new Map(molecule2.atoms.map((atom) => [atom.id, atom]));
+  const links = new Map(molecule2.atoms.map((atom) => [atom.id, []]));
+  for (const { from, to } of molecule2.bonds) {
+    links.get(from).push(to);
+    links.get(to).push(from);
+  }
+  const visited = /* @__PURE__ */ new Set();
+  const components = [];
+  for (const atom of molecule2.atoms) {
+    if (visited.has(atom.id)) continue;
+    visited.add(atom.id);
+    const ids = [atom.id];
+    for (let i9 = 0; i9 < ids.length; i9++) {
+      for (const other of links.get(ids[i9])) {
+        if (visited.has(other)) continue;
+        visited.add(other);
+        ids.push(other);
+      }
+    }
+    const atoms = ids.map((id) => nodes.get(id));
+    const charge = atoms.reduce((total, member) => total + member.charge, 0);
+    const elements = /* @__PURE__ */ new Map();
+    for (const { atomicNumber } of atoms) elements.set(atomicNumber, (elements.get(atomicNumber) ?? 0) + 1);
+    const order = [...elements.keys()].sort((a5, b4) => Number(a5 === 8) - Number(b4 === 8) || a5 - b4);
+    if (order.length === 2 && order.includes(7) && order.includes(1)) order.reverse();
+    if (order.length === 2 && elements.get(1) === 1 && order.includes(8)) order.reverse();
+    if (elements.has(6)) order.unshift(...order.splice(order.indexOf(6), 1));
+    const formula2 = order.map((number2) => atomSymbol(number2) + (elements.get(number2) > 1 ? elements.get(number2) : "")).join("");
+    const suffix = charge ? (Math.abs(charge) > 1 ? "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078\u2079"[Math.abs(charge)] ?? Math.abs(charge) : "") + (charge > 0 ? "\u207A" : "\u207B") : "";
+    components.push({ atoms, charge, label: chemicalFormula(formula2) + suffix });
+  }
+  return components;
+}
+function hydrationWaters(component, dimensions) {
+  if (!component.charge) return [];
+  const position = (atom) => dimensions === 3 ? atom.position : [...atom.diagram, 0];
+  const heavy = component.atoms.filter((atom) => atom.atomicNumber !== 1);
+  const core = heavy.length ? heavy : component.atoms;
+  const mean = scale(core.reduce((sum, atom) => add(sum, position(atom)), [0, 0, 0]), 1 / core.length);
+  const anion = component.charge < 0;
+  const hydrogenDonors = component.atoms.filter((atom) => atom.atomicNumber === 1);
+  const donors = !anion && hydrogenDonors.length && heavy.length ? hydrogenDonors : [];
+  const acceptors = anion && core.length > 1 ? core.filter((atom) => [7, 8, 9, 16, 17, 35, 53].includes(atom.atomicNumber)) : [];
+  const sites = donors.length ? donors : acceptors.length ? acceptors : core.length === 1 ? [] : core;
+  const directions = sites.length ? sites.map((site) => unit(subtract(position(site), mean))) : dimensions === 2 ? Array.from({ length: 4 }, (_3, i9) => [Math.cos(i9 * Math.PI / 2 + 0.36), Math.sin(i9 * Math.PI / 2 + 0.36), 0]) : [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+  return directions.filter((direction, index) => Math.hypot(...direction) > 0.01 && !directions.slice(0, index).some((other) => Math.hypot(...subtract(direction, other)) < 0.38)).map((direction) => {
+    const site = sites.find((candidate) => Math.hypot(...subtract(unit(subtract(position(candidate), mean)), direction)) < 1e-3);
+    const bound = site ? position(site) : mean;
+    const distance2 = donors.length ? 1.75 : anion ? site ? 2.75 : 3.1 : 2.45;
+    const oxygen = add(bound, scale(direction, distance2));
+    const lateral = dimensions === 2 ? [-direction[1], direction[0], 0] : perpendicular(direction);
+    const length2 = 0.96, angle = 104.5 * Math.PI / 180;
+    const hydrogens = anion ? [
+      add(oxygen, scale(direction, -length2)),
+      add(oxygen, scale(add(scale(direction, -Math.cos(angle)), scale(lateral, Math.sin(angle))), length2))
+    ] : [-1, 1].map((sign) => add(
+      oxygen,
+      scale(add(scale(direction, Math.cos(angle / 2)), scale(lateral, sign * Math.sin(angle / 2))), length2)
+    ));
+    return { oxygen, hydrogens, contact: {
+      from: bound,
+      to: anion ? hydrogens[0] : oxygen,
+      kind: anion || donors.length ? "hydrogen" : "ion-dipole"
+    } };
+  });
+}
+var waterIon, point2;
+var init_aqueous_preview = __esm({
+  "molecule-builder/aqueous-preview.ts"() {
+    init_geometry();
+    init_structure_diagram();
+    waterIon = (oxygen, hydrogenCount, charge) => {
+      const center2 = oxygen ? "oxygen" : "nitrogen";
+      return {
+        formula: oxygen ? charge > 0 ? "H\u2083O\u207A" : "OH\u207B" : "NH\u2084\u207A",
+        atoms: [center2, ...Array(hydrogenCount).fill("hydrogen")],
+        bonds: Array.from({ length: hydrogenCount }, (_3, index) => `0-${index + 1}:covalent:1`),
+        charges: [charge]
+      };
+    };
+    point2 = ([x4, y5]) => [x4, y5];
   }
 });
 
@@ -21798,11 +22131,11 @@ function squaredDistanceToLineSegment(x4, y5, x1, y1, x22, y22) {
   const b4 = y5 - y1;
   const c9 = x22 - x1;
   const d4 = y22 - y1;
-  const dot2 = a5 * c9 + b4 * d4;
+  const dot3 = a5 * c9 + b4 * d4;
   const lenSq = c9 * c9 + d4 * d4;
   let param = -1;
   if (lenSq !== 0) {
-    param = dot2 / lenSq;
+    param = dot3 / lenSq;
   }
   let xx;
   let yy;
@@ -42140,10 +42473,10 @@ function buildLine(points, lineStyle, flipAlignment, closed, vertices, indices) 
     const dy0 = y0 - y1;
     const dx1 = x1 - x22;
     const dy1 = y22 - y1;
-    const dot2 = dx0 * dx1 + dy0 * dy1;
+    const dot3 = dx0 * dx1 + dy0 * dy1;
     const cross2 = dy0 * dx1 - dy1 * dx0;
     const clockwise = cross2 < 0;
-    if (Math.abs(cross2) < 1e-3 * Math.abs(dot2)) {
+    if (Math.abs(cross2) < 1e-3 * Math.abs(dot3)) {
       verts.push(
         x1 - perpX * innerWeight,
         y1 - perpY * innerWeight
@@ -42152,7 +42485,7 @@ function buildLine(points, lineStyle, flipAlignment, closed, vertices, indices) 
         x1 + perpX * outerWeight,
         y1 + perpY * outerWeight
       );
-      if (dot2 >= 0) {
+      if (dot3 >= 0) {
         if (style.join === "round") {
           indexCount += round2(
             x1,
@@ -44825,14 +45158,14 @@ var init_buildArcToSvg = __esm({
     };
     vectorAngle = (ux2, uy2, vx2, vy2) => {
       const sign = ux2 * vy2 - uy2 * vx2 < 0 ? -1 : 1;
-      let dot2 = ux2 * vx2 + uy2 * vy2;
-      if (dot2 > 1) {
-        dot2 = 1;
+      let dot3 = ux2 * vx2 + uy2 * vy2;
+      if (dot3 > 1) {
+        dot3 = 1;
       }
-      if (dot2 < -1) {
-        dot2 = -1;
+      if (dot3 < -1) {
+        dot3 = -1;
       }
-      return sign * Math.acos(dot2);
+      return sign * Math.acos(dot3);
     };
     getArcCenter = (px, py, cx, cy, rx, ry, largeArcFlag, sweepFlag, sinPhi, cosPhi, pxp, pyp, out2) => {
       const rxSq = Math.pow(rx, 2);
@@ -46587,8 +46920,8 @@ function getMaxMiterRatio(path2, miterLimit) {
       const len0Sq = dx0 * dx0 + dy0 * dy0;
       const len1Sq = dx1 * dx1 + dy1 * dy1;
       if (len0Sq < 1e-12 || len1Sq < 1e-12) continue;
-      const dot2 = dx0 * dx1 + dy0 * dy1;
-      const cosAngle = dot2 / Math.sqrt(len0Sq * len1Sq);
+      const dot3 = dx0 * dx1 + dy0 * dy1;
+      const cosAngle = dot3 / Math.sqrt(len0Sq * len1Sq);
       let clampedCos = cosAngle;
       if (clampedCos < -1) clampedCos = -1;
       else if (clampedCos > 1) clampedCos = 1;
@@ -51908,10 +52241,10 @@ function getCanvasFillStyle(fillStyle, context2, textMetrics, padding = 0, offse
       );
       isNearlyVertical = Math.abs(end.x - start.x) < Math.abs((end.y - start.y) * 0.1);
     } else {
-      const { center, innerRadius, outerCenter, outerRadius } = fillGradient;
+      const { center: center2, innerRadius, outerCenter, outerRadius } = fillGradient;
       gradient = context2.createRadialGradient(
-        center.x * width + offsetX,
-        center.y * height + offsetY,
+        center2.x * width + offsetX,
+        center2.y * height + offsetY,
         innerRadius * width,
         outerCenter.x * width + offsetX,
         outerCenter.y * height + offsetY,
@@ -56108,20 +56441,20 @@ var init_Quaternion = __esm({
         let z1 = src1[srcOffset1 + 2];
         let w1 = src1[srcOffset1 + 3];
         if (w0 !== w1 || x0 !== x1 || y0 !== y1 || z0 !== z1) {
-          let dot2 = x0 * x1 + y0 * y1 + z0 * z1 + w0 * w1;
-          if (dot2 < 0) {
+          let dot3 = x0 * x1 + y0 * y1 + z0 * z1 + w0 * w1;
+          if (dot3 < 0) {
             x1 = -x1;
             y1 = -y1;
             z1 = -z1;
             w1 = -w1;
-            dot2 = -dot2;
+            dot3 = -dot3;
           }
           let k0 = 1 - t8;
           let k1 = t8;
-          if (dot2 < 0.9995) {
-            const sinT = Math.sin(t8 * Math.acos(dot2));
-            k1 = sinT / Math.sqrt(1 - dot2 * dot2);
-            k0 = Math.sqrt(1 - sinT * sinT) - dot2 * k1;
+          if (dot3 < 0.9995) {
+            const sinT = Math.sin(t8 * Math.acos(dot3));
+            k1 = sinT / Math.sqrt(1 - dot3 * dot3);
+            k0 = Math.sqrt(1 - sinT * sinT) - dot3 * k1;
             x0 = x0 * k0 + x1 * k1;
             y0 = y0 * k0 + y1 * k1;
             z0 = z0 * k0 + z1 * k1;
@@ -56575,18 +56908,18 @@ var init_Quaternion = __esm({
         let qby = qb.y;
         let qbz = qb.z;
         let qbw = qb.w;
-        let dot2 = x0 * qbx + y0 * qby + z0 * qbz + w0 * qbw;
-        if (dot2 < 0) {
+        let dot3 = x0 * qbx + y0 * qby + z0 * qbz + w0 * qbw;
+        if (dot3 < 0) {
           qbx = -qbx;
           qby = -qby;
           qbz = -qbz;
           qbw = -qbw;
-          dot2 = -dot2;
+          dot3 = -dot3;
         }
         let k0 = 1 - t8;
         let k1 = t8;
-        if (dot2 < 0.9995) {
-          const theta = Math.acos(dot2);
+        if (dot3 < 0.9995) {
+          const theta = Math.acos(dot3);
           const sin = Math.sin(theta);
           k0 = Math.sin(k0 * theta) / sin;
           k1 = Math.sin(t8 * theta) / sin;
@@ -57234,11 +57567,11 @@ var init_Box = __esm({
       * @param size - The full size of the box, uniform or per-axis
       * @returns The new box
       */
-      static fromCenterSize(center, size3) {
+      static fromCenterSize(center2, size3) {
         const hx = (typeof size3 === "number" ? size3 : size3.x) * 0.5;
         const hy = (typeof size3 === "number" ? size3 : size3.y) * 0.5;
         const hz = (typeof size3 === "number" ? size3 : size3.z) * 0.5;
-        return new Box2(new Vector3(center.x - hx, center.y - hy, center.z - hz), new Vector3(center.x + hx, center.y + hy, center.z + hz));
+        return new Box2(new Vector3(center2.x - hx, center2.y - hy, center2.z - hz), new Vector3(center2.x + hx, center2.y + hy, center2.z + hz));
       }
       /**
       * Sets the corners of this box to `min` and `max`, copying their values
@@ -60349,8 +60682,8 @@ var init_Sphere = __esm({
       * @param center - The center of the sphere
       * @param radius - The radius of the sphere
       */
-      constructor(center, radius = -1) {
-        this.center = center !== void 0 ? center : new Vector3();
+      constructor(center2, radius = -1) {
+        this.center = center2 !== void 0 ? center2 : new Vector3();
         this.radius = radius;
       }
       /**
@@ -60363,8 +60696,8 @@ var init_Sphere = __esm({
       * @param radius - The radius of the sphere
       * @returns This sphere for chaining
       */
-      set(center, radius) {
-        this.center.copyFrom(center);
+      set(center2, radius) {
+        this.center.copyFrom(center2);
         this.radius = radius;
         return this;
       }
@@ -66437,11 +66770,11 @@ function binLightTiles(out2, lightData, lightCount, viewProjection, view, depthM
     const x4 = lightData[o12] * depthPlane[0];
     const y5 = lightData[o12 + 1] * depthPlane[1];
     const z3 = lightData[o12 + 2] * depthPlane[2];
-    const center = x4 + y5 + z3 + depthPlane[3];
+    const center2 = x4 + y5 + z3 + depthPlane[3];
     const radius = Math.sqrt(lightData[o12 + 7]) * radiusScale;
     const padding = (Math.abs(x4) + Math.abs(y5) + Math.abs(z3) + Math.abs(depthPlane[3]) + radius) * 1e-6 + 1e-5;
-    const first = Math.max(0, Math.min(31, Math.floor(center - radius - padding)));
-    const last = Math.max(0, Math.min(31, Math.floor(center + radius + padding)));
+    const first = Math.max(0, Math.min(31, Math.floor(center2 - radius - padding)));
+    const last = Math.max(0, Math.min(31, Math.floor(center2 + radius + padding)));
     for (let bin = first; bin <= last; bin++) depthMasks[bin] |= bit;
   }
 }
@@ -69866,10 +70199,10 @@ function transformBoundingSphere(out2, o12, matrix2, matrixOffset, geometry, rad
     out2[o12 + 3] = -1;
     return;
   }
-  const center = local.center;
-  const cx = center.x;
-  const cy = center.y;
-  const cz = center.z;
+  const center2 = local.center;
+  const cx = center2.x;
+  const cy = center2.y;
+  const cz = center2.z;
   const m00 = matrix2[matrixOffset];
   const m01 = matrix2[matrixOffset + 1];
   const m02 = matrix2[matrixOffset + 2];
@@ -71906,10 +72239,10 @@ var init_GeometryDataStoreBuffer = __esm({
   "node_modules/@pixi/3d/dist/core/buffers/GeometryDataStoreBuffer.mjs"() {
     init_DataStoreBuffer();
     copyGeometryData = (geometry, buffer, u32Buffer, _fl64Buffer, offset3) => {
-      const { center, radius } = geometry.boundsSphere;
-      buffer[offset3] = center.x;
-      buffer[offset3 + 1] = center.y;
-      buffer[offset3 + 2] = center.z;
+      const { center: center2, radius } = geometry.boundsSphere;
+      buffer[offset3] = center2.x;
+      buffer[offset3 + 1] = center2.y;
+      buffer[offset3 + 2] = center2.z;
       buffer[offset3 + 3] = geometry.dynamic ? -1 : radius + geometry._morphBoundsExpansion;
       if (geometry.morphTargetCount > 0) {
         const packed = geometry._morphDeltaBase >= 0;
@@ -79444,13 +79777,13 @@ var init_Vector2 = __esm({
       * @param out - The target to write the result into, defaults to this vector
       * @returns The vector the result was written into
       */
-      rotateAround(center, angle, out2 = this) {
+      rotateAround(center2, angle, out2 = this) {
         const c9 = Math.cos(angle);
         const s4 = Math.sin(angle);
-        const dx = this.x - center.x;
-        const dy = this.y - center.y;
-        out2.x = dx * c9 - dy * s4 + center.x;
-        out2.y = dx * s4 + dy * c9 + center.y;
+        const dx = this.x - center2.x;
+        const dy = this.y - center2.y;
+        out2.x = dx * c9 - dy * s4 + center2.x;
+        out2.y = dx * s4 + dy * c9 + center2.y;
         return out2;
       }
     };
@@ -84170,7 +84503,7 @@ var init_createDefaultGraph3D = __esm({
 
 // node_modules/@pixi/3d/dist/scene/utils/frameCamera.mjs
 function frameCamera(camera, target, aspect) {
-  const { center, radius } = _sphere.setFromBox(target.getLocalBounds(_bounds2));
+  const { center: center2, radius } = _sphere.setFromBox(target.getLocalBounds(_bounds2));
   const fit = radius > 0 ? radius : 1;
   const tanHalfFovY = camera._tanHalfFovY();
   const halfFovY = Math.atan(tanHalfFovY);
@@ -84178,7 +84511,7 @@ function frameCamera(camera, target, aspect) {
   const distance2 = fit / Math.sin(Math.min(halfFovX, halfFovY));
   camera.near = distance2 / 100;
   camera.far = distance2 * 100;
-  camera.position.set(center.x, center.y, center.z + distance2);
+  camera.position.set(center2.x, center2.y, center2.z + distance2);
 }
 var _bounds2, _sphere;
 var init_frameCamera = __esm({
@@ -91042,6 +91375,7 @@ var init_scene = __esm({
     init_dist2();
     init_geometry();
     init_crystal_display();
+    init_aqueous_preview();
     init_structure();
     vector4 = ([x4, y5, z3]) => ({ x: x4, y: y5, z: z3 });
     cellCorners = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]];
@@ -91112,6 +91446,7 @@ var init_scene = __esm({
       #content = new Container3D();
       #edges = new Container3D();
       #electrons = new Container3D();
+      #hydration = new Container3D({ eventMode: "none" });
       #lattice = new Graphics({ eventMode: "none" });
       #axes = new Graphics({ eventMode: "none" });
       #axisLabels = ["a", "b", "c"].map(() => new Text({ text: "", style: { fontSize: 10, fill: 5395035 } }));
@@ -91131,6 +91466,8 @@ var init_scene = __esm({
       #hovered;
       #structure;
       #showElectrons = false;
+      #showHydration = false;
+      #hydrationBounds = [];
       #showLattice = false;
       #showEdges = true;
       #showAxes = false;
@@ -91157,7 +91494,7 @@ var init_scene = __esm({
         const sun = new DirectionalLight({ color: 16777215, intensity: 2.15 });
         sun.position.set(3, 6, 7);
         sun.lookAt({ x: 0, y: 0, z: 0 });
-        this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons);
+        this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons, this.#hydration);
         this.#preview = this.#rod();
         this.#preview.material = this.#material(SELECTION_COLOR);
         this.#preview.visible = false;
@@ -91259,13 +91596,13 @@ var init_scene = __esm({
           const direction = subtract(region.to, region.from);
           const span = Math.hypot(...direction);
           const axis = unit(direction);
-          const center = scale(add(region.from, region.to), 0.5);
+          const center2 = scale(add(region.from, region.to), 0.5);
           const bond = region.kind === "bond";
           const width = bond ? 0.18 + 0.035 * (region.electrons / 2 - 1) : Math.max(0.14, span * 0.47);
           const cloud = new Mesh3D({
             geometry: this.#sphere,
             material: bond ? this.#bondRegion : this.#loneRegion,
-            position: vector4(center),
+            position: vector4(center2),
             eventMode: "none"
           });
           cloud.scale.set(width, span / 2, width);
@@ -91276,10 +91613,41 @@ var init_scene = __esm({
           for (let index = 0; index < region.electrons; index++) {
             const row = Math.floor(index / 2) - (Math.ceil(region.electrons / 2) - 1) / 2;
             const side = region.electrons === 1 ? 0 : index % 2 === 0 ? -0.058 : 0.058;
-            const position = vector4(add(add(center, scale(across, side)), scale(axis, row * Math.min(0.14, span / 4))));
-            const dot2 = new Mesh3D({ geometry: this.#sphere, material: dotMaterial, position, eventMode: "none" });
-            dot2.scale.set(0.047);
-            this.#electrons.addChild(dot2);
+            const position = vector4(add(add(center2, scale(across, side)), scale(axis, row * Math.min(0.14, span / 4))));
+            const dot3 = new Mesh3D({ geometry: this.#sphere, material: dotMaterial, position, eventMode: "none" });
+            dot3.scale.set(0.047);
+            this.#electrons.addChild(dot3);
+          }
+        }
+      }
+      #renderHydration(structure, show) {
+        for (const child of this.#hydration.removeChildren()) child.destroy();
+        this.#hydrationBounds = [];
+        if (!show || structure.kind !== "molecule") return;
+        const atom = (position, number2, radius) => {
+          const mesh = new Mesh3D({ geometry: this.#sphere, material: this.#material(atomColor(number2)), position: vector4(position) });
+          mesh.scale.set(radius);
+          this.#hydration.addChild(mesh);
+          this.#hydrationBounds.push(position);
+        };
+        const rod = (from, to, color, width) => {
+          const mesh = new Mesh3D({ geometry: this.#cylinder, material: this.#material(color) });
+          this.#line(mesh, from, to, width);
+          this.#hydration.addChild(mesh);
+        };
+        for (const ion2 of aqueousComponents(structure)) {
+          for (const { oxygen, hydrogens, contact } of hydrationWaters(ion2, 3)) {
+            atom(oxygen, 8, 0.22);
+            for (const hydrogen of hydrogens) {
+              atom(hydrogen, 1, 0.13);
+              rod(oxygen, hydrogen, 6583435, 0.028);
+            }
+            const axis = subtract(contact.to, contact.from);
+            const color = contact.kind === "hydrogen" ? 6897826 : 1471364;
+            const dash = contact.kind === "hydrogen" ? 0.09 : 0.04;
+            for (let offset3 = 0.22; offset3 < 0.82; offset3 += 0.15) {
+              rod(add(contact.from, scale(axis, offset3)), add(contact.from, scale(axis, offset3 + dash)), color, 0.026);
+            }
           }
         }
       }
@@ -91347,6 +91715,11 @@ var init_scene = __esm({
         if (rebuild || display.electrons !== this.#showElectrons) {
           this.#showElectrons = display.electrons;
           this.#renderElectrons(structure, display.electrons);
+          this.#draw();
+        }
+        if (rebuild || display.hydration !== this.#showHydration) {
+          this.#showHydration = display.hydration;
+          this.#renderHydration(structure, display.hydration);
           this.#draw();
         }
         const selected = new Set(selection);
@@ -91419,10 +91792,11 @@ var init_scene = __esm({
         this.#camera();
       }
       fit() {
-        const min2 = [0, 1, 2].map((axis) => Math.min(...this.#bounds.map((point) => point[axis])));
-        const max2 = [0, 1, 2].map((axis) => Math.max(...this.#bounds.map((point) => point[axis])));
-        this.#target = this.#bounds.length ? min2.map((value, axis) => (value + max2[axis]) / 2) : [0, 0, 0];
-        const radius = this.#bounds.length ? Math.max(...this.#bounds.map((point) => Math.hypot(...subtract(point, this.#target)))) : 1;
+        const bounds2 = [...this.#bounds, ...this.#hydrationBounds];
+        const min2 = [0, 1, 2].map((axis) => Math.min(...bounds2.map((point) => point[axis])));
+        const max2 = [0, 1, 2].map((axis) => Math.max(...bounds2.map((point) => point[axis])));
+        this.#target = bounds2.length ? min2.map((value, axis) => (value + max2[axis]) / 2) : [0, 0, 0];
+        const radius = bounds2.length ? Math.max(...bounds2.map((point) => Math.hypot(...subtract(point, this.#target)))) : 1;
         const aspect = this.#app.screen.width / this.#app.screen.height;
         const short = Math.min(1, Math.max(0.32, aspect));
         const outer = radius + this.#atomRadius;
@@ -96685,15 +97059,15 @@ var arrow = (options) => ({
     const maxPadding = min(paddingObject[maxProp], largestPossiblePadding);
     const min$1 = minPadding;
     const max2 = clientSize - arrowDimensions[length2] - maxPadding;
-    const center = clientSize / 2 - arrowDimensions[length2] / 2 + centerToReference;
-    const offset3 = clamp(min$1, center, max2);
-    const shouldAddOffset = !middlewareData.arrow && getAlignment(placement) != null && center !== offset3 && rects.reference[length2] / 2 - (center < min$1 ? minPadding : maxPadding) - arrowDimensions[length2] / 2 < 0;
-    const alignmentOffset = shouldAddOffset ? center < min$1 ? center - min$1 : center - max2 : 0;
+    const center2 = clientSize / 2 - arrowDimensions[length2] / 2 + centerToReference;
+    const offset3 = clamp(min$1, center2, max2);
+    const shouldAddOffset = !middlewareData.arrow && getAlignment(placement) != null && center2 !== offset3 && rects.reference[length2] / 2 - (center2 < min$1 ? minPadding : maxPadding) - arrowDimensions[length2] / 2 < 0;
+    const alignmentOffset = shouldAddOffset ? center2 < min$1 ? center2 - min$1 : center2 - max2 : 0;
     return {
       [axis]: coords[axis] + alignmentOffset,
       data: {
         [axis]: offset3,
-        centerOffset: center - offset3 - alignmentOffset,
+        centerOffset: center2 - offset3 - alignmentOffset,
         ...shouldAddOffset && {
           alignmentOffset
         }
@@ -104871,11 +105245,11 @@ var iodine = covalent("I\u2082", ["iodine", "iodine"], [[0, 1]], [0, 0]);
 function ion(formula2, atom, charge) {
   return { formula: formula2, atoms: [atom], bonds: [], charges: [charge] };
 }
-function oxoanion(formula2, center, double, single) {
+function oxoanion(formula2, center2, double, single) {
   const size3 = double + single;
   return {
     formula: formula2,
-    atoms: [center, ...Array(size3).fill("oxygen")],
+    atoms: [center2, ...Array(size3).fill("oxygen")],
     bonds: Array.from({ length: size3 }, (_3, i9) => `0-${i9 + 1}:covalent:${i9 < double ? 2 : 1}`),
     charges: [0, ...Array(double).fill(0), ...Array(single).fill(-1)]
   };
@@ -105169,6 +105543,7 @@ function legacyElementKeyToAtomicNumber(key) {
 
 // molecule-builder/catalog.ts
 init_geometry();
+init_aqueous_preview();
 
 // data/structures/catalog.generated.json
 var catalog_generated_default = {
@@ -105533,6 +105908,50 @@ function catalogStructures(key) {
   });
 }
 var structureCatalog = chemicalCatalog;
+var aqueousPreviews = /* @__PURE__ */ new Map();
+function catalogAqueousStructure(key) {
+  const cached = aqueousPreviews.get(key);
+  if (cached) return cached;
+  const entry = entries.get(key);
+  const limewater = key === "Kalkwasser";
+  const carboxylicAcid = entry?.category === "Carbons\xE4uren" && !!entry.concentrationLimit;
+  if (!entry || !entry.recipe?.aqueousMolar && !carboxylicAcid && !limewater) return void 0;
+  const definitions = catalogDefinitions(entry);
+  const species = definitions.length === 1 ? aqueousAcidBaseSpecies(definitions[0], carboxylicAcid) ?? definitions : definitions;
+  const graphs = limewater ? [references["@calcium"], references["@hydroxide"]] : species.flatMap((definition) => catalogMolecule(void 0, definition) ?? []);
+  const charges = graphs.map((graph) => graph.atoms.reduce((sum, atom) => sum + atom.charge, 0));
+  if (!charges.some((charge) => charge > 0) || !charges.some((charge) => charge < 0)) return void 0;
+  const result = {
+    version: 1,
+    kind: "molecule",
+    catalogKey: key,
+    name: entry.formula,
+    representation: "aqueous-ions",
+    geometry: "estimated",
+    atoms: [],
+    bonds: []
+  };
+  for (const [index, graph] of graphs.entries()) {
+    const positioned = graph.geometry ? graph : fitGeometry({ ...graph, atoms: diagramPositions(graph.atoms, graph.bonds) });
+    if (!positioned.atoms.length) return void 0;
+    const focus = positioned.atoms.filter((atom) => atom.atomicNumber !== 1);
+    const center2 = focus.length ? focus : positioned.atoms;
+    const mean = (value) => center2.reduce((sum, atom) => sum + value(atom), 0) / center2.length;
+    const x4 = index % 2 * 10, y5 = -Math.floor(index / 2) * 9;
+    const dx = x4 - mean((atom) => atom.diagram[0]), dy = y5 - mean((atom) => atom.diagram[1]);
+    const px = x4 - mean((atom) => atom.position[0]), py = y5 - mean((atom) => atom.position[1]), pz = mean((atom) => atom.position[2]);
+    const ids = new Map(positioned.atoms.map((atom, i9) => [atom.id, result.atoms.length + i9 + 1]));
+    result.atoms.push(...positioned.atoms.map((atom) => ({
+      ...atom,
+      id: ids.get(atom.id),
+      diagram: [atom.diagram[0] + dx, atom.diagram[1] + dy],
+      position: [atom.position[0] + px, atom.position[1] + py, atom.position[2] - pz]
+    })));
+    result.bonds.push(...positioned.bonds.map((bond) => ({ ...bond, from: ids.get(bond.from), to: ids.get(bond.to) })));
+  }
+  aqueousPreviews.set(key, result);
+  return result;
+}
 
 // molecule-builder/exchange.ts
 var BUILDER_TAG = "webwriter-chemlab-molecule-builder";
@@ -105550,219 +105969,86 @@ function worksheetPeers(widget, tag) {
 init_crystal_display();
 init_geometry();
 init_structure();
+init_structure_diagram();
+init_aqueous_preview();
 
-// molecule-builder/structure-diagram.ts
-init_element_reference();
-init_crystal_display();
+// molecule-builder/diagram-layout.ts
 init_geometry();
-var allen = {
-  1: 2.3,
-  2: 4.16,
-  3: 0.912,
-  4: 1.576,
-  5: 2.051,
-  6: 2.544,
-  7: 3.066,
-  8: 3.61,
-  9: 4.193,
-  10: 4.787,
-  11: 0.912,
-  12: 1.293,
-  13: 1.613,
-  14: 1.916,
-  15: 2.253,
-  16: 2.589,
-  17: 2.869,
-  18: 3.242,
-  19: 0.734,
-  20: 1.034,
-  21: 1.19,
-  22: 1.38,
-  23: 1.53,
-  24: 1.65,
-  25: 1.75,
-  26: 1.8,
-  27: 1.84,
-  28: 1.88,
-  29: 1.85,
-  30: 1.597,
-  31: 1.756,
-  32: 1.994,
-  33: 2.211,
-  34: 2.424,
-  35: 2.685,
-  36: 2.966,
-  37: 0.706,
-  38: 0.963,
-  39: 1.12,
-  40: 1.32,
-  41: 1.41,
-  42: 1.47,
-  43: 1.51,
-  44: 1.54,
-  45: 1.56,
-  46: 1.58,
-  47: 1.87,
-  48: 1.52,
-  49: 1.656,
-  50: 1.834,
-  51: 1.984,
-  52: 2.158,
-  53: 2.359,
-  54: 2.582,
-  55: 0.659,
-  56: 0.881,
-  71: 1.09,
-  72: 1.16,
-  73: 1.34,
-  74: 1.47,
-  75: 1.6,
-  76: 1.65,
-  77: 1.68,
-  78: 1.72,
-  79: 1.92,
-  80: 1.76,
-  81: 1.789,
-  82: 1.854,
-  83: 2.01,
-  84: 2.19,
-  85: 2.39,
-  86: 2.6
+function congestion(molecule2, positions) {
+  const neighbors = new Map(molecule2.atoms.map((atom, index) => [atom.id, { index, adjacent: [] }]));
+  for (const { from, to } of molecule2.bonds) {
+    neighbors.get(from).adjacent.push(neighbors.get(to).index);
+    neighbors.get(to).adjacent.push(neighbors.get(from).index);
+  }
+  let score = 0;
+  for (const { index, adjacent } of neighbors.values()) {
+    const [x4, y5] = positions[index];
+    for (let other = index + 1; other < positions.length; other++) {
+      const [a5, b4] = positions[other];
+      score += 4 * Math.max(0, 0.58 - Math.hypot(a5 - x4, b4 - y5)) ** 2;
+    }
+    const angles = adjacent.map((other) => Math.atan2(positions[other][1] - y5, positions[other][0] - x4));
+    for (const [i9, angle] of angles.entries()) {
+      for (const other of angles.slice(i9 + 1)) score += Math.max(0, Math.cos(angle - other) - 0.898) ** 2;
+    }
+  }
+  return score;
+}
+function diagramIsCrowded(molecule2) {
+  return molecule2.bonds.length > 0 && congestion(molecule2, molecule2.atoms.map((atom) => atom.diagram)) > 1e-4;
+}
+var dot2 = (a5, b4) => a5[0] * b4[0] + a5[1] * b4[1] + a5[2] * b4[2];
+var center = (atoms, points) => {
+  const bonded = atoms.map((atom, index) => ({ atom, point: points[index] })).filter(({ atom }) => atom.atomicNumber !== 1);
+  const positions = bonded.length ? bonded.map((row) => row.point) : points;
+  return [
+    positions.reduce((sum, point) => sum + point[0], 0) / positions.length,
+    positions.reduce((sum, point) => sum + point[1], 0) / positions.length
+  ];
 };
-var atomSymbol = (number2) => elementByAtomicNumber(number2).symbol;
-var subscript = (value) => value.replace(/\d/g, (digit) => "\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089"[Number(digit)]);
-function chemicalFormula(value) {
-  return value.split("\xB7").map((part) => part.replace(/^(\s*\d+)?(.*)$/, (_3, coefficient, compound) => (coefficient ?? "") + subscript(compound))).join("\xB7");
-}
-var signedNumber = (value) => value > 0 ? `+${value}` : value < 0 ? `\u2212${-value}` : String(value);
-var formalCharge = (value) => value === 0 ? "" : `${Math.abs(value) === 1 ? "" : Math.abs(value)}${value > 0 ? "+" : "\u2212"}`;
-function lewisDiagram(molecule2) {
-  const repeat = molecule2.repeatUnit;
-  const members = repeat ? new Set(repeat.atoms) : void 0;
-  const visible = members ? molecule2.atoms.filter((atom) => members.has(atom.id)) : molecule2.atoms;
-  const atoms = new Map(visible.map((atom) => [atom.id, atom]));
-  const bonds = molecule2.bonds.filter((bond) => atoms.has(bond.from) && atoms.has(bond.to));
-  const oxidation = new Map(visible.map((atom) => [atom.id, atom.charge]));
-  const incident = new Map(visible.map((atom) => [atom.id, []]));
-  const assign = (from, to, order) => {
-    const a5 = atoms.get(from).atomicNumber, b4 = atoms.get(to).atomicNumber;
-    if (a5 === b4) return;
-    if (allen[a5] === void 0 || allen[b4] === void 0 || allen[a5] === allen[b4]) {
-      oxidation.set(from, void 0);
-      oxidation.set(to, void 0);
-      return;
-    }
-    const step = Math.sign(allen[b4] - allen[a5]) * order;
-    if (oxidation.get(from) !== void 0) oxidation.set(from, oxidation.get(from) + step);
-    if (oxidation.get(to) !== void 0) oxidation.set(to, oxidation.get(to) - step);
-  };
-  for (const bond of bonds) {
-    incident.get(bond.from).push(bond);
-    incident.get(bond.to).push(bond);
-    if (!bond.dative) assign(bond.from, bond.to, bond.order);
+function improveDiagram(molecule2) {
+  if (molecule2.repeatUnit || !diagramIsCrowded(molecule2)) return molecule2;
+  const previous = molecule2.atoms.map((atom) => atom.diagram);
+  const anchor = center(molecule2.atoms, previous);
+  let best = previous;
+  let bestScore = congestion(molecule2, best);
+  for (let sample = 0; sample < 48; sample++) {
+    const z3 = 1 - 2 * (sample + 0.5) / 48;
+    const radius = Math.sqrt(1 - z3 * z3);
+    const angle = sample * 2.3999632297;
+    const normal = [radius * Math.cos(angle), radius * Math.sin(angle), z3];
+    const right = perpendicular(normal), up = unit(cross(normal, right));
+    const candidate = molecule2.atoms.map(({ position }) => [dot2(right, position), dot2(up, position)]);
+    const score = congestion(molecule2, candidate);
+    if (score >= bestScore) continue;
+    best = candidate;
+    bestScore = score;
+    if (score < 1e-6) break;
   }
-  if (repeat) assign(...repeat.ends, 1);
-  return {
-    bonds,
-    ends: repeat?.ends,
-    atoms: visible.map((atom) => ({
-      ...atom,
-      oxidation: oxidation.get(atom.id),
-      bonds: incident.get(atom.id),
-      electrons: remainingElectrons(atom, incident.get(atom.id), Number(repeat?.ends.includes(atom.id) ?? false))
-    }))
-  };
+  if (best === previous) return molecule2;
+  const origin = center(molecule2.atoms, best);
+  return { ...molecule2, atoms: molecule2.atoms.map((atom, index) => ({
+    ...atom,
+    diagram: [best[index][0] - origin[0] + anchor[0], best[index][1] - origin[1] + anchor[1]]
+  })) };
 }
-function editableRepeatUnit(molecule2) {
-  if (!molecule2.repeatUnit || molecule2.repeatUnit.atoms.length === molecule2.atoms.length) return molecule2;
-  const unit2 = lewisDiagram(molecule2);
-  return { ...molecule2, atoms: molecule2.atoms.filter((atom) => molecule2.repeatUnit.atoms.includes(atom.id)), bonds: unit2.bonds };
-}
-function electronDots(center, neighbors, count2, used = []) {
-  if (!(count2 > 0 && count2 <= 8)) return [];
-  const [x4, y5] = center;
-  const directions = [...used, ...neighbors.map(([a5, b4]) => Math.atan2(b4 - y5, a5 - x4))];
-  const dots = [];
-  for (let pair = 0; pair < count2; pair += 2) {
-    let angle = Math.PI / 2;
-    let best = -Infinity;
-    for (let sample = 0; sample < 24; sample++) {
-      const candidate = Math.PI / 2 + sample * Math.PI / 12;
-      const gap = Math.min(Math.PI, ...directions.map((direction) => Math.acos(Math.max(-1, Math.min(1, Math.cos(direction - candidate))))));
-      if (gap > best + 1e-6) {
-        angle = candidate;
-        best = gap;
-      }
-    }
-    directions.push(angle);
-    const dx = Math.cos(angle), dy = Math.sin(angle);
-    for (const offset3 of pair + 1 < count2 ? [-0.055, 0.055] : [0]) {
-      dots.push([x4 + 0.32 * dx - offset3 * dy, y5 + 0.32 * dy + offset3 * dx]);
-    }
-  }
-  return dots;
-}
-function crystalSpecies(crystal) {
-  const groups2 = /* @__PURE__ */ new Map();
-  for (const site of crystal.sites) {
-    const ion2 = siteIon(site);
-    const label = ion2 || atomSymbol(site.atomicNumber);
-    if (!groups2.has(label)) groups2.set(label, { label, ion: ion2, sites: [] });
-    groups2.get(label).sites.push(site);
-  }
-  return [...groups2.values()].sort((a5, b4) => speciesOrder(a5.ion) - speciesOrder(b4.ion) || a5.label.localeCompare(b4.label, "en"));
-}
-var speciesOrder = (ion2) => ion2?.endsWith("\u207A") ? 0 : ion2?.endsWith("\u207B") ? 1 : 2;
-function monatomicCharge(site) {
-  const ion2 = siteIon(site);
-  const symbol2 = atomSymbol(site.atomicNumber);
-  const suffix = ion2?.startsWith(symbol2) ? ion2.slice(symbol2.length) : "";
-  if (!/^[¹²³⁴⁵⁶⁷⁸]?[⁺⁻]$/.test(suffix)) return site.charge;
-  const magnitude = suffix.length === 1 ? 1 : "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078".indexOf(suffix[0]);
-  return suffix.endsWith("\u207A") ? magnitude : -magnitude;
-}
-function empiricalCrystalFormula(crystal) {
-  const counts2 = /* @__PURE__ */ new Map();
-  for (const site of crystal.sites) {
-    const item = counts2.get(site.atomicNumber) ?? { amount: 0, order: 2 };
-    item.amount += site.occupancy ?? 1;
-    item.order = Math.min(item.order, speciesOrder(siteIon(site)));
-    counts2.set(site.atomicNumber, item);
-  }
-  if (!counts2.size) return "";
-  const min2 = Math.min(...[...counts2.values()].map((item) => item.amount));
-  let multiplier = 1;
-  const ratios = [...counts2.values()].map((item) => item.amount / min2);
-  while (multiplier <= 24 && ratios.some((ratio) => Math.abs(ratio * multiplier - Math.round(ratio * multiplier)) > 2e-3)) multiplier++;
-  const integral = multiplier <= 24;
-  return [...counts2].sort(([a5, left], [b4, right]) => left.order - right.order || (allen[a5] ?? Infinity) - (allen[b4] ?? Infinity) || a5 - b4).map(([number2, { amount }]) => {
-    const ratio = integral ? Math.round(amount / min2 * multiplier) : Number((amount / min2).toFixed(3));
-    return atomSymbol(number2) + (ratio === 1 ? "" : subscript(String(ratio)));
-  }).join("");
-}
-function freeCrystalSite(sites) {
-  const fractions = [0.5, 0, 0.25, 0.75, 0.125, 0.375, 0.625, 0.875];
-  for (const z3 of fractions) {
-    for (const y5 of fractions) {
-      for (const x4 of fractions) {
-        if (!sites.some(({ fractional: [a5, b4, c9] }) => Math.max(Math.abs(a5 - x4), Math.abs(b4 - y5), Math.abs(c9 - z3)) < 1e-6)) {
-          return [x4, y5, z3];
-        }
-      }
-    }
-  }
-  throw new Error("No free fractional site");
+function repairSavedDiagram(molecule2) {
+  if (molecule2.source || !diagramIsCrowded(molecule2)) return molecule2;
+  return improveDiagram(molecule2.geometry ? molecule2 : fitGeometry(molecule2));
 }
 
 // molecule-builder/lewis-view.ts
+init_structure_diagram();
+init_aqueous_preview();
 function bounds(points) {
   const x4 = points.map((point) => point[0]);
   const y5 = points.map((point) => point[1]);
   return { left: Math.min(...x4), right: Math.max(...x4), top: Math.max(...y5), bottom: Math.min(...y5) };
 }
-function lewisViewBox(diagram) {
+function lewisViewBox(diagram, waters = []) {
   if (!diagram.atoms.length) return [-3, -2, 6, 4];
-  const { left, right, top, bottom } = bounds(diagram.atoms.map((atom) => atom.diagram));
+  const points = [...diagram.atoms.map((atom) => atom.diagram), ...waters.flatMap((water2) => [water2.oxygen, ...water2.hydrogens].map(point2))];
+  const { left, right, top, bottom } = bounds(points);
   const paddingX = diagram.ends ? 1.75 : 0.9;
   const paddingY = 0.95;
   return [left - paddingX, -top - paddingY, right - left + 2 * paddingX, top - bottom + 2 * paddingY];
@@ -105808,6 +106094,19 @@ function renderLewis(diagram, box, options) {
 		</g>`;
   }
   return x2`<svg class="drawing lewis-view" viewBox=${box.join(" ")} role="img" aria-label=${options.label}>
+		${options.waters?.map(({ oxygen, hydrogens, contact }) => {
+    const length2 = Math.hypot(contact.to[0] - contact.from[0], contact.to[1] - contact.from[1]);
+    const inset = Math.min(0.4 / length2, 0.24);
+    const axis = [contact.to[0] - contact.from[0], contact.to[1] - contact.from[1]];
+    return b3`<g class="hydration-water" aria-hidden="true" pointer-events="none">
+				<line class="hydration-contact" data-contact=${contact.kind}
+					x1=${contact.from[0] + axis[0] * inset} y1=${-contact.from[1] - axis[1] * inset}
+					x2=${contact.to[0] - axis[0] * inset} y2=${-contact.to[1] + axis[1] * inset} />
+				${hydrogens.map((hydrogen) => bondLines(point2(oxygen), point2(hydrogen), 1))}
+				${[oxygen, ...hydrogens].map(([x4, y5], index) => b3`<text x=${x4} y=${-y5} data-water-atom=${index ? "H" : "O"}
+					text-anchor="middle" dominant-baseline="central">${index ? "H" : "O"}</text>`)}
+			</g>`;
+  })}
 		${repeat}
 		${diagram.bonds.map((bond) => b3`<g data-bond="${bond.from}-${bond.to}">
 			${bondLines(
@@ -105822,19 +106121,21 @@ function renderLewis(diagram, box, options) {
     const [x4, y5] = atom.diagram;
     const symbol2 = atomSymbol(atom.atomicNumber);
     const oxidation = atom.oxidation === void 0 ? "?" : signedNumber(atom.oxidation);
+    const showOxidation = !options.monatomicIons?.has(atom.id);
     const sign = atom.oxidation === void 0 || atom.oxidation === 0 ? "neutral" : atom.oxidation > 0 ? "positive" : "negative";
     const charge = formalCharge(atom.charge);
     const active = isActive(atom.id);
     const partners = atom.bonds.map((bond) => positions.get(bond.from === atom.id ? bond.to : bond.from));
-    const occupied = [Math.PI / 2];
+    const occupied = showOxidation ? [Math.PI / 2] : [];
     if (charge) occupied.push(Math.PI / 4);
     if (atom.isotope) occupied.push(3 * Math.PI / 4);
     if (diagram.ends?.includes(atom.id)) occupied.push(atom.id === diagram.ends[0] ? Math.PI : 0);
     return b3`<g data-atom=${atom.id} ?data-active=${active} class="lewis-atom">
-				<title>${symbol2} · ${atom.id} · ${options.oxidationLabel} ${atom.oxidation === void 0 ? options.unknownLabel : oxidation}</title>
+				<title>${showOxidation ? `${symbol2} \xB7 ${atom.id} \xB7 ${options.oxidationLabel} ${atom.oxidation === void 0 ? options.unknownLabel : oxidation}` : symbol2 + charge}</title>
 				<circle class="lewis-hit" cx=${x4} cy=${-y5} r=".27" />
 				<text class="lewis-symbol" x=${x4} y=${-y5} text-anchor="middle" dominant-baseline="central">${symbol2}</text>
-				<text class="oxidation-number" data-oxidation=${sign} x=${x4} y=${-y5 - 0.25} text-anchor="middle">${oxidation}</text>
+				${showOxidation ? b3`<text class="oxidation-number" data-oxidation=${sign} x=${x4} y=${-y5 - 0.25}
+					text-anchor="middle">${oxidation}</text>` : E2}
 				${charge ? b3`<text class="formal-charge" x=${x4 + (symbol2.length === 1 ? 0.15 : 0.23)} y=${-y5 - 0.12}>${charge}</text>` : E2}
 				${atom.isotope ? b3`<text class="formal-charge" x=${x4 - (symbol2.length === 1 ? 0.15 : 0.23)} y=${-y5 - 0.12}
 					text-anchor="end">${atom.isotope}</text>` : E2}
@@ -106115,6 +106416,13 @@ var builderStyles = i`
 	.lewis-atom[data-active] .lewis-hit { fill: #e2f3ff; stroke: #8ccff0; }
 	.lewis-symbol { font-size: .31px; font-weight: 650; fill: currentColor; }
 	.lewis-electron { fill: #37465a; }
+	.hydration-water text { fill: #334155; font-weight: 650; font-size: .24px; }
+	.hydration-water [data-water-atom="O"] { fill: #9e3223; }
+	.hydration-contact { stroke: #6940a2; stroke-width: .035; stroke-dasharray: .12 .10; }
+	.hydration-contact[data-contact="ion-dipole"] { stroke: #167384; stroke-dasharray: .045 .09; }
+	.hydration-key { display: flex; align-items: baseline; gap: .35rem; flex-wrap: wrap; }
+	.hydration-key span::before { content: ""; display: inline-block; width: .9em; margin-inline-end: .25em; border-top: 2px dashed #6940a2; }
+	.hydration-key [data-contact="ion-dipole"]::before { border-top: 2px dotted #167384; }
 	.lewis-atom[data-active] .lewis-electron { fill: #6b21a8; r: .036px; }
 	.lewis-atom :is(text, .lewis-electron) { pointer-events: none; }
 	.oxidation-number, .formal-charge { font-size: .165px; font-weight: 700; }
@@ -106415,9 +106723,9 @@ var AXES_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="
 	<path d="M3.4 12.6V3.4M3.4 12.6h9.2M3.4 12.6 8.6 7.4" /><path d="M3.4 2.2v1.2M2.2 12.6h1.2M9.6 6.4 8.6 7.4 9.6 8.4" /></svg>`;
 var ELECTRONS_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
 	<circle cx="4.4" cy="8" r="1.7" /><circle cx="11.6" cy="8" r="1.7" /></svg>`;
-var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _ionCharge_dec, _diagramBox_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramBox, _ionCharge, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _lewisCache, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, stageTarget_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, moveDiagram_fn, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, lewis_fn, renderDrawing_fn, renderModelSummary_fn, renderSelectionCard_fn;
+var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _ionCharge_dec, _diagramBox_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showHydration_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _showHydration, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramBox, _ionCharge, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _aqueousCache, _lewisCache, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, stageTarget_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, moveDiagram_fn, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, lewis_fn, aqueous_fn, renderDrawing_fn, renderModelSummary_fn, renderSelectionCard_fn;
 _ChemLabMoleculeBuilder_decorators = [t4(BUILDER_TAG)];
-var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramBox_dec = [r9()], _ionCharge_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
+var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showHydration_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramBox_dec = [r9()], _ionCharge_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
   constructor() {
     super(...arguments);
     __privateAdd(this, _ChemLabMoleculeBuilder_instances);
@@ -106437,24 +106745,25 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _paletteNarrow, __runInitializers(_init3, 56, this, false)), __runInitializers(_init3, 59, this);
     __privateAdd(this, _pickerView, __runInitializers(_init3, 60, this, "list")), __runInitializers(_init3, 63, this);
     __privateAdd(this, _showElectrons, __runInitializers(_init3, 64, this, false)), __runInitializers(_init3, 67, this);
-    __privateAdd(this, _showLattice, __runInitializers(_init3, 68, this, false)), __runInitializers(_init3, 71, this);
-    __privateAdd(this, _showEdges, __runInitializers(_init3, 72, this, true)), __runInitializers(_init3, 75, this);
-    __privateAdd(this, _showAxes, __runInitializers(_init3, 76, this, false)), __runInitializers(_init3, 79, this);
-    __privateAdd(this, _view2, __runInitializers(_init3, 80, this, "3d")), __runInitializers(_init3, 83, this);
-    __privateAdd(this, _tool, __runInitializers(_init3, 84, this, "orbit")), __runInitializers(_init3, 87, this);
-    __privateAdd(this, _element, __runInitializers(_init3, 88, this, 6)), __runInitializers(_init3, 91, this);
-    __privateAdd(this, _picked, __runInitializers(_init3, 92, this)), __runInitializers(_init3, 95, this);
-    __privateAdd(this, _hoveredAtom, __runInitializers(_init3, 96, this)), __runInitializers(_init3, 99, this);
-    __privateAdd(this, _bondStart, __runInitializers(_init3, 100, this)), __runInitializers(_init3, 103, this);
-    __privateAdd(this, _bondOrder, __runInitializers(_init3, 104, this, 1)), __runInitializers(_init3, 107, this);
-    __privateAdd(this, _repeats, __runInitializers(_init3, 108, this, 1)), __runInitializers(_init3, 111, this);
-    __privateAdd(this, _notice, __runInitializers(_init3, 112, this, "")), __runInitializers(_init3, 115, this);
-    __privateAdd(this, _gpu, __runInitializers(_init3, 116, this, "idle")), __runInitializers(_init3, 119, this);
-    __privateAdd(this, _diagramBox, __runInitializers(_init3, 120, this)), __runInitializers(_init3, 123, this);
-    __privateAdd(this, _ionCharge, __runInitializers(_init3, 124, this, 0)), __runInitializers(_init3, 127, this);
-    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 128, this)), __runInitializers(_init3, 131, this);
-    __privateAdd(this, _bondPreview, __runInitializers(_init3, 132, this)), __runInitializers(_init3, 135, this);
-    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 136, this)), __runInitializers(_init3, 139, this);
+    __privateAdd(this, _showHydration, __runInitializers(_init3, 68, this, false)), __runInitializers(_init3, 71, this);
+    __privateAdd(this, _showLattice, __runInitializers(_init3, 72, this, false)), __runInitializers(_init3, 75, this);
+    __privateAdd(this, _showEdges, __runInitializers(_init3, 76, this, true)), __runInitializers(_init3, 79, this);
+    __privateAdd(this, _showAxes, __runInitializers(_init3, 80, this, false)), __runInitializers(_init3, 83, this);
+    __privateAdd(this, _view2, __runInitializers(_init3, 84, this, "3d")), __runInitializers(_init3, 87, this);
+    __privateAdd(this, _tool, __runInitializers(_init3, 88, this, "orbit")), __runInitializers(_init3, 91, this);
+    __privateAdd(this, _element, __runInitializers(_init3, 92, this, 6)), __runInitializers(_init3, 95, this);
+    __privateAdd(this, _picked, __runInitializers(_init3, 96, this)), __runInitializers(_init3, 99, this);
+    __privateAdd(this, _hoveredAtom, __runInitializers(_init3, 100, this)), __runInitializers(_init3, 103, this);
+    __privateAdd(this, _bondStart, __runInitializers(_init3, 104, this)), __runInitializers(_init3, 107, this);
+    __privateAdd(this, _bondOrder, __runInitializers(_init3, 108, this, 1)), __runInitializers(_init3, 111, this);
+    __privateAdd(this, _repeats, __runInitializers(_init3, 112, this, 1)), __runInitializers(_init3, 115, this);
+    __privateAdd(this, _notice, __runInitializers(_init3, 116, this, "")), __runInitializers(_init3, 119, this);
+    __privateAdd(this, _gpu, __runInitializers(_init3, 120, this, "idle")), __runInitializers(_init3, 123, this);
+    __privateAdd(this, _diagramBox, __runInitializers(_init3, 124, this)), __runInitializers(_init3, 127, this);
+    __privateAdd(this, _ionCharge, __runInitializers(_init3, 128, this, 0)), __runInitializers(_init3, 131, this);
+    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 132, this)), __runInitializers(_init3, 135, this);
+    __privateAdd(this, _bondPreview, __runInitializers(_init3, 136, this)), __runInitializers(_init3, 139, this);
+    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 140, this)), __runInitializers(_init3, 143, this);
     __privateAdd(this, _scene);
     __privateAdd(this, _sceneLoad, 0);
     __privateAdd(this, _fitNext, true);
@@ -106470,6 +106779,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _worksheetObserver);
     __privateAdd(this, _waitingForLab, false);
     __privateAdd(this, _lastSaved, "");
+    __privateAdd(this, _aqueousCache);
     __privateAdd(this, _lewisCache);
     __privateAdd(this, _onContextLost, () => __privateMethod(this, _ChemLabMoleculeBuilder_instances, fallback_fn).call(this));
     __privateAdd(this, _selectPalette, (event) => {
@@ -106624,7 +106934,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         if (!structure) throw new Error("Invalid structure");
         if (request !== __privateGet(this, _fileOpen) || !this.isConnected) return;
         __privateMethod(this, _ChemLabMoleculeBuilder_instances, closePreview_fn).call(this, false);
-        __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, structure, true);
+        __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, structure.kind === "molecule" ? repairSavedDiagram(structure) : structure, true);
         this.openPanel = void 0;
       } catch {
         if (request === __privateGet(this, _fileOpen)) this.notice = __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Could not open this ChemLab structure file.", "Diese ChemLab-Strukturdatei konnte nicht ge\xF6ffnet werden.");
@@ -106671,7 +106981,13 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get),
         this.repeats,
         [this.picked, this.bondStart].filter((id) => id !== void 0),
-        { electrons: this.showElectrons, lattice: this.showLattice, edges: this.showEdges, axes: this.showAxes }
+        {
+          electrons: this.showElectrons,
+          lattice: this.showLattice,
+          edges: this.showEdges,
+          axes: this.showAxes,
+          hydration: this.showHydration && __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get).kind === "molecule" && __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get).representation === "aqueous-ions"
+        }
       );
       if (__privateGet(this, _fitNext)) {
         __privateSet(this, _fitNext, false);
@@ -106681,7 +106997,8 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
   }
   viewCatalogStructure(key) {
     if (!catalogEntry(key)) return false;
-    const variants = catalogStructures(key);
+    const overview = catalogAqueousStructure(key);
+    const variants = overview ? [overview] : catalogStructures(key);
     this.catalogKey = key;
     this.catalogVariants = variants;
     this.catalogIndex = 0;
@@ -106695,7 +107012,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     if (!structure) return false;
     this.catalogKey = "";
     this.catalogVariants = [];
-    __privateMethod(this, _ChemLabMoleculeBuilder_instances, openPreview_fn).call(this, structure);
+    __privateMethod(this, _ChemLabMoleculeBuilder_instances, openPreview_fn).call(this, structure.kind === "molecule" ? repairSavedDiagram(structure) : structure);
     return true;
   }
   render() {
@@ -106710,7 +107027,8 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       experimental: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Experimental geometry", "Experimentelle Geometrie"),
       constituent: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Mixture constituent", "Gemischbestandteil"),
       "repeat-unit": __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Capped repeat-unit example", "Beispiel mit abges\xE4ttigten Wiederholungseinheiten"),
-      "ionic-components": __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ionic components", "Ionenbestandteile")
+      "ionic-components": __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ionic components", "Ionenbestandteile"),
+      "aqueous-ions": __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Aqueous species \xB7 schematic", "Gel\xF6ste Spezies \xB7 schematisch")
     }[current.representation]);
     const tool = (value, label, icon) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
       label,
@@ -106899,6 +107217,7 @@ _paletteOpen = new WeakMap();
 _paletteNarrow = new WeakMap();
 _pickerView = new WeakMap();
 _showElectrons = new WeakMap();
+_showHydration = new WeakMap();
 _showLattice = new WeakMap();
 _showEdges = new WeakMap();
 _showAxes = new WeakMap();
@@ -106932,6 +107251,7 @@ _dataObserver = new WeakMap();
 _worksheetObserver = new WeakMap();
 _waitingForLab = new WeakMap();
 _lastSaved = new WeakMap();
+_aqueousCache = new WeakMap();
 _lewisCache = new WeakMap();
 _ChemLabMoleculeBuilder_instances = new WeakSet();
 current_get = function() {
@@ -107024,7 +107344,7 @@ restore_fn = function() {
     __privateSet(this, _past, []);
     __privateSet(this, _future, []);
     __privateSet(this, _lastSaved, value);
-    this.draft = snapshot;
+    this.draft = snapshot.kind === "molecule" ? repairSavedDiagram(snapshot) : snapshot;
     __privateMethod(this, _ChemLabMoleculeBuilder_instances, resetSelection_fn).call(this);
   } catch {
     this.notice = __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "The saved structure could not be opened.", "Die gespeicherte Struktur konnte nicht ge\xF6ffnet werden.");
@@ -107200,8 +107520,16 @@ connectBond_fn = function(from, to) {
     geometry: void 0,
     bonds: [...bonds, { from, to, order: this.bondOrder }]
   };
-  const updateGeometry = this.view === "2d";
-  __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, updateGeometry ? fitGeometry(next) : next, updateGeometry);
+  if (this.view === "2d") {
+    const fitted = fitGeometry(next);
+    const readable = improveDiagram(fitted);
+    if (readable !== fitted) this.diagramBox = void 0;
+    __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, readable, true);
+  } else if (diagramIsCrowded(next)) {
+    const readable = improveDiagram(fitGeometry(next));
+    this.diagramBox = void 0;
+    __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, { ...next, atoms: next.atoms.map((atom, index) => ({ ...atom, diagram: readable.atoms[index].diagram })) });
+  } else __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, next);
   this.picked = to;
 };
 removeAtom_fn = function() {
@@ -107257,7 +107585,8 @@ updateCharge_fn = function(value) {
 };
 geometry_fn = function() {
   if (__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) || this.draft.kind !== "molecule") return;
-  const next = fitGeometry(this.draft);
+  const next = improveDiagram(fitGeometry(this.draft));
+  this.diagramBox = void 0;
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, next, true);
   this.view = this.gpu === "unavailable" ? "2d" : "3d";
 };
@@ -107287,7 +107616,7 @@ _pointerUp = new WeakMap();
 moveDiagram_fn = function(factor, from, to = from) {
   const current = __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get);
   if (current.kind !== "molecule") return;
-  const base = lewisViewBox(__privateMethod(this, _ChemLabMoleculeBuilder_instances, lewis_fn).call(this, current));
+  const base = lewisViewBox(__privateMethod(this, _ChemLabMoleculeBuilder_instances, lewis_fn).call(this, current), this.showHydration ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, aqueous_fn).call(this, current).waters : []);
   const [x4, y5, width, height] = this.diagramBox ?? base;
   const [a5, b4] = from ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, diagramPoint_fn).call(this, from.x, from.y) : [x4 + width / 2, -(y5 + height / 2)];
   const [c9, d4] = to ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, diagramPoint_fn).call(this, to.x, to.y) : [a5, b4];
@@ -107507,11 +107836,23 @@ lewis_fn = function(structure) {
   if (__privateGet(this, _lewisCache)?.structure !== structure) __privateSet(this, _lewisCache, { structure, value: lewisDiagram(structure) });
   return __privateGet(this, _lewisCache).value;
 };
+aqueous_fn = function(structure) {
+  if (__privateGet(this, _aqueousCache)?.structure !== structure) {
+    const components = structure.representation === "aqueous-ions" ? aqueousComponents(structure) : [];
+    const monatomicIons = new Set(components.filter((component) => component.atoms.length === 1 && component.charge).map((component) => component.atoms[0].id));
+    __privateSet(this, _aqueousCache, { structure, components, monatomicIons, waters: components.flatMap((component) => hydrationWaters(component, 2)) });
+  }
+  return __privateGet(this, _aqueousCache);
+};
 renderDrawing_fn = function(colors2) {
   const current = __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get);
   if (current.kind === "molecule") {
     const diagram = __privateMethod(this, _ChemLabMoleculeBuilder_instances, lewis_fn).call(this, current);
-    return renderLewis(diagram, this.diagramBox ?? lewisViewBox(diagram), {
+    const aqueous2 = __privateMethod(this, _ChemLabMoleculeBuilder_instances, aqueous_fn).call(this, current);
+    const waters = this.showHydration ? aqueous2.waters : [];
+    return renderLewis(diagram, this.diagramBox ?? lewisViewBox(diagram, waters), {
+      waters,
+      monatomicIons: aqueous2.monatomicIons,
       picked: this.picked,
       hovered: this.hoveredAtom,
       bondStart: this.bondStart,
@@ -107559,6 +107900,7 @@ renderDrawing_fn = function(colors2) {
 };
 renderModelSummary_fn = function(current, representation, ionColors) {
   const crystal = current.kind === "crystal";
+  const aqueous2 = !crystal && current.representation === "aqueous-ions" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, aqueous_fn).call(this, current) : void 0;
   const geometry = this.view === "3d" && current.kind === "molecule" && __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? current.geometry === "idealized" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Idealized geometry", "Idealisierte Geometrie") : current.geometry === "estimated" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Estimated geometry", "Gesch\xE4tzte Geometrie") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Sketch", "Skizze") : void 0;
   const toggle = (label, icon, value, onClick) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
     label,
@@ -107568,13 +107910,33 @@ renderModelSummary_fn = function(current, representation, ionColors) {
   });
   return x2`<div class="model-summary">
 			<div class="fields">
-				<sl-tag size="small">${crystal ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Crystal", "Kristall") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Molecule", "Molek\xFCl")}</sl-tag>
+				<sl-tag size="small">${crystal ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Crystal", "Kristall") : aqueous2 ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Solution", "L\xF6sung") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Molecule", "Molek\xFCl")}</sl-tag>
 				${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length && (!crystal || this.view === "3d") ? x2`<sl-tag size="small">${chemicalFormula(
-    current.kind === "molecule" && current.repeatUnit && this.view === "2d" ? formula({ ...current, atoms: __privateMethod(this, _ChemLabMoleculeBuilder_instances, lewis_fn).call(this, current).atoms }) : formula(current)
+    aqueous2 ? current.name : current.kind === "molecule" && current.repeatUnit && this.view === "2d" ? formula({ ...current, atoms: __privateMethod(this, _ChemLabMoleculeBuilder_instances, lewis_fn).call(this, current).atoms }) : formula(current)
   )}</sl-tag>` : E2}
 				${representation ? x2`<sl-tag size="small">${representation}</sl-tag>` : E2}
 				${geometry ? x2`<sl-tag size="small">${geometry}</sl-tag>` : E2}
 			</div>
+			${aqueous2 && aqueous2.components.length ? x2`
+				<div class="fields" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Representative dissolved species", "Repr\xE4sentative gel\xF6ste Spezies")}>
+					${aqueous2.components.map((component) => x2`<sl-tag size="small" variant=${component.charge ? "primary" : "neutral"}>
+						${component.label}
+					</sl-tag>`)}
+				</div>
+				<div class="fields">
+					<sl-button size="small" variant=${this.showHydration ? "primary" : "default"}
+						aria-pressed=${String(this.showHydration)} title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Schematic water orientation around dissolved ions", "Schematische Anordnung von Wasser um gel\xF6ste Ionen")}
+						@click=${() => {
+    this.showHydration = !this.showHydration;
+    this.diagramBox = void 0;
+    __privateSet(this, _fitNext, true);
+  }}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Hydration shells", "Hydrath\xFCllen")}</sl-button>
+				</div>
+				${this.showHydration ? x2`<div class="hydration-key">
+					<span data-contact="hydrogen">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Hydrogen bond", "Wasserstoffbr\xFCcke")}</span>
+					<span data-contact="ion-dipole">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ion\u2013dipole", "Ion\u2013Dipol")}</span>
+				</div>` : E2}
+			` : E2}
 			${ionColors.size && this.view === "3d" ? x2`<span class="structure-legend" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ion colours", "Ionenfarben")}>
 				${[...ionColors].map(([ion2, color]) => x2`<span style="--swatch: ${colorHex(color)}">${ion2}</span>`)}
 				${crystal && this.showLattice ? x2`<span data-marker="lattice">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Lattice points", "Gitterpunkte")}</span>` : E2}
@@ -107584,7 +107946,7 @@ renderModelSummary_fn = function(current, representation, ionColors) {
 					<span data-region="bond">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bonding", "Bindend")}</span>
 					<span data-region="lone">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Nonbonding", "Nichtbindend")}</span>
 				</span>` : E2}
-			${current.kind === "molecule" && this.view === "2d" && current.atoms.length ? x2`
+			${current.kind === "molecule" && this.view === "2d" && current.atoms.length > (aqueous2?.monatomicIons.size ?? 0) ? x2`
 				<div class="lewis-legend" title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ionic approximation of the drawn bonds using Allen electronegativity. ? marks an undetermined value.", "Ionische N\xE4herung der gezeichneten Bindungen nach Allen-Elektronegativit\xE4t. ? kennzeichnet einen unbestimmten Wert.")}>
 					${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Oxidation state", "Oxidationszahl")}
 					<span data-oxidation="negative">−</span><span data-oxidation="neutral">0</span><span data-oxidation="positive">+</span>
@@ -107728,6 +108090,7 @@ __decorateElement(_init3, 4, "paletteOpen", _paletteOpen_dec, _ChemLabMoleculeBu
 __decorateElement(_init3, 4, "paletteNarrow", _paletteNarrow_dec, _ChemLabMoleculeBuilder, _paletteNarrow);
 __decorateElement(_init3, 4, "pickerView", _pickerView_dec, _ChemLabMoleculeBuilder, _pickerView);
 __decorateElement(_init3, 4, "showElectrons", _showElectrons_dec, _ChemLabMoleculeBuilder, _showElectrons);
+__decorateElement(_init3, 4, "showHydration", _showHydration_dec, _ChemLabMoleculeBuilder, _showHydration);
 __decorateElement(_init3, 4, "showLattice", _showLattice_dec, _ChemLabMoleculeBuilder, _showLattice);
 __decorateElement(_init3, 4, "showEdges", _showEdges_dec, _ChemLabMoleculeBuilder, _showEdges);
 __decorateElement(_init3, 4, "showAxes", _showAxes_dec, _ChemLabMoleculeBuilder, _showAxes);

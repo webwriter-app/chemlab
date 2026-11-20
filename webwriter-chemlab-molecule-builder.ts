@@ -14,7 +14,7 @@ import { elementByAtomicNumber } from "./periodic-table/element-reference";
 import { metalCrystal } from "./periodic-table/metal-reference";
 import { ELEMENT_SELECTION_EVENT, isAtomicNumber, type ElementSelectionV1 } from "./periodic-table/selection";
 import { SelectionRouter } from "./periodic-table/routing";
-import { catalogEntry, catalogIsMixture, catalogStructures, structureCatalog } from "./molecule-builder/catalog";
+import { catalogAqueousStructure, catalogEntry, catalogIsMixture, catalogStructures, structureCatalog } from "./molecule-builder/catalog";
 import { BUILDER_TAG, LAB_TAG, TABLE_TAG, worksheetPeers, worksheetScope, type LabReceiver } from "./molecule-builder/exchange";
 import { colorHex, crystalIonColors, siteIon } from "./molecule-builder/crystal-display";
 import { atomRadius, fitGeometry, canBond, shapeName, formula } from "./molecule-builder/geometry";
@@ -23,6 +23,8 @@ import {
 	newCrystal, newMolecule, readStructure, type BondOrder, type Cell, type Point2, type Point3, type Structure,
 } from "./molecule-builder/structure";
 import { chemicalFormula, crystalSpecies, editableRepeatUnit, empiricalCrystalFormula, freeCrystalSite, lewisDiagram, monatomicCharge } from "./molecule-builder/structure-diagram";
+import { aqueousComponents, hydrationWaters } from "./molecule-builder/aqueous-preview";
+import { diagramIsCrowded, improveDiagram, repairSavedDiagram } from "./molecule-builder/diagram-layout";
 import { lewisViewBox, renderLewis, type DiagramBox } from "./molecule-builder/lewis-view";
 import { builderStyles } from "./molecule-builder/styles";
 import type { MoleculeScene } from "./molecule-builder/scene";
@@ -143,6 +145,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor paletteNarrow = false;
 	@state() private accessor pickerView: "list" | "table" = "list";
 	@state() private accessor showElectrons = false;
+	@state() private accessor showHydration = false;
 	@state() private accessor showLattice = false;
 	@state() private accessor showEdges = true;
 	@state() private accessor showAxes = false;
@@ -176,6 +179,12 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	#worksheetObserver?: MutationObserver;
 	#waitingForLab = false;
 	#lastSaved = "";
+	#aqueousCache?: {
+		structure: Structure;
+		components: ReturnType<typeof aqueousComponents>;
+		waters: ReturnType<typeof hydrationWaters>;
+		monatomicIons: ReadonlySet<number>;
+	};
 	#lewisCache?: { structure: Structure; value: ReturnType<typeof lewisDiagram> };
 
 	get #current() { return this.preview ?? this.draft; }
@@ -224,7 +233,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (this.view === "3d" && this.gpu === "idle") void this.#startScene();
 		if (this.#scene && this.view === "3d") {
 			this.#scene.setScene(this.#current, this.repeats, [this.picked, this.bondStart].filter(id => id !== undefined),
-				{ electrons: this.showElectrons, lattice: this.showLattice, edges: this.showEdges, axes: this.showAxes });
+				{ electrons: this.showElectrons, lattice: this.showLattice, edges: this.showEdges, axes: this.showAxes,
+					hydration: this.showHydration && this.#current.kind === "molecule" && this.#current.representation === "aqueous-ions" });
 			if (this.#fitNext) {
 				this.#fitNext = false;
 				this.#scene.fit();
@@ -313,7 +323,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			this.#past = [];
 			this.#future = [];
 			this.#lastSaved = value;
-			this.draft = snapshot;
+			this.draft = snapshot.kind === "molecule" ? repairSavedDiagram(snapshot) : snapshot;
 			this.#resetSelection();
 		} catch {
 			this.notice = this.#t("The saved structure could not be opened.", "Die gespeicherte Struktur konnte nicht geöffnet werden.");
@@ -508,8 +518,16 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const bonds = draft.bonds.filter(bond => !(bond.from === from && bond.to === to || bond.from === to && bond.to === from));
 		const next = { ...draft, name: "", catalogKey: undefined, source: undefined, representation: undefined,
 			geometry: undefined, bonds: [...bonds, { from, to, order: this.bondOrder }] };
-		const updateGeometry = this.view === "2d";
-		this.#record(updateGeometry ? fitGeometry(next) : next, updateGeometry);
+		if (this.view === "2d") {
+			const fitted = fitGeometry(next);
+			const readable = improveDiagram(fitted);
+			if (readable !== fitted) this.diagramBox = undefined;
+			this.#record(readable, true);
+		} else if (diagramIsCrowded(next)) {
+			const readable = improveDiagram(fitGeometry(next));
+			this.diagramBox = undefined;
+			this.#record({ ...next, atoms: next.atoms.map((atom, index) => ({ ...atom, diagram: readable.atoms[index].diagram })) });
+		} else this.#record(next);
 		this.picked = to;
 	}
 
@@ -539,7 +557,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	#geometry() {
 		if (this.#readonly || this.draft.kind !== "molecule") return;
-		const next = fitGeometry(this.draft);
+		const next = improveDiagram(fitGeometry(this.draft));
+		this.diagramBox = undefined;
 		this.#record(next, true);
 		this.view = this.gpu === "unavailable" ? "2d" : "3d";
 	}
@@ -661,7 +680,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	#moveDiagram(factor: number, from?: Pointer, to = from) {
 		const current = this.#current;
 		if (current.kind !== "molecule") return;
-		const base = lewisViewBox(this.#lewis(current));
+		const base = lewisViewBox(this.#lewis(current), this.showHydration ? this.#aqueous(current).waters : []);
 		const [x, y, width, height] = this.diagramBox ?? base;
 		const [a, b] = from ? this.#diagramPoint(from.x, from.y) : [x + width / 2, -(y + height / 2)];
 		const [c, d] = to ? this.#diagramPoint(to.x, to.y) : [a, b];
@@ -733,7 +752,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	viewCatalogStructure(key: string): boolean {
 		if (!catalogEntry(key)) return false;
-		const variants = catalogStructures(key);
+		const overview = catalogAqueousStructure(key);
+		const variants = overview ? [overview] : catalogStructures(key);
 		this.catalogKey = key;
 		this.catalogVariants = variants;
 		this.catalogIndex = 0;
@@ -748,7 +768,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (!structure) return false;
 		this.catalogKey = "";
 		this.catalogVariants = [];
-		this.#openPreview(structure);
+		this.#openPreview(structure.kind === "molecule" ? repairSavedDiagram(structure) : structure);
 		return true;
 	}
 
@@ -780,7 +800,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			if (!structure) throw new Error("Invalid structure");
 			if (request !== this.#fileOpen || !this.isConnected) return;
 			this.#closePreview(false);
-			this.#record(structure, true);
+			this.#record(structure.kind === "molecule" ? repairSavedDiagram(structure) : structure, true);
 			this.openPanel = undefined;
 		} catch {
 			if (request === this.#fileOpen) this.notice = this.#t("Could not open this ChemLab structure file.", "Diese ChemLab-Strukturdatei konnte nicht geöffnet werden.");
@@ -957,11 +977,24 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		return this.#lewisCache.value;
 	}
 
+	#aqueous(structure: Extract<Structure, { kind: "molecule" }>) {
+		if (this.#aqueousCache?.structure !== structure) {
+			const components = structure.representation === "aqueous-ions" ? aqueousComponents(structure) : [];
+			const monatomicIons = new Set(components.filter(component => component.atoms.length === 1 && component.charge)
+				.map(component => component.atoms[0].id));
+			this.#aqueousCache = { structure, components, monatomicIons, waters: components.flatMap(component => hydrationWaters(component, 2)) };
+		}
+		return this.#aqueousCache;
+	}
+
 	#renderDrawing(colors: ReadonlyMap<string, number>) {
 		const current = this.#current;
 		if (current.kind === "molecule") {
 			const diagram = this.#lewis(current);
-			return renderLewis(diagram, this.diagramBox ?? lewisViewBox(diagram), {
+			const aqueous = this.#aqueous(current);
+			const waters = this.showHydration ? aqueous.waters : [];
+			return renderLewis(diagram, this.diagramBox ?? lewisViewBox(diagram, waters), {
+				waters, monatomicIons: aqueous.monatomicIons,
 				picked: this.picked, hovered: this.hoveredAtom, bondStart: this.bondStart, from: this.#gesture?.from,
 				preview: this.bondPreview, order: this.bondOrder, drag: this.diagramDrag,
 				label: this.#t(diagram.ends ? "Lewis structure of the repeating unit" : "Lewis structure",
@@ -1004,6 +1037,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	#renderModelSummary(current: Structure, representation: string | undefined, ionColors: ReadonlyMap<string, number>) {
 		const crystal = current.kind === "crystal";
+		const aqueous = !crystal && current.representation === "aqueous-ions" ? this.#aqueous(current) : undefined;
 		const geometry = this.view === "3d" && current.kind === "molecule" && this.#atoms.length
 			? current.geometry === "idealized" ? this.#t("Idealized geometry", "Idealisierte Geometrie")
 				: current.geometry === "estimated" ? this.#t("Estimated geometry", "Geschätzte Geometrie")
@@ -1014,14 +1048,36 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		});
 		return html`<div class="model-summary">
 			<div class="fields">
-				<sl-tag size="small">${crystal ? this.#t("Crystal", "Kristall") : this.#t("Molecule", "Molekül")}</sl-tag>
+				<sl-tag size="small">${crystal ? this.#t("Crystal", "Kristall")
+					: aqueous ? this.#t("Solution", "Lösung") : this.#t("Molecule", "Molekül")}</sl-tag>
 				${this.#atoms.length && (!crystal || this.view === "3d") ? html`<sl-tag size="small">${chemicalFormula(
-					current.kind === "molecule" && current.repeatUnit && this.view === "2d"
+					aqueous ? current.name : current.kind === "molecule" && current.repeatUnit && this.view === "2d"
 						? formula({ ...current, atoms: this.#lewis(current).atoms }) : formula(current),
 				)}</sl-tag>` : nothing}
 				${representation ? html`<sl-tag size="small">${representation}</sl-tag>` : nothing}
 				${geometry ? html`<sl-tag size="small">${geometry}</sl-tag>` : nothing}
 			</div>
+			${aqueous && aqueous.components.length ? html`
+				<div class="fields" aria-label=${this.#t("Representative dissolved species", "Repräsentative gelöste Spezies")}>
+					${aqueous.components.map(component => html`<sl-tag size="small" variant=${component.charge ? "primary" : "neutral"}>
+						${component.label}
+					</sl-tag>`)}
+				</div>
+				<div class="fields">
+					<sl-button size="small" variant=${this.showHydration ? "primary" : "default"}
+						aria-pressed=${String(this.showHydration)} title=${this.#t(
+							"Schematic water orientation around dissolved ions", "Schematische Anordnung von Wasser um gelöste Ionen")}
+						@click=${() => {
+							this.showHydration = !this.showHydration;
+							this.diagramBox = undefined;
+							this.#fitNext = true;
+						}}>${this.#t("Hydration shells", "Hydrathüllen")}</sl-button>
+				</div>
+				${this.showHydration ? html`<div class="hydration-key">
+					<span data-contact="hydrogen">${this.#t("Hydrogen bond", "Wasserstoffbrücke")}</span>
+					<span data-contact="ion-dipole">${this.#t("Ion–dipole", "Ion–Dipol")}</span>
+				</div>` : nothing}
+			` : nothing}
 			${ionColors.size && this.view === "3d" ? html`<span class="structure-legend" role="group" aria-label=${this.#t("Ion colours", "Ionenfarben")}>
 				${[...ionColors].map(([ion, color]) => html`<span style="--swatch: ${colorHex(color)}">${ion}</span>`)}
 				${crystal && this.showLattice ? html`<span data-marker="lattice">${this.#t("Lattice points", "Gitterpunkte")}</span>` : nothing}
@@ -1034,7 +1090,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					<span data-region="bond">${this.#t("Bonding", "Bindend")}</span>
 					<span data-region="lone">${this.#t("Nonbonding", "Nichtbindend")}</span>
 				</span>` : nothing}
-			${current.kind === "molecule" && this.view === "2d" && current.atoms.length ? html`
+			${current.kind === "molecule" && this.view === "2d" && current.atoms.length > (aqueous?.monatomicIons.size ?? 0) ? html`
 				<div class="lewis-legend" title=${this.#t("Ionic approximation of the drawn bonds using Allen electronegativity. ? marks an undetermined value.",
 					"Ionische Näherung der gezeichneten Bindungen nach Allen-Elektronegativität. ? kennzeichnet einen unbestimmten Wert.")}>
 					${this.#t("Oxidation state", "Oxidationszahl")}
@@ -1166,6 +1222,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			constituent: this.#t("Mixture constituent", "Gemischbestandteil"),
 			"repeat-unit": this.#t("Capped repeat-unit example", "Beispiel mit abgesättigten Wiederholungseinheiten"),
 			"ionic-components": this.#t("Ionic components", "Ionenbestandteile"),
+			"aqueous-ions": this.#t("Aqueous species · schematic", "Gelöste Spezies · schematisch"),
 		}[current.representation]);
 		const tool = (value: Tool, label: string, icon: unknown) => this.#iconButton({
 			label, icon, pressed: value === this.tool, onClick: () => this.#setTool(value),

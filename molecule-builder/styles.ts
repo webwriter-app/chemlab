@@ -270,6 +270,13 @@ export const builderStyles = css`
 	.lewis-atom[data-active] .lewis-hit { fill: #e2f3ff; stroke: #8ccff0; }
 	.lewis-symbol { font-size: .31px; font-weight: 650; fill: currentColor; }
 	.lewis-electron { fill: #37465a; }
+	.hydration-water text { fill: #334155; font-weight: 650; font-size: .24px; }
+	.hydration-water [data-water-atom="O"] { fill: #9e3223; }
+	.hydration-contact { stroke: #6940a2; stroke-width: .035; stroke-dasharray: .12 .10; }
+	.hydration-contact[data-contact="ion-dipole"] { stroke: #167384; stroke-dasharray: .045 .09; }
+	.hydration-key { display: flex; align-items: baseline; gap: .35rem; flex-wrap: wrap; }
+	.hydration-key span::before { content: ""; display: inline-block; width: .9em; margin-inline-end: .25em; border-top: 2px dashed #6940a2; }
+	.hydration-key [data-contact="ion-dipole"]::before { border-top: 2px dotted #167384; }
 	.lewis-atom[data-active] .lewis-electron { fill: #6b21a8; r: .036px; }
 	.lewis-atom :is(text, .lewis-electron) { pointer-events: none; }
 	.oxidation-number, .formal-charge { font-size: .165px; font-weight: 700; }
