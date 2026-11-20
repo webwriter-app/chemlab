@@ -1,4 +1,4 @@
-import { Application, Graphics, Point } from "pixi.js";
+import { Application, Graphics, Point, Text } from "pixi.js";
 import {
 	Container3D, CylinderGeometry, DirectionalLight, Material3D, Mesh3D, Plane,
 	Sphere, SphereGeometry, Vector3, View3D,
@@ -9,6 +9,18 @@ import { cartesian, cellVectors, replicatedSites, type Point3, type Structure } 
 
 const vector = ([x, y, z]: Point3) => ({ x, y, z });
 const cellCorners: Point3[] = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]];
+/** The camera's vertical field of view in degrees, the default of the 3D view. */
+const CAMERA_FOV = 60;
+/** Share of the short edge the structure fills, leaving room for the canvas controls. */
+const FIT_FILL = 0.8;
+/** Screen distance of the cell-axis cue from the upper right corner, in pixels. */
+const AXIS_ORIGIN = 34;
+/** Length of the cell-axis cue arrows, in pixels. */
+const AXIS_LENGTH = 20;
+const AXIS_COLORS = [0xb45309, 0x0f766e, 0x6d28d9];
+
+/** What the scene shows besides the structure itself. */
+export type SceneDisplay = { electrons: boolean; lattice: boolean; edges: boolean; axes: boolean };
 
 export class MoleculeScene {
 	static async create(host: HTMLElement) {
@@ -30,9 +42,13 @@ export class MoleculeScene {
 	readonly #app: Application;
 	readonly #view: View3D;
 	readonly #content = new Container3D();
+	readonly #edges = new Container3D();
 	readonly #electrons = new Container3D();
 	readonly #lattice = new Graphics({ eventMode: "none" });
+	readonly #axes = new Graphics({ eventMode: "none" });
+	readonly #axisLabels = ["a", "b", "c"].map(() => new Text({ text: "", style: { fontSize: 10, fill: 0x52525b } }));
 	readonly #projected = new Point();
+	readonly #axisTip = new Point();
 	readonly #sphere = new SphereGeometry({ radius: 1, widthSegments: 20, heightSegments: 14 });
 	readonly #cylinder = new CylinderGeometry({ height: 1, radiusTop: 1, radiusBottom: 1, radialSegments: 10 });
 	readonly #materials = new Map<string, Material3D>();
@@ -45,6 +61,8 @@ export class MoleculeScene {
 	#structure?: Structure;
 	#showElectrons = false;
 	#showLattice = false;
+	#showEdges = true;
+	#showAxes = false;
 	#latticePoints: ReturnType<typeof vector>[] = [];
 	#repeats = 0;
 	#frame = 0;
@@ -53,18 +71,20 @@ export class MoleculeScene {
 	#yaw = 0.34;
 	#pitch = 0.24;
 	#bounds: Point3[] = [];
+	#atomRadius = 0;
 
 	private constructor(app: Application, host: HTMLElement) {
 		this.#app = app;
 		this.#view = new View3D({
 			autoResize: false, environment: { skyColor: 0xffffff, groundColor: 0xa6b4c3, intensity: 0.94 },
 		});
-		app.stage.addChild(this.#view, this.#lattice);
+		app.stage.addChild(this.#view, this.#lattice, this.#axes, ...this.#axisLabels);
+		for (const label of this.#axisLabels) label.visible = false;
 		this.#view.setSize(app.screen.width, app.screen.height);
 		const sun = new DirectionalLight({ color: 0xffffff, intensity: 2.15 });
 		sun.position.set(3, 6, 7);
 		sun.lookAt({ x: 0, y: 0, z: 0 });
-		this.#view.root.addChild(sun, this.#content, this.#electrons);
+		this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons);
 		this.#preview = this.#rod();
 		this.#preview.material = this.#material(0x0086c5);
 		this.#preview.visible = false;
@@ -117,6 +137,7 @@ export class MoleculeScene {
 		mesh.scale.set(radius);
 		this.#content.addChild(mesh);
 		this.#bounds.push(position);
+		this.#atomRadius = Math.max(this.#atomRadius, radius);
 		this.#picks.set(mesh, { id, color, ionic: ionColor !== undefined, opacity, position });
 	}
 
@@ -150,21 +171,29 @@ export class MoleculeScene {
 		}
 	}
 
-	setScene(structure: Structure, repeats: number, selection: number[], showElectrons = false, showLattice = false) {
+	setScene(structure: Structure, repeats: number, selection: number[], display: SceneDisplay) {
 		const rebuild = structure !== this.#structure || repeats !== this.#repeats;
-		const latticeVisible = structure.kind === "crystal" && showLattice;
-		if (rebuild || latticeVisible !== this.#showLattice) {
+		const crystal = structure.kind === "crystal";
+		const latticeVisible = crystal && display.lattice;
+		const edgesVisible = crystal && display.edges;
+		const axesVisible = crystal && display.axes;
+		if (rebuild || latticeVisible !== this.#showLattice || edgesVisible !== this.#showEdges || axesVisible !== this.#showAxes) {
 			this.#showLattice = latticeVisible;
+			this.#showEdges = edgesVisible;
+			this.#showAxes = axesVisible;
 			this.#latticePoints = latticeVisible ? latticePositions(structure, repeats).map(vector) : [];
 			this.#lattice.visible = latticeVisible;
+			this.#edges.visible = edgesVisible;
 			this.#draw();
 		}
 		if (rebuild) {
 			this.#structure = structure;
 			this.#repeats = repeats;
 			this.#bounds = [];
+			this.#atomRadius = 0;
 			this.#picks.clear();
 			for (const child of this.#content.removeChildren()) child.destroy({ children: true });
+			for (const child of this.#edges.removeChildren()) child.destroy({ children: true });
 			if (structure.kind === "crystal") {
 				const vectors = cellVectors(structure.cell);
 				const corners = cellCorners.map(corner => cartesian(vectors, scale(corner, repeats)));
@@ -179,7 +208,7 @@ export class MoleculeScene {
 							end[axis] = repeats;
 							const edge = this.#rod();
 							this.#line(edge, cartesian(vectors, start), cartesian(vectors, end), 0.024);
-							this.#content.addChild(edge);
+							this.#edges.addChild(edge);
 						}
 					}
 				}
@@ -203,9 +232,9 @@ export class MoleculeScene {
 				for (const atom of structure.atoms) this.#atom(atom.id, atom.atomicNumber, atom.position, false);
 			}
 		}
-		if (rebuild || showElectrons !== this.#showElectrons) {
-			this.#showElectrons = showElectrons;
-			this.#renderElectrons(structure, showElectrons);
+		if (rebuild || display.electrons !== this.#showElectrons) {
+			this.#showElectrons = display.electrons;
+			this.#renderElectrons(structure, display.electrons);
 			this.#draw();
 		}
 		const selected = new Set(selection);
@@ -263,8 +292,15 @@ export class MoleculeScene {
 		const max = [0, 1, 2].map(axis => Math.max(...this.#bounds.map(point => point[axis])));
 		this.#target = this.#bounds.length ? min.map((value, axis) => (value + max[axis]) / 2) as [number, number, number] : [0, 0, 0];
 		const radius = this.#bounds.length ? Math.max(...this.#bounds.map(point => Math.hypot(...subtract(point, this.#target)))) : 1;
+		// Fit the short edge, so a wide embed does not shrink the structure to a
+		// sliver. The padding keeps the canvas controls clear of the atoms and
+		// scales with the structure, so a single molecule does not end up as a
+		// dot in the middle of the workspace.
 		const aspect = this.#app.screen.width / this.#app.screen.height;
-		this.#distance = Math.max(4, (radius + .7) * 2.7 / Math.min(1, Math.max(.32, aspect)));
+		const short = Math.min(1, Math.max(.32, aspect));
+		const outer = radius + this.#atomRadius;
+		const padding = Math.max(.3, Math.min(.7, outer * .12));
+		this.#distance = Math.max(1.6, (outer + padding) / (Math.tan(CAMERA_FOV / 2 * Math.PI / 180) * short * FIT_FILL));
 		this.#camera();
 	}
 
@@ -289,8 +325,39 @@ export class MoleculeScene {
 				}
 				this.#lattice.fill(0x283648).stroke({ color: 0xffffff, width: 1.2 });
 			}
+			this.#drawAxes();
 			this.#app.render();
 		});
+	}
+
+	/**
+	 * Draws the small orientation cue for the cell axes in the upper right corner.
+	 * The arrows keep a fixed screen length, so the cue stays readable at any zoom.
+	 */
+	#drawAxes() {
+		this.#axes.clear();
+		for (const label of this.#axisLabels) label.visible = false;
+		const structure = this.#structure;
+		if (!this.#showAxes || structure?.kind !== "crystal") return;
+		const base = this.#view.worldToScreen(vector(this.#target), this.#projected);
+		if (!base) return;
+		const originX = this.#app.screen.width - AXIS_ORIGIN;
+		const originY = AXIS_ORIGIN;
+		for (const [index, cell] of cellVectors(structure.cell).entries()) {
+			const tip = this.#view.worldToScreen(vector(add(this.#target, cell)), this.#axisTip, true);
+			if (!tip) continue;
+			const dx = tip.x - base.x;
+			const dy = tip.y - base.y;
+			const length = Math.hypot(dx, dy);
+			if (length < 1e-3) continue;
+			const x = originX + dx / length * AXIS_LENGTH;
+			const y = originY + dy / length * AXIS_LENGTH;
+			this.#axes.moveTo(originX, originY).lineTo(x, y).stroke({ color: AXIS_COLORS[index], width: 1.6 });
+			const label = this.#axisLabels[index];
+			label.text = "abc"[index];
+			label.position.set(x + dx / length * 5 - 3, y + dy / length * 5 - 6);
+			label.visible = true;
+		}
 	}
 
 	destroy() {
@@ -301,6 +368,8 @@ export class MoleculeScene {
 		this.#cylinder.destroy();
 		this.#bondRegion.destroy();
 		this.#loneRegion.destroy();
+		this.#axes.destroy();
+		for (const label of this.#axisLabels) label.destroy();
 		for (const material of this.#materials.values()) material.destroy();
 	}
 }

@@ -49944,6 +49944,3518 @@ var init_CompressedSource = __esm({
   }
 });
 
+// node_modules/pixi.js/lib/scene/text/AbstractText.mjs
+function ensureTextOptions(args, name) {
+  let options = args[0] ?? {};
+  if (typeof options === "string" || args[1]) {
+    deprecation(v8_0_0, `use new ${name}({ text: "hi!", style }) instead`);
+    options = {
+      text: options,
+      style: args[1]
+    };
+  }
+  return options;
+}
+var AbstractText;
+var init_AbstractText = __esm({
+  "node_modules/pixi.js/lib/scene/text/AbstractText.mjs"() {
+    init_ObservablePoint();
+    init_deprecation();
+    init_ViewContainer();
+    AbstractText = class extends ViewContainer {
+      constructor(options, styleClass) {
+        const { text, resolution, style, anchor, width, height, roundPixels, ...rest } = options;
+        super({
+          ...rest
+        });
+        this.batched = true;
+        this._resolution = null;
+        this._autoResolution = true;
+        this._didTextUpdate = true;
+        this._styleClass = styleClass;
+        this.text = text ?? "";
+        this.style = style;
+        this.resolution = resolution ?? null;
+        this.allowChildren = false;
+        this._anchor = new ObservablePoint(
+          {
+            _onUpdate: () => {
+              this.onViewUpdate();
+            }
+          }
+        );
+        if (anchor) this.anchor = anchor;
+        this.roundPixels = roundPixels ?? false;
+        if (width !== void 0) this.width = width;
+        if (height !== void 0) this.height = height;
+      }
+      /**
+       * The anchor point of the text that controls the origin point for positioning and rotation.
+       * Can be a number (same value for x/y) or a PointData object.
+       * - (0,0) is top-left
+       * - (0.5,0.5) is center
+       * - (1,1) is bottom-right
+       * ```ts
+       * // Set anchor to center
+       * const text = new Text({
+       *     text: 'Hello Pixi!',
+       *     anchor: 0.5 // Same as { x: 0.5, y: 0.5 }
+       * });
+       * // Set anchor to top-left
+       * const text2 = new Text({
+       *     text: 'Hello Pixi!',
+       *     anchor: { x: 0, y: 0 } // Top-left corner
+       * });
+       * // Set anchor to bottom-right
+       * const text3 = new Text({
+       *     text: 'Hello Pixi!',
+       *     anchor: { x: 1, y: 1 } // Bottom-right corner
+       * });
+       * ```
+       * @default { x: 0, y: 0 }
+       */
+      get anchor() {
+        return this._anchor;
+      }
+      set anchor(value) {
+        typeof value === "number" ? this._anchor.set(value) : this._anchor.copyFrom(value);
+      }
+      /**
+       * The text content to display. Use '\n' for line breaks.
+       * Accepts strings, numbers, or objects with toString() method.
+       * @example
+       * ```ts
+       * const text = new Text({
+       *     text: 'Hello Pixi!',
+       * });
+       * const multilineText = new Text({
+       *     text: 'Line 1\nLine 2\nLine 3',
+       * });
+       * const numberText = new Text({
+       *     text: 12345, // Will be converted to '12345'
+       * });
+       * const objectText = new Text({
+       *     text: { toString: () => 'Object Text' }, // Custom toString
+       * });
+       *
+       * // Update text dynamically
+       * text.text = 'Updated Text'; // Re-renders with new text
+       * text.text = 67890; // Updates to '67890'
+       * text.text = { toString: () => 'Dynamic Text' }; // Uses custom toString method
+       * // Clear text
+       * text.text = ''; // Clears the text
+       * ```
+       * @default ''
+       */
+      set text(value) {
+        value = value.toString();
+        if (this._text === value) return;
+        this._text = value;
+        this.onViewUpdate();
+      }
+      get text() {
+        return this._text;
+      }
+      /**
+       * The resolution/device pixel ratio for rendering.
+       * Higher values result in sharper text at the cost of performance.
+       * Set to null for auto-resolution based on device.
+       * @example
+       * ```ts
+       * const text = new Text({
+       *     text: 'Hello Pixi!',
+       *     resolution: 2 // High DPI for sharper text
+       * });
+       * const autoResText = new Text({
+       *     text: 'Auto Resolution',
+       *     resolution: null // Use device's pixel ratio
+       * });
+       * ```
+       * @default null
+       */
+      set resolution(value) {
+        this._autoResolution = value === null;
+        this._resolution = value;
+        this.onViewUpdate();
+      }
+      get resolution() {
+        return this._resolution;
+      }
+      get style() {
+        return this._style;
+      }
+      /**
+       * The style configuration for the text.
+       * Can be a TextStyle instance or a configuration object.
+       * Supports canvas text styles, HTML text styles, and bitmap text styles.
+       * @example
+       * ```ts
+       * const text = new Text({
+       *     text: 'Styled Text',
+       *     style: {
+       *         fontSize: 24,
+       *         fill: 0xff1010, // Red color
+       *         fontFamily: 'Arial',
+       *         align: 'center', // Center alignment
+       *         stroke: { color: '#4a1850', width: 5 }, // Purple stroke
+       *         dropShadow: {
+       *             color: '#000000', // Black shadow
+       *             blur: 4, // Shadow blur
+       *             distance: 6 // Shadow distance
+       *         }
+       *     }
+       * });
+       * const htmlText = new HTMLText({
+       *     text: 'HTML Styled Text',
+       *     style: {
+       *         fontSize: '20px',
+       *         fill: 'blue',
+       *         fontFamily: 'Verdana',
+       *     }
+       * });
+       * const bitmapText = new BitmapText({
+       *     text: 'Bitmap Styled Text',
+       *     style: {
+       *         fontName: 'Arial',
+       *         fontSize: 32,
+       *     }
+       * })
+       *
+       * // Update style dynamically
+       * text.style = {
+       *     fontSize: 30, // Change font size
+       *     fill: 0x00ff00, // Change color to green
+       *     align: 'right', // Change alignment to right
+       *     stroke: { color: '#000000', width: 2 }, // Add black stroke
+       * }
+       */
+      set style(style) {
+        style || (style = {});
+        this._style?.off("update", this.onViewUpdate, this);
+        if (style instanceof this._styleClass) {
+          this._style = style;
+        } else {
+          this._style = new this._styleClass(style);
+        }
+        this._style.on("update", this.onViewUpdate, this);
+        this.onViewUpdate();
+      }
+      /**
+       * The width of the sprite, setting this will actually modify the scale to achieve the value set.
+       * @example
+       * ```ts
+       * // Set width directly
+       * texture.width = 200;
+       * console.log(texture.scale.x); // Scale adjusted to match width
+       *
+       * // For better performance when setting both width and height
+       * texture.setSize(300, 400); // Avoids recalculating bounds twice
+       * ```
+       */
+      get width() {
+        return Math.abs(this.scale.x) * this.bounds.width;
+      }
+      set width(value) {
+        this._setWidth(value, this.bounds.width);
+      }
+      /**
+       * The height of the sprite, setting this will actually modify the scale to achieve the value set.
+       * @example
+       * ```ts
+       * // Set height directly
+       * texture.height = 200;
+       * console.log(texture.scale.y); // Scale adjusted to match height
+       *
+       * // For better performance when setting both width and height
+       * texture.setSize(300, 400); // Avoids recalculating bounds twice
+       * ```
+       */
+      get height() {
+        return Math.abs(this.scale.y) * this.bounds.height;
+      }
+      set height(value) {
+        this._setHeight(value, this.bounds.height);
+      }
+      /**
+       * Retrieves the size of the Text as a [Size]{@link Size} object based on the texture dimensions and scale.
+       * This is faster than getting width and height separately as it only calculates the bounds once.
+       * @example
+       * ```ts
+       * // Basic size retrieval
+       * const text = new Text({
+       *     text: 'Hello Pixi!',
+       *     style: { fontSize: 24 }
+       * });
+       * const size = text.getSize();
+       * console.log(`Size: ${size.width}x${size.height}`);
+       *
+       * // Reuse existing size object
+       * const reuseSize = { width: 0, height: 0 };
+       * text.getSize(reuseSize);
+       * ```
+       * @param out - Optional object to store the size in, to avoid allocating a new object
+       * @returns The size of the Sprite
+       * @see {@link Text#width} For getting just the width
+       * @see {@link Text#height} For getting just the height
+       * @see {@link Text#setSize} For setting both width and height
+       */
+      getSize(out2) {
+        out2 || (out2 = {});
+        out2.width = Math.abs(this.scale.x) * this.bounds.width;
+        out2.height = Math.abs(this.scale.y) * this.bounds.height;
+        return out2;
+      }
+      /**
+       * Sets the size of the Text to the specified width and height.
+       * This is faster than setting width and height separately as it only recalculates bounds once.
+       * @example
+       * ```ts
+       * // Basic size setting
+       * const text = new Text({
+       *    text: 'Hello Pixi!',
+       *    style: { fontSize: 24 }
+       * });
+       * text.setSize(100, 200); // Width: 100, Height: 200
+       *
+       * // Set uniform size
+       * text.setSize(100); // Sets both width and height to 100
+       *
+       * // Set size with object
+       * text.setSize({
+       *     width: 200,
+       *     height: 300
+       * });
+       * ```
+       * @param value - This can be either a number or a {@link Size} object
+       * @param height - The height to set. Defaults to the value of `width` if not provided
+       * @see {@link Text#width} For setting width only
+       * @see {@link Text#height} For setting height only
+       */
+      setSize(value, height) {
+        if (typeof value === "object") {
+          height = value.height ?? value.width;
+          value = value.width;
+        } else {
+          height ?? (height = value);
+        }
+        value !== void 0 && this._setWidth(value, this.bounds.width);
+        height !== void 0 && this._setHeight(height, this.bounds.height);
+      }
+      /**
+       * Checks if the object contains the given point in local coordinates.
+       * Uses the text's bounds for hit testing.
+       * @example
+       * ```ts
+       * // Basic point check
+       * const localPoint = { x: 50, y: 25 };
+       * const contains = text.containsPoint(localPoint);
+       * console.log('Point is inside:', contains);
+       * ```
+       * @param point - The point to check in local coordinates
+       * @returns True if the point is within the text's bounds
+       * @see {@link Container#toLocal} For converting global coordinates to local
+       */
+      containsPoint(point) {
+        const width = this.bounds.width;
+        const height = this.bounds.height;
+        const x1 = -width * this.anchor.x;
+        let y1 = 0;
+        if (point.x >= x1 && point.x <= x1 + width) {
+          y1 = -height * this.anchor.y;
+          if (point.y >= y1 && point.y <= y1 + height) return true;
+        }
+        return false;
+      }
+      /** @internal */
+      onViewUpdate() {
+        if (!this.didViewUpdate) this._didTextUpdate = true;
+        super.onViewUpdate();
+      }
+      /**
+       * Destroys this text renderable and optionally its style texture.
+       * @param options - Options parameter. A boolean will act as if all options
+       *  have been set to that value
+       * @example
+       * // Destroys the text and its style
+       * text.destroy({ style: true, texture: true, textureSource: true });
+       * text.destroy(true);
+       * text.destroy() // Destroys the text, but not its style
+       */
+      destroy(options = false) {
+        this._style?.off("update", this.onViewUpdate, this);
+        super.destroy(options);
+        this.owner = null;
+        this._bounds = null;
+        this._anchor = null;
+        if (typeof options === "boolean" ? options : options?.style) {
+          this._style.destroy(options);
+        }
+        this._style = null;
+        this._text = null;
+      }
+      /**
+       * Returns a unique key for this instance.
+       * This key is used for caching.
+       * @returns {string} Unique key for the instance
+       */
+      get styleKey() {
+        return `${this._text}:${this._style.styleKey}:${this._resolution}`;
+      }
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/utils/canvas/getCanvasBoundingBox.mjs
+function ensureInternalCanvas(width, height) {
+  if (!_internalCanvas) {
+    _internalCanvas = DOMAdapter.get().createCanvas(256, 128);
+    _internalContext = _internalCanvas.getContext("2d", { willReadFrequently: true });
+    _internalContext.globalCompositeOperation = "copy";
+    _internalContext.globalAlpha = 1;
+  }
+  if (_internalCanvas.width < width || _internalCanvas.height < height) {
+    _internalCanvas.width = nextPow2(width);
+    _internalCanvas.height = nextPow2(height);
+  }
+}
+function checkRow(data, width, y5) {
+  for (let x4 = 0, index = 4 * y5 * width; x4 < width; ++x4, index += 4) {
+    if (data[index + 3] !== 0) return false;
+  }
+  return true;
+}
+function checkColumn(data, width, x4, top, bottom) {
+  const stride = 4 * width;
+  for (let y5 = top, index = top * stride + 4 * x4; y5 <= bottom; ++y5, index += stride) {
+    if (data[index + 3] !== 0) return false;
+  }
+  return true;
+}
+function getCanvasBoundingBox(...args) {
+  let options = args[0];
+  if (!options.canvas) {
+    options = { canvas: args[0], resolution: args[1] };
+  }
+  const { canvas } = options;
+  const resolution = Math.min(options.resolution ?? 1, 1);
+  const width = options.width ?? canvas.width;
+  const height = options.height ?? canvas.height;
+  let output = options.output;
+  ensureInternalCanvas(width, height);
+  if (!_internalContext) {
+    throw new TypeError("Failed to get canvas 2D context");
+  }
+  _internalContext.drawImage(
+    canvas,
+    0,
+    0,
+    width,
+    height,
+    0,
+    0,
+    width * resolution,
+    height * resolution
+  );
+  const imageData = _internalContext.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  let left = 0;
+  let top = 0;
+  let right = width - 1;
+  let bottom = height - 1;
+  while (top < height && checkRow(data, width, top)) ++top;
+  if (top === height) return Rectangle.EMPTY;
+  while (checkRow(data, width, bottom)) --bottom;
+  while (checkColumn(data, width, left, top, bottom)) ++left;
+  while (checkColumn(data, width, right, top, bottom)) --right;
+  ++right;
+  ++bottom;
+  _internalContext.globalCompositeOperation = "source-over";
+  _internalContext.strokeRect(left, top, right - left, bottom - top);
+  _internalContext.globalCompositeOperation = "copy";
+  output ?? (output = new Rectangle());
+  output.set(left / resolution, top / resolution, (right - left) / resolution, (bottom - top) / resolution);
+  return output;
+}
+var _internalCanvas, _internalContext;
+var init_getCanvasBoundingBox = __esm({
+  "node_modules/pixi.js/lib/utils/canvas/getCanvasBoundingBox.mjs"() {
+    init_adapter();
+    init_pow2();
+    init_Rectangle();
+    _internalCanvas = null;
+    _internalContext = null;
+  }
+});
+
+// node_modules/tiny-lru/dist/tiny-lru.js
+function lru(max2 = 1e3, ttl = 0, resetTtl = false) {
+  if (isNaN(max2) || max2 < 0) {
+    throw new TypeError("Invalid max value");
+  }
+  if (isNaN(ttl) || ttl < 0) {
+    throw new TypeError("Invalid ttl value");
+  }
+  if (typeof resetTtl !== "boolean") {
+    throw new TypeError("Invalid resetTtl value");
+  }
+  return new LRU(max2, ttl, resetTtl);
+}
+var LRU;
+var init_tiny_lru = __esm({
+  "node_modules/tiny-lru/dist/tiny-lru.js"() {
+    LRU = class {
+      /**
+       * Creates a new LRU cache instance.
+       * Note: Constructor does not validate parameters. Use lru() factory function for parameter validation.
+       *
+       * @constructor
+       * @param {number} [max=0] - Maximum number of items to store. 0 means unlimited.
+       * @param {number} [ttl=0] - Time to live in milliseconds. 0 means no expiration.
+       * @param {boolean} [resetTtl=false] - Whether to reset TTL when accessing existing items via get().
+       * @example
+       * const cache = new LRU(1000, 60000, true); // 1000 items, 1 minute TTL, reset on access
+       * @see {@link lru} For parameter validation
+       * @since 1.0.0
+       */
+      constructor(max2 = 0, ttl = 0, resetTtl = false) {
+        this.first = null;
+        this.items = /* @__PURE__ */ Object.create(null);
+        this.last = null;
+        this.max = max2;
+        this.resetTtl = resetTtl;
+        this.size = 0;
+        this.ttl = ttl;
+      }
+      /**
+       * Removes all items from the cache.
+       *
+       * @method clear
+       * @memberof LRU
+       * @returns {LRU} The LRU instance for method chaining.
+       * @example
+       * cache.clear();
+       * console.log(cache.size); // 0
+       * @since 1.0.0
+       */
+      clear() {
+        this.first = null;
+        this.items = /* @__PURE__ */ Object.create(null);
+        this.last = null;
+        this.size = 0;
+        return this;
+      }
+      /**
+       * Removes an item from the cache by key.
+       *
+       * @method delete
+       * @memberof LRU
+       * @param {string} key - The key of the item to delete.
+       * @returns {LRU} The LRU instance for method chaining.
+       * @example
+       * cache.set('key1', 'value1');
+       * cache.delete('key1');
+       * console.log(cache.has('key1')); // false
+       * @see {@link LRU#has}
+       * @see {@link LRU#clear}
+       * @since 1.0.0
+       */
+      delete(key) {
+        if (this.has(key)) {
+          const item = this.items[key];
+          delete this.items[key];
+          this.size--;
+          if (item.prev !== null) {
+            item.prev.next = item.next;
+          }
+          if (item.next !== null) {
+            item.next.prev = item.prev;
+          }
+          if (this.first === item) {
+            this.first = item.next;
+          }
+          if (this.last === item) {
+            this.last = item.prev;
+          }
+        }
+        return this;
+      }
+      /**
+       * Returns an array of [key, value] pairs for the specified keys.
+       * Order follows LRU order (least to most recently used).
+       *
+       * @method entries
+       * @memberof LRU
+       * @param {string[]} [keys=this.keys()] - Array of keys to get entries for. Defaults to all keys.
+       * @returns {Array<Array<*>>} Array of [key, value] pairs in LRU order.
+       * @example
+       * cache.set('a', 1).set('b', 2);
+       * console.log(cache.entries()); // [['a', 1], ['b', 2]]
+       * console.log(cache.entries(['a'])); // [['a', 1]]
+       * @see {@link LRU#keys}
+       * @see {@link LRU#values}
+       * @since 11.1.0
+       */
+      entries(keys = this.keys()) {
+        const result = new Array(keys.length);
+        for (let i9 = 0; i9 < keys.length; i9++) {
+          const key = keys[i9];
+          result[i9] = [key, this.get(key)];
+        }
+        return result;
+      }
+      /**
+       * Removes the least recently used item from the cache.
+       *
+       * @method evict
+       * @memberof LRU
+       * @param {boolean} [bypass=false] - Whether to force eviction even when cache is empty.
+       * @returns {LRU} The LRU instance for method chaining.
+       * @example
+       * cache.set('old', 'value').set('new', 'value');
+       * cache.evict(); // Removes 'old' item
+       * @see {@link LRU#setWithEvicted}
+       * @since 1.0.0
+       */
+      evict(bypass = false) {
+        if (bypass || this.size > 0) {
+          const item = this.first;
+          delete this.items[item.key];
+          if (--this.size === 0) {
+            this.first = null;
+            this.last = null;
+          } else {
+            this.first = item.next;
+            this.first.prev = null;
+          }
+        }
+        return this;
+      }
+      /**
+       * Returns the expiration timestamp for a given key.
+       *
+       * @method expiresAt
+       * @memberof LRU
+       * @param {string} key - The key to check expiration for.
+       * @returns {number|undefined} The expiration timestamp in milliseconds, or undefined if key doesn't exist.
+       * @example
+       * const cache = new LRU(100, 5000); // 5 second TTL
+       * cache.set('key1', 'value1');
+       * console.log(cache.expiresAt('key1')); // timestamp 5 seconds from now
+       * @see {@link LRU#get}
+       * @see {@link LRU#has}
+       * @since 1.0.0
+       */
+      expiresAt(key) {
+        let result;
+        if (this.has(key)) {
+          result = this.items[key].expiry;
+        }
+        return result;
+      }
+      /**
+       * Retrieves a value from the cache by key. Updates the item's position to most recently used.
+       *
+       * @method get
+       * @memberof LRU
+       * @param {string} key - The key to retrieve.
+       * @returns {*} The value associated with the key, or undefined if not found or expired.
+       * @example
+       * cache.set('key1', 'value1');
+       * console.log(cache.get('key1')); // 'value1'
+       * console.log(cache.get('nonexistent')); // undefined
+       * @see {@link LRU#set}
+       * @see {@link LRU#has}
+       * @since 1.0.0
+       */
+      get(key) {
+        const item = this.items[key];
+        if (item !== void 0) {
+          if (this.ttl > 0) {
+            if (item.expiry <= Date.now()) {
+              this.delete(key);
+              return void 0;
+            }
+          }
+          this.moveToEnd(item);
+          return item.value;
+        }
+        return void 0;
+      }
+      /**
+       * Checks if a key exists in the cache.
+       *
+       * @method has
+       * @memberof LRU
+       * @param {string} key - The key to check for.
+       * @returns {boolean} True if the key exists, false otherwise.
+       * @example
+       * cache.set('key1', 'value1');
+       * console.log(cache.has('key1')); // true
+       * console.log(cache.has('nonexistent')); // false
+       * @see {@link LRU#get}
+       * @see {@link LRU#delete}
+       * @since 9.0.0
+       */
+      has(key) {
+        return key in this.items;
+      }
+      /**
+       * Efficiently moves an item to the end of the LRU list (most recently used position).
+       * This is an internal optimization method that avoids the overhead of the full set() operation
+       * when only LRU position needs to be updated.
+       *
+       * @method moveToEnd
+       * @memberof LRU
+       * @param {Object} item - The cache item with prev/next pointers to reposition.
+       * @private
+       * @since 11.3.5
+       */
+      moveToEnd(item) {
+        if (this.last === item) {
+          return;
+        }
+        if (item.prev !== null) {
+          item.prev.next = item.next;
+        }
+        if (item.next !== null) {
+          item.next.prev = item.prev;
+        }
+        if (this.first === item) {
+          this.first = item.next;
+        }
+        item.prev = this.last;
+        item.next = null;
+        if (this.last !== null) {
+          this.last.next = item;
+        }
+        this.last = item;
+        if (this.first === null) {
+          this.first = item;
+        }
+      }
+      /**
+       * Returns an array of all keys in the cache, ordered from least to most recently used.
+       *
+       * @method keys
+       * @memberof LRU
+       * @returns {string[]} Array of keys in LRU order.
+       * @example
+       * cache.set('a', 1).set('b', 2);
+       * cache.get('a'); // Move 'a' to most recent
+       * console.log(cache.keys()); // ['b', 'a']
+       * @see {@link LRU#values}
+       * @see {@link LRU#entries}
+       * @since 9.0.0
+       */
+      keys() {
+        const result = new Array(this.size);
+        let x4 = this.first;
+        let i9 = 0;
+        while (x4 !== null) {
+          result[i9++] = x4.key;
+          x4 = x4.next;
+        }
+        return result;
+      }
+      /**
+       * Sets a value in the cache and returns any evicted item.
+       *
+       * @method setWithEvicted
+       * @memberof LRU
+       * @param {string} key - The key to set.
+       * @param {*} value - The value to store.
+       * @param {boolean} [resetTtl=this.resetTtl] - Whether to reset the TTL for this operation.
+       * @returns {Object|null} The evicted item (if any) with shape {key, value, expiry, prev, next}, or null.
+       * @example
+       * const cache = new LRU(2);
+       * cache.set('a', 1).set('b', 2);
+       * const evicted = cache.setWithEvicted('c', 3); // evicted = {key: 'a', value: 1, ...}
+       * @see {@link LRU#set}
+       * @see {@link LRU#evict}
+       * @since 11.3.0
+       */
+      setWithEvicted(key, value, resetTtl = this.resetTtl) {
+        let evicted = null;
+        if (this.has(key)) {
+          this.set(key, value, true, resetTtl);
+        } else {
+          if (this.max > 0 && this.size === this.max) {
+            evicted = { ...this.first };
+            this.evict(true);
+          }
+          let item = this.items[key] = {
+            expiry: this.ttl > 0 ? Date.now() + this.ttl : this.ttl,
+            key,
+            prev: this.last,
+            next: null,
+            value
+          };
+          if (++this.size === 1) {
+            this.first = item;
+          } else {
+            this.last.next = item;
+          }
+          this.last = item;
+        }
+        return evicted;
+      }
+      /**
+       * Sets a value in the cache. Updates the item's position to most recently used.
+       *
+       * @method set
+       * @memberof LRU
+       * @param {string} key - The key to set.
+       * @param {*} value - The value to store.
+       * @param {boolean} [bypass=false] - Internal parameter for setWithEvicted method.
+       * @param {boolean} [resetTtl=this.resetTtl] - Whether to reset the TTL for this operation.
+       * @returns {LRU} The LRU instance for method chaining.
+       * @example
+       * cache.set('key1', 'value1')
+       *      .set('key2', 'value2')
+       *      .set('key3', 'value3');
+       * @see {@link LRU#get}
+       * @see {@link LRU#setWithEvicted}
+       * @since 1.0.0
+       */
+      set(key, value, bypass = false, resetTtl = this.resetTtl) {
+        let item = this.items[key];
+        if (bypass || item !== void 0) {
+          item.value = value;
+          if (bypass === false && resetTtl) {
+            item.expiry = this.ttl > 0 ? Date.now() + this.ttl : this.ttl;
+          }
+          this.moveToEnd(item);
+        } else {
+          if (this.max > 0 && this.size === this.max) {
+            this.evict(true);
+          }
+          item = this.items[key] = {
+            expiry: this.ttl > 0 ? Date.now() + this.ttl : this.ttl,
+            key,
+            prev: this.last,
+            next: null,
+            value
+          };
+          if (++this.size === 1) {
+            this.first = item;
+          } else {
+            this.last.next = item;
+          }
+          this.last = item;
+        }
+        return this;
+      }
+      /**
+       * Returns an array of all values in the cache for the specified keys.
+       * Order follows LRU order (least to most recently used).
+       *
+       * @method values
+       * @memberof LRU
+       * @param {string[]} [keys=this.keys()] - Array of keys to get values for. Defaults to all keys.
+       * @returns {Array<*>} Array of values corresponding to the keys in LRU order.
+       * @example
+       * cache.set('a', 1).set('b', 2);
+       * console.log(cache.values()); // [1, 2]
+       * console.log(cache.values(['a'])); // [1]
+       * @see {@link LRU#keys}
+       * @see {@link LRU#entries}
+       * @since 11.1.0
+       */
+      values(keys = this.keys()) {
+        const result = new Array(keys.length);
+        for (let i9 = 0; i9 < keys.length; i9++) {
+          result[i9] = this.get(keys[i9]);
+        }
+        return result;
+      }
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/utils/parseTaggedText.mjs
+function hasTagStyles(style) {
+  return !!style.tagStyles && Object.keys(style.tagStyles).length > 0;
+}
+function hasTagMarkup(text) {
+  return text.includes("<");
+}
+function createMergedStyle(baseStyle, overrides) {
+  return baseStyle.clone().assign(overrides);
+}
+function parseTaggedText(text, style) {
+  const runs = [];
+  const tagStyles = style.tagStyles;
+  if (!hasTagStyles(style) || !hasTagMarkup(text)) {
+    runs.push({ text, style });
+    return runs;
+  }
+  const styleStack = [style];
+  const tagStack = [];
+  let currentText = "";
+  let i9 = 0;
+  while (i9 < text.length) {
+    const char = text[i9];
+    if (char === "<") {
+      const closeIndex = text.indexOf(">", i9);
+      if (closeIndex === -1) {
+        currentText += char;
+        i9++;
+        continue;
+      }
+      const nextOpenIndex = text.indexOf("<", i9 + 1);
+      if (nextOpenIndex !== -1 && nextOpenIndex < closeIndex) {
+        currentText += char;
+        i9++;
+        continue;
+      }
+      const tagContent = text.slice(i9 + 1, closeIndex);
+      if (tagContent.startsWith("/")) {
+        const closingTagName = tagContent.slice(1).trim();
+        if (tagStack.length > 0 && tagStack[tagStack.length - 1] === closingTagName) {
+          if (currentText.length > 0) {
+            runs.push({
+              text: currentText,
+              style: styleStack[styleStack.length - 1]
+            });
+            currentText = "";
+          }
+          styleStack.pop();
+          tagStack.pop();
+          i9 = closeIndex + 1;
+          continue;
+        } else {
+          currentText += text.slice(i9, closeIndex + 1);
+          i9 = closeIndex + 1;
+          continue;
+        }
+      } else {
+        const tagName = tagContent.trim();
+        if (tagStyles[tagName]) {
+          if (currentText.length > 0) {
+            runs.push({
+              text: currentText,
+              style: styleStack[styleStack.length - 1]
+            });
+            currentText = "";
+          }
+          const currentStyle = styleStack[styleStack.length - 1];
+          const mergedStyle = createMergedStyle(currentStyle, tagStyles[tagName]);
+          styleStack.push(mergedStyle);
+          tagStack.push(tagName);
+          i9 = closeIndex + 1;
+          continue;
+        } else {
+          currentText += text.slice(i9, closeIndex + 1);
+          i9 = closeIndex + 1;
+          continue;
+        }
+      }
+    } else {
+      currentText += char;
+      i9++;
+    }
+  }
+  if (currentText.length > 0) {
+    runs.push({
+      text: currentText,
+      style: styleStack[styleStack.length - 1]
+    });
+  }
+  return runs;
+}
+var init_parseTaggedText = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/utils/parseTaggedText.mjs"() {
+    "use strict";
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/utils/textTokenization.mjs
+function isNewline(char) {
+  if (typeof char !== "string") {
+    return false;
+  }
+  return NEWLINES_SET.has(char.charCodeAt(0));
+}
+function isBreakingSpace(char, _nextChar) {
+  if (typeof char !== "string") {
+    return false;
+  }
+  return BREAKING_SPACES_SET.has(char.charCodeAt(0));
+}
+function isBreakAfterChar(char) {
+  if (typeof char !== "string") {
+    return false;
+  }
+  return BREAK_AFTER_CHARS_SET.has(char.charCodeAt(0));
+}
+function collapseSpaces(whiteSpace) {
+  return whiteSpace === "normal" || whiteSpace === "pre-line";
+}
+function collapseNewlines(whiteSpace) {
+  return whiteSpace === "normal";
+}
+function trimRight(text) {
+  if (typeof text !== "string") {
+    return "";
+  }
+  let i9 = text.length - 1;
+  while (i9 >= 0 && isBreakingSpace(text[i9])) {
+    i9--;
+  }
+  return i9 < text.length - 1 ? text.slice(0, i9 + 1) : text;
+}
+function tokenize(text) {
+  const tokens = [];
+  const tokenChars = [];
+  if (typeof text !== "string") {
+    return tokens;
+  }
+  for (let i9 = 0; i9 < text.length; i9++) {
+    const char = text[i9];
+    const nextChar = text[i9 + 1];
+    if (isBreakingSpace(char, nextChar) || isNewline(char)) {
+      if (tokenChars.length > 0) {
+        tokens.push(tokenChars.join(""));
+        tokenChars.length = 0;
+      }
+      if (char === "\r" && nextChar === "\n") {
+        tokens.push("\r\n");
+        i9++;
+      } else {
+        tokens.push(char);
+      }
+      continue;
+    }
+    tokenChars.push(char);
+    if (isBreakAfterChar(char) && nextChar && !isBreakingSpace(nextChar) && !isNewline(nextChar)) {
+      tokens.push(tokenChars.join(""));
+      tokenChars.length = 0;
+    }
+  }
+  if (tokenChars.length > 0) {
+    tokens.push(tokenChars.join(""));
+  }
+  return tokens;
+}
+function getCharacterGroups(token, breakWords, splitFn, canBreakCharsFn) {
+  const characters = splitFn(token);
+  const groups2 = [];
+  for (let j4 = 0; j4 < characters.length; j4++) {
+    let char = characters[j4];
+    let lastChar = char;
+    let k3 = 1;
+    while (characters[j4 + k3]) {
+      const nextChar = characters[j4 + k3];
+      if (!canBreakCharsFn(lastChar, nextChar, token, j4, breakWords)) {
+        char += nextChar;
+        lastChar = nextChar;
+        k3++;
+      } else {
+        break;
+      }
+    }
+    j4 += k3 - 1;
+    groups2.push(char);
+  }
+  return groups2;
+}
+var NEWLINES, NEWLINES_SET, BREAKING_SPACES, BREAKING_SPACES_SET, COLLAPSIBLE_SPACES, COLLAPSIBLE_SPACES_SET, BREAK_AFTER_CHARS, BREAK_AFTER_CHARS_SET, NEWLINE_SPLIT_REGEX, NEWLINE_MATCH_REGEX;
+var init_textTokenization = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/utils/textTokenization.mjs"() {
+    "use strict";
+    NEWLINES = [
+      10,
+      // line feed
+      13
+      // carriage return
+    ];
+    NEWLINES_SET = new Set(NEWLINES);
+    BREAKING_SPACES = [
+      9,
+      // character tabulation
+      32,
+      // space
+      8192,
+      // en quad
+      8193,
+      // em quad
+      8194,
+      // en space
+      8195,
+      // em space
+      8196,
+      // three-per-em space
+      8197,
+      // four-per-em space
+      8198,
+      // six-per-em space
+      8200,
+      // punctuation space
+      8201,
+      // thin space
+      8202,
+      // hair space
+      8287,
+      // medium mathematical space
+      12288
+      // ideographic space
+    ];
+    BREAKING_SPACES_SET = new Set(BREAKING_SPACES);
+    COLLAPSIBLE_SPACES = [
+      9,
+      // character tabulation (tab)
+      32
+      // space
+    ];
+    COLLAPSIBLE_SPACES_SET = new Set(COLLAPSIBLE_SPACES);
+    BREAK_AFTER_CHARS = [
+      45,
+      // hyphen-minus
+      8208,
+      // unicode hyphen
+      8211,
+      // en-dash
+      8212,
+      // em-dash
+      173
+      // soft hyphen
+    ];
+    BREAK_AFTER_CHARS_SET = new Set(BREAK_AFTER_CHARS);
+    NEWLINE_SPLIT_REGEX = /(\r\n|\r|\n)/;
+    NEWLINE_MATCH_REGEX = /(?:\r\n|\r|\n)/;
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/utils/measureTaggedText.mjs
+function measureTaggedText(text, style, wordWrap2, context2, measureTextFn, wrapMeasureTextFn, measureFontFn, canBreakCharsFn, wordWrapSplitFn) {
+  const runs = parseTaggedText(text, style);
+  const shouldCollapseNewlines = collapseNewlines(style.whiteSpace);
+  if (shouldCollapseNewlines) {
+    for (let i9 = 0; i9 < runs.length; i9++) {
+      const run = runs[i9];
+      runs[i9] = { text: run.text.replace(NEWLINE_TO_SPACE_REGEX, " "), style: run.style };
+    }
+  }
+  const runsByLine = [];
+  let currentLineRuns = [];
+  for (const run of runs) {
+    const parts = run.text.split(NEWLINE_SPLIT_REGEX);
+    for (let i9 = 0; i9 < parts.length; i9++) {
+      const part = parts[i9];
+      if (part === "\r\n" || part === "\r" || part === "\n") {
+        runsByLine.push(currentLineRuns);
+        currentLineRuns = [];
+      } else if (part.length > 0) {
+        currentLineRuns.push({ text: part, style: run.style });
+      }
+    }
+  }
+  if (currentLineRuns.length > 0 || runsByLine.length === 0) {
+    runsByLine.push(currentLineRuns);
+  }
+  const wrappedRunsByLine = wordWrap2 ? wordWrapTaggedLines(
+    runsByLine,
+    style,
+    context2,
+    wrapMeasureTextFn,
+    canBreakCharsFn,
+    wordWrapSplitFn
+  ) : runsByLine;
+  const lineWidths = [];
+  const lineAscents = [];
+  const lineDescents = [];
+  const lineHeightsArr = [];
+  const lines = [];
+  let maxLineWidth = 0;
+  const baseFont = style._fontString;
+  const baseFontProps = measureFontFn(baseFont);
+  if (baseFontProps.fontSize === 0) {
+    baseFontProps.fontSize = style.fontSize;
+    baseFontProps.ascent = style.fontSize;
+  }
+  let lastFont = "";
+  let hasDropShadow = !!style.dropShadow;
+  let maxRunStrokeWidth = style._stroke?.width || 0;
+  for (const lineRuns of wrappedRunsByLine) {
+    let lineWidth = 0;
+    let lineAscent = baseFontProps.ascent;
+    let lineDescent = baseFontProps.descent;
+    let lineText = "";
+    for (const run of lineRuns) {
+      const runFont = run.style._fontString;
+      const runFontProps = measureFontFn(runFont);
+      if (runFont !== lastFont) {
+        context2.font = runFont;
+        lastFont = runFont;
+      }
+      const runWidth = measureTextFn(run.text, run.style.letterSpacing, context2);
+      lineWidth += runWidth;
+      lineAscent = Math.max(lineAscent, runFontProps.ascent);
+      lineDescent = Math.max(lineDescent, runFontProps.descent);
+      lineText += run.text;
+      const runStrokeWidth = run.style._stroke?.width || 0;
+      if (runStrokeWidth > maxRunStrokeWidth) maxRunStrokeWidth = runStrokeWidth;
+      if (!hasDropShadow && run.style.dropShadow) {
+        hasDropShadow = true;
+      }
+    }
+    if (lineRuns.length === 0) {
+      lineAscent = baseFontProps.ascent;
+      lineDescent = baseFontProps.descent;
+    }
+    lineWidths.push(lineWidth);
+    lineAscents.push(lineAscent);
+    lineDescents.push(lineDescent);
+    lines.push(lineText);
+    const computedLineHeight = style.lineHeight || lineAscent + lineDescent;
+    lineHeightsArr.push(computedLineHeight + style.leading);
+    maxLineWidth = Math.max(maxLineWidth, lineWidth);
+  }
+  const strokeWidth = maxRunStrokeWidth;
+  const width = maxLineWidth + strokeWidth + (style.dropShadow ? style.dropShadow.distance : 0);
+  let baseHeight = 0;
+  for (let i9 = 0; i9 < lineHeightsArr.length; i9++) {
+    baseHeight += lineHeightsArr[i9];
+  }
+  baseHeight = Math.max(baseHeight, lineHeightsArr[0] + strokeWidth);
+  const height = baseHeight + (style.dropShadow ? style.dropShadow.distance : 0);
+  const baseLineHeight = style.lineHeight || baseFontProps.fontSize;
+  return {
+    width,
+    height,
+    lines,
+    lineWidths,
+    lineHeight: baseLineHeight + style.leading,
+    maxLineWidth,
+    fontProperties: baseFontProps,
+    runsByLine: wrappedRunsByLine,
+    lineAscents,
+    lineDescents,
+    lineHeights: lineHeightsArr,
+    hasDropShadow
+  };
+}
+function wordWrapTaggedLines(runsByLine, style, context2, measureTextFn, canBreakCharsFn, wordWrapSplitFn) {
+  const { letterSpacing, whiteSpace, wordWrapWidth, breakWords } = style;
+  const shouldCollapseSpaces = collapseSpaces(whiteSpace);
+  const adjustedWrapWidth = wordWrapWidth + letterSpacing;
+  const tokenWidthCache = {};
+  let lastFont = "";
+  const measureTokenWidth = (token, tokenStyle) => {
+    const cacheKey = `${token}|${tokenStyle.styleKey}`;
+    let width = tokenWidthCache[cacheKey];
+    if (width === void 0) {
+      const font = tokenStyle._fontString;
+      if (font !== lastFont) {
+        context2.font = font;
+        lastFont = font;
+      }
+      width = measureTextFn(token, tokenStyle.letterSpacing, context2) + tokenStyle.letterSpacing;
+      tokenWidthCache[cacheKey] = width;
+    }
+    return width;
+  };
+  const result = [];
+  for (const lineRuns of runsByLine) {
+    const styledTokens = tokenizeTaggedRuns(lineRuns);
+    const resultStartLength = result.length;
+    const getWordGroupWidth = (startIndex) => {
+      let totalWidth = 0;
+      let j4 = startIndex;
+      do {
+        const { token: groupToken, style: groupStyle } = styledTokens[j4];
+        totalWidth += measureTokenWidth(groupToken, groupStyle);
+        j4++;
+      } while (j4 < styledTokens.length && styledTokens[j4].continuesFromPrevious);
+      return totalWidth;
+    };
+    const getWordGroupTokens = (startIndex) => {
+      const tokens = [];
+      let j4 = startIndex;
+      do {
+        tokens.push({ token: styledTokens[j4].token, style: styledTokens[j4].style });
+        j4++;
+      } while (j4 < styledTokens.length && styledTokens[j4].continuesFromPrevious);
+      return tokens;
+    };
+    let currentLineRuns = [];
+    let currentWidth = 0;
+    let canPrependSpaces = !shouldCollapseSpaces;
+    let buildingRun = null;
+    const flushBuildingRun = () => {
+      if (buildingRun && buildingRun.text.length > 0) {
+        currentLineRuns.push(buildingRun);
+      }
+      buildingRun = null;
+    };
+    const startNewLine = () => {
+      flushBuildingRun();
+      if (currentLineRuns.length > 0) {
+        const lastRun = currentLineRuns[currentLineRuns.length - 1];
+        lastRun.text = trimRight(lastRun.text);
+        if (lastRun.text.length === 0) {
+          currentLineRuns.pop();
+        }
+      }
+      result.push(currentLineRuns);
+      currentLineRuns = [];
+      currentWidth = 0;
+      canPrependSpaces = false;
+    };
+    for (let i9 = 0; i9 < styledTokens.length; i9++) {
+      const { token, style: tokenStyle, continuesFromPrevious } = styledTokens[i9];
+      const tokenWidth = measureTokenWidth(token, tokenStyle);
+      if (shouldCollapseSpaces) {
+        const currIsSpace = isBreakingSpace(token);
+        const lastChar = buildingRun?.text[buildingRun.text.length - 1] ?? currentLineRuns[currentLineRuns.length - 1]?.text.slice(-1) ?? "";
+        const lastIsSpace = lastChar ? isBreakingSpace(lastChar) : false;
+        if (currIsSpace && lastIsSpace) {
+          continue;
+        }
+      }
+      const startsWordGroup = !continuesFromPrevious;
+      const wordGroupWidth = startsWordGroup ? getWordGroupWidth(i9) : tokenWidth;
+      if (wordGroupWidth > adjustedWrapWidth && startsWordGroup) {
+        if (currentWidth > 0) {
+          startNewLine();
+        }
+        if (breakWords) {
+          const wordGroupTokens = getWordGroupTokens(i9);
+          for (let g4 = 0; g4 < wordGroupTokens.length; g4++) {
+            const groupToken = wordGroupTokens[g4].token;
+            const groupStyle = wordGroupTokens[g4].style;
+            const charGroups = getCharacterGroups(
+              groupToken,
+              breakWords,
+              wordWrapSplitFn,
+              canBreakCharsFn
+            );
+            for (const char of charGroups) {
+              const charWidth = measureTokenWidth(char, groupStyle);
+              if (charWidth + currentWidth > adjustedWrapWidth) {
+                startNewLine();
+              }
+              if (!buildingRun || buildingRun.style !== groupStyle) {
+                flushBuildingRun();
+                buildingRun = { text: char, style: groupStyle };
+              } else {
+                buildingRun.text += char;
+              }
+              currentWidth += charWidth;
+            }
+          }
+          i9 += wordGroupTokens.length - 1;
+        } else {
+          const wordGroupTokens = getWordGroupTokens(i9);
+          flushBuildingRun();
+          result.push(wordGroupTokens.map((t8) => ({ text: t8.token, style: t8.style })));
+          canPrependSpaces = false;
+          i9 += wordGroupTokens.length - 1;
+        }
+      } else if (wordGroupWidth + currentWidth > adjustedWrapWidth && startsWordGroup) {
+        if (isBreakingSpace(token)) {
+          canPrependSpaces = false;
+          continue;
+        }
+        startNewLine();
+        buildingRun = { text: token, style: tokenStyle };
+        currentWidth = tokenWidth;
+      } else if (continuesFromPrevious && !breakWords) {
+        if (!buildingRun || buildingRun.style !== tokenStyle) {
+          flushBuildingRun();
+          buildingRun = { text: token, style: tokenStyle };
+        } else {
+          buildingRun.text += token;
+        }
+        currentWidth += tokenWidth;
+      } else {
+        const isSpace = isBreakingSpace(token);
+        if (currentWidth === 0 && isSpace && !canPrependSpaces) {
+          continue;
+        }
+        if (!buildingRun || buildingRun.style !== tokenStyle) {
+          flushBuildingRun();
+          buildingRun = { text: token, style: tokenStyle };
+        } else {
+          buildingRun.text += token;
+        }
+        currentWidth += tokenWidth;
+      }
+    }
+    flushBuildingRun();
+    if (currentLineRuns.length > 0) {
+      const lastRun = currentLineRuns[currentLineRuns.length - 1];
+      lastRun.text = trimRight(lastRun.text);
+      if (lastRun.text.length === 0) {
+        currentLineRuns.pop();
+      }
+    }
+    if (currentLineRuns.length > 0 || result.length === resultStartLength) {
+      result.push(currentLineRuns);
+    }
+  }
+  return result;
+}
+function tokenizeTaggedRuns(runs) {
+  const styledTokens = [];
+  let lastTokenWasWord = false;
+  for (const run of runs) {
+    const tokens = tokenize(run.text);
+    let isFirstTokenInRun = true;
+    for (const token of tokens) {
+      const isSpace = isBreakingSpace(token) || isNewline(token);
+      const continuesFromPrevious = isFirstTokenInRun && lastTokenWasWord && !isSpace;
+      styledTokens.push({ token, style: run.style, continuesFromPrevious });
+      lastTokenWasWord = !isSpace;
+      isFirstTokenInRun = false;
+    }
+  }
+  return styledTokens;
+}
+var NEWLINE_TO_SPACE_REGEX;
+var init_measureTaggedText = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/utils/measureTaggedText.mjs"() {
+    init_parseTaggedText();
+    init_textTokenization();
+    NEWLINE_TO_SPACE_REGEX = /\r\n|\r|\n/g;
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/utils/wordWrap.mjs
+function getFromCache(key, letterSpacing, cache4, context2, measureTextFn) {
+  let width = cache4[key];
+  if (typeof width !== "number") {
+    width = measureTextFn(key, letterSpacing, context2) + letterSpacing;
+    cache4[key] = width;
+  }
+  return width;
+}
+function wordWrap(text, style, canvas, measureTextFn, canBreakWordsFn, canBreakCharsFn, wordWrapSplitFn) {
+  const context2 = canvas.getContext("2d", contextSettings);
+  context2.font = style._fontString;
+  let width = 0;
+  let line = "";
+  const linesArray = [];
+  const cache4 = /* @__PURE__ */ Object.create(null);
+  const { letterSpacing, whiteSpace } = style;
+  const shouldCollapseSpaces = collapseSpaces(whiteSpace);
+  const shouldCollapseNewlines = collapseNewlines(whiteSpace);
+  let canPrependSpaces = !shouldCollapseSpaces;
+  const wordWrapWidth = style.wordWrapWidth + letterSpacing;
+  const tokens = tokenize(text);
+  for (let i9 = 0; i9 < tokens.length; i9++) {
+    let token = tokens[i9];
+    if (isNewline(token)) {
+      if (!shouldCollapseNewlines) {
+        linesArray.push(trimRight(line));
+        canPrependSpaces = !shouldCollapseSpaces;
+        line = "";
+        width = 0;
+        continue;
+      }
+      token = " ";
+    }
+    if (shouldCollapseSpaces) {
+      const currIsBreakingSpace = isBreakingSpace(token);
+      const lastIsBreakingSpace = isBreakingSpace(line[line.length - 1]);
+      if (currIsBreakingSpace && lastIsBreakingSpace) {
+        continue;
+      }
+    }
+    const tokenWidth = getFromCache(token, letterSpacing, cache4, context2, measureTextFn);
+    if (tokenWidth > wordWrapWidth) {
+      if (line !== "") {
+        linesArray.push(trimRight(line));
+        line = "";
+        width = 0;
+      }
+      if (canBreakWordsFn(token, style.breakWords)) {
+        const charGroups = getCharacterGroups(token, style.breakWords, wordWrapSplitFn, canBreakCharsFn);
+        for (const char of charGroups) {
+          const characterWidth = getFromCache(char, letterSpacing, cache4, context2, measureTextFn);
+          if (characterWidth + width > wordWrapWidth) {
+            linesArray.push(trimRight(line));
+            canPrependSpaces = false;
+            line = "";
+            width = 0;
+          }
+          line += char;
+          width += characterWidth;
+        }
+      } else {
+        if (line.length > 0) {
+          linesArray.push(trimRight(line));
+          line = "";
+          width = 0;
+        }
+        linesArray.push(trimRight(token));
+        canPrependSpaces = false;
+        line = "";
+        width = 0;
+      }
+    } else {
+      if (tokenWidth + width > wordWrapWidth) {
+        canPrependSpaces = false;
+        linesArray.push(trimRight(line));
+        line = "";
+        width = 0;
+      }
+      if (line.length > 0 || !isBreakingSpace(token) || canPrependSpaces) {
+        line += token;
+        width += tokenWidth;
+      }
+    }
+  }
+  const trimmedLine = trimRight(line);
+  if (trimmedLine.length > 0) {
+    linesArray.push(trimmedLine);
+  }
+  return linesArray.join("\n");
+}
+var contextSettings;
+var init_wordWrap = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/utils/wordWrap.mjs"() {
+    init_textTokenization();
+    contextSettings = {
+      // TextMetrics requires getImageData readback for measuring fonts.
+      willReadFrequently: true
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/CanvasTextMetrics.mjs
+var contextSettings2, _CanvasTextMetrics, CanvasTextMetrics;
+var init_CanvasTextMetrics = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/CanvasTextMetrics.mjs"() {
+    init_tiny_lru();
+    init_adapter();
+    init_measureTaggedText();
+    init_parseTaggedText();
+    init_textTokenization();
+    init_wordWrap();
+    contextSettings2 = {
+      // TextMetrics requires getImageData readback for measuring fonts.
+      willReadFrequently: true
+    };
+    _CanvasTextMetrics = class _CanvasTextMetrics2 {
+      /**
+       * Checking that we can use modern canvas 2D API.
+       *
+       * Note: This is an unstable API, Chrome < 94 use `textLetterSpacing`, later versions use `letterSpacing`.
+       * @see CanvasTextMetrics.experimentalLetterSpacing
+       * @see https://developer.mozilla.org/en-US/docs/Web/API/ICanvasRenderingContext2D/letterSpacing
+       * @see https://developer.chrome.com/origintrials/#/view_trial/3585991203293757441
+       */
+      static get experimentalLetterSpacingSupported() {
+        let result = _CanvasTextMetrics2._experimentalLetterSpacingSupported;
+        if (result === void 0) {
+          const proto = DOMAdapter.get().getCanvasRenderingContext2D().prototype;
+          result = _CanvasTextMetrics2._experimentalLetterSpacingSupported = "letterSpacing" in proto || "textLetterSpacing" in proto;
+        }
+        return result;
+      }
+      /**
+       * @param text - the text that was measured
+       * @param style - the style that was measured
+       * @param width - the measured width of the text
+       * @param height - the measured height of the text
+       * @param lines - an array of the lines of text broken by new lines and wrapping if specified in style
+       * @param lineWidths - an array of the line widths for each line matched to `lines`
+       * @param lineHeight - the measured line height for this style
+       * @param maxLineWidth - the maximum line width for all measured lines
+       * @param fontProperties - the font properties object from TextMetrics.measureFont
+       * @param taggedData - optional object containing tagged text specific data
+       * @param taggedData.runsByLine - per-line style runs for tagged text
+       * @param taggedData.lineAscents - per-line ascent values for tagged text
+       * @param taggedData.lineDescents - per-line descent values for tagged text
+       * @param taggedData.lineHeights - per-line height values for tagged text
+       * @param taggedData.hasDropShadow - whether any run has a drop shadow
+       */
+      constructor(text, style, width, height, lines, lineWidths, lineHeight, maxLineWidth, fontProperties, taggedData) {
+        this.text = text;
+        this.style = style;
+        this.width = width;
+        this.height = height;
+        this.lines = lines;
+        this.lineWidths = lineWidths;
+        this.lineHeight = lineHeight;
+        this.maxLineWidth = maxLineWidth;
+        this.fontProperties = fontProperties;
+        if (taggedData) {
+          this.runsByLine = taggedData.runsByLine;
+          this.lineAscents = taggedData.lineAscents;
+          this.lineDescents = taggedData.lineDescents;
+          this.lineHeights = taggedData.lineHeights;
+          this.hasDropShadow = taggedData.hasDropShadow;
+        }
+      }
+      /**
+       * Measures the supplied string of text and returns a Rectangle.
+       * @param text - The text to measure.
+       * @param style - The text style to use for measuring
+       * @param canvas - optional specification of the canvas to use for measuring.
+       * @param wordWrap
+       * @returns Measured width and height of the text.
+       */
+      static measureText(text = " ", style, canvas = _CanvasTextMetrics2._canvas, wordWrap2 = style.wordWrap) {
+        const textKey = `${text}-${style.styleKey}-wordWrap-${wordWrap2}`;
+        if (_CanvasTextMetrics2._measurementCache.has(textKey)) {
+          return _CanvasTextMetrics2._measurementCache.get(textKey);
+        }
+        const isTagged = hasTagStyles(style) && hasTagMarkup(text);
+        if (isTagged) {
+          const result = measureTaggedText(
+            text,
+            style,
+            wordWrap2,
+            _CanvasTextMetrics2._context,
+            _CanvasTextMetrics2._measureText,
+            _CanvasTextMetrics2._measureTextAdvance,
+            _CanvasTextMetrics2.measureFont,
+            _CanvasTextMetrics2.canBreakChars,
+            _CanvasTextMetrics2.wordWrapSplit
+          );
+          const measurements2 = new _CanvasTextMetrics2(
+            text,
+            style,
+            result.width,
+            result.height,
+            result.lines,
+            result.lineWidths,
+            result.lineHeight,
+            result.maxLineWidth,
+            result.fontProperties,
+            {
+              runsByLine: result.runsByLine,
+              lineAscents: result.lineAscents,
+              lineDescents: result.lineDescents,
+              lineHeights: result.lineHeights,
+              hasDropShadow: result.hasDropShadow
+            }
+          );
+          _CanvasTextMetrics2._measurementCache.set(textKey, measurements2);
+          return measurements2;
+        }
+        const font = style._fontString;
+        const fontProperties = _CanvasTextMetrics2.measureFont(font);
+        if (fontProperties.fontSize === 0) {
+          fontProperties.fontSize = style.fontSize;
+          fontProperties.ascent = style.fontSize;
+          fontProperties.descent = 0;
+        }
+        const context2 = _CanvasTextMetrics2._context;
+        context2.font = font;
+        const outputText = wordWrap2 ? _CanvasTextMetrics2._wordWrap(text, style, canvas) : text;
+        const lines = outputText.split(NEWLINE_MATCH_REGEX);
+        const lineWidths = new Array(lines.length);
+        let maxLineWidth = 0;
+        for (let i9 = 0; i9 < lines.length; i9++) {
+          const lineWidth = _CanvasTextMetrics2._measureText(lines[i9], style.letterSpacing, context2);
+          lineWidths[i9] = lineWidth;
+          maxLineWidth = Math.max(maxLineWidth, lineWidth);
+        }
+        const strokeWidth = style._stroke?.width ?? 0;
+        const lineHeight = style.lineHeight || fontProperties.fontSize;
+        const width = _CanvasTextMetrics2._adjustWidthForStyle(maxLineWidth, style);
+        const baseHeight = Math.max(lineHeight, fontProperties.fontSize + strokeWidth) + (lines.length - 1) * (lineHeight + style.leading);
+        const height = _CanvasTextMetrics2._adjustHeightForStyle(baseHeight, style);
+        const measurements = new _CanvasTextMetrics2(
+          text,
+          style,
+          width,
+          height,
+          lines,
+          lineWidths,
+          lineHeight + style.leading,
+          maxLineWidth,
+          fontProperties
+        );
+        _CanvasTextMetrics2._measurementCache.set(textKey, measurements);
+        return measurements;
+      }
+      /**
+       * Adjusts the measured width to account for stroke and drop shadow.
+       * @param baseWidth - The base content width
+       * @param style - The text style
+       * @returns The adjusted width
+       */
+      static _adjustWidthForStyle(baseWidth, style) {
+        const strokeWidth = style._stroke?.width || 0;
+        let width = baseWidth + strokeWidth;
+        if (style.dropShadow) {
+          width += style.dropShadow.distance;
+        }
+        return width;
+      }
+      /**
+       * Adjusts the measured height to account for drop shadow.
+       * @param baseHeight - The base content height
+       * @param style - The text style
+       * @returns The adjusted height
+       */
+      static _adjustHeightForStyle(baseHeight, style) {
+        let height = baseHeight;
+        if (style.dropShadow) {
+          height += style.dropShadow.distance;
+        }
+        return height;
+      }
+      /**
+       * Measures the rendered width of a string, accounting for letter spacing and using the provided context.
+       * Returns the larger of the advance width and the bounding box width.
+       * @param text - The text to measure
+       * @param letterSpacing - Letter spacing in pixels
+       * @param context - Canvas 2D context
+       * @returns The measured width of the text with spacing
+       * @internal
+       */
+      static _measureText(text, letterSpacing, context2) {
+        const { metricWidth, metrics, letterSpacingVal } = _CanvasTextMetrics2._measureTextCore(text, letterSpacing, context2);
+        const actualBoundingBoxLeft = -(metrics.actualBoundingBoxLeft ?? 0);
+        const actualBoundingBoxRight = metrics.actualBoundingBoxRight ?? 0;
+        let boundsWidth = actualBoundingBoxRight - actualBoundingBoxLeft;
+        if (metrics.width > 0) {
+          boundsWidth += letterSpacingVal;
+        }
+        return Math.max(metricWidth, boundsWidth);
+      }
+      /**
+       * Measures advance width only (no bounding box). Advance widths are additive,
+       * making this suitable for word wrap line-fitting where per-token widths must sum correctly.
+       * @param text - The text to measure
+       * @param letterSpacing - Letter spacing in pixels
+       * @param context - Canvas 2D context
+       * @returns The advance width of the text
+       * @internal
+       */
+      static _measureTextAdvance(text, letterSpacing, context2) {
+        return _CanvasTextMetrics2._measureTextCore(text, letterSpacing, context2).metricWidth;
+      }
+      /**
+       * Shared measurement core: sets up letter spacing on the context, calls
+       * context.measureText, and adjusts the advance width for letter spacing.
+       * @param text
+       * @param letterSpacing
+       * @param context
+       * @internal
+       */
+      static _measureTextCore(text, letterSpacing, context2) {
+        let useExperimentalLetterSpacing = false;
+        if (_CanvasTextMetrics2.experimentalLetterSpacingSupported) {
+          if (_CanvasTextMetrics2.experimentalLetterSpacing) {
+            context2.letterSpacing = `${letterSpacing}px`;
+            context2.textLetterSpacing = `${letterSpacing}px`;
+            useExperimentalLetterSpacing = true;
+          } else {
+            context2.letterSpacing = "0px";
+            context2.textLetterSpacing = "0px";
+          }
+        }
+        const metrics = context2.measureText(text);
+        let metricWidth = metrics.width;
+        let letterSpacingVal = 0;
+        if (metricWidth > 0) {
+          if (useExperimentalLetterSpacing) {
+            letterSpacingVal = -letterSpacing;
+          } else {
+            letterSpacingVal = (_CanvasTextMetrics2.graphemeSegmenter(text).length - 1) * letterSpacing;
+          }
+          metricWidth += letterSpacingVal;
+        }
+        return { metricWidth, metrics, letterSpacingVal };
+      }
+      /**
+       * Applies newlines to a string to have it optimally fit into the horizontal
+       * bounds set by the Text object's wordWrapWidth property.
+       * @param text - String to apply word wrapping to
+       * @param style - the style to use when wrapping
+       * @param canvas - optional specification of the canvas to use for measuring.
+       * @returns New string with new lines applied where required
+       */
+      static _wordWrap(text, style, canvas = _CanvasTextMetrics2._canvas) {
+        return wordWrap(
+          text,
+          style,
+          canvas,
+          _CanvasTextMetrics2._measureTextAdvance,
+          _CanvasTextMetrics2.canBreakWords,
+          _CanvasTextMetrics2.canBreakChars,
+          _CanvasTextMetrics2.wordWrapSplit
+        );
+      }
+      /**
+       * Determines if char is a breaking whitespace.
+       *
+       * It allows one to determine whether char should be a breaking whitespace
+       * For example certain characters in CJK langs or numbers.
+       * It must return a boolean.
+       * @param char - The character
+       * @param [_nextChar] - The next character
+       * @returns True if whitespace, False otherwise.
+       */
+      static isBreakingSpace(char, _nextChar) {
+        return isBreakingSpace(char, _nextChar);
+      }
+      /**
+       * Overridable helper method used internally by TextMetrics, exposed to allow customizing the class's behavior.
+       *
+       * It allows one to customise which words should break
+       * Examples are if the token is CJK or numbers.
+       * It must return a boolean.
+       * @param _token - The token
+       * @param breakWords - The style attr break words
+       * @returns Whether to break word or not
+       */
+      static canBreakWords(_token, breakWords) {
+        return breakWords;
+      }
+      /**
+       * Overridable helper method used internally by TextMetrics, exposed to allow customizing the class's behavior.
+       *
+       * It allows one to determine whether a pair of characters
+       * should be broken by newlines
+       * For example certain characters in CJK langs or numbers.
+       * It must return a boolean.
+       * @param _char - The character
+       * @param _nextChar - The next character
+       * @param _token - The token/word the characters are from
+       * @param _index - The index in the token of the char
+       * @param _breakWords - The style attr break words
+       * @returns whether to break word or not
+       */
+      static canBreakChars(_char, _nextChar, _token, _index, _breakWords) {
+        return true;
+      }
+      /**
+       * Overridable helper method used internally by TextMetrics, exposed to allow customizing the class's behavior.
+       *
+       * It is called when a token (usually a word) has to be split into separate pieces
+       * in order to determine the point to break a word.
+       * It must return an array of characters.
+       * @param token - The token to split
+       * @returns The characters of the token
+       * @see CanvasTextMetrics.graphemeSegmenter
+       */
+      static wordWrapSplit(token) {
+        return _CanvasTextMetrics2.graphemeSegmenter(token);
+      }
+      /**
+       * Calculates the ascent, descent and fontSize of a given font-style
+       * @param font - String representing the style of the font
+       * @returns Font properties object
+       */
+      static measureFont(font) {
+        if (_CanvasTextMetrics2._fonts[font]) {
+          return _CanvasTextMetrics2._fonts[font];
+        }
+        const context2 = _CanvasTextMetrics2._context;
+        context2.font = font;
+        const metrics = context2.measureText(_CanvasTextMetrics2.METRICS_STRING + _CanvasTextMetrics2.BASELINE_SYMBOL);
+        const ascent = metrics.actualBoundingBoxAscent ?? 0;
+        const descent = metrics.actualBoundingBoxDescent ?? 0;
+        const properties = {
+          ascent,
+          descent,
+          fontSize: ascent + descent
+        };
+        _CanvasTextMetrics2._fonts[font] = properties;
+        return properties;
+      }
+      /**
+       * Clear font metrics in metrics cache.
+       * @param {string} [font] - font name. If font name not set then clear cache for all fonts.
+       */
+      static clearMetrics(font = "") {
+        if (font) {
+          delete _CanvasTextMetrics2._fonts[font];
+        } else {
+          _CanvasTextMetrics2._fonts = {};
+        }
+      }
+      /**
+       * Cached canvas element for measuring text
+       * TODO: this should be private, but isn't because of backward compat, will fix later.
+       * @ignore
+       */
+      static get _canvas() {
+        if (!_CanvasTextMetrics2.__canvas) {
+          let canvas;
+          try {
+            const c9 = new OffscreenCanvas(0, 0);
+            const context2 = c9.getContext("2d", contextSettings2);
+            if (context2?.measureText) {
+              _CanvasTextMetrics2.__canvas = c9;
+              return c9;
+            }
+            canvas = DOMAdapter.get().createCanvas();
+          } catch (_cx) {
+            canvas = DOMAdapter.get().createCanvas();
+          }
+          canvas.width = canvas.height = 10;
+          _CanvasTextMetrics2.__canvas = canvas;
+        }
+        return _CanvasTextMetrics2.__canvas;
+      }
+      /**
+       * TODO: this should be private, but isn't because of backward compat, will fix later.
+       * @ignore
+       */
+      static get _context() {
+        if (!_CanvasTextMetrics2.__context) {
+          _CanvasTextMetrics2.__context = _CanvasTextMetrics2._canvas.getContext("2d", contextSettings2);
+        }
+        return _CanvasTextMetrics2.__context;
+      }
+    };
+    _CanvasTextMetrics.METRICS_STRING = "|\xC9q\xC5";
+    _CanvasTextMetrics.BASELINE_SYMBOL = "M";
+    _CanvasTextMetrics.BASELINE_MULTIPLIER = 1.4;
+    _CanvasTextMetrics.HEIGHT_MULTIPLIER = 2;
+    _CanvasTextMetrics.graphemeSegmenter = (() => {
+      if (typeof Intl?.Segmenter === "function") {
+        const segmenter = new Intl.Segmenter();
+        return (s4) => {
+          const segments = segmenter.segment(s4);
+          const result = [];
+          let i9 = 0;
+          for (const segment2 of segments) {
+            result[i9++] = segment2.segment;
+          }
+          return result;
+        };
+      }
+      return (s4) => [...s4];
+    })();
+    _CanvasTextMetrics.experimentalLetterSpacing = false;
+    _CanvasTextMetrics._fonts = {};
+    _CanvasTextMetrics._measurementCache = lru(1e3);
+    CanvasTextMetrics = _CanvasTextMetrics;
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/utils/fontStringFromTextStyle.mjs
+function fontStringFromTextStyle(style) {
+  const fontSizeString = typeof style.fontSize === "number" ? `${style.fontSize}px` : style.fontSize;
+  let fontFamilies = style.fontFamily;
+  if (!Array.isArray(style.fontFamily)) {
+    fontFamilies = style.fontFamily.split(",");
+  }
+  for (let i9 = fontFamilies.length - 1; i9 >= 0; i9--) {
+    let fontFamily = fontFamilies[i9].trim();
+    if (!/([\"\'])[^\'\"]+\1/.test(fontFamily) && !genericFontFamilies.includes(fontFamily)) {
+      fontFamily = `"${fontFamily}"`;
+    }
+    fontFamilies[i9] = fontFamily;
+  }
+  return `${style.fontStyle} ${style.fontVariant} ${style.fontWeight} ${fontSizeString} ${fontFamilies.join(",")}`;
+}
+var genericFontFamilies;
+var init_fontStringFromTextStyle = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/utils/fontStringFromTextStyle.mjs"() {
+    "use strict";
+    genericFontFamilies = [
+      "serif",
+      "sans-serif",
+      "monospace",
+      "cursive",
+      "fantasy",
+      "system-ui"
+    ];
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/utils/getCanvasFillStyle.mjs
+function getCanvasFillStyle(fillStyle, context2, textMetrics, padding = 0, offsetX = 0, offsetY = 0) {
+  if (fillStyle.texture === Texture.WHITE && !fillStyle.fill) {
+    return Color.shared.setValue(fillStyle.color).setAlpha(fillStyle.alpha ?? 1).toHexa();
+  } else if (!fillStyle.fill) {
+    const pattern = context2.createPattern(fillStyle.texture.source.resource, "repeat");
+    const tempMatrix8 = fillStyle.matrix.copyTo(Matrix.shared);
+    tempMatrix8.scale(fillStyle.texture.source.pixelWidth, fillStyle.texture.source.pixelHeight);
+    pattern.setTransform(tempMatrix8);
+    return pattern;
+  } else if (fillStyle.fill instanceof FillPattern) {
+    const fillPattern = fillStyle.fill;
+    const pattern = context2.createPattern(fillPattern.texture.source.resource, "repeat");
+    canvasUtils.applyPatternTransform(pattern, fillPattern.transform, false);
+    return pattern;
+  } else if (fillStyle.fill instanceof FillGradient) {
+    const fillGradient = fillStyle.fill;
+    const isLinear = fillGradient.type === "linear";
+    const isLocal = fillGradient.textureSpace === "local";
+    let width = 1;
+    let height = 1;
+    if (isLocal && textMetrics) {
+      width = textMetrics.width + padding;
+      height = textMetrics.height + padding;
+    }
+    let gradient;
+    let isNearlyVertical = false;
+    if (isLinear) {
+      const { start, end } = fillGradient;
+      gradient = context2.createLinearGradient(
+        start.x * width + offsetX,
+        start.y * height + offsetY,
+        end.x * width + offsetX,
+        end.y * height + offsetY
+      );
+      isNearlyVertical = Math.abs(end.x - start.x) < Math.abs((end.y - start.y) * 0.1);
+    } else {
+      const { center, innerRadius, outerCenter, outerRadius } = fillGradient;
+      gradient = context2.createRadialGradient(
+        center.x * width + offsetX,
+        center.y * height + offsetY,
+        innerRadius * width,
+        outerCenter.x * width + offsetX,
+        outerCenter.y * height + offsetY,
+        outerRadius * width
+      );
+    }
+    if (isNearlyVertical && isLocal && textMetrics) {
+      const ratio = textMetrics.lineHeight / height;
+      for (let i9 = 0; i9 < textMetrics.lines.length; i9++) {
+        const start = (i9 * textMetrics.lineHeight + padding / 2) / height;
+        fillGradient.colorStops.forEach((stop) => {
+          let globalStop = start + stop.offset * ratio;
+          globalStop = Math.max(0, Math.min(1, globalStop));
+          gradient.addColorStop(
+            // fix to 5 decimal places to avoid floating point precision issues
+            Math.floor(globalStop * PRECISION) / PRECISION,
+            Color.shared.setValue(stop.color).toHex()
+          );
+        });
+      }
+    } else {
+      fillGradient.colorStops.forEach((stop) => {
+        gradient.addColorStop(stop.offset, Color.shared.setValue(stop.color).toHex());
+      });
+    }
+    return gradient;
+  }
+  warn("FillStyle not recognised", fillStyle);
+  return "red";
+}
+var PRECISION;
+var init_getCanvasFillStyle = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/utils/getCanvasFillStyle.mjs"() {
+    init_Color();
+    init_Matrix();
+    init_canvasUtils();
+    init_Texture();
+    init_warn();
+    init_FillGradient();
+    init_FillPattern();
+    PRECISION = 1e5;
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/CanvasTextGenerator.mjs
+function countSpaces(text) {
+  let count2 = 0;
+  for (let i9 = 0; i9 < text.length; i9++) {
+    if (text.charCodeAt(i9) === 32) count2++;
+  }
+  return count2;
+}
+var tempRect6, CanvasTextGeneratorClass, CanvasTextGenerator;
+var init_CanvasTextGenerator = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/CanvasTextGenerator.mjs"() {
+    init_Color();
+    init_Rectangle();
+    init_CanvasPool();
+    init_getCanvasBoundingBox();
+    init_CanvasTextMetrics();
+    init_fontStringFromTextStyle();
+    init_getCanvasFillStyle();
+    tempRect6 = new Rectangle();
+    CanvasTextGeneratorClass = class {
+      /**
+       * Creates a canvas with the specified text rendered to it.
+       *
+       * Generates a canvas of appropriate size, renders the text with the provided style,
+       * and returns both the canvas/context and a Rectangle representing the text bounds.
+       *
+       * When trim is enabled in the style, the frame will represent the bounds of the
+       * non-transparent pixels, which can be smaller than the full canvas.
+       * @param options - The options for generating the text canvas
+       * @param options.text - The text to render
+       * @param options.style - The style to apply to the text
+       * @param options.resolution - The resolution of the canvas (defaults to 1)
+       * @param options.padding
+       * @returns An object containing the canvas/context and the frame (bounds) of the text
+       */
+      getCanvasAndContext(options) {
+        const { text, style, resolution = 1 } = options;
+        const padding = style._getFinalPadding();
+        const measured = CanvasTextMetrics.measureText(text || " ", style);
+        const width = Math.ceil(Math.ceil(Math.max(1, measured.width) + padding * 2) * resolution);
+        const height = Math.ceil(Math.ceil(Math.max(1, measured.height) + padding * 2) * resolution);
+        const canvasAndContext = CanvasPool.getOptimalCanvasAndContext(width, height);
+        this._renderTextToCanvas(style, padding, resolution, canvasAndContext, measured);
+        const frame = style.trim ? getCanvasBoundingBox({ canvas: canvasAndContext.canvas, width, height, resolution: 1, output: tempRect6 }) : tempRect6.set(0, 0, width, height);
+        return {
+          canvasAndContext,
+          frame
+        };
+      }
+      /**
+       * Returns a canvas and context to the pool.
+       *
+       * This should be called when you're done with the canvas to allow reuse
+       * and prevent memory leaks.
+       * @param canvasAndContext - The canvas and context to return to the pool
+       */
+      returnCanvasAndContext(canvasAndContext) {
+        CanvasPool.returnCanvasAndContext(canvasAndContext);
+      }
+      /**
+       * Renders text to its canvas, and updates its texture.
+       * @param style - The style of the text
+       * @param padding - The padding of the text
+       * @param resolution - The resolution of the text
+       * @param canvasAndContext - The canvas and context to render the text to
+       * @param measured - Pre-measured text metrics to avoid duplicate measurement
+       */
+      _renderTextToCanvas(style, padding, resolution, canvasAndContext, measured) {
+        if (measured.runsByLine && measured.runsByLine.length > 0) {
+          this._renderTaggedTextToCanvas(measured, style, padding, resolution, canvasAndContext);
+          return;
+        }
+        const { canvas, context: context2 } = canvasAndContext;
+        const font = fontStringFromTextStyle(style);
+        const lines = measured.lines;
+        const lineHeight = measured.lineHeight;
+        const lineWidths = measured.lineWidths;
+        const maxLineWidth = measured.maxLineWidth;
+        const fontProperties = measured.fontProperties;
+        const height = canvas.height;
+        context2.resetTransform();
+        context2.scale(resolution, resolution);
+        context2.textBaseline = style.textBaseline;
+        if (style._stroke?.width) {
+          const strokeStyle = style._stroke;
+          context2.lineWidth = strokeStyle.width;
+          context2.miterLimit = strokeStyle.miterLimit;
+          context2.lineJoin = strokeStyle.join;
+          context2.lineCap = strokeStyle.cap;
+        }
+        context2.font = font;
+        let linePositionX;
+        let linePositionY;
+        const passesCount = style.dropShadow ? 2 : 1;
+        const strokeWidth = style._stroke?.width ?? 0;
+        const halfStroke = strokeWidth / 2;
+        let linePositionYShift = (lineHeight - fontProperties.fontSize) / 2;
+        if (lineHeight - fontProperties.fontSize < 0) {
+          linePositionYShift = 0;
+        }
+        for (let i9 = 0; i9 < passesCount; ++i9) {
+          const isShadowPass = style.dropShadow && i9 === 0;
+          const dsOffsetText = isShadowPass ? Math.ceil(Math.max(1, height, height / resolution) + padding * 2) : 0;
+          const dsOffsetShadow = dsOffsetText * resolution;
+          if (isShadowPass) {
+            this._setupDropShadow(context2, style, resolution, dsOffsetShadow);
+          } else {
+            const gradientBounds = style._gradientBounds;
+            const gradientOffset = style._gradientOffset;
+            if (gradientBounds) {
+              const gradientMetrics = {
+                width: gradientBounds.width,
+                height: gradientBounds.height,
+                lineHeight: gradientBounds.height,
+                lines: measured.lines
+              };
+              this._setFillAndStrokeStyles(
+                context2,
+                style,
+                gradientMetrics,
+                padding,
+                halfStroke,
+                gradientOffset?.x ?? 0,
+                gradientOffset?.y ?? 0
+              );
+            } else if (gradientOffset) {
+              this._setFillAndStrokeStyles(
+                context2,
+                style,
+                measured,
+                padding,
+                halfStroke,
+                gradientOffset.x,
+                gradientOffset.y
+              );
+            } else {
+              this._setFillAndStrokeStyles(context2, style, measured, padding, halfStroke);
+            }
+            context2.shadowColor = "rgba(0,0,0,0)";
+          }
+          for (let j4 = 0; j4 < lines.length; j4++) {
+            linePositionX = halfStroke;
+            linePositionY = halfStroke + j4 * lineHeight + fontProperties.ascent + linePositionYShift;
+            linePositionX += this._getAlignmentOffset(lineWidths[j4], maxLineWidth, style.align);
+            let wordSpacing = 0;
+            if (style.align === "justify" && style.wordWrap && j4 < lines.length - 1) {
+              const spaces = countSpaces(lines[j4]);
+              if (spaces > 0) {
+                wordSpacing = (maxLineWidth - lineWidths[j4]) / spaces;
+              }
+            }
+            if (style._stroke?.width) {
+              this._drawLetterSpacing(
+                lines[j4],
+                style,
+                canvasAndContext,
+                linePositionX + padding,
+                linePositionY + padding - dsOffsetText,
+                true,
+                wordSpacing
+              );
+            }
+            if (style._fill !== void 0) {
+              this._drawLetterSpacing(
+                lines[j4],
+                style,
+                canvasAndContext,
+                linePositionX + padding,
+                linePositionY + padding - dsOffsetText,
+                false,
+                wordSpacing
+              );
+            }
+          }
+        }
+      }
+      /**
+       * Renders tagged text (with per-run styles) to canvas.
+       * @param measured - The measured text metrics containing runsByLine
+       * @param style - The base text style
+       * @param padding - The padding of the text
+       * @param resolution - The resolution of the text
+       * @param canvasAndContext - The canvas and context to render to
+       */
+      _renderTaggedTextToCanvas(measured, style, padding, resolution, canvasAndContext) {
+        const { canvas, context: context2 } = canvasAndContext;
+        const { runsByLine, lineWidths, maxLineWidth, lineAscents, lineHeights, hasDropShadow } = measured;
+        const height = canvas.height;
+        context2.resetTransform();
+        context2.scale(resolution, resolution);
+        context2.textBaseline = style.textBaseline;
+        const passesCount = hasDropShadow ? 2 : 1;
+        let maxStrokeWidth = style._stroke?.width ?? 0;
+        for (const lineRuns of runsByLine) {
+          for (const run of lineRuns) {
+            const w4 = run.style._stroke?.width ?? 0;
+            if (w4 > maxStrokeWidth) maxStrokeWidth = w4;
+          }
+        }
+        const halfStroke = maxStrokeWidth / 2;
+        const runDataByLine = [];
+        for (let lineIndex = 0; lineIndex < runsByLine.length; lineIndex++) {
+          const lineRuns = runsByLine[lineIndex];
+          const runData = [];
+          for (const run of lineRuns) {
+            const font = fontStringFromTextStyle(run.style);
+            context2.font = font;
+            runData.push({
+              width: CanvasTextMetrics._measureText(run.text, run.style.letterSpacing, context2),
+              font
+            });
+          }
+          runDataByLine.push(runData);
+        }
+        for (let pass = 0; pass < passesCount; ++pass) {
+          const isShadowPass = hasDropShadow && pass === 0;
+          const dsOffsetText = isShadowPass ? Math.ceil(Math.max(1, height, height / resolution) + padding * 2) : 0;
+          const dsOffsetShadow = dsOffsetText * resolution;
+          if (!isShadowPass) {
+            context2.shadowColor = "rgba(0,0,0,0)";
+          }
+          let currentY = halfStroke;
+          for (let lineIndex = 0; lineIndex < runsByLine.length; lineIndex++) {
+            const lineRuns = runsByLine[lineIndex];
+            const lineWidth = lineWidths[lineIndex];
+            const lineAscent = lineAscents[lineIndex];
+            const currentLineHeight = lineHeights[lineIndex];
+            const lineRunData = runDataByLine[lineIndex];
+            let linePositionX = halfStroke;
+            linePositionX += this._getAlignmentOffset(lineWidth, maxLineWidth, style.align);
+            let wordSpacing = 0;
+            if (style.align === "justify" && style.wordWrap && lineIndex < runsByLine.length - 1) {
+              let totalSpaces = 0;
+              for (const run of lineRuns) {
+                totalSpaces += countSpaces(run.text);
+              }
+              if (totalSpaces > 0) {
+                wordSpacing = (maxLineWidth - lineWidth) / totalSpaces;
+              }
+            }
+            const linePositionY = currentY + lineAscent;
+            let runX = linePositionX + padding;
+            for (let runIndex = 0; runIndex < lineRuns.length; runIndex++) {
+              const run = lineRuns[runIndex];
+              const { width: runWidth, font: runFont } = lineRunData[runIndex];
+              context2.font = runFont;
+              context2.textBaseline = run.style.textBaseline;
+              if (run.style._stroke?.width) {
+                const runStroke = run.style._stroke;
+                context2.lineWidth = runStroke.width;
+                context2.miterLimit = runStroke.miterLimit;
+                context2.lineJoin = runStroke.join;
+                context2.lineCap = runStroke.cap;
+                if (isShadowPass) {
+                  if (run.style.dropShadow) {
+                    this._setupDropShadow(
+                      context2,
+                      run.style,
+                      resolution,
+                      dsOffsetShadow
+                    );
+                  } else {
+                    const spacesSkipped = countSpaces(run.text);
+                    runX += runWidth + spacesSkipped * wordSpacing;
+                    continue;
+                  }
+                } else {
+                  const runFontProps = CanvasTextMetrics.measureFont(runFont);
+                  const runHeight = run.style.lineHeight || runFontProps.fontSize;
+                  const runMetrics = {
+                    width: runWidth,
+                    height: runHeight,
+                    lineHeight: runHeight,
+                    lines: [run.text]
+                  };
+                  context2.strokeStyle = getCanvasFillStyle(
+                    runStroke,
+                    context2,
+                    runMetrics,
+                    padding * 2,
+                    runX - padding,
+                    currentY
+                  );
+                }
+                this._drawLetterSpacing(
+                  run.text,
+                  run.style,
+                  canvasAndContext,
+                  runX,
+                  linePositionY + padding - dsOffsetText,
+                  true,
+                  wordSpacing
+                );
+              }
+              const spacesInRun = countSpaces(run.text);
+              runX += runWidth + spacesInRun * wordSpacing;
+            }
+            runX = linePositionX + padding;
+            for (let runIndex = 0; runIndex < lineRuns.length; runIndex++) {
+              const run = lineRuns[runIndex];
+              const { width: runWidth, font: runFont } = lineRunData[runIndex];
+              context2.font = runFont;
+              context2.textBaseline = run.style.textBaseline;
+              if (run.style._fill !== void 0) {
+                if (isShadowPass) {
+                  if (run.style.dropShadow) {
+                    this._setupDropShadow(
+                      context2,
+                      run.style,
+                      resolution,
+                      dsOffsetShadow
+                    );
+                  } else {
+                    const spacesSkipped = countSpaces(run.text);
+                    runX += runWidth + spacesSkipped * wordSpacing;
+                    continue;
+                  }
+                } else {
+                  const runFontProps = CanvasTextMetrics.measureFont(runFont);
+                  const runHeight = run.style.lineHeight || runFontProps.fontSize;
+                  const runMetrics = {
+                    width: runWidth,
+                    height: runHeight,
+                    lineHeight: runHeight,
+                    lines: [run.text]
+                  };
+                  context2.fillStyle = getCanvasFillStyle(
+                    run.style._fill,
+                    context2,
+                    runMetrics,
+                    padding * 2,
+                    runX - padding,
+                    currentY
+                  );
+                }
+                this._drawLetterSpacing(
+                  run.text,
+                  run.style,
+                  canvasAndContext,
+                  runX,
+                  linePositionY + padding - dsOffsetText,
+                  false,
+                  wordSpacing
+                );
+              }
+              const spacesInFillRun = countSpaces(run.text);
+              runX += runWidth + spacesInFillRun * wordSpacing;
+            }
+            currentY += currentLineHeight;
+          }
+        }
+      }
+      /**
+       * Sets fill and stroke styles on the canvas context for text rendering.
+       * @param context - The canvas context
+       * @param style - The text style
+       * @param metrics - The text metrics for gradient calculation
+       * @param padding - The padding value
+       * @param halfStroke - Half the stroke width
+       * @param offsetX - X offset for gradient positioning
+       * @param offsetY - Y offset for gradient positioning
+       */
+      _setFillAndStrokeStyles(context2, style, metrics, padding, halfStroke, offsetX = 0, offsetY = 0) {
+        context2.fillStyle = style._fill ? getCanvasFillStyle(style._fill, context2, metrics, padding * 2, offsetX, offsetY) : null;
+        if (style._stroke?.width) {
+          const strokePadding = halfStroke + padding * 2;
+          context2.strokeStyle = getCanvasFillStyle(
+            style._stroke,
+            context2,
+            metrics,
+            strokePadding,
+            offsetX,
+            offsetY
+          );
+        }
+      }
+      /**
+       * Sets up the canvas context for drop shadow rendering.
+       * @param context - The canvas context
+       * @param style - The text style containing drop shadow options
+       * @param resolution - The resolution multiplier
+       * @param dsOffsetShadow - The shadow Y offset
+       */
+      _setupDropShadow(context2, style, resolution, dsOffsetShadow) {
+        context2.fillStyle = "black";
+        context2.strokeStyle = "black";
+        const shadowOptions = style.dropShadow;
+        const dropShadowColor = shadowOptions.color;
+        const dropShadowAlpha = shadowOptions.alpha;
+        context2.shadowColor = Color.shared.setValue(dropShadowColor).setAlpha(dropShadowAlpha).toRgbaString();
+        const dropShadowBlur = shadowOptions.blur * resolution;
+        const dropShadowDistance = shadowOptions.distance * resolution;
+        context2.shadowBlur = dropShadowBlur;
+        context2.shadowOffsetX = Math.cos(shadowOptions.angle) * dropShadowDistance;
+        context2.shadowOffsetY = Math.sin(shadowOptions.angle) * dropShadowDistance + dsOffsetShadow;
+      }
+      /**
+       * Calculates the X offset for text alignment.
+       * @param lineWidth - The width of the current line
+       * @param alignWidth - The width to align against
+       * @param align - The text alignment
+       * @returns The X offset for this line
+       */
+      _getAlignmentOffset(lineWidth, alignWidth, align) {
+        if (align === "right") {
+          return alignWidth - lineWidth;
+        } else if (align === "center") {
+          return (alignWidth - lineWidth) / 2;
+        }
+        return 0;
+      }
+      /**
+       * Render the text with letter-spacing.
+       *
+       * This method handles rendering text with the correct letter spacing, using either:
+       * 1. Native letter spacing if supported by the browser
+       * 2. Manual letter spacing calculation if not natively supported
+       *
+       * For manual letter spacing, it calculates the position of each character
+       * based on its width and the desired spacing.
+       * @param text - The text to draw
+       * @param style - The text style to apply
+       * @param canvasAndContext - The canvas and context to draw to
+       * @param x - Horizontal position to draw the text
+       * @param y - Vertical position to draw the text
+       * @param isStroke - Whether to render the stroke (true) or fill (false)
+       * @param wordSpacing - Extra spacing to add between words (for justify alignment)
+       * @private
+       */
+      _drawLetterSpacing(text, style, canvasAndContext, x4, y5, isStroke = false, wordSpacing = 0) {
+        const { context: context2 } = canvasAndContext;
+        const letterSpacing = style.letterSpacing;
+        let useExperimentalLetterSpacing = false;
+        if (CanvasTextMetrics.experimentalLetterSpacingSupported) {
+          if (CanvasTextMetrics.experimentalLetterSpacing) {
+            context2.letterSpacing = `${letterSpacing}px`;
+            context2.textLetterSpacing = `${letterSpacing}px`;
+            useExperimentalLetterSpacing = true;
+          } else {
+            context2.letterSpacing = "0px";
+            context2.textLetterSpacing = "0px";
+          }
+        }
+        if ((letterSpacing === 0 || useExperimentalLetterSpacing) && wordSpacing === 0) {
+          if (isStroke) {
+            context2.strokeText(text, x4, y5);
+          } else {
+            context2.fillText(text, x4, y5);
+          }
+          return;
+        }
+        if (wordSpacing !== 0 && (letterSpacing === 0 || useExperimentalLetterSpacing)) {
+          const words = text.split(" ");
+          let currentPosition2 = x4;
+          const spaceWidth = context2.measureText(" ").width;
+          for (let i9 = 0; i9 < words.length; i9++) {
+            if (isStroke) {
+              context2.strokeText(words[i9], currentPosition2, y5);
+            } else {
+              context2.fillText(words[i9], currentPosition2, y5);
+            }
+            currentPosition2 += context2.measureText(words[i9]).width + spaceWidth + wordSpacing;
+          }
+          return;
+        }
+        let currentPosition = x4;
+        const stringArray = CanvasTextMetrics.graphemeSegmenter(text);
+        let previousWidth = context2.measureText(text).width;
+        let currentWidth = 0;
+        for (let i9 = 0; i9 < stringArray.length; ++i9) {
+          const currentChar = stringArray[i9];
+          if (isStroke) {
+            context2.strokeText(currentChar, currentPosition, y5);
+          } else {
+            context2.fillText(currentChar, currentPosition, y5);
+          }
+          let textStr = "";
+          for (let j4 = i9 + 1; j4 < stringArray.length; ++j4) {
+            textStr += stringArray[j4];
+          }
+          currentWidth = context2.measureText(textStr).width;
+          currentPosition += previousWidth - currentWidth + letterSpacing;
+          if (currentChar === " ") currentPosition += wordSpacing;
+          previousWidth = currentWidth;
+        }
+      }
+    };
+    CanvasTextGenerator = new CanvasTextGeneratorClass();
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/TextStyle.mjs
+function convertV7Tov8Style(style) {
+  const oldStyle = style;
+  if (typeof oldStyle.dropShadow === "boolean" && oldStyle.dropShadow) {
+    const defaults = TextStyle.defaultDropShadow;
+    style.dropShadow = {
+      alpha: oldStyle.dropShadowAlpha ?? defaults.alpha,
+      angle: oldStyle.dropShadowAngle ?? defaults.angle,
+      blur: oldStyle.dropShadowBlur ?? defaults.blur,
+      color: oldStyle.dropShadowColor ?? defaults.color,
+      distance: oldStyle.dropShadowDistance ?? defaults.distance
+    };
+  }
+  if (oldStyle.strokeThickness !== void 0) {
+    deprecation(v8_0_0, "strokeThickness is now a part of stroke");
+    const color = oldStyle.stroke;
+    let obj = {};
+    if (Color.isColorLike(color)) {
+      obj.color = color;
+    } else if (color instanceof FillGradient || color instanceof FillPattern) {
+      obj.fill = color;
+    } else if (Object.hasOwnProperty.call(color, "color") || Object.hasOwnProperty.call(color, "fill")) {
+      obj = color;
+    } else {
+      throw new Error("Invalid stroke value.");
+    }
+    style.stroke = {
+      ...obj,
+      width: oldStyle.strokeThickness
+    };
+  }
+  if (Array.isArray(oldStyle.fillGradientStops)) {
+    deprecation(v8_0_0, "gradient fill is now a fill pattern: `new FillGradient(...)`");
+    if (!Array.isArray(oldStyle.fill) || oldStyle.fill.length === 0) {
+      throw new Error("Invalid fill value. Expected an array of colors for gradient fill.");
+    }
+    if (oldStyle.fill.length !== oldStyle.fillGradientStops.length) {
+      warn("The number of fill colors must match the number of fill gradient stops.");
+    }
+    const gradientFill = new FillGradient({
+      start: { x: 0, y: 0 },
+      end: { x: 0, y: 1 },
+      textureSpace: "local"
+    });
+    const fillGradientStops = oldStyle.fillGradientStops.slice();
+    const fills = oldStyle.fill.map((color) => Color.shared.setValue(color).toNumber());
+    fillGradientStops.forEach((stop, index) => {
+      gradientFill.addColorStop(stop, fills[index]);
+    });
+    style.fill = {
+      fill: gradientFill
+    };
+  }
+}
+var _TextStyle, TextStyle;
+var init_TextStyle = __esm({
+  "node_modules/pixi.js/lib/scene/text/TextStyle.mjs"() {
+    init_eventemitter3();
+    init_Color();
+    init_uid();
+    init_deprecation();
+    init_warn();
+    init_FillGradient();
+    init_FillPattern();
+    init_GraphicsContext();
+    init_convertFillInputToFillStyle();
+    init_fontStringFromTextStyle();
+    _TextStyle = class _TextStyle2 extends eventemitter3_default {
+      constructor(style = {}) {
+        super();
+        this.uid = uid("textStyle");
+        this._tick = 0;
+        this._cachedFontString = null;
+        convertV7Tov8Style(style);
+        const isTextStyle = style instanceof _TextStyle2;
+        const existingStyle = style;
+        if (isTextStyle) {
+          style = existingStyle._toObject();
+        }
+        const fullStyle = { ..._TextStyle2.defaultTextStyle, ...style };
+        for (const key in fullStyle) {
+          const thisKey = key;
+          this[thisKey] = fullStyle[key];
+        }
+        this._tagStyles = style.tagStyles ?? void 0;
+        this.update();
+        this._tick = 0;
+      }
+      /**
+       * Alignment for multiline text, does not affect single line text.
+       * @type {'left'|'center'|'right'|'justify'}
+       */
+      get align() {
+        return this._align;
+      }
+      set align(value) {
+        if (this._align === value) return;
+        this._align = value;
+        this.update();
+      }
+      /** Indicates if lines can be wrapped within words, it needs wordWrap to be set to true. */
+      get breakWords() {
+        return this._breakWords;
+      }
+      set breakWords(value) {
+        if (this._breakWords === value) return;
+        this._breakWords = value;
+        this.update();
+      }
+      /** Set a drop shadow for the text. */
+      get dropShadow() {
+        return this._dropShadow;
+      }
+      set dropShadow(value) {
+        if (this._dropShadow === value) return;
+        if (value !== null && typeof value === "object") {
+          this._dropShadow = this._createProxy({ ..._TextStyle2.defaultDropShadow, ...value });
+        } else {
+          this._dropShadow = value ? this._createProxy({ ..._TextStyle2.defaultDropShadow }) : null;
+        }
+        this.update();
+      }
+      /** The font family, can be a single font name, or a list of names where the first is the preferred font. */
+      get fontFamily() {
+        return this._fontFamily;
+      }
+      set fontFamily(value) {
+        if (this._fontFamily === value) return;
+        this._fontFamily = value;
+        this.update();
+      }
+      /** The font size (as a number it converts to px, but as a string, equivalents are '26px','20pt','160%' or '1.6em') */
+      get fontSize() {
+        return this._fontSize;
+      }
+      set fontSize(value) {
+        if (this._fontSize === value) return;
+        if (typeof value === "string") {
+          this._fontSize = parseInt(value, 10);
+        } else {
+          this._fontSize = value;
+        }
+        this.update();
+      }
+      /**
+       * The font style.
+       * @type {'normal'|'italic'|'oblique'}
+       */
+      get fontStyle() {
+        return this._fontStyle;
+      }
+      set fontStyle(value) {
+        if (this._fontStyle === value) return;
+        this._fontStyle = value.toLowerCase();
+        this.update();
+      }
+      /**
+       * The font variant.
+       * @type {'normal'|'small-caps'}
+       */
+      get fontVariant() {
+        return this._fontVariant;
+      }
+      set fontVariant(value) {
+        if (this._fontVariant === value) return;
+        this._fontVariant = value;
+        this.update();
+      }
+      /**
+       * The font weight.
+       * @type {'normal'|'bold'|'bolder'|'lighter'|'100'|'200'|'300'|'400'|'500'|'600'|'700'|'800'|'900'}
+       */
+      get fontWeight() {
+        return this._fontWeight;
+      }
+      set fontWeight(value) {
+        if (this._fontWeight === value) return;
+        this._fontWeight = value;
+        this.update();
+      }
+      /** The space between lines. */
+      get leading() {
+        return this._leading;
+      }
+      set leading(value) {
+        if (this._leading === value) return;
+        this._leading = value;
+        this.update();
+      }
+      /** The amount of spacing between letters, default is 0. */
+      get letterSpacing() {
+        return this._letterSpacing;
+      }
+      set letterSpacing(value) {
+        if (this._letterSpacing === value) return;
+        this._letterSpacing = value;
+        this.update();
+      }
+      /** The line height, a number that represents the vertical space that a letter uses. */
+      get lineHeight() {
+        return this._lineHeight;
+      }
+      set lineHeight(value) {
+        if (this._lineHeight === value) return;
+        this._lineHeight = value;
+        this.update();
+      }
+      /**
+       * Occasionally some fonts are cropped. Adding some padding will prevent this from happening
+       * by adding padding to all sides of the text.
+       * > [!NOTE] This will NOT affect the positioning or bounds of the text.
+       */
+      get padding() {
+        return this._padding;
+      }
+      set padding(value) {
+        if (this._padding === value) return;
+        this._padding = value;
+        this.update();
+      }
+      /**
+       * An optional filter or array of filters to apply to the text, allowing for advanced visual effects.
+       * These filters will be applied to the text as it is created, resulting in faster rendering for static text
+       * compared to applying the filter directly to the text object (which would be applied at run time).
+       * @default null
+       */
+      get filters() {
+        return this._filters;
+      }
+      set filters(value) {
+        if (this._filters === value) return;
+        this._filters = Object.freeze(value);
+        this.update();
+      }
+      /**
+       * Trim transparent borders from the text texture.
+       * > [!IMPORTANT] PERFORMANCE WARNING:
+       * > This is a costly operation as it requires scanning pixel alpha values.
+       * > Avoid using `trim: true` for dynamic text, as it could significantly impact performance.
+       */
+      get trim() {
+        return this._trim;
+      }
+      set trim(value) {
+        if (this._trim === value) return;
+        this._trim = value;
+        this.update();
+      }
+      /**
+       * The baseline of the text that is rendered.
+       * @type {'alphabetic'|'top'|'hanging'|'middle'|'ideographic'|'bottom'}
+       */
+      get textBaseline() {
+        return this._textBaseline;
+      }
+      set textBaseline(value) {
+        if (this._textBaseline === value) return;
+        this._textBaseline = value;
+        this.update();
+      }
+      /**
+       * How newlines and spaces should be handled.
+       * Default is 'pre' (preserve, preserve).
+       *
+       *  value       | New lines     |   Spaces
+       *  ---         | ---           |   ---
+       * 'normal'     | Collapse      |   Collapse
+       * 'pre'        | Preserve      |   Preserve
+       * 'pre-line'   | Preserve      |   Collapse
+       * @type {'normal'|'pre'|'pre-line'}
+       */
+      get whiteSpace() {
+        return this._whiteSpace;
+      }
+      set whiteSpace(value) {
+        if (this._whiteSpace === value) return;
+        this._whiteSpace = value;
+        this.update();
+      }
+      /** Indicates if word wrap should be used. */
+      get wordWrap() {
+        return this._wordWrap;
+      }
+      set wordWrap(value) {
+        if (this._wordWrap === value) return;
+        this._wordWrap = value;
+        this.update();
+      }
+      /** The width at which text will wrap, it needs wordWrap to be set to true. */
+      get wordWrapWidth() {
+        return this._wordWrapWidth;
+      }
+      set wordWrapWidth(value) {
+        if (this._wordWrapWidth === value) return;
+        this._wordWrapWidth = value;
+        this.update();
+      }
+      /**
+       * The fill style that will be used to color the text.
+       * This can be:
+       * - A color string like 'red', '#00FF00', or 'rgba(255,0,0,0.5)'
+       * - A hex number like 0xff0000 for red
+       * - A FillStyle object with properties like { color: 0xff0000, alpha: 0.5 }
+       * - A FillGradient for gradient fills
+       * - A FillPattern for pattern/texture fills
+       *
+       * When using a FillGradient, vertical gradients (angle of 90 degrees) are applied per line of text,
+       * while gradients at any other angle are spread across the entire text body as a whole.
+       * @example
+       * // Vertical gradient applied per line
+       * const verticalGradient = new FillGradient(0, 0, 0, 1)
+       *     .addColorStop(0, 0xff0000)
+       *     .addColorStop(1, 0x0000ff);
+       *
+       * const text = new Text({
+       *     text: 'Line 1\nLine 2',
+       *     style: { fill: verticalGradient }
+       * });
+       *
+       * To manage the gradient in a global scope, set the textureSpace property of the FillGradient to 'global'.
+       * @type {string|number|FillStyle|FillGradient|FillPattern}
+       */
+      get fill() {
+        return this._originalFill;
+      }
+      set fill(value) {
+        if (value === this._originalFill) return;
+        this._originalFill = value;
+        if (this._isFillStyle(value)) {
+          this._originalFill = this._createProxy({ ...GraphicsContext.defaultFillStyle, ...value }, () => {
+            this._fill = toFillStyle(
+              { ...this._originalFill },
+              GraphicsContext.defaultFillStyle
+            );
+          });
+        }
+        this._fill = toFillStyle(
+          value === 0 ? "black" : value,
+          GraphicsContext.defaultFillStyle
+        );
+        this.update();
+      }
+      /** A fillstyle that will be used on the text stroke, e.g., 'blue', '#FCFF00'. */
+      get stroke() {
+        return this._originalStroke;
+      }
+      set stroke(value) {
+        if (value === this._originalStroke) return;
+        this._originalStroke = value;
+        if (this._isFillStyle(value)) {
+          this._originalStroke = this._createProxy({ ...GraphicsContext.defaultStrokeStyle, ...value }, () => {
+            this._stroke = toStrokeStyle(
+              { ...this._originalStroke },
+              GraphicsContext.defaultStrokeStyle
+            );
+          });
+        }
+        this._stroke = toStrokeStyle(value, GraphicsContext.defaultStrokeStyle);
+        this.update();
+      }
+      /**
+       * Custom styles to apply to specific tags within the text.
+       * Allows for rich text formatting using simple tag markup like `<red>text</red>`.
+       *
+       * Tags are only parsed when this property has entries. If `tagStyles` is undefined,
+       * `<` characters in text are treated as literal.
+       * @example
+       * ```ts
+       * const text = new Text({
+       *     text: '<red>Red</red>, <blue>Blue</blue>',
+       *     style: {
+       *         fill: 'white',
+       *         tagStyles: {
+       *             red: { fill: 'red' },
+       *             blue: { fill: 'blue' }
+       *         }
+       *     }
+       * });
+       * ```
+       */
+      get tagStyles() {
+        return this._tagStyles;
+      }
+      set tagStyles(value) {
+        if (this._tagStyles === value) return;
+        this._tagStyles = value ?? void 0;
+        this.update();
+      }
+      update() {
+        this._tick++;
+        this._cachedFontString = null;
+        this.emit("update", this);
+      }
+      /** Resets all properties to the default values */
+      reset() {
+        const defaultStyle = _TextStyle2.defaultTextStyle;
+        for (const key in defaultStyle) {
+          this[key] = defaultStyle[key];
+        }
+      }
+      /**
+       * Assigns partial style options to this TextStyle instance.
+       * Uses public setters to ensure proper value transformation.
+       * @param values - Partial style options to assign
+       * @returns This TextStyle instance for chaining
+       */
+      assign(values) {
+        for (const key in values) {
+          const thisKey = key;
+          this[thisKey] = values[key];
+        }
+        return this;
+      }
+      /**
+       * Returns a unique key for this instance.
+       * This key is used for caching.
+       * @returns {string} Unique key for the instance
+       */
+      get styleKey() {
+        return `${this.uid}-${this._tick}`;
+      }
+      /**
+       * Returns the CSS font string for this style, cached for performance.
+       * @internal
+       * @returns CSS font string
+       */
+      get _fontString() {
+        if (this._cachedFontString === null) {
+          this._cachedFontString = fontStringFromTextStyle(this);
+        }
+        return this._cachedFontString;
+      }
+      /**
+       * Returns an object with the same values as this TextStyle instance.
+       * @returns Object with the same values as this TextStyle instance
+       * @example
+       * ```ts
+       * const style = new TextStyle({
+       *     fontSize: 24,
+       *     fill: 0xff0000,
+       *     stroke: { color: 0x0000ff, width: 2 }
+       * });
+       * const object = style.toObject();
+       * console.log(object);
+       * // { fontSize: 24, fill: 0xff0000, stroke: { color: 0x0000ff, width: 2 } }
+       * ```
+       */
+      _toObject() {
+        return {
+          align: this.align,
+          breakWords: this.breakWords,
+          dropShadow: this._dropShadow ? { ...this._dropShadow } : null,
+          fill: this._fill ? { ...this._fill } : void 0,
+          fontFamily: this.fontFamily,
+          fontSize: this.fontSize,
+          fontStyle: this.fontStyle,
+          fontVariant: this.fontVariant,
+          fontWeight: this.fontWeight,
+          leading: this.leading,
+          letterSpacing: this.letterSpacing,
+          lineHeight: this.lineHeight,
+          padding: this.padding,
+          stroke: this._stroke ? { ...this._stroke } : void 0,
+          textBaseline: this.textBaseline,
+          trim: this.trim,
+          whiteSpace: this.whiteSpace,
+          wordWrap: this.wordWrap,
+          wordWrapWidth: this.wordWrapWidth,
+          filters: this._filters ? [...this._filters] : void 0,
+          tagStyles: this._tagStyles ? { ...this._tagStyles } : void 0
+        };
+      }
+      /**
+       * Creates a new TextStyle object with the same values as this one.
+       * @returns New cloned TextStyle object
+       */
+      clone() {
+        return new _TextStyle2(this._toObject());
+      }
+      /**
+       * Returns the final padding for the text style, taking into account any filters applied.
+       * Used internally for correct measurements
+       * @internal
+       * @returns {number} The final padding for the text style.
+       */
+      _getFinalPadding() {
+        let filterPadding = 0;
+        if (this._filters) {
+          for (let i9 = 0; i9 < this._filters.length; i9++) {
+            filterPadding += this._filters[i9].padding;
+          }
+        }
+        return Math.max(this._padding, filterPadding);
+      }
+      /**
+       * Destroys this text style.
+       * @param options - Options parameter. A boolean will act as if all options
+       *  have been set to that value
+       * @example
+       * // Destroy the text style and its textures
+       * textStyle.destroy({ texture: true, textureSource: true });
+       * textStyle.destroy(true);
+       */
+      destroy(options = false) {
+        this.removeAllListeners();
+        const destroyTexture = typeof options === "boolean" ? options : options?.texture;
+        if (destroyTexture) {
+          const destroyTextureSource = typeof options === "boolean" ? options : options?.textureSource;
+          if (this._fill?.texture) {
+            this._fill.texture.destroy(destroyTextureSource);
+          }
+          if (this._originalFill?.texture) {
+            this._originalFill.texture.destroy(destroyTextureSource);
+          }
+          if (this._stroke?.texture) {
+            this._stroke.texture.destroy(destroyTextureSource);
+          }
+          if (this._originalStroke?.texture) {
+            this._originalStroke.texture.destroy(destroyTextureSource);
+          }
+        }
+        this._fill = null;
+        this._stroke = null;
+        this.dropShadow = null;
+        this._originalStroke = null;
+        this._originalFill = null;
+      }
+      _createProxy(value, cb) {
+        return new Proxy(value, {
+          set: (target, property, newValue) => {
+            if (target[property] === newValue) return true;
+            target[property] = newValue;
+            cb?.(property, newValue);
+            this.update();
+            return true;
+          }
+        });
+      }
+      _isFillStyle(value) {
+        return (value ?? null) !== null && !(Color.isColorLike(value) || value instanceof FillGradient || value instanceof FillPattern);
+      }
+    };
+    _TextStyle.defaultDropShadow = {
+      alpha: 1,
+      angle: Math.PI / 6,
+      blur: 0,
+      color: "black",
+      distance: 5
+    };
+    _TextStyle.defaultTextStyle = {
+      align: "left",
+      breakWords: false,
+      dropShadow: null,
+      fill: "black",
+      fontFamily: "Arial",
+      fontSize: 26,
+      fontStyle: "normal",
+      fontVariant: "normal",
+      fontWeight: "normal",
+      leading: 0,
+      letterSpacing: 0,
+      lineHeight: 0,
+      padding: 0,
+      stroke: null,
+      textBaseline: "alphabetic",
+      trim: false,
+      whiteSpace: "pre",
+      wordWrap: false,
+      wordWrapWidth: 100
+    };
+    TextStyle = _TextStyle;
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/utils/warnIgnoredTextureStyle.mjs
+function warnIgnoredTextureStyle(textureStyle) {
+  if (warned) return;
+  const scaleModeOnly = new TextureStyle({ scaleMode: textureStyle.scaleMode });
+  if (textureStyle._resourceId === scaleModeOnly._resourceId) return;
+  warned = true;
+  warn("Text textureStyle: only scaleMode is applied to a text texture, the other fields are ignored");
+}
+var warned;
+var init_warnIgnoredTextureStyle = __esm({
+  "node_modules/pixi.js/lib/scene/text/utils/warnIgnoredTextureStyle.mjs"() {
+    init_TextureStyle();
+    init_warn();
+    warned = false;
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/utils/updateTextBounds.mjs
+function updateTextBounds(batchableSprite, text) {
+  const { texture, bounds } = batchableSprite;
+  const padding = text._style._getFinalPadding();
+  updateQuadBounds(bounds, text._anchor, texture);
+  const paddingOffset = text._anchor._x * padding * 2;
+  const paddingOffsetY = text._anchor._y * padding * 2;
+  bounds.minX -= padding - paddingOffset;
+  bounds.minY -= padding - paddingOffsetY;
+  bounds.maxX -= padding - paddingOffset;
+  bounds.maxY -= padding - paddingOffsetY;
+}
+var init_updateTextBounds = __esm({
+  "node_modules/pixi.js/lib/scene/text/utils/updateTextBounds.mjs"() {
+    init_updateQuadBounds();
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/BatchableText.mjs
+var BatchableText;
+var init_BatchableText = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/BatchableText.mjs"() {
+    init_BatchableSprite();
+    BatchableText = class extends BatchableSprite {
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/CanvasTextPipe.mjs
+var CanvasTextPipe;
+var init_CanvasTextPipe = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/CanvasTextPipe.mjs"() {
+    init_Extensions();
+    init_GCManagedHash();
+    init_updateTextBounds();
+    init_BatchableText();
+    CanvasTextPipe = class {
+      constructor(renderer) {
+        this._renderer = renderer;
+        renderer.runners.resolutionChange.add(this);
+        renderer.runners.contextChange.add(this);
+        this._managedTexts = new GCManagedHash({
+          renderer,
+          type: "renderable",
+          onUnload: this.onTextUnload.bind(this),
+          name: "canvasText"
+        });
+      }
+      resolutionChange() {
+        for (const key in this._managedTexts.items) {
+          const text = this._managedTexts.items[key];
+          if (text?._autoResolution) text.onViewUpdate();
+        }
+      }
+      /**
+       * Text textures are uploaded from pooled canvases that are cleared and reused straight after upload,
+       * so they cannot be re-uploaded after a context loss. Unload them and regenerate on the next render.
+       */
+      contextChange() {
+        for (const key in this._managedTexts.items) {
+          this._managedTexts.items[key]?.unload();
+        }
+      }
+      validateRenderable(text) {
+        const gpuText = this._getGpuText(text);
+        const newKey = text.styleKey;
+        if (gpuText.currentKey !== newKey) return true;
+        return text._didTextUpdate;
+      }
+      addRenderable(text, instructionSet) {
+        const batchableText = this._getGpuText(text);
+        if (text._didTextUpdate || batchableText.currentKey !== text.styleKey) {
+          const resolution = text._autoResolution ? this._renderer.resolution : text.resolution;
+          if (batchableText.currentKey !== text.styleKey || text._resolution !== resolution) {
+            this._updateGpuText(text);
+          }
+          text._didTextUpdate = false;
+          updateTextBounds(batchableText, text);
+        }
+        this._renderer.renderPipes.batch.addToBatch(batchableText, instructionSet);
+      }
+      updateRenderable(text) {
+        const batchableText = this._getGpuText(text);
+        batchableText._batcher.updateElement(batchableText);
+      }
+      _updateGpuText(text) {
+        const batchableText = this._getGpuText(text);
+        if (batchableText.texture) {
+          this._renderer.canvasText.decreaseReferenceCount(batchableText.currentKey);
+        }
+        text._resolution = text._autoResolution ? this._renderer.resolution : text.resolution;
+        batchableText.texture = this._renderer.canvasText.getManagedTexture(text);
+        batchableText.currentKey = text.styleKey;
+      }
+      _getGpuText(text) {
+        return text._gpuData[this._renderer.uid] || this.initGpuText(text);
+      }
+      initGpuText(text) {
+        const batchableText = new BatchableText();
+        batchableText.currentKey = "--";
+        batchableText.renderable = text;
+        batchableText.transform = text.groupTransform;
+        batchableText.bounds = { minX: 0, maxX: 1, minY: 0, maxY: 0 };
+        batchableText.roundPixels = this._renderer._roundPixels | text._roundPixels;
+        text._gpuData[this._renderer.uid] = batchableText;
+        this._managedTexts.add(text);
+        return batchableText;
+      }
+      onTextUnload(text) {
+        const gpuData = text._gpuData[this._renderer.uid];
+        if (!gpuData) return;
+        const { canvasText } = this._renderer;
+        const refCount = canvasText.getReferenceCount(gpuData.currentKey);
+        if (refCount > 0) {
+          canvasText.decreaseReferenceCount(gpuData.currentKey);
+        } else if (gpuData.texture) {
+          canvasText.returnTexture(gpuData.texture);
+        }
+      }
+      destroy() {
+        this._managedTexts.destroy();
+        this._renderer = null;
+      }
+    };
+    CanvasTextPipe.extension = {
+      type: [
+        ExtensionType.WebGLPipes,
+        ExtensionType.WebGPUPipes,
+        ExtensionType.CanvasPipes
+      ],
+      name: "text"
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/shared/AbstractTextSystem.mjs
+var AbstractTextSystem;
+var init_AbstractTextSystem = __esm({
+  "node_modules/pixi.js/lib/scene/text/shared/AbstractTextSystem.mjs"() {
+    init_TexturePool();
+    init_deprecation();
+    init_CanvasTextGenerator();
+    init_TextStyle();
+    init_getPo2TextureFromSource();
+    AbstractTextSystem = class {
+      constructor(renderer, retainCanvasContext) {
+        this._activeTextures = {};
+        this._renderer = renderer;
+        this._retainCanvasContext = retainCanvasContext;
+      }
+      getTexture(options, _resolution, _style, _textKey) {
+        if (typeof options === "string") {
+          deprecation("8.0.0", "CanvasTextSystem.getTexture: Use object TextOptions instead of separate arguments");
+          options = {
+            text: options,
+            style: _style,
+            resolution: _resolution
+          };
+        }
+        if (!(options.style instanceof TextStyle)) {
+          options.style = new TextStyle(options.style);
+        }
+        if (typeof options.text !== "string") {
+          options.text = options.text.toString();
+        }
+        const { text, style, textureStyle, autoGenerateMipmaps } = options;
+        const resolution = options.resolution ?? this._renderer.resolution;
+        const { frame, canvasAndContext } = CanvasTextGenerator.getCanvasAndContext({
+          text,
+          style,
+          resolution
+        });
+        const texture = getPo2TextureFromSource(
+          canvasAndContext.canvas,
+          frame.width,
+          frame.height,
+          resolution,
+          autoGenerateMipmaps,
+          textureStyle?.scaleMode
+        );
+        if (style.trim) {
+          frame.pad(style.padding);
+          texture.frame.copyFrom(frame);
+          texture.frame.scale(1 / resolution);
+          texture.updateUvs();
+        }
+        if (style.filters) {
+          const filteredTexture = this._applyFilters(texture, style.filters);
+          this.returnTexture(texture);
+          CanvasTextGenerator.returnCanvasAndContext(canvasAndContext);
+          return filteredTexture;
+        }
+        this._renderer.texture.initSource(texture._source);
+        if (!this._retainCanvasContext) {
+          CanvasTextGenerator.returnCanvasAndContext(canvasAndContext);
+        }
+        return texture;
+      }
+      /**
+       * Returns a texture that was created wit the above `getTexture` function.
+       * Handy if you are done with a texture and want to return it to the pool.
+       * @param texture - The texture to be returned.
+       */
+      returnTexture(texture) {
+        const source3 = texture.source;
+        const resource = source3.resource;
+        if (this._retainCanvasContext && resource?.getContext) {
+          const context2 = resource.getContext("2d");
+          if (context2) {
+            CanvasTextGenerator.returnCanvasAndContext({ canvas: resource, context: context2 });
+          }
+        }
+        source3.resource = null;
+        source3.uploadMethodId = "unknown";
+        source3.alphaMode = "no-premultiply-alpha";
+        TexturePool.returnTexture(texture);
+      }
+      /**
+       * Renders text to its canvas, and updates its texture.
+       * @deprecated since 8.10.0
+       */
+      renderTextToCanvas() {
+        deprecation(
+          "8.10.0",
+          "CanvasTextSystem.renderTextToCanvas: no longer supported, use CanvasTextSystem.getTexture instead"
+        );
+      }
+      /**
+       * Gets or creates a managed texture for a Text object. This method handles texture reuse and reference counting.
+       * @param text - The Text object that needs a texture
+       * @returns A Texture instance that represents the rendered text
+       * @remarks
+       * This method performs the following:
+       * 1. Sets the appropriate resolution based on auto-resolution settings
+       * 2. Checks if a texture already exists for the text's style
+       * 3. Creates a new texture if needed or returns an existing one
+       * 4. Manages reference counting for texture reuse
+       */
+      getManagedTexture(text) {
+        text._resolution = text._autoResolution ? this._renderer.resolution : text.resolution;
+        const textKey = text.styleKey;
+        if (this._activeTextures[textKey]) {
+          this._increaseReferenceCount(textKey);
+          return this._activeTextures[textKey].texture;
+        }
+        const texture = this.getTexture({
+          text: text.text,
+          style: text.style,
+          resolution: text._resolution,
+          textureStyle: text.textureStyle,
+          autoGenerateMipmaps: text.autoGenerateMipmaps
+        });
+        this._activeTextures[textKey] = {
+          texture,
+          usageCount: 1
+        };
+        return texture;
+      }
+      /**
+       * Decreases the reference count for a texture associated with a text key.
+       * When the reference count reaches zero, the texture is returned to the pool.
+       * @param textKey - The unique key identifying the text style configuration
+       * @remarks
+       * This method is crucial for memory management, ensuring textures are properly
+       * cleaned up when they are no longer needed by any Text instances.
+       */
+      decreaseReferenceCount(textKey) {
+        const activeTexture = this._activeTextures[textKey];
+        if (!activeTexture) return;
+        activeTexture.usageCount--;
+        if (activeTexture.usageCount === 0) {
+          this.returnTexture(activeTexture.texture);
+          this._activeTextures[textKey] = null;
+        }
+      }
+      /**
+       * Gets the current reference count for a texture associated with a text key.
+       * @param textKey - The unique key identifying the text style configuration
+       * @returns The number of Text instances currently using this texture
+       */
+      getReferenceCount(textKey) {
+        return this._activeTextures[textKey]?.usageCount ?? 0;
+      }
+      _increaseReferenceCount(textKey) {
+        this._activeTextures[textKey].usageCount++;
+      }
+      /**
+       * Applies the specified filters to the given texture.
+       *
+       * This method takes a texture and a list of filters, applies the filters to the texture,
+       * and returns the resulting texture. It also ensures that the alpha mode of the resulting
+       * texture is set to 'premultiplied-alpha'.
+       * @param {Texture} texture - The texture to which the filters will be applied.
+       * @param {Filter[]} filters - The filters to apply to the texture.
+       * @returns {Texture} The resulting texture after all filters have been applied.
+       */
+      _applyFilters(texture, filters) {
+        const currentRenderTarget = this._renderer.renderTarget.renderTarget;
+        const resultTexture = this._renderer.filter.generateFilteredTexture({
+          texture,
+          filters
+        });
+        this._renderer.renderTarget.bind({ target: currentRenderTarget, clear: false });
+        return resultTexture;
+      }
+      destroy() {
+        this._renderer = null;
+        for (const key in this._activeTextures) {
+          if (this._activeTextures[key]) this.returnTexture(this._activeTextures[key].texture);
+        }
+        this._activeTextures = null;
+      }
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/CanvasTextSystem.mjs
+var CanvasRendererTextSystem;
+var init_CanvasTextSystem = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/CanvasTextSystem.mjs"() {
+    init_Extensions();
+    init_AbstractTextSystem();
+    CanvasRendererTextSystem = class extends AbstractTextSystem {
+      constructor(renderer) {
+        super(renderer, true);
+      }
+    };
+    CanvasRendererTextSystem.extension = {
+      type: [
+        ExtensionType.CanvasSystem
+      ],
+      name: "canvasText"
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/shared/GpuTextSystem.mjs
+var CanvasTextSystem;
+var init_GpuTextSystem = __esm({
+  "node_modules/pixi.js/lib/scene/text/shared/GpuTextSystem.mjs"() {
+    init_Extensions();
+    init_AbstractTextSystem();
+    CanvasTextSystem = class extends AbstractTextSystem {
+      constructor(renderer) {
+        super(renderer, false);
+      }
+    };
+    CanvasTextSystem.extension = {
+      type: [
+        ExtensionType.WebGLSystem,
+        ExtensionType.WebGPUSystem
+      ],
+      name: "canvasText"
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/init.mjs
+var init_init9 = __esm({
+  "node_modules/pixi.js/lib/scene/text/init.mjs"() {
+    init_Extensions();
+    init_CanvasTextPipe();
+    init_CanvasTextSystem();
+    init_GpuTextSystem();
+    extensions.add(CanvasRendererTextSystem);
+    extensions.add(CanvasTextSystem);
+    extensions.add(CanvasTextPipe);
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/Text.mjs
+var Text;
+var init_Text = __esm({
+  "node_modules/pixi.js/lib/scene/text/Text.mjs"() {
+    init_TextureSource();
+    init_TextureStyle();
+    init_AbstractText();
+    init_CanvasTextGenerator();
+    init_CanvasTextMetrics();
+    init_TextStyle();
+    init_warnIgnoredTextureStyle();
+    init_init9();
+    Text = class extends AbstractText {
+      constructor(...args) {
+        const options = ensureTextOptions(args, "Text");
+        super(options, TextStyle);
+        this.renderPipeId = "text";
+        if (options.textureStyle) {
+          this.textureStyle = options.textureStyle instanceof TextureStyle ? options.textureStyle : new TextureStyle(options.textureStyle);
+          warnIgnoredTextureStyle(this.textureStyle);
+        }
+        this.autoGenerateMipmaps = options.autoGenerateMipmaps ?? TextureSource.defaultOptions.autoGenerateMipmaps;
+      }
+      /** @private */
+      updateBounds() {
+        const bounds = this._bounds;
+        const anchor = this._anchor;
+        let width = 0;
+        let height = 0;
+        if (this._style.trim) {
+          const { frame, canvasAndContext } = CanvasTextGenerator.getCanvasAndContext({
+            text: this.text,
+            style: this._style,
+            resolution: 1
+          });
+          CanvasTextGenerator.returnCanvasAndContext(canvasAndContext);
+          width = frame.width;
+          height = frame.height;
+        } else {
+          const canvasMeasurement = CanvasTextMetrics.measureText(
+            this._text,
+            this._style
+          );
+          width = canvasMeasurement.width;
+          height = canvasMeasurement.height;
+        }
+        bounds.minX = -anchor._x * width;
+        bounds.maxX = bounds.minX + width;
+        bounds.minY = -anchor._y * height;
+        bounds.maxY = bounds.minY + height;
+      }
+    };
+  }
+});
+
 // node_modules/pixi.js/lib/rendering/renderers/shared/texture/sources/CubeTextureSource.mjs
 var CubeTextureSource;
 var init_CubeTextureSource = __esm({
@@ -50181,6 +53693,7 @@ var init_lib = __esm({
     init_clearList();
     init_definedProps();
     init_Graphics();
+    init_Text();
     init_ViewContainer();
     init_const2();
     init_Ticker();
@@ -82314,7 +85827,7 @@ var init_addUniformParsers = __esm({
 });
 
 // node_modules/@pixi/3d/dist/assets/init.mjs
-var init_init9 = __esm({
+var init_init10 = __esm({
   "node_modules/@pixi/3d/dist/assets/init.mjs"() {
     init_loadCubemap();
     init_loadGlb();
@@ -82326,7 +85839,7 @@ var init_init9 = __esm({
 });
 
 // node_modules/@pixi/3d/dist/events/init.mjs
-var init_init10 = __esm({
+var init_init11 = __esm({
   "node_modules/@pixi/3d/dist/events/init.mjs"() {
     init_Container3D();
     init_FederatedEventTarget3D();
@@ -84598,7 +88111,7 @@ __export(init_exports, {
   skinningBitGl: () => skinningBitGl,
   uniformBlockInstanceName: () => uniformBlockInstanceName
 });
-var init_init11 = __esm({
+var init_init12 = __esm({
   "node_modules/@pixi/3d/dist/core/gl/init.mjs"() {
     init_globalBitGl();
     init_LightingSystemGl();
@@ -87408,7 +90921,7 @@ __export(init_exports2, {
   wgslOverridesPlugin: () => wgslOverridesPlugin,
   wgslStageSlotsPlugin: () => wgslStageSlotsPlugin
 });
-var init_init12 = __esm({
+var init_init13 = __esm({
   "node_modules/@pixi/3d/dist/core/gpu/init.mjs"() {
     init_ComputeSystemGpu();
     init_globalBitGpu();
@@ -87443,24 +90956,24 @@ var init_init12 = __esm({
 
 // node_modules/@pixi/3d/dist/init.mjs
 var backendLoaders;
-var init_init13 = __esm({
+var init_init14 = __esm({
   "node_modules/@pixi/3d/dist/init.mjs"() {
     init_addUniformParsers();
-    init_init9();
     init_init10();
+    init_init11();
     init_lib();
     backendLoaders = [{
       extension: {
         type: ExtensionType.WebGLLoader,
         name: "pixijs-3d"
       },
-      load: () => Promise.resolve().then(() => (init_init11(), init_exports))
+      load: () => Promise.resolve().then(() => (init_init12(), init_exports))
     }, {
       extension: {
         type: ExtensionType.WebGPULoader,
         name: "pixijs-3d"
       },
-      load: () => Promise.resolve().then(() => (init_init12(), init_exports2))
+      load: () => Promise.resolve().then(() => (init_init13(), init_exports2))
     }];
     addUniformParsers();
     extensions.add(...backendLoaders);
@@ -87480,7 +90993,7 @@ var init_dist2 = __esm({
     init_SphereGeometry();
     init_DirectionalLight();
     init_View3D();
-    init_init13();
+    init_init14();
   }
 });
 
@@ -87489,7 +91002,7 @@ var scene_exports = {};
 __export(scene_exports, {
   MoleculeScene: () => MoleculeScene
 });
-var vector4, cellCorners, MoleculeScene;
+var vector4, cellCorners, CAMERA_FOV, FIT_FILL, AXIS_ORIGIN, AXIS_LENGTH, AXIS_COLORS, MoleculeScene;
 var init_scene = __esm({
   "molecule-builder/scene.ts"() {
     init_lib();
@@ -87499,6 +91012,11 @@ var init_scene = __esm({
     init_structure();
     vector4 = ([x4, y5, z3]) => ({ x: x4, y: y5, z: z3 });
     cellCorners = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]];
+    CAMERA_FOV = 60;
+    FIT_FILL = 0.8;
+    AXIS_ORIGIN = 34;
+    AXIS_LENGTH = 20;
+    AXIS_COLORS = [11817737, 1013358, 7153881];
     MoleculeScene = class _MoleculeScene {
       static async create(host) {
         const app = new Application();
@@ -87524,9 +91042,13 @@ var init_scene = __esm({
       #app;
       #view;
       #content = new Container3D();
+      #edges = new Container3D();
       #electrons = new Container3D();
       #lattice = new Graphics({ eventMode: "none" });
+      #axes = new Graphics({ eventMode: "none" });
+      #axisLabels = ["a", "b", "c"].map(() => new Text({ text: "", style: { fontSize: 10, fill: 5395035 } }));
       #projected = new Point();
+      #axisTip = new Point();
       #sphere = new SphereGeometry({ radius: 1, widthSegments: 20, heightSegments: 14 });
       #cylinder = new CylinderGeometry({ height: 1, radiusTop: 1, radiusBottom: 1, radialSegments: 10 });
       #materials = /* @__PURE__ */ new Map();
@@ -87539,6 +91061,8 @@ var init_scene = __esm({
       #structure;
       #showElectrons = false;
       #showLattice = false;
+      #showEdges = true;
+      #showAxes = false;
       #latticePoints = [];
       #repeats = 0;
       #frame = 0;
@@ -87547,18 +91071,20 @@ var init_scene = __esm({
       #yaw = 0.34;
       #pitch = 0.24;
       #bounds = [];
+      #atomRadius = 0;
       constructor(app, host) {
         this.#app = app;
         this.#view = new View3D({
           autoResize: false,
           environment: { skyColor: 16777215, groundColor: 10925251, intensity: 0.94 }
         });
-        app.stage.addChild(this.#view, this.#lattice);
+        app.stage.addChild(this.#view, this.#lattice, this.#axes, ...this.#axisLabels);
+        for (const label of this.#axisLabels) label.visible = false;
         this.#view.setSize(app.screen.width, app.screen.height);
         const sun = new DirectionalLight({ color: 16777215, intensity: 2.15 });
         sun.position.set(3, 6, 7);
         sun.lookAt({ x: 0, y: 0, z: 0 });
-        this.#view.root.addChild(sun, this.#content, this.#electrons);
+        this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons);
         this.#preview = this.#rod();
         this.#preview.material = this.#material(34501);
         this.#preview.visible = false;
@@ -87614,6 +91140,7 @@ var init_scene = __esm({
         mesh.scale.set(radius);
         this.#content.addChild(mesh);
         this.#bounds.push(position);
+        this.#atomRadius = Math.max(this.#atomRadius, radius);
         this.#picks.set(mesh, { id, color, ionic: ionColor !== void 0, opacity, position });
       }
       #renderElectrons(structure, show) {
@@ -87647,21 +91174,29 @@ var init_scene = __esm({
           }
         }
       }
-      setScene(structure, repeats, selection, showElectrons = false, showLattice = false) {
+      setScene(structure, repeats, selection, display) {
         const rebuild = structure !== this.#structure || repeats !== this.#repeats;
-        const latticeVisible = structure.kind === "crystal" && showLattice;
-        if (rebuild || latticeVisible !== this.#showLattice) {
+        const crystal = structure.kind === "crystal";
+        const latticeVisible = crystal && display.lattice;
+        const edgesVisible = crystal && display.edges;
+        const axesVisible = crystal && display.axes;
+        if (rebuild || latticeVisible !== this.#showLattice || edgesVisible !== this.#showEdges || axesVisible !== this.#showAxes) {
           this.#showLattice = latticeVisible;
+          this.#showEdges = edgesVisible;
+          this.#showAxes = axesVisible;
           this.#latticePoints = latticeVisible ? latticePositions(structure, repeats).map(vector4) : [];
           this.#lattice.visible = latticeVisible;
+          this.#edges.visible = edgesVisible;
           this.#draw();
         }
         if (rebuild) {
           this.#structure = structure;
           this.#repeats = repeats;
           this.#bounds = [];
+          this.#atomRadius = 0;
           this.#picks.clear();
           for (const child of this.#content.removeChildren()) child.destroy({ children: true });
+          for (const child of this.#edges.removeChildren()) child.destroy({ children: true });
           if (structure.kind === "crystal") {
             const vectors = cellVectors(structure.cell);
             const corners = cellCorners.map((corner) => cartesian(vectors, scale(corner, repeats)));
@@ -87676,7 +91211,7 @@ var init_scene = __esm({
                   end[axis] = repeats;
                   const edge = this.#rod();
                   this.#line(edge, cartesian(vectors, start), cartesian(vectors, end), 0.024);
-                  this.#content.addChild(edge);
+                  this.#edges.addChild(edge);
                 }
               }
             }
@@ -87700,9 +91235,9 @@ var init_scene = __esm({
             for (const atom of structure.atoms) this.#atom(atom.id, atom.atomicNumber, atom.position, false);
           }
         }
-        if (rebuild || showElectrons !== this.#showElectrons) {
-          this.#showElectrons = showElectrons;
-          this.#renderElectrons(structure, showElectrons);
+        if (rebuild || display.electrons !== this.#showElectrons) {
+          this.#showElectrons = display.electrons;
+          this.#renderElectrons(structure, display.electrons);
           this.#draw();
         }
         const selected = new Set(selection);
@@ -87753,7 +91288,10 @@ var init_scene = __esm({
         this.#target = this.#bounds.length ? min2.map((value, axis) => (value + max2[axis]) / 2) : [0, 0, 0];
         const radius = this.#bounds.length ? Math.max(...this.#bounds.map((point) => Math.hypot(...subtract(point, this.#target)))) : 1;
         const aspect = this.#app.screen.width / this.#app.screen.height;
-        this.#distance = Math.max(4, (radius + 0.7) * 2.7 / Math.min(1, Math.max(0.32, aspect)));
+        const short = Math.min(1, Math.max(0.32, aspect));
+        const outer = radius + this.#atomRadius;
+        const padding = Math.max(0.3, Math.min(0.7, outer * 0.12));
+        this.#distance = Math.max(1.6, (outer + padding) / (Math.tan(CAMERA_FOV / 2 * Math.PI / 180) * short * FIT_FILL));
         this.#camera();
       }
       #camera() {
@@ -87776,8 +91314,38 @@ var init_scene = __esm({
             }
             this.#lattice.fill(2635336).stroke({ color: 16777215, width: 1.2 });
           }
+          this.#drawAxes();
           this.#app.render();
         });
+      }
+      /**
+       * Draws the small orientation cue for the cell axes in the upper right corner.
+       * The arrows keep a fixed screen length, so the cue stays readable at any zoom.
+       */
+      #drawAxes() {
+        this.#axes.clear();
+        for (const label of this.#axisLabels) label.visible = false;
+        const structure = this.#structure;
+        if (!this.#showAxes || structure?.kind !== "crystal") return;
+        const base = this.#view.worldToScreen(vector4(this.#target), this.#projected);
+        if (!base) return;
+        const originX = this.#app.screen.width - AXIS_ORIGIN;
+        const originY = AXIS_ORIGIN;
+        for (const [index, cell] of cellVectors(structure.cell).entries()) {
+          const tip = this.#view.worldToScreen(vector4(add(this.#target, cell)), this.#axisTip, true);
+          if (!tip) continue;
+          const dx = tip.x - base.x;
+          const dy = tip.y - base.y;
+          const length2 = Math.hypot(dx, dy);
+          if (length2 < 1e-3) continue;
+          const x4 = originX + dx / length2 * AXIS_LENGTH;
+          const y5 = originY + dy / length2 * AXIS_LENGTH;
+          this.#axes.moveTo(originX, originY).lineTo(x4, y5).stroke({ color: AXIS_COLORS[index], width: 1.6 });
+          const label = this.#axisLabels[index];
+          label.text = "abc"[index];
+          label.position.set(x4 + dx / length2 * 5 - 3, y5 + dy / length2 * 5 - 6);
+          label.visible = true;
+        }
       }
       destroy() {
         cancelAnimationFrame(this.#frame);
@@ -87787,6 +91355,8 @@ var init_scene = __esm({
         this.#cylinder.destroy();
         this.#bondRegion.destroy();
         this.#loneRegion.destroy();
+        this.#axes.destroy();
+        for (const label of this.#axisLabels) label.destroy();
         for (const material of this.#materials.values()) material.destroy();
       }
     };
@@ -91578,6 +95148,1927 @@ setDefaultAnimation("details.hide", {
   options: { duration: 250, easing: "linear" }
 });
 
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.3KSWVBQ5.js
+var popup_styles_default = i`
+  :host {
+    --arrow-color: var(--sl-color-neutral-1000);
+    --arrow-size: 6px;
+
+    /*
+     * These properties are computed to account for the arrow's dimensions after being rotated 45º. The constant
+     * 0.7071 is derived from sin(45), which is the diagonal size of the arrow's container after rotating.
+     */
+    --arrow-size-diagonal: calc(var(--arrow-size) * 0.7071);
+    --arrow-padding-offset: calc(var(--arrow-size-diagonal) - var(--arrow-size));
+
+    display: contents;
+  }
+
+  .popup {
+    position: absolute;
+    isolation: isolate;
+    max-width: var(--auto-size-available-width, none);
+    max-height: var(--auto-size-available-height, none);
+  }
+
+  .popup--fixed {
+    position: fixed;
+  }
+
+  .popup:not(.popup--active) {
+    display: none;
+  }
+
+  .popup__arrow {
+    position: absolute;
+    width: calc(var(--arrow-size-diagonal) * 2);
+    height: calc(var(--arrow-size-diagonal) * 2);
+    rotate: 45deg;
+    background: var(--arrow-color);
+    z-index: -1;
+  }
+
+  /* Hover bridge */
+  .popup-hover-bridge:not(.popup-hover-bridge--visible) {
+    display: none;
+  }
+
+  .popup-hover-bridge {
+    position: fixed;
+    z-index: calc(var(--sl-z-index-dropdown) - 1);
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    clip-path: polygon(
+      var(--hover-bridge-top-left-x, 0) var(--hover-bridge-top-left-y, 0),
+      var(--hover-bridge-top-right-x, 0) var(--hover-bridge-top-right-y, 0),
+      var(--hover-bridge-bottom-right-x, 0) var(--hover-bridge-bottom-right-y, 0),
+      var(--hover-bridge-bottom-left-x, 0) var(--hover-bridge-bottom-left-y, 0)
+    );
+  }
+`;
+
+// node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs
+var min = Math.min;
+var max = Math.max;
+var round = Math.round;
+var floor = Math.floor;
+var createCoords = (v4) => ({
+  x: v4,
+  y: v4
+});
+var oppositeSideMap = {
+  left: "right",
+  right: "left",
+  bottom: "top",
+  top: "bottom"
+};
+var oppositeAlignmentMap = {
+  start: "end",
+  end: "start"
+};
+function clamp(start, value, end) {
+  return max(start, min(value, end));
+}
+function evaluate(value, param) {
+  return typeof value === "function" ? value(param) : value;
+}
+function getSide(placement) {
+  return placement.split("-")[0];
+}
+function getAlignment(placement) {
+  return placement.split("-")[1];
+}
+function getOppositeAxis(axis) {
+  return axis === "x" ? "y" : "x";
+}
+function getAxisLength(axis) {
+  return axis === "y" ? "height" : "width";
+}
+function getSideAxis(placement) {
+  return ["top", "bottom"].includes(getSide(placement)) ? "y" : "x";
+}
+function getAlignmentAxis(placement) {
+  return getOppositeAxis(getSideAxis(placement));
+}
+function getAlignmentSides(placement, rects, rtl) {
+  if (rtl === void 0) {
+    rtl = false;
+  }
+  const alignment = getAlignment(placement);
+  const alignmentAxis = getAlignmentAxis(placement);
+  const length2 = getAxisLength(alignmentAxis);
+  let mainAlignmentSide = alignmentAxis === "x" ? alignment === (rtl ? "end" : "start") ? "right" : "left" : alignment === "start" ? "bottom" : "top";
+  if (rects.reference[length2] > rects.floating[length2]) {
+    mainAlignmentSide = getOppositePlacement(mainAlignmentSide);
+  }
+  return [mainAlignmentSide, getOppositePlacement(mainAlignmentSide)];
+}
+function getExpandedPlacements(placement) {
+  const oppositePlacement = getOppositePlacement(placement);
+  return [getOppositeAlignmentPlacement(placement), oppositePlacement, getOppositeAlignmentPlacement(oppositePlacement)];
+}
+function getOppositeAlignmentPlacement(placement) {
+  return placement.replace(/start|end/g, (alignment) => oppositeAlignmentMap[alignment]);
+}
+function getSideList(side, isStart, rtl) {
+  const lr = ["left", "right"];
+  const rl = ["right", "left"];
+  const tb = ["top", "bottom"];
+  const bt = ["bottom", "top"];
+  switch (side) {
+    case "top":
+    case "bottom":
+      if (rtl) return isStart ? rl : lr;
+      return isStart ? lr : rl;
+    case "left":
+    case "right":
+      return isStart ? tb : bt;
+    default:
+      return [];
+  }
+}
+function getOppositeAxisPlacements(placement, flipAlignment, direction, rtl) {
+  const alignment = getAlignment(placement);
+  let list = getSideList(getSide(placement), direction === "start", rtl);
+  if (alignment) {
+    list = list.map((side) => side + "-" + alignment);
+    if (flipAlignment) {
+      list = list.concat(list.map(getOppositeAlignmentPlacement));
+    }
+  }
+  return list;
+}
+function getOppositePlacement(placement) {
+  return placement.replace(/left|right|bottom|top/g, (side) => oppositeSideMap[side]);
+}
+function expandPaddingObject(padding) {
+  return {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    ...padding
+  };
+}
+function getPaddingObject(padding) {
+  return typeof padding !== "number" ? expandPaddingObject(padding) : {
+    top: padding,
+    right: padding,
+    bottom: padding,
+    left: padding
+  };
+}
+function rectToClientRect(rect) {
+  const {
+    x: x4,
+    y: y5,
+    width,
+    height
+  } = rect;
+  return {
+    width,
+    height,
+    top: y5,
+    left: x4,
+    right: x4 + width,
+    bottom: y5 + height,
+    x: x4,
+    y: y5
+  };
+}
+
+// node_modules/@floating-ui/core/dist/floating-ui.core.mjs
+function computeCoordsFromPlacement(_ref, placement, rtl) {
+  let {
+    reference: reference2,
+    floating
+  } = _ref;
+  const sideAxis = getSideAxis(placement);
+  const alignmentAxis = getAlignmentAxis(placement);
+  const alignLength = getAxisLength(alignmentAxis);
+  const side = getSide(placement);
+  const isVertical = sideAxis === "y";
+  const commonX = reference2.x + reference2.width / 2 - floating.width / 2;
+  const commonY = reference2.y + reference2.height / 2 - floating.height / 2;
+  const commonAlign = reference2[alignLength] / 2 - floating[alignLength] / 2;
+  let coords;
+  switch (side) {
+    case "top":
+      coords = {
+        x: commonX,
+        y: reference2.y - floating.height
+      };
+      break;
+    case "bottom":
+      coords = {
+        x: commonX,
+        y: reference2.y + reference2.height
+      };
+      break;
+    case "right":
+      coords = {
+        x: reference2.x + reference2.width,
+        y: commonY
+      };
+      break;
+    case "left":
+      coords = {
+        x: reference2.x - floating.width,
+        y: commonY
+      };
+      break;
+    default:
+      coords = {
+        x: reference2.x,
+        y: reference2.y
+      };
+  }
+  switch (getAlignment(placement)) {
+    case "start":
+      coords[alignmentAxis] -= commonAlign * (rtl && isVertical ? -1 : 1);
+      break;
+    case "end":
+      coords[alignmentAxis] += commonAlign * (rtl && isVertical ? -1 : 1);
+      break;
+  }
+  return coords;
+}
+var computePosition = async (reference2, floating, config) => {
+  const {
+    placement = "bottom",
+    strategy = "absolute",
+    middleware = [],
+    platform: platform2
+  } = config;
+  const validMiddleware = middleware.filter(Boolean);
+  const rtl = await (platform2.isRTL == null ? void 0 : platform2.isRTL(floating));
+  let rects = await platform2.getElementRects({
+    reference: reference2,
+    floating,
+    strategy
+  });
+  let {
+    x: x4,
+    y: y5
+  } = computeCoordsFromPlacement(rects, placement, rtl);
+  let statefulPlacement = placement;
+  let middlewareData = {};
+  let resetCount = 0;
+  for (let i9 = 0; i9 < validMiddleware.length; i9++) {
+    const {
+      name,
+      fn
+    } = validMiddleware[i9];
+    const {
+      x: nextX,
+      y: nextY,
+      data,
+      reset
+    } = await fn({
+      x: x4,
+      y: y5,
+      initialPlacement: placement,
+      placement: statefulPlacement,
+      strategy,
+      middlewareData,
+      rects,
+      platform: platform2,
+      elements: {
+        reference: reference2,
+        floating
+      }
+    });
+    x4 = nextX != null ? nextX : x4;
+    y5 = nextY != null ? nextY : y5;
+    middlewareData = {
+      ...middlewareData,
+      [name]: {
+        ...middlewareData[name],
+        ...data
+      }
+    };
+    if (reset && resetCount <= 50) {
+      resetCount++;
+      if (typeof reset === "object") {
+        if (reset.placement) {
+          statefulPlacement = reset.placement;
+        }
+        if (reset.rects) {
+          rects = reset.rects === true ? await platform2.getElementRects({
+            reference: reference2,
+            floating,
+            strategy
+          }) : reset.rects;
+        }
+        ({
+          x: x4,
+          y: y5
+        } = computeCoordsFromPlacement(rects, statefulPlacement, rtl));
+      }
+      i9 = -1;
+    }
+  }
+  return {
+    x: x4,
+    y: y5,
+    placement: statefulPlacement,
+    strategy,
+    middlewareData
+  };
+};
+async function detectOverflow(state, options) {
+  var _await$platform$isEle;
+  if (options === void 0) {
+    options = {};
+  }
+  const {
+    x: x4,
+    y: y5,
+    platform: platform2,
+    rects,
+    elements,
+    strategy
+  } = state;
+  const {
+    boundary = "clippingAncestors",
+    rootBoundary = "viewport",
+    elementContext = "floating",
+    altBoundary = false,
+    padding = 0
+  } = evaluate(options, state);
+  const paddingObject = getPaddingObject(padding);
+  const altContext = elementContext === "floating" ? "reference" : "floating";
+  const element2 = elements[altBoundary ? altContext : elementContext];
+  const clippingClientRect = rectToClientRect(await platform2.getClippingRect({
+    element: ((_await$platform$isEle = await (platform2.isElement == null ? void 0 : platform2.isElement(element2))) != null ? _await$platform$isEle : true) ? element2 : element2.contextElement || await (platform2.getDocumentElement == null ? void 0 : platform2.getDocumentElement(elements.floating)),
+    boundary,
+    rootBoundary,
+    strategy
+  }));
+  const rect = elementContext === "floating" ? {
+    x: x4,
+    y: y5,
+    width: rects.floating.width,
+    height: rects.floating.height
+  } : rects.reference;
+  const offsetParent = await (platform2.getOffsetParent == null ? void 0 : platform2.getOffsetParent(elements.floating));
+  const offsetScale = await (platform2.isElement == null ? void 0 : platform2.isElement(offsetParent)) ? await (platform2.getScale == null ? void 0 : platform2.getScale(offsetParent)) || {
+    x: 1,
+    y: 1
+  } : {
+    x: 1,
+    y: 1
+  };
+  const elementClientRect = rectToClientRect(platform2.convertOffsetParentRelativeRectToViewportRelativeRect ? await platform2.convertOffsetParentRelativeRectToViewportRelativeRect({
+    elements,
+    rect,
+    offsetParent,
+    strategy
+  }) : rect);
+  return {
+    top: (clippingClientRect.top - elementClientRect.top + paddingObject.top) / offsetScale.y,
+    bottom: (elementClientRect.bottom - clippingClientRect.bottom + paddingObject.bottom) / offsetScale.y,
+    left: (clippingClientRect.left - elementClientRect.left + paddingObject.left) / offsetScale.x,
+    right: (elementClientRect.right - clippingClientRect.right + paddingObject.right) / offsetScale.x
+  };
+}
+var arrow = (options) => ({
+  name: "arrow",
+  options,
+  async fn(state) {
+    const {
+      x: x4,
+      y: y5,
+      placement,
+      rects,
+      platform: platform2,
+      elements,
+      middlewareData
+    } = state;
+    const {
+      element: element2,
+      padding = 0
+    } = evaluate(options, state) || {};
+    if (element2 == null) {
+      return {};
+    }
+    const paddingObject = getPaddingObject(padding);
+    const coords = {
+      x: x4,
+      y: y5
+    };
+    const axis = getAlignmentAxis(placement);
+    const length2 = getAxisLength(axis);
+    const arrowDimensions = await platform2.getDimensions(element2);
+    const isYAxis = axis === "y";
+    const minProp = isYAxis ? "top" : "left";
+    const maxProp = isYAxis ? "bottom" : "right";
+    const clientProp = isYAxis ? "clientHeight" : "clientWidth";
+    const endDiff = rects.reference[length2] + rects.reference[axis] - coords[axis] - rects.floating[length2];
+    const startDiff = coords[axis] - rects.reference[axis];
+    const arrowOffsetParent = await (platform2.getOffsetParent == null ? void 0 : platform2.getOffsetParent(element2));
+    let clientSize = arrowOffsetParent ? arrowOffsetParent[clientProp] : 0;
+    if (!clientSize || !await (platform2.isElement == null ? void 0 : platform2.isElement(arrowOffsetParent))) {
+      clientSize = elements.floating[clientProp] || rects.floating[length2];
+    }
+    const centerToReference = endDiff / 2 - startDiff / 2;
+    const largestPossiblePadding = clientSize / 2 - arrowDimensions[length2] / 2 - 1;
+    const minPadding = min(paddingObject[minProp], largestPossiblePadding);
+    const maxPadding = min(paddingObject[maxProp], largestPossiblePadding);
+    const min$1 = minPadding;
+    const max2 = clientSize - arrowDimensions[length2] - maxPadding;
+    const center = clientSize / 2 - arrowDimensions[length2] / 2 + centerToReference;
+    const offset3 = clamp(min$1, center, max2);
+    const shouldAddOffset = !middlewareData.arrow && getAlignment(placement) != null && center !== offset3 && rects.reference[length2] / 2 - (center < min$1 ? minPadding : maxPadding) - arrowDimensions[length2] / 2 < 0;
+    const alignmentOffset = shouldAddOffset ? center < min$1 ? center - min$1 : center - max2 : 0;
+    return {
+      [axis]: coords[axis] + alignmentOffset,
+      data: {
+        [axis]: offset3,
+        centerOffset: center - offset3 - alignmentOffset,
+        ...shouldAddOffset && {
+          alignmentOffset
+        }
+      },
+      reset: shouldAddOffset
+    };
+  }
+});
+var flip = function(options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: "flip",
+    options,
+    async fn(state) {
+      var _middlewareData$arrow, _middlewareData$flip;
+      const {
+        placement,
+        middlewareData,
+        rects,
+        initialPlacement,
+        platform: platform2,
+        elements
+      } = state;
+      const {
+        mainAxis: checkMainAxis = true,
+        crossAxis: checkCrossAxis = true,
+        fallbackPlacements: specifiedFallbackPlacements,
+        fallbackStrategy = "bestFit",
+        fallbackAxisSideDirection = "none",
+        flipAlignment = true,
+        ...detectOverflowOptions
+      } = evaluate(options, state);
+      if ((_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) {
+        return {};
+      }
+      const side = getSide(placement);
+      const initialSideAxis = getSideAxis(initialPlacement);
+      const isBasePlacement = getSide(initialPlacement) === initialPlacement;
+      const rtl = await (platform2.isRTL == null ? void 0 : platform2.isRTL(elements.floating));
+      const fallbackPlacements = specifiedFallbackPlacements || (isBasePlacement || !flipAlignment ? [getOppositePlacement(initialPlacement)] : getExpandedPlacements(initialPlacement));
+      const hasFallbackAxisSideDirection = fallbackAxisSideDirection !== "none";
+      if (!specifiedFallbackPlacements && hasFallbackAxisSideDirection) {
+        fallbackPlacements.push(...getOppositeAxisPlacements(initialPlacement, flipAlignment, fallbackAxisSideDirection, rtl));
+      }
+      const placements2 = [initialPlacement, ...fallbackPlacements];
+      const overflow = await detectOverflow(state, detectOverflowOptions);
+      const overflows = [];
+      let overflowsData = ((_middlewareData$flip = middlewareData.flip) == null ? void 0 : _middlewareData$flip.overflows) || [];
+      if (checkMainAxis) {
+        overflows.push(overflow[side]);
+      }
+      if (checkCrossAxis) {
+        const sides2 = getAlignmentSides(placement, rects, rtl);
+        overflows.push(overflow[sides2[0]], overflow[sides2[1]]);
+      }
+      overflowsData = [...overflowsData, {
+        placement,
+        overflows
+      }];
+      if (!overflows.every((side2) => side2 <= 0)) {
+        var _middlewareData$flip2, _overflowsData$filter;
+        const nextIndex = (((_middlewareData$flip2 = middlewareData.flip) == null ? void 0 : _middlewareData$flip2.index) || 0) + 1;
+        const nextPlacement = placements2[nextIndex];
+        if (nextPlacement) {
+          return {
+            data: {
+              index: nextIndex,
+              overflows: overflowsData
+            },
+            reset: {
+              placement: nextPlacement
+            }
+          };
+        }
+        let resetPlacement = (_overflowsData$filter = overflowsData.filter((d4) => d4.overflows[0] <= 0).sort((a5, b4) => a5.overflows[1] - b4.overflows[1])[0]) == null ? void 0 : _overflowsData$filter.placement;
+        if (!resetPlacement) {
+          switch (fallbackStrategy) {
+            case "bestFit": {
+              var _overflowsData$filter2;
+              const placement2 = (_overflowsData$filter2 = overflowsData.filter((d4) => {
+                if (hasFallbackAxisSideDirection) {
+                  const currentSideAxis = getSideAxis(d4.placement);
+                  return currentSideAxis === initialSideAxis || // Create a bias to the `y` side axis due to horizontal
+                  // reading directions favoring greater width.
+                  currentSideAxis === "y";
+                }
+                return true;
+              }).map((d4) => [d4.placement, d4.overflows.filter((overflow2) => overflow2 > 0).reduce((acc, overflow2) => acc + overflow2, 0)]).sort((a5, b4) => a5[1] - b4[1])[0]) == null ? void 0 : _overflowsData$filter2[0];
+              if (placement2) {
+                resetPlacement = placement2;
+              }
+              break;
+            }
+            case "initialPlacement":
+              resetPlacement = initialPlacement;
+              break;
+          }
+        }
+        if (placement !== resetPlacement) {
+          return {
+            reset: {
+              placement: resetPlacement
+            }
+          };
+        }
+      }
+      return {};
+    }
+  };
+};
+async function convertValueToCoords(state, options) {
+  const {
+    placement,
+    platform: platform2,
+    elements
+  } = state;
+  const rtl = await (platform2.isRTL == null ? void 0 : platform2.isRTL(elements.floating));
+  const side = getSide(placement);
+  const alignment = getAlignment(placement);
+  const isVertical = getSideAxis(placement) === "y";
+  const mainAxisMulti = ["left", "top"].includes(side) ? -1 : 1;
+  const crossAxisMulti = rtl && isVertical ? -1 : 1;
+  const rawValue = evaluate(options, state);
+  let {
+    mainAxis,
+    crossAxis,
+    alignmentAxis
+  } = typeof rawValue === "number" ? {
+    mainAxis: rawValue,
+    crossAxis: 0,
+    alignmentAxis: null
+  } : {
+    mainAxis: rawValue.mainAxis || 0,
+    crossAxis: rawValue.crossAxis || 0,
+    alignmentAxis: rawValue.alignmentAxis
+  };
+  if (alignment && typeof alignmentAxis === "number") {
+    crossAxis = alignment === "end" ? alignmentAxis * -1 : alignmentAxis;
+  }
+  return isVertical ? {
+    x: crossAxis * crossAxisMulti,
+    y: mainAxis * mainAxisMulti
+  } : {
+    x: mainAxis * mainAxisMulti,
+    y: crossAxis * crossAxisMulti
+  };
+}
+var offset = function(options) {
+  if (options === void 0) {
+    options = 0;
+  }
+  return {
+    name: "offset",
+    options,
+    async fn(state) {
+      var _middlewareData$offse, _middlewareData$arrow;
+      const {
+        x: x4,
+        y: y5,
+        placement,
+        middlewareData
+      } = state;
+      const diffCoords = await convertValueToCoords(state, options);
+      if (placement === ((_middlewareData$offse = middlewareData.offset) == null ? void 0 : _middlewareData$offse.placement) && (_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) {
+        return {};
+      }
+      return {
+        x: x4 + diffCoords.x,
+        y: y5 + diffCoords.y,
+        data: {
+          ...diffCoords,
+          placement
+        }
+      };
+    }
+  };
+};
+var shift = function(options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: "shift",
+    options,
+    async fn(state) {
+      const {
+        x: x4,
+        y: y5,
+        placement
+      } = state;
+      const {
+        mainAxis: checkMainAxis = true,
+        crossAxis: checkCrossAxis = false,
+        limiter = {
+          fn: (_ref) => {
+            let {
+              x: x5,
+              y: y6
+            } = _ref;
+            return {
+              x: x5,
+              y: y6
+            };
+          }
+        },
+        ...detectOverflowOptions
+      } = evaluate(options, state);
+      const coords = {
+        x: x4,
+        y: y5
+      };
+      const overflow = await detectOverflow(state, detectOverflowOptions);
+      const crossAxis = getSideAxis(getSide(placement));
+      const mainAxis = getOppositeAxis(crossAxis);
+      let mainAxisCoord = coords[mainAxis];
+      let crossAxisCoord = coords[crossAxis];
+      if (checkMainAxis) {
+        const minSide = mainAxis === "y" ? "top" : "left";
+        const maxSide = mainAxis === "y" ? "bottom" : "right";
+        const min2 = mainAxisCoord + overflow[minSide];
+        const max2 = mainAxisCoord - overflow[maxSide];
+        mainAxisCoord = clamp(min2, mainAxisCoord, max2);
+      }
+      if (checkCrossAxis) {
+        const minSide = crossAxis === "y" ? "top" : "left";
+        const maxSide = crossAxis === "y" ? "bottom" : "right";
+        const min2 = crossAxisCoord + overflow[minSide];
+        const max2 = crossAxisCoord - overflow[maxSide];
+        crossAxisCoord = clamp(min2, crossAxisCoord, max2);
+      }
+      const limitedCoords = limiter.fn({
+        ...state,
+        [mainAxis]: mainAxisCoord,
+        [crossAxis]: crossAxisCoord
+      });
+      return {
+        ...limitedCoords,
+        data: {
+          x: limitedCoords.x - x4,
+          y: limitedCoords.y - y5,
+          enabled: {
+            [mainAxis]: checkMainAxis,
+            [crossAxis]: checkCrossAxis
+          }
+        }
+      };
+    }
+  };
+};
+var size = function(options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: "size",
+    options,
+    async fn(state) {
+      var _state$middlewareData, _state$middlewareData2;
+      const {
+        placement,
+        rects,
+        platform: platform2,
+        elements
+      } = state;
+      const {
+        apply = () => {
+        },
+        ...detectOverflowOptions
+      } = evaluate(options, state);
+      const overflow = await detectOverflow(state, detectOverflowOptions);
+      const side = getSide(placement);
+      const alignment = getAlignment(placement);
+      const isYAxis = getSideAxis(placement) === "y";
+      const {
+        width,
+        height
+      } = rects.floating;
+      let heightSide;
+      let widthSide;
+      if (side === "top" || side === "bottom") {
+        heightSide = side;
+        widthSide = alignment === (await (platform2.isRTL == null ? void 0 : platform2.isRTL(elements.floating)) ? "start" : "end") ? "left" : "right";
+      } else {
+        widthSide = side;
+        heightSide = alignment === "end" ? "top" : "bottom";
+      }
+      const maximumClippingHeight = height - overflow.top - overflow.bottom;
+      const maximumClippingWidth = width - overflow.left - overflow.right;
+      const overflowAvailableHeight = min(height - overflow[heightSide], maximumClippingHeight);
+      const overflowAvailableWidth = min(width - overflow[widthSide], maximumClippingWidth);
+      const noShift = !state.middlewareData.shift;
+      let availableHeight = overflowAvailableHeight;
+      let availableWidth = overflowAvailableWidth;
+      if ((_state$middlewareData = state.middlewareData.shift) != null && _state$middlewareData.enabled.x) {
+        availableWidth = maximumClippingWidth;
+      }
+      if ((_state$middlewareData2 = state.middlewareData.shift) != null && _state$middlewareData2.enabled.y) {
+        availableHeight = maximumClippingHeight;
+      }
+      if (noShift && !alignment) {
+        const xMin = max(overflow.left, 0);
+        const xMax = max(overflow.right, 0);
+        const yMin = max(overflow.top, 0);
+        const yMax = max(overflow.bottom, 0);
+        if (isYAxis) {
+          availableWidth = width - 2 * (xMin !== 0 || xMax !== 0 ? xMin + xMax : max(overflow.left, overflow.right));
+        } else {
+          availableHeight = height - 2 * (yMin !== 0 || yMax !== 0 ? yMin + yMax : max(overflow.top, overflow.bottom));
+        }
+      }
+      await apply({
+        ...state,
+        availableWidth,
+        availableHeight
+      });
+      const nextDimensions = await platform2.getDimensions(elements.floating);
+      if (width !== nextDimensions.width || height !== nextDimensions.height) {
+        return {
+          reset: {
+            rects: true
+          }
+        };
+      }
+      return {};
+    }
+  };
+};
+
+// node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs
+function hasWindow() {
+  return typeof window !== "undefined";
+}
+function getNodeName(node) {
+  if (isNode(node)) {
+    return (node.nodeName || "").toLowerCase();
+  }
+  return "#document";
+}
+function getWindow(node) {
+  var _node$ownerDocument;
+  return (node == null || (_node$ownerDocument = node.ownerDocument) == null ? void 0 : _node$ownerDocument.defaultView) || window;
+}
+function getDocumentElement(node) {
+  var _ref;
+  return (_ref = (isNode(node) ? node.ownerDocument : node.document) || window.document) == null ? void 0 : _ref.documentElement;
+}
+function isNode(value) {
+  if (!hasWindow()) {
+    return false;
+  }
+  return value instanceof Node || value instanceof getWindow(value).Node;
+}
+function isElement(value) {
+  if (!hasWindow()) {
+    return false;
+  }
+  return value instanceof Element || value instanceof getWindow(value).Element;
+}
+function isHTMLElement(value) {
+  if (!hasWindow()) {
+    return false;
+  }
+  return value instanceof HTMLElement || value instanceof getWindow(value).HTMLElement;
+}
+function isShadowRoot(value) {
+  if (!hasWindow() || typeof ShadowRoot === "undefined") {
+    return false;
+  }
+  return value instanceof ShadowRoot || value instanceof getWindow(value).ShadowRoot;
+}
+function isOverflowElement(element2) {
+  const {
+    overflow,
+    overflowX,
+    overflowY,
+    display
+  } = getComputedStyle2(element2);
+  return /auto|scroll|overlay|hidden|clip/.test(overflow + overflowY + overflowX) && !["inline", "contents"].includes(display);
+}
+function isTableElement(element2) {
+  return ["table", "td", "th"].includes(getNodeName(element2));
+}
+function isTopLayer(element2) {
+  return [":popover-open", ":modal"].some((selector) => {
+    try {
+      return element2.matches(selector);
+    } catch (e13) {
+      return false;
+    }
+  });
+}
+function isContainingBlock(elementOrCss) {
+  const webkit = isWebKit();
+  const css = isElement(elementOrCss) ? getComputedStyle2(elementOrCss) : elementOrCss;
+  return ["transform", "translate", "scale", "rotate", "perspective"].some((value) => css[value] ? css[value] !== "none" : false) || (css.containerType ? css.containerType !== "normal" : false) || !webkit && (css.backdropFilter ? css.backdropFilter !== "none" : false) || !webkit && (css.filter ? css.filter !== "none" : false) || ["transform", "translate", "scale", "rotate", "perspective", "filter"].some((value) => (css.willChange || "").includes(value)) || ["paint", "layout", "strict", "content"].some((value) => (css.contain || "").includes(value));
+}
+function getContainingBlock(element2) {
+  let currentNode = getParentNode(element2);
+  while (isHTMLElement(currentNode) && !isLastTraversableNode(currentNode)) {
+    if (isContainingBlock(currentNode)) {
+      return currentNode;
+    } else if (isTopLayer(currentNode)) {
+      return null;
+    }
+    currentNode = getParentNode(currentNode);
+  }
+  return null;
+}
+function isWebKit() {
+  if (typeof CSS === "undefined" || !CSS.supports) return false;
+  return CSS.supports("-webkit-backdrop-filter", "none");
+}
+function isLastTraversableNode(node) {
+  return ["html", "body", "#document"].includes(getNodeName(node));
+}
+function getComputedStyle2(element2) {
+  return getWindow(element2).getComputedStyle(element2);
+}
+function getNodeScroll(element2) {
+  if (isElement(element2)) {
+    return {
+      scrollLeft: element2.scrollLeft,
+      scrollTop: element2.scrollTop
+    };
+  }
+  return {
+    scrollLeft: element2.scrollX,
+    scrollTop: element2.scrollY
+  };
+}
+function getParentNode(node) {
+  if (getNodeName(node) === "html") {
+    return node;
+  }
+  const result = (
+    // Step into the shadow DOM of the parent of a slotted node.
+    node.assignedSlot || // DOM Element detected.
+    node.parentNode || // ShadowRoot detected.
+    isShadowRoot(node) && node.host || // Fallback.
+    getDocumentElement(node)
+  );
+  return isShadowRoot(result) ? result.host : result;
+}
+function getNearestOverflowAncestor(node) {
+  const parentNode = getParentNode(node);
+  if (isLastTraversableNode(parentNode)) {
+    return node.ownerDocument ? node.ownerDocument.body : node.body;
+  }
+  if (isHTMLElement(parentNode) && isOverflowElement(parentNode)) {
+    return parentNode;
+  }
+  return getNearestOverflowAncestor(parentNode);
+}
+function getOverflowAncestors(node, list, traverseIframes) {
+  var _node$ownerDocument2;
+  if (list === void 0) {
+    list = [];
+  }
+  if (traverseIframes === void 0) {
+    traverseIframes = true;
+  }
+  const scrollableAncestor = getNearestOverflowAncestor(node);
+  const isBody = scrollableAncestor === ((_node$ownerDocument2 = node.ownerDocument) == null ? void 0 : _node$ownerDocument2.body);
+  const win = getWindow(scrollableAncestor);
+  if (isBody) {
+    const frameElement = getFrameElement(win);
+    return list.concat(win, win.visualViewport || [], isOverflowElement(scrollableAncestor) ? scrollableAncestor : [], frameElement && traverseIframes ? getOverflowAncestors(frameElement) : []);
+  }
+  return list.concat(scrollableAncestor, getOverflowAncestors(scrollableAncestor, [], traverseIframes));
+}
+function getFrameElement(win) {
+  return win.parent && Object.getPrototypeOf(win.parent) ? win.frameElement : null;
+}
+
+// node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs
+function getCssDimensions(element2) {
+  const css = getComputedStyle2(element2);
+  let width = parseFloat(css.width) || 0;
+  let height = parseFloat(css.height) || 0;
+  const hasOffset = isHTMLElement(element2);
+  const offsetWidth = hasOffset ? element2.offsetWidth : width;
+  const offsetHeight = hasOffset ? element2.offsetHeight : height;
+  const shouldFallback = round(width) !== offsetWidth || round(height) !== offsetHeight;
+  if (shouldFallback) {
+    width = offsetWidth;
+    height = offsetHeight;
+  }
+  return {
+    width,
+    height,
+    $: shouldFallback
+  };
+}
+function unwrapElement(element2) {
+  return !isElement(element2) ? element2.contextElement : element2;
+}
+function getScale(element2) {
+  const domElement = unwrapElement(element2);
+  if (!isHTMLElement(domElement)) {
+    return createCoords(1);
+  }
+  const rect = domElement.getBoundingClientRect();
+  const {
+    width,
+    height,
+    $: $5
+  } = getCssDimensions(domElement);
+  let x4 = ($5 ? round(rect.width) : rect.width) / width;
+  let y5 = ($5 ? round(rect.height) : rect.height) / height;
+  if (!x4 || !Number.isFinite(x4)) {
+    x4 = 1;
+  }
+  if (!y5 || !Number.isFinite(y5)) {
+    y5 = 1;
+  }
+  return {
+    x: x4,
+    y: y5
+  };
+}
+var noOffsets = /* @__PURE__ */ createCoords(0);
+function getVisualOffsets(element2) {
+  const win = getWindow(element2);
+  if (!isWebKit() || !win.visualViewport) {
+    return noOffsets;
+  }
+  return {
+    x: win.visualViewport.offsetLeft,
+    y: win.visualViewport.offsetTop
+  };
+}
+function shouldAddVisualOffsets(element2, isFixed, floatingOffsetParent) {
+  if (isFixed === void 0) {
+    isFixed = false;
+  }
+  if (!floatingOffsetParent || isFixed && floatingOffsetParent !== getWindow(element2)) {
+    return false;
+  }
+  return isFixed;
+}
+function getBoundingClientRect(element2, includeScale, isFixedStrategy, offsetParent) {
+  if (includeScale === void 0) {
+    includeScale = false;
+  }
+  if (isFixedStrategy === void 0) {
+    isFixedStrategy = false;
+  }
+  const clientRect = element2.getBoundingClientRect();
+  const domElement = unwrapElement(element2);
+  let scale2 = createCoords(1);
+  if (includeScale) {
+    if (offsetParent) {
+      if (isElement(offsetParent)) {
+        scale2 = getScale(offsetParent);
+      }
+    } else {
+      scale2 = getScale(element2);
+    }
+  }
+  const visualOffsets = shouldAddVisualOffsets(domElement, isFixedStrategy, offsetParent) ? getVisualOffsets(domElement) : createCoords(0);
+  let x4 = (clientRect.left + visualOffsets.x) / scale2.x;
+  let y5 = (clientRect.top + visualOffsets.y) / scale2.y;
+  let width = clientRect.width / scale2.x;
+  let height = clientRect.height / scale2.y;
+  if (domElement) {
+    const win = getWindow(domElement);
+    const offsetWin = offsetParent && isElement(offsetParent) ? getWindow(offsetParent) : offsetParent;
+    let currentWin = win;
+    let currentIFrame = getFrameElement(currentWin);
+    while (currentIFrame && offsetParent && offsetWin !== currentWin) {
+      const iframeScale = getScale(currentIFrame);
+      const iframeRect = currentIFrame.getBoundingClientRect();
+      const css = getComputedStyle2(currentIFrame);
+      const left = iframeRect.left + (currentIFrame.clientLeft + parseFloat(css.paddingLeft)) * iframeScale.x;
+      const top = iframeRect.top + (currentIFrame.clientTop + parseFloat(css.paddingTop)) * iframeScale.y;
+      x4 *= iframeScale.x;
+      y5 *= iframeScale.y;
+      width *= iframeScale.x;
+      height *= iframeScale.y;
+      x4 += left;
+      y5 += top;
+      currentWin = getWindow(currentIFrame);
+      currentIFrame = getFrameElement(currentWin);
+    }
+  }
+  return rectToClientRect({
+    width,
+    height,
+    x: x4,
+    y: y5
+  });
+}
+function getWindowScrollBarX(element2, rect) {
+  const leftScroll = getNodeScroll(element2).scrollLeft;
+  if (!rect) {
+    return getBoundingClientRect(getDocumentElement(element2)).left + leftScroll;
+  }
+  return rect.left + leftScroll;
+}
+function getHTMLOffset(documentElement, scroll, ignoreScrollbarX) {
+  if (ignoreScrollbarX === void 0) {
+    ignoreScrollbarX = false;
+  }
+  const htmlRect = documentElement.getBoundingClientRect();
+  const x4 = htmlRect.left + scroll.scrollLeft - (ignoreScrollbarX ? 0 : (
+    // RTL <body> scrollbar.
+    getWindowScrollBarX(documentElement, htmlRect)
+  ));
+  const y5 = htmlRect.top + scroll.scrollTop;
+  return {
+    x: x4,
+    y: y5
+  };
+}
+function convertOffsetParentRelativeRectToViewportRelativeRect(_ref) {
+  let {
+    elements,
+    rect,
+    offsetParent,
+    strategy
+  } = _ref;
+  const isFixed = strategy === "fixed";
+  const documentElement = getDocumentElement(offsetParent);
+  const topLayer = elements ? isTopLayer(elements.floating) : false;
+  if (offsetParent === documentElement || topLayer && isFixed) {
+    return rect;
+  }
+  let scroll = {
+    scrollLeft: 0,
+    scrollTop: 0
+  };
+  let scale2 = createCoords(1);
+  const offsets = createCoords(0);
+  const isOffsetParentAnElement = isHTMLElement(offsetParent);
+  if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
+    if (getNodeName(offsetParent) !== "body" || isOverflowElement(documentElement)) {
+      scroll = getNodeScroll(offsetParent);
+    }
+    if (isHTMLElement(offsetParent)) {
+      const offsetRect = getBoundingClientRect(offsetParent);
+      scale2 = getScale(offsetParent);
+      offsets.x = offsetRect.x + offsetParent.clientLeft;
+      offsets.y = offsetRect.y + offsetParent.clientTop;
+    }
+  }
+  const htmlOffset = documentElement && !isOffsetParentAnElement && !isFixed ? getHTMLOffset(documentElement, scroll, true) : createCoords(0);
+  return {
+    width: rect.width * scale2.x,
+    height: rect.height * scale2.y,
+    x: rect.x * scale2.x - scroll.scrollLeft * scale2.x + offsets.x + htmlOffset.x,
+    y: rect.y * scale2.y - scroll.scrollTop * scale2.y + offsets.y + htmlOffset.y
+  };
+}
+function getClientRects(element2) {
+  return Array.from(element2.getClientRects());
+}
+function getDocumentRect(element2) {
+  const html = getDocumentElement(element2);
+  const scroll = getNodeScroll(element2);
+  const body = element2.ownerDocument.body;
+  const width = max(html.scrollWidth, html.clientWidth, body.scrollWidth, body.clientWidth);
+  const height = max(html.scrollHeight, html.clientHeight, body.scrollHeight, body.clientHeight);
+  let x4 = -scroll.scrollLeft + getWindowScrollBarX(element2);
+  const y5 = -scroll.scrollTop;
+  if (getComputedStyle2(body).direction === "rtl") {
+    x4 += max(html.clientWidth, body.clientWidth) - width;
+  }
+  return {
+    width,
+    height,
+    x: x4,
+    y: y5
+  };
+}
+function getViewportRect(element2, strategy) {
+  const win = getWindow(element2);
+  const html = getDocumentElement(element2);
+  const visualViewport = win.visualViewport;
+  let width = html.clientWidth;
+  let height = html.clientHeight;
+  let x4 = 0;
+  let y5 = 0;
+  if (visualViewport) {
+    width = visualViewport.width;
+    height = visualViewport.height;
+    const visualViewportBased = isWebKit();
+    if (!visualViewportBased || visualViewportBased && strategy === "fixed") {
+      x4 = visualViewport.offsetLeft;
+      y5 = visualViewport.offsetTop;
+    }
+  }
+  return {
+    width,
+    height,
+    x: x4,
+    y: y5
+  };
+}
+function getInnerBoundingClientRect(element2, strategy) {
+  const clientRect = getBoundingClientRect(element2, true, strategy === "fixed");
+  const top = clientRect.top + element2.clientTop;
+  const left = clientRect.left + element2.clientLeft;
+  const scale2 = isHTMLElement(element2) ? getScale(element2) : createCoords(1);
+  const width = element2.clientWidth * scale2.x;
+  const height = element2.clientHeight * scale2.y;
+  const x4 = left * scale2.x;
+  const y5 = top * scale2.y;
+  return {
+    width,
+    height,
+    x: x4,
+    y: y5
+  };
+}
+function getClientRectFromClippingAncestor(element2, clippingAncestor, strategy) {
+  let rect;
+  if (clippingAncestor === "viewport") {
+    rect = getViewportRect(element2, strategy);
+  } else if (clippingAncestor === "document") {
+    rect = getDocumentRect(getDocumentElement(element2));
+  } else if (isElement(clippingAncestor)) {
+    rect = getInnerBoundingClientRect(clippingAncestor, strategy);
+  } else {
+    const visualOffsets = getVisualOffsets(element2);
+    rect = {
+      x: clippingAncestor.x - visualOffsets.x,
+      y: clippingAncestor.y - visualOffsets.y,
+      width: clippingAncestor.width,
+      height: clippingAncestor.height
+    };
+  }
+  return rectToClientRect(rect);
+}
+function hasFixedPositionAncestor(element2, stopNode) {
+  const parentNode = getParentNode(element2);
+  if (parentNode === stopNode || !isElement(parentNode) || isLastTraversableNode(parentNode)) {
+    return false;
+  }
+  return getComputedStyle2(parentNode).position === "fixed" || hasFixedPositionAncestor(parentNode, stopNode);
+}
+function getClippingElementAncestors(element2, cache4) {
+  const cachedResult = cache4.get(element2);
+  if (cachedResult) {
+    return cachedResult;
+  }
+  let result = getOverflowAncestors(element2, [], false).filter((el) => isElement(el) && getNodeName(el) !== "body");
+  let currentContainingBlockComputedStyle = null;
+  const elementIsFixed = getComputedStyle2(element2).position === "fixed";
+  let currentNode = elementIsFixed ? getParentNode(element2) : element2;
+  while (isElement(currentNode) && !isLastTraversableNode(currentNode)) {
+    const computedStyle = getComputedStyle2(currentNode);
+    const currentNodeIsContaining = isContainingBlock(currentNode);
+    if (!currentNodeIsContaining && computedStyle.position === "fixed") {
+      currentContainingBlockComputedStyle = null;
+    }
+    const shouldDropCurrentNode = elementIsFixed ? !currentNodeIsContaining && !currentContainingBlockComputedStyle : !currentNodeIsContaining && computedStyle.position === "static" && !!currentContainingBlockComputedStyle && ["absolute", "fixed"].includes(currentContainingBlockComputedStyle.position) || isOverflowElement(currentNode) && !currentNodeIsContaining && hasFixedPositionAncestor(element2, currentNode);
+    if (shouldDropCurrentNode) {
+      result = result.filter((ancestor) => ancestor !== currentNode);
+    } else {
+      currentContainingBlockComputedStyle = computedStyle;
+    }
+    currentNode = getParentNode(currentNode);
+  }
+  cache4.set(element2, result);
+  return result;
+}
+function getClippingRect(_ref) {
+  let {
+    element: element2,
+    boundary,
+    rootBoundary,
+    strategy
+  } = _ref;
+  const elementClippingAncestors = boundary === "clippingAncestors" ? isTopLayer(element2) ? [] : getClippingElementAncestors(element2, this._c) : [].concat(boundary);
+  const clippingAncestors = [...elementClippingAncestors, rootBoundary];
+  const firstClippingAncestor = clippingAncestors[0];
+  const clippingRect = clippingAncestors.reduce((accRect, clippingAncestor) => {
+    const rect = getClientRectFromClippingAncestor(element2, clippingAncestor, strategy);
+    accRect.top = max(rect.top, accRect.top);
+    accRect.right = min(rect.right, accRect.right);
+    accRect.bottom = min(rect.bottom, accRect.bottom);
+    accRect.left = max(rect.left, accRect.left);
+    return accRect;
+  }, getClientRectFromClippingAncestor(element2, firstClippingAncestor, strategy));
+  return {
+    width: clippingRect.right - clippingRect.left,
+    height: clippingRect.bottom - clippingRect.top,
+    x: clippingRect.left,
+    y: clippingRect.top
+  };
+}
+function getDimensions(element2) {
+  const {
+    width,
+    height
+  } = getCssDimensions(element2);
+  return {
+    width,
+    height
+  };
+}
+function getRectRelativeToOffsetParent(element2, offsetParent, strategy) {
+  const isOffsetParentAnElement = isHTMLElement(offsetParent);
+  const documentElement = getDocumentElement(offsetParent);
+  const isFixed = strategy === "fixed";
+  const rect = getBoundingClientRect(element2, true, isFixed, offsetParent);
+  let scroll = {
+    scrollLeft: 0,
+    scrollTop: 0
+  };
+  const offsets = createCoords(0);
+  if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
+    if (getNodeName(offsetParent) !== "body" || isOverflowElement(documentElement)) {
+      scroll = getNodeScroll(offsetParent);
+    }
+    if (isOffsetParentAnElement) {
+      const offsetRect = getBoundingClientRect(offsetParent, true, isFixed, offsetParent);
+      offsets.x = offsetRect.x + offsetParent.clientLeft;
+      offsets.y = offsetRect.y + offsetParent.clientTop;
+    } else if (documentElement) {
+      offsets.x = getWindowScrollBarX(documentElement);
+    }
+  }
+  const htmlOffset = documentElement && !isOffsetParentAnElement && !isFixed ? getHTMLOffset(documentElement, scroll) : createCoords(0);
+  const x4 = rect.left + scroll.scrollLeft - offsets.x - htmlOffset.x;
+  const y5 = rect.top + scroll.scrollTop - offsets.y - htmlOffset.y;
+  return {
+    x: x4,
+    y: y5,
+    width: rect.width,
+    height: rect.height
+  };
+}
+function isStaticPositioned(element2) {
+  return getComputedStyle2(element2).position === "static";
+}
+function getTrueOffsetParent(element2, polyfill) {
+  if (!isHTMLElement(element2) || getComputedStyle2(element2).position === "fixed") {
+    return null;
+  }
+  if (polyfill) {
+    return polyfill(element2);
+  }
+  let rawOffsetParent = element2.offsetParent;
+  if (getDocumentElement(element2) === rawOffsetParent) {
+    rawOffsetParent = rawOffsetParent.ownerDocument.body;
+  }
+  return rawOffsetParent;
+}
+function getOffsetParent(element2, polyfill) {
+  const win = getWindow(element2);
+  if (isTopLayer(element2)) {
+    return win;
+  }
+  if (!isHTMLElement(element2)) {
+    let svgOffsetParent = getParentNode(element2);
+    while (svgOffsetParent && !isLastTraversableNode(svgOffsetParent)) {
+      if (isElement(svgOffsetParent) && !isStaticPositioned(svgOffsetParent)) {
+        return svgOffsetParent;
+      }
+      svgOffsetParent = getParentNode(svgOffsetParent);
+    }
+    return win;
+  }
+  let offsetParent = getTrueOffsetParent(element2, polyfill);
+  while (offsetParent && isTableElement(offsetParent) && isStaticPositioned(offsetParent)) {
+    offsetParent = getTrueOffsetParent(offsetParent, polyfill);
+  }
+  if (offsetParent && isLastTraversableNode(offsetParent) && isStaticPositioned(offsetParent) && !isContainingBlock(offsetParent)) {
+    return win;
+  }
+  return offsetParent || getContainingBlock(element2) || win;
+}
+var getElementRects = async function(data) {
+  const getOffsetParentFn = this.getOffsetParent || getOffsetParent;
+  const getDimensionsFn = this.getDimensions;
+  const floatingDimensions = await getDimensionsFn(data.floating);
+  return {
+    reference: getRectRelativeToOffsetParent(data.reference, await getOffsetParentFn(data.floating), data.strategy),
+    floating: {
+      x: 0,
+      y: 0,
+      width: floatingDimensions.width,
+      height: floatingDimensions.height
+    }
+  };
+};
+function isRTL(element2) {
+  return getComputedStyle2(element2).direction === "rtl";
+}
+var platform = {
+  convertOffsetParentRelativeRectToViewportRelativeRect,
+  getDocumentElement,
+  getClippingRect,
+  getOffsetParent,
+  getElementRects,
+  getClientRects,
+  getDimensions,
+  getScale,
+  isElement,
+  isRTL
+};
+function rectsAreEqual(a5, b4) {
+  return a5.x === b4.x && a5.y === b4.y && a5.width === b4.width && a5.height === b4.height;
+}
+function observeMove(element2, onMove) {
+  let io = null;
+  let timeoutId;
+  const root = getDocumentElement(element2);
+  function cleanup() {
+    var _io;
+    clearTimeout(timeoutId);
+    (_io = io) == null || _io.disconnect();
+    io = null;
+  }
+  function refresh(skip, threshold) {
+    if (skip === void 0) {
+      skip = false;
+    }
+    if (threshold === void 0) {
+      threshold = 1;
+    }
+    cleanup();
+    const elementRectForRootMargin = element2.getBoundingClientRect();
+    const {
+      left,
+      top,
+      width,
+      height
+    } = elementRectForRootMargin;
+    if (!skip) {
+      onMove();
+    }
+    if (!width || !height) {
+      return;
+    }
+    const insetTop = floor(top);
+    const insetRight = floor(root.clientWidth - (left + width));
+    const insetBottom = floor(root.clientHeight - (top + height));
+    const insetLeft = floor(left);
+    const rootMargin = -insetTop + "px " + -insetRight + "px " + -insetBottom + "px " + -insetLeft + "px";
+    const options = {
+      rootMargin,
+      threshold: max(0, min(1, threshold)) || 1
+    };
+    let isFirstUpdate = true;
+    function handleObserve(entries2) {
+      const ratio = entries2[0].intersectionRatio;
+      if (ratio !== threshold) {
+        if (!isFirstUpdate) {
+          return refresh();
+        }
+        if (!ratio) {
+          timeoutId = setTimeout(() => {
+            refresh(false, 1e-7);
+          }, 1e3);
+        } else {
+          refresh(false, ratio);
+        }
+      }
+      if (ratio === 1 && !rectsAreEqual(elementRectForRootMargin, element2.getBoundingClientRect())) {
+        refresh();
+      }
+      isFirstUpdate = false;
+    }
+    try {
+      io = new IntersectionObserver(handleObserve, {
+        ...options,
+        // Handle <iframe>s
+        root: root.ownerDocument
+      });
+    } catch (e13) {
+      io = new IntersectionObserver(handleObserve, options);
+    }
+    io.observe(element2);
+  }
+  refresh(true);
+  return cleanup;
+}
+function autoUpdate(reference2, floating, update2, options) {
+  if (options === void 0) {
+    options = {};
+  }
+  const {
+    ancestorScroll = true,
+    ancestorResize = true,
+    elementResize = typeof ResizeObserver === "function",
+    layoutShift = typeof IntersectionObserver === "function",
+    animationFrame = false
+  } = options;
+  const referenceEl = unwrapElement(reference2);
+  const ancestors = ancestorScroll || ancestorResize ? [...referenceEl ? getOverflowAncestors(referenceEl) : [], ...getOverflowAncestors(floating)] : [];
+  ancestors.forEach((ancestor) => {
+    ancestorScroll && ancestor.addEventListener("scroll", update2, {
+      passive: true
+    });
+    ancestorResize && ancestor.addEventListener("resize", update2);
+  });
+  const cleanupIo = referenceEl && layoutShift ? observeMove(referenceEl, update2) : null;
+  let reobserveFrame = -1;
+  let resizeObserver = null;
+  if (elementResize) {
+    resizeObserver = new ResizeObserver((_ref) => {
+      let [firstEntry] = _ref;
+      if (firstEntry && firstEntry.target === referenceEl && resizeObserver) {
+        resizeObserver.unobserve(floating);
+        cancelAnimationFrame(reobserveFrame);
+        reobserveFrame = requestAnimationFrame(() => {
+          var _resizeObserver2;
+          (_resizeObserver2 = resizeObserver) == null || _resizeObserver2.observe(floating);
+        });
+      }
+      update2();
+    });
+    if (referenceEl && !animationFrame) {
+      resizeObserver.observe(referenceEl);
+    }
+    resizeObserver.observe(floating);
+  }
+  let frameId;
+  let prevRefRect = animationFrame ? getBoundingClientRect(reference2) : null;
+  if (animationFrame) {
+    frameLoop();
+  }
+  function frameLoop() {
+    const nextRefRect = getBoundingClientRect(reference2);
+    if (prevRefRect && !rectsAreEqual(prevRefRect, nextRefRect)) {
+      update2();
+    }
+    prevRefRect = nextRefRect;
+    frameId = requestAnimationFrame(frameLoop);
+  }
+  update2();
+  return () => {
+    var _resizeObserver2;
+    ancestors.forEach((ancestor) => {
+      ancestorScroll && ancestor.removeEventListener("scroll", update2);
+      ancestorResize && ancestor.removeEventListener("resize", update2);
+    });
+    cleanupIo == null || cleanupIo();
+    (_resizeObserver2 = resizeObserver) == null || _resizeObserver2.disconnect();
+    resizeObserver = null;
+    if (animationFrame) {
+      cancelAnimationFrame(frameId);
+    }
+  };
+}
+var offset2 = offset;
+var shift2 = shift;
+var flip2 = flip;
+var size2 = size;
+var arrow2 = arrow;
+var computePosition2 = (reference2, floating, options) => {
+  const cache4 = /* @__PURE__ */ new Map();
+  const mergedOptions = {
+    platform,
+    ...options
+  };
+  const platformWithCache = {
+    ...mergedOptions.platform,
+    _c: cache4
+  };
+  return computePosition(reference2, floating, {
+    ...mergedOptions,
+    platform: platformWithCache
+  });
+};
+
+// node_modules/composed-offset-position/dist/composed-offset-position.browser.min.mjs
+function e11(t8) {
+  return i8(t8);
+}
+function r10(t8) {
+  return t8.assignedSlot ? t8.assignedSlot : t8.parentNode instanceof ShadowRoot ? t8.parentNode.host : t8.parentNode;
+}
+function i8(e13) {
+  for (let t8 = e13; t8; t8 = r10(t8)) if (t8 instanceof Element && "none" === getComputedStyle(t8).display) return null;
+  for (let n10 = r10(e13); n10; n10 = r10(n10)) {
+    if (!(n10 instanceof Element)) continue;
+    const e14 = getComputedStyle(n10);
+    if ("contents" !== e14.display) {
+      if ("static" !== e14.position || isContainingBlock(e14)) return n10;
+      if ("BODY" === n10.tagName) return n10;
+    }
+  }
+  return null;
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AR3BL5H3.js
+function isVirtualElement(e13) {
+  return e13 !== null && typeof e13 === "object" && "getBoundingClientRect" in e13 && ("contextElement" in e13 ? e13 instanceof Element : true);
+}
+var SlPopup = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.localize = new LocalizeController2(this);
+    this.active = false;
+    this.placement = "top";
+    this.strategy = "absolute";
+    this.distance = 0;
+    this.skidding = 0;
+    this.arrow = false;
+    this.arrowPlacement = "anchor";
+    this.arrowPadding = 10;
+    this.flip = false;
+    this.flipFallbackPlacements = "";
+    this.flipFallbackStrategy = "best-fit";
+    this.flipPadding = 0;
+    this.shift = false;
+    this.shiftPadding = 0;
+    this.autoSizePadding = 0;
+    this.hoverBridge = false;
+    this.updateHoverBridge = () => {
+      if (this.hoverBridge && this.anchorEl) {
+        const anchorRect = this.anchorEl.getBoundingClientRect();
+        const popupRect = this.popup.getBoundingClientRect();
+        const isVertical = this.placement.includes("top") || this.placement.includes("bottom");
+        let topLeftX = 0;
+        let topLeftY = 0;
+        let topRightX = 0;
+        let topRightY = 0;
+        let bottomLeftX = 0;
+        let bottomLeftY = 0;
+        let bottomRightX = 0;
+        let bottomRightY = 0;
+        if (isVertical) {
+          if (anchorRect.top < popupRect.top) {
+            topLeftX = anchorRect.left;
+            topLeftY = anchorRect.bottom;
+            topRightX = anchorRect.right;
+            topRightY = anchorRect.bottom;
+            bottomLeftX = popupRect.left;
+            bottomLeftY = popupRect.top;
+            bottomRightX = popupRect.right;
+            bottomRightY = popupRect.top;
+          } else {
+            topLeftX = popupRect.left;
+            topLeftY = popupRect.bottom;
+            topRightX = popupRect.right;
+            topRightY = popupRect.bottom;
+            bottomLeftX = anchorRect.left;
+            bottomLeftY = anchorRect.top;
+            bottomRightX = anchorRect.right;
+            bottomRightY = anchorRect.top;
+          }
+        } else {
+          if (anchorRect.left < popupRect.left) {
+            topLeftX = anchorRect.right;
+            topLeftY = anchorRect.top;
+            topRightX = popupRect.left;
+            topRightY = popupRect.top;
+            bottomLeftX = anchorRect.right;
+            bottomLeftY = anchorRect.bottom;
+            bottomRightX = popupRect.left;
+            bottomRightY = popupRect.bottom;
+          } else {
+            topLeftX = popupRect.right;
+            topLeftY = popupRect.top;
+            topRightX = anchorRect.left;
+            topRightY = anchorRect.top;
+            bottomLeftX = popupRect.right;
+            bottomLeftY = popupRect.bottom;
+            bottomRightX = anchorRect.left;
+            bottomRightY = anchorRect.bottom;
+          }
+        }
+        this.style.setProperty("--hover-bridge-top-left-x", `${topLeftX}px`);
+        this.style.setProperty("--hover-bridge-top-left-y", `${topLeftY}px`);
+        this.style.setProperty("--hover-bridge-top-right-x", `${topRightX}px`);
+        this.style.setProperty("--hover-bridge-top-right-y", `${topRightY}px`);
+        this.style.setProperty("--hover-bridge-bottom-left-x", `${bottomLeftX}px`);
+        this.style.setProperty("--hover-bridge-bottom-left-y", `${bottomLeftY}px`);
+        this.style.setProperty("--hover-bridge-bottom-right-x", `${bottomRightX}px`);
+        this.style.setProperty("--hover-bridge-bottom-right-y", `${bottomRightY}px`);
+      }
+    };
+  }
+  async connectedCallback() {
+    super.connectedCallback();
+    await this.updateComplete;
+    this.start();
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.stop();
+  }
+  async updated(changedProps) {
+    super.updated(changedProps);
+    if (changedProps.has("active")) {
+      if (this.active) {
+        this.start();
+      } else {
+        this.stop();
+      }
+    }
+    if (changedProps.has("anchor")) {
+      this.handleAnchorChange();
+    }
+    if (this.active) {
+      await this.updateComplete;
+      this.reposition();
+    }
+  }
+  async handleAnchorChange() {
+    await this.stop();
+    if (this.anchor && typeof this.anchor === "string") {
+      const root = this.getRootNode();
+      this.anchorEl = root.getElementById(this.anchor);
+    } else if (this.anchor instanceof Element || isVirtualElement(this.anchor)) {
+      this.anchorEl = this.anchor;
+    } else {
+      this.anchorEl = this.querySelector('[slot="anchor"]');
+    }
+    if (this.anchorEl instanceof HTMLSlotElement) {
+      this.anchorEl = this.anchorEl.assignedElements({ flatten: true })[0];
+    }
+    if (this.anchorEl && this.active) {
+      this.start();
+    }
+  }
+  start() {
+    if (!this.anchorEl || !this.active) {
+      return;
+    }
+    this.cleanup = autoUpdate(this.anchorEl, this.popup, () => {
+      this.reposition();
+    });
+  }
+  async stop() {
+    return new Promise((resolve) => {
+      if (this.cleanup) {
+        this.cleanup();
+        this.cleanup = void 0;
+        this.removeAttribute("data-current-placement");
+        this.style.removeProperty("--auto-size-available-width");
+        this.style.removeProperty("--auto-size-available-height");
+        requestAnimationFrame(() => resolve());
+      } else {
+        resolve();
+      }
+    });
+  }
+  /** Forces the popup to recalculate and reposition itself. */
+  reposition() {
+    if (!this.active || !this.anchorEl) {
+      return;
+    }
+    const middleware = [
+      // The offset middleware goes first
+      offset2({ mainAxis: this.distance, crossAxis: this.skidding })
+    ];
+    if (this.sync) {
+      middleware.push(
+        size2({
+          apply: ({ rects }) => {
+            const syncWidth = this.sync === "width" || this.sync === "both";
+            const syncHeight = this.sync === "height" || this.sync === "both";
+            this.popup.style.width = syncWidth ? `${rects.reference.width}px` : "";
+            this.popup.style.height = syncHeight ? `${rects.reference.height}px` : "";
+          }
+        })
+      );
+    } else {
+      this.popup.style.width = "";
+      this.popup.style.height = "";
+    }
+    if (this.flip) {
+      middleware.push(
+        flip2({
+          boundary: this.flipBoundary,
+          // @ts-expect-error - We're converting a string attribute to an array here
+          fallbackPlacements: this.flipFallbackPlacements,
+          fallbackStrategy: this.flipFallbackStrategy === "best-fit" ? "bestFit" : "initialPlacement",
+          padding: this.flipPadding
+        })
+      );
+    }
+    if (this.shift) {
+      middleware.push(
+        shift2({
+          boundary: this.shiftBoundary,
+          padding: this.shiftPadding
+        })
+      );
+    }
+    if (this.autoSize) {
+      middleware.push(
+        size2({
+          boundary: this.autoSizeBoundary,
+          padding: this.autoSizePadding,
+          apply: ({ availableWidth, availableHeight }) => {
+            if (this.autoSize === "vertical" || this.autoSize === "both") {
+              this.style.setProperty("--auto-size-available-height", `${availableHeight}px`);
+            } else {
+              this.style.removeProperty("--auto-size-available-height");
+            }
+            if (this.autoSize === "horizontal" || this.autoSize === "both") {
+              this.style.setProperty("--auto-size-available-width", `${availableWidth}px`);
+            } else {
+              this.style.removeProperty("--auto-size-available-width");
+            }
+          }
+        })
+      );
+    } else {
+      this.style.removeProperty("--auto-size-available-width");
+      this.style.removeProperty("--auto-size-available-height");
+    }
+    if (this.arrow) {
+      middleware.push(
+        arrow2({
+          element: this.arrowEl,
+          padding: this.arrowPadding
+        })
+      );
+    }
+    const getOffsetParent2 = this.strategy === "absolute" ? (element2) => platform.getOffsetParent(element2, e11) : platform.getOffsetParent;
+    computePosition2(this.anchorEl, this.popup, {
+      placement: this.placement,
+      middleware,
+      strategy: this.strategy,
+      platform: __spreadProps(__spreadValues({}, platform), {
+        getOffsetParent: getOffsetParent2
+      })
+    }).then(({ x: x4, y: y5, middlewareData, placement }) => {
+      const isRtl = this.localize.dir() === "rtl";
+      const staticSide = { top: "bottom", right: "left", bottom: "top", left: "right" }[placement.split("-")[0]];
+      this.setAttribute("data-current-placement", placement);
+      Object.assign(this.popup.style, {
+        left: `${x4}px`,
+        top: `${y5}px`
+      });
+      if (this.arrow) {
+        const arrowX = middlewareData.arrow.x;
+        const arrowY = middlewareData.arrow.y;
+        let top = "";
+        let right = "";
+        let bottom = "";
+        let left = "";
+        if (this.arrowPlacement === "start") {
+          const value = typeof arrowX === "number" ? `calc(${this.arrowPadding}px - var(--arrow-padding-offset))` : "";
+          top = typeof arrowY === "number" ? `calc(${this.arrowPadding}px - var(--arrow-padding-offset))` : "";
+          right = isRtl ? value : "";
+          left = isRtl ? "" : value;
+        } else if (this.arrowPlacement === "end") {
+          const value = typeof arrowX === "number" ? `calc(${this.arrowPadding}px - var(--arrow-padding-offset))` : "";
+          right = isRtl ? "" : value;
+          left = isRtl ? value : "";
+          bottom = typeof arrowY === "number" ? `calc(${this.arrowPadding}px - var(--arrow-padding-offset))` : "";
+        } else if (this.arrowPlacement === "center") {
+          left = typeof arrowX === "number" ? `calc(50% - var(--arrow-size-diagonal))` : "";
+          top = typeof arrowY === "number" ? `calc(50% - var(--arrow-size-diagonal))` : "";
+        } else {
+          left = typeof arrowX === "number" ? `${arrowX}px` : "";
+          top = typeof arrowY === "number" ? `${arrowY}px` : "";
+        }
+        Object.assign(this.arrowEl.style, {
+          top,
+          right,
+          bottom,
+          left,
+          [staticSide]: "calc(var(--arrow-size-diagonal) * -1)"
+        });
+      }
+    });
+    requestAnimationFrame(() => this.updateHoverBridge());
+    this.emit("sl-reposition");
+  }
+  render() {
+    return x2`
+      <slot name="anchor" @slotchange=${this.handleAnchorChange}></slot>
+
+      <span
+        part="hover-bridge"
+        class=${e10({
+      "popup-hover-bridge": true,
+      "popup-hover-bridge--visible": this.hoverBridge && this.active
+    })}
+      ></span>
+
+      <div
+        part="popup"
+        class=${e10({
+      popup: true,
+      "popup--active": this.active,
+      "popup--fixed": this.strategy === "fixed",
+      "popup--has-arrow": this.arrow
+    })}
+      >
+        <slot></slot>
+        ${this.arrow ? x2`<div part="arrow" class="popup__arrow" role="presentation"></div>` : ""}
+      </div>
+    `;
+  }
+};
+SlPopup.styles = [component_styles_default, popup_styles_default];
+__decorateClass([
+  e7(".popup")
+], SlPopup.prototype, "popup", 2);
+__decorateClass([
+  e7(".popup__arrow")
+], SlPopup.prototype, "arrowEl", 2);
+__decorateClass([
+  n8()
+], SlPopup.prototype, "anchor", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlPopup.prototype, "active", 2);
+__decorateClass([
+  n8({ reflect: true })
+], SlPopup.prototype, "placement", 2);
+__decorateClass([
+  n8({ reflect: true })
+], SlPopup.prototype, "strategy", 2);
+__decorateClass([
+  n8({ type: Number })
+], SlPopup.prototype, "distance", 2);
+__decorateClass([
+  n8({ type: Number })
+], SlPopup.prototype, "skidding", 2);
+__decorateClass([
+  n8({ type: Boolean })
+], SlPopup.prototype, "arrow", 2);
+__decorateClass([
+  n8({ attribute: "arrow-placement" })
+], SlPopup.prototype, "arrowPlacement", 2);
+__decorateClass([
+  n8({ attribute: "arrow-padding", type: Number })
+], SlPopup.prototype, "arrowPadding", 2);
+__decorateClass([
+  n8({ type: Boolean })
+], SlPopup.prototype, "flip", 2);
+__decorateClass([
+  n8({
+    attribute: "flip-fallback-placements",
+    converter: {
+      fromAttribute: (value) => {
+        return value.split(" ").map((p5) => p5.trim()).filter((p5) => p5 !== "");
+      },
+      toAttribute: (value) => {
+        return value.join(" ");
+      }
+    }
+  })
+], SlPopup.prototype, "flipFallbackPlacements", 2);
+__decorateClass([
+  n8({ attribute: "flip-fallback-strategy" })
+], SlPopup.prototype, "flipFallbackStrategy", 2);
+__decorateClass([
+  n8({ type: Object })
+], SlPopup.prototype, "flipBoundary", 2);
+__decorateClass([
+  n8({ attribute: "flip-padding", type: Number })
+], SlPopup.prototype, "flipPadding", 2);
+__decorateClass([
+  n8({ type: Boolean })
+], SlPopup.prototype, "shift", 2);
+__decorateClass([
+  n8({ type: Object })
+], SlPopup.prototype, "shiftBoundary", 2);
+__decorateClass([
+  n8({ attribute: "shift-padding", type: Number })
+], SlPopup.prototype, "shiftPadding", 2);
+__decorateClass([
+  n8({ attribute: "auto-size" })
+], SlPopup.prototype, "autoSize", 2);
+__decorateClass([
+  n8()
+], SlPopup.prototype, "sync", 2);
+__decorateClass([
+  n8({ type: Object })
+], SlPopup.prototype, "autoSizeBoundary", 2);
+__decorateClass([
+  n8({ attribute: "auto-size-padding", type: Number })
+], SlPopup.prototype, "autoSizePadding", 2);
+__decorateClass([
+  n8({ attribute: "hover-bridge", type: Boolean })
+], SlPopup.prototype, "hoverBridge", 2);
+
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.V2OL7VMD.js
 var tag_styles_default = i`
   :host {
@@ -92143,7 +97634,7 @@ var SlCard = class extends ShoelaceElement {
 SlCard.styles = [component_styles_default, card_styles_default];
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.HF7GESMZ.js
-function clamp(value, min2, max2) {
+function clamp2(value, min2, max2) {
   const noNegativeZero = (n10) => Object.is(n10, -0) ? 0 : n10;
   if (value < min2) {
     return noNegativeZero(min2);
@@ -92690,10 +98181,10 @@ var SlCarousel = class extends ShoelaceElement {
     if (!slides.length) {
       return;
     }
-    const newActiveSlide = loop ? (index + slides.length) % slides.length : clamp(index, 0, slides.length - slidesPerPage);
+    const newActiveSlide = loop ? (index + slides.length) % slides.length : clamp2(index, 0, slides.length - slidesPerPage);
     this.activeSlide = newActiveSlide;
     const isRtl = this.localize.dir() === "rtl";
-    const nextSlideIndex = clamp(
+    const nextSlideIndex = clamp2(
       index + (loop ? slidesPerPage : 0) + (isRtl ? slidesPerPage - 1 : 0),
       0,
       slidesWithClones.length - 1
@@ -94483,1927 +99974,6 @@ __decorateClass([
 __decorateClass([
   watch("value", { waitUntilFirstUpdate: true })
 ], SlInput.prototype, "handleValueChange", 1);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.3KSWVBQ5.js
-var popup_styles_default = i`
-  :host {
-    --arrow-color: var(--sl-color-neutral-1000);
-    --arrow-size: 6px;
-
-    /*
-     * These properties are computed to account for the arrow's dimensions after being rotated 45º. The constant
-     * 0.7071 is derived from sin(45), which is the diagonal size of the arrow's container after rotating.
-     */
-    --arrow-size-diagonal: calc(var(--arrow-size) * 0.7071);
-    --arrow-padding-offset: calc(var(--arrow-size-diagonal) - var(--arrow-size));
-
-    display: contents;
-  }
-
-  .popup {
-    position: absolute;
-    isolation: isolate;
-    max-width: var(--auto-size-available-width, none);
-    max-height: var(--auto-size-available-height, none);
-  }
-
-  .popup--fixed {
-    position: fixed;
-  }
-
-  .popup:not(.popup--active) {
-    display: none;
-  }
-
-  .popup__arrow {
-    position: absolute;
-    width: calc(var(--arrow-size-diagonal) * 2);
-    height: calc(var(--arrow-size-diagonal) * 2);
-    rotate: 45deg;
-    background: var(--arrow-color);
-    z-index: -1;
-  }
-
-  /* Hover bridge */
-  .popup-hover-bridge:not(.popup-hover-bridge--visible) {
-    display: none;
-  }
-
-  .popup-hover-bridge {
-    position: fixed;
-    z-index: calc(var(--sl-z-index-dropdown) - 1);
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    clip-path: polygon(
-      var(--hover-bridge-top-left-x, 0) var(--hover-bridge-top-left-y, 0),
-      var(--hover-bridge-top-right-x, 0) var(--hover-bridge-top-right-y, 0),
-      var(--hover-bridge-bottom-right-x, 0) var(--hover-bridge-bottom-right-y, 0),
-      var(--hover-bridge-bottom-left-x, 0) var(--hover-bridge-bottom-left-y, 0)
-    );
-  }
-`;
-
-// node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs
-var min = Math.min;
-var max = Math.max;
-var round = Math.round;
-var floor = Math.floor;
-var createCoords = (v4) => ({
-  x: v4,
-  y: v4
-});
-var oppositeSideMap = {
-  left: "right",
-  right: "left",
-  bottom: "top",
-  top: "bottom"
-};
-var oppositeAlignmentMap = {
-  start: "end",
-  end: "start"
-};
-function clamp2(start, value, end) {
-  return max(start, min(value, end));
-}
-function evaluate(value, param) {
-  return typeof value === "function" ? value(param) : value;
-}
-function getSide(placement) {
-  return placement.split("-")[0];
-}
-function getAlignment(placement) {
-  return placement.split("-")[1];
-}
-function getOppositeAxis(axis) {
-  return axis === "x" ? "y" : "x";
-}
-function getAxisLength(axis) {
-  return axis === "y" ? "height" : "width";
-}
-function getSideAxis(placement) {
-  return ["top", "bottom"].includes(getSide(placement)) ? "y" : "x";
-}
-function getAlignmentAxis(placement) {
-  return getOppositeAxis(getSideAxis(placement));
-}
-function getAlignmentSides(placement, rects, rtl) {
-  if (rtl === void 0) {
-    rtl = false;
-  }
-  const alignment = getAlignment(placement);
-  const alignmentAxis = getAlignmentAxis(placement);
-  const length2 = getAxisLength(alignmentAxis);
-  let mainAlignmentSide = alignmentAxis === "x" ? alignment === (rtl ? "end" : "start") ? "right" : "left" : alignment === "start" ? "bottom" : "top";
-  if (rects.reference[length2] > rects.floating[length2]) {
-    mainAlignmentSide = getOppositePlacement(mainAlignmentSide);
-  }
-  return [mainAlignmentSide, getOppositePlacement(mainAlignmentSide)];
-}
-function getExpandedPlacements(placement) {
-  const oppositePlacement = getOppositePlacement(placement);
-  return [getOppositeAlignmentPlacement(placement), oppositePlacement, getOppositeAlignmentPlacement(oppositePlacement)];
-}
-function getOppositeAlignmentPlacement(placement) {
-  return placement.replace(/start|end/g, (alignment) => oppositeAlignmentMap[alignment]);
-}
-function getSideList(side, isStart, rtl) {
-  const lr = ["left", "right"];
-  const rl = ["right", "left"];
-  const tb = ["top", "bottom"];
-  const bt = ["bottom", "top"];
-  switch (side) {
-    case "top":
-    case "bottom":
-      if (rtl) return isStart ? rl : lr;
-      return isStart ? lr : rl;
-    case "left":
-    case "right":
-      return isStart ? tb : bt;
-    default:
-      return [];
-  }
-}
-function getOppositeAxisPlacements(placement, flipAlignment, direction, rtl) {
-  const alignment = getAlignment(placement);
-  let list = getSideList(getSide(placement), direction === "start", rtl);
-  if (alignment) {
-    list = list.map((side) => side + "-" + alignment);
-    if (flipAlignment) {
-      list = list.concat(list.map(getOppositeAlignmentPlacement));
-    }
-  }
-  return list;
-}
-function getOppositePlacement(placement) {
-  return placement.replace(/left|right|bottom|top/g, (side) => oppositeSideMap[side]);
-}
-function expandPaddingObject(padding) {
-  return {
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    ...padding
-  };
-}
-function getPaddingObject(padding) {
-  return typeof padding !== "number" ? expandPaddingObject(padding) : {
-    top: padding,
-    right: padding,
-    bottom: padding,
-    left: padding
-  };
-}
-function rectToClientRect(rect) {
-  const {
-    x: x4,
-    y: y5,
-    width,
-    height
-  } = rect;
-  return {
-    width,
-    height,
-    top: y5,
-    left: x4,
-    right: x4 + width,
-    bottom: y5 + height,
-    x: x4,
-    y: y5
-  };
-}
-
-// node_modules/@floating-ui/core/dist/floating-ui.core.mjs
-function computeCoordsFromPlacement(_ref, placement, rtl) {
-  let {
-    reference: reference2,
-    floating
-  } = _ref;
-  const sideAxis = getSideAxis(placement);
-  const alignmentAxis = getAlignmentAxis(placement);
-  const alignLength = getAxisLength(alignmentAxis);
-  const side = getSide(placement);
-  const isVertical = sideAxis === "y";
-  const commonX = reference2.x + reference2.width / 2 - floating.width / 2;
-  const commonY = reference2.y + reference2.height / 2 - floating.height / 2;
-  const commonAlign = reference2[alignLength] / 2 - floating[alignLength] / 2;
-  let coords;
-  switch (side) {
-    case "top":
-      coords = {
-        x: commonX,
-        y: reference2.y - floating.height
-      };
-      break;
-    case "bottom":
-      coords = {
-        x: commonX,
-        y: reference2.y + reference2.height
-      };
-      break;
-    case "right":
-      coords = {
-        x: reference2.x + reference2.width,
-        y: commonY
-      };
-      break;
-    case "left":
-      coords = {
-        x: reference2.x - floating.width,
-        y: commonY
-      };
-      break;
-    default:
-      coords = {
-        x: reference2.x,
-        y: reference2.y
-      };
-  }
-  switch (getAlignment(placement)) {
-    case "start":
-      coords[alignmentAxis] -= commonAlign * (rtl && isVertical ? -1 : 1);
-      break;
-    case "end":
-      coords[alignmentAxis] += commonAlign * (rtl && isVertical ? -1 : 1);
-      break;
-  }
-  return coords;
-}
-var computePosition = async (reference2, floating, config) => {
-  const {
-    placement = "bottom",
-    strategy = "absolute",
-    middleware = [],
-    platform: platform2
-  } = config;
-  const validMiddleware = middleware.filter(Boolean);
-  const rtl = await (platform2.isRTL == null ? void 0 : platform2.isRTL(floating));
-  let rects = await platform2.getElementRects({
-    reference: reference2,
-    floating,
-    strategy
-  });
-  let {
-    x: x4,
-    y: y5
-  } = computeCoordsFromPlacement(rects, placement, rtl);
-  let statefulPlacement = placement;
-  let middlewareData = {};
-  let resetCount = 0;
-  for (let i9 = 0; i9 < validMiddleware.length; i9++) {
-    const {
-      name,
-      fn
-    } = validMiddleware[i9];
-    const {
-      x: nextX,
-      y: nextY,
-      data,
-      reset
-    } = await fn({
-      x: x4,
-      y: y5,
-      initialPlacement: placement,
-      placement: statefulPlacement,
-      strategy,
-      middlewareData,
-      rects,
-      platform: platform2,
-      elements: {
-        reference: reference2,
-        floating
-      }
-    });
-    x4 = nextX != null ? nextX : x4;
-    y5 = nextY != null ? nextY : y5;
-    middlewareData = {
-      ...middlewareData,
-      [name]: {
-        ...middlewareData[name],
-        ...data
-      }
-    };
-    if (reset && resetCount <= 50) {
-      resetCount++;
-      if (typeof reset === "object") {
-        if (reset.placement) {
-          statefulPlacement = reset.placement;
-        }
-        if (reset.rects) {
-          rects = reset.rects === true ? await platform2.getElementRects({
-            reference: reference2,
-            floating,
-            strategy
-          }) : reset.rects;
-        }
-        ({
-          x: x4,
-          y: y5
-        } = computeCoordsFromPlacement(rects, statefulPlacement, rtl));
-      }
-      i9 = -1;
-    }
-  }
-  return {
-    x: x4,
-    y: y5,
-    placement: statefulPlacement,
-    strategy,
-    middlewareData
-  };
-};
-async function detectOverflow(state, options) {
-  var _await$platform$isEle;
-  if (options === void 0) {
-    options = {};
-  }
-  const {
-    x: x4,
-    y: y5,
-    platform: platform2,
-    rects,
-    elements,
-    strategy
-  } = state;
-  const {
-    boundary = "clippingAncestors",
-    rootBoundary = "viewport",
-    elementContext = "floating",
-    altBoundary = false,
-    padding = 0
-  } = evaluate(options, state);
-  const paddingObject = getPaddingObject(padding);
-  const altContext = elementContext === "floating" ? "reference" : "floating";
-  const element2 = elements[altBoundary ? altContext : elementContext];
-  const clippingClientRect = rectToClientRect(await platform2.getClippingRect({
-    element: ((_await$platform$isEle = await (platform2.isElement == null ? void 0 : platform2.isElement(element2))) != null ? _await$platform$isEle : true) ? element2 : element2.contextElement || await (platform2.getDocumentElement == null ? void 0 : platform2.getDocumentElement(elements.floating)),
-    boundary,
-    rootBoundary,
-    strategy
-  }));
-  const rect = elementContext === "floating" ? {
-    x: x4,
-    y: y5,
-    width: rects.floating.width,
-    height: rects.floating.height
-  } : rects.reference;
-  const offsetParent = await (platform2.getOffsetParent == null ? void 0 : platform2.getOffsetParent(elements.floating));
-  const offsetScale = await (platform2.isElement == null ? void 0 : platform2.isElement(offsetParent)) ? await (platform2.getScale == null ? void 0 : platform2.getScale(offsetParent)) || {
-    x: 1,
-    y: 1
-  } : {
-    x: 1,
-    y: 1
-  };
-  const elementClientRect = rectToClientRect(platform2.convertOffsetParentRelativeRectToViewportRelativeRect ? await platform2.convertOffsetParentRelativeRectToViewportRelativeRect({
-    elements,
-    rect,
-    offsetParent,
-    strategy
-  }) : rect);
-  return {
-    top: (clippingClientRect.top - elementClientRect.top + paddingObject.top) / offsetScale.y,
-    bottom: (elementClientRect.bottom - clippingClientRect.bottom + paddingObject.bottom) / offsetScale.y,
-    left: (clippingClientRect.left - elementClientRect.left + paddingObject.left) / offsetScale.x,
-    right: (elementClientRect.right - clippingClientRect.right + paddingObject.right) / offsetScale.x
-  };
-}
-var arrow = (options) => ({
-  name: "arrow",
-  options,
-  async fn(state) {
-    const {
-      x: x4,
-      y: y5,
-      placement,
-      rects,
-      platform: platform2,
-      elements,
-      middlewareData
-    } = state;
-    const {
-      element: element2,
-      padding = 0
-    } = evaluate(options, state) || {};
-    if (element2 == null) {
-      return {};
-    }
-    const paddingObject = getPaddingObject(padding);
-    const coords = {
-      x: x4,
-      y: y5
-    };
-    const axis = getAlignmentAxis(placement);
-    const length2 = getAxisLength(axis);
-    const arrowDimensions = await platform2.getDimensions(element2);
-    const isYAxis = axis === "y";
-    const minProp = isYAxis ? "top" : "left";
-    const maxProp = isYAxis ? "bottom" : "right";
-    const clientProp = isYAxis ? "clientHeight" : "clientWidth";
-    const endDiff = rects.reference[length2] + rects.reference[axis] - coords[axis] - rects.floating[length2];
-    const startDiff = coords[axis] - rects.reference[axis];
-    const arrowOffsetParent = await (platform2.getOffsetParent == null ? void 0 : platform2.getOffsetParent(element2));
-    let clientSize = arrowOffsetParent ? arrowOffsetParent[clientProp] : 0;
-    if (!clientSize || !await (platform2.isElement == null ? void 0 : platform2.isElement(arrowOffsetParent))) {
-      clientSize = elements.floating[clientProp] || rects.floating[length2];
-    }
-    const centerToReference = endDiff / 2 - startDiff / 2;
-    const largestPossiblePadding = clientSize / 2 - arrowDimensions[length2] / 2 - 1;
-    const minPadding = min(paddingObject[minProp], largestPossiblePadding);
-    const maxPadding = min(paddingObject[maxProp], largestPossiblePadding);
-    const min$1 = minPadding;
-    const max2 = clientSize - arrowDimensions[length2] - maxPadding;
-    const center = clientSize / 2 - arrowDimensions[length2] / 2 + centerToReference;
-    const offset3 = clamp2(min$1, center, max2);
-    const shouldAddOffset = !middlewareData.arrow && getAlignment(placement) != null && center !== offset3 && rects.reference[length2] / 2 - (center < min$1 ? minPadding : maxPadding) - arrowDimensions[length2] / 2 < 0;
-    const alignmentOffset = shouldAddOffset ? center < min$1 ? center - min$1 : center - max2 : 0;
-    return {
-      [axis]: coords[axis] + alignmentOffset,
-      data: {
-        [axis]: offset3,
-        centerOffset: center - offset3 - alignmentOffset,
-        ...shouldAddOffset && {
-          alignmentOffset
-        }
-      },
-      reset: shouldAddOffset
-    };
-  }
-});
-var flip = function(options) {
-  if (options === void 0) {
-    options = {};
-  }
-  return {
-    name: "flip",
-    options,
-    async fn(state) {
-      var _middlewareData$arrow, _middlewareData$flip;
-      const {
-        placement,
-        middlewareData,
-        rects,
-        initialPlacement,
-        platform: platform2,
-        elements
-      } = state;
-      const {
-        mainAxis: checkMainAxis = true,
-        crossAxis: checkCrossAxis = true,
-        fallbackPlacements: specifiedFallbackPlacements,
-        fallbackStrategy = "bestFit",
-        fallbackAxisSideDirection = "none",
-        flipAlignment = true,
-        ...detectOverflowOptions
-      } = evaluate(options, state);
-      if ((_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) {
-        return {};
-      }
-      const side = getSide(placement);
-      const initialSideAxis = getSideAxis(initialPlacement);
-      const isBasePlacement = getSide(initialPlacement) === initialPlacement;
-      const rtl = await (platform2.isRTL == null ? void 0 : platform2.isRTL(elements.floating));
-      const fallbackPlacements = specifiedFallbackPlacements || (isBasePlacement || !flipAlignment ? [getOppositePlacement(initialPlacement)] : getExpandedPlacements(initialPlacement));
-      const hasFallbackAxisSideDirection = fallbackAxisSideDirection !== "none";
-      if (!specifiedFallbackPlacements && hasFallbackAxisSideDirection) {
-        fallbackPlacements.push(...getOppositeAxisPlacements(initialPlacement, flipAlignment, fallbackAxisSideDirection, rtl));
-      }
-      const placements2 = [initialPlacement, ...fallbackPlacements];
-      const overflow = await detectOverflow(state, detectOverflowOptions);
-      const overflows = [];
-      let overflowsData = ((_middlewareData$flip = middlewareData.flip) == null ? void 0 : _middlewareData$flip.overflows) || [];
-      if (checkMainAxis) {
-        overflows.push(overflow[side]);
-      }
-      if (checkCrossAxis) {
-        const sides2 = getAlignmentSides(placement, rects, rtl);
-        overflows.push(overflow[sides2[0]], overflow[sides2[1]]);
-      }
-      overflowsData = [...overflowsData, {
-        placement,
-        overflows
-      }];
-      if (!overflows.every((side2) => side2 <= 0)) {
-        var _middlewareData$flip2, _overflowsData$filter;
-        const nextIndex = (((_middlewareData$flip2 = middlewareData.flip) == null ? void 0 : _middlewareData$flip2.index) || 0) + 1;
-        const nextPlacement = placements2[nextIndex];
-        if (nextPlacement) {
-          return {
-            data: {
-              index: nextIndex,
-              overflows: overflowsData
-            },
-            reset: {
-              placement: nextPlacement
-            }
-          };
-        }
-        let resetPlacement = (_overflowsData$filter = overflowsData.filter((d4) => d4.overflows[0] <= 0).sort((a5, b4) => a5.overflows[1] - b4.overflows[1])[0]) == null ? void 0 : _overflowsData$filter.placement;
-        if (!resetPlacement) {
-          switch (fallbackStrategy) {
-            case "bestFit": {
-              var _overflowsData$filter2;
-              const placement2 = (_overflowsData$filter2 = overflowsData.filter((d4) => {
-                if (hasFallbackAxisSideDirection) {
-                  const currentSideAxis = getSideAxis(d4.placement);
-                  return currentSideAxis === initialSideAxis || // Create a bias to the `y` side axis due to horizontal
-                  // reading directions favoring greater width.
-                  currentSideAxis === "y";
-                }
-                return true;
-              }).map((d4) => [d4.placement, d4.overflows.filter((overflow2) => overflow2 > 0).reduce((acc, overflow2) => acc + overflow2, 0)]).sort((a5, b4) => a5[1] - b4[1])[0]) == null ? void 0 : _overflowsData$filter2[0];
-              if (placement2) {
-                resetPlacement = placement2;
-              }
-              break;
-            }
-            case "initialPlacement":
-              resetPlacement = initialPlacement;
-              break;
-          }
-        }
-        if (placement !== resetPlacement) {
-          return {
-            reset: {
-              placement: resetPlacement
-            }
-          };
-        }
-      }
-      return {};
-    }
-  };
-};
-async function convertValueToCoords(state, options) {
-  const {
-    placement,
-    platform: platform2,
-    elements
-  } = state;
-  const rtl = await (platform2.isRTL == null ? void 0 : platform2.isRTL(elements.floating));
-  const side = getSide(placement);
-  const alignment = getAlignment(placement);
-  const isVertical = getSideAxis(placement) === "y";
-  const mainAxisMulti = ["left", "top"].includes(side) ? -1 : 1;
-  const crossAxisMulti = rtl && isVertical ? -1 : 1;
-  const rawValue = evaluate(options, state);
-  let {
-    mainAxis,
-    crossAxis,
-    alignmentAxis
-  } = typeof rawValue === "number" ? {
-    mainAxis: rawValue,
-    crossAxis: 0,
-    alignmentAxis: null
-  } : {
-    mainAxis: rawValue.mainAxis || 0,
-    crossAxis: rawValue.crossAxis || 0,
-    alignmentAxis: rawValue.alignmentAxis
-  };
-  if (alignment && typeof alignmentAxis === "number") {
-    crossAxis = alignment === "end" ? alignmentAxis * -1 : alignmentAxis;
-  }
-  return isVertical ? {
-    x: crossAxis * crossAxisMulti,
-    y: mainAxis * mainAxisMulti
-  } : {
-    x: mainAxis * mainAxisMulti,
-    y: crossAxis * crossAxisMulti
-  };
-}
-var offset = function(options) {
-  if (options === void 0) {
-    options = 0;
-  }
-  return {
-    name: "offset",
-    options,
-    async fn(state) {
-      var _middlewareData$offse, _middlewareData$arrow;
-      const {
-        x: x4,
-        y: y5,
-        placement,
-        middlewareData
-      } = state;
-      const diffCoords = await convertValueToCoords(state, options);
-      if (placement === ((_middlewareData$offse = middlewareData.offset) == null ? void 0 : _middlewareData$offse.placement) && (_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) {
-        return {};
-      }
-      return {
-        x: x4 + diffCoords.x,
-        y: y5 + diffCoords.y,
-        data: {
-          ...diffCoords,
-          placement
-        }
-      };
-    }
-  };
-};
-var shift = function(options) {
-  if (options === void 0) {
-    options = {};
-  }
-  return {
-    name: "shift",
-    options,
-    async fn(state) {
-      const {
-        x: x4,
-        y: y5,
-        placement
-      } = state;
-      const {
-        mainAxis: checkMainAxis = true,
-        crossAxis: checkCrossAxis = false,
-        limiter = {
-          fn: (_ref) => {
-            let {
-              x: x5,
-              y: y6
-            } = _ref;
-            return {
-              x: x5,
-              y: y6
-            };
-          }
-        },
-        ...detectOverflowOptions
-      } = evaluate(options, state);
-      const coords = {
-        x: x4,
-        y: y5
-      };
-      const overflow = await detectOverflow(state, detectOverflowOptions);
-      const crossAxis = getSideAxis(getSide(placement));
-      const mainAxis = getOppositeAxis(crossAxis);
-      let mainAxisCoord = coords[mainAxis];
-      let crossAxisCoord = coords[crossAxis];
-      if (checkMainAxis) {
-        const minSide = mainAxis === "y" ? "top" : "left";
-        const maxSide = mainAxis === "y" ? "bottom" : "right";
-        const min2 = mainAxisCoord + overflow[minSide];
-        const max2 = mainAxisCoord - overflow[maxSide];
-        mainAxisCoord = clamp2(min2, mainAxisCoord, max2);
-      }
-      if (checkCrossAxis) {
-        const minSide = crossAxis === "y" ? "top" : "left";
-        const maxSide = crossAxis === "y" ? "bottom" : "right";
-        const min2 = crossAxisCoord + overflow[minSide];
-        const max2 = crossAxisCoord - overflow[maxSide];
-        crossAxisCoord = clamp2(min2, crossAxisCoord, max2);
-      }
-      const limitedCoords = limiter.fn({
-        ...state,
-        [mainAxis]: mainAxisCoord,
-        [crossAxis]: crossAxisCoord
-      });
-      return {
-        ...limitedCoords,
-        data: {
-          x: limitedCoords.x - x4,
-          y: limitedCoords.y - y5,
-          enabled: {
-            [mainAxis]: checkMainAxis,
-            [crossAxis]: checkCrossAxis
-          }
-        }
-      };
-    }
-  };
-};
-var size = function(options) {
-  if (options === void 0) {
-    options = {};
-  }
-  return {
-    name: "size",
-    options,
-    async fn(state) {
-      var _state$middlewareData, _state$middlewareData2;
-      const {
-        placement,
-        rects,
-        platform: platform2,
-        elements
-      } = state;
-      const {
-        apply = () => {
-        },
-        ...detectOverflowOptions
-      } = evaluate(options, state);
-      const overflow = await detectOverflow(state, detectOverflowOptions);
-      const side = getSide(placement);
-      const alignment = getAlignment(placement);
-      const isYAxis = getSideAxis(placement) === "y";
-      const {
-        width,
-        height
-      } = rects.floating;
-      let heightSide;
-      let widthSide;
-      if (side === "top" || side === "bottom") {
-        heightSide = side;
-        widthSide = alignment === (await (platform2.isRTL == null ? void 0 : platform2.isRTL(elements.floating)) ? "start" : "end") ? "left" : "right";
-      } else {
-        widthSide = side;
-        heightSide = alignment === "end" ? "top" : "bottom";
-      }
-      const maximumClippingHeight = height - overflow.top - overflow.bottom;
-      const maximumClippingWidth = width - overflow.left - overflow.right;
-      const overflowAvailableHeight = min(height - overflow[heightSide], maximumClippingHeight);
-      const overflowAvailableWidth = min(width - overflow[widthSide], maximumClippingWidth);
-      const noShift = !state.middlewareData.shift;
-      let availableHeight = overflowAvailableHeight;
-      let availableWidth = overflowAvailableWidth;
-      if ((_state$middlewareData = state.middlewareData.shift) != null && _state$middlewareData.enabled.x) {
-        availableWidth = maximumClippingWidth;
-      }
-      if ((_state$middlewareData2 = state.middlewareData.shift) != null && _state$middlewareData2.enabled.y) {
-        availableHeight = maximumClippingHeight;
-      }
-      if (noShift && !alignment) {
-        const xMin = max(overflow.left, 0);
-        const xMax = max(overflow.right, 0);
-        const yMin = max(overflow.top, 0);
-        const yMax = max(overflow.bottom, 0);
-        if (isYAxis) {
-          availableWidth = width - 2 * (xMin !== 0 || xMax !== 0 ? xMin + xMax : max(overflow.left, overflow.right));
-        } else {
-          availableHeight = height - 2 * (yMin !== 0 || yMax !== 0 ? yMin + yMax : max(overflow.top, overflow.bottom));
-        }
-      }
-      await apply({
-        ...state,
-        availableWidth,
-        availableHeight
-      });
-      const nextDimensions = await platform2.getDimensions(elements.floating);
-      if (width !== nextDimensions.width || height !== nextDimensions.height) {
-        return {
-          reset: {
-            rects: true
-          }
-        };
-      }
-      return {};
-    }
-  };
-};
-
-// node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs
-function hasWindow() {
-  return typeof window !== "undefined";
-}
-function getNodeName(node) {
-  if (isNode(node)) {
-    return (node.nodeName || "").toLowerCase();
-  }
-  return "#document";
-}
-function getWindow(node) {
-  var _node$ownerDocument;
-  return (node == null || (_node$ownerDocument = node.ownerDocument) == null ? void 0 : _node$ownerDocument.defaultView) || window;
-}
-function getDocumentElement(node) {
-  var _ref;
-  return (_ref = (isNode(node) ? node.ownerDocument : node.document) || window.document) == null ? void 0 : _ref.documentElement;
-}
-function isNode(value) {
-  if (!hasWindow()) {
-    return false;
-  }
-  return value instanceof Node || value instanceof getWindow(value).Node;
-}
-function isElement(value) {
-  if (!hasWindow()) {
-    return false;
-  }
-  return value instanceof Element || value instanceof getWindow(value).Element;
-}
-function isHTMLElement(value) {
-  if (!hasWindow()) {
-    return false;
-  }
-  return value instanceof HTMLElement || value instanceof getWindow(value).HTMLElement;
-}
-function isShadowRoot(value) {
-  if (!hasWindow() || typeof ShadowRoot === "undefined") {
-    return false;
-  }
-  return value instanceof ShadowRoot || value instanceof getWindow(value).ShadowRoot;
-}
-function isOverflowElement(element2) {
-  const {
-    overflow,
-    overflowX,
-    overflowY,
-    display
-  } = getComputedStyle2(element2);
-  return /auto|scroll|overlay|hidden|clip/.test(overflow + overflowY + overflowX) && !["inline", "contents"].includes(display);
-}
-function isTableElement(element2) {
-  return ["table", "td", "th"].includes(getNodeName(element2));
-}
-function isTopLayer(element2) {
-  return [":popover-open", ":modal"].some((selector) => {
-    try {
-      return element2.matches(selector);
-    } catch (e13) {
-      return false;
-    }
-  });
-}
-function isContainingBlock(elementOrCss) {
-  const webkit = isWebKit();
-  const css = isElement(elementOrCss) ? getComputedStyle2(elementOrCss) : elementOrCss;
-  return ["transform", "translate", "scale", "rotate", "perspective"].some((value) => css[value] ? css[value] !== "none" : false) || (css.containerType ? css.containerType !== "normal" : false) || !webkit && (css.backdropFilter ? css.backdropFilter !== "none" : false) || !webkit && (css.filter ? css.filter !== "none" : false) || ["transform", "translate", "scale", "rotate", "perspective", "filter"].some((value) => (css.willChange || "").includes(value)) || ["paint", "layout", "strict", "content"].some((value) => (css.contain || "").includes(value));
-}
-function getContainingBlock(element2) {
-  let currentNode = getParentNode(element2);
-  while (isHTMLElement(currentNode) && !isLastTraversableNode(currentNode)) {
-    if (isContainingBlock(currentNode)) {
-      return currentNode;
-    } else if (isTopLayer(currentNode)) {
-      return null;
-    }
-    currentNode = getParentNode(currentNode);
-  }
-  return null;
-}
-function isWebKit() {
-  if (typeof CSS === "undefined" || !CSS.supports) return false;
-  return CSS.supports("-webkit-backdrop-filter", "none");
-}
-function isLastTraversableNode(node) {
-  return ["html", "body", "#document"].includes(getNodeName(node));
-}
-function getComputedStyle2(element2) {
-  return getWindow(element2).getComputedStyle(element2);
-}
-function getNodeScroll(element2) {
-  if (isElement(element2)) {
-    return {
-      scrollLeft: element2.scrollLeft,
-      scrollTop: element2.scrollTop
-    };
-  }
-  return {
-    scrollLeft: element2.scrollX,
-    scrollTop: element2.scrollY
-  };
-}
-function getParentNode(node) {
-  if (getNodeName(node) === "html") {
-    return node;
-  }
-  const result = (
-    // Step into the shadow DOM of the parent of a slotted node.
-    node.assignedSlot || // DOM Element detected.
-    node.parentNode || // ShadowRoot detected.
-    isShadowRoot(node) && node.host || // Fallback.
-    getDocumentElement(node)
-  );
-  return isShadowRoot(result) ? result.host : result;
-}
-function getNearestOverflowAncestor(node) {
-  const parentNode = getParentNode(node);
-  if (isLastTraversableNode(parentNode)) {
-    return node.ownerDocument ? node.ownerDocument.body : node.body;
-  }
-  if (isHTMLElement(parentNode) && isOverflowElement(parentNode)) {
-    return parentNode;
-  }
-  return getNearestOverflowAncestor(parentNode);
-}
-function getOverflowAncestors(node, list, traverseIframes) {
-  var _node$ownerDocument2;
-  if (list === void 0) {
-    list = [];
-  }
-  if (traverseIframes === void 0) {
-    traverseIframes = true;
-  }
-  const scrollableAncestor = getNearestOverflowAncestor(node);
-  const isBody = scrollableAncestor === ((_node$ownerDocument2 = node.ownerDocument) == null ? void 0 : _node$ownerDocument2.body);
-  const win = getWindow(scrollableAncestor);
-  if (isBody) {
-    const frameElement = getFrameElement(win);
-    return list.concat(win, win.visualViewport || [], isOverflowElement(scrollableAncestor) ? scrollableAncestor : [], frameElement && traverseIframes ? getOverflowAncestors(frameElement) : []);
-  }
-  return list.concat(scrollableAncestor, getOverflowAncestors(scrollableAncestor, [], traverseIframes));
-}
-function getFrameElement(win) {
-  return win.parent && Object.getPrototypeOf(win.parent) ? win.frameElement : null;
-}
-
-// node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs
-function getCssDimensions(element2) {
-  const css = getComputedStyle2(element2);
-  let width = parseFloat(css.width) || 0;
-  let height = parseFloat(css.height) || 0;
-  const hasOffset = isHTMLElement(element2);
-  const offsetWidth = hasOffset ? element2.offsetWidth : width;
-  const offsetHeight = hasOffset ? element2.offsetHeight : height;
-  const shouldFallback = round(width) !== offsetWidth || round(height) !== offsetHeight;
-  if (shouldFallback) {
-    width = offsetWidth;
-    height = offsetHeight;
-  }
-  return {
-    width,
-    height,
-    $: shouldFallback
-  };
-}
-function unwrapElement(element2) {
-  return !isElement(element2) ? element2.contextElement : element2;
-}
-function getScale(element2) {
-  const domElement = unwrapElement(element2);
-  if (!isHTMLElement(domElement)) {
-    return createCoords(1);
-  }
-  const rect = domElement.getBoundingClientRect();
-  const {
-    width,
-    height,
-    $: $5
-  } = getCssDimensions(domElement);
-  let x4 = ($5 ? round(rect.width) : rect.width) / width;
-  let y5 = ($5 ? round(rect.height) : rect.height) / height;
-  if (!x4 || !Number.isFinite(x4)) {
-    x4 = 1;
-  }
-  if (!y5 || !Number.isFinite(y5)) {
-    y5 = 1;
-  }
-  return {
-    x: x4,
-    y: y5
-  };
-}
-var noOffsets = /* @__PURE__ */ createCoords(0);
-function getVisualOffsets(element2) {
-  const win = getWindow(element2);
-  if (!isWebKit() || !win.visualViewport) {
-    return noOffsets;
-  }
-  return {
-    x: win.visualViewport.offsetLeft,
-    y: win.visualViewport.offsetTop
-  };
-}
-function shouldAddVisualOffsets(element2, isFixed, floatingOffsetParent) {
-  if (isFixed === void 0) {
-    isFixed = false;
-  }
-  if (!floatingOffsetParent || isFixed && floatingOffsetParent !== getWindow(element2)) {
-    return false;
-  }
-  return isFixed;
-}
-function getBoundingClientRect(element2, includeScale, isFixedStrategy, offsetParent) {
-  if (includeScale === void 0) {
-    includeScale = false;
-  }
-  if (isFixedStrategy === void 0) {
-    isFixedStrategy = false;
-  }
-  const clientRect = element2.getBoundingClientRect();
-  const domElement = unwrapElement(element2);
-  let scale2 = createCoords(1);
-  if (includeScale) {
-    if (offsetParent) {
-      if (isElement(offsetParent)) {
-        scale2 = getScale(offsetParent);
-      }
-    } else {
-      scale2 = getScale(element2);
-    }
-  }
-  const visualOffsets = shouldAddVisualOffsets(domElement, isFixedStrategy, offsetParent) ? getVisualOffsets(domElement) : createCoords(0);
-  let x4 = (clientRect.left + visualOffsets.x) / scale2.x;
-  let y5 = (clientRect.top + visualOffsets.y) / scale2.y;
-  let width = clientRect.width / scale2.x;
-  let height = clientRect.height / scale2.y;
-  if (domElement) {
-    const win = getWindow(domElement);
-    const offsetWin = offsetParent && isElement(offsetParent) ? getWindow(offsetParent) : offsetParent;
-    let currentWin = win;
-    let currentIFrame = getFrameElement(currentWin);
-    while (currentIFrame && offsetParent && offsetWin !== currentWin) {
-      const iframeScale = getScale(currentIFrame);
-      const iframeRect = currentIFrame.getBoundingClientRect();
-      const css = getComputedStyle2(currentIFrame);
-      const left = iframeRect.left + (currentIFrame.clientLeft + parseFloat(css.paddingLeft)) * iframeScale.x;
-      const top = iframeRect.top + (currentIFrame.clientTop + parseFloat(css.paddingTop)) * iframeScale.y;
-      x4 *= iframeScale.x;
-      y5 *= iframeScale.y;
-      width *= iframeScale.x;
-      height *= iframeScale.y;
-      x4 += left;
-      y5 += top;
-      currentWin = getWindow(currentIFrame);
-      currentIFrame = getFrameElement(currentWin);
-    }
-  }
-  return rectToClientRect({
-    width,
-    height,
-    x: x4,
-    y: y5
-  });
-}
-function getWindowScrollBarX(element2, rect) {
-  const leftScroll = getNodeScroll(element2).scrollLeft;
-  if (!rect) {
-    return getBoundingClientRect(getDocumentElement(element2)).left + leftScroll;
-  }
-  return rect.left + leftScroll;
-}
-function getHTMLOffset(documentElement, scroll, ignoreScrollbarX) {
-  if (ignoreScrollbarX === void 0) {
-    ignoreScrollbarX = false;
-  }
-  const htmlRect = documentElement.getBoundingClientRect();
-  const x4 = htmlRect.left + scroll.scrollLeft - (ignoreScrollbarX ? 0 : (
-    // RTL <body> scrollbar.
-    getWindowScrollBarX(documentElement, htmlRect)
-  ));
-  const y5 = htmlRect.top + scroll.scrollTop;
-  return {
-    x: x4,
-    y: y5
-  };
-}
-function convertOffsetParentRelativeRectToViewportRelativeRect(_ref) {
-  let {
-    elements,
-    rect,
-    offsetParent,
-    strategy
-  } = _ref;
-  const isFixed = strategy === "fixed";
-  const documentElement = getDocumentElement(offsetParent);
-  const topLayer = elements ? isTopLayer(elements.floating) : false;
-  if (offsetParent === documentElement || topLayer && isFixed) {
-    return rect;
-  }
-  let scroll = {
-    scrollLeft: 0,
-    scrollTop: 0
-  };
-  let scale2 = createCoords(1);
-  const offsets = createCoords(0);
-  const isOffsetParentAnElement = isHTMLElement(offsetParent);
-  if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
-    if (getNodeName(offsetParent) !== "body" || isOverflowElement(documentElement)) {
-      scroll = getNodeScroll(offsetParent);
-    }
-    if (isHTMLElement(offsetParent)) {
-      const offsetRect = getBoundingClientRect(offsetParent);
-      scale2 = getScale(offsetParent);
-      offsets.x = offsetRect.x + offsetParent.clientLeft;
-      offsets.y = offsetRect.y + offsetParent.clientTop;
-    }
-  }
-  const htmlOffset = documentElement && !isOffsetParentAnElement && !isFixed ? getHTMLOffset(documentElement, scroll, true) : createCoords(0);
-  return {
-    width: rect.width * scale2.x,
-    height: rect.height * scale2.y,
-    x: rect.x * scale2.x - scroll.scrollLeft * scale2.x + offsets.x + htmlOffset.x,
-    y: rect.y * scale2.y - scroll.scrollTop * scale2.y + offsets.y + htmlOffset.y
-  };
-}
-function getClientRects(element2) {
-  return Array.from(element2.getClientRects());
-}
-function getDocumentRect(element2) {
-  const html = getDocumentElement(element2);
-  const scroll = getNodeScroll(element2);
-  const body = element2.ownerDocument.body;
-  const width = max(html.scrollWidth, html.clientWidth, body.scrollWidth, body.clientWidth);
-  const height = max(html.scrollHeight, html.clientHeight, body.scrollHeight, body.clientHeight);
-  let x4 = -scroll.scrollLeft + getWindowScrollBarX(element2);
-  const y5 = -scroll.scrollTop;
-  if (getComputedStyle2(body).direction === "rtl") {
-    x4 += max(html.clientWidth, body.clientWidth) - width;
-  }
-  return {
-    width,
-    height,
-    x: x4,
-    y: y5
-  };
-}
-function getViewportRect(element2, strategy) {
-  const win = getWindow(element2);
-  const html = getDocumentElement(element2);
-  const visualViewport = win.visualViewport;
-  let width = html.clientWidth;
-  let height = html.clientHeight;
-  let x4 = 0;
-  let y5 = 0;
-  if (visualViewport) {
-    width = visualViewport.width;
-    height = visualViewport.height;
-    const visualViewportBased = isWebKit();
-    if (!visualViewportBased || visualViewportBased && strategy === "fixed") {
-      x4 = visualViewport.offsetLeft;
-      y5 = visualViewport.offsetTop;
-    }
-  }
-  return {
-    width,
-    height,
-    x: x4,
-    y: y5
-  };
-}
-function getInnerBoundingClientRect(element2, strategy) {
-  const clientRect = getBoundingClientRect(element2, true, strategy === "fixed");
-  const top = clientRect.top + element2.clientTop;
-  const left = clientRect.left + element2.clientLeft;
-  const scale2 = isHTMLElement(element2) ? getScale(element2) : createCoords(1);
-  const width = element2.clientWidth * scale2.x;
-  const height = element2.clientHeight * scale2.y;
-  const x4 = left * scale2.x;
-  const y5 = top * scale2.y;
-  return {
-    width,
-    height,
-    x: x4,
-    y: y5
-  };
-}
-function getClientRectFromClippingAncestor(element2, clippingAncestor, strategy) {
-  let rect;
-  if (clippingAncestor === "viewport") {
-    rect = getViewportRect(element2, strategy);
-  } else if (clippingAncestor === "document") {
-    rect = getDocumentRect(getDocumentElement(element2));
-  } else if (isElement(clippingAncestor)) {
-    rect = getInnerBoundingClientRect(clippingAncestor, strategy);
-  } else {
-    const visualOffsets = getVisualOffsets(element2);
-    rect = {
-      x: clippingAncestor.x - visualOffsets.x,
-      y: clippingAncestor.y - visualOffsets.y,
-      width: clippingAncestor.width,
-      height: clippingAncestor.height
-    };
-  }
-  return rectToClientRect(rect);
-}
-function hasFixedPositionAncestor(element2, stopNode) {
-  const parentNode = getParentNode(element2);
-  if (parentNode === stopNode || !isElement(parentNode) || isLastTraversableNode(parentNode)) {
-    return false;
-  }
-  return getComputedStyle2(parentNode).position === "fixed" || hasFixedPositionAncestor(parentNode, stopNode);
-}
-function getClippingElementAncestors(element2, cache4) {
-  const cachedResult = cache4.get(element2);
-  if (cachedResult) {
-    return cachedResult;
-  }
-  let result = getOverflowAncestors(element2, [], false).filter((el) => isElement(el) && getNodeName(el) !== "body");
-  let currentContainingBlockComputedStyle = null;
-  const elementIsFixed = getComputedStyle2(element2).position === "fixed";
-  let currentNode = elementIsFixed ? getParentNode(element2) : element2;
-  while (isElement(currentNode) && !isLastTraversableNode(currentNode)) {
-    const computedStyle = getComputedStyle2(currentNode);
-    const currentNodeIsContaining = isContainingBlock(currentNode);
-    if (!currentNodeIsContaining && computedStyle.position === "fixed") {
-      currentContainingBlockComputedStyle = null;
-    }
-    const shouldDropCurrentNode = elementIsFixed ? !currentNodeIsContaining && !currentContainingBlockComputedStyle : !currentNodeIsContaining && computedStyle.position === "static" && !!currentContainingBlockComputedStyle && ["absolute", "fixed"].includes(currentContainingBlockComputedStyle.position) || isOverflowElement(currentNode) && !currentNodeIsContaining && hasFixedPositionAncestor(element2, currentNode);
-    if (shouldDropCurrentNode) {
-      result = result.filter((ancestor) => ancestor !== currentNode);
-    } else {
-      currentContainingBlockComputedStyle = computedStyle;
-    }
-    currentNode = getParentNode(currentNode);
-  }
-  cache4.set(element2, result);
-  return result;
-}
-function getClippingRect(_ref) {
-  let {
-    element: element2,
-    boundary,
-    rootBoundary,
-    strategy
-  } = _ref;
-  const elementClippingAncestors = boundary === "clippingAncestors" ? isTopLayer(element2) ? [] : getClippingElementAncestors(element2, this._c) : [].concat(boundary);
-  const clippingAncestors = [...elementClippingAncestors, rootBoundary];
-  const firstClippingAncestor = clippingAncestors[0];
-  const clippingRect = clippingAncestors.reduce((accRect, clippingAncestor) => {
-    const rect = getClientRectFromClippingAncestor(element2, clippingAncestor, strategy);
-    accRect.top = max(rect.top, accRect.top);
-    accRect.right = min(rect.right, accRect.right);
-    accRect.bottom = min(rect.bottom, accRect.bottom);
-    accRect.left = max(rect.left, accRect.left);
-    return accRect;
-  }, getClientRectFromClippingAncestor(element2, firstClippingAncestor, strategy));
-  return {
-    width: clippingRect.right - clippingRect.left,
-    height: clippingRect.bottom - clippingRect.top,
-    x: clippingRect.left,
-    y: clippingRect.top
-  };
-}
-function getDimensions(element2) {
-  const {
-    width,
-    height
-  } = getCssDimensions(element2);
-  return {
-    width,
-    height
-  };
-}
-function getRectRelativeToOffsetParent(element2, offsetParent, strategy) {
-  const isOffsetParentAnElement = isHTMLElement(offsetParent);
-  const documentElement = getDocumentElement(offsetParent);
-  const isFixed = strategy === "fixed";
-  const rect = getBoundingClientRect(element2, true, isFixed, offsetParent);
-  let scroll = {
-    scrollLeft: 0,
-    scrollTop: 0
-  };
-  const offsets = createCoords(0);
-  if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
-    if (getNodeName(offsetParent) !== "body" || isOverflowElement(documentElement)) {
-      scroll = getNodeScroll(offsetParent);
-    }
-    if (isOffsetParentAnElement) {
-      const offsetRect = getBoundingClientRect(offsetParent, true, isFixed, offsetParent);
-      offsets.x = offsetRect.x + offsetParent.clientLeft;
-      offsets.y = offsetRect.y + offsetParent.clientTop;
-    } else if (documentElement) {
-      offsets.x = getWindowScrollBarX(documentElement);
-    }
-  }
-  const htmlOffset = documentElement && !isOffsetParentAnElement && !isFixed ? getHTMLOffset(documentElement, scroll) : createCoords(0);
-  const x4 = rect.left + scroll.scrollLeft - offsets.x - htmlOffset.x;
-  const y5 = rect.top + scroll.scrollTop - offsets.y - htmlOffset.y;
-  return {
-    x: x4,
-    y: y5,
-    width: rect.width,
-    height: rect.height
-  };
-}
-function isStaticPositioned(element2) {
-  return getComputedStyle2(element2).position === "static";
-}
-function getTrueOffsetParent(element2, polyfill) {
-  if (!isHTMLElement(element2) || getComputedStyle2(element2).position === "fixed") {
-    return null;
-  }
-  if (polyfill) {
-    return polyfill(element2);
-  }
-  let rawOffsetParent = element2.offsetParent;
-  if (getDocumentElement(element2) === rawOffsetParent) {
-    rawOffsetParent = rawOffsetParent.ownerDocument.body;
-  }
-  return rawOffsetParent;
-}
-function getOffsetParent(element2, polyfill) {
-  const win = getWindow(element2);
-  if (isTopLayer(element2)) {
-    return win;
-  }
-  if (!isHTMLElement(element2)) {
-    let svgOffsetParent = getParentNode(element2);
-    while (svgOffsetParent && !isLastTraversableNode(svgOffsetParent)) {
-      if (isElement(svgOffsetParent) && !isStaticPositioned(svgOffsetParent)) {
-        return svgOffsetParent;
-      }
-      svgOffsetParent = getParentNode(svgOffsetParent);
-    }
-    return win;
-  }
-  let offsetParent = getTrueOffsetParent(element2, polyfill);
-  while (offsetParent && isTableElement(offsetParent) && isStaticPositioned(offsetParent)) {
-    offsetParent = getTrueOffsetParent(offsetParent, polyfill);
-  }
-  if (offsetParent && isLastTraversableNode(offsetParent) && isStaticPositioned(offsetParent) && !isContainingBlock(offsetParent)) {
-    return win;
-  }
-  return offsetParent || getContainingBlock(element2) || win;
-}
-var getElementRects = async function(data) {
-  const getOffsetParentFn = this.getOffsetParent || getOffsetParent;
-  const getDimensionsFn = this.getDimensions;
-  const floatingDimensions = await getDimensionsFn(data.floating);
-  return {
-    reference: getRectRelativeToOffsetParent(data.reference, await getOffsetParentFn(data.floating), data.strategy),
-    floating: {
-      x: 0,
-      y: 0,
-      width: floatingDimensions.width,
-      height: floatingDimensions.height
-    }
-  };
-};
-function isRTL(element2) {
-  return getComputedStyle2(element2).direction === "rtl";
-}
-var platform = {
-  convertOffsetParentRelativeRectToViewportRelativeRect,
-  getDocumentElement,
-  getClippingRect,
-  getOffsetParent,
-  getElementRects,
-  getClientRects,
-  getDimensions,
-  getScale,
-  isElement,
-  isRTL
-};
-function rectsAreEqual(a5, b4) {
-  return a5.x === b4.x && a5.y === b4.y && a5.width === b4.width && a5.height === b4.height;
-}
-function observeMove(element2, onMove) {
-  let io = null;
-  let timeoutId;
-  const root = getDocumentElement(element2);
-  function cleanup() {
-    var _io;
-    clearTimeout(timeoutId);
-    (_io = io) == null || _io.disconnect();
-    io = null;
-  }
-  function refresh(skip, threshold) {
-    if (skip === void 0) {
-      skip = false;
-    }
-    if (threshold === void 0) {
-      threshold = 1;
-    }
-    cleanup();
-    const elementRectForRootMargin = element2.getBoundingClientRect();
-    const {
-      left,
-      top,
-      width,
-      height
-    } = elementRectForRootMargin;
-    if (!skip) {
-      onMove();
-    }
-    if (!width || !height) {
-      return;
-    }
-    const insetTop = floor(top);
-    const insetRight = floor(root.clientWidth - (left + width));
-    const insetBottom = floor(root.clientHeight - (top + height));
-    const insetLeft = floor(left);
-    const rootMargin = -insetTop + "px " + -insetRight + "px " + -insetBottom + "px " + -insetLeft + "px";
-    const options = {
-      rootMargin,
-      threshold: max(0, min(1, threshold)) || 1
-    };
-    let isFirstUpdate = true;
-    function handleObserve(entries2) {
-      const ratio = entries2[0].intersectionRatio;
-      if (ratio !== threshold) {
-        if (!isFirstUpdate) {
-          return refresh();
-        }
-        if (!ratio) {
-          timeoutId = setTimeout(() => {
-            refresh(false, 1e-7);
-          }, 1e3);
-        } else {
-          refresh(false, ratio);
-        }
-      }
-      if (ratio === 1 && !rectsAreEqual(elementRectForRootMargin, element2.getBoundingClientRect())) {
-        refresh();
-      }
-      isFirstUpdate = false;
-    }
-    try {
-      io = new IntersectionObserver(handleObserve, {
-        ...options,
-        // Handle <iframe>s
-        root: root.ownerDocument
-      });
-    } catch (e13) {
-      io = new IntersectionObserver(handleObserve, options);
-    }
-    io.observe(element2);
-  }
-  refresh(true);
-  return cleanup;
-}
-function autoUpdate(reference2, floating, update2, options) {
-  if (options === void 0) {
-    options = {};
-  }
-  const {
-    ancestorScroll = true,
-    ancestorResize = true,
-    elementResize = typeof ResizeObserver === "function",
-    layoutShift = typeof IntersectionObserver === "function",
-    animationFrame = false
-  } = options;
-  const referenceEl = unwrapElement(reference2);
-  const ancestors = ancestorScroll || ancestorResize ? [...referenceEl ? getOverflowAncestors(referenceEl) : [], ...getOverflowAncestors(floating)] : [];
-  ancestors.forEach((ancestor) => {
-    ancestorScroll && ancestor.addEventListener("scroll", update2, {
-      passive: true
-    });
-    ancestorResize && ancestor.addEventListener("resize", update2);
-  });
-  const cleanupIo = referenceEl && layoutShift ? observeMove(referenceEl, update2) : null;
-  let reobserveFrame = -1;
-  let resizeObserver = null;
-  if (elementResize) {
-    resizeObserver = new ResizeObserver((_ref) => {
-      let [firstEntry] = _ref;
-      if (firstEntry && firstEntry.target === referenceEl && resizeObserver) {
-        resizeObserver.unobserve(floating);
-        cancelAnimationFrame(reobserveFrame);
-        reobserveFrame = requestAnimationFrame(() => {
-          var _resizeObserver2;
-          (_resizeObserver2 = resizeObserver) == null || _resizeObserver2.observe(floating);
-        });
-      }
-      update2();
-    });
-    if (referenceEl && !animationFrame) {
-      resizeObserver.observe(referenceEl);
-    }
-    resizeObserver.observe(floating);
-  }
-  let frameId;
-  let prevRefRect = animationFrame ? getBoundingClientRect(reference2) : null;
-  if (animationFrame) {
-    frameLoop();
-  }
-  function frameLoop() {
-    const nextRefRect = getBoundingClientRect(reference2);
-    if (prevRefRect && !rectsAreEqual(prevRefRect, nextRefRect)) {
-      update2();
-    }
-    prevRefRect = nextRefRect;
-    frameId = requestAnimationFrame(frameLoop);
-  }
-  update2();
-  return () => {
-    var _resizeObserver2;
-    ancestors.forEach((ancestor) => {
-      ancestorScroll && ancestor.removeEventListener("scroll", update2);
-      ancestorResize && ancestor.removeEventListener("resize", update2);
-    });
-    cleanupIo == null || cleanupIo();
-    (_resizeObserver2 = resizeObserver) == null || _resizeObserver2.disconnect();
-    resizeObserver = null;
-    if (animationFrame) {
-      cancelAnimationFrame(frameId);
-    }
-  };
-}
-var offset2 = offset;
-var shift2 = shift;
-var flip2 = flip;
-var size2 = size;
-var arrow2 = arrow;
-var computePosition2 = (reference2, floating, options) => {
-  const cache4 = /* @__PURE__ */ new Map();
-  const mergedOptions = {
-    platform,
-    ...options
-  };
-  const platformWithCache = {
-    ...mergedOptions.platform,
-    _c: cache4
-  };
-  return computePosition(reference2, floating, {
-    ...mergedOptions,
-    platform: platformWithCache
-  });
-};
-
-// node_modules/composed-offset-position/dist/composed-offset-position.browser.min.mjs
-function e11(t8) {
-  return i8(t8);
-}
-function r10(t8) {
-  return t8.assignedSlot ? t8.assignedSlot : t8.parentNode instanceof ShadowRoot ? t8.parentNode.host : t8.parentNode;
-}
-function i8(e13) {
-  for (let t8 = e13; t8; t8 = r10(t8)) if (t8 instanceof Element && "none" === getComputedStyle(t8).display) return null;
-  for (let n10 = r10(e13); n10; n10 = r10(n10)) {
-    if (!(n10 instanceof Element)) continue;
-    const e14 = getComputedStyle(n10);
-    if ("contents" !== e14.display) {
-      if ("static" !== e14.position || isContainingBlock(e14)) return n10;
-      if ("BODY" === n10.tagName) return n10;
-    }
-  }
-  return null;
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AR3BL5H3.js
-function isVirtualElement(e13) {
-  return e13 !== null && typeof e13 === "object" && "getBoundingClientRect" in e13 && ("contextElement" in e13 ? e13 instanceof Element : true);
-}
-var SlPopup = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.localize = new LocalizeController2(this);
-    this.active = false;
-    this.placement = "top";
-    this.strategy = "absolute";
-    this.distance = 0;
-    this.skidding = 0;
-    this.arrow = false;
-    this.arrowPlacement = "anchor";
-    this.arrowPadding = 10;
-    this.flip = false;
-    this.flipFallbackPlacements = "";
-    this.flipFallbackStrategy = "best-fit";
-    this.flipPadding = 0;
-    this.shift = false;
-    this.shiftPadding = 0;
-    this.autoSizePadding = 0;
-    this.hoverBridge = false;
-    this.updateHoverBridge = () => {
-      if (this.hoverBridge && this.anchorEl) {
-        const anchorRect = this.anchorEl.getBoundingClientRect();
-        const popupRect = this.popup.getBoundingClientRect();
-        const isVertical = this.placement.includes("top") || this.placement.includes("bottom");
-        let topLeftX = 0;
-        let topLeftY = 0;
-        let topRightX = 0;
-        let topRightY = 0;
-        let bottomLeftX = 0;
-        let bottomLeftY = 0;
-        let bottomRightX = 0;
-        let bottomRightY = 0;
-        if (isVertical) {
-          if (anchorRect.top < popupRect.top) {
-            topLeftX = anchorRect.left;
-            topLeftY = anchorRect.bottom;
-            topRightX = anchorRect.right;
-            topRightY = anchorRect.bottom;
-            bottomLeftX = popupRect.left;
-            bottomLeftY = popupRect.top;
-            bottomRightX = popupRect.right;
-            bottomRightY = popupRect.top;
-          } else {
-            topLeftX = popupRect.left;
-            topLeftY = popupRect.bottom;
-            topRightX = popupRect.right;
-            topRightY = popupRect.bottom;
-            bottomLeftX = anchorRect.left;
-            bottomLeftY = anchorRect.top;
-            bottomRightX = anchorRect.right;
-            bottomRightY = anchorRect.top;
-          }
-        } else {
-          if (anchorRect.left < popupRect.left) {
-            topLeftX = anchorRect.right;
-            topLeftY = anchorRect.top;
-            topRightX = popupRect.left;
-            topRightY = popupRect.top;
-            bottomLeftX = anchorRect.right;
-            bottomLeftY = anchorRect.bottom;
-            bottomRightX = popupRect.left;
-            bottomRightY = popupRect.bottom;
-          } else {
-            topLeftX = popupRect.right;
-            topLeftY = popupRect.top;
-            topRightX = anchorRect.left;
-            topRightY = anchorRect.top;
-            bottomLeftX = popupRect.right;
-            bottomLeftY = popupRect.bottom;
-            bottomRightX = anchorRect.left;
-            bottomRightY = anchorRect.bottom;
-          }
-        }
-        this.style.setProperty("--hover-bridge-top-left-x", `${topLeftX}px`);
-        this.style.setProperty("--hover-bridge-top-left-y", `${topLeftY}px`);
-        this.style.setProperty("--hover-bridge-top-right-x", `${topRightX}px`);
-        this.style.setProperty("--hover-bridge-top-right-y", `${topRightY}px`);
-        this.style.setProperty("--hover-bridge-bottom-left-x", `${bottomLeftX}px`);
-        this.style.setProperty("--hover-bridge-bottom-left-y", `${bottomLeftY}px`);
-        this.style.setProperty("--hover-bridge-bottom-right-x", `${bottomRightX}px`);
-        this.style.setProperty("--hover-bridge-bottom-right-y", `${bottomRightY}px`);
-      }
-    };
-  }
-  async connectedCallback() {
-    super.connectedCallback();
-    await this.updateComplete;
-    this.start();
-  }
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this.stop();
-  }
-  async updated(changedProps) {
-    super.updated(changedProps);
-    if (changedProps.has("active")) {
-      if (this.active) {
-        this.start();
-      } else {
-        this.stop();
-      }
-    }
-    if (changedProps.has("anchor")) {
-      this.handleAnchorChange();
-    }
-    if (this.active) {
-      await this.updateComplete;
-      this.reposition();
-    }
-  }
-  async handleAnchorChange() {
-    await this.stop();
-    if (this.anchor && typeof this.anchor === "string") {
-      const root = this.getRootNode();
-      this.anchorEl = root.getElementById(this.anchor);
-    } else if (this.anchor instanceof Element || isVirtualElement(this.anchor)) {
-      this.anchorEl = this.anchor;
-    } else {
-      this.anchorEl = this.querySelector('[slot="anchor"]');
-    }
-    if (this.anchorEl instanceof HTMLSlotElement) {
-      this.anchorEl = this.anchorEl.assignedElements({ flatten: true })[0];
-    }
-    if (this.anchorEl && this.active) {
-      this.start();
-    }
-  }
-  start() {
-    if (!this.anchorEl || !this.active) {
-      return;
-    }
-    this.cleanup = autoUpdate(this.anchorEl, this.popup, () => {
-      this.reposition();
-    });
-  }
-  async stop() {
-    return new Promise((resolve) => {
-      if (this.cleanup) {
-        this.cleanup();
-        this.cleanup = void 0;
-        this.removeAttribute("data-current-placement");
-        this.style.removeProperty("--auto-size-available-width");
-        this.style.removeProperty("--auto-size-available-height");
-        requestAnimationFrame(() => resolve());
-      } else {
-        resolve();
-      }
-    });
-  }
-  /** Forces the popup to recalculate and reposition itself. */
-  reposition() {
-    if (!this.active || !this.anchorEl) {
-      return;
-    }
-    const middleware = [
-      // The offset middleware goes first
-      offset2({ mainAxis: this.distance, crossAxis: this.skidding })
-    ];
-    if (this.sync) {
-      middleware.push(
-        size2({
-          apply: ({ rects }) => {
-            const syncWidth = this.sync === "width" || this.sync === "both";
-            const syncHeight = this.sync === "height" || this.sync === "both";
-            this.popup.style.width = syncWidth ? `${rects.reference.width}px` : "";
-            this.popup.style.height = syncHeight ? `${rects.reference.height}px` : "";
-          }
-        })
-      );
-    } else {
-      this.popup.style.width = "";
-      this.popup.style.height = "";
-    }
-    if (this.flip) {
-      middleware.push(
-        flip2({
-          boundary: this.flipBoundary,
-          // @ts-expect-error - We're converting a string attribute to an array here
-          fallbackPlacements: this.flipFallbackPlacements,
-          fallbackStrategy: this.flipFallbackStrategy === "best-fit" ? "bestFit" : "initialPlacement",
-          padding: this.flipPadding
-        })
-      );
-    }
-    if (this.shift) {
-      middleware.push(
-        shift2({
-          boundary: this.shiftBoundary,
-          padding: this.shiftPadding
-        })
-      );
-    }
-    if (this.autoSize) {
-      middleware.push(
-        size2({
-          boundary: this.autoSizeBoundary,
-          padding: this.autoSizePadding,
-          apply: ({ availableWidth, availableHeight }) => {
-            if (this.autoSize === "vertical" || this.autoSize === "both") {
-              this.style.setProperty("--auto-size-available-height", `${availableHeight}px`);
-            } else {
-              this.style.removeProperty("--auto-size-available-height");
-            }
-            if (this.autoSize === "horizontal" || this.autoSize === "both") {
-              this.style.setProperty("--auto-size-available-width", `${availableWidth}px`);
-            } else {
-              this.style.removeProperty("--auto-size-available-width");
-            }
-          }
-        })
-      );
-    } else {
-      this.style.removeProperty("--auto-size-available-width");
-      this.style.removeProperty("--auto-size-available-height");
-    }
-    if (this.arrow) {
-      middleware.push(
-        arrow2({
-          element: this.arrowEl,
-          padding: this.arrowPadding
-        })
-      );
-    }
-    const getOffsetParent2 = this.strategy === "absolute" ? (element2) => platform.getOffsetParent(element2, e11) : platform.getOffsetParent;
-    computePosition2(this.anchorEl, this.popup, {
-      placement: this.placement,
-      middleware,
-      strategy: this.strategy,
-      platform: __spreadProps(__spreadValues({}, platform), {
-        getOffsetParent: getOffsetParent2
-      })
-    }).then(({ x: x4, y: y5, middlewareData, placement }) => {
-      const isRtl = this.localize.dir() === "rtl";
-      const staticSide = { top: "bottom", right: "left", bottom: "top", left: "right" }[placement.split("-")[0]];
-      this.setAttribute("data-current-placement", placement);
-      Object.assign(this.popup.style, {
-        left: `${x4}px`,
-        top: `${y5}px`
-      });
-      if (this.arrow) {
-        const arrowX = middlewareData.arrow.x;
-        const arrowY = middlewareData.arrow.y;
-        let top = "";
-        let right = "";
-        let bottom = "";
-        let left = "";
-        if (this.arrowPlacement === "start") {
-          const value = typeof arrowX === "number" ? `calc(${this.arrowPadding}px - var(--arrow-padding-offset))` : "";
-          top = typeof arrowY === "number" ? `calc(${this.arrowPadding}px - var(--arrow-padding-offset))` : "";
-          right = isRtl ? value : "";
-          left = isRtl ? "" : value;
-        } else if (this.arrowPlacement === "end") {
-          const value = typeof arrowX === "number" ? `calc(${this.arrowPadding}px - var(--arrow-padding-offset))` : "";
-          right = isRtl ? "" : value;
-          left = isRtl ? value : "";
-          bottom = typeof arrowY === "number" ? `calc(${this.arrowPadding}px - var(--arrow-padding-offset))` : "";
-        } else if (this.arrowPlacement === "center") {
-          left = typeof arrowX === "number" ? `calc(50% - var(--arrow-size-diagonal))` : "";
-          top = typeof arrowY === "number" ? `calc(50% - var(--arrow-size-diagonal))` : "";
-        } else {
-          left = typeof arrowX === "number" ? `${arrowX}px` : "";
-          top = typeof arrowY === "number" ? `${arrowY}px` : "";
-        }
-        Object.assign(this.arrowEl.style, {
-          top,
-          right,
-          bottom,
-          left,
-          [staticSide]: "calc(var(--arrow-size-diagonal) * -1)"
-        });
-      }
-    });
-    requestAnimationFrame(() => this.updateHoverBridge());
-    this.emit("sl-reposition");
-  }
-  render() {
-    return x2`
-      <slot name="anchor" @slotchange=${this.handleAnchorChange}></slot>
-
-      <span
-        part="hover-bridge"
-        class=${e10({
-      "popup-hover-bridge": true,
-      "popup-hover-bridge--visible": this.hoverBridge && this.active
-    })}
-      ></span>
-
-      <div
-        part="popup"
-        class=${e10({
-      popup: true,
-      "popup--active": this.active,
-      "popup--fixed": this.strategy === "fixed",
-      "popup--has-arrow": this.arrow
-    })}
-      >
-        <slot></slot>
-        ${this.arrow ? x2`<div part="arrow" class="popup__arrow" role="presentation"></div>` : ""}
-      </div>
-    `;
-  }
-};
-SlPopup.styles = [component_styles_default, popup_styles_default];
-__decorateClass([
-  e7(".popup")
-], SlPopup.prototype, "popup", 2);
-__decorateClass([
-  e7(".popup__arrow")
-], SlPopup.prototype, "arrowEl", 2);
-__decorateClass([
-  n8()
-], SlPopup.prototype, "anchor", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlPopup.prototype, "active", 2);
-__decorateClass([
-  n8({ reflect: true })
-], SlPopup.prototype, "placement", 2);
-__decorateClass([
-  n8({ reflect: true })
-], SlPopup.prototype, "strategy", 2);
-__decorateClass([
-  n8({ type: Number })
-], SlPopup.prototype, "distance", 2);
-__decorateClass([
-  n8({ type: Number })
-], SlPopup.prototype, "skidding", 2);
-__decorateClass([
-  n8({ type: Boolean })
-], SlPopup.prototype, "arrow", 2);
-__decorateClass([
-  n8({ attribute: "arrow-placement" })
-], SlPopup.prototype, "arrowPlacement", 2);
-__decorateClass([
-  n8({ attribute: "arrow-padding", type: Number })
-], SlPopup.prototype, "arrowPadding", 2);
-__decorateClass([
-  n8({ type: Boolean })
-], SlPopup.prototype, "flip", 2);
-__decorateClass([
-  n8({
-    attribute: "flip-fallback-placements",
-    converter: {
-      fromAttribute: (value) => {
-        return value.split(" ").map((p5) => p5.trim()).filter((p5) => p5 !== "");
-      },
-      toAttribute: (value) => {
-        return value.join(" ");
-      }
-    }
-  })
-], SlPopup.prototype, "flipFallbackPlacements", 2);
-__decorateClass([
-  n8({ attribute: "flip-fallback-strategy" })
-], SlPopup.prototype, "flipFallbackStrategy", 2);
-__decorateClass([
-  n8({ type: Object })
-], SlPopup.prototype, "flipBoundary", 2);
-__decorateClass([
-  n8({ attribute: "flip-padding", type: Number })
-], SlPopup.prototype, "flipPadding", 2);
-__decorateClass([
-  n8({ type: Boolean })
-], SlPopup.prototype, "shift", 2);
-__decorateClass([
-  n8({ type: Object })
-], SlPopup.prototype, "shiftBoundary", 2);
-__decorateClass([
-  n8({ attribute: "shift-padding", type: Number })
-], SlPopup.prototype, "shiftPadding", 2);
-__decorateClass([
-  n8({ attribute: "auto-size" })
-], SlPopup.prototype, "autoSize", 2);
-__decorateClass([
-  n8()
-], SlPopup.prototype, "sync", 2);
-__decorateClass([
-  n8({ type: Object })
-], SlPopup.prototype, "autoSizeBoundary", 2);
-__decorateClass([
-  n8({ attribute: "auto-size-padding", type: Number })
-], SlPopup.prototype, "autoSizePadding", 2);
-__decorateClass([
-  n8({ attribute: "hover-bridge", type: Boolean })
-], SlPopup.prototype, "hoverBridge", 2);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FW7UWQXB.js
 var tooltip_styles_default = i`
@@ -101841,80 +105411,202 @@ var builderStyles = i`
 		--control: #f9f9f9;
 		--blue: var(--sl-color-primary-600, #0284c7);
 		--shadow: 0 1px 3px rgb(0 0 0 / 14%);
+		--panel-shadow: 0 2px 8px rgb(0 0 0 / 9%);
+		--chip-height: 1.35rem;
+		--handle-width: 1.1rem;
+		position: relative;
 		border: 1px solid var(--outline);
 		border-radius: 5px;
 		overflow: hidden;
 		background: white;
+		/* Every small control in the widget is as tall as a filter chip, so the
+		   header, the tool row and the canvas controls share one rhythm. */
+		--sl-input-height-small: var(--chip-height);
 	}
-	.toolbar, .tools, .view-tools, .status, .inspect-title, .fields, .palette-tools, .tool-group, .palette-heading {
+	.document, .tools, .view-tools, .fields, .palette-tools, .tool-group, .palette-heading,
+	.document-title, .document-actions, .card-head, .card-facts, .display-controls, .bond-orders {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: .35rem;
 	}
-	.toolbar, .tools {
+	.document, .tools {
 		background: var(--control);
-		padding: .4rem .5rem;
+		padding: .35rem .5rem;
 		border-bottom: 1px solid var(--line);
 	}
-	.toolbar { justify-content: space-between; gap: .5rem; }
+	.document { justify-content: space-between; gap: .5rem; }
+	.document-title { min-inline-size: 0; flex: 1 1 auto; }
+	.document-title h5 {
+		margin: 0;
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: .9rem;
+		font-weight: 600;
+		line-height: 1.2;
+	}
+	.document-actions { flex: none; }
 	.tool-group + .tool-group {
 		border-inline-start: 1px solid var(--line);
 		padding-inline-start: .35rem;
 	}
 	.tools sl-button::part(base), .view-tools sl-button::part(base) { box-shadow: var(--shadow); }
-	.icon-control::part(label) { display: grid; place-items: center; padding-inline: .35rem; }
+	.icon-control::part(label) { display: grid; place-items: center; padding-inline: .3rem; }
+	/* The catalog, file and send actions open in a compact surface anchored to
+	   their own button instead of pushing a full-width row under the header. */
+	.surface {
+		display: grid;
+		gap: .45rem;
+		max-inline-size: min(22rem, 80cqw);
+		padding: .5rem;
+		border: 1px solid var(--outline);
+		border-radius: 5px;
+		background: white;
+		box-shadow: var(--panel-shadow);
+		font-size: .8rem;
+	}
+	.surface .fields { flex-direction: column; align-items: stretch; gap: .4rem; }
+	.surface .fields label { display: grid; gap: .15rem; }
+	.surface select { inline-size: 100%; }
 	.workspace {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		grid-template-rows: minmax(0, 1fr);
-		block-size: clamp(28rem, 60vh, 38rem);
+		block-size: clamp(32rem, 66vh, 42rem);
 	}
-	.workspace[data-palette="list"] {
-		grid-template-columns: clamp(12rem, 34%, 16rem) minmax(0, 1fr);
-		block-size: clamp(36rem, 72vh, 44rem);
-	}
-	.workspace[data-palette="table"] {
-		grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-	}
+	.workspace[data-palette="list"] { grid-template-columns: clamp(12rem, 34%, 16rem) minmax(0, 1fr); }
+	.workspace[data-palette="table"] { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+	.workspace[data-collapsed] { grid-template-columns: 0 minmax(0, 1fr); }
 	.palette {
+		position: relative;
 		display: flex;
+		flex-direction: column;
+		min-inline-size: 0;
+		min-block-size: 0;
+		padding: .45rem;
+		border-inline-end: 1px solid var(--outline);
+		background: var(--control);
+	}
+	.workspace[data-collapsed] .palette { padding: 0; border-inline-end: 0; }
+	/* The handle is the palette's own edge, like the attached drawer handle of
+	   the lab: it stays in place while the panel opens and closes. */
+	.palette-handle {
+		position: absolute;
+		inset-block-start: .5rem;
+		inset-inline-start: 100%;
+		z-index: 3;
+		display: grid;
+		place-items: center;
+		box-sizing: border-box;
+		inline-size: var(--handle-width);
+		block-size: 2.2rem;
+		padding: 0;
+		border: 1px solid var(--outline);
+		border-inline-start: 0;
+		border-radius: 0 4px 4px 0;
+		background: var(--control);
+		box-shadow: var(--shadow);
+		color: var(--sl-color-neutral-600, #52525b);
+		cursor: pointer;
+	}
+	.palette-handle:focus-visible {
+		outline: 2px solid var(--sl-color-neutral-600, #52525b);
+		outline-offset: -3px;
+	}
+	.palette-body {
+		display: flex;
+		flex: 1 1 auto;
 		flex-direction: column;
 		gap: .4rem;
 		min-inline-size: 0;
 		min-block-size: 0;
-		padding: .45rem;
-		border-right: 1px solid var(--outline);
-		background: var(--control);
 	}
 	.palette-heading { justify-content: space-between; }
-	.palette > webwriter-chemlab-periodic-table {
+	.palette > .palette-body > webwriter-chemlab-periodic-table {
 		flex: 1 1 0;
 		box-shadow: var(--shadow);
 	}
 	.visual {
 		display: grid;
-		grid-template-rows: minmax(0, 1fr) auto;
+		grid-template-rows: minmax(0, 1fr);
 		min-width: 0;
 		background: #fbfbfa;
 	}
-	.board { position: relative; }
+	.board { position: relative; min-block-size: 0; }
+	.board:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
 	.scene, .drawing { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 	.scene { overflow: hidden; }
 	.drawing { display: block; background: radial-gradient(#d4d8db 1px, transparent 1px) 1px 1px / 18px 18px; }
 	.drawing [data-atom] { cursor: pointer; }
-	.view-tools { position: absolute; right: .5rem; bottom: .5rem; z-index: 1; }
+	.view-tools { position: absolute; right: .5rem; bottom: .5rem; z-index: 2; gap: .25rem; }
 	.empty { position: absolute; inset: 45% 12% auto; margin: 0; text-align: center; color: #52525b; pointer-events: none; }
-	.status {
+	/* The model summary and the selection card sit at the canvas edge, so they
+	   keep their place while the structure turns. */
+	.model-summary {
+		position: absolute;
+		inset-block-start: .5rem;
+		inset-inline-start: 1.9rem;
+		z-index: 2;
+		display: grid;
+		gap: .3rem;
+		max-inline-size: min(19rem, calc(100% - 2.4rem));
+		max-block-size: min(11rem, calc(100% - 1rem));
+		overflow: auto;
+		padding: .35rem .45rem;
+		border: 1px solid var(--line);
+		border-radius: 5px;
 		background: white;
-		border-top: 1px solid var(--line);
-		min-height: 2rem;
-		padding: .35rem .5rem;
-		font-size: .8rem;
-		justify-content: space-between;
+		box-shadow: var(--panel-shadow);
+		font-size: .78rem;
 	}
-	.status :is(div, span) { min-width: 0; }
-	.status output { color: #52525b; }
+	.model-summary output { color: #52525b; }
+	.selection-card .fields a {
+		display: inline-flex;
+		align-items: center;
+		block-size: var(--chip-height);
+		padding-inline: .4rem;
+		border: 1px solid var(--line);
+		border-radius: 3px;
+		background: var(--control);
+		color: var(--sl-color-primary-700);
+		font-size: .74rem;
+		text-decoration: none;
+	}
+	.selection-card .fields a:hover { border-color: var(--sl-color-primary-400); }
+	.selection-card .fields a:focus-visible { outline: 2px solid var(--sl-color-primary-600); outline-offset: 1px; }
+	.selection-card {
+		position: absolute;
+		inset-block-end: .5rem;
+		inset-inline-start: .5rem;
+		z-index: 2;
+		display: grid;
+		gap: .35rem;
+		inline-size: max-content;
+		max-inline-size: min(15rem, 62%);
+		max-block-size: min(16rem, calc(100% - 4rem));
+		overflow: auto;
+		padding: .4rem;
+		border: 1px solid var(--line);
+		border-radius: 5px;
+		background: white;
+		box-shadow: var(--panel-shadow);
+		font-size: .8rem;
+		overflow-wrap: anywhere;
+	}
+	.card-head { justify-content: space-between; }
+	.card-facts { gap: .25rem; }
+	.selection-card sl-details::part(base) { border-color: var(--line); }
+	.selection-card sl-details::part(header), .selection-card sl-details::part(content) {
+		padding: .3rem .4rem;
+	}
+	.selection-card sl-details::part(header) {
+		background: var(--control);
+		font-size: .78rem;
+	}
+	.selection-card .fields { flex-direction: column; align-items: stretch; gap: .3rem; }
+	.selection-card .fields label { display: grid; gap: .1rem; }
 	.structure-legend { display: flex; flex-wrap: wrap; gap: .55rem; color: #52525b; }
 	.structure-legend span::before {
 		content: "";
@@ -101926,29 +105618,9 @@ var builderStyles = i`
 		background: var(--swatch, #0284c7);
 	}
 	.structure-legend [data-region="lone"] { --swatch: #a855f7; }
-	.controls-panel {
-		padding: .5rem;
-		background: var(--control);
-		border-bottom: 1px solid var(--line);
-	}
-	.controls-panel select { max-width: 100%; }
-	.inspector {
-		display: grid;
-		gap: .4rem;
-		padding: .55rem;
-		border-top: 1px solid var(--line);
-		background: white;
-		box-shadow: 0 -1px 4px rgb(0 0 0 / 5%);
-	}
-	.inspect-title { justify-content: space-between; }
-	.inspector sl-details::part(base) { border-color: var(--line); }
-	.inspector sl-details::part(header), .inspector sl-details::part(content) {
-		padding: .35rem .5rem;
-	}
-	.inspector sl-details::part(header) {
-		background: var(--control);
-		font-size: .8rem;
-	}
+	.structure-legend [data-marker="lattice"]::before { border-radius: 1px; --swatch: #283648; }
+	.display-controls { gap: .25rem; }
+	.display-controls select { max-inline-size: 6rem; }
 	input, select { color: inherit; font: inherit; accent-color: var(--blue); }
 	select, input:not([type=file]) {
 		padding: .28em .4em;
@@ -101971,15 +105643,46 @@ var builderStyles = i`
 		box-shadow: var(--shadow);
 	}
 	@container (max-width: 510px) {
-		.workspace[data-palette="list"] {
+		/* Stacked, the palette sits above the canvas and the handle becomes a tab
+		   hanging from its lower edge instead of a strip on the side. */
+		.workspace[data-palette], .workspace[data-collapsed] {
 			grid-template-columns: minmax(0, 1fr);
-			grid-template-rows: minmax(0, 1fr) minmax(18rem, 1fr);
-			block-size: clamp(40rem, 120vh, 50rem);
+			grid-template-rows: minmax(0, 2fr) minmax(0, 3fr);
 		}
-		.workspace[data-palette="list"] .palette {
+		.workspace[data-collapsed] { grid-template-rows: 0 minmax(0, 1fr); }
+		.palette {
 			border-inline-end: 0;
 			border-block-end: 1px solid var(--outline);
 		}
+		.workspace[data-collapsed] .palette { border-block-end: 0; }
+		.palette-handle {
+			inset-block-start: auto;
+			inset-block-end: 0;
+			inset-inline-start: auto;
+			inset-inline-end: .5rem;
+			transform: translateY(100%);
+			inline-size: 2.2rem;
+			block-size: var(--handle-width);
+			border: 1px solid var(--outline);
+			border-block-start: 0;
+			border-radius: 0 0 4px 4px;
+		}
+		.palette-handle svg { transform: rotate(90deg); }
+		/* The canvas is narrow here, so the view controls stand in a column at the
+		   right edge and the cards keep clear of it. */
+		.view-tools {
+			flex-direction: column;
+			inset-block: 50% auto;
+			transform: translateY(-50%);
+		}
+		/* The handle hangs below the palette here, so the summary starts under it
+		   and both cards keep clear of the view controls on the right. */
+		.model-summary {
+			inset-block-start: 1.75rem;
+			inset-inline-start: .5rem;
+			max-block-size: min(11rem, calc(100% - 2.25rem));
+		}
+		.model-summary, .selection-card { max-inline-size: calc(100% - 4.2rem); }
 	}
 `;
 
@@ -101989,9 +105692,19 @@ var chargeText = (charge) => charge === 0 ? "" : `${Math.abs(charge) > 1 ? Math.
 var distance = (a5, b4) => Math.hypot(a5.x - b4.x, a5.y - b4.y);
 var pointer = (event) => ({ x: event.clientX, y: event.clientY, id: event.pointerId });
 var groups = [...new Set(structureCatalog.map((entry) => entry.category))];
-var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showLattice_dec, _showElectrons_dec, _pickerView_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _openPanel, _labs, _showLabs, _paletteOpen, _pickerView, _showElectrons, _showLattice, _view2, _tool, _element, _picked, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _lastDrawn, _lastDrawnRepeats, _diagramBounds, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, placement_fn, addAtom_fn, setTool_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, _pointerDown, _pointerMove, _pointerUp, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, renderHistoryButton_fn, renderPickerLayout_fn, renderDrawing_fn, renderInspector_fn;
+var PALETTE_GRID_MIN = 352;
+var CUBE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+	<path d="M8 1.9 13.8 5v6L8 14.1 2.2 11V5z" /><path d="M2.2 5 8 8.1 13.8 5M8 8.1v6" /></svg>`;
+var PLANE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+	<path d="M8 1.9 13.8 5v6L8 14.1 2.2 11V5z" /><circle cx="8" cy="8" r="1.7" /></svg>`;
+var FIT_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" /></svg>`;
+var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _lastDrawn, _lastDrawnRepeats, _diagramBounds, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, _pointerDown, _pointerMove, _pointerUp, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, renderDrawing_fn, renderModelSummary_fn, renderSelectionCard_fn;
 _ChemLabMoleculeBuilder_decorators = [t4(BUILDER_TAG)];
-var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showLattice_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
+var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
   constructor() {
     super(...arguments);
     __privateAdd(this, _ChemLabMoleculeBuilder_instances);
@@ -102007,21 +105720,24 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _labs, __runInitializers(_init3, 40, this, [])), __runInitializers(_init3, 43, this);
     __privateAdd(this, _showLabs, __runInitializers(_init3, 44, this, false)), __runInitializers(_init3, 47, this);
     __privateAdd(this, _paletteOpen, __runInitializers(_init3, 48, this, true)), __runInitializers(_init3, 51, this);
-    __privateAdd(this, _pickerView, __runInitializers(_init3, 52, this, "list")), __runInitializers(_init3, 55, this);
-    __privateAdd(this, _showElectrons, __runInitializers(_init3, 56, this, false)), __runInitializers(_init3, 59, this);
-    __privateAdd(this, _showLattice, __runInitializers(_init3, 60, this, false)), __runInitializers(_init3, 63, this);
-    __privateAdd(this, _view2, __runInitializers(_init3, 64, this, "3d")), __runInitializers(_init3, 67, this);
-    __privateAdd(this, _tool, __runInitializers(_init3, 68, this, "orbit")), __runInitializers(_init3, 71, this);
-    __privateAdd(this, _element, __runInitializers(_init3, 72, this, 6)), __runInitializers(_init3, 75, this);
-    __privateAdd(this, _picked, __runInitializers(_init3, 76, this)), __runInitializers(_init3, 79, this);
-    __privateAdd(this, _bondStart, __runInitializers(_init3, 80, this)), __runInitializers(_init3, 83, this);
-    __privateAdd(this, _bondOrder, __runInitializers(_init3, 84, this, 1)), __runInitializers(_init3, 87, this);
-    __privateAdd(this, _repeats, __runInitializers(_init3, 88, this, 1)), __runInitializers(_init3, 91, this);
-    __privateAdd(this, _notice, __runInitializers(_init3, 92, this, "")), __runInitializers(_init3, 95, this);
-    __privateAdd(this, _gpu, __runInitializers(_init3, 96, this, "idle")), __runInitializers(_init3, 99, this);
-    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 100, this)), __runInitializers(_init3, 103, this);
-    __privateAdd(this, _bondPreview, __runInitializers(_init3, 104, this)), __runInitializers(_init3, 107, this);
-    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 108, this)), __runInitializers(_init3, 111, this);
+    __privateAdd(this, _paletteNarrow, __runInitializers(_init3, 52, this, false)), __runInitializers(_init3, 55, this);
+    __privateAdd(this, _pickerView, __runInitializers(_init3, 56, this, "list")), __runInitializers(_init3, 59, this);
+    __privateAdd(this, _showElectrons, __runInitializers(_init3, 60, this, false)), __runInitializers(_init3, 63, this);
+    __privateAdd(this, _showLattice, __runInitializers(_init3, 64, this, false)), __runInitializers(_init3, 67, this);
+    __privateAdd(this, _showEdges, __runInitializers(_init3, 68, this, true)), __runInitializers(_init3, 71, this);
+    __privateAdd(this, _showAxes, __runInitializers(_init3, 72, this, false)), __runInitializers(_init3, 75, this);
+    __privateAdd(this, _view2, __runInitializers(_init3, 76, this, "3d")), __runInitializers(_init3, 79, this);
+    __privateAdd(this, _tool, __runInitializers(_init3, 80, this, "orbit")), __runInitializers(_init3, 83, this);
+    __privateAdd(this, _element, __runInitializers(_init3, 84, this, 6)), __runInitializers(_init3, 87, this);
+    __privateAdd(this, _picked, __runInitializers(_init3, 88, this)), __runInitializers(_init3, 91, this);
+    __privateAdd(this, _bondStart, __runInitializers(_init3, 92, this)), __runInitializers(_init3, 95, this);
+    __privateAdd(this, _bondOrder, __runInitializers(_init3, 96, this, 1)), __runInitializers(_init3, 99, this);
+    __privateAdd(this, _repeats, __runInitializers(_init3, 100, this, 1)), __runInitializers(_init3, 103, this);
+    __privateAdd(this, _notice, __runInitializers(_init3, 104, this, "")), __runInitializers(_init3, 107, this);
+    __privateAdd(this, _gpu, __runInitializers(_init3, 108, this, "idle")), __runInitializers(_init3, 111, this);
+    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 112, this)), __runInitializers(_init3, 115, this);
+    __privateAdd(this, _bondPreview, __runInitializers(_init3, 116, this)), __runInitializers(_init3, 119, this);
+    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 120, this)), __runInitializers(_init3, 123, this);
     __privateAdd(this, _scene);
     __privateAdd(this, _sceneLoad, 0);
     __privateAdd(this, _fitNext, true);
@@ -102032,6 +105748,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _gesture);
     __privateAdd(this, _pointers, /* @__PURE__ */ new Map());
     __privateAdd(this, _router);
+    __privateAdd(this, _paletteObserver);
     __privateAdd(this, _dataObserver);
     __privateAdd(this, _worksheetObserver);
     __privateAdd(this, _waitingForLab, false);
@@ -102071,7 +105788,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       window.addEventListener("blur", clear, options);
     });
     __privateAdd(this, _pointerDown, (event) => {
-      if (event.button !== 0 || event.composedPath().some((target) => target instanceof Element && target.classList.contains("view-tools"))) return;
+      if (event.button !== 0 || event.composedPath().some((target) => target instanceof Element && (target.classList.contains("view-tools") || target.classList.contains("model-summary") || target.classList.contains("selection-card")))) return;
       const point = pointer(event);
       __privateGet(this, _pointers).set(event.pointerId, point);
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -102163,6 +105880,9 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         __privateMethod(this, _ChemLabMoleculeBuilder_instances, removeAtom_fn).call(this);
       } else if (event.key === "Escape" && this.bondStart !== void 0) {
         __privateMethod(this, _ChemLabMoleculeBuilder_instances, setTool_fn).call(this, this.tool);
+      } else if ((event.key === "Enter" || event.key === " ") && this.tool === "atom" && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) && event.composedPath().some((target) => target instanceof Element && target.classList.contains("board"))) {
+        event.preventDefault();
+        __privateMethod(this, _ChemLabMoleculeBuilder_instances, addAtom_fn).call(this, __privateMethod(this, _ChemLabMoleculeBuilder_instances, centre_fn).call(this));
       }
     });
     __privateAdd(this, _openFile, async (file) => {
@@ -102203,6 +105923,8 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateGet(this, _pointers).clear();
     __privateSet(this, _gesture, void 0);
     __privateGet(this, _router)?.dispose();
+    __privateGet(this, _paletteObserver)?.disconnect();
+    __privateSet(this, _paletteObserver, void 0);
     __privateGet(this, _dataObserver)?.disconnect();
     __privateGet(this, _worksheetObserver)?.disconnect();
     __privateGet(this, _scene)?.destroy();
@@ -102212,14 +105934,14 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
   }
   updated(changed) {
     if (changed.has("elementSourceId")) __privateMethod(this, _ChemLabMoleculeBuilder_instances, bindTable_fn).call(this);
+    __privateMethod(this, _ChemLabMoleculeBuilder_instances, observePalette_fn).call(this);
     if (this.view === "3d" && this.gpu === "idle") void __privateMethod(this, _ChemLabMoleculeBuilder_instances, startScene_fn).call(this);
     if (__privateGet(this, _scene) && this.view === "3d") {
       __privateGet(this, _scene).setScene(
         __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get),
         this.repeats,
         [this.picked, this.bondStart].filter((id) => id !== void 0),
-        this.showElectrons,
-        this.showLattice
+        { electrons: this.showElectrons, lattice: this.showLattice, edges: this.showEdges, axes: this.showAxes }
       );
       if (__privateGet(this, _fitNext)) {
         __privateSet(this, _fitNext, false);
@@ -102251,7 +105973,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     const lattice = metalCrystal(this.element);
     const paletteVisible = this.paletteOpen && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get);
     const fullWidth = this.classList.contains("ww-full-width");
-    const pickerView = fullWidth ? this.pickerView : "list";
+    const pickerView = fullWidth && !this.paletteNarrow ? this.pickerView : "list";
     const ionColors = current.kind === "crystal" ? crystalIonColors(current) : /* @__PURE__ */ new Map();
     const representation = current.kind === "molecule" && current.representation && {
       conformer: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "PubChem conformer", "PubChem-Konformer"),
@@ -102262,15 +105984,14 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     }[current.representation];
     const tool = (value, label) => x2`<sl-button size="small" variant=${value === this.tool ? "primary" : "default"}
 			aria-pressed=${value === this.tool} @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, setTool_fn).call(this, value)}>${label}</sl-button>`;
-    const chooseView = (value, label) => x2`<sl-button size="small"
-			variant=${value === this.view ? "primary" : "default"} aria-pressed=${value === this.view}
-			?disabled=${value === "3d" && this.gpu === "unavailable"} @click=${() => {
-      this.view = value;
-    }}>${label}</sl-button>`;
     const fit = () => {
       __privateGet(this, _scene)?.fit();
       __privateSet(this, _lastDrawn, void 0);
       this.requestUpdate();
+    };
+    const title = current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : current.name || formula(current);
+    const toggle = (panel) => () => {
+      this.openPanel = this.openPanel === panel ? void 0 : panel;
     };
     return x2`<div class="builder" contenteditable="false" @keydown=${__privateGet(this, _keys)}
 			@dragover=${(event) => {
@@ -102282,83 +106003,87 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         void __privateGet(this, _openFile).call(this, event.dataTransfer.files[0]);
       }
     }}>
-			<header class="toolbar">
-				<div class="tool-group">
+			<header class="document">
+				<div class="document-title">
 					<sl-tag size="small" variant="primary">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Molecule Builder", "Molek\xFClbaukasten")}</sl-tag>
-					<sl-button size="small" aria-expanded=${this.openPanel === "catalog"}
-						@click=${() => {
-      this.openPanel = this.openPanel === "catalog" ? void 0 : "catalog";
-    }}>
-						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog")}
-					</sl-button>
-					<sl-button size="small" aria-expanded=${this.openPanel === "file"}
-						@click=${() => {
-      this.openPanel = this.openPanel === "file" ? void 0 : "file";
-    }}>
-						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "File", "Datei")}
-					</sl-button>
+					<h5 title=${title}>${title}</h5>
+					<sl-tag size="small" variant=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? "warning" : "neutral"}>
+						${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Preview", "Vorschau") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Draft", "Entwurf")}
+					</sl-tag>
 				</div>
-				${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length && this.labs.length ? x2`
-					<sl-button size="small" variant="primary" @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, prepareSend_fn)}>
-						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Send to ChemLab", "An ChemLab senden")}
-					</sl-button>
-				` : E2}
-			</header>
-			${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderCatalog_fn).call(this)}
-			${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderFileActions_fn).call(this)}
-			${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderTargetPicker_fn).call(this)}
-			<div class="tools">
-				<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Workspace view", "Arbeitsansicht")}>
-					${!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<sl-button size="small" aria-expanded=${paletteVisible}
-						@click=${() => {
-      this.paletteOpen = !this.paletteOpen;
-    }}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Elements", "Elemente")}</sl-button>` : E2}
-					${chooseView("3d", "3D")}${chooseView("2d", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure", "Struktur"))}
-				</div>
-				${!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`
-					<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Editing tools", "Bearbeitungswerkzeuge")}>
-						${tool("orbit", this.view === "3d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Orbit", "Drehen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Select", "Ausw\xE4hlen"))}
-						${tool("atom", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place atom", "Atom platzieren"))}
-						${current.kind === "molecule" ? tool("bond", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Draw bond", "Bindung zeichnen")) : E2}
-						${this.tool === "bond" ? x2`<label class="fields">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Order", "Ordnung")} <select .value=${String(this.bondOrder)}
-							@change=${(event) => {
-      this.bondOrder = Number(event.currentTarget.value);
-    }}>
-							<option value="1">1</option><option value="2">2</option><option value="3">3</option>
-						</select></label>` : E2}
-						${current.kind === "molecule" && current.bonds.length ? x2`<sl-button size="small" @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, geometry_fn)}>
-							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit geometry", "Geometrie anpassen")}
-						</sl-button>` : E2}
-					</div>
-					${__privateGet(this, _past).length || __privateGet(this, _future).length ? x2`
-						<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "History", "Verlauf")}>
-							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderHistoryButton_fn).call(this, false)}${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderHistoryButton_fn).call(this, true)}
-						</div>` : E2}
-				` : x2`
-					<div class="tool-group">
+				<div class="document-actions">
+					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "catalog"}>
+						<sl-button slot="anchor" size="small" aria-expanded=${this.openPanel === "catalog"} @click=${toggle("catalog")}>
+							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog")}
+						</sl-button>
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderCatalog_fn).call(this)}
+					</sl-popup>
+					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "file"}>
+						<sl-button slot="anchor" size="small" aria-expanded=${this.openPanel === "file"} @click=${toggle("file")}>
+							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "File", "Datei")}
+						</sl-button>
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderFileActions_fn).call(this)}
+					</sl-popup>
+					${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length && this.labs.length ? x2`<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.showLabs}>
+						<sl-button slot="anchor" size="small" variant="primary" @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, prepareSend_fn)}>
+							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Send to ChemLab", "An ChemLab senden")}
+						</sl-button>
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderTargetPicker_fn).call(this)}
+					</sl-popup>` : E2}
+					${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`
 						<sl-button size="small" variant="primary" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, closePreview_fn).call(this, true)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Edit copy", "Kopie bearbeiten")}</sl-button>
 						<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, closePreview_fn).call(this, false)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Close preview", "Vorschau schlie\xDFen")}</sl-button>
-					</div>
-				`}
-			</div>
-			<div class="workspace" data-palette=${paletteVisible ? pickerView : E2}>
-				<aside class="palette" ?hidden=${!paletteVisible}>
-					<div class="palette-heading">
-						<div class="palette-tools">
-							<sl-tag size="small" variant="primary">${symbol(this.element)} · ${elementByAtomicNumber(this.element).names[__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "en", "de")]}</sl-tag>
-							<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, addAtom_fn).call(this)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Add atom", "Atom hinzuf\xFCgen")}</sl-button>
+					` : E2}
+				</div>
+			</header>
+			${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? E2 : x2`<div class="tools" role="toolbar" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Editing tools", "Bearbeitungswerkzeuge")}>
+				<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Tools", "Werkzeuge")}>
+					${tool("orbit", this.view === "3d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Orbit", "Drehen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Select", "Ausw\xE4hlen"))}
+					${tool("atom", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place atom", "Atom platzieren"))}
+					${current.kind === "molecule" ? tool("bond", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Draw bond", "Bindung zeichnen")) : E2}
+					${this.tool === "bond" ? x2`<span class="bond-orders" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bond order", "Bindungsordnung")}>
+						${[1, 2, 3].map((order) => x2`<sl-button class="icon-control" size="small"
+							variant=${order === this.bondOrder ? "primary" : "default"} aria-pressed=${String(order === this.bondOrder)}
+							aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, `Bond order ${order}`, `Bindungsordnung ${order}`)}
+							title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, `Bond order ${order}`, `Bindungsordnung ${order}`)}
+							@click=${() => {
+      this.bondOrder = order;
+    }}>${order}</sl-button>`)}
+					</span>` : E2}
+				</div>
+				${current.kind === "molecule" && current.bonds.length ? x2`<div class="tool-group">
+					<sl-button size="small" @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, geometry_fn)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit geometry", "Geometrie anpassen")}</sl-button>
+				</div>` : E2}
+				${__privateGet(this, _past).length || __privateGet(this, _future).length ? x2`<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "History", "Verlauf")}>
+					${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderHistoryButton_fn).call(this, false)}${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderHistoryButton_fn).call(this, true)}
+				</div>` : E2}
+			</div>`}
+			<div class="workspace" data-palette=${paletteVisible ? pickerView : E2} ?data-collapsed=${!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) && !paletteVisible}>
+				${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? E2 : x2`<aside class="palette">
+					<button class="palette-handle" type="button" aria-expanded=${String(paletteVisible)} aria-controls="palette-body"
+						aria-label=${paletteVisible ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Collapse the element palette", "Elementpalette einklappen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Open the element palette", "Elementpalette \xF6ffnen")}
+						title=${paletteVisible ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Collapse the element palette", "Elementpalette einklappen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Open the element palette", "Elementpalette \xF6ffnen")}
+						@click=${() => {
+      this.paletteOpen = !this.paletteOpen;
+    }}>
+						<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" aria-hidden="true">
+							<path d=${paletteVisible ? "m9 3-4 4 4 4" : "m5 3 4 4-4 4"} />
+						</svg>
+					</button>
+					<div class="palette-body" id="palette-body" ?hidden=${!paletteVisible}>
+						<div class="palette-heading">
 							${lattice ? x2`<sl-button size="small" @click=${() => this.viewStructure(lattice)}>
 								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "View crystal", "Kristall ansehen")}</sl-button>` : E2}
+							${lattice === null ? x2`<sl-tag size="small">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bulk lattice unavailable", "Keine experimentelle Gitterstruktur")}</sl-tag>` : E2}
+							${fullWidth ? x2`<div class="palette-tools" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Element palette layout", "Darstellung der Elementpalette")}>
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderPickerLayout_fn).call(this, "list", pickerView === "list")}${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderPickerLayout_fn).call(this, "table", pickerView === "table")}
+							</div>` : E2}
 						</div>
-						${lattice === null ? x2`<sl-tag size="small">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bulk lattice unavailable", "Keine experimentelle Gitterstruktur")}</sl-tag>` : E2}
-						${fullWidth ? x2`<div class="palette-tools" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Element palette layout", "Darstellung der Elementpalette")}>
-							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderPickerLayout_fn).call(this, "list")}${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderPickerLayout_fn).call(this, "table")}
-						</div>` : E2}
+						<webwriter-chemlab-periodic-table .view=${pickerView} picker-mode .selectedAtomicNumber=${this.element}
+							@chemlab:element-selection=${__privateGet(this, _selectPalette)} @chemlab:element-drag=${__privateGet(this, _dragPalette)}>
+						</webwriter-chemlab-periodic-table>
 					</div>
-					<webwriter-chemlab-periodic-table .view=${pickerView} picker-mode .selectedAtomicNumber=${this.element}
-						@chemlab:element-selection=${__privateGet(this, _selectPalette)} @chemlab:element-drag=${__privateGet(this, _dragPalette)}>
-					</webwriter-chemlab-periodic-table>
-				</aside>
+				</aside>`}
 				<main class="visual">
 					<div class="board" tabindex="0" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure workspace", "Struktur-Arbeitsfl\xE4che")}
 						@pointerdown=${__privateGet(this, _pointerDown)} @pointermove=${__privateGet(this, _pointerMove)} @pointerup=${__privateGet(this, _pointerUp)} @pointercancel=${__privateGet(this, _pointerUp)} @wheel=${__privateGet(this, _wheel)}>
@@ -102366,62 +106091,37 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
 						${this.view === "2d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, renderDrawing_fn).call(this, ionColors) : E2}
 						${this.gpu === "loading" && this.view === "3d" ? x2`<p class="empty" role="status"><sl-spinner></sl-spinner>
 							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Loading 3D view", "3D-Ansicht wird geladen")}</p>` : !__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<p class="empty">
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Drag an element here or use Add atom.", "Ziehe ein Element hierher oder w\xE4hle Atom hinzuf\xFCgen.")}
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Drag an element here, or choose Place atom and click the canvas.", "Ziehe ein Element hierher oder w\xE4hle Atom platzieren und klicke auf die Fl\xE4che.")}
 							</p>` : E2}
-						<div class="view-tools">
-							${current.kind === "crystal" ? x2`
-								<sl-button size="small" variant=${this.showLattice ? "primary" : "default"} aria-pressed=${this.showLattice}
-									title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Mark the Bravais lattice points of the displayed cell.", "Bravais-Gitterpunkte der dargestellten Zelle markieren.")}
-									@click=${() => {
-      this.showLattice = !this.showLattice;
-    }}>
-									${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Lattice positions", "Gitterpunkte")}
-								</sl-button>` : E2}
+						<div class="view-tools" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Canvas view", "Ansicht der Zeichenfl\xE4che")}>
+							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "3D view", "3D-Ansicht"),
+      icon: CUBE_ICON,
+      pressed: this.view === "3d",
+      disabled: this.gpu === "unavailable",
+      onClick: () => {
+        this.view = "3d";
+      }
+    })}
+							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure view", "Strukturansicht"),
+      icon: PLANE_ICON,
+      pressed: this.view === "2d",
+      onClick: () => {
+        this.view = "2d";
+      }
+    })}
 							${this.view === "3d" && this.gpu === "ready" ? x2`
-								${current.kind === "molecule" && current.atoms.length ? x2`
-									<sl-button size="small" variant=${this.showElectrons ? "primary" : "default"} aria-pressed=${this.showElectrons}
-										@click=${() => {
-      this.showElectrons = !this.showElectrons;
-    }}>
-										${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Valence electrons", "Valenzelektronen")}
-									</sl-button>` : E2}
-								<sl-button size="small" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom in", "Vergr\xF6\xDFern")} @click=${() => __privateGet(this, _scene)?.zoom(0.83)}>+</sl-button>
-								<sl-button size="small" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom out", "Verkleinern")} @click=${() => __privateGet(this, _scene)?.zoom(1.2)}>−</sl-button>
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom in", "Vergr\xF6\xDFern"), icon: "+", onClick: () => __privateGet(this, _scene)?.zoom(0.83) })}
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom out", "Verkleinern"), icon: "\u2212", onClick: () => __privateGet(this, _scene)?.zoom(1.2) })}
 							` : E2}
-							<sl-button size="small" @click=${fit}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit view", "Ansicht einpassen")}</sl-button>
+							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit })}
 						</div>
-					</div>
-					<div class="status">
-						<div class="fields">
-							<sl-tag size="small">${current.kind === "molecule" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Molecule", "Molek\xFCl") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Crystal", "Kristall")}</sl-tag>
-							${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<sl-tag size="small">${current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : current.name || formula(current)}
-								${current.catalogKey && current.name ? ` \xB7 ${current.name}` : ""}</sl-tag>` : E2}
-							${representation ? x2`<sl-tag size="small">${representation}</sl-tag>` : E2}
-							${current.source?.startsWith("https://") ? x2`<a href=${current.source} target="_blank" rel="noopener noreferrer">
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure source", "Strukturquelle")}</a>` : E2}
-							${current.kind === "molecule" && current.geometry === "idealized" ? x2`<sl-tag size="small">
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Idealized geometry", "Idealisierte Geometrie")}
-							</sl-tag>` : E2}
-							${current.kind === "molecule" && current.geometry === "estimated" ? x2`<sl-tag size="small">
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Estimated geometry", "Gesch\xE4tzte Geometrie")}
-							</sl-tag>` : E2}
-							${current.kind === "molecule" && !current.geometry && __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<sl-tag size="small">
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Sketch", "Skizze")}
-							</sl-tag>` : E2}
-						</div>
-						${ionColors.size ? x2`<span class="structure-legend" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ion colours", "Ionenfarben")}>
-							${[...ionColors].map(([ion2, color]) => x2`<span style="--swatch: ${colorHex(color)}">${ion2}</span>`)}
-						</span>` : E2}
-						${current.kind === "molecule" && this.showElectrons && this.view === "3d" ? x2`
-							<span class="structure-legend" title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Approximate Lewis and VSEPR regions. Dots represent electron counts in the displayed bonding model.", "Angen\xE4herte Lewis- und VSEPR-Bereiche. Punkte stehen f\xFCr die Elektronenzahl im dargestellten Bindungsmodell.")}>
-								<span data-region="bond">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bonding", "Bindend")}</span>
-								<span data-region="lone">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Nonbonding", "Nichtbindend")}</span>
-							</span>` : E2}
-						<output aria-live="polite">${this.notice || (this.bondStart ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose the other atom.", "W\xE4hle das zweite Atom.") : "")}</output>
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderModelSummary_fn).call(this, current, representation, ionColors)}
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderSelectionCard_fn).call(this)}
 					</div>
 				</main>
 			</div>
-			${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderInspector_fn).call(this)}
 			${this.paletteDrag ? x2`<div class="ghost" aria-hidden="true" style="left:${this.paletteDrag.x}px;top:${this.paletteDrag.y}px">
 				${symbol(this.paletteDrag.atomicNumber)}
 			</div>` : E2}
@@ -102440,9 +106140,12 @@ _openPanel = new WeakMap();
 _labs = new WeakMap();
 _showLabs = new WeakMap();
 _paletteOpen = new WeakMap();
+_paletteNarrow = new WeakMap();
 _pickerView = new WeakMap();
 _showElectrons = new WeakMap();
 _showLattice = new WeakMap();
+_showEdges = new WeakMap();
+_showAxes = new WeakMap();
 _view2 = new WeakMap();
 _tool = new WeakMap();
 _element = new WeakMap();
@@ -102465,6 +106168,7 @@ _fileOpen = new WeakMap();
 _gesture = new WeakMap();
 _pointers = new WeakMap();
 _router = new WeakMap();
+_paletteObserver = new WeakMap();
 _dataObserver = new WeakMap();
 _worksheetObserver = new WeakMap();
 _waitingForLab = new WeakMap();
@@ -102498,6 +106202,27 @@ bindTable_fn = function() {
     }
   }));
   __privateGet(this, _router).bind();
+};
+/**
+ * Watches the workspace width. The grid split gives the palette 40 % of it,
+ * so a narrow embed falls back to the list and keeps the symbols readable.
+ * The measurement is the workspace, not the palette, because the palette
+ * width follows the chosen layout and would otherwise block the switch.
+ */
+observePalette_fn = function() {
+  const workspace = this.renderRoot.querySelector(".workspace");
+  if (!workspace) {
+    __privateGet(this, _paletteObserver)?.disconnect();
+    __privateSet(this, _paletteObserver, void 0);
+    return;
+  }
+  if (__privateGet(this, _paletteObserver)) return;
+  __privateSet(this, _paletteObserver, new ResizeObserver((entries2) => {
+    const width = entries2[0]?.contentRect.width ?? 0;
+    const narrow = width > 0 && width * 0.4 < PALETTE_GRID_MIN;
+    if (narrow !== this.paletteNarrow) this.paletteNarrow = narrow;
+  }));
+  __privateGet(this, _paletteObserver).observe(workspace);
 };
 startScene_fn = async function() {
   const host = this.renderRoot.querySelector(".scene");
@@ -102608,6 +106333,12 @@ placement_fn = function(x4, y5) {
   if (this.view === "3d" && __privateGet(this, _scene)) return __privateGet(this, _scene).placement(x4, y5);
   const [a5, b4] = __privateMethod(this, _ChemLabMoleculeBuilder_instances, diagramPoint_fn).call(this, x4, y5);
   return [a5, b4, 0];
+};
+/** The view centre, so an atom can be placed without a pointer. */
+centre_fn = function() {
+  const box = this.renderRoot.querySelector(".board")?.getBoundingClientRect();
+  if (this.view === "3d" && __privateGet(this, _scene) && box) return __privateGet(this, _scene).placement(box.left + box.width / 2, box.top + box.height / 2);
+  return [0, 0, 0];
 };
 addAtom_fn = function(position, atomicNumber = this.element) {
   if (__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)) return;
@@ -102807,6 +106538,7 @@ closePreview_fn = function(edit) {
   this.preview = void 0;
   this.catalogKey = "";
   this.catalogVariants = [];
+  this.openPanel = void 0;
   if (edit && current) __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, current, true);
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, resetSelection_fn).call(this);
 };
@@ -102857,8 +106589,8 @@ renderCatalog_fn = function() {
     const value = event.currentTarget.value;
     if (value) this.viewCatalogStructure(value);
   };
-  return x2`<div class="controls-panel fields">
-			<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog")}
+  return x2`<div class="surface" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog")}>
+			<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Substance", "Stoff")}
 				<select .value=${this.catalogKey} @change=${change}>
 					<option value="">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose a substance", "Stoff ausw\xE4hlen")}</option>
 					${groups.map((category) => x2`<optgroup label=${category}>
@@ -102881,7 +106613,7 @@ renderCatalog_fn = function() {
 };
 renderTargetPicker_fn = function() {
   if (!this.showLabs) return E2;
-  return x2`<div class="controls-panel fields">
+  return x2`<div class="surface" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Send to", "Senden an")}>
 			<span>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Send to", "Senden an")}</span>
 			${this.labs.map((lab, index) => x2`<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, send_fn).call(this, lab)}>
 				${lab.id || `ChemLab ${index + 1}`}
@@ -102893,7 +106625,7 @@ renderTargetPicker_fn = function() {
 };
 renderFileActions_fn = function() {
   if (this.openPanel !== "file") return E2;
-  return x2`<div id="file-actions" class="controls-panel fields">
+  return x2`<div id="file-actions" class="surface" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "File", "Datei")}>
 			<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, new_fn).call(this, "molecule")}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "New molecule", "Neues Molek\xFCl")}</sl-button>
 			<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, new_fn).call(this, "crystal")}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "New crystal", "Neuer Kristall")}</sl-button>
 			<input type="file" hidden accept=".json,application/json" @change=${(event) => {
@@ -102907,6 +106639,12 @@ renderFileActions_fn = function() {
 			<sl-button size="small" ?disabled=${!__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length} @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, download_fn)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Download", "Herunterladen")}</sl-button>
 		</div>`;
 };
+/** Renders a compact icon control, the shape the canvas controls share with the lab. */
+iconButton_fn = function(options) {
+  return x2`<sl-button class="icon-control" size="small" aria-label=${options.label} title=${options.label}
+			variant=${options.pressed ? "primary" : "default"} aria-pressed=${options.pressed === void 0 ? E2 : String(options.pressed)}
+			?disabled=${options.disabled} @click=${options.onClick}>${options.icon}</sl-button>`;
+};
 renderHistoryButton_fn = function(redo) {
   const label = redo ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Redo", "Wiederholen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Undo", "R\xFCckg\xE4ngig");
   return x2`<sl-button class="icon-control" size="small" aria-label=${label} title=${label}
@@ -102917,10 +106655,10 @@ renderHistoryButton_fn = function(redo) {
 			</svg>
 		</sl-button>`;
 };
-renderPickerLayout_fn = function(view) {
+renderPickerLayout_fn = function(view, active) {
   const label = view === "list" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "List view", "Listenansicht") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Grid view", "Rasteransicht");
   return x2`<sl-button class="icon-control" size="small" aria-label=${label} title=${label}
-			variant=${this.pickerView === view ? "primary" : "default"} aria-pressed=${this.pickerView === view}
+			variant=${active ? "primary" : "default"} aria-pressed=${String(active)}
 			@click=${() => {
     this.pickerView = view;
   }}>${view === "list" ? LIST_ICON : TABLE_ICON}</sl-button>`;
@@ -102983,12 +106721,60 @@ renderDrawing_fn = function(colors2) {
 			</g>
 		</svg>`;
 };
-renderInspector_fn = function() {
-  const atom = __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).find((atom2) => atom2.id === this.picked);
+/** The model summary keeps compound, representation and display controls at the canvas edge. */
+renderModelSummary_fn = function(current, representation, ionColors) {
+  const crystal = current.kind === "crystal";
+  const geometry = current.kind === "molecule" && __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? current.geometry === "idealized" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Idealized geometry", "Idealisierte Geometrie") : current.geometry === "estimated" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Estimated geometry", "Gesch\xE4tzte Geometrie") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Sketch", "Skizze") : void 0;
+  const toggle = (label, value, onClick) => x2`<sl-button size="small"
+			variant=${value ? "primary" : "default"} aria-pressed=${String(value)} @click=${onClick}>${label}</sl-button>`;
+  return x2`<div class="model-summary">
+			<div class="fields">
+				<sl-tag size="small">${crystal ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Crystal", "Kristall") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Molecule", "Molek\xFCl")}</sl-tag>
+				${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<sl-tag size="small">${formula(current)}</sl-tag>` : E2}
+				${representation ? x2`<sl-tag size="small">${representation}</sl-tag>` : E2}
+				${geometry ? x2`<sl-tag size="small">${geometry}</sl-tag>` : E2}
+			</div>
+			${ionColors.size ? x2`<span class="structure-legend" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ion colours", "Ionenfarben")}>
+				${[...ionColors].map(([ion2, color]) => x2`<span style="--swatch: ${colorHex(color)}">${ion2}</span>`)}
+				${crystal && this.showLattice ? x2`<span data-marker="lattice">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Lattice points", "Gitterpunkte")}</span>` : E2}
+			</span>` : E2}
+			${current.kind === "molecule" && this.showElectrons && this.view === "3d" ? x2`
+				<span class="structure-legend" title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Approximate Lewis and VSEPR regions. Dots represent electron counts in the displayed bonding model.", "Angen\xE4herte Lewis- und VSEPR-Bereiche. Punkte stehen f\xFCr die Elektronenzahl im dargestellten Bindungsmodell.")}>
+					<span data-region="bond">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bonding", "Bindend")}</span>
+					<span data-region="lone">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Nonbonding", "Nichtbindend")}</span>
+				</span>` : E2}
+			<div class="display-controls" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Display", "Darstellung")}>
+				${crystal ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cells", "Zellen")}
+					<select .value=${String(this.repeats)} @change=${(event) => {
+    this.repeats = Number(event.currentTarget.value);
+    __privateSet(this, _fitNext, true);
+    __privateSet(this, _lastDrawn, void 0);
+  }}>
+						${[1, 2, 3].filter((value) => value ** 3 * current.sites.length <= 1800).map((value) => x2`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
+					</select></label>` : E2}
+				${crystal ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cell edges", "Zellkanten"), this.showEdges, () => {
+    this.showEdges = !this.showEdges;
+  }) : E2}
+				${crystal ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Lattice points", "Gitterpunkte"), this.showLattice, () => {
+    this.showLattice = !this.showLattice;
+  }) : E2}
+				${crystal ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Axes", "Achsen"), this.showAxes, () => {
+    this.showAxes = !this.showAxes;
+  }) : E2}
+				${current.kind === "molecule" && current.atoms.length && this.view === "3d" && this.gpu === "ready" ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Valence electrons", "Valenzelektronen"), this.showElectrons, () => {
+    this.showElectrons = !this.showElectrons;
+  }) : E2}
+			</div>
+			<output aria-live="polite">${this.notice || (this.bondStart ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose the other atom.", "W\xE4hle das zweite Atom.") : "")}</output>
+		</div>`;
+};
+/** The selection card follows the lab's object info card and stays at the canvas edge. */
+renderSelectionCard_fn = function() {
   const current = __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get);
-  if (!atom && current.kind !== "crystal" && !__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length) return E2;
+  const atom = __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).find((entry) => entry.id === this.picked);
+  if (!atom && !__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length) return E2;
   const species = current.kind === "crystal" && atom ? siteIon(atom) : void 0;
-  const title = atom ? `${symbol(atom.atomicNumber)}${chargeText(atom.charge)} \xB7 ${atom.id}` : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure", "Struktur");
+  const title = atom ? `${symbol(atom.atomicNumber)}${chargeText(atom.charge)} \xB7 ${atom.id}` : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "No selection", "Keine Auswahl");
   const shape = atom && current.kind === "molecule" ? shapeName(current, atom.id) : void 0;
   const shapeLabel = {
     linear: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Linear", "Linear"),
@@ -103007,44 +106793,36 @@ renderInspector_fn = function() {
     ionic: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ionic, CN 6", "ionisch, KZ 6"),
     schematic: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "schematic", "schematisch")
   };
-  return x2`<aside class="inspector">
-			<div class="inspect-title">
-				<div class="fields">
-					<sl-tag size="small" variant="primary">${title}</sl-tag>
-					${species ? x2`<sl-tag size="small">${species}</sl-tag>` : E2}
-					${radius ? x2`<sl-tag size="small">${radius.pm} pm · ${radiusLabel[radius.model]}</sl-tag>` : E2}
-					${shape ? x2`<sl-tag size="small">${shapeLabel[shape]}</sl-tag>` : E2}
-					${atom && "occupancy" in atom && atom.occupancy !== void 0 ? x2`<sl-tag size="small">
-						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site occupancy", "Platzbesetzung")} · ${Number((100 * atom.occupancy).toFixed(1))} %
-					</sl-tag>` : E2}
-				</div>
-				${atom && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<sl-button size="small" variant="danger" outline @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, removeAtom_fn)}>
-					${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Delete", "L\xF6schen")}
+  const occupancy = atom && "occupancy" in atom ? atom.occupancy : void 0;
+  return x2`<aside class="selection-card" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Selection", "Auswahl")}>
+			<div class="card-head">
+				<sl-tag size="small" variant=${atom ? "primary" : "neutral"}>${title}</sl-tag>
+				${atom && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<sl-button class="icon-control" size="small" variant="danger" outline
+					aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Delete", "L\xF6schen")} title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Delete", "L\xF6schen")} @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, removeAtom_fn)}>
+					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"
+						stroke-linecap="round" aria-hidden="true">
+						<path d="M2.5 4h9M5.5 4V2.5h3V4M4 4l.5 7.5h5L10 4" />
+					</svg>
 				</sl-button>` : E2}
 			</div>
-			<div class="fields">
-				${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<label>${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site", "Gitterplatz") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom", "Atom")}
-					<select .value=${String(this.picked ?? "")} @change=${(event) => {
+			${atom ? x2`<div class="card-facts">
+				${species ? x2`<sl-tag size="small">${species}</sl-tag>` : E2}
+				${radius ? x2`<sl-tag size="small">${radius.pm} pm · ${radiusLabel[radius.model]}</sl-tag>` : E2}
+				${shape ? x2`<sl-tag size="small">${shapeLabel[shape]}</sl-tag>` : E2}
+				${occupancy !== void 0 ? x2`<sl-tag size="small">${Number((100 * occupancy).toFixed(1))} %</sl-tag>` : E2}
+			</div>` : E2}
+			<sl-details summary=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site properties", "Gitterplatz-Eigenschaften") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom properties", "Atom-Eigenschaften")} ?open=${!atom}>
+				<div class="fields">
+					<label>${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site", "Gitterplatz") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom", "Atom")}
+						<select .value=${String(this.picked ?? "")} @change=${(event) => {
     const value = Number(event.currentTarget.value);
     __privateMethod(this, _ChemLabMoleculeBuilder_instances, selectAtom_fn).call(this, value || void 0);
   }}>
-						<option value="">—</option>
-						${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).map((entry) => x2`<option value=${entry.id} ?selected=${entry.id === this.picked}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</option>`)}
-					</select></label>` : E2}
-				${current.kind === "crystal" ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cells per axis", "Zellen pro Achse")}
-					<select .value=${String(this.repeats)} @change=${(event) => {
-    this.repeats = Number(event.currentTarget.value);
-    __privateSet(this, _fitNext, true);
-    __privateSet(this, _lastDrawn, void 0);
-  }}>
-						${[1, 2, 3].filter((value) => value ** 3 * current.sites.length <= 1800).map((value) => x2`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
-					</select></label>` : E2}
-			</div>
-			${atom && (!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) || "fractional" in atom) ? x2`
-				<sl-details summary=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site properties", "Gitterplatz-Eigenschaften") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom properties", "Atom-Eigenschaften")}>
-					<div class="fields">
-						${!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Formal charge", "Formalladung")}
-							<input type="number" min="-8" max="8" step="1" .value=${String(atom.charge)} @change=${(event) => {
+							<option value="">—</option>
+							${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).map((entry) => x2`<option value=${entry.id} ?selected=${entry.id === this.picked}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</option>`)}
+						</select></label>
+					${atom && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Formal charge", "Formalladung")}
+						<input type="number" min="-8" max="8" step="1" .value=${String(atom.charge)} @change=${(event) => {
     const input = event.currentTarget;
     if (!input.checkValidity() || input.value === "") {
       input.value = String(atom.charge);
@@ -103052,7 +106830,7 @@ renderInspector_fn = function() {
     }
     __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateCharge_fn).call(this, input.valueAsNumber);
   }} /></label>` : E2}
-						${current.kind === "molecule" && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? current.bonds.filter((bond) => bond.from === atom.id || bond.to === atom.id).map((bond) => {
+					${atom && current.kind === "molecule" && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? current.bonds.filter((bond) => bond.from === atom.id || bond.to === atom.id).map((bond) => {
     const to = __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).find((entry) => entry.id === (bond.from === atom.id ? bond.to : bond.from));
     return x2`<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, {
       ...current,
@@ -103064,12 +106842,12 @@ renderInspector_fn = function() {
       bonds: current.bonds.filter((entry) => entry !== bond)
     })}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Remove bond to", "Bindung l\xF6sen zu")} ${symbol(to.atomicNumber)} · ${to.id}</sl-button>`;
   }) : E2}
-						${"fractional" in atom ? atom.fractional.map((value, index) => x2`<label>${["x/a", "y/b", "z/c"][index]}
-							<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}
-								@change=${(event) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateSite_fn).call(this, index, event.currentTarget)} />
-						</label>`) : E2}
-					</div>
-				</sl-details>` : E2}
+					${atom && "fractional" in atom ? atom.fractional.map((value, index) => x2`<label>${["x/a", "y/b", "z/c"][index]}
+						<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}
+							@change=${(event) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateSite_fn).call(this, index, event.currentTarget)} />
+					</label>`) : E2}
+				</div>
+			</sl-details>
 			${current.kind === "crystal" ? x2`<sl-details summary=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Unit cell", "Elementarzelle")}>
 				<div class="fields">
 					${current.bravais ? x2`<sl-tag size="small">${current.bravais} · ${current.spaceGroup}</sl-tag>` : E2}
@@ -103086,6 +106864,13 @@ renderInspector_fn = function() {
   }))}
 				</div>
 			</sl-details>` : E2}
+			${current.source?.startsWith("https://") || current.catalogKey ? x2`<sl-details summary=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Provenance", "Herkunft")}>
+				<div class="fields">
+					${current.catalogKey ? x2`<sl-tag size="small">${current.catalogKey}</sl-tag>` : E2}
+					${current.source?.startsWith("https://") ? x2`<a href=${current.source} target="_blank" rel="noopener noreferrer">
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Source", "Quelle")}</a>` : E2}
+				</div>
+			</sl-details>` : E2}
 		</aside>`;
 };
 __decorateElement(_init3, 4, "elementSourceId", _elementSourceId_dec, _ChemLabMoleculeBuilder, _elementSourceId);
@@ -103099,9 +106884,12 @@ __decorateElement(_init3, 4, "openPanel", _openPanel_dec, _ChemLabMoleculeBuilde
 __decorateElement(_init3, 4, "labs", _labs_dec, _ChemLabMoleculeBuilder, _labs);
 __decorateElement(_init3, 4, "showLabs", _showLabs_dec, _ChemLabMoleculeBuilder, _showLabs);
 __decorateElement(_init3, 4, "paletteOpen", _paletteOpen_dec, _ChemLabMoleculeBuilder, _paletteOpen);
+__decorateElement(_init3, 4, "paletteNarrow", _paletteNarrow_dec, _ChemLabMoleculeBuilder, _paletteNarrow);
 __decorateElement(_init3, 4, "pickerView", _pickerView_dec, _ChemLabMoleculeBuilder, _pickerView);
 __decorateElement(_init3, 4, "showElectrons", _showElectrons_dec, _ChemLabMoleculeBuilder, _showElectrons);
 __decorateElement(_init3, 4, "showLattice", _showLattice_dec, _ChemLabMoleculeBuilder, _showLattice);
+__decorateElement(_init3, 4, "showEdges", _showEdges_dec, _ChemLabMoleculeBuilder, _showEdges);
+__decorateElement(_init3, 4, "showAxes", _showAxes_dec, _ChemLabMoleculeBuilder, _showAxes);
 __decorateElement(_init3, 4, "view", _view_dec2, _ChemLabMoleculeBuilder, _view2);
 __decorateElement(_init3, 4, "tool", _tool_dec, _ChemLabMoleculeBuilder, _tool);
 __decorateElement(_init3, 4, "element", _element_dec, _ChemLabMoleculeBuilder, _element);
@@ -103121,6 +106909,7 @@ __publicField(_ChemLabMoleculeBuilder, "scopedElements", {
   "sl-button": SlButton,
   "sl-details": SlDetails,
   "sl-icon": SlIcon,
+  "sl-popup": SlPopup,
   "sl-spinner": SlSpinner,
   "sl-tag": SlTag
 });
@@ -103142,6 +106931,15 @@ export {
   ChemLabMoleculeBuilder
 };
 /*! Bundled license information:
+
+tiny-lru/dist/tiny-lru.js:
+  (**
+   * tiny-lru
+   *
+   * @copyright 2026 Jason Mulligan <jason.mulligan@avoidwork.com>
+   * @license BSD-3-Clause
+   * @version 11.4.7
+   *)
 
 @webwriter/lit/index.js:
   (*! Bundled license information:
