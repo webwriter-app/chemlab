@@ -14,7 +14,7 @@ export type Atom = {
 
 export type Bond = { from: number; to: number; order: BondOrder };
 export type Cell = { lengths: Point3; angles: Point3 };
-export type Site = Omit<Atom, "diagram" | "position"> & { fractional: Point3; occupancy?: number };
+export type Site = Omit<Atom, "diagram" | "position"> & { fractional: Point3; occupancy?: number; ion?: string };
 type Base = { version: 1; name: string; catalogKey?: string; source?: string };
 export type Representation = "constituent" | "repeat-unit" | "ionic-components" | "conformer" | "experimental";
 export type Molecule = Base & {
@@ -158,7 +158,8 @@ export function readStructure(value: unknown): Structure | null {
 		if (positions.has(position)) return null;
 		positions.add(position);
 		const { id, atomicNumber, charge, isotope } = site;
-		sites.push({ id, atomicNumber, charge, isotope, occupancy: occupancy as number | undefined,
+		const ion = typeof site.ion === "string" ? site.ion.trim().slice(0, 60) || undefined : undefined;
+		sites.push({ id, atomicNumber, charge, isotope, ion, occupancy: occupancy as number | undefined,
 			fractional: [...site.fractional] as [number, number, number] });
 	}
 	if (!uniqueIds(sites)) return null;

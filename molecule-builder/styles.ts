@@ -49,7 +49,7 @@ export const builderStyles = css`
 		block-size: clamp(36rem, 72vh, 44rem);
 	}
 	.workspace[data-palette="table"] {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
 	}
 	.palette {
 		display: flex;
@@ -89,17 +89,17 @@ export const builderStyles = css`
 	}
 	.status :is(div, span) { min-width: 0; }
 	.status output { color: #52525b; }
-	.electron-legend { display: flex; flex-wrap: wrap; gap: .55rem; color: #52525b; }
-	.electron-legend span::before {
+	.structure-legend { display: flex; flex-wrap: wrap; gap: .55rem; color: #52525b; }
+	.structure-legend span::before {
 		content: "";
 		display: inline-block;
 		inline-size: .6em;
 		block-size: .6em;
 		margin-inline-end: .3em;
 		border-radius: 50%;
-		background: #0284c7;
+		background: var(--swatch, #0284c7);
 	}
-	.electron-legend [data-region="lone"]::before { background: #a855f7; }
+	.structure-legend [data-region="lone"] { --swatch: #a855f7; }
 	.controls-panel {
 		padding: .5rem;
 		background: var(--control);

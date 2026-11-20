@@ -1,9 +1,10 @@
-import { Application } from "pixi.js";
+import { Application, Graphics, Point } from "pixi.js";
 import {
 	Container3D, CylinderGeometry, DirectionalLight, Material3D, Mesh3D, Plane,
 	Sphere, SphereGeometry, Vector3, View3D,
 } from "@pixi/3d";
 import { atomColor, atomRadius, add, electronRegions, perpendicular, scale, subtract, unit } from "./geometry";
+import { crystalIonColors, latticePositions, siteIon } from "./crystal-display";
 import { cartesian, cellVectors, replicatedSites, type Point3, type Structure } from "./structure";
 
 const vector = ([x, y, z]: Point3) => ({ x, y, z });
@@ -30,17 +31,21 @@ export class MoleculeScene {
 	readonly #view: View3D;
 	readonly #content = new Container3D();
 	readonly #electrons = new Container3D();
+	readonly #lattice = new Graphics({ eventMode: "none" });
+	readonly #projected = new Point();
 	readonly #sphere = new SphereGeometry({ radius: 1, widthSegments: 20, heightSegments: 14 });
 	readonly #cylinder = new CylinderGeometry({ height: 1, radiusTop: 1, radiusBottom: 1, radialSegments: 10 });
 	readonly #materials = new Map<string, Material3D>();
 	readonly #bondRegion = new Material3D({ baseColor: 0x0284c7, roughness: .85, alphaMode: "blend", alpha: .28 });
 	readonly #loneRegion = new Material3D({ baseColor: 0xc084fc, roughness: .85, alphaMode: "blend", alpha: .39 });
-	readonly #picks = new Map<Container3D, { id: number; color: number; opacity: number; position: Point3 }>();
+	readonly #picks = new Map<Container3D, { id: number; color: number; ionic: boolean; opacity: number; position: Point3 }>();
 	readonly #observer: ResizeObserver;
 	readonly #preview: Mesh3D;
 	#selected: Set<number> = new Set();
 	#structure?: Structure;
 	#showElectrons = false;
+	#showLattice = false;
+	#latticePoints: ReturnType<typeof vector>[] = [];
 	#repeats = 0;
 	#frame = 0;
 	#target: Point3 = [0, 0, 0];
@@ -52,9 +57,10 @@ export class MoleculeScene {
 	private constructor(app: Application, host: HTMLElement) {
 		this.#app = app;
 		this.#view = new View3D({
-			autoResize: true, environment: { skyColor: 0xffffff, groundColor: 0xa6b4c3, intensity: 0.94 },
+			autoResize: false, environment: { skyColor: 0xffffff, groundColor: 0xa6b4c3, intensity: 0.94 },
 		});
-		app.stage.addChild(this.#view);
+		app.stage.addChild(this.#view, this.#lattice);
+		this.#view.setSize(app.screen.width, app.screen.height);
 		const sun = new DirectionalLight({ color: 0xffffff, intensity: 2.15 });
 		sun.position.set(3, 6, 7);
 		sun.lookAt({ x: 0, y: 0, z: 0 });
@@ -69,6 +75,7 @@ export class MoleculeScene {
 		this.#observer = new ResizeObserver(() => {
 			if (host.clientWidth && host.clientHeight) {
 				app.renderer.resize(host.clientWidth, host.clientHeight);
+				this.#view.setSize(host.clientWidth, host.clientHeight);
 				this.#draw();
 			}
 		});
@@ -76,12 +83,13 @@ export class MoleculeScene {
 		this.#camera();
 	}
 
-	#material(color: number, opacity = 1) {
-		const key = `${color}:${opacity}`;
+	#material(color: number, opacity = 1, selected = false) {
+		const key = `${color}:${opacity}:${selected}`;
 		let material = this.#materials.get(key);
 		if (!material) {
 			material = new Material3D({ baseColor: color, roughness: 0.61, alpha: opacity,
-				alphaMode: opacity < 1 ? "blend" : "opaque" });
+				alphaMode: opacity < 1 ? "blend" : "opaque",
+				emissive: selected ? { color, strength: .48 } : undefined });
 			this.#materials.set(key, material);
 		}
 		return material;
@@ -98,8 +106,8 @@ export class MoleculeScene {
 		mesh.quaternion.setFromUnitVectors({ x: 0, y: 1, z: 0 }, vector(unit(direction)));
 	}
 
-	#atom(id: number, atomicNumber: number, position: Point3, crystal: boolean, sixCoordinateCharge?: number, occupancy = 1) {
-		const color = atomColor(atomicNumber);
+	#atom(id: number, atomicNumber: number, position: Point3, crystal: boolean, sixCoordinateCharge?: number, occupancy = 1, ionColor?: number) {
+		const color = ionColor ?? atomColor(atomicNumber);
 		const opacity = Math.max(.18, Math.round(occupancy * 20) / 20);
 		const radius = atomRadius(atomicNumber, sixCoordinateCharge).pm * (crystal ? .0065 : .0052);
 		const mesh = new Mesh3D({
@@ -109,7 +117,7 @@ export class MoleculeScene {
 		mesh.scale.set(radius);
 		this.#content.addChild(mesh);
 		this.#bounds.push(position);
-		this.#picks.set(mesh, { id, color, opacity, position });
+		this.#picks.set(mesh, { id, color, ionic: ionColor !== undefined, opacity, position });
 	}
 
 	#renderElectrons(structure: Structure, show: boolean) {
@@ -142,8 +150,15 @@ export class MoleculeScene {
 		}
 	}
 
-	setScene(structure: Structure, repeats: number, selection: number[], showElectrons = false) {
+	setScene(structure: Structure, repeats: number, selection: number[], showElectrons = false, showLattice = false) {
 		const rebuild = structure !== this.#structure || repeats !== this.#repeats;
+		const latticeVisible = structure.kind === "crystal" && showLattice;
+		if (rebuild || latticeVisible !== this.#showLattice) {
+			this.#showLattice = latticeVisible;
+			this.#latticePoints = latticeVisible ? latticePositions(structure, repeats).map(vector) : [];
+			this.#lattice.visible = latticeVisible;
+			this.#draw();
+		}
 		if (rebuild) {
 			this.#structure = structure;
 			this.#repeats = repeats;
@@ -168,9 +183,10 @@ export class MoleculeScene {
 						}
 					}
 				}
+				const colors = crystalIonColors(structure);
 				for (const { site, position } of replicatedSites(structure, repeats)) {
 					const charge = structure.catalogKey && structure.spaceGroup === "Fm-3m" && site.charge ? site.charge : undefined;
-					this.#atom(site.id, site.atomicNumber, position, true, charge, site.occupancy);
+					this.#atom(site.id, site.atomicNumber, position, true, charge, site.occupancy, colors.get(siteIon(site)));
 				}
 			} else {
 				const positions = new Map(structure.atoms.map(atom => [atom.id, atom.position]));
@@ -196,7 +212,9 @@ export class MoleculeScene {
 		if (rebuild || selected.size !== this.#selected.size || selection.some(id => !this.#selected.has(id))) {
 			this.#selected = selected;
 			for (const [mesh, atom] of this.#picks) {
-				(mesh as Mesh3D).material = selected.has(atom.id) ? this.#material(0x0086c5) : this.#material(atom.color, atom.opacity);
+				(mesh as Mesh3D).material = selected.has(atom.id)
+					? atom.ionic ? this.#material(atom.color, 1, true) : this.#material(0x0086c5)
+					: this.#material(atom.color, atom.opacity);
 			}
 			this.#draw();
 		}
@@ -263,6 +281,14 @@ export class MoleculeScene {
 		if (this.#frame) return;
 		this.#frame = requestAnimationFrame(() => {
 			this.#frame = 0;
+			if (this.#showLattice) {
+				this.#lattice.clear();
+				for (const [index, point] of this.#latticePoints.entries()) {
+					const position = this.#view.worldToScreen(point, this.#projected, index > 0);
+					if (position) this.#lattice.circle(position.x, position.y, 3);
+				}
+				this.#lattice.fill(0x283648).stroke({ color: 0xffffff, width: 1.2 });
+			}
 			this.#app.render();
 		});
 	}

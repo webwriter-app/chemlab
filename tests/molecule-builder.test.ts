@@ -1,5 +1,6 @@
 import { strict as assert } from "node:assert";
 import { catalogIsMixture, catalogStructures, matchingRecipe, structureCatalog } from "../molecule-builder/catalog";
+import { crystalIonColors, latticePositions, siteIon } from "../molecule-builder/crystal-display";
 import { atomRadius, canBond, electronRegions, fitGeometry, shapeName } from "../molecule-builder/geometry";
 import { ELEMENTS, categoryOf } from "../periodic-table/element-reference";
 import { metalCrystal } from "../periodic-table/metal-reference";
@@ -43,6 +44,19 @@ assert.equal(salt.kind, "crystal");
 assert.equal(salt.spaceGroup, "Fm-3m");
 assert.equal(salt.sites.filter(site => site.charge === 1).length, 4);
 assert.equal(salt.sites.filter(site => site.charge === -1).length, 4);
+assert.deepEqual(new Set(salt.sites.map(siteIon)), new Set(["Na⁺", "Cl⁻"]));
+assert.notEqual(crystalIonColors(salt).get("Na⁺"), crystalIonColors(salt).get("Cl⁻"));
+assert.deepEqual(crystalIonColors(readStructure(JSON.parse(JSON.stringify(salt))) as Crystal), crystalIonColors(salt));
+assert.equal(latticePositions(salt, 1).length, 14);
+assert.equal(latticePositions(salt, 2).length, 63);
+assert.equal(latticePositions(metalCrystal(26), 1).length, 9);
+assert.equal(latticePositions(metalCrystal(80), 1).length, 8);
+assert.equal(latticePositions(catalogStructures("Calciumcarbonat")[0] as Crystal, 1).length, 10);
+assert.equal(latticePositions(catalogStructures("Calciumsulfat-Dihydrat")[0] as Crystal, 1).length, 9);
+const hydratedCopperSulfate = catalogStructures("Kupfer(II)-sulfat-Pentahydrat")[0] as Crystal;
+assert.equal(hydratedCopperSulfate.sites.filter(site => site.atomicNumber === 8 && siteIon(site) === "SO₄²⁻").length, 8);
+assert.equal(hydratedCopperSulfate.sites.filter(site => site.atomicNumber === 8 && !siteIon(site)).length, 10);
+assert.deepEqual(new Set(hydratedCopperSulfate.sites.filter(site => site.ion).map(site => site.ion)), new Set(["Cu²⁺", "SO₄²⁻"]));
 const centralIon = cartesian(cellVectors(salt.cell), salt.sites.find(site => site.charge === 1)
 	.fractional.map(value => value + 1) as [number, number, number]);
 const neighbors = replicatedSites(salt, 3).filter(({ site, position }) => site.charge === -1

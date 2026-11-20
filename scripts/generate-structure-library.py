@@ -147,6 +147,27 @@ def ase_metal(symbol):
     return metal_cell(symbol, "tin" if symbol == "Sn" else ref["symmetry"], a, a * ref.get("c/a", 1), ASE)
 
 
+def label_crystal_ions(model, cell, ions):
+    # A plain symbol selects all matching sites. A [symbol, neighbor, Å]
+    # rule only selects sites near already assigned atoms of the same ion.
+    # This separates polyatomic anions from neutral water in hydrates.
+    points = [gemmi.Fractional(*site["fractional"]) for site in model["sites"]]
+    symbols = [chemical_symbols[site["atomicNumber"]] for site in model["sites"]]
+    for ion, rules in ions.items():
+        members = set()
+        for rule in rules:
+            if isinstance(rule, str):
+                members.update(i for i, symbol in enumerate(symbols) if symbol == rule)
+                continue
+            element, neighbor, cutoff = rule
+            reference = [i for i in members if symbols[i] == neighbor]
+            members.update(i for i, symbol in enumerate(symbols) if symbol == element and any(
+                cell.find_nearest_pbc_image(points[i], points[j]).dist() <= cutoff for j in reference
+            ))
+        for i in members:
+            model["sites"][i]["ion"] = ion
+
+
 def cod_crystal(cod_id, extract, name):
     files = [path for path in extract.glob(f"**/{cod_id}.cif")]
     if len(files) != 1:
@@ -189,8 +210,10 @@ def cod_crystal(cod_id, extract, name):
         if raw and raw not in (".", "?"):
             temperature = gemmi.cif.as_number(raw)
             break
-    return crystal(name, params[:3], params[3:], locations, sg.short_name(), bravais, COD + str(cod_id) + ".html",
-                   temperature=temperature, conditions=MANIFEST.get("crystalConditions", {}).get(name))
+    model = crystal(name, params[:3], params[3:], locations, sg.short_name(), bravais, COD + str(cod_id) + ".html",
+                    temperature=temperature, conditions=MANIFEST.get("crystalConditions", {}).get(name))
+    label_crystal_ions(model, structure.cell, MANIFEST["crystalIons"].get(name, {}))
+    return model
 
 
 def write_records(path, records):
