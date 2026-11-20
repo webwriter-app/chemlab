@@ -24,7 +24,6 @@ import SlIcon from "@shoelace-style/shoelace/dist/components/icon/icon.component
 import SlIconButton from "@shoelace-style/shoelace/dist/components/icon-button/icon-button.component.js";
 import SlInput from "@shoelace-style/shoelace/dist/components/input/input.component.js";
 import SlPopup from "@shoelace-style/shoelace/dist/components/popup/popup.component.js";
-import SlRange from "@shoelace-style/shoelace/dist/components/range/range.component.js";
 import SlSpinner from "@shoelace-style/shoelace/dist/components/spinner/spinner.component.js";
 import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js";
 import SlTooltip from "@shoelace-style/shoelace/dist/components/tooltip/tooltip.component.js";
@@ -183,6 +182,27 @@ const RESET_ICON = html`
 `;
 
 /**
+ * Funnel icon of the filter toggle.
+ *
+ * The toggle opens the panel with the search field and the family carousel, so
+ * the icon names the whole panel instead of only the families.
+ */
+const FILTER_ICON = html`
+	<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M2.2 3.2h11.6l-4.5 5.1v4.5l-2.6 1.4V8.3z"/>
+	</svg>
+`;
+
+/** Slider icon of the mode toggle, which opens the property panel. */
+const MODE_ICON = html`
+	<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">
+		<path d="M2.4 4.6h11.2M2.4 11.4h11.2"/>
+		<circle cx="5.6" cy="4.6" r="1.7" fill="currentColor" stroke="none"/>
+		<circle cx="10.4" cy="11.4" r="1.7" fill="currentColor" stroke="none"/>
+	</svg>
+`;
+
+/**
  * Chevron of the detail card toggle.
  *
  * The arrow points down while the card is collapsed and is turned over by the
@@ -285,7 +305,6 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		"sl-icon-button": SlIconButton,
 		"sl-input": SlInput,
 		"sl-popup": SlPopup,
-		"sl-range": SlRange,
 		"sl-spinner": SlSpinner,
 		"sl-tag": SlTag,
 		"sl-tooltip": SlTooltip,
@@ -365,6 +384,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#mode: ModeState = DEFAULT_MODE_STATE;
 	#infoOpen = false;
 	#detailsExpanded = false;
+	/** Whether the panel with the search field and the family carousel is open. */
+	#filtersOpen = false;
+	/** Whether the panel with the property modes and their slider is open. */
+	#modesOpen = false;
 
 	/**
 	 * Currently selected atomic number, `null` when nothing is selected.
@@ -565,13 +588,15 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/**
 	 * Current search hits, best match first.
 	 *
-	 * The query only applies to the list, which is the only layout with a search
-	 * field: a query typed there must not silently filter the grid after a switch
-	 * back, and it survives the round trip.
+	 * The query applies to both layouts: the search field sits in the filter
+	 * panel, which the ribbon opens in either view, so a query narrows the grid
+	 * and the list alike. The family filter is part of the same call, so the two
+	 * filters combine instead of replacing each other.
+	 *
+	 * @returns The matching elements in display order.
 	 */
 	#matches(): readonly SearchResult[] {
-		const query = this.#resolvedView === "list" ? this.#query : "";
-		return searchElements(query, { locale: this.#language, category: this.#category });
+		return searchElements(this.#query, { locale: this.#language, category: this.#category });
 	}
 
 	/**
@@ -689,6 +714,18 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		this.requestUpdate();
 	};
 
+	/** Opens or closes the panel with the search field and the family filter. */
+	#toggleFilters = () => {
+		this.#filtersOpen = !this.#filtersOpen;
+		this.requestUpdate();
+	};
+
+	/** Opens or closes the panel with the property modes. */
+	#toggleModes = () => {
+		this.#modesOpen = !this.#modesOpen;
+		this.requestUpdate();
+	};
+
 	/** Opens the info dialog. */
 	#openInfo = () => {
 		this.#infoOpen = true;
@@ -797,108 +834,140 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the ribbon with the info button, the family carousel, the reset and
-	 * the layout switch.
+	 * Renders the ribbon: the two panel toggles and the layout switch.
 	 *
-	 * The whole row sits on one lightly shaded bar, so the controls read as one
-	 * unit. The families are a Shoelace carousel of tags instead of a dropdown
-	 * plus a legend, because the ribbon has no room for both and the tags double
-	 * as the filter. The carousel scrolls one tag at a time and keeps its arrows
-	 * at the ends, so the strip stays a single band at every width. It names
-	 * itself through a hidden label instead of an attribute, because the carousel
-	 * writes its own generic label when it connects. The reset sits
-	 * right after the carousel rather than inside it, so it never scrolls out of
-	 * reach. The layout switch is a pair of compact icon buttons with a tooltip
-	 * and an accessible label, like the canvas controls of the lab widget; the
-	 * result count is a pill badge, and a hidden live region keeps the full
-	 * sentence for screen readers. The search field only appears in the list,
-	 * where the rows have no grid to scan.
+	 * The ribbon is the only permanently visible band. It carries the toggle that
+	 * opens the filter panel in the slot the info button used to take, the toggle
+	 * that opens the property panel beside it, and the layout switch on the far
+	 * right. Everything that needs more room than one chip lives in one of the two
+	 * panels below, so the ribbon stays one row at every width and the table keeps
+	 * the height it was given.
+	 *
+	 * A toggle shows a filled state while its panel is open and a small dot while
+	 * the panel is closed but still narrows the table, so a hidden filter never
+	 * looks like no filter at all.
+	 *
+	 * @param t - Interface strings.
+	 * @param resolved - Layout actually rendered.
+	 * @returns The ribbon.
+	 */
+	#renderRibbon(t: Strings, resolved: ResolvedView) {
+		const filtersActive = this.#query !== "" || this.#category !== null;
+		const modesActive = this.#mode.mode !== "off";
+		return html`
+			<div class="ribbon">
+				<sl-button
+					class="ribbon-toggle ${this.#filtersOpen ? "is-open" : ""} ${filtersActive ? "is-active" : ""}"
+					size="small"
+					title=${t.filtersLabel}
+					aria-label=${t.filtersLabel}
+					aria-expanded=${this.#filtersOpen}
+					@click=${this.#toggleFilters}
+				>${FILTER_ICON}</sl-button>
+				<sl-button
+					class="ribbon-toggle ${this.#modesOpen ? "is-open" : ""} ${modesActive ? "is-active" : ""}"
+					size="small"
+					title=${t.modeLabel}
+					aria-label=${t.modeLabel}
+					aria-expanded=${this.#modesOpen}
+					@click=${this.#toggleModes}
+				>${MODE_ICON}</sl-button>
+				<div class="views" role="group" aria-label=${t.viewLabel}>
+					<sl-button
+						size="small"
+						variant=${resolved === "table" ? "primary" : "default"}
+						title=${t.viewTable}
+						aria-label=${t.viewTable}
+						aria-pressed=${resolved === "table"}
+						@click=${() => this.#setView("table")}
+					>${TABLE_ICON}</sl-button>
+					<sl-button
+						size="small"
+						variant=${resolved === "list" ? "primary" : "default"}
+						title=${t.viewList}
+						aria-label=${t.viewList}
+						aria-pressed=${resolved === "list"}
+						@click=${() => this.#setView("list")}
+					>${LIST_ICON}</sl-button>
+				</div>
+			</div>
+		`;
+	}
+
+	/**
+	 * Renders the filter panel behind the first ribbon toggle.
+	 *
+	 * The panel holds the two controls that narrow the table, in the order they
+	 * are read: the search field with the reset beside it, then the family
+	 * carousel with the result count. Search and family filter combine, and both
+	 * apply to the grid and the list alike, because the panel is the same in both
+	 * layouts. The families are a Shoelace carousel of tags instead of a dropdown
+	 * plus a legend, because the tags double as the filter and the strip stays one
+	 * band at every width. It names itself through a hidden label instead of an
+	 * attribute, because the carousel writes its own generic label when it
+	 * connects. The reset sits outside the carousel, so it never scrolls out of
+	 * reach. The result count is a pill badge, and a hidden live region keeps the
+	 * full sentence for screen readers.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
 	 * @param count - Number of matching elements.
-	 * @returns The toolbar.
+	 * @returns The filter panel, or nothing while it is closed.
 	 */
-	#renderToolbar(t: Strings, language: Language, count: number) {
-		const resolved = this.#resolvedView;
+	#renderFilters(t: Strings, language: Language, count: number) {
+		if (!this.#filtersOpen) return null;
 		const countText = this.#renderCount(t, count);
 		return html`
-			<div class="toolbar">
-				<sl-icon-button
-					class="info-button"
-					src=${INFO_ICON}
-					label=${t.infoLabel}
-					@click=${this.#openInfo}
-				></sl-icon-button>
-				${resolved === "list"
-					? html`
-						<sl-input
-							class="search"
-							type="search"
-							size="small"
-							clearable
-							label=${t.searchLabel}
-							placeholder=${t.searchPlaceholder}
-							.value=${this.#query}
-							@sl-input=${this.#onQueryInput}
-							@keydown=${this.#onSearchKeydown}
-						></sl-input>
-					`
-					: null}
-				<span class="visually-hidden" id="family-strip-label">${t.legendLabel}</span>
-				<sl-carousel
-					class="family-strip"
-					navigation
-					mouse-dragging
-					slides-per-page="4"
-					slides-per-move="1"
-					aria-labelledby="family-strip-label"
-				>
-					${Object.entries(CATEGORIES).map(([key, category]) => html`
-						<sl-carousel-item>
-							<button
-								class="family-tag category-${key}"
-								type="button"
-								aria-pressed=${this.#category === key}
-								@click=${() => this.#toggleCategory(key)}
-							>
-								<span class="family-swatch"></span>${category[language]}
-							</button>
-						</sl-carousel-item>
-					`)}
-					<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
-					<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
-				</sl-carousel>
-				<sl-button
-					class="reset"
-					size="small"
-					title=${t.reset}
-					aria-label=${t.reset}
-					@click=${() => this.#reset()}
-				>${RESET_ICON}</sl-button>
-				<sl-badge class="count-badge" pill variant="neutral" title=${countText}>
-					${count}
-				</sl-badge>
-				<p class="visually-hidden" role="status" aria-live="polite">${countText}</p>
-				<div class="toolbar-actions">
-					<div class="views" role="group" aria-label=${t.viewLabel}>
-						<sl-button
-							size="small"
-							variant=${resolved === "table" ? "primary" : "default"}
-							title=${t.viewTable}
-							aria-label=${t.viewTable}
-							aria-pressed=${resolved === "table"}
-							@click=${() => this.#setView("table")}
-						>${TABLE_ICON}</sl-button>
-						<sl-button
-							size="small"
-							variant=${resolved === "list" ? "primary" : "default"}
-							title=${t.viewList}
-							aria-label=${t.viewList}
-							aria-pressed=${resolved === "list"}
-							@click=${() => this.#setView("list")}
-						>${LIST_ICON}</sl-button>
-					</div>
+			<div class="panel filters">
+				<div class="panel-row">
+					<sl-input
+						class="search"
+						type="search"
+						size="small"
+						clearable
+						label=${t.searchLabel}
+						placeholder=${t.searchPlaceholder}
+						.value=${this.#query}
+						@sl-input=${this.#onQueryInput}
+						@keydown=${this.#onSearchKeydown}
+					></sl-input>
+					<sl-button
+						class="reset"
+						size="small"
+						title=${t.reset}
+						aria-label=${t.reset}
+						@click=${() => this.#reset()}
+					>${RESET_ICON}</sl-button>
+				</div>
+				<div class="panel-row">
+					<span class="visually-hidden" id="family-strip-label">${t.legendLabel}</span>
+					<sl-carousel
+						class="family-strip"
+						navigation
+						mouse-dragging
+						slides-per-page="4"
+						slides-per-move="1"
+						aria-labelledby="family-strip-label"
+					>
+						${Object.entries(CATEGORIES).map(([key, category]) => html`
+							<sl-carousel-item>
+								<button
+									class="family-tag category-${key}"
+									type="button"
+									aria-pressed=${this.#category === key}
+									@click=${() => this.#toggleCategory(key)}
+								>
+									<span class="family-swatch"></span>${category[language]}
+								</button>
+							</sl-carousel-item>
+						`)}
+						<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
+						<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
+					</sl-carousel>
+					<sl-badge class="count-badge" pill variant="neutral" title=${countText}>
+						${count}
+					</sl-badge>
+					<p class="visually-hidden" role="status" aria-live="polite">${countText}</p>
 				</div>
 			</div>
 		`;
@@ -941,46 +1010,62 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the mode switch with its slider and the state legend.
+	 * Renders the property panel behind the second ribbon toggle.
 	 *
-	 * The switch decides what the cells are coloured by: nothing, the state at the
+	 * The panel decides what the cells are coloured by: nothing, the state at the
 	 * chosen temperature, or whether the element was already known in the chosen
-	 * year. The legend only appears for the temperature mode, because the
-	 * discovery mode hides cells instead of colouring them. It shares the row
-	 * with the switch and the slider: a row of its own would cost the table the
-	 * height of one period at the default widget size.
+	 * year. The modes sit in a carousel of chips, so the row stays one band while
+	 * the list of modes grows, and the slider of the active mode sits underneath
+	 * it with its value as a tag. The slider is a native range input: it needs no
+	 * component registration, keeps the keyboard and touch behaviour of the
+	 * platform, and cannot fall back to plain text when a Shoelace build is
+	 * missing. The legend of the temperature mode shares the last row, because a
+	 * row of its own would cost the table the height of one period.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
-	 * @returns The mode row with the legend of the temperature mode.
+	 * @returns The property panel, or nothing while it is closed.
 	 */
 	#renderModes(t: Strings, language: Language) {
+		if (!this.#modesOpen) return null;
 		const slider = this.#slider(t, language);
 		return html`
-			<div class="modes">
-				<div class="mode-group" role="group" aria-label=${t.modeLabel}>
+			<div class="panel modes">
+				<span class="visually-hidden" id="mode-strip-label">${t.modeLabel}</span>
+				<sl-carousel
+					class="mode-strip"
+					navigation
+					mouse-dragging
+					slides-per-page="4"
+					slides-per-move="1"
+					aria-labelledby="mode-strip-label"
+				>
 					${TABLE_MODES.map(mode => html`
-						<sl-button
-							size="small"
-							variant=${this.#mode.mode === mode ? "primary" : "default"}
-							aria-pressed=${this.#mode.mode === mode}
-							@click=${() => this.#setMode(mode)}
-						>${modeText(mode, t)}</sl-button>
+						<sl-carousel-item>
+							<button
+								class="mode-tag ${this.#mode.mode === mode ? "is-active" : ""}"
+								type="button"
+								aria-pressed=${this.#mode.mode === mode}
+								@click=${() => this.#setMode(mode)}
+							>${modeText(mode, t)}</button>
+						</sl-carousel-item>
 					`)}
-				</div>
+					<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
+					<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
+				</sl-carousel>
 				${slider
 					? html`
 						<div class="mode-slider">
-							<sl-range
-								size="small"
-								label=${slider.label}
+							<input
+								class="mode-range"
+								type="range"
 								min=${slider.min}
 								max=${slider.max}
 								step=${slider.step}
 								.value=${String(slider.value)}
-								.tooltipFormatter=${slider.format}
-								@sl-input=${slider.onInput}
-							></sl-range>
+								aria-label=${slider.label}
+								@input=${slider.onInput}
+							/>
 							<sl-tag class="mode-value" size="small" variant="neutral">${slider.readout}</sl-tag>
 						</div>
 					`
@@ -1559,12 +1644,20 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		});
 		return html`
 			<div class="widget">
-				${this.#renderToolbar(t, language, matches.length)}
+				${this.#renderRibbon(t, resolved)}
+				${this.#renderFilters(t, language, matches.length)}
 				${this.#renderModes(t, language)}
 				${resolved === "list"
 					? this.#renderList(t, language, matches, element, details)
 					: this.#renderGrid(t, language, matching, details)}
 				${this.#renderPrintOverview(t, language, element)}
+				<sl-icon-button
+					class="info-button"
+					src=${INFO_ICON}
+					label=${t.infoLabel}
+					title=${t.infoLabel}
+					@click=${this.#openInfo}
+				></sl-icon-button>
 				${this.#renderInfo(t, language)}
 			</div>
 		`;

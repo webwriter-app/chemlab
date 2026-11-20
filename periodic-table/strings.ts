@@ -19,6 +19,7 @@ export const LANGUAGES: readonly Language[] = ["en", "de"];
 /** Every interface string the table renders. */
 export type StringKey =
 	| "widgetLabel"
+	| "filtersLabel"
 	| "searchLabel"
 	| "searchPlaceholder"
 	| "viewLabel"
@@ -102,6 +103,7 @@ export type Strings = Readonly<Record<StringKey, string>>;
 
 const EN: Strings = {
 	widgetLabel: "Periodic table",
+	filtersLabel: "Search and filter",
 	searchLabel: "Search elements",
 	searchPlaceholder: "Name, symbol, number",
 	viewLabel: "Layout",
@@ -186,6 +188,7 @@ const EN: Strings = {
 
 const DE: Strings = {
 	widgetLabel: "Periodensystem",
+	filtersLabel: "Suchen und filtern",
 	searchLabel: "Elemente suchen",
 	searchPlaceholder: "Name, Symbol, Nummer",
 	viewLabel: "Darstellung",

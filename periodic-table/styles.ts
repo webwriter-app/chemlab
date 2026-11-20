@@ -82,11 +82,14 @@ export const periodicTableStyles = css`
 		box-sizing: border-box;
 	}
 
+	/* The widget is the positioning context of the info button in its bottom left
+	   corner, and the container the layout queries measure. */
 	.widget {
 		container-type: inline-size;
+		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.4rem;
 		block-size: 100%;
 		min-block-size: 0;
 	}
@@ -125,26 +128,112 @@ export const periodicTableStyles = css`
 		--pt-cell-fill: var(--pt-unknown);
 	}
 
-	/* One lightly shaded bar carries search, family filter, result count and the
-	   icon buttons, so the controls read as a single unit instead of scattered
-	   rows. */
-	.toolbar {
+	/* The ribbon is the only band that is always visible: two panel toggles on the
+	   left, the layout switch on the right. Everything that needs more room than
+	   one chip lives in a panel below it, so the ribbon stays one row at every
+	   width and the table keeps the height it was given. */
+	.ribbon {
 		display: flex;
-		flex-wrap: wrap;
+		flex: 0 0 auto;
 		align-items: center;
-		gap: 0.4rem;
-		padding: 0.4rem 0.45rem;
+		gap: 0.3rem;
+		padding: 0.3rem 0.35rem;
 		border: 1px solid var(--pt-border);
 		border-radius: 8px;
 		background: var(--pt-inset);
 	}
 
-	.toolbar .search {
-		flex: 0 1 14rem;
-		min-width: 7rem;
+	/* The toggles and the layout switch are compact icon buttons with a tooltip
+	   and an accessible label, styled like the canvas controls of the lab widget:
+	   a light surface with a small shadow on the shaded bar. */
+	.ribbon sl-button::part(base) {
+		background: var(--pt-surface);
+		box-shadow: var(--pt-control-shadow);
 	}
 
-	.toolbar sl-input::part(form-control-label) {
+	.ribbon sl-button::part(label) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 0.4rem;
+	}
+
+	/* Every control in the ribbon takes the height of a family tag, so the bar
+	   reads as one row of equal chips instead of a mix of sizes. */
+	.ribbon sl-button {
+		--sl-input-height-small: var(--pt-chip-height);
+		--sl-button-font-size-small: 0.7rem;
+	}
+
+	/* An open panel fills its toggle in ChemLab blue, so the button says where the
+	   controls went. A closed panel that still narrows the table keeps a small
+	   accent dot, because a hidden filter must not look like no filter at all. */
+	.ribbon-toggle.is-open::part(base) {
+		border-color: var(--pt-accent);
+		background: var(--pt-accent);
+		color: var(--pt-surface);
+	}
+
+	.ribbon-toggle.is-active:not(.is-open)::part(base) {
+		position: relative;
+	}
+
+	.ribbon-toggle.is-active:not(.is-open)::part(label)::after {
+		content: "";
+		position: absolute;
+		top: 0.1rem;
+		right: 0.1rem;
+		width: 0.3rem;
+		height: 0.3rem;
+		border-radius: 50%;
+		background: var(--pt-accent);
+	}
+
+	.views {
+		display: flex;
+		gap: 0.25rem;
+		margin-inline-start: auto;
+	}
+
+	/* The active layout keeps the accent fill of its primary variant, because the
+	   surface override would leave its white icon on a white box. */
+	.views sl-button[variant="primary"]::part(base) {
+		background: var(--pt-accent);
+	}
+
+	/* A panel is the collapsible half of the ribbon: the same shaded surface, one
+	   row per group of controls, and no border of its own so it reads as the
+	   opened underside of the bar above it. */
+	.panel {
+		display: flex;
+		flex: 0 0 auto;
+		flex-direction: column;
+		gap: 0.3rem;
+		padding: 0.35rem;
+		border: 1px solid var(--pt-border);
+		border-radius: 8px;
+		background: var(--pt-inset);
+	}
+
+	.panel-row {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		min-width: 0;
+	}
+
+	/* Search and the family carousel share one height, so the two rows of the
+	   filter panel line up with the ribbon chips above them. */
+	.panel .search {
+		flex: 1 1 auto;
+		min-width: 5rem;
+		--sl-input-height-small: var(--pt-chip-height);
+		--sl-input-font-size-small: 0.72rem;
+	}
+
+	/* The field names itself through its placeholder and its accessible label, so
+	   the visible label is only kept for assistive technology. */
+	.panel .search::part(form-control-label) {
 		position: absolute;
 		width: 1px;
 		height: 1px;
@@ -155,8 +244,25 @@ export const periodicTableStyles = css`
 		white-space: nowrap;
 	}
 
-	/* The result count rides in the toolbar as a pill badge; the full sentence
-	   stays available to screen readers through the hidden live region. */
+	.panel .reset {
+		flex: 0 0 auto;
+		--sl-input-height-small: var(--pt-chip-height);
+	}
+
+	.panel .reset::part(base) {
+		background: var(--pt-surface);
+		box-shadow: var(--pt-control-shadow);
+	}
+
+	.panel .reset::part(label) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 0.4rem;
+	}
+
+	/* The result count rides beside the family carousel as a pill badge; the full
+	   sentence stays available to screen readers through the hidden live region. */
 	.count-badge {
 		flex: 0 0 auto;
 	}
@@ -176,63 +282,40 @@ export const periodicTableStyles = css`
 		white-space: nowrap;
 	}
 
-	/* Layout switch and reset are compact icon buttons with a tooltip and an
-	   accessible label, styled like the canvas controls of the lab widget: a
-	   light surface with a small shadow on the shaded bar. */
-	.toolbar-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-		margin-inline-start: auto;
+	/* The info button sits in the bottom left corner of the widget, out of the
+	   ribbon: the sources are a reference, not a control of the table, and the
+	   corner keeps them reachable without taking a chip from the bar. */
+	.info-button {
+		position: absolute;
+		bottom: 0.3rem;
+		left: 0.3rem;
+		z-index: 4;
+		font-size: 0.7rem;
 	}
 
-	.views {
-		display: flex;
-		gap: 0.25rem;
-	}
-
-	/* The ribbon buttons sit on the surface of the panel. The active view button
-	   keeps the accent fill of its primary variant, because the surface override
-	   would leave its white icon on a white box. */
-	.toolbar sl-button:not([variant="primary"])::part(base) {
+	.info-button::part(base) {
+		padding: 0.15rem;
+		border: 1px solid var(--pt-border);
+		border-radius: 50%;
 		background: var(--pt-surface);
 		box-shadow: var(--pt-control-shadow);
+		color: var(--pt-ink-soft);
 	}
 
-	.toolbar sl-button::part(label) {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 0 0.4rem;
-	}
-
-	/* Every control in the ribbon takes the height of a family tag, so the bar
-	   reads as one row of equal chips instead of a mix of sizes. The mode switch
-	   sits in the row below and follows, because it belongs to the same band. */
-	.toolbar sl-button,
-	.modes sl-button {
-		--sl-input-height-small: var(--pt-chip-height);
-		--sl-button-font-size-small: 0.7rem;
-	}
-
-	.modes sl-button::part(label) {
-		padding: 0 0.4rem;
-	}
-
-	.toolbar sl-icon-button::part(base) {
-		padding: 0.25rem;
-		font-size: 0.85rem;
+	.info-button::part(base):hover {
+		color: var(--pt-accent);
 	}
 
 	/* The pane is the only part that scrolls: the ribbon and the mode row stay
 	   put while the table or the list moves under them, and the widget itself
-	   never grows past the height it was given. */
+	   never grows past the height it was given. The bottom padding keeps the
+	   last row clear of the info button floating in the corner. */
 	.table-pane {
 		flex: 1 1 auto;
 		min-width: 0;
 		min-height: 0;
 		overflow: auto;
-		padding-bottom: 0.25rem;
+		padding-bottom: 1.6rem;
 	}
 
 	.grid {
@@ -515,42 +598,83 @@ export const periodicTableStyles = css`
 		background: var(--pt-cell-fill);
 	}
 
-	.modes {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.4rem;
+	/* The property panel repeats the filter panel: a carousel of mode chips on
+	   top, the slider of the active mode underneath. The chips are plain buttons
+	   in the family tag treatment, so the two panels read as one system. */
+	.mode-strip {
+		flex: 0 0 auto;
+		--slide-gap: 0.25rem;
+		/* The carousel sizes its slides from an aspect ratio, which would give a
+		   one-row strip the height of a picture. Auto lets the chips decide the
+		   height; the items inherit the same value. */
+		--aspect-ratio: auto;
 	}
 
-	.mode-group {
-		display: flex;
-		gap: 0.25rem;
+	.mode-strip::part(base) {
+		gap: 0.1rem;
+	}
+
+	.mode-strip::part(scroll-container) {
+		--slide-size: max-content;
+	}
+
+	.mode-strip::part(navigation-button) {
+		min-height: var(--pt-chip-height);
+		padding: 0 0.1rem;
+		font-size: 0.8rem;
+	}
+
+	.mode-tag {
+		display: inline-flex;
+		align-items: center;
+		flex: 0 0 auto;
+		min-height: var(--pt-chip-height);
+		padding: 0.12rem 0.45rem;
+		border: 1px solid var(--pt-border);
+		border-radius: 3px;
+		background: var(--pt-surface);
+		color: var(--pt-ink-soft);
+		font: inherit;
+		font-size: 0.7rem;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	.mode-tag[aria-pressed="true"] {
+		border-color: var(--pt-accent);
+		background: color-mix(in srgb, var(--pt-accent) 10%, var(--pt-surface));
+		box-shadow: inset 0 0 0 1px var(--pt-accent);
+		color: var(--pt-ink);
+	}
+
+	.mode-tag:focus-visible {
+		outline: 2px solid var(--pt-ink);
+		outline-offset: 1px;
 	}
 
 	.mode-slider {
 		display: flex;
-		flex: 1 1 16rem;
 		align-items: center;
 		gap: 0.5rem;
-		min-width: 12rem;
+		min-width: 0;
 	}
 
-	.mode-slider sl-range {
+	/* The slider is a native range input: no component registration, the keyboard
+	   and touch behaviour of the platform, and no fallback to plain text when a
+	   Shoelace build is missing. The accent colour is the only styling it needs to
+	   sit in the ChemLab palette. */
+	.mode-range {
 		flex: 1 1 auto;
-		min-width: 6rem;
+		min-width: 4rem;
+		height: var(--pt-chip-height);
+		margin: 0;
+		accent-color: var(--pt-accent);
+		cursor: pointer;
 	}
 
-	/* The active mode button already names the quantity, so the range label is
-	   only kept for assistive technology. */
-	.mode-slider sl-range::part(form-control-label) {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		margin: -1px;
-		padding: 0;
-		overflow: hidden;
-		clip-path: inset(50%);
-		white-space: nowrap;
+	.mode-range:focus-visible {
+		outline: 2px solid var(--pt-ink);
+		outline-offset: 2px;
 	}
 
 	/* The current slider value rides beside the slider as a small tag. */
@@ -926,7 +1050,10 @@ export const periodicTableStyles = css`
 		align-items: center;
 		gap: 0.25rem;
 		margin: 0;
-		overflow-wrap: anywhere;
+		/* Break a long word only when it cannot fit a line of its own, so a value
+		   like the parenthesised temperature wraps as a unit instead of leaving
+		   its closing bracket behind. */
+		overflow-wrap: break-word;
 		font-variant-numeric: tabular-nums;
 	}
 
@@ -1239,9 +1366,9 @@ export const periodicTableStyles = css`
 			block-size: auto;
 		}
 
-		.toolbar,
-		.modes,
-		.state-legend,
+		.ribbon,
+		.panel,
+		.info-button,
 		.table-pane {
 			display: none !important;
 		}
@@ -1257,9 +1384,9 @@ export const periodicTableStyles = css`
 		}
 	}
 
-	:host(.ww-beforeprint) .toolbar,
-	:host(.ww-beforeprint) .modes,
-	:host(.ww-beforeprint) .state-legend,
+	:host(.ww-beforeprint) .ribbon,
+	:host(.ww-beforeprint) .panel,
+	:host(.ww-beforeprint) .info-button,
 	:host(.ww-beforeprint) .table-pane {
 		display: none !important;
 	}
@@ -1272,6 +1399,7 @@ export const periodicTableStyles = css`
 		.cell,
 		.list-row,
 		.family-tag,
+		.mode-tag,
 		.state-legend li,
 		.details-card,
 		.placeholder-text {
@@ -1283,13 +1411,15 @@ export const periodicTableStyles = css`
 		   stay distinct without colour. */
 		.cell:focus-visible,
 		.list-row:focus-visible,
-		.family-tag:focus-visible {
+		.family-tag:focus-visible,
+		.mode-tag:focus-visible {
 			outline: 2px solid Highlight;
 			outline-offset: 2px;
 		}
 
 		.cell[aria-selected="true"],
-		.family-tag[aria-pressed="true"] {
+		.family-tag[aria-pressed="true"],
+		.mode-tag[aria-pressed="true"] {
 			border: 2px solid Highlight;
 			box-shadow: none;
 		}

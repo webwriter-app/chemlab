@@ -8195,533 +8195,6 @@ __decorateClass([
   n7({ attribute: "hover-bridge", type: Boolean })
 ], SlPopup.prototype, "hoverBridge", 2);
 
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.5D6IT2SR.js
-var range_styles_default = i`
-  :host {
-    --thumb-size: 20px;
-    --tooltip-offset: 10px;
-    --track-color-active: var(--sl-color-neutral-200);
-    --track-color-inactive: var(--sl-color-neutral-200);
-    --track-active-offset: 0%;
-    --track-height: 6px;
-
-    display: block;
-  }
-
-  .range {
-    position: relative;
-  }
-
-  .range__control {
-    --percent: 0%;
-    -webkit-appearance: none;
-    border-radius: 3px;
-    width: 100%;
-    height: var(--track-height);
-    background: transparent;
-    line-height: var(--sl-input-height-medium);
-    vertical-align: middle;
-    margin: 0;
-
-    background-image: linear-gradient(
-      to right,
-      var(--track-color-inactive) 0%,
-      var(--track-color-inactive) min(var(--percent), var(--track-active-offset)),
-      var(--track-color-active) min(var(--percent), var(--track-active-offset)),
-      var(--track-color-active) max(var(--percent), var(--track-active-offset)),
-      var(--track-color-inactive) max(var(--percent), var(--track-active-offset)),
-      var(--track-color-inactive) 100%
-    );
-  }
-
-  .range--rtl .range__control {
-    background-image: linear-gradient(
-      to left,
-      var(--track-color-inactive) 0%,
-      var(--track-color-inactive) min(var(--percent), var(--track-active-offset)),
-      var(--track-color-active) min(var(--percent), var(--track-active-offset)),
-      var(--track-color-active) max(var(--percent), var(--track-active-offset)),
-      var(--track-color-inactive) max(var(--percent), var(--track-active-offset)),
-      var(--track-color-inactive) 100%
-    );
-  }
-
-  /* Webkit */
-  .range__control::-webkit-slider-runnable-track {
-    width: 100%;
-    height: var(--track-height);
-    border-radius: 3px;
-    border: none;
-  }
-
-  .range__control::-webkit-slider-thumb {
-    border: none;
-    width: var(--thumb-size);
-    height: var(--thumb-size);
-    border-radius: 50%;
-    background-color: var(--sl-color-primary-600);
-    border: solid var(--sl-input-border-width) var(--sl-color-primary-600);
-    -webkit-appearance: none;
-    margin-top: calc(var(--thumb-size) / -2 + var(--track-height) / 2);
-    cursor: pointer;
-  }
-
-  .range__control:enabled::-webkit-slider-thumb:hover {
-    background-color: var(--sl-color-primary-500);
-    border-color: var(--sl-color-primary-500);
-  }
-
-  .range__control:enabled:focus-visible::-webkit-slider-thumb {
-    outline: var(--sl-focus-ring);
-    outline-offset: var(--sl-focus-ring-offset);
-  }
-
-  .range__control:enabled::-webkit-slider-thumb:active {
-    background-color: var(--sl-color-primary-500);
-    border-color: var(--sl-color-primary-500);
-    cursor: grabbing;
-  }
-
-  /* Firefox */
-  .range__control::-moz-focus-outer {
-    border: 0;
-  }
-
-  .range__control::-moz-range-progress {
-    background-color: var(--track-color-active);
-    border-radius: 3px;
-    height: var(--track-height);
-  }
-
-  .range__control::-moz-range-track {
-    width: 100%;
-    height: var(--track-height);
-    background-color: var(--track-color-inactive);
-    border-radius: 3px;
-    border: none;
-  }
-
-  .range__control::-moz-range-thumb {
-    border: none;
-    height: var(--thumb-size);
-    width: var(--thumb-size);
-    border-radius: 50%;
-    background-color: var(--sl-color-primary-600);
-    border-color: var(--sl-color-primary-600);
-    transition:
-      var(--sl-transition-fast) border-color,
-      var(--sl-transition-fast) background-color,
-      var(--sl-transition-fast) color,
-      var(--sl-transition-fast) box-shadow;
-    cursor: pointer;
-  }
-
-  .range__control:enabled::-moz-range-thumb:hover {
-    background-color: var(--sl-color-primary-500);
-    border-color: var(--sl-color-primary-500);
-  }
-
-  .range__control:enabled:focus-visible::-moz-range-thumb {
-    outline: var(--sl-focus-ring);
-    outline-offset: var(--sl-focus-ring-offset);
-  }
-
-  .range__control:enabled::-moz-range-thumb:active {
-    background-color: var(--sl-color-primary-500);
-    border-color: var(--sl-color-primary-500);
-    cursor: grabbing;
-  }
-
-  /* States */
-  .range__control:focus-visible {
-    outline: none;
-  }
-
-  .range__control:disabled {
-    opacity: 0.5;
-  }
-
-  .range__control:disabled::-webkit-slider-thumb {
-    cursor: not-allowed;
-  }
-
-  .range__control:disabled::-moz-range-thumb {
-    cursor: not-allowed;
-  }
-
-  /* Tooltip output */
-  .range__tooltip {
-    position: absolute;
-    z-index: var(--sl-z-index-tooltip);
-    left: 0;
-    border-radius: var(--sl-tooltip-border-radius);
-    background-color: var(--sl-tooltip-background-color);
-    font-family: var(--sl-tooltip-font-family);
-    font-size: var(--sl-tooltip-font-size);
-    font-weight: var(--sl-tooltip-font-weight);
-    line-height: var(--sl-tooltip-line-height);
-    color: var(--sl-tooltip-color);
-    opacity: 0;
-    padding: var(--sl-tooltip-padding);
-    transition: var(--sl-transition-fast) opacity;
-    pointer-events: none;
-  }
-
-  .range__tooltip:after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 0;
-    left: 50%;
-    translate: calc(-1 * var(--sl-tooltip-arrow-size));
-  }
-
-  .range--tooltip-visible .range__tooltip {
-    opacity: 1;
-  }
-
-  /* Tooltip on top */
-  .range--tooltip-top .range__tooltip {
-    top: calc(-1 * var(--thumb-size) - var(--tooltip-offset));
-  }
-
-  .range--tooltip-top .range__tooltip:after {
-    border-top: var(--sl-tooltip-arrow-size) solid var(--sl-tooltip-background-color);
-    border-left: var(--sl-tooltip-arrow-size) solid transparent;
-    border-right: var(--sl-tooltip-arrow-size) solid transparent;
-    top: 100%;
-  }
-
-  /* Tooltip on bottom */
-  .range--tooltip-bottom .range__tooltip {
-    bottom: calc(-1 * var(--thumb-size) - var(--tooltip-offset));
-  }
-
-  .range--tooltip-bottom .range__tooltip:after {
-    border-bottom: var(--sl-tooltip-arrow-size) solid var(--sl-tooltip-background-color);
-    border-left: var(--sl-tooltip-arrow-size) solid transparent;
-    border-right: var(--sl-tooltip-arrow-size) solid transparent;
-    bottom: 100%;
-  }
-
-  @media (forced-colors: active) {
-    .range__control,
-    .range__tooltip {
-      border: solid 1px transparent;
-    }
-
-    .range__control::-webkit-slider-thumb {
-      border: solid 1px transparent;
-    }
-
-    .range__control::-moz-range-thumb {
-      border: solid 1px transparent;
-    }
-
-    .range__tooltip:after {
-      display: none;
-    }
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.QACYBNWK.js
-var SlRange = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.formControlController = new FormControlController(this);
-    this.hasSlotController = new HasSlotController(this, "help-text", "label");
-    this.localize = new LocalizeController2(this);
-    this.hasFocus = false;
-    this.hasTooltip = false;
-    this.title = "";
-    this.name = "";
-    this.value = 0;
-    this.label = "";
-    this.helpText = "";
-    this.disabled = false;
-    this.min = 0;
-    this.max = 100;
-    this.step = 1;
-    this.tooltip = "top";
-    this.tooltipFormatter = (value) => value.toString();
-    this.form = "";
-    this.defaultValue = 0;
-  }
-  /** Gets the validity state object */
-  get validity() {
-    return this.input.validity;
-  }
-  /** Gets the validation message */
-  get validationMessage() {
-    return this.input.validationMessage;
-  }
-  connectedCallback() {
-    super.connectedCallback();
-    this.resizeObserver = new ResizeObserver(() => this.syncRange());
-    if (this.value < this.min) {
-      this.value = this.min;
-    }
-    if (this.value > this.max) {
-      this.value = this.max;
-    }
-    this.updateComplete.then(() => {
-      this.syncRange();
-      this.resizeObserver.observe(this.input);
-    });
-  }
-  disconnectedCallback() {
-    var _a3;
-    super.disconnectedCallback();
-    (_a3 = this.resizeObserver) == null ? void 0 : _a3.unobserve(this.input);
-  }
-  handleChange() {
-    this.emit("sl-change");
-  }
-  handleInput() {
-    this.value = parseFloat(this.input.value);
-    this.emit("sl-input");
-    this.syncRange();
-  }
-  handleBlur() {
-    this.hasFocus = false;
-    this.hasTooltip = false;
-    this.emit("sl-blur");
-  }
-  handleFocus() {
-    this.hasFocus = true;
-    this.hasTooltip = true;
-    this.emit("sl-focus");
-  }
-  handleThumbDragStart() {
-    this.hasTooltip = true;
-  }
-  handleThumbDragEnd() {
-    this.hasTooltip = false;
-  }
-  syncProgress(percent) {
-    this.input.style.setProperty("--percent", `${percent * 100}%`);
-  }
-  syncTooltip(percent) {
-    if (this.output !== null) {
-      const inputWidth = this.input.offsetWidth;
-      const tooltipWidth = this.output.offsetWidth;
-      const thumbSize = getComputedStyle(this.input).getPropertyValue("--thumb-size");
-      const isRtl = this.localize.dir() === "rtl";
-      const percentAsWidth = inputWidth * percent;
-      if (isRtl) {
-        const x3 = `${inputWidth - percentAsWidth}px + ${percent} * ${thumbSize}`;
-        this.output.style.translate = `calc((${x3} - ${tooltipWidth / 2}px - ${thumbSize} / 2))`;
-      } else {
-        const x3 = `${percentAsWidth}px - ${percent} * ${thumbSize}`;
-        this.output.style.translate = `calc(${x3} - ${tooltipWidth / 2}px + ${thumbSize} / 2)`;
-      }
-    }
-  }
-  handleValueChange() {
-    this.formControlController.updateValidity();
-    this.input.value = this.value.toString();
-    this.value = parseFloat(this.input.value);
-    this.syncRange();
-  }
-  handleDisabledChange() {
-    this.formControlController.setValidity(this.disabled);
-  }
-  syncRange() {
-    const percent = Math.max(0, (this.value - this.min) / (this.max - this.min));
-    this.syncProgress(percent);
-    if (this.tooltip !== "none" && this.hasTooltip) {
-      this.updateComplete.then(() => this.syncTooltip(percent));
-    }
-  }
-  handleInvalid(event) {
-    this.formControlController.setValidity(false);
-    this.formControlController.emitInvalidEvent(event);
-  }
-  /** Sets focus on the range. */
-  focus(options) {
-    this.input.focus(options);
-  }
-  /** Removes focus from the range. */
-  blur() {
-    this.input.blur();
-  }
-  /** Increments the value of the range by the value of the step attribute. */
-  stepUp() {
-    this.input.stepUp();
-    if (this.value !== Number(this.input.value)) {
-      this.value = Number(this.input.value);
-    }
-  }
-  /** Decrements the value of the range by the value of the step attribute. */
-  stepDown() {
-    this.input.stepDown();
-    if (this.value !== Number(this.input.value)) {
-      this.value = Number(this.input.value);
-    }
-  }
-  /** Checks for validity but does not show a validation message. Returns `true` when valid and `false` when invalid. */
-  checkValidity() {
-    return this.input.checkValidity();
-  }
-  /** Gets the associated form, if one exists. */
-  getForm() {
-    return this.formControlController.getForm();
-  }
-  /** Checks for validity and shows the browser's validation message if the control is invalid. */
-  reportValidity() {
-    return this.input.reportValidity();
-  }
-  /** Sets a custom validation message. Pass an empty string to restore validity. */
-  setCustomValidity(message) {
-    this.input.setCustomValidity(message);
-    this.formControlController.updateValidity();
-  }
-  render() {
-    const hasLabelSlot = this.hasSlotController.test("label");
-    const hasHelpTextSlot = this.hasSlotController.test("help-text");
-    const hasLabel = this.label ? true : !!hasLabelSlot;
-    const hasHelpText = this.helpText ? true : !!hasHelpTextSlot;
-    return x2`
-      <div
-        part="form-control"
-        class=${e9({
-      "form-control": true,
-      "form-control--medium": true,
-      // range only has one size
-      "form-control--has-label": hasLabel,
-      "form-control--has-help-text": hasHelpText
-    })}
-      >
-        <label
-          part="form-control-label"
-          class="form-control__label"
-          for="input"
-          aria-hidden=${hasLabel ? "false" : "true"}
-        >
-          <slot name="label">${this.label}</slot>
-        </label>
-
-        <div part="form-control-input" class="form-control-input">
-          <div
-            part="base"
-            class=${e9({
-      range: true,
-      "range--disabled": this.disabled,
-      "range--focused": this.hasFocus,
-      "range--rtl": this.localize.dir() === "rtl",
-      "range--tooltip-visible": this.hasTooltip,
-      "range--tooltip-top": this.tooltip === "top",
-      "range--tooltip-bottom": this.tooltip === "bottom"
-    })}
-            @mousedown=${this.handleThumbDragStart}
-            @mouseup=${this.handleThumbDragEnd}
-            @touchstart=${this.handleThumbDragStart}
-            @touchend=${this.handleThumbDragEnd}
-          >
-            <input
-              part="input"
-              id="input"
-              class="range__control"
-              title=${this.title}
-              type="range"
-              name=${o9(this.name)}
-              ?disabled=${this.disabled}
-              min=${o9(this.min)}
-              max=${o9(this.max)}
-              step=${o9(this.step)}
-              .value=${l5(this.value.toString())}
-              aria-describedby="help-text"
-              @change=${this.handleChange}
-              @focus=${this.handleFocus}
-              @input=${this.handleInput}
-              @invalid=${this.handleInvalid}
-              @blur=${this.handleBlur}
-            />
-            ${this.tooltip !== "none" && !this.disabled ? x2`
-                  <output part="tooltip" class="range__tooltip">
-                    ${typeof this.tooltipFormatter === "function" ? this.tooltipFormatter(this.value) : this.value}
-                  </output>
-                ` : ""}
-          </div>
-        </div>
-
-        <div
-          part="form-control-help-text"
-          id="help-text"
-          class="form-control__help-text"
-          aria-hidden=${hasHelpText ? "false" : "true"}
-        >
-          <slot name="help-text">${this.helpText}</slot>
-        </div>
-      </div>
-    `;
-  }
-};
-SlRange.styles = [component_styles_default, form_control_styles_default, range_styles_default];
-__decorateClass([
-  e6(".range__control")
-], SlRange.prototype, "input", 2);
-__decorateClass([
-  e6(".range__tooltip")
-], SlRange.prototype, "output", 2);
-__decorateClass([
-  r7()
-], SlRange.prototype, "hasFocus", 2);
-__decorateClass([
-  r7()
-], SlRange.prototype, "hasTooltip", 2);
-__decorateClass([
-  n7()
-], SlRange.prototype, "title", 2);
-__decorateClass([
-  n7()
-], SlRange.prototype, "name", 2);
-__decorateClass([
-  n7({ type: Number })
-], SlRange.prototype, "value", 2);
-__decorateClass([
-  n7()
-], SlRange.prototype, "label", 2);
-__decorateClass([
-  n7({ attribute: "help-text" })
-], SlRange.prototype, "helpText", 2);
-__decorateClass([
-  n7({ type: Boolean, reflect: true })
-], SlRange.prototype, "disabled", 2);
-__decorateClass([
-  n7({ type: Number })
-], SlRange.prototype, "min", 2);
-__decorateClass([
-  n7({ type: Number })
-], SlRange.prototype, "max", 2);
-__decorateClass([
-  n7({ type: Number })
-], SlRange.prototype, "step", 2);
-__decorateClass([
-  n7()
-], SlRange.prototype, "tooltip", 2);
-__decorateClass([
-  n7({ attribute: false })
-], SlRange.prototype, "tooltipFormatter", 2);
-__decorateClass([
-  n7({ reflect: true })
-], SlRange.prototype, "form", 2);
-__decorateClass([
-  defaultValue()
-], SlRange.prototype, "defaultValue", 2);
-__decorateClass([
-  t4({ passive: true })
-], SlRange.prototype, "handleThumbDragStart", 1);
-__decorateClass([
-  watch("value", { waitUntilFirstUpdate: true })
-], SlRange.prototype, "handleValueChange", 1);
-__decorateClass([
-  watch("disabled", { waitUntilFirstUpdate: true })
-], SlRange.prototype, "handleDisabledChange", 1);
-__decorateClass([
-  watch("hasTooltip", { waitUntilFirstUpdate: true })
-], SlRange.prototype, "syncRange", 1);
-
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.V2OL7VMD.js
 var tag_styles_default = i`
   :host {
@@ -9954,6 +9427,7 @@ function cellMode(element, state) {
 // periodic-table/strings.ts
 var EN = {
   widgetLabel: "Periodic table",
+  filtersLabel: "Search and filter",
   searchLabel: "Search elements",
   searchPlaceholder: "Name, symbol, number",
   viewLabel: "Layout",
@@ -10034,6 +9508,7 @@ var EN = {
 };
 var DE = {
   widgetLabel: "Periodensystem",
+  filtersLabel: "Suchen und filtern",
   searchLabel: "Elemente suchen",
   searchPlaceholder: "Name, Symbol, Nummer",
   viewLabel: "Darstellung",
@@ -10440,11 +9915,14 @@ var periodicTableStyles = i`
 		box-sizing: border-box;
 	}
 
+	/* The widget is the positioning context of the info button in its bottom left
+	   corner, and the container the layout queries measure. */
 	.widget {
 		container-type: inline-size;
+		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.4rem;
 		block-size: 100%;
 		min-block-size: 0;
 	}
@@ -10483,26 +9961,112 @@ var periodicTableStyles = i`
 		--pt-cell-fill: var(--pt-unknown);
 	}
 
-	/* One lightly shaded bar carries search, family filter, result count and the
-	   icon buttons, so the controls read as a single unit instead of scattered
-	   rows. */
-	.toolbar {
+	/* The ribbon is the only band that is always visible: two panel toggles on the
+	   left, the layout switch on the right. Everything that needs more room than
+	   one chip lives in a panel below it, so the ribbon stays one row at every
+	   width and the table keeps the height it was given. */
+	.ribbon {
 		display: flex;
-		flex-wrap: wrap;
+		flex: 0 0 auto;
 		align-items: center;
-		gap: 0.4rem;
-		padding: 0.4rem 0.45rem;
+		gap: 0.3rem;
+		padding: 0.3rem 0.35rem;
 		border: 1px solid var(--pt-border);
 		border-radius: 8px;
 		background: var(--pt-inset);
 	}
 
-	.toolbar .search {
-		flex: 0 1 14rem;
-		min-width: 7rem;
+	/* The toggles and the layout switch are compact icon buttons with a tooltip
+	   and an accessible label, styled like the canvas controls of the lab widget:
+	   a light surface with a small shadow on the shaded bar. */
+	.ribbon sl-button::part(base) {
+		background: var(--pt-surface);
+		box-shadow: var(--pt-control-shadow);
 	}
 
-	.toolbar sl-input::part(form-control-label) {
+	.ribbon sl-button::part(label) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 0.4rem;
+	}
+
+	/* Every control in the ribbon takes the height of a family tag, so the bar
+	   reads as one row of equal chips instead of a mix of sizes. */
+	.ribbon sl-button {
+		--sl-input-height-small: var(--pt-chip-height);
+		--sl-button-font-size-small: 0.7rem;
+	}
+
+	/* An open panel fills its toggle in ChemLab blue, so the button says where the
+	   controls went. A closed panel that still narrows the table keeps a small
+	   accent dot, because a hidden filter must not look like no filter at all. */
+	.ribbon-toggle.is-open::part(base) {
+		border-color: var(--pt-accent);
+		background: var(--pt-accent);
+		color: var(--pt-surface);
+	}
+
+	.ribbon-toggle.is-active:not(.is-open)::part(base) {
+		position: relative;
+	}
+
+	.ribbon-toggle.is-active:not(.is-open)::part(label)::after {
+		content: "";
+		position: absolute;
+		top: 0.1rem;
+		right: 0.1rem;
+		width: 0.3rem;
+		height: 0.3rem;
+		border-radius: 50%;
+		background: var(--pt-accent);
+	}
+
+	.views {
+		display: flex;
+		gap: 0.25rem;
+		margin-inline-start: auto;
+	}
+
+	/* The active layout keeps the accent fill of its primary variant, because the
+	   surface override would leave its white icon on a white box. */
+	.views sl-button[variant="primary"]::part(base) {
+		background: var(--pt-accent);
+	}
+
+	/* A panel is the collapsible half of the ribbon: the same shaded surface, one
+	   row per group of controls, and no border of its own so it reads as the
+	   opened underside of the bar above it. */
+	.panel {
+		display: flex;
+		flex: 0 0 auto;
+		flex-direction: column;
+		gap: 0.3rem;
+		padding: 0.35rem;
+		border: 1px solid var(--pt-border);
+		border-radius: 8px;
+		background: var(--pt-inset);
+	}
+
+	.panel-row {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		min-width: 0;
+	}
+
+	/* Search and the family carousel share one height, so the two rows of the
+	   filter panel line up with the ribbon chips above them. */
+	.panel .search {
+		flex: 1 1 auto;
+		min-width: 5rem;
+		--sl-input-height-small: var(--pt-chip-height);
+		--sl-input-font-size-small: 0.72rem;
+	}
+
+	/* The field names itself through its placeholder and its accessible label, so
+	   the visible label is only kept for assistive technology. */
+	.panel .search::part(form-control-label) {
 		position: absolute;
 		width: 1px;
 		height: 1px;
@@ -10513,8 +10077,25 @@ var periodicTableStyles = i`
 		white-space: nowrap;
 	}
 
-	/* The result count rides in the toolbar as a pill badge; the full sentence
-	   stays available to screen readers through the hidden live region. */
+	.panel .reset {
+		flex: 0 0 auto;
+		--sl-input-height-small: var(--pt-chip-height);
+	}
+
+	.panel .reset::part(base) {
+		background: var(--pt-surface);
+		box-shadow: var(--pt-control-shadow);
+	}
+
+	.panel .reset::part(label) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 0.4rem;
+	}
+
+	/* The result count rides beside the family carousel as a pill badge; the full
+	   sentence stays available to screen readers through the hidden live region. */
 	.count-badge {
 		flex: 0 0 auto;
 	}
@@ -10534,63 +10115,40 @@ var periodicTableStyles = i`
 		white-space: nowrap;
 	}
 
-	/* Layout switch and reset are compact icon buttons with a tooltip and an
-	   accessible label, styled like the canvas controls of the lab widget: a
-	   light surface with a small shadow on the shaded bar. */
-	.toolbar-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-		margin-inline-start: auto;
+	/* The info button sits in the bottom left corner of the widget, out of the
+	   ribbon: the sources are a reference, not a control of the table, and the
+	   corner keeps them reachable without taking a chip from the bar. */
+	.info-button {
+		position: absolute;
+		bottom: 0.3rem;
+		left: 0.3rem;
+		z-index: 4;
+		font-size: 0.7rem;
 	}
 
-	.views {
-		display: flex;
-		gap: 0.25rem;
-	}
-
-	/* The ribbon buttons sit on the surface of the panel. The active view button
-	   keeps the accent fill of its primary variant, because the surface override
-	   would leave its white icon on a white box. */
-	.toolbar sl-button:not([variant="primary"])::part(base) {
+	.info-button::part(base) {
+		padding: 0.15rem;
+		border: 1px solid var(--pt-border);
+		border-radius: 50%;
 		background: var(--pt-surface);
 		box-shadow: var(--pt-control-shadow);
+		color: var(--pt-ink-soft);
 	}
 
-	.toolbar sl-button::part(label) {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 0 0.4rem;
-	}
-
-	/* Every control in the ribbon takes the height of a family tag, so the bar
-	   reads as one row of equal chips instead of a mix of sizes. The mode switch
-	   sits in the row below and follows, because it belongs to the same band. */
-	.toolbar sl-button,
-	.modes sl-button {
-		--sl-input-height-small: var(--pt-chip-height);
-		--sl-button-font-size-small: 0.7rem;
-	}
-
-	.modes sl-button::part(label) {
-		padding: 0 0.4rem;
-	}
-
-	.toolbar sl-icon-button::part(base) {
-		padding: 0.25rem;
-		font-size: 0.85rem;
+	.info-button::part(base):hover {
+		color: var(--pt-accent);
 	}
 
 	/* The pane is the only part that scrolls: the ribbon and the mode row stay
 	   put while the table or the list moves under them, and the widget itself
-	   never grows past the height it was given. */
+	   never grows past the height it was given. The bottom padding keeps the
+	   last row clear of the info button floating in the corner. */
 	.table-pane {
 		flex: 1 1 auto;
 		min-width: 0;
 		min-height: 0;
 		overflow: auto;
-		padding-bottom: 0.25rem;
+		padding-bottom: 1.6rem;
 	}
 
 	.grid {
@@ -10873,42 +10431,83 @@ var periodicTableStyles = i`
 		background: var(--pt-cell-fill);
 	}
 
-	.modes {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.4rem;
+	/* The property panel repeats the filter panel: a carousel of mode chips on
+	   top, the slider of the active mode underneath. The chips are plain buttons
+	   in the family tag treatment, so the two panels read as one system. */
+	.mode-strip {
+		flex: 0 0 auto;
+		--slide-gap: 0.25rem;
+		/* The carousel sizes its slides from an aspect ratio, which would give a
+		   one-row strip the height of a picture. Auto lets the chips decide the
+		   height; the items inherit the same value. */
+		--aspect-ratio: auto;
 	}
 
-	.mode-group {
-		display: flex;
-		gap: 0.25rem;
+	.mode-strip::part(base) {
+		gap: 0.1rem;
+	}
+
+	.mode-strip::part(scroll-container) {
+		--slide-size: max-content;
+	}
+
+	.mode-strip::part(navigation-button) {
+		min-height: var(--pt-chip-height);
+		padding: 0 0.1rem;
+		font-size: 0.8rem;
+	}
+
+	.mode-tag {
+		display: inline-flex;
+		align-items: center;
+		flex: 0 0 auto;
+		min-height: var(--pt-chip-height);
+		padding: 0.12rem 0.45rem;
+		border: 1px solid var(--pt-border);
+		border-radius: 3px;
+		background: var(--pt-surface);
+		color: var(--pt-ink-soft);
+		font: inherit;
+		font-size: 0.7rem;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	.mode-tag[aria-pressed="true"] {
+		border-color: var(--pt-accent);
+		background: color-mix(in srgb, var(--pt-accent) 10%, var(--pt-surface));
+		box-shadow: inset 0 0 0 1px var(--pt-accent);
+		color: var(--pt-ink);
+	}
+
+	.mode-tag:focus-visible {
+		outline: 2px solid var(--pt-ink);
+		outline-offset: 1px;
 	}
 
 	.mode-slider {
 		display: flex;
-		flex: 1 1 16rem;
 		align-items: center;
 		gap: 0.5rem;
-		min-width: 12rem;
+		min-width: 0;
 	}
 
-	.mode-slider sl-range {
+	/* The slider is a native range input: no component registration, the keyboard
+	   and touch behaviour of the platform, and no fallback to plain text when a
+	   Shoelace build is missing. The accent colour is the only styling it needs to
+	   sit in the ChemLab palette. */
+	.mode-range {
 		flex: 1 1 auto;
-		min-width: 6rem;
+		min-width: 4rem;
+		height: var(--pt-chip-height);
+		margin: 0;
+		accent-color: var(--pt-accent);
+		cursor: pointer;
 	}
 
-	/* The active mode button already names the quantity, so the range label is
-	   only kept for assistive technology. */
-	.mode-slider sl-range::part(form-control-label) {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		margin: -1px;
-		padding: 0;
-		overflow: hidden;
-		clip-path: inset(50%);
-		white-space: nowrap;
+	.mode-range:focus-visible {
+		outline: 2px solid var(--pt-ink);
+		outline-offset: 2px;
 	}
 
 	/* The current slider value rides beside the slider as a small tag. */
@@ -11284,7 +10883,10 @@ var periodicTableStyles = i`
 		align-items: center;
 		gap: 0.25rem;
 		margin: 0;
-		overflow-wrap: anywhere;
+		/* Break a long word only when it cannot fit a line of its own, so a value
+		   like the parenthesised temperature wraps as a unit instead of leaving
+		   its closing bracket behind. */
+		overflow-wrap: break-word;
 		font-variant-numeric: tabular-nums;
 	}
 
@@ -11597,9 +11199,9 @@ var periodicTableStyles = i`
 			block-size: auto;
 		}
 
-		.toolbar,
-		.modes,
-		.state-legend,
+		.ribbon,
+		.panel,
+		.info-button,
 		.table-pane {
 			display: none !important;
 		}
@@ -11615,9 +11217,9 @@ var periodicTableStyles = i`
 		}
 	}
 
-	:host(.ww-beforeprint) .toolbar,
-	:host(.ww-beforeprint) .modes,
-	:host(.ww-beforeprint) .state-legend,
+	:host(.ww-beforeprint) .ribbon,
+	:host(.ww-beforeprint) .panel,
+	:host(.ww-beforeprint) .info-button,
 	:host(.ww-beforeprint) .table-pane {
 		display: none !important;
 	}
@@ -11630,6 +11232,7 @@ var periodicTableStyles = i`
 		.cell,
 		.list-row,
 		.family-tag,
+		.mode-tag,
 		.state-legend li,
 		.details-card,
 		.placeholder-text {
@@ -11641,13 +11244,15 @@ var periodicTableStyles = i`
 		   stay distinct without colour. */
 		.cell:focus-visible,
 		.list-row:focus-visible,
-		.family-tag:focus-visible {
+		.family-tag:focus-visible,
+		.mode-tag:focus-visible {
 			outline: 2px solid Highlight;
 			outline-offset: 2px;
 		}
 
 		.cell[aria-selected="true"],
-		.family-tag[aria-pressed="true"] {
+		.family-tag[aria-pressed="true"],
+		.mode-tag[aria-pressed="true"] {
 			border: 2px solid Highlight;
 			box-shadow: none;
 		}
@@ -11690,6 +11295,18 @@ var RESET_ICON = x2`
 		<path d="M13.6 8a5.6 5.6 0 1 1-1.64-3.96"/><path d="M13.6 2.6v2.6h-2.6"/>
 	</svg>
 `;
+var FILTER_ICON = x2`
+	<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<path d="M2.2 3.2h11.6l-4.5 5.1v4.5l-2.6 1.4V8.3z"/>
+	</svg>
+`;
+var MODE_ICON = x2`
+	<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">
+		<path d="M2.4 4.6h11.2M2.4 11.4h11.2"/>
+		<circle cx="5.6" cy="4.6" r="1.7" fill="currentColor" stroke="none"/>
+		<circle cx="10.4" cy="11.4" r="1.7" fill="currentColor" stroke="none"/>
+	</svg>
+`;
 var CHEVRON_ICON = x2`
 	<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 		<path d="M4 6.2 8 10.2l4-4"/>
@@ -11727,7 +11344,7 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _openInfo, _onInfoHide, focusElement_fn, reset_fn, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderToolbar_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
+var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _filtersOpen, _modesOpen, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _toggleFilters, _toggleModes, _openInfo, _onInfoHide, focusElement_fn, reset_fn, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
 _ChemLabPeriodicTable_decorators = [t2("webwriter-chemlab-periodic-table")];
 var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a2) {
   constructor() {
@@ -11760,6 +11377,10 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     __privateAdd(this, _mode, DEFAULT_MODE_STATE);
     __privateAdd(this, _infoOpen, false);
     __privateAdd(this, _detailsExpanded, false);
+    /** Whether the panel with the search field and the family carousel is open. */
+    __privateAdd(this, _filtersOpen, false);
+    /** Whether the panel with the property modes and their slider is open. */
+    __privateAdd(this, _modesOpen, false);
     /** Opens or closes the full detail card. */
     __privateAdd(this, _toggleDetails, () => {
       __privateSet(this, _detailsExpanded, !__privateGet(this, _detailsExpanded));
@@ -11791,6 +11412,16 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
       const value = Number(event.target.value ?? "");
       if (!Number.isFinite(value)) return;
       __privateSet(this, _mode, { ...__privateGet(this, _mode), year: value });
+      this.requestUpdate();
+    });
+    /** Opens or closes the panel with the search field and the family filter. */
+    __privateAdd(this, _toggleFilters, () => {
+      __privateSet(this, _filtersOpen, !__privateGet(this, _filtersOpen));
+      this.requestUpdate();
+    });
+    /** Opens or closes the panel with the property modes. */
+    __privateAdd(this, _toggleModes, () => {
+      __privateSet(this, _modesOpen, !__privateGet(this, _modesOpen));
       this.requestUpdate();
     });
     /** Opens the info dialog. */
@@ -11944,10 +11575,18 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     });
     return x2`
 			<div class="widget">
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderToolbar_fn).call(this, t8, language, matches.length)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderRibbon_fn).call(this, t8, resolved)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderFilters_fn).call(this, t8, language, matches.length)}
 				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderModes_fn).call(this, t8, language)}
 				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t8, language, matches, element, details) : __privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t8, language, matching, details)}
 				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t8, language, element)}
+				<sl-icon-button
+					class="info-button"
+					src=${INFO_ICON}
+					label=${t8.infoLabel}
+					title=${t8.infoLabel}
+					@click=${__privateGet(this, _openInfo)}
+				></sl-icon-button>
 				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderInfo_fn).call(this, t8, language)}
 			</div>
 		`;
@@ -11971,6 +11610,8 @@ _restoreFocusPending = new WeakMap();
 _mode = new WeakMap();
 _infoOpen = new WeakMap();
 _detailsExpanded = new WeakMap();
+_filtersOpen = new WeakMap();
+_modesOpen = new WeakMap();
 _ChemLabPeriodicTable_instances = new WeakSet();
 /** Watches every ancestor the language walk visits for a `lang` change. */
 observeLanguage_fn = function() {
@@ -12058,13 +11699,15 @@ placeable_fn = function() {
 /**
  * Current search hits, best match first.
  *
- * The query only applies to the list, which is the only layout with a search
- * field: a query typed there must not silently filter the grid after a switch
- * back, and it survives the round trip.
+ * The query applies to both layouts: the search field sits in the filter
+ * panel, which the ribbon opens in either view, so a query narrows the grid
+ * and the list alike. The family filter is part of the same call, so the two
+ * filters combine instead of replacing each other.
+ *
+ * @returns The matching elements in display order.
  */
 matches_fn = function() {
-  const query = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get) === "list" ? __privateGet(this, _query) : "";
-  return searchElements(query, { locale: __privateGet(this, _ChemLabPeriodicTable_instances, language_get), category: __privateGet(this, _category) });
+  return searchElements(__privateGet(this, _query), { locale: __privateGet(this, _ChemLabPeriodicTable_instances, language_get), category: __privateGet(this, _category) });
 };
 /**
  * Selects an element after a user action and reports the change.
@@ -12140,6 +11783,8 @@ setMode_fn = function(mode) {
 };
 _onTemperatureInput = new WeakMap();
 _onYearInput = new WeakMap();
+_toggleFilters = new WeakMap();
+_toggleModes = new WeakMap();
 _openInfo = new WeakMap();
 _onInfoHide = new WeakMap();
 /**
@@ -12195,106 +11840,139 @@ renderCount_fn = function(t8, count) {
   return format(t8.resultCount, { count });
 };
 /**
- * Renders the ribbon with the info button, the family carousel, the reset and
- * the layout switch.
+ * Renders the ribbon: the two panel toggles and the layout switch.
  *
- * The whole row sits on one lightly shaded bar, so the controls read as one
- * unit. The families are a Shoelace carousel of tags instead of a dropdown
- * plus a legend, because the ribbon has no room for both and the tags double
- * as the filter. The carousel scrolls one tag at a time and keeps its arrows
- * at the ends, so the strip stays a single band at every width. It names
- * itself through a hidden label instead of an attribute, because the carousel
- * writes its own generic label when it connects. The reset sits
- * right after the carousel rather than inside it, so it never scrolls out of
- * reach. The layout switch is a pair of compact icon buttons with a tooltip
- * and an accessible label, like the canvas controls of the lab widget; the
- * result count is a pill badge, and a hidden live region keeps the full
- * sentence for screen readers. The search field only appears in the list,
- * where the rows have no grid to scan.
+ * The ribbon is the only permanently visible band. It carries the toggle that
+ * opens the filter panel in the slot the info button used to take, the toggle
+ * that opens the property panel beside it, and the layout switch on the far
+ * right. Everything that needs more room than one chip lives in one of the two
+ * panels below, so the ribbon stays one row at every width and the table keeps
+ * the height it was given.
+ *
+ * A toggle shows a filled state while its panel is open and a small dot while
+ * the panel is closed but still narrows the table, so a hidden filter never
+ * looks like no filter at all.
+ *
+ * @param t - Interface strings.
+ * @param resolved - Layout actually rendered.
+ * @returns The ribbon.
+ */
+renderRibbon_fn = function(t8, resolved) {
+  const filtersActive = __privateGet(this, _query) !== "" || __privateGet(this, _category) !== null;
+  const modesActive = __privateGet(this, _mode).mode !== "off";
+  return x2`
+			<div class="ribbon">
+				<sl-button
+					class="ribbon-toggle ${__privateGet(this, _filtersOpen) ? "is-open" : ""} ${filtersActive ? "is-active" : ""}"
+					size="small"
+					title=${t8.filtersLabel}
+					aria-label=${t8.filtersLabel}
+					aria-expanded=${__privateGet(this, _filtersOpen)}
+					@click=${__privateGet(this, _toggleFilters)}
+				>${FILTER_ICON}</sl-button>
+				<sl-button
+					class="ribbon-toggle ${__privateGet(this, _modesOpen) ? "is-open" : ""} ${modesActive ? "is-active" : ""}"
+					size="small"
+					title=${t8.modeLabel}
+					aria-label=${t8.modeLabel}
+					aria-expanded=${__privateGet(this, _modesOpen)}
+					@click=${__privateGet(this, _toggleModes)}
+				>${MODE_ICON}</sl-button>
+				<div class="views" role="group" aria-label=${t8.viewLabel}>
+					<sl-button
+						size="small"
+						variant=${resolved === "table" ? "primary" : "default"}
+						title=${t8.viewTable}
+						aria-label=${t8.viewTable}
+						aria-pressed=${resolved === "table"}
+						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "table")}
+					>${TABLE_ICON}</sl-button>
+					<sl-button
+						size="small"
+						variant=${resolved === "list" ? "primary" : "default"}
+						title=${t8.viewList}
+						aria-label=${t8.viewList}
+						aria-pressed=${resolved === "list"}
+						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "list")}
+					>${LIST_ICON}</sl-button>
+				</div>
+			</div>
+		`;
+};
+/**
+ * Renders the filter panel behind the first ribbon toggle.
+ *
+ * The panel holds the two controls that narrow the table, in the order they
+ * are read: the search field with the reset beside it, then the family
+ * carousel with the result count. Search and family filter combine, and both
+ * apply to the grid and the list alike, because the panel is the same in both
+ * layouts. The families are a Shoelace carousel of tags instead of a dropdown
+ * plus a legend, because the tags double as the filter and the strip stays one
+ * band at every width. It names itself through a hidden label instead of an
+ * attribute, because the carousel writes its own generic label when it
+ * connects. The reset sits outside the carousel, so it never scrolls out of
+ * reach. The result count is a pill badge, and a hidden live region keeps the
+ * full sentence for screen readers.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
  * @param count - Number of matching elements.
- * @returns The toolbar.
+ * @returns The filter panel, or nothing while it is closed.
  */
-renderToolbar_fn = function(t8, language, count) {
-  const resolved = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get);
+renderFilters_fn = function(t8, language, count) {
+  if (!__privateGet(this, _filtersOpen)) return null;
   const countText = __privateMethod(this, _ChemLabPeriodicTable_instances, renderCount_fn).call(this, t8, count);
   return x2`
-			<div class="toolbar">
-				<sl-icon-button
-					class="info-button"
-					src=${INFO_ICON}
-					label=${t8.infoLabel}
-					@click=${__privateGet(this, _openInfo)}
-				></sl-icon-button>
-				${resolved === "list" ? x2`
-						<sl-input
-							class="search"
-							type="search"
-							size="small"
-							clearable
-							label=${t8.searchLabel}
-							placeholder=${t8.searchPlaceholder}
-							.value=${__privateGet(this, _query)}
-							@sl-input=${__privateGet(this, _onQueryInput)}
-							@keydown=${__privateGet(this, _onSearchKeydown)}
-						></sl-input>
-					` : null}
-				<span class="visually-hidden" id="family-strip-label">${t8.legendLabel}</span>
-				<sl-carousel
-					class="family-strip"
-					navigation
-					mouse-dragging
-					slides-per-page="4"
-					slides-per-move="1"
-					aria-labelledby="family-strip-label"
-				>
-					${Object.entries(CATEGORIES).map(([key, category]) => x2`
-						<sl-carousel-item>
-							<button
-								class="family-tag category-${key}"
-								type="button"
-								aria-pressed=${__privateGet(this, _category) === key}
-								@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, toggleCategory_fn).call(this, key)}
-							>
-								<span class="family-swatch"></span>${category[language]}
-							</button>
-						</sl-carousel-item>
-					`)}
-					<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
-					<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
-				</sl-carousel>
-				<sl-button
-					class="reset"
-					size="small"
-					title=${t8.reset}
-					aria-label=${t8.reset}
-					@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, reset_fn).call(this)}
-				>${RESET_ICON}</sl-button>
-				<sl-badge class="count-badge" pill variant="neutral" title=${countText}>
-					${count}
-				</sl-badge>
-				<p class="visually-hidden" role="status" aria-live="polite">${countText}</p>
-				<div class="toolbar-actions">
-					<div class="views" role="group" aria-label=${t8.viewLabel}>
-						<sl-button
-							size="small"
-							variant=${resolved === "table" ? "primary" : "default"}
-							title=${t8.viewTable}
-							aria-label=${t8.viewTable}
-							aria-pressed=${resolved === "table"}
-							@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "table")}
-						>${TABLE_ICON}</sl-button>
-						<sl-button
-							size="small"
-							variant=${resolved === "list" ? "primary" : "default"}
-							title=${t8.viewList}
-							aria-label=${t8.viewList}
-							aria-pressed=${resolved === "list"}
-							@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "list")}
-						>${LIST_ICON}</sl-button>
-					</div>
+			<div class="panel filters">
+				<div class="panel-row">
+					<sl-input
+						class="search"
+						type="search"
+						size="small"
+						clearable
+						label=${t8.searchLabel}
+						placeholder=${t8.searchPlaceholder}
+						.value=${__privateGet(this, _query)}
+						@sl-input=${__privateGet(this, _onQueryInput)}
+						@keydown=${__privateGet(this, _onSearchKeydown)}
+					></sl-input>
+					<sl-button
+						class="reset"
+						size="small"
+						title=${t8.reset}
+						aria-label=${t8.reset}
+						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, reset_fn).call(this)}
+					>${RESET_ICON}</sl-button>
+				</div>
+				<div class="panel-row">
+					<span class="visually-hidden" id="family-strip-label">${t8.legendLabel}</span>
+					<sl-carousel
+						class="family-strip"
+						navigation
+						mouse-dragging
+						slides-per-page="4"
+						slides-per-move="1"
+						aria-labelledby="family-strip-label"
+					>
+						${Object.entries(CATEGORIES).map(([key, category]) => x2`
+							<sl-carousel-item>
+								<button
+									class="family-tag category-${key}"
+									type="button"
+									aria-pressed=${__privateGet(this, _category) === key}
+									@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, toggleCategory_fn).call(this, key)}
+								>
+									<span class="family-swatch"></span>${category[language]}
+								</button>
+							</sl-carousel-item>
+						`)}
+						<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
+						<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
+					</sl-carousel>
+					<sl-badge class="count-badge" pill variant="neutral" title=${countText}>
+						${count}
+					</sl-badge>
+					<p class="visually-hidden" role="status" aria-live="polite">${countText}</p>
 				</div>
 			</div>
 		`;
@@ -12335,45 +12013,61 @@ slider_fn = function(t8, language) {
   }
 };
 /**
- * Renders the mode switch with its slider and the state legend.
+ * Renders the property panel behind the second ribbon toggle.
  *
- * The switch decides what the cells are coloured by: nothing, the state at the
+ * The panel decides what the cells are coloured by: nothing, the state at the
  * chosen temperature, or whether the element was already known in the chosen
- * year. The legend only appears for the temperature mode, because the
- * discovery mode hides cells instead of colouring them. It shares the row
- * with the switch and the slider: a row of its own would cost the table the
- * height of one period at the default widget size.
+ * year. The modes sit in a carousel of chips, so the row stays one band while
+ * the list of modes grows, and the slider of the active mode sits underneath
+ * it with its value as a tag. The slider is a native range input: it needs no
+ * component registration, keeps the keyboard and touch behaviour of the
+ * platform, and cannot fall back to plain text when a Shoelace build is
+ * missing. The legend of the temperature mode shares the last row, because a
+ * row of its own would cost the table the height of one period.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
- * @returns The mode row with the legend of the temperature mode.
+ * @returns The property panel, or nothing while it is closed.
  */
 renderModes_fn = function(t8, language) {
+  if (!__privateGet(this, _modesOpen)) return null;
   const slider = __privateMethod(this, _ChemLabPeriodicTable_instances, slider_fn).call(this, t8, language);
   return x2`
-			<div class="modes">
-				<div class="mode-group" role="group" aria-label=${t8.modeLabel}>
+			<div class="panel modes">
+				<span class="visually-hidden" id="mode-strip-label">${t8.modeLabel}</span>
+				<sl-carousel
+					class="mode-strip"
+					navigation
+					mouse-dragging
+					slides-per-page="4"
+					slides-per-move="1"
+					aria-labelledby="mode-strip-label"
+				>
 					${TABLE_MODES.map((mode) => x2`
-						<sl-button
-							size="small"
-							variant=${__privateGet(this, _mode).mode === mode ? "primary" : "default"}
-							aria-pressed=${__privateGet(this, _mode).mode === mode}
-							@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setMode_fn).call(this, mode)}
-						>${modeText(mode, t8)}</sl-button>
+						<sl-carousel-item>
+							<button
+								class="mode-tag ${__privateGet(this, _mode).mode === mode ? "is-active" : ""}"
+								type="button"
+								aria-pressed=${__privateGet(this, _mode).mode === mode}
+								@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setMode_fn).call(this, mode)}
+							>${modeText(mode, t8)}</button>
+						</sl-carousel-item>
 					`)}
-				</div>
+					<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
+					<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
+				</sl-carousel>
 				${slider ? x2`
 						<div class="mode-slider">
-							<sl-range
-								size="small"
-								label=${slider.label}
+							<input
+								class="mode-range"
+								type="range"
 								min=${slider.min}
 								max=${slider.max}
 								step=${slider.step}
 								.value=${String(slider.value)}
-								.tooltipFormatter=${slider.format}
-								@sl-input=${slider.onInput}
-							></sl-range>
+								aria-label=${slider.label}
+								@input=${slider.onInput}
+							/>
 							<sl-tag class="mode-value" size="small" variant="neutral">${slider.readout}</sl-tag>
 						</div>
 					` : null}
@@ -12910,7 +12604,6 @@ __publicField(_ChemLabPeriodicTable, "scopedElements", {
   "sl-icon-button": SlIconButton,
   "sl-input": SlInput,
   "sl-popup": SlPopup,
-  "sl-range": SlRange,
   "sl-spinner": SlSpinner,
   "sl-tag": SlTag,
   "sl-tooltip": SlTooltip
