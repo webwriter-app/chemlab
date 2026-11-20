@@ -373,12 +373,31 @@ export const periodicTableStyles = css`
 		min-width: 21rem;
 	}
 
+	/* The picker in the molecule builder is much narrower than the widget, so the
+	   atomic number moves above the symbol instead of sitting on its shoulder and
+	   the family name shrinks into the gutter. Both would otherwise collide with
+	   the symbol at the 20 px cells of a 410 px palette. */
 	:host([picker-mode]) .cell {
+		padding-block-start: 0.45rem;
 		touch-action: manipulation;
+	}
+
+	:host([picker-mode]) .cell-number {
+		inset-inline-start: 2px;
+		font-size: 0.45rem;
+	}
+
+	:host([picker-mode]) .cell-year {
+		font-size: 0.45rem;
 	}
 
 	:host([picker-mode]) .cell-symbol {
 		font-size: 0.75rem;
+	}
+
+	:host([picker-mode]) .series-header {
+		padding-right: 0.15rem;
+		font-size: 0.5rem;
 	}
 
 	.grid-row {

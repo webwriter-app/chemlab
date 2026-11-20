@@ -81,7 +81,10 @@ export const builderStyles = css`
 		block-size: clamp(32rem, 66vh, 42rem);
 	}
 	.workspace[data-palette="list"] { grid-template-columns: clamp(12rem, 34%, 16rem) minmax(0, 1fr); }
-	.workspace[data-palette="table"] { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+	/* The element grid needs about 20 px per column, so the palette takes the
+	   width of the table instead of a share of the workspace. The 55 % cap keeps
+	   the canvas usable; below it the grid button stays disabled. */
+	.workspace[data-palette="table"] { grid-template-columns: minmax(0, min(27rem, 55%)) minmax(0, 1fr); }
 	.workspace[data-collapsed] { grid-template-columns: 0 minmax(0, 1fr); }
 	.palette {
 		position: relative;

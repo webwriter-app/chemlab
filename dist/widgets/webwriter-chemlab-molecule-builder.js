@@ -101695,12 +101695,31 @@ var periodicTableStyles = i`
 		min-width: 21rem;
 	}
 
+	/* The picker in the molecule builder is much narrower than the widget, so the
+	   atomic number moves above the symbol instead of sitting on its shoulder and
+	   the family name shrinks into the gutter. Both would otherwise collide with
+	   the symbol at the 20 px cells of a 410 px palette. */
 	:host([picker-mode]) .cell {
+		padding-block-start: 0.45rem;
 		touch-action: manipulation;
+	}
+
+	:host([picker-mode]) .cell-number {
+		inset-inline-start: 2px;
+		font-size: 0.45rem;
+	}
+
+	:host([picker-mode]) .cell-year {
+		font-size: 0.45rem;
 	}
 
 	:host([picker-mode]) .cell-symbol {
 		font-size: 0.75rem;
+	}
+
+	:host([picker-mode]) .series-header {
+		padding-right: 0.15rem;
+		font-size: 0.5rem;
 	}
 
 	.grid-row {
@@ -105477,7 +105496,10 @@ var builderStyles = i`
 		block-size: clamp(32rem, 66vh, 42rem);
 	}
 	.workspace[data-palette="list"] { grid-template-columns: clamp(12rem, 34%, 16rem) minmax(0, 1fr); }
-	.workspace[data-palette="table"] { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+	/* The element grid needs about 20 px per column, so the palette takes the
+	   width of the table instead of a share of the workspace. The 55 % cap keeps
+	   the canvas usable; below it the grid button stays disabled. */
+	.workspace[data-palette="table"] { grid-template-columns: minmax(0, min(27rem, 55%)) minmax(0, 1fr); }
 	.workspace[data-collapsed] { grid-template-columns: 0 minmax(0, 1fr); }
 	.palette {
 		position: relative;
@@ -105692,7 +105714,9 @@ var chargeText = (charge) => charge === 0 ? "" : `${Math.abs(charge) > 1 ? Math.
 var distance = (a5, b4) => Math.hypot(a5.x - b4.x, a5.y - b4.y);
 var pointer = (event) => ({ x: event.clientX, y: event.clientY, id: event.pointerId });
 var groups = [...new Set(structureCatalog.map((entry) => entry.category))];
-var PALETTE_GRID_MIN = 352;
+var PALETTE_GRID_MIN = 410;
+var PALETTE_GRID_SHARE = 0.55;
+var PALETTE_CHROME = 15;
 var CUBE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
 	<path d="M8 1.9 13.8 5v6L8 14.1 2.2 11V5z" /><path d="M2.2 5 8 8.1 13.8 5M8 8.1v6" /></svg>`;
@@ -106204,10 +106228,10 @@ bindTable_fn = function() {
   __privateGet(this, _router).bind();
 };
 /**
- * Watches the workspace width. The grid split gives the palette 40 % of it,
- * so a narrow embed falls back to the list and keeps the symbols readable.
- * The measurement is the workspace, not the palette, because the palette
- * width follows the chosen layout and would otherwise block the switch.
+ * Watches the workspace width. The palette takes the width of the element grid
+ * while the grid is shown, so a narrow embed disables the grid button instead
+ * of clipping the symbols. The measurement is the workspace, not the palette,
+ * because the palette is narrow in the list and would block its own switch.
  */
 observePalette_fn = function() {
   const workspace = this.renderRoot.querySelector(".workspace");
@@ -106219,7 +106243,7 @@ observePalette_fn = function() {
   if (__privateGet(this, _paletteObserver)) return;
   __privateSet(this, _paletteObserver, new ResizeObserver((entries2) => {
     const width = entries2[0]?.contentRect.width ?? 0;
-    const narrow = width > 0 && width * 0.4 < PALETTE_GRID_MIN;
+    const narrow = width > 0 && width * PALETTE_GRID_SHARE < PALETTE_GRID_MIN + PALETTE_CHROME;
     if (narrow !== this.paletteNarrow) this.paletteNarrow = narrow;
   }));
   __privateGet(this, _paletteObserver).observe(workspace);
@@ -106657,8 +106681,10 @@ renderHistoryButton_fn = function(redo) {
 };
 renderPickerLayout_fn = function(view, active) {
   const label = view === "list" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "List view", "Listenansicht") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Grid view", "Rasteransicht");
-  return x2`<sl-button class="icon-control" size="small" aria-label=${label} title=${label}
-			variant=${active ? "primary" : "default"} aria-pressed=${String(active)}
+  const blocked = view === "table" && this.paletteNarrow;
+  const hint = blocked ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "The grid needs a wider palette. Widen the widget to use it.", "Das Raster braucht eine breitere Palette. Vergr\xF6\xDFere das Widget daf\xFCr.") : label;
+  return x2`<sl-button class="icon-control" size="small" aria-label=${label} title=${hint}
+			variant=${active ? "primary" : "default"} aria-pressed=${String(active)} ?disabled=${blocked}
 			@click=${() => {
     this.pickerView = view;
   }}>${view === "list" ? LIST_ICON : TABLE_ICON}</sl-button>`;

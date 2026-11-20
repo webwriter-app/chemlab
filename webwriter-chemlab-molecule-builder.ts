@@ -31,8 +31,18 @@ const chargeText = (charge: number) => charge === 0 ? "" : `${Math.abs(charge) >
 const distance = (a: Pointer, b: Pointer) => Math.hypot(a.x - b.x, a.y - b.y);
 const pointer = (event: PointerEvent): Pointer => ({ x: event.clientX, y: event.clientY, id: event.pointerId });
 const groups = [...new Set(structureCatalog.map(entry => entry.category))];
-/** The palette column is 40 % of the workspace; below this the grid symbols get unreadable. */
-const PALETTE_GRID_MIN = 352;
+/**
+ * The element grid needs about 20 px per column, so the palette takes the width
+ * of the table (27rem, capped at 55 % of the workspace) while the grid is shown.
+ * The body loses 15 px to the palette padding and border, which leaves 417 px for
+ * eighteen columns at the cap. Below 410 px of body the grid clips its symbols,
+ * so the grid button stays disabled and its tooltip names the reason.
+ */
+const PALETTE_GRID_MIN = 410;
+/** Share of the workspace the palette may take while the element grid is shown. */
+const PALETTE_GRID_SHARE = .55;
+/** Palette padding and border, which the element grid does not get. */
+const PALETTE_CHROME = 15;
 /** Canvas view controls use the same icon size as the lab's canvas controls. */
 const CUBE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
@@ -179,10 +189,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	/**
-	 * Watches the workspace width. The grid split gives the palette 40 % of it,
-	 * so a narrow embed falls back to the list and keeps the symbols readable.
-	 * The measurement is the workspace, not the palette, because the palette
-	 * width follows the chosen layout and would otherwise block the switch.
+	 * Watches the workspace width. The palette takes the width of the element grid
+	 * while the grid is shown, so a narrow embed disables the grid button instead
+	 * of clipping the symbols. The measurement is the workspace, not the palette,
+	 * because the palette is narrow in the list and would block its own switch.
 	 */
 	#observePalette() {
 		const workspace = this.renderRoot.querySelector<HTMLElement>(".workspace");
@@ -194,7 +204,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (this.#paletteObserver) return;
 		this.#paletteObserver = new ResizeObserver(entries => {
 			const width = entries[0]?.contentRect.width ?? 0;
-			const narrow = width > 0 && width * .4 < PALETTE_GRID_MIN;
+			// The 27rem cap of the stylesheet is wider than the grid needs, so only
+			// the share decides whether the grid fits.
+			const narrow = width > 0 && width * PALETTE_GRID_SHARE < PALETTE_GRID_MIN + PALETTE_CHROME;
 			if (narrow !== this.paletteNarrow) this.paletteNarrow = narrow;
 		});
 		this.#paletteObserver.observe(workspace);
@@ -773,8 +785,13 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	#renderPickerLayout(view: "list" | "table", active: boolean) {
 		const label = view === "list" ? this.#t("List view", "Listenansicht") : this.#t("Grid view", "Rasteransicht");
-		return html`<sl-button class="icon-control" size="small" aria-label=${label} title=${label}
-			variant=${active ? "primary" : "default"} aria-pressed=${String(active)}
+		const blocked = view === "table" && this.paletteNarrow;
+		const hint = blocked
+			? this.#t("The grid needs a wider palette. Widen the widget to use it.",
+				"Das Raster braucht eine breitere Palette. Vergrößere das Widget dafür.")
+			: label;
+		return html`<sl-button class="icon-control" size="small" aria-label=${label} title=${hint}
+			variant=${active ? "primary" : "default"} aria-pressed=${String(active)} ?disabled=${blocked}
 			@click=${() => { this.pickerView = view; }}>${view === "list" ? LIST_ICON : TABLE_ICON}</sl-button>`;
 	}
 
