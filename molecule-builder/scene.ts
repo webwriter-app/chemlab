@@ -1,14 +1,187 @@
-import { Application, Graphics, Point } from "pixi.js";
+import { Application, CanvasSource, Graphics, Point, Sprite, Text, Texture } from "pixi.js";
 import {
 	Container3D, CylinderGeometry, DirectionalLight, Material3D, Mesh3D, Plane,
-	Sphere, SphereGeometry, Vector3, View3D,
+	Sphere, SphereGeometry, srgbToLinear, Vector3, View3D,
 } from "@pixi/3d";
+import type { ShaderBit } from "@pixi/3d";
 import { atomColor, atomRadius, add, electronRegions, perpendicular, scale, subtract, unit } from "./geometry";
 import { crystalIonColors, latticePositions, siteIon } from "./crystal-display";
 import { cartesian, cellVectors, replicatedSites, type Point3, type Structure } from "./structure";
 
 const vector = ([x, y, z]: Point3) => ({ x, y, z });
 const cellCorners: Point3[] = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]];
+/** The camera's vertical field of view in degrees, the default of the 3D view. */
+const CAMERA_FOV = 60;
+/** Share of the short edge the structure fills, leaving room for the canvas controls. */
+const FIT_FILL = 0.8;
+/** Screen distance of the cell-axis cue from the upper right corner, in pixels. */
+const AXIS_ORIGIN = 34;
+/** Length of the cell-axis cue arrows, in pixels. */
+const AXIS_LENGTH = 20;
+const AXIS_COLORS = [0xb45309, 0x0f766e, 0x6d28d9];
+/**
+ * How far the silhouette of an atom darkens, as a share of its lit colour.
+ *
+ * The CPK palette runs from white hydrogen to near-black iodine, so no canvas
+ * colour can separate every atom from the background: the best any single
+ * backdrop manages is 2.7:1, and only pure black reaches even that. The edge
+ * therefore has to come from the atom itself. A sphere lit from the front
+ * shades towards its rim only weakly, because the hemisphere fill is
+ * normal-aware and still reaches a surface turned away from the camera, so the
+ * rim is darkened here on top of the lighting.
+ */
+const RIM_STRENGTH = 0.8;
+/**
+ * How tightly the darkening hugs the silhouette.
+ *
+ * A low power spreads the darkening across the whole sphere and reads as a
+ * dirty surface; a high power confines it to a narrow band that reads as the
+ * edge of a round body. The value is a falloff exponent on the facing term, so
+ * it is independent of the atom's size and of the camera distance.
+ */
+const RIM_POWER = 2.2;
+/**
+ * Darkens a surface as its normal turns away from the camera, and draws the
+ * mark of a selected or hovered atom into the same band.
+ *
+ * The darkening is the shading counterpart of an ink outline: the same
+ * silhouette contrast, but following the surface instead of a shell pushed out
+ * along the normal. It therefore scales with curvature rather than with world
+ * units, so a hydrogen and a caesium get the same proportional rim, and it
+ * leaves no ring behind a translucent surface. Runs after the light loop, where
+ * `finalColor` is lit linear light, so the multiply darkens the shaded result.
+ *
+ * The mark reuses that band instead of adding geometry: where the surface turns
+ * away from the camera the colour is mixed towards the accent, which draws a
+ * ring exactly on the silhouette. A ring is the one cue that survives a crowded
+ * lattice, because it does not depend on the atom's own colour — a glow behind
+ * the atom washes out against a light neighbour, and a recoloured sphere would
+ * read as a different element. The body keeps its CPK colour; only the edge
+ * carries the accent, and `markStrength` at zero leaves the atom untouched.
+ */
+const rimBit: ShaderBit = {
+	name: "atomRim",
+	bindings: { material: { rimStrength: "f32", rimPower: "f32", markStrength: "f32", markWidth: "f32", markColor: "vec4<f32>" } },
+	gpu: {
+		fragment: {
+			lobePostLighting: `{
+				let rimFacing = max(dot(normal, viewDir), 0.0);
+				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
+				let markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
+				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
+			}`,
+		},
+	},
+	gl: {
+		fragment: {
+			lobePostLighting: `{
+				float rimFacing = max(dot(normal, viewDir), 0.0);
+				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
+				float markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
+				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
+			}`,
+		},
+	},
+};
+
+/**
+ * The accent a marked atom is outlined with, the ChemLab blue of the canvas
+ * controls.
+ *
+ * The mark is an outline on the atom, never a colour over it: a recoloured
+ * sphere would read as a different element, which is exactly the mistake a
+ * selection must not invite. Only the outermost band of the surface takes the
+ * accent, so the body keeps the CPK colour that identifies it.
+ */
+const SELECTION_COLOR = 0x0086c5;
+/** The same accent in the linear light the material shades in. */
+const SELECTION_LINEAR = [0x00, 0x86, 0xc5].map(channel => srgbToLinear(channel / 255));
+/**
+ * How wide the mark's band is, as the facing term where it fades out.
+ *
+ * The facing term is the cosine between the surface normal and the view
+ * direction, so 0.62 covers the outer 22 % of the projected radius. The band
+ * holds full strength over its inner 45 % and fades over the rest, which reads
+ * as a drawn outline rather than as a tint: on a typical atom the solid part is
+ * about two pixels and the falloff another five, so the ring stays crisp at any
+ * zoom without eating into the element colour.
+ */
+const MARK_WIDTH = 0.62;
+/** Strength of the ring on a selected atom, where it replaces the shaded edge. */
+const SELECTION_MARK = 1;
+/**
+ * Strength of the ring under the pointer.
+ *
+ * The lattice site picker highlights the atom a row belongs to, and that cue
+ * has to be distinguishable from a selection: the same ring at a little over
+ * half the strength reads as a preview rather than as a second selection.
+ */
+const HOVER_MARK = 0.55;
+/**
+ * How far the canvas corners darken, as an alpha at the corner.
+ *
+ * The backdrop is a flat near-white, so a structure in the middle competes with
+ * the empty field around it. The vignette pulls the eye inwards without
+ * touching the atoms, and it stays a screen-space effect: it never moves with
+ * the camera and never hides a part of the structure that the fit put in view.
+ */
+const VIGNETTE_ALPHA = 0.3;
+/** Radius of the vignette's clear centre, as a share of the gradient's radius. */
+const VIGNETTE_CLEAR = 0.55;
+/**
+ * Where the canvas corner sits on the gradient, as a share of its radius.
+ *
+ * The gradient is drawn as a circle, not stretched to the canvas: an ellipse
+ * would reach full strength at the middle of the long edges and grey out the
+ * whole board. Sizing the circle past the corners keeps the edges light and
+ * gathers the shadow where a vignette belongs.
+ */
+const VIGNETTE_REACH = 0.85;
+/** Colour the vignette darkens towards, a slate that reads as shadow on white. */
+const VIGNETTE_COLOR = "15, 23, 42";
+
+/**
+ * The vignette's gradient stops, eased so the darkening stays at the rim.
+ *
+ * A linear ramp from the centre would grey out most of the canvas, because the
+ * texture is stretched over the whole board and its radius reaches the edge
+ * everywhere. The clear centre therefore covers half the radius and the ramp
+ * follows a smoothstep, which keeps the middle of the board white and gathers
+ * the shadow in the corners where it belongs.
+ */
+function vignetteStops() {
+	const stops: [number, string][] = [[0, `rgba(${VIGNETTE_COLOR}, 0)`], [VIGNETTE_CLEAR, `rgba(${VIGNETTE_COLOR}, 0)`]];
+	for (let step = 1; step <= 6; step++) {
+		const share = step / 6;
+		const eased = share * share * (3 - 2 * share);
+		stops.push([VIGNETTE_CLEAR + (1 - VIGNETTE_CLEAR) * share,
+			`rgba(${VIGNETTE_COLOR}, ${(VIGNETTE_ALPHA * eased).toFixed(3)})`]);
+	}
+	return stops;
+}
+
+/**
+ * A square texture painted with a radial gradient.
+ *
+ * The vignette and the selection glow are both soft radial fields, and one
+ * gradient texture costs a single draw where a stack of concentric circles
+ * would band. The texture is stretched to the canvas or to the atom, so its
+ * pixel size only sets how smooth the ramp is.
+ */
+function radialTexture(stops: [number, string][], size = 256) {
+	const canvas = document.createElement("canvas");
+	canvas.width = canvas.height = size;
+	const context = canvas.getContext("2d");
+	if (!context) return Texture.EMPTY;
+	const gradient = context.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+	for (const [offset, color] of stops) gradient.addColorStop(offset, color);
+	context.fillStyle = gradient;
+	context.fillRect(0, 0, size, size);
+	return new Texture({ source: new CanvasSource({ resource: canvas }) });
+}
+
+/** What the scene shows besides the structure itself. */
+export type SceneDisplay = { electrons: boolean; lattice: boolean; edges: boolean; axes: boolean };
 
 export class MoleculeScene {
 	static async create(host: HTMLElement) {
@@ -30,21 +203,30 @@ export class MoleculeScene {
 	readonly #app: Application;
 	readonly #view: View3D;
 	readonly #content = new Container3D();
+	readonly #edges = new Container3D();
 	readonly #electrons = new Container3D();
 	readonly #lattice = new Graphics({ eventMode: "none" });
+	readonly #axes = new Graphics({ eventMode: "none" });
+	readonly #axisLabels = ["a", "b", "c"].map(() => new Text({ text: "", style: { fontSize: 10, fill: 0x52525b } }));
 	readonly #projected = new Point();
+	readonly #axisTip = new Point();
 	readonly #sphere = new SphereGeometry({ radius: 1, widthSegments: 20, heightSegments: 14 });
 	readonly #cylinder = new CylinderGeometry({ height: 1, radiusTop: 1, radiusBottom: 1, radialSegments: 10 });
 	readonly #materials = new Map<string, Material3D>();
 	readonly #bondRegion = new Material3D({ baseColor: 0x0284c7, roughness: .85, alphaMode: "blend", alpha: .28 });
 	readonly #loneRegion = new Material3D({ baseColor: 0xc084fc, roughness: .85, alphaMode: "blend", alpha: .39 });
-	readonly #picks = new Map<Container3D, { id: number; color: number; ionic: boolean; opacity: number; position: Point3 }>();
+	readonly #picks = new Map<Mesh3D, { id: number; color: number; ionic: boolean; opacity: number; position: Point3; radius: number }>();
 	readonly #observer: ResizeObserver;
 	readonly #preview: Mesh3D;
+	readonly #vignette: Sprite;
+	readonly #textures: Texture[] = [];
 	#selected: Set<number> = new Set();
+	#hovered?: number;
 	#structure?: Structure;
 	#showElectrons = false;
 	#showLattice = false;
+	#showEdges = true;
+	#showAxes = false;
 	#latticePoints: ReturnType<typeof vector>[] = [];
 	#repeats = 0;
 	#frame = 0;
@@ -53,20 +235,24 @@ export class MoleculeScene {
 	#yaw = 0.34;
 	#pitch = 0.24;
 	#bounds: Point3[] = [];
+	#atomRadius = 0;
 
 	private constructor(app: Application, host: HTMLElement) {
 		this.#app = app;
 		this.#view = new View3D({
 			autoResize: false, environment: { skyColor: 0xffffff, groundColor: 0xa6b4c3, intensity: 0.94 },
 		});
-		app.stage.addChild(this.#view, this.#lattice);
+		this.#vignette = new Sprite({ texture: this.#track(radialTexture(vignetteStops())), eventMode: "none" });
+		app.stage.addChild(this.#view, this.#vignette, this.#lattice, this.#axes, ...this.#axisLabels);
+		this.#sizeVignette();
+		for (const label of this.#axisLabels) label.visible = false;
 		this.#view.setSize(app.screen.width, app.screen.height);
 		const sun = new DirectionalLight({ color: 0xffffff, intensity: 2.15 });
 		sun.position.set(3, 6, 7);
 		sun.lookAt({ x: 0, y: 0, z: 0 });
-		this.#view.root.addChild(sun, this.#content, this.#electrons);
+		this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons);
 		this.#preview = this.#rod();
-		this.#preview.material = this.#material(0x0086c5);
+		this.#preview.material = this.#material(SELECTION_COLOR);
 		this.#preview.visible = false;
 		this.#view.root.addChild(this.#preview);
 		app.canvas.style.display = "block";
@@ -76,6 +262,7 @@ export class MoleculeScene {
 			if (host.clientWidth && host.clientHeight) {
 				app.renderer.resize(host.clientWidth, host.clientHeight);
 				this.#view.setSize(host.clientWidth, host.clientHeight);
+				this.#sizeVignette();
 				this.#draw();
 			}
 		});
@@ -83,13 +270,50 @@ export class MoleculeScene {
 		this.#camera();
 	}
 
-	#material(color: number, opacity = 1, selected = false) {
-		const key = `${color}:${opacity}:${selected}`;
+	/**
+	 * Remember a generated texture so {@link destroy} can free it.
+	 *
+	 * A missing 2D context leaves {@link Texture.EMPTY}, which belongs to Pixi
+	 * and must never be destroyed; only textures this scene created are kept.
+	 */
+	#track(texture: Texture) {
+		if (texture !== Texture.EMPTY) this.#textures.push(texture);
+		return texture;
+	}
+
+	/** Centre the vignette's circle on the canvas and size it past the corners. */
+	#sizeVignette() {
+		const { width, height } = this.#app.screen;
+		const side = Math.hypot(width, height) / VIGNETTE_REACH;
+		this.#vignette.width = this.#vignette.height = side;
+		this.#vignette.position.set((width - side) / 2, (height - side) / 2);
+	}
+
+	/**
+	 * A cached material for one colour, opacity and mark strength.
+	 *
+	 * Every atom and bond takes the rim, translucent ones included: the term
+	 * darkens the surface itself rather than drawing a shell behind it, so a
+	 * partly occupied site keeps a readable edge without gaining a solid ring.
+	 * The electron clouds use their own materials and stay unrimmed, because
+	 * they are a haze around the atoms rather than bodies of their own.
+	 *
+	 * The mark is part of the key because it is a uniform: a selected atom needs
+	 * its own material, and swapping the uniform on a shared one would outline
+	 * every atom of that colour.
+	 */
+	#material(color: number, opacity = 1, mark = 0) {
+		const key = `${color}:${opacity}:${mark}`;
 		let material = this.#materials.get(key);
 		if (!material) {
 			material = new Material3D({ baseColor: color, roughness: 0.61, alpha: opacity,
 				alphaMode: opacity < 1 ? "blend" : "opaque",
-				emissive: selected ? { color, strength: .48 } : undefined });
+				extraBits: [rimBit] });
+			material.data.rimStrength = RIM_STRENGTH;
+			material.data.rimPower = RIM_POWER;
+			material.data.markWidth = MARK_WIDTH;
+			material.data.markColor = [...SELECTION_LINEAR, 1];
+			material.data.markStrength = mark;
 			this.#materials.set(key, material);
 		}
 		return material;
@@ -117,7 +341,8 @@ export class MoleculeScene {
 		mesh.scale.set(radius);
 		this.#content.addChild(mesh);
 		this.#bounds.push(position);
-		this.#picks.set(mesh, { id, color, ionic: ionColor !== undefined, opacity, position });
+		this.#atomRadius = Math.max(this.#atomRadius, radius);
+		this.#picks.set(mesh, { id, color, ionic: ionColor !== undefined, opacity, position, radius });
 	}
 
 	#renderElectrons(structure: Structure, show: boolean) {
@@ -150,21 +375,29 @@ export class MoleculeScene {
 		}
 	}
 
-	setScene(structure: Structure, repeats: number, selection: number[], showElectrons = false, showLattice = false) {
+	setScene(structure: Structure, repeats: number, selection: number[], display: SceneDisplay) {
 		const rebuild = structure !== this.#structure || repeats !== this.#repeats;
-		const latticeVisible = structure.kind === "crystal" && showLattice;
-		if (rebuild || latticeVisible !== this.#showLattice) {
+		const crystal = structure.kind === "crystal";
+		const latticeVisible = crystal && display.lattice;
+		const edgesVisible = crystal && display.edges;
+		const axesVisible = crystal && display.axes;
+		if (rebuild || latticeVisible !== this.#showLattice || edgesVisible !== this.#showEdges || axesVisible !== this.#showAxes) {
 			this.#showLattice = latticeVisible;
+			this.#showEdges = edgesVisible;
+			this.#showAxes = axesVisible;
 			this.#latticePoints = latticeVisible ? latticePositions(structure, repeats).map(vector) : [];
 			this.#lattice.visible = latticeVisible;
+			this.#edges.visible = edgesVisible;
 			this.#draw();
 		}
 		if (rebuild) {
 			this.#structure = structure;
 			this.#repeats = repeats;
 			this.#bounds = [];
+			this.#atomRadius = 0;
 			this.#picks.clear();
 			for (const child of this.#content.removeChildren()) child.destroy({ children: true });
+			for (const child of this.#edges.removeChildren()) child.destroy({ children: true });
 			if (structure.kind === "crystal") {
 				const vectors = cellVectors(structure.cell);
 				const corners = cellCorners.map(corner => cartesian(vectors, scale(corner, repeats)));
@@ -179,7 +412,7 @@ export class MoleculeScene {
 							end[axis] = repeats;
 							const edge = this.#rod();
 							this.#line(edge, cartesian(vectors, start), cartesian(vectors, end), 0.024);
-							this.#content.addChild(edge);
+							this.#edges.addChild(edge);
 						}
 					}
 				}
@@ -203,21 +436,48 @@ export class MoleculeScene {
 				for (const atom of structure.atoms) this.#atom(atom.id, atom.atomicNumber, atom.position, false);
 			}
 		}
-		if (rebuild || showElectrons !== this.#showElectrons) {
-			this.#showElectrons = showElectrons;
-			this.#renderElectrons(structure, showElectrons);
+		if (rebuild || display.electrons !== this.#showElectrons) {
+			this.#showElectrons = display.electrons;
+			this.#renderElectrons(structure, display.electrons);
 			this.#draw();
 		}
 		const selected = new Set(selection);
 		if (rebuild || selected.size !== this.#selected.size || selection.some(id => !this.#selected.has(id))) {
 			this.#selected = selected;
-			for (const [mesh, atom] of this.#picks) {
-				(mesh as Mesh3D).material = selected.has(atom.id)
-					? atom.ionic ? this.#material(atom.color, 1, true) : this.#material(0x0086c5)
-					: this.#material(atom.color, atom.opacity);
-			}
-			this.#draw();
+			this.#applyMarks();
 		}
+	}
+
+	/**
+	 * Outline the selected atoms, and the one under the pointer.
+	 *
+	 * One system serves molecules and lattices alike, and it never recolours a
+	 * body: the sphere keeps its CPK colour and only its silhouette takes the
+	 * accent, so a marked atom still reads as the element it is. A ring is also
+	 * the only cue that holds up in a packed lattice, where a glow behind the
+	 * atom disappears against a light neighbour and a tint would be mistaken for
+	 * a second species. A selection outranks the hover mark, so pointing at an
+	 * already selected site does not dim it.
+	 */
+	#applyMarks() {
+		for (const [mesh, atom] of this.#picks) {
+			const mark = this.#selected.has(atom.id) ? SELECTION_MARK : atom.id === this.#hovered ? HOVER_MARK : 0;
+			mesh.material = this.#material(atom.color, atom.opacity, mark);
+		}
+		this.#draw();
+	}
+
+	/**
+	 * Outline one atom as a preview, or clear the outline with `undefined`.
+	 *
+	 * The lattice site picker uses this to show which atom a row belongs to
+	 * before the row is clicked, so the pointer never has to guess between two
+	 * sites of the same element.
+	 */
+	highlight(id?: number) {
+		if (id === this.#hovered) return;
+		this.#hovered = id;
+		this.#applyMarks();
 	}
 
 	get canvas() { return this.#app.canvas; }
@@ -228,8 +488,8 @@ export class MoleculeScene {
 	}
 
 	pick(clientX: number, clientY: number): number | undefined {
-		const hit = this.#view.raycast(this.#point(clientX, clientY));
-		return hit ? this.#picks.get(hit.target)?.id : undefined;
+		const target = this.#view.raycast(this.#point(clientX, clientY))?.target;
+		return target instanceof Mesh3D ? this.#picks.get(target)?.id : undefined;
 	}
 
 	placement(clientX: number, clientY: number, origin = this.#target): Point3 {
@@ -263,8 +523,15 @@ export class MoleculeScene {
 		const max = [0, 1, 2].map(axis => Math.max(...this.#bounds.map(point => point[axis])));
 		this.#target = this.#bounds.length ? min.map((value, axis) => (value + max[axis]) / 2) as [number, number, number] : [0, 0, 0];
 		const radius = this.#bounds.length ? Math.max(...this.#bounds.map(point => Math.hypot(...subtract(point, this.#target)))) : 1;
+		// Fit the short edge, so a wide embed does not shrink the structure to a
+		// sliver. The padding keeps the canvas controls clear of the atoms and
+		// scales with the structure, so a single molecule does not end up as a
+		// dot in the middle of the workspace.
 		const aspect = this.#app.screen.width / this.#app.screen.height;
-		this.#distance = Math.max(4, (radius + .7) * 2.7 / Math.min(1, Math.max(.32, aspect)));
+		const short = Math.min(1, Math.max(.32, aspect));
+		const outer = radius + this.#atomRadius;
+		const padding = Math.max(.3, Math.min(.7, outer * .12));
+		this.#distance = Math.max(1.6, (outer + padding) / (Math.tan(CAMERA_FOV / 2 * Math.PI / 180) * short * FIT_FILL));
 		this.#camera();
 	}
 
@@ -289,8 +556,39 @@ export class MoleculeScene {
 				}
 				this.#lattice.fill(0x283648).stroke({ color: 0xffffff, width: 1.2 });
 			}
+			this.#drawAxes();
 			this.#app.render();
 		});
+	}
+
+	/**
+	 * Draws the small orientation cue for the cell axes in the upper right corner.
+	 * The arrows keep a fixed screen length, so the cue stays readable at any zoom.
+	 */
+	#drawAxes() {
+		this.#axes.clear();
+		for (const label of this.#axisLabels) label.visible = false;
+		const structure = this.#structure;
+		if (!this.#showAxes || structure?.kind !== "crystal") return;
+		const base = this.#view.worldToScreen(vector(this.#target), this.#projected);
+		if (!base) return;
+		const originX = this.#app.screen.width - AXIS_ORIGIN;
+		const originY = AXIS_ORIGIN;
+		for (const [index, cell] of cellVectors(structure.cell).entries()) {
+			const tip = this.#view.worldToScreen(vector(add(this.#target, cell)), this.#axisTip, true);
+			if (!tip) continue;
+			const dx = tip.x - base.x;
+			const dy = tip.y - base.y;
+			const length = Math.hypot(dx, dy);
+			if (length < 1e-3) continue;
+			const x = originX + dx / length * AXIS_LENGTH;
+			const y = originY + dy / length * AXIS_LENGTH;
+			this.#axes.moveTo(originX, originY).lineTo(x, y).stroke({ color: AXIS_COLORS[index], width: 1.6 });
+			const label = this.#axisLabels[index];
+			label.text = "abc"[index];
+			label.position.set(x + dx / length * 5 - 3, y + dy / length * 5 - 6);
+			label.visible = true;
+		}
 	}
 
 	destroy() {
@@ -301,6 +599,9 @@ export class MoleculeScene {
 		this.#cylinder.destroy();
 		this.#bondRegion.destroy();
 		this.#loneRegion.destroy();
+		this.#axes.destroy();
+		for (const label of this.#axisLabels) label.destroy();
 		for (const material of this.#materials.values()) material.destroy();
+		for (const texture of this.#textures) texture.destroy(true);
 	}
 }

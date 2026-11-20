@@ -1,9 +1,12 @@
 import { LitElementWw } from "@webwriter/lit";
 import { html, nothing, svg } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
 import SlDetails from "@shoelace-style/shoelace/dist/components/details/details.component.js";
 import SlIcon from "@shoelace-style/shoelace/dist/components/icon/icon.component.js";
+import SlInput from "@shoelace-style/shoelace/dist/components/input/input.component.js";
+import SlPopup from "@shoelace-style/shoelace/dist/components/popup/popup.component.js";
 import SlSpinner from "@shoelace-style/shoelace/dist/components/spinner/spinner.component.js";
 import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js";
 import { ChemLabPeriodicTable, LIST_ICON, TABLE_ICON } from "./webwriter-chemlab-periodic-table";
@@ -30,13 +33,86 @@ const chargeText = (charge: number) => charge === 0 ? "" : `${Math.abs(charge) >
 const distance = (a: Pointer, b: Pointer) => Math.hypot(a.x - b.x, a.y - b.y);
 const pointer = (event: PointerEvent): Pointer => ({ x: event.clientX, y: event.clientY, id: event.pointerId });
 const groups = [...new Set(structureCatalog.map(entry => entry.category))];
+/**
+ * The element grid needs about 20 px per column, so the palette takes the width
+ * of the table (27rem, capped at 55 % of the workspace) while the grid is shown.
+ * The body loses 15 px to the palette padding and border, which leaves 417 px for
+ * eighteen columns at the cap. Below 410 px of body the grid clips its symbols,
+ * so the grid button stays disabled and its tooltip names the reason.
+ */
+const PALETTE_GRID_MIN = 410;
+/** Share of the workspace the palette may take while the element grid is shown. */
+const PALETTE_GRID_SHARE = .55;
+/** Palette padding and border, which the element grid does not get. */
+const PALETTE_CHROME = 15;
+/** Canvas view controls use the same icon size as the lab's canvas controls. */
+const CUBE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+	<path d="M8 1.9 13.8 5v6L8 14.1 2.2 11V5z" /><path d="M2.2 5 8 8.1 13.8 5M8 8.1v6" /></svg>`;
+const PLANE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+	<path d="M8 1.9 13.8 5v6L8 14.1 2.2 11V5z" /><circle cx="8" cy="8" r="1.7" /></svg>`;
+/** Fit control of the canvas, drawn exactly like the lab's fit button. */
+const FIT_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+	<path d="M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4" /><rect x="5" y="5" width="6" height="6" rx="0.5" /></svg>`;
+/** Zoom controls of the canvas, drawn exactly like the lab's zoom buttons. */
+const ZOOM_IN_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true">
+	<path d="M3 8h10M8 3v10" /></svg>`;
+const ZOOM_OUT_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true">
+	<path d="M3 8h10" /></svg>`;
+/** Ribbon icons: the header actions and the editing tools carry no text. */
+const CATALOG_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M6.2 2h3.6M6.8 2v4.3L3.4 12.2A1.1 1.1 0 0 0 4.4 13.8h7.2a1.1 1.1 0 0 0 1-1.6L9.2 6.3V2" />
+	<path d="M4.9 9.6h6.2" /></svg>`;
+const FILE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M4 2.2h4.6L12 5.6v8.2H4z" /><path d="M8.6 2.2v3.4H12" /></svg>`;
+const SEND_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M2.6 9.6v2.9a1.1 1.1 0 0 0 1.1 1.1h8.6a1.1 1.1 0 0 0 1.1-1.1V9.6" />
+	<path d="M8 10.2V2.4M5.1 5.3 8 2.4l2.9 2.9" /></svg>`;
+const ORBIT_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M13.2 8a5.2 5.2 0 1 1-1.6-3.8" /><path d="M13.4 2.4v3.2H10.2" /></svg>`;
+const CURSOR_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M4.2 2.6 12 8.4l-3.6.5-1.7 3.4z" /></svg>`;
+const ATOM_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.2">
+	<circle cx="8" cy="8" r="1.5" /><ellipse cx="8" cy="8" rx="5.8" ry="2.4" />
+	<ellipse cx="8" cy="8" rx="5.8" ry="2.4" transform="rotate(60 8 8)" /></svg>`;
+const BOND_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+	<circle cx="3.9" cy="12.1" r="1.7" /><circle cx="12.1" cy="3.9" r="1.7" /><path d="M5.2 10.8 10.8 5.2" /></svg>`;
+const GEOMETRY_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+	<path d="M8 8 3.6 4.4M8 8l4.4-3.6M8 8v4.6" /><circle cx="8" cy="8" r="1.4" />
+	<circle cx="3.6" cy="4.4" r="1.2" /><circle cx="12.4" cy="4.4" r="1.2" /><circle cx="8" cy="12.6" r="1.2" /></svg>`;
+const CRYSTAL_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.2" stroke-linejoin="round">
+	<path d="M8 2.2 13.4 6.3 8 13.8 2.6 6.3z" /><path d="M2.6 6.3h10.8M8 2.2 6.1 6.3 8 13.8l1.9-7.5z" /></svg>`;
+/** Display switches of the model summary, one glyph per legend entry. */
+const EDGES_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+	<path d="M8 2 13.6 5.2v5.6L8 14 2.4 10.8V5.2z" /></svg>`;
+const LATTICE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
+	<circle cx="3.4" cy="3.4" r="1.3" /><circle cx="8" cy="3.4" r="1.3" /><circle cx="12.6" cy="3.4" r="1.3" />
+	<circle cx="3.4" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" /><circle cx="12.6" cy="8" r="1.3" />
+	<circle cx="3.4" cy="12.6" r="1.3" /><circle cx="8" cy="12.6" r="1.3" /><circle cx="12.6" cy="12.6" r="1.3" /></svg>`;
+const AXES_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M3.4 12.6V3.4M3.4 12.6h9.2M3.4 12.6 8.6 7.4" /><path d="M3.4 2.2v1.2M2.2 12.6h1.2M9.6 6.4 8.6 7.4 9.6 8.4" /></svg>`;
+const ELECTRONS_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
+	<circle cx="4.4" cy="8" r="1.7" /><circle cx="11.6" cy="8" r="1.7" /></svg>`;
 
 @customElement(BUILDER_TAG)
 export class ChemLabMoleculeBuilder extends LitElementWw {
 	static styles = builderStyles;
 	static scopedElements = {
 		"webwriter-chemlab-periodic-table": ChemLabPeriodicTable,
-		"sl-button": SlButton, "sl-details": SlDetails, "sl-icon": SlIcon, "sl-spinner": SlSpinner, "sl-tag": SlTag,
+		"sl-badge": SlBadge, "sl-button": SlButton, "sl-details": SlDetails, "sl-icon": SlIcon,
+		"sl-input": SlInput, "sl-popup": SlPopup, "sl-spinner": SlSpinner, "sl-tag": SlTag,
 	};
 	static options = {
 		elementSourceId: {
@@ -57,17 +133,22 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor catalogKey = "";
 	@state() private accessor catalogVariants: Structure[] = [];
 	@state() private accessor catalogIndex = 0;
+	@state() private accessor catalogQuery = "";
 	@state() private accessor openPanel: "catalog" | "file" | undefined;
 	@state() private accessor labs: HTMLElement[] = [];
 	@state() private accessor showLabs = false;
 	@state() private accessor paletteOpen = true;
+	@state() private accessor paletteNarrow = false;
 	@state() private accessor pickerView: "list" | "table" = "list";
 	@state() private accessor showElectrons = false;
 	@state() private accessor showLattice = false;
+	@state() private accessor showEdges = true;
+	@state() private accessor showAxes = false;
 	@state() private accessor view: "3d" | "2d" = "3d";
 	@state() private accessor tool: Tool = "orbit";
 	@state() private accessor element = 6;
 	@state() private accessor picked: number | undefined;
+	@state() private accessor hoveredAtom: number | undefined;
 	@state() private accessor bondStart: number | undefined;
 	@state() private accessor bondOrder: BondOrder = 1;
 	@state() private accessor repeats = 1;
@@ -86,6 +167,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	#gesture?: Gesture;
 	#pointers = new Map<number, Pointer>();
 	#router?: SelectionRouter;
+	#paletteObserver?: ResizeObserver;
 	#dataObserver?: MutationObserver;
 	#worksheetObserver?: MutationObserver;
 	#waitingForLab = false;
@@ -124,6 +206,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		this.#pointers.clear();
 		this.#gesture = undefined;
 		this.#router?.dispose();
+		this.#paletteObserver?.disconnect();
+		this.#paletteObserver = undefined;
 		this.#dataObserver?.disconnect();
 		this.#worksheetObserver?.disconnect();
 		this.#scene?.destroy();
@@ -134,10 +218,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	override updated(changed: Map<PropertyKey, unknown>) {
 		if (changed.has("elementSourceId")) this.#bindTable();
+		this.#observePalette();
 		if (this.view === "3d" && this.gpu === "idle") void this.#startScene();
 		if (this.#scene && this.view === "3d") {
 			this.#scene.setScene(this.#current, this.repeats, [this.picked, this.bondStart].filter(id => id !== undefined),
-				this.showElectrons, this.showLattice);
+				{ electrons: this.showElectrons, lattice: this.showLattice, edges: this.showEdges, axes: this.showAxes });
 			if (this.#fitNext) {
 				this.#fitNext = false;
 				this.#scene.fit();
@@ -155,6 +240,30 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			onSelection: detail => { if (detail.atomicNumber !== null) this.#chooseElement(detail.atomicNumber); },
 		});
 		this.#router.bind();
+	}
+
+	/**
+	 * Watches the workspace width. The palette takes the width of the element grid
+	 * while the grid is shown, so a narrow embed disables the grid button instead
+	 * of clipping the symbols. The measurement is the workspace, not the palette,
+	 * because the palette is narrow in the list and would block its own switch.
+	 */
+	#observePalette() {
+		const workspace = this.renderRoot.querySelector<HTMLElement>(".workspace");
+		if (!workspace) {
+			this.#paletteObserver?.disconnect();
+			this.#paletteObserver = undefined;
+			return;
+		}
+		if (this.#paletteObserver) return;
+		this.#paletteObserver = new ResizeObserver(entries => {
+			const width = entries[0]?.contentRect.width ?? 0;
+			// The 27rem cap of the stylesheet is wider than the grid needs, so only
+			// the share decides whether the grid fits.
+			const narrow = width > 0 && width * PALETTE_GRID_SHARE < PALETTE_GRID_MIN + PALETTE_CHROME;
+			if (narrow !== this.paletteNarrow) this.paletteNarrow = narrow;
+		});
+		this.#paletteObserver.observe(workspace);
 	}
 
 	async #startScene() {
@@ -303,6 +412,13 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		return [a, b, 0];
 	}
 
+	/** The view centre, so an atom can be placed without a pointer. */
+	#centre(): Point3 {
+		const box = this.renderRoot.querySelector(".board")?.getBoundingClientRect();
+		if (this.view === "3d" && this.#scene && box) return this.#scene.placement(box.left + box.width / 2, box.top + box.height / 2);
+		return [0, 0, 0];
+	}
+
 	#addAtom(position?: Point3, atomicNumber = this.element) {
 		if (this.#readonly) return;
 		const current = this.draft;
@@ -339,6 +455,17 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		this.bondStart = undefined;
 		this.bondPreview = undefined;
 		this.#scene?.preview();
+	}
+
+	/**
+	 * Outline the atom a site chip belongs to, or clear the outline with
+	 * `undefined`. The 3D scene draws the ring itself, the 2D diagram reads the
+	 * same state, so both views answer a hover the same way.
+	 */
+	#hoverAtom(id: number | undefined) {
+		if (this.hoveredAtom === id) return;
+		this.hoveredAtom = id;
+		this.#scene?.highlight(id);
 	}
 
 	#selectAtom(id: number | undefined) {
@@ -404,8 +531,19 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		return inside ? Number(inside.getAttribute("data-atom")) : undefined;
 	}
 
+	/**
+	 * True when the event started inside a card that sits on the canvas and
+	 * scrolls on its own. Those cards keep their wheel and drag gestures, so a
+	 * scroll inside the selection card never turns into a zoom of the scene.
+	 */
+	#overPanel(event: Event) {
+		return event.composedPath().some(target => target instanceof Element
+			&& (target.classList.contains("view-tools") || target.classList.contains("model-summary")
+				|| target.classList.contains("selection-card")));
+	}
+
 	#pointerDown = (event: PointerEvent) => {
-		if (event.button !== 0 || event.composedPath().some(target => target instanceof Element && target.classList.contains("view-tools"))) return;
+		if (event.button !== 0 || this.#overPanel(event)) return;
 		const point = pointer(event);
 		this.#pointers.set(event.pointerId, point);
 		(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
@@ -481,7 +619,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	};
 
 	#wheel = (event: WheelEvent) => {
-		if (this.view !== "3d" || !this.#scene) return;
+		if (this.view !== "3d" || !this.#scene || this.#overPanel(event)) return;
 		event.preventDefault();
 		this.#scene.zoom(Math.exp(Math.max(-100, Math.min(100, event.deltaY)) * 0.004));
 	};
@@ -498,6 +636,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			this.#removeAtom();
 		} else if (event.key === "Escape" && this.bondStart !== undefined) {
 			this.#setTool(this.tool);
+		} else if ((event.key === "Enter" || event.key === " ") && this.tool === "atom" && !this.#readonly
+			&& event.composedPath().some(target => target instanceof Element && target.classList.contains("board"))) {
+			// The keyboard counterpart to dropping an element on the canvas.
+			event.preventDefault();
+			this.#addAtom(this.#centre());
 		}
 	};
 
@@ -569,6 +712,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		this.preview = undefined;
 		this.catalogKey = "";
 		this.catalogVariants = [];
+		// The chooser has done its job once a structure is adopted or dismissed, so it
+		// no longer covers the canvas and repeats the name in the document header.
+		this.openPanel = undefined;
 		if (edit && current) this.#record(current, true);
 		this.#resetSelection();
 	}
@@ -633,42 +779,63 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		target.scrollIntoView({ block: "nearest" });
 	}
 
+	/**
+	 * The catalog opens as a flat list grouped by chemical class. A native select
+	 * would open a second dropdown on top of the popup, so every substance is a
+	 * row of its own and the variants of the chosen one appear right below it.
+	 */
 	#renderCatalog() {
 		if (this.openPanel !== "catalog") return nothing;
-		const change = (event: Event) => {
-			const value = (event.currentTarget as HTMLSelectElement).value;
-			if (value) this.viewCatalogStructure(value);
-		};
-		return html`<div class="controls-panel fields">
-			<label>${this.#t("ChemLab catalog", "ChemLab-Katalog")}
-				<select .value=${this.catalogKey} @change=${change}>
-					<option value="">${this.#t("Choose a substance", "Stoff auswählen")}</option>
-					${groups.map(category => html`<optgroup label=${category}>
-						${structureCatalog.filter(entry => entry.category === category).map(entry => html`<option value=${entry.name} ?selected=${entry.name === this.catalogKey}>
-							${entry.name}${entry.formula ? ` · ${entry.formula}` : ""}
-						</option>`)}
-					</optgroup>`)}
-				</select>
-			</label>
-			${this.catalogVariants.length > 1 ? html`<label>${this.#t("Structure", "Struktur")}
-				<select .value=${String(this.catalogIndex)} @change=${(event: Event) => {
-					this.catalogIndex = Number((event.currentTarget as HTMLSelectElement).value);
-					this.#openPreview(this.catalogVariants[this.catalogIndex]);
-				}}>
-					${this.catalogVariants.map((variant, index) => html`<option value=${index} ?selected=${index === this.catalogIndex}>${variant.name}</option>`)}
-				</select></label>` : nothing}
-			${this.catalogKey && catalogIsMixture(this.catalogKey) ? html`<sl-tag size="small">${this.catalogVariants.length
-				? this.#t("Selected constituents of a mixture", "Ausgewählte Bestandteile eines Gemischs")
-				: this.#t("Mixture with no unique structure", "Gemisch ohne eindeutige Struktur")}</sl-tag>` : nothing}
-			${this.catalogKey && !this.catalogVariants.length && !catalogIsMixture(this.catalogKey)
-				? html`<sl-tag size="small">${this.#t("No verified structure available", "Keine verifizierte Struktur verfügbar")}</sl-tag>`
-				: nothing}
+		const query = this.catalogQuery.trim().toLowerCase();
+		const matches = (entry: (typeof structureCatalog)[number]) => !query
+			|| entry.name.toLowerCase().includes(query) || entry.formula.toLowerCase().includes(query);
+		const sections = groups.map(category => ({
+			category, entries: structureCatalog.filter(entry => entry.category === category && matches(entry)),
+		})).filter(section => section.entries.length);
+		const selected = this.catalogKey;
+		const note = selected && !this.catalogVariants.length
+			? catalogIsMixture(selected)
+				? this.#t("Mixture with no unique structure", "Gemisch ohne eindeutige Struktur")
+				: this.#t("No verified structure available", "Keine verifizierte Struktur verfügbar")
+			: "";
+		return html`<div class="surface catalog-surface" role="group" aria-label=${this.#t("ChemLab catalog", "ChemLab-Katalog")}>
+			<sl-input class="catalog-search" size="small" type="search" clearable
+				label=${this.#t("Search the catalog", "Katalog durchsuchen")}
+				placeholder=${this.#t("Search name or formula", "Name oder Formel suchen")}
+				.value=${this.catalogQuery}
+				@sl-input=${(event: Event) => { this.catalogQuery = (event.currentTarget as SlInput).value; }}></sl-input>
+			<div class="catalog-list">
+				${sections.length ? sections.map(section => html`<section class="catalog-group" aria-label=${section.category}>
+					<div class="catalog-group-heading" role="heading" aria-level="3">
+						<sl-badge variant="primary">${section.category}</sl-badge>
+					</div>
+					<div class="catalog-entries">
+						${section.entries.map(entry => html`
+							<button type="button" class="catalog-entry${entry.name === selected ? " is-selected" : ""}"
+								aria-pressed=${String(entry.name === selected)} @click=${() => this.viewCatalogStructure(entry.name)}>
+								<span class="catalog-entry-name">${entry.name}</span>
+								<span class="catalog-entry-formula">${entry.formula}</span>
+							</button>
+							${entry.name !== selected ? nothing : this.catalogVariants.length > 1 ? html`
+								<div class="catalog-variants" role="group" aria-label=${this.#t("Structure", "Struktur")}>
+									${this.catalogVariants.map((variant, index) => html`<button type="button"
+										class="catalog-variant${index === this.catalogIndex ? " is-selected" : ""}"
+										aria-pressed=${String(index === this.catalogIndex)} @click=${() => {
+											this.catalogIndex = index;
+											this.#openPreview(this.catalogVariants[index]);
+										}}>${variant.name}</button>`)}
+								</div>` : note ? html`<p class="catalog-note">${note}</p>` : nothing}
+						`)}
+					</div>
+				</section>`) : html`<p class="catalog-note" role="status">
+					${this.#t("No substance matches this search.", "Keine Substanz passt zu dieser Suche.")}</p>`}
+			</div>
 		</div>`;
 	}
 
 	#renderTargetPicker() {
 		if (!this.showLabs) return nothing;
-		return html`<div class="controls-panel fields">
+		return html`<div class="surface" role="group" aria-label=${this.#t("Send to", "Senden an")}>
 			<span>${this.#t("Send to", "Senden an")}</span>
 			${this.labs.map((lab, index) => html`<sl-button size="small" @click=${() => this.#send(lab)}>
 				${lab.id || `ChemLab ${index + 1}`}
@@ -679,7 +846,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	#renderFileActions() {
 		if (this.openPanel !== "file") return nothing;
-		return html`<div id="file-actions" class="controls-panel fields">
+		return html`<div id="file-actions" class="surface" role="group" aria-label=${this.#t("File", "Datei")}>
 			<sl-button size="small" @click=${() => this.#new("molecule")}>${this.#t("New molecule", "Neues Molekül")}</sl-button>
 			<sl-button size="small" @click=${() => this.#new("crystal")}>${this.#t("New crystal", "Neuer Kristall")}</sl-button>
 			<input type="file" hidden accept=".json,application/json" @change=${(event: Event) => {
@@ -693,6 +860,23 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		</div>`;
 	}
 
+	/**
+	 * Renders a compact icon control, the shape the canvas controls share with
+	 * the lab. The label only lives in the tooltip and the accessible name, so
+	 * every caller has to pass one.
+	 */
+	#iconButton(options: {
+		label: string; icon: unknown; pressed?: boolean; expanded?: boolean; disabled?: boolean;
+		slot?: string; onClick: () => void;
+	}) {
+		return html`<sl-button class="icon-control" size="small" slot=${options.slot ?? nothing}
+			aria-label=${options.label} title=${options.label}
+			variant=${options.pressed ? "primary" : "default"}
+			aria-pressed=${options.pressed === undefined ? nothing : String(options.pressed)}
+			aria-expanded=${options.expanded === undefined ? nothing : String(options.expanded)}
+			?disabled=${options.disabled} @click=${options.onClick}>${options.icon}</sl-button>`;
+	}
+
 	#renderHistoryButton(redo: boolean) {
 		const label = redo ? this.#t("Redo", "Wiederholen") : this.#t("Undo", "Rückgängig");
 		return html`<sl-button class="icon-control" size="small" aria-label=${label} title=${label}
@@ -704,10 +888,15 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		</sl-button>`;
 	}
 
-	#renderPickerLayout(view: "list" | "table") {
+	#renderPickerLayout(view: "list" | "table", active: boolean) {
 		const label = view === "list" ? this.#t("List view", "Listenansicht") : this.#t("Grid view", "Rasteransicht");
-		return html`<sl-button class="icon-control" size="small" aria-label=${label} title=${label}
-			variant=${this.pickerView === view ? "primary" : "default"} aria-pressed=${this.pickerView === view}
+		const blocked = view === "table" && this.paletteNarrow;
+		const hint = blocked
+			? this.#t("The grid needs a wider palette. Widen the widget to use it.",
+				"Das Raster braucht eine breitere Palette. Vergrößere das Widget dafür.")
+			: label;
+		return html`<sl-button class="icon-control" size="small" aria-label=${label} title=${hint}
+			variant=${active ? "primary" : "default"} aria-pressed=${String(active)} ?disabled=${blocked}
 			@click=${() => { this.pickerView = view; }}>${view === "list" ? LIST_ICON : TABLE_ICON}</sl-button>`;
 	}
 
@@ -759,8 +948,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				const species = current.kind === "crystal" ? siteIon(atom) : undefined;
 				const color = colors.get(species) ?? atomColor(atomicNumber);
 				const selected = id === this.picked || id === this.bondStart;
+				const hovered = id === this.hoveredAtom && !selected;
 				return svg`<g data-atom=${id} aria-label=${species ? `${symbol(atomicNumber)} · ${species}` : symbol(atomicNumber)} transform="translate(${x} ${-y})"
 					opacity=${selected ? 1 : Math.max(.18, occupancy ?? 1)}>
+					${hovered ? svg`<circle r=".3" fill="none" stroke="#0284c7" stroke-width=".03" />` : nothing}
 					<circle r=".254" fill=${selected ? "#dff3ff" : "white"} stroke=${selected ? "#0284c7" : species ? colorHex(color) : "#a1a1aa"} stroke-width=${selected ? .045 : .028} />
 					<circle cx="-.17" cy="-.17" r=".075" fill=${colorHex(color)} stroke="#707780" stroke-width=".01"/>
 					<text text-anchor="middle" dominant-baseline="central" font-weight="600" font-size=".23" fill="#27272a">${symbol(atomicNumber)}</text>
@@ -774,13 +965,65 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		</svg>`;
 	}
 
-	#renderInspector() {
-		const atom = this.#atoms.find(atom => atom.id === this.picked);
+	/** The model summary keeps compound, representation and display controls at the canvas edge. */
+	#renderModelSummary(current: Structure, representation: string | undefined, ionColors: ReadonlyMap<string, number>) {
+		const crystal = current.kind === "crystal";
+		const geometry = current.kind === "molecule" && this.#atoms.length
+			? current.geometry === "idealized" ? this.#t("Idealized geometry", "Idealisierte Geometrie")
+				: current.geometry === "estimated" ? this.#t("Estimated geometry", "Geschätzte Geometrie")
+					: this.#t("Sketch", "Skizze")
+			: undefined;
+		const toggle = (label: string, icon: unknown, value: boolean, onClick: () => void) => this.#iconButton({
+			label, icon, pressed: value, onClick,
+		});
+		return html`<div class="model-summary">
+			<div class="fields">
+				<sl-tag size="small">${crystal ? this.#t("Crystal", "Kristall") : this.#t("Molecule", "Molekül")}</sl-tag>
+				${this.#atoms.length ? html`<sl-tag size="small">${formula(current)}</sl-tag>` : nothing}
+				${representation ? html`<sl-tag size="small">${representation}</sl-tag>` : nothing}
+				${geometry ? html`<sl-tag size="small">${geometry}</sl-tag>` : nothing}
+			</div>
+			${ionColors.size ? html`<span class="structure-legend" role="group" aria-label=${this.#t("Ion colours", "Ionenfarben")}>
+				${[...ionColors].map(([ion, color]) => html`<span style="--swatch: ${colorHex(color)}">${ion}</span>`)}
+				${crystal && this.showLattice ? html`<span data-marker="lattice">${this.#t("Lattice points", "Gitterpunkte")}</span>` : nothing}
+			</span>` : nothing}
+			${current.kind === "molecule" && this.showElectrons && this.view === "3d" ? html`
+				<span class="structure-legend" title=${this.#t(
+					"Approximate Lewis and VSEPR regions. Dots represent electron counts in the displayed bonding model.",
+					"Angenäherte Lewis- und VSEPR-Bereiche. Punkte stehen für die Elektronenzahl im dargestellten Bindungsmodell.",
+				)}>
+					<span data-region="bond">${this.#t("Bonding", "Bindend")}</span>
+					<span data-region="lone">${this.#t("Nonbonding", "Nichtbindend")}</span>
+				</span>` : nothing}
+			<div class="display-controls" role="group" aria-label=${this.#t("Display", "Darstellung")}>
+				${crystal ? html`<label>${this.#t("Cells", "Zellen")}
+					<select .value=${String(this.repeats)} @change=${(event: Event) => {
+						this.repeats = Number((event.currentTarget as HTMLSelectElement).value);
+						this.#fitNext = true;
+						this.#lastDrawn = undefined;
+					}}>
+						${[1, 2, 3].filter(value => value ** 3 * current.sites.length <= 1800)
+							.map(value => html`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
+					</select></label>` : nothing}
+				${crystal ? toggle(this.#t("Cell edges", "Zellkanten"), EDGES_ICON, this.showEdges, () => { this.showEdges = !this.showEdges; }) : nothing}
+				${crystal ? toggle(this.#t("Lattice points", "Gitterpunkte"), LATTICE_ICON, this.showLattice, () => { this.showLattice = !this.showLattice; }) : nothing}
+				${crystal ? toggle(this.#t("Axes", "Achsen"), AXES_ICON, this.showAxes, () => { this.showAxes = !this.showAxes; }) : nothing}
+				${current.kind === "molecule" && current.atoms.length && this.view === "3d" && this.gpu === "ready"
+					? toggle(this.#t("Valence electrons", "Valenzelektronen"), ELECTRONS_ICON, this.showElectrons, () => { this.showElectrons = !this.showElectrons; })
+					: nothing}
+			</div>
+			<output aria-live="polite">${this.notice || (this.bondStart ? this.#t("Choose the other atom.", "Wähle das zweite Atom.") : "")}</output>
+		</div>`;
+	}
+
+	/** The selection card follows the lab's object info card and stays at the canvas edge. */
+	#renderSelectionCard() {
 		const current = this.#current;
-		if (!atom && current.kind !== "crystal" && !this.#atoms.length) return nothing;
+		const atom = this.#atoms.find(entry => entry.id === this.picked);
+		if (!atom && !this.#atoms.length) return nothing;
 		const species = current.kind === "crystal" && atom ? siteIon(atom) : undefined;
 		const title = atom ? `${symbol(atom.atomicNumber)}${chargeText(atom.charge)} · ${atom.id}`
-			: this.#t("Structure", "Struktur");
+			: this.#t("No selection", "Keine Auswahl");
 		const shape = atom && current.kind === "molecule" ? shapeName(current, atom.id) : undefined;
 		const shapeLabel = {
 			linear: this.#t("Linear", "Linear"), bent: this.#t("Bent", "Gewinkelt"),
@@ -793,63 +1036,55 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			covalent: this.#t("covalent", "kovalent"), empirical: this.#t("empirical", "empirisch"),
 			ionic: this.#t("ionic, CN 6", "ionisch, KZ 6"), schematic: this.#t("schematic", "schematisch"),
 		};
-		return html`<aside class="inspector">
-			<div class="inspect-title">
-				<div class="fields">
-					<sl-tag size="small" variant="primary">${title}</sl-tag>
-					${species ? html`<sl-tag size="small">${species}</sl-tag>` : nothing}
-					${radius ? html`<sl-tag size="small">${radius.pm} pm · ${radiusLabel[radius.model]}</sl-tag>` : nothing}
-					${shape ? html`<sl-tag size="small">${shapeLabel[shape]}</sl-tag>` : nothing}
-					${atom && "occupancy" in atom && atom.occupancy !== undefined ? html`<sl-tag size="small">
-						${this.#t("Site occupancy", "Platzbesetzung")} · ${Number((100 * atom.occupancy).toFixed(1))} %
-					</sl-tag>` : nothing}
-				</div>
-				${atom && !this.#readonly ? html`<sl-button size="small" variant="danger" outline @click=${this.#removeAtom}>
-					${this.#t("Delete", "Löschen")}
+		const occupancy = atom && "occupancy" in atom ? atom.occupancy : undefined;
+		return html`<aside class="selection-card" aria-label=${this.#t("Selection", "Auswahl")}>
+			<div class="card-head">
+				<sl-tag size="small" variant=${atom ? "primary" : "neutral"}>${title}</sl-tag>
+				${atom && !this.#readonly ? html`<sl-button class="icon-control" size="small" variant="danger" outline
+					aria-label=${this.#t("Delete", "Löschen")} title=${this.#t("Delete", "Löschen")} @click=${this.#removeAtom}>
+					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"
+						stroke-linecap="round" aria-hidden="true">
+						<path d="M2.5 4h9M5.5 4V2.5h3V4M4 4l.5 7.5h5L10 4" />
+					</svg>
 				</sl-button>` : nothing}
 			</div>
-			<div class="fields">
-				${this.#atoms.length ? html`<label>${current.kind === "crystal" ? this.#t("Site", "Gitterplatz") : this.#t("Atom", "Atom")}
-					<select .value=${String(this.picked ?? "")} @change=${(event: Event) => {
-						const value = Number((event.currentTarget as HTMLSelectElement).value);
-						this.#selectAtom(value || undefined);
-					}}>
-						<option value="">—</option>
-						${this.#atoms.map(entry => html`<option value=${entry.id} ?selected=${entry.id === this.picked}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</option>`)}
-					</select></label>` : nothing}
-				${current.kind === "crystal" ? html`<label>${this.#t("Cells per axis", "Zellen pro Achse")}
-					<select .value=${String(this.repeats)} @change=${(event: Event) => {
-						this.repeats = Number((event.currentTarget as HTMLSelectElement).value);
-						this.#fitNext = true;
-						this.#lastDrawn = undefined;
-					}}>
-						${[1, 2, 3].filter(value => value ** 3 * current.sites.length <= 1800)
-							.map(value => html`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
-					</select></label>` : nothing}
-			</div>
-			${atom && (!this.#readonly || "fractional" in atom) ? html`
-				<sl-details summary=${current.kind === "crystal" ? this.#t("Site properties", "Gitterplatz-Eigenschaften") : this.#t("Atom properties", "Atom-Eigenschaften")}>
-					<div class="fields">
-						${!this.#readonly ? html`<label>${this.#t("Formal charge", "Formalladung")}
-							<input type="number" min="-8" max="8" step="1" .value=${String(atom.charge)} @change=${(event: Event) => {
-								const input = event.currentTarget as HTMLInputElement;
-								if (!input.checkValidity() || input.value === "") { input.value = String(atom.charge); return; }
-								this.#updateCharge(input.valueAsNumber);
-							}} /></label>` : nothing}
-						${current.kind === "molecule" && !this.#readonly ? current.bonds.filter(bond =>
-							bond.from === atom.id || bond.to === atom.id).map(bond => {
-								const to = this.#atoms.find(entry => entry.id === (bond.from === atom.id ? bond.to : bond.from));
-								return html`<sl-button size="small" @click=${() => this.#record({
-									...current, name: "", catalogKey: undefined, source: undefined, representation: undefined,
-									geometry: undefined, bonds: current.bonds.filter(entry => entry !== bond),
-								})}>${this.#t("Remove bond to", "Bindung lösen zu")} ${symbol(to.atomicNumber)} · ${to.id}</sl-button>`;
-							}) : nothing}
-						${"fractional" in atom ? atom.fractional.map((value, index) => html`<label>${["x/a", "y/b", "z/c"][index]}
-							<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${this.#readonly}
-								@change=${(event: Event) => this.#updateSite(index, event.currentTarget as HTMLInputElement)} />
-						</label>`) : nothing}
+			${atom ? html`<div class="card-facts">
+				${species ? html`<sl-tag size="small">${species}</sl-tag>` : nothing}
+				${radius ? html`<sl-tag size="small">${radius.pm} pm · ${radiusLabel[radius.model]}</sl-tag>` : nothing}
+				${shape ? html`<sl-tag size="small">${shapeLabel[shape]}</sl-tag>` : nothing}
+				${occupancy !== undefined ? html`<sl-tag size="small">${Number((100 * occupancy).toFixed(1))} %</sl-tag>` : nothing}
+			</div>` : nothing}
+			<sl-details summary=${current.kind === "crystal" ? this.#t("Site properties", "Gitterplatz-Eigenschaften")
+				: this.#t("Atom properties", "Atom-Eigenschaften")} ?open=${!atom}>
+				<div class="fields">
+					<div class="site-picker" role="group" aria-label=${current.kind === "crystal"
+						? this.#t("Site", "Gitterplatz") : this.#t("Atom", "Atom")}>
+						${this.#atoms.map(entry => html`<button type="button" class="site-chip"
+							aria-pressed=${String(entry.id === this.picked)}
+							@pointerenter=${() => this.#hoverAtom(entry.id)} @pointerleave=${() => this.#hoverAtom(undefined)}
+							@focus=${() => this.#hoverAtom(entry.id)} @blur=${() => this.#hoverAtom(undefined)}
+							@click=${() => this.#selectAtom(entry.id)}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</button>`)}
 					</div>
-				</sl-details>` : nothing}
+					${atom && !this.#readonly ? html`<label>${this.#t("Formal charge", "Formalladung")}
+						<input type="number" min="-8" max="8" step="1" .value=${String(atom.charge)} @change=${(event: Event) => {
+							const input = event.currentTarget as HTMLInputElement;
+							if (!input.checkValidity() || input.value === "") { input.value = String(atom.charge); return; }
+							this.#updateCharge(input.valueAsNumber);
+						}} /></label>` : nothing}
+					${atom && current.kind === "molecule" && !this.#readonly ? current.bonds.filter(bond =>
+						bond.from === atom.id || bond.to === atom.id).map(bond => {
+							const to = this.#atoms.find(entry => entry.id === (bond.from === atom.id ? bond.to : bond.from));
+							return html`<sl-button size="small" @click=${() => this.#record({
+								...current, name: "", catalogKey: undefined, source: undefined, representation: undefined,
+								geometry: undefined, bonds: current.bonds.filter(entry => entry !== bond),
+							})}>${this.#t("Remove bond to", "Bindung lösen zu")} ${symbol(to.atomicNumber)} · ${to.id}</sl-button>`;
+						}) : nothing}
+					${atom && "fractional" in atom ? atom.fractional.map((value, index) => html`<label>${["x/a", "y/b", "z/c"][index]}
+						<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${this.#readonly}
+							@change=${(event: Event) => this.#updateSite(index, event.currentTarget as HTMLInputElement)} />
+					</label>`) : nothing}
+				</div>
+			</sl-details>
 			${current.kind === "crystal" ? html`<sl-details summary=${this.#t("Unit cell", "Elementarzelle")}>
 				<div class="fields">
 					${current.bravais ? html`<sl-tag size="small">${current.bravais} · ${current.spaceGroup}</sl-tag>` : nothing}
@@ -875,7 +1110,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const lattice = metalCrystal(this.element);
 		const paletteVisible = this.paletteOpen && !this.#readonly;
 		const fullWidth = this.classList.contains("ww-full-width");
-		const pickerView = fullWidth ? this.pickerView : "list";
+		const pickerView = fullWidth && !this.paletteNarrow ? this.pickerView : "list";
 		const ionColors = current.kind === "crystal" ? crystalIonColors(current) : new Map<string, number>();
 		const representation = current.kind === "molecule" && current.representation && {
 			conformer: this.#t("PubChem conformer", "PubChem-Konformer"),
@@ -884,84 +1119,91 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			"repeat-unit": this.#t("Capped repeat-unit example", "Beispiel mit abgesättigten Wiederholungseinheiten"),
 			"ionic-components": this.#t("Ionic components", "Ionenbestandteile"),
 		}[current.representation];
-		const tool = (value: Tool, label: string) => html`<sl-button size="small" variant=${value === this.tool ? "primary" : "default"}
-			aria-pressed=${value === this.tool} @click=${() => this.#setTool(value)}>${label}</sl-button>`;
-		const chooseView = (value: "3d" | "2d", label: string) => html`<sl-button size="small"
-			variant=${value === this.view ? "primary" : "default"} aria-pressed=${value === this.view}
-			?disabled=${value === "3d" && this.gpu === "unavailable"} @click=${() => { this.view = value; }}>${label}</sl-button>`;
+		const tool = (value: Tool, label: string, icon: unknown) => this.#iconButton({
+			label, icon, pressed: value === this.tool, onClick: () => this.#setTool(value),
+		});
 		const fit = () => { this.#scene?.fit(); this.#lastDrawn = undefined; this.requestUpdate(); };
+		const title = current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : current.name || formula(current);
+		const toggle = (panel: "catalog" | "file") => () => { this.openPanel = this.openPanel === panel ? undefined : panel; };
 		return html`<div class="builder" contenteditable="false" @keydown=${this.#keys}
 			@dragover=${(event: DragEvent) => { if (event.dataTransfer?.types.includes("Files")) event.preventDefault(); }}
 			@drop=${(event: DragEvent) => { if (event.dataTransfer?.files.length) { event.preventDefault(); void this.#openFile(event.dataTransfer.files[0]); } }}>
-			<header class="toolbar">
-				<div class="tool-group">
-					<sl-tag size="small" variant="primary">${this.#t("Molecule Builder", "Molekülbaukasten")}</sl-tag>
-					<sl-button size="small" aria-expanded=${this.openPanel === "catalog"}
-						@click=${() => { this.openPanel = this.openPanel === "catalog" ? undefined : "catalog"; }}>
-						${this.#t("ChemLab catalog", "ChemLab-Katalog")}
-					</sl-button>
-					<sl-button size="small" aria-expanded=${this.openPanel === "file"}
-						@click=${() => { this.openPanel = this.openPanel === "file" ? undefined : "file"; }}>
-						${this.#t("File", "Datei")}
-					</sl-button>
+			<header class="document">
+				<div class="document-title">
+					<h5 title=${title}>${title}</h5>
+					<sl-tag size="small" variant=${this.#readonly ? "warning" : "neutral"}>
+						${this.#readonly ? this.#t("Preview", "Vorschau") : this.#t("Draft", "Entwurf")}
+					</sl-tag>
 				</div>
-				${this.#atoms.length && this.labs.length ? html`
-					<sl-button size="small" variant="primary" @click=${this.#prepareSend}>
-						${this.#t("Send to ChemLab", "An ChemLab senden")}
-					</sl-button>
-				` : nothing}
-			</header>
-			${this.#renderCatalog()}
-			${this.#renderFileActions()}
-			${this.#renderTargetPicker()}
-			<div class="tools">
-				<div class="tool-group" role="group" aria-label=${this.#t("Workspace view", "Arbeitsansicht")}>
-					${!this.#readonly ? html`<sl-button size="small" aria-expanded=${paletteVisible}
-						@click=${() => { this.paletteOpen = !this.paletteOpen; }}>${this.#t("Elements", "Elemente")}</sl-button>` : nothing}
-					${chooseView("3d", "3D")}${chooseView("2d", this.#t("Structure", "Struktur"))}
-				</div>
-				${!this.#readonly ? html`
-					<div class="tool-group" role="group" aria-label=${this.#t("Editing tools", "Bearbeitungswerkzeuge")}>
-						${tool("orbit", this.view === "3d" ? this.#t("Orbit", "Drehen") : this.#t("Select", "Auswählen"))}
-						${tool("atom", this.#t("Place atom", "Atom platzieren"))}
-						${current.kind === "molecule" ? tool("bond", this.#t("Draw bond", "Bindung zeichnen")) : nothing}
-						${this.tool === "bond" ? html`<label class="fields">${this.#t("Order", "Ordnung")} <select .value=${String(this.bondOrder)}
-							@change=${(event: Event) => { this.bondOrder = Number((event.currentTarget as HTMLSelectElement).value) as BondOrder; }}>
-							<option value="1">1</option><option value="2">2</option><option value="3">3</option>
-						</select></label>` : nothing}
-						${current.kind === "molecule" && current.bonds.length ? html`<sl-button size="small" @click=${this.#geometry}>
-							${this.#t("Fit geometry", "Geometrie anpassen")}
-						</sl-button>` : nothing}
-					</div>
-					${this.#past.length || this.#future.length ? html`
-						<div class="tool-group" role="group" aria-label=${this.#t("History", "Verlauf")}>
-							${this.#renderHistoryButton(false)}${this.#renderHistoryButton(true)}
-						</div>` : nothing}
-				` : html`
-					<div class="tool-group">
+				<div class="document-actions">
+					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "catalog"}>
+						${this.#iconButton({ slot: "anchor", label: this.#t("ChemLab catalog", "ChemLab-Katalog"), icon: CATALOG_ICON,
+							pressed: this.openPanel === "catalog", expanded: this.openPanel === "catalog", onClick: toggle("catalog") })}
+						${this.#renderCatalog()}
+					</sl-popup>
+					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "file"}>
+						${this.#iconButton({ slot: "anchor", label: this.#t("File", "Datei"), icon: FILE_ICON,
+							pressed: this.openPanel === "file", expanded: this.openPanel === "file", onClick: toggle("file") })}
+						${this.#renderFileActions()}
+					</sl-popup>
+					${this.#atoms.length && this.labs.length ? html`<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.showLabs}>
+						${this.#iconButton({ slot: "anchor", label: this.#t("Send to ChemLab", "An ChemLab senden"), icon: SEND_ICON,
+							pressed: this.showLabs, expanded: this.showLabs, onClick: this.#prepareSend })}
+						${this.#renderTargetPicker()}
+					</sl-popup>` : nothing}
+					${this.#readonly ? html`
 						<sl-button size="small" variant="primary" @click=${() => this.#closePreview(true)}>${this.#t("Edit copy", "Kopie bearbeiten")}</sl-button>
 						<sl-button size="small" @click=${() => this.#closePreview(false)}>${this.#t("Close preview", "Vorschau schließen")}</sl-button>
-					</div>
-				`}
-			</div>
-			<div class="workspace" data-palette=${paletteVisible ? pickerView : nothing}>
-				<aside class="palette" ?hidden=${!paletteVisible}>
-					<div class="palette-heading">
-						<div class="palette-tools">
-							<sl-tag size="small" variant="primary">${symbol(this.element)} · ${elementByAtomicNumber(this.element).names[this.#t("en", "de") as "en" | "de"]}</sl-tag>
-							<sl-button size="small" @click=${() => this.#addAtom()}>${this.#t("Add atom", "Atom hinzufügen")}</sl-button>
-							${lattice ? html`<sl-button size="small" @click=${() => this.viewStructure(lattice)}>
-								${this.#t("View crystal", "Kristall ansehen")}</sl-button>` : nothing}
+					` : nothing}
+				</div>
+			</header>
+			${this.#readonly ? nothing : html`<div class="tools" role="toolbar" aria-label=${this.#t("Editing tools", "Bearbeitungswerkzeuge")}>
+				<div class="tool-group" role="group" aria-label=${this.#t("Tools", "Werkzeuge")}>
+					${tool("orbit", this.view === "3d" ? this.#t("Orbit", "Drehen") : this.#t("Select", "Auswählen"),
+						this.view === "3d" ? ORBIT_ICON : CURSOR_ICON)}
+					${tool("atom", this.#t("Place atom", "Atom platzieren"), ATOM_ICON)}
+					${current.kind === "molecule" ? tool("bond", this.#t("Draw bond", "Bindung zeichnen"), BOND_ICON) : nothing}
+					${this.tool === "bond" ? html`<span class="bond-orders" role="group" aria-label=${this.#t("Bond order", "Bindungsordnung")}>
+						${([1, 2, 3] as BondOrder[]).map(order => html`<sl-button class="icon-control" size="small"
+							variant=${order === this.bondOrder ? "primary" : "default"} aria-pressed=${String(order === this.bondOrder)}
+							aria-label=${this.#t(`Bond order ${order}`, `Bindungsordnung ${order}`)}
+							title=${this.#t(`Bond order ${order}`, `Bindungsordnung ${order}`)}
+							@click=${() => { this.bondOrder = order; }}>${order}</sl-button>`)}
+					</span>` : nothing}
+				</div>
+				${current.kind === "molecule" && current.bonds.length ? html`<div class="tool-group">
+					${this.#iconButton({ label: this.#t("Fit geometry", "Geometrie anpassen"), icon: GEOMETRY_ICON, onClick: this.#geometry })}
+				</div>` : nothing}
+				${this.#past.length || this.#future.length ? html`<div class="tool-group" role="group" aria-label=${this.#t("History", "Verlauf")}>
+					${this.#renderHistoryButton(false)}${this.#renderHistoryButton(true)}
+				</div>` : nothing}
+			</div>`}
+			<div class="workspace" data-palette=${paletteVisible ? pickerView : nothing} ?data-collapsed=${!this.#readonly && !paletteVisible}>
+				${this.#readonly ? nothing : html`<aside class="palette">
+					<button class="palette-handle" type="button" aria-expanded=${String(paletteVisible)} aria-controls="palette-body"
+						aria-label=${paletteVisible ? this.#t("Collapse the element palette", "Elementpalette einklappen")
+							: this.#t("Open the element palette", "Elementpalette öffnen")}
+						title=${paletteVisible ? this.#t("Collapse the element palette", "Elementpalette einklappen")
+							: this.#t("Open the element palette", "Elementpalette öffnen")}
+						@click=${() => { this.paletteOpen = !this.paletteOpen; }}>
+						<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" aria-hidden="true">
+							<path d=${paletteVisible ? "m9 3-4 4 4 4" : "m5 3 4 4-4 4"} />
+						</svg>
+					</button>
+					<div class="palette-body" id="palette-body" ?hidden=${!paletteVisible}>
+						<div class="palette-heading">
+							${lattice ? this.#iconButton({ label: this.#t("View crystal", "Kristall ansehen"), icon: CRYSTAL_ICON,
+								onClick: () => this.viewStructure(lattice) }) : nothing}
+							${lattice === null ? html`<sl-tag size="small">${this.#t("Bulk lattice unavailable", "Keine experimentelle Gitterstruktur")}</sl-tag>` : nothing}
+							${fullWidth ? html`<div class="palette-tools" role="group" aria-label=${this.#t("Element palette layout", "Darstellung der Elementpalette")}>
+								${this.#renderPickerLayout("list", pickerView === "list")}${this.#renderPickerLayout("table", pickerView === "table")}
+							</div>` : nothing}
 						</div>
-						${lattice === null ? html`<sl-tag size="small">${this.#t("Bulk lattice unavailable", "Keine experimentelle Gitterstruktur")}</sl-tag>` : nothing}
-						${fullWidth ? html`<div class="palette-tools" role="group" aria-label=${this.#t("Element palette layout", "Darstellung der Elementpalette")}>
-							${this.#renderPickerLayout("list")}${this.#renderPickerLayout("table")}
-						</div>` : nothing}
+						<webwriter-chemlab-periodic-table .view=${pickerView} picker-mode .selectedAtomicNumber=${this.element}
+							@chemlab:element-selection=${this.#selectPalette} @chemlab:element-drag=${this.#dragPalette}>
+						</webwriter-chemlab-periodic-table>
 					</div>
-					<webwriter-chemlab-periodic-table .view=${pickerView} picker-mode .selectedAtomicNumber=${this.element}
-						@chemlab:element-selection=${this.#selectPalette} @chemlab:element-drag=${this.#dragPalette}>
-					</webwriter-chemlab-periodic-table>
-				</aside>
+				</aside>`}
 				<main class="visual">
 					<div class="board" tabindex="0" aria-label=${this.#t("Structure workspace", "Struktur-Arbeitsfläche")}
 						@pointerdown=${this.#pointerDown} @pointermove=${this.#pointerMove} @pointerup=${this.#pointerUp} @pointercancel=${this.#pointerUp} @wheel=${this.#wheel}>
@@ -970,61 +1212,25 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 						${this.gpu === "loading" && this.view === "3d" ? html`<p class="empty" role="status"><sl-spinner></sl-spinner>
 							${this.#t("Loading 3D view", "3D-Ansicht wird geladen")}</p>`
 							: !this.#atoms.length ? html`<p class="empty">
-								${this.#t("Drag an element here or use Add atom.", "Ziehe ein Element hierher oder wähle Atom hinzufügen.")}
+								${this.#t("Drag an element here, or choose Place atom and click the canvas.",
+									"Ziehe ein Element hierher oder wähle Atom platzieren und klicke auf die Fläche.")}
 							</p>` : nothing}
-						<div class="view-tools">
-							${current.kind === "crystal" ? html`
-								<sl-button size="small" variant=${this.showLattice ? "primary" : "default"} aria-pressed=${this.showLattice}
-									title=${this.#t("Mark the Bravais lattice points of the displayed cell.", "Bravais-Gitterpunkte der dargestellten Zelle markieren.")}
-									@click=${() => { this.showLattice = !this.showLattice; }}>
-									${this.#t("Lattice positions", "Gitterpunkte")}
-								</sl-button>` : nothing}
+						<div class="view-tools" role="group" aria-label=${this.#t("Canvas view", "Ansicht der Zeichenfläche")}>
+							${this.#iconButton({ label: this.#t("3D view", "3D-Ansicht"), icon: CUBE_ICON, pressed: this.view === "3d",
+								disabled: this.gpu === "unavailable", onClick: () => { this.view = "3d"; } })}
+							${this.#iconButton({ label: this.#t("Structure view", "Strukturansicht"), icon: PLANE_ICON, pressed: this.view === "2d",
+								onClick: () => { this.view = "2d"; } })}
 							${this.view === "3d" && this.gpu === "ready" ? html`
-								${current.kind === "molecule" && current.atoms.length ? html`
-									<sl-button size="small" variant=${this.showElectrons ? "primary" : "default"} aria-pressed=${this.showElectrons}
-										@click=${() => { this.showElectrons = !this.showElectrons; }}>
-										${this.#t("Valence electrons", "Valenzelektronen")}
-									</sl-button>` : nothing}
-								<sl-button size="small" aria-label=${this.#t("Zoom in", "Vergrößern")} @click=${() => this.#scene?.zoom(.83)}>+</sl-button>
-								<sl-button size="small" aria-label=${this.#t("Zoom out", "Verkleinern")} @click=${() => this.#scene?.zoom(1.2)}>−</sl-button>
+								${this.#iconButton({ label: this.#t("Zoom in", "Vergrößern"), icon: ZOOM_IN_ICON, onClick: () => this.#scene?.zoom(.83) })}
+								${this.#iconButton({ label: this.#t("Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => this.#scene?.zoom(1.2) })}
 							` : nothing}
-							<sl-button size="small" @click=${fit}>${this.#t("Fit view", "Ansicht einpassen")}</sl-button>
+							${this.#iconButton({ label: this.#t("Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit })}
 						</div>
-					</div>
-					<div class="status">
-						<div class="fields">
-							<sl-tag size="small">${current.kind === "molecule" ? this.#t("Molecule", "Molekül") : this.#t("Crystal", "Kristall")}</sl-tag>
-							${this.#atoms.length ? html`<sl-tag size="small">${current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : current.name || formula(current)}
-								${current.catalogKey && current.name ? ` · ${current.name}` : ""}</sl-tag>` : nothing}
-							${representation ? html`<sl-tag size="small">${representation}</sl-tag>` : nothing}
-							${current.source?.startsWith("https://") ? html`<a href=${current.source} target="_blank" rel="noopener noreferrer">
-								${this.#t("Structure source", "Strukturquelle")}</a>` : nothing}
-							${current.kind === "molecule" && current.geometry === "idealized" ? html`<sl-tag size="small">
-								${this.#t("Idealized geometry", "Idealisierte Geometrie")}
-							</sl-tag>` : nothing}
-							${current.kind === "molecule" && current.geometry === "estimated" ? html`<sl-tag size="small">
-								${this.#t("Estimated geometry", "Geschätzte Geometrie")}
-							</sl-tag>` : nothing}
-							${current.kind === "molecule" && !current.geometry && this.#atoms.length ? html`<sl-tag size="small">
-								${this.#t("Sketch", "Skizze")}
-							</sl-tag>` : nothing}
-						</div>
-						${ionColors.size ? html`<span class="structure-legend" role="group" aria-label=${this.#t("Ion colours", "Ionenfarben")}>
-							${[...ionColors].map(([ion, color]) => html`<span style="--swatch: ${colorHex(color)}">${ion}</span>`)}
-						</span>` : nothing}
-						${current.kind === "molecule" && this.showElectrons && this.view === "3d" ? html`
-							<span class="structure-legend" title=${this.#t(
-								"Approximate Lewis and VSEPR regions. Dots represent electron counts in the displayed bonding model.",
-								"Angenäherte Lewis- und VSEPR-Bereiche. Punkte stehen für die Elektronenzahl im dargestellten Bindungsmodell.",
-							)}>
-								<span data-region="bond">${this.#t("Bonding", "Bindend")}</span>
-								<span data-region="lone">${this.#t("Nonbonding", "Nichtbindend")}</span>
-							</span>` : nothing}
-						<output aria-live="polite">${this.notice || (this.bondStart ? this.#t("Choose the other atom.", "Wähle das zweite Atom.") : "")}</output>
+						${this.#renderModelSummary(current, representation, ionColors)}
+						${this.#renderSelectionCard()}
 					</div>
 				</main>
 			</div>
-			${this.#renderInspector()}
 			${this.paletteDrag ? html`<div class="ghost" aria-hidden="true" style="left:${this.paletteDrag.x}px;top:${this.paletteDrag.y}px">
 				${symbol(this.paletteDrag.atomicNumber)}
 			</div>` : nothing}

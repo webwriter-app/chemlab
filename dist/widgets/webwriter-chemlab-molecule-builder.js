@@ -49944,6 +49944,3518 @@ var init_CompressedSource = __esm({
   }
 });
 
+// node_modules/pixi.js/lib/scene/text/AbstractText.mjs
+function ensureTextOptions(args, name) {
+  let options = args[0] ?? {};
+  if (typeof options === "string" || args[1]) {
+    deprecation(v8_0_0, `use new ${name}({ text: "hi!", style }) instead`);
+    options = {
+      text: options,
+      style: args[1]
+    };
+  }
+  return options;
+}
+var AbstractText;
+var init_AbstractText = __esm({
+  "node_modules/pixi.js/lib/scene/text/AbstractText.mjs"() {
+    init_ObservablePoint();
+    init_deprecation();
+    init_ViewContainer();
+    AbstractText = class extends ViewContainer {
+      constructor(options, styleClass) {
+        const { text, resolution, style, anchor, width, height, roundPixels, ...rest } = options;
+        super({
+          ...rest
+        });
+        this.batched = true;
+        this._resolution = null;
+        this._autoResolution = true;
+        this._didTextUpdate = true;
+        this._styleClass = styleClass;
+        this.text = text ?? "";
+        this.style = style;
+        this.resolution = resolution ?? null;
+        this.allowChildren = false;
+        this._anchor = new ObservablePoint(
+          {
+            _onUpdate: () => {
+              this.onViewUpdate();
+            }
+          }
+        );
+        if (anchor) this.anchor = anchor;
+        this.roundPixels = roundPixels ?? false;
+        if (width !== void 0) this.width = width;
+        if (height !== void 0) this.height = height;
+      }
+      /**
+       * The anchor point of the text that controls the origin point for positioning and rotation.
+       * Can be a number (same value for x/y) or a PointData object.
+       * - (0,0) is top-left
+       * - (0.5,0.5) is center
+       * - (1,1) is bottom-right
+       * ```ts
+       * // Set anchor to center
+       * const text = new Text({
+       *     text: 'Hello Pixi!',
+       *     anchor: 0.5 // Same as { x: 0.5, y: 0.5 }
+       * });
+       * // Set anchor to top-left
+       * const text2 = new Text({
+       *     text: 'Hello Pixi!',
+       *     anchor: { x: 0, y: 0 } // Top-left corner
+       * });
+       * // Set anchor to bottom-right
+       * const text3 = new Text({
+       *     text: 'Hello Pixi!',
+       *     anchor: { x: 1, y: 1 } // Bottom-right corner
+       * });
+       * ```
+       * @default { x: 0, y: 0 }
+       */
+      get anchor() {
+        return this._anchor;
+      }
+      set anchor(value) {
+        typeof value === "number" ? this._anchor.set(value) : this._anchor.copyFrom(value);
+      }
+      /**
+       * The text content to display. Use '\n' for line breaks.
+       * Accepts strings, numbers, or objects with toString() method.
+       * @example
+       * ```ts
+       * const text = new Text({
+       *     text: 'Hello Pixi!',
+       * });
+       * const multilineText = new Text({
+       *     text: 'Line 1\nLine 2\nLine 3',
+       * });
+       * const numberText = new Text({
+       *     text: 12345, // Will be converted to '12345'
+       * });
+       * const objectText = new Text({
+       *     text: { toString: () => 'Object Text' }, // Custom toString
+       * });
+       *
+       * // Update text dynamically
+       * text.text = 'Updated Text'; // Re-renders with new text
+       * text.text = 67890; // Updates to '67890'
+       * text.text = { toString: () => 'Dynamic Text' }; // Uses custom toString method
+       * // Clear text
+       * text.text = ''; // Clears the text
+       * ```
+       * @default ''
+       */
+      set text(value) {
+        value = value.toString();
+        if (this._text === value) return;
+        this._text = value;
+        this.onViewUpdate();
+      }
+      get text() {
+        return this._text;
+      }
+      /**
+       * The resolution/device pixel ratio for rendering.
+       * Higher values result in sharper text at the cost of performance.
+       * Set to null for auto-resolution based on device.
+       * @example
+       * ```ts
+       * const text = new Text({
+       *     text: 'Hello Pixi!',
+       *     resolution: 2 // High DPI for sharper text
+       * });
+       * const autoResText = new Text({
+       *     text: 'Auto Resolution',
+       *     resolution: null // Use device's pixel ratio
+       * });
+       * ```
+       * @default null
+       */
+      set resolution(value) {
+        this._autoResolution = value === null;
+        this._resolution = value;
+        this.onViewUpdate();
+      }
+      get resolution() {
+        return this._resolution;
+      }
+      get style() {
+        return this._style;
+      }
+      /**
+       * The style configuration for the text.
+       * Can be a TextStyle instance or a configuration object.
+       * Supports canvas text styles, HTML text styles, and bitmap text styles.
+       * @example
+       * ```ts
+       * const text = new Text({
+       *     text: 'Styled Text',
+       *     style: {
+       *         fontSize: 24,
+       *         fill: 0xff1010, // Red color
+       *         fontFamily: 'Arial',
+       *         align: 'center', // Center alignment
+       *         stroke: { color: '#4a1850', width: 5 }, // Purple stroke
+       *         dropShadow: {
+       *             color: '#000000', // Black shadow
+       *             blur: 4, // Shadow blur
+       *             distance: 6 // Shadow distance
+       *         }
+       *     }
+       * });
+       * const htmlText = new HTMLText({
+       *     text: 'HTML Styled Text',
+       *     style: {
+       *         fontSize: '20px',
+       *         fill: 'blue',
+       *         fontFamily: 'Verdana',
+       *     }
+       * });
+       * const bitmapText = new BitmapText({
+       *     text: 'Bitmap Styled Text',
+       *     style: {
+       *         fontName: 'Arial',
+       *         fontSize: 32,
+       *     }
+       * })
+       *
+       * // Update style dynamically
+       * text.style = {
+       *     fontSize: 30, // Change font size
+       *     fill: 0x00ff00, // Change color to green
+       *     align: 'right', // Change alignment to right
+       *     stroke: { color: '#000000', width: 2 }, // Add black stroke
+       * }
+       */
+      set style(style) {
+        style || (style = {});
+        this._style?.off("update", this.onViewUpdate, this);
+        if (style instanceof this._styleClass) {
+          this._style = style;
+        } else {
+          this._style = new this._styleClass(style);
+        }
+        this._style.on("update", this.onViewUpdate, this);
+        this.onViewUpdate();
+      }
+      /**
+       * The width of the sprite, setting this will actually modify the scale to achieve the value set.
+       * @example
+       * ```ts
+       * // Set width directly
+       * texture.width = 200;
+       * console.log(texture.scale.x); // Scale adjusted to match width
+       *
+       * // For better performance when setting both width and height
+       * texture.setSize(300, 400); // Avoids recalculating bounds twice
+       * ```
+       */
+      get width() {
+        return Math.abs(this.scale.x) * this.bounds.width;
+      }
+      set width(value) {
+        this._setWidth(value, this.bounds.width);
+      }
+      /**
+       * The height of the sprite, setting this will actually modify the scale to achieve the value set.
+       * @example
+       * ```ts
+       * // Set height directly
+       * texture.height = 200;
+       * console.log(texture.scale.y); // Scale adjusted to match height
+       *
+       * // For better performance when setting both width and height
+       * texture.setSize(300, 400); // Avoids recalculating bounds twice
+       * ```
+       */
+      get height() {
+        return Math.abs(this.scale.y) * this.bounds.height;
+      }
+      set height(value) {
+        this._setHeight(value, this.bounds.height);
+      }
+      /**
+       * Retrieves the size of the Text as a [Size]{@link Size} object based on the texture dimensions and scale.
+       * This is faster than getting width and height separately as it only calculates the bounds once.
+       * @example
+       * ```ts
+       * // Basic size retrieval
+       * const text = new Text({
+       *     text: 'Hello Pixi!',
+       *     style: { fontSize: 24 }
+       * });
+       * const size = text.getSize();
+       * console.log(`Size: ${size.width}x${size.height}`);
+       *
+       * // Reuse existing size object
+       * const reuseSize = { width: 0, height: 0 };
+       * text.getSize(reuseSize);
+       * ```
+       * @param out - Optional object to store the size in, to avoid allocating a new object
+       * @returns The size of the Sprite
+       * @see {@link Text#width} For getting just the width
+       * @see {@link Text#height} For getting just the height
+       * @see {@link Text#setSize} For setting both width and height
+       */
+      getSize(out2) {
+        out2 || (out2 = {});
+        out2.width = Math.abs(this.scale.x) * this.bounds.width;
+        out2.height = Math.abs(this.scale.y) * this.bounds.height;
+        return out2;
+      }
+      /**
+       * Sets the size of the Text to the specified width and height.
+       * This is faster than setting width and height separately as it only recalculates bounds once.
+       * @example
+       * ```ts
+       * // Basic size setting
+       * const text = new Text({
+       *    text: 'Hello Pixi!',
+       *    style: { fontSize: 24 }
+       * });
+       * text.setSize(100, 200); // Width: 100, Height: 200
+       *
+       * // Set uniform size
+       * text.setSize(100); // Sets both width and height to 100
+       *
+       * // Set size with object
+       * text.setSize({
+       *     width: 200,
+       *     height: 300
+       * });
+       * ```
+       * @param value - This can be either a number or a {@link Size} object
+       * @param height - The height to set. Defaults to the value of `width` if not provided
+       * @see {@link Text#width} For setting width only
+       * @see {@link Text#height} For setting height only
+       */
+      setSize(value, height) {
+        if (typeof value === "object") {
+          height = value.height ?? value.width;
+          value = value.width;
+        } else {
+          height ?? (height = value);
+        }
+        value !== void 0 && this._setWidth(value, this.bounds.width);
+        height !== void 0 && this._setHeight(height, this.bounds.height);
+      }
+      /**
+       * Checks if the object contains the given point in local coordinates.
+       * Uses the text's bounds for hit testing.
+       * @example
+       * ```ts
+       * // Basic point check
+       * const localPoint = { x: 50, y: 25 };
+       * const contains = text.containsPoint(localPoint);
+       * console.log('Point is inside:', contains);
+       * ```
+       * @param point - The point to check in local coordinates
+       * @returns True if the point is within the text's bounds
+       * @see {@link Container#toLocal} For converting global coordinates to local
+       */
+      containsPoint(point) {
+        const width = this.bounds.width;
+        const height = this.bounds.height;
+        const x1 = -width * this.anchor.x;
+        let y1 = 0;
+        if (point.x >= x1 && point.x <= x1 + width) {
+          y1 = -height * this.anchor.y;
+          if (point.y >= y1 && point.y <= y1 + height) return true;
+        }
+        return false;
+      }
+      /** @internal */
+      onViewUpdate() {
+        if (!this.didViewUpdate) this._didTextUpdate = true;
+        super.onViewUpdate();
+      }
+      /**
+       * Destroys this text renderable and optionally its style texture.
+       * @param options - Options parameter. A boolean will act as if all options
+       *  have been set to that value
+       * @example
+       * // Destroys the text and its style
+       * text.destroy({ style: true, texture: true, textureSource: true });
+       * text.destroy(true);
+       * text.destroy() // Destroys the text, but not its style
+       */
+      destroy(options = false) {
+        this._style?.off("update", this.onViewUpdate, this);
+        super.destroy(options);
+        this.owner = null;
+        this._bounds = null;
+        this._anchor = null;
+        if (typeof options === "boolean" ? options : options?.style) {
+          this._style.destroy(options);
+        }
+        this._style = null;
+        this._text = null;
+      }
+      /**
+       * Returns a unique key for this instance.
+       * This key is used for caching.
+       * @returns {string} Unique key for the instance
+       */
+      get styleKey() {
+        return `${this._text}:${this._style.styleKey}:${this._resolution}`;
+      }
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/utils/canvas/getCanvasBoundingBox.mjs
+function ensureInternalCanvas(width, height) {
+  if (!_internalCanvas) {
+    _internalCanvas = DOMAdapter.get().createCanvas(256, 128);
+    _internalContext = _internalCanvas.getContext("2d", { willReadFrequently: true });
+    _internalContext.globalCompositeOperation = "copy";
+    _internalContext.globalAlpha = 1;
+  }
+  if (_internalCanvas.width < width || _internalCanvas.height < height) {
+    _internalCanvas.width = nextPow2(width);
+    _internalCanvas.height = nextPow2(height);
+  }
+}
+function checkRow(data, width, y5) {
+  for (let x4 = 0, index = 4 * y5 * width; x4 < width; ++x4, index += 4) {
+    if (data[index + 3] !== 0) return false;
+  }
+  return true;
+}
+function checkColumn(data, width, x4, top, bottom) {
+  const stride = 4 * width;
+  for (let y5 = top, index = top * stride + 4 * x4; y5 <= bottom; ++y5, index += stride) {
+    if (data[index + 3] !== 0) return false;
+  }
+  return true;
+}
+function getCanvasBoundingBox(...args) {
+  let options = args[0];
+  if (!options.canvas) {
+    options = { canvas: args[0], resolution: args[1] };
+  }
+  const { canvas } = options;
+  const resolution = Math.min(options.resolution ?? 1, 1);
+  const width = options.width ?? canvas.width;
+  const height = options.height ?? canvas.height;
+  let output = options.output;
+  ensureInternalCanvas(width, height);
+  if (!_internalContext) {
+    throw new TypeError("Failed to get canvas 2D context");
+  }
+  _internalContext.drawImage(
+    canvas,
+    0,
+    0,
+    width,
+    height,
+    0,
+    0,
+    width * resolution,
+    height * resolution
+  );
+  const imageData = _internalContext.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  let left = 0;
+  let top = 0;
+  let right = width - 1;
+  let bottom = height - 1;
+  while (top < height && checkRow(data, width, top)) ++top;
+  if (top === height) return Rectangle.EMPTY;
+  while (checkRow(data, width, bottom)) --bottom;
+  while (checkColumn(data, width, left, top, bottom)) ++left;
+  while (checkColumn(data, width, right, top, bottom)) --right;
+  ++right;
+  ++bottom;
+  _internalContext.globalCompositeOperation = "source-over";
+  _internalContext.strokeRect(left, top, right - left, bottom - top);
+  _internalContext.globalCompositeOperation = "copy";
+  output ?? (output = new Rectangle());
+  output.set(left / resolution, top / resolution, (right - left) / resolution, (bottom - top) / resolution);
+  return output;
+}
+var _internalCanvas, _internalContext;
+var init_getCanvasBoundingBox = __esm({
+  "node_modules/pixi.js/lib/utils/canvas/getCanvasBoundingBox.mjs"() {
+    init_adapter();
+    init_pow2();
+    init_Rectangle();
+    _internalCanvas = null;
+    _internalContext = null;
+  }
+});
+
+// node_modules/tiny-lru/dist/tiny-lru.js
+function lru(max2 = 1e3, ttl = 0, resetTtl = false) {
+  if (isNaN(max2) || max2 < 0) {
+    throw new TypeError("Invalid max value");
+  }
+  if (isNaN(ttl) || ttl < 0) {
+    throw new TypeError("Invalid ttl value");
+  }
+  if (typeof resetTtl !== "boolean") {
+    throw new TypeError("Invalid resetTtl value");
+  }
+  return new LRU(max2, ttl, resetTtl);
+}
+var LRU;
+var init_tiny_lru = __esm({
+  "node_modules/tiny-lru/dist/tiny-lru.js"() {
+    LRU = class {
+      /**
+       * Creates a new LRU cache instance.
+       * Note: Constructor does not validate parameters. Use lru() factory function for parameter validation.
+       *
+       * @constructor
+       * @param {number} [max=0] - Maximum number of items to store. 0 means unlimited.
+       * @param {number} [ttl=0] - Time to live in milliseconds. 0 means no expiration.
+       * @param {boolean} [resetTtl=false] - Whether to reset TTL when accessing existing items via get().
+       * @example
+       * const cache = new LRU(1000, 60000, true); // 1000 items, 1 minute TTL, reset on access
+       * @see {@link lru} For parameter validation
+       * @since 1.0.0
+       */
+      constructor(max2 = 0, ttl = 0, resetTtl = false) {
+        this.first = null;
+        this.items = /* @__PURE__ */ Object.create(null);
+        this.last = null;
+        this.max = max2;
+        this.resetTtl = resetTtl;
+        this.size = 0;
+        this.ttl = ttl;
+      }
+      /**
+       * Removes all items from the cache.
+       *
+       * @method clear
+       * @memberof LRU
+       * @returns {LRU} The LRU instance for method chaining.
+       * @example
+       * cache.clear();
+       * console.log(cache.size); // 0
+       * @since 1.0.0
+       */
+      clear() {
+        this.first = null;
+        this.items = /* @__PURE__ */ Object.create(null);
+        this.last = null;
+        this.size = 0;
+        return this;
+      }
+      /**
+       * Removes an item from the cache by key.
+       *
+       * @method delete
+       * @memberof LRU
+       * @param {string} key - The key of the item to delete.
+       * @returns {LRU} The LRU instance for method chaining.
+       * @example
+       * cache.set('key1', 'value1');
+       * cache.delete('key1');
+       * console.log(cache.has('key1')); // false
+       * @see {@link LRU#has}
+       * @see {@link LRU#clear}
+       * @since 1.0.0
+       */
+      delete(key) {
+        if (this.has(key)) {
+          const item = this.items[key];
+          delete this.items[key];
+          this.size--;
+          if (item.prev !== null) {
+            item.prev.next = item.next;
+          }
+          if (item.next !== null) {
+            item.next.prev = item.prev;
+          }
+          if (this.first === item) {
+            this.first = item.next;
+          }
+          if (this.last === item) {
+            this.last = item.prev;
+          }
+        }
+        return this;
+      }
+      /**
+       * Returns an array of [key, value] pairs for the specified keys.
+       * Order follows LRU order (least to most recently used).
+       *
+       * @method entries
+       * @memberof LRU
+       * @param {string[]} [keys=this.keys()] - Array of keys to get entries for. Defaults to all keys.
+       * @returns {Array<Array<*>>} Array of [key, value] pairs in LRU order.
+       * @example
+       * cache.set('a', 1).set('b', 2);
+       * console.log(cache.entries()); // [['a', 1], ['b', 2]]
+       * console.log(cache.entries(['a'])); // [['a', 1]]
+       * @see {@link LRU#keys}
+       * @see {@link LRU#values}
+       * @since 11.1.0
+       */
+      entries(keys = this.keys()) {
+        const result = new Array(keys.length);
+        for (let i9 = 0; i9 < keys.length; i9++) {
+          const key = keys[i9];
+          result[i9] = [key, this.get(key)];
+        }
+        return result;
+      }
+      /**
+       * Removes the least recently used item from the cache.
+       *
+       * @method evict
+       * @memberof LRU
+       * @param {boolean} [bypass=false] - Whether to force eviction even when cache is empty.
+       * @returns {LRU} The LRU instance for method chaining.
+       * @example
+       * cache.set('old', 'value').set('new', 'value');
+       * cache.evict(); // Removes 'old' item
+       * @see {@link LRU#setWithEvicted}
+       * @since 1.0.0
+       */
+      evict(bypass = false) {
+        if (bypass || this.size > 0) {
+          const item = this.first;
+          delete this.items[item.key];
+          if (--this.size === 0) {
+            this.first = null;
+            this.last = null;
+          } else {
+            this.first = item.next;
+            this.first.prev = null;
+          }
+        }
+        return this;
+      }
+      /**
+       * Returns the expiration timestamp for a given key.
+       *
+       * @method expiresAt
+       * @memberof LRU
+       * @param {string} key - The key to check expiration for.
+       * @returns {number|undefined} The expiration timestamp in milliseconds, or undefined if key doesn't exist.
+       * @example
+       * const cache = new LRU(100, 5000); // 5 second TTL
+       * cache.set('key1', 'value1');
+       * console.log(cache.expiresAt('key1')); // timestamp 5 seconds from now
+       * @see {@link LRU#get}
+       * @see {@link LRU#has}
+       * @since 1.0.0
+       */
+      expiresAt(key) {
+        let result;
+        if (this.has(key)) {
+          result = this.items[key].expiry;
+        }
+        return result;
+      }
+      /**
+       * Retrieves a value from the cache by key. Updates the item's position to most recently used.
+       *
+       * @method get
+       * @memberof LRU
+       * @param {string} key - The key to retrieve.
+       * @returns {*} The value associated with the key, or undefined if not found or expired.
+       * @example
+       * cache.set('key1', 'value1');
+       * console.log(cache.get('key1')); // 'value1'
+       * console.log(cache.get('nonexistent')); // undefined
+       * @see {@link LRU#set}
+       * @see {@link LRU#has}
+       * @since 1.0.0
+       */
+      get(key) {
+        const item = this.items[key];
+        if (item !== void 0) {
+          if (this.ttl > 0) {
+            if (item.expiry <= Date.now()) {
+              this.delete(key);
+              return void 0;
+            }
+          }
+          this.moveToEnd(item);
+          return item.value;
+        }
+        return void 0;
+      }
+      /**
+       * Checks if a key exists in the cache.
+       *
+       * @method has
+       * @memberof LRU
+       * @param {string} key - The key to check for.
+       * @returns {boolean} True if the key exists, false otherwise.
+       * @example
+       * cache.set('key1', 'value1');
+       * console.log(cache.has('key1')); // true
+       * console.log(cache.has('nonexistent')); // false
+       * @see {@link LRU#get}
+       * @see {@link LRU#delete}
+       * @since 9.0.0
+       */
+      has(key) {
+        return key in this.items;
+      }
+      /**
+       * Efficiently moves an item to the end of the LRU list (most recently used position).
+       * This is an internal optimization method that avoids the overhead of the full set() operation
+       * when only LRU position needs to be updated.
+       *
+       * @method moveToEnd
+       * @memberof LRU
+       * @param {Object} item - The cache item with prev/next pointers to reposition.
+       * @private
+       * @since 11.3.5
+       */
+      moveToEnd(item) {
+        if (this.last === item) {
+          return;
+        }
+        if (item.prev !== null) {
+          item.prev.next = item.next;
+        }
+        if (item.next !== null) {
+          item.next.prev = item.prev;
+        }
+        if (this.first === item) {
+          this.first = item.next;
+        }
+        item.prev = this.last;
+        item.next = null;
+        if (this.last !== null) {
+          this.last.next = item;
+        }
+        this.last = item;
+        if (this.first === null) {
+          this.first = item;
+        }
+      }
+      /**
+       * Returns an array of all keys in the cache, ordered from least to most recently used.
+       *
+       * @method keys
+       * @memberof LRU
+       * @returns {string[]} Array of keys in LRU order.
+       * @example
+       * cache.set('a', 1).set('b', 2);
+       * cache.get('a'); // Move 'a' to most recent
+       * console.log(cache.keys()); // ['b', 'a']
+       * @see {@link LRU#values}
+       * @see {@link LRU#entries}
+       * @since 9.0.0
+       */
+      keys() {
+        const result = new Array(this.size);
+        let x4 = this.first;
+        let i9 = 0;
+        while (x4 !== null) {
+          result[i9++] = x4.key;
+          x4 = x4.next;
+        }
+        return result;
+      }
+      /**
+       * Sets a value in the cache and returns any evicted item.
+       *
+       * @method setWithEvicted
+       * @memberof LRU
+       * @param {string} key - The key to set.
+       * @param {*} value - The value to store.
+       * @param {boolean} [resetTtl=this.resetTtl] - Whether to reset the TTL for this operation.
+       * @returns {Object|null} The evicted item (if any) with shape {key, value, expiry, prev, next}, or null.
+       * @example
+       * const cache = new LRU(2);
+       * cache.set('a', 1).set('b', 2);
+       * const evicted = cache.setWithEvicted('c', 3); // evicted = {key: 'a', value: 1, ...}
+       * @see {@link LRU#set}
+       * @see {@link LRU#evict}
+       * @since 11.3.0
+       */
+      setWithEvicted(key, value, resetTtl = this.resetTtl) {
+        let evicted = null;
+        if (this.has(key)) {
+          this.set(key, value, true, resetTtl);
+        } else {
+          if (this.max > 0 && this.size === this.max) {
+            evicted = { ...this.first };
+            this.evict(true);
+          }
+          let item = this.items[key] = {
+            expiry: this.ttl > 0 ? Date.now() + this.ttl : this.ttl,
+            key,
+            prev: this.last,
+            next: null,
+            value
+          };
+          if (++this.size === 1) {
+            this.first = item;
+          } else {
+            this.last.next = item;
+          }
+          this.last = item;
+        }
+        return evicted;
+      }
+      /**
+       * Sets a value in the cache. Updates the item's position to most recently used.
+       *
+       * @method set
+       * @memberof LRU
+       * @param {string} key - The key to set.
+       * @param {*} value - The value to store.
+       * @param {boolean} [bypass=false] - Internal parameter for setWithEvicted method.
+       * @param {boolean} [resetTtl=this.resetTtl] - Whether to reset the TTL for this operation.
+       * @returns {LRU} The LRU instance for method chaining.
+       * @example
+       * cache.set('key1', 'value1')
+       *      .set('key2', 'value2')
+       *      .set('key3', 'value3');
+       * @see {@link LRU#get}
+       * @see {@link LRU#setWithEvicted}
+       * @since 1.0.0
+       */
+      set(key, value, bypass = false, resetTtl = this.resetTtl) {
+        let item = this.items[key];
+        if (bypass || item !== void 0) {
+          item.value = value;
+          if (bypass === false && resetTtl) {
+            item.expiry = this.ttl > 0 ? Date.now() + this.ttl : this.ttl;
+          }
+          this.moveToEnd(item);
+        } else {
+          if (this.max > 0 && this.size === this.max) {
+            this.evict(true);
+          }
+          item = this.items[key] = {
+            expiry: this.ttl > 0 ? Date.now() + this.ttl : this.ttl,
+            key,
+            prev: this.last,
+            next: null,
+            value
+          };
+          if (++this.size === 1) {
+            this.first = item;
+          } else {
+            this.last.next = item;
+          }
+          this.last = item;
+        }
+        return this;
+      }
+      /**
+       * Returns an array of all values in the cache for the specified keys.
+       * Order follows LRU order (least to most recently used).
+       *
+       * @method values
+       * @memberof LRU
+       * @param {string[]} [keys=this.keys()] - Array of keys to get values for. Defaults to all keys.
+       * @returns {Array<*>} Array of values corresponding to the keys in LRU order.
+       * @example
+       * cache.set('a', 1).set('b', 2);
+       * console.log(cache.values()); // [1, 2]
+       * console.log(cache.values(['a'])); // [1]
+       * @see {@link LRU#keys}
+       * @see {@link LRU#entries}
+       * @since 11.1.0
+       */
+      values(keys = this.keys()) {
+        const result = new Array(keys.length);
+        for (let i9 = 0; i9 < keys.length; i9++) {
+          result[i9] = this.get(keys[i9]);
+        }
+        return result;
+      }
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/utils/parseTaggedText.mjs
+function hasTagStyles(style) {
+  return !!style.tagStyles && Object.keys(style.tagStyles).length > 0;
+}
+function hasTagMarkup(text) {
+  return text.includes("<");
+}
+function createMergedStyle(baseStyle, overrides) {
+  return baseStyle.clone().assign(overrides);
+}
+function parseTaggedText(text, style) {
+  const runs = [];
+  const tagStyles = style.tagStyles;
+  if (!hasTagStyles(style) || !hasTagMarkup(text)) {
+    runs.push({ text, style });
+    return runs;
+  }
+  const styleStack = [style];
+  const tagStack = [];
+  let currentText = "";
+  let i9 = 0;
+  while (i9 < text.length) {
+    const char = text[i9];
+    if (char === "<") {
+      const closeIndex = text.indexOf(">", i9);
+      if (closeIndex === -1) {
+        currentText += char;
+        i9++;
+        continue;
+      }
+      const nextOpenIndex = text.indexOf("<", i9 + 1);
+      if (nextOpenIndex !== -1 && nextOpenIndex < closeIndex) {
+        currentText += char;
+        i9++;
+        continue;
+      }
+      const tagContent = text.slice(i9 + 1, closeIndex);
+      if (tagContent.startsWith("/")) {
+        const closingTagName = tagContent.slice(1).trim();
+        if (tagStack.length > 0 && tagStack[tagStack.length - 1] === closingTagName) {
+          if (currentText.length > 0) {
+            runs.push({
+              text: currentText,
+              style: styleStack[styleStack.length - 1]
+            });
+            currentText = "";
+          }
+          styleStack.pop();
+          tagStack.pop();
+          i9 = closeIndex + 1;
+          continue;
+        } else {
+          currentText += text.slice(i9, closeIndex + 1);
+          i9 = closeIndex + 1;
+          continue;
+        }
+      } else {
+        const tagName = tagContent.trim();
+        if (tagStyles[tagName]) {
+          if (currentText.length > 0) {
+            runs.push({
+              text: currentText,
+              style: styleStack[styleStack.length - 1]
+            });
+            currentText = "";
+          }
+          const currentStyle = styleStack[styleStack.length - 1];
+          const mergedStyle = createMergedStyle(currentStyle, tagStyles[tagName]);
+          styleStack.push(mergedStyle);
+          tagStack.push(tagName);
+          i9 = closeIndex + 1;
+          continue;
+        } else {
+          currentText += text.slice(i9, closeIndex + 1);
+          i9 = closeIndex + 1;
+          continue;
+        }
+      }
+    } else {
+      currentText += char;
+      i9++;
+    }
+  }
+  if (currentText.length > 0) {
+    runs.push({
+      text: currentText,
+      style: styleStack[styleStack.length - 1]
+    });
+  }
+  return runs;
+}
+var init_parseTaggedText = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/utils/parseTaggedText.mjs"() {
+    "use strict";
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/utils/textTokenization.mjs
+function isNewline(char) {
+  if (typeof char !== "string") {
+    return false;
+  }
+  return NEWLINES_SET.has(char.charCodeAt(0));
+}
+function isBreakingSpace(char, _nextChar) {
+  if (typeof char !== "string") {
+    return false;
+  }
+  return BREAKING_SPACES_SET.has(char.charCodeAt(0));
+}
+function isBreakAfterChar(char) {
+  if (typeof char !== "string") {
+    return false;
+  }
+  return BREAK_AFTER_CHARS_SET.has(char.charCodeAt(0));
+}
+function collapseSpaces(whiteSpace) {
+  return whiteSpace === "normal" || whiteSpace === "pre-line";
+}
+function collapseNewlines(whiteSpace) {
+  return whiteSpace === "normal";
+}
+function trimRight(text) {
+  if (typeof text !== "string") {
+    return "";
+  }
+  let i9 = text.length - 1;
+  while (i9 >= 0 && isBreakingSpace(text[i9])) {
+    i9--;
+  }
+  return i9 < text.length - 1 ? text.slice(0, i9 + 1) : text;
+}
+function tokenize(text) {
+  const tokens = [];
+  const tokenChars = [];
+  if (typeof text !== "string") {
+    return tokens;
+  }
+  for (let i9 = 0; i9 < text.length; i9++) {
+    const char = text[i9];
+    const nextChar = text[i9 + 1];
+    if (isBreakingSpace(char, nextChar) || isNewline(char)) {
+      if (tokenChars.length > 0) {
+        tokens.push(tokenChars.join(""));
+        tokenChars.length = 0;
+      }
+      if (char === "\r" && nextChar === "\n") {
+        tokens.push("\r\n");
+        i9++;
+      } else {
+        tokens.push(char);
+      }
+      continue;
+    }
+    tokenChars.push(char);
+    if (isBreakAfterChar(char) && nextChar && !isBreakingSpace(nextChar) && !isNewline(nextChar)) {
+      tokens.push(tokenChars.join(""));
+      tokenChars.length = 0;
+    }
+  }
+  if (tokenChars.length > 0) {
+    tokens.push(tokenChars.join(""));
+  }
+  return tokens;
+}
+function getCharacterGroups(token, breakWords, splitFn, canBreakCharsFn) {
+  const characters = splitFn(token);
+  const groups2 = [];
+  for (let j4 = 0; j4 < characters.length; j4++) {
+    let char = characters[j4];
+    let lastChar = char;
+    let k3 = 1;
+    while (characters[j4 + k3]) {
+      const nextChar = characters[j4 + k3];
+      if (!canBreakCharsFn(lastChar, nextChar, token, j4, breakWords)) {
+        char += nextChar;
+        lastChar = nextChar;
+        k3++;
+      } else {
+        break;
+      }
+    }
+    j4 += k3 - 1;
+    groups2.push(char);
+  }
+  return groups2;
+}
+var NEWLINES, NEWLINES_SET, BREAKING_SPACES, BREAKING_SPACES_SET, COLLAPSIBLE_SPACES, COLLAPSIBLE_SPACES_SET, BREAK_AFTER_CHARS, BREAK_AFTER_CHARS_SET, NEWLINE_SPLIT_REGEX, NEWLINE_MATCH_REGEX;
+var init_textTokenization = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/utils/textTokenization.mjs"() {
+    "use strict";
+    NEWLINES = [
+      10,
+      // line feed
+      13
+      // carriage return
+    ];
+    NEWLINES_SET = new Set(NEWLINES);
+    BREAKING_SPACES = [
+      9,
+      // character tabulation
+      32,
+      // space
+      8192,
+      // en quad
+      8193,
+      // em quad
+      8194,
+      // en space
+      8195,
+      // em space
+      8196,
+      // three-per-em space
+      8197,
+      // four-per-em space
+      8198,
+      // six-per-em space
+      8200,
+      // punctuation space
+      8201,
+      // thin space
+      8202,
+      // hair space
+      8287,
+      // medium mathematical space
+      12288
+      // ideographic space
+    ];
+    BREAKING_SPACES_SET = new Set(BREAKING_SPACES);
+    COLLAPSIBLE_SPACES = [
+      9,
+      // character tabulation (tab)
+      32
+      // space
+    ];
+    COLLAPSIBLE_SPACES_SET = new Set(COLLAPSIBLE_SPACES);
+    BREAK_AFTER_CHARS = [
+      45,
+      // hyphen-minus
+      8208,
+      // unicode hyphen
+      8211,
+      // en-dash
+      8212,
+      // em-dash
+      173
+      // soft hyphen
+    ];
+    BREAK_AFTER_CHARS_SET = new Set(BREAK_AFTER_CHARS);
+    NEWLINE_SPLIT_REGEX = /(\r\n|\r|\n)/;
+    NEWLINE_MATCH_REGEX = /(?:\r\n|\r|\n)/;
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/utils/measureTaggedText.mjs
+function measureTaggedText(text, style, wordWrap2, context2, measureTextFn, wrapMeasureTextFn, measureFontFn, canBreakCharsFn, wordWrapSplitFn) {
+  const runs = parseTaggedText(text, style);
+  const shouldCollapseNewlines = collapseNewlines(style.whiteSpace);
+  if (shouldCollapseNewlines) {
+    for (let i9 = 0; i9 < runs.length; i9++) {
+      const run = runs[i9];
+      runs[i9] = { text: run.text.replace(NEWLINE_TO_SPACE_REGEX, " "), style: run.style };
+    }
+  }
+  const runsByLine = [];
+  let currentLineRuns = [];
+  for (const run of runs) {
+    const parts = run.text.split(NEWLINE_SPLIT_REGEX);
+    for (let i9 = 0; i9 < parts.length; i9++) {
+      const part = parts[i9];
+      if (part === "\r\n" || part === "\r" || part === "\n") {
+        runsByLine.push(currentLineRuns);
+        currentLineRuns = [];
+      } else if (part.length > 0) {
+        currentLineRuns.push({ text: part, style: run.style });
+      }
+    }
+  }
+  if (currentLineRuns.length > 0 || runsByLine.length === 0) {
+    runsByLine.push(currentLineRuns);
+  }
+  const wrappedRunsByLine = wordWrap2 ? wordWrapTaggedLines(
+    runsByLine,
+    style,
+    context2,
+    wrapMeasureTextFn,
+    canBreakCharsFn,
+    wordWrapSplitFn
+  ) : runsByLine;
+  const lineWidths = [];
+  const lineAscents = [];
+  const lineDescents = [];
+  const lineHeightsArr = [];
+  const lines = [];
+  let maxLineWidth = 0;
+  const baseFont = style._fontString;
+  const baseFontProps = measureFontFn(baseFont);
+  if (baseFontProps.fontSize === 0) {
+    baseFontProps.fontSize = style.fontSize;
+    baseFontProps.ascent = style.fontSize;
+  }
+  let lastFont = "";
+  let hasDropShadow = !!style.dropShadow;
+  let maxRunStrokeWidth = style._stroke?.width || 0;
+  for (const lineRuns of wrappedRunsByLine) {
+    let lineWidth = 0;
+    let lineAscent = baseFontProps.ascent;
+    let lineDescent = baseFontProps.descent;
+    let lineText = "";
+    for (const run of lineRuns) {
+      const runFont = run.style._fontString;
+      const runFontProps = measureFontFn(runFont);
+      if (runFont !== lastFont) {
+        context2.font = runFont;
+        lastFont = runFont;
+      }
+      const runWidth = measureTextFn(run.text, run.style.letterSpacing, context2);
+      lineWidth += runWidth;
+      lineAscent = Math.max(lineAscent, runFontProps.ascent);
+      lineDescent = Math.max(lineDescent, runFontProps.descent);
+      lineText += run.text;
+      const runStrokeWidth = run.style._stroke?.width || 0;
+      if (runStrokeWidth > maxRunStrokeWidth) maxRunStrokeWidth = runStrokeWidth;
+      if (!hasDropShadow && run.style.dropShadow) {
+        hasDropShadow = true;
+      }
+    }
+    if (lineRuns.length === 0) {
+      lineAscent = baseFontProps.ascent;
+      lineDescent = baseFontProps.descent;
+    }
+    lineWidths.push(lineWidth);
+    lineAscents.push(lineAscent);
+    lineDescents.push(lineDescent);
+    lines.push(lineText);
+    const computedLineHeight = style.lineHeight || lineAscent + lineDescent;
+    lineHeightsArr.push(computedLineHeight + style.leading);
+    maxLineWidth = Math.max(maxLineWidth, lineWidth);
+  }
+  const strokeWidth = maxRunStrokeWidth;
+  const width = maxLineWidth + strokeWidth + (style.dropShadow ? style.dropShadow.distance : 0);
+  let baseHeight = 0;
+  for (let i9 = 0; i9 < lineHeightsArr.length; i9++) {
+    baseHeight += lineHeightsArr[i9];
+  }
+  baseHeight = Math.max(baseHeight, lineHeightsArr[0] + strokeWidth);
+  const height = baseHeight + (style.dropShadow ? style.dropShadow.distance : 0);
+  const baseLineHeight = style.lineHeight || baseFontProps.fontSize;
+  return {
+    width,
+    height,
+    lines,
+    lineWidths,
+    lineHeight: baseLineHeight + style.leading,
+    maxLineWidth,
+    fontProperties: baseFontProps,
+    runsByLine: wrappedRunsByLine,
+    lineAscents,
+    lineDescents,
+    lineHeights: lineHeightsArr,
+    hasDropShadow
+  };
+}
+function wordWrapTaggedLines(runsByLine, style, context2, measureTextFn, canBreakCharsFn, wordWrapSplitFn) {
+  const { letterSpacing, whiteSpace, wordWrapWidth, breakWords } = style;
+  const shouldCollapseSpaces = collapseSpaces(whiteSpace);
+  const adjustedWrapWidth = wordWrapWidth + letterSpacing;
+  const tokenWidthCache = {};
+  let lastFont = "";
+  const measureTokenWidth = (token, tokenStyle) => {
+    const cacheKey = `${token}|${tokenStyle.styleKey}`;
+    let width = tokenWidthCache[cacheKey];
+    if (width === void 0) {
+      const font = tokenStyle._fontString;
+      if (font !== lastFont) {
+        context2.font = font;
+        lastFont = font;
+      }
+      width = measureTextFn(token, tokenStyle.letterSpacing, context2) + tokenStyle.letterSpacing;
+      tokenWidthCache[cacheKey] = width;
+    }
+    return width;
+  };
+  const result = [];
+  for (const lineRuns of runsByLine) {
+    const styledTokens = tokenizeTaggedRuns(lineRuns);
+    const resultStartLength = result.length;
+    const getWordGroupWidth = (startIndex) => {
+      let totalWidth = 0;
+      let j4 = startIndex;
+      do {
+        const { token: groupToken, style: groupStyle } = styledTokens[j4];
+        totalWidth += measureTokenWidth(groupToken, groupStyle);
+        j4++;
+      } while (j4 < styledTokens.length && styledTokens[j4].continuesFromPrevious);
+      return totalWidth;
+    };
+    const getWordGroupTokens = (startIndex) => {
+      const tokens = [];
+      let j4 = startIndex;
+      do {
+        tokens.push({ token: styledTokens[j4].token, style: styledTokens[j4].style });
+        j4++;
+      } while (j4 < styledTokens.length && styledTokens[j4].continuesFromPrevious);
+      return tokens;
+    };
+    let currentLineRuns = [];
+    let currentWidth = 0;
+    let canPrependSpaces = !shouldCollapseSpaces;
+    let buildingRun = null;
+    const flushBuildingRun = () => {
+      if (buildingRun && buildingRun.text.length > 0) {
+        currentLineRuns.push(buildingRun);
+      }
+      buildingRun = null;
+    };
+    const startNewLine = () => {
+      flushBuildingRun();
+      if (currentLineRuns.length > 0) {
+        const lastRun = currentLineRuns[currentLineRuns.length - 1];
+        lastRun.text = trimRight(lastRun.text);
+        if (lastRun.text.length === 0) {
+          currentLineRuns.pop();
+        }
+      }
+      result.push(currentLineRuns);
+      currentLineRuns = [];
+      currentWidth = 0;
+      canPrependSpaces = false;
+    };
+    for (let i9 = 0; i9 < styledTokens.length; i9++) {
+      const { token, style: tokenStyle, continuesFromPrevious } = styledTokens[i9];
+      const tokenWidth = measureTokenWidth(token, tokenStyle);
+      if (shouldCollapseSpaces) {
+        const currIsSpace = isBreakingSpace(token);
+        const lastChar = buildingRun?.text[buildingRun.text.length - 1] ?? currentLineRuns[currentLineRuns.length - 1]?.text.slice(-1) ?? "";
+        const lastIsSpace = lastChar ? isBreakingSpace(lastChar) : false;
+        if (currIsSpace && lastIsSpace) {
+          continue;
+        }
+      }
+      const startsWordGroup = !continuesFromPrevious;
+      const wordGroupWidth = startsWordGroup ? getWordGroupWidth(i9) : tokenWidth;
+      if (wordGroupWidth > adjustedWrapWidth && startsWordGroup) {
+        if (currentWidth > 0) {
+          startNewLine();
+        }
+        if (breakWords) {
+          const wordGroupTokens = getWordGroupTokens(i9);
+          for (let g4 = 0; g4 < wordGroupTokens.length; g4++) {
+            const groupToken = wordGroupTokens[g4].token;
+            const groupStyle = wordGroupTokens[g4].style;
+            const charGroups = getCharacterGroups(
+              groupToken,
+              breakWords,
+              wordWrapSplitFn,
+              canBreakCharsFn
+            );
+            for (const char of charGroups) {
+              const charWidth = measureTokenWidth(char, groupStyle);
+              if (charWidth + currentWidth > adjustedWrapWidth) {
+                startNewLine();
+              }
+              if (!buildingRun || buildingRun.style !== groupStyle) {
+                flushBuildingRun();
+                buildingRun = { text: char, style: groupStyle };
+              } else {
+                buildingRun.text += char;
+              }
+              currentWidth += charWidth;
+            }
+          }
+          i9 += wordGroupTokens.length - 1;
+        } else {
+          const wordGroupTokens = getWordGroupTokens(i9);
+          flushBuildingRun();
+          result.push(wordGroupTokens.map((t8) => ({ text: t8.token, style: t8.style })));
+          canPrependSpaces = false;
+          i9 += wordGroupTokens.length - 1;
+        }
+      } else if (wordGroupWidth + currentWidth > adjustedWrapWidth && startsWordGroup) {
+        if (isBreakingSpace(token)) {
+          canPrependSpaces = false;
+          continue;
+        }
+        startNewLine();
+        buildingRun = { text: token, style: tokenStyle };
+        currentWidth = tokenWidth;
+      } else if (continuesFromPrevious && !breakWords) {
+        if (!buildingRun || buildingRun.style !== tokenStyle) {
+          flushBuildingRun();
+          buildingRun = { text: token, style: tokenStyle };
+        } else {
+          buildingRun.text += token;
+        }
+        currentWidth += tokenWidth;
+      } else {
+        const isSpace = isBreakingSpace(token);
+        if (currentWidth === 0 && isSpace && !canPrependSpaces) {
+          continue;
+        }
+        if (!buildingRun || buildingRun.style !== tokenStyle) {
+          flushBuildingRun();
+          buildingRun = { text: token, style: tokenStyle };
+        } else {
+          buildingRun.text += token;
+        }
+        currentWidth += tokenWidth;
+      }
+    }
+    flushBuildingRun();
+    if (currentLineRuns.length > 0) {
+      const lastRun = currentLineRuns[currentLineRuns.length - 1];
+      lastRun.text = trimRight(lastRun.text);
+      if (lastRun.text.length === 0) {
+        currentLineRuns.pop();
+      }
+    }
+    if (currentLineRuns.length > 0 || result.length === resultStartLength) {
+      result.push(currentLineRuns);
+    }
+  }
+  return result;
+}
+function tokenizeTaggedRuns(runs) {
+  const styledTokens = [];
+  let lastTokenWasWord = false;
+  for (const run of runs) {
+    const tokens = tokenize(run.text);
+    let isFirstTokenInRun = true;
+    for (const token of tokens) {
+      const isSpace = isBreakingSpace(token) || isNewline(token);
+      const continuesFromPrevious = isFirstTokenInRun && lastTokenWasWord && !isSpace;
+      styledTokens.push({ token, style: run.style, continuesFromPrevious });
+      lastTokenWasWord = !isSpace;
+      isFirstTokenInRun = false;
+    }
+  }
+  return styledTokens;
+}
+var NEWLINE_TO_SPACE_REGEX;
+var init_measureTaggedText = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/utils/measureTaggedText.mjs"() {
+    init_parseTaggedText();
+    init_textTokenization();
+    NEWLINE_TO_SPACE_REGEX = /\r\n|\r|\n/g;
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/utils/wordWrap.mjs
+function getFromCache(key, letterSpacing, cache4, context2, measureTextFn) {
+  let width = cache4[key];
+  if (typeof width !== "number") {
+    width = measureTextFn(key, letterSpacing, context2) + letterSpacing;
+    cache4[key] = width;
+  }
+  return width;
+}
+function wordWrap(text, style, canvas, measureTextFn, canBreakWordsFn, canBreakCharsFn, wordWrapSplitFn) {
+  const context2 = canvas.getContext("2d", contextSettings);
+  context2.font = style._fontString;
+  let width = 0;
+  let line = "";
+  const linesArray = [];
+  const cache4 = /* @__PURE__ */ Object.create(null);
+  const { letterSpacing, whiteSpace } = style;
+  const shouldCollapseSpaces = collapseSpaces(whiteSpace);
+  const shouldCollapseNewlines = collapseNewlines(whiteSpace);
+  let canPrependSpaces = !shouldCollapseSpaces;
+  const wordWrapWidth = style.wordWrapWidth + letterSpacing;
+  const tokens = tokenize(text);
+  for (let i9 = 0; i9 < tokens.length; i9++) {
+    let token = tokens[i9];
+    if (isNewline(token)) {
+      if (!shouldCollapseNewlines) {
+        linesArray.push(trimRight(line));
+        canPrependSpaces = !shouldCollapseSpaces;
+        line = "";
+        width = 0;
+        continue;
+      }
+      token = " ";
+    }
+    if (shouldCollapseSpaces) {
+      const currIsBreakingSpace = isBreakingSpace(token);
+      const lastIsBreakingSpace = isBreakingSpace(line[line.length - 1]);
+      if (currIsBreakingSpace && lastIsBreakingSpace) {
+        continue;
+      }
+    }
+    const tokenWidth = getFromCache(token, letterSpacing, cache4, context2, measureTextFn);
+    if (tokenWidth > wordWrapWidth) {
+      if (line !== "") {
+        linesArray.push(trimRight(line));
+        line = "";
+        width = 0;
+      }
+      if (canBreakWordsFn(token, style.breakWords)) {
+        const charGroups = getCharacterGroups(token, style.breakWords, wordWrapSplitFn, canBreakCharsFn);
+        for (const char of charGroups) {
+          const characterWidth = getFromCache(char, letterSpacing, cache4, context2, measureTextFn);
+          if (characterWidth + width > wordWrapWidth) {
+            linesArray.push(trimRight(line));
+            canPrependSpaces = false;
+            line = "";
+            width = 0;
+          }
+          line += char;
+          width += characterWidth;
+        }
+      } else {
+        if (line.length > 0) {
+          linesArray.push(trimRight(line));
+          line = "";
+          width = 0;
+        }
+        linesArray.push(trimRight(token));
+        canPrependSpaces = false;
+        line = "";
+        width = 0;
+      }
+    } else {
+      if (tokenWidth + width > wordWrapWidth) {
+        canPrependSpaces = false;
+        linesArray.push(trimRight(line));
+        line = "";
+        width = 0;
+      }
+      if (line.length > 0 || !isBreakingSpace(token) || canPrependSpaces) {
+        line += token;
+        width += tokenWidth;
+      }
+    }
+  }
+  const trimmedLine = trimRight(line);
+  if (trimmedLine.length > 0) {
+    linesArray.push(trimmedLine);
+  }
+  return linesArray.join("\n");
+}
+var contextSettings;
+var init_wordWrap = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/utils/wordWrap.mjs"() {
+    init_textTokenization();
+    contextSettings = {
+      // TextMetrics requires getImageData readback for measuring fonts.
+      willReadFrequently: true
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/CanvasTextMetrics.mjs
+var contextSettings2, _CanvasTextMetrics, CanvasTextMetrics;
+var init_CanvasTextMetrics = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/CanvasTextMetrics.mjs"() {
+    init_tiny_lru();
+    init_adapter();
+    init_measureTaggedText();
+    init_parseTaggedText();
+    init_textTokenization();
+    init_wordWrap();
+    contextSettings2 = {
+      // TextMetrics requires getImageData readback for measuring fonts.
+      willReadFrequently: true
+    };
+    _CanvasTextMetrics = class _CanvasTextMetrics2 {
+      /**
+       * Checking that we can use modern canvas 2D API.
+       *
+       * Note: This is an unstable API, Chrome < 94 use `textLetterSpacing`, later versions use `letterSpacing`.
+       * @see CanvasTextMetrics.experimentalLetterSpacing
+       * @see https://developer.mozilla.org/en-US/docs/Web/API/ICanvasRenderingContext2D/letterSpacing
+       * @see https://developer.chrome.com/origintrials/#/view_trial/3585991203293757441
+       */
+      static get experimentalLetterSpacingSupported() {
+        let result = _CanvasTextMetrics2._experimentalLetterSpacingSupported;
+        if (result === void 0) {
+          const proto = DOMAdapter.get().getCanvasRenderingContext2D().prototype;
+          result = _CanvasTextMetrics2._experimentalLetterSpacingSupported = "letterSpacing" in proto || "textLetterSpacing" in proto;
+        }
+        return result;
+      }
+      /**
+       * @param text - the text that was measured
+       * @param style - the style that was measured
+       * @param width - the measured width of the text
+       * @param height - the measured height of the text
+       * @param lines - an array of the lines of text broken by new lines and wrapping if specified in style
+       * @param lineWidths - an array of the line widths for each line matched to `lines`
+       * @param lineHeight - the measured line height for this style
+       * @param maxLineWidth - the maximum line width for all measured lines
+       * @param fontProperties - the font properties object from TextMetrics.measureFont
+       * @param taggedData - optional object containing tagged text specific data
+       * @param taggedData.runsByLine - per-line style runs for tagged text
+       * @param taggedData.lineAscents - per-line ascent values for tagged text
+       * @param taggedData.lineDescents - per-line descent values for tagged text
+       * @param taggedData.lineHeights - per-line height values for tagged text
+       * @param taggedData.hasDropShadow - whether any run has a drop shadow
+       */
+      constructor(text, style, width, height, lines, lineWidths, lineHeight, maxLineWidth, fontProperties, taggedData) {
+        this.text = text;
+        this.style = style;
+        this.width = width;
+        this.height = height;
+        this.lines = lines;
+        this.lineWidths = lineWidths;
+        this.lineHeight = lineHeight;
+        this.maxLineWidth = maxLineWidth;
+        this.fontProperties = fontProperties;
+        if (taggedData) {
+          this.runsByLine = taggedData.runsByLine;
+          this.lineAscents = taggedData.lineAscents;
+          this.lineDescents = taggedData.lineDescents;
+          this.lineHeights = taggedData.lineHeights;
+          this.hasDropShadow = taggedData.hasDropShadow;
+        }
+      }
+      /**
+       * Measures the supplied string of text and returns a Rectangle.
+       * @param text - The text to measure.
+       * @param style - The text style to use for measuring
+       * @param canvas - optional specification of the canvas to use for measuring.
+       * @param wordWrap
+       * @returns Measured width and height of the text.
+       */
+      static measureText(text = " ", style, canvas = _CanvasTextMetrics2._canvas, wordWrap2 = style.wordWrap) {
+        const textKey = `${text}-${style.styleKey}-wordWrap-${wordWrap2}`;
+        if (_CanvasTextMetrics2._measurementCache.has(textKey)) {
+          return _CanvasTextMetrics2._measurementCache.get(textKey);
+        }
+        const isTagged = hasTagStyles(style) && hasTagMarkup(text);
+        if (isTagged) {
+          const result = measureTaggedText(
+            text,
+            style,
+            wordWrap2,
+            _CanvasTextMetrics2._context,
+            _CanvasTextMetrics2._measureText,
+            _CanvasTextMetrics2._measureTextAdvance,
+            _CanvasTextMetrics2.measureFont,
+            _CanvasTextMetrics2.canBreakChars,
+            _CanvasTextMetrics2.wordWrapSplit
+          );
+          const measurements2 = new _CanvasTextMetrics2(
+            text,
+            style,
+            result.width,
+            result.height,
+            result.lines,
+            result.lineWidths,
+            result.lineHeight,
+            result.maxLineWidth,
+            result.fontProperties,
+            {
+              runsByLine: result.runsByLine,
+              lineAscents: result.lineAscents,
+              lineDescents: result.lineDescents,
+              lineHeights: result.lineHeights,
+              hasDropShadow: result.hasDropShadow
+            }
+          );
+          _CanvasTextMetrics2._measurementCache.set(textKey, measurements2);
+          return measurements2;
+        }
+        const font = style._fontString;
+        const fontProperties = _CanvasTextMetrics2.measureFont(font);
+        if (fontProperties.fontSize === 0) {
+          fontProperties.fontSize = style.fontSize;
+          fontProperties.ascent = style.fontSize;
+          fontProperties.descent = 0;
+        }
+        const context2 = _CanvasTextMetrics2._context;
+        context2.font = font;
+        const outputText = wordWrap2 ? _CanvasTextMetrics2._wordWrap(text, style, canvas) : text;
+        const lines = outputText.split(NEWLINE_MATCH_REGEX);
+        const lineWidths = new Array(lines.length);
+        let maxLineWidth = 0;
+        for (let i9 = 0; i9 < lines.length; i9++) {
+          const lineWidth = _CanvasTextMetrics2._measureText(lines[i9], style.letterSpacing, context2);
+          lineWidths[i9] = lineWidth;
+          maxLineWidth = Math.max(maxLineWidth, lineWidth);
+        }
+        const strokeWidth = style._stroke?.width ?? 0;
+        const lineHeight = style.lineHeight || fontProperties.fontSize;
+        const width = _CanvasTextMetrics2._adjustWidthForStyle(maxLineWidth, style);
+        const baseHeight = Math.max(lineHeight, fontProperties.fontSize + strokeWidth) + (lines.length - 1) * (lineHeight + style.leading);
+        const height = _CanvasTextMetrics2._adjustHeightForStyle(baseHeight, style);
+        const measurements = new _CanvasTextMetrics2(
+          text,
+          style,
+          width,
+          height,
+          lines,
+          lineWidths,
+          lineHeight + style.leading,
+          maxLineWidth,
+          fontProperties
+        );
+        _CanvasTextMetrics2._measurementCache.set(textKey, measurements);
+        return measurements;
+      }
+      /**
+       * Adjusts the measured width to account for stroke and drop shadow.
+       * @param baseWidth - The base content width
+       * @param style - The text style
+       * @returns The adjusted width
+       */
+      static _adjustWidthForStyle(baseWidth, style) {
+        const strokeWidth = style._stroke?.width || 0;
+        let width = baseWidth + strokeWidth;
+        if (style.dropShadow) {
+          width += style.dropShadow.distance;
+        }
+        return width;
+      }
+      /**
+       * Adjusts the measured height to account for drop shadow.
+       * @param baseHeight - The base content height
+       * @param style - The text style
+       * @returns The adjusted height
+       */
+      static _adjustHeightForStyle(baseHeight, style) {
+        let height = baseHeight;
+        if (style.dropShadow) {
+          height += style.dropShadow.distance;
+        }
+        return height;
+      }
+      /**
+       * Measures the rendered width of a string, accounting for letter spacing and using the provided context.
+       * Returns the larger of the advance width and the bounding box width.
+       * @param text - The text to measure
+       * @param letterSpacing - Letter spacing in pixels
+       * @param context - Canvas 2D context
+       * @returns The measured width of the text with spacing
+       * @internal
+       */
+      static _measureText(text, letterSpacing, context2) {
+        const { metricWidth, metrics, letterSpacingVal } = _CanvasTextMetrics2._measureTextCore(text, letterSpacing, context2);
+        const actualBoundingBoxLeft = -(metrics.actualBoundingBoxLeft ?? 0);
+        const actualBoundingBoxRight = metrics.actualBoundingBoxRight ?? 0;
+        let boundsWidth = actualBoundingBoxRight - actualBoundingBoxLeft;
+        if (metrics.width > 0) {
+          boundsWidth += letterSpacingVal;
+        }
+        return Math.max(metricWidth, boundsWidth);
+      }
+      /**
+       * Measures advance width only (no bounding box). Advance widths are additive,
+       * making this suitable for word wrap line-fitting where per-token widths must sum correctly.
+       * @param text - The text to measure
+       * @param letterSpacing - Letter spacing in pixels
+       * @param context - Canvas 2D context
+       * @returns The advance width of the text
+       * @internal
+       */
+      static _measureTextAdvance(text, letterSpacing, context2) {
+        return _CanvasTextMetrics2._measureTextCore(text, letterSpacing, context2).metricWidth;
+      }
+      /**
+       * Shared measurement core: sets up letter spacing on the context, calls
+       * context.measureText, and adjusts the advance width for letter spacing.
+       * @param text
+       * @param letterSpacing
+       * @param context
+       * @internal
+       */
+      static _measureTextCore(text, letterSpacing, context2) {
+        let useExperimentalLetterSpacing = false;
+        if (_CanvasTextMetrics2.experimentalLetterSpacingSupported) {
+          if (_CanvasTextMetrics2.experimentalLetterSpacing) {
+            context2.letterSpacing = `${letterSpacing}px`;
+            context2.textLetterSpacing = `${letterSpacing}px`;
+            useExperimentalLetterSpacing = true;
+          } else {
+            context2.letterSpacing = "0px";
+            context2.textLetterSpacing = "0px";
+          }
+        }
+        const metrics = context2.measureText(text);
+        let metricWidth = metrics.width;
+        let letterSpacingVal = 0;
+        if (metricWidth > 0) {
+          if (useExperimentalLetterSpacing) {
+            letterSpacingVal = -letterSpacing;
+          } else {
+            letterSpacingVal = (_CanvasTextMetrics2.graphemeSegmenter(text).length - 1) * letterSpacing;
+          }
+          metricWidth += letterSpacingVal;
+        }
+        return { metricWidth, metrics, letterSpacingVal };
+      }
+      /**
+       * Applies newlines to a string to have it optimally fit into the horizontal
+       * bounds set by the Text object's wordWrapWidth property.
+       * @param text - String to apply word wrapping to
+       * @param style - the style to use when wrapping
+       * @param canvas - optional specification of the canvas to use for measuring.
+       * @returns New string with new lines applied where required
+       */
+      static _wordWrap(text, style, canvas = _CanvasTextMetrics2._canvas) {
+        return wordWrap(
+          text,
+          style,
+          canvas,
+          _CanvasTextMetrics2._measureTextAdvance,
+          _CanvasTextMetrics2.canBreakWords,
+          _CanvasTextMetrics2.canBreakChars,
+          _CanvasTextMetrics2.wordWrapSplit
+        );
+      }
+      /**
+       * Determines if char is a breaking whitespace.
+       *
+       * It allows one to determine whether char should be a breaking whitespace
+       * For example certain characters in CJK langs or numbers.
+       * It must return a boolean.
+       * @param char - The character
+       * @param [_nextChar] - The next character
+       * @returns True if whitespace, False otherwise.
+       */
+      static isBreakingSpace(char, _nextChar) {
+        return isBreakingSpace(char, _nextChar);
+      }
+      /**
+       * Overridable helper method used internally by TextMetrics, exposed to allow customizing the class's behavior.
+       *
+       * It allows one to customise which words should break
+       * Examples are if the token is CJK or numbers.
+       * It must return a boolean.
+       * @param _token - The token
+       * @param breakWords - The style attr break words
+       * @returns Whether to break word or not
+       */
+      static canBreakWords(_token, breakWords) {
+        return breakWords;
+      }
+      /**
+       * Overridable helper method used internally by TextMetrics, exposed to allow customizing the class's behavior.
+       *
+       * It allows one to determine whether a pair of characters
+       * should be broken by newlines
+       * For example certain characters in CJK langs or numbers.
+       * It must return a boolean.
+       * @param _char - The character
+       * @param _nextChar - The next character
+       * @param _token - The token/word the characters are from
+       * @param _index - The index in the token of the char
+       * @param _breakWords - The style attr break words
+       * @returns whether to break word or not
+       */
+      static canBreakChars(_char, _nextChar, _token, _index, _breakWords) {
+        return true;
+      }
+      /**
+       * Overridable helper method used internally by TextMetrics, exposed to allow customizing the class's behavior.
+       *
+       * It is called when a token (usually a word) has to be split into separate pieces
+       * in order to determine the point to break a word.
+       * It must return an array of characters.
+       * @param token - The token to split
+       * @returns The characters of the token
+       * @see CanvasTextMetrics.graphemeSegmenter
+       */
+      static wordWrapSplit(token) {
+        return _CanvasTextMetrics2.graphemeSegmenter(token);
+      }
+      /**
+       * Calculates the ascent, descent and fontSize of a given font-style
+       * @param font - String representing the style of the font
+       * @returns Font properties object
+       */
+      static measureFont(font) {
+        if (_CanvasTextMetrics2._fonts[font]) {
+          return _CanvasTextMetrics2._fonts[font];
+        }
+        const context2 = _CanvasTextMetrics2._context;
+        context2.font = font;
+        const metrics = context2.measureText(_CanvasTextMetrics2.METRICS_STRING + _CanvasTextMetrics2.BASELINE_SYMBOL);
+        const ascent = metrics.actualBoundingBoxAscent ?? 0;
+        const descent = metrics.actualBoundingBoxDescent ?? 0;
+        const properties = {
+          ascent,
+          descent,
+          fontSize: ascent + descent
+        };
+        _CanvasTextMetrics2._fonts[font] = properties;
+        return properties;
+      }
+      /**
+       * Clear font metrics in metrics cache.
+       * @param {string} [font] - font name. If font name not set then clear cache for all fonts.
+       */
+      static clearMetrics(font = "") {
+        if (font) {
+          delete _CanvasTextMetrics2._fonts[font];
+        } else {
+          _CanvasTextMetrics2._fonts = {};
+        }
+      }
+      /**
+       * Cached canvas element for measuring text
+       * TODO: this should be private, but isn't because of backward compat, will fix later.
+       * @ignore
+       */
+      static get _canvas() {
+        if (!_CanvasTextMetrics2.__canvas) {
+          let canvas;
+          try {
+            const c9 = new OffscreenCanvas(0, 0);
+            const context2 = c9.getContext("2d", contextSettings2);
+            if (context2?.measureText) {
+              _CanvasTextMetrics2.__canvas = c9;
+              return c9;
+            }
+            canvas = DOMAdapter.get().createCanvas();
+          } catch (_cx) {
+            canvas = DOMAdapter.get().createCanvas();
+          }
+          canvas.width = canvas.height = 10;
+          _CanvasTextMetrics2.__canvas = canvas;
+        }
+        return _CanvasTextMetrics2.__canvas;
+      }
+      /**
+       * TODO: this should be private, but isn't because of backward compat, will fix later.
+       * @ignore
+       */
+      static get _context() {
+        if (!_CanvasTextMetrics2.__context) {
+          _CanvasTextMetrics2.__context = _CanvasTextMetrics2._canvas.getContext("2d", contextSettings2);
+        }
+        return _CanvasTextMetrics2.__context;
+      }
+    };
+    _CanvasTextMetrics.METRICS_STRING = "|\xC9q\xC5";
+    _CanvasTextMetrics.BASELINE_SYMBOL = "M";
+    _CanvasTextMetrics.BASELINE_MULTIPLIER = 1.4;
+    _CanvasTextMetrics.HEIGHT_MULTIPLIER = 2;
+    _CanvasTextMetrics.graphemeSegmenter = (() => {
+      if (typeof Intl?.Segmenter === "function") {
+        const segmenter = new Intl.Segmenter();
+        return (s4) => {
+          const segments = segmenter.segment(s4);
+          const result = [];
+          let i9 = 0;
+          for (const segment2 of segments) {
+            result[i9++] = segment2.segment;
+          }
+          return result;
+        };
+      }
+      return (s4) => [...s4];
+    })();
+    _CanvasTextMetrics.experimentalLetterSpacing = false;
+    _CanvasTextMetrics._fonts = {};
+    _CanvasTextMetrics._measurementCache = lru(1e3);
+    CanvasTextMetrics = _CanvasTextMetrics;
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/utils/fontStringFromTextStyle.mjs
+function fontStringFromTextStyle(style) {
+  const fontSizeString = typeof style.fontSize === "number" ? `${style.fontSize}px` : style.fontSize;
+  let fontFamilies = style.fontFamily;
+  if (!Array.isArray(style.fontFamily)) {
+    fontFamilies = style.fontFamily.split(",");
+  }
+  for (let i9 = fontFamilies.length - 1; i9 >= 0; i9--) {
+    let fontFamily = fontFamilies[i9].trim();
+    if (!/([\"\'])[^\'\"]+\1/.test(fontFamily) && !genericFontFamilies.includes(fontFamily)) {
+      fontFamily = `"${fontFamily}"`;
+    }
+    fontFamilies[i9] = fontFamily;
+  }
+  return `${style.fontStyle} ${style.fontVariant} ${style.fontWeight} ${fontSizeString} ${fontFamilies.join(",")}`;
+}
+var genericFontFamilies;
+var init_fontStringFromTextStyle = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/utils/fontStringFromTextStyle.mjs"() {
+    "use strict";
+    genericFontFamilies = [
+      "serif",
+      "sans-serif",
+      "monospace",
+      "cursive",
+      "fantasy",
+      "system-ui"
+    ];
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/utils/getCanvasFillStyle.mjs
+function getCanvasFillStyle(fillStyle, context2, textMetrics, padding = 0, offsetX = 0, offsetY = 0) {
+  if (fillStyle.texture === Texture.WHITE && !fillStyle.fill) {
+    return Color.shared.setValue(fillStyle.color).setAlpha(fillStyle.alpha ?? 1).toHexa();
+  } else if (!fillStyle.fill) {
+    const pattern = context2.createPattern(fillStyle.texture.source.resource, "repeat");
+    const tempMatrix8 = fillStyle.matrix.copyTo(Matrix.shared);
+    tempMatrix8.scale(fillStyle.texture.source.pixelWidth, fillStyle.texture.source.pixelHeight);
+    pattern.setTransform(tempMatrix8);
+    return pattern;
+  } else if (fillStyle.fill instanceof FillPattern) {
+    const fillPattern = fillStyle.fill;
+    const pattern = context2.createPattern(fillPattern.texture.source.resource, "repeat");
+    canvasUtils.applyPatternTransform(pattern, fillPattern.transform, false);
+    return pattern;
+  } else if (fillStyle.fill instanceof FillGradient) {
+    const fillGradient = fillStyle.fill;
+    const isLinear = fillGradient.type === "linear";
+    const isLocal = fillGradient.textureSpace === "local";
+    let width = 1;
+    let height = 1;
+    if (isLocal && textMetrics) {
+      width = textMetrics.width + padding;
+      height = textMetrics.height + padding;
+    }
+    let gradient;
+    let isNearlyVertical = false;
+    if (isLinear) {
+      const { start, end } = fillGradient;
+      gradient = context2.createLinearGradient(
+        start.x * width + offsetX,
+        start.y * height + offsetY,
+        end.x * width + offsetX,
+        end.y * height + offsetY
+      );
+      isNearlyVertical = Math.abs(end.x - start.x) < Math.abs((end.y - start.y) * 0.1);
+    } else {
+      const { center, innerRadius, outerCenter, outerRadius } = fillGradient;
+      gradient = context2.createRadialGradient(
+        center.x * width + offsetX,
+        center.y * height + offsetY,
+        innerRadius * width,
+        outerCenter.x * width + offsetX,
+        outerCenter.y * height + offsetY,
+        outerRadius * width
+      );
+    }
+    if (isNearlyVertical && isLocal && textMetrics) {
+      const ratio = textMetrics.lineHeight / height;
+      for (let i9 = 0; i9 < textMetrics.lines.length; i9++) {
+        const start = (i9 * textMetrics.lineHeight + padding / 2) / height;
+        fillGradient.colorStops.forEach((stop) => {
+          let globalStop = start + stop.offset * ratio;
+          globalStop = Math.max(0, Math.min(1, globalStop));
+          gradient.addColorStop(
+            // fix to 5 decimal places to avoid floating point precision issues
+            Math.floor(globalStop * PRECISION) / PRECISION,
+            Color.shared.setValue(stop.color).toHex()
+          );
+        });
+      }
+    } else {
+      fillGradient.colorStops.forEach((stop) => {
+        gradient.addColorStop(stop.offset, Color.shared.setValue(stop.color).toHex());
+      });
+    }
+    return gradient;
+  }
+  warn("FillStyle not recognised", fillStyle);
+  return "red";
+}
+var PRECISION;
+var init_getCanvasFillStyle = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/utils/getCanvasFillStyle.mjs"() {
+    init_Color();
+    init_Matrix();
+    init_canvasUtils();
+    init_Texture();
+    init_warn();
+    init_FillGradient();
+    init_FillPattern();
+    PRECISION = 1e5;
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/CanvasTextGenerator.mjs
+function countSpaces(text) {
+  let count2 = 0;
+  for (let i9 = 0; i9 < text.length; i9++) {
+    if (text.charCodeAt(i9) === 32) count2++;
+  }
+  return count2;
+}
+var tempRect6, CanvasTextGeneratorClass, CanvasTextGenerator;
+var init_CanvasTextGenerator = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/CanvasTextGenerator.mjs"() {
+    init_Color();
+    init_Rectangle();
+    init_CanvasPool();
+    init_getCanvasBoundingBox();
+    init_CanvasTextMetrics();
+    init_fontStringFromTextStyle();
+    init_getCanvasFillStyle();
+    tempRect6 = new Rectangle();
+    CanvasTextGeneratorClass = class {
+      /**
+       * Creates a canvas with the specified text rendered to it.
+       *
+       * Generates a canvas of appropriate size, renders the text with the provided style,
+       * and returns both the canvas/context and a Rectangle representing the text bounds.
+       *
+       * When trim is enabled in the style, the frame will represent the bounds of the
+       * non-transparent pixels, which can be smaller than the full canvas.
+       * @param options - The options for generating the text canvas
+       * @param options.text - The text to render
+       * @param options.style - The style to apply to the text
+       * @param options.resolution - The resolution of the canvas (defaults to 1)
+       * @param options.padding
+       * @returns An object containing the canvas/context and the frame (bounds) of the text
+       */
+      getCanvasAndContext(options) {
+        const { text, style, resolution = 1 } = options;
+        const padding = style._getFinalPadding();
+        const measured = CanvasTextMetrics.measureText(text || " ", style);
+        const width = Math.ceil(Math.ceil(Math.max(1, measured.width) + padding * 2) * resolution);
+        const height = Math.ceil(Math.ceil(Math.max(1, measured.height) + padding * 2) * resolution);
+        const canvasAndContext = CanvasPool.getOptimalCanvasAndContext(width, height);
+        this._renderTextToCanvas(style, padding, resolution, canvasAndContext, measured);
+        const frame = style.trim ? getCanvasBoundingBox({ canvas: canvasAndContext.canvas, width, height, resolution: 1, output: tempRect6 }) : tempRect6.set(0, 0, width, height);
+        return {
+          canvasAndContext,
+          frame
+        };
+      }
+      /**
+       * Returns a canvas and context to the pool.
+       *
+       * This should be called when you're done with the canvas to allow reuse
+       * and prevent memory leaks.
+       * @param canvasAndContext - The canvas and context to return to the pool
+       */
+      returnCanvasAndContext(canvasAndContext) {
+        CanvasPool.returnCanvasAndContext(canvasAndContext);
+      }
+      /**
+       * Renders text to its canvas, and updates its texture.
+       * @param style - The style of the text
+       * @param padding - The padding of the text
+       * @param resolution - The resolution of the text
+       * @param canvasAndContext - The canvas and context to render the text to
+       * @param measured - Pre-measured text metrics to avoid duplicate measurement
+       */
+      _renderTextToCanvas(style, padding, resolution, canvasAndContext, measured) {
+        if (measured.runsByLine && measured.runsByLine.length > 0) {
+          this._renderTaggedTextToCanvas(measured, style, padding, resolution, canvasAndContext);
+          return;
+        }
+        const { canvas, context: context2 } = canvasAndContext;
+        const font = fontStringFromTextStyle(style);
+        const lines = measured.lines;
+        const lineHeight = measured.lineHeight;
+        const lineWidths = measured.lineWidths;
+        const maxLineWidth = measured.maxLineWidth;
+        const fontProperties = measured.fontProperties;
+        const height = canvas.height;
+        context2.resetTransform();
+        context2.scale(resolution, resolution);
+        context2.textBaseline = style.textBaseline;
+        if (style._stroke?.width) {
+          const strokeStyle = style._stroke;
+          context2.lineWidth = strokeStyle.width;
+          context2.miterLimit = strokeStyle.miterLimit;
+          context2.lineJoin = strokeStyle.join;
+          context2.lineCap = strokeStyle.cap;
+        }
+        context2.font = font;
+        let linePositionX;
+        let linePositionY;
+        const passesCount = style.dropShadow ? 2 : 1;
+        const strokeWidth = style._stroke?.width ?? 0;
+        const halfStroke = strokeWidth / 2;
+        let linePositionYShift = (lineHeight - fontProperties.fontSize) / 2;
+        if (lineHeight - fontProperties.fontSize < 0) {
+          linePositionYShift = 0;
+        }
+        for (let i9 = 0; i9 < passesCount; ++i9) {
+          const isShadowPass = style.dropShadow && i9 === 0;
+          const dsOffsetText = isShadowPass ? Math.ceil(Math.max(1, height, height / resolution) + padding * 2) : 0;
+          const dsOffsetShadow = dsOffsetText * resolution;
+          if (isShadowPass) {
+            this._setupDropShadow(context2, style, resolution, dsOffsetShadow);
+          } else {
+            const gradientBounds = style._gradientBounds;
+            const gradientOffset = style._gradientOffset;
+            if (gradientBounds) {
+              const gradientMetrics = {
+                width: gradientBounds.width,
+                height: gradientBounds.height,
+                lineHeight: gradientBounds.height,
+                lines: measured.lines
+              };
+              this._setFillAndStrokeStyles(
+                context2,
+                style,
+                gradientMetrics,
+                padding,
+                halfStroke,
+                gradientOffset?.x ?? 0,
+                gradientOffset?.y ?? 0
+              );
+            } else if (gradientOffset) {
+              this._setFillAndStrokeStyles(
+                context2,
+                style,
+                measured,
+                padding,
+                halfStroke,
+                gradientOffset.x,
+                gradientOffset.y
+              );
+            } else {
+              this._setFillAndStrokeStyles(context2, style, measured, padding, halfStroke);
+            }
+            context2.shadowColor = "rgba(0,0,0,0)";
+          }
+          for (let j4 = 0; j4 < lines.length; j4++) {
+            linePositionX = halfStroke;
+            linePositionY = halfStroke + j4 * lineHeight + fontProperties.ascent + linePositionYShift;
+            linePositionX += this._getAlignmentOffset(lineWidths[j4], maxLineWidth, style.align);
+            let wordSpacing = 0;
+            if (style.align === "justify" && style.wordWrap && j4 < lines.length - 1) {
+              const spaces = countSpaces(lines[j4]);
+              if (spaces > 0) {
+                wordSpacing = (maxLineWidth - lineWidths[j4]) / spaces;
+              }
+            }
+            if (style._stroke?.width) {
+              this._drawLetterSpacing(
+                lines[j4],
+                style,
+                canvasAndContext,
+                linePositionX + padding,
+                linePositionY + padding - dsOffsetText,
+                true,
+                wordSpacing
+              );
+            }
+            if (style._fill !== void 0) {
+              this._drawLetterSpacing(
+                lines[j4],
+                style,
+                canvasAndContext,
+                linePositionX + padding,
+                linePositionY + padding - dsOffsetText,
+                false,
+                wordSpacing
+              );
+            }
+          }
+        }
+      }
+      /**
+       * Renders tagged text (with per-run styles) to canvas.
+       * @param measured - The measured text metrics containing runsByLine
+       * @param style - The base text style
+       * @param padding - The padding of the text
+       * @param resolution - The resolution of the text
+       * @param canvasAndContext - The canvas and context to render to
+       */
+      _renderTaggedTextToCanvas(measured, style, padding, resolution, canvasAndContext) {
+        const { canvas, context: context2 } = canvasAndContext;
+        const { runsByLine, lineWidths, maxLineWidth, lineAscents, lineHeights, hasDropShadow } = measured;
+        const height = canvas.height;
+        context2.resetTransform();
+        context2.scale(resolution, resolution);
+        context2.textBaseline = style.textBaseline;
+        const passesCount = hasDropShadow ? 2 : 1;
+        let maxStrokeWidth = style._stroke?.width ?? 0;
+        for (const lineRuns of runsByLine) {
+          for (const run of lineRuns) {
+            const w4 = run.style._stroke?.width ?? 0;
+            if (w4 > maxStrokeWidth) maxStrokeWidth = w4;
+          }
+        }
+        const halfStroke = maxStrokeWidth / 2;
+        const runDataByLine = [];
+        for (let lineIndex = 0; lineIndex < runsByLine.length; lineIndex++) {
+          const lineRuns = runsByLine[lineIndex];
+          const runData = [];
+          for (const run of lineRuns) {
+            const font = fontStringFromTextStyle(run.style);
+            context2.font = font;
+            runData.push({
+              width: CanvasTextMetrics._measureText(run.text, run.style.letterSpacing, context2),
+              font
+            });
+          }
+          runDataByLine.push(runData);
+        }
+        for (let pass = 0; pass < passesCount; ++pass) {
+          const isShadowPass = hasDropShadow && pass === 0;
+          const dsOffsetText = isShadowPass ? Math.ceil(Math.max(1, height, height / resolution) + padding * 2) : 0;
+          const dsOffsetShadow = dsOffsetText * resolution;
+          if (!isShadowPass) {
+            context2.shadowColor = "rgba(0,0,0,0)";
+          }
+          let currentY = halfStroke;
+          for (let lineIndex = 0; lineIndex < runsByLine.length; lineIndex++) {
+            const lineRuns = runsByLine[lineIndex];
+            const lineWidth = lineWidths[lineIndex];
+            const lineAscent = lineAscents[lineIndex];
+            const currentLineHeight = lineHeights[lineIndex];
+            const lineRunData = runDataByLine[lineIndex];
+            let linePositionX = halfStroke;
+            linePositionX += this._getAlignmentOffset(lineWidth, maxLineWidth, style.align);
+            let wordSpacing = 0;
+            if (style.align === "justify" && style.wordWrap && lineIndex < runsByLine.length - 1) {
+              let totalSpaces = 0;
+              for (const run of lineRuns) {
+                totalSpaces += countSpaces(run.text);
+              }
+              if (totalSpaces > 0) {
+                wordSpacing = (maxLineWidth - lineWidth) / totalSpaces;
+              }
+            }
+            const linePositionY = currentY + lineAscent;
+            let runX = linePositionX + padding;
+            for (let runIndex = 0; runIndex < lineRuns.length; runIndex++) {
+              const run = lineRuns[runIndex];
+              const { width: runWidth, font: runFont } = lineRunData[runIndex];
+              context2.font = runFont;
+              context2.textBaseline = run.style.textBaseline;
+              if (run.style._stroke?.width) {
+                const runStroke = run.style._stroke;
+                context2.lineWidth = runStroke.width;
+                context2.miterLimit = runStroke.miterLimit;
+                context2.lineJoin = runStroke.join;
+                context2.lineCap = runStroke.cap;
+                if (isShadowPass) {
+                  if (run.style.dropShadow) {
+                    this._setupDropShadow(
+                      context2,
+                      run.style,
+                      resolution,
+                      dsOffsetShadow
+                    );
+                  } else {
+                    const spacesSkipped = countSpaces(run.text);
+                    runX += runWidth + spacesSkipped * wordSpacing;
+                    continue;
+                  }
+                } else {
+                  const runFontProps = CanvasTextMetrics.measureFont(runFont);
+                  const runHeight = run.style.lineHeight || runFontProps.fontSize;
+                  const runMetrics = {
+                    width: runWidth,
+                    height: runHeight,
+                    lineHeight: runHeight,
+                    lines: [run.text]
+                  };
+                  context2.strokeStyle = getCanvasFillStyle(
+                    runStroke,
+                    context2,
+                    runMetrics,
+                    padding * 2,
+                    runX - padding,
+                    currentY
+                  );
+                }
+                this._drawLetterSpacing(
+                  run.text,
+                  run.style,
+                  canvasAndContext,
+                  runX,
+                  linePositionY + padding - dsOffsetText,
+                  true,
+                  wordSpacing
+                );
+              }
+              const spacesInRun = countSpaces(run.text);
+              runX += runWidth + spacesInRun * wordSpacing;
+            }
+            runX = linePositionX + padding;
+            for (let runIndex = 0; runIndex < lineRuns.length; runIndex++) {
+              const run = lineRuns[runIndex];
+              const { width: runWidth, font: runFont } = lineRunData[runIndex];
+              context2.font = runFont;
+              context2.textBaseline = run.style.textBaseline;
+              if (run.style._fill !== void 0) {
+                if (isShadowPass) {
+                  if (run.style.dropShadow) {
+                    this._setupDropShadow(
+                      context2,
+                      run.style,
+                      resolution,
+                      dsOffsetShadow
+                    );
+                  } else {
+                    const spacesSkipped = countSpaces(run.text);
+                    runX += runWidth + spacesSkipped * wordSpacing;
+                    continue;
+                  }
+                } else {
+                  const runFontProps = CanvasTextMetrics.measureFont(runFont);
+                  const runHeight = run.style.lineHeight || runFontProps.fontSize;
+                  const runMetrics = {
+                    width: runWidth,
+                    height: runHeight,
+                    lineHeight: runHeight,
+                    lines: [run.text]
+                  };
+                  context2.fillStyle = getCanvasFillStyle(
+                    run.style._fill,
+                    context2,
+                    runMetrics,
+                    padding * 2,
+                    runX - padding,
+                    currentY
+                  );
+                }
+                this._drawLetterSpacing(
+                  run.text,
+                  run.style,
+                  canvasAndContext,
+                  runX,
+                  linePositionY + padding - dsOffsetText,
+                  false,
+                  wordSpacing
+                );
+              }
+              const spacesInFillRun = countSpaces(run.text);
+              runX += runWidth + spacesInFillRun * wordSpacing;
+            }
+            currentY += currentLineHeight;
+          }
+        }
+      }
+      /**
+       * Sets fill and stroke styles on the canvas context for text rendering.
+       * @param context - The canvas context
+       * @param style - The text style
+       * @param metrics - The text metrics for gradient calculation
+       * @param padding - The padding value
+       * @param halfStroke - Half the stroke width
+       * @param offsetX - X offset for gradient positioning
+       * @param offsetY - Y offset for gradient positioning
+       */
+      _setFillAndStrokeStyles(context2, style, metrics, padding, halfStroke, offsetX = 0, offsetY = 0) {
+        context2.fillStyle = style._fill ? getCanvasFillStyle(style._fill, context2, metrics, padding * 2, offsetX, offsetY) : null;
+        if (style._stroke?.width) {
+          const strokePadding = halfStroke + padding * 2;
+          context2.strokeStyle = getCanvasFillStyle(
+            style._stroke,
+            context2,
+            metrics,
+            strokePadding,
+            offsetX,
+            offsetY
+          );
+        }
+      }
+      /**
+       * Sets up the canvas context for drop shadow rendering.
+       * @param context - The canvas context
+       * @param style - The text style containing drop shadow options
+       * @param resolution - The resolution multiplier
+       * @param dsOffsetShadow - The shadow Y offset
+       */
+      _setupDropShadow(context2, style, resolution, dsOffsetShadow) {
+        context2.fillStyle = "black";
+        context2.strokeStyle = "black";
+        const shadowOptions = style.dropShadow;
+        const dropShadowColor = shadowOptions.color;
+        const dropShadowAlpha = shadowOptions.alpha;
+        context2.shadowColor = Color.shared.setValue(dropShadowColor).setAlpha(dropShadowAlpha).toRgbaString();
+        const dropShadowBlur = shadowOptions.blur * resolution;
+        const dropShadowDistance = shadowOptions.distance * resolution;
+        context2.shadowBlur = dropShadowBlur;
+        context2.shadowOffsetX = Math.cos(shadowOptions.angle) * dropShadowDistance;
+        context2.shadowOffsetY = Math.sin(shadowOptions.angle) * dropShadowDistance + dsOffsetShadow;
+      }
+      /**
+       * Calculates the X offset for text alignment.
+       * @param lineWidth - The width of the current line
+       * @param alignWidth - The width to align against
+       * @param align - The text alignment
+       * @returns The X offset for this line
+       */
+      _getAlignmentOffset(lineWidth, alignWidth, align) {
+        if (align === "right") {
+          return alignWidth - lineWidth;
+        } else if (align === "center") {
+          return (alignWidth - lineWidth) / 2;
+        }
+        return 0;
+      }
+      /**
+       * Render the text with letter-spacing.
+       *
+       * This method handles rendering text with the correct letter spacing, using either:
+       * 1. Native letter spacing if supported by the browser
+       * 2. Manual letter spacing calculation if not natively supported
+       *
+       * For manual letter spacing, it calculates the position of each character
+       * based on its width and the desired spacing.
+       * @param text - The text to draw
+       * @param style - The text style to apply
+       * @param canvasAndContext - The canvas and context to draw to
+       * @param x - Horizontal position to draw the text
+       * @param y - Vertical position to draw the text
+       * @param isStroke - Whether to render the stroke (true) or fill (false)
+       * @param wordSpacing - Extra spacing to add between words (for justify alignment)
+       * @private
+       */
+      _drawLetterSpacing(text, style, canvasAndContext, x4, y5, isStroke = false, wordSpacing = 0) {
+        const { context: context2 } = canvasAndContext;
+        const letterSpacing = style.letterSpacing;
+        let useExperimentalLetterSpacing = false;
+        if (CanvasTextMetrics.experimentalLetterSpacingSupported) {
+          if (CanvasTextMetrics.experimentalLetterSpacing) {
+            context2.letterSpacing = `${letterSpacing}px`;
+            context2.textLetterSpacing = `${letterSpacing}px`;
+            useExperimentalLetterSpacing = true;
+          } else {
+            context2.letterSpacing = "0px";
+            context2.textLetterSpacing = "0px";
+          }
+        }
+        if ((letterSpacing === 0 || useExperimentalLetterSpacing) && wordSpacing === 0) {
+          if (isStroke) {
+            context2.strokeText(text, x4, y5);
+          } else {
+            context2.fillText(text, x4, y5);
+          }
+          return;
+        }
+        if (wordSpacing !== 0 && (letterSpacing === 0 || useExperimentalLetterSpacing)) {
+          const words = text.split(" ");
+          let currentPosition2 = x4;
+          const spaceWidth = context2.measureText(" ").width;
+          for (let i9 = 0; i9 < words.length; i9++) {
+            if (isStroke) {
+              context2.strokeText(words[i9], currentPosition2, y5);
+            } else {
+              context2.fillText(words[i9], currentPosition2, y5);
+            }
+            currentPosition2 += context2.measureText(words[i9]).width + spaceWidth + wordSpacing;
+          }
+          return;
+        }
+        let currentPosition = x4;
+        const stringArray = CanvasTextMetrics.graphemeSegmenter(text);
+        let previousWidth = context2.measureText(text).width;
+        let currentWidth = 0;
+        for (let i9 = 0; i9 < stringArray.length; ++i9) {
+          const currentChar = stringArray[i9];
+          if (isStroke) {
+            context2.strokeText(currentChar, currentPosition, y5);
+          } else {
+            context2.fillText(currentChar, currentPosition, y5);
+          }
+          let textStr = "";
+          for (let j4 = i9 + 1; j4 < stringArray.length; ++j4) {
+            textStr += stringArray[j4];
+          }
+          currentWidth = context2.measureText(textStr).width;
+          currentPosition += previousWidth - currentWidth + letterSpacing;
+          if (currentChar === " ") currentPosition += wordSpacing;
+          previousWidth = currentWidth;
+        }
+      }
+    };
+    CanvasTextGenerator = new CanvasTextGeneratorClass();
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/TextStyle.mjs
+function convertV7Tov8Style(style) {
+  const oldStyle = style;
+  if (typeof oldStyle.dropShadow === "boolean" && oldStyle.dropShadow) {
+    const defaults = TextStyle.defaultDropShadow;
+    style.dropShadow = {
+      alpha: oldStyle.dropShadowAlpha ?? defaults.alpha,
+      angle: oldStyle.dropShadowAngle ?? defaults.angle,
+      blur: oldStyle.dropShadowBlur ?? defaults.blur,
+      color: oldStyle.dropShadowColor ?? defaults.color,
+      distance: oldStyle.dropShadowDistance ?? defaults.distance
+    };
+  }
+  if (oldStyle.strokeThickness !== void 0) {
+    deprecation(v8_0_0, "strokeThickness is now a part of stroke");
+    const color = oldStyle.stroke;
+    let obj = {};
+    if (Color.isColorLike(color)) {
+      obj.color = color;
+    } else if (color instanceof FillGradient || color instanceof FillPattern) {
+      obj.fill = color;
+    } else if (Object.hasOwnProperty.call(color, "color") || Object.hasOwnProperty.call(color, "fill")) {
+      obj = color;
+    } else {
+      throw new Error("Invalid stroke value.");
+    }
+    style.stroke = {
+      ...obj,
+      width: oldStyle.strokeThickness
+    };
+  }
+  if (Array.isArray(oldStyle.fillGradientStops)) {
+    deprecation(v8_0_0, "gradient fill is now a fill pattern: `new FillGradient(...)`");
+    if (!Array.isArray(oldStyle.fill) || oldStyle.fill.length === 0) {
+      throw new Error("Invalid fill value. Expected an array of colors for gradient fill.");
+    }
+    if (oldStyle.fill.length !== oldStyle.fillGradientStops.length) {
+      warn("The number of fill colors must match the number of fill gradient stops.");
+    }
+    const gradientFill = new FillGradient({
+      start: { x: 0, y: 0 },
+      end: { x: 0, y: 1 },
+      textureSpace: "local"
+    });
+    const fillGradientStops = oldStyle.fillGradientStops.slice();
+    const fills = oldStyle.fill.map((color) => Color.shared.setValue(color).toNumber());
+    fillGradientStops.forEach((stop, index) => {
+      gradientFill.addColorStop(stop, fills[index]);
+    });
+    style.fill = {
+      fill: gradientFill
+    };
+  }
+}
+var _TextStyle, TextStyle;
+var init_TextStyle = __esm({
+  "node_modules/pixi.js/lib/scene/text/TextStyle.mjs"() {
+    init_eventemitter3();
+    init_Color();
+    init_uid();
+    init_deprecation();
+    init_warn();
+    init_FillGradient();
+    init_FillPattern();
+    init_GraphicsContext();
+    init_convertFillInputToFillStyle();
+    init_fontStringFromTextStyle();
+    _TextStyle = class _TextStyle2 extends eventemitter3_default {
+      constructor(style = {}) {
+        super();
+        this.uid = uid("textStyle");
+        this._tick = 0;
+        this._cachedFontString = null;
+        convertV7Tov8Style(style);
+        const isTextStyle = style instanceof _TextStyle2;
+        const existingStyle = style;
+        if (isTextStyle) {
+          style = existingStyle._toObject();
+        }
+        const fullStyle = { ..._TextStyle2.defaultTextStyle, ...style };
+        for (const key in fullStyle) {
+          const thisKey = key;
+          this[thisKey] = fullStyle[key];
+        }
+        this._tagStyles = style.tagStyles ?? void 0;
+        this.update();
+        this._tick = 0;
+      }
+      /**
+       * Alignment for multiline text, does not affect single line text.
+       * @type {'left'|'center'|'right'|'justify'}
+       */
+      get align() {
+        return this._align;
+      }
+      set align(value) {
+        if (this._align === value) return;
+        this._align = value;
+        this.update();
+      }
+      /** Indicates if lines can be wrapped within words, it needs wordWrap to be set to true. */
+      get breakWords() {
+        return this._breakWords;
+      }
+      set breakWords(value) {
+        if (this._breakWords === value) return;
+        this._breakWords = value;
+        this.update();
+      }
+      /** Set a drop shadow for the text. */
+      get dropShadow() {
+        return this._dropShadow;
+      }
+      set dropShadow(value) {
+        if (this._dropShadow === value) return;
+        if (value !== null && typeof value === "object") {
+          this._dropShadow = this._createProxy({ ..._TextStyle2.defaultDropShadow, ...value });
+        } else {
+          this._dropShadow = value ? this._createProxy({ ..._TextStyle2.defaultDropShadow }) : null;
+        }
+        this.update();
+      }
+      /** The font family, can be a single font name, or a list of names where the first is the preferred font. */
+      get fontFamily() {
+        return this._fontFamily;
+      }
+      set fontFamily(value) {
+        if (this._fontFamily === value) return;
+        this._fontFamily = value;
+        this.update();
+      }
+      /** The font size (as a number it converts to px, but as a string, equivalents are '26px','20pt','160%' or '1.6em') */
+      get fontSize() {
+        return this._fontSize;
+      }
+      set fontSize(value) {
+        if (this._fontSize === value) return;
+        if (typeof value === "string") {
+          this._fontSize = parseInt(value, 10);
+        } else {
+          this._fontSize = value;
+        }
+        this.update();
+      }
+      /**
+       * The font style.
+       * @type {'normal'|'italic'|'oblique'}
+       */
+      get fontStyle() {
+        return this._fontStyle;
+      }
+      set fontStyle(value) {
+        if (this._fontStyle === value) return;
+        this._fontStyle = value.toLowerCase();
+        this.update();
+      }
+      /**
+       * The font variant.
+       * @type {'normal'|'small-caps'}
+       */
+      get fontVariant() {
+        return this._fontVariant;
+      }
+      set fontVariant(value) {
+        if (this._fontVariant === value) return;
+        this._fontVariant = value;
+        this.update();
+      }
+      /**
+       * The font weight.
+       * @type {'normal'|'bold'|'bolder'|'lighter'|'100'|'200'|'300'|'400'|'500'|'600'|'700'|'800'|'900'}
+       */
+      get fontWeight() {
+        return this._fontWeight;
+      }
+      set fontWeight(value) {
+        if (this._fontWeight === value) return;
+        this._fontWeight = value;
+        this.update();
+      }
+      /** The space between lines. */
+      get leading() {
+        return this._leading;
+      }
+      set leading(value) {
+        if (this._leading === value) return;
+        this._leading = value;
+        this.update();
+      }
+      /** The amount of spacing between letters, default is 0. */
+      get letterSpacing() {
+        return this._letterSpacing;
+      }
+      set letterSpacing(value) {
+        if (this._letterSpacing === value) return;
+        this._letterSpacing = value;
+        this.update();
+      }
+      /** The line height, a number that represents the vertical space that a letter uses. */
+      get lineHeight() {
+        return this._lineHeight;
+      }
+      set lineHeight(value) {
+        if (this._lineHeight === value) return;
+        this._lineHeight = value;
+        this.update();
+      }
+      /**
+       * Occasionally some fonts are cropped. Adding some padding will prevent this from happening
+       * by adding padding to all sides of the text.
+       * > [!NOTE] This will NOT affect the positioning or bounds of the text.
+       */
+      get padding() {
+        return this._padding;
+      }
+      set padding(value) {
+        if (this._padding === value) return;
+        this._padding = value;
+        this.update();
+      }
+      /**
+       * An optional filter or array of filters to apply to the text, allowing for advanced visual effects.
+       * These filters will be applied to the text as it is created, resulting in faster rendering for static text
+       * compared to applying the filter directly to the text object (which would be applied at run time).
+       * @default null
+       */
+      get filters() {
+        return this._filters;
+      }
+      set filters(value) {
+        if (this._filters === value) return;
+        this._filters = Object.freeze(value);
+        this.update();
+      }
+      /**
+       * Trim transparent borders from the text texture.
+       * > [!IMPORTANT] PERFORMANCE WARNING:
+       * > This is a costly operation as it requires scanning pixel alpha values.
+       * > Avoid using `trim: true` for dynamic text, as it could significantly impact performance.
+       */
+      get trim() {
+        return this._trim;
+      }
+      set trim(value) {
+        if (this._trim === value) return;
+        this._trim = value;
+        this.update();
+      }
+      /**
+       * The baseline of the text that is rendered.
+       * @type {'alphabetic'|'top'|'hanging'|'middle'|'ideographic'|'bottom'}
+       */
+      get textBaseline() {
+        return this._textBaseline;
+      }
+      set textBaseline(value) {
+        if (this._textBaseline === value) return;
+        this._textBaseline = value;
+        this.update();
+      }
+      /**
+       * How newlines and spaces should be handled.
+       * Default is 'pre' (preserve, preserve).
+       *
+       *  value       | New lines     |   Spaces
+       *  ---         | ---           |   ---
+       * 'normal'     | Collapse      |   Collapse
+       * 'pre'        | Preserve      |   Preserve
+       * 'pre-line'   | Preserve      |   Collapse
+       * @type {'normal'|'pre'|'pre-line'}
+       */
+      get whiteSpace() {
+        return this._whiteSpace;
+      }
+      set whiteSpace(value) {
+        if (this._whiteSpace === value) return;
+        this._whiteSpace = value;
+        this.update();
+      }
+      /** Indicates if word wrap should be used. */
+      get wordWrap() {
+        return this._wordWrap;
+      }
+      set wordWrap(value) {
+        if (this._wordWrap === value) return;
+        this._wordWrap = value;
+        this.update();
+      }
+      /** The width at which text will wrap, it needs wordWrap to be set to true. */
+      get wordWrapWidth() {
+        return this._wordWrapWidth;
+      }
+      set wordWrapWidth(value) {
+        if (this._wordWrapWidth === value) return;
+        this._wordWrapWidth = value;
+        this.update();
+      }
+      /**
+       * The fill style that will be used to color the text.
+       * This can be:
+       * - A color string like 'red', '#00FF00', or 'rgba(255,0,0,0.5)'
+       * - A hex number like 0xff0000 for red
+       * - A FillStyle object with properties like { color: 0xff0000, alpha: 0.5 }
+       * - A FillGradient for gradient fills
+       * - A FillPattern for pattern/texture fills
+       *
+       * When using a FillGradient, vertical gradients (angle of 90 degrees) are applied per line of text,
+       * while gradients at any other angle are spread across the entire text body as a whole.
+       * @example
+       * // Vertical gradient applied per line
+       * const verticalGradient = new FillGradient(0, 0, 0, 1)
+       *     .addColorStop(0, 0xff0000)
+       *     .addColorStop(1, 0x0000ff);
+       *
+       * const text = new Text({
+       *     text: 'Line 1\nLine 2',
+       *     style: { fill: verticalGradient }
+       * });
+       *
+       * To manage the gradient in a global scope, set the textureSpace property of the FillGradient to 'global'.
+       * @type {string|number|FillStyle|FillGradient|FillPattern}
+       */
+      get fill() {
+        return this._originalFill;
+      }
+      set fill(value) {
+        if (value === this._originalFill) return;
+        this._originalFill = value;
+        if (this._isFillStyle(value)) {
+          this._originalFill = this._createProxy({ ...GraphicsContext.defaultFillStyle, ...value }, () => {
+            this._fill = toFillStyle(
+              { ...this._originalFill },
+              GraphicsContext.defaultFillStyle
+            );
+          });
+        }
+        this._fill = toFillStyle(
+          value === 0 ? "black" : value,
+          GraphicsContext.defaultFillStyle
+        );
+        this.update();
+      }
+      /** A fillstyle that will be used on the text stroke, e.g., 'blue', '#FCFF00'. */
+      get stroke() {
+        return this._originalStroke;
+      }
+      set stroke(value) {
+        if (value === this._originalStroke) return;
+        this._originalStroke = value;
+        if (this._isFillStyle(value)) {
+          this._originalStroke = this._createProxy({ ...GraphicsContext.defaultStrokeStyle, ...value }, () => {
+            this._stroke = toStrokeStyle(
+              { ...this._originalStroke },
+              GraphicsContext.defaultStrokeStyle
+            );
+          });
+        }
+        this._stroke = toStrokeStyle(value, GraphicsContext.defaultStrokeStyle);
+        this.update();
+      }
+      /**
+       * Custom styles to apply to specific tags within the text.
+       * Allows for rich text formatting using simple tag markup like `<red>text</red>`.
+       *
+       * Tags are only parsed when this property has entries. If `tagStyles` is undefined,
+       * `<` characters in text are treated as literal.
+       * @example
+       * ```ts
+       * const text = new Text({
+       *     text: '<red>Red</red>, <blue>Blue</blue>',
+       *     style: {
+       *         fill: 'white',
+       *         tagStyles: {
+       *             red: { fill: 'red' },
+       *             blue: { fill: 'blue' }
+       *         }
+       *     }
+       * });
+       * ```
+       */
+      get tagStyles() {
+        return this._tagStyles;
+      }
+      set tagStyles(value) {
+        if (this._tagStyles === value) return;
+        this._tagStyles = value ?? void 0;
+        this.update();
+      }
+      update() {
+        this._tick++;
+        this._cachedFontString = null;
+        this.emit("update", this);
+      }
+      /** Resets all properties to the default values */
+      reset() {
+        const defaultStyle = _TextStyle2.defaultTextStyle;
+        for (const key in defaultStyle) {
+          this[key] = defaultStyle[key];
+        }
+      }
+      /**
+       * Assigns partial style options to this TextStyle instance.
+       * Uses public setters to ensure proper value transformation.
+       * @param values - Partial style options to assign
+       * @returns This TextStyle instance for chaining
+       */
+      assign(values) {
+        for (const key in values) {
+          const thisKey = key;
+          this[thisKey] = values[key];
+        }
+        return this;
+      }
+      /**
+       * Returns a unique key for this instance.
+       * This key is used for caching.
+       * @returns {string} Unique key for the instance
+       */
+      get styleKey() {
+        return `${this.uid}-${this._tick}`;
+      }
+      /**
+       * Returns the CSS font string for this style, cached for performance.
+       * @internal
+       * @returns CSS font string
+       */
+      get _fontString() {
+        if (this._cachedFontString === null) {
+          this._cachedFontString = fontStringFromTextStyle(this);
+        }
+        return this._cachedFontString;
+      }
+      /**
+       * Returns an object with the same values as this TextStyle instance.
+       * @returns Object with the same values as this TextStyle instance
+       * @example
+       * ```ts
+       * const style = new TextStyle({
+       *     fontSize: 24,
+       *     fill: 0xff0000,
+       *     stroke: { color: 0x0000ff, width: 2 }
+       * });
+       * const object = style.toObject();
+       * console.log(object);
+       * // { fontSize: 24, fill: 0xff0000, stroke: { color: 0x0000ff, width: 2 } }
+       * ```
+       */
+      _toObject() {
+        return {
+          align: this.align,
+          breakWords: this.breakWords,
+          dropShadow: this._dropShadow ? { ...this._dropShadow } : null,
+          fill: this._fill ? { ...this._fill } : void 0,
+          fontFamily: this.fontFamily,
+          fontSize: this.fontSize,
+          fontStyle: this.fontStyle,
+          fontVariant: this.fontVariant,
+          fontWeight: this.fontWeight,
+          leading: this.leading,
+          letterSpacing: this.letterSpacing,
+          lineHeight: this.lineHeight,
+          padding: this.padding,
+          stroke: this._stroke ? { ...this._stroke } : void 0,
+          textBaseline: this.textBaseline,
+          trim: this.trim,
+          whiteSpace: this.whiteSpace,
+          wordWrap: this.wordWrap,
+          wordWrapWidth: this.wordWrapWidth,
+          filters: this._filters ? [...this._filters] : void 0,
+          tagStyles: this._tagStyles ? { ...this._tagStyles } : void 0
+        };
+      }
+      /**
+       * Creates a new TextStyle object with the same values as this one.
+       * @returns New cloned TextStyle object
+       */
+      clone() {
+        return new _TextStyle2(this._toObject());
+      }
+      /**
+       * Returns the final padding for the text style, taking into account any filters applied.
+       * Used internally for correct measurements
+       * @internal
+       * @returns {number} The final padding for the text style.
+       */
+      _getFinalPadding() {
+        let filterPadding = 0;
+        if (this._filters) {
+          for (let i9 = 0; i9 < this._filters.length; i9++) {
+            filterPadding += this._filters[i9].padding;
+          }
+        }
+        return Math.max(this._padding, filterPadding);
+      }
+      /**
+       * Destroys this text style.
+       * @param options - Options parameter. A boolean will act as if all options
+       *  have been set to that value
+       * @example
+       * // Destroy the text style and its textures
+       * textStyle.destroy({ texture: true, textureSource: true });
+       * textStyle.destroy(true);
+       */
+      destroy(options = false) {
+        this.removeAllListeners();
+        const destroyTexture = typeof options === "boolean" ? options : options?.texture;
+        if (destroyTexture) {
+          const destroyTextureSource = typeof options === "boolean" ? options : options?.textureSource;
+          if (this._fill?.texture) {
+            this._fill.texture.destroy(destroyTextureSource);
+          }
+          if (this._originalFill?.texture) {
+            this._originalFill.texture.destroy(destroyTextureSource);
+          }
+          if (this._stroke?.texture) {
+            this._stroke.texture.destroy(destroyTextureSource);
+          }
+          if (this._originalStroke?.texture) {
+            this._originalStroke.texture.destroy(destroyTextureSource);
+          }
+        }
+        this._fill = null;
+        this._stroke = null;
+        this.dropShadow = null;
+        this._originalStroke = null;
+        this._originalFill = null;
+      }
+      _createProxy(value, cb) {
+        return new Proxy(value, {
+          set: (target, property, newValue) => {
+            if (target[property] === newValue) return true;
+            target[property] = newValue;
+            cb?.(property, newValue);
+            this.update();
+            return true;
+          }
+        });
+      }
+      _isFillStyle(value) {
+        return (value ?? null) !== null && !(Color.isColorLike(value) || value instanceof FillGradient || value instanceof FillPattern);
+      }
+    };
+    _TextStyle.defaultDropShadow = {
+      alpha: 1,
+      angle: Math.PI / 6,
+      blur: 0,
+      color: "black",
+      distance: 5
+    };
+    _TextStyle.defaultTextStyle = {
+      align: "left",
+      breakWords: false,
+      dropShadow: null,
+      fill: "black",
+      fontFamily: "Arial",
+      fontSize: 26,
+      fontStyle: "normal",
+      fontVariant: "normal",
+      fontWeight: "normal",
+      leading: 0,
+      letterSpacing: 0,
+      lineHeight: 0,
+      padding: 0,
+      stroke: null,
+      textBaseline: "alphabetic",
+      trim: false,
+      whiteSpace: "pre",
+      wordWrap: false,
+      wordWrapWidth: 100
+    };
+    TextStyle = _TextStyle;
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/utils/warnIgnoredTextureStyle.mjs
+function warnIgnoredTextureStyle(textureStyle) {
+  if (warned) return;
+  const scaleModeOnly = new TextureStyle({ scaleMode: textureStyle.scaleMode });
+  if (textureStyle._resourceId === scaleModeOnly._resourceId) return;
+  warned = true;
+  warn("Text textureStyle: only scaleMode is applied to a text texture, the other fields are ignored");
+}
+var warned;
+var init_warnIgnoredTextureStyle = __esm({
+  "node_modules/pixi.js/lib/scene/text/utils/warnIgnoredTextureStyle.mjs"() {
+    init_TextureStyle();
+    init_warn();
+    warned = false;
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/utils/updateTextBounds.mjs
+function updateTextBounds(batchableSprite, text) {
+  const { texture, bounds } = batchableSprite;
+  const padding = text._style._getFinalPadding();
+  updateQuadBounds(bounds, text._anchor, texture);
+  const paddingOffset = text._anchor._x * padding * 2;
+  const paddingOffsetY = text._anchor._y * padding * 2;
+  bounds.minX -= padding - paddingOffset;
+  bounds.minY -= padding - paddingOffsetY;
+  bounds.maxX -= padding - paddingOffset;
+  bounds.maxY -= padding - paddingOffsetY;
+}
+var init_updateTextBounds = __esm({
+  "node_modules/pixi.js/lib/scene/text/utils/updateTextBounds.mjs"() {
+    init_updateQuadBounds();
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/BatchableText.mjs
+var BatchableText;
+var init_BatchableText = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/BatchableText.mjs"() {
+    init_BatchableSprite();
+    BatchableText = class extends BatchableSprite {
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/CanvasTextPipe.mjs
+var CanvasTextPipe;
+var init_CanvasTextPipe = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/CanvasTextPipe.mjs"() {
+    init_Extensions();
+    init_GCManagedHash();
+    init_updateTextBounds();
+    init_BatchableText();
+    CanvasTextPipe = class {
+      constructor(renderer) {
+        this._renderer = renderer;
+        renderer.runners.resolutionChange.add(this);
+        renderer.runners.contextChange.add(this);
+        this._managedTexts = new GCManagedHash({
+          renderer,
+          type: "renderable",
+          onUnload: this.onTextUnload.bind(this),
+          name: "canvasText"
+        });
+      }
+      resolutionChange() {
+        for (const key in this._managedTexts.items) {
+          const text = this._managedTexts.items[key];
+          if (text?._autoResolution) text.onViewUpdate();
+        }
+      }
+      /**
+       * Text textures are uploaded from pooled canvases that are cleared and reused straight after upload,
+       * so they cannot be re-uploaded after a context loss. Unload them and regenerate on the next render.
+       */
+      contextChange() {
+        for (const key in this._managedTexts.items) {
+          this._managedTexts.items[key]?.unload();
+        }
+      }
+      validateRenderable(text) {
+        const gpuText = this._getGpuText(text);
+        const newKey = text.styleKey;
+        if (gpuText.currentKey !== newKey) return true;
+        return text._didTextUpdate;
+      }
+      addRenderable(text, instructionSet) {
+        const batchableText = this._getGpuText(text);
+        if (text._didTextUpdate || batchableText.currentKey !== text.styleKey) {
+          const resolution = text._autoResolution ? this._renderer.resolution : text.resolution;
+          if (batchableText.currentKey !== text.styleKey || text._resolution !== resolution) {
+            this._updateGpuText(text);
+          }
+          text._didTextUpdate = false;
+          updateTextBounds(batchableText, text);
+        }
+        this._renderer.renderPipes.batch.addToBatch(batchableText, instructionSet);
+      }
+      updateRenderable(text) {
+        const batchableText = this._getGpuText(text);
+        batchableText._batcher.updateElement(batchableText);
+      }
+      _updateGpuText(text) {
+        const batchableText = this._getGpuText(text);
+        if (batchableText.texture) {
+          this._renderer.canvasText.decreaseReferenceCount(batchableText.currentKey);
+        }
+        text._resolution = text._autoResolution ? this._renderer.resolution : text.resolution;
+        batchableText.texture = this._renderer.canvasText.getManagedTexture(text);
+        batchableText.currentKey = text.styleKey;
+      }
+      _getGpuText(text) {
+        return text._gpuData[this._renderer.uid] || this.initGpuText(text);
+      }
+      initGpuText(text) {
+        const batchableText = new BatchableText();
+        batchableText.currentKey = "--";
+        batchableText.renderable = text;
+        batchableText.transform = text.groupTransform;
+        batchableText.bounds = { minX: 0, maxX: 1, minY: 0, maxY: 0 };
+        batchableText.roundPixels = this._renderer._roundPixels | text._roundPixels;
+        text._gpuData[this._renderer.uid] = batchableText;
+        this._managedTexts.add(text);
+        return batchableText;
+      }
+      onTextUnload(text) {
+        const gpuData = text._gpuData[this._renderer.uid];
+        if (!gpuData) return;
+        const { canvasText } = this._renderer;
+        const refCount = canvasText.getReferenceCount(gpuData.currentKey);
+        if (refCount > 0) {
+          canvasText.decreaseReferenceCount(gpuData.currentKey);
+        } else if (gpuData.texture) {
+          canvasText.returnTexture(gpuData.texture);
+        }
+      }
+      destroy() {
+        this._managedTexts.destroy();
+        this._renderer = null;
+      }
+    };
+    CanvasTextPipe.extension = {
+      type: [
+        ExtensionType.WebGLPipes,
+        ExtensionType.WebGPUPipes,
+        ExtensionType.CanvasPipes
+      ],
+      name: "text"
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/shared/AbstractTextSystem.mjs
+var AbstractTextSystem;
+var init_AbstractTextSystem = __esm({
+  "node_modules/pixi.js/lib/scene/text/shared/AbstractTextSystem.mjs"() {
+    init_TexturePool();
+    init_deprecation();
+    init_CanvasTextGenerator();
+    init_TextStyle();
+    init_getPo2TextureFromSource();
+    AbstractTextSystem = class {
+      constructor(renderer, retainCanvasContext) {
+        this._activeTextures = {};
+        this._renderer = renderer;
+        this._retainCanvasContext = retainCanvasContext;
+      }
+      getTexture(options, _resolution, _style, _textKey) {
+        if (typeof options === "string") {
+          deprecation("8.0.0", "CanvasTextSystem.getTexture: Use object TextOptions instead of separate arguments");
+          options = {
+            text: options,
+            style: _style,
+            resolution: _resolution
+          };
+        }
+        if (!(options.style instanceof TextStyle)) {
+          options.style = new TextStyle(options.style);
+        }
+        if (typeof options.text !== "string") {
+          options.text = options.text.toString();
+        }
+        const { text, style, textureStyle, autoGenerateMipmaps } = options;
+        const resolution = options.resolution ?? this._renderer.resolution;
+        const { frame, canvasAndContext } = CanvasTextGenerator.getCanvasAndContext({
+          text,
+          style,
+          resolution
+        });
+        const texture = getPo2TextureFromSource(
+          canvasAndContext.canvas,
+          frame.width,
+          frame.height,
+          resolution,
+          autoGenerateMipmaps,
+          textureStyle?.scaleMode
+        );
+        if (style.trim) {
+          frame.pad(style.padding);
+          texture.frame.copyFrom(frame);
+          texture.frame.scale(1 / resolution);
+          texture.updateUvs();
+        }
+        if (style.filters) {
+          const filteredTexture = this._applyFilters(texture, style.filters);
+          this.returnTexture(texture);
+          CanvasTextGenerator.returnCanvasAndContext(canvasAndContext);
+          return filteredTexture;
+        }
+        this._renderer.texture.initSource(texture._source);
+        if (!this._retainCanvasContext) {
+          CanvasTextGenerator.returnCanvasAndContext(canvasAndContext);
+        }
+        return texture;
+      }
+      /**
+       * Returns a texture that was created wit the above `getTexture` function.
+       * Handy if you are done with a texture and want to return it to the pool.
+       * @param texture - The texture to be returned.
+       */
+      returnTexture(texture) {
+        const source3 = texture.source;
+        const resource = source3.resource;
+        if (this._retainCanvasContext && resource?.getContext) {
+          const context2 = resource.getContext("2d");
+          if (context2) {
+            CanvasTextGenerator.returnCanvasAndContext({ canvas: resource, context: context2 });
+          }
+        }
+        source3.resource = null;
+        source3.uploadMethodId = "unknown";
+        source3.alphaMode = "no-premultiply-alpha";
+        TexturePool.returnTexture(texture);
+      }
+      /**
+       * Renders text to its canvas, and updates its texture.
+       * @deprecated since 8.10.0
+       */
+      renderTextToCanvas() {
+        deprecation(
+          "8.10.0",
+          "CanvasTextSystem.renderTextToCanvas: no longer supported, use CanvasTextSystem.getTexture instead"
+        );
+      }
+      /**
+       * Gets or creates a managed texture for a Text object. This method handles texture reuse and reference counting.
+       * @param text - The Text object that needs a texture
+       * @returns A Texture instance that represents the rendered text
+       * @remarks
+       * This method performs the following:
+       * 1. Sets the appropriate resolution based on auto-resolution settings
+       * 2. Checks if a texture already exists for the text's style
+       * 3. Creates a new texture if needed or returns an existing one
+       * 4. Manages reference counting for texture reuse
+       */
+      getManagedTexture(text) {
+        text._resolution = text._autoResolution ? this._renderer.resolution : text.resolution;
+        const textKey = text.styleKey;
+        if (this._activeTextures[textKey]) {
+          this._increaseReferenceCount(textKey);
+          return this._activeTextures[textKey].texture;
+        }
+        const texture = this.getTexture({
+          text: text.text,
+          style: text.style,
+          resolution: text._resolution,
+          textureStyle: text.textureStyle,
+          autoGenerateMipmaps: text.autoGenerateMipmaps
+        });
+        this._activeTextures[textKey] = {
+          texture,
+          usageCount: 1
+        };
+        return texture;
+      }
+      /**
+       * Decreases the reference count for a texture associated with a text key.
+       * When the reference count reaches zero, the texture is returned to the pool.
+       * @param textKey - The unique key identifying the text style configuration
+       * @remarks
+       * This method is crucial for memory management, ensuring textures are properly
+       * cleaned up when they are no longer needed by any Text instances.
+       */
+      decreaseReferenceCount(textKey) {
+        const activeTexture = this._activeTextures[textKey];
+        if (!activeTexture) return;
+        activeTexture.usageCount--;
+        if (activeTexture.usageCount === 0) {
+          this.returnTexture(activeTexture.texture);
+          this._activeTextures[textKey] = null;
+        }
+      }
+      /**
+       * Gets the current reference count for a texture associated with a text key.
+       * @param textKey - The unique key identifying the text style configuration
+       * @returns The number of Text instances currently using this texture
+       */
+      getReferenceCount(textKey) {
+        return this._activeTextures[textKey]?.usageCount ?? 0;
+      }
+      _increaseReferenceCount(textKey) {
+        this._activeTextures[textKey].usageCount++;
+      }
+      /**
+       * Applies the specified filters to the given texture.
+       *
+       * This method takes a texture and a list of filters, applies the filters to the texture,
+       * and returns the resulting texture. It also ensures that the alpha mode of the resulting
+       * texture is set to 'premultiplied-alpha'.
+       * @param {Texture} texture - The texture to which the filters will be applied.
+       * @param {Filter[]} filters - The filters to apply to the texture.
+       * @returns {Texture} The resulting texture after all filters have been applied.
+       */
+      _applyFilters(texture, filters) {
+        const currentRenderTarget = this._renderer.renderTarget.renderTarget;
+        const resultTexture = this._renderer.filter.generateFilteredTexture({
+          texture,
+          filters
+        });
+        this._renderer.renderTarget.bind({ target: currentRenderTarget, clear: false });
+        return resultTexture;
+      }
+      destroy() {
+        this._renderer = null;
+        for (const key in this._activeTextures) {
+          if (this._activeTextures[key]) this.returnTexture(this._activeTextures[key].texture);
+        }
+        this._activeTextures = null;
+      }
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/canvas/CanvasTextSystem.mjs
+var CanvasRendererTextSystem;
+var init_CanvasTextSystem = __esm({
+  "node_modules/pixi.js/lib/scene/text/canvas/CanvasTextSystem.mjs"() {
+    init_Extensions();
+    init_AbstractTextSystem();
+    CanvasRendererTextSystem = class extends AbstractTextSystem {
+      constructor(renderer) {
+        super(renderer, true);
+      }
+    };
+    CanvasRendererTextSystem.extension = {
+      type: [
+        ExtensionType.CanvasSystem
+      ],
+      name: "canvasText"
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/shared/GpuTextSystem.mjs
+var CanvasTextSystem;
+var init_GpuTextSystem = __esm({
+  "node_modules/pixi.js/lib/scene/text/shared/GpuTextSystem.mjs"() {
+    init_Extensions();
+    init_AbstractTextSystem();
+    CanvasTextSystem = class extends AbstractTextSystem {
+      constructor(renderer) {
+        super(renderer, false);
+      }
+    };
+    CanvasTextSystem.extension = {
+      type: [
+        ExtensionType.WebGLSystem,
+        ExtensionType.WebGPUSystem
+      ],
+      name: "canvasText"
+    };
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/init.mjs
+var init_init9 = __esm({
+  "node_modules/pixi.js/lib/scene/text/init.mjs"() {
+    init_Extensions();
+    init_CanvasTextPipe();
+    init_CanvasTextSystem();
+    init_GpuTextSystem();
+    extensions.add(CanvasRendererTextSystem);
+    extensions.add(CanvasTextSystem);
+    extensions.add(CanvasTextPipe);
+  }
+});
+
+// node_modules/pixi.js/lib/scene/text/Text.mjs
+var Text;
+var init_Text = __esm({
+  "node_modules/pixi.js/lib/scene/text/Text.mjs"() {
+    init_TextureSource();
+    init_TextureStyle();
+    init_AbstractText();
+    init_CanvasTextGenerator();
+    init_CanvasTextMetrics();
+    init_TextStyle();
+    init_warnIgnoredTextureStyle();
+    init_init9();
+    Text = class extends AbstractText {
+      constructor(...args) {
+        const options = ensureTextOptions(args, "Text");
+        super(options, TextStyle);
+        this.renderPipeId = "text";
+        if (options.textureStyle) {
+          this.textureStyle = options.textureStyle instanceof TextureStyle ? options.textureStyle : new TextureStyle(options.textureStyle);
+          warnIgnoredTextureStyle(this.textureStyle);
+        }
+        this.autoGenerateMipmaps = options.autoGenerateMipmaps ?? TextureSource.defaultOptions.autoGenerateMipmaps;
+      }
+      /** @private */
+      updateBounds() {
+        const bounds = this._bounds;
+        const anchor = this._anchor;
+        let width = 0;
+        let height = 0;
+        if (this._style.trim) {
+          const { frame, canvasAndContext } = CanvasTextGenerator.getCanvasAndContext({
+            text: this.text,
+            style: this._style,
+            resolution: 1
+          });
+          CanvasTextGenerator.returnCanvasAndContext(canvasAndContext);
+          width = frame.width;
+          height = frame.height;
+        } else {
+          const canvasMeasurement = CanvasTextMetrics.measureText(
+            this._text,
+            this._style
+          );
+          width = canvasMeasurement.width;
+          height = canvasMeasurement.height;
+        }
+        bounds.minX = -anchor._x * width;
+        bounds.maxX = bounds.minX + width;
+        bounds.minY = -anchor._y * height;
+        bounds.maxY = bounds.minY + height;
+      }
+    };
+  }
+});
+
 // node_modules/pixi.js/lib/rendering/renderers/shared/texture/sources/CubeTextureSource.mjs
 var CubeTextureSource;
 var init_CubeTextureSource = __esm({
@@ -50168,6 +53680,7 @@ var init_lib = __esm({
     init_CubeTexture();
     init_RenderTexture();
     init_BufferImageSource();
+    init_CanvasSource();
     init_CompressedSource();
     init_TextureSource();
     init_Texture();
@@ -50181,6 +53694,8 @@ var init_lib = __esm({
     init_clearList();
     init_definedProps();
     init_Graphics();
+    init_Sprite();
+    init_Text();
     init_ViewContainer();
     init_const2();
     init_Ticker();
@@ -82314,7 +85829,7 @@ var init_addUniformParsers = __esm({
 });
 
 // node_modules/@pixi/3d/dist/assets/init.mjs
-var init_init9 = __esm({
+var init_init10 = __esm({
   "node_modules/@pixi/3d/dist/assets/init.mjs"() {
     init_loadCubemap();
     init_loadGlb();
@@ -82326,7 +85841,7 @@ var init_init9 = __esm({
 });
 
 // node_modules/@pixi/3d/dist/events/init.mjs
-var init_init10 = __esm({
+var init_init11 = __esm({
   "node_modules/@pixi/3d/dist/events/init.mjs"() {
     init_Container3D();
     init_FederatedEventTarget3D();
@@ -84598,7 +88113,7 @@ __export(init_exports, {
   skinningBitGl: () => skinningBitGl,
   uniformBlockInstanceName: () => uniformBlockInstanceName
 });
-var init_init11 = __esm({
+var init_init12 = __esm({
   "node_modules/@pixi/3d/dist/core/gl/init.mjs"() {
     init_globalBitGl();
     init_LightingSystemGl();
@@ -87408,7 +90923,7 @@ __export(init_exports2, {
   wgslOverridesPlugin: () => wgslOverridesPlugin,
   wgslStageSlotsPlugin: () => wgslStageSlotsPlugin
 });
-var init_init12 = __esm({
+var init_init13 = __esm({
   "node_modules/@pixi/3d/dist/core/gpu/init.mjs"() {
     init_ComputeSystemGpu();
     init_globalBitGpu();
@@ -87443,24 +90958,24 @@ var init_init12 = __esm({
 
 // node_modules/@pixi/3d/dist/init.mjs
 var backendLoaders;
-var init_init13 = __esm({
+var init_init14 = __esm({
   "node_modules/@pixi/3d/dist/init.mjs"() {
     init_addUniformParsers();
-    init_init9();
     init_init10();
+    init_init11();
     init_lib();
     backendLoaders = [{
       extension: {
         type: ExtensionType.WebGLLoader,
         name: "pixijs-3d"
       },
-      load: () => Promise.resolve().then(() => (init_init11(), init_exports))
+      load: () => Promise.resolve().then(() => (init_init12(), init_exports))
     }, {
       extension: {
         type: ExtensionType.WebGPULoader,
         name: "pixijs-3d"
       },
-      load: () => Promise.resolve().then(() => (init_init12(), init_exports2))
+      load: () => Promise.resolve().then(() => (init_init13(), init_exports2))
     }];
     addUniformParsers();
     extensions.add(...backendLoaders);
@@ -87473,6 +90988,7 @@ var init_dist2 = __esm({
     init_Vector3();
     init_Container3D();
     init_Sphere();
+    init_BaseMaterial3D();
     init_Mesh3D();
     init_Material3D();
     init_Plane();
@@ -87480,7 +90996,7 @@ var init_dist2 = __esm({
     init_SphereGeometry();
     init_DirectionalLight();
     init_View3D();
-    init_init13();
+    init_init14();
   }
 });
 
@@ -87489,7 +91005,30 @@ var scene_exports = {};
 __export(scene_exports, {
   MoleculeScene: () => MoleculeScene
 });
-var vector4, cellCorners, MoleculeScene;
+function vignetteStops() {
+  const stops = [[0, `rgba(${VIGNETTE_COLOR}, 0)`], [VIGNETTE_CLEAR, `rgba(${VIGNETTE_COLOR}, 0)`]];
+  for (let step = 1; step <= 6; step++) {
+    const share = step / 6;
+    const eased = share * share * (3 - 2 * share);
+    stops.push([
+      VIGNETTE_CLEAR + (1 - VIGNETTE_CLEAR) * share,
+      `rgba(${VIGNETTE_COLOR}, ${(VIGNETTE_ALPHA * eased).toFixed(3)})`
+    ]);
+  }
+  return stops;
+}
+function radialTexture(stops, size3 = 256) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size3;
+  const context2 = canvas.getContext("2d");
+  if (!context2) return Texture.EMPTY;
+  const gradient = context2.createRadialGradient(size3 / 2, size3 / 2, 0, size3 / 2, size3 / 2, size3 / 2);
+  for (const [offset3, color] of stops) gradient.addColorStop(offset3, color);
+  context2.fillStyle = gradient;
+  context2.fillRect(0, 0, size3, size3);
+  return new Texture({ source: new CanvasSource({ resource: canvas }) });
+}
+var vector4, cellCorners, CAMERA_FOV, FIT_FILL, AXIS_ORIGIN, AXIS_LENGTH, AXIS_COLORS, RIM_STRENGTH, RIM_POWER, rimBit, SELECTION_COLOR, SELECTION_LINEAR, MARK_WIDTH, SELECTION_MARK, HOVER_MARK, VIGNETTE_ALPHA, VIGNETTE_CLEAR, VIGNETTE_REACH, VIGNETTE_COLOR, MoleculeScene;
 var init_scene = __esm({
   "molecule-builder/scene.ts"() {
     init_lib();
@@ -87499,6 +91038,46 @@ var init_scene = __esm({
     init_structure();
     vector4 = ([x4, y5, z3]) => ({ x: x4, y: y5, z: z3 });
     cellCorners = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]];
+    CAMERA_FOV = 60;
+    FIT_FILL = 0.8;
+    AXIS_ORIGIN = 34;
+    AXIS_LENGTH = 20;
+    AXIS_COLORS = [11817737, 1013358, 7153881];
+    RIM_STRENGTH = 0.8;
+    RIM_POWER = 2.2;
+    rimBit = {
+      name: "atomRim",
+      bindings: { material: { rimStrength: "f32", rimPower: "f32", markStrength: "f32", markWidth: "f32", markColor: "vec4<f32>" } },
+      gpu: {
+        fragment: {
+          lobePostLighting: `{
+				let rimFacing = max(dot(normal, viewDir), 0.0);
+				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
+				let markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
+				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
+			}`
+        }
+      },
+      gl: {
+        fragment: {
+          lobePostLighting: `{
+				float rimFacing = max(dot(normal, viewDir), 0.0);
+				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
+				float markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
+				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
+			}`
+        }
+      }
+    };
+    SELECTION_COLOR = 34501;
+    SELECTION_LINEAR = [0, 134, 197].map((channel) => srgbToLinear(channel / 255));
+    MARK_WIDTH = 0.62;
+    SELECTION_MARK = 1;
+    HOVER_MARK = 0.55;
+    VIGNETTE_ALPHA = 0.3;
+    VIGNETTE_CLEAR = 0.55;
+    VIGNETTE_REACH = 0.85;
+    VIGNETTE_COLOR = "15, 23, 42";
     MoleculeScene = class _MoleculeScene {
       static async create(host) {
         const app = new Application();
@@ -87524,9 +91103,13 @@ var init_scene = __esm({
       #app;
       #view;
       #content = new Container3D();
+      #edges = new Container3D();
       #electrons = new Container3D();
       #lattice = new Graphics({ eventMode: "none" });
+      #axes = new Graphics({ eventMode: "none" });
+      #axisLabels = ["a", "b", "c"].map(() => new Text({ text: "", style: { fontSize: 10, fill: 5395035 } }));
       #projected = new Point();
+      #axisTip = new Point();
       #sphere = new SphereGeometry({ radius: 1, widthSegments: 20, heightSegments: 14 });
       #cylinder = new CylinderGeometry({ height: 1, radiusTop: 1, radiusBottom: 1, radialSegments: 10 });
       #materials = /* @__PURE__ */ new Map();
@@ -87535,10 +91118,15 @@ var init_scene = __esm({
       #picks = /* @__PURE__ */ new Map();
       #observer;
       #preview;
+      #vignette;
+      #textures = [];
       #selected = /* @__PURE__ */ new Set();
+      #hovered;
       #structure;
       #showElectrons = false;
       #showLattice = false;
+      #showEdges = true;
+      #showAxes = false;
       #latticePoints = [];
       #repeats = 0;
       #frame = 0;
@@ -87547,20 +91135,24 @@ var init_scene = __esm({
       #yaw = 0.34;
       #pitch = 0.24;
       #bounds = [];
+      #atomRadius = 0;
       constructor(app, host) {
         this.#app = app;
         this.#view = new View3D({
           autoResize: false,
           environment: { skyColor: 16777215, groundColor: 10925251, intensity: 0.94 }
         });
-        app.stage.addChild(this.#view, this.#lattice);
+        this.#vignette = new Sprite({ texture: this.#track(radialTexture(vignetteStops())), eventMode: "none" });
+        app.stage.addChild(this.#view, this.#vignette, this.#lattice, this.#axes, ...this.#axisLabels);
+        this.#sizeVignette();
+        for (const label of this.#axisLabels) label.visible = false;
         this.#view.setSize(app.screen.width, app.screen.height);
         const sun = new DirectionalLight({ color: 16777215, intensity: 2.15 });
         sun.position.set(3, 6, 7);
         sun.lookAt({ x: 0, y: 0, z: 0 });
-        this.#view.root.addChild(sun, this.#content, this.#electrons);
+        this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons);
         this.#preview = this.#rod();
-        this.#preview.material = this.#material(34501);
+        this.#preview.material = this.#material(SELECTION_COLOR);
         this.#preview.visible = false;
         this.#view.root.addChild(this.#preview);
         app.canvas.style.display = "block";
@@ -87570,14 +91162,45 @@ var init_scene = __esm({
           if (host.clientWidth && host.clientHeight) {
             app.renderer.resize(host.clientWidth, host.clientHeight);
             this.#view.setSize(host.clientWidth, host.clientHeight);
+            this.#sizeVignette();
             this.#draw();
           }
         });
         this.#observer.observe(host);
         this.#camera();
       }
-      #material(color, opacity = 1, selected = false) {
-        const key = `${color}:${opacity}:${selected}`;
+      /**
+       * Remember a generated texture so {@link destroy} can free it.
+       *
+       * A missing 2D context leaves {@link Texture.EMPTY}, which belongs to Pixi
+       * and must never be destroyed; only textures this scene created are kept.
+       */
+      #track(texture) {
+        if (texture !== Texture.EMPTY) this.#textures.push(texture);
+        return texture;
+      }
+      /** Centre the vignette's circle on the canvas and size it past the corners. */
+      #sizeVignette() {
+        const { width, height } = this.#app.screen;
+        const side = Math.hypot(width, height) / VIGNETTE_REACH;
+        this.#vignette.width = this.#vignette.height = side;
+        this.#vignette.position.set((width - side) / 2, (height - side) / 2);
+      }
+      /**
+       * A cached material for one colour, opacity and mark strength.
+       *
+       * Every atom and bond takes the rim, translucent ones included: the term
+       * darkens the surface itself rather than drawing a shell behind it, so a
+       * partly occupied site keeps a readable edge without gaining a solid ring.
+       * The electron clouds use their own materials and stay unrimmed, because
+       * they are a haze around the atoms rather than bodies of their own.
+       *
+       * The mark is part of the key because it is a uniform: a selected atom needs
+       * its own material, and swapping the uniform on a shared one would outline
+       * every atom of that colour.
+       */
+      #material(color, opacity = 1, mark = 0) {
+        const key = `${color}:${opacity}:${mark}`;
         let material = this.#materials.get(key);
         if (!material) {
           material = new Material3D({
@@ -87585,8 +91208,13 @@ var init_scene = __esm({
             roughness: 0.61,
             alpha: opacity,
             alphaMode: opacity < 1 ? "blend" : "opaque",
-            emissive: selected ? { color, strength: 0.48 } : void 0
+            extraBits: [rimBit]
           });
+          material.data.rimStrength = RIM_STRENGTH;
+          material.data.rimPower = RIM_POWER;
+          material.data.markWidth = MARK_WIDTH;
+          material.data.markColor = [...SELECTION_LINEAR, 1];
+          material.data.markStrength = mark;
           this.#materials.set(key, material);
         }
         return material;
@@ -87614,7 +91242,8 @@ var init_scene = __esm({
         mesh.scale.set(radius);
         this.#content.addChild(mesh);
         this.#bounds.push(position);
-        this.#picks.set(mesh, { id, color, ionic: ionColor !== void 0, opacity, position });
+        this.#atomRadius = Math.max(this.#atomRadius, radius);
+        this.#picks.set(mesh, { id, color, ionic: ionColor !== void 0, opacity, position, radius });
       }
       #renderElectrons(structure, show) {
         for (const child of this.#electrons.removeChildren()) child.destroy({ children: true });
@@ -87647,21 +91276,29 @@ var init_scene = __esm({
           }
         }
       }
-      setScene(structure, repeats, selection, showElectrons = false, showLattice = false) {
+      setScene(structure, repeats, selection, display) {
         const rebuild = structure !== this.#structure || repeats !== this.#repeats;
-        const latticeVisible = structure.kind === "crystal" && showLattice;
-        if (rebuild || latticeVisible !== this.#showLattice) {
+        const crystal = structure.kind === "crystal";
+        const latticeVisible = crystal && display.lattice;
+        const edgesVisible = crystal && display.edges;
+        const axesVisible = crystal && display.axes;
+        if (rebuild || latticeVisible !== this.#showLattice || edgesVisible !== this.#showEdges || axesVisible !== this.#showAxes) {
           this.#showLattice = latticeVisible;
+          this.#showEdges = edgesVisible;
+          this.#showAxes = axesVisible;
           this.#latticePoints = latticeVisible ? latticePositions(structure, repeats).map(vector4) : [];
           this.#lattice.visible = latticeVisible;
+          this.#edges.visible = edgesVisible;
           this.#draw();
         }
         if (rebuild) {
           this.#structure = structure;
           this.#repeats = repeats;
           this.#bounds = [];
+          this.#atomRadius = 0;
           this.#picks.clear();
           for (const child of this.#content.removeChildren()) child.destroy({ children: true });
+          for (const child of this.#edges.removeChildren()) child.destroy({ children: true });
           if (structure.kind === "crystal") {
             const vectors = cellVectors(structure.cell);
             const corners = cellCorners.map((corner) => cartesian(vectors, scale(corner, repeats)));
@@ -87676,7 +91313,7 @@ var init_scene = __esm({
                   end[axis] = repeats;
                   const edge = this.#rod();
                   this.#line(edge, cartesian(vectors, start), cartesian(vectors, end), 0.024);
-                  this.#content.addChild(edge);
+                  this.#edges.addChild(edge);
                 }
               }
             }
@@ -87700,19 +91337,46 @@ var init_scene = __esm({
             for (const atom of structure.atoms) this.#atom(atom.id, atom.atomicNumber, atom.position, false);
           }
         }
-        if (rebuild || showElectrons !== this.#showElectrons) {
-          this.#showElectrons = showElectrons;
-          this.#renderElectrons(structure, showElectrons);
+        if (rebuild || display.electrons !== this.#showElectrons) {
+          this.#showElectrons = display.electrons;
+          this.#renderElectrons(structure, display.electrons);
           this.#draw();
         }
         const selected = new Set(selection);
         if (rebuild || selected.size !== this.#selected.size || selection.some((id) => !this.#selected.has(id))) {
           this.#selected = selected;
-          for (const [mesh, atom] of this.#picks) {
-            mesh.material = selected.has(atom.id) ? atom.ionic ? this.#material(atom.color, 1, true) : this.#material(34501) : this.#material(atom.color, atom.opacity);
-          }
-          this.#draw();
+          this.#applyMarks();
         }
+      }
+      /**
+       * Outline the selected atoms, and the one under the pointer.
+       *
+       * One system serves molecules and lattices alike, and it never recolours a
+       * body: the sphere keeps its CPK colour and only its silhouette takes the
+       * accent, so a marked atom still reads as the element it is. A ring is also
+       * the only cue that holds up in a packed lattice, where a glow behind the
+       * atom disappears against a light neighbour and a tint would be mistaken for
+       * a second species. A selection outranks the hover mark, so pointing at an
+       * already selected site does not dim it.
+       */
+      #applyMarks() {
+        for (const [mesh, atom] of this.#picks) {
+          const mark = this.#selected.has(atom.id) ? SELECTION_MARK : atom.id === this.#hovered ? HOVER_MARK : 0;
+          mesh.material = this.#material(atom.color, atom.opacity, mark);
+        }
+        this.#draw();
+      }
+      /**
+       * Outline one atom as a preview, or clear the outline with `undefined`.
+       *
+       * The lattice site picker uses this to show which atom a row belongs to
+       * before the row is clicked, so the pointer never has to guess between two
+       * sites of the same element.
+       */
+      highlight(id) {
+        if (id === this.#hovered) return;
+        this.#hovered = id;
+        this.#applyMarks();
       }
       get canvas() {
         return this.#app.canvas;
@@ -87722,8 +91386,8 @@ var init_scene = __esm({
         return { x: (clientX - box.left) * this.#app.screen.width / box.width, y: (clientY - box.top) * this.#app.screen.height / box.height };
       }
       pick(clientX, clientY) {
-        const hit = this.#view.raycast(this.#point(clientX, clientY));
-        return hit ? this.#picks.get(hit.target)?.id : void 0;
+        const target = this.#view.raycast(this.#point(clientX, clientY))?.target;
+        return target instanceof Mesh3D ? this.#picks.get(target)?.id : void 0;
       }
       placement(clientX, clientY, origin = this.#target) {
         const camera = this.#view.camera.position;
@@ -87753,7 +91417,10 @@ var init_scene = __esm({
         this.#target = this.#bounds.length ? min2.map((value, axis) => (value + max2[axis]) / 2) : [0, 0, 0];
         const radius = this.#bounds.length ? Math.max(...this.#bounds.map((point) => Math.hypot(...subtract(point, this.#target)))) : 1;
         const aspect = this.#app.screen.width / this.#app.screen.height;
-        this.#distance = Math.max(4, (radius + 0.7) * 2.7 / Math.min(1, Math.max(0.32, aspect)));
+        const short = Math.min(1, Math.max(0.32, aspect));
+        const outer = radius + this.#atomRadius;
+        const padding = Math.max(0.3, Math.min(0.7, outer * 0.12));
+        this.#distance = Math.max(1.6, (outer + padding) / (Math.tan(CAMERA_FOV / 2 * Math.PI / 180) * short * FIT_FILL));
         this.#camera();
       }
       #camera() {
@@ -87776,8 +91443,38 @@ var init_scene = __esm({
             }
             this.#lattice.fill(2635336).stroke({ color: 16777215, width: 1.2 });
           }
+          this.#drawAxes();
           this.#app.render();
         });
+      }
+      /**
+       * Draws the small orientation cue for the cell axes in the upper right corner.
+       * The arrows keep a fixed screen length, so the cue stays readable at any zoom.
+       */
+      #drawAxes() {
+        this.#axes.clear();
+        for (const label of this.#axisLabels) label.visible = false;
+        const structure = this.#structure;
+        if (!this.#showAxes || structure?.kind !== "crystal") return;
+        const base = this.#view.worldToScreen(vector4(this.#target), this.#projected);
+        if (!base) return;
+        const originX = this.#app.screen.width - AXIS_ORIGIN;
+        const originY = AXIS_ORIGIN;
+        for (const [index, cell] of cellVectors(structure.cell).entries()) {
+          const tip = this.#view.worldToScreen(vector4(add(this.#target, cell)), this.#axisTip, true);
+          if (!tip) continue;
+          const dx = tip.x - base.x;
+          const dy = tip.y - base.y;
+          const length2 = Math.hypot(dx, dy);
+          if (length2 < 1e-3) continue;
+          const x4 = originX + dx / length2 * AXIS_LENGTH;
+          const y5 = originY + dy / length2 * AXIS_LENGTH;
+          this.#axes.moveTo(originX, originY).lineTo(x4, y5).stroke({ color: AXIS_COLORS[index], width: 1.6 });
+          const label = this.#axisLabels[index];
+          label.text = "abc"[index];
+          label.position.set(x4 + dx / length2 * 5 - 3, y5 + dy / length2 * 5 - 6);
+          label.visible = true;
+        }
       }
       destroy() {
         cancelAnimationFrame(this.#frame);
@@ -87787,7 +91484,10 @@ var init_scene = __esm({
         this.#cylinder.destroy();
         this.#bondRegion.destroy();
         this.#loneRegion.destroy();
+        this.#axes.destroy();
+        for (const label of this.#axisLabels) label.destroy();
         for (const material of this.#materials.values()) material.destroy();
+        for (const texture of this.#textures) texture.destroy(true);
       }
     };
   }
@@ -89188,6 +92888,349 @@ function e7(e13, r11) {
   };
 }
 
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.WQC6OWUE.js
+var badge_styles_default = i`
+  :host {
+    display: inline-flex;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: max(12px, 0.75em);
+    font-weight: var(--sl-font-weight-semibold);
+    letter-spacing: var(--sl-letter-spacing-normal);
+    line-height: 1;
+    border-radius: var(--sl-border-radius-small);
+    border: solid 1px var(--sl-color-neutral-0);
+    white-space: nowrap;
+    padding: 0.35em 0.6em;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: inherit;
+  }
+
+  /* Variant modifiers */
+  .badge--primary {
+    background-color: var(--sl-color-primary-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .badge--success {
+    background-color: var(--sl-color-success-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .badge--neutral {
+    background-color: var(--sl-color-neutral-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .badge--warning {
+    background-color: var(--sl-color-warning-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .badge--danger {
+    background-color: var(--sl-color-danger-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  /* Pill modifier */
+  .badge--pill {
+    border-radius: var(--sl-border-radius-pill);
+  }
+
+  /* Pulse modifier */
+  .badge--pulse {
+    animation: pulse 1.5s infinite;
+  }
+
+  .badge--pulse.badge--primary {
+    --pulse-color: var(--sl-color-primary-600);
+  }
+
+  .badge--pulse.badge--success {
+    --pulse-color: var(--sl-color-success-600);
+  }
+
+  .badge--pulse.badge--neutral {
+    --pulse-color: var(--sl-color-neutral-600);
+  }
+
+  .badge--pulse.badge--warning {
+    --pulse-color: var(--sl-color-warning-600);
+  }
+
+  .badge--pulse.badge--danger {
+    --pulse-color: var(--sl-color-danger-600);
+  }
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 var(--pulse-color);
+    }
+    70% {
+      box-shadow: 0 0 0 0.5rem transparent;
+    }
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.TUVJKY7S.js
+var component_styles_default = i`
+  :host {
+    box-sizing: border-box;
+  }
+
+  :host *,
+  :host *::before,
+  :host *::after {
+    box-sizing: inherit;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.KAW7D32O.js
+var __defProp3 = Object.defineProperty;
+var __defProps = Object.defineProperties;
+var __getOwnPropDesc3 = Object.getOwnPropertyDescriptor;
+var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
+var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+var __hasOwnProp2 = Object.prototype.hasOwnProperty;
+var __propIsEnum = Object.prototype.propertyIsEnumerable;
+var __knownSymbol3 = (name, symbol2) => (symbol2 = Symbol[name]) ? symbol2 : Symbol.for("Symbol." + name);
+var __typeError3 = (msg) => {
+  throw TypeError(msg);
+};
+var __defNormalProp3 = (obj, key, value) => key in obj ? __defProp3(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues = (a5, b4) => {
+  for (var prop in b4 || (b4 = {}))
+    if (__hasOwnProp2.call(b4, prop))
+      __defNormalProp3(a5, prop, b4[prop]);
+  if (__getOwnPropSymbols)
+    for (var prop of __getOwnPropSymbols(b4)) {
+      if (__propIsEnum.call(b4, prop))
+        __defNormalProp3(a5, prop, b4[prop]);
+    }
+  return a5;
+};
+var __spreadProps = (a5, b4) => __defProps(a5, __getOwnPropDescs(b4));
+var __decorateClass = (decorators, target, key, kind) => {
+  var result = kind > 1 ? void 0 : kind ? __getOwnPropDesc3(target, key) : target;
+  for (var i9 = decorators.length - 1, decorator; i9 >= 0; i9--)
+    if (decorator = decorators[i9])
+      result = (kind ? decorator(target, key, result) : decorator(result)) || result;
+  if (kind && result) __defProp3(target, key, result);
+  return result;
+};
+var __accessCheck3 = (obj, member, msg) => member.has(obj) || __typeError3("Cannot " + msg);
+var __privateGet3 = (obj, member, getter) => (__accessCheck3(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
+var __privateAdd3 = (obj, member, value) => member.has(obj) ? __typeError3("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+var __privateSet3 = (obj, member, value, setter) => (__accessCheck3(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
+var __await = function(promise2, isYieldStar) {
+  this[0] = promise2;
+  this[1] = isYieldStar;
+};
+var __yieldStar = (value) => {
+  var obj = value[__knownSymbol3("asyncIterator")], isAwait = false, method, it = {};
+  if (obj == null) {
+    obj = value[__knownSymbol3("iterator")]();
+    method = (k3) => it[k3] = (x4) => obj[k3](x4);
+  } else {
+    obj = obj.call(value);
+    method = (k3) => it[k3] = (v4) => {
+      if (isAwait) {
+        isAwait = false;
+        if (k3 === "throw") throw v4;
+        return v4;
+      }
+      isAwait = true;
+      return {
+        done: false,
+        value: new __await(new Promise((resolve) => {
+          var x4 = obj[k3](v4);
+          if (!(x4 instanceof Object)) __typeError3("Object expected");
+          resolve(x4);
+        }), 1)
+      };
+    };
+  }
+  return it[__knownSymbol3("iterator")] = () => it, method("next"), "throw" in obj ? method("throw") : it.throw = (x4) => {
+    throw x4;
+  }, "return" in obj && method("return"), it;
+};
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.EMG3ZSPT.js
+var _hasRecordedInitialProperties;
+var ShoelaceElement = class extends r7 {
+  constructor() {
+    super();
+    __privateAdd3(this, _hasRecordedInitialProperties, false);
+    this.initialReflectedProperties = /* @__PURE__ */ new Map();
+    Object.entries(this.constructor.dependencies).forEach(([name, component]) => {
+      this.constructor.define(name, component);
+    });
+  }
+  emit(name, options) {
+    const event = new CustomEvent(name, __spreadValues({
+      bubbles: true,
+      cancelable: false,
+      composed: true,
+      detail: {}
+    }, options));
+    this.dispatchEvent(event);
+    return event;
+  }
+  /* eslint-enable */
+  static define(name, elementConstructor = this, options = {}) {
+    const currentlyRegisteredConstructor = customElements.get(name);
+    if (!currentlyRegisteredConstructor) {
+      try {
+        customElements.define(name, elementConstructor, options);
+      } catch (_err) {
+        customElements.define(name, class extends elementConstructor {
+        }, options);
+      }
+      return;
+    }
+    let newVersion = " (unknown version)";
+    let existingVersion = newVersion;
+    if ("version" in elementConstructor && elementConstructor.version) {
+      newVersion = " v" + elementConstructor.version;
+    }
+    if ("version" in currentlyRegisteredConstructor && currentlyRegisteredConstructor.version) {
+      existingVersion = " v" + currentlyRegisteredConstructor.version;
+    }
+    if (newVersion && existingVersion && newVersion === existingVersion) {
+      return;
+    }
+    console.warn(
+      `Attempted to register <${name}>${newVersion}, but <${name}>${existingVersion} has already been registered.`
+    );
+  }
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (!__privateGet3(this, _hasRecordedInitialProperties)) {
+      this.constructor.elementProperties.forEach(
+        (obj, prop) => {
+          if (obj.reflect && this[prop] != null) {
+            this.initialReflectedProperties.set(prop, this[prop]);
+          }
+        }
+      );
+      __privateSet3(this, _hasRecordedInitialProperties, true);
+    }
+    super.attributeChangedCallback(name, oldValue, newValue);
+  }
+  willUpdate(changedProperties) {
+    super.willUpdate(changedProperties);
+    this.initialReflectedProperties.forEach((value, prop) => {
+      if (changedProperties.has(prop) && this[prop] == null) {
+        this[prop] = value;
+      }
+    });
+  }
+};
+_hasRecordedInitialProperties = /* @__PURE__ */ new WeakMap();
+ShoelaceElement.version = "2.19.1";
+ShoelaceElement.dependencies = {};
+__decorateClass([
+  n8()
+], ShoelaceElement.prototype, "dir", 2);
+__decorateClass([
+  n8()
+], ShoelaceElement.prototype, "lang", 2);
+
+// node_modules/lit-html/directive.js
+var t6 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
+var e8 = (t8) => (...e13) => ({ _$litDirective$: t8, values: e13 });
+var i6 = class {
+  constructor(t8) {
+  }
+  get _$AU() {
+    return this._$AM._$AU;
+  }
+  _$AT(t8, e13, i9) {
+    this._$Ct = t8, this._$AM = e13, this._$Ci = i9;
+  }
+  _$AS(t8, e13) {
+    return this.update(t8, e13);
+  }
+  update(t8, e13) {
+    return this.render(...e13);
+  }
+};
+
+// node_modules/lit-html/directives/class-map.js
+var e9 = e8(class extends i6 {
+  constructor(t8) {
+    if (super(t8), t8.type !== t6.ATTRIBUTE || "class" !== t8.name || t8.strings?.length > 2) throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.");
+  }
+  render(t8) {
+    return " " + Object.keys(t8).filter(((s4) => t8[s4])).join(" ") + " ";
+  }
+  update(s4, [i9]) {
+    if (void 0 === this.st) {
+      this.st = /* @__PURE__ */ new Set(), void 0 !== s4.strings && (this.nt = new Set(s4.strings.join(" ").split(/\s/).filter(((t8) => "" !== t8))));
+      for (const t8 in i9) i9[t8] && !this.nt?.has(t8) && this.st.add(t8);
+      return this.render(i9);
+    }
+    const r11 = s4.element.classList;
+    for (const t8 of this.st) t8 in i9 || (r11.remove(t8), this.st.delete(t8));
+    for (const t8 in i9) {
+      const s5 = !!i9[t8];
+      s5 === this.st.has(t8) || this.nt?.has(t8) || (s5 ? (r11.add(t8), this.st.add(t8)) : (r11.remove(t8), this.st.delete(t8)));
+    }
+    return T2;
+  }
+});
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.XUX6RZ47.js
+var SlBadge = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.variant = "primary";
+    this.pill = false;
+    this.pulse = false;
+  }
+  render() {
+    return x2`
+      <span
+        part="base"
+        class=${e9({
+      badge: true,
+      "badge--primary": this.variant === "primary",
+      "badge--success": this.variant === "success",
+      "badge--neutral": this.variant === "neutral",
+      "badge--warning": this.variant === "warning",
+      "badge--danger": this.variant === "danger",
+      "badge--pill": this.pill,
+      "badge--pulse": this.pulse
+    })}
+        role="status"
+      >
+        <slot></slot>
+      </span>
+    `;
+  }
+};
+SlBadge.styles = [component_styles_default, badge_styles_default];
+__decorateClass([
+  n8({ reflect: true })
+], SlBadge.prototype, "variant", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlBadge.prototype, "pill", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlBadge.prototype, "pulse", 2);
+
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.7DUCI5S4.js
 var spinner_styles_default = i`
   :host {
@@ -89394,173 +93437,6 @@ var en_default = translation;
 var LocalizeController2 = class extends LocalizeController {
 };
 registerTranslation(en_default);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.TUVJKY7S.js
-var component_styles_default = i`
-  :host {
-    box-sizing: border-box;
-  }
-
-  :host *,
-  :host *::before,
-  :host *::after {
-    box-sizing: inherit;
-  }
-
-  [hidden] {
-    display: none !important;
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.KAW7D32O.js
-var __defProp3 = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDesc3 = Object.getOwnPropertyDescriptor;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp2 = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __knownSymbol3 = (name, symbol2) => (symbol2 = Symbol[name]) ? symbol2 : Symbol.for("Symbol." + name);
-var __typeError3 = (msg) => {
-  throw TypeError(msg);
-};
-var __defNormalProp3 = (obj, key, value) => key in obj ? __defProp3(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a5, b4) => {
-  for (var prop in b4 || (b4 = {}))
-    if (__hasOwnProp2.call(b4, prop))
-      __defNormalProp3(a5, prop, b4[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b4)) {
-      if (__propIsEnum.call(b4, prop))
-        __defNormalProp3(a5, prop, b4[prop]);
-    }
-  return a5;
-};
-var __spreadProps = (a5, b4) => __defProps(a5, __getOwnPropDescs(b4));
-var __decorateClass = (decorators, target, key, kind) => {
-  var result = kind > 1 ? void 0 : kind ? __getOwnPropDesc3(target, key) : target;
-  for (var i9 = decorators.length - 1, decorator; i9 >= 0; i9--)
-    if (decorator = decorators[i9])
-      result = (kind ? decorator(target, key, result) : decorator(result)) || result;
-  if (kind && result) __defProp3(target, key, result);
-  return result;
-};
-var __accessCheck3 = (obj, member, msg) => member.has(obj) || __typeError3("Cannot " + msg);
-var __privateGet3 = (obj, member, getter) => (__accessCheck3(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
-var __privateAdd3 = (obj, member, value) => member.has(obj) ? __typeError3("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-var __privateSet3 = (obj, member, value, setter) => (__accessCheck3(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
-var __await = function(promise2, isYieldStar) {
-  this[0] = promise2;
-  this[1] = isYieldStar;
-};
-var __yieldStar = (value) => {
-  var obj = value[__knownSymbol3("asyncIterator")], isAwait = false, method, it = {};
-  if (obj == null) {
-    obj = value[__knownSymbol3("iterator")]();
-    method = (k3) => it[k3] = (x4) => obj[k3](x4);
-  } else {
-    obj = obj.call(value);
-    method = (k3) => it[k3] = (v4) => {
-      if (isAwait) {
-        isAwait = false;
-        if (k3 === "throw") throw v4;
-        return v4;
-      }
-      isAwait = true;
-      return {
-        done: false,
-        value: new __await(new Promise((resolve) => {
-          var x4 = obj[k3](v4);
-          if (!(x4 instanceof Object)) __typeError3("Object expected");
-          resolve(x4);
-        }), 1)
-      };
-    };
-  }
-  return it[__knownSymbol3("iterator")] = () => it, method("next"), "throw" in obj ? method("throw") : it.throw = (x4) => {
-    throw x4;
-  }, "return" in obj && method("return"), it;
-};
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.EMG3ZSPT.js
-var _hasRecordedInitialProperties;
-var ShoelaceElement = class extends r7 {
-  constructor() {
-    super();
-    __privateAdd3(this, _hasRecordedInitialProperties, false);
-    this.initialReflectedProperties = /* @__PURE__ */ new Map();
-    Object.entries(this.constructor.dependencies).forEach(([name, component]) => {
-      this.constructor.define(name, component);
-    });
-  }
-  emit(name, options) {
-    const event = new CustomEvent(name, __spreadValues({
-      bubbles: true,
-      cancelable: false,
-      composed: true,
-      detail: {}
-    }, options));
-    this.dispatchEvent(event);
-    return event;
-  }
-  /* eslint-enable */
-  static define(name, elementConstructor = this, options = {}) {
-    const currentlyRegisteredConstructor = customElements.get(name);
-    if (!currentlyRegisteredConstructor) {
-      try {
-        customElements.define(name, elementConstructor, options);
-      } catch (_err) {
-        customElements.define(name, class extends elementConstructor {
-        }, options);
-      }
-      return;
-    }
-    let newVersion = " (unknown version)";
-    let existingVersion = newVersion;
-    if ("version" in elementConstructor && elementConstructor.version) {
-      newVersion = " v" + elementConstructor.version;
-    }
-    if ("version" in currentlyRegisteredConstructor && currentlyRegisteredConstructor.version) {
-      existingVersion = " v" + currentlyRegisteredConstructor.version;
-    }
-    if (newVersion && existingVersion && newVersion === existingVersion) {
-      return;
-    }
-    console.warn(
-      `Attempted to register <${name}>${newVersion}, but <${name}>${existingVersion} has already been registered.`
-    );
-  }
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (!__privateGet3(this, _hasRecordedInitialProperties)) {
-      this.constructor.elementProperties.forEach(
-        (obj, prop) => {
-          if (obj.reflect && this[prop] != null) {
-            this.initialReflectedProperties.set(prop, this[prop]);
-          }
-        }
-      );
-      __privateSet3(this, _hasRecordedInitialProperties, true);
-    }
-    super.attributeChangedCallback(name, oldValue, newValue);
-  }
-  willUpdate(changedProperties) {
-    super.willUpdate(changedProperties);
-    this.initialReflectedProperties.forEach((value, prop) => {
-      if (changedProperties.has(prop) && this[prop] == null) {
-        this[prop] = value;
-      }
-    });
-  }
-};
-_hasRecordedInitialProperties = /* @__PURE__ */ new WeakMap();
-ShoelaceElement.version = "2.19.1";
-ShoelaceElement.dependencies = {};
-__decorateClass([
-  n8()
-], ShoelaceElement.prototype, "dir", 2);
-__decorateClass([
-  n8()
-], ShoelaceElement.prototype, "lang", 2);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.YB3JVLEN.js
 var SlSpinner = class extends ShoelaceElement {
@@ -90722,8 +94598,8 @@ function watch(propertyName, options) {
 }
 
 // node_modules/lit-html/directive-helpers.js
-var { I: t6 } = Z2;
-var e8 = (o12, t8) => void 0 === t8 ? void 0 !== o12?._$litType$ : o12?._$litType$ === t8;
+var { I: t7 } = Z2;
+var e10 = (o12, t8) => void 0 === t8 ? void 0 !== o12?._$litType$ : o12?._$litType$ === t8;
 var f6 = (o12) => void 0 === o12.strings;
 var u4 = {};
 var m3 = (o12, t8 = u4) => o12._$AH = t8;
@@ -90832,7 +94708,7 @@ var SlIcon = class extends ShoelaceElement {
     if (url2 !== this.getIconSource().url) {
       return;
     }
-    if (e8(svg)) {
+    if (e10(svg)) {
       this.svg = svg;
       if (library2) {
         await this.updateComplete;
@@ -90881,50 +94757,6 @@ __decorateClass([
 __decorateClass([
   watch(["name", "src", "library"])
 ], SlIcon.prototype, "setIcon", 1);
-
-// node_modules/lit-html/directive.js
-var t7 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
-var e9 = (t8) => (...e13) => ({ _$litDirective$: t8, values: e13 });
-var i6 = class {
-  constructor(t8) {
-  }
-  get _$AU() {
-    return this._$AM._$AU;
-  }
-  _$AT(t8, e13, i9) {
-    this._$Ct = t8, this._$AM = e13, this._$Ci = i9;
-  }
-  _$AS(t8, e13) {
-    return this.update(t8, e13);
-  }
-  update(t8, e13) {
-    return this.render(...e13);
-  }
-};
-
-// node_modules/lit-html/directives/class-map.js
-var e10 = e9(class extends i6 {
-  constructor(t8) {
-    if (super(t8), t8.type !== t7.ATTRIBUTE || "class" !== t8.name || t8.strings?.length > 2) throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.");
-  }
-  render(t8) {
-    return " " + Object.keys(t8).filter(((s4) => t8[s4])).join(" ") + " ";
-  }
-  update(s4, [i9]) {
-    if (void 0 === this.st) {
-      this.st = /* @__PURE__ */ new Set(), void 0 !== s4.strings && (this.nt = new Set(s4.strings.join(" ").split(/\s/).filter(((t8) => "" !== t8))));
-      for (const t8 in i9) i9[t8] && !this.nt?.has(t8) && this.st.add(t8);
-      return this.render(i9);
-    }
-    const r11 = s4.element.classList;
-    for (const t8 of this.st) t8 in i9 || (r11.remove(t8), this.st.delete(t8));
-    for (const t8 in i9) {
-      const s5 = !!i9[t8];
-      s5 === this.st.has(t8) || this.nt?.has(t8) || (s5 ? (r11.add(t8), this.st.add(t8)) : (r11.remove(t8), this.st.delete(t8)));
-    }
-    return T2;
-  }
-});
 
 // node_modules/lit-html/static.js
 var a4 = Symbol.for("");
@@ -91078,7 +94910,7 @@ var SlButton = class extends ShoelaceElement {
     return u5`
       <${tag}
         part="base"
-        class=${e10({
+        class=${e9({
       button: true,
       "button--default": this.variant === "default",
       "button--primary": this.variant === "primary",
@@ -91497,7 +95329,7 @@ var SlDetails = class extends ShoelaceElement {
     return x2`
       <details
         part="base"
-        class=${e10({
+        class=${e9({
       details: true,
       "details--open": this.open,
       "details--disabled": this.disabled,
@@ -91577,2075 +95409,6 @@ setDefaultAnimation("details.hide", {
   ],
   options: { duration: 250, easing: "linear" }
 });
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.V2OL7VMD.js
-var tag_styles_default = i`
-  :host {
-    display: inline-block;
-  }
-
-  .tag {
-    display: flex;
-    align-items: center;
-    border: solid 1px;
-    line-height: 1;
-    white-space: nowrap;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-
-  .tag__remove::part(base) {
-    color: inherit;
-    padding: 0;
-  }
-
-  /*
-   * Variant modifiers
-   */
-
-  .tag--primary {
-    background-color: var(--sl-color-primary-50);
-    border-color: var(--sl-color-primary-200);
-    color: var(--sl-color-primary-800);
-  }
-
-  .tag--primary:active > sl-icon-button {
-    color: var(--sl-color-primary-600);
-  }
-
-  .tag--success {
-    background-color: var(--sl-color-success-50);
-    border-color: var(--sl-color-success-200);
-    color: var(--sl-color-success-800);
-  }
-
-  .tag--success:active > sl-icon-button {
-    color: var(--sl-color-success-600);
-  }
-
-  .tag--neutral {
-    background-color: var(--sl-color-neutral-50);
-    border-color: var(--sl-color-neutral-200);
-    color: var(--sl-color-neutral-800);
-  }
-
-  .tag--neutral:active > sl-icon-button {
-    color: var(--sl-color-neutral-600);
-  }
-
-  .tag--warning {
-    background-color: var(--sl-color-warning-50);
-    border-color: var(--sl-color-warning-200);
-    color: var(--sl-color-warning-800);
-  }
-
-  .tag--warning:active > sl-icon-button {
-    color: var(--sl-color-warning-600);
-  }
-
-  .tag--danger {
-    background-color: var(--sl-color-danger-50);
-    border-color: var(--sl-color-danger-200);
-    color: var(--sl-color-danger-800);
-  }
-
-  .tag--danger:active > sl-icon-button {
-    color: var(--sl-color-danger-600);
-  }
-
-  /*
-   * Size modifiers
-   */
-
-  .tag--small {
-    font-size: var(--sl-button-font-size-small);
-    height: calc(var(--sl-input-height-small) * 0.8);
-    line-height: calc(var(--sl-input-height-small) - var(--sl-input-border-width) * 2);
-    border-radius: var(--sl-input-border-radius-small);
-    padding: 0 var(--sl-spacing-x-small);
-  }
-
-  .tag--medium {
-    font-size: var(--sl-button-font-size-medium);
-    height: calc(var(--sl-input-height-medium) * 0.8);
-    line-height: calc(var(--sl-input-height-medium) - var(--sl-input-border-width) * 2);
-    border-radius: var(--sl-input-border-radius-medium);
-    padding: 0 var(--sl-spacing-small);
-  }
-
-  .tag--large {
-    font-size: var(--sl-button-font-size-large);
-    height: calc(var(--sl-input-height-large) * 0.8);
-    line-height: calc(var(--sl-input-height-large) - var(--sl-input-border-width) * 2);
-    border-radius: var(--sl-input-border-radius-large);
-    padding: 0 var(--sl-spacing-medium);
-  }
-
-  .tag__remove {
-    margin-inline-start: var(--sl-spacing-x-small);
-  }
-
-  /*
-   * Pill modifier
-   */
-
-  .tag--pill {
-    border-radius: var(--sl-border-radius-pill);
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.6I2T3DLI.js
-var icon_button_styles_default = i`
-  :host {
-    display: inline-block;
-    color: var(--sl-color-neutral-600);
-  }
-
-  .icon-button {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    background: none;
-    border: none;
-    border-radius: var(--sl-border-radius-medium);
-    font-size: inherit;
-    color: inherit;
-    padding: var(--sl-spacing-x-small);
-    cursor: pointer;
-    transition: var(--sl-transition-x-fast) color;
-    -webkit-appearance: none;
-  }
-
-  .icon-button:hover:not(.icon-button--disabled),
-  .icon-button:focus-visible:not(.icon-button--disabled) {
-    color: var(--sl-color-primary-600);
-  }
-
-  .icon-button:active:not(.icon-button--disabled) {
-    color: var(--sl-color-primary-700);
-  }
-
-  .icon-button:focus {
-    outline: none;
-  }
-
-  .icon-button--disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .icon-button:focus-visible {
-    outline: var(--sl-focus-ring);
-    outline-offset: var(--sl-focus-ring-offset);
-  }
-
-  .icon-button__icon {
-    pointer-events: none;
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.MMEGYRNV.js
-var SlIconButton = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.hasFocus = false;
-    this.label = "";
-    this.disabled = false;
-  }
-  handleBlur() {
-    this.hasFocus = false;
-    this.emit("sl-blur");
-  }
-  handleFocus() {
-    this.hasFocus = true;
-    this.emit("sl-focus");
-  }
-  handleClick(event) {
-    if (this.disabled) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }
-  /** Simulates a click on the icon button. */
-  click() {
-    this.button.click();
-  }
-  /** Sets focus on the icon button. */
-  focus(options) {
-    this.button.focus(options);
-  }
-  /** Removes focus from the icon button. */
-  blur() {
-    this.button.blur();
-  }
-  render() {
-    const isLink = this.href ? true : false;
-    const tag = isLink ? i7`a` : i7`button`;
-    return u5`
-      <${tag}
-        part="base"
-        class=${e10({
-      "icon-button": true,
-      "icon-button--disabled": !isLink && this.disabled,
-      "icon-button--focused": this.hasFocus
-    })}
-        ?disabled=${o9(isLink ? void 0 : this.disabled)}
-        type=${o9(isLink ? void 0 : "button")}
-        href=${o9(isLink ? this.href : void 0)}
-        target=${o9(isLink ? this.target : void 0)}
-        download=${o9(isLink ? this.download : void 0)}
-        rel=${o9(isLink && this.target ? "noreferrer noopener" : void 0)}
-        role=${o9(isLink ? void 0 : "button")}
-        aria-disabled=${this.disabled ? "true" : "false"}
-        aria-label="${this.label}"
-        tabindex=${this.disabled ? "-1" : "0"}
-        @blur=${this.handleBlur}
-        @focus=${this.handleFocus}
-        @click=${this.handleClick}
-      >
-        <sl-icon
-          class="icon-button__icon"
-          name=${o9(this.name)}
-          library=${o9(this.library)}
-          src=${o9(this.src)}
-          aria-hidden="true"
-        ></sl-icon>
-      </${tag}>
-    `;
-  }
-};
-SlIconButton.styles = [component_styles_default, icon_button_styles_default];
-SlIconButton.dependencies = { "sl-icon": SlIcon };
-__decorateClass([
-  e7(".icon-button")
-], SlIconButton.prototype, "button", 2);
-__decorateClass([
-  r9()
-], SlIconButton.prototype, "hasFocus", 2);
-__decorateClass([
-  n8()
-], SlIconButton.prototype, "name", 2);
-__decorateClass([
-  n8()
-], SlIconButton.prototype, "library", 2);
-__decorateClass([
-  n8()
-], SlIconButton.prototype, "src", 2);
-__decorateClass([
-  n8()
-], SlIconButton.prototype, "href", 2);
-__decorateClass([
-  n8()
-], SlIconButton.prototype, "target", 2);
-__decorateClass([
-  n8()
-], SlIconButton.prototype, "download", 2);
-__decorateClass([
-  n8()
-], SlIconButton.prototype, "label", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlIconButton.prototype, "disabled", 2);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.JGSVFUWB.js
-var SlTag = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.localize = new LocalizeController2(this);
-    this.variant = "neutral";
-    this.size = "medium";
-    this.pill = false;
-    this.removable = false;
-  }
-  handleRemoveClick() {
-    this.emit("sl-remove");
-  }
-  render() {
-    return x2`
-      <span
-        part="base"
-        class=${e10({
-      tag: true,
-      // Types
-      "tag--primary": this.variant === "primary",
-      "tag--success": this.variant === "success",
-      "tag--neutral": this.variant === "neutral",
-      "tag--warning": this.variant === "warning",
-      "tag--danger": this.variant === "danger",
-      "tag--text": this.variant === "text",
-      // Sizes
-      "tag--small": this.size === "small",
-      "tag--medium": this.size === "medium",
-      "tag--large": this.size === "large",
-      // Modifiers
-      "tag--pill": this.pill,
-      "tag--removable": this.removable
-    })}
-      >
-        <slot part="content" class="tag__content"></slot>
-
-        ${this.removable ? x2`
-              <sl-icon-button
-                part="remove-button"
-                exportparts="base:remove-button__base"
-                name="x-lg"
-                library="system"
-                label=${this.localize.term("remove")}
-                class="tag__remove"
-                @click=${this.handleRemoveClick}
-                tabindex="-1"
-              ></sl-icon-button>
-            ` : ""}
-      </span>
-    `;
-  }
-};
-SlTag.styles = [component_styles_default, tag_styles_default];
-SlTag.dependencies = { "sl-icon-button": SlIconButton };
-__decorateClass([
-  n8({ reflect: true })
-], SlTag.prototype, "variant", 2);
-__decorateClass([
-  n8({ reflect: true })
-], SlTag.prototype, "size", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlTag.prototype, "pill", 2);
-__decorateClass([
-  n8({ type: Boolean })
-], SlTag.prototype, "removable", 2);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.WQC6OWUE.js
-var badge_styles_default = i`
-  :host {
-    display: inline-flex;
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: max(12px, 0.75em);
-    font-weight: var(--sl-font-weight-semibold);
-    letter-spacing: var(--sl-letter-spacing-normal);
-    line-height: 1;
-    border-radius: var(--sl-border-radius-small);
-    border: solid 1px var(--sl-color-neutral-0);
-    white-space: nowrap;
-    padding: 0.35em 0.6em;
-    user-select: none;
-    -webkit-user-select: none;
-    cursor: inherit;
-  }
-
-  /* Variant modifiers */
-  .badge--primary {
-    background-color: var(--sl-color-primary-600);
-    color: var(--sl-color-neutral-0);
-  }
-
-  .badge--success {
-    background-color: var(--sl-color-success-600);
-    color: var(--sl-color-neutral-0);
-  }
-
-  .badge--neutral {
-    background-color: var(--sl-color-neutral-600);
-    color: var(--sl-color-neutral-0);
-  }
-
-  .badge--warning {
-    background-color: var(--sl-color-warning-600);
-    color: var(--sl-color-neutral-0);
-  }
-
-  .badge--danger {
-    background-color: var(--sl-color-danger-600);
-    color: var(--sl-color-neutral-0);
-  }
-
-  /* Pill modifier */
-  .badge--pill {
-    border-radius: var(--sl-border-radius-pill);
-  }
-
-  /* Pulse modifier */
-  .badge--pulse {
-    animation: pulse 1.5s infinite;
-  }
-
-  .badge--pulse.badge--primary {
-    --pulse-color: var(--sl-color-primary-600);
-  }
-
-  .badge--pulse.badge--success {
-    --pulse-color: var(--sl-color-success-600);
-  }
-
-  .badge--pulse.badge--neutral {
-    --pulse-color: var(--sl-color-neutral-600);
-  }
-
-  .badge--pulse.badge--warning {
-    --pulse-color: var(--sl-color-warning-600);
-  }
-
-  .badge--pulse.badge--danger {
-    --pulse-color: var(--sl-color-danger-600);
-  }
-
-  @keyframes pulse {
-    0% {
-      box-shadow: 0 0 0 0 var(--pulse-color);
-    }
-    70% {
-      box-shadow: 0 0 0 0.5rem transparent;
-    }
-    100% {
-      box-shadow: 0 0 0 0 transparent;
-    }
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.XUX6RZ47.js
-var SlBadge = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.variant = "primary";
-    this.pill = false;
-    this.pulse = false;
-  }
-  render() {
-    return x2`
-      <span
-        part="base"
-        class=${e10({
-      badge: true,
-      "badge--primary": this.variant === "primary",
-      "badge--success": this.variant === "success",
-      "badge--neutral": this.variant === "neutral",
-      "badge--warning": this.variant === "warning",
-      "badge--danger": this.variant === "danger",
-      "badge--pill": this.pill,
-      "badge--pulse": this.pulse
-    })}
-        role="status"
-      >
-        <slot></slot>
-      </span>
-    `;
-  }
-};
-SlBadge.styles = [component_styles_default, badge_styles_default];
-__decorateClass([
-  n8({ reflect: true })
-], SlBadge.prototype, "variant", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlBadge.prototype, "pill", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlBadge.prototype, "pulse", 2);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.A5D6FTFY.js
-var card_styles_default = i`
-  :host {
-    --border-color: var(--sl-color-neutral-200);
-    --border-radius: var(--sl-border-radius-medium);
-    --border-width: 1px;
-    --padding: var(--sl-spacing-large);
-
-    display: inline-block;
-  }
-
-  .card {
-    display: flex;
-    flex-direction: column;
-    background-color: var(--sl-panel-background-color);
-    box-shadow: var(--sl-shadow-x-small);
-    border: solid var(--border-width) var(--border-color);
-    border-radius: var(--border-radius);
-  }
-
-  .card__image {
-    display: flex;
-    border-top-left-radius: var(--border-radius);
-    border-top-right-radius: var(--border-radius);
-    margin: calc(-1 * var(--border-width));
-    overflow: hidden;
-  }
-
-  .card__image::slotted(img) {
-    display: block;
-    width: 100%;
-  }
-
-  .card:not(.card--has-image) .card__image {
-    display: none;
-  }
-
-  .card__header {
-    display: block;
-    border-bottom: solid var(--border-width) var(--border-color);
-    padding: calc(var(--padding) / 2) var(--padding);
-  }
-
-  .card:not(.card--has-header) .card__header {
-    display: none;
-  }
-
-  .card:not(.card--has-image) .card__header {
-    border-top-left-radius: var(--border-radius);
-    border-top-right-radius: var(--border-radius);
-  }
-
-  .card__body {
-    display: block;
-    padding: var(--padding);
-  }
-
-  .card--has-footer .card__footer {
-    display: block;
-    border-top: solid var(--border-width) var(--border-color);
-    padding: var(--padding);
-  }
-
-  .card:not(.card--has-footer) .card__footer {
-    display: none;
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.X2VUYVGD.js
-var SlCard = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.hasSlotController = new HasSlotController(this, "footer", "header", "image");
-  }
-  render() {
-    return x2`
-      <div
-        part="base"
-        class=${e10({
-      card: true,
-      "card--has-footer": this.hasSlotController.test("footer"),
-      "card--has-image": this.hasSlotController.test("image"),
-      "card--has-header": this.hasSlotController.test("header")
-    })}
-      >
-        <slot name="image" part="image" class="card__image"></slot>
-        <slot name="header" part="header" class="card__header"></slot>
-        <slot part="body" class="card__body"></slot>
-        <slot name="footer" part="footer" class="card__footer"></slot>
-      </div>
-    `;
-  }
-};
-SlCard.styles = [component_styles_default, card_styles_default];
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.HF7GESMZ.js
-function clamp(value, min2, max2) {
-  const noNegativeZero = (n10) => Object.is(n10, -0) ? 0 : n10;
-  if (value < min2) {
-    return noNegativeZero(min2);
-  }
-  if (value > max2) {
-    return noNegativeZero(max2);
-  }
-  return noNegativeZero(value);
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.F4VGSDIW.js
-var AutoplayController = class {
-  constructor(host, tickCallback) {
-    this.timerId = 0;
-    this.activeInteractions = 0;
-    this.paused = false;
-    this.stopped = true;
-    this.pause = () => {
-      if (!this.activeInteractions++) {
-        this.paused = true;
-        this.host.requestUpdate();
-      }
-    };
-    this.resume = () => {
-      if (!--this.activeInteractions) {
-        this.paused = false;
-        this.host.requestUpdate();
-      }
-    };
-    host.addController(this);
-    this.host = host;
-    this.tickCallback = tickCallback;
-  }
-  hostConnected() {
-    this.host.addEventListener("mouseenter", this.pause);
-    this.host.addEventListener("mouseleave", this.resume);
-    this.host.addEventListener("focusin", this.pause);
-    this.host.addEventListener("focusout", this.resume);
-    this.host.addEventListener("touchstart", this.pause, { passive: true });
-    this.host.addEventListener("touchend", this.resume);
-  }
-  hostDisconnected() {
-    this.stop();
-    this.host.removeEventListener("mouseenter", this.pause);
-    this.host.removeEventListener("mouseleave", this.resume);
-    this.host.removeEventListener("focusin", this.pause);
-    this.host.removeEventListener("focusout", this.resume);
-    this.host.removeEventListener("touchstart", this.pause);
-    this.host.removeEventListener("touchend", this.resume);
-  }
-  start(interval) {
-    this.stop();
-    this.stopped = false;
-    this.timerId = window.setInterval(() => {
-      if (!this.paused) {
-        this.tickCallback();
-      }
-    }, interval);
-  }
-  stop() {
-    clearInterval(this.timerId);
-    this.stopped = true;
-    this.host.requestUpdate();
-  }
-};
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.BMOWACWC.js
-var carousel_styles_default = i`
-  :host {
-    --slide-gap: var(--sl-spacing-medium, 1rem);
-    --aspect-ratio: 16 / 9;
-    --scroll-hint: 0px;
-
-    display: flex;
-  }
-
-  .carousel {
-    display: grid;
-    grid-template-columns: min-content 1fr min-content;
-    grid-template-rows: 1fr min-content;
-    grid-template-areas:
-      '. slides .'
-      '. pagination .';
-    gap: var(--sl-spacing-medium);
-    align-items: center;
-    min-height: 100%;
-    min-width: 100%;
-    position: relative;
-  }
-
-  .carousel__pagination {
-    grid-area: pagination;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--sl-spacing-small);
-  }
-
-  .carousel__slides {
-    grid-area: slides;
-
-    display: grid;
-    height: 100%;
-    width: 100%;
-    align-items: center;
-    justify-items: center;
-    overflow: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    aspect-ratio: calc(var(--aspect-ratio) * var(--slides-per-page));
-    border-radius: var(--sl-border-radius-small);
-
-    --slide-size: calc((100% - (var(--slides-per-page) - 1) * var(--slide-gap)) / var(--slides-per-page));
-  }
-
-  @media (prefers-reduced-motion) {
-    :where(.carousel__slides) {
-      scroll-behavior: auto;
-    }
-  }
-
-  .carousel__slides--horizontal {
-    grid-auto-flow: column;
-    grid-auto-columns: var(--slide-size);
-    grid-auto-rows: 100%;
-    column-gap: var(--slide-gap);
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: var(--scroll-hint);
-    padding-inline: var(--scroll-hint);
-    overflow-y: hidden;
-  }
-
-  .carousel__slides--vertical {
-    grid-auto-flow: row;
-    grid-auto-columns: 100%;
-    grid-auto-rows: var(--slide-size);
-    row-gap: var(--slide-gap);
-    scroll-snap-type: y mandatory;
-    scroll-padding-block: var(--scroll-hint);
-    padding-block: var(--scroll-hint);
-    overflow-x: hidden;
-  }
-
-  .carousel__slides--dragging {
-  }
-
-  :host([vertical]) ::slotted(sl-carousel-item) {
-    height: 100%;
-  }
-
-  .carousel__slides::-webkit-scrollbar {
-    display: none;
-  }
-
-  .carousel__navigation {
-    grid-area: navigation;
-    display: contents;
-    font-size: var(--sl-font-size-x-large);
-  }
-
-  .carousel__navigation-button {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    background: none;
-    border: none;
-    border-radius: var(--sl-border-radius-small);
-    font-size: inherit;
-    color: var(--sl-color-neutral-600);
-    padding: var(--sl-spacing-x-small);
-    cursor: pointer;
-    transition: var(--sl-transition-medium) color;
-    appearance: none;
-  }
-
-  .carousel__navigation-button--disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .carousel__navigation-button--disabled::part(base) {
-    pointer-events: none;
-  }
-
-  .carousel__navigation-button--previous {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .carousel__navigation-button--next {
-    grid-column: 3;
-    grid-row: 1;
-  }
-
-  .carousel__pagination-item {
-    display: block;
-    cursor: pointer;
-    background: none;
-    border: 0;
-    border-radius: var(--sl-border-radius-circle);
-    width: var(--sl-spacing-small);
-    height: var(--sl-spacing-small);
-    background-color: var(--sl-color-neutral-300);
-    padding: 0;
-    margin: 0;
-  }
-
-  .carousel__pagination-item--active {
-    background-color: var(--sl-color-neutral-700);
-    transform: scale(1.2);
-  }
-
-  /* Focus styles */
-  .carousel__slides:focus-visible,
-  .carousel__navigation-button:focus-visible,
-  .carousel__pagination-item:focus-visible {
-    outline: var(--sl-focus-ring);
-    outline-offset: var(--sl-focus-ring-offset);
-  }
-`;
-
-// node_modules/lit-html/directives/map.js
-function* o10(o12, f7) {
-  if (void 0 !== o12) {
-    let i9 = 0;
-    for (const t8 of o12) yield f7(t8, i9++);
-  }
-}
-
-// node_modules/lit-html/directives/range.js
-function* o11(o12, t8, e13 = 1) {
-  const i9 = void 0 === t8 ? 0 : o12;
-  t8 ??= o12;
-  for (let o13 = i9; e13 > 0 ? o13 < t8 : t8 < o13; o13 += e13) yield o13;
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.WIPJVEWE.js
-var SlCarousel = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.loop = false;
-    this.navigation = false;
-    this.pagination = false;
-    this.autoplay = false;
-    this.autoplayInterval = 3e3;
-    this.slidesPerPage = 1;
-    this.slidesPerMove = 1;
-    this.orientation = "horizontal";
-    this.mouseDragging = false;
-    this.activeSlide = 0;
-    this.scrolling = false;
-    this.dragging = false;
-    this.autoplayController = new AutoplayController(this, () => this.next());
-    this.dragStartPosition = [-1, -1];
-    this.localize = new LocalizeController2(this);
-    this.pendingSlideChange = false;
-    this.handleMouseDrag = (event) => {
-      if (!this.dragging) {
-        this.scrollContainer.style.setProperty("scroll-snap-type", "none");
-        this.dragging = true;
-        this.dragStartPosition = [event.clientX, event.clientY];
-      }
-      this.scrollContainer.scrollBy({
-        left: -event.movementX,
-        top: -event.movementY,
-        behavior: "instant"
-      });
-    };
-    this.handleMouseDragEnd = () => {
-      const scrollContainer = this.scrollContainer;
-      document.removeEventListener("pointermove", this.handleMouseDrag, { capture: true });
-      const startLeft = scrollContainer.scrollLeft;
-      const startTop = scrollContainer.scrollTop;
-      scrollContainer.style.removeProperty("scroll-snap-type");
-      scrollContainer.style.setProperty("overflow", "hidden");
-      const finalLeft = scrollContainer.scrollLeft;
-      const finalTop = scrollContainer.scrollTop;
-      scrollContainer.style.removeProperty("overflow");
-      scrollContainer.style.setProperty("scroll-snap-type", "none");
-      scrollContainer.scrollTo({ left: startLeft, top: startTop, behavior: "instant" });
-      requestAnimationFrame(async () => {
-        if (startLeft !== finalLeft || startTop !== finalTop) {
-          scrollContainer.scrollTo({
-            left: finalLeft,
-            top: finalTop,
-            behavior: prefersReducedMotion() ? "auto" : "smooth"
-          });
-          await waitForEvent(scrollContainer, "scrollend");
-        }
-        scrollContainer.style.removeProperty("scroll-snap-type");
-        this.dragging = false;
-        this.dragStartPosition = [-1, -1];
-        this.handleScrollEnd();
-      });
-    };
-    this.handleSlotChange = (mutations) => {
-      const needsInitialization = mutations.some(
-        (mutation) => [...mutation.addedNodes, ...mutation.removedNodes].some(
-          (el) => this.isCarouselItem(el) && !el.hasAttribute("data-clone")
-        )
-      );
-      if (needsInitialization) {
-        this.initializeSlides();
-      }
-      this.requestUpdate();
-    };
-  }
-  connectedCallback() {
-    super.connectedCallback();
-    this.setAttribute("role", "region");
-    this.setAttribute("aria-label", this.localize.term("carousel"));
-  }
-  disconnectedCallback() {
-    var _a4;
-    super.disconnectedCallback();
-    (_a4 = this.mutationObserver) == null ? void 0 : _a4.disconnect();
-  }
-  firstUpdated() {
-    this.initializeSlides();
-    this.mutationObserver = new MutationObserver(this.handleSlotChange);
-    this.mutationObserver.observe(this, {
-      childList: true,
-      subtree: true
-    });
-  }
-  willUpdate(changedProperties) {
-    if (changedProperties.has("slidesPerMove") || changedProperties.has("slidesPerPage")) {
-      this.slidesPerMove = Math.min(this.slidesPerMove, this.slidesPerPage);
-    }
-  }
-  getPageCount() {
-    const slidesCount = this.getSlides().length;
-    const { slidesPerPage, slidesPerMove, loop } = this;
-    const pages = loop ? slidesCount / slidesPerMove : (slidesCount - slidesPerPage) / slidesPerMove + 1;
-    return Math.ceil(pages);
-  }
-  getCurrentPage() {
-    return Math.ceil(this.activeSlide / this.slidesPerMove);
-  }
-  canScrollNext() {
-    return this.loop || this.getCurrentPage() < this.getPageCount() - 1;
-  }
-  canScrollPrev() {
-    return this.loop || this.getCurrentPage() > 0;
-  }
-  /** @internal Gets all carousel items. */
-  getSlides({ excludeClones = true } = {}) {
-    return [...this.children].filter(
-      (el) => this.isCarouselItem(el) && (!excludeClones || !el.hasAttribute("data-clone"))
-    );
-  }
-  handleClick(event) {
-    if (this.dragging && this.dragStartPosition[0] > 0 && this.dragStartPosition[1] > 0) {
-      const deltaX = Math.abs(this.dragStartPosition[0] - event.clientX);
-      const deltaY = Math.abs(this.dragStartPosition[1] - event.clientY);
-      const delta = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      if (delta >= 10) {
-        event.preventDefault();
-      }
-    }
-  }
-  handleKeyDown(event) {
-    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
-      const target = event.target;
-      const isRtl = this.localize.dir() === "rtl";
-      const isFocusInPagination = target.closest('[part~="pagination-item"]') !== null;
-      const isNext = event.key === "ArrowDown" || !isRtl && event.key === "ArrowRight" || isRtl && event.key === "ArrowLeft";
-      const isPrevious = event.key === "ArrowUp" || !isRtl && event.key === "ArrowLeft" || isRtl && event.key === "ArrowRight";
-      event.preventDefault();
-      if (isPrevious) {
-        this.previous();
-      }
-      if (isNext) {
-        this.next();
-      }
-      if (event.key === "Home") {
-        this.goToSlide(0);
-      }
-      if (event.key === "End") {
-        this.goToSlide(this.getSlides().length - 1);
-      }
-      if (isFocusInPagination) {
-        this.updateComplete.then(() => {
-          var _a4;
-          const activePaginationItem = (_a4 = this.shadowRoot) == null ? void 0 : _a4.querySelector(
-            '[part~="pagination-item--active"]'
-          );
-          if (activePaginationItem) {
-            activePaginationItem.focus();
-          }
-        });
-      }
-    }
-  }
-  handleMouseDragStart(event) {
-    const canDrag = this.mouseDragging && event.button === 0;
-    if (canDrag) {
-      event.preventDefault();
-      document.addEventListener("pointermove", this.handleMouseDrag, { capture: true, passive: true });
-      document.addEventListener("pointerup", this.handleMouseDragEnd, { capture: true, once: true });
-    }
-  }
-  handleScroll() {
-    this.scrolling = true;
-    if (!this.pendingSlideChange) {
-      this.synchronizeSlides();
-    }
-  }
-  /** @internal Synchronizes the slides with the IntersectionObserver API. */
-  synchronizeSlides() {
-    const io = new IntersectionObserver(
-      (entries2) => {
-        io.disconnect();
-        for (const entry of entries2) {
-          const slide = entry.target;
-          slide.toggleAttribute("inert", !entry.isIntersecting);
-          slide.classList.toggle("--in-view", entry.isIntersecting);
-          slide.setAttribute("aria-hidden", entry.isIntersecting ? "false" : "true");
-        }
-        const firstIntersecting = entries2.find((entry) => entry.isIntersecting);
-        if (!firstIntersecting) {
-          return;
-        }
-        const slidesWithClones = this.getSlides({ excludeClones: false });
-        const slidesCount = this.getSlides().length;
-        const slideIndex = slidesWithClones.indexOf(firstIntersecting.target);
-        const normalizedIndex = this.loop ? slideIndex - this.slidesPerPage : slideIndex;
-        this.activeSlide = (Math.ceil(normalizedIndex / this.slidesPerMove) * this.slidesPerMove + slidesCount) % slidesCount;
-        if (!this.scrolling) {
-          if (this.loop && firstIntersecting.target.hasAttribute("data-clone")) {
-            const clonePosition = Number(firstIntersecting.target.getAttribute("data-clone"));
-            this.goToSlide(clonePosition, "instant");
-          }
-        }
-      },
-      {
-        root: this.scrollContainer,
-        threshold: 0.6
-      }
-    );
-    this.getSlides({ excludeClones: false }).forEach((slide) => {
-      io.observe(slide);
-    });
-  }
-  handleScrollEnd() {
-    if (!this.scrolling || this.dragging) return;
-    this.scrolling = false;
-    this.pendingSlideChange = false;
-    this.synchronizeSlides();
-  }
-  isCarouselItem(node) {
-    return node instanceof Element && node.tagName.toLowerCase() === "sl-carousel-item";
-  }
-  initializeSlides() {
-    this.getSlides({ excludeClones: false }).forEach((slide, index) => {
-      slide.classList.remove("--in-view");
-      slide.classList.remove("--is-active");
-      slide.setAttribute("aria-label", this.localize.term("slideNum", index + 1));
-      if (slide.hasAttribute("data-clone")) {
-        slide.remove();
-      }
-    });
-    this.updateSlidesSnap();
-    if (this.loop) {
-      this.createClones();
-    }
-    this.goToSlide(this.activeSlide, "auto");
-    this.synchronizeSlides();
-  }
-  createClones() {
-    const slides = this.getSlides();
-    const slidesPerPage = this.slidesPerPage;
-    const lastSlides = slides.slice(-slidesPerPage);
-    const firstSlides = slides.slice(0, slidesPerPage);
-    lastSlides.reverse().forEach((slide, i9) => {
-      const clone = slide.cloneNode(true);
-      clone.setAttribute("data-clone", String(slides.length - i9 - 1));
-      this.prepend(clone);
-    });
-    firstSlides.forEach((slide, i9) => {
-      const clone = slide.cloneNode(true);
-      clone.setAttribute("data-clone", String(i9));
-      this.append(clone);
-    });
-  }
-  handleSlideChange() {
-    const slides = this.getSlides();
-    slides.forEach((slide, i9) => {
-      slide.classList.toggle("--is-active", i9 === this.activeSlide);
-    });
-    if (this.hasUpdated) {
-      this.emit("sl-slide-change", {
-        detail: {
-          index: this.activeSlide,
-          slide: slides[this.activeSlide]
-        }
-      });
-    }
-  }
-  updateSlidesSnap() {
-    const slides = this.getSlides();
-    const slidesPerMove = this.slidesPerMove;
-    slides.forEach((slide, i9) => {
-      const shouldSnap = (i9 + slidesPerMove) % slidesPerMove === 0;
-      if (shouldSnap) {
-        slide.style.removeProperty("scroll-snap-align");
-      } else {
-        slide.style.setProperty("scroll-snap-align", "none");
-      }
-    });
-  }
-  handleAutoplayChange() {
-    this.autoplayController.stop();
-    if (this.autoplay) {
-      this.autoplayController.start(this.autoplayInterval);
-    }
-  }
-  /**
-   * Move the carousel backward by `slides-per-move` slides.
-   *
-   * @param behavior - The behavior used for scrolling.
-   */
-  previous(behavior = "smooth") {
-    this.goToSlide(this.activeSlide - this.slidesPerMove, behavior);
-  }
-  /**
-   * Move the carousel forward by `slides-per-move` slides.
-   *
-   * @param behavior - The behavior used for scrolling.
-   */
-  next(behavior = "smooth") {
-    this.goToSlide(this.activeSlide + this.slidesPerMove, behavior);
-  }
-  /**
-   * Scrolls the carousel to the slide specified by `index`.
-   *
-   * @param index - The slide index.
-   * @param behavior - The behavior used for scrolling.
-   */
-  goToSlide(index, behavior = "smooth") {
-    const { slidesPerPage, loop } = this;
-    const slides = this.getSlides();
-    const slidesWithClones = this.getSlides({ excludeClones: false });
-    if (!slides.length) {
-      return;
-    }
-    const newActiveSlide = loop ? (index + slides.length) % slides.length : clamp(index, 0, slides.length - slidesPerPage);
-    this.activeSlide = newActiveSlide;
-    const isRtl = this.localize.dir() === "rtl";
-    const nextSlideIndex = clamp(
-      index + (loop ? slidesPerPage : 0) + (isRtl ? slidesPerPage - 1 : 0),
-      0,
-      slidesWithClones.length - 1
-    );
-    const nextSlide = slidesWithClones[nextSlideIndex];
-    this.scrollToSlide(nextSlide, prefersReducedMotion() ? "auto" : behavior);
-  }
-  scrollToSlide(slide, behavior = "smooth") {
-    this.pendingSlideChange = true;
-    window.requestAnimationFrame(() => {
-      if (!this.scrollContainer) {
-        return;
-      }
-      const scrollContainer = this.scrollContainer;
-      const scrollContainerRect = scrollContainer.getBoundingClientRect();
-      const nextSlideRect = slide.getBoundingClientRect();
-      const nextLeft = nextSlideRect.left - scrollContainerRect.left;
-      const nextTop = nextSlideRect.top - scrollContainerRect.top;
-      if (nextLeft || nextTop) {
-        this.pendingSlideChange = true;
-        scrollContainer.scrollTo({
-          left: nextLeft + scrollContainer.scrollLeft,
-          top: nextTop + scrollContainer.scrollTop,
-          behavior
-        });
-      } else {
-        this.pendingSlideChange = false;
-      }
-    });
-  }
-  render() {
-    const { slidesPerMove, scrolling } = this;
-    const pagesCount = this.getPageCount();
-    const currentPage = this.getCurrentPage();
-    const prevEnabled = this.canScrollPrev();
-    const nextEnabled = this.canScrollNext();
-    const isLtr = this.localize.dir() === "ltr";
-    return x2`
-      <div part="base" class="carousel">
-        <div
-          id="scroll-container"
-          part="scroll-container"
-          class="${e10({
-      carousel__slides: true,
-      "carousel__slides--horizontal": this.orientation === "horizontal",
-      "carousel__slides--vertical": this.orientation === "vertical",
-      "carousel__slides--dragging": this.dragging
-    })}"
-          style="--slides-per-page: ${this.slidesPerPage};"
-          aria-busy="${scrolling ? "true" : "false"}"
-          aria-atomic="true"
-          tabindex="0"
-          @keydown=${this.handleKeyDown}
-          @mousedown="${this.handleMouseDragStart}"
-          @scroll="${this.handleScroll}"
-          @scrollend=${this.handleScrollEnd}
-          @click=${this.handleClick}
-        >
-          <slot></slot>
-        </div>
-
-        ${this.navigation ? x2`
-              <div part="navigation" class="carousel__navigation">
-                <button
-                  part="navigation-button navigation-button--previous"
-                  class="${e10({
-      "carousel__navigation-button": true,
-      "carousel__navigation-button--previous": true,
-      "carousel__navigation-button--disabled": !prevEnabled
-    })}"
-                  aria-label="${this.localize.term("previousSlide")}"
-                  aria-controls="scroll-container"
-                  aria-disabled="${prevEnabled ? "false" : "true"}"
-                  @click=${prevEnabled ? () => this.previous() : null}
-                >
-                  <slot name="previous-icon">
-                    <sl-icon library="system" name="${isLtr ? "chevron-left" : "chevron-right"}"></sl-icon>
-                  </slot>
-                </button>
-
-                <button
-                  part="navigation-button navigation-button--next"
-                  class=${e10({
-      "carousel__navigation-button": true,
-      "carousel__navigation-button--next": true,
-      "carousel__navigation-button--disabled": !nextEnabled
-    })}
-                  aria-label="${this.localize.term("nextSlide")}"
-                  aria-controls="scroll-container"
-                  aria-disabled="${nextEnabled ? "false" : "true"}"
-                  @click=${nextEnabled ? () => this.next() : null}
-                >
-                  <slot name="next-icon">
-                    <sl-icon library="system" name="${isLtr ? "chevron-right" : "chevron-left"}"></sl-icon>
-                  </slot>
-                </button>
-              </div>
-            ` : ""}
-        ${this.pagination ? x2`
-              <div part="pagination" role="tablist" class="carousel__pagination" aria-controls="scroll-container">
-                ${o10(o11(pagesCount), (index) => {
-      const isActive = index === currentPage;
-      return x2`
-                    <button
-                      part="pagination-item ${isActive ? "pagination-item--active" : ""}"
-                      class="${e10({
-        "carousel__pagination-item": true,
-        "carousel__pagination-item--active": isActive
-      })}"
-                      role="tab"
-                      aria-selected="${isActive ? "true" : "false"}"
-                      aria-label="${this.localize.term("goToSlide", index + 1, pagesCount)}"
-                      tabindex=${isActive ? "0" : "-1"}
-                      @click=${() => this.goToSlide(index * slidesPerMove)}
-                      @keydown=${this.handleKeyDown}
-                    ></button>
-                  `;
-    })}
-              </div>
-            ` : ""}
-      </div>
-    `;
-  }
-};
-SlCarousel.styles = [component_styles_default, carousel_styles_default];
-SlCarousel.dependencies = { "sl-icon": SlIcon };
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlCarousel.prototype, "loop", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlCarousel.prototype, "navigation", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlCarousel.prototype, "pagination", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlCarousel.prototype, "autoplay", 2);
-__decorateClass([
-  n8({ type: Number, attribute: "autoplay-interval" })
-], SlCarousel.prototype, "autoplayInterval", 2);
-__decorateClass([
-  n8({ type: Number, attribute: "slides-per-page" })
-], SlCarousel.prototype, "slidesPerPage", 2);
-__decorateClass([
-  n8({ type: Number, attribute: "slides-per-move" })
-], SlCarousel.prototype, "slidesPerMove", 2);
-__decorateClass([
-  n8()
-], SlCarousel.prototype, "orientation", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true, attribute: "mouse-dragging" })
-], SlCarousel.prototype, "mouseDragging", 2);
-__decorateClass([
-  e7(".carousel__slides")
-], SlCarousel.prototype, "scrollContainer", 2);
-__decorateClass([
-  e7(".carousel__pagination")
-], SlCarousel.prototype, "paginationContainer", 2);
-__decorateClass([
-  r9()
-], SlCarousel.prototype, "activeSlide", 2);
-__decorateClass([
-  r9()
-], SlCarousel.prototype, "scrolling", 2);
-__decorateClass([
-  r9()
-], SlCarousel.prototype, "dragging", 2);
-__decorateClass([
-  t5({ passive: true })
-], SlCarousel.prototype, "handleScroll", 1);
-__decorateClass([
-  watch("loop", { waitUntilFirstUpdate: true }),
-  watch("slidesPerPage", { waitUntilFirstUpdate: true })
-], SlCarousel.prototype, "initializeSlides", 1);
-__decorateClass([
-  watch("activeSlide")
-], SlCarousel.prototype, "handleSlideChange", 1);
-__decorateClass([
-  watch("slidesPerMove")
-], SlCarousel.prototype, "updateSlidesSnap", 1);
-__decorateClass([
-  watch("autoplay")
-], SlCarousel.prototype, "handleAutoplayChange", 1);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.OQXPL73S.js
-var debounce = (fn, delay) => {
-  let timerId = 0;
-  return function(...args) {
-    window.clearTimeout(timerId);
-    timerId = window.setTimeout(() => {
-      fn.call(this, ...args);
-    }, delay);
-  };
-};
-var decorate = (proto, method, decorateFn) => {
-  const superFn = proto[method];
-  proto[method] = function(...args) {
-    superFn.call(this, ...args);
-    decorateFn.call(this, superFn, ...args);
-  };
-};
-var isSupported = "onscrollend" in window;
-if (!isSupported) {
-  const pointers = /* @__PURE__ */ new Set();
-  const scrollHandlers = /* @__PURE__ */ new WeakMap();
-  const handlePointerDown = (event) => {
-    for (const touch of event.changedTouches) {
-      pointers.add(touch.identifier);
-    }
-  };
-  const handlePointerUp = (event) => {
-    for (const touch of event.changedTouches) {
-      pointers.delete(touch.identifier);
-    }
-  };
-  document.addEventListener("touchstart", handlePointerDown, true);
-  document.addEventListener("touchend", handlePointerUp, true);
-  document.addEventListener("touchcancel", handlePointerUp, true);
-  decorate(EventTarget.prototype, "addEventListener", function(addEventListener, type) {
-    if (type !== "scrollend") return;
-    const handleScrollEnd = debounce(() => {
-      if (!pointers.size) {
-        this.dispatchEvent(new Event("scrollend"));
-      } else {
-        handleScrollEnd();
-      }
-    }, 100);
-    addEventListener.call(this, "scroll", handleScrollEnd, { passive: true });
-    scrollHandlers.set(this, handleScrollEnd);
-  });
-  decorate(EventTarget.prototype, "removeEventListener", function(removeEventListener, type) {
-    if (type !== "scrollend") return;
-    const scrollHandler = scrollHandlers.get(this);
-    if (scrollHandler) {
-      removeEventListener.call(this, "scroll", scrollHandler, { passive: true });
-    }
-  });
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.NQ44LUGM.js
-var carousel_item_styles_default = i`
-  :host {
-    --aspect-ratio: inherit;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    width: 100%;
-    max-height: 100%;
-    aspect-ratio: var(--aspect-ratio);
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-  }
-
-  ::slotted(img) {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover;
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.XHATQV4E.js
-var SlCarouselItem = class extends ShoelaceElement {
-  connectedCallback() {
-    super.connectedCallback();
-    this.setAttribute("role", "group");
-  }
-  render() {
-    return x2` <slot></slot> `;
-  }
-};
-SlCarouselItem.styles = [component_styles_default, carousel_item_styles_default];
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.LXDTFLWU.js
-var computedStyleMap = /* @__PURE__ */ new WeakMap();
-function getCachedComputedStyle(el) {
-  let computedStyle = computedStyleMap.get(el);
-  if (!computedStyle) {
-    computedStyle = window.getComputedStyle(el, null);
-    computedStyleMap.set(el, computedStyle);
-  }
-  return computedStyle;
-}
-function isVisible(el) {
-  if (typeof el.checkVisibility === "function") {
-    return el.checkVisibility({ checkOpacity: false, checkVisibilityCSS: true });
-  }
-  const computedStyle = getCachedComputedStyle(el);
-  return computedStyle.visibility !== "hidden" && computedStyle.display !== "none";
-}
-function isOverflowingAndTabbable(el) {
-  const computedStyle = getCachedComputedStyle(el);
-  const { overflowY, overflowX } = computedStyle;
-  if (overflowY === "scroll" || overflowX === "scroll") {
-    return true;
-  }
-  if (overflowY !== "auto" || overflowX !== "auto") {
-    return false;
-  }
-  const isOverflowingY = el.scrollHeight > el.clientHeight;
-  if (isOverflowingY && overflowY === "auto") {
-    return true;
-  }
-  const isOverflowingX = el.scrollWidth > el.clientWidth;
-  if (isOverflowingX && overflowX === "auto") {
-    return true;
-  }
-  return false;
-}
-function isTabbable(el) {
-  const tag = el.tagName.toLowerCase();
-  const tabindex = Number(el.getAttribute("tabindex"));
-  const hasTabindex = el.hasAttribute("tabindex");
-  if (hasTabindex && (isNaN(tabindex) || tabindex <= -1)) {
-    return false;
-  }
-  if (el.hasAttribute("disabled")) {
-    return false;
-  }
-  if (el.closest("[inert]")) {
-    return false;
-  }
-  if (tag === "input" && el.getAttribute("type") === "radio" && !el.hasAttribute("checked")) {
-    return false;
-  }
-  if (!isVisible(el)) {
-    return false;
-  }
-  if ((tag === "audio" || tag === "video") && el.hasAttribute("controls")) {
-    return true;
-  }
-  if (el.hasAttribute("tabindex")) {
-    return true;
-  }
-  if (el.hasAttribute("contenteditable") && el.getAttribute("contenteditable") !== "false") {
-    return true;
-  }
-  const isNativelyTabbable = [
-    "button",
-    "input",
-    "select",
-    "textarea",
-    "a",
-    "audio",
-    "video",
-    "summary",
-    "iframe"
-  ].includes(tag);
-  if (isNativelyTabbable) {
-    return true;
-  }
-  return isOverflowingAndTabbable(el);
-}
-function getSlottedChildrenOutsideRootElement(slotElement, root) {
-  var _a4;
-  return ((_a4 = slotElement.getRootNode({ composed: true })) == null ? void 0 : _a4.host) !== root;
-}
-function getTabbableElements(root) {
-  const walkedEls = /* @__PURE__ */ new WeakMap();
-  const tabbableElements = [];
-  function walk(el) {
-    if (el instanceof Element) {
-      if (el.hasAttribute("inert") || el.closest("[inert]")) {
-        return;
-      }
-      if (walkedEls.has(el)) {
-        return;
-      }
-      walkedEls.set(el, true);
-      if (!tabbableElements.includes(el) && isTabbable(el)) {
-        tabbableElements.push(el);
-      }
-      if (el instanceof HTMLSlotElement && getSlottedChildrenOutsideRootElement(el, root)) {
-        el.assignedElements({ flatten: true }).forEach((assignedEl) => {
-          walk(assignedEl);
-        });
-      }
-      if (el.shadowRoot !== null && el.shadowRoot.mode === "open") {
-        walk(el.shadowRoot);
-      }
-    }
-    for (const e13 of el.children) {
-      walk(e13);
-    }
-  }
-  walk(root);
-  return tabbableElements.sort((a5, b4) => {
-    const aTabindex = Number(a5.getAttribute("tabindex")) || 0;
-    const bTabindex = Number(b4.getAttribute("tabindex")) || 0;
-    return bTabindex - aTabindex;
-  });
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FRD7DRZ6.js
-function* activeElements(activeElement = document.activeElement) {
-  if (activeElement === null || activeElement === void 0) return;
-  yield activeElement;
-  if ("shadowRoot" in activeElement && activeElement.shadowRoot && activeElement.shadowRoot.mode !== "closed") {
-    yield* __yieldStar(activeElements(activeElement.shadowRoot.activeElement));
-  }
-}
-function getDeepestActiveElement() {
-  return [...activeElements()].pop();
-}
-var activeModals = [];
-var Modal = class {
-  constructor(element2) {
-    this.tabDirection = "forward";
-    this.handleFocusIn = () => {
-      if (!this.isActive()) return;
-      this.checkFocus();
-    };
-    this.handleKeyDown = (event) => {
-      var _a4;
-      if (event.key !== "Tab" || this.isExternalActivated) return;
-      if (!this.isActive()) return;
-      const currentActiveElement = getDeepestActiveElement();
-      this.previousFocus = currentActiveElement;
-      if (this.previousFocus && this.possiblyHasTabbableChildren(this.previousFocus)) {
-        return;
-      }
-      if (event.shiftKey) {
-        this.tabDirection = "backward";
-      } else {
-        this.tabDirection = "forward";
-      }
-      const tabbableElements = getTabbableElements(this.element);
-      let currentFocusIndex = tabbableElements.findIndex((el) => el === currentActiveElement);
-      this.previousFocus = this.currentFocus;
-      const addition = this.tabDirection === "forward" ? 1 : -1;
-      while (true) {
-        if (currentFocusIndex + addition >= tabbableElements.length) {
-          currentFocusIndex = 0;
-        } else if (currentFocusIndex + addition < 0) {
-          currentFocusIndex = tabbableElements.length - 1;
-        } else {
-          currentFocusIndex += addition;
-        }
-        this.previousFocus = this.currentFocus;
-        const nextFocus = (
-          /** @type {HTMLElement} */
-          tabbableElements[currentFocusIndex]
-        );
-        if (this.tabDirection === "backward") {
-          if (this.previousFocus && this.possiblyHasTabbableChildren(this.previousFocus)) {
-            return;
-          }
-        }
-        if (nextFocus && this.possiblyHasTabbableChildren(nextFocus)) {
-          return;
-        }
-        event.preventDefault();
-        this.currentFocus = nextFocus;
-        (_a4 = this.currentFocus) == null ? void 0 : _a4.focus({ preventScroll: false });
-        const allActiveElements = [...activeElements()];
-        if (allActiveElements.includes(this.currentFocus) || !allActiveElements.includes(this.previousFocus)) {
-          break;
-        }
-      }
-      setTimeout(() => this.checkFocus());
-    };
-    this.handleKeyUp = () => {
-      this.tabDirection = "forward";
-    };
-    this.element = element2;
-    this.elementsWithTabbableControls = ["iframe"];
-  }
-  /** Activates focus trapping. */
-  activate() {
-    activeModals.push(this.element);
-    document.addEventListener("focusin", this.handleFocusIn);
-    document.addEventListener("keydown", this.handleKeyDown);
-    document.addEventListener("keyup", this.handleKeyUp);
-  }
-  /** Deactivates focus trapping. */
-  deactivate() {
-    activeModals = activeModals.filter((modal) => modal !== this.element);
-    this.currentFocus = null;
-    document.removeEventListener("focusin", this.handleFocusIn);
-    document.removeEventListener("keydown", this.handleKeyDown);
-    document.removeEventListener("keyup", this.handleKeyUp);
-  }
-  /** Determines if this modal element is currently active or not. */
-  isActive() {
-    return activeModals[activeModals.length - 1] === this.element;
-  }
-  /** Activates external modal behavior and temporarily disables focus trapping. */
-  activateExternal() {
-    this.isExternalActivated = true;
-  }
-  /** Deactivates external modal behavior and re-enables focus trapping. */
-  deactivateExternal() {
-    this.isExternalActivated = false;
-  }
-  checkFocus() {
-    if (this.isActive() && !this.isExternalActivated) {
-      const tabbableElements = getTabbableElements(this.element);
-      if (!this.element.matches(":focus-within")) {
-        const start = tabbableElements[0];
-        const end = tabbableElements[tabbableElements.length - 1];
-        const target = this.tabDirection === "forward" ? start : end;
-        if (typeof (target == null ? void 0 : target.focus) === "function") {
-          this.currentFocus = target;
-          target.focus({ preventScroll: false });
-        }
-      }
-    }
-  }
-  possiblyHasTabbableChildren(element2) {
-    return this.elementsWithTabbableControls.includes(element2.tagName.toLowerCase()) || element2.hasAttribute("controls");
-  }
-};
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.RWUUFNUL.js
-var locks = /* @__PURE__ */ new Set();
-function getScrollbarWidth() {
-  const documentWidth = document.documentElement.clientWidth;
-  return Math.abs(window.innerWidth - documentWidth);
-}
-function getExistingBodyPadding() {
-  const padding = Number(getComputedStyle(document.body).paddingRight.replace(/px/, ""));
-  if (isNaN(padding) || !padding) {
-    return 0;
-  }
-  return padding;
-}
-function lockBodyScrolling(lockingEl) {
-  locks.add(lockingEl);
-  if (!document.documentElement.classList.contains("sl-scroll-lock")) {
-    const scrollbarWidth = getScrollbarWidth() + getExistingBodyPadding();
-    let scrollbarGutterProperty = getComputedStyle(document.documentElement).scrollbarGutter;
-    if (!scrollbarGutterProperty || scrollbarGutterProperty === "auto") {
-      scrollbarGutterProperty = "stable";
-    }
-    if (scrollbarWidth < 2) {
-      scrollbarGutterProperty = "";
-    }
-    document.documentElement.style.setProperty("--sl-scroll-lock-gutter", scrollbarGutterProperty);
-    document.documentElement.classList.add("sl-scroll-lock");
-    document.documentElement.style.setProperty("--sl-scroll-lock-size", `${scrollbarWidth}px`);
-  }
-}
-function unlockBodyScrolling(lockingEl) {
-  locks.delete(lockingEl);
-  if (locks.size === 0) {
-    document.documentElement.classList.remove("sl-scroll-lock");
-    document.documentElement.style.removeProperty("--sl-scroll-lock-size");
-  }
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.G5RKA5HF.js
-var dialog_styles_default = i`
-  :host {
-    --width: 31rem;
-    --header-spacing: var(--sl-spacing-large);
-    --body-spacing: var(--sl-spacing-large);
-    --footer-spacing: var(--sl-spacing-large);
-
-    display: contents;
-  }
-
-  .dialog {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: var(--sl-z-index-dialog);
-  }
-
-  .dialog__panel {
-    display: flex;
-    flex-direction: column;
-    z-index: 2;
-    width: var(--width);
-    max-width: calc(100% - var(--sl-spacing-2x-large));
-    max-height: calc(100% - var(--sl-spacing-2x-large));
-    background-color: var(--sl-panel-background-color);
-    border-radius: var(--sl-border-radius-medium);
-    box-shadow: var(--sl-shadow-x-large);
-  }
-
-  .dialog__panel:focus {
-    outline: none;
-  }
-
-  /* Ensure there's enough vertical padding for phones that don't update vh when chrome appears (e.g. iPhone) */
-  @media screen and (max-width: 420px) {
-    .dialog__panel {
-      max-height: 80vh;
-    }
-  }
-
-  .dialog--open .dialog__panel {
-    display: flex;
-    opacity: 1;
-  }
-
-  .dialog__header {
-    flex: 0 0 auto;
-    display: flex;
-  }
-
-  .dialog__title {
-    flex: 1 1 auto;
-    font: inherit;
-    font-size: var(--sl-font-size-large);
-    line-height: var(--sl-line-height-dense);
-    padding: var(--header-spacing);
-    margin: 0;
-  }
-
-  .dialog__header-actions {
-    flex-shrink: 0;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: end;
-    gap: var(--sl-spacing-2x-small);
-    padding: 0 var(--header-spacing);
-  }
-
-  .dialog__header-actions sl-icon-button,
-  .dialog__header-actions ::slotted(sl-icon-button) {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    font-size: var(--sl-font-size-medium);
-  }
-
-  .dialog__body {
-    flex: 1 1 auto;
-    display: block;
-    padding: var(--body-spacing);
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .dialog__footer {
-    flex: 0 0 auto;
-    text-align: right;
-    padding: var(--footer-spacing);
-  }
-
-  .dialog__footer ::slotted(sl-button:not(:first-of-type)) {
-    margin-inline-start: var(--sl-spacing-x-small);
-  }
-
-  .dialog:not(.dialog--has-footer) .dialog__footer {
-    display: none;
-  }
-
-  .dialog__overlay {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    background-color: var(--sl-overlay-background-color);
-  }
-
-  @media (forced-colors: active) {
-    .dialog__panel {
-      border: solid 1px var(--sl-color-neutral-0);
-    }
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.6SBTOKGT.js
-var SlDialog = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.hasSlotController = new HasSlotController(this, "footer");
-    this.localize = new LocalizeController2(this);
-    this.modal = new Modal(this);
-    this.open = false;
-    this.label = "";
-    this.noHeader = false;
-    this.handleDocumentKeyDown = (event) => {
-      if (event.key === "Escape" && this.modal.isActive() && this.open) {
-        event.stopPropagation();
-        this.requestClose("keyboard");
-      }
-    };
-  }
-  firstUpdated() {
-    this.dialog.hidden = !this.open;
-    if (this.open) {
-      this.addOpenListeners();
-      this.modal.activate();
-      lockBodyScrolling(this);
-    }
-  }
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this.modal.deactivate();
-    unlockBodyScrolling(this);
-    this.removeOpenListeners();
-  }
-  requestClose(source3) {
-    const slRequestClose = this.emit("sl-request-close", {
-      cancelable: true,
-      detail: { source: source3 }
-    });
-    if (slRequestClose.defaultPrevented) {
-      const animation = getAnimation(this, "dialog.denyClose", { dir: this.localize.dir() });
-      animateTo(this.panel, animation.keyframes, animation.options);
-      return;
-    }
-    this.hide();
-  }
-  addOpenListeners() {
-    var _a4;
-    if ("CloseWatcher" in window) {
-      (_a4 = this.closeWatcher) == null ? void 0 : _a4.destroy();
-      this.closeWatcher = new CloseWatcher();
-      this.closeWatcher.onclose = () => this.requestClose("keyboard");
-    } else {
-      document.addEventListener("keydown", this.handleDocumentKeyDown);
-    }
-  }
-  removeOpenListeners() {
-    var _a4;
-    (_a4 = this.closeWatcher) == null ? void 0 : _a4.destroy();
-    document.removeEventListener("keydown", this.handleDocumentKeyDown);
-  }
-  async handleOpenChange() {
-    if (this.open) {
-      this.emit("sl-show");
-      this.addOpenListeners();
-      this.originalTrigger = document.activeElement;
-      this.modal.activate();
-      lockBodyScrolling(this);
-      const autoFocusTarget = this.querySelector("[autofocus]");
-      if (autoFocusTarget) {
-        autoFocusTarget.removeAttribute("autofocus");
-      }
-      await Promise.all([stopAnimations(this.dialog), stopAnimations(this.overlay)]);
-      this.dialog.hidden = false;
-      requestAnimationFrame(() => {
-        const slInitialFocus = this.emit("sl-initial-focus", { cancelable: true });
-        if (!slInitialFocus.defaultPrevented) {
-          if (autoFocusTarget) {
-            autoFocusTarget.focus({ preventScroll: true });
-          } else {
-            this.panel.focus({ preventScroll: true });
-          }
-        }
-        if (autoFocusTarget) {
-          autoFocusTarget.setAttribute("autofocus", "");
-        }
-      });
-      const panelAnimation = getAnimation(this, "dialog.show", { dir: this.localize.dir() });
-      const overlayAnimation = getAnimation(this, "dialog.overlay.show", { dir: this.localize.dir() });
-      await Promise.all([
-        animateTo(this.panel, panelAnimation.keyframes, panelAnimation.options),
-        animateTo(this.overlay, overlayAnimation.keyframes, overlayAnimation.options)
-      ]);
-      this.emit("sl-after-show");
-    } else {
-      this.emit("sl-hide");
-      this.removeOpenListeners();
-      this.modal.deactivate();
-      await Promise.all([stopAnimations(this.dialog), stopAnimations(this.overlay)]);
-      const panelAnimation = getAnimation(this, "dialog.hide", { dir: this.localize.dir() });
-      const overlayAnimation = getAnimation(this, "dialog.overlay.hide", { dir: this.localize.dir() });
-      await Promise.all([
-        animateTo(this.overlay, overlayAnimation.keyframes, overlayAnimation.options).then(() => {
-          this.overlay.hidden = true;
-        }),
-        animateTo(this.panel, panelAnimation.keyframes, panelAnimation.options).then(() => {
-          this.panel.hidden = true;
-        })
-      ]);
-      this.dialog.hidden = true;
-      this.overlay.hidden = false;
-      this.panel.hidden = false;
-      unlockBodyScrolling(this);
-      const trigger = this.originalTrigger;
-      if (typeof (trigger == null ? void 0 : trigger.focus) === "function") {
-        setTimeout(() => trigger.focus());
-      }
-      this.emit("sl-after-hide");
-    }
-  }
-  /** Shows the dialog. */
-  async show() {
-    if (this.open) {
-      return void 0;
-    }
-    this.open = true;
-    return waitForEvent(this, "sl-after-show");
-  }
-  /** Hides the dialog */
-  async hide() {
-    if (!this.open) {
-      return void 0;
-    }
-    this.open = false;
-    return waitForEvent(this, "sl-after-hide");
-  }
-  render() {
-    return x2`
-      <div
-        part="base"
-        class=${e10({
-      dialog: true,
-      "dialog--open": this.open,
-      "dialog--has-footer": this.hasSlotController.test("footer")
-    })}
-      >
-        <div part="overlay" class="dialog__overlay" @click=${() => this.requestClose("overlay")} tabindex="-1"></div>
-
-        <div
-          part="panel"
-          class="dialog__panel"
-          role="dialog"
-          aria-modal="true"
-          aria-hidden=${this.open ? "false" : "true"}
-          aria-label=${o9(this.noHeader ? this.label : void 0)}
-          aria-labelledby=${o9(!this.noHeader ? "title" : void 0)}
-          tabindex="-1"
-        >
-          ${!this.noHeader ? x2`
-                <header part="header" class="dialog__header">
-                  <h2 part="title" class="dialog__title" id="title">
-                    <slot name="label"> ${this.label.length > 0 ? this.label : String.fromCharCode(65279)} </slot>
-                  </h2>
-                  <div part="header-actions" class="dialog__header-actions">
-                    <slot name="header-actions"></slot>
-                    <sl-icon-button
-                      part="close-button"
-                      exportparts="base:close-button__base"
-                      class="dialog__close"
-                      name="x-lg"
-                      label=${this.localize.term("close")}
-                      library="system"
-                      @click="${() => this.requestClose("close-button")}"
-                    ></sl-icon-button>
-                  </div>
-                </header>
-              ` : ""}
-          ${""}
-          <div part="body" class="dialog__body" tabindex="-1"><slot></slot></div>
-
-          <footer part="footer" class="dialog__footer">
-            <slot name="footer"></slot>
-          </footer>
-        </div>
-      </div>
-    `;
-  }
-};
-SlDialog.styles = [component_styles_default, dialog_styles_default];
-SlDialog.dependencies = {
-  "sl-icon-button": SlIconButton
-};
-__decorateClass([
-  e7(".dialog")
-], SlDialog.prototype, "dialog", 2);
-__decorateClass([
-  e7(".dialog__panel")
-], SlDialog.prototype, "panel", 2);
-__decorateClass([
-  e7(".dialog__overlay")
-], SlDialog.prototype, "overlay", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlDialog.prototype, "open", 2);
-__decorateClass([
-  n8({ reflect: true })
-], SlDialog.prototype, "label", 2);
-__decorateClass([
-  n8({ attribute: "no-header", type: Boolean, reflect: true })
-], SlDialog.prototype, "noHeader", 2);
-__decorateClass([
-  watch("open", { waitUntilFirstUpdate: true })
-], SlDialog.prototype, "handleOpenChange", 1);
-setDefaultAnimation("dialog.show", {
-  keyframes: [
-    { opacity: 0, scale: 0.8 },
-    { opacity: 1, scale: 1 }
-  ],
-  options: { duration: 250, easing: "ease" }
-});
-setDefaultAnimation("dialog.hide", {
-  keyframes: [
-    { opacity: 1, scale: 1 },
-    { opacity: 0, scale: 0.8 }
-  ],
-  options: { duration: 250, easing: "ease" }
-});
-setDefaultAnimation("dialog.denyClose", {
-  keyframes: [{ scale: 1 }, { scale: 1.02 }, { scale: 1 }],
-  options: { duration: 250 }
-});
-setDefaultAnimation("dialog.overlay.show", {
-  keyframes: [{ opacity: 0 }, { opacity: 1 }],
-  options: { duration: 250 }
-});
-setDefaultAnimation("dialog.overlay.hide", {
-  keyframes: [{ opacity: 1 }, { opacity: 0 }],
-  options: { duration: 250 }
-});
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.SUSCR7CI.js
-var divider_styles_default = i`
-  :host {
-    --color: var(--sl-panel-border-color);
-    --width: var(--sl-panel-border-width);
-    --spacing: var(--sl-spacing-medium);
-  }
-
-  :host(:not([vertical])) {
-    display: block;
-    border-top: solid var(--width) var(--color);
-    margin: var(--spacing) 0;
-  }
-
-  :host([vertical]) {
-    display: inline-block;
-    height: 100%;
-    border-left: solid var(--width) var(--color);
-    margin: 0 var(--spacing);
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FWNMG5P5.js
-var SlDivider = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.vertical = false;
-  }
-  connectedCallback() {
-    super.connectedCallback();
-    this.setAttribute("role", "separator");
-  }
-  handleVerticalChange() {
-    this.setAttribute("aria-orientation", this.vertical ? "vertical" : "horizontal");
-  }
-};
-SlDivider.styles = [component_styles_default, divider_styles_default];
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlDivider.prototype, "vertical", 2);
-__decorateClass([
-  watch("vertical")
-], SlDivider.prototype, "handleVerticalChange", 1);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.GGT72J62.js
 var input_styles_default = i`
@@ -94016,9 +95779,9 @@ var form_control_styles_default = i`
 `;
 
 // node_modules/lit-html/directives/live.js
-var l5 = e9(class extends i6 {
+var l5 = e8(class extends i6 {
   constructor(r11) {
-    if (super(r11), r11.type !== t7.PROPERTY && r11.type !== t7.ATTRIBUTE && r11.type !== t7.BOOLEAN_ATTRIBUTE) throw Error("The `live` directive is not allowed on child or event bindings");
+    if (super(r11), r11.type !== t6.PROPERTY && r11.type !== t6.ATTRIBUTE && r11.type !== t6.BOOLEAN_ATTRIBUTE) throw Error("The `live` directive is not allowed on child or event bindings");
     if (!f6(r11)) throw Error("`live` bindings can only contain a single expression");
   }
   render(r11) {
@@ -94027,11 +95790,11 @@ var l5 = e9(class extends i6 {
   update(i9, [t8]) {
     if (t8 === T2 || t8 === E2) return t8;
     const o12 = i9.element, l6 = i9.name;
-    if (i9.type === t7.PROPERTY) {
+    if (i9.type === t6.PROPERTY) {
       if (t8 === o12[l6]) return T2;
-    } else if (i9.type === t7.BOOLEAN_ATTRIBUTE) {
+    } else if (i9.type === t6.BOOLEAN_ATTRIBUTE) {
       if (!!t8 === o12.hasAttribute(l6)) return T2;
-    } else if (i9.type === t7.ATTRIBUTE && o12.getAttribute(l6) === t8 + "") return T2;
+    } else if (i9.type === t6.ATTRIBUTE && o12.getAttribute(l6) === t8 + "") return T2;
     return m3(i9), t8;
   }
 });
@@ -94235,7 +95998,7 @@ var SlInput = class extends ShoelaceElement {
     return x2`
       <div
         part="form-control"
-        class=${e10({
+        class=${e9({
       "form-control": true,
       "form-control--small": this.size === "small",
       "form-control--medium": this.size === "medium",
@@ -94256,7 +96019,7 @@ var SlInput = class extends ShoelaceElement {
         <div part="form-control-input" class="form-control-input">
           <div
             part="base"
-            class=${e10({
+            class=${e9({
       input: true,
       // Sizes
       "input--small": this.size === "small",
@@ -94564,7 +96327,7 @@ var oppositeAlignmentMap = {
   start: "end",
   end: "start"
 };
-function clamp2(start, value, end) {
+function clamp(start, value, end) {
   return max(start, min(value, end));
 }
 function evaluate(value, param) {
@@ -94916,7 +96679,7 @@ var arrow = (options) => ({
     const min$1 = minPadding;
     const max2 = clientSize - arrowDimensions[length2] - maxPadding;
     const center = clientSize / 2 - arrowDimensions[length2] / 2 + centerToReference;
-    const offset3 = clamp2(min$1, center, max2);
+    const offset3 = clamp(min$1, center, max2);
     const shouldAddOffset = !middlewareData.arrow && getAlignment(placement) != null && center !== offset3 && rects.reference[length2] / 2 - (center < min$1 ? minPadding : maxPadding) - arrowDimensions[length2] / 2 < 0;
     const alignmentOffset = shouldAddOffset ? center < min$1 ? center - min$1 : center - max2 : 0;
     return {
@@ -95147,14 +96910,14 @@ var shift = function(options) {
         const maxSide = mainAxis === "y" ? "bottom" : "right";
         const min2 = mainAxisCoord + overflow[minSide];
         const max2 = mainAxisCoord - overflow[maxSide];
-        mainAxisCoord = clamp2(min2, mainAxisCoord, max2);
+        mainAxisCoord = clamp(min2, mainAxisCoord, max2);
       }
       if (checkCrossAxis) {
         const minSide = crossAxis === "y" ? "top" : "left";
         const maxSide = crossAxis === "y" ? "bottom" : "right";
         const min2 = crossAxisCoord + overflow[minSide];
         const max2 = crossAxisCoord - overflow[maxSide];
-        crossAxisCoord = clamp2(min2, crossAxisCoord, max2);
+        crossAxisCoord = clamp(min2, crossAxisCoord, max2);
       }
       const limitedCoords = limiter.fn({
         ...state,
@@ -96300,7 +98063,7 @@ var SlPopup = class extends ShoelaceElement {
 
       <span
         part="hover-bridge"
-        class=${e10({
+        class=${e9({
       "popup-hover-bridge": true,
       "popup-hover-bridge--visible": this.hoverBridge && this.active
     })}
@@ -96308,7 +98071,7 @@ var SlPopup = class extends ShoelaceElement {
 
       <div
         part="popup"
-        class=${e10({
+        class=${e9({
       popup: true,
       "popup--active": this.active,
       "popup--fixed": this.strategy === "fixed",
@@ -96404,6 +98167,1943 @@ __decorateClass([
 __decorateClass([
   n8({ attribute: "hover-bridge", type: Boolean })
 ], SlPopup.prototype, "hoverBridge", 2);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.V2OL7VMD.js
+var tag_styles_default = i`
+  :host {
+    display: inline-block;
+  }
+
+  .tag {
+    display: flex;
+    align-items: center;
+    border: solid 1px;
+    line-height: 1;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .tag__remove::part(base) {
+    color: inherit;
+    padding: 0;
+  }
+
+  /*
+   * Variant modifiers
+   */
+
+  .tag--primary {
+    background-color: var(--sl-color-primary-50);
+    border-color: var(--sl-color-primary-200);
+    color: var(--sl-color-primary-800);
+  }
+
+  .tag--primary:active > sl-icon-button {
+    color: var(--sl-color-primary-600);
+  }
+
+  .tag--success {
+    background-color: var(--sl-color-success-50);
+    border-color: var(--sl-color-success-200);
+    color: var(--sl-color-success-800);
+  }
+
+  .tag--success:active > sl-icon-button {
+    color: var(--sl-color-success-600);
+  }
+
+  .tag--neutral {
+    background-color: var(--sl-color-neutral-50);
+    border-color: var(--sl-color-neutral-200);
+    color: var(--sl-color-neutral-800);
+  }
+
+  .tag--neutral:active > sl-icon-button {
+    color: var(--sl-color-neutral-600);
+  }
+
+  .tag--warning {
+    background-color: var(--sl-color-warning-50);
+    border-color: var(--sl-color-warning-200);
+    color: var(--sl-color-warning-800);
+  }
+
+  .tag--warning:active > sl-icon-button {
+    color: var(--sl-color-warning-600);
+  }
+
+  .tag--danger {
+    background-color: var(--sl-color-danger-50);
+    border-color: var(--sl-color-danger-200);
+    color: var(--sl-color-danger-800);
+  }
+
+  .tag--danger:active > sl-icon-button {
+    color: var(--sl-color-danger-600);
+  }
+
+  /*
+   * Size modifiers
+   */
+
+  .tag--small {
+    font-size: var(--sl-button-font-size-small);
+    height: calc(var(--sl-input-height-small) * 0.8);
+    line-height: calc(var(--sl-input-height-small) - var(--sl-input-border-width) * 2);
+    border-radius: var(--sl-input-border-radius-small);
+    padding: 0 var(--sl-spacing-x-small);
+  }
+
+  .tag--medium {
+    font-size: var(--sl-button-font-size-medium);
+    height: calc(var(--sl-input-height-medium) * 0.8);
+    line-height: calc(var(--sl-input-height-medium) - var(--sl-input-border-width) * 2);
+    border-radius: var(--sl-input-border-radius-medium);
+    padding: 0 var(--sl-spacing-small);
+  }
+
+  .tag--large {
+    font-size: var(--sl-button-font-size-large);
+    height: calc(var(--sl-input-height-large) * 0.8);
+    line-height: calc(var(--sl-input-height-large) - var(--sl-input-border-width) * 2);
+    border-radius: var(--sl-input-border-radius-large);
+    padding: 0 var(--sl-spacing-medium);
+  }
+
+  .tag__remove {
+    margin-inline-start: var(--sl-spacing-x-small);
+  }
+
+  /*
+   * Pill modifier
+   */
+
+  .tag--pill {
+    border-radius: var(--sl-border-radius-pill);
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.6I2T3DLI.js
+var icon_button_styles_default = i`
+  :host {
+    display: inline-block;
+    color: var(--sl-color-neutral-600);
+  }
+
+  .icon-button {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    border-radius: var(--sl-border-radius-medium);
+    font-size: inherit;
+    color: inherit;
+    padding: var(--sl-spacing-x-small);
+    cursor: pointer;
+    transition: var(--sl-transition-x-fast) color;
+    -webkit-appearance: none;
+  }
+
+  .icon-button:hover:not(.icon-button--disabled),
+  .icon-button:focus-visible:not(.icon-button--disabled) {
+    color: var(--sl-color-primary-600);
+  }
+
+  .icon-button:active:not(.icon-button--disabled) {
+    color: var(--sl-color-primary-700);
+  }
+
+  .icon-button:focus {
+    outline: none;
+  }
+
+  .icon-button--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .icon-button:focus-visible {
+    outline: var(--sl-focus-ring);
+    outline-offset: var(--sl-focus-ring-offset);
+  }
+
+  .icon-button__icon {
+    pointer-events: none;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.MMEGYRNV.js
+var SlIconButton = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.hasFocus = false;
+    this.label = "";
+    this.disabled = false;
+  }
+  handleBlur() {
+    this.hasFocus = false;
+    this.emit("sl-blur");
+  }
+  handleFocus() {
+    this.hasFocus = true;
+    this.emit("sl-focus");
+  }
+  handleClick(event) {
+    if (this.disabled) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+  /** Simulates a click on the icon button. */
+  click() {
+    this.button.click();
+  }
+  /** Sets focus on the icon button. */
+  focus(options) {
+    this.button.focus(options);
+  }
+  /** Removes focus from the icon button. */
+  blur() {
+    this.button.blur();
+  }
+  render() {
+    const isLink = this.href ? true : false;
+    const tag = isLink ? i7`a` : i7`button`;
+    return u5`
+      <${tag}
+        part="base"
+        class=${e9({
+      "icon-button": true,
+      "icon-button--disabled": !isLink && this.disabled,
+      "icon-button--focused": this.hasFocus
+    })}
+        ?disabled=${o9(isLink ? void 0 : this.disabled)}
+        type=${o9(isLink ? void 0 : "button")}
+        href=${o9(isLink ? this.href : void 0)}
+        target=${o9(isLink ? this.target : void 0)}
+        download=${o9(isLink ? this.download : void 0)}
+        rel=${o9(isLink && this.target ? "noreferrer noopener" : void 0)}
+        role=${o9(isLink ? void 0 : "button")}
+        aria-disabled=${this.disabled ? "true" : "false"}
+        aria-label="${this.label}"
+        tabindex=${this.disabled ? "-1" : "0"}
+        @blur=${this.handleBlur}
+        @focus=${this.handleFocus}
+        @click=${this.handleClick}
+      >
+        <sl-icon
+          class="icon-button__icon"
+          name=${o9(this.name)}
+          library=${o9(this.library)}
+          src=${o9(this.src)}
+          aria-hidden="true"
+        ></sl-icon>
+      </${tag}>
+    `;
+  }
+};
+SlIconButton.styles = [component_styles_default, icon_button_styles_default];
+SlIconButton.dependencies = { "sl-icon": SlIcon };
+__decorateClass([
+  e7(".icon-button")
+], SlIconButton.prototype, "button", 2);
+__decorateClass([
+  r9()
+], SlIconButton.prototype, "hasFocus", 2);
+__decorateClass([
+  n8()
+], SlIconButton.prototype, "name", 2);
+__decorateClass([
+  n8()
+], SlIconButton.prototype, "library", 2);
+__decorateClass([
+  n8()
+], SlIconButton.prototype, "src", 2);
+__decorateClass([
+  n8()
+], SlIconButton.prototype, "href", 2);
+__decorateClass([
+  n8()
+], SlIconButton.prototype, "target", 2);
+__decorateClass([
+  n8()
+], SlIconButton.prototype, "download", 2);
+__decorateClass([
+  n8()
+], SlIconButton.prototype, "label", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlIconButton.prototype, "disabled", 2);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.JGSVFUWB.js
+var SlTag = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.localize = new LocalizeController2(this);
+    this.variant = "neutral";
+    this.size = "medium";
+    this.pill = false;
+    this.removable = false;
+  }
+  handleRemoveClick() {
+    this.emit("sl-remove");
+  }
+  render() {
+    return x2`
+      <span
+        part="base"
+        class=${e9({
+      tag: true,
+      // Types
+      "tag--primary": this.variant === "primary",
+      "tag--success": this.variant === "success",
+      "tag--neutral": this.variant === "neutral",
+      "tag--warning": this.variant === "warning",
+      "tag--danger": this.variant === "danger",
+      "tag--text": this.variant === "text",
+      // Sizes
+      "tag--small": this.size === "small",
+      "tag--medium": this.size === "medium",
+      "tag--large": this.size === "large",
+      // Modifiers
+      "tag--pill": this.pill,
+      "tag--removable": this.removable
+    })}
+      >
+        <slot part="content" class="tag__content"></slot>
+
+        ${this.removable ? x2`
+              <sl-icon-button
+                part="remove-button"
+                exportparts="base:remove-button__base"
+                name="x-lg"
+                library="system"
+                label=${this.localize.term("remove")}
+                class="tag__remove"
+                @click=${this.handleRemoveClick}
+                tabindex="-1"
+              ></sl-icon-button>
+            ` : ""}
+      </span>
+    `;
+  }
+};
+SlTag.styles = [component_styles_default, tag_styles_default];
+SlTag.dependencies = { "sl-icon-button": SlIconButton };
+__decorateClass([
+  n8({ reflect: true })
+], SlTag.prototype, "variant", 2);
+__decorateClass([
+  n8({ reflect: true })
+], SlTag.prototype, "size", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlTag.prototype, "pill", 2);
+__decorateClass([
+  n8({ type: Boolean })
+], SlTag.prototype, "removable", 2);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.A5D6FTFY.js
+var card_styles_default = i`
+  :host {
+    --border-color: var(--sl-color-neutral-200);
+    --border-radius: var(--sl-border-radius-medium);
+    --border-width: 1px;
+    --padding: var(--sl-spacing-large);
+
+    display: inline-block;
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--sl-panel-background-color);
+    box-shadow: var(--sl-shadow-x-small);
+    border: solid var(--border-width) var(--border-color);
+    border-radius: var(--border-radius);
+  }
+
+  .card__image {
+    display: flex;
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+    margin: calc(-1 * var(--border-width));
+    overflow: hidden;
+  }
+
+  .card__image::slotted(img) {
+    display: block;
+    width: 100%;
+  }
+
+  .card:not(.card--has-image) .card__image {
+    display: none;
+  }
+
+  .card__header {
+    display: block;
+    border-bottom: solid var(--border-width) var(--border-color);
+    padding: calc(var(--padding) / 2) var(--padding);
+  }
+
+  .card:not(.card--has-header) .card__header {
+    display: none;
+  }
+
+  .card:not(.card--has-image) .card__header {
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+  }
+
+  .card__body {
+    display: block;
+    padding: var(--padding);
+  }
+
+  .card--has-footer .card__footer {
+    display: block;
+    border-top: solid var(--border-width) var(--border-color);
+    padding: var(--padding);
+  }
+
+  .card:not(.card--has-footer) .card__footer {
+    display: none;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.X2VUYVGD.js
+var SlCard = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.hasSlotController = new HasSlotController(this, "footer", "header", "image");
+  }
+  render() {
+    return x2`
+      <div
+        part="base"
+        class=${e9({
+      card: true,
+      "card--has-footer": this.hasSlotController.test("footer"),
+      "card--has-image": this.hasSlotController.test("image"),
+      "card--has-header": this.hasSlotController.test("header")
+    })}
+      >
+        <slot name="image" part="image" class="card__image"></slot>
+        <slot name="header" part="header" class="card__header"></slot>
+        <slot part="body" class="card__body"></slot>
+        <slot name="footer" part="footer" class="card__footer"></slot>
+      </div>
+    `;
+  }
+};
+SlCard.styles = [component_styles_default, card_styles_default];
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.HF7GESMZ.js
+function clamp2(value, min2, max2) {
+  const noNegativeZero = (n10) => Object.is(n10, -0) ? 0 : n10;
+  if (value < min2) {
+    return noNegativeZero(min2);
+  }
+  if (value > max2) {
+    return noNegativeZero(max2);
+  }
+  return noNegativeZero(value);
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.F4VGSDIW.js
+var AutoplayController = class {
+  constructor(host, tickCallback) {
+    this.timerId = 0;
+    this.activeInteractions = 0;
+    this.paused = false;
+    this.stopped = true;
+    this.pause = () => {
+      if (!this.activeInteractions++) {
+        this.paused = true;
+        this.host.requestUpdate();
+      }
+    };
+    this.resume = () => {
+      if (!--this.activeInteractions) {
+        this.paused = false;
+        this.host.requestUpdate();
+      }
+    };
+    host.addController(this);
+    this.host = host;
+    this.tickCallback = tickCallback;
+  }
+  hostConnected() {
+    this.host.addEventListener("mouseenter", this.pause);
+    this.host.addEventListener("mouseleave", this.resume);
+    this.host.addEventListener("focusin", this.pause);
+    this.host.addEventListener("focusout", this.resume);
+    this.host.addEventListener("touchstart", this.pause, { passive: true });
+    this.host.addEventListener("touchend", this.resume);
+  }
+  hostDisconnected() {
+    this.stop();
+    this.host.removeEventListener("mouseenter", this.pause);
+    this.host.removeEventListener("mouseleave", this.resume);
+    this.host.removeEventListener("focusin", this.pause);
+    this.host.removeEventListener("focusout", this.resume);
+    this.host.removeEventListener("touchstart", this.pause);
+    this.host.removeEventListener("touchend", this.resume);
+  }
+  start(interval) {
+    this.stop();
+    this.stopped = false;
+    this.timerId = window.setInterval(() => {
+      if (!this.paused) {
+        this.tickCallback();
+      }
+    }, interval);
+  }
+  stop() {
+    clearInterval(this.timerId);
+    this.stopped = true;
+    this.host.requestUpdate();
+  }
+};
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.BMOWACWC.js
+var carousel_styles_default = i`
+  :host {
+    --slide-gap: var(--sl-spacing-medium, 1rem);
+    --aspect-ratio: 16 / 9;
+    --scroll-hint: 0px;
+
+    display: flex;
+  }
+
+  .carousel {
+    display: grid;
+    grid-template-columns: min-content 1fr min-content;
+    grid-template-rows: 1fr min-content;
+    grid-template-areas:
+      '. slides .'
+      '. pagination .';
+    gap: var(--sl-spacing-medium);
+    align-items: center;
+    min-height: 100%;
+    min-width: 100%;
+    position: relative;
+  }
+
+  .carousel__pagination {
+    grid-area: pagination;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--sl-spacing-small);
+  }
+
+  .carousel__slides {
+    grid-area: slides;
+
+    display: grid;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+    justify-items: center;
+    overflow: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    aspect-ratio: calc(var(--aspect-ratio) * var(--slides-per-page));
+    border-radius: var(--sl-border-radius-small);
+
+    --slide-size: calc((100% - (var(--slides-per-page) - 1) * var(--slide-gap)) / var(--slides-per-page));
+  }
+
+  @media (prefers-reduced-motion) {
+    :where(.carousel__slides) {
+      scroll-behavior: auto;
+    }
+  }
+
+  .carousel__slides--horizontal {
+    grid-auto-flow: column;
+    grid-auto-columns: var(--slide-size);
+    grid-auto-rows: 100%;
+    column-gap: var(--slide-gap);
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--scroll-hint);
+    padding-inline: var(--scroll-hint);
+    overflow-y: hidden;
+  }
+
+  .carousel__slides--vertical {
+    grid-auto-flow: row;
+    grid-auto-columns: 100%;
+    grid-auto-rows: var(--slide-size);
+    row-gap: var(--slide-gap);
+    scroll-snap-type: y mandatory;
+    scroll-padding-block: var(--scroll-hint);
+    padding-block: var(--scroll-hint);
+    overflow-x: hidden;
+  }
+
+  .carousel__slides--dragging {
+  }
+
+  :host([vertical]) ::slotted(sl-carousel-item) {
+    height: 100%;
+  }
+
+  .carousel__slides::-webkit-scrollbar {
+    display: none;
+  }
+
+  .carousel__navigation {
+    grid-area: navigation;
+    display: contents;
+    font-size: var(--sl-font-size-x-large);
+  }
+
+  .carousel__navigation-button {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    border-radius: var(--sl-border-radius-small);
+    font-size: inherit;
+    color: var(--sl-color-neutral-600);
+    padding: var(--sl-spacing-x-small);
+    cursor: pointer;
+    transition: var(--sl-transition-medium) color;
+    appearance: none;
+  }
+
+  .carousel__navigation-button--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .carousel__navigation-button--disabled::part(base) {
+    pointer-events: none;
+  }
+
+  .carousel__navigation-button--previous {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .carousel__navigation-button--next {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .carousel__pagination-item {
+    display: block;
+    cursor: pointer;
+    background: none;
+    border: 0;
+    border-radius: var(--sl-border-radius-circle);
+    width: var(--sl-spacing-small);
+    height: var(--sl-spacing-small);
+    background-color: var(--sl-color-neutral-300);
+    padding: 0;
+    margin: 0;
+  }
+
+  .carousel__pagination-item--active {
+    background-color: var(--sl-color-neutral-700);
+    transform: scale(1.2);
+  }
+
+  /* Focus styles */
+  .carousel__slides:focus-visible,
+  .carousel__navigation-button:focus-visible,
+  .carousel__pagination-item:focus-visible {
+    outline: var(--sl-focus-ring);
+    outline-offset: var(--sl-focus-ring-offset);
+  }
+`;
+
+// node_modules/lit-html/directives/map.js
+function* o10(o12, f7) {
+  if (void 0 !== o12) {
+    let i9 = 0;
+    for (const t8 of o12) yield f7(t8, i9++);
+  }
+}
+
+// node_modules/lit-html/directives/range.js
+function* o11(o12, t8, e13 = 1) {
+  const i9 = void 0 === t8 ? 0 : o12;
+  t8 ??= o12;
+  for (let o13 = i9; e13 > 0 ? o13 < t8 : t8 < o13; o13 += e13) yield o13;
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.WIPJVEWE.js
+var SlCarousel = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.loop = false;
+    this.navigation = false;
+    this.pagination = false;
+    this.autoplay = false;
+    this.autoplayInterval = 3e3;
+    this.slidesPerPage = 1;
+    this.slidesPerMove = 1;
+    this.orientation = "horizontal";
+    this.mouseDragging = false;
+    this.activeSlide = 0;
+    this.scrolling = false;
+    this.dragging = false;
+    this.autoplayController = new AutoplayController(this, () => this.next());
+    this.dragStartPosition = [-1, -1];
+    this.localize = new LocalizeController2(this);
+    this.pendingSlideChange = false;
+    this.handleMouseDrag = (event) => {
+      if (!this.dragging) {
+        this.scrollContainer.style.setProperty("scroll-snap-type", "none");
+        this.dragging = true;
+        this.dragStartPosition = [event.clientX, event.clientY];
+      }
+      this.scrollContainer.scrollBy({
+        left: -event.movementX,
+        top: -event.movementY,
+        behavior: "instant"
+      });
+    };
+    this.handleMouseDragEnd = () => {
+      const scrollContainer = this.scrollContainer;
+      document.removeEventListener("pointermove", this.handleMouseDrag, { capture: true });
+      const startLeft = scrollContainer.scrollLeft;
+      const startTop = scrollContainer.scrollTop;
+      scrollContainer.style.removeProperty("scroll-snap-type");
+      scrollContainer.style.setProperty("overflow", "hidden");
+      const finalLeft = scrollContainer.scrollLeft;
+      const finalTop = scrollContainer.scrollTop;
+      scrollContainer.style.removeProperty("overflow");
+      scrollContainer.style.setProperty("scroll-snap-type", "none");
+      scrollContainer.scrollTo({ left: startLeft, top: startTop, behavior: "instant" });
+      requestAnimationFrame(async () => {
+        if (startLeft !== finalLeft || startTop !== finalTop) {
+          scrollContainer.scrollTo({
+            left: finalLeft,
+            top: finalTop,
+            behavior: prefersReducedMotion() ? "auto" : "smooth"
+          });
+          await waitForEvent(scrollContainer, "scrollend");
+        }
+        scrollContainer.style.removeProperty("scroll-snap-type");
+        this.dragging = false;
+        this.dragStartPosition = [-1, -1];
+        this.handleScrollEnd();
+      });
+    };
+    this.handleSlotChange = (mutations) => {
+      const needsInitialization = mutations.some(
+        (mutation) => [...mutation.addedNodes, ...mutation.removedNodes].some(
+          (el) => this.isCarouselItem(el) && !el.hasAttribute("data-clone")
+        )
+      );
+      if (needsInitialization) {
+        this.initializeSlides();
+      }
+      this.requestUpdate();
+    };
+  }
+  connectedCallback() {
+    super.connectedCallback();
+    this.setAttribute("role", "region");
+    this.setAttribute("aria-label", this.localize.term("carousel"));
+  }
+  disconnectedCallback() {
+    var _a4;
+    super.disconnectedCallback();
+    (_a4 = this.mutationObserver) == null ? void 0 : _a4.disconnect();
+  }
+  firstUpdated() {
+    this.initializeSlides();
+    this.mutationObserver = new MutationObserver(this.handleSlotChange);
+    this.mutationObserver.observe(this, {
+      childList: true,
+      subtree: true
+    });
+  }
+  willUpdate(changedProperties) {
+    if (changedProperties.has("slidesPerMove") || changedProperties.has("slidesPerPage")) {
+      this.slidesPerMove = Math.min(this.slidesPerMove, this.slidesPerPage);
+    }
+  }
+  getPageCount() {
+    const slidesCount = this.getSlides().length;
+    const { slidesPerPage, slidesPerMove, loop } = this;
+    const pages = loop ? slidesCount / slidesPerMove : (slidesCount - slidesPerPage) / slidesPerMove + 1;
+    return Math.ceil(pages);
+  }
+  getCurrentPage() {
+    return Math.ceil(this.activeSlide / this.slidesPerMove);
+  }
+  canScrollNext() {
+    return this.loop || this.getCurrentPage() < this.getPageCount() - 1;
+  }
+  canScrollPrev() {
+    return this.loop || this.getCurrentPage() > 0;
+  }
+  /** @internal Gets all carousel items. */
+  getSlides({ excludeClones = true } = {}) {
+    return [...this.children].filter(
+      (el) => this.isCarouselItem(el) && (!excludeClones || !el.hasAttribute("data-clone"))
+    );
+  }
+  handleClick(event) {
+    if (this.dragging && this.dragStartPosition[0] > 0 && this.dragStartPosition[1] > 0) {
+      const deltaX = Math.abs(this.dragStartPosition[0] - event.clientX);
+      const deltaY = Math.abs(this.dragStartPosition[1] - event.clientY);
+      const delta = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      if (delta >= 10) {
+        event.preventDefault();
+      }
+    }
+  }
+  handleKeyDown(event) {
+    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+      const target = event.target;
+      const isRtl = this.localize.dir() === "rtl";
+      const isFocusInPagination = target.closest('[part~="pagination-item"]') !== null;
+      const isNext = event.key === "ArrowDown" || !isRtl && event.key === "ArrowRight" || isRtl && event.key === "ArrowLeft";
+      const isPrevious = event.key === "ArrowUp" || !isRtl && event.key === "ArrowLeft" || isRtl && event.key === "ArrowRight";
+      event.preventDefault();
+      if (isPrevious) {
+        this.previous();
+      }
+      if (isNext) {
+        this.next();
+      }
+      if (event.key === "Home") {
+        this.goToSlide(0);
+      }
+      if (event.key === "End") {
+        this.goToSlide(this.getSlides().length - 1);
+      }
+      if (isFocusInPagination) {
+        this.updateComplete.then(() => {
+          var _a4;
+          const activePaginationItem = (_a4 = this.shadowRoot) == null ? void 0 : _a4.querySelector(
+            '[part~="pagination-item--active"]'
+          );
+          if (activePaginationItem) {
+            activePaginationItem.focus();
+          }
+        });
+      }
+    }
+  }
+  handleMouseDragStart(event) {
+    const canDrag = this.mouseDragging && event.button === 0;
+    if (canDrag) {
+      event.preventDefault();
+      document.addEventListener("pointermove", this.handleMouseDrag, { capture: true, passive: true });
+      document.addEventListener("pointerup", this.handleMouseDragEnd, { capture: true, once: true });
+    }
+  }
+  handleScroll() {
+    this.scrolling = true;
+    if (!this.pendingSlideChange) {
+      this.synchronizeSlides();
+    }
+  }
+  /** @internal Synchronizes the slides with the IntersectionObserver API. */
+  synchronizeSlides() {
+    const io = new IntersectionObserver(
+      (entries2) => {
+        io.disconnect();
+        for (const entry of entries2) {
+          const slide = entry.target;
+          slide.toggleAttribute("inert", !entry.isIntersecting);
+          slide.classList.toggle("--in-view", entry.isIntersecting);
+          slide.setAttribute("aria-hidden", entry.isIntersecting ? "false" : "true");
+        }
+        const firstIntersecting = entries2.find((entry) => entry.isIntersecting);
+        if (!firstIntersecting) {
+          return;
+        }
+        const slidesWithClones = this.getSlides({ excludeClones: false });
+        const slidesCount = this.getSlides().length;
+        const slideIndex = slidesWithClones.indexOf(firstIntersecting.target);
+        const normalizedIndex = this.loop ? slideIndex - this.slidesPerPage : slideIndex;
+        this.activeSlide = (Math.ceil(normalizedIndex / this.slidesPerMove) * this.slidesPerMove + slidesCount) % slidesCount;
+        if (!this.scrolling) {
+          if (this.loop && firstIntersecting.target.hasAttribute("data-clone")) {
+            const clonePosition = Number(firstIntersecting.target.getAttribute("data-clone"));
+            this.goToSlide(clonePosition, "instant");
+          }
+        }
+      },
+      {
+        root: this.scrollContainer,
+        threshold: 0.6
+      }
+    );
+    this.getSlides({ excludeClones: false }).forEach((slide) => {
+      io.observe(slide);
+    });
+  }
+  handleScrollEnd() {
+    if (!this.scrolling || this.dragging) return;
+    this.scrolling = false;
+    this.pendingSlideChange = false;
+    this.synchronizeSlides();
+  }
+  isCarouselItem(node) {
+    return node instanceof Element && node.tagName.toLowerCase() === "sl-carousel-item";
+  }
+  initializeSlides() {
+    this.getSlides({ excludeClones: false }).forEach((slide, index) => {
+      slide.classList.remove("--in-view");
+      slide.classList.remove("--is-active");
+      slide.setAttribute("aria-label", this.localize.term("slideNum", index + 1));
+      if (slide.hasAttribute("data-clone")) {
+        slide.remove();
+      }
+    });
+    this.updateSlidesSnap();
+    if (this.loop) {
+      this.createClones();
+    }
+    this.goToSlide(this.activeSlide, "auto");
+    this.synchronizeSlides();
+  }
+  createClones() {
+    const slides = this.getSlides();
+    const slidesPerPage = this.slidesPerPage;
+    const lastSlides = slides.slice(-slidesPerPage);
+    const firstSlides = slides.slice(0, slidesPerPage);
+    lastSlides.reverse().forEach((slide, i9) => {
+      const clone = slide.cloneNode(true);
+      clone.setAttribute("data-clone", String(slides.length - i9 - 1));
+      this.prepend(clone);
+    });
+    firstSlides.forEach((slide, i9) => {
+      const clone = slide.cloneNode(true);
+      clone.setAttribute("data-clone", String(i9));
+      this.append(clone);
+    });
+  }
+  handleSlideChange() {
+    const slides = this.getSlides();
+    slides.forEach((slide, i9) => {
+      slide.classList.toggle("--is-active", i9 === this.activeSlide);
+    });
+    if (this.hasUpdated) {
+      this.emit("sl-slide-change", {
+        detail: {
+          index: this.activeSlide,
+          slide: slides[this.activeSlide]
+        }
+      });
+    }
+  }
+  updateSlidesSnap() {
+    const slides = this.getSlides();
+    const slidesPerMove = this.slidesPerMove;
+    slides.forEach((slide, i9) => {
+      const shouldSnap = (i9 + slidesPerMove) % slidesPerMove === 0;
+      if (shouldSnap) {
+        slide.style.removeProperty("scroll-snap-align");
+      } else {
+        slide.style.setProperty("scroll-snap-align", "none");
+      }
+    });
+  }
+  handleAutoplayChange() {
+    this.autoplayController.stop();
+    if (this.autoplay) {
+      this.autoplayController.start(this.autoplayInterval);
+    }
+  }
+  /**
+   * Move the carousel backward by `slides-per-move` slides.
+   *
+   * @param behavior - The behavior used for scrolling.
+   */
+  previous(behavior = "smooth") {
+    this.goToSlide(this.activeSlide - this.slidesPerMove, behavior);
+  }
+  /**
+   * Move the carousel forward by `slides-per-move` slides.
+   *
+   * @param behavior - The behavior used for scrolling.
+   */
+  next(behavior = "smooth") {
+    this.goToSlide(this.activeSlide + this.slidesPerMove, behavior);
+  }
+  /**
+   * Scrolls the carousel to the slide specified by `index`.
+   *
+   * @param index - The slide index.
+   * @param behavior - The behavior used for scrolling.
+   */
+  goToSlide(index, behavior = "smooth") {
+    const { slidesPerPage, loop } = this;
+    const slides = this.getSlides();
+    const slidesWithClones = this.getSlides({ excludeClones: false });
+    if (!slides.length) {
+      return;
+    }
+    const newActiveSlide = loop ? (index + slides.length) % slides.length : clamp2(index, 0, slides.length - slidesPerPage);
+    this.activeSlide = newActiveSlide;
+    const isRtl = this.localize.dir() === "rtl";
+    const nextSlideIndex = clamp2(
+      index + (loop ? slidesPerPage : 0) + (isRtl ? slidesPerPage - 1 : 0),
+      0,
+      slidesWithClones.length - 1
+    );
+    const nextSlide = slidesWithClones[nextSlideIndex];
+    this.scrollToSlide(nextSlide, prefersReducedMotion() ? "auto" : behavior);
+  }
+  scrollToSlide(slide, behavior = "smooth") {
+    this.pendingSlideChange = true;
+    window.requestAnimationFrame(() => {
+      if (!this.scrollContainer) {
+        return;
+      }
+      const scrollContainer = this.scrollContainer;
+      const scrollContainerRect = scrollContainer.getBoundingClientRect();
+      const nextSlideRect = slide.getBoundingClientRect();
+      const nextLeft = nextSlideRect.left - scrollContainerRect.left;
+      const nextTop = nextSlideRect.top - scrollContainerRect.top;
+      if (nextLeft || nextTop) {
+        this.pendingSlideChange = true;
+        scrollContainer.scrollTo({
+          left: nextLeft + scrollContainer.scrollLeft,
+          top: nextTop + scrollContainer.scrollTop,
+          behavior
+        });
+      } else {
+        this.pendingSlideChange = false;
+      }
+    });
+  }
+  render() {
+    const { slidesPerMove, scrolling } = this;
+    const pagesCount = this.getPageCount();
+    const currentPage = this.getCurrentPage();
+    const prevEnabled = this.canScrollPrev();
+    const nextEnabled = this.canScrollNext();
+    const isLtr = this.localize.dir() === "ltr";
+    return x2`
+      <div part="base" class="carousel">
+        <div
+          id="scroll-container"
+          part="scroll-container"
+          class="${e9({
+      carousel__slides: true,
+      "carousel__slides--horizontal": this.orientation === "horizontal",
+      "carousel__slides--vertical": this.orientation === "vertical",
+      "carousel__slides--dragging": this.dragging
+    })}"
+          style="--slides-per-page: ${this.slidesPerPage};"
+          aria-busy="${scrolling ? "true" : "false"}"
+          aria-atomic="true"
+          tabindex="0"
+          @keydown=${this.handleKeyDown}
+          @mousedown="${this.handleMouseDragStart}"
+          @scroll="${this.handleScroll}"
+          @scrollend=${this.handleScrollEnd}
+          @click=${this.handleClick}
+        >
+          <slot></slot>
+        </div>
+
+        ${this.navigation ? x2`
+              <div part="navigation" class="carousel__navigation">
+                <button
+                  part="navigation-button navigation-button--previous"
+                  class="${e9({
+      "carousel__navigation-button": true,
+      "carousel__navigation-button--previous": true,
+      "carousel__navigation-button--disabled": !prevEnabled
+    })}"
+                  aria-label="${this.localize.term("previousSlide")}"
+                  aria-controls="scroll-container"
+                  aria-disabled="${prevEnabled ? "false" : "true"}"
+                  @click=${prevEnabled ? () => this.previous() : null}
+                >
+                  <slot name="previous-icon">
+                    <sl-icon library="system" name="${isLtr ? "chevron-left" : "chevron-right"}"></sl-icon>
+                  </slot>
+                </button>
+
+                <button
+                  part="navigation-button navigation-button--next"
+                  class=${e9({
+      "carousel__navigation-button": true,
+      "carousel__navigation-button--next": true,
+      "carousel__navigation-button--disabled": !nextEnabled
+    })}
+                  aria-label="${this.localize.term("nextSlide")}"
+                  aria-controls="scroll-container"
+                  aria-disabled="${nextEnabled ? "false" : "true"}"
+                  @click=${nextEnabled ? () => this.next() : null}
+                >
+                  <slot name="next-icon">
+                    <sl-icon library="system" name="${isLtr ? "chevron-right" : "chevron-left"}"></sl-icon>
+                  </slot>
+                </button>
+              </div>
+            ` : ""}
+        ${this.pagination ? x2`
+              <div part="pagination" role="tablist" class="carousel__pagination" aria-controls="scroll-container">
+                ${o10(o11(pagesCount), (index) => {
+      const isActive = index === currentPage;
+      return x2`
+                    <button
+                      part="pagination-item ${isActive ? "pagination-item--active" : ""}"
+                      class="${e9({
+        "carousel__pagination-item": true,
+        "carousel__pagination-item--active": isActive
+      })}"
+                      role="tab"
+                      aria-selected="${isActive ? "true" : "false"}"
+                      aria-label="${this.localize.term("goToSlide", index + 1, pagesCount)}"
+                      tabindex=${isActive ? "0" : "-1"}
+                      @click=${() => this.goToSlide(index * slidesPerMove)}
+                      @keydown=${this.handleKeyDown}
+                    ></button>
+                  `;
+    })}
+              </div>
+            ` : ""}
+      </div>
+    `;
+  }
+};
+SlCarousel.styles = [component_styles_default, carousel_styles_default];
+SlCarousel.dependencies = { "sl-icon": SlIcon };
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlCarousel.prototype, "loop", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlCarousel.prototype, "navigation", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlCarousel.prototype, "pagination", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlCarousel.prototype, "autoplay", 2);
+__decorateClass([
+  n8({ type: Number, attribute: "autoplay-interval" })
+], SlCarousel.prototype, "autoplayInterval", 2);
+__decorateClass([
+  n8({ type: Number, attribute: "slides-per-page" })
+], SlCarousel.prototype, "slidesPerPage", 2);
+__decorateClass([
+  n8({ type: Number, attribute: "slides-per-move" })
+], SlCarousel.prototype, "slidesPerMove", 2);
+__decorateClass([
+  n8()
+], SlCarousel.prototype, "orientation", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true, attribute: "mouse-dragging" })
+], SlCarousel.prototype, "mouseDragging", 2);
+__decorateClass([
+  e7(".carousel__slides")
+], SlCarousel.prototype, "scrollContainer", 2);
+__decorateClass([
+  e7(".carousel__pagination")
+], SlCarousel.prototype, "paginationContainer", 2);
+__decorateClass([
+  r9()
+], SlCarousel.prototype, "activeSlide", 2);
+__decorateClass([
+  r9()
+], SlCarousel.prototype, "scrolling", 2);
+__decorateClass([
+  r9()
+], SlCarousel.prototype, "dragging", 2);
+__decorateClass([
+  t5({ passive: true })
+], SlCarousel.prototype, "handleScroll", 1);
+__decorateClass([
+  watch("loop", { waitUntilFirstUpdate: true }),
+  watch("slidesPerPage", { waitUntilFirstUpdate: true })
+], SlCarousel.prototype, "initializeSlides", 1);
+__decorateClass([
+  watch("activeSlide")
+], SlCarousel.prototype, "handleSlideChange", 1);
+__decorateClass([
+  watch("slidesPerMove")
+], SlCarousel.prototype, "updateSlidesSnap", 1);
+__decorateClass([
+  watch("autoplay")
+], SlCarousel.prototype, "handleAutoplayChange", 1);
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.OQXPL73S.js
+var debounce = (fn, delay) => {
+  let timerId = 0;
+  return function(...args) {
+    window.clearTimeout(timerId);
+    timerId = window.setTimeout(() => {
+      fn.call(this, ...args);
+    }, delay);
+  };
+};
+var decorate = (proto, method, decorateFn) => {
+  const superFn = proto[method];
+  proto[method] = function(...args) {
+    superFn.call(this, ...args);
+    decorateFn.call(this, superFn, ...args);
+  };
+};
+var isSupported = "onscrollend" in window;
+if (!isSupported) {
+  const pointers = /* @__PURE__ */ new Set();
+  const scrollHandlers = /* @__PURE__ */ new WeakMap();
+  const handlePointerDown = (event) => {
+    for (const touch of event.changedTouches) {
+      pointers.add(touch.identifier);
+    }
+  };
+  const handlePointerUp = (event) => {
+    for (const touch of event.changedTouches) {
+      pointers.delete(touch.identifier);
+    }
+  };
+  document.addEventListener("touchstart", handlePointerDown, true);
+  document.addEventListener("touchend", handlePointerUp, true);
+  document.addEventListener("touchcancel", handlePointerUp, true);
+  decorate(EventTarget.prototype, "addEventListener", function(addEventListener, type) {
+    if (type !== "scrollend") return;
+    const handleScrollEnd = debounce(() => {
+      if (!pointers.size) {
+        this.dispatchEvent(new Event("scrollend"));
+      } else {
+        handleScrollEnd();
+      }
+    }, 100);
+    addEventListener.call(this, "scroll", handleScrollEnd, { passive: true });
+    scrollHandlers.set(this, handleScrollEnd);
+  });
+  decorate(EventTarget.prototype, "removeEventListener", function(removeEventListener, type) {
+    if (type !== "scrollend") return;
+    const scrollHandler = scrollHandlers.get(this);
+    if (scrollHandler) {
+      removeEventListener.call(this, "scroll", scrollHandler, { passive: true });
+    }
+  });
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.NQ44LUGM.js
+var carousel_item_styles_default = i`
+  :host {
+    --aspect-ratio: inherit;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width: 100%;
+    max-height: 100%;
+    aspect-ratio: var(--aspect-ratio);
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  ::slotted(img) {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.XHATQV4E.js
+var SlCarouselItem = class extends ShoelaceElement {
+  connectedCallback() {
+    super.connectedCallback();
+    this.setAttribute("role", "group");
+  }
+  render() {
+    return x2` <slot></slot> `;
+  }
+};
+SlCarouselItem.styles = [component_styles_default, carousel_item_styles_default];
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.LXDTFLWU.js
+var computedStyleMap = /* @__PURE__ */ new WeakMap();
+function getCachedComputedStyle(el) {
+  let computedStyle = computedStyleMap.get(el);
+  if (!computedStyle) {
+    computedStyle = window.getComputedStyle(el, null);
+    computedStyleMap.set(el, computedStyle);
+  }
+  return computedStyle;
+}
+function isVisible(el) {
+  if (typeof el.checkVisibility === "function") {
+    return el.checkVisibility({ checkOpacity: false, checkVisibilityCSS: true });
+  }
+  const computedStyle = getCachedComputedStyle(el);
+  return computedStyle.visibility !== "hidden" && computedStyle.display !== "none";
+}
+function isOverflowingAndTabbable(el) {
+  const computedStyle = getCachedComputedStyle(el);
+  const { overflowY, overflowX } = computedStyle;
+  if (overflowY === "scroll" || overflowX === "scroll") {
+    return true;
+  }
+  if (overflowY !== "auto" || overflowX !== "auto") {
+    return false;
+  }
+  const isOverflowingY = el.scrollHeight > el.clientHeight;
+  if (isOverflowingY && overflowY === "auto") {
+    return true;
+  }
+  const isOverflowingX = el.scrollWidth > el.clientWidth;
+  if (isOverflowingX && overflowX === "auto") {
+    return true;
+  }
+  return false;
+}
+function isTabbable(el) {
+  const tag = el.tagName.toLowerCase();
+  const tabindex = Number(el.getAttribute("tabindex"));
+  const hasTabindex = el.hasAttribute("tabindex");
+  if (hasTabindex && (isNaN(tabindex) || tabindex <= -1)) {
+    return false;
+  }
+  if (el.hasAttribute("disabled")) {
+    return false;
+  }
+  if (el.closest("[inert]")) {
+    return false;
+  }
+  if (tag === "input" && el.getAttribute("type") === "radio" && !el.hasAttribute("checked")) {
+    return false;
+  }
+  if (!isVisible(el)) {
+    return false;
+  }
+  if ((tag === "audio" || tag === "video") && el.hasAttribute("controls")) {
+    return true;
+  }
+  if (el.hasAttribute("tabindex")) {
+    return true;
+  }
+  if (el.hasAttribute("contenteditable") && el.getAttribute("contenteditable") !== "false") {
+    return true;
+  }
+  const isNativelyTabbable = [
+    "button",
+    "input",
+    "select",
+    "textarea",
+    "a",
+    "audio",
+    "video",
+    "summary",
+    "iframe"
+  ].includes(tag);
+  if (isNativelyTabbable) {
+    return true;
+  }
+  return isOverflowingAndTabbable(el);
+}
+function getSlottedChildrenOutsideRootElement(slotElement, root) {
+  var _a4;
+  return ((_a4 = slotElement.getRootNode({ composed: true })) == null ? void 0 : _a4.host) !== root;
+}
+function getTabbableElements(root) {
+  const walkedEls = /* @__PURE__ */ new WeakMap();
+  const tabbableElements = [];
+  function walk(el) {
+    if (el instanceof Element) {
+      if (el.hasAttribute("inert") || el.closest("[inert]")) {
+        return;
+      }
+      if (walkedEls.has(el)) {
+        return;
+      }
+      walkedEls.set(el, true);
+      if (!tabbableElements.includes(el) && isTabbable(el)) {
+        tabbableElements.push(el);
+      }
+      if (el instanceof HTMLSlotElement && getSlottedChildrenOutsideRootElement(el, root)) {
+        el.assignedElements({ flatten: true }).forEach((assignedEl) => {
+          walk(assignedEl);
+        });
+      }
+      if (el.shadowRoot !== null && el.shadowRoot.mode === "open") {
+        walk(el.shadowRoot);
+      }
+    }
+    for (const e13 of el.children) {
+      walk(e13);
+    }
+  }
+  walk(root);
+  return tabbableElements.sort((a5, b4) => {
+    const aTabindex = Number(a5.getAttribute("tabindex")) || 0;
+    const bTabindex = Number(b4.getAttribute("tabindex")) || 0;
+    return bTabindex - aTabindex;
+  });
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FRD7DRZ6.js
+function* activeElements(activeElement = document.activeElement) {
+  if (activeElement === null || activeElement === void 0) return;
+  yield activeElement;
+  if ("shadowRoot" in activeElement && activeElement.shadowRoot && activeElement.shadowRoot.mode !== "closed") {
+    yield* __yieldStar(activeElements(activeElement.shadowRoot.activeElement));
+  }
+}
+function getDeepestActiveElement() {
+  return [...activeElements()].pop();
+}
+var activeModals = [];
+var Modal = class {
+  constructor(element2) {
+    this.tabDirection = "forward";
+    this.handleFocusIn = () => {
+      if (!this.isActive()) return;
+      this.checkFocus();
+    };
+    this.handleKeyDown = (event) => {
+      var _a4;
+      if (event.key !== "Tab" || this.isExternalActivated) return;
+      if (!this.isActive()) return;
+      const currentActiveElement = getDeepestActiveElement();
+      this.previousFocus = currentActiveElement;
+      if (this.previousFocus && this.possiblyHasTabbableChildren(this.previousFocus)) {
+        return;
+      }
+      if (event.shiftKey) {
+        this.tabDirection = "backward";
+      } else {
+        this.tabDirection = "forward";
+      }
+      const tabbableElements = getTabbableElements(this.element);
+      let currentFocusIndex = tabbableElements.findIndex((el) => el === currentActiveElement);
+      this.previousFocus = this.currentFocus;
+      const addition = this.tabDirection === "forward" ? 1 : -1;
+      while (true) {
+        if (currentFocusIndex + addition >= tabbableElements.length) {
+          currentFocusIndex = 0;
+        } else if (currentFocusIndex + addition < 0) {
+          currentFocusIndex = tabbableElements.length - 1;
+        } else {
+          currentFocusIndex += addition;
+        }
+        this.previousFocus = this.currentFocus;
+        const nextFocus = (
+          /** @type {HTMLElement} */
+          tabbableElements[currentFocusIndex]
+        );
+        if (this.tabDirection === "backward") {
+          if (this.previousFocus && this.possiblyHasTabbableChildren(this.previousFocus)) {
+            return;
+          }
+        }
+        if (nextFocus && this.possiblyHasTabbableChildren(nextFocus)) {
+          return;
+        }
+        event.preventDefault();
+        this.currentFocus = nextFocus;
+        (_a4 = this.currentFocus) == null ? void 0 : _a4.focus({ preventScroll: false });
+        const allActiveElements = [...activeElements()];
+        if (allActiveElements.includes(this.currentFocus) || !allActiveElements.includes(this.previousFocus)) {
+          break;
+        }
+      }
+      setTimeout(() => this.checkFocus());
+    };
+    this.handleKeyUp = () => {
+      this.tabDirection = "forward";
+    };
+    this.element = element2;
+    this.elementsWithTabbableControls = ["iframe"];
+  }
+  /** Activates focus trapping. */
+  activate() {
+    activeModals.push(this.element);
+    document.addEventListener("focusin", this.handleFocusIn);
+    document.addEventListener("keydown", this.handleKeyDown);
+    document.addEventListener("keyup", this.handleKeyUp);
+  }
+  /** Deactivates focus trapping. */
+  deactivate() {
+    activeModals = activeModals.filter((modal) => modal !== this.element);
+    this.currentFocus = null;
+    document.removeEventListener("focusin", this.handleFocusIn);
+    document.removeEventListener("keydown", this.handleKeyDown);
+    document.removeEventListener("keyup", this.handleKeyUp);
+  }
+  /** Determines if this modal element is currently active or not. */
+  isActive() {
+    return activeModals[activeModals.length - 1] === this.element;
+  }
+  /** Activates external modal behavior and temporarily disables focus trapping. */
+  activateExternal() {
+    this.isExternalActivated = true;
+  }
+  /** Deactivates external modal behavior and re-enables focus trapping. */
+  deactivateExternal() {
+    this.isExternalActivated = false;
+  }
+  checkFocus() {
+    if (this.isActive() && !this.isExternalActivated) {
+      const tabbableElements = getTabbableElements(this.element);
+      if (!this.element.matches(":focus-within")) {
+        const start = tabbableElements[0];
+        const end = tabbableElements[tabbableElements.length - 1];
+        const target = this.tabDirection === "forward" ? start : end;
+        if (typeof (target == null ? void 0 : target.focus) === "function") {
+          this.currentFocus = target;
+          target.focus({ preventScroll: false });
+        }
+      }
+    }
+  }
+  possiblyHasTabbableChildren(element2) {
+    return this.elementsWithTabbableControls.includes(element2.tagName.toLowerCase()) || element2.hasAttribute("controls");
+  }
+};
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.RWUUFNUL.js
+var locks = /* @__PURE__ */ new Set();
+function getScrollbarWidth() {
+  const documentWidth = document.documentElement.clientWidth;
+  return Math.abs(window.innerWidth - documentWidth);
+}
+function getExistingBodyPadding() {
+  const padding = Number(getComputedStyle(document.body).paddingRight.replace(/px/, ""));
+  if (isNaN(padding) || !padding) {
+    return 0;
+  }
+  return padding;
+}
+function lockBodyScrolling(lockingEl) {
+  locks.add(lockingEl);
+  if (!document.documentElement.classList.contains("sl-scroll-lock")) {
+    const scrollbarWidth = getScrollbarWidth() + getExistingBodyPadding();
+    let scrollbarGutterProperty = getComputedStyle(document.documentElement).scrollbarGutter;
+    if (!scrollbarGutterProperty || scrollbarGutterProperty === "auto") {
+      scrollbarGutterProperty = "stable";
+    }
+    if (scrollbarWidth < 2) {
+      scrollbarGutterProperty = "";
+    }
+    document.documentElement.style.setProperty("--sl-scroll-lock-gutter", scrollbarGutterProperty);
+    document.documentElement.classList.add("sl-scroll-lock");
+    document.documentElement.style.setProperty("--sl-scroll-lock-size", `${scrollbarWidth}px`);
+  }
+}
+function unlockBodyScrolling(lockingEl) {
+  locks.delete(lockingEl);
+  if (locks.size === 0) {
+    document.documentElement.classList.remove("sl-scroll-lock");
+    document.documentElement.style.removeProperty("--sl-scroll-lock-size");
+  }
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.G5RKA5HF.js
+var dialog_styles_default = i`
+  :host {
+    --width: 31rem;
+    --header-spacing: var(--sl-spacing-large);
+    --body-spacing: var(--sl-spacing-large);
+    --footer-spacing: var(--sl-spacing-large);
+
+    display: contents;
+  }
+
+  .dialog {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: var(--sl-z-index-dialog);
+  }
+
+  .dialog__panel {
+    display: flex;
+    flex-direction: column;
+    z-index: 2;
+    width: var(--width);
+    max-width: calc(100% - var(--sl-spacing-2x-large));
+    max-height: calc(100% - var(--sl-spacing-2x-large));
+    background-color: var(--sl-panel-background-color);
+    border-radius: var(--sl-border-radius-medium);
+    box-shadow: var(--sl-shadow-x-large);
+  }
+
+  .dialog__panel:focus {
+    outline: none;
+  }
+
+  /* Ensure there's enough vertical padding for phones that don't update vh when chrome appears (e.g. iPhone) */
+  @media screen and (max-width: 420px) {
+    .dialog__panel {
+      max-height: 80vh;
+    }
+  }
+
+  .dialog--open .dialog__panel {
+    display: flex;
+    opacity: 1;
+  }
+
+  .dialog__header {
+    flex: 0 0 auto;
+    display: flex;
+  }
+
+  .dialog__title {
+    flex: 1 1 auto;
+    font: inherit;
+    font-size: var(--sl-font-size-large);
+    line-height: var(--sl-line-height-dense);
+    padding: var(--header-spacing);
+    margin: 0;
+  }
+
+  .dialog__header-actions {
+    flex-shrink: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: end;
+    gap: var(--sl-spacing-2x-small);
+    padding: 0 var(--header-spacing);
+  }
+
+  .dialog__header-actions sl-icon-button,
+  .dialog__header-actions ::slotted(sl-icon-button) {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    font-size: var(--sl-font-size-medium);
+  }
+
+  .dialog__body {
+    flex: 1 1 auto;
+    display: block;
+    padding: var(--body-spacing);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dialog__footer {
+    flex: 0 0 auto;
+    text-align: right;
+    padding: var(--footer-spacing);
+  }
+
+  .dialog__footer ::slotted(sl-button:not(:first-of-type)) {
+    margin-inline-start: var(--sl-spacing-x-small);
+  }
+
+  .dialog:not(.dialog--has-footer) .dialog__footer {
+    display: none;
+  }
+
+  .dialog__overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: var(--sl-overlay-background-color);
+  }
+
+  @media (forced-colors: active) {
+    .dialog__panel {
+      border: solid 1px var(--sl-color-neutral-0);
+    }
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.6SBTOKGT.js
+var SlDialog = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.hasSlotController = new HasSlotController(this, "footer");
+    this.localize = new LocalizeController2(this);
+    this.modal = new Modal(this);
+    this.open = false;
+    this.label = "";
+    this.noHeader = false;
+    this.handleDocumentKeyDown = (event) => {
+      if (event.key === "Escape" && this.modal.isActive() && this.open) {
+        event.stopPropagation();
+        this.requestClose("keyboard");
+      }
+    };
+  }
+  firstUpdated() {
+    this.dialog.hidden = !this.open;
+    if (this.open) {
+      this.addOpenListeners();
+      this.modal.activate();
+      lockBodyScrolling(this);
+    }
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.modal.deactivate();
+    unlockBodyScrolling(this);
+    this.removeOpenListeners();
+  }
+  requestClose(source3) {
+    const slRequestClose = this.emit("sl-request-close", {
+      cancelable: true,
+      detail: { source: source3 }
+    });
+    if (slRequestClose.defaultPrevented) {
+      const animation = getAnimation(this, "dialog.denyClose", { dir: this.localize.dir() });
+      animateTo(this.panel, animation.keyframes, animation.options);
+      return;
+    }
+    this.hide();
+  }
+  addOpenListeners() {
+    var _a4;
+    if ("CloseWatcher" in window) {
+      (_a4 = this.closeWatcher) == null ? void 0 : _a4.destroy();
+      this.closeWatcher = new CloseWatcher();
+      this.closeWatcher.onclose = () => this.requestClose("keyboard");
+    } else {
+      document.addEventListener("keydown", this.handleDocumentKeyDown);
+    }
+  }
+  removeOpenListeners() {
+    var _a4;
+    (_a4 = this.closeWatcher) == null ? void 0 : _a4.destroy();
+    document.removeEventListener("keydown", this.handleDocumentKeyDown);
+  }
+  async handleOpenChange() {
+    if (this.open) {
+      this.emit("sl-show");
+      this.addOpenListeners();
+      this.originalTrigger = document.activeElement;
+      this.modal.activate();
+      lockBodyScrolling(this);
+      const autoFocusTarget = this.querySelector("[autofocus]");
+      if (autoFocusTarget) {
+        autoFocusTarget.removeAttribute("autofocus");
+      }
+      await Promise.all([stopAnimations(this.dialog), stopAnimations(this.overlay)]);
+      this.dialog.hidden = false;
+      requestAnimationFrame(() => {
+        const slInitialFocus = this.emit("sl-initial-focus", { cancelable: true });
+        if (!slInitialFocus.defaultPrevented) {
+          if (autoFocusTarget) {
+            autoFocusTarget.focus({ preventScroll: true });
+          } else {
+            this.panel.focus({ preventScroll: true });
+          }
+        }
+        if (autoFocusTarget) {
+          autoFocusTarget.setAttribute("autofocus", "");
+        }
+      });
+      const panelAnimation = getAnimation(this, "dialog.show", { dir: this.localize.dir() });
+      const overlayAnimation = getAnimation(this, "dialog.overlay.show", { dir: this.localize.dir() });
+      await Promise.all([
+        animateTo(this.panel, panelAnimation.keyframes, panelAnimation.options),
+        animateTo(this.overlay, overlayAnimation.keyframes, overlayAnimation.options)
+      ]);
+      this.emit("sl-after-show");
+    } else {
+      this.emit("sl-hide");
+      this.removeOpenListeners();
+      this.modal.deactivate();
+      await Promise.all([stopAnimations(this.dialog), stopAnimations(this.overlay)]);
+      const panelAnimation = getAnimation(this, "dialog.hide", { dir: this.localize.dir() });
+      const overlayAnimation = getAnimation(this, "dialog.overlay.hide", { dir: this.localize.dir() });
+      await Promise.all([
+        animateTo(this.overlay, overlayAnimation.keyframes, overlayAnimation.options).then(() => {
+          this.overlay.hidden = true;
+        }),
+        animateTo(this.panel, panelAnimation.keyframes, panelAnimation.options).then(() => {
+          this.panel.hidden = true;
+        })
+      ]);
+      this.dialog.hidden = true;
+      this.overlay.hidden = false;
+      this.panel.hidden = false;
+      unlockBodyScrolling(this);
+      const trigger = this.originalTrigger;
+      if (typeof (trigger == null ? void 0 : trigger.focus) === "function") {
+        setTimeout(() => trigger.focus());
+      }
+      this.emit("sl-after-hide");
+    }
+  }
+  /** Shows the dialog. */
+  async show() {
+    if (this.open) {
+      return void 0;
+    }
+    this.open = true;
+    return waitForEvent(this, "sl-after-show");
+  }
+  /** Hides the dialog */
+  async hide() {
+    if (!this.open) {
+      return void 0;
+    }
+    this.open = false;
+    return waitForEvent(this, "sl-after-hide");
+  }
+  render() {
+    return x2`
+      <div
+        part="base"
+        class=${e9({
+      dialog: true,
+      "dialog--open": this.open,
+      "dialog--has-footer": this.hasSlotController.test("footer")
+    })}
+      >
+        <div part="overlay" class="dialog__overlay" @click=${() => this.requestClose("overlay")} tabindex="-1"></div>
+
+        <div
+          part="panel"
+          class="dialog__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-hidden=${this.open ? "false" : "true"}
+          aria-label=${o9(this.noHeader ? this.label : void 0)}
+          aria-labelledby=${o9(!this.noHeader ? "title" : void 0)}
+          tabindex="-1"
+        >
+          ${!this.noHeader ? x2`
+                <header part="header" class="dialog__header">
+                  <h2 part="title" class="dialog__title" id="title">
+                    <slot name="label"> ${this.label.length > 0 ? this.label : String.fromCharCode(65279)} </slot>
+                  </h2>
+                  <div part="header-actions" class="dialog__header-actions">
+                    <slot name="header-actions"></slot>
+                    <sl-icon-button
+                      part="close-button"
+                      exportparts="base:close-button__base"
+                      class="dialog__close"
+                      name="x-lg"
+                      label=${this.localize.term("close")}
+                      library="system"
+                      @click="${() => this.requestClose("close-button")}"
+                    ></sl-icon-button>
+                  </div>
+                </header>
+              ` : ""}
+          ${""}
+          <div part="body" class="dialog__body" tabindex="-1"><slot></slot></div>
+
+          <footer part="footer" class="dialog__footer">
+            <slot name="footer"></slot>
+          </footer>
+        </div>
+      </div>
+    `;
+  }
+};
+SlDialog.styles = [component_styles_default, dialog_styles_default];
+SlDialog.dependencies = {
+  "sl-icon-button": SlIconButton
+};
+__decorateClass([
+  e7(".dialog")
+], SlDialog.prototype, "dialog", 2);
+__decorateClass([
+  e7(".dialog__panel")
+], SlDialog.prototype, "panel", 2);
+__decorateClass([
+  e7(".dialog__overlay")
+], SlDialog.prototype, "overlay", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlDialog.prototype, "open", 2);
+__decorateClass([
+  n8({ reflect: true })
+], SlDialog.prototype, "label", 2);
+__decorateClass([
+  n8({ attribute: "no-header", type: Boolean, reflect: true })
+], SlDialog.prototype, "noHeader", 2);
+__decorateClass([
+  watch("open", { waitUntilFirstUpdate: true })
+], SlDialog.prototype, "handleOpenChange", 1);
+setDefaultAnimation("dialog.show", {
+  keyframes: [
+    { opacity: 0, scale: 0.8 },
+    { opacity: 1, scale: 1 }
+  ],
+  options: { duration: 250, easing: "ease" }
+});
+setDefaultAnimation("dialog.hide", {
+  keyframes: [
+    { opacity: 1, scale: 1 },
+    { opacity: 0, scale: 0.8 }
+  ],
+  options: { duration: 250, easing: "ease" }
+});
+setDefaultAnimation("dialog.denyClose", {
+  keyframes: [{ scale: 1 }, { scale: 1.02 }, { scale: 1 }],
+  options: { duration: 250 }
+});
+setDefaultAnimation("dialog.overlay.show", {
+  keyframes: [{ opacity: 0 }, { opacity: 1 }],
+  options: { duration: 250 }
+});
+setDefaultAnimation("dialog.overlay.hide", {
+  keyframes: [{ opacity: 1 }, { opacity: 0 }],
+  options: { duration: 250 }
+});
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.SUSCR7CI.js
+var divider_styles_default = i`
+  :host {
+    --color: var(--sl-panel-border-color);
+    --width: var(--sl-panel-border-width);
+    --spacing: var(--sl-spacing-medium);
+  }
+
+  :host(:not([vertical])) {
+    display: block;
+    border-top: solid var(--width) var(--color);
+    margin: var(--spacing) 0;
+  }
+
+  :host([vertical]) {
+    display: inline-block;
+    height: 100%;
+    border-left: solid var(--width) var(--color);
+    margin: 0 var(--spacing);
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FWNMG5P5.js
+var SlDivider = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.vertical = false;
+  }
+  connectedCallback() {
+    super.connectedCallback();
+    this.setAttribute("role", "separator");
+  }
+  handleVerticalChange() {
+    this.setAttribute("aria-orientation", this.vertical ? "vertical" : "horizontal");
+  }
+};
+SlDivider.styles = [component_styles_default, divider_styles_default];
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlDivider.prototype, "vertical", 2);
+__decorateClass([
+  watch("vertical")
+], SlDivider.prototype, "handleVerticalChange", 1);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FW7UWQXB.js
 var tooltip_styles_default = i`
@@ -96611,7 +100311,7 @@ var SlTooltip = class extends ShoelaceElement {
           popup:base__popup,
           arrow:base__arrow
         "
-        class=${e10({
+        class=${e9({
       tooltip: true,
       "tooltip--open": this.open
     })}
@@ -98125,12 +101825,31 @@ var periodicTableStyles = i`
 		min-width: 21rem;
 	}
 
+	/* The picker in the molecule builder is much narrower than the widget, so the
+	   atomic number moves above the symbol instead of sitting on its shoulder and
+	   the family name shrinks into the gutter. Both would otherwise collide with
+	   the symbol at the 20 px cells of a 410 px palette. */
 	:host([picker-mode]) .cell {
+		padding-block-start: 0.45rem;
 		touch-action: manipulation;
+	}
+
+	:host([picker-mode]) .cell-number {
+		inset-inline-start: 2px;
+		font-size: 0.45rem;
+	}
+
+	:host([picker-mode]) .cell-year {
+		font-size: 0.45rem;
 	}
 
 	:host([picker-mode]) .cell-symbol {
 		font-size: 0.75rem;
+	}
+
+	:host([picker-mode]) .series-header {
+		padding-right: 0.15rem;
+		font-size: 0.5rem;
 	}
 
 	.grid-row {
@@ -101841,80 +105560,352 @@ var builderStyles = i`
 		--control: #f9f9f9;
 		--blue: var(--sl-color-primary-600, #0284c7);
 		--shadow: 0 1px 3px rgb(0 0 0 / 14%);
+		--panel-shadow: 0 2px 8px rgb(0 0 0 / 9%);
+		--chip-height: 1.35rem;
+		--handle-width: 1.1rem;
+		/* The catalog headings repeat the chemical drawer of the lab, so the
+		   group badges carry the same lilac band as the palette sections. */
+		--palette-heading-fill: #e8e0ee;
+		--palette-heading-badge: #ded3e7;
+		--palette-heading-ink: #4e3e5d;
+		position: relative;
 		border: 1px solid var(--outline);
 		border-radius: 5px;
 		overflow: hidden;
 		background: white;
+		/* Every small control in the widget is as tall as a filter chip, so the
+		   header, the tool row and the canvas controls share one rhythm. */
+		--sl-input-height-small: var(--chip-height);
 	}
-	.toolbar, .tools, .view-tools, .status, .inspect-title, .fields, .palette-tools, .tool-group, .palette-heading {
+	.document, .tools, .view-tools, .fields, .palette-tools, .tool-group, .palette-heading,
+	.document-title, .document-actions, .card-head, .card-facts, .display-controls, .bond-orders {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: .35rem;
 	}
-	.toolbar, .tools {
+	.document, .tools {
 		background: var(--control);
-		padding: .4rem .5rem;
+		padding: .35rem .5rem;
 		border-bottom: 1px solid var(--line);
 	}
-	.toolbar { justify-content: space-between; gap: .5rem; }
+	.document { justify-content: space-between; gap: .5rem; }
+	.document-title { min-inline-size: 0; flex: 1 1 auto; }
+	.document-title h5 {
+		margin: 0;
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: .9rem;
+		font-weight: 600;
+		line-height: 1.2;
+	}
+	.document-actions { flex: none; }
 	.tool-group + .tool-group {
 		border-inline-start: 1px solid var(--line);
 		padding-inline-start: .35rem;
 	}
-	.tools sl-button::part(base), .view-tools sl-button::part(base) { box-shadow: var(--shadow); }
-	.icon-control::part(label) { display: grid; place-items: center; padding-inline: .35rem; }
+	.tools sl-button::part(base) { box-shadow: var(--shadow); }
+	/* Icon controls carry their label in the tooltip only, so the label part
+	   keeps the square metrics of the lab's canvas buttons. */
+	.icon-control::part(label) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-inline-size: 24px;
+		padding-inline: 3px;
+	}
+	/* The catalog, file and send actions open in a compact surface anchored to
+	   their own button instead of pushing a full-width row under the header. */
+	.surface {
+		display: grid;
+		gap: .45rem;
+		max-inline-size: min(22rem, 80cqw);
+		padding: .5rem;
+		border: 1px solid var(--outline);
+		border-radius: 5px;
+		background: white;
+		box-shadow: var(--panel-shadow);
+		font-size: .8rem;
+	}
+	/* The catalog lists every substance of the lab, so it scrolls inside the
+	   popup instead of growing past the widget. */
+	.catalog-surface { inline-size: min(22rem, 80cqw); gap: .3rem; }
+	.catalog-search { min-inline-size: 0; }
+	.catalog-list {
+		display: grid;
+		gap: .35rem;
+		max-block-size: min(22rem, 52vh);
+		overflow: auto;
+		overscroll-behavior: contain;
+	}
+	.catalog-group, .catalog-entries { display: grid; gap: 2px; }
+	.catalog-group-heading {
+		position: sticky;
+		inset-block-start: 0;
+		z-index: 1;
+		padding: 2px 4px;
+		border-radius: 3px;
+		background: var(--palette-heading-fill);
+		color: var(--palette-heading-ink);
+	}
+	.catalog-group-heading > sl-badge { max-inline-size: 100%; margin: 0; }
+	.catalog-group-heading > sl-badge::part(base) {
+		padding: 1px 5px;
+		border: 0;
+		background: var(--palette-heading-badge);
+		color: inherit;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		line-height: 1.25;
+	}
+	.catalog-entry {
+		display: flex;
+		align-items: baseline;
+		gap: .35rem;
+		padding: 3px 6px;
+		border: 1px solid transparent;
+		border-radius: 3px;
+		background: none;
+		color: inherit;
+		font: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+	.catalog-entry:hover { background: var(--sl-color-neutral-100, #f4f4f5); }
+	.catalog-entry:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+	.catalog-entry.is-selected {
+		border-color: var(--blue);
+		background: color-mix(in srgb, var(--blue) 10%, white);
+	}
+	.catalog-entry-name { font-weight: 500; }
+	.catalog-entry-formula { color: var(--sl-color-neutral-600, #52525b); font-size: .75rem; }
+	.catalog-variants { display: flex; flex-wrap: wrap; gap: 3px; padding: 0 6px 3px; }
+	.catalog-variant {
+		padding: 1px 6px;
+		border: 1px solid var(--outline);
+		border-radius: 3px;
+		background: white;
+		color: inherit;
+		font: inherit;
+		font-size: .75rem;
+		cursor: pointer;
+	}
+	.catalog-variant:hover { background: var(--sl-color-neutral-100, #f4f4f5); }
+	.catalog-variant:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+	.catalog-variant.is-selected {
+		border-color: var(--blue);
+		background: color-mix(in srgb, var(--blue) 10%, white);
+	}
+	.catalog-note {
+		margin: 0;
+		padding: 0 6px 3px;
+		color: var(--sl-color-neutral-600, #52525b);
+		font-size: .75rem;
+	}
+	.surface .fields { flex-direction: column; align-items: stretch; gap: .4rem; }
+	.surface .fields label { display: grid; gap: .15rem; }
+	.surface select { inline-size: 100%; }
+	/* The popup box is absolutely positioned but carries no z-index of its own,
+	   so the canvas, which is positioned later in tree order, painted over it.
+	   The header keeps its popups above the workspace and the palette handle. */
+	.document sl-popup::part(popup) { z-index: 4; }
 	.workspace {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		grid-template-rows: minmax(0, 1fr);
-		block-size: clamp(28rem, 60vh, 38rem);
+		block-size: clamp(32rem, 66vh, 42rem);
 	}
-	.workspace[data-palette="list"] {
-		grid-template-columns: clamp(12rem, 34%, 16rem) minmax(0, 1fr);
-		block-size: clamp(36rem, 72vh, 44rem);
+	.workspace[data-palette="list"] { grid-template-columns: clamp(12rem, 34%, 16rem) minmax(0, 1fr); }
+	/* The element grid needs about 20 px per column, so the palette takes the
+	   width of the table instead of a share of the workspace. The 55 % cap keeps
+	   the canvas usable; below it the grid button stays disabled. */
+	.workspace[data-palette="table"] { grid-template-columns: minmax(0, min(27rem, 55%)) minmax(0, 1fr); }
+	.workspace[data-collapsed] { grid-template-columns: 0 minmax(0, 1fr); }
+	/* Fullscreen hands the widget the whole screen. The builder takes that box
+	   and the workspace grows into the rest, so the canvas fills the screen
+	   instead of keeping the height it has in an embed. */
+	:host(:fullscreen) { block-size: 100%; }
+	:host(:fullscreen) .builder {
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+		block-size: 100%;
 	}
-	.workspace[data-palette="table"] {
-		grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+	:host(:fullscreen) .workspace {
+		flex: 1 1 auto;
+		block-size: auto;
+		min-block-size: 0;
 	}
 	.palette {
+		position: relative;
 		display: flex;
+		flex-direction: column;
+		min-inline-size: 0;
+		min-block-size: 0;
+		padding: .45rem;
+		border-inline-end: 1px solid var(--outline);
+		background: var(--control);
+	}
+	.workspace[data-collapsed] .palette { padding: 0; border-inline-end: 0; }
+	/* The handle is the palette's own edge, like the attached drawer handle of
+	   the lab: it stays in place while the panel opens and closes. */
+	.palette-handle {
+		position: absolute;
+		inset-block-start: .5rem;
+		inset-inline-start: 100%;
+		z-index: 3;
+		display: grid;
+		place-items: center;
+		box-sizing: border-box;
+		inline-size: var(--handle-width);
+		block-size: 2.2rem;
+		padding: 0;
+		border: 1px solid var(--outline);
+		border-inline-start: 0;
+		border-radius: 0 4px 4px 0;
+		background: var(--control);
+		box-shadow: var(--shadow);
+		color: var(--sl-color-neutral-600, #52525b);
+		cursor: pointer;
+	}
+	.palette-handle:focus-visible {
+		outline: 2px solid var(--sl-color-neutral-600, #52525b);
+		outline-offset: -3px;
+	}
+	.palette-body {
+		display: flex;
+		flex: 1 1 auto;
 		flex-direction: column;
 		gap: .4rem;
 		min-inline-size: 0;
 		min-block-size: 0;
-		padding: .45rem;
-		border-right: 1px solid var(--outline);
-		background: var(--control);
 	}
 	.palette-heading { justify-content: space-between; }
-	.palette > webwriter-chemlab-periodic-table {
+	.palette > .palette-body > webwriter-chemlab-periodic-table {
 		flex: 1 1 0;
 		box-shadow: var(--shadow);
 	}
 	.visual {
 		display: grid;
-		grid-template-rows: minmax(0, 1fr) auto;
+		grid-template-rows: minmax(0, 1fr);
 		min-width: 0;
 		background: #fbfbfa;
 	}
-	.board { position: relative; }
+	.board { position: relative; min-block-size: 0; }
+	.board:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
 	.scene, .drawing { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 	.scene { overflow: hidden; }
 	.drawing { display: block; background: radial-gradient(#d4d8db 1px, transparent 1px) 1px 1px / 18px 18px; }
 	.drawing [data-atom] { cursor: pointer; }
-	.view-tools { position: absolute; right: .5rem; bottom: .5rem; z-index: 1; }
-	.empty { position: absolute; inset: 45% 12% auto; margin: 0; text-align: center; color: #52525b; pointer-events: none; }
-	.status {
-		background: white;
-		border-top: 1px solid var(--line);
-		min-height: 2rem;
-		padding: .35rem .5rem;
-		font-size: .8rem;
-		justify-content: space-between;
+	/* The canvas controls repeat the lab's zoom cluster: same inset, same gap,
+	   same 24 px buttons on the light surface with the soft control shadow. */
+	.view-tools {
+		position: absolute;
+		inset-block-end: 4px;
+		inset-inline-end: 4px;
+		z-index: 2;
+		max-inline-size: calc(100% - 8px);
+		justify-content: flex-end;
+		gap: 3px;
+		--sl-input-height-small: 24px;
 	}
-	.status :is(div, span) { min-width: 0; }
-	.status output { color: #52525b; }
+	.view-tools sl-button::part(base) { box-shadow: var(--shadow); }
+	.view-tools sl-button:not([aria-pressed="true"])::part(base):not(:hover):not(:active) { background: var(--control); }
+	.empty { position: absolute; inset: 45% 12% auto; margin: 0; text-align: center; color: #52525b; pointer-events: none; }
+	/* The model summary and the selection card sit at the canvas edge, so they
+	   keep their place while the structure turns. */
+	.model-summary {
+		position: absolute;
+		inset-block-start: .5rem;
+		inset-inline-start: 1.9rem;
+		z-index: 2;
+		display: grid;
+		gap: .3rem;
+		max-inline-size: min(19rem, calc(100% - 2.4rem));
+		max-block-size: min(11rem, calc(100% - 1rem));
+		overflow: auto;
+		padding: .35rem .45rem;
+		border: 1px solid var(--line);
+		border-radius: 5px;
+		background: white;
+		box-shadow: var(--panel-shadow);
+		font-size: .78rem;
+	}
+	.model-summary output { color: #52525b; }
+	.selection-card .fields a {
+		display: inline-flex;
+		align-items: center;
+		block-size: var(--chip-height);
+		padding-inline: .4rem;
+		border: 1px solid var(--line);
+		border-radius: 3px;
+		background: var(--control);
+		color: var(--sl-color-primary-700);
+		font-size: .74rem;
+		text-decoration: none;
+	}
+	.selection-card .fields a:hover { border-color: var(--sl-color-primary-400); }
+	.selection-card .fields a:focus-visible { outline: 2px solid var(--sl-color-primary-600); outline-offset: 1px; }
+	.selection-card {
+		position: absolute;
+		inset-block-end: .5rem;
+		inset-inline-start: .5rem;
+		z-index: 2;
+		display: grid;
+		gap: .35rem;
+		inline-size: max-content;
+		max-inline-size: min(15rem, 62%);
+		max-block-size: min(16rem, calc(100% - 4rem));
+		overflow: auto;
+		padding: .4rem;
+		border: 1px solid var(--line);
+		border-radius: 5px;
+		background: white;
+		box-shadow: var(--panel-shadow);
+		font-size: .8rem;
+		overflow-wrap: anywhere;
+	}
+	.card-head { justify-content: space-between; }
+	.card-facts { gap: .25rem; }
+	.selection-card sl-details::part(base) { border-color: var(--line); }
+	.selection-card sl-details::part(header), .selection-card sl-details::part(content) {
+		padding: .3rem .4rem;
+	}
+	.selection-card sl-details::part(header) {
+		background: var(--control);
+		font-size: .78rem;
+	}
+	.selection-card .fields { flex-direction: column; align-items: stretch; gap: .3rem; }
+	.selection-card .fields label { display: grid; gap: .1rem; }
+	/* The site picker lists every atom as a chip instead of hiding the list in a
+	   select, so a hover can outline the matching atom in the lattice. */
+	.site-picker {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 2px;
+		max-block-size: 6.5rem;
+		overflow: auto;
+		overscroll-behavior: contain;
+	}
+	.site-chip {
+		padding: 1px 5px;
+		border: 1px solid var(--outline);
+		border-radius: 3px;
+		background: white;
+		color: inherit;
+		font: inherit;
+		font-size: .74rem;
+		line-height: 1.3;
+		cursor: pointer;
+	}
+	.site-chip:hover { border-color: var(--sl-color-primary-400, #38bdf8); }
+	.site-chip:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+	.site-chip[aria-pressed="true"] {
+		border-color: var(--blue);
+		background: color-mix(in srgb, var(--blue) 10%, white);
+	}
 	.structure-legend { display: flex; flex-wrap: wrap; gap: .55rem; color: #52525b; }
 	.structure-legend span::before {
 		content: "";
@@ -101926,29 +105917,9 @@ var builderStyles = i`
 		background: var(--swatch, #0284c7);
 	}
 	.structure-legend [data-region="lone"] { --swatch: #a855f7; }
-	.controls-panel {
-		padding: .5rem;
-		background: var(--control);
-		border-bottom: 1px solid var(--line);
-	}
-	.controls-panel select { max-width: 100%; }
-	.inspector {
-		display: grid;
-		gap: .4rem;
-		padding: .55rem;
-		border-top: 1px solid var(--line);
-		background: white;
-		box-shadow: 0 -1px 4px rgb(0 0 0 / 5%);
-	}
-	.inspect-title { justify-content: space-between; }
-	.inspector sl-details::part(base) { border-color: var(--line); }
-	.inspector sl-details::part(header), .inspector sl-details::part(content) {
-		padding: .35rem .5rem;
-	}
-	.inspector sl-details::part(header) {
-		background: var(--control);
-		font-size: .8rem;
-	}
+	.structure-legend [data-marker="lattice"]::before { border-radius: 1px; --swatch: #283648; }
+	.display-controls { gap: .25rem; }
+	.display-controls select { max-inline-size: 6rem; }
 	input, select { color: inherit; font: inherit; accent-color: var(--blue); }
 	select, input:not([type=file]) {
 		padding: .28em .4em;
@@ -101971,15 +105942,46 @@ var builderStyles = i`
 		box-shadow: var(--shadow);
 	}
 	@container (max-width: 510px) {
-		.workspace[data-palette="list"] {
+		/* Stacked, the palette sits above the canvas and the handle becomes a tab
+		   hanging from its lower edge instead of a strip on the side. */
+		.workspace[data-palette], .workspace[data-collapsed] {
 			grid-template-columns: minmax(0, 1fr);
-			grid-template-rows: minmax(0, 1fr) minmax(18rem, 1fr);
-			block-size: clamp(40rem, 120vh, 50rem);
+			grid-template-rows: minmax(0, 2fr) minmax(0, 3fr);
 		}
-		.workspace[data-palette="list"] .palette {
+		.workspace[data-collapsed] { grid-template-rows: 0 minmax(0, 1fr); }
+		.palette {
 			border-inline-end: 0;
 			border-block-end: 1px solid var(--outline);
 		}
+		.workspace[data-collapsed] .palette { border-block-end: 0; }
+		.palette-handle {
+			inset-block-start: auto;
+			inset-block-end: 0;
+			inset-inline-start: auto;
+			inset-inline-end: .5rem;
+			transform: translateY(100%);
+			inline-size: 2.2rem;
+			block-size: var(--handle-width);
+			border: 1px solid var(--outline);
+			border-block-start: 0;
+			border-radius: 0 0 4px 4px;
+		}
+		.palette-handle svg { transform: rotate(90deg); }
+		/* The canvas is narrow here, so the view controls stand in a column at the
+		   right edge and the cards keep clear of it. */
+		.view-tools {
+			flex-direction: column;
+			inset-block: 50% auto;
+			transform: translateY(-50%);
+		}
+		/* The handle hangs below the palette here, so the summary starts under it
+		   and both cards keep clear of the view controls on the right. */
+		.model-summary {
+			inset-block-start: 1.75rem;
+			inset-inline-start: .5rem;
+			max-block-size: min(11rem, calc(100% - 2.25rem));
+		}
+		.model-summary, .selection-card { max-inline-size: calc(100% - 4.2rem); }
 	}
 `;
 
@@ -101989,9 +105991,67 @@ var chargeText = (charge) => charge === 0 ? "" : `${Math.abs(charge) > 1 ? Math.
 var distance = (a5, b4) => Math.hypot(a5.x - b4.x, a5.y - b4.y);
 var pointer = (event) => ({ x: event.clientX, y: event.clientY, id: event.pointerId });
 var groups = [...new Set(structureCatalog.map((entry) => entry.category))];
-var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showLattice_dec, _showElectrons_dec, _pickerView_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _openPanel, _labs, _showLabs, _paletteOpen, _pickerView, _showElectrons, _showLattice, _view2, _tool, _element, _picked, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _lastDrawn, _lastDrawnRepeats, _diagramBounds, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, placement_fn, addAtom_fn, setTool_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, _pointerDown, _pointerMove, _pointerUp, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, renderHistoryButton_fn, renderPickerLayout_fn, renderDrawing_fn, renderInspector_fn;
+var PALETTE_GRID_MIN = 410;
+var PALETTE_GRID_SHARE = 0.55;
+var PALETTE_CHROME = 15;
+var CUBE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+	<path d="M8 1.9 13.8 5v6L8 14.1 2.2 11V5z" /><path d="M2.2 5 8 8.1 13.8 5M8 8.1v6" /></svg>`;
+var PLANE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+	<path d="M8 1.9 13.8 5v6L8 14.1 2.2 11V5z" /><circle cx="8" cy="8" r="1.7" /></svg>`;
+var FIT_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+	<path d="M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4" /><rect x="5" y="5" width="6" height="6" rx="0.5" /></svg>`;
+var ZOOM_IN_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true">
+	<path d="M3 8h10M8 3v10" /></svg>`;
+var ZOOM_OUT_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true">
+	<path d="M3 8h10" /></svg>`;
+var CATALOG_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M6.2 2h3.6M6.8 2v4.3L3.4 12.2A1.1 1.1 0 0 0 4.4 13.8h7.2a1.1 1.1 0 0 0 1-1.6L9.2 6.3V2" />
+	<path d="M4.9 9.6h6.2" /></svg>`;
+var FILE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M4 2.2h4.6L12 5.6v8.2H4z" /><path d="M8.6 2.2v3.4H12" /></svg>`;
+var SEND_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M2.6 9.6v2.9a1.1 1.1 0 0 0 1.1 1.1h8.6a1.1 1.1 0 0 0 1.1-1.1V9.6" />
+	<path d="M8 10.2V2.4M5.1 5.3 8 2.4l2.9 2.9" /></svg>`;
+var ORBIT_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M13.2 8a5.2 5.2 0 1 1-1.6-3.8" /><path d="M13.4 2.4v3.2H10.2" /></svg>`;
+var CURSOR_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M4.2 2.6 12 8.4l-3.6.5-1.7 3.4z" /></svg>`;
+var ATOM_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.2">
+	<circle cx="8" cy="8" r="1.5" /><ellipse cx="8" cy="8" rx="5.8" ry="2.4" />
+	<ellipse cx="8" cy="8" rx="5.8" ry="2.4" transform="rotate(60 8 8)" /></svg>`;
+var BOND_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+	<circle cx="3.9" cy="12.1" r="1.7" /><circle cx="12.1" cy="3.9" r="1.7" /><path d="M5.2 10.8 10.8 5.2" /></svg>`;
+var GEOMETRY_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+	<path d="M8 8 3.6 4.4M8 8l4.4-3.6M8 8v4.6" /><circle cx="8" cy="8" r="1.4" />
+	<circle cx="3.6" cy="4.4" r="1.2" /><circle cx="12.4" cy="4.4" r="1.2" /><circle cx="8" cy="12.6" r="1.2" /></svg>`;
+var CRYSTAL_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.2" stroke-linejoin="round">
+	<path d="M8 2.2 13.4 6.3 8 13.8 2.6 6.3z" /><path d="M2.6 6.3h10.8M8 2.2 6.1 6.3 8 13.8l1.9-7.5z" /></svg>`;
+var EDGES_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+	<path d="M8 2 13.6 5.2v5.6L8 14 2.4 10.8V5.2z" /></svg>`;
+var LATTICE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
+	<circle cx="3.4" cy="3.4" r="1.3" /><circle cx="8" cy="3.4" r="1.3" /><circle cx="12.6" cy="3.4" r="1.3" />
+	<circle cx="3.4" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" /><circle cx="12.6" cy="8" r="1.3" />
+	<circle cx="3.4" cy="12.6" r="1.3" /><circle cx="8" cy="12.6" r="1.3" /><circle cx="12.6" cy="12.6" r="1.3" /></svg>`;
+var AXES_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M3.4 12.6V3.4M3.4 12.6h9.2M3.4 12.6 8.6 7.4" /><path d="M3.4 2.2v1.2M2.2 12.6h1.2M9.6 6.4 8.6 7.4 9.6 8.4" /></svg>`;
+var ELECTRONS_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
+	<circle cx="4.4" cy="8" r="1.7" /><circle cx="11.6" cy="8" r="1.7" /></svg>`;
+var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _lastDrawn, _lastDrawnRepeats, _diagramBounds, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, renderDrawing_fn, renderModelSummary_fn, renderSelectionCard_fn;
 _ChemLabMoleculeBuilder_decorators = [t4(BUILDER_TAG)];
-var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showLattice_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
+var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
   constructor() {
     super(...arguments);
     __privateAdd(this, _ChemLabMoleculeBuilder_instances);
@@ -102003,25 +106063,30 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _catalogKey, __runInitializers(_init3, 24, this, "")), __runInitializers(_init3, 27, this);
     __privateAdd(this, _catalogVariants, __runInitializers(_init3, 28, this, [])), __runInitializers(_init3, 31, this);
     __privateAdd(this, _catalogIndex, __runInitializers(_init3, 32, this, 0)), __runInitializers(_init3, 35, this);
-    __privateAdd(this, _openPanel, __runInitializers(_init3, 36, this)), __runInitializers(_init3, 39, this);
-    __privateAdd(this, _labs, __runInitializers(_init3, 40, this, [])), __runInitializers(_init3, 43, this);
-    __privateAdd(this, _showLabs, __runInitializers(_init3, 44, this, false)), __runInitializers(_init3, 47, this);
-    __privateAdd(this, _paletteOpen, __runInitializers(_init3, 48, this, true)), __runInitializers(_init3, 51, this);
-    __privateAdd(this, _pickerView, __runInitializers(_init3, 52, this, "list")), __runInitializers(_init3, 55, this);
-    __privateAdd(this, _showElectrons, __runInitializers(_init3, 56, this, false)), __runInitializers(_init3, 59, this);
-    __privateAdd(this, _showLattice, __runInitializers(_init3, 60, this, false)), __runInitializers(_init3, 63, this);
-    __privateAdd(this, _view2, __runInitializers(_init3, 64, this, "3d")), __runInitializers(_init3, 67, this);
-    __privateAdd(this, _tool, __runInitializers(_init3, 68, this, "orbit")), __runInitializers(_init3, 71, this);
-    __privateAdd(this, _element, __runInitializers(_init3, 72, this, 6)), __runInitializers(_init3, 75, this);
-    __privateAdd(this, _picked, __runInitializers(_init3, 76, this)), __runInitializers(_init3, 79, this);
-    __privateAdd(this, _bondStart, __runInitializers(_init3, 80, this)), __runInitializers(_init3, 83, this);
-    __privateAdd(this, _bondOrder, __runInitializers(_init3, 84, this, 1)), __runInitializers(_init3, 87, this);
-    __privateAdd(this, _repeats, __runInitializers(_init3, 88, this, 1)), __runInitializers(_init3, 91, this);
-    __privateAdd(this, _notice, __runInitializers(_init3, 92, this, "")), __runInitializers(_init3, 95, this);
-    __privateAdd(this, _gpu, __runInitializers(_init3, 96, this, "idle")), __runInitializers(_init3, 99, this);
-    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 100, this)), __runInitializers(_init3, 103, this);
-    __privateAdd(this, _bondPreview, __runInitializers(_init3, 104, this)), __runInitializers(_init3, 107, this);
-    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 108, this)), __runInitializers(_init3, 111, this);
+    __privateAdd(this, _catalogQuery, __runInitializers(_init3, 36, this, "")), __runInitializers(_init3, 39, this);
+    __privateAdd(this, _openPanel, __runInitializers(_init3, 40, this)), __runInitializers(_init3, 43, this);
+    __privateAdd(this, _labs, __runInitializers(_init3, 44, this, [])), __runInitializers(_init3, 47, this);
+    __privateAdd(this, _showLabs, __runInitializers(_init3, 48, this, false)), __runInitializers(_init3, 51, this);
+    __privateAdd(this, _paletteOpen, __runInitializers(_init3, 52, this, true)), __runInitializers(_init3, 55, this);
+    __privateAdd(this, _paletteNarrow, __runInitializers(_init3, 56, this, false)), __runInitializers(_init3, 59, this);
+    __privateAdd(this, _pickerView, __runInitializers(_init3, 60, this, "list")), __runInitializers(_init3, 63, this);
+    __privateAdd(this, _showElectrons, __runInitializers(_init3, 64, this, false)), __runInitializers(_init3, 67, this);
+    __privateAdd(this, _showLattice, __runInitializers(_init3, 68, this, false)), __runInitializers(_init3, 71, this);
+    __privateAdd(this, _showEdges, __runInitializers(_init3, 72, this, true)), __runInitializers(_init3, 75, this);
+    __privateAdd(this, _showAxes, __runInitializers(_init3, 76, this, false)), __runInitializers(_init3, 79, this);
+    __privateAdd(this, _view2, __runInitializers(_init3, 80, this, "3d")), __runInitializers(_init3, 83, this);
+    __privateAdd(this, _tool, __runInitializers(_init3, 84, this, "orbit")), __runInitializers(_init3, 87, this);
+    __privateAdd(this, _element, __runInitializers(_init3, 88, this, 6)), __runInitializers(_init3, 91, this);
+    __privateAdd(this, _picked, __runInitializers(_init3, 92, this)), __runInitializers(_init3, 95, this);
+    __privateAdd(this, _hoveredAtom, __runInitializers(_init3, 96, this)), __runInitializers(_init3, 99, this);
+    __privateAdd(this, _bondStart, __runInitializers(_init3, 100, this)), __runInitializers(_init3, 103, this);
+    __privateAdd(this, _bondOrder, __runInitializers(_init3, 104, this, 1)), __runInitializers(_init3, 107, this);
+    __privateAdd(this, _repeats, __runInitializers(_init3, 108, this, 1)), __runInitializers(_init3, 111, this);
+    __privateAdd(this, _notice, __runInitializers(_init3, 112, this, "")), __runInitializers(_init3, 115, this);
+    __privateAdd(this, _gpu, __runInitializers(_init3, 116, this, "idle")), __runInitializers(_init3, 119, this);
+    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 120, this)), __runInitializers(_init3, 123, this);
+    __privateAdd(this, _bondPreview, __runInitializers(_init3, 124, this)), __runInitializers(_init3, 127, this);
+    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 128, this)), __runInitializers(_init3, 131, this);
     __privateAdd(this, _scene);
     __privateAdd(this, _sceneLoad, 0);
     __privateAdd(this, _fitNext, true);
@@ -102032,6 +106097,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _gesture);
     __privateAdd(this, _pointers, /* @__PURE__ */ new Map());
     __privateAdd(this, _router);
+    __privateAdd(this, _paletteObserver);
     __privateAdd(this, _dataObserver);
     __privateAdd(this, _worksheetObserver);
     __privateAdd(this, _waitingForLab, false);
@@ -102071,7 +106137,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       window.addEventListener("blur", clear, options);
     });
     __privateAdd(this, _pointerDown, (event) => {
-      if (event.button !== 0 || event.composedPath().some((target) => target instanceof Element && target.classList.contains("view-tools"))) return;
+      if (event.button !== 0 || __privateMethod(this, _ChemLabMoleculeBuilder_instances, overPanel_fn).call(this, event)) return;
       const point = pointer(event);
       __privateGet(this, _pointers).set(event.pointerId, point);
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -102147,7 +106213,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       }
     });
     __privateAdd(this, _wheel, (event) => {
-      if (this.view !== "3d" || !__privateGet(this, _scene)) return;
+      if (this.view !== "3d" || !__privateGet(this, _scene) || __privateMethod(this, _ChemLabMoleculeBuilder_instances, overPanel_fn).call(this, event)) return;
       event.preventDefault();
       __privateGet(this, _scene).zoom(Math.exp(Math.max(-100, Math.min(100, event.deltaY)) * 4e-3));
     });
@@ -102163,6 +106229,9 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         __privateMethod(this, _ChemLabMoleculeBuilder_instances, removeAtom_fn).call(this);
       } else if (event.key === "Escape" && this.bondStart !== void 0) {
         __privateMethod(this, _ChemLabMoleculeBuilder_instances, setTool_fn).call(this, this.tool);
+      } else if ((event.key === "Enter" || event.key === " ") && this.tool === "atom" && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) && event.composedPath().some((target) => target instanceof Element && target.classList.contains("board"))) {
+        event.preventDefault();
+        __privateMethod(this, _ChemLabMoleculeBuilder_instances, addAtom_fn).call(this, __privateMethod(this, _ChemLabMoleculeBuilder_instances, centre_fn).call(this));
       }
     });
     __privateAdd(this, _openFile, async (file) => {
@@ -102203,6 +106272,8 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateGet(this, _pointers).clear();
     __privateSet(this, _gesture, void 0);
     __privateGet(this, _router)?.dispose();
+    __privateGet(this, _paletteObserver)?.disconnect();
+    __privateSet(this, _paletteObserver, void 0);
     __privateGet(this, _dataObserver)?.disconnect();
     __privateGet(this, _worksheetObserver)?.disconnect();
     __privateGet(this, _scene)?.destroy();
@@ -102212,14 +106283,14 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
   }
   updated(changed) {
     if (changed.has("elementSourceId")) __privateMethod(this, _ChemLabMoleculeBuilder_instances, bindTable_fn).call(this);
+    __privateMethod(this, _ChemLabMoleculeBuilder_instances, observePalette_fn).call(this);
     if (this.view === "3d" && this.gpu === "idle") void __privateMethod(this, _ChemLabMoleculeBuilder_instances, startScene_fn).call(this);
     if (__privateGet(this, _scene) && this.view === "3d") {
       __privateGet(this, _scene).setScene(
         __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get),
         this.repeats,
         [this.picked, this.bondStart].filter((id) => id !== void 0),
-        this.showElectrons,
-        this.showLattice
+        { electrons: this.showElectrons, lattice: this.showLattice, edges: this.showEdges, axes: this.showAxes }
       );
       if (__privateGet(this, _fitNext)) {
         __privateSet(this, _fitNext, false);
@@ -102251,7 +106322,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     const lattice = metalCrystal(this.element);
     const paletteVisible = this.paletteOpen && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get);
     const fullWidth = this.classList.contains("ww-full-width");
-    const pickerView = fullWidth ? this.pickerView : "list";
+    const pickerView = fullWidth && !this.paletteNarrow ? this.pickerView : "list";
     const ionColors = current.kind === "crystal" ? crystalIonColors(current) : /* @__PURE__ */ new Map();
     const representation = current.kind === "molecule" && current.representation && {
       conformer: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "PubChem conformer", "PubChem-Konformer"),
@@ -102260,17 +106331,20 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       "repeat-unit": __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Capped repeat-unit example", "Beispiel mit abges\xE4ttigten Wiederholungseinheiten"),
       "ionic-components": __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ionic components", "Ionenbestandteile")
     }[current.representation];
-    const tool = (value, label) => x2`<sl-button size="small" variant=${value === this.tool ? "primary" : "default"}
-			aria-pressed=${value === this.tool} @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, setTool_fn).call(this, value)}>${label}</sl-button>`;
-    const chooseView = (value, label) => x2`<sl-button size="small"
-			variant=${value === this.view ? "primary" : "default"} aria-pressed=${value === this.view}
-			?disabled=${value === "3d" && this.gpu === "unavailable"} @click=${() => {
-      this.view = value;
-    }}>${label}</sl-button>`;
+    const tool = (value, label, icon) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      label,
+      icon,
+      pressed: value === this.tool,
+      onClick: () => __privateMethod(this, _ChemLabMoleculeBuilder_instances, setTool_fn).call(this, value)
+    });
     const fit = () => {
       __privateGet(this, _scene)?.fit();
       __privateSet(this, _lastDrawn, void 0);
       this.requestUpdate();
+    };
+    const title = current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : current.name || formula(current);
+    const toggle = (panel) => () => {
+      this.openPanel = this.openPanel === panel ? void 0 : panel;
     };
     return x2`<div class="builder" contenteditable="false" @keydown=${__privateGet(this, _keys)}
 			@dragover=${(event) => {
@@ -102282,83 +106356,108 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         void __privateGet(this, _openFile).call(this, event.dataTransfer.files[0]);
       }
     }}>
-			<header class="toolbar">
-				<div class="tool-group">
-					<sl-tag size="small" variant="primary">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Molecule Builder", "Molek\xFClbaukasten")}</sl-tag>
-					<sl-button size="small" aria-expanded=${this.openPanel === "catalog"}
-						@click=${() => {
-      this.openPanel = this.openPanel === "catalog" ? void 0 : "catalog";
-    }}>
-						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog")}
-					</sl-button>
-					<sl-button size="small" aria-expanded=${this.openPanel === "file"}
-						@click=${() => {
-      this.openPanel = this.openPanel === "file" ? void 0 : "file";
-    }}>
-						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "File", "Datei")}
-					</sl-button>
+			<header class="document">
+				<div class="document-title">
+					<h5 title=${title}>${title}</h5>
+					<sl-tag size="small" variant=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? "warning" : "neutral"}>
+						${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Preview", "Vorschau") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Draft", "Entwurf")}
+					</sl-tag>
 				</div>
-				${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length && this.labs.length ? x2`
-					<sl-button size="small" variant="primary" @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, prepareSend_fn)}>
-						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Send to ChemLab", "An ChemLab senden")}
-					</sl-button>
-				` : E2}
-			</header>
-			${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderCatalog_fn).call(this)}
-			${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderFileActions_fn).call(this)}
-			${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderTargetPicker_fn).call(this)}
-			<div class="tools">
-				<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Workspace view", "Arbeitsansicht")}>
-					${!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<sl-button size="small" aria-expanded=${paletteVisible}
-						@click=${() => {
-      this.paletteOpen = !this.paletteOpen;
-    }}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Elements", "Elemente")}</sl-button>` : E2}
-					${chooseView("3d", "3D")}${chooseView("2d", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure", "Struktur"))}
-				</div>
-				${!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`
-					<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Editing tools", "Bearbeitungswerkzeuge")}>
-						${tool("orbit", this.view === "3d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Orbit", "Drehen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Select", "Ausw\xE4hlen"))}
-						${tool("atom", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place atom", "Atom platzieren"))}
-						${current.kind === "molecule" ? tool("bond", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Draw bond", "Bindung zeichnen")) : E2}
-						${this.tool === "bond" ? x2`<label class="fields">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Order", "Ordnung")} <select .value=${String(this.bondOrder)}
-							@change=${(event) => {
-      this.bondOrder = Number(event.currentTarget.value);
-    }}>
-							<option value="1">1</option><option value="2">2</option><option value="3">3</option>
-						</select></label>` : E2}
-						${current.kind === "molecule" && current.bonds.length ? x2`<sl-button size="small" @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, geometry_fn)}>
-							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit geometry", "Geometrie anpassen")}
-						</sl-button>` : E2}
-					</div>
-					${__privateGet(this, _past).length || __privateGet(this, _future).length ? x2`
-						<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "History", "Verlauf")}>
-							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderHistoryButton_fn).call(this, false)}${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderHistoryButton_fn).call(this, true)}
-						</div>` : E2}
-				` : x2`
-					<div class="tool-group">
+				<div class="document-actions">
+					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "catalog"}>
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      slot: "anchor",
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog"),
+      icon: CATALOG_ICON,
+      pressed: this.openPanel === "catalog",
+      expanded: this.openPanel === "catalog",
+      onClick: toggle("catalog")
+    })}
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderCatalog_fn).call(this)}
+					</sl-popup>
+					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "file"}>
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      slot: "anchor",
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "File", "Datei"),
+      icon: FILE_ICON,
+      pressed: this.openPanel === "file",
+      expanded: this.openPanel === "file",
+      onClick: toggle("file")
+    })}
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderFileActions_fn).call(this)}
+					</sl-popup>
+					${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length && this.labs.length ? x2`<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.showLabs}>
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      slot: "anchor",
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Send to ChemLab", "An ChemLab senden"),
+      icon: SEND_ICON,
+      pressed: this.showLabs,
+      expanded: this.showLabs,
+      onClick: __privateMethod(this, _ChemLabMoleculeBuilder_instances, prepareSend_fn)
+    })}
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderTargetPicker_fn).call(this)}
+					</sl-popup>` : E2}
+					${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`
 						<sl-button size="small" variant="primary" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, closePreview_fn).call(this, true)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Edit copy", "Kopie bearbeiten")}</sl-button>
 						<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, closePreview_fn).call(this, false)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Close preview", "Vorschau schlie\xDFen")}</sl-button>
-					</div>
-				`}
-			</div>
-			<div class="workspace" data-palette=${paletteVisible ? pickerView : E2}>
-				<aside class="palette" ?hidden=${!paletteVisible}>
-					<div class="palette-heading">
-						<div class="palette-tools">
-							<sl-tag size="small" variant="primary">${symbol(this.element)} · ${elementByAtomicNumber(this.element).names[__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "en", "de")]}</sl-tag>
-							<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, addAtom_fn).call(this)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Add atom", "Atom hinzuf\xFCgen")}</sl-button>
-							${lattice ? x2`<sl-button size="small" @click=${() => this.viewStructure(lattice)}>
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "View crystal", "Kristall ansehen")}</sl-button>` : E2}
+					` : E2}
+				</div>
+			</header>
+			${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? E2 : x2`<div class="tools" role="toolbar" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Editing tools", "Bearbeitungswerkzeuge")}>
+				<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Tools", "Werkzeuge")}>
+					${tool(
+      "orbit",
+      this.view === "3d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Orbit", "Drehen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Select", "Ausw\xE4hlen"),
+      this.view === "3d" ? ORBIT_ICON : CURSOR_ICON
+    )}
+					${tool("atom", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place atom", "Atom platzieren"), ATOM_ICON)}
+					${current.kind === "molecule" ? tool("bond", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Draw bond", "Bindung zeichnen"), BOND_ICON) : E2}
+					${this.tool === "bond" ? x2`<span class="bond-orders" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bond order", "Bindungsordnung")}>
+						${[1, 2, 3].map((order) => x2`<sl-button class="icon-control" size="small"
+							variant=${order === this.bondOrder ? "primary" : "default"} aria-pressed=${String(order === this.bondOrder)}
+							aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, `Bond order ${order}`, `Bindungsordnung ${order}`)}
+							title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, `Bond order ${order}`, `Bindungsordnung ${order}`)}
+							@click=${() => {
+      this.bondOrder = order;
+    }}>${order}</sl-button>`)}
+					</span>` : E2}
+				</div>
+				${current.kind === "molecule" && current.bonds.length ? x2`<div class="tool-group">
+					${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit geometry", "Geometrie anpassen"), icon: GEOMETRY_ICON, onClick: __privateMethod(this, _ChemLabMoleculeBuilder_instances, geometry_fn) })}
+				</div>` : E2}
+				${__privateGet(this, _past).length || __privateGet(this, _future).length ? x2`<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "History", "Verlauf")}>
+					${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderHistoryButton_fn).call(this, false)}${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderHistoryButton_fn).call(this, true)}
+				</div>` : E2}
+			</div>`}
+			<div class="workspace" data-palette=${paletteVisible ? pickerView : E2} ?data-collapsed=${!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) && !paletteVisible}>
+				${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? E2 : x2`<aside class="palette">
+					<button class="palette-handle" type="button" aria-expanded=${String(paletteVisible)} aria-controls="palette-body"
+						aria-label=${paletteVisible ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Collapse the element palette", "Elementpalette einklappen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Open the element palette", "Elementpalette \xF6ffnen")}
+						title=${paletteVisible ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Collapse the element palette", "Elementpalette einklappen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Open the element palette", "Elementpalette \xF6ffnen")}
+						@click=${() => {
+      this.paletteOpen = !this.paletteOpen;
+    }}>
+						<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" aria-hidden="true">
+							<path d=${paletteVisible ? "m9 3-4 4 4 4" : "m5 3 4 4-4 4"} />
+						</svg>
+					</button>
+					<div class="palette-body" id="palette-body" ?hidden=${!paletteVisible}>
+						<div class="palette-heading">
+							${lattice ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "View crystal", "Kristall ansehen"),
+      icon: CRYSTAL_ICON,
+      onClick: () => this.viewStructure(lattice)
+    }) : E2}
+							${lattice === null ? x2`<sl-tag size="small">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bulk lattice unavailable", "Keine experimentelle Gitterstruktur")}</sl-tag>` : E2}
+							${fullWidth ? x2`<div class="palette-tools" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Element palette layout", "Darstellung der Elementpalette")}>
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderPickerLayout_fn).call(this, "list", pickerView === "list")}${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderPickerLayout_fn).call(this, "table", pickerView === "table")}
+							</div>` : E2}
 						</div>
-						${lattice === null ? x2`<sl-tag size="small">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bulk lattice unavailable", "Keine experimentelle Gitterstruktur")}</sl-tag>` : E2}
-						${fullWidth ? x2`<div class="palette-tools" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Element palette layout", "Darstellung der Elementpalette")}>
-							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderPickerLayout_fn).call(this, "list")}${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderPickerLayout_fn).call(this, "table")}
-						</div>` : E2}
+						<webwriter-chemlab-periodic-table .view=${pickerView} picker-mode .selectedAtomicNumber=${this.element}
+							@chemlab:element-selection=${__privateGet(this, _selectPalette)} @chemlab:element-drag=${__privateGet(this, _dragPalette)}>
+						</webwriter-chemlab-periodic-table>
 					</div>
-					<webwriter-chemlab-periodic-table .view=${pickerView} picker-mode .selectedAtomicNumber=${this.element}
-						@chemlab:element-selection=${__privateGet(this, _selectPalette)} @chemlab:element-drag=${__privateGet(this, _dragPalette)}>
-					</webwriter-chemlab-periodic-table>
-				</aside>
+				</aside>`}
 				<main class="visual">
 					<div class="board" tabindex="0" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure workspace", "Struktur-Arbeitsfl\xE4che")}
 						@pointerdown=${__privateGet(this, _pointerDown)} @pointermove=${__privateGet(this, _pointerMove)} @pointerup=${__privateGet(this, _pointerUp)} @pointercancel=${__privateGet(this, _pointerUp)} @wheel=${__privateGet(this, _wheel)}>
@@ -102366,62 +106465,37 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
 						${this.view === "2d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, renderDrawing_fn).call(this, ionColors) : E2}
 						${this.gpu === "loading" && this.view === "3d" ? x2`<p class="empty" role="status"><sl-spinner></sl-spinner>
 							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Loading 3D view", "3D-Ansicht wird geladen")}</p>` : !__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<p class="empty">
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Drag an element here or use Add atom.", "Ziehe ein Element hierher oder w\xE4hle Atom hinzuf\xFCgen.")}
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Drag an element here, or choose Place atom and click the canvas.", "Ziehe ein Element hierher oder w\xE4hle Atom platzieren und klicke auf die Fl\xE4che.")}
 							</p>` : E2}
-						<div class="view-tools">
-							${current.kind === "crystal" ? x2`
-								<sl-button size="small" variant=${this.showLattice ? "primary" : "default"} aria-pressed=${this.showLattice}
-									title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Mark the Bravais lattice points of the displayed cell.", "Bravais-Gitterpunkte der dargestellten Zelle markieren.")}
-									@click=${() => {
-      this.showLattice = !this.showLattice;
-    }}>
-									${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Lattice positions", "Gitterpunkte")}
-								</sl-button>` : E2}
+						<div class="view-tools" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Canvas view", "Ansicht der Zeichenfl\xE4che")}>
+							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "3D view", "3D-Ansicht"),
+      icon: CUBE_ICON,
+      pressed: this.view === "3d",
+      disabled: this.gpu === "unavailable",
+      onClick: () => {
+        this.view = "3d";
+      }
+    })}
+							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure view", "Strukturansicht"),
+      icon: PLANE_ICON,
+      pressed: this.view === "2d",
+      onClick: () => {
+        this.view = "2d";
+      }
+    })}
 							${this.view === "3d" && this.gpu === "ready" ? x2`
-								${current.kind === "molecule" && current.atoms.length ? x2`
-									<sl-button size="small" variant=${this.showElectrons ? "primary" : "default"} aria-pressed=${this.showElectrons}
-										@click=${() => {
-      this.showElectrons = !this.showElectrons;
-    }}>
-										${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Valence electrons", "Valenzelektronen")}
-									</sl-button>` : E2}
-								<sl-button size="small" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom in", "Vergr\xF6\xDFern")} @click=${() => __privateGet(this, _scene)?.zoom(0.83)}>+</sl-button>
-								<sl-button size="small" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom out", "Verkleinern")} @click=${() => __privateGet(this, _scene)?.zoom(1.2)}>−</sl-button>
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom in", "Vergr\xF6\xDFern"), icon: ZOOM_IN_ICON, onClick: () => __privateGet(this, _scene)?.zoom(0.83) })}
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => __privateGet(this, _scene)?.zoom(1.2) })}
 							` : E2}
-							<sl-button size="small" @click=${fit}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit view", "Ansicht einpassen")}</sl-button>
+							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit })}
 						</div>
-					</div>
-					<div class="status">
-						<div class="fields">
-							<sl-tag size="small">${current.kind === "molecule" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Molecule", "Molek\xFCl") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Crystal", "Kristall")}</sl-tag>
-							${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<sl-tag size="small">${current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : current.name || formula(current)}
-								${current.catalogKey && current.name ? ` \xB7 ${current.name}` : ""}</sl-tag>` : E2}
-							${representation ? x2`<sl-tag size="small">${representation}</sl-tag>` : E2}
-							${current.source?.startsWith("https://") ? x2`<a href=${current.source} target="_blank" rel="noopener noreferrer">
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure source", "Strukturquelle")}</a>` : E2}
-							${current.kind === "molecule" && current.geometry === "idealized" ? x2`<sl-tag size="small">
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Idealized geometry", "Idealisierte Geometrie")}
-							</sl-tag>` : E2}
-							${current.kind === "molecule" && current.geometry === "estimated" ? x2`<sl-tag size="small">
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Estimated geometry", "Gesch\xE4tzte Geometrie")}
-							</sl-tag>` : E2}
-							${current.kind === "molecule" && !current.geometry && __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<sl-tag size="small">
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Sketch", "Skizze")}
-							</sl-tag>` : E2}
-						</div>
-						${ionColors.size ? x2`<span class="structure-legend" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ion colours", "Ionenfarben")}>
-							${[...ionColors].map(([ion2, color]) => x2`<span style="--swatch: ${colorHex(color)}">${ion2}</span>`)}
-						</span>` : E2}
-						${current.kind === "molecule" && this.showElectrons && this.view === "3d" ? x2`
-							<span class="structure-legend" title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Approximate Lewis and VSEPR regions. Dots represent electron counts in the displayed bonding model.", "Angen\xE4herte Lewis- und VSEPR-Bereiche. Punkte stehen f\xFCr die Elektronenzahl im dargestellten Bindungsmodell.")}>
-								<span data-region="bond">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bonding", "Bindend")}</span>
-								<span data-region="lone">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Nonbonding", "Nichtbindend")}</span>
-							</span>` : E2}
-						<output aria-live="polite">${this.notice || (this.bondStart ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose the other atom.", "W\xE4hle das zweite Atom.") : "")}</output>
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderModelSummary_fn).call(this, current, representation, ionColors)}
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderSelectionCard_fn).call(this)}
 					</div>
 				</main>
 			</div>
-			${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderInspector_fn).call(this)}
 			${this.paletteDrag ? x2`<div class="ghost" aria-hidden="true" style="left:${this.paletteDrag.x}px;top:${this.paletteDrag.y}px">
 				${symbol(this.paletteDrag.atomicNumber)}
 			</div>` : E2}
@@ -102436,17 +106510,22 @@ _preview = new WeakMap();
 _catalogKey = new WeakMap();
 _catalogVariants = new WeakMap();
 _catalogIndex = new WeakMap();
+_catalogQuery = new WeakMap();
 _openPanel = new WeakMap();
 _labs = new WeakMap();
 _showLabs = new WeakMap();
 _paletteOpen = new WeakMap();
+_paletteNarrow = new WeakMap();
 _pickerView = new WeakMap();
 _showElectrons = new WeakMap();
 _showLattice = new WeakMap();
+_showEdges = new WeakMap();
+_showAxes = new WeakMap();
 _view2 = new WeakMap();
 _tool = new WeakMap();
 _element = new WeakMap();
 _picked = new WeakMap();
+_hoveredAtom = new WeakMap();
 _bondStart = new WeakMap();
 _bondOrder = new WeakMap();
 _repeats = new WeakMap();
@@ -102465,6 +106544,7 @@ _fileOpen = new WeakMap();
 _gesture = new WeakMap();
 _pointers = new WeakMap();
 _router = new WeakMap();
+_paletteObserver = new WeakMap();
 _dataObserver = new WeakMap();
 _worksheetObserver = new WeakMap();
 _waitingForLab = new WeakMap();
@@ -102498,6 +106578,27 @@ bindTable_fn = function() {
     }
   }));
   __privateGet(this, _router).bind();
+};
+/**
+ * Watches the workspace width. The palette takes the width of the element grid
+ * while the grid is shown, so a narrow embed disables the grid button instead
+ * of clipping the symbols. The measurement is the workspace, not the palette,
+ * because the palette is narrow in the list and would block its own switch.
+ */
+observePalette_fn = function() {
+  const workspace = this.renderRoot.querySelector(".workspace");
+  if (!workspace) {
+    __privateGet(this, _paletteObserver)?.disconnect();
+    __privateSet(this, _paletteObserver, void 0);
+    return;
+  }
+  if (__privateGet(this, _paletteObserver)) return;
+  __privateSet(this, _paletteObserver, new ResizeObserver((entries2) => {
+    const width = entries2[0]?.contentRect.width ?? 0;
+    const narrow = width > 0 && width * PALETTE_GRID_SHARE < PALETTE_GRID_MIN + PALETTE_CHROME;
+    if (narrow !== this.paletteNarrow) this.paletteNarrow = narrow;
+  }));
+  __privateGet(this, _paletteObserver).observe(workspace);
 };
 startScene_fn = async function() {
   const host = this.renderRoot.querySelector(".scene");
@@ -102609,6 +106710,12 @@ placement_fn = function(x4, y5) {
   const [a5, b4] = __privateMethod(this, _ChemLabMoleculeBuilder_instances, diagramPoint_fn).call(this, x4, y5);
   return [a5, b4, 0];
 };
+/** The view centre, so an atom can be placed without a pointer. */
+centre_fn = function() {
+  const box = this.renderRoot.querySelector(".board")?.getBoundingClientRect();
+  if (this.view === "3d" && __privateGet(this, _scene) && box) return __privateGet(this, _scene).placement(box.left + box.width / 2, box.top + box.height / 2);
+  return [0, 0, 0];
+};
 addAtom_fn = function(position, atomicNumber = this.element) {
   if (__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)) return;
   const current = this.draft;
@@ -102658,6 +106765,16 @@ setTool_fn = function(tool) {
   this.bondStart = void 0;
   this.bondPreview = void 0;
   __privateGet(this, _scene)?.preview();
+};
+/**
+ * Outline the atom a site chip belongs to, or clear the outline with
+ * `undefined`. The 3D scene draws the ring itself, the 2D diagram reads the
+ * same state, so both views answer a hover the same way.
+ */
+hoverAtom_fn = function(id) {
+  if (this.hoveredAtom === id) return;
+  this.hoveredAtom = id;
+  __privateGet(this, _scene)?.highlight(id);
 };
 selectAtom_fn = function(id) {
   this.picked = id;
@@ -102751,6 +106868,14 @@ hit_fn = function(event) {
   const inside = this.shadowRoot?.elementFromPoint(event.clientX, event.clientY)?.closest("[data-atom]");
   return inside ? Number(inside.getAttribute("data-atom")) : void 0;
 };
+/**
+ * True when the event started inside a card that sits on the canvas and
+ * scrolls on its own. Those cards keep their wheel and drag gestures, so a
+ * scroll inside the selection card never turns into a zoom of the scene.
+ */
+overPanel_fn = function(event) {
+  return event.composedPath().some((target) => target instanceof Element && (target.classList.contains("view-tools") || target.classList.contains("model-summary") || target.classList.contains("selection-card")));
+};
 _pointerDown = new WeakMap();
 _pointerMove = new WeakMap();
 _pointerUp = new WeakMap();
@@ -102807,6 +106932,7 @@ closePreview_fn = function(edit) {
   this.preview = void 0;
   this.catalogKey = "";
   this.catalogVariants = [];
+  this.openPanel = void 0;
   if (edit && current) __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, current, true);
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, resetSelection_fn).call(this);
 };
@@ -102851,37 +106977,60 @@ send_fn = function(target) {
   this.notice = __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure sent for review in ChemLab.", "Struktur zur Pr\xFCfung an ChemLab gesendet.");
   target.scrollIntoView({ block: "nearest" });
 };
+/**
+ * The catalog opens as a flat list grouped by chemical class. A native select
+ * would open a second dropdown on top of the popup, so every substance is a
+ * row of its own and the variants of the chosen one appear right below it.
+ */
 renderCatalog_fn = function() {
   if (this.openPanel !== "catalog") return E2;
-  const change = (event) => {
-    const value = event.currentTarget.value;
-    if (value) this.viewCatalogStructure(value);
-  };
-  return x2`<div class="controls-panel fields">
-			<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog")}
-				<select .value=${this.catalogKey} @change=${change}>
-					<option value="">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose a substance", "Stoff ausw\xE4hlen")}</option>
-					${groups.map((category) => x2`<optgroup label=${category}>
-						${structureCatalog.filter((entry) => entry.category === category).map((entry) => x2`<option value=${entry.name} ?selected=${entry.name === this.catalogKey}>
-							${entry.name}${entry.formula ? ` \xB7 ${entry.formula}` : ""}
-						</option>`)}
-					</optgroup>`)}
-				</select>
-			</label>
-			${this.catalogVariants.length > 1 ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure", "Struktur")}
-				<select .value=${String(this.catalogIndex)} @change=${(event) => {
-    this.catalogIndex = Number(event.currentTarget.value);
-    __privateMethod(this, _ChemLabMoleculeBuilder_instances, openPreview_fn).call(this, this.catalogVariants[this.catalogIndex]);
-  }}>
-					${this.catalogVariants.map((variant, index) => x2`<option value=${index} ?selected=${index === this.catalogIndex}>${variant.name}</option>`)}
-				</select></label>` : E2}
-			${this.catalogKey && catalogIsMixture(this.catalogKey) ? x2`<sl-tag size="small">${this.catalogVariants.length ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Selected constituents of a mixture", "Ausgew\xE4hlte Bestandteile eines Gemischs") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Mixture with no unique structure", "Gemisch ohne eindeutige Struktur")}</sl-tag>` : E2}
-			${this.catalogKey && !this.catalogVariants.length && !catalogIsMixture(this.catalogKey) ? x2`<sl-tag size="small">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "No verified structure available", "Keine verifizierte Struktur verf\xFCgbar")}</sl-tag>` : E2}
+  const query = this.catalogQuery.trim().toLowerCase();
+  const matches = (entry) => !query || entry.name.toLowerCase().includes(query) || entry.formula.toLowerCase().includes(query);
+  const sections = groups.map((category) => ({
+    category,
+    entries: structureCatalog.filter((entry) => entry.category === category && matches(entry))
+  })).filter((section) => section.entries.length);
+  const selected = this.catalogKey;
+  const note = selected && !this.catalogVariants.length ? catalogIsMixture(selected) ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Mixture with no unique structure", "Gemisch ohne eindeutige Struktur") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "No verified structure available", "Keine verifizierte Struktur verf\xFCgbar") : "";
+  return x2`<div class="surface catalog-surface" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog")}>
+			<sl-input class="catalog-search" size="small" type="search" clearable
+				label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Search the catalog", "Katalog durchsuchen")}
+				placeholder=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Search name or formula", "Name oder Formel suchen")}
+				.value=${this.catalogQuery}
+				@sl-input=${(event) => {
+    this.catalogQuery = event.currentTarget.value;
+  }}></sl-input>
+			<div class="catalog-list">
+				${sections.length ? sections.map((section) => x2`<section class="catalog-group" aria-label=${section.category}>
+					<div class="catalog-group-heading" role="heading" aria-level="3">
+						<sl-badge variant="primary">${section.category}</sl-badge>
+					</div>
+					<div class="catalog-entries">
+						${section.entries.map((entry) => x2`
+							<button type="button" class="catalog-entry${entry.name === selected ? " is-selected" : ""}"
+								aria-pressed=${String(entry.name === selected)} @click=${() => this.viewCatalogStructure(entry.name)}>
+								<span class="catalog-entry-name">${entry.name}</span>
+								<span class="catalog-entry-formula">${entry.formula}</span>
+							</button>
+							${entry.name !== selected ? E2 : this.catalogVariants.length > 1 ? x2`
+								<div class="catalog-variants" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure", "Struktur")}>
+									${this.catalogVariants.map((variant, index) => x2`<button type="button"
+										class="catalog-variant${index === this.catalogIndex ? " is-selected" : ""}"
+										aria-pressed=${String(index === this.catalogIndex)} @click=${() => {
+    this.catalogIndex = index;
+    __privateMethod(this, _ChemLabMoleculeBuilder_instances, openPreview_fn).call(this, this.catalogVariants[index]);
+  }}>${variant.name}</button>`)}
+								</div>` : note ? x2`<p class="catalog-note">${note}</p>` : E2}
+						`)}
+					</div>
+				</section>`) : x2`<p class="catalog-note" role="status">
+					${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "No substance matches this search.", "Keine Substanz passt zu dieser Suche.")}</p>`}
+			</div>
 		</div>`;
 };
 renderTargetPicker_fn = function() {
   if (!this.showLabs) return E2;
-  return x2`<div class="controls-panel fields">
+  return x2`<div class="surface" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Send to", "Senden an")}>
 			<span>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Send to", "Senden an")}</span>
 			${this.labs.map((lab, index) => x2`<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, send_fn).call(this, lab)}>
 				${lab.id || `ChemLab ${index + 1}`}
@@ -102893,7 +107042,7 @@ renderTargetPicker_fn = function() {
 };
 renderFileActions_fn = function() {
   if (this.openPanel !== "file") return E2;
-  return x2`<div id="file-actions" class="controls-panel fields">
+  return x2`<div id="file-actions" class="surface" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "File", "Datei")}>
 			<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, new_fn).call(this, "molecule")}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "New molecule", "Neues Molek\xFCl")}</sl-button>
 			<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, new_fn).call(this, "crystal")}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "New crystal", "Neuer Kristall")}</sl-button>
 			<input type="file" hidden accept=".json,application/json" @change=${(event) => {
@@ -102907,6 +107056,19 @@ renderFileActions_fn = function() {
 			<sl-button size="small" ?disabled=${!__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length} @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, download_fn)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Download", "Herunterladen")}</sl-button>
 		</div>`;
 };
+/**
+ * Renders a compact icon control, the shape the canvas controls share with
+ * the lab. The label only lives in the tooltip and the accessible name, so
+ * every caller has to pass one.
+ */
+iconButton_fn = function(options) {
+  return x2`<sl-button class="icon-control" size="small" slot=${options.slot ?? E2}
+			aria-label=${options.label} title=${options.label}
+			variant=${options.pressed ? "primary" : "default"}
+			aria-pressed=${options.pressed === void 0 ? E2 : String(options.pressed)}
+			aria-expanded=${options.expanded === void 0 ? E2 : String(options.expanded)}
+			?disabled=${options.disabled} @click=${options.onClick}>${options.icon}</sl-button>`;
+};
 renderHistoryButton_fn = function(redo) {
   const label = redo ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Redo", "Wiederholen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Undo", "R\xFCckg\xE4ngig");
   return x2`<sl-button class="icon-control" size="small" aria-label=${label} title=${label}
@@ -102917,10 +107079,12 @@ renderHistoryButton_fn = function(redo) {
 			</svg>
 		</sl-button>`;
 };
-renderPickerLayout_fn = function(view) {
+renderPickerLayout_fn = function(view, active) {
   const label = view === "list" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "List view", "Listenansicht") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Grid view", "Rasteransicht");
-  return x2`<sl-button class="icon-control" size="small" aria-label=${label} title=${label}
-			variant=${this.pickerView === view ? "primary" : "default"} aria-pressed=${this.pickerView === view}
+  const blocked = view === "table" && this.paletteNarrow;
+  const hint = blocked ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "The grid needs a wider palette. Widen the widget to use it.", "Das Raster braucht eine breitere Palette. Vergr\xF6\xDFere das Widget daf\xFCr.") : label;
+  return x2`<sl-button class="icon-control" size="small" aria-label=${label} title=${hint}
+			variant=${active ? "primary" : "default"} aria-pressed=${String(active)} ?disabled=${blocked}
 			@click=${() => {
     this.pickerView = view;
   }}>${view === "list" ? LIST_ICON : TABLE_ICON}</sl-button>`;
@@ -102969,8 +107133,10 @@ renderDrawing_fn = function(colors2) {
     const species = current.kind === "crystal" ? siteIon(atom) : void 0;
     const color = colors2.get(species) ?? atomColor(atomicNumber);
     const selected = id === this.picked || id === this.bondStart;
+    const hovered = id === this.hoveredAtom && !selected;
     return b3`<g data-atom=${id} aria-label=${species ? `${symbol(atomicNumber)} \xB7 ${species}` : symbol(atomicNumber)} transform="translate(${x4} ${-y5})"
 					opacity=${selected ? 1 : Math.max(0.18, occupancy ?? 1)}>
+					${hovered ? b3`<circle r=".3" fill="none" stroke="#0284c7" stroke-width=".03" />` : E2}
 					<circle r=".254" fill=${selected ? "#dff3ff" : "white"} stroke=${selected ? "#0284c7" : species ? colorHex(color) : "#a1a1aa"} stroke-width=${selected ? 0.045 : 0.028} />
 					<circle cx="-.17" cy="-.17" r=".075" fill=${colorHex(color)} stroke="#707780" stroke-width=".01"/>
 					<text text-anchor="middle" dominant-baseline="central" font-weight="600" font-size=".23" fill="#27272a">${symbol(atomicNumber)}</text>
@@ -102983,12 +107149,64 @@ renderDrawing_fn = function(colors2) {
 			</g>
 		</svg>`;
 };
-renderInspector_fn = function() {
-  const atom = __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).find((atom2) => atom2.id === this.picked);
+/** The model summary keeps compound, representation and display controls at the canvas edge. */
+renderModelSummary_fn = function(current, representation, ionColors) {
+  const crystal = current.kind === "crystal";
+  const geometry = current.kind === "molecule" && __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? current.geometry === "idealized" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Idealized geometry", "Idealisierte Geometrie") : current.geometry === "estimated" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Estimated geometry", "Gesch\xE4tzte Geometrie") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Sketch", "Skizze") : void 0;
+  const toggle = (label, icon, value, onClick) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+    label,
+    icon,
+    pressed: value,
+    onClick
+  });
+  return x2`<div class="model-summary">
+			<div class="fields">
+				<sl-tag size="small">${crystal ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Crystal", "Kristall") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Molecule", "Molek\xFCl")}</sl-tag>
+				${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<sl-tag size="small">${formula(current)}</sl-tag>` : E2}
+				${representation ? x2`<sl-tag size="small">${representation}</sl-tag>` : E2}
+				${geometry ? x2`<sl-tag size="small">${geometry}</sl-tag>` : E2}
+			</div>
+			${ionColors.size ? x2`<span class="structure-legend" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ion colours", "Ionenfarben")}>
+				${[...ionColors].map(([ion2, color]) => x2`<span style="--swatch: ${colorHex(color)}">${ion2}</span>`)}
+				${crystal && this.showLattice ? x2`<span data-marker="lattice">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Lattice points", "Gitterpunkte")}</span>` : E2}
+			</span>` : E2}
+			${current.kind === "molecule" && this.showElectrons && this.view === "3d" ? x2`
+				<span class="structure-legend" title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Approximate Lewis and VSEPR regions. Dots represent electron counts in the displayed bonding model.", "Angen\xE4herte Lewis- und VSEPR-Bereiche. Punkte stehen f\xFCr die Elektronenzahl im dargestellten Bindungsmodell.")}>
+					<span data-region="bond">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bonding", "Bindend")}</span>
+					<span data-region="lone">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Nonbonding", "Nichtbindend")}</span>
+				</span>` : E2}
+			<div class="display-controls" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Display", "Darstellung")}>
+				${crystal ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cells", "Zellen")}
+					<select .value=${String(this.repeats)} @change=${(event) => {
+    this.repeats = Number(event.currentTarget.value);
+    __privateSet(this, _fitNext, true);
+    __privateSet(this, _lastDrawn, void 0);
+  }}>
+						${[1, 2, 3].filter((value) => value ** 3 * current.sites.length <= 1800).map((value) => x2`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
+					</select></label>` : E2}
+				${crystal ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cell edges", "Zellkanten"), EDGES_ICON, this.showEdges, () => {
+    this.showEdges = !this.showEdges;
+  }) : E2}
+				${crystal ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Lattice points", "Gitterpunkte"), LATTICE_ICON, this.showLattice, () => {
+    this.showLattice = !this.showLattice;
+  }) : E2}
+				${crystal ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Axes", "Achsen"), AXES_ICON, this.showAxes, () => {
+    this.showAxes = !this.showAxes;
+  }) : E2}
+				${current.kind === "molecule" && current.atoms.length && this.view === "3d" && this.gpu === "ready" ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Valence electrons", "Valenzelektronen"), ELECTRONS_ICON, this.showElectrons, () => {
+    this.showElectrons = !this.showElectrons;
+  }) : E2}
+			</div>
+			<output aria-live="polite">${this.notice || (this.bondStart ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose the other atom.", "W\xE4hle das zweite Atom.") : "")}</output>
+		</div>`;
+};
+/** The selection card follows the lab's object info card and stays at the canvas edge. */
+renderSelectionCard_fn = function() {
   const current = __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get);
-  if (!atom && current.kind !== "crystal" && !__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length) return E2;
+  const atom = __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).find((entry) => entry.id === this.picked);
+  if (!atom && !__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length) return E2;
   const species = current.kind === "crystal" && atom ? siteIon(atom) : void 0;
-  const title = atom ? `${symbol(atom.atomicNumber)}${chargeText(atom.charge)} \xB7 ${atom.id}` : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure", "Struktur");
+  const title = atom ? `${symbol(atom.atomicNumber)}${chargeText(atom.charge)} \xB7 ${atom.id}` : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "No selection", "Keine Auswahl");
   const shape = atom && current.kind === "molecule" ? shapeName(current, atom.id) : void 0;
   const shapeLabel = {
     linear: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Linear", "Linear"),
@@ -103007,44 +107225,35 @@ renderInspector_fn = function() {
     ionic: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ionic, CN 6", "ionisch, KZ 6"),
     schematic: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "schematic", "schematisch")
   };
-  return x2`<aside class="inspector">
-			<div class="inspect-title">
-				<div class="fields">
-					<sl-tag size="small" variant="primary">${title}</sl-tag>
-					${species ? x2`<sl-tag size="small">${species}</sl-tag>` : E2}
-					${radius ? x2`<sl-tag size="small">${radius.pm} pm · ${radiusLabel[radius.model]}</sl-tag>` : E2}
-					${shape ? x2`<sl-tag size="small">${shapeLabel[shape]}</sl-tag>` : E2}
-					${atom && "occupancy" in atom && atom.occupancy !== void 0 ? x2`<sl-tag size="small">
-						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site occupancy", "Platzbesetzung")} · ${Number((100 * atom.occupancy).toFixed(1))} %
-					</sl-tag>` : E2}
-				</div>
-				${atom && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<sl-button size="small" variant="danger" outline @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, removeAtom_fn)}>
-					${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Delete", "L\xF6schen")}
+  const occupancy = atom && "occupancy" in atom ? atom.occupancy : void 0;
+  return x2`<aside class="selection-card" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Selection", "Auswahl")}>
+			<div class="card-head">
+				<sl-tag size="small" variant=${atom ? "primary" : "neutral"}>${title}</sl-tag>
+				${atom && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<sl-button class="icon-control" size="small" variant="danger" outline
+					aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Delete", "L\xF6schen")} title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Delete", "L\xF6schen")} @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, removeAtom_fn)}>
+					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"
+						stroke-linecap="round" aria-hidden="true">
+						<path d="M2.5 4h9M5.5 4V2.5h3V4M4 4l.5 7.5h5L10 4" />
+					</svg>
 				</sl-button>` : E2}
 			</div>
-			<div class="fields">
-				${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<label>${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site", "Gitterplatz") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom", "Atom")}
-					<select .value=${String(this.picked ?? "")} @change=${(event) => {
-    const value = Number(event.currentTarget.value);
-    __privateMethod(this, _ChemLabMoleculeBuilder_instances, selectAtom_fn).call(this, value || void 0);
-  }}>
-						<option value="">—</option>
-						${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).map((entry) => x2`<option value=${entry.id} ?selected=${entry.id === this.picked}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</option>`)}
-					</select></label>` : E2}
-				${current.kind === "crystal" ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cells per axis", "Zellen pro Achse")}
-					<select .value=${String(this.repeats)} @change=${(event) => {
-    this.repeats = Number(event.currentTarget.value);
-    __privateSet(this, _fitNext, true);
-    __privateSet(this, _lastDrawn, void 0);
-  }}>
-						${[1, 2, 3].filter((value) => value ** 3 * current.sites.length <= 1800).map((value) => x2`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
-					</select></label>` : E2}
-			</div>
-			${atom && (!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) || "fractional" in atom) ? x2`
-				<sl-details summary=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site properties", "Gitterplatz-Eigenschaften") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom properties", "Atom-Eigenschaften")}>
-					<div class="fields">
-						${!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Formal charge", "Formalladung")}
-							<input type="number" min="-8" max="8" step="1" .value=${String(atom.charge)} @change=${(event) => {
+			${atom ? x2`<div class="card-facts">
+				${species ? x2`<sl-tag size="small">${species}</sl-tag>` : E2}
+				${radius ? x2`<sl-tag size="small">${radius.pm} pm · ${radiusLabel[radius.model]}</sl-tag>` : E2}
+				${shape ? x2`<sl-tag size="small">${shapeLabel[shape]}</sl-tag>` : E2}
+				${occupancy !== void 0 ? x2`<sl-tag size="small">${Number((100 * occupancy).toFixed(1))} %</sl-tag>` : E2}
+			</div>` : E2}
+			<sl-details summary=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site properties", "Gitterplatz-Eigenschaften") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom properties", "Atom-Eigenschaften")} ?open=${!atom}>
+				<div class="fields">
+					<div class="site-picker" role="group" aria-label=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site", "Gitterplatz") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom", "Atom")}>
+						${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).map((entry) => x2`<button type="button" class="site-chip"
+							aria-pressed=${String(entry.id === this.picked)}
+							@pointerenter=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, hoverAtom_fn).call(this, entry.id)} @pointerleave=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, hoverAtom_fn).call(this, void 0)}
+							@focus=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, hoverAtom_fn).call(this, entry.id)} @blur=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, hoverAtom_fn).call(this, void 0)}
+							@click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, selectAtom_fn).call(this, entry.id)}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</button>`)}
+					</div>
+					${atom && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Formal charge", "Formalladung")}
+						<input type="number" min="-8" max="8" step="1" .value=${String(atom.charge)} @change=${(event) => {
     const input = event.currentTarget;
     if (!input.checkValidity() || input.value === "") {
       input.value = String(atom.charge);
@@ -103052,7 +107261,7 @@ renderInspector_fn = function() {
     }
     __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateCharge_fn).call(this, input.valueAsNumber);
   }} /></label>` : E2}
-						${current.kind === "molecule" && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? current.bonds.filter((bond) => bond.from === atom.id || bond.to === atom.id).map((bond) => {
+					${atom && current.kind === "molecule" && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? current.bonds.filter((bond) => bond.from === atom.id || bond.to === atom.id).map((bond) => {
     const to = __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).find((entry) => entry.id === (bond.from === atom.id ? bond.to : bond.from));
     return x2`<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, {
       ...current,
@@ -103064,12 +107273,12 @@ renderInspector_fn = function() {
       bonds: current.bonds.filter((entry) => entry !== bond)
     })}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Remove bond to", "Bindung l\xF6sen zu")} ${symbol(to.atomicNumber)} · ${to.id}</sl-button>`;
   }) : E2}
-						${"fractional" in atom ? atom.fractional.map((value, index) => x2`<label>${["x/a", "y/b", "z/c"][index]}
-							<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}
-								@change=${(event) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateSite_fn).call(this, index, event.currentTarget)} />
-						</label>`) : E2}
-					</div>
-				</sl-details>` : E2}
+					${atom && "fractional" in atom ? atom.fractional.map((value, index) => x2`<label>${["x/a", "y/b", "z/c"][index]}
+						<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}
+							@change=${(event) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateSite_fn).call(this, index, event.currentTarget)} />
+					</label>`) : E2}
+				</div>
+			</sl-details>
 			${current.kind === "crystal" ? x2`<sl-details summary=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Unit cell", "Elementarzelle")}>
 				<div class="fields">
 					${current.bravais ? x2`<sl-tag size="small">${current.bravais} · ${current.spaceGroup}</sl-tag>` : E2}
@@ -103095,17 +107304,22 @@ __decorateElement(_init3, 4, "preview", _preview_dec, _ChemLabMoleculeBuilder, _
 __decorateElement(_init3, 4, "catalogKey", _catalogKey_dec, _ChemLabMoleculeBuilder, _catalogKey);
 __decorateElement(_init3, 4, "catalogVariants", _catalogVariants_dec, _ChemLabMoleculeBuilder, _catalogVariants);
 __decorateElement(_init3, 4, "catalogIndex", _catalogIndex_dec, _ChemLabMoleculeBuilder, _catalogIndex);
+__decorateElement(_init3, 4, "catalogQuery", _catalogQuery_dec, _ChemLabMoleculeBuilder, _catalogQuery);
 __decorateElement(_init3, 4, "openPanel", _openPanel_dec, _ChemLabMoleculeBuilder, _openPanel);
 __decorateElement(_init3, 4, "labs", _labs_dec, _ChemLabMoleculeBuilder, _labs);
 __decorateElement(_init3, 4, "showLabs", _showLabs_dec, _ChemLabMoleculeBuilder, _showLabs);
 __decorateElement(_init3, 4, "paletteOpen", _paletteOpen_dec, _ChemLabMoleculeBuilder, _paletteOpen);
+__decorateElement(_init3, 4, "paletteNarrow", _paletteNarrow_dec, _ChemLabMoleculeBuilder, _paletteNarrow);
 __decorateElement(_init3, 4, "pickerView", _pickerView_dec, _ChemLabMoleculeBuilder, _pickerView);
 __decorateElement(_init3, 4, "showElectrons", _showElectrons_dec, _ChemLabMoleculeBuilder, _showElectrons);
 __decorateElement(_init3, 4, "showLattice", _showLattice_dec, _ChemLabMoleculeBuilder, _showLattice);
+__decorateElement(_init3, 4, "showEdges", _showEdges_dec, _ChemLabMoleculeBuilder, _showEdges);
+__decorateElement(_init3, 4, "showAxes", _showAxes_dec, _ChemLabMoleculeBuilder, _showAxes);
 __decorateElement(_init3, 4, "view", _view_dec2, _ChemLabMoleculeBuilder, _view2);
 __decorateElement(_init3, 4, "tool", _tool_dec, _ChemLabMoleculeBuilder, _tool);
 __decorateElement(_init3, 4, "element", _element_dec, _ChemLabMoleculeBuilder, _element);
 __decorateElement(_init3, 4, "picked", _picked_dec, _ChemLabMoleculeBuilder, _picked);
+__decorateElement(_init3, 4, "hoveredAtom", _hoveredAtom_dec, _ChemLabMoleculeBuilder, _hoveredAtom);
 __decorateElement(_init3, 4, "bondStart", _bondStart_dec, _ChemLabMoleculeBuilder, _bondStart);
 __decorateElement(_init3, 4, "bondOrder", _bondOrder_dec, _ChemLabMoleculeBuilder, _bondOrder);
 __decorateElement(_init3, 4, "repeats", _repeats_dec, _ChemLabMoleculeBuilder, _repeats);
@@ -103118,9 +107332,12 @@ _ChemLabMoleculeBuilder = __decorateElement(_init3, 0, "ChemLabMoleculeBuilder",
 __publicField(_ChemLabMoleculeBuilder, "styles", builderStyles);
 __publicField(_ChemLabMoleculeBuilder, "scopedElements", {
   "webwriter-chemlab-periodic-table": ChemLabPeriodicTable,
+  "sl-badge": SlBadge,
   "sl-button": SlButton,
   "sl-details": SlDetails,
   "sl-icon": SlIcon,
+  "sl-input": SlInput,
+  "sl-popup": SlPopup,
   "sl-spinner": SlSpinner,
   "sl-tag": SlTag
 });
@@ -103142,6 +107359,15 @@ export {
   ChemLabMoleculeBuilder
 };
 /*! Bundled license information:
+
+tiny-lru/dist/tiny-lru.js:
+  (**
+   * tiny-lru
+   *
+   * @copyright 2026 Jason Mulligan <jason.mulligan@avoidwork.com>
+   * @license BSD-3-Clause
+   * @version 11.4.7
+   *)
 
 @webwriter/lit/index.js:
   (*! Bundled license information:
@@ -103294,20 +107520,20 @@ lit-html/directives/range.js:
    * SPDX-License-Identifier: BSD-3-Clause
    *)
 
+lit-html/directives/class-map.js:
+lit-html/directives/if-defined.js:
+  (**
+   * @license
+   * Copyright 2018 Google LLC
+   * SPDX-License-Identifier: BSD-3-Clause
+   *)
+
 lit-html/directive-helpers.js:
 lit-html/static.js:
 lit-html/directives/live.js:
   (**
    * @license
    * Copyright 2020 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-lit-html/directives/class-map.js:
-lit-html/directives/if-defined.js:
-  (**
-   * @license
-   * Copyright 2018 Google LLC
    * SPDX-License-Identifier: BSD-3-Clause
    *)
 */
