@@ -1,7 +1,7 @@
 import { Application, CanvasSource, Graphics, Point, Sprite, Text, Texture } from "pixi.js";
 import {
 	Container3D, CylinderGeometry, DirectionalLight, Material3D, Mesh3D, Plane,
-	Sphere, SphereGeometry, Sprite3D, Vector3, View3D,
+	Sphere, SphereGeometry, srgbToLinear, Vector3, View3D,
 } from "@pixi/3d";
 import type { ShaderBit } from "@pixi/3d";
 import { atomColor, atomRadius, add, electronRegions, perpendicular, scale, subtract, unit } from "./geometry";
@@ -41,23 +41,34 @@ const RIM_STRENGTH = 0.8;
  */
 const RIM_POWER = 2.2;
 /**
- * Darkens a surface as its normal turns away from the camera.
+ * Darkens a surface as its normal turns away from the camera, and draws the
+ * mark of a selected or hovered atom into the same band.
  *
- * This is the shading counterpart of an ink outline: the same silhouette
- * contrast, but following the surface instead of a shell pushed out along the
- * normal. It therefore scales with curvature rather than with world units, so a
- * hydrogen and a caesium get the same proportional rim, and it leaves no ring
- * behind a translucent surface. Runs after the light loop, where `finalColor`
- * is lit linear light, so the multiply darkens the shaded result.
+ * The darkening is the shading counterpart of an ink outline: the same
+ * silhouette contrast, but following the surface instead of a shell pushed out
+ * along the normal. It therefore scales with curvature rather than with world
+ * units, so a hydrogen and a caesium get the same proportional rim, and it
+ * leaves no ring behind a translucent surface. Runs after the light loop, where
+ * `finalColor` is lit linear light, so the multiply darkens the shaded result.
+ *
+ * The mark reuses that band instead of adding geometry: where the surface turns
+ * away from the camera the colour is mixed towards the accent, which draws a
+ * ring exactly on the silhouette. A ring is the one cue that survives a crowded
+ * lattice, because it does not depend on the atom's own colour — a glow behind
+ * the atom washes out against a light neighbour, and a recoloured sphere would
+ * read as a different element. The body keeps its CPK colour; only the edge
+ * carries the accent, and `markStrength` at zero leaves the atom untouched.
  */
 const rimBit: ShaderBit = {
 	name: "atomRim",
-	bindings: { material: { rimStrength: "f32", rimPower: "f32" } },
+	bindings: { material: { rimStrength: "f32", rimPower: "f32", markStrength: "f32", markWidth: "f32", markColor: "vec4<f32>" } },
 	gpu: {
 		fragment: {
 			lobePostLighting: `{
 				let rimFacing = max(dot(normal, viewDir), 0.0);
 				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
+				let markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
+				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
 			}`,
 		},
 	},
@@ -66,33 +77,46 @@ const rimBit: ShaderBit = {
 			lobePostLighting: `{
 				float rimFacing = max(dot(normal, viewDir), 0.0);
 				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
+				float markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
+				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
 			}`,
 		},
 	},
 };
 
 /**
- * The accent a selected atom is marked with, the ChemLab blue of the canvas
+ * The accent a marked atom is outlined with, the ChemLab blue of the canvas
  * controls.
  *
- * The mark is light around the atom, never a colour on it: a recoloured sphere
- * would read as a different element, which is exactly the mistake a selection
- * must not invite. The glow therefore sits behind the atom and only shows
- * outside its silhouette, so the body keeps the CPK colour that identifies it.
+ * The mark is an outline on the atom, never a colour over it: a recoloured
+ * sphere would read as a different element, which is exactly the mistake a
+ * selection must not invite. Only the outermost band of the surface takes the
+ * accent, so the body keeps the CPK colour that identifies it.
  */
 const SELECTION_COLOR = 0x0086c5;
+/** The same accent in the linear light the material shades in. */
+const SELECTION_LINEAR = [0x00, 0x86, 0xc5].map(channel => srgbToLinear(channel / 255));
 /**
- * How far the selection glow reaches beyond the atom, as a multiple of its
- * radius.
+ * How wide the mark's band is, as the facing term where it fades out.
  *
- * The glow is a billboard through the atom's centre, so the sphere itself hides
- * everything inside its silhouette and the visible band starts at the edge. A
- * factor of 1.9 leaves a band a little narrower than the atom, which stays
- * readable in a packed lattice without fogging the neighbours.
+ * The facing term is the cosine between the surface normal and the view
+ * direction, so 0.62 covers the outer 22 % of the projected radius. The band
+ * holds full strength over its inner 45 % and fades over the rest, which reads
+ * as a drawn outline rather than as a tint: on a typical atom the solid part is
+ * about two pixels and the falloff another five, so the ring stays crisp at any
+ * zoom without eating into the element colour.
  */
-const HALO_SCALE = 1.9;
-/** Opacity of the selection glow where it leaves the atom's silhouette. */
-const HALO_ALPHA = 0.85;
+const MARK_WIDTH = 0.62;
+/** Strength of the ring on a selected atom, where it replaces the shaded edge. */
+const SELECTION_MARK = 1;
+/**
+ * Strength of the ring under the pointer.
+ *
+ * The lattice site picker highlights the atom a row belongs to, and that cue
+ * has to be distinguishable from a selection: the same ring at a little over
+ * half the strength reads as a preview rather than as a second selection.
+ */
+const HOVER_MARK = 0.55;
 /**
  * How far the canvas corners darken, as an alpha at the corner.
  *
@@ -191,15 +215,13 @@ export class MoleculeScene {
 	readonly #materials = new Map<string, Material3D>();
 	readonly #bondRegion = new Material3D({ baseColor: 0x0284c7, roughness: .85, alphaMode: "blend", alpha: .28 });
 	readonly #loneRegion = new Material3D({ baseColor: 0xc084fc, roughness: .85, alphaMode: "blend", alpha: .39 });
-	readonly #picks = new Map<Container3D, { id: number; color: number; ionic: boolean; opacity: number; position: Point3; radius: number }>();
+	readonly #picks = new Map<Mesh3D, { id: number; color: number; ionic: boolean; opacity: number; position: Point3; radius: number }>();
 	readonly #observer: ResizeObserver;
 	readonly #preview: Mesh3D;
 	readonly #vignette: Sprite;
-	readonly #halos = new Container3D();
-	readonly #haloTexture: Texture;
 	readonly #textures: Texture[] = [];
-	#haloSprites: Sprite3D[] = [];
 	#selected: Set<number> = new Set();
+	#hovered?: number;
 	#structure?: Structure;
 	#showElectrons = false;
 	#showLattice = false;
@@ -221,13 +243,6 @@ export class MoleculeScene {
 			autoResize: false, environment: { skyColor: 0xffffff, groundColor: 0xa6b4c3, intensity: 0.94 },
 		});
 		this.#vignette = new Sprite({ texture: this.#track(radialTexture(vignetteStops())), eventMode: "none" });
-		this.#haloTexture = this.#track(radialTexture([
-			[0, "rgba(255, 255, 255, 1)"],
-			[0.5, "rgba(255, 255, 255, 0.92)"],
-			[0.66, "rgba(255, 255, 255, 0.42)"],
-			[0.84, "rgba(255, 255, 255, 0.1)"],
-			[1, "rgba(255, 255, 255, 0)"],
-		]));
 		app.stage.addChild(this.#view, this.#vignette, this.#lattice, this.#axes, ...this.#axisLabels);
 		this.#sizeVignette();
 		for (const label of this.#axisLabels) label.visible = false;
@@ -235,9 +250,9 @@ export class MoleculeScene {
 		const sun = new DirectionalLight({ color: 0xffffff, intensity: 2.15 });
 		sun.position.set(3, 6, 7);
 		sun.lookAt({ x: 0, y: 0, z: 0 });
-		this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons, this.#halos);
+		this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons);
 		this.#preview = this.#rod();
-		this.#preview.material = this.#material(0x0086c5);
+		this.#preview.material = this.#material(SELECTION_COLOR);
 		this.#preview.visible = false;
 		this.#view.root.addChild(this.#preview);
 		app.canvas.style.display = "block";
@@ -275,16 +290,20 @@ export class MoleculeScene {
 	}
 
 	/**
-	 * A cached material for one colour and opacity.
+	 * A cached material for one colour, opacity and mark strength.
 	 *
 	 * Every atom and bond takes the rim, translucent ones included: the term
 	 * darkens the surface itself rather than drawing a shell behind it, so a
 	 * partly occupied site keeps a readable edge without gaining a solid ring.
 	 * The electron clouds use their own materials and stay unrimmed, because
 	 * they are a haze around the atoms rather than bodies of their own.
+	 *
+	 * The mark is part of the key because it is a uniform: a selected atom needs
+	 * its own material, and swapping the uniform on a shared one would outline
+	 * every atom of that colour.
 	 */
-	#material(color: number, opacity = 1) {
-		const key = `${color}:${opacity}`;
+	#material(color: number, opacity = 1, mark = 0) {
+		const key = `${color}:${opacity}:${mark}`;
 		let material = this.#materials.get(key);
 		if (!material) {
 			material = new Material3D({ baseColor: color, roughness: 0.61, alpha: opacity,
@@ -292,6 +311,9 @@ export class MoleculeScene {
 				extraBits: [rimBit] });
 			material.data.rimStrength = RIM_STRENGTH;
 			material.data.rimPower = RIM_POWER;
+			material.data.markWidth = MARK_WIDTH;
+			material.data.markColor = [...SELECTION_LINEAR, 1];
+			material.data.markStrength = mark;
 			this.#materials.set(key, material);
 		}
 		return material;
@@ -422,34 +444,40 @@ export class MoleculeScene {
 		const selected = new Set(selection);
 		if (rebuild || selected.size !== this.#selected.size || selection.some(id => !this.#selected.has(id))) {
 			this.#selected = selected;
-			this.#select(selected);
-			this.#draw();
+			this.#applyMarks();
 		}
 	}
 
 	/**
-	 * Mark the selected atoms with a glow behind them.
+	 * Outline the selected atoms, and the one under the pointer.
 	 *
-	 * One system serves molecules and lattices alike, and it never touches the
-	 * atom's own material: the sphere keeps its CPK colour, so a marked atom
-	 * still reads as the element it is. The glow is a billboard through the
-	 * atom's centre, depth-tested against the opaque sphere, so the body hides
-	 * its middle and only a soft band outside the silhouette remains. That band
-	 * is what makes a selected site stand out in a packed lattice, where a
-	 * recoloured sphere would be the only cue and would misread as a new species.
+	 * One system serves molecules and lattices alike, and it never recolours a
+	 * body: the sphere keeps its CPK colour and only its silhouette takes the
+	 * accent, so a marked atom still reads as the element it is. A ring is also
+	 * the only cue that holds up in a packed lattice, where a glow behind the
+	 * atom disappears against a light neighbour and a tint would be mistaken for
+	 * a second species. A selection outranks the hover mark, so pointing at an
+	 * already selected site does not dim it.
 	 */
-	#select(selected: Set<number>) {
-		for (const sprite of this.#haloSprites) sprite.destroy();
-		this.#haloSprites = [];
-		for (const atom of this.#picks.values()) {
-			if (!selected.has(atom.id)) continue;
-			const size = atom.radius * HALO_SCALE * 2;
-			const halo = new Sprite3D({ texture: this.#haloTexture, tint: SELECTION_COLOR, alpha: HALO_ALPHA,
-				alphaMode: "blend", billboardMode: "spherical", eventMode: "none",
-				position: vector(atom.position), width: size, height: size });
-			this.#halos.addChild(halo);
-			this.#haloSprites.push(halo);
+	#applyMarks() {
+		for (const [mesh, atom] of this.#picks) {
+			const mark = this.#selected.has(atom.id) ? SELECTION_MARK : atom.id === this.#hovered ? HOVER_MARK : 0;
+			mesh.material = this.#material(atom.color, atom.opacity, mark);
 		}
+		this.#draw();
+	}
+
+	/**
+	 * Outline one atom as a preview, or clear the outline with `undefined`.
+	 *
+	 * The lattice site picker uses this to show which atom a row belongs to
+	 * before the row is clicked, so the pointer never has to guess between two
+	 * sites of the same element.
+	 */
+	highlight(id?: number) {
+		if (id === this.#hovered) return;
+		this.#hovered = id;
+		this.#applyMarks();
 	}
 
 	get canvas() { return this.#app.canvas; }
@@ -460,8 +488,8 @@ export class MoleculeScene {
 	}
 
 	pick(clientX: number, clientY: number): number | undefined {
-		const hit = this.#view.raycast(this.#point(clientX, clientY));
-		return hit ? this.#picks.get(hit.target)?.id : undefined;
+		const target = this.#view.raycast(this.#point(clientX, clientY))?.target;
+		return target instanceof Mesh3D ? this.#picks.get(target)?.id : undefined;
 	}
 
 	placement(clientX: number, clientY: number, origin = this.#target): Point3 {
