@@ -133,12 +133,13 @@
         "dev": "vite"
     },
     "dependencies": {
+        "@pixi/3d": "0.1.0",
         "@shoelace-style/shoelace": "2.19.1",
         "@webwriter/lit": "^2.1.6",
         "chart.js": "^4.4.8",
         "kekule": "^1.0.0",
         "lit": "^3.2.1",
-        "pixi.js": "8.22.0",
+        "pixi.js": "8.23.0",
         "smiles-drawer": "2.1.5",
         "unique-names-generator": "^4.7.1"
     },
@@ -156,6 +157,10 @@
         "./widgets/webwriter-chemlab-periodic-table.*": {
             "source": "./webwriter-chemlab-periodic-table.ts",
             "default": "./dist/widgets/webwriter-chemlab-periodic-table.*"
+        },
+        "./widgets/webwriter-chemlab-molecule-builder.*": {
+            "source": "./webwriter-chemlab-molecule-builder.ts",
+            "default": "./dist/widgets/webwriter-chemlab-molecule-builder.*"
         },
         "./snippets/Beispiel-Titration.html": "./snippets/Beispiel-Titration.html",
         "./snippets/Beispiel-Titrationstypen.html": "./snippets/Beispiel-Titrationstypen.html",
@@ -509,6 +514,13 @@
                 "ckb-Arab": "تاقیگەی کیمیا",
                 "af-ZA": "Chemielaboratorium",
                 "af-NA": "Chemielaboratorium"
+            }
+        },
+        "./widgets/webwriter-chemlab-molecule-builder": {
+            "label": {
+                "_": "Molecule Builder",
+                "en": "Molecule Builder",
+                "de": "Molekülbaukasten"
             }
         },
         "./widgets/webwriter-chemlab-periodic-table": {

@@ -1,5 +1,6 @@
+import { ElementData } from "../chemlib/ElementData";
 import { dataValue, elementByAtomicNumber } from "../periodic-table/element-reference";
-import type { Molecule, Point3 } from "./structure";
+import type { Molecule, Point3, Structure } from "./structure";
 
 // Cordero et al., Dalton Trans. 2008, doi:10.1039/B801115J. Values are in pm.
 const covalent = new Map([
@@ -19,15 +20,13 @@ export function atomRadius(atomicNumber: number, sixCoordinateCharge?: number) {
 	return pm === undefined ? { pm: 90, model: "schematic" } as const : { pm, model: "empirical" } as const;
 }
 
-const colors = new Map([
-	[1, 0xf0f0f0], [6, 0x41454a], [7, 0x3050f8], [8, 0xff3030], [9, 0x73c952],
-	[11, 0xab5cf2], [12, 0x75bd31], [13, 0xbfa6a6], [14, 0xd7aa86], [15, 0xff8000],
-	[16, 0xf3d326], [17, 0x39b540], [19, 0x8f40d4], [26, 0xe06633], [29, 0xb87333],
-	[30, 0x7d80b0], [35, 0xa62929], [47, 0xb7b9bd], [53, 0x940094],
-]);
+const colors = ElementData.getElementList().map(key => {
+	const hex = ElementData.getData(key)?.["cpk-hex"];
+	return typeof hex === "string" && /^[0-9a-f]{6}$/i.test(hex) ? Number.parseInt(hex, 16) : 0x828b94;
+});
 
 export function atomColor(atomicNumber: number): number {
-	return colors.get(atomicNumber) ?? 0x828b94;
+	return colors[atomicNumber - 1] ?? 0x828b94;
 }
 
 export const add = (a: Point3, b: Point3): Point3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
@@ -121,4 +120,25 @@ export function fitGeometry(molecule: Molecule): Molecule | null {
 		componentX = rightEdge + 3;
 	}
 	return { ...molecule, geometry: "idealized", atoms: molecule.atoms.map(atom => ({ ...atom, position: placements.get(atom.id) })) };
+}
+
+export function formula(structure: Structure): string {
+	if (structure.kind === "crystal" && structure.catalogKey && structure.name) return structure.name;
+	const counts = new Map<string, number>();
+	for (const { atomicNumber } of structure.kind === "molecule" ? structure.atoms : structure.sites) {
+		const symbol = elementByAtomicNumber(atomicNumber).symbol;
+		counts.set(symbol, (counts.get(symbol) ?? 0) + 1);
+	}
+	const ordered = [...counts.keys()].sort((a, b) => a.localeCompare(b, "en"));
+	if (counts.has("C")) {
+		ordered.splice(ordered.indexOf("C"), 1);
+		if (counts.has("H")) ordered.splice(ordered.indexOf("H"), 1);
+		ordered.unshift(...(counts.has("H") ? ["C", "H"] : ["C"]));
+	}
+	const gcd = (a: number, b: number): number => b ? gcd(b, a % b) : a;
+	const divisor = structure.kind === "crystal" ? [...counts.values()].reduce(gcd, 0) : 1;
+	return ordered.map(symbol => {
+		const count = counts.get(symbol) / divisor;
+		return symbol + (count > 1 ? String(count) : "");
+	}).join("");
 }

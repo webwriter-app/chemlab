@@ -760,6 +760,18 @@ export const periodicTableStyles = css`
 		cursor: pointer;
 	}
 
+	:host([picker-mode]) .list-row,
+	:host([picker-mode]) .cell {
+		cursor: grab;
+		touch-action: pan-y;
+		user-select: none;
+	}
+
+	:host([picker-mode]) .list-row[aria-pressed="true"] {
+		border-color: var(--pt-accent);
+		background: var(--pt-inset);
+	}
+
 	.list-row:hover {
 		background: var(--pt-inset);
 	}

@@ -10,7 +10,7 @@
  */
 
 import { LitElementWw, action } from "@webwriter/lit";
-import { customElement, property } from "lit/decorators.js";
+import { property } from "lit/decorators.js";
 import { html, type PropertyValues } from "lit";
 
 import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
@@ -294,7 +294,6 @@ const viewConverter = {
  *
  * @fires chemlab:element-selection - After a user action that changed the selection.
  */
-@customElement("webwriter-chemlab-periodic-table")
 export class ChemLabPeriodicTable extends LitElementWw {
 	/**
 	 * Shoelace components used inside the shadow root.
@@ -375,6 +374,20 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/** Authored layout choice; invalid markup falls back to `auto`. */
 	@property({ type: String, reflect: true, converter: viewConverter })
 	accessor view: PeriodicTableView = "auto";
+
+	/** Whether the rows act as an atom palette inside the Molecule Builder. */
+	@property({ type: Boolean, reflect: true, attribute: "picker-mode" })
+	accessor pickerMode = false;
+
+	#startElementDrag(event: PointerEvent, atomicNumber: number) {
+		if (!this.pickerMode || !event.isPrimary || event.button !== 0) return;
+		this.dispatchEvent(new CustomEvent("chemlab:element-drag", {
+			bubbles: true,
+			composed: true,
+			detail: { atomicNumber, pointerId: event.pointerId, x: event.clientX, y: event.clientY },
+		}));
+	}
+
 
 	#selection = new SelectionModel();
 	#initialized = false;
@@ -628,7 +641,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		this.#detailsExpanded = false;
 		this.requestUpdate();
 		this.#dispatchSelection();
-		if (this.#resolvedView === "list") this.#focusDetails();
+		if (this.#resolvedView === "list" && !this.pickerMode) this.#focusDetails();
 	}
 
 	/** The card that replaced the selected list row, if the list shows one. */
@@ -1274,6 +1287,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 				tabindex=${cell.atomicNumber === roving ? 0 : -1}
 				data-atomic-number=${cell.atomicNumber}
 				style="--pt-row:${displayRow};--pt-column:${cell.column + 1}"
+				@pointerdown=${(event: PointerEvent) => this.#startElementDrag(event, cell.atomicNumber)}
 				@click=${() => this.#selectFromUser(cell.atomicNumber)}
 				@keydown=${(event: KeyboardEvent) => this.#onCellKeydown(event, cell.atomicNumber)}
 			>
@@ -1417,7 +1431,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const rows = matches.map(match => {
 			const entry = elementByAtomicNumber(match.atomicNumber);
 			if (!entry) return null;
-			if (match.atomicNumber === selected) return html`<li class="list-details">${details}</li>`;
+			if (!this.pickerMode && match.atomicNumber === selected) return html`<li class="list-details">${details}</li>`;
 			// The mode decoration keeps its meaning in the narrow list: the state
 			// or the discovery year rides along as a tag at the end of the row.
 			const mode = cellMode(entry, this.#mode, this.#language);
@@ -1427,6 +1441,8 @@ export class ChemLabPeriodicTable extends LitElementWw {
 						class="list-row category-${categoryOf(entry.atomicNumber) ?? "unknown"}"
 						type="button"
 						data-atomic-number=${entry.atomicNumber}
+						aria-pressed=${match.atomicNumber === selected}
+						@pointerdown=${(event: PointerEvent) => this.#startElementDrag(event, entry.atomicNumber)}
 						@click=${() => this.#selectFromUser(entry.atomicNumber)}
 					>
 						<span class="list-number">${entry.atomicNumber}</span>
@@ -1449,7 +1465,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		return html`
 			<div class="table-pane">
 				<ul class="list" aria-label=${t.gridLabel}>
-					${element !== null && !selectedVisible
+					${!this.pickerMode && element !== null && !selectedVisible
 						? html`<li class="list-details">${details}</li>`
 						: null}
 					${rows}
@@ -1778,7 +1794,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		this.#matching = resolved === "table" ? this.#placeable() : matching;
 		const selected = this.#selection.value;
 		const element = selected === null ? null : elementByAtomicNumber(selected) ?? null;
-		const details = this.#renderDetails(t, language, element, {
+		const details = this.pickerMode ? null : this.#renderDetails(t, language, element, {
 			expanded: resolved === "list" || this.#detailsExpanded,
 			collapsible: resolved === "table",
 		});
@@ -1802,6 +1818,11 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	static styles = periodicTableStyles;
+}
+
+// The builder bundles the table as a scoped component as well as a standalone widget.
+if (!customElements.get("webwriter-chemlab-periodic-table")) {
+	customElements.define("webwriter-chemlab-periodic-table", ChemLabPeriodicTable);
 }
 
 declare global {

@@ -821,57 +821,50 @@ __publicField2(LitElementWw, "scopedElements", {});
 __publicField2(LitElementWw, "options", {});
 __publicField2(LitElementWw, "actions", {});
 
-// node_modules/@lit/reactive-element/decorators/custom-element.js
-var t2 = (t8) => (e12, o12) => {
-  void 0 !== o12 ? o12.addInitializer((() => {
-    customElements.define(t8, e12);
-  })) : customElements.define(t8, e12);
-};
-
 // node_modules/@lit/reactive-element/css-tag.js
-var t3 = globalThis;
-var e3 = t3.ShadowRoot && (void 0 === t3.ShadyCSS || t3.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype;
+var t2 = globalThis;
+var e3 = t2.ShadowRoot && (void 0 === t2.ShadyCSS || t2.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype;
 var s2 = Symbol();
 var o4 = /* @__PURE__ */ new WeakMap();
 var n5 = class {
-  constructor(t8, e12, o12) {
+  constructor(t7, e12, o12) {
     if (this._$cssResult$ = true, o12 !== s2) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
-    this.cssText = t8, this.t = e12;
+    this.cssText = t7, this.t = e12;
   }
   get styleSheet() {
-    let t8 = this.o;
+    let t7 = this.o;
     const s4 = this.t;
-    if (e3 && void 0 === t8) {
+    if (e3 && void 0 === t7) {
       const e12 = void 0 !== s4 && 1 === s4.length;
-      e12 && (t8 = o4.get(s4)), void 0 === t8 && ((this.o = t8 = new CSSStyleSheet()).replaceSync(this.cssText), e12 && o4.set(s4, t8));
+      e12 && (t7 = o4.get(s4)), void 0 === t7 && ((this.o = t7 = new CSSStyleSheet()).replaceSync(this.cssText), e12 && o4.set(s4, t7));
     }
-    return t8;
+    return t7;
   }
   toString() {
     return this.cssText;
   }
 };
-var r4 = (t8) => new n5("string" == typeof t8 ? t8 : t8 + "", void 0, s2);
-var i = (t8, ...e12) => {
-  const o12 = 1 === t8.length ? t8[0] : e12.reduce(((e13, s4, o13) => e13 + ((t9) => {
-    if (true === t9._$cssResult$) return t9.cssText;
-    if ("number" == typeof t9) return t9;
-    throw Error("Value passed to 'css' function must be a 'css' function result: " + t9 + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
-  })(s4) + t8[o13 + 1]), t8[0]);
-  return new n5(o12, t8, s2);
+var r4 = (t7) => new n5("string" == typeof t7 ? t7 : t7 + "", void 0, s2);
+var i = (t7, ...e12) => {
+  const o12 = 1 === t7.length ? t7[0] : e12.reduce(((e13, s4, o13) => e13 + ((t8) => {
+    if (true === t8._$cssResult$) return t8.cssText;
+    if ("number" == typeof t8) return t8;
+    throw Error("Value passed to 'css' function must be a 'css' function result: " + t8 + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
+  })(s4) + t7[o13 + 1]), t7[0]);
+  return new n5(o12, t7, s2);
 };
 var S3 = (s4, o12) => {
-  if (e3) s4.adoptedStyleSheets = o12.map(((t8) => t8 instanceof CSSStyleSheet ? t8 : t8.styleSheet));
+  if (e3) s4.adoptedStyleSheets = o12.map(((t7) => t7 instanceof CSSStyleSheet ? t7 : t7.styleSheet));
   else for (const e12 of o12) {
-    const o13 = document.createElement("style"), n10 = t3.litNonce;
+    const o13 = document.createElement("style"), n10 = t2.litNonce;
     void 0 !== n10 && o13.setAttribute("nonce", n10), o13.textContent = e12.cssText, s4.appendChild(o13);
   }
 };
-var c4 = e3 ? (t8) => t8 : (t8) => t8 instanceof CSSStyleSheet ? ((t9) => {
+var c4 = e3 ? (t7) => t7 : (t7) => t7 instanceof CSSStyleSheet ? ((t8) => {
   let e12 = "";
-  for (const s4 of t9.cssRules) e12 += s4.cssText;
+  for (const s4 of t8.cssRules) e12 += s4.cssText;
   return r4(e12);
-})(t8) : t8;
+})(t7) : t7;
 
 // node_modules/@lit/reactive-element/reactive-element.js
 var { is: i3, defineProperty: e4, getOwnPropertyDescriptor: r5, getOwnPropertyNames: h4, getOwnPropertySymbols: o5, getPrototypeOf: n6 } = Object;
@@ -879,88 +872,88 @@ var a2 = globalThis;
 var c5 = a2.trustedTypes;
 var l2 = c5 ? c5.emptyScript : "";
 var p2 = a2.reactiveElementPolyfillSupport;
-var d2 = (t8, s4) => t8;
-var u2 = { toAttribute(t8, s4) {
+var d2 = (t7, s4) => t7;
+var u2 = { toAttribute(t7, s4) {
   switch (s4) {
     case Boolean:
-      t8 = t8 ? l2 : null;
+      t7 = t7 ? l2 : null;
       break;
     case Object:
     case Array:
-      t8 = null == t8 ? t8 : JSON.stringify(t8);
+      t7 = null == t7 ? t7 : JSON.stringify(t7);
   }
-  return t8;
-}, fromAttribute(t8, s4) {
-  let i9 = t8;
+  return t7;
+}, fromAttribute(t7, s4) {
+  let i9 = t7;
   switch (s4) {
     case Boolean:
-      i9 = null !== t8;
+      i9 = null !== t7;
       break;
     case Number:
-      i9 = null === t8 ? null : Number(t8);
+      i9 = null === t7 ? null : Number(t7);
       break;
     case Object:
     case Array:
       try {
-        i9 = JSON.parse(t8);
-      } catch (t9) {
+        i9 = JSON.parse(t7);
+      } catch (t8) {
         i9 = null;
       }
   }
   return i9;
 } };
-var f4 = (t8, s4) => !i3(t8, s4);
+var f4 = (t7, s4) => !i3(t7, s4);
 var y2 = { attribute: true, type: String, converter: u2, reflect: false, hasChanged: f4 };
 Symbol.metadata ??= Symbol("metadata"), a2.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
 var b2 = class extends HTMLElement {
-  static addInitializer(t8) {
-    this._$Ei(), (this.l ??= []).push(t8);
+  static addInitializer(t7) {
+    this._$Ei(), (this.l ??= []).push(t7);
   }
   static get observedAttributes() {
     return this.finalize(), this._$Eh && [...this._$Eh.keys()];
   }
-  static createProperty(t8, s4 = y2) {
-    if (s4.state && (s4.attribute = false), this._$Ei(), this.elementProperties.set(t8, s4), !s4.noAccessor) {
-      const i9 = Symbol(), r11 = this.getPropertyDescriptor(t8, i9, s4);
-      void 0 !== r11 && e4(this.prototype, t8, r11);
+  static createProperty(t7, s4 = y2) {
+    if (s4.state && (s4.attribute = false), this._$Ei(), this.elementProperties.set(t7, s4), !s4.noAccessor) {
+      const i9 = Symbol(), r11 = this.getPropertyDescriptor(t7, i9, s4);
+      void 0 !== r11 && e4(this.prototype, t7, r11);
     }
   }
-  static getPropertyDescriptor(t8, s4, i9) {
-    const { get: e12, set: h6 } = r5(this.prototype, t8) ?? { get() {
+  static getPropertyDescriptor(t7, s4, i9) {
+    const { get: e12, set: h6 } = r5(this.prototype, t7) ?? { get() {
       return this[s4];
-    }, set(t9) {
-      this[s4] = t9;
+    }, set(t8) {
+      this[s4] = t8;
     } };
     return { get() {
       return e12?.call(this);
     }, set(s5) {
       const r11 = e12?.call(this);
-      h6.call(this, s5), this.requestUpdate(t8, r11, i9);
+      h6.call(this, s5), this.requestUpdate(t7, r11, i9);
     }, configurable: true, enumerable: true };
   }
-  static getPropertyOptions(t8) {
-    return this.elementProperties.get(t8) ?? y2;
+  static getPropertyOptions(t7) {
+    return this.elementProperties.get(t7) ?? y2;
   }
   static _$Ei() {
     if (this.hasOwnProperty(d2("elementProperties"))) return;
-    const t8 = n6(this);
-    t8.finalize(), void 0 !== t8.l && (this.l = [...t8.l]), this.elementProperties = new Map(t8.elementProperties);
+    const t7 = n6(this);
+    t7.finalize(), void 0 !== t7.l && (this.l = [...t7.l]), this.elementProperties = new Map(t7.elementProperties);
   }
   static finalize() {
     if (this.hasOwnProperty(d2("finalized"))) return;
     if (this.finalized = true, this._$Ei(), this.hasOwnProperty(d2("properties"))) {
-      const t9 = this.properties, s4 = [...h4(t9), ...o5(t9)];
-      for (const i9 of s4) this.createProperty(i9, t9[i9]);
+      const t8 = this.properties, s4 = [...h4(t8), ...o5(t8)];
+      for (const i9 of s4) this.createProperty(i9, t8[i9]);
     }
-    const t8 = this[Symbol.metadata];
-    if (null !== t8) {
-      const s4 = litPropertyMetadata.get(t8);
-      if (void 0 !== s4) for (const [t9, i9] of s4) this.elementProperties.set(t9, i9);
+    const t7 = this[Symbol.metadata];
+    if (null !== t7) {
+      const s4 = litPropertyMetadata.get(t7);
+      if (void 0 !== s4) for (const [t8, i9] of s4) this.elementProperties.set(t8, i9);
     }
     this._$Eh = /* @__PURE__ */ new Map();
-    for (const [t9, s4] of this.elementProperties) {
-      const i9 = this._$Eu(t9, s4);
-      void 0 !== i9 && this._$Eh.set(i9, t9);
+    for (const [t8, s4] of this.elementProperties) {
+      const i9 = this._$Eu(t8, s4);
+      void 0 !== i9 && this._$Eh.set(i9, t8);
     }
     this.elementStyles = this.finalizeStyles(this.styles);
   }
@@ -972,75 +965,75 @@ var b2 = class extends HTMLElement {
     } else void 0 !== s4 && i9.push(c4(s4));
     return i9;
   }
-  static _$Eu(t8, s4) {
+  static _$Eu(t7, s4) {
     const i9 = s4.attribute;
-    return false === i9 ? void 0 : "string" == typeof i9 ? i9 : "string" == typeof t8 ? t8.toLowerCase() : void 0;
+    return false === i9 ? void 0 : "string" == typeof i9 ? i9 : "string" == typeof t7 ? t7.toLowerCase() : void 0;
   }
   constructor() {
     super(), this._$Ep = void 0, this.isUpdatePending = false, this.hasUpdated = false, this._$Em = null, this._$Ev();
   }
   _$Ev() {
-    this._$ES = new Promise(((t8) => this.enableUpdating = t8)), this._$AL = /* @__PURE__ */ new Map(), this._$E_(), this.requestUpdate(), this.constructor.l?.forEach(((t8) => t8(this)));
+    this._$ES = new Promise(((t7) => this.enableUpdating = t7)), this._$AL = /* @__PURE__ */ new Map(), this._$E_(), this.requestUpdate(), this.constructor.l?.forEach(((t7) => t7(this)));
   }
-  addController(t8) {
-    (this._$EO ??= /* @__PURE__ */ new Set()).add(t8), void 0 !== this.renderRoot && this.isConnected && t8.hostConnected?.();
+  addController(t7) {
+    (this._$EO ??= /* @__PURE__ */ new Set()).add(t7), void 0 !== this.renderRoot && this.isConnected && t7.hostConnected?.();
   }
-  removeController(t8) {
-    this._$EO?.delete(t8);
+  removeController(t7) {
+    this._$EO?.delete(t7);
   }
   _$E_() {
-    const t8 = /* @__PURE__ */ new Map(), s4 = this.constructor.elementProperties;
-    for (const i9 of s4.keys()) this.hasOwnProperty(i9) && (t8.set(i9, this[i9]), delete this[i9]);
-    t8.size > 0 && (this._$Ep = t8);
+    const t7 = /* @__PURE__ */ new Map(), s4 = this.constructor.elementProperties;
+    for (const i9 of s4.keys()) this.hasOwnProperty(i9) && (t7.set(i9, this[i9]), delete this[i9]);
+    t7.size > 0 && (this._$Ep = t7);
   }
   createRenderRoot() {
-    const t8 = this.shadowRoot ?? this.attachShadow(this.constructor.shadowRootOptions);
-    return S3(t8, this.constructor.elementStyles), t8;
+    const t7 = this.shadowRoot ?? this.attachShadow(this.constructor.shadowRootOptions);
+    return S3(t7, this.constructor.elementStyles), t7;
   }
   connectedCallback() {
-    this.renderRoot ??= this.createRenderRoot(), this.enableUpdating(true), this._$EO?.forEach(((t8) => t8.hostConnected?.()));
+    this.renderRoot ??= this.createRenderRoot(), this.enableUpdating(true), this._$EO?.forEach(((t7) => t7.hostConnected?.()));
   }
-  enableUpdating(t8) {
+  enableUpdating(t7) {
   }
   disconnectedCallback() {
-    this._$EO?.forEach(((t8) => t8.hostDisconnected?.()));
+    this._$EO?.forEach(((t7) => t7.hostDisconnected?.()));
   }
-  attributeChangedCallback(t8, s4, i9) {
-    this._$AK(t8, i9);
+  attributeChangedCallback(t7, s4, i9) {
+    this._$AK(t7, i9);
   }
-  _$EC(t8, s4) {
-    const i9 = this.constructor.elementProperties.get(t8), e12 = this.constructor._$Eu(t8, i9);
+  _$EC(t7, s4) {
+    const i9 = this.constructor.elementProperties.get(t7), e12 = this.constructor._$Eu(t7, i9);
     if (void 0 !== e12 && true === i9.reflect) {
       const r11 = (void 0 !== i9.converter?.toAttribute ? i9.converter : u2).toAttribute(s4, i9.type);
-      this._$Em = t8, null == r11 ? this.removeAttribute(e12) : this.setAttribute(e12, r11), this._$Em = null;
+      this._$Em = t7, null == r11 ? this.removeAttribute(e12) : this.setAttribute(e12, r11), this._$Em = null;
     }
   }
-  _$AK(t8, s4) {
-    const i9 = this.constructor, e12 = i9._$Eh.get(t8);
+  _$AK(t7, s4) {
+    const i9 = this.constructor, e12 = i9._$Eh.get(t7);
     if (void 0 !== e12 && this._$Em !== e12) {
-      const t9 = i9.getPropertyOptions(e12), r11 = "function" == typeof t9.converter ? { fromAttribute: t9.converter } : void 0 !== t9.converter?.fromAttribute ? t9.converter : u2;
-      this._$Em = e12, this[e12] = r11.fromAttribute(s4, t9.type), this._$Em = null;
+      const t8 = i9.getPropertyOptions(e12), r11 = "function" == typeof t8.converter ? { fromAttribute: t8.converter } : void 0 !== t8.converter?.fromAttribute ? t8.converter : u2;
+      this._$Em = e12, this[e12] = r11.fromAttribute(s4, t8.type), this._$Em = null;
     }
   }
-  requestUpdate(t8, s4, i9) {
-    if (void 0 !== t8) {
-      if (i9 ??= this.constructor.getPropertyOptions(t8), !(i9.hasChanged ?? f4)(this[t8], s4)) return;
-      this.P(t8, s4, i9);
+  requestUpdate(t7, s4, i9) {
+    if (void 0 !== t7) {
+      if (i9 ??= this.constructor.getPropertyOptions(t7), !(i9.hasChanged ?? f4)(this[t7], s4)) return;
+      this.P(t7, s4, i9);
     }
     false === this.isUpdatePending && (this._$ES = this._$ET());
   }
-  P(t8, s4, i9) {
-    this._$AL.has(t8) || this._$AL.set(t8, s4), true === i9.reflect && this._$Em !== t8 && (this._$Ej ??= /* @__PURE__ */ new Set()).add(t8);
+  P(t7, s4, i9) {
+    this._$AL.has(t7) || this._$AL.set(t7, s4), true === i9.reflect && this._$Em !== t7 && (this._$Ej ??= /* @__PURE__ */ new Set()).add(t7);
   }
   async _$ET() {
     this.isUpdatePending = true;
     try {
       await this._$ES;
-    } catch (t9) {
-      Promise.reject(t9);
+    } catch (t8) {
+      Promise.reject(t8);
     }
-    const t8 = this.scheduleUpdate();
-    return null != t8 && await t8, !this.isUpdatePending;
+    const t7 = this.scheduleUpdate();
+    return null != t7 && await t7, !this.isUpdatePending;
   }
   scheduleUpdate() {
     return this.performUpdate();
@@ -1049,25 +1042,25 @@ var b2 = class extends HTMLElement {
     if (!this.isUpdatePending) return;
     if (!this.hasUpdated) {
       if (this.renderRoot ??= this.createRenderRoot(), this._$Ep) {
-        for (const [t10, s5] of this._$Ep) this[t10] = s5;
+        for (const [t9, s5] of this._$Ep) this[t9] = s5;
         this._$Ep = void 0;
       }
-      const t9 = this.constructor.elementProperties;
-      if (t9.size > 0) for (const [s5, i9] of t9) true !== i9.wrapped || this._$AL.has(s5) || void 0 === this[s5] || this.P(s5, this[s5], i9);
+      const t8 = this.constructor.elementProperties;
+      if (t8.size > 0) for (const [s5, i9] of t8) true !== i9.wrapped || this._$AL.has(s5) || void 0 === this[s5] || this.P(s5, this[s5], i9);
     }
-    let t8 = false;
+    let t7 = false;
     const s4 = this._$AL;
     try {
-      t8 = this.shouldUpdate(s4), t8 ? (this.willUpdate(s4), this._$EO?.forEach(((t9) => t9.hostUpdate?.())), this.update(s4)) : this._$EU();
+      t7 = this.shouldUpdate(s4), t7 ? (this.willUpdate(s4), this._$EO?.forEach(((t8) => t8.hostUpdate?.())), this.update(s4)) : this._$EU();
     } catch (s5) {
-      throw t8 = false, this._$EU(), s5;
+      throw t7 = false, this._$EU(), s5;
     }
-    t8 && this._$AE(s4);
+    t7 && this._$AE(s4);
   }
-  willUpdate(t8) {
+  willUpdate(t7) {
   }
-  _$AE(t8) {
-    this._$EO?.forEach(((t9) => t9.hostUpdated?.())), this.hasUpdated || (this.hasUpdated = true, this.firstUpdated(t8)), this.updated(t8);
+  _$AE(t7) {
+    this._$EO?.forEach(((t8) => t8.hostUpdated?.())), this.hasUpdated || (this.hasUpdated = true, this.firstUpdated(t7)), this.updated(t7);
   }
   _$EU() {
     this._$AL = /* @__PURE__ */ new Map(), this.isUpdatePending = false;
@@ -1078,47 +1071,47 @@ var b2 = class extends HTMLElement {
   getUpdateComplete() {
     return this._$ES;
   }
-  shouldUpdate(t8) {
+  shouldUpdate(t7) {
     return true;
   }
-  update(t8) {
-    this._$Ej &&= this._$Ej.forEach(((t9) => this._$EC(t9, this[t9]))), this._$EU();
+  update(t7) {
+    this._$Ej &&= this._$Ej.forEach(((t8) => this._$EC(t8, this[t8]))), this._$EU();
   }
-  updated(t8) {
+  updated(t7) {
   }
-  firstUpdated(t8) {
+  firstUpdated(t7) {
   }
 };
 b2.elementStyles = [], b2.shadowRootOptions = { mode: "open" }, b2[d2("elementProperties")] = /* @__PURE__ */ new Map(), b2[d2("finalized")] = /* @__PURE__ */ new Map(), p2?.({ ReactiveElement: b2 }), (a2.reactiveElementVersions ??= []).push("2.0.4");
 
 // node_modules/@lit/reactive-element/decorators/property.js
 var o6 = { attribute: true, type: String, converter: u2, reflect: false, hasChanged: f4 };
-var r6 = (t8 = o6, e12, r11) => {
+var r6 = (t7 = o6, e12, r11) => {
   const { kind: n10, metadata: i9 } = r11;
   let s4 = globalThis.litPropertyMetadata.get(i9);
-  if (void 0 === s4 && globalThis.litPropertyMetadata.set(i9, s4 = /* @__PURE__ */ new Map()), s4.set(r11.name, t8), "accessor" === n10) {
+  if (void 0 === s4 && globalThis.litPropertyMetadata.set(i9, s4 = /* @__PURE__ */ new Map()), s4.set(r11.name, t7), "accessor" === n10) {
     const { name: o12 } = r11;
     return { set(r12) {
       const n11 = e12.get.call(this);
-      e12.set.call(this, r12), this.requestUpdate(o12, n11, t8);
+      e12.set.call(this, r12), this.requestUpdate(o12, n11, t7);
     }, init(e13) {
-      return void 0 !== e13 && this.P(o12, void 0, t8), e13;
+      return void 0 !== e13 && this.P(o12, void 0, t7), e13;
     } };
   }
   if ("setter" === n10) {
     const { name: o12 } = r11;
     return function(r12) {
       const n11 = this[o12];
-      e12.call(this, r12), this.requestUpdate(o12, n11, t8);
+      e12.call(this, r12), this.requestUpdate(o12, n11, t7);
     };
   }
   throw Error("Unsupported decorator location: " + n10);
 };
-function n7(t8) {
-  return (e12, o12) => "object" == typeof o12 ? r6(t8, e12, o12) : ((t9, e13, o13) => {
+function n7(t7) {
+  return (e12, o12) => "object" == typeof o12 ? r6(t7, e12, o12) : ((t8, e13, o13) => {
     const r11 = e13.hasOwnProperty(o13);
-    return e13.constructor.createProperty(o13, r11 ? { ...t9, wrapped: true } : t9), r11 ? Object.getOwnPropertyDescriptor(e13, o13) : void 0;
-  })(t8, e12, o12);
+    return e13.constructor.createProperty(o13, r11 ? { ...t8, wrapped: true } : t8), r11 ? Object.getOwnPropertyDescriptor(e13, o13) : void 0;
+  })(t7, e12, o12);
 }
 
 // node_modules/@lit/reactive-element/decorators/state.js
@@ -1127,32 +1120,32 @@ function r7(r11) {
 }
 
 // node_modules/@lit/reactive-element/decorators/event-options.js
-function t4(t8) {
+function t3(t7) {
   return (n10, o12) => {
     const c8 = "function" == typeof n10 ? n10 : n10[o12];
-    Object.assign(c8, t8);
+    Object.assign(c8, t7);
   };
 }
 
 // node_modules/@lit/reactive-element/decorators/base.js
-var e5 = (e12, t8, c8) => (c8.configurable = true, c8.enumerable = true, Reflect.decorate && "object" != typeof t8 && Object.defineProperty(e12, t8, c8), c8);
+var e5 = (e12, t7, c8) => (c8.configurable = true, c8.enumerable = true, Reflect.decorate && "object" != typeof t7 && Object.defineProperty(e12, t7, c8), c8);
 
 // node_modules/@lit/reactive-element/decorators/query.js
 function e6(e12, r11) {
   return (n10, s4, i9) => {
-    const o12 = (t8) => t8.renderRoot?.querySelector(e12) ?? null;
+    const o12 = (t7) => t7.renderRoot?.querySelector(e12) ?? null;
     if (r11) {
       const { get: e13, set: r12 } = "object" == typeof s4 ? n10 : i9 ?? (() => {
-        const t8 = Symbol();
+        const t7 = Symbol();
         return { get() {
-          return this[t8];
+          return this[t7];
         }, set(e14) {
-          this[t8] = e14;
+          this[t7] = e14;
         } };
       })();
       return e5(n10, s4, { get() {
-        let t8 = e13.call(this);
-        return void 0 === t8 && (t8 = o12(this), (null !== t8 || this.hasUpdated) && r12.call(this, t8)), t8;
+        let t7 = e13.call(this);
+        return void 0 === t7 && (t7 = o12(this), (null !== t7 || this.hasUpdated) && r12.call(this, t7)), t7;
       } });
     }
     return e5(n10, s4, { get() {
@@ -1162,18 +1155,18 @@ function e6(e12, r11) {
 }
 
 // node_modules/lit-html/lit-html.js
-var t5 = globalThis;
-var i4 = t5.trustedTypes;
-var s3 = i4 ? i4.createPolicy("lit-html", { createHTML: (t8) => t8 }) : void 0;
+var t4 = globalThis;
+var i4 = t4.trustedTypes;
+var s3 = i4 ? i4.createPolicy("lit-html", { createHTML: (t7) => t7 }) : void 0;
 var e7 = "$lit$";
 var h5 = `lit$${Math.random().toFixed(9).slice(2)}$`;
 var o7 = "?" + h5;
 var n8 = `<${o7}>`;
 var r8 = document;
 var l3 = () => r8.createComment("");
-var c6 = (t8) => null === t8 || "object" != typeof t8 && "function" != typeof t8;
+var c6 = (t7) => null === t7 || "object" != typeof t7 && "function" != typeof t7;
 var a3 = Array.isArray;
-var u3 = (t8) => a3(t8) || "function" == typeof t8?.[Symbol.iterator];
+var u3 = (t7) => a3(t7) || "function" == typeof t7?.[Symbol.iterator];
 var d3 = "[ 	\n\f\r]";
 var f5 = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g;
 var v2 = /-->/g;
@@ -1183,7 +1176,7 @@ var m2 = RegExp(`>|${d3}(?:([^\\s"'>=/]+)(${d3}*=${d3}*(?:[^
 var p3 = /'/g;
 var g2 = /"/g;
 var $2 = /^(?:script|style|textarea|title)$/i;
-var y3 = (t8) => (i9, ...s4) => ({ _$litType$: t8, strings: i9, values: s4 });
+var y3 = (t7) => (i9, ...s4) => ({ _$litType$: t7, strings: i9, values: s4 });
 var x2 = y3(1);
 var b3 = y3(2);
 var w2 = y3(3);
@@ -1191,68 +1184,68 @@ var T2 = Symbol.for("lit-noChange");
 var E2 = Symbol.for("lit-nothing");
 var A = /* @__PURE__ */ new WeakMap();
 var C = r8.createTreeWalker(r8, 129);
-function P2(t8, i9) {
-  if (!a3(t8) || !t8.hasOwnProperty("raw")) throw Error("invalid template strings array");
+function P2(t7, i9) {
+  if (!a3(t7) || !t7.hasOwnProperty("raw")) throw Error("invalid template strings array");
   return void 0 !== s3 ? s3.createHTML(i9) : i9;
 }
-var V2 = (t8, i9) => {
-  const s4 = t8.length - 1, o12 = [];
+var V2 = (t7, i9) => {
+  const s4 = t7.length - 1, o12 = [];
   let r11, l6 = 2 === i9 ? "<svg>" : 3 === i9 ? "<math>" : "", c8 = f5;
   for (let i10 = 0; i10 < s4; i10++) {
-    const s5 = t8[i10];
+    const s5 = t7[i10];
     let a5, u6, d4 = -1, y4 = 0;
     for (; y4 < s5.length && (c8.lastIndex = y4, u6 = c8.exec(s5), null !== u6); ) y4 = c8.lastIndex, c8 === f5 ? "!--" === u6[1] ? c8 = v2 : void 0 !== u6[1] ? c8 = _2 : void 0 !== u6[2] ? ($2.test(u6[2]) && (r11 = RegExp("</" + u6[2], "g")), c8 = m2) : void 0 !== u6[3] && (c8 = m2) : c8 === m2 ? ">" === u6[0] ? (c8 = r11 ?? f5, d4 = -1) : void 0 === u6[1] ? d4 = -2 : (d4 = c8.lastIndex - u6[2].length, a5 = u6[1], c8 = void 0 === u6[3] ? m2 : '"' === u6[3] ? g2 : p3) : c8 === g2 || c8 === p3 ? c8 = m2 : c8 === v2 || c8 === _2 ? c8 = f5 : (c8 = m2, r11 = void 0);
-    const x3 = c8 === m2 && t8[i10 + 1].startsWith("/>") ? " " : "";
+    const x3 = c8 === m2 && t7[i10 + 1].startsWith("/>") ? " " : "";
     l6 += c8 === f5 ? s5 + n8 : d4 >= 0 ? (o12.push(a5), s5.slice(0, d4) + e7 + s5.slice(d4) + h5 + x3) : s5 + h5 + (-2 === d4 ? i10 : x3);
   }
-  return [P2(t8, l6 + (t8[s4] || "<?>") + (2 === i9 ? "</svg>" : 3 === i9 ? "</math>" : "")), o12];
+  return [P2(t7, l6 + (t7[s4] || "<?>") + (2 === i9 ? "</svg>" : 3 === i9 ? "</math>" : "")), o12];
 };
 var N2 = class _N {
-  constructor({ strings: t8, _$litType$: s4 }, n10) {
+  constructor({ strings: t7, _$litType$: s4 }, n10) {
     let r11;
     this.parts = [];
     let c8 = 0, a5 = 0;
-    const u6 = t8.length - 1, d4 = this.parts, [f7, v3] = V2(t8, s4);
+    const u6 = t7.length - 1, d4 = this.parts, [f7, v3] = V2(t7, s4);
     if (this.el = _N.createElement(f7, n10), C.currentNode = this.el.content, 2 === s4 || 3 === s4) {
-      const t9 = this.el.content.firstChild;
-      t9.replaceWith(...t9.childNodes);
+      const t8 = this.el.content.firstChild;
+      t8.replaceWith(...t8.childNodes);
     }
     for (; null !== (r11 = C.nextNode()) && d4.length < u6; ) {
       if (1 === r11.nodeType) {
-        if (r11.hasAttributes()) for (const t9 of r11.getAttributeNames()) if (t9.endsWith(e7)) {
-          const i9 = v3[a5++], s5 = r11.getAttribute(t9).split(h5), e12 = /([.?@])?(.*)/.exec(i9);
-          d4.push({ type: 1, index: c8, name: e12[2], strings: s5, ctor: "." === e12[1] ? H : "?" === e12[1] ? I2 : "@" === e12[1] ? L : k2 }), r11.removeAttribute(t9);
-        } else t9.startsWith(h5) && (d4.push({ type: 6, index: c8 }), r11.removeAttribute(t9));
+        if (r11.hasAttributes()) for (const t8 of r11.getAttributeNames()) if (t8.endsWith(e7)) {
+          const i9 = v3[a5++], s5 = r11.getAttribute(t8).split(h5), e12 = /([.?@])?(.*)/.exec(i9);
+          d4.push({ type: 1, index: c8, name: e12[2], strings: s5, ctor: "." === e12[1] ? H : "?" === e12[1] ? I2 : "@" === e12[1] ? L : k2 }), r11.removeAttribute(t8);
+        } else t8.startsWith(h5) && (d4.push({ type: 6, index: c8 }), r11.removeAttribute(t8));
         if ($2.test(r11.tagName)) {
-          const t9 = r11.textContent.split(h5), s5 = t9.length - 1;
+          const t8 = r11.textContent.split(h5), s5 = t8.length - 1;
           if (s5 > 0) {
             r11.textContent = i4 ? i4.emptyScript : "";
-            for (let i9 = 0; i9 < s5; i9++) r11.append(t9[i9], l3()), C.nextNode(), d4.push({ type: 2, index: ++c8 });
-            r11.append(t9[s5], l3());
+            for (let i9 = 0; i9 < s5; i9++) r11.append(t8[i9], l3()), C.nextNode(), d4.push({ type: 2, index: ++c8 });
+            r11.append(t8[s5], l3());
           }
         }
       } else if (8 === r11.nodeType) if (r11.data === o7) d4.push({ type: 2, index: c8 });
       else {
-        let t9 = -1;
-        for (; -1 !== (t9 = r11.data.indexOf(h5, t9 + 1)); ) d4.push({ type: 7, index: c8 }), t9 += h5.length - 1;
+        let t8 = -1;
+        for (; -1 !== (t8 = r11.data.indexOf(h5, t8 + 1)); ) d4.push({ type: 7, index: c8 }), t8 += h5.length - 1;
       }
       c8++;
     }
   }
-  static createElement(t8, i9) {
+  static createElement(t7, i9) {
     const s4 = r8.createElement("template");
-    return s4.innerHTML = t8, s4;
+    return s4.innerHTML = t7, s4;
   }
 };
-function S4(t8, i9, s4 = t8, e12) {
+function S4(t7, i9, s4 = t7, e12) {
   if (i9 === T2) return i9;
   let h6 = void 0 !== e12 ? s4._$Co?.[e12] : s4._$Cl;
   const o12 = c6(i9) ? void 0 : i9._$litDirective$;
-  return h6?.constructor !== o12 && (h6?._$AO?.(false), void 0 === o12 ? h6 = void 0 : (h6 = new o12(t8), h6._$AT(t8, s4, e12)), void 0 !== e12 ? (s4._$Co ??= [])[e12] = h6 : s4._$Cl = h6), void 0 !== h6 && (i9 = S4(t8, h6._$AS(t8, i9.values), h6, e12)), i9;
+  return h6?.constructor !== o12 && (h6?._$AO?.(false), void 0 === o12 ? h6 = void 0 : (h6 = new o12(t7), h6._$AT(t7, s4, e12)), void 0 !== e12 ? (s4._$Co ??= [])[e12] = h6 : s4._$Cl = h6), void 0 !== h6 && (i9 = S4(t7, h6._$AS(t7, i9.values), h6, e12)), i9;
 }
 var M2 = class {
-  constructor(t8, i9) {
-    this._$AV = [], this._$AN = void 0, this._$AD = t8, this._$AM = i9;
+  constructor(t7, i9) {
+    this._$AV = [], this._$AN = void 0, this._$AD = t7, this._$AM = i9;
   }
   get parentNode() {
     return this._$AM.parentNode;
@@ -1260,35 +1253,35 @@ var M2 = class {
   get _$AU() {
     return this._$AM._$AU;
   }
-  u(t8) {
-    const { el: { content: i9 }, parts: s4 } = this._$AD, e12 = (t8?.creationScope ?? r8).importNode(i9, true);
+  u(t7) {
+    const { el: { content: i9 }, parts: s4 } = this._$AD, e12 = (t7?.creationScope ?? r8).importNode(i9, true);
     C.currentNode = e12;
     let h6 = C.nextNode(), o12 = 0, n10 = 0, l6 = s4[0];
     for (; void 0 !== l6; ) {
       if (o12 === l6.index) {
         let i10;
-        2 === l6.type ? i10 = new R2(h6, h6.nextSibling, this, t8) : 1 === l6.type ? i10 = new l6.ctor(h6, l6.name, l6.strings, this, t8) : 6 === l6.type && (i10 = new z2(h6, this, t8)), this._$AV.push(i10), l6 = s4[++n10];
+        2 === l6.type ? i10 = new R2(h6, h6.nextSibling, this, t7) : 1 === l6.type ? i10 = new l6.ctor(h6, l6.name, l6.strings, this, t7) : 6 === l6.type && (i10 = new z2(h6, this, t7)), this._$AV.push(i10), l6 = s4[++n10];
       }
       o12 !== l6?.index && (h6 = C.nextNode(), o12++);
     }
     return C.currentNode = r8, e12;
   }
-  p(t8) {
+  p(t7) {
     let i9 = 0;
-    for (const s4 of this._$AV) void 0 !== s4 && (void 0 !== s4.strings ? (s4._$AI(t8, s4, i9), i9 += s4.strings.length - 2) : s4._$AI(t8[i9])), i9++;
+    for (const s4 of this._$AV) void 0 !== s4 && (void 0 !== s4.strings ? (s4._$AI(t7, s4, i9), i9 += s4.strings.length - 2) : s4._$AI(t7[i9])), i9++;
   }
 };
 var R2 = class _R {
   get _$AU() {
     return this._$AM?._$AU ?? this._$Cv;
   }
-  constructor(t8, i9, s4, e12) {
-    this.type = 2, this._$AH = E2, this._$AN = void 0, this._$AA = t8, this._$AB = i9, this._$AM = s4, this.options = e12, this._$Cv = e12?.isConnected ?? true;
+  constructor(t7, i9, s4, e12) {
+    this.type = 2, this._$AH = E2, this._$AN = void 0, this._$AA = t7, this._$AB = i9, this._$AM = s4, this.options = e12, this._$Cv = e12?.isConnected ?? true;
   }
   get parentNode() {
-    let t8 = this._$AA.parentNode;
+    let t7 = this._$AA.parentNode;
     const i9 = this._$AM;
-    return void 0 !== i9 && 11 === t8?.nodeType && (t8 = i9.parentNode), t8;
+    return void 0 !== i9 && 11 === t7?.nodeType && (t7 = i9.parentNode), t7;
   }
   get startNode() {
     return this._$AA;
@@ -1296,45 +1289,45 @@ var R2 = class _R {
   get endNode() {
     return this._$AB;
   }
-  _$AI(t8, i9 = this) {
-    t8 = S4(this, t8, i9), c6(t8) ? t8 === E2 || null == t8 || "" === t8 ? (this._$AH !== E2 && this._$AR(), this._$AH = E2) : t8 !== this._$AH && t8 !== T2 && this._(t8) : void 0 !== t8._$litType$ ? this.$(t8) : void 0 !== t8.nodeType ? this.T(t8) : u3(t8) ? this.k(t8) : this._(t8);
+  _$AI(t7, i9 = this) {
+    t7 = S4(this, t7, i9), c6(t7) ? t7 === E2 || null == t7 || "" === t7 ? (this._$AH !== E2 && this._$AR(), this._$AH = E2) : t7 !== this._$AH && t7 !== T2 && this._(t7) : void 0 !== t7._$litType$ ? this.$(t7) : void 0 !== t7.nodeType ? this.T(t7) : u3(t7) ? this.k(t7) : this._(t7);
   }
-  O(t8) {
-    return this._$AA.parentNode.insertBefore(t8, this._$AB);
+  O(t7) {
+    return this._$AA.parentNode.insertBefore(t7, this._$AB);
   }
-  T(t8) {
-    this._$AH !== t8 && (this._$AR(), this._$AH = this.O(t8));
+  T(t7) {
+    this._$AH !== t7 && (this._$AR(), this._$AH = this.O(t7));
   }
-  _(t8) {
-    this._$AH !== E2 && c6(this._$AH) ? this._$AA.nextSibling.data = t8 : this.T(r8.createTextNode(t8)), this._$AH = t8;
+  _(t7) {
+    this._$AH !== E2 && c6(this._$AH) ? this._$AA.nextSibling.data = t7 : this.T(r8.createTextNode(t7)), this._$AH = t7;
   }
-  $(t8) {
-    const { values: i9, _$litType$: s4 } = t8, e12 = "number" == typeof s4 ? this._$AC(t8) : (void 0 === s4.el && (s4.el = N2.createElement(P2(s4.h, s4.h[0]), this.options)), s4);
+  $(t7) {
+    const { values: i9, _$litType$: s4 } = t7, e12 = "number" == typeof s4 ? this._$AC(t7) : (void 0 === s4.el && (s4.el = N2.createElement(P2(s4.h, s4.h[0]), this.options)), s4);
     if (this._$AH?._$AD === e12) this._$AH.p(i9);
     else {
-      const t9 = new M2(e12, this), s5 = t9.u(this.options);
-      t9.p(i9), this.T(s5), this._$AH = t9;
+      const t8 = new M2(e12, this), s5 = t8.u(this.options);
+      t8.p(i9), this.T(s5), this._$AH = t8;
     }
   }
-  _$AC(t8) {
-    let i9 = A.get(t8.strings);
-    return void 0 === i9 && A.set(t8.strings, i9 = new N2(t8)), i9;
+  _$AC(t7) {
+    let i9 = A.get(t7.strings);
+    return void 0 === i9 && A.set(t7.strings, i9 = new N2(t7)), i9;
   }
-  k(t8) {
+  k(t7) {
     a3(this._$AH) || (this._$AH = [], this._$AR());
     const i9 = this._$AH;
     let s4, e12 = 0;
-    for (const h6 of t8) e12 === i9.length ? i9.push(s4 = new _R(this.O(l3()), this.O(l3()), this, this.options)) : s4 = i9[e12], s4._$AI(h6), e12++;
+    for (const h6 of t7) e12 === i9.length ? i9.push(s4 = new _R(this.O(l3()), this.O(l3()), this, this.options)) : s4 = i9[e12], s4._$AI(h6), e12++;
     e12 < i9.length && (this._$AR(s4 && s4._$AB.nextSibling, e12), i9.length = e12);
   }
-  _$AR(t8 = this._$AA.nextSibling, i9) {
-    for (this._$AP?.(false, true, i9); t8 && t8 !== this._$AB; ) {
-      const i10 = t8.nextSibling;
-      t8.remove(), t8 = i10;
+  _$AR(t7 = this._$AA.nextSibling, i9) {
+    for (this._$AP?.(false, true, i9); t7 && t7 !== this._$AB; ) {
+      const i10 = t7.nextSibling;
+      t7.remove(), t7 = i10;
     }
   }
-  setConnected(t8) {
-    void 0 === this._$AM && (this._$Cv = t8, this._$AP?.(t8));
+  setConnected(t7) {
+    void 0 === this._$AM && (this._$Cv = t7, this._$AP?.(t7));
   }
 };
 var k2 = class {
@@ -1344,75 +1337,75 @@ var k2 = class {
   get _$AU() {
     return this._$AM._$AU;
   }
-  constructor(t8, i9, s4, e12, h6) {
-    this.type = 1, this._$AH = E2, this._$AN = void 0, this.element = t8, this.name = i9, this._$AM = e12, this.options = h6, s4.length > 2 || "" !== s4[0] || "" !== s4[1] ? (this._$AH = Array(s4.length - 1).fill(new String()), this.strings = s4) : this._$AH = E2;
+  constructor(t7, i9, s4, e12, h6) {
+    this.type = 1, this._$AH = E2, this._$AN = void 0, this.element = t7, this.name = i9, this._$AM = e12, this.options = h6, s4.length > 2 || "" !== s4[0] || "" !== s4[1] ? (this._$AH = Array(s4.length - 1).fill(new String()), this.strings = s4) : this._$AH = E2;
   }
-  _$AI(t8, i9 = this, s4, e12) {
+  _$AI(t7, i9 = this, s4, e12) {
     const h6 = this.strings;
     let o12 = false;
-    if (void 0 === h6) t8 = S4(this, t8, i9, 0), o12 = !c6(t8) || t8 !== this._$AH && t8 !== T2, o12 && (this._$AH = t8);
+    if (void 0 === h6) t7 = S4(this, t7, i9, 0), o12 = !c6(t7) || t7 !== this._$AH && t7 !== T2, o12 && (this._$AH = t7);
     else {
-      const e13 = t8;
+      const e13 = t7;
       let n10, r11;
-      for (t8 = h6[0], n10 = 0; n10 < h6.length - 1; n10++) r11 = S4(this, e13[s4 + n10], i9, n10), r11 === T2 && (r11 = this._$AH[n10]), o12 ||= !c6(r11) || r11 !== this._$AH[n10], r11 === E2 ? t8 = E2 : t8 !== E2 && (t8 += (r11 ?? "") + h6[n10 + 1]), this._$AH[n10] = r11;
+      for (t7 = h6[0], n10 = 0; n10 < h6.length - 1; n10++) r11 = S4(this, e13[s4 + n10], i9, n10), r11 === T2 && (r11 = this._$AH[n10]), o12 ||= !c6(r11) || r11 !== this._$AH[n10], r11 === E2 ? t7 = E2 : t7 !== E2 && (t7 += (r11 ?? "") + h6[n10 + 1]), this._$AH[n10] = r11;
     }
-    o12 && !e12 && this.j(t8);
+    o12 && !e12 && this.j(t7);
   }
-  j(t8) {
-    t8 === E2 ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t8 ?? "");
+  j(t7) {
+    t7 === E2 ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t7 ?? "");
   }
 };
 var H = class extends k2 {
   constructor() {
     super(...arguments), this.type = 3;
   }
-  j(t8) {
-    this.element[this.name] = t8 === E2 ? void 0 : t8;
+  j(t7) {
+    this.element[this.name] = t7 === E2 ? void 0 : t7;
   }
 };
 var I2 = class extends k2 {
   constructor() {
     super(...arguments), this.type = 4;
   }
-  j(t8) {
-    this.element.toggleAttribute(this.name, !!t8 && t8 !== E2);
+  j(t7) {
+    this.element.toggleAttribute(this.name, !!t7 && t7 !== E2);
   }
 };
 var L = class extends k2 {
-  constructor(t8, i9, s4, e12, h6) {
-    super(t8, i9, s4, e12, h6), this.type = 5;
+  constructor(t7, i9, s4, e12, h6) {
+    super(t7, i9, s4, e12, h6), this.type = 5;
   }
-  _$AI(t8, i9 = this) {
-    if ((t8 = S4(this, t8, i9, 0) ?? E2) === T2) return;
-    const s4 = this._$AH, e12 = t8 === E2 && s4 !== E2 || t8.capture !== s4.capture || t8.once !== s4.once || t8.passive !== s4.passive, h6 = t8 !== E2 && (s4 === E2 || e12);
-    e12 && this.element.removeEventListener(this.name, this, s4), h6 && this.element.addEventListener(this.name, this, t8), this._$AH = t8;
+  _$AI(t7, i9 = this) {
+    if ((t7 = S4(this, t7, i9, 0) ?? E2) === T2) return;
+    const s4 = this._$AH, e12 = t7 === E2 && s4 !== E2 || t7.capture !== s4.capture || t7.once !== s4.once || t7.passive !== s4.passive, h6 = t7 !== E2 && (s4 === E2 || e12);
+    e12 && this.element.removeEventListener(this.name, this, s4), h6 && this.element.addEventListener(this.name, this, t7), this._$AH = t7;
   }
-  handleEvent(t8) {
-    "function" == typeof this._$AH ? this._$AH.call(this.options?.host ?? this.element, t8) : this._$AH.handleEvent(t8);
+  handleEvent(t7) {
+    "function" == typeof this._$AH ? this._$AH.call(this.options?.host ?? this.element, t7) : this._$AH.handleEvent(t7);
   }
 };
 var z2 = class {
-  constructor(t8, i9, s4) {
-    this.element = t8, this.type = 6, this._$AN = void 0, this._$AM = i9, this.options = s4;
+  constructor(t7, i9, s4) {
+    this.element = t7, this.type = 6, this._$AN = void 0, this._$AM = i9, this.options = s4;
   }
   get _$AU() {
     return this._$AM._$AU;
   }
-  _$AI(t8) {
-    S4(this, t8);
+  _$AI(t7) {
+    S4(this, t7);
   }
 };
 var Z2 = { M: e7, P: h5, A: o7, C: 1, L: V2, R: M2, D: u3, V: S4, I: R2, H: k2, N: I2, U: L, B: H, F: z2 };
-var j2 = t5.litHtmlPolyfillSupport;
-j2?.(N2, R2), (t5.litHtmlVersions ??= []).push("3.2.1");
-var B2 = (t8, i9, s4) => {
+var j2 = t4.litHtmlPolyfillSupport;
+j2?.(N2, R2), (t4.litHtmlVersions ??= []).push("3.2.1");
+var B2 = (t7, i9, s4) => {
   const e12 = s4?.renderBefore ?? i9;
   let h6 = e12._$litPart$;
   if (void 0 === h6) {
-    const t9 = s4?.renderBefore ?? null;
-    e12._$litPart$ = h6 = new R2(i9.insertBefore(l3(), t9), t9, void 0, s4 ?? {});
+    const t8 = s4?.renderBefore ?? null;
+    e12._$litPart$ = h6 = new R2(i9.insertBefore(l3(), t8), t8, void 0, s4 ?? {});
   }
-  return h6._$AI(t8), h6;
+  return h6._$AI(t7), h6;
 };
 
 // node_modules/lit-element/lit-element.js
@@ -1421,12 +1414,12 @@ var r9 = class extends b2 {
     super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
   }
   createRenderRoot() {
-    const t8 = super.createRenderRoot();
-    return this.renderOptions.renderBefore ??= t8.firstChild, t8;
+    const t7 = super.createRenderRoot();
+    return this.renderOptions.renderBefore ??= t7.firstChild, t7;
   }
-  update(t8) {
+  update(t7) {
     const s4 = this.render();
-    this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(t8), this._$Do = B2(s4, this.renderRoot, this.renderOptions);
+    this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(t7), this._$Do = B2(s4, this.renderRoot, this.renderOptions);
   }
   connectedCallback() {
     super.connectedCallback(), this._$Do?.setConnected(true);
@@ -1703,44 +1696,44 @@ __decorateClass([
 ], ShoelaceElement.prototype, "lang", 2);
 
 // node_modules/lit-html/directive.js
-var t6 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
-var e8 = (t8) => (...e12) => ({ _$litDirective$: t8, values: e12 });
+var t5 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
+var e8 = (t7) => (...e12) => ({ _$litDirective$: t7, values: e12 });
 var i6 = class {
-  constructor(t8) {
+  constructor(t7) {
   }
   get _$AU() {
     return this._$AM._$AU;
   }
-  _$AT(t8, e12, i9) {
-    this._$Ct = t8, this._$AM = e12, this._$Ci = i9;
+  _$AT(t7, e12, i9) {
+    this._$Ct = t7, this._$AM = e12, this._$Ci = i9;
   }
-  _$AS(t8, e12) {
-    return this.update(t8, e12);
+  _$AS(t7, e12) {
+    return this.update(t7, e12);
   }
-  update(t8, e12) {
+  update(t7, e12) {
     return this.render(...e12);
   }
 };
 
 // node_modules/lit-html/directives/class-map.js
 var e9 = e8(class extends i6 {
-  constructor(t8) {
-    if (super(t8), t8.type !== t6.ATTRIBUTE || "class" !== t8.name || t8.strings?.length > 2) throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.");
+  constructor(t7) {
+    if (super(t7), t7.type !== t5.ATTRIBUTE || "class" !== t7.name || t7.strings?.length > 2) throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.");
   }
-  render(t8) {
-    return " " + Object.keys(t8).filter(((s4) => t8[s4])).join(" ") + " ";
+  render(t7) {
+    return " " + Object.keys(t7).filter(((s4) => t7[s4])).join(" ") + " ";
   }
   update(s4, [i9]) {
     if (void 0 === this.st) {
-      this.st = /* @__PURE__ */ new Set(), void 0 !== s4.strings && (this.nt = new Set(s4.strings.join(" ").split(/\s/).filter(((t8) => "" !== t8))));
-      for (const t8 in i9) i9[t8] && !this.nt?.has(t8) && this.st.add(t8);
+      this.st = /* @__PURE__ */ new Set(), void 0 !== s4.strings && (this.nt = new Set(s4.strings.join(" ").split(/\s/).filter(((t7) => "" !== t7))));
+      for (const t7 in i9) i9[t7] && !this.nt?.has(t7) && this.st.add(t7);
       return this.render(i9);
     }
     const r11 = s4.element.classList;
-    for (const t8 of this.st) t8 in i9 || (r11.remove(t8), this.st.delete(t8));
-    for (const t8 in i9) {
-      const s5 = !!i9[t8];
-      s5 === this.st.has(t8) || this.nt?.has(t8) || (s5 ? (r11.add(t8), this.st.add(t8)) : (r11.remove(t8), this.st.delete(t8)));
+    for (const t7 of this.st) t7 in i9 || (r11.remove(t7), this.st.delete(t7));
+    for (const t7 in i9) {
+      const s5 = !!i9[t7];
+      s5 === this.st.has(t7) || this.nt?.has(t7) || (s5 ? (r11.add(t7), this.st.add(t7)) : (r11.remove(t7), this.st.delete(t7)));
     }
     return T2;
   }
@@ -1863,15 +1856,15 @@ if (isClient) {
   });
 }
 function registerTranslation(...translation2) {
-  translation2.map((t8) => {
-    const code = t8.$code.toLowerCase();
+  translation2.map((t7) => {
+    const code = t7.$code.toLowerCase();
     if (translations.has(code)) {
-      translations.set(code, Object.assign(Object.assign({}, translations.get(code)), t8));
+      translations.set(code, Object.assign(Object.assign({}, translations.get(code)), t7));
     } else {
-      translations.set(code, t8);
+      translations.set(code, t7);
     }
     if (!fallback) {
-      fallback = t8;
+      fallback = t7;
     }
   });
   update();
@@ -3153,11 +3146,11 @@ function watch(propertyName, options) {
 }
 
 // node_modules/lit-html/directive-helpers.js
-var { I: t7 } = Z2;
-var e10 = (o12, t8) => void 0 === t8 ? void 0 !== o12?._$litType$ : o12?._$litType$ === t8;
+var { I: t6 } = Z2;
+var e10 = (o12, t7) => void 0 === t7 ? void 0 !== o12?._$litType$ : o12?._$litType$ === t7;
 var f6 = (o12) => void 0 === o12.strings;
 var u4 = {};
-var m3 = (o12, t8 = u4) => o12._$AH = t8;
+var m3 = (o12, t7 = u4) => o12._$AH = t7;
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.5YPURQKE.js
 var CACHEABLE_ERROR = Symbol();
@@ -3315,16 +3308,16 @@ __decorateClass([
 
 // node_modules/lit-html/static.js
 var a4 = Symbol.for("");
-var o8 = (t8) => {
-  if (t8?.r === a4) return t8?._$litStatic$;
+var o8 = (t7) => {
+  if (t7?.r === a4) return t7?._$litStatic$;
 };
-var i7 = (t8, ...r11) => ({ _$litStatic$: r11.reduce(((r12, e12, a5) => r12 + ((t9) => {
-  if (void 0 !== t9._$litStatic$) return t9._$litStatic$;
-  throw Error(`Value passed to 'literal' function must be a 'literal' result: ${t9}. Use 'unsafeStatic' to pass non-literal values, but
+var i7 = (t7, ...r11) => ({ _$litStatic$: r11.reduce(((r12, e12, a5) => r12 + ((t8) => {
+  if (void 0 !== t8._$litStatic$) return t8._$litStatic$;
+  throw Error(`Value passed to 'literal' function must be a 'literal' result: ${t8}. Use 'unsafeStatic' to pass non-literal values, but
             take care to ensure page security.`);
-})(e12) + t8[a5 + 1]), t8[0]), r: a4 });
+})(e12) + t7[a5 + 1]), t7[0]), r: a4 });
 var l4 = /* @__PURE__ */ new Map();
-var n9 = (t8) => (r11, ...e12) => {
+var n9 = (t7) => (r11, ...e12) => {
   const a5 = e12.length;
   let s4, i9;
   const n10 = [], u6 = [];
@@ -3334,10 +3327,10 @@ var n9 = (t8) => (r11, ...e12) => {
     $4 !== a5 && u6.push(i9), n10.push(c8), $4++;
   }
   if ($4 === a5 && n10.push(r11[a5]), f7) {
-    const t9 = n10.join("$$lit$$");
-    void 0 === (r11 = l4.get(t9)) && (n10.raw = n10, l4.set(t9, r11 = n10)), e12 = u6;
+    const t8 = n10.join("$$lit$$");
+    void 0 === (r11 = l4.get(t8)) && (n10.raw = n10, l4.set(t8, r11 = n10)), e12 = u6;
   }
-  return t8(r11, ...e12);
+  return t7(r11, ...e12);
 };
 var u5 = n9(x2);
 var c7 = n9(b3);
@@ -3973,15 +3966,15 @@ function stopAnimations(el) {
 function* o10(o12, f7) {
   if (void 0 !== o12) {
     let i9 = 0;
-    for (const t8 of o12) yield f7(t8, i9++);
+    for (const t7 of o12) yield f7(t7, i9++);
   }
 }
 
 // node_modules/lit-html/directives/range.js
-function* o11(o12, t8, e12 = 1) {
-  const i9 = void 0 === t8 ? 0 : o12;
-  t8 ??= o12;
-  for (let o13 = i9; e12 > 0 ? o13 < t8 : t8 < o13; o13 += e12) yield o13;
+function* o11(o12, t7, e12 = 1) {
+  const i9 = void 0 === t7 ? 0 : o12;
+  t7 ??= o12;
+  for (let o13 = i9; e12 > 0 ? o13 < t7 : t7 < o13; o13 += e12) yield o13;
 }
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.WIPJVEWE.js
@@ -4467,7 +4460,7 @@ __decorateClass([
   r7()
 ], SlCarousel.prototype, "dragging", 2);
 __decorateClass([
-  t4({ passive: true })
+  t3({ passive: true })
 ], SlCarousel.prototype, "handleScroll", 1);
 __decorateClass([
   watch("loop", { waitUntilFirstUpdate: true }),
@@ -5808,21 +5801,21 @@ var form_control_styles_default = i`
 // node_modules/lit-html/directives/live.js
 var l5 = e8(class extends i6 {
   constructor(r11) {
-    if (super(r11), r11.type !== t6.PROPERTY && r11.type !== t6.ATTRIBUTE && r11.type !== t6.BOOLEAN_ATTRIBUTE) throw Error("The `live` directive is not allowed on child or event bindings");
+    if (super(r11), r11.type !== t5.PROPERTY && r11.type !== t5.ATTRIBUTE && r11.type !== t5.BOOLEAN_ATTRIBUTE) throw Error("The `live` directive is not allowed on child or event bindings");
     if (!f6(r11)) throw Error("`live` bindings can only contain a single expression");
   }
   render(r11) {
     return r11;
   }
-  update(i9, [t8]) {
-    if (t8 === T2 || t8 === E2) return t8;
+  update(i9, [t7]) {
+    if (t7 === T2 || t7 === E2) return t7;
     const o12 = i9.element, l6 = i9.name;
-    if (i9.type === t6.PROPERTY) {
-      if (t8 === o12[l6]) return T2;
-    } else if (i9.type === t6.BOOLEAN_ATTRIBUTE) {
-      if (!!t8 === o12.hasAttribute(l6)) return T2;
-    } else if (i9.type === t6.ATTRIBUTE && o12.getAttribute(l6) === t8 + "") return T2;
-    return m3(i9), t8;
+    if (i9.type === t5.PROPERTY) {
+      if (t7 === o12[l6]) return T2;
+    } else if (i9.type === t5.BOOLEAN_ATTRIBUTE) {
+      if (!!t7 === o12.hasAttribute(l6)) return T2;
+    } else if (i9.type === t5.ATTRIBUTE && o12.getAttribute(l6) === t7 + "") return T2;
+    return m3(i9), t7;
   }
 });
 
@@ -7785,14 +7778,14 @@ var computePosition2 = (reference, floating, options) => {
 };
 
 // node_modules/composed-offset-position/dist/composed-offset-position.browser.min.mjs
-function e11(t8) {
-  return i8(t8);
+function e11(t7) {
+  return i8(t7);
 }
-function r10(t8) {
-  return t8.assignedSlot ? t8.assignedSlot : t8.parentNode instanceof ShadowRoot ? t8.parentNode.host : t8.parentNode;
+function r10(t7) {
+  return t7.assignedSlot ? t7.assignedSlot : t7.parentNode instanceof ShadowRoot ? t7.parentNode.host : t7.parentNode;
 }
 function i8(e12) {
-  for (let t8 = e12; t8; t8 = r10(t8)) if (t8 instanceof Element && "none" === getComputedStyle(t8).display) return null;
+  for (let t7 = e12; t7; t7 = r10(t7)) if (t7 instanceof Element && "none" === getComputedStyle(t7).display) return null;
   for (let n10 = r10(e12); n10; n10 = r10(n10)) {
     if (!(n10 instanceof Element)) continue;
     const e13 = getComputedStyle(n10);
@@ -9822,25 +9815,25 @@ function temperatureText(kelvin, language) {
   const celsius = celsiusFromKelvin(kelvin);
   return `${numberText(kelvin, language)}\xA0K (${numberText(celsius, language)}\xA0\xB0C)`;
 }
-function stateText(state, t8) {
+function stateText(state, t7) {
   switch (state) {
     case "solid":
-      return t8.phaseSolid;
+      return t7.phaseSolid;
     case "liquid":
-      return t8.phaseLiquid;
+      return t7.phaseLiquid;
     case "gas":
-      return t8.phaseGas;
+      return t7.phaseGas;
     case "unknown":
-      return t8.stateUnknown;
+      return t7.stateUnknown;
   }
 }
 function discoveryText(element, language) {
-  const t8 = strings(language);
+  const t7 = strings(language);
   switch (element.discovery.kind) {
     case "antiquity":
-      return t8.discoveryAntiquity;
+      return t7.discoveryAntiquity;
     case "unavailable":
-      return t8.valueUnavailable;
+      return t7.valueUnavailable;
     case "year":
       return element.discovery.by ? `${element.discovery.year} \xB7 ${element.discovery.by}` : String(element.discovery.year);
   }
@@ -9859,17 +9852,17 @@ function weightText(element, language) {
   }
 }
 function groupText(element, language) {
-  const t8 = strings(language);
+  const t7 = strings(language);
   switch (element.group.status) {
     case "reported":
     case "predicted":
       return String(element.group.value);
     case "convention-dependent":
-      return t8.groupConventionDependent;
+      return t7.groupConventionDependent;
     case "unassigned":
-      return t8.groupUnassigned;
+      return t7.groupUnassigned;
     case "unavailable":
-      return t8.valueUnavailable;
+      return t7.valueUnavailable;
   }
 }
 function categoryText(element, language) {
@@ -9877,26 +9870,26 @@ function categoryText(element, language) {
   return category ? CATEGORIES[category]?.[language] ?? category : "";
 }
 function detailRows(element, language, temperatureK = CONDITIONS.temperatureK) {
-  const t8 = strings(language);
+  const t7 = strings(language);
   const rows = [
-    { key: "group", label: t8.fieldGroup, value: groupText(element, language), section: "position" },
-    { key: "period", label: t8.fieldPeriod, value: String(element.period), section: "position" },
-    { key: "family", label: t8.fieldFamily, value: categoryText(element, language), section: "header" }
+    { key: "group", label: t7.fieldGroup, value: groupText(element, language), section: "position" },
+    { key: "period", label: t7.fieldPeriod, value: String(element.period), section: "position" },
+    { key: "family", label: t7.fieldFamily, value: categoryText(element, language), section: "header" }
   ];
   if (element.block.status === "unavailable") {
-    rows.push({ key: "block", label: t8.fieldBlock, value: t8.valueUnavailable, section: "position" });
+    rows.push({ key: "block", label: t7.fieldBlock, value: t7.valueUnavailable, section: "position" });
   } else {
     rows.push({
       key: "block",
-      label: t8.fieldBlock,
+      label: t7.fieldBlock,
       value: element.block.value,
       section: "position",
-      ...element.block.status === "predicted" ? { qualifier: t8.valuePredicted } : {}
+      ...element.block.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
     });
   }
   rows.push({
     key: "weight",
-    label: t8.fieldWeight,
+    label: t7.fieldWeight,
     value: weightText(element, language),
     section: "properties"
   });
@@ -9905,93 +9898,93 @@ function detailRows(element, language, temperatureK = CONDITIONS.temperatureK) {
     const state = matterState(element, temperatureK);
     rows.push({
       key: "phase",
-      label: t8.fieldPhase,
-      value: stateText(state, t8),
+      label: t7.fieldPhase,
+      value: stateText(state, t7),
       section: "properties",
       swatch: state
     });
   } else if (element.phase.status === "unavailable") {
-    rows.push({ key: "phase", label: t8.fieldPhase, value: t8.valueUnavailable, section: "properties" });
+    rows.push({ key: "phase", label: t7.fieldPhase, value: t7.valueUnavailable, section: "properties" });
   } else {
-    const phase = { solid: t8.phaseSolid, liquid: t8.phaseLiquid, gas: t8.phaseGas }[element.phase.value];
+    const phase = { solid: t7.phaseSolid, liquid: t7.phaseLiquid, gas: t7.phaseGas }[element.phase.value];
     rows.push({
       key: "phase",
-      label: t8.fieldPhase,
+      label: t7.fieldPhase,
       value: phase,
       section: "properties",
       swatch: element.phase.value,
-      ...element.phase.status === "predicted" ? { qualifier: t8.valuePredicted } : {}
+      ...element.phase.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
     });
   }
   rows.push({
     key: "radius",
-    label: t8.fieldRadius,
+    label: t7.fieldRadius,
     section: "properties",
-    ...numericRow(element.radius, (value) => `${numberText(value, language)}\xA0pm`, t8)
+    ...numericRow(element.radius, (value) => `${numberText(value, language)}\xA0pm`, t7)
   });
   rows.push({
     key: "electronegativity",
-    label: t8.fieldElectronegativity,
+    label: t7.fieldElectronegativity,
     section: "properties",
-    ...numericRow(element.electronegativity, (value) => numberText(value, language), t8)
+    ...numericRow(element.electronegativity, (value) => numberText(value, language), t7)
   });
   rows.push({
     key: "ionization",
-    label: t8.fieldIonization,
+    label: t7.fieldIonization,
     section: "properties",
-    ...numericRow(element.ionization, (value) => `${numberText(value, language)}\xA0eV`, t8)
+    ...numericRow(element.ionization, (value) => `${numberText(value, language)}\xA0eV`, t7)
   });
   rows.push({
     key: "halfLife",
-    label: t8.fieldHalfLife,
+    label: t7.fieldHalfLife,
     section: "properties",
-    ...halfLifeRow(element, language, t8)
+    ...halfLifeRow(element, language, t7)
   });
   rows.push({
     key: "melting",
-    label: t8.fieldMelting,
+    label: t7.fieldMelting,
     section: "temperatures",
-    ...temperatureRow(element.melting, language, t8)
+    ...temperatureRow(element.melting, language, t7)
   });
   rows.push({
     key: "boiling",
-    label: t8.fieldBoiling,
+    label: t7.fieldBoiling,
     section: "temperatures",
-    ...temperatureRow(element.boiling, language, t8)
+    ...temperatureRow(element.boiling, language, t7)
   });
   if (element.sublimation.status !== "unavailable") {
     rows.push({
       key: "sublimation",
-      label: t8.fieldSublimation,
+      label: t7.fieldSublimation,
       section: "temperatures",
-      ...temperatureRow(element.sublimation, language, t8)
+      ...temperatureRow(element.sublimation, language, t7)
     });
   }
   rows.push({
     key: "discovery",
-    label: t8.fieldDiscovery,
+    label: t7.fieldDiscovery,
     value: discoveryText(element, language),
     section: "history"
   });
   if (element.configuration.status === "unavailable") {
     rows.push({
       key: "configuration",
-      label: t8.fieldConfiguration,
-      value: t8.valueUnavailable,
+      label: t7.fieldConfiguration,
+      value: t7.valueUnavailable,
       section: "structure"
     });
   } else {
     rows.push({
       key: "configuration",
-      label: t8.fieldConfiguration,
+      label: t7.fieldConfiguration,
       value: element.configuration.value,
       section: "structure",
-      ...element.configuration.status === "predicted" ? { qualifier: t8.valuePredicted } : {}
+      ...element.configuration.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
     });
   }
   rows.push({
     key: "shells",
-    label: t8.fieldShells,
+    label: t7.fieldShells,
     value: element.shells.join(" \xB7 "),
     section: "structure"
   });
@@ -10010,27 +10003,27 @@ var MODE_ROW = {
   ionization: "ionization",
   halfLife: "halfLife"
 };
-function temperatureRow(value, language, t8) {
-  if (value.status === "unavailable") return { value: t8.valueUnavailable };
+function temperatureRow(value, language, t7) {
+  if (value.status === "unavailable") return { value: t7.valueUnavailable };
   return {
     value: temperatureText(value.value, language),
-    ...value.status === "predicted" ? { qualifier: t8.valuePredicted } : {}
+    ...value.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
   };
 }
-function numericRow(value, render, t8) {
-  if (value.status === "unavailable") return { value: t8.valueUnavailable };
+function numericRow(value, render, t7) {
+  if (value.status === "unavailable") return { value: t7.valueUnavailable };
   return {
     value: render(value.value),
-    ...value.status === "predicted" ? { qualifier: t8.valuePredicted } : {}
+    ...value.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
   };
 }
-function halfLifeRow(element, language, t8) {
+function halfLifeRow(element, language, t7) {
   const record = element.halfLife;
   switch (record.kind) {
     case "stable":
-      return { value: t8.halfLifeStable };
+      return { value: t7.halfLifeStable };
     case "unavailable":
-      return { value: t8.valueUnavailable };
+      return { value: t7.valueUnavailable };
     case "value":
       return {
         value: `${halfLifeText(record.seconds, language)} (${isotopeText(record.massNumber, element.symbol)})`
@@ -10040,54 +10033,54 @@ function halfLifeRow(element, language, t8) {
 function sourceList() {
   return Object.values(SOURCES);
 }
-function sourceFieldText(field, t8) {
+function sourceFieldText(field, t7) {
   switch (field) {
     case "names.de":
-      return t8.fieldGermanName;
+      return t7.fieldGermanName;
     case "period":
-      return t8.fieldPeriod;
+      return t7.fieldPeriod;
     case "group":
-      return t8.fieldGroup;
+      return t7.fieldGroup;
     case "block":
-      return t8.fieldBlock;
+      return t7.fieldBlock;
     case "phase":
-      return t8.fieldPhase;
+      return t7.fieldPhase;
     case "electron_config":
-      return t8.fieldConfiguration;
+      return t7.fieldConfiguration;
     case "set":
-      return t8.fieldFamily;
+      return t7.fieldFamily;
     case "temperature.melting":
-      return t8.fieldMelting;
+      return t7.fieldMelting;
     case "temperature.boiling":
-      return t8.fieldBoiling;
+      return t7.fieldBoiling;
     case "temperature.sublimation":
-      return t8.fieldSublimation;
+      return t7.fieldSublimation;
     case "discovery":
-      return t8.fieldDiscovery;
+      return t7.fieldDiscovery;
     case "symbol":
-      return t8.fieldSymbol;
+      return t7.fieldSymbol;
     case "name":
-      return t8.fieldName;
+      return t7.fieldName;
     case "standard atomic weight":
-      return t8.fieldWeight;
+      return t7.fieldWeight;
     case "uncertainty digits":
-      return t8.fieldUncertainty;
+      return t7.fieldUncertainty;
     case "note codes":
-      return t8.fieldNoteCodes;
+      return t7.fieldNoteCodes;
     case "neutral ground-state subshell occupation":
-      return t8.fieldShells;
+      return t7.fieldShells;
     case "radius.empirical":
-      return t8.fieldRadius;
+      return t7.fieldRadius;
     case "negativity.pauling":
-      return t8.fieldElectronegativity;
+      return t7.fieldElectronegativity;
     case "ionization.values":
-      return t8.fieldIonization;
+      return t7.fieldIonization;
     case "nuclides.half_life_sec":
-      return t8.fieldHalfLife;
+      return t7.fieldHalfLife;
     case "nuclides.stable":
-      return t8.fieldStableNuclide;
+      return t7.fieldStableNuclide;
     case "nuclides.m":
-      return t8.fieldMassNumber;
+      return t7.fieldMassNumber;
     default:
       return field;
   }
@@ -10839,6 +10832,18 @@ var periodicTableStyles = i`
 		font: inherit;
 		text-align: left;
 		cursor: pointer;
+	}
+
+	:host([picker-mode]) .list-row,
+	:host([picker-mode]) .cell {
+		cursor: grab;
+		touch-action: pan-y;
+		user-select: none;
+	}
+
+	:host([picker-mode]) .list-row[aria-pressed="true"] {
+		border-color: var(--pt-accent);
+		background: var(--pt-inset);
 	}
 
 	.list-row:hover {
@@ -11615,22 +11620,22 @@ var CAROUSEL_NEXT_ICON = x2`
 		<path d="M6 3.5 10.5 8 6 12.5"/>
 	</svg>
 `;
-function modeText(mode, t8) {
+function modeText(mode, t7) {
   switch (mode) {
     case "off":
-      return t8.modeOff;
+      return t7.modeOff;
     case "temperature":
-      return t8.modeTemperature;
+      return t7.modeTemperature;
     case "discovery":
-      return t8.modeDiscovery;
+      return t7.modeDiscovery;
     case "radius":
-      return t8.modeRadius;
+      return t7.modeRadius;
     case "electronegativity":
-      return t8.modeElectronegativity;
+      return t7.modeElectronegativity;
     case "ionization":
-      return t8.modeIonization;
+      return t7.modeIonization;
     case "halfLife":
-      return t8.modeHalfLife;
+      return t7.modeHalfLife;
   }
 }
 function parseView(raw) {
@@ -11645,9 +11650,8 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _view_dec, _initialElement_dec, _a2, _ChemLabPeriodicTable_decorators, _init2, _initialElement, _view, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _filtersOpen, _modesOpen, _ChemLabPeriodicTable_instances, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
-_ChemLabPeriodicTable_decorators = [t2("webwriter-chemlab-periodic-table")];
-var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a2) {
+var _clearInitialElement_dec, _pickerMode_dec, _view_dec, _initialElement_dec, _a2, _init2, _initialElement, _view, _pickerMode, _ChemLabPeriodicTable_instances, startElementDrag_fn, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _filtersOpen, _modesOpen, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
+var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _pickerMode_dec = [n7({ type: Boolean, reflect: true, attribute: "picker-mode" })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a2) {
   constructor() {
     super(...arguments);
     __runInitializers(_init2, 5, this);
@@ -11656,6 +11660,7 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     __publicField(this, "optionGroups", _ChemLabPeriodicTable.optionGroups);
     __privateAdd(this, _initialElement, __runInitializers(_init2, 8, this, null)), __runInitializers(_init2, 11, this);
     __privateAdd(this, _view, __runInitializers(_init2, 12, this, "auto")), __runInitializers(_init2, 15, this);
+    __privateAdd(this, _pickerMode, __runInitializers(_init2, 16, this, false)), __runInitializers(_init2, 19, this);
     __privateAdd(this, _selection, new SelectionModel());
     __privateAdd(this, _initialized, false);
     __privateAdd(this, _viewOverride, null);
@@ -11909,7 +11914,7 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
   }
   render() {
     const language = __privateGet(this, _ChemLabPeriodicTable_instances, language_get);
-    const t8 = strings(language);
+    const t7 = strings(language);
     const resolved = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get);
     const matches = __privateMethod(this, _ChemLabPeriodicTable_instances, matches_fn).call(this).filter((match) => {
       const element2 = elementByAtomicNumber(match.atomicNumber);
@@ -11919,23 +11924,23 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     __privateSet(this, _matching, resolved === "table" ? __privateMethod(this, _ChemLabPeriodicTable_instances, placeable_fn).call(this) : matching);
     const selected = __privateGet(this, _selection).value;
     const element = selected === null ? null : elementByAtomicNumber(selected) ?? null;
-    const details = __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetails_fn).call(this, t8, language, element, {
+    const details = this.pickerMode ? null : __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetails_fn).call(this, t7, language, element, {
       expanded: resolved === "list" || __privateGet(this, _detailsExpanded),
       collapsible: resolved === "table"
     });
     return x2`
 			<div class="widget">
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderRibbon_fn).call(this, t8, language, resolved, matches.length)}
-				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t8, language, matches, element, details) : __privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t8, language, matching, details)}
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t8, language, element)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderRibbon_fn).call(this, t7, language, resolved, matches.length)}
+				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t7, language, matches, element, details) : __privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t7, language, matching, details)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t7, language, element)}
 				<sl-icon-button
 					class="info-button"
 					src=${INFO_ICON}
-					label=${t8.infoLabel}
-					title=${t8.infoLabel}
+					label=${t7.infoLabel}
+					title=${t7.infoLabel}
 					@click=${__privateGet(this, _openInfo)}
 				></sl-icon-button>
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderInfo_fn).call(this, t8, language)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderInfo_fn).call(this, t7, language)}
 			</div>
 		`;
   }
@@ -11943,6 +11948,16 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
 _init2 = __decoratorStart(_a2);
 _initialElement = new WeakMap();
 _view = new WeakMap();
+_pickerMode = new WeakMap();
+_ChemLabPeriodicTable_instances = new WeakSet();
+startElementDrag_fn = function(event, atomicNumber) {
+  if (!this.pickerMode || !event.isPrimary || event.button !== 0) return;
+  this.dispatchEvent(new CustomEvent("chemlab:element-drag", {
+    bubbles: true,
+    composed: true,
+    detail: { atomicNumber, pointerId: event.pointerId, x: event.clientX, y: event.clientY }
+  }));
+};
 _selection = new WeakMap();
 _initialized = new WeakMap();
 _viewOverride = new WeakMap();
@@ -11960,7 +11975,6 @@ _infoOpen = new WeakMap();
 _detailsExpanded = new WeakMap();
 _filtersOpen = new WeakMap();
 _modesOpen = new WeakMap();
-_ChemLabPeriodicTable_instances = new WeakSet();
 /** Watches every ancestor the language walk visits for a `lang` change. */
 observeLanguage_fn = function() {
   __privateGet(this, _languageObserver)?.disconnect();
@@ -12072,7 +12086,7 @@ selectFromUser_fn = function(atomicNumber) {
   __privateSet(this, _detailsExpanded, false);
   this.requestUpdate();
   __privateMethod(this, _ChemLabPeriodicTable_instances, dispatchSelection_fn).call(this);
-  if (__privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get) === "list") __privateMethod(this, _ChemLabPeriodicTable_instances, focusDetails_fn).call(this);
+  if (__privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get) === "list" && !this.pickerMode) __privateMethod(this, _ChemLabPeriodicTable_instances, focusDetails_fn).call(this);
 };
 /** The card that replaced the selected list row, if the list shows one. */
 listDetailsCard_fn = function() {
@@ -12188,10 +12202,10 @@ rovingTarget_fn = function(matching) {
  * @param count - Number of matching elements.
  * @returns The live region text.
  */
-renderCount_fn = function(t8, count) {
-  if (count === 0) return t8.noResults;
-  if (count === 1) return t8.resultCountOne;
-  return format(t8.resultCount, { count });
+renderCount_fn = function(t7, count) {
+  if (count === 0) return t7.noResults;
+  if (count === 1) return t7.resultCountOne;
+  return format(t7.resultCount, { count });
 };
 /**
  * Renders the ribbon: the two layer toggles with their panels and the layout
@@ -12217,7 +12231,7 @@ renderCount_fn = function(t8, count) {
  * @param count - Number of matching elements.
  * @returns The ribbon.
  */
-renderRibbon_fn = function(t8, language, resolved, count) {
+renderRibbon_fn = function(t7, language, resolved, count) {
   const filtersActive = __privateGet(this, _query) !== "" || __privateGet(this, _category) !== null;
   const modesActive = __privateGet(this, _mode).mode !== "off";
   return x2`
@@ -12225,37 +12239,37 @@ renderRibbon_fn = function(t8, language, resolved, count) {
 				<sl-button
 					class="ribbon-toggle ${__privateGet(this, _filtersOpen) ? "is-open" : ""} ${filtersActive ? "is-active" : ""}"
 					size="small"
-					title=${t8.filtersLabel}
-					aria-label=${t8.filtersLabel}
+					title=${t7.filtersLabel}
+					aria-label=${t7.filtersLabel}
 					aria-expanded=${__privateGet(this, _filtersOpen)}
 					@click=${__privateGet(this, _toggleFilters)}
 				>${FILTER_ICON}</sl-button>
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderFilters_fn).call(this, t8, language, count)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderFilters_fn).call(this, t7, language, count)}
 				<span class="ribbon-divider" role="presentation"></span>
 				<sl-button
 					class="ribbon-toggle ${__privateGet(this, _modesOpen) ? "is-open" : ""} ${modesActive ? "is-active" : ""}"
 					size="small"
-					title=${t8.modeLabel}
-					aria-label=${t8.modeLabel}
+					title=${t7.modeLabel}
+					aria-label=${t7.modeLabel}
 					aria-expanded=${__privateGet(this, _modesOpen)}
 					@click=${__privateGet(this, _toggleModes)}
 				>${MODE_ICON}</sl-button>
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderModes_fn).call(this, t8, language)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderModes_fn).call(this, t7, language)}
 				<span class="ribbon-divider" role="presentation"></span>
-				<div class="views" role="group" aria-label=${t8.viewLabel}>
+				<div class="views" role="group" aria-label=${t7.viewLabel}>
 					<sl-button
 						size="small"
 						variant=${resolved === "table" ? "primary" : "default"}
-						title=${t8.viewTable}
-						aria-label=${t8.viewTable}
+						title=${t7.viewTable}
+						aria-label=${t7.viewTable}
 						aria-pressed=${resolved === "table"}
 						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "table")}
 					>${TABLE_ICON}</sl-button>
 					<sl-button
 						size="small"
 						variant=${resolved === "list" ? "primary" : "default"}
-						title=${t8.viewList}
-						aria-label=${t8.viewList}
+						title=${t7.viewList}
+						aria-label=${t7.viewList}
 						aria-pressed=${resolved === "list"}
 						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setView_fn).call(this, "list")}
 					>${LIST_ICON}</sl-button>
@@ -12283,9 +12297,9 @@ renderRibbon_fn = function(t8, language, resolved, count) {
  * @param count - Number of matching elements.
  * @returns The filter panel, or nothing while it is closed.
  */
-renderFilters_fn = function(t8, language, count) {
+renderFilters_fn = function(t7, language, count) {
   if (!__privateGet(this, _filtersOpen)) return null;
-  const countText = __privateMethod(this, _ChemLabPeriodicTable_instances, renderCount_fn).call(this, t8, count);
+  const countText = __privateMethod(this, _ChemLabPeriodicTable_instances, renderCount_fn).call(this, t7, count);
   return x2`
 			<div class="ribbon-panel filters">
 				<div class="panel-row">
@@ -12294,8 +12308,8 @@ renderFilters_fn = function(t8, language, count) {
 						type="search"
 						size="small"
 						clearable
-						label=${t8.searchLabel}
-						placeholder=${t8.searchPlaceholder}
+						label=${t7.searchLabel}
+						placeholder=${t7.searchPlaceholder}
 						.value=${__privateGet(this, _query)}
 						@sl-input=${__privateGet(this, _onQueryInput)}
 						@keydown=${__privateGet(this, _onSearchKeydown)}
@@ -12303,13 +12317,13 @@ renderFilters_fn = function(t8, language, count) {
 					<sl-button
 						class="reset"
 						size="small"
-						title=${t8.reset}
-						aria-label=${t8.reset}
+						title=${t7.reset}
+						aria-label=${t7.reset}
 						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, reset_fn).call(this)}
 					>${RESET_ICON}</sl-button>
 				</div>
 				<div class="panel-row">
-					<span class="visually-hidden" id="family-strip-label">${t8.legendLabel}</span>
+					<span class="visually-hidden" id="family-strip-label">${t7.legendLabel}</span>
 					<sl-carousel
 						class="family-strip"
 						navigation
@@ -12352,13 +12366,13 @@ renderFilters_fn = function(t8, language, count) {
  * @param language - Interface language.
  * @returns Bounds, value, readout and handler of the slider, or `null` when no mode is active.
  */
-slider_fn = function(t8, language) {
+slider_fn = function(t7, language) {
   switch (__privateGet(this, _mode).mode) {
     case "off":
       return null;
     case "temperature":
       return {
-        label: t8.temperatureSlider,
+        label: t7.temperatureSlider,
         min: TEMPERATURE_SLIDER.minCelsius,
         max: TEMPERATURE_SLIDER.maxCelsius,
         step: TEMPERATURE_SLIDER.stepCelsius,
@@ -12368,7 +12382,7 @@ slider_fn = function(t8, language) {
       };
     case "discovery":
       return {
-        label: t8.yearSlider,
+        label: t7.yearSlider,
         min: DISCOVERY_RANGE.min,
         max: DISCOVERY_RANGE.max,
         step: 1,
@@ -12378,7 +12392,7 @@ slider_fn = function(t8, language) {
       };
     case "radius":
       return {
-        label: t8.radiusSlider,
+        label: t7.radiusSlider,
         min: RADIUS_RANGE.min,
         max: RADIUS_RANGE.max,
         step: 1,
@@ -12388,7 +12402,7 @@ slider_fn = function(t8, language) {
       };
     case "electronegativity":
       return {
-        label: t8.electronegativitySlider,
+        label: t7.electronegativitySlider,
         min: ELECTRONEGATIVITY_RANGE.min,
         max: ELECTRONEGATIVITY_RANGE.max,
         step: 0.01,
@@ -12398,7 +12412,7 @@ slider_fn = function(t8, language) {
       };
     case "ionization":
       return {
-        label: t8.ionizationSlider,
+        label: t7.ionizationSlider,
         min: IONIZATION_RANGE.min,
         max: IONIZATION_RANGE.max,
         step: 0.01,
@@ -12408,7 +12422,7 @@ slider_fn = function(t8, language) {
       };
     case "halfLife":
       return {
-        label: t8.halfLifeSlider,
+        label: t7.halfLifeSlider,
         min: HALF_LIFE_RANGE.min,
         max: HALF_LIFE_RANGE.max,
         step: 0.1,
@@ -12441,13 +12455,13 @@ slider_fn = function(t8, language) {
  * @param language - Interface language.
  * @returns The property panel, or nothing while it is closed.
  */
-renderModes_fn = function(t8, language) {
+renderModes_fn = function(t7, language) {
   if (!__privateGet(this, _modesOpen)) return null;
-  const slider = __privateMethod(this, _ChemLabPeriodicTable_instances, slider_fn).call(this, t8, language);
+  const slider = __privateMethod(this, _ChemLabPeriodicTable_instances, slider_fn).call(this, t7, language);
   return x2`
 			<div class="ribbon-panel modes">
 				<div class="panel-row">
-					<span class="visually-hidden" id="mode-strip-label">${t8.modeLabel}</span>
+					<span class="visually-hidden" id="mode-strip-label">${t7.modeLabel}</span>
 					<sl-carousel
 						class="mode-strip"
 						navigation
@@ -12463,7 +12477,7 @@ renderModes_fn = function(t8, language) {
 									type="button"
 									aria-pressed=${__privateGet(this, _mode).mode === mode}
 									@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setMode_fn).call(this, mode)}
-								>${modeText(mode, t8)}</button>
+								>${modeText(mode, t7)}</button>
 							</sl-carousel-item>
 						`)}
 						<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
@@ -12472,8 +12486,8 @@ renderModes_fn = function(t8, language) {
 					<sl-button
 						class="reset"
 						size="small"
-						title=${t8.resetMode}
-						aria-label=${t8.resetMode}
+						title=${t7.resetMode}
+						aria-label=${t7.resetMode}
 						@click=${__privateGet(this, _resetMode)}
 					>${RESET_ICON}</sl-button>
 				</div>
@@ -12492,7 +12506,7 @@ renderModes_fn = function(t8, language) {
 							<sl-tag class="mode-value" size="small" variant="neutral">${slider.readout}</sl-tag>
 						</div>
 					` : null}
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderStateLegend_fn).call(this, t8)}
+				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderStateLegend_fn).call(this, t7)}
 			</div>
 		`;
 };
@@ -12502,13 +12516,13 @@ renderModes_fn = function(t8, language) {
  * @param t - Interface strings.
  * @returns The legend, or nothing while the temperature mode is off.
  */
-renderStateLegend_fn = function(t8) {
+renderStateLegend_fn = function(t7) {
   if (__privateGet(this, _mode).mode !== "temperature") return null;
   return x2`
-			<ul class="state-legend" aria-label=${t8.stateLegend}>
+			<ul class="state-legend" aria-label=${t7.stateLegend}>
 				${STATES.map((state) => x2`
 					<li>
-						<span class="state-swatch state-${state}"></span>${stateText(state, t8)}
+						<span class="state-swatch state-${state}"></span>${stateText(state, t7)}
 					</li>
 				`)}
 			</ul>
@@ -12529,18 +12543,18 @@ renderStateLegend_fn = function(t8) {
  * @param faded - Whether the family filter leaves the cell out.
  * @returns The grid cell.
  */
-renderCell_fn = function(cell, t8, language, roving, faded) {
+renderCell_fn = function(cell, t7, language, roving, faded) {
   const element = elementByAtomicNumber(cell.atomicNumber);
   if (!element) return null;
   const selected = __privateGet(this, _selection).value === cell.atomicNumber;
   const displayRow = cell.section === "main" ? cell.row + 1 : cell.row + 2;
   const mode = cellMode(element, __privateGet(this, _mode), language);
-  const state = mode.state === null ? null : stateText(mode.state, t8);
-  const note = state ?? (mode.badge === null ? null : `${modeText(__privateGet(this, _mode).mode, t8)} ${mode.badge}`);
+  const state = mode.state === null ? null : stateText(mode.state, t7);
+  const note = state ?? (mode.badge === null ? null : `${modeText(__privateGet(this, _mode).mode, t7)} ${mode.badge}`);
   const classes = ["cell", `category-${cell.category}`];
   if (mode.state !== null) classes.push(`state-${mode.state}`);
   if (faded) classes.push("is-faded");
-  const label = format(t8.cellLabel, {
+  const label = format(t7.cellLabel, {
     number: element.atomicNumber,
     name: element.names[language],
     symbol: element.symbol,
@@ -12555,6 +12569,7 @@ renderCell_fn = function(cell, t8, language, roving, faded) {
 				tabindex=${cell.atomicNumber === roving ? 0 : -1}
 				data-atomic-number=${cell.atomicNumber}
 				style="--pt-row:${displayRow};--pt-column:${cell.column + 1}"
+				@pointerdown=${(event) => __privateMethod(this, _ChemLabPeriodicTable_instances, startElementDrag_fn).call(this, event, cell.atomicNumber)}
 				@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, selectFromUser_fn).call(this, cell.atomicNumber)}
 				@keydown=${(event) => __privateGet(this, _onCellKeydown).call(this, event, cell.atomicNumber)}
 			>
@@ -12585,7 +12600,7 @@ renderCell_fn = function(cell, t8, language, roving, faded) {
  * @param details - Rendered detail card.
  * @returns The grid with group labels, period gutter, placeholders and series rows.
  */
-renderGrid_fn = function(t8, language, matching, details) {
+renderGrid_fn = function(t7, language, matching, details) {
   const roving = __privateMethod(this, _ChemLabPeriodicTable_instances, rovingTarget_fn).call(this, matching);
   const fadedCategory = (category) => __privateGet(this, _category) !== null && __privateGet(this, _category) !== category;
   const groupLabels = Array.from({ length: GRID.columns }, (_3, index) => x2`
@@ -12596,7 +12611,7 @@ renderGrid_fn = function(t8, language, matching, details) {
 			>${index + 1}</div>
 		`);
   const cells = (row) => row.cells.map(
-    (cell) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t8, language, roving, !matching.has(cell.atomicNumber))
+    (cell) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderCell_fn).call(this, cell, t7, language, roving, !matching.has(cell.atomicNumber))
   );
   const mainRows = GRID.rows.filter((row) => row.section === "main").map((row) => x2`
 				<div class="grid-row" role="row">
@@ -12610,7 +12625,7 @@ renderGrid_fn = function(t8, language, matching, details) {
 			`);
   const placeholders = GRID.placeholders.map((placeholder) => {
     const series = GRID.seriesRows.find((entry) => entry.row === placeholder.seriesRow);
-    const text = series ? format(t8.placeholderLabel, {
+    const text = series ? format(t7.placeholderLabel, {
       first: series.firstAtomicNumber,
       last: series.lastAtomicNumber
     }) : "";
@@ -12641,7 +12656,7 @@ renderGrid_fn = function(t8, language, matching, details) {
   });
   return x2`
 			<div class="table-pane">
-				<div class="grid" role="grid" aria-label=${t8.gridLabel}>
+				<div class="grid" role="grid" aria-label=${t7.gridLabel}>
 					<div class="grid-row" role="row">
 						<div class="gutter" role="columnheader" style="--pt-row:1;--pt-column:1"></div>
 						${groupLabels}
@@ -12676,13 +12691,13 @@ renderGrid_fn = function(t8, language, matching, details) {
  * @param details - Rendered detail card.
  * @returns The list.
  */
-renderList_fn = function(t8, language, matches, element, details) {
+renderList_fn = function(t7, language, matches, element, details) {
   const selected = __privateGet(this, _selection).value;
   const selectedVisible = matches.some((match) => match.atomicNumber === selected);
   const rows = matches.map((match) => {
     const entry = elementByAtomicNumber(match.atomicNumber);
     if (!entry) return null;
-    if (match.atomicNumber === selected) return x2`<li class="list-details">${details}</li>`;
+    if (!this.pickerMode && match.atomicNumber === selected) return x2`<li class="list-details">${details}</li>`;
     const mode = cellMode(entry, __privateGet(this, _mode), __privateGet(this, _ChemLabPeriodicTable_instances, language_get));
     return x2`
 				<li>
@@ -12690,6 +12705,8 @@ renderList_fn = function(t8, language, matches, element, details) {
 						class="list-row category-${categoryOf(entry.atomicNumber) ?? "unknown"}"
 						type="button"
 						data-atomic-number=${entry.atomicNumber}
+						aria-pressed=${match.atomicNumber === selected}
+						@pointerdown=${(event) => __privateMethod(this, _ChemLabPeriodicTable_instances, startElementDrag_fn).call(this, event, entry.atomicNumber)}
 						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, selectFromUser_fn).call(this, entry.atomicNumber)}
 					>
 						<span class="list-number">${entry.atomicNumber}</span>
@@ -12698,7 +12715,7 @@ renderList_fn = function(t8, language, matches, element, details) {
 						<span class="list-category">${categoryText(entry, language)}</span>
 						${mode.state === null ? mode.badge === null ? null : x2`<sl-tag class="list-year" size="small" variant="neutral">${mode.badge}</sl-tag>` : x2`
 							<sl-tag class="state-tag list-state state-${mode.state}" size="small" variant="neutral">
-								${stateText(mode.state, t8)}
+								${stateText(mode.state, t7)}
 							</sl-tag>
 						`}
 					</button>
@@ -12707,8 +12724,8 @@ renderList_fn = function(t8, language, matches, element, details) {
   });
   return x2`
 			<div class="table-pane">
-				<ul class="list" aria-label=${t8.gridLabel}>
-					${element !== null && !selectedVisible ? x2`<li class="list-details">${details}</li>` : null}
+				<ul class="list" aria-label=${t7.gridLabel}>
+					${!this.pickerMode && element !== null && !selectedVisible ? x2`<li class="list-details">${details}</li>` : null}
 					${rows}
 				</ul>
 			</div>
@@ -12727,7 +12744,7 @@ renderList_fn = function(t8, language, matches, element, details) {
  * @param element - Selected element, or `null` for the empty card.
  * @returns The print overview.
  */
-renderPrintOverview_fn = function(t8, language, element) {
+renderPrintOverview_fn = function(t7, language, element) {
   const groupLabels = Array.from({ length: GRID.columns }, (_3, index) => x2`
 			<div class="print-group" style="--pt-row:1;--pt-column:${index + 2}">${index + 1}</div>
 		`);
@@ -12763,7 +12780,7 @@ renderPrintOverview_fn = function(t8, language, element) {
   const rows = element ? detailRows(element, language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get)) : [];
   return x2`
 			<div class="print-overview" aria-hidden="true">
-				<h2 class="print-title">${t8.widgetLabel}</h2>
+				<h2 class="print-title">${t7.widgetLabel}</h2>
 				<div class="print-grid">
 					<div class="print-gutter" style="--pt-row:1;--pt-column:1"></div>
 					${groupLabels}
@@ -12783,8 +12800,8 @@ renderPrintOverview_fn = function(t8, language, element) {
 									</div>
 								`)}
 							</dl>
-							<p class="print-hint">${t8.detailsHint} ${conditionsText(language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get))}</p>
-						` : x2`<p class="print-hint">${t8.detailsEmpty}</p>`}
+							<p class="print-hint">${t7.detailsHint} ${conditionsText(language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get))}</p>
+						` : x2`<p class="print-hint">${t7.detailsEmpty}</p>`}
 				</div>
 			</div>
 		`;
@@ -12807,14 +12824,14 @@ renderPrintOverview_fn = function(t8, language, element) {
  * @param options - Whether the card can collapse and whether it is open.
  * @returns The detail card with its shell.
  */
-renderDetails_fn = function(t8, language, element, options) {
+renderDetails_fn = function(t7, language, element, options) {
   if (!element) {
     return x2`
 				<div class="details-shell">
 					<sl-card class="details-card details-card-empty" tabindex="-1">
 						<div class="details-empty">
 							<sl-icon class="details-empty-icon" src=${POINTER_ICON}></sl-icon>
-							<p>${t8.detailsEmpty}</p>
+							<p>${t7.detailsEmpty}</p>
 						</div>
 					</sl-card>
 				</div>
@@ -12844,23 +12861,23 @@ renderDetails_fn = function(t8, language, element, options) {
 						<sl-tag class="details-family" size="small" variant="neutral">
 							${categoryText(element, language)}
 						</sl-tag>
-						<sl-tooltip content=${t8.detailsHint} hoist>
+						<sl-tooltip content=${t7.detailsHint} hoist>
 							<span class="details-conditions">${conditionsText(language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get))}</span>
 						</sl-tooltip>
 					</div>
 					<div class="details-body">
 						<dl class="details-rows details-key">
-							${key.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t8, row))}
+							${key.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t7, row))}
 						</dl>
-						${expanded ? x2`<div class="details-more">${__privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailSections_fn).call(this, t8, rest)}</div>` : null}
+						${expanded ? x2`<div class="details-more">${__privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailSections_fn).call(this, t7, rest)}</div>` : null}
 					</div>
 				</sl-card>
 				${options.collapsible ? x2`
 						<sl-button
 							class="details-toggle"
 							size="small"
-							title=${expanded ? t8.detailsCollapse : t8.detailsExpand}
-							aria-label=${expanded ? t8.detailsCollapse : t8.detailsExpand}
+							title=${expanded ? t7.detailsCollapse : t7.detailsExpand}
+							aria-label=${expanded ? t7.detailsCollapse : t7.detailsExpand}
 							aria-expanded=${expanded}
 							@click=${__privateGet(this, _toggleDetails)}
 						>${CHEVRON_ICON}</sl-button>
@@ -12880,17 +12897,17 @@ renderDetails_fn = function(t8, language, element, options) {
  * @param rows - Rows the key rows do not already show.
  * @returns The sections in display order.
  */
-renderDetailSections_fn = function(t8, rows) {
+renderDetailSections_fn = function(t7, rows) {
   return DETAIL_SECTIONS.map((entry) => {
     const own = rows.filter((row) => row.section === entry.section);
     if (own.length === 0) return null;
     return x2`
 				<section class="details-section details-section-${entry.section}">
 					<sl-tag class="details-heading" size="small" variant="neutral">
-						${t8[entry.label]}
+						${t7[entry.label]}
 					</sl-tag>
 					<dl class="details-rows">
-						${own.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t8, row))}
+						${own.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t7, row))}
 					</dl>
 				</section>
 			`;
@@ -12908,7 +12925,7 @@ renderDetailSections_fn = function(t8, rows) {
  * @param row - Row to render.
  * @returns The row.
  */
-renderDetailRow_fn = function(t8, row) {
+renderDetailRow_fn = function(t7, row) {
   return x2`
 			<div class="details-row">
 				<dt>${row.label}</dt>
@@ -12923,7 +12940,7 @@ renderDetailRow_fn = function(t8, row) {
 							</sl-tag>
 						` : x2`<span>${row.value}</span>`}
 					${row.qualifier ? x2`
-							<sl-tooltip content=${t8.qualifierHint} hoist>
+							<sl-tooltip content=${t7.qualifierHint} hoist>
 								<sl-badge class="details-qualifier" variant="neutral" pill>
 									${row.qualifier}
 								</sl-badge>
@@ -12945,33 +12962,33 @@ renderDetailRow_fn = function(t8, row) {
  * @param language - Interface language.
  * @returns The dialog, closed unless the info button was pressed.
  */
-renderInfo_fn = function(t8, language) {
+renderInfo_fn = function(t7, language) {
   return x2`
 			<sl-dialog
 				class="info"
-				label=${t8.infoLabel}
+				label=${t7.infoLabel}
 				?open=${__privateGet(this, _infoOpen)}
 				@sl-after-hide=${__privateGet(this, _onInfoHide)}
 			>
-				<p class="info-intro">${t8.infoIntro}</p>
+				<p class="info-intro">${t7.infoIntro}</p>
 				<section class="info-section">
-					<h3>${t8.infoSources}</h3>
+					<h3>${t7.infoSources}</h3>
 					${sourceList().map((source) => x2`
 						<article class="info-source">
 							<p class="info-source-title">${source.publisher} — ${source.title}</p>
 							<div class="info-source-meta">
 								<sl-badge variant="neutral" pill>
-									${format(t8.sourceRelease, { release: source.release })}
+									${format(t7.sourceRelease, { release: source.release })}
 								</sl-badge>
 								<sl-tag size="small" variant="neutral">
-									${format(t8.sourceLicense, { license: source.license })}
+									${format(t7.sourceLicense, { license: source.license })}
 								</sl-tag>
 								<sl-tag size="small" variant="neutral">
-									${format(t8.sourceRetrieved, { retrieved: source.retrieved })}
+									${format(t7.sourceRetrieved, { retrieved: source.retrieved })}
 								</sl-tag>
 							</div>
 							<p class="info-source-text">
-								${t8.infoFields}: ${source.fields.map((field) => sourceFieldText(field, t8)).join(", ")}
+								${t7.infoFields}: ${source.fields.map((field) => sourceFieldText(field, t7)).join(", ")}
 							</p>
 							<p class="info-source-text">${source.attribution}</p>
 							<a
@@ -12984,23 +13001,24 @@ renderInfo_fn = function(t8, language) {
 					`)}
 				</section>
 				<section class="info-section">
-					<h3>${t8.infoNotes}</h3>
+					<h3>${t7.infoNotes}</h3>
 					<p class="info-note">
-						${format(t8.infoConditions, { conditions: conditionsText(language) })}
+						${format(t7.infoConditions, { conditions: conditionsText(language) })}
 					</p>
-					<p class="info-note">${t8.infoPhaseModel}</p>
-					<p class="info-note">${t8.infoDiscovery}</p>
+					<p class="info-note">${t7.infoPhaseModel}</p>
+					<p class="info-note">${t7.infoDiscovery}</p>
 				</section>
 				<sl-button slot="footer" variant="primary" @click=${__privateGet(this, _closeInfo)}>
-					${t8.infoClose}
+					${t7.infoClose}
 				</sl-button>
 			</sl-dialog>
 		`;
 };
 __decorateElement(_init2, 4, "initialElement", _initialElement_dec, _ChemLabPeriodicTable, _initialElement);
 __decorateElement(_init2, 4, "view", _view_dec, _ChemLabPeriodicTable, _view);
+__decorateElement(_init2, 4, "pickerMode", _pickerMode_dec, _ChemLabPeriodicTable, _pickerMode);
 __decorateElement(_init2, 1, "clearInitialElement", _clearInitialElement_dec, _ChemLabPeriodicTable);
-_ChemLabPeriodicTable = __decorateElement(_init2, 0, "ChemLabPeriodicTable", _ChemLabPeriodicTable_decorators, _ChemLabPeriodicTable);
+__decoratorMetadata(_init2, _ChemLabPeriodicTable);
 /**
  * Shoelace components used inside the shadow root.
  *
@@ -13067,8 +13085,10 @@ __publicField(_ChemLabPeriodicTable, "properties", {
   selectedAtomicNumber: { attribute: false }
 });
 __publicField(_ChemLabPeriodicTable, "styles", periodicTableStyles);
-__runInitializers(_init2, 1, _ChemLabPeriodicTable);
 var ChemLabPeriodicTable = _ChemLabPeriodicTable;
+if (!customElements.get("webwriter-chemlab-periodic-table")) {
+  customElements.define("webwriter-chemlab-periodic-table", ChemLabPeriodicTable);
+}
 export {
   ChemLabPeriodicTable
 };

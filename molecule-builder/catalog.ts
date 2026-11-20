@@ -1,5 +1,6 @@
 import { chemicalCatalog, isWaterDefinition, type CatalogChemical, type MoleculeDefinition } from "../data/chemicals";
 import { legacyElementKeyToAtomicNumber } from "../periodic-table/legacy-names";
+import type { Molecule as LabMolecule } from "../chemlib";
 import { fitGeometry } from "./geometry";
 import { type Atom, type Bond, type Crystal, type Molecule, type Point3, type Structure } from "./structure";
 
@@ -78,7 +79,7 @@ function diagramPositions(atoms: Atom[], bonds: Bond[]) {
 	});
 }
 
-function catalogMolecule(key: string, definition: MoleculeDefinition): Molecule | undefined {
+function catalogMolecule(key: string | undefined, definition: MoleculeDefinition): Molecule | undefined {
 	const atoms: Atom[] = [];
 	for (const [index, element] of definition.atoms.entries()) {
 		const atomicNumber = legacyElementKeyToAtomicNumber(element);
@@ -113,6 +114,20 @@ function catalogDefinitions(entry: CatalogChemical) {
 		return parts.map(part => part.molecule).filter(definition => !isWaterDefinition(definition));
 	}
 	return entry.preview ? [entry.preview] : parts.map(part => part.molecule);
+}
+
+/** Use the structure ChemLab actually models, without transferring mixture amounts. */
+export function fromLabMolecule(molecule: LabMolecule, name: string): Molecule | undefined {
+	const atoms = molecule._atoms;
+	const indexes = new Map(atoms.map((atom, index) => [atom, index]));
+	const bonds = molecule._bonds.filter(bond => bond._type !== "ionic" && bond._type !== "metallic").map(bond =>
+		`${indexes.get(bond._from)}-${indexes.get(bond._to)}:${bond._type}:${bond._magnitude}`);
+	const graph = catalogMolecule(undefined, {
+		atoms: atoms.map(atom => atom.getSymbol()), charges: atoms.map(atom => atom.getIonicCharge()), bonds, formula: name,
+	});
+	if (!graph) return undefined;
+	const placed = { ...graph, atoms: diagramPositions(graph.atoms, graph.bonds) };
+	return fitGeometry(placed) ?? placed;
 }
 
 const models = new Map<string, Structure[]>();
