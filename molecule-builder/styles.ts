@@ -254,6 +254,72 @@ export const builderStyles = css`
 	.scene { overflow: hidden; }
 	.drawing { display: block; background: radial-gradient(#d4d8db 1px, transparent 1px) 1px 1px / 18px 18px; }
 	.drawing [data-atom] { cursor: pointer; }
+	.board:has(.lewis-view) { background: #fafbfc; }
+	.drawing.lewis-view {
+		--diagram-top: min(5.8rem, 21%);
+		--diagram-bottom: min(5rem, 18%);
+		inset: var(--diagram-top) 1.5rem var(--diagram-bottom);
+		inline-size: calc(100% - 3rem);
+		block-size: calc(100% - var(--diagram-top) - var(--diagram-bottom));
+		background: none;
+		color: #263247;
+	}
+	.lewis-bond { fill: none; stroke: #39475a; stroke-width: .036; stroke-linecap: round; stroke-linejoin: round; }
+	.lewis-bond[data-active] { stroke: var(--blue); stroke-width: .06; }
+	.lewis-hit { fill: transparent; stroke: transparent; stroke-width: .023; }
+	.lewis-atom[data-active] .lewis-hit { fill: #e2f3ff; stroke: #8ccff0; }
+	.lewis-symbol { font-size: .31px; font-weight: 650; fill: currentColor; }
+	.lewis-electron { fill: #37465a; }
+	.lewis-atom[data-active] .lewis-electron { fill: #6b21a8; r: .036px; }
+	.lewis-atom :is(text, .lewis-electron) { pointer-events: none; }
+	.oxidation-number, .formal-charge { font-size: .165px; font-weight: 700; }
+	.formal-charge { fill: #263247; }
+	[data-oxidation="negative"] { color: #075985; fill: #075985; }
+	[data-oxidation="positive"] { color: #9e3223; fill: #9e3223; }
+	[data-oxidation="neutral"] { color: #555f70; fill: #555f70; }
+	.oxidation-number { paint-order: stroke; stroke: #fafbfc; stroke-width: .05; stroke-linejoin: round; }
+	.repeat-unit > path { fill: none; stroke: #5b6573; stroke-width: .042; }
+	.repeat-unit > text { font-size: .27px; font-style: italic; fill: currentColor; }
+	.lewis-legend { display: flex; align-items: baseline; flex-wrap: wrap; gap: .4rem; color: #4c5563; }
+	.lewis-legend span { font-weight: 700; }
+	.formula-view {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		place-content: center;
+		gap: .9rem;
+		padding: 3.75rem 2.5rem;
+		overflow: auto;
+		text-align: center;
+		background: #fafbfc;
+	}
+	.formula-display { display: grid; gap: .4rem; }
+	.formula-heading { color: #4c5563; font-size: .8rem; }
+	.empirical-formula { color: #233044; font-size: clamp(1.15rem, 4cqw, 2.65rem); font-weight: 650; overflow-wrap: anywhere; }
+	.formula-ions, .ion-entry {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-wrap: wrap;
+		gap: .4rem;
+	}
+	.ion-site {
+		--ion-color: var(--blue);
+		padding: .24rem .53rem;
+		border: 1px solid color-mix(in srgb, var(--ion-color) 32%, white);
+		border-radius: 4px;
+		background: color-mix(in srgb, var(--ion-color) 8%, white);
+		color: #233044;
+		font: inherit;
+		font-weight: 650;
+		cursor: pointer;
+	}
+	.ion-site:hover, .ion-site[aria-pressed="true"] { border-color: var(--ion-color); }
+	.ion-site[aria-pressed="true"] { box-shadow: inset 0 -2px var(--ion-color); }
+	.ion-site:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+	.ion-entry { padding: .35rem; }
+	.ion-entry label { display: inline-flex; gap: .3rem; align-items: center; font-size: .78rem; }
+	.ion-entry input { width: 3.2rem; }
 	/* The canvas controls repeat the lab's zoom cluster: same inset, same gap,
 	   same 24 px buttons on the light surface with the soft control shadow. */
 	.view-tools {

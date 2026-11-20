@@ -5971,9 +5971,12 @@ function mainGroupValence(atomicNumber) {
   if (group.status !== "reported" && group.status !== "predicted") return void 0;
   return group.value <= 2 ? group.value : group.value >= 13 ? group.value - 10 : void 0;
 }
-function remainingElectrons(atom, bonds) {
+function remainingElectrons(atom, bonds, continuations = 0) {
   const valence = mainGroupValence(atom.atomicNumber);
-  return valence === void 0 ? void 0 : valence - atom.charge - bonds.reduce((sum, bond) => sum + bond.order, 0);
+  return valence === void 0 ? void 0 : valence - atom.charge - continuations - bonds.reduce((sum, bond) => {
+    if (bond.from !== atom.id && bond.to !== atom.id) return sum;
+    return sum + (bond.dative ? bond.from === atom.id ? 2 : 0 : bond.order);
+  }, 0);
 }
 function bondLength(left, right, order) {
   const radius = atomRadius(left).pm + atomRadius(right).pm;
@@ -5985,7 +5988,8 @@ function canBond(molecule2, from, to, order) {
     if (!atom) return false;
     const other = id === from ? to : from;
     const sum = molecule2.bonds.reduce((count2, bond) => bond.from === id && bond.to !== other || bond.to === id && bond.from !== other ? count2 + bond.order : count2, order);
-    return sum <= (maximumOrder.get(atom.atomicNumber) ?? 6);
+    const continuation = molecule2.repeatUnit?.ends.includes(id) ? 1 : 0;
+    return sum + continuation <= (maximumOrder.get(atom.atomicNumber) ?? 6);
   });
 }
 function shapeFor(molecule2, id) {
@@ -6311,11 +6315,14 @@ function readStructure(value) {
       const pair = [bond.from, bond.to].sort((a5, b4) => a5 - b4).join("-");
       if (pairs.has(pair)) return null;
       pairs.add(pair);
-      bonds.push({ from: bond.from, to: bond.to, order: bond.order });
+      bonds.push({ from: bond.from, to: bond.to, order: bond.order, ...bond.dative === true ? { dative: true } : {} });
     }
     const geometry = value.geometry === "idealized" || value.geometry === "supplied" || value.geometry === "estimated" ? value.geometry : void 0;
     const representation = value.representation === "constituent" || value.representation === "repeat-unit" || value.representation === "ionic-components" || value.representation === "conformer" || value.representation === "experimental" ? value.representation : void 0;
-    return { ...base, kind: "molecule", atoms, bonds, geometry, representation };
+    const repeat = value.repeatUnit;
+    const repeatAtoms = record(repeat) && Array.isArray(repeat.atoms) ? repeat.atoms : [];
+    const repeatUnit = repeatAtoms.length >= 2 && repeatAtoms.length <= atomIds.size && new Set(repeatAtoms).size === repeatAtoms.length && repeatAtoms.every((id) => atomIds.has(id)) && record(repeat) && Array.isArray(repeat.ends) && repeat.ends.length === 2 && repeat.ends[0] !== repeat.ends[1] && repeat.ends.every((id) => repeatAtoms.includes(id)) ? { atoms: [...repeatAtoms], ends: [repeat.ends[0], repeat.ends[1]] } : void 0;
+    return { ...base, kind: "molecule", atoms, bonds, geometry, representation, repeatUnit };
   }
   if (value.kind !== "crystal" || !record(value.cell) || !numbers(value.cell.lengths, 3) || !numbers(value.cell.angles, 3) || !Array.isArray(value.sites) || value.sites.length > MAX_SITES) return null;
   const cell = { lengths: [...value.cell.lengths], angles: [...value.cell.angles] };
@@ -10022,11 +10029,11 @@ var init_Rectangle = __esm({
        * @see {@link Bounds} For bounds object structure
        * @see {@link Rectangle.getBounds} For getting rectangle bounds
        */
-      copyFromBounds(bounds) {
-        this.x = bounds.minX;
-        this.y = bounds.minY;
-        this.width = bounds.maxX - bounds.minX;
-        this.height = bounds.maxY - bounds.minY;
+      copyFromBounds(bounds2) {
+        this.x = bounds2.minX;
+        this.y = bounds2.minY;
+        this.width = bounds2.maxX - bounds2.minX;
+        this.height = bounds2.maxY - bounds2.minY;
         return this;
       }
       /**
@@ -10714,8 +10721,8 @@ var init_Bounds = __esm({
        * @see {@link Bounds#addFrame} For adding raw coordinates
        * @see {@link Bounds#addRect} For adding rectangles
        */
-      addBounds(bounds, matrix2) {
-        this.addFrame(bounds.minX, bounds.minY, bounds.maxX, bounds.maxY, matrix2);
+      addBounds(bounds2, matrix2) {
+        this.addFrame(bounds2.minX, bounds2.minY, bounds2.maxX, bounds2.maxY, matrix2);
       }
       /**
        * Adds other Bounds as a mask, creating an intersection of the two bounds.
@@ -11226,11 +11233,11 @@ var init_Bounds = __esm({
        * @returns This bounds object for chaining
        * @see {@link Bounds#clone} For creating new instances
        */
-      copyFrom(bounds) {
-        this.minX = bounds.minX;
-        this.minY = bounds.minY;
-        this.maxX = bounds.maxX;
-        this.maxY = bounds.maxY;
+      copyFrom(bounds2) {
+        this.minX = bounds2.minX;
+        this.minY = bounds2.minY;
+        this.maxX = bounds2.maxX;
+        this.maxY = bounds2.maxY;
         return this;
       }
     };
@@ -11258,19 +11265,19 @@ var init_getFastGlobalBoundsMixin = __esm({
     init_matrixAndBoundsPool();
     tempMatrix2 = new Matrix();
     getFastGlobalBoundsMixin = {
-      getFastGlobalBounds(factorRenderLayers, bounds) {
-        bounds || (bounds = new Bounds());
-        bounds.clear();
-        this._getGlobalBoundsRecursive(!!factorRenderLayers, bounds, this.parentRenderLayer);
-        if (!bounds.isValid) {
-          bounds.set(0, 0, 0, 0);
+      getFastGlobalBounds(factorRenderLayers, bounds2) {
+        bounds2 || (bounds2 = new Bounds());
+        bounds2.clear();
+        this._getGlobalBoundsRecursive(!!factorRenderLayers, bounds2, this.parentRenderLayer);
+        if (!bounds2.isValid) {
+          bounds2.set(0, 0, 0, 0);
         }
         const renderGroup = this.renderGroup || this.parentRenderGroup;
-        bounds.applyMatrix(renderGroup.worldTransform);
-        return bounds;
+        bounds2.applyMatrix(renderGroup.worldTransform);
+        return bounds2;
       },
-      _getGlobalBoundsRecursive(factorRenderLayers, bounds, currentLayer) {
-        let localBounds = bounds;
+      _getGlobalBoundsRecursive(factorRenderLayers, bounds2, currentLayer) {
+        let localBounds = bounds2;
         if (factorRenderLayers && this.parentRenderLayer && this.parentRenderLayer !== currentLayer) return;
         if (this.localDisplayStatus !== 7 || !this.measurable) {
           return;
@@ -11280,7 +11287,7 @@ var init_getFastGlobalBoundsMixin = __esm({
           localBounds = boundsPool.get().clear();
         }
         if (this.boundsArea) {
-          bounds.addRect(this.boundsArea, this.worldTransform);
+          bounds2.addRect(this.boundsArea, this.worldTransform);
         } else {
           if (this.renderPipeId) {
             const viewBounds = this.bounds;
@@ -11312,10 +11319,10 @@ var init_getFastGlobalBoundsMixin = __esm({
           if (advanced) {
             localBounds.applyMatrix(renderGroup.worldTransform.copyTo(tempMatrix2).invert());
           }
-          bounds.addBounds(localBounds);
+          bounds2.addBounds(localBounds);
           boundsPool.return(localBounds);
         } else if (this.renderGroup) {
-          bounds.addBounds(localBounds, this.relativeGroupTransform);
+          bounds2.addBounds(localBounds, this.relativeGroupTransform);
           boundsPool.return(localBounds);
         }
       }
@@ -11324,8 +11331,8 @@ var init_getFastGlobalBoundsMixin = __esm({
 });
 
 // node_modules/pixi.js/lib/scene/container/bounds/getGlobalBounds.mjs
-function getGlobalBounds(target, skipUpdateTransform, bounds) {
-  bounds.clear();
+function getGlobalBounds(target, skipUpdateTransform, bounds2) {
+  bounds2.clear();
   let parentTransform;
   let pooledMatrix;
   if (target.parent) {
@@ -11338,16 +11345,16 @@ function getGlobalBounds(target, skipUpdateTransform, bounds) {
   } else {
     parentTransform = Matrix.IDENTITY;
   }
-  _getGlobalBounds(target, bounds, parentTransform, skipUpdateTransform);
+  _getGlobalBounds(target, bounds2, parentTransform, skipUpdateTransform);
   if (pooledMatrix) {
     matrixPool.return(pooledMatrix);
   }
-  if (!bounds.isValid) {
-    bounds.set(0, 0, 0, 0);
+  if (!bounds2.isValid) {
+    bounds2.set(0, 0, 0, 0);
   }
-  return bounds;
+  return bounds2;
 }
-function _getGlobalBounds(target, bounds, parentTransform, skipUpdateTransform) {
+function _getGlobalBounds(target, bounds2, parentTransform, skipUpdateTransform) {
   if (!target.visible || !target.measurable) return;
   let worldTransform;
   if (!skipUpdateTransform) {
@@ -11357,29 +11364,29 @@ function _getGlobalBounds(target, bounds, parentTransform, skipUpdateTransform) 
   } else {
     worldTransform = target.worldTransform;
   }
-  const parentBounds = bounds;
+  const parentBounds = bounds2;
   const preserveBounds = !!target.effects.length;
   if (preserveBounds) {
-    bounds = boundsPool.get().clear();
+    bounds2 = boundsPool.get().clear();
   }
   if (target.boundsArea) {
-    bounds.addRect(target.boundsArea, worldTransform);
+    bounds2.addRect(target.boundsArea, worldTransform);
   } else {
     const renderableBounds = target.bounds;
     if (renderableBounds && !renderableBounds.isEmpty()) {
-      bounds.matrix = worldTransform;
-      bounds.addBounds(renderableBounds);
+      bounds2.matrix = worldTransform;
+      bounds2.addBounds(renderableBounds);
     }
     for (let i9 = 0; i9 < target.children.length; i9++) {
-      _getGlobalBounds(target.children[i9], bounds, worldTransform, skipUpdateTransform);
+      _getGlobalBounds(target.children[i9], bounds2, worldTransform, skipUpdateTransform);
     }
   }
   if (preserveBounds) {
     for (let i9 = 0; i9 < target.effects.length; i9++) {
-      target.effects[i9].addBounds?.(bounds);
+      target.effects[i9].addBounds?.(bounds2);
     }
-    parentBounds.addBounds(bounds, Matrix.IDENTITY);
-    boundsPool.return(bounds);
+    parentBounds.addBounds(bounds2, Matrix.IDENTITY);
+    boundsPool.return(bounds2);
   }
   if (!skipUpdateTransform) {
     matrixPool.return(worldTransform);
@@ -11505,16 +11512,16 @@ var init_getGlobalMixin = __esm({
 });
 
 // node_modules/pixi.js/lib/scene/container/bounds/getLocalBounds.mjs
-function getLocalBounds(target, bounds, relativeMatrix) {
-  bounds.clear();
+function getLocalBounds(target, bounds2, relativeMatrix) {
+  bounds2.clear();
   relativeMatrix || (relativeMatrix = Matrix.IDENTITY);
-  _getLocalBounds(target, bounds, relativeMatrix, target, true);
-  if (!bounds.isValid) {
-    bounds.set(0, 0, 0, 0);
+  _getLocalBounds(target, bounds2, relativeMatrix, target, true);
+  if (!bounds2.isValid) {
+    bounds2.set(0, 0, 0, 0);
   }
-  return bounds;
+  return bounds2;
 }
-function _getLocalBounds(target, bounds, parentTransform, rootContainer, isRoot) {
+function _getLocalBounds(target, bounds2, parentTransform, rootContainer, isRoot) {
   let relativeTransform;
   if (!isRoot) {
     if (!target.visible || !target.measurable) return;
@@ -11526,29 +11533,29 @@ function _getLocalBounds(target, bounds, parentTransform, rootContainer, isRoot)
     relativeTransform = matrixPool.get();
     relativeTransform = parentTransform.copyTo(relativeTransform);
   }
-  const parentBounds = bounds;
+  const parentBounds = bounds2;
   const preserveBounds = !!target.effects.length;
   if (preserveBounds) {
-    bounds = boundsPool.get().clear();
+    bounds2 = boundsPool.get().clear();
   }
   if (target.boundsArea) {
-    bounds.addRect(target.boundsArea, relativeTransform);
+    bounds2.addRect(target.boundsArea, relativeTransform);
   } else {
     if (target.renderPipeId) {
-      bounds.matrix = relativeTransform;
-      bounds.addBounds(target.bounds);
+      bounds2.matrix = relativeTransform;
+      bounds2.addBounds(target.bounds);
     }
     const children = target.children;
     for (let i9 = 0; i9 < children.length; i9++) {
-      _getLocalBounds(children[i9], bounds, relativeTransform, rootContainer, false);
+      _getLocalBounds(children[i9], bounds2, relativeTransform, rootContainer, false);
     }
   }
   if (preserveBounds) {
     for (let i9 = 0; i9 < target.effects.length; i9++) {
-      target.effects[i9].addLocalBounds?.(bounds, rootContainer);
+      target.effects[i9].addLocalBounds?.(bounds2, rootContainer);
     }
-    parentBounds.addBounds(bounds, Matrix.IDENTITY);
-    boundsPool.return(bounds);
+    parentBounds.addBounds(bounds2, Matrix.IDENTITY);
+    boundsPool.return(bounds2);
   }
   matrixPool.return(relativeTransform);
 }
@@ -11636,8 +11643,8 @@ var init_measureMixin = __esm({
         }
         return localBoundsCacheData.localBounds;
       },
-      getBounds(skipUpdate, bounds) {
-        return getGlobalBounds(this, skipUpdate, bounds || new Bounds());
+      getBounds(skipUpdate, bounds2) {
+        return getGlobalBounds(this, skipUpdate, bounds2 || new Bounds());
       }
     };
   }
@@ -14295,9 +14302,9 @@ var init_Container = __esm({
         if (!out2) {
           out2 = {};
         }
-        const bounds = this.getLocalBounds();
-        out2.width = Math.abs(this.scale.x * bounds.width);
-        out2.height = Math.abs(this.scale.y * bounds.height);
+        const bounds2 = this.getLocalBounds();
+        out2.width = Math.abs(this.scale.x * bounds2.width);
+        out2.height = Math.abs(this.scale.y * bounds2.height);
         return out2;
       }
       /**
@@ -16443,9 +16450,9 @@ var init_ViewContainer = __esm({
        * @see {@link Container#toLocal} For converting global coordinates to local
        */
       containsPoint(point) {
-        const bounds = this.bounds;
+        const bounds2 = this.bounds;
         const { x: x4, y: y5 } = point;
-        return x4 >= bounds.minX && x4 <= bounds.maxX && y5 >= bounds.minY && y5 <= bounds.maxY;
+        return x4 >= bounds2.minX && x4 <= bounds2.maxX && y5 >= bounds2.minY && y5 <= bounds2.maxY;
       }
       /** @private */
       onViewUpdate() {
@@ -20054,21 +20061,21 @@ var init_init4 = __esm({
 });
 
 // node_modules/pixi.js/lib/utils/data/updateQuadBounds.mjs
-function updateQuadBounds(bounds, anchor, texture) {
+function updateQuadBounds(bounds2, anchor, texture) {
   const { width, height } = texture.orig;
   const trim = texture.trim;
   if (trim) {
     const sourceWidth = trim.width;
     const sourceHeight = trim.height;
-    bounds.minX = trim.x - anchor._x * width;
-    bounds.maxX = bounds.minX + sourceWidth;
-    bounds.minY = trim.y - anchor._y * height;
-    bounds.maxY = bounds.minY + sourceHeight;
+    bounds2.minX = trim.x - anchor._x * width;
+    bounds2.maxX = bounds2.minX + sourceWidth;
+    bounds2.minY = trim.y - anchor._y * height;
+    bounds2.maxY = bounds2.minY + sourceHeight;
   } else {
-    bounds.minX = -anchor._x * width;
-    bounds.maxX = bounds.minX + width;
-    bounds.minY = -anchor._y * height;
-    bounds.maxY = bounds.minY + height;
+    bounds2.minX = -anchor._x * width;
+    bounds2.maxX = bounds2.minX + width;
+    bounds2.minY = -anchor._y * height;
+    bounds2.maxY = bounds2.minY + height;
   }
 }
 var init_updateQuadBounds = __esm({
@@ -20220,12 +20227,12 @@ var init_Sprite = __esm({
       updateBounds() {
         const anchor = this._anchor;
         const texture = this._texture;
-        const bounds = this._bounds;
+        const bounds2 = this._bounds;
         const { width, height } = texture.orig;
-        bounds.minX = -anchor._x * width;
-        bounds.maxX = bounds.minX + width;
-        bounds.minY = -anchor._y * height;
-        bounds.maxY = bounds.minY + height;
+        bounds2.minX = -anchor._x * width;
+        bounds2.maxX = bounds2.minX + width;
+        bounds2.minY = -anchor._y * height;
+        bounds2.maxY = bounds2.minY + height;
       }
       /**
        * Destroys this sprite renderable and optionally its texture.
@@ -20412,11 +20419,11 @@ var init_Sprite = __esm({
 });
 
 // node_modules/pixi.js/lib/rendering/mask/utils/addMaskBounds.mjs
-function addMaskBounds(mask, bounds, skipUpdateTransform) {
+function addMaskBounds(mask, bounds2, skipUpdateTransform) {
   const boundsToMask = tempBounds;
   mask.measurable = true;
   getGlobalBounds(mask, skipUpdateTransform, boundsToMask);
-  bounds.addBoundsMask(boundsToMask);
+  bounds2.addBoundsMask(boundsToMask);
   mask.measurable = false;
 }
 var tempBounds;
@@ -20429,14 +20436,14 @@ var init_addMaskBounds = __esm({
 });
 
 // node_modules/pixi.js/lib/rendering/mask/utils/addMaskLocalBounds.mjs
-function addMaskLocalBounds(mask, bounds, localRoot) {
+function addMaskLocalBounds(mask, bounds2, localRoot) {
   const boundsToMask = boundsPool.get();
   mask.measurable = true;
   const tempMatrix8 = matrixPool.get().identity();
   const relativeMask = getMatrixRelativeToParent(mask, localRoot, tempMatrix8);
   getLocalBounds(mask, boundsToMask, relativeMask);
   mask.measurable = false;
-  bounds.addBoundsMask(boundsToMask);
+  bounds2.addBoundsMask(boundsToMask);
   matrixPool.return(tempMatrix8);
   boundsPool.return(boundsToMask);
 }
@@ -20490,13 +20497,13 @@ var init_AlphaMask = __esm({
         this.mask.measurable = true;
         this.mask = null;
       }
-      addBounds(bounds, skipUpdateTransform) {
+      addBounds(bounds2, skipUpdateTransform) {
         if (!this.inverse) {
-          addMaskBounds(this.mask, bounds, skipUpdateTransform);
+          addMaskBounds(this.mask, bounds2, skipUpdateTransform);
         }
       }
-      addLocalBounds(bounds, localRoot) {
-        addMaskLocalBounds(this.mask, bounds, localRoot);
+      addLocalBounds(bounds2, localRoot) {
+        addMaskLocalBounds(this.mask, bounds2, localRoot);
       }
       containsPoint(point, hitTestFn) {
         const mask = this.mask;
@@ -20566,11 +20573,11 @@ var init_StencilMask = __esm({
         this.mask.includeInBuild = true;
         this.mask = null;
       }
-      addBounds(bounds, skipUpdateTransform) {
-        addMaskBounds(this.mask, bounds, skipUpdateTransform);
+      addBounds(bounds2, skipUpdateTransform) {
+        addMaskBounds(this.mask, bounds2, skipUpdateTransform);
       }
-      addLocalBounds(bounds, localRoot) {
-        addMaskLocalBounds(this.mask, bounds, localRoot);
+      addLocalBounds(bounds2, localRoot) {
+        addMaskLocalBounds(this.mask, bounds2, localRoot);
       }
       containsPoint(point, hitTestFn) {
         const mask = this.mask;
@@ -22812,9 +22819,9 @@ var init_RoundedRectangle = __esm({
 });
 
 // node_modules/pixi.js/lib/scene/container/bounds/getRenderableBounds.mjs
-function getGlobalRenderableBounds(renderables, bounds) {
-  bounds.clear();
-  const actualMatrix = bounds.matrix;
+function getGlobalRenderableBounds(renderables, bounds2) {
+  bounds2.clear();
+  const actualMatrix = bounds2.matrix;
   for (let i9 = 0; i9 < renderables.length; i9++) {
     const renderable = renderables[i9];
     if (renderable.globalDisplayStatus < 7) {
@@ -22822,16 +22829,16 @@ function getGlobalRenderableBounds(renderables, bounds) {
     }
     const renderGroup = renderable.renderGroup ?? renderable.parentRenderGroup;
     if (renderGroup?.isCachedAsTexture) {
-      bounds.matrix = tempProjectionMatrix.copyFrom(renderGroup.textureOffsetInverseTransform).append(renderable.worldTransform);
+      bounds2.matrix = tempProjectionMatrix.copyFrom(renderGroup.textureOffsetInverseTransform).append(renderable.worldTransform);
     } else if (renderGroup?._parentCacheAsTextureRenderGroup) {
-      bounds.matrix = tempProjectionMatrix.copyFrom(renderGroup._parentCacheAsTextureRenderGroup.inverseWorldTransform).append(renderable.groupTransform);
+      bounds2.matrix = tempProjectionMatrix.copyFrom(renderGroup._parentCacheAsTextureRenderGroup.inverseWorldTransform).append(renderable.groupTransform);
     } else {
-      bounds.matrix = renderable.worldTransform;
+      bounds2.matrix = renderable.worldTransform;
     }
-    bounds.addBounds(renderable.bounds);
+    bounds2.addBounds(renderable.bounds);
   }
-  bounds.matrix = actualMatrix;
-  return bounds;
+  bounds2.matrix = actualMatrix;
+  return bounds2;
 }
 var tempProjectionMatrix;
 var init_getRenderableBounds = __esm({
@@ -22843,14 +22850,14 @@ var init_getRenderableBounds = __esm({
 
 // node_modules/pixi.js/lib/scene/text/utils/getPo2TextureFromSource.mjs
 function getPo2TextureFromSource(image, width, height, resolution, autoGenerateMipmaps = false, scaleMode) {
-  const bounds = tempBounds2;
-  bounds.minX = 0;
-  bounds.minY = 0;
-  bounds.maxX = image.width / resolution | 0;
-  bounds.maxY = image.height / resolution | 0;
+  const bounds2 = tempBounds2;
+  bounds2.minX = 0;
+  bounds2.minY = 0;
+  bounds2.maxX = image.width / resolution | 0;
+  bounds2.maxY = image.height / resolution | 0;
   const texture = TexturePool.getOptimalTexture({
-    width: bounds.width,
-    height: bounds.height,
+    width: bounds2.width,
+    height: bounds2.height,
     resolution,
     autoGenerateMipmaps,
     scaleMode
@@ -23069,21 +23076,21 @@ var init_CanvasFilterSystem = __esm({
        * @param instruction - Filter instruction
        * @param bounds - Bounds object to populate
        */
-      _calculateFilterArea(instruction, bounds) {
+      _calculateFilterArea(instruction, bounds2) {
         if (instruction.renderables) {
-          getGlobalRenderableBounds(instruction.renderables, bounds);
+          getGlobalRenderableBounds(instruction.renderables, bounds2);
         } else if (instruction.filterEffect.filterArea) {
-          bounds.clear();
-          bounds.addRect(instruction.filterEffect.filterArea);
-          bounds.applyMatrix(instruction.container.worldTransform);
+          bounds2.clear();
+          bounds2.addRect(instruction.filterEffect.filterArea);
+          bounds2.applyMatrix(instruction.container.worldTransform);
         } else {
-          instruction.container.getFastGlobalBounds(true, bounds);
+          instruction.container.getFastGlobalBounds(true, bounds2);
         }
         if (instruction.container) {
           const renderGroup = instruction.container.renderGroup || instruction.container.parentRenderGroup;
           const filterFrameTransform = renderGroup?.cacheToLocalTransform;
           if (filterFrameTransform) {
-            bounds.applyMatrix(filterFrameTransform);
+            bounds2.applyMatrix(filterFrameTransform);
           }
         }
       }
@@ -25097,14 +25104,14 @@ var init_ensureIsBuffer = __esm({
 });
 
 // node_modules/pixi.js/lib/rendering/renderers/shared/geometry/utils/getGeometryBounds.mjs
-function getGeometryBounds(geometry, attributeId, bounds) {
+function getGeometryBounds(geometry, attributeId, bounds2) {
   const attribute = geometry.getAttribute(attributeId);
   if (!attribute) {
-    bounds.minX = 0;
-    bounds.minY = 0;
-    bounds.maxX = 0;
-    bounds.maxY = 0;
-    return bounds;
+    bounds2.minX = 0;
+    bounds2.minY = 0;
+    bounds2.maxX = 0;
+    bounds2.maxY = 0;
+    return bounds2;
   }
   const data = attribute.buffer.data;
   let minX = Infinity;
@@ -25122,11 +25129,11 @@ function getGeometryBounds(geometry, attributeId, bounds) {
     if (x4 < minX) minX = x4;
     if (y5 < minY) minY = y5;
   }
-  bounds.minX = minX;
-  bounds.minY = minY;
-  bounds.maxX = maxX;
-  bounds.maxY = maxY;
-  return bounds;
+  bounds2.minX = minX;
+  bounds2.minY = minY;
+  bounds2.maxX = maxX;
+  bounds2.maxY = maxY;
+  return bounds2;
 }
 var init_getGeometryBounds = __esm({
   "node_modules/pixi.js/lib/rendering/renderers/shared/geometry/utils/getGeometryBounds.mjs"() {
@@ -25389,14 +25396,14 @@ var init_FilterSystem = __esm({
           filterData.skip = true;
           return;
         }
-        const bounds = filterData.bounds;
-        this._calculateFilterArea(instruction, bounds);
+        const bounds2 = filterData.bounds;
+        this._calculateFilterArea(instruction, bounds2);
         this._calculateFilterBounds(filterData, renderer.renderTarget.rootViewPort, rootAntialias, rootResolution, 1);
         if (filterData.skip) {
           return;
         }
         const previousFilterData = this._getPreviousFilterData();
-        this._setupFilterTextures(filterData, bounds, renderer, previousFilterData);
+        this._setupFilterTextures(filterData, bounds2, renderer, previousFilterData);
       }
       /**
        * Applies filters to a texture.
@@ -25436,17 +25443,17 @@ var init_FilterSystem = __esm({
         const colorTextureSource = texture.source;
         const rootResolution = colorTextureSource.resolution;
         const rootAntialias = colorTextureSource.antialias;
-        const bounds = filterData.bounds;
-        bounds.clear();
-        bounds.addRect(texture.frame);
-        this._calculateFilterBounds(filterData, bounds.rectangle, rootAntialias, rootResolution, 0);
+        const bounds2 = filterData.bounds;
+        bounds2.clear();
+        bounds2.addRect(texture.frame);
+        this._calculateFilterBounds(filterData, bounds2.rectangle, rootAntialias, rootResolution, 0);
         if (filterData.skip) {
           this._popFilterData();
           return texture;
         }
         filterData.outputRenderSurface = TexturePool.getOptimalTexture({
-          width: bounds.width,
-          height: bounds.height,
+          width: bounds2.width,
+          height: bounds2.height,
           resolution: filterData.resolution,
           antialias: filterData.antialias
         });
@@ -25482,15 +25489,15 @@ var init_FilterSystem = __esm({
        * @param bounds - The bounds of the area to copy.
        * @param previousBounds - The previous bounds to use for offsetting the copy.
        */
-      getBackTexture(lastRenderSurface, bounds, previousBounds) {
+      getBackTexture(lastRenderSurface, bounds2, previousBounds) {
         const { _resolution: resolution, format: format2 } = lastRenderSurface.colorTexture.source;
         const backTexture = TexturePool.getOptimalTexture({
-          width: bounds.width,
-          height: bounds.height,
+          width: bounds2.width,
+          height: bounds2.height,
           resolution,
           format: format2
         });
-        return this._copyBackTexture(lastRenderSurface, backTexture, bounds, previousBounds);
+        return this._copyBackTexture(lastRenderSurface, backTexture, bounds2, previousBounds);
       }
       /**
        * Copies an area of a render surface into a texture at the resolution of the surface.
@@ -25499,18 +25506,18 @@ var init_FilterSystem = __esm({
        * @param bounds - The bounds of the area to copy.
        * @param previousBounds - The previous bounds to use for offsetting the copy.
        */
-      _copyBackTexture(lastRenderSurface, backTexture, bounds, previousBounds) {
+      _copyBackTexture(lastRenderSurface, backTexture, bounds2, previousBounds) {
         const backgroundResolution = backTexture.source._resolution;
-        let x4 = bounds.minX;
-        let y5 = bounds.minY;
+        let x4 = bounds2.minX;
+        let y5 = bounds2.minY;
         if (previousBounds) {
           x4 -= previousBounds.minX;
           y5 -= previousBounds.minY;
         }
         x4 = Math.floor(x4 * backgroundResolution + 1e-6);
         y5 = Math.floor(y5 * backgroundResolution + 1e-6);
-        const width = Math.min(Math.ceil(bounds.width * backgroundResolution), backTexture.source.pixelWidth);
-        const height = Math.min(Math.ceil(bounds.height * backgroundResolution), backTexture.source.pixelHeight);
+        const width = Math.min(Math.ceil(bounds2.width * backgroundResolution), backTexture.source.pixelWidth);
+        const height = Math.min(Math.ceil(bounds2.height * backgroundResolution), backTexture.source.pixelHeight);
         this.renderer.renderTarget.copyToTexture(
           lastRenderSurface,
           backTexture,
@@ -25629,11 +25636,11 @@ var init_FilterSystem = __esm({
        * @param renderer - The renderer instance
        * @param previousFilterData - The previous filter data for back texture calculation
        */
-      _setupFilterTextures(filterData, bounds, renderer, previousFilterData) {
+      _setupFilterTextures(filterData, bounds2, renderer, previousFilterData) {
         filterData.backTexture = Texture.EMPTY;
         filterData.inputTexture = TexturePool.getOptimalTexture({
-          width: bounds.width,
-          height: bounds.height,
+          width: bounds2.width,
+          height: bounds2.height,
           resolution: filterData.resolution,
           antialias: filterData.antialias
         });
@@ -25649,13 +25656,13 @@ var init_FilterSystem = __esm({
           filterData.backTexture = this._copyBackTexture(
             renderTarget,
             backTexture,
-            bounds,
+            bounds2,
             previousFilterData?.bounds
           );
         }
         renderer.renderTarget.bind({ target: filterData.inputTexture, clear: true });
         renderer.globalUniforms.push({
-          offset: bounds
+          offset: bounds2
         });
       }
       /**
@@ -25735,27 +25742,27 @@ var init_FilterSystem = __esm({
        * @param instruction - The filter instruction
        * @param bounds - The bounds object to populate
        */
-      _calculateFilterArea(instruction, bounds) {
+      _calculateFilterArea(instruction, bounds2) {
         if (instruction.renderables) {
-          getGlobalRenderableBounds(instruction.renderables, bounds);
+          getGlobalRenderableBounds(instruction.renderables, bounds2);
         } else if (instruction.filterEffect.filterArea) {
-          bounds.clear();
-          bounds.addRect(instruction.filterEffect.filterArea);
-          bounds.applyMatrix(instruction.container.worldTransform);
+          bounds2.clear();
+          bounds2.addRect(instruction.filterEffect.filterArea);
+          bounds2.applyMatrix(instruction.container.worldTransform);
         } else {
-          instruction.container.getFastGlobalBounds(true, bounds);
+          instruction.container.getFastGlobalBounds(true, bounds2);
         }
         if (instruction.container) {
           const renderGroup = instruction.container.renderGroup || instruction.container.parentRenderGroup;
           const filterFrameTransform = renderGroup.cacheToLocalTransform;
           if (filterFrameTransform) {
-            bounds.applyMatrix(filterFrameTransform);
+            bounds2.applyMatrix(filterFrameTransform);
           }
         }
       }
       _applyFiltersToTexture(filterData, clear) {
         const inputTexture = filterData.inputTexture;
-        const bounds = filterData.bounds;
+        const bounds2 = filterData.bounds;
         const filters = filterData.filters;
         const firstEnabled = filterData.firstEnabledIndex;
         const lastEnabled = filterData.lastEnabledIndex;
@@ -25766,8 +25773,8 @@ var init_FilterSystem = __esm({
         } else {
           let flip3 = filterData.inputTexture;
           const tempTexture = TexturePool.getOptimalTexture({
-            width: bounds.width,
-            height: bounds.height,
+            width: bounds2.width,
+            height: bounds2.height,
             resolution: flip3.source._resolution
           });
           let flop = tempTexture;
@@ -25785,7 +25792,7 @@ var init_FilterSystem = __esm({
       }
       _calculateFilterBounds(filterData, viewPort, rootAntialias, rootResolution, paddingMultiplier) {
         const renderer = this.renderer;
-        const bounds = filterData.bounds;
+        const bounds2 = filterData.bounds;
         const filters = filterData.filters;
         let resolution = Infinity;
         let padding = 0;
@@ -25828,10 +25835,10 @@ var init_FilterSystem = __esm({
           return;
         }
         if (clipToViewport) {
-          bounds.fitBounds(0, viewPort.width / rootResolution, 0, viewPort.height / rootResolution);
+          bounds2.fitBounds(0, viewPort.width / rootResolution, 0, viewPort.height / rootResolution);
         }
-        bounds.scale(resolution).ceil().scale(1 / resolution).pad((padding | 0) * paddingMultiplier);
-        if (!bounds.isPositive) {
+        bounds2.scale(resolution).ceil().scale(1 / resolution).pad((padding | 0) * paddingMultiplier);
+        if (!bounds2.isPositive) {
           filterData.skip = true;
           return;
         }
@@ -28574,26 +28581,26 @@ var init_RenderGroupSystem = __esm({
         renderGroup.invalidateMatrices();
         if (renderGroup.isCachedAsTexture) {
           if (renderGroup.textureNeedsUpdate) {
-            const bounds = renderGroup.root.getLocalBounds();
+            const bounds2 = renderGroup.root.getLocalBounds();
             const renderer = this._renderer;
             const resolution = renderGroup.textureOptions.resolution || renderer.view.resolution;
             const antialias = renderGroup.textureOptions.antialias ?? renderer.view.antialias;
             const scaleMode = renderGroup.textureOptions.scaleMode ?? "linear";
             const lastTexture = renderGroup.texture;
-            bounds.ceil();
+            bounds2.ceil();
             if (renderGroup.texture) {
               TexturePool.returnTexture(renderGroup.texture);
             }
             const texture = TexturePool.getOptimalTexture({
-              width: bounds.width,
-              height: bounds.height,
+              width: bounds2.width,
+              height: bounds2.height,
               resolution,
               antialias,
               scaleMode
             });
             renderGroup.texture = texture;
             renderGroup._textureBounds || (renderGroup._textureBounds = new Bounds());
-            renderGroup._textureBounds.copyFrom(bounds);
+            renderGroup._textureBounds.copyFrom(bounds2);
             if (lastTexture !== renderGroup.texture) {
               if (renderGroup.renderGroupParent) {
                 renderGroup.renderGroupParent.structureDidChange = true;
@@ -29589,11 +29596,11 @@ var init_DefaultBatcher = __esm({
         const d4 = wt.d;
         const tx = wt.tx;
         const ty = wt.ty;
-        const bounds = element2.bounds;
-        const w0 = bounds.maxX;
-        const w1 = bounds.minX;
-        const h0 = bounds.maxY;
-        const h1 = bounds.minY;
+        const bounds2 = element2.bounds;
+        const w0 = bounds2.maxX;
+        const w1 = bounds2.minX;
+        const h0 = bounds2.maxY;
+        const h1 = bounds2.minY;
         const uvs = texture.uvs;
         const argb = element2.color;
         const textureIdAndRound = textureId << 16 | element2.roundPixels & 65535;
@@ -30019,25 +30026,25 @@ var init_AlphaMaskPipe = __esm({
           filterEffect.channel = instruction.mask.channel;
           if (renderMask) {
             instruction.mask.mask.measurable = true;
-            const bounds = getGlobalBounds(instruction.mask.mask, true, tempBounds3);
+            const bounds2 = getGlobalBounds(instruction.mask.mask, true, tempBounds3);
             instruction.mask.mask.measurable = false;
-            bounds.ceil();
+            bounds2.ceil();
             const colorTextureSource = renderer.renderTarget.renderTarget.colorTexture.source;
             const filterTexture = TexturePool.getOptimalTexture({
-              width: bounds.width,
-              height: bounds.height,
+              width: bounds2.width,
+              height: bounds2.height,
               resolution: colorTextureSource._resolution,
               antialias: colorTextureSource.antialias
             });
             renderer.renderTarget.push({ target: filterTexture, clear: true });
             renderer.globalUniforms.push({
-              offset: bounds,
+              offset: bounds2,
               worldColor: 4294967295
             });
             const sprite = filterEffect.sprite;
             sprite.texture = filterTexture;
-            sprite.worldTransform.tx = bounds.minX;
-            sprite.worldTransform.ty = bounds.minY;
+            sprite.worldTransform.tx = bounds2.minX;
+            sprite.worldTransform.ty = bounds2.minY;
             this._activeMaskStage.push({
               filterEffect,
               maskedContainer: instruction.maskedContainer,
@@ -43125,13 +43132,13 @@ var init_buildTriangle = __esm({
 function generateTextureMatrix(out2, style, shape, matrix2) {
   const textureMatrix = style.matrix ? out2.copyFrom(style.matrix).invert() : out2.identity();
   if (style.textureSpace === "local") {
-    const bounds = shape.getBounds(tempRect4);
+    const bounds2 = shape.getBounds(tempRect4);
     if (style.width) {
-      bounds.pad(style.width);
+      bounds2.pad(style.width);
     }
-    const { x: tx, y: ty } = bounds;
-    const sx = 1 / bounds.width;
-    const sy = 1 / bounds.height;
+    const { x: tx, y: ty } = bounds2;
+    const sx = 1 / bounds2.width;
+    const sy = 1 / bounds2.height;
     const mTx = -tx * sx;
     const mTy = -ty * sy;
     const a1 = textureMatrix.a;
@@ -43762,12 +43769,12 @@ var init_CanvasBatchAdaptor = __esm({
           const sy = frame.y * resolution;
           const sw = frame.width * resolution;
           const sh = frame.height * resolution;
-          const bounds = quad.bounds;
+          const bounds2 = quad.bounds;
           const isRootTarget = renderer.renderTarget.renderTarget.isRoot;
-          const dx = bounds.minX;
-          const dy = bounds.minY;
-          const dw = bounds.maxX - bounds.minX;
-          const dh = bounds.maxY - bounds.minY;
+          const dx = bounds2.minX;
+          const dy = bounds2.minY;
+          const dw = bounds2.maxX - bounds2.minX;
+          const dh = bounds2.maxY - bounds2.minY;
           const rotate = texture.rotate;
           const uvs = texture.uvs;
           const uvMin = Math.min(uvs.x0, uvs.x1, uvs.x2, uvs.x3, uvs.y0, uvs.y1, uvs.y2, uvs.y3);
@@ -45518,19 +45525,19 @@ var init_ShapePath = __esm({
       }
       /** Gets the bounds of the path. */
       get bounds() {
-        const bounds = this._bounds;
-        bounds.clear();
+        const bounds2 = this._bounds;
+        bounds2.clear();
         const shapePrimitives = this.shapePrimitives;
         for (let i9 = 0; i9 < shapePrimitives.length; i9++) {
           const shapePrimitive = shapePrimitives[i9];
           const boundsRect = shapePrimitive.shape.getBounds(tempRectangle);
           if (shapePrimitive.transform) {
-            bounds.addRect(boundsRect, shapePrimitive.transform);
+            bounds2.addRect(boundsRect, shapePrimitive.transform);
           } else {
-            bounds.addRect(boundsRect);
+            bounds2.addRect(boundsRect);
           }
         }
-        return bounds;
+        return bounds2;
       }
     };
   }
@@ -47264,17 +47271,17 @@ var init_GraphicsContext = __esm({
       get bounds() {
         if (!this._boundsDirty) return this._bounds;
         this._boundsDirty = false;
-        const bounds = this._bounds;
-        bounds.clear();
+        const bounds2 = this._bounds;
+        bounds2.clear();
         for (let i9 = 0; i9 < this.instructions.length; i9++) {
           const instruction = this.instructions[i9];
           const action2 = instruction.action;
           if (action2 === "fill") {
             const data = instruction.data;
-            bounds.addBounds(data.path.bounds);
+            bounds2.addBounds(data.path.bounds);
           } else if (action2 === "texture") {
             const data = instruction.data;
-            bounds.addFrame(data.dx, data.dy, data.dx + data.dw, data.dy + data.dh, data.transform);
+            bounds2.addFrame(data.dx, data.dy, data.dx + data.dw, data.dy + data.dh, data.transform);
           }
           if (action2 === "stroke") {
             const data = instruction.data;
@@ -47284,7 +47291,7 @@ var init_GraphicsContext = __esm({
               outerPadding *= getMaxMiterRatio(data.path, data.style.miterLimit);
             }
             const _bounds3 = data.path.bounds;
-            bounds.addFrame(
+            bounds2.addFrame(
               _bounds3.minX - outerPadding,
               _bounds3.minY - outerPadding,
               _bounds3.maxX + outerPadding,
@@ -47292,10 +47299,10 @@ var init_GraphicsContext = __esm({
             );
           }
         }
-        if (!bounds.isValid) {
-          bounds.set(0, 0, 0, 0);
+        if (!bounds2.isValid) {
+          bounds2.set(0, 0, 0, 0);
         }
-        return bounds;
+        return bounds2;
       }
       /**
        * Check to see if a point is contained within this geometry.
@@ -49155,15 +49162,15 @@ var init_CanvasRenderTargetAdaptor = __esm({
       clear(renderTarget, _clear, clearColor, viewport) {
         const gpuRenderTarget = this._renderTargetSystem.getGpuRenderTarget(renderTarget);
         const context2 = gpuRenderTarget.context;
-        const bounds = viewport || { x: 0, y: 0, width: renderTarget.pixelWidth, height: renderTarget.pixelHeight };
+        const bounds2 = viewport || { x: 0, y: 0, width: renderTarget.pixelWidth, height: renderTarget.pixelHeight };
         context2.setTransform(1, 0, 0, 1, 0, 0);
-        context2.clearRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        context2.clearRect(bounds2.x, bounds2.y, bounds2.width, bounds2.height);
         if (clearColor) {
           const color = Color.shared.setValue(clearColor);
           if (color.alpha > 0) {
             context2.globalAlpha = color.alpha;
             context2.fillStyle = color.toHex();
-            context2.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            context2.fillRect(bounds2.x, bounds2.y, bounds2.width, bounds2.height);
             context2.globalAlpha = 1;
           }
         }
@@ -53033,15 +53040,15 @@ var init_warnIgnoredTextureStyle = __esm({
 
 // node_modules/pixi.js/lib/scene/text/utils/updateTextBounds.mjs
 function updateTextBounds(batchableSprite, text) {
-  const { texture, bounds } = batchableSprite;
+  const { texture, bounds: bounds2 } = batchableSprite;
   const padding = text._style._getFinalPadding();
-  updateQuadBounds(bounds, text._anchor, texture);
+  updateQuadBounds(bounds2, text._anchor, texture);
   const paddingOffset = text._anchor._x * padding * 2;
   const paddingOffsetY = text._anchor._y * padding * 2;
-  bounds.minX -= padding - paddingOffset;
-  bounds.minY -= padding - paddingOffsetY;
-  bounds.maxX -= padding - paddingOffset;
-  bounds.maxY -= padding - paddingOffsetY;
+  bounds2.minX -= padding - paddingOffset;
+  bounds2.minY -= padding - paddingOffsetY;
+  bounds2.maxX -= padding - paddingOffset;
+  bounds2.maxY -= padding - paddingOffsetY;
 }
 var init_updateTextBounds = __esm({
   "node_modules/pixi.js/lib/scene/text/utils/updateTextBounds.mjs"() {
@@ -53426,7 +53433,7 @@ var init_Text = __esm({
       }
       /** @private */
       updateBounds() {
-        const bounds = this._bounds;
+        const bounds2 = this._bounds;
         const anchor = this._anchor;
         let width = 0;
         let height = 0;
@@ -53447,10 +53454,10 @@ var init_Text = __esm({
           width = canvasMeasurement.width;
           height = canvasMeasurement.height;
         }
-        bounds.minX = -anchor._x * width;
-        bounds.maxX = bounds.minX + width;
-        bounds.minY = -anchor._y * height;
-        bounds.maxY = bounds.minY + height;
+        bounds2.minX = -anchor._x * width;
+        bounds2.maxX = bounds2.minX + width;
+        bounds2.minY = -anchor._y * height;
+        bounds2.maxY = bounds2.minY + height;
       }
     };
   }
@@ -59444,10 +59451,10 @@ var init_Container3D = __esm({
         height: 0,
         depth: 0
       }) {
-        const bounds = this.getLocalBounds(_measureBox);
-        out2.width = Math.abs(this._scale._x * bounds.width);
-        out2.height = Math.abs(this._scale._y * bounds.height);
-        out2.depth = Math.abs(this._scale._z * bounds.depth);
+        const bounds2 = this.getLocalBounds(_measureBox);
+        out2.width = Math.abs(this._scale._x * bounds2.width);
+        out2.height = Math.abs(this._scale._y * bounds2.height);
+        out2.depth = Math.abs(this._scale._z * bounds2.depth);
         return out2;
       }
       /**
@@ -59477,9 +59484,9 @@ var init_Container3D = __esm({
           height ??= width;
           depth ??= width;
         }
-        const bounds = this.getLocalBounds(_measureBox);
+        const bounds2 = this.getLocalBounds(_measureBox);
         const scale2 = this._scale;
-        scale2.set(scaleForSize(width, bounds.width, scale2._x), scaleForSize(height, bounds.height, scale2._y), scaleForSize(depth, bounds.depth, scale2._z));
+        scale2.set(scaleForSize(width, bounds2.width, scale2._x), scaleForSize(height, bounds2.height, scale2._y), scaleForSize(depth, bounds2.depth, scale2._z));
       }
       /**
       * Turns this node so its forward axis, local +Z, points at a world-space `target`
@@ -73918,7 +73925,7 @@ var init_LightDataList = __esm({
 function roundLikePixi(value) {
   return value + 0.5 | 0;
 }
-function placeViewport(frame, scale2, originX, originY, bounds, flipY, out2) {
+function placeViewport(frame, scale2, originX, originY, bounds2, flipY, out2) {
   let x4 = roundLikePixi((frame.x - originX) * scale2);
   let y5 = roundLikePixi((frame.y - originY) * scale2);
   let w4 = roundLikePixi(frame.width * scale2);
@@ -73931,15 +73938,15 @@ function placeViewport(frame, scale2, originX, originY, bounds, flipY, out2) {
     h6 += y5;
     y5 = 0;
   }
-  if (x4 > bounds.width - 1) x4 = bounds.width - 1;
-  if (y5 > bounds.height - 1) y5 = bounds.height - 1;
-  if (w4 > bounds.width - x4) w4 = bounds.width - x4;
-  if (h6 > bounds.height - y5) h6 = bounds.height - y5;
+  if (x4 > bounds2.width - 1) x4 = bounds2.width - 1;
+  if (y5 > bounds2.height - 1) y5 = bounds2.height - 1;
+  if (w4 > bounds2.width - x4) w4 = bounds2.width - x4;
+  if (h6 > bounds2.height - y5) h6 = bounds2.height - y5;
   if (w4 < 1) w4 = 1;
   if (h6 < 1) h6 = 1;
-  if (flipY) y5 = bounds.height - h6 - y5;
-  out2.x = bounds.x + x4;
-  out2.y = bounds.y + y5;
+  if (flipY) y5 = bounds2.height - h6 - y5;
+  out2.x = bounds2.x + x4;
+  out2.y = bounds2.y + y5;
   out2.width = w4;
   out2.height = h6;
   return out2;
@@ -73951,13 +73958,13 @@ function frameToPhysicalViewport(frame, target, renderer, out2) {
   const flipY = renderer.type === RendererType.WEBGL && target.isRoot;
   return placeViewport(frame, source3.resolution, 0, 0, _sourceBounds, flipY, out2);
 }
-function cameraFrameToPhysicalViewport(camera, session, bounds, sceneResolution) {
+function cameraFrameToPhysicalViewport(camera, session, bounds2, sceneResolution) {
   const frame = getCameraData(camera).frame;
   if (frame.width <= 0 || frame.height <= 0) return null;
   const inTexture = camera.renderTexture !== null;
   const scale2 = inTexture ? 1 : sceneResolution;
   const viewFrame = getCameraData(session.view3d.camera).frame;
-  return placeViewport(frame, scale2, inTexture ? 0 : viewFrame.x, inTexture ? 0 : viewFrame.y, bounds, !inTexture && session.renderer.type === RendererType.WEBGL && session.defaultTarget.isRoot, _tempRect);
+  return placeViewport(frame, scale2, inTexture ? 0 : viewFrame.x, inTexture ? 0 : viewFrame.y, bounds2, !inTexture && session.renderer.type === RendererType.WEBGL && session.defaultTarget.isRoot, _tempRect);
 }
 var _tempRect, _sourceBounds;
 var init_frameToPhysicalViewport = __esm({
@@ -73984,14 +73991,14 @@ function placeCameraInView(view3d, camera, rendererOffset) {
   _placement.tx -= rendererOffset.x;
   _placement.ty -= rendererOffset.y;
 }
-function fitFrame(local, placement, bounds, out2) {
+function fitFrame(local, placement, bounds2, out2) {
   _bounds.clear();
   _bounds.addFrame(local.x, local.y, local.x + local.width, local.y + local.height, placement);
   out2.x = _bounds.minX;
   out2.y = _bounds.minY;
   out2.width = _bounds.maxX - _bounds.minX;
   out2.height = _bounds.maxY - _bounds.minY;
-  return out2.fit(bounds);
+  return out2.fit(bounds2);
 }
 function applyClippingPlane(camera) {
   const plane = camera.clippingPlane;
@@ -76994,10 +77001,10 @@ var init_ShadowRenderPassBase = __esm({
               this._commitCascadeCamera(slot, inverseLightMatrix, lightProjectionMatrix);
               slot.normalBias = light.shadow.normalBias ?? SPOT_SHADOW_NORMAL_BIAS;
             } else {
-              const bounds = light.shadow.bounds ?? this._resolveAutoShadowBounds(light, view3d, mapSize);
-              if (bounds !== void 0 && !bounds.isEmpty()) {
+              const bounds2 = light.shadow.bounds ?? this._resolveAutoShadowBounds(light, view3d, mapSize);
+              if (bounds2 !== void 0 && !bounds2.isEmpty()) {
                 inverseLightMatrix.getInverse(light.worldTransform);
-                computeFixedBoxMatrix(bounds, inverseLightMatrix, lightProjectionMatrix, mapSize, this._applyZRangeFix);
+                computeFixedBoxMatrix(bounds2, inverseLightMatrix, lightProjectionMatrix, mapSize, this._applyZRangeFix);
                 this._commitCascadeCamera(slot, inverseLightMatrix, lightProjectionMatrix);
                 slot.normalBias = this._resolveNormalBias(light, lightProjectionMatrix, mapSize);
               }
@@ -77099,9 +77106,9 @@ var init_ShadowRenderPassBase = __esm({
         }
         return box;
       }
-      _warnIfShadowBoxLarge(bounds, mapSize) {
-        if (bounds.isEmpty()) return;
-        const size3 = bounds.getSize(_scratchVec);
+      _warnIfShadowBoxLarge(bounds2, mapSize) {
+        if (bounds2.isEmpty()) return;
+        const size3 = bounds2.getSize(_scratchVec);
         if (Math.max(size3.x, size3.y, size3.z) / mapSize > SHADOW_SOFT_TEXEL_THRESHOLD) warnOnce("pixijs-3d-shadow-autofit-large", WARN_SHADOW_BOX_LARGE);
       }
       /** The light's `shadow.normalBias`, else {@link SHADOW_NORMAL_BIAS_TEXELS} at the projection's texel size */
@@ -79491,10 +79498,10 @@ var init_HitResult3D = __esm({
 // node_modules/@pixi/3d/dist/events/intersectRayGeometry.mjs
 function intersectRayGeometry(localRay, geom, out2, maxT = Infinity) {
   if (geom.topology !== "triangle-list") return -1;
-  const bounds = geom.bounds3D;
-  const boundsT = localRay.intersectBoxT(bounds);
+  const bounds2 = geom.bounds3D;
+  const boundsT = localRay.intersectBoxT(bounds2);
   if (boundsT === -1) return -1;
-  if (boundsT >= maxT && !bounds.containsPoint(localRay.origin)) return -1;
+  if (boundsT >= maxT && !bounds2.containsPoint(localRay.origin)) return -1;
   const positionAttr = geom.attributes.aPosition;
   if (!positionAttr) return -1;
   const positions = positionAttr.buffer.data;
@@ -85372,14 +85379,14 @@ var init_View3D = __esm({
       }
       /** @internal */
       updateBounds() {
-        const bounds = this._bounds;
+        const bounds2 = this._bounds;
         const width = this._width;
         const height = this._height;
         const { x: x4, y: y5 } = this._anchor;
-        bounds.minX = -x4 * width;
-        bounds.maxX = bounds.minX + width;
-        bounds.minY = -y5 * height;
-        bounds.maxY = bounds.minY + height;
+        bounds2.minX = -x4 * width;
+        bounds2.maxX = bounds2.minX + width;
+        bounds2.minY = -y5 * height;
+        bounds2.maxY = bounds2.minY + height;
       }
       /**
       * Registers `child` and its subtree; pick state follows the rule of `getAncestorPickState` in
@@ -88270,7 +88277,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       * @param commandCount - Commands in `drawCalls`
       * @param instanceCount - Records in `src`
       */
-      dispatch(drawCalls, src, dst, store, bounds, planes, commandCount, instanceCount) {
+      dispatch(drawCalls, src, dst, store, bounds2, planes, commandCount, instanceCount) {
         if (commandCount === 0 || instanceCount === 0) return;
         let job = this._jobs[this._jobCount];
         if (!job) {
@@ -88296,7 +88303,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         job.src = src;
         job.dst = dst;
         job.store = store;
-        job.bounds = bounds;
+        job.bounds = bounds2;
         job.paramsF32.set(planes);
         job.params.update();
         job.commandCount = commandCount;
@@ -88370,10 +88377,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         const dst = bufferSys.getGPUBuffer(job.dst);
         const drawCalls = bufferSys.getGPUBuffer(job.drawCalls);
         const store = bufferSys.getGPUBuffer(job.store);
-        const bounds = bufferSys.getGPUBuffer(job.bounds);
+        const bounds2 = bufferSys.getGPUBuffer(job.bounds);
         const params = bufferSys.getGPUBuffer(job.params);
         const cached = this._compactBinds.get(drawCalls);
-        if (cached && cached.src === src && cached.dst === dst && cached.drawCalls === drawCalls && cached.store === store && cached.bounds === bounds && cached.params === params && cached.commandCount === job.commandCount && cached.instanceCount === job.instanceCount) return cached.bindGroup;
+        if (cached && cached.src === src && cached.dst === dst && cached.drawCalls === drawCalls && cached.store === store && cached.bounds === bounds2 && cached.params === params && cached.commandCount === job.commandCount && cached.instanceCount === job.instanceCount) return cached.bindGroup;
         const bindGroup = device.createBindGroup({
           layout: pipeline.getBindGroupLayout(0),
           entries: [
@@ -88407,7 +88414,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             },
             {
               binding: 4,
-              resource: { buffer: bounds }
+              resource: { buffer: bounds2 }
             },
             {
               binding: 5,
@@ -88421,7 +88428,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
           dst,
           drawCalls,
           store,
-          bounds,
+          bounds: bounds2,
           params,
           commandCount: job.commandCount,
           instanceCount: job.instanceCount
@@ -105170,7 +105177,7 @@ var catalog_generated_default = {
   "@calcium": { version: 1, kind: "molecule", name: "Ca\xB2\u207A", source: "https://pubchem.ncbi.nlm.nih.gov/compound/271", representation: "constituent", geometry: null, atoms: [{ id: 1, atomicNumber: 20, charge: 2, diagram: [0, 0], position: [0, 0, 0] }], bonds: [] },
   "@carbonate": { version: 1, kind: "molecule", name: "CO\u2083\xB2\u207B", source: "https://pubchem.ncbi.nlm.nih.gov/compound/18519", representation: "constituent", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [1.29904, 0.75], position: [-0.49289, 1.16799, 0.2412] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [0, 0], position: [-0.01242, 0.02944, 608e-5] }, { id: 3, atomicNumber: 8, charge: -1, diagram: [-1.29904, 0.75], position: [-0.84871, -1.07633, -0.06145] }, { id: 4, atomicNumber: 8, charge: -1, diagram: [0, -1.5], position: [1.35402, -0.1211, -0.18583] }], bonds: [{ from: 1, to: 2, order: 2 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }] },
   "@citrate": { version: 1, kind: "molecule", name: "C\u2086H\u2085O\u2087\xB3\u207B", source: "https://pubchem.ncbi.nlm.nih.gov/compound/311", representation: "constituent", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [-3.80895, 0.618], position: [2.43877, 0.69862, -1.40806] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-2.65513, -0.34049], position: [2.44638, -13e-5, -0.34809] }, { id: 3, atomicNumber: 8, charge: -1, diagram: [-2.90831, -1.81897], position: [3.46855, -0.41509, 0.28782] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-1.24815, 0.17949], position: [1.08968, -0.50581, 0.16761] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [0.15884, 0.69948], position: [-0.14589, 0.33044, -0.19319] }, { id: 6, atomicNumber: 8, charge: 0, diagram: [-0.36115, 2.10647], position: [-0.2698, 0.37576, -1.64206] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [1.56583, 1.21947], position: [-0.01454, 1.81373, 0.39944] }, { id: 8, atomicNumber: 8, charge: 0, diagram: [2.82787, 0.40877], position: [0.30514, 1.91458, 1.62832] }, { id: 9, atomicNumber: 8, charge: -1, diagram: [1.819, 2.69795], position: [-0.30526, 2.77422, -0.38713] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [0.67883, -0.7075], position: [-1.47552, -0.199, 0.39189] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [1.19882, -2.11449], position: [-2.01349, -1.61909, 0.17113] }, { id: 12, atomicNumber: 8, charge: 0, diagram: [0.24032, -3.26831], position: [-1.29776, -2.58875, 0.56242] }, { id: 13, atomicNumber: 8, charge: -1, diagram: [2.6773, -2.36766], position: [-3.20601, -1.69521, -0.27488] }, { id: 14, atomicNumber: 1, charge: 0, diagram: [-1.04466, -0.68255], position: [0.98466, -1.5092, -0.26382] }, { id: 15, atomicNumber: 1, charge: 0, diagram: [-1.76814, 1.58648], position: [1.15819, -0.62334, 1.25616] }, { id: 16, atomicNumber: 1, charge: 0, diagram: [0.59734, 3.26029], position: [0.55649, 0.8571, -1.88758] }, { id: 17, atomicNumber: 1, charge: 0, diagram: [-0.10836, -1.11353], position: [-1.44684, -0.08933, 1.48579] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [2.13871, -0.3629], position: [-2.27275, 0.48049, 0.05423] }], bonds: [{ from: 1, to: 2, order: 2 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 5, to: 7, order: 1 }, { from: 7, to: 8, order: 2 }, { from: 7, to: 9, order: 1 }, { from: 5, to: 10, order: 1 }, { from: 10, to: 11, order: 1 }, { from: 11, to: 12, order: 2 }, { from: 11, to: 13, order: 1 }, { from: 4, to: 14, order: 1 }, { from: 4, to: 15, order: 1 }, { from: 6, to: 16, order: 1 }, { from: 10, to: 17, order: 1 }, { from: 10, to: 18, order: 1 }] },
-  "@diamminesilver": { version: 1, kind: "molecule", name: "[Ag(NH\u2083)\u2082]\u207A", source: "https://goldbook.iupac.org/terms/view/C01250", representation: "constituent", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 7, charge: 0, diagram: [-1.5, 0], position: [-1.64083, -0.10189, -0.39155] }, { id: 2, atomicNumber: 47, charge: 1, diagram: [0, 0], position: [-0.22146, 0.07513, 0.87343] }, { id: 3, atomicNumber: 7, charge: 0, diagram: [1.5, 0], position: [1.66868, 0.09718, 0.51949] }, { id: 4, atomicNumber: 1, charge: 0, diagram: [-3, 0], position: [-1.80452, 0.87308, -0.72524] }, { id: 5, atomicNumber: 1, charge: 0, diagram: [-1.5, 1.5], position: [-1.31434, -0.72652, -1.16486] }, { id: 6, atomicNumber: 1, charge: 0, diagram: [-1.5, -1.5], position: [-2.42228, -0.49136, 0.16432] }, { id: 7, atomicNumber: 1, charge: 0, diagram: [3, 0], position: [2.07681, -0.03881, 1.4578] }, { id: 8, atomicNumber: 1, charge: 0, diagram: [1.5, 1.5], position: [1.82041, -0.71051, -0.09991] }, { id: 9, atomicNumber: 1, charge: 0, diagram: [1.5, -1.5], position: [1.83754, 1.02371, 0.09799] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 3, to: 2, order: 1 }, { from: 1, to: 4, order: 1 }, { from: 1, to: 5, order: 1 }, { from: 1, to: 6, order: 1 }, { from: 3, to: 7, order: 1 }, { from: 3, to: 8, order: 1 }, { from: 3, to: 9, order: 1 }] },
+  "@diamminesilver": { version: 1, kind: "molecule", name: "[Ag(NH\u2083)\u2082]\u207A", source: "https://goldbook.iupac.org/terms/view/C01250", representation: "constituent", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 7, charge: 0, diagram: [-1.5, 0], position: [-1.64083, -0.10189, -0.39155] }, { id: 2, atomicNumber: 47, charge: 1, diagram: [0, 0], position: [-0.22146, 0.07513, 0.87343] }, { id: 3, atomicNumber: 7, charge: 0, diagram: [1.5, 0], position: [1.66868, 0.09718, 0.51949] }, { id: 4, atomicNumber: 1, charge: 0, diagram: [-3, 0], position: [-1.80452, 0.87308, -0.72524] }, { id: 5, atomicNumber: 1, charge: 0, diagram: [-1.5, 1.5], position: [-1.31434, -0.72652, -1.16486] }, { id: 6, atomicNumber: 1, charge: 0, diagram: [-1.5, -1.5], position: [-2.42228, -0.49136, 0.16432] }, { id: 7, atomicNumber: 1, charge: 0, diagram: [3, 0], position: [2.07681, -0.03881, 1.4578] }, { id: 8, atomicNumber: 1, charge: 0, diagram: [1.5, 1.5], position: [1.82041, -0.71051, -0.09991] }, { id: 9, atomicNumber: 1, charge: 0, diagram: [1.5, -1.5], position: [1.83754, 1.02371, 0.09799] }], bonds: [{ from: 1, to: 2, order: 1, dative: true }, { from: 3, to: 2, order: 1, dative: true }, { from: 1, to: 4, order: 1 }, { from: 1, to: 5, order: 1 }, { from: 1, to: 6, order: 1 }, { from: 3, to: 7, order: 1 }, { from: 3, to: 8, order: 1 }, { from: 3, to: 9, order: 1 }] },
   "@hydroxide": { version: 1, kind: "molecule", name: "OH\u207B", source: "https://pubchem.ncbi.nlm.nih.gov/compound/961", representation: "constituent", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 8, charge: -1, diagram: [-0.75, 0], position: [0.4889, 0, 0] }, { id: 2, atomicNumber: 1, charge: 0, diagram: [0.75, 0], position: [-0.4889, 0, 0] }], bonds: [{ from: 1, to: 2, order: 1 }] },
   "@iodide": { version: 1, kind: "molecule", name: "I\u207B", source: "https://pubchem.ncbi.nlm.nih.gov/compound/30165", representation: "constituent", geometry: null, atoms: [{ id: 1, atomicNumber: 53, charge: -1, diagram: [0, 0], position: [0, 0, 0] }], bonds: [] },
   "@tartrate": { version: 1, kind: "molecule", name: "C\u2084H\u2084O\u2086\xB2\u207B", source: "https://pubchem.ncbi.nlm.nih.gov/compound/9357", representation: "constituent", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [-0.75, -1.17857], position: [-1.10684, 1.82451, -0.13184] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-0.75, 0.32143], position: [-0.80124, 0.38968, 163e-5] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-2.25, 0.32143], position: [-1.02774, -0.28052, -1.39107] }, { id: 4, atomicNumber: 8, charge: 0, diagram: [-3, 1.62047], position: [-0.89915, -1.52902, -1.4908] }, { id: 5, atomicNumber: 8, charge: -1, diagram: [-3, -0.97761], position: [-1.41194, 0.55253, -2.28637] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [0.75, 0.32143], position: [0.5806, 0.23456, 0.61744] }, { id: 7, atomicNumber: 8, charge: 0, diagram: [0.75, -1.17857], position: [1.65022, 0.59061, -0.30894] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [2.25, 0.32143], position: [0.88351, -1.15598, 1.25569] }, { id: 9, atomicNumber: 8, charge: 0, diagram: [3, -0.97761], position: [0.08387, -1.56917, 2.14523] }, { id: 10, atomicNumber: 8, charge: -1, diagram: [3, 1.62047], position: [2.00641, -1.64728, 0.89645] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [-2.04904, -1.92857], position: [-1.24587, 1.88247, -1.10978] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [-0.75, 1.82143], position: [-1.567, -699e-5, 0.67762] }, { id: 13, atomicNumber: 1, charge: 0, diagram: [0.75, 1.82143], position: [0.67795, 0.96017, 1.43512] }, { id: 14, atomicNumber: 1, charge: 0, diagram: [2.04904, -1.92857], position: [2.17721, -0.24558, -0.31038] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 2 }, { from: 3, to: 5, order: 1 }, { from: 2, to: 6, order: 1 }, { from: 6, to: 7, order: 1 }, { from: 6, to: 8, order: 1 }, { from: 8, to: 9, order: 2 }, { from: 8, to: 10, order: 1 }, { from: 1, to: 11, order: 1 }, { from: 2, to: 12, order: 1 }, { from: 6, to: 13, order: 1 }, { from: 7, to: 14, order: 1 }] },
@@ -105195,7 +105202,7 @@ var catalog_generated_default = {
   Calciumhydroxid: { version: 1, kind: "crystal", name: "", cell: { lengths: [3.5862, 3.5862, 4.8801], angles: [90, 90, 120] }, sites: [{ id: 1, atomicNumber: 20, charge: 0, fractional: [0, 0, 0], ion: "Ca\xB2\u207A" }, { id: 2, atomicNumber: 8, charge: 0, fractional: [0.3333, 0.6667, 0.2346], ion: "OH\u207B" }, { id: 3, atomicNumber: 8, charge: 0, fractional: [0.6667, 0.3333, 0.7654], ion: "OH\u207B" }, { id: 4, atomicNumber: 1, charge: 0, fractional: [0.3333, 0.6667, 0.428], ion: "OH\u207B" }, { id: 5, atomicNumber: 1, charge: 0, fractional: [0.6667, 0.3333, 0.572], ion: "OH\u207B" }], bravais: "hP", spaceGroup: "P-3m1", source: "https://www.crystallography.net/cod/1000045.html", temperatureK: null, conditions: null },
   Calciumoxid: { version: 1, kind: "crystal", name: "", cell: { lengths: [4.813, 4.813, 4.813], angles: [90, 90, 90] }, sites: [{ id: 1, atomicNumber: 20, charge: 0, fractional: [0, 0, 0], ion: "Ca\xB2\u207A" }, { id: 2, atomicNumber: 20, charge: 0, fractional: [0, 0.5, 0.5], ion: "Ca\xB2\u207A" }, { id: 3, atomicNumber: 20, charge: 0, fractional: [0.5, 0, 0.5], ion: "Ca\xB2\u207A" }, { id: 4, atomicNumber: 20, charge: 0, fractional: [0.5, 0.5, 0], ion: "Ca\xB2\u207A" }, { id: 5, atomicNumber: 8, charge: 0, fractional: [0.5, 0.5, 0.5], ion: "O\xB2\u207B" }, { id: 6, atomicNumber: 8, charge: 0, fractional: [0.5, 0, 0], ion: "O\xB2\u207B" }, { id: 7, atomicNumber: 8, charge: 0, fractional: [0, 0.5, 0], ion: "O\xB2\u207B" }, { id: 8, atomicNumber: 8, charge: 0, fractional: [0, 0, 0.5], ion: "O\xB2\u207B" }], bravais: "cF", spaceGroup: "Fm-3m", source: "https://www.crystallography.net/cod/9006731.html", temperatureK: 298, conditions: null },
   "Calciumsulfat-Dihydrat": { version: 1, kind: "crystal", name: "", cell: { lengths: [5.679, 15.202, 6.522], angles: [90, 118.43, 90] }, sites: [{ id: 1, atomicNumber: 20, charge: 0, fractional: [0.5, 0.07967, 0.25], ion: "Ca\xB2\u207A" }, { id: 2, atomicNumber: 20, charge: 0, fractional: [0.5, 0.92033, 0.75], ion: "Ca\xB2\u207A" }, { id: 3, atomicNumber: 20, charge: 0, fractional: [0, 0.57967, 0.75], ion: "Ca\xB2\u207A" }, { id: 4, atomicNumber: 20, charge: 0, fractional: [0, 0.42033, 0.25], ion: "Ca\xB2\u207A" }, { id: 5, atomicNumber: 16, charge: 0, fractional: [0, 0.07705, 0.75], ion: "SO\u2084\xB2\u207B" }, { id: 6, atomicNumber: 16, charge: 0, fractional: [0, 0.92295, 0.25], ion: "SO\u2084\xB2\u207B" }, { id: 7, atomicNumber: 16, charge: 0, fractional: [0.5, 0.57705, 0.25], ion: "SO\u2084\xB2\u207B" }, { id: 8, atomicNumber: 16, charge: 0, fractional: [0.5, 0.42295, 0.75], ion: "SO\u2084\xB2\u207B" }, { id: 9, atomicNumber: 8, charge: 0, fractional: [0.9632, 0.1319, 0.55047], ion: "SO\u2084\xB2\u207B" }, { id: 10, atomicNumber: 8, charge: 0, fractional: [0.0368, 0.1319, 0.94953], ion: "SO\u2084\xB2\u207B" }, { id: 11, atomicNumber: 8, charge: 0, fractional: [0.0368, 0.8681, 0.44953], ion: "SO\u2084\xB2\u207B" }, { id: 12, atomicNumber: 8, charge: 0, fractional: [0.9632, 0.8681, 0.05047], ion: "SO\u2084\xB2\u207B" }, { id: 13, atomicNumber: 8, charge: 0, fractional: [0.4632, 0.6319, 0.05047], ion: "SO\u2084\xB2\u207B" }, { id: 14, atomicNumber: 8, charge: 0, fractional: [0.5368, 0.6319, 0.44953], ion: "SO\u2084\xB2\u207B" }, { id: 15, atomicNumber: 8, charge: 0, fractional: [0.5368, 0.3681, 0.94953], ion: "SO\u2084\xB2\u207B" }, { id: 16, atomicNumber: 8, charge: 0, fractional: [0.4632, 0.3681, 0.55047], ion: "SO\u2084\xB2\u207B" }, { id: 17, atomicNumber: 8, charge: 0, fractional: [0.75822, 0.02226, 0.66709], ion: "SO\u2084\xB2\u207B" }, { id: 18, atomicNumber: 8, charge: 0, fractional: [0.24178, 0.02226, 0.83291], ion: "SO\u2084\xB2\u207B" }, { id: 19, atomicNumber: 8, charge: 0, fractional: [0.24178, 0.97774, 0.33291], ion: "SO\u2084\xB2\u207B" }, { id: 20, atomicNumber: 8, charge: 0, fractional: [0.75822, 0.97774, 0.16709], ion: "SO\u2084\xB2\u207B" }, { id: 21, atomicNumber: 8, charge: 0, fractional: [0.25822, 0.52226, 0.16709], ion: "SO\u2084\xB2\u207B" }, { id: 22, atomicNumber: 8, charge: 0, fractional: [0.74178, 0.52226, 0.33291], ion: "SO\u2084\xB2\u207B" }, { id: 23, atomicNumber: 8, charge: 0, fractional: [0.74178, 0.47774, 0.83291], ion: "SO\u2084\xB2\u207B" }, { id: 24, atomicNumber: 8, charge: 0, fractional: [0.25822, 0.47774, 0.66709], ion: "SO\u2084\xB2\u207B" }, { id: 25, atomicNumber: 8, charge: 0, fractional: [0.3796, 0.18212, 0.45881] }, { id: 26, atomicNumber: 8, charge: 0, fractional: [0.6204, 0.18212, 0.04119] }, { id: 27, atomicNumber: 8, charge: 0, fractional: [0.6204, 0.81788, 0.54119] }, { id: 28, atomicNumber: 8, charge: 0, fractional: [0.3796, 0.81788, 0.95881] }, { id: 29, atomicNumber: 8, charge: 0, fractional: [0.8796, 0.68212, 0.95881] }, { id: 30, atomicNumber: 8, charge: 0, fractional: [0.1204, 0.68212, 0.54119] }, { id: 31, atomicNumber: 8, charge: 0, fractional: [0.1204, 0.31788, 0.04119] }, { id: 32, atomicNumber: 8, charge: 0, fractional: [0.8796, 0.31788, 0.45881] }, { id: 33, atomicNumber: 1, charge: 0, fractional: [0.25112, 0.16158, 0.50372] }, { id: 34, atomicNumber: 1, charge: 0, fractional: [0.74888, 0.16158, 0.99628] }, { id: 35, atomicNumber: 1, charge: 0, fractional: [0.74888, 0.83842, 0.49628] }, { id: 36, atomicNumber: 1, charge: 0, fractional: [0.25112, 0.83842, 372e-5] }, { id: 37, atomicNumber: 1, charge: 0, fractional: [0.75112, 0.66158, 372e-5] }, { id: 38, atomicNumber: 1, charge: 0, fractional: [0.24888, 0.66158, 0.49628] }, { id: 39, atomicNumber: 1, charge: 0, fractional: [0.24888, 0.33842, 0.99628] }, { id: 40, atomicNumber: 1, charge: 0, fractional: [0.75112, 0.33842, 0.50372] }, { id: 41, atomicNumber: 1, charge: 0, fractional: [0.40458, 0.24275, 0.49217] }, { id: 42, atomicNumber: 1, charge: 0, fractional: [0.59542, 0.24275, 783e-5] }, { id: 43, atomicNumber: 1, charge: 0, fractional: [0.59542, 0.75725, 0.50783] }, { id: 44, atomicNumber: 1, charge: 0, fractional: [0.40458, 0.75725, 0.99217] }, { id: 45, atomicNumber: 1, charge: 0, fractional: [0.90458, 0.74275, 0.99217] }, { id: 46, atomicNumber: 1, charge: 0, fractional: [0.09542, 0.74275, 0.50783] }, { id: 47, atomicNumber: 1, charge: 0, fractional: [0.09542, 0.25725, 783e-5] }, { id: 48, atomicNumber: 1, charge: 0, fractional: [0.90458, 0.25725, 0.49217] }], bravais: "mC", spaceGroup: "I2/c", source: "https://www.crystallography.net/cod/9017313.html", temperatureK: null, conditions: null },
-  Cellulose: { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [5.49108, -2.69196], position: [-3.54412, 1.49805, 1.41365] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [4.1492, -2.02162], position: [-2.33852, 1.07382, 0.77819] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [2.80732, -1.35127], position: [-2.55702, 0.85648, -0.72712] }, { id: 4, atomicNumber: 8, charge: 0, diagram: [1.3171, -1.18029], position: [-1.32611, 0.83867, -1.46509] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [0.72005, 0.19577], position: [-0.55577, -0.35877, -1.36849] }, { id: 6, atomicNumber: 8, charge: 0, diagram: [-0.53142, -0.63116], position: [222e-5, -0.50886, -0.06551] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [-1.8733, 0.03919], position: [1.37542, -0.10605, 0.05512] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [-2.30045, -1.3987], position: [1.58196, 1.40444, -0.21575] }, { id: 9, atomicNumber: 8, charge: 0, diagram: [-2.21005, -2.89598], position: [1.97646, 1.58083, -1.5891] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [-3.75928, -1.74773], position: [2.64407, 2.04191, 0.69809] }, { id: 11, atomicNumber: 8, charge: 0, diagram: [-5.01076, -2.57465], position: [2.04904, 2.54267, 1.89984] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [-4.79096, -0.65886], position: [3.73518, 1.00662, 1.02718] }, { id: 13, atomicNumber: 8, charge: 0, diagram: [-6.13283, 0.01149], position: [4.3713, 0.60826, -0.1837] }, { id: 14, atomicNumber: 8, charge: 0, diagram: [-4.36381, 0.77904], position: [3.26209, -0.17401, 1.66291] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [-2.90498, 1.12806], position: [1.8641, -0.45889, 1.46964] }, { id: 16, atomicNumber: 6, charge: 0, diagram: [-1.6535, 1.95499], position: [1.67746, -1.95271, 1.77474] }, { id: 17, atomicNumber: 8, charge: 0, diagram: [-0.40202, 2.78191], position: [2.16188, -2.24862, 3.08679] }, { id: 18, atomicNumber: 6, charge: 0, diagram: [1.61323, 1.40085], position: [-1.38359, -1.60765, -1.74644] }, { id: 19, atomicNumber: 8, charge: 0, diagram: [0.27136, 2.0712], position: [-1.65917, -1.60637, -3.15773] }, { id: 20, atomicNumber: 6, charge: 0, diagram: [3.10346, 1.22988], position: [-2.71051, -1.68506, -0.97428] }, { id: 21, atomicNumber: 8, charge: 0, diagram: [3.01306, 2.72715], position: [-2.52975, -2.07522, 0.38356] }, { id: 22, atomicNumber: 6, charge: 0, diagram: [3.7005, -0.14618], position: [-3.46164, -0.34779, -1.05531] }, { id: 23, atomicNumber: 8, charge: 0, diagram: [4.95198, 0.68074], position: [-3.94303, -0.18299, -2.40652] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [5.58147, -4.18924], position: [-3.73397, 2.3999, 1.10235] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [3.47885, -3.36349], position: [-1.99632, 0.17154, 1.2881] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [4.97812, -0.77146], position: [-1.57573, 1.84079, 0.94996] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [2.38017, -2.78916], position: [-3.07991, 1.74852, -1.09684] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [0.04317, 0.91017], position: [0.24233, -0.27035, -2.11458] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [-1.34589, 0.75078], position: [1.95866, -0.69312, -0.66775] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [-0.81023, -1.56968], position: [0.63646, 1.94269, -0.09767] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [-2.95889, -3.53456], position: [2.88497, 1.22368, -1.67317] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [-3.48053, -2.69158], position: [3.10884, 2.89205, 0.18384] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [-5.93821, -2.24543], position: [1.44667, 3.2649, 1.64554] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [-5.46898, -1.37218], position: [4.48687, 1.45605, 1.68526] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [-6.22323, 1.50877], position: [5.19347, 0.17222, 0.10492] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [-3.50202, 2.50412], position: [1.30042, 0.10048, 2.22685] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [-2.48042, 3.20646], position: [2.25218, -2.56714, 1.07375] }, { id: 38, atomicNumber: 1, charge: 0, diagram: [-1.16521, 1.216], position: [0.6268, -2.25284, 1.72778] }, { id: 39, atomicNumber: 1, charge: 0, diagram: [-0.49242, 4.27918], position: [2.99203, -1.74161, 3.17772] }, { id: 40, atomicNumber: 1, charge: 0, diagram: [2.04039, 2.83875], position: [-0.78824, -2.50303, -1.53319] }, { id: 41, atomicNumber: 1, charge: 0, diagram: [0.18096, 3.56847], position: [-2.20812, -0.80889, -3.32694] }, { id: 42, atomicNumber: 1, charge: 0, diagram: [4.56229, 1.5789], position: [-3.33655, -2.45537, -1.44277] }, { id: 43, atomicNumber: 1, charge: 0, diagram: [4.26454, 3.55408], position: [-2.06181, -2.92859, 0.39509] }, { id: 44, atomicNumber: 1, charge: 0, diagram: [4.85722, -1.10117], position: [-4.33578, -0.34821, -0.39422] }, { id: 45, atomicNumber: 1, charge: 0, diagram: [6.29386, 0.01039], position: [-4.70523, -0.78244, -2.50869] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 6, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 8, to: 9, order: 1 }, { from: 8, to: 10, order: 1 }, { from: 10, to: 11, order: 1 }, { from: 10, to: 12, order: 1 }, { from: 12, to: 13, order: 1 }, { from: 12, to: 14, order: 1 }, { from: 14, to: 15, order: 1 }, { from: 15, to: 16, order: 1 }, { from: 16, to: 17, order: 1 }, { from: 5, to: 18, order: 1 }, { from: 18, to: 19, order: 1 }, { from: 18, to: 20, order: 1 }, { from: 20, to: 21, order: 1 }, { from: 20, to: 22, order: 1 }, { from: 22, to: 23, order: 1 }, { from: 22, to: 3, order: 1 }, { from: 15, to: 7, order: 1 }, { from: 1, to: 24, order: 1 }, { from: 2, to: 25, order: 1 }, { from: 2, to: 26, order: 1 }, { from: 3, to: 27, order: 1 }, { from: 5, to: 28, order: 1 }, { from: 7, to: 29, order: 1 }, { from: 8, to: 30, order: 1 }, { from: 9, to: 31, order: 1 }, { from: 10, to: 32, order: 1 }, { from: 11, to: 33, order: 1 }, { from: 12, to: 34, order: 1 }, { from: 13, to: 35, order: 1 }, { from: 15, to: 36, order: 1 }, { from: 16, to: 37, order: 1 }, { from: 16, to: 38, order: 1 }, { from: 17, to: 39, order: 1 }, { from: 18, to: 40, order: 1 }, { from: 19, to: 41, order: 1 }, { from: 20, to: 42, order: 1 }, { from: 21, to: 43, order: 1 }, { from: 22, to: 44, order: 1 }, { from: 23, to: 45, order: 1 }] },
+  Cellulose: { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [-5.14889, 3.29963], position: [-3.54412, 1.49805, 1.41365] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-3.89205, 2.48087], position: [-2.33852, 1.07382, 0.77819] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-2.63522, 1.6621], position: [-2.55702, 0.85648, -0.72712] }, { id: 4, atomicNumber: 8, charge: 0, diagram: [-1.17416, 1.32257], position: [-1.32611, 0.83867, -1.46509] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [-0.73766, -0.11252], position: [-0.55577, -0.35877, -1.36849] }, { id: 6, atomicNumber: 8, charge: 0, diagram: [0.59982, 0.56655], position: [222e-5, -0.50886, -0.06551] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [1.85666, -0.25222], position: [1.37542, -0.10605, 0.05512] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [2.44474, 1.12769], position: [1.58196, 1.40444, -0.21575] }, { id: 9, atomicNumber: 8, charge: 0, diagram: [2.52539, 2.62553], position: [1.97646, 1.58083, -1.5891] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [3.93382, 1.30836], position: [2.64407, 2.04191, 0.69809] }, { id: 11, atomicNumber: 8, charge: 0, diagram: [5.27131, 1.98742], position: [2.04904, 2.54267, 1.89984] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [4.83482, 0.10911], position: [3.73518, 1.00662, 1.02718] }, { id: 13, atomicNumber: 8, charge: 0, diagram: [6.09164, -0.70965], position: [4.3713, 0.60826, -0.1837] }, { id: 14, atomicNumber: 8, charge: 0, diagram: [4.24674, -1.27081], position: [3.26209, -0.17401, 1.66291] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [2.75766, -1.45146], position: [1.8641, -0.45889, 1.46964] }, { id: 16, atomicNumber: 6, charge: 0, diagram: [1.42017, -2.13053], position: [1.67746, -1.95271, 1.77474] }, { id: 17, atomicNumber: 8, charge: 0, diagram: [0.08268, -2.80959], position: [2.16188, -2.24862, 3.08679] }, { id: 18, atomicNumber: 6, charge: 0, diagram: [-1.76223, -1.20807], position: [-1.38359, -1.60765, -1.74644] }, { id: 19, atomicNumber: 8, charge: 0, diagram: [-0.50541, -2.02684], position: [-1.65917, -1.60637, -3.15773] }, { id: 20, atomicNumber: 6, charge: 0, diagram: [-3.22331, -0.86855], position: [-2.71051, -1.68506, -0.97428] }, { id: 21, atomicNumber: 8, charge: 0, diagram: [-3.30396, -2.36637], position: [-2.52975, -2.07522, 0.38356] }, { id: 22, atomicNumber: 6, charge: 0, diagram: [-3.6598, 0.56654], position: [-3.46164, -0.34779, -1.05531] }, { id: 23, atomicNumber: 8, charge: 0, diagram: [-4.99728, -0.11252], position: [-3.94303, -0.18299, -2.40652] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [-5.06822, 4.79747], position: [-3.73397, 2.3999, 1.10235] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [-3.07329, 3.7377], position: [-1.99632, 0.17154, 1.2881] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [-4.85792, 1.33322], position: [-1.57573, 1.84079, 0.94996] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [-2.04714, 3.04201], position: [-3.07991, 1.74852, -1.09684] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [-0.14651, -0.89934], position: [0.24233, -0.27035, -2.11458] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [1.25166, -0.89913], position: [1.95866, -0.69312, -0.66775] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [0.98367, 1.46723], position: [0.63646, 1.94269, -0.09767] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [3.34207, 3.1747], position: [2.88497, 1.22368, -1.67317] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [3.76434, 2.27781], position: [3.10884, 2.89205, 0.18384] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [6.15525, 1.55475], position: [1.44667, 3.2649, 1.64554] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [5.58965, 0.7406], position: [4.48687, 1.45605, 1.68526] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [6.01099, -2.20749], position: [5.19347, 0.17222, 0.10492] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [3.19415, -2.88655], position: [1.30042, 0.10048, 2.22685] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [2.09923, -3.46801], position: [2.25218, -2.56714, 1.07375] }, { id: 38, atomicNumber: 1, charge: 0, diagram: [1.01919, -1.34076], position: [0.6268, -2.25284, 1.72778] }, { id: 39, atomicNumber: 1, charge: 0, diagram: [202e-5, -4.30742], position: [2.99203, -1.74161, 3.17772] }, { id: 40, atomicNumber: 1, charge: 0, diagram: [-2.35032, -2.58799], position: [-0.78824, -2.50303, -1.53319] }, { id: 41, atomicNumber: 1, charge: 0, diagram: [-0.58606, -3.52466], position: [-2.20812, -0.80889, -3.32694] }, { id: 42, atomicNumber: 1, charge: 0, diagram: [-4.71239, -1.0492], position: [-3.33655, -2.45537, -1.44277] }, { id: 43, atomicNumber: 1, charge: 0, diagram: [-4.64145, -3.04544], position: [-2.06181, -2.92859, 0.39509] }, { id: 44, atomicNumber: 1, charge: 0, diagram: [-4.70027, 1.64702], position: [-4.33578, -0.34821, -0.39422] }, { id: 45, atomicNumber: 1, charge: 0, diagram: [-6.25412, 0.70625], position: [-4.70523, -0.78244, -2.50869] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 6, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 8, to: 9, order: 1 }, { from: 8, to: 10, order: 1 }, { from: 10, to: 11, order: 1 }, { from: 10, to: 12, order: 1 }, { from: 12, to: 13, order: 1 }, { from: 12, to: 14, order: 1 }, { from: 14, to: 15, order: 1 }, { from: 15, to: 16, order: 1 }, { from: 16, to: 17, order: 1 }, { from: 5, to: 18, order: 1 }, { from: 18, to: 19, order: 1 }, { from: 18, to: 20, order: 1 }, { from: 20, to: 21, order: 1 }, { from: 20, to: 22, order: 1 }, { from: 22, to: 23, order: 1 }, { from: 22, to: 3, order: 1 }, { from: 15, to: 7, order: 1 }, { from: 1, to: 24, order: 1 }, { from: 2, to: 25, order: 1 }, { from: 2, to: 26, order: 1 }, { from: 3, to: 27, order: 1 }, { from: 5, to: 28, order: 1 }, { from: 7, to: 29, order: 1 }, { from: 8, to: 30, order: 1 }, { from: 9, to: 31, order: 1 }, { from: 10, to: 32, order: 1 }, { from: 11, to: 33, order: 1 }, { from: 12, to: 34, order: 1 }, { from: 13, to: 35, order: 1 }, { from: 15, to: 36, order: 1 }, { from: 16, to: 37, order: 1 }, { from: 16, to: 38, order: 1 }, { from: 17, to: 39, order: 1 }, { from: 18, to: 40, order: 1 }, { from: 19, to: 41, order: 1 }, { from: 20, to: 42, order: 1 }, { from: 21, to: 43, order: 1 }, { from: 22, to: 44, order: 1 }, { from: 23, to: 45, order: 1 }], repeatUnit: { atoms: [1, 2, 3, 4, 5, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 40, 41, 42, 43, 44], ends: [23, 5] } },
   Chlor: { version: 1, kind: "molecule", name: "Cl2", source: "https://cccbdb.nist.gov/diatomicexpbondx.asp", representation: "experimental", geometry: "supplied", bonds: [{ from: 1, to: 2, order: 1 }], atoms: [{ id: 1, atomicNumber: 17, charge: 0, diagram: [-0.994, 0], position: [-0.994, 0, 0] }, { id: 2, atomicNumber: 17, charge: 0, diagram: [0.994, 0], position: [0.994, 0, 0] }] },
   "Chlorethen (Vinylchlorid)": { version: 1, kind: "molecule", name: "C2H3Cl", source: "https://pubchem.ncbi.nlm.nih.gov/compound/6338", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 17, charge: 0, diagram: [-1.5, 1.29904], position: [-1.4203, 0.1932, 0] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-0.75, 0], position: [0.158, -0.4694, 0] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [0.75, 0], position: [1.2623, 0.2762, 0] }, { id: 4, atomicNumber: 1, charge: 0, diagram: [-1.5, -1.29904], position: [0.1621, -1.5509, -1e-4] }, { id: 5, atomicNumber: 1, charge: 0, diagram: [1.5, -1.29904], position: [2.2396, -0.1941, 0] }, { id: 6, atomicNumber: 1, charge: 0, diagram: [1.5, 1.29904], position: [1.2208, 1.36, 0] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 2 }, { from: 2, to: 4, order: 1 }, { from: 3, to: 5, order: 1 }, { from: 3, to: 6, order: 1 }] },
   Cyclohexan: { version: 1, kind: "molecule", name: "C6H12", source: "https://pubchem.ncbi.nlm.nih.gov/compound/8078", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [1.5, 0], position: [-0.0435, -1.4573, -0.2258] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [0.75, -1.29904], position: [1.2404, -0.7663, 0.2258] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [0.75, 1.29904], position: [-1.2838, -0.691, 0.2258] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-0.75, -1.29904], position: [1.2838, 0.6911, -0.2257] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [-0.75, 1.29904], position: [-1.2404, 0.7662, -0.2258] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [-1.5, 0], position: [0.0435, 1.4573, 0.2258] }, { id: 7, atomicNumber: 1, charge: 0, diagram: [2.64907, 0.96418], position: [-0.046, -1.5425, -1.3194] }, { id: 8, atomicNumber: 1, charge: 0, diagram: [2.64907, -0.96418], position: [-0.0739, -2.4771, 0.1741] }, { id: 9, atomicNumber: 1, charge: 0, diagram: [2.15954, -1.81207], position: [1.3129, -0.8111, 1.3194] }, { id: 10, atomicNumber: 1, charge: 0, diagram: [0.48953, -2.77625], position: [2.1083, -1.3026, -0.1742] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [0.48953, 2.77625], position: [-2.1821, -1.1746, -0.1741] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [2.15954, 1.81207], position: [-1.3588, -0.7314, 1.3195] }, { id: 13, atomicNumber: 1, charge: 0, diagram: [-0.48953, -2.77625], position: [2.1821, 1.1746, 0.1742] }, { id: 14, atomicNumber: 1, charge: 0, diagram: [-2.15954, -1.81207], position: [1.359, 0.7315, -1.3194] }, { id: 15, atomicNumber: 1, charge: 0, diagram: [-2.15954, 1.81207], position: [-1.3129, 0.811, -1.3195] }, { id: 16, atomicNumber: 1, charge: 0, diagram: [-0.48953, 2.77625], position: [-2.1083, 1.3025, 0.1741] }, { id: 17, atomicNumber: 1, charge: 0, diagram: [-2.64907, -0.96418], position: [0.0459, 1.5425, 1.3195] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [-2.64907, 0.96418], position: [0.0738, 2.4771, -0.1742] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 1, to: 3, order: 1 }, { from: 1, to: 7, order: 1 }, { from: 1, to: 8, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 2, to: 9, order: 1 }, { from: 2, to: 10, order: 1 }, { from: 3, to: 5, order: 1 }, { from: 3, to: 11, order: 1 }, { from: 3, to: 12, order: 1 }, { from: 4, to: 6, order: 1 }, { from: 4, to: 13, order: 1 }, { from: 4, to: 14, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 5, to: 15, order: 1 }, { from: 5, to: 16, order: 1 }, { from: 6, to: 17, order: 1 }, { from: 6, to: 18, order: 1 }] },
@@ -105238,7 +105245,7 @@ var catalog_generated_default = {
   "Methanal (Formaldehyd)": { version: 1, kind: "molecule", name: "CH2O", source: "https://pubchem.ncbi.nlm.nih.gov/compound/712", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [1.29904, 0.75], position: [0.6123, 0, 0] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [0, 0], position: [-0.6123, 0, 0] }, { id: 3, atomicNumber: 1, charge: 0, diagram: [-1.29904, 0.75], position: [-1.2, 0.2426, -0.8998] }, { id: 4, atomicNumber: 1, charge: 0, diagram: [0, -1.5], position: [-1.2, -0.2424, 0.8998] }], bonds: [{ from: 1, to: 2, order: 2 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }] },
   Methanol: { version: 1, kind: "molecule", name: "CH4O", source: "https://pubchem.ncbi.nlm.nih.gov/compound/887", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [-0.86603, -0.75], position: [0.7079, 0, 0] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [0.43301, 0], position: [-0.7079, 0, 0] }, { id: 3, atomicNumber: 1, charge: 0, diagram: [1.73205, 0.75], position: [-1.0732, -0.769, 0.6852] }, { id: 4, atomicNumber: 1, charge: 0, diagram: [1.18301, -1.29904], position: [-1.0731, -0.1947, -1.0113] }, { id: 5, atomicNumber: 1, charge: 0, diagram: [-0.31699, 1.29904], position: [-1.0632, 0.9786, 0.3312] }, { id: 6, atomicNumber: 1, charge: 0, diagram: [-2.16506, 0], position: [0.9936, -0.8804, -0.298] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 1, to: 6, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 2, to: 5, order: 1 }] },
   Methylmethacrylat: { version: 1, kind: "molecule", name: "C5H8O2", source: "https://pubchem.ncbi.nlm.nih.gov/compound/6658", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [1.4889, 0.55061], position: [-1.1444, -0.6878, 1e-4] }, { id: 2, atomicNumber: 8, charge: 0, diagram: [0.57486, -1.88137], position: [-0.6224, 1.554, 4e-4] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-1.07428, 0.12621], position: [1.1128, -0.1101, 0] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-2.23335, -0.82592], position: [1.4058, -1.5793, 2e-4] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [0.32983, -0.40152], position: [-0.2953, 0.3757, 5e-4] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [-1.31931, 1.60606], position: [2.0832, 0.8155, -7e-4] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [2.893, 0.02289], position: [-2.5398, -0.3681, -6e-4] }, { id: 8, atomicNumber: 1, charge: 0, diagram: [-3.39243, -1.77805], position: [0.9825, -2.0559, 0.8904] }, { id: 9, atomicNumber: 1, charge: 0, diagram: [-3.18548, 0.33316], position: [0.9821, -2.0563, -0.8896] }, { id: 10, atomicNumber: 1, charge: 0, diagram: [-1.28122, -1.98499], position: [2.4825, -1.7814, 0] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [-2.72341, 2.13378], position: [3.1292, 0.5249, -11e-4] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [-0.16023, 2.55819], position: [1.8768, 1.8806, -9e-4] }, { id: 13, atomicNumber: 1, charge: 0, diagram: [4.29711, -0.50484], position: [-3.1031, -1.3051, -9e-4] }, { id: 14, atomicNumber: 1, charge: 0, diagram: [3.42073, 1.42699], position: [-2.7981, 0.1974, -0.901] }, { id: 15, atomicNumber: 1, charge: 0, diagram: [2.36528, -1.38122], position: [-2.799, 0.1975, 0.8995] }], bonds: [{ from: 1, to: 5, order: 1 }, { from: 1, to: 7, order: 1 }, { from: 2, to: 5, order: 2 }, { from: 3, to: 4, order: 1 }, { from: 3, to: 5, order: 1 }, { from: 3, to: 6, order: 2 }, { from: 4, to: 8, order: 1 }, { from: 4, to: 9, order: 1 }, { from: 4, to: 10, order: 1 }, { from: 6, to: 11, order: 1 }, { from: 6, to: 12, order: 1 }, { from: 7, to: 13, order: 1 }, { from: 7, to: 14, order: 1 }, { from: 7, to: 15, order: 1 }] },
-  Methylorange: { version: 1, kind: "molecule", name: "C14H14N3NaO3S", source: "https://pubchem.ncbi.nlm.nih.gov/compound/23673835", representation: "ionic-components", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [-6.23059, 1.06759], position: [13.3006, -0.86446, 0.20215] }, { id: 2, atomicNumber: 7, charge: 0, diagram: [-5.32059, -0.12485], position: [12.57544, 0.39944, 0.09316] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-5.89827, -1.50915], position: [13.21046, 1.41756, -0.74117] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-3.83291, 0.06702], position: [11.17616, 0.38476, 0.18033] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [-3.25523, 1.45132], position: [10.46575, -0.73273, 0.6549] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [-1.76755, 1.64318], position: [9.06555, -0.74373, 0.75303] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [-0.85756, 0.45074], position: [8.31511, 0.37012, 0.3796] }, { id: 8, atomicNumber: 7, charge: 0, diagram: [0.63012, 0.64261], position: [6.91417, 0.40295, 0.49137] }, { id: 9, atomicNumber: 7, charge: 0, diagram: [1.54012, -0.54983], position: [6.39351, -0.47895, -0.22746] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [3.0278, -0.35796], position: [4.98874, -0.44372, -0.12766] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [3.9378, -1.5504], position: [4.32678, -0.63062, 1.09672] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [5.42548, -1.35854], position: [2.93136, -0.62654, 1.15858] }, { id: 13, atomicNumber: 6, charge: 0, diagram: [6.00316, 0.02576], position: [2.1939, -0.45146, -0.01496] }, { id: 14, atomicNumber: 16, charge: 0, diagram: [7.49084, 0.21763], position: [0.3831, -0.4258, 0.07594] }, { id: 15, atomicNumber: 8, charge: 0, diagram: [8.97852, 0.40949], position: [0.13665, 0.27748, 1.3318] }, { id: 16, atomicNumber: 8, charge: 0, diagram: [7.29897, 1.70531], position: [0, 0.30614, -1.12856] }, { id: 17, atomicNumber: 8, charge: -1, diagram: [7.6827, -1.27005], position: [0.0672, -1.85058, 0.07514] }, { id: 18, atomicNumber: 6, charge: 0, diagram: [5.09316, 1.2182], position: [2.83389, -0.26764, -1.24256] }, { id: 19, atomicNumber: 6, charge: 0, diagram: [3.60548, 1.02634], position: [4.2301, -0.27218, -1.29384] }, { id: 20, atomicNumber: 6, charge: 0, diagram: [-1.43524, -0.93356], position: [8.99534, 1.50088, -0.06164] }, { id: 21, atomicNumber: 6, charge: 0, diagram: [-2.92291, -1.12542], position: [10.39588, 1.50582, -0.15689] }, { id: 22, atomicNumber: 11, charge: 1, diagram: [0, 4.02748], position: [17.38242, 0, 0] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [-7.14059, 2.26002], position: [13.13478, -1.33573, 1.17687] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [-7.42303, 0.15759], position: [13.01124, -1.55608, -0.59677] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [-5.03815, 1.97759], position: [14.38242, -0.70586, 0.12798] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [-6.47595, -2.89345], position: [13.02943, 2.42276, -0.34676] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [-7.28257, -0.93147], position: [14.29937, 1.29472, -0.75754] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [-4.51397, -2.08683], position: [12.8568, 1.35785, -1.77617] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [-4.16523, 2.64375], position: [10.98011, -1.63643, 0.96609] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [-1.18987, 3.02748], position: [8.55928, -1.6303, 1.12569] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [3.36012, -2.9347], position: [4.90116, -0.77805, 2.00614] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [6.33548, -2.55097], position: [2.41223, -0.76154, 2.10394] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [5.67084, 2.6025], position: [2.24429, -0.12728, -2.14476] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [2.69548, 2.21877], position: [4.73062, -0.13716, -2.24778] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [-0.52524, -2.12599], position: [8.43301, 2.38977, -0.33495] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [-3.5006, -2.50972], position: [10.85565, 2.42657, -0.50108] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 6, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 8, to: 9, order: 2 }, { from: 9, to: 10, order: 1 }, { from: 10, to: 11, order: 1 }, { from: 11, to: 12, order: 1 }, { from: 12, to: 13, order: 1 }, { from: 13, to: 14, order: 1 }, { from: 14, to: 15, order: 2 }, { from: 14, to: 16, order: 2 }, { from: 14, to: 17, order: 1 }, { from: 13, to: 18, order: 1 }, { from: 18, to: 19, order: 1 }, { from: 7, to: 20, order: 1 }, { from: 20, to: 21, order: 1 }, { from: 21, to: 4, order: 1 }, { from: 19, to: 10, order: 1 }, { from: 1, to: 23, order: 1 }, { from: 1, to: 24, order: 1 }, { from: 1, to: 25, order: 1 }, { from: 3, to: 26, order: 1 }, { from: 3, to: 27, order: 1 }, { from: 3, to: 28, order: 1 }, { from: 5, to: 29, order: 1 }, { from: 6, to: 30, order: 1 }, { from: 11, to: 31, order: 1 }, { from: 12, to: 32, order: 1 }, { from: 18, to: 33, order: 1 }, { from: 19, to: 34, order: 1 }, { from: 20, to: 35, order: 1 }, { from: 21, to: 36, order: 1 }] },
+  Methylorange: { version: 1, kind: "molecule", name: "C14H14N3NaO3S", source: "https://pubchem.ncbi.nlm.nih.gov/compound/23673835", representation: "ionic-components", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [-6.23059, 1.06759], position: [13.3006, -0.86446, 0.20215] }, { id: 2, atomicNumber: 7, charge: 0, diagram: [-5.32059, -0.12485], position: [12.57544, 0.39944, 0.09316] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-5.89827, -1.50915], position: [13.21046, 1.41756, -0.74117] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-3.83291, 0.06702], position: [11.17616, 0.38476, 0.18033] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [-3.25523, 1.45132], position: [10.46575, -0.73273, 0.6549] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [-1.76755, 1.64318], position: [9.06555, -0.74373, 0.75303] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [-0.85756, 0.45074], position: [8.31511, 0.37012, 0.3796] }, { id: 8, atomicNumber: 7, charge: 0, diagram: [0.63012, 0.64261], position: [6.91417, 0.40295, 0.49137] }, { id: 9, atomicNumber: 7, charge: 0, diagram: [1.54012, -0.54983], position: [6.39351, -0.47895, -0.22746] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [3.0278, -0.35796], position: [4.98874, -0.44372, -0.12766] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [3.9378, -1.5504], position: [4.32678, -0.63062, 1.09672] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [5.42548, -1.35854], position: [2.93136, -0.62654, 1.15858] }, { id: 13, atomicNumber: 6, charge: 0, diagram: [6.00316, 0.02576], position: [2.1939, -0.45146, -0.01496] }, { id: 14, atomicNumber: 16, charge: 0, diagram: [7.49084, 0.21763], position: [0.3831, -0.4258, 0.07594] }, { id: 15, atomicNumber: 8, charge: 0, diagram: [8.97852, 0.40949], position: [0.13665, 0.27748, 1.3318] }, { id: 16, atomicNumber: 8, charge: 0, diagram: [7.29897, 1.70531], position: [0, 0.30614, -1.12856] }, { id: 17, atomicNumber: 8, charge: -1, diagram: [7.6827, -1.27005], position: [0.0672, -1.85058, 0.07514] }, { id: 18, atomicNumber: 6, charge: 0, diagram: [5.09316, 1.2182], position: [2.83389, -0.26764, -1.24256] }, { id: 19, atomicNumber: 6, charge: 0, diagram: [3.60548, 1.02634], position: [4.2301, -0.27218, -1.29384] }, { id: 20, atomicNumber: 6, charge: 0, diagram: [-1.43524, -0.93356], position: [8.99534, 1.50088, -0.06164] }, { id: 21, atomicNumber: 6, charge: 0, diagram: [-2.92291, -1.12542], position: [10.39588, 1.50582, -0.15689] }, { id: 22, atomicNumber: 11, charge: 1, diagram: [0, 4.02748], position: [17.38242, 0, 0] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [-7.14059, 2.26002], position: [13.13478, -1.33573, 1.17687] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [-7.42303, 0.15759], position: [13.01124, -1.55608, -0.59677] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [-5.03815, 1.97759], position: [14.38242, -0.70586, 0.12798] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [-6.47595, -2.89345], position: [13.02943, 2.42276, -0.34676] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [-7.28257, -0.93147], position: [14.29937, 1.29472, -0.75754] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [-4.51397, -2.08683], position: [12.8568, 1.35785, -1.77617] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [-4.16523, 2.64375], position: [10.98011, -1.63643, 0.96609] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [-1.18987, 3.02748], position: [8.55928, -1.6303, 1.12569] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [3.36012, -2.9347], position: [4.90116, -0.77805, 2.00614] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [6.33548, -2.55097], position: [2.41223, -0.76154, 2.10394] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [5.67084, 2.6025], position: [2.24429, -0.12728, -2.14476] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [2.69548, 2.21877], position: [4.73062, -0.13716, -2.24778] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [-0.52524, -2.12599], position: [8.43301, 2.38977, -0.33495] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [-3.5006, -2.50972], position: [10.85565, 2.42657, -0.50108] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 4, to: 5, order: 2 }, { from: 5, to: 6, order: 1 }, { from: 6, to: 7, order: 2 }, { from: 7, to: 8, order: 1 }, { from: 8, to: 9, order: 2 }, { from: 9, to: 10, order: 1 }, { from: 10, to: 11, order: 2 }, { from: 11, to: 12, order: 1 }, { from: 12, to: 13, order: 2 }, { from: 13, to: 14, order: 1 }, { from: 14, to: 15, order: 2 }, { from: 14, to: 16, order: 2 }, { from: 14, to: 17, order: 1 }, { from: 13, to: 18, order: 1 }, { from: 18, to: 19, order: 2 }, { from: 7, to: 20, order: 1 }, { from: 20, to: 21, order: 2 }, { from: 21, to: 4, order: 1 }, { from: 19, to: 10, order: 1 }, { from: 1, to: 23, order: 1 }, { from: 1, to: 24, order: 1 }, { from: 1, to: 25, order: 1 }, { from: 3, to: 26, order: 1 }, { from: 3, to: 27, order: 1 }, { from: 3, to: 28, order: 1 }, { from: 5, to: 29, order: 1 }, { from: 6, to: 30, order: 1 }, { from: 11, to: 31, order: 1 }, { from: 12, to: 32, order: 1 }, { from: 18, to: 33, order: 1 }, { from: 19, to: 34, order: 1 }, { from: 20, to: 35, order: 1 }, { from: 21, to: 36, order: 1 }] },
   Milchs\u00E4ure: { version: 1, kind: "molecule", name: "C3H6O3", source: "https://pubchem.ncbi.nlm.nih.gov/compound/612", representation: null, geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [1.81318, -0.15682], position: [-0.6526, 0.15335, 1.40061] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [0.35962, 0.21357], position: [-0.52524, 0.11156, -0.11163] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-1.09393, 0.58395], position: [0.92887, 0.30944, -0.54336] }, { id: 4, atomicNumber: 8, charge: 0, diagram: [-1.49994, 2.02796], position: [1.7745, 1.01239, -0.01735] }, { id: 5, atomicNumber: 8, charge: 0, diagram: [-2.14147, -0.48967], position: [1.21431, -0.37936, -1.67502] }, { id: 6, atomicNumber: 8, charge: 0, diagram: [-0.01076, -1.23999], position: [-1.05028, -1.13519, -0.56598] }, { id: 7, atomicNumber: 1, charge: 0, diagram: [3.26673, -0.52721], position: [-0.0637, -0.6465, 1.86385] }, { id: 8, atomicNumber: 1, charge: 0, diagram: [2.18356, 1.29673], position: [-1.69347, -36e-5, 1.70456] }, { id: 9, atomicNumber: 1, charge: 0, diagram: [1.44279, -1.61037], position: [-0.30645, 1.10929, 1.80595] }, { id: 10, atomicNumber: 1, charge: 0, diagram: [0.73001, 1.66712], position: [-1.11881, 0.91094, -0.5671] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [-3.59502, -0.11928], position: [2.1593, -0.17167, -1.84027] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [-1.45477, -1.646], position: [-0.66644, -1.2739, -1.45427] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 2 }, { from: 3, to: 5, order: 1 }, { from: 2, to: 6, order: 1 }, { from: 1, to: 7, order: 1 }, { from: 1, to: 8, order: 1 }, { from: 1, to: 9, order: 1 }, { from: 2, to: 10, order: 1 }, { from: 5, to: 11, order: 1 }, { from: 6, to: 12, order: 1 }] },
   Myristylmyristat: { version: 1, kind: "molecule", name: "C28H56O2", source: "https://pubchem.ncbi.nlm.nih.gov/compound/18605", representation: null, geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [-20.61597, 0.27442], position: [-10.59756, -3.26083, 1.6781] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-19.11747, 0.20721], position: [-9.70551, -2.38409, 2.54569] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-17.61898, 0.14001], position: [-8.67401, -1.58462, 1.7478] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-16.12048, 0.0728], position: [-9.30053, -0.53929, 0.82046] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [-14.62199, 56e-4], position: [-8.21908, 0.26792, 0.09677] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [-13.1235, -0.06161], position: [-8.8284, 1.29857, -0.8536] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [-11.625, -0.12881], position: [-7.82684, 1.93077, -1.82697] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [-10.12651, -0.19602], position: [-6.74773, 2.81169, -1.18725] }, { id: 9, atomicNumber: 6, charge: 0, diagram: [-8.62802, -0.26322], position: [-5.47532, 2.04827, -0.81071] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [-7.12952, -0.33043], position: [-4.39039, 2.9936, -0.28746] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [-5.63103, -0.39763], position: [-3.21035, 2.26496, 0.36071] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [-4.13253, -0.46484], position: [-2.50714, 1.22166, -0.50946] }, { id: 13, atomicNumber: 6, charge: 0, diagram: [-2.63404, -0.53204], position: [-1.84739, 1.81153, -1.76255] }, { id: 14, atomicNumber: 6, charge: 0, diagram: [-1.13555, -0.59924], position: [-1.15629, 0.73791, -2.60056] }, { id: 15, atomicNumber: 8, charge: 0, diagram: [0.36295, -0.66645], position: [-0.18102, 0.03316, -1.81675] }, { id: 16, atomicNumber: 6, charge: 0, diagram: [1.1704, 0.59768], position: [1.08866, 0.52248, -1.84739] }, { id: 17, atomicNumber: 8, charge: 0, diagram: [0.47935, 1.92902], position: [1.46383, 1.48864, -2.49738] }, { id: 18, atomicNumber: 6, charge: 0, diagram: [2.66889, 0.53048], position: [1.97886, -0.27187, -0.92353] }, { id: 19, atomicNumber: 6, charge: 0, diagram: [4.16738, 0.46327], position: [2.09929, -1.72676, -1.36947] }, { id: 20, atomicNumber: 6, charge: 0, diagram: [5.66588, 0.39607], position: [2.93277, -2.58574, -0.41265] }, { id: 21, atomicNumber: 6, charge: 0, diagram: [7.16437, 0.32886], position: [4.39056, -2.78624, -0.83729] }, { id: 22, atomicNumber: 6, charge: 0, diagram: [8.66286, 0.26166], position: [5.27592, -1.5382, -0.8549] }, { id: 23, atomicNumber: 6, charge: 0, diagram: [10.16136, 0.19445], position: [5.43167, -0.88424, 0.52183] }, { id: 24, atomicNumber: 6, charge: 0, diagram: [11.65985, 0.12725], position: [6.35926, 0.33669, 0.51356] }, { id: 25, atomicNumber: 6, charge: 0, diagram: [13.15835, 0.06004], position: [7.81517, 0.07583, 0.10519] }, { id: 26, atomicNumber: 6, charge: 0, diagram: [14.65684, -716e-5], position: [8.53845, -0.91808, 1.01957] }, { id: 27, atomicNumber: 6, charge: 0, diagram: [16.15533, -0.07436], position: [9.98087, -1.216, 0.59556] }, { id: 28, atomicNumber: 6, charge: 0, diagram: [17.65383, -0.14157], position: [10.94556, -0.03035, 0.47903] }, { id: 29, atomicNumber: 6, charge: 0, diagram: [19.15232, -0.20877], position: [11.48134, 0.53098, 1.79769] }, { id: 30, atomicNumber: 6, charge: 0, diagram: [20.65081, -0.27598], position: [10.5024, 1.39871, 2.56925] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [-22.11446, 0.34162], position: [-11.2339, -3.88919, 2.3096] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [-20.54876, 1.77291], position: [-11.25367, -2.65666, 1.04563] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [-20.68317, -1.22408], position: [-9.99788, -3.9159, 1.03598] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [-19.05027, 1.7057], position: [-9.17136, -3.02722, 3.2548] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [-19.18468, -1.29128], position: [-10.32547, -1.70421, 3.14107] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [-17.68618, -1.35849], position: [-8.00579, -1.08058, 2.45666] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [-17.55177, 1.6385], position: [-8.05126, -2.27334, 1.1627] }, { id: 38, atomicNumber: 1, charge: 0, diagram: [-16.05328, 1.5713], position: [-9.93693, 0.13611, 1.40356] }, { id: 39, atomicNumber: 1, charge: 0, diagram: [-16.18769, -1.42569], position: [-9.93958, -1.03139, 0.0761] }, { id: 40, atomicNumber: 1, charge: 0, diagram: [-14.68919, -1.4929], position: [-7.60338, 0.77809, 0.84436] }, { id: 41, atomicNumber: 1, charge: 0, diagram: [-14.55479, 1.50409], position: [-7.56902, -0.41495, -0.46463] }, { id: 42, atomicNumber: 1, charge: 0, diagram: [-13.05629, 1.43689], position: [-9.32453, 2.08575, -0.27225] }, { id: 43, atomicNumber: 1, charge: 0, diagram: [-13.1907, -1.5601], position: [-9.61127, 0.8154, -1.45323] }, { id: 44, atomicNumber: 1, charge: 0, diagram: [-11.69221, -1.62731], position: [-7.36952, 1.15641, -2.45369] }, { id: 45, atomicNumber: 1, charge: 0, diagram: [-11.5578, 1.36968], position: [-8.40867, 2.56662, -2.50726] }, { id: 46, atomicNumber: 1, charge: 0, diagram: [-10.0593, 1.30248], position: [-7.15539, 3.33364, -0.31384] }, { id: 47, atomicNumber: 1, charge: 0, diagram: [-10.19371, -1.69451], position: [-6.47063, 3.58601, -1.91493] }, { id: 48, atomicNumber: 1, charge: 0, diagram: [-8.69522, -1.76172], position: [-5.69114, 1.29618, -0.04808] }, { id: 49, atomicNumber: 1, charge: 0, diagram: [-8.56081, 1.23527], position: [-5.10055, 1.5172, -1.69306] }, { id: 50, atomicNumber: 1, charge: 0, diagram: [-7.06232, 1.16807], position: [-4.82492, 3.66535, 0.4653] }, { id: 51, atomicNumber: 1, charge: 0, diagram: [-7.19673, -1.82892], position: [-4.03731, 3.63485, -1.10157] }, { id: 52, atomicNumber: 1, charge: 0, diagram: [-5.69823, -1.89612], position: [-3.56656, 1.76342, 1.27131] }, { id: 53, atomicNumber: 1, charge: 0, diagram: [-5.56382, 1.10086], position: [-2.47686, 3.01252, 0.69258] }, { id: 54, atomicNumber: 1, charge: 0, diagram: [-4.06533, 1.03366], position: [-1.73743, 0.73985, 0.10734] }, { id: 55, atomicNumber: 1, charge: 0, diagram: [-4.19974, -1.96333], position: [-3.20884, 0.43082, -0.79529] }, { id: 56, atomicNumber: 1, charge: 0, diagram: [-2.70124, -2.03053], position: [-1.11412, 2.56481, -1.45213] }, { id: 57, atomicNumber: 1, charge: 0, diagram: [-2.56684, 0.96645], position: [-2.59172, 2.31474, -2.38741] }, { id: 58, atomicNumber: 1, charge: 0, diagram: [-1.06834, 0.89925], position: [-0.70955, 1.17129, -3.5025] }, { id: 59, atomicNumber: 1, charge: 0, diagram: [-1.20275, -2.09774], position: [-1.88975, -321e-5, -2.93799] }, { id: 60, atomicNumber: 1, charge: 0, diagram: [2.60168, -0.96802], position: [2.95852, 0.21477, -0.90848] }, { id: 61, atomicNumber: 1, charge: 0, diagram: [2.73609, 2.02897], position: [1.57148, -0.19749, 0.09162] }, { id: 62, atomicNumber: 1, charge: 0, diagram: [4.23459, 1.96177], position: [2.49246, -1.78342, -2.39249] }, { id: 63, atomicNumber: 1, charge: 0, diagram: [4.10018, -1.03522], position: [1.09184, -2.15883, -1.40955] }, { id: 64, atomicNumber: 1, charge: 0, diagram: [5.59867, -1.10243], position: [2.87335, -2.20659, 0.61301] }, { id: 65, atomicNumber: 1, charge: 0, diagram: [5.73308, 1.89456], position: [2.47502, -3.58442, -0.38599] }, { id: 66, atomicNumber: 1, charge: 0, diagram: [7.23157, 1.82736], position: [4.84353, -3.52396, -0.16223] }, { id: 67, atomicNumber: 1, charge: 0, diagram: [7.09717, -1.16963], position: [4.41051, -3.24146, -1.83735] }, { id: 68, atomicNumber: 1, charge: 0, diagram: [8.59566, -1.23684], position: [4.89014, -0.81252, -1.5802] }, { id: 69, atomicNumber: 1, charge: 0, diagram: [8.73007, 1.76015], position: [6.26116, -1.84726, -1.22291] }, { id: 70, atomicNumber: 1, charge: 0, diagram: [10.22856, 1.69295], position: [5.7871, -1.62192, 1.24962] }, { id: 71, atomicNumber: 1, charge: 0, diagram: [10.09415, -1.30404], position: [4.45266, -0.54884, 0.88362] }, { id: 72, atomicNumber: 1, charge: 0, diagram: [11.59265, -1.37124], position: [6.34874, 0.78522, 1.51524] }, { id: 73, atomicNumber: 1, charge: 0, diagram: [11.72706, 1.62574], position: [5.94098, 1.0932, -0.16418] }, { id: 74, atomicNumber: 1, charge: 0, diagram: [13.22555, 1.55854], position: [7.85528, -0.27572, -0.93324] }, { id: 75, atomicNumber: 1, charge: 0, diagram: [13.09114, -1.43845], position: [8.33414, 1.04199, 0.13069] }, { id: 76, atomicNumber: 1, charge: 0, diagram: [14.58963, -1.50565], position: [8.50462, -0.56472, 2.0547] }, { id: 77, atomicNumber: 1, charge: 0, diagram: [14.72404, 1.49133], position: [8.00306, -1.8763, 1.01142] }, { id: 78, atomicNumber: 1, charge: 0, diagram: [16.22254, 1.42413], position: [10.40538, -1.95586, 1.28631] }, { id: 79, atomicNumber: 1, charge: 0, diagram: [16.08813, -1.57286], position: [9.94157, -1.70602, -0.38677] }, { id: 80, atomicNumber: 1, charge: 0, diagram: [17.58662, -1.64006], position: [10.51973, 0.77016, -0.13495] }, { id: 81, atomicNumber: 1, charge: 0, diagram: [17.72103, 1.35692], position: [11.81753, -0.39402, -0.08132] }, { id: 82, atomicNumber: 1, charge: 0, diagram: [19.21952, 1.28972], position: [11.8413, -0.28222, 2.4399] }, { id: 83, atomicNumber: 1, charge: 0, diagram: [19.08512, -1.70727], position: [12.35739, 1.14913, 1.5622] }, { id: 84, atomicNumber: 1, charge: 0, diagram: [22.14931, -0.34318], position: [9.75503, 0.79412, 3.08789] }, { id: 85, atomicNumber: 1, charge: 0, diagram: [20.58361, -1.77447], position: [9.98997, 2.10956, 1.9134] }, { id: 86, atomicNumber: 1, charge: 0, diagram: [20.71802, 1.22252], position: [11.03746, 1.96938, 3.3377] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 6, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 8, to: 9, order: 1 }, { from: 9, to: 10, order: 1 }, { from: 10, to: 11, order: 1 }, { from: 11, to: 12, order: 1 }, { from: 12, to: 13, order: 1 }, { from: 13, to: 14, order: 1 }, { from: 14, to: 15, order: 1 }, { from: 15, to: 16, order: 1 }, { from: 16, to: 17, order: 2 }, { from: 16, to: 18, order: 1 }, { from: 18, to: 19, order: 1 }, { from: 19, to: 20, order: 1 }, { from: 20, to: 21, order: 1 }, { from: 21, to: 22, order: 1 }, { from: 22, to: 23, order: 1 }, { from: 23, to: 24, order: 1 }, { from: 24, to: 25, order: 1 }, { from: 25, to: 26, order: 1 }, { from: 26, to: 27, order: 1 }, { from: 27, to: 28, order: 1 }, { from: 28, to: 29, order: 1 }, { from: 29, to: 30, order: 1 }, { from: 1, to: 31, order: 1 }, { from: 1, to: 32, order: 1 }, { from: 1, to: 33, order: 1 }, { from: 2, to: 34, order: 1 }, { from: 2, to: 35, order: 1 }, { from: 3, to: 36, order: 1 }, { from: 3, to: 37, order: 1 }, { from: 4, to: 38, order: 1 }, { from: 4, to: 39, order: 1 }, { from: 5, to: 40, order: 1 }, { from: 5, to: 41, order: 1 }, { from: 6, to: 42, order: 1 }, { from: 6, to: 43, order: 1 }, { from: 7, to: 44, order: 1 }, { from: 7, to: 45, order: 1 }, { from: 8, to: 46, order: 1 }, { from: 8, to: 47, order: 1 }, { from: 9, to: 48, order: 1 }, { from: 9, to: 49, order: 1 }, { from: 10, to: 50, order: 1 }, { from: 10, to: 51, order: 1 }, { from: 11, to: 52, order: 1 }, { from: 11, to: 53, order: 1 }, { from: 12, to: 54, order: 1 }, { from: 12, to: 55, order: 1 }, { from: 13, to: 56, order: 1 }, { from: 13, to: 57, order: 1 }, { from: 14, to: 58, order: 1 }, { from: 14, to: 59, order: 1 }, { from: 18, to: 60, order: 1 }, { from: 18, to: 61, order: 1 }, { from: 19, to: 62, order: 1 }, { from: 19, to: 63, order: 1 }, { from: 20, to: 64, order: 1 }, { from: 20, to: 65, order: 1 }, { from: 21, to: 66, order: 1 }, { from: 21, to: 67, order: 1 }, { from: 22, to: 68, order: 1 }, { from: 22, to: 69, order: 1 }, { from: 23, to: 70, order: 1 }, { from: 23, to: 71, order: 1 }, { from: 24, to: 72, order: 1 }, { from: 24, to: 73, order: 1 }, { from: 25, to: 74, order: 1 }, { from: 25, to: 75, order: 1 }, { from: 26, to: 76, order: 1 }, { from: 26, to: 77, order: 1 }, { from: 27, to: 78, order: 1 }, { from: 27, to: 79, order: 1 }, { from: 28, to: 80, order: 1 }, { from: 28, to: 81, order: 1 }, { from: 29, to: 82, order: 1 }, { from: 29, to: 83, order: 1 }, { from: 30, to: 84, order: 1 }, { from: 30, to: 85, order: 1 }, { from: 30, to: 86, order: 1 }] },
   Natriumacetat: { version: 1, kind: "crystal", name: "", cell: { lengths: [5.9482, 10.0866, 5.8984], angles: [90, 90, 90] }, sites: [{ id: 1, atomicNumber: 11, charge: 0, fractional: [0.5, 0.58375, 0.25], ion: "Na\u207A" }, { id: 2, atomicNumber: 11, charge: 0, fractional: [0, 0.41625, 0.25], ion: "Na\u207A" }, { id: 3, atomicNumber: 11, charge: 0, fractional: [0.5, 0.41625, 0.75], ion: "Na\u207A" }, { id: 4, atomicNumber: 11, charge: 0, fractional: [0, 0.58375, 0.75], ion: "Na\u207A" }, { id: 5, atomicNumber: 8, charge: 0, fractional: [0.36793, 0.64246, 0.88432], occupancy: 0.8581, ion: "CH\u2083COO\u207B" }, { id: 6, atomicNumber: 8, charge: 0, fractional: [0.13207, 0.35754, 0.88432], occupancy: 0.8581, ion: "CH\u2083COO\u207B" }, { id: 7, atomicNumber: 8, charge: 0, fractional: [0.86793, 0.35754, 0.61568], occupancy: 0.8581, ion: "CH\u2083COO\u207B" }, { id: 8, atomicNumber: 8, charge: 0, fractional: [0.63207, 0.64246, 0.61568], occupancy: 0.8581, ion: "CH\u2083COO\u207B" }, { id: 9, atomicNumber: 8, charge: 0, fractional: [0.63207, 0.35754, 0.11568], occupancy: 0.8581, ion: "CH\u2083COO\u207B" }, { id: 10, atomicNumber: 8, charge: 0, fractional: [0.86793, 0.64246, 0.11568], occupancy: 0.8581, ion: "CH\u2083COO\u207B" }, { id: 11, atomicNumber: 8, charge: 0, fractional: [0.13207, 0.64246, 0.38432], occupancy: 0.8581, ion: "CH\u2083COO\u207B" }, { id: 12, atomicNumber: 8, charge: 0, fractional: [0.36793, 0.35754, 0.38432], occupancy: 0.8581, ion: "CH\u2083COO\u207B" }, { id: 13, atomicNumber: 8, charge: 0, fractional: [0.3681, 0.6426, 0.6145], occupancy: 0.1419, ion: "CH\u2083COO\u207B" }, { id: 14, atomicNumber: 8, charge: 0, fractional: [0.1319, 0.3574, 0.6145], occupancy: 0.1419, ion: "CH\u2083COO\u207B" }, { id: 15, atomicNumber: 8, charge: 0, fractional: [0.8681, 0.3574, 0.8855], occupancy: 0.1419, ion: "CH\u2083COO\u207B" }, { id: 16, atomicNumber: 8, charge: 0, fractional: [0.6319, 0.6426, 0.8855], occupancy: 0.1419, ion: "CH\u2083COO\u207B" }, { id: 17, atomicNumber: 8, charge: 0, fractional: [0.6319, 0.3574, 0.3855], occupancy: 0.1419, ion: "CH\u2083COO\u207B" }, { id: 18, atomicNumber: 8, charge: 0, fractional: [0.8681, 0.6426, 0.3855], occupancy: 0.1419, ion: "CH\u2083COO\u207B" }, { id: 19, atomicNumber: 8, charge: 0, fractional: [0.1319, 0.6426, 0.1145], occupancy: 0.1419, ion: "CH\u2083COO\u207B" }, { id: 20, atomicNumber: 8, charge: 0, fractional: [0.3681, 0.3574, 0.1145], occupancy: 0.1419, ion: "CH\u2083COO\u207B" }, { id: 21, atomicNumber: 6, charge: 0, fractional: [0.5, 0.70146, 0.75], ion: "CH\u2083COO\u207B" }, { id: 22, atomicNumber: 6, charge: 0, fractional: [0, 0.29854, 0.75], ion: "CH\u2083COO\u207B" }, { id: 23, atomicNumber: 6, charge: 0, fractional: [0.5, 0.29854, 0.25], ion: "CH\u2083COO\u207B" }, { id: 24, atomicNumber: 6, charge: 0, fractional: [0, 0.70146, 0.25], ion: "CH\u2083COO\u207B" }, { id: 25, atomicNumber: 6, charge: 0, fractional: [0.5, 0.85216, 0.75], ion: "CH\u2083COO\u207B" }, { id: 26, atomicNumber: 6, charge: 0, fractional: [0, 0.14784, 0.75], ion: "CH\u2083COO\u207B" }, { id: 27, atomicNumber: 6, charge: 0, fractional: [0.5, 0.14784, 0.25], ion: "CH\u2083COO\u207B" }, { id: 28, atomicNumber: 6, charge: 0, fractional: [0, 0.85216, 0.25], ion: "CH\u2083COO\u207B" }, { id: 29, atomicNumber: 1, charge: 0, fractional: [0.4073, 0.8882, 0.6027], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 30, atomicNumber: 1, charge: 0, fractional: [0.0927, 0.1118, 0.6027], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 31, atomicNumber: 1, charge: 0, fractional: [0.9073, 0.1118, 0.8973], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 32, atomicNumber: 1, charge: 0, fractional: [0.5927, 0.8882, 0.8973], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 33, atomicNumber: 1, charge: 0, fractional: [0.5927, 0.1118, 0.3973], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 34, atomicNumber: 1, charge: 0, fractional: [0.9073, 0.8882, 0.3973], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 35, atomicNumber: 1, charge: 0, fractional: [0.0927, 0.8882, 0.1027], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 36, atomicNumber: 1, charge: 0, fractional: [0.4073, 0.1118, 0.1027], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 37, atomicNumber: 1, charge: 0, fractional: [0.6728, 0.8882, 0.7426], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 38, atomicNumber: 1, charge: 0, fractional: [0.8272, 0.1118, 0.7426], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 39, atomicNumber: 1, charge: 0, fractional: [0.1728, 0.1118, 0.7574], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 40, atomicNumber: 1, charge: 0, fractional: [0.3272, 0.8882, 0.7574], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 41, atomicNumber: 1, charge: 0, fractional: [0.3272, 0.1118, 0.2574], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 42, atomicNumber: 1, charge: 0, fractional: [0.1728, 0.8882, 0.2574], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 43, atomicNumber: 1, charge: 0, fractional: [0.8272, 0.8882, 0.2426], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 44, atomicNumber: 1, charge: 0, fractional: [0.6728, 0.1118, 0.2426], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 45, atomicNumber: 1, charge: 0, fractional: [0.4199, 0.8882, 0.9046], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 46, atomicNumber: 1, charge: 0, fractional: [0.0801, 0.1118, 0.9046], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 47, atomicNumber: 1, charge: 0, fractional: [0.9199, 0.1118, 0.5954], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 48, atomicNumber: 1, charge: 0, fractional: [0.5801, 0.8882, 0.5954], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 49, atomicNumber: 1, charge: 0, fractional: [0.5801, 0.1118, 0.0954], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 50, atomicNumber: 1, charge: 0, fractional: [0.9199, 0.8882, 0.0954], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 51, atomicNumber: 1, charge: 0, fractional: [0.0801, 0.8882, 0.4046], occupancy: 0.5, ion: "CH\u2083COO\u207B" }, { id: 52, atomicNumber: 1, charge: 0, fractional: [0.4199, 0.1118, 0.4046], occupancy: 0.5, ion: "CH\u2083COO\u207B" }], bravais: "oP", spaceGroup: "Pcca", source: "https://www.crystallography.net/cod/1549467.html", temperatureK: 100, conditions: null },
@@ -105254,13 +105261,13 @@ var catalog_generated_default = {
   "Pentan-1-ol": { version: 1, kind: "molecule", name: "C5H12O", source: "https://pubchem.ncbi.nlm.nih.gov/compound/6276", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [-4.19697, -0.31735], position: [3.0664, 0.247, -0.0215] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [0.29538, -0.05505], position: [-0.6349, -0.3969, 0.0256] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-1.20207, -0.14248], position: [0.6762, 0.3859, 0.0188] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [1.79283, 0.03239], position: [-1.8422, 0.5402, 3e-3] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [-2.69952, -0.22991], position: [1.8838, -0.5404, -14e-4] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [3.29028, 0.11982], position: [-3.1493, -0.2359, -0.0246] }, { id: 7, atomicNumber: 1, charge: 0, diagram: [0.38281, -1.55249], position: [-0.679, -1.0344, 0.9169] }, { id: 8, atomicNumber: 1, charge: 0, diagram: [0.20794, 1.4424], position: [-0.67, -1.0597, -0.8477] }, { id: 9, atomicNumber: 1, charge: 0, diagram: [-1.28951, 1.35497], position: [0.733, 1.0406, 0.8975] }, { id: 10, atomicNumber: 1, charge: 0, diagram: [-1.11464, -1.63993], position: [0.7134, 1.0511, -0.8531] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [1.70539, 1.52984], position: [-1.8261, 1.1891, 0.8863] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [1.88026, -1.46506], position: [-1.7933, 1.1904, -0.8782] }, { id: 13, atomicNumber: 1, charge: 0, diagram: [-2.61209, -1.72736], position: [1.8805, -1.188, -0.8839] }, { id: 14, atomicNumber: 1, charge: 0, diagram: [-2.78696, 1.26754], position: [1.9095, -1.1718, 0.892] }, { id: 15, atomicNumber: 1, charge: 0, diagram: [4.78773, 0.20726], position: [-3.2109, -0.8695, -0.9151] }, { id: 16, atomicNumber: 1, charge: 0, diagram: [3.37771, -1.37763], position: [-3.2449, -0.8746, 0.8593] }, { id: 17, atomicNumber: 1, charge: 0, diagram: [3.20284, 1.61727], position: [-3.9992, 0.4536, -0.039] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [-5.02142, 0.93577], position: [3.0506, 0.7804, -0.8344] }], bonds: [{ from: 1, to: 5, order: 1 }, { from: 1, to: 18, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 2, to: 7, order: 1 }, { from: 2, to: 8, order: 1 }, { from: 3, to: 5, order: 1 }, { from: 3, to: 9, order: 1 }, { from: 3, to: 10, order: 1 }, { from: 4, to: 6, order: 1 }, { from: 4, to: 11, order: 1 }, { from: 4, to: 12, order: 1 }, { from: 5, to: 13, order: 1 }, { from: 5, to: 14, order: 1 }, { from: 6, to: 15, order: 1 }, { from: 6, to: 16, order: 1 }, { from: 6, to: 17, order: 1 }] },
   Phenolphthalein: { version: 1, kind: "molecule", name: "C20H14O4", source: "https://pubchem.ncbi.nlm.nih.gov/compound/4764", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [0.23888, -2.56132], position: [0.0681, -0.6796, 1.6817] }, { id: 2, atomicNumber: 8, charge: 0, diagram: [-1.15141, -4.84433], position: [0.1311, -2.6912, 2.8191] }, { id: 3, atomicNumber: 8, charge: 0, diagram: [-0.28914, 4.89374], position: [4.9074, 2.6214, -0.3663] }, { id: 4, atomicNumber: 8, charge: 0, diagram: [5.83111, -0.304], position: [-4.5714, 3.1224, -0.3774] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [-0.11535, -1.10375], position: [61e-4, -0.186, 0.2942] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [-1.61105, -0.99023], position: [-0.1448, -1.487, -0.4384] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [-0.1588, 0.39562], position: [1.3275, 0.5706, 0.1165] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [1.37126, -0.90381], position: [-1.2286, 0.7058, 0.1129] }, { id: 9, atomicNumber: 6, charge: 0, diagram: [-2.18121, -2.37764], position: [-0.102, -2.548, 0.4475] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [-1.03789, -3.34863], position: [0.0514, -2.0407, 1.7969] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [-2.52751, 0.19725], position: [-0.3364, -1.7366, -1.7913] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [-1.47902, 1.10768], position: [1.6359, 1.6478, 0.9497] }, { id: 13, atomicNumber: 6, charge: 0, diagram: [2.28772, -2.09129], position: [-1.4446, 1.3655, -1.0987] }, { id: 14, atomicNumber: 6, charge: 0, diagram: [1.11797, 1.18294], position: [2.2267, 0.185, -0.8801] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [1.94142, 0.4836], position: [-2.1399, 0.8614, 1.1596] }, { id: 16, atomicNumber: 6, charge: 0, diagram: [-3.66783, -2.57758], position: [-0.2222, -3.8691, 0.0526] }, { id: 17, atomicNumber: 6, charge: 0, diagram: [-4.01413, -269e-5], position: [-0.4597, -3.0612, -2.2235] }, { id: 18, atomicNumber: 6, charge: 0, diagram: [-4.58428, -1.3901], position: [-0.4004, -4.1214, -1.3066] }, { id: 19, atomicNumber: 6, charge: 0, diagram: [-1.52247, 2.60705], position: [2.8379, 2.3365, 0.787] }, { id: 20, atomicNumber: 6, charge: 0, diagram: [3.77433, -1.89135], position: [-2.5671, 2.1772, -1.2629] }, { id: 21, atomicNumber: 6, charge: 0, diagram: [1.07452, 2.68231], position: [3.4287, 0.8736, -1.0426] }, { id: 22, atomicNumber: 6, charge: 0, diagram: [3.42803, 0.68354], position: [-3.2623, 1.6731, 0.9953] }, { id: 23, atomicNumber: 6, charge: 0, diagram: [-0.2457, 3.39437], position: [3.7343, 1.9494, -0.209] }, { id: 24, atomicNumber: 6, charge: 0, diagram: [4.34449, -0.50394], position: [-3.4759, 2.331, -0.216] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [-2.31001, 1.6814], position: [-0.3778, -0.9351, -2.52] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [-2.23863, 0.86589], position: [0.951, 1.9627, 1.7325] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [1.71756, -3.4787], position: [-0.7422, 1.2764, -1.9222] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [2.57125, 0.8115], position: [2.0446, -0.6456, -1.551] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [1.33954, 1.85755], position: [-2.0108, 0.3652, 2.1165] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [-4.23798, -3.965], position: [-0.1874, -4.6838, 0.7671] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [-4.93058, 1.18479], position: [-0.602, -3.2721, -3.28] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [-6.0709, -1.59004], position: [-0.4996, -5.1442, -1.6594] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [-2.84268, 3.31911], position: [3.0708, 3.1733, 1.4398] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [4.69079, -3.07883], position: [-2.72, 2.6874, -2.2102] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [2.35129, 3.46962], position: [4.1198, 0.5617, -1.8212] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [3.99819, 2.07096], position: [-3.9673, 1.7887, 1.814] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [-1.60936, 5.60579], position: [5.4043, 2.2202, -1.0998] }, { id: 38, atomicNumber: 1, charge: 0, diagram: [6.74757, -1.49148], position: [-4.5598, 3.4974, -1.2749] }], bonds: [{ from: 1, to: 5, order: 1 }, { from: 1, to: 10, order: 1 }, { from: 2, to: 10, order: 2 }, { from: 3, to: 23, order: 1 }, { from: 3, to: 37, order: 1 }, { from: 4, to: 24, order: 1 }, { from: 4, to: 38, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 5, to: 7, order: 1 }, { from: 5, to: 8, order: 1 }, { from: 6, to: 9, order: 2 }, { from: 6, to: 11, order: 1 }, { from: 7, to: 12, order: 2 }, { from: 7, to: 14, order: 1 }, { from: 8, to: 13, order: 2 }, { from: 8, to: 15, order: 1 }, { from: 9, to: 10, order: 1 }, { from: 9, to: 16, order: 1 }, { from: 11, to: 17, order: 2 }, { from: 11, to: 25, order: 1 }, { from: 12, to: 19, order: 1 }, { from: 12, to: 26, order: 1 }, { from: 13, to: 20, order: 1 }, { from: 13, to: 27, order: 1 }, { from: 14, to: 21, order: 2 }, { from: 14, to: 28, order: 1 }, { from: 15, to: 22, order: 2 }, { from: 15, to: 29, order: 1 }, { from: 16, to: 18, order: 2 }, { from: 16, to: 30, order: 1 }, { from: 17, to: 18, order: 1 }, { from: 17, to: 31, order: 1 }, { from: 18, to: 32, order: 1 }, { from: 19, to: 23, order: 2 }, { from: 19, to: 33, order: 1 }, { from: 20, to: 24, order: 2 }, { from: 20, to: 34, order: 1 }, { from: 21, to: 23, order: 1 }, { from: 21, to: 35, order: 1 }, { from: 22, to: 24, order: 1 }, { from: 22, to: 36, order: 1 }] },
   "Phosphors\xE4ure (1 mol/L)": { version: 1, kind: "molecule", name: "H3O4P", source: "https://pubchem.ncbi.nlm.nih.gov/compound/1004", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 15, charge: 0, diagram: [-0.33705, 0.52916], position: [0.0936, -2e-4, -71e-4] }, { id: 2, atomicNumber: 8, charge: 0, diagram: [0.11389, -0.90145], position: [-0.6464, -0.865, -1.1531] }, { id: 3, atomicNumber: 8, charge: 0, diagram: [-1.76766, 0.07822], position: [-0.5406, -0.5569, 1.3712] }, { id: 4, atomicNumber: 8, charge: 0, diagram: [1.09356, 0.9801], position: [-0.4998, 1.4936, -0.159] }, { id: 5, atomicNumber: 8, charge: 0, diagram: [-0.78799, 1.95977], position: [1.5932, -0.0714, -0.052] }, { id: 6, atomicNumber: 1, charge: 0, diagram: [1.57831, -1.22623], position: [-1.6269, -0.8815, -1.1776] }, { id: 7, atomicNumber: 1, charge: 0, diagram: [-2.09244, -1.3862], position: [-1.5153, -0.5509, 1.482] }, { id: 8, atomicNumber: 1, charge: 0, diagram: [2.19939, -0.03337], position: [-0.1382, 2.0806, -0.8567] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 1, to: 3, order: 1 }, { from: 1, to: 4, order: 1 }, { from: 1, to: 5, order: 2 }, { from: 2, to: 6, order: 1 }, { from: 3, to: 7, order: 1 }, { from: 4, to: 8, order: 1 }] },
-  "Polyamid 6": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 7, charge: 0, diagram: [9.67917, 0.29487], position: [-7.08786, -1.05145, 1.00714] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [8.18704, 0.14139], position: [-6.36414, 0.18591, 0.73761] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [6.69491, -0.01209], position: [-4.97006, -0.10293, 0.17899] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [5.20278, -0.16557], position: [-4.21228, 1.19593, -0.10774] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [3.71066, -0.31905], position: [-2.84965, 0.97073, -0.76821] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [2.21853, -0.47253], position: [-1.84236, 0.26772, 0.1408] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [0.7264, -0.62601], position: [-0.46997, 0.16191, -0.4998] }, { id: 8, atomicNumber: 8, charge: 0, diagram: [0.11325, -1.99497], position: [-0.21173, 0.5573, -1.63055] }, { id: 9, atomicNumber: 7, charge: 0, diagram: [-0.15258, 0.58948], position: [0.45822, -0.44354, 0.32533] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [-1.64471, 0.436], position: [1.85079, -0.5173, -0.06881] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [-3.13683, 0.28252], position: [2.6134, -1.52253, 0.78456] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [-4.62896, 0.12904], position: [4.05422, -1.7703, 0.32663] }, { id: 13, atomicNumber: 6, charge: 0, diagram: [-6.12109, -0.02444], position: [4.96941, -0.5444, 0.41064] }, { id: 14, atomicNumber: 6, charge: 0, diagram: [-7.61322, -0.17792], position: [5.11937, 0.18439, -0.92594] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [-9.10534, -0.3314], position: [6.02497, 1.38081, -0.80349] }, { id: 16, atomicNumber: 8, charge: 0, diagram: [-9.71849, -1.70036], position: [6.48585, 1.86055, 0.21763] }, { id: 17, atomicNumber: 8, charge: 0, diagram: [-9.98432, 0.88408], position: [6.29425, 1.93124, -2.00326] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [10.29231, 1.66383], position: [-6.55115, -1.63133, 1.65079] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [10.55815, -0.92061], position: [-7.17188, -1.5921, 0.14669] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [8.34052, -1.35074], position: [-6.28783, 0.76197, 1.66616] }, { id: 21, atomicNumber: 1, charge: 0, diagram: [8.03356, 1.63352], position: [-6.94181, 0.78689, 0.02703] }, { id: 22, atomicNumber: 1, charge: 0, diagram: [6.84839, -1.50422], position: [-4.41031, -0.71108, 0.899] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [6.54143, 1.48004], position: [-5.05451, -0.68831, -0.74511] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [5.0493, 1.32656], position: [-4.08172, 1.76282, 0.82209] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [5.35626, -1.6577], position: [-4.81645, 1.82154, -0.77661] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [3.86413, -1.81118], position: [-2.97765, 0.39828, -1.69536] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [3.55718, 1.17308], position: [-2.44632, 1.9479, -1.06312] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [2.37201, -1.96465], position: [-1.74052, 0.82208, 1.08104] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [2.06505, 1.0196], position: [-2.17984, -0.74823, 0.37257] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [0.46057, 1.95843], position: [0.24107, -0.49368, 1.31258] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [-1.49123, -1.05613], position: [2.265, 0.48947, 0.04688] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [-1.79818, 1.92812], position: [1.90433, -0.78952, -1.12878] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [-2.98336, -1.20961], position: [2.61222, -1.19169, 1.831] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [-3.29031, 1.77465], position: [2.08051, -2.48223, 0.77033] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [-4.78244, 1.62117], position: [4.46911, -2.54543, 0.98393] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [-4.47548, -1.36309], position: [4.06004, -2.19204, -0.68546] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [-5.96761, -1.51657], position: [5.96672, -0.88068, 0.72424] }, { id: 38, atomicNumber: 1, charge: 0, diagram: [-6.27457, 1.46769], position: [4.62327, 0.14346, 1.19158] }, { id: 39, atomicNumber: 1, charge: 0, diagram: [-7.45974, -1.67005], position: [4.15102, 0.53315, -1.29419] }, { id: 40, atomicNumber: 1, charge: 0, diagram: [-7.76669, 1.31421], position: [5.55365, -0.49803, -1.66536] }, { id: 41, atomicNumber: 1, charge: 0, diagram: [-11.47645, 0.73061], position: [6.87063, 2.69571, -1.79345] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 6, to: 7, order: 1 }, { from: 7, to: 8, order: 2 }, { from: 7, to: 9, order: 1 }, { from: 9, to: 10, order: 1 }, { from: 10, to: 11, order: 1 }, { from: 11, to: 12, order: 1 }, { from: 12, to: 13, order: 1 }, { from: 13, to: 14, order: 1 }, { from: 14, to: 15, order: 1 }, { from: 15, to: 16, order: 2 }, { from: 15, to: 17, order: 1 }, { from: 1, to: 18, order: 1 }, { from: 1, to: 19, order: 1 }, { from: 2, to: 20, order: 1 }, { from: 2, to: 21, order: 1 }, { from: 3, to: 22, order: 1 }, { from: 3, to: 23, order: 1 }, { from: 4, to: 24, order: 1 }, { from: 4, to: 25, order: 1 }, { from: 5, to: 26, order: 1 }, { from: 5, to: 27, order: 1 }, { from: 6, to: 28, order: 1 }, { from: 6, to: 29, order: 1 }, { from: 9, to: 30, order: 1 }, { from: 10, to: 31, order: 1 }, { from: 10, to: 32, order: 1 }, { from: 11, to: 33, order: 1 }, { from: 11, to: 34, order: 1 }, { from: 12, to: 35, order: 1 }, { from: 12, to: 36, order: 1 }, { from: 13, to: 37, order: 1 }, { from: 13, to: 38, order: 1 }, { from: 14, to: 39, order: 1 }, { from: 14, to: 40, order: 1 }, { from: 17, to: 41, order: 1 }] },
-  "Polyethylen (PE)": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [-3.75, 0], position: [-2.97811, 0.50527, 0.22387] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-2.25, 0], position: [-1.5262, 0.30954, 0.63344] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-0.75, 0], position: [-0.76358, -0.52227, -0.39846] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [0.75, 0], position: [0.6737, -0.84372, 0.02089] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [2.25, 0], position: [1.57227, 0.39059, 0.1068] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [3.75, 0], position: [3.01187, 768e-5, 0.4151] }, { id: 7, atomicNumber: 1, charge: 0, diagram: [-5.25, 0], position: [-3.0477, 1.02362, -0.73781] }, { id: 8, atomicNumber: 1, charge: 0, diagram: [-3.75, 1.5], position: [-3.49409, -0.45607, 0.13482] }, { id: 9, atomicNumber: 1, charge: 0, diagram: [-3.75, -1.5], position: [-3.50531, 1.10515, 0.97232] }, { id: 10, atomicNumber: 1, charge: 0, diagram: [-2.25, -1.5], position: [-1.49239, -0.18583, 1.61058] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [-2.25, 1.5], position: [-1.06016, 1.29372, 0.74955] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [-0.75, 1.5], position: [-1.29325, -1.4702, -0.55577] }, { id: 13, atomicNumber: 1, charge: 0, diagram: [-0.75, -1.5], position: [-0.75738, -111e-5, -1.36357] }, { id: 14, atomicNumber: 1, charge: 0, diagram: [0.75, -1.5], position: [1.09502, -1.54245, -0.71267] }, { id: 15, atomicNumber: 1, charge: 0, diagram: [0.75, 1.5], position: [0.66744, -1.36576, 0.98552] }, { id: 16, atomicNumber: 1, charge: 0, diagram: [2.25, 1.5], position: [1.21557, 1.06815, 0.88972] }, { id: 17, atomicNumber: 1, charge: 0, diagram: [2.25, -1.5], position: [1.54206, 0.94071, -0.84072] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [5.25, 0], position: [3.42198, -0.63998, -0.36636] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [3.75, -1.5], position: [3.63749, 0.9037, 0.47597] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [3.75, 1.5], position: [3.08079, -0.52073, 1.37134] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 1, to: 7, order: 1 }, { from: 1, to: 8, order: 1 }, { from: 1, to: 9, order: 1 }, { from: 2, to: 10, order: 1 }, { from: 2, to: 11, order: 1 }, { from: 3, to: 12, order: 1 }, { from: 3, to: 13, order: 1 }, { from: 4, to: 14, order: 1 }, { from: 4, to: 15, order: 1 }, { from: 5, to: 16, order: 1 }, { from: 5, to: 17, order: 1 }, { from: 6, to: 18, order: 1 }, { from: 6, to: 19, order: 1 }, { from: 6, to: 20, order: 1 }] },
-  "Polyethylenterephthalat (PET)": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [14.41169, 0.23088], position: [8.74979, 2.00048, 1.28369] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [12.92529, 0.43241], position: [7.79283, 2.57105, 2.1768] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [11.43889, 0.63395], position: [6.90237, 1.4766, 2.75785] }, { id: 4, atomicNumber: 8, charge: 0, diagram: [9.95249, 0.83548], position: [6.15352, 0.83487, 1.70573] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [9.03475, -0.35102], position: [5.01043, 1.46622, 1.33954] }, { id: 6, atomicNumber: 8, charge: 0, diagram: [9.60342, -1.73904], position: [4.5989, 2.51946, 1.79785] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [7.54835, -0.14949], position: [4.30959, 0.70655, 0.2687] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [6.63062, -1.33598], position: [3.15235, 1.26693, -0.29017] }, { id: 9, atomicNumber: 6, charge: 0, diagram: [5.14422, -1.13445], position: [2.45414, 0.5947, -1.29964] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [4.57555, 0.25358], position: [2.90622, -0.64891, -1.76065] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [3.08915, 0.45511], position: [2.20237, -1.40995, -2.82865] }, { id: 12, atomicNumber: 8, charge: 0, diagram: [2.52049, 1.84314], position: [2.60384, -2.4718, -3.27654] }, { id: 13, atomicNumber: 8, charge: 0, diagram: [2.17142, -0.73138], position: [1.07058, -0.76762, -3.20647] }, { id: 14, atomicNumber: 6, charge: 0, diagram: [0.68502, -0.52985], position: [0.29185, -1.42968, -4.22181] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [-0.80138, -0.32832], position: [-0.56101, -2.54573, -3.62411] }, { id: 16, atomicNumber: 8, charge: 0, diagram: [-2.28778, -0.12679], position: [-1.5019, -1.96008, -2.70648] }, { id: 17, atomicNumber: 6, charge: 0, diagram: [-3.20551, -1.31328], position: [-2.35184, -2.84946, -2.13808] }, { id: 18, atomicNumber: 8, charge: 0, diagram: [-2.63684, -2.70131], position: [-2.3915, -4.04718, -2.36778] }, { id: 19, atomicNumber: 6, charge: 0, diagram: [-4.69191, -1.11175], position: [-3.25703, -2.16575, -1.17409] }, { id: 20, atomicNumber: 6, charge: 0, diagram: [-5.26058, 0.27627], position: [-4.23425, -2.93258, -0.52582] }, { id: 21, atomicNumber: 6, charge: 0, diagram: [-6.74698, 0.47781], position: [-5.10616, -2.33694, 0.39159] }, { id: 22, atomicNumber: 6, charge: 0, diagram: [-7.66471, -0.70869], position: [-5.01249, -0.96703, 0.6723] }, { id: 23, atomicNumber: 6, charge: 0, diagram: [-9.15111, -0.50716], position: [-5.96457, -0.38549, 1.65797] }, { id: 24, atomicNumber: 8, charge: 0, diagram: [-10.06884, -1.69365], position: [-6.79632, -1.04381, 2.26085] }, { id: 25, atomicNumber: 8, charge: 0, diagram: [-9.71978, 0.88087], position: [-5.77462, 0.95243, 1.77865] }, { id: 26, atomicNumber: 6, charge: 0, diagram: [-11.20618, 1.0824], position: [-6.66674, 1.58595, 2.71455] }, { id: 27, atomicNumber: 6, charge: 0, diagram: [-12.69258, 1.28393], position: [-6.28978, 3.06043, 2.79907] }, { id: 28, atomicNumber: 8, charge: 0, diagram: [-14.17898, 1.48547], position: [-6.49077, 3.69698, 1.53796] }, { id: 29, atomicNumber: 6, charge: 0, diagram: [-7.09604, -2.09671], position: [-4.03271, -0.19974, 0.02715] }, { id: 30, atomicNumber: 6, charge: 0, diagram: [-5.60964, -2.29825], position: [-3.1597, -0.79606, -0.89126] }, { id: 31, atomicNumber: 6, charge: 0, diagram: [5.49329, 1.44007], position: [4.06316, -1.2093, -1.20148] }, { id: 32, atomicNumber: 6, charge: 0, diagram: [6.97969, 1.23854], position: [4.76171, -0.53727, -0.19171] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [15.32942, 1.41738], position: [8.24882, 1.4572, 0.64852] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [12.72375, -1.05399], position: [8.33946, 3.08359, 2.97346] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [13.12682, 1.91881], position: [7.21465, 3.30996, 1.61446] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [11.23735, -0.85245], position: [6.232, 1.86921, 3.5308] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [11.64042, 2.12035], position: [7.51909, 0.69526, 3.21441] }, { id: 38, atomicNumber: 1, charge: 0, diagram: [7.19929, -2.72401], position: [2.78795, 2.23301, 0.05733] }, { id: 39, atomicNumber: 1, charge: 0, diagram: [4.22649, -2.32094], position: [1.56117, 1.05569, -1.71498] }, { id: 40, atomicNumber: 1, charge: 0, diagram: [0.88655, 0.95655], position: [-0.35485, -0.66124, -4.65885] }, { id: 41, atomicNumber: 1, charge: 0, diagram: [0.48349, -2.01625], position: [0.94366, -1.80724, -5.0181] }, { id: 42, atomicNumber: 1, charge: 0, diagram: [-0.59985, 1.15808], position: [-1.10565, -3.05612, -4.42645] }, { id: 43, atomicNumber: 1, charge: 0, diagram: [-1.00291, -1.81472], position: [0.06074, -3.26377, -3.07903] }, { id: 44, atomicNumber: 1, charge: 0, diagram: [-4.34285, 1.46277], position: [-4.32131, -3.99908, -0.73024] }, { id: 45, atomicNumber: 1, charge: 0, diagram: [-7.31565, 1.86583], position: [-5.85777, -2.94966, 0.88787] }, { id: 46, atomicNumber: 1, charge: 0, diagram: [-11.40771, -0.404], position: [-7.69364, 1.48087, 2.34656] }, { id: 47, atomicNumber: 1, charge: 0, diagram: [-11.00465, 2.5688], position: [-6.56378, 1.11953, 3.70058] }, { id: 48, atomicNumber: 1, charge: 0, diagram: [-12.89411, -0.20247], position: [-5.23485, 3.1802, 3.0653] }, { id: 49, atomicNumber: 1, charge: 0, diagram: [-12.49105, 2.77033], position: [-6.90497, 3.57576, 3.54183] }, { id: 50, atomicNumber: 1, charge: 0, diagram: [-14.74765, 2.87349], position: [-6.04457, 3.14107, 0.8745] }, { id: 51, atomicNumber: 1, charge: 0, diagram: [-8.01377, -3.28321], position: [-3.93004, 0.86344, 0.23034] }, { id: 52, atomicNumber: 1, charge: 0, diagram: [-5.04097, -3.68627], position: [-2.40621, -0.17822, -1.37499] }, { id: 53, atomicNumber: 1, charge: 0, diagram: [4.92462, 2.8281], position: [4.42541, -2.1766, -1.54882] }, { id: 54, atomicNumber: 1, charge: 0, diagram: [7.89742, 2.42503], position: [5.65246, -1.00114, 0.22594] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 2 }, { from: 5, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 8, to: 9, order: 1 }, { from: 9, to: 10, order: 1 }, { from: 10, to: 11, order: 1 }, { from: 11, to: 12, order: 2 }, { from: 11, to: 13, order: 1 }, { from: 13, to: 14, order: 1 }, { from: 14, to: 15, order: 1 }, { from: 15, to: 16, order: 1 }, { from: 16, to: 17, order: 1 }, { from: 17, to: 18, order: 2 }, { from: 17, to: 19, order: 1 }, { from: 19, to: 20, order: 1 }, { from: 20, to: 21, order: 1 }, { from: 21, to: 22, order: 1 }, { from: 22, to: 23, order: 1 }, { from: 23, to: 24, order: 2 }, { from: 23, to: 25, order: 1 }, { from: 25, to: 26, order: 1 }, { from: 26, to: 27, order: 1 }, { from: 27, to: 28, order: 1 }, { from: 22, to: 29, order: 1 }, { from: 29, to: 30, order: 1 }, { from: 10, to: 31, order: 1 }, { from: 31, to: 32, order: 1 }, { from: 32, to: 7, order: 1 }, { from: 30, to: 19, order: 1 }, { from: 1, to: 33, order: 1 }, { from: 2, to: 34, order: 1 }, { from: 2, to: 35, order: 1 }, { from: 3, to: 36, order: 1 }, { from: 3, to: 37, order: 1 }, { from: 8, to: 38, order: 1 }, { from: 9, to: 39, order: 1 }, { from: 14, to: 40, order: 1 }, { from: 14, to: 41, order: 1 }, { from: 15, to: 42, order: 1 }, { from: 15, to: 43, order: 1 }, { from: 20, to: 44, order: 1 }, { from: 21, to: 45, order: 1 }, { from: 26, to: 46, order: 1 }, { from: 26, to: 47, order: 1 }, { from: 27, to: 48, order: 1 }, { from: 27, to: 49, order: 1 }, { from: 28, to: 50, order: 1 }, { from: 29, to: 51, order: 1 }, { from: 30, to: 52, order: 1 }, { from: 31, to: 53, order: 1 }, { from: 32, to: 54, order: 1 }] },
-  "Polymilchs\xE4ure (PLA)": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [-3.48796, -2.08901], position: [-3.83666, -1.7064, -0.14289] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-2.82785, -0.74207], position: [-3.92996, -0.29701, -0.70217] }, { id: 3, atomicNumber: 8, charge: 0, diagram: [-1.48091, -1.40218], position: [-5.19636, 0.24196, -0.31595] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-2.16773, 0.60487], position: [-2.78115, 0.59025, -0.2144] }, { id: 5, atomicNumber: 8, charge: 0, diagram: [-2.66164, 1.34012], position: [-2.95315, 1.69832, 0.28222] }, { id: 6, atomicNumber: 8, charge: 0, diagram: [-0.67119, 0.70667], position: [-1.57358, 0.02429, -0.46215] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [-0.01108, 2.05361], position: [-0.42338, 0.7811, -0.04442] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [-1.35802, 2.71372], position: [43e-5, 1.70118, -1.18154] }, { id: 9, atomicNumber: 6, charge: 0, diagram: [1.33586, 1.39349], position: [0.69983, -0.19545, 0.29726] }, { id: 10, atomicNumber: 8, charge: 0, diagram: [2.07111, 1.8874], position: [0.63568, -1.41446, 0.19925] }, { id: 11, atomicNumber: 8, charge: 0, diagram: [1.43766, -0.10305], position: [1.78991, 0.48099, 0.76699] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [2.7846, -0.76316], position: [2.94027, -0.34303, 1.01372] }, { id: 13, atomicNumber: 6, charge: 0, diagram: [3.44471, 0.58378], position: [3.93236, 0.49696, 1.80533] }, { id: 14, atomicNumber: 6, charge: 0, diagram: [2.12449, -2.1101], position: [3.57912, -0.79652, -0.29677] }, { id: 15, atomicNumber: 8, charge: 0, diagram: [0.62794, -2.2119], position: [3.28394, -0.42193, -1.42149] }, { id: 16, atomicNumber: 8, charge: 0, diagram: [2.96091, -3.35525], position: [4.56476, -1.70048, -0.11728] }, { id: 17, atomicNumber: 1, charge: 0, diagram: [-4.14808, -3.43595], position: [-3.84027, -1.69045, 0.95293] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [-4.8349, -1.42889], position: [-4.69961, -2.30372, -0.45609] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [-2.14102, -2.74912], position: [-2.92468, -2.21408, -0.47168] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [-4.17479, -0.08195], position: [-3.90195, -0.31128, -1.79662] }, { id: 21, atomicNumber: 1, charge: 0, diagram: [-0.23576, -0.56575], position: [-5.07923, 1.2101, -0.24952] }, { id: 22, atomicNumber: 1, charge: 0, diagram: [0.64904, 3.40055], position: [-0.64631, 1.34398, 0.87025] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [-2.70496, 3.37384], position: [-0.81379, 2.37672, -1.46306] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [-1.92868, 2.03632], position: [0.25596, 1.12087, -2.07553] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [-0.6979, 4.06066], position: [0.87156, 2.30507, -0.90919] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [4.13154, -1.42328], position: [2.64878, -1.22161, 1.60177] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [4.10483, 1.93072], position: [4.83007, -0.07414, 2.06176] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [4.79165, -0.07633], position: [4.24182, 1.37913, 1.23313] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [2.76731, 1.15444], position: [3.47375, 0.86232, 2.73041] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [2.3008, -4.70219], position: [4.85183, -1.92269, -1.02852] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 4, to: 5, order: 2 }, { from: 4, to: 6, order: 1 }, { from: 6, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 7, to: 9, order: 1 }, { from: 9, to: 10, order: 2 }, { from: 9, to: 11, order: 1 }, { from: 11, to: 12, order: 1 }, { from: 12, to: 13, order: 1 }, { from: 12, to: 14, order: 1 }, { from: 14, to: 15, order: 2 }, { from: 14, to: 16, order: 1 }, { from: 1, to: 17, order: 1 }, { from: 1, to: 18, order: 1 }, { from: 1, to: 19, order: 1 }, { from: 2, to: 20, order: 1 }, { from: 3, to: 21, order: 1 }, { from: 7, to: 22, order: 1 }, { from: 8, to: 23, order: 1 }, { from: 8, to: 24, order: 1 }, { from: 8, to: 25, order: 1 }, { from: 12, to: 26, order: 1 }, { from: 13, to: 27, order: 1 }, { from: 13, to: 28, order: 1 }, { from: 13, to: 29, order: 1 }, { from: 16, to: 30, order: 1 }] },
-  "Polypropylen (PP)": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [1.28251, 1.87699], position: [-3.18994, -0.06052, -0.97601] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [2.44332, 0.92698], position: [-2.42281, -0.55658, 0.24766] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [3.60413, -0.02303], position: [-2.7578, 0.28421, 1.47968] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [1.49331, -0.23383], position: [-0.90534, -0.70886, 14e-4] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [0.5433, -1.39464], position: [-0.15061, 0.43867, -0.70331] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [-0.40671, -2.55545], position: [-0.14057, 1.74846, 0.08481] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [-0.61751, -0.44463], position: [1.27495, 865e-5, -1.1386] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [-1.77832, 0.50538], position: [2.18744, -0.6982, -0.11381] }, { id: 9, atomicNumber: 6, charge: 0, diagram: [-2.93913, 1.45539], position: [3.48925, -1.12101, -0.80692] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [-2.72833, -0.65543], position: [2.5228, 0.15751, 1.10507] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [0.1217, 2.827], position: [-4.26983, -0.13059, -0.80561] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [2.23252, 3.0378], position: [-2.961, 0.98508, -1.20417] }, { id: 13, atomicNumber: 1, charge: 0, diagram: [0.64217, 1.26503], position: [-2.95255, -0.66617, -1.85676] }, { id: 14, atomicNumber: 1, charge: 0, diagram: [3.39333, 2.08779], position: [-2.79216, -1.56865, 0.46596] }, { id: 15, atomicNumber: 1, charge: 0, diagram: [4.76494, -0.97304], position: [-2.17832, -0.0437, 2.34882] }, { id: 16, atomicNumber: 1, charge: 0, diagram: [4.55414, 1.13778], position: [-2.571, 1.34862, 1.32351] }, { id: 17, atomicNumber: 1, charge: 0, diagram: [3.1309, -0.77175], position: [-3.81884, 0.17805, 1.73237] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [2.10527, -0.87417], position: [-0.77746, -1.60849, -0.61723] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [0.7446, 0.2394], position: [-0.42251, -0.93648, 0.95971] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [1.70411, -2.34465], position: [-0.67101, 0.65734, -1.6454] }, { id: 21, atomicNumber: 1, charge: 0, diagram: [-1.35672, -3.71626], position: [-1.0989, 2.26572, -0.02232] }, { id: 22, atomicNumber: 1, charge: 0, diagram: [0.20525, -3.19579], position: [0.6251, 2.43557, -0.29042] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [0.34201, -3.02869], position: [0.03241, 1.59142, 1.15198] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [-1.70193, -1.48098], position: [1.14882, -0.67838, -1.98796] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [-1.41894, -1.71259], position: [1.7997, 0.88131, -1.55041] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [-0.82831, 1.66619], position: [1.69794, -1.61581, 0.23321] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [-4.09994, 2.4054], position: [4.04705, -0.25087, -1.1698] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [-1.8547, 2.49174], position: [3.28214, -1.77319, -1.66206] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [-2.1377, 2.72335], position: [4.13586, -1.67495, -0.11791] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [-3.67834, -1.81624], position: [1.65305, 0.27791, 1.75507] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [-3.76468, 0.42899], position: [2.88129, 1.14943, 0.81118] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [-3.99628, 0.146], position: [3.30284, -0.3155, 1.71199] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 5, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 8, to: 9, order: 1 }, { from: 8, to: 10, order: 1 }, { from: 1, to: 11, order: 1 }, { from: 1, to: 12, order: 1 }, { from: 1, to: 13, order: 1 }, { from: 2, to: 14, order: 1 }, { from: 3, to: 15, order: 1 }, { from: 3, to: 16, order: 1 }, { from: 3, to: 17, order: 1 }, { from: 4, to: 18, order: 1 }, { from: 4, to: 19, order: 1 }, { from: 5, to: 20, order: 1 }, { from: 6, to: 21, order: 1 }, { from: 6, to: 22, order: 1 }, { from: 6, to: 23, order: 1 }, { from: 7, to: 24, order: 1 }, { from: 7, to: 25, order: 1 }, { from: 8, to: 26, order: 1 }, { from: 9, to: 27, order: 1 }, { from: 9, to: 28, order: 1 }, { from: 9, to: 29, order: 1 }, { from: 10, to: 30, order: 1 }, { from: 10, to: 31, order: 1 }, { from: 10, to: 32, order: 1 }] },
-  "Polystyrol (PS)": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [1.43026, 2.87433], position: [2.05945, 2.12485, 0.85713] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [2.00105, 1.48718], position: [1.09024, 1.03004, 0.39179] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [2.57184, 0.10002], position: [1.85788, -0.11935, -0.24085] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [4.05854, -0.09924], position: [1.69008, -0.39725, -1.60611] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [4.62933, -1.4864], position: [2.37852, -1.45092, -2.20985] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [3.71341, -2.67429], position: [3.24639, -2.23888, -1.45791] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [2.2267, -2.47503], position: [3.42717, -1.97282, -0.10265] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [1.65592, -1.08787], position: [2.73866, -0.91949, 0.50257] }, { id: 9, atomicNumber: 6, charge: 0, diagram: [0.61389, 0.91639], position: [0.18464, 0.58757, 1.56558] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [-0.77326, 0.3456], position: [-0.90597, -0.44366, 1.19038] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [-2.16042, -0.22518], position: [-1.87521, 0.06423, 0.13528] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [-3.34831, 0.69074], position: [-2.64375, 1.22157, 0.33168] }, { id: 13, atomicNumber: 6, charge: 0, diagram: [-4.73547, 0.11995], position: [-3.52261, 1.66916, -0.65681] }, { id: 14, atomicNumber: 6, charge: 0, diagram: [-4.93473, -1.36675], position: [-3.64652, 0.9656, -1.85259] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [-3.74684, -2.28267], position: [-2.89329, -0.18718, -2.0605] }, { id: 16, atomicNumber: 6, charge: 0, diagram: [-2.35968, -1.71189], position: [-2.01477, -0.63597, -1.07284] }, { id: 17, atomicNumber: 6, charge: 0, diagram: [-1.34405, 1.73276], position: [-1.66959, -0.88424, 2.44628] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [0.85948, 4.26149], position: [2.69806, 2.4601, 0.0321] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [2.81742, 3.44512], position: [1.50767, 2.99587, 1.22703] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [0.69307, 2.57099], position: [2.71264, 1.77672, 1.66481] }, { id: 21, atomicNumber: 1, charge: 0, diagram: [3.38821, 2.05796], position: [0.45334, 1.4905, -0.37444] }, { id: 22, atomicNumber: 1, charge: 0, diagram: [4.97446, 1.08865], position: [1.0149, 0.20601, -2.20995] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [6.11604, -1.68566], position: [2.23704, -1.65472, -3.26785] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [4.2842, -4.06145], position: [3.78321, -3.05823, -1.92815] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [1.31078, -3.66292], position: [4.10635, -2.5849, 0.48487] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [0.56248, -1.07581], position: [2.89833, -0.72909, 1.56104] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [0.77294, -0.16548], position: [0.80462, 0.16444, 2.36728] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [0.31056, 1.65358], position: [-0.28794, 1.47973, 1.99785] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [-0.37582, -1.10078], position: [-0.40665, -1.34189, 0.80486] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [-3.14905, 2.17744], position: [-2.56636, 1.78556, 1.25798] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [-5.92336, 1.03587], position: [-4.11191, 2.56726, -0.49179] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [-6.32189, -1.93754], position: [-4.33127, 1.31421, -2.62085] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [-3.9461, -3.76938], position: [-2.98936, -0.73937, -2.9915] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [-1.17179, -2.62781], position: [-1.43342, -1.53786, -1.25468] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [-1.91483, 3.11992], position: [-2.43629, -1.62711, 2.19889] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [-2.8281, 1.51459], position: [-0.98687, -1.33863, 3.1725] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [0.04311, 2.30355], position: [-2.16745, -0.04186, 2.93895] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 6, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 2, to: 9, order: 1 }, { from: 9, to: 10, order: 1 }, { from: 10, to: 11, order: 1 }, { from: 11, to: 12, order: 1 }, { from: 12, to: 13, order: 1 }, { from: 13, to: 14, order: 1 }, { from: 14, to: 15, order: 1 }, { from: 15, to: 16, order: 1 }, { from: 10, to: 17, order: 1 }, { from: 8, to: 3, order: 1 }, { from: 16, to: 11, order: 1 }, { from: 1, to: 18, order: 1 }, { from: 1, to: 19, order: 1 }, { from: 1, to: 20, order: 1 }, { from: 2, to: 21, order: 1 }, { from: 4, to: 22, order: 1 }, { from: 5, to: 23, order: 1 }, { from: 6, to: 24, order: 1 }, { from: 7, to: 25, order: 1 }, { from: 8, to: 26, order: 1 }, { from: 9, to: 27, order: 1 }, { from: 9, to: 28, order: 1 }, { from: 10, to: 29, order: 1 }, { from: 12, to: 30, order: 1 }, { from: 13, to: 31, order: 1 }, { from: 14, to: 32, order: 1 }, { from: 15, to: 33, order: 1 }, { from: 16, to: 34, order: 1 }, { from: 17, to: 35, order: 1 }, { from: 17, to: 36, order: 1 }, { from: 17, to: 37, order: 1 }] },
-  "Polyvinylchlorid (PVC)": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [-4.5, 0], position: [-3.18877, -0.78032, -0.83043] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-3, 0], position: [-2.27045, 0.38867, -0.48107] }, { id: 3, atomicNumber: 17, charge: 0, diagram: [-3, -1.5], position: [-2.34975, 1.56753, -1.82212] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-1.5, 0], position: [-0.83349, -0.10334, -0.22581] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [0, 0], position: [0.04058, 0.83236, 0.62474] }, { id: 6, atomicNumber: 17, charge: 0, diagram: [0, -1.5], position: [0.46796, 2.34851, -0.22013] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [1.5, 0], position: [1.30796, 0.17664, 1.21553] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [3, 0], position: [2.31124, -0.56785, 0.31557] }, { id: 9, atomicNumber: 17, charge: 0, diagram: [3, -1.5], position: [1.7028, -2.18781, -0.149] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [4.5, 0], position: [2.78158, 0.17138, -0.92651] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [-6, 0], position: [-4.21405, -0.4375, -1.00811] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [-4.5, 1.5], position: [-2.84485, -1.30695, -1.72761] }, { id: 13, atomicNumber: 1, charge: 0, diagram: [-4.5, -1.5], position: [-3.22358, -1.50395, -887e-5] }, { id: 14, atomicNumber: 1, charge: 0, diagram: [-3, 1.5], position: [-2.66399, 0.88991, 0.40954] }, { id: 15, atomicNumber: 1, charge: 0, diagram: [-1.5, 1.5], position: [-0.34523, -0.33546, -1.17954] }, { id: 16, atomicNumber: 1, charge: 0, diagram: [-1.5, -1.5], position: [-0.91364, -1.04813, 0.32727] }, { id: 17, atomicNumber: 1, charge: 0, diagram: [0, 1.5], position: [-0.55944, 1.16157, 1.48169] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [1.5, 1.5], position: [0.98229, -0.5197, 2.00146] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [1.5, -1.5], position: [1.86721, 0.95677, 1.75181] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [3, 1.5], position: [3.19515, -0.77657, 0.92957] }, { id: 21, atomicNumber: 1, charge: 0, diagram: [6, 0], position: [1.97939, 0.30548, -1.6582] }, { id: 22, atomicNumber: 1, charge: 0, diagram: [4.5, 1.5], position: [3.18707, 1.15372, -0.66417] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [4.5, -1.5], position: [3.58403, -0.38495, -1.4246] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 5, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 8, to: 9, order: 1 }, { from: 8, to: 10, order: 1 }, { from: 1, to: 11, order: 1 }, { from: 1, to: 12, order: 1 }, { from: 1, to: 13, order: 1 }, { from: 2, to: 14, order: 1 }, { from: 4, to: 15, order: 1 }, { from: 4, to: 16, order: 1 }, { from: 5, to: 17, order: 1 }, { from: 7, to: 18, order: 1 }, { from: 7, to: 19, order: 1 }, { from: 8, to: 20, order: 1 }, { from: 10, to: 21, order: 1 }, { from: 10, to: 22, order: 1 }, { from: 10, to: 23, order: 1 }] },
+  "Polyamid 6": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 7, charge: 0, diagram: [-9.65854, 0.69705], position: [-7.08786, -1.05145, 1.00714] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-8.15854, 0.69705], position: [-6.36414, 0.18591, 0.73761] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-6.65853, 0.69705], position: [-4.97006, -0.10293, 0.17899] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-5.15853, 0.69705], position: [-4.21228, 1.19593, -0.10774] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [-3.65854, 0.69705], position: [-2.84965, 0.97073, -0.76821] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [-2.15854, 0.69705], position: [-1.84236, 0.26772, 0.1408] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [-0.65853, 0.69705], position: [-0.46997, 0.16191, -0.4998] }, { id: 8, atomicNumber: 8, charge: 0, diagram: [0.09147, 1.99609], position: [-0.21173, 0.5573, -1.63055] }, { id: 9, atomicNumber: 7, charge: 0, diagram: [0.09146, -0.602], position: [0.45822, -0.44354, 0.32533] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [1.59147, -0.602], position: [1.85079, -0.5173, -0.06881] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [3.09146, -0.602], position: [2.6134, -1.52253, 0.78456] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [4.59146, -0.602], position: [4.05422, -1.7703, 0.32663] }, { id: 13, atomicNumber: 6, charge: 0, diagram: [6.09146, -0.602], position: [4.96941, -0.5444, 0.41064] }, { id: 14, atomicNumber: 6, charge: 0, diagram: [7.59147, -0.602], position: [5.11937, 0.18439, -0.92594] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [9.09146, -0.602], position: [6.02497, 1.38081, -0.80349] }, { id: 16, atomicNumber: 8, charge: 0, diagram: [9.84146, 0.69704], position: [6.48585, 1.86055, 0.21763] }, { id: 17, atomicNumber: 8, charge: 0, diagram: [9.84146, -1.90104], position: [6.29425, 1.93124, -2.00326] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [-10.40853, -0.60199], position: [-6.55115, -1.63133, 1.65079] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [-10.40854, 1.99609], position: [-7.17188, -1.5921, 0.14669] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [-8.15854, 2.19705], position: [-6.28783, 0.76197, 1.66616] }, { id: 21, atomicNumber: 1, charge: 0, diagram: [-8.15854, -0.80295], position: [-6.94181, 0.78689, 0.02703] }, { id: 22, atomicNumber: 1, charge: 0, diagram: [-6.65853, 2.19705], position: [-4.41031, -0.71108, 0.899] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [-6.65854, -0.80295], position: [-5.05451, -0.68831, -0.74511] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [-5.15853, -0.80295], position: [-4.08172, 1.76282, 0.82209] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [-5.15853, 2.19705], position: [-4.81645, 1.82154, -0.77661] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [-3.65853, 2.19705], position: [-2.97765, 0.39828, -1.69536] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [-3.65854, -0.80295], position: [-2.44632, 1.9479, -1.06312] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [-2.15854, 2.19704], position: [-1.74052, 0.82208, 1.08104] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [-2.15854, -0.80295], position: [-2.17984, -0.74823, 0.37257] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [-0.65854, -1.90103], position: [0.24107, -0.49368, 1.31258] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [1.59147, 0.898], position: [2.265, 0.48947, 0.04688] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [1.59146, -2.10199], position: [1.90433, -0.78952, -1.12878] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [3.09147, 0.898], position: [2.61222, -1.19169, 1.831] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [3.09146, -2.102], position: [2.08051, -2.48223, 0.77033] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [4.59146, -2.102], position: [4.46911, -2.54543, 0.98393] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [4.59146, 0.898], position: [4.06004, -2.19204, -0.68546] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [6.09146, 0.898], position: [5.96672, -0.88068, 0.72424] }, { id: 38, atomicNumber: 1, charge: 0, diagram: [6.09146, -2.102], position: [4.62327, 0.14346, 1.19158] }, { id: 39, atomicNumber: 1, charge: 0, diagram: [7.59147, 0.898], position: [4.15102, 0.53315, -1.29419] }, { id: 40, atomicNumber: 1, charge: 0, diagram: [7.59146, -2.102], position: [5.55365, -0.49803, -1.66536] }, { id: 41, atomicNumber: 1, charge: 0, diagram: [11.34146, -1.90105], position: [6.87063, 2.69571, -1.79345] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 6, to: 7, order: 1 }, { from: 7, to: 8, order: 2 }, { from: 7, to: 9, order: 1 }, { from: 9, to: 10, order: 1 }, { from: 10, to: 11, order: 1 }, { from: 11, to: 12, order: 1 }, { from: 12, to: 13, order: 1 }, { from: 13, to: 14, order: 1 }, { from: 14, to: 15, order: 1 }, { from: 15, to: 16, order: 2 }, { from: 15, to: 17, order: 1 }, { from: 1, to: 18, order: 1 }, { from: 1, to: 19, order: 1 }, { from: 2, to: 20, order: 1 }, { from: 2, to: 21, order: 1 }, { from: 3, to: 22, order: 1 }, { from: 3, to: 23, order: 1 }, { from: 4, to: 24, order: 1 }, { from: 4, to: 25, order: 1 }, { from: 5, to: 26, order: 1 }, { from: 5, to: 27, order: 1 }, { from: 6, to: 28, order: 1 }, { from: 6, to: 29, order: 1 }, { from: 9, to: 30, order: 1 }, { from: 10, to: 31, order: 1 }, { from: 10, to: 32, order: 1 }, { from: 11, to: 33, order: 1 }, { from: 11, to: 34, order: 1 }, { from: 12, to: 35, order: 1 }, { from: 12, to: 36, order: 1 }, { from: 13, to: 37, order: 1 }, { from: 13, to: 38, order: 1 }, { from: 14, to: 39, order: 1 }, { from: 14, to: 40, order: 1 }, { from: 17, to: 41, order: 1 }], repeatUnit: { atoms: [9, 10, 11, 12, 13, 14, 15, 16, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40], ends: [9, 15] } },
+  "Polyethylen (PE)": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [-3.75, 0], position: [-2.97811, 0.50527, 0.22387] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-2.25, 0], position: [-1.5262, 0.30954, 0.63344] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-0.75, 0], position: [-0.76358, -0.52227, -0.39846] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [0.75, 0], position: [0.6737, -0.84372, 0.02089] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [2.25, 0], position: [1.57227, 0.39059, 0.1068] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [3.75, 0], position: [3.01187, 768e-5, 0.4151] }, { id: 7, atomicNumber: 1, charge: 0, diagram: [-5.25, 0], position: [-3.0477, 1.02362, -0.73781] }, { id: 8, atomicNumber: 1, charge: 0, diagram: [-3.75, 1.5], position: [-3.49409, -0.45607, 0.13482] }, { id: 9, atomicNumber: 1, charge: 0, diagram: [-3.75, -1.5], position: [-3.50531, 1.10515, 0.97232] }, { id: 10, atomicNumber: 1, charge: 0, diagram: [-2.25, -1.5], position: [-1.49239, -0.18583, 1.61058] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [-2.25, 1.5], position: [-1.06016, 1.29372, 0.74955] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [-0.75, 1.5], position: [-1.29325, -1.4702, -0.55577] }, { id: 13, atomicNumber: 1, charge: 0, diagram: [-0.75, -1.5], position: [-0.75738, -111e-5, -1.36357] }, { id: 14, atomicNumber: 1, charge: 0, diagram: [0.75, -1.5], position: [1.09502, -1.54245, -0.71267] }, { id: 15, atomicNumber: 1, charge: 0, diagram: [0.75, 1.5], position: [0.66744, -1.36576, 0.98552] }, { id: 16, atomicNumber: 1, charge: 0, diagram: [2.25, 1.5], position: [1.21557, 1.06815, 0.88972] }, { id: 17, atomicNumber: 1, charge: 0, diagram: [2.25, -1.5], position: [1.54206, 0.94071, -0.84072] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [5.25, 0], position: [3.42198, -0.63998, -0.36636] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [3.75, -1.5], position: [3.63749, 0.9037, 0.47597] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [3.75, 1.5], position: [3.08079, -0.52073, 1.37134] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 1, to: 7, order: 1 }, { from: 1, to: 8, order: 1 }, { from: 1, to: 9, order: 1 }, { from: 2, to: 10, order: 1 }, { from: 2, to: 11, order: 1 }, { from: 3, to: 12, order: 1 }, { from: 3, to: 13, order: 1 }, { from: 4, to: 14, order: 1 }, { from: 4, to: 15, order: 1 }, { from: 5, to: 16, order: 1 }, { from: 5, to: 17, order: 1 }, { from: 6, to: 18, order: 1 }, { from: 6, to: 19, order: 1 }, { from: 6, to: 20, order: 1 }], repeatUnit: { atoms: [3, 4, 12, 13, 14, 15], ends: [3, 4] } },
+  "Polyethylenterephthalat (PET)": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [-14.40429, -0.51617], position: [8.74979, 2.00048, 1.28369] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-12.9142, -0.68823], position: [7.79283, 2.57105, 2.1768] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-11.4241, -0.86031], position: [6.90237, 1.4766, 2.75785] }, { id: 4, atomicNumber: 8, charge: 0, diagram: [-9.934, -1.03237], position: [6.15352, 0.83487, 1.70573] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [-9.03993, 0.17207], position: [5.01043, 1.46622, 1.33954] }, { id: 6, atomicNumber: 8, charge: 0, diagram: [-9.63597, 1.54856], position: [4.5989, 2.51946, 1.79785] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [-7.54983, 1e-5], position: [4.30959, 0.70655, 0.2687] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [-6.65577, 1.20444], position: [3.15235, 1.26693, -0.29017] }, { id: 9, atomicNumber: 6, charge: 0, diagram: [-5.16567, 1.03238], position: [2.45414, 0.5947, -1.29964] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [-4.56963, -0.34412], position: [2.90622, -0.64891, -1.76065] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [-3.07953, -0.51618], position: [2.20237, -1.40995, -2.82865] }, { id: 12, atomicNumber: 8, charge: 0, diagram: [-2.4835, -1.89268], position: [2.60384, -2.4718, -3.27654] }, { id: 13, atomicNumber: 8, charge: 0, diagram: [-2.18548, 0.68824], position: [1.07058, -0.76762, -3.20647] }, { id: 14, atomicNumber: 6, charge: 0, diagram: [-0.69538, 0.51618], position: [0.29185, -1.42968, -4.22181] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [0.79472, 0.34412], position: [-0.56101, -2.54573, -3.62411] }, { id: 16, atomicNumber: 8, charge: 0, diagram: [2.28482, 0.17206], position: [-1.5019, -1.96008, -2.70648] }, { id: 17, atomicNumber: 6, charge: 0, diagram: [3.17888, 1.37649], position: [-2.35184, -2.84946, -2.13808] }, { id: 18, atomicNumber: 8, charge: 0, diagram: [2.58284, 2.75299], position: [-2.3915, -4.04718, -2.36778] }, { id: 19, atomicNumber: 6, charge: 0, diagram: [4.66898, 1.20443], position: [-3.25703, -2.16575, -1.17409] }, { id: 20, atomicNumber: 6, charge: 0, diagram: [5.26502, -0.17206], position: [-4.23425, -2.93258, -0.52582] }, { id: 21, atomicNumber: 6, charge: 0, diagram: [6.75512, -0.34413], position: [-5.10616, -2.33694, 0.39159] }, { id: 22, atomicNumber: 6, charge: 0, diagram: [7.64918, 0.86031], position: [-5.01249, -0.96703, 0.6723] }, { id: 23, atomicNumber: 6, charge: 0, diagram: [9.13927, 0.68824], position: [-5.96457, -0.38549, 1.65797] }, { id: 24, atomicNumber: 8, charge: 0, diagram: [10.03333, 1.89267], position: [-6.79632, -1.04381, 2.26085] }, { id: 25, atomicNumber: 8, charge: 0, diagram: [9.73532, -0.68825], position: [-5.77462, 0.95243, 1.77865] }, { id: 26, atomicNumber: 6, charge: 0, diagram: [11.22541, -0.86032], position: [-6.66674, 1.58595, 2.71455] }, { id: 27, atomicNumber: 6, charge: 0, diagram: [12.71551, -1.03238], position: [-6.28978, 3.06043, 2.79907] }, { id: 28, atomicNumber: 8, charge: 0, diagram: [14.20561, -1.20445], position: [-6.49077, 3.69698, 1.53796] }, { id: 29, atomicNumber: 6, charge: 0, diagram: [7.05314, 2.23679], position: [-4.03271, -0.19974, 0.02715] }, { id: 30, atomicNumber: 6, charge: 0, diagram: [5.56304, 2.40887], position: [-3.1597, -0.79606, -0.89126] }, { id: 31, atomicNumber: 6, charge: 0, diagram: [-5.4637, -1.54855], position: [4.06316, -1.2093, -1.20148] }, { id: 32, atomicNumber: 6, charge: 0, diagram: [-6.9538, -1.37649], position: [4.76171, -0.53727, -0.19171] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [-15.29835, -1.72061], position: [8.24882, 1.4572, 0.64852] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [-12.74212, 0.80186], position: [8.33946, 3.08359, 2.97346] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [-13.08626, -2.17833], position: [7.21465, 3.30996, 1.61446] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [-11.25202, 0.62979], position: [6.232, 1.86921, 3.5308] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [-11.59616, -2.3504], position: [7.51909, 0.69526, 3.21441] }, { id: 38, atomicNumber: 1, charge: 0, diagram: [-7.25181, 2.58094], position: [2.78795, 2.23301, 0.05733] }, { id: 39, atomicNumber: 1, charge: 0, diagram: [-4.27161, 2.2368], position: [1.56117, 1.05569, -1.71498] }, { id: 40, atomicNumber: 1, charge: 0, diagram: [-0.86744, -0.97392], position: [-0.35485, -0.66124, -4.65885] }, { id: 41, atomicNumber: 1, charge: 0, diagram: [-0.52332, 2.00628], position: [0.94366, -1.80724, -5.0181] }, { id: 42, atomicNumber: 1, charge: 0, diagram: [0.62266, -1.14598], position: [-1.10565, -3.05612, -4.42645] }, { id: 43, atomicNumber: 1, charge: 0, diagram: [0.96678, 1.83422], position: [0.06074, -3.26377, -3.07903] }, { id: 44, atomicNumber: 1, charge: 0, diagram: [4.37096, -1.3765], position: [-4.32131, -3.99908, -0.73024] }, { id: 45, atomicNumber: 1, charge: 0, diagram: [7.35116, -1.72062], position: [-5.85777, -2.94966, 0.88787] }, { id: 46, atomicNumber: 1, charge: 0, diagram: [11.39748, 0.62978], position: [-7.69364, 1.48087, 2.34656] }, { id: 47, atomicNumber: 1, charge: 0, diagram: [11.05335, -2.35041], position: [-6.56378, 1.11953, 3.70058] }, { id: 48, atomicNumber: 1, charge: 0, diagram: [12.88757, 0.45772], position: [-5.23485, 3.1802, 3.0653] }, { id: 49, atomicNumber: 1, charge: 0, diagram: [12.54345, -2.52248], position: [-6.90497, 3.57576, 3.54183] }, { id: 50, atomicNumber: 1, charge: 0, diagram: [14.80165, -2.58094], position: [-6.04457, 3.14107, 0.8745] }, { id: 51, atomicNumber: 1, charge: 0, diagram: [7.94719, 3.44123], position: [-3.93004, 0.86344, 0.23034] }, { id: 52, atomicNumber: 1, charge: 0, diagram: [4.967, 3.78535], position: [-2.40621, -0.17822, -1.37499] }, { id: 53, atomicNumber: 1, charge: 0, diagram: [-4.86766, -2.92505], position: [4.42541, -2.1766, -1.54882] }, { id: 54, atomicNumber: 1, charge: 0, diagram: [-7.84786, -2.58092], position: [5.65246, -1.00114, 0.22594] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 2 }, { from: 5, to: 7, order: 1 }, { from: 7, to: 8, order: 2 }, { from: 8, to: 9, order: 1 }, { from: 9, to: 10, order: 2 }, { from: 10, to: 11, order: 1 }, { from: 11, to: 12, order: 2 }, { from: 11, to: 13, order: 1 }, { from: 13, to: 14, order: 1 }, { from: 14, to: 15, order: 1 }, { from: 15, to: 16, order: 1 }, { from: 16, to: 17, order: 1 }, { from: 17, to: 18, order: 2 }, { from: 17, to: 19, order: 1 }, { from: 19, to: 20, order: 2 }, { from: 20, to: 21, order: 1 }, { from: 21, to: 22, order: 2 }, { from: 22, to: 23, order: 1 }, { from: 23, to: 24, order: 2 }, { from: 23, to: 25, order: 1 }, { from: 25, to: 26, order: 1 }, { from: 26, to: 27, order: 1 }, { from: 27, to: 28, order: 1 }, { from: 22, to: 29, order: 1 }, { from: 29, to: 30, order: 2 }, { from: 10, to: 31, order: 1 }, { from: 31, to: 32, order: 2 }, { from: 32, to: 7, order: 1 }, { from: 30, to: 19, order: 1 }, { from: 1, to: 33, order: 1 }, { from: 2, to: 34, order: 1 }, { from: 2, to: 35, order: 1 }, { from: 3, to: 36, order: 1 }, { from: 3, to: 37, order: 1 }, { from: 8, to: 38, order: 1 }, { from: 9, to: 39, order: 1 }, { from: 14, to: 40, order: 1 }, { from: 14, to: 41, order: 1 }, { from: 15, to: 42, order: 1 }, { from: 15, to: 43, order: 1 }, { from: 20, to: 44, order: 1 }, { from: 21, to: 45, order: 1 }, { from: 26, to: 46, order: 1 }, { from: 26, to: 47, order: 1 }, { from: 27, to: 48, order: 1 }, { from: 27, to: 49, order: 1 }, { from: 28, to: 50, order: 1 }, { from: 29, to: 51, order: 1 }, { from: 30, to: 52, order: 1 }, { from: 31, to: 53, order: 1 }, { from: 32, to: 54, order: 1 }], repeatUnit: { atoms: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 29, 30, 40, 41, 42, 43, 44, 45, 51, 52], ends: [13, 23] } },
+  "Polymilchs\xE4ure (PLA)": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [-3.97644, -0.84719], position: [-3.83666, -1.7064, -0.14289] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-2.91579, 0.21348], position: [-3.92996, -0.29701, -0.70217] }, { id: 3, atomicNumber: 8, charge: 0, diagram: [-1.85513, -0.84718], position: [-5.19636, 0.24196, -0.31595] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-1.85513, 1.27414], position: [-2.78115, 0.59025, -0.2144] }, { id: 5, atomicNumber: 8, charge: 0, diagram: [-2.08438, 2.1297], position: [-2.95315, 1.69832, 0.28222] }, { id: 6, atomicNumber: 8, charge: 0, diagram: [-0.40624, 0.88592], position: [-1.57358, 0.02429, -0.46215] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [0.65442, 1.94658], position: [-0.42338, 0.7811, -0.04442] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [-0.40625, 3.00723], position: [43e-5, 1.70118, -1.18154] }, { id: 9, atomicNumber: 6, charge: 0, diagram: [1.71508, 0.88592], position: [0.69983, -0.19545, 0.29726] }, { id: 10, atomicNumber: 8, charge: 0, diagram: [2.57064, 1.11517], position: [0.63568, -1.41446, 0.19925] }, { id: 11, atomicNumber: 8, charge: 0, diagram: [1.32686, -0.56297], position: [1.78991, 0.48099, 0.76699] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [2.38752, -1.62363], position: [2.94027, -0.34303, 1.01372] }, { id: 13, atomicNumber: 6, charge: 0, diagram: [3.44817, -0.56296], position: [3.93236, 0.49696, 1.80533] }, { id: 14, atomicNumber: 6, charge: 0, diagram: [1.32687, -2.68429], position: [3.57912, -0.79652, -0.29677] }, { id: 15, atomicNumber: 8, charge: 0, diagram: [-0.12203, -2.29607], position: [3.28394, -0.42193, -1.42149] }, { id: 16, atomicNumber: 8, charge: 0, diagram: [1.71509, -4.13318], position: [4.56476, -1.70048, -0.11728] }, { id: 17, atomicNumber: 1, charge: 0, diagram: [-5.03711, -1.90785], position: [-3.84027, -1.69045, 0.95293] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [-5.0371, 0.21348], position: [-4.69961, -2.30372, -0.45609] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [-2.91578, -1.90784], position: [-2.92468, -2.21408, -0.47168] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [-3.97645, 1.27414], position: [-3.90195, -0.31128, -1.79662] }, { id: 21, atomicNumber: 1, charge: 0, diagram: [-0.40623, -0.45894], position: [-5.07923, 1.2101, -0.24952] }, { id: 22, atomicNumber: 1, charge: 0, diagram: [1.71508, 3.00724], position: [-0.64631, 1.34398, 0.87025] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [-1.46691, 4.0679], position: [-0.81379, 2.37672, -1.46306] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [-1.16549, 2.55109], position: [0.25596, 1.12087, -2.07553] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [0.65442, 4.06789], position: [0.87156, 2.30507, -0.90919] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [3.44818, -2.68429], position: [2.64878, -1.22161, 1.60177] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [4.50884, 0.4977], position: [4.83007, -0.07414, 2.06176] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [4.50884, -1.62362], position: [4.24182, 1.37913, 1.23313] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [2.99202, 0.19628], position: [3.47375, 0.86232, 2.73041] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [0.65444, -5.19384], position: [4.85183, -1.92269, -1.02852] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 4, to: 5, order: 2 }, { from: 4, to: 6, order: 1 }, { from: 6, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 7, to: 9, order: 1 }, { from: 9, to: 10, order: 2 }, { from: 9, to: 11, order: 1 }, { from: 11, to: 12, order: 1 }, { from: 12, to: 13, order: 1 }, { from: 12, to: 14, order: 1 }, { from: 14, to: 15, order: 2 }, { from: 14, to: 16, order: 1 }, { from: 1, to: 17, order: 1 }, { from: 1, to: 18, order: 1 }, { from: 1, to: 19, order: 1 }, { from: 2, to: 20, order: 1 }, { from: 3, to: 21, order: 1 }, { from: 7, to: 22, order: 1 }, { from: 8, to: 23, order: 1 }, { from: 8, to: 24, order: 1 }, { from: 8, to: 25, order: 1 }, { from: 12, to: 26, order: 1 }, { from: 13, to: 27, order: 1 }, { from: 13, to: 28, order: 1 }, { from: 13, to: 29, order: 1 }, { from: 16, to: 30, order: 1 }], repeatUnit: { atoms: [6, 7, 8, 9, 10, 22, 23, 24, 25], ends: [6, 9] } },
+  "Polypropylen (PP)": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [-2.26482, -0.19627], position: [-3.18994, -0.06052, -0.97601] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-2.26482, 1.30373], position: [-2.42281, -0.55658, 0.24766] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-2.26482, 2.80373], position: [-2.7578, 0.28421, 1.47968] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-0.76482, 1.30373], position: [-0.90534, -0.70886, 14e-4] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [0.73518, 1.30373], position: [-0.15061, 0.43867, -0.70331] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [2.23518, 1.30373], position: [-0.14057, 1.74846, 0.08481] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [0.73518, -0.19627], position: [1.27495, 865e-5, -1.1386] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [0.73518, -1.69627], position: [2.18744, -0.6982, -0.11381] }, { id: 9, atomicNumber: 6, charge: 0, diagram: [0.73518, -3.19627], position: [3.48925, -1.12101, -0.80692] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [2.23518, -1.69627], position: [2.5228, 0.15751, 1.10507] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [-2.26482, -1.69627], position: [-4.26983, -0.13059, -0.80561] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [-3.76482, -0.19627], position: [-2.961, 0.98508, -1.20417] }, { id: 13, atomicNumber: 1, charge: 0, diagram: [-1.38569, -0.30424], position: [-2.95255, -0.66617, -1.85676] }, { id: 14, atomicNumber: 1, charge: 0, diagram: [-3.76482, 1.30373], position: [-2.79216, -1.56865, 0.46596] }, { id: 15, atomicNumber: 1, charge: 0, diagram: [-2.26482, 4.30373], position: [-2.17832, -0.0437, 2.34882] }, { id: 16, atomicNumber: 1, charge: 0, diagram: [-3.76482, 2.80373], position: [-2.571, 1.34862, 1.32351] }, { id: 17, atomicNumber: 1, charge: 0, diagram: [-1.38569, 2.9117], position: [-3.81884, 0.17805, 1.73237] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [-0.65686, 2.18286], position: [-0.77746, -1.60849, -0.61723] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [-0.65685, 0.4246], position: [-0.42251, -0.93648, 0.95971] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [0.73518, 2.80373], position: [-0.67101, 0.65734, -1.6454] }, { id: 21, atomicNumber: 1, charge: 0, diagram: [3.73518, 1.30373], position: [-1.0989, 2.26572, -0.02232] }, { id: 22, atomicNumber: 1, charge: 0, diagram: [2.34314, 2.18286], position: [0.6251, 2.43557, -0.29042] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [2.12721, 2.18286], position: [0.03241, 1.59142, 1.15198] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [2.22399, -0.37911], position: [1.14882, -0.67838, -1.98796] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [2.224, -0.01343], position: [1.7997, 0.88131, -1.55041] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [-0.76482, -1.69627], position: [1.69794, -1.61581, 0.23321] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [0.73518, -4.69627], position: [4.04705, -0.25087, -1.1698] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [-0.75364, -3.01342], position: [3.28214, -1.77319, -1.66206] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [-0.75364, -3.37912], position: [4.13586, -1.67495, -0.11791] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [3.73518, -1.69627], position: [1.65305, 0.27791, 1.75507] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [2.05234, -3.18508], position: [2.88129, 1.14943, 0.81118] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [2.41802, -3.18508], position: [3.30284, -0.3155, 1.71199] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 5, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 8, to: 9, order: 1 }, { from: 8, to: 10, order: 1 }, { from: 1, to: 11, order: 1 }, { from: 1, to: 12, order: 1 }, { from: 1, to: 13, order: 1 }, { from: 2, to: 14, order: 1 }, { from: 3, to: 15, order: 1 }, { from: 3, to: 16, order: 1 }, { from: 3, to: 17, order: 1 }, { from: 4, to: 18, order: 1 }, { from: 4, to: 19, order: 1 }, { from: 5, to: 20, order: 1 }, { from: 6, to: 21, order: 1 }, { from: 6, to: 22, order: 1 }, { from: 6, to: 23, order: 1 }, { from: 7, to: 24, order: 1 }, { from: 7, to: 25, order: 1 }, { from: 8, to: 26, order: 1 }, { from: 9, to: 27, order: 1 }, { from: 9, to: 28, order: 1 }, { from: 9, to: 29, order: 1 }, { from: 10, to: 30, order: 1 }, { from: 10, to: 31, order: 1 }, { from: 10, to: 32, order: 1 }], repeatUnit: { atoms: [4, 5, 6, 18, 19, 20, 21, 22, 23], ends: [4, 5] } },
+  "Polystyrol (PS)": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [-2.41642, -2.11384], position: [2.05945, 2.12485, 0.85713] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-2.41642, -0.61384], position: [1.09024, 1.03004, 0.39179] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-2.41642, 0.88616], position: [1.85788, -0.11935, -0.24085] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-3.71545, 1.63616], position: [1.69008, -0.39725, -1.60611] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [-3.71545, 3.13617], position: [2.37852, -1.45092, -2.20985] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [-2.41641, 3.88616], position: [3.24639, -2.23888, -1.45791] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [-1.11737, 3.13615], position: [3.42717, -1.97282, -0.10265] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [-1.11738, 1.63615], position: [2.73866, -0.91949, 0.50257] }, { id: 9, atomicNumber: 6, charge: 0, diagram: [-0.91642, -0.61385], position: [0.18464, 0.58757, 1.56558] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [0.58358, -0.61385], position: [-0.90597, -0.44366, 1.19038] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [2.08358, -0.61386], position: [-1.87521, 0.06423, 0.13528] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [2.83357, -1.9129], position: [-2.64375, 1.22157, 0.33168] }, { id: 13, atomicNumber: 6, charge: 0, diagram: [4.33357, -1.9129], position: [-3.52261, 1.66916, -0.65681] }, { id: 14, atomicNumber: 6, charge: 0, diagram: [5.08357, -0.61387], position: [-3.64652, 0.9656, -1.85259] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [4.33358, 0.68517], position: [-2.89329, -0.18718, -2.0605] }, { id: 16, atomicNumber: 6, charge: 0, diagram: [2.83358, 0.68518], position: [-2.01477, -0.63597, -1.07284] }, { id: 17, atomicNumber: 6, charge: 0, diagram: [0.58357, -2.11385], position: [-1.66959, -0.88424, 2.44628] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [-2.41644, -3.61384], position: [2.69806, 2.4601, 0.0321] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [-3.91643, -2.11384], position: [1.50767, 2.99587, 1.22703] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [-1.61926, -2.11384], position: [2.71264, 1.77672, 1.66481] }, { id: 21, atomicNumber: 1, charge: 0, diagram: [-3.91642, -0.61383], position: [0.45334, 1.4905, -0.37444] }, { id: 22, atomicNumber: 1, charge: 0, diagram: [-5.01449, 0.88617], position: [1.0149, 0.20601, -2.20995] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [-5.01449, 3.88617], position: [2.23704, -1.65472, -3.26785] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [-2.4164, 5.38616], position: [3.78321, -3.05823, -1.92815] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [0.18167, 3.88614], position: [4.10635, -2.5849, 0.48487] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [-0.11079, 1.20892], position: [2.89833, -0.72909, 1.56104] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [-0.65182, 0.44716], position: [0.80462, 0.16444, 2.36728] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [-0.91643, -1.411], position: [-0.28794, 1.47973, 1.99785] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [0.76642, 0.87496], position: [-0.40665, -1.34189, 0.80486] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [2.08357, -3.21193], position: [-2.56636, 1.78556, 1.25798] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [5.08357, -3.21194], position: [-4.11191, 2.56726, -0.49179] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [6.58358, -0.61388], position: [-4.33127, 1.31421, -2.62085] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [5.08359, 1.98421], position: [-2.98936, -0.73937, -2.9915] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [2.08359, 1.98422], position: [-1.43342, -1.53786, -1.25468] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [0.58356, -3.61385], position: [-2.43629, -1.62711, 2.19889] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [2.039, -2.47682], position: [-0.98687, -1.33863, 3.1725] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [-0.91643, -2.11385], position: [-2.16745, -0.04186, 2.93895] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 2 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 2 }, { from: 6, to: 7, order: 1 }, { from: 7, to: 8, order: 2 }, { from: 2, to: 9, order: 1 }, { from: 9, to: 10, order: 1 }, { from: 10, to: 11, order: 1 }, { from: 11, to: 12, order: 2 }, { from: 12, to: 13, order: 1 }, { from: 13, to: 14, order: 2 }, { from: 14, to: 15, order: 1 }, { from: 15, to: 16, order: 2 }, { from: 10, to: 17, order: 1 }, { from: 8, to: 3, order: 1 }, { from: 16, to: 11, order: 1 }, { from: 1, to: 18, order: 1 }, { from: 1, to: 19, order: 1 }, { from: 1, to: 20, order: 1 }, { from: 2, to: 21, order: 1 }, { from: 4, to: 22, order: 1 }, { from: 5, to: 23, order: 1 }, { from: 6, to: 24, order: 1 }, { from: 7, to: 25, order: 1 }, { from: 8, to: 26, order: 1 }, { from: 9, to: 27, order: 1 }, { from: 9, to: 28, order: 1 }, { from: 10, to: 29, order: 1 }, { from: 12, to: 30, order: 1 }, { from: 13, to: 31, order: 1 }, { from: 14, to: 32, order: 1 }, { from: 15, to: 33, order: 1 }, { from: 16, to: 34, order: 1 }, { from: 17, to: 35, order: 1 }, { from: 17, to: 36, order: 1 }, { from: 17, to: 37, order: 1 }], repeatUnit: { atoms: [9, 10, 11, 12, 13, 14, 15, 16, 27, 28, 29, 30, 31, 32, 33, 34], ends: [9, 10] } },
+  "Polyvinylchlorid (PVC)": { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [-4.5, 0], position: [-3.18877, -0.78032, -0.83043] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-3, 0], position: [-2.27045, 0.38867, -0.48107] }, { id: 3, atomicNumber: 17, charge: 0, diagram: [-3, -1.5], position: [-2.34975, 1.56753, -1.82212] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-1.5, 0], position: [-0.83349, -0.10334, -0.22581] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [0, 0], position: [0.04058, 0.83236, 0.62474] }, { id: 6, atomicNumber: 17, charge: 0, diagram: [0, -1.5], position: [0.46796, 2.34851, -0.22013] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [1.5, 0], position: [1.30796, 0.17664, 1.21553] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [3, 0], position: [2.31124, -0.56785, 0.31557] }, { id: 9, atomicNumber: 17, charge: 0, diagram: [3, -1.5], position: [1.7028, -2.18781, -0.149] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [4.5, 0], position: [2.78158, 0.17138, -0.92651] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [-6, 0], position: [-4.21405, -0.4375, -1.00811] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [-4.5, 1.5], position: [-2.84485, -1.30695, -1.72761] }, { id: 13, atomicNumber: 1, charge: 0, diagram: [-4.5, -1.5], position: [-3.22358, -1.50395, -887e-5] }, { id: 14, atomicNumber: 1, charge: 0, diagram: [-3, 1.5], position: [-2.66399, 0.88991, 0.40954] }, { id: 15, atomicNumber: 1, charge: 0, diagram: [-1.5, 1.5], position: [-0.34523, -0.33546, -1.17954] }, { id: 16, atomicNumber: 1, charge: 0, diagram: [-1.5, -1.5], position: [-0.91364, -1.04813, 0.32727] }, { id: 17, atomicNumber: 1, charge: 0, diagram: [0, 1.5], position: [-0.55944, 1.16157, 1.48169] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [1.5, 1.5], position: [0.98229, -0.5197, 2.00146] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [1.5, -1.5], position: [1.86721, 0.95677, 1.75181] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [3, 1.5], position: [3.19515, -0.77657, 0.92957] }, { id: 21, atomicNumber: 1, charge: 0, diagram: [6, 0], position: [1.97939, 0.30548, -1.6582] }, { id: 22, atomicNumber: 1, charge: 0, diagram: [4.5, 1.5], position: [3.18707, 1.15372, -0.66417] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [4.5, -1.5], position: [3.58403, -0.38495, -1.4246] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 5, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 8, to: 9, order: 1 }, { from: 8, to: 10, order: 1 }, { from: 1, to: 11, order: 1 }, { from: 1, to: 12, order: 1 }, { from: 1, to: 13, order: 1 }, { from: 2, to: 14, order: 1 }, { from: 4, to: 15, order: 1 }, { from: 4, to: 16, order: 1 }, { from: 5, to: 17, order: 1 }, { from: 7, to: 18, order: 1 }, { from: 7, to: 19, order: 1 }, { from: 8, to: 20, order: 1 }, { from: 10, to: 21, order: 1 }, { from: 10, to: 22, order: 1 }, { from: 10, to: 23, order: 1 }], repeatUnit: { atoms: [4, 5, 6, 15, 16, 17], ends: [4, 5] } },
   Propan: { version: 1, kind: "molecule", name: "C3H8", source: "https://pubchem.ncbi.nlm.nih.gov/compound/6334", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [0, 0], position: [0, -0.5689, 0] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [1.5, 0], position: [-1.2571, 0.2844, 0] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-1.5, 0], position: [1.2571, 0.2845, 0] }, { id: 4, atomicNumber: 1, charge: 0, diagram: [0, 1.5], position: [0, -1.2183, 0.8824] }, { id: 5, atomicNumber: 1, charge: 0, diagram: [0, -1.5], position: [0, -1.2183, -0.8824] }, { id: 6, atomicNumber: 1, charge: 0, diagram: [3, 0], position: [-1.2969, 0.9244, 0.8873] }, { id: 7, atomicNumber: 1, charge: 0, diagram: [1.5, -1.5], position: [-1.2967, 0.9245, -0.8872] }, { id: 8, atomicNumber: 1, charge: 0, diagram: [1.5, 1.5], position: [-2.1475, -0.352, -1e-4] }, { id: 9, atomicNumber: 1, charge: 0, diagram: [-3, 0], position: [2.1475, -0.352, 0] }, { id: 10, atomicNumber: 1, charge: 0, diagram: [-1.5, -1.5], position: [1.2968, 0.9245, 0.8872] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [-1.5, 1.5], position: [1.2968, 0.9245, -0.8872] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 1, to: 3, order: 1 }, { from: 1, to: 4, order: 1 }, { from: 1, to: 5, order: 1 }, { from: 2, to: 6, order: 1 }, { from: 2, to: 7, order: 1 }, { from: 2, to: 8, order: 1 }, { from: 3, to: 9, order: 1 }, { from: 3, to: 10, order: 1 }, { from: 3, to: 11, order: 1 }] },
   "Propan-1-ol": { version: 1, kind: "molecule", name: "C3H8O", source: "https://pubchem.ncbi.nlm.nih.gov/compound/1031", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [2.6423, -0.50264], position: [1.8381, -0.1603, -38e-4] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-0.32503, -0.06108], position: [-0.53, -0.5081, 38e-4] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [1.15863, -0.28186], position: [0.5908, 0.52, 36e-4] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-1.80869, 0.1597], position: [-1.8989, 0.1484, -36e-4] }, { id: 5, atomicNumber: 1, charge: 0, diagram: [-0.10425, 1.42258], position: [-0.4276, -1.1648, -0.8685] }, { id: 6, atomicNumber: 1, charge: 0, diagram: [-0.54581, -1.54474], position: [-0.4365, -1.1579, 0.8822] }, { id: 7, atomicNumber: 1, charge: 0, diagram: [0.93785, -1.76552], position: [0.5433, 1.153, -0.8878] }, { id: 8, atomicNumber: 1, charge: 0, diagram: [1.37941, 1.2018], position: [0.5477, 1.1632, 0.8882] }, { id: 9, atomicNumber: 1, charge: 0, diagram: [-3.29236, 0.38048], position: [-2.03, 0.7717, -0.8939] }, { id: 10, atomicNumber: 1, charge: 0, diagram: [-2.02947, -1.32396], position: [-2.6851, -0.613, -32e-4] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [-1.58791, 1.64336], position: [-2.036, 0.7789, 0.8808] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [3.57533, 0.67186], position: [1.8848, -0.6971, 0.8057] }], bonds: [{ from: 1, to: 3, order: 1 }, { from: 1, to: 12, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 2, to: 5, order: 1 }, { from: 2, to: 6, order: 1 }, { from: 3, to: 7, order: 1 }, { from: 3, to: 8, order: 1 }, { from: 4, to: 9, order: 1 }, { from: 4, to: 10, order: 1 }, { from: 4, to: 11, order: 1 }] },
   "Propan-2-ol": { version: 1, kind: "molecule", name: "C3H8O", source: "https://pubchem.ncbi.nlm.nih.gov/compound/3776", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [0.12834, 1.29946], position: [-4e-4, 1.3572, -0.1242] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-0.15005, -0.17448], position: [0, 0.0177, 0.3601] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [1.32389, -0.45287], position: [-1.2599, -0.6878, -0.1179] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-1.62399, 0.10391], position: [1.2603, -0.6871, -0.1179] }, { id: 5, atomicNumber: 1, charge: 0, diagram: [-0.42844, -1.64842], position: [-1e-4, 0.0646, 1.454] }, { id: 6, atomicNumber: 1, charge: 0, diagram: [2.79783, -0.73126], position: [-1.3079, -1.7139, 0.259] }, { id: 7, atomicNumber: 1, charge: 0, diagram: [1.77987, 0.97614], position: [-2.1507, -0.1484, 0.2213] }, { id: 8, atomicNumber: 1, charge: 0, diagram: [1.0455, -1.92681], position: [-1.3061, -0.7138, -1.2122] }, { id: 9, atomicNumber: 1, charge: 0, diagram: [-3.09793, 0.3823], position: [1.3089, -1.7132, 0.259] }, { id: 10, atomicNumber: 1, charge: 0, diagram: [-1.90238, -1.37003], position: [2.1508, -0.1471, 0.2213] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [-1.3456, 1.57785], position: [1.3066, -0.7131, -1.2122] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [1.473, 1.9642], position: [-6e-4, 1.3242, -1.0961] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 1, to: 12, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 2, to: 5, order: 1 }, { from: 3, to: 6, order: 1 }, { from: 3, to: 7, order: 1 }, { from: 3, to: 8, order: 1 }, { from: 4, to: 9, order: 1 }, { from: 4, to: 10, order: 1 }, { from: 4, to: 11, order: 1 }] },
@@ -105278,7 +105285,7 @@ var catalog_generated_default = {
   Stearins\u00E4ure: { version: 1, kind: "molecule", name: "C18H36O2", source: "https://pubchem.ncbi.nlm.nih.gov/compound/5281", representation: null, geometry: "estimated", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [12.79012, -0.04478], position: [7.56931, 1.90016, 0.93387] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [11.29014, -0.03681], position: [6.91212, 0.86516, 0.03417] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [9.79016, -0.02884], position: [6.11852, -0.19491, 0.80142] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [8.29018, -0.02087], position: [4.96191, 0.33314, 1.65647] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [6.79021, -0.01289], position: [3.90795, 1.15856, 0.91242] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [5.29023, -492e-5], position: [3.20788, 0.38383, -0.20704] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [3.79025, 305e-5], position: [2.08621, 1.21517, -0.83444] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [2.29027, 0.01102], position: [1.42658, 0.5391, -2.04026] }, { id: 9, atomicNumber: 6, charge: 0, diagram: [0.79029, 0.019], position: [0.78253, -0.82461, -1.77226] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [-0.70969, 0.02697], position: [-0.31955, -0.78052, -0.71088] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [-2.20967, 0.03494], position: [-1.00964, -2.14053, -0.57561] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [-3.70965, 0.04291], position: [-2.03256, -2.19394, 0.56297] }, { id: 13, atomicNumber: 6, charge: 0, diagram: [-5.20962, 0.05089], position: [-3.23248, -1.26771, 0.34799] }, { id: 14, atomicNumber: 6, charge: 0, diagram: [-6.7096, 0.05886], position: [-4.27604, -1.45175, 1.45334] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [-8.20958, 0.06683], position: [-5.43838, -0.45794, 1.36316] }, { id: 16, atomicNumber: 6, charge: 0, diagram: [-9.70956, 0.0748], position: [-6.30468, -0.64799, 0.11382] }, { id: 17, atomicNumber: 6, charge: 0, diagram: [-11.20954, 0.08278], position: [-7.53938, 0.24965, 0.12213] }, { id: 18, atomicNumber: 6, charge: 0, diagram: [-12.70952, 0.09075], position: [-7.19092, 1.70446, -0.01748] }, { id: 19, atomicNumber: 8, charge: 0, diagram: [-13.4526, 1.39376], position: [-7.29148, 2.55617, 0.84947] }, { id: 20, atomicNumber: 8, charge: 0, diagram: [-13.46641, -1.20428], position: [-6.73419, 2.01963, -1.24377] }, { id: 21, atomicNumber: 1, charge: 0, diagram: [14.2901, -0.05276], position: [6.82516, 2.51475, 1.44859] }, { id: 22, atomicNumber: 1, charge: 0, diagram: [12.78215, -1.54476], position: [8.20326, 1.42071, 1.68631] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [12.79809, 1.4552], position: [8.19805, 2.57017, 0.33886] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [11.28217, -1.53679], position: [6.27024, 1.36936, -0.6963] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [11.29811, 1.46317], position: [7.69554, 0.35781, -0.54199] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [9.79814, 1.47114], position: [5.73543, -0.93181, 0.08552] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [9.78219, -1.52882], position: [6.80586, -0.74469, 1.457] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [8.28221, -1.52084], position: [5.36447, 0.93945, 2.47678] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [8.29816, 1.47911], position: [4.46797, -0.52377, 2.13213] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [6.79818, 1.48709], position: [4.36079, 2.07074, 0.50762] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [6.78223, -1.51287], position: [3.15762, 1.48631, 1.64299] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [5.28225, -1.5049], position: [3.93018, 0.11216, -0.98469] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [5.2982, 1.49506], position: [2.80064, -0.54704, 0.20291] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [3.79822, 1.50303], position: [1.33011, 1.45246, -0.07725] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [3.78228, -1.49693], position: [2.49728, 2.17615, -1.1688] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [2.2823, -1.48895], position: [2.17654, 0.41732, -2.83184] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [2.29824, 1.511], position: [0.66391, 1.21794, -2.44202] }, { id: 38, atomicNumber: 1, charge: 0, diagram: [0.79826, 1.51898], position: [1.54992, -1.55141, -1.48213] }, { id: 39, atomicNumber: 1, charge: 0, diagram: [0.78232, -1.48098], position: [0.35667, -1.18888, -2.71579] }, { id: 40, atomicNumber: 1, charge: 0, diagram: [-0.71766, -1.47301], position: [0.10456, -0.49628, 0.25849] }, { id: 41, atomicNumber: 1, charge: 0, diagram: [-0.70172, 1.52695], position: [-1.05182, -0.01382, -0.98694] }, { id: 42, atomicNumber: 1, charge: 0, diagram: [-2.20169, 1.53492], position: [-0.25067, -2.91045, -0.38855] }, { id: 43, atomicNumber: 1, charge: 0, diagram: [-2.21764, -1.46504], position: [-1.4991, -2.40329, -1.52132] }, { id: 44, atomicNumber: 1, charge: 0, diagram: [-3.71762, -1.45706], position: [-2.38966, -3.22749, 0.65284] }, { id: 45, atomicNumber: 1, charge: 0, diagram: [-3.70167, 1.54289], position: [-1.53918, -1.94689, 1.51094] }, { id: 46, atomicNumber: 1, charge: 0, diagram: [-5.20165, 1.55087], position: [-3.67906, -1.48115, -0.62934] }, { id: 47, atomicNumber: 1, charge: 0, diagram: [-5.2176, -1.44909], position: [-2.90268, -0.22304, 0.3376] }, { id: 48, atomicNumber: 1, charge: 0, diagram: [-6.71758, -1.44112], position: [-4.66548, -2.47685, 1.42947] }, { id: 49, atomicNumber: 1, charge: 0, diagram: [-6.70163, 1.55884], position: [-3.79085, -1.32116, 2.42877] }, { id: 50, atomicNumber: 1, charge: 0, diagram: [-8.20161, 1.56681], position: [-6.06459, -0.58385, 2.25515] }, { id: 51, atomicNumber: 1, charge: 0, diagram: [-8.21755, -1.43315], position: [-5.04398, 0.56461, 1.39606] }, { id: 52, atomicNumber: 1, charge: 0, diagram: [-9.71753, -1.42517], position: [-5.71329, -0.45056, -0.78703] }, { id: 53, atomicNumber: 1, charge: 0, diagram: [-9.70159, 1.57478], position: [-6.63438, -1.69256, 0.06089] }, { id: 54, atomicNumber: 1, charge: 0, diagram: [-11.21751, -1.4172], position: [-8.1117, 0.11645, 1.04726] }, { id: 55, atomicNumber: 1, charge: 0, diagram: [-11.20157, 1.58276], position: [-8.21123, -0.01739, -0.70182] }, { id: 56, atomicNumber: 1, charge: 0, diagram: [-14.96639, -1.19631], position: [-6.55022, 2.98088, -1.18868] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 6, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 8, to: 9, order: 1 }, { from: 9, to: 10, order: 1 }, { from: 10, to: 11, order: 1 }, { from: 11, to: 12, order: 1 }, { from: 12, to: 13, order: 1 }, { from: 13, to: 14, order: 1 }, { from: 14, to: 15, order: 1 }, { from: 15, to: 16, order: 1 }, { from: 16, to: 17, order: 1 }, { from: 17, to: 18, order: 1 }, { from: 18, to: 19, order: 2 }, { from: 18, to: 20, order: 1 }, { from: 1, to: 21, order: 1 }, { from: 1, to: 22, order: 1 }, { from: 1, to: 23, order: 1 }, { from: 2, to: 24, order: 1 }, { from: 2, to: 25, order: 1 }, { from: 3, to: 26, order: 1 }, { from: 3, to: 27, order: 1 }, { from: 4, to: 28, order: 1 }, { from: 4, to: 29, order: 1 }, { from: 5, to: 30, order: 1 }, { from: 5, to: 31, order: 1 }, { from: 6, to: 32, order: 1 }, { from: 6, to: 33, order: 1 }, { from: 7, to: 34, order: 1 }, { from: 7, to: 35, order: 1 }, { from: 8, to: 36, order: 1 }, { from: 8, to: 37, order: 1 }, { from: 9, to: 38, order: 1 }, { from: 9, to: 39, order: 1 }, { from: 10, to: 40, order: 1 }, { from: 10, to: 41, order: 1 }, { from: 11, to: 42, order: 1 }, { from: 11, to: 43, order: 1 }, { from: 12, to: 44, order: 1 }, { from: 12, to: 45, order: 1 }, { from: 13, to: 46, order: 1 }, { from: 13, to: 47, order: 1 }, { from: 14, to: 48, order: 1 }, { from: 14, to: 49, order: 1 }, { from: 15, to: 50, order: 1 }, { from: 15, to: 51, order: 1 }, { from: 16, to: 52, order: 1 }, { from: 16, to: 53, order: 1 }, { from: 17, to: 54, order: 1 }, { from: 17, to: 55, order: 1 }, { from: 20, to: 56, order: 1 }] },
   Stickstoff: { version: 1, kind: "molecule", name: "N2", source: "https://cccbdb.nist.gov/diatomicexpbondx.asp", representation: "experimental", geometry: "supplied", bonds: [{ from: 1, to: 2, order: 3 }], atoms: [{ id: 1, atomicNumber: 7, charge: 0, diagram: [-0.549, 0], position: [-0.549, 0, 0] }, { id: 2, atomicNumber: 7, charge: 0, diagram: [0.549, 0], position: [0.549, 0, 0] }] },
   Styrol: { version: 1, kind: "molecule", name: "C8H8", source: "https://pubchem.ncbi.nlm.nih.gov/compound/7501", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 6, charge: 0, diagram: [-0.43707, -0.36628], position: [0.5487, -0.2144, 0.1043] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-0.04074, 1.08041], position: [-0.3364, -1.2879, 52e-4] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [0.61763, -1.43286], position: [0.0619, 1.0927, 0.1091] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [1.4103, 1.46052], position: [-1.7083, -1.0543, -0.0889] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [2.06867, -1.05275], position: [-1.3101, 1.3263, 0.0151] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [2.46501, 0.39394], position: [-2.1952, 0.2528, -0.0839] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [-1.88811, -0.7464], position: [1.9794, -0.458, 0.2022] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [-2.94282, 0.32018], position: [2.9601, 0.3428, -0.263] }, { id: 9, atomicNumber: 1, charge: 0, diagram: [-1.09545, 2.14699], position: [0.0255, -2.3133, -15e-4] }, { id: 10, atomicNumber: 1, charge: 0, diagram: [0.2213, -2.87956], position: [0.7226, 1.951, 0.199] }, { id: 11, atomicNumber: 1, charge: 0, diagram: [1.80663, 2.90722], position: [-2.3977, -1.89, -0.1662] }, { id: 12, atomicNumber: 1, charge: 0, diagram: [3.12338, -2.11933], position: [-1.6899, 2.3438, 0.0222] }, { id: 13, atomicNumber: 1, charge: 0, diagram: [3.91605, 0.77405], position: [-3.2635, 0.4346, -0.1562] }, { id: 14, atomicNumber: 1, charge: 0, diagram: [-2.28444, -2.19309], position: [2.2727, -1.3927, 0.6752] }, { id: 15, atomicNumber: 1, charge: 0, diagram: [-4.39386, -0.05993], position: [3.9982, 0.0502, -0.1434] }, { id: 16, atomicNumber: 1, charge: 0, diagram: [-2.54649, 1.76688], position: [2.7608, 1.2784, -0.7731] }], bonds: [{ from: 1, to: 2, order: 2 }, { from: 1, to: 3, order: 1 }, { from: 1, to: 7, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 2, to: 9, order: 1 }, { from: 3, to: 5, order: 2 }, { from: 3, to: 10, order: 1 }, { from: 4, to: 6, order: 2 }, { from: 4, to: 11, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 5, to: 12, order: 1 }, { from: 6, to: 13, order: 1 }, { from: 7, to: 8, order: 2 }, { from: 7, to: 14, order: 1 }, { from: 8, to: 15, order: 1 }, { from: 8, to: 16, order: 1 }] },
-  St\u00E4rke: { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [5.49108, -2.69196], position: [-3.79614, 1.16618, 2.68425] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [4.1492, -2.02162], position: [-2.92788, 0.09384, 2.33298] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [2.80732, -1.35127], position: [-2.45765, 0.17103, 0.87289] }, { id: 4, atomicNumber: 8, charge: 0, diagram: [1.3171, -1.18029], position: [-1.48958, -0.85134, 0.62812] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [0.72005, 0.19577], position: [-0.79963, -0.66018, -0.61157] }, { id: 6, atomicNumber: 8, charge: 0, diagram: [-0.53142, -0.63116], position: [0.39373, 0.09436, -0.38497] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [-1.8733, 0.03919], position: [1.46168, -0.6853, 0.18323] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [-2.30045, -1.3987], position: [2.35056, -1.17028, -0.9757] }, { id: 9, atomicNumber: 8, charge: 0, diagram: [-2.21005, -2.89598], position: [3.40788, -1.99247, -0.47225] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [-3.75928, -1.74773], position: [2.88207, 0.04681, -1.76646] }, { id: 11, atomicNumber: 8, charge: 0, diagram: [-5.01076, -2.57465], position: [1.87331, 0.51134, -2.68643] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [-4.79096, -0.65886], position: [3.28973, 1.18807, -0.79828] }, { id: 13, atomicNumber: 8, charge: 0, diagram: [-6.13283, 0.01149], position: [4.51358, 1.75971, -1.23477] }, { id: 14, atomicNumber: 8, charge: 0, diagram: [-4.36381, 0.77904], position: [3.50453, 0.67645, 0.5085] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [-2.90498, 1.12806], position: [2.27112, 0.23957, 1.12715] }, { id: 16, atomicNumber: 6, charge: 0, diagram: [-1.6535, 1.95499], position: [2.64572, -0.48871, 2.42768] }, { id: 17, atomicNumber: 8, charge: 0, diagram: [-0.40202, 2.78191], position: [3.15935, 0.4459, 3.37748] }, { id: 18, atomicNumber: 6, charge: 0, diagram: [1.61323, 1.40085], position: [-1.6548, 0.0235, -1.71966] }, { id: 19, atomicNumber: 8, charge: 0, diagram: [0.27136, 2.0712], position: [-1.47713, 1.45019, -1.70999] }, { id: 20, atomicNumber: 6, charge: 0, diagram: [3.10346, 1.22988], position: [-3.14271, -0.30875, -1.53751] }, { id: 21, atomicNumber: 8, charge: 0, diagram: [3.01306, 2.72715], position: [-3.38772, -1.67206, -1.90829] }, { id: 22, atomicNumber: 6, charge: 0, diagram: [3.7005, -0.14618], position: [-3.63834, -0.04553, -0.09381] }, { id: 23, atomicNumber: 8, charge: 0, diagram: [4.95198, 0.68074], position: [-4.52823, 1.07453, -0.03352] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [5.58147, -4.18924], position: [-4.29671, 1.41882, 1.87938] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [3.47885, -3.36349], position: [-3.44516, -0.85228, 2.52694] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [4.97812, -0.77146], position: [-2.06501, 0.11935, 3.00706] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [2.38017, -2.78916], position: [-2.01583, 1.1665, 0.73511] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [0.04317, 0.91017], position: [-0.54218, -1.66456, -0.96967] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [-1.34589, 0.75078], position: [1.05289, -1.52961, 0.75172] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [-0.81023, -1.56968], position: [1.75456, -1.79363, -1.65187] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [-2.95889, -3.53456], position: [4.11741, -1.39556, -0.15837] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [-3.48053, -2.69158], position: [3.74123, -0.25826, -2.37467] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [-5.93821, -2.24543], position: [1.13245, 0.85361, -2.14444] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [-5.46898, -1.37218], position: [2.54125, 1.98991, -0.77702] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [-6.22323, 1.50877], position: [4.65846, 2.51568, -0.64184] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [-3.50202, 2.50412], position: [1.69774, 1.14093, 1.38047] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [-2.48042, 3.20646], position: [3.421, -1.24047, 2.24608] }, { id: 38, atomicNumber: 1, charge: 0, diagram: [-1.16521, 1.216], position: [1.77096, -0.96671, 2.87899] }, { id: 39, atomicNumber: 1, charge: 0, diagram: [-0.49242, 4.27918], position: [3.52952, -0.06899, 4.11496] }, { id: 40, atomicNumber: 1, charge: 0, diagram: [2.04039, 2.83875], position: [-1.28614, -0.32439, -2.69192] }, { id: 41, atomicNumber: 1, charge: 0, diagram: [0.18096, 3.56847], position: [-1.90244, 1.80852, -2.50985] }, { id: 42, atomicNumber: 1, charge: 0, diagram: [4.56229, 1.5789], position: [-3.72787, 0.30235, -2.23467] }, { id: 43, atomicNumber: 1, charge: 0, diagram: [4.26454, 3.55408], position: [-3.0979, -2.25642, -1.1828] }, { id: 44, atomicNumber: 1, charge: 0, diagram: [4.85722, -1.10117], position: [-4.21748, -0.91594, 0.24091] }, { id: 45, atomicNumber: 1, charge: 0, diagram: [6.29386, 0.01039], position: [-5.27418, 0.88428, -0.63363] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 6, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 8, to: 9, order: 1 }, { from: 8, to: 10, order: 1 }, { from: 10, to: 11, order: 1 }, { from: 10, to: 12, order: 1 }, { from: 12, to: 13, order: 1 }, { from: 12, to: 14, order: 1 }, { from: 14, to: 15, order: 1 }, { from: 15, to: 16, order: 1 }, { from: 16, to: 17, order: 1 }, { from: 5, to: 18, order: 1 }, { from: 18, to: 19, order: 1 }, { from: 18, to: 20, order: 1 }, { from: 20, to: 21, order: 1 }, { from: 20, to: 22, order: 1 }, { from: 22, to: 23, order: 1 }, { from: 22, to: 3, order: 1 }, { from: 15, to: 7, order: 1 }, { from: 1, to: 24, order: 1 }, { from: 2, to: 25, order: 1 }, { from: 2, to: 26, order: 1 }, { from: 3, to: 27, order: 1 }, { from: 5, to: 28, order: 1 }, { from: 7, to: 29, order: 1 }, { from: 8, to: 30, order: 1 }, { from: 9, to: 31, order: 1 }, { from: 10, to: 32, order: 1 }, { from: 11, to: 33, order: 1 }, { from: 12, to: 34, order: 1 }, { from: 13, to: 35, order: 1 }, { from: 15, to: 36, order: 1 }, { from: 16, to: 37, order: 1 }, { from: 16, to: 38, order: 1 }, { from: 17, to: 39, order: 1 }, { from: 18, to: 40, order: 1 }, { from: 19, to: 41, order: 1 }, { from: 20, to: 42, order: 1 }, { from: 21, to: 43, order: 1 }, { from: 22, to: 44, order: 1 }, { from: 23, to: 45, order: 1 }] },
+  St\u00E4rke: { version: 1, kind: "molecule", name: "", source: "https://goldbook.iupac.org/terms/view/C01286", representation: "repeat-unit", geometry: "estimated", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [-5.14889, 3.29963], position: [-3.79614, 1.16618, 2.68425] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-3.89205, 2.48087], position: [-2.92788, 0.09384, 2.33298] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [-2.63522, 1.6621], position: [-2.45765, 0.17103, 0.87289] }, { id: 4, atomicNumber: 8, charge: 0, diagram: [-1.17416, 1.32257], position: [-1.48958, -0.85134, 0.62812] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [-0.73766, -0.11252], position: [-0.79963, -0.66018, -0.61157] }, { id: 6, atomicNumber: 8, charge: 0, diagram: [0.59982, 0.56655], position: [0.39373, 0.09436, -0.38497] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [1.85666, -0.25222], position: [1.46168, -0.6853, 0.18323] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [2.44474, 1.12769], position: [2.35056, -1.17028, -0.9757] }, { id: 9, atomicNumber: 8, charge: 0, diagram: [2.52539, 2.62553], position: [3.40788, -1.99247, -0.47225] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [3.93382, 1.30836], position: [2.88207, 0.04681, -1.76646] }, { id: 11, atomicNumber: 8, charge: 0, diagram: [5.27131, 1.98742], position: [1.87331, 0.51134, -2.68643] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [4.83482, 0.10911], position: [3.28973, 1.18807, -0.79828] }, { id: 13, atomicNumber: 8, charge: 0, diagram: [6.09164, -0.70965], position: [4.51358, 1.75971, -1.23477] }, { id: 14, atomicNumber: 8, charge: 0, diagram: [4.24674, -1.27081], position: [3.50453, 0.67645, 0.5085] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [2.75766, -1.45146], position: [2.27112, 0.23957, 1.12715] }, { id: 16, atomicNumber: 6, charge: 0, diagram: [1.42017, -2.13053], position: [2.64572, -0.48871, 2.42768] }, { id: 17, atomicNumber: 8, charge: 0, diagram: [0.08268, -2.80959], position: [3.15935, 0.4459, 3.37748] }, { id: 18, atomicNumber: 6, charge: 0, diagram: [-1.76223, -1.20807], position: [-1.6548, 0.0235, -1.71966] }, { id: 19, atomicNumber: 8, charge: 0, diagram: [-0.50541, -2.02684], position: [-1.47713, 1.45019, -1.70999] }, { id: 20, atomicNumber: 6, charge: 0, diagram: [-3.22331, -0.86855], position: [-3.14271, -0.30875, -1.53751] }, { id: 21, atomicNumber: 8, charge: 0, diagram: [-3.30396, -2.36637], position: [-3.38772, -1.67206, -1.90829] }, { id: 22, atomicNumber: 6, charge: 0, diagram: [-3.6598, 0.56654], position: [-3.63834, -0.04553, -0.09381] }, { id: 23, atomicNumber: 8, charge: 0, diagram: [-4.99728, -0.11252], position: [-4.52823, 1.07453, -0.03352] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [-5.06822, 4.79747], position: [-4.29671, 1.41882, 1.87938] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [-3.07329, 3.7377], position: [-3.44516, -0.85228, 2.52694] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [-4.85792, 1.33322], position: [-2.06501, 0.11935, 3.00706] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [-2.04714, 3.04201], position: [-2.01583, 1.1665, 0.73511] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [-0.14651, -0.89934], position: [-0.54218, -1.66456, -0.96967] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [1.25166, -0.89913], position: [1.05289, -1.52961, 0.75172] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [0.98367, 1.46723], position: [1.75456, -1.79363, -1.65187] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [3.34207, 3.1747], position: [4.11741, -1.39556, -0.15837] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [3.76434, 2.27781], position: [3.74123, -0.25826, -2.37467] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [6.15525, 1.55475], position: [1.13245, 0.85361, -2.14444] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [5.58965, 0.7406], position: [2.54125, 1.98991, -0.77702] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [6.01099, -2.20749], position: [4.65846, 2.51568, -0.64184] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [3.19415, -2.88655], position: [1.69774, 1.14093, 1.38047] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [2.09923, -3.46801], position: [3.421, -1.24047, 2.24608] }, { id: 38, atomicNumber: 1, charge: 0, diagram: [1.01919, -1.34076], position: [1.77096, -0.96671, 2.87899] }, { id: 39, atomicNumber: 1, charge: 0, diagram: [202e-5, -4.30742], position: [3.52952, -0.06899, 4.11496] }, { id: 40, atomicNumber: 1, charge: 0, diagram: [-2.35032, -2.58799], position: [-1.28614, -0.32439, -2.69192] }, { id: 41, atomicNumber: 1, charge: 0, diagram: [-0.58606, -3.52466], position: [-1.90244, 1.80852, -2.50985] }, { id: 42, atomicNumber: 1, charge: 0, diagram: [-4.71239, -1.0492], position: [-3.72787, 0.30235, -2.23467] }, { id: 43, atomicNumber: 1, charge: 0, diagram: [-4.64145, -3.04544], position: [-3.0979, -2.25642, -1.1828] }, { id: 44, atomicNumber: 1, charge: 0, diagram: [-4.70027, 1.64702], position: [-4.21748, -0.91594, 0.24091] }, { id: 45, atomicNumber: 1, charge: 0, diagram: [-6.25412, 0.70625], position: [-5.27418, 0.88428, -0.63363] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 3, to: 4, order: 1 }, { from: 4, to: 5, order: 1 }, { from: 5, to: 6, order: 1 }, { from: 6, to: 7, order: 1 }, { from: 7, to: 8, order: 1 }, { from: 8, to: 9, order: 1 }, { from: 8, to: 10, order: 1 }, { from: 10, to: 11, order: 1 }, { from: 10, to: 12, order: 1 }, { from: 12, to: 13, order: 1 }, { from: 12, to: 14, order: 1 }, { from: 14, to: 15, order: 1 }, { from: 15, to: 16, order: 1 }, { from: 16, to: 17, order: 1 }, { from: 5, to: 18, order: 1 }, { from: 18, to: 19, order: 1 }, { from: 18, to: 20, order: 1 }, { from: 20, to: 21, order: 1 }, { from: 20, to: 22, order: 1 }, { from: 22, to: 23, order: 1 }, { from: 22, to: 3, order: 1 }, { from: 15, to: 7, order: 1 }, { from: 1, to: 24, order: 1 }, { from: 2, to: 25, order: 1 }, { from: 2, to: 26, order: 1 }, { from: 3, to: 27, order: 1 }, { from: 5, to: 28, order: 1 }, { from: 7, to: 29, order: 1 }, { from: 8, to: 30, order: 1 }, { from: 9, to: 31, order: 1 }, { from: 10, to: 32, order: 1 }, { from: 11, to: 33, order: 1 }, { from: 12, to: 34, order: 1 }, { from: 13, to: 35, order: 1 }, { from: 15, to: 36, order: 1 }, { from: 16, to: 37, order: 1 }, { from: 16, to: 38, order: 1 }, { from: 17, to: 39, order: 1 }, { from: 18, to: 40, order: 1 }, { from: 19, to: 41, order: 1 }, { from: 20, to: 42, order: 1 }, { from: 21, to: 43, order: 1 }, { from: 22, to: 44, order: 1 }, { from: 23, to: 45, order: 1 }], repeatUnit: { atoms: [1, 2, 3, 4, 5, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 40, 41, 42, 43, 44], ends: [23, 5] } },
   "Tetradecan-1-ol (Myristylalkohol)": { version: 1, kind: "molecule", name: "C14H30O", source: "https://pubchem.ncbi.nlm.nih.gov/compound/8209", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [-10.98273, 0.11863], position: [8.8022, 0.4015, -0.139] }, { id: 2, atomicNumber: 6, charge: 0, diagram: [-0.48308, 0.03282], position: [0.0381, -0.4432, 0.0623] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [1.01687, 0.02056], position: [-1.264, 0.3602, 0.1517] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-1.98303, 0.04507], position: [1.2957, 0.4292, 0.0853] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [2.51682, 83e-4], position: [-2.5576, -0.4609, 0.1061] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [-3.48298, 0.05733], position: [2.5646, -0.4239, 0.0179] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [4.01677, -396e-5], position: [-3.8237, 0.3984, 0.1401] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [-4.98293, 0.06959], position: [3.8553, 0.4027, 0.0249] }, { id: 9, atomicNumber: 6, charge: 0, diagram: [5.51672, -0.01622], position: [-5.1143, -0.4188, 0.0158] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [-6.48288, 0.08185], position: [5.125, -0.4538, 0.0325] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [7.01667, -0.02848], position: [-6.4118, 0.3942, -0.049] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [-7.98283, 0.09411], position: [6.4114, 0.3717, -0.0307] }, { id: 13, atomicNumber: 6, charge: 0, diagram: [8.51662, -0.04073], position: [-7.6711, -0.4707, -0.1192] }, { id: 14, atomicNumber: 6, charge: 0, diagram: [-9.48278, 0.10637], position: [7.6783, -0.4693, -0.1093] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [10.01657, -0.05299], position: [-8.9281, 0.3828, -0.1892] }, { id: 16, atomicNumber: 1, charge: 0, diagram: [-0.47082, 1.53277], position: [0.0727, -1.1544, 0.8967] }, { id: 17, atomicNumber: 1, charge: 0, diagram: [-0.49534, -1.46713], position: [0.0267, -1.0376, -0.8597] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [1.00461, -1.47939], position: [-1.2813, 1.0854, -0.6721] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [1.02913, 1.52051], position: [-1.2533, 0.9468, 1.0791] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [-1.99529, -1.45487], position: [1.2752, 1.1255, -0.7616] }, { id: 21, atomicNumber: 1, charge: 0, diagram: [-1.97077, 1.54502], position: [1.3077, 1.0328, 1.0006] }, { id: 22, atomicNumber: 1, charge: 0, diagram: [2.52908, 1.50825], position: [-2.5588, -1.0675, -0.8079] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [2.50456, -1.49165], position: [-2.5703, -1.1607, 0.9505] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [-3.47072, 1.55728], position: [2.5786, -1.1144, 0.8705] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [-3.49524, -1.44262], position: [2.5411, -1.041, -0.8888] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [4.00451, -1.50391], position: [-3.8492, 0.9744, 1.073] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [4.02903, 1.49599], position: [-3.7858, 1.1256, -0.6802] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [-4.99519, -1.43036], position: [3.8612, 1.0569, 0.9055] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [-4.97067, 1.56954], position: [3.8638, 1.0567, -0.8557] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [5.52898, 1.48373], position: [-5.0518, -1.0425, -0.885] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [5.50446, -1.51617], position: [-5.1721, -1.1099, 0.8665] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [-6.47062, 1.5818], position: [5.098, -1.1384, -0.8244] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [-6.49514, -1.4181], position: [5.1382, -1.0765, 0.9354] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [7.00441, -1.52843], position: [-6.468, 1.0429, 0.8339] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [7.02893, 1.47147], position: [-6.3736, 1.0547, -0.9242] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [-7.99509, -1.40584], position: [6.3783, 1.0424, -0.8989] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [-7.97057, 1.59406], position: [6.4694, 1.0305, 0.8451] }, { id: 38, atomicNumber: 1, charge: 0, diagram: [8.52888, 1.45922], position: [-7.6257, -1.1203, -1.0008] }, { id: 39, atomicNumber: 1, charge: 0, diagram: [8.50436, -1.54068], position: [-7.7239, -1.1211, 0.7614] }, { id: 40, atomicNumber: 1, charge: 0, diagram: [-9.47052, 1.60632], position: [7.6848, -1.0811, -1.0167] }, { id: 41, atomicNumber: 1, charge: 0, diagram: [-9.49504, -1.39358], position: [7.7661, -1.1232, 0.7639] }, { id: 42, atomicNumber: 1, charge: 0, diagram: [11.51652, -0.06525], position: [-9.0176, 1.0225, 0.6946] }, { id: 43, atomicNumber: 1, charge: 0, diagram: [10.00431, -1.55294], position: [-8.9191, 1.0225, -1.0775] }, { id: 44, atomicNumber: 1, charge: 0, diagram: [10.02883, 1.44696], position: [-9.8164, -0.2547, -0.2386] }, { id: 45, atomicNumber: 1, charge: 0, diagram: [-11.74332, -1.17424], position: [9.5952, -0.1591, -0.1888] }], bonds: [{ from: 1, to: 14, order: 1 }, { from: 1, to: 45, order: 1 }, { from: 2, to: 3, order: 1 }, { from: 2, to: 4, order: 1 }, { from: 2, to: 16, order: 1 }, { from: 2, to: 17, order: 1 }, { from: 3, to: 5, order: 1 }, { from: 3, to: 18, order: 1 }, { from: 3, to: 19, order: 1 }, { from: 4, to: 6, order: 1 }, { from: 4, to: 20, order: 1 }, { from: 4, to: 21, order: 1 }, { from: 5, to: 7, order: 1 }, { from: 5, to: 22, order: 1 }, { from: 5, to: 23, order: 1 }, { from: 6, to: 8, order: 1 }, { from: 6, to: 24, order: 1 }, { from: 6, to: 25, order: 1 }, { from: 7, to: 9, order: 1 }, { from: 7, to: 26, order: 1 }, { from: 7, to: 27, order: 1 }, { from: 8, to: 10, order: 1 }, { from: 8, to: 28, order: 1 }, { from: 8, to: 29, order: 1 }, { from: 9, to: 11, order: 1 }, { from: 9, to: 30, order: 1 }, { from: 9, to: 31, order: 1 }, { from: 10, to: 12, order: 1 }, { from: 10, to: 32, order: 1 }, { from: 10, to: 33, order: 1 }, { from: 11, to: 13, order: 1 }, { from: 11, to: 34, order: 1 }, { from: 11, to: 35, order: 1 }, { from: 12, to: 14, order: 1 }, { from: 12, to: 36, order: 1 }, { from: 12, to: 37, order: 1 }, { from: 13, to: 15, order: 1 }, { from: 13, to: 38, order: 1 }, { from: 13, to: 39, order: 1 }, { from: 14, to: 40, order: 1 }, { from: 14, to: 41, order: 1 }, { from: 15, to: 42, order: 1 }, { from: 15, to: 43, order: 1 }, { from: 15, to: 44, order: 1 }] },
   "Tetradecans\xE4ure (Myristins\xE4ure)": { version: 1, kind: "molecule", name: "C14H28O2", source: "https://pubchem.ncbi.nlm.nih.gov/compound/11005", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [-10.45958, -1.178], position: [-8.275, 0.6505, 0.0672] }, { id: 2, atomicNumber: 8, charge: 0, diagram: [-10.43683, 1.41998], position: [-7.2651, -1.3804, -0.0293] }, { id: 3, atomicNumber: 6, charge: 0, diagram: [0.80136, 0.02251], position: [1.7563, 0.4532, 0.0787] }, { id: 4, atomicNumber: 6, charge: 0, diagram: [-0.69858, 0.03564], position: [0.47, -0.3743, 0.026] }, { id: 5, atomicNumber: 6, charge: 0, diagram: [2.30131, 938e-5], position: [2.9959, -0.4439, 0.0519] }, { id: 6, atomicNumber: 6, charge: 0, diagram: [-2.19852, 0.04877], position: [-0.7675, 0.5253, 0.0206] }, { id: 7, atomicNumber: 6, charge: 0, diagram: [3.80125, -375e-5], position: [4.2806, 0.3867, 0.0723] }, { id: 8, atomicNumber: 6, charge: 0, diagram: [-3.69846, 0.0619], position: [-2.0876, -0.2518, 1e-3] }, { id: 9, atomicNumber: 6, charge: 0, diagram: [5.30119, -0.01688], position: [5.5548, -0.463, 0.0787] }, { id: 10, atomicNumber: 6, charge: 0, diagram: [-5.19841, 0.07503], position: [-3.3605, 0.5959, -0.0903] }, { id: 11, atomicNumber: 6, charge: 0, diagram: [6.80113, -0.03001], position: [6.8738, 0.3143, 0.013] }, { id: 12, atomicNumber: 6, charge: 0, diagram: [-6.69835, 0.08816], position: [-4.6482, -0.2336, -0.0471] }, { id: 13, atomicNumber: 6, charge: 0, diagram: [8.30108, -0.04315], position: [8.1431, -0.5389, -0.0361] }, { id: 14, atomicNumber: 6, charge: 0, diagram: [-8.19829, 0.1013], position: [-5.9037, 0.6403, -0.0481] }, { id: 15, atomicNumber: 6, charge: 0, diagram: [9.80102, -0.05628], position: [9.42, 0.2795, -0.1464] }, { id: 16, atomicNumber: 6, charge: 0, diagram: [-9.69823, 0.11443], position: [-7.187, -0.1599, -0.012] }, { id: 17, atomicNumber: 1, charge: 0, diagram: [0.78823, -1.47743], position: [1.7638, 1.0651, 0.9887] }, { id: 18, atomicNumber: 1, charge: 0, diagram: [0.8145, 1.52245], position: [1.784, 1.1416, -0.7747] }, { id: 19, atomicNumber: 1, charge: 0, diagram: [-0.71171, -1.4643], position: [0.4693, -1.0012, -0.8738] }, { id: 20, atomicNumber: 1, charge: 0, diagram: [-0.68545, 1.53558], position: [0.4301, -1.048, 0.8903] }, { id: 21, atomicNumber: 1, charge: 0, diagram: [2.31444, 1.50932], position: [2.9811, -1.1183, 0.9165] }, { id: 22, atomicNumber: 1, charge: 0, diagram: [2.28818, -1.49056], position: [2.9806, -1.0703, -0.848] }, { id: 23, atomicNumber: 1, charge: 0, diagram: [-2.18539, 1.54871], position: [-0.7521, 1.1748, 0.9044] }, { id: 24, atomicNumber: 1, charge: 0, diagram: [-2.21165, -1.45117], position: [-0.7301, 1.1838, -0.8561] }, { id: 25, atomicNumber: 1, charge: 0, diagram: [3.78812, -1.5037], position: [4.2835, 1.0359, 0.9565] }, { id: 26, atomicNumber: 1, charge: 0, diagram: [3.81438, 1.49619], position: [4.2967, 1.0462, -0.8043] }, { id: 27, atomicNumber: 1, charge: 0, diagram: [-3.71159, -1.43804], position: [-2.0739, -0.9476, -0.8477] }, { id: 28, atomicNumber: 1, charge: 0, diagram: [-3.68533, 1.56184], position: [-2.1394, -0.8707, 0.9059] }, { id: 29, atomicNumber: 1, charge: 0, diagram: [5.31432, 1.48306], position: [5.5188, -1.1528, -0.7741] }, { id: 30, atomicNumber: 1, charge: 0, diagram: [5.28806, -1.51683], position: [5.5595, -1.0878, 0.9806] }, { id: 31, atomicNumber: 1, charge: 0, diagram: [-5.18527, 1.57498], position: [-3.337, 1.1834, -1.0162] }, { id: 32, atomicNumber: 1, charge: 0, diagram: [-5.21154, -1.42491], position: [-3.3663, 1.3129, 0.74] }, { id: 33, atomicNumber: 1, charge: 0, diagram: [6.788, -1.52996], position: [6.9293, 0.9838, 0.8807] }, { id: 34, atomicNumber: 1, charge: 0, diagram: [6.81427, 1.46993], position: [6.8516, 0.9603, -0.8739] }, { id: 35, atomicNumber: 1, charge: 0, diagram: [-6.71148, -1.41178], position: [-4.6475, -0.8643, 0.8507] }, { id: 36, atomicNumber: 1, charge: 0, diagram: [-6.68522, 1.58811], position: [-4.6718, -0.9152, -0.9064] }, { id: 37, atomicNumber: 1, charge: 0, diagram: [8.31421, 1.4568], position: [8.0862, -1.2222, -0.8916] }, { id: 38, atomicNumber: 1, charge: 0, diagram: [8.28795, -1.54309], position: [8.1946, -1.1615, 0.8648] }, { id: 39, atomicNumber: 1, charge: 0, diagram: [-8.21142, -1.39865], position: [-5.92, 1.2598, -0.9518] }, { id: 40, atomicNumber: 1, charge: 0, diagram: [-8.18516, 1.60124], position: [-5.8909, 1.2962, 0.8298] }, { id: 41, atomicNumber: 1, charge: 0, diagram: [11.30096, -0.06941], position: [9.5283, 0.9508, 0.7113] }, { id: 42, atomicNumber: 1, charge: 0, diagram: [9.78789, -1.55622], position: [9.4182, 0.8848, -1.0584] }, { id: 43, atomicNumber: 1, charge: 0, diagram: [9.81415, 1.44367], position: [10.2931, -0.3798, -0.1763] }, { id: 44, atomicNumber: 1, charge: 0, diagram: [-11.95952, -1.16487], position: [-9.1106, 0.1378, 0.1014] }], bonds: [{ from: 1, to: 16, order: 1 }, { from: 1, to: 44, order: 1 }, { from: 2, to: 16, order: 2 }, { from: 3, to: 4, order: 1 }, { from: 3, to: 5, order: 1 }, { from: 3, to: 17, order: 1 }, { from: 3, to: 18, order: 1 }, { from: 4, to: 6, order: 1 }, { from: 4, to: 19, order: 1 }, { from: 4, to: 20, order: 1 }, { from: 5, to: 7, order: 1 }, { from: 5, to: 21, order: 1 }, { from: 5, to: 22, order: 1 }, { from: 6, to: 8, order: 1 }, { from: 6, to: 23, order: 1 }, { from: 6, to: 24, order: 1 }, { from: 7, to: 9, order: 1 }, { from: 7, to: 25, order: 1 }, { from: 7, to: 26, order: 1 }, { from: 8, to: 10, order: 1 }, { from: 8, to: 27, order: 1 }, { from: 8, to: 28, order: 1 }, { from: 9, to: 11, order: 1 }, { from: 9, to: 29, order: 1 }, { from: 9, to: 30, order: 1 }, { from: 10, to: 12, order: 1 }, { from: 10, to: 31, order: 1 }, { from: 10, to: 32, order: 1 }, { from: 11, to: 13, order: 1 }, { from: 11, to: 33, order: 1 }, { from: 11, to: 34, order: 1 }, { from: 12, to: 14, order: 1 }, { from: 12, to: 35, order: 1 }, { from: 12, to: 36, order: 1 }, { from: 13, to: 15, order: 1 }, { from: 13, to: 37, order: 1 }, { from: 13, to: 38, order: 1 }, { from: 14, to: 16, order: 1 }, { from: 14, to: 39, order: 1 }, { from: 14, to: 40, order: 1 }, { from: 15, to: 41, order: 1 }, { from: 15, to: 42, order: 1 }, { from: 15, to: 43, order: 1 }] },
   Wasser: { version: 1, kind: "molecule", name: "H2O", source: "https://pubchem.ncbi.nlm.nih.gov/compound/962", representation: "conformer", geometry: "supplied", atoms: [{ id: 1, atomicNumber: 8, charge: 0, diagram: [0, -0.5], position: [0, 0, 0] }, { id: 2, atomicNumber: 1, charge: 0, diagram: [1.29904, 0.25], position: [0.2774, 0.8929, 0.2544] }, { id: 3, atomicNumber: 1, charge: 0, diagram: [-1.29904, 0.25], position: [0.6068, -0.2383, -0.7169] }], bonds: [{ from: 1, to: 2, order: 1 }, { from: 1, to: 3, order: 1 }] },
@@ -105544,6 +105551,299 @@ init_crystal_display();
 init_geometry();
 init_structure();
 
+// molecule-builder/structure-diagram.ts
+init_element_reference();
+init_crystal_display();
+init_geometry();
+var allen = {
+  1: 2.3,
+  2: 4.16,
+  3: 0.912,
+  4: 1.576,
+  5: 2.051,
+  6: 2.544,
+  7: 3.066,
+  8: 3.61,
+  9: 4.193,
+  10: 4.787,
+  11: 0.912,
+  12: 1.293,
+  13: 1.613,
+  14: 1.916,
+  15: 2.253,
+  16: 2.589,
+  17: 2.869,
+  18: 3.242,
+  19: 0.734,
+  20: 1.034,
+  21: 1.19,
+  22: 1.38,
+  23: 1.53,
+  24: 1.65,
+  25: 1.75,
+  26: 1.8,
+  27: 1.84,
+  28: 1.88,
+  29: 1.85,
+  30: 1.597,
+  31: 1.756,
+  32: 1.994,
+  33: 2.211,
+  34: 2.424,
+  35: 2.685,
+  36: 2.966,
+  37: 0.706,
+  38: 0.963,
+  39: 1.12,
+  40: 1.32,
+  41: 1.41,
+  42: 1.47,
+  43: 1.51,
+  44: 1.54,
+  45: 1.56,
+  46: 1.58,
+  47: 1.87,
+  48: 1.52,
+  49: 1.656,
+  50: 1.834,
+  51: 1.984,
+  52: 2.158,
+  53: 2.359,
+  54: 2.582,
+  55: 0.659,
+  56: 0.881,
+  71: 1.09,
+  72: 1.16,
+  73: 1.34,
+  74: 1.47,
+  75: 1.6,
+  76: 1.65,
+  77: 1.68,
+  78: 1.72,
+  79: 1.92,
+  80: 1.76,
+  81: 1.789,
+  82: 1.854,
+  83: 2.01,
+  84: 2.19,
+  85: 2.39,
+  86: 2.6
+};
+var atomSymbol = (number2) => elementByAtomicNumber(number2).symbol;
+var subscript = (value) => value.replace(/\d/g, (digit) => "\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089"[Number(digit)]);
+function chemicalFormula(value) {
+  return value.split("\xB7").map((part) => part.replace(/^(\s*\d+)?(.*)$/, (_3, coefficient, compound) => (coefficient ?? "") + subscript(compound))).join("\xB7");
+}
+var signedNumber = (value) => value > 0 ? `+${value}` : value < 0 ? `\u2212${-value}` : String(value);
+var formalCharge = (value) => value === 0 ? "" : `${Math.abs(value) === 1 ? "" : Math.abs(value)}${value > 0 ? "+" : "\u2212"}`;
+function lewisDiagram(molecule2) {
+  const repeat = molecule2.repeatUnit;
+  const members = repeat ? new Set(repeat.atoms) : void 0;
+  const visible = members ? molecule2.atoms.filter((atom) => members.has(atom.id)) : molecule2.atoms;
+  const atoms = new Map(visible.map((atom) => [atom.id, atom]));
+  const bonds = molecule2.bonds.filter((bond) => atoms.has(bond.from) && atoms.has(bond.to));
+  const oxidation = new Map(visible.map((atom) => [atom.id, atom.charge]));
+  const incident = new Map(visible.map((atom) => [atom.id, []]));
+  const assign = (from, to, order) => {
+    const a5 = atoms.get(from).atomicNumber, b4 = atoms.get(to).atomicNumber;
+    if (a5 === b4) return;
+    if (allen[a5] === void 0 || allen[b4] === void 0 || allen[a5] === allen[b4]) {
+      oxidation.set(from, void 0);
+      oxidation.set(to, void 0);
+      return;
+    }
+    const step = Math.sign(allen[b4] - allen[a5]) * order;
+    if (oxidation.get(from) !== void 0) oxidation.set(from, oxidation.get(from) + step);
+    if (oxidation.get(to) !== void 0) oxidation.set(to, oxidation.get(to) - step);
+  };
+  for (const bond of bonds) {
+    incident.get(bond.from).push(bond);
+    incident.get(bond.to).push(bond);
+    if (!bond.dative) assign(bond.from, bond.to, bond.order);
+  }
+  if (repeat) assign(...repeat.ends, 1);
+  return {
+    bonds,
+    ends: repeat?.ends,
+    atoms: visible.map((atom) => ({
+      ...atom,
+      oxidation: oxidation.get(atom.id),
+      bonds: incident.get(atom.id),
+      electrons: remainingElectrons(atom, incident.get(atom.id), Number(repeat?.ends.includes(atom.id) ?? false))
+    }))
+  };
+}
+function editableRepeatUnit(molecule2) {
+  if (!molecule2.repeatUnit || molecule2.repeatUnit.atoms.length === molecule2.atoms.length) return molecule2;
+  const unit2 = lewisDiagram(molecule2);
+  return { ...molecule2, atoms: molecule2.atoms.filter((atom) => molecule2.repeatUnit.atoms.includes(atom.id)), bonds: unit2.bonds };
+}
+function electronDots(center, neighbors, count2, used = []) {
+  if (!(count2 > 0 && count2 <= 8)) return [];
+  const [x4, y5] = center;
+  const directions = [...used, ...neighbors.map(([a5, b4]) => Math.atan2(b4 - y5, a5 - x4))];
+  const dots = [];
+  for (let pair = 0; pair < count2; pair += 2) {
+    let angle = Math.PI / 2;
+    let best = -Infinity;
+    for (let sample = 0; sample < 24; sample++) {
+      const candidate = Math.PI / 2 + sample * Math.PI / 12;
+      const gap = Math.min(Math.PI, ...directions.map((direction) => Math.acos(Math.max(-1, Math.min(1, Math.cos(direction - candidate))))));
+      if (gap > best + 1e-6) {
+        angle = candidate;
+        best = gap;
+      }
+    }
+    directions.push(angle);
+    const dx = Math.cos(angle), dy = Math.sin(angle);
+    for (const offset3 of pair + 1 < count2 ? [-0.055, 0.055] : [0]) {
+      dots.push([x4 + 0.32 * dx - offset3 * dy, y5 + 0.32 * dy + offset3 * dx]);
+    }
+  }
+  return dots;
+}
+function crystalSpecies(crystal) {
+  const groups2 = /* @__PURE__ */ new Map();
+  for (const site of crystal.sites) {
+    const ion2 = siteIon(site);
+    const label = ion2 || atomSymbol(site.atomicNumber);
+    if (!groups2.has(label)) groups2.set(label, { label, ion: ion2, sites: [] });
+    groups2.get(label).sites.push(site);
+  }
+  return [...groups2.values()].sort((a5, b4) => speciesOrder(a5.ion) - speciesOrder(b4.ion) || a5.label.localeCompare(b4.label, "en"));
+}
+var speciesOrder = (ion2) => ion2?.endsWith("\u207A") ? 0 : ion2?.endsWith("\u207B") ? 1 : 2;
+function monatomicCharge(site) {
+  const ion2 = siteIon(site);
+  const symbol2 = atomSymbol(site.atomicNumber);
+  const suffix = ion2?.startsWith(symbol2) ? ion2.slice(symbol2.length) : "";
+  if (!/^[¹²³⁴⁵⁶⁷⁸]?[⁺⁻]$/.test(suffix)) return site.charge;
+  const magnitude = suffix.length === 1 ? 1 : "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078".indexOf(suffix[0]);
+  return suffix.endsWith("\u207A") ? magnitude : -magnitude;
+}
+function empiricalCrystalFormula(crystal) {
+  const counts2 = /* @__PURE__ */ new Map();
+  for (const site of crystal.sites) {
+    const item = counts2.get(site.atomicNumber) ?? { amount: 0, order: 2 };
+    item.amount += site.occupancy ?? 1;
+    item.order = Math.min(item.order, speciesOrder(siteIon(site)));
+    counts2.set(site.atomicNumber, item);
+  }
+  if (!counts2.size) return "";
+  const min2 = Math.min(...[...counts2.values()].map((item) => item.amount));
+  let multiplier = 1;
+  const ratios = [...counts2.values()].map((item) => item.amount / min2);
+  while (multiplier <= 24 && ratios.some((ratio) => Math.abs(ratio * multiplier - Math.round(ratio * multiplier)) > 2e-3)) multiplier++;
+  const integral = multiplier <= 24;
+  return [...counts2].sort(([a5, left], [b4, right]) => left.order - right.order || (allen[a5] ?? Infinity) - (allen[b4] ?? Infinity) || a5 - b4).map(([number2, { amount }]) => {
+    const ratio = integral ? Math.round(amount / min2 * multiplier) : Number((amount / min2).toFixed(3));
+    return atomSymbol(number2) + (ratio === 1 ? "" : subscript(String(ratio)));
+  }).join("");
+}
+function freeCrystalSite(sites) {
+  const fractions = [0.5, 0, 0.25, 0.75, 0.125, 0.375, 0.625, 0.875];
+  for (const z3 of fractions) {
+    for (const y5 of fractions) {
+      for (const x4 of fractions) {
+        if (!sites.some(({ fractional: [a5, b4, c9] }) => Math.max(Math.abs(a5 - x4), Math.abs(b4 - y5), Math.abs(c9 - z3)) < 1e-6)) {
+          return [x4, y5, z3];
+        }
+      }
+    }
+  }
+  throw new Error("No free fractional site");
+}
+
+// molecule-builder/lewis-view.ts
+function bounds(points) {
+  const x4 = points.map((point) => point[0]);
+  const y5 = points.map((point) => point[1]);
+  return { left: Math.min(...x4), right: Math.max(...x4), top: Math.max(...y5), bottom: Math.min(...y5) };
+}
+function lewisViewBox(diagram) {
+  if (!diagram.atoms.length) return [-3, -2, 6, 4];
+  const { left, right, top, bottom } = bounds(diagram.atoms.map((atom) => atom.diagram));
+  const paddingX = diagram.ends ? 1.75 : 0.9;
+  const paddingY = 0.95;
+  return [left - paddingX, -top - paddingY, right - left + 2 * paddingX, top - bottom + 2 * paddingY];
+}
+function bondLines(from, to, order, options = {}) {
+  const length2 = Math.hypot(to[0] - from[0], to[1] - from[1]);
+  if (length2 < 1e-3) return E2;
+  const dx = (to[0] - from[0]) / length2, dy = (to[1] - from[1]) / length2;
+  const start = Math.min(0.22, length2 * 0.34);
+  const end = options.trimEnd === false ? 0 : Math.min(options.dative ? 0.32 : 0.22, length2 * 0.34);
+  const x1 = from[0] + dx * start, y1 = from[1] + dy * start;
+  const x22 = to[0] - dx * end, y22 = to[1] - dy * end;
+  return b3`<g class="lewis-bond" ?data-active=${options.active}>
+		${Array.from({ length: order }, (_3, index) => {
+    const offset3 = (index - (order - 1) / 2) * 0.075;
+    return b3`<line x1=${x1 - dy * offset3} y1=${-y1 - dx * offset3}
+				x2=${x22 - dy * offset3} y2=${-y22 - dx * offset3} />`;
+  })}
+		${options.dative ? b3`<path d="M${x22 - dy * 0.055},${-y22 - dx * 0.055} L${x22 + dx * 0.11},${-y22 - dy * 0.11}
+			L${x22 + dy * 0.055},${-y22 + dx * 0.055}" />` : E2}
+	</g>`;
+}
+function renderLewis(diagram, box, options) {
+  const atoms = diagram.atoms.map((atom) => ({ ...atom, diagram: options.drag?.id === atom.id ? options.drag.position : atom.diagram }));
+  const positions = new Map(atoms.map((atom) => [atom.id, atom.diagram]));
+  const highlighted = options.bondStart ?? options.picked;
+  const isActive = (id) => id === highlighted || id === options.hovered;
+  const draftFrom = positions.get(options.from);
+  let repeat = E2;
+  if (diagram.ends) {
+    const { left, right, top, bottom } = bounds(atoms.map((atom) => atom.diagram));
+    const a5 = left - 0.65, b4 = right + 0.65, y5 = -top - 0.65, z3 = -bottom + 0.63;
+    const ends = diagram.ends.map((id) => ({ id, point: positions.get(id) })).sort((x4, y6) => x4.point[0] - y6.point[0]);
+    repeat = b3`<g class="repeat-unit" data-repeat-unit aria-hidden="true">
+			<path d="M${a5 + 0.21} ${y5} H${a5} V${z3} H${a5 + 0.21} M${b4 - 0.21} ${y5} H${b4} V${z3} H${b4 - 0.21}" />
+			${ends.map(({ id, point }, index) => bondLines(
+      point,
+      [index ? b4 + 0.36 : a5 - 0.36, point[1]],
+      1,
+      { active: isActive(id), trimEnd: false }
+    ))}
+			<text x=${b4 + 0.12} y=${z3 + 0.14}>n</text>
+		</g>`;
+  }
+  return x2`<svg class="drawing lewis-view" viewBox=${box.join(" ")} role="img" aria-label=${options.label}>
+		${repeat}
+		${diagram.bonds.map((bond) => b3`<g data-bond="${bond.from}-${bond.to}">
+			${bondLines(
+    positions.get(bond.from),
+    positions.get(bond.to),
+    bond.order,
+    { active: isActive(bond.from) || isActive(bond.to), dative: bond.dative }
+  )}
+		</g>`)}
+		${draftFrom && options.preview ? bondLines(draftFrom, options.preview, options.order, { active: true, trimEnd: false }) : E2}
+		${atoms.map((atom) => {
+    const [x4, y5] = atom.diagram;
+    const symbol2 = atomSymbol(atom.atomicNumber);
+    const oxidation = atom.oxidation === void 0 ? "?" : signedNumber(atom.oxidation);
+    const sign = atom.oxidation === void 0 || atom.oxidation === 0 ? "neutral" : atom.oxidation > 0 ? "positive" : "negative";
+    const charge = formalCharge(atom.charge);
+    const active = isActive(atom.id);
+    const partners = atom.bonds.map((bond) => positions.get(bond.from === atom.id ? bond.to : bond.from));
+    const occupied = [Math.PI / 2];
+    if (charge) occupied.push(Math.PI / 4);
+    if (atom.isotope) occupied.push(3 * Math.PI / 4);
+    if (diagram.ends?.includes(atom.id)) occupied.push(atom.id === diagram.ends[0] ? Math.PI : 0);
+    return b3`<g data-atom=${atom.id} ?data-active=${active} class="lewis-atom">
+				<title>${symbol2} · ${atom.id} · ${options.oxidationLabel} ${atom.oxidation === void 0 ? options.unknownLabel : oxidation}</title>
+				<circle class="lewis-hit" cx=${x4} cy=${-y5} r=".27" />
+				<text class="lewis-symbol" x=${x4} y=${-y5} text-anchor="middle" dominant-baseline="central">${symbol2}</text>
+				<text class="oxidation-number" data-oxidation=${sign} x=${x4} y=${-y5 - 0.25} text-anchor="middle">${oxidation}</text>
+				${charge ? b3`<text class="formal-charge" x=${x4 + (symbol2.length === 1 ? 0.15 : 0.23)} y=${-y5 - 0.12}>${charge}</text>` : E2}
+				${atom.isotope ? b3`<text class="formal-charge" x=${x4 - (symbol2.length === 1 ? 0.15 : 0.23)} y=${-y5 - 0.12}
+					text-anchor="end">${atom.isotope}</text>` : E2}
+				${electronDots(atom.diagram, partners, atom.electrons, occupied).map(([px, py]) => b3`<circle class="lewis-electron" cx=${px} cy=${-py} r=".024" />`)}
+			</g>`;
+  })}
+	</svg>`;
+}
+
 // molecule-builder/styles.ts
 var builderStyles = i`
 	:host {
@@ -105799,6 +106099,72 @@ var builderStyles = i`
 	.scene { overflow: hidden; }
 	.drawing { display: block; background: radial-gradient(#d4d8db 1px, transparent 1px) 1px 1px / 18px 18px; }
 	.drawing [data-atom] { cursor: pointer; }
+	.board:has(.lewis-view) { background: #fafbfc; }
+	.drawing.lewis-view {
+		--diagram-top: min(5.8rem, 21%);
+		--diagram-bottom: min(5rem, 18%);
+		inset: var(--diagram-top) 1.5rem var(--diagram-bottom);
+		inline-size: calc(100% - 3rem);
+		block-size: calc(100% - var(--diagram-top) - var(--diagram-bottom));
+		background: none;
+		color: #263247;
+	}
+	.lewis-bond { fill: none; stroke: #39475a; stroke-width: .036; stroke-linecap: round; stroke-linejoin: round; }
+	.lewis-bond[data-active] { stroke: var(--blue); stroke-width: .06; }
+	.lewis-hit { fill: transparent; stroke: transparent; stroke-width: .023; }
+	.lewis-atom[data-active] .lewis-hit { fill: #e2f3ff; stroke: #8ccff0; }
+	.lewis-symbol { font-size: .31px; font-weight: 650; fill: currentColor; }
+	.lewis-electron { fill: #37465a; }
+	.lewis-atom[data-active] .lewis-electron { fill: #6b21a8; r: .036px; }
+	.lewis-atom :is(text, .lewis-electron) { pointer-events: none; }
+	.oxidation-number, .formal-charge { font-size: .165px; font-weight: 700; }
+	.formal-charge { fill: #263247; }
+	[data-oxidation="negative"] { color: #075985; fill: #075985; }
+	[data-oxidation="positive"] { color: #9e3223; fill: #9e3223; }
+	[data-oxidation="neutral"] { color: #555f70; fill: #555f70; }
+	.oxidation-number { paint-order: stroke; stroke: #fafbfc; stroke-width: .05; stroke-linejoin: round; }
+	.repeat-unit > path { fill: none; stroke: #5b6573; stroke-width: .042; }
+	.repeat-unit > text { font-size: .27px; font-style: italic; fill: currentColor; }
+	.lewis-legend { display: flex; align-items: baseline; flex-wrap: wrap; gap: .4rem; color: #4c5563; }
+	.lewis-legend span { font-weight: 700; }
+	.formula-view {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		place-content: center;
+		gap: .9rem;
+		padding: 3.75rem 2.5rem;
+		overflow: auto;
+		text-align: center;
+		background: #fafbfc;
+	}
+	.formula-display { display: grid; gap: .4rem; }
+	.formula-heading { color: #4c5563; font-size: .8rem; }
+	.empirical-formula { color: #233044; font-size: clamp(1.15rem, 4cqw, 2.65rem); font-weight: 650; overflow-wrap: anywhere; }
+	.formula-ions, .ion-entry {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-wrap: wrap;
+		gap: .4rem;
+	}
+	.ion-site {
+		--ion-color: var(--blue);
+		padding: .24rem .53rem;
+		border: 1px solid color-mix(in srgb, var(--ion-color) 32%, white);
+		border-radius: 4px;
+		background: color-mix(in srgb, var(--ion-color) 8%, white);
+		color: #233044;
+		font: inherit;
+		font-weight: 650;
+		cursor: pointer;
+	}
+	.ion-site:hover, .ion-site[aria-pressed="true"] { border-color: var(--ion-color); }
+	.ion-site[aria-pressed="true"] { box-shadow: inset 0 -2px var(--ion-color); }
+	.ion-site:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+	.ion-entry { padding: .35rem; }
+	.ion-entry label { display: inline-flex; gap: .3rem; align-items: center; font-size: .78rem; }
+	.ion-entry input { width: 3.2rem; }
 	/* The canvas controls repeat the lab's zoom cluster: same inset, same gap,
 	   same 24 px buttons on the light surface with the soft control shadow. */
 	.view-tools {
@@ -106049,9 +106415,9 @@ var AXES_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="
 	<path d="M3.4 12.6V3.4M3.4 12.6h9.2M3.4 12.6 8.6 7.4" /><path d="M3.4 2.2v1.2M2.2 12.6h1.2M9.6 6.4 8.6 7.4 9.6 8.4" /></svg>`;
 var ELECTRONS_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
 	<circle cx="4.4" cy="8" r="1.7" /><circle cx="11.6" cy="8" r="1.7" /></svg>`;
-var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _lastDrawn, _lastDrawnRepeats, _diagramBounds, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, renderDrawing_fn, renderModelSummary_fn, renderSelectionCard_fn;
+var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _ionCharge_dec, _diagramBox_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramBox, _ionCharge, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _lewisCache, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, stageTarget_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, moveDiagram_fn, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, lewis_fn, renderDrawing_fn, renderModelSummary_fn, renderSelectionCard_fn;
 _ChemLabMoleculeBuilder_decorators = [t4(BUILDER_TAG)];
-var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
+var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramBox_dec = [r9()], _ionCharge_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
   constructor() {
     super(...arguments);
     __privateAdd(this, _ChemLabMoleculeBuilder_instances);
@@ -106084,9 +106450,11 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _repeats, __runInitializers(_init3, 108, this, 1)), __runInitializers(_init3, 111, this);
     __privateAdd(this, _notice, __runInitializers(_init3, 112, this, "")), __runInitializers(_init3, 115, this);
     __privateAdd(this, _gpu, __runInitializers(_init3, 116, this, "idle")), __runInitializers(_init3, 119, this);
-    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 120, this)), __runInitializers(_init3, 123, this);
-    __privateAdd(this, _bondPreview, __runInitializers(_init3, 124, this)), __runInitializers(_init3, 127, this);
-    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 128, this)), __runInitializers(_init3, 131, this);
+    __privateAdd(this, _diagramBox, __runInitializers(_init3, 120, this)), __runInitializers(_init3, 123, this);
+    __privateAdd(this, _ionCharge, __runInitializers(_init3, 124, this, 0)), __runInitializers(_init3, 127, this);
+    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 128, this)), __runInitializers(_init3, 131, this);
+    __privateAdd(this, _bondPreview, __runInitializers(_init3, 132, this)), __runInitializers(_init3, 135, this);
+    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 136, this)), __runInitializers(_init3, 139, this);
     __privateAdd(this, _scene);
     __privateAdd(this, _sceneLoad, 0);
     __privateAdd(this, _fitNext, true);
@@ -106102,9 +106470,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _worksheetObserver);
     __privateAdd(this, _waitingForLab, false);
     __privateAdd(this, _lastSaved, "");
-    __privateAdd(this, _lastDrawn);
-    __privateAdd(this, _lastDrawnRepeats, 0);
-    __privateAdd(this, _diagramBounds, [-6, -4, 12, 8]);
+    __privateAdd(this, _lewisCache);
     __privateAdd(this, _onContextLost, () => __privateMethod(this, _ChemLabMoleculeBuilder_instances, fallback_fn).call(this));
     __privateAdd(this, _selectPalette, (event) => {
       if (event.detail.atomicNumber !== null) __privateMethod(this, _ChemLabMoleculeBuilder_instances, chooseElement_fn).call(this, event.detail.atomicNumber);
@@ -106125,7 +106491,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       }, options);
       window.addEventListener("pointerup", (up) => {
         if (up.pointerId !== start.pointerId) return;
-        if (this.paletteDrag && __privateMethod(this, _ChemLabMoleculeBuilder_instances, insideBoard_fn).call(this, up.clientX, up.clientY)) {
+        if (this.paletteDrag && __privateMethod(this, _ChemLabMoleculeBuilder_instances, stageTarget_fn).call(this, up.clientX, up.clientY)) {
           __privateMethod(this, _ChemLabMoleculeBuilder_instances, chooseElement_fn).call(this, start.atomicNumber);
           __privateMethod(this, _ChemLabMoleculeBuilder_instances, addAtom_fn).call(this, __privateMethod(this, _ChemLabMoleculeBuilder_instances, placement_fn).call(this, up.clientX, up.clientY), start.atomicNumber);
         }
@@ -106159,11 +106525,22 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       const gesture = __privateGet(this, _gesture);
       if (!gesture || !__privateGet(this, _pointers).has(event.pointerId)) return;
       const point = pointer(event);
+      const previous = __privateGet(this, _pointers).get(event.pointerId);
       __privateGet(this, _pointers).set(event.pointerId, point);
       if (__privateGet(this, _pointers).size > 1) {
         const [a5, b4] = __privateGet(this, _pointers).values();
         const next = distance(a5, b4);
-        if (gesture.distance > 0 && next > 0) __privateGet(this, _scene)?.zoom(gesture.distance / next);
+        if (gesture.distance > 0 && next > 0) {
+          const factor = gesture.distance / next;
+          if (this.view === "3d") __privateGet(this, _scene)?.zoom(factor);
+          else {
+            const midpoint = { x: (a5.x + b4.x) / 2, y: (a5.y + b4.y) / 2 };
+            __privateMethod(this, _ChemLabMoleculeBuilder_instances, moveDiagram_fn).call(this, factor, {
+              x: midpoint.x + (previous.x - point.x) / 2,
+              y: midpoint.y + (previous.y - point.y) / 2
+            }, midpoint);
+          }
+        }
         gesture.distance = next;
         return;
       }
@@ -106179,7 +106556,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         const next = __privateMethod(this, _ChemLabMoleculeBuilder_instances, diagramPoint_fn).call(this, point.x, point.y);
         gesture.diagram = [gesture.diagram[0] + next[0] - last[0], gesture.diagram[1] + next[1] - last[1]];
         this.diagramDrag = { id: gesture.from, position: gesture.diagram };
-      }
+      } else __privateMethod(this, _ChemLabMoleculeBuilder_instances, moveDiagram_fn).call(this, 1, gesture, point);
       gesture.x = point.x;
       gesture.y = point.y;
     });
@@ -106196,8 +106573,10 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       const hit = __privateMethod(this, _ChemLabMoleculeBuilder_instances, hit_fn).call(this, event);
       if (gesture.moved) {
         if (drag && this.draft.kind === "molecule") {
+          if (!drag.position.every((coordinate) => Number.isFinite(coordinate) && Math.abs(coordinate) <= 1e4)) return;
           const draft = this.draft;
           const id = drag.id;
+          this.diagramBox ??= lewisViewBox(__privateMethod(this, _ChemLabMoleculeBuilder_instances, lewis_fn).call(this, draft));
           __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, { ...draft, atoms: draft.atoms.map((atom) => atom.id === id ? {
             ...atom,
             diagram: drag.position,
@@ -106205,7 +106584,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
           } : atom) });
         } else if (gesture.from && hit && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) && this.tool === "bond") __privateMethod(this, _ChemLabMoleculeBuilder_instances, connectBond_fn).call(this, gesture.from, hit);
       } else if (hit) __privateMethod(this, _ChemLabMoleculeBuilder_instances, selectAtom_fn).call(this, hit);
-      else if (this.tool === "atom" && __privateMethod(this, _ChemLabMoleculeBuilder_instances, insideBoard_fn).call(this, event.clientX, event.clientY)) {
+      else if (this.tool === "atom" && (this.view === "3d" || __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get).kind === "molecule") && __privateMethod(this, _ChemLabMoleculeBuilder_instances, stageTarget_fn).call(this, event.clientX, event.clientY)) {
         __privateMethod(this, _ChemLabMoleculeBuilder_instances, addAtom_fn).call(this, __privateMethod(this, _ChemLabMoleculeBuilder_instances, placement_fn).call(this, event.clientX, event.clientY));
       } else {
         this.picked = void 0;
@@ -106213,9 +106592,11 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       }
     });
     __privateAdd(this, _wheel, (event) => {
-      if (this.view !== "3d" || !__privateGet(this, _scene) || __privateMethod(this, _ChemLabMoleculeBuilder_instances, overPanel_fn).call(this, event)) return;
+      if (__privateMethod(this, _ChemLabMoleculeBuilder_instances, overPanel_fn).call(this, event) || (this.view === "3d" ? !__privateGet(this, _scene) : __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get).kind !== "molecule")) return;
       event.preventDefault();
-      __privateGet(this, _scene).zoom(Math.exp(Math.max(-100, Math.min(100, event.deltaY)) * 4e-3));
+      const factor = Math.exp(Math.max(-100, Math.min(100, event.deltaY)) * 4e-3);
+      if (this.view === "3d") __privateGet(this, _scene)?.zoom(factor);
+      else __privateMethod(this, _ChemLabMoleculeBuilder_instances, moveDiagram_fn).call(this, factor, { x: event.clientX, y: event.clientY });
     });
     __privateAdd(this, _keys, (event) => {
       if (event.composedPath().some((target) => target instanceof Element && target.matches("input, select, textarea, [role=listbox]"))) return;
@@ -106229,9 +106610,9 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         __privateMethod(this, _ChemLabMoleculeBuilder_instances, removeAtom_fn).call(this);
       } else if (event.key === "Escape" && this.bondStart !== void 0) {
         __privateMethod(this, _ChemLabMoleculeBuilder_instances, setTool_fn).call(this, this.tool);
-      } else if ((event.key === "Enter" || event.key === " ") && this.tool === "atom" && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) && event.composedPath().some((target) => target instanceof Element && target.classList.contains("board"))) {
+      } else if (!event.repeat && (event.key === "Enter" || event.key === " ") && this.tool === "atom" && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) && event.composedPath()[0] === this.renderRoot.querySelector(".board")) {
         event.preventDefault();
-        __privateMethod(this, _ChemLabMoleculeBuilder_instances, addAtom_fn).call(this, __privateMethod(this, _ChemLabMoleculeBuilder_instances, centre_fn).call(this));
+        __privateMethod(this, _ChemLabMoleculeBuilder_instances, addAtom_fn).call(this, this.view === "2d" ? void 0 : __privateMethod(this, _ChemLabMoleculeBuilder_instances, centre_fn).call(this));
       }
     });
     __privateAdd(this, _openFile, async (file) => {
@@ -106324,13 +106705,13 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     const fullWidth = this.classList.contains("ww-full-width");
     const pickerView = fullWidth && !this.paletteNarrow ? this.pickerView : "list";
     const ionColors = current.kind === "crystal" ? crystalIonColors(current) : /* @__PURE__ */ new Map();
-    const representation = current.kind === "molecule" && current.representation && {
+    const representation = current.kind === "molecule" && (this.view === "2d" && current.repeatUnit ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Constitutional repeating unit", "Konstitutionelle Wiederholungseinheit") : current.repeatUnit && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Editable repeating unit", "Bearbeitbare Wiederholungseinheit") : current.representation && {
       conformer: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "PubChem conformer", "PubChem-Konformer"),
       experimental: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Experimental geometry", "Experimentelle Geometrie"),
       constituent: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Mixture constituent", "Gemischbestandteil"),
       "repeat-unit": __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Capped repeat-unit example", "Beispiel mit abges\xE4ttigten Wiederholungseinheiten"),
       "ionic-components": __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ionic components", "Ionenbestandteile")
-    }[current.representation];
+    }[current.representation]);
     const tool = (value, label, icon) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
       label,
       icon,
@@ -106339,7 +106720,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     });
     const fit = () => {
       __privateGet(this, _scene)?.fit();
-      __privateSet(this, _lastDrawn, void 0);
+      this.diagramBox = void 0;
       this.requestUpdate();
     };
     const title = current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : current.name || formula(current);
@@ -106410,7 +106791,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       this.view === "3d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Orbit", "Drehen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Select", "Ausw\xE4hlen"),
       this.view === "3d" ? ORBIT_ICON : CURSOR_ICON
     )}
-					${tool("atom", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place atom", "Atom platzieren"), ATOM_ICON)}
+					${tool("atom", this.view === "2d" && current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place ion or atom", "Ion oder Atom platzieren") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place atom", "Atom platzieren"), ATOM_ICON)}
 					${current.kind === "molecule" ? tool("bond", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Draw bond", "Bindung zeichnen"), BOND_ICON) : E2}
 					${this.tool === "bond" ? x2`<span class="bond-orders" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bond order", "Bindungsordnung")}>
 						${[1, 2, 3].map((order) => x2`<sl-button class="icon-control" size="small"
@@ -106465,7 +106846,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
 						${this.view === "2d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, renderDrawing_fn).call(this, ionColors) : E2}
 						${this.gpu === "loading" && this.view === "3d" ? x2`<p class="empty" role="status"><sl-spinner></sl-spinner>
 							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Loading 3D view", "3D-Ansicht wird geladen")}</p>` : !__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<p class="empty">
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Drag an element here, or choose Place atom and click the canvas.", "Ziehe ein Element hierher oder w\xE4hle Atom platzieren und klicke auf die Fl\xE4che.")}
+							${this.view === "2d" && current.kind === "crystal" ? this.tool === "atom" ? E2 : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose an element to add a crystal site.", "W\xE4hle ein Element f\xFCr einen Gitterplatz.") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Drag an element here, or choose Place atom and click the canvas.", "Ziehe ein Element hierher oder w\xE4hle Atom platzieren und klicke auf die Fl\xE4che.")}
 							</p>` : E2}
 						<div class="view-tools" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Canvas view", "Ansicht der Zeichenfl\xE4che")}>
 							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
@@ -106485,11 +106866,11 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         this.view = "2d";
       }
     })}
-							${this.view === "3d" && this.gpu === "ready" ? x2`
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom in", "Vergr\xF6\xDFern"), icon: ZOOM_IN_ICON, onClick: () => __privateGet(this, _scene)?.zoom(0.83) })}
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => __privateGet(this, _scene)?.zoom(1.2) })}
+							${this.view === "3d" && this.gpu === "ready" || this.view === "2d" && current.kind === "molecule" ? x2`
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom in", "Vergr\xF6\xDFern"), icon: ZOOM_IN_ICON, onClick: () => this.view === "3d" ? __privateGet(this, _scene)?.zoom(0.83) : __privateMethod(this, _ChemLabMoleculeBuilder_instances, moveDiagram_fn).call(this, 0.83) })}
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => this.view === "3d" ? __privateGet(this, _scene)?.zoom(1.2) : __privateMethod(this, _ChemLabMoleculeBuilder_instances, moveDiagram_fn).call(this, 1.2) })}
 							` : E2}
-							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit })}
+							${this.view === "3d" || current.kind === "molecule" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit }) : E2}
 						</div>
 						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderModelSummary_fn).call(this, current, representation, ionColors)}
 						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderSelectionCard_fn).call(this)}
@@ -106531,6 +106912,8 @@ _bondOrder = new WeakMap();
 _repeats = new WeakMap();
 _notice = new WeakMap();
 _gpu = new WeakMap();
+_diagramBox = new WeakMap();
+_ionCharge = new WeakMap();
 _diagramDrag = new WeakMap();
 _bondPreview = new WeakMap();
 _paletteDrag = new WeakMap();
@@ -106549,9 +106932,7 @@ _dataObserver = new WeakMap();
 _worksheetObserver = new WeakMap();
 _waitingForLab = new WeakMap();
 _lastSaved = new WeakMap();
-_lastDrawn = new WeakMap();
-_lastDrawnRepeats = new WeakMap();
-_diagramBounds = new WeakMap();
+_lewisCache = new WeakMap();
 _ChemLabMoleculeBuilder_instances = new WeakSet();
 current_get = function() {
   return this.preview ?? this.draft;
@@ -106672,11 +107053,13 @@ record_fn = function(next, fit = false) {
 };
 resetSelection_fn = function() {
   this.picked = void 0;
+  this.hoveredAtom = void 0;
   this.bondStart = void 0;
   this.bondPreview = void 0;
   this.repeats = 1;
   __privateSet(this, _fitNext, true);
-  __privateSet(this, _lastDrawn, void 0);
+  this.diagramBox = void 0;
+  this.ionCharge = 0;
   this.tool = "orbit";
 };
 new_fn = function(kind) {
@@ -106696,6 +107079,10 @@ history_fn = function(redo) {
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, save_fn).call(this);
 };
 chooseElement_fn = function(atomicNumber) {
+  if (this.element !== atomicNumber && this.draft.kind === "crystal") {
+    const charges = new Set(this.draft.sites.filter((site) => site.atomicNumber === atomicNumber).map(monatomicCharge));
+    this.ionCharge = charges.size === 1 ? charges.values().next().value : 0;
+  }
   this.element = atomicNumber;
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, setTool_fn).call(this, "atom");
 };
@@ -106705,6 +107092,12 @@ insideBoard_fn = function(x4, y5) {
   const box = this.renderRoot.querySelector(".board")?.getBoundingClientRect();
   return !!box && x4 >= box.left && x4 <= box.right && y5 >= box.top && y5 <= box.bottom;
 };
+stageTarget_fn = function(x4, y5) {
+  if (!__privateMethod(this, _ChemLabMoleculeBuilder_instances, insideBoard_fn).call(this, x4, y5)) return false;
+  const hit = this.shadowRoot?.elementFromPoint(x4, y5);
+  const surface = this.view === "3d" ? ".board" : ".drawing, .formula-view";
+  return !!hit?.closest(surface) && !hit.closest(".view-tools, .model-summary, .selection-card, .ion-entry, .ion-site");
+};
 placement_fn = function(x4, y5) {
   if (this.view === "3d" && __privateGet(this, _scene)) return __privateGet(this, _scene).placement(x4, y5);
   const [a5, b4] = __privateMethod(this, _ChemLabMoleculeBuilder_instances, diagramPoint_fn).call(this, x4, y5);
@@ -106713,8 +107106,7 @@ placement_fn = function(x4, y5) {
 /** The view centre, so an atom can be placed without a pointer. */
 centre_fn = function() {
   const box = this.renderRoot.querySelector(".board")?.getBoundingClientRect();
-  if (this.view === "3d" && __privateGet(this, _scene) && box) return __privateGet(this, _scene).placement(box.left + box.width / 2, box.top + box.height / 2);
-  return [0, 0, 0];
+  return box ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, placement_fn).call(this, box.left + box.width / 2, box.top + box.height / 2) : [0, 0, 0];
 };
 addAtom_fn = function(position, atomicNumber = this.element) {
   if (__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)) return;
@@ -106730,9 +107122,14 @@ addAtom_fn = function(position, atomicNumber = this.element) {
   const angle = atoms.length * 2.3999632297;
   const radius = 0.9 * Math.sqrt(atoms.length);
   const [x4, y5, z3] = position ?? [radius * Math.cos(angle), radius * Math.sin(angle), 0];
+  if (![x4, y5, z3].every((coordinate) => Number.isFinite(coordinate) && Math.abs(coordinate) <= 1e4)) {
+    this.notice = __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place the atom within the editor\u2019s coordinate range.", "Platziere das Atom innerhalb des Koordinatenbereichs.");
+    return;
+  }
   const identity = { id, atomicNumber, charge: 0 };
   if (current.kind === "crystal") {
-    const coords = position ? fractional(cellVectors(current.cell), position) : [x4 - Math.floor(x4), y5 - Math.floor(y5), 0.5];
+    const formulaView = this.view === "2d";
+    const coords = formulaView ? freeCrystalSite(current.sites) : position ? fractional(cellVectors(current.cell), position) : [x4 - Math.floor(x4), y5 - Math.floor(y5), 0.5];
     if (current.sites.some((site) => site.fractional.every((coordinate, axis) => Math.abs(coordinate - coords[axis]) < 1e-6))) {
       this.notice = __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "A site already occupies that position.", "Diese Position ist bereits belegt.");
       return;
@@ -106744,16 +107141,19 @@ addAtom_fn = function(position, atomicNumber = this.element) {
       bravais: void 0,
       spaceGroup: void 0,
       source: void 0,
-      sites: [...current.sites, { ...identity, fractional: coords }]
+      sites: [...current.sites, { ...identity, charge: formulaView ? this.ionCharge : 0, fractional: coords }]
     });
   } else {
+    if (this.view === "2d" && !this.diagramBox && !current.repeatUnit) this.diagramBox = lewisViewBox(__privateMethod(this, _ChemLabMoleculeBuilder_instances, lewis_fn).call(this, current));
     const atom = { ...identity, diagram: [x4, y5], position: [x4, y5, z3] };
+    const repeatUnit = current.repeatUnit && { ...current.repeatUnit, atoms: [...current.repeatUnit.atoms, id] };
     __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, {
       ...current,
       name: "",
       catalogKey: void 0,
       source: void 0,
       representation: void 0,
+      repeatUnit,
       geometry: void 0,
       atoms: [...current.atoms, atom]
     });
@@ -106791,7 +107191,7 @@ connectBond_fn = function(from, to) {
     return;
   }
   const bonds = draft.bonds.filter((bond) => !(bond.from === from && bond.to === to || bond.from === to && bond.to === from));
-  __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, {
+  const next = {
     ...draft,
     name: "",
     catalogKey: void 0,
@@ -106799,24 +107199,29 @@ connectBond_fn = function(from, to) {
     representation: void 0,
     geometry: void 0,
     bonds: [...bonds, { from, to, order: this.bondOrder }]
-  });
+  };
+  const updateGeometry = this.view === "2d";
+  __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, updateGeometry ? fitGeometry(next) : next, updateGeometry);
   this.picked = to;
 };
 removeAtom_fn = function() {
   if (__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) || this.picked === void 0) return;
   const id = this.picked;
   const draft = this.draft;
-  if (draft.kind === "molecule") __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, {
-    ...draft,
-    name: "",
-    catalogKey: void 0,
-    source: void 0,
-    representation: void 0,
-    geometry: void 0,
-    atoms: draft.atoms.filter((atom) => atom.id !== id),
-    bonds: draft.bonds.filter((bond) => bond.from !== id && bond.to !== id)
-  });
-  else __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, {
+  if (draft.kind === "molecule") {
+    const repeatUnit = draft.repeatUnit && !draft.repeatUnit.ends.includes(id) ? { ...draft.repeatUnit, atoms: draft.repeatUnit.atoms.filter((atom) => atom !== id) } : void 0;
+    __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, {
+      ...draft,
+      name: "",
+      catalogKey: void 0,
+      source: void 0,
+      representation: void 0,
+      repeatUnit,
+      geometry: void 0,
+      atoms: draft.atoms.filter((atom) => atom.id !== id),
+      bonds: draft.bonds.filter((bond) => bond.from !== id && bond.to !== id)
+    });
+  } else __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, {
     ...draft,
     name: "",
     catalogKey: void 0,
@@ -106863,7 +107268,7 @@ diagramPoint_fn = function(x4, y5) {
   return [point.x, -point.y];
 };
 hit_fn = function(event) {
-  if (!__privateMethod(this, _ChemLabMoleculeBuilder_instances, insideBoard_fn).call(this, event.clientX, event.clientY)) return void 0;
+  if (!__privateMethod(this, _ChemLabMoleculeBuilder_instances, stageTarget_fn).call(this, event.clientX, event.clientY)) return void 0;
   if (this.view === "3d" && __privateGet(this, _scene)) return __privateGet(this, _scene).pick(event.clientX, event.clientY);
   const inside = this.shadowRoot?.elementFromPoint(event.clientX, event.clientY)?.closest("[data-atom]");
   return inside ? Number(inside.getAttribute("data-atom")) : void 0;
@@ -106874,11 +107279,21 @@ hit_fn = function(event) {
  * scroll inside the selection card never turns into a zoom of the scene.
  */
 overPanel_fn = function(event) {
-  return event.composedPath().some((target) => target instanceof Element && (target.classList.contains("view-tools") || target.classList.contains("model-summary") || target.classList.contains("selection-card")));
+  return event.composedPath().some((target) => target instanceof Element && (target.classList.contains("view-tools") || target.classList.contains("model-summary") || target.classList.contains("selection-card") || target.classList.contains("ion-entry") || target.classList.contains("ion-site")));
 };
 _pointerDown = new WeakMap();
 _pointerMove = new WeakMap();
 _pointerUp = new WeakMap();
+moveDiagram_fn = function(factor, from, to = from) {
+  const current = __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get);
+  if (current.kind !== "molecule") return;
+  const base = lewisViewBox(__privateMethod(this, _ChemLabMoleculeBuilder_instances, lewis_fn).call(this, current));
+  const [x4, y5, width, height] = this.diagramBox ?? base;
+  const [a5, b4] = from ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, diagramPoint_fn).call(this, from.x, from.y) : [x4 + width / 2, -(y5 + height / 2)];
+  const [c9, d4] = to ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, diagramPoint_fn).call(this, to.x, to.y) : [a5, b4];
+  const zoom = Math.max(base[2] / 8, Math.min(base[2] * 4, width * factor)) / width;
+  this.diagramBox = [a5 - (c9 - x4) * zoom, -b4 - (-d4 - y5) * zoom, width * zoom, height * zoom];
+};
 _wheel = new WeakMap();
 _keys = new WeakMap();
 updateCell_fn = function(key, index, field) {
@@ -106925,7 +107340,6 @@ openPreview_fn = function(snapshot) {
   this.preview = snapshot;
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, resetSelection_fn).call(this);
   this.notice = "";
-  if (this.gpu !== "unavailable") this.view = "3d";
 };
 closePreview_fn = function(edit) {
   const current = this.preview;
@@ -106933,7 +107347,7 @@ closePreview_fn = function(edit) {
   this.catalogKey = "";
   this.catalogVariants = [];
   this.openPanel = void 0;
-  if (edit && current) __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, current, true);
+  if (edit && current) __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, current.kind === "molecule" ? editableRepeatUnit(current) : current, true);
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, resetSelection_fn).call(this);
 };
 _openFile = new WeakMap();
@@ -107089,70 +107503,63 @@ renderPickerLayout_fn = function(view, active) {
     this.pickerView = view;
   }}>${view === "list" ? LIST_ICON : TABLE_ICON}</sl-button>`;
 };
+lewis_fn = function(structure) {
+  if (__privateGet(this, _lewisCache)?.structure !== structure) __privateSet(this, _lewisCache, { structure, value: lewisDiagram(structure) });
+  return __privateGet(this, _lewisCache).value;
+};
 renderDrawing_fn = function(colors2) {
   const current = __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get);
-  const project = ([x4, y5, z3]) => [x4 + 0.43 * z3, y5 + 0.27 * z3];
-  const positions = current.kind === "molecule" ? current.atoms.map((atom) => ({ ...atom, diagram: this.diagramDrag?.id === atom.id ? this.diagramDrag.position : atom.diagram })) : replicatedSites(current, this.repeats).map(({ site, position }) => ({ ...site, diagram: project(position) }));
-  const r11 = this.repeats;
-  const corners = [[0, 0, 0], [r11, 0, 0], [r11, r11, 0], [0, r11, 0], [0, 0, r11], [r11, 0, r11], [r11, r11, r11], [0, r11, r11]];
-  const vectors = current.kind === "crystal" ? cellVectors(current.cell) : void 0;
-  const outline = vectors ? corners.map((point) => project(cartesian(vectors, point))) : [];
-  const lattice = current.kind === "crystal" && this.showLattice ? latticePositions(current, r11).map(project) : [];
-  if (current !== __privateGet(this, _lastDrawn) || r11 !== __privateGet(this, _lastDrawnRepeats)) {
-    __privateSet(this, _lastDrawn, current);
-    __privateSet(this, _lastDrawnRepeats, r11);
-    const points = [...outline, ...positions.map((atom) => atom.diagram)];
-    const minX = Math.min(-3, ...points.map((point) => point[0]));
-    const maxX = Math.max(3, ...points.map((point) => point[0]));
-    const minY = Math.min(-2, ...points.map((point) => -point[1]));
-    const maxY = Math.max(2, ...points.map((point) => -point[1]));
-    __privateSet(this, _diagramBounds, [minX - 1.1, minY - 1.1, maxX - minX + 2.2, maxY - minY + 2.2]);
-  }
-  const byId = new Map(positions.map((atom) => [atom.id, atom.diagram]));
-  const line = (from2, to, order, color) => {
-    const dx = to[0] - from2[0], dy = to[1] - from2[1];
-    const length2 = Math.hypot(dx, dy) || 1;
-    return Array.from({ length: order }, (_3, index) => {
-      const offset3 = (index - (order - 1) / 2) * 0.105;
-      const x4 = dy / length2 * offset3, y5 = dx / length2 * offset3;
-      return b3`<line x1=${from2[0] + x4} y1=${-from2[1] + y5} x2=${to[0] + x4} y2=${-to[1] + y5}
-					stroke=${color} stroke-width=".046" stroke-linecap="round" />`;
+  if (current.kind === "molecule") {
+    const diagram = __privateMethod(this, _ChemLabMoleculeBuilder_instances, lewis_fn).call(this, current);
+    return renderLewis(diagram, this.diagramBox ?? lewisViewBox(diagram), {
+      picked: this.picked,
+      hovered: this.hoveredAtom,
+      bondStart: this.bondStart,
+      from: __privateGet(this, _gesture)?.from,
+      preview: this.bondPreview,
+      order: this.bondOrder,
+      drag: this.diagramDrag,
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, diagram.ends ? "Lewis structure of the repeating unit" : "Lewis structure", diagram.ends ? "Lewis-Struktur der Wiederholungseinheit" : "Lewis-Struktur"),
+      oxidationLabel: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Oxidation state", "Oxidationszahl"),
+      unknownLabel: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "undetermined", "nicht bestimmt")
     });
-  };
-  const from = byId.get(__privateGet(this, _gesture)?.from);
-  return x2`<svg class="drawing" viewBox=${__privateGet(this, _diagramBounds).join(" ")} role="img"
-			aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure diagram", "Strukturzeichnung")}>
-			${current.kind === "molecule" ? current.bonds.map((bond) => line(byId.get(bond.from), byId.get(bond.to), bond.order, "#52525b")) : outline.flatMap((point, index) => [
-    line(point, outline[(index < 4 ? 0 : 4) + (index + 1) % 4], 1, "#a1a1aa"),
-    index < 4 ? line(point, outline[index + 4], 1, "#a1a1aa") : E2
-  ])}
-			${from && this.bondPreview ? line(from, this.bondPreview, this.bondOrder, "#0284c7") : E2}
-			${positions.map((atom) => {
-    const { id, atomicNumber, diagram: [x4, y5], charge, isotope } = atom;
-    const occupancy = "occupancy" in atom ? atom.occupancy : void 0;
-    const species = current.kind === "crystal" ? siteIon(atom) : void 0;
-    const color = colors2.get(species) ?? atomColor(atomicNumber);
-    const selected = id === this.picked || id === this.bondStart;
-    const hovered = id === this.hoveredAtom && !selected;
-    return b3`<g data-atom=${id} aria-label=${species ? `${symbol(atomicNumber)} \xB7 ${species}` : symbol(atomicNumber)} transform="translate(${x4} ${-y5})"
-					opacity=${selected ? 1 : Math.max(0.18, occupancy ?? 1)}>
-					${hovered ? b3`<circle r=".3" fill="none" stroke="#0284c7" stroke-width=".03" />` : E2}
-					<circle r=".254" fill=${selected ? "#dff3ff" : "white"} stroke=${selected ? "#0284c7" : species ? colorHex(color) : "#a1a1aa"} stroke-width=${selected ? 0.045 : 0.028} />
-					<circle cx="-.17" cy="-.17" r=".075" fill=${colorHex(color)} stroke="#707780" stroke-width=".01"/>
-					<text text-anchor="middle" dominant-baseline="central" font-weight="600" font-size=".23" fill="#27272a">${symbol(atomicNumber)}</text>
-					${charge ? b3`<text x=".19" y="-.19" font-size=".15" font-weight="600" fill="#27272a">${chargeText(charge)}</text>` : E2}
-					${isotope ? b3`<text x="-.25" y="-.24" font-size=".13" text-anchor="end" fill="#27272a">${isotope}</text>` : E2}
-				</g>`;
+  }
+  const nominal = current.catalogKey ? catalogEntry(current.catalogKey)?.formula : void 0;
+  const groups2 = crystalSpecies(current).filter((group) => group.ion);
+  return x2`<div class="formula-view">
+			${current.sites.length ? x2`<div class="formula-display">
+				<div class="formula-heading">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Empirical formula", "Verh\xE4ltnisformel")}</div>
+				<div class="empirical-formula">${nominal ? chemicalFormula(nominal) : empiricalCrystalFormula(current)}</div>
+				${groups2.length ? x2`<div class="formula-ions" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ions", "Ionen")}>
+					${groups2.map((group) => {
+    const selected = group.sites.some((site) => site.id === this.picked);
+    return x2`<button type="button" class="ion-site" aria-pressed=${String(selected)}
+							style=${group.ion ? `--ion-color: ${colorHex(colors2.get(group.ion))}` : E2}
+							@click=${() => {
+      this.picked = selected ? void 0 : group.sites[0].id;
+    }}>${group.label}</button>`;
   })}
-			<g pointer-events="none" aria-hidden="true" data-lattice-points>
-				${lattice.map(([x4, y5]) => b3`<circle cx=${x4} cy=${-y5} r=".078" fill="#283648" stroke="white" stroke-width="1.2" vector-effect="non-scaling-stroke" />`)}
-			</g>
-		</svg>`;
+				</div>` : E2}
+			</div>` : E2}
+			${!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) && this.tool === "atom" ? x2`<div class="ion-entry">
+				<sl-tag size="small" variant="primary">${symbol(this.element)}</sl-tag>
+				<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ion charge", "Ionenladung")}
+					<input type="number" min="-8" max="8" step="1" .value=${String(this.ionCharge)}
+						@change=${(event) => {
+    const input = event.currentTarget;
+    if (input.checkValidity() && Number.isInteger(input.valueAsNumber)) this.ionCharge = input.valueAsNumber;
+    else input.value = String(this.ionCharge);
+  }} />
+				</label>
+				<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, addAtom_fn).call(this)}>
+					${this.ionCharge ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Add ion", "Ion hinzuf\xFCgen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Add neutral atom", "Neutrales Atom hinzuf\xFCgen")}
+				</sl-button>
+			</div>` : E2}
+		</div>`;
 };
-/** The model summary keeps compound, representation and display controls at the canvas edge. */
 renderModelSummary_fn = function(current, representation, ionColors) {
   const crystal = current.kind === "crystal";
-  const geometry = current.kind === "molecule" && __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? current.geometry === "idealized" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Idealized geometry", "Idealisierte Geometrie") : current.geometry === "estimated" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Estimated geometry", "Gesch\xE4tzte Geometrie") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Sketch", "Skizze") : void 0;
+  const geometry = this.view === "3d" && current.kind === "molecule" && __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? current.geometry === "idealized" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Idealized geometry", "Idealisierte Geometrie") : current.geometry === "estimated" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Estimated geometry", "Gesch\xE4tzte Geometrie") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Sketch", "Skizze") : void 0;
   const toggle = (label, icon, value, onClick) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
     label,
     icon,
@@ -107162,11 +107569,13 @@ renderModelSummary_fn = function(current, representation, ionColors) {
   return x2`<div class="model-summary">
 			<div class="fields">
 				<sl-tag size="small">${crystal ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Crystal", "Kristall") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Molecule", "Molek\xFCl")}</sl-tag>
-				${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<sl-tag size="small">${formula(current)}</sl-tag>` : E2}
+				${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length && (!crystal || this.view === "3d") ? x2`<sl-tag size="small">${chemicalFormula(
+    current.kind === "molecule" && current.repeatUnit && this.view === "2d" ? formula({ ...current, atoms: __privateMethod(this, _ChemLabMoleculeBuilder_instances, lewis_fn).call(this, current).atoms }) : formula(current)
+  )}</sl-tag>` : E2}
 				${representation ? x2`<sl-tag size="small">${representation}</sl-tag>` : E2}
 				${geometry ? x2`<sl-tag size="small">${geometry}</sl-tag>` : E2}
 			</div>
-			${ionColors.size ? x2`<span class="structure-legend" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ion colours", "Ionenfarben")}>
+			${ionColors.size && this.view === "3d" ? x2`<span class="structure-legend" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ion colours", "Ionenfarben")}>
 				${[...ionColors].map(([ion2, color]) => x2`<span style="--swatch: ${colorHex(color)}">${ion2}</span>`)}
 				${crystal && this.showLattice ? x2`<span data-marker="lattice">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Lattice points", "Gitterpunkte")}</span>` : E2}
 			</span>` : E2}
@@ -107175,12 +107584,17 @@ renderModelSummary_fn = function(current, representation, ionColors) {
 					<span data-region="bond">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bonding", "Bindend")}</span>
 					<span data-region="lone">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Nonbonding", "Nichtbindend")}</span>
 				</span>` : E2}
-			<div class="display-controls" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Display", "Darstellung")}>
+			${current.kind === "molecule" && this.view === "2d" && current.atoms.length ? x2`
+				<div class="lewis-legend" title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ionic approximation of the drawn bonds using Allen electronegativity. ? marks an undetermined value.", "Ionische N\xE4herung der gezeichneten Bindungen nach Allen-Elektronegativit\xE4t. ? kennzeichnet einen unbestimmten Wert.")}>
+					${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Oxidation state", "Oxidationszahl")}
+					<span data-oxidation="negative">−</span><span data-oxidation="neutral">0</span><span data-oxidation="positive">+</span>
+				</div>` : E2}
+			${this.view === "3d" ? x2`<div class="display-controls" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Display", "Darstellung")}>
 				${crystal ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cells", "Zellen")}
 					<select .value=${String(this.repeats)} @change=${(event) => {
     this.repeats = Number(event.currentTarget.value);
     __privateSet(this, _fitNext, true);
-    __privateSet(this, _lastDrawn, void 0);
+    this.diagramBox = void 0;
   }}>
 						${[1, 2, 3].filter((value) => value ** 3 * current.sites.length <= 1800).map((value) => x2`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
 					</select></label>` : E2}
@@ -107196,7 +107610,7 @@ renderModelSummary_fn = function(current, representation, ionColors) {
 				${current.kind === "molecule" && current.atoms.length && this.view === "3d" && this.gpu === "ready" ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Valence electrons", "Valenzelektronen"), ELECTRONS_ICON, this.showElectrons, () => {
     this.showElectrons = !this.showElectrons;
   }) : E2}
-			</div>
+			</div>` : E2}
 			<output aria-live="polite">${this.notice || (this.bondStart ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose the other atom.", "W\xE4hle das zweite Atom.") : "")}</output>
 		</div>`;
 };
@@ -107243,14 +107657,16 @@ renderSelectionCard_fn = function() {
 				${shape ? x2`<sl-tag size="small">${shapeLabel[shape]}</sl-tag>` : E2}
 				${occupancy !== void 0 ? x2`<sl-tag size="small">${Number((100 * occupancy).toFixed(1))} %</sl-tag>` : E2}
 			</div>` : E2}
-			<sl-details summary=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site properties", "Gitterplatz-Eigenschaften") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom properties", "Atom-Eigenschaften")} ?open=${!atom}>
+			<sl-details summary=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site properties", "Gitterplatz-Eigenschaften") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom properties", "Atom-Eigenschaften")} ?open=${!atom && this.view === "3d"}>
 				<div class="fields">
 					<div class="site-picker" role="group" aria-label=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site", "Gitterplatz") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom", "Atom")}>
 						${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).map((entry) => x2`<button type="button" class="site-chip"
 							aria-pressed=${String(entry.id === this.picked)}
 							@pointerenter=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, hoverAtom_fn).call(this, entry.id)} @pointerleave=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, hoverAtom_fn).call(this, void 0)}
 							@focus=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, hoverAtom_fn).call(this, entry.id)} @blur=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, hoverAtom_fn).call(this, void 0)}
-							@click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, selectAtom_fn).call(this, entry.id)}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</button>`)}
+							@click=${() => {
+    this.picked = entry.id;
+  }}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</button>`)}
 					</div>
 					${atom && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Formal charge", "Formalladung")}
 						<input type="number" min="-8" max="8" step="1" .value=${String(atom.charge)} @change=${(event) => {
@@ -107325,6 +107741,8 @@ __decorateElement(_init3, 4, "bondOrder", _bondOrder_dec, _ChemLabMoleculeBuilde
 __decorateElement(_init3, 4, "repeats", _repeats_dec, _ChemLabMoleculeBuilder, _repeats);
 __decorateElement(_init3, 4, "notice", _notice_dec, _ChemLabMoleculeBuilder, _notice);
 __decorateElement(_init3, 4, "gpu", _gpu_dec, _ChemLabMoleculeBuilder, _gpu);
+__decorateElement(_init3, 4, "diagramBox", _diagramBox_dec, _ChemLabMoleculeBuilder, _diagramBox);
+__decorateElement(_init3, 4, "ionCharge", _ionCharge_dec, _ChemLabMoleculeBuilder, _ionCharge);
 __decorateElement(_init3, 4, "diagramDrag", _diagramDrag_dec, _ChemLabMoleculeBuilder, _diagramDrag);
 __decorateElement(_init3, 4, "bondPreview", _bondPreview_dec, _ChemLabMoleculeBuilder, _bondPreview);
 __decorateElement(_init3, 4, "paletteDrag", _paletteDrag_dec, _ChemLabMoleculeBuilder, _paletteDrag);

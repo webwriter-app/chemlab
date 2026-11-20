@@ -251,7 +251,7 @@ export function matchingRecipe(structure: Structure): CatalogChemical | undefine
 			return (!multiple && model?.kind === "crystal" && exactCrystal(model, structure))
 				|| (legacy && exactCrystal(legacy, structure));
 		}
-		if (structure.representation === "constituent" || structure.representation === "repeat-unit") return false;
+		if (structure.repeatUnit || structure.representation === "constituent" || structure.representation === "repeat-unit") return false;
 		const raw = models.get(entry.name) ?? [];
 		const reference = referenceStructures(entry);
 		// A single displayed solute can identify a stock only when its recipe

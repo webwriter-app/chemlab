@@ -46,9 +46,12 @@ function mainGroupValence(atomicNumber: number): number | undefined {
 	return group.value <= 2 ? group.value : group.value >= 13 ? group.value - 10 : undefined;
 }
 
-function remainingElectrons(atom: Atom, bonds: Bond[]) {
+export function remainingElectrons(atom: Atom, bonds: readonly Bond[], continuations = 0) {
 	const valence = mainGroupValence(atom.atomicNumber);
-	return valence === undefined ? undefined : valence - atom.charge - bonds.reduce((sum, bond) => sum + bond.order, 0);
+	return valence === undefined ? undefined : valence - atom.charge - continuations - bonds.reduce((sum, bond) => {
+		if (bond.from !== atom.id && bond.to !== atom.id) return sum;
+		return sum + (bond.dative ? (bond.from === atom.id ? 2 : 0) : bond.order);
+	}, 0);
 }
 
 function bondLength(left: number, right: number, order: number) {
@@ -63,7 +66,8 @@ export function canBond(molecule: Molecule, from: number, to: number, order: num
 		const other = id === from ? to : from;
 		const sum = molecule.bonds.reduce((count, bond) =>
 			(bond.from === id && bond.to !== other) || (bond.to === id && bond.from !== other) ? count + bond.order : count, order);
-		return sum <= (maximumOrder.get(atom.atomicNumber) ?? 6);
+		const continuation = molecule.repeatUnit?.ends.includes(id) ? 1 : 0;
+		return sum + continuation <= (maximumOrder.get(atom.atomicNumber) ?? 6);
 	});
 }
 

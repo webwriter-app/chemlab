@@ -7,6 +7,7 @@ Missing PubChem conformers are estimated from the curated SMILES. CIFs are requi
 """
 import argparse
 import json
+import math
 from collections import Counter
 from pathlib import Path
 import re
@@ -44,6 +45,13 @@ def molecule(mol, name, source, representation, conformer=None):
     if mol.GetNumAtoms() > 128:
         raise ValueError(f"{name} exceeds the editor atom limit")
     Chem.Kekulize(mol, clearAromaticFlags=True)
+    # Force-field setup can re-perceive aromaticity. Capture the integer
+    # Kekulé orders before it turns them back into aromatic bonds.
+    bonds = [
+        {"from": b.GetBeginAtomIdx() + 1, "to": b.GetEndAtomIdx() + 1, "order": int(b.GetBondTypeAsDouble())}
+        | ({"dative": True} if b.GetBondType() == Chem.BondType.DATIVE else {})
+        for b in mol.GetBonds()
+    ]
     if conformer is None and mol.GetNumAtoms() > 1:
         params = AllChem.ETKDGv3()
         params.randomSeed = 61453
@@ -76,12 +84,32 @@ def molecule(mol, name, source, representation, conformer=None):
         if atom.GetIsotope():
             row["isotope"] = atom.GetIsotope()
         atoms.append(row)
-    bonds = [dict(from_=b.GetBeginAtomIdx() + 1, to=b.GetEndAtomIdx() + 1, order=int(b.GetBondTypeAsDouble()))
-             for b in mol.GetBonds()]
-    bonds = [{"from": row["from_"], "to": row["to"], "order": row["order"]} for row in bonds]
     return dict(version=1, kind="molecule", name=name, source=source, representation=representation,
                 geometry=("supplied" if representation == "conformer" else "estimated") if coordinates is not None else None,
                 atoms=atoms, bonds=bonds)
+
+
+def repeat_unit(model, heavy_atoms, ends):
+    included = set(heavy_atoms)
+    atoms = {atom["id"]: atom for atom in model["atoms"]}
+    neighbors = {atom: [] for atom in atoms}
+    for bond in model["bonds"]:
+        neighbors[bond["from"]].append(bond["to"])
+        neighbors[bond["to"]].append(bond["from"])
+    for atom in heavy_atoms:
+        hydrogens = [other for other in neighbors[atom] if atoms[other]["atomicNumber"] == 1]
+        if atom in ends and not any(other not in heavy_atoms and atoms[other]["atomicNumber"] != 1 for other in neighbors[atom]):
+            hydrogens.pop()  # The continuation replaces a terminal hydrogen cap.
+        included.update(hydrogens)
+    model["repeatUnit"] = {"atoms": sorted(included), "ends": ends}
+
+    # Orient the 2D connection points from left to right.
+    left, right = [atoms[atom]["diagram"] for atom in ends]
+    angle = math.atan2(right[1] - left[1], right[0] - left[0])
+    cosine, sine = math.cos(angle), math.sin(angle)
+    for atom in atoms.values():
+        x, y = atom["diagram"]
+        atom["diagram"] = point((cosine * x + sine * y, cosine * y - sine * x))
 
 
 def pubchem(key, record, cache):
@@ -238,8 +266,9 @@ def generate(cache):
                             representation="experimental", geometry="supplied", bonds=[{"from": 1, "to": 2, "order": order}],
                             atoms=[dict(id=i + 1, atomicNumber=number, charge=0, diagram=[side, 0], position=[side, 0, 0])
                                    for i, side in enumerate((-length / 2, length / 2))])
-    for key, smiles in MANIFEST["repeatUnits"].items():
+    for key, (smiles, atoms, ends) in MANIFEST["repeatUnits"].items():
         records[key] = molecule(Chem.MolFromSmiles(smiles), "", IUPAC, "repeat-unit")
+        repeat_unit(records[key], atoms, ends)
     for key, (name, smiles, source) in MANIFEST["specimens"].items():
         records[key] = molecule(Chem.MolFromSmiles(smiles), name, source, "constituent")
     for key, cod_id in MANIFEST["crystals"].items():

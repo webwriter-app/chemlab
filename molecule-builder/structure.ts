@@ -12,7 +12,8 @@ export type Atom = {
 	position: Point3;
 };
 
-export type Bond = { from: number; to: number; order: BondOrder };
+export type Bond = { from: number; to: number; order: BondOrder; dative?: true };
+export type RepeatUnit = { atoms: number[]; ends: [number, number] };
 export type Cell = { lengths: Point3; angles: Point3 };
 export type Site = Omit<Atom, "diagram" | "position"> & { fractional: Point3; occupancy?: number; ion?: string };
 type Base = { version: 1; name: string; catalogKey?: string; source?: string };
@@ -23,6 +24,7 @@ export type Molecule = Base & {
 	bonds: Bond[];
 	geometry?: "idealized" | "supplied" | "estimated";
 	representation?: Representation;
+	repeatUnit?: RepeatUnit;
 };
 export type Crystal = Base & {
 	kind: "crystal";
@@ -133,14 +135,22 @@ export function readStructure(value: unknown): Structure | null {
 			const pair = [bond.from, bond.to].sort((a, b) => a - b).join("-");
 			if (pairs.has(pair)) return null;
 			pairs.add(pair);
-			bonds.push({ from: bond.from, to: bond.to, order: bond.order });
+			bonds.push({ from: bond.from, to: bond.to, order: bond.order, ...(bond.dative === true ? { dative: true as const } : {}) });
 		}
 		const geometry = value.geometry === "idealized" || value.geometry === "supplied" || value.geometry === "estimated"
 			? value.geometry : undefined;
 		const representation = value.representation === "constituent" || value.representation === "repeat-unit"
 			|| value.representation === "ionic-components" || value.representation === "conformer" || value.representation === "experimental"
 			? value.representation : undefined;
-		return { ...base, kind: "molecule", atoms, bonds, geometry, representation };
+		const repeat = value.repeatUnit;
+		const repeatAtoms = record(repeat) && Array.isArray(repeat.atoms) ? repeat.atoms : [];
+		const repeatUnit = repeatAtoms.length >= 2 && repeatAtoms.length <= atomIds.size
+			&& new Set(repeatAtoms).size === repeatAtoms.length && repeatAtoms.every(id => atomIds.has(id)) && record(repeat)
+			&& Array.isArray(repeat.ends) && repeat.ends.length === 2 && repeat.ends[0] !== repeat.ends[1]
+			&& repeat.ends.every(id => repeatAtoms.includes(id))
+			? { atoms: [...repeatAtoms] as number[], ends: [repeat.ends[0], repeat.ends[1]] as [number, number] }
+			: undefined;
+		return { ...base, kind: "molecule", atoms, bonds, geometry, representation, repeatUnit };
 	}
 	if (value.kind !== "crystal" || !record(value.cell)
 		|| !numbers(value.cell.lengths, 3) || !numbers(value.cell.angles, 3)

@@ -472,15 +472,15 @@
     ]
   },
   "repeatUnits": {
-    "Stärke": "OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)O[C@@H]2CO)[C@H](O)[C@@H](O)[C@@H]1O",
-    "Cellulose": "OC[C@H]1O[C@@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)O[C@@H]2CO)[C@H](O)[C@@H](O)[C@@H]1O",
-    "Polyethylen (PE)": "CCCCCC",
-    "Polypropylen (PP)": "CC(C)CC(C)CC(C)C",
-    "Polystyrol (PS)": "CC(c1ccccc1)CC(c1ccccc1)C",
-    "Polyvinylchlorid (PVC)": "CC(Cl)CC(Cl)CC(Cl)C",
-    "Polyethylenterephthalat (PET)": "OCCOC(=O)c1ccc(C(=O)OCCOC(=O)c2ccc(C(=O)OCCO)cc2)cc1",
-    "Polymilchsäure (PLA)": "C[C@@H](O)C(=O)O[C@H](C)C(=O)O[C@H](C)C(=O)O",
-    "Polyamid 6": "NCCCCCC(=O)NCCCCCC(=O)O"
+    "Stärke": ["OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)O[C@@H]2CO)[C@H](O)[C@@H](O)[C@@H]1O", [1, 2, 3, 4, 5, 18, 19, 20, 21, 22, 23], [23, 5]],
+    "Cellulose": ["OC[C@H]1O[C@@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)O[C@@H]2CO)[C@H](O)[C@@H](O)[C@@H]1O", [1, 2, 3, 4, 5, 18, 19, 20, 21, 22, 23], [23, 5]],
+    "Polyethylen (PE)": ["CCCCCC", [3, 4], [3, 4]],
+    "Polypropylen (PP)": ["CC(C)CC(C)CC(C)C", [4, 5, 6], [4, 5]],
+    "Polystyrol (PS)": ["CC(c1ccccc1)CC(c1ccccc1)C", [9, 10, 11, 12, 13, 14, 15, 16], [9, 10]],
+    "Polyvinylchlorid (PVC)": ["CC(Cl)CC(Cl)CC(Cl)C", [4, 5, 6], [4, 5]],
+    "Polyethylenterephthalat (PET)": ["OCCOC(=O)c1ccc(C(=O)OCCOC(=O)c2ccc(C(=O)OCCO)cc2)cc1", [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 29, 30], [13, 23]],
+    "Polymilchsäure (PLA)": ["C[C@@H](O)C(=O)O[C@H](C)C(=O)O[C@H](C)C(=O)O", [6, 7, 8, 9, 10], [6, 9]],
+    "Polyamid 6": ["NCCCCCC(=O)NCCCCCC(=O)O", [9, 10, 11, 12, 13, 14, 15, 16], [9, 15]]
   },
   "mixtures": {
     "Paraffinöl": [],
