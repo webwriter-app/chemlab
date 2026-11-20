@@ -53680,6 +53680,7 @@ var init_lib = __esm({
     init_CubeTexture();
     init_RenderTexture();
     init_BufferImageSource();
+    init_CanvasSource();
     init_CompressedSource();
     init_TextureSource();
     init_Texture();
@@ -53693,6 +53694,7 @@ var init_lib = __esm({
     init_clearList();
     init_definedProps();
     init_Graphics();
+    init_Sprite();
     init_Text();
     init_ViewContainer();
     init_const2();
@@ -81480,6 +81482,118 @@ var init_GeometryAtlasPool = __esm({
   }
 });
 
+// node_modules/@pixi/3d/dist/geometry/PlaneGeometry.mjs
+var PlaneGeometry;
+var init_PlaneGeometry = __esm({
+  "node_modules/@pixi/3d/dist/geometry/PlaneGeometry.mjs"() {
+    init_Geometry3D();
+    init_clampSegments();
+    init_lib();
+    PlaneGeometry = class PlaneGeometry2 extends Geometry3D {
+      /**
+      * Defaults for every new `PlaneGeometry`
+      * @example
+      * ```ts
+      * PlaneGeometry.defaultOptions.flipV = true;
+      * ```
+      */
+      static defaultOptions = {
+        ...Geometry3D.defaultOptions,
+        width: 1,
+        height: 1,
+        widthSegments: 1,
+        heightSegments: 1,
+        flipV: false
+      };
+      /** Built on first read, so importing the module builds nothing */
+      static _spriteQuad = null;
+      /**
+      * The shared 1×1 quad every {@link Sprite3D} draws, built as `new PlaneGeometry({ flipV: true })`
+      *
+      * Give it to {@link BatchedMesh3D} slots with a `billboardMode` to draw billboards without a scene
+      * node per sprite. Its `destroy` does nothing, as with pixi's `Texture.WHITE`, so no `destroy`
+      * call can pull it out from under the sprites.
+      * @example
+      * ```ts
+      * const sprites = new BatchedMesh3D({ size: 10_000, parent: view.root });
+      * sprites.setGeometryAt(0, PlaneGeometry.spriteQuad);
+      * sprites.items[0].billboardMode = 'spherical';
+      * ```
+      */
+      static get spriteQuad() {
+        return PlaneGeometry2._spriteQuad ??= (() => {
+          const quad = new PlaneGeometry2({ flipV: true });
+          quad.destroy = NOOP;
+          return quad;
+        })();
+      }
+      /**
+      * Creates a new `PlaneGeometry`
+      * @param options - See {@link PlaneGeometryOptions} for available options
+      */
+      constructor(options = {}) {
+        const resolvedOptions = {
+          ...PlaneGeometry2.defaultOptions,
+          ...options
+        };
+        const { width, height, flipV } = resolvedOptions;
+        const widthSegments = clampSegments(resolvedOptions.widthSegments, 1);
+        const heightSegments = clampSegments(resolvedOptions.heightSegments, 1);
+        const vertCount = (widthSegments + 1) * (heightSegments + 1);
+        const triCount = widthSegments * heightSegments * 2;
+        const positions = new Float32Array(vertCount * 3);
+        const normals = new Float32Array(vertCount * 3);
+        const uvs = new Float32Array(vertCount * 2);
+        const indices = vertCount > 65536 ? new Uint32Array(triCount * 3) : new Uint16Array(triCount * 3);
+        const halfW = width * 0.5;
+        const halfH = height * 0.5;
+        const invW = 1 / widthSegments;
+        const invH = 1 / heightSegments;
+        let pi = 0;
+        let ni = 0;
+        let ui = 0;
+        for (let y5 = 0; y5 <= heightSegments; ++y5) {
+          const v4 = y5 * invH;
+          for (let x4 = 0; x4 <= widthSegments; ++x4) {
+            const u6 = x4 * invW;
+            positions[pi++] = u6 * width - halfW;
+            positions[pi++] = v4 * height - halfH;
+            positions[pi++] = 0;
+            normals[ni++] = 0;
+            normals[ni++] = 0;
+            normals[ni++] = 1;
+            uvs[ui++] = u6;
+            uvs[ui++] = flipV ? 1 - v4 : v4;
+          }
+        }
+        const rowSize = widthSegments + 1;
+        let ii = 0;
+        for (let y5 = 0; y5 < heightSegments; ++y5) {
+          const rowOffset0 = (y5 + 0) * rowSize;
+          const rowOffset1 = (y5 + 1) * rowSize;
+          for (let x4 = 0; x4 < widthSegments; ++x4) {
+            const offset0 = rowOffset0 + x4;
+            const offset1 = rowOffset1 + x4;
+            indices[ii++] = offset0;
+            indices[ii++] = offset0 + 1;
+            indices[ii++] = offset1;
+            indices[ii++] = offset1;
+            indices[ii++] = offset0 + 1;
+            indices[ii++] = offset1 + 1;
+          }
+        }
+        super({
+          ...resolvedOptions,
+          positions,
+          normals,
+          uvs,
+          indices
+        });
+      }
+    };
+  }
+});
+
 // node_modules/@pixi/3d/dist/geometry/SphereGeometry.mjs
 var SphereGeometry;
 var init_SphereGeometry = __esm({
@@ -84004,6 +84118,498 @@ var init_Model3D = __esm({
         this._builtMeshes = null;
         this._materials = void 0;
         super.destroy(options);
+      }
+    };
+  }
+});
+
+// node_modules/@pixi/3d/dist/scene/Sprite3D.mjs
+function warnUnsizedTexture() {
+  warnOnce("pixijs-3d-sprite3d-size-unloaded", "[@pixi/3d] A Sprite3D was sized in world units while its texture had no dimensions (still loading?). The write was dropped \u2014 size the sprite after the texture resolves, or set `scale` directly.");
+}
+var Sprite3D;
+var init_Sprite3D = __esm({
+  "node_modules/@pixi/3d/dist/scene/Sprite3D.mjs"() {
+    init_Destroy3DOptions();
+    init_warnOnce();
+    init_Mesh3D();
+    init_FlatMaterial();
+    init_PlaneGeometry();
+    init_lib();
+    Sprite3D = class Sprite3D2 extends Mesh3D {
+      /**
+      * Defaults for every new `Sprite3D`; an option passed as `undefined` keeps its default
+      *
+      * `tint`, `alpha`, `alphaMode` and `alphaCutoff` apply only to the {@link FlatMaterial} the
+      * sprite makes, never to a material you pass.
+      * @example
+      * ```ts
+      * // Author against a 32px-per-unit tile set:
+      * Sprite3D.defaultOptions.pixelSize = 1 / 32;
+      * ```
+      */
+      static defaultOptions = {
+        billboardMode: "spherical",
+        tint: 16777215,
+        alpha: 1,
+        alphaMode: "blend",
+        alphaCutoff: 0.5,
+        pixelSize: 0.01,
+        castShadow: false,
+        receiveShadow: true
+      };
+      /**
+      * Creates a self-contained sprite from a texture, or from anything `Texture.from` accepts: an
+      * asset alias or URL already in the cache, an image, a canvas or a `TextureSource`
+      *
+      * The 3D counterpart of pixi's `Sprite.from`. An alias the cache doesn't have draws nothing, and
+      * pixi warns; load the asset first.
+      * @example
+      * ```ts
+      * await Assets.load('tree.png');
+      * const tree = Sprite3D.from('tree.png');
+      * ```
+      * @param source - The texture, or the source to build one from.
+      * @param skipCache - Build a fresh texture instead of reusing a cached one for `source`; an alias
+      * or URL always comes from the cache.
+      * @returns A sprite drawing that texture on its own {@link FlatMaterial}.
+      */
+      static from(source3, skipCache = false) {
+        if (source3 instanceof Texture) return new Sprite3D2(source3);
+        return new Sprite3D2(Texture.from(source3, skipCache) ?? Texture.EMPTY);
+      }
+      _texture;
+      _pixelSize = 0;
+      _anchor;
+      _ownsMaterial;
+      /** Only `dynamic` textures get it, as on pixi's 2D `Sprite`, so frame swaps stay cheap */
+      _onTextureUpdate = () => {
+        this.material._deriveUvFrame();
+        this._onUpdate();
+      };
+      /**
+      * Creates a `Sprite3D`; add it under {@link View3D.root | view.root} to draw it
+      *
+      * A bare `Texture` is short for `{ texture }`, as with pixi's 2D `Sprite`. Throws when a
+      * `material` you pass has no `baseColor` slot.
+      * @example
+      * ```ts
+      * const glow = new Sprite3D(glowTexture);
+      * ```
+      * @param options - Construction options, or the texture to draw; see {@link Sprite3DOptions}.
+      */
+      constructor(options = {}) {
+        if (options instanceof Texture) options = { texture: options };
+        const explicit = definedProps(options);
+        const { material: supplied, texture, tint, alpha, alphaMode, alphaCutoff, pixelSize, anchor, width, height, parent, castShadow, receiveShadow, billboardMode, ...rest } = {
+          ...Sprite3D2.defaultOptions,
+          ...explicit
+        };
+        if (supplied && supplied._slotByName.baseColor === void 0) throw new Error("[Sprite3D] The supplied material has no `baseColor` texture slot, so the sprite has no image to size itself from. Use a material built from a baseColor-bearing bit (FlatMaterial, Material3D, PhongMaterial, ...).");
+        super({
+          label: "Sprite3D",
+          ...rest,
+          geometry: PlaneGeometry.spriteQuad,
+          material: supplied ?? new FlatMaterial({
+            baseColorTexture: texture ?? Texture.WHITE,
+            baseColor: tint,
+            alpha,
+            alphaMode,
+            alphaCutoff,
+            doubleSided: true
+          }),
+          castShadow,
+          receiveShadow,
+          billboardMode
+        });
+        this._ownsMaterial = supplied === void 0;
+        this._pixelSize = pixelSize;
+        this._texture = this.material.textures.baseColor ?? Texture.WHITE;
+        if (this._texture.dynamic) this._texture.on("update", this._onTextureUpdate);
+        if (supplied) {
+          if (texture) this.texture = texture;
+          if (explicit.tint !== void 0) this.tint = explicit.tint;
+          if (explicit.alpha !== void 0) this.alpha = explicit.alpha;
+          if (explicit.alphaMode !== void 0) this.alphaMode = explicit.alphaMode;
+          if (explicit.alphaCutoff !== void 0) this.alphaCutoff = explicit.alphaCutoff;
+        }
+        this._anchor = new ObservablePoint({ _onUpdate: () => this._onUpdate() }, 0.5, 0.5);
+        const initialAnchor = anchor ?? this._texture.defaultAnchor;
+        if (initialAnchor !== void 0) this.anchor = initialAnchor;
+        if (width !== void 0 || height !== void 0) this._fitSize(width, height);
+        parent?.addChild(this);
+      }
+      _fitSize(width, height) {
+        const { width: pixelWidth, height: pixelHeight } = this._texture.orig;
+        if (pixelWidth === 0 || pixelHeight === 0) {
+          warnUnsizedTexture();
+          return;
+        }
+        this.width = width ?? height * pixelWidth / pixelHeight;
+        this.height = height ?? width * pixelHeight / pixelWidth;
+      }
+      /**
+      * The image on the quad
+      *
+      * Assigning another re-sizes the sprite; switching frames within one sprite sheet is cheap. It
+      * writes the material's `baseColor` slot, so on a shared material it changes every sprite using
+      * it. A sprite follows in-place changes only to a texture that was `dynamic` when it got it, as
+      * pixi's 2D `Sprite` does.
+      * @example
+      * ```ts
+      * coin.texture = sheet.textures[`coin_${frame}.png`];
+      * ```
+      */
+      get texture() {
+        return this._texture;
+      }
+      /**
+      * Swaps the image and re-sizes the sprite; rotated sprite sheet frames work too
+      * @param value - Image to draw on the quad.
+      */
+      set texture(value) {
+        if (this._texture === value) return;
+        if (this._texture.dynamic) this._texture.off("update", this._onTextureUpdate);
+        this._texture = value;
+        if (value.dynamic) value.on("update", this._onTextureUpdate);
+        this.material.textures.baseColor = value;
+        this._onUpdate();
+      }
+      /**
+      * Which point of the image sits on the node's origin, as a fraction of its size, with `y`
+      * measured down from the top edge
+      *
+      * `(0.5, 0.5)` is centred, and `y = 1` stands the sprite on the origin. Assign a point or a
+      * single number for both axes, or change it in place. The {@link Sprite3D} class notes cover
+      * how it behaves in each billboard mode.
+      * @example
+      * ```ts
+      * tree.anchor.set(0.5, 1);
+      * ```
+      */
+      get anchor() {
+        return this._anchor;
+      }
+      /**
+      * Sets the anchor from a point or a single number for both axes
+      * @param value - Fractions of the image's size, `y` measured from its top edge.
+      */
+      set anchor(value) {
+        if (typeof value === "number") this._anchor.set(value);
+        else this._anchor.copyFrom(value);
+      }
+      /**
+      * World units per texture pixel, which sets the sprite's size without touching `scale`
+      * @example
+      * ```ts
+      * sprite.pixelSize = 1 / 64;
+      * ```
+      */
+      get pixelSize() {
+        return this._pixelSize;
+      }
+      /**
+      * Re-sizes the sprite without touching `scale`
+      * @param value - World units per texture pixel.
+      */
+      set pixelSize(value) {
+        if (this._pixelSize === value) return;
+        this._pixelSize = value;
+        this._onUpdate();
+      }
+      /**
+      * Colour multiplied into the texture
+      *
+      * As with `Container.tint`, it takes any `ColorSource` and reads back as a hex number. Opacity
+      * is {@link Sprite3D#alpha}. It writes the material's `baseColor`, so on a shared material it
+      * recolours every sprite using it.
+      * @example
+      * ```ts
+      * glow.tint = 'orange';
+      * ```
+      */
+      get tint() {
+        return this.material.baseColor;
+      }
+      /**
+      * Sets the colour multiplied into the texture
+      * @param value - Colour to multiply by.
+      */
+      set tint(value) {
+        this.material.baseColor = value;
+      }
+      /**
+      * Opacity multiplied into the texture's alpha
+      *
+      * It writes the material, so on a shared material it fades every sprite using it.
+      * @example
+      * ```ts
+      * ghost.alpha = 0.4;
+      * ```
+      */
+      get alpha() {
+        return this.material.alpha;
+      }
+      /**
+      * Sets the opacity multiplied into the texture's alpha
+      * @param value - Opacity from 0 to 1.
+      */
+      set alpha(value) {
+        this.material.alpha = value;
+      }
+      /**
+      * How the texture's alpha is used; see {@link Sprite3DOptions.alphaMode}
+      *
+      * A blended sprite casts no shadow. It writes the material, so on a shared material it changes
+      * every sprite using it.
+      * @example
+      * ```ts
+      * leaf.alphaMode = 'mask';
+      * ```
+      */
+      get alphaMode() {
+        return this.material.alphaMode;
+      }
+      /**
+      * Sets how the texture's alpha is used
+      * @param value - How alpha is used.
+      */
+      set alphaMode(value) {
+        if (this.material.alphaMode === value) return;
+        this.material.alphaMode = value;
+      }
+      /**
+      * Alpha below which `'mask'` mode cuts a pixel away; it writes the material
+      * @example
+      * ```ts
+      * leaf.alphaCutoff = 0.3;
+      * ```
+      */
+      get alphaCutoff() {
+        return this.material.alphaCutoff;
+      }
+      /**
+      * Sets the alpha below which `'mask'` mode cuts a pixel away
+      * @param value - Alpha from 0 to 1.
+      */
+      set alphaCutoff(value) {
+        this.material.alphaCutoff = value;
+      }
+      /**
+      * The sprite's width in world units: `|scale.x| × texture width × pixelSize`
+      *
+      * Assigning writes `scale.x` and leaves {@link Sprite3D#height} alone, as on pixi's 2D `Sprite`;
+      * to keep the aspect ratio, pass {@link Sprite3DOptions.width | width} at construction.
+      * @example
+      * ```ts
+      * sign.width = 2;
+      * ```
+      */
+      get width() {
+        return Math.abs(this.scale.x) * this._texture.orig.width * this._pixelSize;
+      }
+      /**
+      * Sets `scale.x` for a width in world units
+      * @param value - Width in world units.
+      */
+      set width(value) {
+        const scale2 = this._scaleForWorldSize(value, this._texture.orig.width, this.scale.x);
+        if (scale2 !== null) this.scale.x = scale2;
+      }
+      /**
+      * The sprite's height in world units: `|scale.y| × texture height × pixelSize`
+      *
+      * Assigning writes `scale.y` only; see {@link Sprite3D#width}.
+      * @example
+      * ```ts
+      * tree.height = 6;
+      * ```
+      */
+      get height() {
+        return Math.abs(this.scale.y) * this._texture.orig.height * this._pixelSize;
+      }
+      /**
+      * Sets `scale.y` for a height in world units
+      * @param value - Height in world units.
+      */
+      set height(value) {
+        const scale2 = this._scaleForWorldSize(value, this._texture.orig.height, this.scale.y);
+        if (scale2 !== null) this.scale.y = scale2;
+      }
+      /**
+      * Returns the sprite's size in world units, from the texture like {@link Sprite3D#width}
+      *
+      * A sprite is flat, so `depth` is always 0.
+      * @example
+      * ```ts
+      * const { width, height } = sprite.getSize();
+      * ```
+      * @param out - Object to write into; a new one when omitted
+      * @returns The size, written into `out`
+      */
+      getSize(out2 = {
+        width: 0,
+        height: 0,
+        depth: 0
+      }) {
+        out2.width = this.width;
+        out2.height = this.height;
+        out2.depth = 0;
+        return out2;
+      }
+      /**
+      * Sizes the sprite in world units, from the texture like {@link Sprite3D#width}
+      *
+      * A single number sets both axes, and a missing `height` takes the width, as in pixi's 2D
+      * `Sprite`. A sprite is flat, so any `depth` is ignored.
+      * @param value - Target width, or an object with `width` and optional `height`
+      * @param height - Target height; defaults to the width
+      * @param _depth - Ignored; a sprite is flat
+      * @example
+      * ```ts
+      * sprite.setSize(2, 1);
+      * sprite.setSize({ width: 3 }); // 3 × 3
+      * ```
+      */
+      setSize(value, height, _depth) {
+        if (typeof value === "object") {
+          height = value.height ?? value.width;
+          value = value.width;
+        } else height ??= value;
+        this.width = value;
+        this.height = height;
+      }
+      _scaleForWorldSize(size3, pixels, currentScale) {
+        if (pixels === 0) {
+          warnUnsizedTexture();
+          return null;
+        }
+        return size3 / (pixels * this._pixelSize) * (Math.sign(currentScale) || 1);
+      }
+      /**
+      * Rebuilds {@link Container3D.localTransform | localTransform} with the texture's world size and
+      * the anchor offset in it
+      *
+      * A texture with no size yet, such as one still loading, shrinks the quad to a point.
+      * @advanced
+      */
+      updateLocalTransform() {
+        const quat = this.quaternion;
+        if (this.rotationDirty) {
+          this.rotationDirty = false;
+          const rx = this.rotation._x;
+          const ry = this.rotation._y;
+          const rz = this.rotation._z;
+          const c1 = Math.cos(rx / 2);
+          const c22 = Math.cos(ry / 2);
+          const c32 = Math.cos(rz / 2);
+          const s1 = Math.sin(rx / 2);
+          const s22 = Math.sin(ry / 2);
+          const s32 = Math.sin(rz / 2);
+          quat._x = s1 * c22 * c32 + c1 * s22 * s32;
+          quat._y = c1 * s22 * c32 - s1 * c22 * s32;
+          quat._z = c1 * c22 * s32 + s1 * s22 * c32;
+          quat._w = c1 * c22 * c32 - s1 * s22 * s32;
+        }
+        const x4 = quat._x;
+        const y5 = quat._y;
+        const z3 = quat._z;
+        const w4 = quat._w;
+        const x22 = x4 + x4;
+        const y22 = y5 + y5;
+        const z22 = z3 + z3;
+        const xx = x4 * x22;
+        const xy = x4 * y22;
+        const xz = x4 * z22;
+        const yy = y5 * y22;
+        const yz = y5 * z22;
+        const zz = z3 * z22;
+        const wx = w4 * x22;
+        const wy = w4 * y22;
+        const wz = w4 * z22;
+        const out2 = this.localTransform.elements;
+        const pixelSize = this._pixelSize;
+        const sx = this.scale._x * (this._texture.orig.width * pixelSize);
+        const sy = this.scale._y * (this._texture.orig.height * pixelSize);
+        const sz = this.scale._z;
+        out2[0] = (1 - (yy + zz)) * sx;
+        out2[1] = (xy + wz) * sx;
+        out2[2] = (xz - wy) * sx;
+        out2[4] = (xy - wz) * sy;
+        out2[5] = (1 - (xx + zz)) * sy;
+        out2[6] = (yz + wx) * sy;
+        out2[8] = (xz + wy) * sz;
+        out2[9] = (yz - wx) * sz;
+        out2[10] = (1 - (xx + yy)) * sz;
+        const dx = 0.5 - this._anchor._x;
+        const dy = this._anchor._y - 0.5;
+        out2[12] = this.position._x + dx * out2[0] + dy * out2[4];
+        out2[13] = this.position._y + dx * out2[1] + dy * out2[5];
+        out2[14] = this.position._z + dx * out2[2] + dy * out2[6];
+        if (this._origin !== null) this._addOriginOffset();
+      }
+      /**
+      * Reads `quaternion` and `scale` rather than the matrix, whose basis carries a size that can be 0
+      * @param out - Receives the offset.
+      */
+      _getOriginOffset(out2) {
+        const origin = this._origin;
+        const ox = origin._x;
+        const oy = origin._y;
+        const oz = origin._z;
+        const vx2 = ox * this.scale._x;
+        const vy2 = oy * this.scale._y;
+        const vz = oz * this.scale._z;
+        const quat = this.quaternion;
+        const x4 = quat._x;
+        const y5 = quat._y;
+        const z3 = quat._z;
+        const w4 = quat._w;
+        const x22 = x4 + x4;
+        const y22 = y5 + y5;
+        const z22 = z3 + z3;
+        const xx = x4 * x22;
+        const xy = x4 * y22;
+        const xz = x4 * z22;
+        const yy = y5 * y22;
+        const yz = y5 * z22;
+        const zz = z3 * z22;
+        const wx = w4 * x22;
+        const wy = w4 * y22;
+        const wz = w4 * z22;
+        out2.x = ox - ((1 - (yy + zz)) * vx2 + (xy - wz) * vy2 + (xz + wy) * vz);
+        out2.y = oy - ((xy + wz) * vx2 + (1 - (xx + zz)) * vy2 + (yz - wx) * vz);
+        out2.z = oz - ((xz - wy) * vx2 + (yz + wx) * vy2 + (1 - (xx + yy)) * vz);
+        return out2;
+      }
+      /**
+      * Destroys the sprite; the shared quad geometry always survives, even `destroy(true)`
+      *
+      * A material the sprite made is always destroyed; one you gave it stays unless you pass
+      * `material`. `texture` frees the sprite's texture, as on pixi's 2D `Sprite`, and
+      * `textureSource` its source too; `textureSource` alone frees nothing. Children get your options
+      * unchanged.
+      * @example
+      * ```ts
+      * sprite.destroy({ texture: true, textureSource: true });
+      * ```
+      * @param options - Teardown flags; see {@link Destroy3DOptions}.
+      */
+      destroy(options) {
+        if (this.destroyed) return;
+        const texture = this._texture;
+        const material = this.material;
+        const materialWasLive = !material.destroyed;
+        if (texture.dynamic) texture.off("update", this._onTextureUpdate);
+        super.destroy(options);
+        if (!(materialWasLive && material.destroyed)) {
+          if (this._ownsMaterial && materialWasLive) material.destroy(options);
+          else if (resolveDestroy3DFlag(options, "texture")) texture.destroy(resolveDestroy3DFlag(options, "textureSource"));
+        }
+        this._texture = null;
+      }
+      /** Spares the quad every sprite shares, while children still get the caller's `geometry` flag */
+      _destroyGeometry() {
       }
     };
   }
@@ -90992,6 +91598,7 @@ var init_dist2 = __esm({
     init_CylinderGeometry();
     init_SphereGeometry();
     init_DirectionalLight();
+    init_Sprite3D();
     init_View3D();
     init_init14();
   }
@@ -91002,7 +91609,30 @@ var scene_exports = {};
 __export(scene_exports, {
   MoleculeScene: () => MoleculeScene
 });
-var vector4, cellCorners, CAMERA_FOV, FIT_FILL, AXIS_ORIGIN, AXIS_LENGTH, AXIS_COLORS, RIM_STRENGTH, RIM_POWER, rimBit, MoleculeScene;
+function vignetteStops() {
+  const stops = [[0, `rgba(${VIGNETTE_COLOR}, 0)`], [VIGNETTE_CLEAR, `rgba(${VIGNETTE_COLOR}, 0)`]];
+  for (let step = 1; step <= 6; step++) {
+    const share = step / 6;
+    const eased = share * share * (3 - 2 * share);
+    stops.push([
+      VIGNETTE_CLEAR + (1 - VIGNETTE_CLEAR) * share,
+      `rgba(${VIGNETTE_COLOR}, ${(VIGNETTE_ALPHA * eased).toFixed(3)})`
+    ]);
+  }
+  return stops;
+}
+function radialTexture(stops, size3 = 256) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size3;
+  const context2 = canvas.getContext("2d");
+  if (!context2) return Texture.EMPTY;
+  const gradient = context2.createRadialGradient(size3 / 2, size3 / 2, 0, size3 / 2, size3 / 2, size3 / 2);
+  for (const [offset3, color] of stops) gradient.addColorStop(offset3, color);
+  context2.fillStyle = gradient;
+  context2.fillRect(0, 0, size3, size3);
+  return new Texture({ source: new CanvasSource({ resource: canvas }) });
+}
+var vector4, cellCorners, CAMERA_FOV, FIT_FILL, AXIS_ORIGIN, AXIS_LENGTH, AXIS_COLORS, RIM_STRENGTH, RIM_POWER, rimBit, SELECTION_COLOR, HALO_SCALE, HALO_ALPHA, VIGNETTE_ALPHA, VIGNETTE_CLEAR, VIGNETTE_REACH, VIGNETTE_COLOR, MoleculeScene;
 var init_scene = __esm({
   "molecule-builder/scene.ts"() {
     init_lib();
@@ -91039,6 +91669,13 @@ var init_scene = __esm({
         }
       }
     };
+    SELECTION_COLOR = 34501;
+    HALO_SCALE = 1.9;
+    HALO_ALPHA = 0.85;
+    VIGNETTE_ALPHA = 0.3;
+    VIGNETTE_CLEAR = 0.55;
+    VIGNETTE_REACH = 0.85;
+    VIGNETTE_COLOR = "15, 23, 42";
     MoleculeScene = class _MoleculeScene {
       static async create(host) {
         const app = new Application();
@@ -91079,6 +91716,11 @@ var init_scene = __esm({
       #picks = /* @__PURE__ */ new Map();
       #observer;
       #preview;
+      #vignette;
+      #halos = new Container3D();
+      #haloTexture;
+      #textures = [];
+      #haloSprites = [];
       #selected = /* @__PURE__ */ new Set();
       #structure;
       #showElectrons = false;
@@ -91100,13 +91742,22 @@ var init_scene = __esm({
           autoResize: false,
           environment: { skyColor: 16777215, groundColor: 10925251, intensity: 0.94 }
         });
-        app.stage.addChild(this.#view, this.#lattice, this.#axes, ...this.#axisLabels);
+        this.#vignette = new Sprite({ texture: this.#track(radialTexture(vignetteStops())), eventMode: "none" });
+        this.#haloTexture = this.#track(radialTexture([
+          [0, "rgba(255, 255, 255, 1)"],
+          [0.5, "rgba(255, 255, 255, 0.92)"],
+          [0.66, "rgba(255, 255, 255, 0.42)"],
+          [0.84, "rgba(255, 255, 255, 0.1)"],
+          [1, "rgba(255, 255, 255, 0)"]
+        ]));
+        app.stage.addChild(this.#view, this.#vignette, this.#lattice, this.#axes, ...this.#axisLabels);
+        this.#sizeVignette();
         for (const label of this.#axisLabels) label.visible = false;
         this.#view.setSize(app.screen.width, app.screen.height);
         const sun = new DirectionalLight({ color: 16777215, intensity: 2.15 });
         sun.position.set(3, 6, 7);
         sun.lookAt({ x: 0, y: 0, z: 0 });
-        this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons);
+        this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons, this.#halos);
         this.#preview = this.#rod();
         this.#preview.material = this.#material(34501);
         this.#preview.visible = false;
@@ -91118,6 +91769,7 @@ var init_scene = __esm({
           if (host.clientWidth && host.clientHeight) {
             app.renderer.resize(host.clientWidth, host.clientHeight);
             this.#view.setSize(host.clientWidth, host.clientHeight);
+            this.#sizeVignette();
             this.#draw();
           }
         });
@@ -91125,7 +91777,24 @@ var init_scene = __esm({
         this.#camera();
       }
       /**
-       * A cached material for one colour, opacity and selection state.
+       * Remember a generated texture so {@link destroy} can free it.
+       *
+       * A missing 2D context leaves {@link Texture.EMPTY}, which belongs to Pixi
+       * and must never be destroyed; only textures this scene created are kept.
+       */
+      #track(texture) {
+        if (texture !== Texture.EMPTY) this.#textures.push(texture);
+        return texture;
+      }
+      /** Centre the vignette's circle on the canvas and size it past the corners. */
+      #sizeVignette() {
+        const { width, height } = this.#app.screen;
+        const side = Math.hypot(width, height) / VIGNETTE_REACH;
+        this.#vignette.width = this.#vignette.height = side;
+        this.#vignette.position.set((width - side) / 2, (height - side) / 2);
+      }
+      /**
+       * A cached material for one colour and opacity.
        *
        * Every atom and bond takes the rim, translucent ones included: the term
        * darkens the surface itself rather than drawing a shell behind it, so a
@@ -91133,8 +91802,8 @@ var init_scene = __esm({
        * The electron clouds use their own materials and stay unrimmed, because
        * they are a haze around the atoms rather than bodies of their own.
        */
-      #material(color, opacity = 1, selected = false) {
-        const key = `${color}:${opacity}:${selected}`;
+      #material(color, opacity = 1) {
+        const key = `${color}:${opacity}`;
         let material = this.#materials.get(key);
         if (!material) {
           material = new Material3D({
@@ -91142,7 +91811,6 @@ var init_scene = __esm({
             roughness: 0.61,
             alpha: opacity,
             alphaMode: opacity < 1 ? "blend" : "opaque",
-            emissive: selected ? { color, strength: 0.48 } : void 0,
             extraBits: [rimBit]
           });
           material.data.rimStrength = RIM_STRENGTH;
@@ -91175,7 +91843,7 @@ var init_scene = __esm({
         this.#content.addChild(mesh);
         this.#bounds.push(position);
         this.#atomRadius = Math.max(this.#atomRadius, radius);
-        this.#picks.set(mesh, { id, color, ionic: ionColor !== void 0, opacity, position });
+        this.#picks.set(mesh, { id, color, ionic: ionColor !== void 0, opacity, position, radius });
       }
       #renderElectrons(structure, show) {
         for (const child of this.#electrons.removeChildren()) child.destroy({ children: true });
@@ -91277,10 +91945,40 @@ var init_scene = __esm({
         const selected = new Set(selection);
         if (rebuild || selected.size !== this.#selected.size || selection.some((id) => !this.#selected.has(id))) {
           this.#selected = selected;
-          for (const [mesh, atom] of this.#picks) {
-            mesh.material = selected.has(atom.id) ? atom.ionic ? this.#material(atom.color, 1, true) : this.#material(34501) : this.#material(atom.color, atom.opacity);
-          }
+          this.#select(selected);
           this.#draw();
+        }
+      }
+      /**
+       * Mark the selected atoms with a glow behind them.
+       *
+       * One system serves molecules and lattices alike, and it never touches the
+       * atom's own material: the sphere keeps its CPK colour, so a marked atom
+       * still reads as the element it is. The glow is a billboard through the
+       * atom's centre, depth-tested against the opaque sphere, so the body hides
+       * its middle and only a soft band outside the silhouette remains. That band
+       * is what makes a selected site stand out in a packed lattice, where a
+       * recoloured sphere would be the only cue and would misread as a new species.
+       */
+      #select(selected) {
+        for (const sprite of this.#haloSprites) sprite.destroy();
+        this.#haloSprites = [];
+        for (const atom of this.#picks.values()) {
+          if (!selected.has(atom.id)) continue;
+          const size3 = atom.radius * HALO_SCALE * 2;
+          const halo = new Sprite3D({
+            texture: this.#haloTexture,
+            tint: SELECTION_COLOR,
+            alpha: HALO_ALPHA,
+            alphaMode: "blend",
+            billboardMode: "spherical",
+            eventMode: "none",
+            position: vector4(atom.position),
+            width: size3,
+            height: size3
+          });
+          this.#halos.addChild(halo);
+          this.#haloSprites.push(halo);
         }
       }
       get canvas() {
@@ -91392,6 +92090,7 @@ var init_scene = __esm({
         this.#axes.destroy();
         for (const label of this.#axisLabels) label.destroy();
         for (const material of this.#materials.values()) material.destroy();
+        for (const texture of this.#textures) texture.destroy(true);
       }
     };
   }

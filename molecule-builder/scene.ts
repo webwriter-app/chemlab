@@ -1,7 +1,7 @@
-import { Application, Graphics, Point, Text } from "pixi.js";
+import { Application, CanvasSource, Graphics, Point, Sprite, Text, Texture } from "pixi.js";
 import {
 	Container3D, CylinderGeometry, DirectionalLight, Material3D, Mesh3D, Plane,
-	Sphere, SphereGeometry, Vector3, View3D,
+	Sphere, SphereGeometry, Sprite3D, Vector3, View3D,
 } from "@pixi/3d";
 import type { ShaderBit } from "@pixi/3d";
 import { atomColor, atomRadius, add, electronRegions, perpendicular, scale, subtract, unit } from "./geometry";
@@ -71,6 +71,91 @@ const rimBit: ShaderBit = {
 	},
 };
 
+/**
+ * The accent a selected atom is marked with, the ChemLab blue of the canvas
+ * controls.
+ *
+ * The mark is light around the atom, never a colour on it: a recoloured sphere
+ * would read as a different element, which is exactly the mistake a selection
+ * must not invite. The glow therefore sits behind the atom and only shows
+ * outside its silhouette, so the body keeps the CPK colour that identifies it.
+ */
+const SELECTION_COLOR = 0x0086c5;
+/**
+ * How far the selection glow reaches beyond the atom, as a multiple of its
+ * radius.
+ *
+ * The glow is a billboard through the atom's centre, so the sphere itself hides
+ * everything inside its silhouette and the visible band starts at the edge. A
+ * factor of 1.9 leaves a band a little narrower than the atom, which stays
+ * readable in a packed lattice without fogging the neighbours.
+ */
+const HALO_SCALE = 1.9;
+/** Opacity of the selection glow where it leaves the atom's silhouette. */
+const HALO_ALPHA = 0.85;
+/**
+ * How far the canvas corners darken, as an alpha at the corner.
+ *
+ * The backdrop is a flat near-white, so a structure in the middle competes with
+ * the empty field around it. The vignette pulls the eye inwards without
+ * touching the atoms, and it stays a screen-space effect: it never moves with
+ * the camera and never hides a part of the structure that the fit put in view.
+ */
+const VIGNETTE_ALPHA = 0.3;
+/** Radius of the vignette's clear centre, as a share of the gradient's radius. */
+const VIGNETTE_CLEAR = 0.55;
+/**
+ * Where the canvas corner sits on the gradient, as a share of its radius.
+ *
+ * The gradient is drawn as a circle, not stretched to the canvas: an ellipse
+ * would reach full strength at the middle of the long edges and grey out the
+ * whole board. Sizing the circle past the corners keeps the edges light and
+ * gathers the shadow where a vignette belongs.
+ */
+const VIGNETTE_REACH = 0.85;
+/** Colour the vignette darkens towards, a slate that reads as shadow on white. */
+const VIGNETTE_COLOR = "15, 23, 42";
+
+/**
+ * The vignette's gradient stops, eased so the darkening stays at the rim.
+ *
+ * A linear ramp from the centre would grey out most of the canvas, because the
+ * texture is stretched over the whole board and its radius reaches the edge
+ * everywhere. The clear centre therefore covers half the radius and the ramp
+ * follows a smoothstep, which keeps the middle of the board white and gathers
+ * the shadow in the corners where it belongs.
+ */
+function vignetteStops() {
+	const stops: [number, string][] = [[0, `rgba(${VIGNETTE_COLOR}, 0)`], [VIGNETTE_CLEAR, `rgba(${VIGNETTE_COLOR}, 0)`]];
+	for (let step = 1; step <= 6; step++) {
+		const share = step / 6;
+		const eased = share * share * (3 - 2 * share);
+		stops.push([VIGNETTE_CLEAR + (1 - VIGNETTE_CLEAR) * share,
+			`rgba(${VIGNETTE_COLOR}, ${(VIGNETTE_ALPHA * eased).toFixed(3)})`]);
+	}
+	return stops;
+}
+
+/**
+ * A square texture painted with a radial gradient.
+ *
+ * The vignette and the selection glow are both soft radial fields, and one
+ * gradient texture costs a single draw where a stack of concentric circles
+ * would band. The texture is stretched to the canvas or to the atom, so its
+ * pixel size only sets how smooth the ramp is.
+ */
+function radialTexture(stops: [number, string][], size = 256) {
+	const canvas = document.createElement("canvas");
+	canvas.width = canvas.height = size;
+	const context = canvas.getContext("2d");
+	if (!context) return Texture.EMPTY;
+	const gradient = context.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+	for (const [offset, color] of stops) gradient.addColorStop(offset, color);
+	context.fillStyle = gradient;
+	context.fillRect(0, 0, size, size);
+	return new Texture({ source: new CanvasSource({ resource: canvas }) });
+}
+
 /** What the scene shows besides the structure itself. */
 export type SceneDisplay = { electrons: boolean; lattice: boolean; edges: boolean; axes: boolean };
 
@@ -106,9 +191,14 @@ export class MoleculeScene {
 	readonly #materials = new Map<string, Material3D>();
 	readonly #bondRegion = new Material3D({ baseColor: 0x0284c7, roughness: .85, alphaMode: "blend", alpha: .28 });
 	readonly #loneRegion = new Material3D({ baseColor: 0xc084fc, roughness: .85, alphaMode: "blend", alpha: .39 });
-	readonly #picks = new Map<Container3D, { id: number; color: number; ionic: boolean; opacity: number; position: Point3 }>();
+	readonly #picks = new Map<Container3D, { id: number; color: number; ionic: boolean; opacity: number; position: Point3; radius: number }>();
 	readonly #observer: ResizeObserver;
 	readonly #preview: Mesh3D;
+	readonly #vignette: Sprite;
+	readonly #halos = new Container3D();
+	readonly #haloTexture: Texture;
+	readonly #textures: Texture[] = [];
+	#haloSprites: Sprite3D[] = [];
 	#selected: Set<number> = new Set();
 	#structure?: Structure;
 	#showElectrons = false;
@@ -130,13 +220,22 @@ export class MoleculeScene {
 		this.#view = new View3D({
 			autoResize: false, environment: { skyColor: 0xffffff, groundColor: 0xa6b4c3, intensity: 0.94 },
 		});
-		app.stage.addChild(this.#view, this.#lattice, this.#axes, ...this.#axisLabels);
+		this.#vignette = new Sprite({ texture: this.#track(radialTexture(vignetteStops())), eventMode: "none" });
+		this.#haloTexture = this.#track(radialTexture([
+			[0, "rgba(255, 255, 255, 1)"],
+			[0.5, "rgba(255, 255, 255, 0.92)"],
+			[0.66, "rgba(255, 255, 255, 0.42)"],
+			[0.84, "rgba(255, 255, 255, 0.1)"],
+			[1, "rgba(255, 255, 255, 0)"],
+		]));
+		app.stage.addChild(this.#view, this.#vignette, this.#lattice, this.#axes, ...this.#axisLabels);
+		this.#sizeVignette();
 		for (const label of this.#axisLabels) label.visible = false;
 		this.#view.setSize(app.screen.width, app.screen.height);
 		const sun = new DirectionalLight({ color: 0xffffff, intensity: 2.15 });
 		sun.position.set(3, 6, 7);
 		sun.lookAt({ x: 0, y: 0, z: 0 });
-		this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons);
+		this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons, this.#halos);
 		this.#preview = this.#rod();
 		this.#preview.material = this.#material(0x0086c5);
 		this.#preview.visible = false;
@@ -148,6 +247,7 @@ export class MoleculeScene {
 			if (host.clientWidth && host.clientHeight) {
 				app.renderer.resize(host.clientWidth, host.clientHeight);
 				this.#view.setSize(host.clientWidth, host.clientHeight);
+				this.#sizeVignette();
 				this.#draw();
 			}
 		});
@@ -156,7 +256,26 @@ export class MoleculeScene {
 	}
 
 	/**
-	 * A cached material for one colour, opacity and selection state.
+	 * Remember a generated texture so {@link destroy} can free it.
+	 *
+	 * A missing 2D context leaves {@link Texture.EMPTY}, which belongs to Pixi
+	 * and must never be destroyed; only textures this scene created are kept.
+	 */
+	#track(texture: Texture) {
+		if (texture !== Texture.EMPTY) this.#textures.push(texture);
+		return texture;
+	}
+
+	/** Centre the vignette's circle on the canvas and size it past the corners. */
+	#sizeVignette() {
+		const { width, height } = this.#app.screen;
+		const side = Math.hypot(width, height) / VIGNETTE_REACH;
+		this.#vignette.width = this.#vignette.height = side;
+		this.#vignette.position.set((width - side) / 2, (height - side) / 2);
+	}
+
+	/**
+	 * A cached material for one colour and opacity.
 	 *
 	 * Every atom and bond takes the rim, translucent ones included: the term
 	 * darkens the surface itself rather than drawing a shell behind it, so a
@@ -164,13 +283,12 @@ export class MoleculeScene {
 	 * The electron clouds use their own materials and stay unrimmed, because
 	 * they are a haze around the atoms rather than bodies of their own.
 	 */
-	#material(color: number, opacity = 1, selected = false) {
-		const key = `${color}:${opacity}:${selected}`;
+	#material(color: number, opacity = 1) {
+		const key = `${color}:${opacity}`;
 		let material = this.#materials.get(key);
 		if (!material) {
 			material = new Material3D({ baseColor: color, roughness: 0.61, alpha: opacity,
 				alphaMode: opacity < 1 ? "blend" : "opaque",
-				emissive: selected ? { color, strength: .48 } : undefined,
 				extraBits: [rimBit] });
 			material.data.rimStrength = RIM_STRENGTH;
 			material.data.rimPower = RIM_POWER;
@@ -202,7 +320,7 @@ export class MoleculeScene {
 		this.#content.addChild(mesh);
 		this.#bounds.push(position);
 		this.#atomRadius = Math.max(this.#atomRadius, radius);
-		this.#picks.set(mesh, { id, color, ionic: ionColor !== undefined, opacity, position });
+		this.#picks.set(mesh, { id, color, ionic: ionColor !== undefined, opacity, position, radius });
 	}
 
 	#renderElectrons(structure: Structure, show: boolean) {
@@ -304,12 +422,33 @@ export class MoleculeScene {
 		const selected = new Set(selection);
 		if (rebuild || selected.size !== this.#selected.size || selection.some(id => !this.#selected.has(id))) {
 			this.#selected = selected;
-			for (const [mesh, atom] of this.#picks) {
-				(mesh as Mesh3D).material = selected.has(atom.id)
-					? atom.ionic ? this.#material(atom.color, 1, true) : this.#material(0x0086c5)
-					: this.#material(atom.color, atom.opacity);
-			}
+			this.#select(selected);
 			this.#draw();
+		}
+	}
+
+	/**
+	 * Mark the selected atoms with a glow behind them.
+	 *
+	 * One system serves molecules and lattices alike, and it never touches the
+	 * atom's own material: the sphere keeps its CPK colour, so a marked atom
+	 * still reads as the element it is. The glow is a billboard through the
+	 * atom's centre, depth-tested against the opaque sphere, so the body hides
+	 * its middle and only a soft band outside the silhouette remains. That band
+	 * is what makes a selected site stand out in a packed lattice, where a
+	 * recoloured sphere would be the only cue and would misread as a new species.
+	 */
+	#select(selected: Set<number>) {
+		for (const sprite of this.#haloSprites) sprite.destroy();
+		this.#haloSprites = [];
+		for (const atom of this.#picks.values()) {
+			if (!selected.has(atom.id)) continue;
+			const size = atom.radius * HALO_SCALE * 2;
+			const halo = new Sprite3D({ texture: this.#haloTexture, tint: SELECTION_COLOR, alpha: HALO_ALPHA,
+				alphaMode: "blend", billboardMode: "spherical", eventMode: "none",
+				position: vector(atom.position), width: size, height: size });
+			this.#halos.addChild(halo);
+			this.#haloSprites.push(halo);
 		}
 	}
 
@@ -435,5 +574,6 @@ export class MoleculeScene {
 		this.#axes.destroy();
 		for (const label of this.#axisLabels) label.destroy();
 		for (const material of this.#materials.values()) material.destroy();
+		for (const texture of this.#textures) texture.destroy(true);
 	}
 }
