@@ -1826,11 +1826,6 @@ export const style = css`
 		font-size: .8rem;
 	}
 
-	.structure-link {
-		align-self: start;
-		justify-self: start;
-	}
-
 	.vessel-structure-link {
 		padding: 0;
 		border: 0;
@@ -2560,9 +2555,6 @@ export const style = css`
 		overflow: hidden;
 		clip-path: inset(50%);
 	}
-	.palette-card-chemical > :not(.palette-card-header) {
-		contain: inline-size;
-	}
 	.palette-card-menu-trigger {
 		display: block;
 		max-inline-size: 100%;
@@ -2585,6 +2577,27 @@ export const style = css`
 	.chemical-card-body {
 		position: relative;
 		min-inline-size: 0;
+		contain: inline-size;
+	}
+	.chemical-card-preview:has(> .structure-link) {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 4px;
+	}
+	.structure-link {
+		justify-self: start;
+		max-inline-size: 100%;
+	}
+	.structure-link::part(base) {
+		max-inline-size: 100%;
+		height: auto;
+		min-height: 24px;
+	}
+	.structure-link::part(label) {
+		padding: 2px 7px;
+		line-height: 1.25;
+		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 	.chemical-card-preview[data-menu-open] {
 		visibility: hidden;

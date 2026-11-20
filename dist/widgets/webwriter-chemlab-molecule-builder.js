@@ -90941,6 +90941,371 @@ __decorateClass([
   watch("disabled", { waitUntilFirstUpdate: true })
 ], SlButton.prototype, "handleDisabledChange", 1);
 
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.J7PLVEQM.js
+var details_styles_default = i`
+  :host {
+    display: block;
+  }
+
+  .details {
+    border: solid 1px var(--sl-color-neutral-200);
+    border-radius: var(--sl-border-radius-medium);
+    background-color: var(--sl-color-neutral-0);
+    overflow-anchor: none;
+  }
+
+  .details--disabled {
+    opacity: 0.5;
+  }
+
+  .details__header {
+    display: flex;
+    align-items: center;
+    border-radius: inherit;
+    padding: var(--sl-spacing-medium);
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+  }
+
+  .details__header::-webkit-details-marker {
+    display: none;
+  }
+
+  .details__header:focus {
+    outline: none;
+  }
+
+  .details__header:focus-visible {
+    outline: var(--sl-focus-ring);
+    outline-offset: calc(1px + var(--sl-focus-ring-offset));
+  }
+
+  .details--disabled .details__header {
+    cursor: not-allowed;
+  }
+
+  .details--disabled .details__header:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .details__summary {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+  }
+
+  .details__summary-icon {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    transition: var(--sl-transition-medium) rotate ease;
+  }
+
+  .details--open .details__summary-icon {
+    rotate: 90deg;
+  }
+
+  .details--open.details--rtl .details__summary-icon {
+    rotate: -90deg;
+  }
+
+  .details--open slot[name='expand-icon'],
+  .details:not(.details--open) slot[name='collapse-icon'] {
+    display: none;
+  }
+
+  .details__body {
+    overflow: hidden;
+  }
+
+  .details__content {
+    display: block;
+    padding: var(--sl-spacing-medium);
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.K7JGTRV7.js
+var defaultAnimationRegistry = /* @__PURE__ */ new Map();
+var customAnimationRegistry = /* @__PURE__ */ new WeakMap();
+function ensureAnimation(animation) {
+  return animation != null ? animation : { keyframes: [], options: { duration: 0 } };
+}
+function getLogicalAnimation(animation, dir) {
+  if (dir.toLowerCase() === "rtl") {
+    return {
+      keyframes: animation.rtlKeyframes || animation.keyframes,
+      options: animation.options
+    };
+  }
+  return animation;
+}
+function setDefaultAnimation(animationName, animation) {
+  defaultAnimationRegistry.set(animationName, ensureAnimation(animation));
+}
+function getAnimation(el, animationName, options) {
+  const customAnimation = customAnimationRegistry.get(el);
+  if (customAnimation == null ? void 0 : customAnimation[animationName]) {
+    return getLogicalAnimation(customAnimation[animationName], options.dir);
+  }
+  const defaultAnimation = defaultAnimationRegistry.get(animationName);
+  if (defaultAnimation) {
+    return getLogicalAnimation(defaultAnimation, options.dir);
+  }
+  return {
+    keyframes: [],
+    options: { duration: 0 }
+  };
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.B4BZKR24.js
+function waitForEvent(el, eventName) {
+  return new Promise((resolve) => {
+    function done(event) {
+      if (event.target === el) {
+        el.removeEventListener(eventName, done);
+        resolve();
+      }
+    }
+    el.addEventListener(eventName, done);
+  });
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AJ3ENQ5C.js
+function animateTo(el, keyframes, options) {
+  return new Promise((resolve) => {
+    if ((options == null ? void 0 : options.duration) === Infinity) {
+      throw new Error("Promise-based animations must be finite.");
+    }
+    const animation = el.animate(keyframes, __spreadProps(__spreadValues({}, options), {
+      duration: prefersReducedMotion() ? 0 : options.duration
+    }));
+    animation.addEventListener("cancel", resolve, { once: true });
+    animation.addEventListener("finish", resolve, { once: true });
+  });
+}
+function parseDuration(delay) {
+  delay = delay.toString().toLowerCase();
+  if (delay.indexOf("ms") > -1) {
+    return parseFloat(delay);
+  }
+  if (delay.indexOf("s") > -1) {
+    return parseFloat(delay) * 1e3;
+  }
+  return parseFloat(delay);
+}
+function prefersReducedMotion() {
+  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+  return query.matches;
+}
+function stopAnimations(el) {
+  return Promise.all(
+    el.getAnimations().map((animation) => {
+      return new Promise((resolve) => {
+        animation.cancel();
+        requestAnimationFrame(resolve);
+      });
+    })
+  );
+}
+function shimKeyframesHeightAuto(keyframes, calculatedHeight) {
+  return keyframes.map((keyframe) => __spreadProps(__spreadValues({}, keyframe), {
+    height: keyframe.height === "auto" ? `${calculatedHeight}px` : keyframe.height
+  }));
+}
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.2SZ4G2LK.js
+var SlDetails = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.localize = new LocalizeController2(this);
+    this.open = false;
+    this.disabled = false;
+  }
+  firstUpdated() {
+    this.body.style.height = this.open ? "auto" : "0";
+    if (this.open) {
+      this.details.open = true;
+    }
+    this.detailsObserver = new MutationObserver((changes) => {
+      for (const change of changes) {
+        if (change.type === "attributes" && change.attributeName === "open") {
+          if (this.details.open) {
+            this.show();
+          } else {
+            this.hide();
+          }
+        }
+      }
+    });
+    this.detailsObserver.observe(this.details, { attributes: true });
+  }
+  disconnectedCallback() {
+    var _a4;
+    super.disconnectedCallback();
+    (_a4 = this.detailsObserver) == null ? void 0 : _a4.disconnect();
+  }
+  handleSummaryClick(event) {
+    event.preventDefault();
+    if (!this.disabled) {
+      if (this.open) {
+        this.hide();
+      } else {
+        this.show();
+      }
+      this.header.focus();
+    }
+  }
+  handleSummaryKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (this.open) {
+        this.hide();
+      } else {
+        this.show();
+      }
+    }
+    if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+      event.preventDefault();
+      this.hide();
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+      event.preventDefault();
+      this.show();
+    }
+  }
+  async handleOpenChange() {
+    if (this.open) {
+      this.details.open = true;
+      const slShow = this.emit("sl-show", { cancelable: true });
+      if (slShow.defaultPrevented) {
+        this.open = false;
+        this.details.open = false;
+        return;
+      }
+      await stopAnimations(this.body);
+      const { keyframes, options } = getAnimation(this, "details.show", { dir: this.localize.dir() });
+      await animateTo(this.body, shimKeyframesHeightAuto(keyframes, this.body.scrollHeight), options);
+      this.body.style.height = "auto";
+      this.emit("sl-after-show");
+    } else {
+      const slHide = this.emit("sl-hide", { cancelable: true });
+      if (slHide.defaultPrevented) {
+        this.details.open = true;
+        this.open = true;
+        return;
+      }
+      await stopAnimations(this.body);
+      const { keyframes, options } = getAnimation(this, "details.hide", { dir: this.localize.dir() });
+      await animateTo(this.body, shimKeyframesHeightAuto(keyframes, this.body.scrollHeight), options);
+      this.body.style.height = "auto";
+      this.details.open = false;
+      this.emit("sl-after-hide");
+    }
+  }
+  /** Shows the details. */
+  async show() {
+    if (this.open || this.disabled) {
+      return void 0;
+    }
+    this.open = true;
+    return waitForEvent(this, "sl-after-show");
+  }
+  /** Hides the details */
+  async hide() {
+    if (!this.open || this.disabled) {
+      return void 0;
+    }
+    this.open = false;
+    return waitForEvent(this, "sl-after-hide");
+  }
+  render() {
+    const isRtl = this.localize.dir() === "rtl";
+    return x2`
+      <details
+        part="base"
+        class=${e10({
+      details: true,
+      "details--open": this.open,
+      "details--disabled": this.disabled,
+      "details--rtl": isRtl
+    })}
+      >
+        <summary
+          part="header"
+          id="header"
+          class="details__header"
+          role="button"
+          aria-expanded=${this.open ? "true" : "false"}
+          aria-controls="content"
+          aria-disabled=${this.disabled ? "true" : "false"}
+          tabindex=${this.disabled ? "-1" : "0"}
+          @click=${this.handleSummaryClick}
+          @keydown=${this.handleSummaryKeyDown}
+        >
+          <slot name="summary" part="summary" class="details__summary">${this.summary}</slot>
+
+          <span part="summary-icon" class="details__summary-icon">
+            <slot name="expand-icon">
+              <sl-icon library="system" name=${isRtl ? "chevron-left" : "chevron-right"}></sl-icon>
+            </slot>
+            <slot name="collapse-icon">
+              <sl-icon library="system" name=${isRtl ? "chevron-left" : "chevron-right"}></sl-icon>
+            </slot>
+          </span>
+        </summary>
+
+        <div class="details__body" role="region" aria-labelledby="header">
+          <slot part="content" id="content" class="details__content"></slot>
+        </div>
+      </details>
+    `;
+  }
+};
+SlDetails.styles = [component_styles_default, details_styles_default];
+SlDetails.dependencies = {
+  "sl-icon": SlIcon
+};
+__decorateClass([
+  e7(".details")
+], SlDetails.prototype, "details", 2);
+__decorateClass([
+  e7(".details__header")
+], SlDetails.prototype, "header", 2);
+__decorateClass([
+  e7(".details__body")
+], SlDetails.prototype, "body", 2);
+__decorateClass([
+  e7(".details__expand-icon-slot")
+], SlDetails.prototype, "expandIconSlot", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlDetails.prototype, "open", 2);
+__decorateClass([
+  n8()
+], SlDetails.prototype, "summary", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlDetails.prototype, "disabled", 2);
+__decorateClass([
+  watch("open", { waitUntilFirstUpdate: true })
+], SlDetails.prototype, "handleOpenChange", 1);
+setDefaultAnimation("details.show", {
+  keyframes: [
+    { height: "0", opacity: "0" },
+    { height: "auto", opacity: "1" }
+  ],
+  options: { duration: 250, easing: "linear" }
+});
+setDefaultAnimation("details.hide", {
+  keyframes: [
+    { height: "auto", opacity: "1" },
+    { height: "0", opacity: "0" }
+  ],
+  options: { duration: 250, easing: "linear" }
+});
+
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.V2OL7VMD.js
 var tag_styles_default = i`
   :host {
@@ -91727,57 +92092,6 @@ var carousel_styles_default = i`
     outline-offset: var(--sl-focus-ring-offset);
   }
 `;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.B4BZKR24.js
-function waitForEvent(el, eventName) {
-  return new Promise((resolve) => {
-    function done(event) {
-      if (event.target === el) {
-        el.removeEventListener(eventName, done);
-        resolve();
-      }
-    }
-    el.addEventListener(eventName, done);
-  });
-}
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.AJ3ENQ5C.js
-function animateTo(el, keyframes, options) {
-  return new Promise((resolve) => {
-    if ((options == null ? void 0 : options.duration) === Infinity) {
-      throw new Error("Promise-based animations must be finite.");
-    }
-    const animation = el.animate(keyframes, __spreadProps(__spreadValues({}, options), {
-      duration: prefersReducedMotion() ? 0 : options.duration
-    }));
-    animation.addEventListener("cancel", resolve, { once: true });
-    animation.addEventListener("finish", resolve, { once: true });
-  });
-}
-function parseDuration(delay) {
-  delay = delay.toString().toLowerCase();
-  if (delay.indexOf("ms") > -1) {
-    return parseFloat(delay);
-  }
-  if (delay.indexOf("s") > -1) {
-    return parseFloat(delay) * 1e3;
-  }
-  return parseFloat(delay);
-}
-function prefersReducedMotion() {
-  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-  return query.matches;
-}
-function stopAnimations(el) {
-  return Promise.all(
-    el.getAnimations().map((animation) => {
-      return new Promise((resolve) => {
-        animation.cancel();
-        requestAnimationFrame(resolve);
-      });
-    })
-  );
-}
 
 // node_modules/lit-html/directives/map.js
 function* o10(o12, f7) {
@@ -92779,39 +93093,6 @@ var dialog_styles_default = i`
     }
   }
 `;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.K7JGTRV7.js
-var defaultAnimationRegistry = /* @__PURE__ */ new Map();
-var customAnimationRegistry = /* @__PURE__ */ new WeakMap();
-function ensureAnimation(animation) {
-  return animation != null ? animation : { keyframes: [], options: { duration: 0 } };
-}
-function getLogicalAnimation(animation, dir) {
-  if (dir.toLowerCase() === "rtl") {
-    return {
-      keyframes: animation.rtlKeyframes || animation.keyframes,
-      options: animation.options
-    };
-  }
-  return animation;
-}
-function setDefaultAnimation(animationName, animation) {
-  defaultAnimationRegistry.set(animationName, ensureAnimation(animation));
-}
-function getAnimation(el, animationName, options) {
-  const customAnimation = customAnimationRegistry.get(el);
-  if (customAnimation == null ? void 0 : customAnimation[animationName]) {
-    return getLogicalAnimation(customAnimation[animationName], options.dir);
-  }
-  const defaultAnimation = defaultAnimationRegistry.get(animationName);
-  if (defaultAnimation) {
-    return getLogicalAnimation(defaultAnimation, options.dir);
-  }
-  return {
-    keyframes: [],
-    options: { duration: 0 }
-  };
-}
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.6SBTOKGT.js
 var SlDialog = class extends ShoelaceElement {
@@ -97167,6 +97448,17 @@ var periodicTableStyles = i`
 		overflow: hidden;
 	}
 
+	:host([picker-mode]) {
+		inline-size: 100%;
+		block-size: auto;
+		min-inline-size: 0;
+		min-block-size: 0;
+		padding: 0;
+		resize: none;
+		--pt-cell-height: 2.2rem;
+		--pt-gutter: 0.8rem;
+	}
+
 	* {
 		box-sizing: border-box;
 	}
@@ -97424,6 +97716,12 @@ var periodicTableStyles = i`
 		padding-bottom: 1.6rem;
 	}
 
+	:host([picker-mode]) .table-pane {
+		padding: 3px;
+		overscroll-behavior: contain;
+		scrollbar-width: thin;
+	}
+
 	.grid {
 		display: grid;
 		grid-template-columns: var(--pt-gutter) repeat(18, minmax(0, 1fr));
@@ -97432,6 +97730,18 @@ var periodicTableStyles = i`
 			var(--pt-series-gap) repeat(2, minmax(var(--pt-cell-height), auto));
 		gap: 2px;
 		min-width: 30rem;
+	}
+
+	:host([picker-mode]) .grid {
+		min-width: 21rem;
+	}
+
+	:host([picker-mode]) .cell {
+		touch-action: manipulation;
+	}
+
+	:host([picker-mode]) .cell-symbol {
+		font-size: 0.75rem;
 	}
 
 	.grid-row {
@@ -97842,11 +98152,17 @@ var periodicTableStyles = i`
 		cursor: pointer;
 	}
 
-	:host([picker-mode]) .list-row,
-	:host([picker-mode]) .cell {
+	:host([picker-mode]) :is(.list-row, .cell) {
 		cursor: grab;
-		touch-action: pan-y;
 		user-select: none;
+	}
+
+	:host([picker-mode]) .list-row {
+		gap: 0.4rem;
+		min-height: 2.25rem;
+		padding: 0.2rem 0.35rem;
+		font-size: 0.8rem;
+		touch-action: pan-y;
 	}
 
 	:host([picker-mode]) .list-row[aria-pressed="true"] {
@@ -97881,6 +98197,19 @@ var periodicTableStyles = i`
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	:host([picker-mode]) .list-name {
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+
+	:host([picker-mode]) :is(.list-number, .list-symbol) {
+		flex: none;
+	}
+
+	:host([picker-mode]) .list-number {
+		width: 1.45rem;
 	}
 
 	.list-category {
@@ -98938,17 +99267,19 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     });
     return x2`
 			<div class="widget">
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderRibbon_fn).call(this, t8, language, resolved, matches.length)}
+				${this.pickerMode ? E2 : __privateMethod(this, _ChemLabPeriodicTable_instances, renderRibbon_fn).call(this, t8, language, resolved, matches.length)}
 				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t8, language, matches, element2, details) : __privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t8, language, matching, details)}
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t8, language, element2)}
-				<sl-icon-button
-					class="info-button"
-					src=${INFO_ICON}
-					label=${t8.infoLabel}
-					title=${t8.infoLabel}
-					@click=${__privateGet(this, _openInfo)}
-				></sl-icon-button>
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderInfo_fn).call(this, t8, language)}
+				${this.pickerMode ? E2 : x2`
+					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t8, language, element2)}
+					<sl-icon-button
+						class="info-button"
+						src=${INFO_ICON}
+						label=${t8.infoLabel}
+						title=${t8.infoLabel}
+						@click=${__privateGet(this, _openInfo)}
+					></sl-icon-button>
+					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderInfo_fn).call(this, t8, language)}
+				`}
 			</div>
 		`;
   }
@@ -99720,7 +100051,7 @@ renderList_fn = function(t8, language, matches, element2, details) {
 						<span class="list-number">${entry.atomicNumber}</span>
 						<span class="list-symbol">${entry.symbol}</span>
 						<span class="list-name">${entry.names[language]}</span>
-						<span class="list-category">${categoryText(entry, language)}</span>
+						${this.pickerMode ? E2 : x2`<span class="list-category">${categoryText(entry, language)}</span>`}
 						${mode.state === null ? mode.badge === null ? null : x2`<sl-tag class="list-year" size="small" variant="neutral">${mode.badge}</sl-tag>` : x2`
 							<sl-tag class="state-tag list-state state-${mode.state}" size="small" variant="neutral">
 								${stateText(mode.state, t8)}
@@ -100900,7 +101231,7 @@ var builderStyles = i`
 		overflow: hidden;
 		background: white;
 	}
-	.toolbar, .tools, .view-tools, .status, .inspect-title, .fields, .palette-tools {
+	.toolbar, .tools, .view-tools, .status, .inspect-title, .fields, .palette-tools, .tool-group, .palette-heading {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -100912,38 +101243,47 @@ var builderStyles = i`
 		border-bottom: 1px solid var(--line);
 	}
 	.toolbar { justify-content: space-between; gap: .5rem; }
-	.toolbar > div { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+	.tool-group + .tool-group {
+		border-inline-start: 1px solid var(--line);
+		padding-inline-start: .35rem;
+	}
 	.tools sl-button::part(base), .view-tools sl-button::part(base) { box-shadow: var(--shadow); }
+	.icon-control::part(label) { display: grid; place-items: center; padding-inline: .35rem; }
 	.workspace {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
-		min-height: 28rem;
+		grid-template-rows: minmax(0, 1fr);
+		block-size: clamp(28rem, 60vh, 38rem);
 	}
-	.workspace[data-palette] { grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr); }
+	.workspace[data-palette="list"] {
+		grid-template-columns: clamp(12rem, 34%, 16rem) minmax(0, 1fr);
+		block-size: clamp(36rem, 72vh, 44rem);
+	}
+	.workspace[data-palette="table"] {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
 	.palette {
 		display: flex;
 		flex-direction: column;
 		gap: .4rem;
-		min-width: 0;
-		max-height: 32rem;
+		min-inline-size: 0;
+		min-block-size: 0;
 		padding: .45rem;
 		border-right: 1px solid var(--outline);
 		background: var(--control);
 	}
+	.palette-heading { justify-content: space-between; }
 	.palette > webwriter-chemlab-periodic-table {
-		min-height: 0;
-		overflow: auto;
-		scrollbar-width: thin;
-		border-radius: 5px;
+		flex: 1 1 0;
 		box-shadow: var(--shadow);
 	}
 	.visual {
 		display: grid;
-		grid-template-rows: minmax(18rem, 1fr) auto;
+		grid-template-rows: minmax(0, 1fr) auto;
 		min-width: 0;
 		background: #fbfbfa;
 	}
-	.board { position: relative; min-height: 18rem; }
+	.board { position: relative; }
 	.scene, .drawing { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 	.scene { overflow: hidden; }
 	.drawing { display: block; background: radial-gradient(#d4d8db 1px, transparent 1px) 1px 1px / 18px 18px; }
@@ -100975,6 +101315,14 @@ var builderStyles = i`
 		box-shadow: 0 -1px 4px rgb(0 0 0 / 5%);
 	}
 	.inspect-title { justify-content: space-between; }
+	.inspector sl-details::part(base) { border-color: var(--line); }
+	.inspector sl-details::part(header), .inspector sl-details::part(content) {
+		padding: .35rem .5rem;
+	}
+	.inspector sl-details::part(header) {
+		background: var(--control);
+		font-size: .8rem;
+	}
 	input, select { color: inherit; font: inherit; accent-color: var(--blue); }
 	select, input:not([type=file]) {
 		padding: .28em .4em;
@@ -100997,9 +101345,15 @@ var builderStyles = i`
 		box-shadow: var(--shadow);
 	}
 	@container (max-width: 510px) {
-		.workspace[data-palette] { grid-template-columns: minmax(0, 1fr); }
-		.palette { max-height: 15rem; border-right: 0; border-bottom: 1px solid var(--outline); }
-		.board { min-height: 20rem; }
+		.workspace[data-palette="list"] {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: minmax(0, 1fr) minmax(18rem, 1fr);
+			block-size: clamp(40rem, 120vh, 50rem);
+		}
+		.workspace[data-palette="list"] .palette {
+			border-inline-end: 0;
+			border-block-end: 1px solid var(--outline);
+		}
 	}
 `;
 
@@ -101009,9 +101363,9 @@ var chargeText = (charge) => charge === 0 ? "" : `${Math.abs(charge) > 1 ? Math.
 var distance = (a5, b4) => Math.hypot(a5.x - b4.x, a5.y - b4.y);
 var pointer = (event) => ({ x: event.clientX, y: event.clientY, id: event.pointerId });
 var groups = [...new Set(structureCatalog.map((entry) => entry.category))];
-var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _paletteOpen_dec, _showLabs_dec, _labs_dec, _showCatalog_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _showCatalog, _labs, _showLabs, _paletteOpen, _view2, _tool, _element, _picked, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _dataObserver, _lastSaved, _lastDrawn, _diagramBounds, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, placement_fn, addAtom_fn, setTool_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, _pointerDown, _pointerMove, _pointerUp, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderDrawing_fn, renderInspector_fn;
+var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _pickerView_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _openPanel, _labs, _showLabs, _paletteOpen, _pickerView, _view2, _tool, _element, _picked, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _dataObserver, _lastSaved, _lastDrawn, _diagramBounds, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, placement_fn, addAtom_fn, setTool_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, _pointerDown, _pointerMove, _pointerUp, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, renderHistoryButton_fn, renderPickerLayout_fn, renderDrawing_fn, renderInspector_fn;
 _ChemLabMoleculeBuilder_decorators = [t4(BUILDER_TAG)];
-var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _showCatalog_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
+var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _pickerView_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
   constructor() {
     super(...arguments);
     __privateAdd(this, _ChemLabMoleculeBuilder_instances);
@@ -101023,22 +101377,23 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _catalogKey, __runInitializers(_init3, 24, this, "")), __runInitializers(_init3, 27, this);
     __privateAdd(this, _catalogVariants, __runInitializers(_init3, 28, this, [])), __runInitializers(_init3, 31, this);
     __privateAdd(this, _catalogIndex, __runInitializers(_init3, 32, this, 0)), __runInitializers(_init3, 35, this);
-    __privateAdd(this, _showCatalog, __runInitializers(_init3, 36, this, false)), __runInitializers(_init3, 39, this);
+    __privateAdd(this, _openPanel, __runInitializers(_init3, 36, this)), __runInitializers(_init3, 39, this);
     __privateAdd(this, _labs, __runInitializers(_init3, 40, this, [])), __runInitializers(_init3, 43, this);
     __privateAdd(this, _showLabs, __runInitializers(_init3, 44, this, false)), __runInitializers(_init3, 47, this);
     __privateAdd(this, _paletteOpen, __runInitializers(_init3, 48, this, true)), __runInitializers(_init3, 51, this);
-    __privateAdd(this, _view2, __runInitializers(_init3, 52, this, "3d")), __runInitializers(_init3, 55, this);
-    __privateAdd(this, _tool, __runInitializers(_init3, 56, this, "orbit")), __runInitializers(_init3, 59, this);
-    __privateAdd(this, _element, __runInitializers(_init3, 60, this, 6)), __runInitializers(_init3, 63, this);
-    __privateAdd(this, _picked, __runInitializers(_init3, 64, this)), __runInitializers(_init3, 67, this);
-    __privateAdd(this, _bondStart, __runInitializers(_init3, 68, this)), __runInitializers(_init3, 71, this);
-    __privateAdd(this, _bondOrder, __runInitializers(_init3, 72, this, 1)), __runInitializers(_init3, 75, this);
-    __privateAdd(this, _repeats, __runInitializers(_init3, 76, this, 1)), __runInitializers(_init3, 79, this);
-    __privateAdd(this, _notice, __runInitializers(_init3, 80, this, "")), __runInitializers(_init3, 83, this);
-    __privateAdd(this, _gpu, __runInitializers(_init3, 84, this, "idle")), __runInitializers(_init3, 87, this);
-    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 88, this)), __runInitializers(_init3, 91, this);
-    __privateAdd(this, _bondPreview, __runInitializers(_init3, 92, this)), __runInitializers(_init3, 95, this);
-    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 96, this)), __runInitializers(_init3, 99, this);
+    __privateAdd(this, _pickerView, __runInitializers(_init3, 52, this, "list")), __runInitializers(_init3, 55, this);
+    __privateAdd(this, _view2, __runInitializers(_init3, 56, this, "3d")), __runInitializers(_init3, 59, this);
+    __privateAdd(this, _tool, __runInitializers(_init3, 60, this, "orbit")), __runInitializers(_init3, 63, this);
+    __privateAdd(this, _element, __runInitializers(_init3, 64, this, 6)), __runInitializers(_init3, 67, this);
+    __privateAdd(this, _picked, __runInitializers(_init3, 68, this)), __runInitializers(_init3, 71, this);
+    __privateAdd(this, _bondStart, __runInitializers(_init3, 72, this)), __runInitializers(_init3, 75, this);
+    __privateAdd(this, _bondOrder, __runInitializers(_init3, 76, this, 1)), __runInitializers(_init3, 79, this);
+    __privateAdd(this, _repeats, __runInitializers(_init3, 80, this, 1)), __runInitializers(_init3, 83, this);
+    __privateAdd(this, _notice, __runInitializers(_init3, 84, this, "")), __runInitializers(_init3, 87, this);
+    __privateAdd(this, _gpu, __runInitializers(_init3, 88, this, "idle")), __runInitializers(_init3, 91, this);
+    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 92, this)), __runInitializers(_init3, 95, this);
+    __privateAdd(this, _bondPreview, __runInitializers(_init3, 96, this)), __runInitializers(_init3, 99, this);
+    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 100, this)), __runInitializers(_init3, 103, this);
     __privateAdd(this, _scene);
     __privateAdd(this, _sceneLoad, 0);
     __privateAdd(this, _fitNext, true);
@@ -101189,6 +101544,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         if (request !== __privateGet(this, _fileOpen) || !this.isConnected) return;
         __privateMethod(this, _ChemLabMoleculeBuilder_instances, closePreview_fn).call(this, false);
         __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, structure, true);
+        this.openPanel = void 0;
       } catch {
         if (request === __privateGet(this, _fileOpen)) this.notice = __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Could not open this ChemLab structure file.", "Diese ChemLab-Strukturdatei konnte nicht ge\xF6ffnet werden.");
       }
@@ -101232,7 +101588,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     this.catalogKey = key;
     this.catalogVariants = variants;
     this.catalogIndex = 0;
-    this.showCatalog = true;
+    this.openPanel = "catalog";
     __privateMethod(this, _ChemLabMoleculeBuilder_instances, openPreview_fn).call(this, variants[0]);
     return true;
   }
@@ -101246,6 +101602,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
   }
   render() {
     const current = __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get);
+    const paletteVisible = this.paletteOpen && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get);
     const tool = (value, label) => x2`<sl-button size="small" variant=${value === this.tool ? "primary" : "default"}
 			aria-pressed=${value === this.tool} @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, setTool_fn).call(this, value)}>${label}</sl-button>`;
     const chooseView = (value, label) => x2`<sl-button size="small"
@@ -101269,66 +101626,76 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       }
     }}>
 			<header class="toolbar">
-				<div>
+				<div class="tool-group">
 					<sl-tag size="small" variant="primary">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Molecule Builder", "Molek\xFClbaukasten")}</sl-tag>
-					<sl-button size="small" aria-expanded=${this.showCatalog} @click=${() => {
-      this.showCatalog = !this.showCatalog;
+					<sl-button size="small" aria-expanded=${this.openPanel === "catalog"}
+						@click=${() => {
+      this.openPanel = this.openPanel === "catalog" ? void 0 : "catalog";
     }}>
 						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog")}
 					</sl-button>
-				</div>
-				<div>
-					<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, new_fn).call(this, "molecule")}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "New molecule", "Neues Molek\xFCl")}</sl-button>
-					<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, new_fn).call(this, "crystal")}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "New crystal", "Neuer Kristall")}</sl-button>
-					<input type="file" hidden accept=".json,application/json" @change=${(event) => {
-      const input = event.currentTarget;
-      void __privateGet(this, _openFile).call(this, input.files?.[0]);
-      input.value = "";
-    }} />
-					<sl-button size="small" @click=${() => this.renderRoot.querySelector('input[type="file"]')?.click()}>
-						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Open file", "Datei \xF6ffnen")}
+					<sl-button size="small" aria-expanded=${this.openPanel === "file"}
+						@click=${() => {
+      this.openPanel = this.openPanel === "file" ? void 0 : "file";
+    }}>
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "File", "Datei")}
 					</sl-button>
-					<sl-button size="small" ?disabled=${!__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length} @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, download_fn)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Download", "Herunterladen")}</sl-button>
-					<sl-button size="small" variant="primary" ?disabled=${!__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length} @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, prepareSend_fn)}>
+				</div>
+				${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`
+					<sl-button size="small" variant="primary" @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, prepareSend_fn)}>
 						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Send to ChemLab", "An ChemLab senden")}
 					</sl-button>
-				</div>
+				` : E2}
 			</header>
 			${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderCatalog_fn).call(this)}
+			${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderFileActions_fn).call(this)}
 			${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderTargetPicker_fn).call(this)}
 			<div class="tools">
-				<sl-button size="small" aria-expanded=${this.paletteOpen && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)} ?disabled=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}
-					@click=${() => {
+				<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Workspace view", "Arbeitsansicht")}>
+					${!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<sl-button size="small" aria-expanded=${paletteVisible}
+						@click=${() => {
       this.paletteOpen = !this.paletteOpen;
-    }}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Elements", "Elemente")}</sl-button>
-				${chooseView("3d", "3D")}${chooseView("2d", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure", "Struktur"))}
+    }}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Elements", "Elemente")}</sl-button>` : E2}
+					${chooseView("3d", "3D")}${chooseView("2d", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure", "Struktur"))}
+				</div>
 				${!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`
-					${tool("orbit", this.view === "3d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Orbit", "Drehen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Select", "Ausw\xE4hlen"))}
-					${tool("atom", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place atom", "Atom platzieren"))}
-					${current.kind === "molecule" ? tool("bond", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Draw bond", "Bindung zeichnen")) : E2}
-					${this.tool === "bond" ? x2`<label class="fields">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Order", "Ordnung")} <select .value=${String(this.bondOrder)}
-						@change=${(event) => {
+					<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Editing tools", "Bearbeitungswerkzeuge")}>
+						${tool("orbit", this.view === "3d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Orbit", "Drehen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Select", "Ausw\xE4hlen"))}
+						${tool("atom", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place atom", "Atom platzieren"))}
+						${current.kind === "molecule" ? tool("bond", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Draw bond", "Bindung zeichnen")) : E2}
+						${this.tool === "bond" ? x2`<label class="fields">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Order", "Ordnung")} <select .value=${String(this.bondOrder)}
+							@change=${(event) => {
       this.bondOrder = Number(event.currentTarget.value);
     }}>
-						<option value="1">1</option><option value="2">2</option><option value="3">3</option>
-					</select></label>` : E2}
-					${current.kind === "molecule" ? x2`<sl-button size="small" ?disabled=${!current.bonds.length} @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, geometry_fn)}>
-						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit geometry", "Geometrie anpassen")}
-					</sl-button>` : E2}
-					<sl-button size="small" ?disabled=${!__privateGet(this, _past).length} @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, history_fn).call(this, false)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Undo", "R\xFCckg\xE4ngig")}</sl-button>
-					<sl-button size="small" ?disabled=${!__privateGet(this, _future).length} @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, history_fn).call(this, true)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Redo", "Wiederholen")}</sl-button>
+							<option value="1">1</option><option value="2">2</option><option value="3">3</option>
+						</select></label>` : E2}
+						${current.kind === "molecule" && current.bonds.length ? x2`<sl-button size="small" @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, geometry_fn)}>
+							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit geometry", "Geometrie anpassen")}
+						</sl-button>` : E2}
+					</div>
+					${__privateGet(this, _past).length || __privateGet(this, _future).length ? x2`
+						<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "History", "Verlauf")}>
+							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderHistoryButton_fn).call(this, false)}${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderHistoryButton_fn).call(this, true)}
+						</div>` : E2}
 				` : x2`
-					<sl-button size="small" variant="primary" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, closePreview_fn).call(this, true)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Edit copy", "Kopie bearbeiten")}</sl-button>
-					<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, closePreview_fn).call(this, false)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Close preview", "Vorschau schlie\xDFen")}</sl-button>
+					<div class="tool-group">
+						<sl-button size="small" variant="primary" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, closePreview_fn).call(this, true)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Edit copy", "Kopie bearbeiten")}</sl-button>
+						<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, closePreview_fn).call(this, false)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Close preview", "Vorschau schlie\xDFen")}</sl-button>
+					</div>
 				`}
 			</div>
-			<div class="workspace" ?data-palette=${this.paletteOpen && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}>
-				<aside class="palette" ?hidden=${!this.paletteOpen || __privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}>
-					<div class="palette-tools">
-						<sl-tag size="small" variant="primary">${symbol(this.element)} · ${elementByAtomicNumber(this.element).names[__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "en", "de")]}</sl-tag>
-						<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, addAtom_fn).call(this)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Add atom", "Atom hinzuf\xFCgen")}</sl-button>
+			<div class="workspace" data-palette=${paletteVisible ? this.pickerView : E2}>
+				<aside class="palette" ?hidden=${!paletteVisible}>
+					<div class="palette-heading">
+						<div class="palette-tools">
+							<sl-tag size="small" variant="primary">${symbol(this.element)} · ${elementByAtomicNumber(this.element).names[__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "en", "de")]}</sl-tag>
+							<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, addAtom_fn).call(this)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Add atom", "Atom hinzuf\xFCgen")}</sl-button>
+						</div>
+						<div class="palette-tools" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Element palette layout", "Darstellung der Elementpalette")}>
+							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderPickerLayout_fn).call(this, "list")}${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderPickerLayout_fn).call(this, "table")}
+						</div>
 					</div>
-					<webwriter-chemlab-periodic-table view="list" picker-mode .selectedAtomicNumber=${this.element}
+					<webwriter-chemlab-periodic-table .view=${this.pickerView} picker-mode .selectedAtomicNumber=${this.element}
 						@chemlab:element-selection=${__privateGet(this, _selectPalette)} @chemlab:element-drag=${__privateGet(this, _dragPalette)}>
 					</webwriter-chemlab-periodic-table>
 				</aside>
@@ -101380,10 +101747,11 @@ _preview = new WeakMap();
 _catalogKey = new WeakMap();
 _catalogVariants = new WeakMap();
 _catalogIndex = new WeakMap();
-_showCatalog = new WeakMap();
+_openPanel = new WeakMap();
 _labs = new WeakMap();
 _showLabs = new WeakMap();
 _paletteOpen = new WeakMap();
+_pickerView = new WeakMap();
 _view2 = new WeakMap();
 _tool = new WeakMap();
 _element = new WeakMap();
@@ -101518,7 +101886,7 @@ resetSelection_fn = function() {
 };
 new_fn = function(kind) {
   this.preview = void 0;
-  this.showCatalog = false;
+  this.openPanel = void 0;
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, kind === "crystal" ? newCrystal() : newMolecule(), true);
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, resetSelection_fn).call(this);
 };
@@ -101759,7 +102127,7 @@ send_fn = function(target) {
   target.scrollIntoView({ block: "nearest" });
 };
 renderCatalog_fn = function() {
-  if (!this.showCatalog) return E2;
+  if (this.openPanel !== "catalog") return E2;
   const change = (event) => {
     const value = event.currentTarget.value;
     if (value) this.viewCatalogStructure(value);
@@ -101795,6 +102163,40 @@ renderTargetPicker_fn = function() {
     this.showLabs = false;
   }}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cancel", "Abbrechen")}</sl-button>
 		</div>`;
+};
+renderFileActions_fn = function() {
+  if (this.openPanel !== "file") return E2;
+  return x2`<div id="file-actions" class="controls-panel fields">
+			<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, new_fn).call(this, "molecule")}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "New molecule", "Neues Molek\xFCl")}</sl-button>
+			<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, new_fn).call(this, "crystal")}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "New crystal", "Neuer Kristall")}</sl-button>
+			<input type="file" hidden accept=".json,application/json" @change=${(event) => {
+    const input = event.currentTarget;
+    void __privateGet(this, _openFile).call(this, input.files?.[0]);
+    input.value = "";
+  }} />
+			<sl-button size="small" @click=${() => this.renderRoot.querySelector('input[type="file"]')?.click()}>
+				${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Open file", "Datei \xF6ffnen")}
+			</sl-button>
+			<sl-button size="small" ?disabled=${!__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length} @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, download_fn)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Download", "Herunterladen")}</sl-button>
+		</div>`;
+};
+renderHistoryButton_fn = function(redo) {
+  const label = redo ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Redo", "Wiederholen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Undo", "R\xFCckg\xE4ngig");
+  return x2`<sl-button class="icon-control" size="small" aria-label=${label} title=${label}
+			?disabled=${!(redo ? __privateGet(this, _future) : __privateGet(this, _past)).length} @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, history_fn).call(this, redo)}>
+			<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+				<path transform=${redo ? "translate(16 0) scale(-1 1)" : ""} d="M6 4 3 7l3 3M3 7h6a3 3 0 0 1 0 6H8"
+					fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+			</svg>
+		</sl-button>`;
+};
+renderPickerLayout_fn = function(view) {
+  const label = view === "list" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "List view", "Listenansicht") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Grid view", "Rasteransicht");
+  return x2`<sl-button class="icon-control" size="small" aria-label=${label} title=${label}
+			variant=${this.pickerView === view ? "primary" : "default"} aria-pressed=${this.pickerView === view}
+			@click=${() => {
+    this.pickerView = view;
+  }}>${view === "list" ? LIST_ICON : TABLE_ICON}</sl-button>`;
 };
 renderDrawing_fn = function() {
   const current = __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get);
@@ -101886,25 +102288,6 @@ renderInspector_fn = function() {
 						<option value="">—</option>
 						${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).map((entry) => x2`<option value=${entry.id} ?selected=${entry.id === this.picked}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</option>`)}
 					</select></label>` : E2}
-				${atom && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Formal charge", "Formalladung")}
-					<input type="number" min="-8" max="8" step="1" .value=${String(atom.charge)} @change=${(event) => {
-    const input = event.currentTarget;
-    if (!input.checkValidity() || input.value === "") {
-      input.value = String(atom.charge);
-      return;
-    }
-    __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateCharge_fn).call(this, input.valueAsNumber);
-  }} /></label>` : E2}
-				${atom && current.kind === "molecule" && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? current.bonds.filter((bond) => bond.from === atom.id || bond.to === atom.id).map((bond) => {
-    const to = __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).find((entry) => entry.id === (bond.from === atom.id ? bond.to : bond.from));
-    return x2`<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, {
-      ...current,
-      name: "",
-      catalogKey: void 0,
-      geometry: void 0,
-      bonds: current.bonds.filter((entry) => entry !== bond)
-    })}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Remove bond to", "Bindung l\xF6sen zu")} ${symbol(to.atomicNumber)} · ${to.id}</sl-button>`;
-  }) : E2}
 				${current.kind === "crystal" ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cells per axis", "Zellen pro Achse")}
 					<select .value=${String(this.repeats)} @change=${(event) => {
     this.repeats = Number(event.currentTarget.value);
@@ -101914,20 +102297,46 @@ renderInspector_fn = function() {
 						${[1, 2, 3].map((value) => x2`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
 					</select></label>` : E2}
 			</div>
-			${current.kind === "crystal" ? x2`<div class="fields">
-				${current.bravais ? x2`<sl-tag size="small">${current.bravais} · ${current.spaceGroup}</sl-tag>` : E2}
-				${current.source === "catalog-density" ? x2`<sl-tag size="small">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cell size estimated from catalog density", "Zellgr\xF6\xDFe aus Katalogdichte gesch\xE4tzt")}</sl-tag>` : E2}
-				${["lengths", "angles"].map((key) => current.cell[key].map((value, index) => {
+			${atom && (!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) || "fractional" in atom) ? x2`
+				<sl-details summary=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site properties", "Gitterplatz-Eigenschaften") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom properties", "Atom-Eigenschaften")}>
+					<div class="fields">
+						${!__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Formal charge", "Formalladung")}
+							<input type="number" min="-8" max="8" step="1" .value=${String(atom.charge)} @change=${(event) => {
+    const input = event.currentTarget;
+    if (!input.checkValidity() || input.value === "") {
+      input.value = String(atom.charge);
+      return;
+    }
+    __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateCharge_fn).call(this, input.valueAsNumber);
+  }} /></label>` : E2}
+						${current.kind === "molecule" && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? current.bonds.filter((bond) => bond.from === atom.id || bond.to === atom.id).map((bond) => {
+    const to = __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).find((entry) => entry.id === (bond.from === atom.id ? bond.to : bond.from));
+    return x2`<sl-button size="small" @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, {
+      ...current,
+      name: "",
+      catalogKey: void 0,
+      geometry: void 0,
+      bonds: current.bonds.filter((entry) => entry !== bond)
+    })}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Remove bond to", "Bindung l\xF6sen zu")} ${symbol(to.atomicNumber)} · ${to.id}</sl-button>`;
+  }) : E2}
+						${"fractional" in atom ? atom.fractional.map((value, index) => x2`<label>${["x/a", "y/b", "z/c"][index]}
+							<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}
+								@change=${(event) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateSite_fn).call(this, index, event.currentTarget)} />
+						</label>`) : E2}
+					</div>
+				</sl-details>` : E2}
+			${current.kind === "crystal" ? x2`<sl-details summary=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Unit cell", "Elementarzelle")}>
+				<div class="fields">
+					${current.bravais ? x2`<sl-tag size="small">${current.bravais} · ${current.spaceGroup}</sl-tag>` : E2}
+					${current.source === "catalog-density" ? x2`<sl-tag size="small">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cell size estimated from catalog density", "Zellgr\xF6\xDFe aus Katalogdichte gesch\xE4tzt")}</sl-tag>` : E2}
+					${["lengths", "angles"].map((key) => current.cell[key].map((value, index) => {
     const label = (key === "lengths" ? ["a (\xC5)", "b (\xC5)", "c (\xC5)"] : ["\u03B1 (\xB0)", "\u03B2 (\xB0)", "\u03B3 (\xB0)"])[index];
     return x2`<label>${label}<input type="number" step="any" aria-label=${label}
-						.value=${String(Number(value.toFixed(4)))} ?readonly=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}
-						@change=${(event) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateCell_fn).call(this, key, index, event.currentTarget)} /></label>`;
+							.value=${String(Number(value.toFixed(4)))} ?readonly=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}
+							@change=${(event) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateCell_fn).call(this, key, index, event.currentTarget)} /></label>`;
   }))}
-				${atom && "fractional" in atom ? atom.fractional.map((value, index) => x2`<label>${["x/a", "y/b", "z/c"][index]}
-					<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}
-						@change=${(event) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateSite_fn).call(this, index, event.currentTarget)} />
-				</label>`) : E2}
-			</div>` : E2}
+				</div>
+			</sl-details>` : E2}
 		</aside>`;
 };
 __decorateElement(_init3, 4, "elementSourceId", _elementSourceId_dec, _ChemLabMoleculeBuilder, _elementSourceId);
@@ -101937,10 +102346,11 @@ __decorateElement(_init3, 4, "preview", _preview_dec, _ChemLabMoleculeBuilder, _
 __decorateElement(_init3, 4, "catalogKey", _catalogKey_dec, _ChemLabMoleculeBuilder, _catalogKey);
 __decorateElement(_init3, 4, "catalogVariants", _catalogVariants_dec, _ChemLabMoleculeBuilder, _catalogVariants);
 __decorateElement(_init3, 4, "catalogIndex", _catalogIndex_dec, _ChemLabMoleculeBuilder, _catalogIndex);
-__decorateElement(_init3, 4, "showCatalog", _showCatalog_dec, _ChemLabMoleculeBuilder, _showCatalog);
+__decorateElement(_init3, 4, "openPanel", _openPanel_dec, _ChemLabMoleculeBuilder, _openPanel);
 __decorateElement(_init3, 4, "labs", _labs_dec, _ChemLabMoleculeBuilder, _labs);
 __decorateElement(_init3, 4, "showLabs", _showLabs_dec, _ChemLabMoleculeBuilder, _showLabs);
 __decorateElement(_init3, 4, "paletteOpen", _paletteOpen_dec, _ChemLabMoleculeBuilder, _paletteOpen);
+__decorateElement(_init3, 4, "pickerView", _pickerView_dec, _ChemLabMoleculeBuilder, _pickerView);
 __decorateElement(_init3, 4, "view", _view_dec2, _ChemLabMoleculeBuilder, _view2);
 __decorateElement(_init3, 4, "tool", _tool_dec, _ChemLabMoleculeBuilder, _tool);
 __decorateElement(_init3, 4, "element", _element_dec, _ChemLabMoleculeBuilder, _element);
@@ -101958,6 +102368,7 @@ __publicField(_ChemLabMoleculeBuilder, "styles", builderStyles);
 __publicField(_ChemLabMoleculeBuilder, "scopedElements", {
   "webwriter-chemlab-periodic-table": ChemLabPeriodicTable,
   "sl-button": SlButton,
+  "sl-details": SlDetails,
   "sl-icon": SlIcon,
   "sl-spinner": SlSpinner,
   "sl-tag": SlTag

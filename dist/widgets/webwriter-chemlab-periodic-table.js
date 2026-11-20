@@ -10159,6 +10159,17 @@ var periodicTableStyles = i`
 		overflow: hidden;
 	}
 
+	:host([picker-mode]) {
+		inline-size: 100%;
+		block-size: auto;
+		min-inline-size: 0;
+		min-block-size: 0;
+		padding: 0;
+		resize: none;
+		--pt-cell-height: 2.2rem;
+		--pt-gutter: 0.8rem;
+	}
+
 	* {
 		box-sizing: border-box;
 	}
@@ -10416,6 +10427,12 @@ var periodicTableStyles = i`
 		padding-bottom: 1.6rem;
 	}
 
+	:host([picker-mode]) .table-pane {
+		padding: 3px;
+		overscroll-behavior: contain;
+		scrollbar-width: thin;
+	}
+
 	.grid {
 		display: grid;
 		grid-template-columns: var(--pt-gutter) repeat(18, minmax(0, 1fr));
@@ -10424,6 +10441,18 @@ var periodicTableStyles = i`
 			var(--pt-series-gap) repeat(2, minmax(var(--pt-cell-height), auto));
 		gap: 2px;
 		min-width: 30rem;
+	}
+
+	:host([picker-mode]) .grid {
+		min-width: 21rem;
+	}
+
+	:host([picker-mode]) .cell {
+		touch-action: manipulation;
+	}
+
+	:host([picker-mode]) .cell-symbol {
+		font-size: 0.75rem;
 	}
 
 	.grid-row {
@@ -10834,11 +10863,17 @@ var periodicTableStyles = i`
 		cursor: pointer;
 	}
 
-	:host([picker-mode]) .list-row,
-	:host([picker-mode]) .cell {
+	:host([picker-mode]) :is(.list-row, .cell) {
 		cursor: grab;
-		touch-action: pan-y;
 		user-select: none;
+	}
+
+	:host([picker-mode]) .list-row {
+		gap: 0.4rem;
+		min-height: 2.25rem;
+		padding: 0.2rem 0.35rem;
+		font-size: 0.8rem;
+		touch-action: pan-y;
 	}
 
 	:host([picker-mode]) .list-row[aria-pressed="true"] {
@@ -10873,6 +10908,19 @@ var periodicTableStyles = i`
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	:host([picker-mode]) .list-name {
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+
+	:host([picker-mode]) :is(.list-number, .list-symbol) {
+		flex: none;
+	}
+
+	:host([picker-mode]) .list-number {
+		width: 1.45rem;
 	}
 
 	.list-category {
@@ -11930,17 +11978,19 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     });
     return x2`
 			<div class="widget">
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderRibbon_fn).call(this, t7, language, resolved, matches.length)}
+				${this.pickerMode ? E2 : __privateMethod(this, _ChemLabPeriodicTable_instances, renderRibbon_fn).call(this, t7, language, resolved, matches.length)}
 				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t7, language, matches, element, details) : __privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t7, language, matching, details)}
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t7, language, element)}
-				<sl-icon-button
-					class="info-button"
-					src=${INFO_ICON}
-					label=${t7.infoLabel}
-					title=${t7.infoLabel}
-					@click=${__privateGet(this, _openInfo)}
-				></sl-icon-button>
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderInfo_fn).call(this, t7, language)}
+				${this.pickerMode ? E2 : x2`
+					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderPrintOverview_fn).call(this, t7, language, element)}
+					<sl-icon-button
+						class="info-button"
+						src=${INFO_ICON}
+						label=${t7.infoLabel}
+						title=${t7.infoLabel}
+						@click=${__privateGet(this, _openInfo)}
+					></sl-icon-button>
+					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderInfo_fn).call(this, t7, language)}
+				`}
 			</div>
 		`;
   }
@@ -12712,7 +12762,7 @@ renderList_fn = function(t7, language, matches, element, details) {
 						<span class="list-number">${entry.atomicNumber}</span>
 						<span class="list-symbol">${entry.symbol}</span>
 						<span class="list-name">${entry.names[language]}</span>
-						<span class="list-category">${categoryText(entry, language)}</span>
+						${this.pickerMode ? E2 : x2`<span class="list-category">${categoryText(entry, language)}</span>`}
 						${mode.state === null ? mode.badge === null ? null : x2`<sl-tag class="list-year" size="small" variant="neutral">${mode.badge}</sl-tag>` : x2`
 							<sl-tag class="state-tag list-state state-${mode.state}" size="small" variant="neutral">
 								${stateText(mode.state, t7)}
@@ -13090,7 +13140,9 @@ if (!customElements.get("webwriter-chemlab-periodic-table")) {
   customElements.define("webwriter-chemlab-periodic-table", ChemLabPeriodicTable);
 }
 export {
-  ChemLabPeriodicTable
+  ChemLabPeriodicTable,
+  LIST_ICON,
+  TABLE_ICON
 };
 /*! Bundled license information:
 

@@ -85,6 +85,17 @@ export const periodicTableStyles = css`
 		overflow: hidden;
 	}
 
+	:host([picker-mode]) {
+		inline-size: 100%;
+		block-size: auto;
+		min-inline-size: 0;
+		min-block-size: 0;
+		padding: 0;
+		resize: none;
+		--pt-cell-height: 2.2rem;
+		--pt-gutter: 0.8rem;
+	}
+
 	* {
 		box-sizing: border-box;
 	}
@@ -342,6 +353,12 @@ export const periodicTableStyles = css`
 		padding-bottom: 1.6rem;
 	}
 
+	:host([picker-mode]) .table-pane {
+		padding: 3px;
+		overscroll-behavior: contain;
+		scrollbar-width: thin;
+	}
+
 	.grid {
 		display: grid;
 		grid-template-columns: var(--pt-gutter) repeat(18, minmax(0, 1fr));
@@ -350,6 +367,18 @@ export const periodicTableStyles = css`
 			var(--pt-series-gap) repeat(2, minmax(var(--pt-cell-height), auto));
 		gap: 2px;
 		min-width: 30rem;
+	}
+
+	:host([picker-mode]) .grid {
+		min-width: 21rem;
+	}
+
+	:host([picker-mode]) .cell {
+		touch-action: manipulation;
+	}
+
+	:host([picker-mode]) .cell-symbol {
+		font-size: 0.75rem;
 	}
 
 	.grid-row {
@@ -760,11 +789,17 @@ export const periodicTableStyles = css`
 		cursor: pointer;
 	}
 
-	:host([picker-mode]) .list-row,
-	:host([picker-mode]) .cell {
+	:host([picker-mode]) :is(.list-row, .cell) {
 		cursor: grab;
-		touch-action: pan-y;
 		user-select: none;
+	}
+
+	:host([picker-mode]) .list-row {
+		gap: 0.4rem;
+		min-height: 2.25rem;
+		padding: 0.2rem 0.35rem;
+		font-size: 0.8rem;
+		touch-action: pan-y;
 	}
 
 	:host([picker-mode]) .list-row[aria-pressed="true"] {
@@ -799,6 +834,19 @@ export const periodicTableStyles = css`
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	:host([picker-mode]) .list-name {
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+
+	:host([picker-mode]) :is(.list-number, .list-symbol) {
+		flex: none;
+	}
+
+	:host([picker-mode]) .list-number {
+		width: 1.45rem;
 	}
 
 	.list-category {

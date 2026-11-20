@@ -11,7 +11,7 @@
 
 import { LitElementWw, action } from "@webwriter/lit";
 import { property } from "lit/decorators.js";
-import { html, type PropertyValues } from "lit";
+import { html, nothing, type PropertyValues } from "lit";
 
 import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
@@ -164,14 +164,14 @@ const POINTER_ICON = `data:image/svg+xml,${encodeURIComponent(
  * Inline SVG like the canvas controls, because the widget ships no icon assets
  * and the default Shoelace icon library would fetch them from a CDN.
  */
-const TABLE_ICON = html`
+export const TABLE_ICON = html`
 	<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
 		<path d="M2 2.5h12v11H2z"/><path d="M6 2.5v11M10 2.5v11M2 6.2h12M2 9.9h12"/>
 	</svg>
 `;
 
 /** List icon of the list view button. */
-const LIST_ICON = html`
+export const LIST_ICON = html`
 	<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
 		<path d="M5.8 4h8.2M5.8 8h8.2M5.8 12h8.2"/>
 		<circle cx="2.8" cy="4" r="1" fill="currentColor" stroke="none"/>
@@ -1448,7 +1448,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 						<span class="list-number">${entry.atomicNumber}</span>
 						<span class="list-symbol">${entry.symbol}</span>
 						<span class="list-name">${entry.names[language]}</span>
-						<span class="list-category">${categoryText(entry, language)}</span>
+						${this.pickerMode ? nothing : html`<span class="list-category">${categoryText(entry, language)}</span>`}
 						${mode.state === null
 							? mode.badge === null
 								? null
@@ -1800,19 +1800,21 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		});
 		return html`
 			<div class="widget">
-				${this.#renderRibbon(t, language, resolved, matches.length)}
+				${this.pickerMode ? nothing : this.#renderRibbon(t, language, resolved, matches.length)}
 				${resolved === "list"
 					? this.#renderList(t, language, matches, element, details)
 					: this.#renderGrid(t, language, matching, details)}
-				${this.#renderPrintOverview(t, language, element)}
-				<sl-icon-button
-					class="info-button"
-					src=${INFO_ICON}
-					label=${t.infoLabel}
-					title=${t.infoLabel}
-					@click=${this.#openInfo}
-				></sl-icon-button>
-				${this.#renderInfo(t, language)}
+				${this.pickerMode ? nothing : html`
+					${this.#renderPrintOverview(t, language, element)}
+					<sl-icon-button
+						class="info-button"
+						src=${INFO_ICON}
+						label=${t.infoLabel}
+						title=${t.infoLabel}
+						@click=${this.#openInfo}
+					></sl-icon-button>
+					${this.#renderInfo(t, language)}
+				`}
 			</div>
 		`;
 	}

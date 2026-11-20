@@ -2,10 +2,11 @@ import { LitElementWw } from "@webwriter/lit";
 import { html, nothing, svg } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
+import SlDetails from "@shoelace-style/shoelace/dist/components/details/details.component.js";
 import SlIcon from "@shoelace-style/shoelace/dist/components/icon/icon.component.js";
 import SlSpinner from "@shoelace-style/shoelace/dist/components/spinner/spinner.component.js";
 import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js";
-import { ChemLabPeriodicTable } from "./webwriter-chemlab-periodic-table";
+import { ChemLabPeriodicTable, LIST_ICON, TABLE_ICON } from "./webwriter-chemlab-periodic-table";
 import { elementByAtomicNumber } from "./periodic-table/element-reference";
 import { ELEMENT_SELECTION_EVENT, isAtomicNumber, type ElementSelectionV1 } from "./periodic-table/selection";
 import { SelectionRouter } from "./periodic-table/routing";
@@ -33,7 +34,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	static styles = builderStyles;
 	static scopedElements = {
 		"webwriter-chemlab-periodic-table": ChemLabPeriodicTable,
-		"sl-button": SlButton, "sl-icon": SlIcon, "sl-spinner": SlSpinner, "sl-tag": SlTag,
+		"sl-button": SlButton, "sl-details": SlDetails, "sl-icon": SlIcon, "sl-spinner": SlSpinner, "sl-tag": SlTag,
 	};
 	static options = {
 		elementSourceId: {
@@ -54,10 +55,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor catalogKey = "";
 	@state() private accessor catalogVariants: Structure[] = [];
 	@state() private accessor catalogIndex = 0;
-	@state() private accessor showCatalog = false;
+	@state() private accessor openPanel: "catalog" | "file" | undefined;
 	@state() private accessor labs: HTMLElement[] = [];
 	@state() private accessor showLabs = false;
 	@state() private accessor paletteOpen = true;
+	@state() private accessor pickerView: "list" | "table" = "list";
 	@state() private accessor view: "3d" | "2d" = "3d";
 	@state() private accessor tool: Tool = "orbit";
 	@state() private accessor element = 6;
@@ -225,7 +227,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	#new(kind: Structure["kind"]) {
 		this.preview = undefined;
-		this.showCatalog = false;
+		this.openPanel = undefined;
 		this.#record(kind === "crystal" ? newCrystal() : newMolecule(), true);
 		this.#resetSelection();
 	}
@@ -524,7 +526,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		this.catalogKey = key;
 		this.catalogVariants = variants;
 		this.catalogIndex = 0;
-		this.showCatalog = true;
+		this.openPanel = "catalog";
 		this.#openPreview(variants[0]);
 		return true;
 	}
@@ -565,6 +567,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			if (request !== this.#fileOpen || !this.isConnected) return;
 			this.#closePreview(false);
 			this.#record(structure, true);
+			this.openPanel = undefined;
 		} catch {
 			if (request === this.#fileOpen) this.notice = this.#t("Could not open this ChemLab structure file.", "Diese ChemLab-Strukturdatei konnte nicht geöffnet werden.");
 		}
@@ -599,7 +602,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	#renderCatalog() {
-		if (!this.showCatalog) return nothing;
+		if (this.openPanel !== "catalog") return nothing;
 		const change = (event: Event) => {
 			const value = (event.currentTarget as HTMLSelectElement).value;
 			if (value) this.viewCatalogStructure(value);
@@ -634,6 +637,40 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			</sl-button>`)}
 			<sl-button size="small" @click=${() => { this.showLabs = false; }}>${this.#t("Cancel", "Abbrechen")}</sl-button>
 		</div>`;
+	}
+
+	#renderFileActions() {
+		if (this.openPanel !== "file") return nothing;
+		return html`<div id="file-actions" class="controls-panel fields">
+			<sl-button size="small" @click=${() => this.#new("molecule")}>${this.#t("New molecule", "Neues Molekül")}</sl-button>
+			<sl-button size="small" @click=${() => this.#new("crystal")}>${this.#t("New crystal", "Neuer Kristall")}</sl-button>
+			<input type="file" hidden accept=".json,application/json" @change=${(event: Event) => {
+				const input = event.currentTarget as HTMLInputElement;
+				void this.#openFile(input.files?.[0]); input.value = "";
+			}} />
+			<sl-button size="small" @click=${() => this.renderRoot.querySelector<HTMLInputElement>('input[type="file"]')?.click()}>
+				${this.#t("Open file", "Datei öffnen")}
+			</sl-button>
+			<sl-button size="small" ?disabled=${!this.#atoms.length} @click=${this.#download}>${this.#t("Download", "Herunterladen")}</sl-button>
+		</div>`;
+	}
+
+	#renderHistoryButton(redo: boolean) {
+		const label = redo ? this.#t("Redo", "Wiederholen") : this.#t("Undo", "Rückgängig");
+		return html`<sl-button class="icon-control" size="small" aria-label=${label} title=${label}
+			?disabled=${!(redo ? this.#future : this.#past).length} @click=${() => this.#history(redo)}>
+			<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+				<path transform=${redo ? "translate(16 0) scale(-1 1)" : ""} d="M6 4 3 7l3 3M3 7h6a3 3 0 0 1 0 6H8"
+					fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+			</svg>
+		</sl-button>`;
+	}
+
+	#renderPickerLayout(view: "list" | "table") {
+		const label = view === "list" ? this.#t("List view", "Listenansicht") : this.#t("Grid view", "Rasteransicht");
+		return html`<sl-button class="icon-control" size="small" aria-label=${label} title=${label}
+			variant=${this.pickerView === view ? "primary" : "default"} aria-pressed=${this.pickerView === view}
+			@click=${() => { this.pickerView = view; }}>${view === "list" ? LIST_ICON : TABLE_ICON}</sl-button>`;
 	}
 
 	#renderDrawing() {
@@ -728,19 +765,6 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 						<option value="">—</option>
 						${this.#atoms.map(entry => html`<option value=${entry.id} ?selected=${entry.id === this.picked}>${symbol(entry.atomicNumber)}${chargeText(entry.charge)} · ${entry.id}</option>`)}
 					</select></label>` : nothing}
-				${atom && !this.#readonly ? html`<label>${this.#t("Formal charge", "Formalladung")}
-					<input type="number" min="-8" max="8" step="1" .value=${String(atom.charge)} @change=${(event: Event) => {
-						const input = event.currentTarget as HTMLInputElement;
-						if (!input.checkValidity() || input.value === "") { input.value = String(atom.charge); return; }
-						this.#updateCharge(input.valueAsNumber);
-					}} /></label>` : nothing}
-				${atom && current.kind === "molecule" && !this.#readonly ? current.bonds.filter(bond =>
-					bond.from === atom.id || bond.to === atom.id).map(bond => {
-						const to = this.#atoms.find(entry => entry.id === (bond.from === atom.id ? bond.to : bond.from));
-						return html`<sl-button size="small" @click=${() => this.#record({
-							...current, name: "", catalogKey: undefined, geometry: undefined, bonds: current.bonds.filter(entry => entry !== bond),
-						})}>${this.#t("Remove bond to", "Bindung lösen zu")} ${symbol(to.atomicNumber)} · ${to.id}</sl-button>`;
-					}) : nothing}
 				${current.kind === "crystal" ? html`<label>${this.#t("Cells per axis", "Zellen pro Achse")}
 					<select .value=${String(this.repeats)} @change=${(event: Event) => {
 						this.repeats = Number((event.currentTarget as HTMLSelectElement).value);
@@ -750,25 +774,46 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 						${[1, 2, 3].map(value => html`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
 					</select></label>` : nothing}
 			</div>
-			${current.kind === "crystal" ? html`<div class="fields">
-				${current.bravais ? html`<sl-tag size="small">${current.bravais} · ${current.spaceGroup}</sl-tag>` : nothing}
-				${current.source === "catalog-density" ? html`<sl-tag size="small">${this.#t("Cell size estimated from catalog density", "Zellgröße aus Katalogdichte geschätzt")}</sl-tag>` : nothing}
-				${(["lengths", "angles"] as const).map(key => current.cell[key].map((value, index) => {
-					const label = (key === "lengths" ? ["a (Å)", "b (Å)", "c (Å)"] : ["α (°)", "β (°)", "γ (°)"])[index];
-					return html`<label>${label}<input type="number" step="any" aria-label=${label}
-						.value=${String(Number(value.toFixed(4)))} ?readonly=${this.#readonly}
-						@change=${(event: Event) => this.#updateCell(key, index, event.currentTarget as HTMLInputElement)} /></label>`;
-				}))}
-				${atom && "fractional" in atom ? atom.fractional.map((value, index) => html`<label>${["x/a", "y/b", "z/c"][index]}
-					<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${this.#readonly}
-						@change=${(event: Event) => this.#updateSite(index, event.currentTarget as HTMLInputElement)} />
-				</label>`) : nothing}
-			</div>` : nothing}
+			${atom && (!this.#readonly || "fractional" in atom) ? html`
+				<sl-details summary=${current.kind === "crystal" ? this.#t("Site properties", "Gitterplatz-Eigenschaften") : this.#t("Atom properties", "Atom-Eigenschaften")}>
+					<div class="fields">
+						${!this.#readonly ? html`<label>${this.#t("Formal charge", "Formalladung")}
+							<input type="number" min="-8" max="8" step="1" .value=${String(atom.charge)} @change=${(event: Event) => {
+								const input = event.currentTarget as HTMLInputElement;
+								if (!input.checkValidity() || input.value === "") { input.value = String(atom.charge); return; }
+								this.#updateCharge(input.valueAsNumber);
+							}} /></label>` : nothing}
+						${current.kind === "molecule" && !this.#readonly ? current.bonds.filter(bond =>
+							bond.from === atom.id || bond.to === atom.id).map(bond => {
+								const to = this.#atoms.find(entry => entry.id === (bond.from === atom.id ? bond.to : bond.from));
+								return html`<sl-button size="small" @click=${() => this.#record({
+									...current, name: "", catalogKey: undefined, geometry: undefined, bonds: current.bonds.filter(entry => entry !== bond),
+								})}>${this.#t("Remove bond to", "Bindung lösen zu")} ${symbol(to.atomicNumber)} · ${to.id}</sl-button>`;
+							}) : nothing}
+						${"fractional" in atom ? atom.fractional.map((value, index) => html`<label>${["x/a", "y/b", "z/c"][index]}
+							<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${this.#readonly}
+								@change=${(event: Event) => this.#updateSite(index, event.currentTarget as HTMLInputElement)} />
+						</label>`) : nothing}
+					</div>
+				</sl-details>` : nothing}
+			${current.kind === "crystal" ? html`<sl-details summary=${this.#t("Unit cell", "Elementarzelle")}>
+				<div class="fields">
+					${current.bravais ? html`<sl-tag size="small">${current.bravais} · ${current.spaceGroup}</sl-tag>` : nothing}
+					${current.source === "catalog-density" ? html`<sl-tag size="small">${this.#t("Cell size estimated from catalog density", "Zellgröße aus Katalogdichte geschätzt")}</sl-tag>` : nothing}
+					${(["lengths", "angles"] as const).map(key => current.cell[key].map((value, index) => {
+						const label = (key === "lengths" ? ["a (Å)", "b (Å)", "c (Å)"] : ["α (°)", "β (°)", "γ (°)"])[index];
+						return html`<label>${label}<input type="number" step="any" aria-label=${label}
+							.value=${String(Number(value.toFixed(4)))} ?readonly=${this.#readonly}
+							@change=${(event: Event) => this.#updateCell(key, index, event.currentTarget as HTMLInputElement)} /></label>`;
+					}))}
+				</div>
+			</sl-details>` : nothing}
 		</aside>`;
 	}
 
 	render() {
 		const current = this.#current;
+		const paletteVisible = this.paletteOpen && !this.#readonly;
 		const tool = (value: Tool, label: string) => html`<sl-button size="small" variant=${value === this.tool ? "primary" : "default"}
 			aria-pressed=${value === this.tool} @click=${() => this.#setTool(value)}>${label}</sl-button>`;
 		const chooseView = (value: "3d" | "2d", label: string) => html`<sl-button size="small"
@@ -779,59 +824,68 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			@dragover=${(event: DragEvent) => { if (event.dataTransfer?.types.includes("Files")) event.preventDefault(); }}
 			@drop=${(event: DragEvent) => { if (event.dataTransfer?.files.length) { event.preventDefault(); void this.#openFile(event.dataTransfer.files[0]); } }}>
 			<header class="toolbar">
-				<div>
+				<div class="tool-group">
 					<sl-tag size="small" variant="primary">${this.#t("Molecule Builder", "Molekülbaukasten")}</sl-tag>
-					<sl-button size="small" aria-expanded=${this.showCatalog} @click=${() => { this.showCatalog = !this.showCatalog; }}>
+					<sl-button size="small" aria-expanded=${this.openPanel === "catalog"}
+						@click=${() => { this.openPanel = this.openPanel === "catalog" ? undefined : "catalog"; }}>
 						${this.#t("ChemLab catalog", "ChemLab-Katalog")}
 					</sl-button>
-				</div>
-				<div>
-					<sl-button size="small" @click=${() => this.#new("molecule")}>${this.#t("New molecule", "Neues Molekül")}</sl-button>
-					<sl-button size="small" @click=${() => this.#new("crystal")}>${this.#t("New crystal", "Neuer Kristall")}</sl-button>
-					<input type="file" hidden accept=".json,application/json" @change=${(event: Event) => {
-						const input = event.currentTarget as HTMLInputElement;
-						void this.#openFile(input.files?.[0]); input.value = "";
-					}} />
-					<sl-button size="small" @click=${() => this.renderRoot.querySelector<HTMLInputElement>('input[type="file"]')?.click()}>
-						${this.#t("Open file", "Datei öffnen")}
+					<sl-button size="small" aria-expanded=${this.openPanel === "file"}
+						@click=${() => { this.openPanel = this.openPanel === "file" ? undefined : "file"; }}>
+						${this.#t("File", "Datei")}
 					</sl-button>
-					<sl-button size="small" ?disabled=${!this.#atoms.length} @click=${this.#download}>${this.#t("Download", "Herunterladen")}</sl-button>
-					<sl-button size="small" variant="primary" ?disabled=${!this.#atoms.length} @click=${this.#prepareSend}>
+				</div>
+				${this.#atoms.length ? html`
+					<sl-button size="small" variant="primary" @click=${this.#prepareSend}>
 						${this.#t("Send to ChemLab", "An ChemLab senden")}
 					</sl-button>
-				</div>
+				` : nothing}
 			</header>
 			${this.#renderCatalog()}
+			${this.#renderFileActions()}
 			${this.#renderTargetPicker()}
 			<div class="tools">
-				<sl-button size="small" aria-expanded=${this.paletteOpen && !this.#readonly} ?disabled=${this.#readonly}
-					@click=${() => { this.paletteOpen = !this.paletteOpen; }}>${this.#t("Elements", "Elemente")}</sl-button>
-				${chooseView("3d", "3D")}${chooseView("2d", this.#t("Structure", "Struktur"))}
+				<div class="tool-group" role="group" aria-label=${this.#t("Workspace view", "Arbeitsansicht")}>
+					${!this.#readonly ? html`<sl-button size="small" aria-expanded=${paletteVisible}
+						@click=${() => { this.paletteOpen = !this.paletteOpen; }}>${this.#t("Elements", "Elemente")}</sl-button>` : nothing}
+					${chooseView("3d", "3D")}${chooseView("2d", this.#t("Structure", "Struktur"))}
+				</div>
 				${!this.#readonly ? html`
-					${tool("orbit", this.view === "3d" ? this.#t("Orbit", "Drehen") : this.#t("Select", "Auswählen"))}
-					${tool("atom", this.#t("Place atom", "Atom platzieren"))}
-					${current.kind === "molecule" ? tool("bond", this.#t("Draw bond", "Bindung zeichnen")) : nothing}
-					${this.tool === "bond" ? html`<label class="fields">${this.#t("Order", "Ordnung")} <select .value=${String(this.bondOrder)}
-						@change=${(event: Event) => { this.bondOrder = Number((event.currentTarget as HTMLSelectElement).value) as BondOrder; }}>
-						<option value="1">1</option><option value="2">2</option><option value="3">3</option>
-					</select></label>` : nothing}
-					${current.kind === "molecule" ? html`<sl-button size="small" ?disabled=${!current.bonds.length} @click=${this.#geometry}>
-						${this.#t("Fit geometry", "Geometrie anpassen")}
-					</sl-button>` : nothing}
-					<sl-button size="small" ?disabled=${!this.#past.length} @click=${() => this.#history(false)}>${this.#t("Undo", "Rückgängig")}</sl-button>
-					<sl-button size="small" ?disabled=${!this.#future.length} @click=${() => this.#history(true)}>${this.#t("Redo", "Wiederholen")}</sl-button>
+					<div class="tool-group" role="group" aria-label=${this.#t("Editing tools", "Bearbeitungswerkzeuge")}>
+						${tool("orbit", this.view === "3d" ? this.#t("Orbit", "Drehen") : this.#t("Select", "Auswählen"))}
+						${tool("atom", this.#t("Place atom", "Atom platzieren"))}
+						${current.kind === "molecule" ? tool("bond", this.#t("Draw bond", "Bindung zeichnen")) : nothing}
+						${this.tool === "bond" ? html`<label class="fields">${this.#t("Order", "Ordnung")} <select .value=${String(this.bondOrder)}
+							@change=${(event: Event) => { this.bondOrder = Number((event.currentTarget as HTMLSelectElement).value) as BondOrder; }}>
+							<option value="1">1</option><option value="2">2</option><option value="3">3</option>
+						</select></label>` : nothing}
+						${current.kind === "molecule" && current.bonds.length ? html`<sl-button size="small" @click=${this.#geometry}>
+							${this.#t("Fit geometry", "Geometrie anpassen")}
+						</sl-button>` : nothing}
+					</div>
+					${this.#past.length || this.#future.length ? html`
+						<div class="tool-group" role="group" aria-label=${this.#t("History", "Verlauf")}>
+							${this.#renderHistoryButton(false)}${this.#renderHistoryButton(true)}
+						</div>` : nothing}
 				` : html`
-					<sl-button size="small" variant="primary" @click=${() => this.#closePreview(true)}>${this.#t("Edit copy", "Kopie bearbeiten")}</sl-button>
-					<sl-button size="small" @click=${() => this.#closePreview(false)}>${this.#t("Close preview", "Vorschau schließen")}</sl-button>
+					<div class="tool-group">
+						<sl-button size="small" variant="primary" @click=${() => this.#closePreview(true)}>${this.#t("Edit copy", "Kopie bearbeiten")}</sl-button>
+						<sl-button size="small" @click=${() => this.#closePreview(false)}>${this.#t("Close preview", "Vorschau schließen")}</sl-button>
+					</div>
 				`}
 			</div>
-			<div class="workspace" ?data-palette=${this.paletteOpen && !this.#readonly}>
-				<aside class="palette" ?hidden=${!this.paletteOpen || this.#readonly}>
-					<div class="palette-tools">
-						<sl-tag size="small" variant="primary">${symbol(this.element)} · ${elementByAtomicNumber(this.element).names[this.#t("en", "de") as "en" | "de"]}</sl-tag>
-						<sl-button size="small" @click=${() => this.#addAtom()}>${this.#t("Add atom", "Atom hinzufügen")}</sl-button>
+			<div class="workspace" data-palette=${paletteVisible ? this.pickerView : nothing}>
+				<aside class="palette" ?hidden=${!paletteVisible}>
+					<div class="palette-heading">
+						<div class="palette-tools">
+							<sl-tag size="small" variant="primary">${symbol(this.element)} · ${elementByAtomicNumber(this.element).names[this.#t("en", "de") as "en" | "de"]}</sl-tag>
+							<sl-button size="small" @click=${() => this.#addAtom()}>${this.#t("Add atom", "Atom hinzufügen")}</sl-button>
+						</div>
+						<div class="palette-tools" role="group" aria-label=${this.#t("Element palette layout", "Darstellung der Elementpalette")}>
+							${this.#renderPickerLayout("list")}${this.#renderPickerLayout("table")}
+						</div>
 					</div>
-					<webwriter-chemlab-periodic-table view="list" picker-mode .selectedAtomicNumber=${this.element}
+					<webwriter-chemlab-periodic-table .view=${this.pickerView} picker-mode .selectedAtomicNumber=${this.element}
 						@chemlab:element-selection=${this.#selectPalette} @chemlab:element-drag=${this.#dragPalette}>
 					</webwriter-chemlab-periodic-table>
 				</aside>

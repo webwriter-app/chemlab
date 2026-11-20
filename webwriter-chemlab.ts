@@ -3707,10 +3707,10 @@ export class ChemLab extends LitElementWw {
 					</div>
 					${this.canAuthor ? badge : nothing}
 				</div>
-				${permissions ? html`
+				${chemical ? html`
 					<div class="chemical-card-body">
-						<div class="chemical-card-preview" ?inert=${permissions.open} ?data-menu-open=${permissions.open}>${body}</div>
-						${permissions.open ? html`
+						<div class="chemical-card-preview" ?inert=${permissions?.open} ?data-menu-open=${permissions?.open}>${body}</div>
+						${permissions?.open ? html`
 							<div class="chemical-concentration-permissions palette-variant" role="group"
 								aria-label=${permissions.label} tabindex="0" contenteditable="false"
 								@keydown=${(event: KeyboardEvent) => {

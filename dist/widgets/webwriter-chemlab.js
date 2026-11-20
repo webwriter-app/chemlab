@@ -111907,11 +111907,6 @@ var style = i`
 		font-size: .8rem;
 	}
 
-	.structure-link {
-		align-self: start;
-		justify-self: start;
-	}
-
 	.vessel-structure-link {
 		padding: 0;
 		border: 0;
@@ -112641,9 +112636,6 @@ var style = i`
 		overflow: hidden;
 		clip-path: inset(50%);
 	}
-	.palette-card-chemical > :not(.palette-card-header) {
-		contain: inline-size;
-	}
 	.palette-card-menu-trigger {
 		display: block;
 		max-inline-size: 100%;
@@ -112666,6 +112658,27 @@ var style = i`
 	.chemical-card-body {
 		position: relative;
 		min-inline-size: 0;
+		contain: inline-size;
+	}
+	.chemical-card-preview:has(> .structure-link) {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 4px;
+	}
+	.structure-link {
+		justify-self: start;
+		max-inline-size: 100%;
+	}
+	.structure-link::part(base) {
+		max-inline-size: 100%;
+		height: auto;
+		min-height: 24px;
+	}
+	.structure-link::part(label) {
+		padding: 2px 7px;
+		line-height: 1.25;
+		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 	.chemical-card-preview[data-menu-open] {
 		visibility: hidden;
@@ -192558,10 +192571,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					</div>
 					${this.canAuthor ? badge : E}
 				</div>
-				${permissions ? x`
+				${chemical ? x`
 					<div class="chemical-card-body">
-						<div class="chemical-card-preview" ?inert=${permissions.open} ?data-menu-open=${permissions.open}>${body2}</div>
-						${permissions.open ? x`
+						<div class="chemical-card-preview" ?inert=${permissions?.open} ?data-menu-open=${permissions?.open}>${body2}</div>
+						${permissions?.open ? x`
 							<div class="chemical-concentration-permissions palette-variant" role="group"
 								aria-label=${permissions.label} tabindex="0" contenteditable="false"
 								@keydown=${(event) => {
