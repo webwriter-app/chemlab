@@ -1,9 +1,11 @@
 import { LitElementWw } from "@webwriter/lit";
 import { html, nothing, svg } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
 import SlDetails from "@shoelace-style/shoelace/dist/components/details/details.component.js";
 import SlIcon from "@shoelace-style/shoelace/dist/components/icon/icon.component.js";
+import SlInput from "@shoelace-style/shoelace/dist/components/input/input.component.js";
 import SlPopup from "@shoelace-style/shoelace/dist/components/popup/popup.component.js";
 import SlSpinner from "@shoelace-style/shoelace/dist/components/spinner/spinner.component.js";
 import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js";
@@ -59,8 +61,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	static styles = builderStyles;
 	static scopedElements = {
 		"webwriter-chemlab-periodic-table": ChemLabPeriodicTable,
-		"sl-button": SlButton, "sl-details": SlDetails, "sl-icon": SlIcon, "sl-popup": SlPopup,
-		"sl-spinner": SlSpinner, "sl-tag": SlTag,
+		"sl-badge": SlBadge, "sl-button": SlButton, "sl-details": SlDetails, "sl-icon": SlIcon,
+		"sl-input": SlInput, "sl-popup": SlPopup, "sl-spinner": SlSpinner, "sl-tag": SlTag,
 	};
 	static options = {
 		elementSourceId: {
@@ -81,6 +83,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor catalogKey = "";
 	@state() private accessor catalogVariants: Structure[] = [];
 	@state() private accessor catalogIndex = 0;
+	@state() private accessor catalogQuery = "";
 	@state() private accessor openPanel: "catalog" | "file" | undefined;
 	@state() private accessor labs: HTMLElement[] = [];
 	@state() private accessor showLabs = false;
@@ -705,36 +708,57 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		target.scrollIntoView({ block: "nearest" });
 	}
 
+	/**
+	 * The catalog opens as a flat list grouped by chemical class. A native select
+	 * would open a second dropdown on top of the popup, so every substance is a
+	 * row of its own and the variants of the chosen one appear right below it.
+	 */
 	#renderCatalog() {
 		if (this.openPanel !== "catalog") return nothing;
-		const change = (event: Event) => {
-			const value = (event.currentTarget as HTMLSelectElement).value;
-			if (value) this.viewCatalogStructure(value);
-		};
-		return html`<div class="surface" role="group" aria-label=${this.#t("ChemLab catalog", "ChemLab-Katalog")}>
-			<label>${this.#t("Substance", "Stoff")}
-				<select .value=${this.catalogKey} @change=${change}>
-					<option value="">${this.#t("Choose a substance", "Stoff auswählen")}</option>
-					${groups.map(category => html`<optgroup label=${category}>
-						${structureCatalog.filter(entry => entry.category === category).map(entry => html`<option value=${entry.name} ?selected=${entry.name === this.catalogKey}>
-							${entry.name}${entry.formula ? ` · ${entry.formula}` : ""}
-						</option>`)}
-					</optgroup>`)}
-				</select>
-			</label>
-			${this.catalogVariants.length > 1 ? html`<label>${this.#t("Structure", "Struktur")}
-				<select .value=${String(this.catalogIndex)} @change=${(event: Event) => {
-					this.catalogIndex = Number((event.currentTarget as HTMLSelectElement).value);
-					this.#openPreview(this.catalogVariants[this.catalogIndex]);
-				}}>
-					${this.catalogVariants.map((variant, index) => html`<option value=${index} ?selected=${index === this.catalogIndex}>${variant.name}</option>`)}
-				</select></label>` : nothing}
-			${this.catalogKey && catalogIsMixture(this.catalogKey) ? html`<sl-tag size="small">${this.catalogVariants.length
-				? this.#t("Selected constituents of a mixture", "Ausgewählte Bestandteile eines Gemischs")
-				: this.#t("Mixture with no unique structure", "Gemisch ohne eindeutige Struktur")}</sl-tag>` : nothing}
-			${this.catalogKey && !this.catalogVariants.length && !catalogIsMixture(this.catalogKey)
-				? html`<sl-tag size="small">${this.#t("No verified structure available", "Keine verifizierte Struktur verfügbar")}</sl-tag>`
-				: nothing}
+		const query = this.catalogQuery.trim().toLowerCase();
+		const matches = (entry: (typeof structureCatalog)[number]) => !query
+			|| entry.name.toLowerCase().includes(query) || entry.formula.toLowerCase().includes(query);
+		const sections = groups.map(category => ({
+			category, entries: structureCatalog.filter(entry => entry.category === category && matches(entry)),
+		})).filter(section => section.entries.length);
+		const selected = this.catalogKey;
+		const note = selected && !this.catalogVariants.length
+			? catalogIsMixture(selected)
+				? this.#t("Mixture with no unique structure", "Gemisch ohne eindeutige Struktur")
+				: this.#t("No verified structure available", "Keine verifizierte Struktur verfügbar")
+			: "";
+		return html`<div class="surface catalog-surface" role="group" aria-label=${this.#t("ChemLab catalog", "ChemLab-Katalog")}>
+			<sl-input class="catalog-search" size="small" type="search" clearable
+				label=${this.#t("Search the catalog", "Katalog durchsuchen")}
+				placeholder=${this.#t("Search name or formula", "Name oder Formel suchen")}
+				.value=${this.catalogQuery}
+				@sl-input=${(event: Event) => { this.catalogQuery = (event.currentTarget as SlInput).value; }}></sl-input>
+			<div class="catalog-list">
+				${sections.length ? sections.map(section => html`<section class="catalog-group" aria-label=${section.category}>
+					<div class="catalog-group-heading" role="heading" aria-level="3">
+						<sl-badge variant="primary">${section.category}</sl-badge>
+					</div>
+					<div class="catalog-entries">
+						${section.entries.map(entry => html`
+							<button type="button" class="catalog-entry${entry.name === selected ? " is-selected" : ""}"
+								aria-pressed=${String(entry.name === selected)} @click=${() => this.viewCatalogStructure(entry.name)}>
+								<span class="catalog-entry-name">${entry.name}</span>
+								<span class="catalog-entry-formula">${entry.formula}</span>
+							</button>
+							${entry.name !== selected ? nothing : this.catalogVariants.length > 1 ? html`
+								<div class="catalog-variants" role="group" aria-label=${this.#t("Structure", "Struktur")}>
+									${this.catalogVariants.map((variant, index) => html`<button type="button"
+										class="catalog-variant${index === this.catalogIndex ? " is-selected" : ""}"
+										aria-pressed=${String(index === this.catalogIndex)} @click=${() => {
+											this.catalogIndex = index;
+											this.#openPreview(this.catalogVariants[index]);
+										}}>${variant.name}</button>`)}
+								</div>` : note ? html`<p class="catalog-note">${note}</p>` : nothing}
+						`)}
+					</div>
+				</section>`) : html`<p class="catalog-note" role="status">
+					${this.#t("No substance matches this search.", "Keine Substanz passt zu dieser Suche.")}</p>`}
+			</div>
 		</div>`;
 	}
 

@@ -18,6 +18,11 @@ export const builderStyles = css`
 		--panel-shadow: 0 2px 8px rgb(0 0 0 / 9%);
 		--chip-height: 1.35rem;
 		--handle-width: 1.1rem;
+		/* The catalog headings repeat the chemical drawer of the lab, so the
+		   group badges carry the same lilac band as the palette sections. */
+		--palette-heading-fill: #e8e0ee;
+		--palette-heading-badge: #ded3e7;
+		--palette-heading-ink: #4e3e5d;
 		position: relative;
 		border: 1px solid var(--outline);
 		border-radius: 5px;
@@ -70,6 +75,81 @@ export const builderStyles = css`
 		background: white;
 		box-shadow: var(--panel-shadow);
 		font-size: .8rem;
+	}
+	/* The catalog lists every substance of the lab, so it scrolls inside the
+	   popup instead of growing past the widget. */
+	.catalog-surface { inline-size: min(22rem, 80cqw); gap: .3rem; }
+	.catalog-search { min-inline-size: 0; }
+	.catalog-list {
+		display: grid;
+		gap: .35rem;
+		max-block-size: min(22rem, 52vh);
+		overflow: auto;
+		overscroll-behavior: contain;
+	}
+	.catalog-group, .catalog-entries { display: grid; gap: 2px; }
+	.catalog-group-heading {
+		position: sticky;
+		inset-block-start: 0;
+		z-index: 1;
+		padding: 2px 4px;
+		border-radius: 3px;
+		background: var(--palette-heading-fill);
+		color: var(--palette-heading-ink);
+	}
+	.catalog-group-heading > sl-badge { max-inline-size: 100%; margin: 0; }
+	.catalog-group-heading > sl-badge::part(base) {
+		padding: 1px 5px;
+		border: 0;
+		background: var(--palette-heading-badge);
+		color: inherit;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		line-height: 1.25;
+	}
+	.catalog-entry {
+		display: flex;
+		align-items: baseline;
+		gap: .35rem;
+		padding: 3px 6px;
+		border: 1px solid transparent;
+		border-radius: 3px;
+		background: none;
+		color: inherit;
+		font: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+	.catalog-entry:hover { background: var(--sl-color-neutral-100, #f4f4f5); }
+	.catalog-entry:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+	.catalog-entry.is-selected {
+		border-color: var(--blue);
+		background: color-mix(in srgb, var(--blue) 10%, white);
+	}
+	.catalog-entry-name { font-weight: 500; }
+	.catalog-entry-formula { color: var(--sl-color-neutral-600, #52525b); font-size: .75rem; }
+	.catalog-variants { display: flex; flex-wrap: wrap; gap: 3px; padding: 0 6px 3px; }
+	.catalog-variant {
+		padding: 1px 6px;
+		border: 1px solid var(--outline);
+		border-radius: 3px;
+		background: white;
+		color: inherit;
+		font: inherit;
+		font-size: .75rem;
+		cursor: pointer;
+	}
+	.catalog-variant:hover { background: var(--sl-color-neutral-100, #f4f4f5); }
+	.catalog-variant:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+	.catalog-variant.is-selected {
+		border-color: var(--blue);
+		background: color-mix(in srgb, var(--blue) 10%, white);
+	}
+	.catalog-note {
+		margin: 0;
+		padding: 0 6px 3px;
+		color: var(--sl-color-neutral-600, #52525b);
+		font-size: .75rem;
 	}
 	.surface .fields { flex-direction: column; align-items: stretch; gap: .4rem; }
 	.surface .fields label { display: grid; gap: .15rem; }

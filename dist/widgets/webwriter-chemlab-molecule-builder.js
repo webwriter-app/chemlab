@@ -92888,6 +92888,349 @@ function e7(e13, r11) {
   };
 }
 
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.WQC6OWUE.js
+var badge_styles_default = i`
+  :host {
+    display: inline-flex;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: max(12px, 0.75em);
+    font-weight: var(--sl-font-weight-semibold);
+    letter-spacing: var(--sl-letter-spacing-normal);
+    line-height: 1;
+    border-radius: var(--sl-border-radius-small);
+    border: solid 1px var(--sl-color-neutral-0);
+    white-space: nowrap;
+    padding: 0.35em 0.6em;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: inherit;
+  }
+
+  /* Variant modifiers */
+  .badge--primary {
+    background-color: var(--sl-color-primary-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .badge--success {
+    background-color: var(--sl-color-success-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .badge--neutral {
+    background-color: var(--sl-color-neutral-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .badge--warning {
+    background-color: var(--sl-color-warning-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  .badge--danger {
+    background-color: var(--sl-color-danger-600);
+    color: var(--sl-color-neutral-0);
+  }
+
+  /* Pill modifier */
+  .badge--pill {
+    border-radius: var(--sl-border-radius-pill);
+  }
+
+  /* Pulse modifier */
+  .badge--pulse {
+    animation: pulse 1.5s infinite;
+  }
+
+  .badge--pulse.badge--primary {
+    --pulse-color: var(--sl-color-primary-600);
+  }
+
+  .badge--pulse.badge--success {
+    --pulse-color: var(--sl-color-success-600);
+  }
+
+  .badge--pulse.badge--neutral {
+    --pulse-color: var(--sl-color-neutral-600);
+  }
+
+  .badge--pulse.badge--warning {
+    --pulse-color: var(--sl-color-warning-600);
+  }
+
+  .badge--pulse.badge--danger {
+    --pulse-color: var(--sl-color-danger-600);
+  }
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 var(--pulse-color);
+    }
+    70% {
+      box-shadow: 0 0 0 0.5rem transparent;
+    }
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.TUVJKY7S.js
+var component_styles_default = i`
+  :host {
+    box-sizing: border-box;
+  }
+
+  :host *,
+  :host *::before,
+  :host *::after {
+    box-sizing: inherit;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.KAW7D32O.js
+var __defProp3 = Object.defineProperty;
+var __defProps = Object.defineProperties;
+var __getOwnPropDesc3 = Object.getOwnPropertyDescriptor;
+var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
+var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+var __hasOwnProp2 = Object.prototype.hasOwnProperty;
+var __propIsEnum = Object.prototype.propertyIsEnumerable;
+var __knownSymbol3 = (name, symbol2) => (symbol2 = Symbol[name]) ? symbol2 : Symbol.for("Symbol." + name);
+var __typeError3 = (msg) => {
+  throw TypeError(msg);
+};
+var __defNormalProp3 = (obj, key, value) => key in obj ? __defProp3(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues = (a5, b4) => {
+  for (var prop in b4 || (b4 = {}))
+    if (__hasOwnProp2.call(b4, prop))
+      __defNormalProp3(a5, prop, b4[prop]);
+  if (__getOwnPropSymbols)
+    for (var prop of __getOwnPropSymbols(b4)) {
+      if (__propIsEnum.call(b4, prop))
+        __defNormalProp3(a5, prop, b4[prop]);
+    }
+  return a5;
+};
+var __spreadProps = (a5, b4) => __defProps(a5, __getOwnPropDescs(b4));
+var __decorateClass = (decorators, target, key, kind) => {
+  var result = kind > 1 ? void 0 : kind ? __getOwnPropDesc3(target, key) : target;
+  for (var i9 = decorators.length - 1, decorator; i9 >= 0; i9--)
+    if (decorator = decorators[i9])
+      result = (kind ? decorator(target, key, result) : decorator(result)) || result;
+  if (kind && result) __defProp3(target, key, result);
+  return result;
+};
+var __accessCheck3 = (obj, member, msg) => member.has(obj) || __typeError3("Cannot " + msg);
+var __privateGet3 = (obj, member, getter) => (__accessCheck3(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
+var __privateAdd3 = (obj, member, value) => member.has(obj) ? __typeError3("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+var __privateSet3 = (obj, member, value, setter) => (__accessCheck3(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
+var __await = function(promise2, isYieldStar) {
+  this[0] = promise2;
+  this[1] = isYieldStar;
+};
+var __yieldStar = (value) => {
+  var obj = value[__knownSymbol3("asyncIterator")], isAwait = false, method, it = {};
+  if (obj == null) {
+    obj = value[__knownSymbol3("iterator")]();
+    method = (k3) => it[k3] = (x4) => obj[k3](x4);
+  } else {
+    obj = obj.call(value);
+    method = (k3) => it[k3] = (v4) => {
+      if (isAwait) {
+        isAwait = false;
+        if (k3 === "throw") throw v4;
+        return v4;
+      }
+      isAwait = true;
+      return {
+        done: false,
+        value: new __await(new Promise((resolve) => {
+          var x4 = obj[k3](v4);
+          if (!(x4 instanceof Object)) __typeError3("Object expected");
+          resolve(x4);
+        }), 1)
+      };
+    };
+  }
+  return it[__knownSymbol3("iterator")] = () => it, method("next"), "throw" in obj ? method("throw") : it.throw = (x4) => {
+    throw x4;
+  }, "return" in obj && method("return"), it;
+};
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.EMG3ZSPT.js
+var _hasRecordedInitialProperties;
+var ShoelaceElement = class extends r7 {
+  constructor() {
+    super();
+    __privateAdd3(this, _hasRecordedInitialProperties, false);
+    this.initialReflectedProperties = /* @__PURE__ */ new Map();
+    Object.entries(this.constructor.dependencies).forEach(([name, component]) => {
+      this.constructor.define(name, component);
+    });
+  }
+  emit(name, options) {
+    const event = new CustomEvent(name, __spreadValues({
+      bubbles: true,
+      cancelable: false,
+      composed: true,
+      detail: {}
+    }, options));
+    this.dispatchEvent(event);
+    return event;
+  }
+  /* eslint-enable */
+  static define(name, elementConstructor = this, options = {}) {
+    const currentlyRegisteredConstructor = customElements.get(name);
+    if (!currentlyRegisteredConstructor) {
+      try {
+        customElements.define(name, elementConstructor, options);
+      } catch (_err) {
+        customElements.define(name, class extends elementConstructor {
+        }, options);
+      }
+      return;
+    }
+    let newVersion = " (unknown version)";
+    let existingVersion = newVersion;
+    if ("version" in elementConstructor && elementConstructor.version) {
+      newVersion = " v" + elementConstructor.version;
+    }
+    if ("version" in currentlyRegisteredConstructor && currentlyRegisteredConstructor.version) {
+      existingVersion = " v" + currentlyRegisteredConstructor.version;
+    }
+    if (newVersion && existingVersion && newVersion === existingVersion) {
+      return;
+    }
+    console.warn(
+      `Attempted to register <${name}>${newVersion}, but <${name}>${existingVersion} has already been registered.`
+    );
+  }
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (!__privateGet3(this, _hasRecordedInitialProperties)) {
+      this.constructor.elementProperties.forEach(
+        (obj, prop) => {
+          if (obj.reflect && this[prop] != null) {
+            this.initialReflectedProperties.set(prop, this[prop]);
+          }
+        }
+      );
+      __privateSet3(this, _hasRecordedInitialProperties, true);
+    }
+    super.attributeChangedCallback(name, oldValue, newValue);
+  }
+  willUpdate(changedProperties) {
+    super.willUpdate(changedProperties);
+    this.initialReflectedProperties.forEach((value, prop) => {
+      if (changedProperties.has(prop) && this[prop] == null) {
+        this[prop] = value;
+      }
+    });
+  }
+};
+_hasRecordedInitialProperties = /* @__PURE__ */ new WeakMap();
+ShoelaceElement.version = "2.19.1";
+ShoelaceElement.dependencies = {};
+__decorateClass([
+  n8()
+], ShoelaceElement.prototype, "dir", 2);
+__decorateClass([
+  n8()
+], ShoelaceElement.prototype, "lang", 2);
+
+// node_modules/lit-html/directive.js
+var t6 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
+var e8 = (t8) => (...e13) => ({ _$litDirective$: t8, values: e13 });
+var i6 = class {
+  constructor(t8) {
+  }
+  get _$AU() {
+    return this._$AM._$AU;
+  }
+  _$AT(t8, e13, i9) {
+    this._$Ct = t8, this._$AM = e13, this._$Ci = i9;
+  }
+  _$AS(t8, e13) {
+    return this.update(t8, e13);
+  }
+  update(t8, e13) {
+    return this.render(...e13);
+  }
+};
+
+// node_modules/lit-html/directives/class-map.js
+var e9 = e8(class extends i6 {
+  constructor(t8) {
+    if (super(t8), t8.type !== t6.ATTRIBUTE || "class" !== t8.name || t8.strings?.length > 2) throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.");
+  }
+  render(t8) {
+    return " " + Object.keys(t8).filter(((s4) => t8[s4])).join(" ") + " ";
+  }
+  update(s4, [i9]) {
+    if (void 0 === this.st) {
+      this.st = /* @__PURE__ */ new Set(), void 0 !== s4.strings && (this.nt = new Set(s4.strings.join(" ").split(/\s/).filter(((t8) => "" !== t8))));
+      for (const t8 in i9) i9[t8] && !this.nt?.has(t8) && this.st.add(t8);
+      return this.render(i9);
+    }
+    const r11 = s4.element.classList;
+    for (const t8 of this.st) t8 in i9 || (r11.remove(t8), this.st.delete(t8));
+    for (const t8 in i9) {
+      const s5 = !!i9[t8];
+      s5 === this.st.has(t8) || this.nt?.has(t8) || (s5 ? (r11.add(t8), this.st.add(t8)) : (r11.remove(t8), this.st.delete(t8)));
+    }
+    return T2;
+  }
+});
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.XUX6RZ47.js
+var SlBadge = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.variant = "primary";
+    this.pill = false;
+    this.pulse = false;
+  }
+  render() {
+    return x2`
+      <span
+        part="base"
+        class=${e9({
+      badge: true,
+      "badge--primary": this.variant === "primary",
+      "badge--success": this.variant === "success",
+      "badge--neutral": this.variant === "neutral",
+      "badge--warning": this.variant === "warning",
+      "badge--danger": this.variant === "danger",
+      "badge--pill": this.pill,
+      "badge--pulse": this.pulse
+    })}
+        role="status"
+      >
+        <slot></slot>
+      </span>
+    `;
+  }
+};
+SlBadge.styles = [component_styles_default, badge_styles_default];
+__decorateClass([
+  n8({ reflect: true })
+], SlBadge.prototype, "variant", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlBadge.prototype, "pill", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlBadge.prototype, "pulse", 2);
+
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.7DUCI5S4.js
 var spinner_styles_default = i`
   :host {
@@ -93094,173 +93437,6 @@ var en_default = translation;
 var LocalizeController2 = class extends LocalizeController {
 };
 registerTranslation(en_default);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.TUVJKY7S.js
-var component_styles_default = i`
-  :host {
-    box-sizing: border-box;
-  }
-
-  :host *,
-  :host *::before,
-  :host *::after {
-    box-sizing: inherit;
-  }
-
-  [hidden] {
-    display: none !important;
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.KAW7D32O.js
-var __defProp3 = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDesc3 = Object.getOwnPropertyDescriptor;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp2 = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __knownSymbol3 = (name, symbol2) => (symbol2 = Symbol[name]) ? symbol2 : Symbol.for("Symbol." + name);
-var __typeError3 = (msg) => {
-  throw TypeError(msg);
-};
-var __defNormalProp3 = (obj, key, value) => key in obj ? __defProp3(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a5, b4) => {
-  for (var prop in b4 || (b4 = {}))
-    if (__hasOwnProp2.call(b4, prop))
-      __defNormalProp3(a5, prop, b4[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b4)) {
-      if (__propIsEnum.call(b4, prop))
-        __defNormalProp3(a5, prop, b4[prop]);
-    }
-  return a5;
-};
-var __spreadProps = (a5, b4) => __defProps(a5, __getOwnPropDescs(b4));
-var __decorateClass = (decorators, target, key, kind) => {
-  var result = kind > 1 ? void 0 : kind ? __getOwnPropDesc3(target, key) : target;
-  for (var i9 = decorators.length - 1, decorator; i9 >= 0; i9--)
-    if (decorator = decorators[i9])
-      result = (kind ? decorator(target, key, result) : decorator(result)) || result;
-  if (kind && result) __defProp3(target, key, result);
-  return result;
-};
-var __accessCheck3 = (obj, member, msg) => member.has(obj) || __typeError3("Cannot " + msg);
-var __privateGet3 = (obj, member, getter) => (__accessCheck3(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
-var __privateAdd3 = (obj, member, value) => member.has(obj) ? __typeError3("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-var __privateSet3 = (obj, member, value, setter) => (__accessCheck3(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
-var __await = function(promise2, isYieldStar) {
-  this[0] = promise2;
-  this[1] = isYieldStar;
-};
-var __yieldStar = (value) => {
-  var obj = value[__knownSymbol3("asyncIterator")], isAwait = false, method, it = {};
-  if (obj == null) {
-    obj = value[__knownSymbol3("iterator")]();
-    method = (k3) => it[k3] = (x4) => obj[k3](x4);
-  } else {
-    obj = obj.call(value);
-    method = (k3) => it[k3] = (v4) => {
-      if (isAwait) {
-        isAwait = false;
-        if (k3 === "throw") throw v4;
-        return v4;
-      }
-      isAwait = true;
-      return {
-        done: false,
-        value: new __await(new Promise((resolve) => {
-          var x4 = obj[k3](v4);
-          if (!(x4 instanceof Object)) __typeError3("Object expected");
-          resolve(x4);
-        }), 1)
-      };
-    };
-  }
-  return it[__knownSymbol3("iterator")] = () => it, method("next"), "throw" in obj ? method("throw") : it.throw = (x4) => {
-    throw x4;
-  }, "return" in obj && method("return"), it;
-};
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.EMG3ZSPT.js
-var _hasRecordedInitialProperties;
-var ShoelaceElement = class extends r7 {
-  constructor() {
-    super();
-    __privateAdd3(this, _hasRecordedInitialProperties, false);
-    this.initialReflectedProperties = /* @__PURE__ */ new Map();
-    Object.entries(this.constructor.dependencies).forEach(([name, component]) => {
-      this.constructor.define(name, component);
-    });
-  }
-  emit(name, options) {
-    const event = new CustomEvent(name, __spreadValues({
-      bubbles: true,
-      cancelable: false,
-      composed: true,
-      detail: {}
-    }, options));
-    this.dispatchEvent(event);
-    return event;
-  }
-  /* eslint-enable */
-  static define(name, elementConstructor = this, options = {}) {
-    const currentlyRegisteredConstructor = customElements.get(name);
-    if (!currentlyRegisteredConstructor) {
-      try {
-        customElements.define(name, elementConstructor, options);
-      } catch (_err) {
-        customElements.define(name, class extends elementConstructor {
-        }, options);
-      }
-      return;
-    }
-    let newVersion = " (unknown version)";
-    let existingVersion = newVersion;
-    if ("version" in elementConstructor && elementConstructor.version) {
-      newVersion = " v" + elementConstructor.version;
-    }
-    if ("version" in currentlyRegisteredConstructor && currentlyRegisteredConstructor.version) {
-      existingVersion = " v" + currentlyRegisteredConstructor.version;
-    }
-    if (newVersion && existingVersion && newVersion === existingVersion) {
-      return;
-    }
-    console.warn(
-      `Attempted to register <${name}>${newVersion}, but <${name}>${existingVersion} has already been registered.`
-    );
-  }
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (!__privateGet3(this, _hasRecordedInitialProperties)) {
-      this.constructor.elementProperties.forEach(
-        (obj, prop) => {
-          if (obj.reflect && this[prop] != null) {
-            this.initialReflectedProperties.set(prop, this[prop]);
-          }
-        }
-      );
-      __privateSet3(this, _hasRecordedInitialProperties, true);
-    }
-    super.attributeChangedCallback(name, oldValue, newValue);
-  }
-  willUpdate(changedProperties) {
-    super.willUpdate(changedProperties);
-    this.initialReflectedProperties.forEach((value, prop) => {
-      if (changedProperties.has(prop) && this[prop] == null) {
-        this[prop] = value;
-      }
-    });
-  }
-};
-_hasRecordedInitialProperties = /* @__PURE__ */ new WeakMap();
-ShoelaceElement.version = "2.19.1";
-ShoelaceElement.dependencies = {};
-__decorateClass([
-  n8()
-], ShoelaceElement.prototype, "dir", 2);
-__decorateClass([
-  n8()
-], ShoelaceElement.prototype, "lang", 2);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.YB3JVLEN.js
 var SlSpinner = class extends ShoelaceElement {
@@ -94422,8 +94598,8 @@ function watch(propertyName, options) {
 }
 
 // node_modules/lit-html/directive-helpers.js
-var { I: t6 } = Z2;
-var e8 = (o12, t8) => void 0 === t8 ? void 0 !== o12?._$litType$ : o12?._$litType$ === t8;
+var { I: t7 } = Z2;
+var e10 = (o12, t8) => void 0 === t8 ? void 0 !== o12?._$litType$ : o12?._$litType$ === t8;
 var f6 = (o12) => void 0 === o12.strings;
 var u4 = {};
 var m3 = (o12, t8 = u4) => o12._$AH = t8;
@@ -94532,7 +94708,7 @@ var SlIcon = class extends ShoelaceElement {
     if (url2 !== this.getIconSource().url) {
       return;
     }
-    if (e8(svg)) {
+    if (e10(svg)) {
       this.svg = svg;
       if (library2) {
         await this.updateComplete;
@@ -94581,50 +94757,6 @@ __decorateClass([
 __decorateClass([
   watch(["name", "src", "library"])
 ], SlIcon.prototype, "setIcon", 1);
-
-// node_modules/lit-html/directive.js
-var t7 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
-var e9 = (t8) => (...e13) => ({ _$litDirective$: t8, values: e13 });
-var i6 = class {
-  constructor(t8) {
-  }
-  get _$AU() {
-    return this._$AM._$AU;
-  }
-  _$AT(t8, e13, i9) {
-    this._$Ct = t8, this._$AM = e13, this._$Ci = i9;
-  }
-  _$AS(t8, e13) {
-    return this.update(t8, e13);
-  }
-  update(t8, e13) {
-    return this.render(...e13);
-  }
-};
-
-// node_modules/lit-html/directives/class-map.js
-var e10 = e9(class extends i6 {
-  constructor(t8) {
-    if (super(t8), t8.type !== t7.ATTRIBUTE || "class" !== t8.name || t8.strings?.length > 2) throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.");
-  }
-  render(t8) {
-    return " " + Object.keys(t8).filter(((s4) => t8[s4])).join(" ") + " ";
-  }
-  update(s4, [i9]) {
-    if (void 0 === this.st) {
-      this.st = /* @__PURE__ */ new Set(), void 0 !== s4.strings && (this.nt = new Set(s4.strings.join(" ").split(/\s/).filter(((t8) => "" !== t8))));
-      for (const t8 in i9) i9[t8] && !this.nt?.has(t8) && this.st.add(t8);
-      return this.render(i9);
-    }
-    const r11 = s4.element.classList;
-    for (const t8 of this.st) t8 in i9 || (r11.remove(t8), this.st.delete(t8));
-    for (const t8 in i9) {
-      const s5 = !!i9[t8];
-      s5 === this.st.has(t8) || this.nt?.has(t8) || (s5 ? (r11.add(t8), this.st.add(t8)) : (r11.remove(t8), this.st.delete(t8)));
-    }
-    return T2;
-  }
-});
 
 // node_modules/lit-html/static.js
 var a4 = Symbol.for("");
@@ -94778,7 +94910,7 @@ var SlButton = class extends ShoelaceElement {
     return u5`
       <${tag}
         part="base"
-        class=${e10({
+        class=${e9({
       button: true,
       "button--default": this.variant === "default",
       "button--primary": this.variant === "primary",
@@ -95197,7 +95329,7 @@ var SlDetails = class extends ShoelaceElement {
     return x2`
       <details
         part="base"
-        class=${e10({
+        class=${e9({
       details: true,
       "details--open": this.open,
       "details--disabled": this.disabled,
@@ -95277,6 +95409,843 @@ setDefaultAnimation("details.hide", {
   ],
   options: { duration: 250, easing: "linear" }
 });
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.GGT72J62.js
+var input_styles_default = i`
+  :host {
+    display: block;
+  }
+
+  .input {
+    flex: 1 1 auto;
+    display: inline-flex;
+    align-items: stretch;
+    justify-content: start;
+    position: relative;
+    width: 100%;
+    font-family: var(--sl-input-font-family);
+    font-weight: var(--sl-input-font-weight);
+    letter-spacing: var(--sl-input-letter-spacing);
+    vertical-align: middle;
+    overflow: hidden;
+    cursor: text;
+    transition:
+      var(--sl-transition-fast) color,
+      var(--sl-transition-fast) border,
+      var(--sl-transition-fast) box-shadow,
+      var(--sl-transition-fast) background-color;
+  }
+
+  /* Standard inputs */
+  .input--standard {
+    background-color: var(--sl-input-background-color);
+    border: solid var(--sl-input-border-width) var(--sl-input-border-color);
+  }
+
+  .input--standard:hover:not(.input--disabled) {
+    background-color: var(--sl-input-background-color-hover);
+    border-color: var(--sl-input-border-color-hover);
+  }
+
+  .input--standard.input--focused:not(.input--disabled) {
+    background-color: var(--sl-input-background-color-focus);
+    border-color: var(--sl-input-border-color-focus);
+    box-shadow: 0 0 0 var(--sl-focus-ring-width) var(--sl-input-focus-ring-color);
+  }
+
+  .input--standard.input--focused:not(.input--disabled) .input__control {
+    color: var(--sl-input-color-focus);
+  }
+
+  .input--standard.input--disabled {
+    background-color: var(--sl-input-background-color-disabled);
+    border-color: var(--sl-input-border-color-disabled);
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .input--standard.input--disabled .input__control {
+    color: var(--sl-input-color-disabled);
+  }
+
+  .input--standard.input--disabled .input__control::placeholder {
+    color: var(--sl-input-placeholder-color-disabled);
+  }
+
+  /* Filled inputs */
+  .input--filled {
+    border: none;
+    background-color: var(--sl-input-filled-background-color);
+    color: var(--sl-input-color);
+  }
+
+  .input--filled:hover:not(.input--disabled) {
+    background-color: var(--sl-input-filled-background-color-hover);
+  }
+
+  .input--filled.input--focused:not(.input--disabled) {
+    background-color: var(--sl-input-filled-background-color-focus);
+    outline: var(--sl-focus-ring);
+    outline-offset: var(--sl-focus-ring-offset);
+  }
+
+  .input--filled.input--disabled {
+    background-color: var(--sl-input-filled-background-color-disabled);
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .input__control {
+    flex: 1 1 auto;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    min-width: 0;
+    height: 100%;
+    color: var(--sl-input-color);
+    border: none;
+    background: inherit;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    cursor: inherit;
+    -webkit-appearance: none;
+  }
+
+  .input__control::-webkit-search-decoration,
+  .input__control::-webkit-search-cancel-button,
+  .input__control::-webkit-search-results-button,
+  .input__control::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+  }
+
+  .input__control:-webkit-autofill,
+  .input__control:-webkit-autofill:hover,
+  .input__control:-webkit-autofill:focus,
+  .input__control:-webkit-autofill:active {
+    box-shadow: 0 0 0 var(--sl-input-height-large) var(--sl-input-background-color-hover) inset !important;
+    -webkit-text-fill-color: var(--sl-color-primary-500);
+    caret-color: var(--sl-input-color);
+  }
+
+  .input--filled .input__control:-webkit-autofill,
+  .input--filled .input__control:-webkit-autofill:hover,
+  .input--filled .input__control:-webkit-autofill:focus,
+  .input--filled .input__control:-webkit-autofill:active {
+    box-shadow: 0 0 0 var(--sl-input-height-large) var(--sl-input-filled-background-color) inset !important;
+  }
+
+  .input__control::placeholder {
+    color: var(--sl-input-placeholder-color);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .input:hover:not(.input--disabled) .input__control {
+    color: var(--sl-input-color-hover);
+  }
+
+  .input__control:focus {
+    outline: none;
+  }
+
+  .input__prefix,
+  .input__suffix {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    cursor: default;
+  }
+
+  .input__prefix ::slotted(sl-icon),
+  .input__suffix ::slotted(sl-icon) {
+    color: var(--sl-input-icon-color);
+  }
+
+  /*
+   * Size modifiers
+   */
+
+  .input--small {
+    border-radius: var(--sl-input-border-radius-small);
+    font-size: var(--sl-input-font-size-small);
+    height: var(--sl-input-height-small);
+  }
+
+  .input--small .input__control {
+    height: calc(var(--sl-input-height-small) - var(--sl-input-border-width) * 2);
+    padding: 0 var(--sl-input-spacing-small);
+  }
+
+  .input--small .input__clear,
+  .input--small .input__password-toggle {
+    width: calc(1em + var(--sl-input-spacing-small) * 2);
+  }
+
+  .input--small .input__prefix ::slotted(*) {
+    margin-inline-start: var(--sl-input-spacing-small);
+  }
+
+  .input--small .input__suffix ::slotted(*) {
+    margin-inline-end: var(--sl-input-spacing-small);
+  }
+
+  .input--medium {
+    border-radius: var(--sl-input-border-radius-medium);
+    font-size: var(--sl-input-font-size-medium);
+    height: var(--sl-input-height-medium);
+  }
+
+  .input--medium .input__control {
+    height: calc(var(--sl-input-height-medium) - var(--sl-input-border-width) * 2);
+    padding: 0 var(--sl-input-spacing-medium);
+  }
+
+  .input--medium .input__clear,
+  .input--medium .input__password-toggle {
+    width: calc(1em + var(--sl-input-spacing-medium) * 2);
+  }
+
+  .input--medium .input__prefix ::slotted(*) {
+    margin-inline-start: var(--sl-input-spacing-medium);
+  }
+
+  .input--medium .input__suffix ::slotted(*) {
+    margin-inline-end: var(--sl-input-spacing-medium);
+  }
+
+  .input--large {
+    border-radius: var(--sl-input-border-radius-large);
+    font-size: var(--sl-input-font-size-large);
+    height: var(--sl-input-height-large);
+  }
+
+  .input--large .input__control {
+    height: calc(var(--sl-input-height-large) - var(--sl-input-border-width) * 2);
+    padding: 0 var(--sl-input-spacing-large);
+  }
+
+  .input--large .input__clear,
+  .input--large .input__password-toggle {
+    width: calc(1em + var(--sl-input-spacing-large) * 2);
+  }
+
+  .input--large .input__prefix ::slotted(*) {
+    margin-inline-start: var(--sl-input-spacing-large);
+  }
+
+  .input--large .input__suffix ::slotted(*) {
+    margin-inline-end: var(--sl-input-spacing-large);
+  }
+
+  /*
+   * Pill modifier
+   */
+
+  .input--pill.input--small {
+    border-radius: var(--sl-input-height-small);
+  }
+
+  .input--pill.input--medium {
+    border-radius: var(--sl-input-height-medium);
+  }
+
+  .input--pill.input--large {
+    border-radius: var(--sl-input-height-large);
+  }
+
+  /*
+   * Clearable + Password Toggle
+   */
+
+  .input__clear,
+  .input__password-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: inherit;
+    color: var(--sl-input-icon-color);
+    border: none;
+    background: none;
+    padding: 0;
+    transition: var(--sl-transition-fast) color;
+    cursor: pointer;
+  }
+
+  .input__clear:hover,
+  .input__password-toggle:hover {
+    color: var(--sl-input-icon-color-hover);
+  }
+
+  .input__clear:focus,
+  .input__password-toggle:focus {
+    outline: none;
+  }
+
+  /* Don't show the browser's password toggle in Edge */
+  ::-ms-reveal {
+    display: none;
+  }
+
+  /* Hide the built-in number spinner */
+  .input--no-spin-buttons input[type='number']::-webkit-outer-spin-button,
+  .input--no-spin-buttons input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    display: none;
+  }
+
+  .input--no-spin-buttons input[type='number'] {
+    -moz-appearance: textfield;
+  }
+`;
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.GI7VDIWX.js
+var defaultValue = (propertyName = "value") => (proto, key) => {
+  const ctor = proto.constructor;
+  const attributeChangedCallback = ctor.prototype.attributeChangedCallback;
+  ctor.prototype.attributeChangedCallback = function(name, old, value) {
+    var _a4;
+    const options = ctor.getPropertyOptions(propertyName);
+    const attributeName = typeof options.attribute === "string" ? options.attribute : propertyName;
+    if (name === attributeName) {
+      const converter = options.converter || u2;
+      const fromAttribute = typeof converter === "function" ? converter : (_a4 = converter == null ? void 0 : converter.fromAttribute) != null ? _a4 : u2.fromAttribute;
+      const newValue = fromAttribute(value, options.type);
+      if (this[propertyName] !== newValue) {
+        this[key] = newValue;
+      }
+    }
+    attributeChangedCallback.call(this, name, old, value);
+  };
+};
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.SI4ACBFK.js
+var form_control_styles_default = i`
+  .form-control .form-control__label {
+    display: none;
+  }
+
+  .form-control .form-control__help-text {
+    display: none;
+  }
+
+  /* Label */
+  .form-control--has-label .form-control__label {
+    display: inline-block;
+    color: var(--sl-input-label-color);
+    margin-bottom: var(--sl-spacing-3x-small);
+  }
+
+  .form-control--has-label.form-control--small .form-control__label {
+    font-size: var(--sl-input-label-font-size-small);
+  }
+
+  .form-control--has-label.form-control--medium .form-control__label {
+    font-size: var(--sl-input-label-font-size-medium);
+  }
+
+  .form-control--has-label.form-control--large .form-control__label {
+    font-size: var(--sl-input-label-font-size-large);
+  }
+
+  :host([required]) .form-control--has-label .form-control__label::after {
+    content: var(--sl-input-required-content);
+    margin-inline-start: var(--sl-input-required-content-offset);
+    color: var(--sl-input-required-content-color);
+  }
+
+  /* Help text */
+  .form-control--has-help-text .form-control__help-text {
+    display: block;
+    color: var(--sl-input-help-text-color);
+    margin-top: var(--sl-spacing-3x-small);
+  }
+
+  .form-control--has-help-text.form-control--small .form-control__help-text {
+    font-size: var(--sl-input-help-text-font-size-small);
+  }
+
+  .form-control--has-help-text.form-control--medium .form-control__help-text {
+    font-size: var(--sl-input-help-text-font-size-medium);
+  }
+
+  .form-control--has-help-text.form-control--large .form-control__help-text {
+    font-size: var(--sl-input-help-text-font-size-large);
+  }
+
+  .form-control--has-help-text.form-control--radio-group .form-control__help-text {
+    margin-top: var(--sl-spacing-2x-small);
+  }
+`;
+
+// node_modules/lit-html/directives/live.js
+var l5 = e8(class extends i6 {
+  constructor(r11) {
+    if (super(r11), r11.type !== t6.PROPERTY && r11.type !== t6.ATTRIBUTE && r11.type !== t6.BOOLEAN_ATTRIBUTE) throw Error("The `live` directive is not allowed on child or event bindings");
+    if (!f6(r11)) throw Error("`live` bindings can only contain a single expression");
+  }
+  render(r11) {
+    return r11;
+  }
+  update(i9, [t8]) {
+    if (t8 === T2 || t8 === E2) return t8;
+    const o12 = i9.element, l6 = i9.name;
+    if (i9.type === t6.PROPERTY) {
+      if (t8 === o12[l6]) return T2;
+    } else if (i9.type === t6.BOOLEAN_ATTRIBUTE) {
+      if (!!t8 === o12.hasAttribute(l6)) return T2;
+    } else if (i9.type === t6.ATTRIBUTE && o12.getAttribute(l6) === t8 + "") return T2;
+    return m3(i9), t8;
+  }
+});
+
+// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.22JN5JYK.js
+var SlInput = class extends ShoelaceElement {
+  constructor() {
+    super(...arguments);
+    this.formControlController = new FormControlController(this, {
+      assumeInteractionOn: ["sl-blur", "sl-input"]
+    });
+    this.hasSlotController = new HasSlotController(this, "help-text", "label");
+    this.localize = new LocalizeController2(this);
+    this.hasFocus = false;
+    this.title = "";
+    this.__numberInput = Object.assign(document.createElement("input"), { type: "number" });
+    this.__dateInput = Object.assign(document.createElement("input"), { type: "date" });
+    this.type = "text";
+    this.name = "";
+    this.value = "";
+    this.defaultValue = "";
+    this.size = "medium";
+    this.filled = false;
+    this.pill = false;
+    this.label = "";
+    this.helpText = "";
+    this.clearable = false;
+    this.disabled = false;
+    this.placeholder = "";
+    this.readonly = false;
+    this.passwordToggle = false;
+    this.passwordVisible = false;
+    this.noSpinButtons = false;
+    this.form = "";
+    this.required = false;
+    this.spellcheck = true;
+  }
+  //
+  // NOTE: We use an in-memory input for these getters/setters instead of the one in the template because the properties
+  // can be set before the component is rendered.
+  //
+  /**
+   * Gets or sets the current value as a `Date` object. Returns `null` if the value can't be converted. This will use the native `<input type="{{type}}">` implementation and may result in an error.
+   */
+  get valueAsDate() {
+    var _a4;
+    this.__dateInput.type = this.type;
+    this.__dateInput.value = this.value;
+    return ((_a4 = this.input) == null ? void 0 : _a4.valueAsDate) || this.__dateInput.valueAsDate;
+  }
+  set valueAsDate(newValue) {
+    this.__dateInput.type = this.type;
+    this.__dateInput.valueAsDate = newValue;
+    this.value = this.__dateInput.value;
+  }
+  /** Gets or sets the current value as a number. Returns `NaN` if the value can't be converted. */
+  get valueAsNumber() {
+    var _a4;
+    this.__numberInput.value = this.value;
+    return ((_a4 = this.input) == null ? void 0 : _a4.valueAsNumber) || this.__numberInput.valueAsNumber;
+  }
+  set valueAsNumber(newValue) {
+    this.__numberInput.valueAsNumber = newValue;
+    this.value = this.__numberInput.value;
+  }
+  /** Gets the validity state object */
+  get validity() {
+    return this.input.validity;
+  }
+  /** Gets the validation message */
+  get validationMessage() {
+    return this.input.validationMessage;
+  }
+  firstUpdated() {
+    this.formControlController.updateValidity();
+  }
+  handleBlur() {
+    this.hasFocus = false;
+    this.emit("sl-blur");
+  }
+  handleChange() {
+    this.value = this.input.value;
+    this.emit("sl-change");
+  }
+  handleClearClick(event) {
+    event.preventDefault();
+    if (this.value !== "") {
+      this.value = "";
+      this.emit("sl-clear");
+      this.emit("sl-input");
+      this.emit("sl-change");
+    }
+    this.input.focus();
+  }
+  handleFocus() {
+    this.hasFocus = true;
+    this.emit("sl-focus");
+  }
+  handleInput() {
+    this.value = this.input.value;
+    this.formControlController.updateValidity();
+    this.emit("sl-input");
+  }
+  handleInvalid(event) {
+    this.formControlController.setValidity(false);
+    this.formControlController.emitInvalidEvent(event);
+  }
+  handleKeyDown(event) {
+    const hasModifier = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+    if (event.key === "Enter" && !hasModifier) {
+      setTimeout(() => {
+        if (!event.defaultPrevented && !event.isComposing) {
+          this.formControlController.submit();
+        }
+      });
+    }
+  }
+  handlePasswordToggle() {
+    this.passwordVisible = !this.passwordVisible;
+  }
+  handleDisabledChange() {
+    this.formControlController.setValidity(this.disabled);
+  }
+  handleStepChange() {
+    this.input.step = String(this.step);
+    this.formControlController.updateValidity();
+  }
+  async handleValueChange() {
+    await this.updateComplete;
+    this.formControlController.updateValidity();
+  }
+  /** Sets focus on the input. */
+  focus(options) {
+    this.input.focus(options);
+  }
+  /** Removes focus from the input. */
+  blur() {
+    this.input.blur();
+  }
+  /** Selects all the text in the input. */
+  select() {
+    this.input.select();
+  }
+  /** Sets the start and end positions of the text selection (0-based). */
+  setSelectionRange(selectionStart, selectionEnd, selectionDirection = "none") {
+    this.input.setSelectionRange(selectionStart, selectionEnd, selectionDirection);
+  }
+  /** Replaces a range of text with a new string. */
+  setRangeText(replacement, start, end, selectMode = "preserve") {
+    const selectionStart = start != null ? start : this.input.selectionStart;
+    const selectionEnd = end != null ? end : this.input.selectionEnd;
+    this.input.setRangeText(replacement, selectionStart, selectionEnd, selectMode);
+    if (this.value !== this.input.value) {
+      this.value = this.input.value;
+    }
+  }
+  /** Displays the browser picker for an input element (only works if the browser supports it for the input type). */
+  showPicker() {
+    if ("showPicker" in HTMLInputElement.prototype) {
+      this.input.showPicker();
+    }
+  }
+  /** Increments the value of a numeric input type by the value of the step attribute. */
+  stepUp() {
+    this.input.stepUp();
+    if (this.value !== this.input.value) {
+      this.value = this.input.value;
+    }
+  }
+  /** Decrements the value of a numeric input type by the value of the step attribute. */
+  stepDown() {
+    this.input.stepDown();
+    if (this.value !== this.input.value) {
+      this.value = this.input.value;
+    }
+  }
+  /** Checks for validity but does not show a validation message. Returns `true` when valid and `false` when invalid. */
+  checkValidity() {
+    return this.input.checkValidity();
+  }
+  /** Gets the associated form, if one exists. */
+  getForm() {
+    return this.formControlController.getForm();
+  }
+  /** Checks for validity and shows the browser's validation message if the control is invalid. */
+  reportValidity() {
+    return this.input.reportValidity();
+  }
+  /** Sets a custom validation message. Pass an empty string to restore validity. */
+  setCustomValidity(message) {
+    this.input.setCustomValidity(message);
+    this.formControlController.updateValidity();
+  }
+  render() {
+    const hasLabelSlot = this.hasSlotController.test("label");
+    const hasHelpTextSlot = this.hasSlotController.test("help-text");
+    const hasLabel = this.label ? true : !!hasLabelSlot;
+    const hasHelpText = this.helpText ? true : !!hasHelpTextSlot;
+    const hasClearIcon = this.clearable && !this.disabled && !this.readonly;
+    const isClearIconVisible = hasClearIcon && (typeof this.value === "number" || this.value.length > 0);
+    return x2`
+      <div
+        part="form-control"
+        class=${e9({
+      "form-control": true,
+      "form-control--small": this.size === "small",
+      "form-control--medium": this.size === "medium",
+      "form-control--large": this.size === "large",
+      "form-control--has-label": hasLabel,
+      "form-control--has-help-text": hasHelpText
+    })}
+      >
+        <label
+          part="form-control-label"
+          class="form-control__label"
+          for="input"
+          aria-hidden=${hasLabel ? "false" : "true"}
+        >
+          <slot name="label">${this.label}</slot>
+        </label>
+
+        <div part="form-control-input" class="form-control-input">
+          <div
+            part="base"
+            class=${e9({
+      input: true,
+      // Sizes
+      "input--small": this.size === "small",
+      "input--medium": this.size === "medium",
+      "input--large": this.size === "large",
+      // States
+      "input--pill": this.pill,
+      "input--standard": !this.filled,
+      "input--filled": this.filled,
+      "input--disabled": this.disabled,
+      "input--focused": this.hasFocus,
+      "input--empty": !this.value,
+      "input--no-spin-buttons": this.noSpinButtons
+    })}
+          >
+            <span part="prefix" class="input__prefix">
+              <slot name="prefix"></slot>
+            </span>
+
+            <input
+              part="input"
+              id="input"
+              class="input__control"
+              type=${this.type === "password" && this.passwordVisible ? "text" : this.type}
+              title=${this.title}
+              name=${o9(this.name)}
+              ?disabled=${this.disabled}
+              ?readonly=${this.readonly}
+              ?required=${this.required}
+              placeholder=${o9(this.placeholder)}
+              minlength=${o9(this.minlength)}
+              maxlength=${o9(this.maxlength)}
+              min=${o9(this.min)}
+              max=${o9(this.max)}
+              step=${o9(this.step)}
+              .value=${l5(this.value)}
+              autocapitalize=${o9(this.autocapitalize)}
+              autocomplete=${o9(this.autocomplete)}
+              autocorrect=${o9(this.autocorrect)}
+              ?autofocus=${this.autofocus}
+              spellcheck=${this.spellcheck}
+              pattern=${o9(this.pattern)}
+              enterkeyhint=${o9(this.enterkeyhint)}
+              inputmode=${o9(this.inputmode)}
+              aria-describedby="help-text"
+              @change=${this.handleChange}
+              @input=${this.handleInput}
+              @invalid=${this.handleInvalid}
+              @keydown=${this.handleKeyDown}
+              @focus=${this.handleFocus}
+              @blur=${this.handleBlur}
+            />
+
+            ${isClearIconVisible ? x2`
+                  <button
+                    part="clear-button"
+                    class="input__clear"
+                    type="button"
+                    aria-label=${this.localize.term("clearEntry")}
+                    @click=${this.handleClearClick}
+                    tabindex="-1"
+                  >
+                    <slot name="clear-icon">
+                      <sl-icon name="x-circle-fill" library="system"></sl-icon>
+                    </slot>
+                  </button>
+                ` : ""}
+            ${this.passwordToggle && !this.disabled ? x2`
+                  <button
+                    part="password-toggle-button"
+                    class="input__password-toggle"
+                    type="button"
+                    aria-label=${this.localize.term(this.passwordVisible ? "hidePassword" : "showPassword")}
+                    @click=${this.handlePasswordToggle}
+                    tabindex="-1"
+                  >
+                    ${this.passwordVisible ? x2`
+                          <slot name="show-password-icon">
+                            <sl-icon name="eye-slash" library="system"></sl-icon>
+                          </slot>
+                        ` : x2`
+                          <slot name="hide-password-icon">
+                            <sl-icon name="eye" library="system"></sl-icon>
+                          </slot>
+                        `}
+                  </button>
+                ` : ""}
+
+            <span part="suffix" class="input__suffix">
+              <slot name="suffix"></slot>
+            </span>
+          </div>
+        </div>
+
+        <div
+          part="form-control-help-text"
+          id="help-text"
+          class="form-control__help-text"
+          aria-hidden=${hasHelpText ? "false" : "true"}
+        >
+          <slot name="help-text">${this.helpText}</slot>
+        </div>
+      </div>
+    `;
+  }
+};
+SlInput.styles = [component_styles_default, form_control_styles_default, input_styles_default];
+SlInput.dependencies = { "sl-icon": SlIcon };
+__decorateClass([
+  e7(".input__control")
+], SlInput.prototype, "input", 2);
+__decorateClass([
+  r9()
+], SlInput.prototype, "hasFocus", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "title", 2);
+__decorateClass([
+  n8({ reflect: true })
+], SlInput.prototype, "type", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "name", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "value", 2);
+__decorateClass([
+  defaultValue()
+], SlInput.prototype, "defaultValue", 2);
+__decorateClass([
+  n8({ reflect: true })
+], SlInput.prototype, "size", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlInput.prototype, "filled", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlInput.prototype, "pill", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "label", 2);
+__decorateClass([
+  n8({ attribute: "help-text" })
+], SlInput.prototype, "helpText", 2);
+__decorateClass([
+  n8({ type: Boolean })
+], SlInput.prototype, "clearable", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlInput.prototype, "disabled", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "placeholder", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlInput.prototype, "readonly", 2);
+__decorateClass([
+  n8({ attribute: "password-toggle", type: Boolean })
+], SlInput.prototype, "passwordToggle", 2);
+__decorateClass([
+  n8({ attribute: "password-visible", type: Boolean })
+], SlInput.prototype, "passwordVisible", 2);
+__decorateClass([
+  n8({ attribute: "no-spin-buttons", type: Boolean })
+], SlInput.prototype, "noSpinButtons", 2);
+__decorateClass([
+  n8({ reflect: true })
+], SlInput.prototype, "form", 2);
+__decorateClass([
+  n8({ type: Boolean, reflect: true })
+], SlInput.prototype, "required", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "pattern", 2);
+__decorateClass([
+  n8({ type: Number })
+], SlInput.prototype, "minlength", 2);
+__decorateClass([
+  n8({ type: Number })
+], SlInput.prototype, "maxlength", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "min", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "max", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "step", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "autocapitalize", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "autocorrect", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "autocomplete", 2);
+__decorateClass([
+  n8({ type: Boolean })
+], SlInput.prototype, "autofocus", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "enterkeyhint", 2);
+__decorateClass([
+  n8({
+    type: Boolean,
+    converter: {
+      // Allow "true|false" attribute values but keep the property boolean
+      fromAttribute: (value) => !value || value === "false" ? false : true,
+      toAttribute: (value) => value ? "true" : "false"
+    }
+  })
+], SlInput.prototype, "spellcheck", 2);
+__decorateClass([
+  n8()
+], SlInput.prototype, "inputmode", 2);
+__decorateClass([
+  watch("disabled", { waitUntilFirstUpdate: true })
+], SlInput.prototype, "handleDisabledChange", 1);
+__decorateClass([
+  watch("step", { waitUntilFirstUpdate: true })
+], SlInput.prototype, "handleStepChange", 1);
+__decorateClass([
+  watch("value", { waitUntilFirstUpdate: true })
+], SlInput.prototype, "handleValueChange", 1);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.3KSWVBQ5.js
 var popup_styles_default = i`
@@ -97094,7 +98063,7 @@ var SlPopup = class extends ShoelaceElement {
 
       <span
         part="hover-bridge"
-        class=${e10({
+        class=${e9({
       "popup-hover-bridge": true,
       "popup-hover-bridge--visible": this.hoverBridge && this.active
     })}
@@ -97102,7 +98071,7 @@ var SlPopup = class extends ShoelaceElement {
 
       <div
         part="popup"
-        class=${e10({
+        class=${e9({
       popup: true,
       "popup--active": this.active,
       "popup--fixed": this.strategy === "fixed",
@@ -97405,7 +98374,7 @@ var SlIconButton = class extends ShoelaceElement {
     return u5`
       <${tag}
         part="base"
-        class=${e10({
+        class=${e9({
       "icon-button": true,
       "icon-button--disabled": !isLink && this.disabled,
       "icon-button--focused": this.hasFocus
@@ -97485,7 +98454,7 @@ var SlTag = class extends ShoelaceElement {
     return x2`
       <span
         part="base"
-        class=${e10({
+        class=${e9({
       tag: true,
       // Types
       "tag--primary": this.variant === "primary",
@@ -97535,138 +98504,6 @@ __decorateClass([
 __decorateClass([
   n8({ type: Boolean })
 ], SlTag.prototype, "removable", 2);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.WQC6OWUE.js
-var badge_styles_default = i`
-  :host {
-    display: inline-flex;
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: max(12px, 0.75em);
-    font-weight: var(--sl-font-weight-semibold);
-    letter-spacing: var(--sl-letter-spacing-normal);
-    line-height: 1;
-    border-radius: var(--sl-border-radius-small);
-    border: solid 1px var(--sl-color-neutral-0);
-    white-space: nowrap;
-    padding: 0.35em 0.6em;
-    user-select: none;
-    -webkit-user-select: none;
-    cursor: inherit;
-  }
-
-  /* Variant modifiers */
-  .badge--primary {
-    background-color: var(--sl-color-primary-600);
-    color: var(--sl-color-neutral-0);
-  }
-
-  .badge--success {
-    background-color: var(--sl-color-success-600);
-    color: var(--sl-color-neutral-0);
-  }
-
-  .badge--neutral {
-    background-color: var(--sl-color-neutral-600);
-    color: var(--sl-color-neutral-0);
-  }
-
-  .badge--warning {
-    background-color: var(--sl-color-warning-600);
-    color: var(--sl-color-neutral-0);
-  }
-
-  .badge--danger {
-    background-color: var(--sl-color-danger-600);
-    color: var(--sl-color-neutral-0);
-  }
-
-  /* Pill modifier */
-  .badge--pill {
-    border-radius: var(--sl-border-radius-pill);
-  }
-
-  /* Pulse modifier */
-  .badge--pulse {
-    animation: pulse 1.5s infinite;
-  }
-
-  .badge--pulse.badge--primary {
-    --pulse-color: var(--sl-color-primary-600);
-  }
-
-  .badge--pulse.badge--success {
-    --pulse-color: var(--sl-color-success-600);
-  }
-
-  .badge--pulse.badge--neutral {
-    --pulse-color: var(--sl-color-neutral-600);
-  }
-
-  .badge--pulse.badge--warning {
-    --pulse-color: var(--sl-color-warning-600);
-  }
-
-  .badge--pulse.badge--danger {
-    --pulse-color: var(--sl-color-danger-600);
-  }
-
-  @keyframes pulse {
-    0% {
-      box-shadow: 0 0 0 0 var(--pulse-color);
-    }
-    70% {
-      box-shadow: 0 0 0 0.5rem transparent;
-    }
-    100% {
-      box-shadow: 0 0 0 0 transparent;
-    }
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.XUX6RZ47.js
-var SlBadge = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.variant = "primary";
-    this.pill = false;
-    this.pulse = false;
-  }
-  render() {
-    return x2`
-      <span
-        part="base"
-        class=${e10({
-      badge: true,
-      "badge--primary": this.variant === "primary",
-      "badge--success": this.variant === "success",
-      "badge--neutral": this.variant === "neutral",
-      "badge--warning": this.variant === "warning",
-      "badge--danger": this.variant === "danger",
-      "badge--pill": this.pill,
-      "badge--pulse": this.pulse
-    })}
-        role="status"
-      >
-        <slot></slot>
-      </span>
-    `;
-  }
-};
-SlBadge.styles = [component_styles_default, badge_styles_default];
-__decorateClass([
-  n8({ reflect: true })
-], SlBadge.prototype, "variant", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlBadge.prototype, "pill", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlBadge.prototype, "pulse", 2);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.A5D6FTFY.js
 var card_styles_default = i`
@@ -97746,7 +98583,7 @@ var SlCard = class extends ShoelaceElement {
     return x2`
       <div
         part="base"
-        class=${e10({
+        class=${e9({
       card: true,
       "card--has-footer": this.hasSlotController.test("footer"),
       "card--has-image": this.hasSlotController.test("image"),
@@ -98357,7 +99194,7 @@ var SlCarousel = class extends ShoelaceElement {
         <div
           id="scroll-container"
           part="scroll-container"
-          class="${e10({
+          class="${e9({
       carousel__slides: true,
       "carousel__slides--horizontal": this.orientation === "horizontal",
       "carousel__slides--vertical": this.orientation === "vertical",
@@ -98380,7 +99217,7 @@ var SlCarousel = class extends ShoelaceElement {
               <div part="navigation" class="carousel__navigation">
                 <button
                   part="navigation-button navigation-button--previous"
-                  class="${e10({
+                  class="${e9({
       "carousel__navigation-button": true,
       "carousel__navigation-button--previous": true,
       "carousel__navigation-button--disabled": !prevEnabled
@@ -98397,7 +99234,7 @@ var SlCarousel = class extends ShoelaceElement {
 
                 <button
                   part="navigation-button navigation-button--next"
-                  class=${e10({
+                  class=${e9({
       "carousel__navigation-button": true,
       "carousel__navigation-button--next": true,
       "carousel__navigation-button--disabled": !nextEnabled
@@ -98420,7 +99257,7 @@ var SlCarousel = class extends ShoelaceElement {
       return x2`
                     <button
                       part="pagination-item ${isActive ? "pagination-item--active" : ""}"
-                      class="${e10({
+                      class="${e9({
         "carousel__pagination-item": true,
         "carousel__pagination-item--active": isActive
       })}"
@@ -99124,7 +99961,7 @@ var SlDialog = class extends ShoelaceElement {
     return x2`
       <div
         part="base"
-        class=${e10({
+        class=${e9({
       dialog: true,
       "dialog--open": this.open,
       "dialog--has-footer": this.hasSlotController.test("footer")
@@ -99267,843 +100104,6 @@ __decorateClass([
 __decorateClass([
   watch("vertical")
 ], SlDivider.prototype, "handleVerticalChange", 1);
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.GGT72J62.js
-var input_styles_default = i`
-  :host {
-    display: block;
-  }
-
-  .input {
-    flex: 1 1 auto;
-    display: inline-flex;
-    align-items: stretch;
-    justify-content: start;
-    position: relative;
-    width: 100%;
-    font-family: var(--sl-input-font-family);
-    font-weight: var(--sl-input-font-weight);
-    letter-spacing: var(--sl-input-letter-spacing);
-    vertical-align: middle;
-    overflow: hidden;
-    cursor: text;
-    transition:
-      var(--sl-transition-fast) color,
-      var(--sl-transition-fast) border,
-      var(--sl-transition-fast) box-shadow,
-      var(--sl-transition-fast) background-color;
-  }
-
-  /* Standard inputs */
-  .input--standard {
-    background-color: var(--sl-input-background-color);
-    border: solid var(--sl-input-border-width) var(--sl-input-border-color);
-  }
-
-  .input--standard:hover:not(.input--disabled) {
-    background-color: var(--sl-input-background-color-hover);
-    border-color: var(--sl-input-border-color-hover);
-  }
-
-  .input--standard.input--focused:not(.input--disabled) {
-    background-color: var(--sl-input-background-color-focus);
-    border-color: var(--sl-input-border-color-focus);
-    box-shadow: 0 0 0 var(--sl-focus-ring-width) var(--sl-input-focus-ring-color);
-  }
-
-  .input--standard.input--focused:not(.input--disabled) .input__control {
-    color: var(--sl-input-color-focus);
-  }
-
-  .input--standard.input--disabled {
-    background-color: var(--sl-input-background-color-disabled);
-    border-color: var(--sl-input-border-color-disabled);
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .input--standard.input--disabled .input__control {
-    color: var(--sl-input-color-disabled);
-  }
-
-  .input--standard.input--disabled .input__control::placeholder {
-    color: var(--sl-input-placeholder-color-disabled);
-  }
-
-  /* Filled inputs */
-  .input--filled {
-    border: none;
-    background-color: var(--sl-input-filled-background-color);
-    color: var(--sl-input-color);
-  }
-
-  .input--filled:hover:not(.input--disabled) {
-    background-color: var(--sl-input-filled-background-color-hover);
-  }
-
-  .input--filled.input--focused:not(.input--disabled) {
-    background-color: var(--sl-input-filled-background-color-focus);
-    outline: var(--sl-focus-ring);
-    outline-offset: var(--sl-focus-ring-offset);
-  }
-
-  .input--filled.input--disabled {
-    background-color: var(--sl-input-filled-background-color-disabled);
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .input__control {
-    flex: 1 1 auto;
-    font-family: inherit;
-    font-size: inherit;
-    font-weight: inherit;
-    min-width: 0;
-    height: 100%;
-    color: var(--sl-input-color);
-    border: none;
-    background: inherit;
-    box-shadow: none;
-    padding: 0;
-    margin: 0;
-    cursor: inherit;
-    -webkit-appearance: none;
-  }
-
-  .input__control::-webkit-search-decoration,
-  .input__control::-webkit-search-cancel-button,
-  .input__control::-webkit-search-results-button,
-  .input__control::-webkit-search-results-decoration {
-    -webkit-appearance: none;
-  }
-
-  .input__control:-webkit-autofill,
-  .input__control:-webkit-autofill:hover,
-  .input__control:-webkit-autofill:focus,
-  .input__control:-webkit-autofill:active {
-    box-shadow: 0 0 0 var(--sl-input-height-large) var(--sl-input-background-color-hover) inset !important;
-    -webkit-text-fill-color: var(--sl-color-primary-500);
-    caret-color: var(--sl-input-color);
-  }
-
-  .input--filled .input__control:-webkit-autofill,
-  .input--filled .input__control:-webkit-autofill:hover,
-  .input--filled .input__control:-webkit-autofill:focus,
-  .input--filled .input__control:-webkit-autofill:active {
-    box-shadow: 0 0 0 var(--sl-input-height-large) var(--sl-input-filled-background-color) inset !important;
-  }
-
-  .input__control::placeholder {
-    color: var(--sl-input-placeholder-color);
-    user-select: none;
-    -webkit-user-select: none;
-  }
-
-  .input:hover:not(.input--disabled) .input__control {
-    color: var(--sl-input-color-hover);
-  }
-
-  .input__control:focus {
-    outline: none;
-  }
-
-  .input__prefix,
-  .input__suffix {
-    display: inline-flex;
-    flex: 0 0 auto;
-    align-items: center;
-    cursor: default;
-  }
-
-  .input__prefix ::slotted(sl-icon),
-  .input__suffix ::slotted(sl-icon) {
-    color: var(--sl-input-icon-color);
-  }
-
-  /*
-   * Size modifiers
-   */
-
-  .input--small {
-    border-radius: var(--sl-input-border-radius-small);
-    font-size: var(--sl-input-font-size-small);
-    height: var(--sl-input-height-small);
-  }
-
-  .input--small .input__control {
-    height: calc(var(--sl-input-height-small) - var(--sl-input-border-width) * 2);
-    padding: 0 var(--sl-input-spacing-small);
-  }
-
-  .input--small .input__clear,
-  .input--small .input__password-toggle {
-    width: calc(1em + var(--sl-input-spacing-small) * 2);
-  }
-
-  .input--small .input__prefix ::slotted(*) {
-    margin-inline-start: var(--sl-input-spacing-small);
-  }
-
-  .input--small .input__suffix ::slotted(*) {
-    margin-inline-end: var(--sl-input-spacing-small);
-  }
-
-  .input--medium {
-    border-radius: var(--sl-input-border-radius-medium);
-    font-size: var(--sl-input-font-size-medium);
-    height: var(--sl-input-height-medium);
-  }
-
-  .input--medium .input__control {
-    height: calc(var(--sl-input-height-medium) - var(--sl-input-border-width) * 2);
-    padding: 0 var(--sl-input-spacing-medium);
-  }
-
-  .input--medium .input__clear,
-  .input--medium .input__password-toggle {
-    width: calc(1em + var(--sl-input-spacing-medium) * 2);
-  }
-
-  .input--medium .input__prefix ::slotted(*) {
-    margin-inline-start: var(--sl-input-spacing-medium);
-  }
-
-  .input--medium .input__suffix ::slotted(*) {
-    margin-inline-end: var(--sl-input-spacing-medium);
-  }
-
-  .input--large {
-    border-radius: var(--sl-input-border-radius-large);
-    font-size: var(--sl-input-font-size-large);
-    height: var(--sl-input-height-large);
-  }
-
-  .input--large .input__control {
-    height: calc(var(--sl-input-height-large) - var(--sl-input-border-width) * 2);
-    padding: 0 var(--sl-input-spacing-large);
-  }
-
-  .input--large .input__clear,
-  .input--large .input__password-toggle {
-    width: calc(1em + var(--sl-input-spacing-large) * 2);
-  }
-
-  .input--large .input__prefix ::slotted(*) {
-    margin-inline-start: var(--sl-input-spacing-large);
-  }
-
-  .input--large .input__suffix ::slotted(*) {
-    margin-inline-end: var(--sl-input-spacing-large);
-  }
-
-  /*
-   * Pill modifier
-   */
-
-  .input--pill.input--small {
-    border-radius: var(--sl-input-height-small);
-  }
-
-  .input--pill.input--medium {
-    border-radius: var(--sl-input-height-medium);
-  }
-
-  .input--pill.input--large {
-    border-radius: var(--sl-input-height-large);
-  }
-
-  /*
-   * Clearable + Password Toggle
-   */
-
-  .input__clear,
-  .input__password-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: inherit;
-    color: var(--sl-input-icon-color);
-    border: none;
-    background: none;
-    padding: 0;
-    transition: var(--sl-transition-fast) color;
-    cursor: pointer;
-  }
-
-  .input__clear:hover,
-  .input__password-toggle:hover {
-    color: var(--sl-input-icon-color-hover);
-  }
-
-  .input__clear:focus,
-  .input__password-toggle:focus {
-    outline: none;
-  }
-
-  /* Don't show the browser's password toggle in Edge */
-  ::-ms-reveal {
-    display: none;
-  }
-
-  /* Hide the built-in number spinner */
-  .input--no-spin-buttons input[type='number']::-webkit-outer-spin-button,
-  .input--no-spin-buttons input[type='number']::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    display: none;
-  }
-
-  .input--no-spin-buttons input[type='number'] {
-    -moz-appearance: textfield;
-  }
-`;
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.GI7VDIWX.js
-var defaultValue = (propertyName = "value") => (proto, key) => {
-  const ctor = proto.constructor;
-  const attributeChangedCallback = ctor.prototype.attributeChangedCallback;
-  ctor.prototype.attributeChangedCallback = function(name, old, value) {
-    var _a4;
-    const options = ctor.getPropertyOptions(propertyName);
-    const attributeName = typeof options.attribute === "string" ? options.attribute : propertyName;
-    if (name === attributeName) {
-      const converter = options.converter || u2;
-      const fromAttribute = typeof converter === "function" ? converter : (_a4 = converter == null ? void 0 : converter.fromAttribute) != null ? _a4 : u2.fromAttribute;
-      const newValue = fromAttribute(value, options.type);
-      if (this[propertyName] !== newValue) {
-        this[key] = newValue;
-      }
-    }
-    attributeChangedCallback.call(this, name, old, value);
-  };
-};
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.SI4ACBFK.js
-var form_control_styles_default = i`
-  .form-control .form-control__label {
-    display: none;
-  }
-
-  .form-control .form-control__help-text {
-    display: none;
-  }
-
-  /* Label */
-  .form-control--has-label .form-control__label {
-    display: inline-block;
-    color: var(--sl-input-label-color);
-    margin-bottom: var(--sl-spacing-3x-small);
-  }
-
-  .form-control--has-label.form-control--small .form-control__label {
-    font-size: var(--sl-input-label-font-size-small);
-  }
-
-  .form-control--has-label.form-control--medium .form-control__label {
-    font-size: var(--sl-input-label-font-size-medium);
-  }
-
-  .form-control--has-label.form-control--large .form-control__label {
-    font-size: var(--sl-input-label-font-size-large);
-  }
-
-  :host([required]) .form-control--has-label .form-control__label::after {
-    content: var(--sl-input-required-content);
-    margin-inline-start: var(--sl-input-required-content-offset);
-    color: var(--sl-input-required-content-color);
-  }
-
-  /* Help text */
-  .form-control--has-help-text .form-control__help-text {
-    display: block;
-    color: var(--sl-input-help-text-color);
-    margin-top: var(--sl-spacing-3x-small);
-  }
-
-  .form-control--has-help-text.form-control--small .form-control__help-text {
-    font-size: var(--sl-input-help-text-font-size-small);
-  }
-
-  .form-control--has-help-text.form-control--medium .form-control__help-text {
-    font-size: var(--sl-input-help-text-font-size-medium);
-  }
-
-  .form-control--has-help-text.form-control--large .form-control__help-text {
-    font-size: var(--sl-input-help-text-font-size-large);
-  }
-
-  .form-control--has-help-text.form-control--radio-group .form-control__help-text {
-    margin-top: var(--sl-spacing-2x-small);
-  }
-`;
-
-// node_modules/lit-html/directives/live.js
-var l5 = e9(class extends i6 {
-  constructor(r11) {
-    if (super(r11), r11.type !== t7.PROPERTY && r11.type !== t7.ATTRIBUTE && r11.type !== t7.BOOLEAN_ATTRIBUTE) throw Error("The `live` directive is not allowed on child or event bindings");
-    if (!f6(r11)) throw Error("`live` bindings can only contain a single expression");
-  }
-  render(r11) {
-    return r11;
-  }
-  update(i9, [t8]) {
-    if (t8 === T2 || t8 === E2) return t8;
-    const o12 = i9.element, l6 = i9.name;
-    if (i9.type === t7.PROPERTY) {
-      if (t8 === o12[l6]) return T2;
-    } else if (i9.type === t7.BOOLEAN_ATTRIBUTE) {
-      if (!!t8 === o12.hasAttribute(l6)) return T2;
-    } else if (i9.type === t7.ATTRIBUTE && o12.getAttribute(l6) === t8 + "") return T2;
-    return m3(i9), t8;
-  }
-});
-
-// node_modules/@shoelace-style/shoelace/dist/chunks/chunk.22JN5JYK.js
-var SlInput = class extends ShoelaceElement {
-  constructor() {
-    super(...arguments);
-    this.formControlController = new FormControlController(this, {
-      assumeInteractionOn: ["sl-blur", "sl-input"]
-    });
-    this.hasSlotController = new HasSlotController(this, "help-text", "label");
-    this.localize = new LocalizeController2(this);
-    this.hasFocus = false;
-    this.title = "";
-    this.__numberInput = Object.assign(document.createElement("input"), { type: "number" });
-    this.__dateInput = Object.assign(document.createElement("input"), { type: "date" });
-    this.type = "text";
-    this.name = "";
-    this.value = "";
-    this.defaultValue = "";
-    this.size = "medium";
-    this.filled = false;
-    this.pill = false;
-    this.label = "";
-    this.helpText = "";
-    this.clearable = false;
-    this.disabled = false;
-    this.placeholder = "";
-    this.readonly = false;
-    this.passwordToggle = false;
-    this.passwordVisible = false;
-    this.noSpinButtons = false;
-    this.form = "";
-    this.required = false;
-    this.spellcheck = true;
-  }
-  //
-  // NOTE: We use an in-memory input for these getters/setters instead of the one in the template because the properties
-  // can be set before the component is rendered.
-  //
-  /**
-   * Gets or sets the current value as a `Date` object. Returns `null` if the value can't be converted. This will use the native `<input type="{{type}}">` implementation and may result in an error.
-   */
-  get valueAsDate() {
-    var _a4;
-    this.__dateInput.type = this.type;
-    this.__dateInput.value = this.value;
-    return ((_a4 = this.input) == null ? void 0 : _a4.valueAsDate) || this.__dateInput.valueAsDate;
-  }
-  set valueAsDate(newValue) {
-    this.__dateInput.type = this.type;
-    this.__dateInput.valueAsDate = newValue;
-    this.value = this.__dateInput.value;
-  }
-  /** Gets or sets the current value as a number. Returns `NaN` if the value can't be converted. */
-  get valueAsNumber() {
-    var _a4;
-    this.__numberInput.value = this.value;
-    return ((_a4 = this.input) == null ? void 0 : _a4.valueAsNumber) || this.__numberInput.valueAsNumber;
-  }
-  set valueAsNumber(newValue) {
-    this.__numberInput.valueAsNumber = newValue;
-    this.value = this.__numberInput.value;
-  }
-  /** Gets the validity state object */
-  get validity() {
-    return this.input.validity;
-  }
-  /** Gets the validation message */
-  get validationMessage() {
-    return this.input.validationMessage;
-  }
-  firstUpdated() {
-    this.formControlController.updateValidity();
-  }
-  handleBlur() {
-    this.hasFocus = false;
-    this.emit("sl-blur");
-  }
-  handleChange() {
-    this.value = this.input.value;
-    this.emit("sl-change");
-  }
-  handleClearClick(event) {
-    event.preventDefault();
-    if (this.value !== "") {
-      this.value = "";
-      this.emit("sl-clear");
-      this.emit("sl-input");
-      this.emit("sl-change");
-    }
-    this.input.focus();
-  }
-  handleFocus() {
-    this.hasFocus = true;
-    this.emit("sl-focus");
-  }
-  handleInput() {
-    this.value = this.input.value;
-    this.formControlController.updateValidity();
-    this.emit("sl-input");
-  }
-  handleInvalid(event) {
-    this.formControlController.setValidity(false);
-    this.formControlController.emitInvalidEvent(event);
-  }
-  handleKeyDown(event) {
-    const hasModifier = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
-    if (event.key === "Enter" && !hasModifier) {
-      setTimeout(() => {
-        if (!event.defaultPrevented && !event.isComposing) {
-          this.formControlController.submit();
-        }
-      });
-    }
-  }
-  handlePasswordToggle() {
-    this.passwordVisible = !this.passwordVisible;
-  }
-  handleDisabledChange() {
-    this.formControlController.setValidity(this.disabled);
-  }
-  handleStepChange() {
-    this.input.step = String(this.step);
-    this.formControlController.updateValidity();
-  }
-  async handleValueChange() {
-    await this.updateComplete;
-    this.formControlController.updateValidity();
-  }
-  /** Sets focus on the input. */
-  focus(options) {
-    this.input.focus(options);
-  }
-  /** Removes focus from the input. */
-  blur() {
-    this.input.blur();
-  }
-  /** Selects all the text in the input. */
-  select() {
-    this.input.select();
-  }
-  /** Sets the start and end positions of the text selection (0-based). */
-  setSelectionRange(selectionStart, selectionEnd, selectionDirection = "none") {
-    this.input.setSelectionRange(selectionStart, selectionEnd, selectionDirection);
-  }
-  /** Replaces a range of text with a new string. */
-  setRangeText(replacement, start, end, selectMode = "preserve") {
-    const selectionStart = start != null ? start : this.input.selectionStart;
-    const selectionEnd = end != null ? end : this.input.selectionEnd;
-    this.input.setRangeText(replacement, selectionStart, selectionEnd, selectMode);
-    if (this.value !== this.input.value) {
-      this.value = this.input.value;
-    }
-  }
-  /** Displays the browser picker for an input element (only works if the browser supports it for the input type). */
-  showPicker() {
-    if ("showPicker" in HTMLInputElement.prototype) {
-      this.input.showPicker();
-    }
-  }
-  /** Increments the value of a numeric input type by the value of the step attribute. */
-  stepUp() {
-    this.input.stepUp();
-    if (this.value !== this.input.value) {
-      this.value = this.input.value;
-    }
-  }
-  /** Decrements the value of a numeric input type by the value of the step attribute. */
-  stepDown() {
-    this.input.stepDown();
-    if (this.value !== this.input.value) {
-      this.value = this.input.value;
-    }
-  }
-  /** Checks for validity but does not show a validation message. Returns `true` when valid and `false` when invalid. */
-  checkValidity() {
-    return this.input.checkValidity();
-  }
-  /** Gets the associated form, if one exists. */
-  getForm() {
-    return this.formControlController.getForm();
-  }
-  /** Checks for validity and shows the browser's validation message if the control is invalid. */
-  reportValidity() {
-    return this.input.reportValidity();
-  }
-  /** Sets a custom validation message. Pass an empty string to restore validity. */
-  setCustomValidity(message) {
-    this.input.setCustomValidity(message);
-    this.formControlController.updateValidity();
-  }
-  render() {
-    const hasLabelSlot = this.hasSlotController.test("label");
-    const hasHelpTextSlot = this.hasSlotController.test("help-text");
-    const hasLabel = this.label ? true : !!hasLabelSlot;
-    const hasHelpText = this.helpText ? true : !!hasHelpTextSlot;
-    const hasClearIcon = this.clearable && !this.disabled && !this.readonly;
-    const isClearIconVisible = hasClearIcon && (typeof this.value === "number" || this.value.length > 0);
-    return x2`
-      <div
-        part="form-control"
-        class=${e10({
-      "form-control": true,
-      "form-control--small": this.size === "small",
-      "form-control--medium": this.size === "medium",
-      "form-control--large": this.size === "large",
-      "form-control--has-label": hasLabel,
-      "form-control--has-help-text": hasHelpText
-    })}
-      >
-        <label
-          part="form-control-label"
-          class="form-control__label"
-          for="input"
-          aria-hidden=${hasLabel ? "false" : "true"}
-        >
-          <slot name="label">${this.label}</slot>
-        </label>
-
-        <div part="form-control-input" class="form-control-input">
-          <div
-            part="base"
-            class=${e10({
-      input: true,
-      // Sizes
-      "input--small": this.size === "small",
-      "input--medium": this.size === "medium",
-      "input--large": this.size === "large",
-      // States
-      "input--pill": this.pill,
-      "input--standard": !this.filled,
-      "input--filled": this.filled,
-      "input--disabled": this.disabled,
-      "input--focused": this.hasFocus,
-      "input--empty": !this.value,
-      "input--no-spin-buttons": this.noSpinButtons
-    })}
-          >
-            <span part="prefix" class="input__prefix">
-              <slot name="prefix"></slot>
-            </span>
-
-            <input
-              part="input"
-              id="input"
-              class="input__control"
-              type=${this.type === "password" && this.passwordVisible ? "text" : this.type}
-              title=${this.title}
-              name=${o9(this.name)}
-              ?disabled=${this.disabled}
-              ?readonly=${this.readonly}
-              ?required=${this.required}
-              placeholder=${o9(this.placeholder)}
-              minlength=${o9(this.minlength)}
-              maxlength=${o9(this.maxlength)}
-              min=${o9(this.min)}
-              max=${o9(this.max)}
-              step=${o9(this.step)}
-              .value=${l5(this.value)}
-              autocapitalize=${o9(this.autocapitalize)}
-              autocomplete=${o9(this.autocomplete)}
-              autocorrect=${o9(this.autocorrect)}
-              ?autofocus=${this.autofocus}
-              spellcheck=${this.spellcheck}
-              pattern=${o9(this.pattern)}
-              enterkeyhint=${o9(this.enterkeyhint)}
-              inputmode=${o9(this.inputmode)}
-              aria-describedby="help-text"
-              @change=${this.handleChange}
-              @input=${this.handleInput}
-              @invalid=${this.handleInvalid}
-              @keydown=${this.handleKeyDown}
-              @focus=${this.handleFocus}
-              @blur=${this.handleBlur}
-            />
-
-            ${isClearIconVisible ? x2`
-                  <button
-                    part="clear-button"
-                    class="input__clear"
-                    type="button"
-                    aria-label=${this.localize.term("clearEntry")}
-                    @click=${this.handleClearClick}
-                    tabindex="-1"
-                  >
-                    <slot name="clear-icon">
-                      <sl-icon name="x-circle-fill" library="system"></sl-icon>
-                    </slot>
-                  </button>
-                ` : ""}
-            ${this.passwordToggle && !this.disabled ? x2`
-                  <button
-                    part="password-toggle-button"
-                    class="input__password-toggle"
-                    type="button"
-                    aria-label=${this.localize.term(this.passwordVisible ? "hidePassword" : "showPassword")}
-                    @click=${this.handlePasswordToggle}
-                    tabindex="-1"
-                  >
-                    ${this.passwordVisible ? x2`
-                          <slot name="show-password-icon">
-                            <sl-icon name="eye-slash" library="system"></sl-icon>
-                          </slot>
-                        ` : x2`
-                          <slot name="hide-password-icon">
-                            <sl-icon name="eye" library="system"></sl-icon>
-                          </slot>
-                        `}
-                  </button>
-                ` : ""}
-
-            <span part="suffix" class="input__suffix">
-              <slot name="suffix"></slot>
-            </span>
-          </div>
-        </div>
-
-        <div
-          part="form-control-help-text"
-          id="help-text"
-          class="form-control__help-text"
-          aria-hidden=${hasHelpText ? "false" : "true"}
-        >
-          <slot name="help-text">${this.helpText}</slot>
-        </div>
-      </div>
-    `;
-  }
-};
-SlInput.styles = [component_styles_default, form_control_styles_default, input_styles_default];
-SlInput.dependencies = { "sl-icon": SlIcon };
-__decorateClass([
-  e7(".input__control")
-], SlInput.prototype, "input", 2);
-__decorateClass([
-  r9()
-], SlInput.prototype, "hasFocus", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "title", 2);
-__decorateClass([
-  n8({ reflect: true })
-], SlInput.prototype, "type", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "name", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "value", 2);
-__decorateClass([
-  defaultValue()
-], SlInput.prototype, "defaultValue", 2);
-__decorateClass([
-  n8({ reflect: true })
-], SlInput.prototype, "size", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlInput.prototype, "filled", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlInput.prototype, "pill", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "label", 2);
-__decorateClass([
-  n8({ attribute: "help-text" })
-], SlInput.prototype, "helpText", 2);
-__decorateClass([
-  n8({ type: Boolean })
-], SlInput.prototype, "clearable", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlInput.prototype, "disabled", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "placeholder", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlInput.prototype, "readonly", 2);
-__decorateClass([
-  n8({ attribute: "password-toggle", type: Boolean })
-], SlInput.prototype, "passwordToggle", 2);
-__decorateClass([
-  n8({ attribute: "password-visible", type: Boolean })
-], SlInput.prototype, "passwordVisible", 2);
-__decorateClass([
-  n8({ attribute: "no-spin-buttons", type: Boolean })
-], SlInput.prototype, "noSpinButtons", 2);
-__decorateClass([
-  n8({ reflect: true })
-], SlInput.prototype, "form", 2);
-__decorateClass([
-  n8({ type: Boolean, reflect: true })
-], SlInput.prototype, "required", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "pattern", 2);
-__decorateClass([
-  n8({ type: Number })
-], SlInput.prototype, "minlength", 2);
-__decorateClass([
-  n8({ type: Number })
-], SlInput.prototype, "maxlength", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "min", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "max", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "step", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "autocapitalize", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "autocorrect", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "autocomplete", 2);
-__decorateClass([
-  n8({ type: Boolean })
-], SlInput.prototype, "autofocus", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "enterkeyhint", 2);
-__decorateClass([
-  n8({
-    type: Boolean,
-    converter: {
-      // Allow "true|false" attribute values but keep the property boolean
-      fromAttribute: (value) => !value || value === "false" ? false : true,
-      toAttribute: (value) => value ? "true" : "false"
-    }
-  })
-], SlInput.prototype, "spellcheck", 2);
-__decorateClass([
-  n8()
-], SlInput.prototype, "inputmode", 2);
-__decorateClass([
-  watch("disabled", { waitUntilFirstUpdate: true })
-], SlInput.prototype, "handleDisabledChange", 1);
-__decorateClass([
-  watch("step", { waitUntilFirstUpdate: true })
-], SlInput.prototype, "handleStepChange", 1);
-__decorateClass([
-  watch("value", { waitUntilFirstUpdate: true })
-], SlInput.prototype, "handleValueChange", 1);
 
 // node_modules/@shoelace-style/shoelace/dist/chunks/chunk.FW7UWQXB.js
 var tooltip_styles_default = i`
@@ -100311,7 +100311,7 @@ var SlTooltip = class extends ShoelaceElement {
           popup:base__popup,
           arrow:base__arrow
         "
-        class=${e10({
+        class=${e9({
       tooltip: true,
       "tooltip--open": this.open
     })}
@@ -105563,6 +105563,11 @@ var builderStyles = i`
 		--panel-shadow: 0 2px 8px rgb(0 0 0 / 9%);
 		--chip-height: 1.35rem;
 		--handle-width: 1.1rem;
+		/* The catalog headings repeat the chemical drawer of the lab, so the
+		   group badges carry the same lilac band as the palette sections. */
+		--palette-heading-fill: #e8e0ee;
+		--palette-heading-badge: #ded3e7;
+		--palette-heading-ink: #4e3e5d;
 		position: relative;
 		border: 1px solid var(--outline);
 		border-radius: 5px;
@@ -105615,6 +105620,81 @@ var builderStyles = i`
 		background: white;
 		box-shadow: var(--panel-shadow);
 		font-size: .8rem;
+	}
+	/* The catalog lists every substance of the lab, so it scrolls inside the
+	   popup instead of growing past the widget. */
+	.catalog-surface { inline-size: min(22rem, 80cqw); gap: .3rem; }
+	.catalog-search { min-inline-size: 0; }
+	.catalog-list {
+		display: grid;
+		gap: .35rem;
+		max-block-size: min(22rem, 52vh);
+		overflow: auto;
+		overscroll-behavior: contain;
+	}
+	.catalog-group, .catalog-entries { display: grid; gap: 2px; }
+	.catalog-group-heading {
+		position: sticky;
+		inset-block-start: 0;
+		z-index: 1;
+		padding: 2px 4px;
+		border-radius: 3px;
+		background: var(--palette-heading-fill);
+		color: var(--palette-heading-ink);
+	}
+	.catalog-group-heading > sl-badge { max-inline-size: 100%; margin: 0; }
+	.catalog-group-heading > sl-badge::part(base) {
+		padding: 1px 5px;
+		border: 0;
+		background: var(--palette-heading-badge);
+		color: inherit;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		line-height: 1.25;
+	}
+	.catalog-entry {
+		display: flex;
+		align-items: baseline;
+		gap: .35rem;
+		padding: 3px 6px;
+		border: 1px solid transparent;
+		border-radius: 3px;
+		background: none;
+		color: inherit;
+		font: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+	.catalog-entry:hover { background: var(--sl-color-neutral-100, #f4f4f5); }
+	.catalog-entry:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+	.catalog-entry.is-selected {
+		border-color: var(--blue);
+		background: color-mix(in srgb, var(--blue) 10%, white);
+	}
+	.catalog-entry-name { font-weight: 500; }
+	.catalog-entry-formula { color: var(--sl-color-neutral-600, #52525b); font-size: .75rem; }
+	.catalog-variants { display: flex; flex-wrap: wrap; gap: 3px; padding: 0 6px 3px; }
+	.catalog-variant {
+		padding: 1px 6px;
+		border: 1px solid var(--outline);
+		border-radius: 3px;
+		background: white;
+		color: inherit;
+		font: inherit;
+		font-size: .75rem;
+		cursor: pointer;
+	}
+	.catalog-variant:hover { background: var(--sl-color-neutral-100, #f4f4f5); }
+	.catalog-variant:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+	.catalog-variant.is-selected {
+		border-color: var(--blue);
+		background: color-mix(in srgb, var(--blue) 10%, white);
+	}
+	.catalog-note {
+		margin: 0;
+		padding: 0 6px 3px;
+		color: var(--sl-color-neutral-600, #52525b);
+		font-size: .75rem;
 	}
 	.surface .fields { flex-direction: column; align-items: stretch; gap: .4rem; }
 	.surface .fields label { display: grid; gap: .15rem; }
@@ -105875,9 +105955,9 @@ var PLANE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden=
 var FIT_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
 	<path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" /></svg>`;
-var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _lastDrawn, _lastDrawnRepeats, _diagramBounds, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, _pointerDown, _pointerMove, _pointerUp, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, renderDrawing_fn, renderModelSummary_fn, renderSelectionCard_fn;
+var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _lastDrawn, _lastDrawnRepeats, _diagramBounds, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, _pointerDown, _pointerMove, _pointerUp, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, renderDrawing_fn, renderModelSummary_fn, renderSelectionCard_fn;
 _ChemLabMoleculeBuilder_decorators = [t4(BUILDER_TAG)];
-var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
+var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
   constructor() {
     super(...arguments);
     __privateAdd(this, _ChemLabMoleculeBuilder_instances);
@@ -105889,28 +105969,29 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _catalogKey, __runInitializers(_init3, 24, this, "")), __runInitializers(_init3, 27, this);
     __privateAdd(this, _catalogVariants, __runInitializers(_init3, 28, this, [])), __runInitializers(_init3, 31, this);
     __privateAdd(this, _catalogIndex, __runInitializers(_init3, 32, this, 0)), __runInitializers(_init3, 35, this);
-    __privateAdd(this, _openPanel, __runInitializers(_init3, 36, this)), __runInitializers(_init3, 39, this);
-    __privateAdd(this, _labs, __runInitializers(_init3, 40, this, [])), __runInitializers(_init3, 43, this);
-    __privateAdd(this, _showLabs, __runInitializers(_init3, 44, this, false)), __runInitializers(_init3, 47, this);
-    __privateAdd(this, _paletteOpen, __runInitializers(_init3, 48, this, true)), __runInitializers(_init3, 51, this);
-    __privateAdd(this, _paletteNarrow, __runInitializers(_init3, 52, this, false)), __runInitializers(_init3, 55, this);
-    __privateAdd(this, _pickerView, __runInitializers(_init3, 56, this, "list")), __runInitializers(_init3, 59, this);
-    __privateAdd(this, _showElectrons, __runInitializers(_init3, 60, this, false)), __runInitializers(_init3, 63, this);
-    __privateAdd(this, _showLattice, __runInitializers(_init3, 64, this, false)), __runInitializers(_init3, 67, this);
-    __privateAdd(this, _showEdges, __runInitializers(_init3, 68, this, true)), __runInitializers(_init3, 71, this);
-    __privateAdd(this, _showAxes, __runInitializers(_init3, 72, this, false)), __runInitializers(_init3, 75, this);
-    __privateAdd(this, _view2, __runInitializers(_init3, 76, this, "3d")), __runInitializers(_init3, 79, this);
-    __privateAdd(this, _tool, __runInitializers(_init3, 80, this, "orbit")), __runInitializers(_init3, 83, this);
-    __privateAdd(this, _element, __runInitializers(_init3, 84, this, 6)), __runInitializers(_init3, 87, this);
-    __privateAdd(this, _picked, __runInitializers(_init3, 88, this)), __runInitializers(_init3, 91, this);
-    __privateAdd(this, _bondStart, __runInitializers(_init3, 92, this)), __runInitializers(_init3, 95, this);
-    __privateAdd(this, _bondOrder, __runInitializers(_init3, 96, this, 1)), __runInitializers(_init3, 99, this);
-    __privateAdd(this, _repeats, __runInitializers(_init3, 100, this, 1)), __runInitializers(_init3, 103, this);
-    __privateAdd(this, _notice, __runInitializers(_init3, 104, this, "")), __runInitializers(_init3, 107, this);
-    __privateAdd(this, _gpu, __runInitializers(_init3, 108, this, "idle")), __runInitializers(_init3, 111, this);
-    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 112, this)), __runInitializers(_init3, 115, this);
-    __privateAdd(this, _bondPreview, __runInitializers(_init3, 116, this)), __runInitializers(_init3, 119, this);
-    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 120, this)), __runInitializers(_init3, 123, this);
+    __privateAdd(this, _catalogQuery, __runInitializers(_init3, 36, this, "")), __runInitializers(_init3, 39, this);
+    __privateAdd(this, _openPanel, __runInitializers(_init3, 40, this)), __runInitializers(_init3, 43, this);
+    __privateAdd(this, _labs, __runInitializers(_init3, 44, this, [])), __runInitializers(_init3, 47, this);
+    __privateAdd(this, _showLabs, __runInitializers(_init3, 48, this, false)), __runInitializers(_init3, 51, this);
+    __privateAdd(this, _paletteOpen, __runInitializers(_init3, 52, this, true)), __runInitializers(_init3, 55, this);
+    __privateAdd(this, _paletteNarrow, __runInitializers(_init3, 56, this, false)), __runInitializers(_init3, 59, this);
+    __privateAdd(this, _pickerView, __runInitializers(_init3, 60, this, "list")), __runInitializers(_init3, 63, this);
+    __privateAdd(this, _showElectrons, __runInitializers(_init3, 64, this, false)), __runInitializers(_init3, 67, this);
+    __privateAdd(this, _showLattice, __runInitializers(_init3, 68, this, false)), __runInitializers(_init3, 71, this);
+    __privateAdd(this, _showEdges, __runInitializers(_init3, 72, this, true)), __runInitializers(_init3, 75, this);
+    __privateAdd(this, _showAxes, __runInitializers(_init3, 76, this, false)), __runInitializers(_init3, 79, this);
+    __privateAdd(this, _view2, __runInitializers(_init3, 80, this, "3d")), __runInitializers(_init3, 83, this);
+    __privateAdd(this, _tool, __runInitializers(_init3, 84, this, "orbit")), __runInitializers(_init3, 87, this);
+    __privateAdd(this, _element, __runInitializers(_init3, 88, this, 6)), __runInitializers(_init3, 91, this);
+    __privateAdd(this, _picked, __runInitializers(_init3, 92, this)), __runInitializers(_init3, 95, this);
+    __privateAdd(this, _bondStart, __runInitializers(_init3, 96, this)), __runInitializers(_init3, 99, this);
+    __privateAdd(this, _bondOrder, __runInitializers(_init3, 100, this, 1)), __runInitializers(_init3, 103, this);
+    __privateAdd(this, _repeats, __runInitializers(_init3, 104, this, 1)), __runInitializers(_init3, 107, this);
+    __privateAdd(this, _notice, __runInitializers(_init3, 108, this, "")), __runInitializers(_init3, 111, this);
+    __privateAdd(this, _gpu, __runInitializers(_init3, 112, this, "idle")), __runInitializers(_init3, 115, this);
+    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 116, this)), __runInitializers(_init3, 119, this);
+    __privateAdd(this, _bondPreview, __runInitializers(_init3, 120, this)), __runInitializers(_init3, 123, this);
+    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 124, this)), __runInitializers(_init3, 127, this);
     __privateAdd(this, _scene);
     __privateAdd(this, _sceneLoad, 0);
     __privateAdd(this, _fitNext, true);
@@ -106309,6 +106390,7 @@ _preview = new WeakMap();
 _catalogKey = new WeakMap();
 _catalogVariants = new WeakMap();
 _catalogIndex = new WeakMap();
+_catalogQuery = new WeakMap();
 _openPanel = new WeakMap();
 _labs = new WeakMap();
 _showLabs = new WeakMap();
@@ -106756,32 +106838,55 @@ send_fn = function(target) {
   this.notice = __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure sent for review in ChemLab.", "Struktur zur Pr\xFCfung an ChemLab gesendet.");
   target.scrollIntoView({ block: "nearest" });
 };
+/**
+ * The catalog opens as a flat list grouped by chemical class. A native select
+ * would open a second dropdown on top of the popup, so every substance is a
+ * row of its own and the variants of the chosen one appear right below it.
+ */
 renderCatalog_fn = function() {
   if (this.openPanel !== "catalog") return E2;
-  const change = (event) => {
-    const value = event.currentTarget.value;
-    if (value) this.viewCatalogStructure(value);
-  };
-  return x2`<div class="surface" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog")}>
-			<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Substance", "Stoff")}
-				<select .value=${this.catalogKey} @change=${change}>
-					<option value="">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose a substance", "Stoff ausw\xE4hlen")}</option>
-					${groups.map((category) => x2`<optgroup label=${category}>
-						${structureCatalog.filter((entry) => entry.category === category).map((entry) => x2`<option value=${entry.name} ?selected=${entry.name === this.catalogKey}>
-							${entry.name}${entry.formula ? ` \xB7 ${entry.formula}` : ""}
-						</option>`)}
-					</optgroup>`)}
-				</select>
-			</label>
-			${this.catalogVariants.length > 1 ? x2`<label>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure", "Struktur")}
-				<select .value=${String(this.catalogIndex)} @change=${(event) => {
-    this.catalogIndex = Number(event.currentTarget.value);
-    __privateMethod(this, _ChemLabMoleculeBuilder_instances, openPreview_fn).call(this, this.catalogVariants[this.catalogIndex]);
-  }}>
-					${this.catalogVariants.map((variant, index) => x2`<option value=${index} ?selected=${index === this.catalogIndex}>${variant.name}</option>`)}
-				</select></label>` : E2}
-			${this.catalogKey && catalogIsMixture(this.catalogKey) ? x2`<sl-tag size="small">${this.catalogVariants.length ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Selected constituents of a mixture", "Ausgew\xE4hlte Bestandteile eines Gemischs") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Mixture with no unique structure", "Gemisch ohne eindeutige Struktur")}</sl-tag>` : E2}
-			${this.catalogKey && !this.catalogVariants.length && !catalogIsMixture(this.catalogKey) ? x2`<sl-tag size="small">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "No verified structure available", "Keine verifizierte Struktur verf\xFCgbar")}</sl-tag>` : E2}
+  const query = this.catalogQuery.trim().toLowerCase();
+  const matches = (entry) => !query || entry.name.toLowerCase().includes(query) || entry.formula.toLowerCase().includes(query);
+  const sections = groups.map((category) => ({
+    category,
+    entries: structureCatalog.filter((entry) => entry.category === category && matches(entry))
+  })).filter((section) => section.entries.length);
+  const selected = this.catalogKey;
+  const note = selected && !this.catalogVariants.length ? catalogIsMixture(selected) ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Mixture with no unique structure", "Gemisch ohne eindeutige Struktur") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "No verified structure available", "Keine verifizierte Struktur verf\xFCgbar") : "";
+  return x2`<div class="surface catalog-surface" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog")}>
+			<sl-input class="catalog-search" size="small" type="search" clearable
+				label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Search the catalog", "Katalog durchsuchen")}
+				placeholder=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Search name or formula", "Name oder Formel suchen")}
+				.value=${this.catalogQuery}
+				@sl-input=${(event) => {
+    this.catalogQuery = event.currentTarget.value;
+  }}></sl-input>
+			<div class="catalog-list">
+				${sections.length ? sections.map((section) => x2`<section class="catalog-group" aria-label=${section.category}>
+					<div class="catalog-group-heading" role="heading" aria-level="3">
+						<sl-badge variant="primary">${section.category}</sl-badge>
+					</div>
+					<div class="catalog-entries">
+						${section.entries.map((entry) => x2`
+							<button type="button" class="catalog-entry${entry.name === selected ? " is-selected" : ""}"
+								aria-pressed=${String(entry.name === selected)} @click=${() => this.viewCatalogStructure(entry.name)}>
+								<span class="catalog-entry-name">${entry.name}</span>
+								<span class="catalog-entry-formula">${entry.formula}</span>
+							</button>
+							${entry.name !== selected ? E2 : this.catalogVariants.length > 1 ? x2`
+								<div class="catalog-variants" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure", "Struktur")}>
+									${this.catalogVariants.map((variant, index) => x2`<button type="button"
+										class="catalog-variant${index === this.catalogIndex ? " is-selected" : ""}"
+										aria-pressed=${String(index === this.catalogIndex)} @click=${() => {
+    this.catalogIndex = index;
+    __privateMethod(this, _ChemLabMoleculeBuilder_instances, openPreview_fn).call(this, this.catalogVariants[index]);
+  }}>${variant.name}</button>`)}
+								</div>` : note ? x2`<p class="catalog-note">${note}</p>` : E2}
+						`)}
+					</div>
+				</section>`) : x2`<p class="catalog-note" role="status">
+					${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "No substance matches this search.", "Keine Substanz passt zu dieser Suche.")}</p>`}
+			</div>
 		</div>`;
 };
 renderTargetPicker_fn = function() {
@@ -107055,6 +107160,7 @@ __decorateElement(_init3, 4, "preview", _preview_dec, _ChemLabMoleculeBuilder, _
 __decorateElement(_init3, 4, "catalogKey", _catalogKey_dec, _ChemLabMoleculeBuilder, _catalogKey);
 __decorateElement(_init3, 4, "catalogVariants", _catalogVariants_dec, _ChemLabMoleculeBuilder, _catalogVariants);
 __decorateElement(_init3, 4, "catalogIndex", _catalogIndex_dec, _ChemLabMoleculeBuilder, _catalogIndex);
+__decorateElement(_init3, 4, "catalogQuery", _catalogQuery_dec, _ChemLabMoleculeBuilder, _catalogQuery);
 __decorateElement(_init3, 4, "openPanel", _openPanel_dec, _ChemLabMoleculeBuilder, _openPanel);
 __decorateElement(_init3, 4, "labs", _labs_dec, _ChemLabMoleculeBuilder, _labs);
 __decorateElement(_init3, 4, "showLabs", _showLabs_dec, _ChemLabMoleculeBuilder, _showLabs);
@@ -107081,9 +107187,11 @@ _ChemLabMoleculeBuilder = __decorateElement(_init3, 0, "ChemLabMoleculeBuilder",
 __publicField(_ChemLabMoleculeBuilder, "styles", builderStyles);
 __publicField(_ChemLabMoleculeBuilder, "scopedElements", {
   "webwriter-chemlab-periodic-table": ChemLabPeriodicTable,
+  "sl-badge": SlBadge,
   "sl-button": SlButton,
   "sl-details": SlDetails,
   "sl-icon": SlIcon,
+  "sl-input": SlInput,
   "sl-popup": SlPopup,
   "sl-spinner": SlSpinner,
   "sl-tag": SlTag
@@ -107267,20 +107375,20 @@ lit-html/directives/range.js:
    * SPDX-License-Identifier: BSD-3-Clause
    *)
 
+lit-html/directives/class-map.js:
+lit-html/directives/if-defined.js:
+  (**
+   * @license
+   * Copyright 2018 Google LLC
+   * SPDX-License-Identifier: BSD-3-Clause
+   *)
+
 lit-html/directive-helpers.js:
 lit-html/static.js:
 lit-html/directives/live.js:
   (**
    * @license
    * Copyright 2020 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-lit-html/directives/class-map.js:
-lit-html/directives/if-defined.js:
-  (**
-   * @license
-   * Copyright 2018 Google LLC
    * SPDX-License-Identifier: BSD-3-Clause
    *)
 */
