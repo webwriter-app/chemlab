@@ -70,7 +70,8 @@ const FILE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidde
 	<path d="M4 2.2h4.6L12 5.6v8.2H4z" /><path d="M8.6 2.2v3.4H12" /></svg>`;
 const SEND_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
-	<path d="M2.6 8h8.4M8 4.6 11.4 8 8 11.4" /><path d="M13.4 2.6v10.8" /></svg>`;
+	<path d="M2.6 9.6v2.9a1.1 1.1 0 0 0 1.1 1.1h8.6a1.1 1.1 0 0 0 1.1-1.1V9.6" />
+	<path d="M8 10.2V2.4M5.1 5.3 8 2.4l2.9 2.9" /></svg>`;
 const ORBIT_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
 	<path d="M13.2 8a5.2 5.2 0 1 1-1.6-3.8" /><path d="M13.4 2.4v3.2H10.2" /></svg>`;
@@ -1129,7 +1130,6 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			@drop=${(event: DragEvent) => { if (event.dataTransfer?.files.length) { event.preventDefault(); void this.#openFile(event.dataTransfer.files[0]); } }}>
 			<header class="document">
 				<div class="document-title">
-					<sl-tag size="small" variant="primary">${this.#t("Molecule Builder", "Molekülbaukasten")}</sl-tag>
 					<h5 title=${title}>${title}</h5>
 					<sl-tag size="small" variant=${this.#readonly ? "warning" : "neutral"}>
 						${this.#readonly ? this.#t("Preview", "Vorschau") : this.#t("Draft", "Entwurf")}

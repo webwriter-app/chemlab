@@ -106015,7 +106015,8 @@ var FILE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="
 	<path d="M4 2.2h4.6L12 5.6v8.2H4z" /><path d="M8.6 2.2v3.4H12" /></svg>`;
 var SEND_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
-	<path d="M2.6 8h8.4M8 4.6 11.4 8 8 11.4" /><path d="M13.4 2.6v10.8" /></svg>`;
+	<path d="M2.6 9.6v2.9a1.1 1.1 0 0 0 1.1 1.1h8.6a1.1 1.1 0 0 0 1.1-1.1V9.6" />
+	<path d="M8 10.2V2.4M5.1 5.3 8 2.4l2.9 2.9" /></svg>`;
 var ORBIT_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
 	<path d="M13.2 8a5.2 5.2 0 1 1-1.6-3.8" /><path d="M13.4 2.4v3.2H10.2" /></svg>`;
@@ -106357,7 +106358,6 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     }}>
 			<header class="document">
 				<div class="document-title">
-					<sl-tag size="small" variant="primary">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Molecule Builder", "Molek\xFClbaukasten")}</sl-tag>
 					<h5 title=${title}>${title}</h5>
 					<sl-tag size="small" variant=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? "warning" : "neutral"}>
 						${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Preview", "Vorschau") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Draft", "Entwurf")}
