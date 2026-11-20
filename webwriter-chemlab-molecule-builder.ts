@@ -17,7 +17,7 @@ import { SelectionRouter } from "./periodic-table/routing";
 import { catalogAqueousStructure, catalogEntry, catalogIsMixture, catalogStructures, structureCatalog } from "./molecule-builder/catalog";
 import { BUILDER_TAG, LAB_TAG, TABLE_TAG, worksheetPeers, worksheetScope, type LabReceiver } from "./molecule-builder/exchange";
 import { colorHex, crystalIonColors, crystalRadii, siteIon } from "./molecule-builder/crystal-display";
-import { fitGeometry, canBond, shapeName, formula, subtract } from "./molecule-builder/geometry";
+import { add, fitGeometry, canBond, shapeName, formula, subtract } from "./molecule-builder/geometry";
 import {
 	MAX_ATOMS, MAX_SITES, MAX_FILE_BYTES, cellVectors, fractional, isCell,
 	newCrystal, newMolecule, readStructure, type BondOrder, type Cell, type Point2, type Point3, type Structure,
@@ -28,10 +28,13 @@ import { diagramIsCrowded, improveDiagram, repairSavedDiagram } from "./molecule
 import { lewisViewBox, renderLewis, type DiagramBox } from "./molecule-builder/lewis-view";
 import { atomRadius, spaceFillingRadius } from "./molecule-builder/radii";
 import { hasMolecularDisplays, moleculeOrbitals, ORBITAL_PHASE_COLORS, type MolecularDisplay } from "./molecule-builder/orbitals";
+import { atomicSpecies, electronConfiguration, orbitalOrientations, type AtomicSpecies } from "./molecule-builder/atomic-configuration";
+import { atomicOrbitalSlice, type AtomicOrbitalDisplay } from "./molecule-builder/atomic-orbitals";
 import { gridCell } from "./molecule-builder/canvas-grid";
 import { builderStyles } from "./molecule-builder/styles";
 import type { MoleculeScene } from "./molecule-builder/scene";
 
+type AtomInspection = { atom: { id: number }; species: AtomicSpecies; configuration: ReturnType<typeof electronConfiguration>; display: AtomicOrbitalDisplay };
 type Tool = "orbit" | "atom" | "bond";
 type Pointer = { x: number; y: number; id?: number };
 type Gesture = Pointer & { from?: number; distance: number; moved: boolean; diagram?: Point2 };
@@ -56,6 +59,12 @@ const PALETTE_CHROME = 15;
 const CUBE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
 	<path d="M8 1.9 13.8 5v6L8 14.1 2.2 11V5z" /><path d="M2.2 5 8 8.1 13.8 5M8 8.1v6" /></svg>`;
+const ATOMIC_ORBITALS_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3">
+	<path d="M8 8C2 8 1 5 2.8 3.2 4.6 1.5 8 2 8 8s3.4 6.5 5.2 4.8C15 11 14 8 8 8Z" />
+	<circle cx="8" cy="8" r="1" fill="currentColor" stroke="none" /></svg>`;
+const BACK_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3">
+	<path d="M13 8H3m4-4L3 8l4 4" /></svg>`;
+const superscript = (value: string) => value.replace(/[0-9+−]/g, c => "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻"["0123456789+−".indexOf(c)]);
 const PLANE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
 	<path d="M8 1.9 13.8 5v6L8 14.1 2.2 11V5z" /><circle cx="8" cy="8" r="1.7" /></svg>`;
@@ -159,6 +168,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor showElectrons = false;
 	@state() private accessor molecularDisplay: MolecularDisplay = "sticks";
 	@state() private accessor orbitalId = "";
+	@state() private accessor inspectedAtom: { id: number; returnView: "2d" | "3d" } | undefined;
+	@state() private accessor dismissedLone: number | undefined;
+	@state() private accessor atomicSubshell = "";
+	@state() private accessor atomicOrientation = 0;
+	@state() private accessor atomicRegion: number | undefined;
 	@state() private accessor showHydration = false;
 	@state() private accessor showLattice = false;
 	@state() private accessor showEdges = true;
@@ -203,10 +217,59 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		monatomicIons: ReadonlySet<number>;
 	};
 	#lewisCache?: { structure: Structure; value: ReturnType<typeof lewisDiagram> };
+	#atomicSlice?: { key: string; slice: ReturnType<typeof atomicOrbitalSlice> };
 
 	get #current() { return this.preview ?? this.draft; }
 	get #atoms() { const current = this.#current; return current.kind === "molecule" ? current.atoms : current.sites; }
 	get #readonly() { return this.preview !== undefined; }
+
+	get #atomicTarget() {
+		const current = this.#current;
+		if (this.inspectedAtom) return this.#atoms.find(atom => atom.id === this.inspectedAtom.id);
+		if ((this.view === "3d" || this.gpu === "unavailable") && current.kind === "molecule" && current.atoms.length === 1
+			&& current.atoms[0].id !== this.dismissedLone) return current.atoms[0];
+		return undefined;
+	}
+
+	get #atomInspection(): AtomInspection | undefined {
+		const atom = this.#atomicTarget;
+		if (!atom) return undefined;
+		const species = atomicSpecies(this.#current, atom.id);
+		if (!species) return undefined;
+		const configuration = electronConfiguration(species.atomicNumber, species.charge);
+		const { subshells } = configuration;
+		const subshell = subshells.find(candidate => candidate.label === this.atomicSubshell) ?? subshells[subshells.length - 1];
+		const orientation = subshell && this.atomicOrientation <= 2 * subshell.l ? this.atomicOrientation : 0;
+		const nodes = subshell ? subshell.n - subshell.l - 1 : 0;
+		return { atom, species, configuration, display: {
+			atomId: atom.id, atomicNumber: species.atomicNumber, electrons: configuration.electrons,
+			subshell, orientation, region: Math.min(this.atomicRegion ?? nodes, nodes),
+		} };
+	}
+
+	#resetAtomicChoices() {
+		this.atomicSubshell = "";
+		this.atomicOrientation = 0;
+		this.atomicRegion = undefined;
+	}
+
+	#inspectAtom(id: number) {
+		this.#resetAtomicChoices();
+		this.bondStart = undefined;
+		this.inspectedAtom = { id, returnView: this.view };
+		if (this.gpu !== "unavailable") this.view = "3d";
+		this.updateComplete.then(() => this.renderRoot.querySelector<HTMLElement>(".atomic-summary .atomic-back")?.focus());
+	}
+
+	#leaveAtom() {
+		if (this.inspectedAtom) {
+			this.view = this.gpu === "unavailable" ? "2d" : this.inspectedAtom.returnView;
+			this.inspectedAtom = undefined;
+		} else this.dismissedLone = this.#atomicTarget?.id;
+		this.#resetAtomicChoices();
+		this.updateComplete.then(() => (this.renderRoot.querySelector<HTMLElement>(".inspect-atom")
+			?? this.renderRoot.querySelector<HTMLElement>(".board"))?.focus());
+	}
 
 	#t(en: string, de: string) { return this.lang?.toLowerCase().startsWith("de") ? de : en; }
 
@@ -262,7 +325,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (changed.has("elementSourceId")) this.#bindTable();
 		this.#observePalette();
 		if (this.view === "3d" && this.gpu === "idle") void this.#startScene();
-		if (this.#scene && this.view === "3d") {
+		const atomic = this.#atomInspection;
+		if (this.#scene && this.view === "3d" && atomic) {
+			this.#scene.setAtomicView(atomic.display);
+		} else if (this.#scene && this.view === "3d") {
 			this.#scene.setScene(this.#current, this.repeats, [this.picked, this.bondStart].filter(id => id !== undefined),
 				{ electrons: this.showElectrons, lattice: this.showLattice, edges: this.showEdges, axes: this.showAxes,
 					molecular: this.molecularDisplay, orbitalId: this.orbitalId,
@@ -271,7 +337,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				this.#fitNext = false;
 				this.#scene.fit();
 			}
-		}
+		} else this.#scene?.clearAtomicView();
 		this.#syncGrid();
 	}
 
@@ -318,8 +384,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (!board || !scale) return;
 		const drawing = this.renderRoot.querySelector<SVGSVGElement>(".lewis-view");
 		const box = drawing?.viewBox.baseVal;
-		const pixelsPerUnit = this.view === "3d" ? this.#scenePixelsPerAngstrom
-			: box && Math.min(drawing.clientWidth / box.width, drawing.clientHeight / box.height);
+		const atomic = this.#atomInspection;
+		const pixelsPerUnit = atomic && (atomic.display.electrons !== 1 || this.gpu !== "ready") ? undefined
+			: this.view === "3d" ? this.#scenePixelsPerAngstrom
+				: box && Math.min(drawing.clientWidth / box.width, drawing.clientHeight / box.height);
 		const cell = gridCell(pixelsPerUnit);
 		board.toggleAttribute("data-unit-grid", !!cell);
 		scale.parentElement.hidden = !cell;
@@ -453,6 +521,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		this.picked = undefined;
 		this.hoveredAtom = undefined;
 		this.bondStart = undefined;
+		if (this.inspectedAtom && this.gpu !== "unavailable") this.view = this.inspectedAtom.returnView;
+		this.inspectedAtom = undefined;
+		this.dismissedLone = undefined;
+		this.#resetAtomicChoices();
 		this.bondPreview = undefined;
 		this.repeats = 1;
 		this.#fitNext = true;
@@ -527,18 +599,25 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	#stageTarget(x: number, y: number) {
 		if (!this.#insideBoard(x, y)) return false;
 		const hit = this.shadowRoot?.elementFromPoint(x, y);
-		const surface = this.view === "3d" ? ".board" : ".drawing, .formula-view";
+		const surface = this.view === "3d" || this.#atomicTarget ? ".board" : ".drawing, .formula-view";
 		return !!hit?.closest(surface) && !hit.closest(".view-tools, .model-summary, .selection-card, .ion-entry, .ion-site");
 	}
 
-	#placement(x: number, y: number): Point3 {
-		if (this.view === "3d" && this.#scene) return this.#scene.placement(x, y);
+	#placement(x: number, y: number): Point3 | undefined {
+		const atomic = this.#atomicTarget;
+		if (this.inspectedAtom) return undefined;
+		if (this.view === "3d" && this.#scene) {
+			const point = this.#scene.placement(x, y);
+			return atomic && "position" in atomic ? add(atomic.position, point) : point;
+		}
+		if (atomic) return undefined;
 		const [a, b] = this.#diagramPoint(x, y);
 		return [a, b, 0];
 	}
 
 	/** The view centre, so an atom can be placed without a pointer. */
-	#centre(): Point3 {
+	#centre(): Point3 | undefined {
+		if (this.#atomicTarget) return undefined;
 		const box = this.renderRoot.querySelector(".board")?.getBoundingClientRect();
 		return box ? this.#placement(box.left + box.width / 2, box.top + box.height / 2) : [0, 0, 0];
 	}
@@ -556,11 +635,16 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (!Number.isSafeInteger(id)) return;
 		const angle = atoms.length * 2.3999632297;
 		const radius = 0.9 * Math.sqrt(atoms.length);
-		const [x, y, z] = position ?? [radius * Math.cos(angle), radius * Math.sin(angle), 0];
+		const wasAtomic = !!this.#atomicTarget;
+		const lone = current.kind === "molecule" && atoms.length === 1 && wasAtomic ? current.atoms[0].position : [0, 0, 0];
+		const [x, y, z] = position ?? [lone[0] + radius * Math.cos(angle), lone[1] + radius * Math.sin(angle), lone[2]];
 		if (![x, y, z].every(coordinate => Number.isFinite(coordinate) && Math.abs(coordinate) <= 10_000)) {
 			this.notice = this.#t("Place the atom within the editor’s coordinate range.", "Platziere das Atom innerhalb des Koordinatenbereichs.");
 			return;
 		}
+		if (this.inspectedAtom) this.#leaveAtom();
+		this.dismissedLone = undefined;
+		this.#resetAtomicChoices();
 		const identity = { id, atomicNumber, charge: 0 };
 		if (current.kind === "crystal") {
 			const formulaView = this.view === "2d";
@@ -577,12 +661,13 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			const atom = { ...identity, diagram: [x, y] as Point2, position: [x, y, z] as Point3 };
 			const repeatUnit = current.repeatUnit && { ...current.repeatUnit, atoms: [...current.repeatUnit.atoms, id] };
 			this.#record({ ...current, name: "", catalogKey: undefined, source: undefined, representation: undefined, repeatUnit,
-				geometry: undefined, atoms: [...current.atoms, atom] });
+				geometry: undefined, atoms: [...current.atoms, atom] }, wasAtomic);
 		}
 		this.picked = id;
 	}
 
 	#setTool(tool: Tool) {
+		if (this.inspectedAtom) this.#leaveAtom();
 		this.tool = this.#readonly ? "orbit" : tool;
 		this.bondStart = undefined;
 		this.bondPreview = undefined;
@@ -732,7 +817,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		}
 		if (gesture.distance || (!gesture.moved && distance(gesture, point) < 5)) return;
 		gesture.moved = true;
-		if (this.tool === "bond" && gesture.from && !this.#readonly) {
+		if (!this.#atomicTarget && this.tool === "bond" && gesture.from && !this.#readonly) {
 			if (this.view === "3d") this.#scene?.preview(gesture.from, point.x, point.y);
 			else this.bondPreview = this.#diagramPoint(point.x, point.y);
 		} else if (this.view === "3d") {
@@ -756,7 +841,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		this.bondPreview = undefined;
 		const drag = this.diagramDrag;
 		this.diagramDrag = undefined;
-		if (!gesture || gesture.distance || event.type === "pointercancel") return;
+		if (!gesture || gesture.distance || this.inspectedAtom || event.type === "pointercancel") return;
 		const hit = this.#hit(event);
 		if (gesture.moved) {
 			if (drag && this.draft.kind === "molecule") {
@@ -789,7 +874,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	#wheel = (event: WheelEvent) => {
-		if (this.#overPanel(event) || (this.view === "3d" ? !this.#scene : this.#current.kind !== "molecule")) return;
+		if (this.#overPanel(event) || (this.view === "3d" ? !this.#scene : this.#atomicTarget || this.#current.kind !== "molecule")) return;
 		event.preventDefault();
 		const factor = Math.exp(Math.max(-100, Math.min(100, event.deltaY)) * 0.004);
 		if (this.view === "3d") this.#scene?.zoom(factor);
@@ -797,6 +882,13 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	};
 
 	#keys = (event: KeyboardEvent) => {
+		if (event.key === "Escape" && this.#atomicTarget && !event.composedPath().some(target => target instanceof HTMLSelectElement)) {
+			event.preventDefault();
+			event.stopPropagation();
+			this.#leaveAtom();
+			return;
+		}
+		if (this.inspectedAtom && event.key === "Delete") return;
 		if (event.composedPath().some(target => target instanceof Element && target.matches("input, select, textarea, [role=listbox]"))) return;
 		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z" && !this.#readonly) {
 			event.preventDefault();
@@ -1125,6 +1217,78 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		</div>`;
 	}
 
+	#renderAtomicSummary({ species, configuration, display }: AtomInspection) {
+		const name = elementByAtomicNumber(species.atomicNumber).names[this.#t("en", "de")];
+		const label = symbol(species.atomicNumber) + superscript(chargeText(species.charge));
+		const { subshell, orientation, region } = display;
+		const orientations = subshell ? orbitalOrientations(subshell.l) : [];
+		const radialRegions = subshell ? subshell.n - subshell.l : 0;
+		const text = configuration.text.replace(/([spdf])(\d+)/g, (_, letter, electrons) => letter + superscript(electrons));
+		return html`<section class="model-summary atomic-summary" aria-label=${this.#t("Atomic orbitals", "Atomorbitale")}>
+			<div class="atomic-title">
+				<sl-button size="small" class="icon-control atomic-back" aria-label=${this.#t("Back to structure", "Zur Struktur")}
+					title=${this.#t("Back to structure", "Zur Struktur")} @click=${() => this.#leaveAtom()}>${BACK_ICON}</sl-button>
+				<strong class="summary-formula">${label} · ${name}</strong>
+			</div>
+			${species.boundReference ? html`<span class="summary-caption">${this.#t("Isolated neutral atom reference", "Referenz für das isolierte neutrale Atom")}</span>` : nothing}
+			${configuration.formal ? html`<span class="summary-caption">${this.#t("Formal ion · closed-shell model", "Formales Ion · Modell mit geschlossener Schale")}</span>` : nothing}
+			<div class="atomic-configuration">
+				<span class="summary-caption">${this.#t("Electron configuration", "Elektronenkonfiguration")}</span>
+				<strong aria-label=${configuration.text || nothing}>${text || (configuration.electrons === 0
+					? this.#t("No electrons", "Keine Elektronen") : this.#t("Unavailable", "Nicht verfügbar"))}</strong>
+				${configuration.predicted ? html`<sl-tag size="small">${this.#t("Predicted", "Vorhergesagt")}</sl-tag>` : nothing}
+			</div>
+			${subshell ? html`
+				<label class="summary-variant"><span>${this.#t("Subshell", "Unterschale")}</span>
+					<select @change=${(event: Event) => {
+						this.atomicSubshell = (event.currentTarget as HTMLSelectElement).value;
+						this.atomicOrientation = 0;
+						this.atomicRegion = undefined;
+					}}>
+						${configuration.subshells.map(option => html`<option value=${option.label} ?selected=${option === subshell}>
+							${option.label}${superscript(String(option.electrons))}
+						</option>`)}
+					</select>
+				</label>
+				${orientations.length > 1 ? html`<label class="summary-variant"><span>${this.#t("Orbital", "Orbital")}</span>
+					<select @change=${(event: Event) => { this.atomicOrientation = Number((event.currentTarget as HTMLSelectElement).value); }}>
+						${orientations.map((name, i) => html`<option value=${i} ?selected=${i === orientation}>${subshell.n}${name}</option>`)}
+					</select>
+				</label>` : nothing}
+				${radialRegions > 1 ? html`<label class="summary-variant" title=${this.#t(
+					"Regions separated by radial nodes, from inside to outside.", "Bereiche zwischen Radialknoten, von innen nach außen.")}>
+					<span>${this.#t("Radial region", "Radialbereich")}</span>
+					<select @change=${(event: Event) => { this.atomicRegion = Number((event.currentTarget as HTMLSelectElement).value); }}>
+						${Array.from({ length: radialRegions }, (_, i) => html`<option value=${i} ?selected=${i === region}>
+							${i + 1} / ${radialRegions}
+						</option>`)}
+					</select>
+				</label>` : nothing}
+				<span class="summary-caption" title=${this.#t("One real orbital. The subshell occupancy counts all its orbitals.",
+					"Ein reelles Orbital. Die Elektronenzahl gilt für die gesamte Unterschale.")}>
+					${configuration.electrons === 1 ? this.#t("Hydrogen-like orbital", "Wasserstoffartiges Orbital")
+						: this.#t("Hydrogen-like shapes · relative scale", "Wasserstoffartige Formen · relative Skala")}
+				</span>
+				<span class="structure-legend" role="group" aria-label=${this.#t("Wavefunction phase", "Phase der Wellenfunktion")}>
+					${ORBITAL_PHASE_COLORS.map((color, index) => subshell.l || index === region % 2
+						? html`<span style="--swatch: ${colorHex(color)}">${index ? "−ψ" : "+ψ"}</span>` : nothing)}
+				</span>
+			` : nothing}
+		</section>`;
+	}
+
+	#renderAtomicSlice(display: AtomicOrbitalDisplay) {
+		const key = [display.subshell?.label, display.orientation, display.region].join(":");
+		if (this.#atomicSlice?.key !== key) this.#atomicSlice = { key, slice: atomicOrbitalSlice(display) };
+		const slice = this.#atomicSlice.slice;
+		if (!slice) return nothing;
+		return html`<svg class="atomic-slice" viewBox="0 0 ${slice.side} ${slice.side}" role="img"
+			aria-label=${this.#t("Atomic orbital cross-section", "Schnitt durch das Atomorbital")}>
+			${slice.paths.map((path, phase) => svg`<path fill=${colorHex(ORBITAL_PHASE_COLORS[phase])} d=${path} />`)}
+			<circle fill="#334155" cx=${slice.side / 2} cy=${slice.side / 2} r=".6" />
+		</svg>`;
+	}
+
 	#renderOrbitals(current: Extract<Structure, { kind: "molecule" }>) {
 		const orbitals = moleculeOrbitals(current);
 		const orbital = orbitals.find(item => item.id === this.orbitalId) ?? orbitals[0];
@@ -1308,6 +1472,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		return html`<aside class="selection-card" aria-label=${this.#t("Selection", "Auswahl")}>
 			<div class="card-head">
 				<sl-tag size="small" variant=${atom ? "primary" : "neutral"}>${title}</sl-tag>
+				${atom && !this.#atomicTarget ? html`<sl-button class="icon-control inspect-atom" size="small"
+					aria-label=${this.#t("View atom orbitals", "Atomorbitale ansehen")}
+					title=${this.#t("View atom orbitals", "Atomorbitale ansehen")}
+					@click=${() => this.#inspectAtom(atom.id)}>${ATOMIC_ORBITALS_ICON}</sl-button>` : nothing}
 				${atom && !this.#readonly ? html`<sl-button class="icon-control" size="small" variant="danger" outline
 					aria-label=${this.#t("Delete", "Löschen")} title=${this.#t("Delete", "Löschen")} @click=${this.#removeAtom}>
 					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"
@@ -1398,6 +1566,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			${this.#iconButton({ label: this.#t("New lattice", "Neues Gitter"), icon: NEW_CRYSTAL_ICON,
 				onClick: () => this.#new("crystal") })}
 		</div>`;
+		const atomic = this.#atomInspection;
+		const explicitAtom = !!this.inspectedAtom;
 		const fit = () => { this.#scene?.fit(); this.diagramBox = undefined; this.requestUpdate(); };
 		const title = current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : current.name || formula(current);
 		const toggle = (panel: "catalog" | "file") => () => { this.openPanel = this.openPanel === panel ? undefined : panel; };
@@ -1487,7 +1657,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					<div class="board" tabindex="0" aria-label=${this.#t("Structure workspace", "Struktur-Arbeitsfläche")}
 						@pointerdown=${this.#pointerDown} @pointermove=${this.#pointerMove} @pointerup=${this.#pointerUp} @pointercancel=${this.#pointerUp} @wheel=${this.#wheel}>
 						<div class="scene" ?hidden=${this.view !== "3d"}></div>
-						${this.view === "2d" ? this.#renderDrawing(ionColors) : nothing}
+						${this.view === "2d" ? atomic ? this.#renderAtomicSlice(atomic.display) : this.#renderDrawing(ionColors) : nothing}
 						${this.gpu === "loading" && this.view === "3d" ? html`<p class="empty" role="status"><sl-spinner></sl-spinner>
 							${this.#t("Loading 3D view", "3D-Ansicht wird geladen")}</p>`
 							: !this.#atoms.length ? html`<p class="empty">
@@ -1501,23 +1671,28 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 								<span class="grid-scale-line" aria-hidden="true"></span><span class="grid-length"></span>
 							</sl-tag>
 							<div class="view-buttons">
-								${this.#iconButton({ label: this.#t("3D view", "3D-Ansicht"), icon: CUBE_ICON, pressed: this.view === "3d",
-									disabled: this.gpu === "unavailable", onClick: () => { this.view = "3d"; } })}
-								${this.#iconButton({ label: this.#t("Structure view", "Strukturansicht"), icon: PLANE_ICON, pressed: this.view === "2d",
-									onClick: () => { this.view = "2d"; } })}
-								${(this.view === "3d" && this.gpu === "ready") || (this.view === "2d" && current.kind === "molecule") ? html`
+								${explicitAtom ? nothing : html`
+									${this.#iconButton({ label: this.#t("3D view", "3D-Ansicht"), icon: CUBE_ICON, pressed: this.view === "3d",
+										disabled: this.gpu === "unavailable", onClick: () => { this.view = "3d"; } })}
+									${this.#iconButton({ label: this.#t("Structure view", "Strukturansicht"), icon: PLANE_ICON, pressed: this.view === "2d",
+										onClick: () => {
+											if (this.#atomicTarget) this.#leaveAtom();
+											this.view = "2d";
+										} })}
+								`}
+								${(this.view === "3d" && this.gpu === "ready") || (this.view === "2d" && !atomic && current.kind === "molecule") ? html`
 									${this.#iconButton({ label: this.#t("Zoom in", "Vergrößern"), icon: ZOOM_IN_ICON, onClick: () => this.view === "3d" ? this.#scene?.zoom(.83) : this.#moveDiagram(.83) })}
 									${this.#iconButton({ label: this.#t("Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => this.view === "3d" ? this.#scene?.zoom(1.2) : this.#moveDiagram(1.2) })}
 								` : nothing}
-								${this.view === "3d" || current.kind === "molecule"
+								${this.view === "3d" || (!atomic && current.kind === "molecule")
 									? this.#iconButton({ label: this.#t("Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit }) : nothing}
 								${this.#iconButton({ label: this.fullscreen ? this.#t("Exit fullscreen", "Vollbild verlassen")
 									: this.#t("Fullscreen", "Vollbild"), icon: this.fullscreen ? EXIT_FULLSCREEN_ICON : FULLSCREEN_ICON,
 									pressed: !!this.fullscreen, onClick: this.#toggleFullscreen })}
 							</div>
 						</div>
-						${this.#renderModelSummary(current, ionColors)}
-						${this.#renderSelectionCard()}
+						${atomic ? this.#renderAtomicSummary(atomic) : this.#renderModelSummary(current, ionColors)}
+						${explicitAtom || (atomic && this.#readonly && this.picked === undefined) ? nothing : this.#renderSelectionCard()}
 					</div>
 				</main>
 			</div>

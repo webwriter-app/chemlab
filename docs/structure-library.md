@@ -47,6 +47,14 @@ Ten catalog specimens have offline Kohn–Sham orbital surfaces computed with PB
 
 Other molecules and edited geometries offer a labeled local valence-bond illustration of supported σ bonds, π bonds and lone pairs. Its orientation follows the geometry, and coplanar π overlap shows two opposite phases. The fallback describes local bonding and does not calculate energies, delocalized states, transition-metal orbital populations, or unsupported coordination. Odd-electron graphs and neutral O₂ without matching reference coordinates bypass the closed-shell fallback. Two-dimensional structures, lattice views and whole-solution previews do not expose the molecule model selector. [Valence bond theory](https://openstax.org/books/chemistry-2e/pages/8-1-valence-bond-theory) · [Multiple bonds](https://openstax.org/books/chemistry-2e/pages/8-3-multiple-bonds)
 
+## Individual atoms
+
+A single atom in the 3D builder opens the atomic view automatically. The atom inspector also opens it for a selected atom in a molecule or a crystal. Returning restores the structure view and the current selection. Adding a second atom returns a one-atom draft to the structure canvas.
+
+The configuration is the isolated-atom ground state from the periodic table data. Noble-gas cores are expanded in the subshell selector. A bonded atom or an atom that belongs to a polyatomic lattice ion shows the neutral element as a reference. Supported monatomic ions use the isolated ion’s configuration or, for oxide and sulfide, a labeled formal closed-shell model. Unverified ionic configurations are unavailable. The predicted label follows the neutral configuration source. [NIST neutral configurations](https://www.nist.gov/pml/ground-levels-and-ionization-energies-neutral-atoms) · [NIST Atomic Spectra Database](https://www.nist.gov/pml/atomic-spectra-database)
+
+The orbital selector shows one real orbital from an occupied subshell. The electron count applies to the entire subshell. The renderer uses real spherical harmonics and hydrogenic radial functions. Each radial region can be viewed independently at 20% of its peak amplitude so a larger outer region cannot hide an inner one. The phase colors match the molecular orbital view. The ångström ruler applies to one-electron species. For many-electron species the renderer normalizes the displayed region and shows a relative shape; it does not estimate screened atomic radii. Without WebGL, the canvas displays a central cross-section of the selected orbital. [NIST DLMF hydrogenic solutions](https://dlmf.nist.gov/18.39)
+
 ## Regenerating the checked-in data
 
 Use Python with ASE 3.26.0, Gemmi 0.7.3, and RDKit 2025.3.5. `data/structures/sources.json` identifies the records, molecular connectivity, hand-curated representations, and the coverage set. The generated snapshots are shipped with the widgets and require no runtime network access.

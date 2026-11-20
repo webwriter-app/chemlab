@@ -380,6 +380,17 @@ export const builderStyles = css`
 	}
 	.summary-variant select { min-inline-size: 0; max-inline-size: 100%; }
 	.model-summary output { color: #52525b; }
+	.atomic-summary { max-block-size: min(17rem, calc(100% - 1rem)); }
+	.atomic-title, .atomic-configuration { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem; }
+	.atomic-configuration strong { overflow-wrap: anywhere; font-weight: 650; }
+	.atomic-slice {
+		position: absolute;
+		inset: 0;
+		width: min(68%, 26rem);
+		height: min(68%, 26rem);
+		margin: auto;
+	}
+	.atomic-slice path { opacity: .82; }
 	.selection-card .fields a {
 		display: inline-flex;
 		align-items: center;

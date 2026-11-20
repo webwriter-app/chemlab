@@ -4,6 +4,8 @@ import { crystalIonColors, crystalRadii, latticePositions, siteIon } from "../mo
 import { canBond, dot, electronRegions, fitGeometry, shapeName, subtract } from "../molecule-builder/geometry";
 import { atomRadius, estimatedBondLength, spaceFillingRadius } from "../molecule-builder/radii";
 import { hasMolecularDisplays, moleculeOrbitals, unpackOrbitalSurface } from "../molecule-builder/orbitals";
+import { atomicSpecies, electronConfiguration, orbitalOrientations } from "../molecule-builder/atomic-configuration";
+import { angularOrbital, atomicOrbitalField, atomicOrbitalMesh, atomicOrbitalSlice } from "../molecule-builder/atomic-orbitals";
 import { ELEMENTS, categoryOf } from "../periodic-table/element-reference";
 import { metalCrystal } from "../periodic-table/metal-reference";
 import { cartesian, cellVectors, fractional, newMolecule, readStructure, replicatedSites, type Crystal, type Molecule } from "../molecule-builder/structure";
@@ -161,3 +163,40 @@ for (const orbital of [...waterOrbitals, ...oxygenOrbitals]) {
 		assert.equal(normals.length, positions.length);
 	}
 }
+
+for (const { atomicNumber, symbol } of ELEMENTS) {
+	const configuration = electronConfiguration(atomicNumber, 0);
+	assert.equal(configuration.subshells.reduce((sum, orbital) => sum + orbital.electrons, 0), atomicNumber, symbol);
+	assert.ok(configuration.subshells.every(({ n, l, electrons }) => n > l && electrons <= 2 * (2 * l + 1)), symbol);
+}
+assert.equal(electronConfiguration(24, 0).text, "[Ar] 3d5 4s1");
+assert.equal(electronConfiguration(26, 2).text, "[Ar] 3d6");
+assert.equal(electronConfiguration(17, -1).subshells.find(orbital => orbital.label === "3p").electrons, 6);
+assert.equal(electronConfiguration(118, 0).predicted, true);
+assert.equal(electronConfiguration(8, -2).formal, true);
+assert.deepEqual(electronConfiguration(1, 1).subshells, []);
+assert.equal(electronConfiguration(8, -7).text, "");
+assert.deepEqual(atomicSpecies(salt, sodium.id), { atomicNumber: 11, charge: 1, boundReference: false });
+const polyatomic = hydratedCopperSulfate.sites.find(site => site.atomicNumber === 8 && site.ion === "SO₄²⁻");
+assert.deepEqual(atomicSpecies(hydratedCopperSulfate, polyatomic.id), { atomicNumber: 8, charge: 0, boundReference: true });
+const chargedBonded = { ...water, atoms: water.atoms.map(atom => atom.id === oxygen.id ? { ...atom, charge: -1 } : atom) };
+assert.deepEqual(atomicSpecies(chargedBonded, oxygen.id), { atomicNumber: 8, charge: 0, boundReference: true });
+assert.deepEqual([0, 1, 2, 3].map(l => orbitalOrientations(l).length), [1, 3, 5, 7]);
+assert.equal(angularOrbital(1, 0, 1, 0, 0), 0);
+assert.equal(angularOrbital(1, 0, 0, 0, -1), -1);
+assert.equal(angularOrbital(2, 4, 1, 0, 0), 0);
+assert.ok(angularOrbital(3, 4, 1, 1, -1) < 0);
+assert.ok(atomicOrbitalField(2, 0, 0, 0).value(0, 0, 0) > 0);
+assert.ok(atomicOrbitalField(2, 0, 0, 1).value(.5, 0, 0) < 0);
+const hydrogen = { atomicNumber: 1, atomId: 1, electrons: 1, subshell: electronConfiguration(1, 0).subshells[0],
+	orientation: 0, region: 0 };
+const { phases, extent, physical } = atomicOrbitalMesh(hydrogen);
+assert.ok(physical);
+assert.equal(phases[1], undefined);
+assert.ok(phases[0].positions.length > 100 && phases[0].indices.length > 300);
+assert.ok(phases[0].indices.every(index => index < phases[0].positions.length / 3));
+const contourRadius = phases[0].positions.reduce((max, value) => Math.max(max, Math.abs(value)), 0) * extent;
+assert.ok(Math.abs(contourRadius + .5291772109 * Math.log(.2)) < .005);
+const f = { atomicNumber: 92, atomId: 1, electrons: 92, subshell: electronConfiguration(92, 0).subshells.find(s => s.label === "5f"),
+	orientation: 4, region: 1 };
+assert.ok(atomicOrbitalSlice(f).paths.every(path => path.length > 0));
