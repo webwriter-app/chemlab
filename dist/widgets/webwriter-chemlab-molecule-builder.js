@@ -82149,6 +82149,45 @@ var init_PostEffect = __esm({
   }
 });
 
+// node_modules/@pixi/3d/dist/post-processing/passes/MeshPass.mjs
+var MeshPass;
+var init_MeshPass = __esm({
+  "node_modules/@pixi/3d/dist/post-processing/passes/MeshPass.mjs"() {
+    init_ForwardRenderPass();
+    init_Pass3D();
+    MeshPass = class extends Pass3D {
+      /** Pass name materials opt in with */
+      name;
+      _options;
+      constructor(options) {
+        super(options);
+        this.name = options.name;
+        this._options = options;
+      }
+      /** The stage the pass draws at; {@link MeshPassOptions#stage} says how it's picked when left out */
+      get stage() {
+        return this._options.stage ?? (this._options.camera?.renderTexture ? "beforeOpaque" : "afterOpaque");
+      }
+      /**
+      * Adds the draw of this pass's meshes
+      * @param graph - Render graph being built.
+      * @param ctx - Renderer and shared handles for this build.
+      */
+      build(graph, ctx) {
+        const options = this._options;
+        graph.addPass(new ForwardRenderPass({
+          renderer: ctx.renderer,
+          name: options.name,
+          description: options.description,
+          descriptor: options.descriptor,
+          sort: options.sort ?? "key",
+          camera: options.camera
+        }));
+      }
+    };
+  }
+});
+
 // node_modules/@pixi/3d/dist/scene/BatchedMesh3D.mjs
 var BatchedMesh3D;
 var init_BatchedMesh3D = __esm({
@@ -90997,16 +91036,188 @@ var init_dist2 = __esm({
   }
 });
 
+// node_modules/@pixi/3d/dist/extras/post-processing/passes/solidMeshShader.mjs
+function solidMeshDescriptor(options = {}) {
+  const color = Color.shared.setValue(options.color ?? 0);
+  return {
+    bitsGpu: [solidMeshBit],
+    bitsGl: [instanceFetchBitGl, solidMeshBit],
+    template: solidMeshTemplate,
+    overrides: {
+      SOLID_EXTRUDE: options.extrude ?? 0,
+      SOLID_R: color.red,
+      SOLID_G: color.green,
+      SOLID_B: color.blue
+    }
+  };
+}
+var solidMeshTemplate, solidMeshBit;
+var init_solidMeshShader = __esm({
+  "node_modules/@pixi/3d/dist/extras/post-processing/passes/solidMeshShader.mjs"() {
+    init_instanceFetchBitGl();
+    init_lib();
+    solidMeshTemplate = {
+      bindGroups: [{
+        name: "global",
+        ubo: true
+      }, "camera"],
+      gpu: `
+{{header}}
+{{vertexHeader}}
+
+@vertex
+fn mainVertex(
+  input: VertexInput,
+  @builtin(instance_index) ii: u32,
+  @builtin(vertex_index) vid: u32
+) -> VertexOutput {
+  var output: VertexOutput;
+
+  var position: vec4<f32>;
+  var normal = input.aNormal;
+  var tangent = vec3<f32>(0.0);
+
+  let renderable = uRenderableStorage[uRenderableInstanceStorage[ii].id];
+  let batchWorldMatrix = uRenderableStorage[0].transform;
+  var modelMatrix = batchWorldMatrix * renderable.transform;
+
+  {{vertexInput}}
+
+  position = vec4<f32>(position.xyz + normalize(normal) * SOLID_EXTRUDE, 1.0);
+
+  let worldPosition = modelMatrix * position;
+  output.position = camera.uViewProjectionMatrix * worldPosition;
+
+  {{vertexEnd}}
+
+  return output;
+}
+
+@fragment
+fn mainFragment(input: FragmentInput) -> @location(0) vec4<f32> {
+  return vec4<f32>(SOLID_R, SOLID_G, SOLID_B, 1.0);
+}
+`,
+      gl: {
+        vertex: `#version 300 es
+
+{{header}}
+
+void main() {
+  mat4 modelMatrix;
+  vec4 position;
+  vec3 normal = aNormal;
+  vec3 tangent = vec3(0.0);
+
+  {{input}}
+
+  position.xyz += normalize(normal) * SOLID_EXTRUDE;
+
+  vec4 worldPosition = modelMatrix * position;
+  gl_Position = uViewProjectionMatrix * worldPosition;
+
+  {{end}}
+}`,
+        fragment: `#version 300 es
+out vec4 fragColor;
+
+{{header}}
+
+void main() {
+  fragColor = vec4(SOLID_R, SOLID_G, SOLID_B, 1.0);
+}`
+      }
+    };
+    solidMeshBit = {
+      name: "solidMesh",
+      attributes: { aNormal: "float32x3" },
+      overrideDefs: {
+        SOLID_EXTRUDE: {
+          type: "f32",
+          default: 0
+        },
+        SOLID_R: {
+          type: "f32",
+          default: 0
+        },
+        SOLID_G: {
+          type: "f32",
+          default: 0
+        },
+        SOLID_B: {
+          type: "f32",
+          default: 0
+        }
+      }
+    };
+  }
+});
+
+// node_modules/@pixi/3d/dist/extras/post-processing/passes/OutlinePass.mjs
+var OutlinePass;
+var init_OutlinePass = __esm({
+  "node_modules/@pixi/3d/dist/extras/post-processing/passes/OutlinePass.mjs"() {
+    init_MeshPass();
+    init_solidMeshShader();
+    init_lib();
+    OutlinePass = class OutlinePass2 extends MeshPass {
+      /**
+      * Defaults for every new `OutlinePass`; an option passed as `undefined` keeps its default
+      * @example
+      * ```ts
+      * OutlinePass.defaultOptions.width = 0.05;
+      * ```
+      */
+      static defaultOptions = {
+        width: 0.03,
+        color: 0,
+        stage: "afterOpaque",
+        description: "Draws expanded back faces around opted-in meshes as an ink outline."
+      };
+      constructor(options = {}) {
+        const { width, color, ...rest } = {
+          ...OutlinePass2.defaultOptions,
+          ...definedProps(options)
+        };
+        const state = new State();
+        state.depthTest = true;
+        state.culling = true;
+        state.clockwiseFrontFace = true;
+        state.blend = false;
+        super({
+          ...rest,
+          name: "outline",
+          descriptor: {
+            shaderDescriptor: solidMeshDescriptor({
+              color,
+              extrude: width
+            }),
+            state
+          }
+        });
+      }
+    };
+  }
+});
+
+// node_modules/@pixi/3d/dist/extras/index.mjs
+var init_extras = __esm({
+  "node_modules/@pixi/3d/dist/extras/index.mjs"() {
+    init_OutlinePass();
+  }
+});
+
 // molecule-builder/scene.ts
 var scene_exports = {};
 __export(scene_exports, {
   MoleculeScene: () => MoleculeScene
 });
-var vector4, cellCorners, CAMERA_FOV, FIT_FILL, AXIS_ORIGIN, AXIS_LENGTH, AXIS_COLORS, MoleculeScene;
+var vector4, cellCorners, CAMERA_FOV, FIT_FILL, AXIS_ORIGIN, AXIS_LENGTH, AXIS_COLORS, OUTLINE_WIDTH, OUTLINE_COLOR, MoleculeScene;
 var init_scene = __esm({
   "molecule-builder/scene.ts"() {
     init_lib();
     init_dist2();
+    init_extras();
     init_geometry();
     init_crystal_display();
     init_structure();
@@ -91017,6 +91228,8 @@ var init_scene = __esm({
     AXIS_ORIGIN = 34;
     AXIS_LENGTH = 20;
     AXIS_COLORS = [11817737, 1013358, 7153881];
+    OUTLINE_WIDTH = 0.09;
+    OUTLINE_COLOR = 3359061;
     MoleculeScene = class _MoleculeScene {
       static async create(host) {
         const app = new Application();
@@ -91076,7 +91289,8 @@ var init_scene = __esm({
         this.#app = app;
         this.#view = new View3D({
           autoResize: false,
-          environment: { skyColor: 16777215, groundColor: 10925251, intensity: 0.94 }
+          environment: { skyColor: 16777215, groundColor: 10925251, intensity: 0.94 },
+          passes: [new OutlinePass({ width: OUTLINE_WIDTH, color: OUTLINE_COLOR })]
         });
         app.stage.addChild(this.#view, this.#lattice, this.#axes, ...this.#axisLabels);
         for (const label of this.#axisLabels) label.visible = false;
@@ -91102,8 +91316,16 @@ var init_scene = __esm({
         this.#observer.observe(host);
         this.#camera();
       }
-      #material(color, opacity = 1, selected = false) {
-        const key = `${color}:${opacity}:${selected}`;
+      /**
+       * A cached material for one colour, opacity and selection state.
+       *
+       * Only opaque meshes take the outline: a translucent atom or electron cloud
+       * would show the ink shell behind its own surface as a solid ring, and the
+       * pass draws before the transparent stage, so the ring would sit under a
+       * veil instead of around the shape.
+       */
+      #material(color, opacity = 1, selected = false, outline = opacity >= 1) {
+        const key = `${color}:${opacity}:${selected}:${outline}`;
         let material = this.#materials.get(key);
         if (!material) {
           material = new Material3D({
@@ -91111,14 +91333,15 @@ var init_scene = __esm({
             roughness: 0.61,
             alpha: opacity,
             alphaMode: opacity < 1 ? "blend" : "opaque",
-            emissive: selected ? { color, strength: 0.48 } : void 0
+            emissive: selected ? { color, strength: 0.48 } : void 0,
+            passes: outline ? { outline: true } : void 0
           });
           this.#materials.set(key, material);
         }
         return material;
       }
-      #rod() {
-        return new Mesh3D({ geometry: this.#cylinder, material: this.#material(8753051), eventMode: "none" });
+      #rod(outline = true) {
+        return new Mesh3D({ geometry: this.#cylinder, material: this.#material(8753051, 1, false, outline), eventMode: "none" });
       }
       #line(mesh, from, to, width) {
         const direction = subtract(to, from);
@@ -91209,7 +91432,7 @@ var init_scene = __esm({
                   start[(axis + 2) % 3] = v4;
                   const end = [...start];
                   end[axis] = repeats;
-                  const edge = this.#rod();
+                  const edge = this.#rod(false);
                   this.#line(edge, cartesian(vectors, start), cartesian(vectors, end), 0.024);
                   this.#edges.addChild(edge);
                 }
