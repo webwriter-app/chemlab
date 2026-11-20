@@ -61,8 +61,16 @@ export const builderStyles = css`
 		border-inline-start: 1px solid var(--line);
 		padding-inline-start: .35rem;
 	}
-	.tools sl-button::part(base), .view-tools sl-button::part(base) { box-shadow: var(--shadow); }
-	.icon-control::part(label) { display: grid; place-items: center; padding-inline: .3rem; }
+	.tools sl-button::part(base) { box-shadow: var(--shadow); }
+	/* Icon controls carry their label in the tooltip only, so the label part
+	   keeps the square metrics of the lab's canvas buttons. */
+	.icon-control::part(label) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-inline-size: 24px;
+		padding-inline: 3px;
+	}
 	/* The catalog, file and send actions open in a compact surface anchored to
 	   their own button instead of pushing a full-width row under the header. */
 	.surface {
@@ -246,7 +254,20 @@ export const builderStyles = css`
 	.scene { overflow: hidden; }
 	.drawing { display: block; background: radial-gradient(#d4d8db 1px, transparent 1px) 1px 1px / 18px 18px; }
 	.drawing [data-atom] { cursor: pointer; }
-	.view-tools { position: absolute; right: .5rem; bottom: .5rem; z-index: 2; gap: .25rem; }
+	/* The canvas controls repeat the lab's zoom cluster: same inset, same gap,
+	   same 24 px buttons on the light surface with the soft control shadow. */
+	.view-tools {
+		position: absolute;
+		inset-block-end: 4px;
+		inset-inline-end: 4px;
+		z-index: 2;
+		max-inline-size: calc(100% - 8px);
+		justify-content: flex-end;
+		gap: 3px;
+		--sl-input-height-small: 24px;
+	}
+	.view-tools sl-button::part(base) { box-shadow: var(--shadow); }
+	.view-tools sl-button:not([aria-pressed="true"])::part(base):not(:hover):not(:active) { background: var(--control); }
 	.empty { position: absolute; inset: 45% 12% auto; margin: 0; text-align: center; color: #52525b; pointer-events: none; }
 	/* The model summary and the selection card sit at the canvas edge, so they
 	   keep their place while the structure turns. */

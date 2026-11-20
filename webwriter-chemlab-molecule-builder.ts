@@ -52,9 +52,58 @@ const CUBE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidde
 const PLANE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
 	<path d="M8 1.9 13.8 5v6L8 14.1 2.2 11V5z" /><circle cx="8" cy="8" r="1.7" /></svg>`;
-const FIT_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+/** Fit control of the canvas, drawn exactly like the lab's fit button. */
+const FIT_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+	<path d="M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4" /><rect x="5" y="5" width="6" height="6" rx="0.5" /></svg>`;
+/** Zoom controls of the canvas, drawn exactly like the lab's zoom buttons. */
+const ZOOM_IN_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true">
+	<path d="M3 8h10M8 3v10" /></svg>`;
+const ZOOM_OUT_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true">
+	<path d="M3 8h10" /></svg>`;
+/** Ribbon icons: the header actions and the editing tools carry no text. */
+const CATALOG_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
-	<path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" /></svg>`;
+	<path d="M6.2 2h3.6M6.8 2v4.3L3.4 12.2A1.1 1.1 0 0 0 4.4 13.8h7.2a1.1 1.1 0 0 0 1-1.6L9.2 6.3V2" />
+	<path d="M4.9 9.6h6.2" /></svg>`;
+const FILE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M4 2.2h4.6L12 5.6v8.2H4z" /><path d="M8.6 2.2v3.4H12" /></svg>`;
+const SEND_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M2.6 8h8.4M8 4.6 11.4 8 8 11.4" /><path d="M13.4 2.6v10.8" /></svg>`;
+const ORBIT_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M13.2 8a5.2 5.2 0 1 1-1.6-3.8" /><path d="M13.4 2.4v3.2H10.2" /></svg>`;
+const CURSOR_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M4.2 2.6 12 8.4l-3.6.5-1.7 3.4z" /></svg>`;
+const ATOM_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.2">
+	<circle cx="8" cy="8" r="1.5" /><ellipse cx="8" cy="8" rx="5.8" ry="2.4" />
+	<ellipse cx="8" cy="8" rx="5.8" ry="2.4" transform="rotate(60 8 8)" /></svg>`;
+const BOND_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+	<circle cx="3.9" cy="12.1" r="1.7" /><circle cx="12.1" cy="3.9" r="1.7" /><path d="M5.2 10.8 10.8 5.2" /></svg>`;
+const GEOMETRY_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+	<path d="M8 8 3.6 4.4M8 8l4.4-3.6M8 8v4.6" /><circle cx="8" cy="8" r="1.4" />
+	<circle cx="3.6" cy="4.4" r="1.2" /><circle cx="12.4" cy="4.4" r="1.2" /><circle cx="8" cy="12.6" r="1.2" /></svg>`;
+const CRYSTAL_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.2" stroke-linejoin="round">
+	<path d="M8 2.2 13.4 6.3 8 13.8 2.6 6.3z" /><path d="M2.6 6.3h10.8M8 2.2 6.1 6.3 8 13.8l1.9-7.5z" /></svg>`;
+/** Display switches of the model summary, one glyph per legend entry. */
+const EDGES_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+	<path d="M8 2 13.6 5.2v5.6L8 14 2.4 10.8V5.2z" /></svg>`;
+const LATTICE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
+	<circle cx="3.4" cy="3.4" r="1.3" /><circle cx="8" cy="3.4" r="1.3" /><circle cx="12.6" cy="3.4" r="1.3" />
+	<circle cx="3.4" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" /><circle cx="12.6" cy="8" r="1.3" />
+	<circle cx="3.4" cy="12.6" r="1.3" /><circle cx="8" cy="12.6" r="1.3" /><circle cx="12.6" cy="12.6" r="1.3" /></svg>`;
+const AXES_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M3.4 12.6V3.4M3.4 12.6h9.2M3.4 12.6 8.6 7.4" /><path d="M3.4 2.2v1.2M2.2 12.6h1.2M9.6 6.4 8.6 7.4 9.6 8.4" /></svg>`;
+const ELECTRONS_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
+	<circle cx="4.4" cy="8" r="1.7" /><circle cx="11.6" cy="8" r="1.7" /></svg>`;
 
 @customElement(BUILDER_TAG)
 export class ChemLabMoleculeBuilder extends LitElementWw {
@@ -810,10 +859,20 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		</div>`;
 	}
 
-	/** Renders a compact icon control, the shape the canvas controls share with the lab. */
-	#iconButton(options: { label: string; icon: unknown; pressed?: boolean; disabled?: boolean; onClick: () => void }) {
-		return html`<sl-button class="icon-control" size="small" aria-label=${options.label} title=${options.label}
-			variant=${options.pressed ? "primary" : "default"} aria-pressed=${options.pressed === undefined ? nothing : String(options.pressed)}
+	/**
+	 * Renders a compact icon control, the shape the canvas controls share with
+	 * the lab. The label only lives in the tooltip and the accessible name, so
+	 * every caller has to pass one.
+	 */
+	#iconButton(options: {
+		label: string; icon: unknown; pressed?: boolean; expanded?: boolean; disabled?: boolean;
+		slot?: string; onClick: () => void;
+	}) {
+		return html`<sl-button class="icon-control" size="small" slot=${options.slot ?? nothing}
+			aria-label=${options.label} title=${options.label}
+			variant=${options.pressed ? "primary" : "default"}
+			aria-pressed=${options.pressed === undefined ? nothing : String(options.pressed)}
+			aria-expanded=${options.expanded === undefined ? nothing : String(options.expanded)}
 			?disabled=${options.disabled} @click=${options.onClick}>${options.icon}</sl-button>`;
 	}
 
@@ -913,8 +972,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				: current.geometry === "estimated" ? this.#t("Estimated geometry", "Geschätzte Geometrie")
 					: this.#t("Sketch", "Skizze")
 			: undefined;
-		const toggle = (label: string, value: boolean, onClick: () => void) => html`<sl-button size="small"
-			variant=${value ? "primary" : "default"} aria-pressed=${String(value)} @click=${onClick}>${label}</sl-button>`;
+		const toggle = (label: string, icon: unknown, value: boolean, onClick: () => void) => this.#iconButton({
+			label, icon, pressed: value, onClick,
+		});
 		return html`<div class="model-summary">
 			<div class="fields">
 				<sl-tag size="small">${crystal ? this.#t("Crystal", "Kristall") : this.#t("Molecule", "Molekül")}</sl-tag>
@@ -944,11 +1004,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 						${[1, 2, 3].filter(value => value ** 3 * current.sites.length <= 1800)
 							.map(value => html`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
 					</select></label>` : nothing}
-				${crystal ? toggle(this.#t("Cell edges", "Zellkanten"), this.showEdges, () => { this.showEdges = !this.showEdges; }) : nothing}
-				${crystal ? toggle(this.#t("Lattice points", "Gitterpunkte"), this.showLattice, () => { this.showLattice = !this.showLattice; }) : nothing}
-				${crystal ? toggle(this.#t("Axes", "Achsen"), this.showAxes, () => { this.showAxes = !this.showAxes; }) : nothing}
+				${crystal ? toggle(this.#t("Cell edges", "Zellkanten"), EDGES_ICON, this.showEdges, () => { this.showEdges = !this.showEdges; }) : nothing}
+				${crystal ? toggle(this.#t("Lattice points", "Gitterpunkte"), LATTICE_ICON, this.showLattice, () => { this.showLattice = !this.showLattice; }) : nothing}
+				${crystal ? toggle(this.#t("Axes", "Achsen"), AXES_ICON, this.showAxes, () => { this.showAxes = !this.showAxes; }) : nothing}
 				${current.kind === "molecule" && current.atoms.length && this.view === "3d" && this.gpu === "ready"
-					? toggle(this.#t("Valence electrons", "Valenzelektronen"), this.showElectrons, () => { this.showElectrons = !this.showElectrons; })
+					? toggle(this.#t("Valence electrons", "Valenzelektronen"), ELECTRONS_ICON, this.showElectrons, () => { this.showElectrons = !this.showElectrons; })
 					: nothing}
 			</div>
 			<output aria-live="polite">${this.notice || (this.bondStart ? this.#t("Choose the other atom.", "Wähle das zweite Atom.") : "")}</output>
@@ -1058,8 +1118,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			"repeat-unit": this.#t("Capped repeat-unit example", "Beispiel mit abgesättigten Wiederholungseinheiten"),
 			"ionic-components": this.#t("Ionic components", "Ionenbestandteile"),
 		}[current.representation];
-		const tool = (value: Tool, label: string) => html`<sl-button size="small" variant=${value === this.tool ? "primary" : "default"}
-			aria-pressed=${value === this.tool} @click=${() => this.#setTool(value)}>${label}</sl-button>`;
+		const tool = (value: Tool, label: string, icon: unknown) => this.#iconButton({
+			label, icon, pressed: value === this.tool, onClick: () => this.#setTool(value),
+		});
 		const fit = () => { this.#scene?.fit(); this.#lastDrawn = undefined; this.requestUpdate(); };
 		const title = current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : current.name || formula(current);
 		const toggle = (panel: "catalog" | "file") => () => { this.openPanel = this.openPanel === panel ? undefined : panel; };
@@ -1076,21 +1137,18 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				</div>
 				<div class="document-actions">
 					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "catalog"}>
-						<sl-button slot="anchor" size="small" aria-expanded=${this.openPanel === "catalog"} @click=${toggle("catalog")}>
-							${this.#t("ChemLab catalog", "ChemLab-Katalog")}
-						</sl-button>
+						${this.#iconButton({ slot: "anchor", label: this.#t("ChemLab catalog", "ChemLab-Katalog"), icon: CATALOG_ICON,
+							pressed: this.openPanel === "catalog", expanded: this.openPanel === "catalog", onClick: toggle("catalog") })}
 						${this.#renderCatalog()}
 					</sl-popup>
 					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "file"}>
-						<sl-button slot="anchor" size="small" aria-expanded=${this.openPanel === "file"} @click=${toggle("file")}>
-							${this.#t("File", "Datei")}
-						</sl-button>
+						${this.#iconButton({ slot: "anchor", label: this.#t("File", "Datei"), icon: FILE_ICON,
+							pressed: this.openPanel === "file", expanded: this.openPanel === "file", onClick: toggle("file") })}
 						${this.#renderFileActions()}
 					</sl-popup>
 					${this.#atoms.length && this.labs.length ? html`<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.showLabs}>
-						<sl-button slot="anchor" size="small" variant="primary" @click=${this.#prepareSend}>
-							${this.#t("Send to ChemLab", "An ChemLab senden")}
-						</sl-button>
+						${this.#iconButton({ slot: "anchor", label: this.#t("Send to ChemLab", "An ChemLab senden"), icon: SEND_ICON,
+							pressed: this.showLabs, expanded: this.showLabs, onClick: this.#prepareSend })}
 						${this.#renderTargetPicker()}
 					</sl-popup>` : nothing}
 					${this.#readonly ? html`
@@ -1101,9 +1159,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			</header>
 			${this.#readonly ? nothing : html`<div class="tools" role="toolbar" aria-label=${this.#t("Editing tools", "Bearbeitungswerkzeuge")}>
 				<div class="tool-group" role="group" aria-label=${this.#t("Tools", "Werkzeuge")}>
-					${tool("orbit", this.view === "3d" ? this.#t("Orbit", "Drehen") : this.#t("Select", "Auswählen"))}
-					${tool("atom", this.#t("Place atom", "Atom platzieren"))}
-					${current.kind === "molecule" ? tool("bond", this.#t("Draw bond", "Bindung zeichnen")) : nothing}
+					${tool("orbit", this.view === "3d" ? this.#t("Orbit", "Drehen") : this.#t("Select", "Auswählen"),
+						this.view === "3d" ? ORBIT_ICON : CURSOR_ICON)}
+					${tool("atom", this.#t("Place atom", "Atom platzieren"), ATOM_ICON)}
+					${current.kind === "molecule" ? tool("bond", this.#t("Draw bond", "Bindung zeichnen"), BOND_ICON) : nothing}
 					${this.tool === "bond" ? html`<span class="bond-orders" role="group" aria-label=${this.#t("Bond order", "Bindungsordnung")}>
 						${([1, 2, 3] as BondOrder[]).map(order => html`<sl-button class="icon-control" size="small"
 							variant=${order === this.bondOrder ? "primary" : "default"} aria-pressed=${String(order === this.bondOrder)}
@@ -1113,7 +1172,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					</span>` : nothing}
 				</div>
 				${current.kind === "molecule" && current.bonds.length ? html`<div class="tool-group">
-					<sl-button size="small" @click=${this.#geometry}>${this.#t("Fit geometry", "Geometrie anpassen")}</sl-button>
+					${this.#iconButton({ label: this.#t("Fit geometry", "Geometrie anpassen"), icon: GEOMETRY_ICON, onClick: this.#geometry })}
 				</div>` : nothing}
 				${this.#past.length || this.#future.length ? html`<div class="tool-group" role="group" aria-label=${this.#t("History", "Verlauf")}>
 					${this.#renderHistoryButton(false)}${this.#renderHistoryButton(true)}
@@ -1133,8 +1192,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					</button>
 					<div class="palette-body" id="palette-body" ?hidden=${!paletteVisible}>
 						<div class="palette-heading">
-							${lattice ? html`<sl-button size="small" @click=${() => this.viewStructure(lattice)}>
-								${this.#t("View crystal", "Kristall ansehen")}</sl-button>` : nothing}
+							${lattice ? this.#iconButton({ label: this.#t("View crystal", "Kristall ansehen"), icon: CRYSTAL_ICON,
+								onClick: () => this.viewStructure(lattice) }) : nothing}
 							${lattice === null ? html`<sl-tag size="small">${this.#t("Bulk lattice unavailable", "Keine experimentelle Gitterstruktur")}</sl-tag>` : nothing}
 							${fullWidth ? html`<div class="palette-tools" role="group" aria-label=${this.#t("Element palette layout", "Darstellung der Elementpalette")}>
 								${this.#renderPickerLayout("list", pickerView === "list")}${this.#renderPickerLayout("table", pickerView === "table")}
@@ -1162,8 +1221,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 							${this.#iconButton({ label: this.#t("Structure view", "Strukturansicht"), icon: PLANE_ICON, pressed: this.view === "2d",
 								onClick: () => { this.view = "2d"; } })}
 							${this.view === "3d" && this.gpu === "ready" ? html`
-								${this.#iconButton({ label: this.#t("Zoom in", "Vergrößern"), icon: "+", onClick: () => this.#scene?.zoom(.83) })}
-								${this.#iconButton({ label: this.#t("Zoom out", "Verkleinern"), icon: "−", onClick: () => this.#scene?.zoom(1.2) })}
+								${this.#iconButton({ label: this.#t("Zoom in", "Vergrößern"), icon: ZOOM_IN_ICON, onClick: () => this.#scene?.zoom(.83) })}
+								${this.#iconButton({ label: this.#t("Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => this.#scene?.zoom(1.2) })}
 							` : nothing}
 							${this.#iconButton({ label: this.#t("Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit })}
 						</div>

@@ -105606,8 +105606,16 @@ var builderStyles = i`
 		border-inline-start: 1px solid var(--line);
 		padding-inline-start: .35rem;
 	}
-	.tools sl-button::part(base), .view-tools sl-button::part(base) { box-shadow: var(--shadow); }
-	.icon-control::part(label) { display: grid; place-items: center; padding-inline: .3rem; }
+	.tools sl-button::part(base) { box-shadow: var(--shadow); }
+	/* Icon controls carry their label in the tooltip only, so the label part
+	   keeps the square metrics of the lab's canvas buttons. */
+	.icon-control::part(label) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-inline-size: 24px;
+		padding-inline: 3px;
+	}
 	/* The catalog, file and send actions open in a compact surface anchored to
 	   their own button instead of pushing a full-width row under the header. */
 	.surface {
@@ -105791,7 +105799,20 @@ var builderStyles = i`
 	.scene { overflow: hidden; }
 	.drawing { display: block; background: radial-gradient(#d4d8db 1px, transparent 1px) 1px 1px / 18px 18px; }
 	.drawing [data-atom] { cursor: pointer; }
-	.view-tools { position: absolute; right: .5rem; bottom: .5rem; z-index: 2; gap: .25rem; }
+	/* The canvas controls repeat the lab's zoom cluster: same inset, same gap,
+	   same 24 px buttons on the light surface with the soft control shadow. */
+	.view-tools {
+		position: absolute;
+		inset-block-end: 4px;
+		inset-inline-end: 4px;
+		z-index: 2;
+		max-inline-size: calc(100% - 8px);
+		justify-content: flex-end;
+		gap: 3px;
+		--sl-input-height-small: 24px;
+	}
+	.view-tools sl-button::part(base) { box-shadow: var(--shadow); }
+	.view-tools sl-button:not([aria-pressed="true"])::part(base):not(:hover):not(:active) { background: var(--control); }
 	.empty { position: absolute; inset: 45% 12% auto; margin: 0; text-align: center; color: #52525b; pointer-events: none; }
 	/* The model summary and the selection card sit at the canvas edge, so they
 	   keep their place while the structure turns. */
@@ -105979,9 +106000,54 @@ var CUBE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="
 var PLANE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
 	<path d="M8 1.9 13.8 5v6L8 14.1 2.2 11V5z" /><circle cx="8" cy="8" r="1.7" /></svg>`;
-var FIT_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+var FIT_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+	<path d="M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4" /><rect x="5" y="5" width="6" height="6" rx="0.5" /></svg>`;
+var ZOOM_IN_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true">
+	<path d="M3 8h10M8 3v10" /></svg>`;
+var ZOOM_OUT_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true">
+	<path d="M3 8h10" /></svg>`;
+var CATALOG_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
-	<path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" /></svg>`;
+	<path d="M6.2 2h3.6M6.8 2v4.3L3.4 12.2A1.1 1.1 0 0 0 4.4 13.8h7.2a1.1 1.1 0 0 0 1-1.6L9.2 6.3V2" />
+	<path d="M4.9 9.6h6.2" /></svg>`;
+var FILE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M4 2.2h4.6L12 5.6v8.2H4z" /><path d="M8.6 2.2v3.4H12" /></svg>`;
+var SEND_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M2.6 8h8.4M8 4.6 11.4 8 8 11.4" /><path d="M13.4 2.6v10.8" /></svg>`;
+var ORBIT_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M13.2 8a5.2 5.2 0 1 1-1.6-3.8" /><path d="M13.4 2.4v3.2H10.2" /></svg>`;
+var CURSOR_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M4.2 2.6 12 8.4l-3.6.5-1.7 3.4z" /></svg>`;
+var ATOM_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.2">
+	<circle cx="8" cy="8" r="1.5" /><ellipse cx="8" cy="8" rx="5.8" ry="2.4" />
+	<ellipse cx="8" cy="8" rx="5.8" ry="2.4" transform="rotate(60 8 8)" /></svg>`;
+var BOND_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+	<circle cx="3.9" cy="12.1" r="1.7" /><circle cx="12.1" cy="3.9" r="1.7" /><path d="M5.2 10.8 10.8 5.2" /></svg>`;
+var GEOMETRY_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+	<path d="M8 8 3.6 4.4M8 8l4.4-3.6M8 8v4.6" /><circle cx="8" cy="8" r="1.4" />
+	<circle cx="3.6" cy="4.4" r="1.2" /><circle cx="12.4" cy="4.4" r="1.2" /><circle cx="8" cy="12.6" r="1.2" /></svg>`;
+var CRYSTAL_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.2" stroke-linejoin="round">
+	<path d="M8 2.2 13.4 6.3 8 13.8 2.6 6.3z" /><path d="M2.6 6.3h10.8M8 2.2 6.1 6.3 8 13.8l1.9-7.5z" /></svg>`;
+var EDGES_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+	<path d="M8 2 13.6 5.2v5.6L8 14 2.4 10.8V5.2z" /></svg>`;
+var LATTICE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
+	<circle cx="3.4" cy="3.4" r="1.3" /><circle cx="8" cy="3.4" r="1.3" /><circle cx="12.6" cy="3.4" r="1.3" />
+	<circle cx="3.4" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" /><circle cx="12.6" cy="8" r="1.3" />
+	<circle cx="3.4" cy="12.6" r="1.3" /><circle cx="8" cy="12.6" r="1.3" /><circle cx="12.6" cy="12.6" r="1.3" /></svg>`;
+var AXES_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M3.4 12.6V3.4M3.4 12.6h9.2M3.4 12.6 8.6 7.4" /><path d="M3.4 2.2v1.2M2.2 12.6h1.2M9.6 6.4 8.6 7.4 9.6 8.4" /></svg>`;
+var ELECTRONS_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
+	<circle cx="4.4" cy="8" r="1.7" /><circle cx="11.6" cy="8" r="1.7" /></svg>`;
 var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _lastDrawn, _lastDrawnRepeats, _diagramBounds, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, t_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, download_fn, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, renderDrawing_fn, renderModelSummary_fn, renderSelectionCard_fn;
 _ChemLabMoleculeBuilder_decorators = [t4(BUILDER_TAG)];
 var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
@@ -106264,8 +106330,12 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       "repeat-unit": __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Capped repeat-unit example", "Beispiel mit abges\xE4ttigten Wiederholungseinheiten"),
       "ionic-components": __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Ionic components", "Ionenbestandteile")
     }[current.representation];
-    const tool = (value, label) => x2`<sl-button size="small" variant=${value === this.tool ? "primary" : "default"}
-			aria-pressed=${value === this.tool} @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, setTool_fn).call(this, value)}>${label}</sl-button>`;
+    const tool = (value, label, icon) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      label,
+      icon,
+      pressed: value === this.tool,
+      onClick: () => __privateMethod(this, _ChemLabMoleculeBuilder_instances, setTool_fn).call(this, value)
+    });
     const fit = () => {
       __privateGet(this, _scene)?.fit();
       __privateSet(this, _lastDrawn, void 0);
@@ -106295,21 +106365,36 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
 				</div>
 				<div class="document-actions">
 					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "catalog"}>
-						<sl-button slot="anchor" size="small" aria-expanded=${this.openPanel === "catalog"} @click=${toggle("catalog")}>
-							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog")}
-						</sl-button>
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      slot: "anchor",
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "ChemLab catalog", "ChemLab-Katalog"),
+      icon: CATALOG_ICON,
+      pressed: this.openPanel === "catalog",
+      expanded: this.openPanel === "catalog",
+      onClick: toggle("catalog")
+    })}
 						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderCatalog_fn).call(this)}
 					</sl-popup>
 					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "file"}>
-						<sl-button slot="anchor" size="small" aria-expanded=${this.openPanel === "file"} @click=${toggle("file")}>
-							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "File", "Datei")}
-						</sl-button>
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      slot: "anchor",
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "File", "Datei"),
+      icon: FILE_ICON,
+      pressed: this.openPanel === "file",
+      expanded: this.openPanel === "file",
+      onClick: toggle("file")
+    })}
 						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderFileActions_fn).call(this)}
 					</sl-popup>
 					${__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length && this.labs.length ? x2`<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.showLabs}>
-						<sl-button slot="anchor" size="small" variant="primary" @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, prepareSend_fn)}>
-							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Send to ChemLab", "An ChemLab senden")}
-						</sl-button>
+						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      slot: "anchor",
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Send to ChemLab", "An ChemLab senden"),
+      icon: SEND_ICON,
+      pressed: this.showLabs,
+      expanded: this.showLabs,
+      onClick: __privateMethod(this, _ChemLabMoleculeBuilder_instances, prepareSend_fn)
+    })}
 						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderTargetPicker_fn).call(this)}
 					</sl-popup>` : E2}
 					${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`
@@ -106320,9 +106405,13 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
 			</header>
 			${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? E2 : x2`<div class="tools" role="toolbar" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Editing tools", "Bearbeitungswerkzeuge")}>
 				<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Tools", "Werkzeuge")}>
-					${tool("orbit", this.view === "3d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Orbit", "Drehen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Select", "Ausw\xE4hlen"))}
-					${tool("atom", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place atom", "Atom platzieren"))}
-					${current.kind === "molecule" ? tool("bond", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Draw bond", "Bindung zeichnen")) : E2}
+					${tool(
+      "orbit",
+      this.view === "3d" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Orbit", "Drehen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Select", "Ausw\xE4hlen"),
+      this.view === "3d" ? ORBIT_ICON : CURSOR_ICON
+    )}
+					${tool("atom", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place atom", "Atom platzieren"), ATOM_ICON)}
+					${current.kind === "molecule" ? tool("bond", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Draw bond", "Bindung zeichnen"), BOND_ICON) : E2}
 					${this.tool === "bond" ? x2`<span class="bond-orders" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bond order", "Bindungsordnung")}>
 						${[1, 2, 3].map((order) => x2`<sl-button class="icon-control" size="small"
 							variant=${order === this.bondOrder ? "primary" : "default"} aria-pressed=${String(order === this.bondOrder)}
@@ -106334,7 +106423,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
 					</span>` : E2}
 				</div>
 				${current.kind === "molecule" && current.bonds.length ? x2`<div class="tool-group">
-					<sl-button size="small" @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, geometry_fn)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit geometry", "Geometrie anpassen")}</sl-button>
+					${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit geometry", "Geometrie anpassen"), icon: GEOMETRY_ICON, onClick: __privateMethod(this, _ChemLabMoleculeBuilder_instances, geometry_fn) })}
 				</div>` : E2}
 				${__privateGet(this, _past).length || __privateGet(this, _future).length ? x2`<div class="tool-group" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "History", "Verlauf")}>
 					${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderHistoryButton_fn).call(this, false)}${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderHistoryButton_fn).call(this, true)}
@@ -106354,8 +106443,11 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
 					</button>
 					<div class="palette-body" id="palette-body" ?hidden=${!paletteVisible}>
 						<div class="palette-heading">
-							${lattice ? x2`<sl-button size="small" @click=${() => this.viewStructure(lattice)}>
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "View crystal", "Kristall ansehen")}</sl-button>` : E2}
+							${lattice ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+      label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "View crystal", "Kristall ansehen"),
+      icon: CRYSTAL_ICON,
+      onClick: () => this.viewStructure(lattice)
+    }) : E2}
 							${lattice === null ? x2`<sl-tag size="small">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bulk lattice unavailable", "Keine experimentelle Gitterstruktur")}</sl-tag>` : E2}
 							${fullWidth ? x2`<div class="palette-tools" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Element palette layout", "Darstellung der Elementpalette")}>
 								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderPickerLayout_fn).call(this, "list", pickerView === "list")}${__privateMethod(this, _ChemLabMoleculeBuilder_instances, renderPickerLayout_fn).call(this, "table", pickerView === "table")}
@@ -106394,8 +106486,8 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       }
     })}
 							${this.view === "3d" && this.gpu === "ready" ? x2`
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom in", "Vergr\xF6\xDFern"), icon: "+", onClick: () => __privateGet(this, _scene)?.zoom(0.83) })}
-								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom out", "Verkleinern"), icon: "\u2212", onClick: () => __privateGet(this, _scene)?.zoom(1.2) })}
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom in", "Vergr\xF6\xDFern"), icon: ZOOM_IN_ICON, onClick: () => __privateGet(this, _scene)?.zoom(0.83) })}
+								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => __privateGet(this, _scene)?.zoom(1.2) })}
 							` : E2}
 							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit })}
 						</div>
@@ -106964,10 +107056,17 @@ renderFileActions_fn = function() {
 			<sl-button size="small" ?disabled=${!__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length} @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, download_fn)}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Download", "Herunterladen")}</sl-button>
 		</div>`;
 };
-/** Renders a compact icon control, the shape the canvas controls share with the lab. */
+/**
+ * Renders a compact icon control, the shape the canvas controls share with
+ * the lab. The label only lives in the tooltip and the accessible name, so
+ * every caller has to pass one.
+ */
 iconButton_fn = function(options) {
-  return x2`<sl-button class="icon-control" size="small" aria-label=${options.label} title=${options.label}
-			variant=${options.pressed ? "primary" : "default"} aria-pressed=${options.pressed === void 0 ? E2 : String(options.pressed)}
+  return x2`<sl-button class="icon-control" size="small" slot=${options.slot ?? E2}
+			aria-label=${options.label} title=${options.label}
+			variant=${options.pressed ? "primary" : "default"}
+			aria-pressed=${options.pressed === void 0 ? E2 : String(options.pressed)}
+			aria-expanded=${options.expanded === void 0 ? E2 : String(options.expanded)}
 			?disabled=${options.disabled} @click=${options.onClick}>${options.icon}</sl-button>`;
 };
 renderHistoryButton_fn = function(redo) {
@@ -107054,8 +107153,12 @@ renderDrawing_fn = function(colors2) {
 renderModelSummary_fn = function(current, representation, ionColors) {
   const crystal = current.kind === "crystal";
   const geometry = current.kind === "molecule" && __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? current.geometry === "idealized" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Idealized geometry", "Idealisierte Geometrie") : current.geometry === "estimated" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Estimated geometry", "Gesch\xE4tzte Geometrie") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Sketch", "Skizze") : void 0;
-  const toggle = (label, value, onClick) => x2`<sl-button size="small"
-			variant=${value ? "primary" : "default"} aria-pressed=${String(value)} @click=${onClick}>${label}</sl-button>`;
+  const toggle = (label, icon, value, onClick) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
+    label,
+    icon,
+    pressed: value,
+    onClick
+  });
   return x2`<div class="model-summary">
 			<div class="fields">
 				<sl-tag size="small">${crystal ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Crystal", "Kristall") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Molecule", "Molek\xFCl")}</sl-tag>
@@ -107081,16 +107184,16 @@ renderModelSummary_fn = function(current, representation, ionColors) {
   }}>
 						${[1, 2, 3].filter((value) => value ** 3 * current.sites.length <= 1800).map((value) => x2`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
 					</select></label>` : E2}
-				${crystal ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cell edges", "Zellkanten"), this.showEdges, () => {
+				${crystal ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cell edges", "Zellkanten"), EDGES_ICON, this.showEdges, () => {
     this.showEdges = !this.showEdges;
   }) : E2}
-				${crystal ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Lattice points", "Gitterpunkte"), this.showLattice, () => {
+				${crystal ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Lattice points", "Gitterpunkte"), LATTICE_ICON, this.showLattice, () => {
     this.showLattice = !this.showLattice;
   }) : E2}
-				${crystal ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Axes", "Achsen"), this.showAxes, () => {
+				${crystal ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Axes", "Achsen"), AXES_ICON, this.showAxes, () => {
     this.showAxes = !this.showAxes;
   }) : E2}
-				${current.kind === "molecule" && current.atoms.length && this.view === "3d" && this.gpu === "ready" ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Valence electrons", "Valenzelektronen"), this.showElectrons, () => {
+				${current.kind === "molecule" && current.atoms.length && this.view === "3d" && this.gpu === "ready" ? toggle(__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Valence electrons", "Valenzelektronen"), ELECTRONS_ICON, this.showElectrons, () => {
     this.showElectrons = !this.showElectrons;
   }) : E2}
 			</div>
