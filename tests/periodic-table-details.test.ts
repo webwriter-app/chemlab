@@ -4,6 +4,7 @@ import { ELEMENTS, SOURCES, elementByAtomicNumber } from "../periodic-table/elem
 import {
 	categoryText,
 	conditionsText,
+	configurationText,
 	detailRows,
 	discoveryText,
 	keyRows,
@@ -42,7 +43,6 @@ test("the detail card lists reference fields, including the metal lattice, in a 
 			"boiling",
 			"discovery",
 			"configuration",
-			"shells",
 			"referenceLattice",
 		],
 	);
@@ -77,7 +77,6 @@ test("every row belongs to one section of the card", () => {
 	assert.equal(sections.get("boiling"), "temperatures");
 	assert.equal(sections.get("discovery"), "history");
 	assert.equal(sections.get("configuration"), "structure");
-	assert.equal(sections.get("shells"), "structure");
 	assert.equal(sections.get("referenceLattice"), "structure");
 	for (const entry of ELEMENTS) {
 		for (const row of detailRows(entry, "en")) {
@@ -94,7 +93,7 @@ test("every row belongs to one section of the card", () => {
 test("the collapsed card shows the weight and the answer of the mode", () => {
 	const keys = (atomicNumber: number, mode: TableMode) =>
 		keyRows(detailRows(element(atomicNumber), "en"), mode).map((row) => row.key);
-	assert.deepEqual(keys(26, "off"), ["weight", "phase"]);
+	assert.deepEqual(keys(26, "off"), ["weight", "configuration"]);
 	assert.deepEqual(keys(26, "temperature"), ["weight", "phase"]);
 	assert.deepEqual(keys(26, "discovery"), ["weight", "discovery"]);
 	assert.deepEqual(keys(26, "radius"), ["weight", "radius"]);
@@ -124,11 +123,28 @@ test("the state row carries the colour the card draws next to it", () => {
 	}
 });
 
-test("an element that sublimes gains a sixteenth row", () => {
+test("an element that sublimes gains a fifteenth row", () => {
 	const carbon = detailRows(element(6), "en").map((row) => row.key);
 	assert.ok(carbon.includes("sublimation"));
-	assert.equal(carbon.length, 16);
+	assert.equal(carbon.length, 15);
 	assert.ok(!detailRows(element(26), "en").some((row) => row.key === "sublimation"));
+});
+
+test("the configuration row carries the shell counts in brackets", () => {
+	const configuration = (atomicNumber: number, language: "en" | "de" = "en") =>
+		detailRows(element(atomicNumber), language).find((row) => row.key === "configuration");
+	assert.equal(configuration(1).value, "1s¹ (1)");
+	assert.equal(configuration(8).value, "[He] 2s² 2p⁴ (2, 6)");
+	assert.equal(configuration(26).value, "[Ar] 3d⁶ 4s² (2, 8, 14, 2)");
+	assert.equal(configuration(118).value, "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶ (2, 8, 18, 32, 32, 18, 8)");
+	assert.equal(configuration(8, "de").value, configuration(8).value);
+	assert.equal(configurationText(element(8), strings("en")), "[He] 2s² 2p⁴ (2, 6)");
+	for (const entry of ELEMENTS) {
+		const row = configuration(entry.atomicNumber);
+		assert.ok(row, entry.symbol);
+		assert.ok(row.value.length > 0, entry.symbol);
+		assert.ok(!/[spdf]\d/.test(row.value), `${entry.symbol} ${row.value}`);
+	}
 });
 
 test("the detail card is fully localized", () => {

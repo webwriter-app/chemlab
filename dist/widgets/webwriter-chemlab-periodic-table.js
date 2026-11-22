@@ -92073,6 +92073,14 @@ function categoryText(element, language) {
   const category = categoryOf(element.atomicNumber);
   return category ? CATEGORIES[category]?.[language] ?? category : "";
 }
+function configurationText(element, t7) {
+  if (element.configuration.status === "unavailable") return t7.valueUnavailable;
+  return `${superscriptConfiguration(element.configuration.value)} (${element.shells.join(", ")})`;
+}
+var SUPERSCRIPT_DIGITS2 = ["\u2070", "\xB9", "\xB2", "\xB3", "\u2074", "\u2075", "\u2076", "\u2077", "\u2078", "\u2079"];
+function superscriptConfiguration(configuration) {
+  return configuration.replace(/([spdf])(\d+)/g, (_3, orbital, count2) => orbital + [...count2].map((digit) => SUPERSCRIPT_DIGITS2[Number(digit)]).join(""));
+}
 function detailRows(element, language, temperatureK = CONDITIONS.temperatureK) {
   const t7 = strings(language);
   const rows = [
@@ -92181,17 +92189,11 @@ function detailRows(element, language, temperatureK = CONDITIONS.temperatureK) {
     rows.push({
       key: "configuration",
       label: t7.fieldConfiguration,
-      value: element.configuration.value,
+      value: configurationText(element, t7),
       section: "structure",
       ...element.configuration.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
     });
   }
-  rows.push({
-    key: "shells",
-    label: t7.fieldShells,
-    value: element.shells.join(" \xB7 "),
-    section: "structure"
-  });
   const lattice = metalCrystal(element.atomicNumber);
   if (lattice !== void 0) {
     const lengths = lattice?.cell.lengths.map((length2) => numberText(length2, language)).join(" \xD7 ");
@@ -92210,7 +92212,7 @@ function keyRows(rows, mode) {
   return rows.filter((row) => row.key === "weight" || row.key === answer);
 }
 var MODE_ROW = {
-  off: "phase",
+  off: "configuration",
   temperature: "phase",
   discovery: "discovery",
   radius: "radius",

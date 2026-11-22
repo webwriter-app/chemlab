@@ -210,6 +210,40 @@ export function categoryText(element: ElementReference, language: Language): str
 }
 
 /**
+ * Renders the electron configuration with the shell counts in brackets.
+ *
+ * The bundle stores the configuration in plain ASCII (`[He] 2s2 2p4`), so the
+ * occupation numbers are raised to superscripts here. The shell counts follow in
+ * brackets, because the collapsed card answers the structure of the element in
+ * one line and the shells are the same statement in a coarser form.
+ *
+ * @param element - Element of the reference bundle.
+ * @param t - Interface strings.
+ * @returns The configuration, for example `[He] 2s² 2p⁴ (2, 6)`.
+ */
+export function configurationText(element: ElementReference, t: Strings): string {
+	if (element.configuration.status === "unavailable") return t.valueUnavailable;
+	return `${superscriptConfiguration(element.configuration.value)} (${element.shells.join(", ")})`;
+}
+
+/** Superscript digits, indexed by the digit they render. */
+const SUPERSCRIPT_DIGITS = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"];
+
+/**
+ * Raises the occupation numbers of a configuration to superscripts.
+ *
+ * Only the digits behind the orbital letter are exponents; the principal quantum
+ * number in front of it and the noble-gas core stay on the baseline.
+ *
+ * @param configuration - Configuration as the bundle stores it, for example `[He] 2s2 2p4`.
+ * @returns The configuration with superscript counts, for example `[He] 2s² 2p⁴`.
+ */
+function superscriptConfiguration(configuration: string): string {
+	return configuration.replace(/([spdf])(\d+)/g, (_, orbital: string, count: string) =>
+		orbital + [...count].map((digit) => SUPERSCRIPT_DIGITS[Number(digit)]).join(""));
+}
+
+/**
  * Builds the rows of the detail card.
  *
  * The state row follows the temperature the card names. At the bundle
@@ -221,7 +255,7 @@ export function categoryText(element: ElementReference, language: Language): str
  * @param element - Element of the reference bundle.
  * @param language - Interface language.
  * @param temperatureK - Temperature the state row refers to, the bundle temperature by default.
- * @returns Group, period, family, block, weight, state, melting, boiling, sublimation, discovery, configuration and shells.
+ * @returns Group, period, family, block, weight, state, melting, boiling, sublimation, discovery, configuration and reference lattice.
  */
 export function detailRows(
 	element: ElementReference,
@@ -338,17 +372,11 @@ export function detailRows(
 		rows.push({
 			key: "configuration",
 			label: t.fieldConfiguration,
-			value: element.configuration.value,
+			value: configurationText(element, t),
 			section: "structure",
 			...(element.configuration.status === "predicted" ? { qualifier: t.valuePredicted } : {}),
 		});
 	}
-	rows.push({
-		key: "shells",
-		label: t.fieldShells,
-		value: element.shells.join(" · "),
-		section: "structure",
-	});
 	const lattice = metalCrystal(element.atomicNumber);
 	if (lattice !== undefined) {
 		const lengths = lattice?.cell.lengths.map(length => numberText(length, language)).join(" × ");
@@ -368,9 +396,10 @@ export function detailRows(
  * Picks the rows the collapsed card shows.
  *
  * The first row is always the standard atomic weight. The second one answers the
- * mode the table is in: the state at the chosen temperature, or the value the
- * mode filters by. The expanded card leaves these rows out of its sections, so no
- * value appears twice in one card.
+ * mode the table is in: the electron configuration while no mode is set, the
+ * state at the chosen temperature, or the value the mode filters by. The
+ * expanded card leaves these rows out of its sections, so no value appears twice
+ * in one card.
  *
  * @param rows - Rows of the card.
  * @param mode - Mode of the table.
@@ -384,11 +413,13 @@ export function keyRows(rows: readonly DetailRow[], mode: TableMode): readonly D
 /**
  * Row that answers each mode in the collapsed card.
  *
- * The temperature mode shares the state row with the off mode, because the card
+ * The resting mode shows the electron configuration, because the card then
+ * answers what the element is made of instead of repeating a state the table
+ * does not vary. The temperature mode shares the state row, because the card
  * already renders that row at the chosen temperature.
  */
 const MODE_ROW: Readonly<Record<TableMode, string>> = {
-	off: "phase",
+	off: "configuration",
 	temperature: "phase",
 	discovery: "discovery",
 	radius: "radius",
