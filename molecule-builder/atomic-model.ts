@@ -1,5 +1,5 @@
 import { css, html, nothing, svg } from "lit";
-import { atomicShells, orbitalOccupation, orbitalOrientations, shellColors, shellOrbit, subshellColors,
+import { atomicShells, mutedShellColor, orbitalOccupation, orbitalOrientations, shellColors, shellOrbit, subshellColors, visibleAtomicSubshells,
 	type AtomicConfiguration, type Subshell } from "./atomic-configuration";
 import { atomicOrbitalSlice, atomicPhaseColors } from "./atomic-orbitals";
 import { nucleonColors, schematicNucleons, type referenceNucleus } from "./atomic-nucleus";
@@ -28,14 +28,17 @@ export function renderAtomicControls(configuration: AtomicConfiguration, choices
 	const { valence, subshells } = configuration;
 	const shells = atomicShells(configuration);
 	const shell = choices.shell ?? shells[shells.length - 1]?.n;
-	const chip = (label: string, title: string, color: string, pressed: boolean, onClick: () => void) => html`
-		<button type="button" class="atom-chip" style="--orbital-color:${color}" title=${title} aria-label=${title}
+	const chip = (label: string, title: string, color: string, pressed: boolean, onClick: () => void, hint?: string) => html`
+		<button type="button" class="atom-chip" style="--orbital-color:${color}" title=${hint ? `${title} · ${hint}` : title} aria-label=${title}
 			aria-pressed=${String(pressed)} @click=${onClick}>
 			<sl-tag pill size="small">${label}</sl-tag>
 		</button>`;
-	const subshellChip = (entry: Subshell) => chip(entry.label + superscript(entry.electrons), `${entry.label} · ${entry.electrons} e⁻`,
-		subshellColors[entry.l], choices.subshell === entry.label,
-		() => change({ ...choices, subshell: choices.subshell === entry.label ? undefined : entry.label }));
+	const subshellChip = (entry: Subshell) => {
+		const selected = choices.subshell === entry.label;
+		const hint = selected ? t("Show overview", "Übersicht anzeigen") : t("Show only this subshell", "Nur diese Unterschale anzeigen");
+		return chip(entry.label + superscript(entry.electrons), `${entry.label} · ${entry.electrons} e⁻`,
+			subshellColors[entry.l], selected, () => change({ ...choices, subshell: selected ? undefined : entry.label }), hint);
+	};
 	const orbital = choices.model === "orbitals";
 	const core = subshells.filter(entry => !valence.includes(entry));
 	const coreLabel = choices.showCore ? t("Hide inner orbitals", "Innere Orbitale ausblenden") : t("Show inner orbitals", "Innere Orbitale einblenden");
@@ -61,9 +64,12 @@ export function renderAtomicControls(configuration: AtomicConfiguration, choices
 							</svg>
 						</button>` : nothing}
 						<div class="atom-valence-rail">${valence.map(subshellChip)}</div>
-					` : shells.map(entry => chip(entry.label + superscript(entry.electrons),
-						`${t("Shell", "Schale")} ${entry.label} · ${entry.electrons} e⁻`, shellColors[entry.n - 1], shell === entry.n,
-						() => change({ ...choices, shell: entry.n })))}
+					` : shells.map(entry => {
+						const selected = shell === entry.n;
+						return chip(entry.label + superscript(entry.electrons),
+							`${t("Shell", "Schale")} ${entry.label} · ${entry.electrons} e⁻`,
+							selected ? shellColors[entry.n - 1] : mutedShellColor, selected, () => change({ ...choices, shell: entry.n }));
+					})}
 				</div>
 			`}
 		</div>`;
@@ -80,7 +86,7 @@ export function renderAtomicShells(nucleus: ReturnType<typeof referenceNucleus>,
 			const { radius, seconds } = shellOrbit(index, shells.length);
 			const r = radius * 94;
 			const selected = n === shell;
-			const color = shellColors[n - 1];
+			const color = selected ? shellColors[n - 1] : mutedShellColor;
 			return svg`<g>
 				<circle cx="110" cy="110" r=${r} fill="none" stroke=${color} stroke-width=${selected ? 2.5 : 1.4} stroke-opacity=${selected ? .86 : .45} />
 				<g class="electron-spin" style="--orbit-period:${seconds}s;animation-play-state:${pause ? "paused" : "running"}">
@@ -101,7 +107,7 @@ export function renderAtomicShells(nucleus: ReturnType<typeof referenceNucleus>,
 
 const slices = new Map<string, ReturnType<typeof atomicOrbitalSlice>>();
 export function renderOrbitalFallback(configuration: AtomicConfiguration, choices: AtomChoices, t: Translate) {
-	const visible = choices.showCore ? configuration.subshells : configuration.valence;
+	const visible = visibleAtomicSubshells(configuration, choices.showCore, choices.subshell);
 	return html`<div class="atom-orbital-slices">
 		${visible.map(subshell => html`<div class="atom-slice-group" ?data-focused=${choices.subshell === subshell.label}>
 			<strong>${subshell.label}</strong>

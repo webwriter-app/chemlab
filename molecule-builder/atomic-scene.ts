@@ -1,13 +1,16 @@
 import { Application } from "pixi.js";
 import { BatchedMesh3D, Container3D, Geometry3D, Material3D, Matrix4, Mesh3D, RenderPassBit,
 	SphereGeometry, TorusGeometry, View3D } from "@pixi/3d";
-import { atomicShells, orbitalOccupation, shellColors, shellOrbit, type AtomicConfiguration } from "./atomic-configuration";
+import { atomicShells, mutedShellColor, orbitalOccupation, shellColors, shellOrbit, visibleAtomicSubshells,
+	type AtomicConfiguration, type Subshell } from "./atomic-configuration";
 import { atomicOrbitalMesh, atomicOverlayParts, atomicPhaseColors, type AtomicOrbitalPart } from "./atomic-orbitals";
 import { nucleonColors, orbitalNuclearRadius, referenceNucleus, schematicNucleons } from "./atomic-nucleus";
 import type { AtomChoices } from "./atomic-model";
 
 export type OrbitalHover = Pick<AtomicOrbitalPart, "orientation" | "subshell">;
 type OrbitalSurface = { part: AtomicOrbitalPart; mesh: Mesh3D; phase: number };
+type ShellDisplay = { n: number; ring: Mesh3D; group: Container3D; particles: Mesh3D[]; speed: number };
+const neutralOpacityStep = .02;
 
 export class AtomicScene {
 	static async create(host: HTMLElement, onHover: (hit?: OrbitalHover) => void, onScale: (scale: number) => void) {
@@ -34,16 +37,22 @@ export class AtomicScene {
 		neutron: new Material3D({ baseColor: nucleonColors.neutron, roughness: .58 }),
 	};
 	readonly #shells = shellColors.map(baseColor => new Material3D({ baseColor, roughness: .7 }));
-	readonly #rings = shellColors.map(baseColor => new Material3D({ baseColor, roughness: .7, alphaMode: "blend", alpha: .5 }));
+	readonly #rings = shellColors.map(baseColor => new Material3D({ baseColor, roughness: .7, alphaMode: "blend", alpha: .9 }));
+	readonly #mutedShell = new Material3D({ baseColor: mutedShellColor, roughness: .7 });
+	readonly #mutedRing = new Material3D({ baseColor: mutedShellColor, roughness: .7, alphaMode: "blend", alpha: .42 });
 	readonly #phases = [.28, .64, .88].map(alpha => atomicPhaseColors.map(baseColor =>
 		new Material3D({ baseColor, roughness: .7, alphaMode: "blend", alpha })));
-	readonly #neutralOrbitals = [.12, .22, .38].map(alpha =>
-		new Material3D({ baseColor: 0x848484, roughness: .7, alphaMode: "blend", alpha }));
+	readonly #neutralOrbitals = Array.from({ length: 18 }, (_, index) =>
+		new Material3D({ baseColor: 0x848484, roughness: .7, alphaMode: "blend", alpha: .008 + index * neutralOpacityStep }));
 	readonly #observer: ResizeObserver;
 	#surfaces: OrbitalSurface[] = [];
 	#background: Mesh3D[] = [];
-	#spins: { group: Container3D; speed: number }[] = [];
+	#spins: ShellDisplay[] = [];
+	#nucleus?: BatchedMesh3D;
 	#ownedGeometry: Geometry3D[] = [];
+	#orbitalParts: AtomicOrbitalPart[] = [];
+	#builtParts = new Set<AtomicOrbitalPart>();
+	#shownSubshells = new Set<Subshell>();
 	#pending: AtomicOrbitalPart[] = [];
 	#hover?: OrbitalHover;
 	#pointer?: { x: number; y: number };
@@ -90,16 +99,13 @@ export class AtomicScene {
 	setModel(atomicNumber: number, configuration: AtomicConfiguration, choices: AtomChoices, animate: boolean) {
 		const previous = this.#choices;
 		const newModel = previous?.model !== choices.model || this.#atom !== atomicNumber || this.#configuration !== configuration;
-		const rebuild = newModel || (choices.model === "orbitals" && !!previous?.showCore !== !!choices.showCore);
 		this.#atom = atomicNumber;
 		this.#configuration = configuration;
 		this.#choices = choices;
 		this.#running = animate && choices.model === "bohr";
 		if (newModel) {
-			this.#yaw = choices.model === "bohr" ? 0 : .74;
-			this.#pitch = choices.model === "bohr" ? .12 : .38;
-		}
-		if (rebuild) {
+			this.#yaw = choices.model === "bohr" ? .35 : .74;
+			this.#pitch = choices.model === "bohr" ? .25 : .38;
 			this.#clear();
 			this.#extent = 1;
 			this.#physical = choices.model === "orbitals" && configuration.electrons === 1;
@@ -113,20 +119,32 @@ export class AtomicScene {
 						eventMode: "none", parent: this.#content });
 					center.scale.set(orbitalNuclearRadius(nucleus, configuration.electrons));
 				}
-				const subshells = choices.showCore ? configuration.subshells : configuration.valence;
-				this.#pending = atomicOverlayParts(subshells).filter(part => part.region === part.subshell.n - part.subshell.l - 1);
-				if (this.#physical && this.#pending.length) {
-					const { phases, extent } = atomicOrbitalMesh({ atomId: 1, atomicNumber, electrons: 1, ...this.#pending[0] });
+				this.#orbitalParts = atomicOverlayParts(configuration.subshells)
+					.filter(part => part.region === part.subshell.n - part.subshell.l - 1)
+					.sort((a, b) => b.scale - a.scale);
+				if (this.#physical && this.#orbitalParts.length) {
+					const [part] = this.#orbitalParts;
+					const { phases, extent } = atomicOrbitalMesh({ atomId: 1, atomicNumber, electrons: 1, ...part });
 					this.#extent = extent;
-					this.#append(this.#pending.pop(), phases, extent);
+					this.#append(part, phases, extent);
 				}
 			}
 			this.fit();
 		}
 		if (choices.model === "bohr") {
-			const selected = choices.shell ?? Number(this.#spins[this.#spins.length - 1]?.group.label);
-			for (const { group } of this.#spins) this.#rings[Number(group.label) - 1].alpha = Number(group.label) === selected ? .9 : .42;
-		} else if (rebuild || previous?.subshell !== choices.subshell) {
+			if (newModel || previous?.shell !== choices.shell) {
+				const selected = choices.shell ?? this.#spins[this.#spins.length - 1]?.n;
+				for (const { n, ring, particles } of this.#spins) {
+					ring.material = n === selected ? this.#rings[n - 1] : this.#mutedRing;
+					const material = n === selected ? this.#shells[n - 1] : this.#mutedShell;
+					for (const electron of particles) electron.material = material;
+				}
+			}
+		} else if (newModel || previous?.subshell !== choices.subshell || previous?.showCore !== choices.showCore) {
+			this.#shownSubshells = new Set(visibleAtomicSubshells(configuration, choices.showCore, choices.subshell));
+			this.#pending = this.#orbitalParts.filter(part => this.#shownSubshells.has(part.subshell) && !this.#builtParts.has(part));
+			this.#hover = undefined;
+			this.onHover();
 			this.point();
 			this.#applyOrbitalMaterials();
 		}
@@ -144,32 +162,36 @@ export class AtomicScene {
 			batch.setPassesAt(i, RenderPassBit.OPAQUE);
 		}
 		this.#content.addChild(batch);
+		this.#nucleus = batch;
 	}
 
 	#buildShells(configuration: AtomicConfiguration) {
 		const shells = atomicShells(configuration);
 		for (const [index, { n, electrons }] of shells.entries()) {
 			const { radius, seconds } = shellOrbit(index, shells.length);
-			const ring = new Mesh3D({ geometry: this.#ring, material: this.#rings[n - 1], eventMode: "none", parent: this.#content });
+			const ring = new Mesh3D({ geometry: this.#ring, material: this.#mutedRing, eventMode: "none", parent: this.#content });
 			ring.scale.set(radius);
 			ring.rotation.x = Math.PI / 2;
-			const group = new Container3D({ label: String(n), parent: this.#content });
-			this.#spins.push({ group, speed: 2 * Math.PI / seconds });
+			const group = new Container3D({ parent: this.#content });
+			const particles: Mesh3D[] = [];
 			for (let i = 0; i < electrons; i++) {
 				const angle = (i / electrons + index * .079) * 2 * Math.PI - Math.PI / 2;
-				const electron = new Mesh3D({ geometry: this.#sphere, material: this.#shells[n - 1], eventMode: "none", parent: group });
+				const electron = new Mesh3D({ geometry: this.#sphere, material: this.#mutedShell, eventMode: "none", parent: group });
 				electron.scale.set(shells.length > 4 ? .025 : .034);
 				electron.position.set(radius * Math.cos(angle), radius * Math.sin(angle), 0);
+				particles.push(electron);
 			}
+			this.#spins.push({ n, ring, group, particles, speed: 2 * Math.PI / seconds });
 		}
 	}
 
 	#append(part: AtomicOrbitalPart, phases: ReturnType<typeof atomicOrbitalMesh>["phases"], extent: number) {
+		this.#builtParts.add(part);
 		for (const [phase, buffers] of phases.entries()) {
 			if (!buffers) continue;
 			const geometry = new Geometry3D(buffers);
 			this.#ownedGeometry.push(geometry);
-			const mesh = new Mesh3D({ geometry, material: this.#neutralOrbitals[0], eventMode: "static", hitVolume: "geometry", parent: this.#content });
+			const mesh = new Mesh3D({ geometry, material: this.#neutralOrbitals[0], eventMode: "static", hitVolume: "geometry" });
 			mesh.scale.set(extent);
 			this.#surfaces.push({ part, mesh, phase });
 		}
@@ -181,16 +203,26 @@ export class AtomicScene {
 		const hasDirectionalOrbitals = valence.some(item => item.l > 0);
 		this.#background.length = 0;
 		for (const { part, mesh, phase } of this.#surfaces) {
-			const focused = !hasFocus || this.#choices.subshell === part.subshell.label;
+			if (!this.#shownSubshells.has(part.subshell)) {
+				mesh.removeFromParent();
+				continue;
+			}
 			const hovered = this.#hover?.subshell === part.subshell && this.#hover.orientation === part.orientation;
 			const occupied = orbitalOccupation(part.subshell, part.orientation);
+			const core = !valence.includes(part.subshell);
 			// A spherical or core surface should not intercept a lobe behind it.
-			const background = !hasFocus && (!valence.includes(part.subshell) || (part.subshell.l === 0 && hasDirectionalOrbitals));
+			const spherical = part.subshell.l === 0 && hasDirectionalOrbitals;
+			const background = !hasFocus && (core || spherical);
 			if (background) this.#background.push(mesh);
-			mesh.eventMode = focused && !background ? "static" : "none";
-			const selected = this.#hover ? hovered : hasFocus && focused;
+			mesh.eventMode = background ? "none" : "static";
+			const selected = this.#hover ? hovered : hasFocus;
+			// Give smaller surfaces less weight, especially inner subshells.
+			// Dividing the opacity across orientations curbs buildup in d and f groups.
+			const opacity = .34 * part.scale ** 2 * (core ? .24 : 1) * (spherical ? .42 : 1) * (occupied ? 1 : .5)
+				* (this.#hover ? .45 : 1) / Math.sqrt(2 * part.subshell.l + 1);
 			mesh.material = selected ? this.#phases[hovered ? 2 : occupied ? 1 : 0][phase]
-				: this.#neutralOrbitals[!focused || background ? 0 : !occupied || this.#hover ? 1 : 2];
+				: this.#neutralOrbitals[Math.floor(opacity / neutralOpacityStep)];
+			if (!mesh.parent) this.#content.addChild(mesh);
 		}
 	}
 
@@ -237,8 +269,13 @@ export class AtomicScene {
 	#camera() {
 		const camera = this.#view.camera;
 		camera.near = Math.min(.05, this.#distance * .04);
-		camera.position.set(this.#distance * Math.cos(this.#pitch) * Math.sin(this.#yaw),
-			this.#distance * Math.sin(this.#pitch), this.#distance * Math.cos(this.#pitch) * Math.cos(this.#yaw));
+		if (this.#choices?.model === "bohr") {
+			camera.position.set(0, 0, this.#distance);
+			this.#nucleus?.rotation.set(this.#pitch, -this.#yaw, 0);
+		} else {
+			camera.position.set(this.#distance * Math.cos(this.#pitch) * Math.sin(this.#yaw),
+				this.#distance * Math.sin(this.#pitch), this.#distance * Math.cos(this.#pitch) * Math.cos(this.#yaw));
+		}
 		camera.lookAt({ x: 0, y: 0, z: 0 });
 		this.#draw();
 	}
@@ -258,29 +295,34 @@ export class AtomicScene {
 				this.#scale = scale;
 				this.onScale(scale);
 			}
-			this.#pick();
-			this.app.render();
 			if (this.#pending.length) {
 				const start = performance.now();
 				do {
 					const part = this.#pending.shift();
 					const { phases } = atomicOrbitalMesh({ atomId: 1, atomicNumber: this.#atom,
-						electrons: this.#configuration.electrons, ...part }, this.#choices.showCore ? 23 : 31);
+						electrons: this.#configuration.electrons, ...part }, this.#configuration.valence.includes(part.subshell) ? 31 : 19);
 					this.#append(part, phases, part.scale);
 				} while (this.#pending.length && performance.now() - start < 5);
 				this.#applyOrbitalMaterials();
-				this.#draw();
-			} else if (this.#running && this.#spins.length) this.#draw();
+			}
+			this.#pick();
+			this.app.render();
+			if (this.#pending.length || (this.#running && this.#spins.length)) this.#draw();
 		});
 	}
 
 	#clear() {
+		for (const { mesh } of this.#surfaces) mesh.destroy();
 		for (const node of this.#content.removeChildren()) node.destroy({ children: true });
 		for (const geometry of this.#ownedGeometry) geometry.destroy();
 		this.#ownedGeometry = [];
 		this.#surfaces = [];
 		this.#background.length = 0;
 		this.#spins = [];
+		this.#nucleus = undefined;
+		this.#orbitalParts = [];
+		this.#builtParts.clear();
+		this.#shownSubshells.clear();
 		this.#pending = [];
 		this.#timestamp = 0;
 		this.#spin = 0;
@@ -296,7 +338,7 @@ export class AtomicScene {
 		this.app.destroy(true, { children: true });
 		this.#sphere.destroy();
 		this.#ring.destroy();
-		for (const material of [...Object.values(this.#nucleons), ...this.#shells, ...this.#rings,
+		for (const material of [...Object.values(this.#nucleons), ...this.#shells, ...this.#rings, this.#mutedShell, this.#mutedRing,
 			...this.#neutralOrbitals, ...this.#phases.flat()]) material.destroy();
 	}
 }

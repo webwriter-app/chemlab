@@ -102,7 +102,13 @@ export function orbitalOccupation(subshell: Subshell, orientation: number): 0 | 
 
 export const shellColors = ["#167fbd", "#147a69", "#8051b5", "#a45115", "#ac4570", "#3966b4", "#637323"];
 export const subshellColors = shellColors.slice(0, 4);
+export const mutedShellColor = "#8b8b8b";
 
 export function shellOrbit(index: number, count: number) {
-	return { radius: (13 + (index + 1) * 81 / Math.max(1, count)) / 94, seconds: 7 + index * 2.5 };
+	return { radius: (13 + (index + 1) * 81 / Math.max(1, count)) / 94, seconds: 28 + index * 8 };
+}
+
+export function visibleAtomicSubshells(configuration: AtomicConfiguration, showCore?: boolean, focus?: string) {
+	const visible = showCore ? configuration.subshells : configuration.valence;
+	return focus ? visible.filter(subshell => subshell.label === focus) : visible;
 }

@@ -4,7 +4,8 @@ import { crystalIonColors, crystalRadii, latticePositions, siteIon } from "../mo
 import { canBond, dot, electronRegions, fitGeometry, shapeName, subtract } from "../molecule-builder/geometry";
 import { atomRadius, estimatedBondLength, spaceFillingRadius } from "../molecule-builder/radii";
 import { hasMolecularDisplays, moleculeOrbitals, unpackOrbitalSurface } from "../molecule-builder/orbitals";
-import { atomicShells, atomicSpecies, electronConfiguration, orbitalOccupation, orbitalOrientations } from "../molecule-builder/atomic-configuration";
+import { atomicShells, atomicSpecies, electronConfiguration, orbitalOccupation, orbitalOrientations, shellOrbit,
+	visibleAtomicSubshells } from "../molecule-builder/atomic-configuration";
 import { nuclearRadiusAngstrom, orbitalNuclearRadius, referenceNucleus, schematicNucleons } from "../molecule-builder/atomic-nucleus";
 import { angularOrbital, atomicFamilyParts, atomicOrbitalField, atomicOrbitalMesh, atomicOrbitalSlice, atomicOverlayParts } from "../molecule-builder/atomic-orbitals";
 import { ELEMENTS, categoryOf } from "../periodic-table/element-reference";
@@ -230,6 +231,12 @@ assert.deepEqual(electronConfiguration(26, 0).valence.map(shell => shell.label),
 assert.deepEqual(electronConfiguration(92, 0).valence.map(shell => shell.label), ["5f", "6d", "7s"]);
 assert.deepEqual(electronConfiguration(11, 1).valence.map(shell => shell.label), ["2s", "2p"]);
 assert.deepEqual(electronConfiguration(1, 0).valence.map(shell => shell.label), ["1s"]);
+assert.equal(shellOrbit(0, 7).seconds, 28);
+assert.equal(shellOrbit(6, 7).seconds, 76);
+const uraniumConfiguration = electronConfiguration(92, 0);
+assert.deepEqual(visibleAtomicSubshells(uraniumConfiguration).map(shell => shell.label), ["5f", "6d", "7s"]);
+assert.deepEqual(visibleAtomicSubshells(uraniumConfiguration, true, "3d").map(shell => shell.label), ["3d"]);
+assert.equal(visibleAtomicSubshells(uraniumConfiguration, true).length, uraniumConfiguration.subshells.length);
 
 assert.deepEqual(referenceNucleus(1), { massNumber: 1, protons: 1, neutrons: 0, abundant: true });
 assert.deepEqual(referenceNucleus(28), { massNumber: 58, protons: 28, neutrons: 30, abundant: true });
