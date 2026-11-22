@@ -1309,6 +1309,7 @@ export const style = css`
 		box-sizing: border-box;
 		inline-size: var(--panel-trigger-width);
 		block-size: var(--panel-trigger-height);
+		margin: 0;
 		padding: 0 2px;
 		border: 1px solid var(--panel-outline);
 		border-inline-start: 0;
