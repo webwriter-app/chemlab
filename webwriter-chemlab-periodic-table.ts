@@ -1739,9 +1739,6 @@ export class ChemLabPeriodicTable extends LitElementWw {
 						<sl-tag class="details-family" size="small" variant="neutral">
 							${categoryText(element, language)}
 						</sl-tag>
-						${atomView ? nothing : html`<sl-tooltip content=${t.detailsHint} hoist>
-							<span class="details-conditions">${conditionsText(language, this.#temperature)}</span>
-						</sl-tooltip>`}
 						<div class="details-view-actions">
 							${openBuilder ? html`<sl-button class="details-view-button" size="small" title=${builderText} aria-label=${builderText}
 								@click=${() => {

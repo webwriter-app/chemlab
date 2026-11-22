@@ -209,7 +209,7 @@ test("the family label follows the placement table", () => {
 	assert.equal(categoryText(element(89), "de"), "Actinoid");
 });
 
-test("the conditions line names the temperature and the fixed pressure", () => {
+test("the print overview and the info dialog name the reference conditions", () => {
 	assert.equal(conditionsText("en"), "25 °C · 1 bar");
 	assert.equal(conditionsText("de"), "25 °C · 1 bar");
 	assert.equal(conditionsText("en", 373.15), "100 °C · 1 bar");
@@ -222,7 +222,7 @@ test("a temperature is rendered in kelvin with its Celsius equivalent", () => {
 	assert.equal(temperatureText(0, "en"), "0\u00A0K (-273.15\u00A0°C)");
 });
 
-test("the state row follows the conditions the card names", () => {
+test("the state row follows the temperature the slider sets", () => {
 	const oxygen = element(8);
 	const atBundle = detailRows(oxygen, "en").find((row) => row.key === "phase");
 	assert.ok(atBundle);

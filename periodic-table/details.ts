@@ -80,6 +80,11 @@ export interface DetailRow {
 /**
  * Renders the conditions the state values refer to.
  *
+ * The card leaves the line out: the temperature is set by the slider above the
+ * table and shown beside it, so the card would only repeat it. The print
+ * overview and the info dialog name the conditions instead, because neither has
+ * a slider.
+ *
  * The pressure is fixed: the bundle stores its thermal data at 1 bar and the
  * table only varies the temperature.
  *

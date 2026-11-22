@@ -483,8 +483,8 @@ export const periodicTableStyles = css`
 	   above the transition metals. The slot is only the box: the card inside it is
 	   positioned and only as tall as its key rows, so it never stretches the rows
 	   it spans and may reach over the cells below when it is expanded. The slot is
-	   also the query container of the card, so the card can drop the conditions
-	   when the block gets narrow. */
+	   also the query container of the card, so the atom preview can size itself
+	   against the block. */
 	.details-slot {
 		position: relative;
 		grid-row: var(--pt-row) / span var(--pt-row-span, 1);
@@ -1037,9 +1037,8 @@ export const periodicTableStyles = css`
 	}
 
 	/* The header carries the identity of the element in one row: the coloured
-	   thumbnail, the name, the atomic number, the family, and the conditions the
-	   state values refer to. It sits on the inset surface, so the card reads as a
-	   titled panel instead of a plain box. */
+	   thumbnail, the name, the atomic number and the family. It sits on the inset
+	   surface, so the card reads as a titled panel instead of a plain box. */
 	.details-card::part(header) {
 		padding: 4px 8px;
 		border-bottom: 1px solid var(--pt-border);
@@ -1120,15 +1119,6 @@ export const periodicTableStyles = css`
 		color: var(--pt-ink);
 		font-size: 0.6rem;
 		line-height: 1.2;
-	}
-
-	.details-conditions {
-		margin-inline-start: auto;
-		padding-inline-start: 0.35rem;
-		font-size: 0.6rem;
-		font-variant-numeric: tabular-nums;
-		white-space: nowrap;
-		color: var(--pt-ink-soft);
 	}
 
 	/* The body holds the key rows and, once the card is open, the sections below
@@ -1369,15 +1359,6 @@ export const periodicTableStyles = css`
 	.details-empty-icon {
 		font-size: 1.1rem;
 		color: var(--pt-ink-soft);
-	}
-
-	/* A narrow card drops the conditions from the header: the temperature is set
-	   by the slider above the table, so the line is the first thing that can go
-	   without losing a value. */
-	@container (max-width: 22rem) {
-		.details-conditions {
-			display: none;
-		}
 	}
 
 	/* The sources and the model notes live in a dialog behind the info button, so
