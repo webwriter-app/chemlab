@@ -110081,14 +110081,16 @@ bindTable_fn = function() {
  * The picker info panel sits in the free strip of the canvas instead of
  * beside the palette, so it never covers the cards and never leaves the
  * widget. A short strip makes the panel scroll instead of growing over the
- * cards.
+ * cards. Its left edge follows the selection card, which sits closest to
+ * the palette, so the panel lines up with the bottom-left card and keeps
+ * that edge when the selection appears.
  */
 pickerGap_fn = function() {
   const board = __privateMethod(this, _ChemLabMoleculeBuilder_instances, cardBox_fn).call(this, ".board");
   if (!board) return new DOMRect(0, 0, 0, 0);
   const summary = __privateMethod(this, _ChemLabMoleculeBuilder_instances, cardBox_fn).call(this, ".model-summary");
   const selection = __privateMethod(this, _ChemLabMoleculeBuilder_instances, cardBox_fn).call(this, ".selection-card");
-  const left = summary ? summary.left : board.left + 8;
+  const left = (selection ?? summary)?.left ?? board.left + 8;
   const top = (summary ? summary.bottom : board.top) + PICKER_INFO_GAP;
   const bottom = (selection ? selection.top : board.bottom) - PICKER_INFO_GAP;
   const width = Math.max(0, Math.min(PICKER_INFO_WIDTH, board.right - left - 8));
