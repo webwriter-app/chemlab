@@ -190,7 +190,7 @@ export class MoleculeScene {
 			}
 			return new MoleculeScene(app, host, updateScale);
 		} catch (error) {
-			if (app.renderer) app.destroy(true, { children: true });
+			if (app.renderer) app.destroy({ removeView: true }, { children: true });
 			throw error;
 		}
 	}
@@ -701,7 +701,7 @@ export class MoleculeScene {
 	destroy() {
 		cancelAnimationFrame(this.#frame);
 		this.#observer.disconnect();
-		this.#app.destroy(true, { children: true });
+		this.#app.destroy({ removeView: true }, { children: true });
 		this.#sphere.destroy();
 		this.#spaceSphere.destroy();
 		this.#cylinder.destroy();

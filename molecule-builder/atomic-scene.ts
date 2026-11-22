@@ -21,7 +21,7 @@ export class AtomicScene {
 			if (!("gl" in app.renderer) || !(app.renderer.gl instanceof WebGL2RenderingContext)) throw Error("WebGL 2 unavailable");
 			return new AtomicScene(app, host, onHover, onScale);
 		} catch (error) {
-			if (app.renderer) app.destroy(true, { children: true });
+			if (app.renderer) app.destroy({ removeView: true }, { children: true });
 			throw error;
 		}
 	}
@@ -335,7 +335,8 @@ export class AtomicScene {
 		cancelAnimationFrame(this.#frame);
 		this.#observer.disconnect();
 		this.#clear();
-		this.app.destroy(true, { children: true });
+		// The structure renderer may still be using the shared Pixi resources.
+		this.app.destroy({ removeView: true }, { children: true });
 		this.#sphere.destroy();
 		this.#ring.destroy();
 		for (const material of [...Object.values(this.#nucleons), ...this.#shells, ...this.#rings, this.#mutedShell, this.#mutedRing,
