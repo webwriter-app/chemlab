@@ -1545,7 +1545,12 @@ export const style = css`
 	}
 	.diagram-remove::part(base) {
 		min-block-size: 22px;
-		color: var(--sl-color-danger-600);
+		color: var(--lab-card-secondary-text);
+	}
+	.diagram-remove::part(base):is(:hover, :active) {
+		color: var(--sl-color-danger-700);
+		background: var(--sl-color-danger-50);
+		border-color: var(--sl-color-danger-200);
 	}
 	.diagram-remove::part(label) {
 		padding-inline: 4px;
@@ -1963,21 +1968,45 @@ export const style = css`
 		outline: var(--sl-focus-ring);
 		outline-offset: var(--sl-focus-ring-offset);
 	}
-	.empty-vessel {
+	.empty-vessel,
+	.save-mixture {
 		color: var(--sl-color-primary-700);
 	}
-	.empty-vessel:hover {
+	:is(.empty-vessel, .save-mixture):is(:hover, :active, [aria-expanded="true"]) {
 		background: var(--sl-color-primary-100);
 		border-color: var(--sl-color-primary-200);
 	}
 	.object-summary-action.remObj {
 		margin-inline-start: auto;
 		align-self: flex-start;
-		color: var(--sl-color-danger-700);
+		color: var(--lab-card-secondary-text);
 	}
-	.object-summary-action.remObj:hover {
+	.object-summary-action.remObj:is(:hover, :active) {
+		color: var(--sl-color-danger-700);
 		background: var(--sl-color-danger-50);
 		border-color: var(--sl-color-danger-200);
+	}
+	.mixture-save-form {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 4px;
+		margin-block-start: 4px;
+	}
+	.mixture-save-form > input {
+		box-sizing: border-box;
+		min-inline-size: 0;
+		inline-size: 100%;
+		block-size: 22px;
+		padding: 2px 5px;
+		border: 1px solid var(--lab-card-border);
+		border-radius: 4px;
+		background: var(--lab-card-surface);
+		color: var(--lab-card-text);
+		font: inherit;
+	}
+	.mixture-save-form > input:focus-visible {
+		outline: var(--sl-focus-ring);
 	}
 	.electrical-settings {
 		inline-size: 10.5rem;
@@ -2811,12 +2840,10 @@ export const style = css`
 		white-space: nowrap;
 		pointer-events: none;
 	}
-	.remObj {
-		/* position: absolute;
-    right: 0px;
-    bottom: 0px; */
-		color: #d10000;
-		background-color: #ffff;
+	.custom-card-actions {
+		display: flex;
+		align-items: center;
+		gap: 4px;
 	}
 	#foldMenu {
 		/* position: absolute;
@@ -2824,10 +2851,6 @@ export const style = css`
     bottom: 0px; */
 		color: #0074aa;
 		background-color: #ffff;
-	}
-	.remObj:hover {
-		background-color: #d10000;
-		color: #ffff;
 	}
 	#foldMenu:hover {
 		background-color: #0074aa;

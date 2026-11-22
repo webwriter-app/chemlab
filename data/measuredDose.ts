@@ -1,12 +1,16 @@
 import { Mixture, Molecule, StructureManager } from "../chemlib";
 import type { ChemicalRecipe, MoleculeDefinition } from "./chemicals";
+import { prepareMixtureDose, type MixtureRecipe } from "./savedMixtures";
+
+export type DoseRecipe = ChemicalRecipe | MixtureRecipe;
 
 export interface SavedDose {
-	recipe: ChemicalRecipe;
+	recipe: DoseRecipe;
 	volumeMl: number;
 }
 
-export function prepareDose(recipe: ChemicalRecipe, load: (definition: MoleculeDefinition) => Molecule) {
+export function prepareDose(recipe: DoseRecipe, load: (definition: MoleculeDefinition) => Molecule) {
+	if ("kind" in recipe) return prepareMixtureDose(recipe, load);
 	const parts = recipe.parts
 		.filter(({ amount }) => Number.isFinite(amount) && amount > 0)
 		.map(({ molecule, amount }) => {

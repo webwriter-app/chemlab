@@ -112533,7 +112533,12 @@ var style = i`
 	}
 	.diagram-remove::part(base) {
 		min-block-size: 22px;
-		color: var(--sl-color-danger-600);
+		color: var(--lab-card-secondary-text);
+	}
+	.diagram-remove::part(base):is(:hover, :active) {
+		color: var(--sl-color-danger-700);
+		background: var(--sl-color-danger-50);
+		border-color: var(--sl-color-danger-200);
 	}
 	.diagram-remove::part(label) {
 		padding-inline: 4px;
@@ -112951,21 +112956,45 @@ var style = i`
 		outline: var(--sl-focus-ring);
 		outline-offset: var(--sl-focus-ring-offset);
 	}
-	.empty-vessel {
+	.empty-vessel,
+	.save-mixture {
 		color: var(--sl-color-primary-700);
 	}
-	.empty-vessel:hover {
+	:is(.empty-vessel, .save-mixture):is(:hover, :active, [aria-expanded="true"]) {
 		background: var(--sl-color-primary-100);
 		border-color: var(--sl-color-primary-200);
 	}
 	.object-summary-action.remObj {
 		margin-inline-start: auto;
 		align-self: flex-start;
-		color: var(--sl-color-danger-700);
+		color: var(--lab-card-secondary-text);
 	}
-	.object-summary-action.remObj:hover {
+	.object-summary-action.remObj:is(:hover, :active) {
+		color: var(--sl-color-danger-700);
 		background: var(--sl-color-danger-50);
 		border-color: var(--sl-color-danger-200);
+	}
+	.mixture-save-form {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 4px;
+		margin-block-start: 4px;
+	}
+	.mixture-save-form > input {
+		box-sizing: border-box;
+		min-inline-size: 0;
+		inline-size: 100%;
+		block-size: 22px;
+		padding: 2px 5px;
+		border: 1px solid var(--lab-card-border);
+		border-radius: 4px;
+		background: var(--lab-card-surface);
+		color: var(--lab-card-text);
+		font: inherit;
+	}
+	.mixture-save-form > input:focus-visible {
+		outline: var(--sl-focus-ring);
 	}
 	.electrical-settings {
 		inline-size: 10.5rem;
@@ -113799,12 +113828,10 @@ var style = i`
 		white-space: nowrap;
 		pointer-events: none;
 	}
-	.remObj {
-		/* position: absolute;
-    right: 0px;
-    bottom: 0px; */
-		color: #d10000;
-		background-color: #ffff;
+	.custom-card-actions {
+		display: flex;
+		align-items: center;
+		gap: 4px;
 	}
 	#foldMenu {
 		/* position: absolute;
@@ -113812,10 +113839,6 @@ var style = i`
     bottom: 0px; */
 		color: #0074aa;
 		background-color: #ffff;
-	}
-	.remObj:hover {
-		background-color: #d10000;
-		color: #ffff;
 	}
 	#foldMenu:hover {
 		background-color: #0074aa;
@@ -182925,8 +182948,109 @@ var catalogPreviews = {
   "Glycin": structures[61]
 };
 
+// data/savedMixtures.ts
+function describeMolecule(molecule2) {
+  const indexes = new Map(molecule2._atoms.map((atom, index2) => [atom, index2]));
+  const charges = molecule2._atoms.map((atom) => atom.getIonicCharge());
+  const bonds = molecule2._bonds.map(({ _from, _to, _type, _magnitude }) => {
+    const from2 = indexes.get(_from);
+    const to2 = indexes.get(_to);
+    if (_type === "ionic") {
+      const change = _from.getElectronNegativityPauling() > _to.getElectronNegativityPauling() ? -1 : 1;
+      charges[from2] -= change;
+      charges[to2] += change;
+    }
+    return `${from2}-${to2}:${_type}:${_magnitude}`;
+  });
+  const formula2 = StructureManager.isWater(molecule2) ? "H\u2082O" : molecule2._kekule_obj.calcFormula().getDisplayText();
+  return {
+    formula: molecule2.solidSaltFormula ?? formula2,
+    atoms: molecule2._atoms.map((atom) => atom.getName().toLowerCase()),
+    charges,
+    bonds
+  };
+}
+function snapshotMixture(mix) {
+  const parts = [];
+  for (const molecule2 of mix._activeMolecules) {
+    const moles = mix._molProperties[molecule2._id + "n"];
+    if (!molecule2._atoms.length || !(moles > 0 && Number.isFinite(moles))) continue;
+    const ions = molecule2.solidSaltIons;
+    parts.push({
+      molecule: describeMolecule(molecule2),
+      moles,
+      name: molecule2.name || void 0,
+      solid: molecule2.dosedAsSolid ? true : void 0,
+      precipitate: molecule2.solidSaltFormula && ions ? { formula: molecule2.solidSaltFormula, ions: [describeMolecule(ions[0]), describeMolecule(ions[1])] } : void 0
+    });
+  }
+  if (!parts.length) return;
+  const measuredMl = mix.contentVolume * 1e3;
+  const sampleMl = measuredMl > 0 ? measuredMl : mix._activeMolecules.reduce((sum, { _id }) => sum + (mix._molProperties[_id + "m"] || 0), 0);
+  if (!(sampleMl > 0 && Number.isFinite(sampleMl))) return;
+  return {
+    kind: "vessel-mixture",
+    phase: mix.hasLiquidContents ? "liquid" : "solid",
+    sampleMl,
+    addedVolumeL: measuredMl > 0 ? mix.addedVolume : sampleMl / 1e3,
+    parts,
+    excessCharge: mix.excessCharge,
+    hypochlorite: mix.hypochlorite,
+    dissolvedGas: Object.fromEntries(mix.dissolvedGas)
+  };
+}
+function isDefinition(definition) {
+  return !!definition && typeof definition.formula === "string" && Array.isArray(definition.atoms) && definition.atoms.length > 0 && definition.atoms.every((element2) => typeof element2 === "string" && ElementData.getData(element2)?.["symbol"]) && Array.isArray(definition.bonds) && definition.bonds.every((bond) => {
+    if (typeof bond !== "string") return false;
+    const match = /^(\d+)-(\d+):[a-z]+:(\d+(?:\.\d+)?)$/.exec(bond);
+    return !!match && Number(match[1]) !== Number(match[2]) && Number(match[1]) < definition.atoms.length && Number(match[2]) < definition.atoms.length;
+  }) && (definition.charges === void 0 || Array.isArray(definition.charges) && definition.charges.length === definition.atoms.length && definition.charges.every(Number.isInteger));
+}
+function isMixtureRecipe(value) {
+  const recipe = value;
+  return !!recipe && recipe.kind === "vessel-mixture" && (recipe.phase === "solid" || recipe.phase === "liquid") && Number.isFinite(recipe.sampleMl) && recipe.sampleMl > 0 && Number.isFinite(recipe.addedVolumeL) && recipe.addedVolumeL >= 0 && Number.isFinite(recipe.excessCharge) && Number.isFinite(recipe.hypochlorite) && recipe.hypochlorite >= 0 && !!recipe.dissolvedGas && typeof recipe.dissolvedGas === "object" && !Array.isArray(recipe.dissolvedGas) && Object.values(recipe.dissolvedGas).every((amount) => Number.isFinite(amount) && amount >= 0) && Array.isArray(recipe.parts) && recipe.parts.length > 0 && recipe.parts.every((part) => !!part && Number.isFinite(part.moles) && part.moles > 0 && isDefinition(part.molecule) && (part.name === void 0 || typeof part.name === "string") && (part.solid === void 0 || part.solid === true) && (part.precipitate === void 0 || !!part.precipitate && typeof part.precipitate.formula === "string" && Array.isArray(part.precipitate.ions) && part.precipitate.ions.length === 2 && part.precipitate.ions.every(isDefinition)));
+}
+function readSavedMixtures(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = /* @__PURE__ */ new Set();
+  return value.filter((item) => {
+    if (!item || typeof item.key !== "string" || !/^saved-mixture:[a-z0-9-]+$/.test(item.key) || seen.has(item.key) || typeof item.name !== "string" || !item.name.trim() || !isMixtureRecipe(item.recipe)) return false;
+    seen.add(item.key);
+    return true;
+  });
+}
+function prepareMixtureDose(recipe, load) {
+  if (!isMixtureRecipe(recipe)) return;
+  try {
+    const parts = recipe.parts.map(({ molecule: molecule2, name: name2, moles, solid, precipitate }) => {
+      const model = load(molecule2);
+      if (name2) model.name = name2;
+      if (solid) model.dosedAsSolid = true;
+      if (precipitate) {
+        model.solidSaltFormula = precipitate.formula;
+        model.solidSaltIons = [load(precipitate.ions[0]), load(precipitate.ions[1])];
+      }
+      return { model, moles };
+    });
+    return (volumeMl) => {
+      const fraction = volumeMl / recipe.sampleMl;
+      const dose = StructureManager.newMixture();
+      for (const { model, moles } of parts) dose.addMolecule(model, moles * fraction);
+      dose.hasLiquidVolume = recipe.phase === "liquid";
+      dose.addedVolume = recipe.addedVolumeL * fraction;
+      dose.excessCharge = recipe.excessCharge * fraction;
+      dose.hypochlorite = recipe.hypochlorite * fraction;
+      for (const [gas, amount] of Object.entries(recipe.dissolvedGas)) dose.dissolvedGas.set(gas, amount * fraction);
+      return dose;
+    };
+  } catch {
+    return void 0;
+  }
+}
+
 // data/measuredDose.ts
 function prepareDose(recipe, load) {
+  if ("kind" in recipe) return prepareMixtureDose(recipe, load);
   const parts = recipe.parts.filter(({ amount }) => Number.isFinite(amount) && amount > 0).map(({ molecule: molecule2, amount }) => {
     const loaded = load(molecule2);
     if (recipe.phase === "solid") loaded.dosedAsSolid = true;
@@ -190673,13 +190797,15 @@ var SURFACE_DISPLACEMENT_TASK = "surface-displacement";
 var MIN_TWO_PANELS_WIDTH = 560;
 var RC_UPDATE_MS = 50;
 var DIAGRAM_PICKER_CLOSE_MS = 2e3;
+var CUSTOM_CHEMICAL_GROUP = "custom";
 var CONTROL_ICONS = {
   power: "M8 2v5m3.2-3.8a5.5 5.5 0 1 1-6.4 0",
   drop: "M8 2.4c1.4 2.2 4 4.5 4 7a4 4 0 1 1-8 0c0-2.5 2.6-4.8 4-7Z",
   play: "M5 3.5 12 8l-7 4.5z",
   stop: "M4 4h8v8H4z",
   cancel: "m4 4 8 8m0-8-8 8",
-  confirm: "m3.5 8 3 3 6-6"
+  confirm: "m3.5 8 3 3 6-6",
+  save: "M2.5 2.5h9L14 5v8.5H2.5zM5 2.5v4h5v-4m-5 11v-4h6v4"
 };
 function isPassiveMeter(device) {
   const { Ammeter, Multimeter, Voltmeter } = EComponentType;
@@ -190690,7 +190816,7 @@ function validRCSettings(value) {
   const { capacitance, seriesResistance, cutoff } = value;
   return Number.isFinite(capacitance) && capacitance > 0 && Number.isFinite(seriesResistance) && seriesResistance >= 0 && (cutoff === void 0 || Number.isFinite(cutoff) && cutoff > 0);
 }
-var _newSmilesDrawer_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _sessionBuilderReferences_dec, _builderReferences_dec, _builderTarget_dec, _builderReview_dec, _builderAvailable_dec, _moleculeBuilderId_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramDismissedOpen_dec, _diagramPickerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _canvasLoading_dec, _app_dec, _pix_canvas_dec, _dragObject_dec, _avComponentsSprites_dec, _showTitrationMarkers_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _statusStrip_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _statusStrip, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _showTitrationMarkers, _avComponentsSprites, _dragObject, _pix_canvas, _app, _canvasLoading, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _diagramPickerOpen, _diagramDismissedOpen, _teacherDrawerOpen, _teacherTab, _moleculeBuilderId, _builderAvailable, _builderReview, _builderTarget, _builderReferences, _sessionBuilderReferences, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _RndName, _invComponents, _enablexAPI, _xAPIKey, _newSmilesDrawer;
+var _newSmilesDrawer_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _mixtureDraft_dec, _sessionVesselMixtures_dec, _savedVesselMixtures_dec, _sessionBuilderReferences_dec, _builderReferences_dec, _builderTarget_dec, _builderReview_dec, _builderAvailable_dec, _moleculeBuilderId_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramDismissedOpen_dec, _diagramPickerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _canvasLoading_dec, _app_dec, _pix_canvas_dec, _dragObject_dec, _avComponentsSprites_dec, _showTitrationMarkers_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _statusStrip_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _statusStrip, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _showTitrationMarkers, _avComponentsSprites, _dragObject, _pix_canvas, _app, _canvasLoading, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _diagramPickerOpen, _diagramDismissedOpen, _teacherDrawerOpen, _teacherTab, _moleculeBuilderId, _builderAvailable, _builderReview, _builderTarget, _builderReferences, _sessionBuilderReferences, _savedVesselMixtures, _sessionVesselMixtures, _mixtureDraft, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _RndName, _invComponents, _enablexAPI, _xAPIKey, _newSmilesDrawer;
 _ChemLab_decorators = [t6("webwriter-chemlab")];
 var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [e8("#upper")], _statusStrip_dec = [e8("#statusStrip")], _contextMolInfo_dec = [e8("#contextMolInfo")], _objectSummary_dec = [e8("#contextInfoBox")], _groupSummary_dec = [e8("#groupSelectionInfo")], _contextMixInfo_dec = [e8("#contextMixInfo")], _contextEchemInfo_dec = [e8("#contextEchemInfo")], _xAPICheck_dec = [e8("#xAPICheck")], _xAPIKeyInput_dec = [e8("#xAPIKeyInput")], _canvasArea_dec = [e8("#canvasArea")], _canvasZoom_dec = [e8("#canvasZoom")], _zoomLevel_dec = [e8("#zoomLevel", true)], _gridScale_dec = [e8("#gridScale", true)], _gridScaleValue_dec = [e8("#gridScaleValue", true)], _pHColors_dec = [n5({ attribute: false })], _dictionary_dec = [n5({ attribute: false })], _availableMolecules_dec = [n5({
   type: Array,
@@ -190701,7 +190827,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 })], _availableComponents_dec = [n5({
   type: Array,
   attribute: false
-})], _thumbnailBadges_dec = [n5({ type: Boolean, reflect: true })], _showTitrationMarkers_dec = [n5({ type: Boolean, reflect: true, attribute: "show-titration-markers" })], _avComponentsSprites_dec = [n5({ attribute: false })], _dragObject_dec = [n5({ attribute: false })], _pix_canvas_dec = [n5({ attribute: false })], _app_dec = [n5({ attribute: false })], _canvasLoading_dec = [r8()], _allChemComponents_dec = [n5({ attribute: false })], _allEComponents_dec = [n5({ attribute: false })], _curr_obj_dec = [n5({ attribute: false })], _fullWidthMode_dec = [r8()], _diagramPanelOpen_dec = [r8()], _diagramPickerOpen_dec = [r8()], _diagramDismissedOpen_dec = [r8()], _teacherDrawerOpen_dec = [r8()], _teacherTab_dec = [r8()], _moleculeBuilderId_dec = [n5({ type: String, attribute: "molecule-builder-id", reflect: true })], _builderAvailable_dec = [r8()], _builderReview_dec = [r8()], _builderTarget_dec = [r8()], _builderReferences_dec = [r8()], _sessionBuilderReferences_dec = [r8()], _permissionTooltip_dec = [r8()], _visibleVariants_dec = [r8()], _componentToPlace_dec = [r8()], _selectedChemical_dec = [r8()], _chemicalPermissions_dec = [r8()], _amountMenu_dec = [r8()], _fillMeter_dec = [r8()], _chemicalQuery_dec = [r8()], _activeChemicalConcentrations_dec = [r8()], _openConcentrationMenu_dec = [r8()], _chemicalGroup_dec = [r8()], _curr_name_dec = [n5({ attribute: false })], _curr_stage_index_dec = [n5({ attribute: false })], _RndName_dec = [n5({ attribute: false })], _invComponents_dec = [n5({
+})], _thumbnailBadges_dec = [n5({ type: Boolean, reflect: true })], _showTitrationMarkers_dec = [n5({ type: Boolean, reflect: true, attribute: "show-titration-markers" })], _avComponentsSprites_dec = [n5({ attribute: false })], _dragObject_dec = [n5({ attribute: false })], _pix_canvas_dec = [n5({ attribute: false })], _app_dec = [n5({ attribute: false })], _canvasLoading_dec = [r8()], _allChemComponents_dec = [n5({ attribute: false })], _allEComponents_dec = [n5({ attribute: false })], _curr_obj_dec = [n5({ attribute: false })], _fullWidthMode_dec = [r8()], _diagramPanelOpen_dec = [r8()], _diagramPickerOpen_dec = [r8()], _diagramDismissedOpen_dec = [r8()], _teacherDrawerOpen_dec = [r8()], _teacherTab_dec = [r8()], _moleculeBuilderId_dec = [n5({ type: String, attribute: "molecule-builder-id", reflect: true })], _builderAvailable_dec = [r8()], _builderReview_dec = [r8()], _builderTarget_dec = [r8()], _builderReferences_dec = [r8()], _sessionBuilderReferences_dec = [r8()], _savedVesselMixtures_dec = [r8()], _sessionVesselMixtures_dec = [r8()], _mixtureDraft_dec = [r8()], _permissionTooltip_dec = [r8()], _visibleVariants_dec = [r8()], _componentToPlace_dec = [r8()], _selectedChemical_dec = [r8()], _chemicalPermissions_dec = [r8()], _amountMenu_dec = [r8()], _fillMeter_dec = [r8()], _chemicalQuery_dec = [r8()], _activeChemicalConcentrations_dec = [r8()], _openConcentrationMenu_dec = [r8()], _chemicalGroup_dec = [r8()], _curr_name_dec = [n5({ attribute: false })], _curr_stage_index_dec = [n5({ attribute: false })], _RndName_dec = [n5({ attribute: false })], _invComponents_dec = [n5({
   type: Array,
   attribute: false
 })], _enablexAPI_dec = [n5({
@@ -190822,37 +190948,40 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __privateAdd(this, _builderTarget, __runInitializers(_init2, 160, this)), __runInitializers(_init2, 163, this);
     __privateAdd(this, _builderReferences, __runInitializers(_init2, 164, this, [])), __runInitializers(_init2, 167, this);
     __privateAdd(this, _sessionBuilderReferences, __runInitializers(_init2, 168, this, [])), __runInitializers(_init2, 171, this);
-    __privateAdd(this, _permissionTooltip, __runInitializers(_init2, 172, this)), __runInitializers(_init2, 175, this);
-    __privateAdd(this, _visibleVariants, __runInitializers(_init2, 176, this, {})), __runInitializers(_init2, 179, this);
-    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 180, this)), __runInitializers(_init2, 183, this);
-    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 184, this)), __runInitializers(_init2, 187, this);
-    __privateAdd(this, _chemicalPermissions, __runInitializers(_init2, 188, this, {})), __runInitializers(_init2, 191, this);
-    __privateAdd(this, _amountMenu, __runInitializers(_init2, 192, this)), __runInitializers(_init2, 195, this);
+    __privateAdd(this, _savedVesselMixtures, __runInitializers(_init2, 172, this, [])), __runInitializers(_init2, 175, this);
+    __privateAdd(this, _sessionVesselMixtures, __runInitializers(_init2, 176, this, [])), __runInitializers(_init2, 179, this);
+    __privateAdd(this, _mixtureDraft, __runInitializers(_init2, 180, this)), __runInitializers(_init2, 183, this);
+    __privateAdd(this, _permissionTooltip, __runInitializers(_init2, 184, this)), __runInitializers(_init2, 187, this);
+    __privateAdd(this, _visibleVariants, __runInitializers(_init2, 188, this, {})), __runInitializers(_init2, 191, this);
+    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 192, this)), __runInitializers(_init2, 195, this);
+    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 196, this)), __runInitializers(_init2, 199, this);
+    __privateAdd(this, _chemicalPermissions, __runInitializers(_init2, 200, this, {})), __runInitializers(_init2, 203, this);
+    __privateAdd(this, _amountMenu, __runInitializers(_init2, 204, this)), __runInitializers(_init2, 207, this);
     __publicField(this, "amountMenuObserver");
-    __privateAdd(this, _fillMeter, __runInitializers(_init2, 196, this)), __runInitializers(_init2, 199, this);
+    __privateAdd(this, _fillMeter, __runInitializers(_init2, 208, this)), __runInitializers(_init2, 211, this);
     __publicField(this, "amountFormatLanguage");
     __publicField(this, "amountFormatters", /* @__PURE__ */ new Map());
-    __privateAdd(this, _chemicalQuery, __runInitializers(_init2, 200, this, "")), __runInitializers(_init2, 203, this);
-    __privateAdd(this, _activeChemicalConcentrations, __runInitializers(_init2, 204, this, {})), __runInitializers(_init2, 207, this);
-    __privateAdd(this, _openConcentrationMenu, __runInitializers(_init2, 208, this)), __runInitializers(_init2, 211, this);
-    __privateAdd(this, _chemicalGroup, __runInitializers(_init2, 212, this, "Salze")), __runInitializers(_init2, 215, this);
+    __privateAdd(this, _chemicalQuery, __runInitializers(_init2, 212, this, "")), __runInitializers(_init2, 215, this);
+    __privateAdd(this, _activeChemicalConcentrations, __runInitializers(_init2, 216, this, {})), __runInitializers(_init2, 219, this);
+    __privateAdd(this, _openConcentrationMenu, __runInitializers(_init2, 220, this)), __runInitializers(_init2, 223, this);
+    __privateAdd(this, _chemicalGroup, __runInitializers(_init2, 224, this, "Salze")), __runInitializers(_init2, 227, this);
     __publicField(this, "stopDose");
     __publicField(this, "paletteDrag");
     __publicField(this, "suppressPaletteClick", false);
     __publicField(this, "dragTransfer");
     __publicField(this, "meterTimeout");
     __publicField(this, "statusTimeout");
-    __privateAdd(this, _curr_name, __runInitializers(_init2, 216, this, "")), __runInitializers(_init2, 219, this);
-    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 220, this, -1)), __runInitializers(_init2, 223, this);
-    __privateAdd(this, _RndName, __runInitializers(_init2, 224, this, n7({
+    __privateAdd(this, _curr_name, __runInitializers(_init2, 228, this, "")), __runInitializers(_init2, 231, this);
+    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 232, this, -1)), __runInitializers(_init2, 235, this);
+    __privateAdd(this, _RndName, __runInitializers(_init2, 236, this, n7({
       dictionaries: [l6, t8, r10]
-    }))), __runInitializers(_init2, 227, this);
-    __privateAdd(this, _invComponents, __runInitializers(_init2, 228, this, [])), __runInitializers(_init2, 231, this);
-    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 232, this, false)), __runInitializers(_init2, 235, this);
-    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 236, this, "")), __runInitializers(_init2, 239, this);
+    }))), __runInitializers(_init2, 239, this);
+    __privateAdd(this, _invComponents, __runInitializers(_init2, 240, this, [])), __runInitializers(_init2, 243, this);
+    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 244, this, false)), __runInitializers(_init2, 247, this);
+    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 248, this, "")), __runInitializers(_init2, 251, this);
     /** Allocated on first use by the selected vessel's structure thumbnails. */
     __publicField(this, "smilesDrawer100");
-    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 240, this, 1)), __runInitializers(_init2, 243, this);
+    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 252, this, 1)), __runInitializers(_init2, 255, this);
   }
   get lang() {
     return effectiveLanguage(this);
@@ -190959,7 +191088,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   updated(changed) {
     super.updated(changed);
     if (!this.canAuthor || changed.has("invComponents") || changed.has("chemicalPermissions")) this.permissionTooltip = void 0;
-    if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions"].some((name2) => changed.has(name2))) {
+    if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions", "savedVesselMixtures"].some((name2) => changed.has(name2))) {
       this.persistAuthoredData();
     }
     if (this.app && !this.canvasLoading && this.refreshFromRemoteData) {
@@ -190985,7 +191114,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.canvas.fitObjects();
       }
     }
-    if (this.canvas.selectedObjects.length || changed.has("curr_obj") || changed.has("curr_name")) {
+    if (this.canvas.selectedObjects.length || changed.has("curr_obj") || changed.has("curr_name") || changed.has("mixtureDraft")) {
       this.canvas.drawSelection();
     }
     if (changed.has("amountMenu")) this.positionAmountMenu();
@@ -191009,6 +191138,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   applyAuthoredData(value) {
     this.builderReferences = Array.isArray(value.builderReferences) ? value.builderReferences.slice(0, 30).map(readStructure).filter(Boolean) : [];
+    this.savedVesselMixtures = readSavedMixtures(value.savedVesselMixtures);
     if (Array.isArray(value.availableMolecules)) this.availableMolecules = value.availableMolecules;
     if (Array.isArray(value.availableMixtures)) this.availableMixtures = value.availableMixtures;
     if (Array.isArray(value.availableComponents)) {
@@ -191051,7 +191181,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         availableComponents: value.availableComponents ?? this.availableComponents,
         invComponents: value.invComponents ?? this.invComponents,
         chemicalPermissions: value.chemicalPermissions ?? this.chemicalPermissions,
-        ...Array.isArray(value.builderReferences) && value.builderReferences.length ? { builderReferences: value.builderReferences } : {}
+        ...Array.isArray(value.builderReferences) && value.builderReferences.length ? { builderReferences: value.builderReferences } : {},
+        ...Array.isArray(value.savedVesselMixtures) && value.savedVesselMixtures.length ? { savedVesselMixtures: value.savedVesselMixtures } : {}
       });
       if (incoming === this.savedDataSnapshot) return;
       this.refreshFromRemoteData = this.hasUpdated;
@@ -191073,7 +191204,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       availableComponents: this.availableComponents,
       invComponents: this.invComponents,
       chemicalPermissions: this.chemicalPermissions,
-      ...this.builderReferences.length ? { builderReferences: this.builderReferences } : {}
+      ...this.builderReferences.length ? { builderReferences: this.builderReferences } : {},
+      ...this.savedVesselMixtures.length ? { savedVesselMixtures: this.savedVesselMixtures } : {}
     });
   }
   persistAuthoredData() {
@@ -192333,6 +192465,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.curr_obj = [...this.allChemComponents, ...this.allEComponents].find(
       (component) => `${component._type}:${component._id}` === name2
     ) ?? null;
+    if (this.mixtureDraft?.vessel !== this.curr_obj) this.mixtureDraft = void 0;
     this.curr_name = name2;
     this._updatePopup();
     this.requestUpdate();
@@ -192433,6 +192566,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.requestUpdate();
   }
   clearObjectSelection() {
+    this.mixtureDraft = void 0;
     this.canvas.clearGroupSelection();
     this.curr_obj = null;
     this.curr_name = "";
@@ -193370,7 +193504,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.activeChemicalConcentrations,
       this.selectedChemical?.key,
       this.openConcentrationMenu,
-      this.builderAvailable
+      this.builderAvailable,
+      this.builderReferences,
+      this.sessionBuilderReferences,
+      this.savedVesselMixtures,
+      this.sessionVesselMixtures
     ] : [false], () => showChemicals ? this.renderChemicalCatalog() : T)}
 								</div>
 							</sl-tab-panel>
@@ -193572,7 +193710,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const selection = () => ({
       key,
       name: label,
-      recipe: concentrationMolPerL === void 0 ? recipe : withConcentration(recipe, concentrationMolPerL)
+      recipe: concentrationMolPerL === void 0 || "kind" in recipe ? recipe : withConcentration(recipe, concentrationMolPerL)
     });
     return x`
 			<button type="button" class="chemical-tile" contenteditable="false"
@@ -193599,10 +193737,22 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       const entries2 = this.canAuthor ? items2 : items2.filter((item) => this.isChemicalAllowed(item.name));
       return entries2.length ? [{ id: category.replace(/ /g, "_"), category, label: this.message(category), items: entries2 }] : [];
     });
+    const customLabel = this.builderText("Custom chemicals", "Eigene Chemikalien");
+    const structureLabel = this.builderText("Molecule Builder", "Molek\xFClbaukasten");
+    const mixtureLabel = this.builderText("Saved mixtures", "Gespeicherte Gemische");
+    const structures2 = [...this.builderReferences, ...this.sessionBuilderReferences];
+    const mixtures2 = [
+      ...this.savedVesselMixtures.filter((item) => this.canAuthor || this.isChemicalAllowed(item.key)),
+      ...this.sessionVesselMixtures
+    ];
+    const hasCustom = !!(structures2.length || mixtures2.length);
+    const customSelected = hasCustom && this.chemicalGroup === CUSTOM_CHEMICAL_GROUP;
     const activeGroup = groupChoices.find((group) => group.id === this.chemicalGroup);
+    const activeId = customSelected ? CUSTOM_CHEMICAL_GROUP : activeGroup?.id ?? "all";
+    const showHeadings = activeId === "all";
     const allLabel = this.message("Alle Stoffe");
     const seen = /* @__PURE__ */ new Set();
-    const sections = (activeGroup ? [activeGroup] : groupChoices).flatMap((group) => {
+    const sections = (customSelected ? [] : activeGroup ? [activeGroup] : groupChoices).flatMap((group) => {
       const solutions = [];
       const other = [];
       for (const item of group.items) {
@@ -193619,17 +193769,29 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       ].filter(({ items: items2 }) => items2.length);
       return subgroups.length ? [{ ...group, subgroups }] : [];
     });
-    const items = sections.flatMap(({ subgroups }) => subgroups.flatMap(({ items: items2 }) => items2));
+    const shownStructures = activeGroup ? [] : structures2.filter((structure) => matches(customLabel, structureLabel, structure.name));
+    const shownMixtures = activeGroup ? [] : mixtures2.filter((item) => matches(
+      customLabel,
+      mixtureLabel,
+      item.name,
+      ...item.recipe.parts.map(({ molecule: molecule2 }) => molecule2.formula)
+    ));
+    const items = [
+      ...sections.flatMap(({ subgroups }) => subgroups.flatMap(({ items: items2 }) => items2)),
+      ...shownMixtures.filter((item) => this.savedVesselMixtures.includes(item)).map((item) => ({ name: item.key, label: item.name }))
+    ];
+    const hasResults = !!(sections.length || shownStructures.length || shownMixtures.length);
     return x`
 			<div class="chemical-filters">
 				<sl-select class="chemical-group-select" size="small" hoist contenteditable="false"
-					label=${this.message("Stoffklasse")} .value=${activeGroup?.id ?? "all"}
+					label=${this.message("Stoffklasse")} .value=${activeId}
 					@sl-change=${(event) => {
       this.chemicalGroup = String(event.currentTarget.value);
       this.openConcentrationMenu = void 0;
     }}>
 					<sl-option value="all">${allLabel}</sl-option>
 					${groupChoices.map((group) => x`<sl-option value=${group.id}>${group.label}</sl-option>`)}
+					${hasCustom ? x`<sl-option value=${CUSTOM_CHEMICAL_GROUP}>${customLabel}</sl-option>` : E}
 				</sl-select>
 				<sl-input class="chemical-search" size="small" type="search" clearable contenteditable="false"
 					label=${this.message("Chemikalien suchen")} placeholder=${this.message("Name oder Formel suchen")}
@@ -193639,19 +193801,33 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }}>
 				</sl-input>
 				${this.canAuthor && items.length ? x`
-					<div class="chemical-filter-badge">${this.renderChemicalPermissionBadge(activeGroup?.label ?? allLabel, items)}</div>` : E}
+					<div class="chemical-filter-badge">${this.renderChemicalPermissionBadge(customSelected ? customLabel : activeGroup?.label ?? allLabel, items)}</div>` : E}
 			</div>
-			${items.length ? i6(activeGroup?.id ?? "all", x`
+			${hasResults ? i6(activeId, x`
 				${c4(sections, (section) => section.id, (section) => this.renderPaletteSection(
       section.label,
       c4(section.subgroups, (subgroup) => subgroup.id, (subgroup) => this.renderPaletteSubgroup(
         subgroup.label,
         section.label,
         c4(subgroup.items, (item) => item.name, (item) => this.renderChemicalCard(item)),
-        activeGroup ? 3 : 4
+        showHeadings ? 4 : 3
       )),
-      !activeGroup
-    ))}`) : x`<p class="palette-empty" role="status">${this.message("Keine Chemikalien gefunden.")}</p>`}
+      showHeadings
+    ))}
+				${shownStructures.length || shownMixtures.length ? this.renderPaletteSection(customLabel, x`
+					${shownStructures.length ? this.renderPaletteSubgroup(
+      structureLabel,
+      customLabel,
+      c4(shownStructures, (structure) => structure, (structure) => this.renderBuilderReference(structure)),
+      showHeadings ? 4 : 3
+    ) : E}
+					${shownMixtures.length ? this.renderPaletteSubgroup(
+      mixtureLabel,
+      customLabel,
+      c4(shownMixtures, (item) => item.key, (item) => this.renderSavedMixture(item)),
+      showHeadings ? 4 : 3
+    ) : E}
+				`, showHeadings) : E}`) : x`<p class="palette-empty" role="status">${this.message("Keine Chemikalien gefunden.")}</p>`}
 		`;
   }
   renderChemicalCard(item) {
@@ -193718,6 +193894,24 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 		</sl-button>` : E;
     return this.renderPaletteCard(name2, variant, badge, x`${body2}${view}`, true, permissions);
   }
+  renderSavedMixture(item) {
+    const sharable = this.canAuthor && this.savedVesselMixtures.includes(item);
+    const removable = sharable || this.sessionVesselMixtures.includes(item);
+    const badge = sharable ? this.renderChemicalPermissionBadge(item.name, [{ name: item.key, label: item.name }]) : E;
+    const variant = sharable ? this.palettePermissionVariant(Number(this.isChemicalAllowed(item.key)), 1) : "primary";
+    const formulas = [...new Set(item.recipe.parts.map(({ molecule: molecule2 }) => molecule2.formula))];
+    const summary = formulas.length > 3 ? `${formulas.slice(0, 3).join(" \xB7 ")} \xB7 \u2026` : formulas.join(" \xB7 ");
+    return this.renderPaletteCard(item.name, variant, badge, x`
+			<div class="palette-preview-area palette-variant" title=${formulas.join(" \xB7 ")}>
+				${this.renderChemicalTile(item.key, item.name, summary, item.recipe)}
+				${sharable ? this.renderChemicalPermission(item.key, item.name) : E}
+			</div>
+			${removable ? x`<div class="custom-card-actions">${this.renderSelectionDeleteButton(
+      () => this.removeSavedMixture(item),
+      this.builderText("Delete mixture", "Gemisch l\xF6schen")
+    )}</div>` : E}
+		`, true);
+  }
   builderText(en, de) {
     return this.lang?.toLowerCase().startsWith("de") ? de : en;
   }
@@ -193729,7 +193923,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.builderReview = review;
     void Promise.all([Promise.resolve().then(() => (init_catalog(), catalog_exports)), Promise.resolve().then(() => (init_geometry(), geometry_exports))]).then(([catalog, geometry]) => {
       if (!this.isConnected || this.builderReview !== review) return;
-      const name2 = geometry.formula(structure) || structure.name;
+      const name2 = structure.name.trim() || geometry.formula(structure);
       const match = catalog.matchingRecipe(structure);
       this.builderReview = { structure: { ...structure, name: name2 }, reagent: match?.name, loading: false };
     }).catch(() => {
@@ -193762,10 +193956,83 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.builderReferences = [...references2, structure];
       this.persistAuthoredData();
     } else this.sessionBuilderReferences = [...references2, structure];
+    this.openCustomChemicals();
+    this.builderReview = void 0;
+  }
+  openCustomChemicals() {
+    this.chemicalGroup = CUSTOM_CHEMICAL_GROUP;
+    this.chemicalQuery = "";
+    this.openConcentrationMenu = void 0;
     this.teacherTab = "chemicals";
     this.teacherDrawerChoice = this.teacherDrawerOpen = true;
+    if (this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.closeDiagramPanel();
     void this.updateComplete.then(() => this.renderRoot.querySelector("#teacherTabs")?.show("chemicals"));
-    this.builderReview = void 0;
+  }
+  toggleMixtureDraft(vessel) {
+    if (this.mixtureDraft?.vessel === vessel) {
+      this.mixtureDraft = void 0;
+      return;
+    }
+    const prefix = this.builderText("Mixture", "Gemisch");
+    const names2 = new Set([...this.savedVesselMixtures, ...this.sessionVesselMixtures].map((item) => item.name));
+    let number2 = 1;
+    while (names2.has(`${prefix} ${number2}`)) number2++;
+    this.mixtureDraft = { vessel, name: `${prefix} ${number2}` };
+    void this.updateComplete.then(() => {
+      const input = this.shadowRoot.querySelector("#mixtureName");
+      input?.focus({ preventScroll: true });
+      input?.select();
+    });
+  }
+  saveVesselMixture(vessel, event) {
+    event.preventDefault();
+    if (this.curr_obj !== vessel || this.mixtureDraft?.vessel !== vessel) return;
+    const input = event.currentTarget.querySelector("input");
+    const name2 = input.value.trim();
+    const recipe = name2 && snapshotMixture(vessel._content);
+    if (!recipe) {
+      input.setCustomValidity(name2 ? this.builderText("The vessel has no contents to save.", "Das Gef\xE4\xDF hat keinen speicherbaren Inhalt.") : this.builderText("Enter a mixture name.", "Gib einen Namen f\xFCr das Gemisch ein."));
+      input.reportValidity();
+      return;
+    }
+    const id3 = Array.from(crypto.getRandomValues(new Uint32Array(2)), (value) => value.toString(36)).join("-");
+    const saved = { key: `saved-mixture:${id3}`, name: name2, recipe };
+    if (this.canAuthor) this.savedVesselMixtures = [...this.savedVesselMixtures, saved];
+    else this.sessionVesselMixtures = [...this.sessionVesselMixtures, saved];
+    this.closeMixtureDraft();
+    this.openCustomChemicals();
+  }
+  closeMixtureDraft() {
+    this.mixtureDraft = void 0;
+    this.shadowRoot.querySelector("#saveVesselMixture")?.focus({ preventScroll: true });
+  }
+  removeSavedMixture(item) {
+    if (this.canAuthor && this.savedVesselMixtures.includes(item)) {
+      this.savedVesselMixtures = this.savedVesselMixtures.filter((entry) => entry.key !== item.key);
+      this.setChemicalBlocked(item.key, false);
+    } else this.sessionVesselMixtures = this.sessionVesselMixtures.filter((entry) => entry.key !== item.key);
+    if (this.selectedChemical?.key === item.key) this.clearChemicalSelection();
+  }
+  renderMixtureDraft(vessel) {
+    const draft = this.mixtureDraft;
+    if (draft?.vessel !== vessel) return E;
+    const name2 = this.builderText("Mixture name", "Name des Gemischs");
+    const save = this.builderText("Save mixture", "Gemisch speichern");
+    return x`<form id="mixtureSaveForm" class="mixture-save-form" contenteditable="false"
+			@submit=${(event) => this.saveVesselMixture(vessel, event)}
+			@keydown=${(event) => {
+      if (event.key !== "Escape" || event.isComposing) return;
+      event.preventDefault();
+      event.stopPropagation();
+      this.closeMixtureDraft();
+    }}>
+			<input id="mixtureName" type="text" maxlength="80" required aria-label=${name2} placeholder=${name2} .value=${draft.name}
+				@input=${(event) => event.currentTarget.setCustomValidity("")}/>
+			<button type="submit" class="object-summary-action save-mixture" aria-label=${save} title=${save}>
+				<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+					stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${CONTROL_ICONS.confirm}/></svg>
+			</button>
+		</form>`;
   }
   openSpeciesInBuilder(molecule2, name2) {
     void Promise.resolve().then(() => (init_catalog(), catalog_exports)).then(({ fromLabMolecule: fromLabMolecule2 }) => {
@@ -193789,24 +194056,24 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       widget.scrollIntoView({ block: "nearest" });
     }
   }
-  renderBuilderReferences() {
-    if (!this.builderReferences.length && !this.sessionBuilderReferences.length) return E;
-    return this.renderPaletteSection(
-      this.builderText("Reference structures", "Referenzstrukturen"),
-      x`<div class="builder-reference-list">${[...this.builderReferences, ...this.sessionBuilderReferences].map((structure) => x`
-				<div>
-					<sl-tag size="small">${structure.name || this.builderText("Structure", "Struktur")}</sl-tag>
-					<sl-button size="small" @click=${() => this.openInBuilder({ structure })}>${this.builderText("Open", "\xD6ffnen")}</sl-button>
-					${this.canAuthor || this.sessionBuilderReferences.includes(structure) ? x`
-						<sl-button size="small" @click=${() => {
-        if (this.builderReferences.includes(structure)) {
-          this.builderReferences = this.builderReferences.filter((item) => item !== structure);
-          this.persistAuthoredData();
-        } else this.sessionBuilderReferences = this.sessionBuilderReferences.filter((item) => item !== structure);
-      }}>${this.builderText("Remove", "Entfernen")}</sl-button>
-					` : E}
-				</div>`)}</div>`
-    );
+  renderBuilderReference(structure) {
+    const remove = () => {
+      if (this.canAuthor && this.builderReferences.includes(structure)) {
+        this.builderReferences = this.builderReferences.filter((item) => item !== structure);
+        this.persistAuthoredData();
+      } else this.sessionBuilderReferences = this.sessionBuilderReferences.filter((item) => item !== structure);
+    };
+    return this.renderPaletteCard(structure.name || this.builderText("Structure", "Struktur"), "primary", E, x`
+			<div class="custom-card-actions">
+				<sl-button size="small" class="structure-link" @click=${() => this.openInBuilder({ structure })}>
+					${this.builderText("View structure", "Struktur ansehen")}
+				</sl-button>
+				${this.canAuthor || this.sessionBuilderReferences.includes(structure) ? this.renderSelectionDeleteButton(
+      remove,
+      this.builderText("Delete structure", "Struktur l\xF6schen")
+    ) : E}
+			</div>
+		`, true);
   }
   renderBuilderExchange() {
     const review = this.builderReview;
@@ -193825,7 +194092,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 						${permitted ? x`<sl-button size="small" variant="primary" @click=${() => this.useBuilderReagent(item.name)}>
 							${this.builderText("Select catalog reagent", "Katalogreagenz ausw\xE4hlen")}</sl-button>` : E}
 						<sl-button size="small" ?disabled=${(this.canAuthor ? this.builderReferences : this.sessionBuilderReferences).length >= 30}
-							@click=${() => this.saveBuilderReference(review.structure)}>${this.builderText("Keep as reference", "Als Referenz behalten")}</sl-button>
+							@click=${() => this.saveBuilderReference(review.structure)}>${this.builderText("Save to custom chemicals", "Unter eigene Chemikalien speichern")}</sl-button>
 					</div>
 				` : x`
 					<p>${fallback2}</p>
@@ -193983,9 +194250,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     summary.style.transform = `translate(${Math.max(padding, Math.min(x4, maxX))}px, ${Math.max(padding, Math.min(y5, maxY))}px)`;
     summary.setAttribute("data-anchored", "");
   }
-  renderSelectionDeleteButton(remove) {
+  renderSelectionDeleteButton(remove, label = this.message("l\xF6schen")) {
     return x`
-			<button type="button" class="remObj object-summary-action" aria-label=${this.message("l\xF6schen")} title=${this.message("l\xF6schen")} @click=${remove}>
+			<button type="button" class="remObj object-summary-action" aria-label=${label} title=${label} @click=${remove}>
 				<svg
 					aria-hidden="true"
 					width="12"
@@ -194000,6 +194267,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 			</button>`;
   }
   emptyVessel(vessel) {
+    this.mixtureDraft = void 0;
     this.stopDose?.(true);
     this.finishDragTransfer();
     this.closeAmountMenu();
@@ -194377,6 +194645,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const name2 = variant?.reference !== void 0 ? this.message(variant.size) : this.itemName(this.curr_name.split(":")[0]);
     const material = device?._material && this.itemName(device._material.name);
     const emptyLabel = this.message("Objekt leeren");
+    const saveLabel = this.builderText("Save contents as mixture", "Inhalt als Gemisch speichern");
     return x`
 			<section id="contextInfoBox" class="selection-info" ?hidden=${!this.curr_obj}>
 				<div class="object-summary-heading">
@@ -194390,10 +194659,16 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 								<path d="M1.5 7 7 1.5 11 5.5 9 5.5 5 9.5a1 1 0 0 1-1.5 0L1.5 7Z"/>
 								<path d="M11.5 8.5c.8 1 2 2.4 2 3.5a2 2 0 0 1-4 0c0-1.1 1.2-2.5 2-3.5Z"/>
 							</svg>
+						</button>
+						<button id="saveVesselMixture" type="button" class="object-summary-action save-mixture"
+							aria-label=${saveLabel} title=${saveLabel} aria-expanded=${this.mixtureDraft?.vessel === vessel}
+							aria-controls="mixtureSaveForm" @click=${() => this.toggleMixtureDraft(vessel)}>
+							<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+								stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${CONTROL_ICONS.save}/></svg>
 						</button>` : E}
 					${this.renderSelectionDeleteButton(() => this._removeSprite())}
 				</div>
-				${vessel ? this.renderValveControls(vessel) : E}
+				${vessel ? x`${this.renderMixtureDraft(vessel)}${this.renderValveControls(vessel)}` : E}
 				<div id="contextEchemInfo" ?hidden=${!device}></div>
 				<sl-carousel id="contextMolInfo" pagination mouse-dragging slides-per-page="1" slides-per-move="1"
 					aria-label=${this.message("Inhalt")} style="display: none"></sl-carousel>
@@ -194456,6 +194731,9 @@ _builderReview = new WeakMap();
 _builderTarget = new WeakMap();
 _builderReferences = new WeakMap();
 _sessionBuilderReferences = new WeakMap();
+_savedVesselMixtures = new WeakMap();
+_sessionVesselMixtures = new WeakMap();
+_mixtureDraft = new WeakMap();
 _permissionTooltip = new WeakMap();
 _visibleVariants = new WeakMap();
 _componentToPlace = new WeakMap();
@@ -194515,6 +194793,9 @@ __decorateElement(_init2, 4, "builderReview", _builderReview_dec, _ChemLab, _bui
 __decorateElement(_init2, 4, "builderTarget", _builderTarget_dec, _ChemLab, _builderTarget);
 __decorateElement(_init2, 4, "builderReferences", _builderReferences_dec, _ChemLab, _builderReferences);
 __decorateElement(_init2, 4, "sessionBuilderReferences", _sessionBuilderReferences_dec, _ChemLab, _sessionBuilderReferences);
+__decorateElement(_init2, 4, "savedVesselMixtures", _savedVesselMixtures_dec, _ChemLab, _savedVesselMixtures);
+__decorateElement(_init2, 4, "sessionVesselMixtures", _sessionVesselMixtures_dec, _ChemLab, _sessionVesselMixtures);
+__decorateElement(_init2, 4, "mixtureDraft", _mixtureDraft_dec, _ChemLab, _mixtureDraft);
 __decorateElement(_init2, 4, "permissionTooltip", _permissionTooltip_dec, _ChemLab, _permissionTooltip);
 __decorateElement(_init2, 4, "visibleVariants", _visibleVariants_dec, _ChemLab, _visibleVariants);
 __decorateElement(_init2, 4, "componentToPlace", _componentToPlace_dec, _ChemLab, _componentToPlace);
