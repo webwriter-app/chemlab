@@ -88,7 +88,8 @@ import {
 } from "./periodic-table/strings";
 
 import { electronConfiguration } from "./molecule-builder/atomic-configuration";
-import { atomicModelStyles, initialAtomChoices, renderAtomicControls, renderAtomicOrbitalTiles, renderAtomicShells } from "./molecule-builder/atomic-model";
+import { AtomicFigure } from "./molecule-builder/atomic-figure";
+import { atomicModelStyles, initialAtomChoices, pauseShellElectronsOption, renderAtomicControls } from "./molecule-builder/atomic-model";
 import { BUILDER_TAG, worksheetPeers, worksheetScope, type AtomReceiver } from "./molecule-builder/exchange";
 
 const ATOM_PREVIEW_ICON = svg`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor">
@@ -321,6 +322,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * not inherit them from the global one.
 	 */
 	static scopedElements = {
+		"chemlab-atomic-figure": AtomicFigure,
 		"sl-badge": SlBadge,
 		"sl-button": SlButton,
 		"sl-card": SlCard,
@@ -343,6 +345,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	};
 
 	static options = {
+		pauseShellElectrons: { ...pauseShellElectronsOption, group: "appearance" },
 		initialElement: {
 			type: "number" as const,
 			group: "content",
@@ -392,6 +395,9 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/** Whether the rows act as an atom palette inside the Molecule Builder. */
 	@property({ type: Boolean, reflect: true, attribute: "picker-mode" })
 	accessor pickerMode = false;
+
+	@property({ type: Boolean, attribute: "pause-shell-electrons", reflect: true })
+	accessor pauseShellElectrons = false;
 
 	#startElementDrag(event: PointerEvent, atomicNumber: number) {
 		if (!this.pickerMode || !event.isPrimary || event.button !== 0) return;
@@ -520,16 +526,6 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * search field and then the layout switch are the stable fallbacks.
 	 */
 	protected updated() {
-		if (this.#atomPreview) {
-			const row = this.renderRoot.querySelector<HTMLElement>(".pt-atom-preview .electron-config-chips");
-			const active = row?.querySelector('[aria-pressed="true"]');
-			if (row && active) {
-				const viewport = row.getBoundingClientRect();
-				const chip = active.getBoundingClientRect();
-				if (chip.right > viewport.right) row.scrollLeft += chip.right - viewport.right;
-				else if (chip.left < viewport.left) row.scrollLeft -= viewport.left - chip.left;
-			}
-		}
 		if (!this.#restoreFocusPending) return;
 		this.#restoreFocusPending = false;
 		const previous = this.#focusBeforeLayout;
@@ -712,10 +708,15 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * @param event - Key event of the card.
 	 */
 	#onDetailsKeydown = (event: KeyboardEvent) => {
-		if (event.key !== "Escape" || !this.#detailsExpanded) return;
+		if (event.key !== "Escape" || !(this.#atomPreview || this.#detailsExpanded)) return;
 		event.stopPropagation();
-		this.#detailsExpanded = false;
-		this.requestUpdate();
+		if (this.#atomPreview) {
+			this.#toggleAtomPreview();
+			void this.updateComplete.then(() => this.renderRoot.querySelector<HTMLElement>(".atom-preview-toggle")?.focus());
+		} else {
+			this.#detailsExpanded = false;
+			this.requestUpdate();
+		}
 	};
 
 	/** Dispatches the current selection once, composed and bubbling. */
@@ -1625,10 +1626,9 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		};
 		return html`<div class="pt-atom-preview">
 			${renderAtomicControls(configuration, choices, change, t)}
-			<div class="pt-atom-figure">
-				${choices.model === "orbitals" ? renderAtomicOrbitalTiles(configuration, choices, change, t)
-					: renderAtomicShells(element.symbol, configuration, choices, t)}
-			</div>
+			<chemlab-atomic-figure class="pt-atom-figure" lang=${language} .atomicNumber=${element.atomicNumber}
+				.symbolText=${element.symbol} .configuration=${configuration} .choices=${choices} .pause=${this.pauseShellElectrons}>
+			</chemlab-atomic-figure>
 		</div>`;
 	}
 
@@ -1681,7 +1681,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const open = !atomView && options.collapsible && expanded;
 		return html`
 			<div
-				class="details-shell ${atomView ? "is-atom" : open ? "is-expanded" : ""}"
+				class="details-shell ${atomView ? "is-atom is-expanded" : open ? "is-expanded" : ""}"
 				@keydown=${this.#onDetailsKeydown}
 			>
 				<sl-card

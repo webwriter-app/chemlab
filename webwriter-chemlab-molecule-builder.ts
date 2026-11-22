@@ -29,17 +29,14 @@ import { lewisViewBox, renderLewis, type DiagramBox } from "./molecule-builder/l
 import { atomRadius, spaceFillingRadius } from "./molecule-builder/radii";
 import { hasMolecularDisplays, moleculeOrbitals, ORBITAL_PHASE_COLORS, type MolecularDisplay } from "./molecule-builder/orbitals";
 import { atomicSpecies, electronConfiguration, type AtomicSpecies } from "./molecule-builder/atomic-configuration";
-import { atomicFamilyParts, atomicOrbitalKey, atomicOrbitalSlice, atomicOverlayParts, type AtomicOrbitalDisplay, type AtomicOrbitalPart } from "./molecule-builder/atomic-orbitals";
-import { atomChoice, atomicModelStyles, initialAtomChoices, renderAtomicControls, renderAtomicOrbitalTiles, renderAtomicShells,
-	type AtomChoices, type AtomicModel } from "./molecule-builder/atomic-model";
+import { AtomicFigure } from "./molecule-builder/atomic-figure";
+import { atomicModelStyles, initialAtomChoices, pauseShellElectronsOption, renderAtomicControls,
+	type AtomicModel } from "./molecule-builder/atomic-model";
 import { gridCell } from "./molecule-builder/canvas-grid";
 import { builderStyles } from "./molecule-builder/styles";
 import type { MoleculeScene } from "./molecule-builder/scene";
 
-type AtomInspection = {
-	atom: { id: number }; species: AtomicSpecies; configuration: ReturnType<typeof electronConfiguration>;
-	display: AtomicOrbitalDisplay; overlay?: readonly AtomicOrbitalPart[];
-};
+type AtomInspection = { species: AtomicSpecies; configuration: ReturnType<typeof electronConfiguration> };
 type Tool = "orbit" | "atom" | "bond";
 type Pointer = { x: number; y: number; id?: number };
 type Gesture = Pointer & { from?: number; distance: number; moved: boolean; diagram?: Point2 };
@@ -141,10 +138,12 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	static styles = [builderStyles, atomicModelStyles];
 	static scopedElements = {
 		"webwriter-chemlab-periodic-table": ChemLabPeriodicTable,
+		"chemlab-atomic-figure": AtomicFigure,
 		"sl-badge": SlBadge, "sl-button": SlButton, "sl-details": SlDetails, "sl-icon": SlIcon,
 		"sl-input": SlInput, "sl-popup": SlPopup, "sl-spinner": SlSpinner, "sl-tag": SlTag,
 	};
 	static options = {
+		pauseShellElectrons: pauseShellElectronsOption,
 		elementSourceId: {
 			type: "string" as const, attribute: "element-source-id",
 			label: { _: "Linked periodic table ID", "de-DE": "ID des verknüpften Periodensystems" },
@@ -157,6 +156,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	options = ChemLabMoleculeBuilder.options;
 	@property({ type: String, attribute: "element-source-id", reflect: true }) accessor elementSourceId = "";
 	@property({ type: String, attribute: "lab-id", reflect: true }) accessor labId = "";
+	@property({ type: Boolean, attribute: "pause-shell-electrons", reflect: true }) accessor pauseShellElectrons = false;
 
 	@state() private accessor draft: Structure = newMolecule();
 	@state() private accessor preview: Structure | undefined;
@@ -176,7 +176,6 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor inspectedAtom: { id: number; returnView: "2d" | "3d" } | undefined;
 	@state() private accessor dismissedLone: number | undefined;
 	@state() private accessor atomChoices = initialAtomChoices();
-	@state() private accessor showAtomicOverlay = false;
 	@state() private accessor showHydration = false;
 	@state() private accessor showLattice = false;
 	@state() private accessor showEdges = true;
@@ -221,7 +220,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		monatomicIons: ReadonlySet<number>;
 	};
 	#lewisCache?: { structure: Structure; value: ReturnType<typeof lewisDiagram> };
-	#atomicSlice?: { key: string; slice: ReturnType<typeof atomicOrbitalSlice> };
+	#atomicScale = 0;
+	get #atomicFigure() { return this.renderRoot.querySelector<AtomicFigure>("chemlab-atomic-figure"); }
 
 	get #current() { return this.preview ?? this.draft; }
 	get #atoms() { const current = this.#current; return current.kind === "molecule" ? current.atoms : current.sites; }
@@ -240,15 +240,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (!atom) return undefined;
 		const species = atomicSpecies(this.#current, atom.id);
 		if (!species) return undefined;
-		const configuration = electronConfiguration(species.atomicNumber, species.charge);
-		const { subshell, orientation, region } = atomChoice(configuration, this.atomChoices);
-		const overlay = this.atomChoices.model !== "orbitals" ? undefined
-			: this.showAtomicOverlay && configuration.subshells.length > 1 ? atomicOverlayParts(configuration.subshells)
-				: subshell?.l ? atomicFamilyParts(subshell, region) : undefined;
-		return { atom, species, configuration, overlay, display: {
-			atomId: atom.id, atomicNumber: species.atomicNumber, electrons: configuration.electrons,
-			subshell, orientation, region,
-		} };
+		return { species, configuration: electronConfiguration(species.atomicNumber, species.charge) };
 	}
 
 	#resetAtomicChoices() {
@@ -328,11 +320,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (changed.has("elementSourceId")) this.#bindTable();
 		this.#observePalette();
 		const atomic = this.#atomInspection;
-		const sceneVisible = this.view === "3d" && (!atomic || this.atomChoices.model === "orbitals");
+		const sceneVisible = this.view === "3d" && !atomic;
+		if (!atomic) this.#atomicScale = 0;
 		if (sceneVisible && this.gpu === "idle") void this.#startScene();
-		if (this.#scene && sceneVisible && atomic) {
-			this.#scene.setAtomicView(atomic.display, atomic.overlay, this.showAtomicOverlay);
-		} else if (this.#scene && sceneVisible) {
+		if (this.#scene && sceneVisible) {
 			this.#scene.setScene(this.#current, this.repeats, [this.picked, this.bondStart].filter(id => id !== undefined),
 				{ electrons: this.showElectrons, lattice: this.showLattice, edges: this.showEdges, axes: this.showAxes,
 					molecular: this.molecularDisplay, orbitalId: this.orbitalId,
@@ -341,7 +332,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				this.#fitNext = false;
 				this.#scene.fit();
 			}
-		} else this.#scene?.clearAtomicView();
+		}
 		this.#syncGrid();
 	}
 
@@ -389,7 +380,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const drawing = this.renderRoot.querySelector<SVGSVGElement>(".lewis-view");
 		const box = drawing?.viewBox.baseVal;
 		const atomic = this.#atomInspection;
-		const pixelsPerUnit = atomic && (this.atomChoices.model !== "orbitals" || atomic.display.electrons !== 1 || this.gpu !== "ready") ? undefined
+		const pixelsPerUnit = atomic ? (this.atomChoices.model === "orbitals" ? this.#atomicScale : 0)
 			: this.view === "3d" ? this.#scenePixelsPerAngstrom
 				: box && Math.min(drawing.clientWidth / box.width, drawing.clientHeight / box.height);
 		const cell = gridCell(pixelsPerUnit);
@@ -399,9 +390,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const size = `${cell.pixels.toFixed(3)}px`;
 		if (board.style.getPropertyValue("--grid-cell") !== size) board.style.setProperty("--grid-cell", size);
 		const length = cell.length.toLocaleString(this.lang?.startsWith("de") ? "de" : "en", { maximumSignificantDigits: 4 });
-		const label = this.view === "3d" ? `${length} Å` : `${length} ${this.#t("du", "ZE")}`;
+		const label = atomic || this.view === "3d" ? `${length} Å` : `${length} ${this.#t("du", "ZE")}`;
 		if (scale.textContent !== label) scale.textContent = label;
-		scale.parentElement.title = this.view === "3d"
+		scale.parentElement.title = atomic || this.view === "3d"
 			? this.#t("Width of one grid cell at the centre of rotation.", "Breite eines Rasterkästchens am Drehzentrum.")
 			: this.#t("Width of one grid cell in diagram units.", "Breite eines Rasterkästchens in Zeichnungseinheiten.");
 	}
@@ -605,19 +596,19 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (!this.#insideBoard(x, y)) return false;
 		const hit = this.shadowRoot?.elementFromPoint(x, y);
 		const surface = this.view === "3d" || this.#atomicTarget ? ".board" : ".drawing, .formula-view";
-		return !!hit?.closest(surface) && !hit.closest(".view-tools, .model-summary, .selection-card, .atom-orbital-tiles, .ion-entry, .ion-site");
+		return !!hit?.closest(surface) && !hit.closest(".view-tools, .model-summary, .selection-card, .ion-entry, .ion-site");
 	}
 
 	#placement(x: number, y: number): Point3 | undefined {
 		const atomic = this.#atomicTarget;
 		if (this.inspectedAtom) return undefined;
-		if (atomic && this.atomChoices.model !== "orbitals" && "position" in atomic) {
+		if (atomic && "position" in atomic) {
 			const bounds = this.renderRoot.querySelector(".board")?.getBoundingClientRect();
 			return bounds ? add(atomic.position, [2 * (x - bounds.left) / bounds.width - 1, 1 - 2 * (y - bounds.top) / bounds.height, 0]) : undefined;
 		}
 		if (this.view === "3d" && this.#scene) {
 			const point = this.#scene.placement(x, y);
-			return atomic && "position" in atomic ? add(atomic.position, point) : point;
+			return point;
 		}
 		if (atomic) return undefined;
 		const [a, b] = this.#diagramPoint(x, y);
@@ -768,8 +759,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	#hit(event: PointerEvent) {
 		if (!this.#stageTarget(event.clientX, event.clientY)) return undefined;
-		if (this.view === "3d" && this.#scene && (!this.#atomicTarget || this.atomChoices.model === "orbitals"))
-			return this.#scene.pick(event.clientX, event.clientY);
+		if (this.#atomicTarget) return undefined;
+		if (this.view === "3d" && this.#scene) return this.#scene.pick(event.clientX, event.clientY);
 		const inside = this.shadowRoot?.elementFromPoint(event.clientX, event.clientY)?.closest("[data-atom]");
 		return inside ? Number(inside.getAttribute("data-atom")) : undefined;
 	}
@@ -782,7 +773,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	#overPanel(event: Event) {
 		return event.composedPath().some(target => target instanceof Element
 			&& (target.classList.contains("view-tools") || target.classList.contains("model-summary")
-				|| target.classList.contains("selection-card") || target.classList.contains("atom-orbital-tiles") || target.classList.contains("ion-entry")
+				|| target.classList.contains("selection-card") || target.classList.contains("ion-entry")
 				|| target.classList.contains("ion-site")));
 	}
 
@@ -818,7 +809,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			if (gesture.distance > 0 && next > 0) {
 				const factor = gesture.distance / next;
 				if (this.view === "3d") {
-					if (!this.#atomicTarget || this.atomChoices.model === "orbitals") this.#scene?.zoom(factor);
+					if (!this.#atomicTarget) this.#scene?.zoom(factor);
 				} else if (!this.#atomicTarget) {
 					const midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 					this.#moveDiagram(factor, { x: midpoint.x + (previous.x - point.x) / 2,
@@ -834,7 +825,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			if (this.view === "3d") this.#scene?.preview(gesture.from, point.x, point.y);
 			else this.bondPreview = this.#diagramPoint(point.x, point.y);
 		} else if (this.view === "3d") {
-			if (!this.#atomicTarget || this.atomChoices.model === "orbitals") this.#scene?.orbit(point.x - gesture.x, point.y - gesture.y);
+			if (!this.#atomicTarget) this.#scene?.orbit(point.x - gesture.x, point.y - gesture.y);
 		} else if (gesture.diagram) {
 			const last = this.#diagramPoint(gesture.x, gesture.y);
 			const next = this.#diagramPoint(point.x, point.y);
@@ -887,8 +878,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	#wheel = (event: WheelEvent) => {
-		if (this.#overPanel(event) || (this.#atomicTarget && this.atomChoices.model !== "orbitals")
-			|| (this.view === "3d" ? !this.#scene : this.#atomicTarget || this.#current.kind !== "molecule")) return;
+		if (this.#overPanel(event) || this.#atomicTarget || (this.view === "3d" ? !this.#scene : this.#current.kind !== "molecule")) return;
 		event.preventDefault();
 		const factor = Math.exp(Math.max(-100, Math.min(100, event.deltaY)) * 0.004);
 		if (this.view === "3d") this.#scene?.zoom(factor);
@@ -1243,12 +1233,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		</div>`;
 	}
 
-	#renderAtomicSummary({ species, configuration, display, overlay }: AtomInspection) {
+	#renderAtomicSummary({ species, configuration }: AtomInspection) {
 		const name = elementByAtomicNumber(species.atomicNumber).names[this.#t("en", "de")];
 		const label = symbol(species.atomicNumber) + superscript(chargeText(species.charge));
 		const t = (en: string, de: string) => this.#t(en, de);
-		const orbital = this.atomChoices.model === "orbitals";
-		const has3D = this.view === "3d" && this.gpu !== "unavailable";
 		return html`<section class="model-summary atomic-summary" aria-label=${t("Atom models", "Atommodelle")}>
 			<div class="atomic-title">
 				<sl-button size="small" class="icon-control atomic-back" aria-label=${t("Back to structure", "Zur Struktur")}
@@ -1257,46 +1245,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			</div>
 			${species.boundReference ? html`<span class="summary-caption">${t("Isolated neutral atom reference", "Referenz für das isolierte neutrale Atom")}</span>` : nothing}
 			${configuration.formal ? html`<span class="summary-caption">${t("Formal ion · closed-shell model", "Formales Ion · Modell mit geschlossener Schale")}</span>` : nothing}
-			${renderAtomicControls(configuration, this.atomChoices, choices => { this.atomChoices = choices; }, t)}
-			${orbital && has3D ? renderAtomicOrbitalTiles(configuration, this.atomChoices,
-				choices => { this.atomChoices = choices; }, t) : nothing}
-			${orbital && configuration.subshells.length > 1 ? html`<div class="fields">
-				<sl-button size="small" variant=${this.showAtomicOverlay ? "primary" : "default"} aria-pressed=${String(this.showAtomicOverlay)}
-					@click=${() => { this.showAtomicOverlay = !this.showAtomicOverlay; }}>
-					${t("Overlay all subshells", "Alle Unterschalen überlagern")}
-				</sl-button>
-			</div>` : nothing}
-			${orbital && display.subshell ? html`
-				<span class="summary-caption">${t("↑↓ Paired · ↑ Single · — Empty", "↑↓ Gepaarte · ↑ Einzelbesetzung · — Leer")}</span>
-				<span class="structure-legend" role="group" aria-label=${t("Wavefunction phase", "Phase der Wellenfunktion")}>
-					${ORBITAL_PHASE_COLORS.map((color, index) => overlay || display.subshell.l || index === display.region % 2
-						? html`<span style="--swatch: ${colorHex(color)}">${index ? "−ψ" : "+ψ"}</span>` : nothing)}
-				</span>` : nothing}
+			${renderAtomicControls(configuration, this.atomChoices, choices => {
+				this.atomChoices = choices;
+				if (choices.model !== "orbitals") this.#atomicScale = 0;
+			}, t)}
 		</section>`;
-	}
-
-	#renderAtomicDrawing(atomic: AtomInspection) {
-		const t = (en: string, de: string) => this.#t(en, de);
-		if (this.atomChoices.model !== "orbitals") {
-			const label = symbol(atomic.species.atomicNumber) + superscript(chargeText(atomic.species.charge));
-			return html`<div class="atomic-illustration">${renderAtomicShells(label, atomic.configuration, this.atomChoices, t)}</div>`;
-		}
-		if (!this.showAtomicOverlay) return html`<div class="atomic-illustration atomic-fallback">
-			${renderAtomicOrbitalTiles(atomic.configuration, this.atomChoices, choices => { this.atomChoices = choices; }, t)}
-		</div>`;
-		const { display, overlay } = atomic;
-		const key = [display.atomicNumber, display.electrons, atomicOrbitalKey(display)].join(":");
-		if (this.#atomicSlice?.key !== key) this.#atomicSlice = { key, slice: atomicOrbitalSlice(display, overlay) };
-		const slice = this.#atomicSlice.slice;
-		return html`<div class="atomic-illustration atomic-fallback">
-			${slice ? svg`<svg class="atomic-overlay-slice" viewBox="0 0 ${slice.side} ${slice.side}" role="img"
-				aria-label=${t("Overlay cross-section", "Schnitt durch überlagerte Orbitale")}>
-				${slice.background?.map((path, phase) => svg`<path fill=${colorHex(ORBITAL_PHASE_COLORS[phase])} opacity=".22"
-					transform="scale(${slice.backgroundScale})" d=${path} />`)}
-				${slice.paths.map((path, phase) => svg`<path fill=${colorHex(ORBITAL_PHASE_COLORS[phase])} opacity=".82" d=${path} />`)}
-			</svg>` : nothing}
-			${renderAtomicOrbitalTiles(atomic.configuration, this.atomChoices, choices => { this.atomChoices = choices; }, t)}
-		</div>`;
 	}
 
 	#renderOrbitals(current: Extract<Structure, { kind: "molecule" }>) {
@@ -1578,8 +1531,18 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		</div>`;
 		const atomic = this.#atomInspection;
 		const explicitAtom = !!this.inspectedAtom;
-		const sceneVisible = this.view === "3d" && (!atomic || this.atomChoices.model === "orbitals");
-		const fit = () => { this.#scene?.fit(); this.diagramBox = undefined; this.requestUpdate(); };
+		const sceneVisible = this.view === "3d" && !atomic;
+		const fit = () => {
+			if (atomic) this.#atomicFigure?.fit();
+			else this.#scene?.fit();
+			this.diagramBox = undefined;
+			this.requestUpdate();
+		};
+		const zoom = (factor: number) => {
+			if (atomic) this.#atomicFigure?.zoom(factor);
+			else if (this.view === "3d") this.#scene?.zoom(factor);
+			else this.#moveDiagram(factor);
+		};
 		const title = current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : current.name || formula(current);
 		const toggle = (panel: "catalog" | "file") => () => { this.openPanel = this.openPanel === panel ? undefined : panel; };
 		return html`<div class="builder" contenteditable="false" @keydown=${this.#keys} @toggle=${this.#onViewportToggle}
@@ -1668,7 +1631,12 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					<div class="board" tabindex="0" aria-label=${this.#t("Structure workspace", "Struktur-Arbeitsfläche")}
 						@pointerdown=${this.#pointerDown} @pointermove=${this.#pointerMove} @pointerup=${this.#pointerUp} @pointercancel=${this.#pointerUp} @wheel=${this.#wheel}>
 						<div class="scene" ?hidden=${!sceneVisible}></div>
-						${!sceneVisible ? atomic ? this.#renderAtomicDrawing(atomic) : this.#renderDrawing(ionColors) : nothing}
+						${atomic ? html`<chemlab-atomic-figure class="builder-atom-figure" lang=${this.#t("en", "de")}
+							.atomicNumber=${atomic.species.atomicNumber} .configuration=${atomic.configuration} .choices=${this.atomChoices}
+							.symbolText=${symbol(atomic.species.atomicNumber) + superscript(chargeText(atomic.species.charge))}
+							.pause=${this.pauseShellElectrons} .interactive=${explicitAtom || this.tool === "orbit"}
+							@atomic-scale=${(event: CustomEvent<number>) => { this.#atomicScale = event.detail; this.#syncGrid(); }}>
+						</chemlab-atomic-figure>` : !sceneVisible ? this.#renderDrawing(ionColors) : nothing}
 						${this.gpu === "loading" && sceneVisible ? html`<p class="empty" role="status"><sl-spinner></sl-spinner>
 							${this.#t("Loading 3D view", "3D-Ansicht wird geladen")}</p>`
 							: !this.#atoms.length ? html`<p class="empty">
@@ -1691,11 +1659,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 											this.view = "2d";
 										} })}
 								`}
-								${(sceneVisible && this.gpu === "ready") || (this.view === "2d" && !atomic && current.kind === "molecule") ? html`
-									${this.#iconButton({ label: this.#t("Zoom in", "Vergrößern"), icon: ZOOM_IN_ICON, onClick: () => this.view === "3d" ? this.#scene?.zoom(.83) : this.#moveDiagram(.83) })}
-									${this.#iconButton({ label: this.#t("Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => this.view === "3d" ? this.#scene?.zoom(1.2) : this.#moveDiagram(1.2) })}
+								${atomic || (sceneVisible && this.gpu === "ready") || (this.view === "2d" && current.kind === "molecule") ? html`
+									${this.#iconButton({ label: this.#t("Zoom in", "Vergrößern"), icon: ZOOM_IN_ICON, onClick: () => zoom(.83) })}
+									${this.#iconButton({ label: this.#t("Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => zoom(1.2) })}
 								` : nothing}
-								${sceneVisible || (!atomic && current.kind === "molecule")
+								${atomic || sceneVisible || current.kind === "molecule"
 									? this.#iconButton({ label: this.#t("Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit }) : nothing}
 								${this.#iconButton({ label: this.fullscreen ? this.#t("Exit fullscreen", "Vollbild verlassen")
 									: this.#t("Fullscreen", "Vollbild"), icon: this.fullscreen ? EXIT_FULLSCREEN_ICON : FULLSCREEN_ICON,

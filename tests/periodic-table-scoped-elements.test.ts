@@ -73,7 +73,9 @@ function importClosure(file: string): Set<string> {
 
 test("every Shoelace tag in the templates is registered", () => {
 	const registered = registeredElements();
-	const missing = usedTags(source).filter(tag => !registered.has(tag));
+	const shared = readFileSync(resolve(ROOT, "molecule-builder/atomic-model.ts"), "utf8");
+	const missing = usedTags(source + shared).filter(tag => !registered.has(tag));
+	assert.equal(registered.get("chemlab-atomic-figure"), "AtomicFigure");
 	assert.deepEqual(missing, [], `unregistered tags: ${missing.join(", ")}`);
 });
 
@@ -82,7 +84,7 @@ test("every registered element is imported from Shoelace", () => {
 	for (const match of source.matchAll(/import\s+([A-Za-z0-9_]+)\s+from\s+"@shoelace-style\/shoelace\/[^"]+"/g)) {
 		imports.add(match[1]);
 	}
-	const unimported = [...registeredElements()].filter(([, identifier]) => !imports.has(identifier));
+	const unimported = [...registeredElements()].filter(([tag, identifier]) => tag.startsWith("sl-") && !imports.has(identifier));
 	assert.deepEqual(unimported, [], `not imported: ${unimported.map(([tag]) => tag).join(", ")}`);
 });
 

@@ -10,6 +10,7 @@ export type AtomicSpecies = { atomicNumber: number; charge: number; boundReferen
 export type AtomicConfiguration = {
 	text: string;
 	subshells: Subshell[];
+	valence: Subshell[];
 	predicted: boolean;
 	formal: boolean;
 	electrons: number;
@@ -36,7 +37,7 @@ function expand(text: string): Subshell[] {
 		const [, n, letter, electrons] = match;
 		subshells.push({ n: Number(n), l: orbitalLetters.indexOf(letter), electrons: Number(electrons), label: n + letter });
 	}
-	return subshells.sort((a, b) => a.n - b.n || a.l - b.l);
+	return subshells;
 }
 
 const cache = new Map<string, AtomicConfiguration>();
@@ -51,8 +52,12 @@ export function electronConfiguration(atomicNumber: number, charge: number): Ato
 		: charge ? ionConfigurations.get(key) ?? "" : dataValue(neutral) ?? "";
 	const subshells = expand(text);
 	const verified = subshells.reduce((sum, item) => sum + item.electrons, 0) === electrons;
+	const tail = text.replace(/^\[[^\]]+\]\s*/, "");
+	const outer = Math.max(...subshells.map(shell => shell.n));
+	const valence = tail !== text && tail ? subshells.slice(-tail.split(/\s+/).length)
+		: subshells.filter(shell => shell.n === outer);
 	const result = {
-		text: verified ? text : "", subshells: verified ? subshells : [], electrons,
+		text: verified ? text : "", subshells: verified ? subshells : [], valence: verified ? valence : [], electrons,
 		predicted: !charge && neutral.status === "predicted",
 		formal: key === "8:-2" || key === "16:-2",
 	};
@@ -86,11 +91,18 @@ export function orbitalOrientations(l: number): readonly string[] {
 export function atomicShells(configuration: AtomicConfiguration) {
 	const electrons = new Map<number, number>();
 	for (const shell of configuration.subshells) electrons.set(shell.n, (electrons.get(shell.n) ?? 0) + shell.electrons);
-	return [...electrons].map(([n, electrons]) => ({ n, electrons, label: "KLMNOPQ"[n - 1] }));
+	return [...electrons].sort(([a], [b]) => a - b).map(([n, electrons]) => ({ n, electrons, label: "KLMNOPQ"[n - 1] }));
 }
 
 /** A conventional assignment to equivalent orbitals for the school-level
  * diagram: fill each with one parallel spin before adding opposite spins. */
 export function orbitalOccupation(subshell: Subshell, orientation: number): 0 | 1 | 2 {
 	return (Number(orientation < subshell.electrons) + Number(orientation + 2 * subshell.l + 1 < subshell.electrons)) as 0 | 1 | 2;
+}
+
+export const shellColors = ["#167fbd", "#147a69", "#8051b5", "#a45115", "#ac4570", "#3966b4", "#637323"];
+export const subshellColors = shellColors.slice(0, 4);
+
+export function shellOrbit(index: number, count: number) {
+	return { radius: (13 + (index + 1) * 81 / Math.max(1, count)) / 94, seconds: 7 + index * 2.5 };
 }

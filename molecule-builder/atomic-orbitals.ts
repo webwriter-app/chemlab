@@ -17,6 +17,7 @@ export function atomicOrbitalKey({ subshell, orientation, region }: Pick<AtomicO
 	return [subshell?.label, orientation, region].join(":");
 }
 
+export const atomicPhaseColors = [0x177da6, 0xd67b27];
 const contour = .2;
 const bohrAngstrom = .5291772109;
 

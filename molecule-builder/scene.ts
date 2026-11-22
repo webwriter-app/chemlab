@@ -8,8 +8,6 @@ import { atomColor, add, cross, electronRegions, perpendicular, scale, subtract,
 import { crystalIonColors, crystalRadii, latticePositions, siteIon } from "./crystal-display";
 import { atomRadius, spaceFillingRadius } from "./radii";
 import { hasMolecularDisplays, moleculeOrbitals, ORBITAL_PHASE_COLORS, unpackOrbitalSurface, type MolecularDisplay } from "./orbitals";
-import { orbitalOccupation } from "./atomic-configuration";
-import { atomicOrbitalKey, atomicOrbitalMesh, type AtomicOrbitalDisplay, type AtomicOrbitalPart } from "./atomic-orbitals";
 import { aqueousComponents, hydrationWaters } from "./aqueous-preview";
 import { cartesian, cellVectors, replicatedSites, type Point3, type Structure } from "./structure";
 
@@ -204,37 +202,9 @@ export class MoleculeScene {
 	readonly #electrons = new Container3D();
 	readonly #orbital = new Container3D({ eventMode: "none" });
 	readonly #orbitalGeometries: Geometry3D[] = [];
-	readonly #atomic = new Container3D();
-	readonly #atomicSurfaces = new Container3D({ eventMode: "none" });
-	readonly #atomicBackdrop = new Container3D({ eventMode: "none" });
-	readonly #atomicBackdropGeometries: Geometry3D[] = [];
-	#atomicOverlay?: {
-		scope: string;
-		selected: string;
-		display: AtomicOrbitalDisplay;
-		parts: readonly AtomicOrbitalPart[];
-		next: number;
-		groups: Map<AtomicOrbitalPart, Container3D>;
-	};
-	readonly #atomicGeometries: Geometry3D[] = [];
-	readonly #nucleus: Mesh3D;
-	#atomicView?: { key: string; atomId: number; extent: number; camera: { target: Point3; distance: number; yaw: number; pitch: number } };
 	readonly #orbitalMaterials = ORBITAL_PHASE_COLORS.map(baseColor => new Material3D({
 		baseColor, roughness: .68, alphaMode: "blend", alpha: .76,
 	}));
-	readonly #atomicBackdropMaterials = ORBITAL_PHASE_COLORS.map(baseColor => new Material3D({
-		baseColor, roughness: .68, alphaMode: "blend", alpha: .16,
-	}));
-	readonly #atomicOccupiedMaterials = ORBITAL_PHASE_COLORS.map(baseColor => new Material3D({
-		baseColor, roughness: .68, alphaMode: "blend", alpha: .46,
-	}));
-	readonly #atomicVacantMaterials = ORBITAL_PHASE_COLORS.map(baseColor => new Material3D({
-		baseColor, roughness: .68, alphaMode: "blend", alpha: .16,
-	}));
-	readonly #atomicSelectedVacantMaterials = ORBITAL_PHASE_COLORS.map(baseColor => new Material3D({
-		baseColor, roughness: .68, alphaMode: "blend", alpha: .60,
-	}));
-
 	readonly #hydration = new Container3D({ eventMode: "none" });
 	readonly #lattice = new Graphics({ eventMode: "none" });
 	readonly #axes = new Graphics({ eventMode: "none" });
@@ -289,11 +259,6 @@ export class MoleculeScene {
 		sun.position.set(3, 6, 7);
 		sun.lookAt({ x: 0, y: 0, z: 0 });
 		this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons, this.#orbital, this.#hydration);
-		this.#nucleus = new Mesh3D({ geometry: this.#sphere, material: this.#material(0x334155), eventMode: "static",
-			hitVolume: new Sphere(new Vector3(), 1), parent: this.#atomic });
-		this.#atomic.addChild(this.#atomicBackdrop, this.#atomicSurfaces);
-		this.#atomic.visible = false;
-		this.#view.root.addChild(this.#atomic);
 		this.#preview = this.#rod();
 		this.#preview.material = this.#material(BOND_PREVIEW_COLOR);
 		this.#preview.visible = false;
@@ -483,120 +448,7 @@ export class MoleculeScene {
 		}
 	}
 
-	setAtomicView(display: AtomicOrbitalDisplay, overlay?: readonly AtomicOrbitalPart[], all = false) {
-		const selected = atomicOrbitalKey(display);
-		const species = [display.atomId, display.atomicNumber, display.electrons].join(":");
-		const scope = [species, all && overlay ? "all" : overlay ? display.subshell?.label + ":" + display.region : "one"].join(":");
-		const key = scope + ":" + selected;
-		const previous = this.#atomicView;
-		if (previous?.key === key) return;
-		const camera = previous?.camera ?? {
-			target: this.#target, distance: this.#distance, yaw: this.#yaw, pitch: this.#pitch,
-		};
-		const { phases, extent } = atomicOrbitalMesh(display);
-		if (!previous) {
-			this.#yaw = .83;
-			this.#pitch = .37;
-		}
-		this.#atomicView = { key, atomId: display.atomId, extent: overlay ? 1 : extent, camera };
-		this.#content.visible = this.#edges.visible = this.#electrons.visible = this.#orbital.visible =
-			this.#hydration.visible = this.#lattice.visible = this.#preview.visible = false;
-		this.#atomic.visible = true;
-
-		const previousOverlay = this.#atomicOverlay;
-		if (previousOverlay?.scope !== scope || !overlay) this.#clearAtomicOverlay();
-		if (overlay && !this.#atomicOverlay) {
-			this.#atomicOverlay = { scope, display, selected, parts: overlay, next: 0, groups: new Map() };
-			const alpha = .22 / Math.max(1, Math.sqrt((overlay.length - 1) / 4));
-			for (const material of this.#atomicBackdropMaterials) material.alpha = alpha;
-		}
-		if (this.#atomicOverlay) {
-			this.#atomicOverlay.selected = selected;
-			this.#atomicOverlay.display = display;
-			for (const [part, group] of this.#atomicOverlay.groups) {
-				group.visible = part.key !== selected;
-				const materials = this.#atomicContextMaterials(part, display);
-				for (const child of group.children) if (child instanceof Mesh3D) child.material = materials[Number(child.label)];
-			}
-		}
-
-		this.#clearAtomicSurfaces();
-		this.#nucleus.material = this.#material(atomColor(display.atomicNumber));
-		this.#nucleus.scale.set(this.#atomicView.extent * (display.subshell ? .048 : .32));
-		const scale = overlay?.find(part => part.key === selected)?.scale ?? extent;
-		const vacant = display.subshell && orbitalOccupation(display.subshell, display.orientation) === 0;
-		this.#addAtomicSurfaces(phases, scale, this.#atomicSurfaces, this.#atomicGeometries,
-			vacant ? this.#atomicSelectedVacantMaterials : this.#orbitalMaterials);
-		if (previous && previousOverlay?.scope === scope && this.#atomicOverlay === previousOverlay) this.#draw();
-		else this.fit();
-	}
-
-	#addAtomicSurfaces(
-		phases: ReturnType<typeof atomicOrbitalMesh>["phases"], extent: number, parent: Container3D,
-		geometries: Geometry3D[], materials: Material3D[],
-	) {
-		for (const [phase, mesh] of phases.entries()) {
-			if (!mesh) continue;
-			const geometry = new Geometry3D(mesh);
-			geometries.push(geometry);
-			const surface = new Mesh3D({ geometry, material: materials[phase], label: String(phase), eventMode: "none", parent });
-			surface.scale.set(extent);
-		}
-	}
-
-	#atomicContextMaterials(part: AtomicOrbitalPart, display: AtomicOrbitalDisplay) {
-		if (part.subshell.label !== display.subshell?.label || part.region !== display.region) return this.#atomicBackdropMaterials;
-		return orbitalOccupation(part.subshell, part.orientation) ? this.#atomicOccupiedMaterials : this.#atomicVacantMaterials;
-	}
-
-	// Give the main view its first frame before building the faint meshes, and
-	// limit work per frame on atoms with many occupied subshells.
-	#buildAtomicOverlay() {
-		const overlay = this.#atomicOverlay;
-		if (!overlay || overlay.next >= overlay.parts.length) return;
-		const start = performance.now();
-		do {
-			const part = overlay.parts[overlay.next++];
-			const { phases } = atomicOrbitalMesh({ ...overlay.display, ...part }, 19);
-			const group = new Container3D({ eventMode: "none", parent: this.#atomicBackdrop });
-			group.visible = part.key !== overlay.selected;
-			this.#addAtomicSurfaces(phases, part.scale, group, this.#atomicBackdropGeometries, this.#atomicContextMaterials(part, overlay.display));
-			overlay.groups.set(part, group);
-		} while (overlay.next < overlay.parts.length && performance.now() - start < 5);
-		this.#draw();
-	}
-
-	#clearAtomicOverlay() {
-		if (!this.#atomicOverlay) return;
-		this.#atomicOverlay = undefined;
-		for (const group of this.#atomicBackdrop.removeChildren()) group.destroy({ children: true });
-		for (const geometry of this.#atomicBackdropGeometries.splice(0)) geometry.destroy();
-	}
-
-	#clearAtomicSurfaces() {
-		for (const child of this.#atomicSurfaces.removeChildren()) child.destroy();
-		for (const geometry of this.#atomicGeometries.splice(0)) geometry.destroy();
-	}
-
-	clearAtomicView() {
-		if (!this.#atomicView) return;
-		const { target, distance, yaw, pitch } = this.#atomicView.camera;
-		this.#atomicView = undefined;
-		this.#atomic.visible = false;
-		this.#clearAtomicSurfaces();
-		this.#clearAtomicOverlay();
-		this.#content.visible = this.#electrons.visible = this.#orbital.visible = this.#hydration.visible = true;
-		this.#lattice.visible = this.#showLattice;
-		this.#edges.visible = this.#showEdges;
-		this.#target = target;
-		this.#distance = distance;
-		this.#yaw = yaw;
-		this.#pitch = pitch;
-		this.#camera();
-	}
-
 	setScene(structure: Structure, repeats: number, selection: number[], display: SceneDisplay) {
-		this.clearAtomicView();
 		const molecular = hasMolecularDisplays(structure) ? display.molecular : "sticks";
 		const rebuild = structure !== this.#structure || repeats !== this.#repeats || molecular !== this.#molecular;
 		this.#molecular = molecular;
@@ -734,7 +586,6 @@ export class MoleculeScene {
 
 	pick(clientX: number, clientY: number): number | undefined {
 		const target = this.#view.raycast(this.#point(clientX, clientY))?.target;
-		if (target === this.#nucleus) return this.#atomicView?.atomId;
 		return target instanceof Mesh3D ? this.#picks.get(target)?.id : undefined;
 	}
 
@@ -747,7 +598,6 @@ export class MoleculeScene {
 	}
 
 	preview(id?: number, clientX?: number, clientY?: number) {
-		if (this.#atomicView) return;
 		const start = [...this.#picks.values()].find(atom => atom.id === id)?.position;
 		this.#preview.visible = !!start && clientX !== undefined;
 		if (start && clientX !== undefined) this.#line(this.#preview, start, this.placement(clientX, clientY, start), .05);
@@ -761,20 +611,13 @@ export class MoleculeScene {
 	}
 
 	zoom(factor: number) {
-		const min = this.#atomicView ? this.#atomicView.extent * .65 : .75;
-		this.#distance = Math.max(min, Math.min(40_000, this.#distance * factor));
+		this.#distance = Math.max(.75, Math.min(40_000, this.#distance * factor));
 		this.#camera();
 	}
 
 	fit() {
 		const aspect = this.#app.screen.width / this.#app.screen.height;
 		const short = Math.min(1, Math.max(.32, aspect));
-		if (this.#atomicView) {
-			this.#target = [0, 0, 0];
-			this.#distance = this.#atomicView.extent * 1.22 / (Math.tan(CAMERA_FOV / 2 * Math.PI / 180) * short * FIT_FILL);
-			this.#camera();
-			return;
-		}
 		const bounds = [...this.#bounds, ...this.#hydrationBounds, ...this.#orbitalBounds];
 		const min = [0, 1, 2].map(axis => Math.min(...bounds.map(point => point[axis])));
 		const max = [0, 1, 2].map(axis => Math.max(...bounds.map(point => point[axis])));
@@ -793,7 +636,7 @@ export class MoleculeScene {
 	#camera() {
 		const offset: Point3 = [Math.cos(this.#pitch) * Math.sin(this.#yaw), Math.sin(this.#pitch), Math.cos(this.#pitch) * Math.cos(this.#yaw)];
 		const camera = this.#view.camera;
-		camera.near = this.#atomicView ? Math.min(.05, this.#distance * .035) : .1;
+		camera.near = .1;
 		camera.far = Math.max(1000, this.#distance * 3);
 		camera.position.copyFrom(vector(add(this.#target, scale(offset, this.#distance))));
 		camera.lookAt(vector(this.#target));
@@ -812,7 +655,7 @@ export class MoleculeScene {
 				this.#lastPixelsPerAngstrom = pixelsPerAngstrom;
 				this.updateScale(pixelsPerAngstrom);
 			}
-			if (this.#showLattice && !this.#atomicView) {
+			if (this.#showLattice) {
 				this.#lattice.clear();
 				for (const [index, point] of this.#latticePoints.entries()) {
 					const position = this.#view.worldToScreen(point, this.#projected, index > 0);
@@ -822,7 +665,6 @@ export class MoleculeScene {
 			}
 			this.#drawAxes();
 			this.#app.render();
-			this.#buildAtomicOverlay();
 		});
 	}
 
@@ -834,7 +676,7 @@ export class MoleculeScene {
 		this.#axes.clear();
 		for (const label of this.#axisLabels) label.visible = false;
 		const structure = this.#structure;
-		if (this.#atomicView || !this.#showAxes || structure?.kind !== "crystal") return;
+		if (!this.#showAxes || structure?.kind !== "crystal") return;
 		const base = this.#view.worldToScreen(vector(this.#target), this.#projected);
 		if (!base) return;
 		const originX = this.#app.screen.width - AXIS_ORIGIN;
@@ -859,16 +701,14 @@ export class MoleculeScene {
 	destroy() {
 		cancelAnimationFrame(this.#frame);
 		this.#observer.disconnect();
-		this.#clearAtomicOverlay();
 		this.#app.destroy(true, { children: true });
 		this.#sphere.destroy();
 		this.#spaceSphere.destroy();
 		this.#cylinder.destroy();
 		this.#bondRegion.destroy();
 		this.#loneRegion.destroy();
-		for (const geometry of [...this.#orbitalGeometries, ...this.#atomicGeometries]) geometry.destroy();
-		for (const material of [...this.#orbitalMaterials, ...this.#atomicBackdropMaterials, ...this.#atomicOccupiedMaterials,
-			...this.#atomicVacantMaterials, ...this.#atomicSelectedVacantMaterials]) material.destroy();
+		for (const geometry of this.#orbitalGeometries) geometry.destroy();
+		for (const material of this.#orbitalMaterials) material.destroy();
 		this.#axes.destroy();
 		for (const label of this.#axisLabels) label.destroy();
 		for (const material of this.#materials.values()) material.destroy();

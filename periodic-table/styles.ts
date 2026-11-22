@@ -997,31 +997,20 @@ export const periodicTableStyles = css`
 	.details-view-button::part(base) { min-inline-size: 1.35rem; }
 	.details-view-button::part(label) { display: grid; place-items: center; padding: 0 .13rem; }
 	.details-head > sl-tag { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-	.details-shell.is-atom { inset-block-end: 0; }
-	.details-shell.is-atom .details-card::part(base) { height: 100%; }
-	.details-shell.is-atom .details-card::part(body) { padding: .25rem .35rem; overflow: auto; }
-	.list-details .details-shell.is-atom .details-card::part(body) { max-block-size: 9rem; }
 	.pt-atom-preview {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-		align-items: start;
-		gap: .35rem;
+		grid-template-rows: auto minmax(0, 1fr);
+		gap: .25rem;
 		inline-size: 100%;
+		block-size: clamp(16rem, 34cqw, 22rem);
 		font-size: .68rem;
 	}
-	.pt-atom-preview .electron-config-chips {
-		inline-size: 100%;
-		flex-wrap: nowrap;
-		overflow-x: auto;
-		scrollbar-width: thin;
-		padding-block-end: .12rem;
+	.pt-atom-preview .electron-config-chips { padding-block-end: .1rem; }
+	.pt-atom-figure {
+		border: 1px solid var(--pt-border);
+		border-radius: 4px;
+		background: radial-gradient(ellipse at center, #fff, #f4f7f9);
 	}
-	.pt-atom-preview .electron-config-chips .atom-chip { flex-shrink: 0; }
-	.pt-atom-preview .electron-config-chips .atom-chip:focus-visible { outline-offset: -2px; }
-	.pt-atom-figure { min-inline-size: 0; }
-	.pt-atom-figure .atom-shell-figure { block-size: min(5.2rem, 100cqw); }
-	.pt-atom-figure .atom-orbital-tiles { grid-template-columns: repeat(auto-fit, minmax(min(100%, 1.6rem), 1fr)); }
-	.pt-atom-figure .atom-orbital-tile svg { max-inline-size: 1.7rem; }
 
 	.details-thumb {
 		display: grid;
@@ -1093,6 +1082,11 @@ export const periodicTableStyles = css`
 		flex: 0 0 auto;
 		overflow: visible;
 		padding-bottom: 1.9rem;
+	}
+
+	.details-shell.is-atom .details-card::part(body) {
+		padding: .35rem .45rem .45rem;
+		overflow: hidden;
 	}
 
 	/* The body is the single flex item of the card body, so it has to take the full

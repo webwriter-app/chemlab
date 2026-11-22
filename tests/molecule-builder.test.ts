@@ -223,3 +223,9 @@ const oxygenP = oxygenSubshells.find(shell => shell.label === "2p");
 assert.deepEqual(atomicFamilyParts(oxygenP, 0).map(part => orbitalOccupation(oxygenP, part.orientation)), [2, 1, 1]);
 const ironD = electronConfiguration(26, 0).subshells.find(shell => shell.label === "3d");
 assert.deepEqual(atomicFamilyParts(ironD, 0).map(part => orbitalOccupation(ironD, part.orientation)), [2, 1, 1, 1, 1]);
+
+assert.deepEqual(electronConfiguration(6, 0).valence.map(shell => shell.label), ["2s", "2p"]);
+assert.deepEqual(electronConfiguration(26, 0).valence.map(shell => shell.label), ["3d", "4s"]);
+assert.deepEqual(electronConfiguration(92, 0).valence.map(shell => shell.label), ["5f", "6d", "7s"]);
+assert.deepEqual(electronConfiguration(11, 1).valence.map(shell => shell.label), ["2s", "2p"]);
+assert.deepEqual(electronConfiguration(1, 0).valence.map(shell => shell.label), ["1s"]);

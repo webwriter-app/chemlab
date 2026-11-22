@@ -1,32 +1,20 @@
 import { css, html, nothing, svg } from "lit";
-import { atomicShells, orbitalOccupation, orbitalOrientations, type AtomicConfiguration, type Subshell } from "./atomic-configuration";
-import { atomicOrbitalSlice } from "./atomic-orbitals";
+import { atomicShells, orbitalOccupation, orbitalOrientations, shellColors, shellOrbit, subshellColors,
+	type AtomicConfiguration, type Subshell } from "./atomic-configuration";
+import { atomicOrbitalSlice, atomicPhaseColors } from "./atomic-orbitals";
 
-export type AtomicModel = "bohr" | "shells" | "orbitals";
-export type AtomChoices = { model: AtomicModel; shell?: number; subshell?: string; orientation: number; region?: number };
-export const initialAtomChoices = (model: AtomicModel = "bohr"): AtomChoices => ({ model, orientation: 0 });
+export type AtomicModel = "bohr" | "orbitals";
+export type AtomChoices = { model: AtomicModel; shell?: number; subshell?: string; showCore?: boolean };
+export const initialAtomChoices = (model: AtomicModel = "bohr"): AtomChoices => ({ model });
 type Translate = (en: string, de: string) => string;
 
-const phases = ["#177da6", "#d67b27"];
-const models: { mode: AtomicModel; en: string; de: string }[] = [
-	{ mode: "bohr", en: "Bohr", de: "Bohr" },
-	{ mode: "shells", en: "Shells", de: "Schalen" },
-	{ mode: "orbitals", en: "Orbitals", de: "Orbitale" },
-];
-export const orbitalGlyph = ["—", "↑", "↑↓"];
-const superscript = (value: number) => String(value).replace(/\d/g, digit => "⁰¹²³⁴⁵⁶⁷⁸⁹"[Number(digit)]);
+export const pauseShellElectronsOption = {
+	type: "boolean" as const, attribute: "pause-shell-electrons",
+	label: { _: "Pause electron motion in the shell model", "de-DE": "Elektronenbewegung im Schalenmodell anhalten" },
+};
 
-export function atomChoice(configuration: AtomicConfiguration, choices: AtomChoices) {
-	const shells = atomicShells(configuration);
-	const subshell = configuration.subshells.find(entry => entry.label === choices.subshell)
-		?? configuration.subshells[configuration.subshells.length - 1];
-	const regions = subshell ? subshell.n - subshell.l : 0;
-	return {
-		shells, shell: shells.find(entry => entry.n === choices.shell)?.n ?? shells[shells.length - 1]?.n,
-		subshell, orientation: subshell && choices.orientation <= 2 * subshell.l ? choices.orientation : 0,
-		region: Math.min(choices.region ?? regions - 1, Math.max(0, regions - 1)), regions,
-	};
-}
+const superscript = (value: number) => String(value).replace(/\d/g, digit => "⁰¹²³⁴⁵⁶⁷⁸⁹"[Number(digit)]);
+const orbitalGlyph = ["—", "↑", "↑↓"];
 
 export function atomicOrbitalLabel(subshell: Subshell, orientation: number, t: Translate) {
 	const electrons = orbitalOccupation(subshell, orientation);
@@ -36,108 +24,140 @@ export function atomicOrbitalLabel(subshell: Subshell, orientation: number, t: T
 
 export function renderAtomicControls(configuration: AtomicConfiguration, choices: AtomChoices, change: (choices: AtomChoices) => void,
 	t: Translate) {
-	const { shells, shell, subshell, region, regions } = atomChoice(configuration, choices);
-	const chip = (label: unknown, title: string, pressed: boolean, onClick: () => void) => html`
-		<button type="button" class="atom-chip" title=${title} aria-label=${title} aria-pressed=${String(pressed)} @click=${onClick}>
-			<sl-tag size="small" variant=${pressed ? "primary" : "neutral"}>${label}</sl-tag>
+	const { valence, subshells } = configuration;
+	const shells = atomicShells(configuration);
+	const shell = choices.shell ?? shells[shells.length - 1]?.n;
+	const chip = (label: string, title: string, color: string, pressed: boolean, onClick: () => void) => html`
+		<button type="button" class="atom-chip" style="--orbital-color:${color}" title=${title} aria-label=${title}
+			aria-pressed=${String(pressed)} @click=${onClick}>
+			<sl-tag pill size="small">${label}</sl-tag>
 		</button>`;
+	const subshellChip = (entry: Subshell) => chip(entry.label + superscript(entry.electrons), `${entry.label} · ${entry.electrons} e⁻`,
+		subshellColors[entry.l], choices.subshell === entry.label,
+		() => change({ ...choices, subshell: choices.subshell === entry.label ? undefined : entry.label }));
 	const orbital = choices.model === "orbitals";
+	const core = subshells.filter(entry => !valence.includes(entry));
+	const coreLabel = choices.showCore ? t("Hide inner orbitals", "Innere Orbitale ausblenden") : t("Show inner orbitals", "Innere Orbitale einblenden");
 	return html`
 		<div class="atomic-controls">
 			<div class="atom-controls-row" role="group" aria-label=${t("Atom model", "Atommodell")}>
-				${models.map(({ mode, en, de }) => html`<sl-button size="small" variant=${choices.model === mode ? "primary" : "default"}
-					aria-pressed=${String(choices.model === mode)} @click=${() => change({ ...choices, model: mode })}>${t(en, de)}</sl-button>`)}
+				<sl-button size="small" variant=${orbital ? "default" : "primary"} aria-pressed=${String(!orbital)}
+					@click=${() => change({ ...choices, model: "bohr" })}>${t("Shells", "Schalen")}</sl-button>
+				<sl-button size="small" variant=${orbital ? "primary" : "default"} aria-pressed=${String(orbital)}
+					@click=${() => change({ ...choices, model: "orbitals" })}>${t("Orbitals", "Orbitale")}</sl-button>
+				${configuration.predicted ? html`<sl-tag size="small" pill>${t("Predicted", "Vorhergesagt")}</sl-tag>` : nothing}
 			</div>
-			${configuration.predicted ? html`<sl-tag size="small">${t("Predicted", "Vorhergesagt")}</sl-tag>` : nothing}
 			${!shells.length ? html`<span>${configuration.electrons === 0 ? t("No electrons", "Keine Elektronen")
 				: t("Configuration unavailable", "Konfiguration nicht verfügbar")}</span>` : html`
-				<div class="atom-controls-row electron-config-chips" role="group" aria-label=${t("Electron configuration", "Elektronenkonfiguration")}>
-					${orbital ? configuration.subshells.map(entry => chip(entry.label + superscript(entry.electrons),
-						`${entry.label} · ${entry.electrons} e⁻`, subshell?.label === entry.label,
-						() => change({ ...choices, subshell: entry.label, orientation: 0, region: undefined })))
-						: shells.map(entry => chip(`${entry.label} · ${entry.electrons}`,
-							`${t("Shell", "Schale")} ${entry.label} · ${entry.electrons} e⁻`, shell === entry.n,
-							() => change({ ...choices, shell: entry.n })))}
+				<div class="electron-config-chips" ?data-orbitals=${orbital} role="group" aria-label=${t("Electron configuration", "Elektronenkonfiguration")}>
+					${orbital ? html`
+						${choices.showCore && core.length ? html`<div class="atom-core-rail">${core.map(subshellChip)}</div>` : nothing}
+						${core.length ? html`<button type="button" class="atom-core-toggle" aria-label=${coreLabel} title=${coreLabel}
+							aria-expanded=${String(!!choices.showCore)} @click=${() => change({ ...choices, showCore: !choices.showCore,
+								subshell: choices.showCore && core.some(entry => entry.label === choices.subshell) ? undefined : choices.subshell })}>
+							<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round">
+								<path d=${choices.showCore ? "m4.5 2.5 3.5 3.5-3.5 3.5" : "m7.5 2.5-3.5 3.5 3.5 3.5"} />
+							</svg>
+						</button>` : nothing}
+						<div class="atom-valence-rail">${valence.map(subshellChip)}</div>
+					` : shells.map(entry => chip(entry.label + superscript(entry.electrons),
+						`${t("Shell", "Schale")} ${entry.label} · ${entry.electrons} e⁻`, shellColors[entry.n - 1], shell === entry.n,
+						() => change({ ...choices, shell: entry.n })))}
 				</div>
-				${orbital && regions > 1 ? html`
-					<div class="atom-controls-row" role="group" aria-label=${t("Radial region", "Radialbereich")}>
-						${Array.from({ length: regions }, (_, i) => chip(i + 1,
-							`${t("Radial region", "Radialbereich")} ${i + 1} / ${regions}`, i === region,
-							() => change({ ...choices, region: i })))}
-					</div>` : nothing}
 			`}
 		</div>`;
 }
 
-export function renderAtomicShells(symbol: string, configuration: AtomicConfiguration, choices: AtomChoices, t: Translate) {
-	const { shells, shell } = atomChoice(configuration, choices);
-	const bohr = choices.model === "bohr";
-	const center = 110;
-	const step = 81 / Math.max(1, shells.length);
-	return svg`<svg class="atom-shell-figure" viewBox="0 0 220 220" role="img"
-		aria-label=${bohr ? t("Bohr model", "Bohrsches Modell") : t("Electron shells", "Elektronenschalen")}>
-		<title>${t("Schematic shell diagram", "Schematische Schalendarstellung")}</title>
+/** The SVG fallback uses the same schematic radii and angular speeds as the 3D figure. */
+export function renderAtomicShells(symbol: string, configuration: AtomicConfiguration, choices: AtomChoices, pause: boolean, t: Translate) {
+	const shells = atomicShells(configuration);
+	const shell = choices.shell ?? shells[shells.length - 1]?.n;
+	return svg`<svg class="atom-shell-figure" viewBox="0 0 220 220" role="img" aria-label=${t("Bohr shell model", "Bohrsches Schalenmodell")}>
 		${shells.map(({ n, electrons }, index) => {
-			const radius = 13 + (index + 1) * step;
+			const { radius, seconds } = shellOrbit(index, shells.length);
+			const r = radius * 94;
 			const selected = n === shell;
-			const color = selected ? "#087bb4" : "#8196a5";
-			return svg`<g class="electron-shell" data-shell=${n} data-selected=${String(selected)}>
-				<circle cx=${center} cy=${center} r=${radius} fill="none" stroke=${color}
-					stroke-width=${bohr ? selected ? 2.5 : 1.4 : step * .72} stroke-opacity=${bohr ? .8 : selected ? .42 : .21} />
-				${bohr ? Array.from({ length: electrons }, (_, i) => {
-					const angle = (i / electrons + index * .079) * 2 * Math.PI - Math.PI / 2;
-					return svg`<circle class="shell-electron" cx=${center + radius * Math.cos(angle)} cy=${center + radius * Math.sin(angle)}
-						r=${shells.length > 4 ? 2.7 : 3.6} fill=${color} />`;
-				}) : nothing}
+			const color = shellColors[n - 1];
+			return svg`<g>
+				<circle cx="110" cy="110" r=${r} fill="none" stroke=${color} stroke-width=${selected ? 2.5 : 1.4} stroke-opacity=${selected ? .86 : .45} />
+				<g class="electron-spin" style="--orbit-period:${seconds}s;animation-play-state:${pause ? "paused" : "running"}">
+					${Array.from({ length: electrons }, (_, i) => {
+						const angle = (i / electrons + index * .079) * 2 * Math.PI - Math.PI / 2;
+						return svg`<circle cx=${110 + r * Math.cos(angle)} cy=${110 + r * Math.sin(angle)}
+							r=${shells.length > 4 ? 2.7 : 3.6} fill=${color} />`;
+					})}
+				</g>
 			</g>`;
 		})}
-		<circle cx=${center} cy=${center} r="13" fill="#e9f4fa" stroke="#6794ae" />
-		<text x=${center} y=${center} dy=".34em" text-anchor="middle" fill="#12364b" font-size="10" font-weight="700">${symbol}</text>
+		<circle cx="110" cy="110" r="13" fill="#e9f4fa" stroke="#6794ae" />
+		<text x="110" y="110" dy=".34em" text-anchor="middle" fill="#12364b" font-size="10" font-weight="700">${symbol}</text>
 	</svg>`;
 }
 
 const slices = new Map<string, ReturnType<typeof atomicOrbitalSlice>>();
-export function renderAtomicOrbitalTiles(configuration: AtomicConfiguration, choices: AtomChoices,
-	change: (choices: AtomChoices) => void, t: Translate) {
-	const { subshell, orientation, region } = atomChoice(configuration, choices);
-	if (!subshell) return nothing;
-	return html`<div class="atom-orbital-tiles" role="group" aria-label=${t("Orbital cross-sections", "Orbitalschnitte")}>
-		${orbitalOrientations(subshell.l).map((name, i) => {
-			const electrons = orbitalOccupation(subshell, i);
-			const key = `${subshell.label}:${i}:${region}`;
-			let slice = slices.get(key);
-			if (!slice) {
-				slice = atomicOrbitalSlice({ subshell, orientation: i, region, atomicNumber: 1, atomId: 1, electrons: 1 }, undefined, 48);
-				slices.set(key, slice);
-			}
-			const label = atomicOrbitalLabel(subshell, i, t);
-			return html`<button type="button" class="atom-orbital-tile" data-electrons=${electrons} title=${label}
-				aria-label=${label} aria-pressed=${String(i === orientation)} @click=${() => change({ ...choices, orientation: i })}>
-				${svg`<svg viewBox="0 0 48 48" aria-hidden="true">
-					${slice.paths.map((path, index) => svg`<path fill=${phases[index]} d=${path} />`)}
-				</svg>`}
-				<span>${name} <b>${orbitalGlyph[electrons]}</b></span>
-			</button>`;
-		})}
+export function renderOrbitalFallback(configuration: AtomicConfiguration, choices: AtomChoices, t: Translate) {
+	const visible = choices.showCore ? configuration.subshells : configuration.valence;
+	return html`<div class="atom-orbital-slices">
+		${visible.map(subshell => html`<div class="atom-slice-group" ?data-focused=${choices.subshell === subshell.label}>
+			<strong>${subshell.label}</strong>
+			<div class="atom-orbital-tiles">
+				${orbitalOrientations(subshell.l).map((_, i) => {
+					const electrons = orbitalOccupation(subshell, i);
+					const key = `${subshell.label}:${i}`;
+					let slice = slices.get(key);
+					if (!slice) {
+						slice = atomicOrbitalSlice({ subshell, orientation: i, region: subshell.n - subshell.l - 1, atomicNumber: 1, atomId: 1, electrons: 1 }, undefined, 40);
+						slices.set(key, slice);
+					}
+					return html`<figure class="atom-orbital-tile" data-electrons=${electrons} title=${atomicOrbitalLabel(subshell, i, t)}>
+						${svg`<svg viewBox="0 0 40 40" aria-hidden="true">
+							${slice.paths.map((path, index) => svg`<path fill="#${atomicPhaseColors[index].toString(16)}" d=${path} />`)}
+						</svg>`}
+						<figcaption>${orbitalGlyph[electrons]}</figcaption>
+					</figure>`;
+				})}
+			</div>
+		</div>`)}
 	</div>`;
 }
 
 export const atomicModelStyles = css`
-	.atomic-controls, .atom-controls-row { min-inline-size: 0; display: flex; flex-wrap: wrap; gap: .2rem; }
-	.atomic-controls { align-items: start; flex-direction: column; }
-	.atom-controls-row { align-items: center; }
-	.atomic-controls sl-button { --sl-input-height-small: 1.35rem; }
+	.atomic-controls { display: flex; flex-flow: column; align-items: start; min-inline-size: 0; gap: .22rem; }
+	.atom-controls-row, .electron-config-chips, .atom-core-rail, .atom-valence-rail { min-inline-size: 0; display: flex; align-items: center; gap: .18rem; }
+	.electron-config-chips { inline-size: 100%; flex-wrap: wrap; }
+	.electron-config-chips[data-orbitals] { flex-wrap: nowrap; }
+	.atom-valence-rail { flex: 0 0 auto; max-inline-size: calc(100% - 1.3rem); overflow-x: auto; scrollbar-width: thin; }
+	.atom-core-rail { flex: 0 1 auto; overflow-x: auto; scrollbar-width: thin; }
+	.atomic-controls sl-button { --sl-input-height-small: 1.3rem; }
 	.atomic-controls sl-button::part(label) { padding-inline: .4rem; font-size: .7rem; }
-	.atom-chip, .atom-orbital-tile { appearance: none; border: 0; padding: 0; background: none; color: inherit;
-		font: inherit; cursor: pointer; border-radius: 4px; }
-	.atom-chip:focus-visible, .atom-orbital-tile:focus-visible { outline: 2px solid var(--sl-color-primary-600, #087bb4); outline-offset: 1px; }
-	.atom-chip sl-tag::part(base) { height: auto; min-height: 1.2rem; padding-inline: .3rem; font-size: .68rem; }
+	.atom-chip, .atom-core-toggle { appearance: none; border: 0; padding: 0; background: none; color: inherit;
+		font: inherit; cursor: pointer; border-radius: 9px; flex: 0 0 auto; }
+	.atom-core-toggle { display: grid; place-items: center; inline-size: 1.15rem; block-size: 1.15rem; color: #577181; }
+	.atom-core-toggle:hover { background: #eaf2f7; }
+	.atom-chip:focus-visible, .atom-core-toggle:focus-visible { outline: 2px solid var(--sl-color-primary-600, #087bb4); outline-offset: -1px; }
+	.atom-chip sl-tag::part(base) {
+		height: auto; min-height: 1.08rem; padding-inline: .32rem; font-size: .67rem; line-height: 1.15;
+		color: color-mix(in srgb, var(--orbital-color) 75%, #13222e);
+		border-color: color-mix(in srgb, var(--orbital-color) 26%, white);
+		background: color-mix(in srgb, var(--orbital-color) 9%, white);
+	}
+	.atom-chip[aria-pressed="true"] sl-tag::part(base) {
+		border-color: var(--orbital-color);
+		background: color-mix(in srgb, var(--orbital-color) 20%, white);
+	}
+`;
+
+export const atomicDrawingStyles = css`
 	.atom-shell-figure { display: block; inline-size: 100%; block-size: 100%; }
-	.atom-orbital-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 2.55rem), 1fr)); gap: .15rem; }
-	.atom-orbital-tile { display: grid; justify-items: center; border: 1px solid var(--sl-color-neutral-200, #e4e4e7);
-		padding: .12rem .1rem; min-inline-size: 0; font-size: .64rem; line-height: 1.1; background: white; }
-	.atom-orbital-tile[aria-pressed="true"] { border-color: var(--sl-color-primary-600, #087bb4); background: #eff8fd; }
-	.atom-orbital-tile svg { inline-size: min(100%, 3rem); aspect-ratio: 1; }
+	.electron-spin { transform-origin: 110px 110px; animation: electron-orbit var(--orbit-period) linear infinite; }
+	@keyframes electron-orbit { to { transform: rotate(1turn); } }
+	@media (prefers-reduced-motion: reduce) { .electron-spin { animation: none; } }
+	.atom-orbital-slices { display: flex; flex-wrap: wrap; place-content: center; align-items: center; gap: .5rem; color: #465764; }
+	.atom-slice-group { border: 1px solid #dbe3eb; border-radius: 5px; padding: .25rem; background: white;
+		font-size: .68rem; text-align: center; }
+	.atom-slice-group[data-focused] { border-color: #087bb4; }
+	.atom-orbital-tiles { display: flex; flex-wrap: wrap; justify-content: center; }
+	.atom-orbital-tile { margin: 0; inline-size: 2rem; text-align: center; }
+	.atom-orbital-tile svg { display: block; inline-size: 100%; aspect-ratio: 1; }
 	.atom-orbital-tile[data-electrons="0"] svg { opacity: .30; }
-	.atom-orbital-tile span { overflow-wrap: anywhere; }
 `;
