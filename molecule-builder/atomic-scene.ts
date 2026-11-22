@@ -1,7 +1,9 @@
 import { Application } from "pixi.js";
-import { Container3D, Geometry3D, Material3D, Mesh3D, SphereGeometry, TorusGeometry, View3D } from "@pixi/3d";
+import { BatchedMesh3D, Container3D, Geometry3D, Material3D, Matrix4, Mesh3D, RenderPassBit,
+	SphereGeometry, TorusGeometry, View3D } from "@pixi/3d";
 import { atomicShells, orbitalOccupation, shellColors, shellOrbit, type AtomicConfiguration } from "./atomic-configuration";
 import { atomicOrbitalMesh, atomicOverlayParts, atomicPhaseColors, type AtomicOrbitalPart } from "./atomic-orbitals";
+import { nucleonColors, orbitalNuclearRadius, referenceNucleus, schematicNucleons } from "./atomic-nucleus";
 import type { AtomChoices } from "./atomic-model";
 
 export type OrbitalHover = Pick<AtomicOrbitalPart, "orientation" | "subshell">;
@@ -22,16 +24,21 @@ export class AtomicScene {
 	}
 
 	readonly #view = new View3D({
-		autoResize: false, environment: { skyColor: 0xffffff, groundColor: 0x9aaabb, intensity: 1.25 },
+		autoResize: false, environment: { skyColor: 0xffffff, groundColor: 0xa6a6a6, intensity: 1.25 },
 	});
 	readonly #content = new Container3D();
 	readonly #sphere = new SphereGeometry({ radius: 1, widthSegments: 18, heightSegments: 12 });
 	readonly #ring = new TorusGeometry({ radius: 1, tube: .012, radialSegments: 6, tubularSegments: 70 });
-	readonly #nucleus = new Material3D({ baseColor: 0x486e88, roughness: .58 });
+	readonly #nucleons = {
+		proton: new Material3D({ baseColor: nucleonColors.proton, roughness: .58 }),
+		neutron: new Material3D({ baseColor: nucleonColors.neutron, roughness: .58 }),
+	};
 	readonly #shells = shellColors.map(baseColor => new Material3D({ baseColor, roughness: .7 }));
 	readonly #rings = shellColors.map(baseColor => new Material3D({ baseColor, roughness: .7, alphaMode: "blend", alpha: .5 }));
-	readonly #phases = [.17, .38, .59, .88].map(alpha => atomicPhaseColors.map(baseColor =>
+	readonly #phases = [.28, .64, .88].map(alpha => atomicPhaseColors.map(baseColor =>
 		new Material3D({ baseColor, roughness: .7, alphaMode: "blend", alpha })));
+	readonly #neutralOrbitals = [.12, .22, .38].map(alpha =>
+		new Material3D({ baseColor: 0x848484, roughness: .7, alphaMode: "blend", alpha }));
 	readonly #observer: ResizeObserver;
 	#surfaces: OrbitalSurface[] = [];
 	#background: Mesh3D[] = [];
@@ -96,9 +103,16 @@ export class AtomicScene {
 			this.#clear();
 			this.#extent = 1;
 			this.#physical = choices.model === "orbitals" && configuration.electrons === 1;
-			const center = new Mesh3D({ geometry: this.#sphere, material: this.#nucleus, eventMode: "none", parent: this.#content });
-			if (choices.model === "bohr") this.#buildShells(configuration);
-			else {
+			const nucleus = referenceNucleus(atomicNumber);
+			if (choices.model === "bohr") {
+				if (nucleus) this.#buildNucleus(nucleus, atomicShells(configuration).length);
+				this.#buildShells(configuration);
+			} else {
+				if (nucleus) {
+					const center = new Mesh3D({ geometry: this.#sphere, material: this.#nucleons.neutron,
+						eventMode: "none", parent: this.#content });
+					center.scale.set(orbitalNuclearRadius(nucleus, configuration.electrons));
+				}
 				const subshells = choices.showCore ? configuration.subshells : configuration.valence;
 				this.#pending = atomicOverlayParts(subshells).filter(part => part.region === part.subshell.n - part.subshell.l - 1);
 				if (this.#physical && this.#pending.length) {
@@ -107,7 +121,6 @@ export class AtomicScene {
 					this.#append(this.#pending.pop(), phases, extent);
 				}
 			}
-			center.scale.set(this.#extent * (choices.model === "bohr" ? .125 : .05));
 			this.fit();
 		}
 		if (choices.model === "bohr") {
@@ -118,6 +131,19 @@ export class AtomicScene {
 			this.#applyOrbitalMaterials();
 		}
 		this.#draw();
+	}
+
+	#buildNucleus(nucleus: NonNullable<ReturnType<typeof referenceNucleus>>, shellCount: number) {
+		const { radius, particles } = schematicNucleons(nucleus, shellCount);
+		const batch = new BatchedMesh3D({ size: particles.length, eventMode: "none" });
+		const matrix = new Matrix4().makeScale(radius, radius, radius);
+		for (const [i, particle] of particles.entries()) {
+			batch.setGeometryAt(i, this.#sphere);
+			batch.setMaterialAt(i, this.#nucleons[particle.kind]);
+			batch.setMatrixAt(i, matrix.setPosition(particle));
+			batch.setPassesAt(i, RenderPassBit.OPAQUE);
+		}
+		this.#content.addChild(batch);
 	}
 
 	#buildShells(configuration: AtomicConfiguration) {
@@ -143,7 +169,7 @@ export class AtomicScene {
 			if (!buffers) continue;
 			const geometry = new Geometry3D(buffers);
 			this.#ownedGeometry.push(geometry);
-			const mesh = new Mesh3D({ geometry, material: this.#phases[0][phase], eventMode: "static", hitVolume: "geometry", parent: this.#content });
+			const mesh = new Mesh3D({ geometry, material: this.#neutralOrbitals[0], eventMode: "static", hitVolume: "geometry", parent: this.#content });
 			mesh.scale.set(extent);
 			this.#surfaces.push({ part, mesh, phase });
 		}
@@ -162,7 +188,9 @@ export class AtomicScene {
 			const background = !hasFocus && (!valence.includes(part.subshell) || (part.subshell.l === 0 && hasDirectionalOrbitals));
 			if (background) this.#background.push(mesh);
 			mesh.eventMode = focused && !background ? "static" : "none";
-			mesh.material = this.#phases[hovered ? 3 : !focused || !occupied || background ? 0 : this.#hover ? 1 : 2][phase];
+			const selected = this.#hover ? hovered : hasFocus && focused;
+			mesh.material = selected ? this.#phases[hovered ? 2 : occupied ? 1 : 0][phase]
+				: this.#neutralOrbitals[!focused || background ? 0 : !occupied || this.#hover ? 1 : 2];
 		}
 	}
 
@@ -268,6 +296,7 @@ export class AtomicScene {
 		this.app.destroy(true, { children: true });
 		this.#sphere.destroy();
 		this.#ring.destroy();
-		for (const material of [this.#nucleus, ...this.#shells, ...this.#rings, ...this.#phases.flat()]) material.destroy();
+		for (const material of [...Object.values(this.#nucleons), ...this.#shells, ...this.#rings,
+			...this.#neutralOrbitals, ...this.#phases.flat()]) material.destroy();
 	}
 }

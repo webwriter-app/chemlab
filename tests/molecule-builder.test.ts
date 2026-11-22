@@ -5,6 +5,7 @@ import { canBond, dot, electronRegions, fitGeometry, shapeName, subtract } from 
 import { atomRadius, estimatedBondLength, spaceFillingRadius } from "../molecule-builder/radii";
 import { hasMolecularDisplays, moleculeOrbitals, unpackOrbitalSurface } from "../molecule-builder/orbitals";
 import { atomicShells, atomicSpecies, electronConfiguration, orbitalOccupation, orbitalOrientations } from "../molecule-builder/atomic-configuration";
+import { nuclearRadiusAngstrom, orbitalNuclearRadius, referenceNucleus, schematicNucleons } from "../molecule-builder/atomic-nucleus";
 import { angularOrbital, atomicFamilyParts, atomicOrbitalField, atomicOrbitalMesh, atomicOrbitalSlice, atomicOverlayParts } from "../molecule-builder/atomic-orbitals";
 import { ELEMENTS, categoryOf } from "../periodic-table/element-reference";
 import { metalCrystal } from "../periodic-table/metal-reference";
@@ -229,3 +230,19 @@ assert.deepEqual(electronConfiguration(26, 0).valence.map(shell => shell.label),
 assert.deepEqual(electronConfiguration(92, 0).valence.map(shell => shell.label), ["5f", "6d", "7s"]);
 assert.deepEqual(electronConfiguration(11, 1).valence.map(shell => shell.label), ["2s", "2p"]);
 assert.deepEqual(electronConfiguration(1, 0).valence.map(shell => shell.label), ["1s"]);
+
+assert.deepEqual(referenceNucleus(1), { massNumber: 1, protons: 1, neutrons: 0, abundant: true });
+assert.deepEqual(referenceNucleus(28), { massNumber: 58, protons: 28, neutrons: 30, abundant: true });
+assert.deepEqual(referenceNucleus(43), { massNumber: 97, protons: 43, neutrons: 54, abundant: false });
+assert.equal(nuclearRadiusAngstrom(1), .84075e-5);
+assert.equal(orbitalNuclearRadius(referenceNucleus(2), 1), nuclearRadiusAngstrom(4));
+for (let z = 1; z <= 118; z++) {
+	const nucleus = referenceNucleus(z);
+	assert.ok(nucleus && nucleus.protons === z && nucleus.neutrons >= 0);
+	const shells = atomicShells(electronConfiguration(z, 0)).length;
+	const { radius, particles } = schematicNucleons(nucleus, shells);
+	assert.equal(particles.filter(particle => particle.kind === "proton").length, z);
+	assert.equal(particles.filter(particle => particle.kind === "neutron").length, nucleus.neutrons);
+	assert.ok(particles.every(({ x, y, z }) => Math.hypot(x, y, z) + radius <= .251));
+	assert.ok(orbitalNuclearRadius(nucleus, z) < .001);
+}

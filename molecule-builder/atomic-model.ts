@@ -2,6 +2,7 @@ import { css, html, nothing, svg } from "lit";
 import { atomicShells, orbitalOccupation, orbitalOrientations, shellColors, shellOrbit, subshellColors,
 	type AtomicConfiguration, type Subshell } from "./atomic-configuration";
 import { atomicOrbitalSlice, atomicPhaseColors } from "./atomic-orbitals";
+import { nucleonColors, schematicNucleons, type referenceNucleus } from "./atomic-nucleus";
 
 export type AtomicModel = "bohr" | "orbitals";
 export type AtomChoices = { model: AtomicModel; shell?: number; subshell?: string; showCore?: boolean };
@@ -69,9 +70,11 @@ export function renderAtomicControls(configuration: AtomicConfiguration, choices
 }
 
 /** The SVG fallback uses the same schematic radii and angular speeds as the 3D figure. */
-export function renderAtomicShells(symbol: string, configuration: AtomicConfiguration, choices: AtomChoices, pause: boolean, t: Translate) {
+export function renderAtomicShells(nucleus: ReturnType<typeof referenceNucleus>, configuration: AtomicConfiguration,
+	choices: AtomChoices, pause: boolean, t: Translate) {
 	const shells = atomicShells(configuration);
 	const shell = choices.shell ?? shells[shells.length - 1]?.n;
+	const core = nucleus && schematicNucleons(nucleus, shells.length);
 	return svg`<svg class="atom-shell-figure" viewBox="0 0 220 220" role="img" aria-label=${t("Bohr shell model", "Bohrsches Schalenmodell")}>
 		${shells.map(({ n, electrons }, index) => {
 			const { radius, seconds } = shellOrbit(index, shells.length);
@@ -89,8 +92,10 @@ export function renderAtomicShells(symbol: string, configuration: AtomicConfigur
 				</g>
 			</g>`;
 		})}
-		<circle cx="110" cy="110" r="13" fill="#e9f4fa" stroke="#6794ae" />
-		<text x="110" y="110" dy=".34em" text-anchor="middle" fill="#12364b" font-size="10" font-weight="700">${symbol}</text>
+		${core?.particles.sort((a, b) => a.z - b.z).map(({ x, y, kind }) => svg`
+			<circle cx=${110 + x * 94} cy=${110 - y * 94} r=${core.radius * 94} fill=${nucleonColors[kind]}
+				stroke="white" stroke-opacity=".45" stroke-width=".6" />
+		`)}
 	</svg>`;
 }
 

@@ -1,9 +1,11 @@
 import { LitElement, css, html } from "lit";
 import { property, state } from "lit/decorators.js";
+import { isotopeText } from "../periodic-table/phase";
 import { atomicDrawingStyles, atomicOrbitalLabel, initialAtomChoices, renderAtomicShells, renderOrbitalFallback,
 	type AtomChoices } from "./atomic-model";
 import type { AtomicConfiguration } from "./atomic-configuration";
 import type { AtomicScene, OrbitalHover } from "./atomic-scene";
+import { nucleonColors, referenceNucleus } from "./atomic-nucleus";
 
 export class AtomicFigure extends LitElement {
 	static styles = [atomicDrawingStyles, css`
@@ -17,6 +19,7 @@ export class AtomicFigure extends LitElement {
 		.fallback .atom-shell-figure { max-block-size: 100%; }
 		.label { position: absolute; inset: auto .4rem .4rem auto; pointer-events: none; padding: .2rem .38rem;
 			color: #16384d; background: white; border: 1px solid #bfd4e0; border-radius: 4px; font: 600 .72rem/1.2 system-ui; }
+		.nucleus { pointer-events: auto; }
 	`];
 	@property({ attribute: false }) accessor atomicNumber = 1;
 	@property({ attribute: false }) accessor symbolText = "H";
@@ -154,6 +157,13 @@ export class AtomicFigure extends LitElement {
 
 	protected override render() {
 		const label = this.hover && atomicOrbitalLabel(this.hover.subshell, this.hover.orientation, this.#t);
+		const nucleus = this.choices.model === "bohr" ? referenceNucleus(this.atomicNumber) : undefined;
+		const isotope = nucleus && isotopeText(nucleus.massNumber, this.symbolText);
+		const nucleusLabel = nucleus && this.#t(
+			`${isotope} · ${nucleus.protons} protons · ${nucleus.neutrons} neutrons`,
+			`${isotope} · ${nucleus.protons} Protonen · ${nucleus.neutrons} Neutronen`);
+		const isotopeContext = nucleus?.abundant ? this.#t("Most abundant isotope", "Häufigstes Isotop")
+			: this.#t("Longest-lived isotope", "Langlebigstes Isotop");
 		return html`<div class="scene" ?hidden=${!this.ready} ?data-interactive=${this.interactive}
 			@pointerdown=${this.#down} @pointermove=${this.#move} @pointerup=${this.#up} @pointercancel=${this.#up}
 			@pointerleave=${() => this.#scene?.point()}
@@ -165,9 +175,13 @@ export class AtomicFigure extends LitElement {
 			}}></div>
 			${!this.ready && this.configuration ? html`<div class="fallback">
 				${this.choices.model === "bohr"
-					? renderAtomicShells(this.symbolText, this.configuration, this.choices, this.pause || !this.#visible, this.#t)
+					? renderAtomicShells(nucleus, this.configuration, this.choices, this.pause || !this.#visible, this.#t)
 					: renderOrbitalFallback(this.configuration, this.choices, this.#t)}
 			</div>` : null}
-			${label ? html`<span class="label" role="tooltip">${label}</span>` : null}`;
+			${label ? html`<span class="label" role="tooltip">${label}</span>` : null}
+			${nucleus ? html`<span class="label nucleus" role="img" aria-label=${nucleusLabel} title=${`${isotopeContext} · ${nucleusLabel}`}>
+				${isotope} · <span style="color:${nucleonColors.proton}">${nucleus.protons} p⁺</span> ·
+				<span style="color:${nucleonColors.neutron}">${nucleus.neutrons} n</span>
+			</span>` : null}`;
 	}
 }
