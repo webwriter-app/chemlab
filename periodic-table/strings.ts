@@ -43,6 +43,7 @@ export type StringKey =
 	| "detailsHint"
 	| "detailsExpand"
 	| "detailsCollapse"
+	| "swapUnit"
 	| "fieldGroup"
 	| "fieldPeriod"
 	| "fieldFamily"
@@ -147,6 +148,7 @@ const EN: Strings = {
 	detailsHint: "Values refer to the neutral atom.",
 	detailsExpand: "Show all details",
 	detailsCollapse: "Show less",
+	swapUnit: "Switch unit",
 	fieldGroup: "Group",
 	fieldReferenceLattice: "Reference lattice",
 	valueSolidMercury: "solid below 234.3 K",
@@ -252,6 +254,7 @@ const DE: Strings = {
 	detailsHint: "Die Werte gelten für das neutrale Atom.",
 	detailsExpand: "Alle Daten anzeigen",
 	detailsCollapse: "Weniger anzeigen",
+	swapUnit: "Einheit wechseln",
 	fieldGroup: "Gruppe",
 	fieldReferenceLattice: "Referenzgitter",
 	valueSolidMercury: "fest unterhalb von 234,3 K",

@@ -91689,6 +91689,7 @@ var EN = {
   detailsHint: "Values refer to the neutral atom.",
   detailsExpand: "Show all details",
   detailsCollapse: "Show less",
+  swapUnit: "Switch unit",
   fieldGroup: "Group",
   fieldReferenceLattice: "Reference lattice",
   valueSolidMercury: "solid below 234.3 K",
@@ -91790,6 +91791,7 @@ var DE = {
   detailsHint: "Die Werte gelten f\xFCr das neutrale Atom.",
   detailsExpand: "Alle Daten anzeigen",
   detailsCollapse: "Weniger anzeigen",
+  swapUnit: "Einheit wechseln",
   fieldGroup: "Gruppe",
   fieldReferenceLattice: "Referenzgitter",
   valueSolidMercury: "fest unterhalb von 234,3 K",
@@ -92015,9 +92017,11 @@ function numberText(value, language) {
   const text = String(Number(value.toFixed(2)));
   return language === "de" ? text.replace(".", ",") : text;
 }
-function temperatureText(kelvin, language) {
-  const celsius = celsiusFromKelvin(kelvin);
-  return `${numberText(kelvin, language)}\xA0K (${numberText(celsius, language)}\xA0\xB0C)`;
+function celsiusFace(kelvin, language) {
+  return `${numberText(celsiusFromKelvin(kelvin), language)}\xA0\xB0C`;
+}
+function kelvinFace(kelvin, language) {
+  return `${numberText(kelvin, language)}\xA0K`;
 }
 function stateText(state, t7) {
   switch (state) {
@@ -92156,20 +92160,20 @@ function detailRows(element, language, temperatureK = CONDITIONS.temperatureK) {
     key: "melting",
     label: t7.fieldMelting,
     section: "temperatures",
-    ...temperatureRow(element.melting, language, t7)
+    ...temperatureRow(element.melting, t7.fieldMelting, language, t7)
   });
   rows.push({
     key: "boiling",
     label: t7.fieldBoiling,
     section: "temperatures",
-    ...temperatureRow(element.boiling, language, t7)
+    ...temperatureRow(element.boiling, t7.fieldBoiling, language, t7)
   });
   if (element.sublimation.status !== "unavailable") {
     rows.push({
       key: "sublimation",
       label: t7.fieldSublimation,
       section: "temperatures",
-      ...temperatureRow(element.sublimation, language, t7)
+      ...temperatureRow(element.sublimation, t7.fieldSublimation, language, t7)
     });
   }
   rows.push({
@@ -92191,7 +92195,7 @@ function detailRows(element, language, temperatureK = CONDITIONS.temperatureK) {
       label: t7.fieldConfiguration,
       value: configurationText(element, t7),
       section: "structure",
-      alternate: { label: t7.fieldShells, value: element.shells.join(", ") },
+      alternate: { group: "structure", label: t7.fieldShells, value: element.shells.join(", ") },
       ...element.configuration.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
     });
   }
@@ -92224,10 +92228,14 @@ var MODE_ROW = {
 function rowFace(row, alternate) {
   return alternate && row.alternate ? row.alternate : row;
 }
-function temperatureRow(value, language, t7) {
+function showsAlternate(row, swapped) {
+  return row.alternate !== void 0 && swapped.has(row.alternate.group);
+}
+function temperatureRow(value, label, language, t7) {
   if (value.status === "unavailable") return { value: t7.valueUnavailable };
   return {
-    value: temperatureText(value.value, language),
+    value: celsiusFace(value.value, language),
+    alternate: { group: "temperature", label, value: kelvinFace(value.value, language) },
     ...value.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
   };
 }
@@ -93302,10 +93310,14 @@ var periodicTableStyles = i`
 		z-index: 6;
 	}
 
+	/* The card is its own query container, so its content reflows against the
+	   width of the card and not against the block it sits in: the list card is
+	   not inside the slot, and the grid card is narrower than the block. */
 	.details-card {
 		flex: 1;
 		min-width: 0;
 		min-height: 0;
+		container-type: inline-size;
 		--padding: 0;
 		--border-color: var(--sl-color-neutral-200, #e4e4e7);
 		--border-width: var(--pt-details-border);
@@ -93340,10 +93352,13 @@ var periodicTableStyles = i`
 		background: color-mix(in srgb, var(--pt-cell-fill, var(--pt-inset)) 16%, var(--pt-surface));
 	}
 
+	/* The header wraps instead of squeezing the name: on a narrow card the family
+	   tag drops to a second line, which keeps the name readable. */
 	.details-head {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.4rem;
+		gap: 0.2rem 0.4rem;
 		min-width: 0;
 	}
 
@@ -93458,24 +93473,21 @@ var periodicTableStyles = i`
 	}
 
 	/* The open card adds the remaining sections below the key rows, in as many
-	   columns as the block allows: side by side while there is room, stacked when
-	   the card is narrow. A wrapping flex row instead of a grid, because the
-	   sections then share the width of their own line: a grid would open as many
-	   narrow columns as fit and leave the rest of the row empty, which reads as a
-	   hole in the wide card of the list view. */
+	   equal columns as the card allows: side by side while there is room, stacked
+	   when the card is narrow. The columns share the width, so a short section
+	   never leaves a hole next to a long one. */
 	.details-more {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.45rem 0.9rem;
-		align-items: flex-start;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+		gap: 0.5rem 1rem;
+		align-items: start;
 		margin-top: 0.4rem;
-		padding-top: 0.4rem;
+		padding-top: 0.45rem;
 		border-top: 1px solid var(--pt-border);
 	}
 
 	.details-section {
 		display: flex;
-		flex: 1 1 8.5rem;
 		flex-direction: column;
 		gap: 0.15rem;
 		min-width: 0;
@@ -93485,7 +93497,7 @@ var periodicTableStyles = i`
 	   badly in a third of the card, so the structure section takes the full width
 	   and starts a row of its own. */
 	.details-section-structure {
-		flex-basis: 100%;
+		grid-column: 1 / -1;
 	}
 
 	/* The section headings are tags, so they read as labels of the card instead of
@@ -93495,17 +93507,17 @@ var periodicTableStyles = i`
 		align-self: flex-start;
 	}
 
+	/* The heading keeps the case of the language instead of shouting in capitals:
+	   an uppercase tag at this size is harder to read than the rows below it. */
 	.details-heading::part(base) {
 		height: auto;
 		padding: 0 0.3rem;
 		border-color: var(--pt-border);
 		background: var(--pt-inset);
 		color: var(--pt-ink-soft);
-		font-size: 0.58rem;
+		font-size: 0.62rem;
 		font-weight: 600;
 		line-height: 1.45;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
 	}
 
 	.details-rows {
@@ -93544,6 +93556,23 @@ var periodicTableStyles = i`
 		   its closing bracket behind. */
 		overflow-wrap: break-word;
 		font-variant-numeric: tabular-nums;
+	}
+
+	/* On a narrow card the label column would leave the value a few characters
+	   per line, so the label moves above its value and loses the colon: it reads
+	   as a caption then, not as the left half of a pair. */
+	@container (max-width: 17rem) {
+		.details-row {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.details-row dt {
+			white-space: normal;
+		}
+
+		.details-row dt::after {
+			content: none;
+		}
 	}
 
 	/* The configuration swaps to the electrons per shell on a click. The value
@@ -93630,7 +93659,7 @@ var periodicTableStyles = i`
 		background: var(--pt-inset);
 		border-color: var(--pt-border);
 		color: var(--pt-ink-soft);
-		font-size: 0.5rem;
+		font-size: 0.55rem;
 		line-height: 1.3;
 	}
 
@@ -94448,7 +94477,7 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _pauseShellElectrons_dec, _pickerMode_dec, _view_dec, _initialElement_dec, _a3, _init3, _initialElement, _view, _pickerMode, _pauseShellElectrons, _ChemLabPeriodicTable_instances, startElementDrag_fn, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _showShells, _atomPreview, _atomChoices, _atomPreviewElement, _atomPeersObserver, _filtersOpen, _modesOpen, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _toggleShells, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, atomBuilder_fn, observeAtomPeers_fn, toggleAtomPreview_fn, renderAtomPreview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
+var _clearInitialElement_dec, _pauseShellElectrons_dec, _pickerMode_dec, _view_dec, _initialElement_dec, _a3, _init3, _initialElement, _view, _pickerMode, _pauseShellElectrons, _ChemLabPeriodicTable_instances, startElementDrag_fn, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _swapped, _atomPreview, _atomChoices, _atomPreviewElement, _atomPeersObserver, _filtersOpen, _modesOpen, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _toggleAlternate, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, atomBuilder_fn, observeAtomPeers_fn, toggleAtomPreview_fn, renderAtomPreview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
 var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _pickerMode_dec = [n7({ type: Boolean, reflect: true, attribute: "picker-mode" })], _pauseShellElectrons_dec = [n7({ type: Boolean, attribute: "pause-shell-electrons", reflect: true })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a3) {
   constructor() {
     super(...arguments);
@@ -94482,8 +94511,14 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElemen
     __privateAdd(this, _mode, DEFAULT_MODE_STATE);
     __privateAdd(this, _infoOpen, false);
     __privateAdd(this, _detailsExpanded, false);
-    /** Whether the structure row of the card shows the electrons per shell. */
-    __privateAdd(this, _showShells, false);
+    /**
+     * Groups of card rows that show their alternate face.
+     *
+     * The temperature unit stays across selections, because it is a preference
+     * about the reading and not about one element; the structure face is reset
+     * with the element, because the shell counts belong to its configuration.
+     */
+    __privateAdd(this, _swapped, /* @__PURE__ */ new Set());
     __privateAdd(this, _atomPreview, false);
     __privateAdd(this, _atomChoices, initialAtomChoices());
     __privateAdd(this, _atomPreviewElement, null);
@@ -94498,13 +94533,16 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElemen
       this.requestUpdate();
     });
     /**
-     * Swaps the structure row between the configuration and the shell counts.
+     * Swaps one group of rows between its two readings.
      *
      * The value itself is the control and carries no mark, so the row reads as
      * plain text until it is used.
+     *
+     * @param group - Group of rows to swap.
      */
-    __privateAdd(this, _toggleShells, () => {
-      __privateSet(this, _showShells, !__privateGet(this, _showShells));
+    __privateAdd(this, _toggleAlternate, (group) => {
+      if (__privateGet(this, _swapped).has(group)) __privateGet(this, _swapped).delete(group);
+      else __privateGet(this, _swapped).add(group);
       this.requestUpdate();
     });
     /**
@@ -94803,7 +94841,7 @@ _restoreFocusPending = new WeakMap();
 _mode = new WeakMap();
 _infoOpen = new WeakMap();
 _detailsExpanded = new WeakMap();
-_showShells = new WeakMap();
+_swapped = new WeakMap();
 _atomPreview = new WeakMap();
 _atomChoices = new WeakMap();
 _atomPreviewElement = new WeakMap();
@@ -94919,7 +94957,7 @@ matches_fn = function() {
 selectFromUser_fn = function(atomicNumber) {
   if (!__privateGet(this, _selection).select(atomicNumber)) return;
   __privateSet(this, _detailsExpanded, false);
-  __privateSet(this, _showShells, false);
+  __privateGet(this, _swapped).delete("structure");
   this.requestUpdate();
   __privateMethod(this, _ChemLabPeriodicTable_instances, dispatchSelection_fn).call(this);
   if (__privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get) === "list" && !this.pickerMode) __privateMethod(this, _ChemLabPeriodicTable_instances, focusDetails_fn).call(this);
@@ -94936,12 +94974,12 @@ focusDetails_fn = function() {
 clearFromUser_fn = function() {
   if (!__privateGet(this, _selection).clear()) return;
   __privateSet(this, _detailsExpanded, false);
-  __privateSet(this, _showShells, false);
+  __privateGet(this, _swapped).delete("structure");
   this.requestUpdate();
   __privateMethod(this, _ChemLabPeriodicTable_instances, dispatchSelection_fn).call(this);
 };
 _toggleDetails = new WeakMap();
-_toggleShells = new WeakMap();
+_toggleAlternate = new WeakMap();
 _onDetailsKeydown = new WeakMap();
 /** Dispatches the current selection once, composed and bubbling. */
 dispatchSelection_fn = function() {
@@ -95658,7 +95696,7 @@ renderPrintOverview_fn = function(t7, language, element) {
 								${rows.map((row) => x2`
 									<div>
 										<dt>${row.label}</dt>
-										<dd>${row.value}${row.qualifier ? ` (${row.qualifier})` : ""}</dd>
+										<dd>${row.value}${row.alternate ? ` (${row.alternate.value})` : ""}${row.qualifier ? ` (${row.qualifier})` : ""}</dd>
 									</div>
 								`)}
 							</dl>
@@ -95841,8 +95879,11 @@ renderDetailSections_fn = function(t7, rows) {
  * @returns The row.
  */
 renderDetailRow_fn = function(t7, row) {
-  const face = rowFace(row, __privateGet(this, _showShells));
-  const other = rowFace(row, !__privateGet(this, _showShells));
+  const alternate = row.alternate;
+  const swapped = showsAlternate(row, __privateGet(this, _swapped));
+  const face = rowFace(row, swapped);
+  const hint = alternate === void 0 ? "" : alternate.group === "temperature" ? t7.swapUnit : swapped ? row.label : alternate.label;
+  const swapLabel = `${face.value} \u2013 ${hint}`;
   const value = row.swatch ? x2`
 				<sl-tag
 					class="state-tag state-${row.swatch}"
@@ -95851,11 +95892,11 @@ renderDetailRow_fn = function(t7, row) {
 				>
 					${face.value}
 				</sl-tag>
-			` : row.alternate ? x2`<button
+			` : alternate ? x2`<button
 					class="details-swap"
 					type="button"
-					aria-label=${other.label}
-					@click=${__privateGet(this, _toggleShells)}
+					aria-label=${swapLabel}
+					@click=${() => __privateGet(this, _toggleAlternate).call(this, alternate.group)}
 				>${face.value}</button>` : x2`<span>${face.value}</span>`;
   return x2`
 			<div class="details-row">

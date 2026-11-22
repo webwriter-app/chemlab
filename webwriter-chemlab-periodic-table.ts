@@ -54,9 +54,11 @@ import {
 	keyRows,
 	numberText,
 	rowFace,
+	showsAlternate,
 	sourceFieldText,
 	sourceList,
 	stateText,
+	type DetailAlternateGroup,
 	type DetailRow,
 	type DetailSection,
 } from "./periodic-table/details";
@@ -432,8 +434,14 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#mode: ModeState = DEFAULT_MODE_STATE;
 	#infoOpen = false;
 	#detailsExpanded = false;
-	/** Whether the structure row of the card shows the electrons per shell. */
-	#showShells = false;
+	/**
+	 * Groups of card rows that show their alternate face.
+	 *
+	 * The temperature unit stays across selections, because it is a preference
+	 * about the reading and not about one element; the structure face is reset
+	 * with the element, because the shell counts belong to its configuration.
+	 */
+	#swapped = new Set<DetailAlternateGroup>();
 	#atomPreview = false;
 	#atomChoices = initialAtomChoices();
 	#atomPreviewElement: number | null = null;
@@ -673,7 +681,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#selectFromUser(atomicNumber: number) {
 		if (!this.#selection.select(atomicNumber)) return;
 		this.#detailsExpanded = false;
-		this.#showShells = false;
+		this.#swapped.delete("structure");
 		this.requestUpdate();
 		this.#dispatchSelection();
 		if (this.#resolvedView === "list" && !this.pickerMode) this.#focusDetails();
@@ -693,7 +701,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#clearFromUser() {
 		if (!this.#selection.clear()) return;
 		this.#detailsExpanded = false;
-		this.#showShells = false;
+		this.#swapped.delete("structure");
 		this.requestUpdate();
 		this.#dispatchSelection();
 	}
@@ -705,13 +713,16 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	};
 
 	/**
-	 * Swaps the structure row between the configuration and the shell counts.
+	 * Swaps one group of rows between its two readings.
 	 *
 	 * The value itself is the control and carries no mark, so the row reads as
 	 * plain text until it is used.
+	 *
+	 * @param group - Group of rows to swap.
 	 */
-	#toggleShells = () => {
-		this.#showShells = !this.#showShells;
+	#toggleAlternate = (group: DetailAlternateGroup) => {
+		if (this.#swapped.has(group)) this.#swapped.delete(group);
+		else this.#swapped.add(group);
 		this.requestUpdate();
 	};
 
@@ -1618,7 +1629,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 								${rows.map(row => html`
 									<div>
 										<dt>${row.label}</dt>
-										<dd>${row.value}${row.qualifier ? ` (${row.qualifier})` : ""}</dd>
+										<dd>${row.value}${row.alternate ? ` (${row.alternate.value})` : ""}${row.qualifier ? ` (${row.qualifier})` : ""}</dd>
 									</div>
 								`)}
 							</dl>
@@ -1821,8 +1832,17 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * @returns The row.
 	 */
 	#renderDetailRow(t: Strings, row: DetailRow) {
-		const face = rowFace(row, this.#showShells);
-		const other = rowFace(row, !this.#showShells);
+		const alternate = row.alternate;
+		const swapped = showsAlternate(row, this.#swapped);
+		const face = rowFace(row, swapped);
+		// The button names the face it would show. A temperature row keeps its
+		// label on both faces, so it names the action instead. The value stays in
+		// the name, because the button replaces the text and would otherwise be
+		// the only place the reading is written.
+		const hint = alternate === undefined ? ""
+			: alternate.group === "temperature" ? t.swapUnit
+			: swapped ? row.label : alternate.label;
+		const swapLabel = `${face.value} \u2013 ${hint}`;
 		const value = row.swatch
 			? html`
 				<sl-tag
@@ -1833,12 +1853,12 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					${face.value}
 				</sl-tag>
 			`
-			: row.alternate
+			: alternate
 				? html`<button
 					class="details-swap"
 					type="button"
-					aria-label=${other.label}
-					@click=${this.#toggleShells}
+					aria-label=${swapLabel}
+					@click=${() => this.#toggleAlternate(alternate.group)}
 				>${face.value}</button>`
 				: html`<span>${face.value}</span>`;
 		return html`

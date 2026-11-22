@@ -1007,10 +1007,14 @@ export const periodicTableStyles = css`
 		z-index: 6;
 	}
 
+	/* The card is its own query container, so its content reflows against the
+	   width of the card and not against the block it sits in: the list card is
+	   not inside the slot, and the grid card is narrower than the block. */
 	.details-card {
 		flex: 1;
 		min-width: 0;
 		min-height: 0;
+		container-type: inline-size;
 		--padding: 0;
 		--border-color: var(--sl-color-neutral-200, #e4e4e7);
 		--border-width: var(--pt-details-border);
@@ -1045,10 +1049,13 @@ export const periodicTableStyles = css`
 		background: color-mix(in srgb, var(--pt-cell-fill, var(--pt-inset)) 16%, var(--pt-surface));
 	}
 
+	/* The header wraps instead of squeezing the name: on a narrow card the family
+	   tag drops to a second line, which keeps the name readable. */
 	.details-head {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.4rem;
+		gap: 0.2rem 0.4rem;
 		min-width: 0;
 	}
 
@@ -1163,24 +1170,21 @@ export const periodicTableStyles = css`
 	}
 
 	/* The open card adds the remaining sections below the key rows, in as many
-	   columns as the block allows: side by side while there is room, stacked when
-	   the card is narrow. A wrapping flex row instead of a grid, because the
-	   sections then share the width of their own line: a grid would open as many
-	   narrow columns as fit and leave the rest of the row empty, which reads as a
-	   hole in the wide card of the list view. */
+	   equal columns as the card allows: side by side while there is room, stacked
+	   when the card is narrow. The columns share the width, so a short section
+	   never leaves a hole next to a long one. */
 	.details-more {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.45rem 0.9rem;
-		align-items: flex-start;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+		gap: 0.5rem 1rem;
+		align-items: start;
 		margin-top: 0.4rem;
-		padding-top: 0.4rem;
+		padding-top: 0.45rem;
 		border-top: 1px solid var(--pt-border);
 	}
 
 	.details-section {
 		display: flex;
-		flex: 1 1 8.5rem;
 		flex-direction: column;
 		gap: 0.15rem;
 		min-width: 0;
@@ -1190,7 +1194,7 @@ export const periodicTableStyles = css`
 	   badly in a third of the card, so the structure section takes the full width
 	   and starts a row of its own. */
 	.details-section-structure {
-		flex-basis: 100%;
+		grid-column: 1 / -1;
 	}
 
 	/* The section headings are tags, so they read as labels of the card instead of
@@ -1200,17 +1204,17 @@ export const periodicTableStyles = css`
 		align-self: flex-start;
 	}
 
+	/* The heading keeps the case of the language instead of shouting in capitals:
+	   an uppercase tag at this size is harder to read than the rows below it. */
 	.details-heading::part(base) {
 		height: auto;
 		padding: 0 0.3rem;
 		border-color: var(--pt-border);
 		background: var(--pt-inset);
 		color: var(--pt-ink-soft);
-		font-size: 0.58rem;
+		font-size: 0.62rem;
 		font-weight: 600;
 		line-height: 1.45;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
 	}
 
 	.details-rows {
@@ -1249,6 +1253,23 @@ export const periodicTableStyles = css`
 		   its closing bracket behind. */
 		overflow-wrap: break-word;
 		font-variant-numeric: tabular-nums;
+	}
+
+	/* On a narrow card the label column would leave the value a few characters
+	   per line, so the label moves above its value and loses the colon: it reads
+	   as a caption then, not as the left half of a pair. */
+	@container (max-width: 17rem) {
+		.details-row {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.details-row dt {
+			white-space: normal;
+		}
+
+		.details-row dt::after {
+			content: none;
+		}
 	}
 
 	/* The configuration swaps to the electrons per shell on a click. The value
@@ -1335,7 +1356,7 @@ export const periodicTableStyles = css`
 		background: var(--pt-inset);
 		border-color: var(--pt-border);
 		color: var(--pt-ink-soft);
-		font-size: 0.5rem;
+		font-size: 0.55rem;
 		line-height: 1.3;
 	}
 

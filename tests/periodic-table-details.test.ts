@@ -3,17 +3,19 @@ import { test } from "node:test";
 import { ELEMENTS, SOURCES, elementByAtomicNumber } from "../periodic-table/element-reference";
 import {
 	categoryText,
+	celsiusFace,
 	conditionsText,
 	configurationText,
 	detailRows,
 	discoveryText,
 	keyRows,
 	groupText,
+	kelvinFace,
 	rowFace,
+	showsAlternate,
 	sourceFieldText,
 	sourceList,
 	stateText,
-	temperatureText,
 	weightText,
 } from "../periodic-table/details";
 import { TABLE_MODES, type TableMode } from "../periodic-table/phase";
@@ -140,7 +142,11 @@ test("the configuration row swaps to the shell counts", () => {
 	assert.equal(configuration(118).value, "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶");
 	assert.equal(configuration(8, "de").value, configuration(8).value);
 	assert.equal(configurationText(element(8), strings("en")), "[He] 2s² 2p⁴");
-	assert.deepEqual(configuration(8).alternate, { label: "Electrons per shell", value: "2, 6" });
+	assert.deepEqual(configuration(8).alternate, {
+		group: "structure",
+		label: "Electrons per shell",
+		value: "2, 6",
+	});
 	assert.equal(configuration(8, "de").alternate.label, "Elektronen je Schale");
 	assert.equal(rowFace(configuration(8), false).value, "[He] 2s² 2p⁴");
 	assert.equal(rowFace(configuration(8), true).value, "2, 6");
@@ -216,10 +222,40 @@ test("the print overview and the info dialog name the reference conditions", () 
 	assert.equal(conditionsText("de", 373.15), "100 °C · 1 bar");
 });
 
-test("a temperature is rendered in kelvin with its Celsius equivalent", () => {
-	assert.equal(temperatureText(332, "en"), "332\u00A0K (58.85\u00A0°C)");
-	assert.equal(temperatureText(332, "de"), "332\u00A0K (58,85\u00A0°C)");
-	assert.equal(temperatureText(0, "en"), "0\u00A0K (-273.15\u00A0°C)");
+test("a temperature is rendered in one unit at a time", () => {
+	assert.equal(celsiusFace(332, "en"), "58.85\u00A0°C");
+	assert.equal(celsiusFace(332, "de"), "58,85\u00A0°C");
+	assert.equal(celsiusFace(0, "en"), "-273.15\u00A0°C");
+	assert.equal(kelvinFace(332, "en"), "332\u00A0K");
+	assert.equal(kelvinFace(332, "de"), "332\u00A0K");
+	assert.equal(kelvinFace(0, "en"), "0\u00A0K");
+});
+
+test("the temperature rows swap to kelvin on their own switch", () => {
+	const melting = (language: "en" | "de" = "en") =>
+		detailRows(element(8), language).find((row) => row.key === "melting");
+	const row = melting();
+	assert.ok(row);
+	assert.equal(row.value, "-218.79\u00A0°C");
+	assert.deepEqual(row.alternate, {
+		group: "temperature",
+		label: "Melting point",
+		value: "54.36\u00A0K",
+	});
+	assert.equal(melting("de").alternate?.label, "Schmelzpunkt");
+	assert.equal(rowFace(row, false).value, "-218.79\u00A0°C");
+	assert.equal(rowFace(row, true).value, "54.36\u00A0K");
+	assert.equal(rowFace(row, true).label, "Melting point");
+	const structure = detailRows(element(8), "en").find((entry) => entry.key === "configuration");
+	assert.ok(structure);
+	assert.equal(showsAlternate(row, new Set()), false);
+	assert.equal(showsAlternate(row, new Set(["temperature"])), true);
+	assert.equal(showsAlternate(row, new Set(["structure"])), false);
+	assert.equal(showsAlternate(structure, new Set(["temperature"])), false);
+	assert.equal(showsAlternate(structure, new Set(["structure"])), true);
+	const weight = detailRows(element(8), "en").find((entry) => entry.key === "weight");
+	assert.ok(weight);
+	assert.equal(showsAlternate(weight, new Set(["structure", "temperature"])), false);
 });
 
 test("the state row follows the temperature the slider sets", () => {

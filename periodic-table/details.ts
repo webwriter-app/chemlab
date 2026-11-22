@@ -46,13 +46,27 @@ export type DetailSection =
 	| "structure";
 
 /**
+ * Group of rows that swap together.
+ *
+ * The card keeps one switch per group instead of one for the whole card, so the
+ * temperature unit and the structure face move independently: a learner who
+ * reads melting points in kelvin keeps that choice while looking at another
+ * element, and the shell counts of one element do not follow them there.
+ */
+export type DetailAlternateGroup = "structure" | "temperature";
+
+/**
  * Second reading of a row value.
  *
  * The card swaps the two faces on a click, so the label travels with the value:
  * the configuration and the electrons per shell are the same statement in two
- * resolutions, and neither may stand under the label of the other.
+ * resolutions, and neither may stand under the label of the other. The group
+ * names the switch the row belongs to, because a card can hold more than one
+ * pair of faces.
  */
 export interface DetailAlternate {
+	/** Switch the row belongs to. */
+	readonly group: DetailAlternateGroup;
 	/** Localized field label of the alternate face. */
 	readonly label: string;
 	/** Rendered value of the alternate face. */
@@ -115,19 +129,32 @@ export function numberText(value: number, language: Language): string {
 }
 
 /**
- * Renders a temperature in kelvin with its Celsius equivalent.
+ * Renders the Celsius face of a temperature row.
  *
- * The number and its unit are joined by a non-breaking space, so a narrow card
- * wraps the Celsius value as a whole instead of leaving the degree sign alone on
- * the next line.
+ * The card shows one unit at a time, so each unit is its own face. The number
+ * and its unit are joined by a non-breaking space, so a narrow card wraps the
+ * value as a whole instead of leaving the degree sign alone on the next line.
+ *
+ * The name avoids the rounded readout of the slider, which lives in the phase
+ * module and renders whole degrees only.
  *
  * @param kelvin - Temperature in kelvin.
  * @param language - Interface language.
- * @returns The temperature, for example `54,36 K (−218,79 °C)`.
+ * @returns The temperature, for example `-218,79 °C`.
  */
-export function temperatureText(kelvin: number, language: Language): string {
-	const celsius = celsiusFromKelvin(kelvin);
-	return `${numberText(kelvin, language)}\u00A0K (${numberText(celsius, language)}\u00A0°C)`;
+export function celsiusFace(kelvin: number, language: Language): string {
+	return `${numberText(celsiusFromKelvin(kelvin), language)}\u00A0°C`;
+}
+
+/**
+ * Renders the kelvin face of a temperature row.
+ *
+ * @param kelvin - Temperature in kelvin.
+ * @param language - Interface language.
+ * @returns The temperature, for example `54,36 K`.
+ */
+export function kelvinFace(kelvin: number, language: Language): string {
+	return `${numberText(kelvin, language)}\u00A0K`;
 }
 
 /**
@@ -360,20 +387,20 @@ export function detailRows(
 		key: "melting",
 		label: t.fieldMelting,
 		section: "temperatures",
-		...temperatureRow(element.melting, language, t),
+		...temperatureRow(element.melting, t.fieldMelting, language, t),
 	});
 	rows.push({
 		key: "boiling",
 		label: t.fieldBoiling,
 		section: "temperatures",
-		...temperatureRow(element.boiling, language, t),
+		...temperatureRow(element.boiling, t.fieldBoiling, language, t),
 	});
 	if (element.sublimation.status !== "unavailable") {
 		rows.push({
 			key: "sublimation",
 			label: t.fieldSublimation,
 			section: "temperatures",
-			...temperatureRow(element.sublimation, language, t),
+			...temperatureRow(element.sublimation, t.fieldSublimation, language, t),
 		});
 	}
 	rows.push({
@@ -395,7 +422,7 @@ export function detailRows(
 			label: t.fieldConfiguration,
 			value: configurationText(element, t),
 			section: "structure",
-			alternate: { label: t.fieldShells, value: element.shells.join(", ") },
+			alternate: { group: "structure", label: t.fieldShells, value: element.shells.join(", ") },
 			...(element.configuration.status === "predicted" ? { qualifier: t.valuePredicted } : {}),
 		});
 	}
@@ -460,26 +487,50 @@ const MODE_ROW: Readonly<Record<TableMode, string>> = {
  * @param alternate - Whether the card shows the alternate face.
  * @returns The label and value to render.
  */
-export function rowFace(row: DetailRow, alternate: boolean): DetailAlternate {
+export function rowFace(
+	row: DetailRow,
+	alternate: boolean,
+): Pick<DetailAlternate, "label" | "value"> {
 	return alternate && row.alternate ? row.alternate : row;
+}
+
+/**
+ * Tells whether a row shows its alternate face.
+ *
+ * The card holds one switch per group, so a row follows the switch of its own
+ * group and stays on its first face while another group is swapped.
+ *
+ * @param row - Row of the card.
+ * @param swapped - Groups whose alternate face the card shows.
+ * @returns `true` when the row belongs to a swapped group.
+ */
+export function showsAlternate(row: DetailRow, swapped: ReadonlySet<DetailAlternateGroup>): boolean {
+	return row.alternate !== undefined && swapped.has(row.alternate.group);
 }
 
 /**
  * Builds the value and qualifier of a temperature row.
  *
+ * The row shows degrees Celsius and keeps kelvin as its alternate face, because
+ * the table's slider is set in Celsius and the bundle stores kelvin. Both faces
+ * carry the same label: the unit is the statement, not the field.
+ *
  * @param value - Temperature of the reference bundle.
+ * @param label - Localized field label of the row.
  * @param language - Interface language.
  * @param t - Interface strings.
  * @returns The rendered temperature, or the reason why there is none.
  */
 function temperatureRow(
 	value: ElementReference["melting"],
+	label: string,
 	language: Language,
 	t: Strings,
-): { readonly value: string; readonly qualifier?: string } {
+): { readonly value: string; readonly alternate?: DetailAlternate; readonly qualifier?: string } {
 	if (value.status === "unavailable") return { value: t.valueUnavailable };
 	return {
-		value: temperatureText(value.value, language),
+		value: celsiusFace(value.value, language),
+		alternate: { group: "temperature", label, value: kelvinFace(value.value, language) },
 		...(value.status === "predicted" ? { qualifier: t.valuePredicted } : {}),
 	};
 }
