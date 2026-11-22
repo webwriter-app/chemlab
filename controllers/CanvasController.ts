@@ -412,13 +412,25 @@ export class CanvasController implements ReactiveController {
 	}
 
 	centerComponent(label: string): void {
-		const sprite = this.spritesByLabel.get(label);
-		if (!sprite || !this.host.app || this.pointerBusy) return;
-		const bounds = sprite.getBounds();
-		const x = bounds.x + bounds.width / 2;
-		const y = bounds.y + bounds.height / 2;
-		if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-		this.camera.panBy(this.camera.width / 2 - x, this.camera.height / 2 - y);
+		this.centerComponents([label]);
+	}
+
+	centerComponents(labels: readonly string[]): void {
+		if (!this.host.app || this.pointerBusy) return;
+		const bounds = new PIXI.Bounds();
+		for (const label of labels) {
+			const sprite = this.spritesByLabel.get(label);
+			if (sprite) bounds.addBounds(sprite.getBounds());
+		}
+		if (!bounds.isValid) return;
+		const { x, y, width, height } = bounds;
+		const inset = Math.min(this.host.canvasZoom.offsetHeight + 4, this.camera.height / 2);
+		if (width > this.camera.width - 16 || height > this.camera.height - inset - 16) {
+			const world = this.camera.toWorld(x, y);
+			this.camera.fit({ ...world, width: width / this.camera.zoom, height: height / this.camera.zoom }, inset);
+		} else {
+			this.camera.panBy((this.camera.width - width) / 2 - x, (this.camera.height - inset - height) / 2 - y);
+		}
 		this.applyCamera();
 	}
 

@@ -202,6 +202,50 @@ test("additional reference senses the working electrode and stops reading when d
 	assert.ok(Math.abs(meter._visibleVoltage - wet) < 0.02);
 });
 
+test("SHE and calomel measure voltage but cannot serve as current-carrying half-cells", () => {
+	for (const potential of [0, 0.241]) {
+		const [copper] = cell();
+		const reference = ComponentManager.newElectricComponent(Type.Electrode, { nMixture: copper._connectedMix });
+		reference._reference = potential;
+		const meter = ComponentManager.newElectricComponent(Type.Multimeter);
+		wire(meter, copper, 0);
+		wire(meter, reference, 1);
+		Simulation.sEChem(copper, reference, [meter]);
+		assert.ok(Math.abs(meter._visibleVoltage - (0.34 - potential)) < 0.01);
+		assert.equal(meter._visibleCurrent, 0);
+
+		const bypass = connectDevices(copper, reference);
+		assert.ok(bypass);
+		Simulation.sEChem(copper, reference, [meter]);
+		assert.equal(meter._cellCurrent, null);
+		copper.disconnect(bypass);
+
+		meter._meterMode = "current";
+		Simulation.sEChem(copper, reference, [meter]);
+		assert.equal(meter._cellCurrent, null);
+		assert.equal(meter._visibleCurrent, null);
+		assert.equal(reference.plating, undefined);
+	}
+});
+
+test("loading a dedicated reference lead invalidates its reading without stopping the working cell", () => {
+	const [copper, zinc] = cell();
+	const cellMeter = ComponentManager.newElectricComponent(Type.Voltmeter);
+	const sense = ComponentManager.newElectricComponent(Type.Voltmeter);
+	const shunt = ComponentManager.newElectricComponent(Type.Ammeter);
+	const reference = ComponentManager.newElectricComponent(Type.Electrode, { nMixture: copper._connectedMix });
+	reference._reference = 0.241;
+	wire(cellMeter, copper, 0);
+	wire(cellMeter, zinc, 1);
+	wire(sense, copper, 0);
+	wire(sense, reference, 1);
+	wire(shunt, reference, 0);
+	wire(shunt, copper, 1);
+	Simulation.sEChem(copper, zinc, [reference, cellMeter, sense, shunt], { bridge: true });
+	assert.ok(Math.abs(cellMeter._visibleVoltage - 1.1) < 0.01);
+	assert.equal(sense._visibleVoltage, null);
+});
+
 test("re-running solvation leaves chlorine at equilibrium and never consumes escaped gas", () => {
 	const mix = dose("Wasser");
 	mix.evolveGas("Cl2", 0.001);

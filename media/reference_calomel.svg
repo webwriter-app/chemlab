@@ -10,7 +10,7 @@
       <stop stop-color="#4a545b"/><stop offset=".38" stop-color="#a3adb3"/><stop offset="1" stop-color="#5b656c"/>
     </linearGradient>
   </defs>
-  <rect x="1.5" y="4" width="12" height="12" rx="1" fill="#f1f5f5" stroke="#76919b" stroke-width=".45"/>
+  <path d="M5.4 16V8h4.2v8" fill="#cad4d8" stroke="#76919b" stroke-width=".6"/>
   <path d="M2.6 16h9.8v51.5a2.5 2.5 0 0 1-2.5 2.5H5.1a2.5 2.5 0 0 1-2.5-2.5z" fill="url(#glass)" stroke="#36515d" stroke-width=".8"/>
   <path d="M3.4 19h8.2v43.8H3.4z" fill="url(#kcl)"/>
   <path d="M3.4 19h8.2" stroke="#7fa8b8" stroke-width=".4"/>

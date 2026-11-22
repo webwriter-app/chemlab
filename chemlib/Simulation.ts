@@ -2778,6 +2778,9 @@ export abstract class Simulation {
 		const ideal = !!thevenin && thevenin.resistance > OPEN_CIRCUIT_RESISTANCE && sDevices.some((device) =>
 			device._type === EComponentType.Voltmeter ||
 			(device._type === EComponentType.Multimeter && device._meterMode === "voltage"));
+		// A wire can bypass the voltmeter even when no current-mode device
+		// is present. In that case the reference cannot serve as a half-cell.
+		if (referenceInPair && !ideal) return this.sCircuit(sDevices);
 		let solution: CellSolution | undefined;
 		let extents: number[][] = [];
 		let scales = new Map<Mixture, number>();

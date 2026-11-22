@@ -93,7 +93,7 @@ const TRANSFER_HOLD_MS = 1500;
 const TRANSFER_HOLD_RADIUS = 6;
 const DRAG_TRANSFER_TASK = "drag-transfer";
 const SURFACE_DISPLACEMENT_TASK = "surface-displacement";
-const MIN_TWO_PANELS_WIDTH = 480;
+const MIN_TWO_PANELS_WIDTH = 560;
 const RC_UPDATE_MS = 50;
 const DIAGRAM_PICKER_CLOSE_MS = 2000;
 const CONTROL_ICONS = {
@@ -2398,6 +2398,7 @@ export class ChemLab extends LitElementWw {
 			newComp._variantId = variant?.id;
 			switch (newComp._type) {
 				case chemlib.EComponentType.Electrode:
+					if (variant?.reference !== undefined) break;
 					if (variant?.material) newComp._material = this.newElectrodeMaterial(variant.material);
 					else if (component["material"]) {
 						newComp._material = this._loadMolecule(component["material"]);
@@ -2450,7 +2451,7 @@ export class ChemLab extends LitElementWw {
 			if (newComp._type === chemlib.EComponentType.Electrode) {
 				const area = Number.parseFloat(component["area"]);
 				if (Number.isFinite(area) && area > 0) newComp._area = area;
-				const reference = Number.parseFloat(component["reference"]);
+				const reference = variant?.reference ?? Number.parseFloat(component["reference"]);
 				if (Number.isFinite(reference)) newComp._reference = reference;
 			}
 			const config = component["rcSettings"];
@@ -2946,11 +2947,24 @@ export class ChemLab extends LitElementWw {
 		this.diagramDismissedOpen = false;
 		if (!this.diagrams.hasPair(x, y)) this.createDiagram(x, y, title);
 		this.onDiagramToggle(true);
-		void this.updateComplete.then(() => {
+		void this.updateComplete.then(async () => {
+			this.focusDiagramSuggestion(x, y);
 			if (!this.isDiagramPanelOpen) return;
 			const drawer = this.shadowRoot.querySelector<HTMLElement>("#inlineDiagramPanel");
 			if (drawer) drawer.scrollTop = drawer.scrollHeight;
+			// The canvas fits the full setup on each resize while the drawer animates.
+			const layout = this.containerDiv.getAnimations().filter(animation =>
+				animation instanceof CSSTransition && animation.transitionProperty === "grid-template-columns");
+			if (!layout.length) return;
+			await Promise.allSettled(layout.map(animation => animation.finished));
+			requestAnimationFrame(() => {
+				if (this.isDiagramPanelOpen && this.diagrams.hasPair(x, y)) this.focusDiagramSuggestion(x, y);
+			});
 		});
+	}
+
+	private focusDiagramSuggestion(x: DiagramAxis, y: MeasurementChannel): void {
+		this.canvas.centerComponents(x === TIME_CHANNEL ? [componentKey(y)] : [componentKey(x), componentKey(y)]);
 	}
 
 	private boundDiagramMenu(event: Event): void {
@@ -3021,6 +3035,7 @@ export class ChemLab extends LitElementWw {
 		const addInstruments = (devices: readonly chemlib.ElectricComponent[], title: string) => {
 			for (const device of devices) {
 				if (device._type !== Source && !isPassiveMeter(device)) continue;
+				if (!this.simulation.hasTask("echem" + key(device))) continue;
 				const wired = device._connections.every(terminal => terminal.some(partner =>
 					partner._type !== Cable || partner.partners.length === 2));
 				if (!wired) continue;
@@ -3043,8 +3058,9 @@ export class ChemLab extends LitElementWw {
 			const a = first._connectedMix;
 			const b = second._connectedMix;
 			if (a === b || this.bridgeBetween(a, b)) {
-				const powered = devices.some(device => device._type === Source);
-				addInstruments(devices, powered ? "Elektrolyse" : "Galvanische Zelle");
+				const sources = devices.filter(device => device._type === Source);
+				const powered = sources.some(device => this.simulation.hasTask("echem" + key(device)));
+				addInstruments(devices, sources.length ? "Elektrolyse" : "Galvanische Zelle");
 				if (powered) {
 					gasVessels.add(a);
 					gasVessels.add(b);
@@ -3064,6 +3080,9 @@ export class ChemLab extends LitElementWw {
 	/** One suggestion as a button that turns it into a diagram. */
 	private renderDiagramSuggestion(suggestion: QueuedDiagramSuggestion, dismissed = false) {
 		return html`<sl-button class="diagram-suggestion${dismissed ? " diagram-suggestion-dismissed" : ""}" size="small"
+			@pointerenter=${(event: PointerEvent) => {
+				if (event.pointerType !== "touch") this.focusDiagramSuggestion(suggestion.x, suggestion.y);
+			}}
 			@click=${() => this.selectDiagramSuggestion(suggestion)}>
 			<span class="diagram-suggestion-title">${this.message(suggestion.title)}</span>
 			<span class="diagram-suggestion-axis"><b>Y</b> ${this.diagrams.label(suggestion.y)}</span>
@@ -3130,9 +3149,11 @@ export class ChemLab extends LitElementWw {
 
 	private renderDiagramDetails(available: boolean, open: boolean) {
 		const channels = open || this.diagramPickerOpen || this.suggestionQueue.size ? this.measurements.history.channels : [];
-		const live = this.liveDiagramSources();
+		const active = this.suggestionQueue.size && this.simulation.hasRunningExperiments
+			? this.diagramSuggestions(channels) : [];
+		const activePairs = new Set(active.map(({ x, y }) => JSON.stringify([axisId(x), axisId(y)])));
 		const suggestions = this.suggestionQueue.list(({ x, y }) =>
-			this.diagramSourcesLive(x, y, live) && !this.diagrams.hasPair(x, y));
+			activePairs.has(JSON.stringify([axisId(x), axisId(y)])) && !this.diagrams.hasPair(x, y));
 		const handleLabel = suggestions.pending.length
 			? this.message("Diagramme ({count} Vorschläge)", { count: suggestions.pending.length }) : this.message("Diagramme");
 		return html`
@@ -3417,7 +3438,8 @@ export class ChemLab extends LitElementWw {
 					</div>
 					<div class="palette-variant-controls">
 						${arrow(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Größe"))}
-						<sl-tag class="palette-variant-value" size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
+						<sl-tag class="palette-variant-value" size="small" variant=${currentAllowed ? "primary" : "neutral"}
+							title=${variantLabel} aria-live="polite">${variantLabel}</sl-tag>
 						${arrow(1, this.message(current.material ? "Nächstes Material" : "Nächste Größe"))}
 					</div>
 				</div>
@@ -3887,11 +3909,11 @@ export class ChemLab extends LitElementWw {
 		if (!selected.length) return nothing;
 		return html`
 			<section id="groupSelectionInfo" class="selection-info" aria-label=${this.message("Ausgewählte Objekte")}>
-				<div class="selection-labels">
-					${selected.map(({ label }) => html`
-						<sl-badge class="selection-info-title">${this.itemName(label.split(":")[0])}</sl-badge>`)}
-				</div>
-				<div class="selection-actions">
+				<div class="object-summary-heading">
+					<div class="selection-labels">
+						${selected.map(({ label }) => html`
+							<sl-badge class="selection-info-title">${this.itemName(label.split(":")[0])}</sl-badge>`)}
+					</div>
 					${this.renderSelectionDeleteButton(() => this.removeObjects(this.canvas.selectedObjects))}
 				</div>
 			</section>
@@ -3949,9 +3971,9 @@ export class ChemLab extends LitElementWw {
 		summary.setAttribute("data-anchored", "");
 	}
 
-	private renderSelectionDeleteButton(remove: () => void, iconOnly = false) {
+	private renderSelectionDeleteButton(remove: () => void) {
 		return html`
-			<button type="button" class=${iconOnly ? "remObj object-summary-action" : "remObj"} aria-label=${this.message("löschen")} title=${this.message("löschen")} @click=${remove}>
+			<button type="button" class="remObj object-summary-action" aria-label=${this.message("löschen")} title=${this.message("löschen")} @click=${remove}>
 				<svg
 					aria-hidden="true"
 					width="12"
@@ -3963,7 +3985,6 @@ export class ChemLab extends LitElementWw {
 						d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"
 					/>
 				</svg>
-				${iconOnly ? nothing : this.message("löschen")}
 			</button>`;
 	}
 
@@ -4024,11 +4045,9 @@ export class ChemLab extends LitElementWw {
 	private renderElectricalControls(device: chemlib.ElectricComponent) {
 		const { Source, Multimeter } = chemlib.EComponentType;
 		const source = device._type === Source;
-		if (!source && !isPassiveMeter(device)) return nothing;
+		if (!source && device._type !== Multimeter) return nothing;
 		const mode = source ? device._sourceMode : device._meterMode;
 		const current = mode === "current";
-		const task = `echem${device._type}:${device._id}`;
-		const active = this.simulation.hasTask(task);
 		const changeMode = (next: "voltage" | "current") => {
 			if (next === mode) return;
 			if (source) {
@@ -4051,27 +4070,16 @@ export class ChemLab extends LitElementWw {
 			this.requestUpdate();
 		};
 		const actions = html`<div class="device-actions">
-			${source || device._type === Multimeter ? html`
-				<div class="device-mode" role="group" aria-label=${this.message(source ? "Betriebsart" : "Messbereich")}>
-					${(["voltage", "current"] as const).map(next => {
-						const label = this.message(next === "voltage"
-							? source ? "Spannung vorgeben" : "Spannung" : source ? "Stromstärke vorgeben" : "Stromstärke");
-						return html`<sl-button size="small" class="compact-control-button" data-mode=${next}
-							variant=${mode === next ? "primary" : "default"}
-							aria-pressed=${mode === next} aria-label=${label} title=${label} @click=${() => changeMode(next)}>
-							${next === "voltage" ? "V" : "A"}</sl-button>`;
-					})}
-				</div>` : nothing}
-			${this.renderCompactAction(this.message(active ? "Ausschalten" : "Einschalten"), "power", () => {
-				this.canvas.setDeviceActive(device, !active);
-				if (active) {
-					this.simulation.stopTask(task);
-					this.clearEChemReadings(device);
-				} else this.startElectricalExperiment(task, device);
-				this._updatePopup();
-				this.requestUpdate();
-				this._sendxAPiStatement(active ? "completed" : "started", task);
-			}, { id: "activateEComp", primary: active })}
+			<div class="device-mode" role="group" aria-label=${this.message(source ? "Betriebsart" : "Messbereich")}>
+				${(["voltage", "current"] as const).map(next => {
+					const label = this.message(next === "voltage"
+						? source ? "Spannung vorgeben" : "Spannung" : source ? "Stromstärke vorgeben" : "Stromstärke");
+					return html`<sl-button size="small" class="compact-control-button" data-mode=${next}
+						variant=${mode === next ? "primary" : "default"}
+						aria-pressed=${mode === next} aria-label=${label} title=${label} @click=${() => changeMode(next)}>
+						${next === "voltage" ? "V" : "A"}</sl-button>`;
+				})}
+			</div>
 		</div>`;
 		return keyed(device, html`
 			<div class="device-controls" ?data-adjustable=${source}>
@@ -4088,6 +4096,22 @@ export class ChemLab extends LitElementWw {
 			</div>`);
 	}
 
+	private renderElectricalPower(device: chemlib.ElectricComponent) {
+		if (device._type !== chemlib.EComponentType.Source && !isPassiveMeter(device)) return nothing;
+		const task = `echem${device._type}:${device._id}`;
+		const active = this.simulation.hasTask(task);
+		return this.renderCompactAction(this.message(active ? "Ausschalten" : "Einschalten"), "power", () => {
+			this.canvas.setDeviceActive(device, !active);
+			if (active) {
+				this.simulation.stopTask(task);
+				this.clearEChemReadings(device);
+			} else this.startElectricalExperiment(task, device);
+			this._updatePopup();
+			this.requestUpdate();
+			this._sendxAPiStatement(active ? "completed" : "started", task);
+		}, { id: "activateEComp", primary: active });
+	}
+
 	private renderElectricalSettings(device: chemlib.ElectricComponent) {
 		const { Cable, Electrode, Source } = chemlib.EComponentType;
 		if (device._type === Cable) return nothing;
@@ -4095,16 +4119,14 @@ export class ChemLab extends LitElementWw {
 			const other = cable.partners.find(end => end !== device);
 			return other ? [{ cable, other }] : [];
 		});
-		// A reference electrode is a variant without a material, so the list
-		// only offers the metal strips.
-		const materials = this.canAuthor && device._type === Electrode
+		const hasElectrode = device._type === Electrode && componentVariant(device._variantId)?.reference === undefined;
+		const materials = this.canAuthor && hasElectrode
 			? componentVariants.electrode.filter(variant => variant.material)
 			: [];
 		const material = materials.find(variant => variant.material?.name === device._material?.name);
 		const hasSource = device._type === Source;
 		const passiveMeter = isPassiveMeter(device);
 		const hasLabel = device._type === chemlib.EComponentType.Label;
-		const hasElectrode = device._type === Electrode;
 		if (!hasSource && !passiveMeter && !hasLabel && !hasElectrode && !connections.length) return nothing;
 		const label = (other: chemlib.ElectricComponent) => `${this.itemName(other._type)} · ${other._id + 1}`;
 		// A source has two poles, and the electrode on the plus pole is the
@@ -4116,9 +4138,15 @@ export class ChemLab extends LitElementWw {
 			? { plus: plusPole, minus: minusPole } : undefined;
 		const settings = this.canAuthor && (hasSource || passiveMeter || hasLabel || hasElectrode);
 		if (!settings && !connections.length) return nothing;
+		const settingsLabel = this.message(settings ? "Erweiterte Einstellungen" : "Verbunden mit");
 		return keyed(device, html`
-			<sl-details class="electrical-settings" summary=${this.message(settings ? "Erweiterte Einstellungen" : "Verbunden mit")}
+			<sl-details class="electrical-settings" title=${settingsLabel}
 				@sl-after-show=${() => this.canvas.drawSelection()} @sl-after-hide=${() => this.canvas.drawSelection()}>
+				<span slot="summary">${settingsLabel}</span>
+				<svg slot="expand-icon" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+					stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
+				<svg slot="collapse-icon" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+					stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 10 4-4 4 4"/></svg>
 				${settings && hasSource ? keyed(device._sourceMode, device._sourceMode === "current" ? html`
 					<sl-input size="small" type="number" min="0" step="any" contenteditable="false"
 						label=${this.message("Grenzspannung in V")} .value=${String(device._complianceVoltage)}
@@ -4189,6 +4217,7 @@ export class ChemLab extends LitElementWw {
 					<select contenteditable="false" @change=${(event: Event) => {
 							const selected = componentVariant((event.currentTarget as HTMLSelectElement).value);
 							if (!selected?.material) return;
+							device._variantId = selected.id;
 							device._material = this.newElectrodeMaterial(selected.material);
 							device._bodyMol = null;
 							device._plating.clear();
@@ -4289,8 +4318,7 @@ export class ChemLab extends LitElementWw {
 			const redox = power && chemlib.oxidationOf(material.smilesString);
 			const rate = redox && chemlib.Simulation.faradayLaw(this.cellCurrent(power), redox.el, material.getTotMolMass());
 			return html`
-				${readouts(html`${tag(material ? this.itemName(material.name || "unbekannt") : this.message("kein Material"))}
-					${tag(this.message(device._connectedMix ? "eingetaucht" : "nicht eingetaucht"))}`)}
+				${readouts(tag(this.message(device._connectedMix ? "eingetaucht" : "nicht eingetaucht")))}
 				${deposit ? html`<p>${this.message("abgeschieden")}: ${this.formatAmount(deposit.mol * deposit.molecule.getTotMolMass(), 3)}
 					g ${deposit.molecule._kekule_obj.calcFormula().getDisplayText()}</p>` : nothing}
 				${rate ? html`<details class="device-diagnostics" @toggle=${() => this.canvas.drawSelection()}>
@@ -4335,14 +4363,17 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderObjectSummary() {
-		const name = this.itemName(this.curr_name.split(":")[0]);
 		const vessel = this.curr_obj instanceof chemlib.ChemComponent ? this.curr_obj : undefined;
 		const device = this.curr_obj instanceof chemlib.ElectricComponent ? this.curr_obj : undefined;
+		const variant = componentVariant(device?._variantId);
+		const name = variant?.reference !== undefined ? this.message(variant.size) : this.itemName(this.curr_name.split(":")[0]);
+		const material = device?._material && this.itemName(device._material.name);
 		const emptyLabel = this.message("Objekt leeren");
 		return html`
 			<section id="contextInfoBox" class="selection-info" ?hidden=${!this.curr_obj}>
 				<div class="object-summary-heading">
-					<sl-tag size="small" variant="primary">${name}</sl-tag>
+					<sl-tag size="small" variant="primary" title=${material || nothing}>${name}</sl-tag>
+					${device ? this.renderElectricalPower(device) : nothing}
 					${vessel?._content._activeMolecules.length ? html`
 						<button type="button" class="object-summary-action empty-vessel"
 							aria-label=${emptyLabel} title=${emptyLabel} @click=${() => this.emptyVessel(vessel)}>
@@ -4352,7 +4383,7 @@ export class ChemLab extends LitElementWw {
 								<path d="M11.5 8.5c.8 1 2 2.4 2 3.5a2 2 0 0 1-4 0c0-1.1 1.2-2.5 2-3.5Z"/>
 							</svg>
 						</button>` : nothing}
-					${this.renderSelectionDeleteButton(() => this._removeSprite(), true)}
+					${this.renderSelectionDeleteButton(() => this._removeSprite())}
 				</div>
 				${vessel ? this.renderValveControls(vessel) : nothing}
 				<div id="contextEchemInfo" ?hidden=${!device}></div>

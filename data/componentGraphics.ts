@@ -114,12 +114,10 @@ export interface ComponentVariant {
 	artboard?: DimensionsMm;
 	/** Graphic override, for a variant that is a different device of the same type. */
 	url?: string;
-	/** Short label drawn on the device itself, where the graphic has room for one. */
-	short?: string;
 	/**
 	 * Fixed electrode potential in V against the standard hydrogen electrode.
 	 * A reference electrode holds this potential instead of reacting, so it
-	 * carries no material and needs no vessel.
+	 * carries no reactive material and must be immersed to sense potential.
 	 */
 	reference?: number;
 	/**
@@ -127,6 +125,29 @@ export interface ComponentVariant {
 	 * an instrument, a crocodile clip clamps onto a metal electrode.
 	 */
 	ends?: [CableEnd, CableEnd];
+}
+
+const electrodeColors: Readonly<Record<string, string>> = {
+	carbon: "#41474c",
+	platinum: "#d1cdd6",
+	gold: "#e9bd51",
+	silver: "#e2e5e9",
+	copper: "#d38961",
+	lead: "#73778a",
+	tin: "#bfc4c7",
+	iron: "#82909c",
+	nickel: "#bdb3a0",
+	cobalt: "#8296a9",
+	chromium: "#c3d2dd",
+	zinc: "#a0b4be",
+	aluminum: "#d6dade",
+	magnesium: "#cdd3ce",
+	antimony: "#9ca3b4",
+};
+
+export function electrodeColor(element?: string): string {
+	const key = element?.toLowerCase();
+	return electrodeColors[key === "aluminium" ? "aluminum" : key] ?? "#b9c4cc";
 }
 
 function capacities(type: keyof typeof vesselDimensions): ComponentVariant[] {
@@ -155,10 +176,10 @@ export const componentVariants = {
 		})),
 		// Standard hydrogen electrode: platinised platinum under 1 bar H2 in
 		// 1 mol/L H+, which defines the zero of the potential scale.
-		{ id: "electrode:she", type: "electrode", size: "SHE", short: "SHE",
+		{ id: "electrode:she", type: "electrode", size: "SHE",
 			url: referenceShe, reference: 0 },
 		// Saturated calomel electrode: Hg2Cl2 over mercury in saturated KCl.
-		{ id: "electrode:calomel", type: "electrode", size: "Kalomel", short: "KCl",
+		{ id: "electrode:calomel", type: "electrode", size: "Kalomel",
 			url: referenceCalomel, reference: 0.241 },
 	],
 	source: [

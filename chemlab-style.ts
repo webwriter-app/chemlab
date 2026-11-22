@@ -1064,7 +1064,7 @@ export const style = css`
 		--workspace-inner-height: calc(100cqh - 2 * var(--workspace-outline-width));
 		--diagram-panel-width: min(58cqw, clamp(10rem, 44cqw, 24rem));
 		--diagram-width: 0px;
-		--palette-panel-width: min(58cqw, clamp(10rem, 27cqw, 24rem));
+		--palette-panel-width: min(calc(100cqw - min(6rem, 36cqw)), clamp(13.5rem, 27cqw, 24rem));
 		--palette-width: 0px;
 		--lab-card-surface: var(--sl-color-neutral-0);
 		--lab-card-inset: var(--sl-color-neutral-50);
@@ -1925,6 +1925,9 @@ export const style = css`
 	#contextInfoBox {
 		max-block-size: min(14rem, calc(100% - 8px));
 	}
+	#contextInfoBox:has(.electrical-settings[open]) {
+		max-block-size: min(26rem, calc(100% - 8px));
+	}
 	#contextInfoBox p {
 		margin: 0.25em 0;
 	}
@@ -1936,6 +1939,12 @@ export const style = css`
 	}
 	#contextMixInfo {
 		flex-wrap: wrap;
+	}
+	#contextInfoBox .object-summary-heading {
+		position: sticky;
+		inset-block-start: 0;
+		z-index: 2;
+		background: var(--lab-card-surface);
 	}
 	.object-summary-action {
 		display: grid;
@@ -1961,6 +1970,8 @@ export const style = css`
 		border-color: var(--sl-color-primary-200);
 	}
 	.object-summary-action.remObj {
+		margin-inline-start: auto;
+		align-self: flex-start;
 		color: var(--sl-color-danger-700);
 	}
 	.object-summary-action.remObj:hover {
@@ -1971,11 +1982,42 @@ export const style = css`
 		inline-size: 10.5rem;
 		max-inline-size: 100%;
 	}
-	.electrical-settings::part(header),
+	.electrical-settings::part(base) {
+		display: flex;
+		flex-direction: column-reverse;
+		border: 0;
+		background: transparent;
+	}
+	.electrical-settings::part(header) {
+		position: sticky;
+		inset-block-end: 0;
+		z-index: 1;
+		align-self: center;
+		box-sizing: border-box;
+		block-size: 20px;
+		inline-size: 24px;
+		padding: 0;
+		justify-content: center;
+		color: var(--lab-card-secondary-text);
+		background: var(--lab-card-surface);
+	}
+	.electrical-settings::part(header):hover {
+		background: var(--lab-card-inset);
+		color: var(--sl-color-primary-700);
+	}
+	.electrical-settings::part(summary) {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+	.electrical-settings::part(summary-icon) {
+		rotate: none;
+	}
 	.electrical-settings::part(content) {
 		padding: 4px;
 	}
-	.electrical-settings::part(base) { border-color: var(--lab-card-border); }
 	.electrical-settings sl-input,
 	.electrical-settings label {
 		display: block;
@@ -2219,14 +2261,9 @@ export const style = css`
 		display: flex;
 		flex-wrap: wrap;
 		gap: 4px;
-		padding: 5px;
 	}
 	.selection-labels > sl-badge {
 		margin: 0;
-	}
-	.selection-actions {
-		display: flex;
-		flex-direction: column;
 	}
 	.device-controls {
 		display: grid;
@@ -2261,16 +2298,6 @@ export const style = css`
 	}
 	.device-diagnostics summary {
 		cursor: pointer;
-	}
-	.selection-actions > .remObj {
-		align-self: flex-start;
-		display: inline-flex;
-		align-items: center;
-		padding: 4px 6px;
-		border-color: var(--sl-color-neutral-300);
-		font-size: 10pt;
-		line-height: 1.1;
-		white-space: nowrap;
 	}
 	#paletteArea {
 		--palette-inset: 8px;
@@ -2339,8 +2366,7 @@ export const style = css`
 		scrollbar-gutter: stable;
 	}
 	#teacherTabs > sl-tab {
-		flex: 0 1 auto;
-		min-inline-size: 0;
+		flex: 0 0 auto;
 	}
 	#teacherTabs > sl-tab::part(base) {
 		display: flex;
@@ -2356,8 +2382,7 @@ export const style = css`
 		color: var(--lab-card-secondary-text);
 		text-align: center;
 		line-height: 1.2;
-		white-space: normal;
-		overflow-wrap: anywhere;
+		white-space: nowrap;
 	}
 	#teacherTabs > sl-tab:hover::part(base) {
 		background: var(--sl-color-neutral-100);
@@ -2411,6 +2436,16 @@ export const style = css`
 		line-height: 1.25;
 		white-space: normal;
 		overflow-wrap: anywhere;
+	}
+	.palette-card:not(.palette-card-chemical) :is(.palette-card-name sl-tag, .palette-variant-value)::part(base) {
+		min-inline-size: 0;
+		white-space: nowrap;
+	}
+	.palette-card:not(.palette-card-chemical) :is(.palette-card-name sl-tag, .palette-variant-value)::part(content) {
+		display: block;
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	.palette-card-menu-indicator {
 		margin-inline-start: 3px;

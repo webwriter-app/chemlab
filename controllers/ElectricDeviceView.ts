@@ -2,7 +2,7 @@ import { CanvasSource, Container, DOMAdapter, Graphics, Rectangle, Sprite, Text,
 import { EComponentType, type ElectricComponent } from "../chemlib/ElectricComponent";
 import { ELECTRODE_AREA } from "../chemlib/halfReactions";
 import { molarGasVolume } from "../chemlib/gasEvolution";
-import { componentTerminals, componentVariant, type TerminalPoint } from "../data/componentGraphics";
+import { componentTerminals, componentVariant, electrodeColor, type TerminalPoint } from "../data/componentGraphics";
 import { AQUEOUS_FILL } from "./VesselView";
 
 function reading(value: number | null | undefined, unit: string): string {
@@ -152,6 +152,7 @@ const TUBE_BORE = { left: 2.6 / 20, right: 17.4 / 20, top: 2.6 / 120, bottom: 11
 const TUBE_VOLUME_ML = Math.PI * (14.8 / 2) ** 2 * 112.8 / 1000;
 
 export class ElectricDeviceView extends Container {
+	private readonly body: Sprite;
 	private lines: { text: Text; maxWidth: number }[] = [];
 	private indicator?: Graphics;
 	private active = false;
@@ -180,7 +181,8 @@ export class ElectricDeviceView extends Container {
 	constructor(readonly component: ElectricComponent, texture: Texture, width: number, height: number) {
 		super({ interactiveChildren: false });
 		this.hitArea = new Rectangle(-width / 2, -height / 2, width, height);
-		this.addChild(new Sprite({ texture, anchor: 0.5, width, height, eventMode: "none" }));
+		this.body = new Sprite({ texture, anchor: 0.5, width, height, eventMode: "none" });
+		this.addChild(this.body);
 		this.artboard = { width, height };
 		// The artboard coordinates of the terminals become local offsets from
 		// the sprite centre, which is where the texture is anchored.
@@ -239,17 +241,17 @@ export class ElectricDeviceView extends Container {
 				addLine(0.5, 0.5, 0.46, 0.9);
 				break;
 			case EComponentType.Electrode:
+				if (componentVariant(component._variantId)?.reference !== undefined) break;
 				// The strip of the electrode graphic spans 0.4..14.6 of 15 across
-				// and 0.4..74.6 of 75 down; the material label ends at y = 16.
+				// and 0.4..74.6 of 75 down.
 				this.strip = {
 					left: width * (0.4 / 15 - 0.5),
 					right: width * (14.6 / 15 - 0.5),
-					top: height * (16 / 75 - 0.5),
+					top: height * (0.4 / 75 - 0.5),
 					bottom: height * (74.6 / 75 - 0.5),
 				};
 				this.coating = new Sprite({ anchor: 0.5, eventMode: "none", visible: false });
 				this.addChild(this.coating);
-				addLine(0.5, 10 / 75, 0.103, 0.72);
 				break;
 		}
 		// The plugs are permanent, so they sit above the graphic and above the
@@ -387,6 +389,7 @@ export class ElectricDeviceView extends Container {
 		const component = this.component;
 		// A cable that was laid or removed changes which plugs are free.
 		this.drawPorts();
+		let changed = false;
 		let values: string[];
 		switch (component._type) {
 			case EComponentType.Source: {
@@ -423,17 +426,18 @@ export class ElectricDeviceView extends Container {
 			case EComponentType.Label:
 				values = [component._labelText];
 				break;
-			case EComponentType.Electrode:
-				// A metal strip is labelled with its element; a reference
-				// electrode has no material and carries its own short name.
-				values = [component._material?._atoms[0]?.getSymbol()
-					?? componentVariant(component._variantId)?.short ?? ""];
+			case EComponentType.Electrode: {
+				const element = component._material?._atoms[0]?.getName();
+				const tint = this.strip ? Number.parseInt(electrodeColor(element).slice(1), 16) : 0xffffff;
+				changed = this.body.tint !== tint;
+				if (changed) this.body.tint = tint;
+				values = [];
 				break;
+			}
 			default:
 				return false;
 		}
 
-		let changed = false;
 		this.lines.forEach(({ text, maxWidth }, index) => {
 			// A display may draw more rows than a state supplies; the spare row
 			// stays blank instead of taking the whole view down.
@@ -538,9 +542,8 @@ export class ElectricDeviceView extends Container {
 			coating.visible = false;
 			return true;
 		}
-		const hex = plating.molecule._atoms[0]?.getCPKHEX();
-		const parsed = hex ? parseInt(hex, 16) : NaN;
-		coating.texture = platingTexture(Number.isFinite(parsed) ? parsed : 0x84949b);
+		const color = electrodeColor(plating.molecule._atoms[0]?.getName());
+		coating.texture = platingTexture(Number.parseInt(color.slice(1), 16));
 		const grown = Math.max(0, (coverage - PLATING_OPAQUE_AT) / (1 - PLATING_OPAQUE_AT));
 		coating.alpha = Math.min(1, coverage / PLATING_OPAQUE_AT);
 		coating.position.set((strip.left + strip.right) / 2, (top + bottom) / 2);

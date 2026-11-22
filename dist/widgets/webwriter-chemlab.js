@@ -112052,7 +112052,7 @@ var style = i`
 		--workspace-inner-height: calc(100cqh - 2 * var(--workspace-outline-width));
 		--diagram-panel-width: min(58cqw, clamp(10rem, 44cqw, 24rem));
 		--diagram-width: 0px;
-		--palette-panel-width: min(58cqw, clamp(10rem, 27cqw, 24rem));
+		--palette-panel-width: min(calc(100cqw - min(6rem, 36cqw)), clamp(13.5rem, 27cqw, 24rem));
 		--palette-width: 0px;
 		--lab-card-surface: var(--sl-color-neutral-0);
 		--lab-card-inset: var(--sl-color-neutral-50);
@@ -112913,6 +112913,9 @@ var style = i`
 	#contextInfoBox {
 		max-block-size: min(14rem, calc(100% - 8px));
 	}
+	#contextInfoBox:has(.electrical-settings[open]) {
+		max-block-size: min(26rem, calc(100% - 8px));
+	}
 	#contextInfoBox p {
 		margin: 0.25em 0;
 	}
@@ -112924,6 +112927,12 @@ var style = i`
 	}
 	#contextMixInfo {
 		flex-wrap: wrap;
+	}
+	#contextInfoBox .object-summary-heading {
+		position: sticky;
+		inset-block-start: 0;
+		z-index: 2;
+		background: var(--lab-card-surface);
 	}
 	.object-summary-action {
 		display: grid;
@@ -112949,6 +112958,8 @@ var style = i`
 		border-color: var(--sl-color-primary-200);
 	}
 	.object-summary-action.remObj {
+		margin-inline-start: auto;
+		align-self: flex-start;
 		color: var(--sl-color-danger-700);
 	}
 	.object-summary-action.remObj:hover {
@@ -112959,11 +112970,42 @@ var style = i`
 		inline-size: 10.5rem;
 		max-inline-size: 100%;
 	}
-	.electrical-settings::part(header),
+	.electrical-settings::part(base) {
+		display: flex;
+		flex-direction: column-reverse;
+		border: 0;
+		background: transparent;
+	}
+	.electrical-settings::part(header) {
+		position: sticky;
+		inset-block-end: 0;
+		z-index: 1;
+		align-self: center;
+		box-sizing: border-box;
+		block-size: 20px;
+		inline-size: 24px;
+		padding: 0;
+		justify-content: center;
+		color: var(--lab-card-secondary-text);
+		background: var(--lab-card-surface);
+	}
+	.electrical-settings::part(header):hover {
+		background: var(--lab-card-inset);
+		color: var(--sl-color-primary-700);
+	}
+	.electrical-settings::part(summary) {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+	.electrical-settings::part(summary-icon) {
+		rotate: none;
+	}
 	.electrical-settings::part(content) {
 		padding: 4px;
 	}
-	.electrical-settings::part(base) { border-color: var(--lab-card-border); }
 	.electrical-settings sl-input,
 	.electrical-settings label {
 		display: block;
@@ -113207,14 +113249,9 @@ var style = i`
 		display: flex;
 		flex-wrap: wrap;
 		gap: 4px;
-		padding: 5px;
 	}
 	.selection-labels > sl-badge {
 		margin: 0;
-	}
-	.selection-actions {
-		display: flex;
-		flex-direction: column;
 	}
 	.device-controls {
 		display: grid;
@@ -113249,16 +113286,6 @@ var style = i`
 	}
 	.device-diagnostics summary {
 		cursor: pointer;
-	}
-	.selection-actions > .remObj {
-		align-self: flex-start;
-		display: inline-flex;
-		align-items: center;
-		padding: 4px 6px;
-		border-color: var(--sl-color-neutral-300);
-		font-size: 10pt;
-		line-height: 1.1;
-		white-space: nowrap;
 	}
 	#paletteArea {
 		--palette-inset: 8px;
@@ -113327,8 +113354,7 @@ var style = i`
 		scrollbar-gutter: stable;
 	}
 	#teacherTabs > sl-tab {
-		flex: 0 1 auto;
-		min-inline-size: 0;
+		flex: 0 0 auto;
 	}
 	#teacherTabs > sl-tab::part(base) {
 		display: flex;
@@ -113344,8 +113370,7 @@ var style = i`
 		color: var(--lab-card-secondary-text);
 		text-align: center;
 		line-height: 1.2;
-		white-space: normal;
-		overflow-wrap: anywhere;
+		white-space: nowrap;
 	}
 	#teacherTabs > sl-tab:hover::part(base) {
 		background: var(--sl-color-neutral-100);
@@ -113399,6 +113424,16 @@ var style = i`
 		line-height: 1.25;
 		white-space: normal;
 		overflow-wrap: anywhere;
+	}
+	.palette-card:not(.palette-card-chemical) :is(.palette-card-name sl-tag, .palette-variant-value)::part(base) {
+		min-inline-size: 0;
+		white-space: nowrap;
+	}
+	.palette-card:not(.palette-card-chemical) :is(.palette-card-name sl-tag, .palette-variant-value)::part(content) {
+		display: block;
+		min-inline-size: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	.palette-card-menu-indicator {
 		margin-inline-start: 3px;
@@ -153592,8 +153627,9 @@ function circuitReadings(network, cell, references2) {
       }
     }
     if (leads.has(network.first) || leads.has(network.second)) continue;
+    const loaded = network.elements.some(({ a: a6, b: b4, device }) => device && (leads.has(a6) || leads.has(b4)) && (device._type === "source" /* Source */ || device._type === "ammeter" /* Ammeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "current"));
     const anchor = local && network.electrodeNodes.get(local.electrode);
-    const value = anchor == null ? null : voltages[anchor] + local.offset;
+    const value = loaded || anchor == null ? null : voltages[anchor] + local.offset;
     for (const lead of leads) sense.set(lead, sense.has(lead) ? null : value);
   }
   const readings = /* @__PURE__ */ new Map();
@@ -155845,6 +155881,7 @@ var Simulation = class {
     const thevenin = source3 && element2 ? void 0 : circuitThevenin(network);
     if (!source3 && !thevenin) return unsolved();
     const ideal = !!thevenin && thevenin.resistance > OPEN_CIRCUIT_RESISTANCE && sDevices.some((device) => device._type === "voltmeter" /* Voltmeter */ || device._type === "multimeter" /* Multimeter */ && device._meterMode === "voltage");
+    if (referenceInPair && !ideal) return this.sCircuit(sDevices);
     let solution;
     let extents = [];
     let scales2 = /* @__PURE__ */ new Map();
@@ -182362,13 +182399,13 @@ var gascollector_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/200
 var label_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="44" viewBox="0 0 100 22">%0A  <rect x=".8" y=".8" width="98.4" height="20.4" rx="3" fill="%23f4f7f8" fill-opacity=".92" stroke="%237d949e" stroke-width="1.1"/>%0A  <path d="M6 6h30" stroke="%23b9c9d0" stroke-width="1.4" stroke-linecap="round"/>%0A</svg>%0A';
 
 // media/electrode.svg
-var electrode_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="150" viewBox="0 0 15 75">%0A  <defs><linearGradient id="metal"><stop stop-color="%2384949b"/><stop offset=".37" stop-color="%23e5eef0"/><stop offset=".7" stop-color="%23bdcbd0"/><stop offset="1" stop-color="%23879ba4"/></linearGradient></defs>%0A  <path d="M.4.4h14.2v74.2H.4z" fill="url(%23metal)" stroke="%2336515d" stroke-width=".8"/>%0A  <path d="M2.5 20v50" stroke="%23f0f5f6" stroke-width=".55"/>%0A  <rect x="1.5" y="4" width="12" height="12" rx="1" fill="%23f1f5f5" stroke="%2376919b" stroke-width=".45"/>%0A</svg>%0A';
+var electrode_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="150" viewBox="0 0 15 75">%0A  <defs><linearGradient id="metal"><stop stop-color="%23969696"/><stop offset=".24" stop-color="%23eaeaea"/><stop offset=".43" stop-color="%23fff"/><stop offset=".76" stop-color="%23d1d1d1"/><stop offset="1" stop-color="%239c9c9c"/></linearGradient></defs>%0A  <path d="M1.2.4h12.6a.8.8 0 0 1 .8.8v72.6a.8.8 0 0 1-.8.8H1.2a.8.8 0 0 1-.8-.8V1.2a.8.8 0 0 1 .8-.8Z" fill="url(%23metal)" stroke="%23535353" stroke-width=".8"/>%0A  <path d="M2.5 3v69m8.7-68v65" stroke="%23fff" stroke-width=".48" stroke-opacity=".34"/>%0A</svg>%0A';
 
 // media/reference_she.svg
-var reference_she_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="150" viewBox="0 0 15 75">%0A  <defs>%0A    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%23b9d3de"/><stop offset=".3" stop-color="%23f4fafc"/><stop offset=".72" stop-color="%23d5e6ec"/><stop offset="1" stop-color="%23a6c0cc"/>%0A    </linearGradient>%0A    <linearGradient id="acid" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%23a8cbd9"/><stop offset=".45" stop-color="%23dceef4"/><stop offset="1" stop-color="%239dc0d0"/>%0A    </linearGradient>%0A    <linearGradient id="platinum" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%235f6d76"/><stop offset=".34" stop-color="%23e4ecf0"/><stop offset=".62" stop-color="%23aab7be"/><stop offset="1" stop-color="%236b7982"/>%0A    </linearGradient>%0A  </defs>%0A  <rect x="1.5" y="4" width="12" height="12" rx="1" fill="%23f1f5f5" stroke="%2376919b" stroke-width=".45"/>%0A  <path d="M2.6 16h9.8v51.5a2.5 2.5 0 0 1-2.5 2.5H5.1a2.5 2.5 0 0 1-2.5-2.5z" fill="url(%23glass)" stroke="%2336515d" stroke-width=".8"/>%0A  <path d="M3.4 24h8.2v38.8H3.4z" fill="url(%23acid)"/>%0A  <path d="M3.4 24h8.2" stroke="%237fa8b8" stroke-width=".4"/>%0A  <path d="M4.4 16v24" stroke="%237d949e" stroke-width="1.6" stroke-linecap="round"/>%0A  <path d="M4.4 16v24" stroke="%23eef6f9" stroke-width=".55" stroke-linecap="round"/>%0A  <path d="M8.5 16v11" stroke="%236b7982" stroke-width="1.2"/>%0A  <path d="M8.5 16v11" stroke="%23eef3f5" stroke-width=".4"/>%0A  <path d="M6.6 27h3.8v21H6.6z" fill="url(%23platinum)" stroke="%234a5a63" stroke-width=".45"/>%0A  <circle cx="5.6" cy="42.5" r=".85" fill="%23f7fbfd" stroke="%237fa8b8" stroke-width=".3"/>%0A  <circle cx="6.5" cy="46.4" r=".7" fill="%23f7fbfd" stroke="%237fa8b8" stroke-width=".3"/>%0A  <circle cx="5.2" cy="50.2" r=".55" fill="%23f7fbfd" stroke="%237fa8b8" stroke-width=".3"/>%0A  <path d="M2.6 63.4h9.8v3.6H2.6z" fill="%23c3cfd4" stroke="%236d858f" stroke-width=".45"/>%0A  <path d="M3.4 64.2h1.2m1.4 0h1.2m1.4 0h1.2m1.4 0h1.2" stroke="%237d949e" stroke-width=".4"/>%0A  <path d="M4 19v43" stroke="%23f7fcfd" stroke-width=".5" stroke-opacity=".85"/>%0A</svg>%0A';
+var reference_she_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="150" viewBox="0 0 15 75">%0A  <defs>%0A    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%23b9d3de"/><stop offset=".3" stop-color="%23f4fafc"/><stop offset=".72" stop-color="%23d5e6ec"/><stop offset="1" stop-color="%23a6c0cc"/>%0A    </linearGradient>%0A    <linearGradient id="acid" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%23a8cbd9"/><stop offset=".45" stop-color="%23dceef4"/><stop offset="1" stop-color="%239dc0d0"/>%0A    </linearGradient>%0A    <linearGradient id="platinum" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%235f6d76"/><stop offset=".34" stop-color="%23e4ecf0"/><stop offset=".62" stop-color="%23aab7be"/><stop offset="1" stop-color="%236b7982"/>%0A    </linearGradient>%0A  </defs>%0A  <path d="M4.4 7v9m4.1-13v13" stroke="%236b7982" stroke-width="1.6" stroke-linecap="round"/>%0A  <path d="M2.6 16h9.8v51.5a2.5 2.5 0 0 1-2.5 2.5H5.1a2.5 2.5 0 0 1-2.5-2.5z" fill="url(%23glass)" stroke="%2336515d" stroke-width=".8"/>%0A  <path d="M3.4 24h8.2v38.8H3.4z" fill="url(%23acid)"/>%0A  <path d="M3.4 24h8.2" stroke="%237fa8b8" stroke-width=".4"/>%0A  <path d="M4.4 16v24" stroke="%237d949e" stroke-width="1.6" stroke-linecap="round"/>%0A  <path d="M4.4 16v24" stroke="%23eef6f9" stroke-width=".55" stroke-linecap="round"/>%0A  <path d="M8.5 16v11" stroke="%236b7982" stroke-width="1.2"/>%0A  <path d="M8.5 16v11" stroke="%23eef3f5" stroke-width=".4"/>%0A  <path d="M6.6 27h3.8v21H6.6z" fill="url(%23platinum)" stroke="%234a5a63" stroke-width=".45"/>%0A  <circle cx="5.6" cy="42.5" r=".85" fill="%23f7fbfd" stroke="%237fa8b8" stroke-width=".3"/>%0A  <circle cx="6.5" cy="46.4" r=".7" fill="%23f7fbfd" stroke="%237fa8b8" stroke-width=".3"/>%0A  <circle cx="5.2" cy="50.2" r=".55" fill="%23f7fbfd" stroke="%237fa8b8" stroke-width=".3"/>%0A  <path d="M2.6 63.4h9.8v3.6H2.6z" fill="%23c3cfd4" stroke="%236d858f" stroke-width=".45"/>%0A  <path d="M3.4 64.2h1.2m1.4 0h1.2m1.4 0h1.2m1.4 0h1.2" stroke="%237d949e" stroke-width=".4"/>%0A  <path d="M4 19v43" stroke="%23f7fcfd" stroke-width=".5" stroke-opacity=".85"/>%0A</svg>%0A';
 
 // media/reference_calomel.svg
-var reference_calomel_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="150" viewBox="0 0 15 75">%0A  <defs>%0A    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%23b9d3de"/><stop offset=".3" stop-color="%23f4fafc"/><stop offset=".72" stop-color="%23d5e6ec"/><stop offset="1" stop-color="%23a6c0cc"/>%0A    </linearGradient>%0A    <linearGradient id="kcl" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%239dc0d0"/><stop offset=".45" stop-color="%23d8ebf1"/><stop offset="1" stop-color="%2393b6c7"/>%0A    </linearGradient>%0A    <linearGradient id="mercury" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%234a545b"/><stop offset=".38" stop-color="%23a3adb3"/><stop offset="1" stop-color="%235b656c"/>%0A    </linearGradient>%0A  </defs>%0A  <rect x="1.5" y="4" width="12" height="12" rx="1" fill="%23f1f5f5" stroke="%2376919b" stroke-width=".45"/>%0A  <path d="M2.6 16h9.8v51.5a2.5 2.5 0 0 1-2.5 2.5H5.1a2.5 2.5 0 0 1-2.5-2.5z" fill="url(%23glass)" stroke="%2336515d" stroke-width=".8"/>%0A  <path d="M3.4 19h8.2v43.8H3.4z" fill="url(%23kcl)"/>%0A  <path d="M3.4 19h8.2" stroke="%237fa8b8" stroke-width=".4"/>%0A  <path d="M5.4 18h4.2v30.2a2.1 2.1 0 0 1-4.2 0z" fill="%23eef5f8" stroke="%236d858f" stroke-width=".5"/>%0A  <path d="M5.4 30h4.2v9.4H5.4z" fill="%23dfe6e9" stroke="%238b9ba3" stroke-width=".35"/>%0A  <path d="M5.9 32.2h3.2m-3.2 2.2h3.2m-3.2 2.2h3.2" stroke="%23aebbc2" stroke-width=".35"/>%0A  <path d="M5.4 39.4h4.2v6.7a2.1 2.1 0 0 1-4.2 0z" fill="url(%23mercury)" stroke="%233f4950" stroke-width=".4"/>%0A  <path d="M7.5 8v32.5" stroke="%236b7982" stroke-width="1.2"/>%0A  <path d="M7.5 8v32.5" stroke="%23eef3f5" stroke-width=".4"/>%0A  <path d="M2.6 63.4h9.8v3.6H2.6z" fill="%23c3cfd4" stroke="%236d858f" stroke-width=".45"/>%0A  <path d="M3.4 64.2h1.2m1.4 0h1.2m1.4 0h1.2m1.4 0h1.2" stroke="%237d949e" stroke-width=".4"/>%0A  <path d="M4 19v43" stroke="%23f7fcfd" stroke-width=".5" stroke-opacity=".8"/>%0A</svg>%0A';
+var reference_calomel_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="150" viewBox="0 0 15 75">%0A  <defs>%0A    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%23b9d3de"/><stop offset=".3" stop-color="%23f4fafc"/><stop offset=".72" stop-color="%23d5e6ec"/><stop offset="1" stop-color="%23a6c0cc"/>%0A    </linearGradient>%0A    <linearGradient id="kcl" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%239dc0d0"/><stop offset=".45" stop-color="%23d8ebf1"/><stop offset="1" stop-color="%2393b6c7"/>%0A    </linearGradient>%0A    <linearGradient id="mercury" x1="0" y1="0" x2="1" y2="0">%0A      <stop stop-color="%234a545b"/><stop offset=".38" stop-color="%23a3adb3"/><stop offset="1" stop-color="%235b656c"/>%0A    </linearGradient>%0A  </defs>%0A  <path d="M5.4 16V8h4.2v8" fill="%23cad4d8" stroke="%2376919b" stroke-width=".6"/>%0A  <path d="M2.6 16h9.8v51.5a2.5 2.5 0 0 1-2.5 2.5H5.1a2.5 2.5 0 0 1-2.5-2.5z" fill="url(%23glass)" stroke="%2336515d" stroke-width=".8"/>%0A  <path d="M3.4 19h8.2v43.8H3.4z" fill="url(%23kcl)"/>%0A  <path d="M3.4 19h8.2" stroke="%237fa8b8" stroke-width=".4"/>%0A  <path d="M5.4 18h4.2v30.2a2.1 2.1 0 0 1-4.2 0z" fill="%23eef5f8" stroke="%236d858f" stroke-width=".5"/>%0A  <path d="M5.4 30h4.2v9.4H5.4z" fill="%23dfe6e9" stroke="%238b9ba3" stroke-width=".35"/>%0A  <path d="M5.9 32.2h3.2m-3.2 2.2h3.2m-3.2 2.2h3.2" stroke="%23aebbc2" stroke-width=".35"/>%0A  <path d="M5.4 39.4h4.2v6.7a2.1 2.1 0 0 1-4.2 0z" fill="url(%23mercury)" stroke="%233f4950" stroke-width=".4"/>%0A  <path d="M7.5 8v32.5" stroke="%236b7982" stroke-width="1.2"/>%0A  <path d="M7.5 8v32.5" stroke="%23eef3f5" stroke-width=".4"/>%0A  <path d="M2.6 63.4h9.8v3.6H2.6z" fill="%23c3cfd4" stroke="%236d858f" stroke-width=".45"/>%0A  <path d="M3.4 64.2h1.2m1.4 0h1.2m1.4 0h1.2m1.4 0h1.2" stroke="%237d949e" stroke-width=".4"/>%0A  <path d="M4 19v43" stroke="%23f7fcfd" stroke-width=".5" stroke-opacity=".8"/>%0A</svg>%0A';
 
 // media/separatingfunnel.svg
 var separatingfunnel_default = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="90" height="235" viewBox="0 0 90 235">%0A  <path d="M35 16v24C35 62 1 71 1 102c0 27 17 40 32 55l8 16v10h8v-10l8-16c15-15 32-28 32-55 0-31-34-40-34-62V16" fill="%23e8f7fb" fill-opacity=".25" stroke="%23325664" stroke-width="1.4"/>%0A  <path d="M34 1h22l-3 16H37Z" fill="%23dde7ec" stroke="%23325664" stroke-width="1.4"/>%0A  <path d="M8 100c0-17 12-27 23-38m51 38c0-17-12-27-23-38" fill="none" stroke="%2388aeb9" stroke-width="1"/>%0A  <path d="M42 190h6v44h-6z" fill="%23e8f7fb" fill-opacity=".3" stroke="%23325664" stroke-width="1.2"/>%0A  <rect x="30" y="182" width="30" height="10" rx="3" fill="%23cedce2" stroke="%23325664" stroke-width="1.4"/>%0A  <path d="M60 181v12" stroke="%23a84438" stroke-width="3" stroke-linecap="round"/>%0A</svg>%0A';
@@ -182451,6 +182488,27 @@ var fixedDimensions = {
   // https://www.eiscolabs.com/products/ch01012d
   condenser: [28.575, 450.85]
 };
+var electrodeColors = {
+  carbon: "#41474c",
+  platinum: "#d1cdd6",
+  gold: "#e9bd51",
+  silver: "#e2e5e9",
+  copper: "#d38961",
+  lead: "#73778a",
+  tin: "#bfc4c7",
+  iron: "#82909c",
+  nickel: "#bdb3a0",
+  cobalt: "#8296a9",
+  chromium: "#c3d2dd",
+  zinc: "#a0b4be",
+  aluminum: "#d6dade",
+  magnesium: "#cdd3ce",
+  antimony: "#9ca3b4"
+};
+function electrodeColor(element2) {
+  const key = element2?.toLowerCase();
+  return electrodeColors[key === "aluminium" ? "aluminum" : key] ?? "#b9c4cc";
+}
 function capacities(type) {
   return Object.keys(vesselDimensions[type]).map(Number).map((capacityMl) => ({ id: `${type}:${capacityMl}ml`, type, size: `${capacityMl} mL`, capacityMl }));
 }
@@ -182492,7 +182550,6 @@ var componentVariants = {
       id: "electrode:she",
       type: "electrode",
       size: "SHE",
-      short: "SHE",
       url: reference_she_default,
       reference: 0
     },
@@ -182501,7 +182558,6 @@ var componentVariants = {
       id: "electrode:calomel",
       type: "electrode",
       size: "Kalomel",
-      short: "KCl",
       url: reference_calomel_default,
       reference: 0.241
     }
@@ -182617,30 +182673,13 @@ var meter = (symbol) => b2`
 	<path d=${symbol}/>
 	<circle cx="33" cy="43" r="2.4" fill="#b84a4a" stroke="none"/>
 	<circle cx="47" cy="43" r="2.4" fill="currentColor" stroke="none"/>`;
-var materialColors = {
-  carbon: "#54606a",
-  platinum: "#c7ccd8",
-  gold: "#d9b64a",
-  silver: "#c9cdd2",
-  copper: "#ca8053",
-  lead: "#6f7784",
-  tin: "#b8bcc0",
-  iron: "#788696",
-  nickel: "#b4b1a0",
-  cobalt: "#5a7fb0",
-  chromium: "#a8b4bd",
-  zinc: "#98adbb",
-  aluminum: "#cfd6da",
-  magnesium: "#d4d9dd",
-  antimony: "#9aa3ad"
-};
 function renderComponentPaletteIcon(variant, sizeFraction) {
   const scale2 = variant.capacityMl === void 0 ? 1 : 0.87 + sizeFraction * 0.13;
   let drawing;
   switch (variant.type) {
     case "electrode":
       drawing = variant.reference === void 0 ? b2`
-					<path d="M33 7h14v46H33z" fill=${materialColors[variant.material?.element ?? "carbon"]}/>
+					<path d="M33 7h14v46H33z" fill=${electrodeColor(variant.material?.element)}/>
 					<path d="M37 12v35" stroke="#f4f8fb" stroke-opacity="0.8"/>` : variant.reference === 0 ? b2`
 					<path d="M32 9h16v37a8 8 0 0 1-16 0z" fill=${glass}/>
 					<path d="M32 9h16M32 41h16"/>
@@ -188217,7 +188256,8 @@ var ElectricDeviceView = class extends Container {
     super({ interactiveChildren: false });
     this.component = component;
     this.hitArea = new Rectangle(-width / 2, -height / 2, width, height);
-    this.addChild(new Sprite({ texture, anchor: 0.5, width, height, eventMode: "none" }));
+    this.body = new Sprite({ texture, anchor: 0.5, width, height, eventMode: "none" });
+    this.addChild(this.body);
     this.artboard = { width, height };
     this.terminals = componentTerminals(component._type).map(({ x: x4, y: y5, r: r12 }) => ({
       x: width * (x4 - 0.5),
@@ -188272,15 +188312,15 @@ var ElectricDeviceView = class extends Container {
         addLine(0.5, 0.5, 0.46, 0.9);
         break;
       case "electrode" /* Electrode */:
+        if (componentVariant(component._variantId)?.reference !== void 0) break;
         this.strip = {
           left: width * (0.4 / 15 - 0.5),
           right: width * (14.6 / 15 - 0.5),
-          top: height * (16 / 75 - 0.5),
+          top: height * (0.4 / 75 - 0.5),
           bottom: height * (74.6 / 75 - 0.5)
         };
         this.coating = new Sprite({ anchor: 0.5, eventMode: "none", visible: false });
         this.addChild(this.coating);
-        addLine(0.5, 10 / 75, 0.103, 0.72);
         break;
     }
     if (this.terminals.length) {
@@ -188289,6 +188329,7 @@ var ElectricDeviceView = class extends Container {
     }
     this.refresh();
   }
+  body;
   lines = [];
   indicator;
   active = false;
@@ -188426,6 +188467,7 @@ var ElectricDeviceView = class extends Container {
   refresh() {
     const component = this.component;
     this.drawPorts();
+    let changed = false;
     let values;
     switch (component._type) {
       case "source" /* Source */: {
@@ -188451,13 +188493,17 @@ var ElectricDeviceView = class extends Container {
       case "label" /* Label */:
         values = [component._labelText];
         break;
-      case "electrode" /* Electrode */:
-        values = [component._material?._atoms[0]?.getSymbol() ?? componentVariant(component._variantId)?.short ?? ""];
+      case "electrode" /* Electrode */: {
+        const element2 = component._material?._atoms[0]?.getName();
+        const tint = this.strip ? Number.parseInt(electrodeColor(element2).slice(1), 16) : 16777215;
+        changed = this.body.tint !== tint;
+        if (changed) this.body.tint = tint;
+        values = [];
         break;
+      }
       default:
         return false;
     }
-    let changed = false;
     this.lines.forEach(({ text, maxWidth }, index2) => {
       const value = values[index2] ?? "";
       if (text.text === value) return;
@@ -188543,9 +188589,8 @@ var ElectricDeviceView = class extends Container {
       coating.visible = false;
       return true;
     }
-    const hex2 = plating.molecule._atoms[0]?.getCPKHEX();
-    const parsed = hex2 ? parseInt(hex2, 16) : NaN;
-    coating.texture = platingTexture(Number.isFinite(parsed) ? parsed : 8688795);
+    const color2 = electrodeColor(plating.molecule._atoms[0]?.getName());
+    coating.texture = platingTexture(Number.parseInt(color2.slice(1), 16));
     const grown = Math.max(0, (coverage - PLATING_OPAQUE_AT) / (1 - PLATING_OPAQUE_AT));
     coating.alpha = Math.min(1, coverage / PLATING_OPAQUE_AT);
     coating.position.set((strip.left + strip.right) / 2, (top + bottom) / 2);
@@ -189212,13 +189257,24 @@ var CanvasController = class _CanvasController {
     if (this.diagramSourceLabel) this.highlightDiagramSource(this.diagramSourceLabel, false);
   }
   centerComponent(label) {
-    const sprite = this.spritesByLabel.get(label);
-    if (!sprite || !this.host.app || this.pointerBusy) return;
-    const bounds = sprite.getBounds();
-    const x4 = bounds.x + bounds.width / 2;
-    const y5 = bounds.y + bounds.height / 2;
-    if (!Number.isFinite(x4) || !Number.isFinite(y5)) return;
-    this.camera.panBy(this.camera.width / 2 - x4, this.camera.height / 2 - y5);
+    this.centerComponents([label]);
+  }
+  centerComponents(labels) {
+    if (!this.host.app || this.pointerBusy) return;
+    const bounds = new Bounds();
+    for (const label of labels) {
+      const sprite = this.spritesByLabel.get(label);
+      if (sprite) bounds.addBounds(sprite.getBounds());
+    }
+    if (!bounds.isValid) return;
+    const { x: x4, y: y5, width, height } = bounds;
+    const inset = Math.min(this.host.canvasZoom.offsetHeight + 4, this.camera.height / 2);
+    if (width > this.camera.width - 16 || height > this.camera.height - inset - 16) {
+      const world = this.camera.toWorld(x4, y5);
+      this.camera.fit({ ...world, width: width / this.camera.zoom, height: height / this.camera.zoom }, inset);
+    } else {
+      this.camera.panBy((this.camera.width - width) / 2 - x4, (this.camera.height - inset - height) / 2 - y5);
+    }
     this.applyCamera();
   }
   zoomFromWheel = (event) => {
@@ -190613,7 +190669,7 @@ var TRANSFER_HOLD_MS = 1500;
 var TRANSFER_HOLD_RADIUS = 6;
 var DRAG_TRANSFER_TASK = "drag-transfer";
 var SURFACE_DISPLACEMENT_TASK = "surface-displacement";
-var MIN_TWO_PANELS_WIDTH = 480;
+var MIN_TWO_PANELS_WIDTH = 560;
 var RC_UPDATE_MS = 50;
 var DIAGRAM_PICKER_CLOSE_MS = 2e3;
 var CONTROL_ICONS = {
@@ -192444,6 +192500,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       newComp._variantId = variant?.id;
       switch (newComp._type) {
         case "electrode" /* Electrode */:
+          if (variant?.reference !== void 0) break;
           if (variant?.material) newComp._material = this.newElectrodeMaterial(variant.material);
           else if (component["material"]) {
             newComp._material = this._loadMolecule(component["material"]);
@@ -192493,7 +192550,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       if (newComp._type === "electrode" /* Electrode */) {
         const area2 = Number.parseFloat(component["area"]);
         if (Number.isFinite(area2) && area2 > 0) newComp._area = area2;
-        const reference2 = Number.parseFloat(component["reference"]);
+        const reference2 = variant?.reference ?? Number.parseFloat(component["reference"]);
         if (Number.isFinite(reference2)) newComp._reference = reference2;
       }
       const config = component["rcSettings"];
@@ -192935,11 +192992,21 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.diagramDismissedOpen = false;
     if (!this.diagrams.hasPair(x4, y5)) this.createDiagram(x4, y5, title);
     this.onDiagramToggle(true);
-    void this.updateComplete.then(() => {
+    void this.updateComplete.then(async () => {
+      this.focusDiagramSuggestion(x4, y5);
       if (!this.isDiagramPanelOpen) return;
       const drawer = this.shadowRoot.querySelector("#inlineDiagramPanel");
       if (drawer) drawer.scrollTop = drawer.scrollHeight;
+      const layout = this.containerDiv.getAnimations().filter((animation) => animation instanceof CSSTransition && animation.transitionProperty === "grid-template-columns");
+      if (!layout.length) return;
+      await Promise.allSettled(layout.map((animation) => animation.finished));
+      requestAnimationFrame(() => {
+        if (this.isDiagramPanelOpen && this.diagrams.hasPair(x4, y5)) this.focusDiagramSuggestion(x4, y5);
+      });
     });
+  }
+  focusDiagramSuggestion(x4, y5) {
+    this.canvas.centerComponents(x4 === TIME_CHANNEL ? [componentKey(y5)] : [componentKey(x4), componentKey(y5)]);
   }
   boundDiagramMenu(event) {
     const popup = event.currentTarget.popup;
@@ -193005,6 +193072,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const addInstruments = (devices, title) => {
       for (const device of devices) {
         if (device._type !== Source && !isPassiveMeter(device)) continue;
+        if (!this.simulation.hasTask("echem" + key(device))) continue;
         const wired = device._connections.every((terminal) => terminal.some((partner) => partner._type !== Cable || partner.partners.length === 2));
         if (!wired) continue;
         const quantities = device._type === Source ? ["Stromst\xE4rke", "Spannung"] : [device._type === Ammeter || device._type === Multimeter && device._meterMode === "current" ? "Stromst\xE4rke" : "Spannung"];
@@ -193024,8 +193092,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       const a6 = first._connectedMix;
       const b4 = second._connectedMix;
       if (a6 === b4 || this.bridgeBetween(a6, b4)) {
-        const powered = devices.some((device) => device._type === Source);
-        addInstruments(devices, powered ? "Elektrolyse" : "Galvanische Zelle");
+        const sources2 = devices.filter((device) => device._type === Source);
+        const powered = sources2.some((device) => this.simulation.hasTask("echem" + key(device)));
+        addInstruments(devices, sources2.length ? "Elektrolyse" : "Galvanische Zelle");
         if (powered) {
           gasVessels.add(a6);
           gasVessels.add(b4);
@@ -193044,6 +193113,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   /** One suggestion as a button that turns it into a diagram. */
   renderDiagramSuggestion(suggestion, dismissed = false) {
     return x`<sl-button class="diagram-suggestion${dismissed ? " diagram-suggestion-dismissed" : ""}" size="small"
+			@pointerenter=${(event) => {
+      if (event.pointerType !== "touch") this.focusDiagramSuggestion(suggestion.x, suggestion.y);
+    }}
 			@click=${() => this.selectDiagramSuggestion(suggestion)}>
 			<span class="diagram-suggestion-title">${this.message(suggestion.title)}</span>
 			<span class="diagram-suggestion-axis"><b>Y</b> ${this.diagrams.label(suggestion.y)}</span>
@@ -193108,8 +193180,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   renderDiagramDetails(available, open) {
     const channels = open || this.diagramPickerOpen || this.suggestionQueue.size ? this.measurements.history.channels : [];
-    const live = this.liveDiagramSources();
-    const suggestions = this.suggestionQueue.list(({ x: x4, y: y5 }) => this.diagramSourcesLive(x4, y5, live) && !this.diagrams.hasPair(x4, y5));
+    const active = this.suggestionQueue.size && this.simulation.hasRunningExperiments ? this.diagramSuggestions(channels) : [];
+    const activePairs = new Set(active.map(({ x: x4, y: y5 }) => JSON.stringify([axisId(x4), axisId(y5)])));
+    const suggestions = this.suggestionQueue.list(({ x: x4, y: y5 }) => activePairs.has(JSON.stringify([axisId(x4), axisId(y5)])) && !this.diagrams.hasPair(x4, y5));
     const handleLabel = suggestions.pending.length ? this.message("Diagramme ({count} Vorschl\xE4ge)", { count: suggestions.pending.length }) : this.message("Diagramme");
     return x`
 			<aside id="diagramArea" class="workspace-side">
@@ -193399,7 +193472,8 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					</div>
 					<div class="palette-variant-controls">
 						${arrow3(-1, this.message(current.material ? "Vorheriges Material" : "Vorherige Gr\xF6\xDFe"))}
-						<sl-tag class="palette-variant-value" size="small" variant=${currentAllowed ? "primary" : "neutral"} aria-live="polite">${variantLabel}</sl-tag>
+						<sl-tag class="palette-variant-value" size="small" variant=${currentAllowed ? "primary" : "neutral"}
+							title=${variantLabel} aria-live="polite">${variantLabel}</sl-tag>
 						${arrow3(1, this.message(current.material ? "N\xE4chstes Material" : "N\xE4chste Gr\xF6\xDFe"))}
 					</div>
 				</div>
@@ -193854,11 +193928,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     if (!selected.length) return E;
     return x`
 			<section id="groupSelectionInfo" class="selection-info" aria-label=${this.message("Ausgew\xE4hlte Objekte")}>
-				<div class="selection-labels">
-					${selected.map(({ label }) => x`
-						<sl-badge class="selection-info-title">${this.itemName(label.split(":")[0])}</sl-badge>`)}
-				</div>
-				<div class="selection-actions">
+				<div class="object-summary-heading">
+					<div class="selection-labels">
+						${selected.map(({ label }) => x`
+							<sl-badge class="selection-info-title">${this.itemName(label.split(":")[0])}</sl-badge>`)}
+					</div>
 					${this.renderSelectionDeleteButton(() => this.removeObjects(this.canvas.selectedObjects))}
 				</div>
 			</section>
@@ -193908,9 +193982,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     summary.style.transform = `translate(${Math.max(padding, Math.min(x4, maxX))}px, ${Math.max(padding, Math.min(y5, maxY))}px)`;
     summary.setAttribute("data-anchored", "");
   }
-  renderSelectionDeleteButton(remove, iconOnly = false) {
+  renderSelectionDeleteButton(remove) {
     return x`
-			<button type="button" class=${iconOnly ? "remObj object-summary-action" : "remObj"} aria-label=${this.message("l\xF6schen")} title=${this.message("l\xF6schen")} @click=${remove}>
+			<button type="button" class="remObj object-summary-action" aria-label=${this.message("l\xF6schen")} title=${this.message("l\xF6schen")} @click=${remove}>
 				<svg
 					aria-hidden="true"
 					width="12"
@@ -193922,7 +193996,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 						d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"
 					/>
 				</svg>
-				${iconOnly ? E : this.message("l\xF6schen")}
 			</button>`;
   }
   emptyVessel(vessel) {
@@ -193988,11 +194061,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   renderElectricalControls(device) {
     const { Source, Multimeter } = EComponentType;
     const source3 = device._type === Source;
-    if (!source3 && !isPassiveMeter(device)) return E;
+    if (!source3 && device._type !== Multimeter) return E;
     const mode = source3 ? device._sourceMode : device._meterMode;
     const current = mode === "current";
-    const task = `echem${device._type}:${device._id}`;
-    const active = this.simulation.hasTask(task);
     const changeMode = (next) => {
       if (next === mode) return;
       if (source3) {
@@ -194015,26 +194086,15 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.requestUpdate();
     };
     const actions = x`<div class="device-actions">
-			${source3 || device._type === Multimeter ? x`
-				<div class="device-mode" role="group" aria-label=${this.message(source3 ? "Betriebsart" : "Messbereich")}>
-					${["voltage", "current"].map((next) => {
+			<div class="device-mode" role="group" aria-label=${this.message(source3 ? "Betriebsart" : "Messbereich")}>
+				${["voltage", "current"].map((next) => {
       const label = this.message(next === "voltage" ? source3 ? "Spannung vorgeben" : "Spannung" : source3 ? "Stromst\xE4rke vorgeben" : "Stromst\xE4rke");
       return x`<sl-button size="small" class="compact-control-button" data-mode=${next}
-							variant=${mode === next ? "primary" : "default"}
-							aria-pressed=${mode === next} aria-label=${label} title=${label} @click=${() => changeMode(next)}>
-							${next === "voltage" ? "V" : "A"}</sl-button>`;
+						variant=${mode === next ? "primary" : "default"}
+						aria-pressed=${mode === next} aria-label=${label} title=${label} @click=${() => changeMode(next)}>
+						${next === "voltage" ? "V" : "A"}</sl-button>`;
     })}
-				</div>` : E}
-			${this.renderCompactAction(this.message(active ? "Ausschalten" : "Einschalten"), "power", () => {
-      this.canvas.setDeviceActive(device, !active);
-      if (active) {
-        this.simulation.stopTask(task);
-        this.clearEChemReadings(device);
-      } else this.startElectricalExperiment(task, device);
-      this._updatePopup();
-      this.requestUpdate();
-      this._sendxAPiStatement(active ? "completed" : "started", task);
-    }, { id: "activateEComp", primary: active })}
+			</div>
 		</div>`;
     return i6(device, x`
 			<div class="device-controls" ?data-adjustable=${source3}>
@@ -194059,6 +194119,21 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }) : actions}
 			</div>`);
   }
+  renderElectricalPower(device) {
+    if (device._type !== "source" /* Source */ && !isPassiveMeter(device)) return E;
+    const task = `echem${device._type}:${device._id}`;
+    const active = this.simulation.hasTask(task);
+    return this.renderCompactAction(this.message(active ? "Ausschalten" : "Einschalten"), "power", () => {
+      this.canvas.setDeviceActive(device, !active);
+      if (active) {
+        this.simulation.stopTask(task);
+        this.clearEChemReadings(device);
+      } else this.startElectricalExperiment(task, device);
+      this._updatePopup();
+      this.requestUpdate();
+      this._sendxAPiStatement(active ? "completed" : "started", task);
+    }, { id: "activateEComp", primary: active });
+  }
   renderElectricalSettings(device) {
     const { Cable, Electrode, Source } = EComponentType;
     if (device._type === Cable) return E;
@@ -194066,12 +194141,12 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       const other = cable.partners.find((end) => end !== device);
       return other ? [{ cable, other }] : [];
     });
-    const materials = this.canAuthor && device._type === Electrode ? componentVariants.electrode.filter((variant) => variant.material) : [];
+    const hasElectrode = device._type === Electrode && componentVariant(device._variantId)?.reference === void 0;
+    const materials = this.canAuthor && hasElectrode ? componentVariants.electrode.filter((variant) => variant.material) : [];
     const material = materials.find((variant) => variant.material?.name === device._material?.name);
     const hasSource = device._type === Source;
     const passiveMeter = isPassiveMeter(device);
     const hasLabel = device._type === "label" /* Label */;
-    const hasElectrode = device._type === Electrode;
     if (!hasSource && !passiveMeter && !hasLabel && !hasElectrode && !connections.length) return E;
     const label = (other) => `${this.itemName(other._type)} \xB7 ${other._id + 1}`;
     const plusPole = hasSource ? ComponentManager.terminalElectrode(device, 0) : void 0;
@@ -194079,9 +194154,15 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const poles = plusPole && minusPole && plusPole !== minusPole ? { plus: plusPole, minus: minusPole } : void 0;
     const settings = this.canAuthor && (hasSource || passiveMeter || hasLabel || hasElectrode);
     if (!settings && !connections.length) return E;
+    const settingsLabel = this.message(settings ? "Erweiterte Einstellungen" : "Verbunden mit");
     return i6(device, x`
-			<sl-details class="electrical-settings" summary=${this.message(settings ? "Erweiterte Einstellungen" : "Verbunden mit")}
+			<sl-details class="electrical-settings" title=${settingsLabel}
 				@sl-after-show=${() => this.canvas.drawSelection()} @sl-after-hide=${() => this.canvas.drawSelection()}>
+				<span slot="summary">${settingsLabel}</span>
+				<svg slot="expand-icon" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+					stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
+				<svg slot="collapse-icon" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+					stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 10 4-4 4 4"/></svg>
 				${settings && hasSource ? i6(device._sourceMode, device._sourceMode === "current" ? x`
 					<sl-input size="small" type="number" min="0" step="any" contenteditable="false"
 						label=${this.message("Grenzspannung in V")} .value=${String(device._complianceVoltage)}
@@ -194151,6 +194232,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					<select contenteditable="false" @change=${(event) => {
       const selected = componentVariant(event.currentTarget.value);
       if (!selected?.material) return;
+      device._variantId = selected.id;
       device._material = this.newElectrodeMaterial(selected.material);
       device._bodyMol = null;
       device._plating.clear();
@@ -194244,8 +194326,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       const redox = power && oxidationOf(material.smilesString);
       const rate = redox && Simulation.faradayLaw(this.cellCurrent(power), redox.el, material.getTotMolMass());
       return x`
-				${readouts(x`${tag(material ? this.itemName(material.name || "unbekannt") : this.message("kein Material"))}
-					${tag(this.message(device._connectedMix ? "eingetaucht" : "nicht eingetaucht"))}`)}
+				${readouts(tag(this.message(device._connectedMix ? "eingetaucht" : "nicht eingetaucht")))}
 				${deposit ? x`<p>${this.message("abgeschieden")}: ${this.formatAmount(deposit.mol * deposit.molecule.getTotMolMass(), 3)}
 					g ${deposit.molecule._kekule_obj.calcFormula().getDisplayText()}</p>` : E}
 				${rate ? x`<details class="device-diagnostics" @toggle=${() => this.canvas.drawSelection()}>
@@ -194289,14 +194370,17 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 			<p>${this.message("Dauer bis zur Stromschwelle")}: ${duration(cutoffAt)}</p>`;
   }
   renderObjectSummary() {
-    const name2 = this.itemName(this.curr_name.split(":")[0]);
     const vessel = this.curr_obj instanceof ChemComponent ? this.curr_obj : void 0;
     const device = this.curr_obj instanceof ElectricComponent ? this.curr_obj : void 0;
+    const variant = componentVariant(device?._variantId);
+    const name2 = variant?.reference !== void 0 ? this.message(variant.size) : this.itemName(this.curr_name.split(":")[0]);
+    const material = device?._material && this.itemName(device._material.name);
     const emptyLabel = this.message("Objekt leeren");
     return x`
 			<section id="contextInfoBox" class="selection-info" ?hidden=${!this.curr_obj}>
 				<div class="object-summary-heading">
-					<sl-tag size="small" variant="primary">${name2}</sl-tag>
+					<sl-tag size="small" variant="primary" title=${material || E}>${name2}</sl-tag>
+					${device ? this.renderElectricalPower(device) : E}
 					${vessel?._content._activeMolecules.length ? x`
 						<button type="button" class="object-summary-action empty-vessel"
 							aria-label=${emptyLabel} title=${emptyLabel} @click=${() => this.emptyVessel(vessel)}>
@@ -194306,7 +194390,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 								<path d="M11.5 8.5c.8 1 2 2.4 2 3.5a2 2 0 0 1-4 0c0-1.1 1.2-2.5 2-3.5Z"/>
 							</svg>
 						</button>` : E}
-					${this.renderSelectionDeleteButton(() => this._removeSprite(), true)}
+					${this.renderSelectionDeleteButton(() => this._removeSprite())}
 				</div>
 				${vessel ? this.renderValveControls(vessel) : E}
 				<div id="contextEchemInfo" ?hidden=${!device}></div>

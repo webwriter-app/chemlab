@@ -1,5 +1,5 @@
 import { svg } from "lit";
-import type { ComponentVariant } from "./componentGraphics";
+import { electrodeColor, type ComponentVariant } from "./componentGraphics";
 
 const glass = "#e0f2f7";
 const highlight = "#f6fcfe";
@@ -39,24 +39,6 @@ const meter = (symbol: string) => svg`
 	<circle cx="33" cy="43" r="2.4" fill="#b84a4a" stroke="none"/>
 	<circle cx="47" cy="43" r="2.4" fill="currentColor" stroke="none"/>`;
 
-const materialColors: Record<string, string> = {
-	carbon: "#54606a",
-	platinum: "#c7ccd8",
-	gold: "#d9b64a",
-	silver: "#c9cdd2",
-	copper: "#ca8053",
-	lead: "#6f7784",
-	tin: "#b8bcc0",
-	iron: "#788696",
-	nickel: "#b4b1a0",
-	cobalt: "#5a7fb0",
-	chromium: "#a8b4bd",
-	zinc: "#98adbb",
-	aluminum: "#cfd6da",
-	magnesium: "#d4d9dd",
-	antimony: "#9aa3ad",
-};
-
 export function renderComponentPaletteIcon(variant: ComponentVariant, sizeFraction: number) {
 	const scale = variant.capacityMl === undefined ? 1 : 0.87 + sizeFraction * 0.13;
 	let drawing;
@@ -67,7 +49,7 @@ export function renderComponentPaletteIcon(variant: ComponentVariant, sizeFracti
 			// foil, the calomel one the paste and the mercury pool below it.
 			drawing = variant.reference === undefined
 				? svg`
-					<path d="M33 7h14v46H33z" fill=${materialColors[variant.material?.element ?? "carbon"]}/>
+					<path d="M33 7h14v46H33z" fill=${electrodeColor(variant.material?.element)}/>
 					<path d="M37 12v35" stroke="#f4f8fb" stroke-opacity="0.8"/>`
 				: variant.reference === 0
 				? svg`

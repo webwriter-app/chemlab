@@ -391,8 +391,12 @@ export function circuitReadings(
 			}
 		}
 		if (leads.has(network.first) || leads.has(network.second)) continue;
+		const loaded = network.elements.some(({ a, b, device }) => device &&
+			(leads.has(a) || leads.has(b)) && (
+				device._type === EComponentType.Source || device._type === EComponentType.Ammeter ||
+				(device._type === EComponentType.Multimeter && device._meterMode === "current")));
 		const anchor = local && network.electrodeNodes.get(local.electrode);
-		const value = anchor == null ? null : voltages[anchor] + local.offset;
+		const value = loaded || anchor == null ? null : voltages[anchor] + local.offset;
 		for (const lead of leads) sense.set(lead, sense.has(lead) ? null : value);
 	}
 	const readings = new Map<ElectricComponent, CircuitReading>();
