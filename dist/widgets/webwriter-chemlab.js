@@ -78235,6 +78235,27 @@ var messages_default = {
     "Halb\xE4quivalenzpunkt (gesch\xE4tzt)": "Estimated half-equivalence point",
     "Titrationspunkte f\xFCr Lernende anzeigen": "Show titration markers to students",
     Dosierschritt: "Dose per step",
+    Einzeldosis: "Single dose",
+    "Hahn \xF6ffnen": "Open valve",
+    "Hahn schlie\xDFen": "Close valve",
+    "Die B\xFCrette ist leer.": "The burette is empty.",
+    "Platziere ein Gef\xE4\xDF unter der B\xFCrette.": "Place a vessel under the burette.",
+    "Das Zielgef\xE4\xDF kann nichts mehr aufnehmen.": "The receiving vessel has no room for another dose.",
+    Sollspannung: "Voltage setpoint",
+    Sollstrom: "Current setpoint",
+    "Gib eine Zahl ein.": "Enter a number.",
+    Betriebsart: "Operating mode",
+    Messbereich: "Measurement mode",
+    "Spannung vorgeben": "Set voltage",
+    "Stromst\xE4rke vorgeben": "Set current",
+    "Gemessene Spannung": "Measured voltage",
+    "Gemessene Stromst\xE4rke": "Measured current",
+    Messdetails: "Measurement details",
+    eingetaucht: "Immersed",
+    "nicht eingetaucht": "Not immersed",
+    "Erweiterte Einstellungen": "Advanced settings",
+    "Grenzspannung in V": "Compliance voltage in V",
+    "Strombegrenzung in A (0 = unbegrenzt)": "Current limit in A (0 = unlimited)",
     "X-Achse automatisch skalieren": "Reset X axis to Auto",
     "Y-Achse automatisch skalieren": "Reset Y axis to Auto",
     "Doppelklick f\xFCr feinere Bereichsauswahl": "Double-click for finer trimming",
@@ -78277,6 +78298,11 @@ var messages_default = {
     "Keine Menge verf\xFCgbar.": "No amount available.",
     "Menge verringern": "Decrease amount",
     "Menge erh\xF6hen": "Increase amount",
+    Menge: "Amount",
+    "Stoff hinzuf\xFCgen": "Add compound",
+    "Inhalt \xFCbertragen": "Transfer contents",
+    Hinzuf\u00FCgen: "Add",
+    \u00DCbertragen: "Transfer",
     "Menge bearbeiten (Doppelklick oder F2)": "Edit amount (double-click or F2)",
     "Gib eine Menge zwischen 0 und {max} mL ein.": "Enter an amount between 0 and {max} mL.",
     "Alle Objekte einpassen": "Fit all objects",
@@ -112930,13 +112956,14 @@ var style = i`
 		border-color: var(--sl-color-danger-200);
 	}
 	.electrical-settings {
-		inline-size: 11rem;
+		inline-size: 12rem;
 		max-inline-size: 100%;
 	}
 	.electrical-settings::part(header),
 	.electrical-settings::part(content) {
 		padding: 4px;
 	}
+	.electrical-settings::part(base) { border-color: var(--lab-card-border); }
 	.electrical-settings sl-input,
 	.electrical-settings label {
 		display: block;
@@ -113084,38 +113111,50 @@ var style = i`
 		visibility: hidden;
 	}
 	#amountMenu {
-		--amount-control-height: 1.0625rem;
+		display: grid;
+		gap: 6px;
 		z-index: 2;
-		max-inline-size: min(13rem, calc(100% - 8px));
+		inline-size: min(14rem, calc(100% - 8px));
+		max-inline-size: none;
+		max-block-size: min(16rem, calc(100% - 8px));
+		padding: 7px;
 	}
-	#amountMenu .selection-labels {
+	.amount-menu-heading,
+	.amount-menu-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 4px;
+	}
+	.amount-menu-limit {
+		color: var(--lab-card-secondary-text);
+		font-size: .72rem;
+		font-variant-numeric: tabular-nums;
+	}
+	.amount-menu-route {
+		display: grid;
+		grid-template-columns: minmax(0, 1.15fr) auto minmax(0, 1fr);
 		align-items: center;
-		padding: 0 0 5px;
+		gap: 4px;
 	}
-	#amountMenu sl-badge {
-		max-inline-size: 100%;
-	}
-	#amountMenu sl-badge::part(base) {
+	.amount-menu-route sl-tag::part(base) {
+		box-sizing: border-box;
+		block-size: auto;
+		min-block-size: 1.125rem;
+		inline-size: 100%;
+		padding-block: 2px;
 		white-space: normal;
+		line-height: 1.15;
 		overflow-wrap: anywhere;
 	}
 	.amount-menu-arrow {
 		display: grid;
-		flex: 1 0 auto;
 		place-items: center;
+		color: var(--lab-card-secondary-text);
 	}
-	.amount-menu-row {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 4px;
-	}
-	.amount-menu-quantity {
-		position: relative;
-		display: grid;
-		place-items: center;
-		inline-size: max-content;
-		block-size: var(--amount-control-height);
+	.amount-menu-actions {
+		justify-content: flex-end;
 	}
 	.volume-bar {
 		border-radius: var(--sl-border-radius-small);
@@ -113123,16 +113162,6 @@ var style = i`
 		background: linear-gradient(to right, var(--amount-fill) var(--amount-progress), transparent var(--amount-progress)),
 			color-mix(in srgb, var(--sl-color-primary-500) 7%, var(--sl-color-neutral-0));
 	}
-	.amount-menu-value {
-		text-align: center;
-		font-variant-numeric: tabular-nums;
-		white-space: nowrap;
-		padding-inline: 2px;
-	}
-	.amount-menu-value[inert] {
-		visibility: hidden;
-	}
-	#amountMenuValue,
 	.amount-editor {
 		position: absolute;
 		inset: 0;
@@ -113145,7 +113174,6 @@ var style = i`
 		font: inherit;
 		text-align: center;
 	}
-	#amountMenuSlider,
 	.amount-slider {
 		position: absolute;
 		inset: 0;
@@ -113162,53 +113190,17 @@ var style = i`
 		cursor: ew-resize;
 		touch-action: none;
 	}
-	#amountMenuSlider::-webkit-slider-thumb,
 	.amount-slider::-webkit-slider-thumb {
 		appearance: none;
 		inline-size: 1px;
 		block-size: 100%;
 		background: transparent;
 	}
-	#amountMenuSlider::-moz-range-thumb,
 	.amount-slider::-moz-range-thumb {
 		inline-size: 1px;
 		block-size: 100%;
 		border: 0;
 		background: transparent;
-	}
-	.amount-menu-button {
-		display: inline-grid;
-		place-items: center;
-		inline-size: 24px;
-		block-size: 24px;
-		margin: 0;
-		padding: 0;
-		line-height: 1;
-		font-weight: 700;
-	}
-	.amount-menu-button[aria-disabled="true"] {
-		opacity: 0.45;
-		cursor: default;
-	}
-	.amount-menu-confirm {
-		--sl-input-height-small: var(--amount-control-height);
-		inline-size: var(--amount-control-height);
-		block-size: var(--amount-control-height);
-		margin-inline-start: auto;
-	}
-	.amount-menu-row .amount-menu-button:nth-last-child(2) {
-		margin-inline-end: 5px;
-	}
-	.amount-menu-confirm::part(base) {
-		inline-size: 100%;
-		block-size: 100%;
-		font-weight: 700;
-		color: var(--sl-color-neutral-600);
-	}
-	.amount-menu-confirm::part(label) {
-		display: grid;
-		place-items: center;
-		padding: 0;
 	}
 	.selection-labels {
 		display: flex;
@@ -113223,14 +113215,41 @@ var style = i`
 		display: flex;
 		flex-direction: column;
 	}
-	.burette-step {
-		inline-size: 7rem;
+	.device-controls {
+		display: grid;
+		inline-size: 12rem;
 		max-inline-size: 100%;
-		margin-block: 4px;
+		gap: 2px;
+		margin-block: 5px;
+		padding: 4px;
+		box-sizing: border-box;
+		border: 1px solid var(--lab-card-border);
+		border-radius: 4px;
+		background: var(--lab-card-surface);
 	}
-	.burette-step::part(form-control-label),
-	.burette-step::part(suffix) {
-		font-size: var(--sl-font-size-x-small);
+	.device-actions, .device-mode, .device-readouts {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 3px;
+	}
+	.device-actions { justify-content: space-between; }
+	.device-actions sl-button { --sl-input-height-small: 26px; max-inline-size: 100%; }
+	.device-actions sl-button::part(label) { padding-inline: 6px; }
+	.device-mode sl-button::part(label) { min-inline-size: 22px; padding-inline: 2px; font-weight: 600; }
+	.device-readouts { padding-block-start: 4px; font-variant-numeric: tabular-nums; }
+	.device-reading {
+		padding: 1px 5px;
+		border: 1px solid var(--lab-card-border);
+		border-radius: 4px;
+		background: var(--lab-card-inset);
+	}
+	.device-diagnostics {
+		margin-block: 4px;
+		color: var(--lab-card-secondary-text);
+	}
+	.device-diagnostics summary {
+		cursor: pointer;
 	}
 	.selection-actions > .remObj {
 		align-self: flex-start;
@@ -190343,6 +190362,213 @@ var i10 = e4(class extends i5 {
   }
 });
 
+// ui/valueControl.ts
+function renderValueControl({
+  label,
+  unit: unit2,
+  value,
+  min: min6,
+  max: max6,
+  step,
+  rangeStep = step,
+  rangeMin = min6,
+  rangeMax = max6,
+  onChange,
+  onInput,
+  disabled,
+  locale,
+  decreaseLabel = `\u2212 ${label}`,
+  increaseLabel = `+ ${label}`,
+  invalidLabel = "Enter a number."
+}) {
+  const clamp3 = (next) => Math.max(min6, Math.min(max6, next));
+  const clampRange = (next) => Math.max(rangeMin, Math.min(rangeMax, next));
+  const round11 = (next) => Number(next.toPrecision(14));
+  const numberOptions = {
+    useGrouping: false,
+    maximumSignificantDigits: 6,
+    numberingSystem: "latn"
+  };
+  let formatter;
+  try {
+    formatter = new Intl.NumberFormat(locale || "de", numberOptions);
+  } catch {
+    formatter = new Intl.NumberFormat("de", numberOptions);
+  }
+  const format = (next) => next !== 0 && (Math.abs(next) < 1e-5 || Math.abs(next) >= 1e9) ? Number(next.toPrecision(4)).toExponential() : formatter.format(next);
+  const formatValue = format(value);
+  const formattedReadout = `${formatValue} ${unit2}`;
+  const position = clampRange(value);
+  const percent = rangeMax > rangeMin ? 100 * (position - rangeMin) / (rangeMax - rangeMin) : 0;
+  const adjust = (direction) => (event) => onChange(clamp3(round11(value + direction * step * (event.shiftKey ? 10 : 1))));
+  const readRange = (input) => {
+    const raw = input.valueAsNumber;
+    if (raw === rangeMax || raw === rangeMin) return raw;
+    return clampRange(round11(rangeMin + Math.round((raw - rangeMin) / rangeStep) * rangeStep));
+  };
+  const commitText = (input) => {
+    if (!input.hasAttribute("data-edited")) {
+      input.value = formatValue;
+      return;
+    }
+    const raw = input.value.trim().replace(",", ".");
+    const parsed = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(raw) ? Number(raw) : NaN;
+    if (!Number.isFinite(parsed)) {
+      input.setCustomValidity(invalidLabel);
+      return;
+    }
+    const next = clamp3(parsed);
+    input.removeAttribute("data-edited");
+    input.value = format(next);
+    if (next !== value) onChange(next);
+  };
+  return x`<div class="value-control" role="group" aria-label=${label} contenteditable="false">
+		<div class="value-control-row">
+			<span class="value-control-label">${label}</span>
+			<sl-button size="small" class="value-control-step" title=${decreaseLabel} aria-label=${decreaseLabel}
+				?disabled=${disabled || value <= min6} @click=${adjust(-1)}>−</sl-button>
+			<label class="value-control-number">
+				<input class="value-control-exact" type="text" inputmode="decimal" autocomplete="off"
+					aria-label=${`${label} (${unit2})`} .value=${formatValue} ?disabled=${!!disabled}
+					@focusin=${(event) => {
+    const input = event.currentTarget;
+    if (input.hasAttribute("data-edited")) return;
+    const decimal = formatter.formatToParts(1.1).find((part) => part.type === "decimal")?.value ?? ".";
+    input.value = String(value).replace(".", decimal);
+  }}
+					@input=${(event) => {
+    const input = event.currentTarget;
+    input.setAttribute("data-edited", "");
+    input.setCustomValidity("");
+  }}
+					@change=${(event) => commitText(event.currentTarget)}
+					@focusout=${(event) => commitText(event.currentTarget)}
+					@keydown=${(event) => {
+    if (event.key !== "Enter" || event.isComposing) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const input = event.currentTarget;
+    commitText(input);
+    input.reportValidity();
+  }}>
+				<span aria-hidden="true">${unit2}</span>
+			</label>
+			<sl-button size="small" class="value-control-step" title=${increaseLabel} aria-label=${increaseLabel}
+				?disabled=${disabled || value >= max6} @click=${adjust(1)}>+</sl-button>
+		</div>
+		<input class="value-control-range" type="range" step="any" dir="ltr" min=${rangeMin} max=${rangeMax}
+			.value=${l3(String(position))} style=${`--value-progress:${percent}%`}
+			aria-label=${label} aria-valuetext=${formattedReadout} ?disabled=${disabled || !(rangeMax > rangeMin)}
+			@input=${(event) => onInput?.(readRange(event.currentTarget))}
+			@change=${(event) => onChange(readRange(event.currentTarget))}
+			@keydown=${(event) => {
+    const delta = {
+      ArrowLeft: -rangeStep,
+      ArrowDown: -rangeStep,
+      ArrowRight: rangeStep,
+      ArrowUp: rangeStep,
+      PageDown: -rangeStep * 10,
+      PageUp: rangeStep * 10
+    }[event.key];
+    const next = event.key === "Home" ? rangeMin : event.key === "End" ? rangeMax : delta === void 0 ? void 0 : clampRange(round11(position + delta));
+    if (next === void 0) return;
+    event.preventDefault();
+    onChange(next);
+  }}>
+	</div>`;
+}
+var valueControlStyles = i`
+	.value-control {
+		display: grid;
+		gap: 1px;
+		min-inline-size: 0;
+	}
+	.value-control-row {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 3px;
+		min-inline-size: 0;
+	}
+	.value-control-label {
+		grid-column: 1 / -1;
+		font-weight: 600;
+	}
+	.value-control-number {
+		display: flex;
+		align-items: center;
+		gap: .2rem;
+		min-inline-size: 0;
+		padding-inline: .3rem;
+		border: 1px solid var(--lab-card-border);
+		border-radius: 4px;
+		background: var(--lab-card-inset);
+		color: var(--lab-card-secondary-text);
+		white-space: nowrap;
+	}
+	.value-control-number:focus-within { outline: 2px solid var(--sl-color-primary-600); }
+	input.value-control-exact {
+		inline-size: 100%;
+		min-inline-size: 0;
+		min-block-size: 24px;
+		padding: 0;
+		border: none;
+		box-shadow: none;
+		outline: none;
+		background: transparent;
+		color: var(--lab-card-text);
+		font: inherit;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		text-align: end;
+	}
+	.value-control-step { --sl-input-height-small: 26px; }
+	.value-control-step::part(label) { min-inline-size: 24px; padding: 0; font-weight: 700; }
+	input.value-control-range {
+		appearance: none;
+		box-sizing: border-box;
+		inline-size: 100%;
+		min-inline-size: 0;
+		block-size: 24px;
+		margin: 0;
+		padding: 0;
+		border: none;
+		box-shadow: none;
+		background: transparent;
+		cursor: pointer;
+		touch-action: pan-y;
+	}
+	input.value-control-exact:focus { box-shadow: none; }
+	input.value-control-range:focus-visible { outline: 2px solid var(--sl-color-primary-600); outline-offset: -2px; border-radius: 4px; }
+	.value-control-range:disabled { opacity: .45; cursor: default; }
+	.value-control-range::-webkit-slider-runnable-track {
+		block-size: 4px;
+		border-radius: 4px;
+		background: linear-gradient(to right, var(--sl-color-primary-500) var(--value-progress), var(--sl-color-neutral-200) var(--value-progress));
+	}
+	.value-control-range::-moz-range-track {
+		block-size: 4px;
+		border-radius: 4px;
+		background: linear-gradient(to right, var(--sl-color-primary-500) var(--value-progress), var(--sl-color-neutral-200) var(--value-progress));
+	}
+	.value-control-range::-webkit-slider-thumb {
+		appearance: none;
+		inline-size: 12px;
+		block-size: 12px;
+		margin-block-start: -4px;
+		border: 0;
+		border-radius: 50%;
+		background: var(--sl-color-primary-600);
+	}
+	.value-control-range::-moz-range-thumb {
+		inline-size: 12px;
+		block-size: 12px;
+		border: 0;
+		border-radius: 50%;
+		background: var(--sl-color-primary-600);
+	}
+`;
+
 // webwriter-chemlab.ts
 setBasePath("@shoelace-style/shoelace/dist");
 var catalogConcentrationLimits = new Map(chemicalCatalog.flatMap(({ name: name2, concentrationLimit }) => concentrationLimit ? [[name2, concentrationLimit]] : []));
@@ -190368,9 +190594,9 @@ function validRCSettings(value) {
   const { capacitance, seriesResistance, cutoff } = value;
   return Number.isFinite(capacitance) && capacitance > 0 && Number.isFinite(seriesResistance) && seriesResistance >= 0 && (cutoff === void 0 || Number.isFinite(cutoff) && cutoff > 0);
 }
-var _newSmilesDrawer_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _sessionBuilderReferences_dec, _builderReferences_dec, _builderTarget_dec, _builderReview_dec, _builderAvailable_dec, _moleculeBuilderId_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramDismissedOpen_dec, _diagramPickerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _canvasLoading_dec, _app_dec, _pix_canvas_dec, _dragObject_dec, _avComponentsSprites_dec, _showTitrationMarkers_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _activateEComp_dec, _openBtn_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _statusStrip_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _statusStrip, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _openBtn, _activateEComp, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _showTitrationMarkers, _avComponentsSprites, _dragObject, _pix_canvas, _app, _canvasLoading, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _diagramPickerOpen, _diagramDismissedOpen, _teacherDrawerOpen, _teacherTab, _moleculeBuilderId, _builderAvailable, _builderReview, _builderTarget, _builderReferences, _sessionBuilderReferences, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _RndName, _invComponents, _enablexAPI, _xAPIKey, _newSmilesDrawer;
+var _newSmilesDrawer_dec, _xAPIKey_dec, _enablexAPI_dec, _invComponents_dec, _RndName_dec, _curr_stage_index_dec, _curr_name_dec, _chemicalGroup_dec, _openConcentrationMenu_dec, _activeChemicalConcentrations_dec, _chemicalQuery_dec, _fillMeter_dec, _amountMenu_dec, _chemicalPermissions_dec, _selectedChemical_dec, _componentToPlace_dec, _visibleVariants_dec, _permissionTooltip_dec, _sessionBuilderReferences_dec, _builderReferences_dec, _builderTarget_dec, _builderReview_dec, _builderAvailable_dec, _moleculeBuilderId_dec, _teacherTab_dec, _teacherDrawerOpen_dec, _diagramDismissedOpen_dec, _diagramPickerOpen_dec, _diagramPanelOpen_dec, _fullWidthMode_dec, _curr_obj_dec, _allEComponents_dec, _allChemComponents_dec, _canvasLoading_dec, _app_dec, _pix_canvas_dec, _dragObject_dec, _avComponentsSprites_dec, _showTitrationMarkers_dec, _thumbnailBadges_dec, _availableComponents_dec, _availableMixtures_dec, _availableMolecules_dec, _dictionary_dec, _pHColors_dec, _gridScaleValue_dec, _gridScale_dec, _zoomLevel_dec, _canvasZoom_dec, _canvasArea_dec, _xAPIKeyInput_dec, _xAPICheck_dec, _contextEchemInfo_dec, _contextMixInfo_dec, _groupSummary_dec, _objectSummary_dec, _contextMolInfo_dec, _statusStrip_dec, _containerDiv_dec, _a2, _ChemLab_decorators, _init2, _containerDiv, _statusStrip, _contextMolInfo, _objectSummary, _groupSummary, _contextMixInfo, _contextEchemInfo, _xAPICheck, _xAPIKeyInput, _canvasArea, _canvasZoom, _zoomLevel, _gridScale, _gridScaleValue, _pHColors, _dictionary, _availableMolecules, _availableMixtures, _availableComponents, _thumbnailBadges, _showTitrationMarkers, _avComponentsSprites, _dragObject, _pix_canvas, _app, _canvasLoading, _allChemComponents, _allEComponents, _curr_obj, _fullWidthMode, _diagramPanelOpen, _diagramPickerOpen, _diagramDismissedOpen, _teacherDrawerOpen, _teacherTab, _moleculeBuilderId, _builderAvailable, _builderReview, _builderTarget, _builderReferences, _sessionBuilderReferences, _permissionTooltip, _visibleVariants, _componentToPlace, _selectedChemical, _chemicalPermissions, _amountMenu, _fillMeter, _chemicalQuery, _activeChemicalConcentrations, _openConcentrationMenu, _chemicalGroup, _curr_name, _curr_stage_index, _RndName, _invComponents, _enablexAPI, _xAPIKey, _newSmilesDrawer;
 _ChemLab_decorators = [t6("webwriter-chemlab")];
-var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [e8("#upper")], _statusStrip_dec = [e8("#statusStrip")], _contextMolInfo_dec = [e8("#contextMolInfo")], _objectSummary_dec = [e8("#contextInfoBox")], _groupSummary_dec = [e8("#groupSelectionInfo")], _contextMixInfo_dec = [e8("#contextMixInfo")], _openBtn_dec = [e8("#openComp")], _activateEComp_dec = [e8("#activateEComp")], _contextEchemInfo_dec = [e8("#contextEchemInfo")], _xAPICheck_dec = [e8("#xAPICheck")], _xAPIKeyInput_dec = [e8("#xAPIKeyInput")], _canvasArea_dec = [e8("#canvasArea")], _canvasZoom_dec = [e8("#canvasZoom")], _zoomLevel_dec = [e8("#zoomLevel", true)], _gridScale_dec = [e8("#gridScale", true)], _gridScaleValue_dec = [e8("#gridScaleValue", true)], _pHColors_dec = [n5({ attribute: false })], _dictionary_dec = [n5({ attribute: false })], _availableMolecules_dec = [n5({
+var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [e8("#upper")], _statusStrip_dec = [e8("#statusStrip")], _contextMolInfo_dec = [e8("#contextMolInfo")], _objectSummary_dec = [e8("#contextInfoBox")], _groupSummary_dec = [e8("#groupSelectionInfo")], _contextMixInfo_dec = [e8("#contextMixInfo")], _contextEchemInfo_dec = [e8("#contextEchemInfo")], _xAPICheck_dec = [e8("#xAPICheck")], _xAPIKeyInput_dec = [e8("#xAPIKeyInput")], _canvasArea_dec = [e8("#canvasArea")], _canvasZoom_dec = [e8("#canvasZoom")], _zoomLevel_dec = [e8("#zoomLevel", true)], _gridScale_dec = [e8("#gridScale", true)], _gridScaleValue_dec = [e8("#gridScaleValue", true)], _pHColors_dec = [n5({ attribute: false })], _dictionary_dec = [n5({ attribute: false })], _availableMolecules_dec = [n5({
   type: Array,
   attribute: false
 })], _availableMixtures_dec = [n5({
@@ -190423,29 +190649,27 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __privateAdd(this, _objectSummary, __runInitializers(_init2, 20, this)), __runInitializers(_init2, 23, this);
     __privateAdd(this, _groupSummary, __runInitializers(_init2, 24, this)), __runInitializers(_init2, 27, this);
     __privateAdd(this, _contextMixInfo, __runInitializers(_init2, 28, this)), __runInitializers(_init2, 31, this);
-    __privateAdd(this, _openBtn, __runInitializers(_init2, 32, this)), __runInitializers(_init2, 35, this);
-    __privateAdd(this, _activateEComp, __runInitializers(_init2, 36, this)), __runInitializers(_init2, 39, this);
-    __privateAdd(this, _contextEchemInfo, __runInitializers(_init2, 40, this)), __runInitializers(_init2, 43, this);
-    __privateAdd(this, _xAPICheck, __runInitializers(_init2, 44, this)), __runInitializers(_init2, 47, this);
-    __privateAdd(this, _xAPIKeyInput, __runInitializers(_init2, 48, this)), __runInitializers(_init2, 51, this);
-    __privateAdd(this, _canvasArea, __runInitializers(_init2, 52, this)), __runInitializers(_init2, 55, this);
-    __privateAdd(this, _canvasZoom, __runInitializers(_init2, 56, this)), __runInitializers(_init2, 59, this);
-    __privateAdd(this, _zoomLevel, __runInitializers(_init2, 60, this)), __runInitializers(_init2, 63, this);
-    __privateAdd(this, _gridScale, __runInitializers(_init2, 64, this)), __runInitializers(_init2, 67, this);
-    __privateAdd(this, _gridScaleValue, __runInitializers(_init2, 68, this)), __runInitializers(_init2, 71, this);
+    __privateAdd(this, _contextEchemInfo, __runInitializers(_init2, 32, this)), __runInitializers(_init2, 35, this);
+    __privateAdd(this, _xAPICheck, __runInitializers(_init2, 36, this)), __runInitializers(_init2, 39, this);
+    __privateAdd(this, _xAPIKeyInput, __runInitializers(_init2, 40, this)), __runInitializers(_init2, 43, this);
+    __privateAdd(this, _canvasArea, __runInitializers(_init2, 44, this)), __runInitializers(_init2, 47, this);
+    __privateAdd(this, _canvasZoom, __runInitializers(_init2, 48, this)), __runInitializers(_init2, 51, this);
+    __privateAdd(this, _zoomLevel, __runInitializers(_init2, 52, this)), __runInitializers(_init2, 55, this);
+    __privateAdd(this, _gridScale, __runInitializers(_init2, 56, this)), __runInitializers(_init2, 59, this);
+    __privateAdd(this, _gridScaleValue, __runInitializers(_init2, 60, this)), __runInitializers(_init2, 63, this);
     __publicField(this, "displayedGridWidthMm");
-    __privateAdd(this, _pHColors, __runInitializers(_init2, 72, this, pHColors)), __runInitializers(_init2, 75, this);
-    __privateAdd(this, _dictionary, __runInitializers(_init2, 76, this, dictionary)), __runInitializers(_init2, 79, this);
-    __privateAdd(this, _availableMolecules, __runInitializers(_init2, 80, this, defaultMolecules)), __runInitializers(_init2, 83, this);
-    __privateAdd(this, _availableMixtures, __runInitializers(_init2, 84, this, defaultMixtures)), __runInitializers(_init2, 87, this);
-    __privateAdd(this, _availableComponents, __runInitializers(_init2, 88, this, [])), __runInitializers(_init2, 91, this);
-    __privateAdd(this, _thumbnailBadges, __runInitializers(_init2, 92, this, false)), __runInitializers(_init2, 95, this);
-    __privateAdd(this, _showTitrationMarkers, __runInitializers(_init2, 96, this, false)), __runInitializers(_init2, 99, this);
+    __privateAdd(this, _pHColors, __runInitializers(_init2, 64, this, pHColors)), __runInitializers(_init2, 67, this);
+    __privateAdd(this, _dictionary, __runInitializers(_init2, 68, this, dictionary)), __runInitializers(_init2, 71, this);
+    __privateAdd(this, _availableMolecules, __runInitializers(_init2, 72, this, defaultMolecules)), __runInitializers(_init2, 75, this);
+    __privateAdd(this, _availableMixtures, __runInitializers(_init2, 76, this, defaultMixtures)), __runInitializers(_init2, 79, this);
+    __privateAdd(this, _availableComponents, __runInitializers(_init2, 80, this, [])), __runInitializers(_init2, 83, this);
+    __privateAdd(this, _thumbnailBadges, __runInitializers(_init2, 84, this, false)), __runInitializers(_init2, 87, this);
+    __privateAdd(this, _showTitrationMarkers, __runInitializers(_init2, 88, this, false)), __runInitializers(_init2, 91, this);
     __publicField(this, "dataObserver");
     __publicField(this, "savedDataSnapshot", null);
     __publicField(this, "updatingDataBlock", false);
     __publicField(this, "refreshFromRemoteData", false);
-    __privateAdd(this, _avComponentsSprites, __runInitializers(_init2, 100, this, [])), __runInitializers(_init2, 103, this);
+    __privateAdd(this, _avComponentsSprites, __runInitializers(_init2, 92, this, [])), __runInitializers(_init2, 95, this);
     /**
      * controller owning all Chart.js diagrams
      *
@@ -190468,21 +190692,21 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
      * @type {CanvasController}
      */
     __publicField(this, "canvas", new CanvasController(this));
-    __privateAdd(this, _dragObject, __runInitializers(_init2, 104, this)), __runInitializers(_init2, 107, this);
-    __privateAdd(this, _pix_canvas, __runInitializers(_init2, 108, this, document.createElement("p_c"))), __runInitializers(_init2, 111, this);
-    __privateAdd(this, _app, __runInitializers(_init2, 112, this, null)), __runInitializers(_init2, 115, this);
+    __privateAdd(this, _dragObject, __runInitializers(_init2, 96, this)), __runInitializers(_init2, 99, this);
+    __privateAdd(this, _pix_canvas, __runInitializers(_init2, 100, this, document.createElement("p_c"))), __runInitializers(_init2, 103, this);
+    __privateAdd(this, _app, __runInitializers(_init2, 104, this, null)), __runInitializers(_init2, 107, this);
     __publicField(this, "canvasReady");
-    __privateAdd(this, _canvasLoading, __runInitializers(_init2, 116, this, {
+    __privateAdd(this, _canvasLoading, __runInitializers(_init2, 108, this, {
       value: 0,
       task: "Grafik vorbereiten"
-    })), __runInitializers(_init2, 119, this);
-    __privateAdd(this, _allChemComponents, __runInitializers(_init2, 120, this, [])), __runInitializers(_init2, 123, this);
-    __privateAdd(this, _allEComponents, __runInitializers(_init2, 124, this, [])), __runInitializers(_init2, 127, this);
-    __privateAdd(this, _curr_obj, __runInitializers(_init2, 128, this, null)), __runInitializers(_init2, 131, this);
-    __privateAdd(this, _fullWidthMode, __runInitializers(_init2, 132, this, false)), __runInitializers(_init2, 135, this);
-    __privateAdd(this, _diagramPanelOpen, __runInitializers(_init2, 136, this, false)), __runInitializers(_init2, 139, this);
-    __privateAdd(this, _diagramPickerOpen, __runInitializers(_init2, 140, this, false)), __runInitializers(_init2, 143, this);
-    __privateAdd(this, _diagramDismissedOpen, __runInitializers(_init2, 144, this, false)), __runInitializers(_init2, 147, this);
+    })), __runInitializers(_init2, 111, this);
+    __privateAdd(this, _allChemComponents, __runInitializers(_init2, 112, this, [])), __runInitializers(_init2, 115, this);
+    __privateAdd(this, _allEComponents, __runInitializers(_init2, 116, this, [])), __runInitializers(_init2, 119, this);
+    __privateAdd(this, _curr_obj, __runInitializers(_init2, 120, this, null)), __runInitializers(_init2, 123, this);
+    __privateAdd(this, _fullWidthMode, __runInitializers(_init2, 124, this, false)), __runInitializers(_init2, 127, this);
+    __privateAdd(this, _diagramPanelOpen, __runInitializers(_init2, 128, this, false)), __runInitializers(_init2, 131, this);
+    __privateAdd(this, _diagramPickerOpen, __runInitializers(_init2, 132, this, false)), __runInitializers(_init2, 135, this);
+    __privateAdd(this, _diagramDismissedOpen, __runInitializers(_init2, 136, this, false)), __runInitializers(_init2, 139, this);
     __publicField(this, "diagramPickerListeners");
     __publicField(this, "diagramPickerCloseTimer");
     __publicField(this, "diagramMenus", /* @__PURE__ */ new Set());
@@ -190490,48 +190714,49 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     __publicField(this, "suggestionQueue", new DiagramSuggestionQueue());
     __publicField(this, "diagramX", "");
     __publicField(this, "diagramY", "");
-    __privateAdd(this, _teacherDrawerOpen, __runInitializers(_init2, 148, this, false)), __runInitializers(_init2, 151, this);
+    __privateAdd(this, _teacherDrawerOpen, __runInitializers(_init2, 140, this, false)), __runInitializers(_init2, 143, this);
     __publicField(this, "teacherDrawerChoice");
     __publicField(this, "workspaceResizeObserver");
     __publicField(this, "workspaceClassObserver");
-    __privateAdd(this, _teacherTab, __runInitializers(_init2, 152, this, "components")), __runInitializers(_init2, 155, this);
-    __privateAdd(this, _moleculeBuilderId, __runInitializers(_init2, 156, this, "")), __runInitializers(_init2, 159, this);
-    __privateAdd(this, _builderAvailable, __runInitializers(_init2, 160, this, false)), __runInitializers(_init2, 163, this);
+    __privateAdd(this, _teacherTab, __runInitializers(_init2, 144, this, "components")), __runInitializers(_init2, 147, this);
+    __privateAdd(this, _moleculeBuilderId, __runInitializers(_init2, 148, this, "")), __runInitializers(_init2, 151, this);
+    __privateAdd(this, _builderAvailable, __runInitializers(_init2, 152, this, false)), __runInitializers(_init2, 155, this);
     __publicField(this, "observeBuilder");
-    __privateAdd(this, _builderReview, __runInitializers(_init2, 164, this)), __runInitializers(_init2, 167, this);
-    __privateAdd(this, _builderTarget, __runInitializers(_init2, 168, this)), __runInitializers(_init2, 171, this);
-    __privateAdd(this, _builderReferences, __runInitializers(_init2, 172, this, [])), __runInitializers(_init2, 175, this);
-    __privateAdd(this, _sessionBuilderReferences, __runInitializers(_init2, 176, this, [])), __runInitializers(_init2, 179, this);
-    __privateAdd(this, _permissionTooltip, __runInitializers(_init2, 180, this)), __runInitializers(_init2, 183, this);
-    __privateAdd(this, _visibleVariants, __runInitializers(_init2, 184, this, {})), __runInitializers(_init2, 187, this);
-    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 188, this)), __runInitializers(_init2, 191, this);
-    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 192, this)), __runInitializers(_init2, 195, this);
-    __privateAdd(this, _chemicalPermissions, __runInitializers(_init2, 196, this, {})), __runInitializers(_init2, 199, this);
-    __privateAdd(this, _amountMenu, __runInitializers(_init2, 200, this)), __runInitializers(_init2, 203, this);
-    __privateAdd(this, _fillMeter, __runInitializers(_init2, 204, this)), __runInitializers(_init2, 207, this);
+    __privateAdd(this, _builderReview, __runInitializers(_init2, 156, this)), __runInitializers(_init2, 159, this);
+    __privateAdd(this, _builderTarget, __runInitializers(_init2, 160, this)), __runInitializers(_init2, 163, this);
+    __privateAdd(this, _builderReferences, __runInitializers(_init2, 164, this, [])), __runInitializers(_init2, 167, this);
+    __privateAdd(this, _sessionBuilderReferences, __runInitializers(_init2, 168, this, [])), __runInitializers(_init2, 171, this);
+    __privateAdd(this, _permissionTooltip, __runInitializers(_init2, 172, this)), __runInitializers(_init2, 175, this);
+    __privateAdd(this, _visibleVariants, __runInitializers(_init2, 176, this, {})), __runInitializers(_init2, 179, this);
+    __privateAdd(this, _componentToPlace, __runInitializers(_init2, 180, this)), __runInitializers(_init2, 183, this);
+    __privateAdd(this, _selectedChemical, __runInitializers(_init2, 184, this)), __runInitializers(_init2, 187, this);
+    __privateAdd(this, _chemicalPermissions, __runInitializers(_init2, 188, this, {})), __runInitializers(_init2, 191, this);
+    __privateAdd(this, _amountMenu, __runInitializers(_init2, 192, this)), __runInitializers(_init2, 195, this);
+    __publicField(this, "amountMenuObserver");
+    __privateAdd(this, _fillMeter, __runInitializers(_init2, 196, this)), __runInitializers(_init2, 199, this);
     __publicField(this, "amountFormatLanguage");
     __publicField(this, "amountFormatters", /* @__PURE__ */ new Map());
-    __privateAdd(this, _chemicalQuery, __runInitializers(_init2, 208, this, "")), __runInitializers(_init2, 211, this);
-    __privateAdd(this, _activeChemicalConcentrations, __runInitializers(_init2, 212, this, {})), __runInitializers(_init2, 215, this);
-    __privateAdd(this, _openConcentrationMenu, __runInitializers(_init2, 216, this)), __runInitializers(_init2, 219, this);
-    __privateAdd(this, _chemicalGroup, __runInitializers(_init2, 220, this, "Salze")), __runInitializers(_init2, 223, this);
+    __privateAdd(this, _chemicalQuery, __runInitializers(_init2, 200, this, "")), __runInitializers(_init2, 203, this);
+    __privateAdd(this, _activeChemicalConcentrations, __runInitializers(_init2, 204, this, {})), __runInitializers(_init2, 207, this);
+    __privateAdd(this, _openConcentrationMenu, __runInitializers(_init2, 208, this)), __runInitializers(_init2, 211, this);
+    __privateAdd(this, _chemicalGroup, __runInitializers(_init2, 212, this, "Salze")), __runInitializers(_init2, 215, this);
     __publicField(this, "stopDose");
     __publicField(this, "paletteDrag");
     __publicField(this, "suppressPaletteClick", false);
     __publicField(this, "dragTransfer");
     __publicField(this, "meterTimeout");
     __publicField(this, "statusTimeout");
-    __privateAdd(this, _curr_name, __runInitializers(_init2, 224, this, "")), __runInitializers(_init2, 227, this);
-    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 228, this, -1)), __runInitializers(_init2, 231, this);
-    __privateAdd(this, _RndName, __runInitializers(_init2, 232, this, n7({
+    __privateAdd(this, _curr_name, __runInitializers(_init2, 216, this, "")), __runInitializers(_init2, 219, this);
+    __privateAdd(this, _curr_stage_index, __runInitializers(_init2, 220, this, -1)), __runInitializers(_init2, 223, this);
+    __privateAdd(this, _RndName, __runInitializers(_init2, 224, this, n7({
       dictionaries: [l6, t8, r10]
-    }))), __runInitializers(_init2, 235, this);
-    __privateAdd(this, _invComponents, __runInitializers(_init2, 236, this, [])), __runInitializers(_init2, 239, this);
-    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 240, this, false)), __runInitializers(_init2, 243, this);
-    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 244, this, "")), __runInitializers(_init2, 247, this);
+    }))), __runInitializers(_init2, 227, this);
+    __privateAdd(this, _invComponents, __runInitializers(_init2, 228, this, [])), __runInitializers(_init2, 231, this);
+    __privateAdd(this, _enablexAPI, __runInitializers(_init2, 232, this, false)), __runInitializers(_init2, 235, this);
+    __privateAdd(this, _xAPIKey, __runInitializers(_init2, 236, this, "")), __runInitializers(_init2, 239, this);
     /** Allocated on first use by the selected vessel's structure thumbnails. */
     __publicField(this, "smilesDrawer100");
-    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 248, this, 1)), __runInitializers(_init2, 251, this);
+    __privateAdd(this, _newSmilesDrawer, __runInitializers(_init2, 240, this, 1)), __runInitializers(_init2, 243, this);
   }
   get lang() {
     return effectiveLanguage(this);
@@ -190592,6 +190817,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.observeWorkspaceLayout();
   }
   disconnectedCallback() {
+    this.amountMenuObserver?.disconnect();
     this.observeBuilder?.disconnect();
     this.observeBuilder = void 0;
     this.closeDiagramPicker();
@@ -190886,15 +191112,16 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   /** Transfers one titration dose to the receiving vessel. */
   stepTitration(source3) {
-    if (!source3._content._activeMolecules.length) return;
+    if (!source3._content._activeMolecules.length) return false;
     const target = this.canvas.titrationTarget(source3);
-    if (!target) return;
+    if (!target) return false;
     const transferredMl = source3.transferContents({}, target) * 1e3;
-    if (!(transferredMl > 0)) return;
+    if (!(transferredMl > 0)) return false;
     const equilibria = this.measurements.record([source3, target], [], { source: source3, target, volume: transferredMl });
     this.canvas.markVesselChanged(source3);
     this.canvas.markVesselChanged(target);
     if (this.curr_obj === source3 || this.curr_obj === target) this._updatePopup(equilibria.get(this.curr_obj._content));
+    return true;
   }
   /**
    * Advances a connected electrochemical experiment by one simulation step.
@@ -191094,10 +191321,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   bridgeBetween(first, second) {
     if (!first || !second || first === second) return void 0;
     return this.allEComponents.find((device) => device._type === "bridge" /* Bridge */ && device._bridgeMixes.includes(first) && device._bridgeMixes.includes(second));
-  }
-  runningCurrent(source3) {
-    const ticker = `echem${source3._type}:${source3._id}`;
-    return this.simulation.hasTask(ticker) && this.operatingCircuit(source3) ? Math.abs(source3._visibleCurrent ?? 0) : 0;
   }
   /**
    * The current the cell between the two electrodes carries, in ampere.
@@ -191421,6 +191644,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.closeAmountMenu();
   }
   closeAmountMenu() {
+    this.amountMenuObserver?.disconnect();
     this.amountMenu = void 0;
   }
   doseTarget(sprite) {
@@ -191635,98 +191859,31 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const menu = { target, anchor, from: from2, max: max6, amount: transfer ? max6 : Math.min(1, max6) };
     this.amountMenu = menu;
     void this.updateComplete.then(() => {
-      if (this.amountMenu === menu) this.shadowRoot.querySelector("#amountMenu")?.focus({ preventScroll: true });
+      if (!this.isConnected || this.amountMenu !== menu) return;
+      const panel = this.shadowRoot.querySelector("#amountMenu");
+      if (!panel) return;
+      this.amountMenuObserver ??= new ResizeObserver(() => this.positionAmountMenu());
+      this.amountMenuObserver.disconnect();
+      this.amountMenuObserver.observe(panel);
+      panel.focus({ preventScroll: true });
     });
-  }
-  adjustAmount(steps2) {
-    if (this.amountMenu?.editing && !this.finishAmountEdit()) return;
-    const menu = this.amountMenu;
-    if (!menu || menu.max <= 0) return;
-    this.setAmount(Number((menu.amount + steps2 / 10).toPrecision(15)));
   }
   setAmount(value) {
     const menu = this.amountMenu;
-    if (!menu) return;
+    if (!menu || !Number.isFinite(value)) return;
     const amount = Math.max(0, Math.min(menu.max, value));
-    if (amount !== menu.amount || menu.editing) this.amountMenu = { ...menu, amount, editing: false };
-  }
-  slideAmount(event) {
-    const slider = event.currentTarget;
-    const max6 = Number(slider.max);
-    const raw = slider.valueAsNumber;
-    const amount = raw === max6 ? max6 : Math.min(max6, Math.round(raw));
-    slider.valueAsNumber = amount;
-    this.setAmount(amount);
-  }
-  async editAmount() {
-    const menu = this.amountMenu;
-    if (!menu || menu.editing) return;
-    this.amountMenu = { ...menu, editing: true };
-    await this.updateComplete;
-    const field = this.shadowRoot.querySelector("#amountMenuValue");
-    field?.focus({ preventScroll: true });
-    field?.select();
-  }
-  finishAmountEdit() {
-    const menu = this.amountMenu;
-    const field = this.shadowRoot.querySelector("#amountMenuValue");
-    if (!menu?.editing || !field) return false;
-    const value = field.value.trim();
-    const amount = /^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(value) ? Number(value.replace(",", ".")) : NaN;
-    if (!Number.isFinite(amount) || amount < 0 || amount > menu.max) {
-      field.setCustomValidity(this.message("Gib eine Menge zwischen 0 und {max} mL ein.", {
-        max: this.formatAmount(menu.max, 15)
-      }));
-      field.reportValidity();
-      field.focus({ preventScroll: true });
-      return false;
-    }
-    this.setAmount(amount);
-    return true;
+    if (amount !== menu.amount) this.amountMenu = { ...menu, amount };
   }
   handleAmountMenuKey(event) {
-    const menu = this.amountMenu;
-    if (!menu || event.isComposing || event.defaultPrevented || menu.max <= 0) return;
-    const target = event.target;
-    if (target.id === "amountMenuValue") {
-      if (event.key !== "Enter" && event.key !== "Escape") return;
-      event.preventDefault();
-      event.stopPropagation();
-      if (event.key === "Escape") this.amountMenu = { ...menu, editing: false };
-      else if (!this.finishAmountEdit()) return;
-      void this.updateComplete.then(() => this.shadowRoot.querySelector("#amountMenuSlider")?.focus({ preventScroll: true }));
-      return;
-    }
-    const onSlider = target.id === "amountMenuSlider";
-    const steps2 = onSlider || event.shiftKey ? 10 : 1;
-    switch (event.key) {
-      case "ArrowLeft":
-      case "ArrowDown":
-        this.adjustAmount(-steps2);
-        break;
-      case "ArrowRight":
-      case "ArrowUp":
-        this.adjustAmount(steps2);
-        break;
-      case "Home":
-        this.setAmount(0);
-        break;
-      case "End":
-        this.setAmount(menu.max);
-        break;
-      case "F2":
-        if (!onSlider && event.target !== event.currentTarget) return;
-        void this.editAmount();
-        break;
-      case "Enter":
-        if (event.target !== event.currentTarget && !onSlider) return;
-        this.confirmAmount();
-        break;
-      default:
-        return;
-    }
+    if (event.key !== "Enter" || event.isComposing || event.defaultPrevented) return;
+    if (event.target !== event.currentTarget && !(event.target instanceof HTMLInputElement && event.target.type === "range")) return;
     event.preventDefault();
     event.stopPropagation();
+    this.confirmAmount();
+  }
+  dismissAmountMenu() {
+    this.closeAmountMenu();
+    this.app?.canvas.focus({ preventScroll: true });
   }
   formatAmount(amount, maximumSignificantDigits) {
     const language = this.lang || void 0;
@@ -191747,7 +191904,11 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     return formatter.format(amount);
   }
   confirmAmount() {
-    if (this.amountMenu?.editing && !this.finishAmountEdit()) return;
+    const exact = this.shadowRoot.querySelector("#amountMenu .value-control-exact[data-edited]");
+    if (exact) {
+      exact.dispatchEvent(new Event("change"));
+      if (!exact.reportValidity()) return;
+    }
     const menu = this.amountMenu;
     if (!menu || !(menu.amount > 0) || menu.amount > menu.max) return;
     const { from: from2, target, anchor, amount } = menu;
@@ -191776,8 +191937,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     }
     if (this.curr_obj === target || "vessel" in from2 && this.curr_obj === from2.vessel) this._updatePopup();
     if (result > 0) {
-      this.closeAmountMenu();
-      this.app?.canvas.focus({ preventScroll: true });
+      this.dismissAmountMenu();
     } else {
       this.amountMenu = { ...menu, amount: 0, max: 0 };
       void this.updateComplete.then(() => this.shadowRoot.querySelector("#amountMenu")?.focus({ preventScroll: true }));
@@ -192017,142 +192177,22 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
    * @private
    */
   _updatePopup(recordedEquilibrium) {
-    if (!this.curr_obj) return;
-    this.contextEchemInfo.style.display = "none";
+    const component = this.curr_obj;
+    if (!component) return;
+    this.contextEchemInfo.hidden = !(component instanceof ElectricComponent);
     this.contextMolInfo.style.display = "none";
     this.contextMixInfo.style.display = "none";
-    this.openBtn.style.display = "none";
-    this.activateEComp.style.display = "none";
-    if (Object.values(ComponentType2).includes(
-      this.curr_obj._type.toLowerCase()
-    )) {
-      const mixture = this.curr_obj._content;
+    if (component instanceof ChemComponent) {
+      const mixture = component._content;
       const hasContents = mixture._activeMolecules.length > 0;
       const equilibrium = recordedEquilibrium ?? (hasContents && mixture._isSolution && mixture._solutionVolume > 0 ? Simulation.getPolyproticEquilibrium(mixture) : void 0);
       if (hasContents) {
         this.contextMolInfo.style.display = "";
         this.renderVesselCarousel(mixture, equilibrium);
+        this.renderVesselSummary(mixture, equilibrium?.pH);
       }
-      if (this.curr_obj._type === "burette" /* Burette */ || this.curr_obj._type === "separatingfunnel" /* Separatingfunnel */) {
-        this.openBtn.style.display = "";
-      }
-      if (hasContents) this.renderVesselSummary(mixture, equilibrium?.pH);
-    }
-    if (Object.values(EComponentType).includes(
-      this.curr_obj._type.toLowerCase()
-    )) {
-      this.contextEchemInfo.style.display = "";
-      const type = this.curr_obj._type;
-      const rc = this.hasRCReadout(this.curr_obj) ? this.rcReadouts.get(this.curr_obj) : void 0;
-      if (rc) {
-        this.activateEComp.style.display = "";
-        this.renderRCReadout(this.curr_obj, rc);
-        return;
-      }
-      this.contextEchemInfo.replaceChildren();
-      const meterReadsCurrent = type === "multimeter" /* Multimeter */ && this.curr_obj._meterMode === "current";
-      if (type === "source" /* Source */ || type === "voltmeter" /* Voltmeter */ || type === "multimeter" /* Multimeter */) {
-        this.activateEComp.style.display = "";
-        if (type === "source" /* Source */) {
-          const current = this.runningCurrent(this.curr_obj);
-          let electronMolRate = this.cellCurrent(this.curr_obj) / Simulation._faradayConst;
-          this.contextEchemInfo.innerHTML = `
-						<div style="display: flex; flex-direction: column">
-							<p>Stromst\xE4rke: ${current.toExponential(2)} A</p>
-							<p>Faraday, 1. Gesetz: ${electronMolRate.toExponential(
-            2
-          )} mol e\u207B/s</p>
-							<p>${this.message("Polung")}: ${this.polarityReading(this.curr_obj)}</p>
-						</div>
-						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-						`;
-        } else if (meterReadsCurrent) {
-          const current = this.runningCurrent(this.curr_obj);
-          this.contextEchemInfo.innerHTML = `
-						<p>Stromst\xE4rke: ${current.toExponential(2)} A</p>
-						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-						`;
-        } else {
-          const reading2 = this.voltageReading(this.curr_obj);
-          this.contextEchemInfo.innerHTML = `
-						<p>${this.message("Spannung")}: ${reading2}</p>
-						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-						`;
-        }
-      } else if (type === "ammeter" /* Ammeter */) {
-        this.activateEComp.style.display = "";
-        const current = this.runningCurrent(this.curr_obj);
-        this.contextEchemInfo.innerHTML = `
-					<p>Stromst\xE4rke: ${current.toExponential(2)} A</p>
-					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-					`;
-      } else if (type === "bridge" /* Bridge */) {
-        const vesselName = (mix) => {
-          const vessel = this.allChemComponents.find((component) => component._content === mix);
-          return vessel ? `${this.itemName(vessel._type)} \xB7 ${vessel._id + 1}` : this.message("kein Gef\xE4\xDF");
-        };
-        const legs = this.curr_obj._bridgeMixes;
-        this.contextEchemInfo.innerHTML = `
-					<div style="display: flex; flex-direction: column">
-						<p>${this.message("Schenkel")}: ${legs.length}</p>
-						${legs.map((mix) => `<p>${vesselName(mix)}</p>`).join("")}
-					</div>
-					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-					`;
-      } else if (type === "gascollector" /* GasCollector */) {
-        const mix = this.curr_obj._connectedMix;
-        const escaped = Math.max(0, (mix?.evolvedGasMol ?? 0) - this.curr_obj._tubeBaseline);
-        const collected = escaped * molarGasVolume(mix?._temperature, mix?._pressure) * 1e3;
-        this.contextEchemInfo.innerHTML = `
-					<p>${this.message("gesammelt")}: ${this.formatAmount(collected, 3)} mL</p>
-					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-					`;
-      } else if (type === "label" /* Label */) {
-        this.contextEchemInfo.innerHTML = `
-					<p>${this.curr_obj._labelText || this.message("kein Text")}</p>
-					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-					`;
-      } else if (this.curr_obj._type === "electrode" /* Electrode */) {
-        this.activateEComp.style.display = "none";
-        let material = this.curr_obj._material;
-        this.contextEchemInfo.innerHTML = `
-						<div style="display: flex; flex-direction: column; align-content: flex-start; align-items: flex-start">
-							<sl-tag id="contextTag" variant="neutral" size="small" style="margin: 5px"></sl-tag>
-							<p>${typeof this.curr_obj._connectedMix != "undefined" ? this.message("verbunden") : this.message("nicht verbunden")}</p>
-						</div>
-						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-						`;
-        this.contextEchemInfo.querySelector("#contextTag").textContent = material ? this.itemName(material.name || "unbekannt") : this.message("kein Material");
-        const deposit = this.curr_obj.plating;
-        if (deposit) {
-          const line = this.ownerDocument.createElement("p");
-          line.textContent = `${this.message("abgeschieden")}: ${this.formatAmount(deposit.mol * deposit.molecule.getTotMolMass(), 3)} g ` + deposit.molecule._kekule_obj.calcFormula().getDisplayText();
-          this.contextEchemInfo.querySelector("div").append(line);
-        }
-        let circuitComps = typeof material != "undefined" ? ComponentManager.isCircuit(this.curr_obj) : [];
-        const source3 = circuitComps.slice(2).find((comp) => comp._type === "source" /* Source */);
-        if (source3) {
-          let device = source3;
-          let redox = oxidationOf(material.smilesString);
-          if (typeof redox != "undefined") {
-            let faraday = Simulation.faradayLaw(
-              this.runningCurrent(device),
-              redox.el,
-              material.getTotMolMass()
-            );
-            this.contextEchemInfo.innerHTML += `
-							<div style="display: flex; flex-direction: column">
-								<p>Faraday, 2. Gesetz (z=${redox.el}):</p>
-								<p>Stoffmengenrate: ${faraday.substanceMol.toExponential(
-              2
-            )} mol/s</p>
-								<p>Massenrate: ${faraday.massGrams.toExponential(2)} g/s</p>
-							</div>
-							<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-							`;
-          }
-        }
-      }
+    } else if (component instanceof ElectricComponent) {
+      B(i6(component, this.renderElectricalReadouts(component)), this.contextEchemInfo);
     }
     this.canvas.drawSelection();
   }
@@ -193715,60 +193755,51 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   renderAmountMenu() {
     const menu = this.amountMenu;
     if (!menu) return E;
-    const from2 = "vessel" in menu.from ? this.itemName(menu.from.vessel._type) : menu.from.name;
-    const target = this.itemName(menu.target._type);
-    const decrease = this.message("Menge verringern");
-    const increase = this.message("Menge erh\xF6hen");
-    const formattedAmount = `${this.formatAmount(menu.amount, 7)} mL`;
-    const editLabel = this.message("Menge bearbeiten (Doppelklick oder F2)");
+    const vesselName = (vessel) => `${this.itemName(vessel._type)} ${vessel._id + 1}`;
+    const from2 = "vessel" in menu.from ? vesselName(menu.from.vessel) : menu.from.name;
+    const target = vesselName(menu.target);
+    const transfer = "vessel" in menu.from;
+    const sliderStep = menu.max >= 1 ? 1 : menu.max >= 0.1 ? 0.1 : menu.max / 10;
+    const changeAmount = (value) => this.setAmount(value);
     return x`
-			<section id="amountMenu" class="selection-info" tabindex="-1" aria-labelledby="amountMenuTitle"
+			<section id="amountMenu" class="selection-info" tabindex="-1" contenteditable="false" aria-labelledby="amountMenuTitle"
 				@keydown=${this.handleAmountMenuKey}>
-				<div id="amountMenuTitle" class="selection-labels">
-					<sl-badge variant="primary">${from2}</sl-badge>
+				<div class="amount-menu-heading">
+					<strong id="amountMenuTitle">${this.message(transfer ? "Inhalt \xFCbertragen" : "Stoff hinzuf\xFCgen")}</strong>
+					${menu.max > 0 ? x`<span class="amount-menu-limit">max. ${this.formatAmount(menu.max, 7)} mL</span>` : E}
+				</div>
+				<div class="amount-menu-route">
+					<sl-tag size="small" variant="neutral">${from2}</sl-tag>
 					<span class="amount-menu-arrow" aria-hidden="true">
 						<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor">
 							<path d="M2.5 8h10m-4-4 4 4-4 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
 					</span>
-					<sl-badge class="selection-info-title">${target}</sl-badge>
+					<sl-tag size="small" variant="primary">${target}</sl-tag>
 				</div>
-				${!(menu.max > 0) ? x`
-					<div class="amount-menu-row">
-						<span role="status">${this.message("Keine Menge verf\xFCgbar.")}</span>
-						<sl-button size="small" @click=${() => {
-      this.closeAmountMenu();
-      this.app.canvas.focus({ preventScroll: true });
-    }}>${this.message("Schlie\xDFen")}</sl-button>
-					</div>` : x`
-					<div class="amount-menu-row">
-						<button type="button" class="amount-menu-button" title=${decrease} aria-label=${decrease}
-							aria-disabled=${menu.amount <= 0}
-							@click=${(event) => this.adjustAmount(event.shiftKey ? -10 : -1)}>−</button>
-						<div class="amount-menu-quantity volume-bar" style=${`--amount-progress: ${100 * menu.amount / menu.max}%`}>
-							<output class="amount-menu-value" for="amountMenuSlider" ?inert=${!!menu.editing}>${formattedAmount}</output>
-							${menu.editing ? x`
-								<input id="amountMenuValue" type="text" inputmode="decimal" autocomplete="off"
-									aria-label=${this.message("Menge in mL")}
-									.value=${menu.amount.toLocaleString("en", { useGrouping: false, maximumSignificantDigits: 17 })}
-									@input=${(event) => event.currentTarget.setCustomValidity("")}>
-							` : x`
-								<input id="amountMenuSlider" type="range" dir="ltr" min="0" max=${menu.max} step="any"
-								.value=${String(menu.amount)}
-								aria-label=${this.message("Menge in mL")} aria-valuetext=${formattedAmount} title=${editLabel}
-								@input=${this.slideAmount} @dblclick=${this.editAmount}>
-							`}
-						</div>
-						<button type="button" class="amount-menu-button" title=${increase} aria-label=${increase}
-							aria-disabled=${menu.amount >= menu.max}
-							@click=${(event) => this.adjustAmount(event.shiftKey ? 10 : 1)}>+</button>
-						<sl-button size="small" variant="default" class="amount-menu-confirm" title=${this.message("best\xE4tigen")}
-							aria-label=${this.message("best\xE4tigen")} ?disabled=${!menu.editing && menu.amount <= 0} @click=${this.confirmAmount}>
-							<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
-								<path d="m3 8 3 3 7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-							</svg>
-						</sl-button>
-					</div>`}
+				${menu.max > 0 ? renderValueControl({
+      label: this.message("Menge"),
+      unit: "mL",
+      value: menu.amount,
+      min: 0,
+      max: menu.max,
+      step: 0.1,
+      rangeStep: sliderStep,
+      locale: this.lang,
+      decreaseLabel: this.message("Menge verringern"),
+      increaseLabel: this.message("Menge erh\xF6hen"),
+      invalidLabel: this.message("Gib eine Zahl ein."),
+      onChange: changeAmount,
+      onInput: changeAmount
+    }) : x`<span role="status">${this.message("Keine Menge verf\xFCgbar.")}</span>`}
+				<div class="amount-menu-actions">
+					<sl-button size="small" @click=${this.dismissAmountMenu}>
+						${this.message(menu.max > 0 ? "Abbrechen" : "Schlie\xDFen")}
+					</sl-button>
+					${menu.max > 0 ? x`<sl-button size="small" variant="primary" ?disabled=${menu.amount <= 0} @click=${this.confirmAmount}>
+						${this.message(transfer ? "\xDCbertragen" : "Hinzuf\xFCgen")}
+					</sl-button>` : E}
+				</div>
 			</section>`;
   }
   renderGroupSummary() {
@@ -193863,6 +193894,124 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this._updatePopup();
     this.requestUpdate();
   }
+  renderValveControls(vessel) {
+    const burette = vessel._type === "burette" /* Burette */;
+    if (!burette && vessel._type !== "separatingfunnel" /* Separatingfunnel */) return E;
+    const task = `transfer${vessel._type}:${vessel._id}`;
+    const flowing = this.simulation.hasTask(task);
+    const volume = vessel.buretteStepMl;
+    const setStep = (amount) => {
+      if (!vessel.setBuretteStepMl(amount)) return;
+      this.requestUpdate();
+    };
+    return i6(vessel, x`
+			<div class="device-controls">
+				${burette ? renderValueControl({
+      label: this.message("Dosierschritt"),
+      unit: "mL",
+      value: volume,
+      min: Number.MIN_VALUE * 1e3,
+      max: Number.MAX_VALUE,
+      rangeMin: 0.01,
+      rangeMax: 1,
+      step: 0.01,
+      locale: this.lang,
+      invalidLabel: this.message("Gib eine Zahl ein."),
+      onInput: setStep,
+      onChange: (amount) => {
+        setStep(amount);
+        this.saveSelectedComponent({ stepVolumeMl: vessel.buretteStepMl });
+      }
+    }) : E}
+				<div class="device-actions">
+					${burette ? x`<sl-button size="small" id="dispenseBurette" ?disabled=${flowing}
+						@click=${() => {
+      if (this.stepTitration(vessel)) return;
+      this._notify(this.message(!vessel._content._activeMolecules.length ? "Die B\xFCrette ist leer." : !this.canvas.titrationTarget(vessel) ? "Platziere ein Gef\xE4\xDF unter der B\xFCrette." : "Das Zielgef\xE4\xDF kann nichts mehr aufnehmen."));
+    }}>${this.message("Einzeldosis")}</sl-button>` : E}
+					<sl-button size="small" id="openComp" variant=${flowing ? "primary" : "default"}
+						@click=${() => {
+      if (flowing) this.simulation.stopTask(task);
+      else this.simulation.startExperiment(task, () => this.stepTitration(vessel));
+      this.requestUpdate();
+      this._sendxAPiStatement(flowing ? "completed" : "started", task);
+    }}>${this.message(flowing ? "Hahn schlie\xDFen" : "Hahn \xF6ffnen")}</sl-button>
+				</div>
+			</div>`);
+  }
+  renderElectricalControls(device) {
+    const { Source, Multimeter } = EComponentType;
+    const source3 = device._type === Source;
+    if (!source3 && !isPassiveMeter(device)) return E;
+    const mode = source3 ? device._sourceMode : device._meterMode;
+    const current = mode === "current";
+    const task = `echem${device._type}:${device._id}`;
+    const active = this.simulation.hasTask(task);
+    const changeMode = (next) => {
+      if (next === mode) return;
+      if (source3) {
+        device._sourceMode = next;
+        this.saveSelectedComponent({ sourceMode: next });
+      } else {
+        device._meterMode = next;
+        device._visibleVoltage = device._visibleCurrent = null;
+        this.saveSelectedComponent({ meterMode: next });
+      }
+      this.canvas.refreshDeviceDisplay(device);
+      this._updatePopup();
+      this.requestUpdate();
+    };
+    const key = current ? "_sourceCurrent" : "_sourceVoltage";
+    const value = Math.abs(device[key] ?? 0);
+    const setpoint = (next) => {
+      device[key] = next;
+      this.canvas.refreshDeviceDisplay(device);
+      this.requestUpdate();
+    };
+    return i6(device, x`
+			<div class="device-controls">
+				${source3 ? renderValueControl({
+      label: this.message(current ? "Sollstrom" : "Sollspannung"),
+      unit: current ? "A" : "V",
+      value,
+      min: 0,
+      max: Number.MAX_VALUE,
+      rangeMax: current ? 2 : 30,
+      step: current ? 0.01 : 0.1,
+      rangeStep: current ? 0.01 : 0.5,
+      locale: this.lang,
+      invalidLabel: this.message("Gib eine Zahl ein."),
+      onInput: setpoint,
+      onChange: (next) => {
+        setpoint(next);
+        this.saveSelectedComponent(current ? { current: next } : { voltage: next });
+        this._sendxAPiStatement("submitted", `${current ? "current" : "voltage"} ${device._type}:${device._id}`);
+      }
+    }) : E}
+				<div class="device-actions">
+					${source3 || device._type === Multimeter ? x`
+						<div class="device-mode" role="group" aria-label=${this.message(source3 ? "Betriebsart" : "Messbereich")}>
+							${["voltage", "current"].map((next) => {
+      const label = this.message(next === "voltage" ? source3 ? "Spannung vorgeben" : "Spannung" : source3 ? "Stromst\xE4rke vorgeben" : "Stromst\xE4rke");
+      return x`<sl-button size="small" data-mode=${next} variant=${mode === next ? "primary" : "default"}
+									aria-pressed=${mode === next} aria-label=${label} title=${label} @click=${() => changeMode(next)}>
+									${next === "voltage" ? "V" : "A"}</sl-button>`;
+    })}
+						</div>` : E}
+					<sl-button size="small" id="activateEComp" variant=${active ? "primary" : "default"}
+						@click=${() => {
+      this.canvas.setDeviceActive(device, !active);
+      if (active) {
+        this.simulation.stopTask(task);
+        this.clearEChemReadings(device);
+      } else this.startElectricalExperiment(task, device);
+      this._updatePopup();
+      this.requestUpdate();
+      this._sendxAPiStatement(active ? "completed" : "started", task);
+    }}>${this.message(active ? "Ausschalten" : "Einschalten")}</sl-button>
+				</div>
+			</div>`);
+  }
   renderElectricalSettings(device) {
     const { Cable, Electrode, Source } = EComponentType;
     if (device._type === Cable) return E;
@@ -193873,7 +194022,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const materials = this.canAuthor && device._type === Electrode ? componentVariants.electrode.filter((variant) => variant.material) : [];
     const material = materials.find((variant) => variant.material?.name === device._material?.name);
     const hasSource = device._type === Source;
-    const hasMeter = device._type === "multimeter" /* Multimeter */;
     const passiveMeter = isPassiveMeter(device);
     const hasLabel = device._type === "label" /* Label */;
     const hasElectrode = device._type === Electrode;
@@ -193882,57 +194030,35 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const plusPole = hasSource ? ComponentManager.terminalElectrode(device, 0) : void 0;
     const minusPole = hasSource ? ComponentManager.terminalElectrode(device, 1) : void 0;
     const poles = plusPole && minusPole && plusPole !== minusPole ? { plus: plusPole, minus: minusPole } : void 0;
+    const settings = this.canAuthor && (hasSource || passiveMeter || hasLabel || hasElectrode);
+    if (!settings && !connections.length) return E;
     return i6(device, x`
-			<sl-details class="electrical-settings" summary=${this.message("Eigenschaften")}
+			<sl-details class="electrical-settings" summary=${this.message(settings ? "Erweiterte Einstellungen" : "Verbunden mit")}
 				@sl-after-show=${() => this.canvas.drawSelection()} @sl-after-hide=${() => this.canvas.drawSelection()}>
-				${hasSource ? x`
-					<label>${this.message("Betriebsart")}
-					<select contenteditable="false" @change=${(event) => {
-      const mode = event.currentTarget.value === "current" ? "current" : "voltage";
-      device._sourceMode = mode;
-      this.saveSelectedComponent({ sourceMode: mode });
-      this.canvas.refreshDeviceDisplay(device);
-      this._updatePopup();
-    }}>
-						<option value="voltage" ?selected=${device._sourceMode !== "current"}>${this.message("Spannung vorgeben")}</option>
-						<option value="current" ?selected=${device._sourceMode === "current"}>${this.message("Stromst\xE4rke vorgeben")}</option>
-					</select></label>
-					${device._sourceMode === "current" ? x`
-						<sl-input id="complianceVoltage" size="small" type="number" contenteditable="false"
-							label=${this.message("Grenzspannung")} .value=${String(device._complianceVoltage ?? 30)}></sl-input>` : E}
-					<sl-input id="sourceVoltage" size="small" type="number" contenteditable="false"
-						label=${this.message("Quellspannung")} .value=${String(device._sourceVoltage ?? 0)}></sl-input>
-					<sl-input id="sourceCurrent" size="small" type="number" contenteditable="false"
-						label=${this.message("Quellstromst\xE4rke")} .value=${String(device._sourceCurrent ?? 0)}></sl-input>
-					<sl-button size="small" @click=${() => {
-      const value = (id3) => Number.parseFloat(this.shadowRoot.querySelector(id3).value) || 0;
-      device._sourceVoltage = value("#sourceVoltage");
-      device._sourceCurrent = value("#sourceCurrent");
-      const compliance = this.shadowRoot.querySelector("#complianceVoltage");
-      if (compliance) device._complianceVoltage = Math.abs(Number.parseFloat(compliance.value)) || 30;
-      this.saveSelectedComponent({
-        voltage: device._sourceVoltage,
-        current: device._sourceCurrent,
-        complianceVoltage: device._complianceVoltage
-      });
-      this.canvas.refreshDeviceDisplay(device);
-      this._updatePopup();
-      this._sendxAPiStatement("submitted", "voltage " + device._type + ":" + device._id);
-    }}>${this.message("best\xE4tigen")}</sl-button>` : E}
-				${hasMeter ? x`
-					<label>${this.message("Messbereich")}
-					<select contenteditable="false" @change=${(event) => {
-      const mode = event.currentTarget.value === "current" ? "current" : "voltage";
-      device._meterMode = mode;
-      this.saveSelectedComponent({ meterMode: mode });
-      this.canvas.refreshDeviceDisplay(device);
-      this._updatePopup();
-    }}>
-						<option value="voltage" ?selected=${device._meterMode !== "current"}>${this.message("Spannung")}</option>
-						<option value="current" ?selected=${device._meterMode === "current"}>${this.message("Stromst\xE4rke")}</option>
-					</select></label>` : E}
-				${passiveMeter ? this.renderRCSettings(device) : E}
-				${hasLabel ? x`
+				${settings && hasSource ? i6(device._sourceMode, device._sourceMode === "current" ? x`
+					<sl-input size="small" type="number" min="0" step="any" contenteditable="false"
+						label=${this.message("Grenzspannung in V")} .value=${String(device._complianceVoltage)}
+						@sl-change=${(event) => {
+      const input = event.currentTarget;
+      const value = input.valueAsNumber;
+      if (Number.isFinite(value) && value >= 0) {
+        device._complianceVoltage = value;
+        this.saveSelectedComponent({ complianceVoltage: value });
+      }
+      input.value = String(device._complianceVoltage);
+    }}></sl-input>` : x`<sl-input size="small" type="number" min="0" step="any" contenteditable="false"
+						label=${this.message("Strombegrenzung in A (0 = unbegrenzt)")} .value=${String(device._sourceCurrent ?? 0)}
+						@sl-change=${(event) => {
+      const input = event.currentTarget;
+      const value = input.value === "" ? 0 : input.valueAsNumber;
+      if (Number.isFinite(value) && value >= 0) {
+        device._sourceCurrent = value;
+        this.saveSelectedComponent({ current: value });
+      }
+      input.value = String(device._sourceCurrent);
+    }}></sl-input>`) : E}
+				${settings && passiveMeter ? this.renderRCSettings(device) : E}
+				${settings && hasLabel ? x`
 					<sl-input id="labelText" size="small" contenteditable="false"
 						label=${this.message("Beschriftung")} .value=${device._labelText ?? ""}></sl-input>
 					<sl-button size="small" @click=${() => {
@@ -193941,7 +194067,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.canvas.refreshDeviceDisplay(device);
       this._updatePopup();
     }}>${this.message("best\xE4tigen")}</sl-button>` : E}
-				${hasElectrode ? x`
+				${settings && hasElectrode ? x`
 					<sl-input id="electrodeArea" size="small" type="number" min="0.1" step="0.1" contenteditable="false"
 						label=${this.message("Benetzte Fl\xE4che in cm\xB2")}
 						.value=${device._area > 0 ? String(device._area) : ""}
@@ -193960,7 +194086,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.canvas.refreshDeviceDisplay(device);
       this._updatePopup();
     }}>${this.message("best\xE4tigen")}</sl-button>` : E}
-				${poles ? x`
+				${settings && poles ? x`
 					<label>${this.message("Polung")}
 					<select contenteditable="false" @change=${(event) => {
       const polarity = Number.parseInt(event.currentTarget.value);
@@ -193993,7 +194119,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					</select></label>` : E}
 				${connections.length ? x`
 					<div class="connection-list">
-						<span class="connection-list-label">${this.message("Verbunden mit")}</span>
+						${settings ? x`<span class="connection-list-label">${this.message("Verbunden mit")}</span>` : E}
 						${connections.map(({ other }) => x`<sl-tag size="small" variant="neutral">${label(other)}</sl-tag>`)}
 					</div>` : E}
 			</sl-details>
@@ -194031,42 +194157,89 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       if (next && !validRCSettings(next)) return;
       device._rcSettings = next;
       this.saveSelectedComponent({ rcSettings: next });
+      const task = `echem${device._type}:${device._id}`;
+      if (this.simulation.hasTask(task)) {
+        this.rcReadouts.delete(device);
+        this.startElectricalExperiment(task, device);
+      }
+      this._updatePopup();
       this.requestUpdate();
     }}>${this.message("best\xE4tigen")}</sl-button>
 			</sl-details>`;
   }
-  renderRCReadout(device, { sample: sample2, timeConstant, cutoffAt }) {
-    const info = this.contextEchemInfo;
-    let readout = info.querySelector(".rc-readout");
-    const isNew = !readout;
-    if (!readout) {
-      readout = this.ownerDocument.createElement("div");
-      readout.className = "rc-readout";
-      info.replaceChildren(readout);
+  renderElectricalReadouts(device) {
+    const { Source, Voltmeter, Multimeter, Electrode, Bridge, GasCollector, Label } = EComponentType;
+    const type = device._type;
+    const source3 = type === Source;
+    const value = (reading2, unit2, magnitude2) => Number.isFinite(reading2) ? `${this.formatAmount(magnitude2 ? Math.abs(reading2) : reading2, 4)} ${unit2}` : `\u2014 ${unit2}`;
+    const tag = (text, label) => x`<span class="device-reading"
+			title=${label ?? text}>${text}</span>`;
+    const readouts = (items) => x`<div class="device-readouts">${items}</div>`;
+    if (source3 || isPassiveMeter(device)) {
+      const voltage = type === Voltmeter || type === Multimeter && device._meterMode === "voltage";
+      const rc = this.hasRCReadout(device) ? this.rcReadouts.get(device) : void 0;
+      const details2 = source3 && this.simulation.hasTask(`echem${type}:${device._id}`) ? x`
+				<p>${this.message("Polung")}: ${this.polarityReading(device)}</p>
+				<p>Faraday: ${this.formatAmount(this.cellCurrent(device) / Simulation._faradayConst, 3)} mol e⁻/s</p>` : rc ? this.renderRCReadout(device, rc) : E;
+      return x`
+				${readouts(x`
+					${source3 || voltage ? tag(value(device._visibleVoltage, "V", false), this.message("Gemessene Spannung")) : E}
+					${source3 || !voltage ? tag(value(device._visibleCurrent, "A", true), this.message("Gemessene Stromst\xE4rke")) : E}
+				`)}
+				${details2 !== E ? x`<details class="device-diagnostics" @toggle=${() => this.canvas.drawSelection()}>
+					<summary>${this.message(rc ? "Kapazitiver Zellstrom (RC-Modell)" : "Messdetails")}</summary>${details2}
+				</details>` : E}`;
     }
-    const { Voltmeter, Multimeter } = EComponentType;
-    const voltage = device._type === Voltmeter || device._type === Multimeter && device._meterMode === "voltage";
-    const value = voltage ? device._visibleVoltage : device._visibleCurrent;
-    const number2 = (value2) => value2.toPrecision(4);
+    if (type === Electrode) {
+      const material = device._material;
+      const deposit = device.plating;
+      const power = material && ComponentManager.isCircuit(device).slice(2).find((component) => component._type === Source);
+      const redox = power && oxidationOf(material.smilesString);
+      const rate = redox && Simulation.faradayLaw(this.cellCurrent(power), redox.el, material.getTotMolMass());
+      return x`
+				${readouts(x`${tag(material ? this.itemName(material.name || "unbekannt") : this.message("kein Material"))}
+					${tag(this.message(device._connectedMix ? "eingetaucht" : "nicht eingetaucht"))}`)}
+				${deposit ? x`<p>${this.message("abgeschieden")}: ${this.formatAmount(deposit.mol * deposit.molecule.getTotMolMass(), 3)}
+					g ${deposit.molecule._kekule_obj.calcFormula().getDisplayText()}</p>` : E}
+				${rate ? x`<details class="device-diagnostics" @toggle=${() => this.canvas.drawSelection()}>
+					<summary>Faraday (z = ${redox.el})</summary>
+					<p>${this.message("Stoffmengenrate")}: ${this.formatAmount(rate.substanceMol, 3)} mol/s</p>
+					<p>${this.message("Massenrate")}: ${this.formatAmount(rate.massGrams, 3)} g/s</p>
+				</details>` : E}`;
+    }
+    if (type === Bridge) {
+      const legs = device._bridgeMixes.flatMap((mix) => {
+        const vessel = this.allChemComponents.find((component) => component._content === mix);
+        return vessel ? [`${this.itemName(vessel._type)} \xB7 ${vessel._id + 1}`] : [];
+      });
+      return legs.length ? readouts(legs.map((name2) => tag(name2))) : readouts(tag(this.message("kein Gef\xE4\xDF")));
+    }
+    if (type === GasCollector) {
+      const mix = device._connectedMix;
+      const escaped = Math.max(0, (mix?.evolvedGasMol ?? 0) - device._tubeBaseline);
+      return readouts(tag(
+        `${this.formatAmount(escaped * molarGasVolume(mix?._temperature, mix?._pressure) * 1e3, 3)} mL`,
+        this.message("gesammelt")
+      ));
+    }
+    return type === Label ? x`<p>${device._labelText || this.message("kein Text")}</p>` : E;
+  }
+  renderRCReadout(device, { sample: sample2, timeConstant, cutoffAt }) {
+    const number2 = (value) => value.toPrecision(4);
     const duration = (seconds) => {
       if (seconds >= 1) return `${number2(seconds)} s`;
       if (seconds >= 1e-3 || seconds === 0) return `${number2(seconds * 1e3)} ms`;
       return `${number2(seconds * 1e6)} \xB5s`;
     };
-    B(i6(device, x`
-			<p>${value === null ? "\u2014" : `${number2(Math.abs(value))} ${voltage ? "V" : "A"}`}</p>
-			<details @toggle=${() => this.canvas.drawSelection()}>
-				<summary>${this.message("Kapazitiver Zellstrom (RC-Modell)")}</summary>
-				${device._rcSettings === void 0 && device.defaultRCCapacitance ? x`<p>${this.message("Modellwert: {value} \xB5F", { value: device.defaultRCCapacitance * 1e6 })}</p>` : E}
-				<p>I: ${number2(sample2.current)} A</p>
-				<p>Q: ${number2(sample2.charge * 1e6)} µC</p>
-				<p>ΔQ: ${number2(sample2.transferredCharge * 1e6)} µC</p>
-				<p>${this.message("Gegenspannung")}: ${number2(sample2.opposingVoltage)} V</p>
-				<p>${this.message("Treibende Spannung")}: ${number2(sample2.drivingVoltage)} V</p>
-				<p>τ: ${duration(timeConstant)}</p>
-				<p>${this.message("Dauer bis zur Stromschwelle")}: ${duration(cutoffAt)}</p>
-			</details>`), readout);
-    if (isNew) this.canvas.drawSelection();
+    return x`
+			${device._rcSettings === void 0 && device.defaultRCCapacitance ? x`<p>${this.message("Modellwert: {value} \xB5F", { value: device.defaultRCCapacitance * 1e6 })}</p>` : E}
+			<p>I: ${number2(sample2.current)} A</p>
+			<p>Q: ${number2(sample2.charge * 1e6)} µC</p>
+			<p>ΔQ: ${number2(sample2.transferredCharge * 1e6)} µC</p>
+			<p>${this.message("Gegenspannung")}: ${number2(sample2.opposingVoltage)} V</p>
+			<p>${this.message("Treibende Spannung")}: ${number2(sample2.drivingVoltage)} V</p>
+			<p>τ: ${duration(timeConstant)}</p>
+			<p>${this.message("Dauer bis zur Stromschwelle")}: ${duration(cutoffAt)}</p>`;
   }
   renderObjectSummary() {
     const name2 = this.itemName(this.curr_name.split(":")[0]);
@@ -194088,91 +194261,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 						</button>` : E}
 					${this.renderSelectionDeleteButton(() => this._removeSprite(), true)}
 				</div>
-				<div id="contextEchemInfo"></div>
+				${vessel ? this.renderValveControls(vessel) : E}
+				<div id="contextEchemInfo" ?hidden=${!device}></div>
 				<sl-carousel id="contextMolInfo" pagination mouse-dragging slides-per-page="1" slides-per-move="1"
 					aria-label=${this.message("Inhalt")} style="display: none"></sl-carousel>
 				<div id="contextMixInfo" style="display: none"></div>
-				<div class="selection-actions">
-					${vessel?._type === "burette" /* Burette */ ? i6(vessel, x`
-						<sl-input class="burette-step" size="small" type="number" min="0" step="any"
-							contenteditable="false" label=${this.message("Dosierschritt")}
-							.value=${String(Number(vessel.buretteStepMl.toPrecision(12)))}
-							@sl-change=${(event) => {
-      const input = event.currentTarget;
-      if (vessel.setBuretteStepMl(input.valueAsNumber)) {
-        this.saveSelectedComponent({ stepVolumeMl: input.valueAsNumber });
-        this.requestUpdate();
-      }
-      input.value = String(Number(vessel.buretteStepMl.toPrecision(12)));
-    }}>
-							<span slot="suffix">mL</span>
-						</sl-input>`) : E}
-					<button
-						id="openComp"
-						@click="${(event) => {
-      if (!this.simulation.hasTask("transfer" + this.curr_name)) {
-        this.requestUpdate();
-        let source3 = this.curr_obj;
-        this.simulation.startExperiment(
-          "transfer" + this.curr_name,
-          () => this.stepTitration(source3)
-        );
-        this._sendxAPiStatement(
-          "started",
-          "transfer" + this.curr_obj._type + ":" + this.curr_obj._id
-        );
-      } else {
-        this.requestUpdate();
-        this.simulation.stopTask(
-          "transfer" + this.curr_name
-        );
-        this._sendxAPiStatement(
-          "completed",
-          "transfer" + this.curr_obj._type + ":" + this.curr_obj._id
-        );
-      }
-    }}"
-					>
-						${this.message(this.simulation.hasTask("transfer" + this.curr_name) ? "Schlie\xDFen" : "\xD6ffnen")}
-					</button>
-					<button
-						id="activateEComp"
-						@click="${(event) => {
-      if (!this.simulation.hasTask("echem" + this.curr_name)) {
-        this.requestUpdate();
-        this.canvas.setDeviceActive(this.curr_obj, true);
-        let source3 = this.curr_obj;
-        this.startElectricalExperiment("echem" + this.curr_name, source3);
-        this._updatePopup();
-        this._sendxAPiStatement(
-          "started",
-          "echem" + this.curr_obj._type + ":" + this.curr_obj._id
-        );
-      } else {
-        this.requestUpdate();
-        this.canvas.setDeviceActive(this.curr_obj, false);
-        this.simulation.stopTask(
-          "echem" + this.curr_name
-        );
-        this.clearEChemReadings(this.curr_obj);
-        this._updatePopup();
-        this._sendxAPiStatement(
-          "completed",
-          "echem" + this.curr_obj._type + ":" + this.curr_obj._id
-        );
-      }
-    }}"
-					>
-						${this.message(this.simulation.hasTask("echem" + this.curr_name) ? "Ausschalten" : "Einschalten")}
-					</button>
-				</div>
-				${device ? this.renderElectricalSettings(device) : E}
+				${device ? x`${this.renderElectricalControls(device)}${this.renderElectricalSettings(device)}` : E}
 			</section>
 		`;
-  }
-  voltageReading(device) {
-    if (device?._visibleVoltage === null) return this.message("Spannung nicht berechenbar");
-    return `${(device?._visibleVoltage ?? 0).toExponential(2)} V`;
   }
   /**
    * Names the electrode that sits on the plus pole of a source, which is the
@@ -194193,8 +194289,6 @@ _contextMolInfo = new WeakMap();
 _objectSummary = new WeakMap();
 _groupSummary = new WeakMap();
 _contextMixInfo = new WeakMap();
-_openBtn = new WeakMap();
-_activateEComp = new WeakMap();
 _contextEchemInfo = new WeakMap();
 _xAPICheck = new WeakMap();
 _xAPIKeyInput = new WeakMap();
@@ -194254,8 +194348,6 @@ __decorateElement(_init2, 4, "contextMolInfo", _contextMolInfo_dec, _ChemLab, _c
 __decorateElement(_init2, 4, "objectSummary", _objectSummary_dec, _ChemLab, _objectSummary);
 __decorateElement(_init2, 4, "groupSummary", _groupSummary_dec, _ChemLab, _groupSummary);
 __decorateElement(_init2, 4, "contextMixInfo", _contextMixInfo_dec, _ChemLab, _contextMixInfo);
-__decorateElement(_init2, 4, "openBtn", _openBtn_dec, _ChemLab, _openBtn);
-__decorateElement(_init2, 4, "activateEComp", _activateEComp_dec, _ChemLab, _activateEComp);
 __decorateElement(_init2, 4, "contextEchemInfo", _contextEchemInfo_dec, _ChemLab, _contextEchemInfo);
 __decorateElement(_init2, 4, "xAPICheck", _xAPICheck_dec, _ChemLab, _xAPICheck);
 __decorateElement(_init2, 4, "xAPIKeyInput", _xAPIKeyInput_dec, _ChemLab, _xAPIKeyInput);
@@ -194353,7 +194445,7 @@ __publicField(_ChemLab, "options", {
  * @static
  * @type {*}
  */
-__publicField(_ChemLab, "styles", style);
+__publicField(_ChemLab, "styles", [style, valueControlStyles]);
 /**
  * early fix for webwriter focus issues
  *

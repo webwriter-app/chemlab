@@ -1968,13 +1968,14 @@ export const style = css`
 		border-color: var(--sl-color-danger-200);
 	}
 	.electrical-settings {
-		inline-size: 11rem;
+		inline-size: 12rem;
 		max-inline-size: 100%;
 	}
 	.electrical-settings::part(header),
 	.electrical-settings::part(content) {
 		padding: 4px;
 	}
+	.electrical-settings::part(base) { border-color: var(--lab-card-border); }
 	.electrical-settings sl-input,
 	.electrical-settings label {
 		display: block;
@@ -2122,38 +2123,50 @@ export const style = css`
 		visibility: hidden;
 	}
 	#amountMenu {
-		--amount-control-height: 1.0625rem;
+		display: grid;
+		gap: 6px;
 		z-index: 2;
-		max-inline-size: min(13rem, calc(100% - 8px));
+		inline-size: min(14rem, calc(100% - 8px));
+		max-inline-size: none;
+		max-block-size: min(16rem, calc(100% - 8px));
+		padding: 7px;
 	}
-	#amountMenu .selection-labels {
+	.amount-menu-heading,
+	.amount-menu-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 4px;
+	}
+	.amount-menu-limit {
+		color: var(--lab-card-secondary-text);
+		font-size: .72rem;
+		font-variant-numeric: tabular-nums;
+	}
+	.amount-menu-route {
+		display: grid;
+		grid-template-columns: minmax(0, 1.15fr) auto minmax(0, 1fr);
 		align-items: center;
-		padding: 0 0 5px;
+		gap: 4px;
 	}
-	#amountMenu sl-badge {
-		max-inline-size: 100%;
-	}
-	#amountMenu sl-badge::part(base) {
+	.amount-menu-route sl-tag::part(base) {
+		box-sizing: border-box;
+		block-size: auto;
+		min-block-size: 1.125rem;
+		inline-size: 100%;
+		padding-block: 2px;
 		white-space: normal;
+		line-height: 1.15;
 		overflow-wrap: anywhere;
 	}
 	.amount-menu-arrow {
 		display: grid;
-		flex: 1 0 auto;
 		place-items: center;
+		color: var(--lab-card-secondary-text);
 	}
-	.amount-menu-row {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 4px;
-	}
-	.amount-menu-quantity {
-		position: relative;
-		display: grid;
-		place-items: center;
-		inline-size: max-content;
-		block-size: var(--amount-control-height);
+	.amount-menu-actions {
+		justify-content: flex-end;
 	}
 	.volume-bar {
 		border-radius: var(--sl-border-radius-small);
@@ -2161,16 +2174,6 @@ export const style = css`
 		background: linear-gradient(to right, var(--amount-fill) var(--amount-progress), transparent var(--amount-progress)),
 			color-mix(in srgb, var(--sl-color-primary-500) 7%, var(--sl-color-neutral-0));
 	}
-	.amount-menu-value {
-		text-align: center;
-		font-variant-numeric: tabular-nums;
-		white-space: nowrap;
-		padding-inline: 2px;
-	}
-	.amount-menu-value[inert] {
-		visibility: hidden;
-	}
-	#amountMenuValue,
 	.amount-editor {
 		position: absolute;
 		inset: 0;
@@ -2183,7 +2186,6 @@ export const style = css`
 		font: inherit;
 		text-align: center;
 	}
-	#amountMenuSlider,
 	.amount-slider {
 		position: absolute;
 		inset: 0;
@@ -2200,53 +2202,17 @@ export const style = css`
 		cursor: ew-resize;
 		touch-action: none;
 	}
-	#amountMenuSlider::-webkit-slider-thumb,
 	.amount-slider::-webkit-slider-thumb {
 		appearance: none;
 		inline-size: 1px;
 		block-size: 100%;
 		background: transparent;
 	}
-	#amountMenuSlider::-moz-range-thumb,
 	.amount-slider::-moz-range-thumb {
 		inline-size: 1px;
 		block-size: 100%;
 		border: 0;
 		background: transparent;
-	}
-	.amount-menu-button {
-		display: inline-grid;
-		place-items: center;
-		inline-size: 24px;
-		block-size: 24px;
-		margin: 0;
-		padding: 0;
-		line-height: 1;
-		font-weight: 700;
-	}
-	.amount-menu-button[aria-disabled="true"] {
-		opacity: 0.45;
-		cursor: default;
-	}
-	.amount-menu-confirm {
-		--sl-input-height-small: var(--amount-control-height);
-		inline-size: var(--amount-control-height);
-		block-size: var(--amount-control-height);
-		margin-inline-start: auto;
-	}
-	.amount-menu-row .amount-menu-button:nth-last-child(2) {
-		margin-inline-end: 5px;
-	}
-	.amount-menu-confirm::part(base) {
-		inline-size: 100%;
-		block-size: 100%;
-		font-weight: 700;
-		color: var(--sl-color-neutral-600);
-	}
-	.amount-menu-confirm::part(label) {
-		display: grid;
-		place-items: center;
-		padding: 0;
 	}
 	.selection-labels {
 		display: flex;
@@ -2261,14 +2227,41 @@ export const style = css`
 		display: flex;
 		flex-direction: column;
 	}
-	.burette-step {
-		inline-size: 7rem;
+	.device-controls {
+		display: grid;
+		inline-size: 12rem;
 		max-inline-size: 100%;
-		margin-block: 4px;
+		gap: 2px;
+		margin-block: 5px;
+		padding: 4px;
+		box-sizing: border-box;
+		border: 1px solid var(--lab-card-border);
+		border-radius: 4px;
+		background: var(--lab-card-surface);
 	}
-	.burette-step::part(form-control-label),
-	.burette-step::part(suffix) {
-		font-size: var(--sl-font-size-x-small);
+	.device-actions, .device-mode, .device-readouts {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 3px;
+	}
+	.device-actions { justify-content: space-between; }
+	.device-actions sl-button { --sl-input-height-small: 26px; max-inline-size: 100%; }
+	.device-actions sl-button::part(label) { padding-inline: 6px; }
+	.device-mode sl-button::part(label) { min-inline-size: 22px; padding-inline: 2px; font-weight: 600; }
+	.device-readouts { padding-block-start: 4px; font-variant-numeric: tabular-nums; }
+	.device-reading {
+		padding: 1px 5px;
+		border: 1px solid var(--lab-card-border);
+		border-radius: 4px;
+		background: var(--lab-card-inset);
+	}
+	.device-diagnostics {
+		margin-block: 4px;
+		color: var(--lab-card-secondary-text);
+	}
+	.device-diagnostics summary {
+		cursor: pointer;
 	}
 	.selection-actions > .remObj {
 		align-self: flex-start;

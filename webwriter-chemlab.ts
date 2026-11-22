@@ -71,6 +71,7 @@ import { STANDARD_CANVAS_WIDTH } from "./controllers/WorkspaceCamera";
 import { CanvasController } from "./controllers/CanvasController";
 import type { VesselHint } from "./controllers/VesselView";
 import { guard } from "lit/directives/guard.js";
+import { renderValueControl, valueControlStyles } from "./ui/valueControl";
 
 type SelectedChemical = { key: string; name: string; recipe: ChemicalRecipe };
 type ChemicalConcentration = { initial: number; max: number };
@@ -186,7 +187,7 @@ export class ChemLab extends LitElementWw {
 	 * @static
 	 * @type {*}
 	 */
-	static styles = style;
+	static styles = [style, valueControlStyles];
 
 	/**
 	 * main container of the canvas
@@ -228,29 +229,13 @@ export class ChemLab extends LitElementWw {
 	@query("#contextMixInfo")
 	private accessor contextMixInfo: HTMLDivElement;
 	/**
-	 * button inside object context menu to open burette components
-	 *
-	 * @private
-	 * @type {HTMLButtonElement}
-	 */
-	@query("#openComp")
-	private accessor openBtn: HTMLButtonElement;
-	/**
-	 * button inside object context menu to activate electric components
-	 *
-	 * @private
-	 * @type {HTMLButtonElement}
-	 */
-	@query("#activateEComp")
-	private accessor activateEComp: HTMLButtonElement;
-	/**
 	 * container inside object context menu showing general info on current e-component
 	 *
 	 * @private
 	 * @type {HTMLButtonElement}
 	 */
 	@query("#contextEchemInfo")
-	private accessor contextEchemInfo: HTMLButtonElement;
+	private accessor contextEchemInfo: HTMLDivElement;
 	/**
 	 * part of options, toggles xAPI statements
 	 *
@@ -473,8 +458,8 @@ export class ChemLab extends LitElementWw {
 		from: AmountSource;
 		amount: number;
 		max: number;
-		editing?: boolean;
 	} | undefined;
+	private amountMenuObserver?: ResizeObserver;
 	@state() private accessor fillMeter: { x: number; y: number; volume: number; capacity: number } | undefined;
 	private amountFormatLanguage?: string;
 	private amountFormatters = new Map<number, Intl.NumberFormat>();
@@ -642,6 +627,7 @@ export class ChemLab extends LitElementWw {
 	}
 
 	disconnectedCallback(): void {
+		this.amountMenuObserver?.disconnect();
 		this.observeBuilder?.disconnect();
 		this.observeBuilder = undefined;
 		this.closeDiagramPicker();
@@ -975,16 +961,17 @@ export class ChemLab extends LitElementWw {
 	}
 
 	/** Transfers one titration dose to the receiving vessel. */
-	private stepTitration(source: chemlib.ChemComponent): void {
-		if (!source._content._activeMolecules.length) return;
+	private stepTitration(source: chemlib.ChemComponent): boolean {
+		if (!source._content._activeMolecules.length) return false;
 		const target = this.canvas.titrationTarget(source);
-		if (!target) return;
+		if (!target) return false;
 		const transferredMl = source.transferContents({}, target) * 1000;
-		if (!(transferredMl > 0)) return;
+		if (!(transferredMl > 0)) return false;
 		const equilibria = this.measurements.record([source, target], [], { source, target, volume: transferredMl });
 		this.canvas.markVesselChanged(source);
 		this.canvas.markVesselChanged(target);
 		if (this.curr_obj === source || this.curr_obj === target) this._updatePopup(equilibria.get(this.curr_obj._content));
+		return true;
 	}
 
 	/**
@@ -1212,15 +1199,6 @@ export class ChemLab extends LitElementWw {
 		return this.allEComponents.find((device) =>
 			device._type === chemlib.EComponentType.Bridge &&
 			device._bridgeMixes.includes(first) && device._bridgeMixes.includes(second));
-	}
-
-	private runningCurrent(source: chemlib.ElectricComponent): number {
-		const ticker = `echem${source._type}:${source._id}`;
-		// The solved current is signed by which electrode happens to come
-		// first in the circuit walk, so only its magnitude is meaningful here:
-		// the ammeter shows a magnitude and the Faraday rate needs one.
-		return this.simulation.hasTask(ticker) && this.operatingCircuit(source)
-			? Math.abs(source._visibleCurrent ?? 0) : 0;
 	}
 
 	/**
@@ -1572,6 +1550,7 @@ export class ChemLab extends LitElementWw {
 	}
 
 	closeAmountMenu(): void {
+		this.amountMenuObserver?.disconnect();
 		this.amountMenu = undefined;
 	}
 
@@ -1811,105 +1790,35 @@ export class ChemLab extends LitElementWw {
 		const menu = { target, anchor, from, max, amount: transfer ? max : Math.min(1, max) };
 		this.amountMenu = menu;
 		void this.updateComplete.then(() => {
-			if (this.amountMenu === menu) this.shadowRoot.querySelector<HTMLElement>("#amountMenu")?.focus({ preventScroll: true });
+			if (!this.isConnected || this.amountMenu !== menu) return;
+			const panel = this.shadowRoot.querySelector<HTMLElement>("#amountMenu");
+			if (!panel) return;
+			// Shoelace buttons can change the panel's height after its first render.
+			this.amountMenuObserver ??= new ResizeObserver(() => this.positionAmountMenu());
+			this.amountMenuObserver.disconnect();
+			this.amountMenuObserver.observe(panel);
+			panel.focus({ preventScroll: true });
 		});
-	}
-
-	private adjustAmount(steps: number): void {
-		if (this.amountMenu?.editing && !this.finishAmountEdit()) return;
-		const menu = this.amountMenu;
-		if (!menu || menu.max <= 0) return;
-		this.setAmount(Number((menu.amount + steps / 10).toPrecision(15)));
 	}
 
 	private setAmount(value: number): void {
 		const menu = this.amountMenu;
-		if (!menu) return;
+		if (!menu || !Number.isFinite(value)) return;
 		const amount = Math.max(0, Math.min(menu.max, value));
-		if (amount !== menu.amount || menu.editing) this.amountMenu = { ...menu, amount, editing: false };
-	}
-
-	private slideAmount(event: Event): void {
-		const slider = event.currentTarget as HTMLInputElement;
-		const max = Number(slider.max);
-		const raw = slider.valueAsNumber;
-		// Keep the actual capacity reachable when it falls between whole millilitres.
-		const amount = raw === max ? max : Math.min(max, Math.round(raw));
-		slider.valueAsNumber = amount;
-		this.setAmount(amount);
-	}
-
-	private async editAmount(): Promise<void> {
-		const menu = this.amountMenu;
-		if (!menu || menu.editing) return;
-		this.amountMenu = { ...menu, editing: true };
-		await this.updateComplete;
-		const field = this.shadowRoot.querySelector<HTMLInputElement>("#amountMenuValue");
-		field?.focus({ preventScroll: true });
-		field?.select();
-	}
-
-	private finishAmountEdit(): boolean {
-		const menu = this.amountMenu;
-		const field = this.shadowRoot.querySelector<HTMLInputElement>("#amountMenuValue");
-		if (!menu?.editing || !field) return false;
-		const value = field.value.trim();
-		const amount = /^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(value) ? Number(value.replace(",", ".")) : NaN;
-		if (!Number.isFinite(amount) || amount < 0 || amount > menu.max) {
-			field.setCustomValidity(this.message("Gib eine Menge zwischen 0 und {max} mL ein.", {
-				max: this.formatAmount(menu.max, 15),
-			}));
-			field.reportValidity();
-			field.focus({ preventScroll: true });
-			return false;
-		}
-		this.setAmount(amount);
-		return true;
+		if (amount !== menu.amount) this.amountMenu = { ...menu, amount };
 	}
 
 	private handleAmountMenuKey(event: KeyboardEvent): void {
-		const menu = this.amountMenu;
-		if (!menu || event.isComposing || event.defaultPrevented || menu.max <= 0) return;
-		const target = event.target as HTMLElement;
-		if (target.id === "amountMenuValue") {
-			if (event.key !== "Enter" && event.key !== "Escape") return;
-			event.preventDefault();
-			event.stopPropagation();
-			if (event.key === "Escape") this.amountMenu = { ...menu, editing: false };
-			else if (!this.finishAmountEdit()) return;
-			void this.updateComplete.then(() => this.shadowRoot.querySelector<HTMLElement>("#amountMenuSlider")?.focus({ preventScroll: true }));
-			return;
-		}
-		const onSlider = target.id === "amountMenuSlider";
-		const steps = onSlider || event.shiftKey ? 10 : 1;
-		switch (event.key) {
-			case "ArrowLeft":
-			case "ArrowDown":
-				this.adjustAmount(-steps);
-				break;
-			case "ArrowRight":
-			case "ArrowUp":
-				this.adjustAmount(steps);
-				break;
-			case "Home":
-				this.setAmount(0);
-				break;
-			case "End":
-				this.setAmount(menu.max);
-				break;
-			case "F2":
-				if (!onSlider && event.target !== event.currentTarget) return;
-				void this.editAmount();
-				break;
-			case "Enter":
-				if (event.target !== event.currentTarget && !onSlider) return;
-				this.confirmAmount();
-				break;
-			default:
-				return;
-		}
+		if (event.key !== "Enter" || event.isComposing || event.defaultPrevented) return;
+		if (event.target !== event.currentTarget && !(event.target instanceof HTMLInputElement && event.target.type === "range")) return;
 		event.preventDefault();
 		event.stopPropagation();
+		this.confirmAmount();
+	}
+
+	private dismissAmountMenu(): void {
+		this.closeAmountMenu();
+		this.app?.canvas.focus({ preventScroll: true });
 	}
 
 	private formatAmount(amount: number, maximumSignificantDigits: number): string {
@@ -1932,7 +1841,13 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private confirmAmount(): void {
-		if (this.amountMenu?.editing && !this.finishAmountEdit()) return;
+		// Focus can stay on the text field when the button is activated inside the
+		// scoped shadow root. Apply the edit before reading the amount.
+		const exact = this.shadowRoot.querySelector<HTMLInputElement>("#amountMenu .value-control-exact[data-edited]");
+		if (exact) {
+			exact.dispatchEvent(new Event("change"));
+			if (!exact.reportValidity()) return;
+		}
 		const menu = this.amountMenu;
 		if (!menu || !(menu.amount > 0) || menu.amount > menu.max) return;
 		const { from, target, anchor, amount } = menu;
@@ -1960,8 +1875,7 @@ export class ChemLab extends LitElementWw {
 		}
 		if (this.curr_obj === target || ("vessel" in from && this.curr_obj === from.vessel)) this._updatePopup();
 		if (result > 0) {
-			this.closeAmountMenu();
-			this.app?.canvas.focus({ preventScroll: true });
+			this.dismissAmountMenu();
 		} else {
 			this.amountMenu = { ...menu, amount: 0, max: 0 };
 			void this.updateComplete.then(() => this.shadowRoot.querySelector<HTMLElement>("#amountMenu")?.focus({ preventScroll: true }));
@@ -2208,177 +2122,24 @@ export class ChemLab extends LitElementWw {
 	 * @private
 	 */
 	private _updatePopup(recordedEquilibrium?: ReturnType<typeof chemlib.Simulation.getPolyproticEquilibrium>): void {
-		if (!this.curr_obj) return;
-		this.contextEchemInfo.style.display = "none";
+		const component = this.curr_obj;
+		if (!component) return;
+		this.contextEchemInfo.hidden = !(component instanceof chemlib.ElectricComponent);
 		this.contextMolInfo.style.display = "none";
 		this.contextMixInfo.style.display = "none";
-		this.openBtn.style.display = "none";
-		this.activateEComp.style.display = "none";
-		if (
-			Object.values(chemlib.ComponentType).includes(
-				this.curr_obj._type.toLowerCase() as chemlib.ComponentType
-			)
-		) {
-			const mixture = this.curr_obj._content as chemlib.Mixture;
+		if (component instanceof chemlib.ChemComponent) {
+			const mixture = component._content;
 			const hasContents = mixture._activeMolecules.length > 0;
 			const equilibrium = recordedEquilibrium ?? (hasContents && mixture._isSolution && mixture._solutionVolume > 0
 				? chemlib.Simulation.getPolyproticEquilibrium(mixture) : undefined);
 			if (hasContents) {
 				this.contextMolInfo.style.display = "";
 				this.renderVesselCarousel(mixture, equilibrium);
+				this.renderVesselSummary(mixture, equilibrium?.pH);
 			}
-			if (
-				this.curr_obj._type === chemlib.ComponentType.Burette ||
-				this.curr_obj._type === chemlib.ComponentType.Separatingfunnel
-			) {
-				this.openBtn.style.display = "";
-			}
-			if (hasContents) this.renderVesselSummary(mixture, equilibrium?.pH);
+		} else if (component instanceof chemlib.ElectricComponent) {
+			render(keyed(component, this.renderElectricalReadouts(component)), this.contextEchemInfo);
 		}
-		if (
-			Object.values(chemlib.EComponentType).includes(
-				this.curr_obj._type.toLowerCase() as chemlib.EComponentType
-			)
-		) {
-			this.contextEchemInfo.style.display = "";
-			const type = this.curr_obj._type;
-			const rc = this.hasRCReadout(this.curr_obj) ? this.rcReadouts.get(this.curr_obj) : undefined;
-			if (rc) {
-				this.activateEComp.style.display = "";
-				this.renderRCReadout(this.curr_obj, rc);
-				return;
-			}
-			this.contextEchemInfo.replaceChildren();
-			// A multimeter reads whichever quantity its mode selects, and the
-			// mode also decides what the meter does to the circuit.
-			const meterReadsCurrent = type === chemlib.EComponentType.Multimeter &&
-				this.curr_obj._meterMode === "current";
-			if (
-				type === chemlib.EComponentType.Source ||
-				type === chemlib.EComponentType.Voltmeter ||
-				type === chemlib.EComponentType.Multimeter
-			) {
-				this.activateEComp.style.display = "";
-				if (type === chemlib.EComponentType.Source) {
-					const current = this.runningCurrent(this.curr_obj);
-					let electronMolRate: number =
-						this.cellCurrent(this.curr_obj) / chemlib.Simulation._faradayConst;
-					this.contextEchemInfo.innerHTML = `
-						<div style="display: flex; flex-direction: column">
-							<p>Stromstärke: ${current.toExponential(2)} A</p>
-							<p>Faraday, 1. Gesetz: ${electronMolRate.toExponential(
-								2
-							)} mol e⁻/s</p>
-							<p>${this.message("Polung")}: ${this.polarityReading(this.curr_obj)}</p>
-						</div>
-						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-						`;
-				} else if (meterReadsCurrent) {
-					const current = this.runningCurrent(this.curr_obj);
-					this.contextEchemInfo.innerHTML = `
-						<p>Stromstärke: ${current.toExponential(2)} A</p>
-						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-						`;
-				} else {
-					const reading = this.voltageReading(this.curr_obj);
-					this.contextEchemInfo.innerHTML = `
-						<p>${this.message("Spannung")}: ${reading}</p>
-						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-						`;
-				}
-			} else if (type === chemlib.EComponentType.Ammeter) {
-				this.activateEComp.style.display = "";
-				const current = this.runningCurrent(this.curr_obj);
-				this.contextEchemInfo.innerHTML = `
-					<p>Stromstärke: ${current.toExponential(2)} A</p>
-					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-					`;
-			} else if (type === chemlib.EComponentType.Bridge) {
-				// A bridge carries no cable, so the legs are the only thing
-				// that says which two half-cells it joins.
-				const vesselName = (mix?: chemlib.Mixture) => {
-					const vessel = this.allChemComponents.find((component) => component._content === mix);
-					return vessel ? `${this.itemName(vessel._type)} · ${vessel._id + 1}` : this.message("kein Gefäß");
-				};
-				const legs = this.curr_obj._bridgeMixes;
-				this.contextEchemInfo.innerHTML = `
-					<div style="display: flex; flex-direction: column">
-						<p>${this.message("Schenkel")}: ${legs.length}</p>
-						${legs.map((mix) => `<p>${vesselName(mix)}</p>`).join("")}
-					</div>
-					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-					`;
-			} else if (type === chemlib.EComponentType.GasCollector) {
-				const mix = this.curr_obj._connectedMix;
-				const escaped = Math.max(0, (mix?.evolvedGasMol ?? 0) - this.curr_obj._tubeBaseline);
-				const collected = escaped * chemlib.molarGasVolume(mix?._temperature, mix?._pressure) * 1000;
-				this.contextEchemInfo.innerHTML = `
-					<p>${this.message("gesammelt")}: ${this.formatAmount(collected, 3)} mL</p>
-					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-					`;
-			} else if (type === chemlib.EComponentType.Label) {
-				this.contextEchemInfo.innerHTML = `
-					<p>${this.curr_obj._labelText || this.message("kein Text")}</p>
-					<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-					`;
-			} else if (this.curr_obj._type === chemlib.EComponentType.Electrode){
-				this.activateEComp.style.display = "none";
-				// an electrode has no material until one is assigned in the
-				// panel, and a material's name is only filled in once its chem
-				// data has been fetched.
-				let material: chemlib.Molecule = this.curr_obj._material;
-				this.contextEchemInfo.innerHTML = `
-						<div style="display: flex; flex-direction: column; align-content: flex-start; align-items: flex-start">
-							<sl-tag id="contextTag" variant="neutral" size="small" style="margin: 5px"></sl-tag>
-							<p>${typeof this.curr_obj._connectedMix != "undefined" ? this.message("verbunden") : this.message("nicht verbunden")}</p>
-						</div>
-						<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-						`;
-				this.contextEchemInfo.querySelector("#contextTag").textContent = material
-					? this.itemName(material.name || "unbekannt")
-					: this.message("kein Material");
-				// Metal deposited on the strip is part of the cell, so the
-				// electrode reports how much of it sits on the surface.
-				const deposit = this.curr_obj.plating;
-				if (deposit) {
-					const line = this.ownerDocument.createElement("p");
-					line.textContent = `${this.message("abgeschieden")}: ` +
-						`${this.formatAmount(deposit.mol * deposit.molecule.getTotMolMass(), 3)} g ` +
-						deposit.molecule._kekule_obj.calcFormula().getDisplayText();
-					this.contextEchemInfo.querySelector("div").append(line);
-				}
-				let circuitComps: chemlib.ElectricComponent[] =
-					typeof material != "undefined"
-						? chemlib.ComponentManager.isCircuit(this.curr_obj)
-						: [];
-				const source = circuitComps.slice(2)
-					.find((comp) => comp._type === chemlib.EComponentType.Source);
-				if (source) {
-					let device: chemlib.ElectricComponent = source;
-					let redox = chemlib.oxidationOf(material.smilesString);
-					if (typeof redox != "undefined") {
-						// charge for exactly 1s at the source current, so
-						// faradayLaw's output doubles as a per-second rate
-						let faraday = chemlib.Simulation.faradayLaw(
-							this.runningCurrent(device),
-							redox.el,
-							material.getTotMolMass()
-						);
-						this.contextEchemInfo.innerHTML += `
-							<div style="display: flex; flex-direction: column">
-								<p>Faraday, 2. Gesetz (z=${redox.el}):</p>
-								<p>Stoffmengenrate: ${faraday.substanceMol.toExponential(
-									2
-								)} mol/s</p>
-								<p>Massenrate: ${faraday.massGrams.toExponential(2)} g/s</p>
-							</div>
-							<sl-divider style="margin-top: 2px; margin-bottom: 2px"></sl<divider>
-							`;
-					}
-				}
-			}
-		}
-
 		this.canvas.drawSelection();
 	}
 
@@ -4067,60 +3828,43 @@ export class ChemLab extends LitElementWw {
 	private renderAmountMenu() {
 		const menu = this.amountMenu;
 		if (!menu) return nothing;
-		const from = "vessel" in menu.from ? this.itemName(menu.from.vessel._type) : menu.from.name;
-		const target = this.itemName(menu.target._type);
-		const decrease = this.message("Menge verringern");
-		const increase = this.message("Menge erhöhen");
-		const formattedAmount = `${this.formatAmount(menu.amount, 7)} mL`;
-		const editLabel = this.message("Menge bearbeiten (Doppelklick oder F2)");
+		const vesselName = (vessel: chemlib.ChemComponent) => `${this.itemName(vessel._type)} ${vessel._id + 1}`;
+		const from = "vessel" in menu.from ? vesselName(menu.from.vessel) : menu.from.name;
+		const target = vesselName(menu.target);
+		const transfer = "vessel" in menu.from;
+		const sliderStep = menu.max >= 1 ? 1 : menu.max >= 0.1 ? 0.1 : menu.max / 10;
+		const changeAmount = (value: number) => this.setAmount(value);
 		return html`
-			<section id="amountMenu" class="selection-info" tabindex="-1" aria-labelledby="amountMenuTitle"
+			<section id="amountMenu" class="selection-info" tabindex="-1" contenteditable="false" aria-labelledby="amountMenuTitle"
 				@keydown=${this.handleAmountMenuKey}>
-				<div id="amountMenuTitle" class="selection-labels">
-					<sl-badge variant="primary">${from}</sl-badge>
+				<div class="amount-menu-heading">
+					<strong id="amountMenuTitle">${this.message(transfer ? "Inhalt übertragen" : "Stoff hinzufügen")}</strong>
+					${menu.max > 0 ? html`<span class="amount-menu-limit">max. ${this.formatAmount(menu.max, 7)} mL</span>` : nothing}
+				</div>
+				<div class="amount-menu-route">
+					<sl-tag size="small" variant="neutral">${from}</sl-tag>
 					<span class="amount-menu-arrow" aria-hidden="true">
 						<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor">
 							<path d="M2.5 8h10m-4-4 4 4-4 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
 					</span>
-					<sl-badge class="selection-info-title">${target}</sl-badge>
+					<sl-tag size="small" variant="primary">${target}</sl-tag>
 				</div>
-				${!(menu.max > 0) ? html`
-					<div class="amount-menu-row">
-						<span role="status">${this.message("Keine Menge verfügbar.")}</span>
-						<sl-button size="small" @click=${() => {
-							this.closeAmountMenu();
-							this.app.canvas.focus({ preventScroll: true });
-						}}>${this.message("Schließen")}</sl-button>
-					</div>` : html`
-					<div class="amount-menu-row">
-						<button type="button" class="amount-menu-button" title=${decrease} aria-label=${decrease}
-							aria-disabled=${menu.amount <= 0}
-							@click=${(event: MouseEvent) => this.adjustAmount(event.shiftKey ? -10 : -1)}>−</button>
-						<div class="amount-menu-quantity volume-bar" style=${`--amount-progress: ${100 * menu.amount / menu.max}%`}>
-							<output class="amount-menu-value" for="amountMenuSlider" ?inert=${!!menu.editing}>${formattedAmount}</output>
-							${menu.editing ? html`
-								<input id="amountMenuValue" type="text" inputmode="decimal" autocomplete="off"
-									aria-label=${this.message("Menge in mL")}
-									.value=${menu.amount.toLocaleString("en", { useGrouping: false, maximumSignificantDigits: 17 })}
-									@input=${(event: Event) => (event.currentTarget as HTMLInputElement).setCustomValidity("")}>
-							` : html`
-								<input id="amountMenuSlider" type="range" dir="ltr" min="0" max=${menu.max} step="any"
-								.value=${String(menu.amount)}
-								aria-label=${this.message("Menge in mL")} aria-valuetext=${formattedAmount} title=${editLabel}
-								@input=${this.slideAmount} @dblclick=${this.editAmount}>
-							`}
-						</div>
-						<button type="button" class="amount-menu-button" title=${increase} aria-label=${increase}
-							aria-disabled=${menu.amount >= menu.max}
-							@click=${(event: MouseEvent) => this.adjustAmount(event.shiftKey ? 10 : 1)}>+</button>
-						<sl-button size="small" variant="default" class="amount-menu-confirm" title=${this.message("bestätigen")}
-							aria-label=${this.message("bestätigen")} ?disabled=${!menu.editing && menu.amount <= 0} @click=${this.confirmAmount}>
-							<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
-								<path d="m3 8 3 3 7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-							</svg>
-						</sl-button>
-					</div>`}
+				${menu.max > 0 ? renderValueControl({
+					label: this.message("Menge"), unit: "mL", value: menu.amount, min: 0, max: menu.max,
+					step: 0.1, rangeStep: sliderStep, locale: this.lang,
+					decreaseLabel: this.message("Menge verringern"), increaseLabel: this.message("Menge erhöhen"),
+					invalidLabel: this.message("Gib eine Zahl ein."),
+					onChange: changeAmount, onInput: changeAmount,
+				}) : html`<span role="status">${this.message("Keine Menge verfügbar.")}</span>`}
+				<div class="amount-menu-actions">
+					<sl-button size="small" @click=${this.dismissAmountMenu}>
+						${this.message(menu.max > 0 ? "Abbrechen" : "Schließen")}
+					</sl-button>
+					${menu.max > 0 ? html`<sl-button size="small" variant="primary" ?disabled=${menu.amount <= 0} @click=${this.confirmAmount}>
+						${this.message(transfer ? "Übertragen" : "Hinzufügen")}
+					</sl-button>` : nothing}
+				</div>
 			</section>`;
 	}
 
@@ -4226,6 +3970,112 @@ export class ChemLab extends LitElementWw {
 		this.requestUpdate();
 	}
 
+	private renderValveControls(vessel: chemlib.ChemComponent) {
+		const burette = vessel._type === chemlib.ComponentType.Burette;
+		if (!burette && vessel._type !== chemlib.ComponentType.Separatingfunnel) return nothing;
+		const task = `transfer${vessel._type}:${vessel._id}`;
+		const flowing = this.simulation.hasTask(task);
+		const volume = vessel.buretteStepMl;
+		const setStep = (amount: number) => {
+			if (!vessel.setBuretteStepMl(amount)) return;
+			this.requestUpdate();
+		};
+		return keyed(vessel, html`
+			<div class="device-controls">
+				${burette ? renderValueControl({
+					label: this.message("Dosierschritt"), unit: "mL", value: volume,
+					min: Number.MIN_VALUE * 1000, max: Number.MAX_VALUE, rangeMin: .01, rangeMax: 1, step: .01,
+					locale: this.lang, invalidLabel: this.message("Gib eine Zahl ein."), onInput: setStep, onChange: (amount) => {
+						setStep(amount);
+						this.saveSelectedComponent({ stepVolumeMl: vessel.buretteStepMl });
+					},
+				}) : nothing}
+				<div class="device-actions">
+					${burette ? html`<sl-button size="small" id="dispenseBurette" ?disabled=${flowing}
+						@click=${() => {
+							if (this.stepTitration(vessel)) return;
+							this._notify(this.message(!vessel._content._activeMolecules.length ? "Die Bürette ist leer."
+								: !this.canvas.titrationTarget(vessel) ? "Platziere ein Gefäß unter der Bürette."
+								: "Das Zielgefäß kann nichts mehr aufnehmen."));
+						}}>${this.message("Einzeldosis")}</sl-button>` : nothing}
+					<sl-button size="small" id="openComp" variant=${flowing ? "primary" : "default"}
+						@click=${() => {
+							if (flowing) this.simulation.stopTask(task);
+							else this.simulation.startExperiment(task, () => this.stepTitration(vessel));
+							this.requestUpdate();
+							this._sendxAPiStatement(flowing ? "completed" : "started", task);
+						}}>${this.message(flowing ? "Hahn schließen" : "Hahn öffnen")}</sl-button>
+				</div>
+			</div>`);
+	}
+
+	private renderElectricalControls(device: chemlib.ElectricComponent) {
+		const { Source, Multimeter } = chemlib.EComponentType;
+		const source = device._type === Source;
+		if (!source && !isPassiveMeter(device)) return nothing;
+		const mode = source ? device._sourceMode : device._meterMode;
+		const current = mode === "current";
+		const task = `echem${device._type}:${device._id}`;
+		const active = this.simulation.hasTask(task);
+		const changeMode = (next: "voltage" | "current") => {
+			if (next === mode) return;
+			if (source) {
+				device._sourceMode = next;
+				this.saveSelectedComponent({ sourceMode: next });
+			} else {
+				device._meterMode = next;
+				device._visibleVoltage = device._visibleCurrent = null;
+				this.saveSelectedComponent({ meterMode: next });
+			}
+			this.canvas.refreshDeviceDisplay(device);
+			this._updatePopup();
+			this.requestUpdate();
+		};
+		const key = current ? "_sourceCurrent" : "_sourceVoltage";
+		const value = Math.abs(device[key] ?? 0);
+		const setpoint = (next: number) => {
+			device[key] = next;
+			this.canvas.refreshDeviceDisplay(device);
+			this.requestUpdate();
+		};
+		return keyed(device, html`
+			<div class="device-controls">
+				${source ? renderValueControl({
+					label: this.message(current ? "Sollstrom" : "Sollspannung"), unit: current ? "A" : "V", value,
+					min: 0, max: Number.MAX_VALUE, rangeMax: current ? 2 : 30,
+					step: current ? .01 : .1, rangeStep: current ? .01 : .5,
+					locale: this.lang, invalidLabel: this.message("Gib eine Zahl ein."), onInput: setpoint, onChange: (next) => {
+						setpoint(next);
+						this.saveSelectedComponent(current ? { current: next } : { voltage: next });
+						this._sendxAPiStatement("submitted", `${current ? "current" : "voltage"} ${device._type}:${device._id}`);
+					},
+				}) : nothing}
+				<div class="device-actions">
+					${source || device._type === Multimeter ? html`
+						<div class="device-mode" role="group" aria-label=${this.message(source ? "Betriebsart" : "Messbereich")}>
+							${(["voltage", "current"] as const).map(next => {
+								const label = this.message(next === "voltage"
+									? source ? "Spannung vorgeben" : "Spannung" : source ? "Stromstärke vorgeben" : "Stromstärke");
+								return html`<sl-button size="small" data-mode=${next} variant=${mode === next ? "primary" : "default"}
+									aria-pressed=${mode === next} aria-label=${label} title=${label} @click=${() => changeMode(next)}>
+									${next === "voltage" ? "V" : "A"}</sl-button>`;
+							})}
+						</div>` : nothing}
+					<sl-button size="small" id="activateEComp" variant=${active ? "primary" : "default"}
+						@click=${() => {
+							this.canvas.setDeviceActive(device, !active);
+							if (active) {
+								this.simulation.stopTask(task);
+								this.clearEChemReadings(device);
+							} else this.startElectricalExperiment(task, device);
+							this._updatePopup();
+							this.requestUpdate();
+							this._sendxAPiStatement(active ? "completed" : "started", task);
+						}}>${this.message(active ? "Ausschalten" : "Einschalten")}</sl-button>
+				</div>
+			</div>`);
+	}
+
 	private renderElectricalSettings(device: chemlib.ElectricComponent) {
 		const { Cable, Electrode, Source } = chemlib.EComponentType;
 		if (device._type === Cable) return nothing;
@@ -4240,7 +4090,6 @@ export class ChemLab extends LitElementWw {
 			: [];
 		const material = materials.find(variant => variant.material?.name === device._material?.name);
 		const hasSource = device._type === Source;
-		const hasMeter = device._type === chemlib.EComponentType.Multimeter;
 		const passiveMeter = isPassiveMeter(device);
 		const hasLabel = device._type === chemlib.EComponentType.Label;
 		const hasElectrode = device._type === Electrode;
@@ -4253,57 +4102,36 @@ export class ChemLab extends LitElementWw {
 		const minusPole = hasSource ? chemlib.ComponentManager.terminalElectrode(device, 1) : undefined;
 		const poles = plusPole && minusPole && plusPole !== minusPole
 			? { plus: plusPole, minus: minusPole } : undefined;
+		const settings = this.canAuthor && (hasSource || passiveMeter || hasLabel || hasElectrode);
+		if (!settings && !connections.length) return nothing;
 		return keyed(device, html`
-			<sl-details class="electrical-settings" summary=${this.message("Eigenschaften")}
+			<sl-details class="electrical-settings" summary=${this.message(settings ? "Erweiterte Einstellungen" : "Verbunden mit")}
 				@sl-after-show=${() => this.canvas.drawSelection()} @sl-after-hide=${() => this.canvas.drawSelection()}>
-				${hasSource ? html`
-					<label>${this.message("Betriebsart")}
-					<select contenteditable="false" @change=${(event: Event) => {
-							const mode = (event.currentTarget as HTMLSelectElement).value === "current" ? "current" : "voltage";
-							device._sourceMode = mode;
-							this.saveSelectedComponent({ sourceMode: mode });
-							this.canvas.refreshDeviceDisplay(device);
-							this._updatePopup();
-					}}>
-						<option value="voltage" ?selected=${device._sourceMode !== "current"}>${this.message("Spannung vorgeben")}</option>
-						<option value="current" ?selected=${device._sourceMode === "current"}>${this.message("Stromstärke vorgeben")}</option>
-					</select></label>
-					${device._sourceMode === "current" ? html`
-						<sl-input id="complianceVoltage" size="small" type="number" contenteditable="false"
-							label=${this.message("Grenzspannung")} .value=${String(device._complianceVoltage ?? 30)}></sl-input>` : nothing}
-					<sl-input id="sourceVoltage" size="small" type="number" contenteditable="false"
-						label=${this.message("Quellspannung")} .value=${String(device._sourceVoltage ?? 0)}></sl-input>
-					<sl-input id="sourceCurrent" size="small" type="number" contenteditable="false"
-						label=${this.message("Quellstromstärke")} .value=${String(device._sourceCurrent ?? 0)}></sl-input>
-					<sl-button size="small" @click=${() => {
-						const value = (id: string) => Number.parseFloat(this.shadowRoot.querySelector<SlInput>(id).value) || 0;
-						device._sourceVoltage = value("#sourceVoltage");
-						device._sourceCurrent = value("#sourceCurrent");
-						const compliance = this.shadowRoot.querySelector<SlInput>("#complianceVoltage");
-						if (compliance) device._complianceVoltage = Math.abs(Number.parseFloat(compliance.value)) || 30;
-						this.saveSelectedComponent({
-							voltage: device._sourceVoltage,
-							current: device._sourceCurrent,
-							complianceVoltage: device._complianceVoltage,
-						});
-						this.canvas.refreshDeviceDisplay(device);
-						this._updatePopup();
-						this._sendxAPiStatement("submitted", "voltage " + device._type + ":" + device._id);
-					}}>${this.message("bestätigen")}</sl-button>` : nothing}
-				${hasMeter ? html`
-					<label>${this.message("Messbereich")}
-					<select contenteditable="false" @change=${(event: Event) => {
-							const mode = (event.currentTarget as HTMLSelectElement).value === "current" ? "current" : "voltage";
-							device._meterMode = mode;
-							this.saveSelectedComponent({ meterMode: mode });
-							this.canvas.refreshDeviceDisplay(device);
-							this._updatePopup();
-					}}>
-						<option value="voltage" ?selected=${device._meterMode !== "current"}>${this.message("Spannung")}</option>
-						<option value="current" ?selected=${device._meterMode === "current"}>${this.message("Stromstärke")}</option>
-					</select></label>` : nothing}
-				${passiveMeter ? this.renderRCSettings(device) : nothing}
-				${hasLabel ? html`
+				${settings && hasSource ? keyed(device._sourceMode, device._sourceMode === "current" ? html`
+					<sl-input size="small" type="number" min="0" step="any" contenteditable="false"
+						label=${this.message("Grenzspannung in V")} .value=${String(device._complianceVoltage)}
+						@sl-change=${(event: Event) => {
+							const input = event.currentTarget as SlInput;
+							const value = input.valueAsNumber;
+							if (Number.isFinite(value) && value >= 0) {
+								device._complianceVoltage = value;
+								this.saveSelectedComponent({ complianceVoltage: value });
+							}
+							input.value = String(device._complianceVoltage);
+						}}></sl-input>`
+					: html`<sl-input size="small" type="number" min="0" step="any" contenteditable="false"
+						label=${this.message("Strombegrenzung in A (0 = unbegrenzt)")} .value=${String(device._sourceCurrent ?? 0)}
+						@sl-change=${(event: Event) => {
+							const input = event.currentTarget as SlInput;
+							const value = input.value === "" ? 0 : input.valueAsNumber;
+							if (Number.isFinite(value) && value >= 0) {
+								device._sourceCurrent = value;
+								this.saveSelectedComponent({ current: value });
+							}
+							input.value = String(device._sourceCurrent);
+						}}></sl-input>`) : nothing}
+				${settings && passiveMeter ? this.renderRCSettings(device) : nothing}
+				${settings && hasLabel ? html`
 					<sl-input id="labelText" size="small" contenteditable="false"
 						label=${this.message("Beschriftung")} .value=${device._labelText ?? ""}></sl-input>
 					<sl-button size="small" @click=${() => {
@@ -4312,7 +4140,7 @@ export class ChemLab extends LitElementWw {
 						this.canvas.refreshDeviceDisplay(device);
 						this._updatePopup();
 					}}>${this.message("bestätigen")}</sl-button>` : nothing}
-				${hasElectrode ? html`
+				${settings && hasElectrode ? html`
 					<sl-input id="electrodeArea" size="small" type="number" min="0.1" step="0.1" contenteditable="false"
 						label=${this.message("Benetzte Fläche in cm²")}
 						.value=${device._area > 0 ? String(device._area) : ""}
@@ -4331,7 +4159,7 @@ export class ChemLab extends LitElementWw {
 						this.canvas.refreshDeviceDisplay(device);
 						this._updatePopup();
 					}}>${this.message("bestätigen")}</sl-button>` : nothing}
-				${poles ? html`
+				${settings && poles ? html`
 					<label>${this.message("Polung")}
 					<select contenteditable="false" @change=${(event: Event) => {
 							const polarity = Number.parseInt((event.currentTarget as HTMLSelectElement).value);
@@ -4364,7 +4192,7 @@ export class ChemLab extends LitElementWw {
 					</select></label>` : nothing}
 				${connections.length ? html`
 					<div class="connection-list">
-						<span class="connection-list-label">${this.message("Verbunden mit")}</span>
+						${settings ? html`<span class="connection-list-label">${this.message("Verbunden mit")}</span>` : nothing}
 						${connections.map(({ other }) => html`<sl-tag size="small" variant="neutral">${label(other)}</sl-tag>`)}
 					</div>` : nothing}
 			</sl-details>
@@ -4405,44 +4233,93 @@ export class ChemLab extends LitElementWw {
 					if (next && !validRCSettings(next)) return;
 					device._rcSettings = next;
 					this.saveSelectedComponent({ rcSettings: next });
+					const task = `echem${device._type}:${device._id}`;
+					if (this.simulation.hasTask(task)) {
+						this.rcReadouts.delete(device);
+						this.startElectricalExperiment(task, device);
+					}
+					this._updatePopup();
 					this.requestUpdate();
 				}}>${this.message("bestätigen")}</sl-button>
 			</sl-details>`;
 	}
 
-	private renderRCReadout(device: chemlib.ElectricComponent, { sample, timeConstant, cutoffAt }: RCReadout): void {
-		const info = this.contextEchemInfo;
-		let readout = info.querySelector<HTMLDivElement>(".rc-readout");
-		const isNew = !readout;
-		if (!readout) {
-			readout = this.ownerDocument.createElement("div");
-			readout.className = "rc-readout";
-			info.replaceChildren(readout);
+	private renderElectricalReadouts(device: chemlib.ElectricComponent) {
+		const { Source, Voltmeter, Multimeter, Electrode, Bridge, GasCollector, Label } = chemlib.EComponentType;
+		const type = device._type;
+		const source = type === Source;
+		const value = (reading: number, unit: string, magnitude: boolean) =>
+			Number.isFinite(reading) ? `${this.formatAmount(magnitude ? Math.abs(reading) : reading, 4)} ${unit}` : `— ${unit}`;
+		const tag = (text: string, label?: string) => html`<span class="device-reading"
+			title=${label ?? text}>${text}</span>`;
+		const readouts = (items: unknown) => html`<div class="device-readouts">${items}</div>`;
+
+		if (source || isPassiveMeter(device)) {
+			const voltage = type === Voltmeter || (type === Multimeter && device._meterMode === "voltage");
+			const rc = this.hasRCReadout(device) ? this.rcReadouts.get(device) : undefined;
+			const details = source && this.simulation.hasTask(`echem${type}:${device._id}`) ? html`
+				<p>${this.message("Polung")}: ${this.polarityReading(device)}</p>
+				<p>Faraday: ${this.formatAmount(this.cellCurrent(device) / chemlib.Simulation._faradayConst, 3)} mol e⁻/s</p>`
+				: rc ? this.renderRCReadout(device, rc) : nothing;
+			return html`
+				${readouts(html`
+					${source || voltage ? tag(value(device._visibleVoltage, "V", false), this.message("Gemessene Spannung")) : nothing}
+					${source || !voltage ? tag(value(device._visibleCurrent, "A", true), this.message("Gemessene Stromstärke")) : nothing}
+				`)}
+				${details !== nothing ? html`<details class="device-diagnostics" @toggle=${() => this.canvas.drawSelection()}>
+					<summary>${this.message(rc ? "Kapazitiver Zellstrom (RC-Modell)" : "Messdetails")}</summary>${details}
+				</details>` : nothing}`;
 		}
-		const { Voltmeter, Multimeter } = chemlib.EComponentType;
-		const voltage = device._type === Voltmeter || (device._type === Multimeter && device._meterMode === "voltage");
-		const value = voltage ? device._visibleVoltage : device._visibleCurrent;
+		if (type === Electrode) {
+			const material = device._material;
+			const deposit = device.plating;
+			const power = material && chemlib.ComponentManager.isCircuit(device).slice(2).find(component => component._type === Source);
+			const redox = power && chemlib.oxidationOf(material.smilesString);
+			const rate = redox && chemlib.Simulation.faradayLaw(this.cellCurrent(power), redox.el, material.getTotMolMass());
+			return html`
+				${readouts(html`${tag(material ? this.itemName(material.name || "unbekannt") : this.message("kein Material"))}
+					${tag(this.message(device._connectedMix ? "eingetaucht" : "nicht eingetaucht"))}`)}
+				${deposit ? html`<p>${this.message("abgeschieden")}: ${this.formatAmount(deposit.mol * deposit.molecule.getTotMolMass(), 3)}
+					g ${deposit.molecule._kekule_obj.calcFormula().getDisplayText()}</p>` : nothing}
+				${rate ? html`<details class="device-diagnostics" @toggle=${() => this.canvas.drawSelection()}>
+					<summary>Faraday (z = ${redox.el})</summary>
+					<p>${this.message("Stoffmengenrate")}: ${this.formatAmount(rate.substanceMol, 3)} mol/s</p>
+					<p>${this.message("Massenrate")}: ${this.formatAmount(rate.massGrams, 3)} g/s</p>
+				</details>` : nothing}`;
+		}
+		if (type === Bridge) {
+			const legs = device._bridgeMixes.flatMap(mix => {
+				const vessel = this.allChemComponents.find(component => component._content === mix);
+				return vessel ? [`${this.itemName(vessel._type)} · ${vessel._id + 1}`] : [];
+			});
+			return legs.length ? readouts(legs.map(name => tag(name))) : readouts(tag(this.message("kein Gefäß")));
+		}
+		if (type === GasCollector) {
+			const mix = device._connectedMix;
+			const escaped = Math.max(0, (mix?.evolvedGasMol ?? 0) - device._tubeBaseline);
+			return readouts(tag(`${this.formatAmount(escaped * chemlib.molarGasVolume(mix?._temperature, mix?._pressure) * 1000, 3)} mL`,
+				this.message("gesammelt")));
+		}
+		return type === Label ? html`<p>${device._labelText || this.message("kein Text")}</p>` : nothing;
+	}
+
+	private renderRCReadout(device: chemlib.ElectricComponent, { sample, timeConstant, cutoffAt }: RCReadout) {
 		const number = (value: number) => value.toPrecision(4);
 		const duration = (seconds: number) => {
 			if (seconds >= 1) return `${number(seconds)} s`;
 			if (seconds >= 1e-3 || seconds === 0) return `${number(seconds * 1000)} ms`;
 			return `${number(seconds * 1e6)} µs`;
 		};
-		render(keyed(device, html`
-			<p>${value === null ? "—" : `${number(Math.abs(value))} ${voltage ? "V" : "A"}`}</p>
-			<details @toggle=${() => this.canvas.drawSelection()}>
-				<summary>${this.message("Kapazitiver Zellstrom (RC-Modell)")}</summary>
-				${device._rcSettings === undefined && device.defaultRCCapacitance
-					? html`<p>${this.message("Modellwert: {value} µF", { value: device.defaultRCCapacitance * 1e6 })}</p>` : nothing}
-				<p>I: ${number(sample.current)} A</p>
-				<p>Q: ${number(sample.charge * 1e6)} µC</p>
-				<p>ΔQ: ${number(sample.transferredCharge * 1e6)} µC</p>
-				<p>${this.message("Gegenspannung")}: ${number(sample.opposingVoltage)} V</p>
-				<p>${this.message("Treibende Spannung")}: ${number(sample.drivingVoltage)} V</p>
-				<p>τ: ${duration(timeConstant)}</p>
-				<p>${this.message("Dauer bis zur Stromschwelle")}: ${duration(cutoffAt)}</p>
-			</details>`), readout);
-		if (isNew) this.canvas.drawSelection();
+		return html`
+			${device._rcSettings === undefined && device.defaultRCCapacitance
+				? html`<p>${this.message("Modellwert: {value} µF", { value: device.defaultRCCapacitance * 1e6 })}</p>` : nothing}
+			<p>I: ${number(sample.current)} A</p>
+			<p>Q: ${number(sample.charge * 1e6)} µC</p>
+			<p>ΔQ: ${number(sample.transferredCharge * 1e6)} µC</p>
+			<p>${this.message("Gegenspannung")}: ${number(sample.opposingVoltage)} V</p>
+			<p>${this.message("Treibende Spannung")}: ${number(sample.drivingVoltage)} V</p>
+			<p>τ: ${duration(timeConstant)}</p>
+			<p>${this.message("Dauer bis zur Stromschwelle")}: ${duration(cutoffAt)}</p>`;
 	}
 
 	private renderObjectSummary() {
@@ -4465,110 +4342,16 @@ export class ChemLab extends LitElementWw {
 						</button>` : nothing}
 					${this.renderSelectionDeleteButton(() => this._removeSprite(), true)}
 				</div>
-				<div id="contextEchemInfo"></div>
+				${vessel ? this.renderValveControls(vessel) : nothing}
+				<div id="contextEchemInfo" ?hidden=${!device}></div>
 				<sl-carousel id="contextMolInfo" pagination mouse-dragging slides-per-page="1" slides-per-move="1"
 					aria-label=${this.message("Inhalt")} style="display: none"></sl-carousel>
 				<div id="contextMixInfo" style="display: none"></div>
-				<div class="selection-actions">
-					${vessel?._type === chemlib.ComponentType.Burette ? keyed(vessel, html`
-						<sl-input class="burette-step" size="small" type="number" min="0" step="any"
-							contenteditable="false" label=${this.message("Dosierschritt")}
-							.value=${String(Number(vessel.buretteStepMl.toPrecision(12)))}
-							@sl-change=${(event: Event) => {
-								const input = event.currentTarget as SlInput;
-								if (vessel.setBuretteStepMl(input.valueAsNumber)) {
-									this.saveSelectedComponent({ stepVolumeMl: input.valueAsNumber });
-									this.requestUpdate();
-								}
-								input.value = String(Number(vessel.buretteStepMl.toPrecision(12)));
-							}}>
-							<span slot="suffix">mL</span>
-						</sl-input>`) : nothing}
-					<button
-						id="openComp"
-						@click="${(event) => {
-							if (
-								!this.simulation.hasTask("transfer" + this.curr_name)
-							) {
-								this.requestUpdate();
-								let source = this.curr_obj;
-								this.simulation.startExperiment("transfer" + this.curr_name,
-									() => this.stepTitration(source));
-								this._sendxAPiStatement(
-									"started",
-									"transfer" +
-										this.curr_obj._type +
-										":" +
-										this.curr_obj._id
-								);
-							} else {
-								this.requestUpdate();
-								this.simulation.stopTask(
-									"transfer" +
-										this.curr_name
-								);
-								this._sendxAPiStatement(
-									"completed",
-									"transfer" +
-										this.curr_obj._type +
-										":" +
-										this.curr_obj._id
-								);
-							}
-						}}"
-					>
-						${this.message(this.simulation.hasTask("transfer" + this.curr_name) ? "Schließen" : "Öffnen")}
-					</button>
-					<button
-						id="activateEComp"
-						@click="${(event) => {
-							if (
-								!this.simulation.hasTask("echem" + this.curr_name)
-							) {
-								this.requestUpdate();
-								this.canvas.setDeviceActive(this.curr_obj, true);
-								let source = this.curr_obj;
-								this.startElectricalExperiment("echem" + this.curr_name, source);
-								this._updatePopup();
-								this._sendxAPiStatement(
-									"started",
-									"echem" +
-										this.curr_obj._type +
-										":" +
-										this.curr_obj._id
-								);
-							} else {
-								this.requestUpdate();
-								this.canvas.setDeviceActive(this.curr_obj, false);
-								this.simulation.stopTask(
-									"echem" +
-										this.curr_name
-								);
-								this.clearEChemReadings(this.curr_obj);
-								this._updatePopup();
-								this._sendxAPiStatement(
-									"completed",
-									"echem" +
-										this.curr_obj._type +
-										":" +
-										this.curr_obj._id
-								);
-							}
-						}}"
-					>
-						${this.message(this.simulation.hasTask("echem" + this.curr_name) ? "Ausschalten" : "Einschalten")}
-					</button>
-				</div>
-				${device ? this.renderElectricalSettings(device) : nothing}
+				${device ? html`${this.renderElectricalControls(device)}${this.renderElectricalSettings(device)}` : nothing}
 			</section>
 		`;
 	}
 
-
-	private voltageReading(device?: chemlib.ElectricComponent): string {
-		if (device?._visibleVoltage === null) return this.message("Spannung nicht berechenbar");
-		return `${(device?._visibleVoltage ?? 0).toExponential(2)} V`;
-	}
 
 	/**
 	 * Names the electrode that sits on the plus pole of a source, which is the
