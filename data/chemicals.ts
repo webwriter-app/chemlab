@@ -1,10 +1,13 @@
+import type { AqueousAcidBase } from "../chemlib/AcidBase";
 import { saltSolubility } from "../chemlib/saltSolubility";
 
 export interface MoleculeDefinition {
 	formula: string;
+	name?: string;
 	atoms: string[];
 	bonds: string[];
 	charges?: number[];
+	aqueousAcidBase?: AqueousAcidBase;
 }
 
 export interface ChemicalRecipe {

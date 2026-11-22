@@ -1,3 +1,15 @@
+/** Successive aqueous dissociations and the protonation step of a stored molecule. */
+export type AqueousAcidBase = { pKa: number[]; step: number };
+
+export function readAqueousAcidBase(value: unknown): AqueousAcidBase | undefined {
+	const entry = value as AqueousAcidBase;
+	if (!entry || !Array.isArray(entry.pKa) || !entry.pKa.length || entry.pKa.length > 8 ||
+		!Number.isInteger(entry.step) || entry.step < 0 || entry.step > entry.pKa.length ||
+		!entry.pKa.every((pKa, index) => Number.isFinite(pKa) && pKa >= -20 && pKa <= 35 &&
+			(!index || pKa >= entry.pKa[index - 1]))) return;
+	return { step: entry.step, pKa: [...entry.pKa] };
+}
+
 /**
  * General aqueous acid–base equilibrium solver.
  *

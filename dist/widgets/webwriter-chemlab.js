@@ -42,7 +42,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
-var __decoratorStart = (base) => [, , , __create(base?.[__knownSymbol("metadata")] ?? null)];
+var __decoratorStart = (base2) => [, , , __create(base2?.[__knownSymbol("metadata")] ?? null)];
 var __decoratorStrings = ["class", "method", "getter", "setter", "accessor", "field", "value", "get", "set"];
 var __expectFn = (fn) => fn !== void 0 && typeof fn !== "function" ? __typeError("Function expected") : fn;
 var __decoratorContext = (kind, name2, done, metadata, fns) => ({ kind: __decoratorStrings[kind], name: name2, metadata, addInitializer: (fn) => done._ ? __typeError("Already initialized") : fns.push(__expectFn(fn || null)) });
@@ -30683,9 +30683,9 @@ function uniqueIds(values) {
 }
 function readStructure(value) {
   if (!record(value) || value.version !== 1 || typeof value.name !== "string" || value.name.length > 160) return null;
-  const base = { version: 1, name: value.name };
-  if (typeof value.catalogKey === "string" && value.catalogKey.length <= 160) base.catalogKey = value.catalogKey;
-  if (typeof value.source === "string" && value.source.length <= 240) base.source = value.source;
+  const base2 = { version: 1, name: value.name };
+  if (typeof value.catalogKey === "string" && value.catalogKey.length <= 160) base2.catalogKey = value.catalogKey;
+  if (typeof value.source === "string" && value.source.length <= 240) base2.source = value.source;
   if (value.kind === "molecule") {
     if (!Array.isArray(value.atoms) || value.atoms.length > MAX_ATOMS || !Array.isArray(value.bonds) || value.bonds.length > MAX_ATOMS * 4) return null;
     const atoms = [];
@@ -30703,14 +30703,22 @@ function readStructure(value) {
       const pair = [bond.from, bond.to].sort((a6, b4) => a6 - b4).join("-");
       if (pairs.has(pair)) return null;
       pairs.add(pair);
-      bonds.push({ from: bond.from, to: bond.to, order: bond.order, ...bond.dative === true ? { dative: true } : {} });
+      if (bond.kind !== void 0 && bond.kind !== "ionic" && bond.kind !== "covalent") return null;
+      if (bond.kind === "ionic" && (bond.order !== 1 || bond.dative)) return null;
+      bonds.push({
+        from: bond.from,
+        to: bond.to,
+        order: bond.order,
+        ...bond.kind === "ionic" || bond.kind === "covalent" ? { kind: bond.kind } : {},
+        ...bond.dative === true ? { dative: true } : {}
+      });
     }
     const geometry = value.geometry === "idealized" || value.geometry === "supplied" || value.geometry === "estimated" ? value.geometry : void 0;
     const representation = value.representation === "constituent" || value.representation === "repeat-unit" || value.representation === "ionic-components" || value.representation === "aqueous-ions" || value.representation === "conformer" || value.representation === "experimental" ? value.representation : void 0;
     const repeat = value.repeatUnit;
     const repeatAtoms = record(repeat) && Array.isArray(repeat.atoms) ? repeat.atoms : [];
     const repeatUnit = repeatAtoms.length >= 2 && repeatAtoms.length <= atomIds.size && new Set(repeatAtoms).size === repeatAtoms.length && repeatAtoms.every((id3) => atomIds.has(id3)) && record(repeat) && Array.isArray(repeat.ends) && repeat.ends.length === 2 && repeat.ends[0] !== repeat.ends[1] && repeat.ends.every((id3) => repeatAtoms.includes(id3)) ? { atoms: [...repeatAtoms], ends: [repeat.ends[0], repeat.ends[1]] } : void 0;
-    return { ...base, kind: "molecule", atoms, bonds, geometry, representation, repeatUnit };
+    return { ...base2, kind: "molecule", atoms, bonds, geometry, representation, repeatUnit };
   }
   if (value.kind !== "crystal" || !record(value.cell) || !numbers2(value.cell.lengths, 3) || !numbers2(value.cell.angles, 3) || !Array.isArray(value.sites) || value.sites.length > MAX_SITES) return null;
   const cell = { lengths: [...value.cell.lengths], angles: [...value.cell.angles] };
@@ -30741,7 +30749,7 @@ function readStructure(value) {
   const spaceGroup = typeof value.spaceGroup === "string" ? value.spaceGroup.slice(0, 60) : void 0;
   const conditions = typeof value.conditions === "string" ? value.conditions.slice(0, 96) : void 0;
   const temperatureK = typeof value.temperatureK === "number" && Number.isFinite(value.temperatureK) && value.temperatureK >= 0 ? value.temperatureK : void 0;
-  return { ...base, kind: "crystal", cell, sites, bravais, spaceGroup, conditions, temperatureK };
+  return { ...base2, kind: "crystal", cell, sites, bravais, spaceGroup, conditions, temperatureK };
 }
 var MAX_ATOMS, MAX_SITES, MAX_FILE_BYTES;
 var init_structure = __esm({
@@ -30750,6 +30758,84 @@ var init_structure = __esm({
     MAX_ATOMS = 128;
     MAX_SITES = 128;
     MAX_FILE_BYTES = 512 * 1024;
+  }
+});
+
+// molecule-builder/bond-types.ts
+function ionicLimits(left, right) {
+  const a6 = left.charge || commonIons[left.atomicNumber];
+  const b4 = right.charge || commonIons[right.atomicNumber];
+  return a6 * b4 < 0 ? [a6, b4] : void 0;
+}
+function ionicCharges(molecule2) {
+  const atoms = new Map(molecule2.atoms.map((atom) => [atom.id, atom]));
+  const charges = new Map(molecule2.atoms.map((atom) => [atom.id, atom.charge]));
+  for (const bond of molecule2.bonds) {
+    if (isCovalentBond(bond)) continue;
+    const left = atoms.get(bond.from);
+    const right = atoms.get(bond.to);
+    const limits2 = ionicLimits(left, right);
+    if (!limits2) continue;
+    if (!left.charge) charges.set(left.id, charges.get(left.id) + Math.sign(limits2[0]));
+    if (!right.charge) charges.set(right.id, charges.get(right.id) + Math.sign(limits2[1]));
+  }
+  return charges;
+}
+function completeIonicFormula(molecule2, charges) {
+  const ions = new Set(molecule2.bonds.filter((bond) => !isCovalentBond(bond)).flatMap((bond) => [bond.from, bond.to]));
+  return molecule2.atoms.every((atom) => !ions.has(atom.id) || (atom.charge || commonIons[atom.atomicNumber]) === charges.get(atom.id));
+}
+var commonIons, isCovalentBond;
+var init_bond_types = __esm({
+  "molecule-builder/bond-types.ts"() {
+    commonIons = {
+      3: 1,
+      11: 1,
+      19: 1,
+      37: 1,
+      55: 1,
+      12: 2,
+      20: 2,
+      38: 2,
+      56: 2,
+      8: -2,
+      9: -1,
+      16: -2,
+      17: -1,
+      35: -1,
+      53: -1
+    };
+    isCovalentBond = (bond) => bond.kind !== "ionic";
+  }
+});
+
+// molecule-builder/formula.ts
+function formula(structure) {
+  if (structure.kind === "crystal" && structure.catalogKey && structure.name) return structure.name;
+  const counts2 = /* @__PURE__ */ new Map();
+  for (const { atomicNumber } of structure.kind === "molecule" ? structure.atoms : structure.sites) {
+    const symbol = ElementData.getData(elementNames[atomicNumber - 1])?.["symbol"];
+    if (!symbol) continue;
+    counts2.set(symbol, (counts2.get(symbol) ?? 0) + 1);
+  }
+  const ordered = [...counts2.keys()].sort((a6, b4) => a6.localeCompare(b4, "en"));
+  if (counts2.has("C")) {
+    ordered.splice(ordered.indexOf("C"), 1);
+    if (counts2.has("H")) ordered.splice(ordered.indexOf("H"), 1);
+    ordered.unshift(...counts2.has("H") ? ["C", "H"] : ["C"]);
+  }
+  const gcd = (a6, b4) => b4 ? gcd(b4, a6 % b4) : a6;
+  const divisor = structure.kind === "crystal" ? [...counts2.values()].reduce(gcd, 0) : 1;
+  return ordered.map((symbol) => {
+    const count2 = counts2.get(symbol) / divisor;
+    return symbol + (count2 > 1 ? String(count2) : "");
+  }).join("");
+}
+var elementNames;
+var init_formula = __esm({
+  "molecule-builder/formula.ts"() {
+    init_ElementData();
+    elementNames = ElementData.getElementList();
   }
 });
 
@@ -31062,15 +31148,15 @@ var require_eventemitter3 = __commonJS({
       this._eventsCount = 0;
     }
     EventEmitter2.prototype.eventNames = function eventNames() {
-      var names2 = [], events, name2;
-      if (this._eventsCount === 0) return names2;
+      var names3 = [], events, name2;
+      if (this._eventsCount === 0) return names3;
       for (name2 in events = this._events) {
-        if (has.call(events, name2)) names2.push(prefix ? name2.slice(1) : name2);
+        if (has.call(events, name2)) names3.push(prefix ? name2.slice(1) : name2);
       }
       if (Object.getOwnPropertySymbols) {
-        return names2.concat(Object.getOwnPropertySymbols(events));
+        return names3.concat(Object.getOwnPropertySymbols(events));
       }
-      return names2;
+      return names3;
     };
     EventEmitter2.prototype.listeners = function listeners(event) {
       var evt = prefix ? prefix + event : event, handlers = this._events[evt];
@@ -43428,14 +43514,14 @@ var init_convertToList = __esm({
 });
 
 // node_modules/pixi.js/lib/assets/utils/createStringVariations.mjs
-function processX(base, ids, depth, result, tags) {
+function processX(base2, ids, depth, result, tags) {
   const id3 = ids[depth];
   for (let i11 = 0; i11 < id3.length; i11++) {
     const value = id3[i11];
     if (depth < ids.length - 1) {
-      processX(base.replace(result[depth], value), ids, depth + 1, result, tags);
+      processX(base2.replace(result[depth], value), ids, depth + 1, result, tags);
     } else {
-      tags.push(base.replace(result[depth], value));
+      tags.push(base2.replace(result[depth], value));
     }
   }
 }
@@ -45720,8 +45806,8 @@ var init_canvasUtils = __esm({
       getTintedCanvas: (sprite, color2) => {
         const texture = sprite.texture;
         const stringColor = Color3.shared.setValue(color2).toHex();
-        const cache = texture.tintCache || (texture.tintCache = {});
-        const cachedCanvas = cache[stringColor];
+        const cache2 = texture.tintCache || (texture.tintCache = {});
+        const cachedCanvas = cache2[stringColor];
         const resourceId = texture.source._resourceId;
         if (cachedCanvas?.tintId === resourceId) {
           return cachedCanvas;
@@ -45733,17 +45819,17 @@ var init_canvasUtils = __esm({
           const tintImage = DOMAdapter.get().createImage();
           tintImage.src = canvas.toDataURL();
           tintImage.tintId = resourceId;
-          cache[stringColor] = tintImage;
+          cache2[stringColor] = tintImage;
         } else {
-          cache[stringColor] = canvas;
+          cache2[stringColor] = canvas;
         }
-        return cache[stringColor];
+        return cache2[stringColor];
       },
       getTintedPattern: (texture, color2) => {
         const stringColor = Color3.shared.setValue(color2).toHex();
-        const cache = texture.patternCache || (texture.patternCache = {});
+        const cache2 = texture.patternCache || (texture.patternCache = {});
         const resourceId = texture.source._resourceId;
-        let pattern = cache[stringColor];
+        let pattern = cache2[stringColor];
         if (pattern?.tintId === resourceId) {
           return pattern;
         }
@@ -45754,7 +45840,7 @@ var init_canvasUtils = __esm({
         const context2 = canvasUtils.canvas.getContext("2d");
         pattern = context2.createPattern(canvasUtils.canvas, "repeat");
         pattern.tintId = resourceId;
-        cache[stringColor] = pattern;
+        cache2[stringColor] = pattern;
         return pattern;
       },
       /**
@@ -63310,12 +63396,12 @@ var init_GlRenderTargetAdaptor = __esm({
             clear &= ~CLEAR.COLOR;
           } else {
             const color2 = attachments[0].clearValue ?? clearColor ?? this._renderTargetSystem.defaultClearColor;
-            const cache = this._clearColorCache;
-            if (cache[0] !== color2[0] || cache[1] !== color2[1] || cache[2] !== color2[2] || cache[3] !== color2[3]) {
-              cache[0] = color2[0];
-              cache[1] = color2[1];
-              cache[2] = color2[2];
-              cache[3] = color2[3];
+            const cache2 = this._clearColorCache;
+            if (cache2[0] !== color2[0] || cache2[1] !== color2[1] || cache2[2] !== color2[2] || cache2[3] !== color2[3]) {
+              cache2[0] = color2[0];
+              cache2[1] = color2[1];
+              cache2[2] = color2[2];
+              cache2[3] = color2[3];
               gl.clearColor(color2[0], color2[1], color2[2], color2[3]);
             }
           }
@@ -63695,9 +63781,9 @@ var init_TextureView = __esm({
 
 // node_modules/pixi.js/lib/rendering/renderers/gl/shader/GenerateShaderSyncCode.mjs
 function invert(layout) {
-  const names2 = {};
-  for (const name2 in layout) names2[layout[name2]] = name2;
-  return names2;
+  const names3 = {};
+  for (const name2 in layout) names3[layout[name2]] = name2;
+  return names3;
 }
 function generateShaderSyncCode(shader, shaderSystem) {
   const funcFragments = [];
@@ -74705,11 +74791,11 @@ var init_measureTaggedText = __esm({
 });
 
 // node_modules/pixi.js/lib/scene/text/canvas/utils/wordWrap.mjs
-function getFromCache(key, letterSpacing, cache, context2, measureTextFn) {
-  let width = cache[key];
+function getFromCache(key, letterSpacing, cache2, context2, measureTextFn) {
+  let width = cache2[key];
   if (typeof width !== "number") {
     width = measureTextFn(key, letterSpacing, context2) + letterSpacing;
-    cache[key] = width;
+    cache2[key] = width;
   }
   return width;
 }
@@ -74719,7 +74805,7 @@ function wordWrap(text, style2, canvas, measureTextFn, canBreakWordsFn, canBreak
   let width = 0;
   let line = "";
   const linesArray = [];
-  const cache = /* @__PURE__ */ Object.create(null);
+  const cache2 = /* @__PURE__ */ Object.create(null);
   const { letterSpacing, whiteSpace } = style2;
   const shouldCollapseSpaces = collapseSpaces(whiteSpace);
   const shouldCollapseNewlines = collapseNewlines(whiteSpace);
@@ -74745,7 +74831,7 @@ function wordWrap(text, style2, canvas, measureTextFn, canBreakWordsFn, canBreak
         continue;
       }
     }
-    const tokenWidth = getFromCache(token, letterSpacing, cache, context2, measureTextFn);
+    const tokenWidth = getFromCache(token, letterSpacing, cache2, context2, measureTextFn);
     if (tokenWidth > wordWrapWidth) {
       if (line !== "") {
         linesArray.push(trimRight(line));
@@ -74755,7 +74841,7 @@ function wordWrap(text, style2, canvas, measureTextFn, canBreakWordsFn, canBreak
       if (canBreakWordsFn(token, style2.breakWords)) {
         const charGroups = getCharacterGroups(token, style2.breakWords, wordWrapSplitFn, canBreakCharsFn);
         for (const char of charGroups) {
-          const characterWidth = getFromCache(char, letterSpacing, cache, context2, measureTextFn);
+          const characterWidth = getFromCache(char, letterSpacing, cache2, context2, measureTextFn);
           if (characterWidth + width > wordWrapWidth) {
             linesArray.push(trimRight(line));
             canPrependSpaces = false;
@@ -77276,6 +77362,10 @@ var init_sources = __esm({
 });
 
 // molecule-builder/radii.ts
+function ionicRadius(atomicNumber, charge, coordination) {
+  const pm = ionicPm.get(`${atomicNumber}:${charge}:${coordination}`);
+  return pm === void 0 ? void 0 : { pm, model: "ionic", coordination };
+}
 function atomRadius(atomicNumber) {
   const covalent2 = covalentPm[atomicNumber];
   if (covalent2) return { pm: covalent2, model: "covalent" };
@@ -77288,7 +77378,7 @@ function estimatedBondLength(left, right, order) {
   const sum = (a6?.[0] ?? atomRadius(left).pm) + (b4?.[0] ?? atomRadius(right).pm);
   return sum / 100 * [1, 0.9, 0.82][order - 1];
 }
-var covalentPm, molecularPm;
+var covalentPm, molecularPm, ionicPm;
 var init_radii = __esm({
   "molecule-builder/radii.ts"() {
     init_element_reference();
@@ -77406,6 +77496,23 @@ var init_radii = __esm({
       [35, [114]],
       [53, [133]]
     ]);
+    ionicPm = /* @__PURE__ */ new Map([
+      ["8:-2:3", 136],
+      ["8:-2:4", 138],
+      ["8:-2:6", 140],
+      ["11:1:6", 102],
+      ["12:2:6", 72],
+      ["17:-1:6", 181],
+      ["19:1:6", 138],
+      ["20:2:6", 100],
+      ["25:4:6", 53],
+      ["26:3:6", 64.5],
+      ["29:2:4", 57],
+      ["35:-1:6", 196],
+      ["47:1:6", 115],
+      ["53:-1:6", 220],
+      ["56:2:12", 161]
+    ]);
   }
 });
 
@@ -77427,7 +77534,13 @@ __export(geometry_exports, {
   subtract: () => subtract,
   unit: () => unit
 });
-function bondLength(molecule2, left, right, order) {
+function bondLength(molecule2, left, right, order, kind) {
+  if (kind === "ionic") {
+    const charges = ionicCharges(molecule2);
+    const a6 = ionicRadius(left.atomicNumber, charges.get(left.id), 6);
+    const b4 = ionicRadius(right.atomicNumber, charges.get(right.id), 6);
+    return a6 && b4 ? (a6.pm + b4.pm) / 100 : estimatedBondLength(left.atomicNumber, right.atomicNumber, 1) * 1.2;
+  }
   if (molecule2.atoms.length === 2 && !left.charge && !right.charge && left.atomicNumber === right.atomicNumber) {
     const reference2 = experimentalDiatomics.get(`${left.atomicNumber}:${order}`);
     if (reference2 !== void 0) return reference2;
@@ -77447,6 +77560,7 @@ function remainingElectrons(atom, bonds, continuations = 0) {
   const valence = mainGroupValence(atom.atomicNumber);
   return valence === void 0 ? void 0 : valence - atom.charge - continuations - bonds.reduce((sum, bond) => {
     if (bond.from !== atom.id && bond.to !== atom.id) return sum;
+    if (!isCovalentBond(bond)) return sum;
     return sum + (bond.dative ? bond.from === atom.id ? 2 : 0 : bond.order);
   }, 0);
 }
@@ -77455,7 +77569,7 @@ function canBond(molecule2, from2, to2, order) {
     const atom = molecule2.atoms.find((item) => item.id === id3);
     if (!atom) return false;
     const other = id3 === from2 ? to2 : from2;
-    const sum = molecule2.bonds.reduce((count2, bond) => bond.from === id3 && bond.to !== other || bond.to === id3 && bond.from !== other ? count2 + bond.order : count2, order);
+    const sum = molecule2.bonds.reduce((count2, bond) => isCovalentBond(bond) && (bond.from === id3 && bond.to !== other || bond.to === id3 && bond.from !== other) ? count2 + bond.order : count2, order);
     const continuation = molecule2.repeatUnit?.ends.includes(id3) ? 1 : 0;
     return sum + continuation <= (maximumOrder.get(atom.atomicNumber) ?? 6);
   });
@@ -77464,6 +77578,7 @@ function shapeFor(molecule2, id3) {
   const atom = molecule2.atoms.find((entry) => entry.id === id3);
   const bonds = molecule2.bonds.filter((bond) => bond.from === id3 || bond.to === id3);
   if (bonds.length < 2) return { angle: 180, domains: 2 };
+  if (bonds.some((bond) => !isCovalentBond(bond))) return null;
   const remaining = remainingElectrons(atom, bonds);
   if (remaining === void 0) return null;
   const domains = bonds.length + remaining / 2;
@@ -77471,7 +77586,7 @@ function shapeFor(molecule2, id3) {
   return { domains, angle: domains === 2 ? 180 : domains === 3 ? 120 : 109.4712206 };
 }
 function shapeName(molecule2, id3) {
-  const neighbors = molecule2.bonds.filter((bond) => bond.from === id3 || bond.to === id3).length;
+  const neighbors = molecule2.bonds.filter((bond) => isCovalentBond(bond) && (bond.from === id3 || bond.to === id3)).length;
   if (neighbors < 2) return void 0;
   const shape = shapeFor(molecule2, id3);
   if (!shape) return void 0;
@@ -77483,8 +77598,8 @@ function shapeName(molecule2, id3) {
 function idealizedGeometry(molecule2) {
   const neighbors = new Map(molecule2.atoms.map((atom) => [atom.id, []]));
   for (const bond of molecule2.bonds) {
-    neighbors.get(bond.from).push({ id: bond.to, order: bond.order });
-    neighbors.get(bond.to).push({ id: bond.from, order: bond.order });
+    neighbors.get(bond.from).push({ id: bond.to, order: bond.order, kind: bond.kind });
+    neighbors.get(bond.to).push({ id: bond.from, order: bond.order, kind: bond.kind });
   }
   const atoms = new Map(molecule2.atoms.map((atom) => [atom.id, atom]));
   const placements2 = /* @__PURE__ */ new Map();
@@ -77514,7 +77629,7 @@ function idealizedGeometry(molecule2) {
           scale(axis, Math.cos(angle)),
           scale(add(scale(tangent, Math.cos(azimuth)), scale(normal2, Math.sin(azimuth))), Math.sin(angle))
         );
-        const distance = bondLength(molecule2, atoms.get(id3), atoms.get(child.id), child.order);
+        const distance = bondLength(molecule2, atoms.get(id3), atoms.get(child.id), child.order, child.kind);
         const position = add(current, scale(direction, distance));
         placements2.set(child.id, position);
         rightEdge = Math.max(rightEdge, position[0]);
@@ -77531,7 +77646,7 @@ function estimatedGeometry(molecule2) {
   const neighbors = atoms.map(() => []);
   const lengths = molecule2.bonds.map((bond) => {
     const a6 = indexes.get(bond.from), b4 = indexes.get(bond.to);
-    const distance = bondLength(molecule2, atoms[a6], atoms[b4], bond.order);
+    const distance = bondLength(molecule2, atoms[a6], atoms[b4], bond.order, bond.kind);
     neighbors[a6].push({ index: b4, length: distance });
     neighbors[b4].push({ index: a6, length: distance });
     return { a: a6, b: b4, distance };
@@ -77596,13 +77711,14 @@ function fitGeometry(molecule2) {
 }
 function electronRegions(molecule2) {
   const atoms = new Map(molecule2.atoms.map((atom) => [atom.id, atom]));
-  const regions = molecule2.bonds.flatMap(({ from: from2, to: to2, order }) => {
+  const regions = molecule2.bonds.filter(isCovalentBond).flatMap(({ from: from2, to: to2, order }) => {
     const a6 = atoms.get(from2).position, b4 = atoms.get(to2).position;
     return Math.hypot(...subtract(a6, b4)) < 1e-6 ? [] : [{ kind: "bond", from: a6, to: b4, electrons: order * 2 }];
   });
+  const charges = ionicCharges(molecule2);
   for (const atom of molecule2.atoms) {
-    const bonds = molecule2.bonds.filter((bond) => bond.from === atom.id || bond.to === atom.id);
-    const remaining = remainingElectrons(atom, bonds, Number(!!molecule2.repeatUnit?.ends.includes(atom.id)));
+    const bonds = molecule2.bonds.filter((bond) => isCovalentBond(bond) && (bond.from === atom.id || bond.to === atom.id));
+    const remaining = remainingElectrons({ ...atom, charge: charges.get(atom.id) }, bonds, Number(!!molecule2.repeatUnit?.ends.includes(atom.id)));
     if (!(remaining > 0 && remaining <= 8)) continue;
     const fixed = bonds.map((bond) => unit(subtract(atoms.get(bond.from === atom.id ? bond.to : bond.from).position, atom.position)));
     const pairs = [];
@@ -77644,33 +77760,15 @@ function electronRegions(molecule2) {
   }
   return regions;
 }
-function formula(structure) {
-  if (structure.kind === "crystal" && structure.catalogKey && structure.name) return structure.name;
-  const counts2 = /* @__PURE__ */ new Map();
-  for (const { atomicNumber } of structure.kind === "molecule" ? structure.atoms : structure.sites) {
-    const symbol = elementByAtomicNumber(atomicNumber).symbol;
-    counts2.set(symbol, (counts2.get(symbol) ?? 0) + 1);
-  }
-  const ordered = [...counts2.keys()].sort((a6, b4) => a6.localeCompare(b4, "en"));
-  if (counts2.has("C")) {
-    ordered.splice(ordered.indexOf("C"), 1);
-    if (counts2.has("H")) ordered.splice(ordered.indexOf("H"), 1);
-    ordered.unshift(...counts2.has("H") ? ["C", "H"] : ["C"]);
-  }
-  const gcd = (a6, b4) => b4 ? gcd(b4, a6 % b4) : a6;
-  const divisor = structure.kind === "crystal" ? [...counts2.values()].reduce(gcd, 0) : 1;
-  return ordered.map((symbol) => {
-    const count2 = counts2.get(symbol) / divisor;
-    return symbol + (count2 > 1 ? String(count2) : "");
-  }).join("");
-}
 var experimentalDiatomics, colors2, add, subtract, scale, dot, cross, unit, perpendicular, maximumOrder;
 var init_geometry = __esm({
   "molecule-builder/geometry.ts"() {
     init_ElementData();
     init_element_reference();
     init_sources();
+    init_bond_types();
     init_radii();
+    init_formula();
     experimentalDiatomics = new Map(Object.values(diatomics).map(([number2, order, length2]) => [`${number2}:${order}`, length2]));
     colors2 = ElementData.getElementList().map((key) => {
       const hex2 = ElementData.getData(key)?.["cpk-hex"];
@@ -77715,6 +77813,7 @@ var init_structure_diagram = __esm({
   "molecule-builder/structure-diagram.ts"() {
     init_element_reference();
     init_crystal_display();
+    init_bond_types();
     init_geometry();
     init_crystal_display();
     subscript2 = (value) => value.replace(/\d/g, (digit) => "\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089"[Number(digit)]);
@@ -78128,7 +78227,10 @@ function catalogAqueousStructure(key) {
 }
 function sameGraph(a6, b4) {
   if (a6.atoms.length !== b4.atoms.length || a6.bonds.length !== b4.bonds.length) return false;
-  const neighbors = (molecule2, id3) => new Map(molecule2.bonds.flatMap(({ from: from2, to: to2, order }) => from2 === id3 ? [[to2, order]] : to2 === id3 ? [[from2, order]] : []));
+  const neighbors = (molecule2, id3) => new Map(molecule2.bonds.flatMap(({ from: from2, to: to2, order, kind }) => {
+    const code = kind === "ionic" ? 0 : order;
+    return from2 === id3 ? [[to2, code]] : to2 === id3 ? [[from2, code]] : [];
+  }));
   const candidates = a6.atoms.map((atom) => {
     const links = neighbors(a6, atom.id);
     return { id: atom.id, links, matches: b4.atoms.flatMap((other) => {
@@ -109421,9 +109523,9 @@ var messages = new Map(
 var localeDefaults = /* @__PURE__ */ new Map([["no", "nb"], ["pt", "pt-pt"], ["sr", "sr-cyrl"], ["zh", "zh-hans"]]);
 function translate(source3, language) {
   const tag = language.trim().toLowerCase();
-  const base = tag.split("-")[0];
-  const fallback2 = localeDefaults.get(base) ?? base;
-  return messages.get(tag)?.[source3] ?? messages.get(base)?.[source3] ?? messages.get(fallback2)?.[source3] ?? (base === "de" || !base ? source3 : messages.get("en")?.[source3] ?? source3);
+  const base2 = tag.split("-")[0];
+  const fallback2 = localeDefaults.get(base2) ?? base2;
+  return messages.get(tag)?.[source3] ?? messages.get(base2)?.[source3] ?? messages.get(fallback2)?.[source3] ?? (base2 === "de" || !base2 ? source3 : messages.get("en")?.[source3] ?? source3);
 }
 function parent(node) {
   const root = node.getRootNode();
@@ -110167,7 +110269,7 @@ var __typeError2 = (msg) => {
 };
 var __defNormalProp2 = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __name2 = (target, value) => __defProp2(target, "name", { value, configurable: true });
-var __decoratorStart2 = (base) => [, , , __create2(base?.[__knownSymbol2("metadata")] ?? null)];
+var __decoratorStart2 = (base2) => [, , , __create2(base2?.[__knownSymbol2("metadata")] ?? null)];
 var __decoratorStrings2 = ["class", "method", "getter", "setter", "accessor", "field", "value", "get", "set"];
 var __expectFn2 = (fn) => fn !== void 0 && typeof fn !== "function" ? __typeError2("Function expected") : fn;
 var __decoratorContext2 = (kind, name2, done, metadata, fns) => ({ kind: __decoratorStrings2[kind], name: name2, metadata, addInitializer: (fn) => done._ ? __typeError2("Already initialized") : fns.push(__expectFn2(fn || null)) });
@@ -112800,7 +112902,9 @@ var style = i`
 		position: absolute;
 		inset: .5rem auto auto .5rem;
 		z-index: 8;
-		max-width: calc(100% - 1rem);
+		max-inline-size: min(22rem, calc(100% - 1rem));
+		max-block-size: calc(100% - 1rem);
+		overflow: auto;
 		padding: .5rem;
 		border: 1px solid var(--lab-card-border);
 		border-radius: 5px;
@@ -112818,6 +112922,20 @@ var style = i`
 	.builder-exchange p {
 		margin: 0;
 		font-size: .8rem;
+	}
+	.builder-exchange .custom-stock-fields {
+		display: grid;
+		inline-size: 100%;
+		grid-template-columns: repeat(auto-fit, minmax(min(8rem, 100%), 1fr));
+	}
+	.custom-stock-fields sl-input { min-inline-size: 0; }
+	.custom-compound-facts {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 3px;
+		padding-block: 3px;
+		font-size: .75rem;
 	}
 
 	.vessel-structure-link {
@@ -151829,6 +151947,7 @@ if (typeof Kekule2 !== "undefined") {
 
 // chemlib/Molecule.ts
 var Molecule = class {
+  aqueousAcidBase;
   /** Catalog phase at the time of dosing, used when no phase change is modeled. */
   dosedAsSolid;
   /** Formula of a solid phase tracked by the salt equilibrium. */
@@ -152520,6 +152639,10 @@ var Mixture = class {
       }
     });
     if (bIncluded) {
+      if (nMolecule.aqueousAcidBase) {
+        const stored = this._activeMolecules.find((molecule2) => molecule2._id === usedIndex);
+        stored.aqueousAcidBase ??= nMolecule.aqueousAcidBase;
+      }
       this.changeMolecule(usedIndex, amountMol);
       if (StructureManager.isWater(nMolecule)) {
         this._solutionVolume = this._molProperties[usedIndex + "m"] / 1e3;
@@ -152593,8 +152716,73 @@ var Mixture = class {
   }
 };
 
+// chemlib/PubChem.ts
+var base = "https://pubchem.ncbi.nlm.nih.gov";
+var cache = /* @__PURE__ */ new Map();
+var dissociationCache = /* @__PURE__ */ new Map();
+var cacheLimit = 128;
+function remember(cache2, key, value) {
+  cache2.set(key, value);
+  if (cache2.size > cacheLimit) cache2.delete(cache2.keys().next().value);
+  return value;
+}
+async function request(path2) {
+  try {
+    const response = await fetch(base + path2, { signal: AbortSignal.timeout(5e3) });
+    return response.ok ? await response.json() : void 0;
+  } catch {
+    return void 0;
+  }
+}
+function lookupCompound(smiles) {
+  if (!smiles) return Promise.resolve(void 0);
+  const cached = cache.get(smiles);
+  if (cached) return cached;
+  const properties = "Title,IUPACName,MolecularFormula,MolecularWeight,InChI,InChIKey";
+  const fetchCompound = request(`/rest/pug/compound/smiles/${encodeURIComponent(smiles)}/property/${properties}/JSON`).then((data2) => {
+    const rows = data2?.PropertyTable?.Properties;
+    const row = rows?.length === 1 ? rows[0] : void 0;
+    const name2 = row?.Title || row?.IUPACName;
+    if (!Number.isSafeInteger(row?.CID) || row.CID <= 0 || typeof name2 !== "string") {
+      cache.delete(smiles);
+      return void 0;
+    }
+    const molarMass = Number(row.MolecularWeight);
+    return {
+      cid: row.CID,
+      name: name2,
+      formula: typeof row.MolecularFormula === "string" ? row.MolecularFormula : void 0,
+      molarMass: Number.isFinite(molarMass) && molarMass > 0 ? molarMass : void 0,
+      inchi: typeof row.InChI === "string" ? row.InChI : void 0,
+      inchiKey: typeof row.InChIKey === "string" ? row.InChIKey : void 0
+    };
+  });
+  return remember(cache, smiles, fetchCompound);
+}
+function dissociationSection(sections) {
+  for (const section of sections ?? []) {
+    if (section.TOCHeading === "Dissociation Constants") return section;
+    const child = dissociationSection(section.Section);
+    if (child) return child;
+  }
+}
+function lookupDissociation(cid) {
+  const cached = dissociationCache.get(cid);
+  if (cached) return cached;
+  const result = request(`/rest/pug_view/data/compound/${cid}/JSON?heading=Dissociation%20Constants`).then((data2) => {
+    const record2 = data2?.Record;
+    if (!record2) {
+      dissociationCache.delete(cid);
+      return [];
+    }
+    const references2 = new Map((record2.Reference ?? []).map((ref) => [ref.ReferenceNumber, ref.SourceName]));
+    const section = dissociationSection(record2.Section);
+    return (section?.Information ?? []).flatMap((item) => (item.Value?.StringWithMarkup ?? []).flatMap(({ String: text }) => typeof text === "string" ? [{ text, name: item.Name ?? "", source: references2.get(item.ReferenceNumber) ?? "PubChem" }] : []));
+  });
+  return remember(dissociationCache, cid, result);
+}
+
 // chemlib/StructureManager.ts
-var COMPOUND_CACHE_LIMIT = 128;
 var StructureManager = class _StructureManager {
   /**
    * The number of current {@link Molecule} objects minus one
@@ -152726,8 +152914,6 @@ var StructureManager = class _StructureManager {
    * @type {Object}
    */
   static _moleculeParts = {};
-  static compoundMetadata = /* @__PURE__ */ new Map();
-  static pendingCompounds = /* @__PURE__ */ new Map();
   /**
    * Generates a new {@link Mixture} object with a unique id and returns it
    *
@@ -152813,6 +152999,7 @@ var StructureManager = class _StructureManager {
    * @returns {boolean}
    */
   static isAcidBase(molecule2) {
+    if (molecule2.aqueousAcidBase) return true;
     var bBondType = false;
     var bInList = false;
     molecule2._bonds.forEach((bond) => {
@@ -153176,44 +153363,11 @@ var StructureManager = class _StructureManager {
   /** Looks up optional display metadata, sharing a request for an identical structure. */
   static async getChemData(molecule2) {
     const smiles = molecule2.smilesString;
-    let metadata = this.compoundMetadata.get(smiles);
-    if (!metadata) {
-      let pending = this.pendingCompounds.get(smiles);
-      if (!pending) {
-        pending = this.fetchChemData(smiles).then((result) => {
-          if (result) {
-            this.compoundMetadata.set(smiles, result);
-            if (this.compoundMetadata.size > COMPOUND_CACHE_LIMIT) {
-              this.compoundMetadata.delete(this.compoundMetadata.keys().next().value);
-            }
-          }
-          return result;
-        }).finally(() => this.pendingCompounds.delete(smiles));
-        this.pendingCompounds.set(smiles, pending);
-      }
-      metadata = await pending;
-    }
+    const metadata = await lookupCompound(smiles);
     if (molecule2.smilesString !== smiles) return;
     molecule2.name = metadata?.name ?? smiles;
     if (metadata?.inchi) molecule2.InChiString = metadata.inchi;
     if (metadata?.inchiKey) molecule2.InChIKey = metadata.inchiKey;
-  }
-  static async fetchChemData(smiles) {
-    if (!smiles) return void 0;
-    try {
-      const response = await fetch(
-        `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/SMILES/${encodeURIComponent(smiles)}//JSON`
-      );
-      if (!response.ok) return void 0;
-      const data2 = await response.json();
-      const props = data2?.PC_Compounds?.[0]?.props;
-      const name2 = props?.[6]?.value?.sval;
-      const inchi = props?.[12]?.value?.sval;
-      const inchiKey = props?.[13]?.value?.sval;
-      return name2 || inchi || inchiKey ? { name: name2, inchi, inchiKey } : void 0;
-    } catch {
-      return void 0;
-    }
   }
 };
 
@@ -153221,6 +153375,11 @@ var StructureManager = class _StructureManager {
 init_ElementData();
 
 // chemlib/AcidBase.ts
+function readAqueousAcidBase(value) {
+  const entry = value;
+  if (!entry || !Array.isArray(entry.pKa) || !entry.pKa.length || entry.pKa.length > 8 || !Number.isInteger(entry.step) || entry.step < 0 || entry.step > entry.pKa.length || !entry.pKa.every((pKa, index2) => Number.isFinite(pKa) && pKa >= -20 && pKa <= 35 && (!index2 || pKa >= entry.pKa[index2 - 1]))) return;
+  return { step: entry.step, pKa: [...entry.pKa] };
+}
 var AcidBase = class _AcidBase {
   /**
    * Ion product of water at 25 °C (mol^2/L^2).
@@ -153851,9 +154010,9 @@ function ionFormula(ion2) {
 var protonationStructures = /* @__PURE__ */ new WeakMap();
 function protonationStructure(source3, removed) {
   if (!removed) return source3;
-  let cache = protonationStructures.get(source3);
-  if (!cache) protonationStructures.set(source3, cache = /* @__PURE__ */ new Map());
-  if (cache.has(removed)) return cache.get(removed);
+  let cache2 = protonationStructures.get(source3);
+  if (!cache2) protonationStructures.set(source3, cache2 = /* @__PURE__ */ new Map());
+  if (cache2.has(removed)) return cache2.get(removed);
   const atoms = new Set(source3._atoms);
   const charges = new Map(source3._atoms.map((atom) => [atom, atom.getIonicCharge()]));
   const neighbors = (atom) => source3._bonds.flatMap((bond) => bond._from === atom ? [{ atom: bond._to, order: bond._magnitude }] : bond._to === atom ? [{ atom: bond._from, order: bond._magnitude }] : []);
@@ -153868,7 +154027,7 @@ function protonationStructure(source3, removed) {
         return [{ site: site2, hydrogen: hydrogen2, rank }];
       }).sort((a6, b4) => a6.rank - b4.rank);
       if (!sites.length) {
-        cache.set(removed, void 0);
+        cache2.set(removed, void 0);
         return;
       }
       const { site, hydrogen } = sites[0];
@@ -153877,7 +154036,7 @@ function protonationStructure(source3, removed) {
     } else {
       const site = [...atoms].find((atom) => ["O", "S"].includes(atom.getSymbol()) && charges.get(atom) < 0) ?? [...atoms].find((atom) => ["N", "P"].includes(atom.getSymbol()) && charges.get(atom) === 0);
       if (!site) {
-        cache.set(removed, void 0);
+        cache2.set(removed, void 0);
         return;
       }
       charges.set(site, charges.get(site) + 1);
@@ -153901,7 +154060,7 @@ function protonationStructure(source3, removed) {
       }
     }
   }
-  cache.set(removed, structure);
+  cache2.set(removed, structure);
   return structure;
 }
 var explicitAcidStates = /* @__PURE__ */ new Map();
@@ -156001,10 +156160,10 @@ var Simulation = class {
     const aqueous2 = chlorine / volume;
     const initialHypochlorite = hypochlorite / volume;
     const trialHypochlorite = { totalC: initialHypochlorite, pKa: [HYPOCHLOROUS_PKA], protonatedCharge: 0 };
-    const base = systems4.filter((system) => system.key !== "hypochlorite");
-    const trial = [...base, trialHypochlorite];
+    const base2 = systems4.filter((system) => system.key !== "hypochlorite");
+    const trial = [...base2, trialHypochlorite];
     const Kw = AcidBase.kwAt(mix._temperature);
-    const extraCharge = this.complexChargeHook(base);
+    const extraCharge = this.complexChargeHook(base2);
     const residual = (extent2) => {
       trialHypochlorite.totalC = initialHypochlorite + extent2;
       const H3 = AcidBase.solveProton(trial, spectatorCharge - extent2, Kw, extraCharge);
@@ -156493,7 +156652,7 @@ var Simulation = class {
       const p6 = entry["pks"];
       return Array.isArray(p6) ? p6.slice() : [p6 === void 0 ? 0 : p6];
     };
-    const familyFor = (key, protonatedCharge, representative, step) => {
+    const familyFor = (key, protonatedCharge, representative, step, constants) => {
       let idx = familyIndex[key];
       if (idx === void 0) {
         idx = systems4.length;
@@ -156501,7 +156660,7 @@ var Simulation = class {
         systems4.push({
           key,
           totalC: 0,
-          pKa: pKaList(acidbaseData[key]),
+          pKa: constants ?? pKaList(acidbaseData[key]),
           protonatedCharge,
           representative,
           step,
@@ -156526,7 +156685,8 @@ var Simulation = class {
       const smiles = molecule2.smilesString;
       const key = acidbaseData[smiles]?.alias ?? smiles;
       const entry = acidbaseData[key];
-      if (entry === void 0 || smiles === "[H+]" || smiles === "[OH-]" || StructureManager.isWater(molecule2)) {
+      const custom = molecule2.aqueousAcidBase;
+      if (entry === void 0 && !custom || smiles === "[H+]" || smiles === "[OH-]" || StructureManager.isWater(molecule2)) {
         return;
       }
       const parts = this.cacheDissociation(molecule2);
@@ -156536,10 +156696,18 @@ var Simulation = class {
         spectatorCharge += (cation != void 0 ? cation._totalCharge : 1) * conc(molecule2);
         return;
       }
-      const step = entry["step"] ?? (entry["base"] ? pKaList(entry).length : 0);
-      const family = familyFor(key, molecule2._totalCharge + step, molecule2, step);
+      const step = entry ? entry["step"] ?? (entry["base"] ? pKaList(entry).length : 0) : custom.step;
+      const family = familyFor(key, molecule2._totalCharge + step, molecule2, step, entry ? void 0 : custom.pKa);
       family.totalC += conc(molecule2);
       family.members.push(molecule2);
+      if (!entry && custom) {
+        for (let state = 0; state <= custom.pKa.length; state++) {
+          const structure = protonationStructure(molecule2, state - step);
+          if (structure?.smilesString && structure !== molecule2 && !acidbaseData[structure.smilesString]) {
+            conjugateToFamily[structure.smilesString] = { key, step: state };
+          }
+        }
+      }
       if (step === 0 && parts != void 0) {
         const conjugate = parts[0].smilesString === "[H+]" ? parts[1] : parts[0];
         if (conjugate != void 0 && conjugate.smilesString != "") {
@@ -156549,12 +156717,12 @@ var Simulation = class {
     });
     sMix._activeMolecules.forEach((molecule2) => {
       const smiles = molecule2.smilesString;
-      if (smiles === "[H+]" || smiles === "[OH-]" || StructureManager.isWater(molecule2) || acidbaseData[smiles] != void 0) {
+      if (smiles === "[H+]" || smiles === "[OH-]" || StructureManager.isWater(molecule2) || (acidbaseData[smiles] != void 0 || molecule2.aqueousAcidBase)) {
         return;
       }
       const conjugate = conjugateToFamily[smiles];
       if (conjugate != void 0) {
-        const family = familyFor(conjugate.key, molecule2._totalCharge + conjugate.step, molecule2, conjugate.step);
+        const family = systems4[familyIndex[conjugate.key]] ?? familyFor(conjugate.key, molecule2._totalCharge + conjugate.step, molecule2, conjugate.step);
         family.totalC += conc(molecule2);
         family.members.push(molecule2);
       } else if (molecule2._totalCharge !== 0) {
@@ -161266,8 +161434,8 @@ function hasFixedPositionAncestor(element2, stopNode) {
   }
   return getComputedStyle2(parentNode).position === "fixed" || hasFixedPositionAncestor(parentNode, stopNode);
 }
-function getClippingElementAncestors(element2, cache) {
-  const cachedResult = cache.get(element2);
+function getClippingElementAncestors(element2, cache2) {
+  const cachedResult = cache2.get(element2);
   if (cachedResult) {
     return cachedResult;
   }
@@ -161289,7 +161457,7 @@ function getClippingElementAncestors(element2, cache) {
     }
     currentNode = getParentNode(currentNode);
   }
-  cache.set(element2, result);
+  cache2.set(element2, result);
   return result;
 }
 function getClippingRect(_ref) {
@@ -161579,14 +161747,14 @@ var flip2 = flip;
 var size2 = size;
 var arrow2 = arrow;
 var computePosition2 = (reference2, floating, options2) => {
-  const cache = /* @__PURE__ */ new Map();
+  const cache2 = /* @__PURE__ */ new Map();
   const mergedOptions = {
     platform,
     ...options2
   };
   const platformWithCache = {
     ...mergedOptions.platform,
-    _c: cache
+    _c: cache2
   };
   return computePosition(reference2, floating, {
     ...mergedOptions,
@@ -167656,12 +167824,12 @@ function listenArrayEvents(array, listener) {
   });
   arrayEvents.forEach((key) => {
     const method = "_onData" + _capitalize(key);
-    const base = array[key];
+    const base2 = array[key];
     Object.defineProperty(array, key, {
       configurable: true,
       enumerable: false,
       value(...args) {
-        const res = base.apply(this, args);
+        const res = base2.apply(this, args);
         array._chartjs.listeners.forEach((object) => {
           if (typeof object[method] === "function") {
             object[method](...args);
@@ -168241,14 +168409,14 @@ function _measureText(ctx, data2, gc, longest, string) {
   }
   return longest;
 }
-function _longestText(ctx, font, arrayOfThings, cache) {
-  cache = cache || {};
-  let data2 = cache.data = cache.data || {};
-  let gc = cache.garbageCollect = cache.garbageCollect || [];
-  if (cache.font !== font) {
-    data2 = cache.data = {};
-    gc = cache.garbageCollect = [];
-    cache.font = font;
+function _longestText(ctx, font, arrayOfThings, cache2) {
+  cache2 = cache2 || {};
+  let data2 = cache2.data = cache2.data || {};
+  let gc = cache2.garbageCollect = cache2.garbageCollect || [];
+  if (cache2.font !== font) {
+    data2 = cache2.data = {};
+    gc = cache2.garbageCollect = [];
+    cache2.font = font;
   }
   ctx.save();
   ctx.font = font;
@@ -168649,7 +168817,7 @@ function _createResolver(scopes, prefixes = [
   if (typeof fallback2 === "undefined") {
     fallback2 = _resolve("_fallback", scopes);
   }
-  const cache = {
+  const cache2 = {
     [Symbol.toStringTag]: "Object",
     _cacheable: true,
     _scopes: scopes,
@@ -168661,7 +168829,7 @@ function _createResolver(scopes, prefixes = [
       ...scopes
     ], prefixes, finalRootScopes, fallback2)
   };
-  return new Proxy(cache, {
+  return new Proxy(cache2, {
     /**
     * A trap for the delete operator.
     */
@@ -168714,7 +168882,7 @@ function _createResolver(scopes, prefixes = [
   });
 }
 function _attachContext(proxy, context2, subProxy, descriptorDefaults) {
-  const cache = {
+  const cache2 = {
     _cacheable: false,
     _proxy: proxy,
     _context: context2,
@@ -168724,7 +168892,7 @@ function _attachContext(proxy, context2, subProxy, descriptorDefaults) {
     setContext: (ctx) => _attachContext(proxy, ctx, subProxy, descriptorDefaults),
     override: (scope) => _attachContext(proxy.override(scope), context2, subProxy, descriptorDefaults)
   };
-  return new Proxy(cache, {
+  return new Proxy(cache2, {
     /**
     * A trap for the delete operator.
     */
@@ -169649,15 +169817,15 @@ function styleChanged(style2, prevStyle) {
   if (!prevStyle) {
     return false;
   }
-  const cache = [];
+  const cache2 = [];
   const replacer = function(key, value) {
     if (!isPatternOrGradient(value)) {
       return value;
     }
-    if (!cache.includes(value)) {
-      cache.push(value);
+    if (!cache2.includes(value)) {
+      cache2.push(value);
     }
-    return cache.indexOf(value);
+    return cache2.indexOf(value);
   };
   return JSON.stringify(style2, replacer) !== JSON.stringify(prevStyle, replacer);
 }
@@ -170269,11 +170437,11 @@ var DatasetController = class {
   linkScales() {
     const chart = this.chart;
     const meta = this._cachedMeta;
-    const dataset = this.getDataset();
+    const dataset2 = this.getDataset();
     const chooseId = (axis, x4, y5, r12) => axis === "x" ? x4 : axis === "r" ? r12 : y5;
-    const xid = meta.xAxisID = valueOrDefault(dataset.xAxisID, getFirstScaleId(chart, "x"));
-    const yid = meta.yAxisID = valueOrDefault(dataset.yAxisID, getFirstScaleId(chart, "y"));
-    const rid = meta.rAxisID = valueOrDefault(dataset.rAxisID, getFirstScaleId(chart, "r"));
+    const xid = meta.xAxisID = valueOrDefault(dataset2.xAxisID, getFirstScaleId(chart, "x"));
+    const yid = meta.yAxisID = valueOrDefault(dataset2.yAxisID, getFirstScaleId(chart, "y"));
+    const rid = meta.rAxisID = valueOrDefault(dataset2.rAxisID, getFirstScaleId(chart, "r"));
     const indexAxis = meta.indexAxis;
     const iid = meta.iAxisID = chooseId(indexAxis, xid, yid, rid);
     const vid = meta.vAxisID = chooseId(indexAxis, yid, xid, rid);
@@ -170309,8 +170477,8 @@ var DatasetController = class {
     }
   }
   _dataCheck() {
-    const dataset = this.getDataset();
-    const data2 = dataset.data || (dataset.data = []);
+    const dataset2 = this.getDataset();
+    const data2 = dataset2.data || (dataset2.data = []);
     const _data = this._data;
     if (isObject(data2)) {
       const meta = this._cachedMeta;
@@ -170338,15 +170506,15 @@ var DatasetController = class {
   }
   buildOrUpdateElements(resetNewElements) {
     const meta = this._cachedMeta;
-    const dataset = this.getDataset();
+    const dataset2 = this.getDataset();
     let stackChanged = false;
     this._dataCheck();
     const oldStacked = meta._stacked;
     meta._stacked = isStacked(meta.vScale, meta);
-    if (meta.stack !== dataset.stack) {
+    if (meta.stack !== dataset2.stack) {
       stackChanged = true;
       clearStacks(meta);
-      meta.stack = dataset.stack;
+      meta.stack = dataset2.stack;
     }
     this._resyncElements(resetNewElements);
     if (stackChanged || oldStacked !== meta._stacked) {
@@ -170576,17 +170744,17 @@ var DatasetController = class {
     return index2 === void 0 && this._cachedMeta.dataset ? this.resolveDatasetElementOptions(mode) : this.resolveDataElementOptions(index2 || 0, mode);
   }
   getContext(index2, active, mode) {
-    const dataset = this.getDataset();
+    const dataset2 = this.getDataset();
     let context2;
     if (index2 >= 0 && index2 < this._cachedMeta.data.length) {
       const element2 = this._cachedMeta.data[index2];
       context2 = element2.$context || (element2.$context = createDataContext(this.getContext(), index2, element2));
       context2.parsed = this.getParsed(index2);
-      context2.raw = dataset.data[index2];
+      context2.raw = dataset2.data[index2];
       context2.index = context2.dataIndex = index2;
     } else {
       context2 = this.$context || (this.$context = createDatasetContext(this.chart.getContext(), this.index));
-      context2.dataset = dataset;
+      context2.dataset = dataset2;
       context2.index = context2.datasetIndex = this.index;
     }
     context2.active = !!active;
@@ -170601,9 +170769,9 @@ var DatasetController = class {
   }
   _resolveElementOptions(elementType, mode = "default", index2) {
     const active = mode === "active";
-    const cache = this._cachedDataOpts;
+    const cache2 = this._cachedDataOpts;
     const cacheKey = elementType + "-" + mode;
-    const cached = cache[cacheKey];
+    const cached = cache2[cacheKey];
     const sharing = this.enableOptionSharing && defined(index2);
     if (cached) {
       return cloneIfNotShared(cached, sharing);
@@ -170620,20 +170788,20 @@ var DatasetController = class {
       ""
     ];
     const scopes = config.getOptionScopes(this.getDataset(), scopeKeys);
-    const names2 = Object.keys(defaults.elements[elementType]);
+    const names3 = Object.keys(defaults.elements[elementType]);
     const context2 = () => this.getContext(index2, active, mode);
-    const values = config.resolveNamedOptions(scopes, names2, context2, prefixes);
+    const values = config.resolveNamedOptions(scopes, names3, context2, prefixes);
     if (values.$shared) {
       values.$shared = sharing;
-      cache[cacheKey] = Object.freeze(cloneIfNotShared(values, sharing));
+      cache2[cacheKey] = Object.freeze(cloneIfNotShared(values, sharing));
     }
     return values;
   }
   _resolveAnimations(index2, transition, active) {
     const chart = this.chart;
-    const cache = this._cachedDataOpts;
+    const cache2 = this._cachedDataOpts;
     const cacheKey = `animation-${transition}`;
-    const cached = cache[cacheKey];
+    const cached = cache2[cacheKey];
     if (cached) {
       return cached;
     }
@@ -170646,7 +170814,7 @@ var DatasetController = class {
     }
     const animations = new Animations(chart, options2 && options2.animations);
     if (options2 && options2._cacheable) {
-      cache[cacheKey] = Object.freeze(animations);
+      cache2[cacheKey] = Object.freeze(animations);
     }
     return animations;
   }
@@ -171112,15 +171280,15 @@ var BarController = class extends DatasetController {
   updateElements(bars, start, count2, mode) {
     const reset = mode === "reset";
     const { index: index2, _cachedMeta: { vScale } } = this;
-    const base = vScale.getBasePixel();
+    const base2 = vScale.getBasePixel();
     const horizontal = vScale.isHorizontal();
     const ruler = this._getRuler();
     const { sharedOptions, includeOptions } = this._getSharedOptions(start, mode);
     for (let i11 = start; i11 < start + count2; i11++) {
       const parsed = this.getParsed(i11);
       const vpixels = reset || isNullOrUndef(parsed[vScale.axis]) ? {
-        base,
-        head: base
+        base: base2,
+        head: base2
       } : this._calculateBarValuePixels(i11);
       const ipixels = this._calculateBarIndexPixels(i11, ruler);
       const stack = (parsed._stacks || {})[vScale.axis];
@@ -171225,36 +171393,36 @@ var BarController = class extends DatasetController {
       start += value;
     }
     const startValue = !isNullOrUndef(baseValue) && !floating ? baseValue : start;
-    let base = vScale.getPixelForValue(startValue);
+    let base2 = vScale.getPixelForValue(startValue);
     if (this.chart.getDataVisibility(index2)) {
       head = vScale.getPixelForValue(start + length2);
     } else {
-      head = base;
+      head = base2;
     }
-    size3 = head - base;
+    size3 = head - base2;
     if (Math.abs(size3) < minBarLength) {
       size3 = barSign(size3, vScale, actualBase) * minBarLength;
       if (value === actualBase) {
-        base -= size3 / 2;
+        base2 -= size3 / 2;
       }
       const startPixel = vScale.getPixelForDecimal(0);
       const endPixel = vScale.getPixelForDecimal(1);
       const min6 = Math.min(startPixel, endPixel);
       const max6 = Math.max(startPixel, endPixel);
-      base = Math.max(Math.min(base, max6), min6);
-      head = base + size3;
+      base2 = Math.max(Math.min(base2, max6), min6);
+      head = base2 + size3;
       if (_stacked && !floating) {
-        parsed._stacks[vScale.axis]._visualValues[datasetIndex] = vScale.getValueForPixel(head) - vScale.getValueForPixel(base);
+        parsed._stacks[vScale.axis]._visualValues[datasetIndex] = vScale.getValueForPixel(head) - vScale.getValueForPixel(base2);
       }
     }
-    if (base === vScale.getPixelForValue(actualBase)) {
+    if (base2 === vScale.getPixelForValue(actualBase)) {
       const halfGrid = sign3(size3) * vScale.getLineWidthForValue(actualBase) / 2;
-      base += halfGrid;
+      base2 += halfGrid;
       size3 -= halfGrid;
     }
     return {
       size: size3,
-      base,
+      base: base2,
       head,
       center: head + size3 / 2
     };
@@ -171800,8 +171968,8 @@ var LineController = class extends DatasetController {
   }
   getMaxOverflow() {
     const meta = this._cachedMeta;
-    const dataset = meta.dataset;
-    const border = dataset.options && dataset.options.borderWidth || 0;
+    const dataset2 = meta.dataset;
+    const border = dataset2.options && dataset2.options.borderWidth || 0;
     const data2 = meta.data || [];
     if (!data2.length) {
       return border;
@@ -172196,8 +172364,8 @@ var ScatterController = class extends DatasetController {
       }
       return max6 > 0 && max6;
     }
-    const dataset = meta.dataset;
-    const border = dataset.options && dataset.options.borderWidth || 0;
+    const dataset2 = meta.dataset;
+    const border = dataset2.options && dataset2.options.borderWidth || 0;
     if (!data2.length) {
       return border;
     }
@@ -173298,13 +173466,13 @@ function getPixelForGridLine(scale2, index2, offsetGridLines) {
   return lineValue;
 }
 function garbageCollect(caches, length2) {
-  each2(caches, (cache) => {
-    const gc = cache.gc;
+  each2(caches, (cache2) => {
+    const gc = cache2.gc;
     const gcLen = gc.length / 2;
     let i11;
     if (gcLen > length2) {
       for (i11 = 0; i11 < gcLen; ++i11) {
-        delete cache.data[gc[i11]];
+        delete cache2.data[gc[i11]];
       }
       gc.splice(0, gcLen);
     }
@@ -173829,25 +173997,25 @@ var Scale = class _Scale extends Element2 {
     const increment = Math.floor(length2 / getTicksLimit(length2, maxTicksLimit));
     let widestLabelSize = 0;
     let highestLabelSize = 0;
-    let i11, j4, jlen, label, tickFont, fontString, cache, lineHeight, width, height, nestedLabel;
+    let i11, j4, jlen, label, tickFont, fontString, cache2, lineHeight, width, height, nestedLabel;
     for (i11 = 0; i11 < length2; i11 += increment) {
       label = ticks[i11].label;
       tickFont = this._resolveTickFontOptions(i11);
       ctx.font = fontString = tickFont.string;
-      cache = caches[fontString] = caches[fontString] || {
+      cache2 = caches[fontString] = caches[fontString] || {
         data: {},
         gc: []
       };
       lineHeight = tickFont.lineHeight;
       width = height = 0;
       if (!isNullOrUndef(label) && !isArray(label)) {
-        width = _measureText(ctx, cache.data, cache.gc, width, label);
+        width = _measureText(ctx, cache2.data, cache2.gc, width, label);
         height = lineHeight;
       } else if (isArray(label)) {
         for (j4 = 0, jlen = label.length; j4 < jlen; ++j4) {
           nestedLabel = label[j4];
           if (!isNullOrUndef(nestedLabel) && !isArray(nestedLabel)) {
-            width = _measureText(ctx, cache.data, cache.gc, width, nestedLabel);
+            width = _measureText(ctx, cache2.data, cache2.gc, width, nestedLabel);
             height += lineHeight;
           }
         }
@@ -174873,8 +175041,8 @@ function determineAxis(id3, ...scaleOptions) {
   }
   throw new Error(`Cannot determine type of '${id3}' axis. Please provide 'axis' or 'position' option.`);
 }
-function getAxisFromDataset(id3, axis, dataset) {
-  if (dataset[axis + "AxisID"] === id3) {
+function getAxisFromDataset(id3, axis, dataset2) {
+  if (dataset2[axis + "AxisID"] === id3) {
     return {
       axis
     };
@@ -174916,14 +175084,14 @@ function mergeScaleConfig(config, options2) {
       defaultScaleOptions[defaultId]
     ]);
   });
-  config.data.datasets.forEach((dataset) => {
-    const type = dataset.type || config.type;
-    const indexAxis = dataset.indexAxis || getIndexAxis(type, options2);
+  config.data.datasets.forEach((dataset2) => {
+    const type = dataset2.type || config.type;
+    const indexAxis = dataset2.indexAxis || getIndexAxis(type, options2);
     const datasetDefaults = overrides[type] || {};
     const defaultScaleOptions = datasetDefaults.scales || {};
     Object.keys(defaultScaleOptions).forEach((defaultID) => {
       const axis = getAxisFromDefaultScaleID(defaultID, indexAxis);
-      const id3 = dataset[axis + "AxisID"] || axis;
+      const id3 = dataset2[axis + "AxisID"] || axis;
       scales2[id3] = scales2[id3] || /* @__PURE__ */ Object.create(null);
       mergeIf(scales2[id3], [
         {
@@ -175058,17 +175226,17 @@ var Config = class {
   }
   _cachedScopes(mainScope, resetCache) {
     const _scopeCache = this._scopeCache;
-    let cache = _scopeCache.get(mainScope);
-    if (!cache || resetCache) {
-      cache = /* @__PURE__ */ new Map();
-      _scopeCache.set(mainScope, cache);
+    let cache2 = _scopeCache.get(mainScope);
+    if (!cache2 || resetCache) {
+      cache2 = /* @__PURE__ */ new Map();
+      _scopeCache.set(mainScope, cache2);
     }
-    return cache;
+    return cache2;
   }
   getOptionScopes(mainScope, keyLists, resetCache) {
     const { options: options2, type } = this;
-    const cache = this._cachedScopes(mainScope, resetCache);
-    const cached = cache.get(keyLists);
+    const cache2 = this._cachedScopes(mainScope, resetCache);
+    const cached = cache2.get(keyLists);
     if (cached) {
       return cached;
     }
@@ -175088,7 +175256,7 @@ var Config = class {
       array.push(/* @__PURE__ */ Object.create(null));
     }
     if (keysCached.has(keyLists)) {
-      cache.set(keyLists, array);
+      cache2.set(keyLists, array);
     }
     return array;
   }
@@ -175105,7 +175273,7 @@ var Config = class {
       descriptors
     ];
   }
-  resolveNamedOptions(scopes, names2, context2, prefixes = [
+  resolveNamedOptions(scopes, names3, context2, prefixes = [
     ""
   ]) {
     const result = {
@@ -175113,13 +175281,13 @@ var Config = class {
     };
     const { resolver, subPrefixes } = getResolver(this._resolverCache, scopes, prefixes);
     let options2 = resolver;
-    if (needContext(resolver, names2)) {
+    if (needContext(resolver, names3)) {
       result.$shared = false;
       context2 = isFunction(context2) ? context2() : context2;
       const subResolver = this.createResolver(scopes, context2, subPrefixes);
       options2 = _attachContext(resolver, context2, subResolver);
     }
-    for (const prop of names2) {
+    for (const prop of names3) {
       result[prop] = options2[prop];
     }
     return result;
@@ -175132,27 +175300,27 @@ var Config = class {
   }
 };
 function getResolver(resolverCache, scopes, prefixes) {
-  let cache = resolverCache.get(scopes);
-  if (!cache) {
-    cache = /* @__PURE__ */ new Map();
-    resolverCache.set(scopes, cache);
+  let cache2 = resolverCache.get(scopes);
+  if (!cache2) {
+    cache2 = /* @__PURE__ */ new Map();
+    resolverCache.set(scopes, cache2);
   }
   const cacheKey = prefixes.join();
-  let cached = cache.get(cacheKey);
+  let cached = cache2.get(cacheKey);
   if (!cached) {
     const resolver = _createResolver(scopes, prefixes);
     cached = {
       resolver,
       subPrefixes: prefixes.filter((p6) => !p6.toLowerCase().includes("hover"))
     };
-    cache.set(cacheKey, cached);
+    cache2.set(cacheKey, cached);
   }
   return cached;
 }
 var hasFunction = (value) => isObject(value) && Object.getOwnPropertyNames(value).some((key) => isFunction(value[key]));
-function needContext(proxy, names2) {
+function needContext(proxy, names3) {
   const { isScriptable, isIndexable } = _descriptors(proxy);
-  for (const prop of names2) {
+  for (const prop of names3) {
     const scriptable = isScriptable(prop);
     const indexable = isIndexable(prop);
     const value = (indexable || scriptable) && proxy[prop];
@@ -175487,18 +175655,18 @@ var Chart = class {
     let i11, ilen;
     this._removeUnreferencedMetasets();
     for (i11 = 0, ilen = datasets.length; i11 < ilen; i11++) {
-      const dataset = datasets[i11];
+      const dataset2 = datasets[i11];
       let meta = this.getDatasetMeta(i11);
-      const type = dataset.type || this.config.type;
+      const type = dataset2.type || this.config.type;
       if (meta.type && meta.type !== type) {
         this._destroyDatasetMeta(i11);
         meta = this.getDatasetMeta(i11);
       }
       meta.type = type;
-      meta.indexAxis = dataset.indexAxis || getIndexAxis(type, this.options);
-      meta.order = dataset.order || 0;
+      meta.indexAxis = dataset2.indexAxis || getIndexAxis(type, this.options);
+      meta.order = dataset2.order || 0;
       meta.index = i11;
-      meta.label = "" + dataset.label;
+      meta.label = "" + dataset2.label;
       meta.visible = this.isDatasetVisible(i11);
       if (meta.controller) {
         meta.controller.updateIndex(i11);
@@ -175518,7 +175686,7 @@ var Chart = class {
     return newControllers;
   }
   _resetElements() {
-    each2(this.data.datasets, (dataset, datasetIndex) => {
+    each2(this.data.datasets, (dataset2, datasetIndex) => {
       this.getDatasetMeta(datasetIndex).controller.reset();
     }, this);
   }
@@ -175781,9 +175949,9 @@ var Chart = class {
     return [];
   }
   getDatasetMeta(datasetIndex) {
-    const dataset = this.data.datasets[datasetIndex];
+    const dataset2 = this.data.datasets[datasetIndex];
     const metasets = this._metasets;
-    let meta = metasets.filter((x4) => x4 && x4._dataset === dataset).pop();
+    let meta = metasets.filter((x4) => x4 && x4._dataset === dataset2).pop();
     if (!meta) {
       meta = {
         type: null,
@@ -175793,9 +175961,9 @@ var Chart = class {
         hidden: null,
         xAxisID: null,
         yAxisID: null,
-        order: dataset && dataset.order || 0,
+        order: dataset2 && dataset2.order || 0,
         index: datasetIndex,
-        _dataset: dataset,
+        _dataset: dataset2,
         _parsed: [],
         _sorted: false
       };
@@ -175813,12 +175981,12 @@ var Chart = class {
     return this.getSortedVisibleDatasetMetas().length;
   }
   isDatasetVisible(datasetIndex) {
-    const dataset = this.data.datasets[datasetIndex];
-    if (!dataset) {
+    const dataset2 = this.data.datasets[datasetIndex];
+    if (!dataset2) {
       return false;
     }
     const meta = this.getDatasetMeta(datasetIndex);
-    return typeof meta.hidden === "boolean" ? !meta.hidden : !dataset.hidden;
+    return typeof meta.hidden === "boolean" ? !meta.hidden : !dataset2.hidden;
   }
   setDatasetVisibility(datasetIndex, visible) {
     const meta = this.getDatasetMeta(datasetIndex);
@@ -176715,7 +176883,7 @@ var PointElement = class extends Element2 {
   }
 };
 function getBarBounds(bar, useFinalPosition) {
-  const { x: x4, y: y5, base, width, height } = bar.getProps([
+  const { x: x4, y: y5, base: base2, width, height } = bar.getProps([
     "x",
     "y",
     "base",
@@ -176725,16 +176893,16 @@ function getBarBounds(bar, useFinalPosition) {
   let left, right, top, bottom, half;
   if (bar.horizontal) {
     half = height / 2;
-    left = Math.min(x4, base);
-    right = Math.max(x4, base);
+    left = Math.min(x4, base2);
+    right = Math.max(x4, base2);
     top = y5 - half;
     bottom = y5 + half;
   } else {
     half = width / 2;
     left = x4 - half;
     right = x4 + half;
-    top = Math.min(y5, base);
-    bottom = Math.max(y5, base);
+    top = Math.min(y5, base2);
+    bottom = Math.max(y5, base2);
   }
   return {
     left,
@@ -176881,15 +177049,15 @@ var BarElement = class extends Element2 {
     return inRange(this, null, mouseY, useFinalPosition);
   }
   getCenterPoint(useFinalPosition) {
-    const { x: x4, y: y5, base, horizontal } = this.getProps([
+    const { x: x4, y: y5, base: base2, horizontal } = this.getProps([
       "x",
       "y",
       "base",
       "horizontal"
     ], useFinalPosition);
     return {
-      x: horizontal ? (x4 + base) / 2 : x4,
-      y: horizontal ? y5 : (y5 + base) / 2
+      x: horizontal ? (x4 + base2) / 2 : x4,
+      y: horizontal ? y5 : (y5 + base2) / 2
     };
   }
   getRange(axis) {
@@ -176920,29 +177088,29 @@ function getBorderColor(i11) {
 function getBackgroundColor(i11) {
   return BACKGROUND_COLORS[i11 % BACKGROUND_COLORS.length];
 }
-function colorizeDefaultDataset(dataset, i11) {
-  dataset.borderColor = getBorderColor(i11);
-  dataset.backgroundColor = getBackgroundColor(i11);
+function colorizeDefaultDataset(dataset2, i11) {
+  dataset2.borderColor = getBorderColor(i11);
+  dataset2.backgroundColor = getBackgroundColor(i11);
   return ++i11;
 }
-function colorizeDoughnutDataset(dataset, i11) {
-  dataset.backgroundColor = dataset.data.map(() => getBorderColor(i11++));
+function colorizeDoughnutDataset(dataset2, i11) {
+  dataset2.backgroundColor = dataset2.data.map(() => getBorderColor(i11++));
   return i11;
 }
-function colorizePolarAreaDataset(dataset, i11) {
-  dataset.backgroundColor = dataset.data.map(() => getBackgroundColor(i11++));
+function colorizePolarAreaDataset(dataset2, i11) {
+  dataset2.backgroundColor = dataset2.data.map(() => getBackgroundColor(i11++));
   return i11;
 }
 function getColorizer(chart) {
   let i11 = 0;
-  return (dataset, datasetIndex) => {
+  return (dataset2, datasetIndex) => {
     const controller = chart.getDatasetMeta(datasetIndex).controller;
     if (controller instanceof DoughnutController) {
-      i11 = colorizeDoughnutDataset(dataset, i11);
+      i11 = colorizeDoughnutDataset(dataset2, i11);
     } else if (controller instanceof PolarAreaController) {
-      i11 = colorizePolarAreaDataset(dataset, i11);
+      i11 = colorizePolarAreaDataset(dataset2, i11);
     } else if (controller) {
-      i11 = colorizeDefaultDataset(dataset, i11);
+      i11 = colorizeDefaultDataset(dataset2, i11);
     }
   };
 }
@@ -177077,12 +177245,12 @@ function minMaxDecimation(data2, start, count2, availableWidth) {
   }
   return decimated;
 }
-function cleanDecimatedDataset(dataset) {
-  if (dataset._decimated) {
-    const data2 = dataset._data;
-    delete dataset._decimated;
-    delete dataset._data;
-    Object.defineProperty(dataset, "data", {
+function cleanDecimatedDataset(dataset2) {
+  if (dataset2._decimated) {
+    const data2 = dataset2._data;
+    delete dataset2._decimated;
+    delete dataset2._data;
+    Object.defineProperty(dataset2, "data", {
       configurable: true,
       enumerable: true,
       writable: true,
@@ -177091,8 +177259,8 @@ function cleanDecimatedDataset(dataset) {
   }
 }
 function cleanDecimatedData(chart) {
-  chart.data.datasets.forEach((dataset) => {
-    cleanDecimatedDataset(dataset);
+  chart.data.datasets.forEach((dataset2) => {
+    cleanDecimatedDataset(dataset2);
   });
 }
 function getStartAndCountOfVisiblePointsSimplified(meta, points) {
@@ -177126,10 +177294,10 @@ var plugin_decimation = {
       return;
     }
     const availableWidth = chart.width;
-    chart.data.datasets.forEach((dataset, datasetIndex) => {
-      const { _data, indexAxis } = dataset;
+    chart.data.datasets.forEach((dataset2, datasetIndex) => {
+      const { _data, indexAxis } = dataset2;
       const meta = chart.getDatasetMeta(datasetIndex);
-      const data2 = _data || dataset.data;
+      const data2 = _data || dataset2.data;
       if (resolve([
         indexAxis,
         chart.options.indexAxis
@@ -177149,13 +177317,13 @@ var plugin_decimation = {
       let { start, count: count2 } = getStartAndCountOfVisiblePointsSimplified(meta, data2);
       const threshold = options2.threshold || 4 * availableWidth;
       if (count2 <= threshold) {
-        cleanDecimatedDataset(dataset);
+        cleanDecimatedDataset(dataset2);
         return;
       }
       if (isNullOrUndef(_data)) {
-        dataset._data = data2;
-        delete dataset.data;
-        Object.defineProperty(dataset, "data", {
+        dataset2._data = data2;
+        delete dataset2.data;
+        Object.defineProperty(dataset2, "data", {
           configurable: true,
           enumerable: true,
           get: function() {
@@ -177177,7 +177345,7 @@ var plugin_decimation = {
         default:
           throw new Error(`Unsupported decimation algorithm '${options2.algorithm}'`);
       }
-      dataset._decimated = decimated;
+      dataset2._decimated = decimated;
     });
   },
   destroy(chart) {
@@ -178545,15 +178713,15 @@ var positioners = {
     };
   }
 };
-function pushOrConcat(base, toPush) {
+function pushOrConcat(base2, toPush) {
   if (toPush) {
     if (isArray(toPush)) {
-      Array.prototype.push.apply(base, toPush);
+      Array.prototype.push.apply(base2, toPush);
     } else {
-      base.push(toPush);
+      base2.push(toPush);
     }
   }
-  return base;
+  return base2;
 }
 function splitNewlines(str) {
   if ((typeof str === "string" || str instanceof String) && str.indexOf("\n") > -1) {
@@ -179878,11 +180046,11 @@ function generateTicks(generationOptions, { min: min6, max: max6 }) {
   let exp2 = startExp(min6, max6);
   let precision = exp2 < 0 ? Math.pow(10, Math.abs(exp2)) : 1;
   const stepSize = Math.pow(10, exp2);
-  const base = minExp > exp2 ? Math.pow(10, minExp) : 0;
-  const start = Math.round((min6 - base) * precision) / precision;
-  const offset3 = Math.floor((min6 - base) / stepSize / 10) * stepSize * 10;
+  const base2 = minExp > exp2 ? Math.pow(10, minExp) : 0;
+  const start = Math.round((min6 - base2) * precision) / precision;
+  const offset3 = Math.floor((min6 - base2) / stepSize / 10) * stepSize * 10;
   let significand = Math.floor((start - offset3) / Math.pow(10, exp2));
-  let value = finiteOrDefault(generationOptions.min, Math.round((base + offset3 + significand * Math.pow(10, exp2)) * precision) / precision);
+  let value = finiteOrDefault(generationOptions.min, Math.round((base2 + offset3 + significand * Math.pow(10, exp2)) * precision) / precision);
   while (value < max6) {
     ticks.push({
       value,
@@ -179899,7 +180067,7 @@ function generateTicks(generationOptions, { min: min6, max: max6 }) {
       significand = 2;
       precision = exp2 >= 0 ? 1 : precision;
     }
-    value = Math.round((base + offset3 + significand * Math.pow(10, exp2)) * precision) / precision;
+    value = Math.round((base2 + offset3 + significand * Math.pow(10, exp2)) * precision) / precision;
   }
   const lastTick = finiteOrDefault(generationOptions.max, value);
   ticks.push({
@@ -181436,12 +181604,12 @@ var DiagramSuggestionQueue = class {
     return changed;
   }
   list(available) {
-    const pending = [];
+    const pending2 = [];
     const dismissed = [];
     for (const suggestion of this.suggestions.values()) {
-      if (available(suggestion)) (suggestion.dismissed ? dismissed : pending).push(suggestion);
+      if (available(suggestion)) (suggestion.dismissed ? dismissed : pending2).push(suggestion);
     }
-    return { pending, dismissed };
+    return { pending: pending2, dismissed };
   }
 };
 function componentKey(channel) {
@@ -182057,12 +182225,12 @@ var DiagramController = class {
       if (Boolean(previous) !== Boolean(ranges) || ranges && previous && ["x", "y"].some((axis) => diagram.zoom[axis] && !diagram.trimDomain[axis] && !diagram.drag[axis] && (ranges[axis].min !== previous[axis].min || ranges[axis].max !== previous[axis].max))) {
         this.host.requestUpdate();
       }
-      const dataset = chart.data.datasets[0];
-      dataset.data = data2;
-      dataset.showLine = this.showLine;
+      const dataset2 = chart.data.datasets[0];
+      dataset2.data = data2;
+      dataset2.showLine = this.showLine;
       const xPadding = diagram.zoom.x ? 0 : 2;
       const yPadding = diagram.zoom.y ? 0 : 2;
-      dataset.clip = { left: xPadding, right: xPadding, top: yPadding, bottom: yPadding };
+      dataset2.clip = { left: xPadding, right: xPadding, top: yPadding, bottom: yPadding };
       if (phAxis) {
         const doseTime = this.host.measurements.firstTitrationDoseTime(
           phAxis === "y" ? xId : yId,
@@ -182781,6 +182949,8 @@ init_chemicals();
 function loadMoleculeDefinition(definition, onAtom) {
   const molecule2 = StructureManager.newMolecule();
   if (!definition) return molecule2;
+  if (typeof definition.name === "string") molecule2.name = definition.name;
+  molecule2.aqueousAcidBase = readAqueousAcidBase(definition.aqueousAcidBase);
   const buildStructure = () => {
     definition.atoms.forEach((element2, index2) => {
       const atom = molecule2.addAtom(element2, ElementData.getData(element2)["symbol"], definition.charges?.[index2]);
@@ -182815,6 +182985,267 @@ function worksheetPeer(widget, tag, id3) {
 
 // webwriter-chemlab.ts
 init_structure();
+
+// chemlib/IupacDissociation.ts
+var dataset = "https://raw.githubusercontent.com/IUPAC/Dissociation-Constants/main/iupac_high-confidence_v2_4.csv";
+var iupacSource = "IUPAC Digitized pKa Dataset";
+var pending;
+function* csvRows(text) {
+  let row = [];
+  let field = "";
+  for (const [value] of text.matchAll(/"(?:[^"]|"")*"|[^"\r\n,]+|,|\r?\n/g)) {
+    if (value.startsWith('"')) field += value.slice(1, -1).replace(/""/g, '"');
+    else if (value === ",") {
+      row.push(field);
+      field = "";
+    } else if (value.endsWith("\n")) {
+      yield [...row, field];
+      row = [];
+      field = "";
+    } else field += value;
+  }
+  if (row.length || field) yield [...row, field];
+}
+function readIupacDissociation(csv, inchi, count2, step) {
+  if (!inchi || count2 < 1 || count2 > 8 || step !== 0 && (step !== 1 || count2 !== 1)) return;
+  const rows = csvRows(csv);
+  const columns = rows.next().value;
+  if (!columns) return;
+  const index2 = new Map(columns.map((column, offset3) => [column.replace(/^\uFEFF/, ""), offset3]));
+  const series = /* @__PURE__ */ new Map();
+  for (const row of rows) {
+    const cell = (key2) => row[index2.get(key2)] ?? "";
+    if (cell("InChI") !== inchi || cell("cosolvent") || cell("pressure")) continue;
+    const condition = cell("T"), evaluation = cell("assessment");
+    if (!condition || !["Reliable", "Approximate"].includes(evaluation)) continue;
+    const temperature = Number(condition);
+    if (!(temperature >= 20 && temperature <= 30)) continue;
+    const type = cell("pka_type");
+    const offset3 = step === 1 ? /^pKaH1?$/.test(type) ? 0 : -1 : /^pKa[1-8]$/.test(type) ? Number(type.slice(-1)) - 1 : -1;
+    const value = cell("pka_value");
+    if (offset3 < 0 || offset3 >= count2 || !/^-?\d+(?:\.\d+)?$/.test(value)) continue;
+    const key = [cell("unique_ID"), cell("ref"), condition, cell("remarks")].join("");
+    let group = series.get(key);
+    if (!group) {
+      group = { pKa: new Array(count2).fill(NaN), problematic: false, rank: Math.abs(temperature - 25) };
+      series.set(key, group);
+    }
+    if (evaluation === "Approximate") group.rank = Math.max(group.rank, 10 + Math.abs(temperature - 25));
+    const pKa = Number(value);
+    if (Number.isFinite(group.pKa[offset3]) && group.pKa[offset3] !== pKa) group.problematic = true;
+    group.pKa[offset3] = pKa;
+  }
+  const best = [...series.values()].filter((group) => !group.problematic).flatMap(({ rank, pKa }) => {
+    const data2 = readAqueousAcidBase({ pKa, step });
+    return data2 ? [{ data: data2, rank }] : [];
+  }).sort((a6, b4) => a6.rank - b4.rank);
+  if (!best.length) return;
+  const preferred = best[0];
+  if (best.some((entry) => entry.rank === preferred.rank && entry.data.pKa.some((value, index3) => Math.abs(value - preferred.data.pKa[index3]) > 0.35))) return;
+  return preferred.data;
+}
+async function lookupIupacDissociation(inchi, count2, step) {
+  if (!inchi || count2 < 1 || count2 > 8 || step !== 0 && (step !== 1 || count2 !== 1)) return;
+  pending ??= (async () => {
+    try {
+      const response = await fetch(dataset, { signal: AbortSignal.timeout(6500) });
+      return response.ok ? await response.text() : void 0;
+    } catch {
+      return void 0;
+    }
+  })();
+  const csv = await pending;
+  if (!csv) {
+    pending = void 0;
+    return;
+  }
+  return readIupacDissociation(csv, inchi, count2, step);
+}
+
+// molecule-builder/custom-compounds.ts
+init_ElementData();
+init_chemicals();
+init_bond_types();
+init_formula();
+init_structure();
+var names2 = ElementData.getElementList();
+var hydrogenValences = { 5: 3, 6: 4, 7: 3, 8: 2, 14: 4 };
+var halogens2 = /* @__PURE__ */ new Set([9, 17, 35, 53]);
+function atomLinks(atoms, bonds) {
+  const byId = new Map(atoms.map((atom) => [atom.id, atom]));
+  const links = new Map(atoms.map((atom) => [atom.id, []]));
+  for (const { from: from2, to: to2, order } of bonds) {
+    links.get(from2).push({ atom: byId.get(to2), order });
+    links.get(to2).push({ atom: byId.get(from2), order });
+  }
+  return links;
+}
+function analyzeBuilderCompound(structure) {
+  if (structure.kind !== "molecule" || structure.atoms.length < 2 || structure.repeatUnit || structure.representation === "aqueous-ions" || structure.representation === "constituent" || structure.bonds.some((bond) => bond.dative) || structure.atoms.some((atom) => atom.isotope !== void 0)) return;
+  const charges = ionicCharges(structure);
+  const atoms = structure.atoms.map((atom) => ({ ...atom, charge: charges.get(atom.id) }));
+  const bonds = structure.bonds.filter(isCovalentBond);
+  const ionic = bonds.length !== structure.bonds.length;
+  if (ionic && !completeIonicFormula(structure, charges)) return;
+  const originalLinks = atomLinks(atoms, bonds);
+  let id3 = Math.max(...atoms.map((atom) => atom.id)) + 1;
+  for (const atom of [...atoms]) {
+    const neighbors = originalLinks.get(atom.id);
+    if (!neighbors.length || !hydrogenValences[atom.atomicNumber]) continue;
+    const order = neighbors.reduce((sum, link) => sum + link.order, 0);
+    const adjustment = atom.atomicNumber === 6 ? -Math.abs(atom.charge) : atom.charge;
+    const missing = hydrogenValences[atom.atomicNumber] + adjustment - order;
+    if (missing < 0 || missing > 4) return;
+    for (let place = 0; place < missing; place++) {
+      const addedId = id3++;
+      atoms.push({ id: addedId, atomicNumber: 1, charge: 0, position: atom.position, diagram: atom.diagram });
+      bonds.push({ from: atom.id, to: addedId, order: 1, kind: "covalent" });
+    }
+  }
+  const molecule2 = { ...structure, atoms, bonds: [...bonds, ...structure.bonds.filter((bond) => !isCovalentBond(bond))] };
+  const links = atomLinks(atoms, bonds);
+  const byId = new Map(atoms.map((atom) => [atom.id, atom]));
+  const unseen = new Set(byId.keys());
+  const parts = [];
+  for (const root of unseen) {
+    const component = /* @__PURE__ */ new Set([root]);
+    for (const id4 of component) {
+      unseen.delete(id4);
+      for (const { atom } of links.get(id4)) component.add(atom.id);
+    }
+    parts.push([...component].map((id4) => byId.get(id4)));
+  }
+  const partCharges = parts.map((part) => part.reduce((sum, atom) => sum + atom.charge, 0));
+  if (ionic ? parts.length < 2 || partCharges.some((charge) => !charge) || partCharges.reduce((sum, charge) => sum + charge, 0) !== 0 : parts.length !== 1) return;
+  const hasBond = (atom, element2, order) => links.get(atom.id).some((link) => link.atom.atomicNumber === element2 && (order === void 0 || link.order === order));
+  const carbonyl = (atom) => atom.atomicNumber === 6 && (hasBond(atom, 8, 2) || hasBond(atom, 16, 2));
+  let acidSites = 0, baseSites = 0;
+  if (!ionic) for (const atom of atoms) {
+    const adjacent = links.get(atom.id);
+    if (atom.atomicNumber === 8 && hasBond(atom, 1, 1) && adjacent.some(({ atom: center }) => carbonyl(center) || [15, 16].includes(center.atomicNumber) && hasBond(center, 8, 2) || center.atomicNumber === 6 && hasBond(center, 6, 2))) acidSites++;
+    if (atom.atomicNumber === 1 && adjacent.some(({ atom: atom2 }) => halogens2.has(atom2.atomicNumber))) acidSites++;
+    if (atom.atomicNumber === 16 && hasBond(atom, 1, 1)) acidSites++;
+    if (atom.atomicNumber === 7 && atom.charge > 0 && hasBond(atom, 1, 1)) acidSites++;
+    if (atom.atomicNumber === 7 && atom.charge === 0 && adjacent.every(({ order, atom: atom2 }) => order < 3 && !carbonyl(atom2)) && (!hasBond(atom, 1, 1) || adjacent.filter(({ atom: atom2 }) => atom2.atomicNumber === 6 && hasBond(atom2, 6, 2)).length < 2)) baseSites++;
+  }
+  const solutes = parts.map((part) => {
+    const indexes = new Map(part.map(({ id: id4 }, index2) => [id4, index2]));
+    return {
+      formula: formula({ ...molecule2, atoms: part }),
+      atoms: part.map((atom) => names2[atom.atomicNumber - 1]),
+      charges: part.map((atom) => atom.charge),
+      bonds: bonds.filter((bond) => indexes.has(bond.from) && indexes.has(bond.to)).map(({ from: from2, to: to2, order }) => `${indexes.get(from2)}-${indexes.get(to2)}:covalent:${order}`)
+    };
+  });
+  try {
+    const models2 = solutes.map((definition) => loadMoleculeDefinition(definition));
+    if (models2.some((model) => !model.smilesString) || models2.some((model, index2) => model._bondCount !== solutes[index2].bonds.length)) return;
+    const classification = ionic ? "salt" : acidSites && baseSites ? "ampholyte" : acidSites ? "acid" : baseSites ? "base" : "other";
+    const stockSupported = ionic ? !parts.some((part) => part.length === 1 && [8, 16].includes(part[0].atomicNumber) && part[0].charge < -1) : partCharges[0] === 0;
+    return {
+      molecule: molecule2,
+      formula: formula(molecule2),
+      smiles: models2.map((model) => model.smilesString).sort().join("."),
+      molarMass: models2.reduce((sum, model) => sum + model.getTotMolMass(), 0),
+      classification,
+      acidSites,
+      baseSites,
+      stockSupported,
+      solutes
+    };
+  } catch {
+    return void 0;
+  }
+}
+function expectedDissociations(analysis) {
+  return analysis.acidSites + analysis.baseSites;
+}
+function resolveDissociation(rows, analysis) {
+  const count2 = expectedDissociations(analysis);
+  if (count2 < 1 || count2 > 8) return {};
+  const series = /* @__PURE__ */ new Map();
+  for (const { text, name: name2, source: source3 } of rows) {
+    const value = text.normalize("NFKC").replace(/−/g, "-");
+    if (/predicted|estimated|calculated|methanol|ethanol|acetonitrile|DMSO|cosolvent|pKb|pKow/i.test(value + " " + name2)) continue;
+    const temperatures = [...value.matchAll(/(-?\d+(?:\.\d+)?)\s*°\s*C/gi)];
+    if (temperatures.some((match) => Number(match[1]) < 20 || Number(match[1]) > 30)) continue;
+    const matches = [...value.matchAll(/\bpK\s*a\s*(H|[1-8])?\s*[:=]\s*(-?\d+(?:\.\d+)?)(?![\d.])/gi)].map(([, label, number2]) => [label, number2]);
+    if (!matches.length && /^pKa(?:H)?$/i.test(name2)) {
+      const match = /^\s*(-?\d+(?:\.\d+)?)(?:\s*(?:\(|@|at\b).*)?\s*$/i.exec(value);
+      if (match) matches.push([name2.toUpperCase().endsWith("H") ? "H" : void 0, match[1]]);
+    }
+    if (!matches.length) continue;
+    let steps2 = series.get(source3);
+    if (!steps2) series.set(source3, steps2 = /* @__PURE__ */ new Map());
+    for (const [label, numeric] of matches) {
+      if (!label && count2 > 1 || label?.toUpperCase() === "H" && (analysis.classification !== "base" || count2 !== 1)) continue;
+      const step = label && /^\d$/.test(label) ? Number(label) : 1;
+      const number2 = Number(numeric);
+      const previous = steps2.get(step);
+      if (previous === void 0) steps2.set(step, number2);
+      else if (Math.abs(number2 - previous) > 0.35) steps2.set(step, Number.NaN);
+    }
+  }
+  const complete = [...series].flatMap(([source3, steps2]) => {
+    const dissociation = readAqueousAcidBase({
+      step: analysis.baseSites,
+      pKa: Array.from({ length: count2 }, (_3, index2) => steps2.get(index2 + 1))
+    });
+    return dissociation ? [{ dissociation, pKaSource: source3 }] : [];
+  });
+  const preferred = complete.find((entry) => entry.pKaSource.includes("IUPAC")) ?? complete[0];
+  if (!preferred || complete.some((entry) => entry.dissociation.pKa.some((pKa, index2) => Math.abs(pKa - preferred.dissociation.pKa[index2]) > 0.35))) return {};
+  return preferred;
+}
+async function enrichBuilderCompound(analysis) {
+  const metadata = await lookupCompound(analysis.smiles);
+  if (!metadata) return {};
+  const relativeMassError = metadata.molarMass ? Math.abs(metadata.molarMass - analysis.molarMass) / metadata.molarMass : 0;
+  if (relativeMassError > 4e-3) return {};
+  const count2 = expectedDissociations(analysis);
+  const rows = count2 ? await lookupDissociation(metadata.cid) : [];
+  const measured = resolveDissociation(rows, analysis);
+  if (measured.dissociation || !count2 || !metadata.inchi) return { metadata, ...measured };
+  const dissociation = await lookupIupacDissociation(metadata.inchi, count2, analysis.baseSites);
+  return dissociation ? { metadata, dissociation, pKaSource: iupacSource } : { metadata };
+}
+function builderStock(analysis, concentration, facts) {
+  if (!analysis?.stockSupported || !(concentration > 0 && Number.isFinite(concentration)) || concentration > 1) return;
+  const count2 = expectedDissociations(analysis);
+  if (count2 && (facts?.dissociation?.pKa.length !== count2 || facts.dissociation.step !== analysis.baseSites)) return;
+  return withConcentration({
+    aqueousMolar: true,
+    phase: "liquid",
+    density: 1,
+    parts: analysis.solutes.map((molecule2) => ({ molecule: {
+      ...molecule2,
+      name: analysis.solutes.length === 1 ? facts?.metadata?.name : void 0,
+      aqueousAcidBase: facts?.dissociation
+    }, amount: 1 }))
+  }, concentration);
+}
+function readBuilderChemical(value, index2) {
+  const record2 = value;
+  const structure = readStructure(record2?.structure ?? value);
+  if (!structure) return;
+  if (!record2.structure) return { structure, key: `builder-reference:${index2}` };
+  const key = typeof record2.key === "string" && /^builder-chemical:[a-z0-9-]+$/.test(record2.key) ? record2.key : `builder-reference:${index2}`;
+  const metadata = record2.facts?.metadata;
+  const facts = {
+    metadata: metadata && Number.isSafeInteger(metadata.cid) && metadata.cid > 0 && typeof metadata.name === "string" ? metadata : void 0,
+    dissociation: readAqueousAcidBase(record2.facts?.dissociation),
+    pKaSource: typeof record2.facts?.pKaSource === "string" ? record2.facts.pKaSource : void 0
+  };
+  const stockConcentration = Number.isFinite(record2.stockConcentration) ? record2.stockConcentration : void 0;
+  const analysis = analyzeBuilderCompound(structure);
+  const recipe = builderStock(analysis, stockConcentration, facts);
+  return { structure, key, facts, stockConcentration, analysis, recipe };
+}
+function portableBuilderChemical(item) {
+  const { key, structure, facts, stockConcentration } = item;
+  if (!facts && stockConcentration === void 0) return structure;
+  return { key, structure, facts, stockConcentration };
+}
 
 // data/chemicalPreviews.generated.ts
 var structures = [
@@ -182967,7 +183398,8 @@ function describeMolecule(molecule2) {
     formula: molecule2.solidSaltFormula ?? formula2,
     atoms: molecule2._atoms.map((atom) => atom.getName().toLowerCase()),
     charges,
-    bonds
+    bonds,
+    aqueousAcidBase: molecule2.aqueousAcidBase && structuredClone(molecule2.aqueousAcidBase)
   };
 }
 function snapshotMixture(mix) {
@@ -183146,8 +183578,8 @@ var WorkspaceCamera = class {
     return this.height / 2 - this.y * this.zoom;
   }
   get gridCellWidth() {
-    const base = GRID_BASE_MM / MILLIMETERS_PER_WORLD_UNIT;
-    return base * 2 ** Math.ceil(Math.log2(MIN_GRID_CELL_PX / (base * this.zoom)));
+    const base2 = GRID_BASE_MM / MILLIMETERS_PER_WORLD_UNIT;
+    return base2 * 2 ** Math.ceil(Math.log2(MIN_GRID_CELL_PX / (base2 * this.zoom)));
   }
   snapToGrid(x4, y5) {
     const step = this.gridCellWidth;
@@ -183826,8 +184258,8 @@ var bitmapFontXMLParser = {
       });
     }
     const map3 = {};
-    const base = common.getAttribute("base");
-    data2.baseLineOffset = base === null ? 0 : data2.lineHeight - parseInt(base, 10);
+    const base2 = common.getAttribute("base");
+    data2.baseLineOffset = base2 === null ? 0 : data2.lineHeight - parseInt(base2, 10);
     for (let i11 = 0; i11 < char.length; i11++) {
       const charNode = char[i11];
       const id3 = parseInt(charNode.getAttribute("id"), 10);
@@ -184666,13 +185098,13 @@ async function loadAsTexture(url, asset, loader, crossOrigin2) {
   context2.imageSmoothingQuality = "high";
   context2.drawImage(image, 0, 0, width * resolution, height * resolution);
   const { parseAsGraphicsContext: _p, ...rest } = asset.data ?? {};
-  const base = new ImageSource({
+  const base2 = new ImageSource({
     resource: canvas,
     alphaMode: "premultiply-alpha-on-upload",
     resolution,
     ...rest
   });
-  return createTexture(base, loader, url);
+  return createTexture(base2, loader, url);
 }
 async function loadAsGraphics(url) {
   const response = await DOMAdapter.get().fetch(url);
@@ -184965,13 +185397,13 @@ var loadTextures = {
         }
       });
     }
-    const base = new ImageSource({
+    const base2 = new ImageSource({
       resource: src,
       alphaMode: "premultiply-alpha-on-upload",
       resolution: asset.data?.resolution || getResolutionOfUrl(url),
       ...asset.data
     });
-    return createTexture(base, loader, url);
+    return createTexture(base2, loader, url);
   },
   unload(texture) {
     texture.destroy(true);
@@ -185104,12 +185536,12 @@ var loadVideoTextures = {
       sourceElement.addEventListener("error", onError);
       videoElement.appendChild(sourceElement);
       async function onCanPlay() {
-        const base = new VideoSource({ ...options2, resource: videoElement });
+        const base2 = new VideoSource({ ...options2, resource: videoElement });
         cleanup();
         if (asset.data.preload) {
           await preloadVideo(videoElement);
         }
-        resolve2(createTexture(base, loader, url));
+        resolve2(createTexture(base2, loader, url));
       }
       function onError(event) {
         cleanup();
@@ -188331,8 +188763,8 @@ function platingTexture(color2) {
   };
   const lighten2 = (amount, alpha2 = 1) => {
     const channel = (shift3) => {
-      const base = color2 >> shift3 & 255;
-      return Math.round(base + (255 - base) * amount);
+      const base2 = color2 >> shift3 & 255;
+      return Math.round(base2 + (255 - base2) * amount);
     };
     return `rgba(${channel(16)}, ${channel(8)}, ${channel(0)}, ${alpha2})`;
   };
@@ -191137,7 +191569,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     return this.querySelector(':scope > script[type="application/json"][slot="data"]');
   }
   applyAuthoredData(value) {
-    this.builderReferences = Array.isArray(value.builderReferences) ? value.builderReferences.slice(0, 30).map(readStructure).filter(Boolean) : [];
+    this.builderReferences = Array.isArray(value.builderReferences) ? value.builderReferences.slice(0, 30).map(readBuilderChemical).filter(Boolean) : [];
     this.savedVesselMixtures = readSavedMixtures(value.savedVesselMixtures);
     if (Array.isArray(value.availableMolecules)) this.availableMolecules = value.availableMolecules;
     if (Array.isArray(value.availableMixtures)) this.availableMixtures = value.availableMixtures;
@@ -191204,7 +191636,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       availableComponents: this.availableComponents,
       invComponents: this.invComponents,
       chemicalPermissions: this.chemicalPermissions,
-      ...this.builderReferences.length ? { builderReferences: this.builderReferences } : {},
+      ...this.builderReferences.length ? { builderReferences: this.builderReferences.map(portableBuilderChemical) } : {},
       ...this.savedVesselMixtures.length ? { savedVesselMixtures: this.savedVesselMixtures } : {}
     });
   }
@@ -193257,9 +193689,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 			<span class="diagram-suggestion-axis"><b>X</b> ${this.diagrams.label(suggestion.x)}</span>
 		</sl-button>`;
   }
-  renderDiagramBuilder(embedded, channels, { pending, dismissed }) {
+  renderDiagramBuilder(embedded, channels, { pending: pending2, dismissed }) {
     const selection = this.diagramSelection;
-    const title = this.message(embedded ? "Diagramm hinzuf\xFCgen" : selection.size && !pending.length && !dismissed.length ? "Achsen w\xE4hlen" : "Diagrammvorschl\xE4ge");
+    const title = this.message(embedded ? "Diagramm hinzuf\xFCgen" : selection.size && !pending2.length && !dismissed.length ? "Achsen w\xE4hlen" : "Diagrammvorschl\xE4ge");
     const dismiss = this.message("Vorschlag ausblenden");
     const dismissedLabel = this.message("Ausgeblendet");
     return x`<section class="diagram-builder diagram-surface ${embedded ? "diagram-builder-inline" : "diagram-builder-popup"}"
@@ -193291,9 +193723,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					aria-label=${this.message("Ausgeblendete Vorschl\xE4ge")}>
 					${c4(dismissed, ({ key }) => key, (suggestion) => this.renderDiagramSuggestion(suggestion, true))}
 				</div>` : E}
-			${pending.length ? x`
+			${pending2.length ? x`
 				<div class="diagram-suggestions">
-					${c4(pending, ({ key }) => key, (suggestion) => x`
+					${c4(pending2, ({ key }) => key, (suggestion) => x`
 						<div class="diagram-suggestion-row">
 							${this.renderDiagramSuggestion(suggestion)}
 							<sl-button class="diagram-control diagram-dismiss" size="small" title=${dismiss} aria-label=${dismiss}
@@ -193309,7 +193741,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 							</sl-button>
 						</div>`)}
 				</div>` : E}
-			${selection.size ? this.renderSelectedDiagramAxes(channels, selection) : !pending.length && !dismissed.length ? x`
+			${selection.size ? this.renderSelectedDiagramAxes(channels, selection) : !pending2.length && !dismissed.length ? x`
 				<p class="diagram-empty">${this.message("W\xE4hle Objekte auf dem Canvas, um ein eigenes Diagramm zu erstellen.")}</p>` : E}
 		</section>`;
   }
@@ -193740,7 +194172,10 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const customLabel = this.builderText("Custom chemicals", "Eigene Chemikalien");
     const structureLabel = this.builderText("Molecule Builder", "Molek\xFClbaukasten");
     const mixtureLabel = this.builderText("Saved mixtures", "Gespeicherte Gemische");
-    const structures2 = [...this.builderReferences, ...this.sessionBuilderReferences];
+    const structures2 = [
+      ...this.builderReferences.filter((item) => this.canAuthor || this.isChemicalAllowed(item.key)),
+      ...this.sessionBuilderReferences
+    ];
     const mixtures2 = [
       ...this.savedVesselMixtures.filter((item) => this.canAuthor || this.isChemicalAllowed(item.key)),
       ...this.sessionVesselMixtures
@@ -193769,7 +194204,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       ].filter(({ items: items2 }) => items2.length);
       return subgroups.length ? [{ ...group, subgroups }] : [];
     });
-    const shownStructures = activeGroup ? [] : structures2.filter((structure) => matches(customLabel, structureLabel, structure.name));
+    const shownStructures = activeGroup ? [] : structures2.filter((item) => matches(customLabel, structureLabel, item.structure.name, item.analysis?.formula ?? ""));
     const shownMixtures = activeGroup ? [] : mixtures2.filter((item) => matches(
       customLabel,
       mixtureLabel,
@@ -193778,6 +194213,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     ));
     const items = [
       ...sections.flatMap(({ subgroups }) => subgroups.flatMap(({ items: items2 }) => items2)),
+      ...shownStructures.filter((item) => item.recipe && this.builderReferences.includes(item)).map((item) => ({ name: item.key, label: item.structure.name })),
       ...shownMixtures.filter((item) => this.savedVesselMixtures.includes(item)).map((item) => ({ name: item.key, label: item.name }))
     ];
     const hasResults = !!(sections.length || shownStructures.length || shownMixtures.length);
@@ -193818,7 +194254,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 					${shownStructures.length ? this.renderPaletteSubgroup(
       structureLabel,
       customLabel,
-      c4(shownStructures, (structure) => structure, (structure) => this.renderBuilderReference(structure)),
+      c4(shownStructures, (item) => item.key, (item) => this.renderBuilderReference(item)),
       showHeadings ? 4 : 3
     ) : E}
 					${shownMixtures.length ? this.renderPaletteSubgroup(
@@ -193921,11 +194357,14 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.builderTarget = void 0;
     const review = { structure, loading: true };
     this.builderReview = review;
-    void Promise.all([Promise.resolve().then(() => (init_catalog(), catalog_exports)), Promise.resolve().then(() => (init_geometry(), geometry_exports))]).then(([catalog, geometry]) => {
+    void Promise.all([Promise.resolve().then(() => (init_catalog(), catalog_exports)), Promise.resolve().then(() => (init_geometry(), geometry_exports))]).then(async ([catalog, geometry]) => {
       if (!this.isConnected || this.builderReview !== review) return;
-      const name2 = structure.name.trim() || geometry.formula(structure);
-      const match = catalog.matchingRecipe(structure);
-      this.builderReview = { structure: { ...structure, name: name2 }, reagent: match?.name, loading: false };
+      const analysis = analyzeBuilderCompound(structure);
+      const match = catalog.matchingRecipe(analysis?.molecule ?? structure) ?? catalog.matchingRecipe(structure);
+      const facts = !match && analysis ? await enrichBuilderCompound(analysis) : void 0;
+      if (!this.isConnected || this.builderReview !== review) return;
+      const name2 = facts?.metadata?.name.slice(0, 160) || structure.name.trim() || analysis?.formula || geometry.formula(structure);
+      this.builderReview = { structure: { ...structure, name: name2 }, reagent: match?.name, analysis, facts, loading: false };
     }).catch(() => {
       if (this.builderReview === review) this.builderReview = { structure, loading: false };
     });
@@ -193949,13 +194388,38 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     this.builderReview = void 0;
     return true;
   }
-  saveBuilderReference(structure) {
+  saveBuilderReference(review, withStock = false) {
     const references2 = this.canAuthor ? this.builderReferences : this.sessionBuilderReferences;
-    if (references2.length >= 30) return;
+    if (references2.length >= 30 || this.builderReview !== review) return;
+    const { structure, analysis } = review;
+    let facts = review.facts;
+    let stockConcentration;
+    let recipe;
+    if (withStock) {
+      if (!this.canAuthor || !analysis?.stockSupported || review.reagent) return;
+      const input = this.shadowRoot.querySelector("#builderStockConcentration");
+      const manual = this.shadowRoot.querySelector("#builderManualPka");
+      stockConcentration = input.valueAsNumber;
+      if (manual) {
+        const values = manual.value.trim().split(/\s*;\s*|\s+/).filter(Boolean).map((value) => Number(value.replace(",", ".")));
+        const dissociation = readAqueousAcidBase({ pKa: values, step: analysis.baseSites });
+        if (dissociation?.pKa.length !== expectedDissociations(analysis)) {
+          manual.setCustomValidity(this.builderText("Enter the requested aqueous pKa values in order.", "Gib die w\xE4ssrigen pKa-Werte in Reihenfolge ein."));
+          manual.reportValidity();
+          return;
+        }
+        facts = { ...facts, dissociation, pKaSource: "manual" };
+      }
+      if (!input.reportValidity()) return;
+      recipe = builderStock(analysis, stockConcentration, facts);
+      if (!recipe) return;
+    }
+    const id3 = Array.from(crypto.getRandomValues(new Uint32Array(2)), (value) => value.toString(36)).join("-");
+    const item = { key: `builder-chemical:${id3}`, structure, recipe, analysis, facts, stockConcentration };
     if (this.canAuthor) {
-      this.builderReferences = [...references2, structure];
+      this.builderReferences = [...references2, item];
       this.persistAuthoredData();
-    } else this.sessionBuilderReferences = [...references2, structure];
+    } else this.sessionBuilderReferences = [...references2, item];
     this.openCustomChemicals();
     this.builderReview = void 0;
   }
@@ -193974,9 +194438,9 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       return;
     }
     const prefix = this.builderText("Mixture", "Gemisch");
-    const names2 = new Set([...this.savedVesselMixtures, ...this.sessionVesselMixtures].map((item) => item.name));
+    const names3 = new Set([...this.savedVesselMixtures, ...this.sessionVesselMixtures].map((item) => item.name));
     let number2 = 1;
-    while (names2.has(`${prefix} ${number2}`)) number2++;
+    while (names3.has(`${prefix} ${number2}`)) number2++;
     this.mixtureDraft = { vessel, name: `${prefix} ${number2}` };
     void this.updateComplete.then(() => {
       const input = this.shadowRoot.querySelector("#mixtureName");
@@ -194056,24 +194520,62 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       widget.scrollIntoView({ block: "nearest" });
     }
   }
-  renderBuilderReference(structure) {
+  renderBuilderReference(item) {
+    const { structure, recipe, analysis, facts } = item;
+    const label = structure.name || this.builderText("Structure", "Struktur");
+    const sharable = !!recipe && this.canAuthor && this.builderReferences.includes(item);
+    const allowed = this.isChemicalAllowed(item.key);
     const remove = () => {
-      if (this.canAuthor && this.builderReferences.includes(structure)) {
-        this.builderReferences = this.builderReferences.filter((item) => item !== structure);
+      if (this.canAuthor && this.builderReferences.includes(item)) {
+        this.builderReferences = this.builderReferences.filter((entry) => entry !== item);
+        this.setChemicalBlocked(item.key, false);
         this.persistAuthoredData();
-      } else this.sessionBuilderReferences = this.sessionBuilderReferences.filter((item) => item !== structure);
+      } else this.sessionBuilderReferences = this.sessionBuilderReferences.filter((entry) => entry !== item);
+      if (this.selectedChemical?.key === item.key) this.clearChemicalSelection();
     };
-    return this.renderPaletteCard(structure.name || this.builderText("Structure", "Struktur"), "primary", E, x`
+    const formula2 = analysis?.formula ?? facts?.metadata?.formula ?? label;
+    const badge = sharable ? this.renderChemicalPermissionBadge(label, [{ name: item.key, label }]) : E;
+    return this.renderPaletteCard(label, sharable ? this.palettePermissionVariant(Number(allowed), 1) : "primary", badge, x`
+			${recipe ? x`<div class="palette-preview-area palette-variant">
+				${this.renderChemicalTile(item.key, this.chemicalTileLabel(label, item.stockConcentration), formula2, recipe)}
+				${sharable ? this.renderChemicalPermission(item.key, label) : E}
+			</div>` : E}
+			${analysis ? this.renderBuilderFacts(analysis, facts, item.stockConcentration) : E}
 			<div class="custom-card-actions">
 				<sl-button size="small" class="structure-link" @click=${() => this.openInBuilder({ structure })}>
 					${this.builderText("View structure", "Struktur ansehen")}
 				</sl-button>
-				${this.canAuthor || this.sessionBuilderReferences.includes(structure) ? this.renderSelectionDeleteButton(
+				${this.canAuthor || this.sessionBuilderReferences.includes(item) ? this.renderSelectionDeleteButton(
       remove,
       this.builderText("Delete structure", "Struktur l\xF6schen")
     ) : E}
 			</div>
 		`, true);
+  }
+  renderBuilderFacts(analysis, facts, concentration) {
+    const classifications = {
+      acid: this.builderText("Acid", "S\xE4ure"),
+      base: this.builderText("Base", "Base"),
+      ampholyte: this.builderText("Ampholyte", "Ampholyt"),
+      salt: this.builderText("Ionic salt", "Ionensalz"),
+      other: this.builderText("Molecular compound", "Molek\xFClverbindung")
+    };
+    const pKa = facts?.dissociation?.pKa;
+    const cid = facts?.metadata?.cid;
+    const source3 = facts?.pKaSource === "manual" ? this.builderText("Entered manually", "Manuell eingetragen") : facts?.pKaSource;
+    return x`<div class="custom-compound-facts">
+			<sl-tag size="small">${analysis.formula}</sl-tag>
+			<sl-tag size="small" title=${this.builderText("Class inferred from structure", "Stoffklasse aus Struktur abgeleitet")}>
+				${classifications[analysis.classification]}</sl-tag>
+			${concentration !== void 0 ? x`<sl-tag size="small">${this.formatAmount(concentration, 5)} mol/L</sl-tag>` : x`<sl-tag size="small">${this.formatAmount(facts?.metadata?.molarMass ?? analysis.molarMass, 5)} g/mol</sl-tag>`}
+			${pKa?.length ? x`<sl-tag size="small" title=${source3 ?? ""}>
+				${analysis.classification === "base" ? "pKaH" : "pKa"} ${pKa.map((value) => this.formatAmount(value, 5)).join(" \xB7 ")}
+			</sl-tag>` : E}
+			${cid ? x`<a href=${`https://pubchem.ncbi.nlm.nih.gov/compound/${cid}#section=Dissociation-Constants`}
+				target="_blank" rel="noopener noreferrer">PubChem</a>` : E}
+			${facts?.pKaSource === iupacSource ? x`<a href="https://github.com/IUPAC/Dissociation-Constants"
+				target="_blank" rel="noopener noreferrer" title="IUPAC Digitized pKa Dataset · CC BY-NC 4.0">IUPAC</a>` : E}
+		</div>`;
   }
   renderBuilderExchange() {
     const review = this.builderReview;
@@ -194086,13 +194588,31 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     return x`<section class="builder-exchange" aria-live="polite">
 			<div class="builder-reference-list">
 				<sl-tag size="small" variant="primary">${review?.structure.name || target?.key || this.builderText("Structure", "Struktur")}</sl-tag>
-				${review?.loading ? x`<p>${this.builderText("Checking the catalog", "Katalog wird gepr\xFCft")}</p>` : review ? x`
-					<p>${permitted ? this.chemicalDisplayLabel(item) : this.builderText("Reference only. No permitted matching dosing recipe.", "Nur Referenz. Keine passende freigegebene Dosiervorschrift.")}</p>
+				${review?.loading ? x`<p>${this.builderText("Identifying compound\u2026", "Verbindung wird bestimmt\u2026")}</p>` : review ? x`
+					${review.analysis ? this.renderBuilderFacts(review.analysis, review.facts) : E}
+					${permitted ? x`<p>${this.chemicalDisplayLabel(item)}</p>` : E}
+					${review.analysis && expectedDissociations(review.analysis) > 0 && !review.facts?.dissociation ? x`<p>${this.builderText(
+      "Acid\u2013base behavior inferred. No complete aqueous pKa series found.",
+      "S\xE4ure-Base-Verhalten aus der Struktur abgeleitet. Keine vollst\xE4ndige w\xE4ssrige pKa-Reihe gefunden."
+    )}</p>` : E}
+					${this.canAuthor && !review.reagent && review.analysis?.stockSupported ? x`
+						<div class="custom-stock-fields">
+							<sl-input id="builderStockConcentration" size="small" type="number" min="0.001" max="1" step="any" required
+								value="0.1" label=${this.builderText("Aqueous stock (mol/L)", "W\xE4ssrige Stamml\xF6sung (mol/L)")}></sl-input>
+							${expectedDissociations(review.analysis) && !review.facts?.dissociation ? x`
+								<sl-input id="builderManualPka" size="small" label=${this.builderText("Aqueous pKa (separate values with ;)", "W\xE4ssrige pKa (Werte mit ; trennen)")}
+									@sl-input=${(event) => event.currentTarget.setCustomValidity("")}></sl-input>` : E}
+						</div>
+						<p>${this.builderText("The stock assumes the compound is dissolved.", "Die Stamml\xF6sung setzt voraus, dass der Stoff gel\xF6st ist.")}</p>
+					` : E}
 					<div>
 						${permitted ? x`<sl-button size="small" variant="primary" @click=${() => this.useBuilderReagent(item.name)}>
 							${this.builderText("Select catalog reagent", "Katalogreagenz ausw\xE4hlen")}</sl-button>` : E}
+						${this.canAuthor && !review.reagent && review.analysis?.stockSupported ? x`
+							<sl-button size="small" variant="primary" ?disabled=${this.builderReferences.length >= 30}
+								@click=${() => this.saveBuilderReference(review, true)}>${this.builderText("Save aqueous stock", "Stamml\xF6sung speichern")}</sl-button>` : E}
 						<sl-button size="small" ?disabled=${(this.canAuthor ? this.builderReferences : this.sessionBuilderReferences).length >= 30}
-							@click=${() => this.saveBuilderReference(review.structure)}>${this.builderText("Save to custom chemicals", "Unter eigene Chemikalien speichern")}</sl-button>
+							@click=${() => this.saveBuilderReference(review)}>${this.builderText("Save as reference", "Als Referenz speichern")}</sl-button>
 					</div>
 				` : x`
 					<p>${fallback2}</p>

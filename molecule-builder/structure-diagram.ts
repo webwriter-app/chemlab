@@ -1,5 +1,6 @@
 import { elementByAtomicNumber } from "../periodic-table/element-reference";
 import { siteIon } from "./crystal-display";
+import { isCovalentBond, ionicCharges } from "./bond-types";
 import { remainingElectrons } from "./geometry";
 import type { Bond, Crystal, Molecule, Point2, Point3, Site } from "./structure";
 
@@ -28,7 +29,9 @@ export const formalCharge = (value: number) => value === 0 ? ""
 export function lewisDiagram(molecule: Molecule) {
 	const repeat = molecule.repeatUnit;
 	const members = repeat ? new Set(repeat.atoms) : undefined;
-	const visible = members ? molecule.atoms.filter(atom => members.has(atom.id)) : molecule.atoms;
+	const charges = ionicCharges(molecule);
+	const visible = (members ? molecule.atoms.filter(atom => members.has(atom.id)) : molecule.atoms)
+		.map(atom => ({ ...atom, charge: charges.get(atom.id) }));
 	const atoms = new Map(visible.map(atom => [atom.id, atom]));
 	const bonds = molecule.bonds.filter(bond => atoms.has(bond.from) && atoms.has(bond.to));
 	const oxidation = new Map<number, number>(visible.map(atom => [atom.id, atom.charge]));
@@ -50,7 +53,7 @@ export function lewisDiagram(molecule: Molecule) {
 		incident.get(bond.to).push(bond);
 		// Catalog coordination bonds retain the donor's pair. Their stored
 		// formal charges describe the free donor and acceptor.
-		if (!bond.dative) assign(bond.from, bond.to, bond.order);
+		if (!bond.dative && isCovalentBond(bond)) assign(bond.from, bond.to, bond.order);
 	}
 	if (repeat) assign(...repeat.ends, 1);
 	return {

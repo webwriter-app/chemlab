@@ -241,8 +241,10 @@ export function catalogAqueousStructure(key: string): Molecule | undefined {
 /** Compare composition, charge and connectivity independently of atom IDs and the camera. */
 function sameGraph(a: Molecule, b: Molecule) {
 	if (a.atoms.length !== b.atoms.length || a.bonds.length !== b.bonds.length) return false;
-	const neighbors = (molecule: Molecule, id: number) => new Map(molecule.bonds.flatMap(({ from, to, order }) =>
-		from === id ? [[to, order]] : to === id ? [[from, order]] : []));
+	const neighbors = (molecule: Molecule, id: number) => new Map(molecule.bonds.flatMap(({ from, to, order, kind }) => {
+		const code = kind === "ionic" ? 0 : order;
+		return from === id ? [[to, code]] : to === id ? [[from, code]] : [];
+	}));
 	const candidates = a.atoms.map(atom => {
 		const links = neighbors(a, atom.id);
 		return { id: atom.id, links, matches: b.atoms.flatMap(other => {

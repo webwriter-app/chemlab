@@ -3,13 +3,10 @@ import { test } from "node:test";
 import { StructureManager } from "../chemlib";
 
 test("identical metadata requests share a result while a failed structure falls back independently", async t => {
-	const props = [];
-	props[6] = { value: { sval: "Example compound" } };
-	props[12] = { value: { sval: "Example InChI" } };
-	props[13] = { value: { sval: "Example key" } };
-	const fetch = t.mock.method(globalThis, "fetch", async (url: string) => url.includes("known-structure")
-		? { ok: true, json: async () => ({ PC_Compounds: [{ props }] }) }
-		: { ok: false });
+	const fetch = t.mock.method(globalThis, "fetch", async (url: string) =>
+		url.includes("known-structure") ? { ok: true, json: async () => ({ PropertyTable: { Properties: [
+			{ CID: 42, Title: "Example compound", InChI: "Example InChI", InChIKey: "Example key" },
+		] } }) } : { ok: false });
 	const molecule = (smiles: string) => {
 		const item = StructureManager.newMolecule();
 		item.smilesString = smiles;

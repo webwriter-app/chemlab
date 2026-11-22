@@ -62,6 +62,13 @@ export const builderStyles = css`
 		padding-inline-start: .35rem;
 	}
 	.tools sl-button::part(base) { box-shadow: var(--shadow); }
+	.formal-charge-input {
+		display: flex;
+		align-items: center;
+		gap: .35rem;
+		font-size: .75rem;
+	}
+	.formal-charge-input input { inline-size: 3.3rem; }
 	/* Icon controls carry their label in the tooltip only, so the label part
 	   keeps the square metrics of the lab's canvas buttons. */
 	.icon-control::part(label) {

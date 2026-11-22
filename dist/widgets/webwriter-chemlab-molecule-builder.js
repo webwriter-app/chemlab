@@ -658,7 +658,15 @@ function readStructure(value) {
       const pair = [bond.from, bond.to].sort((a5, b4) => a5 - b4).join("-");
       if (pairs.has(pair)) return null;
       pairs.add(pair);
-      bonds.push({ from: bond.from, to: bond.to, order: bond.order, ...bond.dative === true ? { dative: true } : {} });
+      if (bond.kind !== void 0 && bond.kind !== "ionic" && bond.kind !== "covalent") return null;
+      if (bond.kind === "ionic" && (bond.order !== 1 || bond.dative)) return null;
+      bonds.push({
+        from: bond.from,
+        to: bond.to,
+        order: bond.order,
+        ...bond.kind === "ionic" || bond.kind === "covalent" ? { kind: bond.kind } : {},
+        ...bond.dative === true ? { dative: true } : {}
+      });
     }
     const geometry = value.geometry === "idealized" || value.geometry === "supplied" || value.geometry === "estimated" ? value.geometry : void 0;
     const representation = value.representation === "constituent" || value.representation === "repeat-unit" || value.representation === "ionic-components" || value.representation === "aqueous-ions" || value.representation === "conformer" || value.representation === "experimental" ? value.representation : void 0;
@@ -92265,8 +92273,105 @@ var init_sources = __esm({
   }
 });
 
+// molecule-builder/bond-types.ts
+function ionicLimits(left, right) {
+  const a5 = left.charge || commonIons[left.atomicNumber];
+  const b4 = right.charge || commonIons[right.atomicNumber];
+  return a5 * b4 < 0 ? [a5, b4] : void 0;
+}
+function bondKind(molecule2, from, to, mode) {
+  if (mode !== "auto") return mode;
+  const left = molecule2.atoms.find((atom) => atom.id === from);
+  const right = molecule2.atoms.find((atom) => atom.id === to);
+  const others = molecule2.bonds.filter((bond) => !(connects(bond, from) && connects(bond, to)));
+  const attached = others.some((bond) => isCovalentBond(bond) && (connects(bond, from) || connects(bond, to)));
+  return left && right && !attached && ionicLimits(left, right) ? "ionic" : "covalent";
+}
+function canAssociateIons(molecule2, from, to) {
+  const left = molecule2.atoms.find((atom) => atom.id === from);
+  const right = molecule2.atoms.find((atom) => atom.id === to);
+  const limits = left && right && ionicLimits(left, right);
+  if (!limits) return false;
+  const others = molecule2.bonds.filter((bond) => !(connects(bond, from) && connects(bond, to)));
+  return [left, right].every((atom, index) => atom.charge || !others.some((bond) => isCovalentBond(bond) && connects(bond, atom.id)) && others.filter((bond) => !isCovalentBond(bond) && connects(bond, atom.id)).length < Math.abs(limits[index]));
+}
+function ionicCharges(molecule2) {
+  const atoms = new Map(molecule2.atoms.map((atom) => [atom.id, atom]));
+  const charges = new Map(molecule2.atoms.map((atom) => [atom.id, atom.charge]));
+  for (const bond of molecule2.bonds) {
+    if (isCovalentBond(bond)) continue;
+    const left = atoms.get(bond.from);
+    const right = atoms.get(bond.to);
+    const limits = ionicLimits(left, right);
+    if (!limits) continue;
+    if (!left.charge) charges.set(left.id, charges.get(left.id) + Math.sign(limits[0]));
+    if (!right.charge) charges.set(right.id, charges.get(right.id) + Math.sign(limits[1]));
+  }
+  return charges;
+}
+var commonIons, isCovalentBond, connects;
+var init_bond_types = __esm({
+  "molecule-builder/bond-types.ts"() {
+    commonIons = {
+      3: 1,
+      11: 1,
+      19: 1,
+      37: 1,
+      55: 1,
+      12: 2,
+      20: 2,
+      38: 2,
+      56: 2,
+      8: -2,
+      9: -1,
+      16: -2,
+      17: -1,
+      35: -1,
+      53: -1
+    };
+    isCovalentBond = (bond) => bond.kind !== "ionic";
+    connects = (bond, id) => bond.from === id || bond.to === id;
+  }
+});
+
+// molecule-builder/formula.ts
+function formula(structure) {
+  if (structure.kind === "crystal" && structure.catalogKey && structure.name) return structure.name;
+  const counts2 = /* @__PURE__ */ new Map();
+  for (const { atomicNumber } of structure.kind === "molecule" ? structure.atoms : structure.sites) {
+    const symbol2 = ElementData.getData(elementNames[atomicNumber - 1])?.["symbol"];
+    if (!symbol2) continue;
+    counts2.set(symbol2, (counts2.get(symbol2) ?? 0) + 1);
+  }
+  const ordered = [...counts2.keys()].sort((a5, b4) => a5.localeCompare(b4, "en"));
+  if (counts2.has("C")) {
+    ordered.splice(ordered.indexOf("C"), 1);
+    if (counts2.has("H")) ordered.splice(ordered.indexOf("H"), 1);
+    ordered.unshift(...counts2.has("H") ? ["C", "H"] : ["C"]);
+  }
+  const gcd = (a5, b4) => b4 ? gcd(b4, a5 % b4) : a5;
+  const divisor = structure.kind === "crystal" ? [...counts2.values()].reduce(gcd, 0) : 1;
+  return ordered.map((symbol2) => {
+    const count2 = counts2.get(symbol2) / divisor;
+    return symbol2 + (count2 > 1 ? String(count2) : "");
+  }).join("");
+}
+var elementNames;
+var init_formula = __esm({
+  "molecule-builder/formula.ts"() {
+    init_ElementData();
+    elementNames = ElementData.getElementList();
+  }
+});
+
 // molecule-builder/geometry.ts
-function bondLength(molecule2, left, right, order) {
+function bondLength(molecule2, left, right, order, kind) {
+  if (kind === "ionic") {
+    const charges = ionicCharges(molecule2);
+    const a5 = ionicRadius(left.atomicNumber, charges.get(left.id), 6);
+    const b4 = ionicRadius(right.atomicNumber, charges.get(right.id), 6);
+    return a5 && b4 ? (a5.pm + b4.pm) / 100 : estimatedBondLength(left.atomicNumber, right.atomicNumber, 1) * 1.2;
+  }
   if (molecule2.atoms.length === 2 && !left.charge && !right.charge && left.atomicNumber === right.atomicNumber) {
     const reference2 = experimentalDiatomics.get(`${left.atomicNumber}:${order}`);
     if (reference2 !== void 0) return reference2;
@@ -92286,6 +92391,7 @@ function remainingElectrons(atom, bonds, continuations = 0) {
   const valence = mainGroupValence(atom.atomicNumber);
   return valence === void 0 ? void 0 : valence - atom.charge - continuations - bonds.reduce((sum, bond) => {
     if (bond.from !== atom.id && bond.to !== atom.id) return sum;
+    if (!isCovalentBond(bond)) return sum;
     return sum + (bond.dative ? bond.from === atom.id ? 2 : 0 : bond.order);
   }, 0);
 }
@@ -92294,7 +92400,7 @@ function canBond(molecule2, from, to, order) {
     const atom = molecule2.atoms.find((item) => item.id === id);
     if (!atom) return false;
     const other = id === from ? to : from;
-    const sum = molecule2.bonds.reduce((count2, bond) => bond.from === id && bond.to !== other || bond.to === id && bond.from !== other ? count2 + bond.order : count2, order);
+    const sum = molecule2.bonds.reduce((count2, bond) => isCovalentBond(bond) && (bond.from === id && bond.to !== other || bond.to === id && bond.from !== other) ? count2 + bond.order : count2, order);
     const continuation = molecule2.repeatUnit?.ends.includes(id) ? 1 : 0;
     return sum + continuation <= (maximumOrder.get(atom.atomicNumber) ?? 6);
   });
@@ -92303,6 +92409,7 @@ function shapeFor(molecule2, id) {
   const atom = molecule2.atoms.find((entry) => entry.id === id);
   const bonds = molecule2.bonds.filter((bond) => bond.from === id || bond.to === id);
   if (bonds.length < 2) return { angle: 180, domains: 2 };
+  if (bonds.some((bond) => !isCovalentBond(bond))) return null;
   const remaining = remainingElectrons(atom, bonds);
   if (remaining === void 0) return null;
   const domains = bonds.length + remaining / 2;
@@ -92310,7 +92417,7 @@ function shapeFor(molecule2, id) {
   return { domains, angle: domains === 2 ? 180 : domains === 3 ? 120 : 109.4712206 };
 }
 function shapeName(molecule2, id) {
-  const neighbors = molecule2.bonds.filter((bond) => bond.from === id || bond.to === id).length;
+  const neighbors = molecule2.bonds.filter((bond) => isCovalentBond(bond) && (bond.from === id || bond.to === id)).length;
   if (neighbors < 2) return void 0;
   const shape = shapeFor(molecule2, id);
   if (!shape) return void 0;
@@ -92322,8 +92429,8 @@ function shapeName(molecule2, id) {
 function idealizedGeometry(molecule2) {
   const neighbors = new Map(molecule2.atoms.map((atom) => [atom.id, []]));
   for (const bond of molecule2.bonds) {
-    neighbors.get(bond.from).push({ id: bond.to, order: bond.order });
-    neighbors.get(bond.to).push({ id: bond.from, order: bond.order });
+    neighbors.get(bond.from).push({ id: bond.to, order: bond.order, kind: bond.kind });
+    neighbors.get(bond.to).push({ id: bond.from, order: bond.order, kind: bond.kind });
   }
   const atoms = new Map(molecule2.atoms.map((atom) => [atom.id, atom]));
   const placements2 = /* @__PURE__ */ new Map();
@@ -92353,7 +92460,7 @@ function idealizedGeometry(molecule2) {
           scale(axis, Math.cos(angle)),
           scale(add(scale(tangent, Math.cos(azimuth)), scale(normal, Math.sin(azimuth))), Math.sin(angle))
         );
-        const distance2 = bondLength(molecule2, atoms.get(id), atoms.get(child.id), child.order);
+        const distance2 = bondLength(molecule2, atoms.get(id), atoms.get(child.id), child.order, child.kind);
         const position = add(current, scale(direction, distance2));
         placements2.set(child.id, position);
         rightEdge = Math.max(rightEdge, position[0]);
@@ -92370,7 +92477,7 @@ function estimatedGeometry(molecule2) {
   const neighbors = atoms.map(() => []);
   const lengths = molecule2.bonds.map((bond) => {
     const a5 = indexes.get(bond.from), b4 = indexes.get(bond.to);
-    const distance2 = bondLength(molecule2, atoms[a5], atoms[b4], bond.order);
+    const distance2 = bondLength(molecule2, atoms[a5], atoms[b4], bond.order, bond.kind);
     neighbors[a5].push({ index: b4, length: distance2 });
     neighbors[b4].push({ index: a5, length: distance2 });
     return { a: a5, b: b4, distance: distance2 };
@@ -92435,13 +92542,14 @@ function fitGeometry(molecule2) {
 }
 function electronRegions(molecule2) {
   const atoms = new Map(molecule2.atoms.map((atom) => [atom.id, atom]));
-  const regions = molecule2.bonds.flatMap(({ from, to, order }) => {
+  const regions = molecule2.bonds.filter(isCovalentBond).flatMap(({ from, to, order }) => {
     const a5 = atoms.get(from).position, b4 = atoms.get(to).position;
     return Math.hypot(...subtract(a5, b4)) < 1e-6 ? [] : [{ kind: "bond", from: a5, to: b4, electrons: order * 2 }];
   });
+  const charges = ionicCharges(molecule2);
   for (const atom of molecule2.atoms) {
-    const bonds = molecule2.bonds.filter((bond) => bond.from === atom.id || bond.to === atom.id);
-    const remaining = remainingElectrons(atom, bonds, Number(!!molecule2.repeatUnit?.ends.includes(atom.id)));
+    const bonds = molecule2.bonds.filter((bond) => isCovalentBond(bond) && (bond.from === atom.id || bond.to === atom.id));
+    const remaining = remainingElectrons({ ...atom, charge: charges.get(atom.id) }, bonds, Number(!!molecule2.repeatUnit?.ends.includes(atom.id)));
     if (!(remaining > 0 && remaining <= 8)) continue;
     const fixed = bonds.map((bond) => unit(subtract(atoms.get(bond.from === atom.id ? bond.to : bond.from).position, atom.position)));
     const pairs = [];
@@ -92483,33 +92591,15 @@ function electronRegions(molecule2) {
   }
   return regions;
 }
-function formula(structure) {
-  if (structure.kind === "crystal" && structure.catalogKey && structure.name) return structure.name;
-  const counts2 = /* @__PURE__ */ new Map();
-  for (const { atomicNumber } of structure.kind === "molecule" ? structure.atoms : structure.sites) {
-    const symbol2 = elementByAtomicNumber(atomicNumber).symbol;
-    counts2.set(symbol2, (counts2.get(symbol2) ?? 0) + 1);
-  }
-  const ordered = [...counts2.keys()].sort((a5, b4) => a5.localeCompare(b4, "en"));
-  if (counts2.has("C")) {
-    ordered.splice(ordered.indexOf("C"), 1);
-    if (counts2.has("H")) ordered.splice(ordered.indexOf("H"), 1);
-    ordered.unshift(...counts2.has("H") ? ["C", "H"] : ["C"]);
-  }
-  const gcd = (a5, b4) => b4 ? gcd(b4, a5 % b4) : a5;
-  const divisor = structure.kind === "crystal" ? [...counts2.values()].reduce(gcd, 0) : 1;
-  return ordered.map((symbol2) => {
-    const count2 = counts2.get(symbol2) / divisor;
-    return symbol2 + (count2 > 1 ? String(count2) : "");
-  }).join("");
-}
 var experimentalDiatomics, colors, add, subtract, scale, dot, cross, unit, perpendicular, maximumOrder;
 var init_geometry = __esm({
   "molecule-builder/geometry.ts"() {
     init_ElementData();
     init_element_reference();
     init_sources();
+    init_bond_types();
     init_radii();
+    init_formula();
     experimentalDiatomics = new Map(Object.values(diatomics).map(([number2, order, length2]) => [`${number2}:${order}`, length2]));
     colors = ElementData.getElementList().map((key) => {
       const hex = ElementData.getData(key)?.["cpk-hex"];
@@ -92533,7 +92623,8 @@ function chemicalFormula(value) {
 function lewisDiagram(molecule2) {
   const repeat = molecule2.repeatUnit;
   const members = repeat ? new Set(repeat.atoms) : void 0;
-  const visible = members ? molecule2.atoms.filter((atom) => members.has(atom.id)) : molecule2.atoms;
+  const charges = ionicCharges(molecule2);
+  const visible = (members ? molecule2.atoms.filter((atom) => members.has(atom.id)) : molecule2.atoms).map((atom) => ({ ...atom, charge: charges.get(atom.id) }));
   const atoms = new Map(visible.map((atom) => [atom.id, atom]));
   const bonds = molecule2.bonds.filter((bond) => atoms.has(bond.from) && atoms.has(bond.to));
   const oxidation = new Map(visible.map((atom) => [atom.id, atom.charge]));
@@ -92553,7 +92644,7 @@ function lewisDiagram(molecule2) {
   for (const bond of bonds) {
     incident.get(bond.from).push(bond);
     incident.get(bond.to).push(bond);
-    if (!bond.dative) assign(bond.from, bond.to, bond.order);
+    if (!bond.dative && isCovalentBond(bond)) assign(bond.from, bond.to, bond.order);
   }
   if (repeat) assign(...repeat.ends, 1);
   return {
@@ -92643,6 +92734,7 @@ var init_structure_diagram = __esm({
   "molecule-builder/structure-diagram.ts"() {
     init_element_reference();
     init_crystal_display();
+    init_bond_types();
     init_geometry();
     init_crystal_display();
     allen = {
@@ -92862,7 +92954,7 @@ var init_orbitals_generated = __esm({
 
 // molecule-builder/orbitals.ts
 function hasMolecularDisplays(structure) {
-  if (structure.kind !== "molecule" || !structure.bonds.length || structure.representation === "aqueous-ions" || structure.representation === "ionic-components") return false;
+  if (structure.kind !== "molecule" || !structure.bonds.length || structure.bonds.some((bond) => bond.kind === "ionic") || structure.representation === "aqueous-ions" || structure.representation === "ionic-components") return false;
   const cached = connected.get(structure);
   if (cached !== void 0) return cached;
   const neighbors = new Map(structure.atoms.map((atom) => [atom.id, []]));
@@ -93330,6 +93422,15 @@ var init_scene = __esm({
             const positions = new Map(structure.atoms.map((atom) => [atom.id, atom.position]));
             for (const bond of molecular === "space-filling" ? [] : structure.bonds) {
               const from = positions.get(bond.from), to = positions.get(bond.to);
+              if (bond.kind === "ionic") {
+                const gap = subtract(to, from);
+                for (const start of [0.28, 0.44, 0.6]) {
+                  const mark = this.#rod();
+                  this.#line(mark, add(from, scale(gap, start)), add(from, scale(gap, start + 0.08)), 0.026);
+                  this.#content.addChild(mark);
+                }
+                continue;
+              }
               const axis = unit(subtract(to, from));
               const rods = molecular === "orbitals" ? 1 : bond.order;
               for (let index = 0; index < rods; index++) {
@@ -108464,6 +108565,7 @@ function catalogAqueousStructure(key) {
 // webwriter-chemlab-molecule-builder.ts
 init_crystal_display();
 init_geometry();
+init_bond_types();
 init_structure();
 init_structure_diagram();
 init_aqueous_preview();
@@ -108557,11 +108659,11 @@ function bondLines(from, to, order, options = {}) {
   const end = options.trimEnd === false ? 0 : Math.min(options.dative ? 0.32 : 0.22, length2 * 0.34);
   const x1 = from[0] + dx * start, y1 = from[1] + dy * start;
   const x22 = to[0] - dx * end, y22 = to[1] - dy * end;
-  return b3`<g class="lewis-bond" ?data-active=${options.active}>
+  return b3`<g class="lewis-bond" ?data-active=${options.active} ?data-ionic=${options.ionic}>
 		${Array.from({ length: order }, (_3, index) => {
     const offset3 = (index - (order - 1) / 2) * 0.075;
     return b3`<line x1=${x1 - dy * offset3} y1=${-y1 - dx * offset3}
-				x2=${x22 - dy * offset3} y2=${-y22 - dx * offset3} />`;
+				x2=${x22 - dy * offset3} y2=${-y22 - dx * offset3} stroke-dasharray=${options.ionic ? ".075 .08" : "none"} />`;
   })}
 		${options.dative ? b3`<path d="M${x22 - dy * 0.055},${-y22 - dx * 0.055} L${x22 + dx * 0.11},${-y22 - dy * 0.11}
 			L${x22 + dy * 0.055},${-y22 + dx * 0.055}" />` : E2}
@@ -108609,15 +108711,20 @@ function renderLewis(diagram, box, options) {
     positions.get(bond.from),
     positions.get(bond.to),
     bond.order,
-    { active: isActive(bond.from) || isActive(bond.to), dative: bond.dative }
+    { active: isActive(bond.from) || isActive(bond.to), dative: bond.dative, ionic: bond.kind === "ionic" }
   )}
 		</g>`)}
-		${draftFrom && options.preview ? bondLines(draftFrom, options.preview, options.order, { active: true, trimEnd: false }) : E2}
+		${draftFrom && options.preview ? bondLines(
+    draftFrom,
+    options.preview,
+    options.ionicPreview ? 1 : options.order,
+    { active: true, ionic: options.ionicPreview, trimEnd: false }
+  ) : E2}
 		${atoms.map((atom) => {
     const [x4, y5] = atom.diagram;
     const symbol2 = atomSymbol(atom.atomicNumber);
     const oxidation = atom.oxidation === void 0 ? "?" : signedNumber(atom.oxidation);
-    const showOxidation = !options.monatomicIons?.has(atom.id);
+    const showOxidation = !options.monatomicIons?.has(atom.id) && !atom.bonds.some((bond) => bond.kind === "ionic");
     const sign = atom.oxidation === void 0 || atom.oxidation === 0 ? "neutral" : atom.oxidation > 0 ? "positive" : "negative";
     const charge = formalCharge(atom.charge);
     const active = isActive(atom.id);
@@ -108722,6 +108829,13 @@ var builderStyles = i`
 		padding-inline-start: .35rem;
 	}
 	.tools sl-button::part(base) { box-shadow: var(--shadow); }
+	.formal-charge-input {
+		display: flex;
+		align-items: center;
+		gap: .35rem;
+		font-size: .75rem;
+	}
+	.formal-charge-input input { inline-size: 3.3rem; }
 	/* Icon controls carry their label in the tooltip only, so the label part
 	   keeps the square metrics of the lab's canvas buttons. */
 	.icon-control::part(label) {
@@ -109310,9 +109424,9 @@ var AXES_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="
 	<path d="M3.4 12.6V3.4M3.4 12.6h9.2M3.4 12.6 8.6 7.4" /><path d="M3.4 2.2v1.2M2.2 12.6h1.2M9.6 6.4 8.6 7.4 9.6 8.4" /></svg>`;
 var ELECTRONS_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
 	<circle cx="4.4" cy="8" r="1.7" /><circle cx="11.6" cy="8" r="1.7" /></svg>`;
-var _orbitalHint_dec, _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _ionCharge_dec, _fullscreen_dec, _diagramBox_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showHydration_dec, _atomChoices_dec, _dismissedLone_dec, _inspectedAtom_dec, _orbitalId_dec, _molecularDisplay_dec, _showElectrons_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _pauseShellElectrons_dec2, _labId_dec, _elementSourceId_dec, _a4, _ChemLabMoleculeBuilder_decorators, _init4, _elementSourceId, _labId, _pauseShellElectrons2, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _showElectrons, _molecularDisplay, _orbitalId, _inspectedAtom, _dismissedLone, _atomChoices2, _showHydration, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramBox, _fullscreen, _ionCharge, _diagramDrag, _bondPreview, _paletteDrag, _scene2, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers2, _router, _pickerObserver, _boardObserver, _scenePixelsPerAngstrom, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _aqueousCache, _lewisCache, _atomicScale, _pickerAnchor, _orbitalHint, _ChemLabMoleculeBuilder_instances, atomicFigure_get, current_get, atoms_get, readonly_get, atomicTarget_get, atomInspection_get, resetAtomicChoices_fn, inspectAtom_fn, leaveAtom_fn, t_fn, _onFullscreenChange, _onViewportToggle, _toggleFullscreen, syncGrid_fn, bindTable_fn, pickerGap_fn, cardBox_fn, observePickerGap_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, stageTarget_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, moveDiagram_fn, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, lewis_fn, aqueous_fn, renderDrawing_fn, renderAtomicSummary_fn, renderOrbitals_fn, renderModelSummary_fn, renderSelectionCard_fn;
+var _orbitalHint_dec, _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _ionCharge_dec, _fullscreen_dec, _diagramBox_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondMode_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showHydration_dec, _atomChoices_dec, _dismissedLone_dec, _inspectedAtom_dec, _orbitalId_dec, _molecularDisplay_dec, _showElectrons_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _pauseShellElectrons_dec2, _labId_dec, _elementSourceId_dec, _a4, _ChemLabMoleculeBuilder_decorators, _init4, _elementSourceId, _labId, _pauseShellElectrons2, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _showElectrons, _molecularDisplay, _orbitalId, _inspectedAtom, _dismissedLone, _atomChoices2, _showHydration, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _bondMode, _repeats, _notice, _gpu, _diagramBox, _fullscreen, _ionCharge, _diagramDrag, _bondPreview, _paletteDrag, _scene2, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers2, _router, _pickerObserver, _boardObserver, _scenePixelsPerAngstrom, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _aqueousCache, _lewisCache, _atomicScale, _pickerAnchor, _orbitalHint, _ChemLabMoleculeBuilder_instances, atomicFigure_get, current_get, atoms_get, readonly_get, atomicTarget_get, atomInspection_get, resetAtomicChoices_fn, inspectAtom_fn, leaveAtom_fn, t_fn, _onFullscreenChange, _onViewportToggle, _toggleFullscreen, syncGrid_fn, bindTable_fn, pickerGap_fn, cardBox_fn, observePickerGap_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, stageTarget_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, setFormalCharge_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, moveDiagram_fn, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, lewis_fn, aqueous_fn, renderDrawing_fn, renderAtomicSummary_fn, renderOrbitals_fn, renderModelSummary_fn, renderSelectionCard_fn;
 _ChemLabMoleculeBuilder_decorators = [t4(BUILDER_TAG)];
-var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a4 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _pauseShellElectrons_dec2 = [n8({ type: Boolean, attribute: "pause-shell-electrons", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _showElectrons_dec = [r9()], _molecularDisplay_dec = [r9()], _orbitalId_dec = [r9()], _inspectedAtom_dec = [r9()], _dismissedLone_dec = [r9()], _atomChoices_dec = [r9()], _showHydration_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramBox_dec = [r9()], _fullscreen_dec = [r9()], _ionCharge_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _orbitalHint_dec = [r9()], _a4) {
+var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a4 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _pauseShellElectrons_dec2 = [n8({ type: Boolean, attribute: "pause-shell-electrons", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _showElectrons_dec = [r9()], _molecularDisplay_dec = [r9()], _orbitalId_dec = [r9()], _inspectedAtom_dec = [r9()], _dismissedLone_dec = [r9()], _atomChoices_dec = [r9()], _showHydration_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _bondMode_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramBox_dec = [r9()], _fullscreen_dec = [r9()], _ionCharge_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _orbitalHint_dec = [r9()], _a4) {
   constructor() {
     super(...arguments);
     __privateAdd(this, _ChemLabMoleculeBuilder_instances);
@@ -109347,15 +109461,16 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a4 = LitEl
     __privateAdd(this, _hoveredAtom, __runInitializers(_init4, 116, this)), __runInitializers(_init4, 119, this);
     __privateAdd(this, _bondStart, __runInitializers(_init4, 120, this)), __runInitializers(_init4, 123, this);
     __privateAdd(this, _bondOrder, __runInitializers(_init4, 124, this, 1)), __runInitializers(_init4, 127, this);
-    __privateAdd(this, _repeats, __runInitializers(_init4, 128, this, 1)), __runInitializers(_init4, 131, this);
-    __privateAdd(this, _notice, __runInitializers(_init4, 132, this, "")), __runInitializers(_init4, 135, this);
-    __privateAdd(this, _gpu, __runInitializers(_init4, 136, this, "idle")), __runInitializers(_init4, 139, this);
-    __privateAdd(this, _diagramBox, __runInitializers(_init4, 140, this)), __runInitializers(_init4, 143, this);
-    __privateAdd(this, _fullscreen, __runInitializers(_init4, 144, this)), __runInitializers(_init4, 147, this);
-    __privateAdd(this, _ionCharge, __runInitializers(_init4, 148, this, 0)), __runInitializers(_init4, 151, this);
-    __privateAdd(this, _diagramDrag, __runInitializers(_init4, 152, this)), __runInitializers(_init4, 155, this);
-    __privateAdd(this, _bondPreview, __runInitializers(_init4, 156, this)), __runInitializers(_init4, 159, this);
-    __privateAdd(this, _paletteDrag, __runInitializers(_init4, 160, this)), __runInitializers(_init4, 163, this);
+    __privateAdd(this, _bondMode, __runInitializers(_init4, 128, this, "auto")), __runInitializers(_init4, 131, this);
+    __privateAdd(this, _repeats, __runInitializers(_init4, 132, this, 1)), __runInitializers(_init4, 135, this);
+    __privateAdd(this, _notice, __runInitializers(_init4, 136, this, "")), __runInitializers(_init4, 139, this);
+    __privateAdd(this, _gpu, __runInitializers(_init4, 140, this, "idle")), __runInitializers(_init4, 143, this);
+    __privateAdd(this, _diagramBox, __runInitializers(_init4, 144, this)), __runInitializers(_init4, 147, this);
+    __privateAdd(this, _fullscreen, __runInitializers(_init4, 148, this)), __runInitializers(_init4, 151, this);
+    __privateAdd(this, _ionCharge, __runInitializers(_init4, 152, this, 0)), __runInitializers(_init4, 155, this);
+    __privateAdd(this, _diagramDrag, __runInitializers(_init4, 156, this)), __runInitializers(_init4, 159, this);
+    __privateAdd(this, _bondPreview, __runInitializers(_init4, 160, this)), __runInitializers(_init4, 163, this);
+    __privateAdd(this, _paletteDrag, __runInitializers(_init4, 164, this)), __runInitializers(_init4, 167, this);
     __privateAdd(this, _scene2);
     __privateAdd(this, _sceneLoad, 0);
     __privateAdd(this, _fitNext, true);
@@ -109385,7 +109500,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a4 = LitEl
      * they grow and shrink.
      */
     __privateAdd(this, _pickerAnchor, { getBoundingClientRect: () => __privateMethod(this, _ChemLabMoleculeBuilder_instances, pickerGap_fn).call(this) });
-    __privateAdd(this, _orbitalHint, __runInitializers(_init4, 164, this)), __runInitializers(_init4, 167, this);
+    __privateAdd(this, _orbitalHint, __runInitializers(_init4, 168, this)), __runInitializers(_init4, 171, this);
     __privateAdd(this, _onFullscreenChange, () => {
       const native = this.getRootNode().fullscreenElement === this;
       if (native || this.fullscreen === "native") this.fullscreen = native ? "native" : void 0;
@@ -109813,7 +109928,13 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a4 = LitEl
     )}
 					${tool("atom", this.view === "2d" && current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place ion or atom", "Ion oder Atom platzieren") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Place atom", "Atom platzieren"), ATOM_ICON)}
 					${current.kind === "molecule" ? tool("bond", __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Draw bond", "Bindung zeichnen"), BOND_ICON) : E2}
-					${this.tool === "bond" ? x2`<span class="bond-orders" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bond order", "Bindungsordnung")}>
+					${this.tool === "bond" ? x2`<span class="bond-orders" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bond type", "Bindungstyp")}>
+						${[["auto", "Auto", "Auto"], ["covalent", "Covalent", "Kovalent"], ["ionic", "Ionic", "Ionisch"]].map(([mode, en, de]) => x2`<sl-button size="small" variant=${mode === this.bondMode ? "primary" : "default"}
+								aria-pressed=${String(mode === this.bondMode)} @click=${() => {
+      this.bondMode = mode;
+    }}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, en, de)}</sl-button>`)}
+					</span>` : E2}
+					${this.tool === "bond" && this.bondMode !== "ionic" ? x2`<span class="bond-orders" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Bond order", "Bindungsordnung")}>
 						${[1, 2, 3].map((order) => x2`<sl-button class="icon-control" size="small"
 							variant=${order === this.bondOrder ? "primary" : "default"} aria-pressed=${String(order === this.bondOrder)}
 							aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, `Bond order ${order}`, `Bindungsordnung ${order}`)}
@@ -109960,6 +110081,7 @@ _picked = new WeakMap();
 _hoveredAtom = new WeakMap();
 _bondStart = new WeakMap();
 _bondOrder = new WeakMap();
+_bondMode = new WeakMap();
 _repeats = new WeakMap();
 _notice = new WeakMap();
 _gpu = new WeakMap();
@@ -110000,7 +110122,10 @@ current_get = function() {
 };
 atoms_get = function() {
   const current = __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get);
-  return current.kind === "molecule" ? current.atoms : current.sites;
+  if (current.kind === "crystal") return current.sites;
+  if (!current.bonds.some((bond) => bond.kind === "ionic")) return current.atoms;
+  const charges = ionicCharges(current);
+  return current.atoms.map((atom) => ({ ...atom, charge: charges.get(atom.id) }));
 };
 readonly_get = function() {
   return this.preview !== void 0;
@@ -110364,8 +110489,9 @@ connectBond_fn = function(from, to) {
   const draft = this.draft;
   this.bondStart = void 0;
   if (__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) || draft.kind !== "molecule" || from === to) return;
-  if (!canBond(draft, from, to, this.bondOrder)) {
-    this.notice = __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "That bond order exceeds the supported valence.", "Diese Bindungsordnung \xFCberschreitet die unterst\xFCtzte Valenz.");
+  const kind = bondKind(draft, from, to, this.bondMode);
+  if (kind === "ionic" ? !canAssociateIons(draft, from, to) : !canBond(draft, from, to, this.bondOrder)) {
+    this.notice = kind === "ionic" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose opposite ions with available charge.", "W\xE4hle entgegengesetzte Ionen mit verf\xFCgbarer Ladung.") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "That bond order exceeds the supported valence.", "Diese Bindungsordnung \xFCberschreitet die unterst\xFCtzte Valenz.");
     return;
   }
   const bonds = draft.bonds.filter((bond) => !(bond.from === from && bond.to === to || bond.from === to && bond.to === from));
@@ -110376,7 +110502,7 @@ connectBond_fn = function(from, to) {
     source: void 0,
     representation: void 0,
     geometry: void 0,
-    bonds: [...bonds, { from, to, order: this.bondOrder }]
+    bonds: [...bonds, { from, to, kind, order: kind === "ionic" ? 1 : this.bondOrder }]
   };
   if (this.view === "2d") {
     const fitted = fitGeometry(next);
@@ -110389,6 +110515,22 @@ connectBond_fn = function(from, to) {
     __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, { ...next, atoms: next.atoms.map((atom, index) => ({ ...atom, diagram: readable.atoms[index].diagram })) });
   } else __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, next);
   this.picked = to;
+};
+setFormalCharge_fn = function(id, input) {
+  const draft = this.draft;
+  if (__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) || draft.kind !== "molecule") return;
+  const atom = draft.atoms.find((atom2) => atom2.id === id);
+  const charge = input.valueAsNumber;
+  if (!atom || !input.checkValidity() || !Number.isInteger(charge)) return;
+  if (charge === atom.charge) return;
+  __privateMethod(this, _ChemLabMoleculeBuilder_instances, record_fn).call(this, {
+    ...draft,
+    name: "",
+    catalogKey: void 0,
+    source: void 0,
+    representation: void 0,
+    atoms: draft.atoms.map((item) => item === atom ? { ...atom, charge } : item)
+  });
 };
 removeAtom_fn = function() {
   if (__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) || this.picked === void 0) return;
@@ -110696,6 +110838,7 @@ renderDrawing_fn = function(colors2) {
       from: __privateGet(this, _gesture)?.from,
       preview: this.bondPreview,
       order: this.bondOrder,
+      ionicPreview: this.bondMode === "ionic",
       drag: this.diagramDrag,
       label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, diagram.ends ? "Lewis structure of the repeating unit" : "Lewis structure", diagram.ends ? "Lewis-Struktur der Wiederholungseinheit" : "Lewis-Struktur"),
       oxidationLabel: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Oxidation state", "Oxidationszahl"),
@@ -110781,7 +110924,7 @@ renderModelSummary_fn = function(current, ionColors) {
   const aqueous2 = !crystal && current.representation === "aqueous-ions" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, aqueous_fn).call(this, current) : void 0;
   const selectedEntry = catalogEntry(this.catalogKey);
   const missing = selectedEntry && !this.catalogVariants.length;
-  const showOxidation = !crystal && this.view === "2d" && current.atoms.length > (aqueous2?.monatomicIons.size ?? 0);
+  const showOxidation = !crystal && this.view === "2d" && __privateMethod(this, _ChemLabMoleculeBuilder_instances, lewis_fn).call(this, current).atoms.some((atom) => !aqueous2?.monatomicIons.has(atom.id) && atom.bonds.every((bond) => bond.kind !== "ionic"));
   const showDisplay = this.view === "3d" && (crystal || __privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length > 0 && this.gpu === "ready");
   const options = this.catalogVariants.length > 1;
   const displays = showDisplay && hasMolecularDisplays(current);
@@ -110948,6 +111091,10 @@ renderSelectionCard_fn = function() {
 			</div>` : E2}
 			<sl-details summary=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site & cell", "Gitterplatz & Zelle") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom properties", "Atom-Eigenschaften")}>
 				<div class="fields">
+					${here && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<label class="formal-charge-input">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Formal charge", "Formalladung")}
+						<input type="number" min="-8" max="8" step="1" required .value=${String(here.charge)}
+							@change=${(event) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, setFormalCharge_fn).call(this, here.id, event.currentTarget)} />
+					</label>` : E2}
 					${lengths.length ? x2`<div class="bond-lengths">
 						<span class="summary-caption">${current.kind === "molecule" && current.geometry === "supplied" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "3D bond lengths", "3D-Bindungsl\xE4ngen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Estimated 3D bond lengths", "Gesch\xE4tzte 3D-Bindungsl\xE4ngen")}</span>
 						<div class="card-facts">${lengths.map(({ neighbor, length: length2 }) => x2`<sl-tag size="small">${symbol(neighbor.atomicNumber)} ·
@@ -111035,6 +111182,7 @@ __decorateElement(_init4, 4, "picked", _picked_dec, _ChemLabMoleculeBuilder, _pi
 __decorateElement(_init4, 4, "hoveredAtom", _hoveredAtom_dec, _ChemLabMoleculeBuilder, _hoveredAtom);
 __decorateElement(_init4, 4, "bondStart", _bondStart_dec, _ChemLabMoleculeBuilder, _bondStart);
 __decorateElement(_init4, 4, "bondOrder", _bondOrder_dec, _ChemLabMoleculeBuilder, _bondOrder);
+__decorateElement(_init4, 4, "bondMode", _bondMode_dec, _ChemLabMoleculeBuilder, _bondMode);
 __decorateElement(_init4, 4, "repeats", _repeats_dec, _ChemLabMoleculeBuilder, _repeats);
 __decorateElement(_init4, 4, "notice", _notice_dec, _ChemLabMoleculeBuilder, _notice);
 __decorateElement(_init4, 4, "gpu", _gpu_dec, _ChemLabMoleculeBuilder, _gpu);

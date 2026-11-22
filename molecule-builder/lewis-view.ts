@@ -21,7 +21,7 @@ export function lewisViewBox(diagram: Diagram, waters: readonly HydrationWater<P
 	return [left - paddingX, -top - paddingY, right - left + 2 * paddingX, top - bottom + 2 * paddingY];
 }
 
-function bondLines(from: Point2, to: Point2, order: number, options: { active?: boolean; dative?: boolean; trimEnd?: boolean } = {}) {
+function bondLines(from: Point2, to: Point2, order: number, options: { active?: boolean; dative?: boolean; ionic?: boolean; trimEnd?: boolean } = {}) {
 	const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
 	if (length < .001) return nothing;
 	const dx = (to[0] - from[0]) / length, dy = (to[1] - from[1]) / length;
@@ -29,11 +29,11 @@ function bondLines(from: Point2, to: Point2, order: number, options: { active?: 
 	const end = options.trimEnd === false ? 0 : Math.min(options.dative ? .32 : .22, length * .34);
 	const x1 = from[0] + dx * start, y1 = from[1] + dy * start;
 	const x2 = to[0] - dx * end, y2 = to[1] - dy * end;
-	return svg`<g class="lewis-bond" ?data-active=${options.active}>
+	return svg`<g class="lewis-bond" ?data-active=${options.active} ?data-ionic=${options.ionic}>
 		${Array.from({ length: order }, (_, index) => {
 			const offset = (index - (order - 1) / 2) * .075;
 			return svg`<line x1=${x1 - dy * offset} y1=${-y1 - dx * offset}
-				x2=${x2 - dy * offset} y2=${-y2 - dx * offset} />`;
+				x2=${x2 - dy * offset} y2=${-y2 - dx * offset} stroke-dasharray=${options.ionic ? ".075 .08" : "none"} />`;
 		})}
 		${options.dative ? svg`<path d="M${x2 - dy * .055},${-y2 - dx * .055} L${x2 + dx * .11},${-y2 - dy * .11}
 			L${x2 + dy * .055},${-y2 + dx * .055}" />` : nothing}
@@ -42,7 +42,7 @@ function bondLines(from: Point2, to: Point2, order: number, options: { active?: 
 
 export function renderLewis(diagram: Diagram, box: DiagramBox, options: {
 	picked?: number; hovered?: number; bondStart?: number; from?: number; preview?: Point2;
-	order: number; drag?: { id: number; position: Point2 }; label: string; oxidationLabel: string; unknownLabel: string;
+	order: number; ionicPreview?: boolean; drag?: { id: number; position: Point2 }; label: string; oxidationLabel: string; unknownLabel: string;
 	waters?: readonly HydrationWater<Point3>[];
 	monatomicIons?: ReadonlySet<number>;
 }) {
@@ -80,14 +80,15 @@ export function renderLewis(diagram: Diagram, box: DiagramBox, options: {
 		${repeat}
 		${diagram.bonds.map(bond => svg`<g data-bond="${bond.from}-${bond.to}">
 			${bondLines(positions.get(bond.from), positions.get(bond.to), bond.order,
-				{ active: isActive(bond.from) || isActive(bond.to), dative: bond.dative })}
+				{ active: isActive(bond.from) || isActive(bond.to), dative: bond.dative, ionic: bond.kind === "ionic" })}
 		</g>`)}
-		${draftFrom && options.preview ? bondLines(draftFrom, options.preview, options.order, { active: true, trimEnd: false }) : nothing}
+		${draftFrom && options.preview ? bondLines(draftFrom, options.preview, options.ionicPreview ? 1 : options.order,
+			{ active: true, ionic: options.ionicPreview, trimEnd: false }) : nothing}
 		${atoms.map(atom => {
 			const [x, y] = atom.diagram;
 			const symbol = atomSymbol(atom.atomicNumber);
 			const oxidation = atom.oxidation === undefined ? "?" : signedNumber(atom.oxidation);
-			const showOxidation = !options.monatomicIons?.has(atom.id);
+			const showOxidation = !options.monatomicIons?.has(atom.id) && !atom.bonds.some(bond => bond.kind === "ionic");
 			const sign = atom.oxidation === undefined || atom.oxidation === 0 ? "neutral" : atom.oxidation > 0 ? "positive" : "negative";
 			const charge = formalCharge(atom.charge);
 			const active = isActive(atom.id);

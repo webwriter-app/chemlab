@@ -307,6 +307,10 @@ class Mixture {
 		});
 
 		if (bIncluded) {
+			if (nMolecule.aqueousAcidBase) {
+				const stored = this._activeMolecules.find(molecule => molecule._id === usedIndex);
+				stored.aqueousAcidBase ??= nMolecule.aqueousAcidBase;
+			}
 			this.changeMolecule(usedIndex, amountMol);
 			if (StructureManager.isWater(nMolecule)) {
 				this._solutionVolume = this._molProperties[usedIndex + "m"] / 1000;

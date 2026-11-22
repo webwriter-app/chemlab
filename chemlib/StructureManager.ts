@@ -3,8 +3,7 @@ import { Atom } from "./Atom";
 import { Mixture } from "./Mixture";
 import { Kekule } from "kekule";
 
-type CompoundMetadata = { name?: string; inchi?: string; inchiKey?: string };
-const COMPOUND_CACHE_LIMIT = 128;
+import { lookupCompound } from "./PubChem";
 
 /**
  * Static management class for {@link Mixture} and {@link Molecule} objects
@@ -145,8 +144,6 @@ export abstract class StructureManager {
 	 */
 	static _moleculeParts: Object = {};
 
-	private static compoundMetadata = new Map<string, CompoundMetadata>();
-	private static pendingCompounds = new Map<string, Promise<CompoundMetadata | undefined>>();
 
 	/**
 	 * Generates a new {@link Mixture} object with a unique id and returns it
@@ -245,6 +242,7 @@ export abstract class StructureManager {
 	 * @returns {boolean}
 	 */
 	public static isAcidBase(molecule: Molecule): boolean {
+		if (molecule.aqueousAcidBase) return true;
 		var bBondType: boolean = false;
 		var bInList: boolean = false;
 
@@ -706,44 +704,11 @@ export abstract class StructureManager {
 	/** Looks up optional display metadata, sharing a request for an identical structure. */
 	public static async getChemData(molecule: Molecule): Promise<void> {
 		const smiles = molecule.smilesString;
-		let metadata = this.compoundMetadata.get(smiles);
-		if (!metadata) {
-			let pending = this.pendingCompounds.get(smiles);
-			if (!pending) {
-				pending = this.fetchChemData(smiles).then(result => {
-					if (result) {
-						this.compoundMetadata.set(smiles, result);
-						if (this.compoundMetadata.size > COMPOUND_CACHE_LIMIT) {
-							this.compoundMetadata.delete(this.compoundMetadata.keys().next().value);
-						}
-					}
-					return result;
-				}).finally(() => this.pendingCompounds.delete(smiles));
-				this.pendingCompounds.set(smiles, pending);
-			}
-			metadata = await pending;
-		}
+		const metadata = await lookupCompound(smiles);
 		if (molecule.smilesString !== smiles) return;
 		molecule.name = metadata?.name ?? smiles;
 		if (metadata?.inchi) molecule.InChiString = metadata.inchi;
 		if (metadata?.inchiKey) molecule.InChIKey = metadata.inchiKey;
 	}
 
-	private static async fetchChemData(smiles: string): Promise<CompoundMetadata | undefined> {
-		if (!smiles) return undefined;
-		try {
-			const response = await fetch(
-				`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/SMILES/${encodeURIComponent(smiles)}//JSON`
-			);
-			if (!response.ok) return undefined;
-			const data = await response.json();
-			const props = data?.PC_Compounds?.[0]?.props;
-			const name = props?.[6]?.value?.sval;
-			const inchi = props?.[12]?.value?.sval;
-			const inchiKey = props?.[13]?.value?.sval;
-			return name || inchi || inchiKey ? { name, inchi, inchiKey } : undefined;
-		} catch {
-			return undefined;
-		}
-	}
 }

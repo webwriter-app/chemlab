@@ -20,7 +20,7 @@ const cache = new WeakMap<Molecule, Orbital[]>();
 const connected = new WeakMap<Molecule, boolean>();
 
 export function hasMolecularDisplays(structure: Structure): structure is Molecule {
-	if (structure.kind !== "molecule" || !structure.bonds.length
+	if (structure.kind !== "molecule" || !structure.bonds.length || structure.bonds.some(bond => bond.kind === "ionic")
 		|| structure.representation === "aqueous-ions" || structure.representation === "ionic-components") return false;
 	const cached = connected.get(structure);
 	if (cached !== undefined) return cached;

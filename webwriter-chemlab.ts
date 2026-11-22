@@ -64,6 +64,10 @@ import { chemicalCatalog, chemicalCatalogGroups, solutionDisplayNames, withConce
 import { loadMoleculeDefinition } from "./data/moleculeDefinition";
 import { BUILDER_TAG, worksheetPeers, worksheetPeer, worksheetScope, type BuilderReceiver } from "./molecule-builder/exchange";
 import { readStructure, type Structure } from "./molecule-builder/structure";
+import { analyzeBuilderCompound, builderStock, enrichBuilderCompound, expectedDissociations,
+	portableBuilderChemical, readBuilderChemical, type BuilderChemical, type CompoundAnalysis, type CompoundFacts } from "./molecule-builder/custom-compounds";
+import { iupacSource } from "./chemlib/IupacDissociation";
+import { readAqueousAcidBase } from "./chemlib/AcidBase";
 import { catalogPreviews } from "./data/chemicalPreviews.generated";
 import { prepareDose, type DoseRecipe, type SavedDose } from "./data/measuredDose";
 import { readSavedMixtures, snapshotMixture, type SavedMixture } from "./data/savedMixtures";
@@ -74,6 +78,7 @@ import type { VesselHint } from "./controllers/VesselView";
 import { guard } from "lit/directives/guard.js";
 import { renderValueControl, valueControlStyles } from "./ui/valueControl";
 
+type BuilderReview = { structure: Structure; reagent?: string; loading: boolean; analysis?: CompoundAnalysis; facts?: CompoundFacts };
 type SelectedChemical = { key: string; name: string; recipe: DoseRecipe };
 type ChemicalConcentration = { initial: number; max: number };
 type ChemicalPermissionItem = { name: string; concentrationLimit?: number };
@@ -452,10 +457,10 @@ export class ChemLab extends LitElementWw {
 	@property({ type: String, attribute: "molecule-builder-id", reflect: true }) accessor moleculeBuilderId = "";
 	@state() private accessor builderAvailable = false;
 	private observeBuilder?: MutationObserver;
-	@state() private accessor builderReview: { structure: Structure; reagent?: string; loading: boolean } | undefined;
+	@state() private accessor builderReview: BuilderReview | undefined;
 	@state() private accessor builderTarget: { key?: string; structure?: Structure } | undefined;
-	@state() private accessor builderReferences: Structure[] = [];
-	@state() private accessor sessionBuilderReferences: Structure[] = [];
+	@state() private accessor builderReferences: BuilderChemical[] = [];
+	@state() private accessor sessionBuilderReferences: BuilderChemical[] = [];
 	@state() private accessor savedVesselMixtures: SavedMixture[] = [];
 	@state() private accessor sessionVesselMixtures: SavedMixture[] = [];
 	@state() private accessor mixtureDraft: { vessel: chemlib.ChemComponent; name: string } | undefined;
@@ -749,7 +754,7 @@ export class ChemLab extends LitElementWw {
 
 	private applyAuthoredData(value: Record<string, unknown>) {
 		this.builderReferences = Array.isArray(value.builderReferences)
-			? value.builderReferences.slice(0, 30).map(readStructure).filter(Boolean) : [];
+			? value.builderReferences.slice(0, 30).map(readBuilderChemical).filter(Boolean) : [];
 		this.savedVesselMixtures = readSavedMixtures(value.savedVesselMixtures);
 
 		if (Array.isArray(value.availableMolecules)) this.availableMolecules = value.availableMolecules;
@@ -825,7 +830,7 @@ export class ChemLab extends LitElementWw {
 			availableComponents: this.availableComponents,
 			invComponents: this.invComponents,
 			chemicalPermissions: this.chemicalPermissions,
-			...(this.builderReferences.length ? { builderReferences: this.builderReferences } : {}),
+			...(this.builderReferences.length ? { builderReferences: this.builderReferences.map(portableBuilderChemical) } : {}),
 			...(this.savedVesselMixtures.length ? { savedVesselMixtures: this.savedVesselMixtures } : {}),
 		});
 	}
@@ -3590,7 +3595,10 @@ export class ChemLab extends LitElementWw {
 		const customLabel = this.builderText("Custom chemicals", "Eigene Chemikalien");
 		const structureLabel = this.builderText("Molecule Builder", "Molekülbaukasten");
 		const mixtureLabel = this.builderText("Saved mixtures", "Gespeicherte Gemische");
-		const structures = [...this.builderReferences, ...this.sessionBuilderReferences];
+		const structures = [
+			...this.builderReferences.filter(item => this.canAuthor || this.isChemicalAllowed(item.key)),
+			...this.sessionBuilderReferences,
+		];
 		const mixtures = [
 			...this.savedVesselMixtures.filter(item => this.canAuthor || this.isChemicalAllowed(item.key)),
 			...this.sessionVesselMixtures,
@@ -3620,11 +3628,13 @@ export class ChemLab extends LitElementWw {
 			].filter(({ items }) => items.length);
 			return subgroups.length ? [{ ...group, subgroups }] : [];
 		});
-		const shownStructures = activeGroup ? [] : structures.filter(structure => matches(customLabel, structureLabel, structure.name));
+		const shownStructures = activeGroup ? [] : structures.filter(item => matches(customLabel, structureLabel, item.structure.name, item.analysis?.formula ?? ""));
 		const shownMixtures = activeGroup ? [] : mixtures.filter(item => matches(customLabel, mixtureLabel, item.name,
 			...item.recipe.parts.map(({ molecule }) => molecule.formula)));
 		const items = [
 			...sections.flatMap(({ subgroups }) => subgroups.flatMap(({ items }) => items)),
+			...shownStructures.filter(item => item.recipe && this.builderReferences.includes(item))
+				.map(item => ({ name: item.key, label: item.structure.name })),
 			...shownMixtures.filter(item => this.savedVesselMixtures.includes(item))
 				.map(item => ({ name: item.key, label: item.name })),
 		];
@@ -3660,7 +3670,7 @@ export class ChemLab extends LitElementWw {
 				))}
 				${shownStructures.length || shownMixtures.length ? this.renderPaletteSection(customLabel, html`
 					${shownStructures.length ? this.renderPaletteSubgroup(structureLabel, customLabel,
-						repeat(shownStructures, structure => structure, structure => this.renderBuilderReference(structure)), showHeadings ? 4 : 3) : nothing}
+						repeat(shownStructures, item => item.key, item => this.renderBuilderReference(item)), showHeadings ? 4 : 3) : nothing}
 					${shownMixtures.length ? this.renderPaletteSubgroup(mixtureLabel, customLabel,
 						repeat(shownMixtures, item => item.key, item => this.renderSavedMixture(item)), showHeadings ? 4 : 3) : nothing}
 				`, showHeadings) : nothing}`) : html`<p class="palette-empty" role="status">${this.message("Keine Chemikalien gefunden.")}</p>`}
@@ -3760,11 +3770,14 @@ export class ChemLab extends LitElementWw {
 		this.builderTarget = undefined;
 		const review = { structure, loading: true };
 		this.builderReview = review;
-		void Promise.all([import("./molecule-builder/catalog"), import("./molecule-builder/geometry")]).then(([catalog, geometry]) => {
+		void Promise.all([import("./molecule-builder/catalog"), import("./molecule-builder/geometry")]).then(async ([catalog, geometry]) => {
 			if (!this.isConnected || this.builderReview !== review) return;
-			const name = structure.name.trim() || geometry.formula(structure);
-			const match = catalog.matchingRecipe(structure);
-			this.builderReview = { structure: { ...structure, name }, reagent: match?.name, loading: false };
+			const analysis = analyzeBuilderCompound(structure);
+			const match = catalog.matchingRecipe(analysis?.molecule ?? structure) ?? catalog.matchingRecipe(structure);
+			const facts = !match && analysis ? await enrichBuilderCompound(analysis) : undefined;
+			if (!this.isConnected || this.builderReview !== review) return;
+			const name = facts?.metadata?.name.slice(0, 160) || structure.name.trim() || analysis?.formula || geometry.formula(structure);
+			this.builderReview = { structure: { ...structure, name }, reagent: match?.name, analysis, facts, loading: false };
 		}).catch(() => {
 			if (this.builderReview === review) this.builderReview = { structure, loading: false };
 		});
@@ -3791,13 +3804,38 @@ export class ChemLab extends LitElementWw {
 		return true;
 	}
 
-	private saveBuilderReference(structure: Structure) {
+	private saveBuilderReference(review: BuilderReview, withStock = false): void {
 		const references = this.canAuthor ? this.builderReferences : this.sessionBuilderReferences;
-		if (references.length >= 30) return;
+		if (references.length >= 30 || this.builderReview !== review) return;
+		const { structure, analysis } = review;
+		let facts = review.facts;
+		let stockConcentration: number | undefined;
+		let recipe: ChemicalRecipe | undefined;
+		if (withStock) {
+			if (!this.canAuthor || !analysis?.stockSupported || review.reagent) return;
+			const input = this.shadowRoot.querySelector<SlInput>("#builderStockConcentration");
+			const manual = this.shadowRoot.querySelector<SlInput>("#builderManualPka");
+			stockConcentration = input.valueAsNumber;
+			if (manual) {
+				const values = manual.value.trim().split(/\s*;\s*|\s+/).filter(Boolean).map(value => Number(value.replace(",", ".")));
+				const dissociation = readAqueousAcidBase({ pKa: values, step: analysis.baseSites });
+				if (dissociation?.pKa.length !== expectedDissociations(analysis)) {
+					manual.setCustomValidity(this.builderText("Enter the requested aqueous pKa values in order.", "Gib die wässrigen pKa-Werte in Reihenfolge ein."));
+					manual.reportValidity();
+					return;
+				}
+				facts = { ...facts, dissociation, pKaSource: "manual" };
+			}
+			if (!input.reportValidity()) return;
+			recipe = builderStock(analysis, stockConcentration, facts);
+			if (!recipe) return;
+		}
+		const id = Array.from(crypto.getRandomValues(new Uint32Array(2)), value => value.toString(36)).join("-");
+		const item = { key: `builder-chemical:${id}`, structure, recipe, analysis, facts, stockConcentration };
 		if (this.canAuthor) {
-			this.builderReferences = [...references, structure];
+			this.builderReferences = [...references, item];
 			this.persistAuthoredData();
-		} else this.sessionBuilderReferences = [...references, structure];
+		} else this.sessionBuilderReferences = [...references, item];
 		this.openCustomChemicals();
 		this.builderReview = undefined;
 	}
@@ -3910,22 +3948,60 @@ export class ChemLab extends LitElementWw {
 		}
 	}
 
-	private renderBuilderReference(structure: Structure) {
+	private renderBuilderReference(item: BuilderChemical) {
+		const { structure, recipe, analysis, facts } = item;
+		const label = structure.name || this.builderText("Structure", "Struktur");
+		const sharable = !!recipe && this.canAuthor && this.builderReferences.includes(item);
+		const allowed = this.isChemicalAllowed(item.key);
 		const remove = () => {
-			if (this.canAuthor && this.builderReferences.includes(structure)) {
-				this.builderReferences = this.builderReferences.filter(item => item !== structure);
+			if (this.canAuthor && this.builderReferences.includes(item)) {
+				this.builderReferences = this.builderReferences.filter(entry => entry !== item);
+				this.setChemicalBlocked(item.key, false);
 				this.persistAuthoredData();
-			} else this.sessionBuilderReferences = this.sessionBuilderReferences.filter(item => item !== structure);
+			} else this.sessionBuilderReferences = this.sessionBuilderReferences.filter(entry => entry !== item);
+			if (this.selectedChemical?.key === item.key) this.clearChemicalSelection();
 		};
-		return this.renderPaletteCard(structure.name || this.builderText("Structure", "Struktur"), "primary", nothing, html`
+		const formula = analysis?.formula ?? facts?.metadata?.formula ?? label;
+		const badge = sharable ? this.renderChemicalPermissionBadge(label, [{ name: item.key, label }]) : nothing;
+		return this.renderPaletteCard(label, sharable ? this.palettePermissionVariant(Number(allowed), 1) : "primary", badge, html`
+			${recipe ? html`<div class="palette-preview-area palette-variant">
+				${this.renderChemicalTile(item.key, this.chemicalTileLabel(label, item.stockConcentration), formula, recipe)}
+				${sharable ? this.renderChemicalPermission(item.key, label) : nothing}
+			</div>` : nothing}
+			${analysis ? this.renderBuilderFacts(analysis, facts, item.stockConcentration) : nothing}
 			<div class="custom-card-actions">
 				<sl-button size="small" class="structure-link" @click=${() => this.openInBuilder({ structure })}>
 					${this.builderText("View structure", "Struktur ansehen")}
 				</sl-button>
-				${this.canAuthor || this.sessionBuilderReferences.includes(structure) ? this.renderSelectionDeleteButton(
+				${this.canAuthor || this.sessionBuilderReferences.includes(item) ? this.renderSelectionDeleteButton(
 					remove, this.builderText("Delete structure", "Struktur löschen")) : nothing}
 			</div>
 		`, true);
+	}
+
+	private renderBuilderFacts(analysis: CompoundAnalysis, facts?: CompoundFacts, concentration?: number) {
+		const classifications = {
+			acid: this.builderText("Acid", "Säure"), base: this.builderText("Base", "Base"),
+			ampholyte: this.builderText("Ampholyte", "Ampholyt"), salt: this.builderText("Ionic salt", "Ionensalz"),
+			other: this.builderText("Molecular compound", "Molekülverbindung"),
+		};
+		const pKa = facts?.dissociation?.pKa;
+		const cid = facts?.metadata?.cid;
+		const source = facts?.pKaSource === "manual" ? this.builderText("Entered manually", "Manuell eingetragen") : facts?.pKaSource;
+		return html`<div class="custom-compound-facts">
+			<sl-tag size="small">${analysis.formula}</sl-tag>
+			<sl-tag size="small" title=${this.builderText("Class inferred from structure", "Stoffklasse aus Struktur abgeleitet")}>
+				${classifications[analysis.classification]}</sl-tag>
+			${concentration !== undefined ? html`<sl-tag size="small">${this.formatAmount(concentration, 5)} mol/L</sl-tag>`
+				: html`<sl-tag size="small">${this.formatAmount(facts?.metadata?.molarMass ?? analysis.molarMass, 5)} g/mol</sl-tag>`}
+			${pKa?.length ? html`<sl-tag size="small" title=${source ?? ""}>
+				${analysis.classification === "base" ? "pKaH" : "pKa"} ${pKa.map(value => this.formatAmount(value, 5)).join(" · ")}
+			</sl-tag>` : nothing}
+			${cid ? html`<a href=${`https://pubchem.ncbi.nlm.nih.gov/compound/${cid}#section=Dissociation-Constants`}
+				target="_blank" rel="noopener noreferrer">PubChem</a>` : nothing}
+			${facts?.pKaSource === iupacSource ? html`<a href="https://github.com/IUPAC/Dissociation-Constants"
+				target="_blank" rel="noopener noreferrer" title="IUPAC Digitized pKa Dataset · CC BY-NC 4.0">IUPAC</a>` : nothing}
+		</div>`;
 	}
 
 	private renderBuilderExchange() {
@@ -3941,15 +4017,31 @@ export class ChemLab extends LitElementWw {
 		return html`<section class="builder-exchange" aria-live="polite">
 			<div class="builder-reference-list">
 				<sl-tag size="small" variant="primary">${review?.structure.name || target?.key || this.builderText("Structure", "Struktur")}</sl-tag>
-				${review?.loading ? html`<p>${this.builderText("Checking the catalog", "Katalog wird geprüft")}</p>`
+				${review?.loading ? html`<p>${this.builderText("Identifying compound…", "Verbindung wird bestimmt…")}</p>`
 				: review ? html`
-					<p>${permitted ? this.chemicalDisplayLabel(item)
-						: this.builderText("Reference only. No permitted matching dosing recipe.", "Nur Referenz. Keine passende freigegebene Dosiervorschrift.")}</p>
+					${review.analysis ? this.renderBuilderFacts(review.analysis, review.facts) : nothing}
+					${permitted ? html`<p>${this.chemicalDisplayLabel(item)}</p>` : nothing}
+					${review.analysis && expectedDissociations(review.analysis) > 0 && !review.facts?.dissociation
+						? html`<p>${this.builderText("Acid–base behavior inferred. No complete aqueous pKa series found.",
+							"Säure-Base-Verhalten aus der Struktur abgeleitet. Keine vollständige wässrige pKa-Reihe gefunden.")}</p>` : nothing}
+					${this.canAuthor && !review.reagent && review.analysis?.stockSupported ? html`
+						<div class="custom-stock-fields">
+							<sl-input id="builderStockConcentration" size="small" type="number" min="0.001" max="1" step="any" required
+								value="0.1" label=${this.builderText("Aqueous stock (mol/L)", "Wässrige Stammlösung (mol/L)")}></sl-input>
+							${expectedDissociations(review.analysis) && !review.facts?.dissociation ? html`
+								<sl-input id="builderManualPka" size="small" label=${this.builderText("Aqueous pKa (separate values with ;)", "Wässrige pKa (Werte mit ; trennen)")}
+									@sl-input=${(event: Event) => (event.currentTarget as SlInput).setCustomValidity("")}></sl-input>` : nothing}
+						</div>
+						<p>${this.builderText("The stock assumes the compound is dissolved.", "Die Stammlösung setzt voraus, dass der Stoff gelöst ist.")}</p>
+					` : nothing}
 					<div>
 						${permitted ? html`<sl-button size="small" variant="primary" @click=${() => this.useBuilderReagent(item.name)}>
 							${this.builderText("Select catalog reagent", "Katalogreagenz auswählen")}</sl-button>` : nothing}
+						${this.canAuthor && !review.reagent && review.analysis?.stockSupported ? html`
+							<sl-button size="small" variant="primary" ?disabled=${this.builderReferences.length >= 30}
+								@click=${() => this.saveBuilderReference(review, true)}>${this.builderText("Save aqueous stock", "Stammlösung speichern")}</sl-button>` : nothing}
 						<sl-button size="small" ?disabled=${(this.canAuthor ? this.builderReferences : this.sessionBuilderReferences).length >= 30}
-							@click=${() => this.saveBuilderReference(review.structure)}>${this.builderText("Save to custom chemicals", "Unter eigene Chemikalien speichern")}</sl-button>
+							@click=${() => this.saveBuilderReference(review)}>${this.builderText("Save as reference", "Als Referenz speichern")}</sl-button>
 					</div>
 				` : html`
 					<p>${fallback}</p>

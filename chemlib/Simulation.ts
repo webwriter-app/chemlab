@@ -3461,6 +3461,7 @@ export abstract class Simulation {
 			protonatedCharge: number,
 			representative: Molecule,
 			step: number,
+			constants?: number[],
 		): AcidBaseFamily => {
 			let idx: number = familyIndex[key];
 			if (idx === undefined) {
@@ -3469,7 +3470,7 @@ export abstract class Simulation {
 				systems.push({
 					key,
 					totalC: 0,
-					pKa: pKaList(acidbaseData[key]),
+					pKa: constants ?? pKaList(acidbaseData[key]),
 					protonatedCharge,
 					representative,
 					step,
@@ -3502,8 +3503,9 @@ export abstract class Simulation {
 			const smiles: string = molecule.smilesString;
 			const key: string = acidbaseData[smiles]?.alias ?? smiles;
 			const entry: object = acidbaseData[key];
+			const custom = molecule.aqueousAcidBase;
 			if (
-				entry === undefined ||
+				(entry === undefined && !custom) ||
 				smiles === "[H+]" ||
 				smiles === "[OH-]" ||
 				StructureManager.isWater(molecule)
@@ -3532,10 +3534,19 @@ export abstract class Simulation {
 			// a molecular base (NH3) is stored as its neutral base form, so its
 			// protonated form is `pKa.length` charges higher; a normal acid is
 			// stored protonated and keeps its own charge
-			const step: number = entry["step"] ?? (entry["base"] ? pKaList(entry).length : 0);
-			const family = familyFor(key, molecule._totalCharge + step, molecule, step);
+			const step: number = entry ? entry["step"] ?? (entry["base"] ? pKaList(entry).length : 0) : custom.step;
+			const family = familyFor(key, molecule._totalCharge + step, molecule, step, entry ? undefined : custom.pKa);
 			family.totalC += conc(molecule);
 			family.members.push(molecule);
+
+			if (!entry && custom) {
+				for (let state = 0; state <= custom.pKa.length; state++) {
+					const structure = protonationStructure(molecule, state - step);
+					if (structure?.smilesString && structure !== molecule && !acidbaseData[structure.smilesString]) {
+						conjugateToFamily[structure.smilesString] = { key, step: state };
+					}
+				}
+			}
 
 			// map the actual conjugate base so a buffer built from this acid plus
 			// its conjugate salt folds into the same family
@@ -3557,14 +3568,15 @@ export abstract class Simulation {
 				smiles === "[H+]" ||
 				smiles === "[OH-]" ||
 				StructureManager.isWater(molecule) ||
-				acidbaseData[smiles] != undefined
+				(acidbaseData[smiles] != undefined || molecule.aqueousAcidBase)
 			) {
 				return;
 			}
 
 			const conjugate = conjugateToFamily[smiles];
 			if (conjugate != undefined) {
-				const family = familyFor(conjugate.key, molecule._totalCharge + conjugate.step, molecule, conjugate.step);
+				const family = systems[familyIndex[conjugate.key]] ??
+					familyFor(conjugate.key, molecule._totalCharge + conjugate.step, molecule, conjugate.step);
 				family.totalC += conc(molecule);
 				family.members.push(molecule);
 			} else if (molecule._totalCharge !== 0) {

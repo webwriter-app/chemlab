@@ -18,6 +18,7 @@ import { catalogAqueousStructure, catalogEntry, catalogIsMixture, catalogStructu
 import { BUILDER_TAG, LAB_TAG, TABLE_TAG, worksheetPeers, worksheetScope, type LabReceiver } from "./molecule-builder/exchange";
 import { colorHex, crystalIonColors, crystalRadii, siteIon } from "./molecule-builder/crystal-display";
 import { add, fitGeometry, canBond, shapeName, formula, subtract } from "./molecule-builder/geometry";
+import { bondKind, canAssociateIons, ionicCharges, type BondMode } from "./molecule-builder/bond-types";
 import {
 	MAX_ATOMS, MAX_SITES, MAX_FILE_BYTES, cellVectors, fractional, isCell,
 	newCrystal, newMolecule, readStructure, type BondOrder, type Cell, type Point2, type Point3, type Structure,
@@ -178,6 +179,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor hoveredAtom: number | undefined;
 	@state() private accessor bondStart: number | undefined;
 	@state() private accessor bondOrder: BondOrder = 1;
+	@state() private accessor bondMode: BondMode = "auto";
 	@state() private accessor repeats = 1;
 	@state() private accessor notice = "";
 	@state() private accessor gpu: "idle" | "loading" | "ready" | "unavailable" = "idle";
@@ -225,7 +227,13 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	get #atomicFigure() { return this.renderRoot.querySelector<AtomicFigure>("chemlab-atomic-figure"); }
 
 	get #current() { return this.preview ?? this.draft; }
-	get #atoms() { const current = this.#current; return current.kind === "molecule" ? current.atoms : current.sites; }
+	get #atoms() {
+		const current = this.#current;
+		if (current.kind === "crystal") return current.sites;
+		if (!current.bonds.some(bond => bond.kind === "ionic")) return current.atoms;
+		const charges = ionicCharges(current);
+		return current.atoms.map(atom => ({ ...atom, charge: charges.get(atom.id) }));
+	}
 	get #readonly() { return this.preview !== undefined; }
 
 	get #atomicTarget() {
@@ -733,13 +741,15 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const draft = this.draft;
 		this.bondStart = undefined;
 		if (this.#readonly || draft.kind !== "molecule" || from === to) return;
-		if (!canBond(draft, from, to, this.bondOrder)) {
-			this.notice = this.#t("That bond order exceeds the supported valence.", "Diese Bindungsordnung überschreitet die unterstützte Valenz.");
+		const kind = bondKind(draft, from, to, this.bondMode);
+		if (kind === "ionic" ? !canAssociateIons(draft, from, to) : !canBond(draft, from, to, this.bondOrder)) {
+			this.notice = kind === "ionic" ? this.#t("Choose opposite ions with available charge.", "Wähle entgegengesetzte Ionen mit verfügbarer Ladung.")
+				: this.#t("That bond order exceeds the supported valence.", "Diese Bindungsordnung überschreitet die unterstützte Valenz.");
 			return;
 		}
 		const bonds = draft.bonds.filter(bond => !(bond.from === from && bond.to === to || bond.from === to && bond.to === from));
 		const next = { ...draft, name: "", catalogKey: undefined, source: undefined, representation: undefined,
-			geometry: undefined, bonds: [...bonds, { from, to, order: this.bondOrder }] };
+			geometry: undefined, bonds: [...bonds, { from, to, kind, order: kind === "ionic" ? 1 as const : this.bondOrder }] };
 		if (this.view === "2d") {
 			const fitted = fitGeometry(next);
 			const readable = improveDiagram(fitted);
@@ -751,6 +761,17 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			this.#record({ ...next, atoms: next.atoms.map((atom, index) => ({ ...atom, diagram: readable.atoms[index].diagram })) });
 		} else this.#record(next);
 		this.picked = to;
+	}
+
+	#setFormalCharge(id: number, input: HTMLInputElement) {
+		const draft = this.draft;
+		if (this.#readonly || draft.kind !== "molecule") return;
+		const atom = draft.atoms.find(atom => atom.id === id);
+		const charge = input.valueAsNumber;
+		if (!atom || !input.checkValidity() || !Number.isInteger(charge)) return;
+		if (charge === atom.charge) return;
+		this.#record({ ...draft, name: "", catalogKey: undefined, source: undefined, representation: undefined,
+			atoms: draft.atoms.map(item => item === atom ? { ...atom, charge } : item) });
 	}
 
 	#removeAtom() {
@@ -1217,7 +1238,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			return renderLewis(diagram, this.diagramBox ?? lewisViewBox(diagram, waters), {
 				waters, monatomicIons: aqueous.monatomicIons,
 				picked: this.picked, hovered: this.hoveredAtom, bondStart: this.bondStart, from: this.#gesture?.from,
-				preview: this.bondPreview, order: this.bondOrder, drag: this.diagramDrag,
+				preview: this.bondPreview, order: this.bondOrder, ionicPreview: this.bondMode === "ionic", drag: this.diagramDrag,
 				label: this.#t(diagram.ends ? "Lewis structure of the repeating unit" : "Lewis structure",
 					diagram.ends ? "Lewis-Struktur der Wiederholungseinheit" : "Lewis-Struktur"),
 				oxidationLabel: this.#t("Oxidation state", "Oxidationszahl"),
@@ -1313,7 +1334,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const aqueous = !crystal && current.representation === "aqueous-ions" ? this.#aqueous(current) : undefined;
 		const selectedEntry = catalogEntry(this.catalogKey);
 		const missing = selectedEntry && !this.catalogVariants.length;
-		const showOxidation = !crystal && this.view === "2d" && current.atoms.length > (aqueous?.monatomicIons.size ?? 0);
+		const showOxidation = !crystal && this.view === "2d" && this.#lewis(current).atoms.some(atom =>
+			!aqueous?.monatomicIons.has(atom.id) && atom.bonds.every(bond => bond.kind !== "ionic"));
 		const showDisplay = this.view === "3d" && (crystal || (this.#atoms.length > 0 && this.gpu === "ready"));
 		const options = this.catalogVariants.length > 1;
 		const displays = showDisplay && hasMolecularDisplays(current);
@@ -1492,6 +1514,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			<sl-details summary=${current.kind === "crystal" ? this.#t("Site & cell", "Gitterplatz & Zelle")
 					: this.#t("Atom properties", "Atom-Eigenschaften")}>
 				<div class="fields">
+					${here && !this.#readonly ? html`<label class="formal-charge-input">${this.#t("Formal charge", "Formalladung")}
+						<input type="number" min="-8" max="8" step="1" required .value=${String(here.charge)}
+							@change=${(event: Event) => this.#setFormalCharge(here.id, event.currentTarget as HTMLInputElement)} />
+					</label>` : nothing}
 					${lengths.length ? html`<div class="bond-lengths">
 						<span class="summary-caption">${current.kind === "molecule" && current.geometry === "supplied"
 							? this.#t("3D bond lengths", "3D-Bindungslängen") : this.#t("Estimated 3D bond lengths", "Geschätzte 3D-Bindungslängen")}</span>
@@ -1616,7 +1642,12 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					${tool("atom", this.view === "2d" && current.kind === "crystal"
 						? this.#t("Place ion or atom", "Ion oder Atom platzieren") : this.#t("Place atom", "Atom platzieren"), ATOM_ICON)}
 					${current.kind === "molecule" ? tool("bond", this.#t("Draw bond", "Bindung zeichnen"), BOND_ICON) : nothing}
-					${this.tool === "bond" ? html`<span class="bond-orders" role="group" aria-label=${this.#t("Bond order", "Bindungsordnung")}>
+					${this.tool === "bond" ? html`<span class="bond-orders" role="group" aria-label=${this.#t("Bond type", "Bindungstyp")}>
+						${([["auto", "Auto", "Auto"], ["covalent", "Covalent", "Kovalent"], ["ionic", "Ionic", "Ionisch"]] as const)
+							.map(([mode, en, de]) => html`<sl-button size="small" variant=${mode === this.bondMode ? "primary" : "default"}
+								aria-pressed=${String(mode === this.bondMode)} @click=${() => { this.bondMode = mode; }}>${this.#t(en, de)}</sl-button>`)}
+					</span>` : nothing}
+					${this.tool === "bond" && this.bondMode !== "ionic" ? html`<span class="bond-orders" role="group" aria-label=${this.#t("Bond order", "Bindungsordnung")}>
 						${([1, 2, 3] as BondOrder[]).map(order => html`<sl-button class="icon-control" size="small"
 							variant=${order === this.bondOrder ? "primary" : "default"} aria-pressed=${String(order === this.bondOrder)}
 							aria-label=${this.#t(`Bond order ${order}`, `Bindungsordnung ${order}`)}

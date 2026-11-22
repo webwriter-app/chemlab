@@ -1812,7 +1812,9 @@ export const style = css`
 		position: absolute;
 		inset: .5rem auto auto .5rem;
 		z-index: 8;
-		max-width: calc(100% - 1rem);
+		max-inline-size: min(22rem, calc(100% - 1rem));
+		max-block-size: calc(100% - 1rem);
+		overflow: auto;
 		padding: .5rem;
 		border: 1px solid var(--lab-card-border);
 		border-radius: 5px;
@@ -1830,6 +1832,20 @@ export const style = css`
 	.builder-exchange p {
 		margin: 0;
 		font-size: .8rem;
+	}
+	.builder-exchange .custom-stock-fields {
+		display: grid;
+		inline-size: 100%;
+		grid-template-columns: repeat(auto-fit, minmax(min(8rem, 100%), 1fr));
+	}
+	.custom-stock-fields sl-input { min-inline-size: 0; }
+	.custom-compound-facts {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 3px;
+		padding-block: 3px;
+		font-size: .75rem;
 	}
 
 	.vessel-structure-link {

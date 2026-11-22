@@ -1,12 +1,19 @@
 import { ElementData } from "../chemlib/ElementData";
 import { elementByAtomicNumber } from "../periodic-table/element-reference";
 import { diatomics } from "../data/structures/sources.json";
-import { atomRadius, estimatedBondLength } from "./radii";
+import { isCovalentBond, ionicCharges } from "./bond-types";
+import { atomRadius, estimatedBondLength, ionicRadius } from "./radii";
 import type { Atom, Bond, Molecule, Point3, Structure } from "./structure";
 
 const experimentalDiatomics = new Map(Object.values(diatomics).map(([number, order, length]) => [`${number}:${order}`, length]));
 
-function bondLength(molecule: Molecule, left: Atom, right: Atom, order: Bond["order"]): number {
+function bondLength(molecule: Molecule, left: Atom, right: Atom, order: Bond["order"], kind?: Bond["kind"]): number {
+	if (kind === "ionic") {
+		const charges = ionicCharges(molecule);
+		const a = ionicRadius(left.atomicNumber, charges.get(left.id), 6);
+		const b = ionicRadius(right.atomicNumber, charges.get(right.id), 6);
+		return a && b ? (a.pm + b.pm) / 100 : estimatedBondLength(left.atomicNumber, right.atomicNumber, 1) * 1.2;
+	}
 	if (molecule.atoms.length === 2 && !left.charge && !right.charge && left.atomicNumber === right.atomicNumber) {
 		const reference = experimentalDiatomics.get(`${left.atomicNumber}:${order}`);
 		if (reference !== undefined) return reference;
@@ -44,6 +51,7 @@ export function remainingElectrons(atom: Atom, bonds: readonly Bond[], continuat
 	const valence = mainGroupValence(atom.atomicNumber);
 	return valence === undefined ? undefined : valence - atom.charge - continuations - bonds.reduce((sum, bond) => {
 		if (bond.from !== atom.id && bond.to !== atom.id) return sum;
+		if (!isCovalentBond(bond)) return sum;
 		return sum + (bond.dative ? (bond.from === atom.id ? 2 : 0) : bond.order);
 	}, 0);
 }
@@ -54,7 +62,8 @@ export function canBond(molecule: Molecule, from: number, to: number, order: num
 		if (!atom) return false;
 		const other = id === from ? to : from;
 		const sum = molecule.bonds.reduce((count, bond) =>
-			(bond.from === id && bond.to !== other) || (bond.to === id && bond.from !== other) ? count + bond.order : count, order);
+			isCovalentBond(bond) && ((bond.from === id && bond.to !== other) || (bond.to === id && bond.from !== other))
+				? count + bond.order : count, order);
 		const continuation = molecule.repeatUnit?.ends.includes(id) ? 1 : 0;
 		return sum + continuation <= (maximumOrder.get(atom.atomicNumber) ?? 6);
 	});
@@ -65,6 +74,7 @@ function shapeFor(molecule: Molecule, id: number): Shape | null {
 	const atom = molecule.atoms.find(entry => entry.id === id);
 	const bonds = molecule.bonds.filter(bond => bond.from === id || bond.to === id);
 	if (bonds.length < 2) return { angle: 180, domains: 2 };
+	if (bonds.some(bond => !isCovalentBond(bond))) return null;
 	const remaining = remainingElectrons(atom, bonds);
 	if (remaining === undefined) return null;
 	const domains = bonds.length + remaining / 2;
@@ -73,7 +83,7 @@ function shapeFor(molecule: Molecule, id: number): Shape | null {
 }
 
 export function shapeName(molecule: Molecule, id: number) {
-	const neighbors = molecule.bonds.filter(bond => bond.from === id || bond.to === id).length;
+	const neighbors = molecule.bonds.filter(bond => isCovalentBond(bond) && (bond.from === id || bond.to === id)).length;
 	if (neighbors < 2) return undefined;
 	const shape = shapeFor(molecule, id);
 	if (!shape) return undefined;
@@ -86,10 +96,10 @@ export function shapeName(molecule: Molecule, id: number) {
 /** Deterministic local VSEPR for acyclic species. Ring conformation and stereo
  * assignment require additional constraints and are kept outside this fitter. */
 function idealizedGeometry(molecule: Molecule): Molecule | null {
-	const neighbors = new Map(molecule.atoms.map(atom => [atom.id, [] as { id: number; order: Bond["order"] }[]]));
+	const neighbors = new Map(molecule.atoms.map(atom => [atom.id, [] as { id: number; order: Bond["order"]; kind?: Bond["kind"] }[]]));
 	for (const bond of molecule.bonds) {
-		neighbors.get(bond.from).push({ id: bond.to, order: bond.order });
-		neighbors.get(bond.to).push({ id: bond.from, order: bond.order });
+		neighbors.get(bond.from).push({ id: bond.to, order: bond.order, kind: bond.kind });
+		neighbors.get(bond.to).push({ id: bond.from, order: bond.order, kind: bond.kind });
 	}
 	const atoms = new Map(molecule.atoms.map(atom => [atom.id, atom]));
 	const placements = new Map<number, Point3>();
@@ -117,7 +127,7 @@ function idealizedGeometry(molecule: Molecule): Molecule | null {
 				const azimuth = (index - indexOffset) * step;
 				const direction = !parent && index === 0 ? axis : add(scale(axis, Math.cos(angle)),
 					scale(add(scale(tangent, Math.cos(azimuth)), scale(normal, Math.sin(azimuth))), Math.sin(angle)));
-				const distance = bondLength(molecule, atoms.get(id), atoms.get(child.id), child.order);
+				const distance = bondLength(molecule, atoms.get(id), atoms.get(child.id), child.order, child.kind);
 				const position = add(current, scale(direction, distance));
 				placements.set(child.id, position);
 				rightEdge = Math.max(rightEdge, position[0]);
@@ -137,7 +147,7 @@ function estimatedGeometry(molecule: Molecule): Molecule {
 	const neighbors: { index: number; length: number }[][] = atoms.map(() => []);
 	const lengths = molecule.bonds.map(bond => {
 		const a = indexes.get(bond.from), b = indexes.get(bond.to);
-		const distance = bondLength(molecule, atoms[a], atoms[b], bond.order);
+		const distance = bondLength(molecule, atoms[a], atoms[b], bond.order, bond.kind);
 		neighbors[a].push({ index: b, length: distance });
 		neighbors[b].push({ index: a, length: distance });
 		return { a, b, distance };
@@ -205,13 +215,14 @@ export type ElectronRegion = { kind: "bond" | "lone"; from: Point3; to: Point3; 
  * per bonded pair of atoms. Transition-metal atomic populations are omitted. */
 export function electronRegions(molecule: Molecule): ElectronRegion[] {
 	const atoms = new Map(molecule.atoms.map(atom => [atom.id, atom]));
-	const regions: ElectronRegion[] = molecule.bonds.flatMap(({ from, to, order }) => {
+	const regions: ElectronRegion[] = molecule.bonds.filter(isCovalentBond).flatMap(({ from, to, order }) => {
 		const a = atoms.get(from).position, b = atoms.get(to).position;
 		return Math.hypot(...subtract(a, b)) < 1e-6 ? [] : [{ kind: "bond", from: a, to: b, electrons: order * 2 }];
 	});
+	const charges = ionicCharges(molecule);
 	for (const atom of molecule.atoms) {
-		const bonds = molecule.bonds.filter(bond => bond.from === atom.id || bond.to === atom.id);
-		const remaining = remainingElectrons(atom, bonds, Number(!!molecule.repeatUnit?.ends.includes(atom.id)));
+		const bonds = molecule.bonds.filter(bond => isCovalentBond(bond) && (bond.from === atom.id || bond.to === atom.id));
+		const remaining = remainingElectrons({ ...atom, charge: charges.get(atom.id) }, bonds, Number(!!molecule.repeatUnit?.ends.includes(atom.id)));
 		if (!(remaining > 0 && remaining <= 8)) continue;
 		const fixed = bonds.map(bond => unit(subtract(atoms.get(bond.from === atom.id ? bond.to : bond.from).position, atom.position)));
 		const pairs: Point3[] = [];
@@ -246,23 +257,5 @@ export function electronRegions(molecule: Molecule): ElectronRegion[] {
 	return regions;
 }
 
-export function formula(structure: Structure): string {
-	if (structure.kind === "crystal" && structure.catalogKey && structure.name) return structure.name;
-	const counts = new Map<string, number>();
-	for (const { atomicNumber } of structure.kind === "molecule" ? structure.atoms : structure.sites) {
-		const symbol = elementByAtomicNumber(atomicNumber).symbol;
-		counts.set(symbol, (counts.get(symbol) ?? 0) + 1);
-	}
-	const ordered = [...counts.keys()].sort((a, b) => a.localeCompare(b, "en"));
-	if (counts.has("C")) {
-		ordered.splice(ordered.indexOf("C"), 1);
-		if (counts.has("H")) ordered.splice(ordered.indexOf("H"), 1);
-		ordered.unshift(...(counts.has("H") ? ["C", "H"] : ["C"]));
-	}
-	const gcd = (a: number, b: number): number => b ? gcd(b, a % b) : a;
-	const divisor = structure.kind === "crystal" ? [...counts.values()].reduce(gcd, 0) : 1;
-	return ordered.map(symbol => {
-		const count = counts.get(symbol) / divisor;
-		return symbol + (count > 1 ? String(count) : "");
-	}).join("");
-}
+
+export { formula } from "./formula";

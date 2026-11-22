@@ -339,6 +339,15 @@ export class MoleculeScene {
 				const positions = new Map(structure.atoms.map(atom => [atom.id, atom.position]));
 				for (const bond of molecular === "space-filling" ? [] : structure.bonds) {
 					const from = positions.get(bond.from), to = positions.get(bond.to);
+					if (bond.kind === "ionic") {
+						const gap = subtract(to, from);
+						for (const start of [.28, .44, .60]) {
+							const mark = this.#rod();
+							this.#line(mark, add(from, scale(gap, start)), add(from, scale(gap, start + .08)), .026);
+							this.#content.addChild(mark);
+						}
+						continue;
+					}
 					const axis = unit(subtract(to, from));
 					const rods = molecular === "orbitals" ? 1 : bond.order;
 					for (let index = 0; index < rods; index++) {

@@ -40,7 +40,7 @@ function describeMolecule(molecule: Molecule): MoleculeDefinition {
 	return {
 		formula: molecule.solidSaltFormula ?? formula,
 		atoms: molecule._atoms.map(atom => atom.getName().toLowerCase()),
-		charges, bonds,
+		charges, bonds, aqueousAcidBase: molecule.aqueousAcidBase && structuredClone(molecule.aqueousAcidBase),
 	};
 }
 

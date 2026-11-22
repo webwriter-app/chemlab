@@ -1,9 +1,12 @@
 import { ElementData, StructureManager, type Atom } from "../chemlib";
+import { readAqueousAcidBase } from "../chemlib/AcidBase";
 import type { MoleculeDefinition } from "./chemicals";
 
 export function loadMoleculeDefinition(definition?: MoleculeDefinition, onAtom?: (atom: Atom) => void) {
 	const molecule = StructureManager.newMolecule();
 	if (!definition) return molecule;
+	if (typeof definition.name === "string") molecule.name = definition.name;
+	molecule.aqueousAcidBase = readAqueousAcidBase(definition.aqueousAcidBase);
 	const buildStructure = () => {
 		definition.atoms.forEach((element, index) => {
 			const atom = molecule.addAtom(element, ElementData.getData(element)["symbol"], definition.charges?.[index]);

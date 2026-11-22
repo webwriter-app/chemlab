@@ -1,3 +1,4 @@
+import type { AqueousAcidBase } from "./AcidBase";
 import { Atom } from "./Atom";
 import { Bond } from "./Bond";
 // @ts-ignore
@@ -10,6 +11,7 @@ import { Kekule } from "kekule";
  * @typedef {Molecule}
  */
 class Molecule {
+	aqueousAcidBase?: AqueousAcidBase;
 	/** Catalog phase at the time of dosing, used when no phase change is modeled. */
 	dosedAsSolid?: boolean;
 	/** Formula of a solid phase tracked by the salt equilibrium. */
