@@ -1,4 +1,5 @@
 import { css, html, nothing, svg } from "lit";
+import { isotopeText } from "../periodic-table/phase";
 import { atomicShells, mutedShellColor, orbitalOccupation, orbitalOrientations, shellColors, shellOrbit, subshellColors, visibleAtomicSubshells,
 	type AtomicConfiguration, type Subshell } from "./atomic-configuration";
 import { atomicOrbitalSlice, atomicPhaseColors } from "./atomic-orbitals";
@@ -21,6 +22,20 @@ export function atomicOrbitalLabel(subshell: Subshell, orientation: number, t: T
 	const electrons = orbitalOccupation(subshell, orientation);
 	const count = [t("empty", "unbesetzt"), t("1 electron", "1 Elektron"), t("2 electrons", "2 Elektronen")][electrons];
 	return `${subshell.n}${orbitalOrientations(subshell.l)[orientation]} · ${count}`;
+}
+
+export function renderNucleusLabel(nucleus: ReturnType<typeof referenceNucleus>, symbol: string, t: Translate) {
+	if (!nucleus) return nothing;
+	const { massNumber, protons, neutrons, abundant } = nucleus;
+	const isotope = isotopeText(massNumber, symbol);
+	const label = t(`${isotope} · ${protons} protons · ${neutrons} neutrons`,
+		`${isotope} · ${protons} Protonen · ${neutrons} Neutronen`);
+	const context = abundant ? t("Most abundant isotope", "Häufigstes Isotop")
+		: t("Longest-lived isotope", "Langlebigstes Isotop");
+	return html`<span class="nucleus" role="img" aria-label=${label} title=${`${context} · ${label}`}>
+		${isotope} · <span style="color:${nucleonColors.proton}">${protons} p⁺</span> ·
+		<span style="color:${nucleonColors.neutron}">${neutrons} n</span>
+	</span>`;
 }
 
 export function renderAtomicControls(configuration: AtomicConfiguration, choices: AtomChoices, change: (choices: AtomChoices) => void,

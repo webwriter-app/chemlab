@@ -1,11 +1,10 @@
 import { LitElement, css, html, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
-import { isotopeText } from "../periodic-table/phase";
-import { atomicDrawingStyles, atomicOrbitalLabel, initialAtomChoices, renderAtomicShells, renderOrbitalFallback,
+import { atomicDrawingStyles, atomicOrbitalLabel, initialAtomChoices, renderAtomicShells, renderNucleusLabel, renderOrbitalFallback,
 	type AtomChoices } from "./atomic-model";
 import type { AtomicConfiguration } from "./atomic-configuration";
 import type { AtomicScene, OrbitalHover } from "./atomic-scene";
-import { nucleonColors, referenceNucleus } from "./atomic-nucleus";
+import { referenceNucleus } from "./atomic-nucleus";
 
 export class AtomicFigure extends LitElement {
 	static styles = [atomicDrawingStyles, css`
@@ -27,7 +26,7 @@ export class AtomicFigure extends LitElement {
 	@property({ attribute: false }) accessor choices: AtomChoices = initialAtomChoices();
 	@property({ attribute: false }) accessor pause = false;
 	@property({ attribute: false }) accessor interactive = true;
-	@property({ attribute: false }) accessor externalOrbitalLabel = false;
+	@property({ attribute: false }) accessor externalLabels = false;
 	@state() private accessor ready = false;
 	@state() private accessor hover: OrbitalHover | undefined;
 	#scene?: AtomicScene;
@@ -72,7 +71,7 @@ export class AtomicFigure extends LitElement {
 
 	protected override updated(changed: PropertyValues) {
 		this.#sync();
-		if (this.externalOrbitalLabel && (changed.has("choices") || changed.has("externalOrbitalLabel")
+		if (this.externalLabels && (changed.has("choices") || changed.has("externalLabels")
 			|| changed.has("lang") || changed.has("hover"))) {
 			this.dispatchEvent(new CustomEvent("orbital-label", { detail: this.#getOrbitalLabel() }));
 		}
@@ -168,14 +167,8 @@ export class AtomicFigure extends LitElement {
 	};
 
 	protected override render() {
-		const label = this.externalOrbitalLabel ? undefined : this.#getOrbitalLabel();
+		const label = this.externalLabels ? undefined : this.#getOrbitalLabel();
 		const nucleus = this.choices.model === "bohr" ? referenceNucleus(this.atomicNumber) : undefined;
-		const isotope = nucleus && isotopeText(nucleus.massNumber, this.symbolText);
-		const nucleusLabel = nucleus && this.#t(
-			`${isotope} · ${nucleus.protons} protons · ${nucleus.neutrons} neutrons`,
-			`${isotope} · ${nucleus.protons} Protonen · ${nucleus.neutrons} Neutronen`);
-		const isotopeContext = nucleus?.abundant ? this.#t("Most abundant isotope", "Häufigstes Isotop")
-			: this.#t("Longest-lived isotope", "Langlebigstes Isotop");
 		return html`<div class="scene" ?hidden=${!this.ready} ?data-interactive=${this.interactive}
 			@pointerdown=${this.#down} @pointermove=${this.#move} @pointerup=${this.#up} @pointercancel=${this.#up}
 			@pointerleave=${() => this.#scene?.point()}
@@ -191,9 +184,6 @@ export class AtomicFigure extends LitElement {
 					: renderOrbitalFallback(this.configuration, this.choices, this.#t)}
 			</div>` : null}
 			${label ? html`<span class="label" role="tooltip">${label}</span>` : null}
-			${nucleus ? html`<span class="label nucleus" role="img" aria-label=${nucleusLabel} title=${`${isotopeContext} · ${nucleusLabel}`}>
-				${isotope} · <span style="color:${nucleonColors.proton}">${nucleus.protons} p⁺</span> ·
-				<span style="color:${nucleonColors.neutron}">${nucleus.neutrons} n</span>
-			</span>` : null}`;
+			${nucleus && !this.externalLabels ? html`<span class="label">${renderNucleusLabel(nucleus, this.symbolText, this.#t)}</span>` : null}`;
 	}
 }

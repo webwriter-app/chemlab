@@ -30,8 +30,9 @@ import { atomRadius, spaceFillingRadius } from "./molecule-builder/radii";
 import { hasMolecularDisplays, moleculeOrbitals, ORBITAL_PHASE_COLORS, type MolecularDisplay } from "./molecule-builder/orbitals";
 import { atomicSpecies, electronConfiguration, type AtomicSpecies } from "./molecule-builder/atomic-configuration";
 import { AtomicFigure } from "./molecule-builder/atomic-figure";
-import { atomicModelStyles, initialAtomChoices, pauseShellElectronsOption, renderAtomicControls,
+import { atomicModelStyles, initialAtomChoices, pauseShellElectronsOption, renderAtomicControls, renderNucleusLabel,
 	type AtomicModel } from "./molecule-builder/atomic-model";
+import { referenceNucleus } from "./molecule-builder/atomic-nucleus";
 import { gridCell } from "./molecule-builder/canvas-grid";
 import { builderStyles } from "./molecule-builder/styles";
 import type { MoleculeScene } from "./molecule-builder/scene";
@@ -1534,6 +1535,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		</div>`;
 		const atomic = this.#atomInspection;
 		const explicitAtom = !!this.inspectedAtom;
+		const atomSymbol = atomic ? symbol(atomic.species.atomicNumber) + superscript(chargeText(atomic.species.charge)) : "";
+		const nucleus = atomic && this.atomChoices.model === "bohr" ? referenceNucleus(atomic.species.atomicNumber) : undefined;
 		const sceneVisible = this.view === "3d" && !atomic;
 		const fit = () => {
 			if (atomic) this.#atomicFigure?.fit();
@@ -1636,9 +1639,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 						<div class="scene" ?hidden=${!sceneVisible}></div>
 						${atomic ? html`<chemlab-atomic-figure class="builder-atom-figure" lang=${this.#t("en", "de")}
 							.atomicNumber=${atomic.species.atomicNumber} .configuration=${atomic.configuration} .choices=${this.atomChoices}
-							.symbolText=${symbol(atomic.species.atomicNumber) + superscript(chargeText(atomic.species.charge))}
+							.symbolText=${atomSymbol}
 							.pause=${this.pauseShellElectrons} .interactive=${explicitAtom || this.tool === "orbit"}
-							.externalOrbitalLabel=${true}
+							.externalLabels=${true}
 							@orbital-label=${(event: CustomEvent<string | undefined>) => { this.orbitalHint = event.detail; }}
 							@atomic-scale=${(event: CustomEvent<number>) => { this.#atomicScale = event.detail; this.#syncGrid(); }}>
 						</chemlab-atomic-figure>` : !sceneVisible ? this.#renderDrawing(ionColors) : nothing}
@@ -1652,7 +1655,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 							</p>` : nothing}
 						<div class="view-tools" role="group" aria-label=${this.#t("Canvas view", "Ansicht der Zeichenfläche")}>
 							${atomic && this.atomChoices.model === "orbitals" && this.orbitalHint
-								? html`<span class="orbital-hint" role="tooltip">${this.orbitalHint}</span>` : nothing}
+								? html`<span class="atomic-hint orbital-hint" role="tooltip">${this.orbitalHint}</span>` : nothing}
+							${nucleus ? html`<span class="atomic-hint">${renderNucleusLabel(nucleus, atomSymbol, (en, de) => this.#t(en, de))}</span>` : nothing}
 							<sl-tag size="small" class="grid-scale" hidden>
 								<span class="grid-scale-line" aria-hidden="true"></span><span class="grid-length"></span>
 							</sl-tag>
