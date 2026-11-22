@@ -1080,36 +1080,59 @@ export const periodicTableStyles = css`
 	.details-view-button::part(base) { min-inline-size: 1.35rem; }
 	.details-view-button::part(label) { display: grid; place-items: center; padding: 0 .13rem; }
 
-	/* The picker shows the card in a floating panel beside the entry, because the
-	   entry itself has to stay in place as the drag handle. The panel is not
-	   clipped by the palette, so it may be taller than the list it belongs to. */
+	/* The picker shows the card in a floating panel over the canvas, because the
+	   entry itself has to stay in place as the drag handle. The panel is anchored
+	   to the free strip between the two canvas cards, so it never covers them and
+	   never grows past the widget. */
 	.picker-info {
 		z-index: 8;
 	}
 
 	.picker-info-surface {
+		display: flex;
+		flex-direction: column;
 		inline-size: 18rem;
 		max-inline-size: min(18rem, 88vw);
+		max-block-size: var(--picker-info-max-height, 26rem);
 	}
 
 	/* The card sits in the flow of the panel instead of the grid slot, so the
 	   shell drops its absolute placement and its height limit. */
 	.picker-info-surface .details-shell {
 		position: static;
+		flex: 1 1 auto;
+		flex-direction: column;
+		min-block-size: 0;
 		max-height: none;
 		overflow: visible;
 	}
 
+	/* The card is a flex column so its body can take the height the panel has
+	   left over and scroll there instead of pushing the panel over a card. */
+	.picker-info-surface .details-card {
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		min-block-size: 0;
+	}
+
 	.picker-info-surface .details-card::part(base) {
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		min-block-size: 0;
 		height: auto;
 		box-shadow: var(--pt-overlay-shadow);
 	}
 
-	/* The panel scrolls as a whole when the viewport is short, and it keeps no
-	   room for the collapse toggle, which only the grid card carries. */
-	.picker-info-surface .details-card::part(body) {
-		flex: 0 0 auto;
-		max-block-size: var(--auto-size-available-height, 26rem);
+	/* The panel scrolls its body when the gap between the canvas cards is short,
+	   and it keeps no room for the collapse toggle, which only the grid card
+	   carries. The open card in the grid grows with its content instead, so the
+	   expanded selector is listed to outrank that rule as well. */
+	.picker-info-surface .details-card::part(body),
+	.picker-info-surface .details-shell.is-expanded .details-card::part(body) {
+		flex: 1 1 auto;
+		min-block-size: 0;
 		padding-bottom: 8px;
 		overflow: auto;
 	}

@@ -139,6 +139,20 @@ interface DetailsOptions {
 	readonly close?: () => void;
 }
 
+/**
+ * Free space the floating picker panel may occupy, in viewport coordinates.
+ *
+ * The panel belongs to the table but describes an entry of the palette, and the
+ * room it may use is the gap between the canvas cards of the builder. Only the
+ * builder can measure that gap, so it hands the table a live rect instead of an
+ * element: the getter is read on every reposition, which keeps the panel in
+ * place while the page scrolls and while the cards grow.
+ */
+export interface PickerInfoAnchor {
+	/** Current free space, in viewport pixels. */
+	getBoundingClientRect: () => DOMRect;
+}
+
 /** One labelled section of the expanded detail card. */
 interface DetailSectionEntry {
 	/** Section to pick from the rows of the card. */
@@ -411,6 +425,17 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	@property({ type: Boolean, reflect: true, attribute: "picker-mode" })
 	accessor pickerMode = false;
 
+	/**
+	 * Free space the floating picker panel may occupy, in viewport coordinates.
+	 *
+	 * The builder hands over the gap between its canvas cards, so the panel sits
+	 * in the canvas instead of beside the palette and never covers a card. The
+	 * rect is read on every reposition, which keeps the panel in place while the
+	 * page scrolls. Without an anchor the picker shows no panel.
+	 */
+	@property({ attribute: false })
+	accessor infoAnchor: PickerInfoAnchor | null = null;
+
 	@property({ type: Boolean, attribute: "pause-shell-electrons", reflect: true })
 	accessor pauseShellElectrons = false;
 
@@ -569,7 +594,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * search field and then the layout switch are the stable fallbacks.
 	 */
 	protected updated() {
-		this.#syncPickerAnchor();
+		this.#repositionPickerInfo();
 		if (!this.#restoreFocusPending) return;
 		this.#restoreFocusPending = false;
 		const previous = this.#focusBeforeLayout;
@@ -797,38 +822,28 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	};
 
 	/**
-	 * Points the floating panel at the entry it describes.
+	 * Re-reads the free space of the floating panel.
 	 *
-	 * The rows are rebuilt with every change, so the anchor is looked up again
-	 * after each render instead of being kept from the click. A panel whose entry
-	 * the filter or the mode removed closes itself.
+	 * The panel is anchored to a live rect instead of an element, so the popup
+	 * cannot watch the boxes that bound it. The builder observes them and calls
+	 * this after they change: the render updates the height limit and the
+	 * reposition moves the panel.
 	 */
-	#syncPickerAnchor() {
-		const popup = this.renderRoot.querySelector<SlPopup>(".picker-info");
-		if (!popup) return;
-		const anchor = this.#pickerInfo === null ? null : this.#pickerAnchorFor(this.#pickerInfo);
-		if (!anchor) {
-			this.#closePickerInfo();
-			return;
-		}
-		if (popup.anchor !== anchor) popup.anchor = anchor;
+	refreshInfoAnchor() {
+		this.requestUpdate();
+		this.#repositionPickerInfo();
 	}
 
 	/**
-	 * Element the floating panel hangs from.
+	 * Moves the floating panel onto the rect it is anchored to.
 	 *
-	 * The list anchors the panel to the row it describes, so the card sits beside
-	 * the entry that opened it. The grid has no room for that: a cell is a few
-	 * pixels wide, and a panel beside it would cover the neighbouring cells. It
-	 * hangs from the pane instead and sits beside the whole palette.
-	 *
-	 * @param atomicNumber - Element the panel describes.
+	 * The popup only repositions itself when its own properties change, and the
+	 * anchor object stays the same while the gap around it moves. Every render
+	 * therefore asks for a fresh position, which reads the live rect again.
 	 */
-	#pickerAnchorFor(atomicNumber: number): HTMLElement | null {
-		const selector = this.#resolvedView === "table"
-			? ".table-pane"
-			: `[data-atomic-number="${atomicNumber}"]`;
-		return this.renderRoot.querySelector<HTMLElement>(selector);
+	#repositionPickerInfo() {
+		if (this.#pickerInfo === null) return;
+		this.renderRoot.querySelector<SlPopup>(".picker-info")?.reposition();
 	}
 
 	/** The card that replaced the selected list row, if the list shows one. */
@@ -1938,23 +1953,32 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/**
 	 * Renders the floating info panel of the picker.
 	 *
-	 * The panel hangs beside the entry it describes instead of replacing it,
+	 * The panel describes an entry of the palette instead of replacing it,
 	 * because the entry has to stay in place as the drag handle. It carries the
 	 * same card as the standalone widget, minus the atom model view, and closes
-	 * through its own button or Escape.
+	 * through its own button or Escape. The builder hands over the gap between
+	 * its canvas cards, so the panel sits in the canvas and takes the height of
+	 * that gap; a short gap makes the body scroll instead of covering a card.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
-	 * @returns The panel, or nothing while it is closed.
+	 * @returns The panel, or nothing while it is closed or unanchored.
 	 */
 	#renderPickerInfo(t: Strings, language: Language) {
 		const atomicNumber = this.#pickerInfo;
-		if (atomicNumber === null) return nothing;
+		const anchor = this.infoAnchor;
+		if (atomicNumber === null || !anchor) return nothing;
 		const element = elementByAtomicNumber(atomicNumber);
 		if (!element) return nothing;
+		const box = anchor.getBoundingClientRect();
+		// The anchor is the gap itself, so the panel is lifted from the bottom
+		// edge of the gap back onto its top edge. The gap height also limits the
+		// panel, which scrolls its body once the content is taller.
+		const lift = -Math.round(box.height);
 		return html`
-			<sl-popup class="picker-info" placement="right-start" distance="6" flip shift auto-size="vertical" .active=${true}>
-				<div class="picker-info-surface" role="dialog" aria-label=${element.names[language]}>
+			<sl-popup class="picker-info" placement="bottom-start" distance=${lift} .anchor=${anchor} .active=${true}>
+				<div class="picker-info-surface" role="dialog" aria-label=${element.names[language]}
+					style="--picker-info-max-height:${Math.max(0, Math.round(box.height))}px">
 					${this.#renderDetails(t, language, element, {
 						expanded: true,
 						collapsible: false,

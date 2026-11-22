@@ -32,7 +32,7 @@ export const builderStyles = css`
 		   header, the tool row and the canvas controls share one rhythm. */
 		--sl-input-height-small: var(--chip-height);
 	}
-	.document, .tools, .view-buttons, .fields, .palette-tools, .tool-group, .palette-heading,
+	.document, .tools, .view-buttons, .fields, .tool-group, .palette-heading,
 	.document-title, .document-actions, .card-head, .card-facts, .display-controls, .bond-orders {
 		display: flex;
 		flex-wrap: wrap;
@@ -155,11 +155,9 @@ export const builderStyles = css`
 		grid-template-rows: minmax(0, 1fr);
 		block-size: clamp(32rem, 66vh, 42rem);
 	}
-	.workspace[data-palette="list"] { grid-template-columns: clamp(12rem, 34%, 16rem) minmax(0, 1fr); }
-	/* The element grid needs about 20 px per column, so the palette takes the
-	   width of the table instead of a share of the workspace. The 55 % cap keeps
-	   the canvas usable; below it the grid button stays disabled. */
-	.workspace[data-palette="table"] { grid-template-columns: minmax(0, min(27rem, 55%)) minmax(0, 1fr); }
+	/* The palette is a narrow column: the element list is the only layout, so it
+	   never takes the width of the table. */
+	.workspace[data-palette] { grid-template-columns: clamp(12rem, 34%, 16rem) minmax(0, 1fr); }
 	.workspace[data-collapsed] { grid-template-columns: 0 minmax(0, 1fr); }
 	/* Fullscreen hands the widget the whole screen. The builder takes that box
 	   and the workspace grows into the rest, so the canvas fills the screen

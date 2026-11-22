@@ -9,7 +9,7 @@ import SlInput from "@shoelace-style/shoelace/dist/components/input/input.compon
 import SlPopup from "@shoelace-style/shoelace/dist/components/popup/popup.component.js";
 import SlSpinner from "@shoelace-style/shoelace/dist/components/spinner/spinner.component.js";
 import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js";
-import { ChemLabPeriodicTable, LIST_ICON, TABLE_ICON } from "./webwriter-chemlab-periodic-table";
+import { ChemLabPeriodicTable, type PickerInfoAnchor } from "./webwriter-chemlab-periodic-table";
 import { elementByAtomicNumber } from "./periodic-table/element-reference";
 import { metalCrystal } from "./periodic-table/metal-reference";
 import { ELEMENT_SELECTION_EVENT, isAtomicNumber, type ElementSelectionV1 } from "./periodic-table/selection";
@@ -46,18 +46,10 @@ const chargeText = (charge: number) => charge === 0 ? "" : `${Math.abs(charge) >
 const distance = (a: Pointer, b: Pointer) => Math.hypot(a.x - b.x, a.y - b.y);
 const pointer = (event: PointerEvent): Pointer => ({ x: event.clientX, y: event.clientY, id: event.pointerId });
 const groups = [...new Set(structureCatalog.map(entry => entry.category))];
-/**
- * The element grid needs about 20 px per column, so the palette takes the width
- * of the table (27rem, capped at 55 % of the workspace) while the grid is shown.
- * The body loses 15 px to the palette padding and border, which leaves 417 px for
- * eighteen columns at the cap. Below 410 px of body the grid clips its symbols,
- * so the grid button stays disabled and its tooltip names the reason.
- */
-const PALETTE_GRID_MIN = 410;
-/** Share of the workspace the palette may take while the element grid is shown. */
-const PALETTE_GRID_SHARE = .55;
-/** Palette padding and border, which the element grid does not get. */
-const PALETTE_CHROME = 15;
+/** Width of the picker info panel, which the periodic table also uses. */
+const PICKER_INFO_WIDTH = 288;
+/** Space between the picker info panel and the canvas cards around it. */
+const PICKER_INFO_GAP = 6;
 /** Canvas view controls use the same icon size as the lab's canvas controls. */
 const CUBE_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
@@ -169,8 +161,6 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor labs: HTMLElement[] = [];
 	@state() private accessor showLabs = false;
 	@state() private accessor paletteOpen = true;
-	@state() private accessor paletteNarrow = false;
-	@state() private accessor pickerView: "list" | "table" = "list";
 	@state() private accessor showElectrons = false;
 	@state() private accessor molecularDisplay: MolecularDisplay = "sticks";
 	@state() private accessor orbitalId = "";
@@ -207,7 +197,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	#gesture?: Gesture;
 	#pointers = new Map<number, Pointer>();
 	#router?: SelectionRouter;
-	#paletteObserver?: ResizeObserver;
+	#pickerObserver?: ResizeObserver;
 	#boardObserver?: ResizeObserver;
 	#scenePixelsPerAngstrom = 0;
 	#dataObserver?: MutationObserver;
@@ -222,6 +212,15 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	};
 	#lewisCache?: { structure: Structure; value: ReturnType<typeof lewisDiagram> };
 	#atomicScale = 0;
+	/**
+	 * Free space the picker info panel may occupy, in viewport coordinates.
+	 *
+	 * The panel belongs to the periodic table, but the space it may use is the
+	 * gap between the two canvas cards, which only the builder can measure. The
+	 * rect is read on every reposition, so the panel follows the cards while
+	 * they grow and shrink.
+	 */
+	#pickerAnchor: PickerInfoAnchor = { getBoundingClientRect: () => this.#pickerGap() };
 	@state() private accessor orbitalHint: string | undefined;
 	get #atomicFigure() { return this.renderRoot.querySelector<AtomicFigure>("chemlab-atomic-figure"); }
 
@@ -301,8 +300,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		this.#pointers.clear();
 		this.#gesture = undefined;
 		this.#router?.dispose();
-		this.#paletteObserver?.disconnect();
-		this.#paletteObserver = undefined;
+		this.#pickerObserver?.disconnect();
+		this.#pickerObserver = undefined;
 		this.#dataObserver?.disconnect();
 		this.#worksheetObserver?.disconnect();
 		this.#scene?.canvas.removeEventListener("webglcontextlost", this.#onContextLost);
@@ -321,7 +320,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			}
 		}
 		if (changed.has("elementSourceId")) this.#bindTable();
-		this.#observePalette();
+		this.#observePickerGap();
 		const atomic = this.#atomInspection;
 		const sceneVisible = this.view === "3d" && !atomic;
 		if (!atomic) this.#atomicScale = 0;
@@ -413,27 +412,58 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	/**
-	 * Watches the workspace width. The palette takes the width of the element grid
-	 * while the grid is shown, so a narrow embed disables the grid button instead
-	 * of clipping the symbols. The measurement is the workspace, not the palette,
-	 * because the palette is narrow in the list and would block its own switch.
+	 * Gap between the model summary and the selection card, in viewport pixels.
+	 *
+	 * The picker info panel sits in the free strip of the canvas instead of
+	 * beside the palette, so it never covers the cards and never leaves the
+	 * widget. A short strip makes the panel scroll instead of growing over the
+	 * cards.
 	 */
-	#observePalette() {
-		const workspace = this.renderRoot.querySelector<HTMLElement>(".workspace");
-		if (!workspace) {
-			this.#paletteObserver?.disconnect();
-			this.#paletteObserver = undefined;
+	#pickerGap(): DOMRect {
+		const board = this.#cardBox(".board");
+		if (!board) return new DOMRect(0, 0, 0, 0);
+		const summary = this.#cardBox(".model-summary");
+		const selection = this.#cardBox(".selection-card");
+		const left = summary ? summary.left : board.left + 8;
+		const top = (summary ? summary.bottom : board.top) + PICKER_INFO_GAP;
+		const bottom = (selection ? selection.top : board.bottom) - PICKER_INFO_GAP;
+		const width = Math.max(0, Math.min(PICKER_INFO_WIDTH, board.right - left - 8));
+		return new DOMRect(left, top, width, Math.max(0, bottom - top));
+	}
+
+	/**
+	 * Box of a canvas card, or nothing when the card is hidden.
+	 *
+	 * The model summary and the selection card stay in the template and are
+	 * hidden with an attribute, so a missing box has to count as an absent card
+	 * rather than as a card at the origin.
+	 */
+	#cardBox(selector: string): DOMRect | undefined {
+		const box = this.renderRoot.querySelector<HTMLElement>(selector)?.getBoundingClientRect();
+		return box && box.width > 0 && box.height > 0 ? box : undefined;
+	}
+
+	/**
+	 * Watches the boxes that bound the picker info panel.
+	 *
+	 * The panel is anchored to a live rect, so nothing tells the popup when a
+	 * card grows. The observer asks the table to re-read the rect, which moves
+	 * the panel and updates its height limit. The cards come and go with the
+	 * structure, so the observed set is rebuilt after every render.
+	 */
+	#observePickerGap() {
+		const table = this.renderRoot.querySelector<ChemLabPeriodicTable>("webwriter-chemlab-periodic-table");
+		if (!table) {
+			this.#pickerObserver?.disconnect();
+			this.#pickerObserver = undefined;
 			return;
 		}
-		if (this.#paletteObserver) return;
-		this.#paletteObserver = new ResizeObserver(entries => {
-			const width = entries[0]?.contentRect.width ?? 0;
-			// The 27rem cap of the stylesheet is wider than the grid needs, so only
-			// the share decides whether the grid fits.
-			const narrow = width > 0 && width * PALETTE_GRID_SHARE < PALETTE_GRID_MIN + PALETTE_CHROME;
-			if (narrow !== this.paletteNarrow) this.paletteNarrow = narrow;
-		});
-		this.#paletteObserver.observe(workspace);
+		if (!this.#pickerObserver) this.#pickerObserver = new ResizeObserver(() => table.refreshInfoAnchor());
+		this.#pickerObserver.disconnect();
+		for (const selector of [".board", ".model-summary", ".selection-card"]) {
+			const element = this.renderRoot.querySelector(selector);
+			if (element) this.#pickerObserver.observe(element);
+		}
 	}
 
 	async #startScene() {
@@ -1161,18 +1191,6 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		</sl-button>`;
 	}
 
-	#renderPickerLayout(view: "list" | "table", active: boolean) {
-		const label = view === "list" ? this.#t("List view", "Listenansicht") : this.#t("Grid view", "Rasteransicht");
-		const blocked = view === "table" && this.paletteNarrow;
-		const hint = blocked
-			? this.#t("The grid needs a wider palette. Widen the widget to use it.",
-				"Das Raster braucht eine breitere Palette. Vergrößere das Widget dafür.")
-			: label;
-		return html`<sl-button class="icon-control" size="small" aria-label=${label} title=${hint}
-			variant=${active ? "primary" : "default"} aria-pressed=${String(active)} ?disabled=${blocked}
-			@click=${() => { this.pickerView = view; }}>${view === "list" ? LIST_ICON : TABLE_ICON}</sl-button>`;
-	}
-
 	#lewis(structure: Extract<Structure, { kind: "molecule" }>) {
 		if (this.#lewisCache?.structure !== structure) this.#lewisCache = { structure, value: lewisDiagram(structure) };
 		return this.#lewisCache.value;
@@ -1527,8 +1545,6 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const current = this.#current;
 		const lattice = metalCrystal(this.element);
 		const paletteVisible = this.paletteOpen && !this.#readonly;
-		const fullWidth = this.classList.contains("ww-full-width");
-		const pickerView = fullWidth && !this.paletteNarrow ? this.pickerView : "list";
 		const ionColors = current.kind === "crystal" ? crystalIonColors(current) : new Map<string, number>();
 		const tool = (value: Tool, label: string, icon: unknown) => this.#iconButton({
 			label, icon, pressed: value === this.tool, onClick: () => this.#setTool(value),
@@ -1613,7 +1629,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					${this.#renderHistoryButton(false)}${this.#renderHistoryButton(true)}
 				</div>` : nothing}
 			</div>`}
-			<div class="workspace" data-palette=${paletteVisible ? pickerView : nothing} ?data-collapsed=${!this.#readonly && !paletteVisible}>
+			<div class="workspace" ?data-palette=${paletteVisible} ?data-collapsed=${!this.#readonly && !paletteVisible}>
 				${this.#readonly ? nothing : html`<aside class="palette">
 					<button class="palette-handle" type="button" aria-expanded=${String(paletteVisible)} aria-controls="palette-body"
 						aria-label=${paletteVisible ? this.#t("Collapse the element palette", "Elementpalette einklappen")
@@ -1630,11 +1646,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 							${lattice ? this.#iconButton({ label: this.#t("View crystal", "Kristall ansehen"), icon: CRYSTAL_ICON,
 								onClick: () => this.viewStructure(lattice) }) : nothing}
 							${lattice === null ? html`<sl-tag size="small">${this.#t("Bulk lattice unavailable", "Keine experimentelle Gitterstruktur")}</sl-tag>` : nothing}
-							${fullWidth ? html`<div class="palette-tools" role="group" aria-label=${this.#t("Element palette layout", "Darstellung der Elementpalette")}>
-								${this.#renderPickerLayout("list", pickerView === "list")}${this.#renderPickerLayout("table", pickerView === "table")}
-							</div>` : nothing}
 						</div>
-						<webwriter-chemlab-periodic-table .view=${pickerView} picker-mode .selectedAtomicNumber=${this.element}
+						<webwriter-chemlab-periodic-table view="list" picker-mode .selectedAtomicNumber=${this.element}
+							.infoAnchor=${paletteVisible ? this.#pickerAnchor : null}
 							@chemlab:element-selection=${this.#selectPalette} @chemlab:element-drag=${this.#dragPalette}>
 						</webwriter-chemlab-periodic-table>
 					</div>

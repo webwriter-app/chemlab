@@ -93489,36 +93489,59 @@ var periodicTableStyles = i`
 	.details-view-button::part(base) { min-inline-size: 1.35rem; }
 	.details-view-button::part(label) { display: grid; place-items: center; padding: 0 .13rem; }
 
-	/* The picker shows the card in a floating panel beside the entry, because the
-	   entry itself has to stay in place as the drag handle. The panel is not
-	   clipped by the palette, so it may be taller than the list it belongs to. */
+	/* The picker shows the card in a floating panel over the canvas, because the
+	   entry itself has to stay in place as the drag handle. The panel is anchored
+	   to the free strip between the two canvas cards, so it never covers them and
+	   never grows past the widget. */
 	.picker-info {
 		z-index: 8;
 	}
 
 	.picker-info-surface {
+		display: flex;
+		flex-direction: column;
 		inline-size: 18rem;
 		max-inline-size: min(18rem, 88vw);
+		max-block-size: var(--picker-info-max-height, 26rem);
 	}
 
 	/* The card sits in the flow of the panel instead of the grid slot, so the
 	   shell drops its absolute placement and its height limit. */
 	.picker-info-surface .details-shell {
 		position: static;
+		flex: 1 1 auto;
+		flex-direction: column;
+		min-block-size: 0;
 		max-height: none;
 		overflow: visible;
 	}
 
+	/* The card is a flex column so its body can take the height the panel has
+	   left over and scroll there instead of pushing the panel over a card. */
+	.picker-info-surface .details-card {
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		min-block-size: 0;
+	}
+
 	.picker-info-surface .details-card::part(base) {
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		min-block-size: 0;
 		height: auto;
 		box-shadow: var(--pt-overlay-shadow);
 	}
 
-	/* The panel scrolls as a whole when the viewport is short, and it keeps no
-	   room for the collapse toggle, which only the grid card carries. */
-	.picker-info-surface .details-card::part(body) {
-		flex: 0 0 auto;
-		max-block-size: var(--auto-size-available-height, 26rem);
+	/* The panel scrolls its body when the gap between the canvas cards is short,
+	   and it keeps no room for the collapse toggle, which only the grid card
+	   carries. The open card in the grid grows with its content instead, so the
+	   expanded selector is listed to outrank that rule as well. */
+	.picker-info-surface .details-card::part(body),
+	.picker-info-surface .details-shell.is-expanded .details-card::part(body) {
+		flex: 1 1 auto;
+		min-block-size: 0;
 		padding-bottom: 8px;
 		overflow: auto;
 	}
@@ -94631,8 +94654,8 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _pauseShellElectrons_dec, _pickerMode_dec, _view_dec, _initialElement_dec, _a3, _init3, _initialElement, _view, _pickerMode, _pauseShellElectrons, _ChemLabPeriodicTable_instances, startElementDrag_fn, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _swapped, _atomPreview, _atomChoices, _atomPreviewElement, _atomPeersObserver, _filtersOpen, _modesOpen, _pickerInfo, _dragOrigin, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, onRowClick_fn, draggedFromHandle_fn, showPickerInfo_fn, _closePickerInfo, _onPickerKeydown, syncPickerAnchor_fn, pickerAnchorFor_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _toggleAlternate, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, atomBuilder_fn, observeAtomPeers_fn, toggleAtomPreview_fn, renderAtomPreview_fn, renderDetails_fn, renderPickerInfo_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
-var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _pickerMode_dec = [n7({ type: Boolean, reflect: true, attribute: "picker-mode" })], _pauseShellElectrons_dec = [n7({ type: Boolean, attribute: "pause-shell-electrons", reflect: true })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a3) {
+var _clearInitialElement_dec, _pauseShellElectrons_dec, _infoAnchor_dec, _pickerMode_dec, _view_dec, _initialElement_dec, _a3, _init3, _initialElement, _view, _pickerMode, _infoAnchor, _pauseShellElectrons, _ChemLabPeriodicTable_instances, startElementDrag_fn, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _swapped, _atomPreview, _atomChoices, _atomPreviewElement, _atomPeersObserver, _filtersOpen, _modesOpen, _pickerInfo, _dragOrigin, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, onRowClick_fn, draggedFromHandle_fn, showPickerInfo_fn, _closePickerInfo, _onPickerKeydown, repositionPickerInfo_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _toggleAlternate, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, atomBuilder_fn, observeAtomPeers_fn, toggleAtomPreview_fn, renderAtomPreview_fn, renderDetails_fn, renderPickerInfo_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
+var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _pickerMode_dec = [n7({ type: Boolean, reflect: true, attribute: "picker-mode" })], _infoAnchor_dec = [n7({ attribute: false })], _pauseShellElectrons_dec = [n7({ type: Boolean, attribute: "pause-shell-electrons", reflect: true })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a3) {
   constructor() {
     super(...arguments);
     __runInitializers(_init3, 5, this);
@@ -94642,7 +94665,8 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElemen
     __privateAdd(this, _initialElement, __runInitializers(_init3, 8, this, null)), __runInitializers(_init3, 11, this);
     __privateAdd(this, _view, __runInitializers(_init3, 12, this, "auto")), __runInitializers(_init3, 15, this);
     __privateAdd(this, _pickerMode, __runInitializers(_init3, 16, this, false)), __runInitializers(_init3, 19, this);
-    __privateAdd(this, _pauseShellElectrons, __runInitializers(_init3, 20, this, false)), __runInitializers(_init3, 23, this);
+    __privateAdd(this, _infoAnchor, __runInitializers(_init3, 20, this, null)), __runInitializers(_init3, 23, this);
+    __privateAdd(this, _pauseShellElectrons, __runInitializers(_init3, 24, this, false)), __runInitializers(_init3, 27, this);
     __privateAdd(this, _selection, new SelectionModel());
     __privateAdd(this, _initialized, false);
     __privateAdd(this, _viewOverride, null);
@@ -94947,7 +94971,7 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElemen
    * search field and then the layout switch are the stable fallbacks.
    */
   updated() {
-    __privateMethod(this, _ChemLabPeriodicTable_instances, syncPickerAnchor_fn).call(this);
+    __privateMethod(this, _ChemLabPeriodicTable_instances, repositionPickerInfo_fn).call(this);
     if (!__privateGet(this, _restoreFocusPending)) return;
     __privateSet(this, _restoreFocusPending, false);
     const previous = __privateGet(this, _focusBeforeLayout);
@@ -94966,6 +94990,18 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElemen
     }
     const fallback2 = this.renderRoot.querySelector("sl-input") ?? this.renderRoot.querySelector(".toolbar-actions sl-button");
     fallback2?.focus();
+  }
+  /**
+   * Re-reads the free space of the floating panel.
+   *
+   * The panel is anchored to a live rect instead of an element, so the popup
+   * cannot watch the boxes that bound it. The builder observes them and calls
+   * this after they change: the render updates the height limit and the
+   * reposition moves the panel.
+   */
+  refreshInfoAnchor() {
+    this.requestUpdate();
+    __privateMethod(this, _ChemLabPeriodicTable_instances, repositionPickerInfo_fn).call(this);
   }
   render() {
     const language = __privateGet(this, _ChemLabPeriodicTable_instances, language_get);
@@ -95008,6 +95044,7 @@ _init3 = __decoratorStart(_a3);
 _initialElement = new WeakMap();
 _view = new WeakMap();
 _pickerMode = new WeakMap();
+_infoAnchor = new WeakMap();
 _pauseShellElectrons = new WeakMap();
 _ChemLabPeriodicTable_instances = new WeakSet();
 startElementDrag_fn = function(event, atomicNumber) {
@@ -95210,35 +95247,15 @@ showPickerInfo_fn = function(atomicNumber) {
 _closePickerInfo = new WeakMap();
 _onPickerKeydown = new WeakMap();
 /**
- * Points the floating panel at the entry it describes.
+ * Moves the floating panel onto the rect it is anchored to.
  *
- * The rows are rebuilt with every change, so the anchor is looked up again
- * after each render instead of being kept from the click. A panel whose entry
- * the filter or the mode removed closes itself.
+ * The popup only repositions itself when its own properties change, and the
+ * anchor object stays the same while the gap around it moves. Every render
+ * therefore asks for a fresh position, which reads the live rect again.
  */
-syncPickerAnchor_fn = function() {
-  const popup = this.renderRoot.querySelector(".picker-info");
-  if (!popup) return;
-  const anchor = __privateGet(this, _pickerInfo) === null ? null : __privateMethod(this, _ChemLabPeriodicTable_instances, pickerAnchorFor_fn).call(this, __privateGet(this, _pickerInfo));
-  if (!anchor) {
-    __privateGet(this, _closePickerInfo).call(this);
-    return;
-  }
-  if (popup.anchor !== anchor) popup.anchor = anchor;
-};
-/**
- * Element the floating panel hangs from.
- *
- * The list anchors the panel to the row it describes, so the card sits beside
- * the entry that opened it. The grid has no room for that: a cell is a few
- * pixels wide, and a panel beside it would cover the neighbouring cells. It
- * hangs from the pane instead and sits beside the whole palette.
- *
- * @param atomicNumber - Element the panel describes.
- */
-pickerAnchorFor_fn = function(atomicNumber) {
-  const selector = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get) === "table" ? ".table-pane" : `[data-atomic-number="${atomicNumber}"]`;
-  return this.renderRoot.querySelector(selector);
+repositionPickerInfo_fn = function() {
+  if (__privateGet(this, _pickerInfo) === null) return;
+  this.renderRoot.querySelector(".picker-info")?.reposition();
 };
 /** The card that replaced the selected list row, if the list shows one. */
 listDetailsCard_fn = function() {
@@ -96120,23 +96137,29 @@ renderDetails_fn = function(t7, language, element, options) {
 /**
  * Renders the floating info panel of the picker.
  *
- * The panel hangs beside the entry it describes instead of replacing it,
+ * The panel describes an entry of the palette instead of replacing it,
  * because the entry has to stay in place as the drag handle. It carries the
  * same card as the standalone widget, minus the atom model view, and closes
- * through its own button or Escape.
+ * through its own button or Escape. The builder hands over the gap between
+ * its canvas cards, so the panel sits in the canvas and takes the height of
+ * that gap; a short gap makes the body scroll instead of covering a card.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
- * @returns The panel, or nothing while it is closed.
+ * @returns The panel, or nothing while it is closed or unanchored.
  */
 renderPickerInfo_fn = function(t7, language) {
   const atomicNumber = __privateGet(this, _pickerInfo);
-  if (atomicNumber === null) return E2;
+  const anchor = this.infoAnchor;
+  if (atomicNumber === null || !anchor) return E2;
   const element = elementByAtomicNumber(atomicNumber);
   if (!element) return E2;
+  const box = anchor.getBoundingClientRect();
+  const lift = -Math.round(box.height);
   return x2`
-			<sl-popup class="picker-info" placement="right-start" distance="6" flip shift auto-size="vertical" .active=${true}>
-				<div class="picker-info-surface" role="dialog" aria-label=${element.names[language]}>
+			<sl-popup class="picker-info" placement="bottom-start" distance=${lift} .anchor=${anchor} .active=${true}>
+				<div class="picker-info-surface" role="dialog" aria-label=${element.names[language]}
+					style="--picker-info-max-height:${Math.max(0, Math.round(box.height))}px">
 					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderDetails_fn).call(this, t7, language, element, {
     expanded: true,
     collapsible: false,
@@ -96293,6 +96316,7 @@ renderInfo_fn = function(t7, language) {
 __decorateElement(_init3, 4, "initialElement", _initialElement_dec, _ChemLabPeriodicTable, _initialElement);
 __decorateElement(_init3, 4, "view", _view_dec, _ChemLabPeriodicTable, _view);
 __decorateElement(_init3, 4, "pickerMode", _pickerMode_dec, _ChemLabPeriodicTable, _pickerMode);
+__decorateElement(_init3, 4, "infoAnchor", _infoAnchor_dec, _ChemLabPeriodicTable, _infoAnchor);
 __decorateElement(_init3, 4, "pauseShellElectrons", _pauseShellElectrons_dec, _ChemLabPeriodicTable, _pauseShellElectrons);
 __decorateElement(_init3, 1, "clearInitialElement", _clearInitialElement_dec, _ChemLabPeriodicTable);
 __decoratorMetadata(_init3, _ChemLabPeriodicTable);
