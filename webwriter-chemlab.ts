@@ -3867,10 +3867,10 @@ export class ChemLab extends LitElementWw {
 		});
 	}
 
-	private saveVesselMixture(vessel: chemlib.ChemComponent, event: SubmitEvent): void {
-		event.preventDefault();
+	private saveVesselMixture(vessel: chemlib.ChemComponent): void {
 		if (this.curr_obj !== vessel || this.mixtureDraft?.vessel !== vessel) return;
-		const input = (event.currentTarget as HTMLFormElement).querySelector("input");
+		const input = this.shadowRoot.querySelector<HTMLInputElement>("#mixtureName");
+		if (!input) return;
 		const name = input.value.trim();
 		const recipe = name && snapshotMixture(vessel._content);
 		if (!recipe) {
@@ -3906,8 +3906,7 @@ export class ChemLab extends LitElementWw {
 		if (draft?.vessel !== vessel) return nothing;
 		const name = this.builderText("Mixture name", "Name des Gemischs");
 		const save = this.builderText("Save mixture", "Gemisch speichern");
-		return html`<form id="mixtureSaveForm" class="mixture-save-form" contenteditable="false"
-			@submit=${(event: SubmitEvent) => this.saveVesselMixture(vessel, event)}
+		return html`<div id="mixtureSaveControls" class="mixture-save-controls" contenteditable="false"
 			@keydown=${(event: KeyboardEvent) => {
 				if (event.key !== "Escape" || event.isComposing) return;
 				event.preventDefault();
@@ -3915,12 +3914,19 @@ export class ChemLab extends LitElementWw {
 				this.closeMixtureDraft();
 			}}>
 			<input id="mixtureName" type="text" maxlength="80" required aria-label=${name} placeholder=${name} .value=${draft.name}
-				@input=${(event: Event) => (event.currentTarget as HTMLInputElement).setCustomValidity("")}/>
-			<button type="submit" class="object-summary-action save-mixture" aria-label=${save} title=${save}>
+				@input=${(event: Event) => (event.currentTarget as HTMLInputElement).setCustomValidity("")}
+				@keydown=${(event: KeyboardEvent) => {
+					if (event.key !== "Enter" || event.isComposing) return;
+					event.preventDefault();
+					event.stopPropagation();
+					this.saveVesselMixture(vessel);
+				}}/>
+			<button type="button" class="object-summary-action save-mixture" aria-label=${save} title=${save}
+				@click=${() => this.saveVesselMixture(vessel)}>
 				<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
 					stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${CONTROL_ICONS.confirm}/></svg>
 			</button>
-		</form>`;
+		</div>`;
 	}
 
 	private openSpeciesInBuilder(molecule: chemlib.Molecule, name: string) {
@@ -4615,7 +4621,7 @@ export class ChemLab extends LitElementWw {
 						</button>
 						<button id="saveVesselMixture" type="button" class="object-summary-action save-mixture"
 							aria-label=${saveLabel} title=${saveLabel} aria-expanded=${this.mixtureDraft?.vessel === vessel}
-							aria-controls="mixtureSaveForm" @click=${() => this.toggleMixtureDraft(vessel)}>
+							aria-controls="mixtureSaveControls" @click=${() => this.toggleMixtureDraft(vessel)}>
 							<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
 								stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${CONTROL_ICONS.save}/></svg>
 						</button>` : nothing}

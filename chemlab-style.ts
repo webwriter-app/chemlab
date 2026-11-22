@@ -2002,14 +2002,14 @@ export const style = css`
 		background: var(--sl-color-danger-50);
 		border-color: var(--sl-color-danger-200);
 	}
-	.mixture-save-form {
+	.mixture-save-controls {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
 		gap: 4px;
 		margin-block-start: 4px;
 	}
-	.mixture-save-form > input {
+	.mixture-save-controls > input {
 		box-sizing: border-box;
 		min-inline-size: 0;
 		inline-size: 100%;
@@ -2021,7 +2021,7 @@ export const style = css`
 		color: var(--lab-card-text);
 		font: inherit;
 	}
-	.mixture-save-form > input:focus-visible {
+	.mixture-save-controls > input:focus-visible {
 		outline: var(--sl-focus-ring);
 	}
 	.electrical-settings {
