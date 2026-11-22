@@ -9,6 +9,7 @@ import {
 	discoveryText,
 	keyRows,
 	groupText,
+	rowFace,
 	sourceFieldText,
 	sourceList,
 	stateText,
@@ -130,20 +131,29 @@ test("an element that sublimes gains a fifteenth row", () => {
 	assert.ok(!detailRows(element(26), "en").some((row) => row.key === "sublimation"));
 });
 
-test("the configuration row carries the shell counts in brackets", () => {
+test("the configuration row swaps to the shell counts", () => {
 	const configuration = (atomicNumber: number, language: "en" | "de" = "en") =>
 		detailRows(element(atomicNumber), language).find((row) => row.key === "configuration");
-	assert.equal(configuration(1).value, "1s¹ (1)");
-	assert.equal(configuration(8).value, "[He] 2s² 2p⁴ (2, 6)");
-	assert.equal(configuration(26).value, "[Ar] 3d⁶ 4s² (2, 8, 14, 2)");
-	assert.equal(configuration(118).value, "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶ (2, 8, 18, 32, 32, 18, 8)");
+	assert.equal(configuration(1).value, "1s¹");
+	assert.equal(configuration(8).value, "[He] 2s² 2p⁴");
+	assert.equal(configuration(26).value, "[Ar] 3d⁶ 4s²");
+	assert.equal(configuration(118).value, "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶");
 	assert.equal(configuration(8, "de").value, configuration(8).value);
-	assert.equal(configurationText(element(8), strings("en")), "[He] 2s² 2p⁴ (2, 6)");
+	assert.equal(configurationText(element(8), strings("en")), "[He] 2s² 2p⁴");
+	assert.deepEqual(configuration(8).alternate, { label: "Electrons per shell", value: "2, 6" });
+	assert.equal(configuration(8, "de").alternate.label, "Elektronen je Schale");
+	assert.equal(rowFace(configuration(8), false).value, "[He] 2s² 2p⁴");
+	assert.equal(rowFace(configuration(8), true).value, "2, 6");
+	assert.equal(rowFace(configuration(8), true).label, "Electrons per shell");
+	const weight = detailRows(element(8), "en").find((row) => row.key === "weight");
+	assert.equal(weight.alternate, undefined);
+	assert.equal(rowFace(weight, true).label, weight.label);
 	for (const entry of ELEMENTS) {
 		const row = configuration(entry.atomicNumber);
 		assert.ok(row, entry.symbol);
 		assert.ok(row.value.length > 0, entry.symbol);
 		assert.ok(!/[spdf]\d/.test(row.value), `${entry.symbol} ${row.value}`);
+		assert.equal(row.alternate?.value, entry.shells.join(", "), entry.symbol);
 	}
 });
 

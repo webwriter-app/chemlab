@@ -45,6 +45,20 @@ export type DetailSection =
 	| "history"
 	| "structure";
 
+/**
+ * Second reading of a row value.
+ *
+ * The card swaps the two faces on a click, so the label travels with the value:
+ * the configuration and the electrons per shell are the same statement in two
+ * resolutions, and neither may stand under the label of the other.
+ */
+export interface DetailAlternate {
+	/** Localized field label of the alternate face. */
+	readonly label: string;
+	/** Rendered value of the alternate face. */
+	readonly value: string;
+}
+
 /** One row of the detail card. */
 export interface DetailRow {
 	/** Stable key, used for tests and for the print overview. */
@@ -59,6 +73,8 @@ export interface DetailRow {
 	readonly qualifier?: string;
 	/** State the row is about, so the card can draw its colour next to the value. */
 	readonly swatch?: MatterState;
+	/** Second reading the card swaps to on a click, if the row has one. */
+	readonly alternate?: DetailAlternate;
 }
 
 /**
@@ -210,20 +226,20 @@ export function categoryText(element: ElementReference, language: Language): str
 }
 
 /**
- * Renders the electron configuration with the shell counts in brackets.
+ * Renders the electron configuration with superscript occupations.
  *
  * The bundle stores the configuration in plain ASCII (`[He] 2s2 2p4`), so the
- * occupation numbers are raised to superscripts here. The shell counts follow in
- * brackets, because the collapsed card answers the structure of the element in
- * one line and the shells are the same statement in a coarser form.
+ * occupation numbers are raised to superscripts here. The shell counts are the
+ * same statement in a coarser form and sit in the alternate face of the row, so
+ * the card can swap between the two without a second line.
  *
  * @param element - Element of the reference bundle.
  * @param t - Interface strings.
- * @returns The configuration, for example `[He] 2s² 2p⁴ (2, 6)`.
+ * @returns The configuration, for example `[He] 2s² 2p⁴`.
  */
 export function configurationText(element: ElementReference, t: Strings): string {
 	if (element.configuration.status === "unavailable") return t.valueUnavailable;
-	return `${superscriptConfiguration(element.configuration.value)} (${element.shells.join(", ")})`;
+	return superscriptConfiguration(element.configuration.value);
 }
 
 /** Superscript digits, indexed by the digit they render. */
@@ -374,6 +390,7 @@ export function detailRows(
 			label: t.fieldConfiguration,
 			value: configurationText(element, t),
 			section: "structure",
+			alternate: { label: t.fieldShells, value: element.shells.join(", ") },
 			...(element.configuration.status === "predicted" ? { qualifier: t.valuePredicted } : {}),
 		});
 	}
@@ -427,6 +444,20 @@ const MODE_ROW: Readonly<Record<TableMode, string>> = {
 	ionization: "ionization",
 	halfLife: "halfLife",
 };
+
+/**
+ * Picks the face of a row the card shows.
+ *
+ * A row without an alternate keeps its own label and value, so the card can ask
+ * for the alternate face of every row without checking the row first.
+ *
+ * @param row - Row of the card.
+ * @param alternate - Whether the card shows the alternate face.
+ * @returns The label and value to render.
+ */
+export function rowFace(row: DetailRow, alternate: boolean): DetailAlternate {
+	return alternate && row.alternate ? row.alternate : row;
+}
 
 /**
  * Builds the value and qualifier of a temperature row.

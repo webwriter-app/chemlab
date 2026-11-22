@@ -92075,7 +92075,7 @@ function categoryText(element, language) {
 }
 function configurationText(element, t7) {
   if (element.configuration.status === "unavailable") return t7.valueUnavailable;
-  return `${superscriptConfiguration(element.configuration.value)} (${element.shells.join(", ")})`;
+  return superscriptConfiguration(element.configuration.value);
 }
 var SUPERSCRIPT_DIGITS2 = ["\u2070", "\xB9", "\xB2", "\xB3", "\u2074", "\u2075", "\u2076", "\u2077", "\u2078", "\u2079"];
 function superscriptConfiguration(configuration) {
@@ -92191,6 +92191,7 @@ function detailRows(element, language, temperatureK = CONDITIONS.temperatureK) {
       label: t7.fieldConfiguration,
       value: configurationText(element, t7),
       section: "structure",
+      alternate: { label: t7.fieldShells, value: element.shells.join(", ") },
       ...element.configuration.status === "predicted" ? { qualifier: t7.valuePredicted } : {}
     });
   }
@@ -92220,6 +92221,9 @@ var MODE_ROW = {
   ionization: "ionization",
   halfLife: "halfLife"
 };
+function rowFace(row, alternate) {
+  return alternate && row.alternate ? row.alternate : row;
+}
 function temperatureRow(value, language, t7) {
   if (value.status === "unavailable") return { value: t7.valueUnavailable };
   return {
@@ -93552,6 +93556,23 @@ var periodicTableStyles = i`
 		font-variant-numeric: tabular-nums;
 	}
 
+	/* The configuration swaps to the electrons per shell on a click. The value
+	   keeps the look of the text it replaces, because the card should not
+	   advertise a control it does not need; the button only carries the pointer
+	   and the keyboard, and the focus ring of the platform stays for the tab key. */
+	.details-swap {
+		appearance: none;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		font-variant-numeric: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+
 	/* The state is a tag in the colour of the state, so the value is readable at a
 	   glance instead of hanging on a dot of half a millimetre. The detail card and
 	   the list rows share the tag. */
@@ -94446,7 +94467,7 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _pauseShellElectrons_dec, _pickerMode_dec, _view_dec, _initialElement_dec, _a3, _init3, _initialElement, _view, _pickerMode, _pauseShellElectrons, _ChemLabPeriodicTable_instances, startElementDrag_fn, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _atomPreview, _atomChoices, _atomPreviewElement, _atomPeersObserver, _filtersOpen, _modesOpen, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, atomBuilder_fn, observeAtomPeers_fn, toggleAtomPreview_fn, renderAtomPreview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
+var _clearInitialElement_dec, _pauseShellElectrons_dec, _pickerMode_dec, _view_dec, _initialElement_dec, _a3, _init3, _initialElement, _view, _pickerMode, _pauseShellElectrons, _ChemLabPeriodicTable_instances, startElementDrag_fn, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _showShells, _atomPreview, _atomChoices, _atomPreviewElement, _atomPeersObserver, _filtersOpen, _modesOpen, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _toggleShells, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, atomBuilder_fn, observeAtomPeers_fn, toggleAtomPreview_fn, renderAtomPreview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
 var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _pickerMode_dec = [n7({ type: Boolean, reflect: true, attribute: "picker-mode" })], _pauseShellElectrons_dec = [n7({ type: Boolean, attribute: "pause-shell-electrons", reflect: true })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a3) {
   constructor() {
     super(...arguments);
@@ -94480,6 +94501,8 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElemen
     __privateAdd(this, _mode, DEFAULT_MODE_STATE);
     __privateAdd(this, _infoOpen, false);
     __privateAdd(this, _detailsExpanded, false);
+    /** Whether the structure row of the card shows the electrons per shell. */
+    __privateAdd(this, _showShells, false);
     __privateAdd(this, _atomPreview, false);
     __privateAdd(this, _atomChoices, initialAtomChoices());
     __privateAdd(this, _atomPreviewElement, null);
@@ -94491,6 +94514,16 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElemen
     /** Opens or closes the full detail card. */
     __privateAdd(this, _toggleDetails, () => {
       __privateSet(this, _detailsExpanded, !__privateGet(this, _detailsExpanded));
+      this.requestUpdate();
+    });
+    /**
+     * Swaps the structure row between the configuration and the shell counts.
+     *
+     * The value itself is the control and carries no mark, so the row reads as
+     * plain text until it is used.
+     */
+    __privateAdd(this, _toggleShells, () => {
+      __privateSet(this, _showShells, !__privateGet(this, _showShells));
       this.requestUpdate();
     });
     /**
@@ -94789,6 +94822,7 @@ _restoreFocusPending = new WeakMap();
 _mode = new WeakMap();
 _infoOpen = new WeakMap();
 _detailsExpanded = new WeakMap();
+_showShells = new WeakMap();
 _atomPreview = new WeakMap();
 _atomChoices = new WeakMap();
 _atomPreviewElement = new WeakMap();
@@ -94904,6 +94938,7 @@ matches_fn = function() {
 selectFromUser_fn = function(atomicNumber) {
   if (!__privateGet(this, _selection).select(atomicNumber)) return;
   __privateSet(this, _detailsExpanded, false);
+  __privateSet(this, _showShells, false);
   this.requestUpdate();
   __privateMethod(this, _ChemLabPeriodicTable_instances, dispatchSelection_fn).call(this);
   if (__privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get) === "list" && !this.pickerMode) __privateMethod(this, _ChemLabPeriodicTable_instances, focusDetails_fn).call(this);
@@ -94920,10 +94955,12 @@ focusDetails_fn = function() {
 clearFromUser_fn = function() {
   if (!__privateGet(this, _selection).clear()) return;
   __privateSet(this, _detailsExpanded, false);
+  __privateSet(this, _showShells, false);
   this.requestUpdate();
   __privateMethod(this, _ChemLabPeriodicTable_instances, dispatchSelection_fn).call(this);
 };
 _toggleDetails = new WeakMap();
+_toggleShells = new WeakMap();
 _onDetailsKeydown = new WeakMap();
 /** Dispatches the current selection once, composed and bubbling. */
 dispatchSelection_fn = function() {
@@ -95816,26 +95853,37 @@ renderDetailSections_fn = function(t7, rows) {
  * The state value is a tag in the colour of the state, so the value is legible
  * at a glance. A predicted value carries a badge instead of a bare word, and
  * the badge explains itself in a tooltip, so the card stays short without
- * hiding what the qualifier means.
+ * hiding what the qualifier means. A row with an alternate face renders its
+ * value as a button that swaps the two readings; the button is styled as the
+ * text it replaces, because the card should not advertise a control it does
+ * not need.
  *
  * @param t - Interface strings.
  * @param row - Row to render.
  * @returns The row.
  */
 renderDetailRow_fn = function(t7, row) {
+  const face = rowFace(row, __privateGet(this, _showShells));
+  const other = rowFace(row, !__privateGet(this, _showShells));
+  const value = row.swatch ? x2`
+				<sl-tag
+					class="state-tag state-${row.swatch}"
+					size="small"
+					variant="neutral"
+				>
+					${face.value}
+				</sl-tag>
+			` : row.alternate ? x2`<button
+					class="details-swap"
+					type="button"
+					aria-label=${other.label}
+					@click=${__privateGet(this, _toggleShells)}
+				>${face.value}</button>` : x2`<span>${face.value}</span>`;
   return x2`
 			<div class="details-row">
-				<dt>${row.label}</dt>
+				<dt>${face.label}</dt>
 				<dd>
-					${row.swatch ? x2`
-							<sl-tag
-								class="state-tag state-${row.swatch}"
-								size="small"
-								variant="neutral"
-							>
-								${row.value}
-							</sl-tag>
-						` : x2`<span>${row.value}</span>`}
+					${value}
 					${row.qualifier ? x2`
 							<sl-tooltip content=${t7.qualifierHint} hoist>
 								<sl-badge class="details-qualifier" variant="neutral" pill>

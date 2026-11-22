@@ -1261,6 +1261,23 @@ export const periodicTableStyles = css`
 		font-variant-numeric: tabular-nums;
 	}
 
+	/* The configuration swaps to the electrons per shell on a click. The value
+	   keeps the look of the text it replaces, because the card should not
+	   advertise a control it does not need; the button only carries the pointer
+	   and the keyboard, and the focus ring of the platform stays for the tab key. */
+	.details-swap {
+		appearance: none;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		font-variant-numeric: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+
 	/* The state is a tag in the colour of the state, so the value is readable at a
 	   glance instead of hanging on a dot of half a millimetre. The detail card and
 	   the list rows share the tag. */

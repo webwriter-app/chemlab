@@ -53,6 +53,7 @@ import {
 	detailRows,
 	keyRows,
 	numberText,
+	rowFace,
 	sourceFieldText,
 	sourceList,
 	stateText,
@@ -431,6 +432,8 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#mode: ModeState = DEFAULT_MODE_STATE;
 	#infoOpen = false;
 	#detailsExpanded = false;
+	/** Whether the structure row of the card shows the electrons per shell. */
+	#showShells = false;
 	#atomPreview = false;
 	#atomChoices = initialAtomChoices();
 	#atomPreviewElement: number | null = null;
@@ -670,6 +673,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#selectFromUser(atomicNumber: number) {
 		if (!this.#selection.select(atomicNumber)) return;
 		this.#detailsExpanded = false;
+		this.#showShells = false;
 		this.requestUpdate();
 		this.#dispatchSelection();
 		if (this.#resolvedView === "list" && !this.pickerMode) this.#focusDetails();
@@ -689,6 +693,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#clearFromUser() {
 		if (!this.#selection.clear()) return;
 		this.#detailsExpanded = false;
+		this.#showShells = false;
 		this.requestUpdate();
 		this.#dispatchSelection();
 	}
@@ -696,6 +701,17 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	/** Opens or closes the full detail card. */
 	#toggleDetails = () => {
 		this.#detailsExpanded = !this.#detailsExpanded;
+		this.requestUpdate();
+	};
+
+	/**
+	 * Swaps the structure row between the configuration and the shell counts.
+	 *
+	 * The value itself is the control and carries no mark, so the row reads as
+	 * plain text until it is used.
+	 */
+	#toggleShells = () => {
+		this.#showShells = !this.#showShells;
 		this.requestUpdate();
 	};
 
@@ -1798,28 +1814,41 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * The state value is a tag in the colour of the state, so the value is legible
 	 * at a glance. A predicted value carries a badge instead of a bare word, and
 	 * the badge explains itself in a tooltip, so the card stays short without
-	 * hiding what the qualifier means.
+	 * hiding what the qualifier means. A row with an alternate face renders its
+	 * value as a button that swaps the two readings; the button is styled as the
+	 * text it replaces, because the card should not advertise a control it does
+	 * not need.
 	 *
 	 * @param t - Interface strings.
 	 * @param row - Row to render.
 	 * @returns The row.
 	 */
 	#renderDetailRow(t: Strings, row: DetailRow) {
+		const face = rowFace(row, this.#showShells);
+		const other = rowFace(row, !this.#showShells);
+		const value = row.swatch
+			? html`
+				<sl-tag
+					class="state-tag state-${row.swatch}"
+					size="small"
+					variant="neutral"
+				>
+					${face.value}
+				</sl-tag>
+			`
+			: row.alternate
+				? html`<button
+					class="details-swap"
+					type="button"
+					aria-label=${other.label}
+					@click=${this.#toggleShells}
+				>${face.value}</button>`
+				: html`<span>${face.value}</span>`;
 		return html`
 			<div class="details-row">
-				<dt>${row.label}</dt>
+				<dt>${face.label}</dt>
 				<dd>
-					${row.swatch
-						? html`
-							<sl-tag
-								class="state-tag state-${row.swatch}"
-								size="small"
-								variant="neutral"
-							>
-								${row.value}
-							</sl-tag>
-						`
-						: html`<span>${row.value}</span>`}
+					${value}
 					${row.qualifier
 						? html`
 							<sl-tooltip content=${t.qualifierHint} hoist>
