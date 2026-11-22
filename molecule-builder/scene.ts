@@ -1,9 +1,9 @@
-import { Application, CanvasSource, Graphics, Point, Sprite, Text, Texture } from "pixi.js";
+import { Application, Graphics, Point, Text } from "pixi.js";
 import {
-	Container3D, CylinderGeometry, DirectionalLight, Geometry3D, Material3D, Mesh3D, Plane,
+	Container3D, CylinderGeometry, Geometry3D, Material3D, Mesh3D, Plane,
 	Sphere, SphereGeometry, Vector3, View3D,
 } from "@pixi/3d";
-import type { ShaderBit } from "@pixi/3d";
+import { VIEW_ENVIRONMENT, Vignette, addSun, rimmedMaterial } from "./shading";
 import { atomColor, add, cross, electronRegions, perpendicular, scale, subtract, unit } from "./geometry";
 import { crystalIonColors, crystalRadii, latticePositions, siteIon } from "./crystal-display";
 import { atomRadius, spaceFillingRadius } from "./radii";
@@ -22,86 +22,8 @@ const AXIS_ORIGIN = 34;
 /** Length of the cell-axis cue arrows, in pixels. */
 const AXIS_LENGTH = 20;
 const AXIS_COLORS = [0xb45309, 0x0f766e, 0x6d28d9];
-/**
- * How far the silhouette of an atom darkens, as a share of its lit colour.
- *
- * The CPK palette runs from white hydrogen to near-black iodine, so no canvas
- * colour can separate every atom from the background: the best any single
- * backdrop manages is 2.7:1, and only pure black reaches even that. The edge
- * therefore has to come from the atom itself. A sphere lit from the front
- * shades towards its rim only weakly, because the hemisphere fill is
- * normal-aware and still reaches a surface turned away from the camera, so the
- * rim is darkened here on top of the lighting.
- */
-const RIM_STRENGTH = 0.8;
-/**
- * How tightly the darkening hugs the silhouette.
- *
- * A low power spreads the darkening across the whole sphere and reads as a
- * dirty surface; a high power confines it to a narrow band that reads as the
- * edge of a round body. The value is a falloff exponent on the facing term, so
- * it is independent of the atom's size and of the camera distance.
- */
-const RIM_POWER = 2.2;
-/**
- * Darkens a surface as its normal turns away from the camera, and draws the
- * mark of a selected or hovered atom into the same band.
- *
- * The darkening is the shading counterpart of an ink outline: the same
- * silhouette contrast, but following the surface instead of a shell pushed out
- * along the normal. It therefore scales with curvature rather than with world
- * units, so a hydrogen and a caesium get the same proportional rim, and it
- * leaves no ring behind a translucent surface. Runs after the light loop, where
- * `finalColor` is lit linear light, so the multiply darkens the shaded result.
- *
- * The mark reuses that band instead of adding geometry: where the surface turns
- * away from the camera the colour is mixed towards the accent, which draws a
- * ring exactly on the silhouette. A ring is the one cue that survives a crowded
- * lattice, because it does not depend on the atom's own colour — a glow behind
- * the atom washes out against a light neighbour, and a recoloured sphere would
- * read as a different element. The body keeps its CPK colour; only the edge
- * carries the accent, and `markStrength` at zero leaves the atom untouched.
- */
-const rimBit: ShaderBit = {
-	name: "atomRim",
-	bindings: { material: { rimStrength: "f32", rimPower: "f32", markStrength: "f32", markWidth: "f32", markColor: "vec4<f32>" } },
-	gpu: {
-		fragment: {
-			lobePostLighting: `{
-				let rimFacing = max(dot(normal, viewDir), 0.0);
-				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
-				let markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
-				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
-			}`,
-		},
-	},
-	gl: {
-		fragment: {
-			lobePostLighting: `{
-				float rimFacing = max(dot(normal, viewDir), 0.0);
-				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
-				float markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
-				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
-			}`,
-		},
-	},
-};
-
 /** ChemLab blue for the unfinished bond while the user drags its endpoint. */
 const BOND_PREVIEW_COLOR = 0x0086c5;
-/** The black silhouette leaves the central CPK colour visible. */
-const MARK_COLOR = [0, 0, 0, 1];
-/**
- * How wide the mark's band is, as the facing term where it fades out.
- *
- * The facing term is the cosine between the surface normal and the view
- * direction, so 0.62 covers the outer 22 % of the projected radius. The band
- * holds full strength over its inner 45 % and fades over the rest, which reads
- * as a drawn outline rather than as a tint: on a typical atom the solid part is
- * about two pixels and the falloff another five, so the ring stays crisp at any
- * zoom without eating into the element colour.
- */
-const MARK_WIDTH = 0.62;
 /** Strength of the ring on a selected atom, where it replaces the shaded edge. */
 const SELECTION_MARK = 1;
 /**
@@ -112,69 +34,6 @@ const SELECTION_MARK = 1;
  * half the strength reads as a preview rather than as a second selection.
  */
 const HOVER_MARK = 0.55;
-/**
- * How far the canvas corners darken, as an alpha at the corner.
- *
- * The backdrop is a flat near-white, so a structure in the middle competes with
- * the empty field around it. The vignette pulls the eye inwards without
- * touching the atoms, and it stays a screen-space effect: it never moves with
- * the camera and never hides a part of the structure that the fit put in view.
- */
-const VIGNETTE_ALPHA = 0.3;
-/** Radius of the vignette's clear centre, as a share of the gradient's radius. */
-const VIGNETTE_CLEAR = 0.55;
-/**
- * Where the canvas corner sits on the gradient, as a share of its radius.
- *
- * The gradient is drawn as a circle, not stretched to the canvas: an ellipse
- * would reach full strength at the middle of the long edges and grey out the
- * whole board. Sizing the circle past the corners keeps the edges light and
- * gathers the shadow where a vignette belongs.
- */
-const VIGNETTE_REACH = 0.85;
-/** Colour the vignette darkens towards, a slate that reads as shadow on white. */
-const VIGNETTE_COLOR = "15, 23, 42";
-
-/**
- * The vignette's gradient stops, eased so the darkening stays at the rim.
- *
- * A linear ramp from the centre would grey out most of the canvas, because the
- * texture is stretched over the whole board and its radius reaches the edge
- * everywhere. The clear centre therefore covers half the radius and the ramp
- * follows a smoothstep, which keeps the middle of the board white and gathers
- * the shadow in the corners where it belongs.
- */
-function vignetteStops() {
-	const stops: [number, string][] = [[0, `rgba(${VIGNETTE_COLOR}, 0)`], [VIGNETTE_CLEAR, `rgba(${VIGNETTE_COLOR}, 0)`]];
-	for (let step = 1; step <= 6; step++) {
-		const share = step / 6;
-		const eased = share * share * (3 - 2 * share);
-		stops.push([VIGNETTE_CLEAR + (1 - VIGNETTE_CLEAR) * share,
-			`rgba(${VIGNETTE_COLOR}, ${(VIGNETTE_ALPHA * eased).toFixed(3)})`]);
-	}
-	return stops;
-}
-
-/**
- * A square texture painted with a radial gradient.
- *
- * The vignette and the selection glow are both soft radial fields, and one
- * gradient texture costs a single draw where a stack of concentric circles
- * would band. The texture is stretched to the canvas or to the atom, so its
- * pixel size only sets how smooth the ramp is.
- */
-function radialTexture(stops: [number, string][], size = 256) {
-	const canvas = document.createElement("canvas");
-	canvas.width = canvas.height = size;
-	const context = canvas.getContext("2d");
-	if (!context) return Texture.EMPTY;
-	const gradient = context.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-	for (const [offset, color] of stops) gradient.addColorStop(offset, color);
-	context.fillStyle = gradient;
-	context.fillRect(0, 0, size, size);
-	return new Texture({ source: new CanvasSource({ resource: canvas }) });
-}
-
 /** What the scene shows besides the structure itself. */
 export type SceneDisplay = { electrons: boolean; lattice: boolean; edges: boolean; axes: boolean; hydration: boolean; molecular: MolecularDisplay; orbitalId?: string };
 
@@ -220,8 +79,7 @@ export class MoleculeScene {
 	readonly #picks = new Map<Mesh3D, { id: number; color: number; ionic: boolean; opacity: number; position: Point3; radius: number }>();
 	readonly #observer: ResizeObserver;
 	readonly #preview: Mesh3D;
-	readonly #vignette: Sprite;
-	readonly #textures: Texture[] = [];
+	readonly #vignette = new Vignette();
 	#selected: Set<number> = new Set();
 	#hovered?: number;
 	#structure?: Structure;
@@ -247,18 +105,13 @@ export class MoleculeScene {
 
 	private constructor(app: Application, host: HTMLElement, private readonly updateScale: (pixelsPerAngstrom: number) => void) {
 		this.#app = app;
-		this.#view = new View3D({
-			autoResize: false, environment: { skyColor: 0xffffff, groundColor: 0xa6b4c3, intensity: 0.94 },
-		});
-		this.#vignette = new Sprite({ texture: this.#track(radialTexture(vignetteStops())), eventMode: "none" });
-		app.stage.addChild(this.#view, this.#vignette, this.#lattice, this.#axes, ...this.#axisLabels);
+		this.#view = new View3D({ autoResize: false, environment: VIEW_ENVIRONMENT });
+		app.stage.addChild(this.#view, this.#vignette.sprite, this.#lattice, this.#axes, ...this.#axisLabels);
 		this.#sizeVignette();
 		for (const label of this.#axisLabels) label.visible = false;
 		this.#view.setSize(app.screen.width, app.screen.height);
-		const sun = new DirectionalLight({ color: 0xffffff, intensity: 2.15 });
-		sun.position.set(3, 6, 7);
-		sun.lookAt({ x: 0, y: 0, z: 0 });
-		this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons, this.#orbital, this.#hydration);
+		addSun(this.#view);
+		this.#view.root.addChild(this.#content, this.#edges, this.#electrons, this.#orbital, this.#hydration);
 		this.#preview = this.#rod();
 		this.#preview.material = this.#material(BOND_PREVIEW_COLOR);
 		this.#preview.visible = false;
@@ -279,22 +132,11 @@ export class MoleculeScene {
 	}
 
 	/**
-	 * Remember a generated texture so {@link destroy} can free it.
-	 *
-	 * A missing 2D context leaves {@link Texture.EMPTY}, which belongs to Pixi
-	 * and must never be destroyed; only textures this scene created are kept.
+	 * Centre the vignette's circle on the canvas and size it past the corners.
 	 */
-	#track(texture: Texture) {
-		if (texture !== Texture.EMPTY) this.#textures.push(texture);
-		return texture;
-	}
-
-	/** Centre the vignette's circle on the canvas and size it past the corners. */
 	#sizeVignette() {
 		const { width, height } = this.#app.screen;
-		const side = Math.hypot(width, height) / VIGNETTE_REACH;
-		this.#vignette.width = this.#vignette.height = side;
-		this.#vignette.position.set((width - side) / 2, (height - side) / 2);
+		this.#vignette.size(width, height);
 	}
 
 	/**
@@ -314,14 +156,8 @@ export class MoleculeScene {
 		const key = `${color}:${opacity}:${mark}`;
 		let material = this.#materials.get(key);
 		if (!material) {
-			material = new Material3D({ baseColor: color, roughness: 0.61, alpha: opacity,
-				alphaMode: opacity < 1 ? "blend" : "opaque",
-				extraBits: [rimBit] });
-			material.data.rimStrength = RIM_STRENGTH;
-			material.data.rimPower = RIM_POWER;
-			material.data.markWidth = MARK_WIDTH;
-			material.data.markColor = MARK_COLOR;
-			material.data.markStrength = mark;
+			material = rimmedMaterial({ baseColor: color, roughness: 0.61, alpha: opacity,
+				alphaMode: opacity < 1 ? "blend" : "opaque" }, mark);
 			this.#materials.set(key, material);
 		}
 		return material;
@@ -712,6 +548,6 @@ export class MoleculeScene {
 		this.#axes.destroy();
 		for (const label of this.#axisLabels) label.destroy();
 		for (const material of this.#materials.values()) material.destroy();
-		for (const texture of this.#textures) texture.destroy(true);
+		this.#vignette.destroy();
 	}
 }

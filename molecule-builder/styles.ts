@@ -484,6 +484,29 @@ export const builderStyles = css`
 	.structure-legend [data-region="lone"] { --swatch: #a855f7; }
 	.structure-legend [data-marker="lattice"]::before { border-radius: 1px; --swatch: #283648; }
 	.bond-lengths { display: grid; gap: .2rem; }
+	/* The cell parameters and the fractional coordinates sit in one row of
+	   three, so the card stays narrow and the numbers line up. */
+	.field-row {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: .25rem;
+	}
+	.field-row input { min-inline-size: 0; }
+	/* The cell block closes the section: a hairline separates the site from the
+	   cell it sits in, so one details element can hold both without a second
+	   header. */
+	.cell-block {
+		display: grid;
+		gap: .3rem;
+		padding-block-start: .35rem;
+		border-block-start: 1px solid var(--line);
+	}
+	.cell-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: .2rem .4rem;
+	}
 	.display-controls { gap: .25rem; }
 	.display-controls select { max-inline-size: 6rem; }
 	input, select { color: inherit; font: inherit; accent-color: var(--blue); }

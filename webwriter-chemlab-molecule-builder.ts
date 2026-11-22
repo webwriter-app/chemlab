@@ -1436,6 +1436,15 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				return neighbor ? [{ neighbor, length: Math.hypot(...subtract(here.position, neighbor.position)) }] : [];
 			}) : [];
 		const occupancy = atom && "occupancy" in atom ? atom.occupancy : undefined;
+		// The cell notes are one caption line instead of four tags: they describe
+		// the measurement behind the numbers, not values of their own.
+		const cellNotes = current.kind === "crystal" ? [
+			current.source === "catalog-density" ? this.#t("cell size estimated from catalog density", "Zellgröße aus Katalogdichte geschätzt") : undefined,
+			current.temperatureK ? `${current.temperatureK} K` : undefined,
+			current.conditions ? current.conditions === "hydrogen-positions-unreported"
+				? this.#t("hydrogen positions unreported", "Wasserstoffpositionen nicht angegeben") : current.conditions : undefined,
+			current.sites.some(site => site.occupancy !== undefined) ? this.#t("partially occupied sites", "teilbesetzte Gitterplätze") : undefined,
+		].filter((note): note is string => Boolean(note)) : [];
 		return html`<aside class="selection-card" aria-label=${this.#t("Selection", "Auswahl")}>
 			<div class="card-head">
 				<sl-tag size="small" variant=${atom ? "primary" : "neutral"}>${title}</sl-tag>
@@ -1460,8 +1469,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				${shape ? html`<sl-tag size="small">${shapeLabel[shape]}</sl-tag>` : nothing}
 				${occupancy !== undefined ? html`<sl-tag size="small">${Number((100 * occupancy).toFixed(1))} %</sl-tag>` : nothing}
 			</div>` : nothing}
-			<sl-details summary=${current.kind === "crystal" ? this.#t("Site properties", "Gitterplatz-Eigenschaften")
-					: this.#t("Atom properties", "Atom-Eigenschaften")} ?open=${!atom && this.view === "3d"}>
+			<sl-details summary=${current.kind === "crystal" ? this.#t("Site & cell", "Gitterplatz & Zelle")
+					: this.#t("Atom properties", "Atom-Eigenschaften")}>
 				<div class="fields">
 					${lengths.length ? html`<div class="bond-lengths">
 						<span class="summary-caption">${current.kind === "molecule" && current.geometry === "supplied"
@@ -1485,35 +1494,32 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 						}} /></label>` : nothing}
 					${atom && current.kind === "molecule" && !this.#readonly ? current.bonds.filter(bond =>
 						bond.from === atom.id || bond.to === atom.id).map(bond => {
-							const to = this.#atoms.find(entry => entry.id === (bond.from === atom.id ? bond.to : bond.from));
-							return html`<sl-button size="small" @click=${() => this.#record({
-									...current, name: "", catalogKey: undefined, source: undefined, representation: undefined,
+						const to = this.#atoms.find(entry => entry.id === (bond.from === atom.id ? bond.to : bond.from));
+						return html`<sl-button size="small" @click=${() => this.#record({
+								...current, name: "", catalogKey: undefined, source: undefined, representation: undefined,
 								geometry: undefined, bonds: current.bonds.filter(entry => entry !== bond),
 							})}>${this.#t("Remove bond to", "Bindung lösen zu")} ${symbol(to.atomicNumber)} · ${to.id}</sl-button>`;
-						}) : nothing}
-					${atom && "fractional" in atom ? atom.fractional.map((value, index) => html`<label>${["x/a", "y/b", "z/c"][index]}
-						<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${this.#readonly}
-							@change=${(event: Event) => this.#updateSite(index, event.currentTarget as HTMLInputElement)} />
-					</label>`) : nothing}
+					}) : nothing}
+					${atom && "fractional" in atom ? html`<div class="field-row">
+						${atom.fractional.map((value, index) => html`<label>${["x/a", "y/b", "z/c"][index]}
+							<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${this.#readonly}
+								@change=${(event: Event) => this.#updateSite(index, event.currentTarget as HTMLInputElement)} />
+						</label>`)}
+					</div>` : nothing}
+					${current.kind === "crystal" ? html`<div class="cell-block">
+						<div class="cell-head">
+							${current.bravais ? html`<sl-tag size="small">${current.bravais} · ${current.spaceGroup}</sl-tag>` : nothing}
+							${cellNotes.length ? html`<span class="summary-caption">${cellNotes.join(" · ")}</span>` : nothing}
+						</div>
+						<div class="field-row">${(["lengths", "angles"] as const).map(key => current.cell[key].map((value, index) => {
+							const label = (key === "lengths" ? ["a (Å)", "b (Å)", "c (Å)"] : ["α (°)", "β (°)", "γ (°)"])[index];
+							return html`<label>${label}<input type="number" step="any" aria-label=${label}
+								.value=${String(Number(value.toFixed(4)))} ?readonly=${this.#readonly}
+								@change=${(event: Event) => this.#updateCell(key, index, event.currentTarget as HTMLInputElement)} /></label>`;
+						}))}</div>
+					</div>` : nothing}
 				</div>
 			</sl-details>
-			${current.kind === "crystal" ? html`<sl-details summary=${this.#t("Unit cell", "Elementarzelle")}>
-				<div class="fields">
-					${current.bravais ? html`<sl-tag size="small">${current.bravais} · ${current.spaceGroup}</sl-tag>` : nothing}
-					${current.source === "catalog-density" ? html`<sl-tag size="small">${this.#t("Cell size estimated from catalog density", "Zellgröße aus Katalogdichte geschätzt")}</sl-tag>` : nothing}
-					${current.temperatureK ? html`<sl-tag size="small">${current.temperatureK} K</sl-tag>` : nothing}
-					${current.conditions ? html`<sl-tag size="small">${current.conditions === "hydrogen-positions-unreported"
-						? this.#t("Hydrogen positions unreported", "Wasserstoffpositionen nicht angegeben") : current.conditions}</sl-tag>` : nothing}
-					${current.sites.some(site => site.occupancy !== undefined) ? html`
-						<sl-tag size="small">${this.#t("Partially occupied sites", "Teilbesetzte Gitterplätze")}</sl-tag>` : nothing}
-					${(["lengths", "angles"] as const).map(key => current.cell[key].map((value, index) => {
-						const label = (key === "lengths" ? ["a (Å)", "b (Å)", "c (Å)"] : ["α (°)", "β (°)", "γ (°)"])[index];
-						return html`<label>${label}<input type="number" step="any" aria-label=${label}
-							.value=${String(Number(value.toFixed(4)))} ?readonly=${this.#readonly}
-							@change=${(event: Event) => this.#updateCell(key, index, event.currentTarget as HTMLInputElement)} /></label>`;
-					}))}
-				</div>
-			</sl-details>` : nothing}
 		</aside>`;
 	}
 

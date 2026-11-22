@@ -45040,6 +45040,7 @@ var init_lib = __esm({
     init_CubeTexture();
     init_RenderTexture();
     init_BufferImageSource();
+    init_CanvasSource();
     init_CompressedSource();
     init_TextureSource();
     init_Texture();
@@ -45052,6 +45053,7 @@ var init_lib = __esm({
     init_assignWithIgnore();
     init_clearList();
     init_definedProps();
+    init_Sprite();
     init_ViewContainer();
     init_const2();
     init_Ticker();
@@ -82259,8 +82261,109 @@ var init_dist2 = __esm({
     init_SphereGeometry();
     init_TorusGeometry();
     init_BatchedMesh3D();
+    init_DirectionalLight();
     init_View3D();
     init_init13();
+  }
+});
+
+// molecule-builder/shading.ts
+function addSun(view) {
+  const sun = new DirectionalLight({ color: 16777215, intensity: SUN_INTENSITY });
+  sun.position.set(3, 6, 7);
+  sun.lookAt({ x: 0, y: 0, z: 0 });
+  view.root.addChild(sun);
+  return sun;
+}
+function rimmedMaterial(options, mark = 0) {
+  const material = new Material3D({ ...options, extraBits: [rimBit] });
+  material.data.rimStrength = RIM_STRENGTH;
+  material.data.rimPower = RIM_POWER;
+  material.data.markWidth = MARK_WIDTH;
+  material.data.markColor = MARK_COLOR;
+  material.data.markStrength = mark;
+  return material;
+}
+function vignetteStops() {
+  const stops = [[0, `rgba(${VIGNETTE_COLOR}, 0)`], [VIGNETTE_CLEAR, `rgba(${VIGNETTE_COLOR}, 0)`]];
+  for (let step = 1; step <= 6; step++) {
+    const share = step / 6;
+    const eased = share * share * (3 - 2 * share);
+    stops.push([
+      VIGNETTE_CLEAR + (1 - VIGNETTE_CLEAR) * share,
+      `rgba(${VIGNETTE_COLOR}, ${(VIGNETTE_ALPHA * eased).toFixed(3)})`
+    ]);
+  }
+  return stops;
+}
+function radialTexture(stops, size3 = 256) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size3;
+  const context2 = canvas.getContext("2d");
+  if (!context2) return Texture.EMPTY;
+  const gradient = context2.createRadialGradient(size3 / 2, size3 / 2, 0, size3 / 2, size3 / 2, size3 / 2);
+  for (const [offset3, color] of stops) gradient.addColorStop(offset3, color);
+  context2.fillStyle = gradient;
+  context2.fillRect(0, 0, size3, size3);
+  return new Texture({ source: new CanvasSource({ resource: canvas }) });
+}
+var VIEW_ENVIRONMENT, SUN_INTENSITY, RIM_STRENGTH, RIM_POWER, MARK_COLOR, MARK_WIDTH, rimBit, VIGNETTE_ALPHA, VIGNETTE_CLEAR, VIGNETTE_REACH, VIGNETTE_COLOR, Vignette;
+var init_shading = __esm({
+  "molecule-builder/shading.ts"() {
+    init_lib();
+    init_dist2();
+    VIEW_ENVIRONMENT = { skyColor: 16777215, groundColor: 10925251, intensity: 0.94 };
+    SUN_INTENSITY = 2.15;
+    RIM_STRENGTH = 0.8;
+    RIM_POWER = 2.2;
+    MARK_COLOR = [0, 0, 0, 1];
+    MARK_WIDTH = 0.62;
+    rimBit = {
+      name: "atomRim",
+      bindings: { material: { rimStrength: "f32", rimPower: "f32", markStrength: "f32", markWidth: "f32", markColor: "vec4<f32>" } },
+      gpu: {
+        fragment: {
+          lobePostLighting: `{
+				let rimFacing = max(dot(normal, viewDir), 0.0);
+				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
+				let markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
+				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
+			}`
+        }
+      },
+      gl: {
+        fragment: {
+          lobePostLighting: `{
+				float rimFacing = max(dot(normal, viewDir), 0.0);
+				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
+				float markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
+				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
+			}`
+        }
+      }
+    };
+    VIGNETTE_ALPHA = 0.3;
+    VIGNETTE_CLEAR = 0.55;
+    VIGNETTE_REACH = 0.85;
+    VIGNETTE_COLOR = "15, 23, 42";
+    Vignette = class {
+      sprite;
+      #texture;
+      constructor() {
+        this.#texture = radialTexture(vignetteStops());
+        this.sprite = new Sprite({ texture: this.#texture, eventMode: "none" });
+      }
+      /** Centre the circle on the canvas and size it past the corners. */
+      size(width, height) {
+        const side = Math.hypot(width, height) / VIGNETTE_REACH;
+        this.sprite.width = this.sprite.height = side;
+        this.sprite.position.set((width - side) / 2, (height - side) / 2);
+      }
+      destroy() {
+        this.sprite.destroy();
+        if (this.#texture !== Texture.EMPTY) this.#texture.destroy(true);
+      }
+    };
   }
 });
 
@@ -82274,6 +82377,7 @@ var init_atomic_scene = __esm({
   "molecule-builder/atomic-scene.ts"() {
     init_lib();
     init_dist2();
+    init_shading();
     init_atomic_configuration();
     init_atomic_orbitals();
     init_atomic_nucleus();
@@ -82283,7 +82387,9 @@ var init_atomic_scene = __esm({
         this.app = app;
         this.onHover = onHover;
         this.onScale = onScale;
-        app.stage.addChild(this.#view);
+        app.stage.addChild(this.#view, this.#vignette.sprite);
+        this.#vignette.size(app.screen.width, app.screen.height);
+        addSun(this.#view);
         this.#view.root.addChild(this.#content);
         this.canvas.style.display = "block";
         this.canvas.setAttribute("aria-hidden", "true");
@@ -82292,6 +82398,7 @@ var init_atomic_scene = __esm({
           if (!host.clientWidth || !host.clientHeight) return;
           app.renderer.resize(host.clientWidth, host.clientHeight);
           this.#view.setSize(host.clientWidth, host.clientHeight);
+          this.#vignette.size(host.clientWidth, host.clientHeight);
           this.fit();
         });
         this.#observer.observe(host);
@@ -82315,21 +82422,19 @@ var init_atomic_scene = __esm({
           throw error;
         }
       }
-      #view = new View3D({
-        autoResize: false,
-        environment: { skyColor: 16777215, groundColor: 10921638, intensity: 1.25 }
-      });
+      #view = new View3D({ autoResize: false, environment: VIEW_ENVIRONMENT });
+      #vignette = new Vignette();
       #content = new Container3D();
       #sphere = new SphereGeometry({ radius: 1, widthSegments: 18, heightSegments: 12 });
       #ring = new TorusGeometry({ radius: 1, tube: 0.012, radialSegments: 6, tubularSegments: 70 });
       #nucleons = {
-        proton: new Material3D({ baseColor: nucleonColors.proton, roughness: 0.58 }),
-        neutron: new Material3D({ baseColor: nucleonColors.neutron, roughness: 0.58 })
+        proton: rimmedMaterial({ baseColor: nucleonColors.proton, roughness: 0.58 }),
+        neutron: rimmedMaterial({ baseColor: nucleonColors.neutron, roughness: 0.58 })
       };
-      #shells = shellColors.map((baseColor) => new Material3D({ baseColor, roughness: 0.7 }));
-      #rings = shellColors.map((baseColor) => new Material3D({ baseColor, roughness: 0.7, alphaMode: "blend", alpha: 0.9 }));
-      #mutedShell = new Material3D({ baseColor: mutedShellColor, roughness: 0.7 });
-      #mutedRing = new Material3D({ baseColor: mutedShellColor, roughness: 0.7, alphaMode: "blend", alpha: 0.42 });
+      #shells = shellColors.map((baseColor) => rimmedMaterial({ baseColor, roughness: 0.7 }));
+      #rings = shellColors.map((baseColor) => rimmedMaterial({ baseColor, roughness: 0.7, alphaMode: "blend", alpha: 0.9 }));
+      #mutedShell = rimmedMaterial({ baseColor: mutedShellColor, roughness: 0.7 });
+      #mutedRing = rimmedMaterial({ baseColor: mutedShellColor, roughness: 0.7, alphaMode: "blend", alpha: 0.42 });
       #phases = [0.28, 0.64, 0.88].map((alpha) => atomicPhaseColors.map((baseColor) => new Material3D({ baseColor, roughness: 0.7, alphaMode: "blend", alpha })));
       #neutralOrbitals = Array.from({ length: 18 }, (_3, index) => new Material3D({ baseColor: 8684676, roughness: 0.7, alphaMode: "blend", alpha: 8e-3 + index * neutralOpacityStep }));
       #observer;
@@ -82609,6 +82714,7 @@ var init_atomic_scene = __esm({
           ...this.#neutralOrbitals,
           ...this.#phases.flat()
         ]) material.destroy();
+        this.#vignette.destroy();
       }
     };
   }

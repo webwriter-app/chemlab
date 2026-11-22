@@ -86344,6 +86344,106 @@ var init_dist2 = __esm({
   }
 });
 
+// molecule-builder/shading.ts
+function addSun(view) {
+  const sun = new DirectionalLight({ color: 16777215, intensity: SUN_INTENSITY });
+  sun.position.set(3, 6, 7);
+  sun.lookAt({ x: 0, y: 0, z: 0 });
+  view.root.addChild(sun);
+  return sun;
+}
+function rimmedMaterial(options, mark = 0) {
+  const material = new Material3D({ ...options, extraBits: [rimBit] });
+  material.data.rimStrength = RIM_STRENGTH;
+  material.data.rimPower = RIM_POWER;
+  material.data.markWidth = MARK_WIDTH;
+  material.data.markColor = MARK_COLOR;
+  material.data.markStrength = mark;
+  return material;
+}
+function vignetteStops() {
+  const stops = [[0, `rgba(${VIGNETTE_COLOR}, 0)`], [VIGNETTE_CLEAR, `rgba(${VIGNETTE_COLOR}, 0)`]];
+  for (let step = 1; step <= 6; step++) {
+    const share = step / 6;
+    const eased = share * share * (3 - 2 * share);
+    stops.push([
+      VIGNETTE_CLEAR + (1 - VIGNETTE_CLEAR) * share,
+      `rgba(${VIGNETTE_COLOR}, ${(VIGNETTE_ALPHA * eased).toFixed(3)})`
+    ]);
+  }
+  return stops;
+}
+function radialTexture(stops, size3 = 256) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size3;
+  const context2 = canvas.getContext("2d");
+  if (!context2) return Texture.EMPTY;
+  const gradient = context2.createRadialGradient(size3 / 2, size3 / 2, 0, size3 / 2, size3 / 2, size3 / 2);
+  for (const [offset3, color] of stops) gradient.addColorStop(offset3, color);
+  context2.fillStyle = gradient;
+  context2.fillRect(0, 0, size3, size3);
+  return new Texture({ source: new CanvasSource({ resource: canvas }) });
+}
+var VIEW_ENVIRONMENT, SUN_INTENSITY, RIM_STRENGTH, RIM_POWER, MARK_COLOR, MARK_WIDTH, rimBit, VIGNETTE_ALPHA, VIGNETTE_CLEAR, VIGNETTE_REACH, VIGNETTE_COLOR, Vignette;
+var init_shading = __esm({
+  "molecule-builder/shading.ts"() {
+    init_lib();
+    init_dist2();
+    VIEW_ENVIRONMENT = { skyColor: 16777215, groundColor: 10925251, intensity: 0.94 };
+    SUN_INTENSITY = 2.15;
+    RIM_STRENGTH = 0.8;
+    RIM_POWER = 2.2;
+    MARK_COLOR = [0, 0, 0, 1];
+    MARK_WIDTH = 0.62;
+    rimBit = {
+      name: "atomRim",
+      bindings: { material: { rimStrength: "f32", rimPower: "f32", markStrength: "f32", markWidth: "f32", markColor: "vec4<f32>" } },
+      gpu: {
+        fragment: {
+          lobePostLighting: `{
+				let rimFacing = max(dot(normal, viewDir), 0.0);
+				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
+				let markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
+				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
+			}`
+        }
+      },
+      gl: {
+        fragment: {
+          lobePostLighting: `{
+				float rimFacing = max(dot(normal, viewDir), 0.0);
+				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
+				float markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
+				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
+			}`
+        }
+      }
+    };
+    VIGNETTE_ALPHA = 0.3;
+    VIGNETTE_CLEAR = 0.55;
+    VIGNETTE_REACH = 0.85;
+    VIGNETTE_COLOR = "15, 23, 42";
+    Vignette = class {
+      sprite;
+      #texture;
+      constructor() {
+        this.#texture = radialTexture(vignetteStops());
+        this.sprite = new Sprite({ texture: this.#texture, eventMode: "none" });
+      }
+      /** Centre the circle on the canvas and size it past the corners. */
+      size(width, height) {
+        const side = Math.hypot(width, height) / VIGNETTE_REACH;
+        this.sprite.width = this.sprite.height = side;
+        this.sprite.position.set((width - side) / 2, (height - side) / 2);
+      }
+      destroy() {
+        this.sprite.destroy();
+        if (this.#texture !== Texture.EMPTY) this.#texture.destroy(true);
+      }
+    };
+  }
+});
+
 // molecule-builder/atomic-scene.ts
 var atomic_scene_exports = {};
 __export(atomic_scene_exports, {
@@ -86354,6 +86454,7 @@ var init_atomic_scene = __esm({
   "molecule-builder/atomic-scene.ts"() {
     init_lib();
     init_dist2();
+    init_shading();
     init_atomic_configuration();
     init_atomic_orbitals();
     init_atomic_nucleus();
@@ -86363,7 +86464,9 @@ var init_atomic_scene = __esm({
         this.app = app;
         this.onHover = onHover;
         this.onScale = onScale;
-        app.stage.addChild(this.#view);
+        app.stage.addChild(this.#view, this.#vignette.sprite);
+        this.#vignette.size(app.screen.width, app.screen.height);
+        addSun(this.#view);
         this.#view.root.addChild(this.#content);
         this.canvas.style.display = "block";
         this.canvas.setAttribute("aria-hidden", "true");
@@ -86372,6 +86475,7 @@ var init_atomic_scene = __esm({
           if (!host.clientWidth || !host.clientHeight) return;
           app.renderer.resize(host.clientWidth, host.clientHeight);
           this.#view.setSize(host.clientWidth, host.clientHeight);
+          this.#vignette.size(host.clientWidth, host.clientHeight);
           this.fit();
         });
         this.#observer.observe(host);
@@ -86395,21 +86499,19 @@ var init_atomic_scene = __esm({
           throw error;
         }
       }
-      #view = new View3D({
-        autoResize: false,
-        environment: { skyColor: 16777215, groundColor: 10921638, intensity: 1.25 }
-      });
+      #view = new View3D({ autoResize: false, environment: VIEW_ENVIRONMENT });
+      #vignette = new Vignette();
       #content = new Container3D();
       #sphere = new SphereGeometry({ radius: 1, widthSegments: 18, heightSegments: 12 });
       #ring = new TorusGeometry({ radius: 1, tube: 0.012, radialSegments: 6, tubularSegments: 70 });
       #nucleons = {
-        proton: new Material3D({ baseColor: nucleonColors.proton, roughness: 0.58 }),
-        neutron: new Material3D({ baseColor: nucleonColors.neutron, roughness: 0.58 })
+        proton: rimmedMaterial({ baseColor: nucleonColors.proton, roughness: 0.58 }),
+        neutron: rimmedMaterial({ baseColor: nucleonColors.neutron, roughness: 0.58 })
       };
-      #shells = shellColors.map((baseColor) => new Material3D({ baseColor, roughness: 0.7 }));
-      #rings = shellColors.map((baseColor) => new Material3D({ baseColor, roughness: 0.7, alphaMode: "blend", alpha: 0.9 }));
-      #mutedShell = new Material3D({ baseColor: mutedShellColor, roughness: 0.7 });
-      #mutedRing = new Material3D({ baseColor: mutedShellColor, roughness: 0.7, alphaMode: "blend", alpha: 0.42 });
+      #shells = shellColors.map((baseColor) => rimmedMaterial({ baseColor, roughness: 0.7 }));
+      #rings = shellColors.map((baseColor) => rimmedMaterial({ baseColor, roughness: 0.7, alphaMode: "blend", alpha: 0.9 }));
+      #mutedShell = rimmedMaterial({ baseColor: mutedShellColor, roughness: 0.7 });
+      #mutedRing = rimmedMaterial({ baseColor: mutedShellColor, roughness: 0.7, alphaMode: "blend", alpha: 0.42 });
       #phases = [0.28, 0.64, 0.88].map((alpha) => atomicPhaseColors.map((baseColor) => new Material3D({ baseColor, roughness: 0.7, alphaMode: "blend", alpha })));
       #neutralOrbitals = Array.from({ length: 18 }, (_3, index) => new Material3D({ baseColor: 8684676, roughness: 0.7, alphaMode: "blend", alpha: 8e-3 + index * neutralOpacityStep }));
       #observer;
@@ -86689,6 +86791,7 @@ var init_atomic_scene = __esm({
           ...this.#neutralOrbitals,
           ...this.#phases.flat()
         ]) material.destroy();
+        this.#vignette.destroy();
       }
     };
   }
@@ -92886,34 +92989,12 @@ var scene_exports = {};
 __export(scene_exports, {
   MoleculeScene: () => MoleculeScene
 });
-function vignetteStops() {
-  const stops = [[0, `rgba(${VIGNETTE_COLOR}, 0)`], [VIGNETTE_CLEAR, `rgba(${VIGNETTE_COLOR}, 0)`]];
-  for (let step = 1; step <= 6; step++) {
-    const share = step / 6;
-    const eased = share * share * (3 - 2 * share);
-    stops.push([
-      VIGNETTE_CLEAR + (1 - VIGNETTE_CLEAR) * share,
-      `rgba(${VIGNETTE_COLOR}, ${(VIGNETTE_ALPHA * eased).toFixed(3)})`
-    ]);
-  }
-  return stops;
-}
-function radialTexture(stops, size3 = 256) {
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = size3;
-  const context2 = canvas.getContext("2d");
-  if (!context2) return Texture.EMPTY;
-  const gradient = context2.createRadialGradient(size3 / 2, size3 / 2, 0, size3 / 2, size3 / 2, size3 / 2);
-  for (const [offset3, color] of stops) gradient.addColorStop(offset3, color);
-  context2.fillStyle = gradient;
-  context2.fillRect(0, 0, size3, size3);
-  return new Texture({ source: new CanvasSource({ resource: canvas }) });
-}
-var vector4, cellCorners, CAMERA_FOV, FIT_FILL, AXIS_ORIGIN, AXIS_LENGTH, AXIS_COLORS, RIM_STRENGTH, RIM_POWER, rimBit, BOND_PREVIEW_COLOR, MARK_COLOR, MARK_WIDTH, SELECTION_MARK, HOVER_MARK, VIGNETTE_ALPHA, VIGNETTE_CLEAR, VIGNETTE_REACH, VIGNETTE_COLOR, MoleculeScene;
+var vector4, cellCorners, CAMERA_FOV, FIT_FILL, AXIS_ORIGIN, AXIS_LENGTH, AXIS_COLORS, BOND_PREVIEW_COLOR, SELECTION_MARK, HOVER_MARK, MoleculeScene;
 var init_scene = __esm({
   "molecule-builder/scene.ts"() {
     init_lib();
     init_dist2();
+    init_shading();
     init_geometry();
     init_crystal_display();
     init_radii();
@@ -92927,58 +93008,20 @@ var init_scene = __esm({
     AXIS_ORIGIN = 34;
     AXIS_LENGTH = 20;
     AXIS_COLORS = [11817737, 1013358, 7153881];
-    RIM_STRENGTH = 0.8;
-    RIM_POWER = 2.2;
-    rimBit = {
-      name: "atomRim",
-      bindings: { material: { rimStrength: "f32", rimPower: "f32", markStrength: "f32", markWidth: "f32", markColor: "vec4<f32>" } },
-      gpu: {
-        fragment: {
-          lobePostLighting: `{
-				let rimFacing = max(dot(normal, viewDir), 0.0);
-				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
-				let markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
-				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
-			}`
-        }
-      },
-      gl: {
-        fragment: {
-          lobePostLighting: `{
-				float rimFacing = max(dot(normal, viewDir), 0.0);
-				finalColor *= 1.0 - material.rimStrength * pow(1.0 - rimFacing, material.rimPower);
-				float markEdge = 1.0 - smoothstep(material.markWidth * 0.55, material.markWidth, rimFacing);
-				finalColor = mix(finalColor, material.markColor.rgb, markEdge * material.markStrength);
-			}`
-        }
-      }
-    };
     BOND_PREVIEW_COLOR = 34501;
-    MARK_COLOR = [0, 0, 0, 1];
-    MARK_WIDTH = 0.62;
     SELECTION_MARK = 1;
     HOVER_MARK = 0.55;
-    VIGNETTE_ALPHA = 0.3;
-    VIGNETTE_CLEAR = 0.55;
-    VIGNETTE_REACH = 0.85;
-    VIGNETTE_COLOR = "15, 23, 42";
     MoleculeScene = class _MoleculeScene {
       constructor(app, host, updateScale) {
         this.updateScale = updateScale;
         this.#app = app;
-        this.#view = new View3D({
-          autoResize: false,
-          environment: { skyColor: 16777215, groundColor: 10925251, intensity: 0.94 }
-        });
-        this.#vignette = new Sprite({ texture: this.#track(radialTexture(vignetteStops())), eventMode: "none" });
-        app.stage.addChild(this.#view, this.#vignette, this.#lattice, this.#axes, ...this.#axisLabels);
+        this.#view = new View3D({ autoResize: false, environment: VIEW_ENVIRONMENT });
+        app.stage.addChild(this.#view, this.#vignette.sprite, this.#lattice, this.#axes, ...this.#axisLabels);
         this.#sizeVignette();
         for (const label of this.#axisLabels) label.visible = false;
         this.#view.setSize(app.screen.width, app.screen.height);
-        const sun = new DirectionalLight({ color: 16777215, intensity: 2.15 });
-        sun.position.set(3, 6, 7);
-        sun.lookAt({ x: 0, y: 0, z: 0 });
-        this.#view.root.addChild(sun, this.#content, this.#edges, this.#electrons, this.#orbital, this.#hydration);
+        addSun(this.#view);
+        this.#view.root.addChild(this.#content, this.#edges, this.#electrons, this.#orbital, this.#hydration);
         this.#preview = this.#rod();
         this.#preview.material = this.#material(BOND_PREVIEW_COLOR);
         this.#preview.visible = false;
@@ -93046,8 +93089,7 @@ var init_scene = __esm({
       #picks = /* @__PURE__ */ new Map();
       #observer;
       #preview;
-      #vignette;
-      #textures = [];
+      #vignette = new Vignette();
       #selected = /* @__PURE__ */ new Set();
       #hovered;
       #structure;
@@ -93071,21 +93113,11 @@ var init_scene = __esm({
       #atomRadius = 0;
       #lastPixelsPerAngstrom = 0;
       /**
-       * Remember a generated texture so {@link destroy} can free it.
-       *
-       * A missing 2D context leaves {@link Texture.EMPTY}, which belongs to Pixi
-       * and must never be destroyed; only textures this scene created are kept.
+       * Centre the vignette's circle on the canvas and size it past the corners.
        */
-      #track(texture) {
-        if (texture !== Texture.EMPTY) this.#textures.push(texture);
-        return texture;
-      }
-      /** Centre the vignette's circle on the canvas and size it past the corners. */
       #sizeVignette() {
         const { width, height } = this.#app.screen;
-        const side = Math.hypot(width, height) / VIGNETTE_REACH;
-        this.#vignette.width = this.#vignette.height = side;
-        this.#vignette.position.set((width - side) / 2, (height - side) / 2);
+        this.#vignette.size(width, height);
       }
       /**
        * A cached material for one colour, opacity and mark strength.
@@ -93104,18 +93136,12 @@ var init_scene = __esm({
         const key = `${color}:${opacity}:${mark}`;
         let material = this.#materials.get(key);
         if (!material) {
-          material = new Material3D({
+          material = rimmedMaterial({
             baseColor: color,
             roughness: 0.61,
             alpha: opacity,
-            alphaMode: opacity < 1 ? "blend" : "opaque",
-            extraBits: [rimBit]
-          });
-          material.data.rimStrength = RIM_STRENGTH;
-          material.data.rimPower = RIM_POWER;
-          material.data.markWidth = MARK_WIDTH;
-          material.data.markColor = MARK_COLOR;
-          material.data.markStrength = mark;
+            alphaMode: opacity < 1 ? "blend" : "opaque"
+          }, mark);
           this.#materials.set(key, material);
         }
         return material;
@@ -93493,7 +93519,7 @@ var init_scene = __esm({
         this.#axes.destroy();
         for (const label of this.#axisLabels) label.destroy();
         for (const material of this.#materials.values()) material.destroy();
-        for (const texture of this.#textures) texture.destroy(true);
+        this.#vignette.destroy();
       }
     };
   }
@@ -108888,6 +108914,29 @@ var builderStyles = i`
 	.structure-legend [data-region="lone"] { --swatch: #a855f7; }
 	.structure-legend [data-marker="lattice"]::before { border-radius: 1px; --swatch: #283648; }
 	.bond-lengths { display: grid; gap: .2rem; }
+	/* The cell parameters and the fractional coordinates sit in one row of
+	   three, so the card stays narrow and the numbers line up. */
+	.field-row {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: .25rem;
+	}
+	.field-row input { min-inline-size: 0; }
+	/* The cell block closes the section: a hairline separates the site from the
+	   cell it sits in, so one details element can hold both without a second
+	   header. */
+	.cell-block {
+		display: grid;
+		gap: .3rem;
+		padding-block-start: .35rem;
+		border-block-start: 1px solid var(--line);
+	}
+	.cell-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: .2rem .4rem;
+	}
 	.display-controls { gap: .25rem; }
 	.display-controls select { max-inline-size: 6rem; }
 	input, select { color: inherit; font: inherit; accent-color: var(--blue); }
@@ -110618,6 +110667,12 @@ renderSelectionCard_fn = function() {
     return neighbor ? [{ neighbor, length: Math.hypot(...subtract(here.position, neighbor.position)) }] : [];
   }) : [];
   const occupancy = atom && "occupancy" in atom ? atom.occupancy : void 0;
+  const cellNotes = current.kind === "crystal" ? [
+    current.source === "catalog-density" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "cell size estimated from catalog density", "Zellgr\xF6\xDFe aus Katalogdichte gesch\xE4tzt") : void 0,
+    current.temperatureK ? `${current.temperatureK} K` : void 0,
+    current.conditions ? current.conditions === "hydrogen-positions-unreported" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "hydrogen positions unreported", "Wasserstoffpositionen nicht angegeben") : current.conditions : void 0,
+    current.sites.some((site) => site.occupancy !== void 0) ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "partially occupied sites", "teilbesetzte Gitterpl\xE4tze") : void 0
+  ].filter((note) => Boolean(note)) : [];
   return x2`<aside class="selection-card" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Selection", "Auswahl")}>
 			<div class="card-head">
 				<sl-tag size="small" variant=${atom ? "primary" : "neutral"}>${title}</sl-tag>
@@ -110639,7 +110694,7 @@ renderSelectionCard_fn = function() {
 				${shape ? x2`<sl-tag size="small">${shapeLabel[shape]}</sl-tag>` : E2}
 				${occupancy !== void 0 ? x2`<sl-tag size="small">${Number((100 * occupancy).toFixed(1))} %</sl-tag>` : E2}
 			</div>` : E2}
-			<sl-details summary=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site properties", "Gitterplatz-Eigenschaften") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom properties", "Atom-Eigenschaften")} ?open=${!atom && this.view === "3d"}>
+			<sl-details summary=${current.kind === "crystal" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Site & cell", "Gitterplatz & Zelle") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atom properties", "Atom-Eigenschaften")}>
 				<div class="fields">
 					${lengths.length ? x2`<div class="bond-lengths">
 						<span class="summary-caption">${current.kind === "molecule" && current.geometry === "supplied" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "3D bond lengths", "3D-Bindungsl\xE4ngen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Estimated 3D bond lengths", "Gesch\xE4tzte 3D-Bindungsl\xE4ngen")}</span>
@@ -110676,28 +110731,26 @@ renderSelectionCard_fn = function() {
       bonds: current.bonds.filter((entry) => entry !== bond)
     })}>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Remove bond to", "Bindung l\xF6sen zu")} ${symbol(to.atomicNumber)} · ${to.id}</sl-button>`;
   }) : E2}
-					${atom && "fractional" in atom ? atom.fractional.map((value, index) => x2`<label>${["x/a", "y/b", "z/c"][index]}
-						<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}
-							@change=${(event) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateSite_fn).call(this, index, event.currentTarget)} />
-					</label>`) : E2}
-				</div>
-			</sl-details>
-			${current.kind === "crystal" ? x2`<sl-details summary=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Unit cell", "Elementarzelle")}>
-				<div class="fields">
-					${current.bravais ? x2`<sl-tag size="small">${current.bravais} · ${current.spaceGroup}</sl-tag>` : E2}
-					${current.source === "catalog-density" ? x2`<sl-tag size="small">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Cell size estimated from catalog density", "Zellgr\xF6\xDFe aus Katalogdichte gesch\xE4tzt")}</sl-tag>` : E2}
-					${current.temperatureK ? x2`<sl-tag size="small">${current.temperatureK} K</sl-tag>` : E2}
-					${current.conditions ? x2`<sl-tag size="small">${current.conditions === "hydrogen-positions-unreported" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Hydrogen positions unreported", "Wasserstoffpositionen nicht angegeben") : current.conditions}</sl-tag>` : E2}
-					${current.sites.some((site) => site.occupancy !== void 0) ? x2`
-						<sl-tag size="small">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Partially occupied sites", "Teilbesetzte Gitterpl\xE4tze")}</sl-tag>` : E2}
-					${["lengths", "angles"].map((key) => current.cell[key].map((value, index) => {
+					${atom && "fractional" in atom ? x2`<div class="field-row">
+						${atom.fractional.map((value, index) => x2`<label>${["x/a", "y/b", "z/c"][index]}
+							<input type="number" step=".05" min="0" max=".999999" .value=${String(Number(value.toFixed(6)))} ?readonly=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}
+								@change=${(event) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateSite_fn).call(this, index, event.currentTarget)} />
+						</label>`)}
+					</div>` : E2}
+					${current.kind === "crystal" ? x2`<div class="cell-block">
+						<div class="cell-head">
+							${current.bravais ? x2`<sl-tag size="small">${current.bravais} · ${current.spaceGroup}</sl-tag>` : E2}
+							${cellNotes.length ? x2`<span class="summary-caption">${cellNotes.join(" \xB7 ")}</span>` : E2}
+						</div>
+						<div class="field-row">${["lengths", "angles"].map((key) => current.cell[key].map((value, index) => {
     const label = (key === "lengths" ? ["a (\xC5)", "b (\xC5)", "c (\xC5)"] : ["\u03B1 (\xB0)", "\u03B2 (\xB0)", "\u03B3 (\xB0)"])[index];
     return x2`<label>${label}<input type="number" step="any" aria-label=${label}
-							.value=${String(Number(value.toFixed(4)))} ?readonly=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}
-							@change=${(event) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateCell_fn).call(this, key, index, event.currentTarget)} /></label>`;
-  }))}
+								.value=${String(Number(value.toFixed(4)))} ?readonly=${__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get)}
+								@change=${(event) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, updateCell_fn).call(this, key, index, event.currentTarget)} /></label>`;
+  }))}</div>
+					</div>` : E2}
 				</div>
-			</sl-details>` : E2}
+			</sl-details>
 		</aside>`;
 };
 __decorateElement(_init4, 4, "elementSourceId", _elementSourceId_dec, _ChemLabMoleculeBuilder, _elementSourceId);

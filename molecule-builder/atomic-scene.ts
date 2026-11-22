@@ -1,6 +1,7 @@
 import { Application } from "pixi.js";
 import { BatchedMesh3D, Container3D, Geometry3D, Material3D, Matrix4, Mesh3D, RenderPassBit,
 	SphereGeometry, TorusGeometry, View3D } from "@pixi/3d";
+import { VIEW_ENVIRONMENT, Vignette, addSun, rimmedMaterial } from "./shading";
 import { atomicShells, mutedShellColor, orbitalOccupation, shellColors, shellOrbit, visibleAtomicSubshells,
 	type AtomicConfiguration, type Subshell } from "./atomic-configuration";
 import { atomicOrbitalMesh, atomicOverlayParts, atomicPhaseColors, type AtomicOrbitalPart } from "./atomic-orbitals";
@@ -26,20 +27,19 @@ export class AtomicScene {
 		}
 	}
 
-	readonly #view = new View3D({
-		autoResize: false, environment: { skyColor: 0xffffff, groundColor: 0xa6a6a6, intensity: 1.25 },
-	});
+	readonly #view = new View3D({ autoResize: false, environment: VIEW_ENVIRONMENT });
+	readonly #vignette = new Vignette();
 	readonly #content = new Container3D();
 	readonly #sphere = new SphereGeometry({ radius: 1, widthSegments: 18, heightSegments: 12 });
 	readonly #ring = new TorusGeometry({ radius: 1, tube: .012, radialSegments: 6, tubularSegments: 70 });
 	readonly #nucleons = {
-		proton: new Material3D({ baseColor: nucleonColors.proton, roughness: .58 }),
-		neutron: new Material3D({ baseColor: nucleonColors.neutron, roughness: .58 }),
+		proton: rimmedMaterial({ baseColor: nucleonColors.proton, roughness: .58 }),
+		neutron: rimmedMaterial({ baseColor: nucleonColors.neutron, roughness: .58 }),
 	};
-	readonly #shells = shellColors.map(baseColor => new Material3D({ baseColor, roughness: .7 }));
-	readonly #rings = shellColors.map(baseColor => new Material3D({ baseColor, roughness: .7, alphaMode: "blend", alpha: .9 }));
-	readonly #mutedShell = new Material3D({ baseColor: mutedShellColor, roughness: .7 });
-	readonly #mutedRing = new Material3D({ baseColor: mutedShellColor, roughness: .7, alphaMode: "blend", alpha: .42 });
+	readonly #shells = shellColors.map(baseColor => rimmedMaterial({ baseColor, roughness: .7 }));
+	readonly #rings = shellColors.map(baseColor => rimmedMaterial({ baseColor, roughness: .7, alphaMode: "blend", alpha: .9 }));
+	readonly #mutedShell = rimmedMaterial({ baseColor: mutedShellColor, roughness: .7 });
+	readonly #mutedRing = rimmedMaterial({ baseColor: mutedShellColor, roughness: .7, alphaMode: "blend", alpha: .42 });
 	readonly #phases = [.28, .64, .88].map(alpha => atomicPhaseColors.map(baseColor =>
 		new Material3D({ baseColor, roughness: .7, alphaMode: "blend", alpha })));
 	readonly #neutralOrbitals = Array.from({ length: 18 }, (_, index) =>
@@ -73,7 +73,9 @@ export class AtomicScene {
 
 	private constructor(private app: Application, host: HTMLElement,
 		private onHover: (hit?: OrbitalHover) => void, private onScale: (scale: number) => void) {
-		app.stage.addChild(this.#view);
+		app.stage.addChild(this.#view, this.#vignette.sprite);
+		this.#vignette.size(app.screen.width, app.screen.height);
+		addSun(this.#view);
 		this.#view.root.addChild(this.#content);
 		this.canvas.style.display = "block";
 		this.canvas.setAttribute("aria-hidden", "true");
@@ -82,6 +84,7 @@ export class AtomicScene {
 			if (!host.clientWidth || !host.clientHeight) return;
 			app.renderer.resize(host.clientWidth, host.clientHeight);
 			this.#view.setSize(host.clientWidth, host.clientHeight);
+			this.#vignette.size(host.clientWidth, host.clientHeight);
 			this.fit();
 		});
 		this.#observer.observe(host);
@@ -341,5 +344,6 @@ export class AtomicScene {
 		this.#ring.destroy();
 		for (const material of [...Object.values(this.#nucleons), ...this.#shells, ...this.#rings, this.#mutedShell, this.#mutedRing,
 			...this.#neutralOrbitals, ...this.#phases.flat()]) material.destroy();
+		this.#vignette.destroy();
 	}
 }
