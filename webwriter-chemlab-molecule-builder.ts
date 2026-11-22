@@ -221,6 +221,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	};
 	#lewisCache?: { structure: Structure; value: ReturnType<typeof lewisDiagram> };
 	#atomicScale = 0;
+	@state() private accessor orbitalHint: string | undefined;
 	get #atomicFigure() { return this.renderRoot.querySelector<AtomicFigure>("chemlab-atomic-figure"); }
 
 	get #current() { return this.preview ?? this.draft; }
@@ -245,6 +246,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	#resetAtomicChoices() {
 		this.atomChoices = initialAtomChoices();
+		this.orbitalHint = undefined;
 	}
 
 	#inspectAtom(id: number) {
@@ -1235,13 +1237,12 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 
 	#renderAtomicSummary({ species, configuration }: AtomInspection) {
 		const name = elementByAtomicNumber(species.atomicNumber).names[this.#t("en", "de")];
-		const label = symbol(species.atomicNumber) + superscript(chargeText(species.charge));
 		const t = (en: string, de: string) => this.#t(en, de);
 		return html`<section class="model-summary atomic-summary" aria-label=${t("Atom models", "Atommodelle")}>
 			<div class="atomic-title">
 				<sl-button size="small" class="icon-control atomic-back" aria-label=${t("Back to structure", "Zur Struktur")}
 					title=${t("Back to structure", "Zur Struktur")} @click=${() => this.#leaveAtom()}>${BACK_ICON}</sl-button>
-				<strong class="summary-formula">${label} · ${name}</strong>
+				<strong class="summary-formula">${name}</strong>
 			</div>
 			${species.boundReference ? html`<span class="summary-caption">${t("Isolated neutral atom reference", "Referenz für das isolierte neutrale Atom")}</span>` : nothing}
 			${configuration.formal ? html`<span class="summary-caption">${t("Formal ion · closed-shell model", "Formales Ion · Modell mit geschlossener Schale")}</span>` : nothing}
@@ -1296,7 +1297,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const options = this.catalogVariants.length > 1;
 		const displays = showDisplay && hasMolecularDisplays(current);
 		const molecular = displays ? this.molecularDisplay : "sticks";
-		const composition = this.#atoms.length && (!crystal || this.view === "3d")
+		const lone = !crystal && current.atoms.length === 1 ? current.atoms[0] : undefined;
+		const composition = lone ? elementByAtomicNumber(lone.atomicNumber).names[this.#t("en", "de")]
+			: this.#atoms.length && (!crystal || this.view === "3d")
 			? chemicalFormula(aqueous ? current.name : !crystal && current.repeatUnit && this.view === "2d"
 				? formula({ ...current, atoms: this.#lewis(current).atoms }) : formula(current))
 			: "";
@@ -1635,6 +1638,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 							.atomicNumber=${atomic.species.atomicNumber} .configuration=${atomic.configuration} .choices=${this.atomChoices}
 							.symbolText=${symbol(atomic.species.atomicNumber) + superscript(chargeText(atomic.species.charge))}
 							.pause=${this.pauseShellElectrons} .interactive=${explicitAtom || this.tool === "orbit"}
+							.externalOrbitalLabel=${true}
+							@orbital-label=${(event: CustomEvent<string | undefined>) => { this.orbitalHint = event.detail; }}
 							@atomic-scale=${(event: CustomEvent<number>) => { this.#atomicScale = event.detail; this.#syncGrid(); }}>
 						</chemlab-atomic-figure>` : !sceneVisible ? this.#renderDrawing(ionColors) : nothing}
 						${this.gpu === "loading" && sceneVisible ? html`<p class="empty" role="status"><sl-spinner></sl-spinner>
@@ -1646,6 +1651,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 									"Ziehe ein Element hierher oder wähle Atom platzieren und klicke auf die Fläche.")}
 							</p>` : nothing}
 						<div class="view-tools" role="group" aria-label=${this.#t("Canvas view", "Ansicht der Zeichenfläche")}>
+							${atomic && this.atomChoices.model === "orbitals" && this.orbitalHint
+								? html`<span class="orbital-hint" role="tooltip">${this.orbitalHint}</span>` : nothing}
 							<sl-tag size="small" class="grid-scale" hidden>
 								<span class="grid-scale-line" aria-hidden="true"></span><span class="grid-length"></span>
 							</sl-tag>

@@ -1,4 +1,4 @@
-import { LitElement, css, html } from "lit";
+import { LitElement, css, html, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import { isotopeText } from "../periodic-table/phase";
 import { atomicDrawingStyles, atomicOrbitalLabel, initialAtomChoices, renderAtomicShells, renderOrbitalFallback,
@@ -27,6 +27,7 @@ export class AtomicFigure extends LitElement {
 	@property({ attribute: false }) accessor choices: AtomChoices = initialAtomChoices();
 	@property({ attribute: false }) accessor pause = false;
 	@property({ attribute: false }) accessor interactive = true;
+	@property({ attribute: false }) accessor externalOrbitalLabel = false;
 	@state() private accessor ready = false;
 	@state() private accessor hover: OrbitalHover | undefined;
 	#scene?: AtomicScene;
@@ -64,7 +65,18 @@ export class AtomicFigure extends LitElement {
 		super.disconnectedCallback();
 	}
 
-	protected override updated() { this.#sync(); }
+	#getOrbitalLabel() {
+		return this.choices.model === "orbitals" && this.hover
+			? atomicOrbitalLabel(this.hover.subshell, this.hover.orientation, this.#t) : undefined;
+	}
+
+	protected override updated(changed: PropertyValues) {
+		this.#sync();
+		if (this.externalOrbitalLabel && (changed.has("choices") || changed.has("externalOrbitalLabel")
+			|| changed.has("lang") || changed.has("hover"))) {
+			this.dispatchEvent(new CustomEvent("orbital-label", { detail: this.#getOrbitalLabel() }));
+		}
+	}
 
 	#disposeScene() {
 		const scene = this.#scene;
@@ -156,7 +168,7 @@ export class AtomicFigure extends LitElement {
 	};
 
 	protected override render() {
-		const label = this.hover && atomicOrbitalLabel(this.hover.subshell, this.hover.orientation, this.#t);
+		const label = this.externalOrbitalLabel ? undefined : this.#getOrbitalLabel();
 		const nucleus = this.choices.model === "bohr" ? referenceNucleus(this.atomicNumber) : undefined;
 		const isotope = nucleus && isotopeText(nucleus.massNumber, this.symbolText);
 		const nucleusLabel = nucleus && this.#t(

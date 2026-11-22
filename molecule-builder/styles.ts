@@ -338,6 +338,19 @@ export const builderStyles = css`
 		--sl-input-height-small: 24px;
 	}
 	.view-buttons { justify-content: flex-end; gap: 3px; }
+	.orbital-hint {
+		position: absolute;
+		inset-block-end: calc(100% + 5px);
+		inset-inline-end: 0;
+		pointer-events: none;
+		white-space: nowrap;
+		padding: .2rem .38rem;
+		border: 1px solid #bfd4e0;
+		border-radius: 4px;
+		background: white;
+		color: #16384d;
+		font: 600 .72rem/1.2 system-ui;
+	}
 	.grid-scale::part(base) { background: var(--control); box-shadow: var(--shadow); }
 	.grid-scale::part(content) { display: flex; align-items: center; gap: .35rem; font-variant-numeric: tabular-nums; }
 	.grid-scale-line {
