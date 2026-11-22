@@ -100,6 +100,12 @@ export const periodicTableStyles = css`
 		resize: none;
 		--pt-cell-height: 2.2rem;
 		--pt-gutter: 0.8rem;
+		/* The floating info panel has to paint over the builder canvas, which
+		   follows the palette in the document, and it may reach past the palette
+		   edge, so the host stops clipping. */
+		position: relative;
+		z-index: 4;
+		overflow: visible;
 	}
 
 	* {
@@ -875,8 +881,13 @@ export const periodicTableStyles = css`
 	}
 
 	:host([picker-mode]) :is(.list-row, .cell) {
-		cursor: grab;
 		user-select: none;
+	}
+
+	/* Only the symbol tile starts a drag; the rest of the row opens the panel. */
+	:host([picker-mode]) :is(.list-symbol, .cell) {
+		cursor: grab;
+		touch-action: none;
 	}
 
 	:host([picker-mode]) .list-row {
@@ -1068,6 +1079,40 @@ export const periodicTableStyles = css`
 	.details-view-button { --sl-input-height-small: 1.3rem; }
 	.details-view-button::part(base) { min-inline-size: 1.35rem; }
 	.details-view-button::part(label) { display: grid; place-items: center; padding: 0 .13rem; }
+
+	/* The picker shows the card in a floating panel beside the entry, because the
+	   entry itself has to stay in place as the drag handle. The panel is not
+	   clipped by the palette, so it may be taller than the list it belongs to. */
+	.picker-info {
+		z-index: 8;
+	}
+
+	.picker-info-surface {
+		inline-size: 18rem;
+		max-inline-size: min(18rem, 88vw);
+	}
+
+	/* The card sits in the flow of the panel instead of the grid slot, so the
+	   shell drops its absolute placement and its height limit. */
+	.picker-info-surface .details-shell {
+		position: static;
+		max-height: none;
+		overflow: visible;
+	}
+
+	.picker-info-surface .details-card::part(base) {
+		height: auto;
+		box-shadow: var(--pt-overlay-shadow);
+	}
+
+	/* The panel scrolls as a whole when the viewport is short, and it keeps no
+	   room for the collapse toggle, which only the grid card carries. */
+	.picker-info-surface .details-card::part(body) {
+		flex: 0 0 auto;
+		max-block-size: var(--auto-size-available-height, 26rem);
+		padding-bottom: 8px;
+		overflow: auto;
+	}
 	.details-head > sl-tag { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	.pt-atom-preview {
 		display: grid;

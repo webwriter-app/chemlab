@@ -92509,6 +92509,12 @@ var periodicTableStyles = i`
 		resize: none;
 		--pt-cell-height: 2.2rem;
 		--pt-gutter: 0.8rem;
+		/* The floating info panel has to paint over the builder canvas, which
+		   follows the palette in the document, and it may reach past the palette
+		   edge, so the host stops clipping. */
+		position: relative;
+		z-index: 4;
+		overflow: visible;
 	}
 
 	* {
@@ -93284,8 +93290,13 @@ var periodicTableStyles = i`
 	}
 
 	:host([picker-mode]) :is(.list-row, .cell) {
-		cursor: grab;
 		user-select: none;
+	}
+
+	/* Only the symbol tile starts a drag; the rest of the row opens the panel. */
+	:host([picker-mode]) :is(.list-symbol, .cell) {
+		cursor: grab;
+		touch-action: none;
 	}
 
 	:host([picker-mode]) .list-row {
@@ -93477,6 +93488,40 @@ var periodicTableStyles = i`
 	.details-view-button { --sl-input-height-small: 1.3rem; }
 	.details-view-button::part(base) { min-inline-size: 1.35rem; }
 	.details-view-button::part(label) { display: grid; place-items: center; padding: 0 .13rem; }
+
+	/* The picker shows the card in a floating panel beside the entry, because the
+	   entry itself has to stay in place as the drag handle. The panel is not
+	   clipped by the palette, so it may be taller than the list it belongs to. */
+	.picker-info {
+		z-index: 8;
+	}
+
+	.picker-info-surface {
+		inline-size: 18rem;
+		max-inline-size: min(18rem, 88vw);
+	}
+
+	/* The card sits in the flow of the panel instead of the grid slot, so the
+	   shell drops its absolute placement and its height limit. */
+	.picker-info-surface .details-shell {
+		position: static;
+		max-height: none;
+		overflow: visible;
+	}
+
+	.picker-info-surface .details-card::part(base) {
+		height: auto;
+		box-shadow: var(--pt-overlay-shadow);
+	}
+
+	/* The panel scrolls as a whole when the viewport is short, and it keeps no
+	   room for the collapse toggle, which only the grid card carries. */
+	.picker-info-surface .details-card::part(body) {
+		flex: 0 0 auto;
+		max-block-size: var(--auto-size-available-height, 26rem);
+		padding-bottom: 8px;
+		overflow: auto;
+	}
 	.details-head > sl-tag { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	.pt-atom-preview {
 		display: grid;
@@ -94492,6 +94537,9 @@ var ELEMENT_DETAILS_ICON = b3`<svg width="14" height="14" viewBox="0 0 16 16" ar
 var OPEN_BUILDER_ICON = b3`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linejoin="round">
 	<path d="M10 3h3v3m0-3L7 9m5-1v5H3V4h5" />
 </svg>`;
+var CLOSE_ICON = b3`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round">
+	<path d="M4.5 4.5l7 7m0-7l-7 7" />
+</svg>`;
 var VIEWS = ["auto", "table", "list"];
 var LIST_BREAKPOINT = 680;
 var STATES = ["solid", "liquid", "gas"];
@@ -94583,7 +94631,7 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _pauseShellElectrons_dec, _pickerMode_dec, _view_dec, _initialElement_dec, _a3, _init3, _initialElement, _view, _pickerMode, _pauseShellElectrons, _ChemLabPeriodicTable_instances, startElementDrag_fn, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _swapped, _atomPreview, _atomChoices, _atomPreviewElement, _atomPeersObserver, _filtersOpen, _modesOpen, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _toggleAlternate, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, atomBuilder_fn, observeAtomPeers_fn, toggleAtomPreview_fn, renderAtomPreview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
+var _clearInitialElement_dec, _pauseShellElectrons_dec, _pickerMode_dec, _view_dec, _initialElement_dec, _a3, _init3, _initialElement, _view, _pickerMode, _pauseShellElectrons, _ChemLabPeriodicTable_instances, startElementDrag_fn, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _swapped, _atomPreview, _atomChoices, _atomPreviewElement, _atomPeersObserver, _filtersOpen, _modesOpen, _pickerInfo, _dragOrigin, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, onRowClick_fn, draggedFromHandle_fn, showPickerInfo_fn, _closePickerInfo, _onPickerKeydown, syncPickerAnchor_fn, pickerAnchorFor_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _toggleAlternate, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, atomBuilder_fn, observeAtomPeers_fn, toggleAtomPreview_fn, renderAtomPreview_fn, renderDetails_fn, renderPickerInfo_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
 var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _pickerMode_dec = [n7({ type: Boolean, reflect: true, attribute: "picker-mode" })], _pauseShellElectrons_dec = [n7({ type: Boolean, attribute: "pause-shell-electrons", reflect: true })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a3) {
   constructor() {
     super(...arguments);
@@ -94633,6 +94681,41 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElemen
     __privateAdd(this, _filtersOpen, false);
     /** Whether the panel with the property modes and their slider is open. */
     __privateAdd(this, _modesOpen, false);
+    /**
+     * Element whose info panel floats beside the palette, `null` when closed.
+     *
+     * The picker has no room for the inline card: the palette is a narrow column,
+     * and the card would replace the row that is also the drag handle. The panel
+     * therefore floats next to the entry it belongs to and leaves the list whole.
+     */
+    __privateAdd(this, _pickerInfo, null);
+    /**
+     * Where the pointer pressed a drag handle, `null` outside a press.
+     *
+     * The builder starts its drag after five pixels and does not suppress the
+     * click that follows, so the picker compares the click with the press and
+     * leaves the panel closed when the pointer travelled.
+     */
+    __privateAdd(this, _dragOrigin, null);
+    /** Closes the floating info panel of the picker. */
+    __privateAdd(this, _closePickerInfo, () => {
+      if (__privateGet(this, _pickerInfo) === null) return;
+      __privateSet(this, _pickerInfo, null);
+      this.requestUpdate();
+    });
+    /**
+     * Closes the floating panel on Escape.
+     *
+     * The panel is not modal and keeps the focus on the row that opened it, so the
+     * key is caught on the widget instead of on the card.
+     *
+     * @param event - Key event of the widget.
+     */
+    __privateAdd(this, _onPickerKeydown, (event) => {
+      if (event.key !== "Escape" || __privateGet(this, _pickerInfo) === null) return;
+      event.stopPropagation();
+      __privateGet(this, _closePickerInfo).call(this);
+    });
     /** Opens or closes the full detail card. */
     __privateAdd(this, _toggleDetails, () => {
       __privateSet(this, _detailsExpanded, !__privateGet(this, _detailsExpanded));
@@ -94864,6 +94947,7 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElemen
    * search field and then the layout switch are the stable fallbacks.
    */
   updated() {
+    __privateMethod(this, _ChemLabPeriodicTable_instances, syncPickerAnchor_fn).call(this);
     if (!__privateGet(this, _restoreFocusPending)) return;
     __privateSet(this, _restoreFocusPending, false);
     const previous = __privateGet(this, _focusBeforeLayout);
@@ -94897,10 +94981,11 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElemen
     const element = selected === null ? null : elementByAtomicNumber(selected) ?? null;
     const details = this.pickerMode ? null : __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetails_fn).call(this, t7, language, element, {
       expanded: resolved === "list" || __privateGet(this, _detailsExpanded),
-      collapsible: resolved === "table"
+      collapsible: resolved === "table",
+      atomPreview: true
     });
     return x2`
-			<div class="widget">
+			<div class="widget" @keydown=${__privateGet(this, _onPickerKeydown)}>
 				${this.pickerMode ? E2 : __privateMethod(this, _ChemLabPeriodicTable_instances, renderRibbon_fn).call(this, t7, language, resolved, matches.length)}
 				${resolved === "list" ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderList_fn).call(this, t7, language, matches, element, details) : __privateMethod(this, _ChemLabPeriodicTable_instances, renderGrid_fn).call(this, t7, language, matching, details)}
 				${this.pickerMode ? E2 : x2`
@@ -94914,6 +94999,7 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a3 = LitElemen
 					></sl-icon-button>
 					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderInfo_fn).call(this, t7, language)}
 				`}
+				${this.pickerMode ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderPickerInfo_fn).call(this, t7, language) : E2}
 			</div>
 		`;
   }
@@ -94926,6 +95012,8 @@ _pauseShellElectrons = new WeakMap();
 _ChemLabPeriodicTable_instances = new WeakSet();
 startElementDrag_fn = function(event, atomicNumber) {
   if (!this.pickerMode || !event.isPrimary || event.button !== 0) return;
+  __privateSet(this, _dragOrigin, { x: event.clientX, y: event.clientY });
+  __privateGet(this, _closePickerInfo).call(this);
   this.dispatchEvent(new CustomEvent("chemlab:element-drag", {
     bubbles: true,
     composed: true,
@@ -94954,6 +95042,8 @@ _atomPreviewElement = new WeakMap();
 _atomPeersObserver = new WeakMap();
 _filtersOpen = new WeakMap();
 _modesOpen = new WeakMap();
+_pickerInfo = new WeakMap();
+_dragOrigin = new WeakMap();
 /** Watches every ancestor the language walk visits for a `lang` change. */
 observeLanguage_fn = function() {
   __privateGet(this, _languageObserver)?.disconnect();
@@ -95067,6 +95157,88 @@ selectFromUser_fn = function(atomicNumber) {
   this.requestUpdate();
   __privateMethod(this, _ChemLabPeriodicTable_instances, dispatchSelection_fn).call(this);
   if (__privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get) === "list" && !this.pickerMode) __privateMethod(this, _ChemLabPeriodicTable_instances, focusDetails_fn).call(this);
+};
+/**
+ * Handles a click on a list row of the picker.
+ *
+ * The symbol tile is the drag handle, so a click there only selects the
+ * element; the rest of the row opens the info panel. The panel is the only
+ * place the picker can show the element data, because the row itself has to
+ * stay in place as the handle.
+ *
+ * @param event - Click event of the row.
+ * @param atomicNumber - Element of the row.
+ */
+onRowClick_fn = function(event, atomicNumber) {
+  __privateMethod(this, _ChemLabPeriodicTable_instances, selectFromUser_fn).call(this, atomicNumber);
+  if (!this.pickerMode) return;
+  const target = event.target instanceof Element ? event.target : null;
+  if (target?.closest(".list-symbol")) {
+    __privateGet(this, _closePickerInfo).call(this);
+    return;
+  }
+  if (__privateMethod(this, _ChemLabPeriodicTable_instances, draggedFromHandle_fn).call(this, event)) return;
+  __privateMethod(this, _ChemLabPeriodicTable_instances, showPickerInfo_fn).call(this, atomicNumber);
+};
+/**
+ * Whether the click that follows a press on a drag handle belongs to a drag.
+ *
+ * The builder starts its drag after five pixels and lets the click through,
+ * so a drop would otherwise open the panel of the element that was just
+ * placed. The press position is consumed here, because it describes one
+ * gesture only.
+ *
+ * @param event - Click event of the entry.
+ */
+draggedFromHandle_fn = function(event) {
+  const origin = __privateGet(this, _dragOrigin);
+  __privateSet(this, _dragOrigin, null);
+  if (!origin) return false;
+  return Math.hypot(event.clientX - origin.x, event.clientY - origin.y) >= 5;
+};
+/**
+ * Opens the floating info panel of the picker, or closes it on a second click.
+ *
+ * @param atomicNumber - Element the panel describes.
+ */
+showPickerInfo_fn = function(atomicNumber) {
+  const next = __privateGet(this, _pickerInfo) === atomicNumber ? null : atomicNumber;
+  if (next === __privateGet(this, _pickerInfo)) return;
+  __privateSet(this, _pickerInfo, next);
+  this.requestUpdate();
+};
+_closePickerInfo = new WeakMap();
+_onPickerKeydown = new WeakMap();
+/**
+ * Points the floating panel at the entry it describes.
+ *
+ * The rows are rebuilt with every change, so the anchor is looked up again
+ * after each render instead of being kept from the click. A panel whose entry
+ * the filter or the mode removed closes itself.
+ */
+syncPickerAnchor_fn = function() {
+  const popup = this.renderRoot.querySelector(".picker-info");
+  if (!popup) return;
+  const anchor = __privateGet(this, _pickerInfo) === null ? null : __privateMethod(this, _ChemLabPeriodicTable_instances, pickerAnchorFor_fn).call(this, __privateGet(this, _pickerInfo));
+  if (!anchor) {
+    __privateGet(this, _closePickerInfo).call(this);
+    return;
+  }
+  if (popup.anchor !== anchor) popup.anchor = anchor;
+};
+/**
+ * Element the floating panel hangs from.
+ *
+ * The list anchors the panel to the row it describes, so the card sits beside
+ * the entry that opened it. The grid has no room for that: a cell is a few
+ * pixels wide, and a panel beside it would cover the neighbouring cells. It
+ * hangs from the pane instead and sits beside the whole palette.
+ *
+ * @param atomicNumber - Element the panel describes.
+ */
+pickerAnchorFor_fn = function(atomicNumber) {
+  const selector = __privateGet(this, _ChemLabPeriodicTable_instances, resolvedView_get) === "table" ? ".table-pane" : `[data-atomic-number="${atomicNumber}"]`;
+  return this.renderRoot.querySelector(selector);
 };
 /** The card that replaced the selected list row, if the list shows one. */
 listDetailsCard_fn = function() {
@@ -95576,7 +95748,10 @@ renderCell_fn = function(cell, t7, language, roving, faded) {
 				data-atomic-number=${cell.atomicNumber}
 				style="--pt-row:${displayRow};--pt-column:${cell.column + 1}"
 				@pointerdown=${(event) => __privateMethod(this, _ChemLabPeriodicTable_instances, startElementDrag_fn).call(this, event, cell.atomicNumber)}
-				@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, selectFromUser_fn).call(this, cell.atomicNumber)}
+				@click=${(event) => {
+    __privateMethod(this, _ChemLabPeriodicTable_instances, selectFromUser_fn).call(this, cell.atomicNumber);
+    if (this.pickerMode && !__privateMethod(this, _ChemLabPeriodicTable_instances, draggedFromHandle_fn).call(this, event)) __privateMethod(this, _ChemLabPeriodicTable_instances, showPickerInfo_fn).call(this, cell.atomicNumber);
+  }}
 				@keydown=${(event) => __privateGet(this, _onCellKeydown).call(this, event, cell.atomicNumber)}
 			>
 				<span class="cell-number">${cell.atomicNumber}</span>
@@ -95712,11 +95887,10 @@ renderList_fn = function(t7, language, matches, element, details) {
 						type="button"
 						data-atomic-number=${entry.atomicNumber}
 						aria-pressed=${match.atomicNumber === selected}
-						@pointerdown=${(event) => __privateMethod(this, _ChemLabPeriodicTable_instances, startElementDrag_fn).call(this, event, entry.atomicNumber)}
-						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, selectFromUser_fn).call(this, entry.atomicNumber)}
+						@click=${(event) => __privateMethod(this, _ChemLabPeriodicTable_instances, onRowClick_fn).call(this, event, entry.atomicNumber)}
 					>
 						<span class="list-number">${entry.atomicNumber}</span>
-						<span class="list-symbol">${entry.symbol}</span>
+						<span class="list-symbol" @pointerdown=${(event) => __privateMethod(this, _ChemLabPeriodicTable_instances, startElementDrag_fn).call(this, event, entry.atomicNumber)}>${entry.symbol}</span>
 						<span class="list-name">${entry.names[language]}</span>
 						${this.pickerMode ? E2 : x2`<span class="list-category">${categoryText(entry, language)}</span>`}
 						${mode.state === null ? mode.badge === null ? null : x2`<sl-tag class="list-year" size="small" variant="neutral">${mode.badge}</sl-tag>` : x2`
@@ -95881,7 +96055,7 @@ renderDetails_fn = function(t7, language, element, options) {
 				</div>
 			`;
   }
-  const atomView = __privateGet(this, _atomPreview);
+  const atomView = options.atomPreview && __privateGet(this, _atomPreview);
   const openBuilder = atomView && __privateMethod(this, _ChemLabPeriodicTable_instances, atomBuilder_fn).call(this);
   const viewText = atomView ? language === "de" ? "Elementinformationen" : "Element information" : language === "de" ? "Atommodelle" : "Atom models";
   const builderText = language === "de" ? "Im Molek\xFClbaukasten \xF6ffnen" : "Open in Molecule Builder";
@@ -95915,10 +96089,12 @@ renderDetails_fn = function(t7, language, element, options) {
     const builder = __privateMethod(this, _ChemLabPeriodicTable_instances, atomBuilder_fn).call(this);
     if (builder?.viewAtom(element.atomicNumber, __privateGet(this, _atomChoices).model)) builder.scrollIntoView({ block: "nearest" });
   }}>${OPEN_BUILDER_ICON}</sl-button>` : E2}
-							<sl-button class="details-view-button atom-preview-toggle" size="small" variant=${atomView ? "primary" : "default"}
+							${options.atomPreview ? x2`<sl-button class="details-view-button atom-preview-toggle" size="small" variant=${atomView ? "primary" : "default"}
 								title=${viewText} aria-label=${viewText} aria-pressed=${String(atomView)} @click=${__privateMethod(this, _ChemLabPeriodicTable_instances, toggleAtomPreview_fn)}>
 								${atomView ? ELEMENT_DETAILS_ICON : ATOM_PREVIEW_ICON}
-							</sl-button>
+							</sl-button>` : E2}
+							${options.close ? x2`<sl-button class="details-view-button details-close" size="small"
+								title=${t7.infoClose} aria-label=${t7.infoClose} @click=${options.close}>${CLOSE_ICON}</sl-button>` : E2}
 						</div>
 					</div>
 					${atomView ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderAtomPreview_fn).call(this, element, language) : x2`<div class="details-body">
@@ -95939,6 +96115,36 @@ renderDetails_fn = function(t7, language, element, options) {
 						>${CHEVRON_ICON}</sl-button>
 					` : null}
 			</div>
+		`;
+};
+/**
+ * Renders the floating info panel of the picker.
+ *
+ * The panel hangs beside the entry it describes instead of replacing it,
+ * because the entry has to stay in place as the drag handle. It carries the
+ * same card as the standalone widget, minus the atom model view, and closes
+ * through its own button or Escape.
+ *
+ * @param t - Interface strings.
+ * @param language - Interface language.
+ * @returns The panel, or nothing while it is closed.
+ */
+renderPickerInfo_fn = function(t7, language) {
+  const atomicNumber = __privateGet(this, _pickerInfo);
+  if (atomicNumber === null) return E2;
+  const element = elementByAtomicNumber(atomicNumber);
+  if (!element) return E2;
+  return x2`
+			<sl-popup class="picker-info" placement="right-start" distance="6" flip shift auto-size="vertical" .active=${true}>
+				<div class="picker-info-surface" role="dialog" aria-label=${element.names[language]}>
+					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderDetails_fn).call(this, t7, language, element, {
+    expanded: true,
+    collapsible: false,
+    atomPreview: false,
+    close: __privateGet(this, _closePickerInfo)
+  })}
+				</div>
+			</sl-popup>
 		`;
 };
 /**

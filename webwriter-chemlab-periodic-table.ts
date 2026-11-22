@@ -104,6 +104,9 @@ const ELEMENT_DETAILS_ICON = svg`<svg width="14" height="14" viewBox="0 0 16 16"
 const OPEN_BUILDER_ICON = svg`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linejoin="round">
 	<path d="M10 3h3v3m0-3L7 9m5-1v5H3V4h5" />
 </svg>`;
+const CLOSE_ICON = svg`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round">
+	<path d="M4.5 4.5l7 7m0-7l-7 7" />
+</svg>`;
 
 /** Author layout choice. `auto` follows the container width. */
 export type PeriodicTableView = "auto" | "table" | "list";
@@ -125,6 +128,15 @@ interface DetailsOptions {
 	readonly expanded: boolean;
 	/** Whether the card offers the corner toggle; the list keeps its card open. */
 	readonly collapsible: boolean;
+	/**
+	 * Whether the header offers the atom model view.
+	 *
+	 * The picker panel leaves it out: the palette is a narrow column, and the
+	 * model would take the room the element data needs.
+	 */
+	readonly atomPreview: boolean;
+	/** Closes the card when it floats; the inline cards pass nothing. */
+	readonly close?: () => void;
 }
 
 /** One labelled section of the expanded detail card. */
@@ -404,6 +416,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 
 	#startElementDrag(event: PointerEvent, atomicNumber: number) {
 		if (!this.pickerMode || !event.isPrimary || event.button !== 0) return;
+		this.#dragOrigin = { x: event.clientX, y: event.clientY };
+		// A press on a handle means placing, not reading, so the panel makes way
+		// for the canvas. A plain click opens it again on release.
+		this.#closePickerInfo();
 		this.dispatchEvent(new CustomEvent("chemlab:element-drag", {
 			bubbles: true,
 			composed: true,
@@ -450,6 +466,22 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#filtersOpen = false;
 	/** Whether the panel with the property modes and their slider is open. */
 	#modesOpen = false;
+	/**
+	 * Element whose info panel floats beside the palette, `null` when closed.
+	 *
+	 * The picker has no room for the inline card: the palette is a narrow column,
+	 * and the card would replace the row that is also the drag handle. The panel
+	 * therefore floats next to the entry it belongs to and leaves the list whole.
+	 */
+	#pickerInfo: number | null = null;
+	/**
+	 * Where the pointer pressed a drag handle, `null` outside a press.
+	 *
+	 * The builder starts its drag after five pixels and does not suppress the
+	 * click that follows, so the picker compares the click with the press and
+	 * leaves the panel closed when the pointer travelled.
+	 */
+	#dragOrigin: { x: number; y: number } | null = null;
 
 	/**
 	 * Currently selected atomic number, `null` when nothing is selected.
@@ -537,6 +569,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * search field and then the layout switch are the stable fallbacks.
 	 */
 	protected updated() {
+		this.#syncPickerAnchor();
 		if (!this.#restoreFocusPending) return;
 		this.#restoreFocusPending = false;
 		const previous = this.#focusBeforeLayout;
@@ -685,6 +718,117 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		this.requestUpdate();
 		this.#dispatchSelection();
 		if (this.#resolvedView === "list" && !this.pickerMode) this.#focusDetails();
+	}
+
+	/**
+	 * Handles a click on a list row of the picker.
+	 *
+	 * The symbol tile is the drag handle, so a click there only selects the
+	 * element; the rest of the row opens the info panel. The panel is the only
+	 * place the picker can show the element data, because the row itself has to
+	 * stay in place as the handle.
+	 *
+	 * @param event - Click event of the row.
+	 * @param atomicNumber - Element of the row.
+	 */
+	#onRowClick(event: MouseEvent, atomicNumber: number) {
+		this.#selectFromUser(atomicNumber);
+		if (!this.pickerMode) return;
+		const target = event.target instanceof Element ? event.target : null;
+		// The symbol tile is the drag handle, so a click there only selects. The
+		// panel closes, because it would otherwise keep describing the element
+		// that was clicked before.
+		if (target?.closest(".list-symbol")) {
+			this.#closePickerInfo();
+			return;
+		}
+		if (this.#draggedFromHandle(event)) return;
+		this.#showPickerInfo(atomicNumber);
+	}
+
+	/**
+	 * Whether the click that follows a press on a drag handle belongs to a drag.
+	 *
+	 * The builder starts its drag after five pixels and lets the click through,
+	 * so a drop would otherwise open the panel of the element that was just
+	 * placed. The press position is consumed here, because it describes one
+	 * gesture only.
+	 *
+	 * @param event - Click event of the entry.
+	 */
+	#draggedFromHandle(event: MouseEvent) {
+		const origin = this.#dragOrigin;
+		this.#dragOrigin = null;
+		if (!origin) return false;
+		return Math.hypot(event.clientX - origin.x, event.clientY - origin.y) >= 5;
+	}
+
+	/**
+	 * Opens the floating info panel of the picker, or closes it on a second click.
+	 *
+	 * @param atomicNumber - Element the panel describes.
+	 */
+	#showPickerInfo(atomicNumber: number) {
+		const next = this.#pickerInfo === atomicNumber ? null : atomicNumber;
+		if (next === this.#pickerInfo) return;
+		this.#pickerInfo = next;
+		this.requestUpdate();
+	}
+
+	/** Closes the floating info panel of the picker. */
+	#closePickerInfo = () => {
+		if (this.#pickerInfo === null) return;
+		this.#pickerInfo = null;
+		this.requestUpdate();
+	};
+
+	/**
+	 * Closes the floating panel on Escape.
+	 *
+	 * The panel is not modal and keeps the focus on the row that opened it, so the
+	 * key is caught on the widget instead of on the card.
+	 *
+	 * @param event - Key event of the widget.
+	 */
+	#onPickerKeydown = (event: KeyboardEvent) => {
+		if (event.key !== "Escape" || this.#pickerInfo === null) return;
+		event.stopPropagation();
+		this.#closePickerInfo();
+	};
+
+	/**
+	 * Points the floating panel at the entry it describes.
+	 *
+	 * The rows are rebuilt with every change, so the anchor is looked up again
+	 * after each render instead of being kept from the click. A panel whose entry
+	 * the filter or the mode removed closes itself.
+	 */
+	#syncPickerAnchor() {
+		const popup = this.renderRoot.querySelector<SlPopup>(".picker-info");
+		if (!popup) return;
+		const anchor = this.#pickerInfo === null ? null : this.#pickerAnchorFor(this.#pickerInfo);
+		if (!anchor) {
+			this.#closePickerInfo();
+			return;
+		}
+		if (popup.anchor !== anchor) popup.anchor = anchor;
+	}
+
+	/**
+	 * Element the floating panel hangs from.
+	 *
+	 * The list anchors the panel to the row it describes, so the card sits beside
+	 * the entry that opened it. The grid has no room for that: a cell is a few
+	 * pixels wide, and a panel beside it would cover the neighbouring cells. It
+	 * hangs from the pane instead and sits beside the whole palette.
+	 *
+	 * @param atomicNumber - Element the panel describes.
+	 */
+	#pickerAnchorFor(atomicNumber: number): HTMLElement | null {
+		const selector = this.#resolvedView === "table"
+			? ".table-pane"
+			: `[data-atomic-number="${atomicNumber}"]`;
+		return this.renderRoot.querySelector<HTMLElement>(selector);
 	}
 
 	/** The card that replaced the selected list row, if the list shows one. */
@@ -1377,7 +1521,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 				data-atomic-number=${cell.atomicNumber}
 				style="--pt-row:${displayRow};--pt-column:${cell.column + 1}"
 				@pointerdown=${(event: PointerEvent) => this.#startElementDrag(event, cell.atomicNumber)}
-				@click=${() => this.#selectFromUser(cell.atomicNumber)}
+				@click=${(event: MouseEvent) => {
+					this.#selectFromUser(cell.atomicNumber);
+					if (this.pickerMode && !this.#draggedFromHandle(event)) this.#showPickerInfo(cell.atomicNumber);
+				}}
 				@keydown=${(event: KeyboardEvent) => this.#onCellKeydown(event, cell.atomicNumber)}
 			>
 				<span class="cell-number">${cell.atomicNumber}</span>
@@ -1531,11 +1678,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 						type="button"
 						data-atomic-number=${entry.atomicNumber}
 						aria-pressed=${match.atomicNumber === selected}
-						@pointerdown=${(event: PointerEvent) => this.#startElementDrag(event, entry.atomicNumber)}
-						@click=${() => this.#selectFromUser(entry.atomicNumber)}
+						@click=${(event: MouseEvent) => this.#onRowClick(event, entry.atomicNumber)}
 					>
 						<span class="list-number">${entry.atomicNumber}</span>
-						<span class="list-symbol">${entry.symbol}</span>
+						<span class="list-symbol" @pointerdown=${(event: PointerEvent) => this.#startElementDrag(event, entry.atomicNumber)}>${entry.symbol}</span>
 						<span class="list-name">${entry.names[language]}</span>
 						${this.pickerMode ? nothing : html`<span class="list-category">${categoryText(entry, language)}</span>`}
 						${mode.state === null
@@ -1721,7 +1867,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 				</div>
 			`;
 		}
-		const atomView = this.#atomPreview;
+		const atomView = options.atomPreview && this.#atomPreview;
 		const openBuilder = atomView && this.#atomBuilder();
 		const viewText = atomView ? (language === "de" ? "Elementinformationen" : "Element information")
 			: (language === "de" ? "Atommodelle" : "Atom models");
@@ -1756,10 +1902,12 @@ export class ChemLabPeriodicTable extends LitElementWw {
 									const builder = this.#atomBuilder();
 									if (builder?.viewAtom(element.atomicNumber, this.#atomChoices.model)) builder.scrollIntoView({ block: "nearest" });
 								}}>${OPEN_BUILDER_ICON}</sl-button>` : nothing}
-							<sl-button class="details-view-button atom-preview-toggle" size="small" variant=${atomView ? "primary" : "default"}
+							${options.atomPreview ? html`<sl-button class="details-view-button atom-preview-toggle" size="small" variant=${atomView ? "primary" : "default"}
 								title=${viewText} aria-label=${viewText} aria-pressed=${String(atomView)} @click=${this.#toggleAtomPreview}>
 								${atomView ? ELEMENT_DETAILS_ICON : ATOM_PREVIEW_ICON}
-							</sl-button>
+							</sl-button>` : nothing}
+							${options.close ? html`<sl-button class="details-view-button details-close" size="small"
+								title=${t.infoClose} aria-label=${t.infoClose} @click=${options.close}>${CLOSE_ICON}</sl-button>` : nothing}
 						</div>
 					</div>
 					${atomView ? this.#renderAtomPreview(element, language) : html`<div class="details-body">
@@ -1784,6 +1932,37 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					`
 					: null}
 			</div>
+		`;
+	}
+
+	/**
+	 * Renders the floating info panel of the picker.
+	 *
+	 * The panel hangs beside the entry it describes instead of replacing it,
+	 * because the entry has to stay in place as the drag handle. It carries the
+	 * same card as the standalone widget, minus the atom model view, and closes
+	 * through its own button or Escape.
+	 *
+	 * @param t - Interface strings.
+	 * @param language - Interface language.
+	 * @returns The panel, or nothing while it is closed.
+	 */
+	#renderPickerInfo(t: Strings, language: Language) {
+		const atomicNumber = this.#pickerInfo;
+		if (atomicNumber === null) return nothing;
+		const element = elementByAtomicNumber(atomicNumber);
+		if (!element) return nothing;
+		return html`
+			<sl-popup class="picker-info" placement="right-start" distance="6" flip shift auto-size="vertical" .active=${true}>
+				<div class="picker-info-surface" role="dialog" aria-label=${element.names[language]}>
+					${this.#renderDetails(t, language, element, {
+						expanded: true,
+						collapsible: false,
+						atomPreview: false,
+						close: this.#closePickerInfo,
+					})}
+				</div>
+			</sl-popup>
 		`;
 	}
 
@@ -1965,9 +2144,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const details = this.pickerMode ? null : this.#renderDetails(t, language, element, {
 			expanded: resolved === "list" || this.#detailsExpanded,
 			collapsible: resolved === "table",
+			atomPreview: true,
 		});
 		return html`
-			<div class="widget">
+			<div class="widget" @keydown=${this.#onPickerKeydown}>
 				${this.pickerMode ? nothing : this.#renderRibbon(t, language, resolved, matches.length)}
 				${resolved === "list"
 					? this.#renderList(t, language, matches, element, details)
@@ -1983,6 +2163,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					></sl-icon-button>
 					${this.#renderInfo(t, language)}
 				`}
+				${this.pickerMode ? this.#renderPickerInfo(t, language) : nothing}
 			</div>
 		`;
 	}
