@@ -1968,7 +1968,7 @@ export const style = css`
 		border-color: var(--sl-color-danger-200);
 	}
 	.electrical-settings {
-		inline-size: 12rem;
+		inline-size: 10.5rem;
 		max-inline-size: 100%;
 	}
 	.electrical-settings::part(header),
@@ -2124,37 +2124,37 @@ export const style = css`
 	}
 	#amountMenu {
 		display: grid;
-		gap: 6px;
+		gap: 4px;
 		z-index: 2;
-		inline-size: min(14rem, calc(100% - 8px));
+		inline-size: min(12rem, calc(100% - 8px));
 		max-inline-size: none;
 		max-block-size: min(16rem, calc(100% - 8px));
-		padding: 7px;
+		padding: 5px;
 	}
 	.amount-menu-heading,
 	.amount-menu-actions {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
+		align-items: center;
 		justify-content: space-between;
-		gap: 4px;
+		gap: 3px;
 	}
-	.amount-menu-limit {
-		color: var(--lab-card-secondary-text);
-		font-size: .72rem;
-		font-variant-numeric: tabular-nums;
+	.amount-menu-heading strong {
+		font-size: .77rem;
+		line-height: 1.15;
 	}
 	.amount-menu-route {
 		display: grid;
 		grid-template-columns: minmax(0, 1.15fr) auto minmax(0, 1fr);
 		align-items: center;
-		gap: 4px;
+		gap: 3px;
 	}
 	.amount-menu-route sl-tag::part(base) {
 		box-sizing: border-box;
 		block-size: auto;
 		min-block-size: 1.125rem;
 		inline-size: 100%;
+		font-size: .71rem;
+		padding-inline: 4px;
 		padding-block: 2px;
 		white-space: normal;
 		line-height: 1.15;
@@ -2166,6 +2166,7 @@ export const style = css`
 		color: var(--lab-card-secondary-text);
 	}
 	.amount-menu-actions {
+		flex: none;
 		justify-content: flex-end;
 	}
 	.volume-bar {
@@ -2229,27 +2230,24 @@ export const style = css`
 	}
 	.device-controls {
 		display: grid;
-		inline-size: 12rem;
 		max-inline-size: 100%;
-		gap: 2px;
-		margin-block: 5px;
-		padding: 4px;
+		margin-block: 3px;
+		padding: 3px;
 		box-sizing: border-box;
 		border: 1px solid var(--lab-card-border);
 		border-radius: 4px;
-		background: var(--lab-card-surface);
 	}
+	.device-controls[data-adjustable] { inline-size: 10.5rem; }
+	.device-controls:has(#dispenseBurette) { min-inline-size: min(10.5rem, 100%); inline-size: 100%; }
 	.device-actions, .device-mode, .device-readouts {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 3px;
 	}
-	.device-actions { justify-content: space-between; }
-	.device-actions sl-button { --sl-input-height-small: 26px; max-inline-size: 100%; }
-	.device-actions sl-button::part(label) { padding-inline: 6px; }
-	.device-mode sl-button::part(label) { min-inline-size: 22px; padding-inline: 2px; font-weight: 600; }
-	.device-readouts { padding-block-start: 4px; font-variant-numeric: tabular-nums; }
+	.device-actions { flex: none; justify-content: flex-end; }
+	.device-actions:has(.device-mode) { justify-content: space-between; }
+	.device-readouts { padding-block-start: 3px; font-size: .74rem; font-variant-numeric: tabular-nums; }
 	.device-reading {
 		padding: 1px 5px;
 		border: 1px solid var(--lab-card-border);
@@ -2257,7 +2255,8 @@ export const style = css`
 		background: var(--lab-card-inset);
 	}
 	.device-diagnostics {
-		margin-block: 4px;
+		margin-block: 2px;
+		font-size: .74rem;
 		color: var(--lab-card-secondary-text);
 	}
 	.device-diagnostics summary {

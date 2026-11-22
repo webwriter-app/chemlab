@@ -96,6 +96,14 @@ const SURFACE_DISPLACEMENT_TASK = "surface-displacement";
 const MIN_TWO_PANELS_WIDTH = 480;
 const RC_UPDATE_MS = 50;
 const DIAGRAM_PICKER_CLOSE_MS = 2000;
+const CONTROL_ICONS = {
+	power: "M8 2v5m3.2-3.8a5.5 5.5 0 1 1-6.4 0",
+	drop: "M8 2.4c1.4 2.2 4 4.5 4 7a4 4 0 1 1-8 0c0-2.5 2.6-4.8 4-7Z",
+	play: "M5 3.5 12 8l-7 4.5z",
+	stop: "M4 4h8v8H4z",
+	cancel: "m4 4 8 8m0-8-8 8",
+	confirm: "m3.5 8 3 3 6-6",
+};
 type RCSettings = NonNullable<chemlib.ElectricComponent["_rcSettings"]>;
 type RCReadout = { sample: chemlib.NoIonicPathTransientSample; timeConstant: number; cutoffAt: number };
 
@@ -3825,6 +3833,15 @@ export class ChemLab extends LitElementWw {
 			</div>`;
 	}
 
+	private renderCompactAction(label: string, icon: keyof typeof CONTROL_ICONS, action: () => void,
+		{ id, primary = false, disabled = false }: { id?: string; primary?: boolean; disabled?: boolean } = {}) {
+		return html`<sl-button size="small" class="compact-control-button" id=${id ?? nothing}
+			variant=${primary ? "primary" : "default"} title=${label} aria-label=${label} ?disabled=${disabled} @click=${action}>
+			<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+				stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${CONTROL_ICONS[icon]}/></svg>
+		</sl-button>`;
+	}
+
 	private renderAmountMenu() {
 		const menu = this.amountMenu;
 		if (!menu) return nothing;
@@ -3839,7 +3856,11 @@ export class ChemLab extends LitElementWw {
 				@keydown=${this.handleAmountMenuKey}>
 				<div class="amount-menu-heading">
 					<strong id="amountMenuTitle">${this.message(transfer ? "Inhalt übertragen" : "Stoff hinzufügen")}</strong>
-					${menu.max > 0 ? html`<span class="amount-menu-limit">max. ${this.formatAmount(menu.max, 7)} mL</span>` : nothing}
+					<div class="amount-menu-actions">
+						${this.renderCompactAction(this.message(menu.max > 0 ? "Abbrechen" : "Schließen"), "cancel", this.dismissAmountMenu)}
+						${menu.max > 0 ? this.renderCompactAction(this.message(transfer ? "Übertragen" : "Hinzufügen"), "confirm",
+							this.confirmAmount.bind(this), { primary: true, disabled: menu.amount <= 0 }) : nothing}
+					</div>
 				</div>
 				<div class="amount-menu-route">
 					<sl-tag size="small" variant="neutral">${from}</sl-tag>
@@ -3852,19 +3873,12 @@ export class ChemLab extends LitElementWw {
 				</div>
 				${menu.max > 0 ? renderValueControl({
 					label: this.message("Menge"), unit: "mL", value: menu.amount, min: 0, max: menu.max,
+					hint: `max. ${this.formatAmount(menu.max, 7)} mL`,
 					step: 0.1, rangeStep: sliderStep, locale: this.lang,
 					decreaseLabel: this.message("Menge verringern"), increaseLabel: this.message("Menge erhöhen"),
 					invalidLabel: this.message("Gib eine Zahl ein."),
 					onChange: changeAmount, onInput: changeAmount,
 				}) : html`<span role="status">${this.message("Keine Menge verfügbar.")}</span>`}
-				<div class="amount-menu-actions">
-					<sl-button size="small" @click=${this.dismissAmountMenu}>
-						${this.message(menu.max > 0 ? "Abbrechen" : "Schließen")}
-					</sl-button>
-					${menu.max > 0 ? html`<sl-button size="small" variant="primary" ?disabled=${menu.amount <= 0} @click=${this.confirmAmount}>
-						${this.message(transfer ? "Übertragen" : "Hinzufügen")}
-					</sl-button>` : nothing}
-				</div>
 			</section>`;
 	}
 
@@ -3980,32 +3994,30 @@ export class ChemLab extends LitElementWw {
 			if (!vessel.setBuretteStepMl(amount)) return;
 			this.requestUpdate();
 		};
+		const actions = html`<div class="device-actions">
+			${burette ? this.renderCompactAction(this.message("Einzeldosis"), "drop", () => {
+				if (this.stepTitration(vessel)) return;
+				this._notify(this.message(!vessel._content._activeMolecules.length ? "Die Bürette ist leer."
+					: !this.canvas.titrationTarget(vessel) ? "Platziere ein Gefäß unter der Bürette."
+					: "Das Zielgefäß kann nichts mehr aufnehmen."));
+			}, { id: "dispenseBurette", disabled: flowing }) : nothing}
+			${this.renderCompactAction(this.message(flowing ? "Hahn schließen" : "Hahn öffnen"), flowing ? "stop" : "play", () => {
+				if (flowing) this.simulation.stopTask(task);
+				else this.simulation.startExperiment(task, () => this.stepTitration(vessel));
+				this.requestUpdate();
+				this._sendxAPiStatement(flowing ? "completed" : "started", task);
+			}, { id: "openComp", primary: flowing })}
+		</div>`;
 		return keyed(vessel, html`
-			<div class="device-controls">
+			<div class="device-controls" ?data-adjustable=${burette}>
 				${burette ? renderValueControl({
-					label: this.message("Dosierschritt"), unit: "mL", value: volume,
+					label: this.message("Dosierschritt"), unit: "mL", value: volume, actions,
 					min: Number.MIN_VALUE * 1000, max: Number.MAX_VALUE, rangeMin: .01, rangeMax: 1, step: .01,
 					locale: this.lang, invalidLabel: this.message("Gib eine Zahl ein."), onInput: setStep, onChange: (amount) => {
 						setStep(amount);
 						this.saveSelectedComponent({ stepVolumeMl: vessel.buretteStepMl });
 					},
-				}) : nothing}
-				<div class="device-actions">
-					${burette ? html`<sl-button size="small" id="dispenseBurette" ?disabled=${flowing}
-						@click=${() => {
-							if (this.stepTitration(vessel)) return;
-							this._notify(this.message(!vessel._content._activeMolecules.length ? "Die Bürette ist leer."
-								: !this.canvas.titrationTarget(vessel) ? "Platziere ein Gefäß unter der Bürette."
-								: "Das Zielgefäß kann nichts mehr aufnehmen."));
-						}}>${this.message("Einzeldosis")}</sl-button>` : nothing}
-					<sl-button size="small" id="openComp" variant=${flowing ? "primary" : "default"}
-						@click=${() => {
-							if (flowing) this.simulation.stopTask(task);
-							else this.simulation.startExperiment(task, () => this.stepTitration(vessel));
-							this.requestUpdate();
-							this._sendxAPiStatement(flowing ? "completed" : "started", task);
-						}}>${this.message(flowing ? "Hahn schließen" : "Hahn öffnen")}</sl-button>
-				</div>
+				}) : actions}
 			</div>`);
 	}
 
@@ -4038,10 +4050,33 @@ export class ChemLab extends LitElementWw {
 			this.canvas.refreshDeviceDisplay(device);
 			this.requestUpdate();
 		};
+		const actions = html`<div class="device-actions">
+			${source || device._type === Multimeter ? html`
+				<div class="device-mode" role="group" aria-label=${this.message(source ? "Betriebsart" : "Messbereich")}>
+					${(["voltage", "current"] as const).map(next => {
+						const label = this.message(next === "voltage"
+							? source ? "Spannung vorgeben" : "Spannung" : source ? "Stromstärke vorgeben" : "Stromstärke");
+						return html`<sl-button size="small" class="compact-control-button" data-mode=${next}
+							variant=${mode === next ? "primary" : "default"}
+							aria-pressed=${mode === next} aria-label=${label} title=${label} @click=${() => changeMode(next)}>
+							${next === "voltage" ? "V" : "A"}</sl-button>`;
+					})}
+				</div>` : nothing}
+			${this.renderCompactAction(this.message(active ? "Ausschalten" : "Einschalten"), "power", () => {
+				this.canvas.setDeviceActive(device, !active);
+				if (active) {
+					this.simulation.stopTask(task);
+					this.clearEChemReadings(device);
+				} else this.startElectricalExperiment(task, device);
+				this._updatePopup();
+				this.requestUpdate();
+				this._sendxAPiStatement(active ? "completed" : "started", task);
+			}, { id: "activateEComp", primary: active })}
+		</div>`;
 		return keyed(device, html`
-			<div class="device-controls">
+			<div class="device-controls" ?data-adjustable=${source}>
 				${source ? renderValueControl({
-					label: this.message(current ? "Sollstrom" : "Sollspannung"), unit: current ? "A" : "V", value,
+					label: this.message(current ? "Sollstrom" : "Sollspannung"), unit: current ? "A" : "V", value, actions,
 					min: 0, max: Number.MAX_VALUE, rangeMax: current ? 2 : 30,
 					step: current ? .01 : .1, rangeStep: current ? .01 : .5,
 					locale: this.lang, invalidLabel: this.message("Gib eine Zahl ein."), onInput: setpoint, onChange: (next) => {
@@ -4049,30 +4084,7 @@ export class ChemLab extends LitElementWw {
 						this.saveSelectedComponent(current ? { current: next } : { voltage: next });
 						this._sendxAPiStatement("submitted", `${current ? "current" : "voltage"} ${device._type}:${device._id}`);
 					},
-				}) : nothing}
-				<div class="device-actions">
-					${source || device._type === Multimeter ? html`
-						<div class="device-mode" role="group" aria-label=${this.message(source ? "Betriebsart" : "Messbereich")}>
-							${(["voltage", "current"] as const).map(next => {
-								const label = this.message(next === "voltage"
-									? source ? "Spannung vorgeben" : "Spannung" : source ? "Stromstärke vorgeben" : "Stromstärke");
-								return html`<sl-button size="small" data-mode=${next} variant=${mode === next ? "primary" : "default"}
-									aria-pressed=${mode === next} aria-label=${label} title=${label} @click=${() => changeMode(next)}>
-									${next === "voltage" ? "V" : "A"}</sl-button>`;
-							})}
-						</div>` : nothing}
-					<sl-button size="small" id="activateEComp" variant=${active ? "primary" : "default"}
-						@click=${() => {
-							this.canvas.setDeviceActive(device, !active);
-							if (active) {
-								this.simulation.stopTask(task);
-								this.clearEChemReadings(device);
-							} else this.startElectricalExperiment(task, device);
-							this._updatePopup();
-							this.requestUpdate();
-							this._sendxAPiStatement(active ? "completed" : "started", task);
-						}}>${this.message(active ? "Ausschalten" : "Einschalten")}</sl-button>
-				</div>
+				}) : actions}
 			</div>`);
 	}
 

@@ -112956,7 +112956,7 @@ var style = i`
 		border-color: var(--sl-color-danger-200);
 	}
 	.electrical-settings {
-		inline-size: 12rem;
+		inline-size: 10.5rem;
 		max-inline-size: 100%;
 	}
 	.electrical-settings::part(header),
@@ -113112,37 +113112,37 @@ var style = i`
 	}
 	#amountMenu {
 		display: grid;
-		gap: 6px;
+		gap: 4px;
 		z-index: 2;
-		inline-size: min(14rem, calc(100% - 8px));
+		inline-size: min(12rem, calc(100% - 8px));
 		max-inline-size: none;
 		max-block-size: min(16rem, calc(100% - 8px));
-		padding: 7px;
+		padding: 5px;
 	}
 	.amount-menu-heading,
 	.amount-menu-actions {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
+		align-items: center;
 		justify-content: space-between;
-		gap: 4px;
+		gap: 3px;
 	}
-	.amount-menu-limit {
-		color: var(--lab-card-secondary-text);
-		font-size: .72rem;
-		font-variant-numeric: tabular-nums;
+	.amount-menu-heading strong {
+		font-size: .77rem;
+		line-height: 1.15;
 	}
 	.amount-menu-route {
 		display: grid;
 		grid-template-columns: minmax(0, 1.15fr) auto minmax(0, 1fr);
 		align-items: center;
-		gap: 4px;
+		gap: 3px;
 	}
 	.amount-menu-route sl-tag::part(base) {
 		box-sizing: border-box;
 		block-size: auto;
 		min-block-size: 1.125rem;
 		inline-size: 100%;
+		font-size: .71rem;
+		padding-inline: 4px;
 		padding-block: 2px;
 		white-space: normal;
 		line-height: 1.15;
@@ -113154,6 +113154,7 @@ var style = i`
 		color: var(--lab-card-secondary-text);
 	}
 	.amount-menu-actions {
+		flex: none;
 		justify-content: flex-end;
 	}
 	.volume-bar {
@@ -113217,27 +113218,24 @@ var style = i`
 	}
 	.device-controls {
 		display: grid;
-		inline-size: 12rem;
 		max-inline-size: 100%;
-		gap: 2px;
-		margin-block: 5px;
-		padding: 4px;
+		margin-block: 3px;
+		padding: 3px;
 		box-sizing: border-box;
 		border: 1px solid var(--lab-card-border);
 		border-radius: 4px;
-		background: var(--lab-card-surface);
 	}
+	.device-controls[data-adjustable] { inline-size: 10.5rem; }
+	.device-controls:has(#dispenseBurette) { min-inline-size: min(10.5rem, 100%); inline-size: 100%; }
 	.device-actions, .device-mode, .device-readouts {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 3px;
 	}
-	.device-actions { justify-content: space-between; }
-	.device-actions sl-button { --sl-input-height-small: 26px; max-inline-size: 100%; }
-	.device-actions sl-button::part(label) { padding-inline: 6px; }
-	.device-mode sl-button::part(label) { min-inline-size: 22px; padding-inline: 2px; font-weight: 600; }
-	.device-readouts { padding-block-start: 4px; font-variant-numeric: tabular-nums; }
+	.device-actions { flex: none; justify-content: flex-end; }
+	.device-actions:has(.device-mode) { justify-content: space-between; }
+	.device-readouts { padding-block-start: 3px; font-size: .74rem; font-variant-numeric: tabular-nums; }
 	.device-reading {
 		padding: 1px 5px;
 		border: 1px solid var(--lab-card-border);
@@ -113245,7 +113243,8 @@ var style = i`
 		background: var(--lab-card-inset);
 	}
 	.device-diagnostics {
-		margin-block: 4px;
+		margin-block: 2px;
+		font-size: .74rem;
 		color: var(--lab-card-secondary-text);
 	}
 	.device-diagnostics summary {
@@ -190379,7 +190378,9 @@ function renderValueControl({
   locale,
   decreaseLabel = `\u2212 ${label}`,
   increaseLabel = `+ ${label}`,
-  invalidLabel = "Enter a number."
+  invalidLabel = "Enter a number.",
+  hint,
+  actions
 }) {
   const clamp3 = (next) => Math.max(min6, Math.min(max6, next));
   const clampRange = (next) => Math.max(rangeMin, Math.min(rangeMax, next));
@@ -190423,10 +190424,15 @@ function renderValueControl({
     if (next !== value) onChange(next);
   };
   return x`<div class="value-control" role="group" aria-label=${label} contenteditable="false">
-		<div class="value-control-row">
+		<div class="value-control-caption">
 			<span class="value-control-label">${label}</span>
-			<sl-button size="small" class="value-control-step" title=${decreaseLabel} aria-label=${decreaseLabel}
-				?disabled=${disabled || value <= min6} @click=${adjust(-1)}>−</sl-button>
+			${hint ? x`<span class="value-control-hint">${hint}</span>` : actions}
+		</div>
+		<div class="value-control-row">
+			<sl-button size="small" class="compact-control-button value-control-step" title=${decreaseLabel} aria-label=${decreaseLabel}
+				?disabled=${disabled || value <= min6} @click=${adjust(-1)}>
+				<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="M4 8h8"/></svg>
+			</sl-button>
 			<label class="value-control-number">
 				<input class="value-control-exact" type="text" inputmode="decimal" autocomplete="off"
 					aria-label=${`${label} (${unit2})`} .value=${formatValue} ?disabled=${!!disabled}
@@ -190453,8 +190459,10 @@ function renderValueControl({
   }}>
 				<span aria-hidden="true">${unit2}</span>
 			</label>
-			<sl-button size="small" class="value-control-step" title=${increaseLabel} aria-label=${increaseLabel}
-				?disabled=${disabled || value >= max6} @click=${adjust(1)}>+</sl-button>
+			<sl-button size="small" class="compact-control-button value-control-step" title=${increaseLabel} aria-label=${increaseLabel}
+				?disabled=${disabled || value >= max6} @click=${adjust(1)}>
+				<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="M4 8h8M8 4v8"/></svg>
+			</sl-button>
 		</div>
 		<input class="value-control-range" type="range" step="any" dir="ltr" min=${rangeMin} max=${rangeMax}
 			.value=${l3(String(position))} style=${`--value-progress:${percent}%`}
@@ -190478,9 +190486,28 @@ function renderValueControl({
 	</div>`;
 }
 var valueControlStyles = i`
+	.compact-control-button {
+		--sl-input-height-small: 22px;
+		--sl-input-font-size-small: .72rem;
+	}
+	.compact-control-button::part(base) { min-inline-size: 22px; }
+	.compact-control-button::part(label) {
+		display: grid;
+		place-items: center;
+		padding: 0 3px;
+		font-weight: 600;
+	}
 	.value-control {
 		display: grid;
-		gap: 1px;
+		gap: 2px;
+		min-inline-size: 0;
+		font-size: .76rem;
+	}
+	.value-control-caption {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 3px;
 		min-inline-size: 0;
 	}
 	.value-control-row {
@@ -190491,8 +190518,14 @@ var valueControlStyles = i`
 		min-inline-size: 0;
 	}
 	.value-control-label {
-		grid-column: 1 / -1;
 		font-weight: 600;
+		line-height: 1.15;
+	}
+	.value-control-hint {
+		color: var(--lab-card-secondary-text);
+		font-size: .68rem;
+		white-space: nowrap;
+		font-variant-numeric: tabular-nums;
 	}
 	.value-control-number {
 		display: flex;
@@ -190510,7 +190543,7 @@ var valueControlStyles = i`
 	input.value-control-exact {
 		inline-size: 100%;
 		min-inline-size: 0;
-		min-block-size: 24px;
+		min-block-size: 20px;
 		padding: 0;
 		border: none;
 		box-shadow: none;
@@ -190522,14 +190555,12 @@ var valueControlStyles = i`
 		font-variant-numeric: tabular-nums;
 		text-align: end;
 	}
-	.value-control-step { --sl-input-height-small: 26px; }
-	.value-control-step::part(label) { min-inline-size: 24px; padding: 0; font-weight: 700; }
 	input.value-control-range {
 		appearance: none;
 		box-sizing: border-box;
 		inline-size: 100%;
 		min-inline-size: 0;
-		block-size: 24px;
+		block-size: 17px;
 		margin: 0;
 		padding: 0;
 		border: none;
@@ -190542,27 +190573,27 @@ var valueControlStyles = i`
 	input.value-control-range:focus-visible { outline: 2px solid var(--sl-color-primary-600); outline-offset: -2px; border-radius: 4px; }
 	.value-control-range:disabled { opacity: .45; cursor: default; }
 	.value-control-range::-webkit-slider-runnable-track {
-		block-size: 4px;
+		block-size: 3px;
 		border-radius: 4px;
 		background: linear-gradient(to right, var(--sl-color-primary-500) var(--value-progress), var(--sl-color-neutral-200) var(--value-progress));
 	}
 	.value-control-range::-moz-range-track {
-		block-size: 4px;
+		block-size: 3px;
 		border-radius: 4px;
 		background: linear-gradient(to right, var(--sl-color-primary-500) var(--value-progress), var(--sl-color-neutral-200) var(--value-progress));
 	}
 	.value-control-range::-webkit-slider-thumb {
 		appearance: none;
-		inline-size: 12px;
-		block-size: 12px;
+		inline-size: 11px;
+		block-size: 11px;
 		margin-block-start: -4px;
 		border: 0;
 		border-radius: 50%;
 		background: var(--sl-color-primary-600);
 	}
 	.value-control-range::-moz-range-thumb {
-		inline-size: 12px;
-		block-size: 12px;
+		inline-size: 11px;
+		block-size: 11px;
 		border: 0;
 		border-radius: 50%;
 		background: var(--sl-color-primary-600);
@@ -190585,6 +190616,14 @@ var SURFACE_DISPLACEMENT_TASK = "surface-displacement";
 var MIN_TWO_PANELS_WIDTH = 480;
 var RC_UPDATE_MS = 50;
 var DIAGRAM_PICKER_CLOSE_MS = 2e3;
+var CONTROL_ICONS = {
+  power: "M8 2v5m3.2-3.8a5.5 5.5 0 1 1-6.4 0",
+  drop: "M8 2.4c1.4 2.2 4 4.5 4 7a4 4 0 1 1-8 0c0-2.5 2.6-4.8 4-7Z",
+  play: "M5 3.5 12 8l-7 4.5z",
+  stop: "M4 4h8v8H4z",
+  cancel: "m4 4 8 8m0-8-8 8",
+  confirm: "m3.5 8 3 3 6-6"
+};
 function isPassiveMeter(device) {
   const { Ammeter, Multimeter, Voltmeter } = EComponentType;
   return device._type === Ammeter || device._type === Multimeter || device._type === Voltmeter;
@@ -193752,6 +193791,13 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				${label}
 			</div>`;
   }
+  renderCompactAction(label, icon, action, { id: id3, primary = false, disabled = false } = {}) {
+    return x`<sl-button size="small" class="compact-control-button" id=${id3 ?? E}
+			variant=${primary ? "primary" : "default"} title=${label} aria-label=${label} ?disabled=${disabled} @click=${action}>
+			<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+				stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${CONTROL_ICONS[icon]}/></svg>
+		</sl-button>`;
+  }
   renderAmountMenu() {
     const menu = this.amountMenu;
     if (!menu) return E;
@@ -193766,7 +193812,15 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
 				@keydown=${this.handleAmountMenuKey}>
 				<div class="amount-menu-heading">
 					<strong id="amountMenuTitle">${this.message(transfer ? "Inhalt \xFCbertragen" : "Stoff hinzuf\xFCgen")}</strong>
-					${menu.max > 0 ? x`<span class="amount-menu-limit">max. ${this.formatAmount(menu.max, 7)} mL</span>` : E}
+					<div class="amount-menu-actions">
+						${this.renderCompactAction(this.message(menu.max > 0 ? "Abbrechen" : "Schlie\xDFen"), "cancel", this.dismissAmountMenu)}
+						${menu.max > 0 ? this.renderCompactAction(
+      this.message(transfer ? "\xDCbertragen" : "Hinzuf\xFCgen"),
+      "confirm",
+      this.confirmAmount.bind(this),
+      { primary: true, disabled: menu.amount <= 0 }
+    ) : E}
+					</div>
 				</div>
 				<div class="amount-menu-route">
 					<sl-tag size="small" variant="neutral">${from2}</sl-tag>
@@ -193783,6 +193837,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       value: menu.amount,
       min: 0,
       max: menu.max,
+      hint: `max. ${this.formatAmount(menu.max, 7)} mL`,
       step: 0.1,
       rangeStep: sliderStep,
       locale: this.lang,
@@ -193792,14 +193847,6 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       onChange: changeAmount,
       onInput: changeAmount
     }) : x`<span role="status">${this.message("Keine Menge verf\xFCgbar.")}</span>`}
-				<div class="amount-menu-actions">
-					<sl-button size="small" @click=${this.dismissAmountMenu}>
-						${this.message(menu.max > 0 ? "Abbrechen" : "Schlie\xDFen")}
-					</sl-button>
-					${menu.max > 0 ? x`<sl-button size="small" variant="primary" ?disabled=${menu.amount <= 0} @click=${this.confirmAmount}>
-						${this.message(transfer ? "\xDCbertragen" : "Hinzuf\xFCgen")}
-					</sl-button>` : E}
-				</div>
 			</section>`;
   }
   renderGroupSummary() {
@@ -193904,12 +193951,25 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       if (!vessel.setBuretteStepMl(amount)) return;
       this.requestUpdate();
     };
+    const actions = x`<div class="device-actions">
+			${burette ? this.renderCompactAction(this.message("Einzeldosis"), "drop", () => {
+      if (this.stepTitration(vessel)) return;
+      this._notify(this.message(!vessel._content._activeMolecules.length ? "Die B\xFCrette ist leer." : !this.canvas.titrationTarget(vessel) ? "Platziere ein Gef\xE4\xDF unter der B\xFCrette." : "Das Zielgef\xE4\xDF kann nichts mehr aufnehmen."));
+    }, { id: "dispenseBurette", disabled: flowing }) : E}
+			${this.renderCompactAction(this.message(flowing ? "Hahn schlie\xDFen" : "Hahn \xF6ffnen"), flowing ? "stop" : "play", () => {
+      if (flowing) this.simulation.stopTask(task);
+      else this.simulation.startExperiment(task, () => this.stepTitration(vessel));
+      this.requestUpdate();
+      this._sendxAPiStatement(flowing ? "completed" : "started", task);
+    }, { id: "openComp", primary: flowing })}
+		</div>`;
     return i6(vessel, x`
-			<div class="device-controls">
+			<div class="device-controls" ?data-adjustable=${burette}>
 				${burette ? renderValueControl({
       label: this.message("Dosierschritt"),
       unit: "mL",
       value: volume,
+      actions,
       min: Number.MIN_VALUE * 1e3,
       max: Number.MAX_VALUE,
       rangeMin: 0.01,
@@ -193922,21 +193982,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         setStep(amount);
         this.saveSelectedComponent({ stepVolumeMl: vessel.buretteStepMl });
       }
-    }) : E}
-				<div class="device-actions">
-					${burette ? x`<sl-button size="small" id="dispenseBurette" ?disabled=${flowing}
-						@click=${() => {
-      if (this.stepTitration(vessel)) return;
-      this._notify(this.message(!vessel._content._activeMolecules.length ? "Die B\xFCrette ist leer." : !this.canvas.titrationTarget(vessel) ? "Platziere ein Gef\xE4\xDF unter der B\xFCrette." : "Das Zielgef\xE4\xDF kann nichts mehr aufnehmen."));
-    }}>${this.message("Einzeldosis")}</sl-button>` : E}
-					<sl-button size="small" id="openComp" variant=${flowing ? "primary" : "default"}
-						@click=${() => {
-      if (flowing) this.simulation.stopTask(task);
-      else this.simulation.startExperiment(task, () => this.stepTitration(vessel));
-      this.requestUpdate();
-      this._sendxAPiStatement(flowing ? "completed" : "started", task);
-    }}>${this.message(flowing ? "Hahn schlie\xDFen" : "Hahn \xF6ffnen")}</sl-button>
-				</div>
+    }) : actions}
 			</div>`);
   }
   renderElectricalControls(device) {
@@ -193968,12 +194014,35 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.canvas.refreshDeviceDisplay(device);
       this.requestUpdate();
     };
+    const actions = x`<div class="device-actions">
+			${source3 || device._type === Multimeter ? x`
+				<div class="device-mode" role="group" aria-label=${this.message(source3 ? "Betriebsart" : "Messbereich")}>
+					${["voltage", "current"].map((next) => {
+      const label = this.message(next === "voltage" ? source3 ? "Spannung vorgeben" : "Spannung" : source3 ? "Stromst\xE4rke vorgeben" : "Stromst\xE4rke");
+      return x`<sl-button size="small" class="compact-control-button" data-mode=${next}
+							variant=${mode === next ? "primary" : "default"}
+							aria-pressed=${mode === next} aria-label=${label} title=${label} @click=${() => changeMode(next)}>
+							${next === "voltage" ? "V" : "A"}</sl-button>`;
+    })}
+				</div>` : E}
+			${this.renderCompactAction(this.message(active ? "Ausschalten" : "Einschalten"), "power", () => {
+      this.canvas.setDeviceActive(device, !active);
+      if (active) {
+        this.simulation.stopTask(task);
+        this.clearEChemReadings(device);
+      } else this.startElectricalExperiment(task, device);
+      this._updatePopup();
+      this.requestUpdate();
+      this._sendxAPiStatement(active ? "completed" : "started", task);
+    }, { id: "activateEComp", primary: active })}
+		</div>`;
     return i6(device, x`
-			<div class="device-controls">
+			<div class="device-controls" ?data-adjustable=${source3}>
 				${source3 ? renderValueControl({
       label: this.message(current ? "Sollstrom" : "Sollspannung"),
       unit: current ? "A" : "V",
       value,
+      actions,
       min: 0,
       max: Number.MAX_VALUE,
       rangeMax: current ? 2 : 30,
@@ -193987,29 +194056,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.saveSelectedComponent(current ? { current: next } : { voltage: next });
         this._sendxAPiStatement("submitted", `${current ? "current" : "voltage"} ${device._type}:${device._id}`);
       }
-    }) : E}
-				<div class="device-actions">
-					${source3 || device._type === Multimeter ? x`
-						<div class="device-mode" role="group" aria-label=${this.message(source3 ? "Betriebsart" : "Messbereich")}>
-							${["voltage", "current"].map((next) => {
-      const label = this.message(next === "voltage" ? source3 ? "Spannung vorgeben" : "Spannung" : source3 ? "Stromst\xE4rke vorgeben" : "Stromst\xE4rke");
-      return x`<sl-button size="small" data-mode=${next} variant=${mode === next ? "primary" : "default"}
-									aria-pressed=${mode === next} aria-label=${label} title=${label} @click=${() => changeMode(next)}>
-									${next === "voltage" ? "V" : "A"}</sl-button>`;
-    })}
-						</div>` : E}
-					<sl-button size="small" id="activateEComp" variant=${active ? "primary" : "default"}
-						@click=${() => {
-      this.canvas.setDeviceActive(device, !active);
-      if (active) {
-        this.simulation.stopTask(task);
-        this.clearEChemReadings(device);
-      } else this.startElectricalExperiment(task, device);
-      this._updatePopup();
-      this.requestUpdate();
-      this._sendxAPiStatement(active ? "completed" : "started", task);
-    }}>${this.message(active ? "Ausschalten" : "Einschalten")}</sl-button>
-				</div>
+    }) : actions}
 			</div>`);
   }
   renderElectricalSettings(device) {

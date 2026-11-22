@@ -1,4 +1,4 @@
-import { css, html } from "lit";
+import { css, html, type TemplateResult } from "lit";
 import { live } from "lit/directives/live.js";
 
 type ValueControl = {
@@ -18,13 +18,15 @@ type ValueControl = {
 	decreaseLabel?: string;
 	increaseLabel?: string;
 	invalidLabel?: string;
+	hint?: string;
+	actions?: TemplateResult;
 };
 
 /** A range for quick adjustment and one field for exact, localized entry. */
 export function renderValueControl({
 	label, unit, value, min, max, step, rangeStep = step, rangeMin = min, rangeMax = max,
 	onChange, onInput, disabled, locale, decreaseLabel = `− ${label}`, increaseLabel = `+ ${label}`,
-	invalidLabel = "Enter a number.",
+	invalidLabel = "Enter a number.", hint, actions,
 }: ValueControl) {
 	const clamp = (next: number) => Math.max(min, Math.min(max, next));
 	const clampRange = (next: number) => Math.max(rangeMin, Math.min(rangeMax, next));
@@ -70,10 +72,15 @@ export function renderValueControl({
 		if (next !== value) onChange(next);
 	};
 	return html`<div class="value-control" role="group" aria-label=${label} contenteditable="false">
-		<div class="value-control-row">
+		<div class="value-control-caption">
 			<span class="value-control-label">${label}</span>
-			<sl-button size="small" class="value-control-step" title=${decreaseLabel} aria-label=${decreaseLabel}
-				?disabled=${disabled || value <= min} @click=${adjust(-1)}>−</sl-button>
+			${hint ? html`<span class="value-control-hint">${hint}</span>` : actions}
+		</div>
+		<div class="value-control-row">
+			<sl-button size="small" class="compact-control-button value-control-step" title=${decreaseLabel} aria-label=${decreaseLabel}
+				?disabled=${disabled || value <= min} @click=${adjust(-1)}>
+				<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="M4 8h8"/></svg>
+			</sl-button>
 			<label class="value-control-number">
 				<input class="value-control-exact" type="text" inputmode="decimal" autocomplete="off"
 					aria-label=${`${label} (${unit})`} .value=${formatValue} ?disabled=${!!disabled}
@@ -100,8 +107,10 @@ export function renderValueControl({
 					}}>
 				<span aria-hidden="true">${unit}</span>
 			</label>
-			<sl-button size="small" class="value-control-step" title=${increaseLabel} aria-label=${increaseLabel}
-				?disabled=${disabled || value >= max} @click=${adjust(1)}>+</sl-button>
+			<sl-button size="small" class="compact-control-button value-control-step" title=${increaseLabel} aria-label=${increaseLabel}
+				?disabled=${disabled || value >= max} @click=${adjust(1)}>
+				<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="M4 8h8M8 4v8"/></svg>
+			</sl-button>
 		</div>
 		<input class="value-control-range" type="range" step="any" dir="ltr" min=${rangeMin} max=${rangeMax}
 			.value=${live(String(position))} style=${`--value-progress:${percent}%`}
@@ -121,9 +130,28 @@ export function renderValueControl({
 }
 
 export const valueControlStyles = css`
+	.compact-control-button {
+		--sl-input-height-small: 22px;
+		--sl-input-font-size-small: .72rem;
+	}
+	.compact-control-button::part(base) { min-inline-size: 22px; }
+	.compact-control-button::part(label) {
+		display: grid;
+		place-items: center;
+		padding: 0 3px;
+		font-weight: 600;
+	}
 	.value-control {
 		display: grid;
-		gap: 1px;
+		gap: 2px;
+		min-inline-size: 0;
+		font-size: .76rem;
+	}
+	.value-control-caption {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 3px;
 		min-inline-size: 0;
 	}
 	.value-control-row {
@@ -134,8 +162,14 @@ export const valueControlStyles = css`
 		min-inline-size: 0;
 	}
 	.value-control-label {
-		grid-column: 1 / -1;
 		font-weight: 600;
+		line-height: 1.15;
+	}
+	.value-control-hint {
+		color: var(--lab-card-secondary-text);
+		font-size: .68rem;
+		white-space: nowrap;
+		font-variant-numeric: tabular-nums;
 	}
 	.value-control-number {
 		display: flex;
@@ -153,7 +187,7 @@ export const valueControlStyles = css`
 	input.value-control-exact {
 		inline-size: 100%;
 		min-inline-size: 0;
-		min-block-size: 24px;
+		min-block-size: 20px;
 		padding: 0;
 		border: none;
 		box-shadow: none;
@@ -165,14 +199,12 @@ export const valueControlStyles = css`
 		font-variant-numeric: tabular-nums;
 		text-align: end;
 	}
-	.value-control-step { --sl-input-height-small: 26px; }
-	.value-control-step::part(label) { min-inline-size: 24px; padding: 0; font-weight: 700; }
 	input.value-control-range {
 		appearance: none;
 		box-sizing: border-box;
 		inline-size: 100%;
 		min-inline-size: 0;
-		block-size: 24px;
+		block-size: 17px;
 		margin: 0;
 		padding: 0;
 		border: none;
@@ -185,27 +217,27 @@ export const valueControlStyles = css`
 	input.value-control-range:focus-visible { outline: 2px solid var(--sl-color-primary-600); outline-offset: -2px; border-radius: 4px; }
 	.value-control-range:disabled { opacity: .45; cursor: default; }
 	.value-control-range::-webkit-slider-runnable-track {
-		block-size: 4px;
+		block-size: 3px;
 		border-radius: 4px;
 		background: linear-gradient(to right, var(--sl-color-primary-500) var(--value-progress), var(--sl-color-neutral-200) var(--value-progress));
 	}
 	.value-control-range::-moz-range-track {
-		block-size: 4px;
+		block-size: 3px;
 		border-radius: 4px;
 		background: linear-gradient(to right, var(--sl-color-primary-500) var(--value-progress), var(--sl-color-neutral-200) var(--value-progress));
 	}
 	.value-control-range::-webkit-slider-thumb {
 		appearance: none;
-		inline-size: 12px;
-		block-size: 12px;
+		inline-size: 11px;
+		block-size: 11px;
 		margin-block-start: -4px;
 		border: 0;
 		border-radius: 50%;
 		background: var(--sl-color-primary-600);
 	}
 	.value-control-range::-moz-range-thumb {
-		inline-size: 12px;
-		block-size: 12px;
+		inline-size: 11px;
+		block-size: 11px;
 		border: 0;
 		border-radius: 50%;
 		background: var(--sl-color-primary-600);
