@@ -7,7 +7,7 @@ const orbitalLetters = "spdf";
 
 export type Subshell = { n: number; l: number; electrons: number; label: string };
 export type AtomicSpecies = { atomicNumber: number; charge: number; boundReference: boolean };
-type Configuration = {
+export type AtomicConfiguration = {
 	text: string;
 	subshells: Subshell[];
 	predicted: boolean;
@@ -39,9 +39,9 @@ function expand(text: string): Subshell[] {
 	return subshells.sort((a, b) => a.n - b.n || a.l - b.l);
 }
 
-const cache = new Map<string, Configuration>();
+const cache = new Map<string, AtomicConfiguration>();
 
-export function electronConfiguration(atomicNumber: number, charge: number): Configuration {
+export function electronConfiguration(atomicNumber: number, charge: number): AtomicConfiguration {
 	const key = `${atomicNumber}:${charge}`;
 	const cached = cache.get(key);
 	if (cached) return cached;
@@ -81,4 +81,16 @@ const orientations = [
 
 export function orbitalOrientations(l: number): readonly string[] {
 	return orientations[l] ?? [];
+}
+
+export function atomicShells(configuration: AtomicConfiguration) {
+	const electrons = new Map<number, number>();
+	for (const shell of configuration.subshells) electrons.set(shell.n, (electrons.get(shell.n) ?? 0) + shell.electrons);
+	return [...electrons].map(([n, electrons]) => ({ n, electrons, label: "KLMNOPQ"[n - 1] }));
+}
+
+/** A conventional assignment to equivalent orbitals for the school-level
+ * diagram: fill each with one parallel spin before adding opposite spins. */
+export function orbitalOccupation(subshell: Subshell, orientation: number): 0 | 1 | 2 {
+	return (Number(orientation < subshell.electrons) + Number(orientation + 2 * subshell.l + 1 < subshell.electrons)) as 0 | 1 | 2;
 }

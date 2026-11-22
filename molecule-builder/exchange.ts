@@ -1,3 +1,4 @@
+import type { AtomicModel } from "./atomic-model";
 import type { Structure } from "./structure";
 
 export const BUILDER_TAG = "webwriter-chemlab-molecule-builder";
@@ -5,6 +6,7 @@ export const LAB_TAG = "webwriter-chemlab";
 export const TABLE_TAG = "webwriter-chemlab-periodic-table";
 
 export type BuilderReceiver = HTMLElement & { viewCatalogStructure(key: string): boolean; viewStructure(snapshot: Structure): boolean };
+export type AtomReceiver = HTMLElement & { viewAtom(atomicNumber: number, model?: AtomicModel): boolean };
 export type LabReceiver = HTMLElement & { reviewBuilderStructure(snapshot: Structure): boolean };
 
 export function worksheetScope(widget: HTMLElement): ParentNode {

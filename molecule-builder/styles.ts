@@ -383,13 +383,20 @@ export const builderStyles = css`
 	.atomic-summary { max-block-size: min(17rem, calc(100% - 1rem)); }
 	.atomic-title, .atomic-configuration { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem; }
 	.atomic-configuration strong { overflow-wrap: anywhere; font-weight: 650; }
-	.atomic-slice {
+	.atomic-illustration {
 		position: absolute;
 		inset: 0;
-		width: min(68%, 26rem);
-		height: min(68%, 26rem);
+		inline-size: min(74%, 32rem);
+		block-size: min(76%, 32rem);
 		margin: auto;
+		container-type: inline-size;
 	}
+	.atomic-illustration:not(.atomic-fallback) { pointer-events: none; }
+	.atomic-fallback { display: grid; align-content: center; gap: .4rem; pointer-events: none; }
+	.atomic-fallback .atom-orbital-tile { pointer-events: auto; }
+	.atomic-fallback .atom-orbital-tiles { grid-template-columns: repeat(auto-fit, minmax(min(100%, 3.2rem), 1fr)); }
+	.atomic-overlay-slice { display: block; block-size: min(45cqw, 10rem); margin-inline: auto; }
+
 	.selection-card .fields a {
 		display: inline-flex;
 		align-items: center;

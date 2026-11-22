@@ -7449,8 +7449,8 @@ function hasFixedPositionAncestor(element, stopNode) {
   }
   return getComputedStyle2(parentNode).position === "fixed" || hasFixedPositionAncestor(parentNode, stopNode);
 }
-function getClippingElementAncestors(element, cache) {
-  const cachedResult = cache.get(element);
+function getClippingElementAncestors(element, cache2) {
+  const cachedResult = cache2.get(element);
   if (cachedResult) {
     return cachedResult;
   }
@@ -7472,7 +7472,7 @@ function getClippingElementAncestors(element, cache) {
     }
     currentNode = getParentNode(currentNode);
   }
-  cache.set(element, result);
+  cache2.set(element, result);
   return result;
 }
 function getClippingRect(_ref) {
@@ -7762,14 +7762,14 @@ var flip2 = flip;
 var size2 = size;
 var arrow2 = arrow;
 var computePosition2 = (reference, floating, options) => {
-  const cache = /* @__PURE__ */ new Map();
+  const cache2 = /* @__PURE__ */ new Map();
   const mergedOptions = {
     platform,
     ...options
   };
   const platformWithCache = {
     ...mergedOptions.platform,
-    _c: cache
+    _c: cache2
   };
   return computePosition(reference, floating, {
     ...mergedOptions,
@@ -11178,6 +11178,42 @@ var periodicTableStyles = i`
 		min-width: 0;
 	}
 
+	.details-view-actions {
+		display: flex;
+		flex: 0 0 auto;
+		gap: .2rem;
+		margin-inline-start: auto;
+	}
+	.details-view-button { --sl-input-height-small: 1.3rem; }
+	.details-view-button::part(base) { min-inline-size: 1.35rem; }
+	.details-view-button::part(label) { display: grid; place-items: center; padding: 0 .13rem; }
+	.details-head > sl-tag { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.details-shell.is-atom { inset-block-end: 0; }
+	.details-shell.is-atom .details-card::part(base) { height: 100%; }
+	.details-shell.is-atom .details-card::part(body) { padding: .25rem .35rem; overflow: auto; }
+	.list-details .details-shell.is-atom .details-card::part(body) { max-block-size: 9rem; }
+	.pt-atom-preview {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+		align-items: start;
+		gap: .35rem;
+		inline-size: 100%;
+		font-size: .68rem;
+	}
+	.pt-atom-preview .electron-config-chips {
+		inline-size: 100%;
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		scrollbar-width: thin;
+		padding-block-end: .12rem;
+	}
+	.pt-atom-preview .electron-config-chips .atom-chip { flex-shrink: 0; }
+	.pt-atom-preview .electron-config-chips .atom-chip:focus-visible { outline-offset: -2px; }
+	.pt-atom-figure { min-inline-size: 0; }
+	.pt-atom-figure .atom-shell-figure { block-size: min(5.2rem, 100cqw); }
+	.pt-atom-figure .atom-orbital-tiles { grid-template-columns: repeat(auto-fit, minmax(min(100%, 1.6rem), 1fr)); }
+	.pt-atom-figure .atom-orbital-tile svg { max-inline-size: 1.7rem; }
+
 	.details-thumb {
 		display: grid;
 		flex: 0 0 auto;
@@ -11741,8 +11777,410 @@ var periodicTableStyles = i`
 	}
 `;
 
+// molecule-builder/structure.ts
+var MAX_FILE_BYTES = 512 * 1024;
+
+// molecule-builder/crystal-display.ts
+var centeringOffsets = {
+  A: [[0, 0.5, 0.5]],
+  B: [[0.5, 0, 0.5]],
+  C: [[0.5, 0.5, 0]],
+  I: [[0.5, 0.5, 0.5]],
+  F: [[0, 0.5, 0.5], [0.5, 0, 0.5], [0.5, 0.5, 0]],
+  R: [[2 / 3, 1 / 3, 1 / 3], [1 / 3, 2 / 3, 2 / 3]],
+  H: [[2 / 3, 1 / 3, 0], [1 / 3, 2 / 3, 0]]
+};
+
+// molecule-builder/atomic-configuration.ts
+var coreNumbers = /* @__PURE__ */ new Map([["He", 2], ["Ne", 10], ["Ar", 18], ["Kr", 36], ["Xe", 54], ["Rn", 86]]);
+var orbitalLetters = "spdf";
+var ionConfigurations = /* @__PURE__ */ new Map([
+  ["3:1", "[He]"],
+  ["8:-2", "[Ne]"],
+  ["9:-1", "[Ne]"],
+  ["11:1", "[Ne]"],
+  ["12:2", "[Ne]"],
+  ["13:3", "[Ne]"],
+  ["16:-2", "[Ar]"],
+  ["17:-1", "[Ar]"],
+  ["19:1", "[Ar]"],
+  ["20:2", "[Ar]"],
+  ["25:2", "[Ar] 3d5"],
+  ["25:4", "[Ar] 3d3"],
+  ["26:2", "[Ar] 3d6"],
+  ["26:3", "[Ar] 3d5"],
+  ["28:2", "[Ar] 3d8"],
+  ["29:1", "[Ar] 3d10"],
+  ["29:2", "[Ar] 3d9"],
+  ["30:2", "[Ar] 3d10"],
+  ["35:-1", "[Kr]"],
+  ["38:2", "[Kr]"],
+  ["47:1", "[Kr] 4d10"],
+  ["53:-1", "[Xe]"],
+  ["56:2", "[Xe]"]
+]);
+function expand(text) {
+  const terms = text.trim().split(/\s+/).filter(Boolean);
+  const core = /^\[([A-Z][a-z])\]$/.exec(terms[0] ?? "");
+  const atomicNumber = core && coreNumbers.get(core[1]);
+  const subshells = atomicNumber ? expand(dataValue(elementByAtomicNumber(atomicNumber).configuration) ?? "") : [];
+  for (const term of terms.slice(core ? 1 : 0)) {
+    const match = /^(\d)([spdf])(\d+)$/.exec(term);
+    if (!match) continue;
+    const [, n10, letter, electrons] = match;
+    subshells.push({ n: Number(n10), l: orbitalLetters.indexOf(letter), electrons: Number(electrons), label: n10 + letter });
+  }
+  return subshells.sort((a5, b4) => a5.n - b4.n || a5.l - b4.l);
+}
+var cache = /* @__PURE__ */ new Map();
+function electronConfiguration(atomicNumber, charge) {
+  const key = `${atomicNumber}:${charge}`;
+  const cached = cache.get(key);
+  if (cached) return cached;
+  const electrons = atomicNumber - charge;
+  const neutral = elementByAtomicNumber(atomicNumber).configuration;
+  const text = electrons === 0 ? "" : electrons === 1 ? "1s1" : charge ? ionConfigurations.get(key) ?? "" : dataValue(neutral) ?? "";
+  const subshells = expand(text);
+  const verified = subshells.reduce((sum, item) => sum + item.electrons, 0) === electrons;
+  const result = {
+    text: verified ? text : "",
+    subshells: verified ? subshells : [],
+    electrons,
+    predicted: !charge && neutral.status === "predicted",
+    formal: key === "8:-2" || key === "16:-2"
+  };
+  cache.set(key, result);
+  return result;
+}
+var orientations = [
+  ["s"],
+  ["p(z)", "p(x)", "p(y)"],
+  ["d(z\xB2)", "d(xz)", "d(yz)", "d(x\xB2\u2212y\xB2)", "d(xy)"],
+  ["f(0)", "f(1, cos)", "f(1, sin)", "f(2, cos)", "f(2, sin)", "f(3, cos)", "f(3, sin)"]
+];
+function orbitalOrientations(l6) {
+  return orientations[l6] ?? [];
+}
+function atomicShells(configuration) {
+  const electrons = /* @__PURE__ */ new Map();
+  for (const shell of configuration.subshells) electrons.set(shell.n, (electrons.get(shell.n) ?? 0) + shell.electrons);
+  return [...electrons].map(([n10, electrons2]) => ({ n: n10, electrons: electrons2, label: "KLMNOPQ"[n10 - 1] }));
+}
+function orbitalOccupation(subshell, orientation) {
+  return Number(orientation < subshell.electrons) + Number(orientation + 2 * subshell.l + 1 < subshell.electrons);
+}
+
+// molecule-builder/atomic-orbitals.ts
+function atomicOrbitalKey({ subshell, orientation, region }) {
+  return [subshell?.label, orientation, region].join(":");
+}
+var contour = 0.2;
+function laguerre(order, alpha, x3) {
+  let previous = 1, value = 1 + alpha - x3;
+  for (let k3 = 2; k3 <= order; k3++) {
+    [previous, value] = [value, ((2 * k3 - 1 + alpha - x3) * value - (k3 - 1 + alpha) * previous) / k3];
+  }
+  return order === 0 ? 1 : value;
+}
+function angularOrbital(l6, orientation, x3, y4, z3) {
+  switch (l6) {
+    case 0:
+      return 1;
+    case 1:
+      return [z3, x3, y4][orientation];
+    case 2:
+      return [3 * z3 * z3 - 1, x3 * z3, y4 * z3, x3 * x3 - y4 * y4, x3 * y4][orientation];
+    case 3:
+      return [
+        z3 * (5 * z3 * z3 - 3),
+        x3 * (5 * z3 * z3 - 1),
+        y4 * (5 * z3 * z3 - 1),
+        z3 * (x3 * x3 - y4 * y4),
+        x3 * y4 * z3,
+        x3 * (x3 * x3 - 3 * y4 * y4),
+        y4 * (3 * x3 * x3 - y4 * y4)
+      ][orientation];
+    default:
+      return 0;
+  }
+}
+function angularPeak(l6, orientation) {
+  let peak = 0;
+  for (let sample = 0; sample < 768; sample++) {
+    const z3 = 1 - 2 * (sample + 0.5) / 768;
+    const r11 = Math.sqrt(1 - z3 * z3), phi = sample * 2.399963229728653;
+    peak = Math.max(peak, Math.abs(angularOrbital(l6, orientation, r11 * Math.cos(phi), r11 * Math.sin(phi), z3)));
+  }
+  return peak;
+}
+function radialOrbital(n10, l6, rho) {
+  return rho ** l6 * Math.exp(-rho / 2) * laguerre(n10 - l6 - 1, 2 * l6 + 1, rho);
+}
+function radialRanges(n10, l6) {
+  const edges = [0];
+  const end = 22 + 6 * n10;
+  let previous = laguerre(n10 - l6 - 1, 2 * l6 + 1, 0);
+  for (let sample = 1; sample <= end * 32; sample++) {
+    const rho = sample / 32;
+    const next = laguerre(n10 - l6 - 1, 2 * l6 + 1, rho);
+    if (previous !== 0 && previous * next <= 0) {
+      let from = rho - 1 / 32, to = rho;
+      for (let i9 = 0; i9 < 18; i9++) {
+        const mid = (from + to) / 2;
+        if (laguerre(n10 - l6 - 1, 2 * l6 + 1, mid) * previous > 0) from = mid;
+        else to = mid;
+      }
+      edges.push((from + to) / 2);
+    }
+    previous = next;
+  }
+  edges.push(end);
+  return edges;
+}
+var radialProfiles = /* @__PURE__ */ new Map();
+function radialProfile(n10, l6, region) {
+  const key = `${n10}:${l6}:${region}`;
+  const cached = radialProfiles.get(key);
+  if (cached) return cached;
+  const ranges = radialRanges(n10, l6);
+  const start = ranges[region], end = ranges[region + 1];
+  let peak = 0;
+  for (let i9 = 0; i9 <= 400; i9++) {
+    peak = Math.max(peak, Math.abs(radialOrbital(n10, l6, start + (end - start) * i9 / 400)));
+  }
+  let extent = end;
+  for (let i9 = 400; i9 >= 0; i9--) {
+    const rho = start + (end - start) * i9 / 400;
+    if (Math.abs(radialOrbital(n10, l6, rho)) >= peak * contour) {
+      extent = rho + (end - start) * 2 / 400;
+      break;
+    }
+  }
+  const result = { start, end, peak, extent };
+  radialProfiles.set(key, result);
+  return result;
+}
+function atomicOrbitalField(n10, l6, orientation, region) {
+  const { start, end, peak, extent } = radialProfile(n10, l6, region);
+  const inversePeak = 1 / (peak * angularPeak(l6, orientation));
+  return {
+    extent,
+    value(x3, y4, z3) {
+      const radius = Math.hypot(x3, y4, z3);
+      const rho = radius * extent;
+      if (rho < start || rho > end) return 0;
+      const angular = radius === 0 ? Number(l6 === 0) : angularOrbital(l6, orientation, x3 / radius, y4 / radius, z3 / radius);
+      return radialOrbital(n10, l6, rho) * angular * inversePeak;
+    }
+  };
+}
+var slicePlanes = [
+  (x3, y4) => [x3, y4, 0],
+  (x3, y4) => [x3, 0, y4],
+  (x3, y4) => [0, x3, y4],
+  (x3, y4) => [x3, y4 * Math.SQRT1_2, y4 * Math.SQRT1_2],
+  (x3, y4) => [y4 * Math.SQRT1_2, x3, y4 * Math.SQRT1_2]
+];
+function slicePaths(side, sample) {
+  const paths = ["", ""];
+  let count = 0;
+  for (let y4 = 0; y4 < side; y4++) {
+    for (let x3 = 0, start = 0, phase = -1; x3 <= side; x3++) {
+      const next = x3 === side ? -1 : sample((2 * x3 + 1) / side - 1, 1 - (2 * y4 + 1) / side);
+      if (next === phase) continue;
+      if (phase >= 0) {
+        const width = x3 - start;
+        count += width;
+        paths[phase] += `M${start} ${y4}h${width}v1h-${width}z`;
+      }
+      start = x3;
+      phase = next;
+    }
+  }
+  return { count, paths };
+}
+function atomicOrbitalSlice(display, overlay, side = 128) {
+  if (!display.subshell) return void 0;
+  const { n: n10, l: l6 } = display.subshell;
+  const field = atomicOrbitalField(n10, l6, display.orientation, display.region);
+  const key = atomicOrbitalKey(display);
+  const scale = overlay?.find((part) => part.key === key)?.scale ?? 1;
+  const phase = (value) => value > contour ? 0 : value < -contour ? 1 : -1;
+  const section = (side2, plane2) => slicePaths(side2, (x3, y4) => phase(field.value(...plane2(x3 / scale, y4 / scale))));
+  const plane = slicePlanes.map((plane2) => ({ plane: plane2, count: section(32, plane2).count })).reduce((best, candidate) => candidate.count > best.count ? candidate : best).plane;
+  const { paths } = section(side, plane);
+  const backgroundSide = 64;
+  const fields = overlay?.filter((part) => part.key !== key).map((part) => {
+    const { n: n11, l: l7 } = part.subshell;
+    return { scale: part.scale, field: atomicOrbitalField(n11, l7, part.orientation, part.region) };
+  });
+  const background = fields && [1, -1].map((sign) => slicePaths(backgroundSide, (x3, y4) => {
+    const distance = Math.hypot(x3, y4);
+    const visible = fields.some((part) => distance <= part.scale && sign * part.field.value(...plane(x3 / part.scale, y4 / part.scale)) > contour);
+    return visible ? 0 : -1;
+  }).paths[0]);
+  return { side, paths, background, backgroundScale: side / backgroundSide };
+}
+
+// molecule-builder/atomic-model.ts
+var initialAtomChoices = (model = "bohr") => ({ model, orientation: 0 });
+var phases = ["#177da6", "#d67b27"];
+var models = [
+  { mode: "bohr", en: "Bohr", de: "Bohr" },
+  { mode: "shells", en: "Shells", de: "Schalen" },
+  { mode: "orbitals", en: "Orbitals", de: "Orbitale" }
+];
+var orbitalGlyph = ["\u2014", "\u2191", "\u2191\u2193"];
+var superscript2 = (value) => String(value).replace(/\d/g, (digit) => "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078\u2079"[Number(digit)]);
+function atomChoice(configuration, choices) {
+  const shells = atomicShells(configuration);
+  const subshell = configuration.subshells.find((entry) => entry.label === choices.subshell) ?? configuration.subshells[configuration.subshells.length - 1];
+  const regions = subshell ? subshell.n - subshell.l : 0;
+  return {
+    shells,
+    shell: shells.find((entry) => entry.n === choices.shell)?.n ?? shells[shells.length - 1]?.n,
+    subshell,
+    orientation: subshell && choices.orientation <= 2 * subshell.l ? choices.orientation : 0,
+    region: Math.min(choices.region ?? regions - 1, Math.max(0, regions - 1)),
+    regions
+  };
+}
+function atomicOrbitalLabel(subshell, orientation, t7) {
+  const electrons = orbitalOccupation(subshell, orientation);
+  const count = [t7("empty", "unbesetzt"), t7("1 electron", "1 Elektron"), t7("2 electrons", "2 Elektronen")][electrons];
+  return `${subshell.n}${orbitalOrientations(subshell.l)[orientation]} \xB7 ${count}`;
+}
+function renderAtomicControls(configuration, choices, change, t7) {
+  const { shells, shell, subshell, region, regions } = atomChoice(configuration, choices);
+  const chip = (label, title, pressed, onClick) => x2`
+		<button type="button" class="atom-chip" title=${title} aria-label=${title} aria-pressed=${String(pressed)} @click=${onClick}>
+			<sl-tag size="small" variant=${pressed ? "primary" : "neutral"}>${label}</sl-tag>
+		</button>`;
+  const orbital = choices.model === "orbitals";
+  return x2`
+		<div class="atomic-controls">
+			<div class="atom-controls-row" role="group" aria-label=${t7("Atom model", "Atommodell")}>
+				${models.map(({ mode, en, de }) => x2`<sl-button size="small" variant=${choices.model === mode ? "primary" : "default"}
+					aria-pressed=${String(choices.model === mode)} @click=${() => change({ ...choices, model: mode })}>${t7(en, de)}</sl-button>`)}
+			</div>
+			${configuration.predicted ? x2`<sl-tag size="small">${t7("Predicted", "Vorhergesagt")}</sl-tag>` : E2}
+			${!shells.length ? x2`<span>${configuration.electrons === 0 ? t7("No electrons", "Keine Elektronen") : t7("Configuration unavailable", "Konfiguration nicht verf\xFCgbar")}</span>` : x2`
+				<div class="atom-controls-row electron-config-chips" role="group" aria-label=${t7("Electron configuration", "Elektronenkonfiguration")}>
+					${orbital ? configuration.subshells.map((entry) => chip(
+    entry.label + superscript2(entry.electrons),
+    `${entry.label} \xB7 ${entry.electrons} e\u207B`,
+    subshell?.label === entry.label,
+    () => change({ ...choices, subshell: entry.label, orientation: 0, region: void 0 })
+  )) : shells.map((entry) => chip(
+    `${entry.label} \xB7 ${entry.electrons}`,
+    `${t7("Shell", "Schale")} ${entry.label} \xB7 ${entry.electrons} e\u207B`,
+    shell === entry.n,
+    () => change({ ...choices, shell: entry.n })
+  ))}
+				</div>
+				${orbital && regions > 1 ? x2`
+					<div class="atom-controls-row" role="group" aria-label=${t7("Radial region", "Radialbereich")}>
+						${Array.from({ length: regions }, (_3, i9) => chip(
+    i9 + 1,
+    `${t7("Radial region", "Radialbereich")} ${i9 + 1} / ${regions}`,
+    i9 === region,
+    () => change({ ...choices, region: i9 })
+  ))}
+					</div>` : E2}
+			`}
+		</div>`;
+}
+function renderAtomicShells(symbol, configuration, choices, t7) {
+  const { shells, shell } = atomChoice(configuration, choices);
+  const bohr = choices.model === "bohr";
+  const center = 110;
+  const step = 81 / Math.max(1, shells.length);
+  return b3`<svg class="atom-shell-figure" viewBox="0 0 220 220" role="img"
+		aria-label=${bohr ? t7("Bohr model", "Bohrsches Modell") : t7("Electron shells", "Elektronenschalen")}>
+		<title>${t7("Schematic shell diagram", "Schematische Schalendarstellung")}</title>
+		${shells.map(({ n: n10, electrons }, index) => {
+    const radius = 13 + (index + 1) * step;
+    const selected = n10 === shell;
+    const color = selected ? "#087bb4" : "#8196a5";
+    return b3`<g class="electron-shell" data-shell=${n10} data-selected=${String(selected)}>
+				<circle cx=${center} cy=${center} r=${radius} fill="none" stroke=${color}
+					stroke-width=${bohr ? selected ? 2.5 : 1.4 : step * 0.72} stroke-opacity=${bohr ? 0.8 : selected ? 0.42 : 0.21} />
+				${bohr ? Array.from({ length: electrons }, (_3, i9) => {
+      const angle = (i9 / electrons + index * 0.079) * 2 * Math.PI - Math.PI / 2;
+      return b3`<circle class="shell-electron" cx=${center + radius * Math.cos(angle)} cy=${center + radius * Math.sin(angle)}
+						r=${shells.length > 4 ? 2.7 : 3.6} fill=${color} />`;
+    }) : E2}
+			</g>`;
+  })}
+		<circle cx=${center} cy=${center} r="13" fill="#e9f4fa" stroke="#6794ae" />
+		<text x=${center} y=${center} dy=".34em" text-anchor="middle" fill="#12364b" font-size="10" font-weight="700">${symbol}</text>
+	</svg>`;
+}
+var slices = /* @__PURE__ */ new Map();
+function renderAtomicOrbitalTiles(configuration, choices, change, t7) {
+  const { subshell, orientation, region } = atomChoice(configuration, choices);
+  if (!subshell) return E2;
+  return x2`<div class="atom-orbital-tiles" role="group" aria-label=${t7("Orbital cross-sections", "Orbitalschnitte")}>
+		${orbitalOrientations(subshell.l).map((name, i9) => {
+    const electrons = orbitalOccupation(subshell, i9);
+    const key = `${subshell.label}:${i9}:${region}`;
+    let slice = slices.get(key);
+    if (!slice) {
+      slice = atomicOrbitalSlice({ subshell, orientation: i9, region, atomicNumber: 1, atomId: 1, electrons: 1 }, void 0, 48);
+      slices.set(key, slice);
+    }
+    const label = atomicOrbitalLabel(subshell, i9, t7);
+    return x2`<button type="button" class="atom-orbital-tile" data-electrons=${electrons} title=${label}
+				aria-label=${label} aria-pressed=${String(i9 === orientation)} @click=${() => change({ ...choices, orientation: i9 })}>
+				${b3`<svg viewBox="0 0 48 48" aria-hidden="true">
+					${slice.paths.map((path, index) => b3`<path fill=${phases[index]} d=${path} />`)}
+				</svg>`}
+				<span>${name} <b>${orbitalGlyph[electrons]}</b></span>
+			</button>`;
+  })}
+	</div>`;
+}
+var atomicModelStyles = i`
+	.atomic-controls, .atom-controls-row { min-inline-size: 0; display: flex; flex-wrap: wrap; gap: .2rem; }
+	.atomic-controls { align-items: start; flex-direction: column; }
+	.atom-controls-row { align-items: center; }
+	.atomic-controls sl-button { --sl-input-height-small: 1.35rem; }
+	.atomic-controls sl-button::part(label) { padding-inline: .4rem; font-size: .7rem; }
+	.atom-chip, .atom-orbital-tile { appearance: none; border: 0; padding: 0; background: none; color: inherit;
+		font: inherit; cursor: pointer; border-radius: 4px; }
+	.atom-chip:focus-visible, .atom-orbital-tile:focus-visible { outline: 2px solid var(--sl-color-primary-600, #087bb4); outline-offset: 1px; }
+	.atom-chip sl-tag::part(base) { height: auto; min-height: 1.2rem; padding-inline: .3rem; font-size: .68rem; }
+	.atom-shell-figure { display: block; inline-size: 100%; block-size: 100%; }
+	.atom-orbital-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 2.55rem), 1fr)); gap: .15rem; }
+	.atom-orbital-tile { display: grid; justify-items: center; border: 1px solid var(--sl-color-neutral-200, #e4e4e7);
+		padding: .12rem .1rem; min-inline-size: 0; font-size: .64rem; line-height: 1.1; background: white; }
+	.atom-orbital-tile[aria-pressed="true"] { border-color: var(--sl-color-primary-600, #087bb4); background: #eff8fd; }
+	.atom-orbital-tile svg { inline-size: min(100%, 3rem); aspect-ratio: 1; }
+	.atom-orbital-tile[data-electrons="0"] svg { opacity: .30; }
+	.atom-orbital-tile span { overflow-wrap: anywhere; }
+`;
+
+// molecule-builder/exchange.ts
+var BUILDER_TAG = "webwriter-chemlab-molecule-builder";
+function worksheetScope(widget) {
+  return widget.closest("[data-chemlab-worksheet], .ProseMirror") ?? widget.getRootNode();
+}
+function worksheetPeers(widget, tag) {
+  const scope = worksheetScope(widget);
+  return Array.from(scope.querySelectorAll(tag)).filter((peer) => peer !== widget && worksheetScope(peer) === scope);
+}
+
 // webwriter-chemlab-periodic-table.ts
 setBasePath("@shoelace-style/shoelace/dist");
+var ATOM_PREVIEW_ICON = b3`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor">
+	<circle cx="8" cy="8" r="5.6" /><circle cx="8" cy="8" r="2.8" /><circle cx="8" cy="2.4" r="1.1" fill="currentColor" />
+</svg>`;
+var ELEMENT_DETAILS_ICON = b3`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round">
+	<path d="M4 4h9M4 8h9M4 12h9M2 4h.1M2 8h.1M2 12h.1" />
+</svg>`;
+var OPEN_BUILDER_ICON = b3`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linejoin="round">
+	<path d="M10 3h3v3m0-3L7 9m5-1v5H3V4h5" />
+</svg>`;
 var VIEWS = ["auto", "table", "list"];
 var LIST_BREAKPOINT = 680;
 var STATES = ["solid", "liquid", "gas"];
@@ -11834,7 +12272,7 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _pickerMode_dec, _view_dec, _initialElement_dec, _a2, _init2, _initialElement, _view, _pickerMode, _ChemLabPeriodicTable_instances, startElementDrag_fn, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _filtersOpen, _modesOpen, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
+var _clearInitialElement_dec, _pickerMode_dec, _view_dec, _initialElement_dec, _a2, _init2, _initialElement, _view, _pickerMode, _ChemLabPeriodicTable_instances, startElementDrag_fn, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _atomPreview, _atomChoices, _atomPreviewElement, _atomPeersObserver, _filtersOpen, _modesOpen, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, atomBuilder_fn, observeAtomPeers_fn, toggleAtomPreview_fn, renderAtomPreview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
 var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElementWw, _initialElement_dec = [n7({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n7({ type: String, reflect: true, converter: viewConverter })], _pickerMode_dec = [n7({ type: Boolean, reflect: true, attribute: "picker-mode" })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a2) {
   constructor() {
     super(...arguments);
@@ -11867,6 +12305,10 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     __privateAdd(this, _mode, DEFAULT_MODE_STATE);
     __privateAdd(this, _infoOpen, false);
     __privateAdd(this, _detailsExpanded, false);
+    __privateAdd(this, _atomPreview, false);
+    __privateAdd(this, _atomChoices, initialAtomChoices());
+    __privateAdd(this, _atomPreviewElement, null);
+    __privateAdd(this, _atomPeersObserver, null);
     /** Whether the panel with the search field and the family carousel is open. */
     __privateAdd(this, _filtersOpen, false);
     /** Whether the panel with the property modes and their slider is open. */
@@ -12045,6 +12487,10 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
       __privateGet(this, _selection).applyAuthored(this.initialElement);
     }
     if (changed.has("view")) __privateSet(this, _viewOverride, null);
+    if (this.selectedAtomicNumber !== __privateGet(this, _atomPreviewElement)) {
+      __privateSet(this, _atomPreviewElement, this.selectedAtomicNumber);
+      __privateSet(this, _atomChoices, initialAtomChoices(__privateGet(this, _atomChoices).model));
+    }
   }
   /** Measures the host once and then follows every resize. */
   firstUpdated() {
@@ -12059,6 +12505,7 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
   connectedCallback() {
     super.connectedCallback();
     __privateMethod(this, _ChemLabPeriodicTable_instances, observeLanguage_fn).call(this);
+    if (__privateGet(this, _atomPreview)) __privateMethod(this, _ChemLabPeriodicTable_instances, observeAtomPeers_fn).call(this);
   }
   /** Stops observing the host and the enclosing content. */
   disconnectedCallback() {
@@ -12066,6 +12513,8 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     __privateSet(this, _resizeObserver, null);
     __privateGet(this, _languageObserver)?.disconnect();
     __privateSet(this, _languageObserver, null);
+    __privateGet(this, _atomPeersObserver)?.disconnect();
+    __privateSet(this, _atomPeersObserver, null);
     super.disconnectedCallback();
   }
   /**
@@ -12077,6 +12526,16 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
    * search field and then the layout switch are the stable fallbacks.
    */
   updated() {
+    if (__privateGet(this, _atomPreview)) {
+      const row = this.renderRoot.querySelector(".pt-atom-preview .electron-config-chips");
+      const active = row?.querySelector('[aria-pressed="true"]');
+      if (row && active) {
+        const viewport = row.getBoundingClientRect();
+        const chip = active.getBoundingClientRect();
+        if (chip.right > viewport.right) row.scrollLeft += chip.right - viewport.right;
+        else if (chip.left < viewport.left) row.scrollLeft -= viewport.left - chip.left;
+      }
+    }
     if (!__privateGet(this, _restoreFocusPending)) return;
     __privateSet(this, _restoreFocusPending, false);
     const previous = __privateGet(this, _focusBeforeLayout);
@@ -12159,6 +12618,10 @@ _restoreFocusPending = new WeakMap();
 _mode = new WeakMap();
 _infoOpen = new WeakMap();
 _detailsExpanded = new WeakMap();
+_atomPreview = new WeakMap();
+_atomChoices = new WeakMap();
+_atomPreviewElement = new WeakMap();
+_atomPeersObserver = new WeakMap();
 _filtersOpen = new WeakMap();
 _modesOpen = new WeakMap();
 /** Watches every ancestor the language walk visits for a `lang` change. */
@@ -12992,6 +13455,44 @@ renderPrintOverview_fn = function(t7, language, element) {
 			</div>
 		`;
 };
+atomBuilder_fn = function() {
+  return worksheetPeers(this, BUILDER_TAG).find((peer) => typeof peer.viewAtom === "function");
+};
+observeAtomPeers_fn = function() {
+  if (__privateGet(this, _atomPeersObserver)) return;
+  const registry2 = this.ownerDocument.defaultView?.customElements;
+  if (registry2 && !registry2.get(BUILDER_TAG)) void registry2.whenDefined(BUILDER_TAG).then(() => {
+    if (this.isConnected && __privateGet(this, _atomPreview)) this.requestUpdate();
+  });
+  __privateSet(this, _atomPeersObserver, new MutationObserver((records) => {
+    if (records.some((record) => [...record.addedNodes, ...record.removedNodes].some((node) => node instanceof Element && (node.matches(BUILDER_TAG) || node.querySelector(BUILDER_TAG))))) this.requestUpdate();
+  }));
+  __privateGet(this, _atomPeersObserver).observe(worksheetScope(this), { childList: true, subtree: true });
+};
+toggleAtomPreview_fn = function() {
+  __privateSet(this, _atomPreview, !__privateGet(this, _atomPreview));
+  if (__privateGet(this, _atomPreview)) __privateMethod(this, _ChemLabPeriodicTable_instances, observeAtomPeers_fn).call(this);
+  else {
+    __privateGet(this, _atomPeersObserver)?.disconnect();
+    __privateSet(this, _atomPeersObserver, null);
+  }
+  this.requestUpdate();
+};
+renderAtomPreview_fn = function(element, language) {
+  const choices = __privateGet(this, _atomChoices);
+  const configuration = electronConfiguration(element.atomicNumber, 0);
+  const t7 = (en, de) => language === "de" ? de : en;
+  const change = (next) => {
+    __privateSet(this, _atomChoices, next);
+    this.requestUpdate();
+  };
+  return x2`<div class="pt-atom-preview">
+			${renderAtomicControls(configuration, choices, change, t7)}
+			<div class="pt-atom-figure">
+				${choices.model === "orbitals" ? renderAtomicOrbitalTiles(configuration, choices, change, t7) : renderAtomicShells(element.symbol, configuration, choices, t7)}
+			</div>
+		</div>`;
+};
 /**
  * Renders the detail card of one element.
  *
@@ -13023,15 +13524,19 @@ renderDetails_fn = function(t7, language, element, options) {
 				</div>
 			`;
   }
-  const rows = detailRows(element, language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get));
+  const atomView = __privateGet(this, _atomPreview);
+  const openBuilder = atomView && __privateMethod(this, _ChemLabPeriodicTable_instances, atomBuilder_fn).call(this);
+  const viewText = atomView ? language === "de" ? "Elementinformationen" : "Element information" : language === "de" ? "Atommodelle" : "Atom models";
+  const builderText = language === "de" ? "Im Molek\xFClbaukasten \xF6ffnen" : "Open in Molecule Builder";
+  const rows = atomView ? [] : detailRows(element, language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get));
   const key = keyRows(rows, __privateGet(this, _mode).mode);
   const rest = rows.filter((row) => !key.includes(row));
   const name = element.names[language];
   const expanded = options.expanded;
-  const open = options.collapsible && expanded;
+  const open = !atomView && options.collapsible && expanded;
   return x2`
 			<div
-				class="details-shell ${open ? "is-expanded" : ""}"
+				class="details-shell ${atomView ? "is-atom" : open ? "is-expanded" : ""}"
 				@keydown=${__privateGet(this, _onDetailsKeydown)}
 			>
 				<sl-card
@@ -13047,18 +13552,29 @@ renderDetails_fn = function(t7, language, element, options) {
 						<sl-tag class="details-family" size="small" variant="neutral">
 							${categoryText(element, language)}
 						</sl-tag>
-						<sl-tooltip content=${t7.detailsHint} hoist>
+						${atomView ? E2 : x2`<sl-tooltip content=${t7.detailsHint} hoist>
 							<span class="details-conditions">${conditionsText(language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get))}</span>
-						</sl-tooltip>
+						</sl-tooltip>`}
+						<div class="details-view-actions">
+							${openBuilder ? x2`<sl-button class="details-view-button" size="small" title=${builderText} aria-label=${builderText}
+								@click=${() => {
+    const builder = __privateMethod(this, _ChemLabPeriodicTable_instances, atomBuilder_fn).call(this);
+    if (builder?.viewAtom(element.atomicNumber, __privateGet(this, _atomChoices).model)) builder.scrollIntoView({ block: "nearest" });
+  }}>${OPEN_BUILDER_ICON}</sl-button>` : E2}
+							<sl-button class="details-view-button atom-preview-toggle" size="small" variant=${atomView ? "primary" : "default"}
+								title=${viewText} aria-label=${viewText} aria-pressed=${String(atomView)} @click=${__privateMethod(this, _ChemLabPeriodicTable_instances, toggleAtomPreview_fn)}>
+								${atomView ? ELEMENT_DETAILS_ICON : ATOM_PREVIEW_ICON}
+							</sl-button>
+						</div>
 					</div>
-					<div class="details-body">
+					${atomView ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderAtomPreview_fn).call(this, element, language) : x2`<div class="details-body">
 						<dl class="details-rows details-key">
 							${key.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t7, row))}
 						</dl>
 						${expanded ? x2`<div class="details-more">${__privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailSections_fn).call(this, t7, rest)}</div>` : null}
-					</div>
+					</div>`}
 				</sl-card>
-				${options.collapsible ? x2`
+				${options.collapsible && !atomView ? x2`
 						<sl-button
 							class="details-toggle"
 							size="small"
@@ -13270,7 +13786,7 @@ __publicField(_ChemLabPeriodicTable, "options", {
 __publicField(_ChemLabPeriodicTable, "properties", {
   selectedAtomicNumber: { attribute: false }
 });
-__publicField(_ChemLabPeriodicTable, "styles", periodicTableStyles);
+__publicField(_ChemLabPeriodicTable, "styles", [periodicTableStyles, atomicModelStyles]);
 var ChemLabPeriodicTable = _ChemLabPeriodicTable;
 if (!customElements.get("webwriter-chemlab-periodic-table")) {
   customElements.define("webwriter-chemlab-periodic-table", ChemLabPeriodicTable);

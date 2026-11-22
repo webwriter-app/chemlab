@@ -4,8 +4,8 @@ import { crystalIonColors, crystalRadii, latticePositions, siteIon } from "../mo
 import { canBond, dot, electronRegions, fitGeometry, shapeName, subtract } from "../molecule-builder/geometry";
 import { atomRadius, estimatedBondLength, spaceFillingRadius } from "../molecule-builder/radii";
 import { hasMolecularDisplays, moleculeOrbitals, unpackOrbitalSurface } from "../molecule-builder/orbitals";
-import { atomicSpecies, electronConfiguration, orbitalOrientations } from "../molecule-builder/atomic-configuration";
-import { angularOrbital, atomicOrbitalField, atomicOrbitalMesh, atomicOrbitalSlice, atomicOverlayParts } from "../molecule-builder/atomic-orbitals";
+import { atomicShells, atomicSpecies, electronConfiguration, orbitalOccupation, orbitalOrientations } from "../molecule-builder/atomic-configuration";
+import { angularOrbital, atomicFamilyParts, atomicOrbitalField, atomicOrbitalMesh, atomicOrbitalSlice, atomicOverlayParts } from "../molecule-builder/atomic-orbitals";
 import { ELEMENTS, categoryOf } from "../periodic-table/element-reference";
 import { metalCrystal } from "../periodic-table/metal-reference";
 import { cartesian, cellVectors, fractional, newMolecule, readStructure, replicatedSites, type Crystal, type Molecule } from "../molecule-builder/structure";
@@ -214,3 +214,12 @@ assert.ok(sliceOverlay.paths.every(path => path.length > 0));
 assert.ok(sliceOverlay.background.every(path => path.length > 0));
 const heavyParts = atomicOverlayParts(electronConfiguration(118, 0).subshells);
 assert.ok(heavyParts.length > 80 && heavyParts.every(part => part.scale > 0 && part.scale <= 1));
+
+assert.deepEqual(atomicShells(electronConfiguration(26, 0)).map(shell => shell.electrons), [2, 8, 14, 2]);
+assert.deepEqual(atomicShells(electronConfiguration(11, 1)).map(shell => shell.label), ["K", "L"]);
+const carbonP = electronConfiguration(6, 0).subshells.find(shell => shell.label === "2p");
+assert.deepEqual(atomicFamilyParts(carbonP, 0).map(part => orbitalOccupation(carbonP, part.orientation)), [1, 1, 0]);
+const oxygenP = oxygenSubshells.find(shell => shell.label === "2p");
+assert.deepEqual(atomicFamilyParts(oxygenP, 0).map(part => orbitalOccupation(oxygenP, part.orientation)), [2, 1, 1]);
+const ironD = electronConfiguration(26, 0).subshells.find(shell => shell.label === "3d");
+assert.deepEqual(atomicFamilyParts(ironD, 0).map(part => orbitalOccupation(ironD, part.orientation)), [2, 1, 1, 1, 1]);

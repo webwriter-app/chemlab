@@ -585,6 +585,890 @@ var init_selection = __esm({
   }
 });
 
+// molecule-builder/structure.ts
+function cellVectors({ lengths: [a5, b4, c9], angles }) {
+  const [alpha, beta, gamma] = angles.map((angle) => angle * Math.PI / 180);
+  const y5 = (Math.cos(alpha) - Math.cos(beta) * Math.cos(gamma)) / Math.sin(gamma);
+  return [
+    [a5, 0, 0],
+    [b4 * Math.cos(gamma), b4 * Math.sin(gamma), 0],
+    [c9 * Math.cos(beta), c9 * y5, c9 * Math.sqrt(1 - Math.cos(beta) ** 2 - y5 ** 2)]
+  ];
+}
+function cartesian(vectors, [x4, y5, z3]) {
+  const [a5, b4, c9] = vectors;
+  return [a5[0] * x4 + b4[0] * y5 + c9[0] * z3, a5[1] * x4 + b4[1] * y5 + c9[1] * z3, a5[2] * x4 + b4[2] * y5 + c9[2] * z3];
+}
+function fractional([a5, b4, c9], point) {
+  const z3 = point[2] / c9[2];
+  const y5 = (point[1] - c9[1] * z3) / b4[1];
+  const x4 = (point[0] - b4[0] * y5 - c9[0] * z3) / a5[0];
+  const wrap = (value) => (value % 1 + 1) % 1;
+  return [wrap(x4), wrap(y5), wrap(z3)];
+}
+function isCell(cell) {
+  return cell.lengths.every((value) => Number.isFinite(value) && value >= 0.1 && value <= 200) && cell.angles.every((value) => Number.isFinite(value) && value >= 1 && value <= 179) && cellVectors(cell)[2][2] > 1e-3;
+}
+function replicatedSites(crystal, repeats) {
+  const vectors = cellVectors(crystal.cell);
+  const sites = [];
+  for (let x4 = 0; x4 < repeats; x4++) {
+    for (let y5 = 0; y5 < repeats; y5++) {
+      for (let z3 = 0; z3 < repeats; z3++) {
+        for (const site of crystal.sites) {
+          const [a5, b4, c9] = site.fractional;
+          sites.push({ site, position: cartesian(vectors, [a5 + x4, b4 + y5, c9 + z3]) });
+        }
+      }
+    }
+  }
+  return sites;
+}
+function record(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function numbers(value, length2) {
+  return Array.isArray(value) && value.length === length2 && value.every((item) => typeof item === "number" && Number.isFinite(item) && Math.abs(item) <= 1e4);
+}
+function atomIdentity(value) {
+  return record(value) && Number.isSafeInteger(value.id) && Number(value.id) > 0 && isAtomicNumber(value.atomicNumber) && Number.isInteger(value.charge) && Math.abs(Number(value.charge)) <= 8 && (value.isotope === void 0 || Number.isInteger(value.isotope) && Number(value.isotope) >= value.atomicNumber && Number(value.isotope) <= 400);
+}
+function uniqueIds(values) {
+  return new Set(values.map((value) => value.id)).size === values.length;
+}
+function readStructure(value) {
+  if (!record(value) || value.version !== 1 || typeof value.name !== "string" || value.name.length > 160) return null;
+  const base = { version: 1, name: value.name };
+  if (typeof value.catalogKey === "string" && value.catalogKey.length <= 160) base.catalogKey = value.catalogKey;
+  if (typeof value.source === "string" && value.source.length <= 240) base.source = value.source;
+  if (value.kind === "molecule") {
+    if (!Array.isArray(value.atoms) || value.atoms.length > MAX_ATOMS || !Array.isArray(value.bonds) || value.bonds.length > MAX_ATOMS * 4) return null;
+    const atoms = [];
+    for (const atom of value.atoms) {
+      if (!atomIdentity(atom) || !numbers(atom.diagram, 2) || !numbers(atom.position, 3)) return null;
+      const { id, atomicNumber, charge, isotope, diagram, position } = atom;
+      atoms.push({ id, atomicNumber, charge, isotope, diagram: [...diagram], position: [...position] });
+    }
+    if (!uniqueIds(atoms)) return null;
+    const atomIds = new Set(atoms.map((atom) => atom.id));
+    const pairs = /* @__PURE__ */ new Set();
+    const bonds = [];
+    for (const bond of value.bonds) {
+      if (!record(bond) || typeof bond.from !== "number" || typeof bond.to !== "number" || !atomIds.has(bond.from) || !atomIds.has(bond.to) || bond.from === bond.to || bond.order !== 1 && bond.order !== 2 && bond.order !== 3) return null;
+      const pair = [bond.from, bond.to].sort((a5, b4) => a5 - b4).join("-");
+      if (pairs.has(pair)) return null;
+      pairs.add(pair);
+      bonds.push({ from: bond.from, to: bond.to, order: bond.order, ...bond.dative === true ? { dative: true } : {} });
+    }
+    const geometry = value.geometry === "idealized" || value.geometry === "supplied" || value.geometry === "estimated" ? value.geometry : void 0;
+    const representation = value.representation === "constituent" || value.representation === "repeat-unit" || value.representation === "ionic-components" || value.representation === "aqueous-ions" || value.representation === "conformer" || value.representation === "experimental" ? value.representation : void 0;
+    const repeat = value.repeatUnit;
+    const repeatAtoms = record(repeat) && Array.isArray(repeat.atoms) ? repeat.atoms : [];
+    const repeatUnit = repeatAtoms.length >= 2 && repeatAtoms.length <= atomIds.size && new Set(repeatAtoms).size === repeatAtoms.length && repeatAtoms.every((id) => atomIds.has(id)) && record(repeat) && Array.isArray(repeat.ends) && repeat.ends.length === 2 && repeat.ends[0] !== repeat.ends[1] && repeat.ends.every((id) => repeatAtoms.includes(id)) ? { atoms: [...repeatAtoms], ends: [repeat.ends[0], repeat.ends[1]] } : void 0;
+    return { ...base, kind: "molecule", atoms, bonds, geometry, representation, repeatUnit };
+  }
+  if (value.kind !== "crystal" || !record(value.cell) || !numbers(value.cell.lengths, 3) || !numbers(value.cell.angles, 3) || !Array.isArray(value.sites) || value.sites.length > MAX_SITES) return null;
+  const cell = { lengths: [...value.cell.lengths], angles: [...value.cell.angles] };
+  if (!isCell(cell)) return null;
+  const sites = [];
+  const positions = /* @__PURE__ */ new Set();
+  for (const site of value.sites) {
+    if (!atomIdentity(site) || !numbers(site.fractional, 3) || site.fractional.some((coordinate) => coordinate < 0 || coordinate >= 1)) return null;
+    const occupancy = site.occupancy;
+    if (occupancy !== void 0 && (typeof occupancy !== "number" || !(occupancy > 0 && occupancy <= 1))) return null;
+    const position = site.fractional.join(",");
+    if (positions.has(position)) return null;
+    positions.add(position);
+    const { id, atomicNumber, charge, isotope } = site;
+    const ion2 = typeof site.ion === "string" ? site.ion.trim().slice(0, 60) || void 0 : void 0;
+    sites.push({
+      id,
+      atomicNumber,
+      charge,
+      isotope,
+      ion: ion2,
+      occupancy,
+      fractional: [...site.fractional]
+    });
+  }
+  if (!uniqueIds(sites)) return null;
+  const bravais = typeof value.bravais === "string" ? value.bravais.slice(0, 60) : void 0;
+  const spaceGroup = typeof value.spaceGroup === "string" ? value.spaceGroup.slice(0, 60) : void 0;
+  const conditions = typeof value.conditions === "string" ? value.conditions.slice(0, 96) : void 0;
+  const temperatureK = typeof value.temperatureK === "number" && Number.isFinite(value.temperatureK) && value.temperatureK >= 0 ? value.temperatureK : void 0;
+  return { ...base, kind: "crystal", cell, sites, bravais, spaceGroup, conditions, temperatureK };
+}
+var MAX_ATOMS, MAX_SITES, MAX_FILE_BYTES, EMPTY_CELL, newMolecule, newCrystal;
+var init_structure = __esm({
+  "molecule-builder/structure.ts"() {
+    init_selection();
+    MAX_ATOMS = 128;
+    MAX_SITES = 128;
+    MAX_FILE_BYTES = 512 * 1024;
+    EMPTY_CELL = { lengths: [5, 5, 5], angles: [90, 90, 90] };
+    newMolecule = () => ({ version: 1, kind: "molecule", name: "", atoms: [], bonds: [] });
+    newCrystal = () => ({ version: 1, kind: "crystal", name: "", cell: EMPTY_CELL, sites: [] });
+  }
+});
+
+// molecule-builder/radii.ts
+function ionicRadius(atomicNumber, charge, coordination) {
+  const pm = ionicPm.get(`${atomicNumber}:${charge}:${coordination}`);
+  return pm === void 0 ? void 0 : { pm, model: "ionic", coordination };
+}
+function atomRadius(atomicNumber) {
+  const covalent2 = covalentPm[atomicNumber];
+  if (covalent2) return { pm: covalent2, model: "covalent" };
+  const pm = dataValue(elementByAtomicNumber(atomicNumber).radius);
+  return pm === void 0 ? { pm: 90, model: "schematic" } : { pm, model: "empirical" };
+}
+function spaceFillingRadius(atomicNumber) {
+  const pm = vanDerWaalsPm[atomicNumber];
+  return pm ? { pm, model: "vdw" } : { pm: 200, model: "schematic" };
+}
+function estimatedBondLength(left, right, order) {
+  const a5 = molecularPm.get(left), b4 = molecularPm.get(right);
+  if (a5?.[order - 1] && b4?.[order - 1]) return (a5[order - 1] + b4[order - 1]) / 100;
+  const sum = (a5?.[0] ?? atomRadius(left).pm) + (b4?.[0] ?? atomRadius(right).pm);
+  return sum / 100 * [1, 0.9, 0.82][order - 1];
+}
+var covalentPm, vanDerWaalsPm, molecularPm, ionicPm;
+var init_radii = __esm({
+  "molecule-builder/radii.ts"() {
+    init_element_reference();
+    covalentPm = [
+      0,
+      31,
+      28,
+      128,
+      96,
+      84,
+      76,
+      71,
+      66,
+      57,
+      58,
+      166,
+      141,
+      121,
+      111,
+      107,
+      105,
+      102,
+      106,
+      203,
+      176,
+      170,
+      160,
+      153,
+      139,
+      139,
+      132,
+      126,
+      124,
+      132,
+      122,
+      122,
+      120,
+      119,
+      120,
+      120,
+      116,
+      220,
+      195,
+      190,
+      175,
+      164,
+      154,
+      147,
+      146,
+      142,
+      139,
+      145,
+      144,
+      142,
+      139,
+      139,
+      138,
+      139,
+      140,
+      244,
+      215,
+      207,
+      204,
+      203,
+      201,
+      199,
+      198,
+      198,
+      196,
+      194,
+      192,
+      192,
+      189,
+      190,
+      187,
+      187,
+      175,
+      170,
+      162,
+      151,
+      144,
+      141,
+      136,
+      136,
+      132,
+      145,
+      146,
+      148,
+      140,
+      150,
+      150,
+      260,
+      221,
+      215,
+      206,
+      200,
+      196,
+      190,
+      187,
+      180,
+      169
+    ];
+    vanDerWaalsPm = [
+      0,
+      110,
+      140,
+      181,
+      153,
+      192,
+      170,
+      155,
+      152,
+      147,
+      154,
+      227,
+      173,
+      184,
+      210,
+      180,
+      180,
+      175,
+      188,
+      275,
+      231,
+      258,
+      246,
+      242,
+      245,
+      245,
+      244,
+      240,
+      240,
+      238,
+      239,
+      187,
+      211,
+      185,
+      190,
+      183,
+      202,
+      303,
+      249,
+      275,
+      252,
+      256,
+      245,
+      244,
+      246,
+      244,
+      215,
+      253,
+      249,
+      193,
+      217,
+      206,
+      206,
+      198,
+      216,
+      343,
+      268,
+      298,
+      288,
+      292,
+      295,
+      0,
+      290,
+      287,
+      283,
+      279,
+      287,
+      281,
+      283,
+      279,
+      280,
+      274,
+      263,
+      253,
+      257,
+      249,
+      248,
+      241,
+      229,
+      232,
+      245,
+      196,
+      202,
+      207,
+      197,
+      202,
+      220,
+      348,
+      283,
+      280,
+      293,
+      288,
+      271,
+      282,
+      281,
+      283,
+      305,
+      340,
+      305,
+      270,
+      0,
+      0,
+      0,
+      0
+    ];
+    molecularPm = /* @__PURE__ */ new Map([
+      [1, [32]],
+      [5, [85, 78, 73]],
+      [6, [75, 67, 60]],
+      [7, [71, 60, 54]],
+      [8, [63, 57, 53]],
+      [9, [64]],
+      [13, [126, 113, 111]],
+      [14, [116, 107, 102]],
+      [15, [111, 102, 94]],
+      [16, [103, 94, 95]],
+      [17, [99]],
+      [35, [114]],
+      [53, [133]]
+    ]);
+    ionicPm = /* @__PURE__ */ new Map([
+      ["8:-2:3", 136],
+      ["8:-2:4", 138],
+      ["8:-2:6", 140],
+      ["11:1:6", 102],
+      ["12:2:6", 72],
+      ["17:-1:6", 181],
+      ["19:1:6", 138],
+      ["20:2:6", 100],
+      ["25:4:6", 53],
+      ["26:3:6", 64.5],
+      ["29:2:4", 57],
+      ["35:-1:6", 196],
+      ["47:1:6", 115],
+      ["53:-1:6", 220],
+      ["56:2:12", 161]
+    ]);
+  }
+});
+
+// molecule-builder/crystal-display.ts
+function siteIon(site) {
+  if (site.ion) return site.ion;
+  if (!site.charge) return void 0;
+  const magnitude = Math.abs(site.charge);
+  const digits = "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078\u2079";
+  return elementByAtomicNumber(site.atomicNumber).symbol + (magnitude > 1 ? digits[magnitude] : "") + (site.charge > 0 ? "\u207A" : "\u207B");
+}
+function crystalIonColors(crystal) {
+  const labels = new Set(crystal.sites.map(siteIon).filter((label) => label !== void 0));
+  const cations = [29362, 9259429, 3769202, 3359061];
+  const anions = [13983232, 11750275, 10254620, 6254386];
+  const offsets = [0, 0];
+  return new Map([...labels].sort().map((label) => {
+    const positive = label.endsWith("\u207A");
+    const palette = positive ? cations : anions;
+    return [label, palette[offsets[positive ? 0 : 1]++ % palette.length]];
+  }));
+}
+function latticePositions(crystal, repeats) {
+  const setting = crystal.spaceGroup?.trim()[0];
+  const type = crystal.bravais?.slice(-1);
+  const centering = setting === "H" && type === "R" ? "R" : setting || type || "P";
+  const [alpha, beta, gamma] = crystal.cell.angles;
+  const hexagonalAxes = Math.abs(alpha - 90) < 1 && Math.abs(beta - 90) < 1 && Math.abs(gamma - 120) < 1;
+  const offsets = [[0, 0, 0], ...centering === "R" && !hexagonalAxes ? [] : centeringOffsets[centering] ?? []];
+  const vectors = cellVectors(crystal.cell);
+  const positions = [];
+  for (const [a5, b4, c9] of offsets) {
+    for (let x4 = 0; x4 + a5 <= repeats; x4++) {
+      for (let y5 = 0; y5 + b4 <= repeats; y5++) {
+        for (let z3 = 0; z3 + c9 <= repeats; z3++) positions.push(cartesian(vectors, [x4 + a5, y5 + b4, z3 + c9]));
+      }
+    }
+  }
+  return positions;
+}
+function monatomicCharge(site) {
+  const ion2 = siteIon(site);
+  const symbol2 = elementByAtomicNumber(site.atomicNumber).symbol;
+  const suffix = ion2?.startsWith(symbol2) ? ion2.slice(symbol2.length) : "";
+  if (!/^[¹²³⁴⁵⁶⁷⁸]?[⁺⁻]$/.test(suffix)) return site.charge;
+  const magnitude = suffix.length === 1 ? 1 : "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078".indexOf(suffix[0]);
+  return suffix.endsWith("\u207A") ? magnitude : -magnitude;
+}
+function metallicRadius(crystal, site, vectors) {
+  const category = categoryOf(site.atomicNumber);
+  if (!crystal.source || !(category?.endsWith("-metal") || category === "lanthanide" || category === "actinide") || !crystal.sites.every((other) => other.atomicNumber === site.atomicNumber && !siteIon(other))) return void 0;
+  let min2 = Infinity;
+  for (const other of crystal.sites) {
+    const delta = other.fractional.map((n10, i9) => n10 - site.fractional[i9]);
+    for (let x4 = -1; x4 <= 1; x4++) for (let y5 = -1; y5 <= 1; y5++) for (let z3 = -1; z3 <= 1; z3++) {
+      const length2 = Math.hypot(...cartesian(vectors, [delta[0] + x4, delta[1] + y5, delta[2] + z3]));
+      if (length2 > 1e-6) min2 = Math.min(min2, length2);
+    }
+  }
+  return Number.isFinite(min2) ? { pm: Math.round(min2 * 500) / 10, model: "metallic" } : void 0;
+}
+function crystalRadii(crystal) {
+  const cached = radiiByCrystal.get(crystal);
+  if (cached) return cached;
+  const vectors = cellVectors(crystal.cell);
+  const radii = new Map(crystal.sites.map((site) => {
+    const charge = monatomicCharge(site);
+    if (!charge) return [site.id, metallicRadius(crystal, site, vectors) ?? atomRadius(site.atomicNumber)];
+    const coordination = crystal.source && crystal.catalogKey && (sixCoordinateSalts.has(crystal.catalogKey) ? 6 : oxideCoordination[crystal.catalogKey]?.[site.atomicNumber]);
+    return [site.id, coordination && ionicRadius(site.atomicNumber, charge, coordination) || { pm: 80, model: "schematic" }];
+  }));
+  radiiByCrystal.set(crystal, radii);
+  return radii;
+}
+var colorHex, centeringOffsets, sixCoordinateSalts, oxideCoordination, radiiByCrystal;
+var init_crystal_display = __esm({
+  "molecule-builder/crystal-display.ts"() {
+    init_element_reference();
+    init_structure();
+    init_radii();
+    colorHex = (color) => `#${color.toString(16).padStart(6, "0")}`;
+    centeringOffsets = {
+      A: [[0, 0.5, 0.5]],
+      B: [[0.5, 0, 0.5]],
+      C: [[0.5, 0.5, 0]],
+      I: [[0.5, 0.5, 0.5]],
+      F: [[0, 0.5, 0.5], [0.5, 0, 0.5], [0.5, 0.5, 0]],
+      R: [[2 / 3, 1 / 3, 1 / 3], [1 / 3, 2 / 3, 2 / 3]],
+      H: [[2 / 3, 1 / 3, 0], [1 / 3, 2 / 3, 0]]
+    };
+    sixCoordinateSalts = /* @__PURE__ */ new Set([
+      "Natriumchlorid",
+      "Natriumbromid",
+      "Natriumiodid",
+      "Kaliumchlorid",
+      "Kaliumbromid",
+      "Kaliumiodid",
+      "Silberchlorid",
+      "Magnesiumoxid",
+      "Calciumoxid"
+    ]);
+    oxideCoordination = {
+      "Eisen(III)-oxid": { 8: 4, 26: 6 },
+      "Kupfer(II)-oxid": { 8: 4, 29: 4 },
+      "Mangan(IV)-oxid": { 8: 3, 25: 6 },
+      "Bariumsulfat": { 56: 12 }
+    };
+    radiiByCrystal = /* @__PURE__ */ new WeakMap();
+  }
+});
+
+// molecule-builder/atomic-configuration.ts
+function expand(text) {
+  const terms = text.trim().split(/\s+/).filter(Boolean);
+  const core = /^\[([A-Z][a-z])\]$/.exec(terms[0] ?? "");
+  const atomicNumber = core && coreNumbers.get(core[1]);
+  const subshells = atomicNumber ? expand(dataValue(elementByAtomicNumber(atomicNumber).configuration) ?? "") : [];
+  for (const term of terms.slice(core ? 1 : 0)) {
+    const match = /^(\d)([spdf])(\d+)$/.exec(term);
+    if (!match) continue;
+    const [, n10, letter, electrons] = match;
+    subshells.push({ n: Number(n10), l: orbitalLetters.indexOf(letter), electrons: Number(electrons), label: n10 + letter });
+  }
+  return subshells.sort((a5, b4) => a5.n - b4.n || a5.l - b4.l);
+}
+function electronConfiguration(atomicNumber, charge) {
+  const key = `${atomicNumber}:${charge}`;
+  const cached = cache.get(key);
+  if (cached) return cached;
+  const electrons = atomicNumber - charge;
+  const neutral = elementByAtomicNumber(atomicNumber).configuration;
+  const text = electrons === 0 ? "" : electrons === 1 ? "1s1" : charge ? ionConfigurations.get(key) ?? "" : dataValue(neutral) ?? "";
+  const subshells = expand(text);
+  const verified = subshells.reduce((sum, item) => sum + item.electrons, 0) === electrons;
+  const result = {
+    text: verified ? text : "",
+    subshells: verified ? subshells : [],
+    electrons,
+    predicted: !charge && neutral.status === "predicted",
+    formal: key === "8:-2" || key === "16:-2"
+  };
+  cache.set(key, result);
+  return result;
+}
+function atomicSpecies(structure, id) {
+  if (structure.kind === "crystal") {
+    const site = structure.sites.find((entry) => entry.id === id);
+    if (!site) return void 0;
+    const charge = monatomicCharge(site.ion ? { ...site, charge: 0 } : site);
+    return { atomicNumber: site.atomicNumber, charge, boundReference: !charge };
+  }
+  const atom = structure.atoms.find((entry) => entry.id === id);
+  if (!atom) return void 0;
+  const bonded = structure.bonds.some((bond) => bond.from === id || bond.to === id);
+  return { atomicNumber: atom.atomicNumber, charge: bonded ? 0 : atom.charge, boundReference: bonded };
+}
+function orbitalOrientations(l6) {
+  return orientations[l6] ?? [];
+}
+function atomicShells(configuration) {
+  const electrons = /* @__PURE__ */ new Map();
+  for (const shell of configuration.subshells) electrons.set(shell.n, (electrons.get(shell.n) ?? 0) + shell.electrons);
+  return [...electrons].map(([n10, electrons2]) => ({ n: n10, electrons: electrons2, label: "KLMNOPQ"[n10 - 1] }));
+}
+function orbitalOccupation(subshell, orientation) {
+  return Number(orientation < subshell.electrons) + Number(orientation + 2 * subshell.l + 1 < subshell.electrons);
+}
+var coreNumbers, orbitalLetters, ionConfigurations, cache, orientations;
+var init_atomic_configuration = __esm({
+  "molecule-builder/atomic-configuration.ts"() {
+    init_element_reference();
+    init_crystal_display();
+    coreNumbers = /* @__PURE__ */ new Map([["He", 2], ["Ne", 10], ["Ar", 18], ["Kr", 36], ["Xe", 54], ["Rn", 86]]);
+    orbitalLetters = "spdf";
+    ionConfigurations = /* @__PURE__ */ new Map([
+      ["3:1", "[He]"],
+      ["8:-2", "[Ne]"],
+      ["9:-1", "[Ne]"],
+      ["11:1", "[Ne]"],
+      ["12:2", "[Ne]"],
+      ["13:3", "[Ne]"],
+      ["16:-2", "[Ar]"],
+      ["17:-1", "[Ar]"],
+      ["19:1", "[Ar]"],
+      ["20:2", "[Ar]"],
+      ["25:2", "[Ar] 3d5"],
+      ["25:4", "[Ar] 3d3"],
+      ["26:2", "[Ar] 3d6"],
+      ["26:3", "[Ar] 3d5"],
+      ["28:2", "[Ar] 3d8"],
+      ["29:1", "[Ar] 3d10"],
+      ["29:2", "[Ar] 3d9"],
+      ["30:2", "[Ar] 3d10"],
+      ["35:-1", "[Kr]"],
+      ["38:2", "[Kr]"],
+      ["47:1", "[Kr] 4d10"],
+      ["53:-1", "[Xe]"],
+      ["56:2", "[Xe]"]
+    ]);
+    cache = /* @__PURE__ */ new Map();
+    orientations = [
+      ["s"],
+      ["p(z)", "p(x)", "p(y)"],
+      ["d(z\xB2)", "d(xz)", "d(yz)", "d(x\xB2\u2212y\xB2)", "d(xy)"],
+      ["f(0)", "f(1, cos)", "f(1, sin)", "f(2, cos)", "f(2, sin)", "f(3, cos)", "f(3, sin)"]
+    ];
+  }
+});
+
+// molecule-builder/orbital-mesh.ts
+function meshNormals(positions, indices) {
+  const normals = new Float32Array(positions.length);
+  for (let i9 = 0; i9 < indices.length; i9 += 3) {
+    const a5 = indices[i9] * 3, b4 = indices[i9 + 1] * 3, c9 = indices[i9 + 2] * 3;
+    const abX = positions[b4] - positions[a5], acX = positions[c9] - positions[a5];
+    const abY = positions[b4 + 1] - positions[a5 + 1], acY = positions[c9 + 1] - positions[a5 + 1];
+    const abZ = positions[b4 + 2] - positions[a5 + 2], acZ = positions[c9 + 2] - positions[a5 + 2];
+    const x4 = abY * acZ - abZ * acY, y5 = abZ * acX - abX * acZ, z3 = abX * acY - abY * acX;
+    for (const offset3 of [a5, b4, c9]) {
+      normals[offset3] += x4;
+      normals[offset3 + 1] += y5;
+      normals[offset3 + 2] += z3;
+    }
+  }
+  for (let i9 = 0; i9 < normals.length; i9 += 3) {
+    const length2 = Math.hypot(normals[i9], normals[i9 + 1], normals[i9 + 2]);
+    if (!length2) continue;
+    normals[i9] /= length2;
+    normals[i9 + 1] /= length2;
+    normals[i9 + 2] /= length2;
+  }
+  return normals;
+}
+var init_orbital_mesh = __esm({
+  "molecule-builder/orbital-mesh.ts"() {
+  }
+});
+
+// molecule-builder/atomic-orbitals.ts
+function atomicOrbitalKey({ subshell, orientation, region }) {
+  return [subshell?.label, orientation, region].join(":");
+}
+function laguerre(order, alpha, x4) {
+  let previous = 1, value = 1 + alpha - x4;
+  for (let k3 = 2; k3 <= order; k3++) {
+    [previous, value] = [value, ((2 * k3 - 1 + alpha - x4) * value - (k3 - 1 + alpha) * previous) / k3];
+  }
+  return order === 0 ? 1 : value;
+}
+function angularOrbital(l6, orientation, x4, y5, z3) {
+  switch (l6) {
+    case 0:
+      return 1;
+    case 1:
+      return [z3, x4, y5][orientation];
+    case 2:
+      return [3 * z3 * z3 - 1, x4 * z3, y5 * z3, x4 * x4 - y5 * y5, x4 * y5][orientation];
+    case 3:
+      return [
+        z3 * (5 * z3 * z3 - 3),
+        x4 * (5 * z3 * z3 - 1),
+        y5 * (5 * z3 * z3 - 1),
+        z3 * (x4 * x4 - y5 * y5),
+        x4 * y5 * z3,
+        x4 * (x4 * x4 - 3 * y5 * y5),
+        y5 * (3 * x4 * x4 - y5 * y5)
+      ][orientation];
+    default:
+      return 0;
+  }
+}
+function angularPeak(l6, orientation) {
+  let peak = 0;
+  for (let sample = 0; sample < 768; sample++) {
+    const z3 = 1 - 2 * (sample + 0.5) / 768;
+    const r11 = Math.sqrt(1 - z3 * z3), phi = sample * 2.399963229728653;
+    peak = Math.max(peak, Math.abs(angularOrbital(l6, orientation, r11 * Math.cos(phi), r11 * Math.sin(phi), z3)));
+  }
+  return peak;
+}
+function radialOrbital(n10, l6, rho) {
+  return rho ** l6 * Math.exp(-rho / 2) * laguerre(n10 - l6 - 1, 2 * l6 + 1, rho);
+}
+function radialRanges(n10, l6) {
+  const edges = [0];
+  const end = 22 + 6 * n10;
+  let previous = laguerre(n10 - l6 - 1, 2 * l6 + 1, 0);
+  for (let sample = 1; sample <= end * 32; sample++) {
+    const rho = sample / 32;
+    const next = laguerre(n10 - l6 - 1, 2 * l6 + 1, rho);
+    if (previous !== 0 && previous * next <= 0) {
+      let from = rho - 1 / 32, to = rho;
+      for (let i9 = 0; i9 < 18; i9++) {
+        const mid = (from + to) / 2;
+        if (laguerre(n10 - l6 - 1, 2 * l6 + 1, mid) * previous > 0) from = mid;
+        else to = mid;
+      }
+      edges.push((from + to) / 2);
+    }
+    previous = next;
+  }
+  edges.push(end);
+  return edges;
+}
+function radialProfile(n10, l6, region) {
+  const key = `${n10}:${l6}:${region}`;
+  const cached = radialProfiles.get(key);
+  if (cached) return cached;
+  const ranges = radialRanges(n10, l6);
+  const start = ranges[region], end = ranges[region + 1];
+  let peak = 0;
+  for (let i9 = 0; i9 <= 400; i9++) {
+    peak = Math.max(peak, Math.abs(radialOrbital(n10, l6, start + (end - start) * i9 / 400)));
+  }
+  let extent = end;
+  for (let i9 = 400; i9 >= 0; i9--) {
+    const rho = start + (end - start) * i9 / 400;
+    if (Math.abs(radialOrbital(n10, l6, rho)) >= peak * contour) {
+      extent = rho + (end - start) * 2 / 400;
+      break;
+    }
+  }
+  const result = { start, end, peak, extent };
+  radialProfiles.set(key, result);
+  return result;
+}
+function atomicOverlayParts(subshells) {
+  const cached = overlayCache.get(subshells);
+  if (cached) return cached;
+  const outermost = subshells.map(({ n: n10, l: l6 }) => radialProfile(n10, l6, n10 - l6 - 1).extent);
+  const reach = Math.max(...subshells.map(({ n: n10 }, i9) => n10 * outermost[i9]));
+  const parts = subshells.flatMap((subshell, i9) => {
+    const { n: n10, l: l6 } = subshell;
+    const outerScale = Math.sqrt(n10 * outermost[i9] / reach);
+    return Array.from({ length: 2 * l6 + 1 }, (_3, orientation) => Array.from({ length: n10 - l6 }, (_4, region) => {
+      const part = { subshell, orientation, region };
+      return {
+        ...part,
+        key: atomicOrbitalKey(part),
+        scale: outerScale * radialProfile(n10, l6, region).extent / outermost[i9]
+      };
+    })).flat();
+  });
+  overlayCache.set(subshells, parts);
+  return parts;
+}
+function atomicOrbitalField(n10, l6, orientation, region) {
+  const { start, end, peak, extent } = radialProfile(n10, l6, region);
+  const inversePeak = 1 / (peak * angularPeak(l6, orientation));
+  return {
+    extent,
+    value(x4, y5, z3) {
+      const radius = Math.hypot(x4, y5, z3);
+      const rho = radius * extent;
+      if (rho < start || rho > end) return 0;
+      const angular = radius === 0 ? Number(l6 === 0) : angularOrbital(l6, orientation, x4 / radius, y5 / radius, z3 / radius);
+      return radialOrbital(n10, l6, rho) * angular * inversePeak;
+    }
+  };
+}
+function contourMesh(points, values, grid, positive) {
+  const vertices = [], triangles = [];
+  const edges = /* @__PURE__ */ new Map();
+  const level = positive ? contour : -contour;
+  const inside = (value) => positive ? value > level : value < level;
+  const vertex3 = (a5, b4) => {
+    const key = Math.min(a5, b4) * values.length + Math.max(a5, b4);
+    let index = edges.get(key);
+    if (index !== void 0) return index;
+    index = vertices.length / 3;
+    const t8 = (level - values[a5]) / (values[b4] - values[a5]);
+    for (let axis = 0; axis < 3; axis++) vertices.push(points[a5 * 3 + axis] + t8 * (points[b4 * 3 + axis] - points[a5 * 3 + axis]));
+    edges.set(key, index);
+    return index;
+  };
+  const triangle2 = (a5, b4, c9, interior) => {
+    const i9 = a5 * 3, j4 = b4 * 3, k3 = c9 * 3;
+    const [x4, y5, z3] = [vertices[j4] - vertices[i9], vertices[j4 + 1] - vertices[i9 + 1], vertices[j4 + 2] - vertices[i9 + 2]];
+    const [u6, v4, w4] = [vertices[k3] - vertices[i9], vertices[k3 + 1] - vertices[i9 + 1], vertices[k3 + 2] - vertices[i9 + 2]];
+    const towardInside = (y5 * w4 - z3 * v4) * (points[interior * 3] - vertices[i9]) + (z3 * u6 - x4 * w4) * (points[interior * 3 + 1] - vertices[i9 + 1]) + (x4 * v4 - y5 * u6) * (points[interior * 3 + 2] - vertices[i9 + 2]);
+    triangles.push(a5, towardInside > 0 ? c9 : b4, towardInside > 0 ? b4 : c9);
+  };
+  const cornerOffsets = corners.map(([x4, y5, z3]) => x4 + (y5 + z3 * grid) * grid);
+  const plane = grid * grid;
+  const ids = new Int32Array(8), flags = new Uint8Array(8);
+  for (let z3 = 0; z3 < grid - 1; z3++) for (let y5 = 0; y5 < grid - 1; y5++) for (let x4 = 0; x4 < grid - 1; x4++) {
+    const base = x4 + y5 * grid + z3 * plane;
+    let count2 = 0;
+    for (let n10 = 0; n10 < 8; n10++) {
+      const id = base + cornerOffsets[n10];
+      ids[n10] = id;
+      flags[n10] = Number(inside(values[id]));
+      count2 += flags[n10];
+    }
+    if (!count2 || count2 === 8) continue;
+    for (const tetra of tetrahedra) {
+      const inner = [], outer = [];
+      for (const corner of tetra) (flags[corner] ? inner : outer).push(ids[corner]);
+      if (!inner.length || !outer.length) continue;
+      if (inner.length === 2) {
+        const a5 = vertex3(inner[0], outer[0]), b4 = vertex3(inner[0], outer[1]);
+        const c9 = vertex3(inner[1], outer[0]), d4 = vertex3(inner[1], outer[1]);
+        triangle2(a5, b4, c9, inner[0]);
+        triangle2(c9, b4, d4, inner[1]);
+      } else {
+        const [one2, rest] = inner.length === 1 ? [inner, outer] : [outer, inner];
+        const [a5, b4, c9] = rest.map((id) => vertex3(one2[0], id));
+        triangle2(a5, b4, c9, inner[0]);
+      }
+    }
+  }
+  if (!triangles.length) return void 0;
+  const positions = Float32Array.from(vertices), indices = Uint32Array.from(triangles);
+  return { positions, indices, normals: meshNormals(positions, indices) };
+}
+function atomicOrbitalMesh({ atomicNumber, electrons, subshell, orientation, region }, grid = 43) {
+  if (!subshell) return { phases: [], extent: 1, physical: false };
+  const { n: n10, l: l6 } = subshell;
+  const field = atomicOrbitalField(n10, l6, orientation, region);
+  const physical = electrons === 1;
+  const extent = physical ? field.extent * n10 * bohrAngstrom / (2 * atomicNumber) : 1;
+  const size3 = grid ** 3;
+  const points = new Float32Array(size3 * 3), values = new Float32Array(size3);
+  for (let z3 = 0, i9 = 0; z3 < grid; z3++) for (let y5 = 0; y5 < grid; y5++) for (let x4 = 0; x4 < grid; x4++, i9++) {
+    const pos = [2 * x4 / (grid - 1) - 1, 2 * y5 / (grid - 1) - 1, 2 * z3 / (grid - 1) - 1];
+    points.set(pos, i9 * 3);
+    values[i9] = field.value(...pos);
+  }
+  return { phases: [contourMesh(points, values, grid, true), contourMesh(points, values, grid, false)], extent, physical };
+}
+function slicePaths(side, sample) {
+  const paths = ["", ""];
+  let count2 = 0;
+  for (let y5 = 0; y5 < side; y5++) {
+    for (let x4 = 0, start = 0, phase = -1; x4 <= side; x4++) {
+      const next = x4 === side ? -1 : sample((2 * x4 + 1) / side - 1, 1 - (2 * y5 + 1) / side);
+      if (next === phase) continue;
+      if (phase >= 0) {
+        const width = x4 - start;
+        count2 += width;
+        paths[phase] += `M${start} ${y5}h${width}v1h-${width}z`;
+      }
+      start = x4;
+      phase = next;
+    }
+  }
+  return { count: count2, paths };
+}
+function atomicOrbitalSlice(display, overlay, side = 128) {
+  if (!display.subshell) return void 0;
+  const { n: n10, l: l6 } = display.subshell;
+  const field = atomicOrbitalField(n10, l6, display.orientation, display.region);
+  const key = atomicOrbitalKey(display);
+  const scale2 = overlay?.find((part) => part.key === key)?.scale ?? 1;
+  const phase = (value) => value > contour ? 0 : value < -contour ? 1 : -1;
+  const section = (side2, plane2) => slicePaths(side2, (x4, y5) => phase(field.value(...plane2(x4 / scale2, y5 / scale2))));
+  const plane = slicePlanes.map((plane2) => ({ plane: plane2, count: section(32, plane2).count })).reduce((best, candidate) => candidate.count > best.count ? candidate : best).plane;
+  const { paths } = section(side, plane);
+  const backgroundSide = 64;
+  const fields = overlay?.filter((part) => part.key !== key).map((part) => {
+    const { n: n11, l: l7 } = part.subshell;
+    return { scale: part.scale, field: atomicOrbitalField(n11, l7, part.orientation, part.region) };
+  });
+  const background = fields && [1, -1].map((sign) => slicePaths(backgroundSide, (x4, y5) => {
+    const distance2 = Math.hypot(x4, y5);
+    const visible = fields.some((part) => distance2 <= part.scale && sign * part.field.value(...plane(x4 / part.scale, y5 / part.scale)) > contour);
+    return visible ? 0 : -1;
+  }).paths[0]);
+  return { side, paths, background, backgroundScale: side / backgroundSide };
+}
+function atomicFamilyParts(subshell, region) {
+  return Array.from({ length: 2 * subshell.l + 1 }, (_3, orientation) => {
+    const part = { subshell, orientation, region };
+    return { ...part, key: atomicOrbitalKey(part), scale: 1 };
+  });
+}
+var contour, bohrAngstrom, radialProfiles, overlayCache, corners, tetrahedra, slicePlanes;
+var init_atomic_orbitals = __esm({
+  "molecule-builder/atomic-orbitals.ts"() {
+    init_orbital_mesh();
+    contour = 0.2;
+    bohrAngstrom = 0.5291772109;
+    radialProfiles = /* @__PURE__ */ new Map();
+    overlayCache = /* @__PURE__ */ new WeakMap();
+    corners = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]];
+    tetrahedra = [[0, 5, 1, 6], [0, 1, 2, 6], [0, 2, 3, 6], [0, 3, 7, 6], [0, 7, 4, 6], [0, 4, 5, 6]];
+    slicePlanes = [
+      (x4, y5) => [x4, y5, 0],
+      (x4, y5) => [x4, 0, y5],
+      (x4, y5) => [0, x4, y5],
+      (x4, y5) => [x4, y5 * Math.SQRT1_2, y5 * Math.SQRT1_2],
+      (x4, y5) => [y5 * Math.SQRT1_2, x4, y5 * Math.SQRT1_2]
+    ];
+  }
+});
+
 // chemlib/ElementData.ts
 var ElementData;
 var init_ElementData = __esm({
@@ -6053,271 +6937,6 @@ var init_sources = __esm({
   }
 });
 
-// molecule-builder/radii.ts
-function ionicRadius(atomicNumber, charge, coordination) {
-  const pm = ionicPm.get(`${atomicNumber}:${charge}:${coordination}`);
-  return pm === void 0 ? void 0 : { pm, model: "ionic", coordination };
-}
-function atomRadius(atomicNumber) {
-  const covalent2 = covalentPm[atomicNumber];
-  if (covalent2) return { pm: covalent2, model: "covalent" };
-  const pm = dataValue(elementByAtomicNumber(atomicNumber).radius);
-  return pm === void 0 ? { pm: 90, model: "schematic" } : { pm, model: "empirical" };
-}
-function spaceFillingRadius(atomicNumber) {
-  const pm = vanDerWaalsPm[atomicNumber];
-  return pm ? { pm, model: "vdw" } : { pm: 200, model: "schematic" };
-}
-function estimatedBondLength(left, right, order) {
-  const a5 = molecularPm.get(left), b4 = molecularPm.get(right);
-  if (a5?.[order - 1] && b4?.[order - 1]) return (a5[order - 1] + b4[order - 1]) / 100;
-  const sum = (a5?.[0] ?? atomRadius(left).pm) + (b4?.[0] ?? atomRadius(right).pm);
-  return sum / 100 * [1, 0.9, 0.82][order - 1];
-}
-var covalentPm, vanDerWaalsPm, molecularPm, ionicPm;
-var init_radii = __esm({
-  "molecule-builder/radii.ts"() {
-    init_element_reference();
-    covalentPm = [
-      0,
-      31,
-      28,
-      128,
-      96,
-      84,
-      76,
-      71,
-      66,
-      57,
-      58,
-      166,
-      141,
-      121,
-      111,
-      107,
-      105,
-      102,
-      106,
-      203,
-      176,
-      170,
-      160,
-      153,
-      139,
-      139,
-      132,
-      126,
-      124,
-      132,
-      122,
-      122,
-      120,
-      119,
-      120,
-      120,
-      116,
-      220,
-      195,
-      190,
-      175,
-      164,
-      154,
-      147,
-      146,
-      142,
-      139,
-      145,
-      144,
-      142,
-      139,
-      139,
-      138,
-      139,
-      140,
-      244,
-      215,
-      207,
-      204,
-      203,
-      201,
-      199,
-      198,
-      198,
-      196,
-      194,
-      192,
-      192,
-      189,
-      190,
-      187,
-      187,
-      175,
-      170,
-      162,
-      151,
-      144,
-      141,
-      136,
-      136,
-      132,
-      145,
-      146,
-      148,
-      140,
-      150,
-      150,
-      260,
-      221,
-      215,
-      206,
-      200,
-      196,
-      190,
-      187,
-      180,
-      169
-    ];
-    vanDerWaalsPm = [
-      0,
-      110,
-      140,
-      181,
-      153,
-      192,
-      170,
-      155,
-      152,
-      147,
-      154,
-      227,
-      173,
-      184,
-      210,
-      180,
-      180,
-      175,
-      188,
-      275,
-      231,
-      258,
-      246,
-      242,
-      245,
-      245,
-      244,
-      240,
-      240,
-      238,
-      239,
-      187,
-      211,
-      185,
-      190,
-      183,
-      202,
-      303,
-      249,
-      275,
-      252,
-      256,
-      245,
-      244,
-      246,
-      244,
-      215,
-      253,
-      249,
-      193,
-      217,
-      206,
-      206,
-      198,
-      216,
-      343,
-      268,
-      298,
-      288,
-      292,
-      295,
-      0,
-      290,
-      287,
-      283,
-      279,
-      287,
-      281,
-      283,
-      279,
-      280,
-      274,
-      263,
-      253,
-      257,
-      249,
-      248,
-      241,
-      229,
-      232,
-      245,
-      196,
-      202,
-      207,
-      197,
-      202,
-      220,
-      348,
-      283,
-      280,
-      293,
-      288,
-      271,
-      282,
-      281,
-      283,
-      305,
-      340,
-      305,
-      270,
-      0,
-      0,
-      0,
-      0
-    ];
-    molecularPm = /* @__PURE__ */ new Map([
-      [1, [32]],
-      [5, [85, 78, 73]],
-      [6, [75, 67, 60]],
-      [7, [71, 60, 54]],
-      [8, [63, 57, 53]],
-      [9, [64]],
-      [13, [126, 113, 111]],
-      [14, [116, 107, 102]],
-      [15, [111, 102, 94]],
-      [16, [103, 94, 95]],
-      [17, [99]],
-      [35, [114]],
-      [53, [133]]
-    ]);
-    ionicPm = /* @__PURE__ */ new Map([
-      ["8:-2:3", 136],
-      ["8:-2:4", 138],
-      ["8:-2:6", 140],
-      ["11:1:6", 102],
-      ["12:2:6", 72],
-      ["17:-1:6", 181],
-      ["19:1:6", 138],
-      ["20:2:6", 100],
-      ["25:4:6", 53],
-      ["26:3:6", 64.5],
-      ["29:2:4", 57],
-      ["35:-1:6", 196],
-      ["47:1:6", 115],
-      ["53:-1:6", 220],
-      ["56:2:12", 161]
-    ]);
-  }
-});
-
 // molecule-builder/geometry.ts
 function bondLength(molecule2, left, right, order) {
   if (molecule2.atoms.length === 2 && !left.charge && !right.charge && left.atomicNumber === right.atomicNumber) {
@@ -6576,240 +7195,6 @@ var init_geometry = __esm({
     unit = (a5) => scale(a5, 1 / (Math.hypot(...a5) || 1));
     perpendicular = (axis) => unit(cross(axis, Math.abs(axis[2]) < 0.85 ? [0, 0, 1] : [0, 1, 0]));
     maximumOrder = /* @__PURE__ */ new Map([[1, 1], [5, 4], [6, 4], [7, 4], [8, 3], [9, 1], [14, 4], [15, 5], [16, 6], [17, 1], [35, 1], [53, 1]]);
-  }
-});
-
-// molecule-builder/structure.ts
-function cellVectors({ lengths: [a5, b4, c9], angles }) {
-  const [alpha, beta, gamma] = angles.map((angle) => angle * Math.PI / 180);
-  const y5 = (Math.cos(alpha) - Math.cos(beta) * Math.cos(gamma)) / Math.sin(gamma);
-  return [
-    [a5, 0, 0],
-    [b4 * Math.cos(gamma), b4 * Math.sin(gamma), 0],
-    [c9 * Math.cos(beta), c9 * y5, c9 * Math.sqrt(1 - Math.cos(beta) ** 2 - y5 ** 2)]
-  ];
-}
-function cartesian(vectors, [x4, y5, z3]) {
-  const [a5, b4, c9] = vectors;
-  return [a5[0] * x4 + b4[0] * y5 + c9[0] * z3, a5[1] * x4 + b4[1] * y5 + c9[1] * z3, a5[2] * x4 + b4[2] * y5 + c9[2] * z3];
-}
-function fractional([a5, b4, c9], point) {
-  const z3 = point[2] / c9[2];
-  const y5 = (point[1] - c9[1] * z3) / b4[1];
-  const x4 = (point[0] - b4[0] * y5 - c9[0] * z3) / a5[0];
-  const wrap = (value) => (value % 1 + 1) % 1;
-  return [wrap(x4), wrap(y5), wrap(z3)];
-}
-function isCell(cell) {
-  return cell.lengths.every((value) => Number.isFinite(value) && value >= 0.1 && value <= 200) && cell.angles.every((value) => Number.isFinite(value) && value >= 1 && value <= 179) && cellVectors(cell)[2][2] > 1e-3;
-}
-function replicatedSites(crystal, repeats) {
-  const vectors = cellVectors(crystal.cell);
-  const sites = [];
-  for (let x4 = 0; x4 < repeats; x4++) {
-    for (let y5 = 0; y5 < repeats; y5++) {
-      for (let z3 = 0; z3 < repeats; z3++) {
-        for (const site of crystal.sites) {
-          const [a5, b4, c9] = site.fractional;
-          sites.push({ site, position: cartesian(vectors, [a5 + x4, b4 + y5, c9 + z3]) });
-        }
-      }
-    }
-  }
-  return sites;
-}
-function record(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-function numbers(value, length2) {
-  return Array.isArray(value) && value.length === length2 && value.every((item) => typeof item === "number" && Number.isFinite(item) && Math.abs(item) <= 1e4);
-}
-function atomIdentity(value) {
-  return record(value) && Number.isSafeInteger(value.id) && Number(value.id) > 0 && isAtomicNumber(value.atomicNumber) && Number.isInteger(value.charge) && Math.abs(Number(value.charge)) <= 8 && (value.isotope === void 0 || Number.isInteger(value.isotope) && Number(value.isotope) >= value.atomicNumber && Number(value.isotope) <= 400);
-}
-function uniqueIds(values) {
-  return new Set(values.map((value) => value.id)).size === values.length;
-}
-function readStructure(value) {
-  if (!record(value) || value.version !== 1 || typeof value.name !== "string" || value.name.length > 160) return null;
-  const base = { version: 1, name: value.name };
-  if (typeof value.catalogKey === "string" && value.catalogKey.length <= 160) base.catalogKey = value.catalogKey;
-  if (typeof value.source === "string" && value.source.length <= 240) base.source = value.source;
-  if (value.kind === "molecule") {
-    if (!Array.isArray(value.atoms) || value.atoms.length > MAX_ATOMS || !Array.isArray(value.bonds) || value.bonds.length > MAX_ATOMS * 4) return null;
-    const atoms = [];
-    for (const atom of value.atoms) {
-      if (!atomIdentity(atom) || !numbers(atom.diagram, 2) || !numbers(atom.position, 3)) return null;
-      const { id, atomicNumber, charge, isotope, diagram, position } = atom;
-      atoms.push({ id, atomicNumber, charge, isotope, diagram: [...diagram], position: [...position] });
-    }
-    if (!uniqueIds(atoms)) return null;
-    const atomIds = new Set(atoms.map((atom) => atom.id));
-    const pairs = /* @__PURE__ */ new Set();
-    const bonds = [];
-    for (const bond of value.bonds) {
-      if (!record(bond) || typeof bond.from !== "number" || typeof bond.to !== "number" || !atomIds.has(bond.from) || !atomIds.has(bond.to) || bond.from === bond.to || bond.order !== 1 && bond.order !== 2 && bond.order !== 3) return null;
-      const pair = [bond.from, bond.to].sort((a5, b4) => a5 - b4).join("-");
-      if (pairs.has(pair)) return null;
-      pairs.add(pair);
-      bonds.push({ from: bond.from, to: bond.to, order: bond.order, ...bond.dative === true ? { dative: true } : {} });
-    }
-    const geometry = value.geometry === "idealized" || value.geometry === "supplied" || value.geometry === "estimated" ? value.geometry : void 0;
-    const representation = value.representation === "constituent" || value.representation === "repeat-unit" || value.representation === "ionic-components" || value.representation === "aqueous-ions" || value.representation === "conformer" || value.representation === "experimental" ? value.representation : void 0;
-    const repeat = value.repeatUnit;
-    const repeatAtoms = record(repeat) && Array.isArray(repeat.atoms) ? repeat.atoms : [];
-    const repeatUnit = repeatAtoms.length >= 2 && repeatAtoms.length <= atomIds.size && new Set(repeatAtoms).size === repeatAtoms.length && repeatAtoms.every((id) => atomIds.has(id)) && record(repeat) && Array.isArray(repeat.ends) && repeat.ends.length === 2 && repeat.ends[0] !== repeat.ends[1] && repeat.ends.every((id) => repeatAtoms.includes(id)) ? { atoms: [...repeatAtoms], ends: [repeat.ends[0], repeat.ends[1]] } : void 0;
-    return { ...base, kind: "molecule", atoms, bonds, geometry, representation, repeatUnit };
-  }
-  if (value.kind !== "crystal" || !record(value.cell) || !numbers(value.cell.lengths, 3) || !numbers(value.cell.angles, 3) || !Array.isArray(value.sites) || value.sites.length > MAX_SITES) return null;
-  const cell = { lengths: [...value.cell.lengths], angles: [...value.cell.angles] };
-  if (!isCell(cell)) return null;
-  const sites = [];
-  const positions = /* @__PURE__ */ new Set();
-  for (const site of value.sites) {
-    if (!atomIdentity(site) || !numbers(site.fractional, 3) || site.fractional.some((coordinate) => coordinate < 0 || coordinate >= 1)) return null;
-    const occupancy = site.occupancy;
-    if (occupancy !== void 0 && (typeof occupancy !== "number" || !(occupancy > 0 && occupancy <= 1))) return null;
-    const position = site.fractional.join(",");
-    if (positions.has(position)) return null;
-    positions.add(position);
-    const { id, atomicNumber, charge, isotope } = site;
-    const ion2 = typeof site.ion === "string" ? site.ion.trim().slice(0, 60) || void 0 : void 0;
-    sites.push({
-      id,
-      atomicNumber,
-      charge,
-      isotope,
-      ion: ion2,
-      occupancy,
-      fractional: [...site.fractional]
-    });
-  }
-  if (!uniqueIds(sites)) return null;
-  const bravais = typeof value.bravais === "string" ? value.bravais.slice(0, 60) : void 0;
-  const spaceGroup = typeof value.spaceGroup === "string" ? value.spaceGroup.slice(0, 60) : void 0;
-  const conditions = typeof value.conditions === "string" ? value.conditions.slice(0, 96) : void 0;
-  const temperatureK = typeof value.temperatureK === "number" && Number.isFinite(value.temperatureK) && value.temperatureK >= 0 ? value.temperatureK : void 0;
-  return { ...base, kind: "crystal", cell, sites, bravais, spaceGroup, conditions, temperatureK };
-}
-var MAX_ATOMS, MAX_SITES, MAX_FILE_BYTES, EMPTY_CELL, newMolecule, newCrystal;
-var init_structure = __esm({
-  "molecule-builder/structure.ts"() {
-    init_selection();
-    MAX_ATOMS = 128;
-    MAX_SITES = 128;
-    MAX_FILE_BYTES = 512 * 1024;
-    EMPTY_CELL = { lengths: [5, 5, 5], angles: [90, 90, 90] };
-    newMolecule = () => ({ version: 1, kind: "molecule", name: "", atoms: [], bonds: [] });
-    newCrystal = () => ({ version: 1, kind: "crystal", name: "", cell: EMPTY_CELL, sites: [] });
-  }
-});
-
-// molecule-builder/crystal-display.ts
-function siteIon(site) {
-  if (site.ion) return site.ion;
-  if (!site.charge) return void 0;
-  const magnitude = Math.abs(site.charge);
-  const digits = "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078\u2079";
-  return elementByAtomicNumber(site.atomicNumber).symbol + (magnitude > 1 ? digits[magnitude] : "") + (site.charge > 0 ? "\u207A" : "\u207B");
-}
-function crystalIonColors(crystal) {
-  const labels = new Set(crystal.sites.map(siteIon).filter((label) => label !== void 0));
-  const cations = [29362, 9259429, 3769202, 3359061];
-  const anions = [13983232, 11750275, 10254620, 6254386];
-  const offsets = [0, 0];
-  return new Map([...labels].sort().map((label) => {
-    const positive = label.endsWith("\u207A");
-    const palette = positive ? cations : anions;
-    return [label, palette[offsets[positive ? 0 : 1]++ % palette.length]];
-  }));
-}
-function latticePositions(crystal, repeats) {
-  const setting = crystal.spaceGroup?.trim()[0];
-  const type = crystal.bravais?.slice(-1);
-  const centering = setting === "H" && type === "R" ? "R" : setting || type || "P";
-  const [alpha, beta, gamma] = crystal.cell.angles;
-  const hexagonalAxes = Math.abs(alpha - 90) < 1 && Math.abs(beta - 90) < 1 && Math.abs(gamma - 120) < 1;
-  const offsets = [[0, 0, 0], ...centering === "R" && !hexagonalAxes ? [] : centeringOffsets[centering] ?? []];
-  const vectors = cellVectors(crystal.cell);
-  const positions = [];
-  for (const [a5, b4, c9] of offsets) {
-    for (let x4 = 0; x4 + a5 <= repeats; x4++) {
-      for (let y5 = 0; y5 + b4 <= repeats; y5++) {
-        for (let z3 = 0; z3 + c9 <= repeats; z3++) positions.push(cartesian(vectors, [x4 + a5, y5 + b4, z3 + c9]));
-      }
-    }
-  }
-  return positions;
-}
-function monatomicCharge(site) {
-  const ion2 = siteIon(site);
-  const symbol2 = elementByAtomicNumber(site.atomicNumber).symbol;
-  const suffix = ion2?.startsWith(symbol2) ? ion2.slice(symbol2.length) : "";
-  if (!/^[¹²³⁴⁵⁶⁷⁸]?[⁺⁻]$/.test(suffix)) return site.charge;
-  const magnitude = suffix.length === 1 ? 1 : "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078".indexOf(suffix[0]);
-  return suffix.endsWith("\u207A") ? magnitude : -magnitude;
-}
-function metallicRadius(crystal, site, vectors) {
-  const category = categoryOf(site.atomicNumber);
-  if (!crystal.source || !(category?.endsWith("-metal") || category === "lanthanide" || category === "actinide") || !crystal.sites.every((other) => other.atomicNumber === site.atomicNumber && !siteIon(other))) return void 0;
-  let min2 = Infinity;
-  for (const other of crystal.sites) {
-    const delta = other.fractional.map((n10, i9) => n10 - site.fractional[i9]);
-    for (let x4 = -1; x4 <= 1; x4++) for (let y5 = -1; y5 <= 1; y5++) for (let z3 = -1; z3 <= 1; z3++) {
-      const length2 = Math.hypot(...cartesian(vectors, [delta[0] + x4, delta[1] + y5, delta[2] + z3]));
-      if (length2 > 1e-6) min2 = Math.min(min2, length2);
-    }
-  }
-  return Number.isFinite(min2) ? { pm: Math.round(min2 * 500) / 10, model: "metallic" } : void 0;
-}
-function crystalRadii(crystal) {
-  const cached = radiiByCrystal.get(crystal);
-  if (cached) return cached;
-  const vectors = cellVectors(crystal.cell);
-  const radii = new Map(crystal.sites.map((site) => {
-    const charge = monatomicCharge(site);
-    if (!charge) return [site.id, metallicRadius(crystal, site, vectors) ?? atomRadius(site.atomicNumber)];
-    const coordination = crystal.source && crystal.catalogKey && (sixCoordinateSalts.has(crystal.catalogKey) ? 6 : oxideCoordination[crystal.catalogKey]?.[site.atomicNumber]);
-    return [site.id, coordination && ionicRadius(site.atomicNumber, charge, coordination) || { pm: 80, model: "schematic" }];
-  }));
-  radiiByCrystal.set(crystal, radii);
-  return radii;
-}
-var colorHex, centeringOffsets, sixCoordinateSalts, oxideCoordination, radiiByCrystal;
-var init_crystal_display = __esm({
-  "molecule-builder/crystal-display.ts"() {
-    init_element_reference();
-    init_structure();
-    init_radii();
-    colorHex = (color) => `#${color.toString(16).padStart(6, "0")}`;
-    centeringOffsets = {
-      A: [[0, 0.5, 0.5]],
-      B: [[0.5, 0, 0.5]],
-      C: [[0.5, 0.5, 0]],
-      I: [[0.5, 0.5, 0.5]],
-      F: [[0, 0.5, 0.5], [0.5, 0, 0.5], [0.5, 0.5, 0]],
-      R: [[2 / 3, 1 / 3, 1 / 3], [1 / 3, 2 / 3, 2 / 3]],
-      H: [[2 / 3, 1 / 3, 0], [1 / 3, 2 / 3, 0]]
-    };
-    sixCoordinateSalts = /* @__PURE__ */ new Set([
-      "Natriumchlorid",
-      "Natriumbromid",
-      "Natriumiodid",
-      "Kaliumchlorid",
-      "Kaliumbromid",
-      "Kaliumiodid",
-      "Silberchlorid",
-      "Magnesiumoxid",
-      "Calciumoxid"
-    ]);
-    oxideCoordination = {
-      "Eisen(III)-oxid": { 8: 4, 26: 6 },
-      "Kupfer(II)-oxid": { 8: 4, 29: 4 },
-      "Mangan(IV)-oxid": { 8: 3, 25: 6 },
-      "Bariumsulfat": { 56: 12 }
-    };
-    radiiByCrystal = /* @__PURE__ */ new WeakMap();
   }
 });
 
@@ -7147,26 +7532,6 @@ var init_orbitals_generated = __esm({
   }
 });
 
-// molecule-builder/orbital-mesh.ts
-function meshNormals(positions, indices) {
-  const normals = new Float32Array(positions.length);
-  for (let i9 = 0; i9 < indices.length; i9 += 3) {
-    const a5 = indices[i9] * 3, b4 = indices[i9 + 1] * 3, c9 = indices[i9 + 2] * 3;
-    const normal = cross(
-      [positions[b4] - positions[a5], positions[b4 + 1] - positions[a5 + 1], positions[b4 + 2] - positions[a5 + 2]],
-      [positions[c9] - positions[a5], positions[c9 + 1] - positions[a5 + 1], positions[c9 + 2] - positions[a5 + 2]]
-    );
-    for (const j4 of [a5, b4, c9]) for (let axis = 0; axis < 3; axis++) normals[j4 + axis] += normal[axis];
-  }
-  for (let i9 = 0; i9 < normals.length; i9 += 3) normals.set(unit([normals[i9], normals[i9 + 1], normals[i9 + 2]]), i9);
-  return normals;
-}
-var init_orbital_mesh = __esm({
-  "molecule-builder/orbital-mesh.ts"() {
-    init_geometry();
-  }
-});
-
 // molecule-builder/orbitals.ts
 function hasMolecularDisplays(structure) {
   if (structure.kind !== "molecule" || !structure.bonds.length || structure.representation === "aqueous-ions" || structure.representation === "ionic-components") return false;
@@ -7186,7 +7551,7 @@ function hasMolecularDisplays(structure) {
 function referenceOrbitals(molecule2) {
   if (molecule2.geometry !== "supplied") return void 0;
   const signature = JSON.stringify(molecule2.atoms.map((atom) => [atom.atomicNumber, atom.charge, ...atom.position]));
-  return referencesByGeometry.get(signature)?.map(([label, phases]) => ({ id: "reference:" + label, kind: "reference", label, phases }));
+  return referencesByGeometry.get(signature)?.map(([label, phases2]) => ({ id: "reference:" + label, kind: "reference", label, phases: phases2 }));
 }
 function piAxis(bond, axis, atom, bonds, atoms) {
   const neighbors = bonds.filter((other) => other !== bond && (other.from === atom.id || other.to === atom.id));
@@ -7261,10 +7626,10 @@ function localOrbitals(molecule2) {
   return [...pis, ...sigmas, ...lone];
 }
 function moleculeOrbitals(molecule2) {
-  let orbitals = cache.get(molecule2);
+  let orbitals = cache2.get(molecule2);
   if (!orbitals) {
     orbitals = referenceOrbitals(molecule2) ?? localOrbitals(molecule2);
-    cache.set(molecule2, orbitals);
+    cache2.set(molecule2, orbitals);
   }
   return orbitals;
 }
@@ -7276,7 +7641,7 @@ function unpackOrbitalSurface([vertices, triangles]) {
   const normals = meshNormals(positions, indices);
   return { positions, indices, normals };
 }
-var ORBITAL_PHASE_COLORS, references2, referencesByGeometry, cache, connected, mainGroup;
+var ORBITAL_PHASE_COLORS, references2, referencesByGeometry, cache2, connected, mainGroup;
 var init_orbitals = __esm({
   "molecule-builder/orbitals.ts"() {
     init_orbitals_generated();
@@ -7285,262 +7650,9 @@ var init_orbitals = __esm({
     ORBITAL_PHASE_COLORS = [1539494, 14056231];
     references2 = orbitals_generated_default;
     referencesByGeometry = new Map(Object.values(references2).map((ref) => [JSON.stringify(ref[0]), ref[1]]));
-    cache = /* @__PURE__ */ new WeakMap();
+    cache2 = /* @__PURE__ */ new WeakMap();
     connected = /* @__PURE__ */ new WeakMap();
     mainGroup = /* @__PURE__ */ new Set([1, 5, 6, 7, 8, 9, 14, 15, 16, 17, 35, 53]);
-  }
-});
-
-// molecule-builder/atomic-orbitals.ts
-function atomicOrbitalKey({ subshell, orientation, region }) {
-  return [subshell?.label, orientation, region].join(":");
-}
-function laguerre(order, alpha, x4) {
-  let previous = 1, value = 1 + alpha - x4;
-  for (let k3 = 2; k3 <= order; k3++) {
-    [previous, value] = [value, ((2 * k3 - 1 + alpha - x4) * value - (k3 - 1 + alpha) * previous) / k3];
-  }
-  return order === 0 ? 1 : value;
-}
-function angularOrbital(l6, orientation, x4, y5, z3) {
-  switch (l6) {
-    case 0:
-      return 1;
-    case 1:
-      return [z3, x4, y5][orientation];
-    case 2:
-      return [3 * z3 * z3 - 1, x4 * z3, y5 * z3, x4 * x4 - y5 * y5, x4 * y5][orientation];
-    case 3:
-      return [
-        z3 * (5 * z3 * z3 - 3),
-        x4 * (5 * z3 * z3 - 1),
-        y5 * (5 * z3 * z3 - 1),
-        z3 * (x4 * x4 - y5 * y5),
-        x4 * y5 * z3,
-        x4 * (x4 * x4 - 3 * y5 * y5),
-        y5 * (3 * x4 * x4 - y5 * y5)
-      ][orientation];
-    default:
-      return 0;
-  }
-}
-function angularPeak(l6, orientation) {
-  let peak = 0;
-  for (let sample = 0; sample < 768; sample++) {
-    const z3 = 1 - 2 * (sample + 0.5) / 768;
-    const r11 = Math.sqrt(1 - z3 * z3), phi = sample * 2.399963229728653;
-    peak = Math.max(peak, Math.abs(angularOrbital(l6, orientation, r11 * Math.cos(phi), r11 * Math.sin(phi), z3)));
-  }
-  return peak;
-}
-function radialOrbital(n10, l6, rho) {
-  return rho ** l6 * Math.exp(-rho / 2) * laguerre(n10 - l6 - 1, 2 * l6 + 1, rho);
-}
-function radialRanges(n10, l6) {
-  const edges = [0];
-  const end = 22 + 6 * n10;
-  let previous = laguerre(n10 - l6 - 1, 2 * l6 + 1, 0);
-  for (let sample = 1; sample <= end * 32; sample++) {
-    const rho = sample / 32;
-    const next = laguerre(n10 - l6 - 1, 2 * l6 + 1, rho);
-    if (previous !== 0 && previous * next <= 0) {
-      let from = rho - 1 / 32, to = rho;
-      for (let i9 = 0; i9 < 18; i9++) {
-        const mid = (from + to) / 2;
-        if (laguerre(n10 - l6 - 1, 2 * l6 + 1, mid) * previous > 0) from = mid;
-        else to = mid;
-      }
-      edges.push((from + to) / 2);
-    }
-    previous = next;
-  }
-  edges.push(end);
-  return edges;
-}
-function radialProfile(n10, l6, region) {
-  const key = `${n10}:${l6}:${region}`;
-  const cached = radialProfiles.get(key);
-  if (cached) return cached;
-  const ranges = radialRanges(n10, l6);
-  const start = ranges[region], end = ranges[region + 1];
-  let peak = 0;
-  for (let i9 = 0; i9 <= 400; i9++) {
-    peak = Math.max(peak, Math.abs(radialOrbital(n10, l6, start + (end - start) * i9 / 400)));
-  }
-  let extent = end;
-  for (let i9 = 400; i9 >= 0; i9--) {
-    const rho = start + (end - start) * i9 / 400;
-    if (Math.abs(radialOrbital(n10, l6, rho)) >= peak * contour) {
-      extent = rho + (end - start) * 2 / 400;
-      break;
-    }
-  }
-  const result = { start, end, peak, extent };
-  radialProfiles.set(key, result);
-  return result;
-}
-function atomicOverlayParts(subshells) {
-  const cached = overlayCache.get(subshells);
-  if (cached) return cached;
-  const outermost = subshells.map(({ n: n10, l: l6 }) => radialProfile(n10, l6, n10 - l6 - 1).extent);
-  const reach = Math.max(...subshells.map(({ n: n10 }, i9) => n10 * outermost[i9]));
-  const parts = subshells.flatMap((subshell, i9) => {
-    const { n: n10, l: l6 } = subshell;
-    const outerScale = Math.sqrt(n10 * outermost[i9] / reach);
-    return Array.from({ length: 2 * l6 + 1 }, (_3, orientation) => Array.from({ length: n10 - l6 }, (_4, region) => {
-      const part = { subshell, orientation, region };
-      return {
-        ...part,
-        key: atomicOrbitalKey(part),
-        scale: outerScale * radialProfile(n10, l6, region).extent / outermost[i9]
-      };
-    })).flat();
-  });
-  overlayCache.set(subshells, parts);
-  return parts;
-}
-function atomicOrbitalField(n10, l6, orientation, region) {
-  const { start, end, peak, extent } = radialProfile(n10, l6, region);
-  const inversePeak = 1 / (peak * angularPeak(l6, orientation));
-  return {
-    extent,
-    value(x4, y5, z3) {
-      const radius = Math.hypot(x4, y5, z3);
-      const rho = radius * extent;
-      if (rho < start || rho > end) return 0;
-      const angular = radius === 0 ? Number(l6 === 0) : angularOrbital(l6, orientation, x4 / radius, y5 / radius, z3 / radius);
-      return radialOrbital(n10, l6, rho) * angular * inversePeak;
-    }
-  };
-}
-function contourMesh(points, values, grid, positive) {
-  const vertices = [], triangles = [];
-  const edges = /* @__PURE__ */ new Map();
-  const level = positive ? contour : -contour;
-  const inside = (value) => positive ? value > level : value < level;
-  const vertex3 = (a5, b4) => {
-    const key = Math.min(a5, b4) * values.length + Math.max(a5, b4);
-    let index = edges.get(key);
-    if (index !== void 0) return index;
-    index = vertices.length / 3;
-    const t8 = (level - values[a5]) / (values[b4] - values[a5]);
-    for (let axis = 0; axis < 3; axis++) vertices.push(points[a5 * 3 + axis] + t8 * (points[b4 * 3 + axis] - points[a5 * 3 + axis]));
-    edges.set(key, index);
-    return index;
-  };
-  const triangle2 = (a5, b4, c9, interior) => {
-    const i9 = a5 * 3, j4 = b4 * 3, k3 = c9 * 3;
-    const [x4, y5, z3] = [vertices[j4] - vertices[i9], vertices[j4 + 1] - vertices[i9 + 1], vertices[j4 + 2] - vertices[i9 + 2]];
-    const [u6, v4, w4] = [vertices[k3] - vertices[i9], vertices[k3 + 1] - vertices[i9 + 1], vertices[k3 + 2] - vertices[i9 + 2]];
-    const towardInside = (y5 * w4 - z3 * v4) * (points[interior * 3] - vertices[i9]) + (z3 * u6 - x4 * w4) * (points[interior * 3 + 1] - vertices[i9 + 1]) + (x4 * v4 - y5 * u6) * (points[interior * 3 + 2] - vertices[i9 + 2]);
-    triangles.push(a5, towardInside > 0 ? c9 : b4, towardInside > 0 ? b4 : c9);
-  };
-  const cornerOffsets = corners.map(([x4, y5, z3]) => x4 + (y5 + z3 * grid) * grid);
-  const plane = grid * grid;
-  const ids = new Int32Array(8), flags = new Uint8Array(8);
-  for (let z3 = 0; z3 < grid - 1; z3++) for (let y5 = 0; y5 < grid - 1; y5++) for (let x4 = 0; x4 < grid - 1; x4++) {
-    const base = x4 + y5 * grid + z3 * plane;
-    let count2 = 0;
-    for (let n10 = 0; n10 < 8; n10++) {
-      const id = base + cornerOffsets[n10];
-      ids[n10] = id;
-      flags[n10] = Number(inside(values[id]));
-      count2 += flags[n10];
-    }
-    if (!count2 || count2 === 8) continue;
-    for (const tetra of tetrahedra) {
-      const inner = [], outer = [];
-      for (const corner of tetra) (flags[corner] ? inner : outer).push(ids[corner]);
-      if (!inner.length || !outer.length) continue;
-      if (inner.length === 2) {
-        const a5 = vertex3(inner[0], outer[0]), b4 = vertex3(inner[0], outer[1]);
-        const c9 = vertex3(inner[1], outer[0]), d4 = vertex3(inner[1], outer[1]);
-        triangle2(a5, b4, c9, inner[0]);
-        triangle2(c9, b4, d4, inner[1]);
-      } else {
-        const [one2, rest] = inner.length === 1 ? [inner, outer] : [outer, inner];
-        const [a5, b4, c9] = rest.map((id) => vertex3(one2[0], id));
-        triangle2(a5, b4, c9, inner[0]);
-      }
-    }
-  }
-  if (!triangles.length) return void 0;
-  const positions = Float32Array.from(vertices), indices = Uint32Array.from(triangles);
-  return { positions, indices, normals: meshNormals(positions, indices) };
-}
-function atomicOrbitalMesh({ atomicNumber, electrons, subshell, orientation, region }, grid = 43) {
-  if (!subshell) return { phases: [], extent: 1, physical: false };
-  const { n: n10, l: l6 } = subshell;
-  const field = atomicOrbitalField(n10, l6, orientation, region);
-  const physical = electrons === 1;
-  const extent = physical ? field.extent * n10 * bohrAngstrom / (2 * atomicNumber) : 1;
-  const size3 = grid ** 3;
-  const points = new Float32Array(size3 * 3), values = new Float32Array(size3);
-  for (let z3 = 0, i9 = 0; z3 < grid; z3++) for (let y5 = 0; y5 < grid; y5++) for (let x4 = 0; x4 < grid; x4++, i9++) {
-    const pos = [2 * x4 / (grid - 1) - 1, 2 * y5 / (grid - 1) - 1, 2 * z3 / (grid - 1) - 1];
-    points.set(pos, i9 * 3);
-    values[i9] = field.value(...pos);
-  }
-  return { phases: [contourMesh(points, values, grid, true), contourMesh(points, values, grid, false)], extent, physical };
-}
-function slicePaths(side, sample) {
-  const paths = ["", ""];
-  let count2 = 0;
-  for (let y5 = 0; y5 < side; y5++) {
-    for (let x4 = 0, start = 0, phase = -1; x4 <= side; x4++) {
-      const next = x4 === side ? -1 : sample((2 * x4 + 1) / side - 1, 1 - (2 * y5 + 1) / side);
-      if (next === phase) continue;
-      if (phase >= 0) {
-        const width = x4 - start;
-        count2 += width;
-        paths[phase] += `M${start} ${y5}h${width}v1h-${width}z`;
-      }
-      start = x4;
-      phase = next;
-    }
-  }
-  return { count: count2, paths };
-}
-function atomicOrbitalSlice(display, overlay) {
-  if (!display.subshell) return void 0;
-  const { n: n10, l: l6 } = display.subshell;
-  const field = atomicOrbitalField(n10, l6, display.orientation, display.region);
-  const key = atomicOrbitalKey(display);
-  const scale2 = overlay?.find((part) => part.key === key)?.scale ?? 1;
-  const phase = (value) => value > contour ? 0 : value < -contour ? 1 : -1;
-  const section = (side2, plane2) => slicePaths(side2, (x4, y5) => phase(field.value(...plane2(x4 / scale2, y5 / scale2))));
-  const plane = slicePlanes.map((plane2) => ({ plane: plane2, count: section(32, plane2).count })).reduce((best, candidate) => candidate.count > best.count ? candidate : best).plane;
-  const side = 128;
-  const { paths } = section(side, plane);
-  const backgroundSide = 64;
-  const fields = overlay?.filter((part) => part.key !== key).map((part) => {
-    const { n: n11, l: l7 } = part.subshell;
-    return { scale: part.scale, field: atomicOrbitalField(n11, l7, part.orientation, part.region) };
-  });
-  const background = fields && [1, -1].map((sign) => slicePaths(backgroundSide, (x4, y5) => {
-    const distance2 = Math.hypot(x4, y5);
-    const visible = fields.some((part) => distance2 <= part.scale && sign * part.field.value(...plane(x4 / part.scale, y5 / part.scale)) > contour);
-    return visible ? 0 : -1;
-  }).paths[0]);
-  return { side, paths, background, backgroundScale: side / backgroundSide };
-}
-var contour, bohrAngstrom, radialProfiles, overlayCache, corners, tetrahedra, slicePlanes;
-var init_atomic_orbitals = __esm({
-  "molecule-builder/atomic-orbitals.ts"() {
-    init_orbital_mesh();
-    contour = 0.2;
-    bohrAngstrom = 0.5291772109;
-    radialProfiles = /* @__PURE__ */ new Map();
-    overlayCache = /* @__PURE__ */ new WeakMap();
-    corners = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]];
-    tetrahedra = [[0, 5, 1, 6], [0, 1, 2, 6], [0, 2, 3, 6], [0, 3, 7, 6], [0, 7, 4, 6], [0, 4, 5, 6]];
-    slicePlanes = [
-      (x4, y5) => [x4, y5, 0],
-      (x4, y5) => [x4, 0, y5],
-      (x4, y5) => [0, x4, y5],
-      (x4, y5) => [x4, y5 * Math.SQRT1_2, y5 * Math.SQRT1_2],
-      (x4, y5) => [y5 * Math.SQRT1_2, x4, y5 * Math.SQRT1_2]
-    ];
   }
 });
 
@@ -92165,6 +92277,7 @@ var init_scene = __esm({
     init_crystal_display();
     init_radii();
     init_orbitals();
+    init_atomic_configuration();
     init_atomic_orbitals();
     init_aqueous_preview();
     init_structure();
@@ -92302,6 +92415,24 @@ var init_scene = __esm({
         roughness: 0.68,
         alphaMode: "blend",
         alpha: 0.16
+      }));
+      #atomicOccupiedMaterials = ORBITAL_PHASE_COLORS.map((baseColor) => new Material3D({
+        baseColor,
+        roughness: 0.68,
+        alphaMode: "blend",
+        alpha: 0.46
+      }));
+      #atomicVacantMaterials = ORBITAL_PHASE_COLORS.map((baseColor) => new Material3D({
+        baseColor,
+        roughness: 0.68,
+        alphaMode: "blend",
+        alpha: 0.16
+      }));
+      #atomicSelectedVacantMaterials = ORBITAL_PHASE_COLORS.map((baseColor) => new Material3D({
+        baseColor,
+        roughness: 0.68,
+        alphaMode: "blend",
+        alpha: 0.6
       }));
       #hydration = new Container3D({ eventMode: "none" });
       #lattice = new Graphics({ eventMode: "none" });
@@ -92515,10 +92646,11 @@ var init_scene = __esm({
           }
         }
       }
-      setAtomicView(display, overlay) {
+      setAtomicView(display, overlay, all = false) {
         const selected = atomicOrbitalKey(display);
         const species = [display.atomId, display.atomicNumber, display.electrons].join(":");
-        const key = [species, selected, !!overlay].join(":");
+        const scope = [species, all && overlay ? "all" : overlay ? display.subshell?.label + ":" + display.region : "one"].join(":");
+        const key = scope + ":" + selected;
         const previous = this.#atomicView;
         if (previous?.key === key) return;
         const camera = previous?.camera ?? {
@@ -92527,7 +92659,7 @@ var init_scene = __esm({
           yaw: this.#yaw,
           pitch: this.#pitch
         };
-        const { phases, extent } = atomicOrbitalMesh(display);
+        const { phases: phases2, extent } = atomicOrbitalMesh(display);
         if (!previous) {
           this.#yaw = 0.83;
           this.#pitch = 0.37;
@@ -92536,32 +92668,48 @@ var init_scene = __esm({
         this.#content.visible = this.#edges.visible = this.#electrons.visible = this.#orbital.visible = this.#hydration.visible = this.#lattice.visible = this.#preview.visible = false;
         this.#atomic.visible = true;
         const previousOverlay = this.#atomicOverlay;
-        if (previousOverlay?.species !== species || !overlay) this.#clearAtomicOverlay();
+        if (previousOverlay?.scope !== scope || !overlay) this.#clearAtomicOverlay();
         if (overlay && !this.#atomicOverlay) {
-          this.#atomicOverlay = { species, display, selected, parts: overlay, next: 0, groups: /* @__PURE__ */ new Map() };
+          this.#atomicOverlay = { scope, display, selected, parts: overlay, next: 0, groups: /* @__PURE__ */ new Map() };
           const alpha = 0.22 / Math.max(1, Math.sqrt((overlay.length - 1) / 4));
           for (const material of this.#atomicBackdropMaterials) material.alpha = alpha;
         }
         if (this.#atomicOverlay) {
           this.#atomicOverlay.selected = selected;
-          for (const [key2, group] of this.#atomicOverlay.groups) group.visible = key2 !== selected;
+          this.#atomicOverlay.display = display;
+          for (const [part, group] of this.#atomicOverlay.groups) {
+            group.visible = part.key !== selected;
+            const materials = this.#atomicContextMaterials(part, display);
+            for (const child of group.children) if (child instanceof Mesh3D) child.material = materials[Number(child.label)];
+          }
         }
         this.#clearAtomicSurfaces();
         this.#nucleus.material = this.#material(atomColor(display.atomicNumber));
         this.#nucleus.scale.set(this.#atomicView.extent * (display.subshell ? 0.048 : 0.32));
         const scale2 = overlay?.find((part) => part.key === selected)?.scale ?? extent;
-        this.#addAtomicSurfaces(phases, scale2, this.#atomicSurfaces, this.#atomicGeometries, this.#orbitalMaterials);
-        if (previous && previousOverlay?.species === species && this.#atomicOverlay === previousOverlay) this.#draw();
+        const vacant = display.subshell && orbitalOccupation(display.subshell, display.orientation) === 0;
+        this.#addAtomicSurfaces(
+          phases2,
+          scale2,
+          this.#atomicSurfaces,
+          this.#atomicGeometries,
+          vacant ? this.#atomicSelectedVacantMaterials : this.#orbitalMaterials
+        );
+        if (previous && previousOverlay?.scope === scope && this.#atomicOverlay === previousOverlay) this.#draw();
         else this.fit();
       }
-      #addAtomicSurfaces(phases, extent, parent, geometries, materials) {
-        for (const [phase, mesh] of phases.entries()) {
+      #addAtomicSurfaces(phases2, extent, parent, geometries, materials) {
+        for (const [phase, mesh] of phases2.entries()) {
           if (!mesh) continue;
           const geometry = new Geometry3D(mesh);
           geometries.push(geometry);
-          const surface = new Mesh3D({ geometry, material: materials[phase], eventMode: "none", parent });
+          const surface = new Mesh3D({ geometry, material: materials[phase], label: String(phase), eventMode: "none", parent });
           surface.scale.set(extent);
         }
+      }
+      #atomicContextMaterials(part, display) {
+        if (part.subshell.label !== display.subshell?.label || part.region !== display.region) return this.#atomicBackdropMaterials;
+        return orbitalOccupation(part.subshell, part.orientation) ? this.#atomicOccupiedMaterials : this.#atomicVacantMaterials;
       }
       // Give the main view its first frame before building the faint meshes, and
       // limit work per frame on atoms with many occupied subshells.
@@ -92571,11 +92719,11 @@ var init_scene = __esm({
         const start = performance.now();
         do {
           const part = overlay.parts[overlay.next++];
-          const { phases } = atomicOrbitalMesh({ ...overlay.display, ...part }, 19);
+          const { phases: phases2 } = atomicOrbitalMesh({ ...overlay.display, ...part }, 19);
           const group = new Container3D({ eventMode: "none", parent: this.#atomicBackdrop });
           group.visible = part.key !== overlay.selected;
-          this.#addAtomicSurfaces(phases, part.scale, group, this.#atomicBackdropGeometries, this.#atomicBackdropMaterials);
-          overlay.groups.set(part.key, group);
+          this.#addAtomicSurfaces(phases2, part.scale, group, this.#atomicBackdropGeometries, this.#atomicContextMaterials(part, overlay.display));
+          overlay.groups.set(part, group);
         } while (overlay.next < overlay.parts.length && performance.now() - start < 5);
         this.#draw();
       }
@@ -92863,7 +93011,13 @@ var init_scene = __esm({
         this.#bondRegion.destroy();
         this.#loneRegion.destroy();
         for (const geometry of [...this.#orbitalGeometries, ...this.#atomicGeometries]) geometry.destroy();
-        for (const material of [...this.#orbitalMaterials, ...this.#atomicBackdropMaterials]) material.destroy();
+        for (const material of [
+          ...this.#orbitalMaterials,
+          ...this.#atomicBackdropMaterials,
+          ...this.#atomicOccupiedMaterials,
+          ...this.#atomicVacantMaterials,
+          ...this.#atomicSelectedVacantMaterials
+        ]) material.destroy();
         this.#axes.destroy();
         for (const label of this.#axisLabels) label.destroy();
         for (const material of this.#materials.values()) material.destroy();
@@ -103819,6 +103973,42 @@ var periodicTableStyles = i`
 		min-width: 0;
 	}
 
+	.details-view-actions {
+		display: flex;
+		flex: 0 0 auto;
+		gap: .2rem;
+		margin-inline-start: auto;
+	}
+	.details-view-button { --sl-input-height-small: 1.3rem; }
+	.details-view-button::part(base) { min-inline-size: 1.35rem; }
+	.details-view-button::part(label) { display: grid; place-items: center; padding: 0 .13rem; }
+	.details-head > sl-tag { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.details-shell.is-atom { inset-block-end: 0; }
+	.details-shell.is-atom .details-card::part(base) { height: 100%; }
+	.details-shell.is-atom .details-card::part(body) { padding: .25rem .35rem; overflow: auto; }
+	.list-details .details-shell.is-atom .details-card::part(body) { max-block-size: 9rem; }
+	.pt-atom-preview {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+		align-items: start;
+		gap: .35rem;
+		inline-size: 100%;
+		font-size: .68rem;
+	}
+	.pt-atom-preview .electron-config-chips {
+		inline-size: 100%;
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		scrollbar-width: thin;
+		padding-block-end: .12rem;
+	}
+	.pt-atom-preview .electron-config-chips .atom-chip { flex-shrink: 0; }
+	.pt-atom-preview .electron-config-chips .atom-chip:focus-visible { outline-offset: -2px; }
+	.pt-atom-figure { min-inline-size: 0; }
+	.pt-atom-figure .atom-shell-figure { block-size: min(5.2rem, 100cqw); }
+	.pt-atom-figure .atom-orbital-tiles { grid-template-columns: repeat(auto-fit, minmax(min(100%, 1.6rem), 1fr)); }
+	.pt-atom-figure .atom-orbital-tile svg { max-inline-size: 1.7rem; }
+
 	.details-thumb {
 		display: grid;
 		flex: 0 0 auto;
@@ -104383,7 +104573,171 @@ var periodicTableStyles = i`
 `;
 
 // webwriter-chemlab-periodic-table.ts
+init_atomic_configuration();
+
+// molecule-builder/atomic-model.ts
+init_atomic_configuration();
+init_atomic_orbitals();
+var initialAtomChoices = (model = "bohr") => ({ model, orientation: 0 });
+var phases = ["#177da6", "#d67b27"];
+var models = [
+  { mode: "bohr", en: "Bohr", de: "Bohr" },
+  { mode: "shells", en: "Shells", de: "Schalen" },
+  { mode: "orbitals", en: "Orbitals", de: "Orbitale" }
+];
+var orbitalGlyph = ["\u2014", "\u2191", "\u2191\u2193"];
+var superscript2 = (value) => String(value).replace(/\d/g, (digit) => "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078\u2079"[Number(digit)]);
+function atomChoice(configuration, choices) {
+  const shells = atomicShells(configuration);
+  const subshell = configuration.subshells.find((entry) => entry.label === choices.subshell) ?? configuration.subshells[configuration.subshells.length - 1];
+  const regions = subshell ? subshell.n - subshell.l : 0;
+  return {
+    shells,
+    shell: shells.find((entry) => entry.n === choices.shell)?.n ?? shells[shells.length - 1]?.n,
+    subshell,
+    orientation: subshell && choices.orientation <= 2 * subshell.l ? choices.orientation : 0,
+    region: Math.min(choices.region ?? regions - 1, Math.max(0, regions - 1)),
+    regions
+  };
+}
+function atomicOrbitalLabel(subshell, orientation, t8) {
+  const electrons = orbitalOccupation(subshell, orientation);
+  const count2 = [t8("empty", "unbesetzt"), t8("1 electron", "1 Elektron"), t8("2 electrons", "2 Elektronen")][electrons];
+  return `${subshell.n}${orbitalOrientations(subshell.l)[orientation]} \xB7 ${count2}`;
+}
+function renderAtomicControls(configuration, choices, change, t8) {
+  const { shells, shell, subshell, region, regions } = atomChoice(configuration, choices);
+  const chip = (label, title, pressed, onClick) => x2`
+		<button type="button" class="atom-chip" title=${title} aria-label=${title} aria-pressed=${String(pressed)} @click=${onClick}>
+			<sl-tag size="small" variant=${pressed ? "primary" : "neutral"}>${label}</sl-tag>
+		</button>`;
+  const orbital = choices.model === "orbitals";
+  return x2`
+		<div class="atomic-controls">
+			<div class="atom-controls-row" role="group" aria-label=${t8("Atom model", "Atommodell")}>
+				${models.map(({ mode, en, de }) => x2`<sl-button size="small" variant=${choices.model === mode ? "primary" : "default"}
+					aria-pressed=${String(choices.model === mode)} @click=${() => change({ ...choices, model: mode })}>${t8(en, de)}</sl-button>`)}
+			</div>
+			${configuration.predicted ? x2`<sl-tag size="small">${t8("Predicted", "Vorhergesagt")}</sl-tag>` : E2}
+			${!shells.length ? x2`<span>${configuration.electrons === 0 ? t8("No electrons", "Keine Elektronen") : t8("Configuration unavailable", "Konfiguration nicht verf\xFCgbar")}</span>` : x2`
+				<div class="atom-controls-row electron-config-chips" role="group" aria-label=${t8("Electron configuration", "Elektronenkonfiguration")}>
+					${orbital ? configuration.subshells.map((entry) => chip(
+    entry.label + superscript2(entry.electrons),
+    `${entry.label} \xB7 ${entry.electrons} e\u207B`,
+    subshell?.label === entry.label,
+    () => change({ ...choices, subshell: entry.label, orientation: 0, region: void 0 })
+  )) : shells.map((entry) => chip(
+    `${entry.label} \xB7 ${entry.electrons}`,
+    `${t8("Shell", "Schale")} ${entry.label} \xB7 ${entry.electrons} e\u207B`,
+    shell === entry.n,
+    () => change({ ...choices, shell: entry.n })
+  ))}
+				</div>
+				${orbital && regions > 1 ? x2`
+					<div class="atom-controls-row" role="group" aria-label=${t8("Radial region", "Radialbereich")}>
+						${Array.from({ length: regions }, (_3, i9) => chip(
+    i9 + 1,
+    `${t8("Radial region", "Radialbereich")} ${i9 + 1} / ${regions}`,
+    i9 === region,
+    () => change({ ...choices, region: i9 })
+  ))}
+					</div>` : E2}
+			`}
+		</div>`;
+}
+function renderAtomicShells(symbol2, configuration, choices, t8) {
+  const { shells, shell } = atomChoice(configuration, choices);
+  const bohr = choices.model === "bohr";
+  const center2 = 110;
+  const step = 81 / Math.max(1, shells.length);
+  return b3`<svg class="atom-shell-figure" viewBox="0 0 220 220" role="img"
+		aria-label=${bohr ? t8("Bohr model", "Bohrsches Modell") : t8("Electron shells", "Elektronenschalen")}>
+		<title>${t8("Schematic shell diagram", "Schematische Schalendarstellung")}</title>
+		${shells.map(({ n: n10, electrons }, index) => {
+    const radius = 13 + (index + 1) * step;
+    const selected = n10 === shell;
+    const color = selected ? "#087bb4" : "#8196a5";
+    return b3`<g class="electron-shell" data-shell=${n10} data-selected=${String(selected)}>
+				<circle cx=${center2} cy=${center2} r=${radius} fill="none" stroke=${color}
+					stroke-width=${bohr ? selected ? 2.5 : 1.4 : step * 0.72} stroke-opacity=${bohr ? 0.8 : selected ? 0.42 : 0.21} />
+				${bohr ? Array.from({ length: electrons }, (_3, i9) => {
+      const angle = (i9 / electrons + index * 0.079) * 2 * Math.PI - Math.PI / 2;
+      return b3`<circle class="shell-electron" cx=${center2 + radius * Math.cos(angle)} cy=${center2 + radius * Math.sin(angle)}
+						r=${shells.length > 4 ? 2.7 : 3.6} fill=${color} />`;
+    }) : E2}
+			</g>`;
+  })}
+		<circle cx=${center2} cy=${center2} r="13" fill="#e9f4fa" stroke="#6794ae" />
+		<text x=${center2} y=${center2} dy=".34em" text-anchor="middle" fill="#12364b" font-size="10" font-weight="700">${symbol2}</text>
+	</svg>`;
+}
+var slices = /* @__PURE__ */ new Map();
+function renderAtomicOrbitalTiles(configuration, choices, change, t8) {
+  const { subshell, orientation, region } = atomChoice(configuration, choices);
+  if (!subshell) return E2;
+  return x2`<div class="atom-orbital-tiles" role="group" aria-label=${t8("Orbital cross-sections", "Orbitalschnitte")}>
+		${orbitalOrientations(subshell.l).map((name, i9) => {
+    const electrons = orbitalOccupation(subshell, i9);
+    const key = `${subshell.label}:${i9}:${region}`;
+    let slice = slices.get(key);
+    if (!slice) {
+      slice = atomicOrbitalSlice({ subshell, orientation: i9, region, atomicNumber: 1, atomId: 1, electrons: 1 }, void 0, 48);
+      slices.set(key, slice);
+    }
+    const label = atomicOrbitalLabel(subshell, i9, t8);
+    return x2`<button type="button" class="atom-orbital-tile" data-electrons=${electrons} title=${label}
+				aria-label=${label} aria-pressed=${String(i9 === orientation)} @click=${() => change({ ...choices, orientation: i9 })}>
+				${b3`<svg viewBox="0 0 48 48" aria-hidden="true">
+					${slice.paths.map((path2, index) => b3`<path fill=${phases[index]} d=${path2} />`)}
+				</svg>`}
+				<span>${name} <b>${orbitalGlyph[electrons]}</b></span>
+			</button>`;
+  })}
+	</div>`;
+}
+var atomicModelStyles = i`
+	.atomic-controls, .atom-controls-row { min-inline-size: 0; display: flex; flex-wrap: wrap; gap: .2rem; }
+	.atomic-controls { align-items: start; flex-direction: column; }
+	.atom-controls-row { align-items: center; }
+	.atomic-controls sl-button { --sl-input-height-small: 1.35rem; }
+	.atomic-controls sl-button::part(label) { padding-inline: .4rem; font-size: .7rem; }
+	.atom-chip, .atom-orbital-tile { appearance: none; border: 0; padding: 0; background: none; color: inherit;
+		font: inherit; cursor: pointer; border-radius: 4px; }
+	.atom-chip:focus-visible, .atom-orbital-tile:focus-visible { outline: 2px solid var(--sl-color-primary-600, #087bb4); outline-offset: 1px; }
+	.atom-chip sl-tag::part(base) { height: auto; min-height: 1.2rem; padding-inline: .3rem; font-size: .68rem; }
+	.atom-shell-figure { display: block; inline-size: 100%; block-size: 100%; }
+	.atom-orbital-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 2.55rem), 1fr)); gap: .15rem; }
+	.atom-orbital-tile { display: grid; justify-items: center; border: 1px solid var(--sl-color-neutral-200, #e4e4e7);
+		padding: .12rem .1rem; min-inline-size: 0; font-size: .64rem; line-height: 1.1; background: white; }
+	.atom-orbital-tile[aria-pressed="true"] { border-color: var(--sl-color-primary-600, #087bb4); background: #eff8fd; }
+	.atom-orbital-tile svg { inline-size: min(100%, 3rem); aspect-ratio: 1; }
+	.atom-orbital-tile[data-electrons="0"] svg { opacity: .30; }
+	.atom-orbital-tile span { overflow-wrap: anywhere; }
+`;
+
+// molecule-builder/exchange.ts
+var BUILDER_TAG = "webwriter-chemlab-molecule-builder";
+var LAB_TAG = "webwriter-chemlab";
+var TABLE_TAG = "webwriter-chemlab-periodic-table";
+function worksheetScope(widget) {
+  return widget.closest("[data-chemlab-worksheet], .ProseMirror") ?? widget.getRootNode();
+}
+function worksheetPeers(widget, tag) {
+  const scope = worksheetScope(widget);
+  return Array.from(scope.querySelectorAll(tag)).filter((peer) => peer !== widget && worksheetScope(peer) === scope);
+}
+
+// webwriter-chemlab-periodic-table.ts
 setBasePath("@shoelace-style/shoelace/dist");
+var ATOM_PREVIEW_ICON = b3`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor">
+	<circle cx="8" cy="8" r="5.6" /><circle cx="8" cy="8" r="2.8" /><circle cx="8" cy="2.4" r="1.1" fill="currentColor" />
+</svg>`;
+var ELEMENT_DETAILS_ICON = b3`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round">
+	<path d="M4 4h9M4 8h9M4 12h9M2 4h.1M2 8h.1M2 12h.1" />
+</svg>`;
+var OPEN_BUILDER_ICON = b3`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linejoin="round">
+	<path d="M10 3h3v3m0-3L7 9m5-1v5H3V4h5" />
+</svg>`;
 var VIEWS = ["auto", "table", "list"];
 var LIST_BREAKPOINT = 680;
 var STATES = ["solid", "liquid", "gas"];
@@ -104475,7 +104829,7 @@ var viewConverter = {
   fromAttribute: (value) => parseView(value),
   toAttribute: (value) => value
 };
-var _clearInitialElement_dec, _pickerMode_dec, _view_dec, _initialElement_dec, _a2, _init2, _initialElement, _view, _pickerMode, _ChemLabPeriodicTable_instances, startElementDrag_fn, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _filtersOpen, _modesOpen, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
+var _clearInitialElement_dec, _pickerMode_dec, _view_dec, _initialElement_dec, _a2, _init2, _initialElement, _view, _pickerMode, _ChemLabPeriodicTable_instances, startElementDrag_fn, _selection, _initialized, _viewOverride, _query, _category, _width, _resizeObserver, _languageObserver, _matching, _rovingOverride, _focusBeforeLayout, _restoreFocusPending, _mode, _infoOpen, _detailsExpanded, _atomPreview, _atomChoices, _atomPreviewElement, _atomPeersObserver, _filtersOpen, _modesOpen, observeLanguage_fn, measure_fn, captureResultFocus_fn, reveal_fn, language_get, resolvedView_get, temperature_get, placeable_fn, matches_fn, selectFromUser_fn, listDetailsCard_fn, focusDetails_fn, clearFromUser_fn, _toggleDetails, _onDetailsKeydown, dispatchSelection_fn, setView_fn, toggleCategory_fn, setMode_fn, _onTemperatureInput, _onYearInput, _onRadiusInput, _onElectronegativityInput, _onIonizationInput, _onHalfLifeInput, _toggleFilters, _toggleModes, _openInfo, _closeInfo, _onInfoHide, focusElement_fn, reset_fn, _resetMode, _onQueryInput, _onSearchKeydown, _onCellKeydown, rovingTarget_fn, renderCount_fn, renderRibbon_fn, renderFilters_fn, slider_fn, renderModes_fn, renderStateLegend_fn, renderCell_fn, renderGrid_fn, renderList_fn, renderPrintOverview_fn, atomBuilder_fn, observeAtomPeers_fn, toggleAtomPreview_fn, renderAtomPreview_fn, renderDetails_fn, renderDetailSections_fn, renderDetailRow_fn, renderInfo_fn;
 var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElementWw, _initialElement_dec = [n8({ type: Number, reflect: true, attribute: "initial-element", converter: atomicNumberConverter })], _view_dec = [n8({ type: String, reflect: true, converter: viewConverter })], _pickerMode_dec = [n8({ type: Boolean, reflect: true, attribute: "picker-mode" })], _clearInitialElement_dec = [action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })], _a2) {
   constructor() {
     super(...arguments);
@@ -104508,6 +104862,10 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     __privateAdd(this, _mode, DEFAULT_MODE_STATE);
     __privateAdd(this, _infoOpen, false);
     __privateAdd(this, _detailsExpanded, false);
+    __privateAdd(this, _atomPreview, false);
+    __privateAdd(this, _atomChoices, initialAtomChoices());
+    __privateAdd(this, _atomPreviewElement, null);
+    __privateAdd(this, _atomPeersObserver, null);
     /** Whether the panel with the search field and the family carousel is open. */
     __privateAdd(this, _filtersOpen, false);
     /** Whether the panel with the property modes and their slider is open. */
@@ -104686,6 +105044,10 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
       __privateGet(this, _selection).applyAuthored(this.initialElement);
     }
     if (changed.has("view")) __privateSet(this, _viewOverride, null);
+    if (this.selectedAtomicNumber !== __privateGet(this, _atomPreviewElement)) {
+      __privateSet(this, _atomPreviewElement, this.selectedAtomicNumber);
+      __privateSet(this, _atomChoices, initialAtomChoices(__privateGet(this, _atomChoices).model));
+    }
   }
   /** Measures the host once and then follows every resize. */
   firstUpdated() {
@@ -104700,6 +105062,7 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
   connectedCallback() {
     super.connectedCallback();
     __privateMethod(this, _ChemLabPeriodicTable_instances, observeLanguage_fn).call(this);
+    if (__privateGet(this, _atomPreview)) __privateMethod(this, _ChemLabPeriodicTable_instances, observeAtomPeers_fn).call(this);
   }
   /** Stops observing the host and the enclosing content. */
   disconnectedCallback() {
@@ -104707,6 +105070,8 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
     __privateSet(this, _resizeObserver, null);
     __privateGet(this, _languageObserver)?.disconnect();
     __privateSet(this, _languageObserver, null);
+    __privateGet(this, _atomPeersObserver)?.disconnect();
+    __privateSet(this, _atomPeersObserver, null);
     super.disconnectedCallback();
   }
   /**
@@ -104718,6 +105083,16 @@ var _ChemLabPeriodicTable = class _ChemLabPeriodicTable extends (_a2 = LitElemen
    * search field and then the layout switch are the stable fallbacks.
    */
   updated() {
+    if (__privateGet(this, _atomPreview)) {
+      const row = this.renderRoot.querySelector(".pt-atom-preview .electron-config-chips");
+      const active = row?.querySelector('[aria-pressed="true"]');
+      if (row && active) {
+        const viewport = row.getBoundingClientRect();
+        const chip = active.getBoundingClientRect();
+        if (chip.right > viewport.right) row.scrollLeft += chip.right - viewport.right;
+        else if (chip.left < viewport.left) row.scrollLeft -= viewport.left - chip.left;
+      }
+    }
     if (!__privateGet(this, _restoreFocusPending)) return;
     __privateSet(this, _restoreFocusPending, false);
     const previous = __privateGet(this, _focusBeforeLayout);
@@ -104800,6 +105175,10 @@ _restoreFocusPending = new WeakMap();
 _mode = new WeakMap();
 _infoOpen = new WeakMap();
 _detailsExpanded = new WeakMap();
+_atomPreview = new WeakMap();
+_atomChoices = new WeakMap();
+_atomPreviewElement = new WeakMap();
+_atomPeersObserver = new WeakMap();
 _filtersOpen = new WeakMap();
 _modesOpen = new WeakMap();
 /** Watches every ancestor the language walk visits for a `lang` change. */
@@ -105633,6 +106012,44 @@ renderPrintOverview_fn = function(t8, language, element2) {
 			</div>
 		`;
 };
+atomBuilder_fn = function() {
+  return worksheetPeers(this, BUILDER_TAG).find((peer) => typeof peer.viewAtom === "function");
+};
+observeAtomPeers_fn = function() {
+  if (__privateGet(this, _atomPeersObserver)) return;
+  const registry3 = this.ownerDocument.defaultView?.customElements;
+  if (registry3 && !registry3.get(BUILDER_TAG)) void registry3.whenDefined(BUILDER_TAG).then(() => {
+    if (this.isConnected && __privateGet(this, _atomPreview)) this.requestUpdate();
+  });
+  __privateSet(this, _atomPeersObserver, new MutationObserver((records) => {
+    if (records.some((record2) => [...record2.addedNodes, ...record2.removedNodes].some((node) => node instanceof Element && (node.matches(BUILDER_TAG) || node.querySelector(BUILDER_TAG))))) this.requestUpdate();
+  }));
+  __privateGet(this, _atomPeersObserver).observe(worksheetScope(this), { childList: true, subtree: true });
+};
+toggleAtomPreview_fn = function() {
+  __privateSet(this, _atomPreview, !__privateGet(this, _atomPreview));
+  if (__privateGet(this, _atomPreview)) __privateMethod(this, _ChemLabPeriodicTable_instances, observeAtomPeers_fn).call(this);
+  else {
+    __privateGet(this, _atomPeersObserver)?.disconnect();
+    __privateSet(this, _atomPeersObserver, null);
+  }
+  this.requestUpdate();
+};
+renderAtomPreview_fn = function(element2, language) {
+  const choices = __privateGet(this, _atomChoices);
+  const configuration = electronConfiguration(element2.atomicNumber, 0);
+  const t8 = (en, de) => language === "de" ? de : en;
+  const change = (next) => {
+    __privateSet(this, _atomChoices, next);
+    this.requestUpdate();
+  };
+  return x2`<div class="pt-atom-preview">
+			${renderAtomicControls(configuration, choices, change, t8)}
+			<div class="pt-atom-figure">
+				${choices.model === "orbitals" ? renderAtomicOrbitalTiles(configuration, choices, change, t8) : renderAtomicShells(element2.symbol, configuration, choices, t8)}
+			</div>
+		</div>`;
+};
 /**
  * Renders the detail card of one element.
  *
@@ -105664,15 +106081,19 @@ renderDetails_fn = function(t8, language, element2, options) {
 				</div>
 			`;
   }
-  const rows = detailRows(element2, language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get));
+  const atomView = __privateGet(this, _atomPreview);
+  const openBuilder = atomView && __privateMethod(this, _ChemLabPeriodicTable_instances, atomBuilder_fn).call(this);
+  const viewText = atomView ? language === "de" ? "Elementinformationen" : "Element information" : language === "de" ? "Atommodelle" : "Atom models";
+  const builderText = language === "de" ? "Im Molek\xFClbaukasten \xF6ffnen" : "Open in Molecule Builder";
+  const rows = atomView ? [] : detailRows(element2, language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get));
   const key = keyRows(rows, __privateGet(this, _mode).mode);
   const rest = rows.filter((row) => !key.includes(row));
   const name = element2.names[language];
   const expanded = options.expanded;
-  const open = options.collapsible && expanded;
+  const open = !atomView && options.collapsible && expanded;
   return x2`
 			<div
-				class="details-shell ${open ? "is-expanded" : ""}"
+				class="details-shell ${atomView ? "is-atom" : open ? "is-expanded" : ""}"
 				@keydown=${__privateGet(this, _onDetailsKeydown)}
 			>
 				<sl-card
@@ -105688,18 +106109,29 @@ renderDetails_fn = function(t8, language, element2, options) {
 						<sl-tag class="details-family" size="small" variant="neutral">
 							${categoryText(element2, language)}
 						</sl-tag>
-						<sl-tooltip content=${t8.detailsHint} hoist>
+						${atomView ? E2 : x2`<sl-tooltip content=${t8.detailsHint} hoist>
 							<span class="details-conditions">${conditionsText(language, __privateGet(this, _ChemLabPeriodicTable_instances, temperature_get))}</span>
-						</sl-tooltip>
+						</sl-tooltip>`}
+						<div class="details-view-actions">
+							${openBuilder ? x2`<sl-button class="details-view-button" size="small" title=${builderText} aria-label=${builderText}
+								@click=${() => {
+    const builder = __privateMethod(this, _ChemLabPeriodicTable_instances, atomBuilder_fn).call(this);
+    if (builder?.viewAtom(element2.atomicNumber, __privateGet(this, _atomChoices).model)) builder.scrollIntoView({ block: "nearest" });
+  }}>${OPEN_BUILDER_ICON}</sl-button>` : E2}
+							<sl-button class="details-view-button atom-preview-toggle" size="small" variant=${atomView ? "primary" : "default"}
+								title=${viewText} aria-label=${viewText} aria-pressed=${String(atomView)} @click=${__privateMethod(this, _ChemLabPeriodicTable_instances, toggleAtomPreview_fn)}>
+								${atomView ? ELEMENT_DETAILS_ICON : ATOM_PREVIEW_ICON}
+							</sl-button>
+						</div>
 					</div>
-					<div class="details-body">
+					${atomView ? __privateMethod(this, _ChemLabPeriodicTable_instances, renderAtomPreview_fn).call(this, element2, language) : x2`<div class="details-body">
 						<dl class="details-rows details-key">
 							${key.map((row) => __privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailRow_fn).call(this, t8, row))}
 						</dl>
 						${expanded ? x2`<div class="details-more">${__privateMethod(this, _ChemLabPeriodicTable_instances, renderDetailSections_fn).call(this, t8, rest)}</div>` : null}
-					</div>
+					</div>`}
 				</sl-card>
-				${options.collapsible ? x2`
+				${options.collapsible && !atomView ? x2`
 						<sl-button
 							class="details-toggle"
 							size="small"
@@ -105911,7 +106343,7 @@ __publicField(_ChemLabPeriodicTable, "options", {
 __publicField(_ChemLabPeriodicTable, "properties", {
   selectedAtomicNumber: { attribute: false }
 });
-__publicField(_ChemLabPeriodicTable, "styles", periodicTableStyles);
+__publicField(_ChemLabPeriodicTable, "styles", [periodicTableStyles, atomicModelStyles]);
 var ChemLabPeriodicTable = _ChemLabPeriodicTable;
 if (!customElements.get("webwriter-chemlab-periodic-table")) {
   customElements.define("webwriter-chemlab-periodic-table", ChemLabPeriodicTable);
@@ -106802,10 +107234,10 @@ function catalogDefinitions(entry) {
   }
   return entry.preview ? [entry.preview] : parts.map((part) => part.molecule);
 }
-var models = /* @__PURE__ */ new Map();
+var models2 = /* @__PURE__ */ new Map();
 for (const entry of chemicalCatalog) {
   const molecules = catalogDefinitions(entry).flatMap((definition) => catalogMolecule(entry.name, definition) ?? []);
-  if (molecules.length) models.set(entry.name, molecules);
+  if (molecules.length) models2.set(entry.name, molecules);
 }
 function withGeometry(model) {
   if (model.geometry) return model;
@@ -106821,13 +107253,13 @@ function referenceStructures(entry) {
     if (lattice) return [{ ...lattice, catalogKey: key }];
   }
   if (stored?.kind === "molecule") {
-    if (!entry.recipe?.aqueousMolar || models.get(key)?.length === 1 && entry.category !== "Salze") {
+    if (!entry.recipe?.aqueousMolar || models2.get(key)?.length === 1 && entry.category !== "Salze") {
       return [{ ...stored, catalogKey: key }];
     }
   }
   const legacy = legacyCatalogCrystal(entry);
   if (legacy) return [legacy];
-  return models.get(key) ?? [];
+  return models2.get(key) ?? [];
 }
 function catalogStructures(key) {
   const entry = entries.get(key);
@@ -106836,8 +107268,8 @@ function catalogStructures(key) {
   if (componentKeys) return componentKeys.flatMap((component) => {
     const stored = references[component];
     const componentEntry = entries.get(component);
-    const models2 = componentEntry ? catalogStructures(component) : stored ? [stored] : [];
-    return models2.map((model) => model.kind === "molecule" ? { ...withGeometry(model), catalogKey: key, representation: "constituent" } : { ...model, catalogKey: key });
+    const models3 = componentEntry ? catalogStructures(component) : stored ? [stored] : [];
+    return models3.map((model) => model.kind === "molecule" ? { ...withGeometry(model), catalogKey: key, representation: "constituent" } : { ...model, catalogKey: key });
   });
   return referenceStructures(entry).map((model) => {
     if (model.kind === "crystal" || model.geometry || model.source) return model.kind === "molecule" ? withGeometry(model) : model;
@@ -106888,18 +107320,6 @@ function catalogAqueousStructure(key) {
   }
   aqueousPreviews.set(key, result);
   return result;
-}
-
-// molecule-builder/exchange.ts
-var BUILDER_TAG = "webwriter-chemlab-molecule-builder";
-var LAB_TAG = "webwriter-chemlab";
-var TABLE_TAG = "webwriter-chemlab-periodic-table";
-function worksheetScope(widget) {
-  return widget.closest("[data-chemlab-worksheet], .ProseMirror") ?? widget.getRootNode();
-}
-function worksheetPeers(widget, tag) {
-  const scope = worksheetScope(widget);
-  return Array.from(scope.querySelectorAll(tag)).filter((peer) => peer !== widget && worksheetScope(peer) === scope);
 }
 
 // webwriter-chemlab-molecule-builder.ts
@@ -107085,93 +107505,7 @@ function renderLewis(diagram, box, options) {
 // webwriter-chemlab-molecule-builder.ts
 init_radii();
 init_orbitals();
-
-// molecule-builder/atomic-configuration.ts
-init_element_reference();
-init_crystal_display();
-var coreNumbers = /* @__PURE__ */ new Map([["He", 2], ["Ne", 10], ["Ar", 18], ["Kr", 36], ["Xe", 54], ["Rn", 86]]);
-var orbitalLetters = "spdf";
-var ionConfigurations = /* @__PURE__ */ new Map([
-  ["3:1", "[He]"],
-  ["8:-2", "[Ne]"],
-  ["9:-1", "[Ne]"],
-  ["11:1", "[Ne]"],
-  ["12:2", "[Ne]"],
-  ["13:3", "[Ne]"],
-  ["16:-2", "[Ar]"],
-  ["17:-1", "[Ar]"],
-  ["19:1", "[Ar]"],
-  ["20:2", "[Ar]"],
-  ["25:2", "[Ar] 3d5"],
-  ["25:4", "[Ar] 3d3"],
-  ["26:2", "[Ar] 3d6"],
-  ["26:3", "[Ar] 3d5"],
-  ["28:2", "[Ar] 3d8"],
-  ["29:1", "[Ar] 3d10"],
-  ["29:2", "[Ar] 3d9"],
-  ["30:2", "[Ar] 3d10"],
-  ["35:-1", "[Kr]"],
-  ["38:2", "[Kr]"],
-  ["47:1", "[Kr] 4d10"],
-  ["53:-1", "[Xe]"],
-  ["56:2", "[Xe]"]
-]);
-function expand(text) {
-  const terms = text.trim().split(/\s+/).filter(Boolean);
-  const core = /^\[([A-Z][a-z])\]$/.exec(terms[0] ?? "");
-  const atomicNumber = core && coreNumbers.get(core[1]);
-  const subshells = atomicNumber ? expand(dataValue(elementByAtomicNumber(atomicNumber).configuration) ?? "") : [];
-  for (const term of terms.slice(core ? 1 : 0)) {
-    const match = /^(\d)([spdf])(\d+)$/.exec(term);
-    if (!match) continue;
-    const [, n10, letter, electrons] = match;
-    subshells.push({ n: Number(n10), l: orbitalLetters.indexOf(letter), electrons: Number(electrons), label: n10 + letter });
-  }
-  return subshells.sort((a5, b4) => a5.n - b4.n || a5.l - b4.l);
-}
-var cache2 = /* @__PURE__ */ new Map();
-function electronConfiguration(atomicNumber, charge) {
-  const key = `${atomicNumber}:${charge}`;
-  const cached = cache2.get(key);
-  if (cached) return cached;
-  const electrons = atomicNumber - charge;
-  const neutral = elementByAtomicNumber(atomicNumber).configuration;
-  const text = electrons === 0 ? "" : electrons === 1 ? "1s1" : charge ? ionConfigurations.get(key) ?? "" : dataValue(neutral) ?? "";
-  const subshells = expand(text);
-  const verified = subshells.reduce((sum, item) => sum + item.electrons, 0) === electrons;
-  const result = {
-    text: verified ? text : "",
-    subshells: verified ? subshells : [],
-    electrons,
-    predicted: !charge && neutral.status === "predicted",
-    formal: key === "8:-2" || key === "16:-2"
-  };
-  cache2.set(key, result);
-  return result;
-}
-function atomicSpecies(structure, id) {
-  if (structure.kind === "crystal") {
-    const site = structure.sites.find((entry) => entry.id === id);
-    if (!site) return void 0;
-    const charge = monatomicCharge(site.ion ? { ...site, charge: 0 } : site);
-    return { atomicNumber: site.atomicNumber, charge, boundReference: !charge };
-  }
-  const atom = structure.atoms.find((entry) => entry.id === id);
-  if (!atom) return void 0;
-  const bonded = structure.bonds.some((bond) => bond.from === id || bond.to === id);
-  return { atomicNumber: atom.atomicNumber, charge: bonded ? 0 : atom.charge, boundReference: bonded };
-}
-var orientations = [
-  ["s"],
-  ["p(z)", "p(x)", "p(y)"],
-  ["d(z\xB2)", "d(xz)", "d(yz)", "d(x\xB2\u2212y\xB2)", "d(xy)"],
-  ["f(0)", "f(1, cos)", "f(1, sin)", "f(2, cos)", "f(2, sin)", "f(3, cos)", "f(3, sin)"]
-];
-function orbitalOrientations(l6) {
-  return orientations[l6] ?? [];
-}
-
-// webwriter-chemlab-molecule-builder.ts
+init_atomic_configuration();
 init_atomic_orbitals();
 
 // molecule-builder/canvas-grid.ts
@@ -107570,13 +107904,20 @@ var builderStyles = i`
 	.atomic-summary { max-block-size: min(17rem, calc(100% - 1rem)); }
 	.atomic-title, .atomic-configuration { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem; }
 	.atomic-configuration strong { overflow-wrap: anywhere; font-weight: 650; }
-	.atomic-slice {
+	.atomic-illustration {
 		position: absolute;
 		inset: 0;
-		width: min(68%, 26rem);
-		height: min(68%, 26rem);
+		inline-size: min(74%, 32rem);
+		block-size: min(76%, 32rem);
 		margin: auto;
+		container-type: inline-size;
 	}
+	.atomic-illustration:not(.atomic-fallback) { pointer-events: none; }
+	.atomic-fallback { display: grid; align-content: center; gap: .4rem; pointer-events: none; }
+	.atomic-fallback .atom-orbital-tile { pointer-events: auto; }
+	.atomic-fallback .atom-orbital-tiles { grid-template-columns: repeat(auto-fit, minmax(min(100%, 3.2rem), 1fr)); }
+	.atomic-overlay-slice { display: block; block-size: min(45cqw, 10rem); margin-inline: auto; }
+
 	.selection-card .fields a {
 		display: inline-flex;
 		align-items: center;
@@ -107746,7 +108087,7 @@ var ATOMIC_ORBITALS_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" ar
 	<circle cx="8" cy="8" r="1" fill="currentColor" stroke="none" /></svg>`;
 var BACK_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3">
 	<path d="M13 8H3m4-4L3 8l4 4" /></svg>`;
-var superscript2 = (value) => value.replace(/[0-9+−]/g, (c9) => "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078\u2079\u207A\u207B"["0123456789+\u2212".indexOf(c9)]);
+var superscript3 = (value) => value.replace(/[0-9+−]/g, (c9) => "\u2070\xB9\xB2\xB3\u2074\u2075\u2076\u2077\u2078\u2079\u207A\u207B"["0123456789+\u2212".indexOf(c9)]);
 var PLANE_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
 	stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
 	<path d="M8 1.9 13.8 5v6L8 14.1 2.2 11V5z" /><circle cx="8" cy="8" r="1.7" /></svg>`;
@@ -107808,9 +108149,9 @@ var AXES_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="
 	<path d="M3.4 12.6V3.4M3.4 12.6h9.2M3.4 12.6 8.6 7.4" /><path d="M3.4 2.2v1.2M2.2 12.6h1.2M9.6 6.4 8.6 7.4 9.6 8.4" /></svg>`;
 var ELECTRONS_ICON = b3`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
 	<circle cx="4.4" cy="8" r="1.7" /><circle cx="11.6" cy="8" r="1.7" /></svg>`;
-var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _ionCharge_dec, _fullscreen_dec, _diagramBox_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showHydration_dec, _atomicRegion_dec, _atomicOrientation_dec, _showAtomicOverlay_dec, _atomicSubshell_dec, _dismissedLone_dec, _inspectedAtom_dec, _orbitalId_dec, _molecularDisplay_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _molecularDisplay, _orbitalId, _inspectedAtom, _dismissedLone, _atomicSubshell, _showAtomicOverlay, _atomicOrientation, _atomicRegion, _showHydration, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramBox, _fullscreen, _ionCharge, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _boardObserver, _scenePixelsPerAngstrom, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _aqueousCache, _lewisCache, _atomicSlice, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, atomicTarget_get, atomInspection_get, resetAtomicChoices_fn, inspectAtom_fn, leaveAtom_fn, t_fn, _onFullscreenChange, _onViewportToggle, _toggleFullscreen, syncGrid_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, stageTarget_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, moveDiagram_fn, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, lewis_fn, aqueous_fn, renderDrawing_fn, renderAtomicSummary_fn, renderAtomicSlice_fn, renderOrbitals_fn, renderModelSummary_fn, renderSelectionCard_fn;
+var _paletteDrag_dec, _bondPreview_dec, _diagramDrag_dec, _ionCharge_dec, _fullscreen_dec, _diagramBox_dec, _gpu_dec, _notice_dec, _repeats_dec, _bondOrder_dec, _bondStart_dec, _hoveredAtom_dec, _picked_dec, _element_dec, _tool_dec, _view_dec2, _showAxes_dec, _showEdges_dec, _showLattice_dec, _showHydration_dec, _showAtomicOverlay_dec, _atomChoices_dec, _dismissedLone_dec, _inspectedAtom_dec, _orbitalId_dec, _molecularDisplay_dec, _showElectrons_dec, _pickerView_dec, _paletteNarrow_dec, _paletteOpen_dec, _showLabs_dec, _labs_dec, _openPanel_dec, _catalogQuery_dec, _catalogIndex_dec, _catalogVariants_dec, _catalogKey_dec, _preview_dec, _draft_dec, _labId_dec, _elementSourceId_dec, _a3, _ChemLabMoleculeBuilder_decorators, _init3, _elementSourceId, _labId, _draft, _preview, _catalogKey, _catalogVariants, _catalogIndex, _catalogQuery, _openPanel, _labs, _showLabs, _paletteOpen, _paletteNarrow, _pickerView, _showElectrons, _molecularDisplay, _orbitalId, _inspectedAtom, _dismissedLone, _atomChoices2, _showAtomicOverlay, _showHydration, _showLattice, _showEdges, _showAxes, _view2, _tool, _element, _picked, _hoveredAtom, _bondStart, _bondOrder, _repeats, _notice, _gpu, _diagramBox, _fullscreen, _ionCharge, _diagramDrag, _bondPreview, _paletteDrag, _scene, _sceneLoad, _fitNext, _past, _future, _elementDrag, _fileOpen, _gesture, _pointers, _router, _paletteObserver, _boardObserver, _scenePixelsPerAngstrom, _dataObserver, _worksheetObserver, _waitingForLab, _lastSaved, _aqueousCache, _lewisCache, _atomicSlice, _ChemLabMoleculeBuilder_instances, current_get, atoms_get, readonly_get, atomicTarget_get, atomInspection_get, resetAtomicChoices_fn, inspectAtom_fn, leaveAtom_fn, t_fn, _onFullscreenChange, _onViewportToggle, _toggleFullscreen, syncGrid_fn, bindTable_fn, observePalette_fn, startScene_fn, _onContextLost, fallback_fn, dataBlock_fn, restore_fn, save_fn, record_fn, resetSelection_fn, new_fn, history_fn, chooseElement_fn, _selectPalette, _dragPalette, insideBoard_fn, stageTarget_fn, placement_fn, centre_fn, addAtom_fn, setTool_fn, hoverAtom_fn, selectAtom_fn, connectBond_fn, removeAtom_fn, updateCharge_fn, geometry_fn, diagramPoint_fn, hit_fn, overPanel_fn, _pointerDown, _pointerMove, _pointerUp, moveDiagram_fn, _wheel, _keys, updateCell_fn, updateSite_fn, openPreview_fn, closePreview_fn, _openFile, refreshLabs_fn, prepareSend_fn, send_fn, renderCatalog_fn, renderTargetPicker_fn, renderFileActions_fn, iconButton_fn, renderHistoryButton_fn, renderPickerLayout_fn, lewis_fn, aqueous_fn, renderDrawing_fn, renderAtomicSummary_fn, renderAtomicDrawing_fn, renderOrbitals_fn, renderModelSummary_fn, renderSelectionCard_fn;
 _ChemLabMoleculeBuilder_decorators = [t4(BUILDER_TAG)];
-var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _molecularDisplay_dec = [r9()], _orbitalId_dec = [r9()], _inspectedAtom_dec = [r9()], _dismissedLone_dec = [r9()], _atomicSubshell_dec = [r9()], _showAtomicOverlay_dec = [r9()], _atomicOrientation_dec = [r9()], _atomicRegion_dec = [r9()], _showHydration_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramBox_dec = [r9()], _fullscreen_dec = [r9()], _ionCharge_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
+var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitElementWw, _elementSourceId_dec = [n8({ type: String, attribute: "element-source-id", reflect: true })], _labId_dec = [n8({ type: String, attribute: "lab-id", reflect: true })], _draft_dec = [r9()], _preview_dec = [r9()], _catalogKey_dec = [r9()], _catalogVariants_dec = [r9()], _catalogIndex_dec = [r9()], _catalogQuery_dec = [r9()], _openPanel_dec = [r9()], _labs_dec = [r9()], _showLabs_dec = [r9()], _paletteOpen_dec = [r9()], _paletteNarrow_dec = [r9()], _pickerView_dec = [r9()], _showElectrons_dec = [r9()], _molecularDisplay_dec = [r9()], _orbitalId_dec = [r9()], _inspectedAtom_dec = [r9()], _dismissedLone_dec = [r9()], _atomChoices_dec = [r9()], _showAtomicOverlay_dec = [r9()], _showHydration_dec = [r9()], _showLattice_dec = [r9()], _showEdges_dec = [r9()], _showAxes_dec = [r9()], _view_dec2 = [r9()], _tool_dec = [r9()], _element_dec = [r9()], _picked_dec = [r9()], _hoveredAtom_dec = [r9()], _bondStart_dec = [r9()], _bondOrder_dec = [r9()], _repeats_dec = [r9()], _notice_dec = [r9()], _gpu_dec = [r9()], _diagramBox_dec = [r9()], _fullscreen_dec = [r9()], _ionCharge_dec = [r9()], _diagramDrag_dec = [r9()], _bondPreview_dec = [r9()], _paletteDrag_dec = [r9()], _a3) {
   constructor() {
     super(...arguments);
     __privateAdd(this, _ChemLabMoleculeBuilder_instances);
@@ -107834,30 +108175,28 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateAdd(this, _orbitalId, __runInitializers(_init3, 72, this, "")), __runInitializers(_init3, 75, this);
     __privateAdd(this, _inspectedAtom, __runInitializers(_init3, 76, this)), __runInitializers(_init3, 79, this);
     __privateAdd(this, _dismissedLone, __runInitializers(_init3, 80, this)), __runInitializers(_init3, 83, this);
-    __privateAdd(this, _atomicSubshell, __runInitializers(_init3, 84, this, "")), __runInitializers(_init3, 87, this);
+    __privateAdd(this, _atomChoices2, __runInitializers(_init3, 84, this, initialAtomChoices())), __runInitializers(_init3, 87, this);
     __privateAdd(this, _showAtomicOverlay, __runInitializers(_init3, 88, this, false)), __runInitializers(_init3, 91, this);
-    __privateAdd(this, _atomicOrientation, __runInitializers(_init3, 92, this, 0)), __runInitializers(_init3, 95, this);
-    __privateAdd(this, _atomicRegion, __runInitializers(_init3, 96, this)), __runInitializers(_init3, 99, this);
-    __privateAdd(this, _showHydration, __runInitializers(_init3, 100, this, false)), __runInitializers(_init3, 103, this);
-    __privateAdd(this, _showLattice, __runInitializers(_init3, 104, this, false)), __runInitializers(_init3, 107, this);
-    __privateAdd(this, _showEdges, __runInitializers(_init3, 108, this, true)), __runInitializers(_init3, 111, this);
-    __privateAdd(this, _showAxes, __runInitializers(_init3, 112, this, false)), __runInitializers(_init3, 115, this);
-    __privateAdd(this, _view2, __runInitializers(_init3, 116, this, "3d")), __runInitializers(_init3, 119, this);
-    __privateAdd(this, _tool, __runInitializers(_init3, 120, this, "orbit")), __runInitializers(_init3, 123, this);
-    __privateAdd(this, _element, __runInitializers(_init3, 124, this, 6)), __runInitializers(_init3, 127, this);
-    __privateAdd(this, _picked, __runInitializers(_init3, 128, this)), __runInitializers(_init3, 131, this);
-    __privateAdd(this, _hoveredAtom, __runInitializers(_init3, 132, this)), __runInitializers(_init3, 135, this);
-    __privateAdd(this, _bondStart, __runInitializers(_init3, 136, this)), __runInitializers(_init3, 139, this);
-    __privateAdd(this, _bondOrder, __runInitializers(_init3, 140, this, 1)), __runInitializers(_init3, 143, this);
-    __privateAdd(this, _repeats, __runInitializers(_init3, 144, this, 1)), __runInitializers(_init3, 147, this);
-    __privateAdd(this, _notice, __runInitializers(_init3, 148, this, "")), __runInitializers(_init3, 151, this);
-    __privateAdd(this, _gpu, __runInitializers(_init3, 152, this, "idle")), __runInitializers(_init3, 155, this);
-    __privateAdd(this, _diagramBox, __runInitializers(_init3, 156, this)), __runInitializers(_init3, 159, this);
-    __privateAdd(this, _fullscreen, __runInitializers(_init3, 160, this)), __runInitializers(_init3, 163, this);
-    __privateAdd(this, _ionCharge, __runInitializers(_init3, 164, this, 0)), __runInitializers(_init3, 167, this);
-    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 168, this)), __runInitializers(_init3, 171, this);
-    __privateAdd(this, _bondPreview, __runInitializers(_init3, 172, this)), __runInitializers(_init3, 175, this);
-    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 176, this)), __runInitializers(_init3, 179, this);
+    __privateAdd(this, _showHydration, __runInitializers(_init3, 92, this, false)), __runInitializers(_init3, 95, this);
+    __privateAdd(this, _showLattice, __runInitializers(_init3, 96, this, false)), __runInitializers(_init3, 99, this);
+    __privateAdd(this, _showEdges, __runInitializers(_init3, 100, this, true)), __runInitializers(_init3, 103, this);
+    __privateAdd(this, _showAxes, __runInitializers(_init3, 104, this, false)), __runInitializers(_init3, 107, this);
+    __privateAdd(this, _view2, __runInitializers(_init3, 108, this, "3d")), __runInitializers(_init3, 111, this);
+    __privateAdd(this, _tool, __runInitializers(_init3, 112, this, "orbit")), __runInitializers(_init3, 115, this);
+    __privateAdd(this, _element, __runInitializers(_init3, 116, this, 6)), __runInitializers(_init3, 119, this);
+    __privateAdd(this, _picked, __runInitializers(_init3, 120, this)), __runInitializers(_init3, 123, this);
+    __privateAdd(this, _hoveredAtom, __runInitializers(_init3, 124, this)), __runInitializers(_init3, 127, this);
+    __privateAdd(this, _bondStart, __runInitializers(_init3, 128, this)), __runInitializers(_init3, 131, this);
+    __privateAdd(this, _bondOrder, __runInitializers(_init3, 132, this, 1)), __runInitializers(_init3, 135, this);
+    __privateAdd(this, _repeats, __runInitializers(_init3, 136, this, 1)), __runInitializers(_init3, 139, this);
+    __privateAdd(this, _notice, __runInitializers(_init3, 140, this, "")), __runInitializers(_init3, 143, this);
+    __privateAdd(this, _gpu, __runInitializers(_init3, 144, this, "idle")), __runInitializers(_init3, 147, this);
+    __privateAdd(this, _diagramBox, __runInitializers(_init3, 148, this)), __runInitializers(_init3, 151, this);
+    __privateAdd(this, _fullscreen, __runInitializers(_init3, 152, this)), __runInitializers(_init3, 155, this);
+    __privateAdd(this, _ionCharge, __runInitializers(_init3, 156, this, 0)), __runInitializers(_init3, 159, this);
+    __privateAdd(this, _diagramDrag, __runInitializers(_init3, 160, this)), __runInitializers(_init3, 163, this);
+    __privateAdd(this, _bondPreview, __runInitializers(_init3, 164, this)), __runInitializers(_init3, 167, this);
+    __privateAdd(this, _paletteDrag, __runInitializers(_init3, 168, this)), __runInitializers(_init3, 171, this);
     __privateAdd(this, _scene);
     __privateAdd(this, _sceneLoad, 0);
     __privateAdd(this, _fitNext, true);
@@ -107911,7 +108250,9 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         this.notice = __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fullscreen is unavailable in this worksheet.", "Vollbild ist in diesem Arbeitsblatt nicht verf\xFCgbar.");
       }
     });
-    __privateAdd(this, _onContextLost, () => __privateMethod(this, _ChemLabMoleculeBuilder_instances, fallback_fn).call(this));
+    __privateAdd(this, _onContextLost, (event) => {
+      if (event.currentTarget === __privateGet(this, _scene)?.canvas) __privateMethod(this, _ChemLabMoleculeBuilder_instances, fallback_fn).call(this);
+    });
     __privateAdd(this, _selectPalette, (event) => {
       if (event.detail.atomicNumber !== null) __privateMethod(this, _ChemLabMoleculeBuilder_instances, chooseElement_fn).call(this, event.detail.atomicNumber);
     });
@@ -107972,8 +108313,9 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         const next = distance(a5, b4);
         if (gesture.distance > 0 && next > 0) {
           const factor = gesture.distance / next;
-          if (this.view === "3d") __privateGet(this, _scene)?.zoom(factor);
-          else {
+          if (this.view === "3d") {
+            if (!__privateGet(this, _ChemLabMoleculeBuilder_instances, atomicTarget_get) || this.atomChoices.model === "orbitals") __privateGet(this, _scene)?.zoom(factor);
+          } else if (!__privateGet(this, _ChemLabMoleculeBuilder_instances, atomicTarget_get)) {
             const midpoint = { x: (a5.x + b4.x) / 2, y: (a5.y + b4.y) / 2 };
             __privateMethod(this, _ChemLabMoleculeBuilder_instances, moveDiagram_fn).call(this, factor, {
               x: midpoint.x + (previous.x - point.x) / 2,
@@ -107990,7 +108332,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
         if (this.view === "3d") __privateGet(this, _scene)?.preview(gesture.from, point.x, point.y);
         else this.bondPreview = __privateMethod(this, _ChemLabMoleculeBuilder_instances, diagramPoint_fn).call(this, point.x, point.y);
       } else if (this.view === "3d") {
-        __privateGet(this, _scene)?.orbit(point.x - gesture.x, point.y - gesture.y);
+        if (!__privateGet(this, _ChemLabMoleculeBuilder_instances, atomicTarget_get) || this.atomChoices.model === "orbitals") __privateGet(this, _scene)?.orbit(point.x - gesture.x, point.y - gesture.y);
       } else if (gesture.diagram) {
         const last = __privateMethod(this, _ChemLabMoleculeBuilder_instances, diagramPoint_fn).call(this, gesture.x, gesture.y);
         const next = __privateMethod(this, _ChemLabMoleculeBuilder_instances, diagramPoint_fn).call(this, point.x, point.y);
@@ -108032,7 +108374,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       }
     });
     __privateAdd(this, _wheel, (event) => {
-      if (__privateMethod(this, _ChemLabMoleculeBuilder_instances, overPanel_fn).call(this, event) || (this.view === "3d" ? !__privateGet(this, _scene) : __privateGet(this, _ChemLabMoleculeBuilder_instances, atomicTarget_get) || __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get).kind !== "molecule")) return;
+      if (__privateMethod(this, _ChemLabMoleculeBuilder_instances, overPanel_fn).call(this, event) || __privateGet(this, _ChemLabMoleculeBuilder_instances, atomicTarget_get) && this.atomChoices.model !== "orbitals" || (this.view === "3d" ? !__privateGet(this, _scene) : __privateGet(this, _ChemLabMoleculeBuilder_instances, atomicTarget_get) || __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get).kind !== "molecule")) return;
       event.preventDefault();
       const factor = Math.exp(Math.max(-100, Math.min(100, event.deltaY)) * 4e-3);
       if (this.view === "3d") __privateGet(this, _scene)?.zoom(factor);
@@ -108111,6 +108453,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     __privateSet(this, _paletteObserver, void 0);
     __privateGet(this, _dataObserver)?.disconnect();
     __privateGet(this, _worksheetObserver)?.disconnect();
+    __privateGet(this, _scene)?.canvas.removeEventListener("webglcontextlost", __privateGet(this, _onContextLost));
     __privateGet(this, _scene)?.destroy();
     __privateSet(this, _scene, void 0);
     this.gpu = "idle";
@@ -108126,11 +108469,12 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     }
     if (changed.has("elementSourceId")) __privateMethod(this, _ChemLabMoleculeBuilder_instances, bindTable_fn).call(this);
     __privateMethod(this, _ChemLabMoleculeBuilder_instances, observePalette_fn).call(this);
-    if (this.view === "3d" && this.gpu === "idle") void __privateMethod(this, _ChemLabMoleculeBuilder_instances, startScene_fn).call(this);
     const atomic = __privateGet(this, _ChemLabMoleculeBuilder_instances, atomInspection_get);
-    if (__privateGet(this, _scene) && this.view === "3d" && atomic) {
-      __privateGet(this, _scene).setAtomicView(atomic.display, atomic.overlay);
-    } else if (__privateGet(this, _scene) && this.view === "3d") {
+    const sceneVisible = this.view === "3d" && (!atomic || this.atomChoices.model === "orbitals");
+    if (sceneVisible && this.gpu === "idle") void __privateMethod(this, _ChemLabMoleculeBuilder_instances, startScene_fn).call(this);
+    if (__privateGet(this, _scene) && sceneVisible && atomic) {
+      __privateGet(this, _scene).setAtomicView(atomic.display, atomic.overlay, this.showAtomicOverlay);
+    } else if (__privateGet(this, _scene) && sceneVisible) {
       __privateGet(this, _scene).setScene(
         __privateGet(this, _ChemLabMoleculeBuilder_instances, current_get),
         this.repeats,
@@ -108168,6 +108512,20 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
     }
     return true;
   }
+  /** Opens an isolated element from another widget on the worksheet. */
+  viewAtom(atomicNumber, model = "bohr") {
+    if (!isAtomicNumber(atomicNumber)) return false;
+    this.viewStructure({
+      ...newMolecule(),
+      name: symbol(atomicNumber),
+      atoms: [{ id: 1, atomicNumber, charge: 0, diagram: [0, 0], position: [0, 0, 0] }]
+    });
+    this.atomChoices = initialAtomChoices(model);
+    this.openPanel = void 0;
+    this.view = this.gpu === "unavailable" ? "2d" : "3d";
+    void this.updateComplete.then(() => this.renderRoot.querySelector(".board")?.focus({ preventScroll: true }));
+    return true;
+  }
   viewStructure(snapshot) {
     const structure = readStructure(snapshot);
     if (!structure) return false;
@@ -108203,6 +108561,7 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
 		</div>`;
     const atomic = __privateGet(this, _ChemLabMoleculeBuilder_instances, atomInspection_get);
     const explicitAtom = !!this.inspectedAtom;
+    const sceneVisible = this.view === "3d" && (!atomic || this.atomChoices.model === "orbitals");
     const fit = () => {
       __privateGet(this, _scene)?.fit();
       this.diagramBox = void 0;
@@ -108329,9 +108688,9 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
 				<main class="visual">
 					<div class="board" tabindex="0" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Structure workspace", "Struktur-Arbeitsfl\xE4che")}
 						@pointerdown=${__privateGet(this, _pointerDown)} @pointermove=${__privateGet(this, _pointerMove)} @pointerup=${__privateGet(this, _pointerUp)} @pointercancel=${__privateGet(this, _pointerUp)} @wheel=${__privateGet(this, _wheel)}>
-						<div class="scene" ?hidden=${this.view !== "3d"}></div>
-						${this.view === "2d" ? atomic ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, renderAtomicSlice_fn).call(this, atomic) : __privateMethod(this, _ChemLabMoleculeBuilder_instances, renderDrawing_fn).call(this, ionColors) : E2}
-						${this.gpu === "loading" && this.view === "3d" ? x2`<p class="empty" role="status"><sl-spinner></sl-spinner>
+						<div class="scene" ?hidden=${!sceneVisible}></div>
+						${!sceneVisible ? atomic ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, renderAtomicDrawing_fn).call(this, atomic) : __privateMethod(this, _ChemLabMoleculeBuilder_instances, renderDrawing_fn).call(this, ionColors) : E2}
+						${this.gpu === "loading" && sceneVisible ? x2`<p class="empty" role="status"><sl-spinner></sl-spinner>
 							${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Loading 3D view", "3D-Ansicht wird geladen")}</p>` : !__privateGet(this, _ChemLabMoleculeBuilder_instances, atoms_get).length ? x2`<p class="empty">
 							${this.view === "2d" && current.kind === "crystal" ? this.tool === "atom" ? E2 : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Choose an element to add a crystal site.", "W\xE4hle ein Element f\xFCr einen Gitterplatz.") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Drag an element here, or choose Place atom and click the canvas.", "Ziehe ein Element hierher oder w\xE4hle Atom platzieren und klicke auf die Fl\xE4che.")}
 							</p>` : E2}
@@ -108360,11 +108719,11 @@ var _ChemLabMoleculeBuilder = class _ChemLabMoleculeBuilder extends (_a3 = LitEl
       }
     })}
 								`}
-								${this.view === "3d" && this.gpu === "ready" || this.view === "2d" && !atomic && current.kind === "molecule" ? x2`
+								${sceneVisible && this.gpu === "ready" || this.view === "2d" && !atomic && current.kind === "molecule" ? x2`
 									${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom in", "Vergr\xF6\xDFern"), icon: ZOOM_IN_ICON, onClick: () => this.view === "3d" ? __privateGet(this, _scene)?.zoom(0.83) : __privateMethod(this, _ChemLabMoleculeBuilder_instances, moveDiagram_fn).call(this, 0.83) })}
 									${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => this.view === "3d" ? __privateGet(this, _scene)?.zoom(1.2) : __privateMethod(this, _ChemLabMoleculeBuilder_instances, moveDiagram_fn).call(this, 1.2) })}
 								` : E2}
-								${this.view === "3d" || !atomic && current.kind === "molecule" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit }) : E2}
+								${sceneVisible || !atomic && current.kind === "molecule" ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, { label: __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit }) : E2}
 								${__privateMethod(this, _ChemLabMoleculeBuilder_instances, iconButton_fn).call(this, {
       label: this.fullscreen ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Exit fullscreen", "Vollbild verlassen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Fullscreen", "Vollbild"),
       icon: this.fullscreen ? EXIT_FULLSCREEN_ICON : FULLSCREEN_ICON,
@@ -108404,10 +108763,8 @@ _molecularDisplay = new WeakMap();
 _orbitalId = new WeakMap();
 _inspectedAtom = new WeakMap();
 _dismissedLone = new WeakMap();
-_atomicSubshell = new WeakMap();
+_atomChoices2 = new WeakMap();
 _showAtomicOverlay = new WeakMap();
-_atomicOrientation = new WeakMap();
-_atomicRegion = new WeakMap();
 _showHydration = new WeakMap();
 _showLattice = new WeakMap();
 _showEdges = new WeakMap();
@@ -108471,24 +108828,19 @@ atomInspection_get = function() {
   const species = atomicSpecies(__privateGet(this, _ChemLabMoleculeBuilder_instances, current_get), atom.id);
   if (!species) return void 0;
   const configuration = electronConfiguration(species.atomicNumber, species.charge);
-  const { subshells } = configuration;
-  const subshell = subshells.find((candidate) => candidate.label === this.atomicSubshell) ?? subshells[subshells.length - 1];
-  const orientation = subshell && this.atomicOrientation <= 2 * subshell.l ? this.atomicOrientation : 0;
-  const nodes = subshell ? subshell.n - subshell.l - 1 : 0;
-  const overlay = this.showAtomicOverlay && subshells.length > 1 ? atomicOverlayParts(subshells) : void 0;
+  const { subshell, orientation, region } = atomChoice(configuration, this.atomChoices);
+  const overlay = this.atomChoices.model !== "orbitals" ? void 0 : this.showAtomicOverlay && configuration.subshells.length > 1 ? atomicOverlayParts(configuration.subshells) : subshell?.l ? atomicFamilyParts(subshell, region) : void 0;
   return { atom, species, configuration, overlay, display: {
     atomId: atom.id,
     atomicNumber: species.atomicNumber,
     electrons: configuration.electrons,
     subshell,
     orientation,
-    region: Math.min(this.atomicRegion ?? nodes, nodes)
+    region
   } };
 };
 resetAtomicChoices_fn = function() {
-  this.atomicSubshell = "";
-  this.atomicOrientation = 0;
-  this.atomicRegion = void 0;
+  this.atomChoices = initialAtomChoices();
 };
 inspectAtom_fn = function(id) {
   __privateMethod(this, _ChemLabMoleculeBuilder_instances, resetAtomicChoices_fn).call(this);
@@ -108518,7 +108870,7 @@ syncGrid_fn = function() {
   const drawing = this.renderRoot.querySelector(".lewis-view");
   const box = drawing?.viewBox.baseVal;
   const atomic = __privateGet(this, _ChemLabMoleculeBuilder_instances, atomInspection_get);
-  const pixelsPerUnit = atomic && (atomic.display.electrons !== 1 || this.gpu !== "ready") ? void 0 : this.view === "3d" ? __privateGet(this, _scenePixelsPerAngstrom) : box && Math.min(drawing.clientWidth / box.width, drawing.clientHeight / box.height);
+  const pixelsPerUnit = atomic && (this.atomChoices.model !== "orbitals" || atomic.display.electrons !== 1 || this.gpu !== "ready") ? void 0 : this.view === "3d" ? __privateGet(this, _scenePixelsPerAngstrom) : box && Math.min(drawing.clientWidth / box.width, drawing.clientHeight / box.height);
   const cell = gridCell(pixelsPerUnit);
   board.toggleAttribute("data-unit-grid", !!cell);
   scale2.parentElement.hidden = !cell;
@@ -108690,11 +109042,15 @@ stageTarget_fn = function(x4, y5) {
   if (!__privateMethod(this, _ChemLabMoleculeBuilder_instances, insideBoard_fn).call(this, x4, y5)) return false;
   const hit = this.shadowRoot?.elementFromPoint(x4, y5);
   const surface = this.view === "3d" || __privateGet(this, _ChemLabMoleculeBuilder_instances, atomicTarget_get) ? ".board" : ".drawing, .formula-view";
-  return !!hit?.closest(surface) && !hit.closest(".view-tools, .model-summary, .selection-card, .ion-entry, .ion-site");
+  return !!hit?.closest(surface) && !hit.closest(".view-tools, .model-summary, .selection-card, .atom-orbital-tiles, .ion-entry, .ion-site");
 };
 placement_fn = function(x4, y5) {
   const atomic = __privateGet(this, _ChemLabMoleculeBuilder_instances, atomicTarget_get);
   if (this.inspectedAtom) return void 0;
+  if (atomic && this.atomChoices.model !== "orbitals" && "position" in atomic) {
+    const bounds2 = this.renderRoot.querySelector(".board")?.getBoundingClientRect();
+    return bounds2 ? add(atomic.position, [2 * (x4 - bounds2.left) / bounds2.width - 1, 1 - 2 * (y5 - bounds2.top) / bounds2.height, 0]) : void 0;
+  }
   if (this.view === "3d" && __privateGet(this, _scene)) {
     const point = __privateGet(this, _scene).placement(x4, y5);
     return atomic && "position" in atomic ? add(atomic.position, point) : point;
@@ -108887,7 +109243,8 @@ diagramPoint_fn = function(x4, y5) {
 };
 hit_fn = function(event) {
   if (!__privateMethod(this, _ChemLabMoleculeBuilder_instances, stageTarget_fn).call(this, event.clientX, event.clientY)) return void 0;
-  if (this.view === "3d" && __privateGet(this, _scene)) return __privateGet(this, _scene).pick(event.clientX, event.clientY);
+  if (this.view === "3d" && __privateGet(this, _scene) && (!__privateGet(this, _ChemLabMoleculeBuilder_instances, atomicTarget_get) || this.atomChoices.model === "orbitals"))
+    return __privateGet(this, _scene).pick(event.clientX, event.clientY);
   const inside = this.shadowRoot?.elementFromPoint(event.clientX, event.clientY)?.closest("[data-atom]");
   return inside ? Number(inside.getAttribute("data-atom")) : void 0;
 };
@@ -108897,7 +109254,7 @@ hit_fn = function(event) {
  * scroll inside the selection card never turns into a zoom of the scene.
  */
 overPanel_fn = function(event) {
-  return event.composedPath().some((target) => target instanceof Element && (target.classList.contains("view-tools") || target.classList.contains("model-summary") || target.classList.contains("selection-card") || target.classList.contains("ion-entry") || target.classList.contains("ion-site")));
+  return event.composedPath().some((target) => target instanceof Element && (target.classList.contains("view-tools") || target.classList.contains("model-summary") || target.classList.contains("selection-card") || target.classList.contains("atom-orbital-tiles") || target.classList.contains("ion-entry") || target.classList.contains("ion-site")));
 };
 _pointerDown = new WeakMap();
 _pointerMove = new WeakMap();
@@ -109177,83 +109534,70 @@ renderDrawing_fn = function(colors2) {
 };
 renderAtomicSummary_fn = function({ species, configuration, display, overlay }) {
   const name = elementByAtomicNumber(species.atomicNumber).names[__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "en", "de")];
-  const label = symbol(species.atomicNumber) + superscript2(chargeText(species.charge));
-  const { subshell, orientation, region } = display;
-  const orientations2 = subshell ? orbitalOrientations(subshell.l) : [];
-  const radialRegions = subshell ? subshell.n - subshell.l : 0;
-  const text = configuration.text.replace(/([spdf])(\d+)/g, (_3, letter, electrons) => letter + superscript2(electrons));
-  return x2`<section class="model-summary atomic-summary" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atomic orbitals", "Atomorbitale")}>
+  const label = symbol(species.atomicNumber) + superscript3(chargeText(species.charge));
+  const t8 = (en, de) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, en, de);
+  const orbital = this.atomChoices.model === "orbitals";
+  const has3D = this.view === "3d" && this.gpu !== "unavailable";
+  return x2`<section class="model-summary atomic-summary" aria-label=${t8("Atom models", "Atommodelle")}>
 			<div class="atomic-title">
-				<sl-button size="small" class="icon-control atomic-back" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Back to structure", "Zur Struktur")}
-					title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Back to structure", "Zur Struktur")} @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, leaveAtom_fn).call(this)}>${BACK_ICON}</sl-button>
+				<sl-button size="small" class="icon-control atomic-back" aria-label=${t8("Back to structure", "Zur Struktur")}
+					title=${t8("Back to structure", "Zur Struktur")} @click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, leaveAtom_fn).call(this)}>${BACK_ICON}</sl-button>
 				<strong class="summary-formula">${label} · ${name}</strong>
 			</div>
-			${species.boundReference ? x2`<span class="summary-caption">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Isolated neutral atom reference", "Referenz f\xFCr das isolierte neutrale Atom")}</span>` : E2}
-			${configuration.formal ? x2`<span class="summary-caption">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Formal ion \xB7 closed-shell model", "Formales Ion \xB7 Modell mit geschlossener Schale")}</span>` : E2}
-			<div class="atomic-configuration">
-				<span class="summary-caption">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Electron configuration", "Elektronenkonfiguration")}</span>
-				<strong aria-label=${configuration.text || E2}>${text || (configuration.electrons === 0 ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "No electrons", "Keine Elektronen") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Unavailable", "Nicht verf\xFCgbar"))}</strong>
-				${configuration.predicted ? x2`<sl-tag size="small">${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Predicted", "Vorhergesagt")}</sl-tag>` : E2}
-			</div>
-			${subshell ? x2`
-				<label class="summary-variant"><span>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Subshell", "Unterschale")}</span>
-					<select @change=${(event) => {
-    this.atomicSubshell = event.currentTarget.value;
-    this.atomicOrientation = 0;
-    this.atomicRegion = void 0;
-  }}>
-						${configuration.subshells.map((option) => x2`<option value=${option.label} ?selected=${option === subshell}>
-							${option.label}${superscript2(String(option.electrons))}
-						</option>`)}
-					</select>
-				</label>
-				${orientations2.length > 1 ? x2`<label class="summary-variant"><span>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Orbital", "Orbital")}</span>
-					<select @change=${(event) => {
-    this.atomicOrientation = Number(event.currentTarget.value);
-  }}>
-						${orientations2.map((name2, i9) => x2`<option value=${i9} ?selected=${i9 === orientation}>${subshell.n}${name2}</option>`)}
-					</select>
-				</label>` : E2}
-				${radialRegions > 1 ? x2`<label class="summary-variant" title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Regions separated by radial nodes, from inside to outside.", "Bereiche zwischen Radialknoten, von innen nach au\xDFen.")}>
-					<span>${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Radial region", "Radialbereich")}</span>
-					<select @change=${(event) => {
-    this.atomicRegion = Number(event.currentTarget.value);
-  }}>
-						${Array.from({ length: radialRegions }, (_3, i9) => x2`<option value=${i9} ?selected=${i9 === region}>
-							${i9 + 1} / ${radialRegions}
-						</option>`)}
-					</select>
-				</label>` : E2}
-				${configuration.subshells.length > 1 ? x2`<div class="fields">
-					<sl-button size="small" variant=${overlay ? "primary" : "default"} aria-pressed=${String(!!overlay)}
-						title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Overlay orbitals from all occupied subshells and emphasize the selected region.", "Orbitale aller besetzten Unterschalen \xFCberlagern und den gew\xE4hlten Bereich hervorheben.")}
-						@click=${() => {
+			${species.boundReference ? x2`<span class="summary-caption">${t8("Isolated neutral atom reference", "Referenz f\xFCr das isolierte neutrale Atom")}</span>` : E2}
+			${configuration.formal ? x2`<span class="summary-caption">${t8("Formal ion \xB7 closed-shell model", "Formales Ion \xB7 Modell mit geschlossener Schale")}</span>` : E2}
+			${renderAtomicControls(configuration, this.atomChoices, (choices) => {
+    this.atomChoices = choices;
+  }, t8)}
+			${orbital && has3D ? renderAtomicOrbitalTiles(
+    configuration,
+    this.atomChoices,
+    (choices) => {
+      this.atomChoices = choices;
+    },
+    t8
+  ) : E2}
+			${orbital && configuration.subshells.length > 1 ? x2`<div class="fields">
+				<sl-button size="small" variant=${this.showAtomicOverlay ? "primary" : "default"} aria-pressed=${String(this.showAtomicOverlay)}
+					@click=${() => {
     this.showAtomicOverlay = !this.showAtomicOverlay;
   }}>
-						${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Overlay all orbitals", "Alle Orbitale \xFCberlagern")}
-					</sl-button>
-				</div>` : E2}
-				<span class="summary-caption" title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "The subshell occupancy counts all its orbitals.", "Die Elektronenzahl gilt f\xFCr die gesamte Unterschale.")}>
-					${configuration.electrons === 1 ? __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Hydrogen-like orbital", "Wasserstoffartiges Orbital") : __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Hydrogen-like shapes \xB7 relative scale", "Wasserstoffartige Formen \xB7 relative Skala")}
-				</span>
-				<span class="structure-legend" role="group" aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Wavefunction phase", "Phase der Wellenfunktion")}>
-					${ORBITAL_PHASE_COLORS.map((color, index) => overlay || subshell.l || index === region % 2 ? x2`<span style="--swatch: ${colorHex(color)}">${index ? "\u2212\u03C8" : "+\u03C8"}</span>` : E2)}
-				</span>
-			` : E2}
+					${t8("Overlay all subshells", "Alle Unterschalen \xFCberlagern")}
+				</sl-button>
+			</div>` : E2}
+			${orbital && display.subshell ? x2`
+				<span class="summary-caption">${t8("\u2191\u2193 Paired \xB7 \u2191 Single \xB7 \u2014 Empty", "\u2191\u2193 Gepaarte \xB7 \u2191 Einzelbesetzung \xB7 \u2014 Leer")}</span>
+				<span class="structure-legend" role="group" aria-label=${t8("Wavefunction phase", "Phase der Wellenfunktion")}>
+					${ORBITAL_PHASE_COLORS.map((color, index) => overlay || display.subshell.l || index === display.region % 2 ? x2`<span style="--swatch: ${colorHex(color)}">${index ? "\u2212\u03C8" : "+\u03C8"}</span>` : E2)}
+				</span>` : E2}
 		</section>`;
 };
-renderAtomicSlice_fn = function({ display, overlay }) {
-  const key = [display.atomicNumber, display.electrons, atomicOrbitalKey(display), !!overlay].join(":");
+renderAtomicDrawing_fn = function(atomic) {
+  const t8 = (en, de) => __privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, en, de);
+  if (this.atomChoices.model !== "orbitals") {
+    const label = symbol(atomic.species.atomicNumber) + superscript3(chargeText(atomic.species.charge));
+    return x2`<div class="atomic-illustration">${renderAtomicShells(label, atomic.configuration, this.atomChoices, t8)}</div>`;
+  }
+  if (!this.showAtomicOverlay) return x2`<div class="atomic-illustration atomic-fallback">
+			${renderAtomicOrbitalTiles(atomic.configuration, this.atomChoices, (choices) => {
+    this.atomChoices = choices;
+  }, t8)}
+		</div>`;
+  const { display, overlay } = atomic;
+  const key = [display.atomicNumber, display.electrons, atomicOrbitalKey(display)].join(":");
   if (__privateGet(this, _atomicSlice)?.key !== key) __privateSet(this, _atomicSlice, { key, slice: atomicOrbitalSlice(display, overlay) });
   const slice = __privateGet(this, _atomicSlice).slice;
-  if (!slice) return E2;
-  return x2`<svg class="atomic-slice" viewBox="0 0 ${slice.side} ${slice.side}" role="img"
-			aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Atomic orbital cross-section", "Schnitt durch das Atomorbital")}>
-			${slice.background?.map((path2, phase) => b3`<path fill=${colorHex(ORBITAL_PHASE_COLORS[phase])} opacity=".22"
-				transform="scale(${slice.backgroundScale})" d=${path2} />`)}
-			${slice.paths.map((path2, phase) => b3`<path fill=${colorHex(ORBITAL_PHASE_COLORS[phase])} opacity=".82" d=${path2} />`)}
-			<circle fill="#334155" cx=${slice.side / 2} cy=${slice.side / 2} r=".6" />
-		</svg>`;
+  return x2`<div class="atomic-illustration atomic-fallback">
+			${slice ? b3`<svg class="atomic-overlay-slice" viewBox="0 0 ${slice.side} ${slice.side}" role="img"
+				aria-label=${t8("Overlay cross-section", "Schnitt durch \xFCberlagerte Orbitale")}>
+				${slice.background?.map((path2, phase) => b3`<path fill=${colorHex(ORBITAL_PHASE_COLORS[phase])} opacity=".22"
+					transform="scale(${slice.backgroundScale})" d=${path2} />`)}
+				${slice.paths.map((path2, phase) => b3`<path fill=${colorHex(ORBITAL_PHASE_COLORS[phase])} opacity=".82" d=${path2} />`)}
+			</svg>` : E2}
+			${renderAtomicOrbitalTiles(atomic.configuration, this.atomChoices, (choices) => {
+    this.atomChoices = choices;
+  }, t8)}
+		</div>`;
 };
 renderOrbitals_fn = function(current) {
   const orbitals = moleculeOrbitals(current);
@@ -109425,8 +109769,8 @@ renderSelectionCard_fn = function() {
 			<div class="card-head">
 				<sl-tag size="small" variant=${atom ? "primary" : "neutral"}>${title}</sl-tag>
 				${atom && !__privateGet(this, _ChemLabMoleculeBuilder_instances, atomicTarget_get) ? x2`<sl-button class="icon-control inspect-atom" size="small"
-					aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "View atom orbitals", "Atomorbitale ansehen")}
-					title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "View atom orbitals", "Atomorbitale ansehen")}
+					aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "View atom models", "Atommodelle ansehen")}
+					title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "View atom models", "Atommodelle ansehen")}
 					@click=${() => __privateMethod(this, _ChemLabMoleculeBuilder_instances, inspectAtom_fn).call(this, atom.id)}>${ATOMIC_ORBITALS_ICON}</sl-button>` : E2}
 				${atom && !__privateGet(this, _ChemLabMoleculeBuilder_instances, readonly_get) ? x2`<sl-button class="icon-control" size="small" variant="danger" outline
 					aria-label=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Delete", "L\xF6schen")} title=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, t_fn).call(this, "Delete", "L\xF6schen")} @click=${__privateMethod(this, _ChemLabMoleculeBuilder_instances, removeAtom_fn)}>
@@ -109522,10 +109866,8 @@ __decorateElement(_init3, 4, "molecularDisplay", _molecularDisplay_dec, _ChemLab
 __decorateElement(_init3, 4, "orbitalId", _orbitalId_dec, _ChemLabMoleculeBuilder, _orbitalId);
 __decorateElement(_init3, 4, "inspectedAtom", _inspectedAtom_dec, _ChemLabMoleculeBuilder, _inspectedAtom);
 __decorateElement(_init3, 4, "dismissedLone", _dismissedLone_dec, _ChemLabMoleculeBuilder, _dismissedLone);
-__decorateElement(_init3, 4, "atomicSubshell", _atomicSubshell_dec, _ChemLabMoleculeBuilder, _atomicSubshell);
+__decorateElement(_init3, 4, "atomChoices", _atomChoices_dec, _ChemLabMoleculeBuilder, _atomChoices2);
 __decorateElement(_init3, 4, "showAtomicOverlay", _showAtomicOverlay_dec, _ChemLabMoleculeBuilder, _showAtomicOverlay);
-__decorateElement(_init3, 4, "atomicOrientation", _atomicOrientation_dec, _ChemLabMoleculeBuilder, _atomicOrientation);
-__decorateElement(_init3, 4, "atomicRegion", _atomicRegion_dec, _ChemLabMoleculeBuilder, _atomicRegion);
 __decorateElement(_init3, 4, "showHydration", _showHydration_dec, _ChemLabMoleculeBuilder, _showHydration);
 __decorateElement(_init3, 4, "showLattice", _showLattice_dec, _ChemLabMoleculeBuilder, _showLattice);
 __decorateElement(_init3, 4, "showEdges", _showEdges_dec, _ChemLabMoleculeBuilder, _showEdges);
@@ -109547,7 +109889,7 @@ __decorateElement(_init3, 4, "diagramDrag", _diagramDrag_dec, _ChemLabMoleculeBu
 __decorateElement(_init3, 4, "bondPreview", _bondPreview_dec, _ChemLabMoleculeBuilder, _bondPreview);
 __decorateElement(_init3, 4, "paletteDrag", _paletteDrag_dec, _ChemLabMoleculeBuilder, _paletteDrag);
 _ChemLabMoleculeBuilder = __decorateElement(_init3, 0, "ChemLabMoleculeBuilder", _ChemLabMoleculeBuilder_decorators, _ChemLabMoleculeBuilder);
-__publicField(_ChemLabMoleculeBuilder, "styles", builderStyles);
+__publicField(_ChemLabMoleculeBuilder, "styles", [builderStyles, atomicModelStyles]);
 __publicField(_ChemLabMoleculeBuilder, "scopedElements", {
   "webwriter-chemlab-periodic-table": ChemLabPeriodicTable,
   "sl-badge": SlBadge,

@@ -11,7 +11,7 @@
 
 import { LitElementWw, action } from "@webwriter/lit";
 import { property } from "lit/decorators.js";
-import { html, nothing, type PropertyValues } from "lit";
+import { html, nothing, svg, type PropertyValues } from "lit";
 
 import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
@@ -86,6 +86,20 @@ import {
 	type Language,
 	type Strings,
 } from "./periodic-table/strings";
+
+import { electronConfiguration } from "./molecule-builder/atomic-configuration";
+import { atomicModelStyles, initialAtomChoices, renderAtomicControls, renderAtomicOrbitalTiles, renderAtomicShells } from "./molecule-builder/atomic-model";
+import { BUILDER_TAG, worksheetPeers, worksheetScope, type AtomReceiver } from "./molecule-builder/exchange";
+
+const ATOM_PREVIEW_ICON = svg`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor">
+	<circle cx="8" cy="8" r="5.6" /><circle cx="8" cy="8" r="2.8" /><circle cx="8" cy="2.4" r="1.1" fill="currentColor" />
+</svg>`;
+const ELEMENT_DETAILS_ICON = svg`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round">
+	<path d="M4 4h9M4 8h9M4 12h9M2 4h.1M2 8h.1M2 12h.1" />
+</svg>`;
+const OPEN_BUILDER_ICON = svg`<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linejoin="round">
+	<path d="M10 3h3v3m0-3L7 9m5-1v5H3V4h5" />
+</svg>`;
 
 /** Author layout choice. `auto` follows the container width. */
 export type PeriodicTableView = "auto" | "table" | "list";
@@ -411,6 +425,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#mode: ModeState = DEFAULT_MODE_STATE;
 	#infoOpen = false;
 	#detailsExpanded = false;
+	#atomPreview = false;
+	#atomChoices = initialAtomChoices();
+	#atomPreviewElement: number | null = null;
+	#atomPeersObserver: MutationObserver | null = null;
 	/** Whether the panel with the search field and the family carousel is open. */
 	#filtersOpen = false;
 	/** Whether the panel with the property modes and their slider is open. */
@@ -459,6 +477,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 			this.#selection.applyAuthored(this.initialElement);
 		}
 		if (changed.has("view")) this.#viewOverride = null;
+		if (this.selectedAtomicNumber !== this.#atomPreviewElement) {
+			this.#atomPreviewElement = this.selectedAtomicNumber;
+			this.#atomChoices = initialAtomChoices(this.#atomChoices.model);
+		}
 	}
 
 	/** Measures the host once and then follows every resize. */
@@ -475,6 +497,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	connectedCallback() {
 		super.connectedCallback();
 		this.#observeLanguage();
+		if (this.#atomPreview) this.#observeAtomPeers();
 	}
 
 	/** Stops observing the host and the enclosing content. */
@@ -483,6 +506,8 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		this.#resizeObserver = null;
 		this.#languageObserver?.disconnect();
 		this.#languageObserver = null;
+		this.#atomPeersObserver?.disconnect();
+		this.#atomPeersObserver = null;
 		super.disconnectedCallback();
 	}
 
@@ -495,6 +520,16 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * search field and then the layout switch are the stable fallbacks.
 	 */
 	protected updated() {
+		if (this.#atomPreview) {
+			const row = this.renderRoot.querySelector<HTMLElement>(".pt-atom-preview .electron-config-chips");
+			const active = row?.querySelector('[aria-pressed="true"]');
+			if (row && active) {
+				const viewport = row.getBoundingClientRect();
+				const chip = active.getBoundingClientRect();
+				if (chip.right > viewport.right) row.scrollLeft += chip.right - viewport.right;
+				else if (chip.left < viewport.left) row.scrollLeft -= viewport.left - chip.left;
+			}
+		}
 		if (!this.#restoreFocusPending) return;
 		this.#restoreFocusPending = false;
 		const previous = this.#focusBeforeLayout;
@@ -1552,6 +1587,51 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		`;
 	}
 
+	#atomBuilder(): AtomReceiver | undefined {
+		return worksheetPeers(this, BUILDER_TAG).find((peer): peer is AtomReceiver =>
+			typeof (peer as Partial<AtomReceiver>).viewAtom === "function");
+	}
+
+	#observeAtomPeers() {
+		if (this.#atomPeersObserver) return;
+		const registry = this.ownerDocument.defaultView?.customElements;
+		if (registry && !registry.get(BUILDER_TAG)) void registry.whenDefined(BUILDER_TAG).then(() => {
+			if (this.isConnected && this.#atomPreview) this.requestUpdate();
+		});
+		this.#atomPeersObserver = new MutationObserver(records => {
+			if (records.some(record => [...record.addedNodes, ...record.removedNodes].some(node =>
+				node instanceof Element && (node.matches(BUILDER_TAG) || node.querySelector(BUILDER_TAG))))) this.requestUpdate();
+		});
+		this.#atomPeersObserver.observe(worksheetScope(this), { childList: true, subtree: true });
+	}
+
+	#toggleAtomPreview() {
+		this.#atomPreview = !this.#atomPreview;
+		if (this.#atomPreview) this.#observeAtomPeers();
+		else {
+			this.#atomPeersObserver?.disconnect();
+			this.#atomPeersObserver = null;
+		}
+		this.requestUpdate();
+	}
+
+	#renderAtomPreview(element: ElementReference, language: Language) {
+		const choices = this.#atomChoices;
+		const configuration = electronConfiguration(element.atomicNumber, 0);
+		const t = (en: string, de: string) => language === "de" ? de : en;
+		const change = (next: typeof choices) => {
+			this.#atomChoices = next;
+			this.requestUpdate();
+		};
+		return html`<div class="pt-atom-preview">
+			${renderAtomicControls(configuration, choices, change, t)}
+			<div class="pt-atom-figure">
+				${choices.model === "orbitals" ? renderAtomicOrbitalTiles(configuration, choices, change, t)
+					: renderAtomicShells(element.symbol, configuration, choices, t)}
+			</div>
+		</div>`;
+	}
+
 	/**
 	 * Renders the detail card of one element.
 	 *
@@ -1588,15 +1668,20 @@ export class ChemLabPeriodicTable extends LitElementWw {
 				</div>
 			`;
 		}
-		const rows = detailRows(element, language, this.#temperature);
+		const atomView = this.#atomPreview;
+		const openBuilder = atomView && this.#atomBuilder();
+		const viewText = atomView ? (language === "de" ? "Elementinformationen" : "Element information")
+			: (language === "de" ? "Atommodelle" : "Atom models");
+		const builderText = language === "de" ? "Im Molekülbaukasten öffnen" : "Open in Molecule Builder";
+		const rows = atomView ? [] : detailRows(element, language, this.#temperature);
 		const key = keyRows(rows, this.#mode.mode);
 		const rest = rows.filter(row => !key.includes(row));
 		const name = element.names[language];
 		const expanded = options.expanded;
-		const open = options.collapsible && expanded;
+		const open = !atomView && options.collapsible && expanded;
 		return html`
 			<div
-				class="details-shell ${open ? "is-expanded" : ""}"
+				class="details-shell ${atomView ? "is-atom" : open ? "is-expanded" : ""}"
 				@keydown=${this.#onDetailsKeydown}
 			>
 				<sl-card
@@ -1612,20 +1697,31 @@ export class ChemLabPeriodicTable extends LitElementWw {
 						<sl-tag class="details-family" size="small" variant="neutral">
 							${categoryText(element, language)}
 						</sl-tag>
-						<sl-tooltip content=${t.detailsHint} hoist>
+						${atomView ? nothing : html`<sl-tooltip content=${t.detailsHint} hoist>
 							<span class="details-conditions">${conditionsText(language, this.#temperature)}</span>
-						</sl-tooltip>
+						</sl-tooltip>`}
+						<div class="details-view-actions">
+							${openBuilder ? html`<sl-button class="details-view-button" size="small" title=${builderText} aria-label=${builderText}
+								@click=${() => {
+									const builder = this.#atomBuilder();
+									if (builder?.viewAtom(element.atomicNumber, this.#atomChoices.model)) builder.scrollIntoView({ block: "nearest" });
+								}}>${OPEN_BUILDER_ICON}</sl-button>` : nothing}
+							<sl-button class="details-view-button atom-preview-toggle" size="small" variant=${atomView ? "primary" : "default"}
+								title=${viewText} aria-label=${viewText} aria-pressed=${String(atomView)} @click=${this.#toggleAtomPreview}>
+								${atomView ? ELEMENT_DETAILS_ICON : ATOM_PREVIEW_ICON}
+							</sl-button>
+						</div>
 					</div>
-					<div class="details-body">
+					${atomView ? this.#renderAtomPreview(element, language) : html`<div class="details-body">
 						<dl class="details-rows details-key">
 							${key.map(row => this.#renderDetailRow(t, row))}
 						</dl>
 						${expanded
 							? html`<div class="details-more">${this.#renderDetailSections(t, rest)}</div>`
 							: null}
-					</div>
+					</div>`}
 				</sl-card>
-				${options.collapsible
+				${options.collapsible && !atomView
 					? html`
 						<sl-button
 							class="details-toggle"
@@ -1819,7 +1915,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		`;
 	}
 
-	static styles = periodicTableStyles;
+	static styles = [periodicTableStyles, atomicModelStyles];
 }
 
 // The builder bundles the table as a scoped component as well as a standalone widget.

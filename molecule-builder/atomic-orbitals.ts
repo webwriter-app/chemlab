@@ -248,7 +248,7 @@ function slicePaths(side: number, sample: (x: number, y: number) => number) {
 	return { count, paths };
 }
 
-export function atomicOrbitalSlice(display: AtomicOrbitalDisplay, overlay?: readonly AtomicOrbitalPart[]) {
+export function atomicOrbitalSlice(display: AtomicOrbitalDisplay, overlay?: readonly AtomicOrbitalPart[], side = 128) {
 	if (!display.subshell) return undefined;
 	const { n, l } = display.subshell;
 	const field = atomicOrbitalField(n, l, display.orientation, display.region);
@@ -259,7 +259,6 @@ export function atomicOrbitalSlice(display: AtomicOrbitalDisplay, overlay?: read
 		slicePaths(side, (x, y) => phase(field.value(...plane(x / scale, y / scale))));
 	const plane = slicePlanes.map(plane => ({ plane, count: section(32, plane).count }))
 		.reduce((best, candidate) => candidate.count > best.count ? candidate : best).plane;
-	const side = 128;
 	const { paths } = section(side, plane);
 	const backgroundSide = 64;
 	const fields = overlay?.filter(part => part.key !== key).map(part => {
@@ -275,4 +274,12 @@ export function atomicOrbitalSlice(display: AtomicOrbitalDisplay, overlay?: read
 		return visible ? 0 : -1;
 	}).paths[0]);
 	return { side, paths, background, backgroundScale: side / backgroundSide };
+}
+
+/** A subshell is shown on its own scale unless other subshells are overlaid. */
+export function atomicFamilyParts(subshell: Subshell, region: number): AtomicOrbitalPart[] {
+	return Array.from({ length: 2 * subshell.l + 1 }, (_, orientation) => {
+		const part = { subshell, orientation, region };
+		return { ...part, key: atomicOrbitalKey(part), scale: 1 };
+	});
 }
