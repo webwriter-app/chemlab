@@ -952,22 +952,22 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the ribbon: the two layer toggles with their panels and the layout
-	 * switch.
+	 * Renders the ribbon: the two layer toggles, the cutout that carries both
+	 * layers, and the layout switch.
 	 *
-	 * The ribbon is the only permanently visible band. It carries the filter
-	 * toggle with the filter panel beside it, the mode toggle with the property
-	 * panel beside it, and the layout switch on the far right, with a thin divider
-	 * between the three groups. A panel opens inside the band instead of below it,
-	 * so the controls stay where the button that opened them is. The band is
-	 * top-aligned: the buttons keep to the first row while an open panel grows the
-	 * band downwards, so the extra height sits under the panel alone. The table
-	 * below keeps its box, because the pane shrinks instead of the widget
-	 * overflowing.
+	 * The ribbon is the only permanently visible band. The two toggles sit on the
+	 * left, the layout switch on the right, and between them one cutout holds both
+	 * layers. The band itself is painted by a pseudo-element that keeps the height
+	 * of a single chip row, while the cutout grows downwards, so the band extends
+	 * only under the cutout, like a lip, instead of stretching into a full-width
+	 * rectangle. The row is top-aligned: the buttons keep to the first row and the
+	 * extra height sits under the cutout alone. The table below keeps its box,
+	 * because the pane shrinks instead of the widget overflowing.
 	 *
-	 * A toggle shows a filled state while its panel is open and a small dot while
-	 * the panel is closed but still narrows the table, so a hidden filter never
-	 * looks like no filter at all.
+	 * Both layers share the cutout and stack inside it without a divider, so two
+	 * open layers read as one block. A toggle shows a filled state while its layer
+	 * is open and a small dot while the layer is closed but still narrows the
+	 * table, so a hidden filter never looks like no filter at all.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
@@ -978,6 +978,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#renderRibbon(t: Strings, language: Language, resolved: ResolvedView, count: number) {
 		const filtersActive = this.#query !== "" || this.#category !== null;
 		const modesActive = this.#mode.mode !== "off";
+		const cutoutOpen = this.#filtersOpen || this.#modesOpen;
 		return html`
 			<div class="ribbon">
 				<sl-button
@@ -988,8 +989,6 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					aria-expanded=${this.#filtersOpen}
 					@click=${this.#toggleFilters}
 				>${FILTER_ICON}</sl-button>
-				${this.#renderFilters(t, language, count)}
-				<span class="ribbon-divider" role="presentation"></span>
 				<sl-button
 					class="ribbon-toggle ${this.#modesOpen ? "is-open" : ""} ${modesActive ? "is-active" : ""}"
 					size="small"
@@ -998,8 +997,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					aria-expanded=${this.#modesOpen}
 					@click=${this.#toggleModes}
 				>${MODE_ICON}</sl-button>
-				${this.#renderModes(t, language)}
-				<span class="ribbon-divider" role="presentation"></span>
+				<div class="ribbon-cutout ${cutoutOpen ? "is-open" : ""}">
+					${this.#renderFilters(t, language, count)}
+					${this.#renderModes(t, language)}
+				</div>
 				<div class="views" role="group" aria-label=${t.viewLabel}>
 					<sl-button
 						size="small"
@@ -1023,7 +1024,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the filter panel beside the first ribbon toggle.
+	 * Renders the filter layer inside the ribbon cutout.
 	 *
 	 * The panel holds the two controls that narrow the table, in the order they
 	 * are read: the search field with the reset beside it, then the family
@@ -1180,7 +1181,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the property panel beside the second ribbon toggle.
+	 * Renders the property layer inside the ribbon cutout.
 	 *
 	 * The panel decides what the cells are coloured by: the state at the chosen
 	 * temperature, whether the element was already known in the chosen year, or

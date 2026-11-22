@@ -92431,33 +92431,58 @@ var periodicTableStyles = i`
 		--pt-cell-fill: var(--pt-unknown);
 	}
 
-	/* The ribbon is the only band that is always visible: the filter toggle with
-	   its panel, the mode toggle with its panel, and the layout switch, separated
-	   by thin dividers. A panel opens inside the band, right beside the button
-	   that opened it, so the controls stay where the toggle is. The band is
-	   top-aligned: the buttons keep to the first row while an open panel grows
-	   the band downwards, so the extra height sits under the panel alone and the
-	   table below keeps the box it was given. */
+	/* The ribbon is the only band that is always visible: the filter toggle, the
+	   mode toggle, the cutout that carries both layers, and the layout switch.
+	   The band itself is painted by the pseudo-element below, which keeps the
+	   height of one chip row, while the cutout in the middle grows downwards.
+	   The band therefore extends only under the cutout, like a lip, instead of
+	   stretching into a full-width rectangle. The row is top-aligned: the buttons
+	   keep to the first row and the extra height sits under the cutout alone, so
+	   the table below keeps the box it was given. */
 	.ribbon {
+		position: relative;
 		display: flex;
 		flex: 0 0 auto;
 		align-items: flex-start;
 		gap: 0.3rem;
 		padding: 0.3rem 0.35rem;
+	}
+
+	/* The bar: one chip row of shaded surface with the frame of the band. It is
+	   painted rather than laid out, so the cutout can hang below it without
+	   dragging the whole band down with it. The height is the chip plus the two
+	   paddings of the row, which is exactly where the buttons end. */
+	.ribbon::before {
+		content: "";
+		position: absolute;
+		inset: 0 0 auto 0;
+		height: calc(var(--pt-chip-height) + 0.6rem);
 		border: 1px solid var(--pt-border);
 		border-radius: 8px;
 		background: var(--pt-inset);
+		pointer-events: none;
 	}
 
-	/* The dividers mark the three groups of the band: filter, modes, layout. They
-	   stretch with the band, so an open panel keeps them full height instead of
-	   leaving a stub beside the buttons. */
-	.ribbon-divider {
-		flex: 0 0 auto;
-		align-self: stretch;
-		width: 1px;
-		min-height: var(--pt-chip-height);
-		background: var(--pt-border);
+	/* The cutout is the single area in the middle of the band that both layers
+	   share. Closed it is an empty spacer that keeps the layout switch on the
+	   right; open it drops below the bar as a white lip with its own frame, and
+	   the two layers stack inside it without a divider between them. */
+	.ribbon-cutout {
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		gap: 0.4rem;
+		min-width: 0;
+	}
+
+	.ribbon-cutout.is-open {
+		/* The lip starts on the bar's bottom edge, one pixel into it, so the two
+		   frames meet in a single line instead of leaving a seam. */
+		margin-top: calc(var(--pt-chip-height) + 0.3rem - 1px);
+		padding: 0.3rem;
+		border: 1px solid var(--pt-border);
+		border-radius: 0 0 5px 5px;
+		background: var(--pt-surface);
 	}
 
 	/* The toggles and the layout switch are compact icon buttons with a tooltip
@@ -92506,10 +92531,11 @@ var periodicTableStyles = i`
 		background: var(--pt-accent);
 	}
 
+	/* The layout switch keeps to the right edge on its own, because the cutout
+	   between the toggles and the switch takes every free pixel. */
 	.views {
 		display: flex;
 		gap: 0.25rem;
-		margin-inline-start: auto;
 	}
 
 	/* The active layout keeps the accent fill of its primary variant, because the
@@ -92518,21 +92544,14 @@ var periodicTableStyles = i`
 		background: var(--pt-accent);
 	}
 
-	/* A panel is the opened layer of the ribbon: it sits beside its toggle and
-	   takes the free width, so two open panels split it and one open panel fills
-	   the band. It keeps a white surface and a light frame of its own, because
-	   the band around it is shaded and the opened area has to read as one block
-	   rather than as loose controls. */
+	/* A panel is one layer inside the cutout. The cutout draws the frame and the
+	   padding, so the panel is only its rows: two open layers read as one block
+	   instead of as two framed boxes with a divider between them. */
 	.ribbon-panel {
 		display: flex;
-		flex: 1 1 0;
 		flex-direction: column;
 		gap: 0.3rem;
 		min-width: 0;
-		padding: 0.3rem;
-		border: 1px solid var(--pt-border);
-		border-radius: 5px;
-		background: var(--pt-surface);
 	}
 
 	.panel-row {
@@ -94956,22 +94975,22 @@ renderCount_fn = function(t7, count2) {
   return format(t7.resultCount, { count: count2 });
 };
 /**
- * Renders the ribbon: the two layer toggles with their panels and the layout
- * switch.
+ * Renders the ribbon: the two layer toggles, the cutout that carries both
+ * layers, and the layout switch.
  *
- * The ribbon is the only permanently visible band. It carries the filter
- * toggle with the filter panel beside it, the mode toggle with the property
- * panel beside it, and the layout switch on the far right, with a thin divider
- * between the three groups. A panel opens inside the band instead of below it,
- * so the controls stay where the button that opened them is. The band is
- * top-aligned: the buttons keep to the first row while an open panel grows the
- * band downwards, so the extra height sits under the panel alone. The table
- * below keeps its box, because the pane shrinks instead of the widget
- * overflowing.
+ * The ribbon is the only permanently visible band. The two toggles sit on the
+ * left, the layout switch on the right, and between them one cutout holds both
+ * layers. The band itself is painted by a pseudo-element that keeps the height
+ * of a single chip row, while the cutout grows downwards, so the band extends
+ * only under the cutout, like a lip, instead of stretching into a full-width
+ * rectangle. The row is top-aligned: the buttons keep to the first row and the
+ * extra height sits under the cutout alone. The table below keeps its box,
+ * because the pane shrinks instead of the widget overflowing.
  *
- * A toggle shows a filled state while its panel is open and a small dot while
- * the panel is closed but still narrows the table, so a hidden filter never
- * looks like no filter at all.
+ * Both layers share the cutout and stack inside it without a divider, so two
+ * open layers read as one block. A toggle shows a filled state while its layer
+ * is open and a small dot while the layer is closed but still narrows the
+ * table, so a hidden filter never looks like no filter at all.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
@@ -94982,6 +95001,7 @@ renderCount_fn = function(t7, count2) {
 renderRibbon_fn = function(t7, language, resolved, count2) {
   const filtersActive = __privateGet(this, _query) !== "" || __privateGet(this, _category) !== null;
   const modesActive = __privateGet(this, _mode).mode !== "off";
+  const cutoutOpen = __privateGet(this, _filtersOpen) || __privateGet(this, _modesOpen);
   return x2`
 			<div class="ribbon">
 				<sl-button
@@ -94992,8 +95012,6 @@ renderRibbon_fn = function(t7, language, resolved, count2) {
 					aria-expanded=${__privateGet(this, _filtersOpen)}
 					@click=${__privateGet(this, _toggleFilters)}
 				>${FILTER_ICON}</sl-button>
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderFilters_fn).call(this, t7, language, count2)}
-				<span class="ribbon-divider" role="presentation"></span>
 				<sl-button
 					class="ribbon-toggle ${__privateGet(this, _modesOpen) ? "is-open" : ""} ${modesActive ? "is-active" : ""}"
 					size="small"
@@ -95002,8 +95020,10 @@ renderRibbon_fn = function(t7, language, resolved, count2) {
 					aria-expanded=${__privateGet(this, _modesOpen)}
 					@click=${__privateGet(this, _toggleModes)}
 				>${MODE_ICON}</sl-button>
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderModes_fn).call(this, t7, language)}
-				<span class="ribbon-divider" role="presentation"></span>
+				<div class="ribbon-cutout ${cutoutOpen ? "is-open" : ""}">
+					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderFilters_fn).call(this, t7, language, count2)}
+					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderModes_fn).call(this, t7, language)}
+				</div>
 				<div class="views" role="group" aria-label=${t7.viewLabel}>
 					<sl-button
 						size="small"
@@ -95026,7 +95046,7 @@ renderRibbon_fn = function(t7, language, resolved, count2) {
 		`;
 };
 /**
- * Renders the filter panel beside the first ribbon toggle.
+ * Renders the filter layer inside the ribbon cutout.
  *
  * The panel holds the two controls that narrow the table, in the order they
  * are read: the search field with the reset beside it, then the family
@@ -95181,7 +95201,7 @@ slider_fn = function(t7, language) {
   }
 };
 /**
- * Renders the property panel beside the second ribbon toggle.
+ * Renders the property layer inside the ribbon cutout.
  *
  * The panel decides what the cells are coloured by: the state at the chosen
  * temperature, whether the element was already known in the chosen year, or
