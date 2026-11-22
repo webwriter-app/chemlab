@@ -20,6 +20,7 @@ export const LANGUAGES: readonly Language[] = ["en", "de"];
 export type StringKey =
 	| "widgetLabel"
 	| "filtersLabel"
+	| "filterHeading"
 	| "searchLabel"
 	| "searchPlaceholder"
 	| "viewLabel"
@@ -80,6 +81,7 @@ export type StringKey =
 	| "conditions"
 	| "discoveryAntiquity"
 	| "modeLabel"
+	| "modeHeading"
 	| "modeOff"
 	| "modeTemperature"
 	| "modeDiscovery"
@@ -122,6 +124,7 @@ export type Strings = Readonly<Record<StringKey, string>>;
 const EN: Strings = {
 	widgetLabel: "Periodic table",
 	filtersLabel: "Search and filter",
+	filterHeading: "Filter",
 	searchLabel: "Search elements",
 	searchPlaceholder: "Name, symbol, number",
 	viewLabel: "Layout",
@@ -182,6 +185,7 @@ const EN: Strings = {
 	conditions: "{temperature} °C · {pressure} bar",
 	discoveryAntiquity: "Antiquity",
 	modeLabel: "Show",
+	modeHeading: "Display",
 	modeOff: "Off",
 	modeTemperature: "Temperature",
 	modeDiscovery: "Discovery",
@@ -225,6 +229,7 @@ const EN: Strings = {
 const DE: Strings = {
 	widgetLabel: "Periodensystem",
 	filtersLabel: "Suchen und filtern",
+	filterHeading: "Filter",
 	searchLabel: "Elemente suchen",
 	searchPlaceholder: "Name, Symbol, Nummer",
 	viewLabel: "Darstellung",
@@ -285,6 +290,7 @@ const DE: Strings = {
 	conditions: "{temperature} °C · {pressure} bar",
 	discoveryAntiquity: "Antike",
 	modeLabel: "Anzeigen",
+	modeHeading: "Anzeige",
 	modeOff: "Aus",
 	modeTemperature: "Temperatur",
 	modeDiscovery: "Entdeckung",

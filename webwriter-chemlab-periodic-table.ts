@@ -952,22 +952,23 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the ribbon: the two layer toggles, the cutout that carries both
+	 * Renders the ribbon: the two layer toggles, the lip that carries both
 	 * layers, and the layout switch.
 	 *
 	 * The ribbon is the only permanently visible band. The two toggles sit on the
-	 * left, the layout switch on the right, and between them one cutout holds both
-	 * layers. The band itself is painted by a pseudo-element that keeps the height
-	 * of a single chip row, while the cutout grows downwards, so the band extends
-	 * only under the cutout, like a lip, instead of stretching into a full-width
-	 * rectangle. The row is top-aligned: the buttons keep to the first row and the
-	 * extra height sits under the cutout alone. The table below keeps its box,
-	 * because the pane shrinks instead of the widget overflowing.
+	 * left, the layout switch on the right, and between them one cutout anchors
+	 * the lip. The band itself is painted by a pseudo-element that keeps the
+	 * height of a single chip row, and the lip hangs below it as an absolutely
+	 * positioned layer, so the band never grows and the table below keeps its
+	 * box: an open layer covers the first rows of the table instead of pushing
+	 * them down. The lip carries the lifting shadow of the detail card, so it
+	 * reads as a layer above the table.
 	 *
-	 * Both layers share the cutout and stack inside it without a divider, so two
-	 * open layers read as one block. A toggle shows a filled state while its layer
-	 * is open and a small dot while the layer is closed but still narrows the
-	 * table, so a hidden filter never looks like no filter at all.
+	 * Both layers share the lip and stack inside it as two sections of their own,
+	 * so two open layers stay distinguishable without a divider between them. A
+	 * toggle shows a filled state while its layer is open and a small dot while
+	 * the layer is closed but still narrows the table, so a hidden filter never
+	 * looks like no filter at all.
 	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
@@ -997,9 +998,15 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					aria-expanded=${this.#modesOpen}
 					@click=${this.#toggleModes}
 				>${MODE_ICON}</sl-button>
-				<div class="ribbon-cutout ${cutoutOpen ? "is-open" : ""}">
-					${this.#renderFilters(t, language, count)}
-					${this.#renderModes(t, language)}
+				<div class="ribbon-cutout">
+					${cutoutOpen
+						? html`
+							<div class="ribbon-lip">
+								${this.#renderFilters(t, language, count)}
+								${this.#renderModes(t, language)}
+							</div>
+						`
+						: null}
 				</div>
 				<div class="views" role="group" aria-label=${t.viewLabel}>
 					<sl-button
@@ -1024,7 +1031,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the filter layer inside the ribbon cutout.
+	 * Renders the filter layer inside the ribbon lip.
 	 *
 	 * The panel holds the two controls that narrow the table, in the order they
 	 * are read: the search field with the reset beside it, then the family
@@ -1038,6 +1045,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * reach. The result count is a pill badge, and a hidden live region keeps the
 	 * full sentence for screen readers.
 	 *
+	 * The panel is a section in the pattern of the chemicals drawer: a heading
+	 * band names the layer, the body holds the rows. That is what tells the two
+	 * layers of the lip apart without a divider between them.
+	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
 	 * @param count - Number of matching elements.
@@ -1048,55 +1059,60 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const countText = this.#renderCount(t, count);
 		return html`
 			<div class="ribbon-panel filters">
-				<div class="panel-row">
-					<sl-input
-						class="search"
-						type="search"
-						size="small"
-						clearable
-						label=${t.searchLabel}
-						placeholder=${t.searchPlaceholder}
-						.value=${this.#query}
-						@sl-input=${this.#onQueryInput}
-						@keydown=${this.#onSearchKeydown}
-					></sl-input>
-					<sl-button
-						class="reset"
-						size="small"
-						title=${t.reset}
-						aria-label=${t.reset}
-						@click=${() => this.#reset()}
-					>${RESET_ICON}</sl-button>
+				<div class="panel-heading" role="heading" aria-level="3">
+					<sl-badge variant="neutral">${t.filterHeading}</sl-badge>
 				</div>
-				<div class="panel-row">
-					<span class="visually-hidden" id="family-strip-label">${t.legendLabel}</span>
-					<sl-carousel
-						class="family-strip"
-						navigation
-						mouse-dragging
-						slides-per-page="4"
-						slides-per-move="1"
-						aria-labelledby="family-strip-label"
-					>
-						${Object.entries(CATEGORIES).map(([key, category]) => html`
-							<sl-carousel-item>
-								<button
-									class="family-tag category-${key}"
-									type="button"
-									aria-pressed=${this.#category === key}
-									@click=${() => this.#toggleCategory(key)}
-								>
-									<span class="family-swatch"></span>${category[language]}
-								</button>
-							</sl-carousel-item>
-						`)}
-						<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
-						<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
-					</sl-carousel>
-					<sl-badge class="count-badge" pill variant="neutral" title=${countText}>
-						${count}
-					</sl-badge>
-					<p class="visually-hidden" role="status" aria-live="polite">${countText}</p>
+				<div class="panel-body">
+					<div class="panel-row">
+						<sl-input
+							class="search"
+							type="search"
+							size="small"
+							clearable
+							label=${t.searchLabel}
+							placeholder=${t.searchPlaceholder}
+							.value=${this.#query}
+							@sl-input=${this.#onQueryInput}
+							@keydown=${this.#onSearchKeydown}
+						></sl-input>
+						<sl-button
+							class="reset"
+							size="small"
+							title=${t.reset}
+							aria-label=${t.reset}
+							@click=${() => this.#reset()}
+						>${RESET_ICON}</sl-button>
+					</div>
+					<div class="panel-row">
+						<span class="visually-hidden" id="family-strip-label">${t.legendLabel}</span>
+						<sl-carousel
+							class="family-strip"
+							navigation
+							mouse-dragging
+							slides-per-page="4"
+							slides-per-move="1"
+							aria-labelledby="family-strip-label"
+						>
+							${Object.entries(CATEGORIES).map(([key, category]) => html`
+								<sl-carousel-item>
+									<button
+										class="family-tag category-${key}"
+										type="button"
+										aria-pressed=${this.#category === key}
+										@click=${() => this.#toggleCategory(key)}
+									>
+										<span class="family-swatch"></span>${category[language]}
+									</button>
+								</sl-carousel-item>
+							`)}
+							<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
+							<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
+						</sl-carousel>
+						<sl-badge class="count-badge" pill variant="neutral" title=${countText}>
+							${count}
+						</sl-badge>
+						<p class="visually-hidden" role="status" aria-live="polite">${countText}</p>
+					</div>
 				</div>
 			</div>
 		`;
@@ -1181,7 +1197,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	}
 
 	/**
-	 * Renders the property layer inside the ribbon cutout.
+	 * Renders the property layer inside the ribbon lip.
 	 *
 	 * The panel decides what the cells are coloured by: the state at the chosen
 	 * temperature, whether the element was already known in the chosen year, or
@@ -1199,6 +1215,10 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * the search, so both panels clear their own state with one button at the end
 	 * of their row instead of a chip that scrolls away with the modes.
 	 *
+	 * The panel is a section in the pattern of the chemicals drawer, like the
+	 * filter panel above it: a heading band names the layer, the body holds the
+	 * rows.
+	 *
 	 * @param t - Interface strings.
 	 * @param language - Interface language.
 	 * @returns The property panel, or nothing while it is closed.
@@ -1208,55 +1228,60 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const slider = this.#slider(t, language);
 		return html`
 			<div class="ribbon-panel modes">
-				<div class="panel-row">
-					<span class="visually-hidden" id="mode-strip-label">${t.modeLabel}</span>
-					<sl-carousel
-						class="mode-strip"
-						navigation
-						mouse-dragging
-						slides-per-page="4"
-						slides-per-move="1"
-						aria-labelledby="mode-strip-label"
-					>
-						${MODE_CHOICES.map(mode => html`
-							<sl-carousel-item>
-								<button
-									class="mode-tag ${this.#mode.mode === mode ? "is-active" : ""}"
-									type="button"
-									aria-pressed=${this.#mode.mode === mode}
-									@click=${() => this.#setMode(mode)}
-								>${modeText(mode, t)}</button>
-							</sl-carousel-item>
-						`)}
-						<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
-						<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
-					</sl-carousel>
-					<sl-button
-						class="reset"
-						size="small"
-						title=${t.resetMode}
-						aria-label=${t.resetMode}
-						@click=${this.#resetMode}
-					>${RESET_ICON}</sl-button>
+				<div class="panel-heading" role="heading" aria-level="3">
+					<sl-badge variant="neutral">${t.modeHeading}</sl-badge>
 				</div>
-				${slider
-					? html`
-						<div class="mode-slider">
-							<input
-								class="mode-range"
-								type="range"
-								min=${slider.min}
-								max=${slider.max}
-								step=${slider.step}
-								.value=${String(slider.value)}
-								aria-label=${slider.label}
-								@input=${slider.onInput}
-							/>
-							<sl-tag class="mode-value" size="small" variant="neutral">${slider.readout}</sl-tag>
-						</div>
-					`
-					: null}
-				${this.#renderStateLegend(t)}
+				<div class="panel-body">
+					<div class="panel-row">
+						<span class="visually-hidden" id="mode-strip-label">${t.modeLabel}</span>
+						<sl-carousel
+							class="mode-strip"
+							navigation
+							mouse-dragging
+							slides-per-page="4"
+							slides-per-move="1"
+							aria-labelledby="mode-strip-label"
+						>
+							${MODE_CHOICES.map(mode => html`
+								<sl-carousel-item>
+									<button
+										class="mode-tag ${this.#mode.mode === mode ? "is-active" : ""}"
+										type="button"
+										aria-pressed=${this.#mode.mode === mode}
+										@click=${() => this.#setMode(mode)}
+									>${modeText(mode, t)}</button>
+								</sl-carousel-item>
+							`)}
+							<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
+							<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
+						</sl-carousel>
+						<sl-button
+							class="reset"
+							size="small"
+							title=${t.resetMode}
+							aria-label=${t.resetMode}
+							@click=${this.#resetMode}
+						>${RESET_ICON}</sl-button>
+					</div>
+					${slider
+						? html`
+							<div class="mode-slider">
+								<input
+									class="mode-range"
+									type="range"
+									min=${slider.min}
+									max=${slider.max}
+									step=${slider.step}
+									.value=${String(slider.value)}
+									aria-label=${slider.label}
+									@input=${slider.onInput}
+								/>
+								<sl-tag class="mode-value" size="small" variant="neutral">${slider.readout}</sl-tag>
+							</div>
+						`
+						: null}
+					${this.#renderStateLegend(t)}
+				</div>
 			</div>
 		`;
 	}

@@ -102839,6 +102839,7 @@ function cellMode(element2, state, language = "en") {
 var EN = {
   widgetLabel: "Periodic table",
   filtersLabel: "Search and filter",
+  filterHeading: "Filter",
   searchLabel: "Search elements",
   searchPlaceholder: "Name, symbol, number",
   viewLabel: "Layout",
@@ -102899,6 +102900,7 @@ var EN = {
   conditions: "{temperature} \xB0C \xB7 {pressure} bar",
   discoveryAntiquity: "Antiquity",
   modeLabel: "Show",
+  modeHeading: "Display",
   modeOff: "Off",
   modeTemperature: "Temperature",
   modeDiscovery: "Discovery",
@@ -102938,6 +102940,7 @@ var EN = {
 var DE = {
   widgetLabel: "Periodensystem",
   filtersLabel: "Suchen und filtern",
+  filterHeading: "Filter",
   searchLabel: "Elemente suchen",
   searchPlaceholder: "Name, Symbol, Nummer",
   viewLabel: "Darstellung",
@@ -102998,6 +103001,7 @@ var DE = {
   conditions: "{temperature} \xB0C \xB7 {pressure} bar",
   discoveryAntiquity: "Antike",
   modeLabel: "Anzeigen",
+  modeHeading: "Anzeige",
   modeOff: "Aus",
   modeTemperature: "Temperatur",
   modeDiscovery: "Entdeckung",
@@ -103519,6 +103523,12 @@ var periodicTableStyles = i`
 		/* The open detail card covers the cells below it, so it needs a shadow
 		   that lifts it off the table instead of one that only softens an edge. */
 		--pt-overlay-shadow: 0 10px 26px rgb(0 0 0 / 20%), 0 2px 6px rgb(0 0 0 / 10%);
+		/* The two layers of the ribbon follow the section pattern of the
+		   chemicals drawer: a faint fill, a heading band and a badge. The
+		   palette stays neutral, because the table's own surface is white. */
+		--pt-heading-fill: var(--sl-color-neutral-100, #f1f1f3);
+		--pt-heading-badge: var(--sl-color-neutral-200, #e2e2e6);
+		--pt-heading-ink: var(--sl-color-neutral-700, #3f3f46);
 
 		--pt-alkali-metal: #f2a3a3;
 		--pt-alkaline-earth-metal: #f7c99a;
@@ -103607,13 +103617,13 @@ var periodicTableStyles = i`
 	/* The ribbon is the only band that is always visible: the filter toggle, the
 	   mode toggle, the cutout that carries both layers, and the layout switch.
 	   The band itself is painted by the pseudo-element below, which keeps the
-	   height of one chip row, while the cutout in the middle grows downwards.
-	   The band therefore extends only under the cutout, like a lip, instead of
-	   stretching into a full-width rectangle. The row is top-aligned: the buttons
-	   keep to the first row and the extra height sits under the cutout alone, so
-	   the table below keeps the box it was given. */
+	   height of one chip row. The cutout in the middle is only the anchor of the
+	   lip, so the band stays one chip tall in every state and the table below
+	   keeps the box it was given. The band sits above the table, because the lip
+	   hangs over it. */
 	.ribbon {
 		position: relative;
+		z-index: 7;
 		display: flex;
 		flex: 0 0 auto;
 		align-items: flex-start;
@@ -103637,25 +103647,33 @@ var periodicTableStyles = i`
 	}
 
 	/* The cutout is the single area in the middle of the band that both layers
-	   share. Closed it is an empty spacer that keeps the layout switch on the
-	   right; open it drops below the bar as a white lip with its own frame, and
-	   the two layers stack inside it without a divider between them. */
+	   share. It is only the anchor of the lip: it takes the free width between
+	   the toggles and the layout switch and keeps no height of its own, so the
+	   band never grows with the layers. */
 	.ribbon-cutout {
-		display: flex;
+		position: relative;
 		flex: 1 1 auto;
-		flex-direction: column;
-		gap: 0.4rem;
 		min-width: 0;
 	}
 
-	.ribbon-cutout.is-open {
-		/* The lip starts on the bar's bottom edge, one pixel into it, so the two
-		   frames meet in a single line instead of leaving a seam. */
-		margin-top: calc(var(--pt-chip-height) + 0.3rem - 1px);
+	/* The lip hangs below the band and floats over the table instead of pushing
+	   it down: the band keeps its height, the table keeps its box, and the open
+	   layers cover the first rows until they are closed again. It starts on the
+	   band's bottom edge, one pixel into it, so the two frames meet in a single
+	   line, and it carries the lifting shadow of the detail card, so it reads as
+	   a layer above the table and not as part of it. */
+	.ribbon-lip {
+		position: absolute;
+		inset-inline: 0;
+		top: calc(var(--pt-chip-height) + 0.3rem - 1px);
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
 		padding: 0.3rem;
 		border: 1px solid var(--pt-border);
 		border-radius: 0 0 5px 5px;
 		background: var(--pt-surface);
+		box-shadow: var(--pt-overlay-shadow);
 	}
 
 	/* The toggles and the layout switch are compact icon buttons with a tooltip
@@ -103717,14 +103735,47 @@ var periodicTableStyles = i`
 		background: var(--pt-accent);
 	}
 
-	/* A panel is one layer inside the cutout. The cutout draws the frame and the
-	   padding, so the panel is only its rows: two open layers read as one block
-	   instead of as two framed boxes with a divider between them. */
+	/* A layer is a section in the pattern of the chemicals drawer: a faint fill
+	   with a small heading band, so the two layers read as two blocks without a
+	   divider line between them. The heading names the layer the way its toggle
+	   does, and the body holds the rows. */
 	.ribbon-panel {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		border: 1px solid var(--pt-border);
+		border-radius: 4px;
+		background: var(--pt-inset);
+	}
+
+	.panel-heading {
+		display: flex;
+		align-items: center;
+		padding: 0.05rem 0.3rem;
+		border-radius: 3px 3px 0 0;
+		background: var(--pt-heading-fill);
+		color: var(--pt-heading-ink);
+	}
+
+	/* The heading carries its name in a badge, like the section headings of the
+	   drawer. The badge drops the Shoelace padding and border, so the band stays
+	   one line high and the name reads as the title of the section. */
+	.panel-heading sl-badge::part(base) {
+		padding: 0 0.3rem;
+		border: 0;
+		background: var(--pt-heading-badge);
+		color: inherit;
+		font-size: 0.62rem;
+		font-weight: var(--sl-font-weight-normal, 400);
+		line-height: 1.4;
+	}
+
+	.panel-body {
 		display: flex;
 		flex-direction: column;
 		gap: 0.3rem;
 		min-width: 0;
+		padding: 0.25rem 0.3rem;
 	}
 
 	.panel-row {
@@ -106150,22 +106201,23 @@ renderCount_fn = function(t8, count2) {
   return format(t8.resultCount, { count: count2 });
 };
 /**
- * Renders the ribbon: the two layer toggles, the cutout that carries both
+ * Renders the ribbon: the two layer toggles, the lip that carries both
  * layers, and the layout switch.
  *
  * The ribbon is the only permanently visible band. The two toggles sit on the
- * left, the layout switch on the right, and between them one cutout holds both
- * layers. The band itself is painted by a pseudo-element that keeps the height
- * of a single chip row, while the cutout grows downwards, so the band extends
- * only under the cutout, like a lip, instead of stretching into a full-width
- * rectangle. The row is top-aligned: the buttons keep to the first row and the
- * extra height sits under the cutout alone. The table below keeps its box,
- * because the pane shrinks instead of the widget overflowing.
+ * left, the layout switch on the right, and between them one cutout anchors
+ * the lip. The band itself is painted by a pseudo-element that keeps the
+ * height of a single chip row, and the lip hangs below it as an absolutely
+ * positioned layer, so the band never grows and the table below keeps its
+ * box: an open layer covers the first rows of the table instead of pushing
+ * them down. The lip carries the lifting shadow of the detail card, so it
+ * reads as a layer above the table.
  *
- * Both layers share the cutout and stack inside it without a divider, so two
- * open layers read as one block. A toggle shows a filled state while its layer
- * is open and a small dot while the layer is closed but still narrows the
- * table, so a hidden filter never looks like no filter at all.
+ * Both layers share the lip and stack inside it as two sections of their own,
+ * so two open layers stay distinguishable without a divider between them. A
+ * toggle shows a filled state while its layer is open and a small dot while
+ * the layer is closed but still narrows the table, so a hidden filter never
+ * looks like no filter at all.
  *
  * @param t - Interface strings.
  * @param language - Interface language.
@@ -106195,9 +106247,13 @@ renderRibbon_fn = function(t8, language, resolved, count2) {
 					aria-expanded=${__privateGet(this, _modesOpen)}
 					@click=${__privateGet(this, _toggleModes)}
 				>${MODE_ICON}</sl-button>
-				<div class="ribbon-cutout ${cutoutOpen ? "is-open" : ""}">
-					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderFilters_fn).call(this, t8, language, count2)}
-					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderModes_fn).call(this, t8, language)}
+				<div class="ribbon-cutout">
+					${cutoutOpen ? x2`
+							<div class="ribbon-lip">
+								${__privateMethod(this, _ChemLabPeriodicTable_instances, renderFilters_fn).call(this, t8, language, count2)}
+								${__privateMethod(this, _ChemLabPeriodicTable_instances, renderModes_fn).call(this, t8, language)}
+							</div>
+						` : null}
 				</div>
 				<div class="views" role="group" aria-label=${t8.viewLabel}>
 					<sl-button
@@ -106221,7 +106277,7 @@ renderRibbon_fn = function(t8, language, resolved, count2) {
 		`;
 };
 /**
- * Renders the filter layer inside the ribbon cutout.
+ * Renders the filter layer inside the ribbon lip.
  *
  * The panel holds the two controls that narrow the table, in the order they
  * are read: the search field with the reset beside it, then the family
@@ -106235,6 +106291,10 @@ renderRibbon_fn = function(t8, language, resolved, count2) {
  * reach. The result count is a pill badge, and a hidden live region keeps the
  * full sentence for screen readers.
  *
+ * The panel is a section in the pattern of the chemicals drawer: a heading
+ * band names the layer, the body holds the rows. That is what tells the two
+ * layers of the lip apart without a divider between them.
+ *
  * @param t - Interface strings.
  * @param language - Interface language.
  * @param count - Number of matching elements.
@@ -106245,55 +106305,60 @@ renderFilters_fn = function(t8, language, count2) {
   const countText = __privateMethod(this, _ChemLabPeriodicTable_instances, renderCount_fn).call(this, t8, count2);
   return x2`
 			<div class="ribbon-panel filters">
-				<div class="panel-row">
-					<sl-input
-						class="search"
-						type="search"
-						size="small"
-						clearable
-						label=${t8.searchLabel}
-						placeholder=${t8.searchPlaceholder}
-						.value=${__privateGet(this, _query)}
-						@sl-input=${__privateGet(this, _onQueryInput)}
-						@keydown=${__privateGet(this, _onSearchKeydown)}
-					></sl-input>
-					<sl-button
-						class="reset"
-						size="small"
-						title=${t8.reset}
-						aria-label=${t8.reset}
-						@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, reset_fn).call(this)}
-					>${RESET_ICON}</sl-button>
+				<div class="panel-heading" role="heading" aria-level="3">
+					<sl-badge variant="neutral">${t8.filterHeading}</sl-badge>
 				</div>
-				<div class="panel-row">
-					<span class="visually-hidden" id="family-strip-label">${t8.legendLabel}</span>
-					<sl-carousel
-						class="family-strip"
-						navigation
-						mouse-dragging
-						slides-per-page="4"
-						slides-per-move="1"
-						aria-labelledby="family-strip-label"
-					>
-						${Object.entries(CATEGORIES).map(([key, category]) => x2`
-							<sl-carousel-item>
-								<button
-									class="family-tag category-${key}"
-									type="button"
-									aria-pressed=${__privateGet(this, _category) === key}
-									@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, toggleCategory_fn).call(this, key)}
-								>
-									<span class="family-swatch"></span>${category[language]}
-								</button>
-							</sl-carousel-item>
-						`)}
-						<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
-						<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
-					</sl-carousel>
-					<sl-badge class="count-badge" pill variant="neutral" title=${countText}>
-						${count2}
-					</sl-badge>
-					<p class="visually-hidden" role="status" aria-live="polite">${countText}</p>
+				<div class="panel-body">
+					<div class="panel-row">
+						<sl-input
+							class="search"
+							type="search"
+							size="small"
+							clearable
+							label=${t8.searchLabel}
+							placeholder=${t8.searchPlaceholder}
+							.value=${__privateGet(this, _query)}
+							@sl-input=${__privateGet(this, _onQueryInput)}
+							@keydown=${__privateGet(this, _onSearchKeydown)}
+						></sl-input>
+						<sl-button
+							class="reset"
+							size="small"
+							title=${t8.reset}
+							aria-label=${t8.reset}
+							@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, reset_fn).call(this)}
+						>${RESET_ICON}</sl-button>
+					</div>
+					<div class="panel-row">
+						<span class="visually-hidden" id="family-strip-label">${t8.legendLabel}</span>
+						<sl-carousel
+							class="family-strip"
+							navigation
+							mouse-dragging
+							slides-per-page="4"
+							slides-per-move="1"
+							aria-labelledby="family-strip-label"
+						>
+							${Object.entries(CATEGORIES).map(([key, category]) => x2`
+								<sl-carousel-item>
+									<button
+										class="family-tag category-${key}"
+										type="button"
+										aria-pressed=${__privateGet(this, _category) === key}
+										@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, toggleCategory_fn).call(this, key)}
+									>
+										<span class="family-swatch"></span>${category[language]}
+									</button>
+								</sl-carousel-item>
+							`)}
+							<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
+							<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
+						</sl-carousel>
+						<sl-badge class="count-badge" pill variant="neutral" title=${countText}>
+							${count2}
+						</sl-badge>
+						<p class="visually-hidden" role="status" aria-live="polite">${countText}</p>
+					</div>
 				</div>
 			</div>
 		`;
@@ -106376,7 +106441,7 @@ slider_fn = function(t8, language) {
   }
 };
 /**
- * Renders the property layer inside the ribbon cutout.
+ * Renders the property layer inside the ribbon lip.
  *
  * The panel decides what the cells are coloured by: the state at the chosen
  * temperature, whether the element was already known in the chosen year, or
@@ -106394,6 +106459,10 @@ slider_fn = function(t8, language) {
  * the search, so both panels clear their own state with one button at the end
  * of their row instead of a chip that scrolls away with the modes.
  *
+ * The panel is a section in the pattern of the chemicals drawer, like the
+ * filter panel above it: a heading band names the layer, the body holds the
+ * rows.
+ *
  * @param t - Interface strings.
  * @param language - Interface language.
  * @returns The property panel, or nothing while it is closed.
@@ -106403,53 +106472,58 @@ renderModes_fn = function(t8, language) {
   const slider = __privateMethod(this, _ChemLabPeriodicTable_instances, slider_fn).call(this, t8, language);
   return x2`
 			<div class="ribbon-panel modes">
-				<div class="panel-row">
-					<span class="visually-hidden" id="mode-strip-label">${t8.modeLabel}</span>
-					<sl-carousel
-						class="mode-strip"
-						navigation
-						mouse-dragging
-						slides-per-page="4"
-						slides-per-move="1"
-						aria-labelledby="mode-strip-label"
-					>
-						${MODE_CHOICES.map((mode) => x2`
-							<sl-carousel-item>
-								<button
-									class="mode-tag ${__privateGet(this, _mode).mode === mode ? "is-active" : ""}"
-									type="button"
-									aria-pressed=${__privateGet(this, _mode).mode === mode}
-									@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setMode_fn).call(this, mode)}
-								>${modeText(mode, t8)}</button>
-							</sl-carousel-item>
-						`)}
-						<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
-						<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
-					</sl-carousel>
-					<sl-button
-						class="reset"
-						size="small"
-						title=${t8.resetMode}
-						aria-label=${t8.resetMode}
-						@click=${__privateGet(this, _resetMode)}
-					>${RESET_ICON}</sl-button>
+				<div class="panel-heading" role="heading" aria-level="3">
+					<sl-badge variant="neutral">${t8.modeHeading}</sl-badge>
 				</div>
-				${slider ? x2`
-						<div class="mode-slider">
-							<input
-								class="mode-range"
-								type="range"
-								min=${slider.min}
-								max=${slider.max}
-								step=${slider.step}
-								.value=${String(slider.value)}
-								aria-label=${slider.label}
-								@input=${slider.onInput}
-							/>
-							<sl-tag class="mode-value" size="small" variant="neutral">${slider.readout}</sl-tag>
-						</div>
-					` : null}
-				${__privateMethod(this, _ChemLabPeriodicTable_instances, renderStateLegend_fn).call(this, t8)}
+				<div class="panel-body">
+					<div class="panel-row">
+						<span class="visually-hidden" id="mode-strip-label">${t8.modeLabel}</span>
+						<sl-carousel
+							class="mode-strip"
+							navigation
+							mouse-dragging
+							slides-per-page="4"
+							slides-per-move="1"
+							aria-labelledby="mode-strip-label"
+						>
+							${MODE_CHOICES.map((mode) => x2`
+								<sl-carousel-item>
+									<button
+										class="mode-tag ${__privateGet(this, _mode).mode === mode ? "is-active" : ""}"
+										type="button"
+										aria-pressed=${__privateGet(this, _mode).mode === mode}
+										@click=${() => __privateMethod(this, _ChemLabPeriodicTable_instances, setMode_fn).call(this, mode)}
+									>${modeText(mode, t8)}</button>
+								</sl-carousel-item>
+							`)}
+							<span slot="previous-icon">${CAROUSEL_PREVIOUS_ICON}</span>
+							<span slot="next-icon">${CAROUSEL_NEXT_ICON}</span>
+						</sl-carousel>
+						<sl-button
+							class="reset"
+							size="small"
+							title=${t8.resetMode}
+							aria-label=${t8.resetMode}
+							@click=${__privateGet(this, _resetMode)}
+						>${RESET_ICON}</sl-button>
+					</div>
+					${slider ? x2`
+							<div class="mode-slider">
+								<input
+									class="mode-range"
+									type="range"
+									min=${slider.min}
+									max=${slider.max}
+									step=${slider.step}
+									.value=${String(slider.value)}
+									aria-label=${slider.label}
+									@input=${slider.onInput}
+								/>
+								<sl-tag class="mode-value" size="small" variant="neutral">${slider.readout}</sl-tag>
+							</div>
+						` : null}
+					${__privateMethod(this, _ChemLabPeriodicTable_instances, renderStateLegend_fn).call(this, t8)}
+				</div>
 			</div>
 		`;
 };
