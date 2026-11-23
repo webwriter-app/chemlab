@@ -201,7 +201,14 @@ export const saltSolubility: Readonly<Record<string, SaltSolubility>> = {
 	"Fe(OH)2": { ions: ["[Fe2+]", "[OH-]", 1, 2], ksp: 8.3e-15, color: 0x6f8f6a, solidDensity: 3.4 },
 	"Fe(OH)3": { ions: ["[Fe3+]", "[OH-]", 1, 3], ksp: 8.3e-38, color: 0x9a5b32, solidDensity: 3.4 },
 	"Zn(OH)2": { ions: ["[Zn2+]", "[OH-]", 1, 2], ksp: 1.7e-16, color: 0xdfe3e6, solidDensity: 3.05 },
-	"Ca(OH)2": { ions: ["[Ca2+]", "[OH-]", 1, 2], ksp: 6.6e-6, color: 0xf2f2ee, solidDensity: 2.21 },
+	// Lime is the one hydroxide that also carries a `saturation`, because the
+	// palette sells lime water as a stock. The ideal solubility from the Ksp is
+	// (6.6e-6 / 4)^(1/3) = 0.01183 mol/L; the stock rounds it down to 0.011 so
+	// its own ion product stays below the product, the same rule the sparingly
+	// soluble salts below follow. Real lime water holds about 0.023 mol/L
+	// because calcium hydroxide forms a CaOH+ ion pair, which the model does not
+	// carry; a dosed solid still dissolves up to the root of the Ksp.
+	"Ca(OH)2": { ions: ["[Ca2+]", "[OH-]", 1, 2], ksp: 6.6e-6, saturation: 0.011, color: 0xf2f2ee, solidDensity: 2.21 },
 	"Mg(OH)2": { ions: ["[Mg2+]", "[OH-]", 1, 2], ksp: 7.2e-12, color: 0xf4f4f0, solidDensity: 2.34 },
 	"Ni(OH)2": { ions: ["[Ni2+]", "[OH-]", 1, 2], ksp: 6.6e-18, color: 0x8fbf6a, solidDensity: 4.1 },
 	"Mn(OH)2": { ions: ["[Mn2+]", "[OH-]", 1, 2], ksp: 1.7e-13, color: 0xd8c9b0, solidDensity: 3.26 },

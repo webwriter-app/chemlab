@@ -105,6 +105,7 @@ export const solutionDisplayNames: Readonly<Record<string, string>> = {
 const concentratedReagent = {
 	hydrochloricAcid: 12.1,
 	sulfuricAcid: 18.4, // 98%, 1.84 g/mL, Merck 112080
+	nitricAcid: 14.4, // 65%, 1.39 g/mL, 65 · 1.39 / 63.01 · 10 = 14.34 mol/L
 	phosphoricAcid: 14.7,
 	ammonia: 14.8,
 	sodiumHydroxide: 19, // 50%, 1.52 g/mL, Merck 100238
@@ -155,6 +156,18 @@ function molecule(formula: string, heavyAtoms: string[], bonds: string[], hydrog
 const water = molecule("H₂O", ["oxygen"], [], [2]);
 const hcl: MoleculeDefinition = { formula: "HCl", atoms: ["hydrogen", "chlorine"], bonds: ["0-1:acidbase:1"] };
 const naoh: MoleculeDefinition = { formula: "NaOH", atoms: ["sodium", "oxygen", "hydrogen"], bonds: ["0-1:acidbase:1", "1-2:covalent:1"] };
+// One ionic bond per hydroxide, so the salt solver splits Ca²⁺ + 2 [OH-], the
+// ions the solubility table lists. This is the only spelling that reaches the
+// hydroxide equilibria: a hand-built, imported or builder-derived graph carries
+// an `acidbase` bond on each hydroxide instead, which `acidBaseComposition`
+// splits into neutral fragments and the salt solver does not recognise, so such
+// a graph stays a molecular solid without a solubility product. The catalog
+// therefore draws the ionic graph and gives the weighed solid and the saturated
+// stock the same definition, so the two can never disagree.
+const calciumHydroxide: MoleculeDefinition = {
+	formula: "Ca(OH)₂", atoms: ["calcium", "oxygen", "hydrogen", "oxygen", "hydrogen"],
+	bonds: ["0-1:ionic:1", "1-2:covalent:1", "0-3:ionic:1", "3-4:covalent:1"],
+};
 
 function aqueous(name: string, category: ChemicalClass, solute: MoleculeDefinition, concentrationLimit = 1): CatalogChemical {
 	return { name, category, formula: solute.formula, preview: solute,
@@ -200,6 +213,36 @@ function molecular(name: string, category: ChemicalClass, formula: string, densi
 	const graph = structureGraphs[name];
 	if (!graph) return { name, category, formula };
 	return pure(name, category, { formula, ...graph }, phase, density, concentrationLimit);
+}
+
+// An acid whose graph comes from the structure library keeps that graph and
+// carries its own acid-base data, because the hand-written table in
+// `StructureManager` keys on its own SMILES spellings and the library draws the
+// same molecule with different ones. `aqueousAcidBase` travels on the
+// definition, so the catalog card, the dose, the conjugate cards and the
+// structure the molecule builder shows stay one graph.
+function libraryAcidBase(name: string, formula: string, aqueousAcidBase: AqueousAcidBase): MoleculeDefinition | undefined {
+	const graph = structureGraphs[name];
+	return graph ? { formula, ...graph, aqueousAcidBase } : undefined;
+}
+
+// A solid acid is dosed as a weighed portion and dissolves completely: the
+// model has no solubility product for a molecular crystal, so a dose smaller
+// than the saturation of the real substance dissolves, and a larger one does
+// too. `density` only sets the bulk volume the portion takes up before it
+// dissolves.
+function solidAcid(name: string, category: ChemicalClass, formula: string, density: number,
+	aqueousAcidBase: AqueousAcidBase): CatalogChemical {
+	const preview = libraryAcidBase(name, formula, aqueousAcidBase);
+	return preview ? pure(name, category, preview, "solid", density) : { name, category, formula };
+}
+
+// The same acid as a stock. `concentrationLimit` is the concentration the
+// palette offers, so a saturated stock reads like lime water or bromine water.
+function acidSolution(name: string, category: ChemicalClass, formula: string, aqueousAcidBase: AqueousAcidBase,
+	concentrationLimit: number): CatalogChemical {
+	const preview = libraryAcidBase(name, formula, aqueousAcidBase);
+	return preview ? aqueous(name, category, preview, concentrationLimit) : { name, category, formula };
 }
 
 // A gas is dosed as the volume it takes up at lab conditions, never as a mass,
@@ -595,12 +638,21 @@ export const chemicalCatalog: CatalogChemical[] = [
 	aqueous("Kalilauge (1 mol/L)", "Basen", { formula: "KOH", atoms: ["potassium", "oxygen", "hydrogen"],
 		bonds: ["0-1:acidbase:1", "1-2:covalent:1"] }, concentratedReagent.potassiumHydroxide),
 	aqueous("Ammoniaklösung", "Basen", ammonia, concentratedReagent.ammonia),
-	reference("Calciumhydroxid", "Basen", "Ca(OH)₂"),
-	reference("Kalkwasser", "Basen", "Ca(OH)₂ (aq)"),
+	// Slaked lime is a sparingly soluble salt, so the weighed portion keeps a
+	// sediment and the saturated stock is the clear solution above it. The stock
+	// carries the ideal solubility, not the 0.023 mol/L of real lime water,
+	// because the model has no CaOH⁺ ion pair and therefore no second route into
+	// solution. No concentration limit on the solid: a limited entry would be
+	// wrapped into a stock and could no longer be dosed as a solid.
+	pure("Calciumhydroxid", "Basen", calciumHydroxide, "solid", saltSolubility["Ca(OH)2"].solidDensity),
+	aqueous("Kalkwasser", "Basen", calciumHydroxide, saltSolubility["Ca(OH)2"].saturation),
 	aqueous("Salzsäure (1 mol/L)", "Anorganische Säuren", hcl, concentratedReagent.hydrochloricAcid),
 	aqueous("Schwefelsäure (1 mol/L)", "Anorganische Säuren", sulfuricAcid, concentratedReagent.sulfuricAcid),
 	aqueous("Phosphorsäure (1 mol/L)", "Anorganische Säuren", phosphoricAcid, concentratedReagent.phosphoricAcid),
-	reference("Salpetersäure", "Anorganische Säuren", "HNO₃"),
+	// Nitric acid is a strong acid and an oxidising agent; only the first role is
+	// modelled, so it doses like hydrochloric acid. pKa from the usual tables of
+	// strong mineral acids (HNO₃ −1.3).
+	acidSolution("Salpetersäure", "Anorganische Säuren", "HNO₃", { pKa: [-1.3], step: 0 }, concentratedReagent.nitricAcid),
 	pure("Wasser", "Lösungsmittel", water, "liquid", 1),
 	organic("Cyclohexan", "Kohlenwasserstoffe", covalent("C₆H₁₂", Array(6).fill("carbon"),
 		[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]], [2, 2, 2, 2, 2, 2]), 0.779),
@@ -653,9 +705,15 @@ export const chemicalCatalog: CatalogChemical[] = [
 		[0, 2, 0, 2, 0, 0, 1, 0, 1, 0, 1, 0, 1]), 1.665, "solid", concentratedReagent.citricAcid),
 	organic("Oxalsäure", "Carbonsäuren", covalent("C₂H₂O₄", ["carbon", "carbon", "oxygen", "oxygen", "oxygen", "oxygen"],
 		[[0, 1], [0, 2, 2], [0, 3], [1, 4, 2], [1, 5]], [0, 0, 0, 1, 0, 1]), 1.90, "solid", concentratedReagent.oxalicAcid),
-	reference("Benzoesäure", "Carbonsäuren", "C₇H₆O₂"),
-	reference("Sorbinsäure", "Carbonsäuren", "C₆H₈O₂"),
-	reference("Tetradecansäure (Myristinsäure)", "Carbonsäuren", "C₁₄H₂₈O₂"),
+	// Three acids the library draws but the hand-written acid-base table never
+	// spelled. Benzoic acid 4.19 is the standard value the table already carries
+	// under its own SMILES; sorbic acid 4.76 is the tabulated sorbate constant.
+	// The apparent constant of the long-chain fatty acids spreads over
+	// 4.5–5.3 depending on the method, so myristic acid takes 4.9 and stays a
+	// weak acid whose portion barely dissolves in the real world anyway.
+	solidAcid("Benzoesäure", "Carbonsäuren", "C₇H₆O₂", 1.32, { pKa: [4.19], step: 0 }),
+	solidAcid("Sorbinsäure", "Carbonsäuren", "C₆H₈O₂", 1.20, { pKa: [4.76], step: 0 }),
+	solidAcid("Tetradecansäure (Myristinsäure)", "Carbonsäuren", "C₁₄H₂₈O₂", 0.86, { pKa: [4.9], step: 0 }),
 	organic("Ethylacetat", "Ester", covalent("C₄H₈O₂", ["carbon", "carbon", "oxygen", "oxygen", "carbon", "carbon"],
 		[[0, 1], [1, 2, 2], [1, 3], [3, 4], [4, 5]], [3, 0, 0, 0, 2, 3]), 0.902),
 	molecular("Isoamylacetat", "Ester", "C₇H₁₄O₂", 0.876, "liquid"),

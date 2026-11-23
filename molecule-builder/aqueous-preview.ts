@@ -54,6 +54,16 @@ export function aqueousAcidBaseSpecies(solute: MoleculeDefinition, carboxylicAci
 	const last = solute.atoms.length - 1;
 	if (formula === "H₂SO₄") return [hydronium, conjugate([last]), conjugate([last - 1, last])];
 	if (formula === "H₃PO₄") return [hydronium, conjugate([last]), solute];
+	// An acid from the structure library brings its own acid-base data instead
+	// of a formula above. Its one proton sits on an oxygen, so removing that
+	// hydrogen and letting the dangling bond take the charge gives the
+	// conjugate base, e.g. nitric acid to nitrate. A polyprotic library acid
+	// stays without a picture until the steps can be drawn one after another.
+	if (solute.aqueousAcidBase?.pKa.length === 1) {
+		const protons = edges.filter(({ from, to, order }) => order === "1" && solute.atoms[from] === "oxygen" &&
+			solute.atoms[to] === "hydrogen").map(({ to }) => to);
+		if (protons.length === 1) return [hydronium, conjugate(protons), solute];
+	}
 	return undefined;
 }
 

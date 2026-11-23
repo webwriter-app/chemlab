@@ -16,6 +16,9 @@ assert.equal(catalogAqueousStructure("Natriumchlorid"), undefined);
 assert.equal(catalogAqueousStructure("Wasser"), undefined);
 assert.deepEqual(aqueousComponents(catalogAqueousStructure("Kalkwasser")).map(component => component.label), ["Ca²⁺", "OH⁻"]);
 assert.deepEqual(aqueousComponents(catalogAqueousStructure("Schwefelsäure (1 mol/L)")).map(component => component.label), ["H₃O⁺", "HSO₄⁻", "SO₄²⁻"]);
+// A library acid brings its own acid-base data instead of a formula branch, so
+// its preview comes from the proton on its oxygen.
+assert.deepEqual(aqueousComponents(catalogAqueousStructure("Salpetersäure")).map(component => component.label), ["H₃O⁺", "NO₃⁻", "HNO₃"]);
 
 for (const entry of structureCatalog) {
 	const weakAcid = entry.category === "Carbonsäuren" && entry.concentrationLimit;

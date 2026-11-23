@@ -15,13 +15,13 @@ Reference-only behaviour is an interim gap, not an exemption.
 | Catalog entries | 181 |
 | Entries with a builder structure | 170 |
 | Entries without a builder structure | 11 |
-| Dosed entries (solid or aqueous) | 125 |
-| Dosed salt entries | 60 |
-| Molecular reagents outside the salt pairing | 65 |
+| Dosed entries (solid or aqueous) | 131 |
+| Dosed salt entries | 62 |
+| Molecular reagents outside the salt pairing | 69 |
 | Mixtures shown by their constituents | 19 |
-| Salt entries in total | 60 |
-| Salt identities | 30 |
-| Salt identities with both forms | 30 |
+| Salt entries in total | 62 |
+| Salt identities | 31 |
+| Salt identities with both forms | 31 |
 | Salt identities with a solid form only | 0 |
 | Salt identities with an aqueous form only | 0 |
 | Salt identities with neither form | 0 |
@@ -36,6 +36,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 | BaCl₂ | Bariumchlorid | Bariumchloridlösung | — | paired | 1.38 mol/L saturation, 3.86 g/mL solid density (BaCl2) |
 | BaSO₄ | Bariumsulfat | Bariumsulfatlösung (gesättigt) | — | paired | 0.00001 mol/L saturation, Ksp 1.10e-10, 4.49 g/mL solid density (BaSO4) |
 | CH₃COONa | Natriumacetat | Natriumacetatlösung | — | paired | 4.29 mol/L saturation, 1.528 g/mL solid density (CH3COONa) |
+| Ca(OH)₂ | Calciumhydroxid | Kalkwasser | — | paired | 0.011 mol/L saturation, Ksp 6.60e-6, 2.21 g/mL solid density (Ca(OH)2) |
 | CaCO₃ | Calciumcarbonat | Calciumcarbonatlösung (gesättigt) | — | paired | 0.000058 mol/L saturation, Ksp 3.40e-9, 2.71 g/mL solid density (CaCO3) |
 | CaCl₂ | Calciumchlorid | Calciumchloridlösung | — | paired | 5.04 mol/L saturation, 2.15 g/mL solid density (CaCl2) |
 | CaSO₄ | Calciumsulfat-Dihydrat (hydrate) | Calciumsulfatlösung (gesättigt) | — | paired | 0.0069 mol/L saturation, Ksp 4.90e-5, 2.97 g/mL solid density (CaSO4) |
@@ -80,9 +81,6 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 ## Entries without a dose
 
-- Anorganische Säuren: Salpetersäure
-- Basen: Calciumhydroxid, Kalkwasser
-- Carbonsäuren: Benzoesäure, Sorbinsäure, Tetradecansäure (Myristinsäure)
 - Aldehyde: Methanal (Formaldehyd)
 - Lösungsmittel: Paraffinöl, Petrolether
 - Metalle: Kalium, Natrium
