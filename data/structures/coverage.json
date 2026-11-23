@@ -1,19 +1,19 @@
 {
   "generatedBy": "scripts/generate-structure-coverage.ts",
   "summary": {
-    "catalogEntries": 168,
-    "withStructure": 157,
+    "catalogEntries": 170,
+    "withStructure": 159,
     "withoutStructure": 11,
-    "dosed": 79,
+    "dosed": 83,
     "reagents": 47,
     "mixtures": 19,
-    "saltEntries": 47,
-    "dosedSaltEntries": 32,
+    "saltEntries": 49,
+    "dosedSaltEntries": 36,
     "saltIdentities": 30,
-    "paired": 15,
+    "paired": 17,
     "solidOnly": 0,
     "stockOnly": 2,
-    "referenceOnly": 13
+    "referenceOnly": 11
   },
   "salts": [
     {
@@ -124,19 +124,28 @@
     },
     {
       "label": "CH₃COONa",
-      "status": "reference-only",
+      "status": "paired",
       "identity": "CH3COONa",
-      "solid": [],
-      "stock": [],
-      "reference": [
+      "solid": [
         {
           "name": "Natriumacetat",
           "hydrated": false
         }
       ],
+      "stock": [
+        {
+          "name": "Natriumacetatlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
       "hydratedReference": false,
-      "solubility": null,
-      "gap": "Neither phase has a recipe for CH₃COONa; only the structural preview exists."
+      "solubility": {
+        "key": "CH3COONa",
+        "saturation": 4.29,
+        "solidDensity": 1.528
+      },
+      "gap": null
     },
     {
       "label": "CaCO₃",
@@ -460,19 +469,28 @@
     },
     {
       "label": "NH₄Cl",
-      "status": "reference-only",
+      "status": "paired",
       "identity": "NH4Cl",
-      "solid": [],
-      "stock": [],
-      "reference": [
+      "solid": [
         {
           "name": "Ammoniumchlorid",
           "hydrated": false
         }
       ],
+      "stock": [
+        {
+          "name": "Ammoniumchloridlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
       "hydratedReference": false,
-      "solubility": null,
-      "gap": "Neither phase has a recipe for NH₄Cl; only the structural preview exists."
+      "solubility": {
+        "key": "NH4Cl",
+        "saturation": 4.6,
+        "solidDensity": 1.527
+      },
+      "gap": null
     },
     {
       "label": "NaBr",
@@ -671,11 +689,24 @@
       "name": "Ammoniumchlorid",
       "category": "Salze",
       "formula": "NH₄Cl",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
+      "identity": "NH4Cl",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Ammoniumchloridlösung",
+      "category": "Salze",
+      "formula": "NH₄Cl",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
       "identity": "NH4Cl",
       "hydrated": false,
       "mixture": false
@@ -1035,11 +1066,24 @@
       "name": "Natriumacetat",
       "category": "Salze",
       "formula": "CH₃COONa",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
+      "identity": "CH3COONa",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natriumacetatlösung",
+      "category": "Salze",
+      "formula": "CH₃COONa",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
       "identity": "CH3COONa",
       "hydrated": false,
       "mixture": false

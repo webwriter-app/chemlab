@@ -250,6 +250,27 @@ const zincSulfate: MoleculeDefinition = { formula: "ZnSO₄",
 const sodiumCarbonate: MoleculeDefinition = { formula: "Na₂CO₃",
 	atoms: ["sodium", "sodium", ...carbonate.atoms],
 	bonds: ["2-3:covalent:2", "2-4:covalent:1", "2-5:covalent:1", "0-4:ionic:1", "1-5:ionic:1"] };
+// Ammonium chloride gives its one electron to chlorine, so the nitrogen keeps
+// its four hydrogens and one positive charge. The fragment serialises as [N+],
+// Kekule's ammonium form and the key of the solubility table; [NH4+] is only
+// the alias that names the ammonia family. The dry salt and the stock
+// therefore acidify through the existing ammonium speciation instead of a
+// salt-specific reaction.
+const ammoniumChloride: MoleculeDefinition = { formula: "NH₄Cl",
+	atoms: ["nitrogen", "hydrogen", "hydrogen", "hydrogen", "hydrogen", "chlorine"],
+	bonds: ["0-1:covalent:1", "0-2:covalent:1", "0-3:covalent:1", "0-4:covalent:1", "0-5:ionic:1"] };
+// Sodium acetate takes the oxyanion route of the carbonate and sulfate salts:
+// the neutral acetate skeleton keeps three hydrogens on the methyl group, and
+// the sodium gives its electron to the unprotonated oxygen, which leaves the
+// CC(=O)[O-] of the solubility table and of the acetic-acid family.
+const sodiumAcetate: MoleculeDefinition = { formula: "CH₃COONa",
+	atoms: ["sodium", "carbon", "carbon", "oxygen", "oxygen", "hydrogen", "hydrogen", "hydrogen"],
+	bonds: ["1-2:covalent:1", "2-3:covalent:2", "2-4:covalent:1", "1-5:covalent:1", "1-6:covalent:1", "1-7:covalent:1", "0-4:ionic:1"] };
+const ammonium = { formula: "NH₄⁺", atoms: ["nitrogen", "hydrogen", "hydrogen", "hydrogen", "hydrogen"],
+	bonds: ["0-1:covalent:1", "0-2:covalent:1", "0-3:covalent:1", "0-4:covalent:1"], charges: [1, 0, 0, 0, 0] };
+const acetate = { formula: "CH₃COO⁻", atoms: ["carbon", "carbon", "oxygen", "oxygen", "hydrogen", "hydrogen", "hydrogen"],
+	bonds: ["0-1:covalent:1", "1-2:covalent:2", "1-3:covalent:1", "0-4:covalent:1", "0-5:covalent:1", "0-6:covalent:1"],
+	charges: [0, 0, 0, -1, 0, 0, 0] };
 
 
 const sodiumChloride = salt("Natriumchlorid", "NaCl", "sodium", "chlorine");
@@ -297,6 +318,8 @@ export const chemicalCatalog: CatalogChemical[] = [
 	pure("Natriumsulfat", "Salze", sodiumSulfate, "solid", saltSolubility.Na2SO4.solidDensity),
 	pure("Zinksulfat", "Salze", zincSulfate, "solid", saltSolubility.ZnSO4.solidDensity),
 	pure("Kaliumnitrat", "Salze", potassiumNitrate, "solid", saltSolubility.KNO3.solidDensity),
+	pure("Ammoniumchlorid", "Salze", ammoniumChloride, "solid", saltSolubility.NH4Cl.solidDensity),
+	pure("Natriumacetat", "Salze", sodiumAcetate, "solid", saltSolubility.CH3COONa.solidDensity),
 	aqueous("Natriumchloridlösung (1 mol/L)", "Salze", sodiumChloride.preview, saltSolubility.NaCl.saturation),
 	saltSolution("Kaliumchloridlösung", "KCl", "KCl", potassium, chloride),
 	saltSolution("Kaliumbromidlösung", "KBr", "KBr", potassium, bromide),
@@ -313,6 +336,8 @@ export const chemicalCatalog: CatalogChemical[] = [
 	saltSolution("Natriumcarbonatlösung", "Na₂CO₃", "Na2CO3", sodium, carbonate, 2),
 	saltSolution("Natriumsulfatlösung", "Na₂SO₄", "Na2SO4", sodium, sulfate, 2),
 	saltSolution("Kaliumnitratlösung", "KNO₃", "KNO3", potassium, nitrate),
+	saltSolution("Ammoniumchloridlösung", "NH₄Cl", "NH4Cl", ammonium, chloride),
+	saltSolution("Natriumacetatlösung", "CH₃COONa", "CH3COONa", sodium, acetate),
 	reference("Kupfer(II)-sulfat-Pentahydrat", "Salze", "CuSO₄·5 H₂O"),
 	reference("Calciumcarbonat", "Salze", "CaCO₃"),
 	reference("Calciumsulfat-Dihydrat", "Salze", "CaSO₄·2 H₂O"),
@@ -320,8 +345,6 @@ export const chemicalCatalog: CatalogChemical[] = [
 	pure("Natriumhydrogencarbonat", "Salze", sodiumBicarbonate, "solid", saltSolubility.NaHCO3.solidDensity),
 	saltSolution("Natriumhydrogencarbonatlösung", "NaHCO₃", "NaHCO3", sodium, bicarbonate),
 	reference("Magnesiumsulfat-Heptahydrat", "Salze", "MgSO₄·7 H₂O"),
-	reference("Ammoniumchlorid", "Salze", "NH₄Cl"),
-	reference("Natriumacetat", "Salze", "CH₃COONa"),
 	reference("Natriumthiosulfat-Pentahydrat", "Salze", "Na₂S₂O₃·5 H₂O"),
 	reference("Kaliumpermanganat", "Salze", "KMnO₄"),
 	reference("Kaliumthiocyanat", "Salze", "KSCN"),

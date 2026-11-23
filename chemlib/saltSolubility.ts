@@ -23,6 +23,14 @@ export const saltSolubility: Readonly<Record<string, SaltSolubility>> = {
 	// at 25 °C (64.8 %, 1.84 g/mL). Both are approximate near 20 °C.
 	NaBr: { ions: ["[Na+]", "[Br-]"], saturation: 7.06, solidDensity: 3.2 },
 	NaI: { ions: ["[Na+]", "[I-]"], saturation: 7.95, solidDensity: 3.67 },
+	// Two freely soluble salts whose ions are weak electrolytes: 29.7 g NH₄Cl per
+	// 100 g water at 25 °C (22.9 %, 1.077 g/mL) and 46.4 g sodium acetate per
+	// 100 g water at 20 °C (31.7 %, 1.11 g/mL), converted the same way.
+	// [N+] is Kekule's form of the ammonium ion; it joins the ammonia family
+	// (alias [NH4+]), and CC(=O)[O-] joins the acetic-acid family, so both salts
+	// move the water equilibrium through the existing speciation.
+	NH4Cl: { ions: ["[N+]", "[Cl-]"], saturation: 4.6, solidDensity: 1.527 },
+	CH3COONa: { ions: ["[Na+]", "CC(=O)[O-]"], saturation: 4.29, solidDensity: 1.528 },
 	CuSO4: { ions: ["[Cu2+]", "[O-]S(=O)(=O)[O-]"], saturation: 1.29, color: 0x5289b1, solidDensity: 3.6 },
 	ZnSO4: { ions: ["[Zn2+]", "[O-]S(=O)(=O)[O-]"], saturation: 1.79, solidDensity: 3.54 },
 	FeSO4: { ions: ["[Fe2+]", "[O-]S(=O)(=O)[O-]"], saturation: 0.93, color: 0x97ab8b, solidDensity: 3.64 },

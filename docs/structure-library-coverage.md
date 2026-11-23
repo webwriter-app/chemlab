@@ -12,19 +12,19 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 | Measure | Count |
 | --- | ---: |
-| Catalog entries | 168 |
-| Entries with a builder structure | 157 |
+| Catalog entries | 170 |
+| Entries with a builder structure | 159 |
 | Entries without a builder structure | 11 |
-| Dosed entries (solid or aqueous) | 79 |
-| Dosed salt entries | 32 |
+| Dosed entries (solid or aqueous) | 83 |
+| Dosed salt entries | 36 |
 | Molecular reagents outside the salt pairing | 47 |
 | Mixtures shown by their constituents | 19 |
-| Salt entries in total | 47 |
+| Salt entries in total | 49 |
 | Salt identities | 30 |
-| Salt identities with both forms | 15 |
+| Salt identities with both forms | 17 |
 | Salt identities with a solid form only | 0 |
 | Salt identities with an aqueous form only | 2 |
-| Salt identities with neither form | 13 |
+| Salt identities with neither form | 11 |
 
 ## Salt forms
 
@@ -35,7 +35,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 | AgNO₃ | Silbernitrat | Silbernitratlösung | — | paired | 8.8 mol/L saturation, 4.35 g/mL solid density (AgNO3) |
 | BaCl₂ | Bariumchlorid | Bariumchloridlösung | — | paired | 1.38 mol/L saturation, 3.86 g/mL solid density (BaCl2) |
 | BaSO₄ | — | — | Bariumsulfat | reference only | Ksp 1.10e-10, 4.49 g/mL solid density (BaSO4) |
-| CH₃COONa | — | — | Natriumacetat | reference only | not tabulated |
+| CH₃COONa | Natriumacetat | Natriumacetatlösung | — | paired | 4.29 mol/L saturation, 1.528 g/mL solid density (CH3COONa) |
 | CaCO₃ | — | — | Calciumcarbonat | reference only | Ksp 3.40e-9, 2.71 g/mL solid density (CaCO3) |
 | CaCl₂ | Calciumchlorid | Calciumchloridlösung | — | paired | 5.04 mol/L saturation, 2.15 g/mL solid density (CaCl2) |
 | CaSO₄·2 H₂O | — | — | Calciumsulfat-Dihydrat (hydrate) | reference only | Ksp 4.90e-5, 2.97 g/mL solid density (CaSO4) |
@@ -51,7 +51,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 | KNaC₄H₄O₆ | — | — | Kaliumnatriumtartrat | reference only | not tabulated |
 | KSCN | — | — | Kaliumthiocyanat | reference only | not tabulated |
 | MgSO₄·7 H₂O | — | — | Magnesiumsulfat-Heptahydrat (hydrate) | reference only | not tabulated |
-| NH₄Cl | — | — | Ammoniumchlorid | reference only | not tabulated |
+| NH₄Cl | Ammoniumchlorid | Ammoniumchloridlösung | — | paired | 4.6 mol/L saturation, 1.527 g/mL solid density (NH4Cl) |
 | NaBr | Natriumbromid | Natriumbromidlösung | — | paired | 7.06 mol/L saturation, 3.2 g/mL solid density (NaBr) |
 | NaCl | Natriumchlorid | Natriumchloridlösung (1 mol/L) | — | paired | 5.43 mol/L saturation, 2.16 g/mL solid density (NaCl) |
 | NaHCO₃ | Natriumhydrogencarbonat | Natriumhydrogencarbonatlösung | — | paired | 1.14 mol/L saturation, 2.16 g/mL solid density (NaHCO3) |
@@ -66,7 +66,6 @@ Reference-only behaviour is an interim gap, not an exemption.
 - **(NH₄)₂SO₄** — Neither phase has a recipe for (NH₄)₂SO₄; only the structural preview exists.
 - **AgCl** — Neither phase has a recipe for AgCl; only the structural preview exists.
 - **BaSO₄** — Neither phase has a recipe for BaSO₄; only the structural preview exists.
-- **CH₃COONa** — Neither phase has a recipe for CH₃COONa; only the structural preview exists.
 - **CaCO₃** — Neither phase has a recipe for CaCO₃; only the structural preview exists.
 - **CaSO₄·2 H₂O** — Neither phase has a recipe for CaSO₄·2 H₂O; only the structural preview exists. The only solid reference is a hydrate (Calciumsulfat-Dihydrat), so a recipe needs a decided hydrate.
 - **CuSO₄** — Solid recipe missing for CuSO₄; 1.29 mol/L saturation, 3.6 g/mL solid density (CuSO4) is tabulated. The only solid reference is a hydrate (Kupfer(II)-sulfat-Pentahydrat), so a recipe needs a decided hydrate.
@@ -76,7 +75,6 @@ Reference-only behaviour is an interim gap, not an exemption.
 - **KNaC₄H₄O₆** — Neither phase has a recipe for KNaC₄H₄O₆; only the structural preview exists.
 - **KSCN** — Neither phase has a recipe for KSCN; only the structural preview exists.
 - **MgSO₄·7 H₂O** — Neither phase has a recipe for MgSO₄·7 H₂O; only the structural preview exists. The only solid reference is a hydrate (Magnesiumsulfat-Heptahydrat), so a recipe needs a decided hydrate.
-- **NH₄Cl** — Neither phase has a recipe for NH₄Cl; only the structural preview exists.
 - **Na₂S₂O₃·5 H₂O** — Neither phase has a recipe for Na₂S₂O₃·5 H₂O; only the structural preview exists. The only solid reference is a hydrate (Natriumthiosulfat-Pentahydrat), so a recipe needs a decided hydrate.
 
 ## Entries without a builder structure
@@ -95,7 +93,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 ## Entries without a dose
 
-- Salze: Ammoniumchlorid, Ammoniumsulfat, Bariumsulfat, Calciumcarbonat, Calciumsulfat-Dihydrat, Eisen(II)-sulfat-Heptahydrat, Eisen(II)-sulfid, Kaliumnatriumtartrat, Kaliumpermanganat, Kaliumthiocyanat, Kupfer(II)-sulfat-Pentahydrat, Magnesiumsulfat-Heptahydrat, Natriumacetat, Natriumthiosulfat-Pentahydrat, Silberchlorid
+- Salze: Ammoniumsulfat, Bariumsulfat, Calciumcarbonat, Calciumsulfat-Dihydrat, Eisen(II)-sulfat-Heptahydrat, Eisen(II)-sulfid, Kaliumnatriumtartrat, Kaliumpermanganat, Kaliumthiocyanat, Kupfer(II)-sulfat-Pentahydrat, Magnesiumsulfat-Heptahydrat, Natriumthiosulfat-Pentahydrat, Silberchlorid
 - Anorganische Säuren: Salpetersäure
 - Basen: Calciumhydroxid, Kalkwasser
 - Carbonsäuren: Benzoesäure, Sorbinsäure, Tetradecansäure (Myristinsäure)
