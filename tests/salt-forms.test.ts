@@ -15,6 +15,8 @@ const pairs = [
 	{ solid: "Kaliumchlorid", stock: "Kaliumchloridlösung", table: "KCl", cation: "[K+]", anion: "[Cl-]" },
 	{ solid: "Kaliumbromid", stock: "Kaliumbromidlösung", table: "KBr", cation: "[K+]", anion: "[Br-]" },
 	{ solid: "Kaliumiodid", stock: "Kaliumiodidlösung", table: "KI", cation: "[K+]", anion: "[I-]" },
+	{ solid: "Natriumbromid", stock: "Natriumbromidlösung", table: "NaBr", cation: "[Na+]", anion: "[Br-]" },
+	{ solid: "Natriumiodid", stock: "Natriumiodidlösung", table: "NaI", cation: "[Na+]", anion: "[I-]" },
 	{ solid: "Kaliumnitrat", stock: "Kaliumnitratlösung", table: "KNO3", cation: "[K+]", anion: "[O-][N+](=O)[O-]" },
 ];
 
@@ -63,7 +65,7 @@ function near(actual: number, expected: number, tolerance = 1e-9) {
 	assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} vs ${expected}`);
 }
 
-test("the potassium halides and potassium nitrate are dosed as solid and as stock", () => {
+test("the alkali halides and potassium nitrate are dosed as solid and as stock", () => {
 	for (const { solid, stock, table } of pairs) {
 		const dry = entry(solid);
 		assert.ok(dry.recipe, `${solid} has a recipe`);
@@ -78,7 +80,7 @@ test("the potassium halides and potassium nitrate are dosed as solid and as stoc
 	}
 });
 
-test("a dry potassium salt dissolves into the same solution as its stock", () => {
+test("a dry alkali salt dissolves into the same solution as its stock", () => {
 	for (const { solid, stock, table, cation, anion } of pairs) {
 		const fromSolid = mix(dose("Wasser", 100, 1), dryDose(solid, 0.01));
 		assert.equal(solidMoles(fromSolid, table), 0, `${solid} dissolves at 0.1 mol/L`);

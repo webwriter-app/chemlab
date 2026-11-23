@@ -111,8 +111,11 @@ function reference(name: string, category: ChemicalClass, formula: string, previ
 	return { name, category, formula, preview };
 }
 
-function salt(name: string, formula: string, metal: string, anion: string, density: number): CatalogChemical {
-	return pure(name, "Salze", { formula, atoms: [metal, anion], bonds: ["0-1:ionic:1"] }, "solid", density);
+// The solubility table is the single source for a dosed salt: its key is the
+// catalog formula, so a formula unit, its solid density and its saturation
+// cannot drift apart.
+function salt(name: string, formula: string, metal: string, anion: string): CatalogChemical {
+	return pure(name, "Salze", { formula, atoms: [metal, anion], bonds: ["0-1:ionic:1"] }, "solid", saltSolubility[formula].solidDensity);
 }
 
 // Use explicit hydrogens, as in the existing molecule editor.
@@ -249,7 +252,7 @@ const sodiumCarbonate: MoleculeDefinition = { formula: "Na₂CO₃",
 	bonds: ["2-3:covalent:2", "2-4:covalent:1", "2-5:covalent:1", "0-4:ionic:1", "1-5:ionic:1"] };
 
 
-const sodiumChloride = salt("Natriumchlorid", "NaCl", "sodium", "chlorine", 2.16);
+const sodiumChloride = salt("Natriumchlorid", "NaCl", "sodium", "chlorine");
 const aceticAcid = molecule("C₂H₄O₂", ["carbon", "carbon", "oxygen", "oxygen"],
 	["0-1:covalent:1", "1-2:covalent:2", "1-3:covalent:1"], [3, 0, 0, 1]);
 
@@ -277,11 +280,11 @@ export const chemicalCatalog: CatalogChemical[] = [
 	reference("Kohlenstoffdioxid", "Nichtmetalle und Gase", carbonDioxide.formula, carbonDioxide),
 	reference("Chlor", "Nichtmetalle und Gase", "Cl₂"),
 	sodiumChloride,
-	salt("Kaliumchlorid", "KCl", "potassium", "chlorine", 1.98),
-	salt("Natriumbromid", "NaBr", "sodium", "bromine", 3.20),
-	salt("Kaliumbromid", "KBr", "potassium", "bromine", 2.75),
-	salt("Natriumiodid", "NaI", "sodium", "iodine", 3.67),
-	salt("Kaliumiodid", "KI", "potassium", "iodine", 3.12),
+	salt("Kaliumchlorid", "KCl", "potassium", "chlorine"),
+	salt("Natriumbromid", "NaBr", "sodium", "bromine"),
+	salt("Kaliumbromid", "KBr", "potassium", "bromine"),
+	salt("Natriumiodid", "NaI", "sodium", "iodine"),
+	salt("Kaliumiodid", "KI", "potassium", "iodine"),
 	// Every dry salt here has a stock further down under the same analytical
 	// formula. The solubility table decides the rest: a saturated salt keeps a
 	// reservoir at its tabulated concentration, a freely soluble one dissolves
@@ -298,6 +301,8 @@ export const chemicalCatalog: CatalogChemical[] = [
 	saltSolution("Kaliumchloridlösung", "KCl", "KCl", potassium, chloride),
 	saltSolution("Kaliumbromidlösung", "KBr", "KBr", potassium, bromide),
 	saltSolution("Kaliumiodidlösung", "KI", "KI", potassium, iodide),
+	saltSolution("Natriumbromidlösung", "NaBr", "NaBr", sodium, bromide),
+	saltSolution("Natriumiodidlösung", "NaI", "NaI", sodium, iodide),
 	saltSolution("Kupfer(II)-sulfatlösung", "CuSO₄", "CuSO4", ion("Cu²⁺", "copper", 2), sulfate),
 	saltSolution("Zinksulfatlösung", "ZnSO₄", "ZnSO4", ion("Zn²⁺", "zinc", 2), sulfate),
 	saltSolution("Eisen(II)-sulfatlösung", "FeSO₄", "FeSO4", ion("Fe²⁺", "iron", 2), sulfate),

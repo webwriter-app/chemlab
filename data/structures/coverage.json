@@ -1,17 +1,17 @@
 {
   "generatedBy": "scripts/generate-structure-coverage.ts",
   "summary": {
-    "catalogEntries": 166,
-    "withStructure": 155,
+    "catalogEntries": 168,
+    "withStructure": 157,
     "withoutStructure": 11,
-    "dosed": 77,
+    "dosed": 79,
     "reagents": 47,
     "mixtures": 19,
-    "saltEntries": 45,
-    "dosedSaltEntries": 30,
+    "saltEntries": 47,
+    "dosedSaltEntries": 32,
     "saltIdentities": 30,
-    "paired": 13,
-    "solidOnly": 2,
+    "paired": 15,
+    "solidOnly": 0,
     "stockOnly": 2,
     "referenceOnly": 13
   },
@@ -476,7 +476,7 @@
     },
     {
       "label": "NaBr",
-      "status": "solid-only",
+      "status": "paired",
       "identity": "NaBr",
       "solid": [
         {
@@ -484,11 +484,20 @@
           "hydrated": false
         }
       ],
-      "stock": [],
+      "stock": [
+        {
+          "name": "Natriumbromidlösung",
+          "hydrated": false
+        }
+      ],
       "reference": [],
       "hydratedReference": false,
-      "solubility": null,
-      "gap": "Aqueous stock missing for NaBr and chemlib/saltSolubility.ts has no entry for it."
+      "solubility": {
+        "key": "NaBr",
+        "saturation": 7.06,
+        "solidDensity": 3.2
+      },
+      "gap": null
     },
     {
       "label": "NaCl",
@@ -542,7 +551,7 @@
     },
     {
       "label": "NaI",
-      "status": "solid-only",
+      "status": "paired",
       "identity": "NaI",
       "solid": [
         {
@@ -550,11 +559,20 @@
           "hydrated": false
         }
       ],
-      "stock": [],
+      "stock": [
+        {
+          "name": "Natriumiodidlösung",
+          "hydrated": false
+        }
+      ],
       "reference": [],
       "hydratedReference": false,
-      "solubility": null,
-      "gap": "Aqueous stock missing for NaI and chemlib/saltSolubility.ts has no entry for it."
+      "solubility": {
+        "key": "NaI",
+        "saturation": 7.95,
+        "solidDensity": 3.67
+      },
+      "gap": null
     },
     {
       "label": "Na₂CO₃",
@@ -1040,6 +1058,19 @@
       "mixture": false
     },
     {
+      "name": "Natriumbromidlösung",
+      "category": "Salze",
+      "formula": "NaBr",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "NaBr",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
       "name": "Natriumcarbonat",
       "category": "Salze",
       "formula": "Na₂CO₃",
@@ -1126,6 +1157,19 @@
       "dosable": true,
       "dosed": true,
       "structures": 1,
+      "identity": "NaI",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natriumiodidlösung",
+      "category": "Salze",
+      "formula": "NaI",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
       "identity": "NaI",
       "hydrated": false,
       "mixture": false

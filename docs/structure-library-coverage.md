@@ -12,17 +12,17 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 | Measure | Count |
 | --- | ---: |
-| Catalog entries | 166 |
-| Entries with a builder structure | 155 |
+| Catalog entries | 168 |
+| Entries with a builder structure | 157 |
 | Entries without a builder structure | 11 |
-| Dosed entries (solid or aqueous) | 77 |
-| Dosed salt entries | 30 |
+| Dosed entries (solid or aqueous) | 79 |
+| Dosed salt entries | 32 |
 | Molecular reagents outside the salt pairing | 47 |
 | Mixtures shown by their constituents | 19 |
-| Salt entries in total | 45 |
+| Salt entries in total | 47 |
 | Salt identities | 30 |
-| Salt identities with both forms | 13 |
-| Salt identities with a solid form only | 2 |
+| Salt identities with both forms | 15 |
+| Salt identities with a solid form only | 0 |
 | Salt identities with an aqueous form only | 2 |
 | Salt identities with neither form | 13 |
 
@@ -52,10 +52,10 @@ Reference-only behaviour is an interim gap, not an exemption.
 | KSCN | — | — | Kaliumthiocyanat | reference only | not tabulated |
 | MgSO₄·7 H₂O | — | — | Magnesiumsulfat-Heptahydrat (hydrate) | reference only | not tabulated |
 | NH₄Cl | — | — | Ammoniumchlorid | reference only | not tabulated |
-| NaBr | Natriumbromid | — | — | solid only | not tabulated |
+| NaBr | Natriumbromid | Natriumbromidlösung | — | paired | 7.06 mol/L saturation, 3.2 g/mL solid density (NaBr) |
 | NaCl | Natriumchlorid | Natriumchloridlösung (1 mol/L) | — | paired | 5.43 mol/L saturation, 2.16 g/mL solid density (NaCl) |
 | NaHCO₃ | Natriumhydrogencarbonat | Natriumhydrogencarbonatlösung | — | paired | 1.14 mol/L saturation, 2.16 g/mL solid density (NaHCO3) |
-| NaI | Natriumiodid | — | — | solid only | not tabulated |
+| NaI | Natriumiodid | Natriumiodidlösung | — | paired | 7.95 mol/L saturation, 3.67 g/mL solid density (NaI) |
 | Na₂CO₃ | Natriumcarbonat | Natriumcarbonatlösung | — | paired | 2.01 mol/L saturation, 2.54 g/mL solid density (Na2CO3) |
 | Na₂SO₄ | Natriumsulfat | Natriumsulfatlösung | — | paired | 1.3 mol/L saturation, 2.66 g/mL solid density (Na2SO4) |
 | Na₂S₂O₃·5 H₂O | — | — | Natriumthiosulfat-Pentahydrat (hydrate) | reference only | not tabulated |
@@ -77,8 +77,6 @@ Reference-only behaviour is an interim gap, not an exemption.
 - **KSCN** — Neither phase has a recipe for KSCN; only the structural preview exists.
 - **MgSO₄·7 H₂O** — Neither phase has a recipe for MgSO₄·7 H₂O; only the structural preview exists. The only solid reference is a hydrate (Magnesiumsulfat-Heptahydrat), so a recipe needs a decided hydrate.
 - **NH₄Cl** — Neither phase has a recipe for NH₄Cl; only the structural preview exists.
-- **NaBr** — Aqueous stock missing for NaBr and chemlib/saltSolubility.ts has no entry for it.
-- **NaI** — Aqueous stock missing for NaI and chemlib/saltSolubility.ts has no entry for it.
 - **Na₂S₂O₃·5 H₂O** — Neither phase has a recipe for Na₂S₂O₃·5 H₂O; only the structural preview exists. The only solid reference is a hydrate (Natriumthiosulfat-Pentahydrat), so a recipe needs a decided hydrate.
 
 ## Entries without a builder structure

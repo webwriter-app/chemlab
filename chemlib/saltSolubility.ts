@@ -18,6 +18,11 @@ export const saltSolubility: Readonly<Record<string, SaltSolubility>> = {
 	KCl: { ions: ["[K+]", "[Cl-]"], saturation: 4.02, solidDensity: 1.98 },
 	KBr: { ions: ["[K+]", "[Br-]"], saturation: 4.57, solidDensity: 2.75 },
 	KI: { ions: ["[K+]", "[I-]"], saturation: 6.09, solidDensity: 3.12 },
+	// Saturated mass fractions converted with the density of that same solution:
+	// NaBr 90.5 g per 100 g water (47.5 %, 1.53 g/mL), NaI 184 g per 100 g water
+	// at 25 °C (64.8 %, 1.84 g/mL). Both are approximate near 20 °C.
+	NaBr: { ions: ["[Na+]", "[Br-]"], saturation: 7.06, solidDensity: 3.2 },
+	NaI: { ions: ["[Na+]", "[I-]"], saturation: 7.95, solidDensity: 3.67 },
 	CuSO4: { ions: ["[Cu2+]", "[O-]S(=O)(=O)[O-]"], saturation: 1.29, color: 0x5289b1, solidDensity: 3.6 },
 	ZnSO4: { ions: ["[Zn2+]", "[O-]S(=O)(=O)[O-]"], saturation: 1.79, solidDensity: 3.54 },
 	FeSO4: { ions: ["[Fe2+]", "[O-]S(=O)(=O)[O-]"], saturation: 0.93, color: 0x97ab8b, solidDensity: 3.64 },
