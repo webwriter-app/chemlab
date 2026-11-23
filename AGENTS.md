@@ -15,18 +15,18 @@ npm ci
 npx @webwriter/build dev
 ```
 
-Der WebWriter-Build schreibt nach `dist/widgets/` und überwacht Änderungen. Der Nutzer importiert das Widget manuell in WebWriter. Dort werden Layout und Interaktionen im tatsächlichen Einbettungskontext geprüft. Das Widget ist standardmäßig 1000 px hoch und lässt sich außerhalb des Vollbilds in beiden Achsen an der Ecke vergrößern und verkleinern. Vorlagen liegen unter `snippets/` für Titration, Titrationstypen, Batterie und Elektrochemie. Eine neue Vorlage erscheint erst in WebWriter, wenn sie zusätzlich in `package.json` unter `exports` eingetragen und in `editingConfig` mit einem `label` versehen ist; die Datei allein im Ordner `snippets/` wird nicht gefunden. Die frühere Vite-Testseite ist ein historisches Hilfsmittel.
+Der WebWriter-Build schreibt nach `dist/widgets/` und überwacht Änderungen. Für den Release im Repository-Stamm `npx @webwriter/build` ohne Unterbefehl ausführen und danach `node scripts/minify-widgets.mjs`; erst dieser Stand wird committet. Der Builder hat keinen Minify-Schalter, deshalb verkleinert das Skript die fertigen Bundles nachträglich und lässt die Lizenzhinweise stehen. Der Nutzer importiert das Widget manuell in WebWriter. Dort werden Layout und Interaktionen im tatsächlichen Einbettungskontext geprüft. Das Widget ist standardmäßig 1000 px hoch und lässt sich außerhalb des Vollbilds in beiden Achsen an der Ecke vergrößern und verkleinern. Vorlagen liegen unter `snippets/` für Titration, Titrationstypen, Batterie und Elektrochemie. Eine neue Vorlage erscheint erst in WebWriter, wenn sie zusätzlich in `package.json` unter `exports` eingetragen und in `editingConfig` mit einem `label` versehen ist; die Datei allein im Ordner `snippets/` wird nicht gefunden. Die frühere Vite-Testseite ist ein historisches Hilfsmittel.
 
-Der Widget-Build verarbeitet den TypeScript-Quellcode in `chemlib/` direkt. `kekule` ist eine Abhängigkeit im zentralen `package.json`. Änderungen an der Simulation laufen durch denselben Build wie Änderungen am Widget.
+Der Widget-Build verarbeitet den TypeScript-Quellcode in `chemlib/` direkt. `kekule` ist eine Abhängigkeit im zentralen `package.json`; `chemlib/kekule.ts` importiert nur die beiden modularen Einstiege `kekule/mod/io` und `kekule/mod/render`, weil Molekülbau, SMILES-Ausgabe und Strukturzeichnung nichts anderes brauchen. Wer eine weitere Kekulé-Funktion verwendet, ergänzt dort den passenden Einstieg statt das Gesamtpaket. Änderungen an der Simulation laufen durch denselben Build wie Änderungen am Widget.
 
 Für die statische Prüfung im Repository-Stamm `npx tsc --noEmit` ausführen. Bei Layoutfehlern das Panel über die normale Bedienung öffnen und Breiten, Überläufe und Grid-Spalten im Originalcontainer prüfen. Erzwungene CSS-Größen im Browser können den Fehler verdecken.
 
-Die automatisierten Prüfungen für RC, Messhistorie, Elektrochemie und Säure-Base laufen im Repository-Stamm. Kekule bleibt beim Test ein externes Modul, damit Node den ESM-Einstieg verwendet; `tests/dom-shim.mjs` stellt die Browserumgebung bereit, die Kekule beim Initialisieren liest. Ohne das Shim bricht jeder Test ab, der `chemlib` lädt.
+Die automatisierten Prüfungen für RC, Messhistorie, Elektrochemie und Säure-Base laufen im Repository-Stamm. Kekule bleibt beim Test ein externes Modul (`--external:'kekule*'` deckt auch die modularen Einstiege ab), damit Node den ESM-Einstieg verwendet; `tests/dom-shim.mjs` stellt die Browserumgebung bereit, die Kekule beim Initialisieren liest. Ohne das Shim bricht jeder Test ab, der `chemlib` lädt.
 
 ```sh
 for test_file in tests/*.test.ts; do
     node_modules/.bin/esbuild "$test_file" --bundle --platform=node --format=esm \
-        --external:kekule --outfile=.test-bundle.mjs || exit 1
+        --external:'kekule*' --outfile=.test-bundle.mjs || exit 1
     node --import ./tests/dom-shim.mjs .test-bundle.mjs || exit 1
 done
 rm -f .test-bundle.mjs
@@ -85,7 +85,7 @@ rm -f .test-bundle.mjs
 - Der Messspeicher hält die jüngsten fünf Minuten in voller Auflösung. Ein regulärer Rohpunkt umfasst zwei Float64-Werte (16 Byte je belegtem Platz zuzüglich Pufferreserve). Pro gemeinsam genutztem Achsenpaar werden ältere Daten in einem Sekundenraster auf erste, letzte und Extrempunkte beider Achsen sowie Lückengrenzen verdichtet. Charts desselben Achsenpaars teilen die Historie auch bei vertauschten Achsen. Nach dem Löschen des letzten Charts für dieses Paar wird sein Archiv freigegeben. Ältere ungenutzte Daten verfallen. Ein letzter alter Zustand bleibt als Fortschreibewert für später gemessene Daten erhalten.
 - Ein RC-Abschnitt speichert das analytische Modell, die signierten Gerätefaktoren und die verstrichene Laufzeit. Die letzten fünf Minuten lassen sich auch nach dem Stopp mit bis zu 81 Punkten für den schnellen Kurvenabschnitt rekonstruieren. Bei der Archivierung eines verwendeten Abschnitts bleiben diese Punkte erhalten. Die Kurve endet spätestens mit dem beobachteten Abschnitt. Daten und Diagramme gehören zur geöffneten Widget-Sitzung.
 
-Die Aufzeichnung, die Diagrammauswahl und die RC-Wiedergabe wurden einzeln umgesetzt und geprüft. `tests/measurement-history.test.ts` prüft Rückblick, Lücken, Verdichtung und das Replay eines kurzen Impulses. Für den Einbettungstest in WebWriter eine Daniell-Zelle ohne Brücke starten, stoppen und erst dann Strom gegen Zeit anzeigen. Außerdem eine Titration als pH gegen abgegebenes Bürettenvolumen auftragen und die Achsenwahl mit Maus, Tastatur und Touch ausprobieren.
+Die Aufzeichnung, die Diagrammauswahl und die RC-Wiedergabe wurden einzeln umgesetzt und geprüft. `tests/measurement-history.test.ts` prüft Rückblick, Lücken, Verdichtung und das Replay eines kurzen Impulses. `tests/diagram-chart.test.ts` hält die registrierten Chart.js-Teile gegen die Diagrammkonfiguration. Für den Einbettungstest in WebWriter eine Daniell-Zelle ohne Brücke starten, stoppen und erst dann Strom gegen Zeit anzeigen. Außerdem eine Titration als pH gegen abgegebenes Bürettenvolumen auftragen und die Achsenwahl mit Maus, Tastatur und Touch ausprobieren.
 
 ## Elektrochemie: Stand der Auditbefunde
 

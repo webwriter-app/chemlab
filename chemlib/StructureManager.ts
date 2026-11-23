@@ -1,7 +1,7 @@
 import { Molecule } from "./Molecule";
 import { Atom } from "./Atom";
 import { Mixture } from "./Mixture";
-import { Kekule } from "kekule";
+import { Kekule } from "./kekule";
 
 import { lookupCompound } from "./PubChem";
 

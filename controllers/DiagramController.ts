@@ -1,13 +1,13 @@
 import { html, nothing, type ReactiveController } from "lit";
 import { createRef, ref, type Ref } from "lit/directives/ref.js";
 import { repeat } from "lit/directives/repeat.js";
-import Chart from "chart.js/auto";
 import { axisTrimSelection, diagramData, moveTrimHandle, trimmedAxisRange, TRIM_STEPS,
 	type AxisRange, type AxisRanges, type ChartAxis, type TrimHandle } from "../data/diagramRanges";
 import { TIME_CHANNEL, type MeasurementChannel, type PlotPoint } from "../data/measurementHistory";
 import { axisId, componentKey, type DiagramAxis } from "../data/diagramSources";
 import { titrationMarkerKinds, titrationPoints, type TitrationMarkerKind } from "../data/titrationPoints";
 import type { ChemLab } from "../webwriter-chemlab";
+import { Chart } from "./diagramChart";
 
 type AxisDrag = {
 	pointer: number;
