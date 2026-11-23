@@ -6,7 +6,7 @@ import { ElementData } from "./ElementData";
 import { ElectricComponent, EComponentType } from "./ElectricComponent";
 import { ComponentManager } from "./ComponentManager";
 import { AcidBase, AcidBaseSystem } from "./AcidBase";
-import { saltSolubility } from "./saltSolubility";
+import { saltSolubility, saltIonList } from "./saltSolubility";
 import { complexEquilibrium } from "./complexes";
 import { evolvedGases, gasForSmiles } from "./gasEvolution";
 import {
@@ -38,9 +38,15 @@ import {
 } from "./conductivity";
 
 const saltEquilibria = Object.entries(saltSolubility).map(([formula, data]) => {
+	// `cation` and `anion` remain the pair the hydroxide equilibria read; `ions`
+	// carries every ion of the formula unit, which a double salt needs.
 	const [cation, anion, cations = 1, anions = 1] = data.ions;
-	const product = data.ksp ?? (cations * data.saturation) ** cations * (anions * data.saturation) ** anions;
-	return { formula, cation, anion, cations, anions, product };
+	const ions = saltIonList(data.ions);
+	const saturation = data.saturation ?? 0;
+	const product = data.ksp ?? ions.reduce((value, { count }) =>
+		value * (count * saturation) ** count, 1);
+	return { formula, cation, anion, cations, anions, ions, product,
+		ionCount: ions.reduce((sum, { count }) => sum + count, 0) };
 }).sort((a, b) => a.product - b.product);
 
 
@@ -106,8 +112,21 @@ function hydroxideMolecule(): Molecule {
 	return hydroxideIon;
 }
 
-function saltIonProduct(positive: number, negative: number, cations: number, anions: number): number {
-	return Math.max(0, positive) ** cations * Math.max(0, negative) ** anions;
+/**
+ * Solubility product from one concentration per ion of the formula unit and
+ * the count of each. Every ion enters with its own exponent, so a double salt
+ * multiplies the terms of both cations into the same product.
+ *
+ * @param {readonly number[]} concentrations - concentration per ion, mol/L
+ * @param {readonly number[]} counts - copies of each ion per formula unit
+ * @returns {number} the product that the entry's Ksp is compared against
+ */
+function saltIonProduct(concentrations: readonly number[], counts: readonly number[]): number {
+	let product = 1;
+	for (let index = 0; index < counts.length; index++) {
+		product *= Math.max(0, concentrations[index] ?? 0) ** counts[index];
+	}
+	return product;
 }
 
 /**
@@ -439,6 +458,28 @@ function explicitAcidState(key: string, step: number): Molecule | undefined {
 	return structure;
 }
 
+/**
+ * Aliases the acid-base data lists for one protonation step of a family.
+ *
+ * A species can be written in more than one SMILES: the hand-written form and
+ * the form Kekulé generates for the same structure. The solubility table names
+ * one of them, so the salt loop has to know every name a step goes by.
+ *
+ * @param {string} key - data key of the acid family
+ * @param {number} step - protonation step, counted from the fully protonated form
+ * @returns {string[]} the SMILES the data lists for that step
+ */
+function conjugateAliases(key: string, step: number): string[] {
+	const entry: object = StructureManager._moleculeData["acidbase"][key];
+	const list = entry?.["conj"];
+	if (!Array.isArray(list)) return [];
+	// A base is stored in its neutral form, so its first conjugate is the
+	// protonated acid at step 0 rather than the first deprotonation.
+	const offset: number = entry["conjOffset"] ?? (entry["base"] ? 0 : 1);
+	const aliases = list[step - offset];
+	return Array.isArray(aliases) ? aliases : aliases ? [aliases] : [];
+}
+
 const waterIonStructures = new Map<number, Molecule>();
 function waterIonStructure(charge: number): Molecule {
 	let structure = waterIonStructures.get(charge);
@@ -605,11 +646,12 @@ export abstract class Simulation {
 		}
 	}
 
-	private static makeSolidSalt(formula: string, ions: readonly [Molecule, Molecule], counts: readonly [number, number]): Molecule {
+	private static makeSolidSalt(formula: string, ions: readonly Molecule[], counts: readonly number[]): Molecule {
 		const solid = StructureManager.newMolecule();
 		solid.name = solid.solidSaltFormula = formula;
 		solid.solidSaltIons = ions;
 		ions.forEach((ion, index) => {
+			if (!ion) return;
 			for (let unit = 0; unit < counts[index]; unit++) {
 				const atoms = new Map(ion._atoms.map((atom) => [atom._id,
 					solid.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), atom.getIonicCharge())._id]));
@@ -628,11 +670,12 @@ export abstract class Simulation {
 	 * with the dissolved and settled amounts.
 	 */
 	private static bulkLitresPerMol(
-		{ formula, cations, anions }: { formula: string; cations: number; anions: number },
-		cationIon: Molecule,
-		anionIon: Molecule
+		formula: string,
+		ions: readonly Molecule[],
+		counts: readonly number[]
 	): number {
-		const molarMass = cationIon.getTotMolMass() * cations + anionIon.getTotMolMass() * anions;
+		const molarMass = ions.reduce((sum, ion, index) =>
+			ion ? sum + ion.getTotMolMass() * counts[index] : sum, 0);
 		const density = saltSolubility[formula]?.solidDensity ?? 2.2;
 		return molarMass / (density * 1000);
 	}
@@ -694,11 +737,13 @@ export abstract class Simulation {
 	}
 
 	private static registerSolidSalt(mix: Mixture, molecule: Molecule, ions: SaltFragment[]): boolean {
-		const cation = ions.find(({ ion }) => ion._totalCharge > 0)?.ion;
-		const anion = ions.find(({ ion }) => ion._totalCharge < 0)?.ion;
-		if (!cation || !anion) return false;
-		const salt = saltEquilibria.find((entry) =>
-			entry.cation === cation.smilesString && entry.anion === anion.smilesString);
+		const dissolved = ions.filter(({ ion }) => !StructureManager.isWater(ion));
+		if (!dissolved.some(({ ion }) => ion._totalCharge > 0) ||
+			!dissolved.some(({ ion }) => ion._totalCharge < 0)) return false;
+		// Match the whole set of ions, not just the first cation and anion: a
+		// two-ion row must never absorb a double salt and drop its second cation.
+		const salt = saltEquilibria.find((entry) => entry.ions.length === dissolved.length &&
+			entry.ions.every(({ smiles }) => dissolved.some(({ ion }) => ion.smilesString === smiles)));
 		if (!salt) return false;
 		const amount = mix._molProperties[molecule._id + "n"];
 		mix.remMolecule(molecule._id);
@@ -707,13 +752,17 @@ export abstract class Simulation {
 		// dosed bulk volume gives way to the reservoir's own.
 		const water = ions.find(({ ion }) => StructureManager.isWater(ion));
 		if (water) mix.addMolecule(water.ion, amount * water.count);
+		const parts = salt.ions.map(({ smiles, count }) => ({
+			molecule: dissolved.find(({ ion }) => ion.smilesString === smiles).ion, count }));
+		const formulaIons = parts.map(({ molecule: ion }) => ion);
+		const counts = parts.map(({ count }) => count);
 		if (molecule.solidBulkLitresPerMol !== undefined) {
 			mix.addedVolume = Math.max(0, mix.addedVolume -
 				molecule.solidBulkLitresPerMol * amount +
-				this.bulkLitresPerMol(salt, cation, anion) * amount);
+				this.bulkLitresPerMol(salt.formula, formulaIons, counts) * amount);
 		}
 		const existing = mix._activeMolecules.find((item) => item.solidSaltFormula === salt.formula);
-		mix.addMolecule(existing ?? this.makeSolidSalt(salt.formula, [cation, anion], [salt.cations, salt.anions]), amount);
+		mix.addMolecule(existing ?? this.makeSolidSalt(salt.formula, formulaIons, counts), amount);
 		return true;
 	}
 
@@ -766,9 +815,12 @@ export abstract class Simulation {
 			for (let step = 1; step < fractions.length; step++) {
 				const molecule = this.familySpecies(family, step);
 				if (!molecule || molecule._totalCharge >= 0) continue;
-				const smiles = molecule.smilesString;
-				const key = family.key === "O=C(O)C(O)=O" && step === 2 ? "[O-]C(=O)C(=O)[O-]" : smiles;
-				if (!saltEquilibria.some(({ anion }) => anion === key)) continue;
+				// The table names an anion by the form its stock is stored with,
+				// which can differ from the structure generated at this step. Any
+				// name of this step that the table carries can key the ion.
+				const key = [molecule.smilesString, ...conjugateAliases(family.key, step)]
+					.find((name) => saltEquilibria.some(({ anion }) => anion === name));
+				if (!key) continue;
 				ions.set(key, {
 					molecule,
 					get concentration() { return total() * fractions[step]; },
@@ -843,21 +895,20 @@ export abstract class Simulation {
 			.map((item) => [item.solidSaltFormula, item]));
 		let changed = false;
 		let ions = this.saltIons(mix);
-		for (const { formula, cation, anion, cations, anions, product } of otherSaltEquilibria) {
-			const positive = ions.get(cation);
-			const negative = ions.get(anion);
+		for (const { formula, ions: species, product } of otherSaltEquilibria) {
+			// One entry per ion of the formula unit, in table order. A double
+			// salt therefore moves both of its cations with the same amount.
+			const parts = species.map(({ smiles, count }) => ({ ion: ions.get(smiles), count }));
+			const counts = species.map(({ count }) => count);
 			const solid = solids.get(formula);
-			if ((!positive || !negative) && !solid) continue;
-			const ionProduct = (delta: number) => saltIonProduct(
-				positive ? positive.concentrationAt(delta * cations) : 0,
-				negative ? negative.concentrationAt(delta * anions) : 0,
-				cations, anions);
+			if (!solid && parts.some(({ ion }) => !ion)) continue;
+			const ionProduct = (delta: number) => saltIonProduct(parts.map(({ ion, count }) =>
+				ion ? ion.concentrationAt(delta * count) : 0), counts);
 			const current = ionProduct(0);
 			if (Math.abs(current - product) <= product * 1e-8) continue;
 			const available = solid ? mix._molProperties[solid._id + "n"] / volume : 0;
-			const removable = Math.min(
-				positive ? positive.removable / cations : Infinity,
-				negative ? negative.removable / anions : Infinity);
+			const removable = Math.min(...parts.map(({ ion, count }) =>
+				ion ? ion.removable / count : Infinity));
 			let low = current > product ? -removable : 0;
 			let high = current > product ? 0 : available;
 			if (!(low < high)) continue;
@@ -872,28 +923,26 @@ export abstract class Simulation {
 			}
 			const amount = delta * volume;
 			if (Math.abs(amount) <= 1e-14) continue;
+			// The solid carries one structure per ion, so a species that the
+			// solution has run out of still has a structure to deposit.
+			const structures = parts.map(({ ion }, index) => ion?.molecule ?? solid?.solidSaltIons?.[index]);
 			if (amount > 0) {
-				const positiveIon = positive?.molecule ?? solid.solidSaltIons[0];
-				const negativeIon = negative?.molecule ?? solid.solidSaltIons[1];
-				if (positive) positive.change(amount * cations / volume);
-				else mix.addMolecule(positiveIon, amount * cations);
-				if (negative) negative.change(amount * anions / volume);
-				else mix.addMolecule(negativeIon, amount * anions);
+				parts.forEach(({ ion, count }, index) => {
+					if (ion) ion.change(amount * count / volume);
+					else if (structures[index]) mix.addMolecule(structures[index], amount * count);
+				});
 				mix.changeMolecule(solid._id, -amount);
 				if (!mix._molProperties[solid._id + "n"]) solids.delete(formula);
 				// the dissolved bulk no longer occupies its solid volume
 				mix.addedVolume = Math.max(0, mix.addedVolume -
-					this.bulkLitresPerMol({ formula, cations, anions }, positiveIon, negativeIon) * amount);
+					this.bulkLitresPerMol(formula, structures, counts) * amount);
 			} else {
-				positive.change(amount * cations / volume);
-				negative.change(amount * anions / volume);
-				const deposit = solid ?? this.makeSolidSalt(formula,
-					[positive.molecule, negative.molecule], [cations, anions]);
+				parts.forEach(({ ion, count }) => ion.change(amount * count / volume));
+				const deposit = solid ?? this.makeSolidSalt(formula, structures, counts);
 				mix.addMolecule(deposit, -amount);
 				solids.set(formula, deposit);
 				// newly settled solid takes up its bulk volume again
-				mix.addedVolume += this.bulkLitresPerMol({ formula, cations, anions },
-					positive.molecule, negative.molecule) * -amount;
+				mix.addedVolume += this.bulkLitresPerMol(formula, structures, counts) * -amount;
 			}
 			changed = true;
 			ions = this.saltIons(mix);
@@ -946,8 +995,8 @@ export abstract class Simulation {
 			if (Math.abs(next - dissolved) <= total * 1e-9 &&
 				Math.abs(nextSolid - solidMol) <= total * volume * 1e-9) continue;
 
-			const bulk = this.bulkLitresPerMol({ formula, cations, anions },
-				family.representative, hydroxideMolecule());
+			const bulk = this.bulkLitresPerMol(formula,
+				[family.representative, hydroxideMolecule()], [cations, anions]);
 			this.changeFamily(mix, family, (next - dissolved) * volume);
 			if (nextSolid > 0) {
 				if (solid) mix.changeMolecule(solid._id, nextSolid - solidMol);
@@ -970,14 +1019,14 @@ export abstract class Simulation {
 		if (!mix._isSolution || !(volume > 0)) return;
 		const ions = this.saltIons(mix);
 		let closest: { formula: string; fraction: number } | undefined;
-		for (const { formula, cation, anion, cations, anions, product } of saltEquilibria) {
-			const positive = ions.get(cation)?.concentration;
-			const negative = ions.get(anion)?.concentration;
-			if (!(positive > 0) || !(negative > 0)) continue;
+		for (const { formula, ions: species, product, ionCount } of saltEquilibria) {
+			const concentrations = species.map(({ smiles }) => ions.get(smiles)?.concentration);
+			if (concentrations.some((value) => !(value > 0))) continue;
 			// Use a concentration-scale fraction: scaling all ion concentrations
 			// by one half scales the gauge by one half, regardless of stoichiometry.
-			const ratio = saltIonProduct(positive, negative, cations, anions) / product;
-			const fraction = Math.min(1, ratio ** (1 / (cations + anions)));
+			const ratio = saltIonProduct(concentrations,
+				species.map(({ count }) => count)) / product;
+			const fraction = Math.min(1, ratio ** (1 / ionCount));
 			if (!closest || fraction > closest.fraction) closest = { formula, fraction };
 		}
 		return closest;
@@ -3285,12 +3334,14 @@ export abstract class Simulation {
 		sMix.changeMolecule(cMolecule._id, -amount);
 		// release the bulk volume of the dissolved portion, keeping the dosed
 		// solid volume consistent with what actually stays solid
-		const cation = ions.find(({ ion }) => ion._totalCharge > 0)?.ion;
-		const anion = ions.find(({ ion }) => ion._totalCharge < 0)?.ion;
-		const entry = cation && anion ? saltEquilibria.find(({ cation: c, anion: a }) =>
-			cation.smilesString === c && anion.smilesString === a) : undefined;
-		const bulk = cMolecule.solidBulkLitresPerMol ??
-			(entry ? this.bulkLitresPerMol(entry, cation, anion) : 0);
+		const dissolved = ions.filter(({ ion }) => !StructureManager.isWater(ion));
+		const entry = saltEquilibria.find((salt) => salt.ions.length === dissolved.length &&
+			salt.ions.every(({ smiles }) => dissolved.some(({ ion }) => ion.smilesString === smiles)));
+		const bulk = cMolecule.solidBulkLitresPerMol ?? (entry
+			? this.bulkLitresPerMol(entry.formula,
+				entry.ions.map(({ smiles }) => dissolved.find(({ ion }) => ion.smilesString === smiles).ion),
+				entry.ions.map(({ count }) => count))
+			: 0);
 		if (bulk > 0) sMix.addedVolume = Math.max(0, sMix.addedVolume - bulk * amount);
 		return amount > 1e-5;
 	}

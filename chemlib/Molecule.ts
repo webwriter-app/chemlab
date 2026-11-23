@@ -15,7 +15,12 @@ class Molecule {
 	dosedAsSolid?: boolean;
 	/** Formula of a solid phase tracked by the salt equilibrium. */
 	solidSaltFormula?: string;
-	solidSaltIons?: readonly [Molecule, Molecule];
+	/**
+	 * One structure per ion of the formula unit, in the order of the solubility
+	 * table. A double salt keeps both of its cations here, so dissolving it
+	 * returns the same charge balance it was dosed with.
+	 */
+	solidSaltIons?: readonly Molecule[];
 	/**
 	 * Bulk volume of one mole of this dosed solid in litres, from the density of
 	 * its own recipe. A hydrate occupies more volume than the anhydrous salt of

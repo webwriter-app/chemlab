@@ -8,7 +8,8 @@ type Constituent = {
 	solid?: true;
 	/** Bulk volume of one mole of this dosed solid in litres, see `Molecule`. */
 	bulk?: number;
-	precipitate?: { formula: string; ions: [MoleculeDefinition, MoleculeDefinition] };
+	/** One structure per ion of the solid's formula unit, in table order. */
+	precipitate?: { formula: string; ions: MoleculeDefinition[] };
 };
 
 export type MixtureRecipe = {
@@ -58,7 +59,7 @@ export function snapshotMixture(mix: Mixture): MixtureRecipe | undefined {
 			bulk: molecule.dosedAsSolid && molecule.solidBulkLitresPerMol
 				? molecule.solidBulkLitresPerMol : undefined,
 			precipitate: molecule.solidSaltFormula && ions
-				? { formula: molecule.solidSaltFormula, ions: [describeMolecule(ions[0]), describeMolecule(ions[1])] }
+				? { formula: molecule.solidSaltFormula, ions: ions.map(describeMolecule) }
 				: undefined,
 		});
 	}
@@ -104,7 +105,7 @@ function isMixtureRecipe(value: unknown): value is MixtureRecipe {
 			(part.solid === undefined || part.solid === true) &&
 			(part.bulk === undefined || (Number.isFinite(part.bulk) && part.bulk > 0)) &&
 			(part.precipitate === undefined || (!!part.precipitate && typeof part.precipitate.formula === "string" &&
-				Array.isArray(part.precipitate.ions) && part.precipitate.ions.length === 2 &&
+				Array.isArray(part.precipitate.ions) && part.precipitate.ions.length >= 2 &&
 				part.precipitate.ions.every(isDefinition))));
 }
 
@@ -129,7 +130,7 @@ export function prepareMixtureDose(recipe: MixtureRecipe, load: (definition: Mol
 			if (bulk) model.solidBulkLitresPerMol = bulk;
 			if (precipitate) {
 				model.solidSaltFormula = precipitate.formula;
-				model.solidSaltIons = [load(precipitate.ions[0]), load(precipitate.ions[1])];
+				model.solidSaltIons = precipitate.ions.map(ion => load(ion));
 			}
 			return { model, moles };
 		});

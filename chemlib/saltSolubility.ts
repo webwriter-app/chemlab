@@ -1,4 +1,43 @@
-type SaltIons = readonly [cation: string, anion: string, cations?: number, anions?: number];
+/**
+ * The ions of one salt formula unit for the solubility table. The cation and
+ * the anion keep the first two slots because the hydroxide equilibria read the
+ * anion there; a double salt such as potassium sodium tartrate carries its
+ * second cation in the fifth slot. No entry needs a third ion, and an anion
+ * that does not fit a single charge remains unrepresented rather than wrong.
+ */
+type SaltIons = readonly [
+	cation: string,
+	anion: string,
+	cations?: number,
+	anions?: number,
+	extraCation?: string,
+	extraCations?: number,
+];
+
+/** One ion of a formula unit, with how many copies of it the unit contains. */
+export interface SaltIonCount {
+	/** SMILES of the ion, as the mixture stores it. */
+	smiles: string;
+	/** Number of these ions per formula unit. */
+	count: number;
+}
+
+/**
+ * The ions of one formula unit in table order, with their counts.
+ *
+ * The salt loop needs every ion of a salt, not just the pair that a 1:1 salt
+ * has: potassium sodium tartrate dissociates into two cations and one anion,
+ * and dropping either cation would break the charge balance of the solution.
+ *
+ * @param {SaltIons} ions - the table entry
+ * @returns {SaltIonCount[]} the ions that carry the formula unit
+ */
+export function saltIonList(ions: SaltIons): SaltIonCount[] {
+	const [cation, anion, cations = 1, anions = 1, extraCation, extraCations = 1] = ions;
+	const list: SaltIonCount[] = [{ smiles: cation, count: cations }, { smiles: anion, count: anions }];
+	if (extraCation) list.push({ smiles: extraCation, count: extraCations });
+	return list;
+}
 
 interface SaltSolubility {
 	ions: SaltIons;
