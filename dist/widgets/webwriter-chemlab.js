@@ -182524,6 +182524,26 @@ var SimulationController = class {
     this.host.collectDiagramSuggestions();
     this.host.requestUpdate();
   }
+  /**
+   * Marks an experiment as running without giving it its own chemistry
+   * clock.
+   *
+   * An electrical instrument keeps its activation marker, which the canvas,
+   * the settings panel and the diagram suggestions read, but the circuit it
+   * hangs in owns the clock: a supply with a parallel voltmeter used to
+   * advance the same cell once per switched-on instrument.
+   *
+   * @param {string} name - task name of the instrument
+   * @param {(elapsedMs: number) => boolean} [live] - keeps the clock of a live transient, which books no chemistry
+   */
+  markRunning(name2, live) {
+    this.startTask(name2, (elapsedMs) => {
+      live?.(elapsedMs);
+    });
+    live?.(0);
+    this.host.collectDiagramSuggestions();
+    this.host.requestUpdate();
+  }
   startFixedStepTask(name2, step, live) {
     let remainingMs = 0;
     this.startTask(name2, (elapsedMs) => {
@@ -182556,6 +182576,77 @@ var SimulationController = class {
     for (const name2 of this.tasks.keys()) {
       if (isExperimentTask(name2)) this.stopTask(name2);
     }
+  }
+};
+
+// controllers/CircuitSchedule.ts
+var CircuitSchedule = class {
+  /**
+   * @param {CircuitClock} clock - the scheduler the clocks run on
+   * @param {() => Iterable<ElectricComponent>} observers - instruments that are switched on right now
+   * @param {(device: ElectricComponent) => (string | undefined)} identityOf - identity of the circuit a device is wired into
+   * @param {(device: ElectricComponent) => void} advance - advances one circuit by one simulation step
+   */
+  constructor(clock, observers, identityOf, advance) {
+    this.clock = clock;
+    this.observers = observers;
+    this.identityOf = identityOf;
+    this.advance = advance;
+  }
+  runners = /* @__PURE__ */ new Map();
+  sequence = 0;
+  /**
+   * Brings the clocks in line with the instruments that are switched on.
+   *
+   * Runs when an instrument starts or stops, when a lead or a bridge is
+   * placed, and before every step. A circuit that kept its identity keeps its
+   * clock, so a second instrument joins the phase the chemistry is already
+   * running in instead of restarting it.
+   */
+  reconcile() {
+    const groups = /* @__PURE__ */ new Map();
+    for (const device of this.observers()) {
+      const identity = this.identityOf(device);
+      if (identity === void 0) continue;
+      const group = groups.get(identity);
+      if (group) group.push(device);
+      else groups.set(identity, [device]);
+    }
+    for (const runner of [...this.runners.values()]) {
+      if (!groups.has(runner.identity)) this.close(runner);
+    }
+    for (const [identity, devices] of groups) {
+      const runner = this.runners.get(identity);
+      if (runner) {
+        runner.observers = devices;
+        continue;
+      }
+      const created = { identity, task: `echemCircuit${++this.sequence}`, observers: devices };
+      this.runners.set(identity, created);
+      this.clock.startFixedStepTask(created.task, () => this.step(created));
+    }
+  }
+  /**
+   * Drops every clock. The layout the clocks belonged to is replaced, so the
+   * activation markers are gone with it.
+   */
+  clear() {
+    for (const runner of [...this.runners.values()]) this.close(runner);
+  }
+  /** Number of circuits that are advancing, for tracing and tests. */
+  get clockCount() {
+    return this.runners.size;
+  }
+  close(runner) {
+    if (this.runners.get(runner.identity) === runner) this.runners.delete(runner.identity);
+    this.clock.stopTask(runner.task);
+  }
+  step(runner) {
+    this.reconcile();
+    if (this.runners.get(runner.identity) !== runner) return;
+    const device = runner.observers[0];
+    if (!device) return;
+    this.advance(device);
   }
 };
 
@@ -190781,6 +190872,7 @@ var CanvasController = class _CanvasController {
       const sprite = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
       if (sprite) this.attachDevice(eComp, sprite, changed);
     }
+    this.host.reconcileCircuits();
   }
   updateUnwiredElectrode(sprite) {
     if (!(sprite instanceof ElectricDeviceView)) return;
@@ -191339,6 +191431,17 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
      * @type {SimulationController}
      */
     __publicField(this, "simulation", new SimulationController(this));
+    /**
+     * the one clock per physical circuit that advances its chemistry
+     *
+     * @type {CircuitSchedule}
+     */
+    __publicField(this, "circuits", new CircuitSchedule(
+      this.simulation,
+      () => this.activeInstruments(),
+      (device) => this.circuitIdentity(device),
+      (device) => this.advanceCircuit(device)
+    ));
     __publicField(this, "surfaceElectrodes", /* @__PURE__ */ new Set());
     __publicField(this, "capacitorCharges", /* @__PURE__ */ new Map());
     __publicField(this, "rcReadouts", /* @__PURE__ */ new Map());
@@ -191533,6 +191636,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
         this.closeAmountMenu();
         this.hideFillMeter();
         this.simulation.stopExperiments();
+        this.circuits.clear();
         this.capacitorCharges.clear();
         this.rcReadouts.clear();
         this.curr_obj = null;
@@ -191787,11 +191891,12 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   }
   /**
    * Advances a connected electrochemical experiment by one simulation step.
+   * The circuit clock calls this once per circuit and step; a live
+   * transient is kept out by {@link advanceCircuit}.
    */
   stepElectrochemistry(source3) {
     const circuitComps = this.operatingCircuit(source3);
     if (circuitComps) {
-      if (circuitComps.some((device) => this.hasRCReadout(device))) return;
       const [first, second, ...devices] = circuitComps;
       const firstMix = first._connectedMix;
       const secondMix = second._connectedMix;
@@ -191864,16 +191969,56 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
   rcCellKey(first, second) {
     return [first, second].sort((a6, b4) => a6._id - b4._id).map((electrode) => `${electrode._id}/${electrode._connectedMix?._id}`).join(":");
   }
+  /** The instruments that are switched on right now, one marker each. */
+  activeInstruments() {
+    return this.allEComponents.filter((device) => (device._type === "source" /* Source */ || isPassiveMeter(device)) && this.simulation.hasTask(`echem${device._type}:${device._id}`));
+  }
+  /**
+   * The physical circuit a device belongs to, as a value that changes when
+   * the wiring does: the members it reaches and the vessel each of them
+   * dips into. A moved electrode, a new lead or a placed bridge re-keys the
+   * circuit, and its clock starts a fresh phase.
+   *
+   * @private
+   * @param {chemlib.ElectricComponent} device - a device of the circuit
+   * @returns {?string} the identity, or undefined for a device that hangs in nothing
+   */
+  circuitIdentity(device) {
+    const members = ComponentManager.connectedDevices(device);
+    if (members.length < 2) return void 0;
+    return members.map((member) => `${member._type}:${member._id}/${member._connectedMix?._id ?? ""}`).sort().join(",");
+  }
+  /**
+   * One simulation step of a circuit, driven by its clock instead of by
+   * every instrument that hangs in it. A live transient books its own
+   * analytic readings, so the chemistry waits for it.
+   *
+   * @private
+   * @param {chemlib.ElectricComponent} device - an active instrument of the circuit
+   */
+  advanceCircuit(device) {
+    if (ComponentManager.connectedDevices(device).some((member) => this.hasRCReadout(member))) return;
+    this.stepElectrochemistry(device);
+  }
+  /**
+   * Brings the circuit clocks in line with the instruments that are
+   * switched on. Called whenever a lead, a bridge, a device or an
+   * instrument changes, so a clock never outlives the circuit it belongs
+   * to.
+   */
+  reconcileCircuits() {
+    this.circuits.reconcile();
+  }
   startElectricalExperiment(name2, meter2) {
-    const step = () => this.stepElectrochemistry(meter2);
     if (!isPassiveMeter(meter2) || !meter2.rcSettings) {
-      this.simulation.startExperiment(name2, step);
+      this.simulation.markRunning(name2);
+      this.circuits.reconcile();
       return;
     }
     let sinceRefresh = RC_UPDATE_MS;
     let circuitKey;
     let active;
-    this.simulation.startExperiment(name2, step, (elapsedMs) => {
+    this.simulation.markRunning(name2, (elapsedMs) => {
       if (active && !active.settled) {
         active.elapsed += elapsedMs / 1e3;
         active.advanceRecording(active.elapsed);
@@ -191950,6 +192095,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       }
       return true;
     });
+    this.circuits.reconcile();
   }
   /**
    * The devices of a network that carries no cell: a supply wired straight
@@ -192975,6 +193121,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.canvas.removeSprite(sprite);
       this.simulation.stopTask("transfer" + sprite.label);
       this.simulation.stopTask("echem" + sprite.label);
+      this.circuits.reconcile();
       this._sendxAPiStatement("removed", sprite.label);
     }
     for (const component of affectedElectrical) {
@@ -192995,6 +193142,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const ticker = "echem" + label;
     if (!this.simulation.hasTask(ticker)) return;
     this.simulation.stopTask(ticker);
+    this.circuits.reconcile();
     this.canvas.setDeviceActive(component, false);
     this._sendxAPiStatement("completed", ticker);
     this.requestUpdate();
@@ -193166,6 +193314,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       (a6, b4) => !alreadyWired(a6, b4) && this.connectElectrical(a6, b4, void 0, void 0, false)
     );
     this.canvas.attachDevices();
+    this.circuits.reconcile();
     const added = entry && this.allChemComponents.find((component) => component._id === entry["id"] && component._type === entry["type"]);
     const device = entry && this.allEComponents.find((component) => component._id === entry["id"] && component._type === entry["type"]);
     this.measurements.record(
@@ -193202,6 +193351,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
     const sprite = this.canvas.addComponentView(cable, false);
     this.canvas.refreshDeviceDisplay(from2);
     this.canvas.refreshDeviceDisplay(to2);
+    this.circuits.reconcile();
     if (!authored) return true;
     this.authorCable(cable, sprite);
     this.syncAuthoredConnections(from2);
@@ -193318,6 +193468,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.syncAuthoredConnections(partner);
       this.canvas.refreshDeviceDisplay(component);
       this.canvas.refreshDeviceDisplay(partner);
+      this.circuits.reconcile();
       this._sendxAPiStatement(
         "removed",
         "eCon " + component._type + component._id,
@@ -194924,6 +195075,7 @@ var _ChemLab = class _ChemLab extends (_a2 = LitElementWw, _containerDiv_dec = [
       this.canvas.setDeviceActive(device, !active);
       if (active) {
         this.simulation.stopTask(task);
+        this.circuits.reconcile();
         this.clearEChemReadings(device);
       } else this.startElectricalExperiment(task, device);
       this._updatePopup();

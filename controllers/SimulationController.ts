@@ -76,6 +76,25 @@ export class SimulationController implements ReactiveController {
 		this.host.requestUpdate();
 	}
 
+	/**
+	 * Marks an experiment as running without giving it its own chemistry
+	 * clock.
+	 *
+	 * An electrical instrument keeps its activation marker, which the canvas,
+	 * the settings panel and the diagram suggestions read, but the circuit it
+	 * hangs in owns the clock: a supply with a parallel voltmeter used to
+	 * advance the same cell once per switched-on instrument.
+	 *
+	 * @param {string} name - task name of the instrument
+	 * @param {(elapsedMs: number) => boolean} [live] - keeps the clock of a live transient, which books no chemistry
+	 */
+	markRunning(name: string, live?: (elapsedMs: number) => boolean): void {
+		this.startTask(name, (elapsedMs) => { live?.(elapsedMs); });
+		live?.(0);
+		this.host.collectDiagramSuggestions();
+		this.host.requestUpdate();
+	}
+
 	startFixedStepTask(name: string, step: () => void, live?: (elapsedMs: number) => boolean): void {
 		let remainingMs = 0;
 		this.startTask(name, (elapsedMs) => {

@@ -58,6 +58,7 @@ import { axisId, componentKey, DiagramSuggestionQueue, selectedDiagramSourceGrou
 import { TIME_CHANNEL, type MeasurementChannel } from "./data/measurementHistory";
 import { MeasurementRecorder } from "./controllers/MeasurementRecorder";
 import { SimulationController } from "./controllers/SimulationController";
+import { CircuitSchedule } from "./controllers/CircuitSchedule";
 import { componentGraphic, componentVariant, componentVariants, type ComponentVariant, type PaletteComponent } from "./data/componentGraphics";
 import { renderComponentPaletteIcon } from "./data/componentPaletteIcons";
 import { chemicalCatalog, chemicalCatalogGroups, solutionDisplayNames, withConcentration, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
@@ -374,6 +375,17 @@ export class ChemLab extends LitElementWw {
 	 * @type {SimulationController}
 	 */
 	simulation = new SimulationController(this);
+	/**
+	 * the one clock per physical circuit that advances its chemistry
+	 *
+	 * @type {CircuitSchedule}
+	 */
+	readonly circuits = new CircuitSchedule(
+		this.simulation,
+		() => this.activeInstruments(),
+		(device) => this.circuitIdentity(device),
+		(device) => this.advanceCircuit(device),
+	);
 	private readonly surfaceElectrodes = new Set<chemlib.ElectricComponent>();
 	private readonly capacitorCharges = new Map<string, number>();
 	private readonly rcReadouts = new Map<chemlib.ElectricComponent, RCReadout>();
@@ -706,6 +718,7 @@ export class ChemLab extends LitElementWw {
 				this.closeAmountMenu();
 				this.hideFillMeter();
 				this.simulation.stopExperiments();
+				this.circuits.clear();
 				this.capacitorCharges.clear();
 				this.rcReadouts.clear();
 				this.curr_obj = null;
@@ -998,11 +1011,12 @@ export class ChemLab extends LitElementWw {
 
 	/**
 	 * Advances a connected electrochemical experiment by one simulation step.
+	 * The circuit clock calls this once per circuit and step; a live
+	 * transient is kept out by {@link advanceCircuit}.
 	 */
 	private stepElectrochemistry(source: chemlib.ElectricComponent): void {
 		const circuitComps = this.operatingCircuit(source);
 		if (circuitComps) {
-			if (circuitComps.some((device) => this.hasRCReadout(device))) return;
 			const [first, second, ...devices] = circuitComps;
 			const firstMix = first._connectedMix;
 			const secondMix = second._connectedMix;
@@ -1087,10 +1101,57 @@ export class ChemLab extends LitElementWw {
 			.map(electrode => `${electrode._id}/${electrode._connectedMix?._id}`).join(":");
 	}
 
+	/** The instruments that are switched on right now, one marker each. */
+	private activeInstruments(): chemlib.ElectricComponent[] {
+		return this.allEComponents.filter((device) =>
+			(device._type === chemlib.EComponentType.Source || isPassiveMeter(device)) &&
+			this.simulation.hasTask(`echem${device._type}:${device._id}`));
+	}
+
+	/**
+	 * The physical circuit a device belongs to, as a value that changes when
+	 * the wiring does: the members it reaches and the vessel each of them
+	 * dips into. A moved electrode, a new lead or a placed bridge re-keys the
+	 * circuit, and its clock starts a fresh phase.
+	 *
+	 * @private
+	 * @param {chemlib.ElectricComponent} device - a device of the circuit
+	 * @returns {?string} the identity, or undefined for a device that hangs in nothing
+	 */
+	private circuitIdentity(device: chemlib.ElectricComponent): string | undefined {
+		const members = chemlib.ComponentManager.connectedDevices(device);
+		if (members.length < 2) return undefined;
+		return members.map((member) => `${member._type}:${member._id}/${member._connectedMix?._id ?? ""}`)
+			.sort().join(",");
+	}
+
+	/**
+	 * One simulation step of a circuit, driven by its clock instead of by
+	 * every instrument that hangs in it. A live transient books its own
+	 * analytic readings, so the chemistry waits for it.
+	 *
+	 * @private
+	 * @param {chemlib.ElectricComponent} device - an active instrument of the circuit
+	 */
+	private advanceCircuit(device: chemlib.ElectricComponent): void {
+		if (chemlib.ComponentManager.connectedDevices(device).some((member) => this.hasRCReadout(member))) return;
+		this.stepElectrochemistry(device);
+	}
+
+	/**
+	 * Brings the circuit clocks in line with the instruments that are
+	 * switched on. Called whenever a lead, a bridge, a device or an
+	 * instrument changes, so a clock never outlives the circuit it belongs
+	 * to.
+	 */
+	reconcileCircuits(): void {
+		this.circuits.reconcile();
+	}
+
 	private startElectricalExperiment(name: string, meter: chemlib.ElectricComponent): void {
-		const step = () => this.stepElectrochemistry(meter);
 		if (!isPassiveMeter(meter) || !meter.rcSettings) {
-			this.simulation.startExperiment(name, step);
+			this.simulation.markRunning(name);
+			this.circuits.reconcile();
 			return;
 		}
 
@@ -1107,7 +1168,7 @@ export class ChemLab extends LitElementWw {
 			settled?: boolean;
 		} | undefined;
 
-		this.simulation.startExperiment(name, step, (elapsedMs) => {
+		this.simulation.markRunning(name, (elapsedMs) => {
 			if (active && !active.settled) {
 				active.elapsed += elapsedMs / 1000;
 				active.advanceRecording(active.elapsed);
@@ -1176,6 +1237,7 @@ export class ChemLab extends LitElementWw {
 			}
 			return true;
 		});
+		this.circuits.reconcile();
 	}
 
 	/**
@@ -2296,6 +2358,7 @@ export class ChemLab extends LitElementWw {
 			this.canvas.removeSprite(sprite);
 			this.simulation.stopTask("transfer" + sprite.label);
 			this.simulation.stopTask("echem" + sprite.label);
+			this.circuits.reconcile();
 			this._sendxAPiStatement("removed", sprite.label);
 		}
 		for (const component of affectedElectrical) {
@@ -2320,6 +2383,7 @@ export class ChemLab extends LitElementWw {
 		const ticker = "echem" + label;
 		if (!this.simulation.hasTask(ticker)) return;
 		this.simulation.stopTask(ticker);
+		this.circuits.reconcile();
 		this.canvas.setDeviceActive(component, false);
 		this._sendxAPiStatement("completed", ticker);
 		this.requestUpdate();
@@ -2530,6 +2594,7 @@ export class ChemLab extends LitElementWw {
 				this.connectElectrical(a, b, undefined, undefined, false)
 		);
 		this.canvas.attachDevices();
+		this.circuits.reconcile();
 		const added = entry && this.allChemComponents.find(component => component._id === entry["id"] && component._type === entry["type"]);
 		const device = entry && this.allEComponents.find(component => component._id === entry["id"] && component._type === entry["type"]);
 		this.measurements.record(entry ? added ? [added] : [] : this.allChemComponents,
@@ -2574,6 +2639,8 @@ export class ChemLab extends LitElementWw {
 		// The plugs of both devices change from free to occupied.
 		this.canvas.refreshDeviceDisplay(from);
 		this.canvas.refreshDeviceDisplay(to);
+		// The two devices are one circuit now, so their clocks merge.
+		this.circuits.reconcile();
 		if (!authored) return true;
 		this.authorCable(cable, sprite);
 		this.syncAuthoredConnections(from);
@@ -2689,6 +2756,8 @@ export class ChemLab extends LitElementWw {
 			// The freed plug has to read as free again.
 			this.canvas.refreshDeviceDisplay(component);
 			this.canvas.refreshDeviceDisplay(partner);
+			// A lead that came off splits the circuit in two.
+			this.circuits.reconcile();
 			this._sendxAPiStatement(
 				"removed",
 				"eCon " + component._type + component._id,
@@ -4339,6 +4408,7 @@ export class ChemLab extends LitElementWw {
 			this.canvas.setDeviceActive(device, !active);
 			if (active) {
 				this.simulation.stopTask(task);
+				this.circuits.reconcile();
 				this.clearEChemReadings(device);
 			} else this.startElectricalExperiment(task, device);
 			this._updatePopup();

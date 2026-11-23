@@ -1475,6 +1475,9 @@ export class CanvasController implements ReactiveController {
 			const sprite = this.spritesByLabel.get(`${eComp._type}:${eComp._id}`);
 			if (sprite) this.attachDevice(eComp, sprite, changed);
 		}
+		// Which vessel a device sits in is part of the circuit it belongs to,
+		// so a moved electrode or a raised liquid level re-keys the clock.
+		this.host.reconcileCircuits();
 	}
 
 	private updateUnwiredElectrode(sprite: PIXI.Container): void {
