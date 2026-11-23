@@ -93,6 +93,11 @@ Der [Elektrochemie-Audit](docs/electrochemistry-audit.md#follow-up-review) dokum
 
 Offene Modellerweiterungen sind Aktivitätskoeffizienten, räumlicher Ionentransport und Flüssigkeitsübergangspotentiale, ortsabhängige Referenzmessung, Teilbedeckung im verdrahteten Modell und potentialabhängige Passivierung. Die Gassammlung setzt voraus, dass seit dem Anbringen des Rohrs entwichene Gasphase in das Rohr gelangt.
 
+### Zukunftsidee: Potentiometrie
+
+- Als Einstieg ist eine kombinierte Glas-pH-Elektrode für Säure-Base-Titrationen vorgesehen. Sie nutzt Benetzungserkennung, pH-Löser und Messhistorie. Bei eingetauchter Sonde berechnet sie aus dem Gefäß-pH eine ideale Spannung mit rund 59,16 mV Steigungsbetrag je pH-Einheit bei 25 °C. Die Messung liest das Gleichgewicht ohne Stoffumsatz. Der Diagrammvorschlag zeigt mV gegen abgegebenes Bürettenvolumen. Eine Testvorlage gehört zum Einstieg, grob zwei bis drei Entwicklungstage. [WHO-Messverfahren](https://digicollections.net/phint/en/d/Jb/7.1.13.html)
+- Spätere Ausbaustufen sind die Zweipunktkalibrierung mit Puffern, temperaturabhängige Empfindlichkeit und Endpunkterkennung aus der Spannungskurve. Als zweiter Versuch bietet sich die Chlorid-Titration mit AgNO₃ und einer Silber-Indikatorelektrode an, da das AgCl-Gleichgewicht bereits modelliert ist. Allgemeine ionenselektive und Redox-Potentiometrie brauchen zusätzliche Daten zu Ionenaktivitäten, Querempfindlichkeit und den beteiligten Gleichgewichten. [IUPAC zur Potentiometrie](https://goldbook.iupac.org/terms/view/09127)
+
 ## Säure-Base-Gleichgewicht
 
 - Bekannte konjugierte Spezies werden auch ohne eingelagertes Elternmolekül ihrer Familie zugeordnet. Acetat, Formiat, Propionat, Lactat und Oxalat haben hinterlegte Aliasformen. Glycin verteilt sich auf Glycinium, Zwitterion und Glycinat. Borsäure zeigt Tetrahydroxyborat als konjugierte Spezies.
