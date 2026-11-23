@@ -48,15 +48,21 @@ export const saltSolubility: Readonly<Record<string, SaltSolubility>> = {
 	// Dilute-solution products near 25 °C. Solve with concentrations as
 	// activities. The concentrated salts above use empirical model thresholds.
 	// https://openstax.org/books/chemistry-2e/pages/j-solubility-products
-	AgCl: { ions: ["[Ag+]", "[Cl-]"], ksp: 1.8e-10, solidDensity: 5.56 },
+	// The three sparingly soluble salts below also carry a `saturation`, because
+	// the palette needs a concentration limit for their stock. It is the ideal
+	// solubility from the Ksp, rounded down to two significant digits so the
+	// saturated stock stays on the safe side of its own solubility product:
+	// AgCl 1.34e-5, BaSO4 1.05e-5 and CaCO3 5.83e-5 mol/L. Only the stock's
+	// limit reads it; `saltEquilibria` keeps the Ksp as the product.
+	AgCl: { ions: ["[Ag+]", "[Cl-]"], ksp: 1.8e-10, saturation: 1.3e-5, solidDensity: 5.56 },
 	AgBr: { ions: ["[Ag+]", "[Br-]"], ksp: 5.0e-13, color: 0xe7dbad, solidDensity: 6.47 },
 	AgI: { ions: ["[Ag+]", "[I-]"], ksp: 8.3e-17, color: 0xd6bd65, solidDensity: 5.68 },
-	BaSO4: { ions: ["[Ba2+]", "[O-]S(=O)(=O)[O-]"], ksp: 1.1e-10, solidDensity: 4.49 },
+	BaSO4: { ions: ["[Ba2+]", "[O-]S(=O)(=O)[O-]"], ksp: 1.1e-10, saturation: 1.0e-5, solidDensity: 4.49 },
 	CaSO4: { ions: ["[Ca2+]", "[O-]S(=O)(=O)[O-]"], ksp: 4.9e-5, solidDensity: 2.97 },
 	// Calcium oxalate monohydrate, approximate dilute-solution product at 25 °C.
 	// https://doi.org/10.3390/cryst10100924
 	CaC2O4: { ions: ["[Ca2+]", "[O-]C(=O)C(=O)[O-]"], ksp: 1.7e-9 },
-	CaCO3: { ions: ["[Ca2+]", "[O-]C(=O)[O-]"], ksp: 3.4e-9, solidDensity: 2.71 },
+	CaCO3: { ions: ["[Ca2+]", "[O-]C(=O)[O-]"], ksp: 3.4e-9, saturation: 5.8e-5, solidDensity: 2.71 },
 	BaCO3: { ions: ["[Ba2+]", "[O-]C(=O)[O-]"], ksp: 2.6e-9, solidDensity: 4.29 },
 	Ag2SO4: { ions: ["[Ag+]", "[O-]S(=O)(=O)[O-]", 2, 1], ksp: 1.2e-5 },
 

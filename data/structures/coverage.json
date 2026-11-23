@@ -1,19 +1,19 @@
 {
   "generatedBy": "scripts/generate-structure-coverage.ts",
   "summary": {
-    "catalogEntries": 170,
-    "withStructure": 159,
+    "catalogEntries": 173,
+    "withStructure": 162,
     "withoutStructure": 11,
-    "dosed": 83,
+    "dosed": 89,
     "reagents": 47,
     "mixtures": 19,
-    "saltEntries": 49,
-    "dosedSaltEntries": 36,
+    "saltEntries": 52,
+    "dosedSaltEntries": 42,
     "saltIdentities": 30,
-    "paired": 17,
+    "paired": 20,
     "solidOnly": 0,
     "stockOnly": 2,
-    "referenceOnly": 11
+    "referenceOnly": 8
   },
   "salts": [
     {
@@ -34,23 +34,29 @@
     },
     {
       "label": "AgCl",
-      "status": "reference-only",
+      "status": "paired",
       "identity": "AgCl",
-      "solid": [],
-      "stock": [],
-      "reference": [
+      "solid": [
         {
           "name": "Silberchlorid",
           "hydrated": false
         }
       ],
+      "stock": [
+        {
+          "name": "Silberchloridlösung (gesättigt)",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
       "hydratedReference": false,
       "solubility": {
         "key": "AgCl",
+        "saturation": 0.000013,
         "ksp": 1.8e-10,
         "solidDensity": 5.56
       },
-      "gap": "Neither phase has a recipe for AgCl; only the structural preview exists."
+      "gap": null
     },
     {
       "label": "AgNO₃",
@@ -104,23 +110,29 @@
     },
     {
       "label": "BaSO₄",
-      "status": "reference-only",
+      "status": "paired",
       "identity": "BaSO4",
-      "solid": [],
-      "stock": [],
-      "reference": [
+      "solid": [
         {
           "name": "Bariumsulfat",
           "hydrated": false
         }
       ],
+      "stock": [
+        {
+          "name": "Bariumsulfatlösung (gesättigt)",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
       "hydratedReference": false,
       "solubility": {
         "key": "BaSO4",
+        "saturation": 0.00001,
         "ksp": 1.1e-10,
         "solidDensity": 4.49
       },
-      "gap": "Neither phase has a recipe for BaSO₄; only the structural preview exists."
+      "gap": null
     },
     {
       "label": "CH₃COONa",
@@ -149,23 +161,29 @@
     },
     {
       "label": "CaCO₃",
-      "status": "reference-only",
+      "status": "paired",
       "identity": "CaCO3",
-      "solid": [],
-      "stock": [],
-      "reference": [
+      "solid": [
         {
           "name": "Calciumcarbonat",
           "hydrated": false
         }
       ],
+      "stock": [
+        {
+          "name": "Calciumcarbonatlösung (gesättigt)",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
       "hydratedReference": false,
       "solubility": {
         "key": "CaCO3",
+        "saturation": 0.000058,
         "ksp": 3.4e-9,
         "solidDensity": 2.71
       },
-      "gap": "Neither phase has a recipe for CaCO₃; only the structural preview exists."
+      "gap": null
     },
     {
       "label": "CaCl₂",
@@ -754,11 +772,24 @@
       "name": "Bariumsulfat",
       "category": "Salze",
       "formula": "BaSO₄",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
+      "identity": "BaSO4",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Bariumsulfatlösung (gesättigt)",
+      "category": "Salze",
+      "formula": "BaSO₄",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
       "identity": "BaSO4",
       "hydrated": false,
       "mixture": false
@@ -767,11 +798,24 @@
       "name": "Calciumcarbonat",
       "category": "Salze",
       "formula": "CaCO₃",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
+      "identity": "CaCO3",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Calciumcarbonatlösung (gesättigt)",
+      "category": "Salze",
+      "formula": "CaCO₃",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
       "identity": "CaCO3",
       "hydrated": false,
       "mixture": false
@@ -1261,11 +1305,24 @@
       "name": "Silberchlorid",
       "category": "Salze",
       "formula": "AgCl",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
+      "identity": "AgCl",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Silberchloridlösung (gesättigt)",
+      "category": "Salze",
+      "formula": "AgCl",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
       "identity": "AgCl",
       "hydrated": false,
       "mixture": false

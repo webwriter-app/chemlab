@@ -63,6 +63,9 @@ export const solutionDisplayNames: Readonly<Record<string, string>> = {
 	"Eisen(III)-chloridlösung": "Eisen(III)-chlorid",
 	"Natriumcarbonatlösung": "Natriumcarbonat",
 	"Natriumhydrogencarbonatlösung": "Natriumhydrogencarbonat",
+	"Silberchloridlösung (gesättigt)": "Silberchlorid",
+	"Bariumsulfatlösung (gesättigt)": "Bariumsulfat",
+	"Calciumcarbonatlösung (gesättigt)": "Calciumcarbonat",
 	"Natriumsulfatlösung": "Natriumsulfat",
 	"Kaliumchloridlösung": "Kaliumchlorid",
 	"Kaliumbromidlösung": "Kaliumbromid",
@@ -273,6 +276,21 @@ const acetate = { formula: "CH₃COO⁻", atoms: ["carbon", "carbon", "oxygen", 
 	charges: [0, 0, 0, -1, 0, 0, 0] };
 
 
+// The sparingly soluble salts keep a solubility product instead of a
+// saturation, so their formula units have to serialise as the ions of the Ksp
+// entry. They are built like the soluble sulfates and carbonates: the skeleton
+// stays neutral and one ionic bond per unprotonated oxygen hands over one
+// electron, which leaves [Ba2+]/[Ca2+] next to [O-]S(=O)(=O)[O-] or
+// [O-]C(=O)[O-]. Silver chloride is the plain 1:1 case of `salt()`.
+const silverChloride: MoleculeDefinition = { formula: "AgCl",
+	atoms: ["silver", "chlorine"], bonds: ["0-1:ionic:1"] };
+const bariumSulfate: MoleculeDefinition = { formula: "BaSO₄",
+	atoms: ["barium", ...sulfate.atoms],
+	bonds: ["1-2:covalent:2", "1-3:covalent:2", "1-4:covalent:1", "1-5:covalent:1", "0-4:ionic:1", "0-5:ionic:1"] };
+const calciumCarbonate: MoleculeDefinition = { formula: "CaCO₃",
+	atoms: ["calcium", ...carbonate.atoms],
+	bonds: ["1-2:covalent:2", "1-3:covalent:1", "1-4:covalent:1", "0-3:ionic:1", "0-4:ionic:1"] };
+
 const sodiumChloride = salt("Natriumchlorid", "NaCl", "sodium", "chlorine");
 const aceticAcid = molecule("C₂H₄O₂", ["carbon", "carbon", "oxygen", "oxygen"],
 	["0-1:covalent:1", "1-2:covalent:2", "1-3:covalent:1"], [3, 0, 0, 1]);
@@ -320,6 +338,12 @@ export const chemicalCatalog: CatalogChemical[] = [
 	pure("Kaliumnitrat", "Salze", potassiumNitrate, "solid", saltSolubility.KNO3.solidDensity),
 	pure("Ammoniumchlorid", "Salze", ammoniumChloride, "solid", saltSolubility.NH4Cl.solidDensity),
 	pure("Natriumacetat", "Salze", sodiumAcetate, "solid", saltSolubility.CH3COONa.solidDensity),
+	// Sparingly soluble salts: the solid keeps a reservoir, and the stock below
+	// is its saturated solution. Ksp decides how much dissolves, the rounded
+	// `saturation` only caps the stock's concentration selector.
+	pure("Silberchlorid", "Salze", silverChloride, "solid", saltSolubility.AgCl.solidDensity),
+	pure("Bariumsulfat", "Salze", bariumSulfate, "solid", saltSolubility.BaSO4.solidDensity),
+	pure("Calciumcarbonat", "Salze", calciumCarbonate, "solid", saltSolubility.CaCO3.solidDensity),
 	aqueous("Natriumchloridlösung (1 mol/L)", "Salze", sodiumChloride.preview, saltSolubility.NaCl.saturation),
 	saltSolution("Kaliumchloridlösung", "KCl", "KCl", potassium, chloride),
 	saltSolution("Kaliumbromidlösung", "KBr", "KBr", potassium, bromide),
@@ -338,8 +362,10 @@ export const chemicalCatalog: CatalogChemical[] = [
 	saltSolution("Kaliumnitratlösung", "KNO₃", "KNO3", potassium, nitrate),
 	saltSolution("Ammoniumchloridlösung", "NH₄Cl", "NH4Cl", ammonium, chloride),
 	saltSolution("Natriumacetatlösung", "CH₃COONa", "CH3COONa", sodium, acetate),
+	saltSolution("Silberchloridlösung (gesättigt)", "AgCl", "AgCl", ion("Ag⁺", "silver", 1), chloride),
+	saltSolution("Bariumsulfatlösung (gesättigt)", "BaSO₄", "BaSO4", ion("Ba²⁺", "barium", 2), sulfate),
+	saltSolution("Calciumcarbonatlösung (gesättigt)", "CaCO₃", "CaCO3", ion("Ca²⁺", "calcium", 2), carbonate),
 	reference("Kupfer(II)-sulfat-Pentahydrat", "Salze", "CuSO₄·5 H₂O"),
-	reference("Calciumcarbonat", "Salze", "CaCO₃"),
 	reference("Calciumsulfat-Dihydrat", "Salze", "CaSO₄·2 H₂O"),
 	// The archived crystal selects the dry salt; the stock is a separate reagent.
 	pure("Natriumhydrogencarbonat", "Salze", sodiumBicarbonate, "solid", saltSolubility.NaHCO3.solidDensity),
@@ -352,8 +378,6 @@ export const chemicalCatalog: CatalogChemical[] = [
 	reference("Eisen(II)-sulfat-Heptahydrat", "Salze", "FeSO₄·7 H₂O"),
 	reference("Ammoniumsulfat", "Salze", "(NH₄)₂SO₄"),
 	reference("Eisen(II)-sulfid", "Salze", "FeS"),
-	reference("Silberchlorid", "Salze", "AgCl"),
-	reference("Bariumsulfat", "Salze", "BaSO₄"),
 	pure("Natriumhydroxid", "Basen", naoh, "solid", 2.13),
 	aqueous("Natronlauge (1 mol/L)", "Basen", naoh, concentratedReagent.sodiumHydroxide),
 	aqueous("Kalilauge (1 mol/L)", "Basen", { formula: "KOH", atoms: ["potassium", "oxygen", "hydrogen"],
