@@ -1,18 +1,18 @@
 {
   "generatedBy": "scripts/generate-structure-coverage.ts",
   "summary": {
-    "catalogEntries": 157,
-    "withStructure": 152,
+    "catalogEntries": 160,
+    "withStructure": 155,
     "withoutStructure": 5,
-    "dosed": 66,
+    "dosed": 70,
     "reagents": 47,
     "mixtures": 19,
-    "saltEntries": 36,
-    "dosedSaltEntries": 19,
+    "saltEntries": 39,
+    "dosedSaltEntries": 23,
     "saltIdentities": 30,
-    "paired": 2,
-    "solidOnly": 5,
-    "stockOnly": 10,
+    "paired": 6,
+    "solidOnly": 2,
+    "stockOnly": 9,
     "referenceOnly": 13
   },
   "salts": [
@@ -281,7 +281,7 @@
     },
     {
       "label": "KBr",
-      "status": "solid-only",
+      "status": "paired",
       "identity": "KBr",
       "solid": [
         {
@@ -289,7 +289,12 @@
           "hydrated": false
         }
       ],
-      "stock": [],
+      "stock": [
+        {
+          "name": "Kaliumbromidlösung",
+          "hydrated": false
+        }
+      ],
       "reference": [],
       "hydratedReference": false,
       "solubility": {
@@ -297,11 +302,11 @@
         "saturation": 4.57,
         "solidDensity": 2.75
       },
-      "gap": "Aqueous stock missing for KBr; 4.57 mol/L saturation, 2.75 g/mL solid density (KBr) is tabulated."
+      "gap": null
     },
     {
       "label": "KCl",
-      "status": "solid-only",
+      "status": "paired",
       "identity": "KCl",
       "solid": [
         {
@@ -309,7 +314,12 @@
           "hydrated": false
         }
       ],
-      "stock": [],
+      "stock": [
+        {
+          "name": "Kaliumchloridlösung",
+          "hydrated": false
+        }
+      ],
       "reference": [],
       "hydratedReference": false,
       "solubility": {
@@ -317,11 +327,11 @@
         "saturation": 4.02,
         "solidDensity": 1.98
       },
-      "gap": "Aqueous stock missing for KCl; 4.02 mol/L saturation, 1.98 g/mL solid density (KCl) is tabulated."
+      "gap": null
     },
     {
       "label": "KI",
-      "status": "solid-only",
+      "status": "paired",
       "identity": "KI",
       "solid": [
         {
@@ -329,7 +339,12 @@
           "hydrated": false
         }
       ],
-      "stock": [],
+      "stock": [
+        {
+          "name": "Kaliumiodidlösung",
+          "hydrated": false
+        }
+      ],
       "reference": [],
       "hydratedReference": false,
       "solubility": {
@@ -337,7 +352,7 @@
         "saturation": 6.09,
         "solidDensity": 3.12
       },
-      "gap": "Aqueous stock missing for KI; 6.09 mol/L saturation, 3.12 g/mL solid density (KI) is tabulated."
+      "gap": null
     },
     {
       "label": "KMnO₄",
@@ -357,28 +372,28 @@
     },
     {
       "label": "KNO₃",
-      "status": "stock-only",
+      "status": "paired",
       "identity": "KNO3",
-      "solid": [],
+      "solid": [
+        {
+          "name": "Kaliumnitrat",
+          "hydrated": false
+        }
+      ],
       "stock": [
         {
           "name": "Kaliumnitratlösung",
           "hydrated": false
         }
       ],
-      "reference": [
-        {
-          "name": "Kaliumnitrat",
-          "hydrated": false
-        }
-      ],
+      "reference": [],
       "hydratedReference": false,
       "solubility": {
         "key": "KNO3",
         "saturation": 2.77,
         "solidDensity": 2.11
       },
-      "gap": "Solid recipe missing for KNO₃; 2.77 mol/L saturation, 2.11 g/mL solid density (KNO3) is tabulated. The catalog lists Kaliumnitrat as reference only, so neither form is dosed yet."
+      "gap": null
     },
     {
       "label": "KNaC₄H₄O₆",
@@ -774,6 +789,19 @@
       "mixture": false
     },
     {
+      "name": "Kaliumbromidlösung",
+      "category": "Salze",
+      "formula": "KBr",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "KBr",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
       "name": "Kaliumchlorid",
       "category": "Salze",
       "formula": "KCl",
@@ -787,6 +815,19 @@
       "mixture": false
     },
     {
+      "name": "Kaliumchloridlösung",
+      "category": "Salze",
+      "formula": "KCl",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "KCl",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
       "name": "Kaliumiodid",
       "category": "Salze",
       "formula": "KI",
@@ -795,6 +836,19 @@
       "dosable": true,
       "dosed": true,
       "structures": 1,
+      "identity": "KI",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kaliumiodidlösung",
+      "category": "Salze",
+      "formula": "KI",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
       "identity": "KI",
       "hydrated": false,
       "mixture": false
@@ -816,10 +870,10 @@
       "name": "Kaliumnitrat",
       "category": "Salze",
       "formula": "KNO₃",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
       "identity": "KNO3",
       "hydrated": false,

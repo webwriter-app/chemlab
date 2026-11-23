@@ -64,6 +64,9 @@ export const solutionDisplayNames: Readonly<Record<string, string>> = {
 	"Natriumcarbonatlösung": "Natriumcarbonat",
 	"Natriumhydrogencarbonatlösung": "Natriumhydrogencarbonat",
 	"Natriumsulfatlösung": "Natriumsulfat",
+	"Kaliumchloridlösung": "Kaliumchlorid",
+	"Kaliumbromidlösung": "Kaliumbromid",
+	"Kaliumiodidlösung": "Kaliumiodid",
 	"Kaliumnitratlösung": "Kaliumnitrat",
 	"Natronlauge (1 mol/L)": "Natronlauge",
 	"Kalilauge (1 mol/L)": "Kalilauge",
@@ -192,6 +195,8 @@ const sulfate = oxoanion("SO₄²⁻", "sulfur", 2, 2);
 const nitrate = oxoanion("NO₃⁻", "nitrogen", 1, 2);
 nitrate.charges = [1, 0, -1, -1];
 const chloride = ion("Cl⁻", "chlorine", -1);
+const bromide = ion("Br⁻", "bromine", -1);
+const iodide = ion("I⁻", "iodine", -1);
 const carbonate = oxoanion("CO₃²⁻", "carbon", 1, 2);
 // Keep the proton explicit: the archived NaHCO₃ crystal omits H positions.
 // This ion joins the same carbonic-acid family as the carbonate stock.
@@ -205,6 +210,15 @@ const sodiumBicarbonate: MoleculeDefinition = { formula: "NaHCO₃",
 	atoms: ["sodium", ...bicarbonate.atoms],
 	bonds: ["1-2:covalent:2", "1-3:covalent:1", "1-4:covalent:1", "4-5:covalent:1", "0-3:ionic:1"] };
 const sodium = ion("Na⁺", "sodium", 1);
+const potassium = ion("K⁺", "potassium", 1);
+// The nitrate keeps the N⁺/O⁻ charges of its resonance limit, because
+// four-bonded nitrogen cannot be neutral. Potassium donates the second
+// electron to the oxygen it bonds, so the anion comes out as the
+// [O-][N+](=O)[O-] of the solubility table and KNO₃ dissolves like the stock.
+const potassiumNitrate: MoleculeDefinition = { formula: "KNO₃",
+	atoms: ["potassium", ...nitrate.atoms],
+	bonds: ["1-2:covalent:2", "1-3:covalent:1", "1-4:covalent:1", "0-3:ionic:1"],
+	charges: [0, 1, 0, 0, -1] };
 
 
 const sodiumChloride = salt("Natriumchlorid", "NaCl", "sodium", "chlorine", 2.16);
@@ -241,6 +255,9 @@ export const chemicalCatalog: CatalogChemical[] = [
 	salt("Natriumiodid", "NaI", "sodium", "iodine", 3.67),
 	salt("Kaliumiodid", "KI", "potassium", "iodine", 3.12),
 	aqueous("Natriumchloridlösung (1 mol/L)", "Salze", sodiumChloride.preview, saltSolubility.NaCl.saturation),
+	saltSolution("Kaliumchloridlösung", "KCl", "KCl", potassium, chloride),
+	saltSolution("Kaliumbromidlösung", "KBr", "KBr", potassium, bromide),
+	saltSolution("Kaliumiodidlösung", "KI", "KI", potassium, iodide),
 	saltSolution("Kupfer(II)-sulfatlösung", "CuSO₄", "CuSO4", ion("Cu²⁺", "copper", 2), sulfate),
 	saltSolution("Zinksulfatlösung", "ZnSO₄", "ZnSO4", ion("Zn²⁺", "zinc", 2), sulfate),
 	saltSolution("Eisen(II)-sulfatlösung", "FeSO₄", "FeSO4", ion("Fe²⁺", "iron", 2), sulfate),
@@ -250,7 +267,9 @@ export const chemicalCatalog: CatalogChemical[] = [
 	saltSolution("Eisen(III)-chloridlösung", "FeCl₃", "FeCl3", ion("Fe³⁺", "iron", 3), chloride, 1, 3),
 	saltSolution("Natriumcarbonatlösung", "Na₂CO₃", "Na2CO3", sodium, carbonate, 2),
 	saltSolution("Natriumsulfatlösung", "Na₂SO₄", "Na2SO4", sodium, sulfate, 2),
-	saltSolution("Kaliumnitratlösung", "KNO₃", "KNO3", ion("K⁺", "potassium", 1), nitrate),
+	saltSolution("Kaliumnitratlösung", "KNO₃", "KNO3", potassium, nitrate),
+	// The dry salt pairs with the stock above, as with the bicarbonate pair.
+	pure("Kaliumnitrat", "Salze", potassiumNitrate, "solid", saltSolubility.KNO3.solidDensity),
 	reference("Kupfer(II)-sulfat-Pentahydrat", "Salze", "CuSO₄·5 H₂O"),
 	reference("Calciumcarbonat", "Salze", "CaCO₃"),
 	reference("Calciumsulfat-Dihydrat", "Salze", "CaSO₄·2 H₂O"),
@@ -267,7 +286,6 @@ export const chemicalCatalog: CatalogChemical[] = [
 	reference("Eisen(II)-sulfat-Heptahydrat", "Salze", "FeSO₄·7 H₂O"),
 	reference("Ammoniumsulfat", "Salze", "(NH₄)₂SO₄"),
 	reference("Eisen(II)-sulfid", "Salze", "FeS"),
-	reference("Kaliumnitrat", "Salze", "KNO₃"),
 	reference("Calciumchlorid", "Salze", "CaCl₂"),
 	reference("Silberchlorid", "Salze", "AgCl"),
 	reference("Bariumsulfat", "Salze", "BaSO₄"),

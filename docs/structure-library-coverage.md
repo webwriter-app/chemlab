@@ -12,18 +12,18 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 | Measure | Count |
 | --- | ---: |
-| Catalog entries | 157 |
-| Entries with a builder structure | 152 |
+| Catalog entries | 160 |
+| Entries with a builder structure | 155 |
 | Entries without a builder structure | 5 |
-| Dosed entries (solid or aqueous) | 66 |
-| Dosed salt entries | 19 |
+| Dosed entries (solid or aqueous) | 70 |
+| Dosed salt entries | 23 |
 | Molecular reagents outside the salt pairing | 47 |
 | Mixtures shown by their constituents | 19 |
-| Salt entries in total | 36 |
+| Salt entries in total | 39 |
 | Salt identities | 30 |
-| Salt identities with both forms | 2 |
-| Salt identities with a solid form only | 5 |
-| Salt identities with an aqueous form only | 10 |
+| Salt identities with both forms | 6 |
+| Salt identities with a solid form only | 2 |
+| Salt identities with an aqueous form only | 9 |
 | Salt identities with neither form | 13 |
 
 ## Salt forms
@@ -43,11 +43,11 @@ Reference-only behaviour is an interim gap, not an exemption.
 | FeCl₃ | — | Eisen(III)-chloridlösung | — | stock only | 2.69 mol/L saturation, 2.9 g/mL solid density (FeCl3) |
 | FeS | — | — | Eisen(II)-sulfid | reference only | not tabulated |
 | FeSO₄ | — | Eisen(II)-sulfatlösung | Eisen(II)-sulfat-Heptahydrat (hydrate) | stock only | 0.93 mol/L saturation, 3.64 g/mL solid density (FeSO4) |
-| KBr | Kaliumbromid | — | — | solid only | 4.57 mol/L saturation, 2.75 g/mL solid density (KBr) |
-| KCl | Kaliumchlorid | — | — | solid only | 4.02 mol/L saturation, 1.98 g/mL solid density (KCl) |
-| KI | Kaliumiodid | — | — | solid only | 6.09 mol/L saturation, 3.12 g/mL solid density (KI) |
+| KBr | Kaliumbromid | Kaliumbromidlösung | — | paired | 4.57 mol/L saturation, 2.75 g/mL solid density (KBr) |
+| KCl | Kaliumchlorid | Kaliumchloridlösung | — | paired | 4.02 mol/L saturation, 1.98 g/mL solid density (KCl) |
+| KI | Kaliumiodid | Kaliumiodidlösung | — | paired | 6.09 mol/L saturation, 3.12 g/mL solid density (KI) |
 | KMnO₄ | — | — | Kaliumpermanganat | reference only | not tabulated |
-| KNO₃ | — | Kaliumnitratlösung | Kaliumnitrat | stock only | 2.77 mol/L saturation, 2.11 g/mL solid density (KNO3) |
+| KNO₃ | Kaliumnitrat | Kaliumnitratlösung | — | paired | 2.77 mol/L saturation, 2.11 g/mL solid density (KNO3) |
 | KNaC₄H₄O₆ | — | — | Kaliumnatriumtartrat | reference only | not tabulated |
 | KSCN | — | — | Kaliumthiocyanat | reference only | not tabulated |
 | MgSO₄·7 H₂O | — | — | Magnesiumsulfat-Heptahydrat (hydrate) | reference only | not tabulated |
@@ -76,11 +76,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 - **FeCl₃** — Solid recipe missing for FeCl₃; 2.69 mol/L saturation, 2.9 g/mL solid density (FeCl3) is tabulated.
 - **FeS** — Neither phase has a recipe for FeS; only the structural preview exists.
 - **FeSO₄** — Solid recipe missing for FeSO₄; 0.93 mol/L saturation, 3.64 g/mL solid density (FeSO4) is tabulated. The only solid reference is a hydrate (Eisen(II)-sulfat-Heptahydrat), so a recipe needs a decided hydrate.
-- **KBr** — Aqueous stock missing for KBr; 4.57 mol/L saturation, 2.75 g/mL solid density (KBr) is tabulated.
-- **KCl** — Aqueous stock missing for KCl; 4.02 mol/L saturation, 1.98 g/mL solid density (KCl) is tabulated.
-- **KI** — Aqueous stock missing for KI; 6.09 mol/L saturation, 3.12 g/mL solid density (KI) is tabulated.
 - **KMnO₄** — Neither phase has a recipe for KMnO₄; only the structural preview exists.
-- **KNO₃** — Solid recipe missing for KNO₃; 2.77 mol/L saturation, 2.11 g/mL solid density (KNO3) is tabulated. The catalog lists Kaliumnitrat as reference only, so neither form is dosed yet.
 - **KNaC₄H₄O₆** — Neither phase has a recipe for KNaC₄H₄O₆; only the structural preview exists.
 - **KSCN** — Neither phase has a recipe for KSCN; only the structural preview exists.
 - **MgSO₄·7 H₂O** — Neither phase has a recipe for MgSO₄·7 H₂O; only the structural preview exists. The only solid reference is a hydrate (Magnesiumsulfat-Heptahydrat), so a recipe needs a decided hydrate.
@@ -102,7 +98,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 ## Entries without a dose
 
-- Salze: Ammoniumchlorid, Ammoniumsulfat, Bariumsulfat, Calciumcarbonat, Calciumchlorid, Calciumsulfat-Dihydrat, Eisen(II)-sulfat-Heptahydrat, Eisen(II)-sulfid, Kaliumnatriumtartrat, Kaliumnitrat, Kaliumpermanganat, Kaliumthiocyanat, Kupfer(II)-sulfat-Pentahydrat, Magnesiumsulfat-Heptahydrat, Natriumacetat, Natriumthiosulfat-Pentahydrat, Silberchlorid
+- Salze: Ammoniumchlorid, Ammoniumsulfat, Bariumsulfat, Calciumcarbonat, Calciumchlorid, Calciumsulfat-Dihydrat, Eisen(II)-sulfat-Heptahydrat, Eisen(II)-sulfid, Kaliumnatriumtartrat, Kaliumpermanganat, Kaliumthiocyanat, Kupfer(II)-sulfat-Pentahydrat, Magnesiumsulfat-Heptahydrat, Natriumacetat, Natriumthiosulfat-Pentahydrat, Silberchlorid
 - Anorganische Säuren: Salpetersäure
 - Basen: Calciumhydroxid, Kalkwasser
 - Carbonsäuren: Benzoesäure, Sorbinsäure, Tetradecansäure (Myristinsäure)
