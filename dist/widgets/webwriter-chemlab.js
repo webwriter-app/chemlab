@@ -154043,23 +154043,25 @@ function protonationStructure(source3, removed) {
     }
   }
   const structure = StructureManager.newMolecule();
-  const copies = new Map([...atoms].map((atom) => [
-    atom,
-    structure.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), charges.get(atom))
-  ]));
-  for (const bond of source3._bonds) {
-    const from2 = copies.get(bond._from);
-    const to2 = copies.get(bond._to);
-    if (from2 && to2) structure.addBond(from2._id, to2._id, bond._magnitude, bond._length, bond._type);
-  }
-  if (removed < 0) {
-    for (const [atom, copy] of copies) {
-      for (let count2 = atom.getIonicCharge(); count2 < charges.get(atom); count2++) {
-        const hydrogen = structure.addAtom("hydrogen", "H");
-        structure.addBond(copy._id, hydrogen._id, 1, 100, "covalent");
+  structure.batchStructureChanges(() => {
+    const copies = new Map([...atoms].map((atom) => [
+      atom,
+      structure.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), charges.get(atom))
+    ]));
+    for (const bond of source3._bonds) {
+      const from2 = copies.get(bond._from);
+      const to2 = copies.get(bond._to);
+      if (from2 && to2) structure.addBond(from2._id, to2._id, bond._magnitude, bond._length, bond._type);
+    }
+    if (removed < 0) {
+      for (const [atom, copy] of copies) {
+        for (let count2 = atom.getIonicCharge(); count2 < charges.get(atom); count2++) {
+          const hydrogen = structure.addAtom("hydrogen", "H");
+          structure.addBond(copy._id, hydrogen._id, 1, 100, "covalent");
+        }
       }
     }
-  }
+  });
   cache2.set(removed, structure);
   return structure;
 }
