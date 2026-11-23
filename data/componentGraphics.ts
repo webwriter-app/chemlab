@@ -16,7 +16,7 @@ import separatingfunnel from "../media/separatingfunnel.svg";
 import condenser from "../media/condenser.svg";
 import fallback from "../media/default.svg";
 import cable from "../media/cable.svg";
-import { AMMETER_RESISTANCE, VOLTMETER_RESISTANCE, type CableEnd } from "../chemlib/ElectricComponent";
+import { AMMETER_RESISTANCE, EComponentType, VOLTMETER_RESISTANCE, type CableEnd } from "../chemlib/ElectricComponent";
 
 interface ComponentGraphic {
 	url: string;
@@ -212,6 +212,22 @@ export function componentVariant(id?: string): ComponentVariant | undefined {
 	return id === undefined ? undefined : variantsById.get(id);
 }
 
+/**
+ * The variant an authored component entry restores. A variant id from an older
+ * catalogue, or one that belongs to another device, is ignored. The derivation
+ * of a layout's textures and the restore of its devices share this rule, so the
+ * artwork that is loaded is the artwork that is drawn.
+ *
+ * @export
+ * @param {string} type - the component type of the entry, in any case
+ * @param {unknown} variantId - the variant id saved with the entry
+ * @returns {ComponentVariant | undefined}
+ */
+export function savedComponentVariant(type: string, variantId: unknown): ComponentVariant | undefined {
+	const variant = componentVariant(typeof variantId === "string" ? variantId : undefined);
+	return variant?.type === type.toLowerCase() ? variant : undefined;
+}
+
 export function componentArtboardMm(type: string, capacityMl?: number, variantId?: string): DimensionsMm {
 	const override = componentVariant(variantId)?.artboard;
 	if (override) return override;
@@ -297,11 +313,23 @@ export function componentTerminals(type: string): readonly TerminalPoint[] {
 	return terminalTable[type] ?? [];
 }
 
-export const componentTextureUrls = [
-	fallback,
-	...Object.values(componentGraphics).map(({ url }) => url),
-	...Object.values(otherGraphics).map(({ url }) => url),
-	// Variant graphics are not part of the type table, so they are listed here
-	// to be loaded with the rest.
-	...Object.values(componentVariants).flat().flatMap((variant) => ("url" in variant && variant.url ? [variant.url] : [])),
-];
+/**
+ * The textures the devices of an authored layout need, one per distinct
+ * graphic, in the order the layout introduces them. A cable draws its own
+ * strands and carries no texture; an entry of an unknown type asks for the
+ * fallback artwork, which is what the canvas draws for it.
+ *
+ * @export
+ * @param {readonly object[]} entries - the authored component entries
+ * @returns {string[]}
+ */
+export function layoutTextureUrls(entries: readonly object[]): string[] {
+	const urls = new Set<string>();
+	for (const entry of entries) {
+		const saved = entry as Record<string, unknown>;
+		const type = String(saved["type"] ?? "").toLowerCase();
+		if (type === EComponentType.Cable) continue;
+		urls.add(componentGraphic(type, savedComponentVariant(type, saved["variantId"])?.id).url);
+	}
+	return [...urls];
+}

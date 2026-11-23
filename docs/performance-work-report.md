@@ -121,3 +121,63 @@ No WebWriter path ran for this package, successfully or otherwise: no import, no
 Shared chunks were deliberately left alone; the handoff keeps them as a separate spike, together with translations and the optional atom renderer.
 
 Verified with `npx tsc --noEmit`, all 29 test files from AGENTS.md, and the two release commands above. The minified and the readable bundle parse and evaluate to the same point under the test DOM shim, and the minified files export `ChemLab`, `ChemLabMoleculeBuilder`, `ChemLabPeriodicTable`, `LIST_ICON` and `TABLE_ICON`, as before.
+
+## 4. Load startup textures selectively
+
+The canvas requested every graphic of the catalogue before it drew the first device: 18 URLs on this checkout, which is the device table, the two reference electrodes, the separating funnel, the condenser, the cable and the fallback artwork. The Electrochemistry template shows ten distinct graphics, the two titration templates two and three, and a blank lab none. The request now follows the authored layout.
+
+| Layout | Requests before | Requests after |
+| --- | ---: | ---: |
+| Blank lab | 18 | 0 |
+| Electrochemistry | 18 | 10 |
+| Titration | 18 | 2 |
+| Titration types | 18 | 3 |
+| Whole catalogue, 46 variants | 18 | 15 |
+
+The last row is the set a palette-wide load would need; it is not requested anywhere any more, it only shows how much of the catalogue the authored layouts actually use.
+
+### The derivation
+
+`layoutTextureUrls(entries)` in `data/componentGraphics.ts` walks the authored entries, lowercases the type, resolves the variant through the new `savedComponentVariant` and adds `componentGraphic(type, variantId).url` to a `Set`. A cable is skipped because `CableView` draws its strands itself, and an entry of an unknown type keeps the fallback artwork that its view falls back to. `savedComponentVariant` is the rule `createSavedComponent` used inline — a variant id of another device, of an older catalogue or of a non-string field does not count — so the graphic that is loaded is exactly the graphic that is drawn. The old `componentTextureUrls` list had no other consumer and is gone.
+
+### The on-demand loader
+
+`CanvasController.loadTexture(url)` asks Pixi's `Assets` cache first, joins a load that is already in flight and forgets the entry when it settles or fails, so one missing artwork can be retried instead of poisoning the session. `hasTexture(url)` answers from the same cache, and `loadTextures(urls, onProgress)` reports a finished load for an empty list, which keeps the widget's progress bar meaningful on a blank lab.
+
+`init(textureUrls, onTextureProgress)` starts `loadTextures` before `await app.init(...)`: the textures are static files that need no renderer, so asset preparation overlaps renderer start-up. The early promise carries a handler, so a failure cannot surface as an unhandled rejection while the renderer comes up, and it is awaited inside the same `try` that destroys the renderer and rethrows — an embedded layout with a broken graphic still fails visibly instead of painting empty frames. The load options (`resolution: 2`, linear scale, mipmaps, anisotropy 4) moved into one constant, so a texture that arrives later is prepared exactly like one that arrived at startup. `Assets` keeps its own global cache, which the widgets of a page share; a canvas that goes away unloads nothing.
+
+### Placement and replacement
+
+- Palette tile: `pointerenter` and `focus` call `prefetchComponentTexture`, so the graphic is usually there before the gesture starts.
+- Drag: the ghost is built only when `hasTexture`. Without the texture the drag continues without a ghost rather than as an empty frame, and the drop does not wait for the download.
+- Drop: `addPaletteComponent` awaits the graphic and then checks `isConnected` and `app` before placing. That check is the cancellation path — a widget that detaches while the graphic is on its way places nothing. The drag drop and `placeSelectedComponent` fire it without awaiting; `placeSelectedComponent` stays synchronous because its caller in `CanvasController` decides between placing and panning, and it now answers from the permission and the variant instead of from the finished placement.
+- Replaced layout: the restore path derives the URLs of the entries it is about to assemble and awaits them in a `try`/`catch` before `_loadComponents`, so a graphic that fails costs its device, not the canvas. The replacement path in `willUpdate` does the same and rebuilds only while the widget is still connected and the renderer is alive.
+
+### Tests
+
+`tests/layout-textures.test.ts`, ten tests: a blank lab asks for nothing; every palette variant derives exactly the URL `componentGraphic` gives for its own type and id; devices of one family share a URL; a variant of another device, of an older catalogue or of a non-string field falls back to its type; a variant with its own artwork names that artwork; an unknown type asks for the fallback and not for another device's graphic; a cable names nothing in either case; the Electrochemistry template derives exactly the ten URLs of its devices and none of the flask, burette, test tube, cable, SHE or calomel electrode; the two titration templates derive two and three; a worksheet edit that adds `electrode:she` names that one URL and nothing more.
+
+### Size
+
+The builder inlines the graphics as data URLs, so the bundle keeps every byte: this package removes requests, not payload.
+
+| Entry | Raw before | Raw after | gzip before | gzip after |
+| --- | ---: | ---: | ---: | ---: |
+| `webwriter-chemlab.js` | 5,055,567 | 5,057,045 | 1,137,175 | 1,137,615 |
+| `webwriter-chemlab-molecule-builder.js` | 2,856,630 | 2,856,630 | 850,694 | 850,694 |
+| `webwriter-chemlab-periodic-table.js` | 1,708,178 | 1,708,178 | 444,140 | 444,140 |
+
+The other two entries are byte-identical, so `git diff --stat dist/` lists only `dist/widgets/webwriter-chemlab.js`. The lab entry grows by 1,478 bytes raw and 440 bytes gzip for the derivation, the loader and the placement guards.
+
+### What stays browser-only
+
+No startup time was measured for this package, for the same reason as in package 3: the release build needs a WebWriter import. The pending browser checks, on top of those inherited from packages 1–3:
+
+- Import the widget into a blank worksheet and watch the network panel: no component graphic is requested, and the progress bar still reaches the renderer step.
+- Open the Electrochemistry and both titration templates: same objects, same wiring, ten, two and three graphic requests.
+- Place one device of every family from the palette in a cold session: the first drag may start without a ghost, the device arrives at the drop.
+- Remove one `media/*.svg` and embed a layout that uses it: the canvas reports the failure and the rest of the layout stands.
+- Close or detach the widget during a slow load: nothing is placed afterwards.
+- Edit a worksheet so that it introduces `electrode:she`: exactly one additional graphic is requested.
+
+Verified with `npx tsc --noEmit`, all 30 test files from AGENTS.md, and the two release commands above.

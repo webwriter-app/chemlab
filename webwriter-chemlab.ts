@@ -59,7 +59,15 @@ import { TIME_CHANNEL, type MeasurementChannel } from "./data/measurementHistory
 import { MeasurementRecorder } from "./controllers/MeasurementRecorder";
 import { SimulationController } from "./controllers/SimulationController";
 import { CircuitSchedule } from "./controllers/CircuitSchedule";
-import { componentGraphic, componentVariant, componentVariants, type ComponentVariant, type PaletteComponent } from "./data/componentGraphics";
+import {
+	componentGraphic,
+	componentVariant,
+	componentVariants,
+	layoutTextureUrls,
+	savedComponentVariant,
+	type ComponentVariant,
+	type PaletteComponent,
+} from "./data/componentGraphics";
 import { renderComponentPaletteIcon } from "./data/componentPaletteIcons";
 import { chemicalCatalog, chemicalCatalogGroups, solutionDisplayNames, withConcentration, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
 import { loadMoleculeDefinition } from "./data/moleculeDefinition";
@@ -732,10 +740,15 @@ export class ChemLab extends LitElementWw {
 				this.pruneDiagramSuggestions();
 
 				this.avComponentsSprites = [];
-				this._loadComponents();
-				// A replaced layout is a fresh load, so it gets the same fit as
-				// the first one.
-				this.canvas.fitObjects();
+				// A replaced layout is a fresh load: it brings devices the startup
+				// load never saw, and it gets the same fit as the first one.
+				void this.canvas.loadTextures(layoutTextureUrls(this.availableComponents)).catch((error) => {
+					console.error("Unable to load the component textures", error);
+				}).then(() => {
+					if (!this.isConnected || !this.app) return;
+					this._loadComponents();
+					this.canvas.fitObjects();
+				});
 			}
 		}
 		if (this.canvas.selectedObjects.length || changed.has("curr_obj") || changed.has("curr_name") || changed.has("mixtureDraft")) {
@@ -897,7 +910,7 @@ export class ChemLab extends LitElementWw {
 	private async initializeCanvas(): Promise<void> {
 		try {
 			await this.paintLoadingProgress();
-			await this.canvas.init((fraction) => {
+			await this.canvas.init(layoutTextureUrls(this.availableComponents), (fraction) => {
 				this.canvasLoading = { value: 10 + 15 * fraction, task: "Gerätegrafiken laden" };
 			});
 			await this.restoreInitialLayout();
@@ -960,6 +973,15 @@ export class ChemLab extends LitElementWw {
 			}
 			this.canvasLoading = { value: 90, task: total ? "Versuchsaufbau und Verbindungen einsetzen" : "Arbeitsfläche zeichnen" };
 			await this.paintLoadingProgress();
+			// The startup load covers the layout as it was embedded. A layout
+			// replaced from the worksheet while loading brings devices whose
+			// textures nobody has asked for yet; a graphic that fails here costs
+			// its own device, not the canvas.
+			try {
+				await this.canvas.loadTextures(layoutTextureUrls(entries));
+			} catch (error) {
+				console.error("Unable to load the component textures", error);
+			}
 			if (this.refreshFromRemoteData) continue;
 			this._loadComponents(undefined, models);
 			return;
@@ -1432,12 +1454,21 @@ export class ChemLab extends LitElementWw {
 
 	private startComponentDrag(event: PointerEvent, variant: ComponentVariant): void {
 		if (!this.canAuthor && !this.isVariantAllowed(variant)) return;
+		const graphicUrl = componentGraphic(variant.type, variant.id).url;
+		// The ghost is built on the first move past the drag threshold, which is
+		// a few pixels away: the texture has to be on its way before that.
+		this.prefetchComponentTexture(variant);
 		let preview: PIXI.Container | undefined;
 		this.startPaletteDrag(event, {
 			start: () => {
+				// A preview draws the texture, so a device whose graphic has not
+				// arrived yet is dropped without a ghost rather than as an empty
+				// frame. The drop itself waits for the download.
+				if (!this.canvas.hasTexture(graphicUrl)) return;
 				preview = this.canvas.createPlacementPreview(this.previewModel(variant));
 			},
 			move: (pointer) => {
+				if (!preview) return;
 				const point = this.canvas.worldPointFromViewport(pointer.clientX, pointer.clientY);
 				preview.visible = !!point;
 				if (point) {
@@ -1448,13 +1479,28 @@ export class ChemLab extends LitElementWw {
 			},
 			drop: (pointer) => {
 				const point = this.canvas.worldPointFromViewport(pointer.clientX, pointer.clientY);
-				if (point) this.addPaletteComponent(variant, point.x, point.y);
+				if (point) void this.addPaletteComponent(variant, point.x, point.y);
 			},
 			cleanup: () => {
 				if (!preview) return;
 				preview.destroy({ children: true });
 				this.requestCanvasRender();
 			},
+		});
+	}
+
+	/**
+	 * Warms the texture of a palette variant, so the drag ghost can be drawn as
+	 * soon as the gesture starts. The startup load covers the authored layout
+	 * only; a device from the palette arrives here first.
+	 *
+	 * @private
+	 * @param {ComponentVariant} variant - the palette variant
+	 */
+	private prefetchComponentTexture(variant: ComponentVariant): void {
+		if (!this.app) return;
+		void this.canvas.loadTexture(componentGraphic(variant.type, variant.id).url).catch((error) => {
+			console.error("Unable to load the component texture of", variant.id, error);
 		});
 	}
 
@@ -1503,18 +1549,40 @@ export class ChemLab extends LitElementWw {
 		return position;
 	}
 
+	/**
+	 * Places the variant the palette holds, if one is held. The answer is
+	 * synchronous because the caller decides between placing and panning; the
+	 * placement itself waits for the texture of the variant and finishes on its
+	 * own.
+	 *
+	 * @param {number} x - the world x of the click
+	 * @param {number} y - the world y of the click
+	 * @returns {boolean} whether a placement was started
+	 */
 	placeSelectedComponent(x: number, y: number): boolean {
 		const variant = componentVariant(this.componentToPlace);
 		this.componentToPlace = undefined;
-		return variant ? this.addPaletteComponent(variant, x, y) : false;
+		if (!variant || (!this.canAuthor && !this.isVariantAllowed(variant))) return false;
+		void this.addPaletteComponent(variant, x, y);
+		return true;
 	}
 
-	private addPaletteComponent(variant: ComponentVariant, x: number, y: number): boolean {
+	private async addPaletteComponent(variant: ComponentVariant, x: number, y: number): Promise<boolean> {
 		if (!this.canAuthor && !this.isVariantAllowed(variant)) return false;
+		const { id: variantId, type, capacityMl, material } = variant;
+		try {
+			// The footprint is measured on a preview and the view draws the
+			// texture, so both need the graphic of this variant.
+			await this.canvas.loadTexture(componentGraphic(type, variantId).url);
+		} catch (error) {
+			console.error("Unable to load the component texture of", variantId, error);
+			return false;
+		}
+		// The widget may have been detached while the graphic was on its way.
+		if (!this.isConnected || !this.app) return false;
 		const position = this.freePlacementFor(variant, x, y);
 		this.componentToPlace = undefined;
 		this.clearChemicalSelection();
-		const { id: variantId, type, capacityMl, material } = variant;
 		if (!this.canAuthor) {
 			let component: chemlib.ChemComponent | chemlib.ElectricComponent;
 			if (capacityMl !== undefined) {
@@ -2441,8 +2509,9 @@ export class ChemLab extends LitElementWw {
 
 	private createSavedComponent(component: object): chemlib.ChemComponent | chemlib.ElectricComponent {
 		const type = component["type"].toLowerCase();
-		const savedVariant = componentVariant(component["variantId"]);
-		const variant = savedVariant?.type === type ? savedVariant : undefined;
+		// The same rule derives the textures of the layout, so a variant that is
+		// refused here is never requested there either.
+		const variant = savedComponentVariant(type, component["variantId"]);
 
 		let newComp: chemlib.ChemComponent | chemlib.ElectricComponent;
 
@@ -3502,6 +3571,8 @@ export class ChemLab extends LitElementWw {
 						<button type="button" class="component-tile" contenteditable="false"
 							aria-label=${itemLabel} aria-pressed=${this.componentToPlace === current.id}
 							@pointerdown=${(event: PointerEvent) => this.startComponentDrag(event, current)}
+							@pointerenter=${() => this.prefetchComponentTexture(current)}
+							@focus=${() => this.prefetchComponentTexture(current)}
 							@dragstart=${this.preventNativePaletteDrag}
 							@click=${(event: MouseEvent) => {
 								if (this.consumePaletteClick(event)) return;

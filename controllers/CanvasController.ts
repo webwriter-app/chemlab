@@ -2,7 +2,7 @@ import { ReactiveController } from "lit";
 import * as PIXI from "pixi.js";
 import * as chemlib from "../chemlib";
 
-import { componentArtboardMm, componentGraphic, componentTextureUrls } from "../data/componentGraphics";
+import { componentArtboardMm, componentGraphic } from "../data/componentGraphics";
 
 import { MILLIMETERS_PER_WORLD_UNIT, STANDARD_CANVAS_HEIGHT, STANDARD_CANVAS_WIDTH, WorkspaceCamera } from "./WorkspaceCamera";
 import { WorkspaceGrid } from "./WorkspaceGrid";
@@ -14,6 +14,13 @@ import type { ChemLab } from "../webwriter-chemlab";
 
 /** Name of the background task that keeps the canvas refreshing while cables move. */
 const CABLE_TASK = "cables";
+/**
+ * The options every device texture loads with. The canvas filters its graphics
+ * when zooming out, including narrow sprites whose horizontal and vertical
+ * scales differ substantially, so a texture that arrives on its own has to be
+ * prepared exactly like one that arrived at startup.
+ */
+const TEXTURE_LOAD_OPTIONS = { resolution: 2, scaleMode: "linear", autoGenerateMipmaps: true, maxAnisotropy: 4 } as const;
 /** Name of the background task that keeps the canvas refreshing while vessel particles move. */
 const VESSEL_TASK = "vessel-anim";
 
@@ -1272,13 +1279,83 @@ export class CanvasController implements ReactiveController {
 		);
 	}
 
+	/** Textures on their way, keyed by url, so a second caller joins the first. */
+	private textureLoads = new Map<string, Promise<PIXI.Texture>>();
+
+	/**
+	 * The texture of a device graphic, loading it on first use. The startup load
+	 * covers the devices an embedded layout carries; a device from the palette, a
+	 * variant an author introduces later or a layout replaced from the worksheet
+	 * arrives here. Pixi's asset cache belongs to the module, not to this
+	 * controller, so a texture another widget on the page loaded is already
+	 * there, and nothing is unloaded when a canvas goes away.
+	 *
+	 * @param {string} url - the graphic url that componentGraphic returns
+	 * @returns {Promise<PIXI.Texture>}
+	 */
+	loadTexture(url: string): Promise<PIXI.Texture> {
+		const cached = PIXI.Assets.get<PIXI.Texture>(url);
+		if (cached) return Promise.resolve(cached);
+		const pending = this.textureLoads.get(url);
+		if (pending) return pending;
+		const load = PIXI.Assets.load<PIXI.Texture>({ src: url, data: { ...TEXTURE_LOAD_OPTIONS } });
+		this.textureLoads.set(url, load);
+		// A settled load leaves the map, a failed one as well: the next attempt
+		// starts over, and one missing artwork does not poison the session.
+		const forget = () => {
+			if (this.textureLoads.get(url) === load) this.textureLoads.delete(url);
+		};
+		load.then(forget, forget);
+		return load;
+	}
+
+	/**
+	 * Whether a graphic is loaded already. The drag ghost asks before it builds a
+	 * preview, because a preview draws the texture.
+	 *
+	 * @param {string} url - the graphic url that componentGraphic returns
+	 * @returns {boolean}
+	 */
+	hasTexture(url: string): boolean {
+		return PIXI.Assets.get<PIXI.Texture>(url) !== undefined;
+	}
+
+	/**
+	 * Loads a list of textures and reports the fraction that is done. An empty
+	 * list is a finished load, so a layout without devices still completes the
+	 * progress bar of the widget.
+	 *
+	 * @param {readonly string[]} urls - the graphic urls to load
+	 * @param {(fraction: number) => void} [onProgress] - progress in 0..1
+	 * @returns {Promise<void>}
+	 */
+	async loadTextures(urls: readonly string[], onProgress?: (fraction: number) => void): Promise<void> {
+		if (!urls.length) {
+			onProgress?.(1);
+			return;
+		}
+		let done = 0;
+		onProgress?.(0);
+		await Promise.all(urls.map(async (url) => {
+			await this.loadTexture(url);
+			done += 1;
+			onProgress?.(done / urls.length);
+		}));
+	}
+
 	/**
 	 * initializes the canvas and its events
 	 *
-	 * @private
+	 * @param {readonly string[]} textureUrls - the graphics the layout needs
+	 * @param {(fraction: number) => void} [onTextureProgress] - progress in 0..1
 	 */
-	async init(onTextureProgress?: (fraction: number) => void): Promise<void> {
+	async init(textureUrls: readonly string[], onTextureProgress?: (fraction: number) => void): Promise<void> {
 		const app = new PIXI.Application<PIXI.WebGLRenderer<HTMLCanvasElement>>();
+		// The textures are static files that need no renderer, so they are on
+		// their way while the renderer comes up.
+		const textures = this.loadTextures(textureUrls, onTextureProgress);
+		// Awaited below; this only keeps a failure quiet while the renderer starts.
+		textures.catch(() => {});
 		await app.init({
 			preference: ["webgl"],
 			autoStart: false,
@@ -1287,13 +1364,7 @@ export class CanvasController implements ReactiveController {
 			height: STANDARD_CANVAS_HEIGHT,
 		});
 		try {
-			onTextureProgress?.(0);
-			await PIXI.Assets.load(componentTextureUrls.map((src) => ({
-				src,
-				// Filter the SVG textures when zooming out, including narrow sprites
-				// whose horizontal and vertical scales differ substantially.
-				data: { resolution: 2, scaleMode: "linear", autoGenerateMipmaps: true, maxAnisotropy: 4 },
-			})), onTextureProgress);
+			await textures;
 		} catch (error) {
 			app.destroy(true, { children: true });
 			throw error;
