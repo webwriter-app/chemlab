@@ -1,36 +1,45 @@
 {
   "generatedBy": "scripts/generate-structure-coverage.ts",
   "summary": {
-    "catalogEntries": 173,
-    "withStructure": 162,
+    "catalogEntries": 176,
+    "withStructure": 165,
     "withoutStructure": 11,
-    "dosed": 89,
+    "dosed": 95,
     "reagents": 47,
     "mixtures": 19,
-    "saltEntries": 52,
-    "dosedSaltEntries": 42,
+    "saltEntries": 55,
+    "dosedSaltEntries": 48,
     "saltIdentities": 30,
-    "paired": 20,
+    "paired": 23,
     "solidOnly": 0,
     "stockOnly": 2,
-    "referenceOnly": 8
+    "referenceOnly": 5
   },
   "salts": [
     {
       "label": "(NH₄)₂SO₄",
-      "status": "reference-only",
+      "status": "paired",
       "identity": "(NH4)2SO4",
-      "solid": [],
-      "stock": [],
-      "reference": [
+      "solid": [
         {
           "name": "Ammoniumsulfat",
           "hydrated": false
         }
       ],
+      "stock": [
+        {
+          "name": "Ammoniumsulfatlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
       "hydratedReference": false,
-      "solubility": null,
-      "gap": "Neither phase has a recipe for (NH₄)₂SO₄; only the structural preview exists."
+      "solubility": {
+        "key": "(NH4)2SO4",
+        "saturation": 4.1,
+        "solidDensity": 1.769
+      },
+      "gap": null
     },
     {
       "label": "AgCl",
@@ -398,19 +407,28 @@
     },
     {
       "label": "KMnO₄",
-      "status": "reference-only",
+      "status": "paired",
       "identity": "KMnO4",
-      "solid": [],
-      "stock": [],
-      "reference": [
+      "solid": [
         {
           "name": "Kaliumpermanganat",
           "hydrated": false
         }
       ],
+      "stock": [
+        {
+          "name": "Kaliumpermanganatlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
       "hydratedReference": false,
-      "solubility": null,
-      "gap": "Neither phase has a recipe for KMnO₄; only the structural preview exists."
+      "solubility": {
+        "key": "KMnO4",
+        "saturation": 0.39,
+        "solidDensity": 2.703
+      },
+      "gap": null
     },
     {
       "label": "KNO₃",
@@ -455,19 +473,28 @@
     },
     {
       "label": "KSCN",
-      "status": "reference-only",
+      "status": "paired",
       "identity": "KSCN",
-      "solid": [],
-      "stock": [],
-      "reference": [
+      "solid": [
         {
           "name": "Kaliumthiocyanat",
           "hydrated": false
         }
       ],
+      "stock": [
+        {
+          "name": "Kaliumthiocyanatlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
       "hydratedReference": false,
-      "solubility": null,
-      "gap": "Neither phase has a recipe for KSCN; only the structural preview exists."
+      "solubility": {
+        "key": "KSCN",
+        "saturation": 9.8,
+        "solidDensity": 1.886
+      },
+      "gap": null
     },
     {
       "label": "MgSO₄·7 H₂O",
@@ -733,11 +760,24 @@
       "name": "Ammoniumsulfat",
       "category": "Salze",
       "formula": "(NH₄)₂SO₄",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
+      "identity": "(NH4)2SO4",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Ammoniumsulfatlösung",
+      "category": "Salze",
+      "formula": "(NH₄)₂SO₄",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
       "identity": "(NH4)2SO4",
       "hydrated": false,
       "mixture": false
@@ -1045,11 +1085,24 @@
       "name": "Kaliumpermanganat",
       "category": "Salze",
       "formula": "KMnO₄",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
+      "identity": "KMnO4",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kaliumpermanganatlösung",
+      "category": "Salze",
+      "formula": "KMnO₄",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
       "identity": "KMnO4",
       "hydrated": false,
       "mixture": false
@@ -1058,11 +1111,24 @@
       "name": "Kaliumthiocyanat",
       "category": "Salze",
       "formula": "KSCN",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
+      "identity": "KSCN",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kaliumthiocyanatlösung",
+      "category": "Salze",
+      "formula": "KSCN",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
       "identity": "KSCN",
       "hydrated": false,
       "mixture": false

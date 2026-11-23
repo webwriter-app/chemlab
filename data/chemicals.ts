@@ -71,6 +71,9 @@ export const solutionDisplayNames: Readonly<Record<string, string>> = {
 	"Kaliumbromidlösung": "Kaliumbromid",
 	"Kaliumiodidlösung": "Kaliumiodid",
 	"Kaliumnitratlösung": "Kaliumnitrat",
+	"Ammoniumsulfatlösung": "Ammoniumsulfat",
+	"Kaliumthiocyanatlösung": "Kaliumthiocyanat",
+	"Kaliumpermanganatlösung": "Kaliumpermanganat",
 	"Natronlauge (1 mol/L)": "Natronlauge",
 	"Kalilauge (1 mol/L)": "Kalilauge",
 	"Ammoniaklösung": "Ammoniak",
@@ -274,6 +277,16 @@ const ammonium = { formula: "NH₄⁺", atoms: ["nitrogen", "hydrogen", "hydroge
 const acetate = { formula: "CH₃COO⁻", atoms: ["carbon", "carbon", "oxygen", "oxygen", "hydrogen", "hydrogen", "hydrogen"],
 	bonds: ["0-1:covalent:1", "1-2:covalent:2", "1-3:covalent:1", "0-4:covalent:1", "0-5:covalent:1", "0-6:covalent:1"],
 	charges: [0, 0, 0, -1, 0, 0, 0] };
+// Thiocyanate carries its charge on sulfur and keeps the carbon-nitrogen
+// triple bond, so it serialises as the N#C[S-] of the solubility table.
+// Neither Kekule nor the chemistry tables know a thiocyanate complex, so the
+// ion stays a spectator and the table entry only fixes its stock limit.
+const thiocyanate = { formula: "SCN⁻", atoms: ["sulfur", "carbon", "nitrogen"],
+	bonds: ["0-1:covalent:1", "1-2:covalent:3"], charges: [-1, 0, 0] };
+// Permanganate is the tetrahedral oxoanion with three double-bonded oxygens,
+// the [O-][Mn](=O)(=O)=O of the table. The model runs no MnO4- reduction, so
+// the ion travels unchanged and only potassium and the anion are booked.
+const permanganate = oxoanion("MnO₄⁻", "manganese", 3, 1);
 
 
 // The sparingly soluble salts keep a solubility product instead of a
@@ -290,6 +303,25 @@ const bariumSulfate: MoleculeDefinition = { formula: "BaSO₄",
 const calciumCarbonate: MoleculeDefinition = { formula: "CaCO₃",
 	atoms: ["calcium", ...carbonate.atoms],
 	bonds: ["1-2:covalent:2", "1-3:covalent:1", "1-4:covalent:1", "0-3:ionic:1", "0-4:ionic:1"] };
+
+// Ammonium sulfate and the two potassium salts follow the same route: the
+// skeleton stays neutral and one ionic bond per unprotonated oxygen or per
+// anion hands over its electron, which leaves the [N+], [K+], N#C[S-] and
+// [O-][Mn](=O)(=O)=O fragments the solubility table lists. The ammonium sits
+// on both sulfates, so the salt carries 2 [N+] next to one sulfate, and each
+// ammonium keeps its four explicit hydrogens like the NH₄Cl formula unit.
+const ammoniumSulfate: MoleculeDefinition = { formula: "(NH₄)₂SO₄",
+	atoms: ["nitrogen", "nitrogen", ...sulfate.atoms, ...Array<string>(8).fill("hydrogen")],
+	bonds: ["2-3:covalent:2", "2-4:covalent:2", "2-5:covalent:1", "2-6:covalent:1",
+		"0-5:ionic:1", "1-6:ionic:1",
+		"0-7:covalent:1", "0-8:covalent:1", "0-9:covalent:1", "0-10:covalent:1",
+		"1-11:covalent:1", "1-12:covalent:1", "1-13:covalent:1", "1-14:covalent:1"] };
+const potassiumThiocyanate: MoleculeDefinition = { formula: "KSCN",
+	atoms: ["potassium", "sulfur", "carbon", "nitrogen"],
+	bonds: ["1-2:covalent:1", "2-3:covalent:3", "0-1:ionic:1"] };
+const potassiumPermanganate: MoleculeDefinition = { formula: "KMnO₄",
+	atoms: ["potassium", ...permanganate.atoms],
+	bonds: ["1-2:covalent:2", "1-3:covalent:2", "1-4:covalent:2", "1-5:covalent:1", "0-5:ionic:1"] };
 
 const sodiumChloride = salt("Natriumchlorid", "NaCl", "sodium", "chlorine");
 const aceticAcid = molecule("C₂H₄O₂", ["carbon", "carbon", "oxygen", "oxygen"],
@@ -344,6 +376,11 @@ export const chemicalCatalog: CatalogChemical[] = [
 	pure("Silberchlorid", "Salze", silverChloride, "solid", saltSolubility.AgCl.solidDensity),
 	pure("Bariumsulfat", "Salze", bariumSulfate, "solid", saltSolubility.BaSO4.solidDensity),
 	pure("Calciumcarbonat", "Salze", calciumCarbonate, "solid", saltSolubility.CaCO3.solidDensity),
+	// Freely soluble salts with an anion the equilibrium model does not run:
+	// the dry salt settles at its saturation and the stock is the same bath.
+	pure("Ammoniumsulfat", "Salze", ammoniumSulfate, "solid", saltSolubility["(NH4)2SO4"].solidDensity),
+	pure("Kaliumthiocyanat", "Salze", potassiumThiocyanate, "solid", saltSolubility.KSCN.solidDensity),
+	pure("Kaliumpermanganat", "Salze", potassiumPermanganate, "solid", saltSolubility.KMnO4.solidDensity),
 	aqueous("Natriumchloridlösung (1 mol/L)", "Salze", sodiumChloride.preview, saltSolubility.NaCl.saturation),
 	saltSolution("Kaliumchloridlösung", "KCl", "KCl", potassium, chloride),
 	saltSolution("Kaliumbromidlösung", "KBr", "KBr", potassium, bromide),
@@ -365,6 +402,9 @@ export const chemicalCatalog: CatalogChemical[] = [
 	saltSolution("Silberchloridlösung (gesättigt)", "AgCl", "AgCl", ion("Ag⁺", "silver", 1), chloride),
 	saltSolution("Bariumsulfatlösung (gesättigt)", "BaSO₄", "BaSO4", ion("Ba²⁺", "barium", 2), sulfate),
 	saltSolution("Calciumcarbonatlösung (gesättigt)", "CaCO₃", "CaCO3", ion("Ca²⁺", "calcium", 2), carbonate),
+	saltSolution("Ammoniumsulfatlösung", "(NH₄)₂SO₄", "(NH4)2SO4", ammonium, sulfate, 2, 1),
+	saltSolution("Kaliumthiocyanatlösung", "KSCN", "KSCN", potassium, thiocyanate),
+	saltSolution("Kaliumpermanganatlösung", "KMnO₄", "KMnO4", potassium, permanganate),
 	reference("Kupfer(II)-sulfat-Pentahydrat", "Salze", "CuSO₄·5 H₂O"),
 	reference("Calciumsulfat-Dihydrat", "Salze", "CaSO₄·2 H₂O"),
 	// The archived crystal selects the dry salt; the stock is a separate reagent.
@@ -372,11 +412,8 @@ export const chemicalCatalog: CatalogChemical[] = [
 	saltSolution("Natriumhydrogencarbonatlösung", "NaHCO₃", "NaHCO3", sodium, bicarbonate),
 	reference("Magnesiumsulfat-Heptahydrat", "Salze", "MgSO₄·7 H₂O"),
 	reference("Natriumthiosulfat-Pentahydrat", "Salze", "Na₂S₂O₃·5 H₂O"),
-	reference("Kaliumpermanganat", "Salze", "KMnO₄"),
-	reference("Kaliumthiocyanat", "Salze", "KSCN"),
 	reference("Kaliumnatriumtartrat", "Salze", "KNaC₄H₄O₆"),
 	reference("Eisen(II)-sulfat-Heptahydrat", "Salze", "FeSO₄·7 H₂O"),
-	reference("Ammoniumsulfat", "Salze", "(NH₄)₂SO₄"),
 	reference("Eisen(II)-sulfid", "Salze", "FeS"),
 	pure("Natriumhydroxid", "Basen", naoh, "solid", 2.13),
 	aqueous("Natronlauge (1 mol/L)", "Basen", naoh, concentratedReagent.sodiumHydroxide),

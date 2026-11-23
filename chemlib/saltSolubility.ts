@@ -44,6 +44,23 @@ export const saltSolubility: Readonly<Record<string, SaltSolubility>> = {
 	NaHCO3: { ions: ["[Na+]", "[O-]C(O)=O"], saturation: 1.14, solidDensity: 2.16 },
 	Na2SO4: { ions: ["[Na+]", "[O-]S(=O)(=O)[O-]", 2, 1], saturation: 1.30, solidDensity: 2.66 },
 	KNO3: { ions: ["[K+]", "[O-][N+](=O)[O-]"], saturation: 2.77, solidDensity: 2.11 },
+	// Three more freely soluble salts whose anions are weak electrolytes or a
+	// redox partner the model does not run yet. Ammonium sulfate: saturated
+	// 4.1 mol/L at 25 °C (3.9 at 0 °C), solid 1.769 g/mL
+	// (https://pmc.ncbi.nlm.nih.gov/articles/PMC4817497/). Potassium
+	// thiocyanate: 217 g per 100 mL water at 20 °C, solid 1.886 g/mL at 15 °C
+	// (https://www.chemicalbook.com/ChemicalProductProperty_EN_CB6853074.htm);
+	// the saturated solution is 68.5 wt%, and with an estimated 1.40 g/mL for it
+	// that is 9.8 mol/L. Potassium permanganate: 6.38 g per 100 mL at 20 °C,
+	// solid 2.703 g/mL, and with an estimated 1.04 g/mL for the saturated
+	// solution 0.0398 mol per 102.3 mL, so 0.39 mol/L.
+	// The ammonium ion is the same [N+] as in NH₄Cl and joins the ammonia
+	// family; the sulfate is the anion of the sulfuric-acid family. Thiocyanate
+	// and permanganate have no entry in the acid-base or complex tables, so they
+	// travel as spectator ions: no SCN⁻ complexation and no MnO₄⁻ redox.
+	"(NH4)2SO4": { ions: ["[N+]", "[O-]S(=O)(=O)[O-]", 2, 1], saturation: 4.1, solidDensity: 1.769 },
+	KSCN: { ions: ["[K+]", "N#C[S-]"], saturation: 9.8, solidDensity: 1.886 },
+	KMnO4: { ions: ["[K+]", "[O-][Mn](=O)(=O)=O"], saturation: 0.39, solidDensity: 2.703 },
 
 	// Dilute-solution products near 25 °C. Solve with concentrations as
 	// activities. The concentrated salts above use empirical model thresholds.
