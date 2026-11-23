@@ -67,6 +67,7 @@ export const solutionDisplayNames: Readonly<Record<string, string>> = {
 	"Silberchloridlösung (gesättigt)": "Silberchlorid",
 	"Bariumsulfatlösung (gesättigt)": "Bariumsulfat",
 	"Calciumcarbonatlösung (gesättigt)": "Calciumcarbonat",
+	"Eisen(II)-sulfidlösung (gesättigt)": "Eisen(II)-sulfid",
 	"Calciumsulfatlösung (gesättigt)": "Calciumsulfat",
 	"Natriumsulfatlösung": "Natriumsulfat",
 	"Kaliumchloridlösung": "Kaliumchlorid",
@@ -229,6 +230,11 @@ const chloride = ion("Cl⁻", "chlorine", -1);
 const bromide = ion("Br⁻", "bromine", -1);
 const iodide = ion("I⁻", "iodine", -1);
 const carbonate = oxoanion("CO₃²⁻", "carbon", 1, 2);
+// The sulfide ion is written [S2-], the form the solubility table and the
+// second step of the hydrogen-sulfide family carry; [S-2] is the hand-written
+// orientation Kekule accepts for it, but `registerSolidSalt` matches the
+// fragment literally, so only this spelling finds its reservoir.
+const sulfide = ion("S²⁻", "sulfur", -2);
 // Keep the proton explicit: the archived NaHCO₃ crystal omits H positions.
 // This ion joins the same carbonic-acid family as the carbonate stock.
 const bicarbonate: MoleculeDefinition = { formula: "HCO₃⁻",
@@ -343,6 +349,15 @@ const bariumSulfate: MoleculeDefinition = { formula: "BaSO₄",
 const calciumCarbonate: MoleculeDefinition = { formula: "CaCO₃",
 	atoms: ["calcium", ...carbonate.atoms],
 	bonds: ["1-2:covalent:2", "1-3:covalent:1", "1-4:covalent:1", "0-3:ionic:1", "0-4:ionic:1"] };
+// Iron(II) sulfide is the 1:1 case of the same route, but it needs two
+// electrons: sulfur is divalent and takes both, while a single ionic bond moves
+// only one. The stored graph therefore starts one electron short of the two
+// ions, and the one bond hands over the last one, which leaves the [Fe2+] and
+// [S2-] of the solubility table. The sulfide then joins the hydrogen-sulfide
+// family (pKa 7.0 and 12.9), so the bath turns basic as the anion takes
+// protons instead of settling at pH 7 like the spectator anions.
+const ironSulfide: MoleculeDefinition = { formula: "FeS",
+	atoms: ["iron", "sulfur"], bonds: ["0-1:ionic:1"], charges: [1, -1] };
 
 // Ammonium sulfate and the two potassium salts follow the same route: the
 // skeleton stays neutral and one ionic bond per unprotonated oxygen or per
@@ -461,6 +476,11 @@ export const chemicalCatalog: CatalogChemical[] = [
 	pure("Silberchlorid", "Salze", silverChloride, "solid", saltSolubility.AgCl.solidDensity),
 	pure("Bariumsulfat", "Salze", bariumSulfate, "solid", saltSolubility.BaSO4.solidDensity),
 	pure("Calciumcarbonat", "Salze", calciumCarbonate, "solid", saltSolubility.CaCO3.solidDensity),
+	// The black sulfide is the fourth of them. Its anion is not a spectator but
+	// the base of the hydrogen-sulfide family, so the little that dissolves
+	// turns the water basic and the reservoir settles at the root of the product
+	// with that protonation.
+	pure("Eisen(II)-sulfid", "Salze", ironSulfide, "solid", saltSolubility.FeS.solidDensity),
 	// Freely soluble salts with an anion the equilibrium model does not run:
 	// the dry salt settles at its saturation and the stock is the same bath.
 	pure("Ammoniumsulfat", "Salze", ammoniumSulfate, "solid", saltSolubility["(NH4)2SO4"].solidDensity),
@@ -488,6 +508,10 @@ export const chemicalCatalog: CatalogChemical[] = [
 	saltSolution("Silberchloridlösung (gesättigt)", "AgCl", "AgCl", ion("Ag⁺", "silver", 1), chloride),
 	saltSolution("Bariumsulfatlösung (gesättigt)", "BaSO₄", "BaSO4", ion("Ba²⁺", "barium", 2), sulfate),
 	saltSolution("Calciumcarbonatlösung (gesättigt)", "CaCO₃", "CaCO3", ion("Ca²⁺", "calcium", 2), carbonate),
+	// Saturated iron(II) sulfide water: 3.6·10⁻⁷ mol/L is all the product
+	// allows at the pH the sulfide itself sets, so the stock reads as a
+	// saturated solution and not as a rack reagent.
+	saltSolution("Eisen(II)-sulfidlösung (gesättigt)", "FeS", "FeS", ion("Fe²⁺", "iron", 2), sulfide),
 	// Gypsum is sparingly soluble, so its stock is a saturated solution; the
 	// Ksp decides how much of a dry dose dissolves, the limit only caps the
 	// concentration selector.
@@ -511,11 +535,9 @@ export const chemicalCatalog: CatalogChemical[] = [
 	saltSolution("Kaliumnatriumtartratlösung", "KNaC₄H₄O₆", "KNaC4H4O6", potassium, tartrate, 1, 1, sodium),
 	// The fixing salt and the Rochelle salt carry their own anion now, and the
 	// tartrate joins the tartaric-acid family, so both dose like the sulfates
-	// above and pair with the stocks below. Iron(II) sulfide still needs a
-	// sulfide family of its own and stays reference only.
+	// above and pair with the stocks below.
 	pure("Natriumthiosulfat-Pentahydrat", "Salze", sodiumThiosulfatePentahydrate, "solid", 1.667),
 	pure("Kaliumnatriumtartrat", "Salze", potassiumSodiumTartrateTetrahydrate, "solid", 1.79),
-	reference("Eisen(II)-sulfid", "Salze", "FeS"),
 	pure("Natriumhydroxid", "Basen", naoh, "solid", 2.13),
 	aqueous("Natronlauge (1 mol/L)", "Basen", naoh, concentratedReagent.sodiumHydroxide),
 	aqueous("Kalilauge (1 mol/L)", "Basen", { formula: "KOH", atoms: ["potassium", "oxygen", "hydrogen"],

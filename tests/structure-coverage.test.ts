@@ -115,12 +115,17 @@ test("a hydrated solid joins the anhydrous stock of its salt", () => {
 		assert.ok(group.solid.some((form) => form.hydrated && form.name === solid), `${identity} has no hydrate`);
 		assert.ok(group.stock.some((form) => form.name === stock), `${identity} has no stock`);
 	}
-	// Iron(II) sulfide is the last salt without a recipe: neither a solubility
-	// row nor a sulfide family exists yet.
+	// Iron(II) sulfide was the last salt without a recipe. It carries one now
+	// because the salt loop re-solves the protonation of its anion instead of
+	// freezing the share of the current bath; the solid is water-free.
 	const ironSulfide = report.salts.find((group) => group.identity === "FeS");
 	assert.ok(ironSulfide, "missing the FeS group");
-	assert.equal(ironSulfide.status, "reference-only");
-	assert.equal(ironSulfide.hydratedReference, false);
-	assert.deepEqual(ironSulfide.reference.map((form) => form.name), ["Eisen(II)-sulfid"]);
+	assert.equal(ironSulfide.status, "paired");
+	assert.deepEqual(ironSulfide.reference, []);
+	assert.ok(ironSulfide.solid.some((form) => !form.hydrated && form.name === "Eisen(II)-sulfid"));
+	assert.ok(ironSulfide.stock.some((form) => form.name === "Eisen(II)-sulfidlösung (gesättigt)"));
+	// No salt identity is left as a reference: every one the catalog names can
+	// be dosed, so the builder and the lab carry the same reagents.
+	assert.equal(report.summary.referenceOnly, 0, "a salt is left without a recipe");
 	assert.equal(new Set(report.salts.map((group) => group.identity)).size, report.salts.length);
 });

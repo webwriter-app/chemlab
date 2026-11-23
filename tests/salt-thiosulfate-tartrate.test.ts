@@ -9,12 +9,11 @@ import { saltIonList, saltSolubility } from "../chemlib/saltSolubility";
 import { catalogStructures, structureCatalog } from "../molecule-builder/catalog";
 
 /**
- * The photographic fixing salt and the Rochelle salt close the last two salt
- * gaps of the builder catalog, except iron(II) sulfide. Both are hydrates of a
- * salt whose anion had no structure yet: a thiosulfate that keeps its
- * sulfur-sulfur bond, and a tartrate that is the dianion of the tartaric-acid
- * family. The double salt carries two different cations per anion, which is why
- * the solubility row lists the cation list in full.
+ * The photographic fixing salt and the Rochelle salt closed the last two salt
+ * gaps of the builder catalog whose anion had no structure yet: a thiosulfate
+ * that keeps its sulfur-sulfur bond, and a tartrate that is the dianion of the
+ * tartaric-acid family. The double salt carries two different cations per
+ * anion, which is why the solubility row lists the cation list in full.
  */
 interface HydrateSalt {
 	name: string;

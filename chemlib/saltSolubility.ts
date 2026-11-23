@@ -146,6 +146,17 @@ export const saltSolubility: Readonly<Record<string, SaltSolubility>> = {
 	CaCO3: { ions: ["[Ca2+]", "[O-]C(=O)[O-]"], ksp: 3.4e-9, saturation: 5.8e-5, solidDensity: 2.71 },
 	BaCO3: { ions: ["[Ba2+]", "[O-]C(=O)[O-]"], ksp: 2.6e-9, solidDensity: 4.29 },
 	Ag2SO4: { ions: ["[Ag+]", "[O-]S(=O)(=O)[O-]", 2, 1], ksp: 1.2e-5 },
+	// Iron(II) sulfide is the first dosed salt whose anion protonates away to a
+	// vanishing share of its own acid family: at the root of the product the
+	// bath sits at pH 7.65 and holds most of the dissolved sulfur as H₂S and
+	// HS⁻, not as S²⁻. Its `saturation` is therefore not the root of the
+	// product but the analytical sulfide total that puts [Fe²⁺][S²⁻] on it at
+	// that protonation, 3.6·10⁻⁷ mol/L; only the stock's concentration limit
+	// reads it. The product 6·10⁻¹⁹ is the usual value of the sulfide tables
+	// (https://openstax.org/books/chemistry-2e/pages/j-solubility-products),
+	// the solid density 4.84 g/mL is troilite's, the mineral of the black
+	// precipitate.
+	FeS: { ions: ["[Fe2+]", "[S2-]"], ksp: 6e-19, saturation: 3.6e-7, color: 0x1c1c22, solidDensity: 4.84 },
 
 	// Sparingly soluble salts of the heavier cations, carried over from the
 	// retired pKL table in StructureManager (ksp = 10^-pKL). The values are

@@ -12,19 +12,19 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 | Measure | Count |
 | --- | ---: |
-| Catalog entries | 180 |
-| Entries with a builder structure | 169 |
+| Catalog entries | 181 |
+| Entries with a builder structure | 170 |
 | Entries without a builder structure | 11 |
-| Dosed entries (solid or aqueous) | 105 |
-| Dosed salt entries | 58 |
+| Dosed entries (solid or aqueous) | 107 |
+| Dosed salt entries | 60 |
 | Molecular reagents outside the salt pairing | 47 |
 | Mixtures shown by their constituents | 19 |
-| Salt entries in total | 59 |
+| Salt entries in total | 60 |
 | Salt identities | 30 |
-| Salt identities with both forms | 29 |
+| Salt identities with both forms | 30 |
 | Salt identities with a solid form only | 0 |
 | Salt identities with an aqueous form only | 0 |
-| Salt identities with neither form | 1 |
+| Salt identities with neither form | 0 |
 
 ## Salt forms
 
@@ -41,7 +41,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 | CaSO₄ | Calciumsulfat-Dihydrat (hydrate) | Calciumsulfatlösung (gesättigt) | — | paired | 0.0069 mol/L saturation, Ksp 4.90e-5, 2.97 g/mL solid density (CaSO4) |
 | CuSO₄ | Kupfer(II)-sulfat-Pentahydrat (hydrate) | Kupfer(II)-sulfatlösung | — | paired | 1.29 mol/L saturation, 3.6 g/mL solid density (CuSO4) |
 | FeCl₃ | Eisen(III)-chlorid | Eisen(III)-chloridlösung | — | paired | 2.69 mol/L saturation, 2.9 g/mL solid density (FeCl3) |
-| FeS | — | — | Eisen(II)-sulfid | reference only | not tabulated |
+| FeS | Eisen(II)-sulfid | Eisen(II)-sulfidlösung (gesättigt) | — | paired | 3.6e-7 mol/L saturation, Ksp 6.00e-19, 4.84 g/mL solid density (FeS) |
 | FeSO₄ | Eisen(II)-sulfat-Heptahydrat (hydrate) | Eisen(II)-sulfatlösung | — | paired | 0.93 mol/L saturation, 3.64 g/mL solid density (FeSO4) |
 | KBr | Kaliumbromid | Kaliumbromidlösung | — | paired | 4.57 mol/L saturation, 2.75 g/mL solid density (KBr) |
 | KCl | Kaliumchlorid | Kaliumchloridlösung | — | paired | 4.02 mol/L saturation, 1.98 g/mL solid density (KCl) |
@@ -63,7 +63,6 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 ## Remaining gaps
 
-- **FeS** — Neither phase has a recipe for FeS; only the structural preview exists.
 
 ## Entries without a builder structure
 
@@ -81,7 +80,6 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 ## Entries without a dose
 
-- Salze: Eisen(II)-sulfid
 - Anorganische Säuren: Salpetersäure
 - Basen: Calciumhydroxid, Kalkwasser
 - Carbonsäuren: Benzoesäure, Sorbinsäure, Tetradecansäure (Myristinsäure)

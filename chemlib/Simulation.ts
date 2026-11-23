@@ -147,6 +147,19 @@ interface SaltFragment {
 	count: number;
 }
 
+/**
+ * Proton state of a trial solution while a salt is being dissolved or
+ * precipitated. The acid-base balance moves with the amount, so a projection
+ * needs the proton concentration of that trial amount and the amounts the
+ * complexes leave of each acid family.
+ */
+interface SaltIonState {
+	/** Proton concentration of the trial state, in mol/L. */
+	H: number;
+	/** Unbound amount per acid-family key, in mol/L; absent without complexes. */
+	unbound?: Map<string, number>;
+}
+
 /** A free ion as the salt equilibria see it: stored as a molecule, or computed from an acid family. */
 interface SaltIon {
 	/** Structure used when a solid precipitates from this ion. */
@@ -161,8 +174,20 @@ interface SaltIon {
 	 * For a spectator ion it equals {@link concentration}.
 	 */
 	readonly activity: number;
-	/** Concentration if `delta` mol/L of this ion were added (negative removes). */
-	concentrationAt(delta: number): number;
+	/**
+	 * Free concentration if `delta` mol/L of this ion dissolved (negative:
+	 * precipitated) in the given trial state.
+	 *
+	 * The ion's reservoir is its acid family, so dissolving more of a
+	 * hydrolysing anion raises that family's analytical total and the protons
+	 * follow; {@link SaltIonState} carries the proton concentration that the
+	 * trial amount produces. A projection that freezes the protonation share
+	 * makes a sulfide look nearly unchanged when it is added, which is how
+	 * iron(II) sulfide got stuck at a fraction of its tabulated solubility.
+	 */
+	concentrationAt(delta: number, state: SaltIonState): number;
+	/** Acid family whose analytical total this ion moves, if it has one. */
+	readonly family?: AcidBaseFamily;
 	/** Largest concentration that can be removed without going negative. */
 	readonly removable: number;
 	/** Apply a change in mol/L of this ion. */
@@ -796,7 +821,11 @@ export abstract class Simulation {
 				molecule,
 				get concentration() { return free(); },
 				get activity() { return free(); },
-				concentrationAt: (delta) => free() + delta * fraction,
+				concentrationAt: (delta, state) => family
+					? this.speciesFraction(family, molecule, state.H) *
+						(state.unbound?.get(family.key) ?? family.totalC + delta)
+					: current() + delta,
+				family,
 				get removable() { return current(); },
 				change: (delta) => mix.changeMolecule(molecule._id, delta * volume),
 				computed: false,
@@ -825,7 +854,10 @@ export abstract class Simulation {
 					molecule,
 					get concentration() { return total() * fractions[step]; },
 					get activity() { return total() * fractions[step]; },
-					concentrationAt: (delta) => (total() + delta) * fractions[step],
+					concentrationAt: (delta, state) =>
+						(AcidBase.speciesFractions(family, state.H)[step] ?? 0) *
+						(state.unbound?.get(family.key) ?? family.totalC + delta),
+					family,
 					get removable() { return total(); },
 					change: (delta) => this.changeFamily(mix, family, delta * volume),
 					computed: true,
@@ -894,7 +926,8 @@ export abstract class Simulation {
 		const solids = new Map(mix._activeMolecules.filter((item) => item.solidSaltFormula)
 			.map((item) => [item.solidSaltFormula, item]));
 		let changed = false;
-		let ions = this.saltIons(mix);
+		const equilibrium = this.solveAqueousEquilibrium(mix);
+		let ions = this.saltIons(mix, equilibrium);
 		for (const { formula, ions: species, product } of otherSaltEquilibria) {
 			// One entry per ion of the formula unit, in table order. A double
 			// salt therefore moves both of its cations with the same amount.
@@ -902,10 +935,12 @@ export abstract class Simulation {
 			const counts = species.map(({ count }) => count);
 			const solid = solids.get(formula);
 			if (!solid && parts.some(({ ion }) => !ion)) continue;
-			const ionProduct = (delta: number) => saltIonProduct(parts.map(({ ion, count }) =>
-				ion ? ion.concentrationAt(delta * count) : 0), counts);
-			const current = ionProduct(0);
+			const current = saltIonProduct(parts.map(({ ion }) => ion ? ion.concentration : 0), counts);
 			if (Math.abs(current - product) <= product * 1e-8) continue;
+			// The free concentrations of a trial amount, with the acid-base and
+			// complex equilibria re-solved for it. A salt that dissolves partly
+			// hydrolysable ions only finds its product this way.
+			const projection = this.saltProjection(parts, counts, equilibrium);
 			const available = solid ? mix._molProperties[solid._id + "n"] / volume : 0;
 			const removable = Math.min(...parts.map(({ ion, count }) =>
 				ion ? ion.removable / count : Infinity));
@@ -913,10 +948,10 @@ export abstract class Simulation {
 			let high = current > product ? 0 : available;
 			if (!(low < high)) continue;
 			let delta = high;
-			if (ionProduct(high) > product) {
+			if (projection(high) > product) {
 				for (let step = 0; step < 52; step++) {
 					const middle = (low + high) / 2;
-					if (ionProduct(middle) > product) high = middle;
+					if (projection(middle) > product) high = middle;
 					else low = middle;
 				}
 				delta = (low + high) / 2;
@@ -932,6 +967,12 @@ export abstract class Simulation {
 					else if (structures[index]) mix.addMolecule(structures[index], amount * count);
 				});
 				mix.changeMolecule(solid._id, -amount);
+				// A reservoir that came out within rounding is empty; a rest of a
+				// few 10⁻¹⁷ mol is the subtraction's dust, not a wet residue.
+				// {@link Mixture.changeMolecule} has already dropped a reservoir
+				// that reached zero, so the property can be gone.
+				const left = mix._molProperties[solid._id + "n"];
+				if (left !== undefined && !(left > Math.max(amount, 0) * 1e-9)) mix.remMolecule(solid._id);
 				if (!mix._molProperties[solid._id + "n"]) solids.delete(formula);
 				// the dissolved bulk no longer occupies its solid volume
 				mix.addedVolume = Math.max(0, mix.addedVolume -
@@ -948,6 +989,69 @@ export abstract class Simulation {
 			ions = this.saltIons(mix);
 		}
 		return changed;
+	}
+
+	/**
+	 * Ion product of one salt as a function of how much of it dissolves.
+	 *
+	 * The free concentration of an ion is its share of the acid family's
+	 * analytical total, and that share depends on the protons. Adding a
+	 * hydrolysing anion therefore raises its own free concentration twice: once
+	 * through the total and once through the proton balance it pulls along.
+	 * Freezing the share at the current pH turns that into a straight line and
+	 * makes a salt like iron(II) sulfide look saturated while it is not, so
+	 * every trial amount re-solves the charge balance instead.
+	 *
+	 * The trial state is exactly the state {@link Mixture} reads after the
+	 * same amount is applied: {@link changeFamily} moves the analytical total by
+	 * the amount, and complex formation follows the new totals.
+	 *
+	 * @private
+	 * @static
+	 * @param parts - the ions of the formula unit with their counts
+	 * @param counts - count of each ion per formula unit, in table order
+	 * @param equilibrium - the aqueous equilibrium of the current solution
+	 * @returns {(delta: number) => number} the ion product at that amount, in mol/L
+	 */
+	private static saltProjection(
+		parts: ReadonlyArray<{ ion?: SaltIon; count: number }>,
+		counts: readonly number[],
+		equilibrium: { systems: AcidBaseFamily[]; spectatorCharge: number; H: number; Kw: number },
+	): (delta: number) => number {
+		const { systems, spectatorCharge, H, Kw } = equilibrium;
+		const productAt = (state: SaltIonState, delta: number) => saltIonProduct(parts.map(({ ion, count }) =>
+			ion ? ion.concentrationAt(delta * count, state) : 0), counts);
+		return (delta) => {
+			// A salt of spectator ions moves nothing but its own total, so the
+			// current proton state still holds and the solve can be skipped.
+			const shifts = new Map<AcidBaseFamily, number>();
+			let spectator = spectatorCharge;
+			for (const { ion, count } of parts) {
+				if (!ion) continue;
+				if (ion.family) shifts.set(ion.family, (shifts.get(ion.family) ?? 0) + delta * count);
+				else spectator += delta * count * ion.molecule._totalCharge;
+			}
+			if (!shifts.size && spectator === spectatorCharge) return productAt({ H }, delta);
+			const trial = shifts.size
+				? systems.map((system) => shifts.has(system)
+					? { ...system, totalC: Math.max(0, system.totalC + shifts.get(system)) }
+					: system)
+				: systems;
+			const complexes = shifts.size ? complexEquilibrium(trial) : undefined;
+			const protons = AcidBase.solveProton(trial, spectator, Kw,
+				complexes ? (h) => complexes(h).chargeCorrection : undefined);
+			const state: SaltIonState = { H: protons,
+				unbound: complexes ? this.unboundPools(complexes(protons)) : undefined };
+			return productAt(state, delta);
+		};
+	}
+
+	/** Amounts the complexes leave of each acid family, keyed by the family key. */
+	private static unboundPools(speciation?: { unbound: Map<AcidBaseFamily, number> }):
+		Map<string, number> | undefined {
+		return speciation
+			? new Map([...speciation.unbound].map(([family, amount]) => [family.key, amount]))
+			: undefined;
 	}
 
 	/**
@@ -3367,7 +3471,7 @@ export abstract class Simulation {
 		const complexes = complexEquilibrium(systems);
 		const H = AcidBase.solveProton(systems, spectatorCharge, Kw,
 			complexes ? H => complexes(H).chargeCorrection : undefined);
-		return { systems, H, Kw, speciation: complexes?.(H) };
+		return { systems, spectatorCharge, H, Kw, speciation: complexes?.(H) };
 	}
 
 	/** Read-only equilibrium view of modeled polyprotic families; stored amounts remain analytical totals. */

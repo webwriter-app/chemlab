@@ -1,19 +1,19 @@
 {
   "generatedBy": "scripts/generate-structure-coverage.ts",
   "summary": {
-    "catalogEntries": 180,
-    "withStructure": 169,
+    "catalogEntries": 181,
+    "withStructure": 170,
     "withoutStructure": 11,
-    "dosed": 105,
+    "dosed": 107,
     "reagents": 47,
     "mixtures": 19,
-    "saltEntries": 59,
-    "dosedSaltEntries": 58,
+    "saltEntries": 60,
+    "dosedSaltEntries": 60,
     "saltIdentities": 30,
-    "paired": 29,
+    "paired": 30,
     "solidOnly": 0,
     "stockOnly": 0,
-    "referenceOnly": 1
+    "referenceOnly": 0
   },
   "salts": [
     {
@@ -297,19 +297,29 @@
     },
     {
       "label": "FeS",
-      "status": "reference-only",
+      "status": "paired",
       "identity": "FeS",
-      "solid": [],
-      "stock": [],
-      "reference": [
+      "solid": [
         {
           "name": "Eisen(II)-sulfid",
           "hydrated": false
         }
       ],
+      "stock": [
+        {
+          "name": "Eisen(II)-sulfidlösung (gesättigt)",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
       "hydratedReference": false,
-      "solubility": null,
-      "gap": "Neither phase has a recipe for FeS; only the structural preview exists."
+      "solubility": {
+        "key": "FeS",
+        "saturation": 3.6e-7,
+        "ksp": 6e-19,
+        "solidDensity": 4.84
+      },
+      "gap": null
     },
     {
       "label": "FeSO₄",
@@ -975,11 +985,24 @@
       "name": "Eisen(II)-sulfid",
       "category": "Salze",
       "formula": "FeS",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
+      "identity": "FeS",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Eisen(II)-sulfidlösung (gesättigt)",
+      "category": "Salze",
+      "formula": "FeS",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
       "identity": "FeS",
       "hydrated": false,
       "mixture": false
