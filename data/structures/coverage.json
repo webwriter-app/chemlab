@@ -1,18 +1,18 @@
 {
   "generatedBy": "scripts/generate-structure-coverage.ts",
   "summary": {
-    "catalogEntries": 160,
+    "catalogEntries": 166,
     "withStructure": 155,
-    "withoutStructure": 5,
-    "dosed": 70,
+    "withoutStructure": 11,
+    "dosed": 77,
     "reagents": 47,
     "mixtures": 19,
-    "saltEntries": 39,
-    "dosedSaltEntries": 23,
+    "saltEntries": 45,
+    "dosedSaltEntries": 30,
     "saltIdentities": 30,
-    "paired": 6,
+    "paired": 13,
     "solidOnly": 2,
-    "stockOnly": 9,
+    "stockOnly": 2,
     "referenceOnly": 13
   },
   "salts": [
@@ -54,9 +54,14 @@
     },
     {
       "label": "AgNO₃",
-      "status": "stock-only",
+      "status": "paired",
       "identity": "AgNO3",
-      "solid": [],
+      "solid": [
+        {
+          "name": "Silbernitrat",
+          "hydrated": false
+        }
+      ],
       "stock": [
         {
           "name": "Silbernitratlösung",
@@ -70,13 +75,18 @@
         "saturation": 8.8,
         "solidDensity": 4.35
       },
-      "gap": "Solid recipe missing for AgNO₃; 8.8 mol/L saturation, 4.35 g/mL solid density (AgNO3) is tabulated."
+      "gap": null
     },
     {
       "label": "BaCl₂",
-      "status": "stock-only",
+      "status": "paired",
       "identity": "BaCl2",
-      "solid": [],
+      "solid": [
+        {
+          "name": "Bariumchlorid",
+          "hydrated": false
+        }
+      ],
       "stock": [
         {
           "name": "Bariumchloridlösung",
@@ -90,7 +100,7 @@
         "saturation": 1.38,
         "solidDensity": 3.86
       },
-      "gap": "Solid recipe missing for BaCl₂; 1.38 mol/L saturation, 3.86 g/mL solid density (BaCl2) is tabulated."
+      "gap": null
     },
     {
       "label": "BaSO₄",
@@ -150,28 +160,28 @@
     },
     {
       "label": "CaCl₂",
-      "status": "stock-only",
+      "status": "paired",
       "identity": "CaCl2",
-      "solid": [],
+      "solid": [
+        {
+          "name": "Calciumchlorid",
+          "hydrated": false
+        }
+      ],
       "stock": [
         {
           "name": "Calciumchloridlösung",
           "hydrated": false
         }
       ],
-      "reference": [
-        {
-          "name": "Calciumchlorid",
-          "hydrated": false
-        }
-      ],
+      "reference": [],
       "hydratedReference": false,
       "solubility": {
         "key": "CaCl2",
         "saturation": 5.04,
         "solidDensity": 2.15
       },
-      "gap": "Solid recipe missing for CaCl₂; 5.04 mol/L saturation, 2.15 g/mL solid density (CaCl2) is tabulated. The catalog lists Calciumchlorid as reference only, so neither form is dosed yet."
+      "gap": null
     },
     {
       "label": "CaSO₄·2 H₂O",
@@ -220,9 +230,14 @@
     },
     {
       "label": "FeCl₃",
-      "status": "stock-only",
+      "status": "paired",
       "identity": "FeCl3",
-      "solid": [],
+      "solid": [
+        {
+          "name": "Eisen(III)-chlorid",
+          "hydrated": false
+        }
+      ],
       "stock": [
         {
           "name": "Eisen(III)-chloridlösung",
@@ -236,7 +251,7 @@
         "saturation": 2.69,
         "solidDensity": 2.9
       },
-      "gap": "Solid recipe missing for FeCl₃; 2.69 mol/L saturation, 2.9 g/mL solid density (FeCl3) is tabulated."
+      "gap": null
     },
     {
       "label": "FeS",
@@ -543,9 +558,14 @@
     },
     {
       "label": "Na₂CO₃",
-      "status": "stock-only",
+      "status": "paired",
       "identity": "Na2CO3",
-      "solid": [],
+      "solid": [
+        {
+          "name": "Natriumcarbonat",
+          "hydrated": false
+        }
+      ],
       "stock": [
         {
           "name": "Natriumcarbonatlösung",
@@ -559,13 +579,18 @@
         "saturation": 2.01,
         "solidDensity": 2.54
       },
-      "gap": "Solid recipe missing for Na₂CO₃; 2.01 mol/L saturation, 2.54 g/mL solid density (Na2CO3) is tabulated."
+      "gap": null
     },
     {
       "label": "Na₂SO₄",
-      "status": "stock-only",
+      "status": "paired",
       "identity": "Na2SO4",
-      "solid": [],
+      "solid": [
+        {
+          "name": "Natriumsulfat",
+          "hydrated": false
+        }
+      ],
       "stock": [
         {
           "name": "Natriumsulfatlösung",
@@ -579,7 +604,7 @@
         "saturation": 1.3,
         "solidDensity": 2.66
       },
-      "gap": "Solid recipe missing for Na₂SO₄; 1.3 mol/L saturation, 2.66 g/mL solid density (Na2SO4) is tabulated."
+      "gap": null
     },
     {
       "label": "Na₂S₂O₃·5 H₂O",
@@ -599,9 +624,14 @@
     },
     {
       "label": "ZnSO₄",
-      "status": "stock-only",
+      "status": "paired",
       "identity": "ZnSO4",
-      "solid": [],
+      "solid": [
+        {
+          "name": "Zinksulfat",
+          "hydrated": false
+        }
+      ],
       "stock": [
         {
           "name": "Zinksulfatlösung",
@@ -615,7 +645,7 @@
         "saturation": 1.79,
         "solidDensity": 3.54
       },
-      "gap": "Solid recipe missing for ZnSO₄; 1.79 mol/L saturation, 3.54 g/mL solid density (ZnSO4) is tabulated."
+      "gap": null
     }
   ],
   "entries": [
@@ -642,6 +672,19 @@
       "dosed": false,
       "structures": 1,
       "identity": "(NH4)2SO4",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Bariumchlorid",
+      "category": "Salze",
+      "formula": "BaCl₂",
+      "form": "salt",
+      "phase": "solid",
+      "dosable": false,
+      "dosed": true,
+      "structures": 0,
+      "identity": "BaCl2",
       "hydrated": false,
       "mixture": false
     },
@@ -688,10 +731,10 @@
       "name": "Calciumchlorid",
       "category": "Salze",
       "formula": "CaCl₂",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
       "identity": "CaCl2",
       "hydrated": false,
@@ -759,6 +802,19 @@
       "dosed": false,
       "structures": 1,
       "identity": "FeS",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Eisen(III)-chlorid",
+      "category": "Salze",
+      "formula": "FeCl₃",
+      "form": "salt",
+      "phase": "solid",
+      "dosable": false,
+      "dosed": true,
+      "structures": 0,
+      "identity": "FeCl3",
       "hydrated": false,
       "mixture": false
     },
@@ -984,6 +1040,19 @@
       "mixture": false
     },
     {
+      "name": "Natriumcarbonat",
+      "category": "Salze",
+      "formula": "Na₂CO₃",
+      "form": "salt",
+      "phase": "solid",
+      "dosable": false,
+      "dosed": true,
+      "structures": 0,
+      "identity": "Na2CO3",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
       "name": "Natriumcarbonatlösung",
       "category": "Salze",
       "formula": "Na₂CO₃",
@@ -1062,6 +1131,19 @@
       "mixture": false
     },
     {
+      "name": "Natriumsulfat",
+      "category": "Salze",
+      "formula": "Na₂SO₄",
+      "form": "salt",
+      "phase": "solid",
+      "dosable": false,
+      "dosed": true,
+      "structures": 0,
+      "identity": "Na2SO4",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
       "name": "Natriumsulfatlösung",
       "category": "Salze",
       "formula": "Na₂SO₄",
@@ -1101,6 +1183,19 @@
       "mixture": false
     },
     {
+      "name": "Silbernitrat",
+      "category": "Salze",
+      "formula": "AgNO₃",
+      "form": "salt",
+      "phase": "solid",
+      "dosable": false,
+      "dosed": true,
+      "structures": 0,
+      "identity": "AgNO3",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
       "name": "Silbernitratlösung",
       "category": "Salze",
       "formula": "AgNO₃",
@@ -1110,6 +1205,19 @@
       "dosed": true,
       "structures": 2,
       "identity": "AgNO3",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Zinksulfat",
+      "category": "Salze",
+      "formula": "ZnSO₄",
+      "form": "salt",
+      "phase": "solid",
+      "dosable": false,
+      "dosed": true,
+      "structures": 0,
+      "identity": "ZnSO4",
       "hydrated": false,
       "mixture": false
     },
@@ -2701,6 +2809,36 @@
     }
   ],
   "unstructured": [
+    {
+      "name": "Bariumchlorid",
+      "category": "Salze",
+      "formula": "BaCl₂"
+    },
+    {
+      "name": "Eisen(III)-chlorid",
+      "category": "Salze",
+      "formula": "FeCl₃"
+    },
+    {
+      "name": "Natriumcarbonat",
+      "category": "Salze",
+      "formula": "Na₂CO₃"
+    },
+    {
+      "name": "Natriumsulfat",
+      "category": "Salze",
+      "formula": "Na₂SO₄"
+    },
+    {
+      "name": "Silbernitrat",
+      "category": "Salze",
+      "formula": "AgNO₃"
+    },
+    {
+      "name": "Zinksulfat",
+      "category": "Salze",
+      "formula": "ZnSO₄"
+    },
     {
       "name": "Paraffinöl",
       "category": "Lösungsmittel",

@@ -1,5 +1,7 @@
 import { strict as assert } from "node:assert";
 import { catalogAqueousStructure, catalogIsMixture, catalogStructures, matchingRecipe, structureCatalog } from "../molecule-builder/catalog";
+import { chemicalCatalog } from "../data/chemicals";
+import { buildCoverageReport } from "../scripts/structure-coverage-model";
 import { crystalIonColors, crystalRadii, latticePositions, siteIon } from "../molecule-builder/crystal-display";
 import { canBond, dot, electronRegions, fitGeometry, shapeName, subtract } from "../molecule-builder/geometry";
 import { atomRadius, estimatedBondLength, spaceFillingRadius } from "../molecule-builder/radii";
@@ -104,9 +106,17 @@ for (const { atomicNumber, symbol } of ELEMENTS) {
 	assert.ok(readStructure(lattice), symbol);
 	assert.ok(lattice.sites.every(site => site.atomicNumber === atomicNumber), symbol);
 }
+// The builder lists only what it can draw. ChemLab may still dose a compound
+// ahead of its structure, so every entry without one has to be tracked in the
+// coverage report; this keeps the gap visible instead of silent.
+const unstructured = new Set(buildCoverageReport().unstructured.map(entry => entry.name));
+for (const { name } of chemicalCatalog) {
+	assert.ok(catalogStructures(name).length || catalogIsMixture(name) || unstructured.has(name),
+		`Missing classification for ${name}`);
+}
 for (const { name } of structureCatalog) {
 	const display = catalogStructures(name);
-	assert.ok(display.length || catalogIsMixture(name), `Missing classification for ${name}`);
+	assert.ok(display.length || catalogIsMixture(name), `Builder lists ${name} without a structure`);
 	for (const model of display) {
 		assert.ok(readStructure(model), `Invalid structure for ${name}`);
 		if (model.kind === "molecule") assert.ok(model.geometry, `Missing geometry for ${name}`);

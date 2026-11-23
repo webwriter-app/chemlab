@@ -12,18 +12,18 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 | Measure | Count |
 | --- | ---: |
-| Catalog entries | 160 |
+| Catalog entries | 166 |
 | Entries with a builder structure | 155 |
-| Entries without a builder structure | 5 |
-| Dosed entries (solid or aqueous) | 70 |
-| Dosed salt entries | 23 |
+| Entries without a builder structure | 11 |
+| Dosed entries (solid or aqueous) | 77 |
+| Dosed salt entries | 30 |
 | Molecular reagents outside the salt pairing | 47 |
 | Mixtures shown by their constituents | 19 |
-| Salt entries in total | 39 |
+| Salt entries in total | 45 |
 | Salt identities | 30 |
-| Salt identities with both forms | 6 |
+| Salt identities with both forms | 13 |
 | Salt identities with a solid form only | 2 |
-| Salt identities with an aqueous form only | 9 |
+| Salt identities with an aqueous form only | 2 |
 | Salt identities with neither form | 13 |
 
 ## Salt forms
@@ -32,15 +32,15 @@ Reference-only behaviour is an interim gap, not an exemption.
 | --- | --- | --- | --- | --- | --- |
 | (NH₄)₂SO₄ | — | — | Ammoniumsulfat | reference only | not tabulated |
 | AgCl | — | — | Silberchlorid | reference only | Ksp 1.80e-10, 5.56 g/mL solid density (AgCl) |
-| AgNO₃ | — | Silbernitratlösung | — | stock only | 8.8 mol/L saturation, 4.35 g/mL solid density (AgNO3) |
-| BaCl₂ | — | Bariumchloridlösung | — | stock only | 1.38 mol/L saturation, 3.86 g/mL solid density (BaCl2) |
+| AgNO₃ | Silbernitrat | Silbernitratlösung | — | paired | 8.8 mol/L saturation, 4.35 g/mL solid density (AgNO3) |
+| BaCl₂ | Bariumchlorid | Bariumchloridlösung | — | paired | 1.38 mol/L saturation, 3.86 g/mL solid density (BaCl2) |
 | BaSO₄ | — | — | Bariumsulfat | reference only | Ksp 1.10e-10, 4.49 g/mL solid density (BaSO4) |
 | CH₃COONa | — | — | Natriumacetat | reference only | not tabulated |
 | CaCO₃ | — | — | Calciumcarbonat | reference only | Ksp 3.40e-9, 2.71 g/mL solid density (CaCO3) |
-| CaCl₂ | — | Calciumchloridlösung | Calciumchlorid | stock only | 5.04 mol/L saturation, 2.15 g/mL solid density (CaCl2) |
+| CaCl₂ | Calciumchlorid | Calciumchloridlösung | — | paired | 5.04 mol/L saturation, 2.15 g/mL solid density (CaCl2) |
 | CaSO₄·2 H₂O | — | — | Calciumsulfat-Dihydrat (hydrate) | reference only | Ksp 4.90e-5, 2.97 g/mL solid density (CaSO4) |
 | CuSO₄ | — | Kupfer(II)-sulfatlösung | Kupfer(II)-sulfat-Pentahydrat (hydrate) | stock only | 1.29 mol/L saturation, 3.6 g/mL solid density (CuSO4) |
-| FeCl₃ | — | Eisen(III)-chloridlösung | — | stock only | 2.69 mol/L saturation, 2.9 g/mL solid density (FeCl3) |
+| FeCl₃ | Eisen(III)-chlorid | Eisen(III)-chloridlösung | — | paired | 2.69 mol/L saturation, 2.9 g/mL solid density (FeCl3) |
 | FeS | — | — | Eisen(II)-sulfid | reference only | not tabulated |
 | FeSO₄ | — | Eisen(II)-sulfatlösung | Eisen(II)-sulfat-Heptahydrat (hydrate) | stock only | 0.93 mol/L saturation, 3.64 g/mL solid density (FeSO4) |
 | KBr | Kaliumbromid | Kaliumbromidlösung | — | paired | 4.57 mol/L saturation, 2.75 g/mL solid density (KBr) |
@@ -56,24 +56,20 @@ Reference-only behaviour is an interim gap, not an exemption.
 | NaCl | Natriumchlorid | Natriumchloridlösung (1 mol/L) | — | paired | 5.43 mol/L saturation, 2.16 g/mL solid density (NaCl) |
 | NaHCO₃ | Natriumhydrogencarbonat | Natriumhydrogencarbonatlösung | — | paired | 1.14 mol/L saturation, 2.16 g/mL solid density (NaHCO3) |
 | NaI | Natriumiodid | — | — | solid only | not tabulated |
-| Na₂CO₃ | — | Natriumcarbonatlösung | — | stock only | 2.01 mol/L saturation, 2.54 g/mL solid density (Na2CO3) |
-| Na₂SO₄ | — | Natriumsulfatlösung | — | stock only | 1.3 mol/L saturation, 2.66 g/mL solid density (Na2SO4) |
+| Na₂CO₃ | Natriumcarbonat | Natriumcarbonatlösung | — | paired | 2.01 mol/L saturation, 2.54 g/mL solid density (Na2CO3) |
+| Na₂SO₄ | Natriumsulfat | Natriumsulfatlösung | — | paired | 1.3 mol/L saturation, 2.66 g/mL solid density (Na2SO4) |
 | Na₂S₂O₃·5 H₂O | — | — | Natriumthiosulfat-Pentahydrat (hydrate) | reference only | not tabulated |
-| ZnSO₄ | — | Zinksulfatlösung | — | stock only | 1.79 mol/L saturation, 3.54 g/mL solid density (ZnSO4) |
+| ZnSO₄ | Zinksulfat | Zinksulfatlösung | — | paired | 1.79 mol/L saturation, 3.54 g/mL solid density (ZnSO4) |
 
 ## Remaining gaps
 
 - **(NH₄)₂SO₄** — Neither phase has a recipe for (NH₄)₂SO₄; only the structural preview exists.
 - **AgCl** — Neither phase has a recipe for AgCl; only the structural preview exists.
-- **AgNO₃** — Solid recipe missing for AgNO₃; 8.8 mol/L saturation, 4.35 g/mL solid density (AgNO3) is tabulated.
-- **BaCl₂** — Solid recipe missing for BaCl₂; 1.38 mol/L saturation, 3.86 g/mL solid density (BaCl2) is tabulated.
 - **BaSO₄** — Neither phase has a recipe for BaSO₄; only the structural preview exists.
 - **CH₃COONa** — Neither phase has a recipe for CH₃COONa; only the structural preview exists.
 - **CaCO₃** — Neither phase has a recipe for CaCO₃; only the structural preview exists.
-- **CaCl₂** — Solid recipe missing for CaCl₂; 5.04 mol/L saturation, 2.15 g/mL solid density (CaCl2) is tabulated. The catalog lists Calciumchlorid as reference only, so neither form is dosed yet.
 - **CaSO₄·2 H₂O** — Neither phase has a recipe for CaSO₄·2 H₂O; only the structural preview exists. The only solid reference is a hydrate (Calciumsulfat-Dihydrat), so a recipe needs a decided hydrate.
 - **CuSO₄** — Solid recipe missing for CuSO₄; 1.29 mol/L saturation, 3.6 g/mL solid density (CuSO4) is tabulated. The only solid reference is a hydrate (Kupfer(II)-sulfat-Pentahydrat), so a recipe needs a decided hydrate.
-- **FeCl₃** — Solid recipe missing for FeCl₃; 2.69 mol/L saturation, 2.9 g/mL solid density (FeCl3) is tabulated.
 - **FeS** — Neither phase has a recipe for FeS; only the structural preview exists.
 - **FeSO₄** — Solid recipe missing for FeSO₄; 0.93 mol/L saturation, 3.64 g/mL solid density (FeSO4) is tabulated. The only solid reference is a hydrate (Eisen(II)-sulfat-Heptahydrat), so a recipe needs a decided hydrate.
 - **KMnO₄** — Neither phase has a recipe for KMnO₄; only the structural preview exists.
@@ -83,13 +79,16 @@ Reference-only behaviour is an interim gap, not an exemption.
 - **NH₄Cl** — Neither phase has a recipe for NH₄Cl; only the structural preview exists.
 - **NaBr** — Aqueous stock missing for NaBr and chemlib/saltSolubility.ts has no entry for it.
 - **NaI** — Aqueous stock missing for NaI and chemlib/saltSolubility.ts has no entry for it.
-- **Na₂CO₃** — Solid recipe missing for Na₂CO₃; 2.01 mol/L saturation, 2.54 g/mL solid density (Na2CO3) is tabulated.
-- **Na₂SO₄** — Solid recipe missing for Na₂SO₄; 1.3 mol/L saturation, 2.66 g/mL solid density (Na2SO4) is tabulated.
 - **Na₂S₂O₃·5 H₂O** — Neither phase has a recipe for Na₂S₂O₃·5 H₂O; only the structural preview exists. The only solid reference is a hydrate (Natriumthiosulfat-Pentahydrat), so a recipe needs a decided hydrate.
-- **ZnSO₄** — Solid recipe missing for ZnSO₄; 1.79 mol/L saturation, 3.54 g/mL solid density (ZnSO4) is tabulated.
 
 ## Entries without a builder structure
 
+- Bariumchlorid (Salze) — BaCl₂
+- Eisen(III)-chlorid (Salze) — FeCl₃
+- Natriumcarbonat (Salze) — Na₂CO₃
+- Natriumsulfat (Salze) — Na₂SO₄
+- Silbernitrat (Salze) — AgNO₃
+- Zinksulfat (Salze) — ZnSO₄
 - Paraffinöl (Lösungsmittel)
 - Lackmus (Indikatoren und Nachweisreagenzien)
 - Rotkohlsaft (Indikatoren und Nachweisreagenzien)
@@ -98,7 +97,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 ## Entries without a dose
 
-- Salze: Ammoniumchlorid, Ammoniumsulfat, Bariumsulfat, Calciumcarbonat, Calciumchlorid, Calciumsulfat-Dihydrat, Eisen(II)-sulfat-Heptahydrat, Eisen(II)-sulfid, Kaliumnatriumtartrat, Kaliumpermanganat, Kaliumthiocyanat, Kupfer(II)-sulfat-Pentahydrat, Magnesiumsulfat-Heptahydrat, Natriumacetat, Natriumthiosulfat-Pentahydrat, Silberchlorid
+- Salze: Ammoniumchlorid, Ammoniumsulfat, Bariumsulfat, Calciumcarbonat, Calciumsulfat-Dihydrat, Eisen(II)-sulfat-Heptahydrat, Eisen(II)-sulfid, Kaliumnatriumtartrat, Kaliumpermanganat, Kaliumthiocyanat, Kupfer(II)-sulfat-Pentahydrat, Magnesiumsulfat-Heptahydrat, Natriumacetat, Natriumthiosulfat-Pentahydrat, Silberchlorid
 - Anorganische Säuren: Salpetersäure
 - Basen: Calciumhydroxid, Kalkwasser
 - Carbonsäuren: Benzoesäure, Sorbinsäure, Tetradecansäure (Myristinsäure)

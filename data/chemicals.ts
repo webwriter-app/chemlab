@@ -219,6 +219,34 @@ const potassiumNitrate: MoleculeDefinition = { formula: "KNO₃",
 	atoms: ["potassium", ...nitrate.atoms],
 	bonds: ["1-2:covalent:2", "1-3:covalent:1", "1-4:covalent:1", "0-3:ionic:1"],
 	charges: [0, 1, 0, 0, -1] };
+const silverNitrate: MoleculeDefinition = { formula: "AgNO₃",
+	atoms: ["silver", ...nitrate.atoms],
+	bonds: ["1-2:covalent:2", "1-3:covalent:1", "1-4:covalent:1", "0-3:ionic:1"],
+	charges: [0, 1, 0, 0, -1] };
+// An ionic bond moves one electron, so a 1:2 or 1:3 salt needs one bond per
+// anion; the charges then come out as Ba²⁺, Ca²⁺ or Fe³⁺ with the matching
+// number of chlorides, exactly as the solubility table lists them.
+const bariumChloride: MoleculeDefinition = { formula: "BaCl₂",
+	atoms: ["barium", "chlorine", "chlorine"],
+	bonds: ["0-1:ionic:1", "0-2:ionic:1"] };
+const calciumChloride: MoleculeDefinition = { formula: "CaCl₂",
+	atoms: ["calcium", "chlorine", "chlorine"],
+	bonds: ["0-1:ionic:1", "0-2:ionic:1"] };
+const ironChloride: MoleculeDefinition = { formula: "FeCl₃",
+	atoms: ["iron", "chlorine", "chlorine", "chlorine"],
+	bonds: ["0-1:ionic:1", "0-2:ionic:1", "0-3:ionic:1"] };
+// The sulfate and carbonate skeletons stay neutral, so the two electrons the
+// alkali metals give up arrive at the two unprotonated oxygens and the anion
+// serialises as the [O-]S(=O)(=O)[O-] and [O-]C(=O)[O-] of the table.
+const sodiumSulfate: MoleculeDefinition = { formula: "Na₂SO₄",
+	atoms: ["sodium", "sodium", ...sulfate.atoms],
+	bonds: ["2-3:covalent:2", "2-4:covalent:2", "2-5:covalent:1", "2-6:covalent:1", "0-5:ionic:1", "1-6:ionic:1"] };
+const zincSulfate: MoleculeDefinition = { formula: "ZnSO₄",
+	atoms: ["zinc", ...sulfate.atoms],
+	bonds: ["1-2:covalent:2", "1-3:covalent:2", "1-4:covalent:1", "1-5:covalent:1", "0-4:ionic:1", "0-5:ionic:1"] };
+const sodiumCarbonate: MoleculeDefinition = { formula: "Na₂CO₃",
+	atoms: ["sodium", "sodium", ...carbonate.atoms],
+	bonds: ["2-3:covalent:2", "2-4:covalent:1", "2-5:covalent:1", "0-4:ionic:1", "1-5:ionic:1"] };
 
 
 const sodiumChloride = salt("Natriumchlorid", "NaCl", "sodium", "chlorine", 2.16);
@@ -254,6 +282,18 @@ export const chemicalCatalog: CatalogChemical[] = [
 	salt("Kaliumbromid", "KBr", "potassium", "bromine", 2.75),
 	salt("Natriumiodid", "NaI", "sodium", "iodine", 3.67),
 	salt("Kaliumiodid", "KI", "potassium", "iodine", 3.12),
+	// Every dry salt here has a stock further down under the same analytical
+	// formula. The solubility table decides the rest: a saturated salt keeps a
+	// reservoir at its tabulated concentration, a freely soluble one dissolves
+	// completely.
+	pure("Silbernitrat", "Salze", silverNitrate, "solid", saltSolubility.AgNO3.solidDensity),
+	pure("Bariumchlorid", "Salze", bariumChloride, "solid", saltSolubility.BaCl2.solidDensity),
+	pure("Calciumchlorid", "Salze", calciumChloride, "solid", saltSolubility.CaCl2.solidDensity),
+	pure("Eisen(III)-chlorid", "Salze", ironChloride, "solid", saltSolubility.FeCl3.solidDensity),
+	pure("Natriumcarbonat", "Salze", sodiumCarbonate, "solid", saltSolubility.Na2CO3.solidDensity),
+	pure("Natriumsulfat", "Salze", sodiumSulfate, "solid", saltSolubility.Na2SO4.solidDensity),
+	pure("Zinksulfat", "Salze", zincSulfate, "solid", saltSolubility.ZnSO4.solidDensity),
+	pure("Kaliumnitrat", "Salze", potassiumNitrate, "solid", saltSolubility.KNO3.solidDensity),
 	aqueous("Natriumchloridlösung (1 mol/L)", "Salze", sodiumChloride.preview, saltSolubility.NaCl.saturation),
 	saltSolution("Kaliumchloridlösung", "KCl", "KCl", potassium, chloride),
 	saltSolution("Kaliumbromidlösung", "KBr", "KBr", potassium, bromide),
@@ -268,8 +308,6 @@ export const chemicalCatalog: CatalogChemical[] = [
 	saltSolution("Natriumcarbonatlösung", "Na₂CO₃", "Na2CO3", sodium, carbonate, 2),
 	saltSolution("Natriumsulfatlösung", "Na₂SO₄", "Na2SO4", sodium, sulfate, 2),
 	saltSolution("Kaliumnitratlösung", "KNO₃", "KNO3", potassium, nitrate),
-	// The dry salt pairs with the stock above, as with the bicarbonate pair.
-	pure("Kaliumnitrat", "Salze", potassiumNitrate, "solid", saltSolubility.KNO3.solidDensity),
 	reference("Kupfer(II)-sulfat-Pentahydrat", "Salze", "CuSO₄·5 H₂O"),
 	reference("Calciumcarbonat", "Salze", "CaCO₃"),
 	reference("Calciumsulfat-Dihydrat", "Salze", "CaSO₄·2 H₂O"),
@@ -286,7 +324,6 @@ export const chemicalCatalog: CatalogChemical[] = [
 	reference("Eisen(II)-sulfat-Heptahydrat", "Salze", "FeSO₄·7 H₂O"),
 	reference("Ammoniumsulfat", "Salze", "(NH₄)₂SO₄"),
 	reference("Eisen(II)-sulfid", "Salze", "FeS"),
-	reference("Calciumchlorid", "Salze", "CaCl₂"),
 	reference("Silberchlorid", "Salze", "AgCl"),
 	reference("Bariumsulfat", "Salze", "BaSO₄"),
 	pure("Natriumhydroxid", "Basen", naoh, "solid", 2.13),

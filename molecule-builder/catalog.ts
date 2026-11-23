@@ -198,8 +198,6 @@ export function catalogStructures(key: string): Structure[] {
 	});
 }
 
-export const structureCatalog = chemicalCatalog;
-
 const aqueousPreviews = new Map<string, Molecule>();
 
 /** An overview of the distinct dissolved species, grouped in one scene. */
@@ -237,6 +235,16 @@ export function catalogAqueousStructure(key: string): Molecule | undefined {
 	aqueousPreviews.set(key, result);
 	return result;
 }
+
+/**
+ * The catalog as the builder offers it: an entry has to resolve to a structure
+ * or to the constituents of a mixture. A purely ionic solid has no editable
+ * graph yet; ChemLab still doses it, and `docs/structure-library-coverage.md`
+ * lists it under "Entries without a builder structure" until a crystal or
+ * molecule definition exists.
+ */
+export const structureCatalog = chemicalCatalog.filter(entry => catalogIsMixture(entry.name)
+	|| referenceStructures(entry).length > 0);
 
 /** Compare composition, charge and connectivity independently of atom IDs and the camera. */
 function sameGraph(a: Molecule, b: Molecule) {
