@@ -375,21 +375,25 @@ function protonationStructure(source: Molecule, removed: number): Molecule | und
 		}
 	}
 	const structure = StructureManager.newMolecule();
-	const copies = new Map([...atoms].map((atom) => [atom,
-		structure.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), charges.get(atom))]));
-	for (const bond of source._bonds) {
-		const from = copies.get(bond._from);
-		const to = copies.get(bond._to);
-		if (from && to) structure.addBond(from._id, to._id, bond._magnitude, bond._length, bond._type);
-	}
-	if (removed < 0) {
-		for (const [atom, copy] of copies) {
-			for (let count = atom.getIonicCharge(); count < charges.get(atom); count++) {
-				const hydrogen = structure.addAtom("hydrogen", "H");
-				structure.addBond(copy._id, hydrogen._id, 1, 100, "covalent");
+	// Nothing in this block reads the SMILES, so the graph is built as one
+	// batch and serialized once when the batch closes.
+	structure.batchStructureChanges(() => {
+		const copies = new Map([...atoms].map((atom) => [atom,
+			structure.addAtom(atom.getName().toLowerCase(), atom.getSymbol(), charges.get(atom))]));
+		for (const bond of source._bonds) {
+			const from = copies.get(bond._from);
+			const to = copies.get(bond._to);
+			if (from && to) structure.addBond(from._id, to._id, bond._magnitude, bond._length, bond._type);
+		}
+		if (removed < 0) {
+			for (const [atom, copy] of copies) {
+				for (let count = atom.getIonicCharge(); count < charges.get(atom); count++) {
+					const hydrogen = structure.addAtom("hydrogen", "H");
+					structure.addBond(copy._id, hydrogen._id, 1, 100, "covalent");
+				}
 			}
 		}
-	}
+	});
 	cache.set(removed, structure);
 	return structure;
 }

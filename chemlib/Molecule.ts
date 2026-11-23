@@ -1,8 +1,7 @@
 import type { AqueousAcidBase } from "./AcidBase";
 import { Atom } from "./Atom";
 import { Bond } from "./Bond";
-// @ts-ignore
-import { Kekule } from "kekule";
+import { Kekule } from "./kekule";
 
 /**
  * Representation of a molecule

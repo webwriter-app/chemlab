@@ -2,6 +2,8 @@
 
 Reviewed at `c10aefc` on `perf/echem-startup`. This plan covers the lab runtime, chemistry, charts, asset loading and resource lifetime. It builds on the completed SMILES batching and loading indicator. The periodic table notes cover the separate committed `main` snapshot `1e26f1a`, including the condition and discovery modes.
 
+For the latest startup measurements and next implementation packages, use the [coding handoff](performance-coding-handoff.md).
+
 ## Findings and priorities
 
 | Priority | Area | Evidence from the current code |

@@ -58,14 +58,24 @@ import { axisId, componentKey, DiagramSuggestionQueue, selectedDiagramSourceGrou
 import { TIME_CHANNEL, type MeasurementChannel } from "./data/measurementHistory";
 import { MeasurementRecorder } from "./controllers/MeasurementRecorder";
 import { SimulationController } from "./controllers/SimulationController";
-import { componentGraphic, componentVariant, componentVariants, type ComponentVariant, type PaletteComponent } from "./data/componentGraphics";
+import { CircuitSchedule } from "./controllers/CircuitSchedule";
+import {
+	componentGraphic,
+	componentVariant,
+	componentVariants,
+	layoutTextureUrls,
+	savedComponentVariant,
+	type ComponentVariant,
+	type PaletteComponent,
+} from "./data/componentGraphics";
 import { renderComponentPaletteIcon } from "./data/componentPaletteIcons";
 import { chemicalCatalog, chemicalCatalogGroups, solutionDisplayNames, withConcentration, type ChemicalRecipe, type MoleculeDefinition } from "./data/chemicals";
 import { loadMoleculeDefinition } from "./data/moleculeDefinition";
 import { BUILDER_TAG, worksheetPeers, worksheetPeer, worksheetScope, type BuilderReceiver } from "./molecule-builder/exchange";
 import { readStructure, type Structure } from "./molecule-builder/structure";
-import { analyzeBuilderCompound, builderStock, enrichBuilderCompound, expectedDissociations,
-	portableBuilderChemical, readBuilderChemical, type BuilderChemical, type CompoundAnalysis, type CompoundFacts } from "./molecule-builder/custom-compounds";
+import { analyzeBuilderCompound, builderStock, builderStockFor, enrichBuilderCompound, expectedDissociations,
+	hydrateBuilderChemical, pendingBuilderChemicals, portableBuilderChemical, readBuilderChemical,
+	type BuilderChemical, type CompoundAnalysis, type CompoundFacts } from "./molecule-builder/custom-compounds";
 import { iupacSource } from "./chemlib/IupacDissociation";
 import { readAqueousAcidBase } from "./chemlib/AcidBase";
 import { catalogPreviews } from "./data/chemicalPreviews.generated";
@@ -103,6 +113,8 @@ const MIN_TWO_PANELS_WIDTH = 560;
 const RC_UPDATE_MS = 50;
 const DIAGRAM_PICKER_CLOSE_MS = 2000;
 const CUSTOM_CHEMICAL_GROUP = "custom";
+/** A card that carries nothing to derive; the palette passes it as its activation. */
+const nothingToHydrate = () => {};
 const CONTROL_ICONS = {
 	power: "M8 2v5m3.2-3.8a5.5 5.5 0 1 1-6.4 0",
 	drop: "M8 2.4c1.4 2.2 4 4.5 4 7a4 4 0 1 1-8 0c0-2.5 2.6-4.8 4-7Z",
@@ -374,6 +386,17 @@ export class ChemLab extends LitElementWw {
 	 * @type {SimulationController}
 	 */
 	simulation = new SimulationController(this);
+	/**
+	 * the one clock per physical circuit that advances its chemistry
+	 *
+	 * @type {CircuitSchedule}
+	 */
+	readonly circuits = new CircuitSchedule(
+		this.simulation,
+		() => this.activeInstruments(),
+		(device) => this.circuitIdentity(device),
+		(device) => this.advanceCircuit(device),
+	);
 	private readonly surfaceElectrodes = new Set<chemlib.ElectricComponent>();
 	private readonly capacitorCharges = new Map<string, number>();
 	private readonly rcReadouts = new Map<chemlib.ElectricComponent, RCReadout>();
@@ -461,6 +484,8 @@ export class ChemLab extends LitElementWw {
 	@state() private accessor builderTarget: { key?: string; structure?: Structure } | undefined;
 	@state() private accessor builderReferences: BuilderChemical[] = [];
 	@state() private accessor sessionBuilderReferences: BuilderChemical[] = [];
+	/** guards the deferred analysis of saved compounds against a second round */
+	private builderHydrating = false;
 	@state() private accessor savedVesselMixtures: SavedMixture[] = [];
 	@state() private accessor sessionVesselMixtures: SavedMixture[] = [];
 	@state() private accessor mixtureDraft: { vessel: chemlib.ChemComponent; name: string } | undefined;
@@ -698,6 +723,7 @@ export class ChemLab extends LitElementWw {
 		if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions", "savedVesselMixtures"].some((name) => changed.has(name))) {
 			this.persistAuthoredData();
 		}
+		if (this.teacherDrawerOpen && this.teacherTab === "chemicals") this.startBuilderHydration();
 		if (this.app && !this.canvasLoading && this.refreshFromRemoteData) {
 			this.refreshFromRemoteData = false;
 			if (changed.has("availableComponents")) {
@@ -706,6 +732,7 @@ export class ChemLab extends LitElementWw {
 				this.closeAmountMenu();
 				this.hideFillMeter();
 				this.simulation.stopExperiments();
+				this.circuits.clear();
 				this.capacitorCharges.clear();
 				this.rcReadouts.clear();
 				this.curr_obj = null;
@@ -719,10 +746,15 @@ export class ChemLab extends LitElementWw {
 				this.pruneDiagramSuggestions();
 
 				this.avComponentsSprites = [];
-				this._loadComponents();
-				// A replaced layout is a fresh load, so it gets the same fit as
-				// the first one.
-				this.canvas.fitObjects();
+				// A replaced layout is a fresh load: it brings devices the startup
+				// load never saw, and it gets the same fit as the first one.
+				void this.canvas.loadTextures(layoutTextureUrls(this.availableComponents)).catch((error) => {
+					console.error("Unable to load the component textures", error);
+				}).then(() => {
+					if (!this.isConnected || !this.app) return;
+					this._loadComponents();
+					this.canvas.fitObjects();
+				});
 			}
 		}
 		if (this.canvas.selectedObjects.length || changed.has("curr_obj") || changed.has("curr_name") || changed.has("mixtureDraft")) {
@@ -884,7 +916,7 @@ export class ChemLab extends LitElementWw {
 	private async initializeCanvas(): Promise<void> {
 		try {
 			await this.paintLoadingProgress();
-			await this.canvas.init((fraction) => {
+			await this.canvas.init(layoutTextureUrls(this.availableComponents), (fraction) => {
 				this.canvasLoading = { value: 10 + 15 * fraction, task: "Gerätegrafiken laden" };
 			});
 			await this.restoreInitialLayout();
@@ -947,6 +979,15 @@ export class ChemLab extends LitElementWw {
 			}
 			this.canvasLoading = { value: 90, task: total ? "Versuchsaufbau und Verbindungen einsetzen" : "Arbeitsfläche zeichnen" };
 			await this.paintLoadingProgress();
+			// The startup load covers the layout as it was embedded. A layout
+			// replaced from the worksheet while loading brings devices whose
+			// textures nobody has asked for yet; a graphic that fails here costs
+			// its own device, not the canvas.
+			try {
+				await this.canvas.loadTextures(layoutTextureUrls(entries));
+			} catch (error) {
+				console.error("Unable to load the component textures", error);
+			}
 			if (this.refreshFromRemoteData) continue;
 			this._loadComponents(undefined, models);
 			return;
@@ -998,11 +1039,12 @@ export class ChemLab extends LitElementWw {
 
 	/**
 	 * Advances a connected electrochemical experiment by one simulation step.
+	 * The circuit clock calls this once per circuit and step; a live
+	 * transient is kept out by {@link advanceCircuit}.
 	 */
 	private stepElectrochemistry(source: chemlib.ElectricComponent): void {
 		const circuitComps = this.operatingCircuit(source);
 		if (circuitComps) {
-			if (circuitComps.some((device) => this.hasRCReadout(device))) return;
 			const [first, second, ...devices] = circuitComps;
 			const firstMix = first._connectedMix;
 			const secondMix = second._connectedMix;
@@ -1087,10 +1129,57 @@ export class ChemLab extends LitElementWw {
 			.map(electrode => `${electrode._id}/${electrode._connectedMix?._id}`).join(":");
 	}
 
+	/** The instruments that are switched on right now, one marker each. */
+	private activeInstruments(): chemlib.ElectricComponent[] {
+		return this.allEComponents.filter((device) =>
+			(device._type === chemlib.EComponentType.Source || isPassiveMeter(device)) &&
+			this.simulation.hasTask(`echem${device._type}:${device._id}`));
+	}
+
+	/**
+	 * The physical circuit a device belongs to, as a value that changes when
+	 * the wiring does: the members it reaches and the vessel each of them
+	 * dips into. A moved electrode, a new lead or a placed bridge re-keys the
+	 * circuit, and its clock starts a fresh phase.
+	 *
+	 * @private
+	 * @param {chemlib.ElectricComponent} device - a device of the circuit
+	 * @returns {?string} the identity, or undefined for a device that hangs in nothing
+	 */
+	private circuitIdentity(device: chemlib.ElectricComponent): string | undefined {
+		const members = chemlib.ComponentManager.connectedDevices(device);
+		if (members.length < 2) return undefined;
+		return members.map((member) => `${member._type}:${member._id}/${member._connectedMix?._id ?? ""}`)
+			.sort().join(",");
+	}
+
+	/**
+	 * One simulation step of a circuit, driven by its clock instead of by
+	 * every instrument that hangs in it. A live transient books its own
+	 * analytic readings, so the chemistry waits for it.
+	 *
+	 * @private
+	 * @param {chemlib.ElectricComponent} device - an active instrument of the circuit
+	 */
+	private advanceCircuit(device: chemlib.ElectricComponent): void {
+		if (chemlib.ComponentManager.connectedDevices(device).some((member) => this.hasRCReadout(member))) return;
+		this.stepElectrochemistry(device);
+	}
+
+	/**
+	 * Brings the circuit clocks in line with the instruments that are
+	 * switched on. Called whenever a lead, a bridge, a device or an
+	 * instrument changes, so a clock never outlives the circuit it belongs
+	 * to.
+	 */
+	reconcileCircuits(): void {
+		this.circuits.reconcile();
+	}
+
 	private startElectricalExperiment(name: string, meter: chemlib.ElectricComponent): void {
-		const step = () => this.stepElectrochemistry(meter);
 		if (!isPassiveMeter(meter) || !meter.rcSettings) {
-			this.simulation.startExperiment(name, step);
+			this.simulation.markRunning(name);
+			this.circuits.reconcile();
 			return;
 		}
 
@@ -1107,7 +1196,7 @@ export class ChemLab extends LitElementWw {
 			settled?: boolean;
 		} | undefined;
 
-		this.simulation.startExperiment(name, step, (elapsedMs) => {
+		this.simulation.markRunning(name, (elapsedMs) => {
 			if (active && !active.settled) {
 				active.elapsed += elapsedMs / 1000;
 				active.advanceRecording(active.elapsed);
@@ -1176,6 +1265,7 @@ export class ChemLab extends LitElementWw {
 			}
 			return true;
 		});
+		this.circuits.reconcile();
 	}
 
 	/**
@@ -1370,12 +1460,21 @@ export class ChemLab extends LitElementWw {
 
 	private startComponentDrag(event: PointerEvent, variant: ComponentVariant): void {
 		if (!this.canAuthor && !this.isVariantAllowed(variant)) return;
+		const graphicUrl = componentGraphic(variant.type, variant.id).url;
+		// The ghost is built on the first move past the drag threshold, which is
+		// a few pixels away: the texture has to be on its way before that.
+		this.prefetchComponentTexture(variant);
 		let preview: PIXI.Container | undefined;
 		this.startPaletteDrag(event, {
 			start: () => {
+				// A preview draws the texture, so a device whose graphic has not
+				// arrived yet is dropped without a ghost rather than as an empty
+				// frame. The drop itself waits for the download.
+				if (!this.canvas.hasTexture(graphicUrl)) return;
 				preview = this.canvas.createPlacementPreview(this.previewModel(variant));
 			},
 			move: (pointer) => {
+				if (!preview) return;
 				const point = this.canvas.worldPointFromViewport(pointer.clientX, pointer.clientY);
 				preview.visible = !!point;
 				if (point) {
@@ -1386,13 +1485,28 @@ export class ChemLab extends LitElementWw {
 			},
 			drop: (pointer) => {
 				const point = this.canvas.worldPointFromViewport(pointer.clientX, pointer.clientY);
-				if (point) this.addPaletteComponent(variant, point.x, point.y);
+				if (point) void this.addPaletteComponent(variant, point.x, point.y);
 			},
 			cleanup: () => {
 				if (!preview) return;
 				preview.destroy({ children: true });
 				this.requestCanvasRender();
 			},
+		});
+	}
+
+	/**
+	 * Warms the texture of a palette variant, so the drag ghost can be drawn as
+	 * soon as the gesture starts. The startup load covers the authored layout
+	 * only; a device from the palette arrives here first.
+	 *
+	 * @private
+	 * @param {ComponentVariant} variant - the palette variant
+	 */
+	private prefetchComponentTexture(variant: ComponentVariant): void {
+		if (!this.app) return;
+		void this.canvas.loadTexture(componentGraphic(variant.type, variant.id).url).catch((error) => {
+			console.error("Unable to load the component texture of", variant.id, error);
 		});
 	}
 
@@ -1441,18 +1555,40 @@ export class ChemLab extends LitElementWw {
 		return position;
 	}
 
+	/**
+	 * Places the variant the palette holds, if one is held. The answer is
+	 * synchronous because the caller decides between placing and panning; the
+	 * placement itself waits for the texture of the variant and finishes on its
+	 * own.
+	 *
+	 * @param {number} x - the world x of the click
+	 * @param {number} y - the world y of the click
+	 * @returns {boolean} whether a placement was started
+	 */
 	placeSelectedComponent(x: number, y: number): boolean {
 		const variant = componentVariant(this.componentToPlace);
 		this.componentToPlace = undefined;
-		return variant ? this.addPaletteComponent(variant, x, y) : false;
+		if (!variant || (!this.canAuthor && !this.isVariantAllowed(variant))) return false;
+		void this.addPaletteComponent(variant, x, y);
+		return true;
 	}
 
-	private addPaletteComponent(variant: ComponentVariant, x: number, y: number): boolean {
+	private async addPaletteComponent(variant: ComponentVariant, x: number, y: number): Promise<boolean> {
 		if (!this.canAuthor && !this.isVariantAllowed(variant)) return false;
+		const { id: variantId, type, capacityMl, material } = variant;
+		try {
+			// The footprint is measured on a preview and the view draws the
+			// texture, so both need the graphic of this variant.
+			await this.canvas.loadTexture(componentGraphic(type, variantId).url);
+		} catch (error) {
+			console.error("Unable to load the component texture of", variantId, error);
+			return false;
+		}
+		// The widget may have been detached while the graphic was on its way.
+		if (!this.isConnected || !this.app) return false;
 		const position = this.freePlacementFor(variant, x, y);
 		this.componentToPlace = undefined;
 		this.clearChemicalSelection();
-		const { id: variantId, type, capacityMl, material } = variant;
 		if (!this.canAuthor) {
 			let component: chemlib.ChemComponent | chemlib.ElectricComponent;
 			if (capacityMl !== undefined) {
@@ -2296,6 +2432,7 @@ export class ChemLab extends LitElementWw {
 			this.canvas.removeSprite(sprite);
 			this.simulation.stopTask("transfer" + sprite.label);
 			this.simulation.stopTask("echem" + sprite.label);
+			this.circuits.reconcile();
 			this._sendxAPiStatement("removed", sprite.label);
 		}
 		for (const component of affectedElectrical) {
@@ -2320,6 +2457,7 @@ export class ChemLab extends LitElementWw {
 		const ticker = "echem" + label;
 		if (!this.simulation.hasTask(ticker)) return;
 		this.simulation.stopTask(ticker);
+		this.circuits.reconcile();
 		this.canvas.setDeviceActive(component, false);
 		this._sendxAPiStatement("completed", ticker);
 		this.requestUpdate();
@@ -2377,8 +2515,9 @@ export class ChemLab extends LitElementWw {
 
 	private createSavedComponent(component: object): chemlib.ChemComponent | chemlib.ElectricComponent {
 		const type = component["type"].toLowerCase();
-		const savedVariant = componentVariant(component["variantId"]);
-		const variant = savedVariant?.type === type ? savedVariant : undefined;
+		// The same rule derives the textures of the layout, so a variant that is
+		// refused here is never requested there either.
+		const variant = savedComponentVariant(type, component["variantId"]);
 
 		let newComp: chemlib.ChemComponent | chemlib.ElectricComponent;
 
@@ -2530,6 +2669,7 @@ export class ChemLab extends LitElementWw {
 				this.connectElectrical(a, b, undefined, undefined, false)
 		);
 		this.canvas.attachDevices();
+		this.circuits.reconcile();
 		const added = entry && this.allChemComponents.find(component => component._id === entry["id"] && component._type === entry["type"]);
 		const device = entry && this.allEComponents.find(component => component._id === entry["id"] && component._type === entry["type"]);
 		this.measurements.record(entry ? added ? [added] : [] : this.allChemComponents,
@@ -2574,6 +2714,8 @@ export class ChemLab extends LitElementWw {
 		// The plugs of both devices change from free to occupied.
 		this.canvas.refreshDeviceDisplay(from);
 		this.canvas.refreshDeviceDisplay(to);
+		// The two devices are one circuit now, so their clocks merge.
+		this.circuits.reconcile();
 		if (!authored) return true;
 		this.authorCable(cable, sprite);
 		this.syncAuthoredConnections(from);
@@ -2689,6 +2831,8 @@ export class ChemLab extends LitElementWw {
 			// The freed plug has to read as free again.
 			this.canvas.refreshDeviceDisplay(component);
 			this.canvas.refreshDeviceDisplay(partner);
+			// A lead that came off splits the circuit in two.
+			this.circuits.reconcile();
 			this._sendxAPiStatement(
 				"removed",
 				"eCon " + component._type + component._id,
@@ -3298,6 +3442,7 @@ export class ChemLab extends LitElementWw {
 		if (open) {
 			this.teacherDrawerChoice = this.teacherDrawerOpen = true;
 			if (this.diagramPanelAvailable && this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.diagramPanelOpen = false;
+			if (this.teacherTab === "chemicals") this.startBuilderHydration();
 		} else {
 			this.closeTeacherDrawer();
 		}
@@ -3433,6 +3578,8 @@ export class ChemLab extends LitElementWw {
 						<button type="button" class="component-tile" contenteditable="false"
 							aria-label=${itemLabel} aria-pressed=${this.componentToPlace === current.id}
 							@pointerdown=${(event: PointerEvent) => this.startComponentDrag(event, current)}
+							@pointerenter=${() => this.prefetchComponentTexture(current)}
+							@focus=${() => this.prefetchComponentTexture(current)}
 							@dragstart=${this.preventNativePaletteDrag}
 							@click=${(event: MouseEvent) => {
 								if (this.consumePaletteClick(event)) return;
@@ -3493,9 +3640,11 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderPaletteCard(name: string, variant: ReturnType<typeof this.palettePermissionVariant>,
-		badge: unknown, body: unknown, chemical = false, permissions?: { open: boolean; label: string; toggle: () => void; options: unknown }) {
+		badge: unknown, body: unknown, chemical = false, permissions?: { open: boolean; label: string; toggle: () => void; options: unknown },
+		activate: () => void = nothingToHydrate) {
 		return html`
-			<div class="palette-card${chemical ? " palette-card-chemical" : ""}" role="group" aria-label=${name}>
+			<div class="palette-card${chemical ? " palette-card-chemical" : ""}" role="group" aria-label=${name}
+				@pointerenter=${activate} @focusin=${activate}>
 				<div class="palette-card-header">
 					<div class="palette-card-name">
 						${permissions ? html`
@@ -3810,7 +3959,6 @@ export class ChemLab extends LitElementWw {
 		const { structure, analysis } = review;
 		let facts = review.facts;
 		let stockConcentration: number | undefined;
-		let recipe: ChemicalRecipe | undefined;
 		if (withStock) {
 			if (!this.canAuthor || !analysis?.stockSupported || review.reagent) return;
 			const input = this.shadowRoot.querySelector<SlInput>("#builderStockConcentration");
@@ -3827,11 +3975,10 @@ export class ChemLab extends LitElementWw {
 				facts = { ...facts, dissociation, pKaSource: "manual" };
 			}
 			if (!input.reportValidity()) return;
-			recipe = builderStock(analysis, stockConcentration, facts);
-			if (!recipe) return;
+			if (!builderStock(analysis, stockConcentration, facts)) return;
 		}
 		const id = Array.from(crypto.getRandomValues(new Uint32Array(2)), value => value.toString(36)).join("-");
-		const item = { key: `builder-chemical:${id}`, structure, recipe, analysis, facts, stockConcentration };
+		const item = hydrateBuilderChemical({ key: `builder-chemical:${id}`, structure, facts, stockConcentration }, analysis);
 		if (this.canAuthor) {
 			this.builderReferences = [...references, item];
 			this.persistAuthoredData();
@@ -3847,6 +3994,7 @@ export class ChemLab extends LitElementWw {
 		this.teacherTab = "chemicals";
 		this.teacherDrawerChoice = this.teacherDrawerOpen = true;
 		if (this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.closeDiagramPanel();
+		this.startBuilderHydration();
 		void this.updateComplete.then(() => this.renderRoot.querySelector<SlTabGroup>("#teacherTabs")?.show("chemicals"));
 	}
 
@@ -3955,9 +4103,10 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderBuilderReference(item: BuilderChemical) {
-		const { structure, recipe, analysis, facts } = item;
+		const { structure, facts } = item;
 		const label = structure.name || this.builderText("Structure", "Struktur");
-		const sharable = !!recipe && this.canAuthor && this.builderReferences.includes(item);
+		const stock = item.hydrated ? builderStockFor(item) : undefined;
+		const sharable = !!stock && this.canAuthor && this.builderReferences.includes(item);
 		const allowed = this.isChemicalAllowed(item.key);
 		const remove = () => {
 			if (this.canAuthor && this.builderReferences.includes(item)) {
@@ -3967,14 +4116,16 @@ export class ChemLab extends LitElementWw {
 			} else this.sessionBuilderReferences = this.sessionBuilderReferences.filter(entry => entry !== item);
 			if (this.selectedChemical?.key === item.key) this.clearChemicalSelection();
 		};
-		const formula = analysis?.formula ?? facts?.metadata?.formula ?? label;
+		const formula = item.analysis?.formula ?? facts?.metadata?.formula ?? label;
 		const badge = sharable ? this.renderChemicalPermissionBadge(label, [{ name: item.key, label }]) : nothing;
 		return this.renderPaletteCard(label, sharable ? this.palettePermissionVariant(Number(allowed), 1) : "primary", badge, html`
-			${recipe ? html`<div class="palette-preview-area palette-variant">
-				${this.renderChemicalTile(item.key, this.chemicalTileLabel(label, item.stockConcentration), formula, recipe)}
-				${sharable ? this.renderChemicalPermission(item.key, label) : nothing}
-			</div>` : nothing}
-			${analysis ? this.renderBuilderFacts(analysis, facts, item.stockConcentration) : nothing}
+			<div class="palette-preview-area palette-variant">
+				${stock ? html`
+					${this.renderChemicalTile(item.key, this.chemicalTileLabel(label, item.stockConcentration), formula, stock)}
+					${sharable ? this.renderChemicalPermission(item.key, label) : nothing}` : html`
+					<span class="chemical-preview chemical-preview-pending"><span>${formula}</span></span>`}
+			</div>
+			${item.analysis ? this.renderBuilderFacts(item.analysis, facts, item.stockConcentration) : nothing}
 			<div class="custom-card-actions">
 				<sl-button size="small" class="structure-link" @click=${() => this.openInBuilder({ structure })}>
 					${this.builderText("View structure", "Struktur ansehen")}
@@ -3982,7 +4133,41 @@ export class ChemLab extends LitElementWw {
 				${this.canAuthor || this.sessionBuilderReferences.includes(item) ? this.renderSelectionDeleteButton(
 					remove, this.builderText("Delete structure", "Struktur löschen")) : nothing}
 			</div>
-		`, true);
+		`, true, undefined, () => this.hydrateBuilderReference(item));
+	}
+
+	/**
+	 * Swaps a saved compound for its hydrated copy. The key stays the same, so the
+	 * card keeps its place in the palette and only gains its tile and facts.
+	 *
+	 * @param {BuilderChemical} item - the restored compound
+	 */
+	private hydrateBuilderReference(item: BuilderChemical): void {
+		if (item.hydrated) return;
+		const hydrated = hydrateBuilderChemical(item);
+		const swap = (entries: BuilderChemical[]) => entries.map(entry => entry === item ? hydrated : entry);
+		this.builderReferences = swap(this.builderReferences);
+		this.sessionBuilderReferences = swap(this.sessionBuilderReferences);
+	}
+
+	/**
+	 * Derives the saved compounds one at a time, so opening the palette pays for
+	 * one graph at a time instead of all thirty in the same frame.
+	 */
+	private startBuilderHydration(): void {
+		if (this.builderHydrating) return;
+		const pending = pendingBuilderChemicals([...this.builderReferences, ...this.sessionBuilderReferences]);
+		if (!pending.length) return;
+		this.builderHydrating = true;
+		const next = (index: number) => {
+			if (!this.isConnected || index >= pending.length) {
+				this.builderHydrating = false;
+				return;
+			}
+			this.hydrateBuilderReference(pending[index]);
+			setTimeout(() => next(index + 1), 0);
+		};
+		setTimeout(() => next(0), 0);
 	}
 
 	private renderBuilderFacts(analysis: CompoundAnalysis, facts?: CompoundFacts, concentration?: number) {
@@ -4339,6 +4524,7 @@ export class ChemLab extends LitElementWw {
 			this.canvas.setDeviceActive(device, !active);
 			if (active) {
 				this.simulation.stopTask(task);
+				this.circuits.reconcile();
 				this.clearEChemReadings(device);
 			} else this.startElectricalExperiment(task, device);
 			this._updatePopup();
