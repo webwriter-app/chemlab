@@ -1,10 +1,14 @@
 /**
- * Gases that can leave an open vessel, and the solutes they leave as.
+ * Gases that can leave an open vessel or be bubbled into one, and the solutes
+ * they leave as.
  *
  * A volatile solute escapes once its dissolved concentration passes the
  * saturation value at room temperature and 1 atm. The values are the usual
  * Henry solubilities, so a carbonate only fizzes while the solution is acidic
  * enough to hold carbonic acid, and a lab ammonia solution keeps its ammonia.
+ * The same value decides how much of a dosed gas the solution takes up: a dose
+ * of nitrogen passes straight into the gas space, a dose of chlorine ends up
+ * mostly dissolved.
  */
 
 /**
@@ -85,6 +89,20 @@ export function molarGasVolume(temperature: number, pressure = 101325): number {
 export const evolvedGases: Readonly<Record<string, EvolvedGas>> = {
 	// CO2: 0.034 mol/L in water at 25 °C and 1 atm
 	CO2: { formula: "CO₂", phase: "gas", family: "C(=O)(O)O", solubility: 0.034 },
+	// N2: 0.64 mmol/L, the reason air stays in the headspace of a water sample
+	N2: { formula: "N₂", phase: "gas", solubility: 6.4e-4 },
+	// CH4: 1.4 mmol/L
+	CH4: { formula: "CH₄", phase: "gas", solubility: 1.4e-3 },
+	// C2H4: 4.7 mmol/L
+	C2H4: { formula: "C₂H₄", phase: "gas", solubility: 4.7e-3 },
+	// C2H2: 40 mmol/L, far more soluble than the alkanes
+	C2H2: { formula: "C₂H₂", phase: "gas", solubility: 4e-2 },
+	// C3H8: 1.5 mmol/L
+	C3H8: { formula: "C₃H₈", phase: "gas", solubility: 1.5e-3 },
+	// C4H10: 1.2 mmol/L
+	C4H10: { formula: "C₄H₁₀", phase: "gas", solubility: 1.2e-3 },
+	// C2H3Cl: 43 mmol/L, vinyl chloride is noticeably soluble for a gas
+	C2H3Cl: { formula: "C₂H₃Cl", phase: "gas", solubility: 4.3e-2 },
 	// H2S: about 0.1 mol/L in saturated water
 	H2S: { formula: "H₂S", phase: "gas", family: "S", solubility: 0.1 },
 	// NH3: about 15 mol/L in the concentrated solution, so a lab solution stays

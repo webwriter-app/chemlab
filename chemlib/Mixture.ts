@@ -81,6 +81,15 @@ class Mixture {
 	 */
 	dissolvedGas: Map<string, number> = new Map();
 	/**
+	 * Gas a fresh dose offers to a vessel, keyed by the id in `evolvedGases`,
+	 * in mol. A dose is built by the palette before its target is known, so it
+	 * cannot say how much of the gas the solution will take: the vessel
+	 * decides when the dose arrives, dissolving up to the tabulated saturation
+	 * and letting the rest pass into the gas space. The receiving vessel
+	 * consumes the offer, so it is admitted exactly once.
+	 */
+	offeredGas: Map<string, number> = new Map();
+	/**
 	 * Analytical hypochlorous acid and hypochlorite together, in mol. Chlorine
 	 * that dissolves hydrolyses to HOCl, H⁺ and Cl⁻; the family is kept as one
 	 * number because neither HOCl nor ClO⁻ is a stored molecule, and the
@@ -124,9 +133,10 @@ class Mixture {
 	 *
 	 * @param {string} gas - id in `evolvedGases`
 	 * @param {number} amountMol - amount offered to the vessel
-	 * @param {number} [solubility] - saturation concentration in mol/L
+	 * @param {number} [solubility] - saturation concentration in mol/L; the
+	 * tabulated value of the gas is used when it is omitted
 	 */
-	admitGas(gas: string, amountMol: number, solubility?: number): void {
+	admitGas(gas: string, amountMol: number, solubility = evolvedGases[gas]?.solubility): void {
 		if (!(amountMol > 0)) return;
 		const volume = this._solutionVolume;
 		const capacity = solubility > 0 && volume > 0 ? solubility * volume : 0;

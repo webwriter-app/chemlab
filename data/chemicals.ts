@@ -1,4 +1,5 @@
 import type { AqueousAcidBase } from "../chemlib/AcidBase";
+import { MOLAR_GAS_VOLUME } from "../chemlib/gasEvolution";
 import { saltSolubility } from "../chemlib/saltSolubility";
 import { structureGraphs } from "./structureDefinitions.generated";
 
@@ -12,11 +13,19 @@ export interface MoleculeDefinition {
 }
 
 export interface ChemicalRecipe {
-	phase: "solid" | "liquid";
+	phase: "solid" | "liquid" | "gas";
 	parts: Array<{ molecule: MoleculeDefinition; amount: number }>;
+	/** Density in g/mL. A gas carries the density it has at lab conditions. */
 	density: number;
 	/** Solute amounts are expressed in mol per model litre of aqueous solution. */
 	aqueousMolar?: true;
+	/**
+	 * Id of the gas in `evolvedGases`, for a reagent that is dosed as the
+	 * volume it takes up. The amount then follows from the molar volume and
+	 * the target vessel decides how much of it the solution dissolves, so the
+	 * parts carry no measure of their own.
+	 */
+	gas?: string;
 }
 
 export function isWaterDefinition(molecule: MoleculeDefinition): boolean {
@@ -193,6 +202,24 @@ function molecular(name: string, category: ChemicalClass, formula: string, densi
 	return pure(name, category, { formula, ...graph }, phase, density, concentrationLimit);
 }
 
+// A gas is dosed as the volume it takes up at lab conditions, never as a mass,
+// so its recipe carries the volume rather than a weighed portion. The graph
+// from the library only serves the card.
+//
+// `parts` names the species a gas enters the solution as. Carbon dioxide is the
+// one case: the model keeps dissolved CO₂ as the carbonic-acid family, exactly
+// the tally the gas evolution removes from, so a dose books carbonic acid and
+// the acid-base solver finds the same pH as after a carbonate reaction. Every
+// other gas is offered to the vessel, which dissolves up to the tabulated
+// saturation and lets the rest pass into the gas space.
+function gasReagent(name: string, category: ChemicalClass, gas: string, formula: string,
+	molarMass: number, fallback: MoleculeDefinition, parts: ChemicalRecipe["parts"] = []): CatalogChemical {
+	const graph = structureGraphs[name];
+	const preview = graph ? { formula, ...graph } : fallback;
+	return { name, category, formula, preview,
+		recipe: { phase: "gas", gas, density: molarMass / (MOLAR_GAS_VOLUME * 1000), parts } };
+}
+
 const propanone = covalent("C₃H₆O", ["carbon", "carbon", "carbon", "oxygen"], [[0, 1], [1, 2], [1, 3, 2]], [3, 0, 3, 0]);
 const sulfuricAcid = covalent("H₂SO₄", ["sulfur", "oxygen", "oxygen", "oxygen", "oxygen"], [[0, 1, 2], [0, 2, 2], [0, 3], [0, 4]], [0, 0, 0, 1, 1]);
 const phosphoricAcid = covalent("H₃PO₄", ["phosphorus", "oxygen", "oxygen", "oxygen", "oxygen"], [[0, 1, 2], [0, 2], [0, 3], [0, 4]], [0, 0, 1, 1, 1]);
@@ -200,6 +227,10 @@ const formicAcid = covalent("CH₂O₂", ["carbon", "oxygen", "oxygen"], [[0, 1,
 const ammonia = molecule("NH₃", ["nitrogen"], [], [3]);
 const peroxide = covalent("H₂O₂", ["oxygen", "oxygen"], [[0, 1]], [1, 1]);
 const carbonDioxide = covalent("CO₂", ["carbon", "oxygen", "oxygen"], [[0, 1, 2], [0, 2, 2]], [0, 0, 0]);
+// Dissolved carbon dioxide is the carbonic-acid family of the acid-base table,
+// whose neutral form is what the gas evolution removes. A dose of the gas
+// therefore books this molecule and not the linear CO₂ of the bottle.
+const carbonicAcid = covalent("H₂CO₃", ["carbon", "oxygen", "oxygen", "oxygen"], [[0, 1, 2], [0, 2], [0, 3]], [0, 0, 1, 1]);
 const ethene = covalent("C₂H₄", ["carbon", "carbon"], [[0, 1, 2]], [2, 2]);
 const iodine = covalent("I₂", ["iodine", "iodine"], [[0, 1]], [0, 0]);
 
@@ -461,11 +492,16 @@ export const chemicalCatalog: CatalogChemical[] = [
 	element("Kohlenstoff", "C", "carbon", 2.26, "Nichtmetalle und Gase"),
 	element("Schwefel", "S", "sulfur", 2.07, "Nichtmetalle und Gase"),
 	pure("Iod", "Nichtmetalle und Gase", iodine, "solid", 4.93),
-	reference("Wasserstoff", "Nichtmetalle und Gase", "H₂", covalent("H₂", ["hydrogen", "hydrogen"], [[0, 1]], [0, 0])),
-	reference("Sauerstoff", "Nichtmetalle und Gase", "O₂", covalent("O₂", ["oxygen", "oxygen"], [[0, 1, 2]], [0, 0])),
-	reference("Stickstoff", "Nichtmetalle und Gase", "N₂", covalent("N₂", ["nitrogen", "nitrogen"], [[0, 1, 3]], [0, 0])),
-	reference("Kohlenstoffdioxid", "Nichtmetalle und Gase", carbonDioxide.formula, carbonDioxide),
-	reference("Chlor", "Nichtmetalle und Gase", "Cl₂"),
+	gasReagent("Wasserstoff", "Nichtmetalle und Gase", "H2", "H₂", 2.016,
+		covalent("H₂", ["hydrogen", "hydrogen"], [[0, 1]], [0, 0])),
+	gasReagent("Sauerstoff", "Nichtmetalle und Gase", "O2", "O₂", 31.998,
+		covalent("O₂", ["oxygen", "oxygen"], [[0, 1, 2]], [0, 0])),
+	gasReagent("Stickstoff", "Nichtmetalle und Gase", "N2", "N₂", 28.014,
+		covalent("N₂", ["nitrogen", "nitrogen"], [[0, 1, 3]], [0, 0])),
+	gasReagent("Kohlenstoffdioxid", "Nichtmetalle und Gase", "CO2", carbonDioxide.formula, 44.009,
+		carbonDioxide, [{ molecule: carbonicAcid, amount: 1 }]),
+	gasReagent("Chlor", "Nichtmetalle und Gase", "Cl2", "Cl₂", 70.906,
+		covalent("Cl₂", ["chlorine", "chlorine"], [[0, 1]], [0, 0])),
 	sodiumChloride,
 	salt("Kaliumchlorid", "KCl", "potassium", "chlorine"),
 	salt("Natriumbromid", "NaBr", "sodium", "bromine"),
@@ -572,14 +608,16 @@ export const chemicalCatalog: CatalogChemical[] = [
 	organic("Hexan", "Kohlenwasserstoffe", alkane("C₆H₁₄", 6), 0.659),
 	organic("Cyclohexen", "Kohlenwasserstoffe", covalent("C₆H₁₀", Array(6).fill("carbon"),
 		[[0, 1, 2], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]], [1, 1, 2, 2, 2, 2]), 0.811),
-	reference("Methan", "Kohlenwasserstoffe", "CH₄", molecule("CH₄", ["carbon"], [], [4])),
-	reference("Ethen", "Kohlenwasserstoffe", ethene.formula, ethene),
-	reference("Propan", "Kohlenwasserstoffe", "C₃H₈", alkane("C₃H₈", 3)),
-	reference("Butan", "Kohlenwasserstoffe", "C₄H₁₀", alkane("C₄H₁₀", 4)),
-	reference("Ethin", "Kohlenwasserstoffe", "C₂H₂"),
+	gasReagent("Methan", "Kohlenwasserstoffe", "CH4", "CH₄", 16.043, molecule("CH₄", ["carbon"], [], [4])),
+	gasReagent("Ethen", "Kohlenwasserstoffe", "C2H4", ethene.formula, 28.054, ethene),
+	gasReagent("Propan", "Kohlenwasserstoffe", "C3H8", "C₃H₈", 44.097, alkane("C₃H₈", 3)),
+	gasReagent("Butan", "Kohlenwasserstoffe", "C4H10", "C₄H₁₀", 58.124, alkane("C₄H₁₀", 4)),
+	gasReagent("Ethin", "Kohlenwasserstoffe", "C2H2", "C₂H₂", 26.038,
+		covalent("C₂H₂", ["carbon", "carbon"], [[0, 1, 3]], [1, 1])),
 	molecular("Dichlormethan", "Halogenkohlenwasserstoffe", "CH₂Cl₂", 1.327, "liquid"),
 	molecular("Bromethan", "Halogenkohlenwasserstoffe", "C₂H₅Br", 1.46, "liquid"),
-	reference("Chlorethen (Vinylchlorid)", "Halogenkohlenwasserstoffe", "C₂H₃Cl"),
+	gasReagent("Chlorethen (Vinylchlorid)", "Halogenkohlenwasserstoffe", "C2H3Cl", "C₂H₃Cl", 62.498,
+		covalent("C₂H₃Cl", ["carbon", "carbon", "chlorine"], [[0, 1, 2], [0, 2]], [2, 1, 0])),
 	reference("Paraffinöl", "Lösungsmittel", ""),
 	reference("Petrolether", "Lösungsmittel", ""),
 	organic("Ethanol", "Alkohole", alkanol("C₂H₆O", 2, 1), 0.789),

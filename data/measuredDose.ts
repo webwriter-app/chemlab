@@ -1,4 +1,5 @@
 import { Mixture, Molecule, StructureManager } from "../chemlib";
+import { MOLAR_GAS_VOLUME } from "../chemlib/gasEvolution";
 import type { ChemicalRecipe, MoleculeDefinition } from "./chemicals";
 import { prepareMixtureDose, type MixtureRecipe } from "./savedMixtures";
 
@@ -9,8 +10,48 @@ export interface SavedDose {
 	volumeMl: number;
 }
 
+/**
+ * Largest volume of gas one dose can add, in mL.
+ *
+ * A gas dose is a volume and not a portion that has to fit anywhere, so the
+ * slider needs a bound of its own: 500 mL are 20.4 mmol and stay a single
+ * portion from a gas bottle. The usual portion is {@link DEFAULT_GAS_DOSE_ML}.
+ */
+export const GAS_DOSE_MAX_ML = 500;
+
+/** Volume a gas dose offers before the user changes it, in mL. */
+export const DEFAULT_GAS_DOSE_ML = 100;
+
+/**
+ * A gas is dosed as the volume it would take up at lab conditions.
+ *
+ * The amount follows from the molar volume alone, so the target vessel cannot
+ * change it: the vessel decides afterwards how much of it dissolves, because
+ * `ChemComponent.addContents` offers the gas to the mixture.
+ */
+function prepareGasDose(recipe: ChemicalRecipe, load: (definition: MoleculeDefinition) => Molecule) {
+	const parts = recipe.parts
+		.filter(({ amount }) => Number.isFinite(amount) && amount > 0)
+		.map(({ molecule, amount }) => ({ molecule: load(molecule), amount }));
+	return (volumeMl: number): Mixture | undefined => {
+		if (!(volumeMl > 0) || !Number.isFinite(volumeMl)) return;
+		const gasMol = volumeMl / 1000 / MOLAR_GAS_VOLUME;
+		const dose = StructureManager.newMixture();
+		if (parts.length) {
+			// The model keeps this gas as a dissolved species, so the dose books
+			// that species and lets the gas evolution remove the excess.
+			for (const { molecule, amount } of parts) dose.addMolecule(molecule, amount * gasMol);
+		} else if (recipe.gas) {
+			dose.offeredGas.set(recipe.gas, gasMol);
+		} else return;
+		dose.hasLiquidVolume = false;
+		return dose;
+	};
+}
+
 export function prepareDose(recipe: DoseRecipe, load: (definition: MoleculeDefinition) => Molecule) {
 	if ("kind" in recipe) return prepareMixtureDose(recipe, load);
+	if (recipe.phase === "gas") return prepareGasDose(recipe, load);
 	const parts = recipe.parts
 		.filter(({ amount }) => Number.isFinite(amount) && amount > 0)
 		.map(({ molecule, amount }) => {

@@ -185,6 +185,14 @@ class ChemComponent {
 	}: { nMix?: Mixture; nMolecule?: Molecule; nMolAmount?: number } = {}): void {
 		if (nMix != null && nMolecule == null) {
 			if (this._content == null) {
+				if (nMolAmount == null && nMix.offeredGas.size > 0) {
+					// Nothing but a gas dose: the empty vessel takes it as its
+					// own content, so a later dose finds the headspace again.
+					this._content = StructureManager.newMixture();
+					this.admitOfferedGas(nMix);
+					Simulation.sSolvation(this._content);
+					return;
+				}
 				if (nMolAmount == null) {
 					this._content = nMix;
 					Simulation.sSolvation(this._content);
@@ -225,6 +233,9 @@ class ChemComponent {
 							: Math.min(nMix._molProperties[mol._id + "n"], nMolAmount)
 					);
 				}
+				// After the liquid, so the solution that is now there decides
+				// how much of the offered gas it can hold.
+				this.admitOfferedGas(nMix, nMolAmount);
 			}
 		}
 		if (nMix == null && nMolecule != null) {
@@ -237,6 +248,26 @@ class ChemComponent {
 		}
 
 		Simulation.sSolvation(this._content);
+	}
+
+	/**
+	 * Admits the gas a dose brings, and consumes the offer.
+	 *
+	 * The dose was built before its target was known, so the target decides
+	 * how much of the gas its solution can dissolve; the rest joins the gas
+	 * space instead of vanishing. `limit` scales the offer for a dose that is
+	 * added in portion, which is what the amount carried in moles means.
+	 *
+	 * @private
+	 * @param {Mixture} nMix - the incoming dose
+	 * @param {number} [limit] - amount in moles of the dose to take
+	 */
+	private admitOfferedGas(nMix: Mixture, limit?: number): void {
+		if (this._content == null || nMix.offeredGas.size === 0) return;
+		for (const [gas, amount] of nMix.offeredGas) {
+			this._content.admitGas(gas, limit == null ? amount : Math.min(amount, limit));
+		}
+		nMix.offeredGas.clear();
 	}
 
 	/**

@@ -15,9 +15,9 @@ Reference-only behaviour is an interim gap, not an exemption.
 | Catalog entries | 181 |
 | Entries with a builder structure | 170 |
 | Entries without a builder structure | 11 |
-| Dosed entries (solid or aqueous) | 114 |
+| Dosed entries (solid or aqueous) | 125 |
 | Dosed salt entries | 60 |
-| Molecular reagents outside the salt pairing | 54 |
+| Molecular reagents outside the salt pairing | 65 |
 | Mixtures shown by their constituents | 19 |
 | Salt entries in total | 60 |
 | Salt identities | 30 |
@@ -84,11 +84,8 @@ Reference-only behaviour is an interim gap, not an exemption.
 - Basen: Calciumhydroxid, Kalkwasser
 - Carbonsäuren: Benzoesäure, Sorbinsäure, Tetradecansäure (Myristinsäure)
 - Aldehyde: Methanal (Formaldehyd)
-- Kohlenwasserstoffe: Butan, Ethen, Ethin, Methan, Propan
 - Lösungsmittel: Paraffinöl, Petrolether
-- Halogenkohlenwasserstoffe: Chlorethen (Vinylchlorid)
 - Metalle: Kalium, Natrium
-- Nichtmetalle und Gase: Chlor, Kohlenstoffdioxid, Sauerstoff, Stickstoff, Wasserstoff
 - Oxide: Calciumoxid, Eisen(III)-oxid, Kupfer(II)-oxid, Magnesiumoxid, Mangan(IV)-oxid, Siliciumdioxid
 - Indikatoren und Nachweisreagenzien: Benedict-Reagenz, Bromthymolblau, Bromwasser, Fehling I, Fehling II, Indigo, Lackmus, Lugolsche Lösung, Methylorange, Phenolphthalein, Rotkohlsaft, Schiff-Reagenz, Tollens-Reagenz, Universalindikator
 - Kohlenhydrate und Aminosäuren: Cellulose, Fructose, Glycin, Saccharose, Stärke

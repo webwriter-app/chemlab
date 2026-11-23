@@ -79,7 +79,7 @@ import { analyzeBuilderCompound, builderStock, builderStockFor, enrichBuilderCom
 import { iupacSource } from "./chemlib/IupacDissociation";
 import { readAqueousAcidBase } from "./chemlib/AcidBase";
 import { catalogPreviews } from "./data/chemicalPreviews.generated";
-import { prepareDose, type DoseRecipe, type SavedDose } from "./data/measuredDose";
+import { DEFAULT_GAS_DOSE_ML, GAS_DOSE_MAX_ML, prepareDose, type DoseRecipe, type SavedDose } from "./data/measuredDose";
 import { readSavedMixtures, snapshotMixture, type SavedMixture } from "./data/savedMixtures";
 import { vesselCarouselEntries, type VesselPlating } from "./data/vesselCarousel";
 import { STANDARD_CANVAS_WIDTH } from "./controllers/WorkspaceCamera";
@@ -94,6 +94,29 @@ type ChemicalConcentration = { initial: number; max: number };
 type ChemicalPermissionItem = { name: string; concentrationLimit?: number };
 const catalogConcentrationLimits = new Map(chemicalCatalog.flatMap(({ name, concentrationLimit }) =>
 	concentrationLimit ? [[name, concentrationLimit] as const] : []));
+
+/**
+ * Millilitres one dose step covers for a gas.
+ *
+ * A liquid or solid portion advances in millilitres that the vessel has to
+ * have room for; a gas dose is the volume it takes up at lab conditions, so a
+ * 1 mL click would be a twentieth of a millimole and show no bubbles at all.
+ */
+const GAS_DOSE_STEP_ML = 5;
+
+/**
+ * Vessel animation a dose asks for. A gas neither falls in as grains nor
+ * pours, so it gets no hint and the rising bubbles come from the gas that
+ * leaves the solution.
+ */
+function doseHint(recipe: DoseRecipe): VesselHint | undefined {
+	return recipe.phase === "solid" ? "grain" : recipe.phase === "liquid" ? "pour" : undefined;
+}
+
+/** Scale of one dose step for a recipe, see {@link GAS_DOSE_STEP_ML}. */
+function doseStepMl(recipe: DoseRecipe): number {
+	return recipe.phase === "gas" ? GAS_DOSE_STEP_ML : 1;
+}
 
 function chemicalConcentration({ concentrationLimit }: ChemicalPermissionItem): ChemicalConcentration | undefined {
 	return concentrationLimit ? { initial: Math.min(1, concentrationLimit), max: concentrationLimit } : undefined;
@@ -1781,10 +1804,10 @@ export class ChemLab extends LitElementWw {
 			drag.active = true;
 			const steps = 1 + Math.floor((drag.heldMs - drag.nextDoseMs) / 50);
 			drag.nextDoseMs += steps * 50;
-			const requestedMl = steps * 0.4;
+			const requestedMl = steps * 0.4 * ("vessel" in from ? 1 : doseStepMl(from.recipe));
 			const added = "vessel" in from
 				? this.transferMeasuredVolume(from.vessel, target, requestedMl)
-				: this.addMeasuredDose(target, from.dose, requestedMl, from.recipe.phase === "solid" ? "grain" : "pour");
+				: this.addMeasuredDose(target, from.dose, requestedMl, doseHint(from.recipe));
 			drag.totalMl += added;
 			this.updateFillMeter(anchor, target);
 			if (added < requestedMl - 1e-8 || target._content.contentVolume * 1000 >= target._volume - 1e-8) {
@@ -1940,12 +1963,18 @@ export class ChemLab extends LitElementWw {
 
 	private openAmountMenu(target: chemlib.ChemComponent, anchor: PIXI.Container, from: AmountSource): void {
 		const transfer = "vessel" in from;
+		// A gas brings no volume of its own and takes no room in the vessel, so
+		// its dose is bounded by what one portion from a gas bottle can be. What
+		// the solution dissolves is decided when the dose arrives.
+		const gas = !transfer && from.recipe.phase === "gas";
 		const incoming = transfer ? from.vessel._content : from.dose(target._volume * 2);
-		const limit = !transfer || target._inOutLimits[0] > 0
-			? incoming.contentVolume * 1000 * target._content.fractionThatFits(incoming, target._volume / 1000)
-			: 0;
+		const limit = gas ? GAS_DOSE_MAX_ML
+			: !transfer || target._inOutLimits[0] > 0
+				? incoming.contentVolume * 1000 * target._content.fractionThatFits(incoming, target._volume / 1000)
+				: 0;
 		const max = Number.isFinite(limit) && limit > 1e-8 ? limit : 0;
-		const menu = { target, anchor, from, max, amount: transfer ? max : Math.min(1, max) };
+		const amount = transfer ? max : gas ? Math.min(DEFAULT_GAS_DOSE_ML, max) : Math.min(1, max);
+		const menu = { target, anchor, from, max, amount };
 		this.amountMenu = menu;
 		void this.updateComplete.then(() => {
 			if (!this.isConnected || this.amountMenu !== menu) return;
@@ -2028,7 +2057,7 @@ export class ChemLab extends LitElementWw {
 			}
 		} else {
 			// A palette drag clears the selection. The open menu owns the recipe for this dose.
-			result = this.addMeasuredDose(target, from.dose, amount, from.recipe.phase === "solid" ? "grain" : "pour");
+			result = this.addMeasuredDose(target, from.dose, amount, doseHint(from.recipe));
 			this.saveMeasuredDose(anchor, from.recipe, result);
 		}
 		if (this.curr_obj === target || ("vessel" in from && this.curr_obj === from.vessel)) this._updatePopup();
@@ -2077,8 +2106,9 @@ export class ChemLab extends LitElementWw {
 		let nextDoseMs = 300;
 		let nextStatusMs = 500;
 		const task = "chemical-dose";
+		const stepMl = doseStepMl(selected.recipe);
 		const add = (requestedMl: number) => {
-			const hint: VesselHint = selected.recipe.phase === "solid" ? "grain" : "pour";
+			const hint = doseHint(selected.recipe);
 			totalMl += this.addMeasuredDose(target, dose, requestedMl, hint);
 			return target._volume - this.updateFillMeter(sprite, target) <= 1e-8;
 		};
@@ -2087,7 +2117,7 @@ export class ChemLab extends LitElementWw {
 			controller.abort();
 			if (canvasView.hasPointerCapture(pointerId)) canvasView.releasePointerCapture(pointerId);
 			this.stopDose = undefined;
-			if (click && !holding) add(1);
+			if (click && !holding) add(stepMl);
 			if (click) this.meterTimeout = view.setTimeout(() => this.hideFillMeter(), 650);
 			else this.hideFillMeter();
 			if (save) this.saveMeasuredDose(sprite, selected.recipe, totalMl);
@@ -2099,7 +2129,7 @@ export class ChemLab extends LitElementWw {
 			holding = true;
 			const steps = 1 + Math.floor((heldMs - nextDoseMs) / 50);
 			nextDoseMs += steps * 50;
-			const full = add(steps * 0.4);
+			const full = add(steps * 0.4 * stepMl);
 			if ((full || heldMs >= nextStatusMs) && this.curr_obj === target) {
 				this._updatePopup();
 				nextStatusMs = heldMs + 500;
