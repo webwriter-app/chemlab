@@ -11,9 +11,11 @@ import { catalogStructures } from "../molecule-builder/catalog";
  * A gas is dosed as the volume it would take up at lab conditions, not as a
  * weighed portion. The dose therefore carries no liquid and no bulk volume:
  * the receiving vessel decides how much of it the solution dissolves, up to
- * the tabulated Henry saturation, and the rest joins the gas space. Only
- * carbon dioxide is booked as a solute, because the model keeps dissolved CO₂
- * as the carbonic-acid family that the gas evolution removes from.
+ * the tabulated Henry saturation, and the rest joins the gas space. Carbon
+ * dioxide and formaldehyde are booked as solutes instead, because the model
+ * keeps dissolved CO₂ as the carbonic-acid family that the gas evolution
+ * removes from, and formaldehyde leaves no Henry row behind that would let a
+ * portion escape again.
  */
 
 const gases = chemicalCatalog.filter(entry => entry.recipe?.phase === "gas");
@@ -52,10 +54,12 @@ test("every catalog gas names a tabulated gas and carries a builder structure", 
 	assert.ok(gases.length >= 11, `${gases.length}`);
 	for (const gas of gases) {
 		const recipe = gas.recipe!;
-		const table = evolvedGases[recipe.gas!];
-		assert.ok(table, gas.name);
-		assert.equal(table.phase, "gas", gas.name);
-		assert.ok(table.solubility! > 0, gas.name);
+		if (recipe.gas) {
+			const table = evolvedGases[recipe.gas];
+			assert.ok(table, gas.name);
+			assert.equal(table.phase, "gas", gas.name);
+			assert.ok(table.solubility! > 0, gas.name);
+		} else assert.ok((recipe.parts?.length ?? 0) > 0, `${gas.name} books a solute of its own`);
 		// a gas at lab conditions is lighter than any liquid or solid portion
 		assert.ok(recipe.density > 0 && recipe.density < 0.005, `${gas.name}: ${recipe.density}`);
 		assert.ok(catalogStructures(gas.name).length > 0, gas.name);

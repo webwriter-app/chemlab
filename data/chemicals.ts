@@ -215,6 +215,15 @@ function molecular(name: string, category: ChemicalClass, formula: string, densi
 	return pure(name, category, { formula, ...graph }, phase, density, concentrationLimit);
 }
 
+// One graph of the shared structure library, asked for by its library key. A
+// row that needs a single part of a library structure — one ion of a mixture,
+// say — cannot go through a recipe that names the whole substance, so it asks
+// for the key directly.
+function libraryMolecule(key: string, formula: string): MoleculeDefinition | undefined {
+	const graph = structureGraphs[key];
+	return graph ? { formula, ...graph } : undefined;
+}
+
 // An acid whose graph comes from the structure library keeps that graph and
 // carries its own acid-base data, because the hand-written table in
 // `StructureManager` keys on its own SMILES spellings and the library draws the
@@ -222,19 +231,21 @@ function molecular(name: string, category: ChemicalClass, formula: string, densi
 // definition, so the catalog card, the dose, the conjugate cards and the
 // structure the molecule builder shows stay one graph.
 function libraryAcidBase(name: string, formula: string, aqueousAcidBase: AqueousAcidBase): MoleculeDefinition | undefined {
-	const graph = structureGraphs[name];
-	return graph ? { formula, ...graph, aqueousAcidBase } : undefined;
+	const graph = libraryMolecule(name, formula);
+	return graph ? { ...graph, aqueousAcidBase } : undefined;
 }
 
 // A solid acid is dosed as a weighed portion and dissolves completely: the
 // model has no solubility product for a molecular crystal, so a dose smaller
 // than the saturation of the real substance dissolves, and a larger one does
 // too. `density` only sets the bulk volume the portion takes up before it
-// dissolves.
-function solidAcid(name: string, category: ChemicalClass, formula: string, density: number,
-	aqueousAcidBase: AqueousAcidBase): CatalogChemical {
+// dissolves. A fatty acid that is a liquid at room temperature takes the same
+// route as the pure liquid, because the model reads the acid-base family from
+// the definition and not from the phase of the portion.
+function acidReagent(name: string, category: ChemicalClass, formula: string, density: number,
+	aqueousAcidBase: AqueousAcidBase, phase: "solid" | "liquid" = "solid"): CatalogChemical {
 	const preview = libraryAcidBase(name, formula, aqueousAcidBase);
-	return preview ? pure(name, category, preview, "solid", density) : { name, category, formula };
+	return preview ? pure(name, category, preview, phase, density) : { name, category, formula };
 }
 
 // The same acid as a stock. `concentrationLimit` is the concentration the
@@ -245,22 +256,33 @@ function acidSolution(name: string, category: ChemicalClass, formula: string, aq
 	return preview ? aqueous(name, category, preview, concentrationLimit) : { name, category, formula };
 }
 
-// A gas is dosed as the volume it takes up at lab conditions, never as a mass,
-// so its recipe carries the volume rather than a weighed portion. The graph
-// from the library only serves the card.
-//
-// `parts` names the species a gas enters the solution as. Carbon dioxide is the
-// one case: the model keeps dissolved CO₂ as the carbonic-acid family, exactly
-// the tally the gas evolution removes from, so a dose books carbonic acid and
-// the acid-base solver finds the same pH as after a carbonate reaction. Every
-// other gas is offered to the vessel, which dissolves up to the tabulated
-// saturation and lets the rest pass into the gas space.
-function gasReagent(name: string, category: ChemicalClass, gas: string, formula: string,
+// A stock whose solute is a graph of the shared library: bromine water is the
+// saturated solution of the library's Br₂, so the card, the dose and the
+// structure in the molecule builder show the same molecule.
+function graphSolution(name: string, category: ChemicalClass, formula: string,
+	solute: MoleculeDefinition | undefined, concentrationLimit: number): CatalogChemical {
+	return solute ? aqueous(name, category, { ...solute, formula }, concentrationLimit) : { name, category, formula };
+}
+
+/**
+ * A portion taken from a gas bottle: the palette asks for a volume and books the
+ * molar amount, so the recipe carries the volume rather than a weighed portion
+ * and the graph from the library only serves the card.
+ *
+ * With a `gas` key the receiving vessel decides how much of it dissolves, up to
+ * the tabulated Henry saturation, and the rest joins the gas space. `parts`
+ * names a species the dose books instead: carbon dioxide needs it because the
+ * model keeps dissolved CO₂ as the carbonic-acid family that the gas evolution
+ * removes from, and formaldehyde needs it because it has no Henry row and a
+ * portion must not escape again.
+ */
+function gasReagent(name: string, category: ChemicalClass, gas: string | undefined, formula: string,
 	molarMass: number, fallback: MoleculeDefinition, parts: ChemicalRecipe["parts"] = []): CatalogChemical {
 	const graph = structureGraphs[name];
 	const preview = graph ? { formula, ...graph } : fallback;
-	return { name, category, formula, preview,
-		recipe: { phase: "gas", gas, density: molarMass / (MOLAR_GAS_VOLUME * 1000), parts } };
+	const recipe: ChemicalRecipe = { phase: "gas", density: molarMass / (MOLAR_GAS_VOLUME * 1000), parts };
+	if (gas) recipe.gas = gas;
+	return { name, category, formula, preview, recipe };
 }
 
 const propanone = covalent("C₃H₆O", ["carbon", "carbon", "carbon", "oxygen"], [[0, 1], [1, 2], [1, 3, 2]], [3, 0, 3, 0]);
@@ -516,6 +538,11 @@ addCrystalWater(potassiumSodiumTartrateTetrahydrate.atoms, potassiumSodiumTartra
 const sodiumChloride = salt("Natriumchlorid", "NaCl", "sodium", "chlorine");
 const aceticAcid = molecule("C₂H₄O₂", ["carbon", "carbon", "oxygen", "oxygen"],
 	["0-1:covalent:1", "1-2:covalent:2", "1-3:covalent:1"], [3, 0, 0, 1]);
+// Library graphs a reagent needs as one dissolved part rather than as a whole
+// catalog entry: the aldehyde of a gas dose and the bromine of bromine water.
+const methanal = libraryMolecule("Methanal (Formaldehyd)", "CH₂O");
+const methanalDose: ChemicalRecipe["parts"] = methanal ? [{ molecule: methanal, amount: 1 }] : [];
+const bromine = libraryMolecule("Bromwasser", "Br₂ (aq)");
 
 // Densities in g/mL are approximate. Solution recipes use nominal amounts
 // per litre of water, as in the original palette's acid/base stock solutions.
@@ -690,7 +717,12 @@ export const chemicalCatalog: CatalogChemical[] = [
 	organic("Ethanal", "Aldehyde", covalent("C₂H₄O", ["carbon", "carbon", "oxygen"], [[0, 1], [1, 2, 2]], [3, 1, 0]), 0.784),
 	organic("Propanal", "Aldehyde", covalent("C₃H₆O", ["carbon", "carbon", "carbon", "oxygen"],
 		[[0, 1], [1, 2], [2, 3, 2]], [3, 2, 1, 0]), 0.798),
-	reference("Methanal (Formaldehyd)", "Aldehyde", "CH₂O", covalent("CH₂O", ["carbon", "oxygen"], [[0, 1, 2]], [2, 0])),
+	// Methanal is a gas at room temperature, so it dosed by the volume it takes
+	// up like every other gas, and the vessel books the dissolved aldehyde. The
+	// model runs neither its hydrate nor an oxidation, so the portion stays a
+	// spectator that dissolves completely.
+	gasReagent("Methanal (Formaldehyd)", "Aldehyde", undefined, "CH₂O", 30.026,
+		covalent("CH₂O", ["carbon", "oxygen"], [[0, 1, 2]], [2, 0]), methanalDose),
 	molecular("Benzaldehyd", "Aldehyde", "C₇H₆O", 1.045, "liquid"),
 	organic("Aceton", "Ketone", propanone, 0.791),
 	organic("Butan-2-on", "Ketone", covalent("C₄H₈O", ["carbon", "carbon", "carbon", "carbon", "oxygen"],
@@ -713,9 +745,9 @@ export const chemicalCatalog: CatalogChemical[] = [
 	// The apparent constant of the long-chain fatty acids spreads over
 	// 4.5–5.3 depending on the method, so myristic acid takes 4.9 and stays a
 	// weak acid whose portion barely dissolves in the real world anyway.
-	solidAcid("Benzoesäure", "Carbonsäuren", "C₇H₆O₂", 1.32, { pKa: [4.19], step: 0 }),
-	solidAcid("Sorbinsäure", "Carbonsäuren", "C₆H₈O₂", 1.20, { pKa: [4.76], step: 0 }),
-	solidAcid("Tetradecansäure (Myristinsäure)", "Carbonsäuren", "C₁₄H₂₈O₂", 0.86, { pKa: [4.9], step: 0 }),
+	acidReagent("Benzoesäure", "Carbonsäuren", "C₇H₆O₂", 1.32, { pKa: [4.19], step: 0 }),
+	acidReagent("Sorbinsäure", "Carbonsäuren", "C₆H₈O₂", 1.20, { pKa: [4.76], step: 0 }),
+	acidReagent("Tetradecansäure (Myristinsäure)", "Carbonsäuren", "C₁₄H₂₈O₂", 0.86, { pKa: [4.9], step: 0 }),
 	organic("Ethylacetat", "Ester", covalent("C₄H₈O₂", ["carbon", "carbon", "oxygen", "oxygen", "carbon", "carbon"],
 		[[0, 1], [1, 2, 2], [1, 3], [3, 4], [4, 5]], [3, 0, 0, 0, 2, 3]), 0.902),
 	molecular("Isoamylacetat", "Ester", "C₇H₁₄O₂", 0.876, "liquid"),
@@ -739,44 +771,69 @@ export const chemicalCatalog: CatalogChemical[] = [
 	pure("Siliciumdioxid", "Oxide", covalent("SiO₂", ["silicon", "oxygen", "oxygen"],
 		[[0, 1, 2], [0, 2, 2]], [0, 0, 0]), "solid", 2.65),
 	aqueous("Wasserstoffperoxidlösung", "Indikatoren und Nachweisreagenzien", peroxide),
-	reference("Bromwasser", "Indikatoren und Nachweisreagenzien", "Br₂ (aq)"),
+	// Bromine water is the saturated solution of the library's Br₂, 0.21 mol/L
+	// at 25 °C (`evolvedGases.Br2`). The dissolved bromine is a spectator: the
+	// model neither brominates nor oxidises with it.
+	graphSolution("Bromwasser", "Indikatoren und Nachweisreagenzien", "Br₂ (aq)", bromine, 0.21),
 	reference("Lugolsche Lösung", "Indikatoren und Nachweisreagenzien", "I₂ / KI (aq)"),
 	reference("Fehling I", "Indikatoren und Nachweisreagenzien", "CuSO₄ (aq)"),
 	reference("Fehling II", "Indikatoren und Nachweisreagenzien", ""),
 	reference("Benedict-Reagenz", "Indikatoren und Nachweisreagenzien", ""),
 	reference("Schiff-Reagenz", "Indikatoren und Nachweisreagenzien", ""),
 	reference("Tollens-Reagenz", "Indikatoren und Nachweisreagenzien", ""),
-	reference("Phenolphthalein", "Indikatoren und Nachweisreagenzien", "C₂₀H₁₄O₄"),
-	reference("Bromthymolblau", "Indikatoren und Nachweisreagenzien", "C₂₇H₂₈Br₂O₅S"),
-	reference("Methylorange", "Indikatoren und Nachweisreagenzien", "C₁₄H₁₄N₃NaO₃S"),
+	// The three indicators are weighed dyes with the library graph on the card.
+	// The model has no colour change, so a portion stays a spectator; methyl
+	// orange is the sodium salt of its sulfonic acid, but the library draws the
+	// ion pair as one net-neutral graph without an ionic bond, which keeps it
+	// out of the salt solver as well.
+	molecular("Phenolphthalein", "Indikatoren und Nachweisreagenzien", "C₂₀H₁₄O₄", 1.277),
+	molecular("Bromthymolblau", "Indikatoren und Nachweisreagenzien", "C₂₇H₂₈Br₂O₅S", 1.25),
+	molecular("Methylorange", "Indikatoren und Nachweisreagenzien", "C₁₄H₁₄N₃NaO₃S", 1.28),
 	reference("Lackmus", "Indikatoren und Nachweisreagenzien", ""),
 	reference("Universalindikator", "Indikatoren und Nachweisreagenzien", ""),
 	reference("Rotkohlsaft", "Indikatoren und Nachweisreagenzien", ""),
-	reference("Indigo", "Indikatoren und Nachweisreagenzien", "C₁₆H₁₀N₂O₂"),
+	molecular("Indigo", "Indikatoren und Nachweisreagenzien", "C₁₆H₁₀N₂O₂", 1.199),
 	organic("Glucose", "Kohlenhydrate und Aminosäuren", covalent("C₆H₁₂O₆",
 		[...Array(6).fill("carbon"), ...Array(6).fill("oxygen")],
 		[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [0, 6, 2], [1, 7], [2, 8], [3, 9], [4, 10], [5, 11]],
 		[1, 1, 1, 1, 1, 2, 0, 1, 1, 1, 1, 1]), 1.54, "solid"),
-	reference("Glycin", "Kohlenhydrate und Aminosäuren", "C₂H₅NO₂", covalent("C₂H₅NO₂", ["carbon", "carbon", "nitrogen", "oxygen", "oxygen"],
-		[[0, 1], [0, 2], [1, 3, 2], [1, 4]], [2, 0, 2, 0, 1])),
-	reference("Fructose", "Kohlenhydrate und Aminosäuren", "C₆H₁₂O₆"),
-	reference("Saccharose", "Kohlenhydrate und Aminosäuren", "C₁₂H₂₂O₁₁"),
-	reference("Stärke", "Kohlenhydrate und Aminosäuren", "(C₆H₁₀O₅)ₙ"),
-	reference("Cellulose", "Kohlenhydrate und Aminosäuren", "(C₆H₁₀O₅)ₙ"),
+	// Glycin is the one ampholyte of the set: it sits on two protonation steps
+	// and carries its constants with the library graph, so a portion reads the
+	// isoelectric pH near 6 like any other diprotic acid. The sugars and the two
+	// polysaccharides have no modelled reaction — no hydrolysis, no fermentation
+	// and no glycoside — so they dissolve as spectators.
+	acidReagent("Glycin", "Kohlenhydrate und Aminosäuren", "C₂H₅NO₂", 1.607, { pKa: [2.34, 9.58], step: 1 }),
+	molecular("Fructose", "Kohlenhydrate und Aminosäuren", "C₆H₁₂O₆", 1.59),
+	molecular("Saccharose", "Kohlenhydrate und Aminosäuren", "C₁₂H₂₂O₁₁", 1.587),
+	molecular("Stärke", "Kohlenhydrate und Aminosäuren", "(C₆H₁₀O₅)ₙ", 1.5),
+	molecular("Cellulose", "Kohlenhydrate und Aminosäuren", "(C₆H₁₀O₅)ₙ", 1.5),
 	reference("Olivenöl", "Fette und Tenside", ""),
-	reference("Stearinsäure", "Fette und Tenside", "C₁₈H₃₆O₂"),
-	reference("Ölsäure", "Fette und Tenside", "C₁₈H₃₄O₂"),
-	reference("Natriumstearat", "Fette und Tenside", "C₁₈H₃₅NaO₂"),
-	reference("Natriumdodecylsulfat", "Fette und Tenside", "C₁₂H₂₅NaO₄S"),
-	reference("Polyethylen (PE)", "Kunststoffe und Monomere", "(C₂H₄)ₙ"),
-	reference("Polypropylen (PP)", "Kunststoffe und Monomere", "(C₃H₆)ₙ"),
-	reference("Polystyrol (PS)", "Kunststoffe und Monomere", "(C₈H₈)ₙ"),
-	reference("Polyvinylchlorid (PVC)", "Kunststoffe und Monomere", "(C₂H₃Cl)ₙ"),
-	reference("Polyethylenterephthalat (PET)", "Kunststoffe und Monomere", "(C₁₀H₈O₄)ₙ"),
-	reference("Polymilchsäure (PLA)", "Kunststoffe und Monomere", "(C₃H₄O₂)ₙ"),
-	reference("Styrol", "Kunststoffe und Monomere", "C₈H₈"),
-	reference("Methylmethacrylat", "Kunststoffe und Monomere", "C₅H₈O₂"),
-	reference("Polyamid 6", "Kunststoffe und Monomere", "(C₆H₁₁NO)ₙ"),
+	// Both fatty acids keep an acid family: the apparent constants of the long
+	// chain spread over 4.5–5.3, so stearic acid takes 4.9 like myristic acid
+	// and oleic acid 5.02. Stearic acid is the weighed solid, oleic acid the
+	// liquid; the model dissolves the whole portion, which oleic acid only does
+	// as a trace, so its pH is a lower bound. The two soaps are net-neutral
+	// library graphs whose charges sit inside the molecule, so the salt solver
+	// does not split them and no surfactant behaviour is modelled.
+	acidReagent("Stearinsäure", "Fette und Tenside", "C₁₈H₃₆O₂", 0.94, { pKa: [4.9], step: 0 }),
+	acidReagent("Ölsäure", "Fette und Tenside", "C₁₈H₃₄O₂", 0.895, { pKa: [5.02], step: 0 }, "liquid"),
+	molecular("Natriumstearat", "Fette und Tenside", "C₁₈H₃₅NaO₂", 1.03),
+	molecular("Natriumdodecylsulfat", "Fette und Tenside", "C₁₂H₂₅NaO₄S", 1.01),
+	// A plastic is a bulk material: the library graph is its repeat unit, the
+	// density is the bulk density of the polymer, and the weighed portion stays
+	// a spectator solid. Neither polymerisation nor depolymerisation is modelled.
+	molecular("Polyethylen (PE)", "Kunststoffe und Monomere", "(C₂H₄)ₙ", 0.94),
+	molecular("Polypropylen (PP)", "Kunststoffe und Monomere", "(C₃H₆)ₙ", 0.90),
+	molecular("Polystyrol (PS)", "Kunststoffe und Monomere", "(C₈H₈)ₙ", 1.05),
+	molecular("Polyvinylchlorid (PVC)", "Kunststoffe und Monomere", "(C₂H₃Cl)ₙ", 1.40),
+	molecular("Polyethylenterephthalat (PET)", "Kunststoffe und Monomere", "(C₁₀H₈O₄)ₙ", 1.38),
+	molecular("Polymilchsäure (PLA)", "Kunststoffe und Monomere", "(C₃H₄O₂)ₙ", 1.24),
+	molecular("Polyamid 6", "Kunststoffe und Monomere", "(C₆H₁₁NO)ₙ", 1.13),
+	// Styrene is the one monomer that separates: the phase split only asks for
+	// carbon and hydrogen, so it floats as its own band, while methyl
+	// methacrylate counts as polar and mixes with the water.
+	molecular("Styrol", "Kunststoffe und Monomere", "C₈H₈", 0.909, "liquid"),
+	molecular("Methylmethacrylat", "Kunststoffe und Monomere", "C₅H₈O₂", 0.94, "liquid"),
 	reference("Sand", "Stoffgemische", ""),
 	reference("Leitungswasser", "Stoffgemische", ""),
 	reference("Mineralwasser", "Stoffgemische", ""),

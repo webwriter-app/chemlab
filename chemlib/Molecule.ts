@@ -29,6 +29,13 @@ class Molecule {
 	 */
 	solidBulkLitresPerMol?: number;
 	/**
+	 * Volume of one mole of this dosed liquid in litres, from the density of
+	 * its own recipe. The phase split stacks the organic layer with it, so a
+	 * dosed millilitre stays a millilitre instead of following the fallback
+	 * density of an unknown hydrocarbon.
+	 */
+	liquidBulkLitresPerMol?: number;
+	/**
 	 * A list of all available bond types
 	 *
 	 * @readonly

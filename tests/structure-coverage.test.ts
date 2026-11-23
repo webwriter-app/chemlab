@@ -45,7 +45,14 @@ test("the summary counts the catalog without double counting", () => {
 	assert.equal(entries.filter((entry) => entry.identity !== null).length, summary.saltEntries);
 	assert.equal(entries.filter((entry) => entry.form === "reference").length, summary.catalogEntries - summary.dosed);
 	assert.equal(summary.mixtures, entries.filter((entry) => entry.mixture).length);
-	assert.ok(summary.mixtures <= summary.catalogEntries - summary.dosed, "a mixture without a recipe cannot be dosed");
+	// A mixture is either a recipe the palette can pour or a reference entry
+	// that only names what it holds. Kalkwasser and Bromwasser carry a recipe,
+	// the documented gaps do not, and the two states never overlap.
+	assert.ok(summary.mixtures > 0);
+	for (const mixture of entries.filter(item => item.mixture)) {
+		assert.equal(mixture.form === "reference", !mixture.dosed,
+			`${mixture.name} is either a recipe or a reference entry`);
+	}
 });
 
 test("every dosed salt names its phase and its catalog entry", () => {

@@ -20,9 +20,12 @@ assert.deepEqual(aqueousComponents(catalogAqueousStructure("Schwefelsäure (1 mo
 // its preview comes from the proton on its oxygen.
 assert.deepEqual(aqueousComponents(catalogAqueousStructure("Salpetersäure")).map(component => component.label), ["H₃O⁺", "NO₃⁻", "HNO₃"]);
 
+// A stock of a neutral molecule has no ion pair to show: bromine water
+// arrives as dissolved Br₂, and the peroxide already needs its own model.
+const neutralStocks = new Set(["Wasserstoffperoxidlösung", "Bromwasser"]);
 for (const entry of structureCatalog) {
 	const weakAcid = entry.category === "Carbonsäuren" && entry.concentrationLimit;
-	if ((!entry.recipe?.aqueousMolar && !weakAcid) || entry.name === "Wasserstoffperoxidlösung") continue;
+	if ((!entry.recipe?.aqueousMolar && !weakAcid) || neutralStocks.has(entry.name)) continue;
 	const preview = catalogAqueousStructure(entry.name);
 	assert.ok(preview, entry.name);
 	const components = aqueousComponents(preview);

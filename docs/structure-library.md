@@ -12,7 +12,7 @@ For every listed salt, provide **both a solid-salt form and an aqueous-solution 
 
 Compatibility includes dosing, chemically appropriate behaviour within the simulation's documented scope, interaction with existing reagents, and save/restore. Existing reagent permissions and structural validation remain in force. Missing identity data, recipes or chemistry models are implementation gaps to resolve for selectable catalog compounds, not a permanent reference-only exemption. Track them explicitly until the catalog-wide requirement is satisfied.
 
-The salt half is met: all 31 salt identities carry both a solid and a stock, the [coverage report](structure-library-coverage.md) lists 62 dosed salt entries, and no reference-only identity is left; `tests/structure-coverage.test.ts` holds that state, including the absence of the block. The non-salt half is under way: `molecular()` builds a reagent from the graph the library already stores, so far for seven spectator organics, the eleven gases are dosed by volume, the four library acids and slaked lime now carry their own dosing recipe, the six oxides join them through `chemlib/oxides.ts`, and sodium and potassium are dosed as the water-reactive metals they are; the catalog holds 139 dosed entries. Still open are the remaining organic compounds, the indicators, the mixtures, and the manual-edit pipeline, which has no implementation yet.
+The salt half is met: all 31 salt identities carry both a solid and a stock, the [coverage report](structure-library-coverage.md) lists 62 dosed salt entries, and no reference-only identity is left; `tests/structure-coverage.test.ts` holds that state, including the absence of the block. The non-salt half is nearly met: `molecular()` builds a reagent from the graph the library already stores, so the eleven gases are dosed by volume, the four library acids and slaked lime carry their own dosing recipe, the six oxides join them through `chemlib/oxides.ts`, sodium and potassium are dosed as the water-reactive metals they are, and the 24 organic rows of the library — indicators, sugars, the polysaccharides, the fatty acids and their soaps, the plastics, the two monomers, formaldehyde and bromine water — are dosed from their own graphs as well; the catalog holds 163 of 181 dosed entries. Still open are the thirteen mixtures and reagent solutions (Petrolether, Lugol's solution, Fehling I and II, Benedict's reagent, Tollens' reagent, universal indicator, household vinegar, lemon juice, tap water, mineral water, air and sand), the five rows deliberately without a dose (paraffin oil, litmus, red cabbage juice, Schiff's reagent, olive oil; see the [coverage report](structure-library-coverage.md)), and the manual-edit pipeline, which has no implementation yet.
 
 ### Manually edited inorganic compounds
 
@@ -175,7 +175,7 @@ The palette treats a gas like any other reagent, with three differences: the amo
 
 ### Implemented example: acids and lime water from the library graph
 
-**Four acids keep the graph the builder shows.** `Salpetersäure`, `Benzoesäure`, `Sorbinsäure` and `Tetradecansäure (Myristinsäure)` were the last reference-only acids of the catalog. The obstacle was the spelling, not the chemistry: the hand-written acid-base table in `StructureManager` keys its families on its own SMILES strings, and the library draws the same molecule with another atom order and its own charges, so a graph from the library would have found no entry. Instead of adding a second graph per acid, the catalog entry carries `aqueousAcidBase` on its `MoleculeDefinition`, the route the custom-compound path already takes. `libraryAcidBase()` attaches the data to the library graph, `solidAcid()` builds a weighed portion from it and `acidSolution()` a stock, so the palette card, the dose, the conjugate-base cards and the structure in the builder stay one graph and no SMILES spelling is repeated.
+**Four acids keep the graph the builder shows.** `Salpetersäure`, `Benzoesäure`, `Sorbinsäure` and `Tetradecansäure (Myristinsäure)` were the last reference-only acids of the catalog. The obstacle was the spelling, not the chemistry: the hand-written acid-base table in `StructureManager` keys its families on its own SMILES strings, and the library draws the same molecule with another atom order and its own charges, so a graph from the library would have found no entry. Instead of adding a second graph per acid, the catalog entry carries `aqueousAcidBase` on its `MoleculeDefinition`, the route the custom-compound path already takes. `libraryAcidBase()` attaches the data to the library graph, `acidReagent()` (then still named `solidAcid()`) builds a weighed portion from it and `acidSolution()` a stock, so the palette card, the dose, the conjugate-base cards and the structure in the builder stay one graph and no SMILES spelling is repeated.
 
 **Nitric acid** is modelled as the strong acid it is, pKa −1.3, with one proton on an oxygen. Only that role exists: it does not oxidise copper, iron(II) or organic material, the same documented gap the permanganate and the thiosulfate carry as spectator ions. The stock takes the 65 % reagent of 1.39 g/mL, which is 0.65 · 1390 / 63.012 = 14.34 mol/L and stands as 14.4 beside the other concentrated reagents; 0.1 mol/L reads pH 1.002 and 0.01 mol/L pH 2.000, one unit apart.
 
@@ -226,6 +226,71 @@ The palette treats a gas like any other reagent, with three differences: the amo
 - Calcium, 1 mmol in 100 mL of copper sulfate: no copper plating, 1 mmol of Cu(OH)₂ plus the gypsum the lime does not hold in solution, 138.4 mg together at pH 7.7270. The copper sulfate solution is weakly acidic on its own (pH 4.898), so a sliver of the calcium takes the proton path and the hydrogen reads 0.5006 mmol instead of 0.5000 mmol.
 
 `tests/alkali-metal.test.ts` checks the two catalog rows against the table, the three water-reactive metals of the catalog as the exact set, sodium, potassium and calcium in water, zinc as the counter-example, both acid cases, the lye, both copper sulfate cases and the hydrogen balance across dissolved and escaped gas.
+
+### Implemented example: the organic rows of the library
+
+**Twenty-four entries that had only a structure now carry a portion.** Four
+indicators (phenolphthalein, bromothymol blue, methyl orange, indigo), the
+amino acid glycine, two sugars, two polysaccharides, stearic and oleic acid,
+sodium stearate and sodium dodecyl sulfate, seven plastics, the two monomers
+styrene and methyl methacrylate, formaldehyde and bromine water were dosed as
+the phase they come in. `libraryMolecule(key, formula)` returns the archived
+graph with the entry's formula, `molecular(...)` turns it into a weighed or
+poured reagent, `graphSolution(...)` does the same for a stock whose single
+solute is that graph, and `acidReagent(...)` — the earlier `solidAcid` — adds
+acid-base data to a library acid, so the card, the dose, the conjugate cards
+and the builder keep one graph.
+
+- **Phase and measure.** Twenty of the new rows are weighed solids with the
+  density a supplier states for the powder; styrene (0.909), methyl
+  methacrylate (0.94) and oleic acid (0.895) are poured liquids; 100 mL of
+  formaldehyde gas book 4.09 mmol of the dissolved aldehyde.
+- **Spectators stay neutral.** Phenolphthalein, bromothymol blue, indigo, both
+  sugars, the polysaccharides, the plastics and the monomers read pH 7.000 in
+  water, because the catalog keeps them as spectator molecules: the model has
+  no acidity, no indicator colour change, no hydrolysis and no polymer
+  degradation. Sodium stearate, sodium dodecyl sulfate and methyl orange carry
+  an internal ±1 that sums to zero, so they are spectators too and stay
+  neutral; only a net charge would enter `spectatorCharge`.
+- **Glycine is the one ampholyte.** pKa 2.34 and 9.58, isoelectric at
+  pH 6.041 for 1 mmol in 100 mL. Half an equivalent of acid and of lye moves
+  the bath less than the same amount without the amino acid, in both
+  directions.
+- **The fatty acids dissociate.** Stearic acid (pKa 4.9, 1 mmol in 100 mL)
+  reads pH 3.458 and oleic acid (pKa 5.02, 1 mL = 3.17 mmol) pH 3.263. The
+  model dissolves the whole portion because a molecular crystal has no
+  solubility product; the reading is the acid equilibrium, not a saturation.
+- **A weighed portion stays a body.** `solidSediment` counts dosed molecular
+  solids, so 1 mmol of a dye, a sugar or a plastic keeps its mass in the vessel
+  while it takes part in the equilibria. `splitLiquidPhases` had to learn the
+  same distinction: a hydrocarbon graph reads as a water-immiscible liquid, so
+  a weighed polyethylene granule would have appeared as a floating organic
+  layer. The phase split now treats a dosed solid like a settled salt, and only
+  a poured liquid forms a band.
+- **A poured band is as thick as its portion.** `Molecule.liquidBulkLitresPerMol`
+  carries the molar volume of a dosed liquid from its own recipe, so 1 mL of
+  styrene gives a 1.0 mL organic layer of 0.909 g/mL that floats on the water;
+  the phase split used to fall back to a typical hydrocarbon density and drew
+  1.3 mL. Methyl methacrylate stays miscible, because the ester oxygen makes it
+  polar to the classifier.
+- **Bromine water is a saturated stock.** `Br₂ (aq)` as a single solute with
+  its concentration limit at the tabulated Henry solubility of bromine,
+  0.21 mol/L. The halogen/halide couple belongs to the electrodes, so a dose is
+  a spectator and reads pH 7.000.
+- **Formaldehyde enters as a solute.** `gasReagent` accepts a row without a
+  `gas` key when `parts` names what the dose books: there is no Henry row for
+  formaldehyde, and a portion that escaped again would be booked twice.
+- **One library gap shows through.** Starch and cellulose share the same
+  disaccharide cut in the archive, so their graphs are identical in atoms,
+  bonds and molar mass.
+
+`tests/organic-reagents.test.ts` checks the 24 rows against their phase,
+density or stock rule, the bromine solubility limit, the formaldehyde gas
+volume, glycine's isoelectric point and its buffering on both sides, both fatty
+acids with their portion amounts, the neutral spectators, the plastics as a
+body without a second liquid phase, the saturated sediment of a weighed dye or
+sugar, the shared starch/cellulose graph, and the styrene layer with its own
+density beside the miscible monomer.
 
 ### Planned extension to all selectable compounds
 

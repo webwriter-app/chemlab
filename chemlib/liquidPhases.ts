@@ -65,13 +65,24 @@ export function splitLiquidPhases(mixture: Mixture): LiquidPhase[] {
 	for (const molecule of mixture._activeMolecules) {
 		const mass = mixture._molProperties[molecule._id + "m"];
 		if (!(mass > 0)) continue;
+		if (molecule.solidSaltFormula || molecule.dosedAsSolid) {
+			// Settled solid: rendered as the sediment bed, not part of a band.
+			// A weighed plastic counts here too, even though its graph is a
+			// hydrocarbon: a granule does not spread into a floating layer.
+			const bulk = molecule.solidBulkLitresPerMol;
+			if (bulk !== undefined) settledVolume += bulk * mixture._molProperties[molecule._id + "n"];
+			else settledVolume += mass / (saltSolubility[molecule.solidSaltFormula ?? ""]?.solidDensity ?? 2.2) / 1000;
+			continue;
+		}
 		const density = nonpolarDensity(molecule);
 		if (density > 0) {
+			// A dosed organic liquid knows its own density, which keeps the band
+			// as thick as the portion the palette poured in.
+			const bulk = molecule.liquidBulkLitresPerMol;
 			nonpolarMass += mass;
-			nonpolarVolume += mass / density / 1000;
-		} else if (molecule.solidSaltFormula) {
-			// settled solid: rendered as the sediment bed, not part of a band
-			settledVolume += mass / (saltSolubility[molecule.solidSaltFormula]?.solidDensity ?? 2.2) / 1000;
+			nonpolarVolume += bulk !== undefined
+				? bulk * mixture._molProperties[molecule._id + "n"]
+				: mass / density / 1000;
 		} else polarMass += mass;
 	}
 	if (!(nonpolarVolume > 1e-12)) return [];

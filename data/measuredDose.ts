@@ -63,6 +63,11 @@ export function prepareDose(recipe: DoseRecipe, load: (definition: MoleculeDefin
 				// is packed with its water and would otherwise free too little.
 				loaded.solidBulkLitresPerMol = loaded.getTotMolMass() / recipe.density / 1000;
 			}
+			if (recipe.phase === "liquid" && !recipe.aqueousMolar && recipe.density > 0) {
+				// The same for a liquid: the immiscible layer is stacked with the
+				// density its own recipe states, not with a typical hydrocarbon.
+				loaded.liquidBulkLitresPerMol = loaded.getTotMolMass() / recipe.density / 1000;
+			}
 			return { molecule: loaded, amount };
 		});
 	const mass = parts.reduce((sum, part) => sum + part.amount * part.molecule.getTotMolMass(), 0);

@@ -8,6 +8,8 @@ type Constituent = {
 	solid?: true;
 	/** Bulk volume of one mole of this dosed solid in litres, see `Molecule`. */
 	bulk?: number;
+	/** Volume of one mole of this dosed liquid in litres, see `Molecule`. */
+	liquid?: number;
 	/** One structure per ion of the solid's formula unit, in table order. */
 	precipitate?: { formula: string; ions: MoleculeDefinition[] };
 };
@@ -58,6 +60,8 @@ export function snapshotMixture(mix: Mixture): MixtureRecipe | undefined {
 			solid: molecule.dosedAsSolid ? true : undefined,
 			bulk: molecule.dosedAsSolid && molecule.solidBulkLitresPerMol
 				? molecule.solidBulkLitresPerMol : undefined,
+			liquid: !molecule.dosedAsSolid && molecule.liquidBulkLitresPerMol
+				? molecule.liquidBulkLitresPerMol : undefined,
 			precipitate: molecule.solidSaltFormula && ions
 				? { formula: molecule.solidSaltFormula, ions: ions.map(describeMolecule) }
 				: undefined,
@@ -104,6 +108,7 @@ function isMixtureRecipe(value: unknown): value is MixtureRecipe {
 			(part.name === undefined || typeof part.name === "string") &&
 			(part.solid === undefined || part.solid === true) &&
 			(part.bulk === undefined || (Number.isFinite(part.bulk) && part.bulk > 0)) &&
+			(part.liquid === undefined || (Number.isFinite(part.liquid) && part.liquid > 0)) &&
 			(part.precipitate === undefined || (!!part.precipitate && typeof part.precipitate.formula === "string" &&
 				Array.isArray(part.precipitate.ions) && part.precipitate.ions.length >= 2 &&
 				part.precipitate.ions.every(isDefinition))));
@@ -123,11 +128,12 @@ export function readSavedMixtures(value: unknown): SavedMixture[] {
 export function prepareMixtureDose(recipe: MixtureRecipe, load: (definition: MoleculeDefinition) => Molecule) {
 	if (!isMixtureRecipe(recipe)) return;
 	try {
-		const parts = recipe.parts.map(({ molecule, name, moles, solid, bulk, precipitate }) => {
+		const parts = recipe.parts.map(({ molecule, name, moles, solid, bulk, liquid, precipitate }) => {
 			const model = load(molecule);
 			if (name) model.name = name;
 			if (solid) model.dosedAsSolid = true;
 			if (bulk) model.solidBulkLitresPerMol = bulk;
+			if (liquid) model.liquidBulkLitresPerMol = liquid;
 			if (precipitate) {
 				model.solidSaltFormula = precipitate.formula;
 				model.solidSaltIons = precipitate.ions.map(ion => load(ion));

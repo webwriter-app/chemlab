@@ -15,9 +15,9 @@ Reference-only behaviour is an interim gap, not an exemption.
 | Catalog entries | 181 |
 | Entries with a builder structure | 170 |
 | Entries without a builder structure | 11 |
-| Dosed entries (solid or aqueous) | 139 |
+| Dosed entries (solid or aqueous) | 163 |
 | Dosed salt entries | 62 |
-| Molecular reagents outside the salt pairing | 77 |
+| Molecular reagents outside the salt pairing | 101 |
 | Mixtures shown by their constituents | 19 |
 | Salt entries in total | 62 |
 | Salt identities | 31 |
@@ -81,10 +81,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 ## Entries without a dose
 
-- Aldehyde: Methanal (Formaldehyd)
 - Lösungsmittel: Paraffinöl, Petrolether
-- Indikatoren und Nachweisreagenzien: Benedict-Reagenz, Bromthymolblau, Bromwasser, Fehling I, Fehling II, Indigo, Lackmus, Lugolsche Lösung, Methylorange, Phenolphthalein, Rotkohlsaft, Schiff-Reagenz, Tollens-Reagenz, Universalindikator
-- Kohlenhydrate und Aminosäuren: Cellulose, Fructose, Glycin, Saccharose, Stärke
-- Fette und Tenside: Natriumdodecylsulfat, Natriumstearat, Olivenöl, Stearinsäure, Ölsäure
-- Kunststoffe und Monomere: Methylmethacrylat, Polyamid 6, Polyethylen (PE), Polyethylenterephthalat (PET), Polymilchsäure (PLA), Polypropylen (PP), Polystyrol (PS), Polyvinylchlorid (PVC), Styrol
+- Indikatoren und Nachweisreagenzien: Benedict-Reagenz, Fehling I, Fehling II, Lackmus, Lugolsche Lösung, Rotkohlsaft, Schiff-Reagenz, Tollens-Reagenz, Universalindikator
+- Fette und Tenside: Olivenöl
 - Stoffgemische: Haushaltsessig, Leitungswasser, Luft, Mineralwasser, Sand, Zitronensaft
