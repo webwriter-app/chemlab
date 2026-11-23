@@ -62,6 +62,7 @@ export const solutionDisplayNames: Readonly<Record<string, string>> = {
 	"Calciumchloridlösung": "Calciumchlorid",
 	"Eisen(III)-chloridlösung": "Eisen(III)-chlorid",
 	"Natriumcarbonatlösung": "Natriumcarbonat",
+	"Natriumhydrogencarbonatlösung": "Natriumhydrogencarbonat",
 	"Natriumsulfatlösung": "Natriumsulfat",
 	"Kaliumnitratlösung": "Kaliumnitrat",
 	"Natronlauge (1 mol/L)": "Natronlauge",
@@ -198,6 +199,11 @@ const bicarbonate: MoleculeDefinition = { formula: "HCO₃⁻",
 	atoms: ["carbon", "oxygen", "oxygen", "oxygen", "hydrogen"],
 	bonds: ["0-1:covalent:2", "0-2:covalent:1", "0-3:covalent:1", "3-4:covalent:1"],
 	charges: [0, 0, -1, 0, 0] };
+// Start neutral; the ionic bond transfers one electron from Na to the
+// unprotonated oxygen. Explicit charges here would count that transfer twice.
+const sodiumBicarbonate: MoleculeDefinition = { formula: "NaHCO₃",
+	atoms: ["sodium", ...bicarbonate.atoms],
+	bonds: ["1-2:covalent:2", "1-3:covalent:1", "1-4:covalent:1", "4-5:covalent:1", "0-3:ionic:1"] };
 const sodium = ion("Na⁺", "sodium", 1);
 
 
@@ -248,9 +254,9 @@ export const chemicalCatalog: CatalogChemical[] = [
 	reference("Kupfer(II)-sulfat-Pentahydrat", "Salze", "CuSO₄·5 H₂O"),
 	reference("Calciumcarbonat", "Salze", "CaCO₃"),
 	reference("Calciumsulfat-Dihydrat", "Salze", "CaSO₄·2 H₂O"),
-	// Preserve the crystal's catalog key while supplying a prepared aqueous stock,
-	// as for Na₂CO₃; crystal coordinates are not a simulation recipe.
-	saltSolution("Natriumhydrogencarbonat", "NaHCO₃", "NaHCO3", sodium, bicarbonate),
+	// The archived crystal selects the dry salt; the stock is a separate reagent.
+	pure("Natriumhydrogencarbonat", "Salze", sodiumBicarbonate, "solid", saltSolubility.NaHCO3.solidDensity),
+	saltSolution("Natriumhydrogencarbonatlösung", "NaHCO₃", "NaHCO3", sodium, bicarbonate),
 	reference("Magnesiumsulfat-Heptahydrat", "Salze", "MgSO₄·7 H₂O"),
 	reference("Ammoniumchlorid", "Salze", "NH₄Cl"),
 	reference("Natriumacetat", "Salze", "CH₃COONa"),

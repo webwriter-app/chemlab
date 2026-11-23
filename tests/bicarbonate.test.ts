@@ -9,7 +9,8 @@ import { catalogAqueousStructure, catalogStructures, matchingRecipe } from "../m
 import { aqueousComponents } from "../molecule-builder/aqueous-preview";
 import { readStructure } from "../molecule-builder/structure";
 
-const bicarbonate = "Natriumhydrogencarbonat";
+const solidBicarbonate = "Natriumhydrogencarbonat";
+const bicarbonate = "Natriumhydrogencarbonatlösung";
 const carbonate = "Natriumcarbonatlösung";
 
 function dose(name: string, ml: number, concentration: number) {
@@ -28,10 +29,64 @@ function near(actual: number, expected: number, tolerance = 0.01) {
 	assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} vs ${expected}`);
 }
 
-test("the archived bicarbonate crystal selects a recipe with an explicit proton and aqueous ions", () => {
-	const [crystal] = catalogStructures(bicarbonate);
+function dryDose(moles: number) {
+	const recipe = chemicalCatalog.find(item => item.name === solidBicarbonate).recipe;
+	const molarMass = loadMoleculeDefinition(recipe.parts[0].molecule).getTotMolMass();
+	return prepareDose(recipe, loadMoleculeDefinition)(moles * molarMass / recipe.density);
+}
+
+function solidMoles(solution: Mixture) {
+	return solution._activeMolecules.filter(molecule => molecule.solidSaltFormula === "NaHCO3")
+		.reduce((sum, molecule) => sum + solution._molProperties[molecule._id + "n"], 0);
+}
+
+test("dry bicarbonate preserves its mass and charge through save/restore and dissolves like the stock", () => {
+	const dry = dryDose(0.01);
+	assert.equal(dry.hasLiquidContents, false);
+	assert.equal(dry._activeMolecules.length, 1);
+	const salt = dry._activeMolecules[0];
+	assert.equal(salt.dosedAsSolid, true);
+	assert.equal(salt._totalCharge, 0);
+	assert.deepEqual(salt._atoms.map(atom => atom.getIonicCharge()), [1, 0, 0, -1, 0, 0]);
+	near(dry._molProperties[salt._id + "n"], 0.01, 1e-12);
+	near(salt.getTotMolMass(), 84.01, 0.02);
+	const saved = snapshotMixture(dry);
+	const restored = prepareMixtureDose(JSON.parse(JSON.stringify(saved)), loadMoleculeDefinition)(saved.sampleMl);
+	const solution = mix(dose("Wasser", 100, 1), restored);
+	near(solidMoles(solution), 0, 1e-10);
+	near(solution._solutionVolume, 0.1, 1e-10);
+	near(Simulation.getpH(solution), Simulation.getpH(dose(bicarbonate, 100, 0.1)), 0.001);
+});
+
+test("excess dry bicarbonate leaves a reservoir that dissolves after dilution and survives restore", () => {
+	const saturated = mix(dose("Wasser", 100, 1), dryDose(0.2));
+	const remaining = solidMoles(saturated);
+	assert.ok(remaining > 0.07 && remaining < 0.1, `solid reservoir ${remaining}`);
+	const sodium = saturated._activeMolecules.find(molecule => molecule.smilesString === "[Na+]");
+	near(saturated._molProperties[sodium._id + "n"] + remaining, 0.2, 1e-8);
+	const saved = snapshotMixture(saturated);
+	const restored = prepareMixtureDose(JSON.parse(JSON.stringify(saved)), loadMoleculeDefinition)(saved.sampleMl);
+	near(solidMoles(restored), remaining, 1e-10);
+	const diluted = mix(restored, dose("Wasser", 200, 1));
+	near(solidMoles(diluted), 0, 1e-10);
+	near(Simulation.getpH(diluted), Simulation.getpH(dose(bicarbonate, 300, 2 / 3)), 0.001);
+});
+
+test("dry bicarbonate reacts with acid like the same amount in solution", () => {
+	const dry = mix(dose("Salzsäure (1 mol/L)", 100, 0.3), dryDose(0.02));
+	const stock = mix(dose(bicarbonate, 50, 0.4), dose("Salzsäure (1 mol/L)", 50, 0.6));
+	assert.ok((dry.evolvedGas.get("CO2") ?? 0) > 0.01);
+	near(dry.evolvedGas.get("CO2"), stock.evolvedGas.get("CO2"), 1e-5);
+	near(Simulation.getpH(dry), Simulation.getpH(stock));
+	near(solidMoles(dry), 0, 1e-10);
+});
+
+test("the bicarbonate crystal selects the dry salt while the aqueous preview selects the stock", () => {
+	const [crystal] = catalogStructures(solidBicarbonate);
 	assert.equal(crystal.kind, "crystal");
-	assert.equal(matchingRecipe(readStructure(JSON.parse(JSON.stringify(crystal))))?.name, bicarbonate);
+	const match = matchingRecipe(readStructure(JSON.parse(JSON.stringify(crystal))));
+	assert.equal(match?.name, solidBicarbonate);
+	assert.equal(match.recipe.phase, "solid");
 	if (crystal.kind !== "crystal") return;
 	const edited = { ...crystal, sites: crystal.sites.slice(1) };
 	assert.equal(matchingRecipe(edited), undefined, "a catalog key cannot approve an edited crystal");
