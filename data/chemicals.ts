@@ -192,6 +192,12 @@ const nitrate = oxoanion("NO₃⁻", "nitrogen", 1, 2);
 nitrate.charges = [1, 0, -1, -1];
 const chloride = ion("Cl⁻", "chlorine", -1);
 const carbonate = oxoanion("CO₃²⁻", "carbon", 1, 2);
+// Keep the proton explicit: the archived NaHCO₃ crystal omits H positions.
+// This ion joins the same carbonic-acid family as the carbonate stock.
+const bicarbonate: MoleculeDefinition = { formula: "HCO₃⁻",
+	atoms: ["carbon", "oxygen", "oxygen", "oxygen", "hydrogen"],
+	bonds: ["0-1:covalent:2", "0-2:covalent:1", "0-3:covalent:1", "3-4:covalent:1"],
+	charges: [0, 0, -1, 0, 0] };
 const sodium = ion("Na⁺", "sodium", 1);
 
 
@@ -242,7 +248,9 @@ export const chemicalCatalog: CatalogChemical[] = [
 	reference("Kupfer(II)-sulfat-Pentahydrat", "Salze", "CuSO₄·5 H₂O"),
 	reference("Calciumcarbonat", "Salze", "CaCO₃"),
 	reference("Calciumsulfat-Dihydrat", "Salze", "CaSO₄·2 H₂O"),
-	reference("Natriumhydrogencarbonat", "Salze", "NaHCO₃"),
+	// Preserve the crystal's catalog key while supplying a prepared aqueous stock,
+	// as for Na₂CO₃; crystal coordinates are not a simulation recipe.
+	saltSolution("Natriumhydrogencarbonat", "NaHCO₃", "NaHCO3", sodium, bicarbonate),
 	reference("Magnesiumsulfat-Heptahydrat", "Salze", "MgSO₄·7 H₂O"),
 	reference("Ammoniumchlorid", "Salze", "NH₄Cl"),
 	reference("Natriumacetat", "Salze", "CH₃COONa"),

@@ -26,6 +26,9 @@ export const saltSolubility: Readonly<Record<string, SaltSolubility>> = {
 	CaCl2: { ions: ["[Ca2+]", "[Cl-]", 1, 2], saturation: 5.04, solidDensity: 2.15 },
 	FeCl3: { ions: ["[Fe3+]", "[Cl-]", 1, 3], saturation: 2.69, color: 0xb88546, solidDensity: 2.9 },
 	Na2CO3: { ions: ["[Na+]", "[O-]C(=O)[O-]", 2, 1], saturation: 2.01, solidDensity: 2.54 },
+	// 96 g/L near 20 °C / 84.01 g/mol, rounded to the model's nominal limit.
+	// https://www.solvay.com/sites/g/files/srpend221/files/2021-01/PSS-Sodium-Bicarbonate.pdf
+	NaHCO3: { ions: ["[Na+]", "[O-]C(=O)O"], saturation: 1.14, solidDensity: 2.16 },
 	Na2SO4: { ions: ["[Na+]", "[O-]S(=O)(=O)[O-]", 2, 1], saturation: 1.30, solidDensity: 2.66 },
 	KNO3: { ions: ["[K+]", "[O-][N+](=O)[O-]"], saturation: 2.77, solidDensity: 2.11 },
 

@@ -2,6 +2,25 @@
 
 The library supplies offline structures for the existing chemical catalog. It is separate from ChemLab's dosing and equilibrium models. Molecule Builder shows the archived structure with its source. ChemLab checks a returned structure against the catalog and the worksheet's reagent permissions before selecting a dose.
 
+## Crystal-to-reagent pipeline: NaHCO₃ and future coverage
+
+Sodium bicarbonate now has an explicit prepared aqueous recipe under the existing `Natriumhydrogencarbonat` catalog key. Returning its unchanged archived crystal selects this reagent through the existing structural comparison and worksheet permissions. The dose is an aqueous stock, not a simulated portion of dry crystal. Its dissolved formula unit is one Na⁺ and one HCO₃⁻ with an explicit O–H bond; the CIF has no hydrogen positions and must not supply the analytical formula. The aqueous preview includes the proton and uses the conventional HCO₃⁻ label.
+
+The stock shares the existing carbonic-acid family with `Natriumcarbonatlösung` (pKa 6.35 and 10.33). Bicarbonate starts at the intermediate protonation step with one sodium per carbon, whereas carbonate has two. Acid/base addition, CO₂ release, precipitation and saved mixtures use the shared simulation rather than a bicarbonate-specific reaction. The nominal room-temperature saturation limit is 1.14 mol/L, approximately 96 g/L divided by 84.01 g/mol; the solid-density parameter is 2.16 g/mL. Sources: [Solvay product safety summary](https://www.solvay.com/sites/g/files/srpend221/files/2021-01/PSS-Sodium-Bicarbonate.pdf) and [Sigma-Aldrich sodium bicarbonate](https://www.sigmaaldrich.com/US/en/product/sigald/s6014). The existing ideal-concentration and gas-saturation approximations still apply; this does not add thermal decomposition or atmospheric CO₂ exchange.
+
+### Planned extension to all listed crystal references
+
+Implement this as a catalog-wide review and admission pipeline, not as automatic dosing from CIF coordinates:
+
+1. Inventory every crystal in `catalog.generated.json` and join it to its stable catalog key. Record a status for each: supported reagent, missing chemical data, unsupported chemistry, or reference only. Include metals, hydrates, network solids and partially occupied structures, not only simple salts.
+2. Maintain a separate validated analytical definition: formula-unit stoichiometry, hydrate water, complete polyatomic-ion graphs, formal charges and protonation steps. Check mass and charge balance. Preserve source omissions (especially hydrogen and occupancy) as structural provenance; do not infer missing chemistry silently from site counts, ion labels or a display formula.
+3. Fetch and retain source-backed compound identity and phase-specific data during enrichment: density, solubility or Ksp with temperature and units, and relevant aqueous dissociation data. Resolve conflicting identities and measurements explicitly. PubChem molecular identity alone does not establish a crystal phase, hydrate, solubility or simulation compatibility.
+4. Check compatibility with existing equilibrium, complexation, redox and gas families before admitting a dose. Reuse registered families rather than creating duplicate acid/base systems from fetched salt pKa values. Unresolved compounds remain reference only with a specific reason.
+5. Generate an explicit prepared-solution recipe and, only when supported, a separate solid recipe/reservoir. Label which phase is being dosed. Preserve catalog keys, exact structural validation, edited-structure rejection and reagent permissions; a matching name or formula is insufficient authorization.
+6. Verify each admitted crystal with handoff and aqueous-preview round trips, formula/charge/mass conservation, dissolution and saturation, relevant pH/precipitation/gas behaviour, and save/restore. Include compatibility cases involving existing reagents. Report unsupported crystals individually rather than implying that every listed model is doseable.
+
+`tests/bicarbonate.test.ts` supplies the first regression case: unchanged and edited crystal matching, aqueous preview, pH and sodium stoichiometry, save/restore, interconversion with carbonate through one acid/base equivalent, and consistent CO₂ release.
+
 ## Data and coverage
 
 - `data/structures/catalog.generated.json` includes PubChem molecular graphs and matching PubChem3D computed conformers, NIST bond lengths for six diatomics and experimental geometries for six polyatomics, and experimental CIF unit cells from the Crystallography Open Database. When a PubChem record has no matching conformer, the generator attempts RDKit ETKDG followed by MMFF or UFF where parameterized. The widget identifies calculated coordinates as estimates or PubChem conformers. [PubChem PUG REST](https://pubchem.ncbi.nlm.nih.gov/docs/pug-rest) · [NIST experimental diatomic geometries](https://cccbdb.nist.gov/diatomicexpbondx.asp) · [COD](https://doi.org/10.1093/nar/gkr900) · [ETKDG](https://doi.org/10.1021/acs.jcim.5b00654)

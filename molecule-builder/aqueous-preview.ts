@@ -85,6 +85,10 @@ export function aqueousComponents(molecule: Molecule) {
 		if (order.length === 2 && order.includes(7) && order.includes(1)) order.reverse();
 		if (order.length === 2 && elements.get(1) === 1 && order.includes(8)) order.reverse();
 		if (elements.has(6)) order.unshift(...order.splice(order.indexOf(6), 1));
+		// Conventional hydrogen carbonate notation rather than the Hill CHO₃⁻.
+		if (charge === -1 && elements.size === 3 && elements.get(1) === 1 && elements.get(6) === 1 && elements.get(8) === 3) {
+			order.splice(0, order.length, 1, 6, 8);
+		}
 		const formula = order.map(number => atomSymbol(number) + (elements.get(number) > 1 ? elements.get(number) : "")).join("");
 		const suffix = charge ? (Math.abs(charge) > 1 ? "⁰¹²³⁴⁵⁶⁷⁸⁹"[Math.abs(charge)] ?? Math.abs(charge) : "")
 			+ (charge > 0 ? "⁺" : "⁻") : "";
