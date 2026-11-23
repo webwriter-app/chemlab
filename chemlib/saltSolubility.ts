@@ -34,6 +34,12 @@ export const saltSolubility: Readonly<Record<string, SaltSolubility>> = {
 	CuSO4: { ions: ["[Cu2+]", "[O-]S(=O)(=O)[O-]"], saturation: 1.29, color: 0x5289b1, solidDensity: 3.6 },
 	ZnSO4: { ions: ["[Zn2+]", "[O-]S(=O)(=O)[O-]"], saturation: 1.79, solidDensity: 3.54 },
 	FeSO4: { ions: ["[Fe2+]", "[O-]S(=O)(=O)[O-]"], saturation: 0.93, color: 0x97ab8b, solidDensity: 3.64 },
+	// Magnesium sulfate: 35.1 g MgSO4 per 100 g water at 20 °C is 0.2916 mol in
+	// a 135.1 g solution of about 26.0 wt%, which measures 1.295 g/mL and thus
+	// holds those 0.2916 mol in 104.3 mL, so 2.80 mol/L. The epsomite density
+	// (MgSO4·7 H2O) is 1.68 g/mL, the anhydrous one 2.66 g/mL.
+	// https://www.chemicalbook.com/ChemicalProductProperty_EN_CB9122608.htm
+	MgSO4: { ions: ["[Mg2+]", "[O-]S(=O)(=O)[O-]"], saturation: 2.80, solidDensity: 2.66 },
 	AgNO3: { ions: ["[Ag+]", "[O-][N+](=O)[O-]"], saturation: 8.80, solidDensity: 4.35 },
 	BaCl2: { ions: ["[Ba2+]", "[Cl-]", 1, 2], saturation: 1.38, solidDensity: 3.86 },
 	CaCl2: { ions: ["[Ca2+]", "[Cl-]", 1, 2], saturation: 5.04, solidDensity: 2.15 },
@@ -65,17 +71,20 @@ export const saltSolubility: Readonly<Record<string, SaltSolubility>> = {
 	// Dilute-solution products near 25 °C. Solve with concentrations as
 	// activities. The concentrated salts above use empirical model thresholds.
 	// https://openstax.org/books/chemistry-2e/pages/j-solubility-products
-	// The three sparingly soluble salts below also carry a `saturation`, because
-	// the palette needs a concentration limit for their stock. It is the ideal
+	// The sparingly soluble salts below also carry a `saturation`, because the
+	// palette needs a concentration limit for their stock. It is the ideal
 	// solubility from the Ksp, rounded down to two significant digits so the
 	// saturated stock stays on the safe side of its own solubility product:
-	// AgCl 1.34e-5, BaSO4 1.05e-5 and CaCO3 5.83e-5 mol/L. Only the stock's
-	// limit reads it; `saltEquilibria` keeps the Ksp as the product.
+	// AgCl 1.34e-5, BaSO4 1.05e-5, CaSO4 7.00e-3 and CaCO3 5.83e-5 mol/L. Only
+	// the stock's limit reads it; `saltEquilibria` keeps the Ksp as the product.
+	// Gypsum measures about 0.014 mol/L, twice the ideal value here, because the
+	// model carries no CaSO4(aq) ion pair; the same reason applies to the two
+	// barium and silver salts above.
 	AgCl: { ions: ["[Ag+]", "[Cl-]"], ksp: 1.8e-10, saturation: 1.3e-5, solidDensity: 5.56 },
 	AgBr: { ions: ["[Ag+]", "[Br-]"], ksp: 5.0e-13, color: 0xe7dbad, solidDensity: 6.47 },
 	AgI: { ions: ["[Ag+]", "[I-]"], ksp: 8.3e-17, color: 0xd6bd65, solidDensity: 5.68 },
 	BaSO4: { ions: ["[Ba2+]", "[O-]S(=O)(=O)[O-]"], ksp: 1.1e-10, saturation: 1.0e-5, solidDensity: 4.49 },
-	CaSO4: { ions: ["[Ca2+]", "[O-]S(=O)(=O)[O-]"], ksp: 4.9e-5, solidDensity: 2.97 },
+	CaSO4: { ions: ["[Ca2+]", "[O-]S(=O)(=O)[O-]"], ksp: 4.9e-5, saturation: 6.9e-3, solidDensity: 2.97 },
 	// Calcium oxalate monohydrate, approximate dilute-solution product at 25 °C.
 	// https://doi.org/10.3390/cryst10100924
 	CaC2O4: { ions: ["[Ca2+]", "[O-]C(=O)C(=O)[O-]"], ksp: 1.7e-9 },

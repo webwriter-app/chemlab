@@ -1,19 +1,19 @@
 {
   "generatedBy": "scripts/generate-structure-coverage.ts",
   "summary": {
-    "catalogEntries": 176,
-    "withStructure": 165,
+    "catalogEntries": 178,
+    "withStructure": 167,
     "withoutStructure": 11,
-    "dosed": 96,
+    "dosed": 101,
     "reagents": 47,
     "mixtures": 19,
-    "saltEntries": 55,
-    "dosedSaltEntries": 49,
+    "saltEntries": 57,
+    "dosedSaltEntries": 54,
     "saltIdentities": 30,
-    "paired": 24,
+    "paired": 27,
     "solidOnly": 0,
-    "stockOnly": 1,
-    "referenceOnly": 5
+    "stockOnly": 0,
+    "referenceOnly": 3
   },
   "salts": [
     {
@@ -220,24 +220,30 @@
       "gap": null
     },
     {
-      "label": "CaSO₄·2 H₂O",
-      "status": "reference-only",
+      "label": "CaSO₄",
+      "status": "paired",
       "identity": "CaSO4",
-      "solid": [],
-      "stock": [],
-      "reference": [
+      "solid": [
         {
           "name": "Calciumsulfat-Dihydrat",
           "hydrated": true
         }
       ],
-      "hydratedReference": true,
+      "stock": [
+        {
+          "name": "Calciumsulfatlösung (gesättigt)",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
+      "hydratedReference": false,
       "solubility": {
         "key": "CaSO4",
+        "saturation": 0.0069,
         "ksp": 0.000049,
         "solidDensity": 2.97
       },
-      "gap": "Neither phase has a recipe for CaSO₄·2 H₂O; only the structural preview exists. The only solid reference is a hydrate (Calciumsulfat-Dihydrat), so a recipe needs a decided hydrate."
+      "gap": null
     },
     {
       "label": "CuSO₄",
@@ -307,28 +313,28 @@
     },
     {
       "label": "FeSO₄",
-      "status": "stock-only",
+      "status": "paired",
       "identity": "FeSO4",
-      "solid": [],
+      "solid": [
+        {
+          "name": "Eisen(II)-sulfat-Heptahydrat",
+          "hydrated": true
+        }
+      ],
       "stock": [
         {
           "name": "Eisen(II)-sulfatlösung",
           "hydrated": false
         }
       ],
-      "reference": [
-        {
-          "name": "Eisen(II)-sulfat-Heptahydrat",
-          "hydrated": true
-        }
-      ],
-      "hydratedReference": true,
+      "reference": [],
+      "hydratedReference": false,
       "solubility": {
         "key": "FeSO4",
         "saturation": 0.93,
         "solidDensity": 3.64
       },
-      "gap": "Solid recipe missing for FeSO₄; 0.93 mol/L saturation, 3.64 g/mL solid density (FeSO4) is tabulated. The only solid reference is a hydrate (Eisen(II)-sulfat-Heptahydrat), so a recipe needs a decided hydrate."
+      "gap": null
     },
     {
       "label": "KBr",
@@ -497,20 +503,29 @@
       "gap": null
     },
     {
-      "label": "MgSO₄·7 H₂O",
-      "status": "reference-only",
+      "label": "MgSO₄",
+      "status": "paired",
       "identity": "MgSO4",
-      "solid": [],
-      "stock": [],
-      "reference": [
+      "solid": [
         {
           "name": "Magnesiumsulfat-Heptahydrat",
           "hydrated": true
         }
       ],
-      "hydratedReference": true,
-      "solubility": null,
-      "gap": "Neither phase has a recipe for MgSO₄·7 H₂O; only the structural preview exists. The only solid reference is a hydrate (Magnesiumsulfat-Heptahydrat), so a recipe needs a decided hydrate."
+      "stock": [
+        {
+          "name": "Magnesiumsulfatlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "MgSO4",
+        "saturation": 2.8,
+        "solidDensity": 2.66
+      },
+      "gap": null
     },
     {
       "label": "NH₄Cl",
@@ -890,23 +905,36 @@
       "name": "Calciumsulfat-Dihydrat",
       "category": "Salze",
       "formula": "CaSO₄·2 H₂O",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
       "identity": "CaSO4",
       "hydrated": true,
       "mixture": false
     },
     {
+      "name": "Calciumsulfatlösung (gesättigt)",
+      "category": "Salze",
+      "formula": "CaSO₄",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "CaSO4",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
       "name": "Eisen(II)-sulfat-Heptahydrat",
       "category": "Salze",
       "formula": "FeSO₄·7 H₂O",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
       "identity": "FeSO4",
       "hydrated": true,
@@ -1163,13 +1191,26 @@
       "name": "Magnesiumsulfat-Heptahydrat",
       "category": "Salze",
       "formula": "MgSO₄·7 H₂O",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
       "identity": "MgSO4",
       "hydrated": true,
+      "mixture": false
+    },
+    {
+      "name": "Magnesiumsulfatlösung",
+      "category": "Salze",
+      "formula": "MgSO₄",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "MgSO4",
+      "hydrated": false,
       "mixture": false
     },
     {

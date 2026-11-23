@@ -89,10 +89,25 @@ test("a hydrated solid joins the anhydrous stock of its salt", () => {
 	assert.deepEqual(copper.reference, []);
 	assert.ok(copper.solid.some((form) => form.hydrated && form.name.includes("Pentahydrat")));
 	assert.ok(copper.stock.length > 0, "the CuSO₄ group should carry the dosed stock");
-	// The remaining hydrates of the catalog are still reference only.
-	const calcium = report.salts.find((group) => group.identity === "CaSO4");
-	assert.ok(calcium, "missing the CaSO₄ group");
-	assert.equal(calcium.hydratedReference, true);
-	assert.ok(calcium.reference.some((form) => form.hydrated && form.name.includes("Dihydrat")));
+	// Gypsum and epsomite join their anhydrous stocks the same way, each with a
+	// stock of its own where the palette did not carry one.
+	for (const [identity, hydrate, stock] of [
+		["CaSO4", "Dihydrat", "Calciumsulfatlösung"],
+		["MgSO4", "Heptahydrat", "Magnesiumsulfatlösung"],
+	] as const) {
+		const group = report.salts.find((candidate) => candidate.identity === identity);
+		assert.ok(group, `missing the ${identity} group`);
+		assert.equal(group.status, "paired");
+		assert.equal(group.hydratedReference, false);
+		assert.ok(group.solid.some((form) => form.hydrated && form.name.includes(hydrate)));
+		assert.ok(group.stock.some((form) => form.name.includes(stock)), `${identity} has no saturated stock`);
+	}
+	// A hydrate without a dosed form of its salt stays a reference: the
+	// thiosulfate needs its own anion, which the model does not carry yet.
+	const thiosulfate = report.salts.find((group) => group.identity === "Na2S2O3");
+	assert.ok(thiosulfate, "missing the Na₂S₂O₃ group");
+	assert.equal(thiosulfate.status, "reference-only");
+	assert.equal(thiosulfate.hydratedReference, true);
+	assert.ok(thiosulfate.reference.some((form) => form.hydrated && form.name.includes("Pentahydrat")));
 	assert.equal(new Set(report.salts.map((group) => group.identity)).size, report.salts.length);
 });

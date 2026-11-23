@@ -57,6 +57,7 @@ export const solutionDisplayNames: Readonly<Record<string, string>> = {
 	"Kupfer(II)-sulfatlösung": "Kupfer(II)-sulfat",
 	"Zinksulfatlösung": "Zinksulfat",
 	"Eisen(II)-sulfatlösung": "Eisen(II)-sulfat",
+	"Magnesiumsulfatlösung": "Magnesiumsulfat",
 	"Silbernitratlösung": "Silbernitrat",
 	"Bariumchloridlösung": "Bariumchlorid",
 	"Calciumchloridlösung": "Calciumchlorid",
@@ -66,6 +67,7 @@ export const solutionDisplayNames: Readonly<Record<string, string>> = {
 	"Silberchloridlösung (gesättigt)": "Silberchlorid",
 	"Bariumsulfatlösung (gesättigt)": "Bariumsulfat",
 	"Calciumcarbonatlösung (gesättigt)": "Calciumcarbonat",
+	"Calciumsulfatlösung (gesättigt)": "Calciumsulfat",
 	"Natriumsulfatlösung": "Natriumsulfat",
 	"Kaliumchloridlösung": "Kaliumchlorid",
 	"Kaliumbromidlösung": "Kaliumbromid",
@@ -335,17 +337,25 @@ const potassiumPermanganate: MoleculeDefinition = { formula: "KMnO₄",
 	atoms: ["potassium", ...permanganate.atoms],
 	bonds: ["1-2:covalent:2", "1-3:covalent:2", "1-4:covalent:2", "1-5:covalent:1", "0-5:ionic:1"] };
 
-// The pentahydrate repeats the zinc sulfate bond pattern and carries five
-// crystal waters; its own density (2.286 g/mL, chalcanthite) feeds the dose
-// mass, and the bulk volume of that dose travels with the solid, so
-// dissolving it gives back the volume the blue crystals occupied.
-const copperSulfatePentahydrate: MoleculeDefinition = (() => {
-	const atoms = ["copper", ...sulfate.atoms];
+// A hydrated sulfate repeats the zinc sulfate bond pattern and carries its
+// crystal waters. The density of the crystal feeds the dose mass, and the bulk
+// volume of that dose travels with the solid, so dissolving it gives back the
+// volume the crystals occupied: chalcanthite 2.286 g/mL for the pentahydrate,
+// melanterite 1.895 for the iron heptahydrate, gypsum 2.32 for the calcium
+// dihydrate and epsomite 1.68 for the magnesium heptahydrate.
+// https://www.mindat.org/min-19816.html https://www.mindat.org/min-16198.html
+// https://www.mindat.org/min-1784.html https://www.mindat.org/min-1393.html
+function sulfateHydrate(formula: string, metal: string, waters: number): MoleculeDefinition {
+	const atoms = [metal, ...sulfate.atoms];
 	const bonds = ["1-2:covalent:2", "1-3:covalent:2", "1-4:covalent:1", "1-5:covalent:1",
 		"0-4:ionic:1", "0-5:ionic:1"];
-	addCrystalWater(atoms, bonds, 5);
-	return { formula: "CuSO₄·5 H₂O", atoms, bonds };
-})();
+	addCrystalWater(atoms, bonds, waters);
+	return { formula, atoms, bonds };
+}
+const copperSulfatePentahydrate = sulfateHydrate("CuSO₄·5 H₂O", "copper", 5);
+const ironSulfateHeptahydrate = sulfateHydrate("FeSO₄·7 H₂O", "iron", 7);
+const calciumSulfateDihydrate = sulfateHydrate("CaSO₄·2 H₂O", "calcium", 2);
+const magnesiumSulfateHeptahydrate = sulfateHydrate("MgSO₄·7 H₂O", "magnesium", 7);
 
 const sodiumChloride = salt("Natriumchlorid", "NaCl", "sodium", "chlorine");
 const aceticAcid = molecule("C₂H₄O₂", ["carbon", "carbon", "oxygen", "oxygen"],
@@ -414,6 +424,7 @@ export const chemicalCatalog: CatalogChemical[] = [
 	saltSolution("Kupfer(II)-sulfatlösung", "CuSO₄", "CuSO4", ion("Cu²⁺", "copper", 2), sulfate),
 	saltSolution("Zinksulfatlösung", "ZnSO₄", "ZnSO4", ion("Zn²⁺", "zinc", 2), sulfate),
 	saltSolution("Eisen(II)-sulfatlösung", "FeSO₄", "FeSO4", ion("Fe²⁺", "iron", 2), sulfate),
+	saltSolution("Magnesiumsulfatlösung", "MgSO₄", "MgSO4", ion("Mg²⁺", "magnesium", 2), sulfate),
 	saltSolution("Silbernitratlösung", "AgNO₃", "AgNO3", ion("Ag⁺", "silver", 1), nitrate),
 	saltSolution("Bariumchloridlösung", "BaCl₂", "BaCl2", ion("Ba²⁺", "barium", 2), chloride, 1, 2),
 	saltSolution("Calciumchloridlösung", "CaCl₂", "CaCl2", ion("Ca²⁺", "calcium", 2), chloride, 1, 2),
@@ -426,18 +437,29 @@ export const chemicalCatalog: CatalogChemical[] = [
 	saltSolution("Silberchloridlösung (gesättigt)", "AgCl", "AgCl", ion("Ag⁺", "silver", 1), chloride),
 	saltSolution("Bariumsulfatlösung (gesättigt)", "BaSO₄", "BaSO4", ion("Ba²⁺", "barium", 2), sulfate),
 	saltSolution("Calciumcarbonatlösung (gesättigt)", "CaCO₃", "CaCO3", ion("Ca²⁺", "calcium", 2), carbonate),
+	// Gypsum is sparingly soluble, so its stock is a saturated solution; the
+	// Ksp decides how much of a dry dose dissolves, the limit only caps the
+	// concentration selector.
+	saltSolution("Calciumsulfatlösung (gesättigt)", "CaSO₄", "CaSO4", ion("Ca²⁺", "calcium", 2), sulfate),
 	saltSolution("Ammoniumsulfatlösung", "(NH₄)₂SO₄", "(NH4)2SO4", ammonium, sulfate, 2, 1),
 	saltSolution("Kaliumthiocyanatlösung", "KSCN", "KSCN", potassium, thiocyanate),
 	saltSolution("Kaliumpermanganatlösung", "KMnO₄", "KMnO4", potassium, permanganate),
+	// The sulfate hydrates name their crystals: the dose follows the water of
+	// crystallisation and the density of the mineral, and dissolving the solid
+	// returns that water to the solvent. Each one joins the stock of its
+	// anhydrous salt above, so gypsum pairs with a saturated calcium sulfate
+	// solution and epsomite with the magnesium sulfate stock.
 	pure("Kupfer(II)-sulfat-Pentahydrat", "Salze", copperSulfatePentahydrate, "solid", 2.286),
-	reference("Calciumsulfat-Dihydrat", "Salze", "CaSO₄·2 H₂O"),
+	pure("Eisen(II)-sulfat-Heptahydrat", "Salze", ironSulfateHeptahydrate, "solid", 1.895),
+	pure("Calciumsulfat-Dihydrat", "Salze", calciumSulfateDihydrate, "solid", 2.32),
+	pure("Magnesiumsulfat-Heptahydrat", "Salze", magnesiumSulfateHeptahydrate, "solid", 1.68),
 	// The archived crystal selects the dry salt; the stock is a separate reagent.
 	pure("Natriumhydrogencarbonat", "Salze", sodiumBicarbonate, "solid", saltSolubility.NaHCO3.solidDensity),
 	saltSolution("Natriumhydrogencarbonatlösung", "NaHCO₃", "NaHCO3", sodium, bicarbonate),
-	reference("Magnesiumsulfat-Heptahydrat", "Salze", "MgSO₄·7 H₂O"),
+	// Still reference only: a thiosulfate and a tartrate need their own anion
+	// and acid-base data, and iron(II) sulfide needs a sulfide family.
 	reference("Natriumthiosulfat-Pentahydrat", "Salze", "Na₂S₂O₃·5 H₂O"),
 	reference("Kaliumnatriumtartrat", "Salze", "KNaC₄H₄O₆"),
-	reference("Eisen(II)-sulfat-Heptahydrat", "Salze", "FeSO₄·7 H₂O"),
 	reference("Eisen(II)-sulfid", "Salze", "FeS"),
 	pure("Natriumhydroxid", "Basen", naoh, "solid", 2.13),
 	aqueous("Natronlauge (1 mol/L)", "Basen", naoh, concentratedReagent.sodiumHydroxide),
