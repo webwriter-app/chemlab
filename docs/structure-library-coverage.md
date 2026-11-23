@@ -15,15 +15,15 @@ Reference-only behaviour is an interim gap, not an exemption.
 | Catalog entries | 176 |
 | Entries with a builder structure | 165 |
 | Entries without a builder structure | 11 |
-| Dosed entries (solid or aqueous) | 95 |
-| Dosed salt entries | 48 |
+| Dosed entries (solid or aqueous) | 96 |
+| Dosed salt entries | 49 |
 | Molecular reagents outside the salt pairing | 47 |
 | Mixtures shown by their constituents | 19 |
 | Salt entries in total | 55 |
 | Salt identities | 30 |
-| Salt identities with both forms | 23 |
+| Salt identities with both forms | 24 |
 | Salt identities with a solid form only | 0 |
-| Salt identities with an aqueous form only | 2 |
+| Salt identities with an aqueous form only | 1 |
 | Salt identities with neither form | 5 |
 
 ## Salt forms
@@ -39,7 +39,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 | CaCO₃ | Calciumcarbonat | Calciumcarbonatlösung (gesättigt) | — | paired | 0.000058 mol/L saturation, Ksp 3.40e-9, 2.71 g/mL solid density (CaCO3) |
 | CaCl₂ | Calciumchlorid | Calciumchloridlösung | — | paired | 5.04 mol/L saturation, 2.15 g/mL solid density (CaCl2) |
 | CaSO₄·2 H₂O | — | — | Calciumsulfat-Dihydrat (hydrate) | reference only | Ksp 4.90e-5, 2.97 g/mL solid density (CaSO4) |
-| CuSO₄ | — | Kupfer(II)-sulfatlösung | Kupfer(II)-sulfat-Pentahydrat (hydrate) | stock only | 1.29 mol/L saturation, 3.6 g/mL solid density (CuSO4) |
+| CuSO₄ | Kupfer(II)-sulfat-Pentahydrat (hydrate) | Kupfer(II)-sulfatlösung | — | paired | 1.29 mol/L saturation, 3.6 g/mL solid density (CuSO4) |
 | FeCl₃ | Eisen(III)-chlorid | Eisen(III)-chloridlösung | — | paired | 2.69 mol/L saturation, 2.9 g/mL solid density (FeCl3) |
 | FeS | — | — | Eisen(II)-sulfid | reference only | not tabulated |
 | FeSO₄ | — | Eisen(II)-sulfatlösung | Eisen(II)-sulfat-Heptahydrat (hydrate) | stock only | 0.93 mol/L saturation, 3.64 g/mL solid density (FeSO4) |
@@ -64,7 +64,6 @@ Reference-only behaviour is an interim gap, not an exemption.
 ## Remaining gaps
 
 - **CaSO₄·2 H₂O** — Neither phase has a recipe for CaSO₄·2 H₂O; only the structural preview exists. The only solid reference is a hydrate (Calciumsulfat-Dihydrat), so a recipe needs a decided hydrate.
-- **CuSO₄** — Solid recipe missing for CuSO₄; 1.29 mol/L saturation, 3.6 g/mL solid density (CuSO4) is tabulated. The only solid reference is a hydrate (Kupfer(II)-sulfat-Pentahydrat), so a recipe needs a decided hydrate.
 - **FeS** — Neither phase has a recipe for FeS; only the structural preview exists.
 - **FeSO₄** — Solid recipe missing for FeSO₄; 0.93 mol/L saturation, 3.64 g/mL solid density (FeSO4) is tabulated. The only solid reference is a hydrate (Eisen(II)-sulfat-Heptahydrat), so a recipe needs a decided hydrate.
 - **KNaC₄H₄O₆** — Neither phase has a recipe for KNaC₄H₄O₆; only the structural preview exists.
@@ -87,7 +86,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 ## Entries without a dose
 
-- Salze: Calciumsulfat-Dihydrat, Eisen(II)-sulfat-Heptahydrat, Eisen(II)-sulfid, Kaliumnatriumtartrat, Kupfer(II)-sulfat-Pentahydrat, Magnesiumsulfat-Heptahydrat, Natriumthiosulfat-Pentahydrat
+- Salze: Calciumsulfat-Dihydrat, Eisen(II)-sulfat-Heptahydrat, Eisen(II)-sulfid, Kaliumnatriumtartrat, Magnesiumsulfat-Heptahydrat, Natriumthiosulfat-Pentahydrat
 - Anorganische Säuren: Salpetersäure
 - Basen: Calciumhydroxid, Kalkwasser
 - Carbonsäuren: Benzoesäure, Sorbinsäure, Tetradecansäure (Myristinsäure)

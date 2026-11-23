@@ -17,6 +17,13 @@ class Molecule {
 	solidSaltFormula?: string;
 	solidSaltIons?: readonly [Molecule, Molecule];
 	/**
+	 * Bulk volume of one mole of this dosed solid in litres, from the density of
+	 * its own recipe. A hydrate occupies more volume than the anhydrous salt of
+	 * the solubility table, so dissolving it has to release this volume and not
+	 * the tabulated one.
+	 */
+	solidBulkLitresPerMol?: number;
+	/**
 	 * A list of all available bond types
 	 *
 	 * @readonly

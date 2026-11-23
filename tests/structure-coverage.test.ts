@@ -78,12 +78,21 @@ test("salt identities drop hydrate water and subscripts", () => {
 	assert.notEqual(normalizeFormula("NaCl"), normalizeFormula("NaBr"));
 });
 
-test("hydrated references join their anhydrous stock", () => {
+test("a hydrated solid joins the anhydrous stock of its salt", () => {
 	const report = buildCoverageReport();
 	const copper = report.salts.find((group) => group.identity === "CuSO4");
 	assert.ok(copper, "missing the CuSO₄ group");
-	assert.equal(copper.hydratedReference, true);
+	// The pentahydrate is a dosed solid, so the group is a full pair and no
+	// hydrate is left as a reference.
+	assert.equal(copper.status, "paired");
+	assert.equal(copper.hydratedReference, false);
+	assert.deepEqual(copper.reference, []);
+	assert.ok(copper.solid.some((form) => form.hydrated && form.name.includes("Pentahydrat")));
 	assert.ok(copper.stock.length > 0, "the CuSO₄ group should carry the dosed stock");
-	assert.ok(copper.reference.some((form) => form.hydrated && form.name.includes("Pentahydrat")));
+	// The remaining hydrates of the catalog are still reference only.
+	const calcium = report.salts.find((group) => group.identity === "CaSO4");
+	assert.ok(calcium, "missing the CaSO₄ group");
+	assert.equal(calcium.hydratedReference, true);
+	assert.ok(calcium.reference.some((form) => form.hydrated && form.name.includes("Dihydrat")));
 	assert.equal(new Set(report.salts.map((group) => group.identity)).size, report.salts.length);
 });

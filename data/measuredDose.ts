@@ -15,7 +15,13 @@ export function prepareDose(recipe: DoseRecipe, load: (definition: MoleculeDefin
 		.filter(({ amount }) => Number.isFinite(amount) && amount > 0)
 		.map(({ molecule, amount }) => {
 			const loaded = load(molecule);
-			if (recipe.phase === "solid") loaded.dosedAsSolid = true;
+			if (recipe.phase === "solid") {
+				loaded.dosedAsSolid = true;
+				// Keep the bulk volume of the dosed solid with the molecule, so
+				// dissolution releases what the dose actually occupied. A hydrate
+				// is packed with its water and would otherwise free too little.
+				loaded.solidBulkLitresPerMol = loaded.getTotMolMass() / recipe.density / 1000;
+			}
 			return { molecule: loaded, amount };
 		});
 	const mass = parts.reduce((sum, part) => sum + part.amount * part.molecule.getTotMolMass(), 0);

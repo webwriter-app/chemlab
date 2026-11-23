@@ -6,6 +6,8 @@ type Constituent = {
 	moles: number;
 	name?: string;
 	solid?: true;
+	/** Bulk volume of one mole of this dosed solid in litres, see `Molecule`. */
+	bulk?: number;
 	precipitate?: { formula: string; ions: [MoleculeDefinition, MoleculeDefinition] };
 };
 
@@ -53,6 +55,8 @@ export function snapshotMixture(mix: Mixture): MixtureRecipe | undefined {
 		parts.push({
 			molecule: describeMolecule(molecule), moles, name: molecule.name || undefined,
 			solid: molecule.dosedAsSolid ? true : undefined,
+			bulk: molecule.dosedAsSolid && molecule.solidBulkLitresPerMol
+				? molecule.solidBulkLitresPerMol : undefined,
 			precipitate: molecule.solidSaltFormula && ions
 				? { formula: molecule.solidSaltFormula, ions: [describeMolecule(ions[0]), describeMolecule(ions[1])] }
 				: undefined,
@@ -98,6 +102,7 @@ function isMixtureRecipe(value: unknown): value is MixtureRecipe {
 			!!part && Number.isFinite(part.moles) && part.moles > 0 && isDefinition(part.molecule) &&
 			(part.name === undefined || typeof part.name === "string") &&
 			(part.solid === undefined || part.solid === true) &&
+			(part.bulk === undefined || (Number.isFinite(part.bulk) && part.bulk > 0)) &&
 			(part.precipitate === undefined || (!!part.precipitate && typeof part.precipitate.formula === "string" &&
 				Array.isArray(part.precipitate.ions) && part.precipitate.ions.length === 2 &&
 				part.precipitate.ions.every(isDefinition))));
@@ -117,10 +122,11 @@ export function readSavedMixtures(value: unknown): SavedMixture[] {
 export function prepareMixtureDose(recipe: MixtureRecipe, load: (definition: MoleculeDefinition) => Molecule) {
 	if (!isMixtureRecipe(recipe)) return;
 	try {
-		const parts = recipe.parts.map(({ molecule, name, moles, solid, precipitate }) => {
+		const parts = recipe.parts.map(({ molecule, name, moles, solid, bulk, precipitate }) => {
 			const model = load(molecule);
 			if (name) model.name = name;
 			if (solid) model.dosedAsSolid = true;
+			if (bulk) model.solidBulkLitresPerMol = bulk;
 			if (precipitate) {
 				model.solidSaltFormula = precipitate.formula;
 				model.solidSaltIons = [load(precipitate.ions[0]), load(precipitate.ions[1])];

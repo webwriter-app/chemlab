@@ -4,15 +4,15 @@
     "catalogEntries": 176,
     "withStructure": 165,
     "withoutStructure": 11,
-    "dosed": 95,
+    "dosed": 96,
     "reagents": 47,
     "mixtures": 19,
     "saltEntries": 55,
-    "dosedSaltEntries": 48,
+    "dosedSaltEntries": 49,
     "saltIdentities": 30,
-    "paired": 23,
+    "paired": 24,
     "solidOnly": 0,
-    "stockOnly": 2,
+    "stockOnly": 1,
     "referenceOnly": 5
   },
   "salts": [
@@ -241,28 +241,28 @@
     },
     {
       "label": "CuSO₄",
-      "status": "stock-only",
+      "status": "paired",
       "identity": "CuSO4",
-      "solid": [],
+      "solid": [
+        {
+          "name": "Kupfer(II)-sulfat-Pentahydrat",
+          "hydrated": true
+        }
+      ],
       "stock": [
         {
           "name": "Kupfer(II)-sulfatlösung",
           "hydrated": false
         }
       ],
-      "reference": [
-        {
-          "name": "Kupfer(II)-sulfat-Pentahydrat",
-          "hydrated": true
-        }
-      ],
-      "hydratedReference": true,
+      "reference": [],
+      "hydratedReference": false,
       "solubility": {
         "key": "CuSO4",
         "saturation": 1.29,
         "solidDensity": 3.6
       },
-      "gap": "Solid recipe missing for CuSO₄; 1.29 mol/L saturation, 3.6 g/mL solid density (CuSO4) is tabulated. The only solid reference is a hydrate (Kupfer(II)-sulfat-Pentahydrat), so a recipe needs a decided hydrate."
+      "gap": null
     },
     {
       "label": "FeCl₃",
@@ -1137,10 +1137,10 @@
       "name": "Kupfer(II)-sulfat-Pentahydrat",
       "category": "Salze",
       "formula": "CuSO₄·5 H₂O",
-      "form": "reference",
-      "phase": null,
+      "form": "salt",
+      "phase": "solid",
       "dosable": true,
-      "dosed": false,
+      "dosed": true,
       "structures": 1,
       "identity": "CuSO4",
       "hydrated": true,

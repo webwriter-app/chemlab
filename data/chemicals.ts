@@ -193,6 +193,18 @@ function oxoanion(formula: string, center: string, double: number, single: numbe
 		charges: [0, ...Array<number>(double).fill(0), ...Array<number>(single).fill(-1)] };
 }
 
+// Water of crystallisation sits next to the salt skeleton as unbonded neutral
+// H₂O fragments. The fragment bookkeeping of the salt then hands one water to
+// the solvent per crystal water, so a hydrate dissolves into the same bath as
+// an equimolar dose of its anhydrous salt plus that water.
+function addCrystalWater(atoms: string[], bonds: string[], count: number): void {
+	for (let index = 0; index < count; index++) {
+		const base = atoms.length;
+		atoms.push("oxygen", "hydrogen", "hydrogen");
+		bonds.push(`${base}-${base + 1}:covalent:1`, `${base}-${base + 2}:covalent:1`);
+	}
+}
+
 function saltSolution(name: string, formula: string, salt: string, cation: MoleculeDefinition, anion: MoleculeDefinition,
 	cations = 1, anions = 1): CatalogChemical {
 	return { name, formula, category: "Salze", concentrationLimit: saltSolubility[salt].saturation, recipe: { phase: "liquid", density: 1, aqueousMolar: true, parts: [
@@ -323,6 +335,18 @@ const potassiumPermanganate: MoleculeDefinition = { formula: "KMnO₄",
 	atoms: ["potassium", ...permanganate.atoms],
 	bonds: ["1-2:covalent:2", "1-3:covalent:2", "1-4:covalent:2", "1-5:covalent:1", "0-5:ionic:1"] };
 
+// The pentahydrate repeats the zinc sulfate bond pattern and carries five
+// crystal waters; its own density (2.286 g/mL, chalcanthite) feeds the dose
+// mass, and the bulk volume of that dose travels with the solid, so
+// dissolving it gives back the volume the blue crystals occupied.
+const copperSulfatePentahydrate: MoleculeDefinition = (() => {
+	const atoms = ["copper", ...sulfate.atoms];
+	const bonds = ["1-2:covalent:2", "1-3:covalent:2", "1-4:covalent:1", "1-5:covalent:1",
+		"0-4:ionic:1", "0-5:ionic:1"];
+	addCrystalWater(atoms, bonds, 5);
+	return { formula: "CuSO₄·5 H₂O", atoms, bonds };
+})();
+
 const sodiumChloride = salt("Natriumchlorid", "NaCl", "sodium", "chlorine");
 const aceticAcid = molecule("C₂H₄O₂", ["carbon", "carbon", "oxygen", "oxygen"],
 	["0-1:covalent:1", "1-2:covalent:2", "1-3:covalent:1"], [3, 0, 0, 1]);
@@ -405,7 +429,7 @@ export const chemicalCatalog: CatalogChemical[] = [
 	saltSolution("Ammoniumsulfatlösung", "(NH₄)₂SO₄", "(NH4)2SO4", ammonium, sulfate, 2, 1),
 	saltSolution("Kaliumthiocyanatlösung", "KSCN", "KSCN", potassium, thiocyanate),
 	saltSolution("Kaliumpermanganatlösung", "KMnO₄", "KMnO4", potassium, permanganate),
-	reference("Kupfer(II)-sulfat-Pentahydrat", "Salze", "CuSO₄·5 H₂O"),
+	pure("Kupfer(II)-sulfat-Pentahydrat", "Salze", copperSulfatePentahydrate, "solid", 2.286),
 	reference("Calciumsulfat-Dihydrat", "Salze", "CaSO₄·2 H₂O"),
 	// The archived crystal selects the dry salt; the stock is a separate reagent.
 	pure("Natriumhydrogencarbonat", "Salze", sodiumBicarbonate, "solid", saltSolubility.NaHCO3.solidDensity),

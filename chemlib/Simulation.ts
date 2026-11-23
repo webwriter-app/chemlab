@@ -702,6 +702,16 @@ export abstract class Simulation {
 		if (!salt) return false;
 		const amount = mix._molProperties[molecule._id + "n"];
 		mix.remMolecule(molecule._id);
+		// The reservoir is the anhydrous salt of the solubility table. Water of
+		// crystallisation of a dosed hydrate therefore joins the solvent, and the
+		// dosed bulk volume gives way to the reservoir's own.
+		const water = ions.find(({ ion }) => StructureManager.isWater(ion));
+		if (water) mix.addMolecule(water.ion, amount * water.count);
+		if (molecule.solidBulkLitresPerMol !== undefined) {
+			mix.addedVolume = Math.max(0, mix.addedVolume -
+				molecule.solidBulkLitresPerMol * amount +
+				this.bulkLitresPerMol(salt, cation, anion) * amount);
+		}
 		const existing = mix._activeMolecules.find((item) => item.solidSaltFormula === salt.formula);
 		mix.addMolecule(existing ?? this.makeSolidSalt(salt.formula, [cation, anion], [salt.cations, salt.anions]), amount);
 		return true;
@@ -3269,6 +3279,8 @@ export abstract class Simulation {
 	): boolean {
 		const amount: number = sMix._molProperties[cMolecule._id + "n"] ?? 0;
 		if (!(amount > 0) || !(sMix._solutionVolume > 0)) return false;
+		// Every fragment is booked, so the water of crystallisation of a hydrate
+		// enters the solvent together with the ions.
 		for (const { ion, count } of ions) sMix.addMolecule(ion, amount * count);
 		sMix.changeMolecule(cMolecule._id, -amount);
 		// release the bulk volume of the dissolved portion, keeping the dosed
@@ -3277,8 +3289,9 @@ export abstract class Simulation {
 		const anion = ions.find(({ ion }) => ion._totalCharge < 0)?.ion;
 		const entry = cation && anion ? saltEquilibria.find(({ cation: c, anion: a }) =>
 			cation.smilesString === c && anion.smilesString === a) : undefined;
-		if (entry) sMix.addedVolume = Math.max(0, sMix.addedVolume -
-			this.bulkLitresPerMol(entry, cation, anion) * amount);
+		const bulk = cMolecule.solidBulkLitresPerMol ??
+			(entry ? this.bulkLitresPerMol(entry, cation, anion) : 0);
+		if (bulk > 0) sMix.addedVolume = Math.max(0, sMix.addedVolume - bulk * amount);
 		return amount > 1e-5;
 	}
 
