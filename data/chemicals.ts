@@ -718,12 +718,24 @@ export const chemicalCatalog: CatalogChemical[] = [
 		[[0, 1], [1, 2, 2], [1, 3], [3, 4], [4, 5]], [3, 0, 0, 0, 2, 3]), 0.902),
 	molecular("Isoamylacetat", "Ester", "C₇H₁₄O₂", 0.876, "liquid"),
 	molecular("Myristylmyristat", "Ester", "C₂₈H₅₆O₂", 0.85, "solid"),
-	reference("Kupfer(II)-oxid", "Oxide", "CuO"),
-	reference("Magnesiumoxid", "Oxide", "MgO"),
-	reference("Calciumoxid", "Oxide", "CaO"),
-	reference("Eisen(III)-oxid", "Oxide", "Fe₂O₃"),
-	reference("Mangan(IV)-oxid", "Oxide", "MnO₂"),
-	reference("Siliciumdioxid", "Oxide", "SiO₂"),
+	// The six oxides of the classic salt analysis. What one is never depends on a
+	// bond order or a formal charge: `chemlib/oxides.ts` counts the atoms of a
+	// dosed graph, so the drawing below only has to carry the formula unit, and a
+	// Cu=O and a drawn Cu²⁺–O²⁻ are the same weighed portion. Densities are the
+	// handbook values of the real solids.
+	pure("Kupfer(II)-oxid", "Oxide", covalent("CuO", ["copper", "oxygen"], [[0, 1, 2]], [0, 0]),
+		"solid", 6.31),
+	pure("Magnesiumoxid", "Oxide", covalent("MgO", ["magnesium", "oxygen"], [[0, 1, 2]], [0, 0]),
+		"solid", 3.58),
+	pure("Calciumoxid", "Oxide", covalent("CaO", ["calcium", "oxygen"], [[0, 1, 2]], [0, 0]),
+		"solid", 3.34),
+	pure("Eisen(III)-oxid", "Oxide", covalent("Fe₂O₃",
+		["iron", "iron", "oxygen", "oxygen", "oxygen"],
+		[[0, 2], [0, 3], [1, 3], [1, 4]], [0, 0, 0, 0, 0]), "solid", 5.24),
+	pure("Mangan(IV)-oxid", "Oxide", covalent("MnO₂", ["manganese", "oxygen", "oxygen"],
+		[[0, 1, 2], [0, 2, 2]], [0, 0, 0]), "solid", 5.03),
+	pure("Siliciumdioxid", "Oxide", covalent("SiO₂", ["silicon", "oxygen", "oxygen"],
+		[[0, 1, 2], [0, 2, 2]], [0, 0, 0]), "solid", 2.65),
 	aqueous("Wasserstoffperoxidlösung", "Indikatoren und Nachweisreagenzien", peroxide),
 	reference("Bromwasser", "Indikatoren und Nachweisreagenzien", "Br₂ (aq)"),
 	reference("Lugolsche Lösung", "Indikatoren und Nachweisreagenzien", "I₂ / KI (aq)"),

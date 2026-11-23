@@ -27,6 +27,7 @@ import {
 	reactsWithWater,
 } from "./halfReactions";
 import { circuitNetwork, circuitThevenin, circuitReadings, type CircuitElement, type CircuitNetwork, type CircuitReading } from "./circuit";
+import { oxideOf } from "./oxides";
 import { NoIonicPathTransientModel, type NoIonicPathTransientSample } from "./NoIonicPathTransientModel";
 import {
 	pathResistance,
@@ -622,6 +623,10 @@ export abstract class Simulation {
 		this.sRedoxSolution(cMixture);
 		// The same metal surface reduces the protons of an acid to hydrogen.
 		this.sMetalAcid(cMixture);
+		// An oxide is no salt: it has no solubility product, so it lies in the
+		// vessel until an acid attacks it or, as quicklime does, the water
+		// turns it into a hydroxide first.
+		this.sOxideAcid(cMixture);
 
 		// Salts still dissociate explicitly into their ions, which feed the
 		// solubility model and the electrochemistry code. Iterate until the
@@ -3367,6 +3372,105 @@ export abstract class Simulation {
 				this.metalBulkLitresPerMol(metal, couple) * atoms);
 			mix.evolveGas("H2", protons / 2);
 			capacity -= protons;
+			changed = true;
+		}
+		return changed;
+	}
+
+	/**
+	 * A dosed oxide is a molecular solid: it has no solubility product, so it
+	 * lies in the vessel until an acid attacks it. Quicklime goes one step
+	 * further and takes the solvent itself, which is what makes a pinch of it
+	 * caustic; the slaked lime it leaves is a body of the solubility table and
+	 * from then on the hydroxide equilibria carry it.
+	 *
+	 * The acid attack books the cation and nothing else: the protons it takes
+	 * from the acid family are the ones that balance that cation, exactly as in
+	 * {@link sMetalAcid}. Booking them a second time as excess charge would let
+	 * the acid stay protonated and leave a lime suspension at pH 1.
+	 *
+	 * @private
+	 * @static
+	 * @param {Mixture} mix - the solution to react
+	 * @returns {boolean} whether any amount changed
+	 */
+	private static sOxideAcid(mix: Mixture): boolean {
+		if (!mix._isSolution || !(mix._solutionVolume > 0)) return false;
+		const oxides = mix._activeMolecules
+			.filter((molecule) => molecule.dosedAsSolid)
+			.flatMap((molecule) => {
+				const oxide = oxideOf(molecule);
+				return oxide?.attack ? [{ molecule, attack: oxide.attack }] : [];
+			});
+		if (!oxides.length) return false;
+		const solvent = mix._activeMolecules.find((molecule) => StructureManager.isWater(molecule));
+		if (!solvent) return false;
+		const volume = mix._solutionVolume;
+		const { systems, spectatorCharge } = this.acidBaseComposition(mix);
+		const Kw = AcidBase.kwAt(mix._temperature);
+		const H = AcidBase.solveProton(systems, spectatorCharge, Kw, this.complexChargeHook(systems));
+		// Titratable acidity: the free protons plus the protons the acids still
+		// hold above pH 7, the same reading {@link sMetalAcid} uses. A weak acid
+		// therefore delivers what it holds, a cation acid such as Fe³⁺ nothing.
+		const bound = (family: AcidBaseFamily, h: number) => AcidBase.speciesFractions(family, h)
+			.reduce((sum, fraction, step) => sum + fraction * (family.pKa.length - step), 0);
+		let capacity = (H - 1e-7) * volume;
+		for (const family of systems) {
+			if (!(family.totalC > 0) || family.pKa.length < 1) continue;
+			if (family.protonatedCharge > 0 || !(family.pKa[0] < 7)) continue;
+			capacity += family.totalC * Math.max(0, bound(family, H) - bound(family, 1e-7)) * volume;
+		}
+		let changed = false;
+		// The attack first: MO + 2 H⁺ → M²⁺ + H₂O. It books the cation and
+		// nothing else, because the protons it takes from the acid family are
+		// the ones that balance that cation, exactly as in {@link sMetalAcid}.
+		// Booking them a second time as excess charge would let the acid stay
+		// protonated and leave a lime suspension at pH 1.
+		if (H > 1e-7) {
+			for (const { molecule, attack } of oxides) {
+				const amount = mix._molProperties[molecule._id + "n"] ?? 0;
+				const atoms = Math.min(amount, capacity / attack.protons);
+				if (!(atoms > 1e-12)) continue;
+				const cation = this.ionMolecule(attack.cation);
+				if (!cation) continue;
+				mix.changeMolecule(molecule._id, -atoms);
+				mix.addMolecule(cation, atoms * attack.cations);
+				if (molecule.solidBulkLitresPerMol !== undefined) {
+					mix.addedVolume = Math.max(0, mix.addedVolume - molecule.solidBulkLitresPerMol * atoms);
+				}
+				// The oxide releases water; booking it through the solvent keeps
+				// the solution volume and every concentration in step, as the
+				// oxygen evolution of a half-reaction does in the other direction.
+				if (attack.water > 0) mix.addMolecule(solvent, atoms * attack.water);
+				capacity -= atoms * attack.protons;
+				changed = true;
+			}
+		}
+		// What no acid took slakes instead: CaO + H₂O → Ca(OH)₂. The hydroxide
+		// takes the place of the oxide in the sediment and gives up its water to
+		// the solvent, and from then on the hydroxide equilibria carry it — which
+		// is what makes a pinch of quicklime caustic in a beaker of water. The
+		// order matters: where an acid can take the whole portion, the attack
+		// above is the shorter way to the same net reaction.
+		for (const { molecule, attack } of oxides) {
+			const formula = attack.slaking;
+			if (!formula || !(formula in saltSolubility)) continue;
+			const amount = mix._molProperties[molecule._id + "n"] ?? 0;
+			if (!(amount > 1e-12)) continue;
+			const atoms = Math.min(amount, mix._molProperties[solvent._id + "n"] ?? 0);
+			if (!(atoms > 1e-12)) continue;
+			const cation = this.ionMolecule(attack.cation);
+			const ions = [cation, hydroxideMolecule()];
+			const counts = [1, 2];
+			const hydroxide = mix._activeMolecules.find((item) => item.solidSaltFormula === formula) ??
+				this.makeSolidSalt(formula, ions, counts);
+			if (molecule.solidBulkLitresPerMol !== undefined) {
+				mix.addedVolume = Math.max(0, mix.addedVolume - molecule.solidBulkLitresPerMol * atoms);
+			}
+			mix.changeMolecule(molecule._id, -atoms);
+			mix.changeMolecule(solvent._id, -atoms);
+			mix.addMolecule(hydroxide, atoms);
+			mix.addedVolume += this.bulkLitresPerMol(formula, ions, counts) * atoms;
 			changed = true;
 		}
 		return changed;
