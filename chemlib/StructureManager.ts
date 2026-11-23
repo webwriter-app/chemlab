@@ -70,6 +70,16 @@ export abstract class StructureManager {
 				["[O-]C(=O)C(O)=O", "O=C(O)C(=O)[O-]", "O=C(O)C([O-])=O"],
 				["[O-]C(=O)C(=O)[O-]", "[O-]C(=O)C([O-])=O", "O=C([O-])C(=O)[O-]"],
 			] },
+			// Tartaric acid. Its dianion is the anion the solubility table lists for
+			// potassium sodium tartrate, so the tartrate of that stock folds into
+			// this family and the double salt reacts basic (about pH 8.7 at
+			// 0.1 mol/L) instead of acting as a spectator. The first alias is the
+			// form the table names, the others are the hand-written orientations
+			// Kekule regenerates for the same structure.
+			"O=C(O)C(O)C(O)C(O)=O": { "pks": [2.98, 4.34], "conj": [
+				["[O-]C(=O)C(O)C(O)C(O)=O", "O=C(O)C(O)C(O)C(=O)[O-]", "O=C(O)C(O)C(O)C([O-])=O"],
+				["[O-]C(=O)C(O)C(O)C(=O)[O-]", "O=C([O-])C(O)C(O)C(=O)[O-]"],
+			] },
 			"O=C(O)CC(O)(C(O)=O)CC(O)=O": { "pks": [3.13, 4.76, 6.40] },
 			"[Na]O": { "pks": -0.56 },
 			"CC(=O)O": { "alias": "CC(O)=O" },

@@ -12,19 +12,19 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 | Measure | Count |
 | --- | ---: |
-| Catalog entries | 178 |
-| Entries with a builder structure | 167 |
+| Catalog entries | 180 |
+| Entries with a builder structure | 169 |
 | Entries without a builder structure | 11 |
-| Dosed entries (solid or aqueous) | 101 |
-| Dosed salt entries | 54 |
+| Dosed entries (solid or aqueous) | 105 |
+| Dosed salt entries | 58 |
 | Molecular reagents outside the salt pairing | 47 |
 | Mixtures shown by their constituents | 19 |
-| Salt entries in total | 57 |
+| Salt entries in total | 59 |
 | Salt identities | 30 |
-| Salt identities with both forms | 27 |
+| Salt identities with both forms | 29 |
 | Salt identities with a solid form only | 0 |
 | Salt identities with an aqueous form only | 0 |
-| Salt identities with neither form | 3 |
+| Salt identities with neither form | 1 |
 
 ## Salt forms
 
@@ -48,7 +48,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 | KI | Kaliumiodid | Kaliumiodidlösung | — | paired | 6.09 mol/L saturation, 3.12 g/mL solid density (KI) |
 | KMnO₄ | Kaliumpermanganat | Kaliumpermanganatlösung | — | paired | 0.39 mol/L saturation, 2.703 g/mL solid density (KMnO4) |
 | KNO₃ | Kaliumnitrat | Kaliumnitratlösung | — | paired | 2.77 mol/L saturation, 2.11 g/mL solid density (KNO3) |
-| KNaC₄H₄O₆ | — | — | Kaliumnatriumtartrat | reference only | not tabulated |
+| KNaC₄H₄O₆ | Kaliumnatriumtartrat (hydrate) | Kaliumnatriumtartratlösung | — | paired | 2.2 mol/L saturation, 1.79 g/mL solid density (KNaC4H4O6) |
 | KSCN | Kaliumthiocyanat | Kaliumthiocyanatlösung | — | paired | 9.8 mol/L saturation, 1.886 g/mL solid density (KSCN) |
 | MgSO₄ | Magnesiumsulfat-Heptahydrat (hydrate) | Magnesiumsulfatlösung | — | paired | 2.8 mol/L saturation, 2.66 g/mL solid density (MgSO4) |
 | NH₄Cl | Ammoniumchlorid | Ammoniumchloridlösung | — | paired | 4.6 mol/L saturation, 1.527 g/mL solid density (NH4Cl) |
@@ -58,14 +58,12 @@ Reference-only behaviour is an interim gap, not an exemption.
 | NaI | Natriumiodid | Natriumiodidlösung | — | paired | 7.95 mol/L saturation, 3.67 g/mL solid density (NaI) |
 | Na₂CO₃ | Natriumcarbonat | Natriumcarbonatlösung | — | paired | 2.01 mol/L saturation, 2.54 g/mL solid density (Na2CO3) |
 | Na₂SO₄ | Natriumsulfat | Natriumsulfatlösung | — | paired | 1.3 mol/L saturation, 2.66 g/mL solid density (Na2SO4) |
-| Na₂S₂O₃·5 H₂O | — | — | Natriumthiosulfat-Pentahydrat (hydrate) | reference only | not tabulated |
+| Na₂S₂O₃ | Natriumthiosulfat-Pentahydrat (hydrate) | Natriumthiosulfatlösung | — | paired | 3.6 mol/L saturation, 2.345 g/mL solid density (Na2S2O3) |
 | ZnSO₄ | Zinksulfat | Zinksulfatlösung | — | paired | 1.79 mol/L saturation, 3.54 g/mL solid density (ZnSO4) |
 
 ## Remaining gaps
 
 - **FeS** — Neither phase has a recipe for FeS; only the structural preview exists.
-- **KNaC₄H₄O₆** — Neither phase has a recipe for KNaC₄H₄O₆; only the structural preview exists.
-- **Na₂S₂O₃·5 H₂O** — Neither phase has a recipe for Na₂S₂O₃·5 H₂O; only the structural preview exists. The only solid reference is a hydrate (Natriumthiosulfat-Pentahydrat), so a recipe needs a decided hydrate.
 
 ## Entries without a builder structure
 
@@ -83,7 +81,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 ## Entries without a dose
 
-- Salze: Eisen(II)-sulfid, Kaliumnatriumtartrat, Natriumthiosulfat-Pentahydrat
+- Salze: Eisen(II)-sulfid
 - Anorganische Säuren: Salpetersäure
 - Basen: Calciumhydroxid, Kalkwasser
 - Carbonsäuren: Benzoesäure, Sorbinsäure, Tetradecansäure (Myristinsäure)

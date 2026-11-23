@@ -102,12 +102,25 @@ test("a hydrated solid joins the anhydrous stock of its salt", () => {
 		assert.ok(group.solid.some((form) => form.hydrated && form.name.includes(hydrate)));
 		assert.ok(group.stock.some((form) => form.name.includes(stock)), `${identity} has no saturated stock`);
 	}
-	// A hydrate without a dosed form of its salt stays a reference: the
-	// thiosulfate needs its own anion, which the model does not carry yet.
-	const thiosulfate = report.salts.find((group) => group.identity === "Na2S2O3");
-	assert.ok(thiosulfate, "missing the Na₂S₂O₃ group");
-	assert.equal(thiosulfate.status, "reference-only");
-	assert.equal(thiosulfate.hydratedReference, true);
-	assert.ok(thiosulfate.reference.some((form) => form.hydrated && form.name.includes("Pentahydrat")));
+	// The two hydrates that were the last reference-only sulfates now carry a
+	// solid and a stock as well: their ions have a place in the model.
+	for (const [identity, solid, stock] of [
+		["Na2S2O3", "Natriumthiosulfat-Pentahydrat", "Natriumthiosulfatlösung"],
+		["KNaC4H4O6", "Kaliumnatriumtartrat", "Kaliumnatriumtartratlösung"],
+	] as const) {
+		const group = report.salts.find((candidate) => candidate.identity === identity);
+		assert.ok(group, `missing the ${identity} group`);
+		assert.equal(group.status, "paired");
+		assert.equal(group.hydratedReference, false);
+		assert.ok(group.solid.some((form) => form.hydrated && form.name === solid), `${identity} has no hydrate`);
+		assert.ok(group.stock.some((form) => form.name === stock), `${identity} has no stock`);
+	}
+	// Iron(II) sulfide is the last salt without a recipe: neither a solubility
+	// row nor a sulfide family exists yet.
+	const ironSulfide = report.salts.find((group) => group.identity === "FeS");
+	assert.ok(ironSulfide, "missing the FeS group");
+	assert.equal(ironSulfide.status, "reference-only");
+	assert.equal(ironSulfide.hydratedReference, false);
+	assert.deepEqual(ironSulfide.reference.map((form) => form.name), ["Eisen(II)-sulfid"]);
 	assert.equal(new Set(report.salts.map((group) => group.identity)).size, report.salts.length);
 });

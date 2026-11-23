@@ -106,6 +106,22 @@ export const saltSolubility: Readonly<Record<string, SaltSolubility>> = {
 	"(NH4)2SO4": { ions: ["[N+]", "[O-]S(=O)(=O)[O-]", 2, 1], saturation: 4.1, solidDensity: 1.769 },
 	KSCN: { ions: ["[K+]", "N#C[S-]"], saturation: 9.8, solidDensity: 1.886 },
 	KMnO4: { ions: ["[K+]", "[O-][Mn](=O)(=O)=O"], saturation: 0.39, solidDensity: 2.703 },
+	// Sodium thiosulfate: 70.1 g of the anhydrous salt per 100 g water at 20 °C
+	// is 0.443 mol in a 170.1 g solution; at about 1.33 g/mL for the saturated
+	// solution that is 128 mL and thus 3.5 mol/L, rounded to 3.6 for the model.
+	// The anhydrous salt measures 2.345 g/mL, the pentahydrate 1.667
+	// (https://en.wikipedia.org/wiki/Sodium_thiosulfate). The thiosulfate has no
+	// entry in the acid-base, complex or half-reaction tables, so it travels as a
+	// spectator ion like the thiocyanate and the permanganate.
+	Na2S2O3: { ions: ["[Na+]", "[O-]S(=O)([S-])=O", 2, 1], saturation: 3.6, solidDensity: 2.345 },
+	// Potassium sodium tartrate (Rochelle salt), the double salt of tartaric
+	// acid: 630 g of the tetrahydrate per litre of water at 20 °C is 2.23 mol/L
+	// (https://www.scbt.com/p/potassium-sodium-tartrate-6381-59-5). The entry
+	// carries both cations; the tartrate is the anion of the tartaric-acid
+	// family, so its stock is weakly basic instead of neutral. Only the crystal
+	// density of the tetrahydrate is tabulated and it stands in for the
+	// anhydrous reservoir, which merely sets the bulk volume of a sediment.
+	KNaC4H4O6: { ions: ["[K+]", "[O-]C(=O)C(O)C(O)C(=O)[O-]", 1, 1, "[Na+]", 1], saturation: 2.2, solidDensity: 1.79 },
 
 	// Dilute-solution products near 25 °C. Solve with concentrations as
 	// activities. The concentrated salts above use empirical model thresholds.

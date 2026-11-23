@@ -76,6 +76,8 @@ export const solutionDisplayNames: Readonly<Record<string, string>> = {
 	"Ammoniumsulfatlösung": "Ammoniumsulfat",
 	"Kaliumthiocyanatlösung": "Kaliumthiocyanat",
 	"Kaliumpermanganatlösung": "Kaliumpermanganat",
+	"Natriumthiosulfatlösung": "Natriumthiosulfat",
+	"Kaliumnatriumtartratlösung": "Kaliumnatriumtartrat",
 	"Natronlauge (1 mol/L)": "Natronlauge",
 	"Kalilauge (1 mol/L)": "Kalilauge",
 	"Ammoniaklösung": "Ammoniak",
@@ -207,11 +209,17 @@ function addCrystalWater(atoms: string[], bonds: string[], count: number): void 
 	}
 }
 
+// A stock of a salt. The second cation is optional because a double salt such
+// as potassium sodium tartrate carries two different cations per anion; the
+// parts mirror the ion list of the solubility table, so the stock dissociates
+// into exactly the ions the table pairs with the solid.
 function saltSolution(name: string, formula: string, salt: string, cation: MoleculeDefinition, anion: MoleculeDefinition,
-	cations = 1, anions = 1): CatalogChemical {
-	return { name, formula, category: "Salze", concentrationLimit: saltSolubility[salt].saturation, recipe: { phase: "liquid", density: 1, aqueousMolar: true, parts: [
+	cations = 1, anions = 1, extraCation?: MoleculeDefinition, extraCations = 1): CatalogChemical {
+	const parts = [
 		{ molecule: water, amount: 55.5 }, { molecule: cation, amount: cations }, { molecule: anion, amount: anions },
-	] } };
+	];
+	if (extraCation) parts.push({ molecule: extraCation, amount: extraCations });
+	return { name, formula, category: "Salze", concentrationLimit: saltSolubility[salt].saturation, recipe: { phase: "liquid", density: 1, aqueousMolar: true, parts } };
 }
 
 const sulfate = oxoanion("SO₄²⁻", "sulfur", 2, 2);
@@ -301,6 +309,24 @@ const thiocyanate = { formula: "SCN⁻", atoms: ["sulfur", "carbon", "nitrogen"]
 // the [O-][Mn](=O)(=O)=O of the table. The model runs no MnO4- reduction, so
 // the ion travels unchanged and only potassium and the anion are booked.
 const permanganate = oxoanion("MnO₄⁻", "manganese", 3, 1);
+// Thiosulfate keeps the sulfur-sulfur bond of the sulfate group: one sulfur
+// sits in the middle with two double-bonded oxygens, the terminal sulfur and
+// the remaining oxygen each carry one charge. It serialises as the
+// [O-]S(=O)([S-])=O of the table and stays a spectator ion, because no
+// acid-base, complex or half-reaction table names a thiosulfate species.
+const thiosulfate: MoleculeDefinition = { formula: "S₂O₃²⁻", atoms: ["sulfur", "sulfur", "oxygen", "oxygen", "oxygen"],
+	bonds: ["0-1:covalent:1", "0-2:covalent:2", "0-3:covalent:2", "0-4:covalent:1"], charges: [0, -1, 0, 0, -1] };
+// Tartrate is the dianion of tartaric acid: the four-carbon chain carries one
+// hydroxyl on each inner carbon and a carboxylate at both ends. Both charges
+// sit on the single-bonded carboxyl oxygens, which leaves the
+// [O-]C(=O)C(O)C(O)C(=O)[O-] of the table and of the tartaric-acid family.
+const tartrate: MoleculeDefinition = { formula: "C₄H₄O₆²⁻",
+	atoms: ["carbon", "carbon", "carbon", "carbon", "oxygen", "oxygen", "oxygen", "oxygen", "oxygen", "oxygen",
+		"hydrogen", "hydrogen", "hydrogen", "hydrogen"],
+	bonds: ["0-1:covalent:1", "1-2:covalent:1", "2-3:covalent:1", "0-4:covalent:2", "0-5:covalent:1",
+		"1-6:covalent:1", "2-7:covalent:1", "3-8:covalent:2", "3-9:covalent:1",
+		"1-10:covalent:1", "2-11:covalent:1", "6-12:covalent:1", "7-13:covalent:1"],
+	charges: [0, 0, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, 0, 0] };
 
 
 // The sparingly soluble salts keep a solubility product instead of a
@@ -356,6 +382,31 @@ const copperSulfatePentahydrate = sulfateHydrate("CuSO₄·5 H₂O", "copper", 5
 const ironSulfateHeptahydrate = sulfateHydrate("FeSO₄·7 H₂O", "iron", 7);
 const calciumSulfateDihydrate = sulfateHydrate("CaSO₄·2 H₂O", "calcium", 2);
 const magnesiumSulfateHeptahydrate = sulfateHydrate("MgSO₄·7 H₂O", "magnesium", 7);
+
+// The other two hydrated salts follow the same route: the anion skeleton stays
+// neutral, one ionic bond per unprotonated oxygen hands over one electron, and
+// the crystal water sits next to the formula unit as separate H₂O fragments.
+// Sodium thiosulfate is the photographic fixing salt (pentahydrate 1.667 g/mL);
+// the thiosulfate keeps both charges on the terminal sulfur and on the free
+// oxygen, so the two sodiums leave it as the anion of the solubility table.
+// https://en.wikipedia.org/wiki/Sodium_thiosulfate
+const sodiumThiosulfatePentahydrate: MoleculeDefinition = { formula: "Na₂S₂O₃·5 H₂O",
+	atoms: ["sodium", "sodium", ...thiosulfate.atoms],
+	bonds: ["2-3:covalent:1", "2-4:covalent:2", "2-5:covalent:2", "2-6:covalent:1",
+		"0-6:ionic:1", "1-3:ionic:1"] };
+addCrystalWater(sodiumThiosulfatePentahydrate.atoms, sodiumThiosulfatePentahydrate.bonds, 5);
+// Potassium sodium tartrate is the Rochelle salt of Fehling's solution and of
+// the Seignette crystals (tetrahydrate 1.79 g/mL). It is a double salt: the
+// potassium sits on one carboxylate and the sodium on the other, so the two
+// different cations of the solubility table appear next to the tartrate.
+// https://www.scbt.com/p/potassium-sodium-tartrate-6381-59-5
+const potassiumSodiumTartrateTetrahydrate: MoleculeDefinition = { formula: "KNaC₄H₄O₆·4 H₂O",
+	atoms: ["potassium", "sodium", ...tartrate.atoms],
+	bonds: ["2-3:covalent:1", "3-4:covalent:1", "4-5:covalent:1", "2-6:covalent:2", "2-7:covalent:1",
+		"3-8:covalent:1", "4-9:covalent:1", "5-10:covalent:2", "5-11:covalent:1",
+		"3-12:covalent:1", "4-13:covalent:1", "8-14:covalent:1", "9-15:covalent:1",
+		"0-7:ionic:1", "1-11:ionic:1"] };
+addCrystalWater(potassiumSodiumTartrateTetrahydrate.atoms, potassiumSodiumTartrateTetrahydrate.bonds, 4);
 
 const sodiumChloride = salt("Natriumchlorid", "NaCl", "sodium", "chlorine");
 const aceticAcid = molecule("C₂H₄O₂", ["carbon", "carbon", "oxygen", "oxygen"],
@@ -456,10 +507,14 @@ export const chemicalCatalog: CatalogChemical[] = [
 	// The archived crystal selects the dry salt; the stock is a separate reagent.
 	pure("Natriumhydrogencarbonat", "Salze", sodiumBicarbonate, "solid", saltSolubility.NaHCO3.solidDensity),
 	saltSolution("Natriumhydrogencarbonatlösung", "NaHCO₃", "NaHCO3", sodium, bicarbonate),
-	// Still reference only: a thiosulfate and a tartrate need their own anion
-	// and acid-base data, and iron(II) sulfide needs a sulfide family.
-	reference("Natriumthiosulfat-Pentahydrat", "Salze", "Na₂S₂O₃·5 H₂O"),
-	reference("Kaliumnatriumtartrat", "Salze", "KNaC₄H₄O₆"),
+	saltSolution("Natriumthiosulfatlösung", "Na₂S₂O₃", "Na2S2O3", sodium, thiosulfate, 2, 1),
+	saltSolution("Kaliumnatriumtartratlösung", "KNaC₄H₄O₆", "KNaC4H4O6", potassium, tartrate, 1, 1, sodium),
+	// The fixing salt and the Rochelle salt carry their own anion now, and the
+	// tartrate joins the tartaric-acid family, so both dose like the sulfates
+	// above and pair with the stocks below. Iron(II) sulfide still needs a
+	// sulfide family of its own and stays reference only.
+	pure("Natriumthiosulfat-Pentahydrat", "Salze", sodiumThiosulfatePentahydrate, "solid", 1.667),
+	pure("Kaliumnatriumtartrat", "Salze", potassiumSodiumTartrateTetrahydrate, "solid", 1.79),
 	reference("Eisen(II)-sulfid", "Salze", "FeS"),
 	pure("Natriumhydroxid", "Basen", naoh, "solid", 2.13),
 	aqueous("Natronlauge (1 mol/L)", "Basen", naoh, concentratedReagent.sodiumHydroxide),
