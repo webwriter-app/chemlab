@@ -263,3 +263,17 @@ The timing figures come from the bundled modules under the test shim, not from a
 - Open the chemicals tab and close the drawer within a few hundred milliseconds: the queue stops without errors and continues on the next open.
 
 Verified with `npx tsc --noEmit`, all 31 test files from AGENTS.md, and the two release commands above.
+
+## Commits
+
+Every package is one commit on `vibe/perf-packages`, each after `npx tsc --noEmit`, the test loop of AGENTS.md and the release build.
+
+| Order | Commit | Subject |
+| --- | --- | --- |
+| 1 | `a132d6e` | Batch protonation graph construction |
+| 2 | `e4bc13f` | Advance each electrical circuit once per simulation step |
+| 3 | `57d5c58` | Shrink the single-file widget release |
+| 4 | `e6d29a1` | Load only the component textures a layout shows |
+| 5 | `4c384ba` | Defer the analysis of saved custom compounds |
+
+The audit at `53c9b9a` and the handoff at `4b82c34` stay untouched, so measurements and implementation commits remain distinguishable. Remaining work is profiling, not a package: longer chart sessions, repeated IUPAC CSV scans for the same compound, suggestion recomputation on unrelated UI updates, wetting scans across unchanged vessels and offscreen companion rendering are the candidates the handoff names.
