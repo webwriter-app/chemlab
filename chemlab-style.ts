@@ -2848,6 +2848,14 @@ export const style = css`
 		block-size: 100%;
 		object-fit: contain;
 	}
+	/* A saved compound whose analysis is still deferred keeps the preview box of its tile. */
+	.palette-preview-area > .chemical-preview-pending {
+		grid-area: 1 / 1;
+		box-sizing: border-box;
+		padding: 3px 22px;
+		border: 1px solid transparent;
+		border-radius: var(--sl-border-radius-medium);
+	}
 	.fill-meter {
 		position: absolute;
 		padding: 2px 4px;

@@ -73,8 +73,9 @@ import { chemicalCatalog, chemicalCatalogGroups, solutionDisplayNames, withConce
 import { loadMoleculeDefinition } from "./data/moleculeDefinition";
 import { BUILDER_TAG, worksheetPeers, worksheetPeer, worksheetScope, type BuilderReceiver } from "./molecule-builder/exchange";
 import { readStructure, type Structure } from "./molecule-builder/structure";
-import { analyzeBuilderCompound, builderStock, enrichBuilderCompound, expectedDissociations,
-	portableBuilderChemical, readBuilderChemical, type BuilderChemical, type CompoundAnalysis, type CompoundFacts } from "./molecule-builder/custom-compounds";
+import { analyzeBuilderCompound, builderStock, builderStockFor, enrichBuilderCompound, expectedDissociations,
+	hydrateBuilderChemical, pendingBuilderChemicals, portableBuilderChemical, readBuilderChemical,
+	type BuilderChemical, type CompoundAnalysis, type CompoundFacts } from "./molecule-builder/custom-compounds";
 import { iupacSource } from "./chemlib/IupacDissociation";
 import { readAqueousAcidBase } from "./chemlib/AcidBase";
 import { catalogPreviews } from "./data/chemicalPreviews.generated";
@@ -112,6 +113,8 @@ const MIN_TWO_PANELS_WIDTH = 560;
 const RC_UPDATE_MS = 50;
 const DIAGRAM_PICKER_CLOSE_MS = 2000;
 const CUSTOM_CHEMICAL_GROUP = "custom";
+/** A card that carries nothing to derive; the palette passes it as its activation. */
+const nothingToHydrate = () => {};
 const CONTROL_ICONS = {
 	power: "M8 2v5m3.2-3.8a5.5 5.5 0 1 1-6.4 0",
 	drop: "M8 2.4c1.4 2.2 4 4.5 4 7a4 4 0 1 1-8 0c0-2.5 2.6-4.8 4-7Z",
@@ -481,6 +484,8 @@ export class ChemLab extends LitElementWw {
 	@state() private accessor builderTarget: { key?: string; structure?: Structure } | undefined;
 	@state() private accessor builderReferences: BuilderChemical[] = [];
 	@state() private accessor sessionBuilderReferences: BuilderChemical[] = [];
+	/** guards the deferred analysis of saved compounds against a second round */
+	private builderHydrating = false;
 	@state() private accessor savedVesselMixtures: SavedMixture[] = [];
 	@state() private accessor sessionVesselMixtures: SavedMixture[] = [];
 	@state() private accessor mixtureDraft: { vessel: chemlib.ChemComponent; name: string } | undefined;
@@ -718,6 +723,7 @@ export class ChemLab extends LitElementWw {
 		if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions", "savedVesselMixtures"].some((name) => changed.has(name))) {
 			this.persistAuthoredData();
 		}
+		if (this.teacherDrawerOpen && this.teacherTab === "chemicals") this.startBuilderHydration();
 		if (this.app && !this.canvasLoading && this.refreshFromRemoteData) {
 			this.refreshFromRemoteData = false;
 			if (changed.has("availableComponents")) {
@@ -3436,6 +3442,7 @@ export class ChemLab extends LitElementWw {
 		if (open) {
 			this.teacherDrawerChoice = this.teacherDrawerOpen = true;
 			if (this.diagramPanelAvailable && this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.diagramPanelOpen = false;
+			if (this.teacherTab === "chemicals") this.startBuilderHydration();
 		} else {
 			this.closeTeacherDrawer();
 		}
@@ -3633,9 +3640,11 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderPaletteCard(name: string, variant: ReturnType<typeof this.palettePermissionVariant>,
-		badge: unknown, body: unknown, chemical = false, permissions?: { open: boolean; label: string; toggle: () => void; options: unknown }) {
+		badge: unknown, body: unknown, chemical = false, permissions?: { open: boolean; label: string; toggle: () => void; options: unknown },
+		activate: () => void = nothingToHydrate) {
 		return html`
-			<div class="palette-card${chemical ? " palette-card-chemical" : ""}" role="group" aria-label=${name}>
+			<div class="palette-card${chemical ? " palette-card-chemical" : ""}" role="group" aria-label=${name}
+				@pointerenter=${activate} @focusin=${activate}>
 				<div class="palette-card-header">
 					<div class="palette-card-name">
 						${permissions ? html`
@@ -3950,7 +3959,6 @@ export class ChemLab extends LitElementWw {
 		const { structure, analysis } = review;
 		let facts = review.facts;
 		let stockConcentration: number | undefined;
-		let recipe: ChemicalRecipe | undefined;
 		if (withStock) {
 			if (!this.canAuthor || !analysis?.stockSupported || review.reagent) return;
 			const input = this.shadowRoot.querySelector<SlInput>("#builderStockConcentration");
@@ -3967,11 +3975,10 @@ export class ChemLab extends LitElementWw {
 				facts = { ...facts, dissociation, pKaSource: "manual" };
 			}
 			if (!input.reportValidity()) return;
-			recipe = builderStock(analysis, stockConcentration, facts);
-			if (!recipe) return;
+			if (!builderStock(analysis, stockConcentration, facts)) return;
 		}
 		const id = Array.from(crypto.getRandomValues(new Uint32Array(2)), value => value.toString(36)).join("-");
-		const item = { key: `builder-chemical:${id}`, structure, recipe, analysis, facts, stockConcentration };
+		const item = hydrateBuilderChemical({ key: `builder-chemical:${id}`, structure, facts, stockConcentration }, analysis);
 		if (this.canAuthor) {
 			this.builderReferences = [...references, item];
 			this.persistAuthoredData();
@@ -3987,6 +3994,7 @@ export class ChemLab extends LitElementWw {
 		this.teacherTab = "chemicals";
 		this.teacherDrawerChoice = this.teacherDrawerOpen = true;
 		if (this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.closeDiagramPanel();
+		this.startBuilderHydration();
 		void this.updateComplete.then(() => this.renderRoot.querySelector<SlTabGroup>("#teacherTabs")?.show("chemicals"));
 	}
 
@@ -4095,9 +4103,10 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderBuilderReference(item: BuilderChemical) {
-		const { structure, recipe, analysis, facts } = item;
+		const { structure, facts } = item;
 		const label = structure.name || this.builderText("Structure", "Struktur");
-		const sharable = !!recipe && this.canAuthor && this.builderReferences.includes(item);
+		const stock = item.hydrated ? builderStockFor(item) : undefined;
+		const sharable = !!stock && this.canAuthor && this.builderReferences.includes(item);
 		const allowed = this.isChemicalAllowed(item.key);
 		const remove = () => {
 			if (this.canAuthor && this.builderReferences.includes(item)) {
@@ -4107,14 +4116,16 @@ export class ChemLab extends LitElementWw {
 			} else this.sessionBuilderReferences = this.sessionBuilderReferences.filter(entry => entry !== item);
 			if (this.selectedChemical?.key === item.key) this.clearChemicalSelection();
 		};
-		const formula = analysis?.formula ?? facts?.metadata?.formula ?? label;
+		const formula = item.analysis?.formula ?? facts?.metadata?.formula ?? label;
 		const badge = sharable ? this.renderChemicalPermissionBadge(label, [{ name: item.key, label }]) : nothing;
 		return this.renderPaletteCard(label, sharable ? this.palettePermissionVariant(Number(allowed), 1) : "primary", badge, html`
-			${recipe ? html`<div class="palette-preview-area palette-variant">
-				${this.renderChemicalTile(item.key, this.chemicalTileLabel(label, item.stockConcentration), formula, recipe)}
-				${sharable ? this.renderChemicalPermission(item.key, label) : nothing}
-			</div>` : nothing}
-			${analysis ? this.renderBuilderFacts(analysis, facts, item.stockConcentration) : nothing}
+			<div class="palette-preview-area palette-variant">
+				${stock ? html`
+					${this.renderChemicalTile(item.key, this.chemicalTileLabel(label, item.stockConcentration), formula, stock)}
+					${sharable ? this.renderChemicalPermission(item.key, label) : nothing}` : html`
+					<span class="chemical-preview chemical-preview-pending"><span>${formula}</span></span>`}
+			</div>
+			${item.analysis ? this.renderBuilderFacts(item.analysis, facts, item.stockConcentration) : nothing}
 			<div class="custom-card-actions">
 				<sl-button size="small" class="structure-link" @click=${() => this.openInBuilder({ structure })}>
 					${this.builderText("View structure", "Struktur ansehen")}
@@ -4122,7 +4133,41 @@ export class ChemLab extends LitElementWw {
 				${this.canAuthor || this.sessionBuilderReferences.includes(item) ? this.renderSelectionDeleteButton(
 					remove, this.builderText("Delete structure", "Struktur löschen")) : nothing}
 			</div>
-		`, true);
+		`, true, undefined, () => this.hydrateBuilderReference(item));
+	}
+
+	/**
+	 * Swaps a saved compound for its hydrated copy. The key stays the same, so the
+	 * card keeps its place in the palette and only gains its tile and facts.
+	 *
+	 * @param {BuilderChemical} item - the restored compound
+	 */
+	private hydrateBuilderReference(item: BuilderChemical): void {
+		if (item.hydrated) return;
+		const hydrated = hydrateBuilderChemical(item);
+		const swap = (entries: BuilderChemical[]) => entries.map(entry => entry === item ? hydrated : entry);
+		this.builderReferences = swap(this.builderReferences);
+		this.sessionBuilderReferences = swap(this.sessionBuilderReferences);
+	}
+
+	/**
+	 * Derives the saved compounds one at a time, so opening the palette pays for
+	 * one graph at a time instead of all thirty in the same frame.
+	 */
+	private startBuilderHydration(): void {
+		if (this.builderHydrating) return;
+		const pending = pendingBuilderChemicals([...this.builderReferences, ...this.sessionBuilderReferences]);
+		if (!pending.length) return;
+		this.builderHydrating = true;
+		const next = (index: number) => {
+			if (!this.isConnected || index >= pending.length) {
+				this.builderHydrating = false;
+				return;
+			}
+			this.hydrateBuilderReference(pending[index]);
+			setTimeout(() => next(index + 1), 0);
+		};
+		setTimeout(() => next(0), 0);
 	}
 
 	private renderBuilderFacts(analysis: CompoundAnalysis, facts?: CompoundFacts, concentration?: number) {

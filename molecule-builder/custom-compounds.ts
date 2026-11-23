@@ -32,6 +32,8 @@ export type BuilderChemical = {
 	stockConcentration?: number;
 	analysis?: CompoundAnalysis;
 	recipe?: ChemicalRecipe;
+	/** Set once the deferred analysis ran, also when it found nothing to analyse. */
+	hydrated?: boolean;
 };
 
 const names = ElementData.getElementList();
@@ -198,6 +200,18 @@ export function builderStock(analysis: CompoundAnalysis | undefined, concentrati
 			aqueousAcidBase: facts?.dissociation }, amount: 1 })) }, concentration);
 }
 
+/**
+ * Reads one saved compound. Only what a restore has to validate is read: the
+ * structure, its key, the metadata facts and the prepared concentration. The
+ * graph analysis and the recipe are derived by {@link hydrateBuilderChemical}
+ * when the palette needs them, because they rebuild the lab graph of every
+ * saved compound and a worksheet can carry thirty of them.
+ *
+ * @export
+ * @param {unknown} value - the authored entry, or a bare structure of an older worksheet
+ * @param {number} index - its position, used for a legacy key
+ * @returns {BuilderChemical | undefined}
+ */
 export function readBuilderChemical(value: unknown, index: number): BuilderChemical | undefined {
 	const record = value as BuilderChemical;
 	const structure = readStructure(record?.structure ?? value);
@@ -212,9 +226,49 @@ export function readBuilderChemical(value: unknown, index: number): BuilderChemi
 		pKaSource: typeof record.facts?.pKaSource === "string" ? record.facts.pKaSource : undefined,
 	};
 	const stockConcentration = Number.isFinite(record.stockConcentration) ? record.stockConcentration : undefined;
-	const analysis = analyzeBuilderCompound(structure);
-	const recipe = builderStock(analysis, stockConcentration, facts);
-	return { structure, key, facts, stockConcentration, analysis, recipe };
+	return { structure, key, facts, stockConcentration };
+}
+
+/**
+ * Derives the deferred part of a saved compound: the graph analysis and the
+ * stock recipe. Idempotent, so a second call after the first one settled does
+ * nothing, and an item whose structure cannot be analysed is marked as well
+ * instead of being retried on every render.
+ *
+ * @export
+ * @param {BuilderChemical} item - the restored or newly saved compound
+ * @param {CompoundAnalysis} [known] - an analysis the caller already holds
+ * @returns {BuilderChemical} the same item once it is hydrated, otherwise a hydrated copy
+ */
+export function hydrateBuilderChemical(item: BuilderChemical, known?: CompoundAnalysis): BuilderChemical {
+	if (item.hydrated) return item;
+	const analysis = known ?? item.analysis ?? analyzeBuilderCompound(item.structure);
+	return { ...item, analysis, recipe: builderStock(analysis, item.stockConcentration, item.facts), hydrated: true };
+}
+
+/**
+ * The stock a hydrated compound may dose. The recipe is derived again at the
+ * moment of use instead of trusting the one a restore cached, so a compound
+ * whose concentration or dissociation data does not fit its structure never
+ * reaches a vessel.
+ *
+ * @export
+ * @param {BuilderChemical} item - the hydrated compound
+ * @returns {ChemicalRecipe | undefined}
+ */
+export function builderStockFor(item: BuilderChemical): ChemicalRecipe | undefined {
+	return builderStock(item.analysis, item.stockConcentration, item.facts);
+}
+
+/**
+ * The compounds whose deferred analysis has not run yet.
+ *
+ * @export
+ * @param {readonly BuilderChemical[]} items - the saved compounds
+ * @returns {BuilderChemical[]}
+ */
+export function pendingBuilderChemicals(items: readonly BuilderChemical[]): BuilderChemical[] {
+	return items.filter(item => !item.hydrated);
 }
 
 /** Keep only portable structure and verified metadata in the authored worksheet. */

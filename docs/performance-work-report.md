@@ -181,3 +181,85 @@ No startup time was measured for this package, for the same reason as in package
 - Edit a worksheet so that it introduces `electrode:she`: exactly one additional graphic is requested.
 
 Verified with `npx tsc --noEmit`, all 30 test files from AGENTS.md, and the two release commands above.
+
+## 5. Defer the analysis of saved custom compounds
+
+A worksheet that has collected a full palette pays for every compound twice: once when the data block is parsed, and again whenever a compound is dosed. The first part is avoidable. `readBuilderChemical` rebuilt each saved structure into a chemlib molecule during the restore — it derived the formula, the SMILES, the classification, the acid and base sites, the solutes and the stock recipe — although the restore only has to validate the structure, its key, the metadata and the prepared concentration. Nothing of that derived half is needed before the palette shows the card, and a card is only shown when the chemicals drawer is open.
+
+The derived half now runs per compound, on demand.
+
+### Where the work moved
+
+`molecule-builder/custom-compounds.ts` gained three pieces beside the reader:
+
+- `hydrateBuilderChemical(item, known?)` derives `analysis` and `recipe` and marks the item `hydrated`. It is idempotent, because it returns an already hydrated item unchanged, and it marks a structure it cannot analyse as well, so a failed analysis is not retried on every render. A caller that already holds an analysis passes it as `known`, which is how a freshly saved compound skips its second analysis.
+- `builderStockFor(item)` derives the recipe again from the stored analysis, concentration and dissociation during dosing. This is the boundary check: a compound whose pKa count or concentration no longer fits its structure never reaches a vessel, whatever the cached recipe says.
+- `pendingBuilderChemicals(items)` lists what is still missing, so the caller does not have to know the flag.
+
+The authored worksheet is untouched: `portableBuilderChemical` writes `key`, `structure`, `facts` and `stockConcentration` exactly as before, so a document keeps its shape and both older ChemLab versions still read it.
+
+### The palette
+
+`renderBuilderReference` asks `builderStockFor` for the dose twice-over-validated and builds the tile from that, so the tile exists exactly when a dose exists. A card whose analysis is still pending shows the formula in the same preview box the tile occupies — the new `.chemical-preview-pending` rule in `chemlab-style.ts` repeats the tile's box — but as plain text without a button. Nothing jumps into a different layout when the hydration lands; the card only gains its preview and its facts.
+
+Hydration starts when it is first useful, from four places:
+
+- the chemicals drawer opens, and the chemicals tab is shown while the drawer is open (`updated`),
+- `openCustomChemicals` runs, which is also the path a structure from the molecule builder takes,
+- the pointer enters or focus lands in a card, through the new optional `activate` argument of `renderPaletteCard`.
+
+`startBuilderHydration` walks `pendingBuilderChemicals` one item per `setTimeout(…, 0)` and stops when the widget is disconnected. One compound costs about 25 ms, so the queue spreads a full palette over roughly three quarters of a second of idle tasks instead of blocking the first frame; a card that is pointed at jumps the queue because its own `activate` hydrates it directly.
+
+`saveBuilderReference` builds the saved item through `hydrateBuilderChemical({ … }, review.analysis)` and keeps its `builderStock` validation in front of it, so a compound saved from the builder arrives hydrated and behaves like one that a later restore reads.
+
+Until its item is hydrated it also stays out of the structure picker of the catalog, because that list only offers entries with a finished recipe; it appears there after the first queue.
+
+### Measured
+
+Thirty analysable compounds as a fixture (carboxylic acids with one to six carbons and up to two halogens, five pyridines, four ionic magnesium chlorides), five runs after one warm-up, medians, Node v23.11.0 with `tests/dom-shim.mjs`:
+
+| Work on thirty records | Before | After |
+| --- | ---: | ---: |
+| Restore from the data block | 736 ms | 0.7 ms |
+| SMILES serializations during the restore | 38 | 0 |
+| Deferred work, all thirty hydrated | — | 742 ms |
+| One compound hydrated | — | ≈ 25 ms |
+
+The deferred total matches the eager total, which is the point: the work did not become cheaper, it moved out of the frame that restores the document. The three runs of the fixture landed between 731 and 749 ms for the eager path, 742 and 770 ms for restore plus full hydration, and between 0.56 and 0.84 ms for the light restore.
+
+### Tests
+
+`tests/builder-compounds.test.ts` now reads a saved stock, asserts that the reader leaves `recipe` empty, hydrates the item and doses it through `builderStockFor`; the pH still equals the one the original solution had.
+
+`tests/builder-compound-hydration.test.ts` adds seven tests and counts the SMILES serializations of newly built molecules, the way the protonation tests do:
+
+- restoring thirty records serializes nothing and leaves no `analysis`, no `recipe` and no `hydrated` flag, while `pendingBuilderChemicals` reports all thirty;
+- hydration serializes and yields the analysis, the recipe and the flag, `builderStockFor` answers, and a second call returns the same object;
+- a structure without an analysis is marked and not retried, and the pending list drops it;
+- a known analysis is reused without another serialization;
+- the stock is revalidated: two pKa for a single-site acid, 4 mol/L and a missing concentration all yield no dose, while matching data does;
+- a bare structure of an older worksheet keeps `builder-reference:7` and hydrates without a dose;
+- `portableBuilderChemical` still writes exactly `key`, `structure`, `facts` and `stockConcentration`.
+
+### Size
+
+| Entry | Raw before | Raw after | gzip before | gzip after |
+| --- | ---: | ---: | ---: | ---: |
+| `webwriter-chemlab.js` | 5,057,045 | 5,058,525 | 1,137,615 | 1,137,984 |
+| `webwriter-chemlab-molecule-builder.js` | 2,856,630 | 2,856,630 | 850,694 | 850,694 |
+| `webwriter-chemlab-periodic-table.js` | 1,708,178 | 1,708,178 | 444,140 | 444,140 |
+
+Only the lab entry grew, by 1,480 bytes raw and 369 bytes gzip: the reader's validation, the three new functions, the prefix rule of the pending card and the queue. The other two entries stay byte-identical, so `git diff --stat dist/` lists only `dist/widgets/webwriter-chemlab.js`.
+
+### What stays browser-only
+
+The timing figures come from the bundled modules under the test shim, not from an embedded worksheet, because the release build needs a WebWriter import. On top of the checks inherited from packages 1–4:
+
+- Import the widget with a worksheet of about thirty saved compounds and watch the palette open: cards paint with their formula first, then gain preview and facts, and the invented structures never appear as tiles.
+- Search the chemicals tab by a formula of a saved compound during that second and after it.
+- Drag a hydrated card into a vessel, then save and reload the worksheet: same solution, same pH.
+- Edit a saved compound so that its stored pKa count no longer fits its graph: the card keeps its facts but offers no tile, and a reload does not try the analysis again.
+- Send a structure from the molecule builder: the new card arrives hydrated and doses immediately.
+- Open the chemicals tab and close the drawer within a few hundred milliseconds: the queue stops without errors and continues on the next open.
+
+Verified with `npx tsc --noEmit`, all 31 test files from AGENTS.md, and the two release commands above.

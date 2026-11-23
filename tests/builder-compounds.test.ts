@@ -3,8 +3,8 @@ import { test } from "node:test";
 import { Simulation } from "../chemlib";
 import { readIupacDissociation } from "../chemlib/IupacDissociation";
 import { bondKind, canAssociateIons, ionicCharges } from "../molecule-builder/bond-types";
-import { analyzeBuilderCompound, builderStock, enrichBuilderCompound, portableBuilderChemical,
-	readBuilderChemical, resolveDissociation } from "../molecule-builder/custom-compounds";
+import { analyzeBuilderCompound, builderStock, builderStockFor, enrichBuilderCompound, hydrateBuilderChemical,
+	portableBuilderChemical, readBuilderChemical, resolveDissociation } from "../molecule-builder/custom-compounds";
 import { electronRegions } from "../molecule-builder/geometry";
 import { lewisDiagram } from "../molecule-builder/structure-diagram";
 import { readStructure, type Bond, type Molecule } from "../molecule-builder/structure";
@@ -72,8 +72,9 @@ test("lookup uses exact SMILES and measured pKa drives the pH of a saved stock a
 	const saved = readBuilderChemical(JSON.parse(JSON.stringify(portableBuilderChemical({
 		key: "builder-chemical:test", structure: tfa, stockConcentration: .1, facts,
 	}))), 0);
-	assert.ok(saved.recipe);
-	const restored = prepareDose(saved.recipe, loadMoleculeDefinition)(10);
+	assert.equal(saved.recipe, undefined);
+	const hydrated = hydrateBuilderChemical(saved);
+	const restored = prepareDose(builderStockFor(hydrated), loadMoleculeDefinition)(10);
 	assert.equal(Simulation.getpH(restored), Simulation.getpH(solution));
 	const mixture = prepareDose(JSON.parse(JSON.stringify(snapshotMixture(solution))), loadMoleculeDefinition)(10);
 	assert.equal(Simulation.getpH(mixture), Simulation.getpH(solution));
