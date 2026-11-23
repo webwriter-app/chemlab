@@ -618,11 +618,17 @@ export abstract class Simulation {
 			}
 		});
 
+		// The same metal surface reduces the protons of an acid to hydrogen.
+		this.sMetalAcid(cMixture);
+		// What the acid did not take, the water takes: sodium and potassium
+		// decompose it even in a neutral or an alkaline solution. This runs
+		// before the displacement, because a metal that attacks the solvent
+		// never reaches a dissolved cation as the elemental metal: sodium in
+		// copper sulfate leaves sodium hydroxide and no copper plating.
+		this.sMetalWater(cMixture);
 		// A dosed metal reacts with the cations of less noble elements before the
 		// salt equilibria run, so the ions it releases take part in them.
 		this.sRedoxSolution(cMixture);
-		// The same metal surface reduces the protons of an acid to hydrogen.
-		this.sMetalAcid(cMixture);
 		// An oxide is no salt: it has no solubility product, so it lies in the
 		// vessel until an acid attacks it or, as quicklime does, the water
 		// turns it into a hydroxide first.
@@ -3471,6 +3477,55 @@ export abstract class Simulation {
 			mix.changeMolecule(solvent._id, -atoms);
 			mix.addMolecule(hydroxide, atoms);
 			mix.addedVolume += this.bulkLitresPerMol(formula, ions, counts) * atoms;
+			changed = true;
+		}
+		return changed;
+	}
+
+	/**
+	 * Metals that decompose water: `2 M + 2 H₂O → 2 M⁺ + 2 OH⁻ + H₂`. The
+	 * hydrogen couple alone is enough here, unlike {@link sMetalAcid}, because
+	 * the metal sits far below it even in a neutral solution. The metal takes
+	 * the protons from the water and leaves its hydroxide behind, and the
+	 * reaction does not stop at pH 7 — that is what makes a piece of sodium
+	 * caustic in a beaker of water.
+	 *
+	 * Nothing is booked for the hydroxide. The stored cation is a spectator
+	 * ion of the charge balance, and with no anion to pair it the solver has to
+	 * leave the water's own hydroxide in solution: booking `excessCharge` as
+	 * well would count the base twice, exactly as it would for the zinc of
+	 * {@link sMetalAcid}. The solvent counts as inexhaustible up to the water
+	 * the vessel holds, which bounds the turnover of a very small portion.
+	 *
+	 * @private
+	 * @static
+	 * @param {Mixture} mix - the solution
+	 * @returns {boolean} whether any metal was consumed
+	 */
+	private static sMetalWater(mix: Mixture): boolean {
+		if (!mix._isSolution || !(mix._solutionVolume > 0)) return false;
+		const solvent = mix._activeMolecules.find((molecule) => StructureManager.isWater(molecule));
+		if (!solvent) return false;
+		const metals = mix._activeMolecules.filter((molecule) => {
+			if (!molecule.dosedAsSolid) return false;
+			if (!reactsWithWater(atomSymbol(molecule.smilesString))) return false;
+			const couple = oxidationOf(molecule.smilesString);
+			return couple !== undefined && couple.el > 0;
+		});
+		if (!metals.length) return false;
+		const solventAmount = mix._molProperties[solvent._id + "n"] ?? 0;
+		let changed = false;
+		for (const metal of metals) {
+			const couple = oxidationOf(metal.smilesString);
+			if (!couple) continue;
+			const available = mix._molProperties[metal._id + "n"] ?? 0;
+			const atoms = Math.min(available, solventAmount);
+			if (!(atoms > 1e-12)) continue;
+			mix.changeMolecule(metal._id, -atoms);
+			mix.addMolecule(this.redoxProduct(metal, couple.el), atoms);
+			mix.addedVolume = Math.max(0, mix.addedVolume -
+				this.metalBulkLitresPerMol(metal, couple) * atoms);
+			mix.admitGas("H2", atoms / 2, evolvedGases.H2.solubility);
 			changed = true;
 		}
 		return changed;

@@ -530,8 +530,10 @@ export const chemicalCatalog: CatalogChemical[] = [
 	element("Nickel", "Ni", "nickel", 8.90),
 	element("Platin", "Pt", "platinum", 21.45),
 	element("Calcium", "Ca", "calcium", 1.55),
-	reference("Natrium", "Metalle", "Na"),
-	reference("Kalium", "Metalle", "K"),
+	// Alkali metals decompose water, so their density feeds the bulk volume of
+	// a portion and the drop that reacts, not a solubility.
+	element("Natrium", "Na", "sodium", 0.968),
+	element("Kalium", "K", "potassium", 0.862),
 	element("Kohlenstoff", "C", "carbon", 2.26, "Nichtmetalle und Gase"),
 	element("Schwefel", "S", "sulfur", 2.07, "Nichtmetalle und Gase"),
 	pure("Iod", "Nichtmetalle und Gase", iodine, "solid", 4.93),
