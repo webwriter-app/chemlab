@@ -1,5 +1,6 @@
 import type { AqueousAcidBase } from "../chemlib/AcidBase";
 import { saltSolubility } from "../chemlib/saltSolubility";
+import { structureGraphs } from "./structureDefinitions.generated";
 
 export interface MoleculeDefinition {
 	formula: string;
@@ -175,6 +176,21 @@ function alkanol(formula: string, length: number, position: number): MoleculeDef
 function organic(name: string, category: ChemicalClass, structure: MoleculeDefinition, density: number,
 	phase: ChemicalRecipe["phase"] = "liquid", concentrationLimit?: number) {
 	return pure(name, category, structure, phase, density, concentrationLimit);
+}
+
+// A reagent whose molecular graph comes from the shared structure library, so
+// the catalog card, the dose and the structure the molecule builder shows are
+// one and the same graph. Only spectator substances use this path: an acid, a
+// base or a salt needs its own definition, because the dissociation of the
+// model hangs on `acidbase` and `ionic` bonds and on the ion spellings of the
+// solubility table. A substance the library does not carry keeps its entry
+// without a recipe, so the palette still lists it and the coverage report keeps
+// counting the gap.
+function molecular(name: string, category: ChemicalClass, formula: string, density: number,
+	phase: ChemicalRecipe["phase"] = "solid", concentrationLimit?: number): CatalogChemical {
+	const graph = structureGraphs[name];
+	if (!graph) return { name, category, formula };
+	return pure(name, category, { formula, ...graph }, phase, density, concentrationLimit);
 }
 
 const propanone = covalent("C₃H₆O", ["carbon", "carbon", "carbon", "oxygen"], [[0, 1], [1, 2], [1, 3, 2]], [3, 0, 3, 0]);
@@ -561,8 +577,8 @@ export const chemicalCatalog: CatalogChemical[] = [
 	reference("Propan", "Kohlenwasserstoffe", "C₃H₈", alkane("C₃H₈", 3)),
 	reference("Butan", "Kohlenwasserstoffe", "C₄H₁₀", alkane("C₄H₁₀", 4)),
 	reference("Ethin", "Kohlenwasserstoffe", "C₂H₂"),
-	reference("Dichlormethan", "Halogenkohlenwasserstoffe", "CH₂Cl₂"),
-	reference("Bromethan", "Halogenkohlenwasserstoffe", "C₂H₅Br"),
+	molecular("Dichlormethan", "Halogenkohlenwasserstoffe", "CH₂Cl₂", 1.327, "liquid"),
+	molecular("Bromethan", "Halogenkohlenwasserstoffe", "C₂H₅Br", 1.46, "liquid"),
 	reference("Chlorethen (Vinylchlorid)", "Halogenkohlenwasserstoffe", "C₂H₃Cl"),
 	reference("Paraffinöl", "Lösungsmittel", ""),
 	reference("Petrolether", "Lösungsmittel", ""),
@@ -573,8 +589,8 @@ export const chemicalCatalog: CatalogChemical[] = [
 	organic("Butan-1-ol", "Alkohole", alkanol("C₄H₁₀O", 4, 0), 0.810),
 	organic("Butan-2-ol", "Alkohole", alkanol("C₄H₁₀O", 4, 1), 0.806),
 	organic("Pentan-1-ol", "Alkohole", alkanol("C₅H₁₂O", 5, 0), 0.814),
-	reference("3-Methylbutan-1-ol (Isoamylalkohol)", "Alkohole", "C₅H₁₂O"),
-	reference("Tetradecan-1-ol (Myristylalkohol)", "Alkohole", "C₁₄H₃₀O"),
+	molecular("3-Methylbutan-1-ol (Isoamylalkohol)", "Alkohole", "C₅H₁₂O", 0.810, "liquid"),
+	molecular("Tetradecan-1-ol (Myristylalkohol)", "Alkohole", "C₁₄H₃₀O", 0.824, "solid"),
 	organic("Ethan-1,2-diol", "Alkohole", covalent("C₂H₆O₂", ["carbon", "carbon", "oxygen", "oxygen"],
 		[[0, 1], [0, 2], [1, 3]], [2, 2, 1, 1]), 1.11),
 	organic("Glycerin", "Alkohole", covalent("C₃H₈O₃", ["carbon", "carbon", "carbon", "oxygen", "oxygen", "oxygen"],
@@ -583,7 +599,7 @@ export const chemicalCatalog: CatalogChemical[] = [
 	organic("Propanal", "Aldehyde", covalent("C₃H₆O", ["carbon", "carbon", "carbon", "oxygen"],
 		[[0, 1], [1, 2], [2, 3, 2]], [3, 2, 1, 0]), 0.798),
 	reference("Methanal (Formaldehyd)", "Aldehyde", "CH₂O", covalent("CH₂O", ["carbon", "oxygen"], [[0, 1, 2]], [2, 0])),
-	reference("Benzaldehyd", "Aldehyde", "C₇H₆O"),
+	molecular("Benzaldehyd", "Aldehyde", "C₇H₆O", 1.045, "liquid"),
 	organic("Aceton", "Ketone", propanone, 0.791),
 	organic("Butan-2-on", "Ketone", covalent("C₄H₈O", ["carbon", "carbon", "carbon", "carbon", "oxygen"],
 		[[0, 1], [1, 2], [2, 3], [1, 4, 2]], [3, 0, 2, 3, 0]), 0.805),
@@ -604,8 +620,8 @@ export const chemicalCatalog: CatalogChemical[] = [
 	reference("Tetradecansäure (Myristinsäure)", "Carbonsäuren", "C₁₄H₂₈O₂"),
 	organic("Ethylacetat", "Ester", covalent("C₄H₈O₂", ["carbon", "carbon", "oxygen", "oxygen", "carbon", "carbon"],
 		[[0, 1], [1, 2, 2], [1, 3], [3, 4], [4, 5]], [3, 0, 0, 0, 2, 3]), 0.902),
-	reference("Isoamylacetat", "Ester", "C₇H₁₄O₂"),
-	reference("Myristylmyristat", "Ester", "C₂₈H₅₆O₂"),
+	molecular("Isoamylacetat", "Ester", "C₇H₁₄O₂", 0.876, "liquid"),
+	molecular("Myristylmyristat", "Ester", "C₂₈H₅₆O₂", 0.85, "solid"),
 	reference("Kupfer(II)-oxid", "Oxide", "CuO"),
 	reference("Magnesiumoxid", "Oxide", "MgO"),
 	reference("Calciumoxid", "Oxide", "CaO"),

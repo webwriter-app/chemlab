@@ -15,9 +15,9 @@ Reference-only behaviour is an interim gap, not an exemption.
 | Catalog entries | 181 |
 | Entries with a builder structure | 170 |
 | Entries without a builder structure | 11 |
-| Dosed entries (solid or aqueous) | 107 |
+| Dosed entries (solid or aqueous) | 114 |
 | Dosed salt entries | 60 |
-| Molecular reagents outside the salt pairing | 47 |
+| Molecular reagents outside the salt pairing | 54 |
 | Mixtures shown by their constituents | 19 |
 | Salt entries in total | 60 |
 | Salt identities | 30 |
@@ -83,12 +83,10 @@ Reference-only behaviour is an interim gap, not an exemption.
 - Anorganische Säuren: Salpetersäure
 - Basen: Calciumhydroxid, Kalkwasser
 - Carbonsäuren: Benzoesäure, Sorbinsäure, Tetradecansäure (Myristinsäure)
-- Alkohole: 3-Methylbutan-1-ol (Isoamylalkohol), Tetradecan-1-ol (Myristylalkohol)
-- Aldehyde: Benzaldehyd, Methanal (Formaldehyd)
-- Ester: Isoamylacetat, Myristylmyristat
+- Aldehyde: Methanal (Formaldehyd)
 - Kohlenwasserstoffe: Butan, Ethen, Ethin, Methan, Propan
 - Lösungsmittel: Paraffinöl, Petrolether
-- Halogenkohlenwasserstoffe: Bromethan, Chlorethen (Vinylchlorid), Dichlormethan
+- Halogenkohlenwasserstoffe: Chlorethen (Vinylchlorid)
 - Metalle: Kalium, Natrium
 - Nichtmetalle und Gase: Chlor, Kohlenstoffdioxid, Sauerstoff, Stickstoff, Wasserstoff
 - Oxide: Calciumoxid, Eisen(III)-oxid, Kupfer(II)-oxid, Magnesiumoxid, Mangan(IV)-oxid, Siliciumdioxid

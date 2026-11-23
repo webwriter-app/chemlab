@@ -1,0 +1,172 @@
+/**
+ * Pure functions behind `scripts/generate-structure-definitions.ts` and
+ * `tests/structure-definitions.test.ts`.
+ *
+ * The model turns the molecule entries of `data/structures/catalog.generated.json`
+ * into the flat `MoleculeDefinition` graph format of `data/chemicals.ts` and
+ * renders the tracked module, so the generator and its freshness test cannot
+ * disagree about the output.
+ *
+ * @module scripts/structure-definition-model
+ */
+
+/** A molecular graph in the flat format of `MoleculeDefinition`. */
+export interface StructureGraph {
+	atoms: string[];
+	bonds: string[];
+	charges?: number[];
+}
+
+/** One catalog key together with its converted graph. */
+export interface StructureDefinitionEntry {
+	key: string;
+	graph: StructureGraph;
+}
+
+/** Catalog entry as the structure library stores a molecule. */
+interface LibraryAtom {
+	id: number;
+	atomicNumber: number;
+	charge?: number;
+}
+
+interface LibraryBond {
+	from: number;
+	to: number;
+	order?: number;
+	kind?: string;
+}
+
+interface LibraryMolecule {
+	kind?: string;
+	name?: string;
+	atoms: LibraryAtom[];
+	bonds: LibraryBond[];
+}
+
+/** Thrown when the structure library cannot be converted without guessing. */
+export class StructureDefinitionError extends Error {}
+
+/**
+ * Reads the element names that `ElementData` indexes by atomic number.
+ *
+ * The table starts with `"proton"` at index 0, so the name of an element is the
+ * entry at its atomic number.
+ *
+ * @param source Source text of `chemlib/ElementData.ts`.
+ * @returns Element names from hydrogen onwards.
+ */
+export function elementNamesFromSource(source: string): string[] {
+	const match = /order:\s*\[([\s\S]*?)\n\t\t\]/.exec(source);
+	if (!match) throw new StructureDefinitionError("cannot find the element order table in chemlib/ElementData.ts");
+	const names = [...match[1].matchAll(/"([a-z]+)"/g)].map((entry) => entry[1]);
+	if (names[0] !== "proton" || names.length < 119) {
+		throw new StructureDefinitionError(`unexpected element order table (${names.length} entries, first "${names[0]}")`);
+	}
+	return names;
+}
+
+/**
+ * Converts one library molecule into the flat definition format.
+ *
+ * @param key Catalog key of the structure, used in error messages.
+ * @param structure A catalog entry of `kind: "molecule"`.
+ * @param elementNames Element names indexed by atomic number.
+ * @returns The converted graph.
+ */
+export function toStructureGraph(key: string, structure: LibraryMolecule, elementNames: string[]): StructureGraph {
+	const atoms = structure.atoms.map((atom) => {
+		const name = elementNames[atom.atomicNumber];
+		if (!name) throw new StructureDefinitionError(`${key}: no element for atomic number ${atom.atomicNumber}`);
+		return name;
+	});
+	const indexOf = new Map(structure.atoms.map((atom, index) => [atom.id, index]));
+	const bonds = structure.bonds.map((bond) => {
+		const from = indexOf.get(bond.from);
+		const to = indexOf.get(bond.to);
+		if (from === undefined || to === undefined) throw new StructureDefinitionError(`${key}: dangling bond ${bond.from}-${bond.to}`);
+		return `${from}-${to}:${bond.kind ?? "covalent"}:${bond.order ?? 1}`;
+	});
+	const charges = structure.atoms.map((atom) => atom.charge ?? 0);
+	const graph: StructureGraph = { atoms, bonds };
+	// A neutral graph would only repeat the default of `Molecule.addAtom`.
+	if (charges.some((charge) => charge !== 0)) graph.charges = charges;
+	return graph;
+}
+
+/**
+ * Converts the molecule entries of the catalog.
+ *
+ * Crystal entries are skipped: a lattice holds many formula units, while a dosed
+ * salt is built from one formula unit, which the solubility table supplies.
+ *
+ * @param catalog Catalog object of `data/structures/catalog.generated.json`.
+ * @param elementNames Element names indexed by atomic number.
+ * @returns The converted entries, sorted by catalog key.
+ */
+export function structureDefinitionEntries(
+	catalog: Record<string, LibraryMolecule>,
+	elementNames: string[],
+): StructureDefinitionEntry[] {
+	return Object.keys(catalog)
+		.sort()
+		.filter((key) => catalog[key].kind === "molecule")
+		.map((key) => ({ key, graph: toStructureGraph(key, catalog[key], elementNames) }));
+}
+
+/**
+ * Renders one record entry as a single line of TypeScript.
+ *
+ * @param entry The converted structure.
+ * @returns The rendered entry.
+ */
+function renderEntry(entry: StructureDefinitionEntry): string {
+	const { key, graph } = entry;
+	const fields = [`atoms: ${JSON.stringify(graph.atoms)}`, `bonds: ${JSON.stringify(graph.bonds)}`];
+	if (graph.charges) fields.push(`charges: ${JSON.stringify(graph.charges)}`);
+	return `\t${JSON.stringify(key)}: { ${fields.join(", ")} },`;
+}
+
+/**
+ * Renders the tracked module.
+ *
+ * @param entries The converted structures.
+ * @returns The TypeScript source of `data/structureDefinitions.generated.ts`.
+ */
+export function renderStructureDefinitions(entries: StructureDefinitionEntry[]): string {
+	return `// Generated by scripts/generate-structure-definitions.ts -- do not edit.
+// Source: data/structures/catalog.generated.json (molecule entries only).
+// Regenerate with: node_modules/.bin/esbuild scripts/generate-structure-definitions.ts \\
+//     --bundle --platform=node --format=esm --outfile=.structure-definitions-bundle.mjs &&
+//     node .structure-definitions-bundle.mjs
+
+/** A molecular graph in the flat format of \`MoleculeDefinition\`. */
+export interface StructureGraph {
+	atoms: string[];
+	bonds: string[];
+	charges?: number[];
+}
+
+/**
+ * Molecular graphs of the shared structure library, keyed by catalog name.
+ *
+ * \`data/chemicals.ts\` fills in formula and dose data for the catalog entry that
+ * uses a graph, so the two cannot disagree about the structure.
+ */
+export const structureGraphs: Readonly<Record<string, StructureGraph>> = {
+${entries.map(renderEntry).join("\n")}
+};
+`;
+}
+
+/**
+ * Builds the whole module from the two tracked sources.
+ *
+ * @param catalogSource Source text of `data/structures/catalog.generated.json`.
+ * @param elementDataSource Source text of `chemlib/ElementData.ts`.
+ * @returns The TypeScript source of the tracked module.
+ */
+export function buildStructureDefinitions(catalogSource: string, elementDataSource: string): string {
+	const catalog = JSON.parse(catalogSource) as Record<string, LibraryMolecule>;
+	return renderStructureDefinitions(structureDefinitionEntries(catalog, elementNamesFromSource(elementDataSource)));
+}
