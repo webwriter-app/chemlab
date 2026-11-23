@@ -16,7 +16,9 @@
  * @module scripts/structure-coverage-model
  */
 
-import { saltSolubility } from "../chemlib/saltSolubility";
+import { normalizeFormula, saltSolubility } from "../chemlib/saltSolubility";
+
+export { normalizeFormula };
 import {
 	chemicalCatalog,
 	chemicalClasses,
@@ -114,21 +116,9 @@ export interface CoverageReport {
 }
 
 const GENERATED_BY = "scripts/generate-structure-coverage.ts";
-const SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇₈₉";
 
 function compareText(a: string, b: string): number {
 	return a < b ? -1 : a > b ? 1 : 0;
-}
-
-/**
- * Names the analytical compound of a catalog formula: subscript digits become
- * ASCII, spaces disappear and hydrate water after the middle dot is dropped.
- */
-export function normalizeFormula(formula: string): string {
-	return formula
-		.split("·")[0]
-		.replace(/[₀₁₂₃₄₅₆₇₈₉]/g, (digit) => String(SUBSCRIPT_DIGITS.indexOf(digit)))
-		.replace(/\s+/g, "");
 }
 
 function ionic(definition: MoleculeDefinition): boolean {

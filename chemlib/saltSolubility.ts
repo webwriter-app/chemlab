@@ -22,6 +22,65 @@ export interface SaltIonCount {
 	count: number;
 }
 
+const SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇₈₉";
+
+/**
+ * Names the analytical compound of a catalog formula: subscript digits become
+ * ASCII, spaces disappear and hydrate water after the middle dot is dropped.
+ * The result is the key of the solubility table, so a hydrate row and its
+ * anhydrous salt share both the density and the equilibrium.
+ *
+ * @export
+ * @param {string} formula - the display formula, e.g. `CuSO₄·5 H₂O`
+ * @returns {string} the table key, e.g. `CuSO4`
+ */
+export function normalizeFormula(formula: string): string {
+	return formula
+		.split("·")[0]
+		.replace(/[₀₁₂₃₄₅₆₇₈₉]/g, (digit) => String(SUBSCRIPT_DIGITS.indexOf(digit)))
+		.replace(/\s+/g, "");
+}
+
+/**
+ * The net charge of an ion SMILES, summed over its bracketed atoms. Only the
+ * bracket notation carries charge, so an unbracketed atom cannot hide one.
+ *
+ * @export
+ * @param {string} smiles - one ion of the table
+ * @returns {number} the charge of that ion
+ */
+export function ionCharge(smiles: string): number {
+	let total = 0;
+	for (const match of smiles.matchAll(/\[([^\]]+)\]/g)) {
+		const leading = /(\d+)([+-])$/.exec(match[1]);
+		if (leading) {
+			total += (leading[2] === "-" ? -1 : 1) * Number(leading[1]);
+			continue;
+		}
+		const trailing = /([+-])(\d*)$/.exec(match[1]);
+		if (trailing) total += (trailing[1] === "-" ? -1 : 1) * (trailing[2] ? Number(trailing[2]) : 1);
+	}
+	return total;
+}
+
+/**
+ * The ideal solubility of a salt from its solubility product and the ion
+ * counts of its formula unit: `s = (Ksp / Π νᵢ^νᵢ)^(1/Σν)`. It is the
+ * concentration a dosed solid reaches in the model, where the salt loop reads
+ * the product itself instead of a tabulated `saturation`.
+ *
+ * @export
+ * @param {number} ksp - the solubility product
+ * @param {SaltIons} ions - the ion pattern of the formula unit
+ * @returns {number} mol/L of the free salt
+ */
+export function idealSolubility(ksp: number, ions: SaltIons): number {
+	const list = saltIonList(ions);
+	const count = list.reduce((sum, ion) => sum + ion.count, 0);
+	const weights = list.reduce((product, ion) => product * ion.count ** ion.count, 1);
+	return (ksp / weights) ** (1 / count);
+}
+
 /**
  * The ions of one formula unit in table order, with their counts.
  *

@@ -73,9 +73,10 @@ import { chemicalCatalog, chemicalCatalogGroups, solutionDisplayNames, withConce
 import { loadMoleculeDefinition } from "./data/moleculeDefinition";
 import { BUILDER_TAG, worksheetPeers, worksheetPeer, worksheetScope, type BuilderReceiver } from "./molecule-builder/exchange";
 import { readStructure, type Structure } from "./molecule-builder/structure";
-import { analyzeBuilderCompound, builderStock, builderStockFor, enrichBuilderCompound, expectedDissociations,
+import { analyzeBuilderCompound, builderRecipes, builderStockFor, enrichBuilderCompound, expectedDissociations,
 	hydrateBuilderChemical, pendingBuilderChemicals, portableBuilderChemical, readBuilderChemical,
-	type BuilderChemical, type CompoundAnalysis, type CompoundFacts } from "./molecule-builder/custom-compounds";
+	type BuilderChemical, type BuilderGap, type CompoundAnalysis, type CompoundFacts } from "./molecule-builder/custom-compounds";
+import { reviewIsCurrent } from "./molecule-builder/lookup-guard";
 import { iupacSource } from "./chemlib/IupacDissociation";
 import { readAqueousAcidBase } from "./chemlib/AcidBase";
 import { catalogPreviews } from "./data/chemicalPreviews.generated";
@@ -3943,6 +3944,40 @@ export class ChemLab extends LitElementWw {
 		return this.lang?.toLowerCase().startsWith("de") ? de : en;
 	}
 
+	/**
+	 * Names the data a missing dose waits for, so a rejected compound says what
+	 * it needs instead of only refusing the button.
+	 *
+	 * @private
+	 * @param {BuilderGap} [reason] - the gap the recipe reported
+	 * @returns {string} the localized reason
+	 */
+	private builderGapText(reason: BuilderGap | undefined): string {
+		if (reason === "identity-missing") return this.builderText(
+			"the archive holds no crystal or molecular definition of this compound",
+			"das Archiv führt keine Kristall- oder Moleküldefinition dieses Stoffes");
+		if (reason === "density-missing") return this.builderText(
+			"no solid density is recorded for it",
+			"für den Stoff ist keine Schüttdichte hinterlegt");
+		if (reason === "ambiguous-density") return this.builderText(
+			"several catalog entries share this formula with different densities",
+			"mehrere Katalogeinträge teilen diese Formel mit verschiedenen Dichten");
+		if (reason === "ions-unsupported") return this.builderText(
+			"its ions do not dissolve in the model",
+			"seine Ionen lösen sich im Modell nicht");
+		if (reason === "concentration-missing") return this.builderText(
+			"enter a concentration",
+			"gib eine Konzentration ein");
+		if (reason === "above-saturation") return this.builderText(
+			"that is above the concentration the model carries for this compound",
+			"das liegt über der Konzentration, die das Modell für den Stoff trägt");
+		if (reason === "pka-series-missing") return this.builderText(
+			"the aqueous pKa series of this acid is incomplete",
+			"die wässrige pKa-Reihe dieser Säure ist unvollständig");
+		return this.builderText("the structure could not be analysed",
+			"die Struktur ließ sich nicht auswerten");
+	}
+
 	reviewBuilderStructure(snapshot: Structure): boolean {
 		const structure = readStructure(snapshot);
 		if (!structure || !(structure.kind === "crystal" ? structure.sites.length : structure.atoms.length)) return false;
@@ -3950,15 +3985,15 @@ export class ChemLab extends LitElementWw {
 		const review = { structure, loading: true };
 		this.builderReview = review;
 		void Promise.all([import("./molecule-builder/catalog"), import("./molecule-builder/geometry")]).then(async ([catalog, geometry]) => {
-			if (!this.isConnected || this.builderReview !== review) return;
+			if (!reviewIsCurrent(this, this.builderReview, review)) return;
 			const analysis = analyzeBuilderCompound(structure);
 			const match = catalog.matchingRecipe(analysis?.molecule ?? structure) ?? catalog.matchingRecipe(structure);
 			const facts = !match && analysis ? await enrichBuilderCompound(analysis) : undefined;
-			if (!this.isConnected || this.builderReview !== review) return;
+			if (!reviewIsCurrent(this, this.builderReview, review)) return;
 			const name = facts?.metadata?.name.slice(0, 160) || structure.name.trim() || analysis?.formula || geometry.formula(structure);
 			this.builderReview = { structure: { ...structure, name }, reagent: match?.name, analysis, facts, loading: false };
 		}).catch(() => {
-			if (this.builderReview === review) this.builderReview = { structure, loading: false };
+			if (reviewIsCurrent(this, this.builderReview, review)) this.builderReview = { structure, loading: false };
 		});
 		return true;
 	}
@@ -3983,13 +4018,34 @@ export class ChemLab extends LitElementWw {
 		return true;
 	}
 
-	private saveBuilderReference(review: BuilderReview, withStock = false): void {
+	/**
+	 * Stores a reviewed structure as a palette reagent, a weighed solid or a
+	 * plain reference.
+	 *
+	 * The weighed form exists only for a compound the catalog does not already
+	 * hold: a catalog solid is selected as that reagent instead, so the palette
+	 * never carries a second entry for one substance. Both forms keep the same
+	 * key, and both derive their recipe again from the current structure at the
+	 * moment of use, so an edited structure cannot dose an old recipe.
+	 *
+	 * @private
+	 * @param {BuilderReview} review - the panel this button belongs to
+	 * @param {"stock" | "solid" | "reference"} [form] - the form to store
+	 */
+	private saveBuilderReference(review: BuilderReview, form: "stock" | "solid" | "reference" = "reference"): void {
 		const references = this.canAuthor ? this.builderReferences : this.sessionBuilderReferences;
 		if (references.length >= 30 || this.builderReview !== review) return;
 		const { structure, analysis } = review;
+		if (form === "solid") {
+			if (!this.canAuthor || review.reagent || !analysis) return;
+			const recipes = builderRecipes(analysis, undefined, review.facts);
+			if (!recipes.solid.recipe) return;
+			this.storeBuilderReference({ structure, facts: review.facts, phase: "solid" }, analysis);
+			return;
+		}
 		let facts = review.facts;
 		let stockConcentration: number | undefined;
-		if (withStock) {
+		if (form === "stock") {
 			if (!this.canAuthor || !analysis?.stockSupported || review.reagent) return;
 			const input = this.shadowRoot.querySelector<SlInput>("#builderStockConcentration");
 			const manual = this.shadowRoot.querySelector<SlInput>("#builderManualPka");
@@ -4005,14 +4061,24 @@ export class ChemLab extends LitElementWw {
 				facts = { ...facts, dissociation, pKaSource: "manual" };
 			}
 			if (!input.reportValidity()) return;
-			if (!builderStock(analysis, stockConcentration, facts)) return;
+			const recipes = builderRecipes(analysis, stockConcentration, facts);
+			if (!recipes.stock.recipe) {
+				input.setCustomValidity(this.builderGapText(recipes.stock.reason));
+				input.reportValidity();
+				return;
+			}
 		}
+		this.storeBuilderReference({ structure, facts, stockConcentration }, analysis);
+	}
+
+	/** Appends the hydrated compound to the palette it belongs to and opens it. */
+	private storeBuilderReference(entry: Omit<BuilderChemical, "key">, analysis?: CompoundAnalysis): void {
 		const id = Array.from(crypto.getRandomValues(new Uint32Array(2)), value => value.toString(36)).join("-");
-		const item = hydrateBuilderChemical({ key: `builder-chemical:${id}`, structure, facts, stockConcentration }, analysis);
+		const item = hydrateBuilderChemical({ ...entry, key: `builder-chemical:${id}` }, analysis);
 		if (this.canAuthor) {
-			this.builderReferences = [...references, item];
+			this.builderReferences = [...this.builderReferences, item];
 			this.persistAuthoredData();
-		} else this.sessionBuilderReferences = [...references, item];
+		} else this.sessionBuilderReferences = [...this.sessionBuilderReferences, item];
 		this.openCustomChemicals();
 		this.builderReview = undefined;
 	}
@@ -4135,8 +4201,10 @@ export class ChemLab extends LitElementWw {
 	private renderBuilderReference(item: BuilderChemical) {
 		const { structure, facts } = item;
 		const label = structure.name || this.builderText("Structure", "Struktur");
-		const stock = item.hydrated ? builderStockFor(item) : undefined;
-		const sharable = !!stock && this.canAuthor && this.builderReferences.includes(item);
+		// The saved form, derived again from the structure: a weighed solid or the
+		// prepared stock, whichever this compound was stored as.
+		const dose = item.hydrated ? builderStockFor(item) : undefined;
+		const sharable = !!dose && this.canAuthor && this.builderReferences.includes(item);
 		const allowed = this.isChemicalAllowed(item.key);
 		const remove = () => {
 			if (this.canAuthor && this.builderReferences.includes(item)) {
@@ -4150,12 +4218,13 @@ export class ChemLab extends LitElementWw {
 		const badge = sharable ? this.renderChemicalPermissionBadge(label, [{ name: item.key, label }]) : nothing;
 		return this.renderPaletteCard(label, sharable ? this.palettePermissionVariant(Number(allowed), 1) : "primary", badge, html`
 			<div class="palette-preview-area palette-variant">
-				${stock ? html`
-					${this.renderChemicalTile(item.key, this.chemicalTileLabel(label, item.stockConcentration), formula, stock)}
+				${dose ? html`
+					${this.renderChemicalTile(item.key, this.chemicalTileLabel(label, item.stockConcentration), formula, dose)}
 					${sharable ? this.renderChemicalPermission(item.key, label) : nothing}` : html`
 					<span class="chemical-preview chemical-preview-pending"><span>${formula}</span></span>`}
 			</div>
-			${item.analysis ? this.renderBuilderFacts(item.analysis, facts, item.stockConcentration) : nothing}
+			${item.analysis ? this.renderBuilderFacts(item.analysis, facts,
+				item.phase === "solid" ? undefined : item.stockConcentration) : nothing}
 			<div class="custom-card-actions">
 				<sl-button size="small" class="structure-link" @click=${() => this.openInBuilder({ structure })}>
 					${this.builderText("View structure", "Struktur ansehen")}
@@ -4232,6 +4301,12 @@ export class ChemLab extends LitElementWw {
 		const item = review?.reagent && chemicalCatalog.find(entry => entry.name === review.reagent);
 		const permitted = item && (this.canAuthor || this.isChemicalAllowed(item.name));
 		const builders = target ? worksheetPeers(this, BUILDER_TAG) : [];
+		const recipes = review ? builderRecipes(review.analysis, undefined, review.facts) : undefined;
+		const limit = recipes?.limit ?? 1;
+		// A sparingly soluble compound is dosed as the saturated stock it really
+		// is, instead of offering a concentration the model would refuse.
+		const stockValue = String(Number(Math.min(0.1, limit).toPrecision(6)));
+		const solidGap = recipes && !recipes.solid.recipe ? recipes.solid.reason : undefined;
 		const fallback = !builders.length
 			? this.builderText("Place a Molecule Builder in this worksheet to view the structure.", "Platziere einen Molekülbaukasten in diesem Arbeitsblatt, um die Struktur anzusehen.")
 			: this.builderText("Choose a Molecule Builder to view the structure.", "Wähle einen Molekülbaukasten für die Strukturansicht.");
@@ -4242,27 +4317,37 @@ export class ChemLab extends LitElementWw {
 				: review ? html`
 					${review.analysis ? this.renderBuilderFacts(review.analysis, review.facts) : nothing}
 					${permitted ? html`<p>${this.chemicalDisplayLabel(item)}</p>` : nothing}
+					${recipes && solidGap ? html`<p class="builder-gap">${this.builderText("No dry dose", "Keine Trockendosis")}:
+						${this.builderGapText(solidGap)}</p>` : nothing}
 					${review.analysis && expectedDissociations(review.analysis) > 0 && !review.facts?.dissociation
 						? html`<p>${this.builderText("Acid–base behavior inferred. No complete aqueous pKa series found.",
 							"Säure-Base-Verhalten aus der Struktur abgeleitet. Keine vollständige wässrige pKa-Reihe gefunden.")}</p>` : nothing}
 					${this.canAuthor && !review.reagent && review.analysis?.stockSupported ? html`
 						<div class="custom-stock-fields">
-							<sl-input id="builderStockConcentration" size="small" type="number" min="0.001" max="1" step="any" required
-								value="0.1" label=${this.builderText("Aqueous stock (mol/L)", "Wässrige Stammlösung (mol/L)")}></sl-input>
+							<sl-input id="builderStockConcentration" size="small" type="number" min="0.000001" max=${String(limit)}
+								step="any" required value=${stockValue}
+								label=${this.builderText("Aqueous stock (mol/L)", "Wässrige Stammlösung (mol/L)")}
+								@sl-input=${(event: Event) => (event.currentTarget as SlInput).setCustomValidity("")}></sl-input>
 							${expectedDissociations(review.analysis) && !review.facts?.dissociation ? html`
 								<sl-input id="builderManualPka" size="small" label=${this.builderText("Aqueous pKa (separate values with ;)", "Wässrige pKa (Werte mit ; trennen)")}
 									@sl-input=${(event: Event) => (event.currentTarget as SlInput).setCustomValidity("")}></sl-input>` : nothing}
 						</div>
 						<p>${this.builderText("The stock assumes the compound is dissolved.", "Die Stammlösung setzt voraus, dass der Stoff gelöst ist.")}</p>
+						${limit < 1 ? html`<p class="builder-gap">${this.builderText(
+							`At most ${this.formatAmount(limit, 3)} mol/L dissolve; a dry dose leaves the rest as sediment.`,
+							`Höchstens ${this.formatAmount(limit, 3)} mol/L lösen sich; eine Trockendosis lässt den Rest als Bodensatz stehen.`)}</p>` : nothing}
 					` : nothing}
 					<div>
 						${permitted ? html`<sl-button size="small" variant="primary" @click=${() => this.useBuilderReagent(item.name)}>
 							${this.builderText("Select catalog reagent", "Katalogreagenz auswählen")}</sl-button>` : nothing}
+						${this.canAuthor && !review.reagent && recipes?.solid.recipe ? html`
+							<sl-button size="small" variant="primary" ?disabled=${this.builderReferences.length >= 30}
+								@click=${() => this.saveBuilderReference(review, "solid")}>${this.builderText("Save solid", "Feststoff speichern")}</sl-button>` : nothing}
 						${this.canAuthor && !review.reagent && review.analysis?.stockSupported ? html`
 							<sl-button size="small" variant="primary" ?disabled=${this.builderReferences.length >= 30}
-								@click=${() => this.saveBuilderReference(review, true)}>${this.builderText("Save aqueous stock", "Stammlösung speichern")}</sl-button>` : nothing}
+								@click=${() => this.saveBuilderReference(review, "stock")}>${this.builderText("Save aqueous stock", "Stammlösung speichern")}</sl-button>` : nothing}
 						<sl-button size="small" ?disabled=${(this.canAuthor ? this.builderReferences : this.sessionBuilderReferences).length >= 30}
-							@click=${() => this.saveBuilderReference(review)}>${this.builderText("Save as reference", "Als Referenz speichern")}</sl-button>
+							@click=${() => this.saveBuilderReference(review, "reference")}>${this.builderText("Save as reference", "Als Referenz speichern")}</sl-button>
 					</div>
 				` : html`
 					<p>${fallback}</p>

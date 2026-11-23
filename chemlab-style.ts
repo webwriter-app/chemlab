@@ -1833,6 +1833,9 @@ export const style = css`
 		margin: 0;
 		font-size: .8rem;
 	}
+	.builder-exchange p.builder-gap {
+		color: var(--sl-color-warning-700);
+	}
 	.builder-exchange .custom-stock-fields {
 		display: grid;
 		inline-size: 100%;
