@@ -29,6 +29,7 @@
     "webwriter-chemlab-periodic-table.ts",
     "webwriter-chemlab-molecule-builder.ts",
     "molecule-builder/**/*.ts",
+    "scripts/structure-coverage-model.ts",
     "periodic-table/**/*.ts",
     "data/periodic-table/**/*.ts"
   ]

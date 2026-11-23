@@ -1,0 +1,89 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { test } from "node:test";
+import { chemicalCatalog } from "../data/chemicals";
+import {
+	buildCoverageReport,
+	normalizeFormula,
+	renderCoverageJson,
+	renderCoverageMarkdown,
+} from "../scripts/structure-coverage-model";
+
+const REGENERATE = "node_modules/.bin/esbuild scripts/generate-structure-coverage.ts --bundle --platform=node --format=esm --outfile=.coverage-bundle.mjs && node .coverage-bundle.mjs";
+
+function readTracked(relative: string): string {
+	return readFileSync(relative, "utf8");
+}
+
+test("the tracked coverage artifacts match the current catalog", () => {
+	const report = buildCoverageReport();
+	assert.equal(
+		readTracked("data/structures/coverage.json"),
+		renderCoverageJson(report),
+		`data/structures/coverage.json is out of date; run ${REGENERATE}`,
+	);
+	assert.equal(
+		readTracked("docs/structure-library-coverage.md"),
+		renderCoverageMarkdown(report),
+		`docs/structure-library-coverage.md is out of date; run ${REGENERATE}`,
+	);
+});
+
+test("the summary counts the catalog without double counting", () => {
+	const { summary, entries, salts } = buildCoverageReport();
+	assert.equal(summary.catalogEntries, chemicalCatalog.length);
+	assert.equal(summary.catalogEntries, entries.length);
+	assert.equal(summary.withStructure + summary.withoutStructure, summary.catalogEntries);
+	assert.equal(
+		summary.reagents + summary.dosedSaltEntries,
+		summary.dosed,
+		"every dosed entry belongs to exactly one group",
+	);
+	assert.equal(summary.paired + summary.solidOnly + summary.stockOnly + summary.referenceOnly, summary.saltIdentities);
+	assert.equal(summary.saltIdentities, salts.length);
+	assert.ok(summary.dosed <= summary.catalogEntries);
+	assert.equal(entries.filter((entry) => entry.identity !== null).length, summary.saltEntries);
+	assert.equal(entries.filter((entry) => entry.form === "reference").length, summary.catalogEntries - summary.dosed);
+	assert.equal(summary.mixtures, entries.filter((entry) => entry.mixture).length);
+	assert.ok(summary.mixtures <= summary.catalogEntries - summary.dosed, "a mixture without a recipe cannot be dosed");
+});
+
+test("every dosed salt names its phase and its catalog entry", () => {
+	const names = new Set(chemicalCatalog.map((entry) => entry.name));
+	for (const group of buildCoverageReport().salts) {
+		for (const { name } of [...group.solid, ...group.stock, ...group.reference]) {
+			assert.ok(names.has(name), `${group.label} lists ${name}, which is not in the catalog`);
+		}
+		if (group.status === "paired") assert.ok(group.solid.length && group.stock.length);
+		if (group.status === "solid-only") assert.equal(group.stock.length, 0);
+		if (group.status === "stock-only") assert.equal(group.solid.length, 0);
+		if (group.status === "reference-only") assert.equal(group.solid.length + group.stock.length, 0);
+		assert.equal(group.gap === null, group.status === "paired", `${group.label} needs a gap sentence unless it is paired`);
+	}
+});
+
+test("every dosed entry carries a recipe phase", () => {
+	for (const entry of buildCoverageReport().entries) {
+		if (entry.dosed) assert.ok(entry.phase, `${entry.name} is dosed without a phase`);
+		else assert.equal(entry.phase, null);
+		if (entry.dosable) assert.ok(entry.structures > 0);
+	}
+});
+
+test("salt identities drop hydrate water and subscripts", () => {
+	assert.equal(normalizeFormula("CuSO₄·5 H₂O"), "CuSO4");
+	assert.equal(normalizeFormula("NaHCO₃"), "NaHCO3");
+	assert.equal(normalizeFormula("CaSO₄ · 2 H₂O"), "CaSO4");
+	assert.equal(normalizeFormula("(NH₄)₂SO₄"), "(NH4)2SO4");
+	assert.notEqual(normalizeFormula("NaCl"), normalizeFormula("NaBr"));
+});
+
+test("hydrated references join their anhydrous stock", () => {
+	const report = buildCoverageReport();
+	const copper = report.salts.find((group) => group.identity === "CuSO4");
+	assert.ok(copper, "missing the CuSO₄ group");
+	assert.equal(copper.hydratedReference, true);
+	assert.ok(copper.stock.length > 0, "the CuSO₄ group should carry the dosed stock");
+	assert.ok(copper.reference.some((form) => form.hydrated && form.name.includes("Pentahydrat")));
+	assert.equal(new Set(report.salts.map((group) => group.identity)).size, report.salts.length);
+});

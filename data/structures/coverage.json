@@ -1,0 +1,2676 @@
+{
+  "generatedBy": "scripts/generate-structure-coverage.ts",
+  "summary": {
+    "catalogEntries": 157,
+    "withStructure": 152,
+    "withoutStructure": 5,
+    "dosed": 66,
+    "reagents": 47,
+    "mixtures": 19,
+    "saltEntries": 36,
+    "dosedSaltEntries": 19,
+    "saltIdentities": 30,
+    "paired": 2,
+    "solidOnly": 5,
+    "stockOnly": 10,
+    "referenceOnly": 13
+  },
+  "salts": [
+    {
+      "label": "(NH₄)₂SO₄",
+      "status": "reference-only",
+      "identity": "(NH4)2SO4",
+      "solid": [],
+      "stock": [],
+      "reference": [
+        {
+          "name": "Ammoniumsulfat",
+          "hydrated": false
+        }
+      ],
+      "hydratedReference": false,
+      "solubility": null,
+      "gap": "Neither phase has a recipe for (NH₄)₂SO₄; only the structural preview exists."
+    },
+    {
+      "label": "AgCl",
+      "status": "reference-only",
+      "identity": "AgCl",
+      "solid": [],
+      "stock": [],
+      "reference": [
+        {
+          "name": "Silberchlorid",
+          "hydrated": false
+        }
+      ],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "AgCl",
+        "ksp": 1.8e-10,
+        "solidDensity": 5.56
+      },
+      "gap": "Neither phase has a recipe for AgCl; only the structural preview exists."
+    },
+    {
+      "label": "AgNO₃",
+      "status": "stock-only",
+      "identity": "AgNO3",
+      "solid": [],
+      "stock": [
+        {
+          "name": "Silbernitratlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "AgNO3",
+        "saturation": 8.8,
+        "solidDensity": 4.35
+      },
+      "gap": "Solid recipe missing for AgNO₃; 8.8 mol/L saturation, 4.35 g/mL solid density (AgNO3) is tabulated."
+    },
+    {
+      "label": "BaCl₂",
+      "status": "stock-only",
+      "identity": "BaCl2",
+      "solid": [],
+      "stock": [
+        {
+          "name": "Bariumchloridlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "BaCl2",
+        "saturation": 1.38,
+        "solidDensity": 3.86
+      },
+      "gap": "Solid recipe missing for BaCl₂; 1.38 mol/L saturation, 3.86 g/mL solid density (BaCl2) is tabulated."
+    },
+    {
+      "label": "BaSO₄",
+      "status": "reference-only",
+      "identity": "BaSO4",
+      "solid": [],
+      "stock": [],
+      "reference": [
+        {
+          "name": "Bariumsulfat",
+          "hydrated": false
+        }
+      ],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "BaSO4",
+        "ksp": 1.1e-10,
+        "solidDensity": 4.49
+      },
+      "gap": "Neither phase has a recipe for BaSO₄; only the structural preview exists."
+    },
+    {
+      "label": "CH₃COONa",
+      "status": "reference-only",
+      "identity": "CH3COONa",
+      "solid": [],
+      "stock": [],
+      "reference": [
+        {
+          "name": "Natriumacetat",
+          "hydrated": false
+        }
+      ],
+      "hydratedReference": false,
+      "solubility": null,
+      "gap": "Neither phase has a recipe for CH₃COONa; only the structural preview exists."
+    },
+    {
+      "label": "CaCO₃",
+      "status": "reference-only",
+      "identity": "CaCO3",
+      "solid": [],
+      "stock": [],
+      "reference": [
+        {
+          "name": "Calciumcarbonat",
+          "hydrated": false
+        }
+      ],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "CaCO3",
+        "ksp": 3.4e-9,
+        "solidDensity": 2.71
+      },
+      "gap": "Neither phase has a recipe for CaCO₃; only the structural preview exists."
+    },
+    {
+      "label": "CaCl₂",
+      "status": "stock-only",
+      "identity": "CaCl2",
+      "solid": [],
+      "stock": [
+        {
+          "name": "Calciumchloridlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [
+        {
+          "name": "Calciumchlorid",
+          "hydrated": false
+        }
+      ],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "CaCl2",
+        "saturation": 5.04,
+        "solidDensity": 2.15
+      },
+      "gap": "Solid recipe missing for CaCl₂; 5.04 mol/L saturation, 2.15 g/mL solid density (CaCl2) is tabulated. The catalog lists Calciumchlorid as reference only, so neither form is dosed yet."
+    },
+    {
+      "label": "CaSO₄·2 H₂O",
+      "status": "reference-only",
+      "identity": "CaSO4",
+      "solid": [],
+      "stock": [],
+      "reference": [
+        {
+          "name": "Calciumsulfat-Dihydrat",
+          "hydrated": true
+        }
+      ],
+      "hydratedReference": true,
+      "solubility": {
+        "key": "CaSO4",
+        "ksp": 0.000049,
+        "solidDensity": 2.97
+      },
+      "gap": "Neither phase has a recipe for CaSO₄·2 H₂O; only the structural preview exists. The only solid reference is a hydrate (Calciumsulfat-Dihydrat), so a recipe needs a decided hydrate."
+    },
+    {
+      "label": "CuSO₄",
+      "status": "stock-only",
+      "identity": "CuSO4",
+      "solid": [],
+      "stock": [
+        {
+          "name": "Kupfer(II)-sulfatlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [
+        {
+          "name": "Kupfer(II)-sulfat-Pentahydrat",
+          "hydrated": true
+        }
+      ],
+      "hydratedReference": true,
+      "solubility": {
+        "key": "CuSO4",
+        "saturation": 1.29,
+        "solidDensity": 3.6
+      },
+      "gap": "Solid recipe missing for CuSO₄; 1.29 mol/L saturation, 3.6 g/mL solid density (CuSO4) is tabulated. The only solid reference is a hydrate (Kupfer(II)-sulfat-Pentahydrat), so a recipe needs a decided hydrate."
+    },
+    {
+      "label": "FeCl₃",
+      "status": "stock-only",
+      "identity": "FeCl3",
+      "solid": [],
+      "stock": [
+        {
+          "name": "Eisen(III)-chloridlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "FeCl3",
+        "saturation": 2.69,
+        "solidDensity": 2.9
+      },
+      "gap": "Solid recipe missing for FeCl₃; 2.69 mol/L saturation, 2.9 g/mL solid density (FeCl3) is tabulated."
+    },
+    {
+      "label": "FeS",
+      "status": "reference-only",
+      "identity": "FeS",
+      "solid": [],
+      "stock": [],
+      "reference": [
+        {
+          "name": "Eisen(II)-sulfid",
+          "hydrated": false
+        }
+      ],
+      "hydratedReference": false,
+      "solubility": null,
+      "gap": "Neither phase has a recipe for FeS; only the structural preview exists."
+    },
+    {
+      "label": "FeSO₄",
+      "status": "stock-only",
+      "identity": "FeSO4",
+      "solid": [],
+      "stock": [
+        {
+          "name": "Eisen(II)-sulfatlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [
+        {
+          "name": "Eisen(II)-sulfat-Heptahydrat",
+          "hydrated": true
+        }
+      ],
+      "hydratedReference": true,
+      "solubility": {
+        "key": "FeSO4",
+        "saturation": 0.93,
+        "solidDensity": 3.64
+      },
+      "gap": "Solid recipe missing for FeSO₄; 0.93 mol/L saturation, 3.64 g/mL solid density (FeSO4) is tabulated. The only solid reference is a hydrate (Eisen(II)-sulfat-Heptahydrat), so a recipe needs a decided hydrate."
+    },
+    {
+      "label": "KBr",
+      "status": "solid-only",
+      "identity": "KBr",
+      "solid": [
+        {
+          "name": "Kaliumbromid",
+          "hydrated": false
+        }
+      ],
+      "stock": [],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "KBr",
+        "saturation": 4.57,
+        "solidDensity": 2.75
+      },
+      "gap": "Aqueous stock missing for KBr; 4.57 mol/L saturation, 2.75 g/mL solid density (KBr) is tabulated."
+    },
+    {
+      "label": "KCl",
+      "status": "solid-only",
+      "identity": "KCl",
+      "solid": [
+        {
+          "name": "Kaliumchlorid",
+          "hydrated": false
+        }
+      ],
+      "stock": [],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "KCl",
+        "saturation": 4.02,
+        "solidDensity": 1.98
+      },
+      "gap": "Aqueous stock missing for KCl; 4.02 mol/L saturation, 1.98 g/mL solid density (KCl) is tabulated."
+    },
+    {
+      "label": "KI",
+      "status": "solid-only",
+      "identity": "KI",
+      "solid": [
+        {
+          "name": "Kaliumiodid",
+          "hydrated": false
+        }
+      ],
+      "stock": [],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "KI",
+        "saturation": 6.09,
+        "solidDensity": 3.12
+      },
+      "gap": "Aqueous stock missing for KI; 6.09 mol/L saturation, 3.12 g/mL solid density (KI) is tabulated."
+    },
+    {
+      "label": "KMnO₄",
+      "status": "reference-only",
+      "identity": "KMnO4",
+      "solid": [],
+      "stock": [],
+      "reference": [
+        {
+          "name": "Kaliumpermanganat",
+          "hydrated": false
+        }
+      ],
+      "hydratedReference": false,
+      "solubility": null,
+      "gap": "Neither phase has a recipe for KMnO₄; only the structural preview exists."
+    },
+    {
+      "label": "KNO₃",
+      "status": "stock-only",
+      "identity": "KNO3",
+      "solid": [],
+      "stock": [
+        {
+          "name": "Kaliumnitratlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [
+        {
+          "name": "Kaliumnitrat",
+          "hydrated": false
+        }
+      ],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "KNO3",
+        "saturation": 2.77,
+        "solidDensity": 2.11
+      },
+      "gap": "Solid recipe missing for KNO₃; 2.77 mol/L saturation, 2.11 g/mL solid density (KNO3) is tabulated. The catalog lists Kaliumnitrat as reference only, so neither form is dosed yet."
+    },
+    {
+      "label": "KNaC₄H₄O₆",
+      "status": "reference-only",
+      "identity": "KNaC4H4O6",
+      "solid": [],
+      "stock": [],
+      "reference": [
+        {
+          "name": "Kaliumnatriumtartrat",
+          "hydrated": false
+        }
+      ],
+      "hydratedReference": false,
+      "solubility": null,
+      "gap": "Neither phase has a recipe for KNaC₄H₄O₆; only the structural preview exists."
+    },
+    {
+      "label": "KSCN",
+      "status": "reference-only",
+      "identity": "KSCN",
+      "solid": [],
+      "stock": [],
+      "reference": [
+        {
+          "name": "Kaliumthiocyanat",
+          "hydrated": false
+        }
+      ],
+      "hydratedReference": false,
+      "solubility": null,
+      "gap": "Neither phase has a recipe for KSCN; only the structural preview exists."
+    },
+    {
+      "label": "MgSO₄·7 H₂O",
+      "status": "reference-only",
+      "identity": "MgSO4",
+      "solid": [],
+      "stock": [],
+      "reference": [
+        {
+          "name": "Magnesiumsulfat-Heptahydrat",
+          "hydrated": true
+        }
+      ],
+      "hydratedReference": true,
+      "solubility": null,
+      "gap": "Neither phase has a recipe for MgSO₄·7 H₂O; only the structural preview exists. The only solid reference is a hydrate (Magnesiumsulfat-Heptahydrat), so a recipe needs a decided hydrate."
+    },
+    {
+      "label": "NH₄Cl",
+      "status": "reference-only",
+      "identity": "NH4Cl",
+      "solid": [],
+      "stock": [],
+      "reference": [
+        {
+          "name": "Ammoniumchlorid",
+          "hydrated": false
+        }
+      ],
+      "hydratedReference": false,
+      "solubility": null,
+      "gap": "Neither phase has a recipe for NH₄Cl; only the structural preview exists."
+    },
+    {
+      "label": "NaBr",
+      "status": "solid-only",
+      "identity": "NaBr",
+      "solid": [
+        {
+          "name": "Natriumbromid",
+          "hydrated": false
+        }
+      ],
+      "stock": [],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": null,
+      "gap": "Aqueous stock missing for NaBr and chemlib/saltSolubility.ts has no entry for it."
+    },
+    {
+      "label": "NaCl",
+      "status": "paired",
+      "identity": "NaCl",
+      "solid": [
+        {
+          "name": "Natriumchlorid",
+          "hydrated": false
+        }
+      ],
+      "stock": [
+        {
+          "name": "Natriumchloridlösung (1 mol/L)",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "NaCl",
+        "saturation": 5.43,
+        "solidDensity": 2.16
+      },
+      "gap": null
+    },
+    {
+      "label": "NaHCO₃",
+      "status": "paired",
+      "identity": "NaHCO3",
+      "solid": [
+        {
+          "name": "Natriumhydrogencarbonat",
+          "hydrated": false
+        }
+      ],
+      "stock": [
+        {
+          "name": "Natriumhydrogencarbonatlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "NaHCO3",
+        "saturation": 1.14,
+        "solidDensity": 2.16
+      },
+      "gap": null
+    },
+    {
+      "label": "NaI",
+      "status": "solid-only",
+      "identity": "NaI",
+      "solid": [
+        {
+          "name": "Natriumiodid",
+          "hydrated": false
+        }
+      ],
+      "stock": [],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": null,
+      "gap": "Aqueous stock missing for NaI and chemlib/saltSolubility.ts has no entry for it."
+    },
+    {
+      "label": "Na₂CO₃",
+      "status": "stock-only",
+      "identity": "Na2CO3",
+      "solid": [],
+      "stock": [
+        {
+          "name": "Natriumcarbonatlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "Na2CO3",
+        "saturation": 2.01,
+        "solidDensity": 2.54
+      },
+      "gap": "Solid recipe missing for Na₂CO₃; 2.01 mol/L saturation, 2.54 g/mL solid density (Na2CO3) is tabulated."
+    },
+    {
+      "label": "Na₂SO₄",
+      "status": "stock-only",
+      "identity": "Na2SO4",
+      "solid": [],
+      "stock": [
+        {
+          "name": "Natriumsulfatlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "Na2SO4",
+        "saturation": 1.3,
+        "solidDensity": 2.66
+      },
+      "gap": "Solid recipe missing for Na₂SO₄; 1.3 mol/L saturation, 2.66 g/mL solid density (Na2SO4) is tabulated."
+    },
+    {
+      "label": "Na₂S₂O₃·5 H₂O",
+      "status": "reference-only",
+      "identity": "Na2S2O3",
+      "solid": [],
+      "stock": [],
+      "reference": [
+        {
+          "name": "Natriumthiosulfat-Pentahydrat",
+          "hydrated": true
+        }
+      ],
+      "hydratedReference": true,
+      "solubility": null,
+      "gap": "Neither phase has a recipe for Na₂S₂O₃·5 H₂O; only the structural preview exists. The only solid reference is a hydrate (Natriumthiosulfat-Pentahydrat), so a recipe needs a decided hydrate."
+    },
+    {
+      "label": "ZnSO₄",
+      "status": "stock-only",
+      "identity": "ZnSO4",
+      "solid": [],
+      "stock": [
+        {
+          "name": "Zinksulfatlösung",
+          "hydrated": false
+        }
+      ],
+      "reference": [],
+      "hydratedReference": false,
+      "solubility": {
+        "key": "ZnSO4",
+        "saturation": 1.79,
+        "solidDensity": 3.54
+      },
+      "gap": "Solid recipe missing for ZnSO₄; 1.79 mol/L saturation, 3.54 g/mL solid density (ZnSO4) is tabulated."
+    }
+  ],
+  "entries": [
+    {
+      "name": "Ammoniumchlorid",
+      "category": "Salze",
+      "formula": "NH₄Cl",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "NH4Cl",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Ammoniumsulfat",
+      "category": "Salze",
+      "formula": "(NH₄)₂SO₄",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "(NH4)2SO4",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Bariumchloridlösung",
+      "category": "Salze",
+      "formula": "BaCl₂",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "BaCl2",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Bariumsulfat",
+      "category": "Salze",
+      "formula": "BaSO₄",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "BaSO4",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Calciumcarbonat",
+      "category": "Salze",
+      "formula": "CaCO₃",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "CaCO3",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Calciumchlorid",
+      "category": "Salze",
+      "formula": "CaCl₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "CaCl2",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Calciumchloridlösung",
+      "category": "Salze",
+      "formula": "CaCl₂",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "CaCl2",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Calciumsulfat-Dihydrat",
+      "category": "Salze",
+      "formula": "CaSO₄·2 H₂O",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "CaSO4",
+      "hydrated": true,
+      "mixture": false
+    },
+    {
+      "name": "Eisen(II)-sulfat-Heptahydrat",
+      "category": "Salze",
+      "formula": "FeSO₄·7 H₂O",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "FeSO4",
+      "hydrated": true,
+      "mixture": false
+    },
+    {
+      "name": "Eisen(II)-sulfatlösung",
+      "category": "Salze",
+      "formula": "FeSO₄",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "FeSO4",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Eisen(II)-sulfid",
+      "category": "Salze",
+      "formula": "FeS",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "FeS",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Eisen(III)-chloridlösung",
+      "category": "Salze",
+      "formula": "FeCl₃",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "FeCl3",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kaliumbromid",
+      "category": "Salze",
+      "formula": "KBr",
+      "form": "salt",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": "KBr",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kaliumchlorid",
+      "category": "Salze",
+      "formula": "KCl",
+      "form": "salt",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": "KCl",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kaliumiodid",
+      "category": "Salze",
+      "formula": "KI",
+      "form": "salt",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": "KI",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kaliumnatriumtartrat",
+      "category": "Salze",
+      "formula": "KNaC₄H₄O₆",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "KNaC4H4O6",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kaliumnitrat",
+      "category": "Salze",
+      "formula": "KNO₃",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "KNO3",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kaliumnitratlösung",
+      "category": "Salze",
+      "formula": "KNO₃",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "KNO3",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kaliumpermanganat",
+      "category": "Salze",
+      "formula": "KMnO₄",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "KMnO4",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kaliumthiocyanat",
+      "category": "Salze",
+      "formula": "KSCN",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "KSCN",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kupfer(II)-sulfat-Pentahydrat",
+      "category": "Salze",
+      "formula": "CuSO₄·5 H₂O",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "CuSO4",
+      "hydrated": true,
+      "mixture": false
+    },
+    {
+      "name": "Kupfer(II)-sulfatlösung",
+      "category": "Salze",
+      "formula": "CuSO₄",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "CuSO4",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Magnesiumsulfat-Heptahydrat",
+      "category": "Salze",
+      "formula": "MgSO₄·7 H₂O",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "MgSO4",
+      "hydrated": true,
+      "mixture": false
+    },
+    {
+      "name": "Natriumacetat",
+      "category": "Salze",
+      "formula": "CH₃COONa",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "CH3COONa",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natriumbromid",
+      "category": "Salze",
+      "formula": "NaBr",
+      "form": "salt",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": "NaBr",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natriumcarbonatlösung",
+      "category": "Salze",
+      "formula": "Na₂CO₃",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "Na2CO3",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natriumchlorid",
+      "category": "Salze",
+      "formula": "NaCl",
+      "form": "salt",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": "NaCl",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natriumchloridlösung (1 mol/L)",
+      "category": "Salze",
+      "formula": "NaCl",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "NaCl",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natriumhydrogencarbonat",
+      "category": "Salze",
+      "formula": "NaHCO₃",
+      "form": "salt",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": "NaHCO3",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natriumhydrogencarbonatlösung",
+      "category": "Salze",
+      "formula": "NaHCO₃",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "NaHCO3",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natriumiodid",
+      "category": "Salze",
+      "formula": "NaI",
+      "form": "salt",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": "NaI",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natriumsulfatlösung",
+      "category": "Salze",
+      "formula": "Na₂SO₄",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "Na2SO4",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natriumthiosulfat-Pentahydrat",
+      "category": "Salze",
+      "formula": "Na₂S₂O₃·5 H₂O",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "Na2S2O3",
+      "hydrated": true,
+      "mixture": false
+    },
+    {
+      "name": "Silberchlorid",
+      "category": "Salze",
+      "formula": "AgCl",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": "AgCl",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Silbernitratlösung",
+      "category": "Salze",
+      "formula": "AgNO₃",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "AgNO3",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Zinksulfatlösung",
+      "category": "Salze",
+      "formula": "ZnSO₄",
+      "form": "salt",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": "ZnSO4",
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Phosphorsäure (1 mol/L)",
+      "category": "Anorganische Säuren",
+      "formula": "H₃PO₄",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Salpetersäure",
+      "category": "Anorganische Säuren",
+      "formula": "HNO₃",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Salzsäure (1 mol/L)",
+      "category": "Anorganische Säuren",
+      "formula": "HCl",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Schwefelsäure (1 mol/L)",
+      "category": "Anorganische Säuren",
+      "formula": "H₂SO₄",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Ammoniaklösung",
+      "category": "Basen",
+      "formula": "NH₃",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Calciumhydroxid",
+      "category": "Basen",
+      "formula": "Ca(OH)₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kalilauge (1 mol/L)",
+      "category": "Basen",
+      "formula": "KOH",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kalkwasser",
+      "category": "Basen",
+      "formula": "Ca(OH)₂ (aq)",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 2,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Natriumhydroxid",
+      "category": "Basen",
+      "formula": "NaOH",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natronlauge (1 mol/L)",
+      "category": "Basen",
+      "formula": "NaOH",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 2,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Ameisensäure",
+      "category": "Carbonsäuren",
+      "formula": "CH₂O₂",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Benzoesäure",
+      "category": "Carbonsäuren",
+      "formula": "C₇H₆O₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Essigsäure",
+      "category": "Carbonsäuren",
+      "formula": "C₂H₄O₂",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Milchsäure",
+      "category": "Carbonsäuren",
+      "formula": "C₃H₆O₃",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Oxalsäure",
+      "category": "Carbonsäuren",
+      "formula": "C₂H₂O₄",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Propionsäure",
+      "category": "Carbonsäuren",
+      "formula": "C₃H₆O₂",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Sorbinsäure",
+      "category": "Carbonsäuren",
+      "formula": "C₆H₈O₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Tetradecansäure (Myristinsäure)",
+      "category": "Carbonsäuren",
+      "formula": "C₁₄H₂₈O₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Zitronensäure",
+      "category": "Carbonsäuren",
+      "formula": "C₆H₈O₇",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "3-Methylbutan-1-ol (Isoamylalkohol)",
+      "category": "Alkohole",
+      "formula": "C₅H₁₂O",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Butan-1-ol",
+      "category": "Alkohole",
+      "formula": "C₄H₁₀O",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Butan-2-ol",
+      "category": "Alkohole",
+      "formula": "C₄H₁₀O",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Ethan-1,2-diol",
+      "category": "Alkohole",
+      "formula": "C₂H₆O₂",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Ethanol",
+      "category": "Alkohole",
+      "formula": "C₂H₆O",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Glycerin",
+      "category": "Alkohole",
+      "formula": "C₃H₈O₃",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Methanol",
+      "category": "Alkohole",
+      "formula": "CH₄O",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Pentan-1-ol",
+      "category": "Alkohole",
+      "formula": "C₅H₁₂O",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Propan-1-ol",
+      "category": "Alkohole",
+      "formula": "C₃H₈O",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Propan-2-ol",
+      "category": "Alkohole",
+      "formula": "C₃H₈O",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Tetradecan-1-ol (Myristylalkohol)",
+      "category": "Alkohole",
+      "formula": "C₁₄H₃₀O",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Benzaldehyd",
+      "category": "Aldehyde",
+      "formula": "C₇H₆O",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Ethanal",
+      "category": "Aldehyde",
+      "formula": "C₂H₄O",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Methanal (Formaldehyd)",
+      "category": "Aldehyde",
+      "formula": "CH₂O",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Propanal",
+      "category": "Aldehyde",
+      "formula": "C₃H₆O",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Aceton",
+      "category": "Ketone",
+      "formula": "C₃H₆O",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Butan-2-on",
+      "category": "Ketone",
+      "formula": "C₄H₈O",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Ethylacetat",
+      "category": "Ester",
+      "formula": "C₄H₈O₂",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Isoamylacetat",
+      "category": "Ester",
+      "formula": "C₇H₁₄O₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Myristylmyristat",
+      "category": "Ester",
+      "formula": "C₂₈H₅₆O₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Butan",
+      "category": "Kohlenwasserstoffe",
+      "formula": "C₄H₁₀",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Cyclohexan",
+      "category": "Kohlenwasserstoffe",
+      "formula": "C₆H₁₂",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Cyclohexen",
+      "category": "Kohlenwasserstoffe",
+      "formula": "C₆H₁₀",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Ethen",
+      "category": "Kohlenwasserstoffe",
+      "formula": "C₂H₄",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Ethin",
+      "category": "Kohlenwasserstoffe",
+      "formula": "C₂H₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Heptan",
+      "category": "Kohlenwasserstoffe",
+      "formula": "C₇H₁₆",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Hexan",
+      "category": "Kohlenwasserstoffe",
+      "formula": "C₆H₁₄",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Methan",
+      "category": "Kohlenwasserstoffe",
+      "formula": "CH₄",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Propan",
+      "category": "Kohlenwasserstoffe",
+      "formula": "C₃H₈",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Paraffinöl",
+      "category": "Lösungsmittel",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": false,
+      "dosed": false,
+      "structures": 0,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Petrolether",
+      "category": "Lösungsmittel",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Wasser",
+      "category": "Lösungsmittel",
+      "formula": "H₂O",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Bromethan",
+      "category": "Halogenkohlenwasserstoffe",
+      "formula": "C₂H₅Br",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Chlorethen (Vinylchlorid)",
+      "category": "Halogenkohlenwasserstoffe",
+      "formula": "C₂H₃Cl",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Dichlormethan",
+      "category": "Halogenkohlenwasserstoffe",
+      "formula": "CH₂Cl₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Aluminium",
+      "category": "Metalle",
+      "formula": "Al",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Calcium",
+      "category": "Metalle",
+      "formula": "Ca",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Eisen",
+      "category": "Metalle",
+      "formula": "Fe",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kalium",
+      "category": "Metalle",
+      "formula": "K",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kupfer",
+      "category": "Metalle",
+      "formula": "Cu",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Magnesium",
+      "category": "Metalle",
+      "formula": "Mg",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natrium",
+      "category": "Metalle",
+      "formula": "Na",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Nickel",
+      "category": "Metalle",
+      "formula": "Ni",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Platin",
+      "category": "Metalle",
+      "formula": "Pt",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Silber",
+      "category": "Metalle",
+      "formula": "Ag",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Zink",
+      "category": "Metalle",
+      "formula": "Zn",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Zinn",
+      "category": "Metalle",
+      "formula": "Sn",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Chlor",
+      "category": "Nichtmetalle und Gase",
+      "formula": "Cl₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Iod",
+      "category": "Nichtmetalle und Gase",
+      "formula": "I₂",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kohlenstoff",
+      "category": "Nichtmetalle und Gase",
+      "formula": "C",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kohlenstoffdioxid",
+      "category": "Nichtmetalle und Gase",
+      "formula": "CO₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Sauerstoff",
+      "category": "Nichtmetalle und Gase",
+      "formula": "O₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Schwefel",
+      "category": "Nichtmetalle und Gase",
+      "formula": "S",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Stickstoff",
+      "category": "Nichtmetalle und Gase",
+      "formula": "N₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Wasserstoff",
+      "category": "Nichtmetalle und Gase",
+      "formula": "H₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Calciumoxid",
+      "category": "Oxide",
+      "formula": "CaO",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Eisen(III)-oxid",
+      "category": "Oxide",
+      "formula": "Fe₂O₃",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Kupfer(II)-oxid",
+      "category": "Oxide",
+      "formula": "CuO",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Magnesiumoxid",
+      "category": "Oxide",
+      "formula": "MgO",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Mangan(IV)-oxid",
+      "category": "Oxide",
+      "formula": "MnO₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Siliciumdioxid",
+      "category": "Oxide",
+      "formula": "SiO₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Benedict-Reagenz",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 4,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Bromthymolblau",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "C₂₇H₂₈Br₂O₅S",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Bromwasser",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "Br₂ (aq)",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Fehling I",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "CuSO₄ (aq)",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 2,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Fehling II",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 2,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Indigo",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "C₁₆H₁₀N₂O₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Lackmus",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": false,
+      "dosed": false,
+      "structures": 0,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Lugolsche Lösung",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "I₂ / KI (aq)",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 3,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Methylorange",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "C₁₄H₁₄N₃NaO₃S",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Phenolphthalein",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "C₂₀H₁₄O₄",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Rotkohlsaft",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": false,
+      "dosed": false,
+      "structures": 0,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Schiff-Reagenz",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": false,
+      "dosed": false,
+      "structures": 0,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Tollens-Reagenz",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Universalindikator",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 3,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Wasserstoffperoxidlösung",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": "H₂O₂",
+      "form": "reagent",
+      "phase": "liquid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Cellulose",
+      "category": "Kohlenhydrate und Aminosäuren",
+      "formula": "(C₆H₁₀O₅)ₙ",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Fructose",
+      "category": "Kohlenhydrate und Aminosäuren",
+      "formula": "C₆H₁₂O₆",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Glucose",
+      "category": "Kohlenhydrate und Aminosäuren",
+      "formula": "C₆H₁₂O₆",
+      "form": "reagent",
+      "phase": "solid",
+      "dosable": true,
+      "dosed": true,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Glycin",
+      "category": "Kohlenhydrate und Aminosäuren",
+      "formula": "C₂H₅NO₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Saccharose",
+      "category": "Kohlenhydrate und Aminosäuren",
+      "formula": "C₁₂H₂₂O₁₁",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Stärke",
+      "category": "Kohlenhydrate und Aminosäuren",
+      "formula": "(C₆H₁₀O₅)ₙ",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natriumdodecylsulfat",
+      "category": "Fette und Tenside",
+      "formula": "C₁₂H₂₅NaO₄S",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Natriumstearat",
+      "category": "Fette und Tenside",
+      "formula": "C₁₈H₃₅NaO₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Olivenöl",
+      "category": "Fette und Tenside",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": false,
+      "dosed": false,
+      "structures": 0,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Stearinsäure",
+      "category": "Fette und Tenside",
+      "formula": "C₁₈H₃₆O₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Ölsäure",
+      "category": "Fette und Tenside",
+      "formula": "C₁₈H₃₄O₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Methylmethacrylat",
+      "category": "Kunststoffe und Monomere",
+      "formula": "C₅H₈O₂",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Polyamid 6",
+      "category": "Kunststoffe und Monomere",
+      "formula": "(C₆H₁₁NO)ₙ",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Polyethylen (PE)",
+      "category": "Kunststoffe und Monomere",
+      "formula": "(C₂H₄)ₙ",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Polyethylenterephthalat (PET)",
+      "category": "Kunststoffe und Monomere",
+      "formula": "(C₁₀H₈O₄)ₙ",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Polymilchsäure (PLA)",
+      "category": "Kunststoffe und Monomere",
+      "formula": "(C₃H₄O₂)ₙ",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Polypropylen (PP)",
+      "category": "Kunststoffe und Monomere",
+      "formula": "(C₃H₆)ₙ",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Polystyrol (PS)",
+      "category": "Kunststoffe und Monomere",
+      "formula": "(C₈H₈)ₙ",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Polyvinylchlorid (PVC)",
+      "category": "Kunststoffe und Monomere",
+      "formula": "(C₂H₃Cl)ₙ",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Styrol",
+      "category": "Kunststoffe und Monomere",
+      "formula": "C₈H₈",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": false
+    },
+    {
+      "name": "Haushaltsessig",
+      "category": "Stoffgemische",
+      "formula": "CH₃COOH (aq)",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 2,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Leitungswasser",
+      "category": "Stoffgemische",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Luft",
+      "category": "Stoffgemische",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 3,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Mineralwasser",
+      "category": "Stoffgemische",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Sand",
+      "category": "Stoffgemische",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 1,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    },
+    {
+      "name": "Zitronensaft",
+      "category": "Stoffgemische",
+      "formula": "",
+      "form": "reference",
+      "phase": null,
+      "dosable": true,
+      "dosed": false,
+      "structures": 2,
+      "identity": null,
+      "hydrated": false,
+      "mixture": true
+    }
+  ],
+  "unstructured": [
+    {
+      "name": "Paraffinöl",
+      "category": "Lösungsmittel",
+      "formula": ""
+    },
+    {
+      "name": "Lackmus",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": ""
+    },
+    {
+      "name": "Rotkohlsaft",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": ""
+    },
+    {
+      "name": "Schiff-Reagenz",
+      "category": "Indikatoren und Nachweisreagenzien",
+      "formula": ""
+    },
+    {
+      "name": "Olivenöl",
+      "category": "Fette und Tenside",
+      "formula": ""
+    }
+  ]
+}
